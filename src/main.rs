@@ -1,129 +1,224 @@
-use std::cmp::max;
-use std::collections::HashMap;
+// use std::cmp::max;
 
 fn main() {
-    println!("Hello, world!");
+    test4();
+    test5();
+    test6();
 
-    let mut range_set_int = RangeSetInt::new();
-    range_set_int._internal_add(1, 2);
-    println!(
-        "{},\n{:?},\n{:?}",
-        range_set_int.len(),
-        range_set_int._start_items,
-        range_set_int._start_to_length
-    );
-    range_set_int._internal_add(3, 4);
-    println!(
-        "{},\n{:?},\n{:?}",
-        range_set_int.len(),
-        range_set_int._start_items,
-        range_set_int._start_to_length
-    );
-    range_set_int._internal_add(1, 3);
-    println!(
-        "{},\n{:?},\n{:?}",
-        range_set_int.len(),
-        range_set_int._start_items,
-        range_set_int._start_to_length
-    );
-    range_set_int.clear();
-    println!(
-        "{},\n{:?},\n{:?}",
-        range_set_int.len(),
-        range_set_int._start_items,
-        range_set_int._start_to_length
-    );
+    test1();
+    test2();
+    test3();
 }
 
-// RangeSetInt implements Set trait
+fn test1() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(2, 3);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 1);
+    assert!(range_set._items[0].start == 2);
+    assert!(range_set._items[0].length == 3);
+}
+
+// !!!cmk what if connects with next range(s)?
+fn test2() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(2, 3);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 1);
+    assert!(range_set._items[0].start == 2);
+    assert!(range_set._items[0].length == 3);
+    range_set._internal_add(2, 1);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 1);
+    assert!(range_set._items[0].start == 2);
+    assert!(range_set._items[0].length == 3);
+    range_set._internal_add(2, 4);
+    assert!(range_set.len() == 4);
+    assert!(range_set._items.len() == 1);
+    assert!(range_set._items[0].start == 2);
+    assert!(range_set._items[0].length == 4);
+}
+
+// !!!cmk what if connects with next range(s)?
+fn test3() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(2, 3);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 1);
+    range_set._internal_add(0, 1);
+    assert!(range_set.len() == 4);
+    assert!(range_set._items.len() == 2);
+    assert!(range_set._items[0].start == 0);
+    assert!(range_set._items[0].length == 1);
+    assert!(range_set._items[1].start == 2);
+    assert!(range_set._items[1].length == 3);
+}
+
+fn test4() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(0, 2);
+    range_set._internal_add(5, 1);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 2);
+    range_set._internal_add(1, 1);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 2);
+    assert!(range_set._items[0].start == 0);
+    assert!(range_set._items[0].length == 2);
+    assert!(range_set._items[1].start == 5);
+    assert!(range_set._items[1].length == 1);
+}
+
+fn test5() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(0, 2);
+    range_set._internal_add(5, 1);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 2);
+    range_set._internal_add(1, 2);
+    assert!(range_set.len() == 4);
+    assert!(range_set._items.len() == 2);
+    assert!(range_set._items[0].start == 0);
+    assert!(range_set._items[0].length == 3);
+    assert!(range_set._items[1].start == 5);
+    assert!(range_set._items[1].length == 1);
+}
+
+fn test6() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(0, 2);
+    range_set._internal_add(5, 1);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 2);
+    range_set._internal_add(3, 1);
+    assert!(range_set.len() == 4);
+    assert!(range_set._items.len() == 3);
+    assert!(range_set._items[0].start == 0);
+    assert!(range_set._items[0].length == 2);
+    assert!(range_set._items[1].start == 3);
+    assert!(range_set._items[1].length == 1);
+    assert!(range_set._items[2].start == 5);
+    assert!(range_set._items[2].length == 1);
+}
+
+struct Range {
+    start: usize,
+    length: usize,
+}
 
 struct RangeSetInt {
-    _start_items: Vec<usize>, // !!!cmk usize?
-    _start_to_length: HashMap<usize, usize>, // !!! cmk use more efficient no hash
-                              // !!!cmk underscore?
+    _items: Vec<Range>, // !!!cmk usize?
+                        // !!!cmk underscore?
 }
 
 impl RangeSetInt {
     fn new() -> RangeSetInt {
-        RangeSetInt {
-            _start_items: Vec::new(),
-            _start_to_length: HashMap::new(),
-        }
+        RangeSetInt { _items: Vec::new() }
     }
 
     fn clear(&mut self) {
-        self._start_items.clear();
-        self._start_to_length.clear();
+        self._items.clear();
     }
 
     fn len(&self) -> usize {
-        self._start_to_length.values().sum()
+        self._items.iter().fold(0, |acc, x| acc + x.length)
     }
 
     fn _internal_add(&mut self, start: usize, length: usize) {
-        assert!(self._start_items.len() == self._start_to_length.len()); // !!!cmk real assert
-        let mut index = self._start_items.partition_point(|&x| x < start);
-        let mut previous: usize;
-        let mut stop: usize;
-        if index != self._start_items.len() && self._start_items[index] == start {
-            if length <= self._start_to_length[&start] {
-                return;
-            } else {
-                self._start_to_length.entry(start).or_insert(length);
-                index += 1; // index should point to the following range for the remainder of this method
-                previous = start;
-                stop = &start + length; // !!!cmk check the types
-            }
+        let mut index = self._items.partition_point(|x| x.start < start);
+        if index == self._items.len() {
+            self._items.push(Range { start, length }); // !!!cmk why copy?
+                                                       // !!!cmk what if connects with previous range?
         } else {
-            if index == 0 {
-                self._start_items.insert(index, start);
-                self._start_to_length.entry(start).or_insert(length);
-                previous = start;
-                stop = start + length;
-                index += 1 // index_of_miss should point to the following range for the remainder of this method
+            let range: &mut Range = &mut self._items[index];
+            let mut previous_start: usize;
+            let mut previous_stop: usize;
+            if range.start == start {
+                if length > range.length {
+                    range.length = length;
+                    index += 1; // index should point to the following range for the remainder of this method
+                    previous_start = start;
+                    previous_stop = start + length;
+                }
             } else {
-                previous = self._start_items[index - 1];
-                stop = previous + self._start_to_length[&previous];
-
-                if start <= stop {
-                    let new_length = start - previous + length;
-                    assert!(new_length > 0); // real assert
-                    if new_length < self._start_to_length[&previous] {
-                        return;
-                    } else {
-                        self._start_to_length.entry(previous).or_insert(new_length);
-                        stop = previous + new_length;
-                    }
+                if index == 0 {
+                    self._items.insert(index, Range { start, length });
+                    previous_start = start;
+                    previous_stop = start + length;
+                    index += 1 // index_of_miss should point to the following range for the remainder of this method
                 } else {
-                    // after previous range, not contiguous with previous range
-                    self._start_items.insert(index, start);
-                    self._start_to_length.entry(start).or_insert(length);
-                    previous = start;
-                    stop = start + length;
-                    index += 1;
+                    let previous_range: &mut Range = &mut self._items[index - 1];
+                    previous_start = previous_range.start;
+                    let previous_length = previous_range.length;
+                    previous_stop = previous_start + previous_range.length;
+
+                    if previous_stop >= start {
+                        let new_length = start + length - previous_start;
+                        assert!(new_length > 0); // real assert
+                        if new_length < previous_length {
+                            return;
+                        } else {
+                            previous_range.length = new_length;
+                            previous_stop = previous_start + new_length;
+                        }
+                    } else {
+                        // after previous range, not contiguous with previous range
+                        self._items.insert(index, Range { start, length });
+                        previous_start = start;
+                        previous_stop = start + length;
+                        index += 1;
+                    }
                 }
             }
         }
-
-        if index == self._start_items.len() {
-            return;
-        }
-
-        // collapse next range into this one
-        let mut next = self._start_items[index];
-        while stop >= next {
-            let new_stop = max(stop, next + self._start_to_length[&next]);
-            self._start_to_length
-                .entry(previous)
-                .or_insert(new_stop - previous); // ItemToLength[previous] + ItemToLength[next]
-            self._start_to_length.remove(&next);
-            self._start_items.remove(index);
-            stop = new_stop;
-            if index >= self._start_items.len() {
-                break;
-            }
-            next = self._start_items[index];
-        }
-        return;
     }
 }
+
+//         } else {
+//             let previous_range: &Range = &self._items[index - 1];
+//             previous_start = previous_range.start;
+//             let previous_length = previous_range.length;
+//             stop = previous_start + previous_range.length;
+
+//             if start <= stop {
+//                 let new_length = start - previous_start + length;
+//                 assert!(new_length > 0); // real assert
+//                 if new_length < previous_length {
+//                     return;
+//                 } else {
+//                     previous_range.length = new_length;
+//                     stop = previous_start + new_length;
+//                 }
+//             } else {
+//                 // after previous range, not contiguous with previous range
+//                 self._items.insert(index, Range { start, length });
+//                 previous_start = start;
+//                 stop = start + length;
+//                 index += 1;
+//             }
+//         }
+
+//         // collapse next range(s) into this one
+//         // use 'drain'
+//     //     let mut next: &Range = &self._items[index];
+//     //     while stop >= next.start {
+//     //         let new_stop = max(stop, next.start + next.length);
+//     //         let length = new_stop - previous_start;
+//     //         self._start_to_length
+//     //             .entry(previous)
+//     //             .or_insert(new_stop - previous); // ItemToLength[previous] + ItemToLength[next]
+//     //         self._start_to_length.remove(&next);
+//     //         self._start_items.remove(index);
+//     //         stop = new_stop;
+//     //         if index >= self._start_items.len() {
+//     //             break;
+//     //         }
+//     //         next = self._start_items[index];
+//     //     }
+//     // }
