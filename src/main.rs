@@ -132,51 +132,53 @@ impl RangeSetInt {
 
     fn _internal_add(&mut self, start: usize, length: usize) {
         let mut index = self._items.partition_point(|x| x.start < start);
+        let mut previous_index;
+
         if index == self._items.len() {
             self._items.push(Range { start, length }); // !!!cmk why copy?
-                                                       // !!!cmk what if connects with previous range?
+            index += 1; // index should point to the following range for the remainder of this method
+                        // !!!cmk what if connects with previous range?
         } else {
             let range: &mut Range = &mut self._items[index];
-            let mut previous_start: usize;
-            let mut previous_stop: usize;
             if range.start == start {
                 if length > range.length {
                     range.length = length;
+                    previous_index = index;
                     index += 1; // index should point to the following range for the remainder of this method
-                    previous_start = start;
-                    previous_stop = start + length;
+                } else {
+                    return;
                 }
             } else {
                 if index == 0 {
                     self._items.insert(index, Range { start, length });
-                    previous_start = start;
-                    previous_stop = start + length;
+                    previous_index = index;
                     index += 1 // index_of_miss should point to the following range for the remainder of this method
                 } else {
-                    let previous_range: &mut Range = &mut self._items[index - 1];
-                    previous_start = previous_range.start;
-                    let previous_length = previous_range.length;
-                    previous_stop = previous_start + previous_range.length;
+                    previous_index = index - 1;
+                    let previous_range: &mut Range = &mut self._items[previous_index];
+                    let previous_stop = previous_range.start + previous_range.length;
 
                     if previous_stop >= start {
-                        let new_length = start + length - previous_start;
+                        let new_length = start + length - previous_range.start;
                         assert!(new_length > 0); // real assert
-                        if new_length < previous_length {
+                        if new_length < previous_range.length {
                             return;
                         } else {
                             previous_range.length = new_length;
-                            previous_stop = previous_start + new_length;
                         }
                     } else {
                         // after previous range, not contiguous with previous range
                         self._items.insert(index, Range { start, length });
-                        previous_start = start;
-                        previous_stop = start + length;
+                        previous_index = index;
                         index += 1;
                     }
                 }
             }
         }
+
+        // collapse next range(s) if necessary
+        let delete_start = index;
+        let mut delete_stop = index;
     }
 }
 
