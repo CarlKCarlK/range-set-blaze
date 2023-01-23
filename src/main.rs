@@ -1,5 +1,7 @@
 // use std::cmp::max;
 
+use std::cmp::max;
+
 fn main() {
     test4();
     test5();
@@ -136,6 +138,7 @@ impl RangeSetInt {
 
         if index == self._items.len() {
             self._items.push(Range { start, length }); // !!!cmk why copy?
+            previous_index = index;
             index += 1; // index should point to the following range for the remainder of this method
                         // !!!cmk what if connects with previous range?
         } else {
@@ -176,9 +179,25 @@ impl RangeSetInt {
             }
         }
 
-        // collapse next range(s) if necessary
         let delete_start = index;
         let mut delete_stop = index;
+        while index < self._items.len() {
+            let previous_range1: &Range = &self._items[previous_index];
+            let range: &Range = &self._items[index];
+            if previous_range1.start + previous_range1.length < range.start {
+                break;
+            }
+            let new_length = max(
+                range.start + range.length - previous_range1.start,
+                previous_range1.length,
+            );
+            assert!(new_length > 0); // real assert
+            let previous_range2: &mut Range = &mut self._items[previous_index];
+            previous_range2.length = new_length;
+            delete_stop += 1;
+            index += 1;
+        }
+        self._items.drain(delete_start..delete_stop);
     }
 }
 
