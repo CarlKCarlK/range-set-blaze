@@ -295,9 +295,7 @@ impl RangeSetInt {
                 index += 1;
                 continue;
             }
-            let new_length = range_end - previous_range1.start;
-            let previous_range2: &mut Range = &mut self._items[previous_index];
-            previous_range2.length = new_length;
+            self._items[previous_index].length = range_end - previous_range1.start;
             index += 1;
             break;
         }
