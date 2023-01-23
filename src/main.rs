@@ -215,6 +215,12 @@ struct Range {
     length: usize,
 }
 
+impl Range {
+    fn end(&self) -> usize {
+        self.start + self.length
+    }
+}
+
 struct RangeSetInt {
     _items: Vec<Range>, // !!!cmk usize?
                         // !!!cmk underscore?
@@ -260,9 +266,8 @@ impl RangeSetInt {
                 } else {
                     previous_index = index - 1;
                     let previous_range: &mut Range = &mut self._items[previous_index];
-                    let previous_stop = previous_range.start + previous_range.length;
 
-                    if previous_stop >= start {
+                    if previous_range.end() >= start {
                         let new_length = start + length - previous_range.start;
                         assert!(new_length > 0); // real assert
                         if new_length <= previous_range.length {
@@ -285,14 +290,10 @@ impl RangeSetInt {
         while index < self._items.len() {
             let previous_range1: &Range = &self._items[previous_index];
             let range: &Range = &self._items[index];
-            if previous_range1.start + previous_range1.length < range.start {
+            if previous_range1.end() < range.start {
                 break;
             }
-            let new_length = max(
-                range.start + range.length - previous_range1.start,
-                previous_range1.length,
-            );
-            assert!(new_length > 0); // real assert
+            let new_length = max(range.end() - previous_range1.start, previous_range1.length);
             let previous_range2: &mut Range = &mut self._items[previous_index];
             previous_range2.length = new_length;
             delete_stop += 1;
@@ -301,46 +302,3 @@ impl RangeSetInt {
         self._items.drain(delete_start..delete_stop);
     }
 }
-
-//         } else {
-//             let previous_range: &Range = &self._items[index - 1];
-//             previous_start = previous_range.start;
-//             let previous_length = previous_range.length;
-//             stop = previous_start + previous_range.length;
-
-//             if start <= stop {
-//                 let new_length = start - previous_start + length;
-//                 assert!(new_length > 0); // real assert
-//                 if new_length < previous_length {
-//                     return;
-//                 } else {
-//                     previous_range.length = new_length;
-//                     stop = previous_start + new_length;
-//                 }
-//             } else {
-//                 // after previous range, not contiguous with previous range
-//                 self._items.insert(index, Range { start, length });
-//                 previous_start = start;
-//                 stop = start + length;
-//                 index += 1;
-//             }
-//         }
-
-//         // collapse next range(s) into this one
-//         // use 'drain'
-//     //     let mut next: &Range = &self._items[index];
-//     //     while stop >= next.start {
-//     //         let new_stop = max(stop, next.start + next.length);
-//     //         let length = new_stop - previous_start;
-//     //         self._start_to_length
-//     //             .entry(previous)
-//     //             .or_insert(new_stop - previous); // ItemToLength[previous] + ItemToLength[next]
-//     //         self._start_to_length.remove(&next);
-//     //         self._start_items.remove(index);
-//     //         stop = new_stop;
-//     //         if index >= self._start_items.len() {
-//     //             break;
-//     //         }
-//     //         next = self._start_items[index];
-//     //     }
-//     // }
