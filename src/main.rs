@@ -3,13 +3,19 @@
 use std::cmp::max;
 
 fn main() {
+    test1();
+    test1_c();
+    test2();
+    test2_c();
+    test2_c2();
+    test3();
+    test3c();
+
     test4();
     test5();
+    test5_c();
     test6();
-
-    test1();
-    test2();
-    test3();
+    test6_c();
 }
 
 fn test1() {
@@ -20,6 +26,17 @@ fn test1() {
     assert!(range_set._items.len() == 1);
     assert!(range_set._items[0].start == 2);
     assert!(range_set._items[0].length == 3);
+}
+
+fn test1_c() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(2, 3);
+    range_set._internal_add(1, 1);
+    assert!(range_set.len() == 4);
+    assert!(range_set._items.len() == 1);
+    assert!(range_set._items[0].start == 1);
+    assert!(range_set._items[0].length == 4);
 }
 
 // !!!cmk what if connects with next range(s)?
@@ -43,7 +60,48 @@ fn test2() {
     assert!(range_set._items[0].length == 4);
 }
 
-// !!!cmk what if connects with next range(s)?
+fn test2_c() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(2, 1);
+    range_set._internal_add(4, 1);
+    range_set._internal_add(6, 2);
+    assert!(range_set.len() == 4);
+    assert!(range_set._items.len() == 3);
+    assert!(range_set._items[0].start == 2);
+    assert!(range_set._items[0].length == 1);
+    assert!(range_set._items[1].start == 4);
+    assert!(range_set._items[1].length == 1);
+    assert!(range_set._items[2].start == 6);
+    assert!(range_set._items[2].length == 2);
+    range_set._internal_add(2, 10);
+    assert!(range_set.len() == 10);
+    assert!(range_set._items.len() == 1);
+    assert!(range_set._items[0].start == 2);
+    assert!(range_set._items[0].length == 10);
+}
+
+fn test2_c2() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(2, 1);
+    range_set._internal_add(4, 1);
+    range_set._internal_add(6, 20);
+    assert!(range_set.len() == 22);
+    assert!(range_set._items.len() == 3);
+    assert!(range_set._items[0].start == 2);
+    assert!(range_set._items[0].length == 1);
+    assert!(range_set._items[1].start == 4);
+    assert!(range_set._items[1].length == 1);
+    assert!(range_set._items[2].start == 6);
+    assert!(range_set._items[2].length == 20);
+    range_set._internal_add(2, 10);
+    assert!(range_set.len() == 24);
+    assert!(range_set._items.len() == 1);
+    assert!(range_set._items[0].start == 2);
+    assert!(range_set._items[0].length == 24);
+}
+
 fn test3() {
     let mut range_set = RangeSetInt::new();
     assert!(range_set.len() == 0);
@@ -57,6 +115,19 @@ fn test3() {
     assert!(range_set._items[0].length == 1);
     assert!(range_set._items[1].start == 2);
     assert!(range_set._items[1].length == 3);
+}
+
+fn test3c() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(2, 3);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 1);
+    range_set._internal_add(0, 3);
+    assert!(range_set.len() == 5);
+    assert!(range_set._items.len() == 1);
+    assert!(range_set._items[0].start == 0);
+    assert!(range_set._items[0].length == 5);
 }
 
 fn test4() {
@@ -91,6 +162,20 @@ fn test5() {
     assert!(range_set._items[1].length == 1);
 }
 
+fn test5_c() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(0, 2);
+    range_set._internal_add(5, 1);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 2);
+    range_set._internal_add(1, 10);
+    assert!(range_set.len() == 11);
+    assert!(range_set._items.len() == 1);
+    assert!(range_set._items[0].start == 0);
+    assert!(range_set._items[0].length == 11);
+}
+
 fn test6() {
     let mut range_set = RangeSetInt::new();
     assert!(range_set.len() == 0);
@@ -107,6 +192,22 @@ fn test6() {
     assert!(range_set._items[1].length == 1);
     assert!(range_set._items[2].start == 5);
     assert!(range_set._items[2].length == 1);
+}
+
+fn test6_c() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(0, 2);
+    range_set._internal_add(5, 1);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 2);
+    range_set._internal_add(3, 2);
+    assert!(range_set.len() == 5);
+    assert!(range_set._items.len() == 2);
+    assert!(range_set._items[0].start == 0);
+    assert!(range_set._items[0].length == 2);
+    assert!(range_set._items[1].start == 3);
+    assert!(range_set._items[1].length == 3);
 }
 
 struct Range {
@@ -164,7 +265,7 @@ impl RangeSetInt {
                     if previous_stop >= start {
                         let new_length = start + length - previous_range.start;
                         assert!(new_length > 0); // real assert
-                        if new_length < previous_range.length {
+                        if new_length <= previous_range.length {
                             return;
                         } else {
                             previous_range.length = new_length;
