@@ -1,7 +1,5 @@
 // use std::cmp::max;
 
-use std::cmp::max;
-
 fn main() {
     test1();
     test1_c();
@@ -285,20 +283,24 @@ impl RangeSetInt {
             }
         }
 
-        let delete_start = index;
-        let mut delete_stop = index;
+        let previous_end = self._items[previous_index].end();
         while index < self._items.len() {
             let previous_range1: &Range = &self._items[previous_index];
             let range: &Range = &self._items[index];
-            if previous_range1.end() < range.start {
+            if previous_end < range.start {
                 break;
             }
-            let new_length = max(range.end() - previous_range1.start, previous_range1.length);
+            let range_end = range.end();
+            if previous_end >= range_end {
+                index += 1;
+                continue;
+            }
+            let new_length = range_end - previous_range1.start;
             let previous_range2: &mut Range = &mut self._items[previous_index];
             previous_range2.length = new_length;
-            delete_stop += 1;
             index += 1;
+            break;
         }
-        self._items.drain(delete_start..delete_stop);
+        self._items.drain(previous_index + 1..index);
     }
 }
