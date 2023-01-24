@@ -209,12 +209,12 @@ fn test6_c() {
 }
 
 struct Range {
-    start: usize,
-    length: usize,
+    start: u128,
+    length: u128,
 }
 
 impl Range {
-    fn end(&self) -> usize {
+    fn end(&self) -> u128 {
         self.start + self.length
     }
 }
@@ -233,11 +233,11 @@ impl RangeSetInt {
         self._items.clear();
     }
 
-    fn len(&self) -> usize {
+    fn len(&self) -> u128 {
         self._items.iter().fold(0, |acc, x| acc + x.length)
     }
 
-    fn _internal_add(&mut self, start: usize, length: usize) {
+    fn _internal_add(&mut self, start: u128, length: u128) {
         let mut index = self._items.partition_point(|x| x.start < start);
         let mut previous_index;
 
@@ -245,7 +245,6 @@ impl RangeSetInt {
             self._items.push(Range { start, length }); // !!!cmk why copy?
             previous_index = index;
             index += 1; // index should point to the following range for the remainder of this method
-                        // !!!cmk what if connects with previous range?
         } else {
             let range: &mut Range = &mut self._items[index];
             if range.start == start {
@@ -267,7 +266,6 @@ impl RangeSetInt {
 
                     if previous_range.end() >= start {
                         let new_length = start + length - previous_range.start;
-                        assert!(new_length > 0); // real assert
                         if new_length <= previous_range.length {
                             return;
                         } else {
@@ -283,21 +281,20 @@ impl RangeSetInt {
             }
         }
 
-        let previous_end = self._items[previous_index].end();
+        let previous_range: &Range = &self._items[previous_index];
+        let previous_end = previous_range.end();
         while index < self._items.len() {
-            let previous_range1: &Range = &self._items[previous_index];
             let range: &Range = &self._items[index];
             if previous_end < range.start {
                 break;
             }
             let range_end = range.end();
-            if previous_end >= range_end {
+            if previous_end < range_end {
+                self._items[previous_index].length = range_end - previous_range.start;
                 index += 1;
-                continue;
+                break;
             }
-            self._items[previous_index].length = range_end - previous_range1.start;
             index += 1;
-            break;
         }
         self._items.drain(previous_index + 1..index);
     }
