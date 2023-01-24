@@ -1,6 +1,9 @@
-// use std::cmp::max;
+use rand::seq::SliceRandom;
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 fn main() {
+    random_data(0);
+
     test1();
     test1_c();
     test2();
@@ -208,6 +211,44 @@ fn test6_c() {
     assert!(range_set._items[1].length == 3);
 }
 
+fn random_data(seed: u64) -> () {
+    let top = 1000u128;
+    let split = 5;
+    let delete_fraction = 0.1;
+    let dup_fraction = 0.01;
+    let mut rng = StdRng::seed_from_u64(seed);
+
+    assert!(split <= top); // !!!cmk panic
+    let mut part_list = Vec::<Range>::new();
+    for i in 0..split {
+        let start = i * top / split;
+        let end = (i + 1) * top / split;
+
+        if rng.gen::<f64>() < delete_fraction {
+            continue;
+        }
+
+        part_list.push(Range {
+            start,
+            length: end - start,
+        });
+
+        if rng.gen::<f64>() < dup_fraction {
+            part_list.push(Range {
+                start,
+                length: end - start,
+            });
+        }
+    }
+    // shuffle the list
+    part_list.shuffle(&mut rng);
+    for part in part_list.iter() {
+        println!("part: {} {}", part.start, part.length);
+    }
+}
+
+// !!!cmk can I use a Rust range?
+// !!!cmk allow negatives and any size
 struct Range {
     start: u128,
     length: u128,
