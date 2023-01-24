@@ -8,16 +8,14 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 fn main() {
     // let rng = StdRng::seed_from_u64(0);
 
-    let i_thing = random_data(
+    for range in random_data(
         0,
         Range {
             start: 20,
             length: 31,
         },
         0,
-    );
-
-    for range in i_thing.into_iter() {
+    ) {
         println!("range: {:?},{}", range.start, range.length);
     }
 
@@ -36,11 +34,7 @@ fn main() {
     test6_c();
 }
 
-fn random_data(
-    mut rng: u64,
-    range: Range,
-    level: usize,
-) -> Box<dyn Generator<Yield = Range, Return = ()>> {
+fn random_data(mut rng: u64, range: Range, level: usize) -> impl Iterator<Item = Range> {
     // impl Iterator<Item = Range> {
     let split = 5;
     let delete_fraction = 0.1;
@@ -53,14 +47,13 @@ fn random_data(
             if part.length < split {
                 yield_!(part);
             } else {
-                todo!();
-                // for sub_part in random_data(rng, part, level + 1) {
-                //     yield_!(sub_part);
-                // }
+                for sub_part in random_data(rng, part, level + 1) {
+                    yield_!(sub_part);
+                }
             }
         }
     });
-    Box::new(p)
+    p.into_iter()
 }
 
 fn _process_this_level(
