@@ -1,15 +1,23 @@
-use generator::{done, Gn};
+use std::future::Future;
+
+use genawaiter::{sync::gen, yield_, Generator};
 use rand::seq::SliceRandom;
+use rand::RngCore;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 fn main() {
-    for range in random_data(
+    // let rng = StdRng::seed_from_u64(0);
+
+    let i_thing = random_data(
         0,
         Range {
             start: 20,
             length: 31,
         },
-    ) {
+        0,
+    );
+
+    for range in i_thing.into_iter() {
         println!("range: {:?},{}", range.start, range.length);
     }
 
@@ -28,13 +36,41 @@ fn main() {
     test6_c();
 }
 
-fn random_data(seed: u64, range: Range) -> impl Iterator<Item = Range> {
+fn random_data(
+    mut rng: u64,
+    range: Range,
+    level: usize,
+) -> Box<dyn Generator<Yield = Range, Return = ()>> {
+    // impl Iterator<Item = Range> {
     let split = 5;
     let delete_fraction = 0.1;
     let dup_fraction = 0.01;
-    let mut rng = StdRng::seed_from_u64(seed);
 
     assert!(split <= range.length); // !!!cmk panic
+    let part_list = _process_this_level(split, range, rng, delete_fraction, dup_fraction);
+    let p = gen!({
+        for part in part_list.into_iter() {
+            if part.length < split {
+                yield_!(part);
+            } else {
+                todo!();
+                // for sub_part in random_data(rng, part, level + 1) {
+                //     yield_!(sub_part);
+                // }
+            }
+        }
+    });
+    Box::new(p)
+}
+
+fn _process_this_level(
+    split: u128,
+    range: Range,
+    rng: u64,
+    delete_fraction: f64,
+    dup_fraction: f64,
+) -> Vec<Range> {
+    let mut rng = StdRng::seed_from_u64(rng);
     let mut part_list = Vec::<Range>::new();
     for i in 0..split {
         let start = i * range.length / split + range.start;
@@ -58,13 +94,7 @@ fn random_data(seed: u64, range: Range) -> impl Iterator<Item = Range> {
     }
     // shuffle the list
     part_list.shuffle(&mut rng);
-    let g = Gn::new_scoped(move |mut yielder| {
-        for part in part_list.into_iter() {
-            yielder.yield_(part);
-        }
-        done()
-    });
-    g
+    part_list
 }
 
 fn test1() {
