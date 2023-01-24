@@ -1,7 +1,9 @@
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
+use thousands::Separable;
 
 fn main() {
+    test7a();
     test7();
 
     test1();
@@ -21,30 +23,40 @@ fn main() {
 
 fn test7() {
     let mut range_set = RangeSetInt::new();
+    let mut index = 0u128;
+    #[allow(clippy::explicit_counter_loop)]
     for value in RandomData::new(
         0,
         Range {
             start: 20,
-            length: 31,
+            length: 1_300_300_010,
         },
+        100_000,
     ) {
+        if index % 100_000_000 == 0 {
+            println!("index {}, range_count {}", index.separate_with_commas(), range_set._items.len());
+        }
+        index += 1;
         range_set._internal_add(value, 1);
-        println!("{:?}", range_set._items);
+        // println!("{value} {:?}", range_set._items);
     }
+    // println!("{:?}", range_set._items);
 }
 
 struct RandomData {
     rng: StdRng,
     current: Option<Range>,
     data_range: Vec<Range>,
+    small_enough: u128,
 }
 
 impl RandomData {
-    fn new(seed: u64, range: Range) -> Self {
+    fn new(seed: u64, range: Range, small_enough: u128) -> Self {
         Self {
             rng: StdRng::seed_from_u64(seed),
             current: None,
             data_range: vec![range],
+            small_enough,
         }
     }
 }
@@ -67,7 +79,7 @@ impl Iterator for RandomData {
             None
         } else {
             let range = self.data_range.pop().unwrap();
-            if range.length < 10 {
+            if range.length <= self.small_enough {
                 self.current = Some(range);
                 self.next()
             } else {
@@ -116,6 +128,15 @@ fn _process_this_level(
     part_list
 }
 
+fn test7a() {
+    let mut range_set = RangeSetInt::new();
+    range_set._internal_add(38, 1);
+    range_set._internal_add(39, 1);
+    assert!(range_set.len() == 2);
+    assert!(range_set._items.len() == 1);
+    assert!(range_set._items[0].start == 38);
+    assert!(range_set._items[0].length == 2);
+}
 fn test1() {
     let mut range_set = RangeSetInt::new();
     assert!(range_set.len() == 0);
@@ -346,8 +367,10 @@ impl RangeSetInt {
 
         if index == self._items.len() {
             self._items.push(Range { start, length }); // !!!cmk why copy?
-            previous_index = index;
-            index += 1; // index should point to the following range for the remainder of this method
+            if index == 0 {
+                return;
+            }
+            previous_index = index - 1;
         } else {
             let range: &mut Range = &mut self._items[index];
             if range.start == start {
