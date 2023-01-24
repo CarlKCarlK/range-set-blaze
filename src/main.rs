@@ -2,17 +2,7 @@ use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 fn main() {
-    // let rng = StdRng::seed_from_u64(0);
-
-    for value in RandomData::new(
-        0,
-        Range {
-            start: 20,
-            length: 31,
-        },
-    ) {
-        println!("{value}");
-    }
+    test7();
 
     test1();
     test1_c();
@@ -27,6 +17,20 @@ fn main() {
     test5_c();
     test6();
     test6_c();
+}
+
+fn test7() {
+    let mut range_set = RangeSetInt::new();
+    for value in RandomData::new(
+        0,
+        Range {
+            start: 20,
+            length: 31,
+        },
+    ) {
+        range_set._internal_add(value, 1);
+        println!("{:?}", range_set._items);
+    }
 }
 
 struct RandomData {
@@ -50,7 +54,7 @@ impl Iterator for RandomData {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(current) = &mut self.current {
             let value = current.start;
-            self.current = if current.length == 1 {
+            self.current = if current.length > 1 {
                 Some(Range {
                     start: current.start + 1,
                     length: current.length - 1,
@@ -63,7 +67,7 @@ impl Iterator for RandomData {
             None
         } else {
             let range = self.data_range.pop().unwrap();
-            if range.length < 100 {
+            if range.length < 10 {
                 self.current = Some(range);
                 self.next()
             } else {
@@ -306,6 +310,7 @@ fn test6_c() {
 
 // !!!cmk can I use a Rust range?
 // !!!cmk allow negatives and any size
+#[derive(Debug)]
 struct Range {
     start: u128,
     length: u128,
