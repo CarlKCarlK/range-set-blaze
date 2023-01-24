@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 rand = "0.8.5"
-genawaiter = "0.99.0"
+next-gen = "0.1.1"
+async-recursion = "1.0.2"

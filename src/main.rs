@@ -1,21 +1,22 @@
-use std::future::Future;
+// cmk use ::next_gen::prelude::*;
+use async_recursion::async_recursion;
 
-use genawaiter::{sync::gen, yield_, Generator};
 use rand::seq::SliceRandom;
-use rand::RngCore;
+// cmk use rand::RngCore;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 fn main() {
     // let rng = StdRng::seed_from_u64(0);
 
-    for range in random_data(
+    mk_gen!(let rd = random_data(
         0,
         Range {
             start: 20,
             length: 31,
         },
         0,
-    ) {
+    ));
+    for range in rd {
         println!("range: {:?},{}", range.start, range.length);
     }
 
@@ -34,7 +35,9 @@ fn main() {
     test6_c();
 }
 
-fn random_data(mut rng: u64, range: Range, level: usize) -> impl Iterator<Item = Range> {
+#[generator(yield(Range))]
+#[async_recursion]
+fn random_data(rng: u64, range: Range, _level: usize) {
     // impl Iterator<Item = Range> {
     let split = 5;
     let delete_fraction = 0.1;
@@ -42,18 +45,16 @@ fn random_data(mut rng: u64, range: Range, level: usize) -> impl Iterator<Item =
 
     assert!(split <= range.length); // !!!cmk panic
     let part_list = _process_this_level(split, range, rng, delete_fraction, dup_fraction);
-    let p = gen!({
-        for part in part_list.into_iter() {
-            if part.length < split {
-                yield_!(part);
-            } else {
-                for sub_part in random_data(rng, part, level + 1) {
-                    yield_!(sub_part);
-                }
+    for part in part_list.into_iter() {
+        if part.length < split {
+            yield_!(part);
+        } else {
+            mk_gen!(let rd = random_data(rng, part, _level + 1));
+            for sub_part in rd {
+                yield_!(sub_part);
             }
         }
-    });
-    p.into_iter()
+    }
 }
 
 fn _process_this_level(
