@@ -1,23 +1,17 @@
-// cmk use ::next_gen::prelude::*;
-use async_recursion::async_recursion;
-
 use rand::seq::SliceRandom;
-// cmk use rand::RngCore;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 fn main() {
     // let rng = StdRng::seed_from_u64(0);
 
-    mk_gen!(let rd = random_data(
+    for value in RandomData::new(
         0,
         Range {
             start: 20,
             length: 31,
         },
-        0,
-    ));
-    for range in rd {
-        println!("range: {:?},{}", range.start, range.length);
+    ) {
+        println!("{value}");
     }
 
     test1();
@@ -35,23 +29,51 @@ fn main() {
     test6_c();
 }
 
-#[generator(yield(Range))]
-#[async_recursion]
-fn random_data(rng: u64, range: Range, _level: usize) {
-    // impl Iterator<Item = Range> {
-    let split = 5;
-    let delete_fraction = 0.1;
-    let dup_fraction = 0.01;
+struct RandomData {
+    rng: StdRng,
+    current: Option<Range>,
+    data_range: Vec<Range>,
+}
 
-    assert!(split <= range.length); // !!!cmk panic
-    let part_list = _process_this_level(split, range, rng, delete_fraction, dup_fraction);
-    for part in part_list.into_iter() {
-        if part.length < split {
-            yield_!(part);
+impl RandomData {
+    fn new(seed: u64, range: Range) -> Self {
+        Self {
+            rng: StdRng::seed_from_u64(seed),
+            current: None,
+            data_range: vec![range],
+        }
+    }
+}
+
+impl Iterator for RandomData {
+    type Item = u128;
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(current) = &mut self.current {
+            let value = current.start;
+            self.current = if current.length == 1 {
+                Some(Range {
+                    start: current.start + 1,
+                    length: current.length - 1,
+                })
+            } else {
+                None
+            };
+            Some(value)
+        } else if self.data_range.is_empty() {
+            None
         } else {
-            mk_gen!(let rd = random_data(rng, part, _level + 1));
-            for sub_part in rd {
-                yield_!(sub_part);
+            let range = self.data_range.pop().unwrap();
+            if range.length < 100 {
+                self.current = Some(range);
+                self.next()
+            } else {
+                let split = 5;
+                let delete_fraction = 0.1;
+                let dup_fraction = 0.01;
+                let part_list =
+                    _process_this_level(split, range, &mut self.rng, delete_fraction, dup_fraction);
+                self.data_range.splice(0..0, part_list);
+                self.next()
             }
         }
     }
@@ -60,11 +82,10 @@ fn random_data(rng: u64, range: Range, _level: usize) {
 fn _process_this_level(
     split: u128,
     range: Range,
-    rng: u64,
+    rng: &mut StdRng,
     delete_fraction: f64,
     dup_fraction: f64,
 ) -> Vec<Range> {
-    let mut rng = StdRng::seed_from_u64(rng);
     let mut part_list = Vec::<Range>::new();
     for i in 0..split {
         let start = i * range.length / split + range.start;
@@ -87,7 +108,7 @@ fn _process_this_level(
         }
     }
     // shuffle the list
-    part_list.shuffle(&mut rng);
+    part_list.shuffle(rng);
     part_list
 }
 
@@ -332,28 +353,26 @@ impl RangeSetInt {
                 } else {
                     return;
                 }
+            } else if index == 0 {
+                self._items.insert(index, Range { start, length });
+                previous_index = index;
+                index += 1 // index_of_miss should point to the following range for the remainder of this method
             } else {
-                if index == 0 {
+                previous_index = index - 1;
+                let previous_range: &mut Range = &mut self._items[previous_index];
+
+                if previous_range.end() >= start {
+                    let new_length = start + length - previous_range.start;
+                    if new_length <= previous_range.length {
+                        return;
+                    } else {
+                        previous_range.length = new_length;
+                    }
+                } else {
+                    // after previous range, not contiguous with previous range
                     self._items.insert(index, Range { start, length });
                     previous_index = index;
-                    index += 1 // index_of_miss should point to the following range for the remainder of this method
-                } else {
-                    previous_index = index - 1;
-                    let previous_range: &mut Range = &mut self._items[previous_index];
-
-                    if previous_range.end() >= start {
-                        let new_length = start + length - previous_range.start;
-                        if new_length <= previous_range.length {
-                            return;
-                        } else {
-                            previous_range.length = new_length;
-                        }
-                    } else {
-                        // after previous range, not contiguous with previous range
-                        self._items.insert(index, Range { start, length });
-                        previous_index = index;
-                        index += 1;
-                    }
+                    index += 1;
                 }
             }
         }
