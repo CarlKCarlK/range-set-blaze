@@ -1,8 +1,17 @@
+use generator::{done, Gn};
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 fn main() {
-    random_data(0);
+    for range in random_data(
+        0,
+        Range {
+            start: 20,
+            length: 31,
+        },
+    ) {
+        println!("range: {:?},{}", range.start, range.length);
+    }
 
     test1();
     test1_c();
@@ -17,6 +26,45 @@ fn main() {
     test5_c();
     test6();
     test6_c();
+}
+
+fn random_data(seed: u64, range: Range) -> impl Iterator<Item = Range> {
+    let split = 5;
+    let delete_fraction = 0.1;
+    let dup_fraction = 0.01;
+    let mut rng = StdRng::seed_from_u64(seed);
+
+    assert!(split <= range.length); // !!!cmk panic
+    let mut part_list = Vec::<Range>::new();
+    for i in 0..split {
+        let start = i * range.length / split + range.start;
+        let end = (i + 1) * range.length / split + range.start;
+
+        if rng.gen::<f64>() < delete_fraction {
+            continue;
+        }
+
+        part_list.push(Range {
+            start,
+            length: end - start,
+        });
+
+        if rng.gen::<f64>() < dup_fraction {
+            part_list.push(Range {
+                start,
+                length: end - start,
+            });
+        }
+    }
+    // shuffle the list
+    part_list.shuffle(&mut rng);
+    let g = Gn::new_scoped(move |mut yielder| {
+        for part in part_list.into_iter() {
+            yielder.yield_(part);
+        }
+        done()
+    });
+    g
 }
 
 fn test1() {
@@ -209,42 +257,6 @@ fn test6_c() {
     assert!(range_set._items[0].length == 2);
     assert!(range_set._items[1].start == 3);
     assert!(range_set._items[1].length == 3);
-}
-
-fn random_data(seed: u64) -> () {
-    let top = 1000u128;
-    let split = 5;
-    let delete_fraction = 0.1;
-    let dup_fraction = 0.01;
-    let mut rng = StdRng::seed_from_u64(seed);
-
-    assert!(split <= top); // !!!cmk panic
-    let mut part_list = Vec::<Range>::new();
-    for i in 0..split {
-        let start = i * top / split;
-        let end = (i + 1) * top / split;
-
-        if rng.gen::<f64>() < delete_fraction {
-            continue;
-        }
-
-        part_list.push(Range {
-            start,
-            length: end - start,
-        });
-
-        if rng.gen::<f64>() < dup_fraction {
-            part_list.push(Range {
-                start,
-                length: end - start,
-            });
-        }
-    }
-    // shuffle the list
-    part_list.shuffle(&mut rng);
-    for part in part_list.iter() {
-        println!("part: {} {}", part.start, part.length);
-    }
 }
 
 // !!!cmk can I use a Rust range?
