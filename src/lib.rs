@@ -2,7 +2,6 @@ mod tests;
 
 use itertools::Itertools;
 use std::cmp::max;
-use std::collections::binary_heap::Iter;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
@@ -76,13 +75,14 @@ fn insert(items: &mut BTreeMap<u128, u128>, len: &mut u128, start: u128, end: u1
 // !!!cmk can I use a Rust range?
 // !!!cmk allow negatives and any size
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RangeSetInt {
     len: u128,
     items: BTreeMap<u128, u128>, // !!!cmk usize?
 }
 
 // !!!cmk support =, and single numbers
+// !!!cmk error to use -
 // !!!cmk are the unwraps OK?
 // !!!cmk what about bad input?
 impl From<&str> for RangeSetInt {
@@ -95,6 +95,12 @@ impl From<&str> for RangeSetInt {
             result.internal_add(start, end);
         }
         result
+    }
+}
+
+impl fmt::Debug for RangeSetInt {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", fmt(&self.items))
     }
 }
 
@@ -124,6 +130,52 @@ impl RangeSetInt {
 
     fn len_slow(&self) -> u128 {
         len_slow(&self.items)
+    }
+
+    /// Moves all elements from `other` into `self`, leaving `other` empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let mut a = RangeSetInt::from("1..4");
+    /// let mut b = RangeSetInt::from("3..6");
+    ///
+    /// a.append(&mut b);
+    ///
+    /// assert_eq!(a.len(), 5);
+    /// assert_eq!(b.len(), 0);
+    ///
+    /// assert!(a.contains(1));
+    /// assert!(a.contains(2));
+    /// assert!(a.contains(3));
+    /// assert!(a.contains(4));
+    /// assert!(a.contains(5));
+    /// ```
+    pub fn append(&mut self, other: &mut Self) {
+        for (start, end) in other.items.iter() {
+            self.internal_add(*start, *end);
+        }
+        other.clear();
+    }
+
+    /// Returns `true` if the set contains an element equal to the value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let set = RangeSetInt::from([1, 2, 3]);
+    /// assert_eq!(set.contains(1), true);
+    /// assert_eq!(set.contains(4), false);
+    /// ```
+    pub fn contains(&self, value: u128) -> bool {
+        self.items
+            .range(..=value)
+            .next_back()
+            .map_or(false, |(_, end)| value < *end)
     }
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset

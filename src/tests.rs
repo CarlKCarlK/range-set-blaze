@@ -11,7 +11,8 @@ use thousands::Separable;
 fn repro1() {
     let mut range_set_int = RangeSetInt::from("20..22,24..25,25..30");
     range_set_int.internal_add(25, 26);
-    assert!(range_set_int.to_string() == "20..22,24..25,25..30");
+    println!("{range_set_int}");
+    assert!(range_set_int.to_string() == "20..22,24..30");
 }
 
 #[test]
@@ -25,6 +26,29 @@ fn doctest1() {
     assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
 }
 
+#[test]
+fn doctest2() {
+    let set = RangeSetInt::from([1, 2, 3]);
+    assert_eq!(set.contains(1), true);
+    assert_eq!(set.contains(4), false);
+}
+
+#[test]
+fn doctest3() {
+    let mut a = RangeSetInt::from("1..4");
+    let mut b = RangeSetInt::from("3..6");
+
+    a.append(&mut b);
+
+    assert_eq!(a.len(), 5);
+    assert_eq!(b.len(), 0);
+
+    assert!(a.contains(1));
+    assert!(a.contains(2));
+    assert!(a.contains(3));
+    assert!(a.contains(4));
+    assert!(a.contains(5));
+}
 #[test]
 fn compare() {
     let mut btree_set = BTreeSet::new();
