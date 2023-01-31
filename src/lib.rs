@@ -5,6 +5,7 @@ use std::cmp::max;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
+use std::ops::BitOr;
 
 pub fn fmt(items: &BTreeMap<u128, u128>) -> String {
     items
@@ -13,14 +14,14 @@ pub fn fmt(items: &BTreeMap<u128, u128>) -> String {
         .join(",")
 }
 
-fn slow_len(items: &BTreeMap<u128, u128>) -> u128 {
+fn len_slow(items: &BTreeMap<u128, u128>) -> u128 {
     items.iter().map(|(start, end)| end - start).sum()
 }
 
 pub fn internal_add(items: &mut BTreeMap<u128, u128>, len: &mut u128, start: u128, end: u128) {
     assert!(start < end); // !!!cmk check that length is not zero
                           // !!! cmk would be nice to have a partition_point function that returns two iterators
-    let mut before = items.range_mut(..=start);
+    let mut before = items.range_mut(..=start).rev();
     if let Some((start_before, end_before)) = before.next() {
         if *end_before < start {
             insert(items, len, start, end);
@@ -74,7 +75,8 @@ fn insert(items: &mut BTreeMap<u128, u128>, len: &mut u128, start: u128, end: u1
 // !!!cmk can I use a Rust range?
 // !!!cmk allow negatives and any size
 
-struct RangeSetInt {
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct RangeSetInt {
     items: BTreeMap<u128, u128>, // !!!cmk usize?
     len: u128,
 }
@@ -120,7 +122,7 @@ impl RangeSetInt {
     }
 
     fn len_slow(&self) -> u128 {
-        slow_len(&self.items)
+        len_slow(&self.items)
     }
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
@@ -207,4 +209,39 @@ impl RangeSetInt {
     //     // }
     //     // self._items.drain(previous_index + 1..index);
     // }
+}
+
+impl BitOr<&RangeSetInt> for &RangeSetInt {
+    type Output = RangeSetInt;
+
+    /// Returns the union of `self` and `rhs` as a new `RangeSetInt`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([3, 4, 5]);
+    ///
+    /// let result = &a | &b;
+    /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+    /// ```
+    fn bitor(self, rhs: &RangeSetInt) -> RangeSetInt {
+        let mut result = self.clone();
+        for (start, end) in rhs.items.iter() {
+            result.internal_add(*start, *end);
+        }
+        result
+    }
+}
+
+impl<const N: usize> From<[u128; N]> for RangeSetInt {
+    fn from(arr: [u128; N]) -> Self {
+        let mut result = RangeSetInt::new();
+        for value in arr.iter() {
+            result.internal_add(*value, *value + 1);
+        }
+        result
+    }
 }

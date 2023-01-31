@@ -1,9 +1,39 @@
 #![cfg(test)]
 
+use std::collections::BTreeSet;
+
 use super::*;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-// use thousands::Separable;
+use thousands::Separable;
+
+#[test]
+fn repro1() {
+    let mut range_set_int = RangeSetInt::from("20..22,24..25,25..30");
+    range_set_int.internal_add(25, 26);
+    assert!(range_set_int.to_string() == "20..22,24..25,25..30");
+}
+
+#[test]
+fn doctest1() {
+    // use rangeset_int::RangeSetInt;
+
+    let a = RangeSetInt::from([1, 2, 3]);
+    let b = RangeSetInt::from([3, 4, 5]);
+
+    let result = &a | &b;
+    assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+}
+
+#[test]
+fn compare() {
+    let mut btree_set = BTreeSet::new();
+    btree_set.insert(3);
+    btree_set.insert(1);
+    let string = btree_set.iter().join(",");
+    println!("{string:#?}");
+    assert!(string == "1,3");
+}
 
 #[test]
 fn demo_c1() {
@@ -130,62 +160,33 @@ fn demo_a() {
 }
 
 // #[test]
-// fn demo() {
-//     let mut items = BTreeMap::<u128, u128>::new();
-//     println!("{items:?}");
-//     let range = items.range(0..);
-//     println!("0.. {:?}", range);
-//     items.insert(10, 200);
-//     items.insert(11, 200);
-//     println!("{items:?}");
-//     let range = items.range(..=0).rev();
-//     println!("0 {:?}", range);
-//     let range = items.range(..=10).rev();
-//     println!("10 {:?}", range);
-//     let range = items.range(..=20).rev();
-//     println!("20 {:?}", range);
-
-//     let mut range = items.range_mut(..=10).peekable();
-//     let peek = range.peek();
-//     println!("10.. peek {:?}", peek);
-
-//     let (_, value) = range.next().unwrap();
-//     *value = 201;
-
-//     // if let Some(peek) = peek {
-//     //     let peek = *peek;
-//     //     if *peek.0 == 10 {
-//     //         let (_, value) = range.next().unwrap();
-//     //         *value = 201;
-//     //         println!("{items:?}");
-//     //     }
-//     // }
-//     println!("{items:?}");
-// }
-
-// #[test]
 // fn test7() {
 //     let mut range_set = RangeSetInt::new();
 //     let mut index = 0u128;
 //     #[allow(clippy::explicit_counter_loop)]
 //     for value in RandomData::new(
 //         0,
+//         // RangeX {
+//         //     start: 20,
+//         //     length: 10,
+//         // },
+//         // 1,
 //         RangeX {
 //             start: 20,
 //             length: 1_300_300_010,
 //         },
-//         1_000_000,
+//         100_000,
 //     ) {
-//         if index % 100_000_000 == 0 {
+//         if index % 10_000_000 == 0 {
 //             println!(
 //                 "index {}, range_count {}",
 //                 index.separate_with_commas(),
-//                 range_set._items.len()
+//                 range_set.items.len().separate_with_commas()
 //             );
 //         }
 //         index += 1;
-//         range_set._internal_add(value, 1);
-//         // println!("{value} {:?}", range_set._items);
+//         range_set.internal_add(value, value + 1);
+//         // println!("{value}->{range_set}");
 //     }
 //     // println!("{:?}", range_set._items);
 // }
