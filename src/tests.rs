@@ -1,42 +1,11 @@
+#![cfg(test)]
+
+use super::*;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use std::cmp::max;
-use std::collections::BTreeMap;
 use thousands::Separable;
 
-fn main() {
-    test_demo_f1();
-    test_demo_e1();
-    test_demo_c1();
-    test_demo_c2();
-    test_demo_a();
-    test_demo_b3();
-    test_demo_b1();
-    test_demo_b2();
-    test_demo_d1();
-    test_demo_e1();
-
-    // test_demo();
-    // test1_c2();
-    // test1_c();
-    // test1();
-    // test2();
-    // test7a();
-    // test7();
-
-    // cmk bring back in
-    // test2_c();
-    // test2_c2();
-    // test3();
-    // test3c();
-
-    // test4();
-    // test5();
-    // test5_c();
-    // test6();
-    // test6_c();
-}
-
+#[test]
 fn test_demo_c1() {
     // before_or_equal_exists	1
     // equal?	0
@@ -58,6 +27,7 @@ fn test_demo_c1() {
     assert!(*entry.1 == 1);
 }
 
+#[test]
 fn test_demo_c2() {
     // before_or_equal_exists	1
     // equal?	0
@@ -81,6 +51,7 @@ fn test_demo_c2() {
     assert!(e1 == 2);
 }
 
+#[test]
 fn test_demo_f1() {
     // before_or_equal_exists	0
     //     INSERT, etc
@@ -102,6 +73,7 @@ fn test_demo_f1() {
     assert!(*entry.1 == 5);
 }
 
+#[test]
 fn test_demo_d1() {
     // before_or_equal_exists	1
     // equal?	1
@@ -122,6 +94,7 @@ fn test_demo_d1() {
     assert!(*first_entry.get() == 5);
 }
 
+#[test]
 fn test_demo_e1() {
     // before_or_equal_exists	1
     // equal?	1
@@ -148,35 +121,7 @@ fn test_demo_e1() {
     assert!(*first_entry.get() == 10);
 }
 
-fn b_d_cmk(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
-    assert!(start < end); // !!!cmk check that length is not zero
-                          // !!! cmk would be nice to have a partition_point function that returns two iterators
-    let mut before = items.range_mut(..=start);
-    // println!("before {:?}", before.collect::<Vec<_>>());
-    if let Some((start_x, length_x)) = before.next() {
-        let start_x2 = *start_x;
-        println!("start_x {:?}, length_x {:?}", start_x, length_x);
-        let end_x: u128 = start_x + *length_x;
-        if end_x < start {
-            insert(items, start, end);
-        } else if end > end_x {
-            *length_x = end - start_x;
-            delete_extra(items, start_x2, end);
-        } else {
-            // do nothing
-        }
-    } else {
-        insert(items, start, end);
-    }
-}
-
-fn insert(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
-    let was_there = items.insert(start, end - start);
-    assert!(was_there.is_none());
-    // !!!cmk real assert
-    delete_extra(items, start, end);
-}
-
+#[test]
 fn test_demo_b1() {
     // before_or_equal_exists	1
     // equal?	0
@@ -199,6 +144,7 @@ fn test_demo_b1() {
     assert!(*first_entry.get() == 8);
 }
 
+#[test]
 fn test_demo_b2() {
     // before_or_equal_exists	1
     // equal?	0
@@ -226,6 +172,7 @@ fn test_demo_b2() {
     assert!(*first_entry.get() == 8);
 }
 
+#[test]
 fn test_demo_b3() {
     // before_or_equal_exists	1
     // equal?	0
@@ -255,31 +202,8 @@ fn test_demo_b3() {
     assert!(*entry.0 == 160);
     assert!(*entry.1 == 1);
 }
-fn delete_extra(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
-    let mut after = items.range_mut(start..);
-    let (start2, length2) = after.next().unwrap(); // !!! cmk assert that there is a next
-    assert!(start == *start2 && start2 + *length2 == end); // !!! cmk real assert
-                                                           // !!!cmk would be nice to have a delete_range function
-    let mut new_end = end;
-    let delete_list = after
-        .map_while(|(start3, length3)| {
-            if *start3 <= end {
-                new_end = max(new_end, start3 + *length3);
-                Some(*start3)
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-    println!("delete_list {:?}", delete_list);
-    if new_end > end {
-        *length2 = new_end - start;
-    }
-    for start in delete_list {
-        items.remove(&start);
-    }
-}
 
+#[test]
 fn test_demo_a() {
     // before_or_equal_exists	1
     // equal?	0
@@ -299,6 +223,7 @@ fn test_demo_a() {
     assert!(*first_entry.get() == 5);
 }
 
+#[test]
 fn test_demo() {
     let mut items = BTreeMap::<u128, u128>::new();
     println!("{:?}", items);
@@ -332,6 +257,7 @@ fn test_demo() {
     println!("{:?}", items);
 }
 
+#[test]
 fn test7() {
     let mut range_set = RangeSetInt::new();
     let mut index = 0u128;
@@ -357,6 +283,238 @@ fn test7() {
     }
     // println!("{:?}", range_set._items);
 }
+
+#[test]
+fn test7a() {
+    let mut range_set = RangeSetInt::new();
+    range_set._internal_add(38, 1);
+    range_set._internal_add(39, 1);
+    assert!(range_set.len() == 2);
+    assert!(range_set._items.len() == 1);
+    let first_entry = range_set._items.first_entry().unwrap();
+    assert!(*first_entry.key() == 38);
+    assert!(*first_entry.get() == 2);
+}
+
+#[test]
+fn test1() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(2, 3);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 1);
+    let first_entry = range_set._items.first_entry().unwrap();
+    assert!(*first_entry.key() == 2);
+    assert!(*first_entry.get() == 3);
+}
+
+#[test]
+fn test1_c2() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(1, 1);
+    range_set._internal_add(1, 4);
+    assert!(range_set.len() == 4);
+    assert!(range_set._items.len() == 1);
+    let first_entry = range_set._items.first_entry().unwrap();
+    assert!(*first_entry.key() == 1);
+    assert!(*first_entry.get() == 4);
+}
+
+#[test]
+fn test1_c() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(2, 3);
+    range_set._internal_add(1, 1);
+    assert!(range_set.len() == 4);
+    assert!(range_set._items.len() == 1);
+    let first_entry = range_set._items.first_entry().unwrap();
+    assert!(*first_entry.key() == 1);
+    assert!(*first_entry.get() == 4);
+}
+
+// !!!cmk what if connects with next range(s)?
+#[test]
+fn test2() {
+    let mut range_set = RangeSetInt::new();
+    assert!(range_set.len() == 0);
+    range_set._internal_add(2, 3);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 1);
+    let first_entry = range_set._items.first_entry().unwrap();
+    assert!(*first_entry.key() == 2);
+    assert!(*first_entry.get() == 3);
+    range_set._internal_add(2, 1);
+    assert!(range_set.len() == 3);
+    assert!(range_set._items.len() == 1);
+    let first_entry = range_set._items.first_entry().unwrap();
+    assert!(*first_entry.key() == 2);
+    assert!(*first_entry.get() == 3);
+    range_set._internal_add(2, 4);
+    assert!(range_set.len() == 4);
+    assert!(range_set._items.len() == 1);
+    let first_entry = range_set._items.first_entry().unwrap();
+    assert!(*first_entry.key() == 2);
+    assert!(*first_entry.get() == 4);
+}
+
+// !!!cmk bring back in
+
+//#[test]
+// fn test2_c() {
+//     let mut range_set = RangeSetInt::new();
+//     assert!(range_set.len() == 0);
+//     range_set._internal_add(2, 1);
+//     range_set._internal_add(4, 1);
+//     range_set._internal_add(6, 2);
+//     assert!(range_set.len() == 4);
+//     assert!(range_set._items.len() == 3);
+//     assert!(range_set._items[0].start == 2);
+//     assert!(range_set._items[0].length == 1);
+//     assert!(range_set._items[1].start == 4);
+//     assert!(range_set._items[1].length == 1);
+//     assert!(range_set._items[2].start == 6);
+//     assert!(range_set._items[2].length == 2);
+//     range_set._internal_add(2, 10);
+//     assert!(range_set.len() == 10);
+//     assert!(range_set._items.len() == 1);
+//     assert!(range_set._items[0].start == 2);
+//     assert!(range_set._items[0].length == 10);
+// }
+
+//#[test]
+// fn test2_c2() {
+//     let mut range_set = RangeSetInt::new();
+//     assert!(range_set.len() == 0);
+//     range_set._internal_add(2, 1);
+//     range_set._internal_add(4, 1);
+//     range_set._internal_add(6, 20);
+//     assert!(range_set.len() == 22);
+//     assert!(range_set._items.len() == 3);
+//     assert!(range_set._items[0].start == 2);
+//     assert!(range_set._items[0].length == 1);
+//     assert!(range_set._items[1].start == 4);
+//     assert!(range_set._items[1].length == 1);
+//     assert!(range_set._items[2].start == 6);
+//     assert!(range_set._items[2].length == 20);
+//     range_set._internal_add(2, 10);
+//     assert!(range_set.len() == 24);
+//     assert!(range_set._items.len() == 1);
+//     assert!(range_set._items[0].start == 2);
+//     assert!(range_set._items[0].length == 24);
+// }
+
+//#[test]
+// fn test3() {
+//     let mut range_set = RangeSetInt::new();
+//     assert!(range_set.len() == 0);
+//     range_set._internal_add(2, 3);
+//     assert!(range_set.len() == 3);
+//     assert!(range_set._items.len() == 1);
+//     range_set._internal_add(0, 1);
+//     assert!(range_set.len() == 4);
+//     assert!(range_set._items.len() == 2);
+//     assert!(range_set._items[0].start == 0);
+//     assert!(range_set._items[0].length == 1);
+//     assert!(range_set._items[1].start == 2);
+//     assert!(range_set._items[1].length == 3);
+// }
+
+//#[test]
+// fn test3c() {
+//     let mut range_set = RangeSetInt::new();
+//     assert!(range_set.len() == 0);
+//     range_set._internal_add(2, 3);
+//     assert!(range_set.len() == 3);
+//     assert!(range_set._items.len() == 1);
+//     range_set._internal_add(0, 3);
+//     assert!(range_set.len() == 5);
+//     assert!(range_set._items.len() == 1);
+//     assert!(range_set._items[0].start == 0);
+//     assert!(range_set._items[0].length == 5);
+// }
+
+//#[test]
+// fn test4() {
+//     let mut range_set = RangeSetInt::new();
+//     assert!(range_set.len() == 0);
+//     range_set._internal_add(0, 2);
+//     range_set._internal_add(5, 1);
+//     assert!(range_set.len() == 3);
+//     assert!(range_set._items.len() == 2);
+//     range_set._internal_add(1, 1);
+//     assert!(range_set.len() == 3);
+//     assert!(range_set._items.len() == 2);
+//     assert!(range_set._items[0].start == 0);
+//     assert!(range_set._items[0].length == 2);
+//     assert!(range_set._items[1].start == 5);
+//     assert!(range_set._items[1].length == 1);
+// }
+//#[test]
+// fn test5() {
+//     let mut range_set = RangeSetInt::new();
+//     assert!(range_set.len() == 0);
+//     range_set._internal_add(0, 2);
+//     range_set._internal_add(5, 1);
+//     assert!(range_set.len() == 3);
+//     assert!(range_set._items.len() == 2);
+//     range_set._internal_add(1, 2);
+//     assert!(range_set.len() == 4);
+//     assert!(range_set._items.len() == 2);
+//     assert!(range_set._items[0].start == 0);
+//     assert!(range_set._items[0].length == 3);
+//     assert!(range_set._items[1].start == 5);
+//     assert!(range_set._items[1].length == 1);
+// }
+//#[test]
+// fn test5_c() {
+//     let mut range_set = RangeSetInt::new();
+//     assert!(range_set.len() == 0);
+//     range_set._internal_add(0, 2);
+//     range_set._internal_add(5, 1);
+//     assert!(range_set.len() == 3);
+//     assert!(range_set._items.len() == 2);
+//     range_set._internal_add(1, 10);
+//     assert!(range_set.len() == 11);
+//     assert!(range_set._items.len() == 1);
+//     assert!(range_set._items[0].start == 0);
+//     assert!(range_set._items[0].length == 11);
+// }
+//#[test]
+// fn test6() {
+//     let mut range_set = RangeSetInt::new();
+//     assert!(range_set.len() == 0);
+//     range_set._internal_add(0, 2);
+//     range_set._internal_add(5, 1);
+//     assert!(range_set.len() == 3);
+//     assert!(range_set._items.len() == 2);
+//     range_set._internal_add(3, 1);
+//     assert!(range_set.len() == 4);
+//     assert!(range_set._items.len() == 3);
+//     assert!(range_set._items[0].start == 0);
+//     assert!(range_set._items[0].length == 2);
+//     assert!(range_set._items[1].start == 3);
+//     assert!(range_set._items[1].length == 1);
+//     assert!(range_set._items[2].start == 5);
+//     assert!(range_set._items[2].length == 1);
+// }
+//#[test]
+// fn test6_c() {
+//     let mut range_set = RangeSetInt::new();
+//     assert!(range_set.len() == 0);
+//     range_set._internal_add(0, 2);
+//     range_set._internal_add(5, 1);
+//     assert!(range_set.len() == 3);
+//     assert!(range_set._items.len() == 2);
+//     range_set._internal_add(3, 2);
+//     assert!(range_set.len() == 5);
+//     assert!(range_set._items.len() == 2);
+//     assert!(range_set._items[0].start == 0);
+//     assert!(range_set._items[0].length == 2);
+//     assert!(range_set._items[1].start == 3);
+//     assert!(range_set._items[1].length == 3);
+// }
 
 struct RandomData {
     rng: StdRng,
@@ -441,342 +599,4 @@ fn _process_this_level(
     // shuffle the list
     part_list.shuffle(rng);
     part_list
-}
-
-fn test7a() {
-    let mut range_set = RangeSetInt::new();
-    range_set._internal_add(38, 1);
-    range_set._internal_add(39, 1);
-    assert!(range_set.len() == 2);
-    assert!(range_set._items.len() == 1);
-    let first_entry = range_set._items.first_entry().unwrap();
-    assert!(*first_entry.key() == 38);
-    assert!(*first_entry.get() == 2);
-}
-fn test1() {
-    let mut range_set = RangeSetInt::new();
-    assert!(range_set.len() == 0);
-    range_set._internal_add(2, 3);
-    assert!(range_set.len() == 3);
-    assert!(range_set._items.len() == 1);
-    let first_entry = range_set._items.first_entry().unwrap();
-    assert!(*first_entry.key() == 2);
-    assert!(*first_entry.get() == 3);
-}
-
-fn test1_c2() {
-    let mut range_set = RangeSetInt::new();
-    assert!(range_set.len() == 0);
-    range_set._internal_add(1, 1);
-    range_set._internal_add(1, 4);
-    assert!(range_set.len() == 4);
-    assert!(range_set._items.len() == 1);
-    let first_entry = range_set._items.first_entry().unwrap();
-    assert!(*first_entry.key() == 1);
-    assert!(*first_entry.get() == 4);
-}
-
-fn test1_c() {
-    let mut range_set = RangeSetInt::new();
-    assert!(range_set.len() == 0);
-    range_set._internal_add(2, 3);
-    range_set._internal_add(1, 1);
-    assert!(range_set.len() == 4);
-    assert!(range_set._items.len() == 1);
-    let first_entry = range_set._items.first_entry().unwrap();
-    assert!(*first_entry.key() == 1);
-    assert!(*first_entry.get() == 4);
-}
-
-// !!!cmk what if connects with next range(s)?
-fn test2() {
-    let mut range_set = RangeSetInt::new();
-    assert!(range_set.len() == 0);
-    range_set._internal_add(2, 3);
-    assert!(range_set.len() == 3);
-    assert!(range_set._items.len() == 1);
-    let first_entry = range_set._items.first_entry().unwrap();
-    assert!(*first_entry.key() == 2);
-    assert!(*first_entry.get() == 3);
-    range_set._internal_add(2, 1);
-    assert!(range_set.len() == 3);
-    assert!(range_set._items.len() == 1);
-    let first_entry = range_set._items.first_entry().unwrap();
-    assert!(*first_entry.key() == 2);
-    assert!(*first_entry.get() == 3);
-    range_set._internal_add(2, 4);
-    assert!(range_set.len() == 4);
-    assert!(range_set._items.len() == 1);
-    let first_entry = range_set._items.first_entry().unwrap();
-    assert!(*first_entry.key() == 2);
-    assert!(*first_entry.get() == 4);
-}
-
-// !!!cmk bring back in
-
-// fn test2_c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 1);
-//     range_set._internal_add(4, 1);
-//     range_set._internal_add(6, 2);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 3);
-//     assert!(range_set._items[0].start == 2);
-//     assert!(range_set._items[0].length == 1);
-//     assert!(range_set._items[1].start == 4);
-//     assert!(range_set._items[1].length == 1);
-//     assert!(range_set._items[2].start == 6);
-//     assert!(range_set._items[2].length == 2);
-//     range_set._internal_add(2, 10);
-//     assert!(range_set.len() == 10);
-//     assert!(range_set._items.len() == 1);
-//     assert!(range_set._items[0].start == 2);
-//     assert!(range_set._items[0].length == 10);
-// }
-
-// fn test2_c2() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 1);
-//     range_set._internal_add(4, 1);
-//     range_set._internal_add(6, 20);
-//     assert!(range_set.len() == 22);
-//     assert!(range_set._items.len() == 3);
-//     assert!(range_set._items[0].start == 2);
-//     assert!(range_set._items[0].length == 1);
-//     assert!(range_set._items[1].start == 4);
-//     assert!(range_set._items[1].length == 1);
-//     assert!(range_set._items[2].start == 6);
-//     assert!(range_set._items[2].length == 20);
-//     range_set._internal_add(2, 10);
-//     assert!(range_set.len() == 24);
-//     assert!(range_set._items.len() == 1);
-//     assert!(range_set._items[0].start == 2);
-//     assert!(range_set._items[0].length == 24);
-// }
-
-// fn test3() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 3);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 1);
-//     range_set._internal_add(0, 1);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 2);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 1);
-//     assert!(range_set._items[1].start == 2);
-//     assert!(range_set._items[1].length == 3);
-// }
-
-// fn test3c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 3);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 1);
-//     range_set._internal_add(0, 3);
-//     assert!(range_set.len() == 5);
-//     assert!(range_set._items.len() == 1);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 5);
-// }
-
-// fn test4() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(1, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 2);
-//     assert!(range_set._items[1].start == 5);
-//     assert!(range_set._items[1].length == 1);
-// }
-
-// fn test5() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(1, 2);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 2);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 3);
-//     assert!(range_set._items[1].start == 5);
-//     assert!(range_set._items[1].length == 1);
-// }
-
-// fn test5_c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(1, 10);
-//     assert!(range_set.len() == 11);
-//     assert!(range_set._items.len() == 1);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 11);
-// }
-
-// fn test6() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(3, 1);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 3);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 2);
-//     assert!(range_set._items[1].start == 3);
-//     assert!(range_set._items[1].length == 1);
-//     assert!(range_set._items[2].start == 5);
-//     assert!(range_set._items[2].length == 1);
-// }
-
-// fn test6_c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(3, 2);
-//     assert!(range_set.len() == 5);
-//     assert!(range_set._items.len() == 2);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 2);
-//     assert!(range_set._items[1].start == 3);
-//     assert!(range_set._items[1].length == 3);
-// }
-
-// !!!cmk can I use a Rust range?
-// !!!cmk allow negatives and any size
-#[derive(Debug)]
-struct RangeX {
-    start: u128,
-    length: u128,
-}
-
-impl RangeX {
-    fn end(&self) -> u128 {
-        self.start + self.length
-    }
-}
-
-struct RangeSetInt {
-    _items: BTreeMap<u128, u128>, // !!!cmk usize?
-                                  // !!!cmk underscore?
-}
-
-impl RangeSetInt {
-    fn new() -> RangeSetInt {
-        RangeSetInt {
-            _items: BTreeMap::new(),
-        }
-    }
-
-    fn clear(&mut self) {
-        self._items.clear();
-    }
-
-    // !!!cmk keep this in a field
-    fn len(&self) -> u128 {
-        self._items.values().fold(0, |acc, length| acc + length)
-    }
-
-    fn _internal_add(&mut self, start: u128, length: u128) {
-        // !!!cmk put this shortcut back?
-        // if self._items.len() == 0 {
-        //     self._items.insert(start, length);
-        //     return;
-        // }
-
-        // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
-        // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-        // !!!cmk rename index to "range"
-        let range = self._items.range(..start);
-        let mut peekable_forward = range.clone().peekable();
-        let peek_forward = peekable_forward.peek();
-        let mut peekable_backwards = range.rev().peekable();
-        let peek_backwards = peekable_backwards.peek();
-        if let Some(peek_forward) = peek_forward {
-            let mut peek_forward = *peek_forward;
-            if *peek_forward.0 == start {
-                if length > *peek_forward.1 {
-                    peek_forward.1 = &length;
-                    // previous_range = peek_forward;
-                    // peek_forward = peekable_forward.next(); // index should point to the following range for the remainder of this method
-                    todo!()
-                } else {
-                    todo!();
-                }
-            }
-        } else {
-            println!("self._items.insert(start, length);");
-            if let Some(previous_range) = peek_backwards {
-                // nothing
-            } else {
-                return;
-            }
-        }
-
-        todo!();
-        //             return;
-        //         }
-        //     } else if index == 0 {
-        //         self._items.insert(index, RangeX { start, length });
-        //         previous_index = index;
-        //         index += 1 // index_of_miss should point to the following range for the remainder of this method
-        //     } else {
-        //         previous_index = index - 1;
-        //         let previous_range: &mut RangeX = &mut self._items[previous_index];
-
-        //         if previous_range.end() >= start {
-        //             let new_length = start + length - previous_range.start;
-        //             if new_length <= previous_range.length {
-        //                 return;
-        //             } else {
-        //                 previous_range.length = new_length;
-        //             }
-        //         } else {
-        //             // after previous range, not contiguous with previous range
-        //             self._items.insert(index, RangeX { start, length });
-        //             previous_index = index;
-        //             index += 1;
-        //         }
-        //     }
-        // }
-
-        // let previous_range: &RangeX = &self._items[previous_index];
-        // let previous_end = previous_range.end();
-        // while index < self._items.len() {
-        //     let range: &RangeX = &self._items[index];
-        //     if previous_end < range.start {
-        //         break;
-        //     }
-        //     let range_end = range.end();
-        //     if previous_end < range_end {
-        //         self._items[previous_index].length = range_end - previous_range.start;
-        //         index += 1;
-        //         break;
-        //     }
-        //     index += 1;
-        // }
-        // self._items.drain(previous_index + 1..index);
-    }
 }
