@@ -15,19 +15,17 @@ pub fn internal_add(items: &mut BTreeMap<u128, u128>, len: &mut u128, start: u12
     assert!(start < end); // !!!cmk check that length is not zero
                           // !!! cmk would be nice to have a partition_point function that returns two iterators
     let mut before = items.range_mut(..=start);
-    // println!("before {:?}", before.collect::<Vec<_>>());
-    if let Some((start_x, end_x)) = before.next() {
-        let start_x2 = *start_x;
-        println!("start_x {start_x:?}, end_x {end_x:?}");
-        if *end_x < start {
+    if let Some((start_before, end_before)) = before.next() {
+        if *end_before < start {
             insert(items, len, start, end);
             *len += end - start;
-        } else if *end_x < end {
-            *len += end - *end_x;
-            *end_x = end;
-            delete_extra(items, len, start_x2, end);
+        } else if *end_before < end {
+            *len += end - *end_before;
+            *end_before = end;
+            let start_before = *start_before;
+            delete_extra(items, len, start_before, end);
         } else {
-            // do nothing
+            // completely contained, so do nothing
         }
     } else {
         insert(items, len, start, end);
@@ -37,25 +35,24 @@ pub fn internal_add(items: &mut BTreeMap<u128, u128>, len: &mut u128, start: u12
 
 fn delete_extra(items: &mut BTreeMap<u128, u128>, len: &mut u128, start: u128, end: u128) {
     let mut after = items.range_mut(start..);
-    let (start2, end2) = after.next().unwrap(); // !!! cmk assert that there is a next
-    assert!(start == *start2 && end == *end2); // !!! cmk real assert
-                                               // !!!cmk would be nice to have a delete_range function
-    let mut new_end = end;
+    let (start_after, start_end) = after.next().unwrap(); // !!! cmk assert that there is a next
+    assert!(start == *start_after && end == *start_end); // !!! cmk real assert
+                                                         // !!!cmk would be nice to have a delete_range function
+    let mut end_new = end;
     let delete_list = after
-        .map_while(|(start3, end3)| {
-            if *start3 <= end {
-                new_end = max(new_end, *end3);
-                *len -= *end3 - *start3;
-                Some(*start3)
+        .map_while(|(start_delete, end_delete)| {
+            if *start_delete <= end {
+                end_new = max(end_new, *end_delete);
+                *len -= *end_delete - *start_delete;
+                Some(*start_delete)
             } else {
                 None
             }
         })
         .collect::<Vec<_>>();
-    println!("delete_list {delete_list:?}");
-    if new_end > end {
-        *len += new_end - end;
-        *end2 = new_end;
+    if end_new > end {
+        *len += end_new - end;
+        *start_end = end_new;
     }
     for start in delete_list {
         items.remove(&start);
