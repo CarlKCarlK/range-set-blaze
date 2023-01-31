@@ -1,36 +1,28 @@
 mod tests;
 
+use itertools::Itertools;
 use std::cmp::max;
 use std::collections::BTreeMap;
 
 pub fn fmt(items: &BTreeMap<u128, u128>) -> String {
-    let mut result = String::new();
-    for (start, length) in items {
-        if !result.is_empty() {
-            result.push(',');
-        }
-        result.push_str(&format!("{}..{}", start, start + length));
-    }
-    result
+    items
+        .iter()
+        .map(|(start, end)| format!("{start}..{end}"))
+        .join(",")
 }
 
-pub fn b_d_cmk(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
-    internal_add(items, start, end - start);
-}
-pub fn internal_add(items: &mut BTreeMap<u128, u128>, start: u128, length: u128) {
-    let end = start + length;
+pub fn internal_add(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
     assert!(start < end); // !!!cmk check that length is not zero
                           // !!! cmk would be nice to have a partition_point function that returns two iterators
     let mut before = items.range_mut(..=start);
     // println!("before {:?}", before.collect::<Vec<_>>());
-    if let Some((start_x, length_x)) = before.next() {
+    if let Some((start_x, end_x)) = before.next() {
         let start_x2 = *start_x;
-        println!("start_x {start_x:?}, length_x {length_x:?}");
-        let end_x: u128 = start_x + *length_x;
-        if end_x < start {
+        println!("start_x {start_x:?}, end_x {end_x:?}");
+        if *end_x < start {
             insert(items, start, end);
-        } else if end > end_x {
-            *length_x = end - start_x;
+        } else if *end_x < end {
+            *end_x = end;
             delete_extra(items, start_x2, end);
         } else {
             // do nothing
@@ -42,14 +34,14 @@ pub fn internal_add(items: &mut BTreeMap<u128, u128>, start: u128, length: u128)
 
 fn delete_extra(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
     let mut after = items.range_mut(start..);
-    let (start2, length2) = after.next().unwrap(); // !!! cmk assert that there is a next
-    assert!(start == *start2 && start2 + *length2 == end); // !!! cmk real assert
-                                                           // !!!cmk would be nice to have a delete_range function
+    let (start2, end2) = after.next().unwrap(); // !!! cmk assert that there is a next
+    assert!(start == *start2 && end == *end2); // !!! cmk real assert
+                                               // !!!cmk would be nice to have a delete_range function
     let mut new_end = end;
     let delete_list = after
-        .map_while(|(start3, length3)| {
+        .map_while(|(start3, end3)| {
             if *start3 <= end {
-                new_end = max(new_end, start3 + *length3);
+                new_end = max(new_end, *end3);
                 Some(*start3)
             } else {
                 None
@@ -58,14 +50,14 @@ fn delete_extra(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
         .collect::<Vec<_>>();
     println!("delete_list {delete_list:?}");
     if new_end > end {
-        *length2 = new_end - start;
+        *end2 = new_end;
     }
     for start in delete_list {
         items.remove(&start);
     }
 }
 fn insert(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
-    let was_there = items.insert(start, end - start);
+    let was_there = items.insert(start, end);
     assert!(was_there.is_none());
     // !!!cmk real assert
     delete_extra(items, start, end);

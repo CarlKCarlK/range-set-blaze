@@ -11,8 +11,8 @@ fn demo_c1() {
     // equal?	0
     // is_included	0
     //     INSERT
-    let mut items = BTreeMap::from([(10, 1)]);
-    internal_add(&mut items, 12, 1);
+    let mut items = BTreeMap::from([(10, 11)]);
+    internal_add(&mut items, 12, 13);
     assert!(fmt(&items) == *"10..11,12..13");
 }
 
@@ -22,8 +22,8 @@ fn demo_c2() {
     // equal?	0
     // is_included	0
     //     INSERT
-    let mut items = BTreeMap::from([(10, 1), (13, 1)]);
-    internal_add(&mut items, 12, 1);
+    let mut items = BTreeMap::from([(10, 11), (13, 14)]);
+    internal_add(&mut items, 12, 13);
     assert!(fmt(&items) == *"10..11,12..14");
 }
 
@@ -32,8 +32,8 @@ fn demo_f1() {
     // before_or_equal_exists	0
     //     INSERT, etc
 
-    let mut items = BTreeMap::from([(11, 5), (22, 5)]);
-    internal_add(&mut items, 10, 1);
+    let mut items = BTreeMap::from([(11, 16), (22, 27)]);
+    internal_add(&mut items, 10, 11);
     assert!(fmt(&items) == *"10..16,22..27");
 }
 
@@ -45,8 +45,8 @@ fn demo_d1() {
     // fits?	1
     //     DONE
 
-    let mut items = BTreeMap::from([(10, 5)]);
-    internal_add(&mut items, 10, 1);
+    let mut items = BTreeMap::from([(10, 15)]);
+    internal_add(&mut items, 10, 11);
     assert!(fmt(&items) == *"10..15");
 }
 
@@ -59,8 +59,8 @@ fn demo_e1() {
     // next?    0
     //     DONE
 
-    let mut items = BTreeMap::from([(10, 5), (16, 1)]);
-    internal_add(&mut items, 10, 10);
+    let mut items = BTreeMap::from([(10, 15), (16, 17)]);
+    internal_add(&mut items, 10, 20);
     assert!(fmt(&items) == *"10..20");
 }
 
@@ -73,8 +73,8 @@ fn demo_b1() {
     // next?    0
     //     DONE
 
-    let mut items = BTreeMap::from([(10, 5)]);
-    internal_add(&mut items, 12, 6);
+    let mut items = BTreeMap::from([(10, 15)]);
+    internal_add(&mut items, 12, 18);
     assert!(fmt(&items) == *"10..18");
 }
 
@@ -88,8 +88,8 @@ fn demo_b2() {
     // delete how many? 1
     //     DONE
 
-    let mut items = BTreeMap::from([(10, 5), (16, 1)]);
-    internal_add(&mut items, 12, 6);
+    let mut items = BTreeMap::from([(10, 15), (16, 17)]);
+    internal_add(&mut items, 12, 18);
     assert!(fmt(&items) == *"10..18");
 }
 
@@ -103,8 +103,8 @@ fn demo_b3() {
     // delete how many? 0
     //     DONE
 
-    let mut items = BTreeMap::from([(10, 5), (160, 1)]);
-    internal_add(&mut items, 12, 6);
+    let mut items = BTreeMap::from([(10, 15), (160, 161)]);
+    internal_add(&mut items, 12, 18);
     assert!(fmt(&items) == *"10..18,160..161");
 }
 
@@ -115,8 +115,8 @@ fn demo_a() {
     // is_included	1
     // fits?	1
     //     DONE
-    let mut items = BTreeMap::from([(10, 5)]);
-    internal_add(&mut items, 12, 1);
+    let mut items = BTreeMap::from([(10, 15)]);
+    internal_add(&mut items, 12, 13);
     assert!(fmt(&items) == *"10..15");
 }
 
