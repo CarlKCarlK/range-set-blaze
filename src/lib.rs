@@ -11,7 +11,7 @@ pub fn fmt(items: &BTreeMap<u128, u128>) -> String {
         .join(",")
 }
 
-pub fn internal_add(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
+pub fn internal_add(items: &mut BTreeMap<u128, u128>, len: &mut u128, start: u128, end: u128) {
     assert!(start < end); // !!!cmk check that length is not zero
                           // !!! cmk would be nice to have a partition_point function that returns two iterators
     let mut before = items.range_mut(..=start);
@@ -20,19 +20,22 @@ pub fn internal_add(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
         let start_x2 = *start_x;
         println!("start_x {start_x:?}, end_x {end_x:?}");
         if *end_x < start {
-            insert(items, start, end);
+            insert(items, len, start, end);
+            *len += end - start;
         } else if *end_x < end {
+            *len += end - *end_x;
             *end_x = end;
-            delete_extra(items, start_x2, end);
+            delete_extra(items, len, start_x2, end);
         } else {
             // do nothing
         }
     } else {
-        insert(items, start, end);
+        insert(items, len, start, end);
+        *len += end - start;
     }
 }
 
-fn delete_extra(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
+fn delete_extra(items: &mut BTreeMap<u128, u128>, len: &mut u128, start: u128, end: u128) {
     let mut after = items.range_mut(start..);
     let (start2, end2) = after.next().unwrap(); // !!! cmk assert that there is a next
     assert!(start == *start2 && end == *end2); // !!! cmk real assert
@@ -42,6 +45,7 @@ fn delete_extra(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
         .map_while(|(start3, end3)| {
             if *start3 <= end {
                 new_end = max(new_end, *end3);
+                *len -= *end3 - *start3;
                 Some(*start3)
             } else {
                 None
@@ -50,17 +54,18 @@ fn delete_extra(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
         .collect::<Vec<_>>();
     println!("delete_list {delete_list:?}");
     if new_end > end {
+        *len += new_end - end;
         *end2 = new_end;
     }
     for start in delete_list {
         items.remove(&start);
     }
 }
-fn insert(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
+fn insert(items: &mut BTreeMap<u128, u128>, len: &mut u128, start: u128, end: u128) {
     let was_there = items.insert(start, end);
     assert!(was_there.is_none());
     // !!!cmk real assert
-    delete_extra(items, start, end);
+    delete_extra(items, len, start, end);
 }
 
 // !!!cmk can I use a Rust range?

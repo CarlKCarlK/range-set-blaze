@@ -5,6 +5,10 @@ use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 // use thousands::Separable;
 
+fn slow_len(items: &BTreeMap<u128, u128>) -> u128 {
+    items.iter().map(|(start, end)| end - start).sum()
+}
+
 #[test]
 fn demo_c1() {
     // before_or_equal_exists	1
@@ -12,8 +16,10 @@ fn demo_c1() {
     // is_included	0
     //     INSERT
     let mut items = BTreeMap::from([(10, 11)]);
-    internal_add(&mut items, 12, 13);
+    let mut len = slow_len(&items);
+    internal_add(&mut items, &mut len, 12, 13);
     assert!(fmt(&items) == *"10..11,12..13");
+    assert!(len == slow_len(&items));
 }
 
 #[test]
@@ -23,8 +29,10 @@ fn demo_c2() {
     // is_included	0
     //     INSERT
     let mut items = BTreeMap::from([(10, 11), (13, 14)]);
-    internal_add(&mut items, 12, 13);
+    let mut len = slow_len(&items);
+    internal_add(&mut items, &mut len, 12, 13);
     assert!(fmt(&items) == *"10..11,12..14");
+    assert!(len == slow_len(&items));
 }
 
 #[test]
@@ -33,8 +41,10 @@ fn demo_f1() {
     //     INSERT, etc
 
     let mut items = BTreeMap::from([(11, 16), (22, 27)]);
-    internal_add(&mut items, 10, 11);
+    let mut len = slow_len(&items);
+    internal_add(&mut items, &mut len, 10, 11);
     assert!(fmt(&items) == *"10..16,22..27");
+    assert!(len == slow_len(&items));
 }
 
 #[test]
@@ -46,8 +56,10 @@ fn demo_d1() {
     //     DONE
 
     let mut items = BTreeMap::from([(10, 15)]);
-    internal_add(&mut items, 10, 11);
+    let mut len = slow_len(&items);
+    internal_add(&mut items, &mut len, 10, 11);
     assert!(fmt(&items) == *"10..15");
+    assert!(len == slow_len(&items));
 }
 
 #[test]
@@ -60,8 +72,10 @@ fn demo_e1() {
     //     DONE
 
     let mut items = BTreeMap::from([(10, 15), (16, 17)]);
-    internal_add(&mut items, 10, 20);
+    let mut len = slow_len(&items);
+    internal_add(&mut items, &mut len, 10, 20);
     assert!(fmt(&items) == *"10..20");
+    assert!(len == slow_len(&items));
 }
 
 #[test]
@@ -74,8 +88,10 @@ fn demo_b1() {
     //     DONE
 
     let mut items = BTreeMap::from([(10, 15)]);
-    internal_add(&mut items, 12, 18);
+    let mut len = slow_len(&items);
+    internal_add(&mut items, &mut len, 12, 18);
     assert!(fmt(&items) == *"10..18");
+    assert!(len == slow_len(&items));
 }
 
 #[test]
@@ -89,8 +105,10 @@ fn demo_b2() {
     //     DONE
 
     let mut items = BTreeMap::from([(10, 15), (16, 17)]);
-    internal_add(&mut items, 12, 18);
+    let mut len = slow_len(&items);
+    internal_add(&mut items, &mut len, 12, 18);
     assert!(fmt(&items) == *"10..18");
+    assert!(len == slow_len(&items));
 }
 
 #[test]
@@ -104,8 +122,10 @@ fn demo_b3() {
     //     DONE
 
     let mut items = BTreeMap::from([(10, 15), (160, 161)]);
-    internal_add(&mut items, 12, 18);
+    let mut len = slow_len(&items);
+    internal_add(&mut items, &mut len, 12, 18);
     assert!(fmt(&items) == *"10..18,160..161");
+    assert!(len == slow_len(&items));
 }
 
 #[test]
@@ -116,8 +136,10 @@ fn demo_a() {
     // fits?	1
     //     DONE
     let mut items = BTreeMap::from([(10, 15)]);
-    internal_add(&mut items, 12, 13);
+    let mut len = slow_len(&items);
+    internal_add(&mut items, &mut len, 12, 13);
     assert!(fmt(&items) == *"10..15");
+    assert!(len == slow_len(&items));
 }
 
 // #[test]
