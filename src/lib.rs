@@ -3,7 +3,22 @@ mod tests;
 use std::cmp::max;
 use std::collections::BTreeMap;
 
+pub fn fmt(items: &BTreeMap<u128, u128>) -> String {
+    let mut result = String::new();
+    for (start, length) in items {
+        if !result.is_empty() {
+            result.push(',');
+        }
+        result.push_str(&format!("{}..{}", start, start + length));
+    }
+    result
+}
+
 pub fn b_d_cmk(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
+    internal_add(items, start, end - start);
+}
+pub fn internal_add(items: &mut BTreeMap<u128, u128>, start: u128, length: u128) {
+    let end = start + length;
     assert!(start < end); // !!!cmk check that length is not zero
                           // !!! cmk would be nice to have a partition_point function that returns two iterators
     let mut before = items.range_mut(..=start);

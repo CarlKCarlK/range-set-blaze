@@ -11,20 +11,9 @@ fn demo_c1() {
     // equal?	0
     // is_included	0
     //     INSERT
-    let (start, length) = (12u128, 1u128);
-    let end = start + length;
-    let mut items = BTreeMap::<u128, u128>::new();
-    items.insert(10, 1);
-    println!("{items:?}");
-    b_d_cmk(&mut items, start, end);
-    println!("{items:?}");
-    assert!(items.len() == 2);
-    let first_entry = items.first_entry().unwrap();
-    assert!(*first_entry.key() == 10);
-    assert!(*first_entry.get() == 1);
-    let entry = items.iter().nth(1).unwrap();
-    assert!(*entry.0 == 12);
-    assert!(*entry.1 == 1);
+    let mut items = BTreeMap::from([(10, 1)]);
+    internal_add(&mut items, 12, 1);
+    assert!(fmt(&items) == *"10..11,12..13");
 }
 
 #[test]
@@ -33,44 +22,19 @@ fn demo_c2() {
     // equal?	0
     // is_included	0
     //     INSERT
-    let (start, length) = (12u128, 1u128);
-    let end = start + length;
-    let mut items = BTreeMap::<u128, u128>::new();
-    items.insert(10, 1);
-    items.insert(13, 1);
-    println!("{items:?}");
-    b_d_cmk(&mut items, start, end);
-    println!("{items:?}");
-    assert!(items.len() == 2);
-    let first_entry = items.first_entry().unwrap();
-    assert!(*first_entry.key() == 10);
-    assert!(*first_entry.get() == 1);
-    let entry = items.iter().nth(1).unwrap();
-    assert!(*entry.0 == 12);
-    let e1 = *entry.1;
-    assert!(e1 == 2);
+    let mut items = BTreeMap::from([(10, 1), (13, 1)]);
+    internal_add(&mut items, 12, 1);
+    assert!(fmt(&items) == *"10..11,12..14");
 }
 
 #[test]
 fn demo_f1() {
     // before_or_equal_exists	0
     //     INSERT, etc
-    let (start, length) = (10u128, 1u128);
-    let end = start + length;
-    let mut items = BTreeMap::<u128, u128>::new();
-    items.insert(11, 5);
-    items.insert(22, 5);
-    println!("{items:?}");
-    b_d_cmk(&mut items, start, end);
 
-    println!("{items:?}");
-    assert!(items.len() == 2);
-    let first_entry = items.first_entry().unwrap();
-    assert!(*first_entry.key() == 10);
-    assert!(*first_entry.get() == 6);
-    let entry = items.iter().nth(1).unwrap();
-    assert!(*entry.0 == 22);
-    assert!(*entry.1 == 5);
+    let mut items = BTreeMap::from([(11, 5), (22, 5)]);
+    internal_add(&mut items, 10, 1);
+    assert!(fmt(&items) == *"10..16,22..27");
 }
 
 #[test]
@@ -80,18 +44,10 @@ fn demo_d1() {
     // is_included	n/a
     // fits?	1
     //     DONE
-    let (start, length) = (10u128, 1u128);
-    let end = start + length;
-    let mut items = BTreeMap::<u128, u128>::new();
-    items.insert(10, 5);
-    println!("{items:?}");
-    b_d_cmk(&mut items, start, end);
 
-    println!("{items:?}");
-    assert!(items.len() == 1);
-    let first_entry = items.first_entry().unwrap();
-    assert!(*first_entry.key() == 10);
-    assert!(*first_entry.get() == 5);
+    let mut items = BTreeMap::from([(10, 5)]);
+    internal_add(&mut items, 10, 1);
+    assert!(fmt(&items) == *"10..15");
 }
 
 #[test]
@@ -102,23 +58,10 @@ fn demo_e1() {
     // fits?	0
     // next?    0
     //     DONE
-    let (start, length) = (10u128, 10u128);
-    let end = start + length;
-    let mut items = BTreeMap::<u128, u128>::new();
-    items.insert(10, 5);
-    items.insert(16, 1);
-    println!("{items:?}");
-    b_d_cmk(&mut items, start, end);
-    // println!("after {:?}", after);
-    // let next = range.next();
-    // println!("next {:?}", next);
-    // // assert!(next.is_some());
-    println!("{items:?}");
 
-    assert!(items.len() == 1);
-    let first_entry = items.first_entry().unwrap();
-    assert!(*first_entry.key() == 10);
-    assert!(*first_entry.get() == 10);
+    let mut items = BTreeMap::from([(10, 5), (16, 1)]);
+    internal_add(&mut items, 10, 10);
+    assert!(fmt(&items) == *"10..20");
 }
 
 #[test]
@@ -129,19 +72,10 @@ fn demo_b1() {
     // fits?	0
     // next?    0
     //     DONE
-    let (start, length) = (12u128, 6u128);
-    let end = start + length;
-    let mut items = BTreeMap::<u128, u128>::new();
-    items.insert(10, 5);
-    println!("{items:?}");
 
-    b_d_cmk(&mut items, start, end);
-
-    println!("{items:?}");
-    assert!(items.len() == 1);
-    let first_entry = items.first_entry().unwrap();
-    assert!(*first_entry.key() == 10);
-    assert!(*first_entry.get() == 8);
+    let mut items = BTreeMap::from([(10, 5)]);
+    internal_add(&mut items, 12, 6);
+    assert!(fmt(&items) == *"10..18");
 }
 
 #[test]
@@ -153,23 +87,10 @@ fn demo_b2() {
     // next?    1
     // delete how many? 1
     //     DONE
-    let (start, length) = (12u128, 6u128);
-    let end = start + length;
-    let mut items = BTreeMap::<u128, u128>::new();
-    items.insert(10, 5);
-    items.insert(16, 1);
-    println!("{items:?}");
-    // !!! cmk would be nice to have a partition_point function that returns two iterators
-    b_d_cmk(&mut items, start, end);
-    // println!("after {:?}", after);
-    // let next = range.next();
-    // println!("next {:?}", next);
-    // // assert!(next.is_some());
-    println!("{items:?}");
-    assert!(items.len() == 1);
-    let first_entry = items.first_entry().unwrap();
-    assert!(*first_entry.key() == 10);
-    assert!(*first_entry.get() == 8);
+
+    let mut items = BTreeMap::from([(10, 5), (16, 1)]);
+    internal_add(&mut items, 12, 6);
+    assert!(fmt(&items) == *"10..18");
 }
 
 #[test]
@@ -181,26 +102,10 @@ fn demo_b3() {
     // next?    1
     // delete how many? 0
     //     DONE
-    let (start, length) = (12u128, 6u128);
-    let end = start + length;
-    let mut items = BTreeMap::<u128, u128>::new();
-    items.insert(10, 5);
-    items.insert(160, 1);
-    println!("{items:?}");
-    // !!! cmk would be nice to have a partition_point function that returns two iterators
-    b_d_cmk(&mut items, start, end);
-    // println!("after {:?}", after);
-    // let next = range.next();
-    // println!("next {:?}", next);
-    // // assert!(next.is_some());
-    println!("{items:?}");
-    assert!(items.len() == 2);
-    let first_entry = items.first_entry().unwrap();
-    assert!(*first_entry.key() == 10);
-    assert!(*first_entry.get() == 8);
-    let entry = items.iter().nth(1).unwrap();
-    assert!(*entry.0 == 160);
-    assert!(*entry.1 == 1);
+
+    let mut items = BTreeMap::from([(10, 5), (160, 1)]);
+    internal_add(&mut items, 12, 6);
+    assert!(fmt(&items) == *"10..18,160..161");
 }
 
 #[test]
@@ -210,17 +115,9 @@ fn demo_a() {
     // is_included	1
     // fits?	1
     //     DONE
-    let (start, length) = (12u128, 1u128);
-    let end = start + length;
-    let mut items = BTreeMap::<u128, u128>::new();
-    items.insert(10, 5);
-    println!("{items:?}");
-    b_d_cmk(&mut items, start, end);
-    println!("{items:?}");
-    assert!(items.len() == 1);
-    let first_entry = items.first_entry().unwrap();
-    assert!(*first_entry.key() == 10);
-    assert!(*first_entry.get() == 5);
+    let mut items = BTreeMap::from([(10, 5)]);
+    internal_add(&mut items, 12, 1);
+    assert!(fmt(&items) == *"10..15");
 }
 
 // #[test]
