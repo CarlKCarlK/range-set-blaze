@@ -2,6 +2,7 @@ mod tests;
 
 use itertools::Itertools;
 use std::cmp::max;
+use std::collections::binary_heap::Iter;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
@@ -75,10 +76,10 @@ fn insert(items: &mut BTreeMap<u128, u128>, len: &mut u128, start: u128, end: u1
 // !!!cmk can I use a Rust range?
 // !!!cmk allow negatives and any size
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RangeSetInt {
-    items: BTreeMap<u128, u128>, // !!!cmk usize?
     len: u128,
+    items: BTreeMap<u128, u128>, // !!!cmk usize?
 }
 
 // !!!cmk support =, and single numbers
@@ -243,5 +244,49 @@ impl<const N: usize> From<[u128; N]> for RangeSetInt {
             result.internal_add(*value, *value + 1);
         }
         result
+    }
+}
+
+impl IntoIterator for RangeSetInt {
+    type Item = u128;
+    type IntoIter = IntoIter;
+
+    /// Gets an iterator for moving out the `RangeSetInt`'s contents.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let set = RangeSetInt::from([1, 2, 3, 4]);
+    ///
+    /// let v: Vec<_> = set.into_iter().collect();
+    /// assert_eq!(v, [1, 2, 3, 4]);
+    /// ```
+    fn into_iter(self) -> IntoIter {
+        IntoIter {
+            item_iter: 0..0,
+            range_iter: self.items.into_iter(),
+        }
+    }
+}
+
+pub struct IntoIter {
+    item_iter: core::ops::Range<u128>,
+    range_iter: std::collections::btree_map::IntoIter<u128, u128>,
+}
+
+impl Iterator for IntoIter {
+    type Item = u128;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(item) = self.item_iter.next() {
+            return Some(item);
+        }
+        if let Some((start, end)) = self.range_iter.next() {
+            self.item_iter = start..end;
+            return self.next();
+        }
+        None
     }
 }
