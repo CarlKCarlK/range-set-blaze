@@ -3,12 +3,18 @@ mod tests;
 use itertools::Itertools;
 use std::cmp::max;
 use std::collections::BTreeMap;
+use std::convert::From;
+use std::fmt;
 
 pub fn fmt(items: &BTreeMap<u128, u128>) -> String {
     items
         .iter()
         .map(|(start, end)| format!("{start}..{end}"))
         .join(",")
+}
+
+fn slow_len(items: &BTreeMap<u128, u128>) -> u128 {
+    items.iter().map(|(start, end)| end - start).sum()
 }
 
 pub fn internal_add(items: &mut BTreeMap<u128, u128>, len: &mut u128, start: u128, end: u128) {
@@ -69,24 +75,58 @@ fn insert(items: &mut BTreeMap<u128, u128>, len: &mut u128, start: u128, end: u1
 // !!!cmk allow negatives and any size
 
 struct RangeSetInt {
-    _items: BTreeMap<u128, u128>, // !!!cmk usize?
-                                  // !!!cmk underscore?
+    items: BTreeMap<u128, u128>, // !!!cmk usize?
+    len: u128,
+}
+
+// !!!cmk support =, and single numbers
+// !!!cmk are the unwraps OK?
+// !!!cmk what about bad input?
+impl From<&str> for RangeSetInt {
+    fn from(s: &str) -> Self {
+        let mut result = RangeSetInt::new();
+        for range in s.split(',') {
+            let mut range = range.split("..");
+            let start = range.next().unwrap().parse::<u128>().unwrap();
+            let end = range.next().unwrap().parse::<u128>().unwrap();
+            result.internal_add(start, end);
+        }
+        result
+    }
+}
+
+impl fmt::Display for RangeSetInt {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", fmt(&self.items))
+    }
 }
 
 impl RangeSetInt {
-    fn new() -> RangeSetInt {
+    pub fn new() -> RangeSetInt {
         RangeSetInt {
-            _items: BTreeMap::new(),
+            items: BTreeMap::new(),
+            len: 0,
         }
     }
 
-    fn clear(&mut self) {
-        self._items.clear();
+    pub fn clear(&mut self) {
+        self.items.clear();
+        self.len = 0;
     }
 
     // !!!cmk keep this in a field
-    fn len(&self) -> u128 {
-        self._items.values().sum()
+    pub fn len(&self) -> u128 {
+        self.len
+    }
+
+    fn len_slow(&self) -> u128 {
+        slow_len(&self.items)
+    }
+
+    // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
+    // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
+    fn internal_add(&mut self, start: u128, end: u128) {
+        internal_add(&mut self.items, &mut self.len, start, end);
     }
 
     // fn _internal_add(&mut self, start: u128, length: u128) {
@@ -96,8 +136,6 @@ impl RangeSetInt {
     //     //     return;
     //     // }
 
-    //     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
-    //     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     //     // !!!cmk rename index to "range"
     //     let range = self._items.range(..start);
     //     let mut peekable_forward = range.clone().peekable();
