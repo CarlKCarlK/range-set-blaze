@@ -5,6 +5,8 @@ use std::collections::BTreeMap;
 use thousands::Separable;
 
 fn main() {
+    test_demo_f1();
+    test_demo_e1();
     test_demo_c1();
     test_demo_c2();
     test_demo_a();
@@ -12,7 +14,7 @@ fn main() {
     test_demo_b1();
     test_demo_b2();
     test_demo_d1();
-    test_demo_d2();
+    test_demo_e1();
 
     // test_demo();
     // test1_c2();
@@ -78,6 +80,28 @@ fn test_demo_c2() {
     let e1 = *entry.1;
     assert!(e1 == 2);
 }
+
+fn test_demo_f1() {
+    // before_or_equal_exists	0
+    //     INSERT, etc
+    let (start, length) = (10u128, 1u128);
+    let end = start + length;
+    let mut items = BTreeMap::<u128, u128>::new();
+    items.insert(11, 5);
+    items.insert(22, 5);
+    println!("{:?}", items);
+    b_d_cmk(&mut items, start, end);
+
+    println!("{:?}", items);
+    assert!(items.len() == 2);
+    let first_entry = items.first_entry().unwrap();
+    assert!(*first_entry.key() == 10);
+    assert!(*first_entry.get() == 6);
+    let entry = items.iter().nth(1).unwrap();
+    assert!(*entry.0 == 22);
+    assert!(*entry.1 == 5);
+}
+
 fn test_demo_d1() {
     // before_or_equal_exists	1
     // equal?	1
@@ -98,7 +122,7 @@ fn test_demo_d1() {
     assert!(*first_entry.get() == 5);
 }
 
-fn test_demo_d2() {
+fn test_demo_e1() {
     // before_or_equal_exists	1
     // equal?	1
     // is_included	n/a
@@ -129,20 +153,28 @@ fn b_d_cmk(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
                           // !!! cmk would be nice to have a partition_point function that returns two iterators
     let mut before = items.range_mut(..=start);
     // println!("before {:?}", before.collect::<Vec<_>>());
-    let (start_x, length_x) = before.next().unwrap();
-    let start_x2 = *start_x;
-    println!("start_x {:?}, length_x {:?}", start_x, length_x);
-    let end_x: u128 = start_x + *length_x;
-    if end_x < start {
-        let was_there = items.insert(start, end - start);
-        assert!(was_there.is_none()); // !!!cmk real assert
-        delete_extra(items, start, end);
-    } else if end > end_x {
-        *length_x = end - start_x;
-        delete_extra(items, start_x2, end);
+    if let Some((start_x, length_x)) = before.next() {
+        let start_x2 = *start_x;
+        println!("start_x {:?}, length_x {:?}", start_x, length_x);
+        let end_x: u128 = start_x + *length_x;
+        if end_x < start {
+            insert(items, start, end);
+        } else if end > end_x {
+            *length_x = end - start_x;
+            delete_extra(items, start_x2, end);
+        } else {
+            // do nothing
+        }
     } else {
-        // do nothing
+        insert(items, start, end);
     }
+}
+
+fn insert(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
+    let was_there = items.insert(start, end - start);
+    assert!(was_there.is_none());
+    // !!!cmk real assert
+    delete_extra(items, start, end);
 }
 
 fn test_demo_b1() {
