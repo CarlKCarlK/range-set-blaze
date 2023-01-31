@@ -3,7 +3,7 @@ mod tests;
 use std::cmp::max;
 use std::collections::BTreeMap;
 
-fn b_d_cmk(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
+pub fn b_d_cmk(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
     assert!(start < end); // !!!cmk check that length is not zero
                           // !!! cmk would be nice to have a partition_point function that returns two iterators
     let mut before = items.range_mut(..=start);
@@ -41,7 +41,7 @@ fn delete_extra(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
             }
         })
         .collect::<Vec<_>>();
-    println!("delete_list {:?}", delete_list);
+    println!("delete_list {delete_list:?}");
     if new_end > end {
         *length2 = new_end - start;
     }
@@ -58,17 +58,6 @@ fn insert(items: &mut BTreeMap<u128, u128>, start: u128, end: u128) {
 
 // !!!cmk can I use a Rust range?
 // !!!cmk allow negatives and any size
-#[derive(Debug)]
-struct RangeX {
-    start: u128,
-    length: u128,
-}
-
-impl RangeX {
-    fn end(&self) -> u128 {
-        self.start + self.length
-    }
-}
 
 struct RangeSetInt {
     _items: BTreeMap<u128, u128>, // !!!cmk usize?
@@ -88,87 +77,87 @@ impl RangeSetInt {
 
     // !!!cmk keep this in a field
     fn len(&self) -> u128 {
-        self._items.values().fold(0, |acc, length| acc + length)
+        self._items.values().sum()
     }
 
-    fn _internal_add(&mut self, start: u128, length: u128) {
-        // !!!cmk put this shortcut back?
-        // if self._items.len() == 0 {
-        //     self._items.insert(start, length);
-        //     return;
-        // }
+    // fn _internal_add(&mut self, start: u128, length: u128) {
+    //     // !!!cmk put this shortcut back?
+    //     // if self._items.len() == 0 {
+    //     //     self._items.insert(start, length);
+    //     //     return;
+    //     // }
 
-        // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
-        // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-        // !!!cmk rename index to "range"
-        let range = self._items.range(..start);
-        let mut peekable_forward = range.clone().peekable();
-        let peek_forward = peekable_forward.peek();
-        let mut peekable_backwards = range.rev().peekable();
-        let peek_backwards = peekable_backwards.peek();
-        if let Some(peek_forward) = peek_forward {
-            let mut peek_forward = *peek_forward;
-            if *peek_forward.0 == start {
-                if length > *peek_forward.1 {
-                    peek_forward.1 = &length;
-                    // previous_range = peek_forward;
-                    // peek_forward = peekable_forward.next(); // index should point to the following range for the remainder of this method
-                    todo!()
-                } else {
-                    todo!();
-                }
-            }
-        } else {
-            println!("self._items.insert(start, length);");
-            if let Some(previous_range) = peek_backwards {
-                // nothing
-            } else {
-                return;
-            }
-        }
+    //     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
+    //     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
+    //     // !!!cmk rename index to "range"
+    //     let range = self._items.range(..start);
+    //     let mut peekable_forward = range.clone().peekable();
+    //     let peek_forward = peekable_forward.peek();
+    //     let mut peekable_backwards = range.rev().peekable();
+    //     let peek_backwards = peekable_backwards.peek();
+    //     if let Some(peek_forward) = peek_forward {
+    //         let mut peek_forward = *peek_forward;
+    //         if *peek_forward.0 == start {
+    //             if length > *peek_forward.1 {
+    //                 peek_forward.1 = &length;
+    //                 // previous_range = peek_forward;
+    //                 // peek_forward = peekable_forward.next(); // index should point to the following range for the remainder of this method
+    //                 todo!()
+    //             } else {
+    //                 todo!();
+    //             }
+    //         }
+    //     } else {
+    //         println!("self._items.insert(start, length);");
+    //         if let Some(previous_range) = peek_backwards {
+    //             // nothing
+    //         } else {
+    //             return;
+    //         }
+    //     }
 
-        todo!();
-        //             return;
-        //         }
-        //     } else if index == 0 {
-        //         self._items.insert(index, RangeX { start, length });
-        //         previous_index = index;
-        //         index += 1 // index_of_miss should point to the following range for the remainder of this method
-        //     } else {
-        //         previous_index = index - 1;
-        //         let previous_range: &mut RangeX = &mut self._items[previous_index];
+    //     todo!();
+    //     //             return;
+    //     //         }
+    //     //     } else if index == 0 {
+    //     //         self._items.insert(index, RangeX { start, length });
+    //     //         previous_index = index;
+    //     //         index += 1 // index_of_miss should point to the following range for the remainder of this method
+    //     //     } else {
+    //     //         previous_index = index - 1;
+    //     //         let previous_range: &mut RangeX = &mut self._items[previous_index];
 
-        //         if previous_range.end() >= start {
-        //             let new_length = start + length - previous_range.start;
-        //             if new_length <= previous_range.length {
-        //                 return;
-        //             } else {
-        //                 previous_range.length = new_length;
-        //             }
-        //         } else {
-        //             // after previous range, not contiguous with previous range
-        //             self._items.insert(index, RangeX { start, length });
-        //             previous_index = index;
-        //             index += 1;
-        //         }
-        //     }
-        // }
+    //     //         if previous_range.end() >= start {
+    //     //             let new_length = start + length - previous_range.start;
+    //     //             if new_length <= previous_range.length {
+    //     //                 return;
+    //     //             } else {
+    //     //                 previous_range.length = new_length;
+    //     //             }
+    //     //         } else {
+    //     //             // after previous range, not contiguous with previous range
+    //     //             self._items.insert(index, RangeX { start, length });
+    //     //             previous_index = index;
+    //     //             index += 1;
+    //     //         }
+    //     //     }
+    //     // }
 
-        // let previous_range: &RangeX = &self._items[previous_index];
-        // let previous_end = previous_range.end();
-        // while index < self._items.len() {
-        //     let range: &RangeX = &self._items[index];
-        //     if previous_end < range.start {
-        //         break;
-        //     }
-        //     let range_end = range.end();
-        //     if previous_end < range_end {
-        //         self._items[previous_index].length = range_end - previous_range.start;
-        //         index += 1;
-        //         break;
-        //     }
-        //     index += 1;
-        // }
-        // self._items.drain(previous_index + 1..index);
-    }
+    //     // let previous_range: &RangeX = &self._items[previous_index];
+    //     // let previous_end = previous_range.end();
+    //     // while index < self._items.len() {
+    //     //     let range: &RangeX = &self._items[index];
+    //     //     if previous_end < range.start {
+    //     //         break;
+    //     //     }
+    //     //     let range_end = range.end();
+    //     //     if previous_end < range_end {
+    //     //         self._items[previous_index].length = range_end - previous_range.start;
+    //     //         index += 1;
+    //     //         break;
+    //     //     }
+    //     //     index += 1;
+    //     // }
+    //     // self._items.drain(previous_index + 1..index);
+    // }
 }
