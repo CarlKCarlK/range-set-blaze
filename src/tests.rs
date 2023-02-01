@@ -8,6 +8,16 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 // use thousands::Separable;
 
 #[test]
+fn repro_bit_and() {
+    let a = RangeSetInt::from([1, 2, 3]);
+    let b = RangeSetInt::from([2, 3, 4]);
+
+    let result = &a & &b;
+    println!("{result}");
+    assert_eq!(result, RangeSetInt::from([2, 3]));
+}
+
+#[test]
 fn repro1() {
     let mut range_set_int = RangeSetInt::<i8>::from("20..22,24..25,25..30");
     range_set_int.internal_add(25, 26);
@@ -37,8 +47,8 @@ fn doctest1() {
 #[test]
 fn doctest2() {
     let set = RangeSetInt::<u128>::from([1, 2, 3]);
-    assert_eq!(set.contains(1), true);
-    assert_eq!(set.contains(4), false);
+    assert!(set.contains(1));
+    assert!(!set.contains(4));
 }
 
 #[test]
@@ -57,6 +67,15 @@ fn doctest3() {
     assert!(a.contains(4));
     assert!(a.contains(5));
 }
+
+#[test]
+fn doctest4() {
+    let a = RangeSetInt::<i8>::from([1, 2, 3]);
+
+    let result = !&a;
+    assert_eq!(result.to_string(), "-128..1,4..127");
+}
+
 #[test]
 fn compare() {
     let mut btree_set = BTreeSet::<u128>::new();

@@ -19,11 +19,13 @@
 mod tests;
 
 use itertools::Itertools;
+use num_traits::ToPrimitive;
 use std::cmp::max;
+use std::collections::btree_map::Range;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
-use std::ops::{BitOr, Sub};
+use std::ops::{BitAnd, BitOr, Not, Sub};
 use std::str::FromStr;
 use trait_set::trait_set;
 
@@ -36,7 +38,10 @@ trait_set! {
     + std::iter::Sum
     + num_traits::NumAssignOps
     + FromStr
-    + Copy;
+    + Copy
+    + num_traits::Bounded
+    + num_traits::NumCast
+    ;
 }
 
 pub fn test_me<T>(i: T)
@@ -58,23 +63,36 @@ pub fn fmt<T: Integer>(items: &BTreeMap<T, T>) -> String {
 }
 
 /// !!! cmk understand this
-fn len_slow<T: Integer>(items: &BTreeMap<T, T>) -> T
+fn len_slow<T: Integer>(items: &BTreeMap<T, T>) -> u128
 where
     for<'a> &'a T: Sub<&'a T, Output = T>,
 {
-    items.iter().map(|(start, end)| end - start).sum()
+    items
+        .iter()
+        .map(|(start, end)| safe_subtract(*end, *start))
+        .sum()
 }
 
-pub fn internal_add<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut T, start: T, end: T) {
+// !!!cmk 0
+pub fn safe_subtract<T: Integer>(a: T, b: T) -> u128 {
+    (a.to_i128().unwrap() - b.to_i128().unwrap())
+        .to_u128()
+        .unwrap()
+}
+
+pub fn internal_add<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut u128, start: T, end: T) {
+    if start == end {
+        return;
+    }
     assert!(start < end); // !!!cmk check that length is not zero
                           // !!! cmk would be nice to have a partition_point function that returns two iterators
     let mut before = items.range_mut(..=start).rev();
     if let Some((start_before, end_before)) = before.next() {
         if *end_before < start {
             insert(items, len, start, end);
-            *len += end - start;
+            *len += safe_subtract(end, start);
         } else if *end_before < end {
-            *len += end - *end_before;
+            *len += safe_subtract(end, *end_before);
             *end_before = end;
             let start_before = *start_before;
             delete_extra(items, len, start_before, end);
@@ -83,11 +101,12 @@ pub fn internal_add<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut T, start: 
         }
     } else {
         insert(items, len, start, end);
-        *len += end - start;
+        // !!!cmk 0
+        *len += safe_subtract(end, start);
     }
 }
 
-fn delete_extra<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut T, start: T, end: T) {
+fn delete_extra<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut u128, start: T, end: T) {
     let mut after = items.range_mut(start..);
     let (start_after, start_end) = after.next().unwrap(); // !!! cmk assert that there is a next
     assert!(start == *start_after && end == *start_end); // !!! cmk real assert
@@ -97,7 +116,7 @@ fn delete_extra<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut T, start: T, e
         .map_while(|(start_delete, end_delete)| {
             if *start_delete <= end {
                 end_new = max(end_new, *end_delete);
-                *len -= *end_delete - *start_delete;
+                *len -= safe_subtract(*end_delete, *start_delete);
                 Some(*start_delete)
             } else {
                 None
@@ -105,14 +124,14 @@ fn delete_extra<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut T, start: T, e
         })
         .collect::<Vec<_>>();
     if end_new > end {
-        *len += end_new - end;
+        *len += safe_subtract(end_new, end);
         *start_end = end_new;
     }
     for start in delete_list {
         items.remove(&start);
     }
 }
-fn insert<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut T, start: T, end: T) {
+fn insert<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut u128, start: T, end: T) {
     let was_there = items.insert(start, end);
     assert!(was_there.is_none());
     // !!!cmk real assert
@@ -124,7 +143,7 @@ fn insert<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut T, start: T, end: T)
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RangeSetInt<T: Integer> {
-    len: T,
+    len: u128,
     items: BTreeMap<T, T>,
 }
 
@@ -166,21 +185,21 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn new() -> RangeSetInt<T> {
         RangeSetInt {
             items: BTreeMap::new(),
-            len: T::zero(),
+            len: 0,
         }
     }
 
     pub fn clear(&mut self) {
         self.items.clear();
-        self.len = T::zero();
+        self.len = 0;
     }
 
     // !!!cmk keep this in a field
-    pub fn len(&self) -> T {
+    pub fn len(&self) -> u128 {
         self.len
     }
 
-    fn len_slow(&self) -> T
+    fn len_slow(&self) -> u128
     where
         for<'a> &'a T: Sub<&'a T, Output = T>,
     {
@@ -265,30 +284,54 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     }
 }
 
-// // !!! cmk
-// // impl<T: Ord + Clone, A: Allocator + Clone> BitAnd<&BTreeSet<T, A>> for &BTreeSet<T, A> {
-// //     type Output = BTreeSet<T, A>;
+impl<T: Integer> Not for &RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
 
-// //     /// Returns the intersection of `self` and `rhs` as a new `BTreeSet<T>`.
-// //     ///
-// //     /// # Examples
-// //     ///
-// //     /// ```
-// //     /// use std::collections::BTreeSet;
-// //     ///
-// //     /// let a = BTreeSet::from([1, 2, 3]);
-// //     /// let b = BTreeSet::from([2, 3, 4]);
-// //     ///
-// //     /// let result = &a & &b;
-// //     /// assert_eq!(result, BTreeSet::from([2, 3]));
-// //     /// ```
-// //     fn bitand(self, rhs: &BTreeSet<T, A>) -> BTreeSet<T, A> {
-// //         BTreeSet::from_sorted_iter(
-// //             self.intersection(rhs).cloned(),
-// //             ManuallyDrop::into_inner(self.map.alloc.clone()),
-// //         )
-// //     }
-// // }
+    /// Returns the complement of `self` as a new `RangeSetInt`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::<i8>::from([1, 2, 3]);
+    ///
+    /// let result = ! &a;
+    /// assert_eq!(result.to_string(), "-128..1,4..127");
+    /// ```
+    fn not(self) -> RangeSetInt<T> {
+        let mut result = RangeSetInt::new();
+        let mut start_not = T::min_value();
+        for (start, end) in self.items.iter() {
+            result.internal_add(start_not, *start);
+            start_not = *end;
+        }
+        result.internal_add(start_not, T::max_value());
+        result
+    }
+}
+
+impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
+
+    /// Returns the intersection of `self` and `rhs` as a new `BTreeSet<T>`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([2, 3, 4]);
+    ///
+    /// let result = &a & &b;
+    /// assert_eq!(result, RangeSetInt::from([2, 3]));
+    /// ```
+    fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
+        !&(&(!self) | &(!rhs))
+        // !!!cmk would be nice if it didn't allocate a new RangeSetInt for each operation
+    }
+}
 
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     fn from(arr: [T; N]) -> Self {
