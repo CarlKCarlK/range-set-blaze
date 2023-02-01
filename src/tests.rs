@@ -5,14 +5,22 @@ use std::collections::BTreeSet;
 use super::*;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use thousands::Separable;
+// use thousands::Separable;
 
 #[test]
 fn repro1() {
-    let mut range_set_int = RangeSetInt::<u128>::from("20..22,24..25,25..30");
+    let mut range_set_int = RangeSetInt::<i8>::from("20..22,24..25,25..30");
     range_set_int.internal_add(25, 26);
     println!("{range_set_int}");
     assert!(range_set_int.to_string() == "20..22,24..30");
+}
+
+#[test]
+fn repro2() {
+    let mut range_set_int = RangeSetInt::<i8>::from([-8, 8, -2, -1, 3, 2]);
+    range_set_int.internal_add(25, 26);
+    println!("{range_set_int}");
+    assert!(range_set_int.to_string() == "-8..-7,-2..0,2..4,8..9,25..26");
 }
 
 #[test]

@@ -25,18 +25,29 @@ use std::convert::From;
 use std::fmt;
 use std::ops::{BitOr, Sub};
 use std::str::FromStr;
+use trait_set::trait_set;
 
-trait Integer:
+trait_set! {
+    pub trait Integer =
     num_integer::Integer
+    + FromStr
     + fmt::Display
     + fmt::Debug
     + std::iter::Sum
-    + num_traits::Num
-    + num_traits::NumRef
-    + num_traits::NumOps
     + num_traits::NumAssignOps
     + FromStr
+    + Copy;
+}
+
+pub fn test_me<T>(i: T)
+where
+    T: Integer,
 {
+    let _j = i;
+}
+
+pub fn test_me_i32(i: i32) {
+    test_me(i);
 }
 
 pub fn fmt<T: Integer>(items: &BTreeMap<T, T>) -> String {
@@ -114,14 +125,19 @@ fn insert<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut T, start: T, end: T)
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RangeSetInt<T: Integer> {
     len: T,
-    items: BTreeMap<T, T>, // !!!cmk usize?
+    items: BTreeMap<T, T>,
 }
 
 // !!!cmk support =, and single numbers
 // !!!cmk error to use -
 // !!!cmk are the unwraps OK?
 // !!!cmk what about bad input?
-impl<T: Integer> From<&str> for RangeSetInt<T> {
+
+impl<T: Integer> From<&str> for RangeSetInt<T>
+where
+    // !!! cmk understand this
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
     fn from(s: &str) -> Self {
         let mut result = RangeSetInt::new();
         for range in s.split(',') {
@@ -222,23 +238,6 @@ impl<T: Integer> RangeSetInt<T> {
     fn internal_add(&mut self, start: T, end: T) {
         internal_add(&mut self.items, &mut self.len, start, end);
     }
-
-    //     // let previous_end = previous_range.end();
-    //     // while index < self._items.len() {
-    //     //     let range: &RangeX = &self._items[index];
-    //     //     if previous_end < range.start {
-    //     //         break;
-    //     //     }
-    //     //     let range_end = range.end();
-    //     //     if previous_end < range_end {
-    //     //         self._items[previous_index].length = range_end - previous_range.start;
-    //     //         index += 1;
-    //     //         break;
-    //     //     }
-    //     //     index += 1;
-    //     // }
-    //     // self._items.drain(previous_index + 1..index);
-    // }
 }
 
 impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
@@ -266,30 +265,30 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     }
 }
 
-// !!! cmk
-// impl<T: Ord + Clone, A: Allocator + Clone> BitAnd<&BTreeSet<T, A>> for &BTreeSet<T, A> {
-//     type Output = BTreeSet<T, A>;
+// // !!! cmk
+// // impl<T: Ord + Clone, A: Allocator + Clone> BitAnd<&BTreeSet<T, A>> for &BTreeSet<T, A> {
+// //     type Output = BTreeSet<T, A>;
 
-//     /// Returns the intersection of `self` and `rhs` as a new `BTreeSet<T>`.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use std::collections::BTreeSet;
-//     ///
-//     /// let a = BTreeSet::from([1, 2, 3]);
-//     /// let b = BTreeSet::from([2, 3, 4]);
-//     ///
-//     /// let result = &a & &b;
-//     /// assert_eq!(result, BTreeSet::from([2, 3]));
-//     /// ```
-//     fn bitand(self, rhs: &BTreeSet<T, A>) -> BTreeSet<T, A> {
-//         BTreeSet::from_sorted_iter(
-//             self.intersection(rhs).cloned(),
-//             ManuallyDrop::into_inner(self.map.alloc.clone()),
-//         )
-//     }
-// }
+// //     /// Returns the intersection of `self` and `rhs` as a new `BTreeSet<T>`.
+// //     ///
+// //     /// # Examples
+// //     ///
+// //     /// ```
+// //     /// use std::collections::BTreeSet;
+// //     ///
+// //     /// let a = BTreeSet::from([1, 2, 3]);
+// //     /// let b = BTreeSet::from([2, 3, 4]);
+// //     ///
+// //     /// let result = &a & &b;
+// //     /// assert_eq!(result, BTreeSet::from([2, 3]));
+// //     /// ```
+// //     fn bitand(self, rhs: &BTreeSet<T, A>) -> BTreeSet<T, A> {
+// //         BTreeSet::from_sorted_iter(
+// //             self.intersection(rhs).cloned(),
+// //             ManuallyDrop::into_inner(self.map.alloc.clone()),
+// //         )
+// //     }
+// // }
 
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     fn from(arr: [T; N]) -> Self {
@@ -319,14 +318,16 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     /// ```
     fn into_iter(self) -> IntoIter<T> {
         IntoIter {
-            item_iter: T::zero()..T::zero(),
+            start: T::zero(),
+            end: T::zero(),
             range_iter: self.items.into_iter(),
         }
     }
 }
 
 pub struct IntoIter<T: Integer> {
-    item_iter: core::ops::Range<T>,
+    start: T,
+    end: T,
     range_iter: std::collections::btree_map::IntoIter<T, T>,
 }
 
@@ -334,11 +335,14 @@ impl<T: Integer> Iterator for IntoIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(item) = self.item_iter.next() {
-            return Some(item);
+        if self.start < self.end {
+            let result = self.start;
+            self.start += T::one();
+            return Some(result);
         }
         if let Some((start, end)) = self.range_iter.next() {
-            self.item_iter = start..end;
+            self.start = start;
+            self.end = end;
             return self.next();
         }
         None
