@@ -125,29 +125,29 @@ use syntactic_for::syntactic_for;
 //     assert!(string == "1,3");
 // }
 
-// #[test]
-// fn demo_c1() {
-//     // before_or_equal_exists	1
-//     // equal?	0
-//     // is_included	0
-//     //     INSERT
-//     let mut range_set_int = RangeSetInt::<u64>::from("10..11");
-//     range_set_int.internal_add(12, 13, false);
-//     assert!(range_set_int.to_string() == *"10..11,12..13");
-//     assert!(range_set_int.len_slow() == range_set_int.len());
-// }
+#[test]
+fn demo_c1() {
+    // before_or_equal_exists	1
+    // equal?	0
+    // is_included	0
+    //     INSERT
+    let mut range_set_int = RangeSetInt::<u8>::from("10..=10");
+    range_set_int.internal_add(12, 12);
+    assert!(range_set_int.to_string() == "10..=10,12..=12");
+    assert!(range_set_int.len_slow() == range_set_int.len());
+}
 
-// #[test]
-// fn demo_c2() {
-//     // before_or_equal_exists	1
-//     // equal?	0
-//     // is_included	0
-//     //     INSERT
-//     let mut range_set_int = RangeSetInt::<u64>::from("10..11,13..14");
-//     range_set_int.internal_add(12, 13, false);
-//     assert!(range_set_int.to_string() == *"10..11,12..14");
-//     assert!(range_set_int.len_slow() == range_set_int.len());
-// }
+#[test]
+fn demo_c2() {
+    // before_or_equal_exists	1
+    // equal?	0
+    // is_included	0
+    //     INSERT
+    let mut range_set_int = RangeSetInt::<u8>::from("10..=10,13..=13");
+    range_set_int.internal_add(12, 12);
+    assert!(range_set_int.to_string() == "10..=10,12..=13");
+    assert!(range_set_int.len_slow() == range_set_int.len());
+}
 
 #[test]
 fn demo_f1() {
