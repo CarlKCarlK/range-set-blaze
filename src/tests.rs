@@ -9,7 +9,7 @@ use syntactic_for::syntactic_for;
 // use thousands::Separable;
 
 #[test]
-fn test_sub() {
+fn sub() {
     for start in i8::MIN..i8::MAX {
         for end in start..i8::MAX {
             let diff = i8::safe_subtract(end, start);
@@ -17,6 +17,17 @@ fn test_sub() {
             assert_eq!(diff as i16, diff2);
         }
     }
+    for start in u8::MIN..u8::MAX {
+        for end in start..u8::MAX {
+            let diff = u8::safe_subtract(end, start);
+            let diff2 = (end as i16) - (start as i16);
+            assert_eq!(diff as i16, diff2);
+        }
+    }
+
+    let before = 127i8.overflowing_sub(-128i8).0;
+    let after = before as u8;
+    println!("before: {before}, after: {after}");
 }
 
 #[test]

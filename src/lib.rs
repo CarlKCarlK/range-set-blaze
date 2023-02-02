@@ -19,6 +19,9 @@
 mod tests;
 
 use itertools::Itertools;
+use num_traits::ops;
+use num_traits::ops::overflowing::OverflowingSub;
+use num_traits::PrimInt;
 use num_traits::ToPrimitive;
 use num_traits::Zero;
 use std::cmp::max;
@@ -43,10 +46,11 @@ trait_set! {
     + num_traits::Bounded
     + num_traits::NumCast
     + SafeSubtract
+    + num_traits::ops::overflowing::OverflowingSub
     ;
 }
 
-pub trait SafeSubtract {
+pub trait SafeSubtract: num_traits::ops::overflowing::OverflowingSub {
     // type Upscale;
     type Output: std::hash::Hash
         + num_integer::Integer
@@ -60,74 +64,62 @@ pub trait SafeSubtract {
         + Default;
     // !!!cmk 0
     // !!!cmk inline?
-    fn safe_subtract(a: Self, b: Self) -> Self::Output;
+    fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output;
 }
 
 impl SafeSubtract for i8 {
     type Output = u8;
-    fn safe_subtract(a: Self, b: Self) -> Self::Output {
-        let (result, did_overflow) = a.overflowing_sub(b);
-        result as Self::Output
-        // if did_overflow {
-        //     (result as Self::Output).wrapping_sub(0)
-        // } else {
-        //     result as Self::Output
-        // }
+    fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output
     }
 }
 
 impl SafeSubtract for u8 {
     type Output = u8;
-    fn safe_subtract(a: Self, b: Self) -> Self::Output {
+    fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a - b
     }
 }
 
 impl SafeSubtract for i16 {
     type Output = u16;
-    fn safe_subtract(a: Self, b: Self) -> Self::Output {
-        type Upscale = i32;
-        (<Upscale>::from(a) - <Upscale>::from(b)) as Self::Output
+    fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output
     }
 }
 
 impl SafeSubtract for u16 {
     type Output = u16;
-    fn safe_subtract(a: Self, b: Self) -> Self::Output {
-        type Upscale = u32;
-        (<Upscale>::from(a) - <Upscale>::from(b)) as Self::Output
+    fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a - b
     }
 }
 
 impl SafeSubtract for i32 {
     type Output = u32;
-    fn safe_subtract(a: Self, b: Self) -> Self::Output {
-        type Upscale = i64;
-        (<Upscale>::from(a) - <Upscale>::from(b)) as Self::Output
+    fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output
     }
 }
 
 impl SafeSubtract for u32 {
     type Output = u32;
-    fn safe_subtract(a: Self, b: Self) -> Self::Output {
-        type Upscale = u64;
-        (<Upscale>::from(a) - <Upscale>::from(b)) as Self::Output
+    fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a - b
     }
 }
 
 impl SafeSubtract for i64 {
     type Output = u64;
-    fn safe_subtract(a: Self, b: Self) -> Self::Output {
-        type Upscale = i128;
-        (<Upscale>::from(a) - <Upscale>::from(b)) as Self::Output
+    fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output
     }
 }
 
 impl SafeSubtract for u64 {
     type Output = u64;
-    fn safe_subtract(a: Self, b: Self) -> Self::Output {
-        type Upscale = u128;
-        (<Upscale>::from(a) - <Upscale>::from(b)) as Self::Output
+    fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a - b
     }
 }
 
@@ -313,8 +305,8 @@ impl<T: Integer> RangeSetInt<T> {
     ///
     /// a.append(&mut b);
     ///
-    /// assert_eq!(a.len(), 5u64);
-    /// assert_eq!(b.len(), 0u64);
+    /// assert_eq!(a.len(), 5u32);
+    /// assert_eq!(b.len(), 0u32);
     ///
     /// assert!(a.contains(1));
     /// assert!(a.contains(2));
