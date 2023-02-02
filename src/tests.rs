@@ -9,6 +9,17 @@ use syntactic_for::syntactic_for;
 // use thousands::Separable;
 
 #[test]
+fn test_sub() {
+    for start in i8::MIN..i8::MAX {
+        for end in start..i8::MAX {
+            let diff = i8::safe_subtract(end, start);
+            let diff2 = (end as i16) - (start as i16);
+            assert_eq!(diff as i16, diff2);
+        }
+    }
+}
+
+#[test]
 fn complement() {
     syntactic_for! { ty in [i8, u8, i16, u16, i32, u32, i64, u64 ] { // , isize, usize, i128, u128,
         $(

@@ -66,16 +66,20 @@ pub trait SafeSubtract {
 impl SafeSubtract for i8 {
     type Output = u8;
     fn safe_subtract(a: Self, b: Self) -> Self::Output {
-        type Upscale = i16;
-        (<Upscale>::from(a) - <Upscale>::from(b)) as Self::Output
+        let (result, did_overflow) = a.overflowing_sub(b);
+        result as Self::Output
+        // if did_overflow {
+        //     (result as Self::Output).wrapping_sub(0)
+        // } else {
+        //     result as Self::Output
+        // }
     }
 }
 
 impl SafeSubtract for u8 {
     type Output = u8;
     fn safe_subtract(a: Self, b: Self) -> Self::Output {
-        type Upscale = u16;
-        (<Upscale>::from(a) - <Upscale>::from(b)) as Self::Output
+        a - b
     }
 }
 
