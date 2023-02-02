@@ -46,11 +46,10 @@ trait_set! {
     + num_traits::Bounded
     + num_traits::NumCast
     + SafeSubtract
-    + num_traits::ops::overflowing::OverflowingSub
     ;
 }
 
-pub trait SafeSubtract: num_traits::ops::overflowing::OverflowingSub {
+pub trait SafeSubtract {
     // type Upscale;
     type Output: std::hash::Hash
         + num_integer::Integer
@@ -118,6 +117,34 @@ impl SafeSubtract for i64 {
 
 impl SafeSubtract for u64 {
     type Output = u64;
+    fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a - b
+    }
+}
+
+impl SafeSubtract for isize {
+    type Output = usize;
+    fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output
+    }
+}
+
+impl SafeSubtract for usize {
+    type Output = usize;
+    fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a - b
+    }
+}
+
+impl SafeSubtract for i128 {
+    type Output = u128;
+    fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output
+    }
+}
+
+impl SafeSubtract for u128 {
+    type Output = u128;
     fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a - b
     }
