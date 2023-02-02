@@ -65,7 +65,7 @@ pub trait SafeSubtract {
 
 impl SafeSubtract for i8 {
     type Upscale = i16;
-    type Output = u16;
+    type Output = u8;
     fn safe_subtract(a: Self, b: Self) -> Self::Output {
         (<Self::Upscale>::from(a) - <Self::Upscale>::from(b)) as Self::Output
     }
@@ -73,15 +73,15 @@ impl SafeSubtract for i8 {
 
 impl SafeSubtract for u8 {
     type Upscale = u16;
-    type Output = u16;
+    type Output = u8;
     fn safe_subtract(a: Self, b: Self) -> Self::Output {
-        <Self::Upscale>::from(a) - <Self::Upscale>::from(b)
+        (<Self::Upscale>::from(a) - <Self::Upscale>::from(b)) as Self::Output
     }
 }
 
 impl SafeSubtract for i16 {
     type Upscale = i32;
-    type Output = u32;
+    type Output = u16;
     fn safe_subtract(a: Self, b: Self) -> Self::Output {
         (<Self::Upscale>::from(a) - <Self::Upscale>::from(b)) as Self::Output
     }
@@ -89,15 +89,15 @@ impl SafeSubtract for i16 {
 
 impl SafeSubtract for u16 {
     type Upscale = u32;
-    type Output = u32;
+    type Output = u16;
     fn safe_subtract(a: Self, b: Self) -> Self::Output {
-        <Self::Upscale>::from(a) - <Self::Upscale>::from(b)
+        (<Self::Upscale>::from(a) - <Self::Upscale>::from(b)) as Self::Output
     }
 }
 
 impl SafeSubtract for i32 {
     type Upscale = i64;
-    type Output = u64;
+    type Output = u32;
     fn safe_subtract(a: Self, b: Self) -> Self::Output {
         (<Self::Upscale>::from(a) - <Self::Upscale>::from(b)) as Self::Output
     }
@@ -105,15 +105,15 @@ impl SafeSubtract for i32 {
 
 impl SafeSubtract for u32 {
     type Upscale = u64;
-    type Output = u64;
+    type Output = u32;
     fn safe_subtract(a: Self, b: Self) -> Self::Output {
-        <Self::Upscale>::from(a) - <Self::Upscale>::from(b)
+        (<Self::Upscale>::from(a) - <Self::Upscale>::from(b)) as Self::Output
     }
 }
 
 impl SafeSubtract for i64 {
     type Upscale = i128;
-    type Output = u128;
+    type Output = u64;
     fn safe_subtract(a: Self, b: Self) -> Self::Output {
         (<Self::Upscale>::from(a) - <Self::Upscale>::from(b)) as Self::Output
     }
@@ -121,9 +121,9 @@ impl SafeSubtract for i64 {
 
 impl SafeSubtract for u64 {
     type Upscale = u128;
-    type Output = u128;
+    type Output = u64;
     fn safe_subtract(a: Self, b: Self) -> Self::Output {
-        <Self::Upscale>::from(a) - <Self::Upscale>::from(b)
+        (<Self::Upscale>::from(a) - <Self::Upscale>::from(b)) as Self::Output
     }
 }
 
