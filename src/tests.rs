@@ -5,7 +5,19 @@ use std::collections::BTreeSet;
 use super::*;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
+use syntactic_for::syntactic_for;
 // use thousands::Separable;
+
+#[test]
+fn complement() {
+    syntactic_for! { ty in [i8, u8, i16, u16, i32, u32, i64, u64 ] { // , isize, usize, i128, u128,
+        $(
+        let empty = RangeSetInt::<$ty>::new();
+        let full = !&empty;
+        println!("empty: {empty}, full: {full}");
+        )*
+    }};
+}
 
 #[test]
 fn repro_bit_and() {
@@ -37,24 +49,24 @@ fn repro2() {
 fn doctest1() {
     // use rangeset_int::RangeSetInt;
 
-    let a = RangeSetInt::<u128>::from([1, 2, 3]);
-    let b = RangeSetInt::<u128>::from([3, 4, 5]);
+    let a = RangeSetInt::<u64>::from([1, 2, 3]);
+    let b = RangeSetInt::<u64>::from([3, 4, 5]);
 
     let result = &a | &b;
-    assert_eq!(result, RangeSetInt::<u128>::from([1, 2, 3, 4, 5]));
+    assert_eq!(result, RangeSetInt::<u64>::from([1, 2, 3, 4, 5]));
 }
 
 #[test]
 fn doctest2() {
-    let set = RangeSetInt::<u128>::from([1, 2, 3]);
+    let set = RangeSetInt::<u64>::from([1, 2, 3]);
     assert!(set.contains(1));
     assert!(!set.contains(4));
 }
 
 #[test]
 fn doctest3() {
-    let mut a = RangeSetInt::<u128>::from("1..4");
-    let mut b = RangeSetInt::<u128>::from("3..6");
+    let mut a = RangeSetInt::<u64>::from("1..4");
+    let mut b = RangeSetInt::<u64>::from("3..6");
 
     a.append(&mut b);
 
@@ -92,7 +104,7 @@ fn demo_c1() {
     // equal?	0
     // is_included	0
     //     INSERT
-    let mut range_set_int = RangeSetInt::<u128>::from("10..11");
+    let mut range_set_int = RangeSetInt::<u64>::from("10..11");
     range_set_int.internal_add(12, 13);
     assert!(range_set_int.to_string() == *"10..11,12..13");
     assert!(range_set_int.len_slow() == range_set_int.len());
@@ -104,7 +116,7 @@ fn demo_c2() {
     // equal?	0
     // is_included	0
     //     INSERT
-    let mut range_set_int = RangeSetInt::<u128>::from("10..11,13..14");
+    let mut range_set_int = RangeSetInt::<u64>::from("10..11,13..14");
     range_set_int.internal_add(12, 13);
     assert!(range_set_int.to_string() == *"10..11,12..14");
     assert!(range_set_int.len_slow() == range_set_int.len());
@@ -115,7 +127,7 @@ fn demo_f1() {
     // before_or_equal_exists	0
     //     INSERT, etc
 
-    let mut range_set_int = RangeSetInt::<u128>::from("11..16,22..27");
+    let mut range_set_int = RangeSetInt::<u64>::from("11..16,22..27");
     range_set_int.internal_add(10, 11);
     assert!(range_set_int.to_string() == *"10..16,22..27");
     assert!(range_set_int.len_slow() == range_set_int.len());
@@ -129,7 +141,7 @@ fn demo_d1() {
     // fits?	1
     //     DONE
 
-    let mut range_set_int = RangeSetInt::<u128>::from("10..15");
+    let mut range_set_int = RangeSetInt::<u64>::from("10..15");
     range_set_int.internal_add(10, 11);
     assert!(range_set_int.to_string() == *"10..15");
     assert!(range_set_int.len_slow() == range_set_int.len());
@@ -144,7 +156,7 @@ fn demo_e1() {
     // next?    0
     //     DONE
 
-    let mut range_set_int = RangeSetInt::<u128>::from("10..15,16..17");
+    let mut range_set_int = RangeSetInt::<u64>::from("10..15,16..17");
     range_set_int.internal_add(10, 20);
     assert!(range_set_int.to_string() == *"10..20");
     assert!(range_set_int.len_slow() == range_set_int.len());
@@ -159,7 +171,7 @@ fn demo_b1() {
     // next?    0
     //     DONE
 
-    let mut range_set_int = RangeSetInt::<u128>::from("10..15");
+    let mut range_set_int = RangeSetInt::<u64>::from("10..15");
     range_set_int.internal_add(12, 18);
     assert!(range_set_int.to_string() == *"10..18");
     assert!(range_set_int.len_slow() == range_set_int.len());
@@ -175,7 +187,7 @@ fn demo_b2() {
     // delete how many? 1
     //     DONE
 
-    let mut range_set_int = RangeSetInt::<u128>::from("10..15,16..17");
+    let mut range_set_int = RangeSetInt::<u64>::from("10..15,16..17");
     range_set_int.internal_add(12, 18);
     assert!(range_set_int.to_string() == *"10..18");
     assert!(range_set_int.len_slow() == range_set_int.len());
@@ -191,7 +203,7 @@ fn demo_b3() {
     // delete how many? 0
     //     DONE
 
-    let mut range_set_int = RangeSetInt::<u128>::from("10..15,160..161");
+    let mut range_set_int = RangeSetInt::<u64>::from("10..15,160..161");
     range_set_int.internal_add(12, 18);
     assert!(range_set_int.to_string() == *"10..18,160..161");
     assert!(range_set_int.len_slow() == range_set_int.len());
@@ -204,7 +216,7 @@ fn demo_a() {
     // is_included	1
     // fits?	1
     //     DONE
-    let mut range_set_int = RangeSetInt::<u128>::from("10..15");
+    let mut range_set_int = RangeSetInt::<u64>::from("10..15");
     range_set_int.internal_add(12, 13);
     assert!(range_set_int.to_string() == *"10..15");
     assert!(range_set_int.len_slow() == range_set_int.len());

@@ -20,11 +20,12 @@ mod tests;
 
 use itertools::Itertools;
 use num_traits::ToPrimitive;
+use num_traits::Zero;
 use std::cmp::max;
 use std::collections::btree_map::Range;
 use std::collections::BTreeMap;
 use std::convert::From;
-use std::fmt;
+use std::fmt::{self, Debug};
 use std::ops::{BitAnd, BitOr, Not, Sub};
 use std::str::FromStr;
 use trait_set::trait_set;
@@ -41,7 +42,104 @@ trait_set! {
     + Copy
     + num_traits::Bounded
     + num_traits::NumCast
+    + SafeSubtract
     ;
+}
+
+// pub fn safe_subtract<T: Integer>(a: T, b: T) -> <T as SafeSubtract>::Output
+// where
+//     T: Into<<T as SafeSubtract>::Upscale>,
+// {
+//     let a: <T as SafeSubtract>::Upscale = a.into();
+//     let b: <T as SafeSubtract>::Upscale = b.into();
+//     let diff: <T as SafeSubtract>::Upscale = a - b;
+//     let diff = <T as SafeSubtract>::Output::try_from(diff);
+//     let diff = diff.unwrap();
+//     diff
+//     // (a.to_i128().unwrap() - b.to_i128().unwrap())
+//     //     .to_u128()
+//     //     .unwrap()
+// }
+
+pub trait SafeSubtract {
+    type Upscale;
+    type Output: std::hash::Hash
+        + num_integer::Integer
+        + std::ops::AddAssign
+        + std::ops::SubAssign
+        + Clone
+        + PartialEq
+        + Eq
+        + PartialOrd
+        + Ord
+        + Default;
+    // !!!cmk 0
+    // !!!cmk inline?
+    fn safe_subtract(a: Self, b: Self) -> Self::Output;
+}
+
+impl SafeSubtract for i8 {
+    type Upscale = i16;
+    type Output = u16;
+    fn safe_subtract(a: Self, b: Self) -> Self::Output {
+        (<Self::Upscale>::from(a) - <Self::Upscale>::from(b)) as Self::Output
+    }
+}
+
+impl SafeSubtract for u8 {
+    type Upscale = u16;
+    type Output = u16;
+    fn safe_subtract(a: Self, b: Self) -> Self::Output {
+        <Self::Upscale>::from(a) - <Self::Upscale>::from(b)
+    }
+}
+
+impl SafeSubtract for i16 {
+    type Upscale = i32;
+    type Output = u32;
+    fn safe_subtract(a: Self, b: Self) -> Self::Output {
+        (<Self::Upscale>::from(a) - <Self::Upscale>::from(b)) as Self::Output
+    }
+}
+
+impl SafeSubtract for u16 {
+    type Upscale = u32;
+    type Output = u32;
+    fn safe_subtract(a: Self, b: Self) -> Self::Output {
+        <Self::Upscale>::from(a) - <Self::Upscale>::from(b)
+    }
+}
+
+impl SafeSubtract for i32 {
+    type Upscale = i64;
+    type Output = u64;
+    fn safe_subtract(a: Self, b: Self) -> Self::Output {
+        (<Self::Upscale>::from(a) - <Self::Upscale>::from(b)) as Self::Output
+    }
+}
+
+impl SafeSubtract for u32 {
+    type Upscale = u64;
+    type Output = u64;
+    fn safe_subtract(a: Self, b: Self) -> Self::Output {
+        <Self::Upscale>::from(a) - <Self::Upscale>::from(b)
+    }
+}
+
+impl SafeSubtract for i64 {
+    type Upscale = i128;
+    type Output = u128;
+    fn safe_subtract(a: Self, b: Self) -> Self::Output {
+        (<Self::Upscale>::from(a) - <Self::Upscale>::from(b)) as Self::Output
+    }
+}
+
+impl SafeSubtract for u64 {
+    type Upscale = u128;
+    type Output = u128;
+    fn safe_subtract(a: Self, b: Self) -> Self::Output {
+        <Self::Upscale>::from(a) - <Self::Upscale>::from(b)
+    }
 }
 
 pub fn test_me<T>(i: T)
@@ -63,24 +161,22 @@ pub fn fmt<T: Integer>(items: &BTreeMap<T, T>) -> String {
 }
 
 /// !!! cmk understand this
-fn len_slow<T: Integer>(items: &BTreeMap<T, T>) -> u128
+fn len_slow<T: Integer>(items: &BTreeMap<T, T>) -> <T as SafeSubtract>::Output
 where
     for<'a> &'a T: Sub<&'a T, Output = T>,
 {
-    items
-        .iter()
-        .map(|(start, end)| safe_subtract(*end, *start))
-        .sum()
+    items.iter().fold(
+        <T as SafeSubtract>::Output::default(),
+        |acc, (start, end)| acc + T::safe_subtract(*end, *start),
+    )
 }
 
-// !!!cmk 0
-pub fn safe_subtract<T: Integer>(a: T, b: T) -> u128 {
-    (a.to_i128().unwrap() - b.to_i128().unwrap())
-        .to_u128()
-        .unwrap()
-}
-
-pub fn internal_add<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut u128, start: T, end: T) {
+pub fn internal_add<T: Integer>(
+    items: &mut BTreeMap<T, T>,
+    len: &mut <T as SafeSubtract>::Output,
+    start: T,
+    end: T,
+) {
     if start == end {
         return;
     }
@@ -90,9 +186,9 @@ pub fn internal_add<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut u128, star
     if let Some((start_before, end_before)) = before.next() {
         if *end_before < start {
             insert(items, len, start, end);
-            *len += safe_subtract(end, start);
+            *len += T::safe_subtract(end, start);
         } else if *end_before < end {
-            *len += safe_subtract(end, *end_before);
+            *len += T::safe_subtract(end, *end_before);
             *end_before = end;
             let start_before = *start_before;
             delete_extra(items, len, start_before, end);
@@ -102,11 +198,16 @@ pub fn internal_add<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut u128, star
     } else {
         insert(items, len, start, end);
         // !!!cmk 0
-        *len += safe_subtract(end, start);
+        *len += T::safe_subtract(end, start);
     }
 }
 
-fn delete_extra<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut u128, start: T, end: T) {
+fn delete_extra<T: Integer>(
+    items: &mut BTreeMap<T, T>,
+    len: &mut <T as SafeSubtract>::Output,
+    start: T,
+    end: T,
+) {
     let mut after = items.range_mut(start..);
     let (start_after, start_end) = after.next().unwrap(); // !!! cmk assert that there is a next
     assert!(start == *start_after && end == *start_end); // !!! cmk real assert
@@ -116,7 +217,7 @@ fn delete_extra<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut u128, start: T
         .map_while(|(start_delete, end_delete)| {
             if *start_delete <= end {
                 end_new = max(end_new, *end_delete);
-                *len -= safe_subtract(*end_delete, *start_delete);
+                *len -= T::safe_subtract(*end_delete, *start_delete);
                 Some(*start_delete)
             } else {
                 None
@@ -124,14 +225,19 @@ fn delete_extra<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut u128, start: T
         })
         .collect::<Vec<_>>();
     if end_new > end {
-        *len += safe_subtract(end_new, end);
+        *len += T::safe_subtract(end_new, end);
         *start_end = end_new;
     }
     for start in delete_list {
         items.remove(&start);
     }
 }
-fn insert<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut u128, start: T, end: T) {
+fn insert<T: Integer>(
+    items: &mut BTreeMap<T, T>,
+    len: &mut <T as SafeSubtract>::Output,
+    start: T,
+    end: T,
+) {
     let was_there = items.insert(start, end);
     assert!(was_there.is_none());
     // !!!cmk real assert
@@ -143,7 +249,7 @@ fn insert<T: Integer>(items: &mut BTreeMap<T, T>, len: &mut u128, start: T, end:
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RangeSetInt<T: Integer> {
-    len: u128,
+    len: <T as SafeSubtract>::Output,
     items: BTreeMap<T, T>,
 }
 
@@ -185,21 +291,21 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn new() -> RangeSetInt<T> {
         RangeSetInt {
             items: BTreeMap::new(),
-            len: 0,
+            len: <T as SafeSubtract>::Output::zero(),
         }
     }
 
     pub fn clear(&mut self) {
         self.items.clear();
-        self.len = 0;
+        self.len = <T as SafeSubtract>::Output::zero();
     }
 
     // !!!cmk keep this in a field
-    pub fn len(&self) -> u128 {
-        self.len
+    pub fn len(&self) -> <T as SafeSubtract>::Output {
+        self.len.clone()
     }
 
-    fn len_slow(&self) -> u128
+    fn len_slow(&self) -> <T as SafeSubtract>::Output
     where
         for<'a> &'a T: Sub<&'a T, Output = T>,
     {
@@ -218,8 +324,8 @@ impl<T: Integer> RangeSetInt<T> {
     ///
     /// a.append(&mut b);
     ///
-    /// assert_eq!(a.len(), 5);
-    /// assert_eq!(b.len(), 0);
+    /// assert_eq!(a.len(), 5u64);
+    /// assert_eq!(b.len(), 0u64);
     ///
     /// assert!(a.contains(1));
     /// assert!(a.contains(2));

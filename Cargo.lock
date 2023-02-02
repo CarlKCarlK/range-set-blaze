@@ -127,6 +127,7 @@ dependencies = [
  "num-integer",
  "num-traits",
  "rand",
+ "syntactic-for",
  "thousands",
  "trait-set",
 ]
@@ -140,6 +141,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "syntactic-for"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a897d1a2219333b336dc5cac1b87935c4e18b0702676185ed3699255ad942757"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
