@@ -14,7 +14,7 @@ fn complement() {
         $(
         let empty = RangeSetInt::<$ty>::new();
         let full = !&empty;
-        println!("empty: {empty}, full: {full}");
+        println!("empty: {empty} (len {}), full: {full} (len {})", empty.len(), full.len());
         )*
     }};
 }

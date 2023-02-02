@@ -46,21 +46,6 @@ trait_set! {
     ;
 }
 
-// pub fn safe_subtract<T: Integer>(a: T, b: T) -> <T as SafeSubtract>::Output
-// where
-//     T: Into<<T as SafeSubtract>::Upscale>,
-// {
-//     let a: <T as SafeSubtract>::Upscale = a.into();
-//     let b: <T as SafeSubtract>::Upscale = b.into();
-//     let diff: <T as SafeSubtract>::Upscale = a - b;
-//     let diff = <T as SafeSubtract>::Output::try_from(diff);
-//     let diff = diff.unwrap();
-//     diff
-//     // (a.to_i128().unwrap() - b.to_i128().unwrap())
-//     //     .to_u128()
-//     //     .unwrap()
-// }
-
 pub trait SafeSubtract {
     type Upscale;
     type Output: std::hash::Hash
