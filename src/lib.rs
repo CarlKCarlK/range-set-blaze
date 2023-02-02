@@ -46,7 +46,7 @@ trait_set! {
     + num_traits::Bounded
     + num_traits::NumCast
     + SafeSubtractInclusive
-    + From<u128>
+    + TryFrom<u128>
     ;
 }
 
@@ -92,12 +92,22 @@ pub fn internal_add<T: Integer>(
     start: T,
     stop: u128,
 ) {
-    let stop_t: T = stop.into();
+    let stop_t = if let Ok(stop_t) = stop.try_into() {
+        stop_t
+    } else {
+        panic!("cmk");
+    };
     assert!(start <= stop_t); // !!!cmk check that length is not zero
                               // !!! cmk would be nice to have a partition_point function that returns two iterators
     let mut before = items.range_mut(..=start).rev();
     if let Some((start_before, stop_before)) = before.next() {
-        let stop_before_t: T = (*stop_before).into();
+        let stop_before_t: Result<T, _> = (*stop_before).try_into();
+        let stop_before_t = if let Ok(stop_before_t) = stop_before_t {
+            stop_before_t
+        } else {
+            panic!("cmk");
+        };
+
         // Must check this in two parts to avoid overflow
         if stop_before_t < start && stop_before_t + T::one() < start {
             insert(items, len, start, stop);
@@ -123,7 +133,12 @@ fn delete_extra<T: Integer>(
     start: T,
     stop: u128,
 ) {
-    let stop_t: T = stop.into();
+    let stop_t = if let Ok(stop_t) = stop.try_into() {
+        stop_t
+    } else {
+        panic!("cmk");
+    };
+
     let mut after = items.range_mut(start..);
     let (start_after, stop_after) = after.next().unwrap(); // !!! cmk assert that there is a next
     assert!(start == *start_after && stop == *stop_after); // !!! cmk real assert
@@ -131,7 +146,8 @@ fn delete_extra<T: Integer>(
     let mut stop_new = stop;
     let delete_list = after
         .map_while(|(start_delete, stop_delete)| {
-            if *start_delete < stop_t {
+            // must check this in two parts to avoid overflow
+            if *start_delete <= stop_t || *start_delete <= stop_t + T::one() {
                 stop_new = max(stop_new, *stop_delete);
                 *len -= T::safe_subtract_inclusive(*stop_delete, *start_delete);
                 Some(*start_delete)
@@ -163,123 +179,123 @@ fn insert<T: Integer>(
 // !!!cmk can I use a Rust range?
 // !!!cmk allow negatives and any size
 
-// #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-// pub struct RangeSetInt<T: Integer> {
-//     len: <T as SafeSubtract>::Output,
-//     items: BTreeMap<T, T>,
-// }
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct RangeSetInt<T: Integer> {
+    len: <T as SafeSubtractInclusive>::Output,
+    items: BTreeMap<T, u128>,
+}
 
-// // !!!cmk support =, and single numbers
-// // !!!cmk error to use -
-// // !!!cmk are the unwraps OK?
-// // !!!cmk what about bad input?
+// !!!cmk support =, and single numbers
+// !!!cmk error to use -
+// !!!cmk are the unwraps OK?
+// !!!cmk what about bad input?
 
-// impl<T: Integer> From<&str> for RangeSetInt<T>
-// where
-//     // !!! cmk understand this
-//     <T as std::str::FromStr>::Err: std::fmt::Debug,
-// {
-//     fn from(s: &str) -> Self {
-//         let mut result = RangeSetInt::new();
-//         for range in s.split(',') {
-//             let mut range = range.split("..");
-//             let start = range.next().unwrap().parse::<T>().unwrap();
-//             let end = range.next().unwrap().parse::<T>().unwrap();
-//             result.internal_add(start, end, false);
-//         }
-//         result
-//     }
-// }
+impl<T: Integer> From<&str> for RangeSetInt<T>
+where
+    // !!! cmk understand this
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
+    fn from(s: &str) -> Self {
+        let mut result = RangeSetInt::new();
+        for range in s.split(',') {
+            let mut range = range.split("..=");
+            let start = range.next().unwrap().parse::<T>().unwrap();
+            let stop = range.next().unwrap().parse::<u128>().unwrap();
+            result.internal_add(start, stop);
+        }
+        result
+    }
+}
 
-// impl<T: Integer> fmt::Debug for RangeSetInt<T> {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{}", fmt(&self.items))
-//     }
-// }
+impl<T: Integer> fmt::Debug for RangeSetInt<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", fmt(&self.items))
+    }
+}
 
-// impl<T: Integer> fmt::Display for RangeSetInt<T> {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{}", fmt(&self.items))
-//     }
-// }
+impl<T: Integer> fmt::Display for RangeSetInt<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", fmt(&self.items))
+    }
+}
 
-// impl<T: Integer> RangeSetInt<T> {
-//     pub fn new() -> RangeSetInt<T> {
-//         RangeSetInt {
-//             items: BTreeMap::new(),
-//             len: <T as SafeSubtract>::Output::zero(),
-//         }
-//     }
+impl<T: Integer> RangeSetInt<T> {
+    pub fn new() -> RangeSetInt<T> {
+        RangeSetInt {
+            items: BTreeMap::new(),
+            len: <T as SafeSubtractInclusive>::Output::zero(),
+        }
+    }
 
-//     pub fn clear(&mut self) {
-//         self.items.clear();
-//         self.len = <T as SafeSubtract>::Output::zero();
-//     }
+    pub fn clear(&mut self) {
+        self.items.clear();
+        self.len = <T as SafeSubtractInclusive>::Output::zero();
+    }
 
-//     // !!!cmk keep this in a field
-//     pub fn len(&self) -> <T as SafeSubtract>::Output {
-//         self.len.clone()
-//     }
+    // !!!cmk keep this in a field
+    pub fn len(&self) -> <T as SafeSubtractInclusive>::Output {
+        self.len.clone()
+    }
 
-//     fn len_slow(&self) -> <T as SafeSubtract>::Output
-//     where
-//         for<'a> &'a T: Sub<&'a T, Output = T>,
-//     {
-//         len_slow(&self.items)
-//     }
+    fn len_slow(&self) -> <T as SafeSubtractInclusive>::Output
+    where
+        for<'a> &'a T: Sub<&'a T, Output = T>,
+    {
+        len_slow(&self.items)
+    }
 
-//     /// Moves all elements from `other` into `self`, leaving `other` empty.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use rangeset_int::RangeSetInt;
-//     ///
-//     /// let mut a = RangeSetInt::from("1..4");
-//     /// let mut b = RangeSetInt::from("3..6");
-//     ///
-//     /// a.append(&mut b);
-//     ///
-//     /// assert_eq!(a.len(), 5u32);
-//     /// assert_eq!(b.len(), 0u32);
-//     ///
-//     /// assert!(a.contains(1));
-//     /// assert!(a.contains(2));
-//     /// assert!(a.contains(3));
-//     /// assert!(a.contains(4));
-//     /// assert!(a.contains(5));
-//     /// ```
-//     pub fn append(&mut self, other: &mut Self) {
-//         for (start, end) in other.items.iter() {
-//             self.internal_add(*start, *end, false);
-//         }
-//         other.clear();
-//     }
+    //     /// Moves all elements from `other` into `self`, leaving `other` empty.
+    //     ///
+    //     /// # Examples
+    //     ///
+    //     /// ```
+    //     /// use rangeset_int::RangeSetInt;
+    //     ///
+    //     /// let mut a = RangeSetInt::from("1..4");
+    //     /// let mut b = RangeSetInt::from("3..6");
+    //     ///
+    //     /// a.append(&mut b);
+    //     ///
+    //     /// assert_eq!(a.len(), 5u32);
+    //     /// assert_eq!(b.len(), 0u32);
+    //     ///
+    //     /// assert!(a.contains(1));
+    //     /// assert!(a.contains(2));
+    //     /// assert!(a.contains(3));
+    //     /// assert!(a.contains(4));
+    //     /// assert!(a.contains(5));
+    //     /// ```
+    //     pub fn append(&mut self, other: &mut Self) {
+    //         for (start, end) in other.items.iter() {
+    //             self.internal_add(*start, *end, false);
+    //         }
+    //         other.clear();
+    //     }
 
-//     /// Returns `true` if the set contains an element equal to the value.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use rangeset_int::RangeSetInt;
-//     ///
-//     /// let set = RangeSetInt::from([1, 2, 3]);
-//     /// assert_eq!(set.contains(1), true);
-//     /// assert_eq!(set.contains(4), false);
-//     /// ```
-//     pub fn contains(&self, value: T) -> bool {
-//         self.items
-//             .range(..=value)
-//             .next_back()
-//             .map_or(false, |(_, end)| value < *end)
-//     }
+    //     /// Returns `true` if the set contains an element equal to the value.
+    //     ///
+    //     /// # Examples
+    //     ///
+    //     /// ```
+    //     /// use rangeset_int::RangeSetInt;
+    //     ///
+    //     /// let set = RangeSetInt::from([1, 2, 3]);
+    //     /// assert_eq!(set.contains(1), true);
+    //     /// assert_eq!(set.contains(4), false);
+    //     /// ```
+    //     pub fn contains(&self, value: T) -> bool {
+    //         self.items
+    //             .range(..=value)
+    //             .next_back()
+    //             .map_or(false, |(_, end)| value < *end)
+    //     }
 
-//     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
-//     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-//     fn internal_add(&mut self, start: T, end: T, inclusive: bool) {
-//         internal_add(&mut self.items, &mut self.len, start, end, inclusive);
-//     }
-// }
+    // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
+    // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
+    fn internal_add(&mut self, start: T, stop: u128) {
+        internal_add(&mut self.items, &mut self.len, start, stop);
+    }
+}
 
 // impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
 //     type Output = RangeSetInt<T>;

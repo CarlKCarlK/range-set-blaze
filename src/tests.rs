@@ -1,12 +1,12 @@
-// #![cfg(test)]
+#![cfg(test)]
 
 // use std::collections::BTreeSet;
 
-// use super::*;
-// use rand::seq::SliceRandom;
-// use rand::{rngs::StdRng, Rng, SeedableRng};
-// use syntactic_for::syntactic_for;
-// // use thousands::Separable;
+use super::*;
+use rand::seq::SliceRandom;
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use syntactic_for::syntactic_for;
+// use thousands::Separable;
 
 // #[test]
 // // fn insert_255u8() {
@@ -149,105 +149,105 @@
 //     assert!(range_set_int.len_slow() == range_set_int.len());
 // }
 
-// #[test]
-// fn demo_f1() {
-//     // before_or_equal_exists	0
-//     //     INSERT, etc
+#[test]
+fn demo_f1() {
+    // before_or_equal_exists	0
+    //     INSERT, etc
 
-//     let mut range_set_int = RangeSetInt::<u64>::from("11..16,22..27");
-//     range_set_int.internal_add(10, 11, false);
-//     assert!(range_set_int.to_string() == *"10..16,22..27");
-//     assert!(range_set_int.len_slow() == range_set_int.len());
-// }
+    let mut range_set_int = RangeSetInt::<u8>::from("11..=14,22..=26");
+    range_set_int.internal_add(10, 10);
+    assert!(range_set_int.to_string() == "10..=14,22..=26");
+    assert!(range_set_int.len_slow() == range_set_int.len());
+}
 
-// #[test]
-// fn demo_d1() {
-//     // before_or_equal_exists	1
-//     // equal?	1
-//     // is_included	n/a
-//     // fits?	1
-//     //     DONE
+#[test]
+fn demo_d1() {
+    // before_or_equal_exists	1
+    // equal?	1
+    // is_included	n/a
+    // fits?	1
+    //     DONE
 
-//     let mut range_set_int = RangeSetInt::<u64>::from("10..15");
-//     range_set_int.internal_add(10, 11, false);
-//     assert!(range_set_int.to_string() == *"10..15");
-//     assert!(range_set_int.len_slow() == range_set_int.len());
-// }
+    let mut range_set_int = RangeSetInt::<u8>::from("10..=14");
+    range_set_int.internal_add(10, 10);
+    assert!(range_set_int.to_string() == "10..=14");
+    assert!(range_set_int.len_slow() == range_set_int.len());
+}
 
-// #[test]
-// fn demo_e1() {
-//     // before_or_equal_exists	1
-//     // equal?	1
-//     // is_included	n/a
-//     // fits?	0
-//     // next?    0
-//     //     DONE
+#[test]
+fn demo_e1() {
+    // before_or_equal_exists	1
+    // equal?	1
+    // is_included	n/a
+    // fits?	0
+    // next?    0
+    //     DONE
 
-//     let mut range_set_int = RangeSetInt::<u64>::from("10..15,16..17");
-//     range_set_int.internal_add(10, 20, false);
-//     assert!(range_set_int.to_string() == *"10..20");
-//     assert!(range_set_int.len_slow() == range_set_int.len());
-// }
+    let mut range_set_int = RangeSetInt::<u8>::from("10..=14,16..=16");
+    range_set_int.internal_add(10, 19);
+    assert!(range_set_int.to_string() == "10..=19");
+    assert!(range_set_int.len_slow() == range_set_int.len());
+}
 
-// #[test]
-// fn demo_b1() {
-//     // before_or_equal_exists	1
-//     // equal?	0
-//     // is_included	1
-//     // fits?	0
-//     // next?    0
-//     //     DONE
+#[test]
+fn demo_b1() {
+    // before_or_equal_exists	1
+    // equal?	0
+    // is_included	1
+    // fits?	0
+    // next?    0
+    //     DONE
 
-//     let mut range_set_int = RangeSetInt::<u64>::from("10..15");
-//     range_set_int.internal_add(12, 18, false);
-//     assert!(range_set_int.to_string() == *"10..18");
-//     assert!(range_set_int.len_slow() == range_set_int.len());
-// }
+    let mut range_set_int = RangeSetInt::<u8>::from("10..=14");
+    range_set_int.internal_add(12, 17);
+    assert!(range_set_int.to_string() == "10..=17");
+    assert!(range_set_int.len_slow() == range_set_int.len());
+}
 
-// #[test]
-// fn demo_b2() {
-//     // before_or_equal_exists	1
-//     // equal?	0
-//     // is_included	1
-//     // fits?	0
-//     // next?    1
-//     // delete how many? 1
-//     //     DONE
+#[test]
+fn demo_b2() {
+    // before_or_equal_exists	1
+    // equal?	0
+    // is_included	1
+    // fits?	0
+    // next?    1
+    // delete how many? 1
+    //     DONE
 
-//     let mut range_set_int = RangeSetInt::<u64>::from("10..15,16..17");
-//     range_set_int.internal_add(12, 18, false);
-//     assert!(range_set_int.to_string() == *"10..18");
-//     assert!(range_set_int.len_slow() == range_set_int.len());
-// }
+    let mut range_set_int = RangeSetInt::<u8>::from("10..=14,16..=16");
+    range_set_int.internal_add(12, 17);
+    assert!(range_set_int.to_string() == "10..=17");
+    assert!(range_set_int.len_slow() == range_set_int.len());
+}
 
-// #[test]
-// fn demo_b3() {
-//     // before_or_equal_exists	1
-//     // equal?	0
-//     // is_included	1
-//     // fits?	0
-//     // next?    1
-//     // delete how many? 0
-//     //     DONE
+#[test]
+fn demo_b3() {
+    // before_or_equal_exists	1
+    // equal?	0
+    // is_included	1
+    // fits?	0
+    // next?    1
+    // delete how many? 0
+    //     DONE
 
-//     let mut range_set_int = RangeSetInt::<u64>::from("10..15,160..161");
-//     range_set_int.internal_add(12, 18, false);
-//     assert!(range_set_int.to_string() == *"10..18,160..161");
-//     assert!(range_set_int.len_slow() == range_set_int.len());
-// }
+    let mut range_set_int = RangeSetInt::<u8>::from("10..=15,160..=160");
+    range_set_int.internal_add(12, 17);
+    assert!(range_set_int.to_string() == "10..=17,160..=160");
+    assert!(range_set_int.len_slow() == range_set_int.len());
+}
 
-// #[test]
-// fn demo_a() {
-//     // before_or_equal_exists	1
-//     // equal?	0
-//     // is_included	1
-//     // fits?	1
-//     //     DONE
-//     let mut range_set_int = RangeSetInt::<u64>::from("10..15");
-//     range_set_int.internal_add(12, 13, false);
-//     assert!(range_set_int.to_string() == *"10..15");
-//     assert!(range_set_int.len_slow() == range_set_int.len());
-// }
+#[test]
+fn demo_a() {
+    // before_or_equal_exists	1
+    // equal?	0
+    // is_included	1
+    // fits?	1
+    //     DONE
+    let mut range_set_int = RangeSetInt::<u8>::from("10..=14");
+    range_set_int.internal_add(12, 12);
+    assert!(range_set_int.to_string() == "10..=14");
+    assert!(range_set_int.len_slow() == range_set_int.len());
+}
 
 // // #[test]
 // // fn test7() {
