@@ -19,17 +19,17 @@
 mod tests;
 
 use itertools::Itertools;
-use num_traits::ops;
-use num_traits::ops::overflowing::OverflowingSub;
-use num_traits::PrimInt;
-use num_traits::ToPrimitive;
+// use num_traits::ops;
+// use num_traits::ops::overflowing::OverflowingSub;
+// use num_traits::PrimInt;
+// use num_traits::ToPrimitive;
 use num_traits::Zero;
 use std::cmp::max;
-use std::collections::btree_map::Range;
+// use std::collections::btree_map::Range;
 use std::collections::BTreeMap;
 use std::convert::From;
-use std::fmt::{self, Debug};
-use std::ops::{BitAnd, BitOr, Not, Sub};
+use std::fmt;
+use std::ops::{BitAnd, BitOr, BitXor, Not, Sub};
 use std::str::FromStr;
 use trait_set::trait_set;
 
@@ -428,7 +428,7 @@ impl<T: Integer> Not for &RangeSetInt<T> {
 impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     type Output = RangeSetInt<T>;
 
-    /// Returns the intersection of `self` and `rhs` as a new `BTreeSet<T>`.
+    /// Returns the intersection of `self` and `rhs` as a new `RangeSetInt<T>`.
     ///
     /// # Examples
     ///
@@ -444,6 +444,48 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         !&(&(!self) | &(!rhs))
         // !!!cmk would be nice if it didn't allocate a new RangeSetInt for each operation
+    }
+}
+
+impl<T: Integer> BitXor<&RangeSetInt<T>> for &RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
+
+    /// Returns the symmetric difference of `self` and `rhs` as a new `RangeSetInt<T>`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([2, 3, 4]);
+    ///
+    /// let result = &a ^ &b;
+    /// assert_eq!(result, RangeSetInt::from([1, 4]));
+    /// ```
+    fn bitxor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
+        &(self - rhs) | &(rhs - self)
+    }
+}
+
+impl<T: Integer> Sub<&RangeSetInt<T>> for &RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
+
+    /// Returns the set difference of `self` and `rhs` as a new `RangeSetInt<T>`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([2, 3, 4]);
+    ///
+    /// let result = &a - &b;
+    /// assert_eq!(result, RangeSetInt::from([1]));
+    /// ```
+    fn sub(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
+        self & &(!rhs)
     }
 }
 
