@@ -47,6 +47,7 @@ trait_set! {
     + num_traits::NumCast
     + SafeSubtractInclusive
     + TryFrom<u128>
+    + TryInto<u128>
     ;
 }
 
@@ -244,51 +245,54 @@ impl<T: Integer> RangeSetInt<T> {
         len_slow(&self.items)
     }
 
-    //     /// Moves all elements from `other` into `self`, leaving `other` empty.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use rangeset_int::RangeSetInt;
-    //     ///
-    //     /// let mut a = RangeSetInt::from("1..4");
-    //     /// let mut b = RangeSetInt::from("3..6");
-    //     ///
-    //     /// a.append(&mut b);
-    //     ///
-    //     /// assert_eq!(a.len(), 5u32);
-    //     /// assert_eq!(b.len(), 0u32);
-    //     ///
-    //     /// assert!(a.contains(1));
-    //     /// assert!(a.contains(2));
-    //     /// assert!(a.contains(3));
-    //     /// assert!(a.contains(4));
-    //     /// assert!(a.contains(5));
-    //     /// ```
-    //     pub fn append(&mut self, other: &mut Self) {
-    //         for (start, end) in other.items.iter() {
-    //             self.internal_add(*start, *end, false);
-    //         }
-    //         other.clear();
-    //     }
+    /// Moves all elements from `other` into `self`, leaving `other` empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let mut a = RangeSetInt::from("1..4");
+    /// let mut b = RangeSetInt::from("3..6");
+    ///
+    /// a.append(&mut b);
+    ///
+    /// assert_eq!(a.len(), 5u32);
+    /// assert_eq!(b.len(), 0u32);
+    ///
+    /// assert!(a.contains(1));
+    /// assert!(a.contains(2));
+    /// assert!(a.contains(3));
+    /// assert!(a.contains(4));
+    /// assert!(a.contains(5));
+    /// ```
+    pub fn append(&mut self, other: &mut Self) {
+        for (start, stop) in other.items.iter() {
+            self.internal_add(*start, *stop);
+        }
+        other.clear();
+    }
 
-    //     /// Returns `true` if the set contains an element equal to the value.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use rangeset_int::RangeSetInt;
-    //     ///
-    //     /// let set = RangeSetInt::from([1, 2, 3]);
-    //     /// assert_eq!(set.contains(1), true);
-    //     /// assert_eq!(set.contains(4), false);
-    //     /// ```
-    //     pub fn contains(&self, value: T) -> bool {
-    //         self.items
-    //             .range(..=value)
-    //             .next_back()
-    //             .map_or(false, |(_, end)| value < *end)
-    //     }
+    /// Returns `true` if the set contains an element equal to the value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let set = RangeSetInt::from([1, 2, 3]);
+    /// assert_eq!(set.contains(1), true);
+    /// assert_eq!(set.contains(4), false);
+    /// ```
+    pub fn contains(&self, value: T) -> bool {
+        self.items
+            .range(..=value)
+            .next_back()
+            .map_or(false, |(_, stop)| {
+                let stop_t = (*stop).try_into().ok().unwrap(); // !!! cmk
+                value <= stop_t
+            })
+    }
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
@@ -297,180 +301,196 @@ impl<T: Integer> RangeSetInt<T> {
     }
 }
 
-// impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
-//     type Output = RangeSetInt<T>;
+impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
 
-//     /// Returns the union of `self` and `rhs` as a new `RangeSetInt`.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use rangeset_int::RangeSetInt;
-//     ///
-//     /// let a = RangeSetInt::from([1, 2, 3]);
-//     /// let b = RangeSetInt::from([3, 4, 5]);
-//     ///
-//     /// let result = &a | &b;
-//     /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
-//     /// ```
-//     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-//         let mut result = self.clone();
-//         for (start, end) in rhs.items.iter() {
-//             result.internal_add(*start, *end, false);
-//         }
-//         result
-//     }
-// }
+    /// Returns the union of `self` and `rhs` as a new `RangeSetInt`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([3, 4, 5]);
+    ///
+    /// let result = &a | &b;
+    /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+    /// ```
+    fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
+        let mut result = self.clone();
+        for (start, stop) in rhs.items.iter() {
+            result.internal_add(*start, *stop);
+        }
+        result
+    }
+}
 
-// impl<T: Integer> Not for &RangeSetInt<T> {
-//     type Output = RangeSetInt<T>;
+impl<T: Integer> Not for &RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
 
-//     /// Returns the complement of `self` as a new `RangeSetInt`.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use rangeset_int::RangeSetInt;
-//     ///
-//     /// let a = RangeSetInt::<i8>::from([1, 2, 3]);
-//     ///
-//     /// let result = ! &a;
-//     /// assert_eq!(result.to_string(), "-128..1,4..127");
-//     /// ```
-//     fn not(self) -> RangeSetInt<T> {
-//         let mut result = RangeSetInt::new();
-//         let mut start_not = T::min_value();
-//         for (start, end) in self.items.iter() {
-//             result.internal_add(start_not, *start, false);
-//             start_not = *end;
-//         }
-//         result.internal_add(start_not, T::max_value(), true);
-//         result
-//     }
-// }
+    /// Returns the complement of `self` as a new `RangeSetInt`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::<i8>::from([1, 2, 3]);
+    ///
+    /// let result = ! &a;
+    /// assert_eq!(result.to_string(), "-128..1,4..127");
+    /// ```
+    fn not(self) -> RangeSetInt<T> {
+        todo!(); // !!!cmk
+                 // let mut result = RangeSetInt::new();
+                 // let mut start_not = T::min_value();
+                 // for (start, stop) in self.items.iter() {
+                 //     if start > &start_not {
+                 //         let start_i128: i128 = (*start).try_into().ok().unwrap(); // !!!cmk
+                 //         result.internal_add(start_not, start_u128 - 1);
+                 //     }
+                 //     let stop_t: T = (*stop).try_into().ok().unwrap(); // !!!cmk
+                 //     start_not = stop_t + T::one();
+                 // }
+                 // if start_not < T::max_value() {
+                 //     let max_value_u128: u128 = T::max_value().try_into().ok().unwrap(); // !!!cmk
+                 //     result.internal_add(start_not, max_value_u128);
+                 // }
+                 // result
+    }
+}
 
-// impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
-//     type Output = RangeSetInt<T>;
+impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
 
-//     /// Returns the intersection of `self` and `rhs` as a new `RangeSetInt<T>`.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use rangeset_int::RangeSetInt;
-//     ///
-//     /// let a = RangeSetInt::from([1, 2, 3]);
-//     /// let b = RangeSetInt::from([2, 3, 4]);
-//     ///
-//     /// let result = &a & &b;
-//     /// assert_eq!(result, RangeSetInt::from([2, 3]));
-//     /// ```
-//     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-//         !&(&(!self) | &(!rhs))
-//         // !!!cmk would be nice if it didn't allocate a new RangeSetInt for each operation
-//     }
-// }
+    /// Returns the intersection of `self` and `rhs` as a new `RangeSetInt<T>`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([2, 3, 4]);
+    ///
+    /// let result = &a & &b;
+    /// assert_eq!(result, RangeSetInt::from([2, 3]));
+    /// ```
+    fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
+        !&(&(!self) | &(!rhs))
+        // !!!cmk would be nice if it didn't allocate a new RangeSetInt for each operation
+    }
+}
 
-// impl<T: Integer> BitXor<&RangeSetInt<T>> for &RangeSetInt<T> {
-//     type Output = RangeSetInt<T>;
+impl<T: Integer> BitXor<&RangeSetInt<T>> for &RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
 
-//     /// Returns the symmetric difference of `self` and `rhs` as a new `RangeSetInt<T>`.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use rangeset_int::RangeSetInt;
-//     ///
-//     /// let a = RangeSetInt::from([1, 2, 3]);
-//     /// let b = RangeSetInt::from([2, 3, 4]);
-//     ///
-//     /// let result = &a ^ &b;
-//     /// assert_eq!(result, RangeSetInt::from([1, 4]));
-//     /// ```
-//     fn bitxor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-//         &(self - rhs) | &(rhs - self)
-//     }
-// }
+    /// Returns the symmetric difference of `self` and `rhs` as a new `RangeSetInt<T>`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([2, 3, 4]);
+    ///
+    /// let result = &a ^ &b;
+    /// assert_eq!(result, RangeSetInt::from([1, 4]));
+    /// ```
+    fn bitxor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
+        &(self - rhs) | &(rhs - self)
+    }
+}
 
-// impl<T: Integer> Sub<&RangeSetInt<T>> for &RangeSetInt<T> {
-//     type Output = RangeSetInt<T>;
+impl<T: Integer> Sub<&RangeSetInt<T>> for &RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
 
-//     /// Returns the set difference of `self` and `rhs` as a new `RangeSetInt<T>`.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use rangeset_int::RangeSetInt;
-//     ///
-//     /// let a = RangeSetInt::from([1, 2, 3]);
-//     /// let b = RangeSetInt::from([2, 3, 4]);
-//     ///
-//     /// let result = &a - &b;
-//     /// assert_eq!(result, RangeSetInt::from([1]));
-//     /// ```
-//     fn sub(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-//         self & &(!rhs)
-//     }
-// }
+    /// Returns the set difference of `self` and `rhs` as a new `RangeSetInt<T>`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([2, 3, 4]);
+    ///
+    /// let result = &a - &b;
+    /// assert_eq!(result, RangeSetInt::from([1]));
+    /// ```
+    fn sub(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
+        self & &(!rhs)
+    }
+}
 
-// impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
-//     fn from(arr: [T; N]) -> Self {
-//         let mut result = RangeSetInt::new();
-//         for value in arr.iter() {
-//             result.internal_add(*value, *value, true);
-//         }
-//         result
-//     }
-// }
+impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
+    fn from(arr: [T; N]) -> Self {
+        let mut result = RangeSetInt::new();
+        for value in arr.iter() {
+            let value_u128: u128 = (*value).try_into().ok().unwrap(); // !!!cmk
+            result.internal_add(*value, value_u128);
+        }
+        result
+    }
+}
 
-// impl<T: Integer> IntoIterator for RangeSetInt<T> {
-//     type Item = T;
-//     type IntoIter = IntoIter<T>;
+impl<T: Integer> IntoIterator for RangeSetInt<T> {
+    type Item = T;
+    type IntoIter = IntoIter<T>;
 
-//     /// Gets an iterator for moving out the `RangeSetInt`'s contents.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use rangeset_int::RangeSetInt;
-//     ///
-//     /// let set = RangeSetInt::from([1, 2, 3, 4]);
-//     ///
-//     /// let v: Vec<_> = set.into_iter().collect();
-//     /// assert_eq!(v, [1, 2, 3, 4]);
-//     /// ```
-//     fn into_iter(self) -> IntoIter<T> {
-//         IntoIter {
-//             start: T::zero(),
-//             end: T::zero(),
-//             range_iter: self.items.into_iter(),
-//         }
-//     }
-// }
+    /// Gets an iterator for moving out the `RangeSetInt`'s contents.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rangeset_int::RangeSetInt;
+    ///
+    /// let set = RangeSetInt::from([1, 2, 3, 4]);
+    ///
+    /// let v: Vec<_> = set.into_iter().collect();
+    /// assert_eq!(v, [1, 2, 3, 4]);
+    /// ```
+    fn into_iter(self) -> IntoIter<T> {
+        IntoIter {
+            start: T::zero(),
+            stop: None,
+            range_iter: self.items.into_iter(),
+        }
+    }
+}
 
-// pub struct IntoIter<T: Integer> {
-//     start: T,
-//     end: T,
-//     range_iter: std::collections::btree_map::IntoIter<T, T>,
-// }
+pub struct IntoIter<T: Integer> {
+    start: T,
+    stop: Option<u128>,
+    range_iter: std::collections::btree_map::IntoIter<T, u128>,
+}
 
-// impl<T: Integer> Iterator for IntoIter<T> {
-//     type Item = T;
+impl<T: Integer> Iterator for IntoIter<T> {
+    type Item = T;
 
-//     fn next(&mut self) -> Option<Self::Item> {
-//         if self.start < self.end {
-//             let result = self.start;
-//             self.start += T::one();
-//             return Some(result);
-//         }
-//         if let Some((start, end)) = self.range_iter.next() {
-//             self.start = start;
-//             self.end = end;
-//             return self.next();
-//         }
-//         None
-//     }
-// }
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(stop) = self.stop {
+            let stop_t = stop.try_into().ok().unwrap(); // !!!cmk
+            if self.start <= stop_t {
+                let result = self.start;
+                if self.start < stop_t {
+                    self.start += T::one();
+                } else {
+                    self.stop = None;
+                }
+                return Some(result);
+            }
+        }
+        if let Some((start, stop)) = self.range_iter.next() {
+            self.start = start;
+            self.stop = Some(stop);
+            return self.next();
+        }
+        None
+    }
+}
 impl SafeSubtractInclusive for i8 {
     type Output = u8;
     fn safe_subtract(end: u128, start: u128) -> <Self as SafeSubtractInclusive>::Output {
@@ -483,7 +503,7 @@ impl SafeSubtractInclusive for i8 {
         if a == b {
             1
         } else {
-            (a + 1).overflowing_sub(b).0 as <Self as SafeSubtractInclusive>::Output
+            a.overflowing_sub(b).0 as <Self as SafeSubtractInclusive>::Output + 1
         }
     }
 }
