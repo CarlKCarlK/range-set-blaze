@@ -6,13 +6,14 @@ use super::*;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use syntactic_for::syntactic_for;
-// use thousands::Separable;
+use thousands::Separable;
 
-//#[test]
-// fn insert_255u8() {
-//     let range_set_int = RangeSetInt::<u8>::from([255]);
-//     assert!(range_set_int.to_string() == "255..");
-// }
+#[test]
+fn insert_255u8() {
+    let range_set_int = RangeSetInt::<u8>::from([255]);
+    assert!(range_set_int.to_string() == "255..=255");
+}
+
 #[test]
 fn sub() {
     for start in i8::MIN..i8::MAX {
@@ -37,7 +38,7 @@ fn sub() {
 
 #[test]
 fn complement() {
-    syntactic_for! { ty in [i8, u8, isize, usize] { // !!! cmk  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
         let empty = RangeSetInt::<$ty>::new();
         let full = !&empty;
@@ -249,37 +250,37 @@ fn demo_a() {
     assert!(range_set_int.len_slow() == range_set_int.len());
 }
 
-// #[test]
-// fn test7() {
-//     let mut range_set = RangeSetInt::new();
-//     let mut index = 0u128;
-//     #[allow(clippy::explicit_counter_loop)]
-//     for value in RandomData::new(
-//         0,
-//         // RangeX {
-//         //     start: 20,
-//         //     length: 10,
-//         // },
-//         // 1,
-//         RangeX {
-//             start: 20,
-//             length: 1_300_300_010,
-//         },
-//         100_000,
-//     ) {
-//         if index % 10_000_000 == 0 {
-//             println!(
-//                 "index {}, range_count {}",
-//                 index.separate_with_commas(),
-//                 range_set.items.len().separate_with_commas()
-//             );
-//         }
-//         index += 1;
-//         range_set.internal_add(value, value + 1);
-//         // println!("{value}->{range_set}");
-//     }
-//     // println!("{:?}", range_set._items);
-// }
+#[test]
+fn test7() {
+    let mut range_set = RangeSetInt::new();
+    let mut index = 0u64;
+    #[allow(clippy::explicit_counter_loop)]
+    for value in RandomData::new(
+        0,
+        // RangeX {
+        //     start: 20,
+        //     length: 10,
+        // },
+        // 1,
+        RangeX {
+            start: 20,
+            length: 1_300_300_010,
+        },
+        100_000,
+    ) {
+        if index % 10_000_000 == 0 {
+            println!(
+                "index {}, range_count {}",
+                index.separate_with_commas(),
+                range_set.items.len().separate_with_commas()
+            );
+        }
+        index += 1;
+        range_set.internal_add(value, value + 1);
+        // println!("{value}->{range_set}");
+    }
+    // println!("{:?}", range_set._items);
+}
 
 // #[test]
 // fn test7a() {
@@ -515,8 +516,8 @@ fn demo_a() {
 
 #[derive(Debug)]
 struct RangeX {
-    start: u128,
-    length: u128,
+    start: u64,
+    length: u64,
 }
 
 // impl RangeX {
@@ -529,11 +530,11 @@ struct RandomData {
     rng: StdRng,
     current: Option<RangeX>,
     data_range: Vec<RangeX>,
-    small_enough: u128,
+    small_enough: u64,
 }
 
 impl RandomData {
-    fn new(seed: u64, range: RangeX, small_enough: u128) -> Self {
+    fn new(seed: u64, range: RangeX, small_enough: u64) -> Self {
         Self {
             rng: StdRng::seed_from_u64(seed),
             current: None,
@@ -544,7 +545,7 @@ impl RandomData {
 }
 
 impl Iterator for RandomData {
-    type Item = u128;
+    type Item = u64;
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(current) = &mut self.current {
             let value = current.start;
@@ -578,7 +579,7 @@ impl Iterator for RandomData {
 }
 
 fn _process_this_level(
-    split: u128,
+    split: u64,
     range: RangeX,
     rng: &mut StdRng,
     delete_fraction: f64,

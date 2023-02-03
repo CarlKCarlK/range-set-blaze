@@ -274,10 +274,7 @@ impl<T: Integer> RangeSetInt<T> {
         self.items
             .range(..=value)
             .next_back()
-            .map_or(false, |(_, stop)| {
-                let stop_t = (*stop).try_into().ok().unwrap(); // !!! cmk
-                value <= stop_t
-            })
+            .map_or(false, |(_, stop)| value <= *stop)
     }
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
@@ -539,6 +536,66 @@ impl SafeSubtract for u32 {
     }
 }
 
+impl SafeSubtract for i64 {
+    #[cfg(target_pointer_width = "16")]
+    type Output = u128;
+    #[cfg(target_pointer_width = "32")]
+    type Output = u128;
+    #[cfg(target_pointer_width = "64")]
+    type Output = u128;
+    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
+        end.overflowing_sub(start).0 as u64 as <Self as SafeSubtract>::Output
+    }
+    fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as u64 as <Self as SafeSubtract>::Output + 1
+    }
+}
+
+impl SafeSubtract for u64 {
+    #[cfg(target_pointer_width = "16")]
+    type Output = u128;
+    #[cfg(target_pointer_width = "32")]
+    type Output = u128;
+    #[cfg(target_pointer_width = "64")]
+    type Output = u128;
+    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
+        end.overflowing_sub(start).0 as <Self as SafeSubtract>::Output
+    }
+    fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output + 1
+    }
+}
+
+impl SafeSubtract for i128 {
+    #[cfg(target_pointer_width = "16")]
+    type Output = u128;
+    #[cfg(target_pointer_width = "32")]
+    type Output = u128;
+    #[cfg(target_pointer_width = "64")]
+    type Output = u128;
+    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
+        end.overflowing_sub(start).0 as u128 as <Self as SafeSubtract>::Output
+    }
+    fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as u128 as <Self as SafeSubtract>::Output + 1
+    }
+}
+
+impl SafeSubtract for u128 {
+    #[cfg(target_pointer_width = "16")]
+    type Output = u128;
+    #[cfg(target_pointer_width = "32")]
+    type Output = u128;
+    #[cfg(target_pointer_width = "64")]
+    type Output = u128;
+    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
+        end.overflowing_sub(start).0 as <Self as SafeSubtract>::Output
+    }
+    fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output + 1
+    }
+}
+
 impl SafeSubtract for isize {
     #[cfg(target_pointer_width = "16")]
     type Output = u32;
@@ -568,76 +625,41 @@ impl SafeSubtract for usize {
         a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output + 1
     }
 }
-// impl SafeSubtract for i16 {
-//     type Output = u16;
-//     fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
-//         a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output
-//     }
-// }
 
-// impl SafeSubtract for u16 {
-//     type Output = u16;
-//     fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
-//         a - b
-//     }
-// }
-
-// impl SafeSubtract for i32 {
-//     type Output = u32;
-//     fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
-//         a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output
-//     }
-// }
-
-// impl SafeSubtract for u32 {
-//     type Output = u32;
-//     fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
-//         a - b
-//     }
-// }
-
-// impl SafeSubtract for i64 {
-//     type Output = u64;
-//     fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
-//         a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output
-//     }
-// }
-
-// impl SafeSubtract for u64 {
-//     type Output = u64;
-//     fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
-//         a - b
-//     }
-// }
-
-// impl SafeSubtract for isize {
-//     type Output = usize;
-//     fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
-//         a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output
-//     }
-// }
-
-// impl SafeSubtract for usize {
-//     type Output = usize;
-//     fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
-//         a - b
-//     }
-// }
-
-// impl SafeSubtract for i128 {
-//     type Output = u128;
-//     fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
-//         a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output
-//     }
-// }
-
-// impl SafeSubtract for u128 {
 //     type Output = u128;
 //     fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
 //         a - b
 //     }
 // }
+impl SafeSubtract for i16 {
+    #[cfg(target_pointer_width = "16")]
+    type Output = u32;
+    #[cfg(target_pointer_width = "32")]
+    type Output = usize;
+    #[cfg(target_pointer_width = "64")]
+    type Output = usize;
+    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
+        end.overflowing_sub(start).0 as u16 as <Self as SafeSubtract>::Output
+    }
+    fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as u16 as <Self as SafeSubtract>::Output + 1
+    }
+}
 
+impl SafeSubtract for u16 {
+    #[cfg(target_pointer_width = "16")]
+    type Output = u32;
+    #[cfg(target_pointer_width = "32")]
+    type Output = usize;
+    #[cfg(target_pointer_width = "64")]
+    type Output = usize;
+    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
+        end.overflowing_sub(start).0 as <Self as SafeSubtract>::Output
+    }
+    fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output + 1
+    }
+}
 // pub fn test_me<T>(i: T)
 // where
 //     T: Integer,
