@@ -45,13 +45,11 @@ trait_set! {
     + Copy
     + num_traits::Bounded
     + num_traits::NumCast
-    + SafeSubtractInclusive
-    + TryFrom<u128>
-    + TryInto<u128>
+    + SafeSubtract
     ;
 }
 
-pub trait SafeSubtractInclusive {
+pub trait SafeSubtract {
     // type Upscale;
     type Output: std::hash::Hash
         + num_integer::Integer
@@ -65,11 +63,11 @@ pub trait SafeSubtractInclusive {
         + Default;
     // !!!cmk 0
     // !!!cmk inline?
-    fn safe_subtract(end: u128, start: u128) -> <Self as SafeSubtractInclusive>::Output;
-    fn safe_subtract_inclusive(stop: u128, start: Self) -> <Self as SafeSubtractInclusive>::Output;
+    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output;
+    fn safe_subtract_inclusive(stop: Self, start: Self) -> <Self as SafeSubtract>::Output;
 }
 
-pub fn fmt<T: Integer>(items: &BTreeMap<T, u128>) -> String {
+pub fn fmt<T: Integer>(items: &BTreeMap<T, T>) -> String {
     items
         .iter()
         .map(|(start, stop)| format!("{start}..={stop}"))
@@ -77,40 +75,28 @@ pub fn fmt<T: Integer>(items: &BTreeMap<T, u128>) -> String {
 }
 
 /// !!! cmk understand this
-fn len_slow<T: Integer>(items: &BTreeMap<T, u128>) -> <T as SafeSubtractInclusive>::Output
+fn len_slow<T: Integer>(items: &BTreeMap<T, T>) -> <T as SafeSubtract>::Output
 where
     for<'a> &'a T: Sub<&'a T, Output = T>,
 {
     items.iter().fold(
-        <T as SafeSubtractInclusive>::Output::default(),
+        <T as SafeSubtract>::Output::default(),
         |acc, (start, stop)| acc + T::safe_subtract_inclusive(*stop, *start),
     )
 }
 
 pub fn internal_add<T: Integer>(
-    items: &mut BTreeMap<T, u128>,
-    len: &mut <T as SafeSubtractInclusive>::Output,
+    items: &mut BTreeMap<T, T>,
+    len: &mut <T as SafeSubtract>::Output,
     start: T,
-    stop: u128,
+    stop: T,
 ) {
-    let stop_t = if let Ok(stop_t) = stop.try_into() {
-        stop_t
-    } else {
-        panic!("cmk");
-    };
-    assert!(start <= stop_t); // !!!cmk check that length is not zero
-                              // !!! cmk would be nice to have a partition_point function that returns two iterators
+    assert!(start <= stop); // !!!cmk check that length is not zero
+                            // !!! cmk would be nice to have a partition_point function that returns two iterators
     let mut before = items.range_mut(..=start).rev();
     if let Some((start_before, stop_before)) = before.next() {
-        let stop_before_t: Result<T, _> = (*stop_before).try_into();
-        let stop_before_t = if let Ok(stop_before_t) = stop_before_t {
-            stop_before_t
-        } else {
-            panic!("cmk");
-        };
-
         // Must check this in two parts to avoid overflow
-        if stop_before_t < start && stop_before_t + T::one() < start {
+        if *stop_before < start && *stop_before + T::one() < start {
             insert(items, len, start, stop);
             *len += T::safe_subtract_inclusive(stop, start);
         } else if *stop_before < stop {
@@ -129,10 +115,10 @@ pub fn internal_add<T: Integer>(
 }
 
 fn delete_extra<T: Integer>(
-    items: &mut BTreeMap<T, u128>,
-    len: &mut <T as SafeSubtractInclusive>::Output,
+    items: &mut BTreeMap<T, T>,
+    len: &mut <T as SafeSubtract>::Output,
     start: T,
-    stop: u128,
+    stop: T,
 ) {
     let stop_t = if let Ok(stop_t) = stop.try_into() {
         stop_t
@@ -166,10 +152,10 @@ fn delete_extra<T: Integer>(
     }
 }
 fn insert<T: Integer>(
-    items: &mut BTreeMap<T, u128>,
-    len: &mut <T as SafeSubtractInclusive>::Output,
+    items: &mut BTreeMap<T, T>,
+    len: &mut <T as SafeSubtract>::Output,
     start: T,
-    stop: u128,
+    stop: T,
 ) {
     let was_there = items.insert(start, stop);
     assert!(was_there.is_none());
@@ -182,8 +168,8 @@ fn insert<T: Integer>(
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RangeSetInt<T: Integer> {
-    len: <T as SafeSubtractInclusive>::Output,
-    items: BTreeMap<T, u128>,
+    len: <T as SafeSubtract>::Output,
+    items: BTreeMap<T, T>,
 }
 
 // !!!cmk support =, and single numbers
@@ -201,7 +187,7 @@ where
         for range in s.split(',') {
             let mut range = range.split("..=");
             let start = range.next().unwrap().parse::<T>().unwrap();
-            let stop = range.next().unwrap().parse::<u128>().unwrap();
+            let stop = range.next().unwrap().parse::<T>().unwrap();
             result.internal_add(start, stop);
         }
         result
@@ -224,21 +210,21 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn new() -> RangeSetInt<T> {
         RangeSetInt {
             items: BTreeMap::new(),
-            len: <T as SafeSubtractInclusive>::Output::zero(),
+            len: <T as SafeSubtract>::Output::zero(),
         }
     }
 
     pub fn clear(&mut self) {
         self.items.clear();
-        self.len = <T as SafeSubtractInclusive>::Output::zero();
+        self.len = <T as SafeSubtract>::Output::zero();
     }
 
     // !!!cmk keep this in a field
-    pub fn len(&self) -> <T as SafeSubtractInclusive>::Output {
+    pub fn len(&self) -> <T as SafeSubtract>::Output {
         self.len.clone()
     }
 
-    fn len_slow(&self) -> <T as SafeSubtractInclusive>::Output
+    fn len_slow(&self) -> <T as SafeSubtract>::Output
     where
         for<'a> &'a T: Sub<&'a T, Output = T>,
     {
@@ -252,13 +238,13 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use rangeset_int::RangeSetInt;
     ///
-    /// let mut a = RangeSetInt::from("1..4");
-    /// let mut b = RangeSetInt::from("3..6");
+    /// let mut a = RangeSetInt::from("1..=3");
+    /// let mut b = RangeSetInt::from("3..=5");
     ///
     /// a.append(&mut b);
     ///
-    /// assert_eq!(a.len(), 5u32);
-    /// assert_eq!(b.len(), 0u32);
+    /// assert_eq!(a.len(), 5u128);
+    /// assert_eq!(b.len(), 0u128);
     ///
     /// assert!(a.contains(1));
     /// assert!(a.contains(2));
@@ -296,7 +282,7 @@ impl<T: Integer> RangeSetInt<T> {
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-    fn internal_add(&mut self, start: T, stop: u128) {
+    fn internal_add(&mut self, start: T, stop: T) {
         internal_add(&mut self.items, &mut self.len, start, stop);
     }
 }
@@ -339,25 +325,28 @@ impl<T: Integer> Not for &RangeSetInt<T> {
     /// let a = RangeSetInt::<i8>::from([1, 2, 3]);
     ///
     /// let result = ! &a;
-    /// assert_eq!(result.to_string(), "-128..1,4..127");
+    /// assert_eq!(result.to_string(), "-128..=0,4..=127");
     /// ```
     fn not(self) -> RangeSetInt<T> {
-        todo!(); // !!!cmk
-                 // let mut result = RangeSetInt::new();
-                 // let mut start_not = T::min_value();
-                 // for (start, stop) in self.items.iter() {
-                 //     if start > &start_not {
-                 //         let start_i128: i128 = (*start).try_into().ok().unwrap(); // !!!cmk
-                 //         result.internal_add(start_not, start_u128 - 1);
-                 //     }
-                 //     let stop_t: T = (*stop).try_into().ok().unwrap(); // !!!cmk
-                 //     start_not = stop_t + T::one();
-                 // }
-                 // if start_not < T::max_value() {
-                 //     let max_value_u128: u128 = T::max_value().try_into().ok().unwrap(); // !!!cmk
-                 //     result.internal_add(start_not, max_value_u128);
-                 // }
-                 // result
+        let mut result = RangeSetInt::new();
+        let mut start_not = Some(T::min_value());
+        for (start, stop) in self.items.iter() {
+            // This is always safe because we know that start_not is not None
+            let start_not2 = start_not.unwrap();
+            if start > &start_not2 {
+                // We can subtract with underflow because we know that start > start_not
+                result.internal_add(start_not2, *start - T::one());
+            }
+            if *stop == T::max_value() {
+                start_not = None;
+            } else {
+                start_not = Some(*stop + T::one());
+            }
+        }
+        if let Some(start_not) = start_not {
+            result.internal_add(start_not, T::max_value());
+        }
+        result
     }
 }
 
@@ -429,8 +418,7 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     fn from(arr: [T; N]) -> Self {
         let mut result = RangeSetInt::new();
         for value in arr.iter() {
-            let value_u128: u128 = (*value).try_into().ok().unwrap(); // !!!cmk
-            result.internal_add(*value, value_u128);
+            result.internal_add(*value, *value);
         }
         result
     }
@@ -463,8 +451,8 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
 
 pub struct IntoIter<T: Integer> {
     start: T,
-    stop: Option<u128>,
-    range_iter: std::collections::btree_map::IntoIter<T, u128>,
+    stop: Option<T>,
+    range_iter: std::collections::btree_map::IntoIter<T, T>,
 }
 
 impl<T: Integer> Iterator for IntoIter<T> {
@@ -491,33 +479,93 @@ impl<T: Integer> Iterator for IntoIter<T> {
         None
     }
 }
-impl SafeSubtractInclusive for i8 {
-    type Output = u8;
-    fn safe_subtract(end: u128, start: u128) -> <Self as SafeSubtractInclusive>::Output {
-        let end = end as i8;
-        let start = start as i8;
-        end.overflowing_sub(start).0 as <Self as SafeSubtractInclusive>::Output
+impl SafeSubtract for i8 {
+    #[cfg(target_pointer_width = "16")]
+    type Output = usize;
+    #[cfg(target_pointer_width = "32")]
+    type Output = usize;
+    #[cfg(target_pointer_width = "64")]
+    type Output = usize;
+    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
+        end.overflowing_sub(start).0 as u8 as <Self as SafeSubtract>::Output
     }
-    fn safe_subtract_inclusive(a: u128, b: Self) -> <Self as SafeSubtractInclusive>::Output {
-        let a = a as i8;
-        if a == b {
-            1
-        } else {
-            a.overflowing_sub(b).0 as <Self as SafeSubtractInclusive>::Output + 1
-        }
+    fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as u8 as <Self as SafeSubtract>::Output + 1
     }
 }
 
-impl SafeSubtractInclusive for u8 {
-    type Output = u8;
-    fn safe_subtract(a: u128, b: u128) -> <Self as SafeSubtractInclusive>::Output {
-        let a = a as u8;
-        let b = b as u8;
-        a - b
+impl SafeSubtract for u8 {
+    #[cfg(target_pointer_width = "16")]
+    type Output = usize;
+    #[cfg(target_pointer_width = "32")]
+    type Output = usize;
+    #[cfg(target_pointer_width = "64")]
+    type Output = usize;
+    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
+        end.overflowing_sub(start).0 as <Self as SafeSubtract>::Output
     }
-    fn safe_subtract_inclusive(a: u128, b: Self) -> <Self as SafeSubtractInclusive>::Output {
-        let a = a as u8;
-        (a - b) + 1
+    fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output + 1
+    }
+}
+
+impl SafeSubtract for i32 {
+    #[cfg(target_pointer_width = "16")]
+    type Output = usize;
+    #[cfg(target_pointer_width = "32")]
+    type Output = u64;
+    #[cfg(target_pointer_width = "64")]
+    type Output = u128;
+    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
+        end.overflowing_sub(start).0 as u32 as <Self as SafeSubtract>::Output
+    }
+    fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as u32 as <Self as SafeSubtract>::Output + 1
+    }
+}
+
+impl SafeSubtract for u32 {
+    #[cfg(target_pointer_width = "16")]
+    type Output = usize;
+    #[cfg(target_pointer_width = "32")]
+    type Output = u64;
+    #[cfg(target_pointer_width = "64")]
+    type Output = u128;
+    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
+        end.overflowing_sub(start).0 as <Self as SafeSubtract>::Output
+    }
+    fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output + 1
+    }
+}
+
+impl SafeSubtract for isize {
+    #[cfg(target_pointer_width = "16")]
+    type Output = u32;
+    #[cfg(target_pointer_width = "32")]
+    type Output = u64;
+    #[cfg(target_pointer_width = "64")]
+    type Output = u128;
+    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
+        end.overflowing_sub(start).0 as usize as <Self as SafeSubtract>::Output
+    }
+    fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as usize as <Self as SafeSubtract>::Output + 1
+    }
+}
+
+impl SafeSubtract for usize {
+    #[cfg(target_pointer_width = "16")]
+    type Output = u32;
+    #[cfg(target_pointer_width = "32")]
+    type Output = u64;
+    #[cfg(target_pointer_width = "64")]
+    type Output = u128;
+    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
+        end.overflowing_sub(start).0 as <Self as SafeSubtract>::Output
+    }
+    fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
+        a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output + 1
     }
 }
 // impl SafeSubtract for i16 {

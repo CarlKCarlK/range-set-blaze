@@ -8,7 +8,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use syntactic_for::syntactic_for;
 // use thousands::Separable;
 
-#[test]
+//#[test]
 // fn insert_255u8() {
 //     let range_set_int = RangeSetInt::<u8>::from([255]);
 //     assert!(range_set_int.to_string() == "255..");
@@ -17,17 +17,15 @@ use syntactic_for::syntactic_for;
 fn sub() {
     for start in i8::MIN..i8::MAX {
         for end in start..i8::MAX {
-            let end = end as u128; // !!! cmk
             let diff = i8::safe_subtract_inclusive(end, start);
-            let diff2 = (end as i16) - (start as i16);
+            let diff2 = (end as i16) - (start as i16) + 1;
             assert_eq!(diff as i16, diff2);
         }
     }
     for start in u8::MIN..u8::MAX {
         for end in start..u8::MAX {
-            let end = end as u128; // !!! cmk
             let diff = u8::safe_subtract_inclusive(end, start);
-            let diff2 = (end as i16) - (start as i16);
+            let diff2 = (end as i16) - (start as i16) + 1;
             assert_eq!(diff as i16, diff2);
         }
     }
@@ -39,7 +37,7 @@ fn sub() {
 
 #[test]
 fn complement() {
-    syntactic_for! { ty in [i8, u8] { // !!! cmk  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+    syntactic_for! { ty in [i8, u8, isize, usize] { // !!! cmk  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
         let empty = RangeSetInt::<$ty>::new();
         let full = !&empty;
@@ -51,12 +49,11 @@ fn complement() {
 #[test]
 fn repro_bit_and() {
     let a = RangeSetInt::from([1u8, 2, 3]);
-    // !!! cmk
-    // let b = RangeSetInt::from([2u8, 3, 4]);
+    let b = RangeSetInt::from([2u8, 3, 4]);
 
-    // let result = &a & &b;
-    // println!("{result}");
-    // assert_eq!(result, RangeSetInt::from([2u8, 3]));
+    let result = &a & &b;
+    println!("{result}");
+    assert_eq!(result, RangeSetInt::from([2u8, 3]));
 }
 
 #[test]
@@ -115,7 +112,7 @@ fn doctest4() {
     let a = RangeSetInt::<i8>::from([1, 2, 3]);
 
     let result = !&a;
-    assert_eq!(result.to_string(), "-128..1,4..127");
+    assert_eq!(result.to_string(), "-128..=0,4..=127");
 }
 
 #[test]
