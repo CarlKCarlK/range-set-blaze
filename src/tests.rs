@@ -15,6 +15,12 @@ fn insert_255u8() {
 }
 
 #[test]
+#[should_panic]
+fn insert_max_u128() {
+    let _ = RangeSetInt::<u128>::from([u128::MAX]);
+}
+
+#[test]
 fn sub() {
     for start in i8::MIN..i8::MAX {
         for end in start..i8::MAX {

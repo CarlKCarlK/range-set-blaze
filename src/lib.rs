@@ -65,6 +65,7 @@ pub trait SafeSubtract {
     // !!!cmk inline?
     fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output;
     fn safe_subtract_inclusive(stop: Self, start: Self) -> <Self as SafeSubtract>::Output;
+    fn max_value2() -> Self;
 }
 
 pub fn fmt<T: Integer>(items: &BTreeMap<T, T>) -> String {
@@ -91,8 +92,8 @@ pub fn internal_add<T: Integer>(
     start: T,
     stop: T,
 ) {
-    assert!(start <= stop); // !!!cmk check that length is not zero
-                            // !!! cmk would be nice to have a partition_point function that returns two iterators
+    assert!(start <= stop && stop <= T::max_value2()); // !!!cmk check that length is not zero
+                                                       // !!! cmk would be nice to have a partition_point function that returns two iterators
     let mut before = items.range_mut(..=start).rev();
     if let Some((start_before, stop_before)) = before.next() {
         // Must check this in two parts to avoid overflow
@@ -334,14 +335,14 @@ impl<T: Integer> Not for &RangeSetInt<T> {
                 // We can subtract with underflow because we know that start > start_not
                 result.internal_add(start_not2, *start - T::one());
             }
-            if *stop == T::max_value() {
+            if *stop == T::max_value2() {
                 start_not = None;
             } else {
                 start_not = Some(*stop + T::one());
             }
         }
         if let Some(start_not) = start_not {
-            result.internal_add(start_not, T::max_value());
+            result.internal_add(start_not, T::max_value2());
         }
         result
     }
@@ -489,6 +490,9 @@ impl SafeSubtract for i8 {
     fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a.overflowing_sub(b).0 as u8 as <Self as SafeSubtract>::Output + 1
     }
+    fn max_value2() -> Self {
+        Self::max_value()
+    }
 }
 
 impl SafeSubtract for u8 {
@@ -503,6 +507,9 @@ impl SafeSubtract for u8 {
     }
     fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output + 1
+    }
+    fn max_value2() -> Self {
+        Self::max_value()
     }
 }
 
@@ -519,6 +526,9 @@ impl SafeSubtract for i32 {
     fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a.overflowing_sub(b).0 as u32 as <Self as SafeSubtract>::Output + 1
     }
+    fn max_value2() -> Self {
+        Self::max_value()
+    }
 }
 
 impl SafeSubtract for u32 {
@@ -533,6 +543,9 @@ impl SafeSubtract for u32 {
     }
     fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output + 1
+    }
+    fn max_value2() -> Self {
+        Self::max_value()
     }
 }
 
@@ -549,6 +562,9 @@ impl SafeSubtract for i64 {
     fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a.overflowing_sub(b).0 as u64 as <Self as SafeSubtract>::Output + 1
     }
+    fn max_value2() -> Self {
+        Self::max_value()
+    }
 }
 
 impl SafeSubtract for u64 {
@@ -563,6 +579,9 @@ impl SafeSubtract for u64 {
     }
     fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output + 1
+    }
+    fn max_value2() -> Self {
+        Self::max_value()
     }
 }
 
@@ -579,6 +598,9 @@ impl SafeSubtract for i128 {
     fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a.overflowing_sub(b).0 as u128 as <Self as SafeSubtract>::Output + 1
     }
+    fn max_value2() -> Self {
+        Self::max_value() - 1
+    }
 }
 
 impl SafeSubtract for u128 {
@@ -593,6 +615,9 @@ impl SafeSubtract for u128 {
     }
     fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output + 1
+    }
+    fn max_value2() -> Self {
+        Self::max_value() - 1
     }
 }
 
@@ -609,6 +634,9 @@ impl SafeSubtract for isize {
     fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a.overflowing_sub(b).0 as usize as <Self as SafeSubtract>::Output + 1
     }
+    fn max_value2() -> Self {
+        Self::max_value()
+    }
 }
 
 impl SafeSubtract for usize {
@@ -623,6 +651,9 @@ impl SafeSubtract for usize {
     }
     fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output + 1
+    }
+    fn max_value2() -> Self {
+        Self::max_value()
     }
 }
 
@@ -644,6 +675,9 @@ impl SafeSubtract for i16 {
     fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a.overflowing_sub(b).0 as u16 as <Self as SafeSubtract>::Output + 1
     }
+    fn max_value2() -> Self {
+        Self::max_value()
+    }
 }
 
 impl SafeSubtract for u16 {
@@ -658,6 +692,9 @@ impl SafeSubtract for u16 {
     }
     fn safe_subtract_inclusive(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
         a.overflowing_sub(b).0 as <Self as SafeSubtract>::Output + 1
+    }
+    fn max_value2() -> Self {
+        Self::max_value()
     }
 }
 // pub fn test_me<T>(i: T)
