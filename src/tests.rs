@@ -3,10 +3,7 @@
 use std::collections::BTreeSet;
 
 use super::*;
-use rand::seq::SliceRandom;
-use rand::{rngs::StdRng, Rng, SeedableRng};
 use syntactic_for::syntactic_for;
-use thousands::Separable;
 
 #[test]
 fn insert_255u8() {
@@ -141,7 +138,7 @@ fn demo_c1() {
     let mut range_set_int = RangeSetInt::<u8>::from("10..=10");
     range_set_int.internal_add(12, 12);
     assert!(range_set_int.to_string() == "10..=10,12..=12");
-    assert!(range_set_int.len_slow() == range_set_int.len());
+    assert!(range_set_int._len_slow() == range_set_int.len());
 }
 
 #[test]
@@ -153,7 +150,7 @@ fn demo_c2() {
     let mut range_set_int = RangeSetInt::<u8>::from("10..=10,13..=13");
     range_set_int.internal_add(12, 12);
     assert!(range_set_int.to_string() == "10..=10,12..=13");
-    assert!(range_set_int.len_slow() == range_set_int.len());
+    assert!(range_set_int._len_slow() == range_set_int.len());
 }
 
 #[test]
@@ -164,7 +161,7 @@ fn demo_f1() {
     let mut range_set_int = RangeSetInt::<u8>::from("11..=14,22..=26");
     range_set_int.internal_add(10, 10);
     assert!(range_set_int.to_string() == "10..=14,22..=26");
-    assert!(range_set_int.len_slow() == range_set_int.len());
+    assert!(range_set_int._len_slow() == range_set_int.len());
 }
 
 #[test]
@@ -178,7 +175,7 @@ fn demo_d1() {
     let mut range_set_int = RangeSetInt::<u8>::from("10..=14");
     range_set_int.internal_add(10, 10);
     assert!(range_set_int.to_string() == "10..=14");
-    assert!(range_set_int.len_slow() == range_set_int.len());
+    assert!(range_set_int._len_slow() == range_set_int.len());
 }
 
 #[test]
@@ -193,7 +190,7 @@ fn demo_e1() {
     let mut range_set_int = RangeSetInt::<u8>::from("10..=14,16..=16");
     range_set_int.internal_add(10, 19);
     assert!(range_set_int.to_string() == "10..=19");
-    assert!(range_set_int.len_slow() == range_set_int.len());
+    assert!(range_set_int._len_slow() == range_set_int.len());
 }
 
 #[test]
@@ -208,7 +205,7 @@ fn demo_b1() {
     let mut range_set_int = RangeSetInt::<u8>::from("10..=14");
     range_set_int.internal_add(12, 17);
     assert!(range_set_int.to_string() == "10..=17");
-    assert!(range_set_int.len_slow() == range_set_int.len());
+    assert!(range_set_int._len_slow() == range_set_int.len());
 }
 
 #[test]
@@ -224,7 +221,7 @@ fn demo_b2() {
     let mut range_set_int = RangeSetInt::<u8>::from("10..=14,16..=16");
     range_set_int.internal_add(12, 17);
     assert!(range_set_int.to_string() == "10..=17");
-    assert!(range_set_int.len_slow() == range_set_int.len());
+    assert!(range_set_int._len_slow() == range_set_int.len());
 }
 
 #[test]
@@ -240,7 +237,7 @@ fn demo_b3() {
     let mut range_set_int = RangeSetInt::<u8>::from("10..=15,160..=160");
     range_set_int.internal_add(12, 17);
     assert!(range_set_int.to_string() == "10..=17,160..=160");
-    assert!(range_set_int.len_slow() == range_set_int.len());
+    assert!(range_set_int._len_slow() == range_set_int.len());
 }
 
 #[test]
@@ -253,39 +250,7 @@ fn demo_a() {
     let mut range_set_int = RangeSetInt::<u8>::from("10..=14");
     range_set_int.internal_add(12, 12);
     assert!(range_set_int.to_string() == "10..=14");
-    assert!(range_set_int.len_slow() == range_set_int.len());
-}
-
-#[test]
-fn test7() {
-    let mut range_set = RangeSetInt::new();
-    let mut index = 0u64;
-    #[allow(clippy::explicit_counter_loop)]
-    for value in RandomData::new(
-        0,
-        // RangeX {
-        //     start: 20,
-        //     length: 10,
-        // },
-        // 1,
-        RangeX {
-            start: 20,
-            length: 1_300_300_010,
-        },
-        100_000,
-    ) {
-        if index % 10_000_000 == 0 {
-            println!(
-                "index {}, range_count {}",
-                index.separate_with_commas(),
-                range_set.items.len().separate_with_commas()
-            );
-        }
-        index += 1;
-        range_set.internal_add(value, value + 1);
-        // println!("{value}->{range_set}");
-    }
-    // println!("{:?}", range_set._items);
+    assert!(range_set_int._len_slow() == range_set_int.len());
 }
 
 // #[test]
@@ -519,100 +484,3 @@ fn test7() {
 //     assert!(range_set._items[1].start == 3);
 //     assert!(range_set._items[1].length == 3);
 // }
-
-#[derive(Debug)]
-struct RangeX {
-    start: u64,
-    length: u64,
-}
-
-// impl RangeX {
-//     fn end(&self) -> u128 {
-//         self.start + self.length
-//     }
-// }
-
-struct RandomData {
-    rng: StdRng,
-    current: Option<RangeX>,
-    data_range: Vec<RangeX>,
-    small_enough: u64,
-}
-
-impl RandomData {
-    fn new(seed: u64, range: RangeX, small_enough: u64) -> Self {
-        Self {
-            rng: StdRng::seed_from_u64(seed),
-            current: None,
-            data_range: vec![range],
-            small_enough,
-        }
-    }
-}
-
-impl Iterator for RandomData {
-    type Item = u64;
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(current) = &mut self.current {
-            let value = current.start;
-            self.current = if current.length > 1 {
-                Some(RangeX {
-                    start: current.start + 1,
-                    length: current.length - 1,
-                })
-            } else {
-                None
-            };
-            Some(value)
-        } else if self.data_range.is_empty() {
-            None
-        } else {
-            let range = self.data_range.pop().unwrap();
-            if range.length <= self.small_enough {
-                self.current = Some(range);
-                self.next()
-            } else {
-                let split = 5;
-                let delete_fraction = 0.1;
-                let dup_fraction = 0.01;
-                let part_list =
-                    _process_this_level(split, range, &mut self.rng, delete_fraction, dup_fraction);
-                self.data_range.splice(0..0, part_list);
-                self.next()
-            }
-        }
-    }
-}
-
-fn _process_this_level(
-    split: u64,
-    range: RangeX,
-    rng: &mut StdRng,
-    delete_fraction: f64,
-    dup_fraction: f64,
-) -> Vec<RangeX> {
-    let mut part_list = Vec::<RangeX>::new();
-    for i in 0..split {
-        let start = i * range.length / split + range.start;
-        let end = (i + 1) * range.length / split + range.start;
-
-        if rng.gen::<f64>() < delete_fraction {
-            continue;
-        }
-
-        part_list.push(RangeX {
-            start,
-            length: end - start,
-        });
-
-        if rng.gen::<f64>() < dup_fraction {
-            part_list.push(RangeX {
-                start,
-                length: end - start,
-            });
-        }
-    }
-    // shuffle the list
-    part_list.shuffle(rng);
-    part_list
-}

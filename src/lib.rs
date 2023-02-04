@@ -3,7 +3,7 @@
 
 // https://docs.rs/rangemap Very similar to this crate but can only use Ranges and RangeInclusives as keys in it's map and set structs (separately).
 // https://docs.rs/btree-range-map
-// https://docs.rs/ranges Cool library for fully-generic ranges (unlike std::ops ranges), along with a Ranges datastructure for storing them (Vec-based unfortunately)
+// https://docs.rs/ranges Cool library for fully-generic ranges (unlike std::ops ranges), along with a Ranges data structure for storing them (Vec-based unfortunately)
 // https://docs.rs/intervaltree Allows overlapping intervals but is immutable unfortunately
 // https://docs.rs/nonoverlapping_interval_tree Very similar to rangemap except without a gaps() function and only for Ranges and not RangeInclusives. And also no fancy coalescing functions.
 // https://docs.rs/unbounded-interval-tree A data structure based off of a 2007 published paper! It supports any RangeBounds as keys too, except it is implemented with a non-balancing Box<Node> based tree, however it also supports overlapping RangeBounds which my library does not.
@@ -76,7 +76,7 @@ pub fn fmt<T: Integer>(items: &BTreeMap<T, T>) -> String {
 }
 
 /// !!! cmk understand this
-fn len_slow<T: Integer>(items: &BTreeMap<T, T>) -> <T as SafeSubtract>::Output
+fn _len_slow<T: Integer>(items: &BTreeMap<T, T>) -> <T as SafeSubtract>::Output
 where
     for<'a> &'a T: Sub<&'a T, Output = T>,
 {
@@ -121,12 +121,6 @@ fn delete_extra<T: Integer>(
     start: T,
     stop: T,
 ) {
-    let stop_t = if let Ok(stop_t) = stop.try_into() {
-        stop_t
-    } else {
-        panic!("cmk");
-    };
-
     let mut after = items.range_mut(start..);
     let (start_after, stop_after) = after.next().unwrap(); // !!! cmk assert that there is a next
     assert!(start == *start_after && stop == *stop_after); // !!! cmk real assert
@@ -135,7 +129,7 @@ fn delete_extra<T: Integer>(
     let delete_list = after
         .map_while(|(start_delete, stop_delete)| {
             // must check this in two parts to avoid overflow
-            if *start_delete <= stop_t || *start_delete <= stop_t + T::one() {
+            if *start_delete <= stop || *start_delete <= stop + T::one() {
                 stop_new = max(stop_new, *stop_delete);
                 *len -= T::safe_subtract_inclusive(*stop_delete, *start_delete);
                 Some(*start_delete)
@@ -225,11 +219,15 @@ impl<T: Integer> RangeSetInt<T> {
         self.len.clone()
     }
 
-    fn len_slow(&self) -> <T as SafeSubtract>::Output
+    fn _len_slow(&self) -> <T as SafeSubtract>::Output
     where
         for<'a> &'a T: Sub<&'a T, Output = T>,
     {
-        len_slow(&self.items)
+        _len_slow(&self.items)
+    }
+
+    pub fn insert(&mut self, item: T) {
+        self.internal_add(item, item);
     }
 
     /// Moves all elements from `other` into `self`, leaving `other` empty.
@@ -282,6 +280,21 @@ impl<T: Integer> RangeSetInt<T> {
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     fn internal_add(&mut self, start: T, stop: T) {
         internal_add(&mut self.items, &mut self.len, start, stop);
+    }
+
+    pub fn range_len(&self) -> usize {
+        self.items.len()
+    }
+
+    pub fn from_iter_x<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+    {
+        let mut result = RangeSetInt::new();
+        for value in iter.into_iter() {
+            result.internal_add(value, value);
+        }
+        result
     }
 }
 
@@ -412,6 +425,7 @@ impl<T: Integer> Sub<&RangeSetInt<T>> for &RangeSetInt<T> {
     }
 }
 
+// !!!cmk merge this with from_iter
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     fn from(arr: [T; N]) -> Self {
         let mut result = RangeSetInt::new();
@@ -458,10 +472,9 @@ impl<T: Integer> Iterator for IntoIter<T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(stop) = self.stop {
-            let stop_t = stop.try_into().ok().unwrap(); // !!!cmk
-            if self.start <= stop_t {
+            if self.start <= stop {
                 let result = self.start;
-                if self.start < stop_t {
+                if self.start < stop {
                     self.start += T::one();
                 } else {
                     self.stop = None;
@@ -515,11 +528,11 @@ impl SafeSubtract for u8 {
 
 impl SafeSubtract for i32 {
     #[cfg(target_pointer_width = "16")]
-    type Output = usize;
+    type Output = u64;
     #[cfg(target_pointer_width = "32")]
     type Output = u64;
     #[cfg(target_pointer_width = "64")]
-    type Output = u128;
+    type Output = usize;
     fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
         end.overflowing_sub(start).0 as u32 as <Self as SafeSubtract>::Output
     }
@@ -533,11 +546,11 @@ impl SafeSubtract for i32 {
 
 impl SafeSubtract for u32 {
     #[cfg(target_pointer_width = "16")]
-    type Output = usize;
+    type Output = u64;
     #[cfg(target_pointer_width = "32")]
     type Output = u64;
     #[cfg(target_pointer_width = "64")]
-    type Output = u128;
+    type Output = usize;
     fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output {
         end.overflowing_sub(start).0 as <Self as SafeSubtract>::Output
     }

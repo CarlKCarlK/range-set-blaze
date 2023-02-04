@@ -1,7 +1,7 @@
 // https://bheisler.github.io/criterion.rs/book/getting_started.html
 // https://www.jibbow.com/posts/criterion-flamegraphs/
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rangeset_int::RangeSetInt;
@@ -168,5 +168,42 @@ fn _process_this_level(
     part_list
 }
 
-criterion_group!(benches, insert10, small_random_inserts, big_random_inserts);
+// fn shuffled(c: &mut Criterion) {
+//     c.bench_function("shuffled", |b| b.iter(shuffled_test))
+//         .sample_size(10);
+// }
+
+pub fn shuffled(c: &mut Criterion) {
+    let seed = 0;
+    let len = 2u32.pow(25); // 25 cmk
+    let mut group = c.benchmark_group("shuffled");
+    group.sample_size(10);
+    group.bench_function("shuffled", |b| {
+        b.iter_batched(
+            || gen_data(seed, len),
+            |data| shuffled_test(data, len as usize),
+            BatchSize::SmallInput,
+        );
+    });
+}
+
+fn gen_data(seed: u64, len: u32) -> Vec<u32> {
+    let mut rng = StdRng::seed_from_u64(seed);
+    let mut data: Vec<u32> = (0..len).collect();
+    data.shuffle(&mut rng);
+    data
+}
+
+fn shuffled_test(data: Vec<u32>, len: usize) {
+    let rangeset_int = RangeSetInt::<u32>::from_iter_x(data.into_iter());
+    assert!(rangeset_int.range_len() == 1 && rangeset_int.len() == len);
+}
+
+criterion_group!(
+    benches,
+    insert10,
+    small_random_inserts,
+    big_random_inserts,
+    shuffled
+);
 criterion_main!(benches);
