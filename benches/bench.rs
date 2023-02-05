@@ -178,7 +178,7 @@ use range_set_int::{RangeSetInt, X32};
 
 pub fn shuffled(c: &mut Criterion) {
     let seed = 0;
-    let len = 2u32.pow(20); // 25 cmk
+    let len = 2u32.pow(23); // 25 cmk
     let mut group = c.benchmark_group("shuffled");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
@@ -267,7 +267,7 @@ fn gen_data_descending(_seed: u64, len: u32) -> Vec<u32> {
 }
 
 fn range_set_test(data: Vec<u32>, range_len: usize, len: usize) {
-    let range_set_int = RangeSetInt::<u32>::from_iter(data);
+    let range_set_int = RangeSetInt::<u32>::from(data.as_slice());
     assert!(range_set_int.range_len() == range_len && range_set_int.len() == len);
 }
 

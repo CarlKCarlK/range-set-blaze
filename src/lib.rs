@@ -728,6 +728,13 @@ pub struct X32<'a, T: Integer> {
     upper: T,
 }
 
+pub struct X32Own<T: Integer> {
+    pub range_set_int: RangeSetInt<T>,
+    is_empty: bool,
+    lower: T,
+    upper: T,
+}
+
 impl<'a, T: Integer> X32<'a, T> {
     pub fn new(range_set_int: &'a mut RangeSetInt<T>) -> Self {
         Self {
@@ -770,12 +777,55 @@ impl<'a, T: Integer> X32<'a, T> {
     }
 }
 
+impl<T: Integer> X32Own<T> {
+    pub fn insert(&mut self, i: T) {
+        if self.is_empty {
+            self.lower = i;
+            self.upper = i;
+            self.is_empty = false;
+        } else {
+            if self.lower <= i && i <= self.upper {
+                return;
+            }
+            if T::zero() < self.lower && self.lower - T::one() == i {
+                self.lower = i;
+                return;
+            }
+            // !!!cmk max_value2, right?
+            if self.upper < T::max_value2() && self.upper + T::one() == i {
+                self.upper = i;
+                return;
+            }
+            self.range_set_int.internal_add(self.lower, self.upper);
+            self.lower = i;
+            self.upper = i;
+        }
+    }
+
+    // !!! cmk what if forget to call this?
+    pub fn save(&mut self) {
+        if !self.is_empty {
+            self.range_set_int.internal_add(self.lower, self.upper);
+            self.is_empty = true;
+        }
+    }
+
+    pub fn merge(mut self, mut other: Self) -> Self {
+        self.save();
+        other.save();
+        for (lower, upper) in other.range_set_int.items.iter() {
+            self.range_set_int.internal_add(*lower, *upper);
+        }
+        self
+    }
+}
+
 // !!!cmk can we make a version of Extends that takes a slice and parallelizes it?
 // !!!cmk or does Rayon work with iterators in a way that would work for us?
 impl<T: Integer> From<&[T]> for RangeSetInt<T> {
     fn from(slice: &[T]) -> Self {
         // let num_s = [1, 2, 1, 2, 1, 2];
-        // let result: HashMap<i32, i32> = nums
+        // let result: HashMap<i32, i32> = num_s
         //     .par_iter()
         //     .filter(|x| *x % 2 == 0)
         //     .fold(HashMap::new, |mut acc, x| {
@@ -792,16 +842,23 @@ impl<T: Integer> From<&[T]> for RangeSetInt<T> {
         let r = slice
             .par_iter()
             .fold(
-                || RangeSetInt::<T>::new(),
+                || {
+                    let range_set_int = RangeSetInt::<T>::new();
+                    X32Own {
+                        range_set_int,
+                        is_empty: true,
+                        lower: T::zero(),
+                        upper: T::zero(),
+                    }
+                },
                 |mut acc, i| {
                     acc.insert(*i);
                     acc
                 },
             )
-            .reduce_with(|m1, m2| &m1 | &m2)
+            .reduce_with(|m1, m2| m1.merge(m2))
             .unwrap();
-
-        r
+        r.range_set_int
     }
 }
 impl<T: Integer> Extend<T> for RangeSetInt<T> {
