@@ -3,6 +3,7 @@
 use std::collections::BTreeSet;
 
 use super::*;
+use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use syntactic_for::syntactic_for;
 
 #[test]
@@ -484,3 +485,31 @@ fn demo_a() {
 //     assert!(range_set._items[1].start == 3);
 //     assert!(range_set._items[1].length == 3);
 // }
+
+#[test]
+fn add_in_order() {
+    let mut range_set = RangeSetInt::new();
+    for i in 0u64..1000 {
+        range_set.insert(i);
+    }
+}
+
+#[test]
+fn x32() {
+    let seed = 0;
+    let len = 5;
+    let mut rng = StdRng::seed_from_u64(seed);
+    let mut data: Vec<u32> = (0..len).collect();
+    data.shuffle(&mut rng);
+    println!("{data:?}");
+
+    let mut x32 = X32::new();
+    for i in data {
+        x32.insert(i);
+        println!("{x32:?}");
+    }
+    x32.save();
+    let rangeset_int = x32.range_set_int;
+    println!("{rangeset_int:?}");
+    assert!(rangeset_int.range_len() == 1 && rangeset_int.len() == len as usize);
+}

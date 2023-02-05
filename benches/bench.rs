@@ -8,6 +8,7 @@ use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
 use rangeset_int::RangeSetInt;
+use rangeset_int::X32;
 // use thousands::Separable;
 
 // fn insert10(c: &mut Criterion) {
@@ -196,6 +197,13 @@ pub fn shuffled(c: &mut Criterion) {
             BatchSize::SmallInput,
         );
     });
+    group.bench_function("shuffled X32", |b| {
+        b.iter_batched(
+            || gen_data_shuffled(seed, len),
+            |data| x32_test(data, 1, len as usize),
+            BatchSize::SmallInput,
+        );
+    });
 }
 
 fn gen_data_shuffled(seed: u64, len: u32) -> Vec<u32> {
@@ -240,6 +248,13 @@ pub fn descending(c: &mut Criterion) {
             BatchSize::SmallInput,
         );
     });
+    group.bench_function("descending X32", |b| {
+        b.iter_batched(
+            || gen_data_descending(seed, len),
+            |data| x32_test(data, 1, len as usize),
+            BatchSize::SmallInput,
+        );
+    });
 }
 
 fn gen_data_ascending(_seed: u64, len: u32) -> Vec<u32> {
@@ -254,6 +269,16 @@ fn gen_data_descending(_seed: u64, len: u32) -> Vec<u32> {
 
 fn range_set_test(data: Vec<u32>, range_len: usize, len: usize) {
     let rangeset_int = RangeSetInt::<u32>::from_iter_cmk(data.into_iter());
+    assert!(rangeset_int.range_len() == range_len && rangeset_int.len() == len);
+}
+
+fn x32_test(data: Vec<u32>, range_len: usize, len: usize) {
+    let mut x32 = X32::new();
+    for i in data {
+        x32.insert(i);
+    }
+    x32.save();
+    let rangeset_int = x32.range_set_int;
     assert!(rangeset_int.range_len() == range_len && rangeset_int.len() == len);
 }
 

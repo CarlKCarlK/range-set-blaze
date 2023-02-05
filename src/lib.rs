@@ -123,8 +123,8 @@ fn delete_extra<T: Integer>(
 ) {
     let mut after = items.range_mut(start..);
     let (start_after, stop_after) = after.next().unwrap(); // !!! cmk assert that there is a next
-    assert!(start == *start_after && stop == *stop_after); // !!! cmk real assert
-                                                           // !!!cmk would be nice to have a delete_range function
+    debug_assert!(start == *start_after && stop == *stop_after); // !!! cmk real assert
+                                                                 // !!!cmk would be nice to have a delete_range function
     let mut stop_new = stop;
     let delete_list = after
         .map_while(|(start_delete, stop_delete)| {
@@ -242,8 +242,8 @@ impl<T: Integer> RangeSetInt<T> {
     ///
     /// a.append(&mut b);
     ///
-    /// assert_eq!(a.len(), 5u128);
-    /// assert_eq!(b.len(), 0u128);
+    /// assert_eq!(a.len(), 5usize);
+    /// assert_eq!(b.len(), 0usize);
     ///
     /// assert!(a.contains(1));
     /// assert!(a.contains(2));
@@ -720,3 +720,50 @@ impl SafeSubtract for u16 {
 // pub fn test_me_i32(i: i32) {
 //     test_me(i);
 // }
+
+#[derive(Debug)]
+pub struct X32 {
+    pub range_set_int: RangeSetInt<u32>,
+    is_empty: bool,
+    lower: u32,
+    upper: u32,
+}
+
+impl X32 {
+    pub fn new() -> Self {
+        Self {
+            range_set_int: RangeSetInt::new(),
+            is_empty: true,
+            lower: 0,
+            upper: 0,
+        }
+    }
+    pub fn insert(&mut self, i: u32) {
+        if self.is_empty {
+            self.lower = i;
+            self.upper = i;
+            self.is_empty = false;
+        } else {
+            if self.lower <= i && i <= self.upper {
+                return;
+            }
+            if 0 < self.lower && self.lower - 1 == i {
+                self.lower = i;
+                return;
+            }
+            if self.upper < u32::MAX && self.upper + 1 == i {
+                self.upper = i;
+                return;
+            }
+            self.range_set_int.internal_add(self.lower, self.upper);
+            self.lower = i;
+            self.upper = i;
+        }
+    }
+    pub fn save(&mut self) {
+        if !self.is_empty {
+            self.range_set_int.internal_add(self.lower, self.upper);
+            self.is_empty = true;
+        }
+    }
+}
