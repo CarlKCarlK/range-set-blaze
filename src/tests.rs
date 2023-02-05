@@ -79,7 +79,7 @@ fn repro2() {
 
 #[test]
 fn doctest1() {
-    // use rangeset_int::RangeSetInt;
+    // use range_set_int::RangeSetInt;
 
     let a = RangeSetInt::<u8>::from([1, 2, 3]);
     let b = RangeSetInt::<u8>::from([3, 4, 5]);
@@ -503,13 +503,13 @@ fn x32() {
     data.shuffle(&mut rng);
     println!("{data:?}");
 
-    let mut x32 = X32::new();
+    let mut range_set_int = RangeSetInt::new();
+    let mut x32 = X32::new(&mut range_set_int);
     for i in data {
         x32.insert(i);
         println!("{x32:?}");
     }
     x32.save();
-    let rangeset_int = x32.range_set_int;
-    println!("{rangeset_int:?}");
-    assert!(rangeset_int.range_len() == 1 && rangeset_int.len() == len as usize);
+    println!("{range_set_int:?}");
+    assert!(range_set_int.range_len() == 1 && range_set_int.len() == len as usize);
 }

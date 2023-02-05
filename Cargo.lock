@@ -417,7 +417,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rangeset-int"
+name = "range-set-int"
 version = "0.1.0"
 dependencies = [
  "criterion",

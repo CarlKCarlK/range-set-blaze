@@ -191,12 +191,13 @@ where
 
 impl<T: Integer> From<&[T]> for RangeSetInt<T> {
     fn from(slice: &[T]) -> Self {
-        let mut x32 = X32::new();
+        let mut range_set_int = RangeSetInt::<T>::new();
+        let mut x32 = X32::new(&mut range_set_int);
         for i in slice {
             x32.insert(*i);
         }
         x32.save();
-        x32.range_set_int
+        range_set_int
     }
 }
 
@@ -246,7 +247,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use rangeset_int::RangeSetInt;
+    /// use range_set_int::RangeSetInt;
     ///
     /// let mut a = RangeSetInt::from("1..=3");
     /// let mut b = RangeSetInt::from("3..=5");
@@ -274,7 +275,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use rangeset_int::RangeSetInt;
+    /// use range_set_int::RangeSetInt;
     ///
     /// let set = RangeSetInt::from([1, 2, 3]);
     /// assert_eq!(set.contains(1), true);
@@ -303,12 +304,31 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
-        let mut x32 = X32::new();
+        let mut range_set_int = RangeSetInt::<T>::new();
+        let mut x32 = X32::new(&mut range_set_int);
         for value in iter.into_iter() {
             x32.insert(value);
         }
         x32.save();
-        x32.range_set_int
+        range_set_int
+    }
+}
+
+impl<T: Integer> Extend<T> for RangeSetInt<T> {
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = T>,
+    {
+        let mut x32 = X32 {
+            range_set_int: self,
+            is_empty: true,
+            lower: T::zero(),
+            upper: T::zero(),
+        };
+        for value in iter.into_iter() {
+            x32.insert(value);
+        }
+        x32.save();
     }
 }
 
@@ -320,7 +340,7 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use rangeset_int::RangeSetInt;
+    /// use range_set_int::RangeSetInt;
     ///
     /// let a = RangeSetInt::from([1, 2, 3]);
     /// let b = RangeSetInt::from([3, 4, 5]);
@@ -345,7 +365,7 @@ impl<T: Integer> Not for &RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use rangeset_int::RangeSetInt;
+    /// use range_set_int::RangeSetInt;
     ///
     /// let a = RangeSetInt::<i8>::from([1, 2, 3]);
     ///
@@ -383,7 +403,7 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use rangeset_int::RangeSetInt;
+    /// use range_set_int::RangeSetInt;
     ///
     /// let a = RangeSetInt::from([1, 2, 3]);
     /// let b = RangeSetInt::from([2, 3, 4]);
@@ -405,7 +425,7 @@ impl<T: Integer> BitXor<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use rangeset_int::RangeSetInt;
+    /// use range_set_int::RangeSetInt;
     ///
     /// let a = RangeSetInt::from([1, 2, 3]);
     /// let b = RangeSetInt::from([2, 3, 4]);
@@ -426,7 +446,7 @@ impl<T: Integer> Sub<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use rangeset_int::RangeSetInt;
+    /// use range_set_int::RangeSetInt;
     ///
     /// let a = RangeSetInt::from([1, 2, 3]);
     /// let b = RangeSetInt::from([2, 3, 4]);
@@ -459,7 +479,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use rangeset_int::RangeSetInt;
+    /// use range_set_int::RangeSetInt;
     ///
     /// let set = RangeSetInt::from([1, 2, 3, 4]);
     ///
@@ -736,17 +756,17 @@ impl SafeSubtract for u16 {
 // }
 
 #[derive(Debug)]
-pub struct X32<T: Integer> {
-    pub range_set_int: RangeSetInt<T>,
+pub struct X32<'a, T: Integer> {
+    pub range_set_int: &'a mut RangeSetInt<T>,
     is_empty: bool,
     lower: T,
     upper: T,
 }
 
-impl<T: Integer> X32<T> {
-    pub fn new() -> Self {
+impl<'a, T: Integer> X32<'a, T> {
+    pub fn new(range_set_int: &'a mut RangeSetInt<T>) -> Self {
         Self {
-            range_set_int: RangeSetInt::new(),
+            range_set_int,
             is_empty: true,
             lower: T::zero(),
             upper: T::zero(),
@@ -775,16 +795,12 @@ impl<T: Integer> X32<T> {
             self.upper = i;
         }
     }
+
+    // !!! cmk what if forget to call this?
     pub fn save(&mut self) {
         if !self.is_empty {
             self.range_set_int.internal_add(self.lower, self.upper);
             self.is_empty = true;
         }
-    }
-}
-
-impl<T: Integer> Default for X32<T> {
-    fn default() -> Self {
-        Self::new()
     }
 }

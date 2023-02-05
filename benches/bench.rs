@@ -7,8 +7,7 @@ use std::collections::BTreeSet;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
-use rangeset_int::RangeSetInt;
-use rangeset_int::X32;
+use rangeset_int::{RangeSetInt, X32};
 // use thousands::Separable;
 
 // fn insert10(c: &mut Criterion) {
@@ -268,18 +267,18 @@ fn gen_data_descending(_seed: u64, len: u32) -> Vec<u32> {
 }
 
 fn range_set_test(data: Vec<u32>, range_len: usize, len: usize) {
-    let rangeset_int = RangeSetInt::<u32>::from_iter(data);
-    assert!(rangeset_int.range_len() == range_len && rangeset_int.len() == len);
+    let range_set_int = RangeSetInt::<u32>::from_iter(data);
+    assert!(range_set_int.range_len() == range_len && range_set_int.len() == len);
 }
 
 fn x32_test(data: Vec<u32>, range_len: usize, len: usize) {
-    let mut x32 = X32::new();
+    let mut range_set_int = RangeSetInt::<u32>::new();
+    let mut x32 = X32::new(&mut range_set_int);
     for i in data {
         x32.insert(i);
     }
     x32.save();
-    let rangeset_int = x32.range_set_int;
-    assert!(rangeset_int.range_len() == range_len && rangeset_int.len() == len);
+    assert!(range_set_int.range_len() == range_len && range_set_int.len() == len);
 }
 
 fn btree_set_test(data: Vec<u32>, _range_len: usize, len: usize) {
