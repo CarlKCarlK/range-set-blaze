@@ -305,11 +305,7 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
         I: IntoIterator<Item = T>,
     {
         let mut range_set_int = RangeSetInt::<T>::new();
-        let mut x32 = X32::new(&mut range_set_int);
-        for value in iter.into_iter() {
-            x32.insert(value);
-        }
-        x32.save();
+        range_set_int.extend(iter);
         range_set_int
     }
 }
@@ -462,11 +458,7 @@ impl<T: Integer> Sub<&RangeSetInt<T>> for &RangeSetInt<T> {
 // !!!cmk merge this with from_iter
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     fn from(arr: [T; N]) -> Self {
-        let mut result = RangeSetInt::new();
-        for value in arr.iter() {
-            result.internal_add(*value, *value);
-        }
-        result
+        RangeSetInt::from(arr.as_slice())
     }
 }
 

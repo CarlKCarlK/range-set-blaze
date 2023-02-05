@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
-use rangeset_int::{RangeSetInt, X32};
+use range_set_int::{RangeSetInt, X32};
 // use thousands::Separable;
 
 // fn insert10(c: &mut Criterion) {
