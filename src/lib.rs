@@ -286,7 +286,7 @@ impl<T: Integer> RangeSetInt<T> {
         self.items.len()
     }
 
-    pub fn from_iter_x<I>(iter: I) -> Self
+    pub fn from_iter_cmk<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = T>,
     {
