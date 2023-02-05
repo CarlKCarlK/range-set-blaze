@@ -26,6 +26,7 @@ use itertools::Itertools;
 use num_traits::Zero;
 use std::cmp::max;
 // use std::collections::btree_map::Range;
+use rayon::prelude::*; // !!! use preludes or not?
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
@@ -46,6 +47,7 @@ trait_set! {
     + num_traits::Bounded
     + num_traits::NumCast
     + SafeSubtract
++ Send + Sync
     ;
 }
 
@@ -60,6 +62,7 @@ pub trait SafeSubtract {
         + Eq
         + PartialOrd
         + Ord
+        + Send
         + Default;
     // !!!cmk 0
     // !!!cmk inline?
@@ -189,18 +192,6 @@ where
     }
 }
 
-impl<T: Integer> From<&[T]> for RangeSetInt<T> {
-    fn from(slice: &[T]) -> Self {
-        let mut range_set_int = RangeSetInt::<T>::new();
-        let mut x32 = X32::new(&mut range_set_int);
-        for i in slice {
-            x32.insert(*i);
-        }
-        x32.save();
-        range_set_int
-    }
-}
-
 impl<T: Integer> fmt::Debug for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", fmt(&self.items))
@@ -307,24 +298,6 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
         let mut range_set_int = RangeSetInt::<T>::new();
         range_set_int.extend(iter);
         range_set_int
-    }
-}
-
-impl<T: Integer> Extend<T> for RangeSetInt<T> {
-    fn extend<I>(&mut self, iter: I)
-    where
-        I: IntoIterator<Item = T>,
-    {
-        let mut x32 = X32 {
-            range_set_int: self,
-            is_empty: true,
-            lower: T::zero(),
-            upper: T::zero(),
-        };
-        for value in iter.into_iter() {
-            x32.insert(value);
-        }
-        x32.save();
     }
 }
 
@@ -794,5 +767,63 @@ impl<'a, T: Integer> X32<'a, T> {
             self.range_set_int.internal_add(self.lower, self.upper);
             self.is_empty = true;
         }
+    }
+}
+
+// !!!cmk can we make a version of Extends that takes a slice and parallelizes it?
+// !!!cmk or does Rayon work with iterators in a way that would work for us?
+impl<T: Integer> From<&[T]> for RangeSetInt<T> {
+    fn from(slice: &[T]) -> Self {
+        // let num_s = [1, 2, 1, 2, 1, 2];
+        // let result: HashMap<i32, i32> = nums
+        //     .par_iter()
+        //     .filter(|x| *x % 2 == 0)
+        //     .fold(HashMap::new, |mut acc, x| {
+        //         *acc.entry(*x).or_insert(0) += 1;
+        //         acc
+        //     })
+        //     .reduce_with(|mut m1, m2| {
+        //         for (k, v) in m2 {
+        //             *m1.entry(k).or_default() += v;
+        //         }
+        //         m1
+        //     })
+        //     .unwrap();
+        let r = slice
+            .par_iter()
+            .fold(
+                || RangeSetInt::<T>::new(),
+                |mut acc, i| {
+                    acc.insert(*i);
+                    acc
+                },
+            )
+            .reduce_with(|m1, m2| &m1 | &m2)
+            .unwrap();
+
+        r
+    }
+}
+impl<T: Integer> Extend<T> for RangeSetInt<T> {
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = T>,
+    {
+        let mut x32 = X32 {
+            range_set_int: self,
+            is_empty: true,
+            lower: T::zero(),
+            upper: T::zero(),
+        };
+        for value in iter.into_iter() {
+            x32.insert(value);
+        }
+        x32.save();
+    }
+}
+
+impl<'a, T: 'a + Integer> Extend<&'a T> for RangeSetInt<T> {
+    fn extend<I: IntoIterator<Item = &'a T>>(&mut self, iter: I) {
+        self.extend(iter.into_iter().cloned());
     }
 }
