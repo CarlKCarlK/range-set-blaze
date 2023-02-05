@@ -189,6 +189,17 @@ where
     }
 }
 
+impl<T: Integer> From<&[T]> for RangeSetInt<T> {
+    fn from(slice: &[T]) -> Self {
+        let mut x32 = X32::new();
+        for i in slice {
+            x32.insert(*i);
+        }
+        x32.save();
+        x32.range_set_int
+    }
+}
+
 impl<T: Integer> fmt::Debug for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", fmt(&self.items))
@@ -285,16 +296,19 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn range_len(&self) -> usize {
         self.items.len()
     }
+}
 
-    pub fn from_iter_cmk<I>(iter: I) -> Self
+impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
+    fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = T>,
     {
-        let mut result = RangeSetInt::new();
+        let mut x32 = X32::new();
         for value in iter.into_iter() {
-            result.internal_add(value, value);
+            x32.insert(value);
         }
-        result
+        x32.save();
+        x32.range_set_int
     }
 }
 
@@ -722,23 +736,23 @@ impl SafeSubtract for u16 {
 // }
 
 #[derive(Debug)]
-pub struct X32 {
-    pub range_set_int: RangeSetInt<u32>,
+pub struct X32<T: Integer> {
+    pub range_set_int: RangeSetInt<T>,
     is_empty: bool,
-    lower: u32,
-    upper: u32,
+    lower: T,
+    upper: T,
 }
 
-impl X32 {
+impl<T: Integer> X32<T> {
     pub fn new() -> Self {
         Self {
             range_set_int: RangeSetInt::new(),
             is_empty: true,
-            lower: 0,
-            upper: 0,
+            lower: T::zero(),
+            upper: T::zero(),
         }
     }
-    pub fn insert(&mut self, i: u32) {
+    pub fn insert(&mut self, i: T) {
         if self.is_empty {
             self.lower = i;
             self.upper = i;
@@ -747,11 +761,12 @@ impl X32 {
             if self.lower <= i && i <= self.upper {
                 return;
             }
-            if 0 < self.lower && self.lower - 1 == i {
+            if T::zero() < self.lower && self.lower - T::one() == i {
                 self.lower = i;
                 return;
             }
-            if self.upper < u32::MAX && self.upper + 1 == i {
+            // !!!cmk max_value2, right?
+            if self.upper < T::max_value2() && self.upper + T::one() == i {
                 self.upper = i;
                 return;
             }
@@ -765,5 +780,11 @@ impl X32 {
             self.range_set_int.internal_add(self.lower, self.upper);
             self.is_empty = true;
         }
+    }
+}
+
+impl<T: Integer> Default for X32<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }

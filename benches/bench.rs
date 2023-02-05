@@ -268,7 +268,7 @@ fn gen_data_descending(_seed: u64, len: u32) -> Vec<u32> {
 }
 
 fn range_set_test(data: Vec<u32>, range_len: usize, len: usize) {
-    let rangeset_int = RangeSetInt::<u32>::from_iter_cmk(data.into_iter());
+    let rangeset_int = RangeSetInt::<u32>::from_iter(data);
     assert!(rangeset_int.range_len() == range_len && rangeset_int.len() == len);
 }
 
