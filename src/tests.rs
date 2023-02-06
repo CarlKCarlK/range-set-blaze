@@ -513,3 +513,13 @@ fn x32() {
     println!("{range_set_int:?}");
     assert!(range_set_int.range_len() == 1 && range_set_int.len() == len as usize);
 }
+
+#[test]
+fn memoryless_data() {
+    let len = 10_000_000;
+    let coverage_goal = 0.95;
+    let memoryless_data = MemorylessData::new(0, 10_000, len, coverage_goal);
+    let range_set_int = RangeSetInt::from_iter(memoryless_data);
+    let coverage = range_set_int.len() as f64 / len as f64;
+    println!(" {coverage:?} {:?}", range_set_int.range_len());
+}

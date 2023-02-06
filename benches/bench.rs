@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
-use range_set_int::{RangeSetInt, X32};
+use range_set_int::{MemorylessData, RangeSetInt, X32};
 // use thousands::Separable;
 
 // fn insert10(c: &mut Criterion) {
@@ -286,10 +286,32 @@ fn btree_set_test(data: Vec<u32>, _range_len: usize, len: usize) {
     assert!(btree_set.len() == len);
 }
 
+pub fn clumps(c: &mut Criterion) {
+    let len = 10_000_000;
+    let coverage_goal = 0.95;
+    let mut group = c.benchmark_group("clumps");
+    group.sample_size(10);
+    // group.measurement_time(Duration::from_secs(170));
+    group.bench_function("clumps range_set_int", |b| {
+        b.iter_batched(
+            || MemorylessData::new(0, 10_000, len, coverage_goal),
+            RangeSetInt::<u64>::from_iter,
+            BatchSize::SmallInput,
+        );
+    });
+    group.bench_function("clumps btree_set", |b| {
+        b.iter_batched(
+            || MemorylessData::new(0, 10_000, len, coverage_goal),
+            BTreeSet::<u64>::from_iter,
+            BatchSize::SmallInput,
+        );
+    });
+}
+
 criterion_group!(
     benches, // insert10,
     // small_random_inserts,
     // big_random_inserts,
-    shuffled, ascending, descending
+    shuffled, ascending, descending, clumps
 );
 criterion_main!(benches);
