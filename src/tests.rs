@@ -5,6 +5,7 @@ use std::collections::BTreeSet;
 use super::*;
 use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use syntactic_for::syntactic_for;
+use thousands::Separable;
 
 #[test]
 fn insert_255u8() {
@@ -516,10 +517,13 @@ fn x32() {
 
 #[test]
 fn memoryless_data() {
-    let len = 10_000_000;
-    let coverage_goal = 0.95;
-    let memoryless_data = MemorylessData::new(0, 10_000, len, coverage_goal);
+    let len = 1_000_000_000;
+    let coverage_goal = 0.75;
+    let memoryless_data = MemorylessData::new(0, 100_000_000, len, coverage_goal);
     let range_set_int = RangeSetInt::from_iter(memoryless_data);
     let coverage = range_set_int.len() as f64 / len as f64;
-    println!(" {coverage:?} {:?}", range_set_int.range_len());
+    println!(
+        "coverage {coverage:?} range_len {:?}",
+        range_set_int.range_len().separate_with_commas()
+    );
 }

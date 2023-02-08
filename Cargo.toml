@@ -6,7 +6,6 @@ edition = "2021"
 [lib]
 
 [dependencies]
-
 # !!!cmk make rayon a feature?
 rand = "0.8.5"
 thousands = "0.2.0"
@@ -19,7 +18,11 @@ rayon = "1.5.1"
 [dev-dependencies]
 syntactic-for = "0.1.1"
 criterion = "0.4.0"
+# pprof = { version = "0.11.0", features = ["flamegraph", "criterion"] }
 
 [[bench]]
 name = "bench"
 harness = false
+
+[profile.release]
+debug = true

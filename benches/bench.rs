@@ -1,10 +1,13 @@
 // https://bheisler.github.io/criterion.rs/book/getting_started.html
+// https://www.notamonadtutorial.com/benchmarking-and-analyzing-rust-performance-with-criterion-and-iai/#:~:text=It%20was%20written%20by%20the%20master%20of%20all,process%2C%20including%20calls%20from%20the%20Rust%20standard%20library.
 // https://www.jibbow.com/posts/criterion-flamegraphs/
 // https://github.com/orlp/glidesort
+// https://nnethercote.github.io/perf-book/profiling.html
 
 use std::collections::BTreeSet;
 
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
+// use pprof::criterion::Output; //PProfProfiler
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
 use range_set_int::{MemorylessData, RangeSetInt, X32};
@@ -307,6 +310,12 @@ pub fn clumps(c: &mut Criterion) {
         );
     });
 }
+
+// criterion_group! {
+//     name = flame;
+//     config = Criterion::default().with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
+//     targets = clumps
+// }
 
 criterion_group!(
     benches, // insert10,
