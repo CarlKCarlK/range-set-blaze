@@ -535,7 +535,8 @@ fn memoryless_vec() {
     let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
     let data_as_vec: Vec<u64> = memoryless_data.collect();
     let start = Instant::now();
-    let range_set_int = RangeSetInt::from(data_as_vec.as_slice());
+    // let range_set_int = RangeSetInt::from_mut_slice(data_as_vec.as_mut_slice());
+    let range_set_int = RangeSetInt::from_iter(data_as_vec);
     let coverage = range_set_int.len() as f64 / len as f64;
     println!(
         "coverage {coverage:?} range_len {:?}",

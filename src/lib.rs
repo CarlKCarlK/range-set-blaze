@@ -268,6 +268,21 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn range_len(&self) -> usize {
         self.items.len()
     }
+
+    pub fn from_mut_slice(slice: &mut [T]) -> Self {
+        slice.sort_unstable();
+        let mut range_set_int = RangeSetInt::<T>::new();
+        let mut x32 = X32::<T> {
+            range_set_int: &mut range_set_int,
+            is_empty: true,
+            lower: T::zero(),
+            upper: T::zero(),
+        };
+        for item in slice {
+            x32.insert(*item);
+        }
+        range_set_int
+    }
 }
 
 impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
