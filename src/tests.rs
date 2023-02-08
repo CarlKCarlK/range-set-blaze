@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, time::Instant};
 
 use super::*;
 use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
@@ -517,13 +517,32 @@ fn x32() {
 
 #[test]
 fn memoryless_data() {
-    let len = 1_000_000_000;
+    let len = 100_000_000;
     let coverage_goal = 0.75;
-    let memoryless_data = MemorylessData::new(0, 100_000_000, len, coverage_goal);
+    let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
     let range_set_int = RangeSetInt::from_iter(memoryless_data);
     let coverage = range_set_int.len() as f64 / len as f64;
     println!(
         "coverage {coverage:?} range_len {:?}",
         range_set_int.range_len().separate_with_commas()
+    );
+}
+
+#[test]
+fn memoryless_vec() {
+    let len = 100_000_000;
+    let coverage_goal = 0.75;
+    let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
+    let data_as_vec: Vec<u64> = memoryless_data.collect();
+    let start = Instant::now();
+    let range_set_int = RangeSetInt::from(data_as_vec.as_slice());
+    let coverage = range_set_int.len() as f64 / len as f64;
+    println!(
+        "coverage {coverage:?} range_len {:?}",
+        range_set_int.range_len().separate_with_commas()
+    );
+    println!(
+        "Time elapsed in expensive_function() is: {} ms",
+        start.elapsed().as_millis()
     );
 }

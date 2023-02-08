@@ -82,89 +82,6 @@ pub fn fmt<T: Integer>(items: &BTreeMap<T, T>) -> String {
         .join(",")
 }
 
-/// !!! cmk understand this
-fn _len_slow<T: Integer>(items: &BTreeMap<T, T>) -> <T as SafeSubtract>::Output
-where
-    for<'a> &'a T: Sub<&'a T, Output = T>,
-{
-    items.iter().fold(
-        <T as SafeSubtract>::Output::default(),
-        |acc, (start, stop)| acc + T::safe_subtract_inclusive(*stop, *start),
-    )
-}
-
-pub fn internal_add<T: Integer>(
-    items: &mut BTreeMap<T, T>,
-    len: &mut <T as SafeSubtract>::Output,
-    start: T,
-    stop: T,
-) {
-    assert!(start <= stop && stop <= T::max_value2()); // !!!cmk check that length is not zero
-                                                       // !!! cmk would be nice to have a partition_point function that returns two iterators
-    let mut before = items.range_mut(..=start).rev();
-    if let Some((start_before, stop_before)) = before.next() {
-        // Must check this in two parts to avoid overflow
-        if *stop_before < start && *stop_before + T::one() < start {
-            insert(items, len, start, stop);
-            *len += T::safe_subtract_inclusive(stop, start);
-        } else if *stop_before < stop {
-            *len += T::safe_subtract(stop, *stop_before);
-            *stop_before = stop;
-            let start_before = *start_before;
-            delete_extra(items, len, start_before, stop);
-        } else {
-            // completely contained, so do nothing
-        }
-    } else {
-        insert(items, len, start, stop);
-        // !!!cmk 0
-        *len += T::safe_subtract_inclusive(stop, start);
-    }
-}
-
-fn delete_extra<T: Integer>(
-    items: &mut BTreeMap<T, T>,
-    len: &mut <T as SafeSubtract>::Output,
-    start: T,
-    stop: T,
-) {
-    let mut after = items.range_mut(start..);
-    let (start_after, stop_after) = after.next().unwrap(); // !!! cmk assert that there is a next
-    debug_assert!(start == *start_after && stop == *stop_after); // !!! cmk real assert
-                                                                 // !!!cmk would be nice to have a delete_range function
-    let mut stop_new = stop;
-    let delete_list = after
-        .map_while(|(start_delete, stop_delete)| {
-            // must check this in two parts to avoid overflow
-            if *start_delete <= stop || *start_delete <= stop + T::one() {
-                stop_new = max(stop_new, *stop_delete);
-                *len -= T::safe_subtract_inclusive(*stop_delete, *start_delete);
-                Some(*start_delete)
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-    if stop_new > stop {
-        *len += T::safe_subtract(stop_new, stop);
-        *stop_after = stop_new;
-    }
-    for start in delete_list {
-        items.remove(&start);
-    }
-}
-fn insert<T: Integer>(
-    items: &mut BTreeMap<T, T>,
-    len: &mut <T as SafeSubtract>::Output,
-    start: T,
-    stop: T,
-) {
-    let was_there = items.insert(start, stop);
-    assert!(was_there.is_none());
-    // !!!cmk real assert
-    delete_extra(items, len, start, stop);
-}
-
 // !!!cmk can I use a Rust range?
 // !!!cmk allow negatives and any size
 
@@ -226,11 +143,15 @@ impl<T: Integer> RangeSetInt<T> {
         self.len.clone()
     }
 
+    /// !!! cmk understand the 'where for'
     fn _len_slow(&self) -> <T as SafeSubtract>::Output
     where
         for<'a> &'a T: Sub<&'a T, Output = T>,
     {
-        _len_slow(&self.items)
+        self.items.iter().fold(
+            <T as SafeSubtract>::Output::default(),
+            |acc, (start, stop)| acc + T::safe_subtract_inclusive(*stop, *start),
+        )
     }
 
     pub fn insert(&mut self, item: T) {
@@ -286,7 +207,62 @@ impl<T: Integer> RangeSetInt<T> {
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     fn internal_add(&mut self, start: T, stop: T) {
-        internal_add(&mut self.items, &mut self.len, start, stop);
+        // internal_add(&mut self.items, &mut self.len, start, stop);
+        assert!(start <= stop && stop <= T::max_value2()); // !!!cmk check that length is not zero
+                                                           // !!! cmk would be nice to have a partition_point function that returns two iterators
+        let mut before = self.items.range_mut(..=start).rev();
+        if let Some((start_before, stop_before)) = before.next() {
+            // Must check this in two parts to avoid overflow
+            if *stop_before < start && *stop_before + T::one() < start {
+                self.insert_internal(start, stop);
+                self.len += T::safe_subtract_inclusive(stop, start);
+            } else if *stop_before < stop {
+                self.len += T::safe_subtract(stop, *stop_before);
+                *stop_before = stop;
+                let start_before = *start_before;
+                self.delete_extra(start_before, stop);
+            } else {
+                // completely contained, so do nothing
+            }
+        } else {
+            self.insert_internal(start, stop);
+            // !!!cmk 0
+            self.len += T::safe_subtract_inclusive(stop, start);
+        }
+    }
+
+    fn insert_internal(&mut self, start: T, stop: T) {
+        let was_there = self.items.insert(start, stop);
+        assert!(was_there.is_none());
+        // !!!cmk real assert
+        self.delete_extra(start, stop);
+    }
+
+    fn delete_extra(&mut self, start: T, stop: T) {
+        let mut after = self.items.range_mut(start..);
+        let (start_after, stop_after) = after.next().unwrap(); // !!! cmk assert that there is a next
+        debug_assert!(start == *start_after && stop == *stop_after); // !!! cmk real assert
+                                                                     // !!!cmk would be nice to have a delete_range function
+        let mut stop_new = stop;
+        let delete_list = after
+            .map_while(|(start_delete, stop_delete)| {
+                // must check this in two parts to avoid overflow
+                if *start_delete <= stop || *start_delete <= stop + T::one() {
+                    stop_new = max(stop_new, *stop_delete);
+                    self.len -= T::safe_subtract_inclusive(*stop_delete, *start_delete);
+                    Some(*start_delete)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        if stop_new > stop {
+            self.len += T::safe_subtract(stop_new, stop);
+            *stop_after = stop_new;
+        }
+        for start in delete_list {
+            self.items.remove(&start);
+        }
     }
 
     pub fn range_len(&self) -> usize {
@@ -300,7 +276,15 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
         I: IntoIterator<Item = T>,
     {
         // let mut range_set_int = RangeSetInt::<T>::new();
-        // range_set_int.extend(iter);
+        // let mut x32 = X32::<T> {
+        //     range_set_int: &mut range_set_int,
+        //     is_empty: true,
+        //     lower: T::zero(),
+        //     upper: T::zero(),
+        // };
+        // for item in iter {
+        //     x32.insert(item);
+        // }
         // range_set_int
         let mut sortie = Sortie {
             sort_list: Vec::new(),
