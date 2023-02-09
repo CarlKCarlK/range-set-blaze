@@ -734,13 +734,6 @@ pub struct X32<'a, T: Integer> {
     upper: T,
 }
 
-// pub struct X32Own<T: Integer> {
-//     pub range_set_int: RangeSetInt<T>,
-//     is_empty: bool,
-//     lower: T,
-//     upper: T,
-// }
-
 impl<'a, T: Integer> X32<'a, T> {
     pub fn new(range_set_int: &'a mut RangeSetInt<T>) -> Self {
         Self {
@@ -782,49 +775,6 @@ impl<'a, T: Integer> X32<'a, T> {
         }
     }
 }
-
-// impl<T: Integer> X32Own<T> {
-//     pub fn insert(&mut self, i: T) {
-//         if self.is_empty {
-//             self.lower = i;
-//             self.upper = i;
-//             self.is_empty = false;
-//         } else {
-//             if self.lower <= i && i <= self.upper {
-//                 return;
-//             }
-//             if T::zero() < self.lower && self.lower - T::one() == i {
-//                 self.lower = i;
-//                 return;
-//             }
-//             // !!!cmk max_value2, right?
-//             if self.upper < T::max_value2() && self.upper + T::one() == i {
-//                 self.upper = i;
-//                 return;
-//             }
-//             self.range_set_int.internal_add(self.lower, self.upper);
-//             self.lower = i;
-//             self.upper = i;
-//         }
-//     }
-
-//     // !!! cmk what if forget to call this?
-//     pub fn save(&mut self) {
-//         if !self.is_empty {
-//             self.range_set_int.internal_add(self.lower, self.upper);
-//             self.is_empty = true;
-//         }
-//     }
-
-//     pub fn merge(mut self, mut other: Self) -> Self {
-//         self.save();
-//         other.save();
-//         for (lower, upper) in other.range_set_int.items.iter() {
-//             self.range_set_int.internal_add(*lower, *upper);
-//         }
-//         self
-//     }
-// }
 
 impl<T: Integer> Sortie<T> {
     pub fn insert(&mut self, i: T) {
@@ -871,90 +821,6 @@ impl<T: Integer> Sortie<T> {
 impl<T: Integer> From<&[T]> for RangeSetInt<T> {
     fn from(slice: &[T]) -> Self {
         RangeSetInt::from_iter(slice.iter().copied())
-        // let num_s = [1, 2, 1, 2, 1, 2];
-        // let result: HashMap<i32, i32> = num_s
-        //     .par_iter()
-        //     .filter(|x| *x % 2 == 0)
-        //     .fold(HashMap::new, |mut acc, x| {
-        //         *acc.entry(*x).or_insert(0) += 1;
-        //         acc
-        //     })
-        //     .reduce_with(|mut m1, m2| {
-        //         for (k, v) in m2 {
-        //             *m1.entry(k).or_default() += v;
-        //         }
-        //         m1
-        //     })
-        //     .unwrap();
-        // let r = slice
-        //     .par_iter()
-        //     .fold(
-        //         || {
-        //             let range_set_int = RangeSetInt::<T>::new();
-        //             X32Own {
-        //                 range_set_int,
-        //                 is_empty: true,
-        //                 lower: T::zero(),
-        //                 upper: T::zero(),
-        //             }
-        //         },
-        //         |mut acc, i| {
-        //             acc.insert(*i);
-        //             acc
-        //         },
-        //     )
-        //     .reduce_with(|m1, m2| m1.merge(m2))
-        //     .unwrap();
-        // r.range_set_int
-
-        // let sortie = slice
-        //     .par_iter()
-        //     .fold(
-        //         || Sortie {
-        //             sort_list: Vec::new(),
-        //             is_empty: true,
-        //             lower: T::zero(),
-        //             upper: T::zero(),
-        //         },
-        //         |mut acc, i| {
-        //             acc.insert(*i);
-        //             acc
-        //         },
-        //     )
-        //     .reduce_with(|m1, m2| m1.merge(m2))
-        //     .unwrap();
-        // // !!!cmk similar code elsewhere
-        // let mut sort_list = sortie.sort_list;
-        // sort_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-        // let mut range_set_int: RangeSetInt<T> = RangeSetInt {
-        //     items: BTreeMap::new(),
-        //     len: <T as SafeSubtract>::Output::zero(),
-        // };
-
-        // let mut is_empty = true;
-        // let mut current_start = T::zero();
-        // let mut current_stop = T::zero();
-        // for (start, stop) in sort_list {
-        //     if is_empty {
-        //         current_start = start;
-        //         current_stop = stop;
-        //         is_empty = false;
-        //     }
-        //     // !!!cmk check for overflow with the +1
-        //     else if start <= current_stop + T::one() {
-        //         current_stop = max(current_stop, stop);
-        //     } else {
-        //         range_set_int.items.insert(current_start, current_stop);
-        //         range_set_int.len += T::safe_subtract_inclusive(current_stop, current_start);
-        //         current_start = start;
-        //         current_stop = stop;
-        //     }
-        // }
-        // if !is_empty {
-        //     range_set_int.items.insert(current_start, current_stop);
-        //     range_set_int.len += T::safe_subtract_inclusive(current_stop, current_start);
-        // }
-        // range_set_int
     }
 }
 impl<T: Integer> Extend<T> for RangeSetInt<T> {
