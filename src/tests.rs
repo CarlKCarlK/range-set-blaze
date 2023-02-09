@@ -10,6 +10,7 @@ use thousands::Separable;
 #[test]
 fn insert_255u8() {
     let range_set_int = RangeSetInt::<u8>::from([255]);
+    println!("cmk{range_set_int}");
     assert!(range_set_int.to_string() == "255..=255");
 }
 
@@ -515,35 +516,35 @@ fn x32() {
     assert!(range_set_int.range_len() == 1 && range_set_int.len() == len as usize);
 }
 
-#[test]
-fn memoryless_data() {
-    let len = 100_000_000;
-    let coverage_goal = 0.75;
-    let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
-    let range_set_int = RangeSetInt::from_iter(memoryless_data);
-    let coverage = range_set_int.len() as f64 / len as f64;
-    println!(
-        "coverage {coverage:?} range_len {:?}",
-        range_set_int.range_len().separate_with_commas()
-    );
-}
+// #[test]
+// fn memoryless_data() {
+//     let len = 100_000_000;
+//     let coverage_goal = 0.75;
+//     let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
+//     let range_set_int = RangeSetInt::from_iter(memoryless_data);
+//     let coverage = range_set_int.len() as f64 / len as f64;
+//     println!(
+//         "coverage {coverage:?} range_len {:?}",
+//         range_set_int.range_len().separate_with_commas()
+//     );
+// }
 
-#[test]
-fn memoryless_vec() {
-    let len = 100_000_000;
-    let coverage_goal = 0.75;
-    let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
-    let data_as_vec: Vec<u64> = memoryless_data.collect();
-    let start = Instant::now();
-    // let range_set_int = RangeSetInt::from_mut_slice(data_as_vec.as_mut_slice());
-    let range_set_int = RangeSetInt::from_iter(data_as_vec);
-    let coverage = range_set_int.len() as f64 / len as f64;
-    println!(
-        "coverage {coverage:?} range_len {:?}",
-        range_set_int.range_len().separate_with_commas()
-    );
-    println!(
-        "Time elapsed in expensive_function() is: {} ms",
-        start.elapsed().as_millis()
-    );
-}
+// #[test]
+// fn memoryless_vec() {
+//     let len = 100_000_000;
+//     let coverage_goal = 0.75;
+//     let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
+//     let data_as_vec: Vec<u64> = memoryless_data.collect();
+//     let start = Instant::now();
+//     // let range_set_int = RangeSetInt::from_mut_slice(data_as_vec.as_mut_slice());
+//     let range_set_int = RangeSetInt::from(data_as_vec.as_slice());
+//     let coverage = range_set_int.len() as f64 / len as f64;
+//     println!(
+//         "coverage {coverage:?} range_len {:?}",
+//         range_set_int.range_len().separate_with_commas()
+//     );
+//     println!(
+//         "xTime elapsed in expensive_function() is: {} ms",
+//         start.elapsed().as_millis()
+//     );
+// }
