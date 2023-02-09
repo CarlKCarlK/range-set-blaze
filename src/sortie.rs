@@ -68,38 +68,45 @@ impl<T: Integer> Sortie<T> {
             sort_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
 
             // !!!cmk0 remove this is_empty
-            let mut is_empty = true;
-            let mut current_start = T::zero();
-            let mut current_stop = T::zero();
+            let mut x32 = X32::None;
             for (start, stop) in sort_list {
-                if is_empty {
-                    current_start = *start;
-                    current_stop = *stop;
-                    is_empty = false;
-                }
-                // !!!cmk check for overflow with the +1
-                else if *start <= current_stop + T::one() {
-                    current_stop = max(current_stop, *stop);
-                } else {
-                    items.insert(current_start, current_stop);
-                    *len += T::safe_subtract_inclusive(current_stop, current_start);
-                    current_start = *start;
-                    current_stop = *stop;
+                match &mut x32 {
+                    X32::None => {
+                        x32 = X32::Some {
+                            start: *start,
+                            stop: *stop,
+                        };
+                    }
+                    X32::Some {
+                        start: current_start,
+                        stop: current_stop,
+                    } => {
+                        // !!!cmk check for overflow with the +1
+                        if *start <= *current_stop + T::one() {
+                            *current_stop = max(*current_stop, *stop);
+                        } else {
+                            items.insert(*current_start, *current_stop);
+                            *len += T::safe_subtract_inclusive(*current_stop, *current_start);
+                            *current_start = *start;
+                            *current_stop = *stop;
+                        }
+                    }
                 }
             }
-            if !is_empty {
+            if let X32::Some {
+                start: current_start,
+                stop: current_stop,
+            } = x32
+            {
                 items.insert(current_start, current_stop);
                 *len += T::safe_subtract_inclusive(current_stop, current_start);
             }
             *self = Sortie::None;
         }
     }
-    // !!! cmk what if forget to call this?
+}
 
-    // fn merge(mut self, mut other: Self) -> Self {
-    //     self.save();
-    //     other.save();
-    //     self.sort_list.extend(other.sort_list);
-    //     self
-    // }
+pub enum X32<T: Integer> {
+    None,
+    Some { start: T, stop: T },
 }
