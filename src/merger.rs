@@ -1,9 +1,6 @@
-use std::{
-    cmp::{max, min},
-    collections::BTreeMap,
-};
+use std::cmp::{max, min};
 
-use crate::{Integer, RangeSetInt, SafeSubtract};
+use crate::{Integer, RangeSetInt};
 
 #[derive(Debug)]
 pub enum Merger<T: Integer> {
@@ -39,7 +36,7 @@ impl<T: Integer> Merger<T> {
         } = self
         {
             range_list.push((*lower, *upper));
-            MergeRangeList::merge(range_list, &mut range_set_int.items, &mut range_set_int.len);
+            MergeRange::extend(range_set_int, range_list);
             *self = Merger::None;
         }
     }
@@ -88,41 +85,34 @@ impl<T: Integer> FromIterator<(T, T)> for Merger<T> {
     }
 }
 
-pub enum MergeRangeList<T: Integer> {
+pub enum MergeRange<T: Integer> {
     None,
     Some { start: T, stop: T },
 }
 
-impl<T: Integer> MergeRangeList<T> {
-    pub fn merge(
-        sort_list: &mut Vec<(T, T)>,
-        items: &mut BTreeMap<T, T>,
-        len: &mut <T as SafeSubtract>::Output,
-    ) {
-        sort_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+impl<T: Integer> MergeRange<T> {
+    pub fn extend(range_set_int: &mut RangeSetInt<T>, range_list: &mut Vec<(T, T)>) {
+        range_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
 
-        let mut x32 = MergeRangeList::None;
-        for (start, stop) in sort_list {
-            x32.insert(start, stop, items, len);
+        let mut merge_range_list = MergeRange::None;
+        for (start, stop) in range_list {
+            merge_range_list.insert(start, stop, range_set_int);
         }
-        x32.extract(items, len);
+        if let MergeRange::Some { start, stop } = merge_range_list {
+            range_set_int.items.insert(start, stop);
+            range_set_int.len += T::safe_subtract_inclusive(stop, start);
+        }
     }
 
-    fn insert(
-        &mut self,
-        start: &mut T,
-        stop: &mut T,
-        items: &mut BTreeMap<T, T>,
-        len: &mut <T as SafeSubtract>::Output,
-    ) {
+    fn insert(&mut self, start: &mut T, stop: &mut T, range_set_int: &mut RangeSetInt<T>) {
         match self {
-            MergeRangeList::None => {
-                *self = MergeRangeList::Some {
+            MergeRange::None => {
+                *self = MergeRange::Some {
                     start: *start,
                     stop: *stop,
                 };
             }
-            MergeRangeList::Some {
+            MergeRange::Some {
                 start: current_start,
                 stop: current_stop,
             } => {
@@ -130,20 +120,12 @@ impl<T: Integer> MergeRangeList<T> {
                 if *start <= *current_stop + T::one() {
                     *current_stop = max(*current_stop, *stop);
                 } else {
-                    items.insert(*current_start, *current_stop);
-                    *len += T::safe_subtract_inclusive(*current_stop, *current_start);
+                    range_set_int.items.insert(*current_start, *current_stop);
+                    range_set_int.len += T::safe_subtract_inclusive(*current_stop, *current_start);
                     *current_start = *start;
                     *current_stop = *stop;
                 }
             }
         }
-    }
-
-    fn extract(&mut self, items: &mut BTreeMap<T, T>, len: &mut <T as SafeSubtract>::Output) {
-        if let MergeRangeList::Some { start, stop } = self {
-            items.insert(*start, *stop);
-            *len += T::safe_subtract_inclusive(*stop, *start);
-        }
-        *self = MergeRangeList::None;
     }
 }
