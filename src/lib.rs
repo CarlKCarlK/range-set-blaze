@@ -16,15 +16,15 @@
 // https://lib.rs/crates/ranges
 // https://lib.rs/crates/nonoverlapping_interval_tree
 
-mod sortie;
+mod merger;
 mod tests;
 
 use itertools::Itertools;
+use merger::Merger;
 use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
-use sortie::Sortie;
 
 use std::cmp::max;
 use std::collections::BTreeMap;
@@ -95,15 +95,13 @@ where
     <T as std::str::FromStr>::Err: std::fmt::Debug,
 {
     fn from(s: &str) -> Self {
-        let mut sortie = Sortie::new();
-        for range in s.split(',') {
-            let mut range = range.split("..=");
+        Merger::from_iter(s.split(',').map(|s| {
+            let mut range = s.split("..=");
             let start = range.next().unwrap().parse::<T>().unwrap();
             let stop = range.next().unwrap().parse::<T>().unwrap();
-            sortie.insert(start, stop);
-        }
-        let (items, len) = sortie.range_int_set();
-        RangeSetInt { items, len }
+            (start, stop)
+        }))
+        .into()
     }
 }
 
@@ -270,13 +268,7 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
-        // !!!cmk0 refactor?
-        let mut sortie = Sortie::new();
-        for item in iter {
-            sortie.insert(item, item);
-        }
-        let (items, len) = sortie.range_int_set();
-        RangeSetInt { items, len }
+        Merger::from_iter(iter.into_iter().map(|x| (x, x))).into()
     }
 }
 
@@ -699,11 +691,7 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
-        let mut sortie = Sortie::new();
-        for item in iter {
-            sortie.insert(item, item);
-        }
-        sortie.extract(&mut self.items, &mut self.len)
+        Merger::from_iter(iter.into_iter().map(|x| (x, x))).extract(self);
     }
 }
 

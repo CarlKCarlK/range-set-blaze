@@ -1,30 +1,58 @@
-use num_traits::Zero;
 use std::{
     cmp::{max, min},
     collections::BTreeMap,
 };
 
-use crate::{Integer, SafeSubtract};
+use crate::{Integer, RangeSetInt, SafeSubtract};
 
 #[derive(Debug)]
-pub enum Sortie<T: Integer> {
+pub enum Merger<T: Integer> {
     None,
     Some {
-        sort_list: Vec<(T, T)>,
+        range_list: Vec<(T, T)>,
         lower: T,
         upper: T,
     },
 }
 
-impl<T: Integer> Sortie<T> {
-    pub fn new() -> Self {
+impl<T: Integer> Default for Merger<T> {
+    fn default() -> Self {
         Self::None
     }
-    pub fn insert(&mut self, lower: T, upper: T) {
+}
+
+impl<T: Integer> From<Merger<T>> for RangeSetInt<T> {
+    fn from(mut val: Merger<T>) -> Self {
+        let mut range_set_int = RangeSetInt::new();
+        val.extract(&mut range_set_int);
+        range_set_int
+    }
+}
+
+impl<T: Integer> Merger<T> {
+    // !!!cmk rename to something better
+    pub fn extract(&mut self, range_set_int: &mut RangeSetInt<T>) {
+        if let Merger::Some {
+            range_list,
+            lower,
+            upper,
+        } = self
+        {
+            range_list.push((*lower, *upper));
+            MergeRangeList::merge(range_list, &mut range_set_int.items, &mut range_set_int.len);
+            *self = Merger::None;
+        }
+    }
+
+    fn new() -> Self {
+        Self::None
+    }
+
+    fn insert(&mut self, lower: T, upper: T) {
         let two = T::one() + T::one();
         assert!(lower <= upper && upper <= T::max_value2());
-        if let Sortie::Some {
-            sort_list,
+        if let Merger::Some {
+            range_list: sort_list,
             lower: self_lower,
             upper: self_upper,
         } = self
@@ -40,34 +68,23 @@ impl<T: Integer> Sortie<T> {
                 *self_upper = max(*self_upper, upper);
             }
         } else {
-            *self = Sortie::Some {
-                sort_list: Vec::new(),
+            *self = Merger::Some {
+                range_list: Vec::new(),
                 lower,
                 upper,
             };
         }
     }
     // !!!cmk0 better as from_iter?
+}
 
-    pub fn range_int_set(mut self) -> (BTreeMap<T, T>, <T as SafeSubtract>::Output) {
-        let mut items = BTreeMap::new();
-        let mut len = <T as SafeSubtract>::Output::zero();
-        self.extract(&mut items, &mut len);
-        (items, len)
-    }
-
-    // !!!cmk rename to something better
-    pub fn extract(&mut self, items: &mut BTreeMap<T, T>, len: &mut <T as SafeSubtract>::Output) {
-        if let Sortie::Some {
-            sort_list: range_list,
-            lower: self_lower,
-            upper: self_upper,
-        } = self
-        {
-            range_list.push((*self_lower, *self_upper));
-            MergeRangeList::merge(range_list, items, len);
-            *self = Sortie::None;
+impl<T: Integer> FromIterator<(T, T)> for Merger<T> {
+    fn from_iter<I: IntoIterator<Item = (T, T)>>(iter: I) -> Self {
+        let mut sortie = Merger::new();
+        for (lower, upper) in iter {
+            sortie.insert(lower, upper);
         }
+        sortie
     }
 }
 
@@ -77,7 +94,7 @@ pub enum MergeRangeList<T: Integer> {
 }
 
 impl<T: Integer> MergeRangeList<T> {
-    fn merge(
+    pub fn merge(
         sort_list: &mut Vec<(T, T)>,
         items: &mut BTreeMap<T, T>,
         len: &mut <T as SafeSubtract>::Output,
