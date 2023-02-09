@@ -703,7 +703,7 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
         for item in iter {
             sortie.insert(item, item);
         }
-        sortie.extend_x(&mut self.items, &mut self.len)
+        sortie.extract(&mut self.items, &mut self.len)
     }
 }
 
