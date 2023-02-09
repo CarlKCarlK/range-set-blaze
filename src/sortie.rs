@@ -59,54 +59,74 @@ impl<T: Integer> Sortie<T> {
     // !!!cmk rename to something better
     pub fn extract(&mut self, items: &mut BTreeMap<T, T>, len: &mut <T as SafeSubtract>::Output) {
         if let Sortie::Some {
-            sort_list,
+            sort_list: range_list,
             lower: self_lower,
             upper: self_upper,
         } = self
         {
-            sort_list.push((*self_lower, *self_upper));
-            sort_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-
-            // !!!cmk0 remove this is_empty
-            let mut x32 = X32::None;
-            for (start, stop) in sort_list {
-                match &mut x32 {
-                    X32::None => {
-                        x32 = X32::Some {
-                            start: *start,
-                            stop: *stop,
-                        };
-                    }
-                    X32::Some {
-                        start: current_start,
-                        stop: current_stop,
-                    } => {
-                        // !!!cmk check for overflow with the +1
-                        if *start <= *current_stop + T::one() {
-                            *current_stop = max(*current_stop, *stop);
-                        } else {
-                            items.insert(*current_start, *current_stop);
-                            *len += T::safe_subtract_inclusive(*current_stop, *current_start);
-                            *current_start = *start;
-                            *current_stop = *stop;
-                        }
-                    }
-                }
-            }
-            if let X32::Some {
-                start: current_start,
-                stop: current_stop,
-            } = x32
-            {
-                items.insert(current_start, current_stop);
-                *len += T::safe_subtract_inclusive(current_stop, current_start);
-            }
+            range_list.push((*self_lower, *self_upper));
+            MergeRangeList::merge(range_list, items, len);
             *self = Sortie::None;
         }
     }
 }
 
-pub enum X32<T: Integer> {
+pub enum MergeRangeList<T: Integer> {
     None,
     Some { start: T, stop: T },
+}
+
+impl<T: Integer> MergeRangeList<T> {
+    fn merge(
+        sort_list: &mut Vec<(T, T)>,
+        items: &mut BTreeMap<T, T>,
+        len: &mut <T as SafeSubtract>::Output,
+    ) {
+        sort_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
+        let mut x32 = MergeRangeList::None;
+        for (start, stop) in sort_list {
+            x32.insert(start, stop, items, len);
+        }
+        x32.extract(items, len);
+    }
+
+    fn insert(
+        &mut self,
+        start: &mut T,
+        stop: &mut T,
+        items: &mut BTreeMap<T, T>,
+        len: &mut <T as SafeSubtract>::Output,
+    ) {
+        match self {
+            MergeRangeList::None => {
+                *self = MergeRangeList::Some {
+                    start: *start,
+                    stop: *stop,
+                };
+            }
+            MergeRangeList::Some {
+                start: current_start,
+                stop: current_stop,
+            } => {
+                // !!!cmk check for overflow with the +1
+                if *start <= *current_stop + T::one() {
+                    *current_stop = max(*current_stop, *stop);
+                } else {
+                    items.insert(*current_start, *current_stop);
+                    *len += T::safe_subtract_inclusive(*current_stop, *current_start);
+                    *current_start = *start;
+                    *current_stop = *stop;
+                }
+            }
+        }
+    }
+
+    fn extract(&mut self, items: &mut BTreeMap<T, T>, len: &mut <T as SafeSubtract>::Output) {
+        if let MergeRangeList::Some { start, stop } = self {
+            items.insert(*start, *stop);
+            *len += T::safe_subtract_inclusive(*stop, *start);
+        }
+        *self = MergeRangeList::None;
+    }
 }
