@@ -1,7 +1,7 @@
 use num_traits::Zero;
 use std::{cmp::max, collections::BTreeMap};
 
-use crate::{Integer, RangeSetInt, SafeSubtract};
+use crate::{Integer, SafeSubtract};
 
 #[derive(Debug)]
 pub struct Sortie<T: Integer> {
@@ -45,17 +45,21 @@ impl<T: Integer> Sortie<T> {
         }
     }
 
-    pub fn range_int_set(mut self) -> (BTreeMap<T, T>, <T as SafeSubtract>::Output) {
-        // !!!cmk fix do can't forget 'save'
+    pub fn range_int_set(self) -> (BTreeMap<T, T>, <T as SafeSubtract>::Output) {
+        let mut items = BTreeMap::new();
+        let mut len = <T as SafeSubtract>::Output::zero();
+        self.extend_x(&mut items, &mut len);
+        (items, len)
+    }
+
+    // !!!cmk rename to something better
+    pub fn extend_x(mut self, items: &mut BTreeMap<T, T>, len: &mut <T as SafeSubtract>::Output) {
         if !self.is_empty {
             self.sort_list.push((self.lower, self.upper));
             self.is_empty = true;
         }
         let mut sort_list = self.sort_list;
         sort_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-
-        let mut items = BTreeMap::new();
-        let mut len = <T as SafeSubtract>::Output::zero();
 
         let mut is_empty = true;
         let mut current_start = T::zero();
@@ -71,16 +75,15 @@ impl<T: Integer> Sortie<T> {
                 current_stop = max(current_stop, stop);
             } else {
                 items.insert(current_start, current_stop);
-                len += T::safe_subtract_inclusive(current_stop, current_start);
+                *len += T::safe_subtract_inclusive(current_stop, current_start);
                 current_start = start;
                 current_stop = stop;
             }
         }
         if !is_empty {
             items.insert(current_start, current_stop);
-            len += T::safe_subtract_inclusive(current_stop, current_start);
+            *len += T::safe_subtract_inclusive(current_stop, current_start);
         }
-        (items, len)
     }
 
     // !!! cmk what if forget to call this?

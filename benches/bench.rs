@@ -10,7 +10,7 @@ use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 // use pprof::criterion::Output; //PProfProfiler
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
-use range_set_int::{MemorylessData, RangeSetInt, X32};
+use range_set_int::{MemorylessData, RangeSetInt};
 // use thousands::Separable;
 
 // fn insert10(c: &mut Criterion) {
@@ -199,13 +199,6 @@ pub fn shuffled(c: &mut Criterion) {
             BatchSize::SmallInput,
         );
     });
-    group.bench_function("shuffled X32", |b| {
-        b.iter_batched(
-            || gen_data_shuffled(seed, len),
-            |data| x32_test(data, 1, len as usize),
-            BatchSize::SmallInput,
-        );
-    });
 }
 
 fn gen_data_shuffled(seed: u64, len: u32) -> Vec<u32> {
@@ -250,13 +243,6 @@ pub fn descending(c: &mut Criterion) {
             BatchSize::SmallInput,
         );
     });
-    group.bench_function("descending X32", |b| {
-        b.iter_batched(
-            || gen_data_descending(seed, len),
-            |data| x32_test(data, 1, len as usize),
-            BatchSize::SmallInput,
-        );
-    });
 }
 
 fn gen_data_ascending(_seed: u64, len: u32) -> Vec<u32> {
@@ -271,16 +257,6 @@ fn gen_data_descending(_seed: u64, len: u32) -> Vec<u32> {
 
 fn range_set_test(data: Vec<u32>, range_len: usize, len: usize) {
     let range_set_int = RangeSetInt::<u32>::from(data.as_slice());
-    assert!(range_set_int.range_len() == range_len && range_set_int.len() == len);
-}
-
-fn x32_test(data: Vec<u32>, range_len: usize, len: usize) {
-    let mut range_set_int = RangeSetInt::<u32>::new();
-    let mut x32 = X32::new(&mut range_set_int);
-    for i in data {
-        x32.insert(i);
-    }
-    x32.save();
     assert!(range_set_int.range_len() == range_len && range_set_int.len() == len);
 }
 

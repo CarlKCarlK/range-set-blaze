@@ -270,6 +270,7 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
+        // !!!cmk0 refactor?
         let mut sortie = Sortie::new();
         for item in iter {
             sortie.insert(item);
@@ -684,56 +685,6 @@ impl SafeSubtract for u16 {
     }
 }
 
-#[derive(Debug)]
-pub struct X32<'a, T: Integer> {
-    pub range_set_int: &'a mut RangeSetInt<T>,
-    is_empty: bool,
-    lower: T,
-    upper: T,
-}
-
-impl<'a, T: Integer> X32<'a, T> {
-    pub fn new(range_set_int: &'a mut RangeSetInt<T>) -> Self {
-        Self {
-            range_set_int,
-            is_empty: true,
-            lower: T::zero(),
-            upper: T::zero(),
-        }
-    }
-    pub fn insert(&mut self, i: T) {
-        if self.is_empty {
-            self.lower = i;
-            self.upper = i;
-            self.is_empty = false;
-        } else {
-            if self.lower <= i && i <= self.upper {
-                return;
-            }
-            if T::zero() < self.lower && self.lower - T::one() == i {
-                self.lower = i;
-                return;
-            }
-            // !!!cmk max_value2, right?
-            if self.upper < T::max_value2() && self.upper + T::one() == i {
-                self.upper = i;
-                return;
-            }
-            self.range_set_int.internal_add(self.lower, self.upper);
-            self.lower = i;
-            self.upper = i;
-        }
-    }
-
-    // !!! cmk what if forget to call this?
-    pub fn save(&mut self) {
-        if !self.is_empty {
-            self.range_set_int.internal_add(self.lower, self.upper);
-            self.is_empty = true;
-        }
-    }
-}
-
 // !!!cmk can we make a version of Extends that takes a slice and parallelizes it?
 // !!!cmk or does Rayon work with iterators in a way that would work for us?
 impl<T: Integer> From<&[T]> for RangeSetInt<T> {
@@ -741,21 +692,18 @@ impl<T: Integer> From<&[T]> for RangeSetInt<T> {
         RangeSetInt::from_iter(slice.iter().copied())
     }
 }
+
+// !!!cmk can we make a version that takes another RangeSetInt and doesn't use Sortie?
 impl<T: Integer> Extend<T> for RangeSetInt<T> {
     fn extend<I>(&mut self, iter: I)
     where
         I: IntoIterator<Item = T>,
     {
-        let mut x32 = X32 {
-            range_set_int: self,
-            is_empty: true,
-            lower: T::zero(),
-            upper: T::zero(),
-        };
-        for value in iter.into_iter() {
-            x32.insert(value);
+        let mut sortie = Sortie::new();
+        for item in iter {
+            sortie.insert(item);
         }
-        x32.save();
+        sortie.extend_x(&mut self.items, &mut self.len)
     }
 }
 

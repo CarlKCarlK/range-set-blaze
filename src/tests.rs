@@ -496,26 +496,6 @@ fn add_in_order() {
     }
 }
 
-#[test]
-fn x32() {
-    let seed = 0;
-    let len = 5;
-    let mut rng = StdRng::seed_from_u64(seed);
-    let mut data: Vec<u32> = (0..len).collect();
-    data.shuffle(&mut rng);
-    println!("{data:?}");
-
-    let mut range_set_int = RangeSetInt::new();
-    let mut x32 = X32::new(&mut range_set_int);
-    for i in data {
-        x32.insert(i);
-        println!("{x32:?}");
-    }
-    x32.save();
-    println!("{range_set_int:?}");
-    assert!(range_set_int.range_len() == 1 && range_set_int.len() == len as usize);
-}
-
 // #[test]
 // fn memoryless_data() {
 //     let len = 100_000_000;
