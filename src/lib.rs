@@ -95,15 +95,15 @@ where
     <T as std::str::FromStr>::Err: std::fmt::Debug,
 {
     fn from(s: &str) -> Self {
-        let mut result = RangeSetInt::new();
+        let mut sortie = Sortie::new();
         for range in s.split(',') {
             let mut range = range.split("..=");
             let start = range.next().unwrap().parse::<T>().unwrap();
             let stop = range.next().unwrap().parse::<T>().unwrap();
-            // !!!cmk0 gather and sort with Sortie
-            result.internal_add(start, stop);
+            sortie.insert_range(start, stop);
         }
-        result
+        let (items, len) = sortie.range_int_set();
+        RangeSetInt { items, len }
     }
 }
 

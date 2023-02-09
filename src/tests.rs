@@ -528,3 +528,35 @@ fn add_in_order() {
 //         start.elapsed().as_millis()
 //     );
 // }
+
+#[test]
+fn optimize() {
+    let stop = 8u8;
+    for a in 0..=stop {
+        for b in 0..=stop {
+            for c in 0..=stop {
+                for d in 0..=stop {
+                    let restart = (a >= 2 && a - 2 >= d) || (c >= 2 && c - 2 >= b);
+                    print!("{a}\t{b}\t{c}\t{d}\t");
+                    if a > b {
+                        println!("impossible");
+                    } else if c > d {
+                        println!("error");
+                    } else {
+                        let mut range_set_int = RangeSetInt::new();
+                        range_set_int.internal_add(a, b);
+                        range_set_int.internal_add(c, d);
+                        if range_set_int.range_len() == 1 {
+                            let vec = range_set_int.into_iter().collect::<Vec<u8>>();
+                            println! {"combine\t{}\t{}", vec[0], vec[vec.len()-1]};
+                            assert!(!restart);
+                        } else {
+                            println!("restart");
+                            assert!(restart);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

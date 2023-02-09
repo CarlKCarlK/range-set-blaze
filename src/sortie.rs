@@ -1,5 +1,8 @@
 use num_traits::Zero;
-use std::{cmp::max, collections::BTreeMap};
+use std::{
+    cmp::{max, min},
+    collections::BTreeMap,
+};
 
 use crate::{Integer, SafeSubtract};
 
@@ -9,6 +12,7 @@ pub struct Sortie<T: Integer> {
     is_empty: bool,
     lower: T,
     upper: T,
+    two: T, // !!!cmk constant
 }
 
 impl<T: Integer> Sortie<T> {
@@ -18,6 +22,24 @@ impl<T: Integer> Sortie<T> {
             is_empty: true,
             lower: T::zero(),
             upper: T::zero(),
+            two: T::one() + T::one(),
+        }
+    }
+    pub fn insert_range(&mut self, lower: T, upper: T) {
+        assert!(lower <= upper && upper <= T::max_value2());
+        if self.is_empty {
+            self.lower = lower;
+            self.upper = upper;
+            self.is_empty = false;
+        } else if (self.lower >= self.two && self.lower - self.two >= upper)
+            || (lower >= self.two && lower - self.two >= self.upper)
+        {
+            self.sort_list.push((self.lower, self.upper));
+            self.lower = lower;
+            self.upper = upper;
+        } else {
+            self.lower = min(self.lower, lower);
+            self.upper = max(self.upper, upper);
         }
     }
     // !!!cmk0 better as from_iter?
