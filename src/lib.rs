@@ -19,17 +19,12 @@
 mod tests;
 
 use itertools::Itertools;
-// use num_traits::ops;
-// use num_traits::ops::overflowing::OverflowingSub;
-// use num_traits::PrimInt;
-// use num_traits::ToPrimitive;
 use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
 
 use std::cmp::max;
-// use std::collections::btree_map::Range;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
@@ -67,8 +62,6 @@ pub trait SafeSubtract {
         + Ord
         + Send
         + Default;
-    // !!!cmk 0
-    // !!!cmk inline?
     fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output;
     fn safe_subtract_inclusive(stop: Self, start: Self) -> <Self as SafeSubtract>::Output;
     fn max_value2() -> Self;
@@ -82,7 +75,6 @@ pub fn fmt<T: Integer>(items: &BTreeMap<T, T>) -> String {
 }
 
 // !!!cmk can I use a Rust range?
-// !!!cmk allow negatives and any size
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RangeSetInt<T: Integer> {
@@ -106,6 +98,7 @@ where
             let mut range = range.split("..=");
             let start = range.next().unwrap().parse::<T>().unwrap();
             let stop = range.next().unwrap().parse::<T>().unwrap();
+            // !!!cmk0 gather and sort with Sortie
             result.internal_add(start, stop);
         }
         result
@@ -137,7 +130,6 @@ impl<T: Integer> RangeSetInt<T> {
         self.len = <T as SafeSubtract>::Output::zero();
     }
 
-    // !!!cmk keep this in a field
     pub fn len(&self) -> <T as SafeSubtract>::Output {
         self.len.clone()
     }
@@ -147,10 +139,11 @@ impl<T: Integer> RangeSetInt<T> {
     where
         for<'a> &'a T: Sub<&'a T, Output = T>,
     {
-        self.items.iter().fold(
-            <T as SafeSubtract>::Output::default(),
-            |acc, (start, stop)| acc + T::safe_subtract_inclusive(*stop, *start),
-        )
+        self.items
+            .iter()
+            .fold(<T as SafeSubtract>::Output::zero(), |acc, (start, stop)| {
+                acc + T::safe_subtract_inclusive(*stop, *start)
+            })
     }
 
     pub fn insert(&mut self, item: T) {
@@ -230,6 +223,7 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
+    // !!!cmk this is too similar to internal_add
     fn insert_internal(&mut self, start: T, stop: T) {
         let was_there = self.items.insert(start, stop);
         assert!(was_there.is_none());
@@ -267,21 +261,6 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn range_len(&self) -> usize {
         self.items.len()
     }
-
-    // pub fn from_mut_slice(slice: &mut [T]) -> Self {
-    //     slice.sort_unstable();
-    //     let mut range_set_int = RangeSetInt::<T>::new();
-    //     let mut x32 = X32::<T> {
-    //         range_set_int: &mut range_set_int,
-    //         is_empty: true,
-    //         lower: T::zero(),
-    //         upper: T::zero(),
-    //     };
-    //     for item in slice {
-    //         x32.insert(*item);
-    //     }
-    //     range_set_int
-    // }
 }
 
 impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
@@ -289,17 +268,6 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
-        // let mut range_set_int = RangeSetInt::<T>::new();
-        // let mut x32 = X32::<T> {
-        //     range_set_int: &mut range_set_int,
-        //     is_empty: true,
-        //     lower: T::zero(),
-        //     upper: T::zero(),
-        // };
-        // for item in iter {
-        //     x32.insert(item);
-        // }
-        // range_set_int
         let mut sortie = Sortie {
             sort_list: Vec::new(),
             is_empty: true,
@@ -309,6 +277,8 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
         for item in iter {
             sortie.insert(item);
         }
+
+        // !!!cmk fix do can't forget 'save'
         sortie.save();
         let mut sort_list = sortie.sort_list;
         sort_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
@@ -503,6 +473,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     }
 }
 
+// !!!cmk IntoIter is suppose to take ownership of the RangeSetInt, but it doesn't here (I think)
 pub struct IntoIter<T: Integer> {
     start: T,
     stop: Option<T>,
@@ -712,11 +683,6 @@ impl SafeSubtract for usize {
     }
 }
 
-//     type Output = u128;
-//     fn safe_subtract(a: Self, b: Self) -> <Self as SafeSubtract>::Output {
-//         a - b
-//     }
-// }
 impl SafeSubtract for i16 {
     #[cfg(target_pointer_width = "16")]
     type Output = u32;
@@ -752,17 +718,6 @@ impl SafeSubtract for u16 {
         Self::max_value()
     }
 }
-// pub fn test_me<T>(i: T)
-// where
-//     T: Integer,
-// {
-//     let _j = i;
-// }
-
-// pub fn test_me_i32(i: i32) {
-//     test_me(i);
-// }
-
 #[derive(Debug)]
 pub struct Sortie<T: Integer> {
     pub sort_list: Vec<(T, T)>,
@@ -779,12 +734,12 @@ pub struct X32<'a, T: Integer> {
     upper: T,
 }
 
-pub struct X32Own<T: Integer> {
-    pub range_set_int: RangeSetInt<T>,
-    is_empty: bool,
-    lower: T,
-    upper: T,
-}
+// pub struct X32Own<T: Integer> {
+//     pub range_set_int: RangeSetInt<T>,
+//     is_empty: bool,
+//     lower: T,
+//     upper: T,
+// }
 
 impl<'a, T: Integer> X32<'a, T> {
     pub fn new(range_set_int: &'a mut RangeSetInt<T>) -> Self {
@@ -828,48 +783,48 @@ impl<'a, T: Integer> X32<'a, T> {
     }
 }
 
-impl<T: Integer> X32Own<T> {
-    pub fn insert(&mut self, i: T) {
-        if self.is_empty {
-            self.lower = i;
-            self.upper = i;
-            self.is_empty = false;
-        } else {
-            if self.lower <= i && i <= self.upper {
-                return;
-            }
-            if T::zero() < self.lower && self.lower - T::one() == i {
-                self.lower = i;
-                return;
-            }
-            // !!!cmk max_value2, right?
-            if self.upper < T::max_value2() && self.upper + T::one() == i {
-                self.upper = i;
-                return;
-            }
-            self.range_set_int.internal_add(self.lower, self.upper);
-            self.lower = i;
-            self.upper = i;
-        }
-    }
+// impl<T: Integer> X32Own<T> {
+//     pub fn insert(&mut self, i: T) {
+//         if self.is_empty {
+//             self.lower = i;
+//             self.upper = i;
+//             self.is_empty = false;
+//         } else {
+//             if self.lower <= i && i <= self.upper {
+//                 return;
+//             }
+//             if T::zero() < self.lower && self.lower - T::one() == i {
+//                 self.lower = i;
+//                 return;
+//             }
+//             // !!!cmk max_value2, right?
+//             if self.upper < T::max_value2() && self.upper + T::one() == i {
+//                 self.upper = i;
+//                 return;
+//             }
+//             self.range_set_int.internal_add(self.lower, self.upper);
+//             self.lower = i;
+//             self.upper = i;
+//         }
+//     }
 
-    // !!! cmk what if forget to call this?
-    pub fn save(&mut self) {
-        if !self.is_empty {
-            self.range_set_int.internal_add(self.lower, self.upper);
-            self.is_empty = true;
-        }
-    }
+//     // !!! cmk what if forget to call this?
+//     pub fn save(&mut self) {
+//         if !self.is_empty {
+//             self.range_set_int.internal_add(self.lower, self.upper);
+//             self.is_empty = true;
+//         }
+//     }
 
-    pub fn merge(mut self, mut other: Self) -> Self {
-        self.save();
-        other.save();
-        for (lower, upper) in other.range_set_int.items.iter() {
-            self.range_set_int.internal_add(*lower, *upper);
-        }
-        self
-    }
-}
+//     pub fn merge(mut self, mut other: Self) -> Self {
+//         self.save();
+//         other.save();
+//         for (lower, upper) in other.range_set_int.items.iter() {
+//             self.range_set_int.internal_add(*lower, *upper);
+//         }
+//         self
+//     }
+// }
 
 impl<T: Integer> Sortie<T> {
     pub fn insert(&mut self, i: T) {
