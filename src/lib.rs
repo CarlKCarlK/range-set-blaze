@@ -100,7 +100,7 @@ where
             let mut range = range.split("..=");
             let start = range.next().unwrap().parse::<T>().unwrap();
             let stop = range.next().unwrap().parse::<T>().unwrap();
-            sortie.insert_range(start, stop);
+            sortie.insert(start, stop);
         }
         let (items, len) = sortie.range_int_set();
         RangeSetInt { items, len }
@@ -273,7 +273,7 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
         // !!!cmk0 refactor?
         let mut sortie = Sortie::new();
         for item in iter {
-            sortie.insert(item);
+            sortie.insert(item, item);
         }
         let (items, len) = sortie.range_int_set();
         RangeSetInt { items, len }
@@ -701,7 +701,7 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
     {
         let mut sortie = Sortie::new();
         for item in iter {
-            sortie.insert(item);
+            sortie.insert(item, item);
         }
         sortie.extend_x(&mut self.items, &mut self.len)
     }

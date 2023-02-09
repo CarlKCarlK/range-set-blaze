@@ -12,8 +12,11 @@ pub struct Sortie<T: Integer> {
     is_empty: bool,
     lower: T,
     upper: T,
-    two: T, // !!!cmk constant
 }
+
+// impl<T: Integer> Sortie<T> {
+//     const TWO: T = T::two();
+// }
 
 impl<T: Integer> Sortie<T> {
     pub fn new() -> Self {
@@ -22,17 +25,17 @@ impl<T: Integer> Sortie<T> {
             is_empty: true,
             lower: T::zero(),
             upper: T::zero(),
-            two: T::one() + T::one(),
         }
     }
-    pub fn insert_range(&mut self, lower: T, upper: T) {
+    pub fn insert(&mut self, lower: T, upper: T) {
+        let two = T::one() + T::one();
         assert!(lower <= upper && upper <= T::max_value2());
         if self.is_empty {
             self.lower = lower;
             self.upper = upper;
             self.is_empty = false;
-        } else if (self.lower >= self.two && self.lower - self.two >= upper)
-            || (lower >= self.two && lower - self.two >= self.upper)
+        } else if (self.lower >= two && self.lower - two >= upper)
+            || (lower >= two && lower - two >= self.upper)
         {
             self.sort_list.push((self.lower, self.upper));
             self.lower = lower;
@@ -43,29 +46,6 @@ impl<T: Integer> Sortie<T> {
         }
     }
     // !!!cmk0 better as from_iter?
-    pub fn insert(&mut self, i: T) {
-        assert!(i <= T::max_value2()); // !!!cmk raise error
-        if self.is_empty {
-            self.lower = i;
-            self.upper = i;
-            self.is_empty = false;
-        } else {
-            if self.lower <= i && i <= self.upper {
-                return;
-            }
-            if T::zero() < self.lower && self.lower - T::one() == i {
-                self.lower = i;
-                return;
-            }
-            if self.upper < T::max_value2() && self.upper + T::one() == i {
-                self.upper = i;
-                return;
-            }
-            self.sort_list.push((self.lower, self.upper));
-            self.lower = i;
-            self.upper = i;
-        }
-    }
 
     pub fn range_int_set(self) -> (BTreeMap<T, T>, <T as SafeSubtract>::Output) {
         let mut items = BTreeMap::new();
