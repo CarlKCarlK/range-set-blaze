@@ -23,30 +23,28 @@ impl<T: Integer> Sortie<T> {
     pub fn insert(&mut self, lower: T, upper: T) {
         let two = T::one() + T::one();
         assert!(lower <= upper && upper <= T::max_value2());
-        match self {
-            Sortie::None => {
-                *self = Sortie::Some {
-                    sort_list: Vec::new(),
-                    lower,
-                    upper,
-                };
+        if let Sortie::Some {
+            sort_list,
+            lower: self_lower,
+            upper: self_upper,
+        } = self
+        {
+            if (lower >= two && lower - two >= *self_upper)
+                || (*self_lower >= two && *self_lower - two >= upper)
+            {
+                sort_list.push((*self_lower, *self_upper));
+                *self_lower = lower;
+                *self_upper = upper;
+            } else {
+                *self_lower = min(*self_lower, lower);
+                *self_upper = max(*self_upper, upper);
             }
-            Sortie::Some {
-                sort_list,
-                lower: self_lower,
-                upper: self_upper,
-            } => {
-                if (lower >= two && lower - two >= *self_upper)
-                    || (*self_lower >= two && *self_lower - two >= upper)
-                {
-                    sort_list.push((*self_lower, *self_upper));
-                    *self_lower = lower;
-                    *self_upper = upper;
-                } else {
-                    *self_lower = min(*self_lower, lower);
-                    *self_upper = max(*self_upper, upper);
-                }
-            }
+        } else {
+            *self = Sortie::Some {
+                sort_list: Vec::new(),
+                lower,
+                upper,
+            };
         }
     }
     // !!!cmk0 better as from_iter?
@@ -60,47 +58,42 @@ impl<T: Integer> Sortie<T> {
 
     // !!!cmk rename to something better
     pub fn extract(&mut self, items: &mut BTreeMap<T, T>, len: &mut <T as SafeSubtract>::Output) {
-        match self {
-            Sortie::None => {
-                // do nothing
-            }
-            Sortie::Some {
-                sort_list,
-                lower: self_lower,
-                upper: self_upper,
-            } => {
-                sort_list.push((*self_lower, *self_upper));
-                sort_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+        if let Sortie::Some {
+            sort_list,
+            lower: self_lower,
+            upper: self_upper,
+        } = self
+        {
+            sort_list.push((*self_lower, *self_upper));
+            sort_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
 
-                // !!!cmk0 remove this is_empty
-                let mut is_empty = true;
-                let mut current_start = T::zero();
-                let mut current_stop = T::zero();
-                for (start, stop) in sort_list {
-                    if is_empty {
-                        current_start = *start;
-                        current_stop = *stop;
-                        is_empty = false;
-                    }
-                    // !!!cmk check for overflow with the +1
-                    else if *start <= current_stop + T::one() {
-                        current_stop = max(current_stop, *stop);
-                    } else {
-                        items.insert(current_start, current_stop);
-                        *len += T::safe_subtract_inclusive(current_stop, current_start);
-                        current_start = *start;
-                        current_stop = *stop;
-                    }
+            // !!!cmk0 remove this is_empty
+            let mut is_empty = true;
+            let mut current_start = T::zero();
+            let mut current_stop = T::zero();
+            for (start, stop) in sort_list {
+                if is_empty {
+                    current_start = *start;
+                    current_stop = *stop;
+                    is_empty = false;
                 }
-                if !is_empty {
+                // !!!cmk check for overflow with the +1
+                else if *start <= current_stop + T::one() {
+                    current_stop = max(current_stop, *stop);
+                } else {
                     items.insert(current_start, current_stop);
                     *len += T::safe_subtract_inclusive(current_stop, current_start);
+                    current_start = *start;
+                    current_stop = *stop;
                 }
-                *self = Sortie::None;
             }
+            if !is_empty {
+                items.insert(current_start, current_stop);
+                *len += T::safe_subtract_inclusive(current_stop, current_start);
+            }
+            *self = Sortie::None;
         }
     }
-
     // !!! cmk what if forget to call this?
 
     // fn merge(mut self, mut other: Self) -> Self {
