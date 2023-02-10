@@ -19,16 +19,16 @@ impl<T: Integer> Default for Merger<T> {
 }
 
 impl<T: Integer> From<Merger<T>> for RangeSetInt<T> {
-    fn from(mut val: Merger<T>) -> Self {
+    fn from(mut merger: Merger<T>) -> Self {
         let mut range_set_int = RangeSetInt::new();
-        val.extract(&mut range_set_int);
+        merger.collect_into(&mut range_set_int);
         range_set_int
     }
 }
 
 impl<T: Integer> Merger<T> {
     // !!!cmk rename to something better
-    pub fn extract(&mut self, range_set_int: &mut RangeSetInt<T>) {
+    pub fn collect_into(&mut self, range_set_int: &mut RangeSetInt<T>) {
         if let Merger::Some {
             range_list,
             lower,
@@ -36,8 +36,24 @@ impl<T: Integer> Merger<T> {
         } = self
         {
             range_list.push((*lower, *upper));
-            MergeRange::extend(range_set_int, range_list);
+            Self::collect_range_list_into_range_set_int(range_list, range_set_int);
             *self = Merger::None;
+        }
+    }
+
+    fn collect_range_list_into_range_set_int(
+        range_list: &mut Vec<(T, T)>,
+        range_set_int: &mut RangeSetInt<T>,
+    ) {
+        range_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
+        let mut merge_range_list = MergeRange::None;
+        for (start, stop) in range_list {
+            merge_range_list.insert_sorted(start, stop, range_set_int);
+        }
+        if let MergeRange::Some { start, stop } = merge_range_list {
+            range_set_int.items.insert(start, stop);
+            range_set_int.len += T::safe_subtract_inclusive(stop, start);
         }
     }
 
@@ -77,11 +93,11 @@ impl<T: Integer> Merger<T> {
 
 impl<T: Integer> FromIterator<(T, T)> for Merger<T> {
     fn from_iter<I: IntoIterator<Item = (T, T)>>(iter: I) -> Self {
-        let mut sortie = Merger::new();
+        let mut merger = Merger::new();
         for (lower, upper) in iter {
-            sortie.insert(lower, upper);
+            merger.insert(lower, upper);
         }
-        sortie
+        merger
     }
 }
 
@@ -91,20 +107,7 @@ pub enum MergeRange<T: Integer> {
 }
 
 impl<T: Integer> MergeRange<T> {
-    pub fn extend(range_set_int: &mut RangeSetInt<T>, range_list: &mut Vec<(T, T)>) {
-        range_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-
-        let mut merge_range_list = MergeRange::None;
-        for (start, stop) in range_list {
-            merge_range_list.insert(start, stop, range_set_int);
-        }
-        if let MergeRange::Some { start, stop } = merge_range_list {
-            range_set_int.items.insert(start, stop);
-            range_set_int.len += T::safe_subtract_inclusive(stop, start);
-        }
-    }
-
-    fn insert(&mut self, start: &mut T, stop: &mut T, range_set_int: &mut RangeSetInt<T>) {
+    fn insert_sorted(&mut self, start: &mut T, stop: &mut T, range_set_int: &mut RangeSetInt<T>) {
         match self {
             MergeRange::None => {
                 *self = MergeRange::Some {
@@ -116,8 +119,7 @@ impl<T: Integer> MergeRange<T> {
                 start: current_start,
                 stop: current_stop,
             } => {
-                // !!!cmk check for overflow with the +1
-                if *start <= *current_stop + T::one() {
+                if *current_stop < T::max_value2() && *start <= *current_stop + T::one() {
                     *current_stop = max(*current_stop, *stop);
                 } else {
                     range_set_int.items.insert(*current_start, *current_stop);
