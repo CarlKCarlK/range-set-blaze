@@ -38,17 +38,8 @@ impl<T: Integer> Merger<T> {
             range_list.push((*lower, *upper));
             range_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
 
-            let mut merge_range_list = MergeRange {
-                range_set_int,
-                range: RangeEnum::None,
-            };
-            for (start, stop) in range_list {
-                merge_range_list.insert_sorted(start, stop);
-            }
-            if let RangeEnum::Some { start, stop } = merge_range_list.range {
-                range_set_int.items.insert(start, stop);
-                range_set_int.len += T::safe_subtract_inclusive(stop, start);
-            }
+            let mut merge_range_list = MergeRange::new(range_set_int);
+            merge_range_list.extend(range_list);
             *self = Merger::None;
         }
     }
@@ -108,6 +99,23 @@ pub struct MergeRange<'a, T: Integer> {
 }
 
 impl<'a, T: Integer> MergeRange<'a, T> {
+    fn new(range_set_int: &'a mut RangeSetInt<T>) -> Self {
+        MergeRange {
+            range_set_int,
+            range: RangeEnum::None,
+        }
+    }
+
+    fn extend(&mut self, range_list: &mut Vec<(T, T)>) {
+        for (start, stop) in range_list {
+            self.insert_sorted(start, stop);
+        }
+        if let RangeEnum::Some { start, stop } = self.range {
+            self.range_set_int.items.insert(start, stop);
+            self.range_set_int.len += T::safe_subtract_inclusive(stop, start);
+        }
+    }
+
     fn insert_sorted(&mut self, start: &mut T, stop: &mut T) {
         match self.range {
             RangeEnum::None => {
