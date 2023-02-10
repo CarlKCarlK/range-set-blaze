@@ -36,24 +36,17 @@ impl<T: Integer> Merger<T> {
         } = self
         {
             range_list.push((*lower, *upper));
-            Self::collect_range_list_into_range_set_int(range_list, range_set_int);
+            range_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
+            let mut merge_range_list = MergeRange::None;
+            for (start, stop) in range_list {
+                merge_range_list.insert_sorted(start, stop, range_set_int);
+            }
+            if let MergeRange::Some { start, stop } = merge_range_list {
+                range_set_int.items.insert(start, stop);
+                range_set_int.len += T::safe_subtract_inclusive(stop, start);
+            }
             *self = Merger::None;
-        }
-    }
-
-    fn collect_range_list_into_range_set_int(
-        range_list: &mut Vec<(T, T)>,
-        range_set_int: &mut RangeSetInt<T>,
-    ) {
-        range_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-
-        let mut merge_range_list = MergeRange::None;
-        for (start, stop) in range_list {
-            merge_range_list.insert_sorted(start, stop, range_set_int);
-        }
-        if let MergeRange::Some { start, stop } = merge_range_list {
-            range_set_int.items.insert(start, stop);
-            range_set_int.len += T::safe_subtract_inclusive(stop, start);
         }
     }
 
