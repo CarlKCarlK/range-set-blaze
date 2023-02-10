@@ -38,11 +38,14 @@ impl<T: Integer> Merger<T> {
             range_list.push((*lower, *upper));
             range_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
 
-            let mut merge_range_list = MergeRange::None;
+            let mut merge_range_list = MergeRange {
+                range_set_int,
+                range: RangeEnum::None,
+            };
             for (start, stop) in range_list {
-                merge_range_list.insert_sorted(start, stop, range_set_int);
+                merge_range_list.insert_sorted(start, stop);
             }
-            if let MergeRange::Some { start, stop } = merge_range_list {
+            if let RangeEnum::Some { start, stop } = merge_range_list.range {
                 range_set_int.items.insert(start, stop);
                 range_set_int.len += T::safe_subtract_inclusive(stop, start);
             }
@@ -94,32 +97,42 @@ impl<T: Integer> FromIterator<(T, T)> for Merger<T> {
     }
 }
 
-pub enum MergeRange<T: Integer> {
+enum RangeEnum<T: Integer> {
     None,
     Some { start: T, stop: T },
 }
 
-impl<T: Integer> MergeRange<T> {
-    fn insert_sorted(&mut self, start: &mut T, stop: &mut T, range_set_int: &mut RangeSetInt<T>) {
-        match self {
-            MergeRange::None => {
-                *self = MergeRange::Some {
+pub struct MergeRange<'a, T: Integer> {
+    range_set_int: &'a mut RangeSetInt<T>,
+    range: RangeEnum<T>,
+}
+
+impl<'a, T: Integer> MergeRange<'a, T> {
+    fn insert_sorted(&mut self, start: &mut T, stop: &mut T) {
+        match self.range {
+            RangeEnum::None => {
+                self.range = RangeEnum::Some {
                     start: *start,
                     stop: *stop,
                 };
             }
-            MergeRange::Some {
-                start: current_start,
-                stop: current_stop,
+            RangeEnum::Some {
+                start: mut current_start,
+                stop: mut current_stop,
             } => {
-                if *current_stop < T::max_value2() && *start <= *current_stop + T::one() {
-                    *current_stop = max(*current_stop, *stop);
+                if current_stop < T::max_value2() && *start <= current_stop + T::one() {
+                    current_stop = max(current_stop, *stop);
                 } else {
-                    range_set_int.items.insert(*current_start, *current_stop);
-                    range_set_int.len += T::safe_subtract_inclusive(*current_stop, *current_start);
-                    *current_start = *start;
-                    *current_stop = *stop;
+                    self.range_set_int.items.insert(current_start, current_stop);
+                    self.range_set_int.len +=
+                        T::safe_subtract_inclusive(current_stop, current_start);
+                    current_start = *start;
+                    current_stop = *stop;
                 }
+                self.range = RangeEnum::Some {
+                    start: current_start,
+                    stop: current_stop,
+                };
             }
         }
     }
