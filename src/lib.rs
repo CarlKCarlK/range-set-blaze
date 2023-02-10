@@ -200,14 +200,13 @@ impl<T: Integer> RangeSetInt<T> {
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     fn internal_add(&mut self, start: T, stop: T) {
         // internal_add(&mut self.items, &mut self.len, start, stop);
-        assert!(start <= stop && stop <= T::max_value2()); // !!!cmk check that length is not zero
-                                                           // !!! cmk would be nice to have a partition_point function that returns two iterators
+        assert!(start <= stop && stop <= T::max_value2());
+        // !!! cmk would be nice to have a partition_point function that returns two iterators
         let mut before = self.items.range_mut(..=start).rev();
         if let Some((start_before, stop_before)) = before.next() {
             // Must check this in two parts to avoid overflow
             if *stop_before < start && *stop_before + T::one() < start {
-                self.insert_internal(start, stop);
-                self.len += T::safe_subtract_inclusive(stop, start);
+                self.internal_add2(start, stop);
             } else if *stop_before < stop {
                 self.len += T::safe_subtract(stop, *stop_before);
                 *stop_before = stop;
@@ -217,24 +216,21 @@ impl<T: Integer> RangeSetInt<T> {
                 // completely contained, so do nothing
             }
         } else {
-            self.insert_internal(start, stop);
-            // !!!cmk 0
-            self.len += T::safe_subtract_inclusive(stop, start);
+            self.internal_add2(start, stop);
         }
     }
 
-    // !!!cmk this is too similar to internal_add
-    fn insert_internal(&mut self, start: T, stop: T) {
+    fn internal_add2(&mut self, start: T, stop: T) {
         let was_there = self.items.insert(start, stop);
-        assert!(was_there.is_none());
-        // !!!cmk real assert
+        debug_assert!(was_there.is_none()); // real assert
         self.delete_extra(start, stop);
+        self.len += T::safe_subtract_inclusive(stop, start);
     }
 
     fn delete_extra(&mut self, start: T, stop: T) {
         let mut after = self.items.range_mut(start..);
-        let (start_after, stop_after) = after.next().unwrap(); // !!! cmk assert that there is a next
-        debug_assert!(start == *start_after && stop == *stop_after); // !!! cmk real assert
+        let (start_after, stop_after) = after.next().unwrap(); // there will always be a next
+        debug_assert!(start == *start_after && stop == *stop_after); // real assert
                                                                      // !!!cmk would be nice to have a delete_range function
         let mut stop_new = stop;
         let delete_list = after
@@ -353,7 +349,7 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// ```
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         !&(&(!self) | &(!rhs))
-        // !!!cmk would be nice if it didn't allocate a new RangeSetInt for each operation
+        // !!!cmk0 would be nice if it didn't allocate a new RangeSetInt for each operation
     }
 }
 
@@ -399,7 +395,6 @@ impl<T: Integer> Sub<&RangeSetInt<T>> for &RangeSetInt<T> {
     }
 }
 
-// !!!cmk merge this with from_iter
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     fn from(arr: [T; N]) -> Self {
         RangeSetInt::from(arr.as_slice())
@@ -431,7 +426,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     }
 }
 
-// !!!cmk IntoIter is suppose to take ownership of the RangeSetInt, but it doesn't here (I think)
+// !!! cmk0 IntoIter is suppose to take ownership of the RangeSetInt, but it doesn't here (I think)
 pub struct IntoIter<T: Integer> {
     start: T,
     stop: Option<T>,
@@ -677,8 +672,6 @@ impl SafeSubtract for u16 {
     }
 }
 
-// !!!cmk can we make a version of Extends that takes a slice and parallelizes it?
-// !!!cmk or does Rayon work with iterators in a way that would work for us?
 impl<T: Integer> From<&[T]> for RangeSetInt<T> {
     fn from(slice: &[T]) -> Self {
         RangeSetInt::from_iter(slice.iter().copied())
@@ -693,6 +686,14 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
     {
         Merger::from_iter(iter).collect_into(self);
     }
+
+    // fn extend<I>(&mut self, other: RangeSetInt<T>) {
+    //     todo!();
+    //     //for (start, end) in other.range_iter() {
+    //     //     self.internal_add(start, stop)
+    //     // }
+    //     //}
+    //}
 }
 
 impl<'a, T: 'a + Integer> Extend<&'a T> for RangeSetInt<T> {

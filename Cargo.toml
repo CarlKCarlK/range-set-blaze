@@ -6,14 +6,12 @@ edition = "2021"
 [lib]
 
 [dependencies]
-# !!!cmk make rayon a feature?
 rand = "0.8.5"
 thousands = "0.2.0"
 itertools = "0.10.1"
 num-integer = "0.1.44"
 num-traits = "0.2.14"
 trait-set = "0.3.0"
-rayon = "1.5.1"
 
 [dev-dependencies]
 syntactic-for = "0.1.1"

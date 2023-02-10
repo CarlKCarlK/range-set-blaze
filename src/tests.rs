@@ -10,7 +10,6 @@ use thousands::Separable;
 #[test]
 fn insert_255u8() {
     let range_set_int = RangeSetInt::<u8>::from([255]);
-    println!("cmk{range_set_int}");
     assert!(range_set_int.to_string() == "255..=255");
 }
 

@@ -425,7 +425,6 @@ dependencies = [
  "num-integer",
  "num-traits",
  "rand",
- "rayon",
  "syntactic-for",
  "thousands",
  "trait-set",

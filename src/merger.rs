@@ -78,7 +78,6 @@ impl<T: Integer> Merger<T> {
             };
         }
     }
-    // !!!cmk0 better as from_iter?
 }
 
 enum OptionRange<T: Integer> {
@@ -115,7 +114,7 @@ impl<'a, T: Integer> SortedRanges<'a, T> {
                 start: current_start,
                 stop: current_stop,
             } => {
-                debug_assert!(current_start <= *start); // !!! cmk panic because not sorted;
+                debug_assert!(current_start <= *start); // panic if not sorted
                 if current_stop < T::max_value2() && *start <= current_stop + T::one() {
                     OptionRange::Some {
                         start: current_start,
