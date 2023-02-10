@@ -268,7 +268,7 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
-        Merger::from_iter(iter.into_iter().map(|x| (x, x))).into()
+        Merger::from_iter(iter).into()
     }
 }
 
@@ -691,7 +691,7 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
-        Merger::from_iter(iter.into_iter().map(|x| (x, x))).collect_into(self);
+        Merger::from_iter(iter).collect_into(self);
     }
 }
 

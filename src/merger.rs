@@ -12,9 +12,19 @@ pub enum Merger<T: Integer> {
     },
 }
 
-impl<T: Integer> Default for Merger<T> {
-    fn default() -> Self {
-        Self::None
+impl<T: Integer> FromIterator<T> for Merger<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        Merger::from_iter(iter.into_iter().map(|item| (item, item)))
+    }
+}
+
+impl<T: Integer> FromIterator<(T, T)> for Merger<T> {
+    fn from_iter<I: IntoIterator<Item = (T, T)>>(iter: I) -> Self {
+        let mut merger = Merger::None;
+        for (lower, upper) in iter {
+            merger.insert(lower, upper);
+        }
+        merger
     }
 }
 
@@ -27,7 +37,6 @@ impl<T: Integer> From<Merger<T>> for RangeSetInt<T> {
 }
 
 impl<T: Integer> Merger<T> {
-    // !!!cmk rename to something better
     pub fn collect_into(&mut self, range_set_int: &mut RangeSetInt<T>) {
         if let Merger::Some {
             range_list,
@@ -37,15 +46,9 @@ impl<T: Integer> Merger<T> {
         {
             range_list.push((*lower, *upper));
             range_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-
-            let mut merge_range_list = MergeRange::new(range_set_int);
-            merge_range_list.extend(range_list);
+            MergeRange::new(range_set_int).extend_with_sorted(range_list);
             *self = Merger::None;
         }
-    }
-
-    fn new() -> Self {
-        Self::None
     }
 
     fn insert(&mut self, lower: T, upper: T) {
@@ -78,39 +81,29 @@ impl<T: Integer> Merger<T> {
     // !!!cmk0 better as from_iter?
 }
 
-impl<T: Integer> FromIterator<(T, T)> for Merger<T> {
-    fn from_iter<I: IntoIterator<Item = (T, T)>>(iter: I) -> Self {
-        let mut merger = Merger::new();
-        for (lower, upper) in iter {
-            merger.insert(lower, upper);
-        }
-        merger
-    }
-}
-
-enum RangeEnum<T: Integer> {
+enum OptionRange<T: Integer> {
     None,
     Some { start: T, stop: T },
 }
 
 pub struct MergeRange<'a, T: Integer> {
     range_set_int: &'a mut RangeSetInt<T>,
-    range: RangeEnum<T>,
+    range: OptionRange<T>,
 }
 
 impl<'a, T: Integer> MergeRange<'a, T> {
     fn new(range_set_int: &'a mut RangeSetInt<T>) -> Self {
         MergeRange {
             range_set_int,
-            range: RangeEnum::None,
+            range: OptionRange::None,
         }
     }
 
-    fn extend(&mut self, range_list: &mut Vec<(T, T)>) {
+    fn extend_with_sorted(&mut self, range_list: &mut Vec<(T, T)>) {
         for (start, stop) in range_list {
             self.insert_sorted(start, stop);
         }
-        if let RangeEnum::Some { start, stop } = self.range {
+        if let OptionRange::Some { start, stop } = self.range {
             self.range_set_int.items.insert(start, stop);
             self.range_set_int.len += T::safe_subtract_inclusive(stop, start);
         }
@@ -118,13 +111,13 @@ impl<'a, T: Integer> MergeRange<'a, T> {
 
     fn insert_sorted(&mut self, start: &mut T, stop: &mut T) {
         match self.range {
-            RangeEnum::None => {
-                self.range = RangeEnum::Some {
+            OptionRange::None => {
+                self.range = OptionRange::Some {
                     start: *start,
                     stop: *stop,
                 };
             }
-            RangeEnum::Some {
+            OptionRange::Some {
                 start: mut current_start,
                 stop: mut current_stop,
             } => {
@@ -137,7 +130,7 @@ impl<'a, T: Integer> MergeRange<'a, T> {
                     current_start = *start;
                     current_stop = *stop;
                 }
-                self.range = RangeEnum::Some {
+                self.range = OptionRange::Some {
                     start: current_start,
                     stop: current_stop,
                 };
