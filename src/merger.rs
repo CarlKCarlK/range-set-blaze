@@ -46,7 +46,7 @@ impl<T: Integer> Merger<T> {
         {
             range_list.push((*lower, *upper));
             range_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-            MergeRange::new(range_set_int).extend_with_sorted(range_list);
+            SortedRanges::process(range_set_int, range_list);
             *self = Merger::None;
         }
     }
@@ -86,55 +86,54 @@ enum OptionRange<T: Integer> {
     Some { start: T, stop: T },
 }
 
-pub struct MergeRange<'a, T: Integer> {
+pub struct SortedRanges<'a, T: Integer> {
     range_set_int: &'a mut RangeSetInt<T>,
     range: OptionRange<T>,
 }
 
-impl<'a, T: Integer> MergeRange<'a, T> {
-    fn new(range_set_int: &'a mut RangeSetInt<T>) -> Self {
-        MergeRange {
+impl<'a, T: Integer> SortedRanges<'a, T> {
+    fn process(range_set_int: &'a mut RangeSetInt<T>, range_list: &mut Vec<(T, T)>) {
+        let mut sorted_ranges = SortedRanges {
             range_set_int,
             range: OptionRange::None,
-        }
-    }
-
-    fn extend_with_sorted(&mut self, range_list: &mut Vec<(T, T)>) {
+        };
         for (start, stop) in range_list {
-            self.insert_sorted(start, stop);
+            sorted_ranges.insert(start, stop);
         }
-        if let OptionRange::Some { start, stop } = self.range {
-            self.range_set_int.items.insert(start, stop);
-            self.range_set_int.len += T::safe_subtract_inclusive(stop, start);
+        if let OptionRange::Some { start, stop } = sorted_ranges.range {
+            sorted_ranges.push(start, stop);
         }
     }
 
-    fn insert_sorted(&mut self, start: &mut T, stop: &mut T) {
-        match self.range {
-            OptionRange::None => {
-                self.range = OptionRange::Some {
-                    start: *start,
-                    stop: *stop,
-                };
-            }
+    fn insert(&mut self, start: &mut T, stop: &mut T) {
+        self.range = match self.range {
+            OptionRange::None => OptionRange::Some {
+                start: *start,
+                stop: *stop,
+            },
             OptionRange::Some {
-                start: mut current_start,
-                stop: mut current_stop,
+                start: current_start,
+                stop: current_stop,
             } => {
+                debug_assert!(current_start <= *start); // !!! cmk panic because not sorted;
                 if current_stop < T::max_value2() && *start <= current_stop + T::one() {
-                    current_stop = max(current_stop, *stop);
+                    OptionRange::Some {
+                        start: current_start,
+                        stop: max(current_stop, *stop),
+                    }
                 } else {
-                    self.range_set_int.items.insert(current_start, current_stop);
-                    self.range_set_int.len +=
-                        T::safe_subtract_inclusive(current_stop, current_start);
-                    current_start = *start;
-                    current_stop = *stop;
+                    self.push(current_start, current_stop);
+                    OptionRange::Some {
+                        start: *start,
+                        stop: *stop,
+                    }
                 }
-                self.range = OptionRange::Some {
-                    start: current_start,
-                    stop: current_stop,
-                };
             }
-        }
+        };
+    }
+
+    fn push(&mut self, start: T, stop: T) {
+        self.range_set_int.items.insert(start, stop);
+        self.range_set_int.len += T::safe_subtract_inclusive(stop, start);
     }
 }
