@@ -470,59 +470,6 @@ impl<'a, T: Integer> Iterator for Iter<'a, T> {
     }
 }
 
-// impl<'a, 'b, T: Integer> Iterator for Iter<'a, T>
-// where
-//     'b: 'a,
-// {
-//     type Item = &'a T;
-
-//     fn next(&'b mut self) -> Option<Self::Item> {
-//         todo!();
-//         // if let OptionRange::Some { start, stop } = self.option_range {
-//         //     self.current = start;
-//         //     if start < stop {
-//         //         self.option_range = OptionRange::Some {
-//         //             start: start + T::one(),
-//         //             stop,
-//         //         };
-//         //     } else {
-//         //         self.option_range = OptionRange::None;
-//         //     }
-//         //     Some(std::borrow::Borrow::borrow(&self.current))
-//         // } else if let Some((start, stop)) = self.range_iter.next() {
-//         //     self.option_range = OptionRange::Some {
-//         //         start: *start,
-//         //         stop: *stop,
-//         //     };
-//         //     self.next()
-//         // } else {
-//         //     None
-//         // }
-//     }
-
-// impl<'a, T: Integer> Iterator for Iter<'a, T> {
-//     type Item = T;
-
-//     fn next(&mut self) -> Option<Self::Item> {
-//         if let OptionRange::Some { start, stop } = self.option_range {
-//             if start < stop {
-//                 self.option_range = OptionRange::Some {
-//                     start: start + T::one(),
-//                     stop,
-//                 };
-//             } else {
-//                 self.option_range = OptionRange::None;
-//             }
-//             Some(start)
-//         } else if let Some((start, stop)) = self.range_iter.next() {
-//             self.option_range = OptionRange::Some { start, stop };
-//             self.next()
-//         } else {
-//             None
-//         }
-//     }
-// }
-
 pub struct IntoIter<T: Integer> {
     option_range: OptionRange<T>,
     range_into_iter: std::collections::btree_map::IntoIter<T, T>,
@@ -856,5 +803,45 @@ impl Iterator for MemorylessData {
             self.current_upper = self.current_lower + delta;
             self.next()
         }
+    }
+}
+
+pub struct SquareVecIter<'a> {
+    current: f64,
+    iter: core::slice::Iter<'a, f64>,
+}
+
+pub fn square_iter<'a>(vec: &'a Vec<f64>) -> SquareVecIter<'a> {
+    SquareVecIter {
+        current: 0.0,
+        iter: vec.iter(),
+    }
+}
+
+impl<'a> Iterator for SquareVecIter<'a> {
+    type Item = f64;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(next) = self.iter.next() {
+            self.current = next * next;
+            Some(self.current)
+        } else {
+            None
+        }
+    }
+}
+
+// switch to test module
+#[cfg(test)]
+mod tests_2 {
+    use super::*;
+
+    #[test]
+    fn test_square_vec() {
+        let vec = vec![1.0, 2.0];
+        let mut iter = square_iter(&vec);
+        assert_eq!(iter.next(), Some(1.0));
+        assert_eq!(iter.next(), Some(4.0));
+        assert_eq!(iter.next(), None);
     }
 }

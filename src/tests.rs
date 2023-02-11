@@ -566,6 +566,12 @@ fn understand_into_iter() {
     for i in btree_set.iter() {
         println!("{i}");
     }
+
+    let s = "abc".to_string();
+    for c in s.chars() {
+        println!("{c}");
+    }
+    println!("{s:?}");
     // println!("{btree_set:?}");
 
     // let ri = 1..=5;
@@ -583,6 +589,10 @@ fn understand_into_iter() {
     let _len2 = s.len();
 
     let arr = [1, 2, 3, 4, 5];
+    for i in arr.iter() {
+        println!("{i}");
+    }
+
     for i in arr {
         println!("{i}");
     }
@@ -601,10 +611,10 @@ fn iters() {
     // !!!cmk 0
     // assert!(range_int_set.ranges.len() == 3);
     // // !!!cmk 0 i is &u8
-    let ii = range_int_set.iter();
-    for i in ii {
-        println!("{i}");
-    }
+    // let ii = range_int_set.iter();
+    // for i in ii {
+    //     println!("{i}");
+    // }
     // for (start, stop) in range_int_set.ranges {
     //     println!("{start} {stop}");
     // }
