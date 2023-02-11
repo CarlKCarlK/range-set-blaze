@@ -559,3 +559,57 @@ fn optimize() {
         }
     }
 }
+
+#[test]
+fn understand_into_iter() {
+    let btree_set = BTreeSet::from([1, 2, 3, 4, 5]);
+    for i in btree_set.iter() {
+        println!("{i}");
+    }
+    // println!("{btree_set:?}");
+
+    // let ri = 1..=5;
+    // let rii = ri.into_iter();
+    // let val = rii.next();
+    // let len = rii.len();
+    // // for i in ri() {
+    // //     println!("{i} {}", ri.len());
+    // // }
+    // // println!("{ri:?}");
+    let s = "hello".to_string();
+    let mut si = s.bytes();
+    let _val = si.next();
+    let _len = si.len();
+    let _len2 = s.len();
+
+    let arr = [1, 2, 3, 4, 5];
+    for i in arr {
+        println!("{i}");
+    }
+
+    // let rsi = RangeSetInt::from_iter(1..=5);
+    // for i in rsi.iter() {
+    //     println!("{i}");
+    // }
+    // let len = rsi.len();
+}
+
+#[test]
+fn iters() {
+    let range_int_set = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    assert!(range_int_set.len() == 13);
+    // !!!cmk 0
+    // assert!(range_int_set.ranges.len() == 3);
+    // // !!!cmk 0 i is &u8
+    // for i in range_int_set.iter() {
+    //     println!("{i}");
+    // }
+    // for (start, stop) in range_int_set.ranges {
+    //     println!("{start} {stop}");
+    // }
+    for i in range_int_set {
+        println!("{i}");
+    }
+    // range_int_set.len();
+    // !!! assert that can't use range_int_set again
+}

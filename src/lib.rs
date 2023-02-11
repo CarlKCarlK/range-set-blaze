@@ -125,6 +125,9 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
+    // pub fn iter() -> impl Iterator<Item = T> {
+    //     todo!("cmk0")
+    // }
     pub fn clear(&mut self) {
         self.items.clear();
         self.len = <T as SafeSubtract>::Output::zero();
@@ -254,6 +257,7 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
+    // !!!cmk0 remove this
     pub fn range_len(&self) -> usize {
         self.items.len()
     }
@@ -401,6 +405,11 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     }
 }
 
+enum OptionRange<T: Integer> {
+    None,
+    Some { start: T, stop: T },
+}
+
 impl<T: Integer> IntoIterator for RangeSetInt<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
@@ -419,17 +428,15 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     /// ```
     fn into_iter(self) -> IntoIter<T> {
         IntoIter {
-            start: T::zero(),
-            stop: None,
+            option_range: OptionRange::None,
             range_iter: self.items.into_iter(),
         }
     }
 }
 
-// !!! cmk0 IntoIter is suppose to take ownership of the RangeSetInt, but it doesn't here (I think)
+// !!! cmk reimplement with enum rather than Option(stop)
 pub struct IntoIter<T: Integer> {
-    start: T,
-    stop: Option<T>,
+    option_range: OptionRange<T>,
     range_iter: std::collections::btree_map::IntoIter<T, T>,
 }
 
@@ -437,25 +444,25 @@ impl<T: Integer> Iterator for IntoIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(stop) = self.stop {
-            if self.start <= stop {
-                let result = self.start;
-                if self.start < stop {
-                    self.start += T::one();
-                } else {
-                    self.stop = None;
-                }
-                return Some(result);
+        if let OptionRange::Some { start, stop } = self.option_range {
+            if start < stop {
+                self.option_range = OptionRange::Some {
+                    start: start + T::one(),
+                    stop,
+                };
+            } else {
+                self.option_range = OptionRange::None;
             }
+            Some(start)
+        } else if let Some((start, stop)) = self.range_iter.next() {
+            self.option_range = OptionRange::Some { start, stop };
+            self.next()
+        } else {
+            None
         }
-        if let Some((start, stop)) = self.range_iter.next() {
-            self.start = start;
-            self.stop = Some(stop);
-            return self.next();
-        }
-        None
     }
 }
+
 impl SafeSubtract for i8 {
     #[cfg(target_pointer_width = "16")]
     type Output = usize;

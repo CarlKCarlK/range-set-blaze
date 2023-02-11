@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 
-use crate::{Integer, RangeSetInt};
+use crate::{Integer, OptionRange, RangeSetInt};
 
 #[derive(Debug)]
 pub enum Merger<T: Integer> {
@@ -78,11 +78,6 @@ impl<T: Integer> Merger<T> {
             };
         }
     }
-}
-
-enum OptionRange<T: Integer> {
-    None,
-    Some { start: T, stop: T },
 }
 
 pub struct SortedRanges<'a, T: Integer> {
