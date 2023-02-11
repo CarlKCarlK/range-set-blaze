@@ -125,9 +125,13 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    // pub fn iter() -> impl Iterator<Item = T> {
-    //     todo!("cmk0")
-    // }
+    pub fn iter(&self) -> Iter<'_, T> {
+        Iter {
+            current: T::zero(),
+            option_range: OptionRange::None,
+            range_iter: self.items.iter(),
+        }
+    }
     pub fn clear(&mut self) {
         self.items.clear();
         self.len = <T as SafeSubtract>::Output::zero();
@@ -429,15 +433,99 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     fn into_iter(self) -> IntoIter<T> {
         IntoIter {
             option_range: OptionRange::None,
-            range_iter: self.items.into_iter(),
+            range_into_iter: self.items.into_iter(),
         }
     }
 }
 
-// !!! cmk reimplement with enum rather than Option(stop)
+pub struct Iter<'a, T: Integer> {
+    current: T,
+    option_range: OptionRange<T>,
+    range_iter: std::collections::btree_map::Iter<'a, T, T>,
+}
+
+impl<'a, T: Integer> Iterator for Iter<'a, T> {
+    type Item = T;
+    fn next(&mut self) -> Option<T> {
+        if let OptionRange::Some { start, stop } = self.option_range {
+            self.current = start;
+            if start < stop {
+                self.option_range = OptionRange::Some {
+                    start: start + T::one(),
+                    stop,
+                };
+            } else {
+                self.option_range = OptionRange::None;
+            }
+            Some(self.current)
+        } else if let Some((start, stop)) = self.range_iter.next() {
+            self.option_range = OptionRange::Some {
+                start: *start,
+                stop: *stop,
+            };
+            self.next()
+        } else {
+            None
+        }
+    }
+}
+
+// impl<'a, 'b, T: Integer> Iterator for Iter<'a, T>
+// where
+//     'b: 'a,
+// {
+//     type Item = &'a T;
+
+//     fn next(&'b mut self) -> Option<Self::Item> {
+//         todo!();
+//         // if let OptionRange::Some { start, stop } = self.option_range {
+//         //     self.current = start;
+//         //     if start < stop {
+//         //         self.option_range = OptionRange::Some {
+//         //             start: start + T::one(),
+//         //             stop,
+//         //         };
+//         //     } else {
+//         //         self.option_range = OptionRange::None;
+//         //     }
+//         //     Some(std::borrow::Borrow::borrow(&self.current))
+//         // } else if let Some((start, stop)) = self.range_iter.next() {
+//         //     self.option_range = OptionRange::Some {
+//         //         start: *start,
+//         //         stop: *stop,
+//         //     };
+//         //     self.next()
+//         // } else {
+//         //     None
+//         // }
+//     }
+
+// impl<'a, T: Integer> Iterator for Iter<'a, T> {
+//     type Item = T;
+
+//     fn next(&mut self) -> Option<Self::Item> {
+//         if let OptionRange::Some { start, stop } = self.option_range {
+//             if start < stop {
+//                 self.option_range = OptionRange::Some {
+//                     start: start + T::one(),
+//                     stop,
+//                 };
+//             } else {
+//                 self.option_range = OptionRange::None;
+//             }
+//             Some(start)
+//         } else if let Some((start, stop)) = self.range_iter.next() {
+//             self.option_range = OptionRange::Some { start, stop };
+//             self.next()
+//         } else {
+//             None
+//         }
+//     }
+// }
+
 pub struct IntoIter<T: Integer> {
     option_range: OptionRange<T>,
-    range_iter: std::collections::btree_map::IntoIter<T, T>,
+    range_into_iter: std::collections::btree_map::IntoIter<T, T>,
 }
 
 impl<T: Integer> Iterator for IntoIter<T> {
@@ -454,7 +542,7 @@ impl<T: Integer> Iterator for IntoIter<T> {
                 self.option_range = OptionRange::None;
             }
             Some(start)
-        } else if let Some((start, stop)) = self.range_iter.next() {
+        } else if let Some((start, stop)) = self.range_into_iter.next() {
             self.option_range = OptionRange::Some { start, stop };
             self.next()
         } else {

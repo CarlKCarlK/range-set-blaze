@@ -601,9 +601,10 @@ fn iters() {
     // !!!cmk 0
     // assert!(range_int_set.ranges.len() == 3);
     // // !!!cmk 0 i is &u8
-    // for i in range_int_set.iter() {
-    //     println!("{i}");
-    // }
+    let ii = range_int_set.iter();
+    for i in ii {
+        println!("{i}");
+    }
     // for (start, stop) in range_int_set.ranges {
     //     println!("{start} {stop}");
     // }
