@@ -1,11 +1,11 @@
 #![cfg(test)]
 
-use std::{collections::BTreeSet, time::Instant};
+use std::collections::BTreeSet; // , time::Instant
 
 use super::*;
 // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use syntactic_for::syntactic_for;
-use thousands::Separable;
+// use thousands::Separable;
 
 #[test]
 fn insert_255u8() {
