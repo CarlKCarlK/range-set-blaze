@@ -321,6 +321,63 @@ impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     }
 }
 
+struct BitOrIter<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
+    merged_ranges: I,
+    range: Option<(T, T)>,
+}
+
+// impl<T, I> BitOrIter<T, I>
+// where
+//     T: Integer,
+//     I: Iterator<Item = (T, T)>,
+// {
+//     // !!!cmk0 understand iter.size_hint();
+//     fn new(sorted_iter_lhs: I, sorted_iter_rhs: I) -> Self {
+//         // let iter = sorted_iter_lhs
+//         //     .merge_by(sorted_iter_rhs, |a, b| a.0 <= b.0)
+//         //     .map(|(a, b)| (a, b));
+//         // let iter: I = iter;
+//         // BitOrIter {
+//         //     merged_ranges: iter,
+//         //     range: None,
+//         todo!();
+//     }
+// }
+impl<T, I> Iterator for BitOrIter<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
+    type Item = (T, T);
+
+    fn next(&mut self) -> Option<(T, T)> {
+        if let Some((start, stop)) = self.merged_ranges.next() {
+            if let Some((current_start, current_stop)) = self.range {
+                debug_assert!(current_start <= start); // panic if not sorted
+                if current_stop < T::max_value2() && start <= current_stop + T::one() {
+                    self.range = Some((current_start, max(current_stop, stop)));
+                    self.next()
+                } else {
+                    let result = self.range;
+                    self.range = Some((start, stop));
+                    result
+                }
+            } else {
+                self.range = Some((start, stop));
+                self.next()
+            }
+        } else {
+            let result = self.range;
+            self.range = None;
+            result
+        }
+    }
+}
+
 impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     type Output = RangeSetInt<T>;
 
@@ -338,67 +395,6 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        struct BitOrIter<T, I>
-        where
-            T: Integer,
-            I: Iterator<Item = (T, T)>,
-        {
-            merged_ranges: I,
-            range: Option<(T, T)>,
-        }
-
-        impl<T, I> BitOrIter<T, I>
-        where
-            T: Integer,
-            I: Iterator<Item = (T, T)>,
-        {
-            // !!!cmk0 understand iter.size_hint();
-            fn new(sorted_iter_lhs: I, sorted_iter_rhs: I) -> Self {
-                // let iter = sorted_iter_lhs
-                //     .merge_by(sorted_iter_rhs, |a, b| a.0 <= b.0)
-                //     .map(|(a, b)| (a, b));
-                // let iter: I = iter;
-                // BitOrIter {
-                //     merged_ranges: iter,
-                //     range: None,
-                todo!();
-            }
-        }
-        impl<T, I> Iterator for BitOrIter<T, I>
-        where
-            T: Integer,
-            I: Iterator<Item = (T, T)>,
-        {
-            type Item = (T, T);
-
-            fn next(&mut self) -> Option<(T, T)> {
-                if let Some((start, stop)) = self.merged_ranges.next() {
-                    if let Some((current_start, current_stop)) = self.range {
-                        debug_assert!(current_start <= start); // panic if not sorted
-                        if current_stop < T::max_value2() && start <= current_stop + T::one() {
-                            self.range = Some((current_start, max(current_stop, stop)));
-                            self.next()
-                        } else {
-                            let result = self.range;
-                            self.range = Some((start, stop));
-                            result
-                        }
-                    } else {
-                        self.range = Some((start, stop));
-                        self.next()
-                    }
-                } else {
-                    let result = self.range;
-                    self.range = None;
-                    result
-                }
-            }
-        }
-
-        // let lhs = self.ranges().map(|(start, stop)| (*start, *stop));
-        // let rhs = rhs.ranges().map(|(start, stop)| (*start, *stop));
-        // let bitor_iter = BitOrIter::new(lhs, rhs);
-        // // RangeSetInt::from_sorted_distinct_iter(bitor_iter)
         let lhs_ranges = self.ranges();
         let rhs_ranges = rhs.ranges();
         let merged_ranges = lhs_ranges
@@ -410,6 +406,54 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
         };
 
         RangeSetInt::from_sorted_distinct_iter(bitor_iter)
+    }
+}
+
+struct NotIter<'a, T, I>
+where
+    T: Integer + 'a,
+    I: Iterator<Item = (&'a T, &'a T)>,
+{
+    ranges: I,
+    start_not: T,
+    next_time_return_none: bool,
+}
+
+// !!!cmk0 create coverage tests
+impl<'a, T, I> Iterator for NotIter<'a, T, I>
+where
+    T: Integer + 'a,
+    I: Iterator<Item = (&'a T, &'a T)>,
+{
+    type Item = (T, T);
+    fn next(&mut self) -> Option<(T, T)> {
+        debug_assert!(T::min_value() <= T::max_value2()); // real assert
+        if self.next_time_return_none {
+            return None;
+        }
+        let next_item = self.ranges.next();
+        if let Some((start, stop)) = next_item {
+            if self.start_not < *start {
+                // We can subtract with underflow worry because
+                // we know that start > start_not and so not min_value
+                let result = Some((self.start_not, *start - T::one()));
+                if *stop < T::max_value2() {
+                    self.start_not = *stop + T::one();
+                } else {
+                    self.next_time_return_none = true;
+                }
+                result
+            } else if *stop < T::max_value2() {
+                self.start_not = *stop + T::one();
+                self.next()
+            } else {
+                self.next_time_return_none = true;
+                None
+            }
+        } else {
+            self.next_time_return_none = true;
+            Some((self.start_not, T::max_value2()))
+        }
     }
 }
 
@@ -429,47 +473,7 @@ impl<T: Integer> Not for &RangeSetInt<T> {
     /// assert_eq!(result.to_string(), "-128..=0,4..=127");
     /// ```
     fn not(self) -> RangeSetInt<T> {
-        struct NotIter<'a, T: Integer> {
-            ranges: btree_map::Iter<'a, T, T>,
-            start_not: T,
-            next_time_return_none: bool,
-        }
-
-        // !!!cmk0 create coverage tests
-        impl<'a, T: Integer> Iterator for NotIter<'a, T> {
-            type Item = (T, T);
-            fn next(&mut self) -> Option<(T, T)> {
-                debug_assert!(T::min_value() <= T::max_value2()); // real assert
-                if self.next_time_return_none {
-                    return None;
-                }
-                let next_item = self.ranges.next();
-                if let Some((start, stop)) = next_item {
-                    if self.start_not < *start {
-                        // We can subtract with underflow worry because
-                        // we know that start > start_not and so not min_value
-                        let result = Some((self.start_not, *start - T::one()));
-                        if *stop < T::max_value2() {
-                            self.start_not = *stop + T::one();
-                        } else {
-                            self.next_time_return_none = true;
-                        }
-                        result
-                    } else if *stop < T::max_value2() {
-                        self.start_not = *stop + T::one();
-                        self.next()
-                    } else {
-                        self.next_time_return_none = true;
-                        None
-                    }
-                } else {
-                    self.next_time_return_none = true;
-                    Some((self.start_not, T::max_value2()))
-                }
-            }
-        }
-
-        let not_iter = NotIter::<T> {
+        let not_iter = NotIter::<T, _> {
             ranges: self.ranges(),
             start_not: T::min_value(),
             next_time_return_none: false,
@@ -521,9 +525,28 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         // !!! cmk0 this does 3 copies of the data, can we do better?
         // !!! cmk0 also should we sometimes swap the order of the operands?
-        let mut a = !self;
-        a |= &(!rhs);
-        !&a
+        let not_lhs = NotIter {
+            ranges: self.ranges(),
+            start_not: T::min_value(),
+            next_time_return_none: false,
+        };
+        let not_rhs = NotIter {
+            ranges: rhs.ranges(),
+            start_not: T::min_value(),
+            next_time_return_none: false,
+        };
+
+        let merged_ranges = not_lhs.merge_by(not_rhs, |a, b| a.0 <= b.0);
+        let bitor_iter: BitOrIter<T, _> = BitOrIter {
+            merged_ranges,
+            range: None,
+        };
+        let not_bitor_iter = NotIter {
+            ranges: bitor_iter,
+            start_not: T::min_value(),
+            next_time_return_none: false,
+        };
+        RangeSetInt::from_sorted_distinct_iter(not_bitor_iter)
     }
 }
 
