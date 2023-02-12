@@ -30,7 +30,10 @@ use std::cmp::max;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
+use std::ops::BitAndAssign;
 use std::ops::BitOrAssign;
+use std::ops::BitXorAssign;
+use std::ops::SubAssign;
 use std::ops::{BitAnd, BitOr, BitXor, Not, Sub};
 use std::str::FromStr;
 use trait_set::trait_set;
@@ -292,8 +295,9 @@ impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     /// let mut a = RangeSetInt::from([1, 2, 3]);
     /// let b = RangeSetInt::from([3, 4, 5]);
     ///
-    /// a |= b;
+    /// a |= &b;
     /// assert_eq!(a, RangeSetInt::from([1, 2, 3, 4, 5]));
+    /// assert_eq!(b, RangeSetInt::from([3, 4, 5]));
     /// ```
     fn bitor_assign(&mut self, rhs: &Self) {
         for (start, stop) in rhs.ranges() {
@@ -320,9 +324,7 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         let mut result = self.clone();
-        for (start, stop) in rhs.ranges() {
-            result.internal_add(*start, *stop);
-        }
+        result |= rhs;
         result
     }
 }
@@ -365,6 +367,29 @@ impl<T: Integer> Not for &RangeSetInt<T> {
     }
 }
 
+impl<T: Integer> BitAndAssign<&RangeSetInt<T>> for RangeSetInt<T> {
+    /// Returns the intersection of `self` and `rhs` as a cmk `RangeSetInt<T>`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([2, 3, 4]);
+    ///
+    /// a &= &b;
+    /// assert_eq!(a, RangeSetInt::from([2, 3]));
+    /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
+    /// ```
+    fn bitand_assign(&mut self, rhs: &Self) {
+        // !!! cmk0 this does 4 copies of the data, can we do better?
+        let mut a = !(&self.clone());
+        a |= &(!rhs);
+        *self = !&a;
+    }
+}
+
 impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     type Output = RangeSetInt<T>;
 
@@ -382,8 +407,34 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([2, 3]));
     /// ```
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        !&(&(!self) | &(!rhs))
-        // !!!cmk0 would be nice if it didn't allocate a new RangeSetInt for each operation
+        // !!! cmk0 this does 3 copies of the data, can we do better?
+        // !!! cmk0 also should we sometimes swap the order of the operands?
+        let mut a = !self;
+        a |= &(!rhs);
+        !&a
+    }
+}
+
+impl<T: Integer> BitXorAssign<&RangeSetInt<T>> for RangeSetInt<T> {
+    /// Returns the symmetric difference of `self` and `rhs` as a cmk `RangeSetInt<T>`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([2, 3, 4]);
+    ///
+    /// a ^= &b;
+    /// assert_eq!(a, RangeSetInt::from([1, 4]));
+    /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
+    /// ```
+    fn bitxor_assign(&mut self, rhs: &Self) {
+        let a = self.clone();
+        let mut a = &a - rhs;
+        a |= &(rhs - self);
+        *self = a;
     }
 }
 
@@ -404,7 +455,29 @@ impl<T: Integer> BitXor<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([1, 4]));
     /// ```
     fn bitxor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        &(self - rhs) | &(rhs - self)
+        let mut a = self - rhs;
+        a |= &(rhs - self);
+        a
+    }
+}
+
+impl<T: Integer> SubAssign<&RangeSetInt<T>> for RangeSetInt<T> {
+    /// Returns the set difference of `self` and `rhs` as a cmk `RangeSetInt<T>`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([2, 3, 4]);
+    ///
+    /// a -= &b;
+    /// assert_eq!(a, RangeSetInt::from([1]));
+    /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
+    /// ```
+    fn sub_assign(&mut self, rhs: &Self) {
+        *self &= &(!rhs);
     }
 }
 
