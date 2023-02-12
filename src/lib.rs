@@ -323,6 +323,9 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
+        let merged = vec![self.ranges(), rhs.ranges()]
+            .into_iter()
+            .kmerge_by(|a, b| a.0 <= b.0);
         let mut result = self.clone();
         result |= rhs;
         result
@@ -351,8 +354,11 @@ impl<T: Integer> Not for &RangeSetInt<T> {
             // This is always safe because we know that start_not is not None
             let start_not2 = start_not.unwrap();
             if start > &start_not2 {
-                // We can subtract with underflow because we know that start > start_not
-                result.internal_add(start_not2, *start - T::one());
+                // We can subtract with underflow worry because
+                // we know that start > start_not and so not min_value
+                let stop_not2 = *start - T::one();
+                result.items.insert(start_not2, stop_not2);
+                result.len += T::safe_subtract_inclusive(stop_not2, start_not2);
             }
             if *stop == T::max_value2() {
                 start_not = None;
@@ -361,7 +367,9 @@ impl<T: Integer> Not for &RangeSetInt<T> {
             }
         }
         if let Some(start_not) = start_not {
-            result.internal_add(start_not, T::max_value2());
+            let stop_not2 = T::max_value2();
+            result.items.insert(start_not, stop_not2);
+            result.len += T::safe_subtract_inclusive(stop_not2, start_not);
         }
         result
     }
@@ -383,8 +391,8 @@ impl<T: Integer> BitAndAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
     /// ```
     fn bitand_assign(&mut self, rhs: &Self) {
-        // !!! cmk0 this does 4 copies of the data, can we do better?
-        let mut a = !(&self.clone());
+        // !!! cmk0 this does 3 copies of the data, can we do better?
+        let mut a = !(&*self);
         a |= &(!rhs);
         *self = !&a;
     }
@@ -819,7 +827,7 @@ impl<T: Integer> From<&[T]> for RangeSetInt<T> {
     }
 }
 
-// !!!cmk can we make a version that takes another RangeSetInt and doesn't use Sortie?
+// !!!cmk can we make a version that takes another RangeSetInt and doesn't use Merger?
 impl<T: Integer> Extend<T> for RangeSetInt<T> {
     fn extend<I>(&mut self, iter: I)
     where

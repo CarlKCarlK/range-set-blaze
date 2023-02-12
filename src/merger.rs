@@ -46,7 +46,8 @@ impl<T: Integer> Merger<T> {
         {
             range_list.push((*lower, *upper));
             range_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-            SortedRanges::process(range_set_int, range_list);
+            let iter = range_list.iter();
+            SortedRanges::process(range_set_int, iter);
             *self = Merger::None;
         }
     }
@@ -86,41 +87,38 @@ pub struct SortedRanges<'a, T: Integer> {
 }
 
 impl<'a, T: Integer> SortedRanges<'a, T> {
-    fn process(range_set_int: &'a mut RangeSetInt<T>, range_list: &mut Vec<(T, T)>) {
+    fn process<I>(range_set_int: &'a mut RangeSetInt<T>, sorted_range_iter: I)
+    where
+        I: Iterator<Item = &'a (T, T)>,
+    {
         let mut sorted_ranges = SortedRanges {
             range_set_int,
             range: OptionRange::None,
         };
-        for (start, stop) in range_list {
-            sorted_ranges.insert(start, stop);
+        for (start, stop) in sorted_range_iter {
+            sorted_ranges.insert(*start, *stop);
         }
         if let OptionRange::Some { start, stop } = sorted_ranges.range {
             sorted_ranges.push(start, stop);
         }
     }
 
-    fn insert(&mut self, start: &mut T, stop: &mut T) {
+    fn insert(&mut self, start: T, stop: T) {
         self.range = match self.range {
-            OptionRange::None => OptionRange::Some {
-                start: *start,
-                stop: *stop,
-            },
+            OptionRange::None => OptionRange::Some { start, stop },
             OptionRange::Some {
                 start: current_start,
                 stop: current_stop,
             } => {
-                debug_assert!(current_start <= *start); // panic if not sorted
-                if current_stop < T::max_value2() && *start <= current_stop + T::one() {
+                debug_assert!(current_start <= start); // panic if not sorted
+                if current_stop < T::max_value2() && start <= current_stop + T::one() {
                     OptionRange::Some {
                         start: current_start,
-                        stop: max(current_stop, *stop),
+                        stop: max(current_stop, stop),
                     }
                 } else {
                     self.push(current_start, current_stop);
-                    OptionRange::Some {
-                        start: *start,
-                        stop: *stop,
-                    }
+                    OptionRange::Some { start, stop }
                 }
             }
         };
