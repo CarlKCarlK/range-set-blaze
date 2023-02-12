@@ -339,14 +339,57 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        let iter = vec![self.ranges(), rhs.ranges()]
-            .into_iter()
-            // !!!cmk0 use merge/merge_join_by
-            .kmerge_by(|a, b| a.0 <= b.0)
+        struct BitOrIter<T, I>
+        where
+            T: Integer,
+            I: Iterator<Item = (T, T)>,
+        {
+            merged_ranges: I,
+            range: Option<(T, T)>,
+        }
+
+        impl<T, I> Iterator for BitOrIter<T, I>
+        where
+            T: Integer,
+            I: Iterator<Item = (T, T)>,
+        {
+            type Item = (T, T);
+
+            fn next(&mut self) -> Option<(T, T)> {
+                if let Some((start, stop)) = self.merged_ranges.next() {
+                    if let Some((current_start, current_stop)) = self.range {
+                        debug_assert!(current_start <= start); // panic if not sorted
+                        if current_stop < T::max_value2() && start <= current_stop + T::one() {
+                            self.range = Some((current_start, max(current_stop, stop)));
+                            self.next()
+                        } else {
+                            let result = self.range;
+                            self.range = Some((start, stop));
+                            result
+                        }
+                    } else {
+                        self.range = Some((start, stop));
+                        self.next()
+                    }
+                } else {
+                    let result = self.range;
+                    self.range = None;
+                    result
+                }
+            }
+        }
+
+        let iter = self
+            .ranges()
+            .merge_by(rhs.ranges(), |a, b| a.0 <= b.0)
             .map(|(start, stop)| (*start, *stop));
-        let mut result = RangeSetInt::<T>::new();
-        SortedRanges::process(&mut result, iter);
-        result
+
+        let bitor_iter = BitOrIter {
+            merged_ranges: iter,
+            range: None,
+        };
+
+        RangeSetInt::from_sorted_distinct_iter(bitor_iter)
     }
 }
 
