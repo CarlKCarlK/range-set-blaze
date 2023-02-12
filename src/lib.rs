@@ -28,6 +28,7 @@ use rand::Rng;
 use rand::SeedableRng;
 
 use std::cmp::max;
+use std::collections::btree_map;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
@@ -138,7 +139,7 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    pub fn ranges(&self) -> std::collections::btree_map::Iter<'_, T, T> {
+    pub fn ranges(&self) -> btree_map::Iter<'_, T, T> {
         self.items.iter()
     }
 
@@ -271,6 +272,20 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
+    fn from_sorted_distinct_iter<I>(sorted_distinct_iter: I) -> Self
+    where
+        I: Iterator<Item = (T, T)>,
+    {
+        let mut len = <T as SafeSubtract>::Output::zero();
+        let sorted_distinct_iter2 = sorted_distinct_iter.map(|(start, stop)| {
+            len += T::safe_subtract_inclusive(stop, start);
+            (start, stop)
+        });
+
+        let items = BTreeMap::<T, T>::from_iter(sorted_distinct_iter2);
+        RangeSetInt::<T> { items, len }
+    }
+
     pub fn ranges_len(&self) -> usize {
         self.items.len()
     }
@@ -326,6 +341,7 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         let iter = vec![self.ranges(), rhs.ranges()]
             .into_iter()
+            // !!!cmk0 use merge/merge_join_by
             .kmerge_by(|a, b| a.0 <= b.0)
             .map(|(start, stop)| (*start, *stop));
         let mut result = RangeSetInt::<T>::new();
@@ -350,30 +366,53 @@ impl<T: Integer> Not for &RangeSetInt<T> {
     /// assert_eq!(result.to_string(), "-128..=0,4..=127");
     /// ```
     fn not(self) -> RangeSetInt<T> {
-        let mut result = RangeSetInt::new();
-        let mut start_not = Some(T::min_value());
-        for (start, stop) in self.ranges() {
-            // This is always safe because we know that start_not is not None
-            let start_not2 = start_not.unwrap();
-            if start > &start_not2 {
-                // We can subtract with underflow worry because
-                // we know that start > start_not and so not min_value
-                let stop_not2 = *start - T::one();
-                result.items.insert(start_not2, stop_not2);
-                result.len += T::safe_subtract_inclusive(stop_not2, start_not2);
-            }
-            if *stop == T::max_value2() {
-                start_not = None;
-            } else {
-                start_not = Some(*stop + T::one());
+        struct NotIter<'a, T: Integer> {
+            ranges: btree_map::Iter<'a, T, T>,
+            start_not: T,
+            next_time_return_none: bool,
+        }
+
+        // !!!cmk0 create coverage tests
+        impl<'a, T: Integer> Iterator for NotIter<'a, T> {
+            type Item = (T, T);
+            fn next(&mut self) -> Option<(T, T)> {
+                debug_assert!(T::min_value() <= T::max_value2()); // real assert
+                if self.next_time_return_none {
+                    return None;
+                }
+                let next_item = self.ranges.next();
+                if let Some((start, stop)) = next_item {
+                    if self.start_not < *start {
+                        // We can subtract with underflow worry because
+                        // we know that start > start_not and so not min_value
+                        let result = Some((self.start_not, *start - T::one()));
+                        if *stop < T::max_value2() {
+                            self.start_not = *stop + T::one();
+                        } else {
+                            self.next_time_return_none = true;
+                        }
+                        result
+                    } else if *stop < T::max_value2() {
+                        self.start_not = *stop + T::one();
+                        self.next()
+                    } else {
+                        self.next_time_return_none = true;
+                        None
+                    }
+                } else {
+                    self.next_time_return_none = true;
+                    Some((self.start_not, T::max_value2()))
+                }
             }
         }
-        if let Some(start_not) = start_not {
-            let stop_not2 = T::max_value2();
-            result.items.insert(start_not, stop_not2);
-            result.len += T::safe_subtract_inclusive(stop_not2, start_not);
-        }
-        result
+
+        let not_iter = NotIter::<T> {
+            ranges: self.ranges(),
+            start_not: T::min_value(),
+            next_time_return_none: false,
+        };
+
+        RangeSetInt::from_sorted_distinct_iter(not_iter)
     }
 }
 
