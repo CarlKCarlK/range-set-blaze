@@ -46,7 +46,7 @@ impl<T: Integer> Merger<T> {
         {
             range_list.push((*lower, *upper));
             range_list.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-            let iter = range_list.iter();
+            let iter = range_list.iter().cloned();
             SortedRanges::process(range_set_int, iter);
             *self = Merger::None;
         }
@@ -81,22 +81,23 @@ impl<T: Integer> Merger<T> {
     }
 }
 
+// !!! cmk0 change this to build from an array. Benchmark it.
 pub struct SortedRanges<'a, T: Integer> {
     range_set_int: &'a mut RangeSetInt<T>,
     range: OptionRange<T>,
 }
 
 impl<'a, T: Integer> SortedRanges<'a, T> {
-    fn process<I>(range_set_int: &'a mut RangeSetInt<T>, sorted_range_iter: I)
+    pub fn process<I>(range_set_int: &'a mut RangeSetInt<T>, sorted_range_iter: I)
     where
-        I: Iterator<Item = &'a (T, T)>,
+        I: Iterator<Item = (T, T)>,
     {
         let mut sorted_ranges = SortedRanges {
             range_set_int,
             range: OptionRange::None,
         };
         for (start, stop) in sorted_range_iter {
-            sorted_ranges.insert(*start, *stop);
+            sorted_ranges.insert(start, stop);
         }
         if let OptionRange::Some { start, stop } = sorted_ranges.range {
             sorted_ranges.push(start, stop);

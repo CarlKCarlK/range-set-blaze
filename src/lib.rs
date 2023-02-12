@@ -21,6 +21,7 @@ mod tests;
 
 use itertools::Itertools;
 use merger::Merger;
+use merger::SortedRanges;
 use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::Rng;
@@ -323,11 +324,12 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        let merged = vec![self.ranges(), rhs.ranges()]
+        let iter = vec![self.ranges(), rhs.ranges()]
             .into_iter()
-            .kmerge_by(|a, b| a.0 <= b.0);
-        let mut result = self.clone();
-        result |= rhs;
+            .kmerge_by(|a, b| a.0 <= b.0)
+            .map(|(start, stop)| (*start, *stop));
+        let mut result = RangeSetInt::<T>::new();
+        SortedRanges::process(&mut result, iter);
         result
     }
 }
@@ -833,6 +835,7 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
+        // !!!!cmk0 !!!! likely error: this may fail is range_set_int is not empty
         Merger::from_iter(iter).collect_into(self);
     }
 
