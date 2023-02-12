@@ -30,6 +30,7 @@ use std::cmp::max;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
+use std::ops::BitOrAssign;
 use std::ops::{BitAnd, BitOr, BitXor, Not, Sub};
 use std::str::FromStr;
 use trait_set::trait_set;
@@ -129,9 +130,14 @@ impl<T: Integer> RangeSetInt<T> {
         Iter {
             current: T::zero(),
             option_range: OptionRange::None,
-            range_iter: self.items.iter(),
+            range_iter: self.ranges(),
         }
     }
+
+    pub fn ranges(&self) -> std::collections::btree_map::Iter<'_, T, T> {
+        self.items.iter()
+    }
+
     pub fn clear(&mut self) {
         self.items.clear();
         self.len = <T as SafeSubtract>::Output::zero();
@@ -179,7 +185,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert!(a.contains(5));
     /// ```
     pub fn append(&mut self, other: &mut Self) {
-        for (start, stop) in other.items.iter() {
+        for (start, stop) in other.ranges() {
             self.internal_add(*start, *stop);
         }
         other.clear();
@@ -261,8 +267,7 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    // !!!cmk0 remove this
-    pub fn range_len(&self) -> usize {
+    pub fn ranges_len(&self) -> usize {
         self.items.len()
     }
 }
@@ -273,6 +278,27 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
         I: IntoIterator<Item = T>,
     {
         Merger::from_iter(iter).into()
+    }
+}
+
+impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
+    /// Returns the union of `self` and `rhs` as a new `RangeSetInt`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([3, 4, 5]);
+    ///
+    /// a |= b;
+    /// assert_eq!(a, RangeSetInt::from([1, 2, 3, 4, 5]));
+    /// ```
+    fn bitor_assign(&mut self, rhs: &Self) {
+        for (start, stop) in rhs.ranges() {
+            self.internal_add(*start, *stop);
+        }
     }
 }
 
@@ -294,7 +320,7 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         let mut result = self.clone();
-        for (start, stop) in rhs.items.iter() {
+        for (start, stop) in rhs.ranges() {
             result.internal_add(*start, *stop);
         }
         result
@@ -319,7 +345,7 @@ impl<T: Integer> Not for &RangeSetInt<T> {
     fn not(self) -> RangeSetInt<T> {
         let mut result = RangeSetInt::new();
         let mut start_not = Some(T::min_value());
-        for (start, stop) in self.items.iter() {
+        for (start, stop) in self.ranges() {
             // This is always safe because we know that start_not is not None
             let start_not2 = start_not.unwrap();
             if start > &start_not2 {
@@ -803,45 +829,5 @@ impl Iterator for MemorylessData {
             self.current_upper = self.current_lower + delta;
             self.next()
         }
-    }
-}
-
-pub struct SquareVecIter<'a> {
-    current: f64,
-    iter: core::slice::Iter<'a, f64>,
-}
-
-pub fn square_iter<'a>(vec: &'a Vec<f64>) -> SquareVecIter<'a> {
-    SquareVecIter {
-        current: 0.0,
-        iter: vec.iter(),
-    }
-}
-
-impl<'a> Iterator for SquareVecIter<'a> {
-    type Item = f64;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(next) = self.iter.next() {
-            self.current = next * next;
-            Some(self.current)
-        } else {
-            None
-        }
-    }
-}
-
-// switch to test module
-#[cfg(test)]
-mod tests_2 {
-    use super::*;
-
-    #[test]
-    fn test_square_vec() {
-        let vec = vec![1.0, 2.0];
-        let mut iter = square_iter(&vec);
-        assert_eq!(iter.next(), Some(1.0));
-        assert_eq!(iter.next(), Some(4.0));
-        assert_eq!(iter.next(), None);
     }
 }

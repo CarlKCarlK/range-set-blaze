@@ -114,6 +114,16 @@ fn doctest3() {
 }
 
 #[test]
+fn doctest5() {
+    let mut a = RangeSetInt::from([1, 2, 3]);
+    let b = RangeSetInt::from([3, 4, 5]);
+
+    a |= &b;
+    assert_eq!(a, RangeSetInt::from([1, 2, 3, 4, 5]));
+    assert_eq!(b, RangeSetInt::from([3, 4, 5]));
+}
+
+#[test]
 fn doctest4() {
     let a = RangeSetInt::<i8>::from([1, 2, 3]);
 
@@ -508,25 +518,25 @@ fn add_in_order() {
 //     );
 // }
 
-#[test]
-fn memoryless_vec() {
-    let len = 100_000_000;
-    let coverage_goal = 0.75;
-    let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
-    let data_as_vec: Vec<u64> = memoryless_data.collect();
-    let start = Instant::now();
-    // let range_set_int = RangeSetInt::from_mut_slice(data_as_vec.as_mut_slice());
-    let range_set_int = RangeSetInt::from_iter(data_as_vec);
-    let coverage = range_set_int.len() as f64 / len as f64;
-    println!(
-        "coverage {coverage:?} range_len {:?}",
-        range_set_int.range_len().separate_with_commas()
-    );
-    println!(
-        "xTime elapsed in expensive_function() is: {} ms",
-        start.elapsed().as_millis()
-    );
-}
+// #[test]
+// fn memoryless_vec() {
+//     let len = 100_000_000;
+//     let coverage_goal = 0.75;
+//     let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
+//     let data_as_vec: Vec<u64> = memoryless_data.collect();
+//     let start = Instant::now();
+//     // let range_set_int = RangeSetInt::from_mut_slice(data_as_vec.as_mut_slice());
+//     let range_set_int = RangeSetInt::from_iter(data_as_vec);
+//     let coverage = range_set_int.len() as f64 / len as f64;
+//     println!(
+//         "coverage {coverage:?} range_len {:?}",
+//         range_set_int.range_len().separate_with_commas()
+//     );
+//     println!(
+//         "xTime elapsed in expensive_function() is: {} ms",
+//         start.elapsed().as_millis()
+//     );
+// }
 
 #[test]
 fn optimize() {
@@ -545,7 +555,7 @@ fn optimize() {
                         let mut range_set_int = RangeSetInt::new();
                         range_set_int.internal_add(a, b);
                         range_set_int.internal_add(c, d);
-                        if range_set_int.range_len() == 1 {
+                        if range_set_int.ranges_len() == 1 {
                             let vec = range_set_int.into_iter().collect::<Vec<u8>>();
                             println! {"combine\t{}\t{}", vec[0], vec[vec.len()-1]};
                             assert!(!restart);
@@ -604,6 +614,40 @@ fn understand_into_iter() {
     // let len = rsi.len();
 }
 
+use std::ops::BitAndAssign;
+
+#[derive(Debug, PartialEq)]
+struct BooleanVector(Vec<bool>);
+
+impl BitAndAssign for BooleanVector {
+    // `rhs` is the "right-hand side" of the expression `a &= b`.
+    fn bitand_assign(&mut self, rhs: Self) {
+        assert_eq!(self.0.len(), rhs.0.len());
+        *self = BooleanVector(
+            self.0
+                .iter()
+                .zip(rhs.0.iter())
+                .map(|(x, y)| *x && *y)
+                .collect(),
+        );
+    }
+}
+
+#[test]
+fn understand_bitand_assign() {
+    let mut a = 3u8;
+    let b = 5u8;
+    a &= b;
+    println!("{a}");
+    println!("{b}");
+
+    let mut bv = BooleanVector(vec![true, true, false, false]);
+    let bv2 = BooleanVector(vec![true, false, true, false]);
+    bv &= bv2;
+    let expected = BooleanVector(vec![true, false, false, false]);
+    assert_eq!(bv, expected);
+    // println!("{bv2:?}");
+}
 #[test]
 fn iters() {
     let range_int_set = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
@@ -611,13 +655,16 @@ fn iters() {
     // !!!cmk 0
     // assert!(range_int_set.ranges.len() == 3);
     // // !!!cmk 0 i is &u8
-    // let ii = range_int_set.iter();
-    // for i in ii {
-    //     println!("{i}");
-    // }
-    // for (start, stop) in range_int_set.ranges {
-    //     println!("{start} {stop}");
-    // }
+    for i in range_int_set.iter() {
+        println!("{i}");
+    }
+    for (start, stop) in range_int_set.ranges() {
+        println!("{start} {stop}");
+    }
+    let mut rs = range_int_set.ranges();
+    println!("{:?}", rs.next());
+    println!("{:?}", rs.len());
+    println!("{:?}", rs.next());
     for i in range_int_set {
         println!("{i}");
     }
