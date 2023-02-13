@@ -367,6 +367,16 @@ where
     }
 }
 
+// fn new_bitor_iter<T, I0, I1, I>(lhs: I0, rhs: I1) -> BitOrIter<T, I>
+// where
+//     T: Integer,
+//     I0: Iterator<Item = (T, T)>,
+//     I1: Iterator<Item = (T, T)>,
+//     I: Iterator<Item = (T, T)>,
+// {
+//     BitOrIter::new2(lhs, rhs, sorter)
+// }
+
 impl<T, I> Iterator for BitOrIter<T, I>
 where
     T: Integer,
@@ -415,14 +425,8 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        // let bitor_iter = BitOrIter::new2(self.ranges(), rhs.ranges(), sorter);
-        // let merged_ranges = self.ranges().merge_by(rhs.ranges(), |a, b| a.0 <= b.0);
-        // let tuple_to_values_iter = TupleToValuesIter {
-        //     inner_iter: merged_ranges,
-        // };
-        // let bitor_iter = BitOrIter::new(tuple_to_values_iter);
-        // RangeSetInt::from_sorted_distinct_iter(bitor_iter)
-        todo!()
+        let bitor_iter = BitOrIter::new2(self.ranges(), rhs.ranges(), sorter);
+        RangeSetInt::from_sorted_distinct_iter(bitor_iter)
     }
 }
 
@@ -548,7 +552,6 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([2, 3]));
     /// ```
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        // !!! cmk0 also should we sometimes swap the order of the operands?
         let bitor_iter = BitOrIter::new2(self.ranges_not(), rhs.ranges_not(), sorter);
         let not_bitor_iter = NotIter::new(bitor_iter);
         RangeSetInt::from_sorted_distinct_iter(not_bitor_iter)
@@ -687,7 +690,7 @@ where
     range_iter: I,
 }
 
-impl<'a, T: Integer, I> Iterator for Iter<T, I>
+impl<T: Integer, I> Iterator for Iter<T, I>
 where
     I: Iterator<Item = (T, T)>,
 {

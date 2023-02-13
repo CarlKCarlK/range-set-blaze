@@ -663,11 +663,12 @@ fn iters() {
     }
     let mut rs = range_int_set.ranges();
     println!("{:?}", rs.next());
-    // println!("{:?}", rs.len());
+    println!("{range_int_set}");
+    println!("{:?}", rs.len());
     println!("{:?}", rs.next());
-    // for i in range_int_set {
-    //     println!("{i}");
-    // }
-    // range_int_set.len();
+    for i in range_int_set.iter() {
+        println!("{i}");
+    }
+    range_int_set.len();
     // !!! assert that can't use range_int_set again
 }
