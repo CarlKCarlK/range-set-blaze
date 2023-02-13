@@ -143,6 +143,10 @@ impl<T: Integer> RangeSetInt<T> {
         self.items.iter()
     }
 
+    pub fn ranges_not(&self) -> impl Iterator<Item = (T, T)> + '_ {
+        NotIter::new(self.ranges().map(|(a, b)| (*a, *b)))
+    }
+
     pub fn clear(&mut self) {
         self.items.clear();
         self.len = <T as SafeSubtract>::Output::zero();
@@ -409,10 +413,9 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        let lhs_ranges = self.ranges();
-        let rhs_ranges = rhs.ranges();
-        let merged_ranges = lhs_ranges
-            .merge_by(rhs_ranges, |a, b| a.0 <= b.0)
+        let merged_ranges = self
+            .ranges()
+            .merge_by(rhs.ranges(), |a, b| a.0 <= b.0)
             .map(|(a, b)| (*a, *b));
         let bitor_iter: BitOrIter<T, _> = BitOrIter::new(merged_ranges);
         RangeSetInt::from_sorted_distinct_iter(bitor_iter)
@@ -497,14 +500,7 @@ impl<T: Integer> Not for &RangeSetInt<T> {
     /// assert_eq!(result.to_string(), "-128..=0,4..=127");
     /// ```
     fn not(self) -> RangeSetInt<T> {
-        let new_iter = self.ranges().map(|(a, b)| (*a, *b));
-        let not_iter = NotIter::<T, _> {
-            ranges: new_iter,
-            start_not: T::min_value(),
-            next_time_return_none: false,
-        };
-
-        RangeSetInt::from_sorted_distinct_iter(not_iter)
+        RangeSetInt::from_sorted_distinct_iter(self.ranges_not())
     }
 }
 
@@ -548,11 +544,10 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([2, 3]));
     /// ```
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        // !!! cmk0 this does 3 copies of the data, can we do better?
         // !!! cmk0 also should we sometimes swap the order of the operands?
-        let not_lhs = NotIter::new(self.ranges().map(|(a, b)| (*a, *b)));
-        let not_rhs = NotIter::new(rhs.ranges().map(|(a, b)| (*a, *b)));
-        let merged_ranges = not_lhs.merge_by(not_rhs, |a, b| a.0 <= b.0);
+        let merged_ranges = self
+            .ranges_not()
+            .merge_by(rhs.ranges_not(), |a, b| a.0 <= b.0);
         let bitor_iter: BitOrIter<T, _> = BitOrIter::new(merged_ranges);
         let not_bitor_iter = NotIter::new(bitor_iter);
         RangeSetInt::from_sorted_distinct_iter(not_bitor_iter)
