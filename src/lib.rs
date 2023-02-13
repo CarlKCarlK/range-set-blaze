@@ -352,25 +352,16 @@ where
 fn sorter<T: Integer>(a: &(T, T), b: &(T, T)) -> bool {
     a.0 <= b.0
 }
-impl<T, I0, I1> BitOrIter<T, MergeBy<I0, I1, _>>
+impl<T, I0, I1, F> BitOrIter<T, MergeBy<I0, I1, F>>
 where
     T: Integer,
     I0: Iterator<Item = (T, T)>,
     I1: Iterator<Item = (T, T)>,
+    F: FnMut(&(T, T), &(T, T)) -> bool,
 {
-    fn new2(lhs: I0, rhs: I1) -> Self {
-        let merged_ranges = lhs.merge_by(rhs, sorter);
-        let bitor_iter = BitOrIter::new(merged_ranges);
-        bitor_iter
-        // // let merged_ranges: I = lhs.merge_by(rhs, |a, b| a.0 <= b.0);
-        // // let x = TupleToValuesIter {
-        // //     inner_iter: merged_ranges,
-        // // };
-        // let bit_or_iter = Self {
-        //     merged_ranges,
-        //     range: None,
-        // };
-        // todo!()
+    fn new2(lhs: I0, rhs: I1, is_first: F) -> Self {
+        let merged_ranges = lhs.merge_by(rhs, is_first);
+        BitOrIter::new(merged_ranges)
     }
 }
 
@@ -422,6 +413,7 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
+        // let bitor_iter = BitOrIter::new2(self.ranges(), rhs.ranges(), sorter);
         let merged_ranges = self.ranges().merge_by(rhs.ranges(), |a, b| a.0 <= b.0);
         let tuple_to_values_iter = TupleToValuesIter {
             inner_iter: merged_ranges,
@@ -555,10 +547,7 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// ```
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         // !!! cmk0 also should we sometimes swap the order of the operands?
-        let merged_ranges = self
-            .ranges_not()
-            .merge_by(rhs.ranges_not(), |a, b| a.0 <= b.0);
-        let bitor_iter: BitOrIter<T, _> = BitOrIter::new(merged_ranges);
+        let bitor_iter = BitOrIter::new2(self.ranges_not(), rhs.ranges_not(), sorter);
         let not_bitor_iter = NotIter::new(bitor_iter);
         RangeSetInt::from_sorted_distinct_iter(not_bitor_iter)
     }
