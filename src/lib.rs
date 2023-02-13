@@ -348,23 +348,6 @@ where
     }
 }
 
-// impl<T, I> BitOrIter<T, I>
-// where
-//     T: Integer,
-//     I: Iterator<Item = (T, T)>,
-// {
-//     // !!!cmk0 understand iter.size_hint();
-//     fn new(sorted_iter_lhs: I, sorted_iter_rhs: I) -> Self {
-//         // let iter = sorted_iter_lhs
-//         //     .merge_by(sorted_iter_rhs, |a, b| a.0 <= b.0)
-//         //     .map(|(a, b)| (a, b));
-//         // let iter: I = iter;
-//         // BitOrIter {
-//         //     merged_ranges: iter,
-//         //     range: None,
-//         todo!();
-//     }
-// }
 impl<T, I> Iterator for BitOrIter<T, I>
 where
     T: Integer,
@@ -413,12 +396,13 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        let merged_ranges = self
-            .ranges()
-            .merge_by(rhs.ranges(), |a, b| a.0 <= b.0)
-            .map(|(a, b)| (*a, *b));
-        let bitor_iter: BitOrIter<T, _> = BitOrIter::new(merged_ranges);
+        let merged_ranges = self.ranges().merge_by(rhs.ranges(), |a, b| a.0 <= b.0);
+        let tuple_to_values_iter = TupleToValuesIter {
+            inner_iter: merged_ranges,
+        };
+        let bitor_iter = BitOrIter::new(tuple_to_values_iter);
         RangeSetInt::from_sorted_distinct_iter(bitor_iter)
+        // todo!()
     }
 }
 
@@ -1042,5 +1026,41 @@ impl Iterator for MemorylessData {
             self.current_upper = self.current_lower + delta;
             self.next()
         }
+    }
+}
+
+// // https://stackoverflow.com/questions/30540766/how-can-i-add-new-methods-to-iterator
+// pub trait ItertoolsPlus: Iterator {
+//     fn tuple_values(self)
+//     //  + DoubleEndedIterator + ExactSizeIterator
+//     where
+//         Self: Sized,
+//         J: IntoIterator<Item = Self::Item>,
+//     {
+//         let merged_ranges = self.merge_by(other, is_first)(|a, b| (a, b));
+//         let bitor_iter = BitOrIter::new(merged_ranges);
+//         // bitor_iter
+//     }
+// }
+
+// impl<I: Iterator> ItertoolsPlus for I {}
+
+struct TupleToValuesIter<'a, T, J>
+where
+    T: Integer + 'a,
+    J: Iterator<Item = (&'a T, &'a T)>,
+{
+    inner_iter: J,
+}
+
+// implement Iterator for TupleToValuesIter
+impl<'a, T: Integer, J> Iterator for TupleToValuesIter<'a, T, J>
+where
+    J: Iterator<Item = (&'a T, &'a T)>,
+{
+    type Item = (T, T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner_iter.next().map(|(a, b)| (*a, *b))
     }
 }
