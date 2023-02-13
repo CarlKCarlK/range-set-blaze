@@ -331,6 +331,19 @@ where
     range: Option<(T, T)>,
 }
 
+impl<T, I> BitOrIter<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
+    fn new(merged_ranges: I) -> Self {
+        BitOrIter {
+            merged_ranges,
+            range: None,
+        }
+    }
+}
+
 // impl<T, I> BitOrIter<T, I>
 // where
 //     T: Integer,
@@ -401,11 +414,7 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
         let merged_ranges = lhs_ranges
             .merge_by(rhs_ranges, |a, b| a.0 <= b.0)
             .map(|(a, b)| (*a, *b));
-        let bitor_iter: BitOrIter<T, _> = BitOrIter {
-            merged_ranges,
-            range: None,
-        };
-
+        let bitor_iter: BitOrIter<T, _> = BitOrIter::new(merged_ranges);
         RangeSetInt::from_sorted_distinct_iter(bitor_iter)
     }
 }
@@ -543,12 +552,8 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
         // !!! cmk0 also should we sometimes swap the order of the operands?
         let not_lhs = NotIter::new(self.ranges().map(|(a, b)| (*a, *b)));
         let not_rhs = NotIter::new(rhs.ranges().map(|(a, b)| (*a, *b)));
-
         let merged_ranges = not_lhs.merge_by(not_rhs, |a, b| a.0 <= b.0);
-        let bitor_iter: BitOrIter<T, _> = BitOrIter {
-            merged_ranges,
-            range: None,
-        };
+        let bitor_iter: BitOrIter<T, _> = BitOrIter::new(merged_ranges);
         let not_bitor_iter = NotIter::new(bitor_iter);
         RangeSetInt::from_sorted_distinct_iter(not_bitor_iter)
     }
