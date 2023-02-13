@@ -28,7 +28,6 @@ use rand::Rng;
 use rand::SeedableRng;
 
 use std::cmp::max;
-use std::collections::btree_map;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
@@ -124,6 +123,30 @@ impl<T: Integer> fmt::Display for RangeSetInt<T> {
 }
 
 impl<T: Integer> RangeSetInt<T> {
+    pub fn iter(&self) -> Iter<T, impl Iterator<Item = (T, T)> + '_> {
+        let i = self.ranges();
+        Iter {
+            current: T::zero(),
+            option_range: OptionRange::None,
+            range_iter: i,
+        }
+    }
+
+    fn from_sorted_distinct_iter<I>(sorted_distinct_iter: I) -> Self
+    where
+        I: Iterator<Item = (T, T)>,
+    {
+        let mut len = <T as SafeSubtract>::Output::zero();
+        let sorted_distinct_iter2 = sorted_distinct_iter.map(|(start, stop)| {
+            len += T::safe_subtract_inclusive(stop, start);
+            (start, stop)
+        });
+
+        let items = BTreeMap::<T, T>::from_iter(sorted_distinct_iter2);
+        RangeSetInt::<T> { items, len }
+    }
+}
+impl<T: Integer> RangeSetInt<T> {
     pub fn new() -> RangeSetInt<T> {
         RangeSetInt {
             items: BTreeMap::new(),
@@ -131,21 +154,14 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    pub fn iter(&self) -> Iter<'_, T> {
-        Iter {
-            current: T::zero(),
-            option_range: OptionRange::None,
-            range_iter: self.ranges(),
-        }
-    }
-
     // !!!cmk0 add .map(|(start, stop)| (*start, *stop)) to ranges()?
-    pub fn ranges(&self) -> btree_map::Iter<'_, T, T> {
-        self.items.iter()
+    pub fn ranges(&self) -> impl Iterator<Item = (T, T)> + '_ {
+        // !!!cmk0 can we do this without IdentityIter?
+        IdentityIter::new(self.items.iter().map(|(a, b)| (*a, *b)))
     }
 
     pub fn ranges_not(&self) -> impl Iterator<Item = (T, T)> + '_ {
-        NotIter::new(self.ranges().map(|(a, b)| (*a, *b)))
+        NotIter::new(self.items.iter().map(|(a, b)| (*a, *b)))
     }
 
     pub fn clear(&mut self) {
@@ -196,7 +212,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     pub fn append(&mut self, other: &mut Self) {
         for (start, stop) in other.ranges() {
-            self.internal_add(*start, *stop);
+            self.internal_add(start, stop);
         }
         other.clear();
     }
@@ -277,20 +293,6 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    fn from_sorted_distinct_iter<I>(sorted_distinct_iter: I) -> Self
-    where
-        I: Iterator<Item = (T, T)>,
-    {
-        let mut len = <T as SafeSubtract>::Output::zero();
-        let sorted_distinct_iter2 = sorted_distinct_iter.map(|(start, stop)| {
-            len += T::safe_subtract_inclusive(stop, start);
-            (start, stop)
-        });
-
-        let items = BTreeMap::<T, T>::from_iter(sorted_distinct_iter2);
-        RangeSetInt::<T> { items, len }
-    }
-
     pub fn ranges_len(&self) -> usize {
         self.items.len()
     }
@@ -322,7 +324,7 @@ impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     /// ```
     fn bitor_assign(&mut self, rhs: &Self) {
         for (start, stop) in rhs.ranges() {
-            self.internal_add(*start, *stop);
+            self.internal_add(start, stop);
         }
     }
 }
@@ -414,13 +416,13 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         // let bitor_iter = BitOrIter::new2(self.ranges(), rhs.ranges(), sorter);
-        let merged_ranges = self.ranges().merge_by(rhs.ranges(), |a, b| a.0 <= b.0);
-        let tuple_to_values_iter = TupleToValuesIter {
-            inner_iter: merged_ranges,
-        };
-        let bitor_iter = BitOrIter::new(tuple_to_values_iter);
-        RangeSetInt::from_sorted_distinct_iter(bitor_iter)
-        // todo!()
+        // let merged_ranges = self.ranges().merge_by(rhs.ranges(), |a, b| a.0 <= b.0);
+        // let tuple_to_values_iter = TupleToValuesIter {
+        //     inner_iter: merged_ranges,
+        // };
+        // let bitor_iter = BitOrIter::new(tuple_to_values_iter);
+        // RangeSetInt::from_sorted_distinct_iter(bitor_iter)
+        todo!()
     }
 }
 
@@ -675,13 +677,20 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     }
 }
 
-pub struct Iter<'a, T: Integer> {
+pub struct Iter<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
     current: T,
     option_range: OptionRange<T>,
-    range_iter: std::collections::btree_map::Iter<'a, T, T>,
+    range_iter: I,
 }
 
-impl<'a, T: Integer> Iterator for Iter<'a, T> {
+impl<'a, T: Integer, I> Iterator for Iter<T, I>
+where
+    I: Iterator<Item = (T, T)>,
+{
     type Item = T;
     fn next(&mut self) -> Option<T> {
         if let OptionRange::Some { start, stop } = self.option_range {
@@ -696,10 +705,7 @@ impl<'a, T: Integer> Iterator for Iter<'a, T> {
             }
             Some(self.current)
         } else if let Some((start, stop)) = self.range_iter.next() {
-            self.option_range = OptionRange::Some {
-                start: *start,
-                stop: *stop,
-            };
+            self.option_range = OptionRange::Some { start, stop };
             self.next()
         } else {
             None
@@ -1077,5 +1083,34 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner_iter.next().map(|(a, b)| (*a, *b))
+    }
+}
+
+struct IdentityIter<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
+    ranges: I,
+}
+
+impl<T, I> IdentityIter<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
+    fn new(ranges: I) -> Self {
+        IdentityIter { ranges }
+    }
+}
+
+impl<T, I> Iterator for IdentityIter<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
+    type Item = (T, T);
+    fn next(&mut self) -> Option<(T, T)> {
+        self.ranges.next()
     }
 }
