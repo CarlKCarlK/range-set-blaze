@@ -20,6 +20,7 @@ mod merger;
 mod tests;
 
 use itertools::Itertools;
+use itertools::MergeBy;
 use merger::Merger;
 use num_traits::Zero;
 use rand::rngs::StdRng;
@@ -341,10 +342,35 @@ where
     I: Iterator<Item = (T, T)>,
 {
     fn new(merged_ranges: I) -> Self {
-        BitOrIter {
+        Self {
             merged_ranges,
             range: None,
         }
+    }
+}
+
+fn sorter<T: Integer>(a: &(T, T), b: &(T, T)) -> bool {
+    a.0 <= b.0
+}
+impl<T, I0, I1> BitOrIter<T, MergeBy<I0, I1, _>>
+where
+    T: Integer,
+    I0: Iterator<Item = (T, T)>,
+    I1: Iterator<Item = (T, T)>,
+{
+    fn new2(lhs: I0, rhs: I1) -> Self {
+        let merged_ranges = lhs.merge_by(rhs, sorter);
+        let bitor_iter = BitOrIter::new(merged_ranges);
+        bitor_iter
+        // // let merged_ranges: I = lhs.merge_by(rhs, |a, b| a.0 <= b.0);
+        // // let x = TupleToValuesIter {
+        // //     inner_iter: merged_ranges,
+        // // };
+        // let bit_or_iter = Self {
+        //     merged_ranges,
+        //     range: None,
+        // };
+        // todo!()
     }
 }
 
