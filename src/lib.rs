@@ -138,6 +138,7 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
+    // !!!cmk0 add .map(|(start, stop)| (*start, *stop)) to ranges()?
     pub fn ranges(&self) -> btree_map::Iter<'_, T, T> {
         self.items.iter()
     }
@@ -419,6 +420,20 @@ where
     next_time_return_none: bool,
 }
 
+impl<T, I> NotIter<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
+    fn new(ranges: I) -> Self {
+        NotIter {
+            ranges,
+            start_not: T::min_value(),
+            next_time_return_none: false,
+        }
+    }
+}
+
 // !!!cmk0 create coverage tests
 impl<T, I> Iterator for NotIter<T, I>
 where
@@ -526,27 +541,15 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         // !!! cmk0 this does 3 copies of the data, can we do better?
         // !!! cmk0 also should we sometimes swap the order of the operands?
-        let not_lhs = NotIter {
-            ranges: self.ranges().map(|(a, b)| (*a, *b)),
-            start_not: T::min_value(),
-            next_time_return_none: false,
-        };
-        let not_rhs = NotIter {
-            ranges: rhs.ranges().map(|(a, b)| (*a, *b)),
-            start_not: T::min_value(),
-            next_time_return_none: false,
-        };
+        let not_lhs = NotIter::new(self.ranges().map(|(a, b)| (*a, *b)));
+        let not_rhs = NotIter::new(rhs.ranges().map(|(a, b)| (*a, *b)));
 
         let merged_ranges = not_lhs.merge_by(not_rhs, |a, b| a.0 <= b.0);
         let bitor_iter: BitOrIter<T, _> = BitOrIter {
             merged_ranges,
             range: None,
         };
-        let not_bitor_iter = NotIter {
-            ranges: bitor_iter,
-            start_not: T::min_value(),
-            next_time_return_none: false,
-        };
+        let not_bitor_iter = NotIter::new(bitor_iter);
         RangeSetInt::from_sorted_distinct_iter(not_bitor_iter)
     }
 }
