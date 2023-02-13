@@ -409,10 +409,10 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     }
 }
 
-struct NotIter<'a, T, I>
+struct NotIter<T, I>
 where
-    T: Integer + 'a,
-    I: Iterator<Item = (&'a T, &'a T)>,
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
 {
     ranges: I,
     start_not: T,
@@ -420,10 +420,10 @@ where
 }
 
 // !!!cmk0 create coverage tests
-impl<'a, T, I> Iterator for NotIter<'a, T, I>
+impl<T, I> Iterator for NotIter<T, I>
 where
-    T: Integer + 'a,
-    I: Iterator<Item = (&'a T, &'a T)>,
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
 {
     type Item = (T, T);
     fn next(&mut self) -> Option<(T, T)> {
@@ -433,18 +433,18 @@ where
         }
         let next_item = self.ranges.next();
         if let Some((start, stop)) = next_item {
-            if self.start_not < *start {
+            if self.start_not < start {
                 // We can subtract with underflow worry because
                 // we know that start > start_not and so not min_value
-                let result = Some((self.start_not, *start - T::one()));
-                if *stop < T::max_value2() {
-                    self.start_not = *stop + T::one();
+                let result = Some((self.start_not, start - T::one()));
+                if stop < T::max_value2() {
+                    self.start_not = stop + T::one();
                 } else {
                     self.next_time_return_none = true;
                 }
                 result
-            } else if *stop < T::max_value2() {
-                self.start_not = *stop + T::one();
+            } else if stop < T::max_value2() {
+                self.start_not = stop + T::one();
                 self.next()
             } else {
                 self.next_time_return_none = true;
@@ -473,8 +473,9 @@ impl<T: Integer> Not for &RangeSetInt<T> {
     /// assert_eq!(result.to_string(), "-128..=0,4..=127");
     /// ```
     fn not(self) -> RangeSetInt<T> {
+        let new_iter = self.ranges().map(|(a, b)| (*a, *b));
         let not_iter = NotIter::<T, _> {
-            ranges: self.ranges(),
+            ranges: new_iter,
             start_not: T::min_value(),
             next_time_return_none: false,
         };
@@ -526,12 +527,12 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
         // !!! cmk0 this does 3 copies of the data, can we do better?
         // !!! cmk0 also should we sometimes swap the order of the operands?
         let not_lhs = NotIter {
-            ranges: self.ranges(),
+            ranges: self.ranges().map(|(a, b)| (*a, *b)),
             start_not: T::min_value(),
             next_time_return_none: false,
         };
         let not_rhs = NotIter {
-            ranges: rhs.ranges(),
+            ranges: rhs.ranges().map(|(a, b)| (*a, *b)),
             start_not: T::min_value(),
             next_time_return_none: false,
         };
