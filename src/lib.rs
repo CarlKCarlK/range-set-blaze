@@ -164,7 +164,9 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     pub fn ranges_not(&self) -> impl Iterator<Item = (T, T)> + '_ {
-        NotIter::new(self.items.iter().map(|(a, b)| (*a, *b)))
+        NotIter::new(TupleToValuesIter {
+            inner_iter: self.items.iter(),
+        })
     }
 
     pub fn clear(&mut self) {
@@ -357,18 +359,49 @@ where
 fn sorter<T: Integer>(a: &(T, T), b: &(T, T)) -> bool {
     a.0 <= b.0
 }
-impl<T, I0, I1, F> BitOrIter<T, MergeBy<I0, I1, F>>
+
+fn new_bit_or_iter<T, I0, I1>(
+    lhs: I0,
+    rhs: I1,
+) -> BitOrIter<T, MergeBy<I0, I1, impl Fn(&(T, T), &(T, T)) -> bool>>
+// impl Iterator<Item = (T, T)>
 where
     T: Integer,
     I0: Iterator<Item = (T, T)>,
     I1: Iterator<Item = (T, T)>,
-    F: FnMut(&(T, T), &(T, T)) -> bool,
 {
-    fn new2(lhs: I0, rhs: I1, is_first: F) -> Self {
-        let merged_ranges = lhs.merge_by(rhs, is_first);
-        BitOrIter::new(merged_ranges)
+    BitOrIter::new(lhs.merge_by(rhs, sorter))
+}
+
+impl<T, I2> BitOrIter<T, I2>
+where
+    T: Integer,
+    I2: Iterator<Item = (T, T)>,
+{
+    fn new2<I0, I1>(
+        lhs: I0,
+        rhs: I1,
+    ) -> BitOrIter<T, MergeBy<I0, I1, impl Fn(&(T, T), &(T, T)) -> bool>>
+    where
+        I0: Iterator<Item = (T, T)>,
+        I1: Iterator<Item = (T, T)>,
+    {
+        new_bit_or_iter(lhs, rhs)
     }
 }
+
+// impl<T, I0, I1, F> BitOrIter<T, MergeBy<I0, I1, F>>
+// where
+//     T: Integer,
+//     I0: Iterator<Item = (T, T)>,
+//     I1: Iterator<Item = (T, T)>,
+//     F: FnMut(&(T, T), &(T, T)) -> bool,
+// {
+//     fn new2(lhs: I0, rhs: I1, is_first: F) -> Self {
+//         let merged_ranges = lhs.merge_by(rhs, is_first);
+//         BitOrIter::new(merged_ranges)
+//     }
+// }
 
 // fn new_bitor_iter<T, I0, I1, I>(lhs: I0, rhs: I1) -> BitOrIter<T, I>
 // where
@@ -428,7 +461,10 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        let bitor_iter = BitOrIter::new2(self.ranges(), rhs.ranges(), sorter);
+        // cmk00
+        let lhs = self.ranges();
+        let rhs = rhs.ranges();
+        let bitor_iter = new_bit_or_iter(lhs, rhs);
         RangeSetInt::from_sorted_distinct_iter(bitor_iter)
     }
 }
@@ -555,7 +591,7 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([2, 3]));
     /// ```
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        let bitor_iter = BitOrIter::new2(self.ranges_not(), rhs.ranges_not(), sorter);
+        let bitor_iter = BitOrIter::new2(self.ranges_not(), rhs.ranges_not());
         let not_bitor_iter = NotIter::new(bitor_iter);
         RangeSetInt::from_sorted_distinct_iter(not_bitor_iter)
     }
@@ -1106,6 +1142,7 @@ where
     T: Integer,
     I: Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)>,
 {
+    // !!!cmk0 name all these fields consistently (and consistent with itertools)
     ranges: I,
 }
 

@@ -670,5 +670,9 @@ fn iters() {
         println!("{i}");
     }
     range_int_set.len();
+
+    let mut rs = range_int_set.ranges_not();
+    println!("{:?}", rs.next());
+    println!("{range_int_set}");
     // !!! assert that can't use range_int_set again
 }
