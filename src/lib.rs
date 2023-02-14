@@ -374,15 +374,19 @@ where
 //     a.0 <= b.0
 // }
 
-pub type BitOrIterMerge<T, I0, I1> = BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>>;
+// !!!cmk 0 should I0,I1 be I,J to match itertools?
+pub type BitOrIterOutput<T, I0, I1> = BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>>;
+pub type BitAndIterOutput<T, I0, I1> =
+    NotIter<T, BitOrIterOutput<T, NotIter<T, I0>, NotIter<T, I1>>>;
+pub type BitSubIterOutput<T, I0, I1> = BitAndIterOutput<T, I0, NotIter<T, I1>>;
 
-impl<T, I0, I1> BitOrIterMerge<T, I0, I1>
+impl<T, I0, I1> BitOrIterOutput<T, I0, I1>
 where
     T: Integer,
     I0: Iterator<Item = (T, T)>,
     I1: Iterator<Item = (T, T)>,
 {
-    fn new(lhs: I0, rhs: I1) -> BitOrIterMerge<T, I0, I1> {
+    fn new(lhs: I0, rhs: I1) -> BitOrIterOutput<T, I0, I1> {
         Self {
             merged_ranges: lhs.merge_by(rhs, |a, b| a.0 <= b.0),
             range: None,
@@ -391,13 +395,31 @@ where
 }
 
 pub trait ItertoolsPlus: Iterator {
-    fn bitor<T, J>(self, other: J) -> BitOrIterMerge<T, Self, J>
+    fn bitor<T, J>(self, other: J) -> BitOrIterOutput<T, Self, J>
     where
         T: Integer,
         Self: Iterator<Item = (T, T)> + Sized,
         J: Iterator<Item = Self::Item>,
     {
         BitOrIter::new(self, other)
+    }
+
+    fn bitand<T, J>(self, other: J) -> BitAndIterOutput<T, Self, J>
+    where
+        T: Integer,
+        Self: Iterator<Item = (T, T)> + Sized,
+        J: Iterator<Item = Self::Item>,
+    {
+        self.not().bitor(other.not()).not()
+    }
+
+    fn sub<T, J>(self, other: J) -> BitSubIterOutput<T, Self, J>
+    where
+        T: Integer,
+        Self: Iterator<Item = (T, T)> + Sized,
+        J: Iterator<Item = Self::Item>,
+    {
+        self.bitand(other.not())
     }
 
     fn not<T>(self) -> NotIter<T, Self>
@@ -414,7 +436,7 @@ impl<T: Integer> BitOr for dyn ItertoolsPlus<Item = (T, T)>
 where
     Self: Sized,
 {
-    type Output = BitOrIterMerge<T, Self, Self>;
+    type Output = BitOrIterOutput<T, Self, Self>;
 
     fn bitor(self, rhs: Self) -> Self::Output {
         let result = BitOrIter::new(self, rhs);
@@ -422,20 +444,20 @@ where
     }
 }
 
-impl<T, I0, I1> BitOr for BitOrIterMerge<T, I0, I1>
-where
-    T: Integer,
-    I0: Iterator<Item = (T, T)>,
+// impl<T, I0, I1> BitOr for BitOrIterMerge<T, I0, I1>
+// where
+//     T: Integer,
+//     I0: Iterator<Item = (T, T)>,
 
-    Self: Sized,
-{
-    type Output = BitOrIterMerge<T, Self, Self>;
+//     Self: Sized,
+// {
+//     type Output = BitOrIterMerge<T, Self, Self>;
 
-    fn bitor(self, rhs: Self) -> Self::Output {
-        let result = BitOrIter::new(self, rhs);
-        result
-    }
-}
+//     fn bitor(self, rhs: Self) -> Self::Output {
+//         let result = BitOrIter::new(self, rhs);
+//         result
+//     }
+// }
 
 // impl<T> Not for ItertoolsPlus<Item=(T, T>)
 // where
@@ -652,11 +674,9 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// ```
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         // cmk00 - also merge and not and xor, etc
-        // cmk00 can we define ! & etc on iterators?
+        // cmk can we define ! & etc on iterators?
         // cmk00 do we still need the IdentityIter ?
-        let a = self.ranges().not().bitor(rhs.ranges().not());
-        let b = !a;
-        RangeSetInt::from_sorted_distinct_iter(b)
+        RangeSetInt::from_sorted_distinct_iter(self.ranges().bitand(rhs.ranges()))
     }
 }
 
@@ -743,7 +763,8 @@ impl<T: Integer> Sub<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([1]));
     /// ```
     fn sub(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        self & &(!rhs)
+        // self & &(!rhs)
+        RangeSetInt::from_sorted_distinct_iter(self.ranges().sub(rhs.ranges()))
     }
 }
 
