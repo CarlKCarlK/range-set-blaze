@@ -651,10 +651,7 @@ impl<T: Integer> BitAndAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
     /// ```
     fn bitand_assign(&mut self, rhs: &Self) {
-        // !!! cmk0 this does 3 copies of the data, can we do better?
-        let mut a = !(&*self);
-        a |= &(!rhs);
-        *self = !&a;
+        *self = self.bitand(rhs);
     }
 }
 
@@ -675,13 +672,14 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([2, 3]));
     /// ```
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        // cmk00 - also merge and not and xor, etc
+        // cmk00 - also merge as iterator method
         // cmk can we define ! & etc on iterators?
         // cmk00 do we still need the IdentityIter ?
         RangeSetInt::from_sorted_distinct_iter(self.ranges().bitand(rhs.ranges()))
     }
 }
 
+// cmk0 should we even provide the Assign methods, since only bitor_assign could be better than bitor?
 impl<T: Integer> BitXorAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     /// Returns the symmetric difference of `self` and `rhs` as a cmk `RangeSetInt<T>`.
     ///
@@ -698,10 +696,7 @@ impl<T: Integer> BitXorAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
     /// ```
     fn bitxor_assign(&mut self, rhs: &Self) {
-        let mut rhs2 = rhs.clone();
-        rhs2 -= self;
-        *self -= rhs;
-        *self |= &rhs2;
+        *self = self.bitxor(rhs);
     }
 }
 
@@ -721,7 +716,7 @@ impl<T: Integer> BitXor<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// let result = &a ^ &b;
     /// assert_eq!(result, RangeSetInt::from([1, 4]));
     /// ```
-    // cmk00 replace with iterator version
+    // cmk00 use from/into to shorten this
     fn bitxor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         RangeSetInt::from_sorted_distinct_iter(
             self.ranges()
@@ -748,7 +743,7 @@ impl<T: Integer> SubAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     /// ```
     // cmk00 if any of these do copies, replace with a more efficient implementation
     fn sub_assign(&mut self, rhs: &Self) {
-        *self &= &(!rhs);
+        *self = self.sub(rhs);
     }
 }
 
@@ -769,7 +764,6 @@ impl<T: Integer> Sub<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([1]));
     /// ```
     fn sub(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        // self & &(!rhs)
         RangeSetInt::from_sorted_distinct_iter(self.ranges().sub(rhs.ranges()))
     }
 }
