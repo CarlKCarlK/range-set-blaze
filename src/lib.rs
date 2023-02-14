@@ -341,47 +341,52 @@ where
     range: Option<(T, T)>,
 }
 
-impl<T, I> BitOrIter<T, I>
+// impl<T, I> BitOrIter<T, I>
+// where
+//     T: Integer,
+//     I: Iterator<Item = (T, T)>,
+// {
+//     fn new_cmk2(merged_ranges: I) -> Self {
+//         Self {
+//             merged_ranges,
+//             range: None,
+//         }
+//     }
+// }
+
+// fn sorter<T: Integer>(a: &(T, T), b: &(T, T)) -> bool {
+//     a.0 <= b.0
+// }
+
+// fn new_cmk1<T, I0, I1>(
+//     lhs: I0,
+//     rhs: I1,
+// ) -> BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>>
+// where
+//     T: Integer + Sized,
+//     I0: Iterator<Item = (T, T)>,
+//     I1: Iterator<Item = (T, T)>,
+// {
+//     BitOrIter::new_cmk2(lhs.merge_by(rhs, |a, b| a.0 <= b.0))
+// }
+
+// fn sorter<T: Integer>(a: &(T, T), b: &(T, T)) -> bool {
+//     a.0 <= b.0
+// }
+
+type BitOrIterMerge<T, I0, I1> = BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>>;
+
+impl<T, I0, I1> BitOrIterMerge<T, I0, I1>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)>,
+    I0: Iterator<Item = (T, T)>,
+    I1: Iterator<Item = (T, T)>,
 {
-    fn new(merged_ranges: I) -> Self {
+    fn new(lhs: I0, rhs: I1) -> BitOrIterMerge<T, I0, I1> {
         Self {
-            merged_ranges,
+            merged_ranges: lhs.merge_by(rhs, |a, b| a.0 <= b.0),
             range: None,
         }
-    }
-}
-
-// fn sorter<T: Integer>(a: &(T, T), b: &(T, T)) -> bool {
-//     a.0 <= b.0
-// }
-
-fn new_bitor_iter<T, I0, I1>(
-    lhs: I0,
-    rhs: I1,
-) -> BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>>
-where
-    T: Integer + Sized,
-    I0: Iterator<Item = (T, T)>,
-    I1: Iterator<Item = (T, T)>,
-{
-    BitOrIter::new(lhs.merge_by(rhs, |a, b| a.0 <= b.0))
-}
-
-// fn sorter<T: Integer>(a: &(T, T), b: &(T, T)) -> bool {
-//     a.0 <= b.0
-// }
-
-impl<T, I0, I1> BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>>
-where
-    T: Integer,
-    I0: Iterator<Item = (T, T)>,
-    I1: Iterator<Item = (T, T)>,
-{
-    fn new2(lhs: I0, rhs: I1) -> BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>> {
-        new_bitor_iter(lhs, rhs)
     }
 }
 
@@ -459,7 +464,7 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
         // cmk00
         let lhs = self.ranges();
         let rhs = rhs.ranges();
-        let bitor_iter = BitOrIter::new2(lhs, rhs);
+        let bitor_iter = BitOrIter::new(lhs, rhs);
         RangeSetInt::from_sorted_distinct_iter(bitor_iter)
     }
 }
@@ -586,7 +591,7 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([2, 3]));
     /// ```
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        let bitor_iter = BitOrIter::new2(self.ranges_not(), rhs.ranges_not());
+        let bitor_iter = BitOrIter::new(self.ranges_not(), rhs.ranges_not());
         let not_bitor_iter = NotIter::new(bitor_iter);
         RangeSetInt::from_sorted_distinct_iter(not_bitor_iter)
     }
@@ -1189,44 +1194,44 @@ where
 
 // impl<I: Iterator> ItertoolsPlus for I {}
 
-fn merge_bigger0<I, J, T>(lhs: I, other: J) -> impl Iterator<Item = I::Item>
-where
-    T: std::cmp::PartialOrd + Sized,
-    I: Iterator<Item = T> + Sized,
-    J: Iterator<Item = I::Item>,
-{
-    lhs.merge_by(other, |a, b| b < a)
-}
+// fn merge_bigger0<I, J, T>(lhs: I, other: J) -> impl Iterator<Item = I::Item>
+// where
+//     T: std::cmp::PartialOrd + Sized,
+//     I: Iterator<Item = T> + Sized,
+//     J: Iterator<Item = I::Item>,
+// {
+//     lhs.merge_by(other, |a, b| b < a)
+// }
 
 // https://stackoverflow.com/questions/30540766/how-can-i-add-new-methods-to-iterator
-pub trait ItertoolsPlus: Iterator {
-    fn merge_bigger<J, T>(self, other: J) -> MergeBy<Self, J, fn(&T, &T) -> bool>
-    where
-        Self: Sized + Iterator<Item = T>,
-        T: std::cmp::PartialOrd,
-        J: Iterator<Item = Self::Item>,
-    {
-        self.merge_by(other, |a, b| *b < *a)
-    }
-}
+// pub trait ItertoolsPlus: Iterator {
+//     fn merge_bigger<J, T>(self, other: J) -> MergeBy<Self, J, fn(&T, &T) -> bool>
+//     where
+//         Self: Sized + Iterator<Item = T>,
+//         T: std::cmp::PartialOrd,
+//         J: Iterator<Item = Self::Item>,
+//     {
+//         self.merge_by(other, |a, b| *b < *a)
+//     }
+// }
 
-impl<I: Iterator> ItertoolsPlus for I {}
+// impl<I: Iterator> ItertoolsPlus for I {}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_merge_bigger0() {
-        let lhs = vec![10, 8, 7, 5, 1];
-        let rhs = vec![10, 9, 7, 2, 1];
-        let merged1 = merge_bigger0(lhs.iter(), rhs.iter());
-        let merged2: Vec<i32> = merged1.copied().collect();
-        println!("{merged2:?}");
-        assert_eq!(merged2, vec![10, 10, 9, 8, 7, 7, 5, 2, 1, 1]);
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     #[test]
+//     fn test_merge_bigger0() {
+//         let lhs = vec![10, 8, 7, 5, 1];
+//         let rhs = vec![10, 9, 7, 2, 1];
+//         let merged1 = merge_bigger0(lhs.iter(), rhs.iter());
+//         let merged2: Vec<i32> = merged1.copied().collect();
+//         println!("{merged2:?}");
+//         assert_eq!(merged2, vec![10, 10, 9, 8, 7, 7, 5, 2, 1, 1]);
 
-        let merged1 = lhs.iter().merge_bigger(rhs.iter());
-        let merged2: Vec<i32> = merged1.copied().collect();
-        println!("{merged2:?}");
-        assert_eq!(merged2, vec![10, 10, 9, 8, 7, 7, 5, 2, 1, 1]);
-    }
-}
+//         let merged1 = lhs.iter().merge_bigger(rhs.iter());
+//         let merged2: Vec<i32> = merged1.copied().collect();
+//         println!("{merged2:?}");
+//         assert_eq!(merged2, vec![10, 10, 9, 8, 7, 7, 5, 2, 1, 1]);
+//     }
+// }
