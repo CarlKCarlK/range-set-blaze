@@ -16,6 +16,8 @@
 // https://lib.rs/crates/ranges
 // https://lib.rs/crates/nonoverlapping_interval_tree
 
+// !!!cmk0 sort by start then by larger stop
+
 mod merger;
 
 use itertools::Itertools;

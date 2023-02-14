@@ -361,6 +361,42 @@ fn bitor(c: &mut Criterion) {
     });
 }
 
+fn bitor1(c: &mut Criterion) {
+    let len = 10_000_000;
+    let range_len = 10_000;
+    let coverage_goal = 0.50;
+    let mut group = c.benchmark_group("operations");
+    group.sample_size(10);
+    // group.measurement_time(Duration::from_secs(170));
+    group.bench_function("RangeSetInt bitor1", |b| {
+        b.iter_batched(
+            || two_sets1(range_len, len, coverage_goal),
+            |(set0, set1)| {
+                let _answer = &set0 | &set1;
+            },
+            BatchSize::SmallInput,
+        );
+    });
+    group.bench_function("RangeSetInt bitor1_assign", |b| {
+        b.iter_batched(
+            || two_sets1(range_len, len, coverage_goal),
+            |(set0, set1)| {
+                let mut answer = set0;
+                answer |= &set1;
+            },
+            BatchSize::SmallInput,
+        );
+    });
+    group.bench_function("BTreeSet bitor1", |b| {
+        b.iter_batched(
+            || btree_two_sets1(range_len, len, coverage_goal),
+            |(set0, set1)| {
+                let _answer = &set0 | &set1;
+            },
+            BatchSize::SmallInput,
+        );
+    });
+}
 fn two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (RangeSetInt<u64>, RangeSetInt<u64>) {
     (
         RangeSetInt::<u64>::from_iter(MemorylessData::new(0, range_len, len, coverage_goal)),
@@ -368,10 +404,30 @@ fn two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (RangeSetInt<u64>,
     )
 }
 
+fn two_sets1(
+    range_len: u64,
+    len: u128,
+    coverage_goal: f64,
+) -> (RangeSetInt<u64>, RangeSetInt<u64>) {
+    (
+        RangeSetInt::<u64>::from_iter(MemorylessData::new(0, range_len, len, coverage_goal)),
+        RangeSetInt::<u64>::from([range_len / 2]),
+    )
+}
 fn btree_two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (BTreeSet<u64>, BTreeSet<u64>) {
     (
         BTreeSet::<u64>::from_iter(MemorylessData::new(0, range_len, len, coverage_goal)),
         BTreeSet::<u64>::from_iter(MemorylessData::new(1, range_len, len, coverage_goal)),
+    )
+}
+fn btree_two_sets1(
+    range_len: u64,
+    len: u128,
+    coverage_goal: f64,
+) -> (BTreeSet<u64>, BTreeSet<u64>) {
+    (
+        BTreeSet::<u64>::from_iter(MemorylessData::new(0, range_len, len, coverage_goal)),
+        BTreeSet::<u64>::from([range_len / 2]),
     )
 }
 
@@ -385,6 +441,6 @@ criterion_group!(
     benches, // insert10,
     // small_random_inserts,
     // big_random_inserts,
-    shuffled, ascending, descending, clumps, bitxor, bitor
+    shuffled, ascending, descending, clumps, bitxor, bitor, bitor1
 );
 criterion_main!(benches);
