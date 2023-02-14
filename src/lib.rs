@@ -157,11 +157,7 @@ impl<T: Integer> RangeSetInt<T> {
 
     // !!!cmk0 add .map(|(start, stop)| (*start, *stop)) to ranges()?
     pub fn ranges(&self) -> impl Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)> + '_ {
-        IdentityIter::new(TupleToValuesIter {
-            inner_iter: self.items.iter(),
-        })
-        // !!!cmk0 can we do this without IdentityIter?
-        // !!!cmk0 can we do this without TupleToValuesIter?
+        self.items.iter().map(|(start, stop)| (*start, *stop))
     }
 
     pub fn clear(&mut self) {
@@ -861,75 +857,6 @@ impl Iterator for MemorylessData {
             self.current_upper = self.current_lower + delta;
             self.next()
         }
-    }
-}
-
-struct TupleToValuesIter<'a, T, J>
-where
-    T: Integer + 'a,
-    J: Iterator<Item = (&'a T, &'a T)> + ExactSizeIterator<Item = (&'a T, &'a T)>,
-{
-    inner_iter: J,
-}
-
-// implement Iterator for TupleToValuesIter
-impl<'a, T: Integer, J> Iterator for TupleToValuesIter<'a, T, J>
-where
-    J: Iterator<Item = (&'a T, &'a T)> + ExactSizeIterator<Item = (&'a T, &'a T)>,
-{
-    type Item = (T, T);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner_iter.next().map(|(a, b)| (*a, *b))
-    }
-}
-
-impl<'a, T: Integer, J> ExactSizeIterator for TupleToValuesIter<'a, T, J>
-where
-    J: Iterator<Item = (&'a T, &'a T)> + ExactSizeIterator<Item = (&'a T, &'a T)>,
-{
-    fn len(&self) -> usize {
-        self.inner_iter.len()
-    }
-}
-
-struct IdentityIter<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)>,
-{
-    // !!!cmk0 name all these fields consistently (and consistent with itertools)
-    ranges: I,
-}
-
-impl<T, I> IdentityIter<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)>,
-{
-    fn new(ranges: I) -> Self {
-        IdentityIter { ranges }
-    }
-}
-
-impl<T, I> Iterator for IdentityIter<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)>,
-{
-    type Item = (T, T);
-    fn next(&mut self) -> Option<(T, T)> {
-        self.ranges.next()
-    }
-}
-
-impl<T, I> ExactSizeIterator for IdentityIter<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)>,
-{
-    fn len(&self) -> usize {
-        self.ranges.len()
     }
 }
 
