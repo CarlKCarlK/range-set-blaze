@@ -303,16 +303,16 @@ fn bitxor(c: &mut Criterion) {
             BatchSize::SmallInput,
         );
     });
-    group.bench_function("RangeSetInt bitxor_assign", |b| {
-        b.iter_batched(
-            || two_sets(range_len, len, coverage_goal),
-            |(set0, set1)| {
-                let mut answer = set0;
-                answer ^= &set1;
-            },
-            BatchSize::SmallInput,
-        );
-    });
+    // group.bench_function("RangeSetInt bitxor_assign", |b| {
+    //     b.iter_batched(
+    //         || two_sets(range_len, len, coverage_goal),
+    //         |(set0, set1)| {
+    //             let mut answer = set0;
+    //             answer ^= &set1;
+    //         },
+    //         BatchSize::SmallInput,
+    //     );
+    // });
     group.bench_function("BTreeSet bitxor", |b| {
         b.iter_batched(
             || btree_two_sets(range_len, len, coverage_goal),

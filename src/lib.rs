@@ -33,11 +33,7 @@ use std::cmp::max;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
-use std::ops::BitAndAssign;
-use std::ops::BitOrAssign;
-use std::ops::BitXorAssign;
-use std::ops::SubAssign;
-use std::ops::{BitAnd, BitOr, BitXor, Not, Sub};
+use std::ops::{BitAnd, BitOr, BitOrAssign, BitXor, Not, Sub};
 use std::str::FromStr;
 use trait_set::trait_set;
 
@@ -326,6 +322,27 @@ impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     }
 }
 
+// cmk0 get this working
+// impl<T: Integer> BitOrAssign<RangeSetInt<T>> for RangeSetInt<T> {
+//     /// Returns the union of `self` and `rhs` as a new `RangeSetInt`.
+//     ///
+//     /// # Examples
+//     ///
+//     /// ```
+//     /// use range_set_int::RangeSetInt;
+//     ///
+//     /// let mut a = RangeSetInt::from([1, 2, 3]);
+//     /// let b = RangeSetInt::from([3, 4, 5]);
+//     ///
+//     /// a |= b;
+//     /// assert_eq!(a, RangeSetInt::from([1, 2, 3, 4, 5]));
+//     /// assert_eq!(b, RangeSetInt::from([3, 4, 5]));
+//     /// ```
+//     fn bitor_assign(&mut self, rhs: Self) {
+//         self |= &rhs;
+//     }
+// }
+
 pub struct BitOrIter<T, I>
 where
     T: Integer,
@@ -392,7 +409,9 @@ pub trait ItertoolsPlus: Iterator {
     }
 }
 
+// !!!cmk00 support multiple inputs to bitor,bitand
 // !!!cmk00 allow rhs to be of a different type
+
 // !!!cmk dyn????
 // impl<T: Integer> BitOr for dyn ItertoolsPlus<Item = (T, T)>
 // where
@@ -456,11 +475,73 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        // cmk00
         RangeSetInt::from_sorted_distinct_iter(self.ranges().bitor(rhs.ranges()))
     }
 }
 
+// !!!cmk00 implement this for everything
+impl<T: Integer> BitOr<RangeSetInt<T>> for RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
+
+    /// Returns the union of `self` and `rhs` as a new `RangeSetInt`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([3, 4, 5]);
+    ///
+    /// let result = a | &b;
+    /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+    /// ```
+    fn bitor(self, rhs: RangeSetInt<T>) -> RangeSetInt<T> {
+        &self | &rhs
+    }
+}
+
+impl<T: Integer> BitOr<&RangeSetInt<T>> for RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
+
+    /// Returns the union of `self` and `rhs` as a new `RangeSetInt`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([3, 4, 5]);
+    ///
+    /// let result = a | &b;
+    /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+    /// ```
+    fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
+        &self | rhs
+    }
+}
+
+impl<T: Integer> BitOr<RangeSetInt<T>> for &RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
+
+    /// Returns the union of `self` and `rhs` as a new `RangeSetInt`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([3, 4, 5]);
+    ///
+    /// let result = &a | b;
+    /// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+    /// ```
+    fn bitor(self, rhs: RangeSetInt<T>) -> RangeSetInt<T> {
+        self | &rhs
+    }
+}
 pub struct NotIter<T, I>
 where
     T: Integer,
@@ -545,25 +626,45 @@ impl<T: Integer> Not for &RangeSetInt<T> {
     }
 }
 
-impl<T: Integer> BitAndAssign<&RangeSetInt<T>> for RangeSetInt<T> {
-    /// Returns the intersection of `self` and `rhs` as a cmk `RangeSetInt<T>`.
+impl<T: Integer> Not for RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
+
+    /// Returns the complement of `self` as a new `RangeSetInt`.
     ///
     /// # Examples
     ///
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let mut a = RangeSetInt::from([1, 2, 3]);
-    /// let b = RangeSetInt::from([2, 3, 4]);
+    /// let a = RangeSetInt::<i8>::from([1, 2, 3]);
     ///
-    /// a &= &b;
-    /// assert_eq!(a, RangeSetInt::from([2, 3]));
-    /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
+    /// let result = !a;
+    /// assert_eq!(result.to_string(), "-128..=0,4..=127");
     /// ```
-    fn bitand_assign(&mut self, rhs: &Self) {
-        *self = self.bitand(rhs);
+    fn not(self) -> RangeSetInt<T> {
+        !&self
     }
 }
+
+// impl<T: Integer> BitAndAssign<&RangeSetInt<T>> for RangeSetInt<T> {
+//     /// Returns the intersection of `self` and `rhs` as a cmk `RangeSetInt<T>`.
+//     ///
+//     /// # Examples
+//     ///
+//     /// ```
+//     /// use range_set_int::RangeSetInt;
+//     ///
+//     /// let mut a = RangeSetInt::from([1, 2, 3]);
+//     /// let b = RangeSetInt::from([2, 3, 4]);
+//     ///
+//     /// a &= &b;
+//     /// assert_eq!(a, RangeSetInt::from([2, 3]));
+//     /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
+//     /// ```
+//     fn bitand_assign(&mut self, rhs: &Self) {
+//         *self = self.bitand(rhs);
+//     }
+// }
 
 impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     type Output = RangeSetInt<T>;
@@ -584,31 +685,53 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         // cmk00 - also merge as iterator method
         // cmk can we define ! & etc on iterators?
-        // cmk00 do we still need the IdentityIter ?
         RangeSetInt::from_sorted_distinct_iter(self.ranges().bitand(rhs.ranges()))
     }
 }
+impl<T: Integer> BitAnd<RangeSetInt<T>> for RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
 
-// cmk0 should we even provide the Assign methods, since only bitor_assign could be better than bitor?
-impl<T: Integer> BitXorAssign<&RangeSetInt<T>> for RangeSetInt<T> {
-    /// Returns the symmetric difference of `self` and `rhs` as a cmk `RangeSetInt<T>`.
+    /// Returns the intersection of `self` and `rhs` as a new `RangeSetInt<T>`.
     ///
     /// # Examples
     ///
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let mut a = RangeSetInt::from([1, 2, 3]);
+    /// let a = RangeSetInt::from([1, 2, 3]);
     /// let b = RangeSetInt::from([2, 3, 4]);
     ///
-    /// a ^= &b;
-    /// assert_eq!(a, RangeSetInt::from([1, 4]));
-    /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
+    /// let result = a & b;
+    /// assert_eq!(result, RangeSetInt::from([2, 3]));
     /// ```
-    fn bitxor_assign(&mut self, rhs: &Self) {
-        *self = self.bitxor(rhs);
+    fn bitand(self, rhs: RangeSetInt<T>) -> RangeSetInt<T> {
+        // cmk00 - also merge as iterator method
+        // cmk can we define ! & etc on iterators?
+        &self & &rhs
     }
 }
+
+// cmk0 should we even provide the Assign methods, since only bitor_assign could be better than bitor?
+// impl<T: Integer> BitXorAssign<&RangeSetInt<T>> for RangeSetInt<T> {
+//     /// Returns the symmetric difference of `self` and `rhs` as a cmk `RangeSetInt<T>`.
+//     ///
+//     /// # Examples
+//     ///
+//     /// ```
+//     /// use range_set_int::RangeSetInt;
+//     ///
+//     /// let mut a = RangeSetInt::from([1, 2, 3]);
+//     /// let b = RangeSetInt::from([2, 3, 4]);
+//     ///
+//     /// a ^= &b;
+//     /// assert_eq!(a, RangeSetInt::from([1, 4]));
+//     /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
+//     /// ```
+//     // cmk00 use profiling to understand why this is 10% faster than bitxor
+//     fn bitxor_assign(&mut self, rhs: &Self) {
+//         *self = self.bitxor(rhs);
+//     }
+// }
 
 impl<T: Integer> BitXor<&RangeSetInt<T>> for &RangeSetInt<T> {
     type Output = RangeSetInt<T>;
@@ -636,26 +759,47 @@ impl<T: Integer> BitXor<&RangeSetInt<T>> for &RangeSetInt<T> {
     }
 }
 
-impl<T: Integer> SubAssign<&RangeSetInt<T>> for RangeSetInt<T> {
-    /// Returns the set difference of `self` and `rhs` as a cmk `RangeSetInt<T>`.
+impl<T: Integer> BitXor<RangeSetInt<T>> for RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
+
+    /// Returns the symmetric difference of `self` and `rhs` as a new `RangeSetInt<T>`.
     ///
     /// # Examples
     ///
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let mut a = RangeSetInt::from([1, 2, 3]);
+    /// let a = RangeSetInt::from([1, 2, 3]);
     /// let b = RangeSetInt::from([2, 3, 4]);
     ///
-    /// a -= &b;
-    /// assert_eq!(a, RangeSetInt::from([1]));
-    /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
+    /// let result = a ^ b;
+    /// assert_eq!(result, RangeSetInt::from([1, 4]));
     /// ```
-    // cmk00 if any of these do copies, replace with a more efficient implementation
-    fn sub_assign(&mut self, rhs: &Self) {
-        *self = self.sub(rhs);
+    // cmk00 use from/into to shorten this
+    fn bitxor(self, rhs: RangeSetInt<T>) -> RangeSetInt<T> {
+        &self ^ &rhs
     }
 }
+
+// impl<T: Integer> SubAssign<&RangeSetInt<T>> for RangeSetInt<T> {
+//     /// Returns the set difference of `self` and `rhs` as a cmk `RangeSetInt<T>`.
+//     ///
+//     /// # Examples
+//     ///
+//     /// ```
+//     /// use range_set_int::RangeSetInt;
+//     ///
+//     /// let mut a = RangeSetInt::from([1, 2, 3]);
+//     /// let b = RangeSetInt::from([2, 3, 4]);
+//     ///
+//     /// a -= &b;
+//     /// assert_eq!(a, RangeSetInt::from([1]));
+//     /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
+//     /// ```
+//     fn sub_assign(&mut self, rhs: &Self) {
+//         *self = self.sub(rhs);
+//     }
+// }
 
 impl<T: Integer> Sub<&RangeSetInt<T>> for &RangeSetInt<T> {
     type Output = RangeSetInt<T>;
@@ -678,6 +822,26 @@ impl<T: Integer> Sub<&RangeSetInt<T>> for &RangeSetInt<T> {
     }
 }
 
+impl<T: Integer> Sub<RangeSetInt<T>> for RangeSetInt<T> {
+    type Output = RangeSetInt<T>;
+
+    /// Returns the set difference of `self` and `rhs` as a new `RangeSetInt<T>`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1, 2, 3]);
+    /// let b = RangeSetInt::from([2, 3, 4]);
+    ///
+    /// let result = &a - &b;
+    /// assert_eq!(result, RangeSetInt::from([1]));
+    /// ```
+    fn sub(self, rhs: RangeSetInt<T>) -> RangeSetInt<T> {
+        &self - &rhs
+    }
+}
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     fn from(arr: [T; N]) -> Self {
         RangeSetInt::from(arr.as_slice())
@@ -863,3 +1027,54 @@ impl Iterator for MemorylessData {
 }
 
 // https://stackoverflow.com/questions/30540766/how-can-i-add-new-methods-to-iterator
+
+// use std::ops::BitOr;
+
+#[derive(Debug, PartialEq)]
+struct Scalar(bool);
+
+impl BitOr<&Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn bitor(self, rhs: &Scalar) -> Scalar {
+        Scalar(self.0 | rhs.0)
+    }
+}
+impl BitOr<Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn bitor(self, rhs: Scalar) -> Scalar {
+        &self | &rhs
+    }
+}
+
+impl BitOr<&Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn bitor(self, rhs: &Scalar) -> Scalar {
+        &self | rhs
+    }
+}
+
+impl BitOr<Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn bitor(self, rhs: Scalar) -> Scalar {
+        self | &rhs
+    }
+}
+
+// make test code
+
+#[test]
+
+fn test_combos() {
+    let a = Scalar(true);
+    let b = Scalar(false);
+    assert_eq!(&a | &b, Scalar(true));
+    assert_eq!(&a | b, Scalar(true));
+    let b = Scalar(false);
+    assert_eq!(a | &b, Scalar(true));
+    let a = Scalar(true);
+    assert_eq!(a | b, Scalar(true));
+}

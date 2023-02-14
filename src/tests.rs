@@ -677,3 +677,19 @@ fn iters() {
     println!("{range_int_set}");
     // !!! assert that can't use range_int_set again
 }
+
+#[test]
+fn multi_op() {
+    let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    let b = RangeSetInt::<u8>::from("1..=6,18..=29");
+    let c = RangeSetInt::<u8>::from("38..=42");
+    // !!!!cmk00 problems   these should work d= a|b; d= a|b|c; d=&a|&b|&c;
+    let d = &(&a | &b) | &c;
+    println!("{d}");
+    let d = a | b | &c;
+    println!("{d}");
+    let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    let b = RangeSetInt::<u8>::from("1..=6,18..=29");
+    let d = &a | b;
+    println!("{d}");
+}
