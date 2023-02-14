@@ -332,7 +332,7 @@ impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     }
 }
 
-struct BitOrIter<T, I>
+pub struct BitOrIter<T, I>
 where
     T: Integer,
     I: Iterator<Item = (T, T)>,
@@ -374,7 +374,7 @@ where
 //     a.0 <= b.0
 // }
 
-type BitOrIterMerge<T, I0, I1> = BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>>;
+pub type BitOrIterMerge<T, I0, I1> = BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>>;
 
 impl<T, I0, I1> BitOrIterMerge<T, I0, I1>
 where
@@ -389,6 +389,19 @@ where
         }
     }
 }
+
+pub trait ItertoolsPlus: Iterator {
+    fn bitor<T, J>(self, other: J) -> BitOrIterMerge<T, Self, J>
+    where
+        T: Integer,
+        Self: Iterator<Item = (T, T)> + Sized,
+        J: Iterator<Item = Self::Item>,
+    {
+        BitOrIter::new(self, other)
+    }
+}
+
+impl<I: Iterator> ItertoolsPlus for I {}
 
 // impl<T, I0, I1, F> BitOrIter<T, MergeBy<I0, I1, F>>
 // where
@@ -462,10 +475,7 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// ```
     fn bitor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         // cmk00
-        let lhs = self.ranges();
-        let rhs = rhs.ranges();
-        let bitor_iter = BitOrIter::new(lhs, rhs);
-        RangeSetInt::from_sorted_distinct_iter(bitor_iter)
+        RangeSetInt::from_sorted_distinct_iter(self.ranges().bitor(rhs.ranges()))
     }
 }
 
@@ -591,9 +601,9 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([2, 3]));
     /// ```
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        let bitor_iter = BitOrIter::new(self.ranges_not(), rhs.ranges_not());
-        let not_bitor_iter = NotIter::new(bitor_iter);
-        RangeSetInt::from_sorted_distinct_iter(not_bitor_iter)
+        RangeSetInt::from_sorted_distinct_iter(NotIter::new(
+            self.ranges_not().bitor(rhs.ranges_not()),
+        ))
     }
 }
 
@@ -1172,23 +1182,6 @@ where
 //         J: Iterator<Item = Self::Item>,
 //     {
 //         self.merge_by(other, |a, b| b < a)
-//     }
-// }
-
-// impl<I: Iterator> ItertoolsPlus for I {}
-
-// pub trait ItertoolsPlus: Iterator {
-//     fn bitor<T, J>(
-//         self,
-//         other: J,
-//     ) -> BitOrIter<T, MergeBy<Self, J, fn sorter<_,_>->bool>
-//     where
-//         T: Integer,
-//         Self: Iterator<Item = (T, T)> + Sized,
-//         J: Iterator<Item = Self::Item>,
-//     {
-//         let x = sorter;
-//         BitOrIter::new(self.merge_by(other, sorter))
 //     }
 // }
 
