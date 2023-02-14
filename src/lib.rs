@@ -409,6 +409,46 @@ pub trait ItertoolsPlus: Iterator {
     }
 }
 
+// !!!cmk00 allow rhs to be of a different type
+impl<T: Integer> BitOr for dyn ItertoolsPlus<Item = (T, T)>
+where
+    Self: Sized,
+{
+    type Output = BitOrIterMerge<T, Self, Self>;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        let result = BitOrIter::new(self, rhs);
+        result
+    }
+}
+
+impl<T, I0, I1> BitOr for BitOrIterMerge<T, I0, I1>
+where
+    T: Integer,
+    I0: Iterator<Item = (T, T)>,
+
+    Self: Sized,
+{
+    type Output = BitOrIterMerge<T, Self, Self>;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        let result = BitOrIter::new(self, rhs);
+        result
+    }
+}
+
+// impl<T> Not for ItertoolsPlus<Item=(T, T>)
+// where
+//     T: Integer,
+//     Self: Iterator<Item = (T, T)> + Sized,
+// {
+//     type Output = NotIter<T, Self>;
+
+//     fn not(self) -> RangeSetInt<T> {
+//         RangeSetInt::from_sorted_distinct_iter(self.ranges().not())
+//     }
+// }
+
 impl<I: Iterator> ItertoolsPlus for I {}
 
 // impl<T, I0, I1, F> BitOrIter<T, MergeBy<I0, I1, F>>
@@ -612,7 +652,11 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// ```
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
         // cmk00 - also merge and not and xor, etc
-        RangeSetInt::from_sorted_distinct_iter(self.ranges().not().bitor(rhs.ranges().not()).not())
+        // cmk00 can we define ! & etc on iterators?
+        // cmk00 do we still need the IdentityIter ?
+        let a = self.ranges().not().bitor(rhs.ranges().not());
+        let b = !a;
+        RangeSetInt::from_sorted_distinct_iter(b)
     }
 }
 
