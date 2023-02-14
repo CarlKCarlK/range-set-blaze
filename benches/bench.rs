@@ -287,6 +287,94 @@ pub fn clumps(c: &mut Criterion) {
     });
 }
 
+fn bitxor(c: &mut Criterion) {
+    let len = 10_000_000;
+    let range_len = 10_000;
+    let coverage_goal = 0.50;
+    let mut group = c.benchmark_group("operations");
+    group.sample_size(10);
+    // group.measurement_time(Duration::from_secs(170));
+    group.bench_function("RangeSetInt bitxor", |b| {
+        b.iter_batched(
+            || two_sets(range_len, len, coverage_goal),
+            |(set0, set1)| {
+                let _answer = &set0 ^ &set1;
+            },
+            BatchSize::SmallInput,
+        );
+    });
+    group.bench_function("RangeSetInt bitxor_assign", |b| {
+        b.iter_batched(
+            || two_sets(range_len, len, coverage_goal),
+            |(set0, set1)| {
+                let mut answer = set0;
+                answer ^= &set1;
+            },
+            BatchSize::SmallInput,
+        );
+    });
+    group.bench_function("BTreeSet bitxor", |b| {
+        b.iter_batched(
+            || btree_two_sets(range_len, len, coverage_goal),
+            |(set0, set1)| {
+                let _answer = &set0 ^ &set1;
+            },
+            BatchSize::SmallInput,
+        );
+    });
+}
+
+fn bitor(c: &mut Criterion) {
+    let len = 10_000_000;
+    let range_len = 10_000;
+    let coverage_goal = 0.50;
+    let mut group = c.benchmark_group("operations");
+    group.sample_size(10);
+    // group.measurement_time(Duration::from_secs(170));
+    group.bench_function("RangeSetInt bitor", |b| {
+        b.iter_batched(
+            || two_sets(range_len, len, coverage_goal),
+            |(set0, set1)| {
+                let _answer = &set0 | &set1;
+            },
+            BatchSize::SmallInput,
+        );
+    });
+    group.bench_function("RangeSetInt bitor_assign", |b| {
+        b.iter_batched(
+            || two_sets(range_len, len, coverage_goal),
+            |(set0, set1)| {
+                let mut answer = set0;
+                answer |= &set1;
+            },
+            BatchSize::SmallInput,
+        );
+    });
+    group.bench_function("BTreeSet bitor", |b| {
+        b.iter_batched(
+            || btree_two_sets(range_len, len, coverage_goal),
+            |(set0, set1)| {
+                let _answer = &set0 | &set1;
+            },
+            BatchSize::SmallInput,
+        );
+    });
+}
+
+fn two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (RangeSetInt<u64>, RangeSetInt<u64>) {
+    (
+        RangeSetInt::<u64>::from_iter(MemorylessData::new(0, range_len, len, coverage_goal)),
+        RangeSetInt::<u64>::from_iter(MemorylessData::new(1, range_len, len, coverage_goal)),
+    )
+}
+
+fn btree_two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (BTreeSet<u64>, BTreeSet<u64>) {
+    (
+        BTreeSet::<u64>::from_iter(MemorylessData::new(0, range_len, len, coverage_goal)),
+        BTreeSet::<u64>::from_iter(MemorylessData::new(1, range_len, len, coverage_goal)),
+    )
+}
+
 // criterion_group! {
 //     name = flame;
 //     config = Criterion::default().with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
@@ -297,6 +385,6 @@ criterion_group!(
     benches, // insert10,
     // small_random_inserts,
     // big_random_inserts,
-    shuffled, ascending, descending, clumps
+    shuffled, ascending, descending, clumps, bitxor, bitor
 );
 criterion_main!(benches);

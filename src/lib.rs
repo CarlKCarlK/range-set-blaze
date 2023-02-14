@@ -696,10 +696,10 @@ impl<T: Integer> BitXorAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
     /// ```
     fn bitxor_assign(&mut self, rhs: &Self) {
-        let a = self.clone();
-        let mut a = &a - rhs;
-        a |= &(rhs - self);
-        *self = a;
+        let mut rhs2 = rhs.clone();
+        rhs2 -= self;
+        *self -= rhs;
+        *self |= &rhs2;
     }
 }
 
