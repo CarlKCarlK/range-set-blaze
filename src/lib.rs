@@ -163,12 +163,6 @@ impl<T: Integer> RangeSetInt<T> {
         // !!!cmk0 can we do this without TupleToValuesIter?
     }
 
-    // pub fn ranges_not(&self) -> impl Iterator<Item = (T, T)> + '_ {
-    //     NotIter::new(TupleToValuesIter {
-    //         inner_iter: self.items.iter(),
-    //     })
-    // }
-
     pub fn clear(&mut self) {
         self.items.clear();
         self.len = <T as SafeSubtract>::Output::zero();
@@ -343,39 +337,6 @@ where
     range: Option<(T, T)>,
 }
 
-// impl<T, I> BitOrIter<T, I>
-// where
-//     T: Integer,
-//     I: Iterator<Item = (T, T)>,
-// {
-//     fn new_cmk2(merged_ranges: I) -> Self {
-//         Self {
-//             merged_ranges,
-//             range: None,
-//         }
-//     }
-// }
-
-// fn sorter<T: Integer>(a: &(T, T), b: &(T, T)) -> bool {
-//     a.0 <= b.0
-// }
-
-// fn new_cmk1<T, I0, I1>(
-//     lhs: I0,
-//     rhs: I1,
-// ) -> BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>>
-// where
-//     T: Integer + Sized,
-//     I0: Iterator<Item = (T, T)>,
-//     I1: Iterator<Item = (T, T)>,
-// {
-//     BitOrIter::new_cmk2(lhs.merge_by(rhs, |a, b| a.0 <= b.0))
-// }
-
-// fn sorter<T: Integer>(a: &(T, T), b: &(T, T)) -> bool {
-//     a.0 <= b.0
-// }
-
 // !!!cmk 0 should I0,I1 be I,J to match itertools?
 pub type BitOrIterOutput<T, I0, I1> = BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>>;
 pub type BitAndIterOutput<T, I0, I1> =
@@ -446,57 +407,7 @@ where
     }
 }
 
-// impl<T, I0, I1> BitOr for BitOrIterMerge<T, I0, I1>
-// where
-//     T: Integer,
-//     I0: Iterator<Item = (T, T)>,
-
-//     Self: Sized,
-// {
-//     type Output = BitOrIterMerge<T, Self, Self>;
-
-//     fn bitor(self, rhs: Self) -> Self::Output {
-//         let result = BitOrIter::new(self, rhs);
-//         result
-//     }
-// }
-
-// impl<T> Not for ItertoolsPlus<Item=(T, T>)
-// where
-//     T: Integer,
-//     Self: Iterator<Item = (T, T)> + Sized,
-// {
-//     type Output = NotIter<T, Self>;
-
-//     fn not(self) -> RangeSetInt<T> {
-//         RangeSetInt::from_sorted_distinct_iter(self.ranges().not())
-//     }
-// }
-
 impl<I: Iterator> ItertoolsPlus for I {}
-
-// impl<T, I0, I1, F> BitOrIter<T, MergeBy<I0, I1, F>>
-// where
-//     T: Integer,
-//     I0: Iterator<Item = (T, T)>,
-//     I1: Iterator<Item = (T, T)>,
-//     F: FnMut(&(T, T), &(T, T)) -> bool,
-// {
-//     fn new2(lhs: I0, rhs: I1, is_first: F) -> Self {
-//         let merged_ranges = lhs.merge_by(rhs, is_first);
-//         BitOrIter::new(merged_ranges)
-//     }
-// }
-
-// fn new_bitor_iter<T, I0, I1, I>(lhs: I0, rhs: I1) -> BitOrIter<T, I>
-// where
-//     T: Integer,
-//     I0: Iterator<Item = (T, T)>,
-//     I1: Iterator<Item = (T, T)>,
-//     I: Iterator<Item = (T, T)>,
-// {
-//     BitOrIter::new2(lhs, rhs, sorter)
-// }
 
 impl<T, I> Iterator for BitOrIter<T, I>
 where
@@ -1095,17 +1006,9 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
-        // !!!!cmk0 !!!! likely error: this may fail is range_set_int is not empty
+        // !!!!cmk00 !!!! likely error: this may fail is range_set_int is not empty
         Merger::from_iter(iter).collect_into(self);
     }
-
-    // fn extend<I>(&mut self, other: RangeSetInt<T>) {
-    //     todo!();
-    //     //for (start, end) in other.range_iter() {
-    //     //     self.internal_add(start, stop)
-    //     // }
-    //     //}
-    //}
 }
 
 impl<'a, T: 'a + Integer> Extend<&'a T> for RangeSetInt<T> {
@@ -1245,60 +1148,4 @@ where
     }
 }
 
-// // https://stackoverflow.com/questions/30540766/how-can-i-add-new-methods-to-iterator
-// pub trait ItertoolsPlus: Iterator {
-//     fn merge_bigger<T, J>(self, other: J) -> MergeBy<Self, J, fn(&T, &T) -> bool>
-//     //  impl Iterator<Item = Self::Item>
-//     where
-//         T: Integer,
-//         Self: Sized,
-//         Self::Item: std::cmp::PartialOrd + Sized,
-//         J: Iterator<Item = Self::Item>,
-//     {
-//         self.merge_by(other, |a, b| b < a)
-//     }
-// }
-
-// impl<I: Iterator> ItertoolsPlus for I {}
-
-// fn merge_bigger0<I, J, T>(lhs: I, other: J) -> impl Iterator<Item = I::Item>
-// where
-//     T: std::cmp::PartialOrd + Sized,
-//     I: Iterator<Item = T> + Sized,
-//     J: Iterator<Item = I::Item>,
-// {
-//     lhs.merge_by(other, |a, b| b < a)
-// }
-
 // https://stackoverflow.com/questions/30540766/how-can-i-add-new-methods-to-iterator
-// pub trait ItertoolsPlus: Iterator {
-//     fn merge_bigger<J, T>(self, other: J) -> MergeBy<Self, J, fn(&T, &T) -> bool>
-//     where
-//         Self: Sized + Iterator<Item = T>,
-//         T: std::cmp::PartialOrd,
-//         J: Iterator<Item = Self::Item>,
-//     {
-//         self.merge_by(other, |a, b| *b < *a)
-//     }
-// }
-
-// impl<I: Iterator> ItertoolsPlus for I {}
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     #[test]
-//     fn test_merge_bigger0() {
-//         let lhs = vec![10, 8, 7, 5, 1];
-//         let rhs = vec![10, 9, 7, 2, 1];
-//         let merged1 = merge_bigger0(lhs.iter(), rhs.iter());
-//         let merged2: Vec<i32> = merged1.copied().collect();
-//         println!("{merged2:?}");
-//         assert_eq!(merged2, vec![10, 10, 9, 8, 7, 7, 5, 2, 1, 1]);
-
-//         let merged1 = lhs.iter().merge_bigger(rhs.iter());
-//         let merged2: Vec<i32> = merged1.copied().collect();
-//         println!("{merged2:?}");
-//         assert_eq!(merged2, vec![10, 10, 9, 8, 7, 7, 5, 2, 1, 1]);
-//     }
-// }
