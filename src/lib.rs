@@ -370,19 +370,20 @@ where
     BitOrIter::new(lhs.merge_by(rhs, |a, b| a.0 <= b.0))
 }
 
-// impl<I2, T> BitOrIter<I2, T>
-// where
-//     T: Integer + Sized,
-//     I2: Iterator<Item = (T, T)>,
-// {
-//     fn new2<I0, I1>(lhs: I0, rhs: I1) -> BitOrIter<T, MergeBy<Self, J, fn(&T, &T) -> bool>>
-//     where
-//         I0: Iterator<Item = (T, T)>,
-//         I1: Iterator<Item = (T, T)>,
-//     {
-//         new_bit_or_iter(lhs, rhs)
-//     }
+// fn sorter<T: Integer>(a: &(T, T), b: &(T, T)) -> bool {
+//     a.0 <= b.0
 // }
+
+impl<T, I0, I1> BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>>
+where
+    T: Integer,
+    I0: Iterator<Item = (T, T)>,
+    I1: Iterator<Item = (T, T)>,
+{
+    fn new2(lhs: I0, rhs: I1) -> BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>> {
+        new_bitor_iter(lhs, rhs)
+    }
+}
 
 // impl<T, I0, I1, F> BitOrIter<T, MergeBy<I0, I1, F>>
 // where
@@ -458,7 +459,7 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
         // cmk00
         let lhs = self.ranges();
         let rhs = rhs.ranges();
-        let bitor_iter = new_bitor_iter(lhs, rhs);
+        let bitor_iter = BitOrIter::new2(lhs, rhs);
         RangeSetInt::from_sorted_distinct_iter(bitor_iter)
     }
 }
@@ -585,7 +586,7 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([2, 3]));
     /// ```
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        let bitor_iter = new_bitor_iter(self.ranges_not(), rhs.ranges_not());
+        let bitor_iter = BitOrIter::new2(self.ranges_not(), rhs.ranges_not());
         let not_bitor_iter = NotIter::new(bitor_iter);
         RangeSetInt::from_sorted_distinct_iter(not_bitor_iter)
     }
