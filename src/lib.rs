@@ -161,11 +161,11 @@ impl<T: Integer> RangeSetInt<T> {
         // !!!cmk0 can we do this without TupleToValuesIter?
     }
 
-    pub fn ranges_not(&self) -> impl Iterator<Item = (T, T)> + '_ {
-        NotIter::new(TupleToValuesIter {
-            inner_iter: self.items.iter(),
-        })
-    }
+    // pub fn ranges_not(&self) -> impl Iterator<Item = (T, T)> + '_ {
+    //     NotIter::new(TupleToValuesIter {
+    //         inner_iter: self.items.iter(),
+    //     })
+    // }
 
     pub fn clear(&mut self) {
         self.items.clear();
@@ -399,6 +399,14 @@ pub trait ItertoolsPlus: Iterator {
     {
         BitOrIter::new(self, other)
     }
+
+    fn not<T>(self) -> NotIter<T, Self>
+    where
+        T: Integer,
+        Self: Iterator<Item = (T, T)> + Sized,
+    {
+        NotIter::new(self)
+    }
 }
 
 impl<I: Iterator> ItertoolsPlus for I {}
@@ -479,7 +487,7 @@ impl<T: Integer> BitOr<&RangeSetInt<T>> for &RangeSetInt<T> {
     }
 }
 
-struct NotIter<T, I>
+pub struct NotIter<T, I>
 where
     T: Integer,
     I: Iterator<Item = (T, T)>,
@@ -502,6 +510,8 @@ where
         }
     }
 }
+
+// cmk0 remove range_not() because can use range().not()
 
 // !!!cmk0 create coverage tests
 impl<T, I> Iterator for NotIter<T, I>
@@ -557,7 +567,7 @@ impl<T: Integer> Not for &RangeSetInt<T> {
     /// assert_eq!(result.to_string(), "-128..=0,4..=127");
     /// ```
     fn not(self) -> RangeSetInt<T> {
-        RangeSetInt::from_sorted_distinct_iter(self.ranges_not())
+        RangeSetInt::from_sorted_distinct_iter(self.ranges().not())
     }
 }
 
@@ -601,9 +611,8 @@ impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// assert_eq!(result, RangeSetInt::from([2, 3]));
     /// ```
     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        RangeSetInt::from_sorted_distinct_iter(NotIter::new(
-            self.ranges_not().bitor(rhs.ranges_not()),
-        ))
+        // cmk00 - also merge and not and xor, etc
+        RangeSetInt::from_sorted_distinct_iter(self.ranges().not().bitor(rhs.ranges().not()).not())
     }
 }
 
