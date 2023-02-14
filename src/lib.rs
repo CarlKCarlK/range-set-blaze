@@ -20,6 +20,7 @@
 
 mod merger;
 mod safe_subtract;
+mod tests;
 
 use itertools::Itertools;
 use itertools::MergeBy;
@@ -392,17 +393,18 @@ pub trait ItertoolsPlus: Iterator {
 }
 
 // !!!cmk00 allow rhs to be of a different type
-impl<T: Integer> BitOr for dyn ItertoolsPlus<Item = (T, T)>
-where
-    Self: Sized,
-{
-    type Output = BitOrIterOutput<T, Self, Self>;
+// !!!cmk dyn????
+// impl<T: Integer> BitOr for dyn ItertoolsPlus<Item = (T, T)>
+// where
+//     Self: Sized,
+// {
+//     type Output = BitOrIterOutput<T, Self, Self>;
 
-    fn bitor(self, rhs: Self) -> Self::Output {
-        let result = BitOrIter::new(self, rhs);
-        result
-    }
-}
+//     fn bitor(self, rhs: Self) -> Self::Output {
+//         let result = BitOrIter::new(self, rhs);
+//         result
+//     }
+// }
 
 impl<I: Iterator> ItertoolsPlus for I {}
 
