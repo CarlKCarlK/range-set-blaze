@@ -719,10 +719,13 @@ impl<T: Integer> BitXor<&RangeSetInt<T>> for &RangeSetInt<T> {
     /// let result = &a ^ &b;
     /// assert_eq!(result, RangeSetInt::from([1, 4]));
     /// ```
+    // cmk00 replace with iterator version
     fn bitxor(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
-        let mut a = self - rhs;
-        a |= &(rhs - self);
-        a
+        RangeSetInt::from_sorted_distinct_iter(
+            self.ranges()
+                .sub(rhs.ranges())
+                .bitor(rhs.ranges().sub(self.ranges())),
+        )
     }
 }
 
@@ -741,6 +744,7 @@ impl<T: Integer> SubAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     /// assert_eq!(a, RangeSetInt::from([1]));
     /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
     /// ```
+    // cmk00 if any of these do copies, replace with a more efficient implementation
     fn sub_assign(&mut self, rhs: &Self) {
         *self &= &(!rhs);
     }
