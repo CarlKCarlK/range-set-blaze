@@ -679,22 +679,6 @@ fn iters() {
 }
 
 #[test]
-fn multi_op() {
-    let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    let b = RangeSetInt::<u8>::from("1..=6,18..=29");
-    let c = RangeSetInt::<u8>::from("38..=42");
-    // !!!!cmk00 problems   these should work d= a|b; d= a|b|c; d=&a|&b|&c;
-    let d = &(&a | &b) | &c;
-    println!("{d}");
-    let d = a | b | &c;
-    println!("{d}");
-    let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    let b = RangeSetInt::<u8>::from("1..=6,18..=29");
-    let d = &a | b;
-    println!("{d}");
-}
-
-#[test]
 fn missing_doctest_ops() {
     // note that may be borrowed or owned in any combination.
 
@@ -739,4 +723,26 @@ fn missing_doctest_ops() {
 
     let result = a - b;
     assert_eq!(result, RangeSetInt::from([1]));
+}
+
+#[test]
+fn multi_op() {
+    let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    let b = RangeSetInt::<u8>::from("5..=13,18..=29");
+    let c = RangeSetInt::<u8>::from("38..=42");
+    // !!!!cmk00 problems   these should work d= a|b; d= a|b|c; d=&a|&b|&c;
+    let d = &(&a | &b) | &c;
+    println!("{d}");
+    let d = a | b | &c;
+    println!("{d}");
+
+    let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    let b = RangeSetInt::<u8>::from("5..=13,18..=29");
+    let c = RangeSetInt::<u8>::from("38..=42");
+
+    let d = RangeSetInt::union([a, b, c]);
+    println!("{d}");
+    assert_eq!(d, RangeSetInt::from("1..=15,18..=29,38..=42"));
+
+    assert_eq!(!RangeSetInt::<u8>::union([]), RangeSetInt::from("0..=255"));
 }

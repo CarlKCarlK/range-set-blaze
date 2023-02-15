@@ -38,6 +38,9 @@ use std::ops::{BitOrAssign, Sub};
 use std::str::FromStr;
 use trait_set::trait_set;
 
+// cmk rule: Support Send and Sync (what about Clone (Copy?) and ExactSizeIterator?)
+// cmk rule: Use trait_set
+
 trait_set! {
     pub trait Integer =
     num_integer::Integer
@@ -81,6 +84,7 @@ pub fn fmt<T: Integer>(items: &BTreeMap<T, T>) -> String {
 }
 
 // !!!cmk can I use a Rust range?
+// !!!cmk0 could it use the sorted ranges and automatically convert from/to RangeIntSet at the end?
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RangeSetInt<T: Integer> {
@@ -145,28 +149,18 @@ impl<T: Integer> RangeSetInt<T> {
         RangeSetInt::<T> { items, len }
     }
 }
+
+// !!!cmk0 support iterator instead of slices?
 impl<T: Integer> RangeSetInt<T> {
-    pub fn new() -> RangeSetInt<T> {
-        RangeSetInt {
-            items: BTreeMap::new(),
-            len: <T as SafeSubtract>::Output::zero(),
-        }
-    }
-
-    // !!!cmk0 add .map(|(start, stop)| (*start, *stop)) to ranges()?
-    pub fn ranges(
-        &self,
-    ) -> impl Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)> + Clone + '_ {
-        self.items.iter().map(|(start, stop)| (*start, *stop))
-    }
-
-    pub fn clear(&mut self) {
-        self.items.clear();
-        self.len = <T as SafeSubtract>::Output::zero();
-    }
-
-    pub fn len(&self) -> <T as SafeSubtract>::Output {
-        self.len.clone()
+    pub fn union<U: AsRef<[RangeSetInt<T>]>>(slice: U) -> Self {
+        let slice = slice.as_ref();
+        let ranges_iter = slice.iter().map(|x| x.ranges());
+        let merged_ranges = ranges_iter.kmerge_by(|a, b| a.0 < b.0);
+        let bit_or_iter = BitOrIter {
+            merged_ranges,
+            range: None,
+        };
+        RangeSetInt::from_sorted_distinct_iter(bit_or_iter)
     }
 
     /// !!! cmk understand the 'where for'
@@ -180,10 +174,6 @@ impl<T: Integer> RangeSetInt<T> {
             .fold(<T as SafeSubtract>::Output::zero(), |acc, (start, stop)| {
                 acc + T::safe_subtract_inclusive(*stop, *start)
             })
-    }
-
-    pub fn insert(&mut self, item: T) {
-        self.internal_add(item, item);
     }
 
     /// Moves all elements from `other` into `self`, leaving `other` empty.
@@ -214,6 +204,11 @@ impl<T: Integer> RangeSetInt<T> {
         other.clear();
     }
 
+    pub fn clear(&mut self) {
+        self.items.clear();
+        self.len = <T as SafeSubtract>::Output::zero();
+    }
+
     /// Returns `true` if the set contains an element equal to the value.
     ///
     /// # Examples
@@ -230,6 +225,37 @@ impl<T: Integer> RangeSetInt<T> {
             .range(..=value)
             .next_back()
             .map_or(false, |(_, stop)| value <= *stop)
+    }
+
+    fn delete_extra(&mut self, start: T, stop: T) {
+        let mut after = self.items.range_mut(start..);
+        let (start_after, stop_after) = after.next().unwrap(); // there will always be a next
+        debug_assert!(start == *start_after && stop == *stop_after); // real assert
+                                                                     // !!!cmk would be nice to have a delete_range function
+        let mut stop_new = stop;
+        let delete_list = after
+            .map_while(|(start_delete, stop_delete)| {
+                // must check this in two parts to avoid overflow
+                if *start_delete <= stop || *start_delete <= stop + T::one() {
+                    stop_new = max(stop_new, *stop_delete);
+                    self.len -= T::safe_subtract_inclusive(*stop_delete, *start_delete);
+                    Some(*start_delete)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        if stop_new > stop {
+            self.len += T::safe_subtract(stop_new, stop);
+            *stop_after = stop_new;
+        }
+        for start in delete_list {
+            self.items.remove(&start);
+        }
+    }
+
+    pub fn insert(&mut self, item: T) {
+        self.internal_add(item, item);
     }
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
@@ -263,31 +289,22 @@ impl<T: Integer> RangeSetInt<T> {
         self.len += T::safe_subtract_inclusive(stop, start);
     }
 
-    fn delete_extra(&mut self, start: T, stop: T) {
-        let mut after = self.items.range_mut(start..);
-        let (start_after, stop_after) = after.next().unwrap(); // there will always be a next
-        debug_assert!(start == *start_after && stop == *stop_after); // real assert
-                                                                     // !!!cmk would be nice to have a delete_range function
-        let mut stop_new = stop;
-        let delete_list = after
-            .map_while(|(start_delete, stop_delete)| {
-                // must check this in two parts to avoid overflow
-                if *start_delete <= stop || *start_delete <= stop + T::one() {
-                    stop_new = max(stop_new, *stop_delete);
-                    self.len -= T::safe_subtract_inclusive(*stop_delete, *start_delete);
-                    Some(*start_delete)
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-        if stop_new > stop {
-            self.len += T::safe_subtract(stop_new, stop);
-            *stop_after = stop_new;
+    pub fn len(&self) -> <T as SafeSubtract>::Output {
+        self.len.clone()
+    }
+
+    pub fn new() -> RangeSetInt<T> {
+        RangeSetInt {
+            items: BTreeMap::new(),
+            len: <T as SafeSubtract>::Output::zero(),
         }
-        for start in delete_list {
-            self.items.remove(&start);
-        }
+    }
+
+    // !!!cmk0 add .map(|(start, stop)| (*start, *stop)) to ranges()?
+    pub fn ranges(
+        &self,
+    ) -> impl Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)> + Clone + '_ {
+        self.items.iter().map(|(start, stop)| (*start, *stop))
     }
 
     pub fn ranges_len(&self) -> usize {
@@ -349,6 +366,7 @@ where
     I0: Iterator<Item = (T, T)> + std::clone::Clone,
     I1: Iterator<Item = (T, T)> + Clone,
 {
+    // !!!cmk0 understand this better
     fn new(lhs: I0, rhs: I1) -> BitOrIterOutput<T, I0, I1> {
         Self {
             merged_ranges: lhs.merge_by(rhs, |a, b| a.0 <= b.0),
