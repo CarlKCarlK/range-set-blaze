@@ -767,6 +767,11 @@ fn multi_op() {
 // cmk00 need to be able to do a|b|c
 // cmk00 type are very hard to read
 
+// https://stackoverflow.com/questions/21747136/how-do-i-print-in-rust-the-type-of-a-variable/58119924#58119924
+fn print_type_of<T>(_: &T) {
+    println!("{}", std::any::type_name::<T>())
+}
+
 #[test]
 fn custom_multi() {
     let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
@@ -780,12 +785,28 @@ fn custom_multi() {
 
     // cmk0 will runtime checks catch you trying to chain when you shouldn't? Can we stop this?
     let input_iter = list_iter(&b, &c);
+    print_type_of(&input_iter);
     let union_stream = input_iter.kmerge_by(|pair0, pair1| pair0.0 < pair1.0);
+    print_type_of(&union_stream);
+    //     let union_stream = kmerge2(input_iter);
 
-    let a_less = a.ranges().sub(union_stream);
-    let d = RangeSetInt::from_sorted_distinct_iter(a_less);
-    println!("{d}");
+    //     let a_less = a.ranges().sub(union_stream);
+    //     let d = RangeSetInt::from_sorted_distinct_iter(a_less);
+    //     println!("{d}");
 }
+
+// fn sorter<T: Integer>(pair0: &(T, T), pair1: &(T, T)) -> bool {
+//     pair0.0 < pair1.0
+// }
+// fn kmerge2<T, I0, I1>(input_iter: I0) -> KMergeBy<I1, fn(&(T, T), &(T, T)) -> bool>
+// where
+//     I0: Iterator<Item = I1>,
+//     I1: Iterator<Item = (T, T)> + Clone,
+//     T: Integer,
+// {
+//     let merged = input_iter.kmerge_by(|pair0, pair1| pair0.0 < pair1.0);
+//     merged
+// }
 
 fn list_iter<'a, T: Integer + 'a>(
     b: &'a RangeSetInt<T>,
