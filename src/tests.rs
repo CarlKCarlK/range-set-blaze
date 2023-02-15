@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use std::collections::BTreeSet; // , time::Instant
+use std::{collections::BTreeSet, iter}; // , time::Instant
 
 use super::*;
 // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
@@ -784,29 +784,8 @@ fn custom_multi() {
     println!("{d}");
 
     // cmk0 will runtime checks catch you trying to chain when you shouldn't? Can we stop this?
-    let input_iter = list_iter(&b, &c);
-    print_type_of(&input_iter);
-    let union_stream = input_iter.kmerge();
+    let union_stream = vec![b.ranges(), c.ranges()].into_iter().kmerge();
     let a_less = a.ranges().sub(union_stream);
     let d = RangeSetInt::from_sorted_distinct_iter(a_less);
     println!("{d}");
 }
-
-fn list_iter<'a, T: Integer + 'a>(
-    b: &'a RangeSetInt<T>,
-    c: &'a RangeSetInt<T>,
-) -> impl Iterator<Item = impl Iterator<Item = (T, T)> + Clone + 'a> + 'a {
-    let input_iter = [b.ranges(), c.ranges()].into_iter();
-    input_iter
-}
-
-// fn union_x<T, I>(b: RangeSetInt<T>, c: RangeSetInt<T>) -> KMergeBy<I, fn(&(T, T), &(T, T)) -> bool>
-// where
-//     T: Integer,
-//     I: Iterator<Item = Iterator<Item = (T, T)>>,
-// {
-//     let union_stream = [b.ranges(), c.ranges()]
-//         .into_iter()
-//         .kmerge_by(|pair0, pair1| pair0.0 < pair1.0);
-//     union_stream
-// }
