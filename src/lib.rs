@@ -33,6 +33,7 @@ use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
+use sorted_iter::assume::AssumeSortedByKeyExt;
 use sorted_iter::sorted_pair_iterator::SortedByKey;
 use std::cmp::max;
 use std::collections::btree_map;
@@ -161,7 +162,9 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn union<U: AsRef<[RangeSetInt<T>]>>(slice: U) -> Self {
         let slice = slice.as_ref();
         let ranges_iter = slice.iter().map(|x| x.ranges());
-        let merged_ranges = ranges_iter.kmerge_by(|a, b| a.0 < b.0);
+        let merged_ranges = ranges_iter
+            .kmerge_by(|a, b| a.0 < b.0)
+            .assume_sorted_by_key();
         let bit_or_iter = BitOrIter {
             merged_ranges,
             range: None,
@@ -172,7 +175,9 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn intersection<U: AsRef<[RangeSetInt<T>]>>(slice: U) -> Self {
         let slice = slice.as_ref();
         let not_ranges_iter = slice.iter().map(|x| x.ranges().not());
-        let merged_ranges = not_ranges_iter.kmerge_by(|a, b| a.0 < b.0);
+        let merged_ranges = not_ranges_iter
+            .kmerge_by(|a, b| a.0 < b.0)
+            .assume_sorted_by_key();
         let bit_or_iter = BitOrIter {
             merged_ranges,
             range: None,
@@ -401,7 +406,9 @@ pub type KMergeByRanges<T, I> = KMergeBy<I, fn(&(T, T), &(T, T)) -> bool>;
 pub type BitAndIter<T, I0, I1> = NotIter<T, BitOrOfNots<T, I0, I1>>;
 pub type BitSubIter<T, I0, I1> = BitAndIter<T, I0, NotIter<T, I1>>;
 pub type BitOrOfNots<T, I0, I1> = BitOrIterOfMergeBy<T, NotIter<T, I0>, NotIter<T, I1>>;
-// pub type KMergeByRanges<T, I> = KMergeBy<I, fn(&(T, T), &(T, T)) -> bool>;
+
+impl<T: Integer, I: Clone + Iterator<Item = (T, T)>> SortedByKey for BitOrIter<T, I> {}
+impl<T: Integer, I: Clone + Iterator<Item = (T, T)>> SortedByKey for NotIter<T, I> {}
 
 impl<T, I0, I1> BitOrIterOfMergeBy<T, I0, I1>
 where
@@ -433,7 +440,7 @@ pub trait ItertoolsPlus: Iterator + Clone {
     where
         T: Integer,
         Self: Iterator<Item = (T, T)> + Sized,
-        J: Iterator<Item = Self::Item> + Clone,
+        J: Iterator<Item = Self::Item> + Clone + SortedByKey,
     {
         BitOrIter::new(self, other)
     }
@@ -441,8 +448,8 @@ pub trait ItertoolsPlus: Iterator + Clone {
     fn bitand<T, J>(self, other: J) -> BitAndIter<T, Self, J>
     where
         T: Integer,
-        Self: Iterator<Item = (T, T)> + Sized,
-        J: Iterator<Item = Self::Item> + Clone,
+        Self: Iterator<Item = (T, T)> + Sized + SortedByKey,
+        J: Iterator<Item = Self::Item> + Clone + SortedByKey,
     {
         self.not().bitor(other.not()).not()
     }
@@ -450,8 +457,8 @@ pub trait ItertoolsPlus: Iterator + Clone {
     fn sub<T, J>(self, other: J) -> BitSubIter<T, Self, J>
     where
         T: Integer,
-        Self: Iterator<Item = (T, T)> + Sized,
-        J: Iterator<Item = Self::Item> + Clone,
+        Self: Iterator<Item = (T, T)> + Sized + SortedByKey,
+        J: Iterator<Item = Self::Item> + Clone + SortedByKey,
     {
         self.bitand(other.not())
     }
@@ -459,7 +466,7 @@ pub trait ItertoolsPlus: Iterator + Clone {
     fn not<T>(self) -> NotIter<T, Self>
     where
         T: Integer,
-        Self: Iterator<Item = (T, T)> + Sized,
+        Self: Iterator<Item = (T, T)> + Sized + SortedByKey,
     {
         NotIter::new(self)
     }
@@ -470,8 +477,8 @@ pub trait ItertoolsPlus: Iterator + Clone {
     ) -> BitOrIterOfMergeBy<T, BitSubIter<T, Self, J>, BitSubIter<T, J, Self>>
     where
         T: Integer,
-        Self: Iterator<Item = (T, T)> + Sized,
-        J: Iterator<Item = Self::Item> + Clone,
+        Self: Iterator<Item = (T, T)> + Sized + SortedByKey,
+        J: Iterator<Item = Self::Item> + Clone + SortedByKey,
     {
         self.clone().sub(other.clone()).bitor(other.sub(self))
     }

@@ -784,7 +784,10 @@ fn custom_multi() {
     println!("{d}");
 
     // cmk0 will runtime checks catch you trying to chain when you shouldn't? Can we stop this?
-    let union_stream = vec![b.ranges(), c.ranges()].into_iter().kmerge();
+    let union_stream = vec![b.ranges(), c.ranges()]
+        .into_iter()
+        .kmerge()
+        .assume_sorted_by_key();
     let a_less = a.ranges().sub(union_stream);
     let d = RangeSetInt::from_sorted_distinct_iter(a_less);
     println!("{d}");
