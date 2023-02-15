@@ -696,16 +696,47 @@ fn multi_op() {
 
 #[test]
 fn missing_doctest_ops() {
-    // Returns the complement of `self` as a new `RangeSetInt`.
-    //
-    // # Examples
-    //
-    // use range_set_int::RangeSetInt;
+    // note that may be borrowed or owned in any combination.
 
+    // Returns the union of `self` and `rhs` as a new `RangeSetInt`.
+    let a = RangeSetInt::from([1, 2, 3]);
+    let b = RangeSetInt::from([3, 4, 5]);
+
+    let result = &a | &b;
+    assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+    let result = a | &b;
+    assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+
+    // Returns the complement of `self` as a new `RangeSetInt`.
     let a = RangeSetInt::<i8>::from([1, 2, 3]);
 
     let result = !&a;
     assert_eq!(result.to_string(), "-128..=0,4..=127");
     let result = !a;
     assert_eq!(result.to_string(), "-128..=0,4..=127");
+
+    // Returns the intersection of `self` and `rhs` as a new `RangeSetInt<T>`.
+
+    let a = RangeSetInt::from([1, 2, 3]);
+    let b = RangeSetInt::from([2, 3, 4]);
+
+    let result = a & &b;
+    assert_eq!(result, RangeSetInt::from([2, 3]));
+    let a = RangeSetInt::from([1, 2, 3]);
+    let result = a & b;
+    assert_eq!(result, RangeSetInt::from([2, 3]));
+
+    // Returns the symmetric difference of `self` and `rhs` as a new `RangeSetInt<T>`.
+    let a = RangeSetInt::from([1, 2, 3]);
+    let b = RangeSetInt::from([2, 3, 4]);
+
+    let result = a ^ b;
+    assert_eq!(result, RangeSetInt::from([1, 4]));
+
+    // Returns the set difference of `self` and `rhs` as a new `RangeSetInt<T>`.
+    let a = RangeSetInt::from([1, 2, 3]);
+    let b = RangeSetInt::from([2, 3, 4]);
+
+    let result = a - b;
+    assert_eq!(result, RangeSetInt::from([1]));
 }
