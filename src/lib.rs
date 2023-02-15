@@ -16,6 +16,7 @@
 // https://lib.rs/crates/ranges
 // https://lib.rs/crates/nonoverlapping_interval_tree
 
+// !!!cmk0 how could you write your own subtraction that subtracted many sets from one set via iterators?
 // !!!cmk0 sort by start then by larger stop
 
 mod merger;
@@ -152,6 +153,7 @@ impl<T: Integer> RangeSetInt<T> {
 
 // !!!cmk0 support iterator instead of slices?
 impl<T: Integer> RangeSetInt<T> {
+    // !!!cmk0 should part of this be a method on BitOrIter?
     pub fn union<U: AsRef<[RangeSetInt<T>]>>(slice: U) -> Self {
         let slice = slice.as_ref();
         let ranges_iter = slice.iter().map(|x| x.ranges());
@@ -161,6 +163,17 @@ impl<T: Integer> RangeSetInt<T> {
             range: None,
         };
         RangeSetInt::from_sorted_distinct_iter(bit_or_iter)
+    }
+
+    pub fn intersection<U: AsRef<[RangeSetInt<T>]>>(slice: U) -> Self {
+        let slice = slice.as_ref();
+        let not_ranges_iter = slice.iter().map(|x| x.ranges().not());
+        let merged_ranges = not_ranges_iter.kmerge_by(|a, b| a.0 < b.0);
+        let bit_or_iter = BitOrIter {
+            merged_ranges,
+            range: None,
+        };
+        RangeSetInt::from_sorted_distinct_iter(bit_or_iter.not())
     }
 
     /// !!! cmk understand the 'where for'

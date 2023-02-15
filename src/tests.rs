@@ -745,4 +745,17 @@ fn multi_op() {
     assert_eq!(d, RangeSetInt::from("1..=15,18..=29,38..=42"));
 
     assert_eq!(!RangeSetInt::<u8>::union([]), RangeSetInt::from("0..=255"));
+
+    let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    let b = RangeSetInt::<u8>::from("5..=13,18..=29");
+    let c = RangeSetInt::<u8>::from("1..=42");
+
+    let d = RangeSetInt::intersection([a, b, c]);
+    println!("{d}");
+    assert_eq!(d, RangeSetInt::from("5..=6,8..=9,11..=13"));
+
+    assert_eq!(
+        RangeSetInt::<u8>::intersection([]),
+        RangeSetInt::from("0..=255")
+    );
 }
