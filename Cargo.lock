@@ -432,6 +432,7 @@ dependencies = [
  "num-integer",
  "num-traits",
  "rand",
+ "sorted-iter",
  "syntactic-for",
  "thousands",
  "trait-set",
@@ -525,6 +526,12 @@ dependencies = [
  "ryu",
  "serde",
 ]
+
+[[package]]
+name = "sorted-iter"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f1341053f34bb13b5e9590afb7d94b48b48d4b87467ec28e3c238693bb553de"
 
 [[package]]
 name = "syn"

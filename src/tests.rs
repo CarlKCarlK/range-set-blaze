@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use std::{collections::BTreeSet, iter}; // , time::Instant
+use std::collections::BTreeSet; // , time::Instant
 
 use super::*;
 // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
@@ -768,9 +768,9 @@ fn multi_op() {
 // cmk00 type are very hard to read
 
 // https://stackoverflow.com/questions/21747136/how-do-i-print-in-rust-the-type-of-a-variable/58119924#58119924
-fn print_type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>())
-}
+// fn print_type_of<T>(_: &T) {
+//     println!("{}", std::any::type_name::<T>())
+// }
 
 #[test]
 fn custom_multi() {

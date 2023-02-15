@@ -1,6 +1,7 @@
 // https://docs.rs/range_bounds_map/latest/range_bounds_map/range_bounds_set/struct.RangeBoundsSet.html
 // Here are some relevant crates I found whilst searching around the topic area:
 
+// https://crates.io/crates/sorted-iter
 // https://docs.rs/rangemap Very similar to this crate but can only use Ranges and RangeInclusives as keys in it's map and set structs (separately).
 // https://docs.rs/btree-range-map
 // https://docs.rs/ranges Cool library for fully-generic ranges (unlike std::ops ranges), along with a Ranges data structure for storing them (Vec-based unfortunately)
@@ -32,7 +33,9 @@ use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
+use sorted_iter::sorted_pair_iterator::SortedByKey;
 use std::cmp::max;
+use std::collections::btree_map;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
@@ -315,14 +318,37 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     // !!!cmk0 add .map(|(start, stop)| (*start, *stop)) to ranges()?
-    pub fn ranges(
-        &self,
-    ) -> impl Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)> + Clone + '_ {
-        self.items.iter().map(|(start, stop)| (*start, *stop))
+    pub fn ranges(&self) -> Ranges<'_, T>
+// impl Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)> + Clone + '_
+    {
+        let ranges = Ranges {
+            items: self.items.iter(),
+        };
+        ranges
     }
 
     pub fn ranges_len(&self) -> usize {
         self.items.len()
+    }
+}
+
+#[derive(Clone)]
+pub struct Ranges<'a, T: Integer> {
+    items: btree_map::Iter<'a, T, T>,
+}
+
+impl<T: Integer> SortedByKey for Ranges<'_, T> {}
+impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
+    fn len(&self) -> usize {
+        self.items.len()
+    }
+}
+
+impl<'a, T: Integer> Iterator for Ranges<'a, T> {
+    type Item = (T, T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.items.next().map(|(start, stop)| (*start, *stop))
     }
 }
 
