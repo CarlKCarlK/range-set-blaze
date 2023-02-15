@@ -305,7 +305,6 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
 }
 
 // !!!cmk00 what about combos?
-// !!!cmk00 what about not's combos
 impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     /// Returns the union of `self` and `rhs` as a new `RangeSetInt`.
     ///
@@ -338,7 +337,7 @@ where
     range: Option<(T, T)>,
 }
 
-// !!!cmk 0 should I0,I1 be I,J to match itertools?
+// !!!cmk0 should I0,I1 be I,J to match itertools?
 pub type BitOrIterOutput<T, I0, I1> = BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>>;
 pub type BitAndIterOutput<T, I0, I1> =
     NotIter<T, BitOrIterOutput<T, NotIter<T, I0>, NotIter<T, I1>>>;
@@ -506,8 +505,8 @@ where
     }
 }
 
-//         // cmk00 - also merge as iterator method
-//         // cmk can we define ! & etc on iterators?
+// cmk00 - also merge as iterator method
+// cmk can we define ! & etc on iterators?
 
 gen_ops_ex!(
     <T>;
