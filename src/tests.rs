@@ -790,10 +790,8 @@ fn custom_multi() {
 fn list_iter<'a, T: Integer + 'a>(
     b: &'a RangeSetInt<T>,
     c: &'a RangeSetInt<T>,
-) -> std::array::IntoIter<
-    impl Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)> + Clone + 'a,
-    2,
-> {
+) -> impl Iterator<Item = impl Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)> + Clone + 'a>
+       + 'a {
     let input_iter = [b.ranges(), c.ranges()].into_iter();
     input_iter
 }
