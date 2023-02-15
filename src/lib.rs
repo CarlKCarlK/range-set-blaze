@@ -430,7 +430,7 @@ pub trait ItertoolsPlus: Iterator + Clone {
     fn kmerge<T, I1>(input_iter: Self) -> KMergeByRanges<T, I1>
     where
         Self: Iterator<Item = I1>,
-        I1: Iterator<Item = (T, T)> + Clone,
+        I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
         T: Integer,
     {
         input_iter.kmerge_by(|pair0, pair1| pair0.0 < pair1.0)
