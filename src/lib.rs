@@ -36,7 +36,7 @@ use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
 use std::ops::Add;
-use std::ops::{BitOrAssign, Not, Sub};
+use std::ops::{BitOrAssign, Sub};
 use std::str::FromStr;
 use trait_set::trait_set;
 
@@ -594,46 +594,6 @@ where
     }
 }
 
-impl<T: Integer> Not for &RangeSetInt<T> {
-    type Output = RangeSetInt<T>;
-
-    /// Returns the complement of `self` as a new `RangeSetInt`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_int::RangeSetInt;
-    ///
-    /// let a = RangeSetInt::<i8>::from([1, 2, 3]);
-    ///
-    /// let result = ! &a;
-    /// assert_eq!(result.to_string(), "-128..=0,4..=127");
-    /// ```
-    fn not(self) -> RangeSetInt<T> {
-        RangeSetInt::from_sorted_distinct_iter(self.ranges().not())
-    }
-}
-
-impl<T: Integer> Not for RangeSetInt<T> {
-    type Output = RangeSetInt<T>;
-
-    /// Returns the complement of `self` as a new `RangeSetInt`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_int::RangeSetInt;
-    ///
-    /// let a = RangeSetInt::<i8>::from([1, 2, 3]);
-    ///
-    /// let result = !a;
-    /// assert_eq!(result.to_string(), "-128..=0,4..=127");
-    /// ```
-    fn not(self) -> RangeSetInt<T> {
-        !&self
-    }
-}
-
 //         // cmk00 - also merge as iterator method
 //         // cmk can we define ! & etc on iterators?
 
@@ -671,6 +631,15 @@ gen_ops_ex!(
     where T: Integer //Where clause for all impl's
 );
 
+gen_ops_ex!(
+    <T>;
+    types ref RangeSetInt<T> => RangeSetInt<T>;
+    for ! call |a: &RangeSetInt<T>| {
+        RangeSetInt::from_sorted_distinct_iter(a.ranges().not())
+    };
+
+    where T: Integer //Where clause for all impl's
+);
 // gen_ops_ex!(
 //     <T>;
 //     types RangeSetInt<T>, RangeSetInt<T> => RangeSetInt<T>;

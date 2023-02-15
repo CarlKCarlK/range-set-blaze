@@ -693,3 +693,19 @@ fn multi_op() {
     let d = &a | b;
     println!("{d}");
 }
+
+#[test]
+fn missing_doctest_ops() {
+    // Returns the complement of `self` as a new `RangeSetInt`.
+    //
+    // # Examples
+    //
+    // use range_set_int::RangeSetInt;
+
+    let a = RangeSetInt::<i8>::from([1, 2, 3]);
+
+    let result = !&a;
+    assert_eq!(result.to_string(), "-128..=0,4..=127");
+    let result = !a;
+    assert_eq!(result.to_string(), "-128..=0,4..=127");
+}
