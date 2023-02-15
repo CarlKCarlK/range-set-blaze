@@ -393,6 +393,16 @@ where
 }
 
 pub trait ItertoolsPlus: Iterator + Clone {
+    // !!!cmk0 better name?
+    fn kmerge<T, I1>(input_iter: Self) -> KMergeByRanges<T, I1>
+    where
+        Self: Iterator<Item = I1>,
+        I1: Iterator<Item = (T, T)> + Clone,
+        T: Integer,
+    {
+        input_iter.kmerge_by(|pair0, pair1| pair0.0 < pair1.0)
+    }
+
     fn bitor<T, J>(self, other: J) -> BitOrIterOfMergeBy<T, Self, J>
     where
         T: Integer,
