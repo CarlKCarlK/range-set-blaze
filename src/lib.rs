@@ -25,6 +25,7 @@ mod tests;
 
 use gen_ops::gen_ops_ex;
 use itertools::Itertools;
+use itertools::KMergeBy;
 use itertools::MergeBy;
 use merger::Merger;
 use num_traits::Zero;
@@ -368,19 +369,21 @@ where
 }
 
 // !!!cmk0 should I0,I1 be I,J to match itertools?
-pub type BitOrIterOutput<T, I0, I1> = BitOrIter<T, MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>>;
-pub type BitAndIterOutput<T, I0, I1> =
-    NotIter<T, BitOrIterOutput<T, NotIter<T, I0>, NotIter<T, I1>>>;
-pub type BitSubIterOutput<T, I0, I1> = BitAndIterOutput<T, I0, NotIter<T, I1>>;
+pub type BitOrIterOfMergeBy<T, I0, I1> = BitOrIter<T, MergeByRanges<T, I0, I1>>;
+pub type MergeByRanges<T, I0, I1> = MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>;
+pub type BitAndIter<T, I0, I1> = NotIter<T, BitOrOfNots<T, I0, I1>>;
+pub type BitSubIter<T, I0, I1> = BitAndIter<T, I0, NotIter<T, I1>>;
+pub type BitOrOfNots<T, I0, I1> = BitOrIterOfMergeBy<T, NotIter<T, I0>, NotIter<T, I1>>;
+// pub type KMergeByRanges<T, I> = KMergeBy<I, fn(&(T, T), &(T, T)) -> bool>;
 
-impl<T, I0, I1> BitOrIterOutput<T, I0, I1>
+impl<T, I0, I1> BitOrIterOfMergeBy<T, I0, I1>
 where
     T: Integer,
     I0: Iterator<Item = (T, T)> + std::clone::Clone,
     I1: Iterator<Item = (T, T)> + Clone,
 {
     // !!!cmk0 understand this better
-    fn new(lhs: I0, rhs: I1) -> BitOrIterOutput<T, I0, I1> {
+    fn new(lhs: I0, rhs: I1) -> BitOrIterOfMergeBy<T, I0, I1> {
         Self {
             merged_ranges: lhs.merge_by(rhs, |a, b| a.0 <= b.0),
             range: None,
@@ -389,7 +392,7 @@ where
 }
 
 pub trait ItertoolsPlus: Iterator + Clone {
-    fn bitor<T, J>(self, other: J) -> BitOrIterOutput<T, Self, J>
+    fn bitor<T, J>(self, other: J) -> BitOrIterOfMergeBy<T, Self, J>
     where
         T: Integer,
         Self: Iterator<Item = (T, T)> + Sized,
@@ -398,7 +401,7 @@ pub trait ItertoolsPlus: Iterator + Clone {
         BitOrIter::new(self, other)
     }
 
-    fn bitand<T, J>(self, other: J) -> BitAndIterOutput<T, Self, J>
+    fn bitand<T, J>(self, other: J) -> BitAndIter<T, Self, J>
     where
         T: Integer,
         Self: Iterator<Item = (T, T)> + Sized,
@@ -407,7 +410,7 @@ pub trait ItertoolsPlus: Iterator + Clone {
         self.not().bitor(other.not()).not()
     }
 
-    fn sub<T, J>(self, other: J) -> BitSubIterOutput<T, Self, J>
+    fn sub<T, J>(self, other: J) -> BitSubIter<T, Self, J>
     where
         T: Integer,
         Self: Iterator<Item = (T, T)> + Sized,
@@ -427,7 +430,7 @@ pub trait ItertoolsPlus: Iterator + Clone {
     fn bitxor<T, J>(
         self,
         other: J,
-    ) -> BitOrIterOutput<T, BitSubIterOutput<T, Self, J>, BitSubIterOutput<T, J, Self>>
+    ) -> BitOrIterOfMergeBy<T, BitSubIter<T, Self, J>, BitSubIter<T, J, Self>>
     where
         T: Integer,
         Self: Iterator<Item = (T, T)> + Sized,

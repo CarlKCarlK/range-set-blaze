@@ -759,3 +759,52 @@ fn multi_op() {
         RangeSetInt::from("0..=255")
     );
 }
+
+// cmk00 use merge in example
+// cmk00 support 'from' not just 'from_sorted_distinct_iter'
+// cmk00 support 'collect' not just 'from'
+// cmk00 much too easy to make errors -- need types!
+// cmk00 need to be able to do a|b|c
+// cmk00 type are very hard to read
+
+#[test]
+fn custom_multi() {
+    let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    let b = RangeSetInt::<u8>::from("5..=13,18..=29");
+    let c = RangeSetInt::<u8>::from("38..=42");
+
+    let union_stream = b.ranges().bitor(c.ranges());
+    let a_less = a.ranges().sub(union_stream);
+    let d = RangeSetInt::from_sorted_distinct_iter(a_less);
+    println!("{d}");
+
+    // cmk0 will runtime checks catch you trying to chain when you shouldn't? Can we stop this?
+    let input_iter = list_iter(&b, &c);
+    let union_stream = input_iter.kmerge_by(|pair0, pair1| pair0.0 < pair1.0);
+
+    let a_less = a.ranges().sub(union_stream);
+    let d = RangeSetInt::from_sorted_distinct_iter(a_less);
+    println!("{d}");
+}
+
+fn list_iter<'a, T: Integer + 'a>(
+    b: &'a RangeSetInt<T>,
+    c: &'a RangeSetInt<T>,
+) -> std::array::IntoIter<
+    impl Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)> + Clone + 'a,
+    2,
+> {
+    let input_iter = [b.ranges(), c.ranges()].into_iter();
+    input_iter
+}
+
+// fn union_x<T, I>(b: RangeSetInt<T>, c: RangeSetInt<T>) -> KMergeBy<I, fn(&(T, T), &(T, T)) -> bool>
+// where
+//     T: Integer,
+//     I: Iterator<Item = Iterator<Item = (T, T)>>,
+// {
+//     let union_stream = [b.ranges(), c.ranges()]
+//         .into_iter()
+//         .kmerge_by(|pair0, pair1| pair0.0 < pair1.0);
+//     union_stream
+// }

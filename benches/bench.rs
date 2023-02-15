@@ -427,7 +427,7 @@ fn btree_two_sets1(
 //     targets = clumps
 // }
 
-// cmk rule use benchmarking
+// cmk rule use benchmarking -- your random data is important -- automate graphs
 fn k_intersect(c: &mut Criterion) {
     let k = 100;
     let len = 10_000_000;
@@ -481,11 +481,11 @@ fn k_sets(k: u64, range_len: u64, len: u128, coverage_goal: f64) -> Vec<RangeSet
         .collect()
 }
 
-fn btree_k_sets(k: u64, range_len: u64, len: u128, coverage_goal: f64) -> Vec<BTreeSet<u64>> {
-    (0..k)
-        .map(|i| BTreeSet::<u64>::from_iter(MemorylessData::new(i, range_len, len, coverage_goal)))
-        .collect()
-}
+// fn btree_k_sets(k: u64, range_len: u64, len: u128, coverage_goal: f64) -> Vec<BTreeSet<u64>> {
+//     (0..k)
+//         .map(|i| BTreeSet::<u64>::from_iter(MemorylessData::new(i, range_len, len, coverage_goal)))
+//         .collect()
+// }
 
 criterion_group!(
     benches, // insert10,
