@@ -427,10 +427,77 @@ fn btree_two_sets1(
 //     targets = clumps
 // }
 
+// cmk rule use benchmarking
+fn k_intersect(c: &mut Criterion) {
+    let k = 100;
+    let len = 10_000_000;
+    let range_len = 10_000;
+    let coverage_goal = 0.90;
+    let mut group = c.benchmark_group("k_intersect");
+    group.sample_size(10);
+    // group.measurement_time(Duration::from_secs(170));
+    group.bench_function("RangeSetInt intersect", |b| {
+        b.iter_batched(
+            || k_sets(k, range_len, len, coverage_goal),
+            |sets| {
+                let _answer = RangeSetInt::intersection(sets);
+            },
+            BatchSize::SmallInput,
+        );
+    });
+    group.bench_function("RangeSetInt intersect 2-at-a-time", |b| {
+        b.iter_batched(
+            || k_sets(k, range_len, len, coverage_goal),
+            |sets| {
+                // !!!cmk need code for size zero
+                let mut answer = sets[0].clone();
+                for set in sets.iter().skip(1) {
+                    answer = answer & set;
+                }
+            },
+            BatchSize::SmallInput,
+        );
+    });
+    // group.bench_function("BTreeSet intersect 2-at-a-time", |b| {
+    //     b.iter_batched(
+    //         || btree_k_sets(k, range_len, len, coverage_goal),
+    //         |sets| {
+    //             // !!!cmk need code for size zero
+    //             let mut answer = sets[0].clone();
+    //             for set in sets.iter().skip(1) {
+    //                 answer = &answer & set;
+    //             }
+    //         },
+    //         BatchSize::SmallInput,
+    //     );
+    //});
+}
+
+fn k_sets(k: u64, range_len: u64, len: u128, coverage_goal: f64) -> Vec<RangeSetInt<u64>> {
+    (0..k)
+        .map(|i| {
+            RangeSetInt::<u64>::from_iter(MemorylessData::new(i, range_len, len, coverage_goal))
+        })
+        .collect()
+}
+
+fn btree_k_sets(k: u64, range_len: u64, len: u128, coverage_goal: f64) -> Vec<BTreeSet<u64>> {
+    (0..k)
+        .map(|i| BTreeSet::<u64>::from_iter(MemorylessData::new(i, range_len, len, coverage_goal)))
+        .collect()
+}
+
 criterion_group!(
     benches, // insert10,
     // small_random_inserts,
     // big_random_inserts,
-    shuffled, ascending, descending, clumps, bitxor, bitor, bitor1
+    shuffled,
+    ascending,
+    descending,
+    clumps,
+    bitxor,
+    bitor,
+    bitor1,
+    k_intersect
 );
 criterion_main!(benches);
