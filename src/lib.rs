@@ -305,7 +305,8 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     }
 }
 
-// !!!cmk what about combos?
+// !!!cmk00 what about combos?
+// !!!cmk00 what about not's combos
 impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     /// Returns the union of `self` and `rhs` as a new `RangeSetInt`.
     ///
@@ -409,19 +410,6 @@ pub trait ItertoolsPlus: Iterator + Clone {
 
 // !!!cmk00 support multiple inputs to bitor,bitand
 // !!!cmk00 allow rhs to be of a different type
-
-// !!!cmk dyn????
-// impl<T: Integer> BitOr for dyn ItertoolsPlus<Item = (T, T)>
-// where
-//     Self: Sized,
-// {
-//     type Output = BitOrIterOutput<T, Self, Self>;
-
-//     fn bitor(self, rhs: Self) -> Self::Output {
-//         let result = BitOrIter::new(self, rhs);
-//         result
-//     }
-// }
 
 impl<I: Iterator + Clone> ItertoolsPlus for I {}
 
@@ -646,52 +634,27 @@ impl<T: Integer> Not for RangeSetInt<T> {
     }
 }
 
-// impl<T: Integer> BitAndAssign<&RangeSetInt<T>> for RangeSetInt<T> {
-//     /// Returns the intersection of `self` and `rhs` as a cmk `RangeSetInt<T>`.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use range_set_int::RangeSetInt;
-//     ///
-//     /// let mut a = RangeSetInt::from([1, 2, 3]);
-//     /// let b = RangeSetInt::from([2, 3, 4]);
-//     ///
-//     /// a &= &b;
-//     /// assert_eq!(a, RangeSetInt::from([2, 3]));
-//     /// assert_eq!(b, RangeSetInt::from([2, 3, 4]));
-//     /// ```
-//     fn bitand_assign(&mut self, rhs: &Self) {
-//         *self = self.bitand(rhs);
-//     }
-// }
-
-// impl<T: Integer> BitAnd<&RangeSetInt<T>> for &RangeSetInt<T> {
-//     type Output = RangeSetInt<T>;
-
-//     /// Returns the intersection of `self` and `rhs` as a new `RangeSetInt<T>`.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use range_set_int::RangeSetInt;
-//     ///
-//     /// let a = RangeSetInt::from([1, 2, 3]);
-//     /// let b = RangeSetInt::from([2, 3, 4]);
-//     ///
-//     /// let result = &a & &b;
-//     /// assert_eq!(result, RangeSetInt::from([2, 3]));
-//     /// ```
-//     fn bitand(self, rhs: &RangeSetInt<T>) -> RangeSetInt<T> {
 //         // cmk00 - also merge as iterator method
 //         // cmk can we define ! & etc on iterators?
-//         RangeSetInt::from_sorted_distinct_iter(self.ranges().bitand(rhs.ranges()))
-//     }
-// }
 
 gen_ops_ex!(
     <T>;
     types ref RangeSetInt<T>, ref RangeSetInt<T> => RangeSetInt<T>;
+    // Returns the union of `self` and `rhs` as a new `RangeSetInt`.
+    //
+    // # Examples
+    //
+    // ```
+    // use range_set_int::RangeSetInt;
+    //
+    // let a = RangeSetInt::from([1, 2, 3]);
+    // let b = RangeSetInt::from([3, 4, 5]);
+    //
+    // let result = &a | &b;
+    // assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+    // let result = a | b;
+    // assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+    // ```
     for | call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         RangeSetInt::from_sorted_distinct_iter(a.ranges().bitor(b.ranges()))
     };
