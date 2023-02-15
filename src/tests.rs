@@ -786,9 +786,9 @@ fn custom_multi() {
     // cmk0 will runtime checks catch you trying to chain when you shouldn't? Can we stop this?
     let input_iter = list_iter(&b, &c);
     print_type_of(&input_iter);
-    let union_stream = input_iter.kmerge_by(|pair0, pair1| pair0.0 < pair1.0);
-    print_type_of(&union_stream);
-    //     let union_stream = kmerge2(input_iter);
+    // let union_stream = input_iter.kmerge_by(|pair0, pair1| pair0.0 < pair1.0);
+    // print_type_of(&union_stream);
+    let union_stream = kmerge2(input_iter);
 
     //     let a_less = a.ranges().sub(union_stream);
     //     let d = RangeSetInt::from_sorted_distinct_iter(a_less);
@@ -798,15 +798,14 @@ fn custom_multi() {
 // fn sorter<T: Integer>(pair0: &(T, T), pair1: &(T, T)) -> bool {
 //     pair0.0 < pair1.0
 // }
-// fn kmerge2<T, I0, I1>(input_iter: I0) -> KMergeBy<I1, fn(&(T, T), &(T, T)) -> bool>
-// where
-//     I0: Iterator<Item = I1>,
-//     I1: Iterator<Item = (T, T)> + Clone,
-//     T: Integer,
-// {
-//     let merged = input_iter.kmerge_by(|pair0, pair1| pair0.0 < pair1.0);
-//     merged
-// }
+fn kmerge2<T, I0, I1>(input_iter: I0) -> KMergeByRanges<T, I1>
+where
+    I0: Iterator<Item = I1>,
+    I1: Iterator<Item = (T, T)> + Clone,
+    T: Integer,
+{
+    input_iter.kmerge_by(|pair0, pair1| pair0.0 < pair1.0)
+}
 
 fn list_iter<'a, T: Integer + 'a>(
     b: &'a RangeSetInt<T>,

@@ -371,6 +371,7 @@ where
 // !!!cmk0 should I0,I1 be I,J to match itertools?
 pub type BitOrIterOfMergeBy<T, I0, I1> = BitOrIter<T, MergeByRanges<T, I0, I1>>;
 pub type MergeByRanges<T, I0, I1> = MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>;
+pub type KMergeByRanges<T, I> = KMergeBy<I, fn(&(T, T), &(T, T)) -> bool>;
 pub type BitAndIter<T, I0, I1> = NotIter<T, BitOrOfNots<T, I0, I1>>;
 pub type BitSubIter<T, I0, I1> = BitAndIter<T, I0, NotIter<T, I1>>;
 pub type BitOrOfNots<T, I0, I1> = BitOrIterOfMergeBy<T, NotIter<T, I0>, NotIter<T, I1>>;
