@@ -35,7 +35,6 @@ use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
-use sorted_iter::assume::AssumeSortedByKeyExt;
 use sorted_iter::sorted_pair_iterator::SortedByKey;
 use std::cmp::max;
 use std::collections::btree_map;
@@ -158,34 +157,18 @@ impl<T: Integer> RangeSetInt<T> {
     }
 }
 
-// !!!cmk0 support iterator instead of slices?
+// !!!cmk00 support iterator instead of slices?
 impl<T: Integer> RangeSetInt<T> {
     // !!!cmk0 should part of this be a method on BitOrIter?
     pub fn union<U: AsRef<[RangeSetInt<T>]>>(slice: U) -> Self {
-        let slice = slice.as_ref();
-        let ranges_iter = slice.iter().map(|x| x.ranges());
-        let merged_ranges = ranges_iter
-            .kmerge_by(|a, b| a.0 < b.0)
-            .assume_sorted_by_key();
-        let bit_or_iter = BitOrIter {
-            merged_ranges,
-            range: None,
-        };
-        RangeSetInt::from_sorted_distinct_iter(bit_or_iter)
+        RangeSetInt::from_sorted_distinct_iter(slice.as_ref().iter().map(|x| x.ranges()).union())
     }
 
-    // !!!cmk0 these should work on iterators not slices
+    // !!!cmk00 these should work on iterators not slices
     pub fn intersection<U: AsRef<[RangeSetInt<T>]>>(slice: U) -> Self {
-        let slice = slice.as_ref();
-        let not_ranges_iter = slice.iter().map(|x| x.ranges().not());
-        let merged_ranges = not_ranges_iter
-            .kmerge_by(|a, b| a.0 < b.0)
-            .assume_sorted_by_key();
-        let bit_or_iter = BitOrIter {
-            merged_ranges,
-            range: None,
-        };
-        RangeSetInt::from_sorted_distinct_iter(bit_or_iter.not())
+        RangeSetInt::from_sorted_distinct_iter(
+            slice.as_ref().iter().map(|x| x.ranges()).intersection(),
+        )
     }
 
     /// !!! cmk understand the 'where for'
@@ -407,9 +390,11 @@ pub type BitOrIterOfMergeBy<T, I0, I1> = BitOrIter<T, MergeByRanges<T, I0, I1>>;
 pub type BitOrIterOfKMergeBy<T, I> = BitOrIter<T, KMergeByRanges<T, I>>;
 pub type MergeByRanges<T, I0, I1> = MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>;
 pub type KMergeByRanges<T, I> = KMergeBy<I, fn(&(T, T), &(T, T)) -> bool>;
-pub type BitAndIter<T, I0, I1> = NotIter<T, BitOrOfNots<T, I0, I1>>;
-pub type BitSubIter<T, I0, I1> = BitAndIter<T, I0, NotIter<T, I1>>;
-pub type BitOrOfNots<T, I0, I1> = BitOrIterOfMergeBy<T, NotIter<T, I0>, NotIter<T, I1>>;
+pub type BitAndIterMerge<T, I0, I1> = NotIter<T, BitOrOfMergeNots<T, I0, I1>>;
+pub type BitAndIterKMerge<T, I> = NotIter<T, BitOrOfKMergeNots<T, I>>;
+pub type BitSubIter<T, I0, I1> = BitAndIterMerge<T, I0, NotIter<T, I1>>;
+pub type BitOrOfMergeNots<T, I0, I1> = BitOrIterOfMergeBy<T, NotIter<T, I0>, NotIter<T, I1>>;
+pub type BitOrOfKMergeNots<T, I> = BitOrIterOfKMergeBy<T, NotIter<T, I>>;
 
 impl<T: Integer, I: Clone + Iterator<Item = (T, T)>> SortedByKey for BitOrIter<T, I> {}
 impl<T: Integer, I: Clone + Iterator<Item = (T, T)>> SortedByKey for NotIter<T, I> {}
@@ -466,7 +451,15 @@ pub trait ItertoolsPlus: Iterator + Clone {
         BitOrIter::new(self, other)
     }
 
-    fn bitand<T, J>(self, other: J) -> BitAndIter<T, Self, J>
+    fn intersection<T, I1>(self) -> BitAndIterKMerge<T, I1>
+    where
+        Self: Iterator<Item = I1>,
+        I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
+        T: Integer,
+    {
+        self.map(|seq| seq.not()).union().not()
+    }
+    fn bitand<T, J>(self, other: J) -> BitAndIterMerge<T, Self, J>
     where
         T: Integer,
         Self: Iterator<Item = (T, T)> + Sized + SortedByKey,
