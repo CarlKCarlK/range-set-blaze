@@ -118,7 +118,8 @@ where
                 let stop = range.next().unwrap().parse::<T>().unwrap();
                 (start, stop)
             })
-            .collect::<RangeSetInt<T>>()
+            .collect::<Merger<T>>()
+            .into()
     }
 }
 
@@ -355,7 +356,7 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     }
 }
 
-// !!!cmk00 add +SortedByKey to this trait
+// !!!cmk000 add +SortedByKey to this trait
 impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
     fn from_iter<I: IntoIterator<Item = (T, T)>>(iter: I) -> Self {
         let mut len = <T as SafeSubtract>::Output::zero();
