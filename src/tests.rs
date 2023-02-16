@@ -1,5 +1,10 @@
 #![cfg(test)]
 
+// !!!cmk rule: Use the same testing as with macros to check that the types are correct
+// !!!cmk rule make illegal states unpresentable (example u8.len->usize, but u128 needs max_value2), SortedDistinctIter
+// !!!cmk rule detail: Note that this nicely fails to compile if you try to chain when you shouldn't
+// !!!cmk rule detail:  let chain = b.ranges().chain(c.ranges());
+// !!!cmk rule detail:  let a_less = a.ranges().sub(chain);
 use std::collections::BTreeSet; // , time::Instant
 
 use super::*;
@@ -821,18 +826,6 @@ fn custom_multi() {
     let d: RangeSetInt<_> = a_less.collect();
     println!("{d}");
 
-    let d: RangeSetInt<_> = a
-        .ranges()
-        // !!!cmk0 can we define sub, etc to accept an array directly?
-        .sub([b.ranges(), c.ranges()].union())
-        .collect();
+    let d: RangeSetInt<_> = a.ranges().sub(union([b.ranges(), c.ranges()])).collect();
     println!("{d}");
-
-    // !!!cmk rule: Use the same testing as with macros to check that the types are correct
-    // Note that this nicely fails to compile if you try to chain when you shouldn't
-    // cmk0 will runtime checks catch you trying to chain when you shouldn't? Can we stop this?
-    // let chain = b.ranges().chain(c.ranges());
-    // let a_less = a.ranges().sub(chain);
-
-    // !!!cmk make illegal states unpresentable (example u8.len->usize, but u128 needs max_value2), SortedDistinctIter
 }

@@ -416,6 +416,29 @@ where
     }
 }
 
+fn union<T, I0, I1>(input: I0) -> BitOrIterOfKMergeBy<T, I1>
+where
+    I0: IntoIterator<Item = I1>,
+    I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
+    T: Integer,
+{
+    BitOrIter {
+        merged_ranges: input
+            .into_iter()
+            .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
+        range: None,
+    }
+}
+
+fn intersection<T, I0, I1>(input: I0) -> BitAndIterKMerge<T, I1>
+where
+    I0: Iterator<Item = I1>,
+    I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
+    T: Integer,
+{
+    input.map(|seq| seq.not()).union().not()
+}
+
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 impl<I: IntoIterator + Sized> ItertoolsPlus2 for I {}
 pub trait ItertoolsPlus2: IntoIterator + Sized {
@@ -428,11 +451,7 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
         I: Iterator<Item = (T, T)> + Clone + SortedByKey,
         T: Integer,
     {
-        let input = self.into_iter();
-        BitOrIter {
-            merged_ranges: input.kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
-            range: None,
-        }
+        union(self)
     }
 
     fn intersection<T, I1>(self) -> BitAndIterKMerge<T, I1>
@@ -441,7 +460,7 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
         I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
         T: Integer,
     {
-        self.map(|seq| seq.not()).union().not()
+        intersection(self)
     }
 }
 pub trait ItertoolsPlus1: Iterator + Clone {
