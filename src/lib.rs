@@ -36,6 +36,7 @@ use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
 use sorted_iter::sorted_pair_iterator::SortedByKey;
+use std::borrow::Borrow;
 use std::cmp::max;
 use std::collections::btree_map;
 use std::collections::BTreeMap;
@@ -142,12 +143,28 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 }
-// !!!cmk00 support iterator instead of slices?
-impl<T: Integer> RangeSetInt<T> {
+// !!!cmk000 support iterator instead of slices?
+impl<'a, T: Integer + 'a> RangeSetInt<T> {
     // !!!cmk0 should part of this be a method on BitOrIter?
-    pub fn union<U: AsRef<[RangeSetInt<T>]>>(slice: U) -> Self {
-        slice.as_ref().iter().map(|x| x.ranges()).union().collect()
+    pub fn union<I>(input: I) -> Self
+    where
+        I: IntoIterator<Item = &'a RangeSetInt<T>>,
+    {
+        let ranges_iter = input.into_iter().map(|x| x.ranges());
+        union_cmk(ranges_iter).collect()
     }
+}
+
+impl<'a, T: Integer + 'a> RangeSetInt<T> {
+    // !!!cmk00 these should work on iterators not slices
+    // pub fn union<U: AsRef<[&'a RangeSetInt<T>]>>(slice: U) -> Self {
+    //     slice
+    //         .as_ref()
+    //         .iter()
+    //         .map(|x| x.ranges())
+    //         .union_cmk()
+    //         .collect()
+    // }
 
     // !!!cmk00 these should work on iterators not slices
     pub fn intersection<U: AsRef<[RangeSetInt<T>]>>(slice: U) -> Self {
@@ -158,7 +175,9 @@ impl<T: Integer> RangeSetInt<T> {
             .intersection()
             .collect()
     }
+}
 
+impl<T: Integer> RangeSetInt<T> {
     /// !!! cmk understand the 'where for'
     /// !!! cmk understand the operator 'Sub'
     fn _len_slow(&self) -> <T as SafeSubtract>::Output
@@ -416,7 +435,7 @@ where
     }
 }
 
-fn union<T, I0, I1>(input: I0) -> BitOrIterOfKMergeBy<T, I1>
+fn union_cmk<T, I0, I1>(input: I0) -> BitOrIterOfKMergeBy<T, I1>
 where
     I0: IntoIterator<Item = I1>,
     I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
@@ -436,7 +455,7 @@ where
     I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
     T: Integer,
 {
-    input.map(|seq| seq.not()).union().not()
+    input.map(|seq| seq.not()).union_cmk().not()
 }
 
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
@@ -445,13 +464,13 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
     // !!!cmk00 where is two input merge?
     // !!!cmk0 is it an issue that all inputs by the be the same type?
 
-    fn union<T, I>(self) -> BitOrIterOfKMergeBy<T, I>
+    fn union_cmk<T, I>(self) -> BitOrIterOfKMergeBy<T, I>
     where
         Self: IntoIterator<Item = I>,
         I: Iterator<Item = (T, T)> + Clone + SortedByKey,
         T: Integer,
     {
-        union(self)
+        union_cmk(self)
     }
 
     fn intersection<T, I1>(self) -> BitAndIterKMerge<T, I1>
