@@ -658,31 +658,31 @@ fn understand_bitand_assign() {
 
 #[test]
 fn iters() {
-    let range_int_set = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    assert!(range_int_set.len() == 13);
+    let range_set_int = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    assert!(range_set_int.len() == 13);
     // !!!cmk0
-    // assert!(range_int_set.ranges.len() == 3);
+    // assert!(range_set_int.ranges.len() == 3);
     // // !!!cmk0 i is &u8
-    for i in range_int_set.iter() {
+    for i in range_set_int.iter() {
         println!("{i}");
     }
-    for (start, stop) in range_int_set.ranges() {
+    for (start, stop) in range_set_int.ranges() {
         println!("{start} {stop}");
     }
-    let mut rs = range_int_set.ranges();
+    let mut rs = range_set_int.ranges();
     println!("{:?}", rs.next());
-    println!("{range_int_set}");
+    println!("{range_set_int}");
     println!("{:?}", rs.len());
     println!("{:?}", rs.next());
-    for i in range_int_set.iter() {
+    for i in range_set_int.iter() {
         println!("{i}");
     }
-    range_int_set.len();
+    range_set_int.len();
 
-    let mut rs = range_int_set.ranges().not();
+    let mut rs = range_set_int.ranges().not();
     println!("{:?}", rs.next());
-    println!("{range_int_set}");
-    // !!! assert that can't use range_int_set again
+    println!("{range_set_int}");
+    // !!! assert that can't use range_set_int again
 }
 
 #[test]
@@ -791,9 +791,12 @@ fn custom_multi() {
 
     let union_stream = b.ranges().bitor(c.ranges());
     let a_less = a.ranges().sub(union_stream);
-    let d: RangeSetInt<_> = a_less.collect();
+    let d: RangeSetInt<_> = a_less.to_range_set_int();
     println!("{d}");
 
-    let d: RangeSetInt<_> = a.ranges().sub(union([b.ranges(), c.ranges()])).collect();
+    let d: RangeSetInt<_> = a
+        .ranges()
+        .sub(union([b.ranges(), c.ranges()]))
+        .to_range_set_int();
     println!("{d}");
 }

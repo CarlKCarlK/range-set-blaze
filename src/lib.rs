@@ -18,7 +18,7 @@
 // https://lib.rs/crates/rangemap
 // https://lib.rs/crates/ranges
 // https://lib.rs/crates/nonoverlapping_interval_tree
-
+// https://stackoverflow.com/questions/30540766/how-can-i-add-new-methods-to-iterator
 // !!!cmk0 how could you write your own subtraction that subtracted many sets from one set via iterators?
 // !!!cmk0 sort by start then by larger stop
 
@@ -99,30 +99,6 @@ pub struct RangeSetInt<T: Integer> {
     items: BTreeMap<T, T>,
 }
 
-// !!!cmk support =, and single numbers
-// !!!cmk error to use -
-// !!!cmk are the unwraps OK?
-// !!!cmk what about bad input?
-
-impl<T: Integer> From<&str> for RangeSetInt<T>
-where
-    // !!! cmk understand this
-    <T as std::str::FromStr>::Err: std::fmt::Debug,
-{
-    fn from(s: &str) -> Self {
-        // !!!cmk0 this may not handle empty strings correctly
-        s.split(',')
-            .map(|s| {
-                let mut range = s.split("..=");
-                let start = range.next().unwrap().parse::<T>().unwrap();
-                let stop = range.next().unwrap().parse::<T>().unwrap();
-                (start, stop)
-            })
-            .collect::<Merger<T>>()
-            .into()
-    }
-}
-
 impl<T: Integer> fmt::Debug for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", fmt(&self.items))
@@ -145,13 +121,18 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 }
+
 impl<'a, T: Integer + 'a> RangeSetInt<T> {
     // !!!cmk0 should part of this be a method on BitOrIter?
     pub fn union<I>(input: I) -> Self
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        input.into_iter().map(|x| x.ranges()).union().collect()
+        input
+            .into_iter()
+            .map(|x| x.ranges())
+            .union()
+            .to_range_set_int()
     }
 
     pub fn intersection<I>(input: I) -> Self
@@ -162,7 +143,7 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
             .into_iter()
             .map(|x| x.ranges())
             .intersection()
-            .collect()
+            .to_range_set_int()
     }
 }
 
@@ -357,8 +338,13 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
 }
 
 // !!!cmk000 add +SortedByKey to this trait
-impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
-    fn from_iter<I: IntoIterator<Item = (T, T)>>(iter: I) -> Self {
+// impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
+impl<T: Integer> RangeSetInt<T> {
+    fn from_sorted_distinct_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = (T, T)>,
+        // I: SortedByKey,
+    {
         let mut len = <T as SafeSubtract>::Output::zero();
         let sorted_distinct_iter = iter.into_iter().map(|(start, stop)| {
             len += T::safe_subtract_inclusive(stop, start);
@@ -514,6 +500,14 @@ pub trait ItertoolsPlus1: Iterator + Clone {
         NotIter::new(self)
     }
 
+    fn to_range_set_int<T>(self) -> RangeSetInt<T>
+    where
+        T: Integer,
+        Self: Iterator<Item = (T, T)> + Sized + SortedByKey,
+    {
+        RangeSetInt::from_sorted_distinct_iter(self)
+    }
+
     fn bitxor<T, J>(
         self,
         other: J,
@@ -647,16 +641,16 @@ gen_ops_ex!(
     // assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     // ```
     for | call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        a.ranges().bitor(b.ranges()).collect()
+        a.ranges().bitor(b.ranges()).to_range_set_int()
     };
     for & call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        a.ranges().bitand(b.ranges()).collect()
+        a.ranges().bitand(b.ranges()).to_range_set_int()
     };
     for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        a.ranges().bitxor(b.ranges()).collect()
+        a.ranges().bitxor(b.ranges()).to_range_set_int()
     };
     for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        a.ranges().sub(b.ranges()).collect()
+        a.ranges().sub(b.ranges()).to_range_set_int()
     };
 
     where T: Integer //Where clause for all impl's
@@ -666,22 +660,11 @@ gen_ops_ex!(
     <T>;
     types ref RangeSetInt<T> => RangeSetInt<T>;
     for ! call |a: &RangeSetInt<T>| {
-        a.ranges().not().collect()
+        a.ranges().not().to_range_set_int()
     };
 
     where T: Integer //Where clause for all impl's
 );
-
-// cmk00 - also merge as iterator method
-// cmk can we define ! & etc on iterators?
-// cmk0 should we even provide the Assign methods, since only bitor_assign could be better than bitor?
-// cmk00 use from/into to shorten xor's expression
-
-impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
-    fn from(arr: [T; N]) -> Self {
-        RangeSetInt::from(arr.as_slice())
-    }
-}
 
 enum OptionRange<T: Integer> {
     None,
@@ -776,12 +759,6 @@ impl<T: Integer> Iterator for IntoIter<T> {
     }
 }
 
-impl<T: Integer> From<&[T]> for RangeSetInt<T> {
-    fn from(slice: &[T]) -> Self {
-        slice.iter().cloned().collect()
-    }
-}
-
 // !!!cmk can we make a version that takes another RangeSetInt and doesn't use Merger?
 impl<T: Integer> Extend<T> for RangeSetInt<T> {
     fn extend<I>(&mut self, iter: I)
@@ -861,4 +838,42 @@ impl Iterator for MemorylessData {
     }
 }
 
-// https://stackoverflow.com/questions/30540766/how-can-i-add-new-methods-to-iterator
+// !!!cmk support =, and single numbers
+// !!!cmk error to use -
+// !!!cmk are the unwraps OK?
+// !!!cmk what about bad input?
+
+impl<T: Integer> From<&str> for RangeSetInt<T>
+where
+    // !!! cmk understand this
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
+    fn from(s: &str) -> Self {
+        // !!!cmk0 this may not handle empty strings correctly
+        s.split(',')
+            .map(|s| {
+                let mut range = s.split("..=");
+                let start = range.next().unwrap().parse::<T>().unwrap();
+                let stop = range.next().unwrap().parse::<T>().unwrap();
+                (start, stop)
+            })
+            .collect::<Merger<T>>()
+            .into()
+    }
+}
+// cmk00 - also merge as iterator method
+// cmk can we define ! & etc on iterators?
+// cmk0 should we even provide the Assign methods, since only bitor_assign could be better than bitor?
+// cmk00 use from/into to shorten xor's expression
+
+impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
+    fn from(arr: [T; N]) -> Self {
+        RangeSetInt::from(arr.as_slice())
+    }
+}
+
+impl<T: Integer> From<&[T]> for RangeSetInt<T> {
+    fn from(slice: &[T]) -> Self {
+        slice.iter().cloned().collect()
+    }
+}
