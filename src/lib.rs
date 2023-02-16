@@ -343,6 +343,7 @@ impl<'a, T: Integer> Iterator for Ranges<'a, T> {
     }
 }
 
+// !!!cmk00 don't use this or from_iter explicitly. Instead use 'collect'
 impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -351,6 +352,13 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
         Merger::from_iter(iter).into()
     }
 }
+
+// impl<I, T: Integer> FromIterator<I> for RangeSetInt<T>
+// where
+//     I: IntoIterator<Item = (T, T)> + SortedByKey,
+// {
+//     RangeSetInt::from_sorted_distinct_iter(iter.into_iter())
+// }
 
 // !!!cmk00 what about combos?
 impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
@@ -415,18 +423,8 @@ where
 }
 
 pub trait ItertoolsPlus: Iterator + Clone {
-    // !!!cmk0 better name?
-    // !!!cmk00 this one is not like the others because there may not be gaps between ranges
     // !!!cmk00 where is two input merge?
     // !!!cmk0 is it an issue that all inputs by the be the same type?
-    fn kmerge_cmk<T, I1>(self) -> KMergeByRanges<T, I1>
-    where
-        Self: Iterator<Item = I1>,
-        I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
-        T: Integer,
-    {
-        self.kmerge_by(|pair0, pair1| pair0.0 < pair1.0)
-    }
 
     fn union<T, I1>(self) -> BitOrIterOfKMergeBy<T, I1>
     where
@@ -435,9 +433,9 @@ pub trait ItertoolsPlus: Iterator + Clone {
         T: Integer,
     {
         // !!!cmk00 that is hard to say '<Self as ItertoolsPlus>::kmerge_cmk'
-        let merged_ranges = <Self as ItertoolsPlus>::kmerge_cmk(self);
+        // let merged_ranges = <Self as ItertoolsPlus>::kmerge_cmk(self);
         BitOrIter {
-            merged_ranges,
+            merged_ranges: self.kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
             range: None,
         }
     }

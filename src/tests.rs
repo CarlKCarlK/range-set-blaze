@@ -783,10 +783,18 @@ fn custom_multi() {
     let d = RangeSetInt::from_sorted_distinct_iter(a_less);
     println!("{d}");
 
-    // cmk0 will runtime checks catch you trying to chain when you shouldn't? Can we stop this?
-    let union_stream = vec![b.ranges(), c.ranges()].into_iter().union();
     // !!!cmk00 are we sure that '.sub' works when they may not be gaps?
-    let a_less = a.ranges().sub(union_stream);
+    let a_less = a
+        .ranges()
+        .sub(vec![b.ranges(), c.ranges()].into_iter().union());
     let d = RangeSetInt::from_sorted_distinct_iter(a_less);
     println!("{d}");
+
+    // !!!cmk rule: Use the same testing as with macros to check that the types are correct
+    // Note that this nicely fails to compile if you try to chain when you shouldn't
+    // cmk0 will runtime checks catch you trying to chain when you shouldn't? Can we stop this?
+    // let chain = b.ranges().chain(c.ranges());
+    // let a_less = a.ranges().sub(chain);
+
+    // !!!cmk make illegal states unpresentable (example u8.len->usize, but u128 needs max_value2), SortedDistinctIter
 }
