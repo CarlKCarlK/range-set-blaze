@@ -780,14 +780,14 @@ fn custom_multi() {
 
     let union_stream = b.ranges().bitor(c.ranges());
     let a_less = a.ranges().sub(union_stream);
-    let d = RangeSetInt::from_sorted_distinct_iter(a_less);
+    let d: RangeSetInt<_> = a_less.collect();
     println!("{d}");
 
     // !!!cmk00 are we sure that '.sub' works when they may not be gaps?
     let a_less = a
         .ranges()
         .sub(vec![b.ranges(), c.ranges()].into_iter().union());
-    let d = RangeSetInt::from_sorted_distinct_iter(a_less);
+    let d: RangeSetInt<_> = a_less.collect();
     println!("{d}");
 
     // !!!cmk rule: Use the same testing as with macros to check that the types are correct

@@ -141,34 +141,22 @@ impl<T: Integer> RangeSetInt<T> {
             range_iter: i,
         }
     }
-
-    fn from_sorted_distinct_iter<I>(sorted_distinct_iter: I) -> Self
-    where
-        I: Iterator<Item = (T, T)>,
-    {
-        let mut len = <T as SafeSubtract>::Output::zero();
-        let sorted_distinct_iter2 = sorted_distinct_iter.map(|(start, stop)| {
-            len += T::safe_subtract_inclusive(stop, start);
-            (start, stop)
-        });
-
-        let items = BTreeMap::<T, T>::from_iter(sorted_distinct_iter2);
-        RangeSetInt::<T> { items, len }
-    }
 }
-
 // !!!cmk00 support iterator instead of slices?
 impl<T: Integer> RangeSetInt<T> {
     // !!!cmk0 should part of this be a method on BitOrIter?
     pub fn union<U: AsRef<[RangeSetInt<T>]>>(slice: U) -> Self {
-        RangeSetInt::from_sorted_distinct_iter(slice.as_ref().iter().map(|x| x.ranges()).union())
+        slice.as_ref().iter().map(|x| x.ranges()).union().collect()
     }
 
     // !!!cmk00 these should work on iterators not slices
     pub fn intersection<U: AsRef<[RangeSetInt<T>]>>(slice: U) -> Self {
-        RangeSetInt::from_sorted_distinct_iter(
-            slice.as_ref().iter().map(|x| x.ranges()).intersection(),
-        )
+        slice
+            .as_ref()
+            .iter()
+            .map(|x| x.ranges())
+            .intersection()
+            .collect()
     }
 
     /// !!! cmk understand the 'where for'
@@ -353,12 +341,21 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     }
 }
 
-// impl<I, T: Integer> FromIterator<I> for RangeSetInt<T>
-// where
-//     I: IntoIterator<Item = (T, T)> + SortedByKey,
-// {
-//     RangeSetInt::from_sorted_distinct_iter(iter.into_iter())
-// }
+// !!!cmk00 move from_sorted_distinct_iter to here
+// !!!cmk00 add +SortedByKey to this trait
+impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
+    fn from_iter<I: IntoIterator<Item = (T, T)>>(iter: I) -> Self {
+        //RangeSetInt::from_sorted_distinct_iter(iter.into_iter())
+        let mut len = <T as SafeSubtract>::Output::zero();
+        let sorted_distinct_iter2 = iter.into_iter().map(|(start, stop)| {
+            len += T::safe_subtract_inclusive(stop, start);
+            (start, stop)
+        });
+
+        let items = BTreeMap::<T, T>::from_iter(sorted_distinct_iter2);
+        RangeSetInt::<T> { items, len }
+    }
+}
 
 // !!!cmk00 what about combos?
 impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
@@ -617,16 +614,16 @@ gen_ops_ex!(
     // assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     // ```
     for | call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        RangeSetInt::from_sorted_distinct_iter(a.ranges().bitor(b.ranges()))
+        a.ranges().bitor(b.ranges()).collect()
     };
     for & call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        RangeSetInt::from_sorted_distinct_iter(a.ranges().bitand(b.ranges()))
+        a.ranges().bitand(b.ranges()).collect()
     };
     for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        RangeSetInt::from_sorted_distinct_iter(a.ranges().bitxor(b.ranges()))
+        a.ranges().bitxor(b.ranges()).collect()
     };
     for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        RangeSetInt::from_sorted_distinct_iter(a.ranges().sub(b.ranges()))
+        a.ranges().sub(b.ranges()).collect()
     };
 
     where T: Integer //Where clause for all impl's
@@ -636,7 +633,7 @@ gen_ops_ex!(
     <T>;
     types ref RangeSetInt<T> => RangeSetInt<T>;
     for ! call |a: &RangeSetInt<T>| {
-        RangeSetInt::from_sorted_distinct_iter(a.ranges().not())
+        a.ranges().not().collect()
     };
 
     where T: Integer //Where clause for all impl's
