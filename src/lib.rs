@@ -416,21 +416,6 @@ where
     }
 }
 
-use itertools::kmerge;
-use itertools::KMerge;
-
-impl<I: IntoIterator> IntoItertoolsPlus for I {}
-pub trait IntoItertoolsPlus: IntoIterator {
-    fn kmerge(self) -> KMerge<<Self::Item as IntoIterator>::IntoIter>
-    where
-        Self: IntoIterator + Sized,
-        Self::Item: IntoIterator,
-        <<Self as IntoIterator>::Item as IntoIterator>::Item: PartialOrd,
-    {
-        kmerge(self)
-    }
-}
-
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 impl<I: IntoIterator + Sized> ItertoolsPlus2 for I {}
 pub trait ItertoolsPlus2: IntoIterator + Sized {

@@ -836,22 +836,3 @@ fn custom_multi() {
 
     // !!!cmk make illegal states unpresentable (example u8.len->usize, but u128 needs max_value2), SortedDistinctIter
 }
-
-#[test]
-fn kmerge() {
-    use itertools::Itertools;
-
-    let a = (0..6).step_by(3);
-    let b = (1..6).step_by(3);
-    let c = (2..6).step_by(3);
-    let it = [a, b, c].kmerge();
-    itertools::assert_equal(it, [0, 1, 2, 3, 4, 5]);
-
-    // use itertools::kmerge;
-
-    // // for elt in kmerge([vec![0, 2, 4], vec![1, 3, 5], vec![6, 7]]) { /* loop body */ }
-
-    // for i in [vec![0, 2, 4], vec![1, 3, 5], vec![6, 7]].kmerge() {
-    //     println!("{i}");
-    // }
-}
