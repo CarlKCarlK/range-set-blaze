@@ -440,7 +440,7 @@ fn k_intersect(c: &mut Criterion) {
         b.iter_batched(
             || k_sets(k, range_len, len, coverage_goal),
             |sets| {
-                let _answer = RangeSetInt::intersection(sets);
+                let _answer = RangeSetInt::intersection(sets.iter());
             },
             BatchSize::SmallInput,
         );

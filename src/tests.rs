@@ -747,10 +747,9 @@ fn multi_op() {
 
     // !!!cmk00 must with on empty, with ref and with owned
 
-    let d = RangeSetInt::union([&a, &b, &c]);
-    // let d = RangeSetInt::intersection([a, b, c]);
-    println!("{d}");
-    assert_eq!(d, RangeSetInt::from("1..=15,18..=29,38..=42"));
+    let _ = RangeSetInt::union([&a, &b, &c]);
+    let d = RangeSetInt::intersection([a, b, c].iter());
+    assert_eq!(d, RangeSetInt::new());
 
     assert_eq!(!RangeSetInt::<u8>::union([]), RangeSetInt::from("0..=255"));
 
@@ -758,7 +757,9 @@ fn multi_op() {
     let b = RangeSetInt::<u8>::from("5..=13,18..=29");
     let c = RangeSetInt::<u8>::from("1..=42");
 
-    let d = RangeSetInt::intersection([a, b, c]);
+    let _ = &a & &b;
+    let d = RangeSetInt::intersection([&a, &b, &c]);
+    // let d = RangeSetInt::intersection([a, b, c]);
     println!("{d}");
     assert_eq!(d, RangeSetInt::from("5..=6,8..=9,11..=13"));
 
@@ -829,9 +830,6 @@ fn custom_multi() {
     let d: RangeSetInt<_> = a_less.collect();
     println!("{d}");
 
-    let d: RangeSetInt<_> = a
-        .ranges()
-        .sub(union_cmk([b.ranges(), c.ranges()]))
-        .collect();
+    let d: RangeSetInt<_> = a.ranges().sub(union([b.ranges(), c.ranges()])).collect();
     println!("{d}");
 }

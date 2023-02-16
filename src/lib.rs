@@ -36,7 +36,6 @@ use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
 use sorted_iter::sorted_pair_iterator::SortedByKey;
-use std::borrow::Borrow;
 use std::cmp::max;
 use std::collections::btree_map;
 use std::collections::BTreeMap;
@@ -111,6 +110,7 @@ where
     <T as std::str::FromStr>::Err: std::fmt::Debug,
 {
     fn from(s: &str) -> Self {
+        // !!!cmk0 this may not handle empty strings correctly
         Merger::from_iter(s.split(',').map(|s| {
             let mut range = s.split("..=");
             let start = range.next().unwrap().parse::<T>().unwrap();
@@ -150,30 +150,14 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        let ranges_iter = input.into_iter().map(|x| x.ranges());
-        union_cmk(ranges_iter).collect()
+        union(input.into_iter().map(|x| x.ranges())).collect()
     }
-}
 
-impl<'a, T: Integer + 'a> RangeSetInt<T> {
-    // !!!cmk00 these should work on iterators not slices
-    // pub fn union<U: AsRef<[&'a RangeSetInt<T>]>>(slice: U) -> Self {
-    //     slice
-    //         .as_ref()
-    //         .iter()
-    //         .map(|x| x.ranges())
-    //         .union_cmk()
-    //         .collect()
-    // }
-
-    // !!!cmk00 these should work on iterators not slices
-    pub fn intersection<U: AsRef<[RangeSetInt<T>]>>(slice: U) -> Self {
-        slice
-            .as_ref()
-            .iter()
-            .map(|x| x.ranges())
-            .intersection()
-            .collect()
+    pub fn intersection<I>(input: I) -> Self
+    where
+        I: IntoIterator<Item = &'a RangeSetInt<T>>,
+    {
+        intersection(input.into_iter().map(|x| x.ranges())).collect()
     }
 }
 
@@ -335,6 +319,13 @@ pub struct Ranges<'a, T: Integer> {
     items: btree_map::Iter<'a, T, T>,
 }
 
+impl<'a, T: Integer> AsRef<Ranges<'a, T>> for Ranges<'a, T> {
+    fn as_ref(&self) -> &Self {
+        // Self is Ranges<'a>, the type for which we impl AsRef
+        self
+    }
+}
+
 impl<T: Integer> SortedByKey for Ranges<'_, T> {}
 impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
     fn len(&self) -> usize {
@@ -435,7 +426,7 @@ where
     }
 }
 
-fn union_cmk<T, I0, I1>(input: I0) -> BitOrIterOfKMergeBy<T, I1>
+fn union<T, I0, I1>(input: I0) -> BitOrIterOfKMergeBy<T, I1>
 where
     I0: IntoIterator<Item = I1>,
     I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
@@ -455,7 +446,7 @@ where
     I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
     T: Integer,
 {
-    input.map(|seq| seq.not()).union_cmk().not()
+    input.map(|seq| seq.not()).union().not()
 }
 
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
@@ -464,13 +455,13 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
     // !!!cmk00 where is two input merge?
     // !!!cmk0 is it an issue that all inputs by the be the same type?
 
-    fn union_cmk<T, I>(self) -> BitOrIterOfKMergeBy<T, I>
+    fn union<T, I>(self) -> BitOrIterOfKMergeBy<T, I>
     where
         Self: IntoIterator<Item = I>,
         I: Iterator<Item = (T, T)> + Clone + SortedByKey,
         T: Integer,
     {
-        union_cmk(self)
+        union(self)
     }
 
     fn intersection<T, I1>(self) -> BitAndIterKMerge<T, I1>
