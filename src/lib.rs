@@ -419,8 +419,8 @@ where
 use itertools::kmerge;
 use itertools::KMerge;
 
-impl<I: IntoIterator> ItertoolsPlus for I {}
-pub trait ItertoolsPlus: IntoIterator {
+impl<I: IntoIterator> IntoItertoolsPlus for I {}
+pub trait IntoItertoolsPlus: IntoIterator {
     fn kmerge(self) -> KMerge<<Self::Item as IntoIterator>::IntoIter>
     where
         Self: IntoIterator + Sized,

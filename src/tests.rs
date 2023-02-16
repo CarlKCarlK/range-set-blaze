@@ -841,17 +841,17 @@ fn custom_multi() {
 fn kmerge() {
     use itertools::Itertools;
 
-    let a = (0..6).step(3);
-    let b = (1..6).step(3);
-    let c = (2..6).step(3);
-    let it = kmerge([a, b, c]);
-    itertools::assert_equal(it, vec![0, 1, 2, 3, 4, 5]);
+    let a = (0..6).step_by(3);
+    let b = (1..6).step_by(3);
+    let c = (2..6).step_by(3);
+    let it = [a, b, c].kmerge();
+    itertools::assert_equal(it, [0, 1, 2, 3, 4, 5]);
 
-    use itertools::kmerge;
+    // use itertools::kmerge;
 
-    // for elt in kmerge([vec![0, 2, 4], vec![1, 3, 5], vec![6, 7]]) { /* loop body */ }
+    // // for elt in kmerge([vec![0, 2, 4], vec![1, 3, 5], vec![6, 7]]) { /* loop body */ }
 
-    for i in [vec![0, 2, 4], vec![1, 3, 5], vec![6, 7]].kmerge() {
-        println!("{i}");
-    }
+    // for i in [vec![0, 2, 4], vec![1, 3, 5], vec![6, 7]].kmerge() {
+    //     println!("{i}");
+    // }
 }
