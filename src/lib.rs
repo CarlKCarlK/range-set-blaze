@@ -341,18 +341,15 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     }
 }
 
-// !!!cmk00 move from_sorted_distinct_iter to here
 // !!!cmk00 add +SortedByKey to this trait
 impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
     fn from_iter<I: IntoIterator<Item = (T, T)>>(iter: I) -> Self {
-        //RangeSetInt::from_sorted_distinct_iter(iter.into_iter())
         let mut len = <T as SafeSubtract>::Output::zero();
-        let sorted_distinct_iter2 = iter.into_iter().map(|(start, stop)| {
+        let sorted_distinct_iter = iter.into_iter().map(|(start, stop)| {
             len += T::safe_subtract_inclusive(stop, start);
             (start, stop)
         });
-
-        let items = BTreeMap::<T, T>::from_iter(sorted_distinct_iter2);
+        let items = BTreeMap::<T, T>::from_iter(sorted_distinct_iter);
         RangeSetInt::<T> { items, len }
     }
 }
@@ -419,31 +416,38 @@ where
     }
 }
 
-pub trait ItertoolsPlus: Iterator + Clone {
+use itertools::kmerge;
+use itertools::KMerge;
+
+impl<I: IntoIterator> ItertoolsPlus for I {}
+pub trait ItertoolsPlus: IntoIterator {
+    fn kmerge(self) -> KMerge<<Self::Item as IntoIterator>::IntoIter>
+    where
+        Self: IntoIterator + Sized,
+        Self::Item: IntoIterator,
+        <<Self as IntoIterator>::Item as IntoIterator>::Item: PartialOrd,
+    {
+        kmerge(self)
+    }
+}
+
+// !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
+impl<I: IntoIterator + Sized> ItertoolsPlus2 for I {}
+pub trait ItertoolsPlus2: IntoIterator + Sized {
     // !!!cmk00 where is two input merge?
     // !!!cmk0 is it an issue that all inputs by the be the same type?
 
-    fn union<T, I1>(self) -> BitOrIterOfKMergeBy<T, I1>
+    fn union<T, I>(self) -> BitOrIterOfKMergeBy<T, I>
     where
-        Self: Iterator<Item = I1>,
-        I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
+        Self: IntoIterator<Item = I>,
+        I: Iterator<Item = (T, T)> + Clone + SortedByKey,
         T: Integer,
     {
-        // !!!cmk00 that is hard to say '<Self as ItertoolsPlus>::kmerge_cmk'
-        // let merged_ranges = <Self as ItertoolsPlus>::kmerge_cmk(self);
+        let input = self.into_iter();
         BitOrIter {
-            merged_ranges: self.kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
+            merged_ranges: input.kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
             range: None,
         }
-    }
-
-    fn bitor<T, J>(self, other: J) -> BitOrIterOfMergeBy<T, Self, J>
-    where
-        T: Integer,
-        Self: Iterator<Item = (T, T)> + Sized,
-        J: Iterator<Item = Self::Item> + Clone + SortedByKey,
-    {
-        BitOrIter::new(self, other)
     }
 
     fn intersection<T, I1>(self) -> BitAndIterKMerge<T, I1>
@@ -454,6 +458,17 @@ pub trait ItertoolsPlus: Iterator + Clone {
     {
         self.map(|seq| seq.not()).union().not()
     }
+}
+pub trait ItertoolsPlus1: Iterator + Clone {
+    fn bitor<T, J>(self, other: J) -> BitOrIterOfMergeBy<T, Self, J>
+    where
+        T: Integer,
+        Self: Iterator<Item = (T, T)> + Sized,
+        J: Iterator<Item = Self::Item> + Clone + SortedByKey,
+    {
+        BitOrIter::new(self, other)
+    }
+
     fn bitand<T, J>(self, other: J) -> BitAndIterMerge<T, Self, J>
     where
         T: Integer,
@@ -466,8 +481,8 @@ pub trait ItertoolsPlus: Iterator + Clone {
     fn sub<T, J>(self, other: J) -> BitSubIter<T, Self, J>
     where
         T: Integer,
-        Self: Iterator<Item = (T, T)> + Sized + SortedByKey,
         J: Iterator<Item = Self::Item> + Clone + SortedByKey,
+        Self: Iterator<Item = (T, T)> + Sized + SortedByKey,
     {
         self.bitand(other.not())
     }
@@ -493,10 +508,9 @@ pub trait ItertoolsPlus: Iterator + Clone {
     }
 }
 
-// !!!cmk00 support multiple inputs to bitor,bitand
 // !!!cmk00 allow rhs to be of a different type
 
-impl<I: Iterator + Clone> ItertoolsPlus for I {}
+impl<I: Iterator + Clone> ItertoolsPlus1 for I {}
 
 impl<T, I> Iterator for BitOrIter<T, I>
 where

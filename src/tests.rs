@@ -773,6 +773,44 @@ fn multi_op() {
 // }
 
 #[test]
+fn understand_any_iter() {
+    fn any_iter<T, I, J>(iter: I)
+    where
+        I: IntoIterator<Item = J>,
+        J: Iterator<Item = (T, T)>, // + Clone,
+        // Self: IntoIterator<Item = I>,
+        // I: Iterator<Item = (T, T)> + Clone + SortedByKey,
+        T: Integer,
+    {
+        for i in iter {
+            for j in i {
+                println!("{j:?}");
+            }
+        }
+    }
+
+    fn dup<I>(seq: I) -> impl Iterator<Item = (I::Item, I::Item)>
+    where
+        I: Iterator<Item = u32>,
+    {
+        seq.map(|x| (x, x))
+    }
+    let a = dup((0..6).step_by(3));
+    let b = dup((1..6).step_by(3));
+    let c = dup((2..6).step_by(3));
+    any_iter([a, b, c].into_iter());
+
+    //     let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    //     let b = RangeSetInt::<u8>::from("5..=13,18..=29");
+    //     let c = RangeSetInt::<u8>::from("38..=42");
+
+    //     a.ranges()
+    //         .sub([b.ranges(), c.ranges()].into_iter().union_cmk());
+
+    //     todo!
+}
+
+#[test]
 fn custom_multi() {
     let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let b = RangeSetInt::<u8>::from("5..=13,18..=29");
@@ -783,11 +821,11 @@ fn custom_multi() {
     let d: RangeSetInt<_> = a_less.collect();
     println!("{d}");
 
-    // !!!cmk00 are we sure that '.sub' works when they may not be gaps?
-    let a_less = a
+    let d: RangeSetInt<_> = a
         .ranges()
-        .sub(vec![b.ranges(), c.ranges()].into_iter().union());
-    let d: RangeSetInt<_> = a_less.collect();
+        // !!!cmk0 can we define sub, etc to accept an array directly?
+        .sub([b.ranges(), c.ranges()].union())
+        .collect();
     println!("{d}");
 
     // !!!cmk rule: Use the same testing as with macros to check that the types are correct
@@ -797,4 +835,23 @@ fn custom_multi() {
     // let a_less = a.ranges().sub(chain);
 
     // !!!cmk make illegal states unpresentable (example u8.len->usize, but u128 needs max_value2), SortedDistinctIter
+}
+
+#[test]
+fn kmerge() {
+    use itertools::Itertools;
+
+    let a = (0..6).step(3);
+    let b = (1..6).step(3);
+    let c = (2..6).step(3);
+    let it = kmerge([a, b, c]);
+    itertools::assert_equal(it, vec![0, 1, 2, 3, 4, 5]);
+
+    use itertools::kmerge;
+
+    // for elt in kmerge([vec![0, 2, 4], vec![1, 3, 5], vec![6, 7]]) { /* loop body */ }
+
+    for i in [vec![0, 2, 4], vec![1, 3, 5], vec![6, 7]].kmerge() {
+        println!("{i}");
+    }
 }
