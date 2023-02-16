@@ -2,6 +2,8 @@
 // Here are some relevant crates I found whilst searching around the topic area:
 
 // https://crates.io/crates/sorted-iter
+//    cmk0 Look at sorted-iter's note about exporting.
+//    cmk0 Look at sorted-iter's note about their testing tool.
 // https://docs.rs/rangemap Very similar to this crate but can only use Ranges and RangeInclusives as keys in it's map and set structs (separately).
 // https://docs.rs/btree-range-map
 // https://docs.rs/ranges Cool library for fully-generic ranges (unlike std::ops ranges), along with a Ranges data structure for storing them (Vec-based unfortunately)
@@ -172,6 +174,7 @@ impl<T: Integer> RangeSetInt<T> {
         RangeSetInt::from_sorted_distinct_iter(bit_or_iter)
     }
 
+    // !!!cmk0 these should work on iterators not slices
     pub fn intersection<U: AsRef<[RangeSetInt<T>]>>(slice: U) -> Self {
         let slice = slice.as_ref();
         let not_ranges_iter = slice.iter().map(|x| x.ranges().not());
@@ -401,6 +404,7 @@ where
 
 // !!!cmk0 should I0,I1 be I,J to match itertools?
 pub type BitOrIterOfMergeBy<T, I0, I1> = BitOrIter<T, MergeByRanges<T, I0, I1>>;
+pub type BitOrIterOfKMergeBy<T, I> = BitOrIter<T, KMergeByRanges<T, I>>;
 pub type MergeByRanges<T, I0, I1> = MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>;
 pub type KMergeByRanges<T, I> = KMergeBy<I, fn(&(T, T), &(T, T)) -> bool>;
 pub type BitAndIter<T, I0, I1> = NotIter<T, BitOrOfNots<T, I0, I1>>;
@@ -427,13 +431,30 @@ where
 
 pub trait ItertoolsPlus: Iterator + Clone {
     // !!!cmk0 better name?
-    fn kmerge<T, I1>(input_iter: Self) -> KMergeByRanges<T, I1>
+    // !!!cmk00 this one is not like the others because there may not be gaps between ranges
+    // !!!cmk00 where is two input merge?
+    // !!!cmk0 is it an issue that all inputs by the be the same type?
+    fn kmerge_cmk<T, I1>(self) -> KMergeByRanges<T, I1>
     where
         Self: Iterator<Item = I1>,
         I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
         T: Integer,
     {
-        input_iter.kmerge_by(|pair0, pair1| pair0.0 < pair1.0)
+        self.kmerge_by(|pair0, pair1| pair0.0 < pair1.0)
+    }
+
+    fn union<T, I1>(self) -> BitOrIterOfKMergeBy<T, I1>
+    where
+        Self: Iterator<Item = I1>,
+        I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
+        T: Integer,
+    {
+        // !!!cmk00 that is hard to say '<Self as ItertoolsPlus>::kmerge_cmk'
+        let merged_ranges = <Self as ItertoolsPlus>::kmerge_cmk(self);
+        BitOrIter {
+            merged_ranges,
+            range: None,
+        }
     }
 
     fn bitor<T, J>(self, other: J) -> BitOrIterOfMergeBy<T, Self, J>
