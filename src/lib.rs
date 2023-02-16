@@ -464,8 +464,14 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
         intersection(self)
     }
 }
-pub trait ItertoolsPlus1: Iterator + Clone {
-    fn bitor<T, J>(self, other: J) -> BitOrIterOfMergeBy<T, Self, J>
+pub trait ItertoolsPlus3<T: Integer>:
+    Iterator<Item = (T, T)> + Clone + SortedByKey + Sized
+{
+    fn to_range_set_int(self) -> RangeSetInt<T> {
+        RangeSetInt::from_sorted_distinct_iter(self)
+    }
+
+    fn bitor<J>(self, other: J) -> BitOrIterOfMergeBy<T, Self, J>
     where
         T: Integer,
         Self: Iterator<Item = (T, T)> + Sized,
@@ -473,7 +479,8 @@ pub trait ItertoolsPlus1: Iterator + Clone {
     {
         BitOrIter::new(self, other)
     }
-
+}
+pub trait ItertoolsPlus1: Iterator + Clone + SortedByKey + Sized {
     fn bitand<T, J>(self, other: J) -> BitAndIterMerge<T, Self, J>
     where
         T: Integer,
@@ -500,14 +507,6 @@ pub trait ItertoolsPlus1: Iterator + Clone {
         NotIter::new(self)
     }
 
-    fn to_range_set_int<T>(self) -> RangeSetInt<T>
-    where
-        T: Integer,
-        Self: Iterator<Item = (T, T)> + Sized + SortedByKey,
-    {
-        RangeSetInt::from_sorted_distinct_iter(self)
-    }
-
     fn bitxor<T, J>(
         self,
         other: J,
@@ -523,7 +522,8 @@ pub trait ItertoolsPlus1: Iterator + Clone {
 
 // !!!cmk00 allow rhs to be of a different type
 
-impl<I: Iterator + Clone> ItertoolsPlus1 for I {}
+impl<I: Iterator + Clone + SortedByKey> ItertoolsPlus1 for I {}
+impl<I: Iterator<Item = (T, T)> + Clone + SortedByKey, T: Integer> ItertoolsPlus3<T> for I {}
 
 impl<T, I> Iterator for BitOrIter<T, I>
 where
