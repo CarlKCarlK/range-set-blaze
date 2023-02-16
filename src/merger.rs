@@ -2,6 +2,7 @@ use std::cmp::{max, min};
 
 use crate::{Integer, OptionRange, RangeSetInt};
 
+// !!!cmk0 improve the name and understanding of Merger
 #[derive(Debug)]
 pub enum Merger<T: Integer> {
     None,
@@ -14,7 +15,7 @@ pub enum Merger<T: Integer> {
 
 impl<T: Integer> FromIterator<T> for Merger<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        Merger::from_iter(iter.into_iter().map(|item| (item, item)))
+        iter.into_iter().map(|item| (item, item)).collect()
     }
 }
 

@@ -70,6 +70,8 @@ fn repro_bit_and() {
 #[test]
 fn repro1() {
     let mut range_set_int = RangeSetInt::<i8>::from("20..=21,24..=24,25..=29");
+    println!("{range_set_int}");
+    assert!(range_set_int.to_string() == "20..=21,24..=29");
     range_set_int.internal_add(25, 25);
     println!("{range_set_int}");
     assert!(range_set_int.to_string() == "20..=21,24..=29");
@@ -780,44 +782,6 @@ fn multi_op() {
 // fn print_type_of<T>(_: &T) {
 //     println!("{}", std::any::type_name::<T>())
 // }
-
-#[test]
-fn understand_any_iter() {
-    fn any_iter<T, I, J>(iter: I)
-    where
-        I: IntoIterator<Item = J>,
-        J: Iterator<Item = (T, T)>, // + Clone,
-        // Self: IntoIterator<Item = I>,
-        // I: Iterator<Item = (T, T)> + Clone + SortedByKey,
-        T: Integer,
-    {
-        for i in iter {
-            for j in i {
-                println!("{j:?}");
-            }
-        }
-    }
-
-    fn dup<I>(seq: I) -> impl Iterator<Item = (I::Item, I::Item)>
-    where
-        I: Iterator<Item = u32>,
-    {
-        seq.map(|x| (x, x))
-    }
-    let a = dup((0..6).step_by(3));
-    let b = dup((1..6).step_by(3));
-    let c = dup((2..6).step_by(3));
-    any_iter([a, b, c].into_iter());
-
-    //     let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    //     let b = RangeSetInt::<u8>::from("5..=13,18..=29");
-    //     let c = RangeSetInt::<u8>::from("38..=42");
-
-    //     a.ranges()
-    //         .sub([b.ranges(), c.ranges()].into_iter().union_cmk());
-
-    //     todo!
-}
 
 #[test]
 fn custom_multi() {

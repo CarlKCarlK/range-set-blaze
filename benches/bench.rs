@@ -389,8 +389,8 @@ fn bitor1(c: &mut Criterion) {
 }
 fn two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (RangeSetInt<u64>, RangeSetInt<u64>) {
     (
-        RangeSetInt::<u64>::from_iter(MemorylessData::new(0, range_len, len, coverage_goal)),
-        RangeSetInt::<u64>::from_iter(MemorylessData::new(1, range_len, len, coverage_goal)),
+        MemorylessData::new(0, range_len, len, coverage_goal).collect(),
+        MemorylessData::new(1, range_len, len, coverage_goal).collect(),
     )
 }
 
@@ -400,14 +400,14 @@ fn two_sets1(
     coverage_goal: f64,
 ) -> (RangeSetInt<u64>, RangeSetInt<u64>) {
     (
-        RangeSetInt::<u64>::from_iter(MemorylessData::new(0, range_len, len, coverage_goal)),
+        MemorylessData::new(0, range_len, len, coverage_goal).collect(),
         RangeSetInt::<u64>::from([range_len / 2]),
     )
 }
 fn btree_two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (BTreeSet<u64>, BTreeSet<u64>) {
     (
-        BTreeSet::<u64>::from_iter(MemorylessData::new(0, range_len, len, coverage_goal)),
-        BTreeSet::<u64>::from_iter(MemorylessData::new(1, range_len, len, coverage_goal)),
+        MemorylessData::new(0, range_len, len, coverage_goal).collect(),
+        MemorylessData::new(1, range_len, len, coverage_goal).collect(),
     )
 }
 fn btree_two_sets1(
@@ -416,7 +416,7 @@ fn btree_two_sets1(
     coverage_goal: f64,
 ) -> (BTreeSet<u64>, BTreeSet<u64>) {
     (
-        BTreeSet::<u64>::from_iter(MemorylessData::new(0, range_len, len, coverage_goal)),
+        MemorylessData::new(0, range_len, len, coverage_goal).collect(),
         BTreeSet::<u64>::from([range_len / 2]),
     )
 }
@@ -480,12 +480,6 @@ fn k_sets(k: u64, range_len: u64, len: u128, coverage_goal: f64) -> Vec<RangeSet
         })
         .collect()
 }
-
-// fn btree_k_sets(k: u64, range_len: u64, len: u128, coverage_goal: f64) -> Vec<BTreeSet<u64>> {
-//     (0..k)
-//         .map(|i| BTreeSet::<u64>::from_iter(MemorylessData::new(i, range_len, len, coverage_goal)))
-//         .collect()
-// }
 
 criterion_group!(
     benches, // insert10,

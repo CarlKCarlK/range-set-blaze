@@ -111,13 +111,14 @@ where
 {
     fn from(s: &str) -> Self {
         // !!!cmk0 this may not handle empty strings correctly
-        Merger::from_iter(s.split(',').map(|s| {
-            let mut range = s.split("..=");
-            let start = range.next().unwrap().parse::<T>().unwrap();
-            let stop = range.next().unwrap().parse::<T>().unwrap();
-            (start, stop)
-        }))
-        .into()
+        s.split(',')
+            .map(|s| {
+                let mut range = s.split("..=");
+                let start = range.next().unwrap().parse::<T>().unwrap();
+                let stop = range.next().unwrap().parse::<T>().unwrap();
+                (start, stop)
+            })
+            .collect::<RangeSetInt<T>>()
     }
 }
 
@@ -143,21 +144,24 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 }
-// !!!cmk000 support iterator instead of slices?
 impl<'a, T: Integer + 'a> RangeSetInt<T> {
     // !!!cmk0 should part of this be a method on BitOrIter?
     pub fn union<I>(input: I) -> Self
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        union(input.into_iter().map(|x| x.ranges())).collect()
+        input.into_iter().map(|x| x.ranges()).union().collect()
     }
 
     pub fn intersection<I>(input: I) -> Self
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        intersection(input.into_iter().map(|x| x.ranges())).collect()
+        input
+            .into_iter()
+            .map(|x| x.ranges())
+            .intersection()
+            .collect()
     }
 }
 
@@ -347,7 +351,7 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
-        Merger::from_iter(iter).into()
+        iter.into_iter().collect::<Merger<T>>().into()
     }
 }
 
@@ -773,7 +777,7 @@ impl<T: Integer> Iterator for IntoIter<T> {
 
 impl<T: Integer> From<&[T]> for RangeSetInt<T> {
     fn from(slice: &[T]) -> Self {
-        RangeSetInt::from_iter(slice.iter().copied())
+        slice.iter().cloned().collect()
     }
 }
 
