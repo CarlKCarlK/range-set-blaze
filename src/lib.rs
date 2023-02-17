@@ -337,7 +337,7 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     }
 }
 
-// !!!cmk000 add +SortedByKey to this trait
+// !!!cmk0 add +SortedByKey to this trait
 // impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
 impl<T: Integer> RangeSetInt<T> {
     fn from_sorted_distinct_iter<I>(iter: I) -> Self
@@ -389,27 +389,28 @@ where
 }
 
 // !!!cmk0 should I0,I1 be I,J to match itertools?
-pub type BitOrIterOfMergeBy<T, I0, I1> = BitOrIter<T, MergeByRanges<T, I0, I1>>;
-pub type BitOrIterOfKMergeBy<T, I> = BitOrIter<T, KMergeByRanges<T, I>>;
-pub type MergeByRanges<T, I0, I1> = MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>;
-pub type KMergeByRanges<T, I> = KMergeBy<I, fn(&(T, T), &(T, T)) -> bool>;
-pub type BitAndIterMerge<T, I0, I1> = NotIter<T, BitOrOfMergeNots<T, I0, I1>>;
-pub type BitAndIterKMerge<T, I> = NotIter<T, BitOrOfKMergeNots<T, I>>;
-pub type BitSubIter<T, I0, I1> = BitAndIterMerge<T, I0, NotIter<T, I1>>;
-pub type BitOrOfMergeNots<T, I0, I1> = BitOrIterOfMergeBy<T, NotIter<T, I0>, NotIter<T, I1>>;
-pub type BitOrOfKMergeNots<T, I> = BitOrIterOfKMergeBy<T, NotIter<T, I>>;
+pub type Merge<T, I0, I1> = MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>;
+pub type KMerge<T, I> = KMergeBy<I, fn(&(T, T), &(T, T)) -> bool>;
+pub type BitOrMerge<T, I0, I1> = BitOrIter<T, Merge<T, I0, I1>>;
+pub type BitOrKMerge<T, I> = BitOrIter<T, KMerge<T, I>>;
+pub type BitAndMerge<T, I0, I1> = NotIter<T, BitNandMerge<T, I0, I1>>;
+pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
+pub type BitNandMerge<T, I0, I1> = BitOrMerge<T, NotIter<T, I0>, NotIter<T, I1>>;
+pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
+// !!!cmk0 why is there no BitSubKMerge? and BitXorKMerge?
+pub type BitSubMerge<T, I0, I1> = BitAndMerge<T, I0, NotIter<T, I1>>;
+pub type BitXOrMerge<T, I0, I1> = BitOrMerge<T, BitSubMerge<T, I0, I1>, BitSubMerge<T, I1, I0>>;
 
 impl<T: Integer, I: Clone + Iterator<Item = (T, T)>> SortedByKey for BitOrIter<T, I> {}
 impl<T: Integer, I: Clone + Iterator<Item = (T, T)>> SortedByKey for NotIter<T, I> {}
-
-impl<T, I0, I1> BitOrIterOfMergeBy<T, I0, I1>
+impl<T, I0, I1> BitOrMerge<T, I0, I1>
 where
     T: Integer,
-    I0: Iterator<Item = (T, T)> + std::clone::Clone,
+    I0: Iterator<Item = (T, T)> + Clone,
     I1: Iterator<Item = (T, T)> + Clone,
 {
     // !!!cmk0 understand this better
-    fn new(lhs: I0, rhs: I1) -> BitOrIterOfMergeBy<T, I0, I1> {
+    fn new(lhs: I0, rhs: I1) -> BitOrMerge<T, I0, I1> {
         Self {
             merged_ranges: lhs.merge_by(rhs, |a, b| a.0 <= b.0),
             range: None,
@@ -417,7 +418,7 @@ where
     }
 }
 
-fn union<T, I0, I1>(input: I0) -> BitOrIterOfKMergeBy<T, I1>
+fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
 where
     I0: IntoIterator<Item = I1>,
     I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
@@ -431,7 +432,7 @@ where
     }
 }
 
-fn intersection<T, I0, I1>(input: I0) -> BitAndIterKMerge<T, I1>
+fn intersection<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
 where
     I0: Iterator<Item = I1>,
     I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
@@ -446,7 +447,7 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
     // !!!cmk00 where is two input merge?
     // !!!cmk0 is it an issue that all inputs by the be the same type?
 
-    fn union<T, I>(self) -> BitOrIterOfKMergeBy<T, I>
+    fn union<T, I>(self) -> BitOrKMerge<T, I>
     where
         Self: IntoIterator<Item = I>,
         I: Iterator<Item = (T, T)> + Clone + SortedByKey,
@@ -455,7 +456,7 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
         union(self)
     }
 
-    fn intersection<T, I1>(self) -> BitAndIterKMerge<T, I1>
+    fn intersection<T, I1>(self) -> BitAndKMerge<T, I1>
     where
         Self: Iterator<Item = I1>,
         I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
@@ -464,66 +465,54 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
         intersection(self)
     }
 }
-pub trait ItertoolsPlus3<T: Integer>:
+
+impl<I, T> ItertoolsSorted<T> for I
+where
+    I: Iterator<Item = (T, T)> + Clone + SortedByKey + Sized,
+    T: Integer,
+{
+}
+
+pub trait ItertoolsSorted<T: Integer>:
     Iterator<Item = (T, T)> + Clone + SortedByKey + Sized
 {
     fn to_range_set_int(self) -> RangeSetInt<T> {
         RangeSetInt::from_sorted_distinct_iter(self)
     }
 
-    fn bitor<J>(self, other: J) -> BitOrIterOfMergeBy<T, Self, J>
+    fn bitor<J>(self, other: J) -> BitOrMerge<T, Self, J>
     where
-        T: Integer,
-        Self: Iterator<Item = (T, T)> + Sized,
-        J: Iterator<Item = Self::Item> + Clone + SortedByKey,
+        J: Iterator<Item = Self::Item> + Clone + SortedByKey + Sized,
     {
-        BitOrIter::new(self, other)
+        BitOrMerge::new(self, other)
     }
-}
-pub trait ItertoolsPlus1: Iterator + Clone + SortedByKey + Sized {
-    fn bitand<T, J>(self, other: J) -> BitAndIterMerge<T, Self, J>
+    fn bitand<J>(self, other: J) -> BitAndMerge<T, Self, J>
     where
-        T: Integer,
-        Self: Iterator<Item = (T, T)> + Sized + SortedByKey,
         J: Iterator<Item = Self::Item> + Clone + SortedByKey,
     {
         self.not().bitor(other.not()).not()
     }
 
-    fn sub<T, J>(self, other: J) -> BitSubIter<T, Self, J>
+    fn sub<J>(self, other: J) -> BitSubMerge<T, Self, J>
     where
-        T: Integer,
-        J: Iterator<Item = Self::Item> + Clone + SortedByKey,
-        Self: Iterator<Item = (T, T)> + Sized + SortedByKey,
+        J: Iterator<Item = Self::Item> + Clone + SortedByKey + Sized,
     {
         self.bitand(other.not())
     }
 
-    fn not<T>(self) -> NotIter<T, Self>
-    where
-        T: Integer,
-        Self: Iterator<Item = (T, T)> + Sized + SortedByKey,
-    {
+    fn not(self) -> NotIter<T, Self> {
         NotIter::new(self)
     }
 
-    fn bitxor<T, J>(
-        self,
-        other: J,
-    ) -> BitOrIterOfMergeBy<T, BitSubIter<T, Self, J>, BitSubIter<T, J, Self>>
+    fn bitxor<J>(self, other: J) -> BitXOrMerge<T, Self, J>
     where
-        T: Integer,
-        Self: Iterator<Item = (T, T)> + Sized + SortedByKey,
-        J: Iterator<Item = Self::Item> + Clone + SortedByKey,
+        J: Iterator<Item = Self::Item> + Clone + SortedByKey + Sized,
     {
         self.clone().sub(other.clone()).bitor(other.sub(self))
     }
 }
 
 // !!!cmk00 allow rhs to be of a different type
-
-impl<I: Iterator + Clone + SortedByKey> ItertoolsPlus1 for I {}
-impl<I: Iterator<Item = (T, T)> + Clone + SortedByKey, T: Integer> ItertoolsPlus3<T> for I {}
 
 impl<T, I> Iterator for BitOrIter<T, I>
 where
