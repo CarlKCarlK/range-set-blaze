@@ -439,8 +439,8 @@ where
     I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
     T: Integer,
 {
-    // input.into_iter().map(|seq| seq.not()).union().not()
-    todo!()
+    input.into_iter().map(|seq| seq.not()).union().not()
+    // todo!() cmk00
 }
 
 // fn intersection_cmk<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>

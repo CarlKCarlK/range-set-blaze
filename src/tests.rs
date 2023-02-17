@@ -806,15 +806,15 @@ fn parity_cmk00() {
     let a = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
     let c = &RangeSetInt::<u8>::from("38..=42");
-    // !!!cmk0 time intertools.split (?) vs range.clone()
+    // !!!cmk0 time itertools.split (?) vs range.clone()
     // !!!cmk00 replace "Merge" with "KMerge"
     // !!!cmk00 empty needs to work. Go back to slices?
     let parity = a & !b & !c | !a & b & !c | !a & !b & c | a & b & c;
     println!("{parity}");
-    let d = intersection_cmk([a.ranges()]);
-    let parity: RangeSetInt<u8> = union([intersection_cmk([a.ranges()])]).to_range_set_int();
-    let parity: RangeSetInt<u8> = intersection_cmk([a.ranges()]).to_range_set_int();
-    let parity: RangeSetInt<u8> = union([a.ranges()]).to_range_set_int();
+    let _d = intersection_cmk([a.ranges()]);
+    let _parity: RangeSetInt<u8> = union([intersection_cmk([a.ranges()])]).to_range_set_int();
+    let _parity: RangeSetInt<u8> = intersection_cmk([a.ranges()]).to_range_set_int();
+    let _parity: RangeSetInt<u8> = union([a.ranges()]).to_range_set_int();
     let parity: RangeSetInt<u8> = union([
         a.ranges(), // intersection_cmk([a.ranges(), b.ranges().not(), c.ranges().not()]),
                     // intersection_cmk([a.ranges().not(), b.ranges(), c.ranges().not()]),
@@ -829,5 +829,5 @@ fn parity_cmk00() {
 fn two_type() {
     let a = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
-    let u = a.ranges().bitor(b.ranges());
+    let _u = a.ranges().bitor(b.ranges());
 }
