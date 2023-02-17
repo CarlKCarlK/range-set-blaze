@@ -26,6 +26,7 @@ mod merger;
 mod safe_subtract;
 mod tests;
 
+use dyn_clone::DynClone;
 use gen_ops::gen_ops_ex;
 use itertools::Itertools;
 use itertools::KMergeBy;
@@ -900,5 +901,8 @@ impl<T: Integer> From<&[T]> for RangeSetInt<T> {
 //         RangeSetInt::from_sorted_distinct_iter(iter)
 //     }
 // }
-pub trait SortedDisjoint<T: Integer>: Iterator<Item = (T, T)> + SortedByKey {}
-impl<TR, T: Integer> SortedDisjoint<T> for TR where TR: Iterator<Item = (T, T)> + SortedByKey {}
+pub trait SortedDisjoint<T: Integer>: Iterator<Item = (T, T)> + SortedByKey + DynClone {}
+impl<TR, T: Integer> SortedDisjoint<T> for TR where
+    TR: Iterator<Item = (T, T)> + SortedByKey + DynClone
+{
+}
