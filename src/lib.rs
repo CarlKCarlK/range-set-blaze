@@ -421,7 +421,7 @@ where
 fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
 where
     I0: IntoIterator<Item = I1>,
-    I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
+    I1: SortedDisjoint<T> + Clone,
     T: Integer,
 {
     BitOrIter {
@@ -436,7 +436,7 @@ fn intersection_cmk<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
 where
     // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
     I0: IntoIterator<Item = I1>,
-    I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
+    I1: SortedDisjoint<T> + Clone,
     T: Integer,
 {
     input.into_iter().map(|seq| seq.not()).union().not()
@@ -446,7 +446,7 @@ where
 // fn intersection_cmk<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
 // where
 //     I0: Iterator<Item = I1>,
-//     I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
+//     I1: SortedDisjoint<T> + Clone,
 //     T: Integer,
 // {
 //     BitOrIter {
@@ -467,7 +467,7 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
     fn union<T, I>(self) -> BitOrKMerge<T, I>
     where
         Self: IntoIterator<Item = I>,
-        I: Iterator<Item = (T, T)> + Clone + SortedByKey,
+        I: SortedDisjoint<T> + Clone,
         T: Integer,
     {
         union(self)
@@ -476,7 +476,7 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
     fn intersection_cmk2<T, I>(self) -> BitAndKMerge<T, I>
     where
         Self: IntoIterator<Item = I>,
-        I: Iterator<Item = (T, T)> + Clone + SortedByKey,
+        I: SortedDisjoint<T> + Clone,
         T: Integer,
     {
         intersection_cmk(self)
@@ -485,14 +485,12 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
 
 impl<I, T> ItertoolsSorted<T> for I
 where
-    I: Iterator<Item = (T, T)> + Clone + SortedByKey + Sized,
+    I: SortedDisjoint<T> + Clone + Sized,
     T: Integer,
 {
 }
 
-pub trait ItertoolsSorted<T: Integer>:
-    Iterator<Item = (T, T)> + Clone + SortedByKey + Sized
-{
+pub trait ItertoolsSorted<T: Integer>: SortedDisjoint<T> + Clone + Sized {
     fn to_range_set_int(self) -> RangeSetInt<T> {
         RangeSetInt::from_sorted_distinct_iter(self)
     }
@@ -896,9 +894,11 @@ impl<T: Integer> From<&[T]> for RangeSetInt<T> {
 // impl<T, I> From<I> for RangeSetInt<T>
 // where
 //     T: Integer,
-//     I: Iterator<Item = (T, T)> + Clone + SortedByKey + Sized,
+//     I: SortedDisjoint<T> + Clone + Sized,
 // {
 //     fn from(iter: I) -> RangeSetInt<T> {
 //         RangeSetInt::from_sorted_distinct_iter(iter)
 //     }
 // }
+pub trait SortedDisjoint<T: Integer>: Iterator<Item = (T, T)> + SortedByKey {}
+impl<TR, T: Integer> SortedDisjoint<T> for TR where TR: Iterator<Item = (T, T)> + SortedByKey {}

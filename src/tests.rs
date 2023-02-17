@@ -831,3 +831,13 @@ fn two_type() {
     let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
     let _u = a.ranges().bitor(b.ranges());
 }
+
+#[test]
+fn kmerge_by_example() {
+    let aa = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    let bb = &RangeSetInt::<u8>::from("5..=13,18..=29");
+    let a: Box<dyn SortedDisjoint<u8>> = Box::new(aa.ranges());
+    let b: Box<dyn SortedDisjoint<u8>> = Box::new(bb.ranges().not());
+
+    let _x = [a, b].into_iter().kmerge_by(|a, b| a.0 < b.0);
+}
