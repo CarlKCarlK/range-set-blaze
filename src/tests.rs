@@ -802,11 +802,32 @@ fn custom_multi() {
 }
 
 #[test]
-fn test22() {
+fn parity_cmk00() {
     let a = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
     let c = &RangeSetInt::<u8>::from("38..=42");
-
+    // !!!cmk0 time intertools.split (?) vs range.clone()
+    // !!!cmk00 replace "Merge" with "KMerge"
+    // !!!cmk00 empty needs to work. Go back to slices?
     let parity = a & !b & !c | !a & b & !c | !a & !b & c | a & b & c;
     println!("{parity}");
+    let d = intersection_cmk([a.ranges()]);
+    let parity: RangeSetInt<u8> = union([intersection_cmk([a.ranges()])]).to_range_set_int();
+    let parity: RangeSetInt<u8> = intersection_cmk([a.ranges()]).to_range_set_int();
+    let parity: RangeSetInt<u8> = union([a.ranges()]).to_range_set_int();
+    let parity: RangeSetInt<u8> = union([
+        a.ranges(), // intersection_cmk([a.ranges(), b.ranges().not(), c.ranges().not()]),
+                    // intersection_cmk([a.ranges().not(), b.ranges(), c.ranges().not()]),
+                    // intersection_cmk([a.ranges().not(), b.ranges().not(), c.ranges()]),
+                    // intersection_cmk([a.ranges(), b.ranges(), c.ranges()]),
+    ])
+    .to_range_set_int();
+    println!("{parity}");
+}
+
+#[test]
+fn two_type() {
+    let a = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
+    let u = a.ranges().bitor(b.ranges());
 }

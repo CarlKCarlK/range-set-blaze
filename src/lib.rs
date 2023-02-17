@@ -142,7 +142,7 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
         input
             .into_iter()
             .map(|x| x.ranges())
-            .intersection()
+            .intersection_cmk2()
             .to_range_set_int()
     }
 }
@@ -432,14 +432,31 @@ where
     }
 }
 
-fn intersection<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
+fn intersection_cmk<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
 where
-    I0: Iterator<Item = I1>,
+    // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
+    I0: IntoIterator<Item = I1>,
     I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
     T: Integer,
 {
-    input.map(|seq| seq.not()).union().not()
+    // input.into_iter().map(|seq| seq.not()).union().not()
+    todo!()
 }
+
+// fn intersection_cmk<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
+// where
+//     I0: Iterator<Item = I1>,
+//     I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
+//     T: Integer,
+// {
+//     BitOrIter {
+//         merged_ranges: input
+//             .into_iter()
+//             .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
+//         range: None,
+//     }
+//     // cmk000 input.map(|seq| seq.not()).union().not()
+// }
 
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 impl<I: IntoIterator + Sized> ItertoolsPlus2 for I {}
@@ -456,13 +473,13 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
         union(self)
     }
 
-    fn intersection<T, I1>(self) -> BitAndKMerge<T, I1>
+    fn intersection_cmk2<T, I>(self) -> BitAndKMerge<T, I>
     where
-        Self: Iterator<Item = I1>,
-        I1: Iterator<Item = (T, T)> + Clone + SortedByKey,
+        Self: IntoIterator<Item = I>,
+        I: Iterator<Item = (T, T)> + Clone + SortedByKey,
         T: Integer,
     {
-        intersection(self)
+        intersection_cmk(self)
     }
 }
 
