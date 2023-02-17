@@ -800,3 +800,13 @@ fn custom_multi() {
         .to_range_set_int();
     println!("{d}");
 }
+
+#[test]
+fn test22() {
+    let a = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
+    let c = &RangeSetInt::<u8>::from("38..=42");
+
+    let parity = a & !b & !c | !a & b & !c | !a & !b & c | a & b & c;
+    println!("{parity}");
+}

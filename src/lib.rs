@@ -355,7 +355,7 @@ impl<T: Integer> RangeSetInt<T> {
     }
 }
 
-// !!!cmk00 what about combos?
+// cmk Rule: Use a crate to get op combos
 impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     /// Returns the union of `self` and `rhs` as a new `RangeSetInt`.
     ///
@@ -866,3 +866,22 @@ impl<T: Integer> From<&[T]> for RangeSetInt<T> {
         slice.iter().cloned().collect()
     }
 }
+
+// impl<T> From<RangeSetInt<T>> for Ranges<'_, T>
+// where
+//     T: Integer,
+// {
+//     fn from(range_set_int: RangeSetInt<T>) -> Ranges<'_, T> {
+//         range_set_int.ranges()
+//     }
+// }
+
+// impl<T, I> From<I> for RangeSetInt<T>
+// where
+//     T: Integer,
+//     I: Iterator<Item = (T, T)> + Clone + SortedByKey + Sized,
+// {
+//     fn from(iter: I) -> RangeSetInt<T> {
+//         RangeSetInt::from_sorted_distinct_iter(iter)
+//     }
+// }
