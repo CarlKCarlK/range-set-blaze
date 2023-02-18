@@ -535,7 +535,9 @@ where
         if let Some((start, stop)) = self.merged_ranges.next() {
             if let Some((current_start, current_stop)) = self.range {
                 debug_assert!(current_start <= start); // panic if not sorted
-                if current_stop < T::max_value2() && start <= current_stop + T::one() {
+                if start <= current_stop  // !!!cmk0 this code also appears in SortedRanges
+                    || (current_stop < T::max_value2() && start <= current_stop + T::one())
+                {
                     self.range = Some((current_start, max(current_stop, stop)));
                     self.next()
                 } else {
@@ -665,6 +667,7 @@ gen_ops_ex!(
     where T: Integer //Where clause for all impl's
 );
 
+#[derive(Debug)]
 enum OptionRange<T: Integer> {
     None,
     Some { start: T, stop: T },

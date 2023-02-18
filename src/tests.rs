@@ -800,6 +800,25 @@ fn custom_multi() {
 }
 
 #[test]
+fn from_string() {
+    let a = RangeSetInt::<u16>::from("0..=4,14..=17,30..=255,0..=37,43..=65535");
+    assert_eq!(a, RangeSetInt::from("0..=65535"));
+}
+
+#[test]
+fn nand_repro() {
+    let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
+    let c = &RangeSetInt::<u8>::from("38..=42");
+    println!("about to nand");
+    let d = !b | !c;
+    println!("cmk '{d}'");
+    assert_eq!(
+        d,
+        RangeSetInt::from("0..=4,14..=17,30..=255,0..=37,43..=255")
+    );
+}
+
+#[test]
 fn parity_cmk00() {
     let a = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
@@ -815,6 +834,13 @@ fn parity_cmk00() {
     let _parity: RangeSetInt<u8> =
         RangeSetInt::from_sorted_distinct_iter(intersection_cmk([a.ranges()]));
     let _parity: RangeSetInt<u8> = RangeSetInt::from_sorted_distinct_iter(union([a.ranges()]));
+    println!("!b {}", !b);
+    println!("!c {}", !c);
+    println!("!b|!c {}", !b | !c);
+    println!(
+        "!b|!c {}",
+        RangeSetInt::from_sorted_distinct_iter(b.ranges().not().bitor(c.ranges().not()))
+    );
     let parity = union2([
         //a.ranges(),
         // a.ranges(),
@@ -824,9 +850,9 @@ fn parity_cmk00() {
                           // intersection_cmk([a.ranges().not(), b.ranges().not(), c.ranges()]),
                           //  intersection_cmk([a.ranges(), b.ranges(), c.ranges()]),
     ]);
-    // println!("{parity:#?}");
+    println!("--cmk--");
     for (start, stop) in parity {
-        println!("{start}..={stop}");
+        println!("cmk'{start}..={stop}'");
     }
 }
 
