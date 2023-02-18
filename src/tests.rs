@@ -6,9 +6,11 @@
 // !!!cmk rule detail:  let chain = b.ranges().chain(c.ranges());
 // !!!cmk rule detail:  let a_less = a.ranges().sub(chain);
 // !!!cmk rule test near extreme values
+// !!!cmk test it across threads
 use std::collections::BTreeSet; // , time::Instant
 
 use super::*;
+// use sorted_iter::assume::AssumeSortedByKeyExt;
 // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use syntactic_for::syntactic_for;
 // use thousands::Separable;
@@ -842,8 +844,13 @@ fn parity_cmk00() {
         "!b|!c {}",
         RangeSetInt::from_sorted_distinct_iter(b.ranges().not().bitor(c.ranges().not()))
     );
-    let mixed_list: Vec<Box<dyn SortedDisjoint<u8>>> = vec![Box::new(a.ranges())];
-    // let parity = union2(mixed_list);
+
+    let _a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    // let a_ranges = a.ranges().assume_sorted_by_key();
+    // let mixed_list: Vec<Box<dyn SortedDisjoint<u8>>> = vec![Box::new(a_ranges)];
+    // union_x(mixed_list);
+    // !!!cmk0000
+    // let _parity = union3::<u8>(mixed_list.as_slice());
     // let mixed_list: Vec<Box<dyn SortedDisjoint<u8>>> = vec![
     //     Box::new(a.ranges()),
     //     Box::new(b.ranges().not()),
@@ -859,9 +866,15 @@ fn parity_cmk00() {
     //                       // intersection_cmk([a.ranges().not(), b.ranges().not(), c.ranges()]),
     //                       //  intersection_cmk([a.ranges(), b.ranges(), c.ranges()]),
     // ]);
-    println!("--cmk--");
-    for (start, stop) in parity {
-        println!("cmk'{start}..={stop}'");
+    // println!("--cmk--");
+    // for (start, stop) in parity {
+    //     println!("cmk'{start}..={stop}'");
+    // }
+}
+
+fn _union_x(mixed_list: Vec<Box<dyn SortedDisjoint<u8>>>) {
+    for _dit in mixed_list.iter() {
+        println!("hello");
     }
 }
 

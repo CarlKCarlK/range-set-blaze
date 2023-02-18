@@ -924,3 +924,17 @@ where
     };
     Box::new(bit_or_iter)
 }
+
+pub fn union3<'a, T>(input: &[Box<dyn SortedDisjoint<u8>>]) -> Box<dyn SortedDisjoint<T> + 'a>
+where
+    T: Integer + 'a,
+{
+    let _input = input.iter();
+    // let merged_ranges = input.kmerge_by(|pair0, pair1| pair0.0 < pair1.0);
+    // let bit_or_iter = BitOrIter {
+    //     merged_ranges,
+    //     range: None,
+    // };
+    // Box::new(bit_or_iter)
+    todo!()
+}
