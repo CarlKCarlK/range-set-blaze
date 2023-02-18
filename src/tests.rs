@@ -5,6 +5,7 @@
 // !!!cmk rule detail: Note that this nicely fails to compile if you try to chain when you shouldn't
 // !!!cmk rule detail:  let chain = b.ranges().chain(c.ranges());
 // !!!cmk rule detail:  let a_less = a.ranges().sub(chain);
+// !!!cmk rule test near extreme values
 use std::collections::BTreeSet; // , time::Instant
 
 use super::*;
@@ -841,15 +842,23 @@ fn parity_cmk00() {
         "!b|!c {}",
         RangeSetInt::from_sorted_distinct_iter(b.ranges().not().bitor(c.ranges().not()))
     );
-    let parity = union2([
-        //a.ranges(),
-        // a.ranges(),
-        b.ranges().not(),
-        c.ranges().not(), // intersection_cmk([a.ranges(), b.ranges().not(), c.ranges().not()]),
-                          // intersection_cmk([a.ranges().not(), b.ranges(), c.ranges().not()]),
-                          // intersection_cmk([a.ranges().not(), b.ranges().not(), c.ranges()]),
-                          //  intersection_cmk([a.ranges(), b.ranges(), c.ranges()]),
-    ]);
+    let mixed_list: Vec<Box<dyn SortedDisjoint<u8>>> = vec![Box::new(a.ranges())];
+    // let parity = union2(mixed_list);
+    // let mixed_list: Vec<Box<dyn SortedDisjoint<u8>>> = vec![
+    //     Box::new(a.ranges()),
+    //     Box::new(b.ranges().not()),
+    //     Box::new(c.ranges().not()),
+    // ];
+    // let parity = union2(mixed_list);
+    // let parity = union2([
+    //     //a.ranges(),
+    //     // a.ranges(),
+    //     b.ranges().not(),
+    //     c.ranges().not(), // intersection_cmk([a.ranges(), b.ranges().not(), c.ranges().not()]),
+    //                       // intersection_cmk([a.ranges().not(), b.ranges(), c.ranges().not()]),
+    //                       // intersection_cmk([a.ranges().not(), b.ranges().not(), c.ranges()]),
+    //                       //  intersection_cmk([a.ranges(), b.ranges(), c.ranges()]),
+    // ]);
     println!("--cmk--");
     for (start, stop) in parity {
         println!("cmk'{start}..={stop}'");
