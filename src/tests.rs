@@ -791,13 +791,11 @@ fn custom_multi() {
 
     let union_stream = b.ranges().bitor(c.ranges());
     let a_less = a.ranges().sub(union_stream);
-    let d: RangeSetInt<_> = a_less.to_range_set_int();
+    let d: RangeSetInt<_> = RangeSetInt::from_sorted_distinct_iter(a_less);
     println!("{d}");
 
-    let d: RangeSetInt<_> = a
-        .ranges()
-        .sub(union([b.ranges(), c.ranges()]))
-        .to_range_set_int();
+    let d: RangeSetInt<_> =
+        RangeSetInt::from_sorted_distinct_iter(a.ranges().sub(union([b.ranges(), c.ranges()])));
     println!("{d}");
 }
 
@@ -812,17 +810,24 @@ fn parity_cmk00() {
     let parity = a & !b & !c | !a & b & !c | !a & !b & c | a & b & c;
     println!("{parity}");
     let _d = intersection_cmk([a.ranges()]);
-    let _parity: RangeSetInt<u8> = union([intersection_cmk([a.ranges()])]).to_range_set_int();
-    let _parity: RangeSetInt<u8> = intersection_cmk([a.ranges()]).to_range_set_int();
-    let _parity: RangeSetInt<u8> = union([a.ranges()]).to_range_set_int();
-    let parity: RangeSetInt<u8> = union([
-        a.ranges(), // intersection_cmk([a.ranges(), b.ranges().not(), c.ranges().not()]),
-                    // intersection_cmk([a.ranges().not(), b.ranges(), c.ranges().not()]),
-                    // intersection_cmk([a.ranges().not(), b.ranges().not(), c.ranges()]),
-                    // intersection_cmk([a.ranges(), b.ranges(), c.ranges()]),
-    ])
-    .to_range_set_int();
-    println!("{parity}");
+    let _parity: RangeSetInt<u8> =
+        RangeSetInt::from_sorted_distinct_iter(union([intersection_cmk([a.ranges()])]));
+    let _parity: RangeSetInt<u8> =
+        RangeSetInt::from_sorted_distinct_iter(intersection_cmk([a.ranges()]));
+    let _parity: RangeSetInt<u8> = RangeSetInt::from_sorted_distinct_iter(union([a.ranges()]));
+    let parity = union2([
+        //a.ranges(),
+        // a.ranges(),
+        b.ranges().not(),
+        c.ranges().not(), // intersection_cmk([a.ranges(), b.ranges().not(), c.ranges().not()]),
+                          // intersection_cmk([a.ranges().not(), b.ranges(), c.ranges().not()]),
+                          // intersection_cmk([a.ranges().not(), b.ranges().not(), c.ranges()]),
+                          //  intersection_cmk([a.ranges(), b.ranges(), c.ranges()]),
+    ]);
+    // println!("{parity:#?}");
+    for (start, stop) in parity {
+        println!("{start}..={stop}");
+    }
 }
 
 #[test]

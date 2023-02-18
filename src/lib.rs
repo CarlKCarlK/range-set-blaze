@@ -129,22 +129,16 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        input
-            .into_iter()
-            .map(|x| x.ranges())
-            .union()
-            .to_range_set_int()
+        RangeSetInt::from_sorted_distinct_iter(input.into_iter().map(|x| x.ranges()).union())
     }
 
     pub fn intersection<I>(input: I) -> Self
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        input
-            .into_iter()
-            .map(|x| x.ranges())
-            .intersection_cmk2()
-            .to_range_set_int()
+        RangeSetInt::from_sorted_distinct_iter(
+            input.into_iter().map(|x| x.ranges()).intersection_cmk2(),
+        )
     }
 }
 
@@ -492,9 +486,9 @@ where
 }
 
 pub trait ItertoolsSorted<T: Integer>: SortedDisjoint<T> + Clone + Sized {
-    fn to_range_set_int(self) -> RangeSetInt<T> {
-        RangeSetInt::from_sorted_distinct_iter(self)
-    }
+    // fn to_range_set_int(self) -> RangeSetInt<T> {
+    //     RangeSetInt::from_sorted_distinct_iter(self)
+    // }
 
     fn bitor<J>(self, other: J) -> BitOrMerge<T, Self, J>
     where
@@ -646,16 +640,16 @@ gen_ops_ex!(
     // assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     // ```
     for | call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        a.ranges().bitor(b.ranges()).to_range_set_int()
+        RangeSetInt::from_sorted_distinct_iter(a.ranges().bitor(b.ranges()))
     };
     for & call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        a.ranges().bitand(b.ranges()).to_range_set_int()
+        RangeSetInt::from_sorted_distinct_iter(a.ranges().bitand(b.ranges()))
     };
     for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        a.ranges().bitxor(b.ranges()).to_range_set_int()
+        RangeSetInt::from_sorted_distinct_iter(a.ranges().bitxor(b.ranges()))
     };
     for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        a.ranges().sub(b.ranges()).to_range_set_int()
+        RangeSetInt::from_sorted_distinct_iter(a.ranges().sub(b.ranges()))
     };
 
     where T: Integer //Where clause for all impl's
@@ -665,7 +659,7 @@ gen_ops_ex!(
     <T>;
     types ref RangeSetInt<T> => RangeSetInt<T>;
     for ! call |a: &RangeSetInt<T>| {
-        a.ranges().not().to_range_set_int()
+        RangeSetInt::from_sorted_distinct_iter(a.ranges().not())
     };
 
     where T: Integer //Where clause for all impl's
@@ -905,4 +899,25 @@ pub trait SortedDisjoint<T: Integer>: Iterator<Item = (T, T)> + SortedByKey + Dy
 impl<TR, T: Integer> SortedDisjoint<T> for TR where
     TR: Iterator<Item = (T, T)> + SortedByKey + DynClone
 {
+}
+// pub struct BoxSortedDisjoint<T>
+// where
+//     T: Integer,
+// {
+//     inner: Box<dyn SortedDisjoint<T>>,
+// }
+
+pub fn union2<'a, T, I0, I1>(input: I0) -> Box<dyn SortedDisjoint<T> + 'a>
+where
+    I0: IntoIterator<Item = I1>,
+    I1: SortedDisjoint<T> + Clone + 'a,
+    T: Integer + 'a,
+{
+    let bit_or_iter = BitOrIter {
+        merged_ranges: input
+            .into_iter()
+            .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
+        range: None,
+    };
+    Box::new(bit_or_iter)
 }
