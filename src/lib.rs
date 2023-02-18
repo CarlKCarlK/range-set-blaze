@@ -24,6 +24,7 @@
 
 mod merger;
 mod safe_subtract;
+mod simple;
 mod tests;
 
 use dyn_clone::DynClone;
