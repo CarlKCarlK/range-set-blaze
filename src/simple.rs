@@ -68,12 +68,11 @@ where
     II: IntoIterator<Item = I>,
     I: SortedDisjointIterator,
 {
-    let iters = iters.into_iter();
-    if use_first {
-        iters.next().unwrap()
-    } else {
-        iters.next().unwrap()
+    let mut iters = iters.into_iter();
+    if !use_first {
+        iters.next().unwrap();
     }
+    iters.next().unwrap()
 }
 
 #[test]
@@ -186,6 +185,8 @@ fn test_s_d() {
     fn even_new() -> Box<dyn Iterator<Item = u64>> {
         Box::new((0..14).filter(|x| x % 2 == 0))
     }
+
+    // impl SortedDisjoint0 for Box<dyn SortedDisjoint0> {}
 
     let primes = primes_new().assume_sorted_disjoint();
     union([primes].into_iter(), true);
