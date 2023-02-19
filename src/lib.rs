@@ -31,11 +31,14 @@ use gen_ops::gen_ops_ex;
 use itertools::Itertools;
 use itertools::KMergeBy;
 use itertools::MergeBy;
+use itertools::Tee;
 use merger::Merger;
 use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
+use sorted_iter::assume::AssumeSortedByKeyExt;
+use sorted_iter::sorted_pair_iterator::AssumeSortedByKey;
 use sorted_iter::sorted_pair_iterator::SortedByKey;
 use std::cmp::max;
 use std::collections::btree_map;
@@ -393,7 +396,16 @@ pub type BitNandMerge<T, I0, I1> = BitOrMerge<T, NotIter<T, I0>, NotIter<T, I1>>
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
 // !!!cmk0 why is there no BitSubKMerge? and BitXorKMerge?
 pub type BitSubMerge<T, I0, I1> = BitAndMerge<T, I0, NotIter<T, I1>>;
-pub type BitXOrMerge<T, I0, I1> = BitOrMerge<T, BitSubMerge<T, I0, I1>, BitSubMerge<T, I1, I0>>;
+pub type BitXOrMerge<T, I0, I1> = BitOrMerge<
+    T,
+    BitSubMerge<T, AssumeSortedByKey<Tee<I0>>, AssumeSortedByKey<Tee<I1>>>,
+    BitSubMerge<T, AssumeSortedByKey<Tee<I1>>, AssumeSortedByKey<Tee<I0>>>,
+>;
+// pub type BitXOrMerge<T, I0, I1> = BitOrMerge<
+//     T,
+//     BitAndMerge<T, AssumeSortedByKey<Tee<I0>>, NotIter<T, AssumeSortedByKey<Tee<I1>>>>,
+//     BitAndMerge<T, AssumeSortedByKey<Tee<I1>>, NotIter<T, AssumeSortedByKey<Tee<I0>>>>,
+// >;
 
 impl<T: Integer, I: Iterator<Item = (T, T)>> SortedByKey for BitOrIter<T, I> {}
 impl<T: Integer, I: Iterator<Item = (T, T)>> SortedByKey for NotIter<T, I> {}
@@ -516,9 +528,17 @@ pub trait ItertoolsSorted<T: Integer>: SortedDisjoint1<T> + Sized {
     // !!! cmk0 how do do this without cloning?
     // fn bitxor<J>(self, other: J) -> BitXOrMerge<T, Self, J>
     // where
-    //     J: Iterator<Item = Self::Item> + Clone + SortedByKey + Sized,
+    //     J: Iterator<Item = Self::Item> + SortedByKey + Sized,
     // {
-    //     self.clone().sub(other.clone()).bitor(other.sub(self))
+    //     let (mut lhs0, mut lhs1) = self.tee();
+    //     let (mut rhs0, mut rhs1) = other.tee();
+    //     let lhs0 = lhs0.assume_sorted_by_key();
+    //     let lhs1 = lhs1.assume_sorted_by_key();
+    //     let rhs0 = rhs0.assume_sorted_by_key();
+    //     let rhs1 = rhs1.assume_sorted_by_key();
+    //     let iter0 = lhs0.sub(rhs0);
+    //     let iter1 = lhs1.sub(rhs1);
+    //     iter0.bitor(iter1)
     // }
 }
 
