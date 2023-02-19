@@ -47,7 +47,8 @@ pub trait AssumeSortedDisjointExt: Iterator + Sized {
         AssumeSortedDisjoint { i: self }
     }
 }
-impl<I: Iterator + Sized> AssumeSortedDisjointExt for I {}
+// All iterators are AssumeSortedDisjointExt
+impl<I: Iterator> AssumeSortedDisjointExt for I {}
 
 // Implement the Iterator trait for AssumeSortedDisjoint<I>
 impl<I: Iterator> Iterator for AssumeSortedDisjoint<I> {
@@ -62,14 +63,17 @@ impl<I: Iterator> Iterator for AssumeSortedDisjoint<I> {
     }
 }
 
-pub fn union<II, I>(iters: II) -> I
+pub fn union<II, I>(iters: II, use_first: bool) -> I
 where
     II: IntoIterator<Item = I>,
     I: SortedDisjointIterator,
 {
-    let first = iters.into_iter().next().unwrap();
-    println!("union");
-    first
+    let iters = iters.into_iter();
+    if use_first {
+        iters.next().unwrap()
+    } else {
+        iters.next().unwrap()
+    }
 }
 
 #[test]
@@ -173,26 +177,29 @@ fn test_s_d() {
         .into_iter()
         .assume_sorted_disjoint();
     let evens = (0..14u64).filter(|x| x % 2 == 0).assume_sorted_disjoint();
-    let u = union([primes, fibs].into_iter());
+    let u = union([primes, fibs].into_iter(), true);
     println!("union: {:?}", u.collect::<Vec<_>>());
 
-    //     fn primes_new() -> Box<dyn Iterator<Item = u64>> {
-    //         Box::new(btreeset! { 2, 3, 5, 7, 11, 13u64 }.into_iter())
-    //     }
+    fn primes_new() -> Box<dyn Iterator<Item = u64>> {
+        Box::new(btreeset! { 2, 3, 5, 7, 11, 13u64 }.into_iter())
+    }
+    fn even_new() -> Box<dyn Iterator<Item = u64>> {
+        Box::new((0..14).filter(|x| x % 2 == 0))
+    }
 
-    //     fn add_dyn<'a>(input: impl Iterator<Item = u64> + 'a) -> Box<dyn Iterator<Item = u64> + 'a> {
-    //         Box::new(input)
-    //     }
+    let primes = primes_new().assume_sorted_disjoint();
+    union([primes].into_iter(), true);
+    let primes = primes_new().assume_sorted_disjoint();
+    let even = even_new().assume_sorted_disjoint();
+    let u = union([primes, even].into_iter(), false);
 
-    //     // trait SortedIterator: Iterator + SortedByItem {}
+    fn add_dyn<'a>(input: impl Iterator<Item = u64> + 'a) -> Box<dyn Iterator<Item = u64> + 'a> {
+        Box::new(input)
+    }
 
-    //     fn fibs_new() -> Box<dyn Iterator<Item = u64>> {
-    //         Box::new([1, 2, 3, 5, 8, 13u64].into_iter())
-    //     }
-
-    //     fn even_new() -> Box<dyn Iterator<Item = u64>> {
-    //         Box::new((0..14).filter(|x| x % 2 == 0))
-    //     }
+    fn fibs_new() -> Box<dyn Iterator<Item = u64>> {
+        Box::new([1, 2, 3, 5, 8, 13u64].into_iter())
+    }
 
     //     fn is_sorted(_: &dyn SortedByItem) {
     //         println!("yep");
