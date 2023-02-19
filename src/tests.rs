@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 // !!!cmk rule: Use the same testing as with macros to check that the types are correct
-// !!!cmk rule make illegal states unpresentable (example u8.len->usize, but u128 needs max_value2), SortedDistinctIter
+// !!!cmk rule make illegal states unpresentable (example u8.len->usize, but u128 needs max_value2), SortedDisjointIter
 // !!!cmk rule detail: Note that this nicely fails to compile if you try to chain when you shouldn't
 // !!!cmk rule detail:  let chain = b.ranges().chain(c.ranges());
 // !!!cmk rule detail:  let a_less = a.ranges().sub(chain);
@@ -775,7 +775,7 @@ fn multi_op() {
 }
 
 // cmk00 use merge in example
-// cmk00 support 'from' not just 'from_sorted_distinct_iter'
+// cmk00 support 'from' not just 'from_sorted_disjoint_iter'
 // cmk00 support 'collect' not just 'from'
 // cmk00 much too easy to make errors -- need types!
 // cmk00 need to be able to do a|b|c
@@ -794,11 +794,11 @@ fn custom_multi() {
 
     let union_stream = b.ranges().bitor(c.ranges());
     let a_less = a.ranges().sub(union_stream);
-    let d: RangeSetInt<_> = RangeSetInt::from_sorted_distinct_iter(a_less);
+    let d: RangeSetInt<_> = RangeSetInt::from_sorted_disjoint_iter(a_less);
     println!("{d}");
 
     let d: RangeSetInt<_> =
-        RangeSetInt::from_sorted_distinct_iter(a.ranges().sub(union([b.ranges(), c.ranges()])));
+        RangeSetInt::from_sorted_disjoint_iter(a.ranges().sub(union([b.ranges(), c.ranges()])));
     println!("{d}");
 }
 
@@ -833,16 +833,16 @@ fn parity_cmk00() {
     println!("{parity}");
     let _d = intersection_cmk([a.ranges()]);
     let _parity: RangeSetInt<u8> =
-        RangeSetInt::from_sorted_distinct_iter(union([intersection_cmk([a.ranges()])]));
+        RangeSetInt::from_sorted_disjoint_iter(union([intersection_cmk([a.ranges()])]));
     let _parity: RangeSetInt<u8> =
-        RangeSetInt::from_sorted_distinct_iter(intersection_cmk([a.ranges()]));
-    let _parity: RangeSetInt<u8> = RangeSetInt::from_sorted_distinct_iter(union([a.ranges()]));
+        RangeSetInt::from_sorted_disjoint_iter(intersection_cmk([a.ranges()]));
+    let _parity: RangeSetInt<u8> = RangeSetInt::from_sorted_disjoint_iter(union([a.ranges()]));
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
     println!(
         "!b|!c {}",
-        RangeSetInt::from_sorted_distinct_iter(b.ranges().not().bitor(c.ranges().not()))
+        RangeSetInt::from_sorted_disjoint_iter(b.ranges().not().bitor(c.ranges().not()))
     );
 
     let _a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
@@ -872,7 +872,7 @@ fn parity_cmk00() {
     // }
 }
 
-fn _union_x(mixed_list: Vec<Box<dyn SortedDisjoint<u8>>>) {
+fn _union_x(mixed_list: Vec<Box<dyn SortedDisjoint1<u8>>>) {
     for _dit in mixed_list.iter() {
         println!("hello");
     }
@@ -889,8 +889,8 @@ fn two_type() {
 fn kmerge_by_example() {
     let aa = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let bb = &RangeSetInt::<u8>::from("5..=13,18..=29");
-    let a: Box<dyn SortedDisjoint<u8>> = Box::new(aa.ranges());
-    let b: Box<dyn SortedDisjoint<u8>> = Box::new(bb.ranges().not());
+    let a: Box<dyn SortedDisjoint1<u8>> = Box::new(aa.ranges());
+    let b: Box<dyn SortedDisjoint1<u8>> = Box::new(bb.ranges().not());
 
     let _x = [a, b].into_iter().kmerge_by(|a, b| a.0 < b.0);
 }
