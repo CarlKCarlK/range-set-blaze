@@ -66,7 +66,7 @@ impl<I: Iterator> Iterator for AssumeSortedDisjoint<I> {
 pub fn union<II, I>(iters: II, use_first: bool) -> I
 where
     II: IntoIterator<Item = I>,
-    I: SortedDisjointIterator,
+    I: SortedDisjoint,
 {
     let mut iters = iters.into_iter();
     if !use_first {
@@ -179,19 +179,23 @@ fn test_s_d() {
     let u = union([primes, fibs].into_iter(), true);
     println!("union: {:?}", u.collect::<Vec<_>>());
 
-    fn primes_new() -> Box<dyn Iterator<Item = u64>> {
-        Box::new(btreeset! { 2, 3, 5, 7, 11, 13u64 }.into_iter())
+    fn primes_new() -> Box<dyn SortedDisjoint> {
+        Box::new(
+            btreeset! { 2, 3, 5, 7, 11, 13u64 }
+                .into_iter()
+                .assume_sorted_disjoint(),
+        )
     }
-    fn even_new() -> Box<dyn Iterator<Item = u64>> {
-        Box::new((0..14).filter(|x| x % 2 == 0))
+    fn even_new() -> Box<dyn SortedDisjoint> {
+        Box::new((0..14).filter(|x| x % 2 == 0).assume_sorted_disjoint())
     }
 
-    // impl SortedDisjoint0 for Box<dyn SortedDisjoint0> {}
+    impl SortedDisjoint for Box<dyn SortedDisjoint> {}
 
-    let primes = primes_new().assume_sorted_disjoint();
+    let primes = primes_new();
     union([primes].into_iter(), true);
-    let primes = primes_new().assume_sorted_disjoint();
-    let even = even_new().assume_sorted_disjoint();
+    let primes = primes_new();
+    let even = even_new();
     let u = union([primes, even].into_iter(), false);
 
     fn add_dyn<'a>(input: impl Iterator<Item = u64> + 'a) -> Box<dyn Iterator<Item = u64> + 'a> {
