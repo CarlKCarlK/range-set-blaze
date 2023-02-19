@@ -63,18 +63,6 @@ impl<I: Iterator> Iterator for AssumeSortedDisjoint<I> {
     }
 }
 
-pub fn union<II, I>(iters: II, use_first: bool) -> I
-where
-    II: IntoIterator<Item = I>,
-    I: SortedDisjoint,
-{
-    let mut iters = iters.into_iter();
-    if !use_first {
-        iters.next().unwrap();
-    }
-    iters.next().unwrap()
-}
-
 #[test]
 fn test11() {
     let fibs = btreeset! { 1, 2, 3, 5, 8, 13u64 }.into_iter();
@@ -162,49 +150,40 @@ fn test11() {
 
 #[test]
 fn test_s_d() {
-    let fibs = btreeset! { 1, 2, 3, 5, 8, 13u64 }
-        .into_iter()
-        .assume_sorted_disjoint();
-    let evens = (0..14).filter(|x| x % 2 == 0).assume_sorted_disjoint();
-    let fib_evens = fibs.left(evens);
-    println!("fib_evens: {:?}", fib_evens.collect::<Vec<_>>());
+    let fibs = DynSortedDisjointIter::new(btreeset! { 1, 2, 3, 5, 8, 13u64 }.into_iter());
+    let evens = DynSortedDisjointIter::new((0..14).filter(|x| x % 2 == 0));
+    // let fib_evens = fibs.left(evens);
+    // println!("fib_evens: {:?}", fib_evens.collect::<Vec<_>>());
 
-    let primes = btreeset! { 2, 3, 5, 7, 11, 13u64 }
-        .into_iter()
-        .assume_sorted_disjoint();
-    let fibs = btreeset! { 1, 2, 3, 5, 8, 13u64 }
-        .into_iter()
-        .assume_sorted_disjoint();
-    let evens = (0..14u64).filter(|x| x % 2 == 0).assume_sorted_disjoint();
-    let u = union([primes, fibs].into_iter(), true);
-    println!("union: {:?}", u.collect::<Vec<_>>());
+    // let u = union([primes, fibs].into_iter(), true);
+    // println!("union: {:?}", u.collect::<Vec<_>>());
 
-    fn primes_new() -> Box<dyn SortedDisjoint> {
-        Box::new(
-            btreeset! { 2, 3, 5, 7, 11, 13u64 }
-                .into_iter()
-                .assume_sorted_disjoint(),
-        )
-    }
-    fn even_new() -> Box<dyn SortedDisjoint> {
-        Box::new((0..14).filter(|x| x % 2 == 0).assume_sorted_disjoint())
-    }
+    // fn primes_new() -> Box<dyn SortedDisjoint> {
+    //     Box::new(
+    //         btreeset! { 2, 3, 5, 7, 11, 13u64 }
+    //             .into_iter()
+    //             .assume_sorted_disjoint(),
+    //     )
+    // }
+    // fn even_new() -> Box<dyn SortedDisjoint> {
+    //     Box::new((0..14).filter(|x| x % 2 == 0).assume_sorted_disjoint())
+    // }
 
-    impl SortedDisjoint for Box<dyn SortedDisjoint> {}
+    // impl SortedDisjoint for Box<dyn SortedDisjoint> {}
 
-    let primes = primes_new();
-    union([primes].into_iter(), true);
-    let primes = primes_new();
-    let even = even_new();
-    let u = union([primes, even].into_iter(), false);
+    // let primes = primes_new();
+    // union([primes].into_iter(), true);
+    // let primes = primes_new();
+    // let even = even_new();
+    // let u = union([primes, even].into_iter(), false);
 
-    fn add_dyn<'a>(input: impl Iterator<Item = u64> + 'a) -> Box<dyn Iterator<Item = u64> + 'a> {
-        Box::new(input)
-    }
+    // fn add_dyn<'a>(input: impl Iterator<Item = u64> + 'a) -> Box<dyn Iterator<Item = u64> + 'a> {
+    //     Box::new(input)
+    // }
 
-    fn fibs_new() -> Box<dyn Iterator<Item = u64>> {
-        Box::new([1, 2, 3, 5, 8, 13u64].into_iter())
-    }
+    // fn fibs_new() -> Box<dyn Iterator<Item = u64>> {
+    //     Box::new([1, 2, 3, 5, 8, 13u64].into_iter())
+    // }
 
     //     fn is_sorted(_: &dyn SortedByItem) {
     //         println!("yep");
@@ -268,4 +247,36 @@ fn test_s_d() {
     //     );
     //     println!("mw: {:?}", mw.collect::<Vec<_>>());
     // }
+}
+
+pub struct DynSortedDisjointIter<'a> {
+    iter: Box<dyn Iterator<Item = u64> + 'a>,
+}
+
+impl<'a> DynSortedDisjointIter<'a> {
+    pub fn new(iter: impl Iterator<Item = u64> + 'a) -> Self {
+        DynSortedDisjointIter {
+            iter: Box::new(iter),
+        }
+    }
+}
+
+impl<'a> Iterator for DynSortedDisjointIter<'a> {
+    type Item = u64;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+}
+
+pub fn union<'a, I>(iters: I) -> DynSortedDisjointIter<'a>
+where
+    I: IntoIterator<Item = DynSortedDisjointIter<'a>>,
+{
+    for inner in iters {
+        for item in inner {
+            println!("item: {item}");
+        }
+    }
+    DynSortedDisjointIter::new((0..14).filter(|x| x % 2 == 0))
 }
