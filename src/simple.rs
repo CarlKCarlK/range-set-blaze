@@ -5,7 +5,7 @@ use sorted_iter::{
     assume::AssumeSortedByItemExt, multiway_union, sorted_iterator::SortedByItem, SortedIterator,
 };
 
-use crate::union;
+use crate::{union, Integer};
 
 // Inspired by sorted_iter crate.
 
@@ -13,16 +13,16 @@ use crate::union;
 pub trait SortedDisjoint {}
 
 // define mathematical set methods, e.g. left_iter.left(right_iter) returns the left_iter.
-pub trait SortedDisjointIterator: Iterator + Sized {
+pub trait SortedDisjointIterator<T>: Iterator + Sized {
     fn left<J>(self, _that: J) -> Self
     where
-        J: SortedDisjointIterator<Item = Self::Item>,
+        J: SortedDisjointIterator<T>,
     {
         self
     }
     fn right<J>(self, that: J) -> J
     where
-        J: SortedDisjointIterator<Item = Self::Item>,
+        J: SortedDisjointIterator<T>,
     {
         that
     }
@@ -32,7 +32,12 @@ pub trait SortedDisjointIterator: Iterator + Sized {
 // for any type I that satisfies two conditions: it is an Iterator and it is SortedDisjoint.
 // This lets us use the methods defined in the SortedDisjointIterator trait on any type that satisfies these conditions.
 // i.e. Iterator + SortedDisjoint isa SortedDisjointIterator
-impl<I: Iterator + SortedDisjoint> SortedDisjointIterator for I {}
+impl<T, I> SortedDisjointIterator<T> for I
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+}
 
 // A container for an iterator that is assumed to be sorted disjoint.
 #[derive(Clone, Debug)]
