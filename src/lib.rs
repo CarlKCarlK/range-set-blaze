@@ -27,7 +27,6 @@ mod safe_subtract;
 mod simple;
 mod tests;
 
-use dyn_clone::DynClone;
 use gen_ops::gen_ops_ex;
 use itertools::Itertools;
 use itertools::KMergeBy;
@@ -374,11 +373,10 @@ impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     }
 }
 
-#[derive(Clone)]
 pub struct BitOrIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)> + Clone,
+    I: Iterator<Item = (T, T)>,
 {
     merged_ranges: I,
     range: Option<(T, T)>,
@@ -397,13 +395,13 @@ pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
 pub type BitSubMerge<T, I0, I1> = BitAndMerge<T, I0, NotIter<T, I1>>;
 pub type BitXOrMerge<T, I0, I1> = BitOrMerge<T, BitSubMerge<T, I0, I1>, BitSubMerge<T, I1, I0>>;
 
-impl<T: Integer, I: Clone + Iterator<Item = (T, T)>> SortedByKey for BitOrIter<T, I> {}
-impl<T: Integer, I: Clone + Iterator<Item = (T, T)>> SortedByKey for NotIter<T, I> {}
+impl<T: Integer, I: Iterator<Item = (T, T)>> SortedByKey for BitOrIter<T, I> {}
+impl<T: Integer, I: Iterator<Item = (T, T)>> SortedByKey for NotIter<T, I> {}
 impl<T, I0, I1> BitOrMerge<T, I0, I1>
 where
     T: Integer,
-    I0: Iterator<Item = (T, T)> + Clone,
-    I1: Iterator<Item = (T, T)> + Clone,
+    I0: Iterator<Item = (T, T)>,
+    I1: Iterator<Item = (T, T)>,
 {
     // !!!cmk0 understand this better
     fn new(lhs: I0, rhs: I1) -> BitOrMerge<T, I0, I1> {
@@ -417,7 +415,7 @@ where
 fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
 where
     I0: IntoIterator<Item = I1>,
-    I1: SortedDisjoint1<T> + Clone,
+    I1: SortedDisjoint1<T>,
     T: Integer,
 {
     BitOrIter {
@@ -432,7 +430,7 @@ fn intersection_cmk<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
 where
     // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
     I0: IntoIterator<Item = I1>,
-    I1: SortedDisjoint1<T> + Clone,
+    I1: SortedDisjoint1<T>,
     T: Integer,
 {
     input.into_iter().map(|seq| seq.not()).union().not()
@@ -463,7 +461,7 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
     fn union<T, I>(self) -> BitOrKMerge<T, I>
     where
         Self: IntoIterator<Item = I>,
-        I: SortedDisjoint1<T> + Clone,
+        I: SortedDisjoint1<T>,
         T: Integer,
     {
         union(self)
@@ -472,7 +470,7 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
     fn intersection_cmk2<T, I>(self) -> BitAndKMerge<T, I>
     where
         Self: IntoIterator<Item = I>,
-        I: SortedDisjoint1<T> + Clone,
+        I: SortedDisjoint1<T>,
         T: Integer,
     {
         intersection_cmk(self)
@@ -481,32 +479,32 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
 
 impl<I, T> ItertoolsSorted<T> for I
 where
-    I: SortedDisjoint1<T> + Clone + Sized,
+    I: SortedDisjoint1<T> + Sized,
     T: Integer,
 {
 }
 
-pub trait ItertoolsSorted<T: Integer>: SortedDisjoint1<T> + Clone + Sized {
+pub trait ItertoolsSorted<T: Integer>: SortedDisjoint1<T> + Sized {
     // fn to_range_set_int(self) -> RangeSetInt<T> {
     //     RangeSetInt::from_sorted_disjoint_iter(self)
     // }
 
     fn bitor<J>(self, other: J) -> BitOrMerge<T, Self, J>
     where
-        J: Iterator<Item = Self::Item> + Clone + SortedByKey + Sized,
+        J: Iterator<Item = Self::Item> + SortedByKey + Sized,
     {
         BitOrMerge::new(self, other)
     }
     fn bitand<J>(self, other: J) -> BitAndMerge<T, Self, J>
     where
-        J: Iterator<Item = Self::Item> + Clone + SortedByKey,
+        J: Iterator<Item = Self::Item> + SortedByKey,
     {
         self.not().bitor(other.not()).not()
     }
 
     fn sub<J>(self, other: J) -> BitSubMerge<T, Self, J>
     where
-        J: Iterator<Item = Self::Item> + Clone + SortedByKey + Sized,
+        J: Iterator<Item = Self::Item> + SortedByKey + Sized,
     {
         self.bitand(other.not())
     }
@@ -515,12 +513,13 @@ pub trait ItertoolsSorted<T: Integer>: SortedDisjoint1<T> + Clone + Sized {
         NotIter::new(self)
     }
 
-    fn bitxor<J>(self, other: J) -> BitXOrMerge<T, Self, J>
-    where
-        J: Iterator<Item = Self::Item> + Clone + SortedByKey + Sized,
-    {
-        self.clone().sub(other.clone()).bitor(other.sub(self))
-    }
+    // !!! cmk0 how do do this without cloning?
+    // fn bitxor<J>(self, other: J) -> BitXOrMerge<T, Self, J>
+    // where
+    //     J: Iterator<Item = Self::Item> + Clone + SortedByKey + Sized,
+    // {
+    //     self.clone().sub(other.clone()).bitor(other.sub(self))
+    // }
 }
 
 // !!!cmk00 allow rhs to be of a different type
@@ -528,7 +527,7 @@ pub trait ItertoolsSorted<T: Integer>: SortedDisjoint1<T> + Clone + Sized {
 impl<T, I> Iterator for BitOrIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)> + Clone,
+    I: Iterator<Item = (T, T)>,
 {
     type Item = (T, T);
 
@@ -558,11 +557,10 @@ where
     }
 }
 
-#[derive(Clone)]
 pub struct NotIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)> + Clone,
+    I: Iterator<Item = (T, T)>,
 {
     ranges: I,
     start_not: T,
@@ -572,7 +570,7 @@ where
 impl<T, I> NotIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)> + Clone,
+    I: Iterator<Item = (T, T)>,
 {
     fn new(ranges: I) -> Self {
         NotIter {
@@ -587,7 +585,7 @@ where
 impl<T, I> Iterator for NotIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)> + Clone,
+    I: Iterator<Item = (T, T)>,
 {
     type Item = (T, T);
     fn next(&mut self) -> Option<(T, T)> {
@@ -648,9 +646,10 @@ gen_ops_ex!(
     for & call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         RangeSetInt::from_sorted_disjoint_iter(a.ranges().bitand(b.ranges()))
     };
-    for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        RangeSetInt::from_sorted_disjoint_iter(a.ranges().bitxor(b.ranges()))
-    };
+    // !!!cmk0 return xor without cloning
+    // for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
+    //     RangeSetInt::from_sorted_disjoint_iter(a.ranges().bitxor(b.ranges()))
+    // };
     for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         RangeSetInt::from_sorted_disjoint_iter(a.ranges().sub(b.ranges()))
     };
@@ -899,11 +898,8 @@ impl<T: Integer> From<&[T]> for RangeSetInt<T> {
 //         RangeSetInt::from_sorted_disjoint_iter(iter)
 //     }
 // }
-pub trait SortedDisjoint1<T: Integer>: Iterator<Item = (T, T)> + SortedByKey + DynClone {}
-impl<TR, T: Integer> SortedDisjoint1<T> for TR where
-    TR: Iterator<Item = (T, T)> + SortedByKey + DynClone
-{
-}
+pub trait SortedDisjoint1<T: Integer>: Iterator<Item = (T, T)> + SortedByKey {}
+impl<TR, T: Integer> SortedDisjoint1<T> for TR where TR: Iterator<Item = (T, T)> + SortedByKey {}
 // pub struct BoxSortedDisjoint<T>
 // where
 //     T: Integer,
@@ -911,31 +907,31 @@ impl<TR, T: Integer> SortedDisjoint1<T> for TR where
 //     inner: Box<dyn SortedDisjoint<T>>,
 // }
 
-pub fn union2<'a, T, I0, I1>(input: I0) -> Box<dyn SortedDisjoint1<T> + 'a>
-where
-    I0: IntoIterator<Item = I1>,
-    I1: SortedDisjoint1<T> + Clone + 'a,
-    T: Integer + 'a,
-{
-    let bit_or_iter = BitOrIter {
-        merged_ranges: input
-            .into_iter()
-            .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
-        range: None,
-    };
-    Box::new(bit_or_iter)
-}
+// pub fn union2<'a, T, I0, I1>(input: I0) -> Box<dyn SortedDisjoint1<T> + 'a>
+// where
+//     I0: IntoIterator<Item = I1>,
+//     I1: SortedDisjoint1<T> + Clone + 'a,
+//     T: Integer + 'a,
+// {
+//     let bit_or_iter = BitOrIter {
+//         merged_ranges: input
+//             .into_iter()
+//             .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
+//         range: None,
+//     };
+//     Box::new(bit_or_iter)
+// }
 
-pub fn union3<'a, T>(input: &[Box<dyn SortedDisjoint1<u8>>]) -> Box<dyn SortedDisjoint1<T> + 'a>
-where
-    T: Integer + 'a,
-{
-    let _input = input.iter();
-    // let merged_ranges = input.kmerge_by(|pair0, pair1| pair0.0 < pair1.0);
-    // let bit_or_iter = BitOrIter {
-    //     merged_ranges,
-    //     range: None,
-    // };
-    // Box::new(bit_or_iter)
-    todo!()
-}
+// pub fn union3<'a, T>(input: &[Box<dyn SortedDisjoint1<u8>>]) -> Box<dyn SortedDisjoint1<T> + 'a>
+// where
+//     T: Integer + 'a,
+// {
+//     let _input = input.iter();
+//     // let merged_ranges = input.kmerge_by(|pair0, pair1| pair0.0 < pair1.0);
+//     // let bit_or_iter = BitOrIter {
+//     //     merged_ranges,
+//     //     range: None,
+//     // };
+//     // Box::new(bit_or_iter)
+//     todo!()
+// }

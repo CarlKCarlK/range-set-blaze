@@ -287,32 +287,33 @@ pub fn clumps(c: &mut Criterion) {
     });
 }
 
-fn bitxor(c: &mut Criterion) {
-    let len = 10_000_000;
-    let range_len = 10_000;
-    let coverage_goal = 0.50;
-    let mut group = c.benchmark_group("operations");
-    group.sample_size(10);
-    // group.measurement_time(Duration::from_secs(170));
-    group.bench_function("RangeSetInt bitxor", |b| {
-        b.iter_batched(
-            || two_sets(range_len, len, coverage_goal),
-            |(set0, set1)| {
-                let _answer = &set0 ^ &set1;
-            },
-            BatchSize::SmallInput,
-        );
-    });
-    group.bench_function("BTreeSet bitxor", |b| {
-        b.iter_batched(
-            || btree_two_sets(range_len, len, coverage_goal),
-            |(set0, set1)| {
-                let _answer = &set0 ^ &set1;
-            },
-            BatchSize::SmallInput,
-        );
-    });
-}
+// cmk0 restore xor
+// fn bitxor(c: &mut Criterion) {
+//     let len = 10_000_000;
+//     let range_len = 10_000;
+//     let coverage_goal = 0.50;
+//     let mut group = c.benchmark_group("operations");
+//     group.sample_size(10);
+//     // group.measurement_time(Duration::from_secs(170));
+//     group.bench_function("RangeSetInt bitxor", |b| {
+//         b.iter_batched(
+//             || two_sets(range_len, len, coverage_goal),
+//             |(set0, set1)| {
+//                 let _answer = &set0 ^ &set1;
+//             },
+//             BatchSize::SmallInput,
+//         );
+//     });
+//     group.bench_function("BTreeSet bitxor", |b| {
+//         b.iter_batched(
+//             || btree_two_sets(range_len, len, coverage_goal),
+//             |(set0, set1)| {
+//                 let _answer = &set0 ^ &set1;
+//             },
+//             BatchSize::SmallInput,
+//         );
+//     });
+// }
 
 fn bitor(c: &mut Criterion) {
     let len = 10_000_000;
@@ -489,7 +490,7 @@ criterion_group!(
     ascending,
     descending,
     clumps,
-    bitxor,
+    // cmk0 restore bitxor,
     bitor,
     bitor1,
     k_intersect

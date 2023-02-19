@@ -14,12 +14,12 @@ num-traits = "0.2.14"
 trait-set = "0.3.0"
 gen_ops = "0.2.0"
 sorted-iter = "0.1.8"
-dyn-clone = "1.0.10"
-maplit = "1.0.2"
+# cmk00 dyn-clone = "1.0.10"
 
 [dev-dependencies]
 syntactic-for = "0.1.1"
 criterion = "0.4.0"
+maplit = "1.0.2"
 # pprof = { version = "0.11.0", features = ["flamegraph", "criterion"] }
 
 [[bench]]
