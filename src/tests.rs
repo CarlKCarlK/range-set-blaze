@@ -846,79 +846,25 @@ fn parity() {
     );
 
     let _a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    let a_ranges = a.ranges();
-    let mixed_list = [a_ranges.dyn_sorted_disjoint()];
-    let u = union(mixed_list);
-    // !!!cmk00 this 'from_sorted_disjoint_iter' is ugly
-    println!("u {}", RangeSetInt::from_sorted_disjoint_iter(u));
-    let a_ranges = a.ranges().dyn_sorted_disjoint();
-    let b_ranges = b.ranges().dyn_sorted_disjoint();
-    let c_ranges = c.ranges().not().dyn_sorted_disjoint();
-    let u = union([a_ranges, b_ranges, c_ranges]);
-    println!("u {}", RangeSetInt::from_sorted_disjoint_iter(u));
+    let u = union_dyn!(a.ranges());
+    assert_eq!(
+        RangeSetInt::from_sorted_disjoint_iter(u),
+        RangeSetInt::from("1..=6,8..=9,11..=15")
+    );
+    let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
+    assert_eq!(
+        RangeSetInt::from_sorted_disjoint_iter(u),
+        RangeSetInt::from("1..=15,18..=29,38..=42")
+    );
 
-    let a00 = a.ranges().not().dyn_sorted_disjoint();
-    let a01 = a.ranges().not().dyn_sorted_disjoint();
-    let b00 = b.ranges().not().dyn_sorted_disjoint();
-    let b01 = b.ranges().not().dyn_sorted_disjoint();
-    let c00 = c.ranges().not().dyn_sorted_disjoint();
-    let c01 = c.ranges().not().dyn_sorted_disjoint();
-    let a10 = a.ranges().dyn_sorted_disjoint();
-    let a11 = a.ranges().dyn_sorted_disjoint();
-    let b10 = b.ranges().dyn_sorted_disjoint();
-    let b11 = b.ranges().dyn_sorted_disjoint();
-    let c10 = c.ranges().dyn_sorted_disjoint();
-    let c11 = c.ranges().dyn_sorted_disjoint();
-    // cmk00 could we make a macro to apply dyn_sorted_disjoint to all args?
-    let term1 = intersection([a10, b00, c00]);
-    let term2 = intersection([a00, b10, c01]);
-    let term3 = intersection([a01, b01, c10]);
-    let term4 = intersection([a11, b11, c11]);
-    let u = union([term1, term2, term3, term4]);
-    println!("parity {}", RangeSetInt::from_sorted_disjoint_iter(u));
-
-    // // !!!cmk00Parity
-    // let _parity = union3::<u8>(mixed_list.as_slice());
-    // let mixed_list: Vec<Box<dyn SortedDisjoint<u8>>> = vec![
-    //     Box::new(a.ranges()),
-    //     Box::new(b.ranges().not()),
-    //     Box::new(c.ranges().not()),
-    // ];
-    // let parity = union2(mixed_list);
-    // let parity = union2([
-    //     //a.ranges(),
-    //     // a.ranges(),
-    //     b.ranges().not(),
-    //     c.ranges().not(), // intersection_cmk([a.ranges(), b.ranges().not(), c.ranges().not()]),
-    //                       // intersection_cmk([a.ranges().not(), b.ranges(), c.ranges().not()]),
-    //                       // intersection_cmk([a.ranges().not(), b.ranges().not(), c.ranges()]),
-    //                       //  intersection_cmk([a.ranges(), b.ranges(), c.ranges()]),
-    // ]);
-    // println!("--cmk--");
-    // for (start, stop) in parity {
-    //     println!("cmk'{start}..={stop}'");
-    // }
+    let u = union([
+        intersection_dyn!(a.ranges(), b.ranges().not(), c.ranges().not()),
+        intersection_dyn!(a.ranges().not(), b.ranges(), c.ranges().not()),
+        intersection_dyn!(a.ranges().not(), b.ranges().not(), c.ranges()),
+        intersection_dyn!(a.ranges(), b.ranges(), c.ranges()),
+    ]);
+    assert_eq!(
+        RangeSetInt::from_sorted_disjoint_iter(u),
+        RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
+    );
 }
-
-// fn _union_x(mixed_list: Vec<Box<dyn SortedDisjoint1<u8>>>) {
-//     for _dit in mixed_list.iter() {
-//         println!("hello");
-//     }
-// }
-
-// #[test]
-// fn two_type() {
-//     let a = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-//     let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
-//     let _u = a.ranges().bitor(b.ranges());
-// }
-
-// #[test]
-// fn kmerge_by_example() {
-//     let aa = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-//     let bb = &RangeSetInt::<u8>::from("5..=13,18..=29");
-//     let a: Box<dyn SortedDisjoint1<u8>> = Box::new(aa.ranges());
-//     let b: Box<dyn SortedDisjoint1<u8>> = Box::new(bb.ranges().not());
-
-//     let _x = [a, b].into_iter().kmerge_by(|a, b| a.0 < b.0);
-// }
