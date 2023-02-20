@@ -14,7 +14,7 @@ num-traits = "0.2.14"
 trait-set = "0.3.0"
 gen_ops = "0.2.0"
 sorted-iter = "0.1.8"
-# cmk00 dyn-clone = "1.0.10"
+# cmk0 dyn-clone = "1.0.10"
 
 [dev-dependencies]
 syntactic-for = "0.1.1"

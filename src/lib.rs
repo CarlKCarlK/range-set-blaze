@@ -136,9 +136,7 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        RangeSetInt::from_sorted_disjoint_iter(
-            input.into_iter().map(|x| x.ranges()).intersection_cmk2(),
-        )
+        RangeSetInt::from_sorted_disjoint_iter(input.into_iter().map(|x| x.ranges()).intersection())
     }
 }
 
@@ -326,7 +324,7 @@ impl<'a, T: Integer> Iterator for Ranges<'a, T> {
     }
 }
 
-// !!!cmk00 don't use this or from_iter explicitly. Instead use 'collect'
+// !!!cmk0 don't use this or from_iter explicitly. Instead use 'collect'
 impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -435,7 +433,7 @@ where
     }
 }
 
-fn intersection_cmk<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
+fn intersection<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
 where
     // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
     I0: IntoIterator<Item = I1>,
@@ -443,29 +441,13 @@ where
     T: Integer,
 {
     input.into_iter().map(|seq| seq.not()).union().not()
-    // todo!() cmk00
 }
-
-// fn intersection_cmk<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
-// where
-//     I0: Iterator<Item = I1>,
-//     I1: SortedDisjoint<T> + Clone,
-//     T: Integer,
-// {
-//     BitOrIter {
-//         merged_ranges: input
-//             .into_iter()
-//             .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
-//         range: None,
-//     }
-//     // cmk000 input.map(|seq| seq.not()).union().not()
-// }
 
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 impl<I: IntoIterator + Sized> ItertoolsPlus2 for I {}
 pub trait ItertoolsPlus2: IntoIterator + Sized {
-    // !!!cmk00 where is two input merge?
-    // !!!cmk0 is it an issue that all inputs by the be the same type?
+    // !!!cmk0 where is two input merge?
+    // !!!cmk00parity is it an issue that all inputs by the be the same type?
 
     fn union<T, I>(self) -> BitOrKMerge<T, I>
     where
@@ -476,13 +458,14 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
         union(self)
     }
 
-    fn intersection_cmk2<T, I>(self) -> BitAndKMerge<T, I>
+    // !!!cmk0 don't have a function and a method. Pick one.
+    fn intersection<T, I>(self) -> BitAndKMerge<T, I>
     where
         Self: IntoIterator<Item = I>,
         I: Iterator<Item = (T, T)> + SortedDisjoint,
         T: Integer,
     {
-        intersection_cmk(self)
+        intersection(self)
     }
 }
 
@@ -532,7 +515,7 @@ pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
     }
 }
 
-// !!!cmk00 allow rhs to be of a different type
+// !!!cmk0 allow rhs to be of a different type
 impl<T, I> SortedDisjointIterator<T> for I
 where
     T: Integer,
@@ -636,7 +619,7 @@ where
     }
 }
 
-// cmk00 - also merge as iterator method
+// cmk0 - also merge as iterator method
 // cmk can we define ! & etc on iterators?
 
 gen_ops_ex!(
@@ -783,7 +766,7 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
-        // !!!!cmk00 !!!! likely error: this may fail is range_set_int is not empty
+        // !!!!cmk0 !!!! likely error: this may fail is range_set_int is not empty
         Merger::from_iter(iter).collect_into(self);
     }
 }
@@ -879,7 +862,7 @@ where
             .into()
     }
 }
-// cmk00 - also merge as iterator method
+// cmk0 - also merge as iterator method
 // cmk can we define ! & etc on iterators?
 // cmk0 should we even provide the Assign methods, since only bitor_assign could be better than bitor?
 // cmk00 use from/into to shorten xor's expression

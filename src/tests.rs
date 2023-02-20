@@ -740,7 +740,7 @@ fn multi_op() {
     let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let b = RangeSetInt::<u8>::from("5..=13,18..=29");
     let c = RangeSetInt::<u8>::from("38..=42");
-    // !!!!cmk00 problems   these should work d= a|b; d= a|b|c; d=&a|&b|&c;
+    // cmkRule make these work d= a|b; d= a|b|c; d=&a|&b|&c;
     let d = &(&a | &b) | &c;
     println!("{d}");
     let d = a | b | &c;
@@ -750,7 +750,7 @@ fn multi_op() {
     let b = RangeSetInt::<u8>::from("5..=13,18..=29");
     let c = RangeSetInt::<u8>::from("38..=42");
 
-    // !!!cmk00 must with on empty, with ref and with owned
+    // !!!cmk0 must with on empty, with ref and with owned
 
     let _ = RangeSetInt::union([&a, &b, &c]);
     let d = RangeSetInt::intersection([a, b, c].iter());
@@ -774,12 +774,12 @@ fn multi_op() {
     );
 }
 
-// cmk00 use merge in example
-// cmk00 support 'from' not just 'from_sorted_disjoint_iter'
-// cmk00 support 'collect' not just 'from'
-// cmk00 much too easy to make errors -- need types!
-// cmk00 need to be able to do a|b|c
-// cmk00 type are very hard to read
+// cmk0 use merge in example
+// cmk0 support 'from' not just 'from_sorted_disjoint_iter'
+// cmk0 support 'collect' not just 'from'
+// cmk much too easy to make errors -- need types!
+// cmk0 need to be able to do a|b|c
+// cmk type are very hard to read
 
 // https://stackoverflow.com/questions/21747136/how-do-i-print-in-rust-the-type-of-a-variable/58119924#58119924
 // fn print_type_of<T>(_: &T) {
@@ -822,20 +822,20 @@ fn nand_repro() {
 }
 
 #[test]
-fn parity_cmk00() {
+fn parity_cmk00parity() {
     let a = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
     let c = &RangeSetInt::<u8>::from("38..=42");
     // !!!cmk0 time itertools.split (?) vs range.clone()
-    // !!!cmk00 replace "Merge" with "KMerge"
-    // !!!cmk00 empty needs to work. Go back to slices?
+    // !!!cmk explain why need both "Merge" with "KMerge"
+    // !!!cmk0 empty needs to work. Go back to slices?
     let parity = a & !b & !c | !a & b & !c | !a & !b & c | a & b & c;
     println!("{parity}");
-    let _d = intersection_cmk([a.ranges()]);
+    let _d = intersection([a.ranges()]);
     let _parity: RangeSetInt<u8> =
-        RangeSetInt::from_sorted_disjoint_iter(union([intersection_cmk([a.ranges()])]));
+        RangeSetInt::from_sorted_disjoint_iter(union([intersection([a.ranges()])]));
     let _parity: RangeSetInt<u8> =
-        RangeSetInt::from_sorted_disjoint_iter(intersection_cmk([a.ranges()]));
+        RangeSetInt::from_sorted_disjoint_iter(intersection([a.ranges()]));
     let _parity: RangeSetInt<u8> = RangeSetInt::from_sorted_disjoint_iter(union([a.ranges()]));
     println!("!b {}", !b);
     println!("!c {}", !c);
@@ -849,7 +849,7 @@ fn parity_cmk00() {
     // let a_ranges = a.ranges().assume_sorted_by_key();
     // let mixed_list: Vec<Box<dyn SortedDisjoint<u8>>> = vec![Box::new(a_ranges)];
     // union_x(mixed_list);
-    // !!!cmk0000
+    // !!!cmk00Parity
     // let _parity = union3::<u8>(mixed_list.as_slice());
     // let mixed_list: Vec<Box<dyn SortedDisjoint<u8>>> = vec![
     //     Box::new(a.ranges()),
