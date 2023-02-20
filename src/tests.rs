@@ -873,25 +873,25 @@ fn parity_cmk00() {
     // }
 }
 
-fn _union_x(mixed_list: Vec<Box<dyn SortedDisjoint1<u8>>>) {
-    for _dit in mixed_list.iter() {
-        println!("hello");
-    }
-}
+// fn _union_x(mixed_list: Vec<Box<dyn SortedDisjoint1<u8>>>) {
+//     for _dit in mixed_list.iter() {
+//         println!("hello");
+//     }
+// }
 
-#[test]
-fn two_type() {
-    let a = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
-    let _u = a.ranges().bitor(b.ranges());
-}
+// #[test]
+// fn two_type() {
+//     let a = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+//     let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
+//     let _u = a.ranges().bitor(b.ranges());
+// }
 
-#[test]
-fn kmerge_by_example() {
-    let aa = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    let bb = &RangeSetInt::<u8>::from("5..=13,18..=29");
-    let a: Box<dyn SortedDisjoint1<u8>> = Box::new(aa.ranges());
-    let b: Box<dyn SortedDisjoint1<u8>> = Box::new(bb.ranges().not());
+// #[test]
+// fn kmerge_by_example() {
+//     let aa = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+//     let bb = &RangeSetInt::<u8>::from("5..=13,18..=29");
+//     let a: Box<dyn SortedDisjoint1<u8>> = Box::new(aa.ranges());
+//     let b: Box<dyn SortedDisjoint1<u8>> = Box::new(bb.ranges().not());
 
-    let _x = [a, b].into_iter().kmerge_by(|a, b| a.0 < b.0);
-}
+//     let _x = [a, b].into_iter().kmerge_by(|a, b| a.0 < b.0);
+// }

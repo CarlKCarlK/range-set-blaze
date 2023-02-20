@@ -31,15 +31,11 @@ use gen_ops::gen_ops_ex;
 use itertools::Itertools;
 use itertools::KMergeBy;
 use itertools::MergeBy;
-use itertools::Tee;
 use merger::Merger;
 use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
-use sorted_iter::assume::AssumeSortedByKeyExt;
-use sorted_iter::sorted_pair_iterator::AssumeSortedByKey;
-use sorted_iter::sorted_pair_iterator::SortedByKey;
 use std::cmp::max;
 use std::collections::btree_map;
 use std::collections::BTreeMap;
@@ -310,7 +306,10 @@ impl<'a, T: Integer> AsRef<Ranges<'a, T>> for Ranges<'a, T> {
     }
 }
 
-impl<T: Integer> SortedByKey for Ranges<'_, T> {}
+impl<T: Integer> SortedDisjoint for Ranges<'_, T> {}
+impl<T: Integer, I: Iterator<Item = (T, T)>> SortedDisjoint for BitOrIter<T, I> {}
+impl<T: Integer, I: Iterator<Item = (T, T)>> SortedDisjoint for NotIter<T, I> {}
+
 impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
     fn len(&self) -> usize {
         self.items.len()
@@ -335,13 +334,13 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     }
 }
 
-// !!!cmk0 add +SortedByKey to this trait
+// !!!cmk0 add +SortedDisjoint to this trait
 // impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
 impl<T: Integer> RangeSetInt<T> {
     fn from_sorted_disjoint_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = (T, T)>,
-        // I: SortedByKey,
+        // I: SortedDisjoint,
     {
         let mut len = <T as SafeSubtract>::Output::zero();
         let sorted_disjoint_iter = iter.into_iter().map(|(start, stop)| {
@@ -381,8 +380,8 @@ where
     T: Integer,
     I: Iterator<Item = (T, T)>,
 {
-    merged_ranges: I,
-    range: Option<(T, T)>,
+    pub(crate) merged_ranges: I,
+    pub(crate) range: Option<(T, T)>,
 }
 
 // !!!cmk0 should I0,I1 be I,J to match itertools?
@@ -396,19 +395,18 @@ pub type BitNandMerge<T, I0, I1> = BitOrMerge<T, NotIter<T, I0>, NotIter<T, I1>>
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
 // !!!cmk0 why is there no BitSubKMerge? and BitXorKMerge?
 pub type BitSubMerge<T, I0, I1> = BitAndMerge<T, I0, NotIter<T, I1>>;
-pub type BitXOrMerge<T, I0, I1> = BitOrMerge<
-    T,
-    BitSubMerge<T, AssumeSortedByKey<Tee<I0>>, AssumeSortedByKey<Tee<I1>>>,
-    BitSubMerge<T, AssumeSortedByKey<Tee<I1>>, AssumeSortedByKey<Tee<I0>>>,
->;
+// pub type BitXOrMerge<T, I0, I1> = BitOrMerge<
+//     T,
+//     BitSubMerge<T, AssumeSortedByKey<Tee<I0>>, AssumeSortedByKey<Tee<I1>>>,
+//     BitSubMerge<T, AssumeSortedByKey<Tee<I1>>, AssumeSortedByKey<Tee<I0>>>,
+// >;
 // pub type BitXOrMerge<T, I0, I1> = BitOrMerge<
 //     T,
 //     BitAndMerge<T, AssumeSortedByKey<Tee<I0>>, NotIter<T, AssumeSortedByKey<Tee<I1>>>>,
 //     BitAndMerge<T, AssumeSortedByKey<Tee<I1>>, NotIter<T, AssumeSortedByKey<Tee<I0>>>>,
 // >;
 
-impl<T: Integer, I: Iterator<Item = (T, T)>> SortedByKey for BitOrIter<T, I> {}
-impl<T: Integer, I: Iterator<Item = (T, T)>> SortedByKey for NotIter<T, I> {}
+// !!!cmk0 do we need any 'new' methods?
 impl<T, I0, I1> BitOrMerge<T, I0, I1>
 where
     T: Integer,
@@ -427,7 +425,7 @@ where
 fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
 where
     I0: IntoIterator<Item = I1>,
-    I1: SortedDisjoint1<T>,
+    I1: Iterator<Item = (T, T)>,
     T: Integer,
 {
     BitOrIter {
@@ -442,7 +440,7 @@ fn intersection_cmk<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
 where
     // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
     I0: IntoIterator<Item = I1>,
-    I1: SortedDisjoint1<T>,
+    I1: Iterator<Item = (T, T)> + SortedDisjoint,
     T: Integer,
 {
     input.into_iter().map(|seq| seq.not()).union().not()
@@ -473,7 +471,7 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
     fn union<T, I>(self) -> BitOrKMerge<T, I>
     where
         Self: IntoIterator<Item = I>,
-        I: SortedDisjoint1<T>,
+        I: Iterator<Item = (T, T)>,
         T: Integer,
     {
         union(self)
@@ -482,41 +480,39 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
     fn intersection_cmk2<T, I>(self) -> BitAndKMerge<T, I>
     where
         Self: IntoIterator<Item = I>,
-        I: SortedDisjoint1<T>,
+        I: Iterator<Item = (T, T)> + SortedDisjoint,
         T: Integer,
     {
         intersection_cmk(self)
     }
 }
 
-impl<I, T> ItertoolsSorted<T> for I
-where
-    I: SortedDisjoint1<T> + Sized,
-    T: Integer,
-{
-}
+// impl<I, T> ItertoolsSorted<T> for I
+// where
+//     I: SortedDisjoint1<T> + Sized,
+//     T: Integer,
+// {
+// }
 
-pub trait ItertoolsSorted<T: Integer>: SortedDisjoint1<T> + Sized {
+// define mathematical set methods, e.g. left_iter.left(right_iter) returns the left_iter.
+pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
     // fn to_range_set_int(self) -> RangeSetInt<T> {
     //     RangeSetInt::from_sorted_disjoint_iter(self)
     // }
 
-    fn bitor<J>(self, other: J) -> BitOrMerge<T, Self, J>
-    where
-        J: Iterator<Item = Self::Item> + SortedByKey + Sized,
-    {
+    fn bitor<J: SortedDisjointIterator<T>>(self, other: J) -> BitOrMerge<T, Self, J> {
         BitOrMerge::new(self, other)
     }
     fn bitand<J>(self, other: J) -> BitAndMerge<T, Self, J>
     where
-        J: Iterator<Item = Self::Item> + SortedByKey,
+        J: Iterator<Item = Self::Item> + SortedDisjoint,
     {
         self.not().bitor(other.not()).not()
     }
 
     fn sub<J>(self, other: J) -> BitSubMerge<T, Self, J>
     where
-        J: Iterator<Item = Self::Item> + SortedByKey + Sized,
+        J: Iterator<Item = Self::Item> + SortedDisjoint + Sized,
     {
         self.bitand(other.not())
     }
@@ -543,6 +539,12 @@ pub trait ItertoolsSorted<T: Integer>: SortedDisjoint1<T> + Sized {
 }
 
 // !!!cmk00 allow rhs to be of a different type
+impl<T, I> SortedDisjointIterator<T> for I
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+}
 
 impl<T, I> Iterator for BitOrIter<T, I>
 where
@@ -582,11 +584,12 @@ where
     T: Integer,
     I: Iterator<Item = (T, T)>,
 {
-    ranges: I,
-    start_not: T,
-    next_time_return_none: bool,
+    pub(crate) ranges: I,
+    pub(crate) start_not: T,
+    pub(crate) next_time_return_none: bool,
 }
 
+// cmk0 do we even need this?
 impl<T, I> NotIter<T, I>
 where
     T: Integer,
@@ -918,8 +921,7 @@ impl<T: Integer> From<&[T]> for RangeSetInt<T> {
 //         RangeSetInt::from_sorted_disjoint_iter(iter)
 //     }
 // }
-pub trait SortedDisjoint1<T: Integer>: Iterator<Item = (T, T)> + SortedByKey {}
-impl<TR, T: Integer> SortedDisjoint1<T> for TR where TR: Iterator<Item = (T, T)> + SortedByKey {}
+pub trait SortedDisjoint {}
 // pub struct BoxSortedDisjoint<T>
 // where
 //     T: Integer,
@@ -955,3 +957,19 @@ impl<TR, T: Integer> SortedDisjoint1<T> for TR where TR: Iterator<Item = (T, T)>
 //     // Box::new(bit_or_iter)
 //     todo!()
 // }
+
+// cmk This code from sorted-iter shows how to define clone when possible
+// impl<I: Iterator + Clone, J: Iterator + Clone> Clone for Union<I, J>
+// where
+//     I::Item: Clone,
+//     J::Item: Clone,
+// {
+//     fn clone(&self) -> Self {
+//         Self {
+//             a: self.a.clone(),
+//             b: self.b.clone(),
+//         }
+//     }
+// }
+
+// cmk sort-iter uses peekable. Is that better?
