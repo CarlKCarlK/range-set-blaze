@@ -54,7 +54,7 @@ impl<T: Integer> Merger<T> {
     }
 
     fn insert(&mut self, lower: T, upper: T) {
-        println!("inserting ({lower:?}, {upper:?})");
+        // cmk println!("inserting ({lower:?}, {upper:?})");
         let two = T::one() + T::one();
         assert!(lower <= upper && upper <= T::max_value2());
         if let Merger::Some {
@@ -66,18 +66,18 @@ impl<T: Integer> Merger<T> {
             if (lower >= two && lower - two >= *self_upper)
                 || (*self_lower >= two && *self_lower - two >= upper)
             {
-                println!("pushing onto sort list, saving ({lower:?}, {upper:?})");
+                // cmk println!("pushing onto sort list, saving ({lower:?}, {upper:?})");
                 sort_list.push((*self_lower, *self_upper));
                 *self_lower = lower;
                 *self_upper = upper;
             } else {
-                println!("merging in ({lower:?}, {upper:?})");
+                // cmk println!("merging in ({lower:?}, {upper:?})");
                 *self_lower = min(*self_lower, lower);
                 *self_upper = max(*self_upper, upper);
-                println!("merging in, now ({self_lower:?}, {self_upper:?})");
+                // cmk println!("merging in, now ({self_lower:?}, {self_upper:?})");
             }
         } else {
-            println!("creating empty sort list, saving ({lower:?}, {upper:?})");
+            // cmk println!("creating empty sort list, saving ({lower:?}, {upper:?})");
             *self = Merger::Some {
                 range_list: Vec::new(),
                 lower,
@@ -98,7 +98,7 @@ impl<'a, T: Integer> SortedRanges<'a, T> {
     where
         I: Iterator<Item = (T, T)>,
     {
-        println!("SR: start process");
+        // cmk println!("SR: start process");
         let mut sorted_ranges = SortedRanges {
             range_set_int,
             range: OptionRange::None,
@@ -107,13 +107,13 @@ impl<'a, T: Integer> SortedRanges<'a, T> {
             sorted_ranges.insert(start, stop);
         }
         if let OptionRange::Some { start, stop } = sorted_ranges.range {
-            println!("SR: final push");
+            // cmk println!("SR: final push");
             sorted_ranges.push(start, stop);
         }
     }
 
     fn insert(&mut self, start: T, stop: T) {
-        println!("SR: inserting ({start:?}, {stop:?})");
+        // cmk println!("SR: inserting ({start:?}, {stop:?})");
         self.range = match self.range {
             OptionRange::None => OptionRange::Some { start, stop },
             OptionRange::Some {
@@ -124,23 +124,23 @@ impl<'a, T: Integer> SortedRanges<'a, T> {
                 if start <= current_stop
                     || (current_stop < T::max_value2() && start <= current_stop + T::one())
                 {
-                    println!("SR: merging");
+                    // cmk println!("SR: merging");
                     OptionRange::Some {
                         start: current_start,
                         stop: max(current_stop, stop),
                     }
                 } else {
-                    println!("SR: push & new");
+                    // cmk println!("SR: push & new");
                     self.push(current_start, current_stop);
                     OptionRange::Some { start, stop }
                 }
             }
         };
-        if let OptionRange::Some { start, stop } = self.range {
-            println!("SR: range is now {start}..={stop}");
-        } else {
-            println!("SR: range is now None");
-        }
+        // if let OptionRange::Some { start, stop } = self.range {
+        //     // cmk println!("SR: range is now {start}..={stop}");
+        // } else {
+        //     // cmk println!("SR: range is now None");
+        // }
     }
 
     fn push(&mut self, start: T, stop: T) {

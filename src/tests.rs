@@ -829,8 +829,10 @@ fn parity() {
     // !!!cmk0 time itertools.split (?) vs range.clone()
     // !!!cmk explain why need both "Merge" with "KMerge"
     // !!!cmk0 empty needs to work. Go back to slices?
-    let parity = a & !b & !c | !a & b & !c | !a & !b & c | a & b & c;
-    println!("{parity}");
+    assert_eq!(
+        a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
+        RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
+    );
     let _d = intersection([a.ranges()]);
     let _parity: RangeSetInt<u8> =
         RangeSetInt::from_sorted_disjoint_iter(union([intersection([a.ranges()])]));
