@@ -31,6 +31,7 @@ use gen_ops::gen_ops_ex;
 use itertools::Itertools;
 use itertools::KMergeBy;
 use itertools::MergeBy;
+use itertools::Tee;
 use merger::Merger;
 use num_traits::Zero;
 use rand::rngs::StdRng;
@@ -309,6 +310,7 @@ impl<'a, T: Integer> AsRef<Ranges<'a, T>> for Ranges<'a, T> {
 impl<T: Integer> SortedDisjoint for Ranges<'_, T> {}
 impl<T: Integer, I: Iterator<Item = (T, T)>> SortedDisjoint for BitOrIter<T, I> {}
 impl<T: Integer, I: Iterator<Item = (T, T)>> SortedDisjoint for NotIter<T, I> {}
+impl<T: Integer, I: Iterator<Item = (T, T)>> SortedDisjoint for Tee<I> {}
 
 impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
     fn len(&self) -> usize {
@@ -395,11 +397,8 @@ pub type BitNandMerge<T, I0, I1> = BitOrMerge<T, NotIter<T, I0>, NotIter<T, I1>>
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
 // !!!cmk0 why is there no BitSubKMerge? and BitXorKMerge?
 pub type BitSubMerge<T, I0, I1> = BitAndMerge<T, I0, NotIter<T, I1>>;
-// pub type BitXOrMerge<T, I0, I1> = BitOrMerge<
-//     T,
-//     BitSubMerge<T, AssumeSortedByKey<Tee<I0>>, AssumeSortedByKey<Tee<I1>>>,
-//     BitSubMerge<T, AssumeSortedByKey<Tee<I1>>, AssumeSortedByKey<Tee<I0>>>,
-// >;
+pub type BitXOrMerge<T, I0, I1> =
+    BitOrMerge<T, BitSubMerge<T, Tee<I0>, Tee<I1>>, BitSubMerge<T, Tee<I1>, Tee<I0>>>;
 // pub type BitXOrMerge<T, I0, I1> = BitOrMerge<
 //     T,
 //     BitAndMerge<T, AssumeSortedByKey<Tee<I0>>, NotIter<T, AssumeSortedByKey<Tee<I1>>>>,
@@ -522,20 +521,15 @@ pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
     }
 
     // !!! cmk0 how do do this without cloning?
-    // fn bitxor<J>(self, other: J) -> BitXOrMerge<T, Self, J>
-    // where
-    //     J: Iterator<Item = Self::Item> + SortedByKey + Sized,
-    // {
-    //     let (mut lhs0, mut lhs1) = self.tee();
-    //     let (mut rhs0, mut rhs1) = other.tee();
-    //     let lhs0 = lhs0.assume_sorted_by_key();
-    //     let lhs1 = lhs1.assume_sorted_by_key();
-    //     let rhs0 = rhs0.assume_sorted_by_key();
-    //     let rhs1 = rhs1.assume_sorted_by_key();
-    //     let iter0 = lhs0.sub(rhs0);
-    //     let iter1 = lhs1.sub(rhs1);
-    //     iter0.bitor(iter1)
-    // }
+    // !!! cmk0 test the speed of this
+    fn bitxor<J>(self, other: J) -> BitXOrMerge<T, Self, J>
+    where
+        J: Iterator<Item = Self::Item> + Sized,
+    {
+        let (lhs0, lhs1) = self.tee();
+        let (rhs0, rhs1) = other.tee();
+        lhs0.sub(rhs0).bitor(rhs1.sub(lhs1))
+    }
 }
 
 // !!!cmk00 allow rhs to be of a different type
@@ -669,10 +663,9 @@ gen_ops_ex!(
     for & call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         RangeSetInt::from_sorted_disjoint_iter(a.ranges().bitand(b.ranges()))
     };
-    // !!!cmk0 return xor without cloning
-    // for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-    //     RangeSetInt::from_sorted_disjoint_iter(a.ranges().bitxor(b.ranges()))
-    // };
+    for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
+        RangeSetInt::from_sorted_disjoint_iter(a.ranges().bitxor(b.ranges()))
+    };
     for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         RangeSetInt::from_sorted_disjoint_iter(a.ranges().sub(b.ranges()))
     };

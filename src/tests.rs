@@ -724,9 +724,8 @@ fn missing_doctest_ops() {
     let a = RangeSetInt::from([1, 2, 3]);
     let b = RangeSetInt::from([2, 3, 4]);
 
-    // !!!cmk0 restore xor
-    // let result = a ^ b;
-    // assert_eq!(result, RangeSetInt::from([1, 4]));
+    let result = a ^ b;
+    assert_eq!(result, RangeSetInt::from([1, 4]));
 
     // Returns the set difference of `self` and `rhs` as a new `RangeSetInt<T>`.
     let a = RangeSetInt::from([1, 2, 3]);
