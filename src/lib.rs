@@ -949,3 +949,38 @@ pub trait SortedDisjoint {}
 // }
 
 // cmk sort-iter uses peekable. Is that better?
+
+pub struct DynSortedDisjoint<'a, T> {
+    iter: Box<dyn Iterator<Item = T> + 'a>,
+}
+impl<'a, T> SortedDisjoint for DynSortedDisjoint<'a, T> {}
+
+impl<'a, T> DynSortedDisjoint<'a, T> {
+    pub fn new(iter: impl Iterator<Item = T> + SortedDisjoint + 'a) -> Self {
+        DynSortedDisjoint {
+            iter: Box::new(iter),
+        }
+    }
+}
+
+impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
+/// extension trait for any iterator to add a assume_sorted_by_item method
+pub trait DynSortedDisjointExt<'a>: Iterator + Sized + SortedDisjoint + 'a {
+    /// create dynamic version of the iterator
+    fn dyn_sorted_disjoint(self) -> DynSortedDisjoint<'a, Self::Item> {
+        DynSortedDisjoint::new(self)
+    }
+}
+
+impl<'a, I: Iterator + Sized + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}

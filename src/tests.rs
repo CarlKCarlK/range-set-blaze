@@ -822,7 +822,7 @@ fn nand_repro() {
 }
 
 #[test]
-fn parity_cmk00parity() {
+fn parity() {
     let a = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
     let c = &RangeSetInt::<u8>::from("38..=42");
@@ -846,10 +846,38 @@ fn parity_cmk00parity() {
     );
 
     let _a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    // let a_ranges = a.ranges().assume_sorted_by_key();
-    // let mixed_list: Vec<Box<dyn SortedDisjoint<u8>>> = vec![Box::new(a_ranges)];
-    // union_x(mixed_list);
-    // !!!cmk00Parity
+    let a_ranges = a.ranges();
+    let mixed_list = [a_ranges.dyn_sorted_disjoint()];
+    let u = union(mixed_list);
+    // !!!cmk00 this 'from_sorted_disjoint_iter' is ugly
+    println!("u {}", RangeSetInt::from_sorted_disjoint_iter(u));
+    let a_ranges = a.ranges().dyn_sorted_disjoint();
+    let b_ranges = b.ranges().dyn_sorted_disjoint();
+    let c_ranges = c.ranges().not().dyn_sorted_disjoint();
+    let u = union([a_ranges, b_ranges, c_ranges]);
+    println!("u {}", RangeSetInt::from_sorted_disjoint_iter(u));
+
+    let a00 = a.ranges().not().dyn_sorted_disjoint();
+    let a01 = a.ranges().not().dyn_sorted_disjoint();
+    let b00 = b.ranges().not().dyn_sorted_disjoint();
+    let b01 = b.ranges().not().dyn_sorted_disjoint();
+    let c00 = c.ranges().not().dyn_sorted_disjoint();
+    let c01 = c.ranges().not().dyn_sorted_disjoint();
+    let a10 = a.ranges().dyn_sorted_disjoint();
+    let a11 = a.ranges().dyn_sorted_disjoint();
+    let b10 = b.ranges().dyn_sorted_disjoint();
+    let b11 = b.ranges().dyn_sorted_disjoint();
+    let c10 = c.ranges().dyn_sorted_disjoint();
+    let c11 = c.ranges().dyn_sorted_disjoint();
+    // cmk00 could we make a macro to apply dyn_sorted_disjoint to all args?
+    let term1 = intersection([a10, b00, c00]);
+    let term2 = intersection([a00, b10, c01]);
+    let term3 = intersection([a01, b01, c10]);
+    let term4 = intersection([a11, b11, c11]);
+    let u = union([term1, term2, term3, term4]);
+    println!("parity {}", RangeSetInt::from_sorted_disjoint_iter(u));
+
+    // // !!!cmk00Parity
     // let _parity = union3::<u8>(mixed_list.as_slice());
     // let mixed_list: Vec<Box<dyn SortedDisjoint<u8>>> = vec![
     //     Box::new(a.ranges()),
