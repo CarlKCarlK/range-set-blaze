@@ -337,7 +337,8 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
 // !!!cmk0 add +SortedDisjoint to this trait
 // impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
 impl<T: Integer> RangeSetInt<T> {
-    fn from_sorted_disjoint_iter<I>(iter: I) -> Self
+    // !!!cmk00 should not be pub
+    pub fn from_sorted_disjoint_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = (T, T)>,
         // I: SortedDisjoint,
@@ -433,6 +434,7 @@ where
     }
 }
 
+// !!!cmk0 why define standalone function if only ever called from below?
 fn intersection<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
 where
     // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
@@ -447,7 +449,6 @@ where
 impl<I: IntoIterator + Sized> ItertoolsPlus2 for I {}
 pub trait ItertoolsPlus2: IntoIterator + Sized {
     // !!!cmk0 where is two input merge?
-    // !!!cmk00parity is it an issue that all inputs by the be the same type?
 
     fn union<T, I>(self) -> BitOrKMerge<T, I>
     where
@@ -504,7 +505,7 @@ pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
     }
 
     // !!! cmk0 how do do this without cloning?
-    // !!! cmk0 test the speed of this
+    // !!! cmk00 test the speed of this
     fn bitxor<J>(self, other: J) -> BitXOrMerge<T, Self, J>
     where
         J: Iterator<Item = Self::Item> + Sized,

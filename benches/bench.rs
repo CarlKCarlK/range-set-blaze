@@ -10,7 +10,8 @@ use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 // use pprof::criterion::Output; //PProfProfiler
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
-use range_set_int::{MemorylessData, RangeSetInt};
+// !!!cmk annoying to need to import ItertoolsPlus2
+use range_set_int::{DynSortedDisjointExt, ItertoolsPlus2, MemorylessData, RangeSetInt};
 // use thousands::Separable;
 
 // fn insert10(c: &mut Criterion) {
@@ -446,6 +447,16 @@ fn k_intersect(c: &mut Criterion) {
             BatchSize::SmallInput,
         );
     });
+    group.bench_function("RangeSetInt dyn intersect", |b| {
+        b.iter_batched(
+            || k_sets(k, range_len, len, coverage_goal),
+            |sets| {
+                let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
+                let _answer = RangeSetInt::from_sorted_disjoint_iter(sets.intersection());
+            },
+            BatchSize::SmallInput,
+        );
+    });
     group.bench_function("RangeSetInt intersect 2-at-a-time", |b| {
         b.iter_batched(
             || k_sets(k, range_len, len, coverage_goal),
@@ -471,7 +482,7 @@ fn k_intersect(c: &mut Criterion) {
     //         },
     //         BatchSize::SmallInput,
     //     );
-    //});
+    // });
 }
 
 fn k_sets(k: u64, range_len: u64, len: u128, coverage_goal: f64) -> Vec<RangeSetInt<u64>> {
