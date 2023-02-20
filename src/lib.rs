@@ -990,7 +990,7 @@ impl<'a, I: Iterator + Sized + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for
 macro_rules! intersection_dyn {
     ($($val:expr),*) => {{
         let arr = [$($val.dyn_sorted_disjoint()),*];
-        intersection(arr)
+        arr.intersection()
     }}
 }
 
@@ -998,6 +998,6 @@ macro_rules! intersection_dyn {
 macro_rules! union_dyn {
     ($($val:expr),*) => {{
         let arr = [$($val.dyn_sorted_disjoint()),*];
-        union(arr)
+        arr.union()
     }}
 }
