@@ -433,8 +433,8 @@ fn btree_two_sets1(
 fn k_intersect(c: &mut Criterion) {
     let k = 100;
     let len = 10_000_000;
-    let range_len = 10_000;
-    let coverage_goal = 0.90;
+    let range_len = 1_000;
+    let coverage_goal = 0.99;
     let mut group = c.benchmark_group("k_intersect");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
