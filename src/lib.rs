@@ -33,6 +33,7 @@ use itertools::KMergeBy;
 use itertools::MergeBy;
 use itertools::Tee;
 use merger::Merger;
+use merger::SortedDisjointFromUnsortedDisjoint;
 use merger::UnsortedDisjoint;
 use num_traits::Zero;
 use rand::rngs::StdRng;
@@ -344,7 +345,23 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
-        iter.into_iter().collect::<Merger<T>>().into()
+        iter.into_iter().map(|x| (x, x)).collect()
+    }
+}
+
+impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = (T, T)>,
+    {
+        let mut sorted_unsorted_disjoint: SortedDisjointFromUnsortedDisjoint<_> =
+            iter.into_iter().collect();
+        let btree_map = BTreeMap::from_iter(&mut sorted_unsorted_disjoint);
+        let len = sorted_unsorted_disjoint.len();
+        RangeSetInt {
+            items: btree_map,
+            len,
+        }
     }
 }
 
@@ -864,8 +881,7 @@ where
                 let stop = range.next().unwrap().parse::<T>().unwrap();
                 (start, stop)
             })
-            .collect::<Merger<T>>()
-            .into()
+            .collect()
     }
 }
 // cmk0 - also merge as iterator method

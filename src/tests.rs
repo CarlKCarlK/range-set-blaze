@@ -25,7 +25,8 @@ fn insert_255u8() {
 #[test]
 #[should_panic]
 fn insert_max_u128() {
-    let _ = RangeSetInt::<u128>::from([u128::MAX]);
+    let a = RangeSetInt::<u128>::from([u128::MAX]);
+    println!("a: {a}");
 }
 
 #[test]
