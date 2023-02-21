@@ -650,6 +650,7 @@ gen_ops_ex!(
     for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         a.ranges().sub(b.ranges()).to_range_set_int()
     };
+    // cmk000 must/should we support both operators and methods?
 
     where T: Integer //Where clause for all impl's
 );
@@ -863,7 +864,6 @@ where
 // cmk0 - also merge as iterator method
 // cmk can we define ! & etc on iterators?
 // cmk0 should we even provide the Assign methods, since only bitor_assign could be better than bitor?
-// cmk00 use from/into to shorten xor's expression
 
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     fn from(arr: [T; N]) -> Self {

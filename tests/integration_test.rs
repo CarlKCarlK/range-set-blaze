@@ -249,7 +249,7 @@ fn multi_op() {
     let b = RangeSetInt::<u8>::from("5..=13,18..=29");
     let c = RangeSetInt::<u8>::from("1..=42");
 
-    // cmk00 list all the ways that we and BTreeMap does intersection. Do they make sense?
+    // cmk000 list all the ways that we and BTreeMap does intersection. Do they make sense? Work when empty?
     let _ = &a & &b;
     let d = RangeSetInt::intersection([&a, &b, &c]);
     // let d = RangeSetInt::intersection([a, b, c]);
