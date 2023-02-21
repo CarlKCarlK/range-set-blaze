@@ -22,9 +22,9 @@
 // !!!cmk0 how could you write your own subtraction that subtracted many sets from one set via iterators?
 // !!!cmk0 sort by start then by larger stop
 
-mod merger;
 mod safe_subtract;
 mod simple;
+mod sorted_disjoint_from_iter;
 mod tests;
 
 use gen_ops::gen_ops_ex;
@@ -32,13 +32,12 @@ use itertools::Itertools;
 use itertools::KMergeBy;
 use itertools::MergeBy;
 use itertools::Tee;
-use merger::Merger;
-use merger::SortedDisjointFromUnsortedDisjoint;
-use merger::UnsortedDisjoint;
 use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
+use sorted_disjoint_from_iter::SortedDisjointFromIter;
+use sorted_disjoint_from_iter::UnsortedDisjoint;
 use std::cmp::max;
 use std::collections::btree_map;
 use std::collections::BTreeMap;
@@ -354,8 +353,7 @@ impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = (T, T)>,
     {
-        let mut sorted_unsorted_disjoint: SortedDisjointFromUnsortedDisjoint<_> =
-            iter.into_iter().collect();
+        let mut sorted_unsorted_disjoint: SortedDisjointFromIter<_> = iter.into_iter().collect();
         let btree_map = BTreeMap::from_iter(&mut sorted_unsorted_disjoint);
         let len = sorted_unsorted_disjoint.len();
         RangeSetInt {
