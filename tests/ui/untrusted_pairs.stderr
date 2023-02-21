@@ -1,0 +1,30 @@
+error[E0599]: the method `to_range_set_int` exists for struct `std::slice::Iter<'_, ({integer}, {integer})>`, but its trait bounds were not satisfied
+ --> tests/ui/untrusted_pairs.rs:8:42
+  |
+8 |     let range_set_int = untrusted.iter().to_range_set_int();
+  |                                          ^^^^^^^^^^^^^^^^ method cannot be called on `std::slice::Iter<'_, ({integer}, {integer})>` due to unsatisfied trait bounds
+  |
+ ::: $RUST/core/src/slice/iter.rs
+  |
+  | pub struct Iter<'a, T: 'a> {
+  | --------------------------
+  | |
+  | doesn't satisfy `<_ as Iterator>::Item = (_, _)`
+  | doesn't satisfy `_: SortedDisjointIterator<_>`
+  | doesn't satisfy `_: SortedDisjoint`
+  |
+  = note: the following trait bounds were not satisfied:
+          `<std::slice::Iter<'_, ({integer}, {integer})> as Iterator>::Item = (_, _)`
+          which is required by `std::slice::Iter<'_, ({integer}, {integer})>: SortedDisjointIterator<_>`
+          `std::slice::Iter<'_, ({integer}, {integer})>: SortedDisjoint`
+          which is required by `std::slice::Iter<'_, ({integer}, {integer})>: SortedDisjointIterator<_>`
+          `<&std::slice::Iter<'_, ({integer}, {integer})> as Iterator>::Item = (_, _)`
+          which is required by `&std::slice::Iter<'_, ({integer}, {integer})>: SortedDisjointIterator<_>`
+          `&std::slice::Iter<'_, ({integer}, {integer})>: Iterator`
+          which is required by `&std::slice::Iter<'_, ({integer}, {integer})>: SortedDisjointIterator<_>`
+          `&std::slice::Iter<'_, ({integer}, {integer})>: SortedDisjoint`
+          which is required by `&std::slice::Iter<'_, ({integer}, {integer})>: SortedDisjointIterator<_>`
+          `<&mut std::slice::Iter<'_, ({integer}, {integer})> as Iterator>::Item = (_, _)`
+          which is required by `&mut std::slice::Iter<'_, ({integer}, {integer})>: SortedDisjointIterator<_>`
+          `&mut std::slice::Iter<'_, ({integer}, {integer})>: SortedDisjoint`
+          which is required by `&mut std::slice::Iter<'_, ({integer}, {integer})>: SortedDisjointIterator<_>`

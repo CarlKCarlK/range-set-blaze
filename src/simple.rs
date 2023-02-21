@@ -33,6 +33,7 @@ where
 {
 }
 
+// move AssumeSortedDisjoint to lib.rs and test
 // A container for an iterator that is assumed to be sorted disjoint.
 #[derive(Clone, Debug)]
 pub struct AssumeSortedDisjoint<I: Iterator> {

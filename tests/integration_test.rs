@@ -1,7 +1,15 @@
+// !!!cmkRule add integration tests
 #![cfg(test)]
 
 use itertools::Itertools;
+use std::collections::BTreeSet;
 use syntactic_for::syntactic_for;
+
+// !!!cmk should users use a prelude?
+use range_set_int::{
+    intersection_dyn, union_dyn, DynSortedDisjointExt, ItertoolsPlus2, RangeSetInt,
+    SortedDisjointIterator,
+};
 
 #[test]
 fn insert_255u8() {
@@ -38,8 +46,6 @@ fn repro_bit_and() {
 
 #[test]
 fn doctest1() {
-    // use range_set_int::RangeSetInt;
-
     let a = RangeSetInt::<u8>::from([1, 2, 3]);
     let b = RangeSetInt::<u8>::from([3, 4, 5]);
 
@@ -99,238 +105,6 @@ fn compare() {
     assert!(string == "1,3");
 }
 
-// #[test]
-// fn test7a() {
-//     let mut range_set = RangeSetInt::new();
-//     range_set._internal_add(38, 1);
-//     range_set._internal_add(39, 1);
-//     assert!(range_set.len() == 2);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 38);
-//     assert!(*first_entry.get() == 2);
-// }
-
-// #[test]
-// fn test1() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 3);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 2);
-//     assert!(*first_entry.get() == 3);
-// }
-
-// #[test]
-// fn test1_c2() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(1, 1);
-//     range_set._internal_add(1, 4);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 1);
-//     assert!(*first_entry.get() == 4);
-// }
-
-// #[test]
-// fn test1_c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 3);
-//     range_set._internal_add(1, 1);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 1);
-//     assert!(*first_entry.get() == 4);
-// }
-
-// // !!!cmk what if connects with next range(s)?
-// #[test]
-// fn test2() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 3);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 2);
-//     assert!(*first_entry.get() == 3);
-//     range_set._internal_add(2, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 2);
-//     assert!(*first_entry.get() == 3);
-//     range_set._internal_add(2, 4);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 2);
-//     assert!(*first_entry.get() == 4);
-// }
-
-// !!!cmk bring back in
-
-//#[test]
-// fn test2_c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 1);
-//     range_set._internal_add(4, 1);
-//     range_set._internal_add(6, 2);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 3);
-//     assert!(range_set._items[0].start == 2);
-//     assert!(range_set._items[0].length == 1);
-//     assert!(range_set._items[1].start == 4);
-//     assert!(range_set._items[1].length == 1);
-//     assert!(range_set._items[2].start == 6);
-//     assert!(range_set._items[2].length == 2);
-//     range_set._internal_add(2, 10);
-//     assert!(range_set.len() == 10);
-//     assert!(range_set._items.len() == 1);
-//     assert!(range_set._items[0].start == 2);
-//     assert!(range_set._items[0].length == 10);
-// }
-
-//#[test]
-// fn test2_c2() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 1);
-//     range_set._internal_add(4, 1);
-//     range_set._internal_add(6, 20);
-//     assert!(range_set.len() == 22);
-//     assert!(range_set._items.len() == 3);
-//     assert!(range_set._items[0].start == 2);
-//     assert!(range_set._items[0].length == 1);
-//     assert!(range_set._items[1].start == 4);
-//     assert!(range_set._items[1].length == 1);
-//     assert!(range_set._items[2].start == 6);
-//     assert!(range_set._items[2].length == 20);
-//     range_set._internal_add(2, 10);
-//     assert!(range_set.len() == 24);
-//     assert!(range_set._items.len() == 1);
-//     assert!(range_set._items[0].start == 2);
-//     assert!(range_set._items[0].length == 24);
-// }
-
-//#[test]
-// fn test3() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 3);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 1);
-//     range_set._internal_add(0, 1);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 2);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 1);
-//     assert!(range_set._items[1].start == 2);
-//     assert!(range_set._items[1].length == 3);
-// }
-
-//#[test]
-// fn test3c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 3);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 1);
-//     range_set._internal_add(0, 3);
-//     assert!(range_set.len() == 5);
-//     assert!(range_set._items.len() == 1);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 5);
-// }
-
-//#[test]
-// fn test4() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(1, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 2);
-//     assert!(range_set._items[1].start == 5);
-//     assert!(range_set._items[1].length == 1);
-// }
-//#[test]
-// fn test5() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(1, 2);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 2);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 3);
-//     assert!(range_set._items[1].start == 5);
-//     assert!(range_set._items[1].length == 1);
-// }
-//#[test]
-// fn test5_c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(1, 10);
-//     assert!(range_set.len() == 11);
-//     assert!(range_set._items.len() == 1);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 11);
-// }
-//#[test]
-// fn test6() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(3, 1);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 3);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 2);
-//     assert!(range_set._items[1].start == 3);
-//     assert!(range_set._items[1].length == 1);
-//     assert!(range_set._items[2].start == 5);
-//     assert!(range_set._items[2].length == 1);
-// }
-//#[test]
-// fn test6_c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(3, 2);
-//     assert!(range_set.len() == 5);
-//     assert!(range_set._items.len() == 2);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 2);
-//     assert!(range_set._items[1].start == 3);
-//     assert!(range_set._items[1].length == 3);
-// }
-
 #[test]
 fn add_in_order() {
     let mut range_set = RangeSetInt::new();
@@ -364,129 +138,13 @@ fn add_in_order() {
 //     let coverage = range_set_int.len() as f64 / len as f64;
 //     println!(
 //         "coverage {coverage:?} range_len {:?}",
-//         range_set_int.range_len().separate_with_commas()
+//         range_set_int.ranges_len().separate_with_commas()
 //     );
 //     println!(
 //         "xTime elapsed in expensive_function() is: {} ms",
 //         start.elapsed().as_millis()
 //     );
 // }
-
-// #[test]
-// fn optimize() {
-//     let stop = 8u8;
-//     for a in 0..=stop {
-//         for b in 0..=stop {
-//             for c in 0..=stop {
-//                 for d in 0..=stop {
-//                     let restart = (a >= 2 && a - 2 >= d) || (c >= 2 && c - 2 >= b);
-//                     print!("{a}\t{b}\t{c}\t{d}\t");
-//                     if a > b {
-//                         println!("impossible");
-//                     } else if c > d {
-//                         println!("error");
-//                     } else {
-//                         let mut range_set_int = RangeSetInt::new();
-//                         range_set_int.internal_add(a, b);
-//                         range_set_int.internal_add(c, d);
-//                         if range_set_int.ranges_len() == 1 {
-//                             let vec = range_set_int.into_iter().collect::<Vec<u8>>();
-//                             println! {"combine\t{}\t{}", vec[0], vec[vec.len()-1]};
-//                             assert!(!restart);
-//                         } else {
-//                             println!("restart");
-//                             assert!(restart);
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
-
-#[test]
-fn understand_into_iter() {
-    let btree_set = BTreeSet::from([1, 2, 3, 4, 5]);
-    for i in btree_set.iter() {
-        println!("{i}");
-    }
-
-    let s = "abc".to_string();
-    for c in s.chars() {
-        println!("{c}");
-    }
-    println!("{s:?}");
-    // println!("{btree_set:?}");
-
-    // let ri = 1..=5;
-    // let rii = ri.into_iter();
-    // let val = rii.next();
-    // let len = rii.len();
-    // // for i in ri() {
-    // //     println!("{i} {}", ri.len());
-    // // }
-    // // println!("{ri:?}");
-    let s = "hello".to_string();
-    let mut si = s.bytes();
-    let _val = si.next();
-    let _len = si.len();
-    let _len2 = s.len();
-
-    let arr = [1, 2, 3, 4, 5];
-    for i in arr.iter() {
-        println!("{i}");
-    }
-
-    for i in arr {
-        println!("{i}");
-    }
-
-    // let rsi = RangeSetInt::from_iter(1..=5);
-    // for i in rsi.iter() {
-    //     println!("{i}");
-    // }
-    // let len = rsi.len();
-}
-
-use std::{collections::BTreeSet, ops::BitAndAssign};
-
-use range_set_int::{
-    intersection_dyn, union_dyn, DynSortedDisjointExt, ItertoolsPlus2, RangeSetInt,
-    SortedDisjointIterator,
-};
-
-#[derive(Debug, PartialEq)]
-struct BooleanVector(Vec<bool>);
-
-impl BitAndAssign for BooleanVector {
-    // `rhs` is the "right-hand side" of the expression `a &= b`.
-    fn bitand_assign(&mut self, rhs: Self) {
-        assert_eq!(self.0.len(), rhs.0.len());
-        *self = BooleanVector(
-            self.0
-                .iter()
-                .zip(rhs.0.iter())
-                .map(|(x, y)| *x && *y)
-                .collect(),
-        );
-    }
-}
-
-#[test]
-fn understand_bitand_assign() {
-    let mut a = 3u8;
-    let b = 5u8;
-    a &= b;
-    println!("{a}");
-    println!("{b}");
-
-    let mut bv = BooleanVector(vec![true, true, false, false]);
-    let bv2 = BooleanVector(vec![true, false, true, false]);
-    bv &= bv2;
-    let expected = BooleanVector(vec![true, false, false, false]);
-    assert_eq!(bv, expected);
-    // println!("{bv2:?}");
-}
 
 #[test]
 fn iters() {
@@ -591,6 +249,7 @@ fn multi_op() {
     let b = RangeSetInt::<u8>::from("5..=13,18..=29");
     let c = RangeSetInt::<u8>::from("1..=42");
 
+    // cmk00 list all the ways that we and BTreeMap does intersection. Do they make sense?
     let _ = &a & &b;
     let d = RangeSetInt::intersection([&a, &b, &c]);
     // let d = RangeSetInt::intersection([a, b, c]);
@@ -623,11 +282,13 @@ fn custom_multi() {
 
     let union_stream = b.ranges().bitor(c.ranges());
     let a_less = a.ranges().sub(union_stream);
-    let d: RangeSetInt<_> = RangeSetInt::from_sorted_disjoint_iter(a_less);
+    let d: RangeSetInt<_> = a_less.to_range_set_int();
     println!("{d}");
 
-    let d: RangeSetInt<_> =
-        RangeSetInt::from_sorted_disjoint_iter(a.ranges().sub([b.ranges(), c.ranges()].union()));
+    let d: RangeSetInt<_> = a
+        .ranges()
+        .sub([b.ranges(), c.ranges()].union())
+        .to_range_set_int();
     println!("{d}");
 }
 
@@ -663,33 +324,31 @@ fn parity() {
         RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
     );
     let _d = [a.ranges()].intersection();
-    let _parity: RangeSetInt<u8> =
-        RangeSetInt::from_sorted_disjoint_iter([[a.ranges()].intersection()].union());
-    let _parity: RangeSetInt<u8> =
-        RangeSetInt::from_sorted_disjoint_iter([a.ranges()].intersection());
-    let _parity: RangeSetInt<u8> = RangeSetInt::from_sorted_disjoint_iter([a.ranges()].union());
+    let _parity: RangeSetInt<u8> = [[a.ranges()].intersection()].union().to_range_set_int();
+    let _parity: RangeSetInt<u8> = [a.ranges()].intersection().to_range_set_int();
+    let _parity: RangeSetInt<u8> = [a.ranges()].union().to_range_set_int();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
     println!(
         "!b|!c {}",
-        RangeSetInt::from_sorted_disjoint_iter(b.ranges().not().bitor(c.ranges().not()))
+        b.ranges().not().bitor(c.ranges().not()).to_range_set_int()
     );
 
     let _a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let u = [a.ranges().dyn_sorted_disjoint()].union();
     assert_eq!(
-        RangeSetInt::from_sorted_disjoint_iter(u),
+        u.to_range_set_int(),
         RangeSetInt::from("1..=6,8..=9,11..=15")
     );
     let u = union_dyn!(a.ranges());
     assert_eq!(
-        RangeSetInt::from_sorted_disjoint_iter(u),
+        u.to_range_set_int(),
         RangeSetInt::from("1..=6,8..=9,11..=15")
     );
     let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
     assert_eq!(
-        RangeSetInt::from_sorted_disjoint_iter(u),
+        u.to_range_set_int(),
         RangeSetInt::from("1..=15,18..=29,38..=42")
     );
 
@@ -701,7 +360,13 @@ fn parity() {
     ]
     .union();
     assert_eq!(
-        RangeSetInt::from_sorted_disjoint_iter(u),
+        u.to_range_set_int(),
         RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
     );
+}
+
+#[test]
+fn ui() {
+    let t = trybuild::TestCases::new();
+    t.compile_fail("tests/ui/*.rs");
 }

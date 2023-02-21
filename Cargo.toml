@@ -20,6 +20,7 @@ sorted-iter = "0.1.8"
 syntactic-for = "0.1.1"
 criterion = "0.4.0"
 maplit = "1.0.2"
+trybuild = "1.0.53"
 # pprof = { version = "0.11.0", features = ["flamegraph", "criterion"] }
 
 [[bench]]

@@ -129,14 +129,22 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        RangeSetInt::from_sorted_disjoint_iter(input.into_iter().map(|x| x.ranges()).union())
+        input
+            .into_iter()
+            .map(|x| x.ranges())
+            .union()
+            .to_range_set_int()
     }
 
     pub fn intersection<I>(input: I) -> Self
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        RangeSetInt::from_sorted_disjoint_iter(input.into_iter().map(|x| x.ranges()).intersection())
+        input
+            .into_iter()
+            .map(|x| x.ranges())
+            .intersection()
+            .to_range_set_int()
     }
 }
 
@@ -308,6 +316,8 @@ impl<'a, T: Integer> AsRef<Ranges<'a, T>> for Ranges<'a, T> {
 impl<T: Integer> SortedDisjoint for Ranges<'_, T> {}
 impl<T: Integer, I: Iterator<Item = (T, T)>> SortedDisjoint for BitOrIter<T, I> {}
 impl<T: Integer, I: Iterator<Item = (T, T)>> SortedDisjoint for NotIter<T, I> {}
+
+// !!!cmk00 does this say that anything coming out of Tee is SortedDisjoint, even if the input wasn't?
 impl<T: Integer, I: Iterator<Item = (T, T)>> SortedDisjoint for Tee<I> {}
 
 impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
@@ -331,25 +341,6 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
         I: IntoIterator<Item = T>,
     {
         iter.into_iter().collect::<Merger<T>>().into()
-    }
-}
-
-// !!!cmk0 add +SortedDisjoint to this trait
-// impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
-impl<T: Integer> RangeSetInt<T> {
-    // !!!cmk00 should not be pub
-    pub fn from_sorted_disjoint_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = (T, T)>,
-        // I: SortedDisjoint,
-    {
-        let mut len = <T as SafeSubtract>::Output::zero();
-        let sorted_disjoint_iter = iter.into_iter().map(|(start, stop)| {
-            len += T::safe_subtract_inclusive(stop, start);
-            (start, stop)
-        });
-        let items = BTreeMap::<T, T>::from_iter(sorted_disjoint_iter);
-        RangeSetInt::<T> { items, len }
     }
 }
 
@@ -479,9 +470,15 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
 
 // define mathematical set methods, e.g. left_iter.left(right_iter) returns the left_iter.
 pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
-    // fn to_range_set_int(self) -> RangeSetInt<T> {
-    //     RangeSetInt::from_sorted_disjoint_iter(self)
-    // }
+    fn to_range_set_int(self) -> RangeSetInt<T> {
+        let mut len = <T as SafeSubtract>::Output::zero();
+        let sorted_disjoint_iter = self.map(|(start, stop)| {
+            len += T::safe_subtract_inclusive(stop, start);
+            (start, stop)
+        });
+        let items = BTreeMap::<T, T>::from_iter(sorted_disjoint_iter);
+        RangeSetInt::<T> { items, len }
+    }
 
     fn bitor<J: SortedDisjointIterator<T>>(self, other: J) -> BitOrMerge<T, Self, J> {
         BitOrMerge::new(self, other)
@@ -642,16 +639,16 @@ gen_ops_ex!(
     // assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     // ```
     for | call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        RangeSetInt::from_sorted_disjoint_iter(a.ranges().bitor(b.ranges()))
+        a.ranges().bitor(b.ranges()).to_range_set_int()
     };
     for & call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        RangeSetInt::from_sorted_disjoint_iter(a.ranges().bitand(b.ranges()))
+        a.ranges().bitand(b.ranges()).to_range_set_int()
     };
     for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        RangeSetInt::from_sorted_disjoint_iter(a.ranges().bitxor(b.ranges()))
+        a.ranges().bitxor(b.ranges()).to_range_set_int()
     };
     for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        RangeSetInt::from_sorted_disjoint_iter(a.ranges().sub(b.ranges()))
+        a.ranges().sub(b.ranges()).to_range_set_int()
     };
 
     where T: Integer //Where clause for all impl's
@@ -661,7 +658,7 @@ gen_ops_ex!(
     <T>;
     types ref RangeSetInt<T> => RangeSetInt<T>;
     for ! call |a: &RangeSetInt<T>| {
-        RangeSetInt::from_sorted_disjoint_iter(a.ranges().not())
+        a.ranges().not().to_range_set_int()
     };
 
     where T: Integer //Where clause for all impl's

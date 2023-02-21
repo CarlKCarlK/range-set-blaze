@@ -14,6 +14,7 @@ use super::*;
 // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use syntactic_for::syntactic_for;
 // use thousands::Separable;
+use std::ops::BitAndAssign;
 
 #[test]
 fn insert_255u8() {
@@ -90,8 +91,6 @@ fn repro2() {
 
 #[test]
 fn doctest1() {
-    // use range_set_int::RangeSetInt;
-
     let a = RangeSetInt::<u8>::from([1, 2, 3]);
     let b = RangeSetInt::<u8>::from([3, 4, 5]);
 
@@ -624,8 +623,7 @@ fn understand_into_iter() {
     // let len = rsi.len();
 }
 
-use std::ops::BitAndAssign;
-
+// !!!cmk what's this about?
 #[derive(Debug, PartialEq)]
 struct BooleanVector(Vec<bool>);
 
@@ -794,11 +792,13 @@ fn custom_multi() {
 
     let union_stream = b.ranges().bitor(c.ranges());
     let a_less = a.ranges().sub(union_stream);
-    let d: RangeSetInt<_> = RangeSetInt::from_sorted_disjoint_iter(a_less);
+    let d: RangeSetInt<_> = a_less.to_range_set_int();
     println!("{d}");
 
-    let d: RangeSetInt<_> =
-        RangeSetInt::from_sorted_disjoint_iter(a.ranges().sub(union([b.ranges(), c.ranges()])));
+    let d: RangeSetInt<_> = a
+        .ranges()
+        .sub(union([b.ranges(), c.ranges()]))
+        .to_range_set_int();
     println!("{d}");
 }
 
@@ -834,28 +834,26 @@ fn parity() {
         RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
     );
     let _d = intersection([a.ranges()]);
-    let _parity: RangeSetInt<u8> =
-        RangeSetInt::from_sorted_disjoint_iter(union([intersection([a.ranges()])]));
-    let _parity: RangeSetInt<u8> =
-        RangeSetInt::from_sorted_disjoint_iter(intersection([a.ranges()]));
-    let _parity: RangeSetInt<u8> = RangeSetInt::from_sorted_disjoint_iter(union([a.ranges()]));
+    let _parity: RangeSetInt<u8> = union([intersection([a.ranges()])]).to_range_set_int();
+    let _parity: RangeSetInt<u8> = intersection([a.ranges()]).to_range_set_int();
+    let _parity: RangeSetInt<u8> = union([a.ranges()]).to_range_set_int();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
     println!(
         "!b|!c {}",
-        RangeSetInt::from_sorted_disjoint_iter(b.ranges().not().bitor(c.ranges().not()))
+        b.ranges().not().bitor(c.ranges().not()).to_range_set_int()
     );
 
     let _a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let u = union_dyn!(a.ranges());
     assert_eq!(
-        RangeSetInt::from_sorted_disjoint_iter(u),
+        u.to_range_set_int(),
         RangeSetInt::from("1..=6,8..=9,11..=15")
     );
     let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
     assert_eq!(
-        RangeSetInt::from_sorted_disjoint_iter(u),
+        u.to_range_set_int(),
         RangeSetInt::from("1..=15,18..=29,38..=42")
     );
 
@@ -866,7 +864,7 @@ fn parity() {
         intersection_dyn!(a.ranges(), b.ranges(), c.ranges()),
     ]);
     assert_eq!(
-        RangeSetInt::from_sorted_disjoint_iter(u),
+        u.to_range_set_int(),
         RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
     );
 }
