@@ -5,7 +5,7 @@
 /// cmk00 however it doesn't check that the RangeSetInt is empty. bug bug bug
 ///
 /// It is used by RangeSetInt::from_iter (single items) and from("1..=5, 7..=9"), which is
-///   not as good as using btreemap.from_iter
+///   not as good as using b_tree_map.from_iter
 ///
 /// But it is doing the wrong thing for extend. cmk0000
 use std::cmp::{max, min};
@@ -152,7 +152,7 @@ impl<'a, T: Integer> SortedRanges<'a, T> {
         //     // cmk println!("SR: range is now {start}..={stop}");
         // } else {
         //     // cmk println!("SR: range is now None");
-        // }
+        // }collect_into
     }
 
     fn push(&mut self, start: T, stop: T) {
@@ -160,3 +160,76 @@ impl<'a, T: Integer> SortedRanges<'a, T> {
         self.range_set_int.len += T::safe_subtract_inclusive(stop, start);
     }
 }
+
+pub struct UnsortedDisjoint<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
+    iter: I,
+    range: OptionRange<T>,
+}
+
+impl<T, I> UnsortedDisjoint<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
+    pub fn new(iter: I) -> Self {
+        UnsortedDisjoint {
+            iter,
+            range: OptionRange::None,
+        }
+    }
+}
+
+impl<T, I> Iterator for UnsortedDisjoint<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
+    type Item = (T, T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let two = T::one() + T::one(); // !!!cmk best way to do this?
+        let inner_next = self.iter.next();
+        if let Some((lower, upper)) = inner_next {
+            if let OptionRange::Some {
+                start: self_lower,
+                stop: self_upper,
+            } = self.range
+            {
+                if (lower >= two && lower - two >= self_upper)
+                    || (self_lower >= two && self_lower - two >= upper)
+                {
+                    let result = Some((self_lower, self_upper));
+                    self.range = OptionRange::Some {
+                        start: lower,
+                        stop: upper,
+                    };
+                    result
+                } else {
+                    self.range = OptionRange::Some {
+                        start: min(self_lower, lower),
+                        stop: max(self_upper, upper),
+                    };
+                    self.next()
+                }
+            } else {
+                self.range = OptionRange::Some {
+                    start: lower,
+                    stop: upper,
+                };
+                self.next()
+            }
+        } else if let OptionRange::Some { start, stop } = self.range {
+            self.range = OptionRange::None;
+            Some((start, stop))
+        } else {
+            None
+        }
+    }
+}
+
+// !!!cmk make the names consistent, start/lower vs stop/upper/end/...
+// !!!cmk replace OptionRange with Option<(T, T)>

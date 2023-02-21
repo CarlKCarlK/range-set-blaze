@@ -33,6 +33,7 @@ use itertools::KMergeBy;
 use itertools::MergeBy;
 use itertools::Tee;
 use merger::Merger;
+use merger::UnsortedDisjoint;
 use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::Rng;
@@ -763,12 +764,16 @@ impl<T: Integer> Iterator for IntoIter<T> {
 }
 
 /// cmk warn that adds one-by-one
+/// cmk should the input be named 'iter' or 'into_iter'?
 impl<T: Integer> Extend<T> for RangeSetInt<T> {
     fn extend<I>(&mut self, iter: I)
     where
         I: IntoIterator<Item = T>,
     {
-        Merger::from_iter(iter).collect_into(self);
+        let iter = iter.into_iter();
+        for (start, stop) in UnsortedDisjoint::new(iter.map(|x| (x, x))) {
+            self.internal_add(start, stop);
+        }
     }
 }
 
