@@ -182,7 +182,10 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert!(a.contains(3));
     /// assert!(a.contains(4));
     /// assert!(a.contains(5));
+    ///
     /// ```
+    /// cmk add a note about the performance compared
+    /// to bitor
     pub fn append(&mut self, other: &mut Self) {
         for (start, stop) in other.ranges() {
             self.internal_add(start, stop);
@@ -759,13 +762,12 @@ impl<T: Integer> Iterator for IntoIter<T> {
     }
 }
 
-// !!!cmk can we make a version that takes another RangeSetInt and doesn't use Merger?
+/// cmk warn that adds one-by-one
 impl<T: Integer> Extend<T> for RangeSetInt<T> {
     fn extend<I>(&mut self, iter: I)
     where
         I: IntoIterator<Item = T>,
     {
-        // !!!!cmk0 !!!! likely error: this may fail is range_set_int is not empty
         Merger::from_iter(iter).collect_into(self);
     }
 }

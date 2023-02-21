@@ -1,3 +1,13 @@
+/// Merger collects items and pairs into a vector of ranges
+/// that it sorts and then sends to SortedRanges::process.
+///
+/// SortedRanges::process merges the ranges into an *empty* RangeSetInt.
+/// cmk00 however it doesn't check that the RangeSetInt is empty. bug bug bug
+///
+/// It is used by RangeSetInt::from_iter (single items) and from("1..=5, 7..=9"), which is
+///   not as good as using btreemap.from_iter
+///
+/// But it is doing the wrong thing for extend. cmk0000
 use std::cmp::{max, min};
 
 use crate::{Integer, OptionRange, RangeSetInt};
@@ -38,6 +48,8 @@ impl<T: Integer> From<Merger<T>> for RangeSetInt<T> {
 }
 
 impl<T: Integer> Merger<T> {
+    // cmk note that iterator's collect_into is experimental
+
     pub fn collect_into(&mut self, range_set_int: &mut RangeSetInt<T>) {
         if let Merger::Some {
             range_list,
