@@ -334,16 +334,6 @@ fn bitor(c: &mut Criterion) {
             BatchSize::SmallInput,
         );
     });
-    group.bench_function("RangeSetInt bitor_assign", |b| {
-        b.iter_batched(
-            || two_sets(range_len, len, coverage_goal),
-            |(set0, set1)| {
-                let mut answer = set0;
-                answer |= &set1;
-            },
-            BatchSize::SmallInput,
-        );
-    });
     group.bench_function("BTreeSet bitor", |b| {
         b.iter_batched(
             || btree_two_sets(range_len, len, coverage_goal),
@@ -367,16 +357,6 @@ fn bitor1(c: &mut Criterion) {
             || two_sets1(range_len, len, coverage_goal),
             |(set0, set1)| {
                 let _answer = &set0 | &set1;
-            },
-            BatchSize::SmallInput,
-        );
-    });
-    group.bench_function("RangeSetInt bitor1_assign", |b| {
-        b.iter_batched(
-            || two_sets1(range_len, len, coverage_goal),
-            |(set0, set1)| {
-                let mut answer = set0;
-                answer |= &set1;
             },
             BatchSize::SmallInput,
         );

@@ -78,16 +78,6 @@ fn doctest3() {
 }
 
 #[test]
-fn doctest5() {
-    let mut a = RangeSetInt::from([1, 2, 3]);
-    let b = RangeSetInt::from([3, 4, 5]);
-
-    a |= &b;
-    assert_eq!(a, RangeSetInt::from([1, 2, 3, 4, 5]));
-    assert_eq!(b, RangeSetInt::from([3, 4, 5]));
-}
-
-#[test]
 fn doctest4() {
     let a = RangeSetInt::<i8>::from([1, 2, 3]);
 

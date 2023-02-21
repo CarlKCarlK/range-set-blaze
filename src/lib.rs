@@ -43,7 +43,8 @@ use std::collections::btree_map;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
-use std::ops::{BitOrAssign, Sub};
+use std::ops;
+use std::ops::Sub;
 use std::str::FromStr;
 use trait_set::trait_set;
 
@@ -363,29 +364,6 @@ impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
     }
 }
 
-// cmk Rule: Use a crate to get op combos
-impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
-    /// Returns the union of `self` and `rhs` as a new `RangeSetInt`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_int::RangeSetInt;
-    ///
-    /// let mut a = RangeSetInt::from([1, 2, 3]);
-    /// let b = RangeSetInt::from([3, 4, 5]);
-    ///
-    /// a |= &b;
-    /// assert_eq!(a, RangeSetInt::from([1, 2, 3, 4, 5]));
-    /// assert_eq!(b, RangeSetInt::from([3, 4, 5]));
-    /// ```
-    fn bitor_assign(&mut self, rhs: &Self) {
-        for (start, stop) in rhs.ranges() {
-            self.internal_add(start, stop);
-        }
-    }
-}
-
 pub struct BitOrIter<T, I>
 where
     T: Integer,
@@ -578,7 +556,7 @@ where
     T: Integer,
     I: Iterator<Item = (T, T)>,
 {
-    pub(crate) ranges: I,
+    pub(crate) iter: I,
     pub(crate) start_not: T,
     pub(crate) next_time_return_none: bool,
 }
@@ -589,9 +567,9 @@ where
     T: Integer,
     I: Iterator<Item = (T, T)>,
 {
-    fn new(ranges: I) -> Self {
+    fn new(iter: I) -> Self {
         NotIter {
-            ranges,
+            iter,
             start_not: T::min_value(),
             next_time_return_none: false,
         }
@@ -610,7 +588,7 @@ where
         if self.next_time_return_none {
             return None;
         }
-        let next_item = self.ranges.next();
+        let next_item = self.iter.next();
         if let Some((start, stop)) = next_item {
             if self.start_not < start {
                 // We can subtract with underflow worry because
@@ -678,7 +656,7 @@ gen_ops_ex!(
     <T>;
     types ref RangeSetInt<T> => RangeSetInt<T>;
     for ! call |a: &RangeSetInt<T>| {
-        a.ranges().not().to_range_set_int()
+        (!a.ranges()).to_range_set_int()
     };
 
     where T: Integer //Where clause for all impl's
@@ -917,42 +895,6 @@ impl<T: Integer> From<&[T]> for RangeSetInt<T> {
 //     }
 // }
 pub trait SortedDisjoint {}
-// pub struct BoxSortedDisjoint<T>
-// where
-//     T: Integer,
-// {
-//     inner: Box<dyn SortedDisjoint<T>>,
-// }
-
-// pub fn union2<'a, T, I0, I1>(input: I0) -> Box<dyn SortedDisjoint1<T> + 'a>
-// where
-//     I0: IntoIterator<Item = I1>,
-//     I1: SortedDisjoint1<T> + Clone + 'a,
-//     T: Integer + 'a,
-// {
-//     let bit_or_iter = BitOrIter {
-//         merged_ranges: input
-//             .into_iter()
-//             .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
-//         range: None,
-//     };
-//     Box::new(bit_or_iter)
-// }
-
-// pub fn union3<'a, T>(input: &[Box<dyn SortedDisjoint1<u8>>]) -> Box<dyn SortedDisjoint1<T> + 'a>
-// where
-//     T: Integer + 'a,
-// {
-//     let _input = input.iter();
-//     // let merged_ranges = input.kmerge_by(|pair0, pair1| pair0.0 < pair1.0);
-//     // let bit_or_iter = BitOrIter {
-//     //     merged_ranges,
-//     //     range: None,
-//     // };
-//     // Box::new(bit_or_iter)
-//     todo!()
-// }
-
 // cmk This code from sorted-iter shows how to define clone when possible
 // impl<I: Iterator + Clone, J: Iterator + Clone> Clone for Union<I, J>
 // where
@@ -1018,4 +960,25 @@ macro_rules! union_dyn {
         let arr = [$($val.dyn_sorted_disjoint()),*];
         arr.union()
     }}
+}
+
+impl<T: Integer> ops::Not for Ranges<'_, T> {
+    type Output = NotIter<T, Self>;
+
+    fn not(self) -> Self::Output {
+        NotIter::new(self)
+    }
+}
+
+//
+impl<T: Integer, I> ops::Not for NotIter<T, I>
+where
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = NotIter<T, Self>;
+
+    fn not(self) -> Self::Output {
+        // cmk0 special case remove the not not
+        NotIter::new(self)
+    }
 }
