@@ -636,7 +636,7 @@ gen_ops_ex!(
     // assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     // ```
     for | call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        a.ranges().bitor(b.ranges()).to_range_set_int()
+        (a.ranges() | b.ranges()).to_range_set_int()
     };
     for & call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         a.ranges().bitand(b.ranges()).to_range_set_int()
@@ -967,6 +967,17 @@ impl<T: Integer> ops::Not for Ranges<'_, T> {
 
     fn not(self) -> Self::Output {
         NotIter::new(self)
+    }
+}
+
+impl<T: Integer, I> ops::BitOr<I> for Ranges<'_, T>
+where
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = BitOrMerge<T, Self, I>;
+
+    fn bitor(self, rhs: I) -> Self::Output {
+        BitOrIter::new(self, rhs)
     }
 }
 

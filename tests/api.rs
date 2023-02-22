@@ -44,7 +44,7 @@ fn range_set_int() {
     let c1b = &a | b.clone();
     let c1c = a.clone() | &b;
     let c1d = a.clone() | b.clone();
-    let c2 = a.ranges().bitor(b.ranges()).to_range_set_int();
+    let c2 = (a.ranges() | b.ranges()).to_range_set_int();
     c3.append(&mut b.clone());
     c4.extend(b_ref);
     c5.extend(b);
