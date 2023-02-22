@@ -364,6 +364,7 @@ impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
     }
 }
 
+#[derive(Clone)]
 pub struct BitOrIter<T, I>
 where
     T: Integer,
@@ -503,16 +504,19 @@ pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
     // !!! cmk00 test the speed of this
     fn bitxor<J>(self, other: J) -> BitXOrMerge<T, Self, J>
     where
-        J: Iterator<Item = Self::Item> + Sized,
+        J: Iterator<Item = Self::Item> + Sized, // !!!cmk0 + SortedDisjoint????
     {
         let (lhs0, lhs1) = self.tee();
         let (rhs0, rhs1) = other.tee();
         lhs0.sub(rhs0).bitor(rhs1.sub(lhs1))
     }
 
-    // fn eq(self, other: Self) -> bool {
-    //     itertools::equal(self, other)
-    // }
+    fn equal<I>(self, other: I) -> bool
+    where
+        I: Iterator<Item = Self::Item> + SortedDisjoint,
+    {
+        itertools::equal(self, other)
+    }
 }
 
 // !!!cmk0 allow rhs to be of a different type
@@ -556,15 +560,29 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct NotIter<T, I>
 where
     T: Integer,
     I: Iterator<Item = (T, T)>,
 {
-    pub(crate) iter: I,
-    pub(crate) start_not: T,
-    pub(crate) next_time_return_none: bool,
+    iter: I,
+    start_not: T,
+    next_time_return_none: bool,
 }
+
+// impl<I: Iterator + Clone> Clone for NotIter<T, I>
+// where
+//     T: Integer,
+//     I::Item: Clone,
+// {
+//     fn clone(&self) -> Self {
+//         Self {
+//             a: self.a.clone(),
+//             b: self.b.clone(),
+//         }
+//     }
+// }
 
 // cmk0 do we even need this?
 impl<T, I> NotIter<T, I>
@@ -667,7 +685,7 @@ gen_ops_ex!(
     where T: Integer //Where clause for all impl's
 );
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum OptionRange<T: Integer> {
     None,
     Some { start: T, stop: T },
@@ -697,6 +715,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     }
 }
 
+#[derive(Clone)]
 pub struct Iter<T, I>
 where
     T: Integer,

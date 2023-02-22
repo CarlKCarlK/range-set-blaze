@@ -1,7 +1,6 @@
 // !!!cmk can you optimize a | b | c to automatically call union([a,b,c])?
 use std::{collections::BTreeSet, ops::BitOr};
 
-use itertools::Itertools;
 use range_set_int::{union_dyn, DynSortedDisjointExt, RangeSetInt, SortedDisjointIterator};
 
 #[test]
@@ -67,9 +66,6 @@ fn sorted_disjoint() {
     use range_set_int::ItertoolsPlus2;
     let a = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();
     let b = RangeSetInt::from([2, 3, 4]);
-    // let mut c3 = a.clone();
-    // let mut c4 = a.clone();
-    // let mut c5 = a.clone();
 
     let c0 = a.ranges() | b.ranges();
     let c1 = range_set_int::union([a.ranges(), b.ranges()]);
@@ -79,35 +75,23 @@ fn sorted_disjoint() {
         .map(|x| x.dyn_sorted_disjoint())
         .union();
 
-    let answer = RangeSetInt::from([1, 2, 3, 4]).ranges();
-    // assert_eq!(&c0, &answer);
-    // assert_eq!(&c1a, &answer);
-    // assert_eq!(&c1b, &answer);
-    // assert_eq!(&c1c, &answer);
-    // assert_eq!(&c1d, &answer);
-    // assert_eq!(&c2, &answer);
-    // assert_eq!(&c3, &answer);
-    // assert_eq!(&c4, &answer);
-    // assert_eq!(&c5, &answer);
+    let answer = RangeSetInt::from([1, 2, 3, 4]);
+    assert!(c0.equal(answer.ranges()));
+    assert!(c1.equal(answer.ranges()));
+    assert!(c2.equal(answer.ranges()));
+    assert!(c3.equal(answer.ranges()));
+    assert!(c4.equal(answer.ranges()));
 }
 
-// !!!cmk we can't define operator overloads on Tee.
+// !!!cmk0000 we can't define operator overloads on Tee.
+// !!!cmk0000 can/should we define clone/copy on many of these iterators?
 #[test]
 fn sorted_disjoint_ops() {
-    let a_ = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();
-    let a0 = a_.ranges();
-    let a1 = a_.ranges();
-    let a2 = a_.ranges();
-    let a3 = a_.ranges();
-    let a4 = a_.ranges();
-    let a5 = a_.ranges();
-    let a6 = a_.ranges();
-    let b0 = !a0;
-    let b1 = !a1;
-    let b2 = !a3;
-    let b3 = !a6;
-    let c = !!b0;
-    let d = a2 | b1;
-    let e = !a4 | b2;
-    let f = !(!a5 | !b3);
+    let a = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();
+    let a = a.ranges();
+    let b = !a.clone();
+    let _c = !!b.clone();
+    let _d = a.clone() | b.clone();
+    let _e = !a.clone() | b.clone();
+    let _f = !(!a | !b);
 }
