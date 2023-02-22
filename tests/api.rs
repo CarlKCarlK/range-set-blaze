@@ -104,5 +104,8 @@ fn sorted_disjoint_ops() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();
     let a = a.ranges();
     let b = !a;
-    let c = !b;
+    let c = !!b;
+    let d = a | b;
+    let e = !a | b;
+    let f = !(!a | !b);
 }

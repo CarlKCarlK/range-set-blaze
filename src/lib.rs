@@ -970,6 +970,31 @@ impl<T: Integer> ops::Not for Ranges<'_, T> {
     }
 }
 
+impl<T: Integer, I> ops::Not for NotIter<T, I>
+where
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = NotIter<T, Self>;
+
+    fn not(self) -> Self::Output {
+        // cmk0 special case remove the not not
+        NotIter::new(self)
+    }
+}
+
+// cmk We can define ops on MergeBy because it's from an outside crate
+impl<T: Integer, I0, I1> ops::Not for Merge<T, I0, I1>
+where
+    I0: Iterator<Item = (T, T)> + SortedDisjoint,
+    I1: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = NotIter<T, Self>;
+
+    fn not(self) -> Self::Output {
+        NotIter::new(self)
+    }
+}
+
 impl<T: Integer, I> ops::BitOr<I> for Ranges<'_, T>
 where
     I: Iterator<Item = (T, T)> + SortedDisjoint,
@@ -981,15 +1006,14 @@ where
     }
 }
 
-//
-impl<T: Integer, I> ops::Not for NotIter<T, I>
+impl<T: Integer, I, J> ops::BitOr<I> for NotIter<T, J>
 where
     I: Iterator<Item = (T, T)> + SortedDisjoint,
+    J: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    type Output = NotIter<T, Self>;
+    type Output = BitOrMerge<T, Self, I>;
 
-    fn not(self) -> Self::Output {
-        // cmk0 special case remove the not not
-        NotIter::new(self)
+    fn bitor(self, rhs: I) -> Self::Output {
+        BitOrIter::new(self, rhs)
     }
 }
