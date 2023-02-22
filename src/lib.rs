@@ -369,8 +369,8 @@ where
     T: Integer,
     I: Iterator<Item = (T, T)>,
 {
-    pub(crate) merged_ranges: I,
-    pub(crate) range: Option<(T, T)>,
+    merged_ranges: I,
+    range: Option<(T, T)>,
 }
 
 // !!!cmk0 should I0,I1 be I,J to match itertools?
@@ -408,7 +408,8 @@ where
     }
 }
 
-fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
+// !!!cmk000 these are too easy to mix up with other things
+pub fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
 where
     I0: IntoIterator<Item = I1>,
     I1: Iterator<Item = (T, T)>,
@@ -423,7 +424,7 @@ where
 }
 
 // !!!cmk0 why define standalone function if only ever called from below?
-fn intersection<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
+pub fn intersection<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
 where
     // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
     I0: IntoIterator<Item = I1>,
@@ -508,6 +509,10 @@ pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
         let (rhs0, rhs1) = other.tee();
         lhs0.sub(rhs0).bitor(rhs1.sub(lhs1))
     }
+
+    // fn eq(self, other: Self) -> bool {
+    //     itertools::equal(self, other)
+    // }
 }
 
 // !!!cmk0 allow rhs to be of a different type
@@ -636,7 +641,7 @@ gen_ops_ex!(
     // assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     // ```
     for | call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        (a.ranges() | b.ranges()).to_range_set_int()
+        (a.ranges()|b.ranges()).to_range_set_int()
     };
     for & call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         a.ranges().bitand(b.ranges()).to_range_set_int()
@@ -982,8 +987,7 @@ where
     }
 }
 
-// cmk We can define ops on MergeBy because it's from an outside crate
-impl<T: Integer, I0, I1> ops::Not for Merge<T, I0, I1>
+impl<T: Integer, I0, I1> ops::Not for BitOrMerge<T, I0, I1>
 where
     I0: Iterator<Item = (T, T)> + SortedDisjoint,
     I1: Iterator<Item = (T, T)> + SortedDisjoint,
@@ -991,10 +995,10 @@ where
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
+        // cmk0 special case remove the not not
         NotIter::new(self)
     }
 }
-
 impl<T: Integer, I> ops::BitOr<I> for Ranges<'_, T>
 where
     I: Iterator<Item = (T, T)> + SortedDisjoint,
