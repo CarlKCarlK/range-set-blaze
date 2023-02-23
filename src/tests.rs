@@ -671,7 +671,7 @@ fn iters() {
     }
     range_set_int.len();
 
-    let mut rs = range_set_int.ranges().not();
+    let mut rs = !range_set_int.ranges();
     println!("{:?}", rs.next());
     println!("{range_set_int}");
     // !!! assert that can't use range_set_int again
@@ -782,14 +782,11 @@ fn custom_multi() {
     let c = RangeSetInt::<u8>::from("38..=42");
 
     let union_stream = b.ranges().bitor(c.ranges());
-    let a_less = a.ranges().sub(union_stream);
+    let a_less = a.ranges() - union_stream;
     let d: RangeSetInt<_> = a_less.to_range_set_int();
     println!("{d}");
 
-    let d: RangeSetInt<_> = a
-        .ranges()
-        .sub(union([b.ranges(), c.ranges()]))
-        .to_range_set_int();
+    let d: RangeSetInt<_> = (a.ranges() - union([b.ranges(), c.ranges()])).to_range_set_int();
     println!("{d}");
 }
 
@@ -833,7 +830,7 @@ fn parity() {
     println!("!b|!c {}", !b | !c);
     println!(
         "!b|!c {}",
-        b.ranges().not().bitor(c.ranges().not()).to_range_set_int()
+        (!b.ranges()).bitor(!c.ranges()).to_range_set_int()
     );
 
     let _a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
@@ -849,9 +846,9 @@ fn parity() {
     );
 
     let u = union([
-        intersection_dyn!(a.ranges(), b.ranges().not(), c.ranges().not()),
-        intersection_dyn!(a.ranges().not(), b.ranges(), c.ranges().not()),
-        intersection_dyn!(a.ranges().not(), b.ranges().not(), c.ranges()),
+        intersection_dyn!(a.ranges(), !b.ranges(), !c.ranges()),
+        intersection_dyn!(!a.ranges(), b.ranges(), !c.ranges()),
+        intersection_dyn!(!a.ranges(), !b.ranges(), c.ranges()),
         intersection_dyn!(a.ranges(), b.ranges(), c.ranges()),
     ]);
     assert_eq!(

@@ -44,6 +44,7 @@ use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
 use std::ops;
+use std::ops::Not;
 use std::ops::Sub;
 use std::str::FromStr;
 use trait_set::trait_set;
@@ -102,6 +103,7 @@ pub struct RangeSetInt<T: Integer> {
     items: BTreeMap<T, T>,
 }
 
+// !!!cmk0 define these for SortedDisjoint, too?
 impl<T: Integer> fmt::Debug for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", fmt(&self.items))
@@ -486,7 +488,7 @@ pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
     where
         J: Iterator<Item = Self::Item> + SortedDisjoint,
     {
-        self.not().bitor(other.not()).not()
+        !(self.not().bitor(other.not()))
     }
 
     fn sub<J>(self, other: J) -> BitSubMerge<T, Self, J>
@@ -504,11 +506,11 @@ pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
     // !!! cmk00 test the speed of this
     fn bitxor<J>(self, other: J) -> BitXOrMerge<T, Self, J>
     where
-        J: Iterator<Item = Self::Item> + Sized, // !!!cmk0 + SortedDisjoint????
+        J: Iterator<Item = Self::Item> + SortedDisjoint + Sized,
     {
         let (lhs0, lhs1) = self.tee();
         let (rhs0, rhs1) = other.tee();
-        lhs0.sub(rhs0).bitor(rhs1.sub(lhs1))
+        lhs0.sub(rhs0) | rhs1.sub(lhs1)
     }
 
     fn equal<I>(self, other: I) -> bool
@@ -665,10 +667,10 @@ gen_ops_ex!(
         a.ranges().bitand(b.ranges()).to_range_set_int()
     };
     for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        a.ranges().bitxor(b.ranges()).to_range_set_int()
+        (a.ranges() ^ b.ranges()).to_range_set_int()
     };
     for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        a.ranges().sub(b.ranges()).to_range_set_int()
+        (a.ranges() - b.ranges()).to_range_set_int()
     };
     // cmk000 must/should we support both operators and methods?
 
@@ -986,6 +988,7 @@ macro_rules! union_dyn {
     }}
 }
 
+// Not: Ranges, NotIter, BitOrMerge
 impl<T: Integer> ops::Not for Ranges<'_, T> {
     type Output = NotIter<T, Self>;
 
@@ -998,11 +1001,10 @@ impl<T: Integer, I> ops::Not for NotIter<T, I>
 where
     I: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    type Output = NotIter<T, Self>;
+    type Output = I;
 
     fn not(self) -> Self::Output {
-        // cmk0 special case remove the not not
-        NotIter::new(self)
+        self.iter
     }
 }
 
@@ -1014,10 +1016,11 @@ where
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        // cmk0 special case remove the not not
         NotIter::new(self)
     }
 }
+
+// BitOr: Ranges, NotIter, BitOrMerge
 impl<T: Integer, I> ops::BitOr<I> for Ranges<'_, T>
 where
     I: Iterator<Item = (T, T)> + SortedDisjoint,
@@ -1040,3 +1043,133 @@ where
         BitOrIter::new(self, rhs)
     }
 }
+
+impl<T: Integer, I0, I1, I2> ops::BitOr<I2> for BitOrMerge<T, I0, I1>
+where
+    I0: Iterator<Item = (T, T)> + SortedDisjoint,
+    I1: Iterator<Item = (T, T)> + SortedDisjoint,
+    I2: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = BitOrMerge<T, Self, I2>;
+
+    fn bitor(self, rhs: I2) -> Self::Output {
+        BitOrIter::new(self, rhs)
+    }
+}
+
+// Sub: Ranges, NotIter, BitOrMerge
+
+impl<T: Integer, I> ops::Sub<I> for Ranges<'_, T>
+where
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = BitSubMerge<T, Self, I>;
+
+    fn sub(self, rhs: I) -> Self::Output {
+        self.bitand(rhs.not())
+    }
+}
+
+// impl<T: Integer, I, J> ops::Sub<I> for NotIter<T, J>
+// where
+//     I: Iterator<Item = (T, T)> + SortedDisjoint,
+//     J: Iterator<Item = (T, T)> + SortedDisjoint,
+// {
+//     type Output = BitOrMerge<T, Self, NotIter<T, I>>;
+
+//     fn sub(self, rhs: I) -> Self::Output {
+//         self | rhs.not()
+//     }
+// }
+
+// impl<T: Integer, I0, I1, I2> ops::Sub<I2> for BitOrMerge<T, I0, I1>
+// where
+//     I0: Iterator<Item = (T, T)> + SortedDisjoint,
+//     I1: Iterator<Item = (T, T)> + SortedDisjoint,
+//     I2: Iterator<Item = (T, T)> + SortedDisjoint,
+// {
+//     type Output = BitOrMerge<T, Self, NotIter<T, I2>>;
+
+//     fn sub(self, rhs: I2) -> Self::Output {
+//         self | rhs.not()
+//     }
+// }
+
+// BitXor: Ranges, NotIter, BitOrMerge
+
+impl<T: Integer, I> ops::BitXor<I> for Ranges<'_, T>
+where
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = BitXOrMerge<T, Self, I>;
+
+    fn bitxor(self, rhs: I) -> Self::Output {
+        // !!!cmk00 this xor expression appears twice
+        let (lhs0, lhs1) = self.tee();
+        let (rhs0, rhs1) = rhs.tee();
+        lhs0.sub(rhs0) | rhs1.sub(lhs1)
+    }
+}
+
+// impl<T: Integer, I, J> ops::BitXor<I> for NotIter<T, J>
+// where
+//     I: Iterator<Item = (T, T)> + SortedDisjoint,
+//     J: Iterator<Item = (T, T)> + SortedDisjoint,
+// {
+//     type Output = BitOrMerge<T, J, NotIter<T, I>>;
+
+//     fn bitxor(self, rhs: I) -> Self::Output {
+//         self.iter.bitor(rhs.not())
+//     }
+// }
+
+// impl<T: Integer, I0, I1, I2> ops::BitXor<I2> for BitOrMerge<T, I0, I1>
+// where
+//     I0: Iterator<Item = (T, T)> + SortedDisjoint,
+//     I1: Iterator<Item = (T, T)> + SortedDisjoint,
+//     I2: Iterator<Item = (T, T)> + SortedDisjoint,
+// {
+//     type Output = BitOrMerge<T, NotIter<T, Self>, NotIter<T, I2>>;
+
+//     fn bitxor(self, rhs: I2) -> Self::Output {
+//         !self | rhs.not()
+//     }
+// }
+
+// // BitAnd: Ranges, NotIter, BitOrMerge
+
+// impl<T: Integer, I> ops::BitAnd<I> for Ranges<'_, T>
+// where
+//     I: Iterator<Item = (T, T)> + SortedDisjoint,
+// {
+//     type Output = BitAndMerge<T, Self, I>;
+
+//     fn bitand(self, rhs: I) -> Self::Output {
+//         !(!self | rhs.not())
+//     }
+// }
+
+// impl<T: Integer, I, J> ops::BitAnd<I> for NotIter<T, J>
+// where
+//     I: Iterator<Item = (T, T)> + SortedDisjoint,
+//     J: Iterator<Item = (T, T)> + SortedDisjoint,
+// {
+//     type Output = NotIter<T, BitOrMerge<T, J, NotIter<T, I>>>;
+
+//     fn bitand(self, rhs: I) -> Self::Output {
+//         !(self.iter.bitor(rhs.not()))
+//     }
+// }
+
+// impl<T: Integer, I0, I1, I2> ops::BitAnd<I2> for BitOrMerge<T, I0, I1>
+// where
+//     I0: Iterator<Item = (T, T)> + SortedDisjoint,
+//     I1: Iterator<Item = (T, T)> + SortedDisjoint,
+//     I2: Iterator<Item = (T, T)> + SortedDisjoint,
+// {
+//     type Output = BitAndMerge<T, Self, I2>;
+
+//     fn bitand(self, rhs: I2) -> Self::Output {
+//         !(!self | rhs.not())
+//     }
+// }

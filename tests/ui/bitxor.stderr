@@ -1,0 +1,10 @@
+error[E0433]: failed to resolve: use of undeclared type `RangeSetInt`
+ --> tests/ui/bitxor.rs:2:13
+  |
+2 |     let a = RangeSetInt::from([1, 2, 3]);
+  |             ^^^^^^^^^^^ use of undeclared type `RangeSetInt`
+  |
+help: consider importing this struct
+  |
+1 | use range_set_int::RangeSetInt;
+  |

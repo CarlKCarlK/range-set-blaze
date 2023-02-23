@@ -84,7 +84,6 @@ fn sorted_disjoint() {
 }
 
 // !!!cmk0000 we can't define operator overloads on Tee.
-// !!!cmk0000 can/should we define clone/copy on many of these iterators?
 #[test]
 fn sorted_disjoint_ops() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();
@@ -93,5 +92,8 @@ fn sorted_disjoint_ops() {
     let _c = !!b.clone();
     let _d = a.clone() | b.clone();
     let _e = !a.clone() | b.clone();
-    let _f = !(!a | !b);
+    let _f = !(!a.clone() | !b.clone());
+    let _g = std::ops::BitOr::bitor(a.clone().not(), b.clone().not()).not();
+    let _h = range_set_int::SortedDisjointIterator::bitor(a.clone().not(), b.clone().not()).not();
+    let _z = !(!a | !b);
 }
