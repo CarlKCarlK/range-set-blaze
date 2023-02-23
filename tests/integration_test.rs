@@ -372,7 +372,7 @@ fn complement2() {
     let not_b = !b;
     let not_c = !c;
     let not_d = !d;
-    let not_e = e.not();
+    let not_e = e.not(); // !!! cmk0000 operator overloading?
     assert!(not_a.ranges().equal(not_b));
     assert!(not_a.ranges().equal(not_c));
     assert!(not_a.ranges().equal(not_d));
@@ -383,6 +383,7 @@ fn complement2() {
 fn union() {
     // RangeSetInt, Ranges, NotIter, BitOrIter
     let a0 = RangeSetInt::<u8>::from("1..=6");
+    let (a0_tee, _) = a0.ranges().tee();
     let a1 = RangeSetInt::<u8>::from("8..=9");
     let a2 = RangeSetInt::from("11..=15");
     let a12 = &a1 | &a2;
@@ -391,9 +392,11 @@ fn union() {
     let b = a0.ranges() | a1.ranges() | a2.ranges();
     let c = !not_a0.ranges() | a12.ranges();
     let d = a0.ranges() | a1.ranges() | a2.ranges();
+    let e = a0_tee.bitor(a12.ranges());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
+    assert!(a.ranges().equal(e));
 }
 
 #[test]
@@ -403,15 +406,55 @@ fn sub() {
     let a1 = RangeSetInt::<u8>::from("8..=9");
     let a2 = RangeSetInt::from("11..=15");
     let a01 = &a0 | &a1;
+    let (a01_tee, _) = a01.ranges().tee();
     let not_a01 = !&a01;
     let a = &a01 - &a2;
     let b = a01.ranges() - a2.ranges();
     let c = !not_a01.ranges() - a2.ranges();
     let d = (a0.ranges() | a1.ranges()) - a2.ranges();
+    let e = a01_tee.sub(a2.ranges());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
+    assert!(a.ranges().equal(e));
 }
 
-// cmk0000 Next test xor and and
-// cmk0000 to all the tests, tests an unknown sortedDisjoint via Tee
+#[test]
+fn xor() {
+    // RangeSetInt, Ranges, NotIter, BitOrIter
+    let a0 = RangeSetInt::<u8>::from("1..=6");
+    let a1 = RangeSetInt::<u8>::from("8..=9");
+    let a2 = RangeSetInt::from("11..=15");
+    let a01 = &a0 | &a1;
+    let (a01_tee, _) = a01.ranges().tee();
+    let not_a01 = !&a01;
+    let a = &a01 ^ &a2;
+    let b = a01.ranges() ^ a2.ranges();
+    let c = !not_a01.ranges() ^ a2.ranges();
+    let d = (a0.ranges() | a1.ranges()) ^ a2.ranges();
+    let e = a01_tee.bitxor(a2.ranges());
+    assert!(a.ranges().equal(b));
+    assert!(a.ranges().equal(c));
+    assert!(a.ranges().equal(d));
+    assert!(a.ranges().equal(e));
+}
+
+#[test]
+fn bitand() {
+    // RangeSetInt, Ranges, NotIter, BitOrIter
+    let a0 = RangeSetInt::<u8>::from("1..=6");
+    let a1 = RangeSetInt::<u8>::from("8..=9");
+    let a2 = RangeSetInt::from("11..=15");
+    let a01 = &a0 | &a1;
+    let (a01_tee, _) = a01.ranges().tee();
+    let not_a01 = !&a01;
+    let a = &a01 & &a2;
+    let b = a01.ranges() & a2.ranges();
+    let c = !not_a01.ranges() & a2.ranges();
+    let d = (a0.ranges() | a1.ranges()) & a2.ranges();
+    let e = a01_tee.bitand(a2.ranges());
+    assert!(a.ranges().equal(b));
+    assert!(a.ranges().equal(c));
+    assert!(a.ranges().equal(d));
+    assert!(a.ranges().equal(e));
+}

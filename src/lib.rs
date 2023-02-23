@@ -668,7 +668,7 @@ gen_ops_ex!(
         (a.ranges()|b.ranges()).into()
     };
     for & call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        a.ranges().bitand(b.ranges()).into()
+        (a.ranges() & b.ranges()).into()
     };
     for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         (a.ranges() ^ b.ranges()).into()
@@ -1147,40 +1147,40 @@ where
     }
 }
 
-// // BitAnd: Ranges, NotIter, BitOrMerge
+// BitAnd: Ranges, NotIter, BitOrMerge
 
-// impl<T: Integer, I> ops::BitAnd<I> for Ranges<'_, T>
-// where
-//     I: Iterator<Item = (T, T)> + SortedDisjoint,
-// {
-//     type Output = BitAndMerge<T, Self, I>;
+impl<T: Integer, I> ops::BitAnd<I> for Ranges<'_, T>
+where
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = BitAndMerge<T, Self, I>;
 
-//     fn bitand(self, rhs: I) -> Self::Output {
-//         !(!self | rhs.not())
-//     }
-// }
+    fn bitand(self, rhs: I) -> Self::Output {
+        !(!self | rhs.not())
+    }
+}
 
-// impl<T: Integer, I, J> ops::BitAnd<I> for NotIter<T, J>
-// where
-//     I: Iterator<Item = (T, T)> + SortedDisjoint,
-//     J: Iterator<Item = (T, T)> + SortedDisjoint,
-// {
-//     type Output = NotIter<T, BitOrMerge<T, J, NotIter<T, I>>>;
+impl<T: Integer, I, J> ops::BitAnd<I> for NotIter<T, J>
+where
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    J: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = NotIter<T, BitOrMerge<T, J, NotIter<T, I>>>;
 
-//     fn bitand(self, rhs: I) -> Self::Output {
-//         !(self.iter.bitor(rhs.not()))
-//     }
-// }
+    fn bitand(self, rhs: I) -> Self::Output {
+        !(self.iter.bitor(rhs.not()))
+    }
+}
 
-// impl<T: Integer, I0, I1, I2> ops::BitAnd<I2> for BitOrMerge<T, I0, I1>
-// where
-//     I0: Iterator<Item = (T, T)> + SortedDisjoint,
-//     I1: Iterator<Item = (T, T)> + SortedDisjoint,
-//     I2: Iterator<Item = (T, T)> + SortedDisjoint,
-// {
-//     type Output = BitAndMerge<T, Self, I2>;
+impl<T: Integer, I0, I1, I2> ops::BitAnd<I2> for BitOrMerge<T, I0, I1>
+where
+    I0: Iterator<Item = (T, T)> + SortedDisjoint,
+    I1: Iterator<Item = (T, T)> + SortedDisjoint,
+    I2: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = BitAndMerge<T, Self, I2>;
 
-//     fn bitand(self, rhs: I2) -> Self::Output {
-//         !(!self | rhs.not())
-//     }
-// }
+    fn bitand(self, rhs: I2) -> Self::Output {
+        !(!self | rhs.not())
+    }
+}
