@@ -44,7 +44,6 @@ use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
 use std::ops;
-use std::ops::Not;
 use std::ops::Sub;
 use std::str::FromStr;
 use trait_set::trait_set;
@@ -1108,11 +1107,12 @@ where
 {
     type Output = BitXOrMerge<T, Self, I>;
 
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitxor(self, rhs: I) -> Self::Output {
         // !!!cmk00 this xor expression appears twice
         let (lhs0, lhs1) = self.tee();
         let (rhs0, rhs1) = rhs.tee();
-        lhs0.sub(rhs0).bitor(rhs1.sub(lhs1))
+        lhs0.sub(rhs0) | (rhs1.sub(lhs1))
     }
 }
 
@@ -1127,7 +1127,7 @@ where
         let (not_lhs0, not_lhs1) = self.iter.tee();
         let (rhs0, rhs1) = rhs.tee();
         // ¬(¬n ∨ ¬r) ∨ ¬(n ∨ r) // https://www.wolframalpha.com/input?i=%28not+n%29+xor+r
-        !(not_lhs0.not() | (rhs0.not())) | !(not_lhs1.bitor(rhs1))
+        !(not_lhs0.not() | rhs0.not()) | !not_lhs1.bitor(rhs1)
     }
 }
 
@@ -1139,8 +1139,9 @@ where
 {
     type Output = BitXOrMerge<T, Self, I2>;
 
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitxor(self, rhs: I2) -> Self::Output {
-        // !!!cmk00 this xor expression appears twice
+        // !!!cmk000 this xor expression appears twice
         let (lhs0, lhs1) = self.tee();
         let (rhs0, rhs1) = rhs.tee();
         lhs0.sub(rhs0) | rhs1.sub(lhs1)
@@ -1155,6 +1156,7 @@ where
 {
     type Output = BitAndMerge<T, Self, I>;
 
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitand(self, rhs: I) -> Self::Output {
         !(!self | rhs.not())
     }
@@ -1168,7 +1170,7 @@ where
     type Output = NotIter<T, BitOrMerge<T, J, NotIter<T, I>>>;
 
     fn bitand(self, rhs: I) -> Self::Output {
-        !(self.iter.bitor(rhs.not()))
+        !self.iter.bitor(rhs.not())
     }
 }
 

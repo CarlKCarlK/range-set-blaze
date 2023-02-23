@@ -372,7 +372,7 @@ fn complement2() {
     let not_b = !b;
     let not_c = !c;
     let not_d = !d;
-    let not_e = e.not(); // !!! cmk0000 operator overloading?
+    let not_e = e.not();
     assert!(not_a.ranges().equal(not_b));
     assert!(not_a.ranges().equal(not_c));
     assert!(not_a.ranges().equal(not_d));

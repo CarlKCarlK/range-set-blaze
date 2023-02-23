@@ -83,7 +83,6 @@ fn sorted_disjoint() {
     assert!(c4.equal(answer.ranges()));
 }
 
-// !!!cmk0000 we can't define operator overloads on Tee.
 #[test]
 fn sorted_disjoint_ops() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();

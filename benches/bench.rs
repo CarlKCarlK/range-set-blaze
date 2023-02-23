@@ -11,9 +11,7 @@ use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
 // !!!cmk annoying to need to import ItertoolsPlus2
-use range_set_int::{
-    DynSortedDisjointExt, ItertoolsPlus2, MemorylessData, RangeSetInt, SortedDisjointIterator,
-};
+use range_set_int::{DynSortedDisjointExt, ItertoolsPlus2, MemorylessData, RangeSetInt};
 // use thousands::Separable;
 
 // fn insert10(c: &mut Criterion) {
