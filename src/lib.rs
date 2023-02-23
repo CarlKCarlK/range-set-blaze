@@ -133,22 +133,14 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        input
-            .into_iter()
-            .map(|x| x.ranges())
-            .union()
-            .to_range_set_int()
+        input.into_iter().map(|x| x.ranges()).union().into()
     }
 
     pub fn intersection<I>(input: I) -> Self
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        input
-            .into_iter()
-            .map(|x| x.ranges())
-            .intersection()
-            .to_range_set_int()
+        input.into_iter().map(|x| x.ranges()).intersection().into()
     }
 }
 
@@ -469,18 +461,26 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
 // {
 // }
 
-// define mathematical set methods, e.g. left_iter.left(right_iter) returns the left_iter.
-pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
-    fn to_range_set_int(self) -> RangeSetInt<T> {
+impl<T, I> From<I> for RangeSetInt<T>
+where
+    T: Integer,
+    // !!!cmk00 what does ' IntoIter = I::IntoIter' mean?
+    // !!!IntoIterator instead?
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    fn from(iter: I) -> Self {
         let mut len = <T as SafeSubtract>::Output::zero();
-        let sorted_disjoint_iter = self.map(|(start, stop)| {
+        let sorted_disjoint_iter = iter.map(|(start, stop)| {
             len += T::safe_subtract_inclusive(stop, start);
             (start, stop)
         });
         let items = BTreeMap::<T, T>::from_iter(sorted_disjoint_iter);
         RangeSetInt::<T> { items, len }
     }
+}
 
+// define mathematical set methods, e.g. left_iter.left(right_iter) returns the left_iter.
+pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
     fn bitor<J: SortedDisjointIterator<T>>(self, other: J) -> BitOrMerge<T, Self, J> {
         BitOrMerge::new(self, other)
     }
@@ -493,7 +493,7 @@ pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
 
     fn sub<J>(self, other: J) -> BitSubMerge<T, Self, J>
     where
-        J: Iterator<Item = Self::Item> + SortedDisjoint + Sized,
+        J: Iterator<Item = Self::Item> + SortedDisjoint + Sized, // !!!cmk0 why Sized?
     {
         self.bitand(other.not())
     }
@@ -661,16 +661,16 @@ gen_ops_ex!(
     // assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
     // ```
     for | call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        (a.ranges()|b.ranges()).to_range_set_int()
+        (a.ranges()|b.ranges()).into()
     };
     for & call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        a.ranges().bitand(b.ranges()).to_range_set_int()
+        a.ranges().bitand(b.ranges()).into()
     };
     for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        (a.ranges() ^ b.ranges()).to_range_set_int()
+        (a.ranges() ^ b.ranges()).into()
     };
     for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        (a.ranges() - b.ranges()).to_range_set_int()
+        (a.ranges() - b.ranges()).into()
     };
     // cmk000 must/should we support both operators and methods?
 
@@ -681,7 +681,7 @@ gen_ops_ex!(
     <T>;
     types ref RangeSetInt<T> => RangeSetInt<T>;
     for ! call |a: &RangeSetInt<T>| {
-        (!a.ranges()).to_range_set_int()
+        (!a.ranges()).into()
     };
 
     where T: Integer //Where clause for all impl's

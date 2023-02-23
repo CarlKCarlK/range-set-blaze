@@ -434,7 +434,7 @@ fn k_intersect(c: &mut Criterion) {
             || k_sets(k, range_len, len, coverage_goal),
             |sets| {
                 let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
-                let _answer = sets.intersection().to_range_set_int();
+                let _answer: RangeSetInt<_> = sets.intersection().into();
             },
             BatchSize::SmallInput,
         );

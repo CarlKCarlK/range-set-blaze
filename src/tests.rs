@@ -783,10 +783,10 @@ fn custom_multi() {
 
     let union_stream = b.ranges().bitor(c.ranges());
     let a_less = a.ranges() - union_stream;
-    let d: RangeSetInt<_> = a_less.to_range_set_int();
+    let d: RangeSetInt<_> = a_less.into();
     println!("{d}");
 
-    let d: RangeSetInt<_> = (a.ranges() - union([b.ranges(), c.ranges()])).to_range_set_int();
+    let d: RangeSetInt<_> = (a.ranges() - union([b.ranges(), c.ranges()])).into();
     println!("{d}");
 }
 
@@ -822,26 +822,26 @@ fn parity() {
         RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
     );
     let _d = intersection([a.ranges()]);
-    let _parity: RangeSetInt<u8> = union([intersection([a.ranges()])]).to_range_set_int();
-    let _parity: RangeSetInt<u8> = intersection([a.ranges()]).to_range_set_int();
-    let _parity: RangeSetInt<u8> = union([a.ranges()]).to_range_set_int();
+    let _parity: RangeSetInt<u8> = union([intersection([a.ranges()])]).into();
+    let _parity: RangeSetInt<u8> = intersection([a.ranges()]).into();
+    let _parity: RangeSetInt<u8> = union([a.ranges()]).into();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
     println!(
         "!b|!c {}",
-        (!b.ranges()).bitor(!c.ranges()).to_range_set_int()
-    );
+        RangeSetInt::from((!b.ranges()).bitor(!c.ranges()))
+    ); // !!!cmk00 hard to read
 
     let _a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let u = union_dyn!(a.ranges());
     assert_eq!(
-        u.to_range_set_int(),
+        RangeSetInt::from(u),
         RangeSetInt::from("1..=6,8..=9,11..=15")
     );
     let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
     assert_eq!(
-        u.to_range_set_int(),
+        RangeSetInt::from(u),
         RangeSetInt::from("1..=15,18..=29,38..=42")
     );
 
@@ -852,7 +852,7 @@ fn parity() {
         intersection_dyn!(a.ranges(), b.ranges(), c.ranges()),
     ]);
     assert_eq!(
-        u.to_range_set_int(),
+        RangeSetInt::from(u),
         RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
     );
 }

@@ -272,13 +272,10 @@ fn custom_multi() {
 
     let union_stream = b.ranges().bitor(c.ranges());
     let a_less = a.ranges().sub(union_stream);
-    let d: RangeSetInt<_> = a_less.to_range_set_int();
+    let d: RangeSetInt<_> = a_less.into();
     println!("{d}");
 
-    let d: RangeSetInt<_> = a
-        .ranges()
-        .sub([b.ranges(), c.ranges()].union())
-        .to_range_set_int();
+    let d: RangeSetInt<_> = a.ranges().sub([b.ranges(), c.ranges()].union()).into();
     println!("{d}");
 }
 
@@ -314,31 +311,31 @@ fn parity() {
         RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
     );
     let _d = [a.ranges()].intersection();
-    let _parity: RangeSetInt<u8> = [[a.ranges()].intersection()].union().to_range_set_int();
-    let _parity: RangeSetInt<u8> = [a.ranges()].intersection().to_range_set_int();
-    let _parity: RangeSetInt<u8> = [a.ranges()].union().to_range_set_int();
+    let _parity: RangeSetInt<u8> = [[a.ranges()].intersection()].union().into();
+    let _parity: RangeSetInt<u8> = [a.ranges()].intersection().into();
+    let _parity: RangeSetInt<u8> = [a.ranges()].union().into();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
     println!(
         "!b|!c {}",
-        b.ranges().not().bitor(c.ranges().not()).to_range_set_int()
+        RangeSetInt::from(b.ranges().not().bitor(c.ranges().not()))
     );
 
     let _a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let u = [a.ranges().dyn_sorted_disjoint()].union();
     assert_eq!(
-        u.to_range_set_int(),
+        RangeSetInt::from(u),
         RangeSetInt::from("1..=6,8..=9,11..=15")
     );
     let u = union_dyn!(a.ranges());
     assert_eq!(
-        u.to_range_set_int(),
+        RangeSetInt::from(u),
         RangeSetInt::from("1..=6,8..=9,11..=15")
     );
     let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
     assert_eq!(
-        u.to_range_set_int(),
+        RangeSetInt::from(u),
         RangeSetInt::from("1..=15,18..=29,38..=42")
     );
 
@@ -350,7 +347,7 @@ fn parity() {
     ]
     .union();
     assert_eq!(
-        u.to_range_set_int(),
+        RangeSetInt::from(u),
         RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
     );
 }
