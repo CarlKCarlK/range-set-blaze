@@ -381,6 +381,11 @@ pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
 pub type BitSubMerge<T, I0, I1> = NotIter<T, BitOrMerge<T, NotIter<T, I0>, I1>>;
 pub type BitXOrMerge<T, I0, I1> =
     BitOrMerge<T, BitSubMerge<T, Tee<I0>, Tee<I1>>, BitSubMerge<T, Tee<I1>, Tee<I0>>>;
+pub type BitEq<T, J, I> = BitOrMerge<
+    T,
+    NotIter<T, BitOrMerge<T, NotIter<T, Tee<J>>, NotIter<T, Tee<I>>>>,
+    NotIter<T, BitOrMerge<T, Tee<J>, Tee<I>>>,
+>;
 // pub type BitXOrMerge<T, I0, I1> = BitOrMerge<
 //     T,
 //     BitAndMerge<T, AssumeSortedByKey<Tee<I0>>, NotIter<T, AssumeSortedByKey<Tee<I1>>>>,
@@ -1107,21 +1112,24 @@ where
         // !!!cmk00 this xor expression appears twice
         let (lhs0, lhs1) = self.tee();
         let (rhs0, rhs1) = rhs.tee();
-        lhs0.sub(rhs0) | rhs1.sub(lhs1)
+        lhs0.sub(rhs0).bitor(rhs1.sub(lhs1))
     }
 }
 
-// impl<T: Integer, I, J> ops::BitXor<I> for NotIter<T, J>
-// where
-//     I: Iterator<Item = (T, T)> + SortedDisjoint,
-//     J: Iterator<Item = (T, T)> + SortedDisjoint,
-// {
-//     type Output = BitOrMerge<T, J, NotIter<T, I>>;
+impl<T: Integer, I, J> ops::BitXor<I> for NotIter<T, J>
+where
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    J: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = BitEq<T, J, I>;
 
-//     fn bitxor(self, rhs: I) -> Self::Output {
-//         self.iter.bitor(rhs.not())
-//     }
-// }
+    fn bitxor(self, rhs: I) -> Self::Output {
+        let (not_lhs0, not_lhs1) = self.iter.tee();
+        let (rhs0, rhs1) = rhs.tee();
+        // ¬(¬n ∨ ¬r) ∨ ¬(n ∨ r) // https://www.wolframalpha.com/input?i=%28not+n%29+xor+r
+        !(not_lhs0.not() | (rhs0.not())) | !(not_lhs1.bitor(rhs1))
+    }
+}
 
 // impl<T: Integer, I0, I1, I2> ops::BitXor<I2> for BitOrMerge<T, I0, I1>
 // where
