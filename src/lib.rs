@@ -1131,18 +1131,21 @@ where
     }
 }
 
-// impl<T: Integer, I0, I1, I2> ops::BitXor<I2> for BitOrMerge<T, I0, I1>
-// where
-//     I0: Iterator<Item = (T, T)> + SortedDisjoint,
-//     I1: Iterator<Item = (T, T)> + SortedDisjoint,
-//     I2: Iterator<Item = (T, T)> + SortedDisjoint,
-// {
-//     type Output = BitOrMerge<T, NotIter<T, Self>, NotIter<T, I2>>;
+impl<T: Integer, I0, I1, I2> ops::BitXor<I2> for BitOrMerge<T, I0, I1>
+where
+    I0: Iterator<Item = (T, T)> + SortedDisjoint,
+    I1: Iterator<Item = (T, T)> + SortedDisjoint,
+    I2: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = BitXOrMerge<T, Self, I2>;
 
-//     fn bitxor(self, rhs: I2) -> Self::Output {
-//         !self | rhs.not()
-//     }
-// }
+    fn bitxor(self, rhs: I2) -> Self::Output {
+        // !!!cmk00 this xor expression appears twice
+        let (lhs0, lhs1) = self.tee();
+        let (rhs0, rhs1) = rhs.tee();
+        lhs0.sub(rhs0) | rhs1.sub(lhs1)
+    }
+}
 
 // // BitAnd: Ranges, NotIter, BitOrMerge
 
