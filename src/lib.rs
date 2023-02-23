@@ -378,7 +378,7 @@ pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
 pub type BitNandMerge<T, I0, I1> = BitOrMerge<T, NotIter<T, I0>, NotIter<T, I1>>;
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
 // !!!cmk0 why is there no BitSubKMerge? and BitXorKMerge?
-pub type BitSubMerge<T, I0, I1> = BitAndMerge<T, I0, NotIter<T, I1>>;
+pub type BitSubMerge<T, I0, I1> = NotIter<T, BitOrMerge<T, NotIter<T, I0>, I1>>;
 pub type BitXOrMerge<T, I0, I1> =
     BitOrMerge<T, BitSubMerge<T, Tee<I0>, Tee<I1>>, BitSubMerge<T, Tee<I1>, Tee<I0>>>;
 // pub type BitXOrMerge<T, I0, I1> = BitOrMerge<
@@ -464,8 +464,7 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
 impl<T, I> From<I> for RangeSetInt<T>
 where
     T: Integer,
-    // !!!cmk00 what does ' IntoIter = I::IntoIter' mean?
-    // !!!IntoIterator instead?
+    // !!!cmk what does IntoIterator's ' IntoIter = I::IntoIter' mean?
     I: Iterator<Item = (T, T)> + SortedDisjoint,
 {
     fn from(iter: I) -> Self {
@@ -495,7 +494,7 @@ pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
     where
         J: Iterator<Item = Self::Item> + SortedDisjoint + Sized, // !!!cmk0 why Sized?
     {
-        self.bitand(other.not())
+        !(self.not().bitor(other))
     }
 
     fn not(self) -> NotIter<T, Self> {
@@ -1066,21 +1065,22 @@ where
     type Output = BitSubMerge<T, Self, I>;
 
     fn sub(self, rhs: I) -> Self::Output {
-        self.bitand(rhs.not())
+        // cmk00 make sure we don't use self.bitand(rhs.not()) as formula
+        !(!self | rhs)
     }
 }
 
-// impl<T: Integer, I, J> ops::Sub<I> for NotIter<T, J>
-// where
-//     I: Iterator<Item = (T, T)> + SortedDisjoint,
-//     J: Iterator<Item = (T, T)> + SortedDisjoint,
-// {
-//     type Output = BitOrMerge<T, Self, NotIter<T, I>>;
+impl<T: Integer, I, J> ops::Sub<I> for NotIter<T, J>
+where
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    J: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = NotIter<T, BitOrMerge<T, J, I>>;
 
-//     fn sub(self, rhs: I) -> Self::Output {
-//         self | rhs.not()
-//     }
-// }
+    fn sub(self, rhs: I) -> Self::Output {
+        !self.iter.bitor(rhs)
+    }
+}
 
 // impl<T: Integer, I0, I1, I2> ops::Sub<I2> for BitOrMerge<T, I0, I1>
 // where
