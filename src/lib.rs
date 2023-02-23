@@ -1082,18 +1082,18 @@ where
     }
 }
 
-// impl<T: Integer, I0, I1, I2> ops::Sub<I2> for BitOrMerge<T, I0, I1>
-// where
-//     I0: Iterator<Item = (T, T)> + SortedDisjoint,
-//     I1: Iterator<Item = (T, T)> + SortedDisjoint,
-//     I2: Iterator<Item = (T, T)> + SortedDisjoint,
-// {
-//     type Output = BitOrMerge<T, Self, NotIter<T, I2>>;
+impl<T: Integer, I0, I1, I2> ops::Sub<I2> for BitOrMerge<T, I0, I1>
+where
+    I0: Iterator<Item = (T, T)> + SortedDisjoint,
+    I1: Iterator<Item = (T, T)> + SortedDisjoint,
+    I2: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Output = BitSubMerge<T, Self, I2>;
 
-//     fn sub(self, rhs: I2) -> Self::Output {
-//         self | rhs.not()
-//     }
-// }
+    fn sub(self, rhs: I2) -> Self::Output {
+        !(!self | rhs)
+    }
+}
 
 // BitXor: Ranges, NotIter, BitOrMerge
 
