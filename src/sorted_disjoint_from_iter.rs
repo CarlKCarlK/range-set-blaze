@@ -35,19 +35,6 @@ where
     }
 }
 
-// cmk0 impl<T, I> From<I> for UnsortedDisjoint<T, I>
-// where
-//     T: Integer,
-//     I: Iterator<Item = T>,
-// {
-//     fn from(iter: I) -> Self {
-//         UnsortedDisjoint {
-//             iter: iter.map(|x| (x, x)),
-//             range: OptionRange::None,
-//             two: T::one() + T::one(),
-//         }
-//     }
-// }
 impl<T, I> Iterator for UnsortedDisjoint<T, I>
 where
     T: Integer,

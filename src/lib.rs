@@ -21,6 +21,8 @@
 // https://stackoverflow.com/questions/30540766/how-can-i-add-new-methods-to-iterator
 // !!!cmk0 how could you write your own subtraction that subtracted many sets from one set via iterators?
 // !!!cmk0 sort by start then by larger stop
+// cmk rules: When should use Iterator and when IntoIterator?
+// cmk rules: When should use: from_iter, from, new from_something?
 
 mod safe_subtract;
 mod simple;
@@ -100,19 +102,19 @@ pub fn fmt<T: Integer>(items: &BTreeMap<T, T>) -> String {
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RangeSetInt<T: Integer> {
     len: <T as SafeSubtract>::Output,
-    items: BTreeMap<T, T>,
+    btree_map: BTreeMap<T, T>,
 }
 
 // !!!cmk0 define these for SortedDisjoint, too?
 impl<T: Integer> fmt::Debug for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", fmt(&self.items))
+        write!(f, "{}", fmt(&self.btree_map))
     }
 }
 
 impl<T: Integer> fmt::Display for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", fmt(&self.items))
+        write!(f, "{}", fmt(&self.btree_map))
     }
 }
 
@@ -151,7 +153,7 @@ impl<T: Integer> RangeSetInt<T> {
     where
         for<'a> &'a T: Sub<&'a T, Output = T>,
     {
-        self.items
+        self.btree_map
             .iter()
             .fold(<T as SafeSubtract>::Output::zero(), |acc, (start, stop)| {
                 acc + T::safe_subtract_inclusive(*stop, *start)
@@ -190,7 +192,7 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     pub fn clear(&mut self) {
-        self.items.clear();
+        self.btree_map.clear();
         self.len = <T as SafeSubtract>::Output::zero();
     }
 
@@ -206,14 +208,14 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(set.contains(4), false);
     /// ```
     pub fn contains(&self, value: T) -> bool {
-        self.items
+        self.btree_map
             .range(..=value)
             .next_back()
             .map_or(false, |(_, stop)| value <= *stop)
     }
 
     fn delete_extra(&mut self, start: T, stop: T) {
-        let mut after = self.items.range_mut(start..);
+        let mut after = self.btree_map.range_mut(start..);
         let (start_after, stop_after) = after.next().unwrap(); // there will always be a next
         debug_assert!(start == *start_after && stop == *stop_after); // real assert
                                                                      // !!!cmk would be nice to have a delete_range function
@@ -235,7 +237,7 @@ impl<T: Integer> RangeSetInt<T> {
             *stop_after = stop_new;
         }
         for start in delete_list {
-            self.items.remove(&start);
+            self.btree_map.remove(&start);
         }
     }
 
@@ -249,7 +251,7 @@ impl<T: Integer> RangeSetInt<T> {
         // internal_add(&mut self.items, &mut self.len, start, stop);
         assert!(start <= stop && stop <= T::max_value2());
         // !!! cmk would be nice to have a partition_point function that returns two iterators
-        let mut before = self.items.range_mut(..=start).rev();
+        let mut before = self.btree_map.range_mut(..=start).rev();
         if let Some((start_before, stop_before)) = before.next() {
             // Must check this in two parts to avoid overflow
             if *stop_before < start && *stop_before + T::one() < start {
@@ -268,7 +270,7 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     fn internal_add2(&mut self, start: T, stop: T) {
-        let was_there = self.items.insert(start, stop);
+        let was_there = self.btree_map.insert(start, stop);
         debug_assert!(was_there.is_none()); // real assert
         self.delete_extra(start, stop);
         self.len += T::safe_subtract_inclusive(stop, start);
@@ -280,7 +282,7 @@ impl<T: Integer> RangeSetInt<T> {
 
     pub fn new() -> RangeSetInt<T> {
         RangeSetInt {
-            items: BTreeMap::new(),
+            btree_map: BTreeMap::new(),
             len: <T as SafeSubtract>::Output::zero(),
         }
     }
@@ -290,13 +292,13 @@ impl<T: Integer> RangeSetInt<T> {
 // impl Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)> + Clone + '_
     {
         let ranges = Ranges {
-            items: self.items.iter(),
+            items: self.btree_map.iter(),
         };
         ranges
     }
 
     pub fn ranges_len(&self) -> usize {
-        self.items.len()
+        self.btree_map.len()
     }
 }
 
@@ -348,25 +350,7 @@ impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
         I: IntoIterator<Item = (T, T)>,
     {
         let sorted_disjoint: SortedDisjointFromIter<_> = iter.into_iter().collect();
-        RangeSetInt::from_sorted_disjoint(sorted_disjoint)
-    }
-}
-
-// cmk rules: When should use Iterator and when IntoIterator?
-// cmk rules: When should use: from_iter, from, new from_something?
-impl<T: Integer> RangeSetInt<T> {
-    fn from_sorted_disjoint<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = (T, T)>,
-        <I as IntoIterator>::IntoIter: SortedDisjoint,
-    {
-        let mut iter_with_len = SortedDisjointWithLenSoFar::new(iter.into_iter());
-        let btree_map = BTreeMap::from_iter(&mut iter_with_len);
-        let len = iter_with_len.len();
-        RangeSetInt {
-            items: btree_map,
-            len,
-        }
+        sorted_disjoint.into()
     }
 }
 
@@ -486,15 +470,15 @@ where
     T: Integer,
     // !!!cmk what does IntoIterator's ' IntoIter = I::IntoIter' mean?
     I: Iterator<Item = (T, T)> + SortedDisjoint,
+    // cmk0 understand why this can't be  I: IntoIterator<Item = (T, T)>, <I as IntoIterator>::IntoIter: SortedDisjoint,
 {
     fn from(iter: I) -> Self {
-        let mut len = <T as SafeSubtract>::Output::zero();
-        let sorted_disjoint_iter = iter.map(|(start, stop)| {
-            len += T::safe_subtract_inclusive(stop, start);
-            (start, stop)
-        });
-        let items = BTreeMap::<T, T>::from_iter(sorted_disjoint_iter);
-        RangeSetInt::<T> { items, len }
+        let mut iter_with_len = SortedDisjointWithLenSoFar::new(iter);
+        let btree_map = BTreeMap::from_iter(&mut iter_with_len);
+        RangeSetInt {
+            btree_map,
+            len: iter_with_len.len(),
+        }
     }
 }
 
@@ -733,7 +717,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     fn into_iter(self) -> IntoIter<T> {
         IntoIter {
             option_range: OptionRange::None,
-            range_into_iter: self.items.into_iter(),
+            range_into_iter: self.btree_map.into_iter(),
         }
     }
 }
