@@ -376,10 +376,13 @@ pub type BitAndMerge<T, I0, I1> = NotIter<T, BitNandMerge<T, I0, I1>>;
 pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
 pub type BitNandMerge<T, I0, I1> = BitOrMerge<T, NotIter<T, I0>, NotIter<T, I1>>;
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
+pub type BitNorMerge<T, J, I> = NotIter<T, BitOrMerge<T, J, I>>;
 // !!!cmk0 why is there no BitSubKMerge? and BitXorKMerge?
 pub type BitSubMerge<T, I0, I1> = NotIter<T, BitOrMerge<T, NotIter<T, I0>, I1>>;
-pub type BitXOrMerge<T, I0, I1> =
+pub type BitXOrTee<T, I0, I1> =
     BitOrMerge<T, BitSubMerge<T, Tee<I0>, Tee<I1>>, BitSubMerge<T, Tee<I1>, Tee<I0>>>;
+pub type BitXOr<T, I0, I1> =
+    BitOrMerge<T, BitSubMerge<T, I0, Tee<I1>>, BitSubMerge<T, Tee<I1>, I0>>;
 pub type BitEq<T, J, I> = BitOrMerge<
     T,
     NotIter<T, BitOrMerge<T, NotIter<T, Tee<J>>, NotIter<T, Tee<I>>>>,
@@ -507,7 +510,7 @@ pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
 
     // !!! cmk0 how do do this without cloning?
     // !!! cmk00 test the speed of this
-    fn bitxor<J>(self, other: J) -> BitXOrMerge<T, Self, J>
+    fn bitxor<J>(self, other: J) -> BitXOrTee<T, Self, J>
     where
         J: Iterator<Item = Self::Item> + SortedDisjoint + Sized,
     {
@@ -1056,6 +1059,7 @@ where
     type Output = BitOrMerge<T, Self, I2>;
 
     fn bitor(self, rhs: I2) -> Self::Output {
+        // cmk00 should we optimize a|b|c into union(a,b,c)?
         BitOrIter::new(self, rhs)
     }
 }
@@ -1069,7 +1073,6 @@ where
     type Output = BitSubMerge<T, Self, I>;
 
     fn sub(self, rhs: I) -> Self::Output {
-        // cmk00 make sure we don't use self.bitand(rhs.not()) as formula
         !(!self | rhs)
     }
 }
@@ -1079,9 +1082,10 @@ where
     I: Iterator<Item = (T, T)> + SortedDisjoint,
     J: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    type Output = NotIter<T, BitOrMerge<T, J, I>>;
+    type Output = BitNorMerge<T, J, I>;
 
     fn sub(self, rhs: I) -> Self::Output {
+        // optimize !!self.iter into self.iter
         !self.iter.bitor(rhs)
     }
 }
@@ -1105,14 +1109,14 @@ impl<T: Integer, I> ops::BitXor<I> for Ranges<'_, T>
 where
     I: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    type Output = BitXOrMerge<T, Self, I>;
+    type Output = BitXOr<T, Self, I>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitxor(self, rhs: I) -> Self::Output {
-        // !!!cmk00 this xor expression appears twice
-        let (lhs0, lhs1) = self.tee();
+        // optimize by using self.clone() instead of tee
+        let lhs1 = self.clone();
         let (rhs0, rhs1) = rhs.tee();
-        lhs0.sub(rhs0) | (rhs1.sub(lhs1))
+        (self - rhs0) | (rhs1.sub(lhs1))
     }
 }
 
@@ -1126,6 +1130,7 @@ where
     fn bitxor(self, rhs: I) -> Self::Output {
         let (not_lhs0, not_lhs1) = self.iter.tee();
         let (rhs0, rhs1) = rhs.tee();
+        // optimize !!self.iter into self.iter
         // ¬(¬n ∨ ¬r) ∨ ¬(n ∨ r) // https://www.wolframalpha.com/input?i=%28not+n%29+xor+r
         !(not_lhs0.not() | rhs0.not()) | !not_lhs1.bitor(rhs1)
     }
@@ -1137,11 +1142,10 @@ where
     I1: Iterator<Item = (T, T)> + SortedDisjoint,
     I2: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    type Output = BitXOrMerge<T, Self, I2>;
+    type Output = BitXOrTee<T, Self, I2>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitxor(self, rhs: I2) -> Self::Output {
-        // !!!cmk000 this xor expression appears twice
         let (lhs0, lhs1) = self.tee();
         let (rhs0, rhs1) = rhs.tee();
         lhs0.sub(rhs0) | rhs1.sub(lhs1)
@@ -1170,10 +1174,12 @@ where
     type Output = NotIter<T, BitOrMerge<T, J, NotIter<T, I>>>;
 
     fn bitand(self, rhs: I) -> Self::Output {
+        // optimize !!self.iter into self.iter
         !self.iter.bitor(rhs.not())
     }
 }
 
+// cmk name all generics in a sensible way
 impl<T: Integer, I0, I1, I2> ops::BitAnd<I2> for BitOrMerge<T, I0, I1>
 where
     I0: Iterator<Item = (T, T)> + SortedDisjoint,
