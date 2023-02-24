@@ -1,3 +1,6 @@
+// !!!cmk make the names consistent, start/lower vs stop/upper/end/...
+// !!!cmk replace OptionRange with Option<(T, T)>
+
 use num_traits::Zero;
 use std::{
     cmp::{max, min},
@@ -98,7 +101,6 @@ where
 {
     vec_iter: vec::IntoIter<(T, T)>,
     range: OptionRange<T>,
-    len: <T as SafeSubtract>::Output,
 }
 
 impl<T: Integer> SortedDisjointFromIter<T> {
@@ -109,12 +111,7 @@ impl<T: Integer> SortedDisjointFromIter<T> {
         SortedDisjointFromIter {
             vec_iter: unsorted_disjoint.sorted_by_key(|(start, _)| *start),
             range: OptionRange::None,
-            len: <T as SafeSubtract>::Output::zero(),
         }
-    }
-
-    pub fn len(&self) -> <T as SafeSubtract>::Output {
-        self.len.clone()
     }
 }
 
@@ -156,7 +153,6 @@ impl<T: Integer> Iterator for SortedDisjointFromIter<T> {
                     self.next()
                 } else {
                     self.range = OptionRange::Some { start, stop };
-                    self.len += T::safe_subtract_inclusive(self_stop, self_start);
                     Some((self_start, self_stop))
                 }
             } else {
@@ -165,7 +161,6 @@ impl<T: Integer> Iterator for SortedDisjointFromIter<T> {
             }
         } else if let OptionRange::Some { start, stop } = self.range {
             self.range = OptionRange::None;
-            self.len += T::safe_subtract_inclusive(stop, start);
             Some((start, stop))
         } else {
             None
@@ -173,5 +168,49 @@ impl<T: Integer> Iterator for SortedDisjointFromIter<T> {
     }
 }
 
-// !!!cmk make the names consistent, start/lower vs stop/upper/end/...
-// !!!cmk replace OptionRange with Option<(T, T)>
+pub struct SortedDisjointWithLenSoFar<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    iter: I,
+    len: <T as SafeSubtract>::Output,
+}
+
+// !!!cmk00 from instead of new?
+impl<T: Integer, I> SortedDisjointWithLenSoFar<T, I>
+where
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    pub fn new(iter: I) -> Self {
+        SortedDisjointWithLenSoFar {
+            iter,
+            len: <T as SafeSubtract>::Output::zero(),
+        }
+    }
+
+    pub fn len(&self) -> <T as SafeSubtract>::Output {
+        self.len.clone()
+    }
+}
+
+impl<T: Integer, I> Iterator for SortedDisjointWithLenSoFar<T, I>
+where
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+{
+    type Item = (T, T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some((start, stop)) = self.iter.next() {
+            debug_assert!(start <= stop && stop <= T::max_value2());
+            self.len += T::safe_subtract_inclusive(stop, start);
+            Some((start, stop))
+        } else {
+            None
+        }
+    }
+}
+impl<T: Integer, I> SortedDisjoint for SortedDisjointWithLenSoFar<T, I> where
+    I: Iterator<Item = (T, T)> + SortedDisjoint
+{
+}

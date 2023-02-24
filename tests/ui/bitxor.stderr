@@ -12,6 +12,8 @@ error[E0277]: the trait bound `std::array::IntoIter<({integer}, {integer}), 2>: 
             NotIter<T, I>
             Ranges<'_, T>
             itertools::tee::Tee<I>
+            range_set_int::sorted_disjoint_from_iter::SortedDisjointFromIter<T>
+            range_set_int::sorted_disjoint_from_iter::SortedDisjointWithLenSoFar<T, I>
 note: required by a bound in `range_set_int::SortedDisjointIterator::bitxor`
  --> src/lib.rs
   |

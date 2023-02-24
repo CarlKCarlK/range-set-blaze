@@ -37,6 +37,7 @@ use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
 use sorted_disjoint_from_iter::SortedDisjointFromIter;
+use sorted_disjoint_from_iter::SortedDisjointWithLenSoFar;
 use sorted_disjoint_from_iter::UnsortedDisjoint;
 use std::cmp::max;
 use std::collections::btree_map;
@@ -346,9 +347,22 @@ impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = (T, T)>,
     {
-        let mut sorted_unsorted_disjoint: SortedDisjointFromIter<_> = iter.into_iter().collect();
-        let btree_map = BTreeMap::from_iter(&mut sorted_unsorted_disjoint);
-        let len = sorted_unsorted_disjoint.len();
+        let sorted_disjoint: SortedDisjointFromIter<_> = iter.into_iter().collect();
+        RangeSetInt::from_sorted_disjoint(sorted_disjoint)
+    }
+}
+
+// cmk rules: When should use Iterator and when IntoIterator?
+// cmk rules: When should use: from_iter, from, new from_something?
+impl<T: Integer> RangeSetInt<T> {
+    fn from_sorted_disjoint<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = (T, T)>,
+        <I as IntoIterator>::IntoIter: SortedDisjoint,
+    {
+        let mut iter_with_len = SortedDisjointWithLenSoFar::new(iter.into_iter());
+        let btree_map = BTreeMap::from_iter(&mut iter_with_len);
+        let len = iter_with_len.len();
         RangeSetInt {
             items: btree_map,
             len,
