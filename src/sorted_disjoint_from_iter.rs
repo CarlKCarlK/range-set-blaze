@@ -82,7 +82,7 @@ where
     }
 }
 
-pub struct SortedDisjointFromIter<T>
+pub(crate) struct SortedDisjointFromIter<T>
 where
     T: Integer,
 {
