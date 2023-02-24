@@ -410,7 +410,7 @@ where
     }
 }
 
-// !!!cmk000 these are too easy to mix up with other things
+// !!!cmk0 these are too easy to mix up with other things
 pub fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
 where
     I0: IntoIterator<Item = I1>,
@@ -678,7 +678,7 @@ gen_ops_ex!(
     for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         (a.ranges() - b.ranges()).into()
     };
-    // cmk000 must/should we support both operators and methods?
+    // cmk0 must/should we support both operators and methods?
 
     where T: Integer //Where clause for all impl's
 );

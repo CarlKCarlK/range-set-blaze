@@ -69,7 +69,7 @@ fn sorted_disjoint() {
 
     let c0 = a.ranges() | b.ranges();
     let c1 = range_set_int::union([a.ranges(), b.ranges()]);
-    let c2 = [a.ranges(), b.ranges()].into_iter().union();
+    let c2 = [a.ranges(), b.ranges()].union();
     let c3 = union_dyn!(a.ranges(), b.ranges());
     let c4 = [a.ranges(), b.ranges()]
         .map(|x| x.dyn_sorted_disjoint())
@@ -92,7 +92,7 @@ fn sorted_disjoint_ops() {
     let _d = a.clone() | b.clone();
     let _e = !a.clone() | b.clone();
     let _f = !(!a.clone() | !b.clone());
-    let _g = std::ops::BitOr::bitor(a.clone().not(), b.clone().not()).not();
-    let _h = range_set_int::SortedDisjointIterator::bitor(a.clone().not(), b.clone().not()).not();
+    let _g = BitOr::bitor(a.clone().not(), b.clone().not()).not();
+    let _h = SortedDisjointIterator::bitor(a.clone().not(), b.clone().not()).not();
     let _z = !(!a | !b);
 }
