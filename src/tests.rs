@@ -828,10 +828,7 @@ fn parity() {
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
-    println!(
-        "!b|!c {}",
-        RangeSetInt::from((!b.ranges()).bitor(!c.ranges()))
-    ); // !!!cmk00 hard to read
+    println!("!b|!c {}", RangeSetInt::from(!b.ranges() | !c.ranges()));
 
     let _a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let u = union_dyn!(a.ranges());
@@ -855,4 +852,13 @@ fn parity() {
         RangeSetInt::from(u),
         RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
     );
+}
+
+#[test]
+fn sorted_disjoint_iter() {
+    let i: SortedDisjointFromIter<_> = [1, 3, 4, 2, 2, 43, 4, 5, 4, 23, 2, 43]
+        .into_iter()
+        .collect();
+    let (i0, i1) = i.tee();
+    let _j = i0.bitor(i1);
 }

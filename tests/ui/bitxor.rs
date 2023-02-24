@@ -1,3 +1,5 @@
+use range_set_int::{RangeSetInt, SortedDisjointIterator};
+
 fn main() {
     let a = RangeSetInt::from([1, 2, 3]);
     let a = a.ranges();

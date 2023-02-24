@@ -6,7 +6,7 @@ use std::{
 
 use itertools::Itertools;
 
-use crate::{Integer, OptionRange, SafeSubtract};
+use crate::{Integer, OptionRange, SafeSubtract, SortedDisjoint};
 
 pub struct UnsortedDisjoint<T, I>
 where
@@ -15,21 +15,36 @@ where
 {
     iter: I,
     range: OptionRange<T>,
+    two: T,
 }
 
-impl<T, I> UnsortedDisjoint<T, I>
+impl<T, I> From<I> for UnsortedDisjoint<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)>,
+    I: Iterator<Item = (T, T)>, // cmk should this be IntoIterator?
 {
-    pub fn new(iter: I) -> Self {
+    fn from(iter: I) -> Self {
         UnsortedDisjoint {
             iter,
             range: OptionRange::None,
+            two: T::one() + T::one(),
         }
     }
 }
 
+// cmk0 impl<T, I> From<I> for UnsortedDisjoint<T, I>
+// where
+//     T: Integer,
+//     I: Iterator<Item = T>,
+// {
+//     fn from(iter: I) -> Self {
+//         UnsortedDisjoint {
+//             iter: iter.map(|x| (x, x)),
+//             range: OptionRange::None,
+//             two: T::one() + T::one(),
+//         }
+//     }
+// }
 impl<T, I> Iterator for UnsortedDisjoint<T, I>
 where
     T: Integer,
@@ -38,7 +53,6 @@ where
     type Item = (T, T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let two = T::one() + T::one(); // !!!cmk best way to do this?
         if let Some((lower, upper)) = self.iter.next() {
             assert!(lower <= upper && upper <= T::max_value2()); // !!!cmk0 raise error on panic?
             if let OptionRange::Some {
@@ -46,8 +60,8 @@ where
                 stop: self_upper,
             } = self.range
             {
-                if (lower >= two && lower - two >= self_upper)
-                    || (self_lower >= two && self_lower - two >= upper)
+                if (lower >= self.two && lower - self.two >= self_upper)
+                    || (self_lower >= self.two && self_lower - self.two >= upper)
                 {
                     let result = Some((self_lower, self_upper));
                     self.range = OptionRange::Some {
@@ -104,15 +118,23 @@ impl<T: Integer> SortedDisjointFromIter<T> {
     }
 }
 
-// define from_iter
-
 impl<T: Integer> FromIterator<(T, T)> for SortedDisjointFromIter<T> {
     fn from_iter<I: IntoIterator<Item = (T, T)>>(iter: I) -> Self {
-        Self::new(UnsortedDisjoint::new(iter.into_iter()))
+        Self::new(UnsortedDisjoint::from(iter.into_iter()))
     }
 }
 
-// cmk00 can we have any fun by marking this SortedDisjoint and using with .ranges()?
+impl<T: Integer> FromIterator<T> for SortedDisjointFromIter<T> {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+    {
+        iter.into_iter().map(|x| (x, x)).collect()
+    }
+}
+
+impl<T: Integer> SortedDisjoint for SortedDisjointFromIter<T> {}
+
 impl<T: Integer> Iterator for SortedDisjointFromIter<T> {
     type Item = (T, T);
 

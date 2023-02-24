@@ -315,8 +315,8 @@ impl<T: Integer> SortedDisjoint for Ranges<'_, T> {}
 impl<T: Integer, I: Iterator<Item = (T, T)>> SortedDisjoint for BitOrIter<T, I> {}
 impl<T: Integer, I: Iterator<Item = (T, T)>> SortedDisjoint for NotIter<T, I> {}
 
-// !!!cmk00 does this say that anything coming out of Tee is SortedDisjoint, even if the input wasn't?
-impl<T: Integer, I: Iterator<Item = (T, T)>> SortedDisjoint for Tee<I> {}
+// cmk rules define "pass through" functions
+impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedDisjoint for Tee<I> {}
 
 impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
     fn len(&self) -> usize {
@@ -332,7 +332,6 @@ impl<'a, T: Integer> Iterator for Ranges<'a, T> {
     }
 }
 
-// !!!cmk0 don't use this or from_iter explicitly. Instead use 'collect'
 impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -486,7 +485,9 @@ where
 }
 
 // define mathematical set methods, e.g. left_iter.left(right_iter) returns the left_iter.
-pub trait SortedDisjointIterator<T: Integer>: Iterator<Item = (T, T)> + Sized {
+pub trait SortedDisjointIterator<T: Integer>:
+    Iterator<Item = (T, T)> + SortedDisjoint + Sized
+{
     fn bitor<J: SortedDisjointIterator<T>>(self, other: J) -> BitOrMerge<T, Self, J> {
         BitOrMerge::new(self, other)
     }
@@ -796,7 +797,7 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
         I: IntoIterator<Item = T>,
     {
         let iter = iter.into_iter();
-        for (start, stop) in UnsortedDisjoint::new(iter.map(|x| (x, x))) {
+        for (start, stop) in UnsortedDisjoint::from(iter.map(|x| (x, x))) {
             self.internal_add(start, stop);
         }
     }
