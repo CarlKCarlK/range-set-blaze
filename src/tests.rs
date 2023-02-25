@@ -852,11 +852,12 @@ fn parity() {
     );
 }
 
-#[test]
-fn sorted_disjoint_iter() {
-    let i: SortedDisjointFromIter<_> = [1, 3, 4, 2, 2, 43, 4, 5, 4, 23, 2, 43]
-        .into_iter()
-        .collect();
-    let (i0, i1) = i.tee();
-    let _j = i0.bitor(i1);
-}
+// cmk000
+// #[test]
+// fn sorted_disjoint_iter() {
+//     let i: SortedDisjointFromIter<_> = [1, 3, 4, 2, 2, 43, 4, 5, 4, 23, 2, 43]
+//         .into_iter()
+//         .collect();
+//     let (i0, i1) = i.tee();
+//     let _j = i0.bitor(i1);
+// }

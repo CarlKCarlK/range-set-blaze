@@ -2,14 +2,9 @@
 // !!!cmk replace OptionRange with Option<(T, T)>
 
 use num_traits::Zero;
-use std::{
-    cmp::{max, min},
-    vec,
-};
+use std::cmp::{max, min};
 
-use itertools::Itertools;
-
-use crate::{BitOrIter, Integer, SafeSubtract, SortedDisjoint};
+use crate::{Integer, SafeSubtract, SortedDisjoint};
 
 pub struct UnsortedDisjoint<T, I>
 where
@@ -69,51 +64,51 @@ where
     }
 }
 
-pub(crate) struct SortedDisjointFromIter<T>
-where
-    T: Integer,
-{
-    iter: BitOrIter<T, vec::IntoIter<(T, T)>>,
-}
+// pub(crate) struct SortedDisjointFromIter<T>
+// where
+//     T: Integer,
+// {
+//     iter: BitOrIter<T, vec::IntoIter<(T, T)>>,
+// }
 
-impl<T: Integer> SortedDisjointFromIter<T> {
-    pub fn new<I>(unsorted_disjoint: UnsortedDisjoint<T, I>) -> Self
-    where
-        I: Iterator<Item = (T, T)>,
-    {
-        SortedDisjointFromIter {
-            iter: BitOrIter {
-                merged_ranges: unsorted_disjoint.sorted_by_key(|(start, _)| *start),
-                range: None,
-            },
-        }
-    }
-}
+// impl<T: Integer> SortedDisjointFromIter<T> {
+//     pub fn new<I>(unsorted_disjoint: UnsortedDisjoint<T, I>) -> Self
+//     where
+//         I: Iterator<Item = (T, T)>,
+//     {
+//         SortedDisjointFromIter {
+//             iter: BitOrIter {
+//                 merged_ranges: unsorted_disjoint.sorted_by_key(|(start, _)| *start),
+//                 range: None,
+//             },
+//         }
+//     }
+// }
 
-impl<T: Integer> FromIterator<(T, T)> for SortedDisjointFromIter<T> {
-    fn from_iter<I: IntoIterator<Item = (T, T)>>(iter: I) -> Self {
-        Self::new(UnsortedDisjoint::from(iter.into_iter()))
-    }
-}
+// impl<T: Integer> FromIterator<(T, T)> for SortedDisjointFromIter<T> {
+//     fn from_iter<I: IntoIterator<Item = (T, T)>>(iter: I) -> Self {
+//         Self::new(UnsortedDisjoint::from(iter.into_iter()))
+//     }
+// }
 
-impl<T: Integer> FromIterator<T> for SortedDisjointFromIter<T> {
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = T>,
-    {
-        iter.into_iter().map(|x| (x, x)).collect()
-    }
-}
+// impl<T: Integer> FromIterator<T> for SortedDisjointFromIter<T> {
+//     fn from_iter<I>(iter: I) -> Self
+//     where
+//         I: IntoIterator<Item = T>,
+//     {
+//         iter.into_iter().map(|x| (x, x)).collect()
+//     }
+// }
 
-impl<T: Integer> SortedDisjoint for SortedDisjointFromIter<T> {}
+// impl<T: Integer> SortedDisjoint for SortedDisjointFromIter<T> {}
 
-impl<T: Integer> Iterator for SortedDisjointFromIter<T> {
-    type Item = (T, T);
+// impl<T: Integer> Iterator for SortedDisjointFromIter<T> {
+//     type Item = (T, T);
 
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
-    }
-}
+//     fn next(&mut self) -> Option<Self::Item> {
+//         self.iter.next()
+//     }
+// }
 
 pub struct SortedDisjointWithLenSoFar<T, I>
 where

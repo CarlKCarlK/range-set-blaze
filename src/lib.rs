@@ -37,7 +37,6 @@ use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
-use sorted_disjoint_from_iter::SortedDisjointFromIter;
 use sorted_disjoint_from_iter::SortedDisjointWithLenSoFar;
 use sorted_disjoint_from_iter::UnsortedDisjoint;
 use std::cmp::max;
@@ -346,8 +345,9 @@ impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = (T, T)>,
     {
-        let sorted_disjoint: SortedDisjointFromIter<_> = iter.into_iter().collect();
-        sorted_disjoint.into()
+        // cmk0000 replace 'new1' and "into" "into" with something better in bitoriter
+        // cmk0000 remove commented out mentions of SortedDisjointFromIter
+        BitOrIter::new1(iter.into_iter().into()).into()
     }
 }
 
@@ -391,6 +391,21 @@ where
     fn new(lhs: I0, rhs: I1) -> BitOrMerge<T, I0, I1> {
         Self {
             merged_ranges: lhs.merge_by(rhs, |a, b| a.0 <= b.0),
+            range: None,
+        }
+    }
+}
+impl<T> BitOrIter<T, std::vec::IntoIter<(T, T)>>
+where
+    T: Integer,
+{
+    pub fn new1<I>(unsorted_disjoint: UnsortedDisjoint<T, I>) -> Self
+    where
+        I: Iterator<Item = (T, T)>,
+    {
+        let iter = unsorted_disjoint.sorted_by_key(|(start, _)| *start);
+        Self {
+            merged_ranges: iter,
             range: None,
         }
     }
