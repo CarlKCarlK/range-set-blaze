@@ -855,14 +855,11 @@ fn parity() {
 /// cmk000 Rename BitOrIter to MergeIter or UnionIter
 #[test]
 fn bit_or_iter_from_unsorted() {
-    let i = [1, 3, 4, 2, 2, 43, 4, 5, 4, 23, 2, 43]
-        .into_iter()
-        .collect::<BitOrIter<_, _>>();
-    let j = [11, 3, 4, 42, 2, 43, 4, 55, 4, 23, 2, 543]
-        .into_iter()
-        .collect::<BitOrIter<_, _>>();
+    let i: BitOrIter<_, _> = [1, 3, 4, 2, 2, 43, -1, 4, 22].into_iter().collect();
+    let j: BitOrIter<_, _> = [11, 3, 4, 42, 2, 43, 23, 2, 543].into_iter().collect();
 
     // cmk0000 why can't i-j?
+    let not_i = !i.clone();
     let _k = i.sub(j);
     // cmk00 would be nice to print k
 }

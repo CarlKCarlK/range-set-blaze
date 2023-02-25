@@ -1021,11 +1021,19 @@ where
     }
 }
 
-impl<T: Integer, I0, I1> ops::Not for BitOrMerge<T, I0, I1>
-where
-    I0: Iterator<Item = (T, T)> + SortedDisjoint,
-    I1: Iterator<Item = (T, T)> + SortedDisjoint,
-{
+// impl<T: Integer, I0, I1> ops::Not for BitOrMerge<T, I0, I1>
+// where
+//     I0: Iterator<Item = (T, T)> + SortedDisjoint,
+//     I1: Iterator<Item = (T, T)> + SortedDisjoint,
+// {
+//     type Output = NotIter<T, Self>;
+
+//     fn not(self) -> Self::Output {
+//         NotIter::new(self)
+//     }
+// }
+
+impl<T: Integer, I: Iterator<Item = (T, T)>> ops::Not for BitOrIter<T, I> {
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
