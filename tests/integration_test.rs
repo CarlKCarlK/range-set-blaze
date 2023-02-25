@@ -7,7 +7,7 @@ use syntactic_for::syntactic_for;
 
 // !!!cmk should users use a prelude?
 use range_set_int::{
-    intersection_dyn, union_dyn, DynSortedDisjointExt, ItertoolsPlus2, RangeSetInt,
+    intersection_dyn, union_dyn, BitOrIter, DynSortedDisjointExt, ItertoolsPlus2, RangeSetInt,
     SortedDisjointIterator,
 };
 
@@ -24,7 +24,7 @@ fn insert_max_u128() {
 }
 
 #[test]
-fn complement() {
+fn complement0() {
     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
         let empty = RangeSetInt::<$ty>::new();
@@ -355,8 +355,8 @@ fn ui() {
 }
 
 #[test]
-fn complement2() {
-    // RangeSetInt, Ranges, NotIter, BitOrIter
+fn complement() {
+    // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
     let a0 = RangeSetInt::<u8>::from("1..=6");
     let a1 = RangeSetInt::from("8..=9,11..=15");
     let a = &a0 | &a1;
@@ -365,19 +365,24 @@ fn complement2() {
     let c = !not_a.ranges();
     let d = a0.ranges() | a1.ranges();
     let (e, _) = a.ranges().tee();
+    let f: BitOrIter<_, _> = [15, 14, 15, 13, 12, 11, 9, 9, 8, 6, 4, 5, 3, 2, 1, 1, 1]
+        .into_iter()
+        .collect();
     let not_b = !b;
     let not_c = !c;
     let not_d = !d;
     let not_e = e.not();
+    let not_f = !f;
     assert!(not_a.ranges().equal(not_b));
     assert!(not_a.ranges().equal(not_c));
     assert!(not_a.ranges().equal(not_d));
     assert!(not_a.ranges().equal(not_e));
+    assert!(not_a.ranges().equal(not_f));
 }
 
 #[test]
 fn union() {
-    // RangeSetInt, Ranges, NotIter, BitOrIter
+    // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
     let a0 = RangeSetInt::<u8>::from("1..=6");
     let (a0_tee, _) = a0.ranges().tee();
     let a1 = RangeSetInt::<u8>::from("8..=9");
@@ -389,15 +394,19 @@ fn union() {
     let c = !not_a0.ranges() | a12.ranges();
     let d = a0.ranges() | a1.ranges() | a2.ranges();
     let e = a0_tee.bitor(a12.ranges());
+    let f = a0.iter().collect::<BitOrIter<_, _>>()
+        | a1.iter().collect::<BitOrIter<_, _>>()
+        | a2.iter().collect::<BitOrIter<_, _>>();
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
+    assert!(a.ranges().equal(f));
 }
 
 #[test]
 fn sub() {
-    // RangeSetInt, Ranges, NotIter, BitOrIter
+    // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
     let a0 = RangeSetInt::<u8>::from("1..=6");
     let a1 = RangeSetInt::<u8>::from("8..=9");
     let a2 = RangeSetInt::from("11..=15");
@@ -409,15 +418,17 @@ fn sub() {
     let c = !not_a01.ranges() - a2.ranges();
     let d = (a0.ranges() | a1.ranges()) - a2.ranges();
     let e = a01_tee.sub(a2.ranges());
+    let f = a01.iter().collect::<BitOrIter<_, _>>() - a2.iter().collect::<BitOrIter<_, _>>();
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
+    assert!(a.ranges().equal(f));
 }
 
 #[test]
 fn xor() {
-    // RangeSetInt, Ranges, NotIter, BitOrIter
+    // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
     let a0 = RangeSetInt::<u8>::from("1..=6");
     let a1 = RangeSetInt::<u8>::from("8..=9");
     let a2 = RangeSetInt::from("11..=15");
@@ -429,10 +440,12 @@ fn xor() {
     let c = !not_a01.ranges() ^ a2.ranges();
     let d = (a0.ranges() | a1.ranges()) ^ a2.ranges();
     let e = a01_tee.bitxor(a2.ranges());
+    let f = a01.iter().collect::<BitOrIter<_, _>>() ^ a2.iter().collect::<BitOrIter<_, _>>();
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
+    assert!(a.ranges().equal(f));
 }
 
 #[test]
@@ -449,8 +462,10 @@ fn bitand() {
     let c = !not_a01.ranges() & a2.ranges();
     let d = (a0.ranges() | a1.ranges()) & a2.ranges();
     let e = a01_tee.bitand(a2.ranges());
+    let f = a01.iter().collect::<BitOrIter<_, _>>() & a2.iter().collect::<BitOrIter<_, _>>();
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
+    assert!(a.ranges().equal(f));
 }

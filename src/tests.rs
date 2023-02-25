@@ -52,7 +52,7 @@ fn sub() {
 }
 
 #[test]
-fn complement() {
+fn complement0() {
     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
         let empty = RangeSetInt::<$ty>::new();
@@ -859,7 +859,7 @@ fn bit_or_iter_from_unsorted() {
     let j: BitOrIter<_, _> = [11, 3, 4, 42, 2, 43, 23, 2, 543].into_iter().collect();
 
     // cmk0000 why can't i-j?
-    let not_i = !i.clone();
-    let _k = i.sub(j);
+    let _not_i = !i.clone();
+    let _k = i - j;
     // cmk00 would be nice to print k
 }

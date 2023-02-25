@@ -1065,15 +1065,14 @@ where
     }
 }
 
-impl<T: Integer, I0, I1, I2> ops::BitOr<I2> for BitOrMerge<T, I0, I1>
+impl<T: Integer, I, J> ops::BitOr<I> for BitOrIter<T, J>
 where
-    I0: Iterator<Item = (T, T)> + SortedDisjoint,
-    I1: Iterator<Item = (T, T)> + SortedDisjoint,
-    I2: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    J: Iterator<Item = (T, T)>,
 {
-    type Output = BitOrMerge<T, Self, I2>;
+    type Output = BitOrMerge<T, Self, I>;
 
-    fn bitor(self, rhs: I2) -> Self::Output {
+    fn bitor(self, rhs: I) -> Self::Output {
         // cmk should we optimize a|b|c into union(a,b,c)?
         BitOrIter::new(self, rhs)
     }
@@ -1105,15 +1104,14 @@ where
     }
 }
 
-impl<T: Integer, I0, I1, I2> ops::Sub<I2> for BitOrMerge<T, I0, I1>
+impl<T: Integer, I, J> ops::Sub<I> for BitOrIter<T, J>
 where
-    I0: Iterator<Item = (T, T)> + SortedDisjoint,
-    I1: Iterator<Item = (T, T)> + SortedDisjoint,
-    I2: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    J: Iterator<Item = (T, T)>,
 {
-    type Output = BitSubMerge<T, Self, I2>;
+    type Output = BitSubMerge<T, Self, I>;
 
-    fn sub(self, rhs: I2) -> Self::Output {
+    fn sub(self, rhs: I) -> Self::Output {
         !(!self | rhs)
     }
 }
@@ -1151,16 +1149,15 @@ where
     }
 }
 
-impl<T: Integer, I0, I1, I2> ops::BitXor<I2> for BitOrMerge<T, I0, I1>
+impl<T: Integer, I, J> ops::BitXor<I> for BitOrIter<T, J>
 where
-    I0: Iterator<Item = (T, T)> + SortedDisjoint,
-    I1: Iterator<Item = (T, T)> + SortedDisjoint,
-    I2: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    J: Iterator<Item = (T, T)>,
 {
-    type Output = BitXOrTee<T, Self, I2>;
+    type Output = BitXOrTee<T, Self, I>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn bitxor(self, rhs: I2) -> Self::Output {
+    fn bitxor(self, rhs: I) -> Self::Output {
         let (lhs0, lhs1) = self.tee();
         let (rhs0, rhs1) = rhs.tee();
         lhs0.sub(rhs0) | rhs1.sub(lhs1)
@@ -1195,15 +1192,14 @@ where
 }
 
 // cmk name all generics in a sensible way
-impl<T: Integer, I0, I1, I2> ops::BitAnd<I2> for BitOrMerge<T, I0, I1>
+impl<T: Integer, I, J> ops::BitAnd<I> for BitOrIter<T, J>
 where
-    I0: Iterator<Item = (T, T)> + SortedDisjoint,
-    I1: Iterator<Item = (T, T)> + SortedDisjoint,
-    I2: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    J: Iterator<Item = (T, T)>,
 {
-    type Output = BitAndMerge<T, Self, I2>;
+    type Output = BitAndMerge<T, Self, I>;
 
-    fn bitand(self, rhs: I2) -> Self::Output {
+    fn bitand(self, rhs: I) -> Self::Output {
         !(!self | rhs.not())
     }
 }
