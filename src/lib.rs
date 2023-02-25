@@ -521,9 +521,8 @@ where
 {
 }
 
-impl<T, I> Iterator for BitOrIter<T, I>
+impl<T: Integer, I> Iterator for BitOrIter<T, I>
 where
-    T: Integer,
     I: Iterator<Item = (T, T)>,
 {
     type Item = (T, T);
@@ -531,16 +530,15 @@ where
     fn next(&mut self) -> Option<(T, T)> {
         if let Some((start, stop)) = self.merged_ranges.next() {
             if let Some((current_start, current_stop)) = self.range {
-                debug_assert!(current_start <= start); // panic if not sorted
+                debug_assert!(current_start <= start); // cmk panic if not sorted
                 if start <= current_stop  // !!!cmk000 this code also appears in SortedRanges
                     || (current_stop < T::max_value2() && start <= current_stop + T::one())
                 {
                     self.range = Some((current_start, max(current_stop, stop)));
                     self.next()
                 } else {
-                    let result = self.range;
                     self.range = Some((start, stop));
-                    result
+                    Some((current_start, current_stop))
                 }
             } else {
                 self.range = Some((start, stop));
