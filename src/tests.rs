@@ -862,4 +862,5 @@ fn bit_or_iter_from_unsorted() {
     let _not_i = !i.clone();
     let _k = i - j;
     // cmk00 would be nice to print k
+    // println!("k {:?}", _k);
 }

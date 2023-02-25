@@ -25,8 +25,8 @@
 
 mod safe_subtract;
 mod simple;
-mod sorted_disjoint_from_iter;
 mod tests;
+mod unsorted_disjoint;
 
 use gen_ops::gen_ops_ex;
 use itertools::Itertools;
@@ -37,8 +37,6 @@ use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
-use sorted_disjoint_from_iter::SortedDisjointWithLenSoFar;
-use sorted_disjoint_from_iter::UnsortedDisjoint;
 use std::cmp::max;
 use std::collections::btree_map;
 use std::collections::BTreeMap;
@@ -48,6 +46,8 @@ use std::ops;
 use std::ops::Sub;
 use std::str::FromStr;
 use trait_set::trait_set;
+use unsorted_disjoint::SortedDisjointWithLenSoFar;
+use unsorted_disjoint::UnsortedDisjoint;
 
 // cmk rule: Support Send and Sync (what about Clone (Copy?) and ExactSizeIterator?)
 // cmk rule: Use trait_set

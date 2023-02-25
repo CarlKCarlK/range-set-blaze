@@ -33,6 +33,6 @@ error[E0277]: the trait bound `std::slice::Iter<'_, ({integer}, {integer})>: Sor
             NotIter<T, I>
             Ranges<'_, T>
             itertools::tee::Tee<I>
-            range_set_int::sorted_disjoint_from_iter::SortedDisjointWithLenSoFar<T, I>
+            range_set_int::unsorted_disjoint::SortedDisjointWithLenSoFar<T, I>
   = note: required for `RangeSetInt<_>` to implement `From<std::slice::Iter<'_, ({integer}, {integer})>>`
   = note: required for `std::slice::Iter<'_, ({integer}, {integer})>` to implement `Into<RangeSetInt<_>>`
