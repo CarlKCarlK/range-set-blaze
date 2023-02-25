@@ -763,12 +763,10 @@ fn multi_op() {
     );
 }
 
+// cmk000 print iters of sorted ranges
 // cmk0 use merge in example
-// cmk0 support 'from' not just 'from_sorted_disjoint_iter'
 // cmk0 support 'collect' not just 'from'
 // cmk much too easy to make errors -- need types!
-// cmk0 need to be able to do a|b|c
-// cmk type are very hard to read
 
 // https://stackoverflow.com/questions/21747136/how-do-i-print-in-rust-the-type-of-a-variable/58119924#58119924
 // fn print_type_of<T>(_: &T) {

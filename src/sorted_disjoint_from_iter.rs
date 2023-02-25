@@ -164,18 +164,22 @@ where
     len: <T as SafeSubtract>::Output,
 }
 
-// !!!cmk00 from instead of new?
-impl<T: Integer, I> SortedDisjointWithLenSoFar<T, I>
+impl<T: Integer, I> From<I> for SortedDisjointWithLenSoFar<T, I>
 where
     I: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    pub fn new(iter: I) -> Self {
+    fn from(iter: I) -> Self {
         SortedDisjointWithLenSoFar {
             iter,
             len: <T as SafeSubtract>::Output::zero(),
         }
     }
+}
 
+impl<T: Integer, I> SortedDisjointWithLenSoFar<T, I>
+where
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+{
     pub fn len(&self) -> <T as SafeSubtract>::Output {
         self.len.clone()
     }

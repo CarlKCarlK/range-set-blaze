@@ -20,7 +20,6 @@
 // https://lib.rs/crates/nonoverlapping_interval_tree
 // https://stackoverflow.com/questions/30540766/how-can-i-add-new-methods-to-iterator
 // !!!cmk0 how could you write your own subtraction that subtracted many sets from one set via iterators?
-// !!!cmk0 sort by start then by larger stop
 // cmk rules: When should use Iterator and when IntoIterator?
 // cmk rules: When should use: from_iter, from, new from_something?
 
@@ -97,7 +96,6 @@ pub fn fmt<T: Integer>(items: &BTreeMap<T, T>) -> String {
 }
 
 // !!!cmk can I use a Rust range?
-// !!!cmk0 could it use the sorted ranges and automatically convert from/to RangeIntSet at the end?
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RangeSetInt<T: Integer> {
@@ -130,7 +128,6 @@ impl<T: Integer> RangeSetInt<T> {
 }
 
 impl<'a, T: Integer + 'a> RangeSetInt<T> {
-    // !!!cmk0 should part of this be a method on BitOrIter?
     pub fn union<I>(input: I) -> Self
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
@@ -374,7 +371,6 @@ pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
 pub type BitNandMerge<T, I0, I1> = BitOrMerge<T, NotIter<T, I0>, NotIter<T, I1>>;
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
 pub type BitNorMerge<T, J, I> = NotIter<T, BitOrMerge<T, J, I>>;
-// !!!cmk0 why is there no BitSubKMerge? and BitXorKMerge?
 pub type BitSubMerge<T, I0, I1> = NotIter<T, BitOrMerge<T, NotIter<T, I0>, I1>>;
 pub type BitXOrTee<T, I0, I1> =
     BitOrMerge<T, BitSubMerge<T, Tee<I0>, Tee<I1>>, BitSubMerge<T, Tee<I1>, Tee<I0>>>;
@@ -385,20 +381,13 @@ pub type BitEq<T, J, I> = BitOrMerge<
     NotIter<T, BitOrMerge<T, NotIter<T, Tee<J>>, NotIter<T, Tee<I>>>>,
     NotIter<T, BitOrMerge<T, Tee<J>, Tee<I>>>,
 >;
-// pub type BitXOrMerge<T, I0, I1> = BitOrMerge<
-//     T,
-//     BitAndMerge<T, AssumeSortedByKey<Tee<I0>>, NotIter<T, AssumeSortedByKey<Tee<I1>>>>,
-//     BitAndMerge<T, AssumeSortedByKey<Tee<I1>>, NotIter<T, AssumeSortedByKey<Tee<I0>>>>,
-// >;
 
-// !!!cmk0 do we need any 'new' methods?
 impl<T, I0, I1> BitOrMerge<T, I0, I1>
 where
     T: Integer,
     I0: Iterator<Item = (T, T)>,
     I1: Iterator<Item = (T, T)>,
 {
-    // !!!cmk0 understand this better
     fn new(lhs: I0, rhs: I1) -> BitOrMerge<T, I0, I1> {
         Self {
             merged_ranges: lhs.merge_by(rhs, |a, b| a.0 <= b.0),
@@ -407,7 +396,7 @@ where
     }
 }
 
-// !!!cmk0 these are too easy to mix up with other things
+// !!!cmk00 these are too easy to mix up with other things
 pub fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
 where
     I0: IntoIterator<Item = I1>,
@@ -422,7 +411,7 @@ where
     }
 }
 
-// !!!cmk0 why define standalone function if only ever called from below?
+// !!!cmk00 why define standalone function if only ever called from below?
 pub fn intersection<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
 where
     // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
@@ -436,7 +425,7 @@ where
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 impl<I: IntoIterator + Sized> ItertoolsPlus2 for I {}
 pub trait ItertoolsPlus2: IntoIterator + Sized {
-    // !!!cmk0 where is two input merge?
+    // !!!cmk00 where is two input merge?
 
     fn union<T, I>(self) -> BitOrKMerge<T, I>
     where
@@ -447,7 +436,7 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
         union(self)
     }
 
-    // !!!cmk0 don't have a function and a method. Pick one.
+    // !!!cmk00 don't have a function and a method. Pick one.
     fn intersection<T, I>(self) -> BitAndKMerge<T, I>
     where
         Self: IntoIterator<Item = I>,
@@ -473,7 +462,7 @@ where
     // cmk0 understand why this can't be  I: IntoIterator<Item = (T, T)>, <I as IntoIterator>::IntoIter: SortedDisjoint,
 {
     fn from(iter: I) -> Self {
-        let mut iter_with_len = SortedDisjointWithLenSoFar::new(iter);
+        let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
         RangeSetInt {
             btree_map,
@@ -507,8 +496,7 @@ pub trait SortedDisjointIterator<T: Integer>:
         NotIter::new(self)
     }
 
-    // !!! cmk0 how do do this without cloning?
-    // !!! cmk00 test the speed of this
+    // !!! cmk test the speed of this
     fn bitxor<J>(self, other: J) -> BitXOrTee<T, Self, J>
     where
         J: Iterator<Item = Self::Item> + SortedDisjoint + Sized,
@@ -526,7 +514,6 @@ pub trait SortedDisjointIterator<T: Integer>:
     }
 }
 
-// !!!cmk0 allow rhs to be of a different type
 impl<T, I> SortedDisjointIterator<T> for I
 where
     T: Integer,
@@ -545,7 +532,7 @@ where
         if let Some((start, stop)) = self.merged_ranges.next() {
             if let Some((current_start, current_stop)) = self.range {
                 debug_assert!(current_start <= start); // panic if not sorted
-                if start <= current_stop  // !!!cmk0 this code also appears in SortedRanges
+                if start <= current_stop  // !!!cmk000 this code also appears in SortedRanges
                     || (current_stop < T::max_value2() && start <= current_stop + T::one())
                 {
                     self.range = Some((current_start, max(current_stop, stop)));
@@ -578,6 +565,7 @@ where
     next_time_return_none: bool,
 }
 
+// cmk00 can this work?
 // impl<I: Iterator + Clone> Clone for NotIter<T, I>
 // where
 //     T: Integer,
@@ -591,7 +579,7 @@ where
 //     }
 // }
 
-// cmk0 do we even need this?
+// cmk rule: Create a new function when setup is complicated and the function is used in multiple places.
 impl<T, I> NotIter<T, I>
 where
     T: Integer,
@@ -643,9 +631,6 @@ where
         }
     }
 }
-
-// cmk0 - also merge as iterator method
-// cmk can we define ! & etc on iterators?
 
 gen_ops_ex!(
     <T>;
@@ -873,6 +858,7 @@ impl Iterator for MemorylessData {
 // !!!cmk error to use -
 // !!!cmk are the unwraps OK?
 // !!!cmk what about bad input?
+// !!!cmk000 handle empty union and intersection correctly
 
 impl<T: Integer> From<&str> for RangeSetInt<T>
 where
@@ -891,10 +877,8 @@ where
             .collect()
     }
 }
-// cmk0 - also merge as iterator method
-// cmk can we define ! & etc on iterators?
-// cmk0 should we even provide the Assign methods, since only bitor_assign could be better than bitor?
 
+// cmkrule: don't create an assign method if it is not more efficient
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     fn from(arr: [T; N]) -> Self {
         RangeSetInt::from(arr.as_slice())
@@ -1058,7 +1042,7 @@ where
     type Output = BitOrMerge<T, Self, I2>;
 
     fn bitor(self, rhs: I2) -> Self::Output {
-        // cmk00 should we optimize a|b|c into union(a,b,c)?
+        // cmk should we optimize a|b|c into union(a,b,c)?
         BitOrIter::new(self, rhs)
     }
 }

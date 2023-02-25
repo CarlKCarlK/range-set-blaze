@@ -288,7 +288,6 @@ pub fn clumps(c: &mut Criterion) {
     });
 }
 
-// cmk0 restore xor
 fn bitxor(c: &mut Criterion) {
     let len = 10_000_000;
     let range_len = 10_000;

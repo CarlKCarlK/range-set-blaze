@@ -37,7 +37,7 @@ where
 // A container for an iterator that is assumed to be sorted disjoint.
 #[derive(Clone, Debug)]
 pub struct AssumeSortedDisjoint<I: Iterator> {
-    i: I, // pub(crate) cmk0 put back?
+    i: I,
 }
 
 // AssumeSortedDisjoint<I> isa SortedDisjoint

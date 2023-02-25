@@ -253,11 +253,7 @@ fn multi_op() {
 }
 
 // cmk0 use merge in example
-// cmk0 support 'from' not just 'from_sorted_disjoint_iter'
 // cmk0 support 'collect' not just 'from'
-// cmk much too easy to make errors -- need types!
-// cmk0 need to be able to do a|b|c
-// cmk type are very hard to read
 
 // https://stackoverflow.com/questions/21747136/how-do-i-print-in-rust-the-type-of-a-variable/58119924#58119924
 // fn print_type_of<T>(_: &T) {
@@ -303,7 +299,7 @@ fn parity() {
     let a = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
     let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
     let c = &RangeSetInt::<u8>::from("38..=42");
-    // !!!cmk0 time itertools.split (?) vs range.clone()
+    // !!!cmk0 time itertools.tee (?) vs range.clone()
     // !!!cmk explain why need both "Merge" with "KMerge"
     // !!!cmk0 empty needs to work. Go back to slices?
     assert_eq!(
