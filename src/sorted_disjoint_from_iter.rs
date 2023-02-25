@@ -9,7 +9,7 @@ use std::{
 
 use itertools::Itertools;
 
-use crate::{Integer, SafeSubtract, SortedDisjoint};
+use crate::{BitOrIter, Integer, SafeSubtract, SortedDisjoint};
 
 pub struct UnsortedDisjoint<T, I>
 where
@@ -73,8 +73,7 @@ pub(crate) struct SortedDisjointFromIter<T>
 where
     T: Integer,
 {
-    vec_iter: vec::IntoIter<(T, T)>,
-    range: Option<(T, T)>,
+    iter: BitOrIter<T, vec::IntoIter<(T, T)>>,
 }
 
 impl<T: Integer> SortedDisjointFromIter<T> {
@@ -83,8 +82,10 @@ impl<T: Integer> SortedDisjointFromIter<T> {
         I: Iterator<Item = (T, T)>,
     {
         SortedDisjointFromIter {
-            vec_iter: unsorted_disjoint.sorted_by_key(|(start, _)| *start),
-            range: None,
+            iter: BitOrIter {
+                merged_ranges: unsorted_disjoint.sorted_by_key(|(start, _)| *start),
+                range: None,
+            },
         }
     }
 }
@@ -110,27 +111,7 @@ impl<T: Integer> Iterator for SortedDisjointFromIter<T> {
     type Item = (T, T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some((start, stop)) = self.vec_iter.next() {
-            debug_assert!(start <= stop && stop <= T::max_value2()); // cmk panic if not sorted
-            if let Some((current_start, current_stop)) = self.range {
-                if start <= current_stop
-                    || (current_stop < T::max_value2() && start <= current_stop + T::one())
-                {
-                    self.range = Some((current_start, max(current_stop, stop)));
-                    self.next()
-                } else {
-                    self.range = Some((start, stop));
-                    Some((current_start, current_stop))
-                }
-            } else {
-                self.range = Some((start, stop));
-                self.next()
-            }
-        } else {
-            let result = self.range;
-            self.range = None;
-            result
-        }
+        self.iter.next()
     }
 }
 
