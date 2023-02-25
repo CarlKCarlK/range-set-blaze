@@ -855,7 +855,14 @@ fn parity() {
 /// cmk000 Rename BitOrIter to MergeIter or UnionIter
 #[test]
 fn bit_or_iter_from_unsorted() {
-    let i = BitOrIter::new1([1, 3, 4, 2, 2, 43, 4, 5, 4, 23, 2, 43]);
-    let (i0, i1) = i.tee();
-    let _j = i0.bitor(i1);
+    let i = [1, 3, 4, 2, 2, 43, 4, 5, 4, 23, 2, 43]
+        .into_iter()
+        .collect::<BitOrIter<_, _>>();
+    let j = [11, 3, 4, 42, 2, 43, 4, 55, 4, 23, 2, 543]
+        .into_iter()
+        .collect::<BitOrIter<_, _>>();
+
+    // cmk0000 why can't i-j?
+    let _k = i.sub(j);
+    // cmk00 would be nice to print k
 }

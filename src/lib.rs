@@ -336,7 +336,7 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
-        BitOrIter::new1(iter).into()
+        iter.into_iter().collect::<BitOrIter<T, _>>().into()
     }
 }
 
@@ -346,7 +346,7 @@ impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
         I: IntoIterator<Item = (T, T)>,
     {
         // cmk0000 remove commented out mentions of SortedDisjointFromIter
-        BitOrIter::new2(iter).into()
+        iter.into_iter().collect::<BitOrIter<T, _>>().into()
     }
 }
 
@@ -395,29 +395,21 @@ where
     }
 }
 
-// cmk0000 make this a from or from_iter?
-impl<T> BitOrIter<T, std::vec::IntoIter<(T, T)>>
-where
-    T: Integer,
-{
-    fn new2<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = (T, T)>,
-    {
-        let unsorted_disjoint = UnsortedDisjoint::from(iter.into_iter());
-        BitOrIter::from(unsorted_disjoint)
-    }
-}
-// cmk0000 make this a from or from_iter?
-impl<T> BitOrIter<T, std::vec::IntoIter<(T, T)>>
-where
-    T: Integer,
-{
-    fn new1<I>(iter: I) -> Self
+impl<T: Integer> FromIterator<T> for BitOrIter<T, std::vec::IntoIter<(T, T)>> {
+    fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = T>,
     {
-        BitOrIter::new2(iter.into_iter().map(|x| (x, x)))
+        iter.into_iter().map(|x| (x, x)).collect()
+    }
+}
+
+impl<T: Integer> FromIterator<(T, T)> for BitOrIter<T, std::vec::IntoIter<(T, T)>> {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = (T, T)>,
+    {
+        UnsortedDisjoint::from(iter.into_iter()).into()
     }
 }
 
