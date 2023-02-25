@@ -852,12 +852,10 @@ fn parity() {
     );
 }
 
-// cmk000
-// #[test]
-// fn sorted_disjoint_iter() {
-//     let i: SortedDisjointFromIter<_> = [1, 3, 4, 2, 2, 43, 4, 5, 4, 23, 2, 43]
-//         .into_iter()
-//         .collect();
-//     let (i0, i1) = i.tee();
-//     let _j = i0.bitor(i1);
-// }
+/// cmk000 Rename BitOrIter to MergeIter or UnionIter
+#[test]
+fn bit_or_iter_from_unsorted() {
+    let i = BitOrIter::new1([1, 3, 4, 2, 2, 43, 4, 5, 4, 23, 2, 43]);
+    let (i0, i1) = i.tee();
+    let _j = i0.bitor(i1);
+}

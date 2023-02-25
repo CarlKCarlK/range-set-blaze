@@ -336,7 +336,7 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = T>,
     {
-        iter.into_iter().map(|x| (x, x)).collect()
+        BitOrIter::new1(iter).into()
     }
 }
 
@@ -345,12 +345,8 @@ impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = (T, T)>,
     {
-        // cmk0000 replace 'new1' and "into" "into" with something better in bitoriter
         // cmk0000 remove commented out mentions of SortedDisjointFromIter
-        // cmk0000 can BitOriter take unordered items and pairs directly, too? Should it?
-        let unsorted_disjoint = UnsortedDisjoint::from(iter.into_iter());
-        let bit_or_iter = BitOrIter::from(unsorted_disjoint);
-        bit_or_iter.into()
+        BitOrIter::new2(iter).into()
     }
 }
 
@@ -398,6 +394,33 @@ where
         }
     }
 }
+
+// cmk0000 make this a from or from_iter?
+impl<T> BitOrIter<T, std::vec::IntoIter<(T, T)>>
+where
+    T: Integer,
+{
+    fn new2<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = (T, T)>,
+    {
+        let unsorted_disjoint = UnsortedDisjoint::from(iter.into_iter());
+        BitOrIter::from(unsorted_disjoint)
+    }
+}
+// cmk0000 make this a from or from_iter?
+impl<T> BitOrIter<T, std::vec::IntoIter<(T, T)>>
+where
+    T: Integer,
+{
+    fn new1<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+    {
+        BitOrIter::new2(iter.into_iter().map(|x| (x, x)))
+    }
+}
+
 impl<T, I> From<UnsortedDisjoint<T, I>> for BitOrIter<T, std::vec::IntoIter<(T, T)>>
 where
     T: Integer,
