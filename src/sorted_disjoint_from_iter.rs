@@ -9,7 +9,7 @@ use std::{
 
 use itertools::Itertools;
 
-use crate::{Integer, OptionRange, SafeSubtract, SortedDisjoint};
+use crate::{Integer, SafeSubtract, SortedDisjoint};
 
 pub struct UnsortedDisjoint<T, I>
 where
@@ -17,7 +17,7 @@ where
     I: Iterator<Item = (T, T)>,
 {
     iter: I,
-    range: OptionRange<T>,
+    range: Option<(T, T)>,
     two: T,
 }
 
@@ -29,7 +29,7 @@ where
     fn from(iter: I) -> Self {
         UnsortedDisjoint {
             iter,
-            range: OptionRange::None,
+            range: None,
             two: T::one() + T::one(),
         }
     }
@@ -45,36 +45,23 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         if let Some((lower, upper)) = self.iter.next() {
             assert!(lower <= upper && upper <= T::max_value2()); // !!!cmk0 raise error on panic?
-            if let OptionRange::Some {
-                start: self_lower,
-                stop: self_upper,
-            } = self.range
-            {
+            if let Some((self_lower, self_upper)) = self.range {
                 if (lower >= self.two && lower - self.two >= self_upper)
                     || (self_lower >= self.two && self_lower - self.two >= upper)
                 {
                     let result = Some((self_lower, self_upper));
-                    self.range = OptionRange::Some {
-                        start: lower,
-                        stop: upper,
-                    };
+                    self.range = Some((lower, upper));
                     result
                 } else {
-                    self.range = OptionRange::Some {
-                        start: min(self_lower, lower),
-                        stop: max(self_upper, upper),
-                    };
+                    self.range = Some((min(self_lower, lower), max(self_upper, upper)));
                     self.next()
                 }
             } else {
-                self.range = OptionRange::Some {
-                    start: lower,
-                    stop: upper,
-                };
+                self.range = Some((lower, upper));
                 self.next()
             }
-        } else if let OptionRange::Some { start, stop } = self.range {
-            self.range = OptionRange::None;
+        } else if let Some((start, stop)) = self.range {
+            self.range = None;
             Some((start, stop))
         } else {
             None
@@ -87,7 +74,7 @@ where
     T: Integer,
 {
     vec_iter: vec::IntoIter<(T, T)>,
-    range: OptionRange<T>,
+    range: Option<(T, T)>,
 }
 
 impl<T: Integer> SortedDisjointFromIter<T> {
@@ -97,7 +84,7 @@ impl<T: Integer> SortedDisjointFromIter<T> {
     {
         SortedDisjointFromIter {
             vec_iter: unsorted_disjoint.sorted_by_key(|(start, _)| *start),
-            range: OptionRange::None,
+            range: None,
         }
     }
 }
@@ -125,29 +112,22 @@ impl<T: Integer> Iterator for SortedDisjointFromIter<T> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some((start, stop)) = self.vec_iter.next() {
             debug_assert!(start <= stop && stop <= T::max_value2());
-            if let OptionRange::Some {
-                start: self_start,
-                stop: self_stop,
-            } = self.range
-            {
+            if let Some((self_start, self_stop)) = self.range {
                 if start <= self_stop
                     || (self_stop < T::max_value2() && start <= self_stop + T::one())
                 {
-                    self.range = OptionRange::Some {
-                        start: self_start,
-                        stop: max(self_stop, stop),
-                    };
+                    self.range = Some((self_start, max(self_stop, stop)));
                     self.next()
                 } else {
-                    self.range = OptionRange::Some { start, stop };
+                    self.range = Some((start, stop));
                     Some((self_start, self_stop))
                 }
             } else {
-                self.range = OptionRange::Some { start, stop };
+                self.range = Some((start, stop));
                 self.next()
             }
-        } else if let OptionRange::Some { start, stop } = self.range {
-            self.range = OptionRange::None;
+        } else if let Some((start, stop)) = self.range {
+            self.range = None;
             Some((start, stop))
         } else {
             None

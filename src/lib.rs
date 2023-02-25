@@ -121,7 +121,7 @@ impl<T: Integer> RangeSetInt<T> {
         let i = self.ranges();
         Iter {
             current: T::zero(),
-            option_range: OptionRange::None,
+            option_range: None,
             range_iter: i,
         }
     }
@@ -677,11 +677,12 @@ gen_ops_ex!(
     where T: Integer //Where clause for all impl's
 );
 
-#[derive(Debug, Clone)]
-enum OptionRange<T: Integer> {
-    None,
-    Some { start: T, stop: T },
-}
+//cmk0000
+// #[derive(Debug, Clone)]
+// enum OptionRange<T: Integer> {
+//     None,
+//     Some { start: T, stop: T },
+// }
 
 impl<T: Integer> IntoIterator for RangeSetInt<T> {
     type Item = T;
@@ -701,7 +702,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     /// ```
     fn into_iter(self) -> IntoIter<T> {
         IntoIter {
-            option_range: OptionRange::None,
+            option_range: None,
             range_into_iter: self.btree_map.into_iter(),
         }
     }
@@ -714,7 +715,7 @@ where
     I: Iterator<Item = (T, T)>,
 {
     current: T,
-    option_range: OptionRange<T>,
+    option_range: Option<(T, T)>,
     range_iter: I,
 }
 
@@ -724,19 +725,16 @@ where
 {
     type Item = T;
     fn next(&mut self) -> Option<T> {
-        if let OptionRange::Some { start, stop } = self.option_range {
+        if let Some((start, stop)) = self.option_range {
             self.current = start;
             if start < stop {
-                self.option_range = OptionRange::Some {
-                    start: start + T::one(),
-                    stop,
-                };
+                self.option_range = Some((start + T::one(), stop));
             } else {
-                self.option_range = OptionRange::None;
+                self.option_range = None;
             }
             Some(self.current)
         } else if let Some((start, stop)) = self.range_iter.next() {
-            self.option_range = OptionRange::Some { start, stop };
+            self.option_range = Some((start, stop));
             self.next()
         } else {
             None
@@ -745,7 +743,7 @@ where
 }
 
 pub struct IntoIter<T: Integer> {
-    option_range: OptionRange<T>,
+    option_range: Option<(T, T)>,
     range_into_iter: std::collections::btree_map::IntoIter<T, T>,
 }
 
@@ -753,18 +751,15 @@ impl<T: Integer> Iterator for IntoIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let OptionRange::Some { start, stop } = self.option_range {
+        if let Some((start, stop)) = self.option_range {
             if start < stop {
-                self.option_range = OptionRange::Some {
-                    start: start + T::one(),
-                    stop,
-                };
+                self.option_range = Some((start + T::one(), stop));
             } else {
-                self.option_range = OptionRange::None;
+                self.option_range = None;
             }
             Some(start)
         } else if let Some((start, stop)) = self.range_into_iter.next() {
-            self.option_range = OptionRange::Some { start, stop };
+            self.option_range = Some((start, stop));
             self.next()
         } else {
             None
@@ -878,7 +873,7 @@ where
     }
 }
 
-// cmkrule: don't create an assign method if it is not more efficient
+// cmk rule: don't create an assign method if it is not more efficient
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     fn from(arr: [T; N]) -> Self {
         RangeSetInt::from(arr.as_slice())
