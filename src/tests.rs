@@ -858,5 +858,5 @@ fn bit_or_iter() {
 
     let _not_i = !i.clone();
     let k = i - j;
-    println!("{}", fmt_sorted_disjoint(k));
+    assert_eq!(k.fmt(), "-1..=-1,1..=1,22..=22");
 }

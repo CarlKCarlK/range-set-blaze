@@ -87,16 +87,6 @@ pub trait SafeSubtract {
     fn max_value2() -> Self;
 }
 
-pub fn fmt_sorted_disjoint<T: Integer, I>(items: I) -> String
-where
-    I: IntoIterator<Item = (T, T)> + SortedDisjoint,
-{
-    items
-        .into_iter()
-        .map(|(start, stop)| format!("{start}..={stop}"))
-        .join(",")
-}
-
 // !!!cmk can I use a Rust range?
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
@@ -108,13 +98,13 @@ pub struct RangeSetInt<T: Integer> {
 // !!!cmk0 define these for SortedDisjoint, too?
 impl<T: Integer> fmt::Debug for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", fmt_sorted_disjoint(self.ranges()))
+        write!(f, "{}", self.ranges().fmt())
     }
 }
 
 impl<T: Integer> fmt::Display for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", fmt_sorted_disjoint(self.ranges()))
+        write!(f, "{}", self.ranges().fmt())
     }
 }
 
@@ -546,7 +536,11 @@ pub trait SortedDisjointIterator<T: Integer>:
         itertools::equal(self, other)
     }
 
-    // !!!cmk000 should we define fmt here?
+    // cmk rule: You can't define traits on combinations of traits, so use this method to define methods on traits
+    fn fmt(self) -> String {
+        self.map(|(start, stop)| format!("{start}..={stop}"))
+            .join(",")
+    }
 }
 
 impl<T, I> SortedDisjointIterator<T> for I
@@ -887,7 +881,9 @@ where
     <T as std::str::FromStr>::Err: std::fmt::Debug,
 {
     fn from(s: &str) -> Self {
-        // !!!cmk0 this may not handle empty strings correctly
+        if s.is_empty() {
+            return RangeSetInt::new();
+        }
         s.split(',')
             .map(|s| {
                 let mut range = s.split("..=");
@@ -989,6 +985,13 @@ macro_rules! intersection_dyn {
         arr.intersection()
     }}
 }
+
+// #[macro_export]
+// macro_rules! intersection_dyn {
+//     ($($val:expr),*) => {{
+//         [$($val),*].into_iter().map(|x| x.dyn_sorted_disjoint()).intersection()
+//     }}
+// }
 
 #[macro_export]
 macro_rules! union_dyn {

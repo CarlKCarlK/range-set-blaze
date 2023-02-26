@@ -8,7 +8,7 @@ use syntactic_for::syntactic_for;
 // !!!cmk should users use a prelude? If not, are these reasonable imports?
 use range_set_int::{
     intersection_dyn, union_dyn, BitOrIter, DynSortedDisjointExt, ItertoolsPlus2, RangeSetInt,
-    SortedDisjointIterator,
+    Ranges, SortedDisjointIterator,
 };
 
 #[test]
@@ -470,15 +470,20 @@ fn bitand() {
     assert!(a.ranges().equal(f));
 }
 
+// !!!cmk should each type have a .universe() and .empty() method? e.g. 0..=255 for u8
 #[test]
 fn empty() {
-    // let a0 = RangeSetInt::<u8>::from("1..=6");
-    let a = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();
-    let b = RangeSetInt::from([2, 3, 4]);
-    let b2 = 2;
-    let b3 = 3;
-    let b4 = 4;
-    let b_ref = [&b2, &b3, &b4];
+    let universe: BitOrIter<u8, _> = [(0, 255)].into_iter().collect();
+    let a0 = RangeSetInt::<u8>::from([]);
+    assert!(!(a0.ranges()).equal(universe.clone()));
+    assert!((!a0).ranges().equal(universe));
+    let _a0 = RangeSetInt::<u8>::from("");
+    let _a = RangeSetInt::<i32>::new();
+
+    let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
+    let a = a_iter.collect::<RangeSetInt<i32>>();
+    let b = RangeSetInt::from([]);
+    let b_ref: [&i32; 0] = [];
     let mut c3 = a.clone();
     let mut c4 = a.clone();
     let mut c5 = a.clone();
@@ -493,7 +498,7 @@ fn empty() {
     c4.extend(b_ref);
     c5.extend(b);
 
-    let answer = RangeSetInt::from([1, 2, 3, 4]);
+    let answer = RangeSetInt::from([]);
     assert_eq!(&c0, &answer);
     assert_eq!(&c1a, &answer);
     assert_eq!(&c1b, &answer);
@@ -505,21 +510,49 @@ fn empty() {
     assert_eq!(&c5, &answer);
 
     use range_set_int::ItertoolsPlus2;
-    let a = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();
-    let b = RangeSetInt::from([2, 3, 4]);
+    let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
+    let a = a_iter.collect::<RangeSetInt<i32>>();
+    let b = RangeSetInt::from([]);
 
     let c0 = a.ranges() | b.ranges();
     let c1 = range_set_int::union([a.ranges(), b.ranges()]);
-    let c2 = [a.ranges(), b.ranges()].union();
+    let c_list2: [Ranges<i32>; 0] = [];
+    let c2 = c_list2.clone().union();
     let c3 = union_dyn!(a.ranges(), b.ranges());
-    let c4 = [a.ranges(), b.ranges()]
-        .map(|x| x.dyn_sorted_disjoint())
-        .union();
+    let c4 = c_list2.map(|x| x.dyn_sorted_disjoint()).union();
 
-    let answer = RangeSetInt::from([1, 2, 3, 4]);
+    let answer = RangeSetInt::from([]);
     assert!(c0.equal(answer.ranges()));
     assert!(c1.equal(answer.ranges()));
     assert!(c2.equal(answer.ranges()));
     assert!(c3.equal(answer.ranges()));
+    assert!(c4.equal(answer.ranges()));
+
+    let c0 = !(a.ranges() & b.ranges());
+    let c1 = !range_set_int::intersection([a.ranges(), b.ranges()]);
+    let c_list2: [Ranges<i32>; 0] = [];
+    let c2 = c_list2.clone().intersection();
+    // let c3a = intersection_dyn!(a.ranges(), b.ranges());
+    // let c3: BitOrIter<i32, _> = !c3a;
+    // !!!cmk000 let c3 = !intersection_dyn!(a.ranges(), b.ranges());
+
+    let c3c = !([a.ranges(), b.ranges()]
+        .into_iter()
+        .map(|x| x.dyn_sorted_disjoint())
+        .intersection());
+
+    let c3d = ![
+        a.ranges().dyn_sorted_disjoint(),
+        b.ranges().dyn_sorted_disjoint(),
+    ]
+    .intersection();
+
+    let c4 = !(c_list2.map(|x| x.dyn_sorted_disjoint()).intersection());
+
+    let answer = !RangeSetInt::from([]);
+    assert!(c0.equal(answer.ranges()));
+    assert!(c1.equal(answer.ranges()));
+    assert!(c2.equal(answer.ranges()));
+    // cmk0000 assert!(c3.equal(answer.ranges()));
     assert!(c4.equal(answer.ranges()));
 }
