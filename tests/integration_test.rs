@@ -2,10 +2,10 @@
 #![cfg(test)]
 
 use itertools::Itertools;
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 
-// !!!cmk should users use a prelude?
+// !!!cmk should users use a prelude? If not, are these reasonable imports?
 use range_set_int::{
     intersection_dyn, union_dyn, BitOrIter, DynSortedDisjointExt, ItertoolsPlus2, RangeSetInt,
     SortedDisjointIterator,
@@ -266,7 +266,7 @@ fn custom_multi() {
     let b = RangeSetInt::<u8>::from("5..=13,18..=29");
     let c = RangeSetInt::<u8>::from("38..=42");
 
-    let union_stream = b.ranges().bitor(c.ranges());
+    let union_stream = b.ranges() | c.ranges();
     let a_less = a.ranges().sub(union_stream);
     let d: RangeSetInt<_> = a_less.into();
     println!("{d}");
@@ -315,7 +315,7 @@ fn parity() {
     println!("!b|!c {}", !b | !c);
     println!(
         "!b|!c {}",
-        RangeSetInt::from(b.ranges().not().bitor(c.ranges().not()))
+        RangeSetInt::from(b.ranges().not() | c.ranges().not())
     );
 
     let _a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
@@ -450,7 +450,7 @@ fn xor() {
 
 #[test]
 fn bitand() {
-    // RangeSetInt, Ranges, NotIter, BitOrIter
+    // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
     let a0 = RangeSetInt::<u8>::from("1..=6");
     let a1 = RangeSetInt::<u8>::from("8..=9");
     let a2 = RangeSetInt::from("11..=15");
@@ -468,4 +468,58 @@ fn bitand() {
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
     assert!(a.ranges().equal(f));
+}
+
+#[test]
+fn empty() {
+    // let a0 = RangeSetInt::<u8>::from("1..=6");
+    let a = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();
+    let b = RangeSetInt::from([2, 3, 4]);
+    let b2 = 2;
+    let b3 = 3;
+    let b4 = 4;
+    let b_ref = [&b2, &b3, &b4];
+    let mut c3 = a.clone();
+    let mut c4 = a.clone();
+    let mut c5 = a.clone();
+
+    let c0 = (&a).bitor(&b);
+    let c1a = &a | &b;
+    let c1b = &a | b.clone();
+    let c1c = a.clone() | &b;
+    let c1d = a.clone() | b.clone();
+    let c2: RangeSetInt<_> = (a.ranges() | b.ranges()).into();
+    c3.append(&mut b.clone());
+    c4.extend(b_ref);
+    c5.extend(b);
+
+    let answer = RangeSetInt::from([1, 2, 3, 4]);
+    assert_eq!(&c0, &answer);
+    assert_eq!(&c1a, &answer);
+    assert_eq!(&c1b, &answer);
+    assert_eq!(&c1c, &answer);
+    assert_eq!(&c1d, &answer);
+    assert_eq!(&c2, &answer);
+    assert_eq!(&c3, &answer);
+    assert_eq!(&c4, &answer);
+    assert_eq!(&c5, &answer);
+
+    use range_set_int::ItertoolsPlus2;
+    let a = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();
+    let b = RangeSetInt::from([2, 3, 4]);
+
+    let c0 = a.ranges() | b.ranges();
+    let c1 = range_set_int::union([a.ranges(), b.ranges()]);
+    let c2 = [a.ranges(), b.ranges()].union();
+    let c3 = union_dyn!(a.ranges(), b.ranges());
+    let c4 = [a.ranges(), b.ranges()]
+        .map(|x| x.dyn_sorted_disjoint())
+        .union();
+
+    let answer = RangeSetInt::from([1, 2, 3, 4]);
+    assert!(c0.equal(answer.ranges()));
+    assert!(c1.equal(answer.ranges()));
+    assert!(c2.equal(answer.ranges()));
+    assert!(c3.equal(answer.ranges()));
+    assert!(c4.equal(answer.ranges()));
 }

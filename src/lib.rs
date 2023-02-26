@@ -87,9 +87,12 @@ pub trait SafeSubtract {
     fn max_value2() -> Self;
 }
 
-pub fn fmt<T: Integer>(items: &BTreeMap<T, T>) -> String {
+pub fn fmt_sorted_disjoint<T: Integer, I>(items: I) -> String
+where
+    I: IntoIterator<Item = (T, T)> + SortedDisjoint,
+{
     items
-        .iter()
+        .into_iter()
         .map(|(start, stop)| format!("{start}..={stop}"))
         .join(",")
 }
@@ -105,13 +108,13 @@ pub struct RangeSetInt<T: Integer> {
 // !!!cmk0 define these for SortedDisjoint, too?
 impl<T: Integer> fmt::Debug for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", fmt(&self.btree_map))
+        write!(f, "{}", fmt_sorted_disjoint(self.ranges()))
     }
 }
 
 impl<T: Integer> fmt::Display for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", fmt(&self.btree_map))
+        write!(f, "{}", fmt_sorted_disjoint(self.ranges()))
     }
 }
 
@@ -345,7 +348,6 @@ impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = (T, T)>,
     {
-        // cmk0000 remove commented out mentions of SortedDisjointFromIter
         iter.into_iter().collect::<BitOrIter<T, _>>().into()
     }
 }
@@ -543,6 +545,8 @@ pub trait SortedDisjointIterator<T: Integer>:
     {
         itertools::equal(self, other)
     }
+
+    // !!!cmk000 should we define fmt here?
 }
 
 impl<T, I> SortedDisjointIterator<T> for I
@@ -562,7 +566,7 @@ where
         if let Some((start, stop)) = self.merged_ranges.next() {
             if let Some((current_start, current_stop)) = self.range {
                 debug_assert!(current_start <= start); // cmk panic if not sorted
-                if start <= current_stop  // !!!cmk000 this code also appears in SortedRanges
+                if start <= current_stop
                     || (current_stop < T::max_value2() && start <= current_stop + T::one())
                 {
                     self.range = Some((current_start, max(current_stop, stop)));
@@ -705,13 +709,6 @@ gen_ops_ex!(
 
     where T: Integer //Where clause for all impl's
 );
-
-//cmk0000
-// #[derive(Debug, Clone)]
-// enum OptionRange<T: Integer> {
-//     None,
-//     Some { start: T, stop: T },
-// }
 
 impl<T: Integer> IntoIterator for RangeSetInt<T> {
     type Item = T;

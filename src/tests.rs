@@ -763,7 +763,6 @@ fn multi_op() {
     );
 }
 
-// cmk000 print iters of sorted ranges
 // cmk0 use merge in example
 // cmk0 support 'collect' not just 'from'
 // cmk much too easy to make errors -- need types!
@@ -852,15 +851,12 @@ fn parity() {
     );
 }
 
-/// cmk000 Rename BitOrIter to MergeIter or UnionIter
 #[test]
-fn bit_or_iter_from_unsorted() {
+fn bit_or_iter() {
     let i: BitOrIter<_, _> = [1, 3, 4, 2, 2, 43, -1, 4, 22].into_iter().collect();
     let j: BitOrIter<_, _> = [11, 3, 4, 42, 2, 43, 23, 2, 543].into_iter().collect();
 
-    // cmk0000 why can't i-j?
     let _not_i = !i.clone();
-    let _k = i - j;
-    // cmk00 would be nice to print k
-    // println!("k {:?}", _k);
+    let k = i - j;
+    println!("{}", fmt_sorted_disjoint(k));
 }
