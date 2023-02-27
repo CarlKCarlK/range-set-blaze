@@ -422,14 +422,12 @@ where
 
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 
-// cmk00 understand Sized
-
 impl<T, I> From<I> for RangeSetInt<T>
 where
     T: Integer,
     // !!!cmk what does IntoIterator's ' IntoIter = I::IntoIter' mean?
     I: Iterator<Item = (T, T)> + SortedDisjoint,
-    // cmk0 understand why this can't be  I: IntoIterator<Item = (T, T)>, <I as IntoIterator>::IntoIter: SortedDisjoint,
+    // cmk00 understand why this can't be  I: IntoIterator<Item = (T, T)>, <I as IntoIterator>::IntoIter: SortedDisjoint,
 {
     fn from(iter: I) -> Self {
         let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
@@ -468,6 +466,7 @@ where
 // define mathematical set methods, e.g. left_iter.left(right_iter) returns the left_iter.
 pub trait SortedDisjointIterator<T: Integer>:
     Iterator<Item = (T, T)> + SortedDisjoint + Sized
+// I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 {
     fn bitor<J: SortedDisjointIterator<T>>(self, other: J) -> BitOrMerge<T, Self, J> {
         BitOrMerge::new(self, other)
@@ -481,7 +480,7 @@ pub trait SortedDisjointIterator<T: Integer>:
 
     fn sub<J>(self, other: J) -> BitSubMerge<T, Self, J>
     where
-        J: Iterator<Item = Self::Item> + SortedDisjoint + Sized, // !!!cmk0 why Sized?
+        J: Iterator<Item = Self::Item> + SortedDisjoint,
     {
         !(self.not().bitor(other))
     }
@@ -493,7 +492,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     // !!! cmk test the speed of this
     fn bitxor<J>(self, other: J) -> BitXOrTee<T, Self, J>
     where
-        J: Iterator<Item = Self::Item> + SortedDisjoint + Sized,
+        J: Iterator<Item = Self::Item> + SortedDisjoint,
     {
         let (lhs0, lhs1) = self.tee();
         let (rhs0, rhs1) = other.tee();
@@ -865,24 +864,6 @@ impl<T: Integer> From<&[T]> for RangeSetInt<T> {
     }
 }
 
-// impl<T> From<RangeSetInt<T>> for Ranges<'_, T>
-// where
-//     T: Integer,
-// {
-//     fn from(range_set_int: RangeSetInt<T>) -> Ranges<'_, T> {
-//         range_set_int.ranges()
-//     }
-// }
-
-// impl<T, I> From<I> for RangeSetInt<T>
-// where
-//     T: Integer,
-//     I: SortedDisjoint<T> + Clone + Sized,
-// {
-//     fn from(iter: I) -> RangeSetInt<T> {
-//         RangeSetInt::from_sorted_disjoint_iter(iter)
-//     }
-// }
 pub trait SortedDisjoint {}
 // cmk This code from sorted-iter shows how to define clone when possible
 // impl<I: Iterator + Clone, J: Iterator + Clone> Clone for Union<I, J>
@@ -905,14 +886,6 @@ pub struct DynSortedDisjoint<'a, T> {
 }
 impl<'a, T> SortedDisjoint for DynSortedDisjoint<'a, T> {}
 
-impl<'a, T> DynSortedDisjoint<'a, T> {
-    pub fn new(iter: impl Iterator<Item = T> + SortedDisjoint + 'a) -> Self {
-        DynSortedDisjoint {
-            iter: Box::new(iter),
-        }
-    }
-}
-
 impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
     type Item = T;
 
@@ -926,14 +899,16 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
 }
 
 /// extension trait for any iterator to add a assume_sorted_by_item method
-pub trait DynSortedDisjointExt<'a>: Iterator + Sized + SortedDisjoint + 'a {
+pub trait DynSortedDisjointExt<'a>: Iterator + SortedDisjoint + Sized + 'a {
     /// create dynamic version of the iterator
     fn dyn_sorted_disjoint(self) -> DynSortedDisjoint<'a, Self::Item> {
-        DynSortedDisjoint::new(self)
+        DynSortedDisjoint {
+            iter: Box::new(self),
+        }
     }
 }
 
-impl<'a, I: Iterator + Sized + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
+impl<'a, I: Iterator + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
 
 #[macro_export]
 macro_rules! intersection_dyn {
