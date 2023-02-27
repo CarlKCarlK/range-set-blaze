@@ -347,7 +347,7 @@ where
     T: Integer,
     I: Iterator<Item = (T, T)>,
 {
-    merged_ranges: I,
+    iter: I,
     range: Option<(T, T)>,
 }
 
@@ -380,7 +380,7 @@ where
 {
     fn new(lhs: I0, rhs: I1) -> BitOrMerge<T, I0, I1> {
         Self {
-            merged_ranges: lhs.merge_by(rhs, |a, b| a.0 <= b.0),
+            iter: lhs.merge_by(rhs, |a, b| a.0 <= b.0),
             range: None,
         }
     }
@@ -407,14 +407,12 @@ impl<T: Integer> FromIterator<(T, T)> for BitOrIter<T, std::vec::IntoIter<(T, T)
 impl<T, I> From<UnsortedDisjoint<T, I>> for BitOrIter<T, std::vec::IntoIter<(T, T)>>
 where
     T: Integer,
+    // cmk000 change this to IntoIterator???
     I: Iterator<Item = (T, T)>,
 {
     fn from(unsorted_disjoint: UnsortedDisjoint<T, I>) -> Self {
         let iter = unsorted_disjoint.sorted_by_key(|(start, _)| *start);
-        Self {
-            merged_ranges: iter,
-            range: None,
-        }
+        Self { iter, range: None }
     }
 }
 
@@ -446,7 +444,7 @@ where
     T: Integer,
 {
     BitOrIter {
-        merged_ranges: input
+        iter: input
             .into_iter()
             .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
         range: None,
@@ -527,7 +525,7 @@ where
     type Item = (T, T);
 
     fn next(&mut self) -> Option<(T, T)> {
-        if let Some((start, stop)) = self.merged_ranges.next() {
+        if let Some((start, stop)) = self.iter.next() {
             if let Some((current_start, current_stop)) = self.range {
                 debug_assert!(current_start <= start); // cmk panic if not sorted
                 if start <= current_stop
