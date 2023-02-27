@@ -4,7 +4,7 @@
 use num_traits::Zero;
 use std::cmp::{max, min};
 
-use crate::{Integer, SafeSubtract, SortedDisjoint};
+use crate::{Integer, SafeSubtract, SortedDisjoint, SortedStarts};
 
 pub struct UnsortedDisjoint<T, I>
 where
@@ -14,6 +14,13 @@ where
     iter: I,
     range: Option<(T, T)>,
     two: T,
+}
+
+impl<T, I> SortedStarts for UnsortedDisjoint<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
 }
 
 impl<T, I> From<I> for UnsortedDisjoint<T, I>
@@ -98,7 +105,7 @@ where
 
 impl<T: Integer, I> Iterator for SortedDisjointWithLenSoFar<T, I>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = (T, T)> + SortedDisjoint, // cmk000 should we name this?
 {
     type Item = (T, T);
 
@@ -115,4 +122,27 @@ where
 impl<T: Integer, I> SortedDisjoint for SortedDisjointWithLenSoFar<T, I> where
     I: Iterator<Item = (T, T)> + SortedDisjoint
 {
+}
+
+#[derive(Clone)]
+pub struct AssumeSortedStarts<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
+    pub(crate) iter: I,
+}
+
+impl<T: Integer, I> SortedStarts for AssumeSortedStarts<T, I> where I: Iterator<Item = (T, T)> {}
+
+impl<T, I> Iterator for AssumeSortedStarts<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = (T, T)>,
+{
+    type Item = (T, T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
 }
