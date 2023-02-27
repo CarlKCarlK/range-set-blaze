@@ -407,7 +407,6 @@ impl<T: Integer> FromIterator<(T, T)> for BitOrIter<T, std::vec::IntoIter<(T, T)
 impl<T, I> From<UnsortedDisjoint<T, I>> for BitOrIter<T, std::vec::IntoIter<(T, T)>>
 where
     T: Integer,
-    // cmk000 change this to IntoIterator???
     I: Iterator<Item = (T, T)>,
 {
     fn from(unsorted_disjoint: UnsortedDisjoint<T, I>) -> Self {
@@ -416,7 +415,7 @@ where
     }
 }
 
-// !!! cmk rule: don't define standalone functions. Don't have a function and a method. Pick one (method)
+// !!! cmk rule: Don't have a function and a method. Pick one (method)
 
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 
@@ -425,7 +424,7 @@ where
     T: Integer,
     // !!!cmk what does IntoIterator's ' IntoIter = I::IntoIter' mean?
     I: Iterator<Item = (T, T)> + SortedDisjoint,
-    // cmk00 understand why this can't be  I: IntoIterator<Item = (T, T)>, <I as IntoIterator>::IntoIter: SortedDisjoint,
+    // cmk00 understand why this can't be  I: IntoIterator<Item = (T, T)>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
 {
     fn from(iter: I) -> Self {
         let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
@@ -440,7 +439,7 @@ where
 pub fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
 where
     I0: IntoIterator<Item = I1>,
-    I1: Iterator<Item = (T, T)>,
+    I1: Iterator<Item = (T, T)> + SortedDisjoint,
     T: Integer,
 {
     BitOrIter {
@@ -451,6 +450,7 @@ where
     }
 }
 
+// cmk rule: don't for get these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
 pub fn intersection<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
 where
     // !!!cmk0 understand I0: Iterator vs I0: IntoIterator

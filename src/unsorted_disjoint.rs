@@ -73,13 +73,15 @@ where
     len: <T as SafeSubtract>::Output,
 }
 
-impl<T: Integer, I> From<I> for SortedDisjointWithLenSoFar<T, I>
+// cmk Rule there is no reason From's should be into iterators
+impl<T: Integer, I> From<I> for SortedDisjointWithLenSoFar<T, I::IntoIter>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: IntoIterator<Item = (T, T)>,
+    I::IntoIter: SortedDisjoint,
 {
-    fn from(iter: I) -> Self {
+    fn from(into_iter: I) -> Self {
         SortedDisjointWithLenSoFar {
-            iter,
+            iter: into_iter.into_iter(),
             len: <T as SafeSubtract>::Output::zero(),
         }
     }
