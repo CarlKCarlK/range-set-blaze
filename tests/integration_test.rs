@@ -531,28 +531,14 @@ fn empty() {
     let c0 = !(a.ranges() & b.ranges());
     let c1 = !range_set_int::intersection([a.ranges(), b.ranges()]);
     let c_list2: [Ranges<i32>; 0] = [];
-    let c2 = c_list2.clone().intersection();
-    // let c3a = intersection_dyn!(a.ranges(), b.ranges());
-    // let c3: BitOrIter<i32, _> = !c3a;
-    // !!!cmk000 let c3 = !intersection_dyn!(a.ranges(), b.ranges());
-
-    let c3c = !([a.ranges(), b.ranges()]
-        .into_iter()
-        .map(|x| x.dyn_sorted_disjoint())
-        .intersection());
-
-    let c3d = ![
-        a.ranges().dyn_sorted_disjoint(),
-        b.ranges().dyn_sorted_disjoint(),
-    ]
-    .intersection();
-
+    let c2 = !c_list2.clone().intersection();
+    let c3 = !intersection_dyn!(a.ranges(), b.ranges());
     let c4 = !(c_list2.map(|x| x.dyn_sorted_disjoint()).intersection());
 
     let answer = !RangeSetInt::from([]);
     assert!(c0.equal(answer.ranges()));
     assert!(c1.equal(answer.ranges()));
     assert!(c2.equal(answer.ranges()));
-    // cmk0000 assert!(c3.equal(answer.ranges()));
+    assert!(c3.equal(answer.ranges()));
     assert!(c4.equal(answer.ranges()));
 }

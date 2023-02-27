@@ -978,13 +978,22 @@ pub trait DynSortedDisjointExt<'a>: Iterator + Sized + SortedDisjoint + 'a {
 
 impl<'a, I: Iterator + Sized + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
 
-#[macro_export]
-macro_rules! intersection_dyn {
-    ($($val:expr),*) => {{
-        let arr = [$($val.dyn_sorted_disjoint()),*];
-        arr.intersection()
-    }}
-}
+// #[macro_export]
+// macro_rules! intersection_dyn {
+//     ($($val:expr),*) => {{
+//         let arr = [$($val.dyn_sorted_disjoint()),*];
+//         arr.intersection()
+//     }}
+// }
+
+// #[macro_export]
+// macro_rules! intersection_dyn {
+//     ($($expr:expr),*) => {
+//         $(
+//             println!("{}", $expr);
+//         )*
+//     };
+// }
 
 // #[macro_export]
 // macro_rules! intersection_dyn {
@@ -994,11 +1003,13 @@ macro_rules! intersection_dyn {
 // }
 
 #[macro_export]
+macro_rules! intersection_dyn {
+    ($($val:expr),*) => {[$($val.dyn_sorted_disjoint()),*].intersection()}
+}
+
+#[macro_export]
 macro_rules! union_dyn {
-    ($($val:expr),*) => {{
-        let arr = [$($val.dyn_sorted_disjoint()),*];
-        arr.union()
-    }}
+    ($($val:expr),*) => {[$($val.dyn_sorted_disjoint()),*].union()}
 }
 
 // Not: Ranges, NotIter, BitOrMerge
