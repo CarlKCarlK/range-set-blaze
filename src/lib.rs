@@ -24,7 +24,6 @@
 // cmk rules: When should use: from_iter, from, new from_something?
 
 mod safe_subtract;
-mod simple;
 mod tests;
 mod unsorted_disjoint;
 
@@ -419,31 +418,7 @@ where
     }
 }
 
-// !!!cmk00 these are too easy to mix up with other things
-// pub fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
-// where
-//     I0: IntoIterator<Item = I1>,
-//     I1: Iterator<Item = (T, T)>,
-//     T: Integer,
-// {
-//     BitOrIter {
-//         merged_ranges: input
-//             .into_iter()
-//             .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
-//         range: None,
-//     }
-// }
-
-// !!!cmk00 why define standalone function if only ever called from below?
-// pub fn intersection<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
-// where
-//     // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
-//     I0: IntoIterator<Item = I1>,
-//     I1: Iterator<Item = (T, T)> + SortedDisjoint,
-//     T: Integer,
-// {
-//     input.into_iter().map(|seq| seq.not()).union().not()
-// }
+// !!! cmk rule: don't define standalone functions. Don't have a function and a method. Pick one (method)
 
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 impl<I: IntoIterator + Sized> ItertoolsPlus2 for I {}
@@ -460,7 +435,6 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
         }
     }
 
-    // !!!cmk00 don't have a function and a method. Pick one.
     fn intersection<T, I>(self) -> BitAndKMerge<T, I>
     where
         Self: IntoIterator<Item = I>,
@@ -582,6 +556,7 @@ where
     }
 }
 
+// cmk rule: Make structs clonable when possible.
 #[derive(Clone)]
 pub struct NotIter<T, I>
 where
@@ -592,20 +567,6 @@ where
     start_not: T,
     next_time_return_none: bool,
 }
-
-// cmk00 can this work?
-// impl<I: Iterator + Clone> Clone for NotIter<T, I>
-// where
-//     T: Integer,
-//     I::Item: Clone,
-// {
-//     fn clone(&self) -> Self {
-//         Self {
-//             a: self.a.clone(),
-//             b: self.b.clone(),
-//         }
-//     }
-// }
 
 // cmk rule: Create a new function when setup is complicated and the function is used in multiple places.
 impl<T, I> NotIter<T, I>
