@@ -109,12 +109,13 @@ impl<T: Integer> fmt::Display for RangeSetInt<T> {
 }
 
 impl<T: Integer> RangeSetInt<T> {
-    pub fn iter(&self) -> Iter<T, impl Iterator<Item = (T, T)> + '_> {
-        let i = self.ranges();
+    // If the user asks for an iter, we give them a borrow to a Ranges iterator
+    // and we iterate that one integer at a time.
+    pub fn iter(&self) -> Iter<T, impl Iterator<Item = (T, T)> + SortedDisjoint + '_> {
         Iter {
             current: T::zero(),
             option_range: None,
-            range_iter: i,
+            iter: self.ranges(),
         }
     }
 }
@@ -303,13 +304,16 @@ impl<'a, T: Integer> AsRef<Ranges<'a, T>> for Ranges<'a, T> {
     }
 }
 
+// Ranges (one of the iterators from RangeSetInt) is SortedDisjoint
 impl<T: Integer> SortedDisjoint for Ranges<'_, T> {}
+// If the iterator inside a BitOrIter is SortedStart, the output will be SortedDisjoint
 impl<T: Integer, I: Iterator<Item = (T, T)> + SortedStarts> SortedDisjoint for BitOrIter<T, I> {}
+// If the iterator inside NotIter is SortedDisjoint, the output will be SortedDisjoint
 impl<T: Integer, I: Iterator<Item = (T, T)>> SortedDisjoint for NotIter<T, I> {}
-
-// cmk rules define "pass through" functions
+// If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
 impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedDisjoint for Tee<I> {}
 
+// !!!cmk0 should anything be an ExactSizeIterator?
 impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
     fn len(&self) -> usize {
         self.items.len()
@@ -710,16 +714,16 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
 pub struct Iter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)>,
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
 {
     current: T,
     option_range: Option<(T, T)>,
-    range_iter: I,
+    iter: I,
 }
 
 impl<T: Integer, I> Iterator for Iter<T, I>
 where
-    I: Iterator<Item = (T, T)>,
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
 {
     type Item = T;
     fn next(&mut self) -> Option<T> {
@@ -731,7 +735,7 @@ where
                 self.option_range = None;
             }
             Some(self.current)
-        } else if let Some((start, stop)) = self.range_iter.next() {
+        } else if let Some((start, stop)) = self.iter.next() {
             self.option_range = Some((start, stop));
             self.next()
         } else {
