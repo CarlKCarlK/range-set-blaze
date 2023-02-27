@@ -420,43 +420,44 @@ where
 }
 
 // !!!cmk00 these are too easy to mix up with other things
-pub fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
-where
-    I0: IntoIterator<Item = I1>,
-    I1: Iterator<Item = (T, T)>,
-    T: Integer,
-{
-    BitOrIter {
-        merged_ranges: input
-            .into_iter()
-            .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
-        range: None,
-    }
-}
+// pub fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
+// where
+//     I0: IntoIterator<Item = I1>,
+//     I1: Iterator<Item = (T, T)>,
+//     T: Integer,
+// {
+//     BitOrIter {
+//         merged_ranges: input
+//             .into_iter()
+//             .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
+//         range: None,
+//     }
+// }
 
 // !!!cmk00 why define standalone function if only ever called from below?
-pub fn intersection<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
-where
-    // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
-    I0: IntoIterator<Item = I1>,
-    I1: Iterator<Item = (T, T)> + SortedDisjoint,
-    T: Integer,
-{
-    input.into_iter().map(|seq| seq.not()).union().not()
-}
+// pub fn intersection<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
+// where
+//     // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
+//     I0: IntoIterator<Item = I1>,
+//     I1: Iterator<Item = (T, T)> + SortedDisjoint,
+//     T: Integer,
+// {
+//     input.into_iter().map(|seq| seq.not()).union().not()
+// }
 
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 impl<I: IntoIterator + Sized> ItertoolsPlus2 for I {}
 pub trait ItertoolsPlus2: IntoIterator + Sized {
-    // !!!cmk00 where is two input merge?
-
     fn union<T, I>(self) -> BitOrKMerge<T, I>
     where
         Self: IntoIterator<Item = I>,
         I: Iterator<Item = (T, T)>,
         T: Integer,
     {
-        union(self)
+        BitOrIter {
+            merged_ranges: self.into_iter().kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
+            range: None,
+        }
     }
 
     // !!!cmk00 don't have a function and a method. Pick one.
@@ -466,7 +467,7 @@ pub trait ItertoolsPlus2: IntoIterator + Sized {
         I: Iterator<Item = (T, T)> + SortedDisjoint,
         T: Integer,
     {
-        intersection(self)
+        self.into_iter().map(|seq| seq.not()).union().not()
     }
 }
 
@@ -873,7 +874,6 @@ impl Iterator for MemorylessData {
 // !!!cmk error to use -
 // !!!cmk are the unwraps OK?
 // !!!cmk what about bad input?
-// !!!cmk000 handle empty union and intersection correctly
 
 impl<T: Integer> From<&str> for RangeSetInt<T>
 where
@@ -977,30 +977,6 @@ pub trait DynSortedDisjointExt<'a>: Iterator + Sized + SortedDisjoint + 'a {
 }
 
 impl<'a, I: Iterator + Sized + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
-
-// #[macro_export]
-// macro_rules! intersection_dyn {
-//     ($($val:expr),*) => {{
-//         let arr = [$($val.dyn_sorted_disjoint()),*];
-//         arr.intersection()
-//     }}
-// }
-
-// #[macro_export]
-// macro_rules! intersection_dyn {
-//     ($($expr:expr),*) => {
-//         $(
-//             println!("{}", $expr);
-//         )*
-//     };
-// }
-
-// #[macro_export]
-// macro_rules! intersection_dyn {
-//     ($($val:expr),*) => {{
-//         [$($val),*].into_iter().map(|x| x.dyn_sorted_disjoint()).intersection()
-//     }}
-// }
 
 #[macro_export]
 macro_rules! intersection_dyn {

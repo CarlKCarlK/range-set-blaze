@@ -7,7 +7,7 @@
 // !!!cmk rule detail:  let a_less = a.ranges().sub(chain);
 // !!!cmk rule test near extreme values
 // !!!cmk test it across threads
-use std::collections::BTreeSet; // , time::Instant
+use std::{collections::BTreeSet, ops::BitOr}; // , time::Instant
 
 use super::*;
 // use sorted_iter::assume::AssumeSortedByKeyExt;
@@ -778,12 +778,12 @@ fn custom_multi() {
     let b = RangeSetInt::<u8>::from("5..=13,18..=29");
     let c = RangeSetInt::<u8>::from("38..=42");
 
-    let union_stream = b.ranges().bitor(c.ranges());
+    let union_stream = b.ranges() | c.ranges();
     let a_less = a.ranges() - union_stream;
     let d: RangeSetInt<_> = a_less.into();
     println!("{d}");
 
-    let d: RangeSetInt<_> = (a.ranges() - union([b.ranges(), c.ranges()])).into();
+    let d: RangeSetInt<_> = (a.ranges() - [b.ranges(), c.ranges()].union()).into();
     println!("{d}");
 }
 
@@ -818,10 +818,10 @@ fn parity() {
         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
         RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
     );
-    let _d = intersection([a.ranges()]);
-    let _parity: RangeSetInt<u8> = union([intersection([a.ranges()])]).into();
-    let _parity: RangeSetInt<u8> = intersection([a.ranges()]).into();
-    let _parity: RangeSetInt<u8> = union([a.ranges()]).into();
+    let _d = [a.ranges()].intersection();
+    let _parity: RangeSetInt<u8> = [[a.ranges()].intersection()].union().into();
+    let _parity: RangeSetInt<u8> = [a.ranges()].intersection().into();
+    let _parity: RangeSetInt<u8> = [a.ranges()].union().into();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
@@ -839,12 +839,13 @@ fn parity() {
         RangeSetInt::from("1..=15,18..=29,38..=42")
     );
 
-    let u = union([
+    let u = [
         intersection_dyn!(a.ranges(), !b.ranges(), !c.ranges()),
         intersection_dyn!(!a.ranges(), b.ranges(), !c.ranges()),
         intersection_dyn!(!a.ranges(), !b.ranges(), c.ranges()),
         intersection_dyn!(a.ranges(), b.ranges(), c.ranges()),
-    ]);
+    ]
+    .union();
     assert_eq!(
         RangeSetInt::from(u),
         RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
@@ -859,4 +860,75 @@ fn bit_or_iter() {
     let _not_i = !i.clone();
     let k = i - j;
     assert_eq!(k.fmt(), "-1..=-1,1..=1,22..=22");
+}
+
+#[test]
+fn empty() {
+    let universe: BitOrIter<u8, _> = [(0, 255)].into_iter().collect();
+    let a0 = RangeSetInt::<u8>::from([]);
+    assert!(!(a0.ranges()).equal(universe.clone()));
+    assert!((!a0).ranges().equal(universe));
+    let _a0 = RangeSetInt::<u8>::from("");
+    let _a = RangeSetInt::<i32>::new();
+
+    let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
+    let a = a_iter.collect::<RangeSetInt<i32>>();
+    let b = RangeSetInt::from([]);
+    let b_ref: [&i32; 0] = [];
+    let mut c3 = a.clone();
+    let mut c4 = a.clone();
+    let mut c5 = a.clone();
+
+    let c0 = (&a).bitor(&b);
+    let c1a = &a | &b;
+    let c1b = &a | b.clone();
+    let c1c = a.clone() | &b;
+    let c1d = a.clone() | b.clone();
+    let c2: RangeSetInt<_> = (a.ranges() | b.ranges()).into();
+    c3.append(&mut b.clone());
+    c4.extend(b_ref);
+    c5.extend(b);
+
+    let answer = RangeSetInt::from([]);
+    assert_eq!(&c0, &answer);
+    assert_eq!(&c1a, &answer);
+    assert_eq!(&c1b, &answer);
+    assert_eq!(&c1c, &answer);
+    assert_eq!(&c1d, &answer);
+    assert_eq!(&c2, &answer);
+    assert_eq!(&c3, &answer);
+    assert_eq!(&c4, &answer);
+    assert_eq!(&c5, &answer);
+
+    let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
+    let a = a_iter.collect::<RangeSetInt<i32>>();
+    let b = RangeSetInt::from([]);
+
+    let c0 = a.ranges() | b.ranges();
+    let c1 = [a.ranges(), b.ranges()].union();
+    let c_list2: [Ranges<i32>; 0] = [];
+    let c2 = c_list2.clone().union();
+    let c3 = union_dyn!(a.ranges(), b.ranges());
+    let c4 = c_list2.map(|x| x.dyn_sorted_disjoint()).union();
+
+    let answer = RangeSetInt::from([]);
+    assert!(c0.equal(answer.ranges()));
+    assert!(c1.equal(answer.ranges()));
+    assert!(c2.equal(answer.ranges()));
+    assert!(c3.equal(answer.ranges()));
+    assert!(c4.equal(answer.ranges()));
+
+    let c0 = !(a.ranges() & b.ranges());
+    let c1 = ![a.ranges(), b.ranges()].intersection();
+    let c_list2: [Ranges<i32>; 0] = [];
+    let c2 = !!c_list2.clone().intersection();
+    let c3 = !intersection_dyn!(a.ranges(), b.ranges());
+    let c4 = !!(c_list2.map(|x| x.dyn_sorted_disjoint()).intersection());
+
+    let answer = !RangeSetInt::from([]);
+    assert!(c0.equal(answer.ranges()));
+    assert!(c1.equal(answer.ranges()));
+    assert!(c2.equal(answer.ranges()));
+    assert!(c3.equal(answer.ranges()));
+    assert!(c4.equal(answer.ranges()));
 }

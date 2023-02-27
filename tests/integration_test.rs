@@ -472,7 +472,7 @@ fn bitand() {
 
 // !!!cmk should each type have a .universe() and .empty() method? e.g. 0..=255 for u8
 #[test]
-fn empty() {
+fn empty_it() {
     let universe: BitOrIter<u8, _> = [(0, 255)].into_iter().collect();
     let a0 = RangeSetInt::<u8>::from([]);
     assert!(!(a0.ranges()).equal(universe.clone()));
@@ -515,7 +515,7 @@ fn empty() {
     let b = RangeSetInt::from([]);
 
     let c0 = a.ranges() | b.ranges();
-    let c1 = range_set_int::union([a.ranges(), b.ranges()]);
+    let c1 = [a.ranges(), b.ranges()].union();
     let c_list2: [Ranges<i32>; 0] = [];
     let c2 = c_list2.clone().union();
     let c3 = union_dyn!(a.ranges(), b.ranges());
@@ -529,11 +529,11 @@ fn empty() {
     assert!(c4.equal(answer.ranges()));
 
     let c0 = !(a.ranges() & b.ranges());
-    let c1 = !range_set_int::intersection([a.ranges(), b.ranges()]);
+    let c1 = ![a.ranges(), b.ranges()].intersection();
     let c_list2: [Ranges<i32>; 0] = [];
-    let c2 = !c_list2.clone().intersection();
+    let c2 = !!c_list2.clone().intersection();
     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
-    let c4 = !(c_list2.map(|x| x.dyn_sorted_disjoint()).intersection());
+    let c4 = !!(c_list2.map(|x| x.dyn_sorted_disjoint()).intersection());
 
     let answer = !RangeSetInt::from([]);
     assert!(c0.equal(answer.ranges()));
