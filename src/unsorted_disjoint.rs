@@ -105,7 +105,7 @@ where
 
 impl<T: Integer, I> Iterator for SortedDisjointWithLenSoFar<T, I>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint, // cmk000 should we name this?
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
 {
     type Item = (T, T);
 

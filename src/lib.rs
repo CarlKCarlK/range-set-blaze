@@ -367,15 +367,15 @@ where
 impl<T, I0, I1> SortedStarts for Merge<T, I0, I1>
 where
     T: Integer,
-    I0: Iterator<Item = (T, T)>, // + SortedStarts, cmk000
-    I1: Iterator<Item = (T, T)>, // + SortedStarts, cmk000
+    I0: Iterator<Item = (T, T)> + SortedStarts,
+    I1: Iterator<Item = (T, T)> + SortedStarts,
 {
 }
 
 impl<T, I> SortedStarts for KMerge<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)>, //+ SortedStarts, // cmk000
+    I: Iterator<Item = (T, T)> + SortedStarts,
 {
 }
 
