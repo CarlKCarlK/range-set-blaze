@@ -282,7 +282,7 @@ impl<T: Integer> RangeSetInt<T> {
 // impl Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)> + Clone + '_
     {
         let ranges = Ranges {
-            items: self.btree_map.iter(),
+            iter: self.btree_map.iter(),
         };
         ranges
     }
@@ -294,7 +294,7 @@ impl<T: Integer> RangeSetInt<T> {
 
 #[derive(Clone)]
 pub struct Ranges<'a, T: Integer> {
-    items: btree_map::Iter<'a, T, T>,
+    iter: btree_map::Iter<'a, T, T>,
 }
 
 impl<'a, T: Integer> AsRef<Ranges<'a, T>> for Ranges<'a, T> {
@@ -316,18 +316,22 @@ impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedDisjoint for
 // !!!cmk0 should anything be an ExactSizeIterator?
 impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
     fn len(&self) -> usize {
-        self.items.len()
+        self.iter.len()
     }
 }
 
+// Range's iterator is just the inside BTreeMap iterator as values
 impl<'a, T: Integer> Iterator for Ranges<'a, T> {
     type Item = (T, T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.items.next().map(|(start, stop)| (*start, *stop))
+        self.iter.next().map(|(start, stop)| (*start, *stop))
     }
 }
 
+// We create a RangeSetInt from an iterator of integers or integer ranges by
+// 1. turning them into a BitOrIter (internally, it collects into intervals and sorts by start).
+// 2. Turning the SortedDisjoint into a BTreeMap.
 impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     fn from_iter<I>(iter: I) -> Self
     where
