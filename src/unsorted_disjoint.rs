@@ -123,6 +123,10 @@ impl<T: Integer, I> SortedDisjoint for SortedDisjointWithLenSoFar<T, I> where
     I: Iterator<Item = (T, T)> + SortedDisjoint
 {
 }
+impl<T: Integer, I> SortedStarts for SortedDisjointWithLenSoFar<T, I> where
+    I: Iterator<Item = (T, T)> + SortedDisjoint
+{
+}
 
 #[derive(Clone)]
 pub struct AssumeSortedStarts<T, I>

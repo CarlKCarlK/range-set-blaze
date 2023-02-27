@@ -305,12 +305,16 @@ impl<'a, T: Integer> AsRef<Ranges<'a, T>> for Ranges<'a, T> {
 }
 
 // Ranges (one of the iterators from RangeSetInt) is SortedDisjoint
+impl<T: Integer> SortedStarts for Ranges<'_, T> {}
 impl<T: Integer> SortedDisjoint for Ranges<'_, T> {}
 // If the iterator inside a BitOrIter is SortedStart, the output will be SortedDisjoint
+impl<T: Integer, I: Iterator<Item = (T, T)> + SortedStarts> SortedStarts for BitOrIter<T, I> {}
 impl<T: Integer, I: Iterator<Item = (T, T)> + SortedStarts> SortedDisjoint for BitOrIter<T, I> {}
 // If the iterator inside NotIter is SortedDisjoint, the output will be SortedDisjoint
-impl<T: Integer, I: Iterator<Item = (T, T)>> SortedDisjoint for NotIter<T, I> {}
+impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedStarts for NotIter<T, I> {}
+impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedDisjoint for NotIter<T, I> {}
 // If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
+impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedStarts for Tee<I> {}
 impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedDisjoint for Tee<I> {}
 
 // !!!cmk0 should anything be an ExactSizeIterator?
@@ -371,7 +375,7 @@ where
 impl<T, I> SortedStarts for KMerge<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)>, // + SortedStarts, cmk000
+    I: Iterator<Item = (T, T)>, //+ SortedStarts, // cmk000
 {
 }
 
@@ -893,8 +897,8 @@ impl<T: Integer> From<&[T]> for RangeSetInt<T> {
     }
 }
 
-pub trait SortedDisjoint {}
 pub trait SortedStarts {}
+pub trait SortedDisjoint: SortedStarts {}
 
 // cmk This code from sorted-iter shows how to define clone when possible
 // impl<I: Iterator + Clone, J: Iterator + Clone> Clone for Union<I, J>
@@ -917,6 +921,7 @@ pub struct DynSortedDisjoint<'a, T> {
 }
 
 // All DynSortedDisjoint's are SortedDisjoint's
+impl<'a, T> SortedStarts for DynSortedDisjoint<'a, T> {}
 impl<'a, T> SortedDisjoint for DynSortedDisjoint<'a, T> {}
 
 impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
@@ -987,7 +992,7 @@ where
 
 impl<T: Integer, I> ops::Not for BitOrIter<T, I>
 where
-    I: Iterator<Item = (T, T)> + SortedStarts, // !!!cmk000 missing? + SortedDisjoint,
+    I: Iterator<Item = (T, T)> + SortedStarts,
 {
     type Output = NotIter<T, Self>;
 
@@ -1023,7 +1028,7 @@ where
 impl<T: Integer, I, J> ops::BitOr<I> for BitOrIter<T, J>
 where
     I: Iterator<Item = (T, T)> + SortedDisjoint,
-    J: Iterator<Item = (T, T)> + SortedStarts, // cmk000 missing?
+    J: Iterator<Item = (T, T)> + SortedStarts,
 {
     type Output = BitOrMerge<T, Self, I>;
 
@@ -1062,7 +1067,7 @@ where
 impl<T: Integer, I, J> ops::Sub<I> for BitOrIter<T, J>
 where
     I: Iterator<Item = (T, T)> + SortedDisjoint,
-    J: Iterator<Item = (T, T)> + SortedStarts, // cmk000 missing?
+    J: Iterator<Item = (T, T)> + SortedStarts,
 {
     type Output = BitSubMerge<T, Self, I>;
 
@@ -1107,7 +1112,7 @@ where
 impl<T: Integer, I, J> ops::BitXor<I> for BitOrIter<T, J>
 where
     I: Iterator<Item = (T, T)> + SortedDisjoint,
-    J: Iterator<Item = (T, T)> + SortedStarts, // cmk000 missing?
+    J: Iterator<Item = (T, T)> + SortedStarts,
 {
     type Output = BitXOrTee<T, Self, I>;
 
@@ -1150,7 +1155,7 @@ where
 impl<T: Integer, I, J> ops::BitAnd<I> for BitOrIter<T, J>
 where
     I: Iterator<Item = (T, T)> + SortedDisjoint,
-    J: Iterator<Item = (T, T)> + SortedStarts, // cmk000 missing?
+    J: Iterator<Item = (T, T)> + SortedStarts,
 {
     type Output = BitAndMerge<T, Self, I>;
 
