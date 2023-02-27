@@ -6,9 +6,10 @@ use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 
 // !!!cmk should users use a prelude? If not, are these reasonable imports?
+use range_set_int::{intersection, union};
 use range_set_int::{
-    intersection_dyn, union_dyn, BitOrIter, DynSortedDisjointExt, ItertoolsPlus2, RangeSetInt,
-    Ranges, SortedDisjointIterator,
+    intersection_dyn, union_dyn, BitOrIter, DynSortedDisjointExt, RangeSetInt, Ranges,
+    SortedDisjointIterator,
 };
 
 #[test]
@@ -271,7 +272,7 @@ fn custom_multi() {
     let d: RangeSetInt<_> = a_less.into();
     println!("{d}");
 
-    let d: RangeSetInt<_> = a.ranges().sub([b.ranges(), c.ranges()].union()).into();
+    let d: RangeSetInt<_> = a.ranges().sub(union([b.ranges(), c.ranges()])).into();
     println!("{d}");
 }
 
@@ -306,10 +307,10 @@ fn parity() {
         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
         RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
     );
-    let _d = [a.ranges()].intersection();
-    let _parity: RangeSetInt<u8> = [[a.ranges()].intersection()].union().into();
-    let _parity: RangeSetInt<u8> = [a.ranges()].intersection().into();
-    let _parity: RangeSetInt<u8> = [a.ranges()].union().into();
+    let _d = range_set_int::intersection([a.ranges()]);
+    let _parity: RangeSetInt<u8> = union([intersection([a.ranges()])]).into();
+    let _parity: RangeSetInt<u8> = intersection([a.ranges()]).into();
+    let _parity: RangeSetInt<u8> = union([a.ranges()]).into();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
@@ -319,7 +320,7 @@ fn parity() {
     );
 
     let _a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    let u = [a.ranges().dyn_sorted_disjoint()].union();
+    let u = union([a.ranges().dyn_sorted_disjoint()]);
     assert_eq!(
         RangeSetInt::from(u),
         RangeSetInt::from("1..=6,8..=9,11..=15")
@@ -335,13 +336,12 @@ fn parity() {
         RangeSetInt::from("1..=15,18..=29,38..=42")
     );
 
-    let u = [
+    let u = union([
         intersection_dyn!(a.ranges(), b.ranges().not(), c.ranges().not()),
         intersection_dyn!(a.ranges().not(), b.ranges(), c.ranges().not()),
         intersection_dyn!(a.ranges().not(), b.ranges().not(), c.ranges()),
         intersection_dyn!(a.ranges(), b.ranges(), c.ranges()),
-    ]
-    .union();
+    ]);
     assert_eq!(
         RangeSetInt::from(u),
         RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
@@ -381,7 +381,7 @@ fn complement() {
 }
 
 #[test]
-fn union() {
+fn union_test() {
     // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
     let a0 = RangeSetInt::<u8>::from("1..=6");
     let (a0_tee, _) = a0.ranges().tee();
@@ -509,17 +509,16 @@ fn empty_it() {
     assert_eq!(&c4, &answer);
     assert_eq!(&c5, &answer);
 
-    use range_set_int::ItertoolsPlus2;
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
     let a = a_iter.collect::<RangeSetInt<i32>>();
     let b = RangeSetInt::from([]);
 
     let c0 = a.ranges() | b.ranges();
-    let c1 = [a.ranges(), b.ranges()].union();
+    let c1 = union([a.ranges(), b.ranges()]);
     let c_list2: [Ranges<i32>; 0] = [];
-    let c2 = c_list2.clone().union();
+    let c2 = union(c_list2.clone());
     let c3 = union_dyn!(a.ranges(), b.ranges());
-    let c4 = c_list2.map(|x| x.dyn_sorted_disjoint()).union();
+    let c4 = union(c_list2.map(|x| x.dyn_sorted_disjoint()));
 
     let answer = RangeSetInt::from([]);
     assert!(c0.equal(answer.ranges()));
@@ -529,11 +528,11 @@ fn empty_it() {
     assert!(c4.equal(answer.ranges()));
 
     let c0 = !(a.ranges() & b.ranges());
-    let c1 = ![a.ranges(), b.ranges()].intersection();
+    let c1 = !intersection([a.ranges(), b.ranges()]);
     let c_list2: [Ranges<i32>; 0] = [];
-    let c2 = !!c_list2.clone().intersection();
+    let c2 = !!intersection(c_list2.clone());
     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
-    let c4 = !!(c_list2.map(|x| x.dyn_sorted_disjoint()).intersection());
+    let c4 = !!intersection(c_list2.map(|x| x.dyn_sorted_disjoint()));
 
     let answer = !RangeSetInt::from([]);
     assert!(c0.equal(answer.ranges()));

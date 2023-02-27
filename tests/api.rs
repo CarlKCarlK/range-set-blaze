@@ -1,7 +1,7 @@
 // !!!cmk can you optimize a | b | c to automatically call union([a,b,c])?
 use std::{collections::BTreeSet, ops::BitOr};
 
-use range_set_int::{union_dyn, DynSortedDisjointExt, RangeSetInt, SortedDisjointIterator};
+use range_set_int::{union, union_dyn, DynSortedDisjointExt, RangeSetInt, SortedDisjointIterator};
 
 #[test]
 fn b_tree_set() {
@@ -63,17 +63,14 @@ fn range_set_int() {
 
 #[test]
 fn sorted_disjoint() {
-    use range_set_int::ItertoolsPlus2;
     let a = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();
     let b = RangeSetInt::from([2, 3, 4]);
 
     let c0 = a.ranges() | b.ranges();
-    let c1 = [a.ranges(), b.ranges()].union();
-    let c2 = [a.ranges(), b.ranges()].union();
+    let c1 = union([a.ranges(), b.ranges()]);
+    let c2 = union([a.ranges(), b.ranges()]);
     let c3 = union_dyn!(a.ranges(), b.ranges());
-    let c4 = [a.ranges(), b.ranges()]
-        .map(|x| x.dyn_sorted_disjoint())
-        .union();
+    let c4 = union([a.ranges(), b.ranges()].map(|x| x.dyn_sorted_disjoint()));
 
     let answer = RangeSetInt::from([1, 2, 3, 4]);
     assert!(c0.equal(answer.ranges()));

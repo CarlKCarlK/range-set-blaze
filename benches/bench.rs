@@ -10,8 +10,7 @@ use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 // use pprof::criterion::Output; //PProfProfiler
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, SeedableRng};
-// !!!cmk annoying to need to import ItertoolsPlus2
-use range_set_int::{DynSortedDisjointExt, ItertoolsPlus2, MemorylessData, RangeSetInt};
+use range_set_int::{intersection, DynSortedDisjointExt, MemorylessData, RangeSetInt};
 // use thousands::Separable;
 
 // fn insert10(c: &mut Criterion) {
@@ -431,7 +430,7 @@ fn k_intersect(c: &mut Criterion) {
             || k_sets(k, range_len, len, coverage_goal),
             |sets| {
                 let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
-                let _answer: RangeSetInt<_> = sets.intersection().into();
+                let _answer: RangeSetInt<_> = intersection(sets).into();
             },
             BatchSize::SmallInput,
         );

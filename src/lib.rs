@@ -123,14 +123,14 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        input.into_iter().map(|x| x.ranges()).union().into()
+        union(input.into_iter().map(|x| x.ranges())).into()
     }
 
     pub fn intersection<I>(input: I) -> Self
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        input.into_iter().map(|x| x.ranges()).intersection().into()
+        intersection(input.into_iter().map(|x| x.ranges())).into()
     }
 }
 
@@ -421,36 +421,8 @@ where
 // !!! cmk rule: don't define standalone functions. Don't have a function and a method. Pick one (method)
 
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
-impl<I: IntoIterator + Sized> ItertoolsPlus2 for I {}
-pub trait ItertoolsPlus2: IntoIterator + Sized {
-    fn union<T, I>(self) -> BitOrKMerge<T, I>
-    where
-        Self: IntoIterator<Item = I>,
-        I: Iterator<Item = (T, T)>,
-        T: Integer,
-    {
-        BitOrIter {
-            merged_ranges: self.into_iter().kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
-            range: None,
-        }
-    }
 
-    fn intersection<T, I>(self) -> BitAndKMerge<T, I>
-    where
-        Self: IntoIterator<Item = I>,
-        I: Iterator<Item = (T, T)> + SortedDisjoint,
-        T: Integer,
-    {
-        self.into_iter().map(|seq| seq.not()).union().not()
-    }
-}
-
-// impl<I, T> ItertoolsSorted<T> for I
-// where
-//     I: SortedDisjoint1<T> + Sized,
-//     T: Integer,
-// {
-// }
+// cmk00 understand Sized
 
 impl<T, I> From<I> for RangeSetInt<T>
 where
@@ -467,6 +439,30 @@ where
             len: iter_with_len.len(),
         }
     }
+}
+
+pub fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
+where
+    I0: IntoIterator<Item = I1>,
+    I1: Iterator<Item = (T, T)>,
+    T: Integer,
+{
+    BitOrIter {
+        merged_ranges: input
+            .into_iter()
+            .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
+        range: None,
+    }
+}
+
+pub fn intersection<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
+where
+    // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
+    I0: IntoIterator<Item = I1>,
+    I1: Iterator<Item = (T, T)> + SortedDisjoint,
+    T: Integer,
+{
+    union(input.into_iter().map(|seq| seq.not())).not()
 }
 
 // define mathematical set methods, e.g. left_iter.left(right_iter) returns the left_iter.
@@ -941,12 +937,12 @@ impl<'a, I: Iterator + Sized + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for
 
 #[macro_export]
 macro_rules! intersection_dyn {
-    ($($val:expr),*) => {[$($val.dyn_sorted_disjoint()),*].intersection()}
+    ($($val:expr),*) => {intersection([$($val.dyn_sorted_disjoint()),*])}
 }
 
 #[macro_export]
 macro_rules! union_dyn {
-    ($($val:expr),*) => {[$($val.dyn_sorted_disjoint()),*].union()}
+    ($($val:expr),*) => {union([$($val.dyn_sorted_disjoint()),*])}
 }
 
 // Not: Ranges, NotIter, BitOrMerge
