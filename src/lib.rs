@@ -364,11 +364,11 @@ where
     range: Option<(T, T)>,
 }
 
-impl<T, I0, I1> SortedStarts for Merge<T, I0, I1>
+impl<T, L, R> SortedStarts for Merge<T, L, R>
 where
     T: Integer,
-    I0: Iterator<Item = (T, T)> + SortedStarts,
-    I1: Iterator<Item = (T, T)> + SortedStarts,
+    L: Iterator<Item = (T, T)> + SortedStarts,
+    R: Iterator<Item = (T, T)> + SortedStarts,
 {
 }
 
@@ -380,33 +380,32 @@ where
 }
 
 // !!!cmk0 should I0,I1 be I,J to match itertools?
-pub type Merge<T, I0, I1> = MergeBy<I0, I1, fn(&(T, T), &(T, T)) -> bool>;
+pub type Merge<T, L, R> = MergeBy<L, R, fn(&(T, T), &(T, T)) -> bool>;
 pub type KMerge<T, I> = KMergeBy<I, fn(&(T, T), &(T, T)) -> bool>;
-pub type BitOrMerge<T, I0, I1> = BitOrIter<T, Merge<T, I0, I1>>;
+pub type BitOrMerge<T, L, R> = BitOrIter<T, Merge<T, L, R>>;
 pub type BitOrKMerge<T, I> = BitOrIter<T, KMerge<T, I>>;
-pub type BitAndMerge<T, I0, I1> = NotIter<T, BitNandMerge<T, I0, I1>>;
+pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
 pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
-pub type BitNandMerge<T, I0, I1> = BitOrMerge<T, NotIter<T, I0>, NotIter<T, I1>>;
+pub type BitNandMerge<T, L, R> = BitOrMerge<T, NotIter<T, L>, NotIter<T, R>>;
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
-pub type BitNorMerge<T, J, I> = NotIter<T, BitOrMerge<T, J, I>>;
-pub type BitSubMerge<T, I0, I1> = NotIter<T, BitOrMerge<T, NotIter<T, I0>, I1>>;
-pub type BitXOrTee<T, I0, I1> =
-    BitOrMerge<T, BitSubMerge<T, Tee<I0>, Tee<I1>>, BitSubMerge<T, Tee<I1>, Tee<I0>>>;
-pub type BitXOr<T, I0, I1> =
-    BitOrMerge<T, BitSubMerge<T, I0, Tee<I1>>, BitSubMerge<T, Tee<I1>, I0>>;
-pub type BitEq<T, J, I> = BitOrMerge<
+pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
+pub type BitSubMerge<T, L, R> = NotIter<T, BitOrMerge<T, NotIter<T, L>, R>>;
+pub type BitXOrTee<T, L, R> =
+    BitOrMerge<T, BitSubMerge<T, Tee<L>, Tee<R>>, BitSubMerge<T, Tee<R>, Tee<L>>>;
+pub type BitXOr<T, L, R> = BitOrMerge<T, BitSubMerge<T, L, Tee<R>>, BitSubMerge<T, Tee<R>, L>>;
+pub type BitEq<T, L, R> = BitOrMerge<
     T,
-    NotIter<T, BitOrMerge<T, NotIter<T, Tee<J>>, NotIter<T, Tee<I>>>>,
-    NotIter<T, BitOrMerge<T, Tee<J>, Tee<I>>>,
+    NotIter<T, BitOrMerge<T, NotIter<T, Tee<L>>, NotIter<T, Tee<R>>>>,
+    NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
 >;
 
-impl<T, I0, I1> BitOrMerge<T, I0, I1>
+impl<T, L, R> BitOrMerge<T, L, R>
 where
     T: Integer,
-    I0: Iterator<Item = (T, T)> + SortedDisjoint,
-    I1: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = (T, T)> + SortedDisjoint,
+    R: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    fn new(lhs: I0, rhs: I1) -> BitOrMerge<T, I0, I1> {
+    fn new(lhs: L, rhs: R) -> BitOrMerge<T, L, R> {
         Self {
             iter: lhs.merge_by(rhs, |a, b| a.0 <= b.0),
             range: None,
@@ -440,7 +439,7 @@ impl<T, I> From<UnsortedDisjoint<T, I>>
     for BitOrIter<T, AssumeSortedStarts<T, std::vec::IntoIter<(T, T)>>>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)>,
+    I: Iterator<Item = (T, T)>, // Any iterator is OK, because we will sort
 {
     fn from(unsorted_disjoint: UnsortedDisjoint<T, I>) -> Self {
         let iter = AssumeSortedStarts {
@@ -471,10 +470,10 @@ where
     }
 }
 
-pub fn union<T, I0, I1>(input: I0) -> BitOrKMerge<T, I1>
+pub fn union<T, I, J>(input: I) -> BitOrKMerge<T, J>
 where
-    I0: IntoIterator<Item = I1>,
-    I1: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: IntoIterator<Item = J>,
+    J: Iterator<Item = (T, T)> + SortedDisjoint,
     T: Integer,
 {
     BitOrIter {
@@ -486,11 +485,11 @@ where
 }
 
 // cmk rule: don't for get these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
-pub fn intersection<T, I0, I1>(input: I0) -> BitAndKMerge<T, I1>
+pub fn intersection<T, I, J>(input: I) -> BitAndKMerge<T, J>
 where
     // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
-    I0: IntoIterator<Item = I1>,
-    I1: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: IntoIterator<Item = J>,
+    J: Iterator<Item = (T, T)> + SortedDisjoint,
     T: Integer,
 {
     union(input.into_iter().map(|seq| seq.not())).not()
@@ -501,21 +500,28 @@ pub trait SortedDisjointIterator<T: Integer>:
     Iterator<Item = (T, T)> + SortedDisjoint + Sized
 // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 {
-    fn bitor<J: SortedDisjointIterator<T>>(self, other: J) -> BitOrMerge<T, Self, J> {
-        BitOrMerge::new(self, other)
-    }
-    fn bitand<J>(self, other: J) -> BitAndMerge<T, Self, J>
+    fn bitor<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
     where
-        J: Iterator<Item = Self::Item> + SortedDisjoint,
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint,
     {
-        !(self.not().bitor(other.not()))
+        BitOrMerge::new(self, other.into_iter())
     }
 
-    fn sub<J>(self, other: J) -> BitSubMerge<T, Self, J>
+    fn bitand<R>(self, other: R) -> BitAndMerge<T, Self, R::IntoIter>
     where
-        J: Iterator<Item = Self::Item> + SortedDisjoint,
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint,
     {
-        !(self.not().bitor(other))
+        !(self.not().bitor(other.into_iter().not()))
+    }
+
+    fn sub<R>(self, other: R) -> BitSubMerge<T, Self, R::IntoIter>
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint,
+    {
+        !(self.not().bitor(other.into_iter()))
     }
 
     fn not(self) -> NotIter<T, Self> {
@@ -523,18 +529,21 @@ pub trait SortedDisjointIterator<T: Integer>:
     }
 
     // !!! cmk test the speed of this
-    fn bitxor<J>(self, other: J) -> BitXOrTee<T, Self, J>
+    fn bitxor<R>(self, other: R) -> BitXOrTee<T, Self, R::IntoIter>
     where
-        J: Iterator<Item = Self::Item> + SortedDisjoint,
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint,
     {
         let (lhs0, lhs1) = self.tee();
-        let (rhs0, rhs1) = other.tee();
+        let (rhs0, rhs1) = other.into_iter().tee();
         lhs0.sub(rhs0) | rhs1.sub(lhs1)
     }
 
-    fn equal<I>(self, other: I) -> bool
+    // cmk rule: Prefer IntoIterator to Iterator
+    fn equal<R>(self, other: R) -> bool
     where
-        I: Iterator<Item = Self::Item> + SortedDisjoint,
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint,
     {
         itertools::equal(self, other)
     }
@@ -546,6 +555,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     }
 }
 
+// cmk000 explain why this is needed
 impl<T, I> SortedDisjointIterator<T> for I
 where
     T: Integer,
@@ -589,7 +599,7 @@ where
 pub struct NotIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)>,
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
 {
     iter: I,
     start_not: T,
@@ -600,7 +610,7 @@ where
 impl<T, I> NotIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)>,
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
 {
     fn new(iter: I) -> Self {
         NotIter {
@@ -615,7 +625,7 @@ where
 impl<T, I> Iterator for NotIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)>,
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
 {
     type Item = (T, T);
     fn next(&mut self) -> Option<(T, T)> {
