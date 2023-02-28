@@ -16,21 +16,14 @@ where
     two: T,
 }
 
-impl<T, I> SortedStarts for UnsortedDisjoint<T, I>
+impl<T, I> From<I> for UnsortedDisjoint<T, I::IntoIter>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)>,
+    I: IntoIterator<Item = (T, T)>,
 {
-}
-
-impl<T, I> From<I> for UnsortedDisjoint<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = (T, T)>, // cmk should this be IntoIterator?
-{
-    fn from(iter: I) -> Self {
+    fn from(into_iter: I) -> Self {
         UnsortedDisjoint {
-            iter,
+            iter: into_iter.into_iter(),
             range: None,
             two: T::one() + T::one(),
         }

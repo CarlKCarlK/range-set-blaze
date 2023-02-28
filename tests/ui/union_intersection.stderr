@@ -32,7 +32,7 @@ error[E0277]: the trait bound `std::array::IntoIter<({integer}, {integer}), 2>: 
             itertools::kmerge_impl::KMergeBy<I, for<'a, 'b> fn(&'a (T, T), &'b (T, T)) -> bool>
             itertools::tee::Tee<I>
             range_set_int::unsorted_disjoint::AssumeSortedStarts<T, I>
-          and $N others
+            range_set_int::unsorted_disjoint::SortedDisjointWithLenSoFar<T, I>
   = note: required for `itertools::kmerge_impl::KMergeBy<std::array::IntoIter<({integer}, {integer}), 2>, ...>` to implement `SortedStarts`
 note: required by a bound in `BitOrIter`
  --> src/lib.rs

@@ -612,9 +612,12 @@ where
     T: Integer,
     I: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    fn new(iter: I) -> Self {
+    fn new<J>(iter: J) -> Self
+    where
+        J: IntoIterator<Item = (T, T), IntoIter = I>,
+    {
         NotIter {
-            iter,
+            iter: iter.into_iter(),
             start_not: T::min_value(),
             next_time_return_none: false,
         }
@@ -723,7 +726,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     fn into_iter(self) -> IntoIter<T> {
         IntoIter {
             option_range: None,
-            range_into_iter: self.btree_map.into_iter(),
+            into_iter: self.btree_map.into_iter(),
         }
     }
 }
@@ -764,7 +767,7 @@ where
 
 pub struct IntoIter<T: Integer> {
     option_range: Option<(T, T)>,
-    range_into_iter: std::collections::btree_map::IntoIter<T, T>,
+    into_iter: std::collections::btree_map::IntoIter<T, T>,
 }
 
 impl<T: Integer> Iterator for IntoIter<T> {
@@ -778,7 +781,7 @@ impl<T: Integer> Iterator for IntoIter<T> {
                 self.option_range = None;
             }
             Some(start)
-        } else if let Some((start, stop)) = self.range_into_iter.next() {
+        } else if let Some((start, stop)) = self.into_iter.next() {
             self.option_range = Some((start, stop));
             self.next()
         } else {
@@ -788,7 +791,6 @@ impl<T: Integer> Iterator for IntoIter<T> {
 }
 
 /// cmk warn that adds one-by-one
-/// cmk should the input be named 'iter' or 'into_iter'?
 impl<T: Integer> Extend<T> for RangeSetInt<T> {
     fn extend<I>(&mut self, iter: I)
     where
@@ -807,6 +809,7 @@ impl<'a, T: 'a + Integer> Extend<&'a T> for RangeSetInt<T> {
     }
 }
 
+// !!!cmk 0 move to own file
 pub struct MemorylessData {
     current_is_empty: bool,
     current_lower: u64,
@@ -941,6 +944,7 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
         self.iter.next()
     }
 
+    // !!!cmk0 understand this
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -956,6 +960,7 @@ pub trait DynSortedDisjointExt<'a>: Iterator + SortedDisjoint + Sized + 'a {
     }
 }
 
+// !!!cmk understand this
 impl<'a, I: Iterator + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
 
 #[macro_export]
@@ -988,18 +993,6 @@ where
     }
 }
 
-// impl<T: Integer, I0, I1> ops::Not for BitOrMerge<T, I0, I1>
-// where
-//     I0: Iterator<Item = (T, T)> + SortedDisjoint,
-//     I1: Iterator<Item = (T, T)> + SortedDisjoint,
-// {
-//     type Output = NotIter<T, Self>;
-
-//     fn not(self) -> Self::Output {
-//         NotIter::new(self)
-//     }
-// }
-
 impl<T: Integer, I> ops::Not for BitOrIter<T, I>
 where
     I: Iterator<Item = (T, T)> + SortedStarts,
@@ -1023,26 +1016,26 @@ where
     }
 }
 
-impl<T: Integer, I, J> ops::BitOr<I> for NotIter<T, J>
+impl<T: Integer, R, L> ops::BitOr<R> for NotIter<T, L>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
-    J: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = (T, T)> + SortedDisjoint,
+    R: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    type Output = BitOrMerge<T, Self, I>;
+    type Output = BitOrMerge<T, Self, R>;
 
-    fn bitor(self, rhs: I) -> Self::Output {
+    fn bitor(self, rhs: R) -> Self::Output {
         BitOrIter::new(self, rhs)
     }
 }
 
-impl<T: Integer, I, J> ops::BitOr<I> for BitOrIter<T, J>
+impl<T: Integer, R, L> ops::BitOr<R> for BitOrIter<T, L>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
-    J: Iterator<Item = (T, T)> + SortedStarts,
+    L: Iterator<Item = (T, T)> + SortedStarts,
+    R: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    type Output = BitOrMerge<T, Self, I>;
+    type Output = BitOrMerge<T, Self, R>;
 
-    fn bitor(self, rhs: I) -> Self::Output {
+    fn bitor(self, rhs: R) -> Self::Output {
         // cmk should we optimize a|b|c into union(a,b,c)?
         BitOrIter::new(self, rhs)
     }
@@ -1061,27 +1054,27 @@ where
     }
 }
 
-impl<T: Integer, I, J> ops::Sub<I> for NotIter<T, J>
+impl<T: Integer, R, L> ops::Sub<R> for NotIter<T, L>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
-    J: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = (T, T)> + SortedDisjoint,
+    R: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    type Output = BitNorMerge<T, J, I>;
+    type Output = BitNorMerge<T, L, R>;
 
-    fn sub(self, rhs: I) -> Self::Output {
-        // optimize !!self.iter into self.iter
+    fn sub(self, rhs: R) -> Self::Output {
+        // We have optimized !!self.iter into self.iter
         !self.iter.bitor(rhs)
     }
 }
 
-impl<T: Integer, I, J> ops::Sub<I> for BitOrIter<T, J>
+impl<T: Integer, R, L> ops::Sub<R> for BitOrIter<T, L>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
-    J: Iterator<Item = (T, T)> + SortedStarts,
+    L: Iterator<Item = (T, T)> + SortedStarts,
+    R: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    type Output = BitSubMerge<T, Self, I>;
+    type Output = BitSubMerge<T, Self, R>;
 
-    fn sub(self, rhs: I) -> Self::Output {
+    fn sub(self, rhs: R) -> Self::Output {
         !(!self | rhs)
     }
 }
@@ -1096,21 +1089,21 @@ where
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitxor(self, rhs: I) -> Self::Output {
-        // optimize by using self.clone() instead of tee
+        // We optimize by using self.clone() instead of tee
         let lhs1 = self.clone();
         let (rhs0, rhs1) = rhs.tee();
         (self - rhs0) | (rhs1.sub(lhs1))
     }
 }
 
-impl<T: Integer, I, J> ops::BitXor<I> for NotIter<T, J>
+impl<T: Integer, R, L> ops::BitXor<R> for NotIter<T, L>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
-    J: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = (T, T)> + SortedDisjoint,
+    R: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    type Output = BitEq<T, J, I>;
+    type Output = BitEq<T, L, R>;
 
-    fn bitxor(self, rhs: I) -> Self::Output {
+    fn bitxor(self, rhs: R) -> Self::Output {
         let (not_lhs0, not_lhs1) = self.iter.tee();
         let (rhs0, rhs1) = rhs.tee();
         // optimize !!self.iter into self.iter
@@ -1119,15 +1112,15 @@ where
     }
 }
 
-impl<T: Integer, I, J> ops::BitXor<I> for BitOrIter<T, J>
+impl<T: Integer, R, L> ops::BitXor<R> for BitOrIter<T, L>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
-    J: Iterator<Item = (T, T)> + SortedStarts,
+    L: Iterator<Item = (T, T)> + SortedStarts,
+    R: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    type Output = BitXOrTee<T, Self, I>;
+    type Output = BitXOrTee<T, Self, R>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn bitxor(self, rhs: I) -> Self::Output {
+    fn bitxor(self, rhs: R) -> Self::Output {
         let (lhs0, lhs1) = self.tee();
         let (rhs0, rhs1) = rhs.tee();
         lhs0.sub(rhs0) | rhs1.sub(lhs1)
@@ -1148,28 +1141,28 @@ where
     }
 }
 
-impl<T: Integer, I, J> ops::BitAnd<I> for NotIter<T, J>
+impl<T: Integer, R, L> ops::BitAnd<R> for NotIter<T, L>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
-    J: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = (T, T)> + SortedDisjoint,
+    R: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    type Output = NotIter<T, BitOrMerge<T, J, NotIter<T, I>>>;
+    type Output = NotIter<T, BitOrMerge<T, L, NotIter<T, R>>>;
 
-    fn bitand(self, rhs: I) -> Self::Output {
+    fn bitand(self, rhs: R) -> Self::Output {
         // optimize !!self.iter into self.iter
         !self.iter.bitor(rhs.not())
     }
 }
 
 // cmk name all generics in a sensible way
-impl<T: Integer, I, J> ops::BitAnd<I> for BitOrIter<T, J>
+impl<T: Integer, R, L> ops::BitAnd<R> for BitOrIter<T, L>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
-    J: Iterator<Item = (T, T)> + SortedStarts,
+    L: Iterator<Item = (T, T)> + SortedStarts,
+    R: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    type Output = BitAndMerge<T, Self, I>;
+    type Output = BitAndMerge<T, Self, R>;
 
-    fn bitand(self, rhs: I) -> Self::Output {
+    fn bitand(self, rhs: R) -> Self::Output {
         !(!self | rhs.not())
     }
 }
