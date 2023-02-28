@@ -19,7 +19,7 @@ where
 impl<T, I> From<I> for UnsortedDisjoint<T, I::IntoIter>
 where
     T: Integer,
-    I: IntoIterator<Item = (T, T)>,
+    I: IntoIterator<Item = (T, T)>, // Any iterator is fine
 {
     fn from(into_iter: I) -> Self {
         UnsortedDisjoint {
@@ -98,7 +98,7 @@ impl<T: Integer, I> SortedDisjointWithLenSoFar<T, I>
 where
     I: Iterator<Item = (T, T)> + SortedDisjoint,
 {
-    pub fn len(&self) -> <T as SafeSubtract>::Output {
+    pub fn len_so_far(&self) -> <T as SafeSubtract>::Output {
         self.len.clone()
     }
 }

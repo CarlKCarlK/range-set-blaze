@@ -22,6 +22,8 @@
 // !!!cmk0 how could you write your own subtraction that subtracted many sets from one set via iterators?
 // cmk rules: When should use Iterator and when IntoIterator?
 // cmk rules: When should use: from_iter, from, new from_something?
+// !!! cmk rule: Don't have a function and a method. Pick one (method)
+// !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 
 mod safe_subtract;
 mod tests;
@@ -312,9 +314,7 @@ impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedDisjoint for
 // If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
 impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedStarts for Tee<I> {}
 impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedDisjoint for Tee<I> {}
-// cmk0 What is a iterator len returns the original len, and not the len of the rest?
 
-// !!!cmk00 should anything be an ExactSizeIterator?
 impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
     fn len(&self) -> usize {
         self.iter.len()
@@ -337,6 +337,16 @@ impl<'a, T: Integer> Iterator for Ranges<'a, T> {
 // We create a RangeSetInt from an iterator of integers or integer ranges by
 // 1. turning them into a BitOrIter (internally, it collects into intervals and sorts by start).
 // 2. Turning the SortedDisjoint into a BTreeMap.
+
+impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = (T, T)>,
+    {
+        iter.into_iter().collect::<BitOrIter<T, _>>().into()
+    }
+}
+
 impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -346,12 +356,20 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     }
 }
 
-impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = (T, T)>,
-    {
-        iter.into_iter().collect::<BitOrIter<T, _>>().into()
+impl<T, I> From<I> for RangeSetInt<T>
+where
+    T: Integer,
+    // !!!cmk what does IntoIterator's ' IntoIter = I::IntoIter' mean?
+    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    // cmk0 understand why this can't be  I: IntoIterator<Item = (T, T)>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
+{
+    fn from(iter: I) -> Self {
+        let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
+        let btree_map = BTreeMap::from_iter(&mut iter_with_len);
+        RangeSetInt {
+            btree_map,
+            len: iter_with_len.len_so_far(),
+        }
     }
 }
 
@@ -446,27 +464,6 @@ where
             iter: unsorted_disjoint.sorted_by_key(|(start, _)| *start),
         };
         Self { iter, range: None }
-    }
-}
-
-// !!! cmk rule: Don't have a function and a method. Pick one (method)
-
-// !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
-
-impl<T, I> From<I> for RangeSetInt<T>
-where
-    T: Integer,
-    // !!!cmk what does IntoIterator's ' IntoIter = I::IntoIter' mean?
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
-    // cmk0 understand why this can't be  I: IntoIterator<Item = (T, T)>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
-{
-    fn from(iter: I) -> Self {
-        let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
-        let btree_map = BTreeMap::from_iter(&mut iter_with_len);
-        RangeSetInt {
-            btree_map,
-            len: iter_with_len.len(),
-        }
     }
 }
 

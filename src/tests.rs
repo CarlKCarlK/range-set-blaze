@@ -84,7 +84,7 @@ fn repro1() {
 
 #[test]
 fn repro2() {
-    let mut range_set_int = RangeSetInt::<i8>::from([-8, 8, -2, -1, 3, 2]);
+    let mut range_set_int = RangeSetInt::<i8>::from([-8, 8, -2, -1, 3, 2]); // from_iter??? cmk000
     range_set_int.internal_add(25, 25);
     println!("{range_set_int}");
     assert!(range_set_int.to_string() == "-8..=-8,-2..=-1,2..=3,8..=8,25..=25");
