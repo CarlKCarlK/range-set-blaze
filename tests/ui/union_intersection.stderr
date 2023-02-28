@@ -14,8 +14,8 @@ error[E0277]: the trait bound `std::array::IntoIter<({integer}, {integer}), 2>: 
 note: required by a bound in `union`
  --> src/lib.rs
   |
-  |     J: Iterator<Item = (T, T)> + SortedDisjoint,
-  |                                  ^^^^^^^^^^^^^^ required by this bound in `union`
+  |     J::IntoIter: SortedDisjoint,
+  |                  ^^^^^^^^^^^^^^ required by this bound in `union`
 
 error[E0277]: the trait bound `std::array::IntoIter<({integer}, {integer}), 2>: SortedStarts` is not satisfied
  --> tests/ui/union_intersection.rs:4:14
@@ -56,8 +56,8 @@ error[E0277]: the trait bound `std::array::IntoIter<({integer}, {integer}), 2>: 
 note: required by a bound in `intersection`
  --> src/lib.rs
   |
-  |     J: Iterator<Item = (T, T)> + SortedDisjoint,
-  |                                  ^^^^^^^^^^^^^^ required by this bound in `intersection`
+  |     J::IntoIter: SortedDisjoint,
+  |                  ^^^^^^^^^^^^^^ required by this bound in `intersection`
 
 error[E0277]: the trait bound `std::array::IntoIter<({integer}, {integer}), 2>: SortedDisjoint` is not satisfied
  --> tests/ui/union_intersection.rs:5:14

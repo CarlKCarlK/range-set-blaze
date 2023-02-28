@@ -739,7 +739,7 @@ fn multi_op() {
     let b = RangeSetInt::<u8>::from("5..=13,18..=29");
     let c = RangeSetInt::<u8>::from("38..=42");
 
-    // !!!cmk0 must with on empty, with ref and with owned
+    // !!!cmk0 must work on empty, with ref and with owned
 
     let _ = RangeSetInt::union([&a, &b, &c]);
     let d = RangeSetInt::intersection([a, b, c].iter());

@@ -95,7 +95,6 @@ pub struct RangeSetInt<T: Integer> {
     btree_map: BTreeMap<T, T>,
 }
 
-// !!!cmk0 define these for SortedDisjoint, too?
 impl<T: Integer> fmt::Debug for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.ranges().fmt())
@@ -277,10 +276,7 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    // !!!cmk0 add .map(|(start, stop)| (*start, *stop)) to ranges()?
-    pub fn ranges(&self) -> Ranges<'_, T>
-// impl Iterator<Item = (T, T)> + ExactSizeIterator<Item = (T, T)> + Clone + '_
-    {
+    pub fn ranges(&self) -> Ranges<'_, T> {
         let ranges = Ranges {
             iter: self.btree_map.iter(),
         };
@@ -316,8 +312,9 @@ impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedDisjoint for
 // If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
 impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedStarts for Tee<I> {}
 impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedDisjoint for Tee<I> {}
+// cmk0 What is a iterator len returns the original len, and not the len of the rest?
 
-// !!!cmk0 should anything be an ExactSizeIterator?
+// !!!cmk00 should anything be an ExactSizeIterator?
 impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
     fn len(&self) -> usize {
         self.iter.len()
@@ -330,6 +327,10 @@ impl<'a, T: Integer> Iterator for Ranges<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(start, stop)| (*start, *stop))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 
@@ -379,7 +380,6 @@ where
 {
 }
 
-// !!!cmk0 should I0,I1 be I,J to match itertools?
 pub type Merge<T, L, R> = MergeBy<L, R, fn(&(T, T), &(T, T)) -> bool>;
 pub type KMerge<T, I> = KMergeBy<I, fn(&(T, T), &(T, T)) -> bool>;
 pub type BitOrMerge<T, L, R> = BitOrIter<T, Merge<T, L, R>>;
@@ -458,7 +458,7 @@ where
     T: Integer,
     // !!!cmk what does IntoIterator's ' IntoIter = I::IntoIter' mean?
     I: Iterator<Item = (T, T)> + SortedDisjoint,
-    // cmk00 understand why this can't be  I: IntoIterator<Item = (T, T)>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
+    // cmk0 understand why this can't be  I: IntoIterator<Item = (T, T)>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
 {
     fn from(iter: I) -> Self {
         let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
@@ -470,14 +470,15 @@ where
     }
 }
 
-pub fn union<T, I, J>(input: I) -> BitOrKMerge<T, J>
+pub fn union<T, I, J>(into_iter: I) -> BitOrKMerge<T, J::IntoIter>
 where
     I: IntoIterator<Item = J>,
-    J: Iterator<Item = (T, T)> + SortedDisjoint,
+    J: IntoIterator<Item = (T, T)>,
+    J::IntoIter: SortedDisjoint,
     T: Integer,
 {
     BitOrIter {
-        iter: input
+        iter: into_iter
             .into_iter()
             .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
         range: None,
@@ -485,14 +486,15 @@ where
 }
 
 // cmk rule: don't for get these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
-pub fn intersection<T, I, J>(input: I) -> BitAndKMerge<T, J>
+pub fn intersection<T, I, J>(into_iter: I) -> BitAndKMerge<T, J::IntoIter>
 where
-    // !!!cmk0 understand I0: Iterator vs I0: IntoIterator
+    // cmk rule prefer IntoIterator over Iterator (here is example)
     I: IntoIterator<Item = J>,
-    J: Iterator<Item = (T, T)> + SortedDisjoint,
+    J: IntoIterator<Item = (T, T)>,
+    J::IntoIter: SortedDisjoint,
     T: Integer,
 {
-    union(input.into_iter().map(|seq| seq.not())).not()
+    union(into_iter.into_iter().map(|seq| seq.into_iter().not())).not()
 }
 
 // define mathematical set methods, e.g. left_iter.left(right_iter) returns the left_iter.
@@ -555,7 +557,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     }
 }
 
-// cmk000 explain why this is needed
+// cmk0 explain why this is needed
 impl<T, I> SortedDisjointIterator<T> for I
 where
     T: Integer,
@@ -591,6 +593,13 @@ where
             self.range = None;
             result
         }
+    }
+
+    // There could be a few as 1 (or 0 if the iter is empty) or as many as the iter.
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (low, high) = self.iter.size_hint();
+        let low = low.min(1);
+        (low, high)
     }
 }
 
@@ -659,6 +668,20 @@ where
             self.next_time_return_none = true;
             Some((self.start_not, T::max_value2()))
         }
+    }
+
+    // We could have one less or one more than the iter.
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (low, high) = self.iter.size_hint();
+        let low = if low > 0 { low - 1 } else { 0 };
+        let high = high.map(|high| {
+            if high < usize::MAX {
+                high + 1
+            } else {
+                usize::MAX
+            }
+        });
+        (low, high)
     }
 }
 
@@ -763,6 +786,12 @@ where
             None
         }
     }
+
+    // We'll have at least as many integers as intervals. There could be more that usize MAX
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (low, _high) = self.iter.size_hint();
+        (low, None)
+    }
 }
 
 pub struct IntoIter<T: Integer> {
@@ -787,6 +816,12 @@ impl<T: Integer> Iterator for IntoIter<T> {
         } else {
             None
         }
+    }
+
+    // We'll have at least as many integers as intervals. There could be more that usize MAX
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (low, _high) = self.into_iter.size_hint();
+        (low, None)
     }
 }
 
@@ -944,7 +979,7 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
         self.iter.next()
     }
 
-    // !!!cmk0 understand this
+    // cmk rule Implement size_hint if possible and ExactSizeIterator if possible
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }

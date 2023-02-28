@@ -62,6 +62,13 @@ where
             None
         }
     }
+
+    // As few as one (or zero if iter is empty) and as many as iter.len()
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (lower, upper) = self.iter.size_hint();
+        let lower = if lower == 0 { 0 } else { 1 };
+        (lower, upper)
+    }
 }
 
 pub struct SortedDisjointWithLenSoFar<T, I>
@@ -111,6 +118,9 @@ where
             None
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 impl<T: Integer, I> SortedDisjoint for SortedDisjointWithLenSoFar<T, I> where
     I: Iterator<Item = (T, T)> + SortedDisjoint
@@ -141,5 +151,9 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
