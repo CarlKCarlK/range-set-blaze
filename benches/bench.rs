@@ -381,7 +381,7 @@ fn two_sets1(
 ) -> (RangeSetInt<u64>, RangeSetInt<u64>) {
     (
         MemorylessData::new(0, range_len, len, coverage_goal).collect(),
-        RangeSetInt::<u64>::from([range_len / 2]),
+        [range_len / 2].into(),
     )
 }
 fn btree_two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (BTreeSet<u64>, BTreeSet<u64>) {

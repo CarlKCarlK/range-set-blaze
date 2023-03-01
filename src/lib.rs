@@ -24,6 +24,7 @@
 // cmk rules: When should use: from_iter, from, new from_something?
 // !!! cmk rule: Don't have a function and a method. Pick one (method)
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
+// cmk rule: don't create an assign method if it is not more efficient
 
 mod safe_subtract;
 mod tests;
@@ -35,6 +36,7 @@ use itertools::KMergeBy;
 use itertools::MergeBy;
 use itertools::Tee;
 use num_traits::Zero;
+// cmk0 move rand to dev-dependencies
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
@@ -353,6 +355,18 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
         I: IntoIterator<Item = T>,
     {
         iter.into_iter().collect::<BitOrIter<T, _>>().into()
+    }
+}
+
+impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
+    fn from(arr: [T; N]) -> Self {
+        arr.as_slice().into()
+    }
+}
+
+impl<T: Integer> From<&[T]> for RangeSetInt<T> {
+    fn from(slice: &[T]) -> Self {
+        slice.iter().cloned().collect()
     }
 }
 
@@ -909,6 +923,29 @@ impl Iterator for MemorylessData {
 // !!!cmk are the unwraps OK?
 // !!!cmk what about bad input?
 
+// impl<T: Integer> FromStr for RangeSetInt<T>
+// where
+//     // !!! cmk understand this
+//     <T as std::str::FromStr>::Err: std::fmt::Debug,
+// {
+//     type Err = ();
+
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         if s.is_empty() {
+//             return Ok(RangeSetInt::new());
+//         }
+//         let mut result = RangeSetInt::new();
+//         for s in s.split(',') {
+//             let mut range = s.split("..=");
+//             let start = range.next().unwrap_or_else(|| return Err(()));
+//             let start = start.parse::<T>()?;
+//             let stop = range.next().unwrap().parse::<T>()?;
+//             result.add(start, stop);
+//         }
+//         Ok(result)
+//     }
+// }
+
 impl<T: Integer> From<&str> for RangeSetInt<T>
 where
     // !!! cmk understand this
@@ -926,19 +963,6 @@ where
                 (start, stop)
             })
             .collect()
-    }
-}
-
-// cmk rule: don't create an assign method if it is not more efficient
-impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
-    fn from(arr: [T; N]) -> Self {
-        RangeSetInt::from(arr.as_slice())
-    }
-}
-
-impl<T: Integer> From<&[T]> for RangeSetInt<T> {
-    fn from(slice: &[T]) -> Self {
-        slice.iter().cloned().collect()
     }
 }
 

@@ -553,10 +553,16 @@ fn constructors() {
     // collect / from_iter (T,T)
     _range_set_int = [(5, 6), (1, 5)].into_iter().collect();
     _range_set_int = RangeSetInt::from_iter([(5, 6), (1, 5)]);
-    // into / from T - for compatibility with std::collections::BTreeSet
+    // into / from array T
     _range_set_int = [1, 5, 6, 5].into();
     _range_set_int = RangeSetInt::from([1, 5, 6, 5]);
-    // into / from (T,T) - for completeness
-    // _range_set_int = [(5, 6), (1, 5)].into();
-    // _range_set_int = RangeSetInt::from([(5, 6), (1, 5)]);
+    // into / from slice T
+    _range_set_int = [1, 5, 6, 5][1..=2].into();
+    _range_set_int = RangeSetInt::from([1, 5, 6, 5].as_slice());
+    // into / from iter (T,T) + SortedDisjoint
+    _range_set_int = _range_set_int.ranges().into();
+    _range_set_int = RangeSetInt::from(_range_set_int.ranges());
+    // into /from string
+    _range_set_int = "5..=6,1..=5".into();
+    _range_set_int = RangeSetInt::from("5..=6,1..=5");
 }
