@@ -162,8 +162,8 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let mut a = RangeSetInt::from("1..=3");
-    /// let mut b = RangeSetInt::from("3..=5");
+    /// let mut a = RangeSetInt::from([1..=3]);
+    /// let mut b = RangeSetInt::from([3..=5]);
     ///
     /// a.append(&mut b);
     ///

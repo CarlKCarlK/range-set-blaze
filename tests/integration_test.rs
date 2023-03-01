@@ -63,8 +63,8 @@ fn doctest2() {
 
 #[test]
 fn doctest3() -> Result<(), Box<dyn std::error::Error>> {
-    let mut a = RangeSetInt::<u8>::try_from("1..=3")?;
-    let mut b = RangeSetInt::<u8>::try_from("3..=5")?;
+    let mut a = RangeSetInt::from([1u8..=3]);
+    let mut b = RangeSetInt::from([3u8..=5]);
 
     a.append(&mut b);
 
@@ -140,7 +140,7 @@ fn add_in_order() {
 
 #[test]
 fn iters() -> Result<(), Box<dyn std::error::Error>> {
-    let range_set_int = RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
+    let range_set_int = RangeSetInt::from([1u8..=6, 8..=9, 11..=15]);
     assert!(range_set_int.len() == 13);
     // !!!cmk0
     // assert!(range_set_int.ranges.len() == 3);
@@ -585,5 +585,12 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     //collect / from_iter range_inclusive
     _range_set_int = [5..=6, 1..=5].into_iter().collect();
     _range_set_int = RangeSetInt::from_iter([5..=6, 1..=5]);
+    // from into array range_inclusive
+    _range_set_int = [5..=6, 1..=5].into();
+    _range_set_int = RangeSetInt::from([5..=6, 1..=5]);
+    // from into slice range_inclusive
+    _range_set_int = [5..=6, 1..=5][0..=1].into();
+    _range_set_int = RangeSetInt::from([5..=6, 1..=5].as_slice());
+
     Ok(())
 }
