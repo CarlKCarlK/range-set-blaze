@@ -374,6 +374,18 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
     }
 }
 
+impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]> for RangeSetInt<T> {
+    fn from(arr: [RangeInclusive<T>; N]) -> Self {
+        arr.as_slice().into()
+    }
+}
+
+impl<T: Integer> From<&[RangeInclusive<T>]> for RangeSetInt<T> {
+    fn from(slice: &[RangeInclusive<T>]) -> Self {
+        slice.iter().cloned().collect()
+    }
+}
+
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     fn from(arr: [T; N]) -> Self {
         arr.as_slice().into()

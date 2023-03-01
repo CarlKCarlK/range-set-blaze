@@ -490,7 +490,8 @@ fn bitand() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn empty_it() {
     let universe: BitOrIter<u8, _> = [(0, 255)].into_iter().collect();
-    let a0 = RangeSetInt::<u8>::from([]);
+    let arr: [u8; 0] = [];
+    let a0 = RangeSetInt::<u8>::from(arr);
     assert!(!(a0.ranges()).equal(universe.clone()));
     assert!((!a0).ranges().equal(universe));
     let _a0 = RangeSetInt::<u8>::try_from("");
@@ -498,7 +499,7 @@ fn empty_it() {
 
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
     let a = a_iter.collect::<RangeSetInt<i32>>();
-    let b = RangeSetInt::from([]);
+    let b = RangeSetInt::from([0i32; 0]);
     let b_ref: [&i32; 0] = [];
     let mut c3 = a.clone();
     let mut c4 = a.clone();
@@ -514,7 +515,7 @@ fn empty_it() {
     c4.extend(b_ref);
     c5.extend(b);
 
-    let answer = RangeSetInt::from([]);
+    let answer = RangeSetInt::from([0; 0]);
     assert_eq!(&c0, &answer);
     assert_eq!(&c1a, &answer);
     assert_eq!(&c1b, &answer);
@@ -527,7 +528,7 @@ fn empty_it() {
 
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
     let a = a_iter.collect::<RangeSetInt<i32>>();
-    let b = RangeSetInt::from([]);
+    let b = RangeSetInt::from([0; 0]);
 
     let c0 = a.ranges() | b.ranges();
     let c1 = union([a.ranges(), b.ranges()]);
@@ -536,7 +537,7 @@ fn empty_it() {
     let c3 = union_dyn!(a.ranges(), b.ranges());
     let c4 = union(c_list2.map(|x| x.dyn_sorted_disjoint()));
 
-    let answer = RangeSetInt::from([]);
+    let answer = RangeSetInt::from([0; 0]);
     assert!(c0.equal(answer.ranges()));
     assert!(c1.equal(answer.ranges()));
     assert!(c2.equal(answer.ranges()));
@@ -550,7 +551,7 @@ fn empty_it() {
     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
     let c4 = !!intersection(c_list2.map(|x| x.dyn_sorted_disjoint()));
 
-    let answer = !RangeSetInt::from([]);
+    let answer = !RangeSetInt::from([0; 0]);
     assert!(c0.equal(answer.ranges()));
     assert!(c1.equal(answer.ranges()));
     assert!(c2.equal(answer.ranges()));
