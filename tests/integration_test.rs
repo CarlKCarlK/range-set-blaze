@@ -62,9 +62,9 @@ fn doctest2() {
 }
 
 #[test]
-fn doctest3() {
-    let mut a = RangeSetInt::<u8>::from("1..=3");
-    let mut b = RangeSetInt::<u8>::from("3..=5");
+fn doctest3() -> Result<(), Box<dyn std::error::Error>> {
+    let mut a = RangeSetInt::<u8>::try_from("1..=3")?;
+    let mut b = RangeSetInt::<u8>::try_from("3..=5")?;
 
     a.append(&mut b);
 
@@ -76,6 +76,7 @@ fn doctest3() {
     assert!(a.contains(3));
     assert!(a.contains(4));
     assert!(a.contains(5));
+    Ok(())
 }
 
 #[test]
@@ -138,8 +139,8 @@ fn add_in_order() {
 // }
 
 #[test]
-fn iters() {
-    let range_set_int = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+fn iters() -> Result<(), Box<dyn std::error::Error>> {
+    let range_set_int = RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
     assert!(range_set_int.len() == 13);
     // !!!cmk0
     // assert!(range_set_int.ranges.len() == 3);
@@ -164,6 +165,7 @@ fn iters() {
     println!("{:?}", rs.next());
     println!("{range_set_int}");
     // !!! assert that can't use range_set_int again
+    Ok(())
 }
 
 #[test]
@@ -214,19 +216,19 @@ fn missing_doctest_ops() {
 }
 
 #[test]
-fn multi_op() {
-    let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    let b = RangeSetInt::<u8>::from("5..=13,18..=29");
-    let c = RangeSetInt::<u8>::from("38..=42");
+fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
+    let a = RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
+    let b = RangeSetInt::<u8>::try_from("5..=13,18..=29")?;
+    let c = RangeSetInt::<u8>::try_from("38..=42")?;
     // cmkRule make these work d= a|b; d= a|b|c; d=&a|&b|&c;
     let d = &(&a | &b) | &c;
     println!("{d}");
     let d = a | b | &c;
     println!("{d}");
 
-    let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    let b = RangeSetInt::<u8>::from("5..=13,18..=29");
-    let c = RangeSetInt::<u8>::from("38..=42");
+    let a = RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
+    let b = RangeSetInt::<u8>::try_from("5..=13,18..=29")?;
+    let c = RangeSetInt::<u8>::try_from("38..=42")?;
 
     // !!!cmk0 must with on empty, with ref and with owned
 
@@ -234,23 +236,27 @@ fn multi_op() {
     let d = RangeSetInt::intersection([a, b, c].iter());
     assert_eq!(d, RangeSetInt::new());
 
-    assert_eq!(!RangeSetInt::<u8>::union([]), RangeSetInt::from("0..=255"));
+    assert_eq!(
+        !RangeSetInt::<u8>::union([]),
+        RangeSetInt::try_from("0..=255")?
+    );
 
-    let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    let b = RangeSetInt::<u8>::from("5..=13,18..=29");
-    let c = RangeSetInt::<u8>::from("1..=42");
+    let a = RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
+    let b = RangeSetInt::<u8>::try_from("5..=13,18..=29")?;
+    let c = RangeSetInt::<u8>::try_from("1..=42")?;
 
     // cmk0 list all the ways that we and BTreeMap does intersection. Do they make sense? Work when empty?
     let _ = &a & &b;
     let d = RangeSetInt::intersection([&a, &b, &c]);
     // let d = RangeSetInt::intersection([a, b, c]);
     println!("{d}");
-    assert_eq!(d, RangeSetInt::from("5..=6,8..=9,11..=13"));
+    assert_eq!(d, RangeSetInt::try_from("5..=6,8..=9,11..=13")?);
 
     assert_eq!(
         RangeSetInt::<u8>::intersection([]),
-        RangeSetInt::from("0..=255")
+        RangeSetInt::try_from("0..=255")?
     );
+    Ok(())
 }
 
 // cmk0 use merge in example
@@ -262,10 +268,10 @@ fn multi_op() {
 // }
 
 #[test]
-fn custom_multi() {
-    let a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    let b = RangeSetInt::<u8>::from("5..=13,18..=29");
-    let c = RangeSetInt::<u8>::from("38..=42");
+fn custom_multi() -> Result<(), Box<dyn std::error::Error>> {
+    let a = RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
+    let b = RangeSetInt::<u8>::try_from("5..=13,18..=29")?;
+    let c = RangeSetInt::<u8>::try_from("38..=42")?;
 
     let union_stream = b.ranges() | c.ranges();
     let a_less = a.ranges().sub(union_stream);
@@ -274,38 +280,41 @@ fn custom_multi() {
 
     let d: RangeSetInt<_> = a.ranges().sub(union([b.ranges(), c.ranges()])).into();
     println!("{d}");
+    Ok(())
 }
 
 #[test]
-fn from_string() {
-    let a = RangeSetInt::<u16>::from("0..=4,14..=17,30..=255,0..=37,43..=65535");
-    assert_eq!(a, RangeSetInt::from("0..=65535"));
+fn from_string() -> Result<(), Box<dyn std::error::Error>> {
+    let a = RangeSetInt::<u16>::try_from("0..=4,14..=17,30..=255,0..=37,43..=65535")?;
+    assert_eq!(a, RangeSetInt::try_from("0..=65535")?);
+    Ok(())
 }
 
 #[test]
-fn nand_repro() {
-    let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
-    let c = &RangeSetInt::<u8>::from("38..=42");
+fn nand_repro() -> Result<(), Box<dyn std::error::Error>> {
+    let b = &RangeSetInt::<u8>::try_from("5..=13,18..=29")?;
+    let c = &RangeSetInt::<u8>::try_from("38..=42")?;
     println!("about to nand");
     let d = !b | !c;
     println!("cmk '{d}'");
     assert_eq!(
         d,
-        RangeSetInt::from("0..=4,14..=17,30..=255,0..=37,43..=255")
+        RangeSetInt::try_from("0..=4,14..=17,30..=255,0..=37,43..=255")?
     );
+    Ok(())
 }
 
 #[test]
-fn parity() {
-    let a = &RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
-    let b = &RangeSetInt::<u8>::from("5..=13,18..=29");
-    let c = &RangeSetInt::<u8>::from("38..=42");
+fn parity() -> Result<(), Box<dyn std::error::Error>> {
+    let a = &RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
+    let b = &RangeSetInt::<u8>::try_from("5..=13,18..=29")?;
+    let c = &RangeSetInt::<u8>::try_from("38..=42")?;
     // !!!cmk0 time itertools.tee (?) vs range.clone()
     // !!!cmk explain why need both "Merge" with "KMerge"
     // !!!cmk0 empty needs to work. Go back to slices?
     assert_eq!(
         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
-        RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
+        RangeSetInt::try_from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")?
     );
     let _d = range_set_int::intersection([a.ranges()]);
     let _parity: RangeSetInt<u8> = union([intersection([a.ranges()])]).into();
@@ -319,21 +328,21 @@ fn parity() {
         RangeSetInt::from(b.ranges().not() | c.ranges().not())
     );
 
-    let _a = RangeSetInt::<u8>::from("1..=6,8..=9,11..=15");
+    let _a = RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
     let u = union([a.ranges().dyn_sorted_disjoint()]);
     assert_eq!(
         RangeSetInt::from(u),
-        RangeSetInt::from("1..=6,8..=9,11..=15")
+        RangeSetInt::try_from("1..=6,8..=9,11..=15")?
     );
     let u = union_dyn!(a.ranges());
     assert_eq!(
         RangeSetInt::from(u),
-        RangeSetInt::from("1..=6,8..=9,11..=15")
+        RangeSetInt::try_from("1..=6,8..=9,11..=15")?
     );
     let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
     assert_eq!(
         RangeSetInt::from(u),
-        RangeSetInt::from("1..=15,18..=29,38..=42")
+        RangeSetInt::try_from("1..=15,18..=29,38..=42")?
     );
 
     let u = union([
@@ -344,8 +353,9 @@ fn parity() {
     ]);
     assert_eq!(
         RangeSetInt::from(u),
-        RangeSetInt::from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")
+        RangeSetInt::try_from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")?
     );
+    Ok(())
 }
 
 #[test]
@@ -355,10 +365,10 @@ fn ui() {
 }
 
 #[test]
-fn complement() {
+fn complement() -> Result<(), Box<dyn std::error::Error>> {
     // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
-    let a0 = RangeSetInt::<u8>::from("1..=6");
-    let a1 = RangeSetInt::from("8..=9,11..=15");
+    let a0 = RangeSetInt::<u8>::try_from("1..=6")?;
+    let a1 = RangeSetInt::try_from("8..=9,11..=15")?;
     let a = &a0 | &a1;
     let not_a = !&a;
     let b = a.ranges();
@@ -378,15 +388,16 @@ fn complement() {
     assert!(not_a.ranges().equal(not_d));
     assert!(not_a.ranges().equal(not_e));
     assert!(not_a.ranges().equal(not_f));
+    Ok(())
 }
 
 #[test]
-fn union_test() {
+fn union_test() -> Result<(), Box<dyn std::error::Error>> {
     // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
-    let a0 = RangeSetInt::<u8>::from("1..=6");
+    let a0 = RangeSetInt::<u8>::try_from("1..=6")?;
     let (a0_tee, _) = a0.ranges().tee();
-    let a1 = RangeSetInt::<u8>::from("8..=9");
-    let a2 = RangeSetInt::from("11..=15");
+    let a1 = RangeSetInt::<u8>::try_from("8..=9")?;
+    let a2 = RangeSetInt::try_from("11..=15")?;
     let a12 = &a1 | &a2;
     let not_a0 = !&a0;
     let a = &a0 | &a1 | &a2;
@@ -402,14 +413,15 @@ fn union_test() {
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
     assert!(a.ranges().equal(f));
+    Ok(())
 }
 
 #[test]
-fn sub() {
+fn sub() -> Result<(), Box<dyn std::error::Error>> {
     // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
-    let a0 = RangeSetInt::<u8>::from("1..=6");
-    let a1 = RangeSetInt::<u8>::from("8..=9");
-    let a2 = RangeSetInt::from("11..=15");
+    let a0 = RangeSetInt::<u8>::try_from("1..=6")?;
+    let a1 = RangeSetInt::<u8>::try_from("8..=9")?;
+    let a2 = RangeSetInt::try_from("11..=15")?;
     let a01 = &a0 | &a1;
     let (a01_tee, _) = a01.ranges().tee();
     let not_a01 = !&a01;
@@ -424,14 +436,16 @@ fn sub() {
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
     assert!(a.ranges().equal(f));
+
+    Ok(())
 }
 
 #[test]
-fn xor() {
+fn xor() -> Result<(), Box<dyn std::error::Error>> {
     // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
-    let a0 = RangeSetInt::<u8>::from("1..=6");
-    let a1 = RangeSetInt::<u8>::from("8..=9");
-    let a2 = RangeSetInt::from("11..=15");
+    let a0 = RangeSetInt::<u8>::try_from("1..=6")?;
+    let a1 = RangeSetInt::<u8>::try_from("8..=9")?;
+    let a2 = RangeSetInt::try_from("11..=15")?;
     let a01 = &a0 | &a1;
     let (a01_tee, _) = a01.ranges().tee();
     let not_a01 = !&a01;
@@ -446,14 +460,15 @@ fn xor() {
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
     assert!(a.ranges().equal(f));
+    Ok(())
 }
 
 #[test]
-fn bitand() {
+fn bitand() -> Result<(), Box<dyn std::error::Error>> {
     // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
-    let a0 = RangeSetInt::<u8>::from("1..=6");
-    let a1 = RangeSetInt::<u8>::from("8..=9");
-    let a2 = RangeSetInt::from("11..=15");
+    let a0 = RangeSetInt::<u8>::try_from("1..=6")?;
+    let a1 = RangeSetInt::<u8>::try_from("8..=9")?;
+    let a2 = RangeSetInt::try_from("11..=15")?;
     let a01 = &a0 | &a1;
     let (a01_tee, _) = a01.ranges().tee();
     let not_a01 = !&a01;
@@ -468,6 +483,7 @@ fn bitand() {
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
     assert!(a.ranges().equal(f));
+    Ok(())
 }
 
 // !!!cmk should each type have a .universe() and .empty() method? e.g. 0..=255 for u8
@@ -477,7 +493,7 @@ fn empty_it() {
     let a0 = RangeSetInt::<u8>::from([]);
     assert!(!(a0.ranges()).equal(universe.clone()));
     assert!((!a0).ranges().equal(universe));
-    let _a0 = RangeSetInt::<u8>::from("");
+    let _a0 = RangeSetInt::<u8>::try_from("");
     let _a = RangeSetInt::<i32>::new();
 
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
@@ -543,7 +559,7 @@ fn empty_it() {
 }
 
 #[test]
-fn constructors() {
+fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     let mut _range_set_int;
     // new
     _range_set_int = RangeSetInt::<i32>::new();
@@ -563,6 +579,7 @@ fn constructors() {
     _range_set_int = _range_set_int.ranges().into();
     _range_set_int = RangeSetInt::from(_range_set_int.ranges());
     // into /from string
-    _range_set_int = "5..=6,1..=5".into();
-    _range_set_int = RangeSetInt::from("5..=6,1..=5");
+    _range_set_int = "5..=6,1..=5".try_into()?;
+    _range_set_int = RangeSetInt::try_from("5..=6,1..=5")?;
+    Ok(())
 }

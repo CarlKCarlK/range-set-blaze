@@ -48,6 +48,7 @@ use std::fmt;
 use std::ops;
 use std::ops::Sub;
 use std::str::FromStr;
+use thiserror::Error as ThisError;
 use trait_set::trait_set;
 use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
@@ -923,46 +924,102 @@ impl Iterator for MemorylessData {
 // !!!cmk are the unwraps OK?
 // !!!cmk what about bad input?
 
-// impl<T: Integer> FromStr for RangeSetInt<T>
-// where
-//     // !!! cmk understand this
-//     <T as std::str::FromStr>::Err: std::fmt::Debug,
-// {
-//     type Err = ();
+// !!!cmk0 just "Error"?
+#[derive(ThisError, Debug)]
+pub enum RangeIntSetError {
+    #[error("after splitting on ',' tried to split on '..=' but failed on {0}")]
+    ParseSplitError(String),
+    #[error("error parsing integer {0}")]
+    ParseIntegerError(String),
+    // Redaction(String),
+    // #[error("invalid header (expected {expected:?}, found {found:?})")]
+    // InvalidHeader { expected: String, found: String },
+    // #[error("unknown data store error")]
+    // Unknown,
+}
 
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         if s.is_empty() {
-//             return Ok(RangeSetInt::new());
-//         }
-//         let mut result = RangeSetInt::new();
-//         for s in s.split(',') {
-//             let mut range = s.split("..=");
-//             let start = range.next().unwrap_or_else(|| return Err(()));
-//             let start = start.parse::<T>()?;
-//             let stop = range.next().unwrap().parse::<T>()?;
-//             result.add(start, stop);
-//         }
-//         Ok(result)
-//     }
-// }
-
-impl<T: Integer> From<&str> for RangeSetInt<T>
+impl<T: Integer> FromStr for RangeSetInt<T>
 where
     // !!! cmk understand this
     <T as std::str::FromStr>::Err: std::fmt::Debug,
 {
-    fn from(s: &str) -> Self {
+    type Err = RangeIntSetError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.is_empty() {
-            return RangeSetInt::new();
+            return Ok(RangeSetInt::new());
         }
-        s.split(',')
-            .map(|s| {
-                let mut range = s.split("..=");
-                let start = range.next().unwrap().parse::<T>().unwrap();
-                let stop = range.next().unwrap().parse::<T>().unwrap();
-                (start, stop)
-            })
-            .collect()
+        let result: Result<RangeSetInt<T>, Self::Err> = s.split(',').map(process_bit1).collect();
+        result
+    }
+}
+
+// !!!cmk000 test all errors
+// !!!cmk000 rename
+fn process_bit1<T: Integer>(s: &str) -> Result<(T, T), RangeIntSetError>
+where
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
+    let mut range = s.split("..=");
+    let start = range
+        .next()
+        .ok_or(RangeIntSetError::ParseSplitError("first item".to_string()))?;
+    let start_result = start.parse::<T>();
+    match start_result {
+        Ok(start) => {
+            let stop = range
+                .next()
+                .ok_or(RangeIntSetError::ParseSplitError("second item".to_string()))?;
+            let stop_result = stop.parse::<T>();
+            match stop_result {
+                Ok(stop) => {
+                    if range.next().is_some() {
+                        Err(RangeIntSetError::ParseSplitError(
+                            "unexpected third item".to_string(),
+                        ))
+                    } else {
+                        Ok((start, stop))
+                    }
+                }
+                Err(e) => {
+                    let msg = format!("second item: {e:?}");
+                    Err(RangeIntSetError::ParseIntegerError(msg))
+                }
+            }
+        }
+        Err(e) => {
+            let msg = format!("first item: {e:?}");
+            Err(RangeIntSetError::ParseIntegerError(msg))
+        }
+    }
+}
+
+// fn process_bit2<T: Integer>(
+//     mut range: std::str::Split<&str>,
+//     start: T,
+// ) -> Result<(T, T), RangeIntSetError>
+// where
+//     <T as std::str::FromStr>::Err: std::fmt::Debug,
+// {
+//     let stop = range.next().ok_or(RangeIntSetError::ParseSplitError)?;
+//     let stop_result = stop.parse::<T>();
+//     match stop_result {
+//         Ok(stop) => Ok((start, stop)),
+//         Err(e) => {
+//             let msg = format!("{e:?}");
+//             Err(RangeIntSetError::ParseIntegerError(msg))
+//         }
+//     }
+// }
+
+impl<T: Integer> TryFrom<&str> for RangeSetInt<T>
+where
+    // !!! cmk understand this
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
+    type Error = RangeIntSetError;
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        FromStr::from_str(s)
     }
 }
 
