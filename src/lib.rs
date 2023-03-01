@@ -46,6 +46,7 @@ use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
 use std::ops;
+use std::ops::RangeInclusive;
 use std::ops::Sub;
 use std::str::FromStr;
 use thiserror::Error as ThisError;
@@ -356,6 +357,20 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
         I: IntoIterator<Item = T>,
     {
         iter.into_iter().collect::<BitOrIter<T, _>>().into()
+    }
+}
+
+// cmk0 if range_inclusive calls it start and end, why not use that?
+// cmk000 Rust defines this as empty let cmk = 1..=-1; should we do the same?
+impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = RangeInclusive<T>>,
+    {
+        iter.into_iter()
+            .map(|range_inclusive| (*range_inclusive.start(), *range_inclusive.end()))
+            .collect::<BitOrIter<T, _>>()
+            .into()
     }
 }
 
