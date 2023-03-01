@@ -567,9 +567,9 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     // collect / from_iter T
     _range_set_int = [1, 5, 6, 5].into_iter().collect();
     _range_set_int = RangeSetInt::from_iter([1, 5, 6, 5]);
-    // collect / from_iter (T,T)
-    _range_set_int = [(5, 6), (1, 5)].into_iter().collect();
-    _range_set_int = RangeSetInt::from_iter([(5, 6), (1, 5)]);
+    // // collect / from_iter (T,T)
+    // _range_set_int = [(5, 6), (1, 5)].into_iter().collect();
+    // _range_set_int = RangeSetInt::from_iter([(5, 6), (1, 5)]);
     // into / from array T
     _range_set_int = [1, 5, 6, 5].into();
     _range_set_int = RangeSetInt::from([1, 5, 6, 5]);

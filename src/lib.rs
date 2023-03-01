@@ -342,14 +342,15 @@ impl<'a, T: Integer> Iterator for Ranges<'a, T> {
 // 1. turning them into a BitOrIter (internally, it collects into intervals and sorts by start).
 // 2. Turning the SortedDisjoint into a BTreeMap.
 
-impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = (T, T)>,
-    {
-        iter.into_iter().collect::<BitOrIter<T, _>>().into()
-    }
-}
+/// cmk0000
+// impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
+//     fn from_iter<I>(iter: I) -> Self
+//     where
+//         I: IntoIterator<Item = (T, T)>,
+//     {
+//         iter.into_iter().collect::<BitOrIter<T, _>>().into()
+//     }
+// }
 
 impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     fn from_iter<I>(iter: I) -> Self
@@ -484,6 +485,7 @@ impl<T: Integer> FromIterator<T>
     }
 }
 
+// !!!cmk0000
 impl<T: Integer> FromIterator<(T, T)>
     for BitOrIter<T, AssumeSortedStarts<T, std::vec::IntoIter<(T, T)>>>
 {
@@ -983,7 +985,7 @@ where
 
 // !!!cmk000 test all errors
 // !!!cmk000 rename
-fn process_bit1<T: Integer>(s: &str) -> Result<(T, T), RangeIntSetError>
+fn process_bit1<T: Integer>(s: &str) -> Result<RangeInclusive<T>, RangeIntSetError>
 where
     <T as std::str::FromStr>::Err: std::fmt::Debug,
 {
@@ -1005,7 +1007,7 @@ where
                             "unexpected third item".to_string(),
                         ))
                     } else {
-                        Ok((start, stop))
+                        Ok(start..=stop)
                     }
                 }
                 Err(e) => {
