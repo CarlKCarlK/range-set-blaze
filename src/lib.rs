@@ -256,7 +256,7 @@ impl<T: Integer> RangeSetInt<T> {
         if let Some((start_before, stop_before)) = before.next() {
             // Must check this in two parts to avoid overflow
             if *stop_before < start && *stop_before + T::one() < start {
-                self.internal_add2(start, stop);
+                self.internal_add2(start..=stop);
             } else if *stop_before < stop {
                 self.len += T::safe_subtract(stop, *stop_before);
                 *stop_before = stop;
@@ -266,15 +266,16 @@ impl<T: Integer> RangeSetInt<T> {
                 // completely contained, so do nothing
             }
         } else {
-            self.internal_add2(start, stop);
+            self.internal_add2(start..=stop);
         }
     }
 
-    fn internal_add2(&mut self, start: T, stop: T) {
+    fn internal_add2(&mut self, internal_inclusive: RangeInclusive<T>) {
+        let (start, stop) = internal_inclusive.into_inner();
         let was_there = self.btree_map.insert(start, stop);
         debug_assert!(was_there.is_none()); // real assert
-        self.delete_extra(start, stop);
-        self.len += T::safe_subtract_inclusive(stop, start);
+        self.delete_extra(start, stop); // cmk0000 make this take a range
+        self.len += T::safe_subtract_inclusive(stop, start); // cmk0000 make this take a range
     }
 
     pub fn len(&self) -> <T as SafeSubtract>::Output {
