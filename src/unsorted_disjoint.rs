@@ -124,7 +124,7 @@ where
         if let Some(range_inclusive) = self.iter.next() {
             let (start, stop) = range_inclusive.clone().into_inner();
             debug_assert!(start <= stop && stop <= T::max_value2()); // !!!cmk0000
-            self.len += T::safe_subtract_inclusive(range_inclusive.clone()); // !!!cmk000 define these on range_inclusive?
+            self.len += T::safe_inclusive_len(range_inclusive.clone()); // !!!cmk000 define these on range_inclusive?
             let (start, stop) = range_inclusive.into_inner();
             println!("cmk0000 {:?} {:?} {:?}", start, stop, self.len.clone());
             Some((start, stop))

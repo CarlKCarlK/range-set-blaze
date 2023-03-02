@@ -26,7 +26,7 @@
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 // cmk rule: don't create an assign method if it is not more efficient
 
-mod safe_subtract;
+mod integer;
 mod tests;
 mod unsorted_disjoint;
 
@@ -101,7 +101,7 @@ pub trait Integer:
         + Default
         + fmt::Debug
         + fmt::Display;
-    fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output;
+    fn safe_inclusive_len(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output;
     fn max_value2() -> Self;
 }
 
@@ -163,7 +163,7 @@ impl<T: Integer> RangeSetInt<T> {
         self.btree_map
             .iter()
             .fold(<T as Integer>::Output::zero(), |acc, (start, stop)| {
-                acc + T::safe_subtract_inclusive(*start..=*stop)
+                acc + T::safe_inclusive_len(*start..=*stop)
             })
     }
 
@@ -233,7 +233,7 @@ impl<T: Integer> RangeSetInt<T> {
                 // must check this in two parts to avoid overflow
                 if *start_delete <= stop || *start_delete <= stop + T::one() {
                     stop_new = max(stop_new, *stop_delete);
-                    self.len -= T::safe_subtract_inclusive(*start_delete..=*stop_delete);
+                    self.len -= T::safe_inclusive_len(*start_delete..=*stop_delete);
                     Some(*start_delete)
                 } else {
                     None
@@ -241,7 +241,7 @@ impl<T: Integer> RangeSetInt<T> {
             })
             .collect::<Vec<_>>();
         if stop_new > stop {
-            self.len += T::safe_subtract_inclusive(stop..=stop_new - T::one());
+            self.len += T::safe_inclusive_len(stop..=stop_new - T::one());
             *stop_after = stop_new;
         }
         for start in delete_list {
@@ -268,7 +268,7 @@ impl<T: Integer> RangeSetInt<T> {
             if *stop_before < start && *stop_before + T::one() < start {
                 self.internal_add2(range_inclusive);
             } else if *stop_before < stop {
-                self.len += T::safe_subtract_inclusive(*stop_before..=stop - T::one());
+                self.len += T::safe_inclusive_len(*stop_before..=stop - T::one());
                 *stop_before = stop;
                 let start_before = *start_before;
                 self.delete_extra(start_before..=stop);
@@ -285,7 +285,7 @@ impl<T: Integer> RangeSetInt<T> {
         let was_there = self.btree_map.insert(start, stop);
         debug_assert!(was_there.is_none()); // real assert
         self.delete_extra(internal_inclusive.clone()); // cmk0000 make this take a range
-        self.len += T::safe_subtract_inclusive(internal_inclusive); // cmk0000 make this take a range
+        self.len += T::safe_inclusive_len(internal_inclusive); // cmk0000 make this take a range
     }
 
     pub fn len(&self) -> <T as Integer>::Output {
