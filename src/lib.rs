@@ -116,7 +116,7 @@ impl<T: Integer> fmt::Display for RangeSetInt<T> {
 impl<T: Integer> RangeSetInt<T> {
     // If the user asks for an iter, we give them a borrow to a Ranges iterator
     // and we iterate that one integer at a time.
-    pub fn iter(&self) -> Iter<T, impl Iterator<Item = (T, T)> + SortedDisjoint + '_> {
+    pub fn iter(&self) -> Iter<T, impl Iterator<Item = RangeInclusive<T>> + SortedDisjoint + '_> {
         Iter {
             current: T::zero(),
             option_range: None,
@@ -180,7 +180,8 @@ impl<T: Integer> RangeSetInt<T> {
     /// cmk add a note about the performance compared
     /// to bitor
     pub fn append(&mut self, other: &mut Self) {
-        for (start, stop) in other.ranges() {
+        for range_inclusive in other.ranges() {
+            let (start, stop) = range_inclusive.into_inner();
             self.internal_add(start, stop);
         }
         other.clear();
@@ -310,14 +311,26 @@ impl<'a, T: Integer> AsRef<Ranges<'a, T>> for Ranges<'a, T> {
 impl<T: Integer> SortedStarts for Ranges<'_, T> {}
 impl<T: Integer> SortedDisjoint for Ranges<'_, T> {}
 // If the iterator inside a BitOrIter is SortedStart, the output will be SortedDisjoint
-impl<T: Integer, I: Iterator<Item = (T, T)> + SortedStarts> SortedStarts for BitOrIter<T, I> {}
-impl<T: Integer, I: Iterator<Item = (T, T)> + SortedStarts> SortedDisjoint for BitOrIter<T, I> {}
+impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedStarts> SortedStarts
+    for BitOrIter<T, I>
+{
+}
+impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedStarts> SortedDisjoint
+    for BitOrIter<T, I>
+{
+}
 // If the iterator inside NotIter is SortedDisjoint, the output will be SortedDisjoint
-impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedStarts for NotIter<T, I> {}
-impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedDisjoint for NotIter<T, I> {}
+impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedStarts
+    for NotIter<T, I>
+{
+}
+impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedDisjoint
+    for NotIter<T, I>
+{
+}
 // If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
-impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedStarts for Tee<I> {}
-impl<T: Integer, I: Iterator<Item = (T, T)> + SortedDisjoint> SortedDisjoint for Tee<I> {}
+impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedStarts for Tee<I> {}
+impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedDisjoint for Tee<I> {}
 
 impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
     fn len(&self) -> usize {
@@ -327,10 +340,10 @@ impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
 
 // Range's iterator is just the inside BTreeMap iterator as values
 impl<'a, T: Integer> Iterator for Ranges<'a, T> {
-    type Item = (T, T);
+    type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(start, stop)| (*start, *stop))
+        self.iter.next().map(|(start, stop)| *start..=*stop)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -343,10 +356,10 @@ impl<'a, T: Integer> Iterator for Ranges<'a, T> {
 // 2. Turning the SortedDisjoint into a BTreeMap.
 
 /// cmk0000
-// impl<T: Integer> FromIterator<(T, T)> for RangeSetInt<T> {
+// impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
 //     fn from_iter<I>(iter: I) -> Self
 //     where
-//         I: IntoIterator<Item = (T, T)>,
+//         I: IntoIterator<Item = RangeInclusive<T>>,
 //     {
 //         iter.into_iter().collect::<BitOrIter<T, _>>().into()
 //     }
@@ -369,7 +382,8 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
         I: IntoIterator<Item = RangeInclusive<T>>,
     {
         iter.into_iter()
-            .map(|range_inclusive| (*range_inclusive.start(), *range_inclusive.end()))
+            // cmk0000 used cloned()
+            .map(|range_inclusive| *range_inclusive.start()..=*range_inclusive.end())
             .collect::<BitOrIter<T, _>>()
             .into()
     }
@@ -403,11 +417,15 @@ impl<T, I> From<I> for RangeSetInt<T>
 where
     T: Integer,
     // !!!cmk what does IntoIterator's ' IntoIter = I::IntoIter' mean?
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
-    // cmk0 understand why this can't be  I: IntoIterator<Item = (T, T)>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    // cmk0 understand why this can't be  I: IntoIterator<Item = RangeInclusive<T>>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
 {
     fn from(iter: I) -> Self {
-        let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
+        let (iter0, iter1) = iter.tee();
+        let cmk_0: Vec<_> = iter0.collect();
+        println!("cmk_0: {cmk_0:?}");
+        let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter1);
+        // !!!cmk000 could/should SortedDisjointWithLenSoFar iterator (T,T)???
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
         RangeSetInt {
             btree_map,
@@ -420,29 +438,29 @@ where
 pub struct BitOrIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)> + SortedStarts,
+    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
     iter: I,
-    range: Option<(T, T)>,
+    range: Option<RangeInclusive<T>>,
 }
 
 impl<T, L, R> SortedStarts for Merge<T, L, R>
 where
     T: Integer,
-    L: Iterator<Item = (T, T)> + SortedStarts,
-    R: Iterator<Item = (T, T)> + SortedStarts,
+    L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+    R: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
 }
 
 impl<T, I> SortedStarts for KMerge<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)> + SortedStarts,
+    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
 }
 
-pub type Merge<T, L, R> = MergeBy<L, R, fn(&(T, T), &(T, T)) -> bool>;
-pub type KMerge<T, I> = KMergeBy<I, fn(&(T, T), &(T, T)) -> bool>;
+pub type Merge<T, L, R> = MergeBy<L, R, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>;
+pub type KMerge<T, I> = KMergeBy<I, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>;
 pub type BitOrMerge<T, L, R> = BitOrIter<T, Merge<T, L, R>>;
 pub type BitOrKMerge<T, I> = BitOrIter<T, KMerge<T, I>>;
 pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
@@ -460,52 +478,55 @@ pub type BitEq<T, L, R> = BitOrMerge<
     NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
 >;
 
+// !!!cmk000 remove support for TryFrom from strings
+// !!!cmk000 change semantics of 3..=2 to be empty
+// !!!cmk000 show special u128::MAX case
 impl<T, L, R> BitOrMerge<T, L, R>
 where
     T: Integer,
-    L: Iterator<Item = (T, T)> + SortedDisjoint,
-    R: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     fn new(lhs: L, rhs: R) -> BitOrMerge<T, L, R> {
         Self {
-            iter: lhs.merge_by(rhs, |a, b| a.0 <= b.0),
+            iter: lhs.merge_by(rhs, |a, b| a.start() <= b.start()),
             range: None,
         }
     }
 }
 
 impl<T: Integer> FromIterator<T>
-    for BitOrIter<T, AssumeSortedStarts<T, std::vec::IntoIter<(T, T)>>>
+    for BitOrIter<T, AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = T>,
     {
-        iter.into_iter().map(|x| (x, x)).collect()
+        iter.into_iter().map(|x| x..=x).collect()
     }
 }
 
 // !!!cmk0000
-impl<T: Integer> FromIterator<(T, T)>
-    for BitOrIter<T, AssumeSortedStarts<T, std::vec::IntoIter<(T, T)>>>
+impl<T: Integer> FromIterator<RangeInclusive<T>>
+    for BitOrIter<T, AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (T, T)>,
+        I: IntoIterator<Item = RangeInclusive<T>>,
     {
         UnsortedDisjoint::from(iter.into_iter()).into()
     }
 }
 
 impl<T, I> From<UnsortedDisjoint<T, I>>
-    for BitOrIter<T, AssumeSortedStarts<T, std::vec::IntoIter<(T, T)>>>
+    for BitOrIter<T, AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)>, // Any iterator is OK, because we will sort
+    I: Iterator<Item = RangeInclusive<T>>, // Any iterator is OK, because we will sort
 {
     fn from(unsorted_disjoint: UnsortedDisjoint<T, I>) -> Self {
         let iter = AssumeSortedStarts {
-            iter: unsorted_disjoint.sorted_by_key(|(start, _)| *start),
+            iter: unsorted_disjoint.sorted_by_key(|range_inclusive| *range_inclusive.start()),
         };
         Self { iter, range: None }
     }
@@ -514,14 +535,14 @@ where
 pub fn union<T, I, J>(into_iter: I) -> BitOrKMerge<T, J::IntoIter>
 where
     I: IntoIterator<Item = J>,
-    J: IntoIterator<Item = (T, T)>,
+    J: IntoIterator<Item = RangeInclusive<T>>,
     J::IntoIter: SortedDisjoint,
     T: Integer,
 {
     BitOrIter {
         iter: into_iter
             .into_iter()
-            .kmerge_by(|pair0, pair1| pair0.0 < pair1.0),
+            .kmerge_by(|pair0, pair1| pair0.start() < pair1.start()),
         range: None,
     }
 }
@@ -531,7 +552,7 @@ pub fn intersection<T, I, J>(into_iter: I) -> BitAndKMerge<T, J::IntoIter>
 where
     // cmk rule prefer IntoIterator over Iterator (here is example)
     I: IntoIterator<Item = J>,
-    J: IntoIterator<Item = (T, T)>,
+    J: IntoIterator<Item = RangeInclusive<T>>,
     J::IntoIter: SortedDisjoint,
     T: Integer,
 {
@@ -540,7 +561,7 @@ where
 
 // define mathematical set methods, e.g. left_iter.left(right_iter) returns the left_iter.
 pub trait SortedDisjointIterator<T: Integer>:
-    Iterator<Item = (T, T)> + SortedDisjoint + Sized
+    Iterator<Item = RangeInclusive<T>> + SortedDisjoint + Sized
 // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 {
     fn bitor<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
@@ -593,8 +614,11 @@ pub trait SortedDisjointIterator<T: Integer>:
 
     // cmk rule: You can't define traits on combinations of traits, so use this method to define methods on traits
     fn fmt(self) -> String {
-        self.map(|(start, stop)| format!("{start}..={stop}"))
-            .join(",")
+        self.map(|range_inclusive| {
+            let (start, stop) = range_inclusive.into_inner();
+            format!("{start}..={stop}") // cmk could we format RangeInclusive directly?
+        })
+        .join(",")
     }
 }
 
@@ -602,35 +626,38 @@ pub trait SortedDisjointIterator<T: Integer>:
 impl<T, I> SortedDisjointIterator<T> for I
 where
     T: Integer,
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
 }
 
 impl<T: Integer, I> Iterator for BitOrIter<T, I>
 where
-    I: Iterator<Item = (T, T)> + SortedStarts,
+    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
-    type Item = (T, T);
+    type Item = RangeInclusive<T>;
 
-    fn next(&mut self) -> Option<(T, T)> {
-        if let Some((start, stop)) = self.iter.next() {
-            if let Some((current_start, current_stop)) = self.range {
+    fn next(&mut self) -> Option<RangeInclusive<T>> {
+        if let Some(range_inclusive) = self.iter.next() {
+            let (start, stop) = range_inclusive.into_inner();
+            if let Some(current_range_inclusive) = self.range.clone() {
+                // cmk0 why clone?
+                let (current_start, current_stop) = current_range_inclusive.into_inner();
                 debug_assert!(current_start <= start); // cmk panic if not sorted
                 if start <= current_stop
                     || (current_stop < T::max_value2() && start <= current_stop + T::one())
                 {
-                    self.range = Some((current_start, max(current_stop, stop)));
+                    self.range = Some(current_start..=max(current_stop, stop));
                     self.next()
                 } else {
-                    self.range = Some((start, stop));
-                    Some((current_start, current_stop))
+                    self.range = Some(start..=stop);
+                    Some(current_start..=current_stop)
                 }
             } else {
-                self.range = Some((start, stop));
+                self.range = Some(start..=stop);
                 self.next()
             }
         } else {
-            let result = self.range;
+            let result = self.range.clone(); // cmk0 why clone?
             self.range = None;
             result
         }
@@ -649,7 +676,7 @@ where
 pub struct NotIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     iter: I,
     start_not: T,
@@ -660,11 +687,11 @@ where
 impl<T, I> NotIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     fn new<J>(iter: J) -> Self
     where
-        J: IntoIterator<Item = (T, T), IntoIter = I>,
+        J: IntoIterator<Item = RangeInclusive<T>, IntoIter = I>,
     {
         NotIter {
             iter: iter.into_iter(),
@@ -678,20 +705,21 @@ where
 impl<T, I> Iterator for NotIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
-    type Item = (T, T);
-    fn next(&mut self) -> Option<(T, T)> {
+    type Item = RangeInclusive<T>;
+    fn next(&mut self) -> Option<RangeInclusive<T>> {
         debug_assert!(T::min_value() <= T::max_value2()); // real assert
         if self.next_time_return_none {
             return None;
         }
         let next_item = self.iter.next();
-        if let Some((start, stop)) = next_item {
+        if let Some(range_inclusive) = next_item {
+            let (start, stop) = range_inclusive.into_inner();
             if self.start_not < start {
                 // We can subtract with underflow worry because
                 // we know that start > start_not and so not min_value
-                let result = Some((self.start_not, start - T::one()));
+                let result = Some(self.start_not..=start - T::one());
                 if stop < T::max_value2() {
                     self.start_not = stop + T::one();
                 } else {
@@ -707,7 +735,7 @@ where
             }
         } else {
             self.next_time_return_none = true;
-            Some((self.start_not, T::max_value2()))
+            Some(self.start_not..=T::max_value2())
         }
     }
 
@@ -799,29 +827,31 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
 pub struct Iter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     current: T,
-    option_range: Option<(T, T)>,
+    option_range: Option<RangeInclusive<T>>,
     iter: I,
 }
 
 impl<T: Integer, I> Iterator for Iter<T, I>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Item = T;
     fn next(&mut self) -> Option<T> {
-        if let Some((start, stop)) = self.option_range {
+        if let Some(range_inclusive) = self.option_range.clone() {
+            // cmk clone?
+            let (start, stop) = range_inclusive.into_inner();
             self.current = start;
             if start < stop {
-                self.option_range = Some((start + T::one(), stop));
+                self.option_range = Some(start + T::one()..=stop);
             } else {
                 self.option_range = None;
             }
             Some(self.current)
-        } else if let Some((start, stop)) = self.iter.next() {
-            self.option_range = Some((start, stop));
+        } else if let Some(range_inclusive) = self.iter.next() {
+            self.option_range = Some(range_inclusive);
             self.next()
         } else {
             None
@@ -836,7 +866,7 @@ where
 }
 
 pub struct IntoIter<T: Integer> {
-    option_range: Option<(T, T)>,
+    option_range: Option<RangeInclusive<T>>,
     into_iter: std::collections::btree_map::IntoIter<T, T>,
 }
 
@@ -844,15 +874,17 @@ impl<T: Integer> Iterator for IntoIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some((start, stop)) = self.option_range {
+        if let Some(range_inclusive) = self.option_range.clone() {
+            // cmk clone
+            let (start, stop) = range_inclusive.into_inner();
             if start < stop {
-                self.option_range = Some((start + T::one(), stop));
+                self.option_range = Some(start + T::one()..=stop);
             } else {
                 self.option_range = None;
             }
             Some(start)
         } else if let Some((start, stop)) = self.into_iter.next() {
-            self.option_range = Some((start, stop));
+            self.option_range = Some(start..=stop);
             self.next()
         } else {
             None
@@ -873,7 +905,9 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
         I: IntoIterator<Item = T>,
     {
         let iter = iter.into_iter();
-        for (start, stop) in UnsortedDisjoint::from(iter.map(|x| (x, x))) {
+        for range_inclusive in UnsortedDisjoint::from(iter.map(|x| x..=x)) {
+            let (start, stop) = range_inclusive.into_inner();
+            // !!!cmk000 make internal add work with inclusive ranges
             self.internal_add(start, stop);
         }
     }
@@ -1026,7 +1060,7 @@ where
 // fn process_bit2<T: Integer>(
 //     mut range: std::str::Split<&str>,
 //     start: T,
-// ) -> Result<(T, T), RangeIntSetError>
+// ) -> Result<RangeInclusive<T>, RangeIntSetError>
 // where
 //     <T as std::str::FromStr>::Err: std::fmt::Debug,
 // {
@@ -1126,7 +1160,7 @@ impl<T: Integer> ops::Not for Ranges<'_, T> {
 
 impl<T: Integer, I> ops::Not for NotIter<T, I>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Output = I;
 
@@ -1137,7 +1171,7 @@ where
 
 impl<T: Integer, I> ops::Not for BitOrIter<T, I>
 where
-    I: Iterator<Item = (T, T)> + SortedStarts,
+    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
     type Output = NotIter<T, Self>;
 
@@ -1149,7 +1183,7 @@ where
 // BitOr: Ranges, NotIter, BitOrMerge
 impl<T: Integer, I> ops::BitOr<I> for Ranges<'_, T>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Output = BitOrMerge<T, Self, I>;
 
@@ -1160,8 +1194,8 @@ where
 
 impl<T: Integer, R, L> ops::BitOr<R> for NotIter<T, L>
 where
-    L: Iterator<Item = (T, T)> + SortedDisjoint,
-    R: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Output = BitOrMerge<T, Self, R>;
 
@@ -1172,8 +1206,8 @@ where
 
 impl<T: Integer, R, L> ops::BitOr<R> for BitOrIter<T, L>
 where
-    L: Iterator<Item = (T, T)> + SortedStarts,
-    R: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Output = BitOrMerge<T, Self, R>;
 
@@ -1187,7 +1221,7 @@ where
 
 impl<T: Integer, I> ops::Sub<I> for Ranges<'_, T>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Output = BitSubMerge<T, Self, I>;
 
@@ -1198,8 +1232,8 @@ where
 
 impl<T: Integer, R, L> ops::Sub<R> for NotIter<T, L>
 where
-    L: Iterator<Item = (T, T)> + SortedDisjoint,
-    R: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Output = BitNorMerge<T, L, R>;
 
@@ -1211,8 +1245,8 @@ where
 
 impl<T: Integer, R, L> ops::Sub<R> for BitOrIter<T, L>
 where
-    L: Iterator<Item = (T, T)> + SortedStarts,
-    R: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Output = BitSubMerge<T, Self, R>;
 
@@ -1225,7 +1259,7 @@ where
 
 impl<T: Integer, I> ops::BitXor<I> for Ranges<'_, T>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Output = BitXOr<T, Self, I>;
 
@@ -1240,8 +1274,8 @@ where
 
 impl<T: Integer, R, L> ops::BitXor<R> for NotIter<T, L>
 where
-    L: Iterator<Item = (T, T)> + SortedDisjoint,
-    R: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Output = BitEq<T, L, R>;
 
@@ -1256,8 +1290,8 @@ where
 
 impl<T: Integer, R, L> ops::BitXor<R> for BitOrIter<T, L>
 where
-    L: Iterator<Item = (T, T)> + SortedStarts,
-    R: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Output = BitXOrTee<T, Self, R>;
 
@@ -1273,7 +1307,7 @@ where
 
 impl<T: Integer, I> ops::BitAnd<I> for Ranges<'_, T>
 where
-    I: Iterator<Item = (T, T)> + SortedDisjoint,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Output = BitAndMerge<T, Self, I>;
 
@@ -1285,8 +1319,8 @@ where
 
 impl<T: Integer, R, L> ops::BitAnd<R> for NotIter<T, L>
 where
-    L: Iterator<Item = (T, T)> + SortedDisjoint,
-    R: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Output = NotIter<T, BitOrMerge<T, L, NotIter<T, R>>>;
 
@@ -1299,8 +1333,8 @@ where
 // cmk name all generics in a sensible way
 impl<T: Integer, R, L> ops::BitAnd<R> for BitOrIter<T, L>
 where
-    L: Iterator<Item = (T, T)> + SortedStarts,
-    R: Iterator<Item = (T, T)> + SortedDisjoint,
+    L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     type Output = BitAndMerge<T, Self, R>;
 

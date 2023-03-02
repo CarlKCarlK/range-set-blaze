@@ -670,8 +670,9 @@ fn iters() -> Result<(), RangeIntSetError> {
     for i in range_set_int.iter() {
         println!("{i}");
     }
-    for (start, stop) in range_set_int.ranges() {
-        println!("{start} {stop}");
+    for range_inclusive in range_set_int.ranges() {
+        let (start, stop) = range_inclusive.into_inner();
+        println!("{start}..={stop}");
     }
     let mut rs = range_set_int.ranges();
     println!("{:?}", rs.next());
@@ -884,7 +885,7 @@ fn bit_or_iter() {
 
 #[test]
 fn empty() -> Result<(), RangeIntSetError> {
-    let universe: BitOrIter<u8, _> = [(0, 255)].into_iter().collect();
+    let universe: BitOrIter<u8, _> = [0..=255].into_iter().collect();
     let arr: [u8; 0] = [];
     let a0 = RangeSetInt::<u8>::from(arr);
     assert!(!(a0.ranges()).equal(universe.clone()));

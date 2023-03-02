@@ -148,8 +148,9 @@ fn iters() -> Result<(), Box<dyn std::error::Error>> {
     for i in range_set_int.iter() {
         println!("{i}");
     }
-    for (start, stop) in range_set_int.ranges() {
-        println!("{start} {stop}");
+    for range_inclusive in range_set_int.ranges() {
+        let (start, stop) = range_inclusive.into_inner();
+        println!("{start}..={stop}");
     }
     let mut rs = range_set_int.ranges();
     println!("{:?}", rs.next());
@@ -489,7 +490,7 @@ fn bitand() -> Result<(), Box<dyn std::error::Error>> {
 // !!!cmk should each type have a .universe() and .empty() method? e.g. 0..=255 for u8
 #[test]
 fn empty_it() {
-    let universe: BitOrIter<u8, _> = [(0, 255)].into_iter().collect();
+    let universe: BitOrIter<u8, _> = [0..=255].into_iter().collect();
     let arr: [u8; 0] = [];
     let a0 = RangeSetInt::<u8>::from(arr);
     assert!(!(a0.ranges()).equal(universe.clone()));

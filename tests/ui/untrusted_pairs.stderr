@@ -1,20 +1,12 @@
-warning: unused import: `SortedDisjointIterator`
- --> tests/ui/untrusted_pairs.rs:1:34
-  |
-1 | use range_set_int::{RangeSetInt, SortedDisjointIterator};
-  |                                  ^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
-
-error[E0271]: expected `std::slice::Iter<'_, ({integer}, {integer})>` to be an iterator that yields `(_, _)`, but it yields `&({integer}, {integer})`
+error[E0271]: expected `std::slice::Iter<'_, ({integer}, {integer})>` to be an iterator that yields `RangeInclusive<_>`, but it yields `&({integer}, {integer})`
  --> tests/ui/untrusted_pairs.rs:8:41
   |
 8 |     let range_set_int: RangeSetInt<_> = untrusted.iter().into();
   |                                         ^^^^^^^^^^^^^^^^ ---- required by a bound introduced by this call
   |                                         |
-  |                                         expected tuple, found reference
+  |                                         expected struct `RangeInclusive`, found reference
   |
-  = note:  expected tuple `(_, _)`
+  = note: expected struct `RangeInclusive<_>`
           found reference `&({integer}, {integer})`
   = note: required for `RangeSetInt<_>` to implement `From<std::slice::Iter<'_, ({integer}, {integer})>>`
   = note: required for `std::slice::Iter<'_, ({integer}, {integer})>` to implement `Into<RangeSetInt<_>>`

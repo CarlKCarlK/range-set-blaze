@@ -1,4 +1,4 @@
-use range_set_int::{RangeSetInt, SortedDisjointIterator};
+use range_set_int::RangeSetInt;
 // !!!cmk should users use a prelude?
 fn _some_fn() {
     let trusted = RangeSetInt::<u8>::try_from("1..=2,3..=4,5..=6").unwrap();

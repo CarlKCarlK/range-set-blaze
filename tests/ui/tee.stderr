@@ -17,22 +17,22 @@ error[E0599]: the method `bitor` exists for struct `Tee<std::slice::Iter<'_, ({i
   | pub struct Tee<I>
   | -----------------
   | |
-  | doesn't satisfy `<_ as Iterator>::Item = (_, _)`
+  | doesn't satisfy `<_ as Iterator>::Item = RangeInclusive<_>`
   | doesn't satisfy `_: SortedDisjointIterator<_>`
   | doesn't satisfy `_: SortedDisjoint`
   |
   = note: the following trait bounds were not satisfied:
-          `<Tee<std::slice::Iter<'_, ({integer}, {integer})>> as Iterator>::Item = (_, _)`
+          `<Tee<std::slice::Iter<'_, ({integer}, {integer})>> as Iterator>::Item = RangeInclusive<_>`
           which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
           `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjoint`
           which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
-          `<&Tee<std::slice::Iter<'_, ({integer}, {integer})>> as Iterator>::Item = (_, _)`
+          `<&Tee<std::slice::Iter<'_, ({integer}, {integer})>> as Iterator>::Item = RangeInclusive<_>`
           which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
           `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: Iterator`
           which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
           `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjoint`
           which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
-          `<&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>> as Iterator>::Item = (_, _)`
+          `<&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>> as Iterator>::Item = RangeInclusive<_>`
           which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
           `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjoint`
           which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
