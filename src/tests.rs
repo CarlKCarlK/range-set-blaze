@@ -77,7 +77,7 @@ fn repro1() -> Result<(), RangeIntSetError> {
     let mut range_set_int = RangeSetInt::from([20..=21, 24..=24, 25..=29]);
     println!("{range_set_int}");
     assert!(range_set_int.to_string() == "20..=21,24..=29");
-    range_set_int.internal_add(25, 25);
+    range_set_int.internal_add(25..=25);
     println!("{range_set_int}");
     assert!(range_set_int.to_string() == "20..=21,24..=29");
     Ok(())
@@ -86,7 +86,7 @@ fn repro1() -> Result<(), RangeIntSetError> {
 #[test]
 fn repro2() {
     let mut range_set_int = RangeSetInt::<i8>::from([-8, 8, -2, -1, 3, 2]); // from_iter??? cmk000
-    range_set_int.internal_add(25, 25);
+    range_set_int.internal_add(25..=25);
     println!("{range_set_int}");
     assert!(range_set_int.to_string() == "-8..=-8,-2..=-1,2..=3,8..=8,25..=25");
 }
@@ -151,7 +151,7 @@ fn demo_c1() -> Result<(), RangeIntSetError> {
     // is_included	0
     //     INSERT
     let mut range_set_int = RangeSetInt::from([10..=10]);
-    range_set_int.internal_add(12, 12);
+    range_set_int.internal_add(12..=12);
     assert!(range_set_int.to_string() == "10..=10,12..=12");
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
@@ -164,7 +164,7 @@ fn demo_c2() -> Result<(), RangeIntSetError> {
     // is_included	0
     //     INSERT
     let mut range_set_int = RangeSetInt::from([10..=10, 13..=13]);
-    range_set_int.internal_add(12, 12);
+    range_set_int.internal_add(12..=12);
     assert!(range_set_int.to_string() == "10..=10,12..=13");
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
@@ -176,7 +176,7 @@ fn demo_f1() -> Result<(), RangeIntSetError> {
     //     INSERT, etc
 
     let mut range_set_int = RangeSetInt::from([11..=14, 22..=26]);
-    range_set_int.internal_add(10, 10);
+    range_set_int.internal_add(10..=10);
     assert!(range_set_int.to_string() == "10..=14,22..=26");
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
@@ -191,7 +191,7 @@ fn demo_d1() -> Result<(), RangeIntSetError> {
     //     DONE
 
     let mut range_set_int = RangeSetInt::from([10..=14]);
-    range_set_int.internal_add(10, 10);
+    range_set_int.internal_add(10..=10);
     assert!(range_set_int.to_string() == "10..=14");
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
@@ -207,7 +207,7 @@ fn demo_e1() -> Result<(), RangeIntSetError> {
     //     DONE
 
     let mut range_set_int = RangeSetInt::from([10..=14, 16..=16]);
-    range_set_int.internal_add(10, 19);
+    range_set_int.internal_add(10..=19);
     assert!(range_set_int.to_string() == "10..=19");
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
@@ -223,7 +223,7 @@ fn demo_b1() -> Result<(), RangeIntSetError> {
     //     DONE
 
     let mut range_set_int = RangeSetInt::from([10..=14]);
-    range_set_int.internal_add(12, 17);
+    range_set_int.internal_add(12..=17);
     assert!(range_set_int.to_string() == "10..=17");
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
@@ -240,7 +240,7 @@ fn demo_b2() -> Result<(), RangeIntSetError> {
     //     DONE
 
     let mut range_set_int = RangeSetInt::from([10..=14, 16..=16]);
-    range_set_int.internal_add(12, 17);
+    range_set_int.internal_add(12..=17);
     assert!(range_set_int.to_string() == "10..=17");
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
@@ -257,7 +257,7 @@ fn demo_b3() -> Result<(), RangeIntSetError> {
     //     DONE
 
     let mut range_set_int = RangeSetInt::from([10..=15, 160..=160]);
-    range_set_int.internal_add(12, 17);
+    range_set_int.internal_add(12..=17);
     assert!(range_set_int.to_string() == "10..=17,160..=160");
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
@@ -271,7 +271,7 @@ fn demo_a() -> Result<(), RangeIntSetError> {
     // fits?	1
     //     DONE
     let mut range_set_int = RangeSetInt::from([10..=14]);
-    range_set_int.internal_add(12, 12);
+    range_set_int.internal_add(12..=12);
     assert!(range_set_int.to_string() == "10..=14");
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
@@ -565,8 +565,8 @@ fn optimize() {
                         println!("error");
                     } else {
                         let mut range_set_int = RangeSetInt::new();
-                        range_set_int.internal_add(a, b);
-                        range_set_int.internal_add(c, d);
+                        range_set_int.internal_add(a..=b);
+                        range_set_int.internal_add(c..=d);
                         if range_set_int.ranges_len() == 1 {
                             let vec = range_set_int.into_iter().collect::<Vec<u8>>();
                             println! {"combine\t{}\t{}", vec[0], vec[vec.len()-1]};

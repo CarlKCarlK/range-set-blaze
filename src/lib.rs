@@ -184,8 +184,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// to bitor
     pub fn append(&mut self, other: &mut Self) {
         for range_inclusive in other.ranges() {
-            let (start, stop) = range_inclusive.into_inner();
-            self.internal_add(start, stop);
+            self.internal_add(range_inclusive);
         }
         other.clear();
     }
@@ -241,15 +240,18 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     pub fn insert(&mut self, item: T) {
-        self.internal_add(item, item);
+        self.internal_add(item..=item);
     }
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-    fn internal_add(&mut self, start: T, stop: T) {
-        // internal_add(&mut self.items, &mut self.len, start, stop);
-        assert!(start <= stop && stop <= T::max_value2()); //cmk0000
-                                                           // !!! cmk would be nice to have a partition_point function that returns two iterators
+    fn internal_add(&mut self, range_inclusive: RangeInclusive<T>) {
+        let (start, stop) = range_inclusive.into_inner();
+        if stop < start {
+            return;
+        }
+        assert!(stop <= T::max_value2()); //cmk0000 raise error
+                                          // !!! cmk would be nice to have a partition_point function that returns two iterators
         let mut before = self.btree_map.range_mut(..=start).rev();
         if let Some((start_before, stop_before)) = before.next() {
             // Must check this in two parts to avoid overflow
@@ -909,9 +911,8 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
     {
         let iter = iter.into_iter();
         for range_inclusive in UnsortedDisjoint::from(iter.map(|x| x..=x)) {
-            let (start, stop) = range_inclusive.into_inner();
             // !!!cmk000 make internal add work with inclusive ranges
-            self.internal_add(start, stop);
+            self.internal_add(range_inclusive);
         }
     }
 }
