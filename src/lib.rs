@@ -212,7 +212,8 @@ impl<T: Integer> RangeSetInt<T> {
             .map_or(false, |(_, stop)| value <= *stop)
     }
 
-    fn delete_extra(&mut self, start: T, stop: T) {
+    fn delete_extra(&mut self, internal_inclusive: RangeInclusive<T>) {
+        let (start, stop) = internal_inclusive.into_inner();
         let mut after = self.btree_map.range_mut(start..);
         let (start_after, stop_after) = after.next().unwrap(); // there will always be a next
         debug_assert!(start == *start_after && stop == *stop_after); // real assert
@@ -261,7 +262,7 @@ impl<T: Integer> RangeSetInt<T> {
                 self.len += T::safe_subtract(stop, *stop_before);
                 *stop_before = stop;
                 let start_before = *start_before;
-                self.delete_extra(start_before, stop);
+                self.delete_extra(start_before..=stop);
             } else {
                 // completely contained, so do nothing
             }
@@ -271,10 +272,10 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     fn internal_add2(&mut self, internal_inclusive: RangeInclusive<T>) {
-        let (start, stop) = internal_inclusive.into_inner();
+        let (start, stop) = internal_inclusive.clone().into_inner();
         let was_there = self.btree_map.insert(start, stop);
         debug_assert!(was_there.is_none()); // real assert
-        self.delete_extra(start, stop); // cmk0000 make this take a range
+        self.delete_extra(internal_inclusive); // cmk0000 make this take a range
         self.len += T::safe_subtract_inclusive(stop, start); // cmk0000 make this take a range
     }
 
