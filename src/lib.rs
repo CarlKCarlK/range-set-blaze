@@ -987,75 +987,70 @@ impl Iterator for MemorylessData {
 // !!!cmk are the unwraps OK?
 // !!!cmk what about bad input?
 
-// !!!cmk0 just "Error"?
+// !!!cmk0 just "Error" or remove if unused?
 #[derive(ThisError, Debug)]
 pub enum RangeIntSetError {
-    #[error("after splitting on ',' tried to split on '..=' but failed on {0}")]
-    ParseSplitError(String),
-    #[error("error parsing integer {0}")]
-    ParseIntegerError(String),
-    // Redaction(String),
-    // #[error("invalid header (expected {expected:?}, found {found:?})")]
-    // InvalidHeader { expected: String, found: String },
-    // #[error("unknown data store error")]
-    // Unknown,
+    // #[error("after splitting on ',' tried to split on '..=' but failed on {0}")]
+    // ParseSplitError(String),
+    // #[error("error parsing integer {0}")]
+    // ParseIntegerError(String),
 }
 
-impl<T: Integer> FromStr for RangeSetInt<T>
-where
-    // !!! cmk understand this
-    <T as std::str::FromStr>::Err: std::fmt::Debug,
-{
-    type Err = RangeIntSetError;
+// impl<T: Integer> FromStr for RangeSetInt<T>
+// where
+//     // !!! cmk understand this
+//     <T as std::str::FromStr>::Err: std::fmt::Debug,
+// {
+//     type Err = RangeIntSetError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty() {
-            return Ok(RangeSetInt::new());
-        }
-        let result: Result<RangeSetInt<T>, Self::Err> = s.split(',').map(process_bit1).collect();
-        result
-    }
-}
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         if s.is_empty() {
+//             return Ok(RangeSetInt::new());
+//         }
+//         let result: Result<RangeSetInt<T>, Self::Err> = s.split(',').map(process_bit1).collect();
+//         result
+//     }
+// }
 
-// !!!cmk000 test all errors
-// !!!cmk000 rename
-fn process_bit1<T: Integer>(s: &str) -> Result<RangeInclusive<T>, RangeIntSetError>
-where
-    <T as std::str::FromStr>::Err: std::fmt::Debug,
-{
-    let mut range = s.split("..=");
-    let start = range
-        .next()
-        .ok_or(RangeIntSetError::ParseSplitError("first item".to_string()))?;
-    let start_result = start.parse::<T>();
-    match start_result {
-        Ok(start) => {
-            let stop = range
-                .next()
-                .ok_or(RangeIntSetError::ParseSplitError("second item".to_string()))?;
-            let stop_result = stop.parse::<T>();
-            match stop_result {
-                Ok(stop) => {
-                    if range.next().is_some() {
-                        Err(RangeIntSetError::ParseSplitError(
-                            "unexpected third item".to_string(),
-                        ))
-                    } else {
-                        Ok(start..=stop)
-                    }
-                }
-                Err(e) => {
-                    let msg = format!("second item: {e:?}");
-                    Err(RangeIntSetError::ParseIntegerError(msg))
-                }
-            }
-        }
-        Err(e) => {
-            let msg = format!("first item: {e:?}");
-            Err(RangeIntSetError::ParseIntegerError(msg))
-        }
-    }
-}
+// // !!!cmk000 test all errors
+// // !!!cmk000 rename
+// fn process_bit1<T: Integer>(s: &str) -> Result<RangeInclusive<T>, RangeIntSetError>
+// where
+//     <T as std::str::FromStr>::Err: std::fmt::Debug,
+// {
+//     let mut range = s.split("..=");
+//     let start = range
+//         .next()
+//         .ok_or(RangeIntSetError::ParseSplitError("first item".to_string()))?;
+//     let start_result = start.parse::<T>();
+//     match start_result {
+//         Ok(start) => {
+//             let stop = range
+//                 .next()
+//                 .ok_or(RangeIntSetError::ParseSplitError("second item".to_string()))?;
+//             let stop_result = stop.parse::<T>();
+//             match stop_result {
+//                 Ok(stop) => {
+//                     if range.next().is_some() {
+//                         Err(RangeIntSetError::ParseSplitError(
+//                             "unexpected third item".to_string(),
+//                         ))
+//                     } else {
+//                         Ok(start..=stop)
+//                     }
+//                 }
+//                 Err(e) => {
+//                     let msg = format!("second item: {e:?}");
+//                     Err(RangeIntSetError::ParseIntegerError(msg))
+//                 }
+//             }
+//         }
+//         Err(e) => {
+//             let msg = format!("first item: {e:?}");
+//             Err(RangeIntSetError::ParseIntegerError(msg))
+//         }
+//     }
+// }
 
 // fn process_bit2<T: Integer>(
 //     mut range: std::str::Split<&str>,
@@ -1075,16 +1070,16 @@ where
 //     }
 // }
 
-impl<T: Integer> TryFrom<&str> for RangeSetInt<T>
-where
-    // !!! cmk understand this
-    <T as std::str::FromStr>::Err: std::fmt::Debug,
-{
-    type Error = RangeIntSetError;
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        FromStr::from_str(s)
-    }
-}
+// impl<T: Integer> TryFrom<&str> for RangeSetInt<T>
+// where
+//     // !!! cmk understand this
+//     <T as std::str::FromStr>::Err: std::fmt::Debug,
+// {
+//     type Error = RangeIntSetError;
+//     fn try_from(s: &str) -> Result<Self, Self::Error> {
+//         FromStr::from_str(s)
+//     }
+// }
 
 pub trait SortedStarts {}
 pub trait SortedDisjoint: SortedStarts {}

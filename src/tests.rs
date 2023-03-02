@@ -74,7 +74,7 @@ fn repro_bit_and() {
 
 #[test]
 fn repro1() -> Result<(), RangeIntSetError> {
-    let mut range_set_int = RangeSetInt::<i8>::try_from("20..=21,24..=24,25..=29")?;
+    let mut range_set_int = RangeSetInt::from([20..=21, 24..=24, 25..=29]);
     println!("{range_set_int}");
     assert!(range_set_int.to_string() == "20..=21,24..=29");
     range_set_int.internal_add(25, 25);
@@ -109,13 +109,13 @@ fn doctest2() {
 
 #[test]
 fn doctest3() -> Result<(), RangeIntSetError> {
-    let mut a = RangeSetInt::<u8>::try_from("1..=3")?;
-    let mut b = RangeSetInt::<u8>::try_from("3..=5")?;
+    let mut a = RangeSetInt::from([1..=3]);
+    let mut b = RangeSetInt::from([3..=5]);
 
     a.append(&mut b);
 
-    assert_eq!(a.len(), 5);
-    assert_eq!(b.len(), 0);
+    assert_eq!(a.len(), 5usize);
+    assert_eq!(b.len(), 0usize);
 
     assert!(a.contains(1));
     assert!(a.contains(2));
@@ -150,7 +150,7 @@ fn demo_c1() -> Result<(), RangeIntSetError> {
     // equal?	0
     // is_included	0
     //     INSERT
-    let mut range_set_int = RangeSetInt::<u8>::try_from("10..=10")?;
+    let mut range_set_int = RangeSetInt::from([10..=10]);
     range_set_int.internal_add(12, 12);
     assert!(range_set_int.to_string() == "10..=10,12..=12");
     assert!(range_set_int._len_slow() == range_set_int.len());
@@ -163,7 +163,7 @@ fn demo_c2() -> Result<(), RangeIntSetError> {
     // equal?	0
     // is_included	0
     //     INSERT
-    let mut range_set_int = RangeSetInt::<u8>::try_from("10..=10,13..=13")?;
+    let mut range_set_int = RangeSetInt::from([10..=10, 13..=13]);
     range_set_int.internal_add(12, 12);
     assert!(range_set_int.to_string() == "10..=10,12..=13");
     assert!(range_set_int._len_slow() == range_set_int.len());
@@ -175,7 +175,7 @@ fn demo_f1() -> Result<(), RangeIntSetError> {
     // before_or_equal_exists	0
     //     INSERT, etc
 
-    let mut range_set_int = RangeSetInt::<u8>::try_from("11..=14,22..=26")?;
+    let mut range_set_int = RangeSetInt::from([11..=14, 22..=26]);
     range_set_int.internal_add(10, 10);
     assert!(range_set_int.to_string() == "10..=14,22..=26");
     assert!(range_set_int._len_slow() == range_set_int.len());
@@ -190,7 +190,7 @@ fn demo_d1() -> Result<(), RangeIntSetError> {
     // fits?	1
     //     DONE
 
-    let mut range_set_int = RangeSetInt::<u8>::try_from("10..=14")?;
+    let mut range_set_int = RangeSetInt::from([10..=14]);
     range_set_int.internal_add(10, 10);
     assert!(range_set_int.to_string() == "10..=14");
     assert!(range_set_int._len_slow() == range_set_int.len());
@@ -206,7 +206,7 @@ fn demo_e1() -> Result<(), RangeIntSetError> {
     // next?    0
     //     DONE
 
-    let mut range_set_int = RangeSetInt::<u8>::try_from("10..=14,16..=16")?;
+    let mut range_set_int = RangeSetInt::from([10..=14, 16..=16]);
     range_set_int.internal_add(10, 19);
     assert!(range_set_int.to_string() == "10..=19");
     assert!(range_set_int._len_slow() == range_set_int.len());
@@ -222,7 +222,7 @@ fn demo_b1() -> Result<(), RangeIntSetError> {
     // next?    0
     //     DONE
 
-    let mut range_set_int = RangeSetInt::<u8>::try_from("10..=14")?;
+    let mut range_set_int = RangeSetInt::from([10..=14]);
     range_set_int.internal_add(12, 17);
     assert!(range_set_int.to_string() == "10..=17");
     assert!(range_set_int._len_slow() == range_set_int.len());
@@ -239,7 +239,7 @@ fn demo_b2() -> Result<(), RangeIntSetError> {
     // delete how many? 1
     //     DONE
 
-    let mut range_set_int = RangeSetInt::<u8>::try_from("10..=14,16..=16")?;
+    let mut range_set_int = RangeSetInt::from([10..=14, 16..=16]);
     range_set_int.internal_add(12, 17);
     assert!(range_set_int.to_string() == "10..=17");
     assert!(range_set_int._len_slow() == range_set_int.len());
@@ -256,7 +256,7 @@ fn demo_b3() -> Result<(), RangeIntSetError> {
     // delete how many? 0
     //     DONE
 
-    let mut range_set_int = RangeSetInt::<u8>::try_from("10..=15,160..=160")?;
+    let mut range_set_int = RangeSetInt::from([10..=15, 160..=160]);
     range_set_int.internal_add(12, 17);
     assert!(range_set_int.to_string() == "10..=17,160..=160");
     assert!(range_set_int._len_slow() == range_set_int.len());
@@ -270,7 +270,7 @@ fn demo_a() -> Result<(), RangeIntSetError> {
     // is_included	1
     // fits?	1
     //     DONE
-    let mut range_set_int = RangeSetInt::<u8>::try_from("10..=14")?;
+    let mut range_set_int = RangeSetInt::from([10..=14]);
     range_set_int.internal_add(12, 12);
     assert!(range_set_int.to_string() == "10..=14");
     assert!(range_set_int._len_slow() == range_set_int.len());
@@ -662,8 +662,8 @@ fn understand_bitand_assign() {
 
 #[test]
 fn iters() -> Result<(), RangeIntSetError> {
-    let range_set_int = RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
-    assert!(range_set_int.len() == 13);
+    let range_set_int = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+    assert!(range_set_int.len() == 13usize);
     // !!!cmk0
     // assert!(range_set_int.ranges.len() == 3);
     // // !!!cmk0 i is &u8
@@ -740,18 +740,18 @@ fn missing_doctest_ops() {
 
 #[test]
 fn multi_op() -> Result<(), RangeIntSetError> {
-    let a = RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
-    let b = RangeSetInt::<u8>::try_from("5..=13,18..=29")?;
-    let c = RangeSetInt::<u8>::try_from("38..=42")?;
+    let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetInt::from([5..=13, 18..=29]);
+    let c = RangeSetInt::from([38..=42]);
     // cmkRule make these work d= a|b; d= a|b|c; d=&a|&b|&c;
     let d = &(&a | &b) | &c;
     println!("{d}");
     let d = a | b | &c;
     println!("{d}");
 
-    let a = RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
-    let b = RangeSetInt::<u8>::try_from("5..=13,18..=29")?;
-    let c = RangeSetInt::<u8>::try_from("38..=42")?;
+    let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetInt::from([5..=13, 18..=29]);
+    let c = RangeSetInt::from([38..=42]);
 
     // !!!cmk0 must work on empty, with ref and with owned
 
@@ -759,24 +759,21 @@ fn multi_op() -> Result<(), RangeIntSetError> {
     let d = RangeSetInt::intersection([a, b, c].iter());
     assert_eq!(d, RangeSetInt::new());
 
-    assert_eq!(
-        !RangeSetInt::<u8>::union([]),
-        RangeSetInt::try_from("0..=255").unwrap()
-    );
+    assert_eq!(!RangeSetInt::<u8>::union([]), RangeSetInt::from([0..=255]));
 
-    let a = RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
-    let b = RangeSetInt::<u8>::try_from("5..=13,18..=29")?;
-    let c = RangeSetInt::<u8>::try_from("1..=42")?;
+    let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetInt::from([5..=13, 18..=29]);
+    let c = RangeSetInt::from([1..=42]);
 
     let _ = &a & &b;
     let d = RangeSetInt::intersection([&a, &b, &c]);
     // let d = RangeSetInt::intersection([a, b, c]);
     println!("{d}");
-    assert_eq!(d, RangeSetInt::try_from("5..=6,8..=9,11..=13")?);
+    assert_eq!(d, RangeSetInt::from([5..=6, 8..=9, 11..=13]));
 
     assert_eq!(
         RangeSetInt::<u8>::intersection([]),
-        RangeSetInt::try_from("0..=255")?
+        RangeSetInt::from([0..=255])
     );
     Ok(())
 }
@@ -792,9 +789,9 @@ fn multi_op() -> Result<(), RangeIntSetError> {
 
 #[test]
 fn custom_multi() -> Result<(), RangeIntSetError> {
-    let a = RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
-    let b = RangeSetInt::<u8>::try_from("5..=13,18..=29")?;
-    let c = RangeSetInt::<u8>::try_from("38..=42")?;
+    let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetInt::from([5..=13, 18..=29]);
+    let c = RangeSetInt::from([38..=42]);
 
     let union_stream = b.ranges() | c.ranges();
     let a_less = a.ranges() - union_stream;
@@ -808,36 +805,36 @@ fn custom_multi() -> Result<(), RangeIntSetError> {
 
 #[test]
 fn from_string() -> Result<(), RangeIntSetError> {
-    let a = RangeSetInt::<u16>::try_from("0..=4,14..=17,30..=255,0..=37,43..=65535")?;
-    assert_eq!(a, RangeSetInt::try_from("0..=65535")?);
+    let a = RangeSetInt::from([0..=4, 14..=17, 30..=255, 0..=37, 43..=65535]);
+    assert_eq!(a, RangeSetInt::from([0..=65535]));
     Ok(())
 }
 
 #[test]
 fn nand_repro() -> Result<(), RangeIntSetError> {
-    let b = &RangeSetInt::<u8>::try_from("5..=13,18..=29")?;
-    let c = &RangeSetInt::<u8>::try_from("38..=42")?;
+    let b = &RangeSetInt::from([5u8..=13, 18..=29]);
+    let c = &RangeSetInt::from([38..=42]);
     println!("about to nand");
     let d = !b | !c;
     println!("cmk '{d}'");
     assert_eq!(
         d,
-        RangeSetInt::try_from("0..=4,14..=17,30..=255,0..=37,43..=255")?
+        RangeSetInt::from([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
     );
     Ok(())
 }
 
 #[test]
 fn parity() -> Result<(), RangeIntSetError> {
-    let a = &RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15")?;
-    let b = &RangeSetInt::<u8>::try_from("5..=13,18..=29")?;
-    let c = &RangeSetInt::<u8>::try_from("38..=42")?;
+    let a = &RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+    let b = &RangeSetInt::from([5..=13, 18..=29]);
+    let c = &RangeSetInt::from([38..=42]);
     // !!!cmk0 time itertools.split (?) vs range.clone()
     // !!!cmk explain why need both "Merge" with "KMerge"
     // !!!cmk0 empty needs to work. Go back to slices?
     assert_eq!(
         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
-        RangeSetInt::try_from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")?
+        RangeSetInt::from([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
     let _d = intersection([a.ranges()]);
     let _parity: RangeSetInt<u8> = union([intersection([a.ranges()])]).into();
@@ -848,16 +845,16 @@ fn parity() -> Result<(), RangeIntSetError> {
     println!("!b|!c {}", !b | !c);
     println!("!b|!c {}", RangeSetInt::from(!b.ranges() | !c.ranges()));
 
-    let _a = RangeSetInt::<u8>::try_from("1..=6,8..=9,11..=15");
+    let _a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
     let u = union_dyn!(a.ranges());
     assert_eq!(
         RangeSetInt::from(u),
-        RangeSetInt::try_from("1..=6,8..=9,11..=15")?
+        RangeSetInt::from([1..=6, 8..=9, 11..=15])
     );
     let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
     assert_eq!(
         RangeSetInt::from(u),
-        RangeSetInt::try_from("1..=15,18..=29,38..=42")?
+        RangeSetInt::from([1..=15, 18..=29, 38..=42])
     );
 
     let u = union([
@@ -868,7 +865,7 @@ fn parity() -> Result<(), RangeIntSetError> {
     ]);
     assert_eq!(
         RangeSetInt::from(u),
-        RangeSetInt::try_from("1..=4,7..=7,10..=10,14..=15,18..=29,38..=42")?
+        RangeSetInt::from([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
     Ok(())
 }
@@ -890,7 +887,7 @@ fn empty() -> Result<(), RangeIntSetError> {
     let a0 = RangeSetInt::<u8>::from(arr);
     assert!(!(a0.ranges()).equal(universe.clone()));
     assert!((!a0).ranges().equal(universe));
-    let _a0 = RangeSetInt::<u8>::try_from("")?;
+    let _a0 = RangeSetInt::from([0..=0; 0]);
     let _a = RangeSetInt::<i32>::new();
 
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
