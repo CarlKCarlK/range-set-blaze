@@ -46,10 +46,8 @@ where
             if lower > upper {
                 return self.next();
             }
-            assert!(upper <= T::max_value2()); // !!!cmk0 raise error on panic? cmk0000
+            assert!(upper <= T::max_value2()); // !!!cmk00 raise error on panic?
             if let Some(self_range_inclusive) = self.range.clone() {
-                // cmk0 clone?
-                // cmk0 clone?
                 let (self_lower, self_upper) = self_range_inclusive.into_inner();
                 if (lower >= self.two && lower - self.two >= self_upper)
                     || (self_lower >= self.two && self_lower - self.two >= upper)
@@ -88,7 +86,7 @@ where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     iter: I,
-    len: <T as Integer>::Output,
+    len: <T as Integer>::SafeLen,
 }
 
 // cmk Rule there is no reason From's should be into iterators
@@ -100,7 +98,7 @@ where
     fn from(into_iter: I) -> Self {
         SortedDisjointWithLenSoFar {
             iter: into_iter.into_iter(),
-            len: <T as Integer>::Output::zero(),
+            len: <T as Integer>::SafeLen::zero(),
         }
     }
 }
@@ -109,7 +107,7 @@ impl<T: Integer, I> SortedDisjointWithLenSoFar<T, I>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
-    pub fn len_so_far(&self) -> <T as Integer>::Output {
+    pub fn len_so_far(&self) -> <T as Integer>::SafeLen {
         self.len.clone()
     }
 }
@@ -123,10 +121,8 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range_inclusive) = self.iter.next() {
             let (start, stop) = range_inclusive.clone().into_inner();
-            debug_assert!(start <= stop && stop <= T::max_value2()); // !!!cmk0000
-            self.len += T::safe_inclusive_len(range_inclusive.clone()); // !!!cmk000 define these on range_inclusive?
-            let (start, stop) = range_inclusive.into_inner();
-            println!("cmk0000 {:?} {:?} {:?}", start, stop, self.len.clone());
+            debug_assert!(start <= stop && stop <= T::max_value2());
+            self.len += T::safe_inclusive_len(&range_inclusive);
             Some((start, stop))
         } else {
             None

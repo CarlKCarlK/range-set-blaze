@@ -35,6 +35,7 @@ use itertools::Itertools;
 use itertools::KMergeBy;
 use itertools::MergeBy;
 use itertools::Tee;
+use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::Zero;
 // cmk0 move rand to dev-dependencies
 use rand::rngs::StdRng;
@@ -87,8 +88,9 @@ pub trait Integer:
     + num_traits::NumCast
     + Send
     + Sync
+    + OverflowingSub
 {
-    type Output: std::hash::Hash
+    type SafeLen: std::hash::Hash
         + num_integer::Integer
         + std::ops::AddAssign
         + std::ops::SubAssign
@@ -101,15 +103,18 @@ pub trait Integer:
         + Default
         + fmt::Debug
         + fmt::Display;
-    fn safe_inclusive_len(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output;
-    fn max_value2() -> Self;
+    fn safe_inclusive_len(range_inclusive: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen;
+
+    fn max_value2() -> Self {
+        Self::max_value()
+    }
 }
 
 // !!!cmk can I use a Rust range?
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RangeSetInt<T: Integer> {
-    len: <T as Integer>::Output,
+    len: <T as Integer>::SafeLen,
     btree_map: BTreeMap<T, T>,
 }
 
@@ -156,14 +161,14 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
 impl<T: Integer> RangeSetInt<T> {
     /// !!! cmk understand the 'where for'
     /// !!! cmk understand the operator 'Sub'
-    fn _len_slow(&self) -> <T as Integer>::Output
+    fn _len_slow(&self) -> <T as Integer>::SafeLen
     where
         for<'a> &'a T: Sub<&'a T, Output = T>,
     {
         self.btree_map
             .iter()
-            .fold(<T as Integer>::Output::zero(), |acc, (start, stop)| {
-                acc + T::safe_inclusive_len(*start..=*stop)
+            .fold(<T as Integer>::SafeLen::zero(), |acc, (start, stop)| {
+                acc + T::safe_inclusive_len(&(*start..=*stop))
             })
     }
 
@@ -200,7 +205,7 @@ impl<T: Integer> RangeSetInt<T> {
 
     pub fn clear(&mut self) {
         self.btree_map.clear();
-        self.len = <T as Integer>::Output::zero();
+        self.len = <T as Integer>::SafeLen::zero();
     }
 
     /// Returns `true` if the set contains an element equal to the value.
@@ -221,8 +226,8 @@ impl<T: Integer> RangeSetInt<T> {
             .map_or(false, |(_, stop)| value <= *stop)
     }
 
-    fn delete_extra(&mut self, internal_inclusive: RangeInclusive<T>) {
-        let (start, stop) = internal_inclusive.into_inner();
+    fn delete_extra(&mut self, internal_inclusive: &RangeInclusive<T>) {
+        let (start, stop) = internal_inclusive.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
         let (start_after, stop_after) = after.next().unwrap(); // there will always be a next
         debug_assert!(start == *start_after && stop == *stop_after); // real assert
@@ -233,7 +238,7 @@ impl<T: Integer> RangeSetInt<T> {
                 // must check this in two parts to avoid overflow
                 if *start_delete <= stop || *start_delete <= stop + T::one() {
                     stop_new = max(stop_new, *stop_delete);
-                    self.len -= T::safe_inclusive_len(*start_delete..=*stop_delete);
+                    self.len -= T::safe_inclusive_len(&(*start_delete..=*stop_delete));
                     Some(*start_delete)
                 } else {
                     None
@@ -241,7 +246,7 @@ impl<T: Integer> RangeSetInt<T> {
             })
             .collect::<Vec<_>>();
         if stop_new > stop {
-            self.len += T::safe_inclusive_len(stop..=stop_new - T::one());
+            self.len += T::safe_inclusive_len(&(stop..=stop_new - T::one()));
             *stop_after = stop_new;
         }
         for start in delete_list {
@@ -260,42 +265,42 @@ impl<T: Integer> RangeSetInt<T> {
         if stop < start {
             return;
         }
-        assert!(stop <= T::max_value2()); //cmk0000 raise error
+        assert!(stop <= T::max_value2()); //cmk00 panic
                                           // !!! cmk would be nice to have a partition_point function that returns two iterators
         let mut before = self.btree_map.range_mut(..=start).rev();
         if let Some((start_before, stop_before)) = before.next() {
             // Must check this in two parts to avoid overflow
             if *stop_before < start && *stop_before + T::one() < start {
-                self.internal_add2(range_inclusive);
+                self.internal_add2(&range_inclusive);
             } else if *stop_before < stop {
-                self.len += T::safe_inclusive_len(*stop_before..=stop - T::one());
+                self.len += T::safe_inclusive_len(&(*stop_before..=stop - T::one()));
                 *stop_before = stop;
                 let start_before = *start_before;
-                self.delete_extra(start_before..=stop);
+                self.delete_extra(&(start_before..=stop));
             } else {
                 // completely contained, so do nothing
             }
         } else {
-            self.internal_add2(range_inclusive);
+            self.internal_add2(&range_inclusive);
         }
     }
 
-    fn internal_add2(&mut self, internal_inclusive: RangeInclusive<T>) {
+    fn internal_add2(&mut self, internal_inclusive: &RangeInclusive<T>) {
         let (start, stop) = internal_inclusive.clone().into_inner();
         let was_there = self.btree_map.insert(start, stop);
         debug_assert!(was_there.is_none()); // real assert
-        self.delete_extra(internal_inclusive.clone()); // cmk0000 make this take a range
-        self.len += T::safe_inclusive_len(internal_inclusive); // cmk0000 make this take a range
+        self.delete_extra(internal_inclusive);
+        self.len += T::safe_inclusive_len(internal_inclusive);
     }
 
-    pub fn len(&self) -> <T as Integer>::Output {
+    pub fn len(&self) -> <T as Integer>::SafeLen {
         self.len.clone()
     }
 
     pub fn new() -> RangeSetInt<T> {
         RangeSetInt {
             btree_map: BTreeMap::new(),
-            len: <T as Integer>::Output::zero(),
+            len: <T as Integer>::SafeLen::zero(),
         }
     }
 
@@ -370,17 +375,6 @@ impl<'a, T: Integer> Iterator for Ranges<'a, T> {
 // We create a RangeSetInt from an iterator of integers or integer ranges by
 // 1. turning them into a BitOrIter (internally, it collects into intervals and sorts by start).
 // 2. Turning the SortedDisjoint into a BTreeMap.
-
-/// cmk0000
-// impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
-//     fn from_iter<I>(iter: I) -> Self
-//     where
-//         I: IntoIterator<Item = RangeInclusive<T>>,
-//     {
-//         iter.into_iter().collect::<BitOrIter<T, _>>().into()
-//     }
-// }
-
 impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -522,7 +516,6 @@ impl<T: Integer> FromIterator<T>
     }
 }
 
-// !!!cmk0000
 impl<T: Integer> FromIterator<RangeInclusive<T>>
     for BitOrIter<T, AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>>
 {
@@ -656,9 +649,8 @@ where
         if let Some(range_inclusive) = self.iter.next() {
             let (start, stop) = range_inclusive.into_inner();
             if let Some(current_range_inclusive) = self.range.clone() {
-                // cmk0 why clone?
                 let (current_start, current_stop) = current_range_inclusive.into_inner();
-                debug_assert!(current_start <= start); // cmk panic if not sorted
+                debug_assert!(current_start <= start); // cmk debug panic if not sorted
                 if start <= current_stop
                     || (current_stop < T::max_value2() && start <= current_stop + T::one())
                 {
@@ -673,7 +665,7 @@ where
                 self.next()
             }
         } else {
-            let result = self.range.clone(); // cmk0 why clone?
+            let result = self.range.clone();
             self.range = None;
             result
         }
@@ -857,7 +849,6 @@ where
     type Item = T;
     fn next(&mut self) -> Option<T> {
         if let Some(range_inclusive) = self.option_range.clone() {
-            // cmk clone?
             let (start, stop) = range_inclusive.into_inner();
             self.current = start;
             if start < stop {
@@ -891,7 +882,6 @@ impl<T: Integer> Iterator for IntoIter<T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range_inclusive) = self.option_range.clone() {
-            // cmk clone
             let (start, stop) = range_inclusive.into_inner();
             if start < stop {
                 self.option_range = Some(start + T::one()..=stop);
