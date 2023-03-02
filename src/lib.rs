@@ -45,6 +45,7 @@ use std::collections::btree_map;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
+use std::fmt::Debug;
 use std::ops;
 use std::ops::RangeInclusive;
 use std::ops::Sub;
@@ -87,7 +88,9 @@ pub trait SafeSubtract {
         + PartialOrd
         + Ord
         + Send
-        + Default;
+        + Default
+        + fmt::Debug
+        + fmt::Display;
     fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output;
     fn safe_subtract_inclusive(stop: Self, start: Self) -> <Self as SafeSubtract>::Output;
     fn max_value2() -> Self;
@@ -245,8 +248,8 @@ impl<T: Integer> RangeSetInt<T> {
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     fn internal_add(&mut self, start: T, stop: T) {
         // internal_add(&mut self.items, &mut self.len, start, stop);
-        assert!(start <= stop && stop <= T::max_value2());
-        // !!! cmk would be nice to have a partition_point function that returns two iterators
+        assert!(start <= stop && stop <= T::max_value2()); //cmk0000
+                                                           // !!! cmk would be nice to have a partition_point function that returns two iterators
         let mut before = self.btree_map.range_mut(..=start).rev();
         if let Some((start_before, stop_before)) = before.next() {
             // Must check this in two parts to avoid overflow
@@ -382,7 +385,7 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
         I: IntoIterator<Item = RangeInclusive<T>>,
     {
         iter.into_iter()
-            // cmk0000 used cloned()
+            // cmk000 used cloned()
             .map(|range_inclusive| *range_inclusive.start()..=*range_inclusive.end())
             .collect::<BitOrIter<T, _>>()
             .into()
@@ -421,10 +424,10 @@ where
     // cmk0 understand why this can't be  I: IntoIterator<Item = RangeInclusive<T>>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
 {
     fn from(iter: I) -> Self {
-        let (iter0, iter1) = iter.tee();
-        let cmk_0: Vec<_> = iter0.collect();
-        println!("cmk_0: {cmk_0:?}");
-        let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter1);
+        // let (iter0, iter1) = iter.tee();
+        // let cmk_0: Vec<_> = iter0.collect();
+        // println!("cmk_0: {cmk_0:?}");
+        let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
         // !!!cmk000 could/should SortedDisjointWithLenSoFar iterator (T,T)???
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
         RangeSetInt {

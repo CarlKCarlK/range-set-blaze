@@ -592,3 +592,40 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+#[allow(clippy::reversed_empty_ranges)]
+fn tricky_case1() {
+    let a = RangeSetInt::from([1..=0]);
+    let b = RangeSetInt::from([2..=1]);
+    assert_eq!(a, b);
+    assert!(a.ranges().equal(b.ranges()));
+    assert_eq!(a.ranges().len(), 0);
+    assert_eq!(a.ranges().len(), b.ranges().len());
+    let a = RangeSetInt::from([i32::MIN..=i32::MAX]);
+    println!("tc1 '{a}'");
+    assert_eq!(a.len() as i128, (i32::MAX as i128) - (i32::MIN as i128) + 1);
+    let a = !RangeSetInt::from([1..=0]);
+    println!("tc1 '{a}'");
+    assert_eq!(a.len() as i128, (i32::MAX as i128) - (i32::MIN as i128) + 1);
+
+    let a = !RangeSetInt::from([1i128..=0]);
+    println!("tc1 '{a}', {}", a.len());
+    assert_eq!(a.len(), u128::MAX);
+    let a = !RangeSetInt::from([1u128..=0]);
+    println!("tc1 '{a}', {}", a.len());
+    assert_eq!(a.len(), u128::MAX);
+}
+
+// should fail
+#[test]
+#[should_panic]
+fn tricky_case2() {
+    let _a = RangeSetInt::from([-1..=i128::MAX]);
+}
+
+#[test]
+#[should_panic]
+fn tricky_case3() {
+    let _a = RangeSetInt::from([0..=u128::MAX]);
+}

@@ -43,8 +43,12 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range_inclusive) = self.iter.next() {
             let (lower, upper) = range_inclusive.into_inner();
-            assert!(lower <= upper && upper <= T::max_value2()); // !!!cmk0 raise error on panic?
+            if lower > upper {
+                return self.next();
+            }
+            assert!(upper <= T::max_value2()); // !!!cmk0 raise error on panic? cmk0000
             if let Some(self_range_inclusive) = self.range.clone() {
+                // cmk0 clone?
                 // cmk0 clone?
                 let (self_lower, self_upper) = self_range_inclusive.into_inner();
                 if (lower >= self.two && lower - self.two >= self_upper)
@@ -119,8 +123,10 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range_inclusive) = self.iter.next() {
             let (start, stop) = range_inclusive.into_inner();
+            // cmk0000
             debug_assert!(start <= stop && stop <= T::max_value2());
             self.len += T::safe_subtract_inclusive(stop, start); // !!!cmk000 define these on range_inclusive?
+            println!("cmk0000 {:?} {:?} {:?}", start, stop, self.len.clone());
             Some((start, stop))
         } else {
             None
