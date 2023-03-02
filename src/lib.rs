@@ -110,8 +110,6 @@ pub trait Integer:
     }
 }
 
-// !!!cmk can I use a Rust range?
-
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RangeSetInt<T: Integer> {
     len: <T as Integer>::SafeLen,
@@ -265,7 +263,7 @@ impl<T: Integer> RangeSetInt<T> {
         if stop < start {
             return;
         }
-        assert!(stop <= T::max_value2()); //cmk00 panic
+        assert!(stop <= T::max_value2()); //cmk0 panic
                                           // !!! cmk would be nice to have a partition_point function that returns two iterators
         let mut before = self.btree_map.range_mut(..=start).rev();
         if let Some((start_before, stop_before)) = before.next() {
@@ -384,18 +382,13 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     }
 }
 
-// cmk0 if range_inclusive calls it start and end, why not use that?
-// cmk000 Rust defines this as empty let cmk = 1..=-1; should we do the same?
+// cmk rules: Follow Rust conventions. For example this as empty let cmk = 1..=-1; we do the same
 impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
-    fn from_iter<I>(iter: I) -> Self
+    fn from_iter<I>(into_iter: I) -> Self
     where
         I: IntoIterator<Item = RangeInclusive<T>>,
     {
-        iter.into_iter()
-            // cmk000 used cloned()
-            .map(|range_inclusive| *range_inclusive.start()..=*range_inclusive.end())
-            .collect::<BitOrIter<T, _>>()
-            .into()
+        into_iter.into_iter().collect::<BitOrIter<T, _>>().into()
     }
 }
 
@@ -431,11 +424,7 @@ where
     // cmk0 understand why this can't be  I: IntoIterator<Item = RangeInclusive<T>>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
 {
     fn from(iter: I) -> Self {
-        // let (iter0, iter1) = iter.tee();
-        // let cmk_0: Vec<_> = iter0.collect();
-        // println!("cmk_0: {cmk_0:?}");
         let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
-        // !!!cmk000 could/should SortedDisjointWithLenSoFar iterator (T,T)???
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
         RangeSetInt {
             btree_map,
@@ -489,8 +478,6 @@ pub type BitEq<T, L, R> = BitOrMerge<
 >;
 
 // !!!cmk000 remove support for TryFrom from strings
-// !!!cmk000 change semantics of 3..=2 to be empty
-// !!!cmk000 show special u128::MAX case
 impl<T, L, R> BitOrMerge<T, L, R>
 where
     T: Integer,
@@ -912,7 +899,6 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
     {
         let iter = iter.into_iter();
         for range_inclusive in UnsortedDisjoint::from(iter.map(|x| x..=x)) {
-            // !!!cmk000 make internal add work with inclusive ranges
             self.internal_add(range_inclusive);
         }
     }

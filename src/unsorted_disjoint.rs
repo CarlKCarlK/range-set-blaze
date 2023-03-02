@@ -46,7 +46,7 @@ where
             if lower > upper {
                 return self.next();
             }
-            assert!(upper <= T::max_value2()); // !!!cmk00 raise error on panic?
+            assert!(upper <= T::max_value2()); // !!!cmk0 raise error on panic?
             if let Some(self_range_inclusive) = self.range.clone() {
                 let (self_lower, self_upper) = self_range_inclusive.into_inner();
                 if (lower >= self.two && lower - self.two >= self_upper)

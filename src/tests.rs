@@ -85,7 +85,7 @@ fn repro1() -> Result<(), RangeIntSetError> {
 
 #[test]
 fn repro2() {
-    let mut range_set_int = RangeSetInt::<i8>::from([-8, 8, -2, -1, 3, 2]); // from_iter??? cmk000
+    let mut range_set_int = RangeSetInt::<i8>::from([-8, 8, -2, -1, 3, 2]);
     range_set_int.internal_add(25..=25);
     println!("{range_set_int}");
     assert!(range_set_int.to_string() == "-8..=-8,-2..=-1,2..=3,8..=8,25..=25");
@@ -179,7 +179,7 @@ fn demo_f1() -> Result<(), RangeIntSetError> {
     range_set_int.internal_add(10..=10);
     assert!(range_set_int.to_string() == "10..=14,22..=26");
     println!(
-        "cmk000 range_set_int = {:?}, _len_slow = {}, len = {}",
+        "demo_1 range_set_int = {:?}, _len_slow = {}, len = {}",
         range_set_int,
         range_set_int._len_slow(),
         range_set_int.len()
@@ -281,7 +281,7 @@ fn demo_a() -> Result<(), RangeIntSetError> {
     range_set_int.internal_add(12..=12);
     assert!(range_set_int.to_string() == "10..=14");
     println!(
-        "cmk000 range_set_int = {:?}, _len_slow = {}, len = {}",
+        "demo_a range_set_int = {:?}, _len_slow = {}, len = {}",
         range_set_int,
         range_set_int._len_slow(),
         range_set_int.len()
