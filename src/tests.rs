@@ -33,14 +33,14 @@ fn insert_max_u128() {
 fn sub() {
     for start in i8::MIN..i8::MAX {
         for end in start..i8::MAX {
-            let diff = i8::safe_subtract_inclusive(end, start);
+            let diff = i8::safe_subtract_inclusive(start..=end);
             let diff2 = (end as i16) - (start as i16) + 1;
             assert_eq!(diff as i16, diff2);
         }
     }
     for start in u8::MIN..u8::MAX {
         for end in start..u8::MAX {
-            let diff = u8::safe_subtract_inclusive(end, start);
+            let diff = u8::safe_subtract_inclusive(start..=end);
             let diff2 = (end as i16) - (start as i16) + 1;
             assert_eq!(diff as i16, diff2);
         }
@@ -178,6 +178,13 @@ fn demo_f1() -> Result<(), RangeIntSetError> {
     let mut range_set_int = RangeSetInt::from([11..=14, 22..=26]);
     range_set_int.internal_add(10..=10);
     assert!(range_set_int.to_string() == "10..=14,22..=26");
+    println!(
+        "cmk000 range_set_int = {:?}, _len_slow = {}, len = {}",
+        range_set_int,
+        range_set_int._len_slow(),
+        range_set_int.len()
+    );
+
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
 }
@@ -273,6 +280,12 @@ fn demo_a() -> Result<(), RangeIntSetError> {
     let mut range_set_int = RangeSetInt::from([10..=14]);
     range_set_int.internal_add(12..=12);
     assert!(range_set_int.to_string() == "10..=14");
+    println!(
+        "cmk000 range_set_int = {:?}, _len_slow = {}, len = {}",
+        range_set_int,
+        range_set_int._len_slow(),
+        range_set_int.len()
+    );
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
 }

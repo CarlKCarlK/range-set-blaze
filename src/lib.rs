@@ -51,7 +51,6 @@ use std::ops::RangeInclusive;
 use std::ops::Sub;
 use std::str::FromStr;
 use thiserror::Error as ThisError;
-use trait_set::trait_set;
 use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
@@ -59,8 +58,23 @@ use unsorted_disjoint::UnsortedDisjoint;
 // cmk rule: Support Send and Sync (what about Clone (Copy?) and ExactSizeIterator?)
 // cmk rule: Use trait_set
 
-trait_set! {
-    pub trait Integer =
+// trait_set! {
+//     pub trait Integer =
+//     num_integer::Integer
+//     + FromStr
+//     + fmt::Display
+//     + fmt::Debug
+//     + std::iter::Sum
+//     + num_traits::NumAssignOps
+//     + FromStr
+//     + Copy
+//     + num_traits::Bounded
+//     + num_traits::NumCast
+// + Send + Sync
+//     ;
+// }
+
+pub trait Integer:
     num_integer::Integer
     + FromStr
     + fmt::Display
@@ -71,13 +85,9 @@ trait_set! {
     + Copy
     + num_traits::Bounded
     + num_traits::NumCast
-    + SafeSubtract
-+ Send + Sync
-    ;
-}
-
-pub trait SafeSubtract {
-    // type Upscale;
+    + Send
+    + Sync
+{
     type Output: std::hash::Hash
         + num_integer::Integer
         + std::ops::AddAssign
@@ -91,8 +101,8 @@ pub trait SafeSubtract {
         + Default
         + fmt::Debug
         + fmt::Display;
-    fn safe_subtract(end: Self, start: Self) -> <Self as SafeSubtract>::Output;
-    fn safe_subtract_inclusive(stop: Self, start: Self) -> <Self as SafeSubtract>::Output;
+    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output;
+    fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output;
     fn max_value2() -> Self;
 }
 
@@ -100,7 +110,7 @@ pub trait SafeSubtract {
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RangeSetInt<T: Integer> {
-    len: <T as SafeSubtract>::Output,
+    len: <T as Integer>::Output,
     btree_map: BTreeMap<T, T>,
 }
 
@@ -147,14 +157,14 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
 impl<T: Integer> RangeSetInt<T> {
     /// !!! cmk understand the 'where for'
     /// !!! cmk understand the operator 'Sub'
-    fn _len_slow(&self) -> <T as SafeSubtract>::Output
+    fn _len_slow(&self) -> <T as Integer>::Output
     where
         for<'a> &'a T: Sub<&'a T, Output = T>,
     {
         self.btree_map
             .iter()
-            .fold(<T as SafeSubtract>::Output::zero(), |acc, (start, stop)| {
-                acc + T::safe_subtract_inclusive(*stop, *start)
+            .fold(<T as Integer>::Output::zero(), |acc, (start, stop)| {
+                acc + T::safe_subtract_inclusive(*start..=*stop)
             })
     }
 
@@ -191,7 +201,7 @@ impl<T: Integer> RangeSetInt<T> {
 
     pub fn clear(&mut self) {
         self.btree_map.clear();
-        self.len = <T as SafeSubtract>::Output::zero();
+        self.len = <T as Integer>::Output::zero();
     }
 
     /// Returns `true` if the set contains an element equal to the value.
@@ -224,7 +234,7 @@ impl<T: Integer> RangeSetInt<T> {
                 // must check this in two parts to avoid overflow
                 if *start_delete <= stop || *start_delete <= stop + T::one() {
                     stop_new = max(stop_new, *stop_delete);
-                    self.len -= T::safe_subtract_inclusive(*stop_delete, *start_delete);
+                    self.len -= T::safe_subtract_inclusive(*start_delete..=*stop_delete);
                     Some(*start_delete)
                 } else {
                     None
@@ -247,7 +257,7 @@ impl<T: Integer> RangeSetInt<T> {
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     fn internal_add(&mut self, range_inclusive: RangeInclusive<T>) {
-        let (start, stop) = range_inclusive.into_inner();
+        let (start, stop) = range_inclusive.clone().into_inner();
         if stop < start {
             return;
         }
@@ -257,7 +267,7 @@ impl<T: Integer> RangeSetInt<T> {
         if let Some((start_before, stop_before)) = before.next() {
             // Must check this in two parts to avoid overflow
             if *stop_before < start && *stop_before + T::one() < start {
-                self.internal_add2(start..=stop);
+                self.internal_add2(range_inclusive);
             } else if *stop_before < stop {
                 self.len += T::safe_subtract(stop, *stop_before);
                 *stop_before = stop;
@@ -267,7 +277,7 @@ impl<T: Integer> RangeSetInt<T> {
                 // completely contained, so do nothing
             }
         } else {
-            self.internal_add2(start..=stop);
+            self.internal_add2(range_inclusive);
         }
     }
 
@@ -275,18 +285,18 @@ impl<T: Integer> RangeSetInt<T> {
         let (start, stop) = internal_inclusive.clone().into_inner();
         let was_there = self.btree_map.insert(start, stop);
         debug_assert!(was_there.is_none()); // real assert
-        self.delete_extra(internal_inclusive); // cmk0000 make this take a range
-        self.len += T::safe_subtract_inclusive(stop, start); // cmk0000 make this take a range
+        self.delete_extra(internal_inclusive.clone()); // cmk0000 make this take a range
+        self.len += T::safe_subtract_inclusive(internal_inclusive); // cmk0000 make this take a range
     }
 
-    pub fn len(&self) -> <T as SafeSubtract>::Output {
+    pub fn len(&self) -> <T as Integer>::Output {
         self.len.clone()
     }
 
     pub fn new() -> RangeSetInt<T> {
         RangeSetInt {
             btree_map: BTreeMap::new(),
-            len: <T as SafeSubtract>::Output::zero(),
+            len: <T as Integer>::Output::zero(),
         }
     }
 

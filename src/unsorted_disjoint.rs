@@ -7,7 +7,7 @@ use std::{
     ops::RangeInclusive,
 };
 
-use crate::{Integer, SafeSubtract, SortedDisjoint, SortedStarts};
+use crate::{Integer, SortedDisjoint, SortedStarts};
 
 pub struct UnsortedDisjoint<T, I>
 where
@@ -88,7 +88,7 @@ where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     iter: I,
-    len: <T as SafeSubtract>::Output,
+    len: <T as Integer>::Output,
 }
 
 // cmk Rule there is no reason From's should be into iterators
@@ -100,7 +100,7 @@ where
     fn from(into_iter: I) -> Self {
         SortedDisjointWithLenSoFar {
             iter: into_iter.into_iter(),
-            len: <T as SafeSubtract>::Output::zero(),
+            len: <T as Integer>::Output::zero(),
         }
     }
 }
@@ -109,7 +109,7 @@ impl<T: Integer, I> SortedDisjointWithLenSoFar<T, I>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
-    pub fn len_so_far(&self) -> <T as SafeSubtract>::Output {
+    pub fn len_so_far(&self) -> <T as Integer>::Output {
         self.len.clone()
     }
 }
@@ -122,10 +122,10 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range_inclusive) = self.iter.next() {
+            let (start, stop) = range_inclusive.clone().into_inner();
+            debug_assert!(start <= stop && stop <= T::max_value2()); // !!!cmk0000
+            self.len += T::safe_subtract_inclusive(range_inclusive.clone()); // !!!cmk000 define these on range_inclusive?
             let (start, stop) = range_inclusive.into_inner();
-            // cmk0000
-            debug_assert!(start <= stop && stop <= T::max_value2());
-            self.len += T::safe_subtract_inclusive(stop, start); // !!!cmk000 define these on range_inclusive?
             println!("cmk0000 {:?} {:?} {:?}", start, stop, self.len.clone());
             Some((start, stop))
         } else {
