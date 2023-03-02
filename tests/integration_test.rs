@@ -84,7 +84,7 @@ fn doctest4() {
     let a = RangeSetInt::<i8>::from([1, 2, 3]);
 
     let result = !&a;
-    assert_eq!(result.to_string(), "-128..=0,4..=127");
+    assert_eq!(result.to_string(), "-128..=0, 4..=127");
 }
 
 #[test]
@@ -92,9 +92,9 @@ fn compare() {
     let mut btree_set = BTreeSet::<u128>::new();
     btree_set.insert(3);
     btree_set.insert(1);
-    let string = btree_set.iter().join(",");
+    let string = btree_set.iter().join(", ");
     println!("{string:#?}");
-    assert!(string == "1,3");
+    assert!(string == "1, 3");
 }
 
 #[test]
@@ -186,9 +186,9 @@ fn missing_doctest_ops() {
     let a = RangeSetInt::<i8>::from([1, 2, 3]);
 
     let result = !&a;
-    assert_eq!(result.to_string(), "-128..=0,4..=127");
+    assert_eq!(result.to_string(), "-128..=0, 4..=127");
     let result = !a;
-    assert_eq!(result.to_string(), "-128..=0,4..=127");
+    assert_eq!(result.to_string(), "-128..=0, 4..=127");
 
     // Returns the intersection of `self` and `rhs` as a new `RangeSetInt<T>`.
 
@@ -558,42 +558,6 @@ fn empty_it() {
 }
 
 #[test]
-fn constructors() -> Result<(), Box<dyn std::error::Error>> {
-    let mut _range_set_int;
-    // new
-    _range_set_int = RangeSetInt::<i32>::new();
-    // collect / from_iter T
-    _range_set_int = [1, 5, 6, 5].into_iter().collect();
-    _range_set_int = RangeSetInt::from_iter([1, 5, 6, 5]);
-    // // collect / from_iter (T,T)
-    // _range_set_int = [(5, 6), (1, 5)].into_iter().collect();
-    // _range_set_int = RangeSetInt::from_iter([(5, 6), (1, 5)]);
-    // into / from array T
-    _range_set_int = [1, 5, 6, 5].into();
-    _range_set_int = RangeSetInt::from([1, 5, 6, 5]);
-    // into / from slice T
-    _range_set_int = [1, 5, 6, 5][1..=2].into();
-    _range_set_int = RangeSetInt::from([1, 5, 6, 5].as_slice());
-    // into / from iter (T,T) + SortedDisjoint
-    _range_set_int = _range_set_int.ranges().into();
-    _range_set_int = RangeSetInt::from(_range_set_int.ranges());
-    // try_into / try_from string
-    _range_set_int = [5..=6, 1..=5].into();
-    _range_set_int = RangeSetInt::from([5..=6, 1..=5]);
-    //collect / from_iter range_inclusive
-    _range_set_int = [5..=6, 1..=5].into_iter().collect();
-    _range_set_int = RangeSetInt::from_iter([5..=6, 1..=5]);
-    // from into array range_inclusive
-    _range_set_int = [5..=6, 1..=5].into();
-    _range_set_int = RangeSetInt::from([5..=6, 1..=5]);
-    // from into slice range_inclusive
-    _range_set_int = [5..=6, 1..=5][0..=1].into();
-    _range_set_int = RangeSetInt::from([5..=6, 1..=5].as_slice());
-
-    Ok(())
-}
-
-#[test]
 #[allow(clippy::reversed_empty_ranges)]
 fn tricky_case1() {
     let a = RangeSetInt::from([1..=0]);
@@ -628,4 +592,37 @@ fn tricky_case2() {
 #[should_panic]
 fn tricky_case3() {
     let _a = RangeSetInt::from([0..=u128::MAX]);
+}
+
+#[test]
+fn constructors() -> Result<(), Box<dyn std::error::Error>> {
+    // #9: new
+    let mut _range_set_int;
+    _range_set_int = RangeSetInt::<i32>::new();
+    // #10 collect / from_iter T
+    _range_set_int = [1, 5, 6, 5].into_iter().collect();
+    _range_set_int = RangeSetInt::from_iter([1, 5, 6, 5]);
+    // #11 into / from array T
+    _range_set_int = [1, 5, 6, 5].into();
+    _range_set_int = RangeSetInt::from([1, 5, 6, 5]);
+    // #12 into / from slice T
+    _range_set_int = [1, 5, 6, 5][1..=2].into();
+    _range_set_int = RangeSetInt::from([1, 5, 6, 5].as_slice());
+    //#13 collect / from_iter range_inclusive
+    _range_set_int = [5..=6, 1..=5].into_iter().collect();
+    _range_set_int = RangeSetInt::from_iter([5..=6, 1..=5]);
+    // #14 from into array range_inclusive
+    _range_set_int = [5..=6, 1..=5].into();
+    _range_set_int = RangeSetInt::from([5..=6, 1..=5]);
+    // #15 from into slice range_inclusive
+    _range_set_int = [5..=6, 1..=5][0..=1].into();
+    _range_set_int = RangeSetInt::from([5..=6, 1..=5].as_slice());
+    // #16 into / from iter (T,T) + SortedDisjoint
+    _range_set_int = _range_set_int.ranges().into();
+    _range_set_int = RangeSetInt::from(_range_set_int.ranges());
+    // // try_into / try_from string cmk0000
+    // _range_set_int = [5..=6, 1..=5].into();
+    // _range_set_int = RangeSetInt::from([5..=6, 1..=5]);
+
+    Ok(())
 }

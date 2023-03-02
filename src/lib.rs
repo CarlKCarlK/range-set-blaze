@@ -57,24 +57,8 @@ use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
 
 // cmk rule: Support Send and Sync (what about Clone (Copy?) and ExactSizeIterator?)
-// cmk rule: Use trait_set
 
-// trait_set! {
-//     pub trait Integer =
-//     num_integer::Integer
-//     + FromStr
-//     + fmt::Display
-//     + fmt::Debug
-//     + std::iter::Sum
-//     + num_traits::NumAssignOps
-//     + FromStr
-//     + Copy
-//     + num_traits::Bounded
-//     + num_traits::NumCast
-// + Send + Sync
-//     ;
-// }
-
+// cmk rule: Define your element type
 pub trait Integer:
     num_integer::Integer
     + FromStr
@@ -614,7 +598,7 @@ pub trait SortedDisjointIterator<T: Integer>:
             let (start, stop) = range_inclusive.into_inner();
             format!("{start}..={stop}") // cmk could we format RangeInclusive directly?
         })
-        .join(",")
+        .join(", ")
     }
 }
 

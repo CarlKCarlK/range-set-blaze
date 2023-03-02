@@ -1,13 +1,13 @@
 // !!!cmk make the names consistent, start/lower vs stop/upper/end/...
 // !!!cmk replace OptionRange with Option<RangeInclusive<T>>
 
+use crate::{Integer, SortedDisjoint, SortedStarts};
+use itertools::Itertools;
 use num_traits::Zero;
 use std::{
     cmp::{max, min},
     ops::RangeInclusive,
 };
-
-use crate::{Integer, SortedDisjoint, SortedStarts};
 
 pub struct UnsortedDisjoint<T, I>
 where
@@ -16,6 +16,7 @@ where
 {
     iter: I,
     range: Option<RangeInclusive<T>>,
+    min_value_plus_2: T,
     two: T,
 }
 
@@ -28,6 +29,7 @@ where
         UnsortedDisjoint {
             iter: into_iter.into_iter(),
             range: None,
+            min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
         }
     }
@@ -42,25 +44,26 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range_inclusive) = self.iter.next() {
-            let (lower, upper) = range_inclusive.into_inner();
-            if lower > upper {
+            let (next_start, next_end) = range_inclusive.into_inner();
+            if next_start > next_end {
                 return self.next();
             }
-            assert!(upper <= T::max_value2()); // !!!cmk0 raise error on panic?
+            assert!(next_end <= T::max_value2()); // !!!cmk0 raise error on panic?
+                                                  // !!!cmk0000 bug
             if let Some(self_range_inclusive) = self.range.clone() {
-                let (self_lower, self_upper) = self_range_inclusive.into_inner();
-                if (lower >= self.two && lower - self.two >= self_upper)
-                    || (self_lower >= self.two && self_lower - self.two >= upper)
+                let (self_start, self_end) = self_range_inclusive.into_inner();
+                if (next_start >= self.min_value_plus_2 && self_end <= next_start - self.two)
+                    || (self_start >= self.min_value_plus_2 && next_end <= self_start - self.two)
                 {
-                    let result = Some(self_lower..=self_upper);
-                    self.range = Some(lower..=upper);
+                    let result = Some(self_start..=self_end);
+                    self.range = Some(next_start..=next_end);
                     result
                 } else {
-                    self.range = Some(min(self_lower, lower)..=max(self_upper, upper));
+                    self.range = Some(min(self_start, next_start)..=max(self_end, next_end));
                     self.next()
                 }
             } else {
-                self.range = Some(lower..=upper);
+                self.range = Some(next_start..=next_end);
                 self.next()
             }
         } else if let Some(range_inclusive) = self.range.clone() {
@@ -77,6 +80,21 @@ where
         let (lower, upper) = self.iter.size_hint();
         let lower = if lower == 0 { 0 } else { 1 };
         (lower, upper)
+    }
+}
+
+// Can't implement fmt::Display fmt must take ownership
+impl<T, I> UnsortedDisjoint<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>>,
+{
+    pub fn fmt(self) -> String {
+        self.map(|range_inclusive| {
+            let (start, stop) = range_inclusive.into_inner();
+            format!("{start}..={stop}") // cmk could we format RangeInclusive directly?
+        })
+        .join(", ")
     }
 }
 

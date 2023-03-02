@@ -76,19 +76,20 @@ fn repro_bit_and() {
 fn repro1() -> Result<(), RangeIntSetError> {
     let mut range_set_int = RangeSetInt::from([20..=21, 24..=24, 25..=29]);
     println!("{range_set_int}");
-    assert!(range_set_int.to_string() == "20..=21,24..=29");
+    assert!(range_set_int.to_string() == "20..=21, 24..=29");
     range_set_int.internal_add(25..=25);
     println!("{range_set_int}");
-    assert!(range_set_int.to_string() == "20..=21,24..=29");
+    assert!(range_set_int.to_string() == "20..=21, 24..=29");
     Ok(())
 }
+// !!!cmk000 understand "to_string" vs "fmt"
 
 #[test]
 fn repro2() {
     let mut range_set_int = RangeSetInt::<i8>::from([-8, 8, -2, -1, 3, 2]);
     range_set_int.internal_add(25..=25);
     println!("{range_set_int}");
-    assert!(range_set_int.to_string() == "-8..=-8,-2..=-1,2..=3,8..=8,25..=25");
+    assert!(range_set_int.to_string() == "-8..=-8, -2..=-1, 2..=3, 8..=8, 25..=25");
 }
 
 #[test]
@@ -131,7 +132,7 @@ fn doctest4() {
     let a = RangeSetInt::<i8>::from([1, 2, 3]);
 
     let result = !&a;
-    assert_eq!(result.to_string(), "-128..=0,4..=127");
+    assert_eq!(result.to_string(), "-128..=0, 4..=127");
 }
 
 #[test]
@@ -139,9 +140,9 @@ fn compare() {
     let mut btree_set = BTreeSet::<u128>::new();
     btree_set.insert(3);
     btree_set.insert(1);
-    let string = btree_set.iter().join(",");
+    let string = btree_set.iter().join(", ");
     println!("{string:#?}");
-    assert!(string == "1,3");
+    assert!(string == "1, 3");
 }
 
 #[test]
@@ -152,7 +153,7 @@ fn demo_c1() -> Result<(), RangeIntSetError> {
     //     INSERT
     let mut range_set_int = RangeSetInt::from([10..=10]);
     range_set_int.internal_add(12..=12);
-    assert!(range_set_int.to_string() == "10..=10,12..=12");
+    assert!(range_set_int.to_string() == "10..=10, 12..=12");
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
 }
@@ -165,7 +166,7 @@ fn demo_c2() -> Result<(), RangeIntSetError> {
     //     INSERT
     let mut range_set_int = RangeSetInt::from([10..=10, 13..=13]);
     range_set_int.internal_add(12..=12);
-    assert!(range_set_int.to_string() == "10..=10,12..=13");
+    assert!(range_set_int.to_string() == "10..=10, 12..=13");
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
 }
@@ -177,7 +178,7 @@ fn demo_f1() -> Result<(), RangeIntSetError> {
 
     let mut range_set_int = RangeSetInt::from([11..=14, 22..=26]);
     range_set_int.internal_add(10..=10);
-    assert!(range_set_int.to_string() == "10..=14,22..=26");
+    assert!(range_set_int.to_string() == "10..=14, 22..=26");
     println!(
         "demo_1 range_set_int = {:?}, _len_slow = {}, len = {}",
         range_set_int,
@@ -265,7 +266,7 @@ fn demo_b3() -> Result<(), RangeIntSetError> {
 
     let mut range_set_int = RangeSetInt::from([10..=15, 160..=160]);
     range_set_int.internal_add(12..=17);
-    assert!(range_set_int.to_string() == "10..=17,160..=160");
+    assert!(range_set_int.to_string() == "10..=17, 160..=160");
     assert!(range_set_int._len_slow() == range_set_int.len());
     Ok(())
 }
@@ -721,9 +722,9 @@ fn missing_doctest_ops() {
     let a = RangeSetInt::<i8>::from([1, 2, 3]);
 
     let result = !&a;
-    assert_eq!(result.to_string(), "-128..=0,4..=127");
+    assert_eq!(result.to_string(), "-128..=0, 4..=127");
     let result = !a;
-    assert_eq!(result.to_string(), "-128..=0,4..=127");
+    assert_eq!(result.to_string(), "-128..=0, 4..=127");
 
     // Returns the intersection of `self` and `rhs` as a new `RangeSetInt<T>`.
 
@@ -890,7 +891,7 @@ fn bit_or_iter() {
 
     let _not_i = !i.clone();
     let k = i - j;
-    assert_eq!(k.fmt(), "-1..=-1,1..=1,22..=22");
+    assert_eq!(k.fmt(), "-1..=-1, 1..=1, 22..=22");
 }
 
 #[test]
@@ -966,4 +967,12 @@ fn empty() -> Result<(), RangeIntSetError> {
     assert!(c4.equal(answer.ranges()));
 
     Ok(())
+}
+
+#[allow(clippy::reversed_empty_ranges)]
+#[test]
+fn private_constructor() {
+    let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
+    // println!("{}", unsorted_disjoint.fmt());
+    assert_eq!(unsorted_disjoint.fmt(), "1..=6, -12..=-10, 3..=3");
 }
