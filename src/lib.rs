@@ -101,7 +101,6 @@ pub trait Integer:
         + Default
         + fmt::Debug
         + fmt::Display;
-    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output;
     fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output;
     fn max_value2() -> Self;
 }
@@ -242,7 +241,7 @@ impl<T: Integer> RangeSetInt<T> {
             })
             .collect::<Vec<_>>();
         if stop_new > stop {
-            self.len += T::safe_subtract(stop_new, stop);
+            self.len += T::safe_subtract_inclusive(stop..=stop_new - T::one());
             *stop_after = stop_new;
         }
         for start in delete_list {
@@ -269,7 +268,7 @@ impl<T: Integer> RangeSetInt<T> {
             if *stop_before < start && *stop_before + T::one() < start {
                 self.internal_add2(range_inclusive);
             } else if *stop_before < stop {
-                self.len += T::safe_subtract(stop, *stop_before);
+                self.len += T::safe_subtract_inclusive(*stop_before..=stop - T::one());
                 *stop_before = stop;
                 let start_before = *start_before;
                 self.delete_extra(start_before..=stop);

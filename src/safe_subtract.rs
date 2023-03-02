@@ -9,9 +9,6 @@ impl Integer for i8 {
     type Output = usize;
     #[cfg(target_pointer_width = "64")]
     type Output = usize;
-    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output {
-        end.overflowing_sub(start).0 as u8 as <Self as Integer>::Output
-    }
     fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output {
         let (b, a) = range_inclusive.into_inner(); // !!!cmk00 rename to end, start
         a.overflowing_sub(b).0 as u8 as <Self as Integer>::Output + 1
@@ -28,9 +25,6 @@ impl Integer for u8 {
     type Output = usize;
     #[cfg(target_pointer_width = "64")]
     type Output = usize;
-    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output {
-        end.overflowing_sub(start).0 as <Self as Integer>::Output
-    }
     fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output {
         let (b, a) = range_inclusive.into_inner();
         a.overflowing_sub(b).0 as <Self as Integer>::Output + 1
@@ -47,9 +41,6 @@ impl Integer for i32 {
     type Output = u64;
     #[cfg(target_pointer_width = "64")]
     type Output = usize;
-    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output {
-        end.overflowing_sub(start).0 as u32 as <Self as Integer>::Output
-    }
     fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output {
         let (b, a) = range_inclusive.into_inner();
         a.overflowing_sub(b).0 as u32 as <Self as Integer>::Output + 1
@@ -66,9 +57,6 @@ impl Integer for u32 {
     type Output = u64;
     #[cfg(target_pointer_width = "64")]
     type Output = usize;
-    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output {
-        end.overflowing_sub(start).0 as <Self as Integer>::Output
-    }
     fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output {
         let (b, a) = range_inclusive.into_inner();
         a.overflowing_sub(b).0 as <Self as Integer>::Output + 1
@@ -85,9 +73,6 @@ impl Integer for i64 {
     type Output = u128;
     #[cfg(target_pointer_width = "64")]
     type Output = u128;
-    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output {
-        end.overflowing_sub(start).0 as u64 as <Self as Integer>::Output
-    }
     fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output {
         let (b, a) = range_inclusive.into_inner();
         a.overflowing_sub(b).0 as u64 as <Self as Integer>::Output + 1
@@ -104,9 +89,6 @@ impl Integer for u64 {
     type Output = u128;
     #[cfg(target_pointer_width = "64")]
     type Output = u128;
-    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output {
-        end.overflowing_sub(start).0 as <Self as Integer>::Output
-    }
     fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output {
         let (b, a) = range_inclusive.into_inner();
         a.overflowing_sub(b).0 as <Self as Integer>::Output + 1
@@ -123,9 +105,6 @@ impl Integer for i128 {
     type Output = u128;
     #[cfg(target_pointer_width = "64")]
     type Output = u128;
-    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output {
-        end.overflowing_sub(start).0 as u128 as <Self as Integer>::Output
-    }
     fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output {
         let (b, a) = range_inclusive.into_inner();
         a.overflowing_sub(b).0 as u128 as <Self as Integer>::Output + 1
@@ -142,9 +121,6 @@ impl Integer for u128 {
     type Output = u128;
     #[cfg(target_pointer_width = "64")]
     type Output = u128;
-    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output {
-        end.overflowing_sub(start).0 as <Self as Integer>::Output
-    }
     fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output {
         let (b, a) = range_inclusive.into_inner();
         a.overflowing_sub(b).0 as <Self as Integer>::Output + 1
@@ -161,9 +137,6 @@ impl Integer for isize {
     type Output = u64;
     #[cfg(target_pointer_width = "64")]
     type Output = u128;
-    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output {
-        end.overflowing_sub(start).0 as usize as <Self as Integer>::Output
-    }
     fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output {
         let (b, a) = range_inclusive.into_inner();
         a.overflowing_sub(b).0 as usize as <Self as Integer>::Output + 1
@@ -180,9 +153,6 @@ impl Integer for usize {
     type Output = u64;
     #[cfg(target_pointer_width = "64")]
     type Output = u128;
-    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output {
-        end.overflowing_sub(start).0 as <Self as Integer>::Output
-    }
     fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output {
         let (b, a) = range_inclusive.into_inner();
         a.overflowing_sub(b).0 as <Self as Integer>::Output + 1
@@ -199,9 +169,6 @@ impl Integer for i16 {
     type Output = usize;
     #[cfg(target_pointer_width = "64")]
     type Output = usize;
-    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output {
-        end.overflowing_sub(start).0 as u16 as <Self as Integer>::Output
-    }
     fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output {
         let (b, a) = range_inclusive.into_inner();
         a.overflowing_sub(b).0 as u16 as <Self as Integer>::Output + 1
@@ -218,9 +185,6 @@ impl Integer for u16 {
     type Output = usize;
     #[cfg(target_pointer_width = "64")]
     type Output = usize;
-    fn safe_subtract(end: Self, start: Self) -> <Self as Integer>::Output {
-        end.overflowing_sub(start).0 as <Self as Integer>::Output
-    }
     fn safe_subtract_inclusive(range_inclusive: RangeInclusive<Self>) -> <Self as Integer>::Output {
         let (b, a) = range_inclusive.into_inner();
         a.overflowing_sub(b).0 as <Self as Integer>::Output + 1
