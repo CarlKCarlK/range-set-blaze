@@ -9,8 +9,8 @@ error[E0277]: the trait bound `std::array::IntoIter<RangeInclusive<{integer}>, 2
             NotIter<T, I>
             Ranges<'_, T>
             SortedDisjointIter<T, I>
+            SortedDisjointWithLenSoFar<T, I>
             itertools::tee::Tee<I>
-            range_set_int::unsorted_disjoint::SortedDisjointWithLenSoFar<T, I>
 note: required by a bound in `union`
  --> src/lib.rs
   |
@@ -24,15 +24,15 @@ error[E0277]: the trait bound `std::array::IntoIter<RangeInclusive<{integer}>, 2
   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `SortedStarts` is not implemented for `std::array::IntoIter<RangeInclusive<{integer}>, 2>`
   |
   = help: the following other types implement trait `SortedStarts`:
+            AssumeSortedStarts<T, I>
             DynSortedDisjoint<'a, T>
             NotIter<T, I>
             Ranges<'_, T>
             SortedDisjointIter<T, I>
+            SortedDisjointWithLenSoFar<T, I>
             itertools::adaptors::MergeBy<L, R, for<'a, 'b> fn(&'a RangeInclusive<T>, &'b RangeInclusive<T>) -> bool>
             itertools::kmerge_impl::KMergeBy<I, for<'a, 'b> fn(&'a RangeInclusive<T>, &'b RangeInclusive<T>) -> bool>
             itertools::tee::Tee<I>
-            range_set_int::unsorted_disjoint::AssumeSortedStarts<T, I>
-            range_set_int::unsorted_disjoint::SortedDisjointWithLenSoFar<T, I>
   = note: required for `itertools::kmerge_impl::KMergeBy<std::array::IntoIter<RangeInclusive<{integer}>, 2>, ...>` to implement `SortedStarts`
 note: required by a bound in `SortedDisjointIter`
  --> src/sorted_disjoint_iter.rs
@@ -51,8 +51,8 @@ error[E0277]: the trait bound `std::array::IntoIter<RangeInclusive<{integer}>, 2
             NotIter<T, I>
             Ranges<'_, T>
             SortedDisjointIter<T, I>
+            SortedDisjointWithLenSoFar<T, I>
             itertools::tee::Tee<I>
-            range_set_int::unsorted_disjoint::SortedDisjointWithLenSoFar<T, I>
 note: required by a bound in `intersection`
  --> src/lib.rs
   |
@@ -70,8 +70,8 @@ error[E0277]: the trait bound `std::array::IntoIter<RangeInclusive<{integer}>, 2
             NotIter<T, I>
             Ranges<'_, T>
             SortedDisjointIter<T, I>
+            SortedDisjointWithLenSoFar<T, I>
             itertools::tee::Tee<I>
-            range_set_int::unsorted_disjoint::SortedDisjointWithLenSoFar<T, I>
 note: required by a bound in `NotIter`
  --> src/lib.rs
   |

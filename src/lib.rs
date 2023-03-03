@@ -29,7 +29,7 @@
 mod integer;
 pub mod sorted_disjoint_iter;
 mod tests;
-mod unsorted_disjoint;
+pub mod unsorted_disjoint;
 
 use gen_ops::gen_ops_ex;
 use itertools::Itertools;

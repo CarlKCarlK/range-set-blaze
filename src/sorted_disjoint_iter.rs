@@ -7,6 +7,7 @@ use crate::{
     Integer, SortedStarts,
 };
 
+// cmk00 maybe not the best name
 #[derive(Clone)]
 pub struct SortedDisjointIter<T, I>
 where
@@ -37,6 +38,20 @@ impl<T: Integer, const N: usize> From<[T; N]>
 
 impl<T: Integer> From<&[T]> for SortedDisjointIter<T, SortedRangeInclusiveVec<T>> {
     fn from(slice: &[T]) -> Self {
+        slice.iter().cloned().collect()
+    }
+}
+
+impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]>
+    for SortedDisjointIter<T, SortedRangeInclusiveVec<T>>
+{
+    fn from(arr: [RangeInclusive<T>; N]) -> Self {
+        arr.as_slice().into()
+    }
+}
+
+impl<T: Integer> From<&[RangeInclusive<T>]> for SortedDisjointIter<T, SortedRangeInclusiveVec<T>> {
+    fn from(slice: &[RangeInclusive<T>]) -> Self {
         slice.iter().cloned().collect()
     }
 }

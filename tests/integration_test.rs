@@ -3,6 +3,7 @@
 
 use itertools::Itertools;
 use range_set_int::sorted_disjoint_iter::SortedDisjointIter;
+use range_set_int::unsorted_disjoint::AssumeSortedStarts;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 
@@ -624,6 +625,34 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     // // try_into / try_from string cmk00
     // _range_set_int = [5..=6, 1..=5].into();
     // _range_set_int = RangeSetInt::from([5..=6, 1..=5]);
+
+    let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10].into_iter());
+    let mut _sorted_disjoint_iter;
+    _sorted_disjoint_iter = SortedDisjointIter::new(sorted_starts);
+    // #10 collect / from_iter T
+    let mut _sorted_disjoint_iter: SortedDisjointIter<_, _> = [1, 5, 6, 5].into_iter().collect();
+    _sorted_disjoint_iter = SortedDisjointIter::from_iter([1, 5, 6, 5]);
+    // // #11 into / from array T
+    _sorted_disjoint_iter = [1, 5, 6, 5].into();
+    _sorted_disjoint_iter = SortedDisjointIter::from([1, 5, 6, 5]);
+    // // #12 into / from slice T
+    _sorted_disjoint_iter = [1, 5, 6, 5][1..=2].into();
+    _sorted_disjoint_iter = SortedDisjointIter::from([1, 5, 6, 5].as_slice());
+    // //#13 collect / from_iter range_inclusive
+    _sorted_disjoint_iter = [5..=6, 1..=5].into_iter().collect();
+    _sorted_disjoint_iter = SortedDisjointIter::from_iter([5..=6, 1..=5]);
+    // // #14 from into array range_inclusive
+    _sorted_disjoint_iter = [5..=6, 1..=5].into();
+    _sorted_disjoint_iter = SortedDisjointIter::from([5..=6, 1..=5]);
+    // // #15 from into slice range_inclusive
+    _sorted_disjoint_iter = [5..=6, 1..=5][0..=1].into();
+    _sorted_disjoint_iter = SortedDisjointIter::from([5..=6, 1..=5].as_slice());
+    // // #16 into / from iter (T,T) + SortedDisjoint
+    let mut _sorted_disjoint_iter: SortedDisjointIter<_, _> = _range_set_int.ranges().collect();
+    _sorted_disjoint_iter = SortedDisjointIter::from_iter(_range_set_int.ranges());
+    // // // try_into / try_from string cmk00
+    // // _range_set_int = [5..=6, 1..=5].into();
+    // // _range_set_int = SortedDisjointIter::from([5..=6, 1..=5]);
 
     Ok(())
 }

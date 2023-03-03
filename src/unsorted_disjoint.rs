@@ -171,6 +171,16 @@ impl<T: Integer, I> SortedStarts for AssumeSortedStarts<T, I> where
 {
 }
 
+impl<T, I> AssumeSortedStarts<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>>,
+{
+    pub fn new(iter: I) -> Self {
+        AssumeSortedStarts { iter }
+    }
+}
+
 impl<T, I> Iterator for AssumeSortedStarts<T, I>
 where
     T: Integer,
