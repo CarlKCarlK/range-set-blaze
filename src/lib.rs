@@ -103,13 +103,13 @@ pub struct RangeSetInt<T: Integer> {
 
 impl<T: Integer> fmt::Debug for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.ranges().fmt())
+        write!(f, "{}", self.ranges().to_string())
     }
 }
 
 impl<T: Integer> fmt::Display for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.ranges().fmt())
+        write!(f, "{}", self.ranges().to_string())
     }
 }
 
@@ -535,7 +535,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     }
 
     // cmk rule: You can't define traits on combinations of traits, so use this method to define methods on traits
-    fn fmt(self) -> String {
+    fn to_string(self) -> String {
         self.map(|range_inclusive| {
             let (start, stop) = range_inclusive.into_inner();
             format!("{start}..={stop}") // cmk could we format RangeInclusive directly?

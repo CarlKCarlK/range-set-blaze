@@ -56,8 +56,6 @@ impl<T: Integer> From<&[RangeInclusive<T>]> for SortedDisjointIter<T, SortedRang
     }
 }
 
-// !!!cmk000 create from array/slice of ranges, too
-
 type SortedRangeInclusiveVec<T> = AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>;
 
 impl<T: Integer> FromIterator<T> for SortedDisjointIter<T, SortedRangeInclusiveVec<T>> {

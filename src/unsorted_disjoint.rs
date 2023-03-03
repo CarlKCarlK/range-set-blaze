@@ -87,7 +87,8 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>,
 {
-    pub fn fmt(self) -> String {
+    #[allow(clippy::inherent_to_string)]
+    pub fn to_string(self) -> String {
         self.map(|range_inclusive| {
             let (start, stop) = range_inclusive.into_inner();
             format!("{start}..={stop}") // cmk could we format RangeInclusive directly?

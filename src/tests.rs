@@ -891,7 +891,7 @@ fn bit_or_iter() {
 
     let _not_i = !i.clone();
     let k = i - j;
-    assert_eq!(k.fmt(), "-1..=-1, 1..=1, 22..=22");
+    assert_eq!(k.to_string(), "-1..=-1, 1..=1, 22..=22");
 }
 
 #[test]
@@ -974,15 +974,15 @@ fn empty() -> Result<(), RangeIntSetError> {
 fn private_constructor() {
     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
     // println!("{}", unsorted_disjoint.fmt());
-    assert_eq!(unsorted_disjoint.fmt(), "1..=6, -12..=-10, 3..=3");
+    assert_eq!(unsorted_disjoint.to_string(), "1..=6, -12..=-10, 3..=3");
 
     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
     let sorted_disjoint_iter = SortedDisjointIter::from(unsorted_disjoint);
     // println!("{}", sorted_disjoint_iter.fmt());
-    assert_eq!(sorted_disjoint_iter.fmt(), "-12..=-10, 1..=6");
+    assert_eq!(sorted_disjoint_iter.to_string(), "-12..=-10, 1..=6");
 
     let sorted_disjoint_iter: SortedDisjointIter<_, _> = [5, 6, 1, 2, 3, 4, 5, -12, -11, -10, 3]
         .into_iter()
         .collect();
-    assert_eq!(sorted_disjoint_iter.fmt(), "-12..=-10, 1..=6");
+    assert_eq!(sorted_disjoint_iter.to_string(), "-12..=-10, 1..=6");
 }
