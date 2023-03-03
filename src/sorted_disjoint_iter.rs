@@ -14,8 +14,8 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
-    iter: I,
-    range: Option<RangeInclusive<T>>,
+    pub(crate) iter: I,
+    pub(crate) range: Option<RangeInclusive<T>>,
 }
 
 impl<T, I> SortedDisjointIter<T, I>
@@ -101,7 +101,7 @@ where
         if let Some(range_inclusive) = self.iter.next() {
             let (start, stop) = range_inclusive.into_inner();
             if stop < start {
-                return self.next(); // !!!cmk000 test this
+                return self.next(); // !!!cmk00 test this
             }
             if let Some(current_range_inclusive) = self.range.clone() {
                 let (current_start, current_stop) = current_range_inclusive.into_inner();

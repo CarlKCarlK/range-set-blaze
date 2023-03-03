@@ -82,7 +82,6 @@ fn repro1() -> Result<(), RangeIntSetError> {
     assert!(range_set_int.to_string() == "20..=21, 24..=29");
     Ok(())
 }
-// !!!cmk000 understand "to_string" vs "fmt"
 
 #[test]
 fn repro2() {

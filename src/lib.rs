@@ -25,6 +25,8 @@
 // !!! cmk rule: Don't have a function and a method. Pick one (method)
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 // cmk rule: don't create an assign method if it is not more efficient
+// cmk0000 show that multiple binary unions and intersections are done only once on RangeSetInt
+// cmk0000 benchmark.
 
 mod integer;
 pub mod sorted_disjoint_iter;
@@ -465,7 +467,7 @@ where
     SortedDisjointIter::new(
         into_iter
             .into_iter()
-            .kmerge_by(|pair0, pair1| pair0.start() < pair1.start()),
+            .kmerge_by(|pair0, pair1| pair0.start() <= pair1.start()),
     )
 }
 
@@ -1084,11 +1086,13 @@ where
     L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
-    type Output = BitOrMerge<T, Self, R>;
+    type Output = BitOrMerge<T, L, R>;
 
+    // SortedDisjointIter(SortedStarts) | SortedDisjoint -> SortedDisjointIter(SortedStarts.merge(SortedDisjoint))
     fn bitor(self, rhs: R) -> Self::Output {
-        // cmk should we optimize a|b|c into union(a,b,c)?
-        SortedDisjointIterator::bitor(self, rhs)
+        // cmk0000 doesn't this assume that self.range is None?
+        // cmk0000 should we optimize a|b|c into union(a,b,c)?
+        SortedDisjointIter::new(self.iter.merge_by(rhs, |a, b| a.start() <= b.start()))
     }
 }
 
@@ -1114,6 +1118,7 @@ where
 
     fn sub(self, rhs: R) -> Self::Output {
         // We have optimized !!self.iter into self.iter
+        // cmk0000 doesn't this assume that self.range is None? etc
         !self.iter.bitor(rhs)
     }
 }
