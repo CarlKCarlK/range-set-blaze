@@ -373,7 +373,6 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = RangeInclusive<T>>,
     {
-        // !!!cmk000
         let sorted_disjoint_iter: SortedDisjointIter<T, _> = into_iter.into_iter().collect();
         sorted_disjoint_iter.into()
     }
@@ -454,7 +453,7 @@ pub type BitEq<T, L, R> = BitOrMerge<
     NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
 >;
 
-// !!!cmk000 remove support for TryFrom from strings
+// !!!mk000 remove support for TryFrom from strings
 
 pub fn union<T, I, J>(into_iter: I) -> BitOrKMerge<T, J::IntoIter>
 where
@@ -893,8 +892,8 @@ pub enum RangeIntSetError {
 //     }
 // }
 
-// // !!!cmk000 test all errors
-// // !!!cmk000 rename
+// // !!!cmk00 test all errors
+// // !!!cmk00 rename
 // fn process_bit1<T: Integer>(s: &str) -> Result<RangeInclusive<T>, RangeIntSetError>
 // where
 //     <T as std::str::FromStr>::Err: std::fmt::Debug,

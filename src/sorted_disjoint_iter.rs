@@ -41,9 +41,10 @@ impl<T: Integer> From<&[T]> for SortedDisjointIter<T, SortedRangeInclusiveVec<T>
     }
 }
 
+// !!!cmk000 create from array/slice of ranges, too
+
 type SortedRangeInclusiveVec<T> = AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>;
 
-// cmk0000 these seem to specific and seem to do too much
 impl<T: Integer> FromIterator<T> for SortedDisjointIter<T, SortedRangeInclusiveVec<T>> {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -52,8 +53,6 @@ impl<T: Integer> FromIterator<T> for SortedDisjointIter<T, SortedRangeInclusiveV
         iter.into_iter().map(|x| x..=x).collect()
     }
 }
-
-// !!!cmk0000 name this?: SortedDisjointIter<T, AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>>
 
 impl<T: Integer> FromIterator<RangeInclusive<T>>
     for SortedDisjointIter<T, SortedRangeInclusiveVec<T>>
@@ -89,7 +88,7 @@ where
         if let Some(range_inclusive) = self.iter.next() {
             let (start, stop) = range_inclusive.into_inner();
             if stop < start {
-                return self.next(); // !!!cmk0000 test this
+                return self.next(); // !!!cmk000 test this
             }
             if let Some(current_range_inclusive) = self.range.clone() {
                 let (current_start, current_stop) = current_range_inclusive.into_inner();

@@ -362,7 +362,6 @@ fn ui() {
     t.compile_fail("tests/ui/*.rs");
 }
 
-// cmk0000
 #[test]
 fn complement() -> Result<(), Box<dyn std::error::Error>> {
     // RangeSetInt, Ranges, NotIter, SortedDisjointIter, Tee, SortedDisjointIter(g)
@@ -622,7 +621,7 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     // #16 into / from iter (T,T) + SortedDisjoint
     _range_set_int = _range_set_int.ranges().into();
     _range_set_int = RangeSetInt::from(_range_set_int.ranges());
-    // // try_into / try_from string cmk0000
+    // // try_into / try_from string cmk00
     // _range_set_int = [5..=6, 1..=5].into();
     // _range_set_int = RangeSetInt::from([5..=6, 1..=5]);
 
