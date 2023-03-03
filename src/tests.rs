@@ -7,7 +7,7 @@
 // !!!cmk rule detail:  let a_less = a.ranges().sub(chain);
 // !!!cmk rule test near extreme values
 // !!!cmk test it across threads
-use std::{collections::BTreeSet, ops::BitOr}; // , time::Instant
+use std::collections::BTreeSet; // , time::Instant
 
 use super::*;
 // use sorted_iter::assume::AssumeSortedByKeyExt;
@@ -887,8 +887,8 @@ fn parity() -> Result<(), RangeIntSetError> {
 // !!!cmk0000
 #[test]
 fn bit_or_iter() {
-    let i: SortedDisjointIter<_, _> = [1, 3, 4, 2, 2, 43, -1, 4, 22].into_iter().collect();
-    let j: SortedDisjointIter<_, _> = [11, 3, 4, 42, 2, 43, 23, 2, 543].into_iter().collect();
+    let i = SortedDisjointIter::from([1, 3, 4, 2, 2, 43, -1, 4, 22]);
+    let j = SortedDisjointIter::from([11, 3, 4, 42, 2, 43, 23, 2, 543]);
 
     let _not_i = !i.clone();
     let k = i - j;

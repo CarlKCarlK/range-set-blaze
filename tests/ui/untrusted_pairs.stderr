@@ -20,10 +20,10 @@ error[E0277]: the trait bound `std::slice::Iter<'_, ({integer}, {integer})>: Sor
   |                                         the trait `SortedDisjoint` is not implemented for `std::slice::Iter<'_, ({integer}, {integer})>`
   |
   = help: the following other types implement trait `SortedDisjoint`:
-            BitOrIter<T, I>
             DynSortedDisjoint<'a, T>
             NotIter<T, I>
             Ranges<'_, T>
+            SortedDisjointIter<T, I>
             itertools::tee::Tee<I>
             range_set_int::unsorted_disjoint::SortedDisjointWithLenSoFar<T, I>
   = note: required for `RangeSetInt<_>` to implement `From<std::slice::Iter<'_, ({integer}, {integer})>>`

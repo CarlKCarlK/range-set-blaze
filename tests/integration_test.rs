@@ -2,14 +2,14 @@
 #![cfg(test)]
 
 use itertools::Itertools;
+use range_set_int::sorted_disjoint_iter::SortedDisjointIter;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 
 // !!!cmk should users use a prelude? If not, are these reasonable imports?
 use range_set_int::{intersection, union};
 use range_set_int::{
-    intersection_dyn, union_dyn, DynSortedDisjointExt, RangeSetInt, Ranges, SortedDisjointIter,
-    SortedDisjointIterator,
+    intersection_dyn, union_dyn, DynSortedDisjointExt, RangeSetInt, Ranges, SortedDisjointIterator,
 };
 
 #[test]
@@ -363,200 +363,201 @@ fn ui() {
 }
 
 // cmk0000
-// #[test]
-// fn complement() -> Result<(), Box<dyn std::error::Error>> {
-//     // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
-//     let a0 = RangeSetInt::from([1..=6]);
-//     let a1 = RangeSetInt::from([8..=9, 11..=15]);
-//     let a = &a0 | &a1;
-//     let not_a = !&a;
-//     let b = a.ranges();
-//     let c = !not_a.ranges();
-//     let d = a0.ranges() | a1.ranges();
-//     let (e, _) = a.ranges().tee();
-//     let f: BitOrIter<_, _> = [15, 14, 15, 13, 12, 11, 9, 9, 8, 6, 4, 5, 3, 2, 1, 1, 1]
-//         .into_iter()
-//         .collect();
-//     let not_b = !b;
-//     let not_c = !c;
-//     let not_d = !d;
-//     let not_e = e.not();
-//     let not_f = !f;
-//     assert!(not_a.ranges().equal(not_b));
-//     assert!(not_a.ranges().equal(not_c));
-//     assert!(not_a.ranges().equal(not_d));
-//     assert!(not_a.ranges().equal(not_e));
-//     assert!(not_a.ranges().equal(not_f));
-//     Ok(())
-// }
+#[test]
+fn complement() -> Result<(), Box<dyn std::error::Error>> {
+    // RangeSetInt, Ranges, NotIter, SortedDisjointIter, Tee, SortedDisjointIter(g)
+    let a0 = RangeSetInt::from([1..=6]);
+    let a1 = RangeSetInt::from([8..=9, 11..=15]);
+    let a = &a0 | &a1;
+    let not_a = !&a;
+    let b = a.ranges();
+    let c = !not_a.ranges();
+    let d = a0.ranges() | a1.ranges();
+    let (e, _) = a.ranges().tee();
+    let f = SortedDisjointIter::from([15, 14, 15, 13, 12, 11, 9, 9, 8, 6, 4, 5, 3, 2, 1, 1, 1]);
+    let not_b = !b;
+    let not_c = !c;
+    let not_d = !d;
+    let not_e = e.not();
+    let not_f = !f;
+    assert!(not_a.ranges().equal(not_b));
+    assert!(not_a.ranges().equal(not_c));
+    assert!(not_a.ranges().equal(not_d));
+    assert!(not_a.ranges().equal(not_e));
+    assert!(not_a.ranges().equal(not_f));
+    Ok(())
+}
 
-// #[test]
-// fn union_test() -> Result<(), Box<dyn std::error::Error>> {
-//     // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
-//     let a0 = RangeSetInt::from([1..=6]);
-//     let (a0_tee, _) = a0.ranges().tee();
-//     let a1 = RangeSetInt::from([8..=9]);
-//     let a2 = RangeSetInt::from([11..=15]);
-//     let a12 = &a1 | &a2;
-//     let not_a0 = !&a0;
-//     let a = &a0 | &a1 | &a2;
-//     let b = a0.ranges() | a1.ranges() | a2.ranges();
-//     let c = !not_a0.ranges() | a12.ranges();
-//     let d = a0.ranges() | a1.ranges() | a2.ranges();
-//     let e = a0_tee.bitor(a12.ranges());
-//     let f = a0.iter().collect::<BitOrIter<_, _>>()
-//         | a1.iter().collect::<BitOrIter<_, _>>()
-//         | a2.iter().collect::<BitOrIter<_, _>>();
-//     assert!(a.ranges().equal(b));
-//     assert!(a.ranges().equal(c));
-//     assert!(a.ranges().equal(d));
-//     assert!(a.ranges().equal(e));
-//     assert!(a.ranges().equal(f));
-//     Ok(())
-// }
+#[test]
+fn union_test() -> Result<(), Box<dyn std::error::Error>> {
+    // RangeSetInt, Ranges, NotIter, SortedDisjointIter, Tee, SortedDisjointIter(g)
+    let a0 = RangeSetInt::from([1..=6]);
+    let (a0_tee, _) = a0.ranges().tee();
+    let a1 = RangeSetInt::from([8..=9]);
+    let a2 = RangeSetInt::from([11..=15]);
+    let a12 = &a1 | &a2;
+    let not_a0 = !&a0;
+    let a = &a0 | &a1 | &a2;
+    let b = a0.ranges() | a1.ranges() | a2.ranges();
+    let c = !not_a0.ranges() | a12.ranges();
+    let d = a0.ranges() | a1.ranges() | a2.ranges();
+    let e = a0_tee.bitor(a12.ranges());
+    let f = a0.iter().collect::<SortedDisjointIter<_, _>>()
+        | a1.iter().collect::<SortedDisjointIter<_, _>>()
+        | a2.iter().collect::<SortedDisjointIter<_, _>>();
+    assert!(a.ranges().equal(b));
+    assert!(a.ranges().equal(c));
+    assert!(a.ranges().equal(d));
+    assert!(a.ranges().equal(e));
+    assert!(a.ranges().equal(f));
+    Ok(())
+}
 
-// #[test]
-// fn sub() -> Result<(), Box<dyn std::error::Error>> {
-//     // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
-//     let a0 = RangeSetInt::from([1..=6]);
-//     let a1 = RangeSetInt::from([8..=9]);
-//     let a2 = RangeSetInt::from([11..=15]);
-//     let a01 = &a0 | &a1;
-//     let (a01_tee, _) = a01.ranges().tee();
-//     let not_a01 = !&a01;
-//     let a = &a01 - &a2;
-//     let b = a01.ranges() - a2.ranges();
-//     let c = !not_a01.ranges() - a2.ranges();
-//     let d = (a0.ranges() | a1.ranges()) - a2.ranges();
-//     let e = a01_tee.sub(a2.ranges());
-//     let f = a01.iter().collect::<BitOrIter<_, _>>() - a2.iter().collect::<BitOrIter<_, _>>();
-//     assert!(a.ranges().equal(b));
-//     assert!(a.ranges().equal(c));
-//     assert!(a.ranges().equal(d));
-//     assert!(a.ranges().equal(e));
-//     assert!(a.ranges().equal(f));
+#[test]
+fn sub() -> Result<(), Box<dyn std::error::Error>> {
+    // RangeSetInt, Ranges, NotIter, SortedDisjointIter, Tee, SortedDisjointIter(g)
+    let a0 = RangeSetInt::from([1..=6]);
+    let a1 = RangeSetInt::from([8..=9]);
+    let a2 = RangeSetInt::from([11..=15]);
+    let a01 = &a0 | &a1;
+    let (a01_tee, _) = a01.ranges().tee();
+    let not_a01 = !&a01;
+    let a = &a01 - &a2;
+    let b = a01.ranges() - a2.ranges();
+    let c = !not_a01.ranges() - a2.ranges();
+    let d = (a0.ranges() | a1.ranges()) - a2.ranges();
+    let e = a01_tee.sub(a2.ranges());
+    let f = a01.iter().collect::<SortedDisjointIter<_, _>>()
+        - a2.iter().collect::<SortedDisjointIter<_, _>>();
+    assert!(a.ranges().equal(b));
+    assert!(a.ranges().equal(c));
+    assert!(a.ranges().equal(d));
+    assert!(a.ranges().equal(e));
+    assert!(a.ranges().equal(f));
 
-//     Ok(())
-// }
+    Ok(())
+}
 
-// #[test]
-// fn xor() -> Result<(), Box<dyn std::error::Error>> {
-//     // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
-//     let a0 = RangeSetInt::from([1..=6]);
-//     let a1 = RangeSetInt::from([8..=9]);
-//     let a2 = RangeSetInt::from([11..=15]);
-//     let a01 = &a0 | &a1;
-//     let (a01_tee, _) = a01.ranges().tee();
-//     let not_a01 = !&a01;
-//     let a = &a01 ^ &a2;
-//     let b = a01.ranges() ^ a2.ranges();
-//     let c = !not_a01.ranges() ^ a2.ranges();
-//     let d = (a0.ranges() | a1.ranges()) ^ a2.ranges();
-//     let e = a01_tee.bitxor(a2.ranges());
-//     let f = a01.iter().collect::<BitOrIter<_, _>>() ^ a2.iter().collect::<BitOrIter<_, _>>();
-//     assert!(a.ranges().equal(b));
-//     assert!(a.ranges().equal(c));
-//     assert!(a.ranges().equal(d));
-//     assert!(a.ranges().equal(e));
-//     assert!(a.ranges().equal(f));
-//     Ok(())
-// }
+#[test]
+fn xor() -> Result<(), Box<dyn std::error::Error>> {
+    // RangeSetInt, Ranges, NotIter, SortedDisjointIter, Tee, SortedDisjointIter(g)
+    let a0 = RangeSetInt::from([1..=6]);
+    let a1 = RangeSetInt::from([8..=9]);
+    let a2 = RangeSetInt::from([11..=15]);
+    let a01 = &a0 | &a1;
+    let (a01_tee, _) = a01.ranges().tee();
+    let not_a01 = !&a01;
+    let a = &a01 ^ &a2;
+    let b = a01.ranges() ^ a2.ranges();
+    let c = !not_a01.ranges() ^ a2.ranges();
+    let d = (a0.ranges() | a1.ranges()) ^ a2.ranges();
+    let e = a01_tee.bitxor(a2.ranges());
+    let f = a01.iter().collect::<SortedDisjointIter<_, _>>()
+        ^ a2.iter().collect::<SortedDisjointIter<_, _>>();
+    assert!(a.ranges().equal(b));
+    assert!(a.ranges().equal(c));
+    assert!(a.ranges().equal(d));
+    assert!(a.ranges().equal(e));
+    assert!(a.ranges().equal(f));
+    Ok(())
+}
 
-// #[test]
-// fn bitand() -> Result<(), Box<dyn std::error::Error>> {
-//     // RangeSetInt, Ranges, NotIter, BitOrIter, Tee, BitOrIter(g)
-//     let a0 = RangeSetInt::from([1..=6]);
-//     let a1 = RangeSetInt::from([8..=9]);
-//     let a2 = RangeSetInt::from([11..=15]);
-//     let a01 = &a0 | &a1;
-//     let (a01_tee, _) = a01.ranges().tee();
-//     let not_a01 = !&a01;
-//     let a = &a01 & &a2;
-//     let b = a01.ranges() & a2.ranges();
-//     let c = !not_a01.ranges() & a2.ranges();
-//     let d = (a0.ranges() | a1.ranges()) & a2.ranges();
-//     let e = a01_tee.bitand(a2.ranges());
-//     let f = a01.iter().collect::<BitOrIter<_, _>>() & a2.iter().collect::<BitOrIter<_, _>>();
-//     assert!(a.ranges().equal(b));
-//     assert!(a.ranges().equal(c));
-//     assert!(a.ranges().equal(d));
-//     assert!(a.ranges().equal(e));
-//     assert!(a.ranges().equal(f));
-//     Ok(())
-// }
+#[test]
+fn bitand() -> Result<(), Box<dyn std::error::Error>> {
+    // RangeSetInt, Ranges, NotIter, SortedDisjointIter, Tee, SortedDisjointIter(g)
+    let a0 = RangeSetInt::from([1..=6]);
+    let a1 = RangeSetInt::from([8..=9]);
+    let a2 = RangeSetInt::from([11..=15]);
+    let a01 = &a0 | &a1;
+    let (a01_tee, _) = a01.ranges().tee();
+    let not_a01 = !&a01;
+    let a = &a01 & &a2;
+    let b = a01.ranges() & a2.ranges();
+    let c = !not_a01.ranges() & a2.ranges();
+    let d = (a0.ranges() | a1.ranges()) & a2.ranges();
+    let e = a01_tee.bitand(a2.ranges());
+    let f = a01.iter().collect::<SortedDisjointIter<_, _>>()
+        & a2.iter().collect::<SortedDisjointIter<_, _>>();
+    assert!(a.ranges().equal(b));
+    assert!(a.ranges().equal(c));
+    assert!(a.ranges().equal(d));
+    assert!(a.ranges().equal(e));
+    assert!(a.ranges().equal(f));
+    Ok(())
+}
 
 // // !!!cmk should each type have a .universe() and .empty() method? e.g. 0..=255 for u8
-// #[test]
-// fn empty_it() {
-//     let universe: BitOrIter<u8, _> = [0..=255].into_iter().collect();
-//     let arr: [u8; 0] = [];
-//     let a0 = RangeSetInt::<u8>::from(arr);
-//     assert!(!(a0.ranges()).equal(universe.clone()));
-//     assert!((!a0).ranges().equal(universe));
-//     let _a0 = RangeSetInt::from([0..=0; 0]);
-//     let _a = RangeSetInt::<i32>::new();
+#[test]
+fn empty_it() {
+    let universe: SortedDisjointIter<u8, _> = [0..=255].into_iter().collect();
+    let arr: [u8; 0] = [];
+    let a0 = RangeSetInt::<u8>::from(arr);
+    assert!(!(a0.ranges()).equal(universe.clone()));
+    assert!((!a0).ranges().equal(universe));
+    let _a0 = RangeSetInt::from([0..=0; 0]);
+    let _a = RangeSetInt::<i32>::new();
 
-//     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-//     let a = a_iter.collect::<RangeSetInt<i32>>();
-//     let b = RangeSetInt::from([0i32; 0]);
-//     let b_ref: [&i32; 0] = [];
-//     let mut c3 = a.clone();
-//     let mut c4 = a.clone();
-//     let mut c5 = a.clone();
+    let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
+    let a = a_iter.collect::<RangeSetInt<i32>>();
+    let b = RangeSetInt::from([0i32; 0]);
+    let b_ref: [&i32; 0] = [];
+    let mut c3 = a.clone();
+    let mut c4 = a.clone();
+    let mut c5 = a.clone();
 
-//     let c0 = (&a).bitor(&b);
-//     let c1a = &a | &b;
-//     let c1b = &a | b.clone();
-//     let c1c = a.clone() | &b;
-//     let c1d = a.clone() | b.clone();
-//     let c2: RangeSetInt<_> = (a.ranges() | b.ranges()).into();
-//     c3.append(&mut b.clone());
-//     c4.extend(b_ref);
-//     c5.extend(b);
+    let c0 = (&a).bitor(&b);
+    let c1a = &a | &b;
+    let c1b = &a | b.clone();
+    let c1c = a.clone() | &b;
+    let c1d = a.clone() | b.clone();
+    let c2: RangeSetInt<_> = (a.ranges() | b.ranges()).into();
+    c3.append(&mut b.clone());
+    c4.extend(b_ref);
+    c5.extend(b);
 
-//     let answer = RangeSetInt::from([0; 0]);
-//     assert_eq!(&c0, &answer);
-//     assert_eq!(&c1a, &answer);
-//     assert_eq!(&c1b, &answer);
-//     assert_eq!(&c1c, &answer);
-//     assert_eq!(&c1d, &answer);
-//     assert_eq!(&c2, &answer);
-//     assert_eq!(&c3, &answer);
-//     assert_eq!(&c4, &answer);
-//     assert_eq!(&c5, &answer);
+    let answer = RangeSetInt::from([0; 0]);
+    assert_eq!(&c0, &answer);
+    assert_eq!(&c1a, &answer);
+    assert_eq!(&c1b, &answer);
+    assert_eq!(&c1c, &answer);
+    assert_eq!(&c1d, &answer);
+    assert_eq!(&c2, &answer);
+    assert_eq!(&c3, &answer);
+    assert_eq!(&c4, &answer);
+    assert_eq!(&c5, &answer);
 
-//     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-//     let a = a_iter.collect::<RangeSetInt<i32>>();
-//     let b = RangeSetInt::from([0; 0]);
+    let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
+    let a = a_iter.collect::<RangeSetInt<i32>>();
+    let b = RangeSetInt::from([0; 0]);
 
-//     let c0 = a.ranges() | b.ranges();
-//     let c1 = union([a.ranges(), b.ranges()]);
-//     let c_list2: [Ranges<i32>; 0] = [];
-//     let c2 = union(c_list2.clone());
-//     let c3 = union_dyn!(a.ranges(), b.ranges());
-//     let c4 = union(c_list2.map(|x| x.dyn_sorted_disjoint()));
+    let c0 = a.ranges() | b.ranges();
+    let c1 = union([a.ranges(), b.ranges()]);
+    let c_list2: [Ranges<i32>; 0] = [];
+    let c2 = union(c_list2.clone());
+    let c3 = union_dyn!(a.ranges(), b.ranges());
+    let c4 = union(c_list2.map(|x| x.dyn_sorted_disjoint()));
 
-//     let answer = RangeSetInt::from([0; 0]);
-//     assert!(c0.equal(answer.ranges()));
-//     assert!(c1.equal(answer.ranges()));
-//     assert!(c2.equal(answer.ranges()));
-//     assert!(c3.equal(answer.ranges()));
-//     assert!(c4.equal(answer.ranges()));
+    let answer = RangeSetInt::from([0; 0]);
+    assert!(c0.equal(answer.ranges()));
+    assert!(c1.equal(answer.ranges()));
+    assert!(c2.equal(answer.ranges()));
+    assert!(c3.equal(answer.ranges()));
+    assert!(c4.equal(answer.ranges()));
 
-//     let c0 = !(a.ranges() & b.ranges());
-//     let c1 = !intersection([a.ranges(), b.ranges()]);
-//     let c_list2: [Ranges<i32>; 0] = [];
-//     let c2 = !!intersection(c_list2.clone());
-//     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
-//     let c4 = !!intersection(c_list2.map(|x| x.dyn_sorted_disjoint()));
+    let c0 = !(a.ranges() & b.ranges());
+    let c1 = !intersection([a.ranges(), b.ranges()]);
+    let c_list2: [Ranges<i32>; 0] = [];
+    let c2 = !!intersection(c_list2.clone());
+    let c3 = !intersection_dyn!(a.ranges(), b.ranges());
+    let c4 = !!intersection(c_list2.map(|x| x.dyn_sorted_disjoint()));
 
-//     let answer = !RangeSetInt::from([0; 0]);
-//     assert!(c0.equal(answer.ranges()));
-//     assert!(c1.equal(answer.ranges()));
-//     assert!(c2.equal(answer.ranges()));
-//     assert!(c3.equal(answer.ranges()));
-//     assert!(c4.equal(answer.ranges()));
-// }
+    let answer = !RangeSetInt::from([0; 0]);
+    assert!(c0.equal(answer.ranges()));
+    assert!(c1.equal(answer.ranges()));
+    assert!(c2.equal(answer.ranges()));
+    assert!(c3.equal(answer.ranges()));
+    assert!(c4.equal(answer.ranges()));
+}
 
 #[test]
 #[allow(clippy::reversed_empty_ranges)]
