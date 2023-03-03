@@ -15,7 +15,7 @@ where
     I: Iterator<Item = RangeInclusive<T>>,
 {
     // !!!cmk0000 can't allow access to iter without handling the other fields
-    iter: I,
+    iter_cmk0000: I,
     range: Option<RangeInclusive<T>>,
     min_value_plus_2: T,
     two: T,
@@ -28,7 +28,7 @@ where
 {
     fn from(into_iter: I) -> Self {
         UnsortedDisjoint {
-            iter: into_iter.into_iter(),
+            iter_cmk0000: into_iter.into_iter(),
             range: None,
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
@@ -44,7 +44,7 @@ where
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(range_inclusive) = self.iter.next() {
+        if let Some(range_inclusive) = self.iter_cmk0000.next() {
             let (next_start, next_end) = range_inclusive.into_inner();
             if next_start > next_end {
                 return self.next();
@@ -75,8 +75,9 @@ where
     }
 
     // As few as one (or zero if iter is empty) and as many as iter.len()
+    // !!!cmk0000 this is wrong because don't take into account the other fields
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let (lower, upper) = self.iter.size_hint();
+        let (lower, upper) = self.iter_cmk0000.size_hint();
         let lower = if lower == 0 { 0 } else { 1 };
         (lower, upper)
     }
@@ -195,6 +196,7 @@ where
         self.iter.next()
     }
 
+    // !!!cmk rule add a size hint, but think about if it is correct with respect to other fields
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }

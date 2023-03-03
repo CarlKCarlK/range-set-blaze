@@ -15,7 +15,7 @@ where
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
     // !!!cmk0000 can't allow access to iter without handling the other fields
-    pub(crate) iter: I,
+    pub(crate) iter_cmk0000: I,
     pub(crate) range: Option<RangeInclusive<T>>,
 }
 
@@ -25,7 +25,10 @@ where
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
     pub fn new(iter: I) -> Self {
-        Self { iter, range: None }
+        Self {
+            iter_cmk0000: iter,
+            range: None,
+        }
     }
 }
 
@@ -88,7 +91,10 @@ where
         let iter = AssumeSortedStarts {
             iter: unsorted_disjoint.sorted_by_key(|range_inclusive| *range_inclusive.start()),
         };
-        Self { iter, range: None }
+        Self {
+            iter_cmk0000: iter,
+            range: None,
+        }
     }
 }
 
@@ -99,7 +105,7 @@ where
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<RangeInclusive<T>> {
-        if let Some(range_inclusive) = self.iter.next() {
+        if let Some(range_inclusive) = self.iter_cmk0000.next() {
             let (start, stop) = range_inclusive.into_inner();
             if stop < start {
                 return self.next(); // !!!cmk00 test this
@@ -128,8 +134,9 @@ where
     }
 
     // There could be a few as 1 (or 0 if the iter is empty) or as many as the iter.
+    // !!!cmk0000 this is not correct because it ignores the other fields
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let (low, high) = self.iter.size_hint();
+        let (low, high) = self.iter_cmk0000.size_hint();
         let low = low.min(1);
         (low, high)
     }

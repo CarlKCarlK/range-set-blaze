@@ -73,7 +73,7 @@ error[E0277]: the trait bound `std::array::IntoIter<RangeInclusive<{integer}>, 2
             SortedDisjointWithLenSoFar<T, I>
             itertools::tee::Tee<I>
 note: required by a bound in `NotIter`
- --> src/lib.rs
+ --> src/not_iter.rs
   |
   |     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
   |                                             ^^^^^^^^^^^^^^ required by this bound in `NotIter`

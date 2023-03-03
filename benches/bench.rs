@@ -486,4 +486,4 @@ criterion_group!(
 );
 criterion_main!(benches);
 
-// cmkrule cargo bench intersect
+// cmk rule cargo bench intersect
