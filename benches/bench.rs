@@ -485,3 +485,5 @@ criterion_group!(
     k_intersect
 );
 criterion_main!(benches);
+
+// cmkrule cargo bench intersect

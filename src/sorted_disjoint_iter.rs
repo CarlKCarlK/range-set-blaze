@@ -14,6 +14,7 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
+    // !!!cmk0000 can't allow access to iter without handling the other fields
     pub(crate) iter: I,
     pub(crate) range: Option<RangeInclusive<T>>,
 }

@@ -14,6 +14,7 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>,
 {
+    // !!!cmk0000 can't allow access to iter without handling the other fields
     iter: I,
     range: Option<RangeInclusive<T>>,
     min_value_plus_2: T,
@@ -102,6 +103,7 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
+    // !!!cmk0000 can't allow access to iter without handling the other fields
     iter: I,
     len: <T as Integer>::SafeLen,
 }

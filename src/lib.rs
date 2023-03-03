@@ -561,6 +561,7 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
+    // cmk0000 can't allow access to iter without handling the other fields
     iter: I,
     start_not: T,
     next_time_return_none: bool,
@@ -713,6 +714,7 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
+    // !!!cmk0000 can't allow access to iter without handling the other fields
     current: T,
     option_range: Option<RangeInclusive<T>>,
     iter: I,
