@@ -315,11 +315,11 @@ impl<T: Integer> SortedStarts for Ranges<'_, T> {}
 impl<T: Integer> SortedDisjoint for Ranges<'_, T> {}
 // If the iterator inside a BitOrIter is SortedStart, the output will be SortedDisjoint
 impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedStarts> SortedStarts
-    for BitOrIter<T, I>
+    for SortedDisjointIter<T, I>
 {
 }
 impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedStarts> SortedDisjoint
-    for BitOrIter<T, I>
+    for SortedDisjointIter<T, I>
 {
 }
 // If the iterator inside NotIter is SortedDisjoint, the output will be SortedDisjoint
@@ -358,11 +358,11 @@ impl<'a, T: Integer> Iterator for Ranges<'a, T> {
 // 1. turning them into a BitOrIter (internally, it collects into intervals and sorts by start).
 // 2. Turning the SortedDisjoint into a BTreeMap.
 impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
-    fn from_iter<I>(iter: I) -> Self
+    fn from_iter<I>(into_iter: I) -> Self
     where
         I: IntoIterator<Item = T>,
     {
-        iter.into_iter().collect::<BitOrIter<T, _>>().into()
+        into_iter.into_iter().map(|x| x..=x).collect()
     }
 }
 
@@ -372,7 +372,9 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = RangeInclusive<T>>,
     {
-        into_iter.into_iter().collect::<BitOrIter<T, _>>().into()
+        let unsorted_disjoint = UnsortedDisjoint::from(into_iter);
+        let sorted_disjoint_iter = SortedDisjointIter::from(unsorted_disjoint);
+        sorted_disjoint_iter.into()
     }
 }
 
@@ -418,7 +420,7 @@ where
 }
 
 #[derive(Clone)]
-pub struct BitOrIter<T, I>
+pub struct SortedDisjointIter<T, I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
@@ -444,8 +446,8 @@ where
 
 pub type Merge<T, L, R> = MergeBy<L, R, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>;
 pub type KMerge<T, I> = KMergeBy<I, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>;
-pub type BitOrMerge<T, L, R> = BitOrIter<T, Merge<T, L, R>>;
-pub type BitOrKMerge<T, I> = BitOrIter<T, KMerge<T, I>>;
+pub type BitOrMerge<T, L, R> = SortedDisjointIter<T, Merge<T, L, R>>;
+pub type BitOrKMerge<T, I> = SortedDisjointIter<T, KMerge<T, I>>;
 pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
 pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
 pub type BitNandMerge<T, L, R> = BitOrMerge<T, NotIter<T, L>, NotIter<T, R>>;
@@ -462,22 +464,20 @@ pub type BitEq<T, L, R> = BitOrMerge<
 >;
 
 // !!!cmk000 remove support for TryFrom from strings
-impl<T, L, R> BitOrMerge<T, L, R>
+
+impl<T, I> SortedDisjointIter<T, I>
 where
     T: Integer,
-    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
-    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
-    fn new(lhs: L, rhs: R) -> BitOrMerge<T, L, R> {
-        Self {
-            iter: lhs.merge_by(rhs, |a, b| a.start() <= b.start()),
-            range: None,
-        }
+    fn new(iter: I) -> Self {
+        Self { iter, range: None }
     }
 }
 
+// cmk0000 these seem to specific and seem to do too much
 impl<T: Integer> FromIterator<T>
-    for BitOrIter<T, AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>>
+    for SortedDisjointIter<T, AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -488,7 +488,7 @@ impl<T: Integer> FromIterator<T>
 }
 
 impl<T: Integer> FromIterator<RangeInclusive<T>>
-    for BitOrIter<T, AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>>
+    for SortedDisjointIter<T, AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -499,7 +499,7 @@ impl<T: Integer> FromIterator<RangeInclusive<T>>
 }
 
 impl<T, I> From<UnsortedDisjoint<T, I>>
-    for BitOrIter<T, AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>>
+    for SortedDisjointIter<T, AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>, // Any iterator is OK, because we will sort
@@ -519,12 +519,11 @@ where
     J::IntoIter: SortedDisjoint,
     T: Integer,
 {
-    BitOrIter {
-        iter: into_iter
+    SortedDisjointIter::new(
+        into_iter
             .into_iter()
             .kmerge_by(|pair0, pair1| pair0.start() < pair1.start()),
-        range: None,
-    }
+    )
 }
 
 // cmk rule: don't for get these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
@@ -549,7 +548,7 @@ pub trait SortedDisjointIterator<T: Integer>:
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint,
     {
-        BitOrMerge::new(self, other.into_iter())
+        SortedDisjointIter::new(self.merge_by(other.into_iter(), |a, b| a.start() <= b.start()))
     }
 
     fn bitand<R>(self, other: R) -> BitAndMerge<T, Self, R::IntoIter>
@@ -610,7 +609,7 @@ where
 {
 }
 
-impl<T: Integer, I> Iterator for BitOrIter<T, I>
+impl<T: Integer, I> Iterator for SortedDisjointIter<T, I>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
@@ -619,6 +618,9 @@ where
     fn next(&mut self) -> Option<RangeInclusive<T>> {
         if let Some(range_inclusive) = self.iter.next() {
             let (start, stop) = range_inclusive.into_inner();
+            if stop < start {
+                return self.next(); // !!!cmk0000 test this
+            }
             if let Some(current_range_inclusive) = self.range.clone() {
                 let (current_start, current_stop) = current_range_inclusive.into_inner();
                 debug_assert!(current_start <= start); // cmk debug panic if not sorted
@@ -695,6 +697,7 @@ where
         let next_item = self.iter.next();
         if let Some(range_inclusive) = next_item {
             let (start, stop) = range_inclusive.into_inner();
+            debug_assert!(start <= stop && stop <= T::max_value2());
             if self.start_not < start {
                 // We can subtract with underflow worry because
                 // we know that start > start_not and so not min_value
@@ -821,6 +824,7 @@ where
     fn next(&mut self) -> Option<T> {
         if let Some(range_inclusive) = self.option_range.clone() {
             let (start, stop) = range_inclusive.into_inner();
+            debug_assert!(start <= stop && stop <= T::max_value2());
             self.current = start;
             if start < stop {
                 self.option_range = Some(start + T::one()..=stop);
@@ -854,6 +858,7 @@ impl<T: Integer> Iterator for IntoIter<T> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range_inclusive) = self.option_range.clone() {
             let (start, stop) = range_inclusive.into_inner();
+            debug_assert!(start <= stop && stop <= T::max_value2());
             if start < stop {
                 self.option_range = Some(start + T::one()..=stop);
             } else {
@@ -1139,7 +1144,7 @@ where
     }
 }
 
-impl<T: Integer, I> ops::Not for BitOrIter<T, I>
+impl<T: Integer, I> ops::Not for SortedDisjointIter<T, I>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
@@ -1158,7 +1163,7 @@ where
     type Output = BitOrMerge<T, Self, I>;
 
     fn bitor(self, rhs: I) -> Self::Output {
-        BitOrIter::new(self, rhs)
+        SortedDisjointIterator::bitor(self, rhs)
     }
 }
 
@@ -1170,11 +1175,11 @@ where
     type Output = BitOrMerge<T, Self, R>;
 
     fn bitor(self, rhs: R) -> Self::Output {
-        BitOrIter::new(self, rhs)
+        SortedDisjointIterator::bitor(self, rhs)
     }
 }
 
-impl<T: Integer, R, L> ops::BitOr<R> for BitOrIter<T, L>
+impl<T: Integer, R, L> ops::BitOr<R> for SortedDisjointIter<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
@@ -1183,7 +1188,7 @@ where
 
     fn bitor(self, rhs: R) -> Self::Output {
         // cmk should we optimize a|b|c into union(a,b,c)?
-        BitOrIter::new(self, rhs)
+        SortedDisjointIterator::bitor(self, rhs)
     }
 }
 
@@ -1213,7 +1218,7 @@ where
     }
 }
 
-impl<T: Integer, R, L> ops::Sub<R> for BitOrIter<T, L>
+impl<T: Integer, R, L> ops::Sub<R> for SortedDisjointIter<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
@@ -1258,7 +1263,7 @@ where
     }
 }
 
-impl<T: Integer, R, L> ops::BitXor<R> for BitOrIter<T, L>
+impl<T: Integer, R, L> ops::BitXor<R> for SortedDisjointIter<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
@@ -1301,7 +1306,7 @@ where
 }
 
 // cmk name all generics in a sensible way
-impl<T: Integer, R, L> ops::BitAnd<R> for BitOrIter<T, L>
+impl<T: Integer, R, L> ops::BitAnd<R> for SortedDisjointIter<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,

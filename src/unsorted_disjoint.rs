@@ -49,7 +49,6 @@ where
                 return self.next();
             }
             assert!(next_end <= T::max_value2()); // !!!cmk0 raise error on panic?
-                                                  // !!!cmk0000 bug
             if let Some(self_range_inclusive) = self.range.clone() {
                 let (self_start, self_end) = self_range_inclusive.into_inner();
                 if (next_start >= self.min_value_plus_2 && self_end <= next_start - self.two)
@@ -67,7 +66,6 @@ where
                 self.next()
             }
         } else if let Some(range_inclusive) = self.range.clone() {
-            // cmk0 clone?
             self.range = None;
             Some(range_inclusive)
         } else {
