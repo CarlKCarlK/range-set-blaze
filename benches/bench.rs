@@ -7,10 +7,10 @@
 use std::collections::BTreeSet;
 
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
+use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 // use pprof::criterion::Output; //PProfProfiler
-use rand::seq::SliceRandom;
-use rand::{rngs::StdRng, SeedableRng};
-use range_set_int::{intersection, DynSortedDisjointExt, MemorylessData, RangeSetInt};
+use range_set_int::{intersection, DynSortedDisjointExt, RangeSetInt};
+use tests_common::MemorylessData;
 // use thousands::Separable;
 
 // fn insert10(c: &mut Criterion) {

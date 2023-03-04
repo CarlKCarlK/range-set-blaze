@@ -3,11 +3,12 @@ name = "range-set-int"
 version = "0.1.0"
 edition = "2021"
 
+[workspace]
+
+members = [".", "tests_common"]
 [lib]
 
 [dependencies]
-rand = "0.8.5"
-thousands = "0.2.0"
 itertools = "0.10.1"
 num-integer = "0.1.44"
 num-traits = "0.2.14"
@@ -15,11 +16,15 @@ gen_ops = "0.2.0"
 thiserror = "1.0"
 
 [dev-dependencies]
+tests_common = { path = "tests_common" }
 syntactic-for = "0.1.1"
-criterion = "0.4.0"
-maplit = "1.0.2"
+criterion = { version = "0.4", features = ["html_reports"] }
 trybuild = "1.0.53"
+rand = "0.8.4"
+thousands = "0.2.0"
 
+
+# Declare a benchmark called “bench” without the standard benchmarking harness. 
 [[bench]]
 name = "bench"
 harness = false
