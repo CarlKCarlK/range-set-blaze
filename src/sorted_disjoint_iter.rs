@@ -14,9 +14,8 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
-    // !!!cmk0000 can't allow access to iter without handling the other fields
-    pub(crate) iter_cmk0000: I,
-    pub(crate) range: Option<RangeInclusive<T>>,
+    iter: I,
+    option_range_inclusive: Option<RangeInclusive<T>>,
 }
 
 impl<T, I> SortedDisjointIter<T, I>
@@ -26,8 +25,8 @@ where
 {
     pub fn new(iter: I) -> Self {
         Self {
-            iter_cmk0000: iter,
-            range: None,
+            iter,
+            option_range_inclusive: None,
         }
     }
 }
@@ -92,8 +91,8 @@ where
             iter: unsorted_disjoint.sorted_by_key(|range_inclusive| *range_inclusive.start()),
         };
         Self {
-            iter_cmk0000: iter,
-            range: None,
+            iter,
+            option_range_inclusive: None,
         }
     }
 }
@@ -105,39 +104,43 @@ where
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<RangeInclusive<T>> {
-        if let Some(range_inclusive) = self.iter_cmk0000.next() {
+        if let Some(range_inclusive) = self.iter.next() {
             let (start, stop) = range_inclusive.into_inner();
             if stop < start {
                 return self.next(); // !!!cmk00 test this
             }
-            if let Some(current_range_inclusive) = self.range.clone() {
+            if let Some(current_range_inclusive) = self.option_range_inclusive.clone() {
                 let (current_start, current_stop) = current_range_inclusive.into_inner();
                 debug_assert!(current_start <= start); // cmk debug panic if not sorted
                 if start <= current_stop
                     || (current_stop < T::max_value2() && start <= current_stop + T::one())
                 {
-                    self.range = Some(current_start..=max(current_stop, stop));
+                    self.option_range_inclusive = Some(current_start..=max(current_stop, stop));
                     self.next()
                 } else {
-                    self.range = Some(start..=stop);
+                    self.option_range_inclusive = Some(start..=stop);
                     Some(current_start..=current_stop)
                 }
             } else {
-                self.range = Some(start..=stop);
+                self.option_range_inclusive = Some(start..=stop);
                 self.next()
             }
         } else {
-            let result = self.range.clone();
-            self.range = None;
+            let result = self.option_range_inclusive.clone();
+            self.option_range_inclusive = None;
             result
         }
     }
 
     // There could be a few as 1 (or 0 if the iter is empty) or as many as the iter.
-    // !!!cmk0000 this is not correct because it ignores the other fields
+    // Plus, possibly one more if we have a range_inclusive is in progress.
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let (low, high) = self.iter_cmk0000.size_hint();
+        let (low, high) = self.iter.size_hint();
         let low = low.min(1);
-        (low, high)
+        if self.option_range_inclusive.is_some() {
+            (low, high.map(|x| x + 1))
+        } else {
+            (low, high)
+        }
     }
 }

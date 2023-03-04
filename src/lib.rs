@@ -25,8 +25,7 @@
 // !!! cmk rule: Don't have a function and a method. Pick one (method)
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 // cmk rule: don't create an assign method if it is not more efficient
-// cmk0000 show that multiple binary unions and intersections are done only once on RangeSetInt
-// cmk0000 benchmark.
+// cmk00000 benchmark.
 
 mod integer;
 pub mod not_iter;
@@ -123,8 +122,8 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn iter(&self) -> Iter<T, impl Iterator<Item = RangeInclusive<T>> + SortedDisjoint + '_> {
         Iter {
             current: T::zero(),
-            option_range: None,
-            iter_cmk0000: self.ranges(),
+            option_range_inclusive: None,
+            iter: self.ranges(),
         }
     }
 }
@@ -619,8 +618,8 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     /// ```
     fn into_iter(self) -> IntoIter<T> {
         IntoIter {
-            option_range: None,
-            into_iter_cmk0000: self.btree_map.into_iter(),
+            option_range_inclusive: None,
+            into_iter: self.btree_map.into_iter(),
         }
     }
 }
@@ -631,10 +630,9 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
-    // !!!cmk0000 can't allow access to iter without handling the other fields
+    iter: I,
     current: T,
-    option_range: Option<RangeInclusive<T>>,
-    iter_cmk0000: I,
+    option_range_inclusive: Option<RangeInclusive<T>>,
 }
 
 impl<T: Integer, I> Iterator for Iter<T, I>
@@ -643,18 +641,18 @@ where
 {
     type Item = T;
     fn next(&mut self) -> Option<T> {
-        if let Some(range_inclusive) = self.option_range.clone() {
+        if let Some(range_inclusive) = self.option_range_inclusive.clone() {
             let (start, stop) = range_inclusive.into_inner();
             debug_assert!(start <= stop && stop <= T::max_value2());
             self.current = start;
             if start < stop {
-                self.option_range = Some(start + T::one()..=stop);
+                self.option_range_inclusive = Some(start + T::one()..=stop);
             } else {
-                self.option_range = None;
+                self.option_range_inclusive = None;
             }
             Some(self.current)
-        } else if let Some(range_inclusive) = self.iter_cmk0000.next() {
-            self.option_range = Some(range_inclusive);
+        } else if let Some(range_inclusive) = self.iter.next() {
+            self.option_range_inclusive = Some(range_inclusive);
             self.next()
         } else {
             None
@@ -662,35 +660,34 @@ where
     }
 
     // We'll have at least as many integers as intervals. There could be more that usize MAX
-    // !!!cmk0000 may not be right given other two fields
+    // The option_range field could increase the number of integers, but we can ignore that.
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let (low, _high) = self.iter_cmk0000.size_hint();
+        let (low, _high) = self.iter.size_hint();
         (low, None)
     }
 }
 
 // cmk000 why not just use Iter?
 pub struct IntoIter<T: Integer> {
-    option_range: Option<RangeInclusive<T>>,
-    /// cmk0000 can't allow access to iter without handling the other fields
-    into_iter_cmk0000: std::collections::btree_map::IntoIter<T, T>,
+    option_range_inclusive: Option<RangeInclusive<T>>,
+    into_iter: std::collections::btree_map::IntoIter<T, T>,
 }
 
 impl<T: Integer> Iterator for IntoIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(range_inclusive) = self.option_range.clone() {
+        if let Some(range_inclusive) = self.option_range_inclusive.clone() {
             let (start, stop) = range_inclusive.into_inner();
             debug_assert!(start <= stop && stop <= T::max_value2());
             if start < stop {
-                self.option_range = Some(start + T::one()..=stop);
+                self.option_range_inclusive = Some(start + T::one()..=stop);
             } else {
-                self.option_range = None;
+                self.option_range_inclusive = None;
             }
             Some(start)
-        } else if let Some((start, stop)) = self.into_iter_cmk0000.next() {
-            self.option_range = Some(start..=stop);
+        } else if let Some((start, stop)) = self.into_iter.next() {
+            self.option_range_inclusive = Some(start..=stop);
             self.next()
         } else {
             None
@@ -698,9 +695,9 @@ impl<T: Integer> Iterator for IntoIter<T> {
     }
 
     // We'll have at least as many integers as intervals. There could be more that usize MAX
-    // !!!cmk0000 may not be right given other two fields
+    // the option_range field could increase the number of integers, but we can ignore that.
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let (low, _high) = self.into_iter_cmk0000.size_hint();
+        let (low, _high) = self.into_iter.size_hint();
         (low, None)
     }
 }
@@ -962,11 +959,12 @@ impl<T: Integer, I> ops::Not for NotIter<T, I>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
-    type Output = I;
+    type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        // !!!cmk0000 this is wrong because it ignores other fields
-        self.iter_cmk0000
+        // It would be fun to optimize to self.iter, but that would require
+        // also considering fields 'start_not' and 'next_time_return_none'.
+        NotIter::new(self)
     }
 }
 
@@ -1010,16 +1008,12 @@ where
     L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
-    type Output = BitOrMerge<T, L, R>;
+    type Output = BitOrMerge<T, Self, R>;
 
-    // SortedDisjointIter(SortedStarts) | SortedDisjoint -> SortedDisjointIter(SortedStarts.merge(SortedDisjoint))
     fn bitor(self, rhs: R) -> Self::Output {
-        // cmk0000 doesn't this assume that self.range is None?
-        // cmk0000 should we optimize a|b|c into union(a,b,c)?
-        SortedDisjointIter::new(
-            self.iter_cmk0000
-                .merge_by(rhs, |a, b| a.start() <= b.start()),
-        )
+        // It might be fine to optimize to self.iter, but that would require
+        // also considering field 'range'
+        SortedDisjointIterator::bitor(self, rhs)
     }
 }
 
@@ -1041,12 +1035,12 @@ where
     L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
-    type Output = BitNorMerge<T, L, R>;
+    type Output = BitSubMerge<T, Self, R>;
 
     fn sub(self, rhs: R) -> Self::Output {
-        // We have optimized !!self.iter into self.iter
-        // cmk0000 doesn't this assume that self.range is None? etc
-        !self.iter_cmk0000.bitor(rhs)
+        // It would be fun to optimize !!self.iter into self.iter
+        // but that would require also considering fields 'start_not' and 'next_time_return_none'.
+        !(!self | rhs)
     }
 }
 
@@ -1084,15 +1078,16 @@ where
     L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
-    type Output = BitEq<T, L, R>;
+    type Output = BitXOrTee<T, Self, R>;
 
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitxor(self, rhs: R) -> Self::Output {
-        // !!!cmk0000 not_iter.iter is wrong because it ignores other fields
-        let (not_lhs0, not_lhs1) = self.iter_cmk0000.tee();
-        let (rhs0, rhs1) = rhs.tee();
-        // optimize !!self.iter into self.iter
+        // It would be fine optimize !!self.iter into self.iter, ala
         // ¬(¬n ∨ ¬r) ∨ ¬(n ∨ r) // https://www.wolframalpha.com/input?i=%28not+n%29+xor+r
-        !(not_lhs0.not() | rhs0.not()) | !not_lhs1.bitor(rhs1)
+        // but that would require also considering fields 'start_not' and 'next_time_return_none'.
+        let (lhs0, lhs1) = self.tee();
+        let (rhs0, rhs1) = rhs.tee();
+        lhs0.sub(rhs0) | rhs1.sub(lhs1)
     }
 }
 
@@ -1130,12 +1125,12 @@ where
     L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
-    type Output = NotIter<T, BitOrMerge<T, L, NotIter<T, R>>>;
+    type Output = BitAndMerge<T, Self, R>;
 
     fn bitand(self, rhs: R) -> Self::Output {
-        // optimize !!self.iter into self.iter
-        // !!!cmk0000 not_iter.iter is wrong because it ignores other fields
-        !self.iter_cmk0000.bitor(rhs.not())
+        // It would be fun to optimize !!self.iter into self.iter
+        // but that would require also considering fields 'start_not' and 'next_time_return_none'.
+        !(!self | rhs.not())
     }
 }
 

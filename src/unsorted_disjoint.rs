@@ -14,9 +14,8 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>,
 {
-    // !!!cmk0000 can't allow access to iter without handling the other fields
-    iter_cmk0000: I,
-    range: Option<RangeInclusive<T>>,
+    iter: I,
+    option_range_inclusive: Option<RangeInclusive<T>>,
     min_value_plus_2: T,
     two: T,
 }
@@ -28,8 +27,8 @@ where
 {
     fn from(into_iter: I) -> Self {
         UnsortedDisjoint {
-            iter_cmk0000: into_iter.into_iter(),
-            range: None,
+            iter: into_iter.into_iter(),
+            option_range_inclusive: None,
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
         }
@@ -44,30 +43,31 @@ where
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(range_inclusive) = self.iter_cmk0000.next() {
+        if let Some(range_inclusive) = self.iter.next() {
             let (next_start, next_end) = range_inclusive.into_inner();
             if next_start > next_end {
                 return self.next();
             }
             assert!(next_end <= T::max_value2()); // !!!cmk0 raise error on panic?
-            if let Some(self_range_inclusive) = self.range.clone() {
+            if let Some(self_range_inclusive) = self.option_range_inclusive.clone() {
                 let (self_start, self_end) = self_range_inclusive.into_inner();
                 if (next_start >= self.min_value_plus_2 && self_end <= next_start - self.two)
                     || (self_start >= self.min_value_plus_2 && next_end <= self_start - self.two)
                 {
                     let result = Some(self_start..=self_end);
-                    self.range = Some(next_start..=next_end);
+                    self.option_range_inclusive = Some(next_start..=next_end);
                     result
                 } else {
-                    self.range = Some(min(self_start, next_start)..=max(self_end, next_end));
+                    self.option_range_inclusive =
+                        Some(min(self_start, next_start)..=max(self_end, next_end));
                     self.next()
                 }
             } else {
-                self.range = Some(next_start..=next_end);
+                self.option_range_inclusive = Some(next_start..=next_end);
                 self.next()
             }
-        } else if let Some(range_inclusive) = self.range.clone() {
-            self.range = None;
+        } else if let Some(range_inclusive) = self.option_range_inclusive.clone() {
+            self.option_range_inclusive = None;
             Some(range_inclusive)
         } else {
             None
@@ -75,11 +75,15 @@ where
     }
 
     // As few as one (or zero if iter is empty) and as many as iter.len()
-    // !!!cmk0000 this is wrong because don't take into account the other fields
+    // There could be one extra if option_range_inclusive is Some.
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let (lower, upper) = self.iter_cmk0000.size_hint();
+        let (lower, upper) = self.iter.size_hint();
         let lower = if lower == 0 { 0 } else { 1 };
-        (lower, upper)
+        if self.option_range_inclusive.is_some() {
+            (lower, upper.map(|x| x + 1))
+        } else {
+            (lower, upper)
+        }
     }
 }
 
@@ -104,7 +108,6 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
-    // !!!cmk0000 can't allow access to iter without handling the other fields
     iter: I,
     len: <T as Integer>::SafeLen,
 }

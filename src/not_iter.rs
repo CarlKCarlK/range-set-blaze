@@ -9,8 +9,7 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
-    // cmk0000 can't allow access to iter without handling the other fields
-    pub(crate) iter_cmk0000: I,
+    iter: I,
     start_not: T,
     next_time_return_none: bool,
 }
@@ -21,12 +20,12 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
-    pub fn new<J>(iter: J) -> Self
+    pub fn new<J>(into_iter: J) -> Self
     where
         J: IntoIterator<Item = RangeInclusive<T>, IntoIter = I>,
     {
         NotIter {
-            iter_cmk0000: iter.into_iter(),
+            iter: into_iter.into_iter(),
             start_not: T::min_value(),
             next_time_return_none: false,
         }
@@ -45,7 +44,7 @@ where
         if self.next_time_return_none {
             return None;
         }
-        let next_item = self.iter_cmk0000.next();
+        let next_item = self.iter.next();
         if let Some(range_inclusive) = next_item {
             let (start, stop) = range_inclusive.into_inner();
             debug_assert!(start <= stop && stop <= T::max_value2());
@@ -73,9 +72,8 @@ where
     }
 
     // We could have one less or one more than the iter.
-    // !!!cmk0000 not right because could be using the other fields.
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let (low, high) = self.iter_cmk0000.size_hint();
+        let (low, high) = self.iter.size_hint();
         let low = if low > 0 { low - 1 } else { 0 };
         let high = high.map(|high| {
             if high < usize::MAX {
