@@ -527,6 +527,50 @@ fn coverage_goal(c: &mut Criterion) {
     group.finish();
 }
 
+fn k_play(c: &mut Criterion) {
+    let len = 10_000_000; // 10_000_000;
+    let range_len = 100; //1_000;
+    let coverage_goal = 0.90;
+
+    let mut group = c.benchmark_group("k_play");
+    for k in [2u64, 10, 50, 100].iter() {
+        // group.throughput(Throughput::Bytes(*size as u64));
+        group.bench_with_input(BenchmarkId::new("dyn", k), k, |b, &k| {
+            b.iter_batched(
+                || k_sets(k, range_len, len, coverage_goal),
+                |sets| {
+                    let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
+                    let _answer: RangeSetInt<_> = intersection(sets).into();
+                },
+                BatchSize::SmallInput,
+            );
+        });
+        group.bench_with_input(BenchmarkId::new("static", k), k, |b, &k| {
+            b.iter_batched(
+                || k_sets(k, range_len, len, coverage_goal),
+                |sets| {
+                    let _answer = RangeSetInt::intersection(sets.iter());
+                },
+                BatchSize::SmallInput,
+            );
+        });
+        group.bench_with_input(BenchmarkId::new("two-at-a-time", k), k, |b, &k| {
+            b.iter_batched(
+                || k_sets(k, range_len, len, coverage_goal),
+                |sets| {
+                    // !!!cmk need code for size zero
+                    let mut answer = sets[0].clone();
+                    for set in sets.iter().skip(1) {
+                        answer = answer & set;
+                    }
+                },
+                BatchSize::SmallInput,
+            );
+        });
+    }
+    group.finish();
+}
+
 criterion_group!(
     benches, // insert10,
     // small_random_inserts,
@@ -539,7 +583,8 @@ criterion_group!(
     bitor,
     bitor1,
     k_intersect,
-    coverage_goal
+    coverage_goal,
+    k_play
 );
 criterion_main!(benches);
 
