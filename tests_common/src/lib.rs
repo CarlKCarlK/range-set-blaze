@@ -1,11 +1,11 @@
+use std::ops::RangeInclusive;
+
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
 
 pub struct MemorylessData {
-    current_is_empty: bool,
-    current_lower: u64,
-    current_upper: u64,
+    option_range_inclusive: Option<RangeInclusive<u64>>,
     rng: StdRng,
     len: u128,
     range_len: u64,
@@ -17,9 +17,7 @@ impl MemorylessData {
         let average_coverage_per_clump = 1.0 - (1.0 - coverage_goal).powf(1.0 / (range_len as f64));
         Self {
             rng: StdRng::seed_from_u64(seed),
-            current_is_empty: true,
-            current_lower: 0,
-            current_upper: 0,
+            option_range_inclusive: None,
             len,
             range_len,
             average_coverage_per_clump,
@@ -31,12 +29,13 @@ impl Iterator for MemorylessData {
     type Item = u64;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if !self.current_is_empty {
-            let value = self.current_lower;
-            if self.current_lower == self.current_upper {
-                self.current_is_empty = true;
+        if let Some(range_inclusive) = self.option_range_inclusive.clone() {
+            let (self_start, self_end) = range_inclusive.into_inner();
+            let value = self_start;
+            if self_start == self_end {
+                self.option_range_inclusive = None;
             } else {
-                self.current_lower += 1u64;
+                self.option_range_inclusive = Some(self_start + 1..=self_end);
             }
             Some(value)
         } else if self.range_len == 0 {
@@ -53,12 +52,11 @@ impl Iterator for MemorylessData {
                     width_fraction = 1.0 - start_fraction;
                 }
             }
-            self.current_is_empty = false;
             let len_f64: f64 = self.len as f64;
             let current_lower_f64: f64 = len_f64 * start_fraction;
-            self.current_lower = current_lower_f64 as u64;
+            let start = current_lower_f64 as u64;
             let delta = (len_f64 * width_fraction) as u64;
-            self.current_upper = self.current_lower + delta;
+            self.option_range_inclusive = Some(start..=start + delta);
             self.next()
         }
     }

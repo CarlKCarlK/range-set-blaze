@@ -571,6 +571,15 @@ fn k_play(c: &mut Criterion) {
     group.finish();
 }
 
+// !!!cmk000 understand data generation and make it faster, perhaps only once
+// !!!cmk000 when generating k, make them union up to coverage_goal
+// !!!cmk000 why did full version get stack error?
+// !!!cmk000 make graph show effect of size of Element.
+// !!!cmk000 what is effect of # of range_elements? (k can be 2)
+// !!!cmk000 shorten code for each section as much as possible.
+// !!!cmk000 why is k-play so slow?
+// !!!cmk000 understand why criterion_group! starts with "benches"
+
 criterion_group!(
     benches, // insert10,
     // small_random_inserts,
