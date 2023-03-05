@@ -6,7 +6,7 @@
 
 use std::collections::BTreeSet;
 
-use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
+use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 // use pprof::criterion::Output; //PProfProfiler
 use range_set_int::{intersection, DynSortedDisjointExt, RangeSetInt};
@@ -471,6 +471,62 @@ fn k_sets(k: u64, range_len: u64, len: u128, coverage_goal: f64) -> Vec<RangeSet
         .collect()
 }
 
+fn coverage_goal(c: &mut Criterion) {
+    let k = 10; // 100;
+    let len = 1_000_000; // 10_000_000;
+    let range_len = 100; //1_000;
+
+    let mut group = c.benchmark_group("coverage_goal");
+    for coverage_goal in [0.1, 0.5, 0.75, 0.90, 0.95, 0.99].iter() {
+        // group.throughput(Throughput::Bytes(*size as u64));
+        group.bench_with_input(
+            BenchmarkId::new("dyn", coverage_goal),
+            coverage_goal,
+            |b, &coverage_goal| {
+                b.iter_batched(
+                    || k_sets(k, range_len, len, coverage_goal),
+                    |sets| {
+                        let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
+                        let _answer: RangeSetInt<_> = intersection(sets).into();
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("static", coverage_goal),
+            coverage_goal,
+            |b, &coverage_goal| {
+                b.iter_batched(
+                    || k_sets(k, range_len, len, coverage_goal),
+                    |sets| {
+                        let _answer = RangeSetInt::intersection(sets.iter());
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("two-at-a-time", coverage_goal),
+            coverage_goal,
+            |b, &coverage_goal| {
+                b.iter_batched(
+                    || k_sets(k, range_len, len, coverage_goal),
+                    |sets| {
+                        // !!!cmk need code for size zero
+                        let mut answer = sets[0].clone();
+                        for set in sets.iter().skip(1) {
+                            answer = answer & set;
+                        }
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+    }
+    group.finish();
+}
+
 criterion_group!(
     benches, // insert10,
     // small_random_inserts,
@@ -482,7 +538,8 @@ criterion_group!(
     bitxor,
     bitor,
     bitor1,
-    k_intersect
+    k_intersect,
+    coverage_goal
 );
 criterion_main!(benches);
 
