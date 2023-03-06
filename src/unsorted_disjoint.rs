@@ -43,34 +43,37 @@ where
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(range_inclusive) = self.iter.next() {
-            let (next_start, next_end) = range_inclusive.into_inner();
-            if next_start > next_end {
-                return self.next();
-            }
-            assert!(next_end <= T::max_value2()); // !!!cmk0 raise error on panic?
-            if let Some(self_range_inclusive) = self.option_range_inclusive.clone() {
-                let (self_start, self_end) = self_range_inclusive.into_inner();
-                if (next_start >= self.min_value_plus_2 && self_end <= next_start - self.two)
-                    || (self_start >= self.min_value_plus_2 && next_end <= self_start - self.two)
-                {
-                    let result = Some(self_start..=self_end);
-                    self.option_range_inclusive = Some(next_start..=next_end);
-                    result
-                } else {
-                    self.option_range_inclusive =
-                        Some(min(self_start, next_start)..=max(self_end, next_end));
-                    self.next()
+        loop {
+            if let Some(range_inclusive) = self.iter.next() {
+                let (next_start, next_end) = range_inclusive.into_inner();
+                if next_start > next_end {
+                    continue;
                 }
+                assert!(next_end <= T::max_value2()); // !!!cmk0 raise error on panic?
+                if let Some(self_range_inclusive) = self.option_range_inclusive.clone() {
+                    let (self_start, self_end) = self_range_inclusive.into_inner();
+                    if (next_start >= self.min_value_plus_2 && self_end <= next_start - self.two)
+                        || (self_start >= self.min_value_plus_2
+                            && next_end <= self_start - self.two)
+                    {
+                        let result = Some(self_start..=self_end);
+                        self.option_range_inclusive = Some(next_start..=next_end);
+                        return result;
+                    } else {
+                        self.option_range_inclusive =
+                            Some(min(self_start, next_start)..=max(self_end, next_end));
+                        continue;
+                    }
+                } else {
+                    self.option_range_inclusive = Some(next_start..=next_end);
+                    continue;
+                }
+            } else if let Some(range_inclusive) = self.option_range_inclusive.clone() {
+                self.option_range_inclusive = None;
+                return Some(range_inclusive);
             } else {
-                self.option_range_inclusive = Some(next_start..=next_end);
-                self.next()
+                return None;
             }
-        } else if let Some(range_inclusive) = self.option_range_inclusive.clone() {
-            self.option_range_inclusive = None;
-            Some(range_inclusive)
-        } else {
-            None
         }
     }
 

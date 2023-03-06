@@ -638,21 +638,23 @@ where
 {
     type Item = T;
     fn next(&mut self) -> Option<T> {
-        if let Some(range_inclusive) = self.option_range_inclusive.clone() {
-            let (start, stop) = range_inclusive.into_inner();
-            debug_assert!(start <= stop && stop <= T::max_value2());
-            self.current = start;
-            if start < stop {
-                self.option_range_inclusive = Some(start + T::one()..=stop);
+        loop {
+            if let Some(range_inclusive) = self.option_range_inclusive.clone() {
+                let (start, stop) = range_inclusive.into_inner();
+                debug_assert!(start <= stop && stop <= T::max_value2());
+                self.current = start;
+                if start < stop {
+                    self.option_range_inclusive = Some(start + T::one()..=stop);
+                } else {
+                    self.option_range_inclusive = None;
+                }
+                return Some(self.current);
+            } else if let Some(range_inclusive) = self.iter.next() {
+                self.option_range_inclusive = Some(range_inclusive);
+                continue;
             } else {
-                self.option_range_inclusive = None;
+                return None;
             }
-            Some(self.current)
-        } else if let Some(range_inclusive) = self.iter.next() {
-            self.option_range_inclusive = Some(range_inclusive);
-            self.next()
-        } else {
-            None
         }
     }
 
@@ -684,7 +686,7 @@ impl<T: Integer> Iterator for IntoIter<T> {
             Some(start)
         } else if let Some((start, stop)) = self.into_iter.next() {
             self.option_range_inclusive = Some(start..=stop);
-            self.next()
+            self.next() // will recurse at most once
         } else {
             None
         }

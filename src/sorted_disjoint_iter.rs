@@ -104,31 +104,33 @@ where
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<RangeInclusive<T>> {
-        if let Some(range_inclusive) = self.iter.next() {
-            let (start, stop) = range_inclusive.into_inner();
-            if stop < start {
-                return self.next(); // !!!cmk00 test this
-            }
-            if let Some(current_range_inclusive) = self.option_range_inclusive.clone() {
-                let (current_start, current_stop) = current_range_inclusive.into_inner();
-                debug_assert!(current_start <= start); // cmk debug panic if not sorted
-                if start <= current_stop
-                    || (current_stop < T::max_value2() && start <= current_stop + T::one())
-                {
-                    self.option_range_inclusive = Some(current_start..=max(current_stop, stop));
-                    self.next()
+        loop {
+            if let Some(range_inclusive) = self.iter.next() {
+                let (start, stop) = range_inclusive.into_inner();
+                if stop < start {
+                    return self.next(); // !!!cmk00 test this
+                }
+                if let Some(current_range_inclusive) = self.option_range_inclusive.clone() {
+                    let (current_start, current_stop) = current_range_inclusive.into_inner();
+                    debug_assert!(current_start <= start); // cmk debug panic if not sorted
+                    if start <= current_stop
+                        || (current_stop < T::max_value2() && start <= current_stop + T::one())
+                    {
+                        self.option_range_inclusive = Some(current_start..=max(current_stop, stop));
+                        continue;
+                    } else {
+                        self.option_range_inclusive = Some(start..=stop);
+                        return Some(current_start..=current_stop);
+                    }
                 } else {
                     self.option_range_inclusive = Some(start..=stop);
-                    Some(current_start..=current_stop)
+                    continue;
                 }
             } else {
-                self.option_range_inclusive = Some(start..=stop);
-                self.next()
+                let result = self.option_range_inclusive.clone();
+                self.option_range_inclusive = None;
+                return result;
             }
-        } else {
-            let result = self.option_range_inclusive.clone();
-            self.option_range_inclusive = None;
-            result
         }
     }
 

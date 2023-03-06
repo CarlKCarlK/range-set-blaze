@@ -81,7 +81,7 @@ impl Iterator for MemorylessIter {
             Some(start)
         } else if let Some(range_inclusive) = self.iter.next() {
             self.option_range_inclusive = Some(range_inclusive);
-            self.next()
+            self.next() // will recurse at most once
         } else {
             None
         }

@@ -60,7 +60,7 @@ where
                 result
             } else if stop < T::max_value2() {
                 self.start_not = stop + T::one();
-                self.next()
+                self.next() // will recurse at most once
             } else {
                 self.next_time_return_none = true;
                 None
