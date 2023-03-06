@@ -1,3 +1,4 @@
+use std::cmp::min;
 use std::ops::RangeInclusive;
 
 use rand::rngs::StdRng;
@@ -13,9 +14,20 @@ pub struct MemorylessRange {
 }
 
 impl MemorylessRange {
-    pub fn new(seed: u64, range_len: u64, len: u128, coverage_goal: f64, k: u64) -> Self {
-        let average_coverage_per_clump =
-            1.0 - (1.0 - coverage_goal).powf(1.0 / ((range_len as f64) * (k as f64)));
+    pub fn new(
+        seed: u64,
+        range_len: u64,
+        len: u128,
+        coverage_goal: f64,
+        k: u64,
+        do_intersection: bool,
+    ) -> Self {
+        let average_coverage_per_clump = if do_intersection {
+            let goal2 = coverage_goal.powf(1.0 / (k as f64));
+            1.0 - (1.0 - goal2).powf(1.0 / (range_len as f64))
+        } else {
+            1.0 - (1.0 - coverage_goal).powf(1.0 / ((range_len as f64) * (k as f64)))
+        };
         Self {
             rng: StdRng::seed_from_u64(seed),
             len,
@@ -26,42 +38,49 @@ impl MemorylessRange {
 }
 
 impl Iterator for MemorylessRange {
-    type Item = RangeInclusive<u64>;
+    type Item = [RangeInclusive<u64>; 2];
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.range_len == 0 {
             None
         } else {
             self.range_len -= 1;
-            let mut start_fraction = self.rng.gen::<f64>();
-            let mut width_fraction = self.rng.gen::<f64>() * self.average_coverage_per_clump * 2.0;
-            if start_fraction + width_fraction > 1.0 {
-                if self.rng.gen::<f64>() < 0.5 {
-                    width_fraction = 1.0 - (start_fraction + width_fraction);
-                    start_fraction = 0.0;
-                } else {
-                    width_fraction = 1.0 - start_fraction;
-                }
-            }
-            let len_f64: f64 = self.len as f64;
-            let current_lower_f64: f64 = len_f64 * start_fraction;
-            let start = current_lower_f64 as u64;
-            let delta = (len_f64 * width_fraction) as u64;
-            Some(start..=start + delta)
+            let start_fraction = self.rng.gen::<f64>();
+            let end_fraction =
+                start_fraction + self.average_coverage_per_clump * self.rng.gen::<f64>() * 2.0;
+            let start = (start_fraction * self.len as f64) as u64;
+            let end = (end_fraction * self.len as f64) as u64;
+            let first = start..=min(end, (self.len - 1) as u64);
+            #[allow(clippy::reversed_empty_ranges)]
+            let second = if (end as u128) < self.len {
+                1u64..=0
+            } else {
+                0u64..=(end - self.len as u64)
+            };
+            // println!("cmk000 1st, 2nd = {first:?}, {second:?}");
+            Some([first, second])
         }
     }
 }
 
 pub struct MemorylessIter {
-    option_range_inclusive: Option<RangeInclusive<u64>>,
+    option_pair: Option<[RangeInclusive<u64>; 2]>,
     iter: MemorylessRange,
 }
 
 impl MemorylessIter {
-    pub fn new(seed: u64, range_len: u64, len: u128, coverage_goal: f64, k: u64) -> Self {
-        let memoryless_range = MemorylessRange::new(seed, range_len, len, coverage_goal, k);
+    pub fn new(
+        seed: u64,
+        range_len: u64,
+        len: u128,
+        coverage_goal: f64,
+        k: u64,
+        do_intersection: bool,
+    ) -> Self {
+        let memoryless_range =
+            MemorylessRange::new(seed, range_len, len, coverage_goal, k, do_intersection);
         Self {
-            option_range_inclusive: None,
+            option_pair: None,
             iter: memoryless_range,
         }
     }
@@ -70,17 +89,23 @@ impl MemorylessIter {
 impl Iterator for MemorylessIter {
     type Item = u64;
 
+    #[allow(clippy::reversed_empty_ranges)]
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(range_inclusive) = &self.option_range_inclusive {
-            let (start, stop) = range_inclusive.clone().into_inner();
-            if start == stop {
-                self.option_range_inclusive = None;
+        if let Some(pair) = &self.option_pair {
+            let (start0, stop0) = pair[0].clone().into_inner();
+            if start0 == stop0 {
+                let (start1, stop1) = pair[1].clone().into_inner();
+                if start1 > stop1 {
+                    self.option_pair = None;
+                } else {
+                    self.option_pair = Some([start1..=stop1, 1..=0]);
+                }
             } else {
-                self.option_range_inclusive = Some((start + 1)..=stop);
+                self.option_pair = Some([(start0 + 1)..=stop0, pair[1].clone()]);
             }
-            Some(start)
-        } else if let Some(range_inclusive) = self.iter.next() {
-            self.option_range_inclusive = Some(range_inclusive);
+            Some(start0)
+        } else if let Some(range_inclusive_pair) = self.iter.next() {
+            self.option_pair = Some(range_inclusive_pair);
             self.next() // will recurse at most once
         } else {
             None
@@ -88,10 +113,19 @@ impl Iterator for MemorylessIter {
     }
 }
 
-pub fn k_sets(k: u64, range_len: u64, len: u128, coverage_goal: f64) -> Vec<RangeSetInt<u64>> {
+pub fn k_sets(
+    k: u64,
+    range_len: u64,
+    len: u128,
+    coverage_goal: f64,
+    do_intersection: bool,
+) -> Vec<RangeSetInt<u64>> {
     (0..k)
         .map(|i| {
-            RangeSetInt::<u64>::from_iter(MemorylessRange::new(i, range_len, len, coverage_goal, k))
+            RangeSetInt::<u64>::from_iter(
+                MemorylessRange::new(i, range_len, len, coverage_goal, k, do_intersection)
+                    .flatten(),
+            )
         })
         .collect()
 }

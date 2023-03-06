@@ -990,25 +990,39 @@ fn private_constructor() {
 #[test]
 fn data_gen() {
     let len = 10_000_000;
-    let range_len = 1_000;
-    let coverage_goal = 0.50;
-    let k = 100;
-    let mut option_range_int_set: Option<RangeSetInt<_>> = None;
-    for seed in 0..k {
-        let r2: RangeSetInt<_> =
-            MemorylessRange::new(seed, range_len, len, coverage_goal, k).collect();
-        option_range_int_set = Some(if let Some(range_int_set) = &option_range_int_set {
-            range_int_set | r2
-        } else {
-            r2
-        });
-        let range_int_set = option_range_int_set.as_ref().unwrap();
-        let fraction = range_int_set.len() as f64 / len as f64;
-        println!(
-            "{seed} range_len={}, fraction={fraction}",
-            range_int_set.ranges_len()
-        );
+    let range_len = 1_000; // cmk0000 1_000
+    let coverage_goal = 0.75;
+    let k = 100; // cmk0000 100
+
+    // cmk0000 let universe = RangeSetInt::from([0..=len as u64]);
+    for do_intersection in [true, false] {
+        let mut option_range_int_set: Option<RangeSetInt<_>> = None;
+        for seed in 0..k {
+            let r2: RangeSetInt<u64> =
+                MemorylessRange::new(seed, range_len, len, coverage_goal, k, do_intersection)
+                    .flatten()
+                    .collect();
+            option_range_int_set = Some(if let Some(range_int_set) = &option_range_int_set {
+                if do_intersection {
+                    range_int_set & r2
+                } else {
+                    range_int_set | r2
+                }
+            } else {
+                r2
+            });
+            // let range_int_set = option_range_int_set.as_ref().unwrap();
+            // println!(
+            //     "do_intersection={do_intersection} {seed} range_len={}, fraction={}",
+            //     range_int_set.ranges_len(),
+            //     fraction(range_int_set, len)
+            // );
+        }
+        let fraction = fraction(&option_range_int_set.unwrap(), len);
+        assert!(coverage_goal * 0.95 < fraction && fraction < coverage_goal * 1.05);
     }
-    let fraction = option_range_int_set.unwrap().len() as f64 / len as f64;
-    assert!(coverage_goal * 0.95 < fraction && fraction < coverage_goal * 1.05);
+}
+
+fn fraction(range_int_set: &RangeSetInt<u64>, len: u128) -> f64 {
+    range_int_set.len() as f64 / len as f64
 }

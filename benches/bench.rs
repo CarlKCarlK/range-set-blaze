@@ -273,14 +273,14 @@ pub fn clumps(c: &mut Criterion) {
     // group.measurement_time(Duration::from_secs(170));
     group.bench_function("clumps range_set_int", |b| {
         b.iter_batched(
-            || MemorylessIter::new(0, 10_000, len, coverage_goal, 1),
+            || MemorylessIter::new(0, 10_000, len, coverage_goal, 1, false),
             RangeSetInt::<u64>::from_iter,
             BatchSize::SmallInput,
         );
     });
     group.bench_function("clumps btree_set", |b| {
         b.iter_batched(
-            || MemorylessIter::new(0, 10_000, len, coverage_goal, 1),
+            || MemorylessIter::new(0, 10_000, len, coverage_goal, 1, false),
             BTreeSet::<u64>::from_iter,
             BatchSize::SmallInput,
         );
@@ -369,8 +369,8 @@ fn bitor1(c: &mut Criterion) {
 }
 fn two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (RangeSetInt<u64>, RangeSetInt<u64>) {
     (
-        MemorylessIter::new(0, range_len, len, coverage_goal, 2).collect(),
-        MemorylessIter::new(1, range_len, len, coverage_goal, 2).collect(),
+        MemorylessIter::new(0, range_len, len, coverage_goal, 2, false).collect(),
+        MemorylessIter::new(1, range_len, len, coverage_goal, 2, false).collect(),
     )
 }
 
@@ -380,14 +380,14 @@ fn two_sets1(
     coverage_goal: f64,
 ) -> (RangeSetInt<u64>, RangeSetInt<u64>) {
     (
-        MemorylessIter::new(0, range_len, len, coverage_goal, 1).collect(),
+        MemorylessIter::new(0, range_len, len, coverage_goal, 1, false).collect(),
         [range_len / 2].into(),
     )
 }
 fn btree_two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (BTreeSet<u64>, BTreeSet<u64>) {
     (
-        MemorylessIter::new(0, range_len, len, coverage_goal, 2).collect(),
-        MemorylessIter::new(1, range_len, len, coverage_goal, 2).collect(),
+        MemorylessIter::new(0, range_len, len, coverage_goal, 2, false).collect(),
+        MemorylessIter::new(1, range_len, len, coverage_goal, 2, false).collect(),
     )
 }
 fn btree_two_sets1(
@@ -396,7 +396,7 @@ fn btree_two_sets1(
     coverage_goal: f64,
 ) -> (BTreeSet<u64>, BTreeSet<u64>) {
     (
-        MemorylessIter::new(0, range_len, len, coverage_goal, 1).collect(),
+        MemorylessIter::new(0, range_len, len, coverage_goal, 1, false).collect(),
         BTreeSet::<u64>::from([range_len / 2]),
     )
 }
@@ -418,7 +418,7 @@ fn k_intersect(c: &mut Criterion) {
     // group.measurement_time(Duration::from_secs(170));
     group.bench_function("RangeSetInt intersect", |b| {
         b.iter_batched(
-            || k_sets(k, range_len, len, coverage_goal),
+            || k_sets(k, range_len, len, coverage_goal, true),
             |sets| {
                 let _answer = RangeSetInt::intersection(sets.iter());
             },
@@ -427,7 +427,7 @@ fn k_intersect(c: &mut Criterion) {
     });
     group.bench_function("RangeSetInt dyn intersect", |b| {
         b.iter_batched(
-            || k_sets(k, range_len, len, coverage_goal),
+            || k_sets(k, range_len, len, coverage_goal, true),
             |sets| {
                 let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
                 let _answer: RangeSetInt<_> = intersection(sets).into();
@@ -437,7 +437,7 @@ fn k_intersect(c: &mut Criterion) {
     });
     group.bench_function("RangeSetInt intersect 2-at-a-time", |b| {
         b.iter_batched(
-            || k_sets(k, range_len, len, coverage_goal),
+            || k_sets(k, range_len, len, coverage_goal, true),
             |sets| {
                 // !!!cmk need code for size zero
                 let mut answer = sets[0].clone();
@@ -476,7 +476,7 @@ fn coverage_goal(c: &mut Criterion) {
             coverage_goal,
             |b, &coverage_goal| {
                 b.iter_batched(
-                    || k_sets(k, range_len, len, coverage_goal),
+                    || k_sets(k, range_len, len, coverage_goal, true),
                     |sets| {
                         let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
                         let _answer: RangeSetInt<_> = intersection(sets).into();
@@ -490,7 +490,7 @@ fn coverage_goal(c: &mut Criterion) {
             coverage_goal,
             |b, &coverage_goal| {
                 b.iter_batched(
-                    || k_sets(k, range_len, len, coverage_goal),
+                    || k_sets(k, range_len, len, coverage_goal, true),
                     |sets| {
                         let _answer = RangeSetInt::intersection(sets.iter());
                     },
@@ -503,7 +503,7 @@ fn coverage_goal(c: &mut Criterion) {
             coverage_goal,
             |b, &coverage_goal| {
                 b.iter_batched(
-                    || k_sets(k, range_len, len, coverage_goal),
+                    || k_sets(k, range_len, len, coverage_goal, true),
                     |sets| {
                         // !!!cmk need code for size zero
                         let mut answer = sets[0].clone();
@@ -519,20 +519,38 @@ fn coverage_goal(c: &mut Criterion) {
     group.finish();
 }
 
-fn k_play(c: &mut Criterion) {
-    k_play_internal(c, "k_play");
+fn union_vary_k(c: &mut Criterion) {
+    k_play_internal(c, "union_vary_k", false, false);
 }
-fn k_play_with_two_at_a_time(c: &mut Criterion) {
-    k_play_internal(c, "k_play_with_two_at_a_time");
+fn union_vary_k_w_2_at_a_time(c: &mut Criterion) {
+    k_play_internal(c, "union_k_w_2_at_a_time", true, false);
 }
-fn k_play_internal(c: &mut Criterion, group_name: &str) {
+
+fn intersection_vary_k(c: &mut Criterion) {
+    k_play_internal(c, "intersection_vary_k", false, true);
+}
+fn intersection_vary_k_w_2_at_a_time(c: &mut Criterion) {
+    k_play_internal(c, "intersection_k_w_2_at_a_time", true, true);
+}
+
+fn k_play_internal(
+    c: &mut Criterion,
+    group_name: &str,
+    include_two_at_a_time: bool,
+    do_intersection: bool,
+) {
     let len = 10_000_000;
     let range_len = 1000;
-    let coverage_goal = 0.50;
+    let coverage_goal = 0.75;
     let k_list = [2u64, 25, 50, 75, 100];
     let setup_vec = k_list
         .iter()
-        .map(|k| (k, k_sets(*k, range_len, len, coverage_goal)))
+        .map(|k| {
+            (
+                k,
+                k_sets(*k, range_len, len, coverage_goal, do_intersection),
+            )
+        })
         .collect::<Vec<_>>();
 
     let mut group = c.benchmark_group(group_name);
@@ -543,7 +561,11 @@ fn k_play_internal(c: &mut Criterion, group_name: &str) {
                 || setup,
                 |sets| {
                     let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
-                    let _answer: RangeSetInt<_> = union(sets).into();
+                    let _answer: RangeSetInt<_> = if do_intersection {
+                        intersection(sets).into()
+                    } else {
+                        union(sets).into()
+                    };
                 },
                 BatchSize::SmallInput,
             );
@@ -552,20 +574,30 @@ fn k_play_internal(c: &mut Criterion, group_name: &str) {
             b.iter_batched(
                 || setup,
                 |sets| {
-                    let _answer = RangeSetInt::union(sets.iter());
+                    let _answer = if do_intersection {
+                        RangeSetInt::intersection(sets.iter())
+                    } else {
+                        RangeSetInt::union(sets)
+                    };
                 },
                 BatchSize::SmallInput,
             );
         });
-        if group_name == "k_play_with_two_at_a_time" {
-            group.bench_with_input(BenchmarkId::new("two-at-a-time", k), k, |b, _k| {
+        if include_two_at_a_time {
+            group.bench_with_input(BenchmarkId::new("2-at-a-time", k), k, |b, _k| {
                 b.iter_batched(
                     || setup,
                     |sets| {
                         // !!!cmk need code for size zero
                         let mut answer = sets[0].clone();
-                        for set in sets.iter().skip(1) {
-                            answer = answer | set;
+                        if do_intersection {
+                            for set in sets.iter().skip(1) {
+                                answer = answer & set;
+                            }
+                        } else {
+                            for set in sets.iter().skip(1) {
+                                answer = answer | set;
+                            }
                         }
                     },
                     BatchSize::SmallInput,
@@ -596,8 +628,10 @@ criterion_group!(
     bitor1,
     k_intersect,
     coverage_goal,
-    k_play,
-    k_play_with_two_at_a_time
+    union_vary_k,
+    union_vary_k_w_2_at_a_time,
+    intersection_vary_k,
+    intersection_vary_k_w_2_at_a_time
 );
 criterion_main!(benches);
 

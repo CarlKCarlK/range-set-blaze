@@ -677,7 +677,7 @@ fn k_play(c: &mut Criterion) {
         // group.throughput(Throughput::Bytes(*size as u64));
         group.bench_with_input(BenchmarkId::new("dyn", k), k, |b, &k| {
             b.iter_batched(
-                || k_sets(k, range_len, len, coverage_goal),
+                || k_sets(k, range_len, len, coverage_goal, true),
                 |sets| {
                     let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
                     let _answer: RangeSetInt<_> = intersection(sets).into();
