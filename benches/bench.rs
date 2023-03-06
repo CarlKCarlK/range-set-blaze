@@ -520,8 +520,8 @@ fn coverage_goal(c: &mut Criterion) {
 }
 
 fn k_play(c: &mut Criterion) {
-    let len = 10_000_000; // 10_000_000;
-    let range_len = 1000; //1_000;
+    let len = 10_000_000;
+    let range_len = 1000;
     let coverage_goal = 0.50;
     let k_list = [2u64, 25, 50, 75, 100];
     let setup_vec = k_list
@@ -551,19 +551,19 @@ fn k_play(c: &mut Criterion) {
                 BatchSize::SmallInput,
             );
         });
-        group.bench_with_input(BenchmarkId::new("two-at-a-time", k), k, |b, _k| {
-            b.iter_batched(
-                || setup,
-                |sets| {
-                    // !!!cmk need code for size zero
-                    let mut answer = sets[0].clone();
-                    for set in sets.iter().skip(1) {
-                        answer = answer | set;
-                    }
-                },
-                BatchSize::SmallInput,
-            );
-        });
+        // group.bench_with_input(BenchmarkId::new("two-at-a-time", k), k, |b, _k| {
+        //     b.iter_batched(
+        //         || setup,
+        //         |sets| {
+        //             // !!!cmk need code for size zero
+        //             let mut answer = sets[0].clone();
+        //             for set in sets.iter().skip(1) {
+        //                 answer = answer | set;
+        //             }
+        //         },
+        //         BatchSize::SmallInput,
+        //     );
+        // });
     }
     group.finish();
 }
