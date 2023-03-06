@@ -551,19 +551,19 @@ fn k_play(c: &mut Criterion) {
                 BatchSize::SmallInput,
             );
         });
-        // group.bench_with_input(BenchmarkId::new("two-at-a-time", k), k, |b, _k| {
-        //     b.iter_batched(
-        //         || setup,
-        //         |sets| {
-        //             // !!!cmk need code for size zero
-        //             let mut answer = sets[0].clone();
-        //             for set in sets.iter().skip(1) {
-        //                 answer = answer | set;
-        //             }
-        //         },
-        //         BatchSize::SmallInput,
-        //     );
-        // });
+        group.bench_with_input(BenchmarkId::new("two-at-a-time", k), k, |b, _k| {
+            b.iter_batched(
+                || setup,
+                |sets| {
+                    // !!!cmk need code for size zero
+                    let mut answer = sets[0].clone();
+                    for set in sets.iter().skip(1) {
+                        answer = answer | set;
+                    }
+                },
+                BatchSize::SmallInput,
+            );
+        });
     }
     group.finish();
 }
