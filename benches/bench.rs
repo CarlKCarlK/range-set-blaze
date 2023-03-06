@@ -9,7 +9,7 @@ use std::collections::BTreeSet;
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 // use pprof::criterion::Output; //PProfProfiler
-use range_set_int::{intersection, DynSortedDisjointExt, RangeSetInt};
+use range_set_int::{intersection, union, DynSortedDisjointExt, RangeSetInt};
 use tests_common::{k_sets, MemorylessIter};
 // use thousands::Separable;
 
@@ -537,7 +537,7 @@ fn k_play(c: &mut Criterion) {
                 || setup,
                 |sets| {
                     let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
-                    let _answer: RangeSetInt<_> = intersection(sets).into();
+                    let _answer: RangeSetInt<_> = union(sets).into();
                 },
                 BatchSize::SmallInput,
             );
@@ -546,7 +546,7 @@ fn k_play(c: &mut Criterion) {
             b.iter_batched(
                 || setup,
                 |sets| {
-                    let _answer = RangeSetInt::intersection(sets.iter());
+                    let _answer = RangeSetInt::union(sets.iter());
                 },
                 BatchSize::SmallInput,
             );
@@ -558,7 +558,7 @@ fn k_play(c: &mut Criterion) {
                     // !!!cmk need code for size zero
                     let mut answer = sets[0].clone();
                     for set in sets.iter().skip(1) {
-                        answer = answer & set;
+                        answer = answer | set;
                     }
                 },
                 BatchSize::SmallInput,
