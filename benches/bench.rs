@@ -10,7 +10,7 @@ use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criteri
 use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 // use pprof::criterion::Output; //PProfProfiler
 use range_set_int::{intersection, DynSortedDisjointExt, RangeSetInt};
-use tests_common::{k_sets, MemorylessIter, MemorylessRange};
+use tests_common::{k_sets, MemorylessIter};
 // use thousands::Separable;
 
 // fn insert10(c: &mut Criterion) {
@@ -523,13 +523,18 @@ fn k_play(c: &mut Criterion) {
     let len = 10_000_000; // 10_000_000;
     let range_len = 1000; //1_000;
     let coverage_goal = 0.50;
+    let k_list = [2u64, 25, 50, 75, 100];
+    let setup_vec = k_list
+        .iter()
+        .map(|k| (k, k_sets(*k, range_len, len, coverage_goal)))
+        .collect::<Vec<_>>();
 
     let mut group = c.benchmark_group("k_play");
-    for k in [2u64, 25, 50, 75, 100].iter() {
+    for (k, setup) in &setup_vec {
         // group.throughput(Throughput::Bytes(*size as u64));
-        group.bench_with_input(BenchmarkId::new("dyn", k), k, |b, &k| {
+        group.bench_with_input(BenchmarkId::new("dyn", k), k, |b, _k| {
             b.iter_batched(
-                || k_sets(k, range_len, len, coverage_goal),
+                || setup,
                 |sets| {
                     let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
                     let _answer: RangeSetInt<_> = intersection(sets).into();
@@ -537,18 +542,18 @@ fn k_play(c: &mut Criterion) {
                 BatchSize::SmallInput,
             );
         });
-        group.bench_with_input(BenchmarkId::new("static", k), k, |b, &k| {
+        group.bench_with_input(BenchmarkId::new("static", k), k, |b, _k| {
             b.iter_batched(
-                || k_sets(k, range_len, len, coverage_goal),
+                || setup,
                 |sets| {
                     let _answer = RangeSetInt::intersection(sets.iter());
                 },
                 BatchSize::SmallInput,
             );
         });
-        group.bench_with_input(BenchmarkId::new("two-at-a-time", k), k, |b, &k| {
+        group.bench_with_input(BenchmarkId::new("two-at-a-time", k), k, |b, _k| {
             b.iter_batched(
-                || k_sets(k, range_len, len, coverage_goal),
+                || setup,
                 |sets| {
                     // !!!cmk need code for size zero
                     let mut answer = sets[0].clone();
@@ -564,8 +569,6 @@ fn k_play(c: &mut Criterion) {
 }
 
 // !!!cmk000 understand data generation and make it faster, perhaps only once
-// !!!cmk000 when generating k, make them union up to coverage_goal
-// !!!cmk000 why did full version get stack error?
 // !!!cmk000 make graph show effect of size of Element.
 // !!!cmk000 what is effect of # of range_elements? (k can be 2)
 // !!!cmk000 shorten code for each section as much as possible.
