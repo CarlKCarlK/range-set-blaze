@@ -520,6 +520,12 @@ fn coverage_goal(c: &mut Criterion) {
 }
 
 fn k_play(c: &mut Criterion) {
+    k_play_internal(c, "k_play");
+}
+fn k_play_with_two_at_a_time(c: &mut Criterion) {
+    k_play_internal(c, "k_play_with_two_at_a_time");
+}
+fn k_play_internal(c: &mut Criterion, group_name: &str) {
     let len = 10_000_000;
     let range_len = 1000;
     let coverage_goal = 0.50;
@@ -529,7 +535,7 @@ fn k_play(c: &mut Criterion) {
         .map(|k| (k, k_sets(*k, range_len, len, coverage_goal)))
         .collect::<Vec<_>>();
 
-    let mut group = c.benchmark_group("k_play");
+    let mut group = c.benchmark_group(group_name);
     for (k, setup) in &setup_vec {
         // group.throughput(Throughput::Bytes(*size as u64));
         group.bench_with_input(BenchmarkId::new("dyn", k), k, |b, _k| {
@@ -551,19 +557,21 @@ fn k_play(c: &mut Criterion) {
                 BatchSize::SmallInput,
             );
         });
-        group.bench_with_input(BenchmarkId::new("two-at-a-time", k), k, |b, _k| {
-            b.iter_batched(
-                || setup,
-                |sets| {
-                    // !!!cmk need code for size zero
-                    let mut answer = sets[0].clone();
-                    for set in sets.iter().skip(1) {
-                        answer = answer | set;
-                    }
-                },
-                BatchSize::SmallInput,
-            );
-        });
+        if group_name == "k_play_with_two_at_a_time" {
+            group.bench_with_input(BenchmarkId::new("two-at-a-time", k), k, |b, _k| {
+                b.iter_batched(
+                    || setup,
+                    |sets| {
+                        // !!!cmk need code for size zero
+                        let mut answer = sets[0].clone();
+                        for set in sets.iter().skip(1) {
+                            answer = answer | set;
+                        }
+                    },
+                    BatchSize::SmallInput,
+                );
+            });
+        }
     }
     group.finish();
 }
@@ -588,7 +596,8 @@ criterion_group!(
     bitor1,
     k_intersect,
     coverage_goal,
-    k_play
+    k_play,
+    k_play_with_two_at_a_time
 );
 criterion_main!(benches);
 
