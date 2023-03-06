@@ -628,7 +628,7 @@ where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     iter: I,
-    current: T,
+    current: T, // !!!cmk can't we write this without current? (likewise IntoIter)
     option_range_inclusive: Option<RangeInclusive<T>>,
 }
 

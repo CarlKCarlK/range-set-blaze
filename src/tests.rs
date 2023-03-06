@@ -13,6 +13,7 @@ use super::*;
 // use sorted_iter::assume::AssumeSortedByKeyExt;
 // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use syntactic_for::syntactic_for;
+use tests_common::MemorylessRange;
 // use thousands::Separable;
 use std::ops::BitAndAssign;
 
@@ -984,4 +985,30 @@ fn private_constructor() {
         .into_iter()
         .collect();
     assert_eq!(sorted_disjoint_iter.to_string(), "-12..=-10, 1..=6");
+}
+
+#[test]
+fn data_gen() {
+    let len = 10_000_000;
+    let range_len = 1_000;
+    let coverage_goal = 0.50;
+    let k = 100;
+    let mut option_range_int_set: Option<RangeSetInt<_>> = None;
+    for seed in 0..k {
+        let r2: RangeSetInt<_> =
+            MemorylessRange::new(seed, range_len, len, coverage_goal, k).collect();
+        option_range_int_set = Some(if let Some(range_int_set) = &option_range_int_set {
+            range_int_set | r2
+        } else {
+            r2
+        });
+        let range_int_set = option_range_int_set.as_ref().unwrap();
+        let fraction = range_int_set.len() as f64 / len as f64;
+        println!(
+            "{seed} range_len={}, fraction={fraction}",
+            range_int_set.ranges_len()
+        );
+    }
+    let fraction = option_range_int_set.unwrap().len() as f64 / len as f64;
+    assert!(coverage_goal * 0.95 < fraction && fraction < coverage_goal * 1.05);
 }

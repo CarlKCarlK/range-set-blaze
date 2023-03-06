@@ -10,7 +10,7 @@ use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criteri
 use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 // use pprof::criterion::Output; //PProfProfiler
 use range_set_int::{intersection, DynSortedDisjointExt, RangeSetInt};
-use tests_common::MemorylessData;
+use tests_common::{k_sets, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
 
 // fn insert10(c: &mut Criterion) {
@@ -273,14 +273,14 @@ pub fn clumps(c: &mut Criterion) {
     // group.measurement_time(Duration::from_secs(170));
     group.bench_function("clumps range_set_int", |b| {
         b.iter_batched(
-            || MemorylessData::new(0, 10_000, len, coverage_goal),
+            || MemorylessIter::new(0, 10_000, len, coverage_goal, 1),
             RangeSetInt::<u64>::from_iter,
             BatchSize::SmallInput,
         );
     });
     group.bench_function("clumps btree_set", |b| {
         b.iter_batched(
-            || MemorylessData::new(0, 10_000, len, coverage_goal),
+            || MemorylessIter::new(0, 10_000, len, coverage_goal, 1),
             BTreeSet::<u64>::from_iter,
             BatchSize::SmallInput,
         );
@@ -369,8 +369,8 @@ fn bitor1(c: &mut Criterion) {
 }
 fn two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (RangeSetInt<u64>, RangeSetInt<u64>) {
     (
-        MemorylessData::new(0, range_len, len, coverage_goal).collect(),
-        MemorylessData::new(1, range_len, len, coverage_goal).collect(),
+        MemorylessIter::new(0, range_len, len, coverage_goal, 2).collect(),
+        MemorylessIter::new(1, range_len, len, coverage_goal, 2).collect(),
     )
 }
 
@@ -380,14 +380,14 @@ fn two_sets1(
     coverage_goal: f64,
 ) -> (RangeSetInt<u64>, RangeSetInt<u64>) {
     (
-        MemorylessData::new(0, range_len, len, coverage_goal).collect(),
+        MemorylessIter::new(0, range_len, len, coverage_goal, 1).collect(),
         [range_len / 2].into(),
     )
 }
 fn btree_two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (BTreeSet<u64>, BTreeSet<u64>) {
     (
-        MemorylessData::new(0, range_len, len, coverage_goal).collect(),
-        MemorylessData::new(1, range_len, len, coverage_goal).collect(),
+        MemorylessIter::new(0, range_len, len, coverage_goal, 2).collect(),
+        MemorylessIter::new(1, range_len, len, coverage_goal, 2).collect(),
     )
 }
 fn btree_two_sets1(
@@ -396,7 +396,7 @@ fn btree_two_sets1(
     coverage_goal: f64,
 ) -> (BTreeSet<u64>, BTreeSet<u64>) {
     (
-        MemorylessData::new(0, range_len, len, coverage_goal).collect(),
+        MemorylessIter::new(0, range_len, len, coverage_goal, 1).collect(),
         BTreeSet::<u64>::from([range_len / 2]),
     )
 }
@@ -463,14 +463,6 @@ fn k_intersect(c: &mut Criterion) {
     // });
 }
 
-fn k_sets(k: u64, range_len: u64, len: u128, coverage_goal: f64) -> Vec<RangeSetInt<u64>> {
-    (0..k)
-        .map(|i| {
-            RangeSetInt::<u64>::from_iter(MemorylessData::new(i, range_len, len, coverage_goal))
-        })
-        .collect()
-}
-
 fn coverage_goal(c: &mut Criterion) {
     let k = 10; // 100;
     let len = 1_000_000; // 10_000_000;
@@ -529,11 +521,11 @@ fn coverage_goal(c: &mut Criterion) {
 
 fn k_play(c: &mut Criterion) {
     let len = 10_000_000; // 10_000_000;
-    let range_len = 100; //1_000;
-    let coverage_goal = 0.90;
+    let range_len = 1000; //1_000;
+    let coverage_goal = 0.50;
 
     let mut group = c.benchmark_group("k_play");
-    for k in [2u64, 10, 50, 100].iter() {
+    for k in [2u64, 25, 50, 75, 100].iter() {
         // group.throughput(Throughput::Bytes(*size as u64));
         group.bench_with_input(BenchmarkId::new("dyn", k), k, |b, &k| {
             b.iter_batched(

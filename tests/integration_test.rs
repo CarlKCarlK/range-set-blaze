@@ -1,11 +1,13 @@
 // !!!cmkRule add integration tests
 #![cfg(test)]
 
+use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use range_set_int::sorted_disjoint_iter::SortedDisjointIter;
 use range_set_int::unsorted_disjoint::AssumeSortedStarts;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
+use tests_common::k_sets;
 
 // !!!cmk should users use a prelude? If not, are these reasonable imports?
 use range_set_int::{intersection, union};
@@ -655,4 +657,34 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     // // _range_set_int = SortedDisjointIter::from([5..=6, 1..=5]);
 
     Ok(())
+}
+
+#[test]
+fn debug_k_play() {
+    println!("cmk0000");
+    let mut c = Criterion::default();
+    k_play(&mut c);
+}
+
+fn k_play(c: &mut Criterion) {
+    let len = 10_000_000; // 10_000_000;
+    let range_len = 1000; //1_000;
+    let coverage_goal = 0.50;
+
+    let mut group = c.benchmark_group("k_play");
+    {
+        let k = &25;
+        // group.throughput(Throughput::Bytes(*size as u64));
+        group.bench_with_input(BenchmarkId::new("dyn", k), k, |b, &k| {
+            b.iter_batched(
+                || k_sets(k, range_len, len, coverage_goal),
+                |sets| {
+                    let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
+                    let _answer: RangeSetInt<_> = intersection(sets).into();
+                },
+                BatchSize::SmallInput,
+            );
+        });
+    }
+    group.finish();
 }
