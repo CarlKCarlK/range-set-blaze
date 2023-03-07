@@ -13,20 +13,24 @@ pub struct MemorylessRange {
     average_coverage_per_clump: f64,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum How {
+    Union,
+    Intersection,
+    None,
+}
+
 impl MemorylessRange {
-    pub fn new(
-        seed: u64,
-        range_len: u64,
-        len: u128,
-        coverage_goal: f64,
-        k: u64,
-        do_intersection: bool,
-    ) -> Self {
-        let average_coverage_per_clump = if do_intersection {
-            let goal2 = coverage_goal.powf(1.0 / (k as f64));
-            1.0 - (1.0 - goal2).powf(1.0 / (range_len as f64))
-        } else {
-            1.0 - (1.0 - coverage_goal).powf(1.0 / ((range_len as f64) * (k as f64)))
+    pub fn new(seed: u64, range_len: u64, len: u128, coverage_goal: f64, k: u64, how: How) -> Self {
+        let average_coverage_per_clump = match how {
+            How::Union => {
+                let goal2 = coverage_goal.powf(1.0 / (k as f64));
+                1.0 - (1.0 - goal2).powf(1.0 / (range_len as f64))
+            }
+            How::Intersection => {
+                1.0 - (1.0 - coverage_goal).powf(1.0 / ((range_len as f64) * (k as f64)))
+            }
+            How::None => 1.0 - (1.0 - coverage_goal).powf(1.0 / (range_len as f64)),
         };
         Self {
             rng: StdRng::seed_from_u64(seed),
@@ -69,16 +73,8 @@ pub struct MemorylessIter {
 }
 
 impl MemorylessIter {
-    pub fn new(
-        seed: u64,
-        range_len: u64,
-        len: u128,
-        coverage_goal: f64,
-        k: u64,
-        do_intersection: bool,
-    ) -> Self {
-        let memoryless_range =
-            MemorylessRange::new(seed, range_len, len, coverage_goal, k, do_intersection);
+    pub fn new(seed: u64, range_len: u64, len: u128, coverage_goal: f64, k: u64, how: How) -> Self {
+        let memoryless_range = MemorylessRange::new(seed, range_len, len, coverage_goal, k, how);
         Self {
             option_pair: None,
             iter: memoryless_range,
@@ -118,14 +114,19 @@ pub fn k_sets(
     range_len: u64,
     len: u128,
     coverage_goal: f64,
-    do_intersection: bool,
+    how: How,
+    seed_offset: u64,
 ) -> Vec<RangeSetInt<u64>> {
     (0..k)
         .map(|i| {
             RangeSetInt::<u64>::from_iter(
-                MemorylessRange::new(i, range_len, len, coverage_goal, k, do_intersection)
+                MemorylessRange::new(i + seed_offset, range_len, len, coverage_goal, k, how)
                     .flatten(),
             )
         })
         .collect()
+}
+
+pub fn fraction(range_int_set: &RangeSetInt<u64>, len: u128) -> f64 {
+    range_int_set.len() as f64 / len as f64
 }

@@ -7,7 +7,7 @@ use range_set_int::sorted_disjoint_iter::SortedDisjointIter;
 use range_set_int::unsorted_disjoint::AssumeSortedStarts;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
-use tests_common::k_sets;
+use tests_common::{fraction, k_sets, How, MemorylessRange};
 
 // !!!cmk should users use a prelude? If not, are these reasonable imports?
 use range_set_int::{intersection, union};
@@ -677,7 +677,7 @@ fn k_play(c: &mut Criterion) {
         // group.throughput(Throughput::Bytes(*size as u64));
         group.bench_with_input(BenchmarkId::new("dyn", k), k, |b, &k| {
             b.iter_batched(
-                || k_sets(k, range_len, len, coverage_goal, true),
+                || k_sets(k, range_len, len, coverage_goal, How::Intersection, 0),
                 |sets| {
                     let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
                     let _answer: RangeSetInt<_> = intersection(sets).into();
@@ -687,4 +687,78 @@ fn k_play(c: &mut Criterion) {
         });
     }
     group.finish();
+}
+
+#[test]
+fn data_gen() {
+    let len = 10_000_000;
+    let range_len = 1_000; // cmk0000 1_000
+    let coverage_goal = 0.75;
+    let k = 100; // cmk0000 100
+
+    // cmk0000 let universe = RangeSetInt::from([0..=len as u64]);
+    for how in [How::Intersection, How::Union, How::None].iter() {
+        let mut option_range_int_set: Option<RangeSetInt<_>> = None;
+        for seed in 0..k {
+            let r2: RangeSetInt<u64> =
+                MemorylessRange::new(seed, range_len, len, coverage_goal, k, *how)
+                    .flatten()
+                    .collect();
+            option_range_int_set = Some(if let Some(range_int_set) = &option_range_int_set {
+                match how {
+                    How::Intersection => range_int_set & r2,
+                    How::Union => range_int_set | r2,
+                    How::None => r2,
+                }
+            } else {
+                r2
+            });
+            // let range_int_set = option_range_int_set.as_ref().unwrap();
+            // println!(
+            //     "do_intersection={do_intersection} {seed} range_len={}, fraction={}",
+            //     range_int_set.ranges_len(),
+            //     fraction(range_int_set, len)
+            // );
+        }
+        let fraction = fraction(&option_range_int_set.unwrap(), len);
+        assert!(coverage_goal * 0.95 < fraction && fraction < coverage_goal * 1.05);
+    }
+}
+
+#[test]
+fn vary_coverage_goal() {
+    let k = 2;
+    let range_len = 1_000u64;
+    let len = 100_000_000;
+    let coverage_goal_list = [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99];
+    let setup_vec = coverage_goal_list
+        .iter()
+        .map(|coverage_goal| {
+            (
+                coverage_goal,
+                k_sets(k, range_len, len, *coverage_goal, How::None, 0),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    for (range_len, sets) in &setup_vec {
+        let parameter = *range_len;
+
+        let answer = &sets[0] | &sets[1];
+        let fraction_val = fraction(&answer, len);
+        println!(
+            "u: {parameter}, {fraction_val}, {}+{}={}",
+            sets[0].ranges_len(),
+            sets[1].ranges_len(),
+            answer.ranges_len()
+        );
+        let answer = &sets[0] & &sets[1];
+        let fraction_val = fraction(&answer, len);
+        println!(
+            "i: {parameter}, {fraction_val}, {}+{}={}",
+            sets[0].ranges_len(),
+            sets[1].ranges_len(),
+            answer.ranges_len()
+        );
+    }
 }
