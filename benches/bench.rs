@@ -6,7 +6,11 @@
 
 use std::collections::BTreeSet;
 
-use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
+use criterion::{
+    criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
+    PlotConfiguration,
+};
+use itertools::iproduct;
 use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 // use pprof::criterion::Output; //PProfProfiler
 use range_set_int::{intersection, union, DynSortedDisjointExt, RangeSetInt};
@@ -520,100 +524,189 @@ fn coverage_goal(c: &mut Criterion) {
 }
 
 fn union_vary_k(c: &mut Criterion) {
-    k_play_internal(c, "union_vary_k", false, false);
+    let k_list = [2u64, 5, 10, 25, 50, 100];
+    let range_len_list = [1000u64];
+    parameter_vary_internal(
+        c,
+        "union_vary_k",
+        false,
+        false,
+        &k_list,
+        &range_len_list,
+        access_k,
+    );
 }
 fn union_vary_k_w_2_at_a_time(c: &mut Criterion) {
-    k_play_internal(c, "union_k_w_2_at_a_time", true, false);
+    let k_list = [2u64, 5, 10, 25, 50, 100];
+    let range_len_list = [1000u64];
+    parameter_vary_internal(
+        c,
+        "union_k_w_2_at_a_time",
+        true,
+        false,
+        &k_list,
+        &range_len_list,
+        access_k,
+    );
 }
 
 fn intersection_vary_k(c: &mut Criterion) {
-    k_play_internal(c, "intersection_vary_k", false, true);
+    let k_list = [2u64, 5, 10, 25, 50, 100];
+    let range_len_list = [1000u64];
+    parameter_vary_internal(
+        c,
+        "intersection_vary_k",
+        false,
+        true,
+        &k_list,
+        &range_len_list,
+        access_k,
+    );
 }
 fn intersection_vary_k_w_2_at_a_time(c: &mut Criterion) {
-    k_play_internal(c, "intersection_k_w_2_at_a_time", true, true);
+    let k_list = [2u64, 5, 10, 25, 50, 100];
+    let range_len_list = [1000u64];
+    parameter_vary_internal(
+        c,
+        "intersection_k_w_2_at_a_time",
+        true,
+        true,
+        &k_list,
+        &range_len_list,
+        access_k,
+    );
 }
 
-fn k_play_internal(
+fn union_vary_range_len(c: &mut Criterion) {
+    let k_list = [2u64];
+    let range_len_list = [1u64, 10, 100, 1000, 10_000, 100_000];
+    parameter_vary_internal(
+        c,
+        "union_vary_range_len",
+        true,
+        false,
+        &k_list,
+        &range_len_list,
+        access_r,
+    );
+}
+
+fn access_k(&x: &(u64, u64)) -> u64 {
+    x.0
+}
+fn access_r(&x: &(u64, u64)) -> u64 {
+    x.1
+}
+fn intersection_vary_range_len(c: &mut Criterion) {
+    let k_list = [2u64];
+    let range_len_list = [1u64, 10, 100, 1000, 10_000, 100_000];
+    parameter_vary_internal(
+        c,
+        "intersection_vary_range_len",
+        true,
+        true,
+        &k_list,
+        &range_len_list,
+        access_r,
+    );
+}
+
+fn parameter_vary_internal<F: Fn(&(u64, u64)) -> u64>(
     c: &mut Criterion,
     group_name: &str,
     include_two_at_a_time: bool,
     do_intersection: bool,
+    k_list: &[u64],
+    range_len_list: &[u64],
+    access: F,
 ) {
-    let len = 10_000_000;
-    let range_len = 1000;
+    let len = 100_000_000;
     let coverage_goal = 0.75;
-    let k_list = [2u64, 25, 50, 75, 100];
-    let setup_vec = k_list
-        .iter()
-        .map(|k| {
+    let setup_vec = iproduct!(k_list, range_len_list)
+        .map(|(k, range_len)| {
+            let k = *k;
+            let range_len = *range_len;
             (
-                k,
-                k_sets(*k, range_len, len, coverage_goal, do_intersection),
+                (k, range_len),
+                k_sets(k, range_len, len, coverage_goal, do_intersection),
             )
         })
         .collect::<Vec<_>>();
 
     let mut group = c.benchmark_group(group_name);
-    for (k, setup) in &setup_vec {
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    for (k_and_range_len, setup) in &setup_vec {
+        let parameter = access(k_and_range_len);
         // group.throughput(Throughput::Bytes(*size as u64));
-        group.bench_with_input(BenchmarkId::new("dyn", k), k, |b, _k| {
-            b.iter_batched(
-                || setup,
-                |sets| {
-                    let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
-                    let _answer: RangeSetInt<_> = if do_intersection {
-                        intersection(sets).into()
-                    } else {
-                        union(sets).into()
-                    };
-                },
-                BatchSize::SmallInput,
-            );
-        });
-        group.bench_with_input(BenchmarkId::new("static", k), k, |b, _k| {
-            b.iter_batched(
-                || setup,
-                |sets| {
-                    let _answer = if do_intersection {
-                        RangeSetInt::intersection(sets.iter())
-                    } else {
-                        RangeSetInt::union(sets)
-                    };
-                },
-                BatchSize::SmallInput,
-            );
-        });
-        if include_two_at_a_time {
-            group.bench_with_input(BenchmarkId::new("2-at-a-time", k), k, |b, _k| {
+        group.bench_with_input(
+            BenchmarkId::new("dyn", parameter),
+            &parameter,
+            |b, _k_and_range_len| {
                 b.iter_batched(
                     || setup,
                     |sets| {
-                        // !!!cmk need code for size zero
-                        let mut answer = sets[0].clone();
-                        if do_intersection {
-                            for set in sets.iter().skip(1) {
-                                answer = answer & set;
-                            }
+                        let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
+                        let _answer: RangeSetInt<_> = if do_intersection {
+                            intersection(sets).into()
                         } else {
-                            for set in sets.iter().skip(1) {
-                                answer = answer | set;
-                            }
-                        }
+                            union(sets).into()
+                        };
                     },
                     BatchSize::SmallInput,
                 );
-            });
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("static", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup,
+                    |sets| {
+                        let _answer = if do_intersection {
+                            RangeSetInt::intersection(sets.iter())
+                        } else {
+                            RangeSetInt::union(sets)
+                        };
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        if include_two_at_a_time {
+            group.bench_with_input(
+                BenchmarkId::new("2-at-a-time", parameter),
+                &parameter,
+                |b, _k| {
+                    b.iter_batched(
+                        || setup,
+                        |sets| {
+                            // !!!cmk need code for size zero
+                            let mut answer = sets[0].clone();
+                            if do_intersection {
+                                for set in sets.iter().skip(1) {
+                                    answer = answer & set;
+                                }
+                            } else {
+                                for set in sets.iter().skip(1) {
+                                    answer = answer | set;
+                                }
+                            }
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
         }
     }
     group.finish();
 }
 
-// !!!cmk000 understand data generation and make it faster, perhaps only once
 // !!!cmk000 make graph show effect of size of Element.
 // !!!cmk000 what is effect of # of range_elements? (k can be 2)
 // !!!cmk000 shorten code for each section as much as possible.
-// !!!cmk000 why is k-play so slow?
 // !!!cmk000 understand why criterion_group! starts with "benches"
+// !!!cmk000 compare the various operations on the same data.
 
 criterion_group!(
     benches, // insert10,
@@ -631,7 +724,9 @@ criterion_group!(
     union_vary_k,
     union_vary_k_w_2_at_a_time,
     intersection_vary_k,
-    intersection_vary_k_w_2_at_a_time
+    intersection_vary_k_w_2_at_a_time,
+    union_vary_range_len,
+    intersection_vary_range_len,
 );
 criterion_main!(benches);
 
