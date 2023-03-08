@@ -25,7 +25,7 @@
 // !!! cmk rule: Don't have a function and a method. Pick one (method)
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 // cmk rule: don't create an assign method if it is not more efficient
-// cmk00000 benchmark.
+// cmk00 benchmark.
 
 mod integer;
 pub mod not_iter;
@@ -41,7 +41,6 @@ use itertools::Tee;
 use not_iter::NotIter;
 use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::Zero;
-// cmk0 move rand to dev-dependencies
 use sorted_disjoint_iter::SortedDisjointIter;
 use std::cmp::max;
 use std::collections::btree_map;
@@ -725,8 +724,26 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
     }
 }
 
+impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetInt<T> {
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = RangeInclusive<T>>,
+    {
+        let iter = iter.into_iter();
+        for range_inclusive in iter {
+            self.internal_add(range_inclusive);
+        }
+    }
+}
+
 impl<'a, T: 'a + Integer> Extend<&'a T> for RangeSetInt<T> {
     fn extend<I: IntoIterator<Item = &'a T>>(&mut self, iter: I) {
+        self.extend(iter.into_iter().cloned());
+    }
+}
+
+impl<'a, T: 'a + Integer> Extend<&'a RangeInclusive<T>> for RangeSetInt<T> {
+    fn extend<I: IntoIterator<Item = &'a RangeInclusive<T>>>(&mut self, iter: I) {
         self.extend(iter.into_iter().cloned());
     }
 }

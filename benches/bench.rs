@@ -1016,15 +1016,60 @@ fn vary_type(c: &mut Criterion) {
     }};
     group.finish();
 }
-// !!!cmk000 should every trial use a different seed?
 
-// !!!cmk000 make graph show effect of size of Element.
-// !!!cmk000 understand why criterion_group! starts with "benches"
+fn stream_vs_adhoc(c: &mut Criterion) {
+    let group_name = "stream_vs_adhoc";
+    // let k = 2;
+    let range_inclusive = 0..=99_999_999;
+    let range_len0 = 1_000;
+    let range_len_list1 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal = 0.5;
+    let how = How::None;
+    let seed = 0;
 
-criterion_group!(
-    benches, // insert10,
-    // small_random_inserts,
-    // big_random_inserts,
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    let mut rng = StdRng::seed_from_u64(seed);
+
+    let set0 = &k_sets(
+        1,
+        range_len0,
+        &range_inclusive,
+        coverage_goal,
+        how,
+        &mut rng,
+    )[0];
+
+    for range_len1 in &range_len_list1 {
+        let parameter = range_len1;
+
+        let set1 = &k_sets(
+            1,
+            *range_len1,
+            &range_inclusive,
+            coverage_goal,
+            how,
+            &mut rng,
+        )[0];
+        group.bench_with_input(BenchmarkId::new("stream", parameter), &parameter, |b, _| {
+            b.iter(|| {
+                let _answer = set0 | set1;
+            });
+        });
+        group.bench_with_input(BenchmarkId::new("ad_hoc", parameter), &parameter, |b, _| {
+            b.iter(|| {
+                let mut answer = set0.clone();
+                answer.extend(set1.ranges());
+            });
+        });
+    }
+    group.finish();
+}
+
+criterion_group! {
+    name = benches;
+    config = Criterion::default();
+    targets =
     shuffled,
     ascending,
     descending,
@@ -1043,7 +1088,8 @@ criterion_group!(
     every_op,
     vary_coverage_goal,
     vary_type,
-);
+    stream_vs_adhoc
+}
 criterion_main!(benches);
 
 // cmk rule cargo bench intersect

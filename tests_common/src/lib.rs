@@ -57,7 +57,6 @@ impl<'a, T: Integer> Iterator for MemorylessRange<'a, T> {
         let offset: f64 = T::into_f64(T::safe_inclusive_len(
             &(*self.range_inclusive.start()..=T::zero()),
         ));
-        //cmk000 what if zero is not in range?
         if self.range_len == 0 {
             None
         } else {
@@ -67,11 +66,11 @@ impl<'a, T: Integer> Iterator for MemorylessRange<'a, T> {
                 (mid_fraction - self.rng.gen::<f64>() * self.average_coverage_per_clump).max(0.0);
             let stop_fraction =
                 (mid_fraction + self.rng.gen::<f64>() * self.average_coverage_per_clump).min(1.0);
-            // cmk000 println!("start_fraction: {start_fraction}, stop_fraction: {stop_fraction}, delta={}, a_c_p_c={}", stop_fraction - start_fraction, self.average_coverage_per_clump, start_fraction=start_fraction, stop_fraction=stop_fraction);
+            // println!("start_fraction: {start_fraction}, stop_fraction: {stop_fraction}, delta={}, a_c_p_c={}", stop_fraction - start_fraction, self.average_coverage_per_clump, start_fraction=start_fraction, stop_fraction=stop_fraction);
             let start: T = T::from_f64(start_fraction * len - offset);
             let stop: T = T::from_f64(stop_fraction * len - offset);
             // let fraction_value: f64 = T::into_f64(T::safe_inclusive_len(&(start..=stop))) / len;
-            // cmk000 println!("fraction_value: {}", fraction_value);
+            //  println!("fraction_value: {}", fraction_value);
             Some(start..=stop)
         }
     }

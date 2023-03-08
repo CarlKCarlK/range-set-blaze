@@ -626,7 +626,7 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     // #16 into / from iter (T,T) + SortedDisjoint
     _range_set_int = _range_set_int.ranges().into();
     _range_set_int = RangeSetInt::from(_range_set_int.ranges());
-    // // try_into / try_from string cmk00
+    // // try_into / try_from string cmk`
     // _range_set_int = [5..=6, 1..=5].into();
     // _range_set_int = RangeSetInt::from([5..=6, 1..=5]);
 
@@ -654,7 +654,7 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     // // #16 into / from iter (T,T) + SortedDisjoint
     let mut _sorted_disjoint_iter: SortedDisjointIter<_, _> = _range_set_int.ranges().collect();
     _sorted_disjoint_iter = SortedDisjointIter::from_iter(_range_set_int.ranges());
-    // // // try_into / try_from string cmk00
+    // // // try_into / try_from string cmk
     // // _range_set_int = [5..=6, 1..=5].into();
     // // _range_set_int = SortedDisjointIter::from([5..=6, 1..=5]);
 
