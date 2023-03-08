@@ -1001,8 +1001,6 @@ fn vary_type(c: &mut Criterion) {
     // group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
     syntactic_for! { ty in [u16, u32, u64, u128] {
         $(
-            //cmk0000 why does it fail with $ty::MAX-2?
-            //cmk0000 pass the rng instead of using _from_entropy?
         let range_inclusive: RangeInclusive<$ty> = 0..=65535;
         let parameter = $ty::BITS;
         group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _| {

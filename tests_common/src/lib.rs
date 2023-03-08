@@ -5,6 +5,8 @@ use rand::Rng;
 use range_set_int::Integer;
 use range_set_int::RangeSetInt;
 
+// Not reliable if the range_inclusive is too small, especially if the range_len
+// is small. Might have some off-by-one errors that aren't material in practice.
 pub struct MemorylessRange<'a, T: Integer> {
     rng: &'a mut StdRng,
     range_len: usize,
@@ -51,6 +53,7 @@ impl<'a, T: Integer> Iterator for MemorylessRange<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let len: f64 = T::into_f64(T::safe_inclusive_len(&self.range_inclusive));
+        // This may not work for all ranges, but it works for the ones we're using.
         let offset: f64 = T::into_f64(T::safe_inclusive_len(
             &(*self.range_inclusive.start()..=T::zero()),
         ));

@@ -127,6 +127,14 @@ impl<T: Integer> RangeSetInt<T> {
             iter: self.ranges(),
         }
     }
+
+    pub fn first(&self) -> Option<T> {
+        self.btree_map.iter().next().map(|(x, _)| *x)
+    }
+
+    pub fn last(&self) -> Option<T> {
+        self.btree_map.iter().next_back().map(|(_, x)| *x)
+    }
 }
 
 impl<'a, T: Integer + 'a> RangeSetInt<T> {
