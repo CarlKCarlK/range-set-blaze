@@ -1,15 +1,16 @@
-use std::cmp::min;
+use std::collections::btree_map::Range;
 use std::ops::RangeInclusive;
 
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
+use range_set_int::Integer;
 use range_set_int::RangeSetInt;
 
-pub struct MemorylessRange {
+pub struct MemorylessRange<T: Integer> {
     rng: StdRng,
-    len: u128,
-    range_len: u64,
+    range_len: usize,
+    range_inclusive: RangeInclusive<T>,
     average_coverage_per_clump: f64,
 }
 
@@ -20,88 +21,92 @@ pub enum How {
     None,
 }
 
-impl MemorylessRange {
-    pub fn new(seed: u64, range_len: u64, len: u128, coverage_goal: f64, k: u64, how: How) -> Self {
+impl<T: Integer> MemorylessRange<T> {
+    pub fn new(
+        seed: u64,
+        range_len: usize,
+        range_inclusive: RangeInclusive<T>,
+        coverage_goal: f64,
+        k: usize,
+        how: How,
+    ) -> Self {
+        let len: f64 = T::into_f64(T::safe_inclusive_len(&range_inclusive));
         let average_coverage_per_clump = match how {
             How::Union => {
                 let goal2 = coverage_goal.powf(1.0 / (k as f64));
-                1.0 - (1.0 - goal2).powf(1.0 / (range_len as f64))
+                1.0 - (1.0 - goal2).powf(1.0 / len)
             }
-            How::Intersection => {
-                1.0 - (1.0 - coverage_goal).powf(1.0 / ((range_len as f64) * (k as f64)))
-            }
-            How::None => 1.0 - (1.0 - coverage_goal).powf(1.0 / (range_len as f64)),
+            How::Intersection => 1.0 - (1.0 - coverage_goal).powf(1.0 / (len * k as f64)),
+            How::None => 1.0 - (1.0 - coverage_goal).powf(1.0 / len),
         };
         Self {
             rng: StdRng::seed_from_u64(seed),
-            len,
             range_len,
+            range_inclusive,
             average_coverage_per_clump,
         }
     }
 }
 
-impl Iterator for MemorylessRange {
-    type Item = [RangeInclusive<u64>; 2];
+impl<T: Integer> Iterator for MemorylessRange<T> {
+    type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        let len: f64 = T::into_f64(T::safe_inclusive_len(&self.range_inclusive));
         if self.range_len == 0 {
             None
         } else {
             self.range_len -= 1;
-            let start_fraction = self.rng.gen::<f64>();
-            let end_fraction =
-                start_fraction + self.average_coverage_per_clump * self.rng.gen::<f64>() * 2.0;
-            let start = (start_fraction * self.len as f64) as u64;
-            let end = (end_fraction * self.len as f64) as u64;
-            let first = start..=min(end, (self.len - 1) as u64);
-            #[allow(clippy::reversed_empty_ranges)]
-            let second = if (end as u128) < self.len {
-                1u64..=0
-            } else {
-                0u64..=(end - self.len as u64)
-            };
-            // println!("cmk000 1st, 2nd = {first:?}, {second:?}");
-            Some([first, second])
+            let mid_fraction = self.rng.gen::<f64>();
+            let start_fraction = mid_fraction
+                - (self.rng.gen::<f64>() * self.average_coverage_per_clump / len).max(0.0);
+            let stop_fraction = mid_fraction
+                + (self.rng.gen::<f64>() * self.average_coverage_per_clump / len).min(1.0);
+            let start: T = T::from_f64(start_fraction * len);
+            let stop: T = T::from_f64(stop_fraction * len);
+            Some(start..=stop)
         }
     }
 }
 
-pub struct MemorylessIter {
-    option_pair: Option<[RangeInclusive<u64>; 2]>,
-    iter: MemorylessRange,
+pub struct MemorylessIter<T: Integer> {
+    option_range_inclusive: Option<RangeInclusive<T>>,
+    iter: MemorylessRange<T>,
 }
 
-impl MemorylessIter {
-    pub fn new(seed: u64, range_len: u64, len: u128, coverage_goal: f64, k: u64, how: How) -> Self {
-        let memoryless_range = MemorylessRange::new(seed, range_len, len, coverage_goal, k, how);
+impl<T: Integer> MemorylessIter<T> {
+    pub fn new(
+        seed: u64,
+        range_len: usize,
+        range_inclusive: RangeInclusive<T>,
+        coverage_goal: f64,
+        k: usize,
+        how: How,
+    ) -> Self {
+        let memoryless_range =
+            MemorylessRange::new(seed, range_len, range_inclusive, coverage_goal, k, how);
         Self {
-            option_pair: None,
+            option_range_inclusive: None,
             iter: memoryless_range,
         }
     }
 }
 
-impl Iterator for MemorylessIter {
-    type Item = u64;
+impl<T: Integer> Iterator for MemorylessIter<T> {
+    type Item = T;
 
     #[allow(clippy::reversed_empty_ranges)]
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(pair) = &self.option_pair {
-            let (start0, stop0) = pair[0].clone().into_inner();
-            if start0 == stop0 {
-                let (start1, stop1) = pair[1].clone().into_inner();
-                if start1 > stop1 {
-                    self.option_pair = None;
-                } else {
-                    self.option_pair = Some([start1..=stop1, 1..=0]);
-                }
+        if let Some(range_inclusive) = &self.option_range_inclusive {
+            let (start, stop) = range_inclusive.clone().into_inner();
+            if start == stop {
+                self.option_range_inclusive = None;
             } else {
-                self.option_pair = Some([(start0 + 1)..=stop0, pair[1].clone()]);
+                self.option_range_inclusive = Some(start + T::one()..=stop);
             }
-            Some(start0)
-        } else if let Some(range_inclusive_pair) = self.iter.next() {
-            self.option_pair = Some(range_inclusive_pair);
+            Some(start)
+        } else if let Some(range_inclusive) = self.iter.next() {
+            self.option_range_inclusive = Some(range_inclusive);
             self.next() // will recurse at most once
         } else {
             None
@@ -109,24 +114,31 @@ impl Iterator for MemorylessIter {
     }
 }
 
-pub fn k_sets(
-    k: u64,
-    range_len: u64,
-    len: u128,
+pub fn k_sets<T: Integer>(
+    k: usize,
+    range_len: usize,
+    range_inclusive: &RangeInclusive<T>,
     coverage_goal: f64,
     how: How,
     seed_offset: u64,
-) -> Vec<RangeSetInt<u64>> {
+) -> Vec<RangeSetInt<T>> {
     (0..k)
         .map(|i| {
-            RangeSetInt::<u64>::from_iter(
-                MemorylessRange::new(i + seed_offset, range_len, len, coverage_goal, k, how)
-                    .flatten(),
-            )
+            RangeSetInt::<T>::from_iter(MemorylessRange::new(
+                i as u64 + seed_offset,
+                range_len,
+                range_inclusive.clone(),
+                coverage_goal,
+                k,
+                how,
+            ))
         })
         .collect()
 }
 
-pub fn fraction(range_int_set: &RangeSetInt<u64>, len: u128) -> f64 {
-    range_int_set.len() as f64 / len as f64
+pub fn fraction<T: Integer>(
+    range_int_set: &RangeSetInt<T>,
+    range_inclusive: &RangeInclusive<T>,
+) -> f64 {
+    T::into_f64(range_int_set.len()) / T::into_f64(T::safe_inclusive_len(range_inclusive))
 }

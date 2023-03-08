@@ -4,7 +4,7 @@
 // https://github.com/orlp/glidesort
 // https://nnethercote.github.io/perf-book/profiling.html
 
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, ops::RangeInclusive};
 
 use criterion::{
     criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
@@ -13,8 +13,9 @@ use criterion::{
 use itertools::iproduct;
 use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 // use pprof::criterion::Output; //PProfProfiler
-use range_set_int::{intersection, union, DynSortedDisjointExt, RangeSetInt};
-use tests_common::{k_sets, How, MemorylessIter};
+use range_set_int::{intersection, union, DynSortedDisjointExt, Integer, RangeSetInt};
+use syntactic_for::syntactic_for;
+use tests_common::{k_sets, How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
 
 // fn insert10(c: &mut Criterion) {
@@ -270,21 +271,39 @@ fn btree_set_test(data: Vec<u32>, _range_len: usize, len: usize) {
 }
 
 pub fn clumps(c: &mut Criterion) {
-    let len = 10_000_000;
+    let range_inclusive = 0..=9_999_999;
     let coverage_goal = 0.95;
     let mut group = c.benchmark_group("clumps");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
     group.bench_function("clumps range_set_int", |b| {
         b.iter_batched(
-            || MemorylessIter::new(0, 10_000, len, coverage_goal, 1, How::Intersection),
+            || {
+                MemorylessIter::new(
+                    0,
+                    10_000,
+                    range_inclusive.clone(),
+                    coverage_goal,
+                    1,
+                    How::Intersection,
+                )
+            },
             RangeSetInt::<u64>::from_iter,
             BatchSize::SmallInput,
         );
     });
     group.bench_function("clumps btree_set", |b| {
         b.iter_batched(
-            || MemorylessIter::new(0, 10_000, len, coverage_goal, 1, How::Intersection),
+            || {
+                MemorylessIter::new(
+                    0,
+                    10_000,
+                    range_inclusive.clone(),
+                    coverage_goal,
+                    1,
+                    How::Intersection,
+                )
+            },
             BTreeSet::<u64>::from_iter,
             BatchSize::SmallInput,
         );
@@ -292,7 +311,7 @@ pub fn clumps(c: &mut Criterion) {
 }
 
 fn bitxor(c: &mut Criterion) {
-    let len = 10_000_000;
+    let range_inclusive = 0..=9_999_999;
     let range_len = 10_000;
     let coverage_goal = 0.50;
     let mut group = c.benchmark_group("operations");
@@ -300,7 +319,7 @@ fn bitxor(c: &mut Criterion) {
     // group.measurement_time(Duration::from_secs(170));
     group.bench_function("RangeSetInt bitxor", |b| {
         b.iter_batched(
-            || two_sets(range_len, len, coverage_goal),
+            || two_sets(range_len, range_inclusive.clone(), coverage_goal),
             |(set0, set1)| {
                 let _answer = &set0 ^ &set1;
             },
@@ -309,7 +328,7 @@ fn bitxor(c: &mut Criterion) {
     });
     group.bench_function("BTreeSet bitxor", |b| {
         b.iter_batched(
-            || btree_two_sets(range_len, len, coverage_goal),
+            || btree_two_sets(range_len, range_inclusive.clone(), coverage_goal),
             |(set0, set1)| {
                 let _answer = &set0 ^ &set1;
             },
@@ -319,7 +338,7 @@ fn bitxor(c: &mut Criterion) {
 }
 
 fn bitor(c: &mut Criterion) {
-    let len = 10_000_000;
+    let range_inclusive = 0..=9_999_999;
     let range_len = 10_000;
     let coverage_goal = 0.50;
     let mut group = c.benchmark_group("operations");
@@ -327,7 +346,7 @@ fn bitor(c: &mut Criterion) {
     // group.measurement_time(Duration::from_secs(170));
     group.bench_function("RangeSetInt bitor", |b| {
         b.iter_batched(
-            || two_sets(range_len, len, coverage_goal),
+            || two_sets(range_len, range_inclusive.clone(), coverage_goal),
             |(set0, set1)| {
                 let _answer = &set0 | &set1;
             },
@@ -336,7 +355,7 @@ fn bitor(c: &mut Criterion) {
     });
     group.bench_function("BTreeSet bitor", |b| {
         b.iter_batched(
-            || btree_two_sets(range_len, len, coverage_goal),
+            || btree_two_sets(range_len, range_inclusive.clone(), coverage_goal),
             |(set0, set1)| {
                 let _answer = &set0 | &set1;
             },
@@ -346,15 +365,15 @@ fn bitor(c: &mut Criterion) {
 }
 
 fn bitor1(c: &mut Criterion) {
-    let len = 10_000_000;
-    let range_len = 10_000;
+    let range_inclusive = 0..=9_999_999;
+    let range_len = 10_000usize;
     let coverage_goal = 0.50;
     let mut group = c.benchmark_group("operations");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
     group.bench_function("RangeSetInt bitor1", |b| {
         b.iter_batched(
-            || two_sets1(range_len, len, coverage_goal),
+            || two_sets1(range_len, range_inclusive.clone(), coverage_goal),
             |(set0, set1)| {
                 let _answer = &set0 | &set1;
             },
@@ -363,7 +382,7 @@ fn bitor1(c: &mut Criterion) {
     });
     group.bench_function("BTreeSet bitor1", |b| {
         b.iter_batched(
-            || btree_two_sets1(range_len, len, coverage_goal),
+            || btree_two_sets1(range_len, range_inclusive.clone(), coverage_goal),
             |(set0, set1)| {
                 let _answer = &set0 | &set1;
             },
@@ -371,37 +390,93 @@ fn bitor1(c: &mut Criterion) {
         );
     });
 }
-fn two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (RangeSetInt<u64>, RangeSetInt<u64>) {
+fn two_sets<T: Integer>(
+    range_len: usize,
+    range_inclusive: RangeInclusive<T>,
+    coverage_goal: f64,
+) -> (RangeSetInt<T>, RangeSetInt<T>) {
     (
-        MemorylessIter::new(0, range_len, len, coverage_goal, 2, How::Intersection).collect(),
-        MemorylessIter::new(1, range_len, len, coverage_goal, 2, How::Intersection).collect(),
+        MemorylessIter::new(
+            0,
+            range_len,
+            range_inclusive.clone(),
+            coverage_goal,
+            2,
+            How::Intersection,
+        )
+        .collect(),
+        MemorylessIter::new(
+            1,
+            range_len,
+            range_inclusive,
+            coverage_goal,
+            2,
+            How::Intersection,
+        )
+        .collect(),
     )
 }
 
-fn two_sets1(
-    range_len: u64,
-    len: u128,
+fn two_sets1<T: Integer>(
+    range_len: usize,
+    range_inclusive: RangeInclusive<T>,
     coverage_goal: f64,
-) -> (RangeSetInt<u64>, RangeSetInt<u64>) {
+) -> (RangeSetInt<T>, RangeSetInt<T>) {
     (
-        MemorylessIter::new(0, range_len, len, coverage_goal, 1, How::Intersection).collect(),
-        [range_len / 2].into(),
+        MemorylessRange::new(
+            0,
+            range_len,
+            range_inclusive.clone(),
+            coverage_goal,
+            1,
+            How::Intersection,
+        )
+        .collect(),
+        [*range_inclusive.start()].into(),
     )
 }
-fn btree_two_sets(range_len: u64, len: u128, coverage_goal: f64) -> (BTreeSet<u64>, BTreeSet<u64>) {
+fn btree_two_sets<T: Integer>(
+    range_len: usize,
+    range_inclusive: RangeInclusive<T>,
+    coverage_goal: f64,
+) -> (BTreeSet<T>, BTreeSet<T>) {
     (
-        MemorylessIter::new(0, range_len, len, coverage_goal, 2, How::Intersection).collect(),
-        MemorylessIter::new(1, range_len, len, coverage_goal, 2, How::Intersection).collect(),
+        MemorylessIter::new(
+            0,
+            range_len,
+            range_inclusive.clone(),
+            coverage_goal,
+            2,
+            How::Intersection,
+        )
+        .collect(),
+        MemorylessIter::new(
+            1,
+            range_len,
+            range_inclusive,
+            coverage_goal,
+            2,
+            How::Intersection,
+        )
+        .collect(),
     )
 }
-fn btree_two_sets1(
-    range_len: u64,
-    len: u128,
+fn btree_two_sets1<T: Integer>(
+    range_len: usize,
+    range_inclusive: RangeInclusive<T>,
     coverage_goal: f64,
-) -> (BTreeSet<u64>, BTreeSet<u64>) {
+) -> (BTreeSet<T>, BTreeSet<T>) {
     (
-        MemorylessIter::new(0, range_len, len, coverage_goal, 1, How::Intersection).collect(),
-        BTreeSet::<u64>::from([range_len / 2]),
+        MemorylessIter::new(
+            0,
+            range_len,
+            range_inclusive.clone(),
+            coverage_goal,
+            1,
+            How::Intersection,
+        )
+        .collect(),
+        BTreeSet::<T>::from([*range_inclusive.start()]),
     )
 }
 
@@ -414,7 +489,7 @@ fn btree_two_sets1(
 // cmk rule use benchmarking -- your random data is important -- automate graphs
 fn k_intersect(c: &mut Criterion) {
     let k = 100;
-    let len = 10_000_000;
+    let range_inclusive = 0..=9_999_999;
     let range_len = 1_000;
     let coverage_goal = 0.99;
     let mut group = c.benchmark_group("k_intersect");
@@ -423,7 +498,7 @@ fn k_intersect(c: &mut Criterion) {
     // group.measurement_time(Duration::from_secs(170));
     group.bench_function("RangeSetInt intersect", |b| {
         b.iter_batched(
-            || k_sets(k, range_len, len, coverage_goal, how, 0),
+            || k_sets(k, range_len, &range_inclusive, coverage_goal, how, 0),
             |sets| {
                 let _answer = RangeSetInt::intersection(sets.iter());
             },
@@ -432,7 +507,7 @@ fn k_intersect(c: &mut Criterion) {
     });
     group.bench_function("RangeSetInt dyn intersect", |b| {
         b.iter_batched(
-            || k_sets(k, range_len, len, coverage_goal, how, 0),
+            || k_sets(k, range_len, &range_inclusive, coverage_goal, how, 0),
             |sets| {
                 let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
                 let _answer: RangeSetInt<_> = intersection(sets).into();
@@ -442,7 +517,7 @@ fn k_intersect(c: &mut Criterion) {
     });
     group.bench_function("RangeSetInt intersect 2-at-a-time", |b| {
         b.iter_batched(
-            || k_sets(k, range_len, len, coverage_goal, how, 0),
+            || k_sets(k, range_len, &range_inclusive, coverage_goal, how, 0),
             |sets| {
                 // !!!cmk need code for size zero
                 let mut answer = sets[0].clone();
@@ -470,7 +545,7 @@ fn k_intersect(c: &mut Criterion) {
 
 fn coverage_goal(c: &mut Criterion) {
     let k = 10; // 100;
-    let len = 1_000_000; // 10_000_000;
+    let range_inclusive = 0..=999_999; // 0..=99_999_999;
     let range_len = 100; //1_000;
     let how = How::Union;
 
@@ -482,7 +557,7 @@ fn coverage_goal(c: &mut Criterion) {
             coverage_goal,
             |b, &coverage_goal| {
                 b.iter_batched(
-                    || k_sets(k, range_len, len, coverage_goal, how, 0),
+                    || k_sets(k, range_len, &range_inclusive, coverage_goal, how, 0),
                     |sets| {
                         let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
                         let _answer: RangeSetInt<_> = intersection(sets).into();
@@ -496,7 +571,7 @@ fn coverage_goal(c: &mut Criterion) {
             coverage_goal,
             |b, &coverage_goal| {
                 b.iter_batched(
-                    || k_sets(k, range_len, len, coverage_goal, how, 0),
+                    || k_sets(k, range_len, &range_inclusive, coverage_goal, how, 0),
                     |sets| {
                         let _answer = RangeSetInt::intersection(sets.iter());
                     },
@@ -509,7 +584,7 @@ fn coverage_goal(c: &mut Criterion) {
             coverage_goal,
             |b, &coverage_goal| {
                 b.iter_batched(
-                    || k_sets(k, range_len, len, coverage_goal, how, 0),
+                    || k_sets(k, range_len, &range_inclusive, coverage_goal, how, 0),
                     |sets| {
                         // !!!cmk need code for size zero
                         let mut answer = sets[0].clone();
@@ -526,8 +601,8 @@ fn coverage_goal(c: &mut Criterion) {
 }
 
 fn union_vary_k(c: &mut Criterion) {
-    let k_list = [2u64, 5, 10, 25, 50, 100];
-    let range_len_list = [1000u64];
+    let k_list = [2usize, 5, 10, 25, 50, 100];
+    let range_len_list = [1000usize];
     parameter_vary_internal(
         c,
         "union_vary_k",
@@ -539,8 +614,8 @@ fn union_vary_k(c: &mut Criterion) {
     );
 }
 fn union_vary_k_w_2_at_a_time(c: &mut Criterion) {
-    let k_list = [2u64, 5, 10, 25, 50, 100];
-    let range_len_list = [1000u64];
+    let k_list = [2usize, 5, 10, 25, 50, 100];
+    let range_len_list = [1000usize];
     parameter_vary_internal(
         c,
         "union_k_w_2_at_a_time",
@@ -553,8 +628,8 @@ fn union_vary_k_w_2_at_a_time(c: &mut Criterion) {
 }
 
 fn intersection_vary_k(c: &mut Criterion) {
-    let k_list = [2u64, 5, 10, 25, 50, 100];
-    let range_len_list = [1000u64];
+    let k_list = [2usize, 5, 10, 25, 50, 100];
+    let range_len_list = [1000usize];
     parameter_vary_internal(
         c,
         "intersection_vary_k",
@@ -566,8 +641,8 @@ fn intersection_vary_k(c: &mut Criterion) {
     );
 }
 fn intersection_vary_k_w_2_at_a_time(c: &mut Criterion) {
-    let k_list = [2u64, 5, 10, 25, 50, 100];
-    let range_len_list = [1000u64];
+    let k_list = [2usize, 5, 10, 25, 50, 100];
+    let range_len_list = [1000usize];
     parameter_vary_internal(
         c,
         "intersection_k_w_2_at_a_time",
@@ -580,8 +655,8 @@ fn intersection_vary_k_w_2_at_a_time(c: &mut Criterion) {
 }
 
 fn union_vary_range_len(c: &mut Criterion) {
-    let k_list = [2u64];
-    let range_len_list = [1u64, 10, 100, 1000, 10_000, 100_000];
+    let k_list = [2usize];
+    let range_len_list = [1usize, 10, 100, 1000, 10_000, 100_000];
     parameter_vary_internal(
         c,
         "union_vary_range_len",
@@ -593,15 +668,15 @@ fn union_vary_range_len(c: &mut Criterion) {
     );
 }
 
-fn access_k(&x: &(u64, u64)) -> u64 {
+fn access_k(&x: &(usize, usize)) -> usize {
     x.0
 }
-fn access_r(&x: &(u64, u64)) -> u64 {
+fn access_r(&x: &(usize, usize)) -> usize {
     x.1
 }
 fn intersection_vary_range_len(c: &mut Criterion) {
-    let k_list = [2u64];
-    let range_len_list = [1u64, 10, 100, 1000, 10_000, 100_000];
+    let k_list = [2usize];
+    let range_len_list = [1usize, 10, 100, 1000, 10_000, 100_000];
     parameter_vary_internal(
         c,
         "intersection_vary_range_len",
@@ -613,16 +688,16 @@ fn intersection_vary_range_len(c: &mut Criterion) {
     );
 }
 
-fn parameter_vary_internal<F: Fn(&(u64, u64)) -> u64>(
+fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
     c: &mut Criterion,
     group_name: &str,
     include_two_at_a_time: bool,
     how: How,
-    k_list: &[u64],
-    range_len_list: &[u64],
+    k_list: &[usize],
+    range_len_list: &[usize],
     access: F,
 ) {
-    let len = 100_000_000;
+    let range_inclusive = 0..=99_999;
     let coverage_goal = 0.75;
     let setup_vec = iproduct!(k_list, range_len_list)
         .map(|(k, range_len)| {
@@ -630,7 +705,7 @@ fn parameter_vary_internal<F: Fn(&(u64, u64)) -> u64>(
             let range_len = *range_len;
             (
                 (k, range_len),
-                k_sets(k, range_len, len, coverage_goal, how, 0),
+                k_sets(k, range_len, &range_inclusive, coverage_goal, how, 0),
             )
         })
         .collect::<Vec<_>>();
@@ -711,15 +786,20 @@ fn parameter_vary_internal<F: Fn(&(u64, u64)) -> u64>(
 fn every_op(c: &mut Criterion) {
     let group_name = "every_op";
     let k = 2;
-    let range_len_list = [1u64, 10, 100, 1000, 10_000, 100_000];
-    let len = 100_000_000;
+    let range_len_list = [1usize, 10, 100, 1000, 10_000, 100_000];
+    let range_inclusive = 0..=99_999_999;
     let coverage_goal = 0.50;
     let how = How::None;
     let mut group = c.benchmark_group(group_name);
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
     let setup_vec = range_len_list
         .iter()
-        .map(|range_len| (range_len, k_sets(k, *range_len, len, coverage_goal, how, 0)))
+        .map(|range_len| {
+            (
+                range_len,
+                k_sets(k, *range_len, &range_inclusive, coverage_goal, how, 0),
+            )
+        })
         .collect::<Vec<_>>();
 
     for (range_len, setup) in &setup_vec {
@@ -788,8 +868,8 @@ fn every_op(c: &mut Criterion) {
 fn vary_coverage_goal(c: &mut Criterion) {
     let group_name = "vary_coverage_goal";
     let k = 2;
-    let range_len = 1_000u64;
-    let len = 100_000_000;
+    let range_len = 1_000usize;
+    let range_inclusive = 0..=99_999_999;
     let coverage_goal_list = [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99];
     let mut group = c.benchmark_group(group_name);
     let how = How::None;
@@ -799,7 +879,7 @@ fn vary_coverage_goal(c: &mut Criterion) {
         .map(|coverage_goal| {
             (
                 coverage_goal,
-                k_sets(k, range_len, len, *coverage_goal, how, 0),
+                k_sets(k, range_len, &range_inclusive, *coverage_goal, how, 0),
             )
         })
         .collect::<Vec<_>>();
@@ -831,14 +911,37 @@ fn vary_coverage_goal(c: &mut Criterion) {
     }
     group.finish();
 }
-// !!!cmk000 at coverage_goal = 0.5, why is union is slower than intersection?
-// !!!cmk000 should every trail use a different seed?
+
+// fn vary_type(c: &mut Criterion) {
+//     let group_name = "vary_type";
+//     let coverage_goal = 0.5;
+//     let how = How::None;
+//     let mut group = c.benchmark_group(group_name);
+//     //, i8, u8,  cmk0000
+//     syntactic_for! { ty in [isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+//         $(
+//         let k: $ty = 2;
+//         let range_len: $ty = 1_000;
+//         let len: $ty = 10_000_000;
+//         let setup = k_sets(k, range_len, len, coverage_goal, how, 0);
+//         let parameter = range_len;
+//         group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
+//             b.iter_batched(
+//                 || setup,
+//                 |sets| {
+//                     let _answer = &sets[0] | &sets[1];
+//                 },
+//                 BatchSize::SmallInput,
+//             );
+//         });
+//         )*
+//     }};
+//     group.finish();
+// }
+// !!!cmk000 should every trial use a different seed?
 
 // !!!cmk000 make graph show effect of size of Element.
-// !!!cmk000 what is effect of # of range_elements? (k can be 2)
-// !!!cmk000 shorten code for each section as much as possible.
 // !!!cmk000 understand why criterion_group! starts with "benches"
-// !!!cmk000 compare the various operations on the same data.
 
 criterion_group!(
     benches, // insert10,

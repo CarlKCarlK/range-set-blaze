@@ -93,6 +93,10 @@ pub trait Integer:
     fn max_value2() -> Self {
         Self::max_value()
     }
+
+    fn from_f64(f: f64) -> Self;
+
+    fn into_f64(len: Self::SafeLen) -> f64;
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
