@@ -3,6 +3,8 @@
 
 use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 use range_set_int::sorted_disjoint_iter::SortedDisjointIter;
 use range_set_int::unsorted_disjoint::AssumeSortedStarts;
 use std::{collections::BTreeSet, ops::BitOr};
@@ -684,7 +686,7 @@ fn k_play(c: &mut Criterion) {
                         &range_inclusive,
                         coverage_goal,
                         How::Intersection,
-                        0,
+                        &mut StdRng::seed_from_u64(0),
                     )
                 },
                 |sets| {
@@ -710,7 +712,7 @@ fn data_gen() {
         let mut option_range_int_set: Option<RangeSetInt<_>> = None;
         for seed in 0..k as u64 {
             let r2: RangeSetInt<i32> = MemorylessRange::new(
-                seed,
+                &mut StdRng::seed_from_u64(seed),
                 range_len,
                 range_inclusive.clone(),
                 coverage_goal,
@@ -754,7 +756,14 @@ fn vary_coverage_goal() {
         .map(|coverage_goal| {
             (
                 coverage_goal,
-                k_sets(k, range_len, &range_inclusive, *coverage_goal, How::None, 0),
+                k_sets(
+                    k,
+                    range_len,
+                    &range_inclusive,
+                    *coverage_goal,
+                    How::None,
+                    &mut StdRng::seed_from_u64(0),
+                ),
             )
         })
         .collect::<Vec<_>>();

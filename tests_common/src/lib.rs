@@ -2,12 +2,11 @@ use std::ops::RangeInclusive;
 
 use rand::rngs::StdRng;
 use rand::Rng;
-use rand::SeedableRng;
 use range_set_int::Integer;
 use range_set_int::RangeSetInt;
 
-pub struct MemorylessRange<T: Integer> {
-    rng: StdRng,
+pub struct MemorylessRange<'a, T: Integer> {
+    rng: &'a mut StdRng,
     range_len: usize,
     range_inclusive: RangeInclusive<T>,
     average_coverage_per_clump: f64,
@@ -20,9 +19,9 @@ pub enum How {
     None,
 }
 
-impl<T: Integer> MemorylessRange<T> {
+impl<'a, T: Integer> MemorylessRange<'a, T> {
     pub fn new(
-        seed: u64,
+        rng: &'a mut StdRng,
         range_len: usize,
         range_inclusive: RangeInclusive<T>,
         coverage_goal: f64,
@@ -39,7 +38,7 @@ impl<T: Integer> MemorylessRange<T> {
             How::None => 1.0 - (1.0 - coverage_goal).powf(1.0 / range_len as f64),
         };
         Self {
-            rng: StdRng::from_entropy(), //cmk00000 ::seed_from_u64(seed),
+            rng,
             range_len,
             range_inclusive,
             average_coverage_per_clump,
@@ -47,7 +46,7 @@ impl<T: Integer> MemorylessRange<T> {
     }
 }
 
-impl<T: Integer> Iterator for MemorylessRange<T> {
+impl<'a, T: Integer> Iterator for MemorylessRange<'a, T> {
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -75,14 +74,14 @@ impl<T: Integer> Iterator for MemorylessRange<T> {
     }
 }
 
-pub struct MemorylessIter<T: Integer> {
+pub struct MemorylessIter<'a, T: Integer> {
     option_range_inclusive: Option<RangeInclusive<T>>,
-    iter: MemorylessRange<T>,
+    iter: MemorylessRange<'a, T>,
 }
 
-impl<T: Integer> MemorylessIter<T> {
+impl<'a, T: Integer> MemorylessIter<'a, T> {
     pub fn new(
-        seed: u64,
+        rng: &'a mut StdRng,
         range_len: usize,
         range_inclusive: RangeInclusive<T>,
         coverage_goal: f64,
@@ -90,7 +89,7 @@ impl<T: Integer> MemorylessIter<T> {
         how: How,
     ) -> Self {
         let memoryless_range =
-            MemorylessRange::new(seed, range_len, range_inclusive, coverage_goal, k, how);
+            MemorylessRange::new(rng, range_len, range_inclusive, coverage_goal, k, how);
         Self {
             option_range_inclusive: None,
             iter: memoryless_range,
@@ -98,7 +97,7 @@ impl<T: Integer> MemorylessIter<T> {
     }
 }
 
-impl<T: Integer> Iterator for MemorylessIter<T> {
+impl<'a, T: Integer> Iterator for MemorylessIter<'a, T> {
     type Item = T;
 
     #[allow(clippy::reversed_empty_ranges)]
@@ -126,12 +125,12 @@ pub fn k_sets<T: Integer>(
     range_inclusive: &RangeInclusive<T>,
     coverage_goal: f64,
     how: How,
-    seed_offset: u64,
+    rng: &mut StdRng,
 ) -> Vec<RangeSetInt<T>> {
     (0..k)
-        .map(|i| {
+        .map(|_i| {
             RangeSetInt::<T>::from_iter(MemorylessRange::new(
-                i as u64 + seed_offset,
+                rng,
                 range_len,
                 range_inclusive.clone(),
                 coverage_goal,
