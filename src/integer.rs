@@ -201,6 +201,8 @@ impl Integer for i16 {
     fn from_f64(f: f64) -> Self {
         f as i16
     }
+    //cmk0 don't rust this for other target_pointer_width. maybe don't support others
+    //cmk0 is there a to_f64 alternative?
     fn into_f64(len: Self::SafeLen) -> f64 {
         len as f64
     }

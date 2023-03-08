@@ -4,7 +4,7 @@
 // https://github.com/orlp/glidesort
 // https://nnethercote.github.io/perf-book/profiling.html
 
-use std::{collections::BTreeSet, ops::RangeInclusive};
+use std::{collections::BTreeSet, mem::size_of, ops::RangeInclusive};
 
 use criterion::{
     criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
@@ -912,32 +912,31 @@ fn vary_coverage_goal(c: &mut Criterion) {
     group.finish();
 }
 
-// fn vary_type(c: &mut Criterion) {
-//     let group_name = "vary_type";
-//     let coverage_goal = 0.5;
-//     let how = How::None;
-//     let mut group = c.benchmark_group(group_name);
-//     //, i8, u8,  cmk0000
-//     syntactic_for! { ty in [isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
-//         $(
-//         let k: $ty = 2;
-//         let range_len: $ty = 1_000;
-//         let len: $ty = 10_000_000;
-//         let setup = k_sets(k, range_len, len, coverage_goal, how, 0);
-//         let parameter = range_len;
-//         group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
-//             b.iter_batched(
-//                 || setup,
-//                 |sets| {
-//                     let _answer = &sets[0] | &sets[1];
-//                 },
-//                 BatchSize::SmallInput,
-//             );
-//         });
-//         )*
-//     }};
-//     group.finish();
-// }
+fn vary_type(c: &mut Criterion) {
+    let group_name = "vary_type";
+    let k = 2;
+    let range_len = 100;
+    let coverage_goal = 0.5;
+    let how = How::None;
+    let mut group = c.benchmark_group(group_name);
+    // group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    syntactic_for! { ty in [u8, u16, u32, u64, u128] {
+        $(
+        let range_inclusive: RangeInclusive<$ty> = 0..=$ty::MAX-1;
+        let parameter = $ty::BITS;
+        group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _| {
+            b.iter_batched(
+                || k_sets(k, range_len, &range_inclusive, coverage_goal, how, 0),
+                |sets| {
+                    let _answer = &sets[0] | &sets[1];
+                },
+                BatchSize::SmallInput,
+            );
+        });
+        )*
+    }};
+    group.finish();
+}
 // !!!cmk000 should every trial use a different seed?
 
 // !!!cmk000 make graph show effect of size of Element.
@@ -964,6 +963,7 @@ criterion_group!(
     intersection_vary_range_len,
     every_op,
     vary_coverage_goal,
+    vary_type,
 );
 criterion_main!(benches);
 

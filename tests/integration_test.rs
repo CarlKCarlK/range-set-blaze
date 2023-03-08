@@ -700,24 +700,23 @@ fn k_play(c: &mut Criterion) {
 
 #[test]
 fn data_gen() {
-    let range_inclusive = 0..=9_999_999;
-    let range_len = 1_000; // cmk0000 1_000
+    let range_inclusive = -10_000_000i32..=10_000_000;
+    let range_len = 1000; // cmk0000 1_000
     let coverage_goal = 0.75;
-    let k = 100usize; // cmk0000 100
+    let k = 100; // cmk0000 100
 
     // cmk0000 let universe = RangeSetInt::from([0..=len as u64]);
-    for how in [How::Intersection, How::Union, How::None].iter() {
+    for how in [How::None, How::Union, How::Intersection] {
         let mut option_range_int_set: Option<RangeSetInt<_>> = None;
         for seed in 0..k as u64 {
-            let r2: RangeSetInt<u64> = MemorylessRange::new(
+            let r2: RangeSetInt<i32> = MemorylessRange::new(
                 seed,
                 range_len,
                 range_inclusive.clone(),
                 coverage_goal,
                 k,
-                *how,
+                how,
             )
-            .flatten()
             .collect();
             option_range_int_set = Some(if let Some(range_int_set) = &option_range_int_set {
                 match how {
@@ -728,14 +727,18 @@ fn data_gen() {
             } else {
                 r2
             });
-            // let range_int_set = option_range_int_set.as_ref().unwrap();
-            // println!(
-            //     "do_intersection={do_intersection} {seed} range_len={}, fraction={}",
-            //     range_int_set.ranges_len(),
-            //     fraction(range_int_set, len)
-            // );
+            let range_int_set = option_range_int_set.as_ref().unwrap();
+            println!(
+                "range_int_set.len={}, ri={:#?}, how={how:#?} {seed} range_len={}, fraction={}",
+                range_int_set.len(),
+                &range_inclusive,
+                range_int_set.ranges_len(),
+                fraction(range_int_set, &range_inclusive)
+            );
         }
         let fraction = fraction(&option_range_int_set.unwrap(), &range_inclusive);
+        //cmk0000 add assert that in bounds -- add min and max of range_set_int
+        println!("how={how:#?}, goal={coverage_goal}, fraction={fraction}");
         assert!(coverage_goal * 0.95 < fraction && fraction < coverage_goal * 1.05);
     }
 }
