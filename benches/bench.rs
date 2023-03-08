@@ -915,14 +915,16 @@ fn vary_coverage_goal(c: &mut Criterion) {
 fn vary_type(c: &mut Criterion) {
     let group_name = "vary_type";
     let k = 2;
-    let range_len = 100;
+    let range_len = 250;
     let coverage_goal = 0.5;
     let how = How::None;
     let mut group = c.benchmark_group(group_name);
     // group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-    syntactic_for! { ty in [u8, u16, u32, u64, u128] {
+    syntactic_for! { ty in [u16, u32, u64, u128] {
         $(
-        let range_inclusive: RangeInclusive<$ty> = 0..=$ty::MAX-1;
+            //cmk0000 why does it fail with $ty::MAX-2?
+            //cmk0000 pass the rng instead of using _from_entropy?
+        let range_inclusive: RangeInclusive<$ty> = 0..=65535;
         let parameter = $ty::BITS;
         group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _| {
             b.iter_batched(

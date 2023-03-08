@@ -39,7 +39,7 @@ impl<T: Integer> MemorylessRange<T> {
             How::None => 1.0 - (1.0 - coverage_goal).powf(1.0 / range_len as f64),
         };
         Self {
-            rng: StdRng::seed_from_u64(seed),
+            rng: StdRng::from_entropy(), //cmk00000 ::seed_from_u64(seed),
             range_len,
             range_inclusive,
             average_coverage_per_clump,
