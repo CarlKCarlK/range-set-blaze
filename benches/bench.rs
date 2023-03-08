@@ -943,6 +943,7 @@ fn vary_coverage_goal(c: &mut Criterion) {
     let coverage_goal_list = [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99];
     let mut group = c.benchmark_group(group_name);
     let how = How::None;
+    let seed = 0;
     // group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
     let setup_vec = coverage_goal_list
         .iter()
@@ -955,7 +956,7 @@ fn vary_coverage_goal(c: &mut Criterion) {
                     &range_inclusive,
                     *coverage_goal,
                     how,
-                    &mut StdRng::seed_from_u64(0),
+                    &mut StdRng::seed_from_u64(seed),
                 ),
             )
         })
@@ -995,6 +996,7 @@ fn vary_type(c: &mut Criterion) {
     let range_len = 250;
     let coverage_goal = 0.5;
     let how = How::None;
+    let seed = 0;
     let mut group = c.benchmark_group(group_name);
     // group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
     syntactic_for! { ty in [u16, u32, u64, u128] {
@@ -1005,7 +1007,7 @@ fn vary_type(c: &mut Criterion) {
         let parameter = $ty::BITS;
         group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _| {
             b.iter_batched(
-                || k_sets(k, range_len, &range_inclusive, coverage_goal, how, &mut StdRng::seed_from_u64(0)),
+                || k_sets(k, range_len, &range_inclusive, coverage_goal, how, &mut StdRng::seed_from_u64(seed)),
                 |sets| {
                     let _answer = &sets[0] | &sets[1];
                 },
