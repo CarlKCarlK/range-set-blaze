@@ -14,13 +14,13 @@ num-integer = "0.1.44"
 num-traits = "0.2.14"
 gen_ops = "0.2.0"
 thiserror = "1.0"
+rand = "0.8.4"
 
 [dev-dependencies]
 tests_common = { path = "tests_common" }
 syntactic-for = "0.1.1"
 criterion = { version = "0.4", features = ["html_reports"] }
 trybuild = "1.0.53"
-rand = "0.8.4"
 thousands = "0.2.0"
 
 

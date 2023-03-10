@@ -25,7 +25,7 @@
 // !!! cmk rule: Don't have a function and a method. Pick one (method)
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 // cmk rule: don't create an assign method if it is not more efficient
-// cmk00 benchmark.
+// cmk rule: generate HTML: criterion = { version = "0.4", features = ["html_reports"] }
 
 mod integer;
 pub mod not_iter;
@@ -41,6 +41,7 @@ use itertools::Tee;
 use not_iter::NotIter;
 use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::Zero;
+use rand::distributions::uniform::SampleUniform;
 use sorted_disjoint_iter::SortedDisjointIter;
 use std::cmp::max;
 use std::collections::btree_map;
@@ -73,9 +74,13 @@ pub trait Integer:
     + Send
     + Sync
     + OverflowingSub
+    + SampleUniform
 {
     type SafeLen: std::hash::Hash
         + num_integer::Integer
+        + num_traits::NumAssignOps
+        + num_traits::Bounded
+        + num_traits::NumCast
         + std::ops::AddAssign
         + std::ops::SubAssign
         + Clone
@@ -93,9 +98,11 @@ pub trait Integer:
         Self::max_value()
     }
 
-    fn from_f64(f: f64) -> Self;
-
-    fn into_f64(len: Self::SafeLen) -> f64;
+    fn f64_to_t(f: f64) -> Self;
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen;
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64;
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self;
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self;
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]

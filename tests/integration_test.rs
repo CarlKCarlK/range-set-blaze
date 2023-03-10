@@ -9,7 +9,9 @@ use range_set_int::sorted_disjoint_iter::SortedDisjointIter;
 use range_set_int::unsorted_disjoint::AssumeSortedStarts;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
-use tests_common::{fraction, k_sets, How, MemorylessRange};
+use tests_common::{
+    fraction, k_sets, width_to_range_inclusive, How, MemorylessIter, MemorylessRange,
+};
 
 // !!!cmk should users use a prelude? If not, are these reasonable imports?
 use range_set_int::{intersection, union};
@@ -791,5 +793,90 @@ fn vary_coverage_goal() {
             sets[1].ranges_len(),
             answer.ranges_len()
         );
+    }
+}
+
+#[test]
+fn vs_btree_set() {
+    let k = 1;
+    let average_width_list = [2, 1, 3, 4, 5, 10, 100, 1000, 10_000, 100_000, 1_000_000];
+    let coverage_goal = 0.10;
+    let assert_tolerance = 0.005;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    println!(
+        "{:#?},{:#?},{:#?},{:#?},{:#?},{:#?},{:#?},{:#?},{:#?},{:#?}",
+        "seed",
+        "average_width",
+        "coverage_goal",
+        "iter_len",
+        "range_inclusive",
+        "range_count_with_dups",
+        "item_count_with_dups",
+        "range_count_without_dups",
+        "item_count_without_dups",
+        "fraction",
+    );
+
+    for average_width in average_width_list {
+        let (range_len, range_inclusive) =
+            width_to_range_inclusive(iter_len, average_width, coverage_goal);
+
+        let mut rng = StdRng::seed_from_u64(seed);
+        let memoryless_range = MemorylessRange::new(
+            &mut rng,
+            range_len,
+            range_inclusive.clone(),
+            coverage_goal,
+            k,
+            how,
+        );
+        let range_count_with_dups = memoryless_range.count();
+        let mut rng = StdRng::seed_from_u64(seed);
+        let memoryless_iter = MemorylessIter::new(
+            &mut rng,
+            range_len,
+            range_inclusive.clone(),
+            coverage_goal,
+            k,
+            how,
+        );
+        let item_count_with_dups = memoryless_iter.count();
+        let mut rng = StdRng::seed_from_u64(seed);
+        let range_set_int: RangeSetInt<_> = MemorylessRange::new(
+            &mut rng,
+            range_len,
+            range_inclusive.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+
+        let range_count_no_dups = range_set_int.ranges_len();
+        let item_count_no_dups = range_set_int.len();
+        let fraction_value = fraction(&range_set_int, &range_inclusive);
+        println!(
+            "{:#?},{:#?},{:#?},{:#?},{:#?},{:#?},{:#?},{:#?},{:#?},{:#?}",
+            seed,
+            average_width,
+            coverage_goal,
+            iter_len,
+            range_inclusive.end() + 1,
+            range_count_with_dups,
+            item_count_with_dups,
+            range_count_no_dups,
+            item_count_no_dups,
+            fraction_value
+        );
+        assert!((fraction_value - coverage_goal).abs() < assert_tolerance);
+
+        // count of iter with dups
+        // count of iter without dups
+        // range_inclusive with dups
+        // range_inclusive without dups
+        // fraction
     }
 }

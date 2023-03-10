@@ -12,11 +12,20 @@ impl Integer for i8 {
     fn safe_inclusive_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u8 as <Self as Integer>::SafeLen + 1
     }
-    fn from_f64(f: f64) -> Self {
-        f as i8
+    fn f64_to_t(f: f64) -> Self {
+        f as Self
     }
-    fn into_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a + (b - 1) as Self
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a - (b - 1) as Self
     }
 }
 
@@ -30,11 +39,20 @@ impl Integer for u8 {
     fn safe_inclusive_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
     }
-    fn from_f64(f: f64) -> Self {
-        f as u8
+    fn f64_to_t(f: f64) -> Self {
+        f as Self
     }
-    fn into_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a + (b - 1) as Self
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a - (b - 1) as Self
     }
 }
 
@@ -48,11 +66,20 @@ impl Integer for i32 {
     fn safe_inclusive_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u32 as <Self as Integer>::SafeLen + 1
     }
-    fn from_f64(f: f64) -> Self {
-        f as i32
+    fn f64_to_t(f: f64) -> Self {
+        f as Self
     }
-    fn into_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a + (b - 1) as Self
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a - (b - 1) as Self
     }
 }
 
@@ -66,11 +93,20 @@ impl Integer for u32 {
     fn safe_inclusive_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
     }
-    fn from_f64(f: f64) -> Self {
-        f as u32
+    fn f64_to_t(f: f64) -> Self {
+        f as Self
     }
-    fn into_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a + (b - 1) as Self
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a - (b - 1) as Self
     }
 }
 
@@ -84,11 +120,20 @@ impl Integer for i64 {
     fn safe_inclusive_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u64 as <Self as Integer>::SafeLen + 1
     }
-    fn from_f64(f: f64) -> Self {
-        f as i64
+    fn f64_to_t(f: f64) -> Self {
+        f as Self
     }
-    fn into_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a + (b - 1) as Self
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a - (b - 1) as Self
     }
 }
 
@@ -102,11 +147,20 @@ impl Integer for u64 {
     fn safe_inclusive_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
     }
-    fn from_f64(f: f64) -> Self {
-        f as u64
+    fn f64_to_t(f: f64) -> Self {
+        f as Self
     }
-    fn into_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a + (b - 1) as Self
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a - (b - 1) as Self
     }
 }
 
@@ -123,11 +177,20 @@ impl Integer for i128 {
     fn max_value2() -> Self {
         Self::max_value() - 1
     }
-    fn from_f64(f: f64) -> Self {
-        f as i128
+    fn f64_to_t(f: f64) -> Self {
+        f as Self
     }
-    fn into_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a + (b - 1) as Self
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a - (b - 1) as Self
     }
 }
 
@@ -144,11 +207,20 @@ impl Integer for u128 {
     fn max_value2() -> Self {
         Self::max_value() - 1
     }
-    fn from_f64(f: f64) -> Self {
-        f as u128
+    fn f64_to_t(f: f64) -> Self {
+        f as Self
     }
-    fn into_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a + (b - 1) as Self
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a - (b - 1) as Self
     }
 }
 
@@ -162,11 +234,20 @@ impl Integer for isize {
     fn safe_inclusive_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as usize as <Self as Integer>::SafeLen + 1
     }
-    fn from_f64(f: f64) -> Self {
-        f as isize
+    fn f64_to_t(f: f64) -> Self {
+        f as Self
     }
-    fn into_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a + (b - 1) as Self
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a - (b - 1) as Self
     }
 }
 
@@ -180,11 +261,20 @@ impl Integer for usize {
     fn safe_inclusive_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
     }
-    fn from_f64(f: f64) -> Self {
-        f as usize
+    fn f64_to_t(f: f64) -> Self {
+        f as Self
     }
-    fn into_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a + (b - 1) as Self
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a - (b - 1) as Self
     }
 }
 
@@ -198,13 +288,22 @@ impl Integer for i16 {
     fn safe_inclusive_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u16 as <Self as Integer>::SafeLen + 1
     }
-    fn from_f64(f: f64) -> Self {
-        f as i16
+    fn f64_to_t(f: f64) -> Self {
+        f as Self
     }
     //cmk0 don't rust this for other target_pointer_width. maybe don't support others
     //cmk0 is there a to_f64 alternative?
-    fn into_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a + (b - 1) as Self
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a - (b - 1) as Self
     }
 }
 
@@ -218,10 +317,19 @@ impl Integer for u16 {
     fn safe_inclusive_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
     }
-    fn from_f64(f: f64) -> Self {
-        f as u16
+    fn f64_to_t(f: f64) -> Self {
+        f as Self
     }
-    fn into_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a + (b - 1) as Self
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        a - (b - 1) as Self
     }
 }

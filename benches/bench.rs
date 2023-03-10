@@ -3,19 +3,25 @@
 // https://www.jibbow.com/posts/criterion-flamegraphs/
 // https://github.com/orlp/glidesort
 // https://nnethercote.github.io/perf-book/profiling.html
+// cmk rule: When benchmarking, don't fight criterion.  It's smarter than you are. Make 'em fast.
 
-use std::{collections::BTreeSet, ops::RangeInclusive};
+use std::{
+    collections::{BTreeSet, HashSet},
+    ops::RangeInclusive,
+};
 
 use criterion::{
     criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
     PlotConfiguration,
 };
 use itertools::iproduct;
-use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
+use rand::{
+    distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, SeedableRng,
+};
 // use pprof::criterion::Output; //PProfProfiler
 use range_set_int::{intersection, union, DynSortedDisjointExt, Integer, RangeSetInt};
 use syntactic_for::syntactic_for;
-use tests_common::{k_sets, How, MemorylessIter, MemorylessRange};
+use tests_common::{k_sets, width_to_range_inclusive, How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
 
 // fn insert10(c: &mut Criterion) {
@@ -1022,7 +1028,7 @@ fn stream_vs_adhoc(c: &mut Criterion) {
     // let k = 2;
     let range_inclusive = 0..=99_999_999;
     let range_len0 = 1_000;
-    let range_len_list1 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 1000, 10_000, 100_000];
+    let range_len_list1 = [1, 5, 10, 100, 1000, 10_000, 100_000];
     let coverage_goal = 0.5;
     let how = How::None;
     let seed = 0;
@@ -1052,16 +1058,130 @@ fn stream_vs_adhoc(c: &mut Criterion) {
             &mut rng,
         )[0];
         group.bench_with_input(BenchmarkId::new("stream", parameter), &parameter, |b, _| {
-            b.iter(|| {
-                let _answer = set0 | set1;
-            });
+            b.iter_batched(
+                || set0,
+                |set00| {
+                    let _answer = set00 | set1;
+                },
+                BatchSize::SmallInput,
+            );
         });
         group.bench_with_input(BenchmarkId::new("ad_hoc", parameter), &parameter, |b, _| {
-            b.iter(|| {
-                let mut answer = set0.clone();
-                answer.extend(set1.ranges());
-            });
+            b.iter_batched(
+                || set0.clone(),
+                |mut set00| {
+                    set00.extend(set1.ranges());
+                },
+                BatchSize::SmallInput,
+            );
         });
+    }
+    group.finish();
+}
+
+fn vs_btree_set(c: &mut Criterion) {
+    let group_name = "vs_btree_set";
+    let k = 1;
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000, 1_000_000];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    for average_width in average_width_list {
+        let parameter = average_width;
+
+        let (range_len, range_inclusive) =
+            width_to_range_inclusive(iter_len, average_width, coverage_goal);
+
+        let vec: Vec<i32> = MemorylessIter::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range_inclusive.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetInt", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetInt::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("BTreeSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("HashSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: HashSet<i32> = HashSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+    }
+    group.finish();
+}
+
+fn worst(c: &mut Criterion) {
+    let group_name = "worst";
+    let range_inclusive = 0..=1000;
+    let iter_len_list = [1, 10, 100, 1_000, 10_000];
+    let seed = 0;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    for iter_len in iter_len_list {
+        let parameter = iter_len;
+
+        let mut rng = StdRng::seed_from_u64(seed);
+        let uniform = Uniform::from(range_inclusive.clone());
+        let vec: Vec<i32> = (0..iter_len).map(|_| uniform.sample(&mut rng)).collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetInt", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetInt::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("BTreeSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("HashSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: HashSet<i32> = HashSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
     }
     group.finish();
 }
@@ -1088,7 +1208,9 @@ criterion_group! {
     every_op,
     vary_coverage_goal,
     vary_type,
-    stream_vs_adhoc
+    stream_vs_adhoc,
+    vs_btree_set,
+    worst
 }
 criterion_main!(benches);
 
