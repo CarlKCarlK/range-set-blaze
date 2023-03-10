@@ -769,7 +769,7 @@ fn multi_op() -> Result<(), RangeIntSetError> {
     // !!!cmk0 must work on empty, with ref and with owned
 
     let _ = RangeSetInt::union([&a, &b, &c]);
-    let d = RangeSetInt::intersection([a, b, c].iter());
+    let d = RangeSetInt::multiway_intersection([a, b, c].iter());
     assert_eq!(d, RangeSetInt::new());
 
     assert_eq!(!RangeSetInt::<u8>::union([]), RangeSetInt::from([0..=255]));
@@ -779,13 +779,13 @@ fn multi_op() -> Result<(), RangeIntSetError> {
     let c = RangeSetInt::from([1..=42]);
 
     let _ = &a & &b;
-    let d = RangeSetInt::intersection([&a, &b, &c]);
+    let d = RangeSetInt::multiway_intersection([&a, &b, &c]);
     // let d = RangeSetInt::intersection([a, b, c]);
     println!("{d}");
     assert_eq!(d, RangeSetInt::from([5..=6, 8..=9, 11..=13]));
 
     assert_eq!(
-        RangeSetInt::<u8>::intersection([]),
+        RangeSetInt::<u8>::multiway_intersection([]),
         RangeSetInt::from([0..=255])
     );
     Ok(())
@@ -849,9 +849,9 @@ fn parity() -> Result<(), RangeIntSetError> {
         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
         RangeSetInt::from([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
-    let _d = intersection([a.ranges()]);
-    let _parity: RangeSetInt<u8> = union([intersection([a.ranges()])]).into();
-    let _parity: RangeSetInt<u8> = intersection([a.ranges()]).into();
+    let _d = multiway_intersection([a.ranges()]);
+    let _parity: RangeSetInt<u8> = union([multiway_intersection([a.ranges()])]).into();
+    let _parity: RangeSetInt<u8> = multiway_intersection([a.ranges()]).into();
     let _parity: RangeSetInt<u8> = union([a.ranges()]).into();
     println!("!b {}", !b);
     println!("!c {}", !c);
@@ -952,11 +952,11 @@ fn empty() -> Result<(), RangeIntSetError> {
     assert!(c4.equal(answer.ranges()));
 
     let c0 = !(a.ranges() & b.ranges());
-    let c1 = !intersection([a.ranges(), b.ranges()]);
+    let c1 = !multiway_intersection([a.ranges(), b.ranges()]);
     let c_list2: [Ranges<i32>; 0] = [];
-    let c2 = !!intersection(c_list2.clone());
+    let c2 = !!multiway_intersection(c_list2.clone());
     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
-    let c4 = !!intersection(c_list2.map(|x| x.dyn_sorted_disjoint()));
+    let c4 = !!multiway_intersection(c_list2.map(|x| x.dyn_sorted_disjoint()));
 
     let answer = !RangeSetInt::from([0i32; 0]);
     assert!(c0.equal(answer.ranges()));

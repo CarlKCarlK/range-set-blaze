@@ -19,7 +19,7 @@ use rand::{
     distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, SeedableRng,
 };
 // use pprof::criterion::Output; //PProfProfiler
-use range_set_int::{intersection, union, DynSortedDisjointExt, Integer, RangeSetInt};
+use range_set_int::{multiway_intersection, union, DynSortedDisjointExt, Integer, RangeSetInt};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range_inclusive, How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
@@ -517,7 +517,7 @@ fn k_intersect(c: &mut Criterion) {
                 )
             },
             |sets| {
-                let _answer = RangeSetInt::intersection(sets.iter());
+                let _answer = RangeSetInt::multiway_intersection(sets.iter());
             },
             BatchSize::SmallInput,
         );
@@ -536,7 +536,7 @@ fn k_intersect(c: &mut Criterion) {
             },
             |sets| {
                 let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
-                let _answer: RangeSetInt<_> = intersection(sets).into();
+                let _answer: RangeSetInt<_> = multiway_intersection(sets).into();
             },
             BatchSize::SmallInput,
         );
@@ -604,7 +604,7 @@ fn coverage_goal(c: &mut Criterion) {
                     },
                     |sets| {
                         let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
-                        let _answer: RangeSetInt<_> = intersection(sets).into();
+                        let _answer: RangeSetInt<_> = multiway_intersection(sets).into();
                     },
                     BatchSize::SmallInput,
                 );
@@ -626,7 +626,7 @@ fn coverage_goal(c: &mut Criterion) {
                         )
                     },
                     |sets| {
-                        let _answer = RangeSetInt::intersection(sets.iter());
+                        let _answer = RangeSetInt::multiway_intersection(sets.iter());
                     },
                     BatchSize::SmallInput,
                 );
@@ -793,7 +793,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                     |sets| {
                         let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
                         let _answer: RangeSetInt<_> = match how {
-                            How::Intersection => intersection(sets).into(),
+                            How::Intersection => multiway_intersection(sets).into(),
                             How::Union => union(sets).into(),
                             How::None => panic!("should not happen"),
                         };
@@ -810,7 +810,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                     || setup,
                     |sets| {
                         let _answer = match how {
-                            How::Intersection => RangeSetInt::intersection(sets.iter()),
+                            How::Intersection => RangeSetInt::multiway_intersection(sets.iter()),
                             How::Union => RangeSetInt::union(sets),
                             How::None => panic!("should not happen"),
                         };
@@ -1106,9 +1106,18 @@ fn vs_btree_set(c: &mut Criterion) {
             how,
         )
         .collect();
+        let vec_range: Vec<RangeInclusive<i32>> = MemorylessRange::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range_inclusive.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
 
         group.bench_with_input(
-            BenchmarkId::new("RangeSetInt", parameter),
+            BenchmarkId::new("RangeSetInt (integers)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1116,6 +1125,16 @@ fn vs_btree_set(c: &mut Criterion) {
                 })
             },
         );
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetInt (ranges)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetInt::from_iter(vec_range.iter().cloned());
+                })
+            },
+        );
+
         group.bench_with_input(
             BenchmarkId::new("BTreeSet", parameter),
             &parameter,

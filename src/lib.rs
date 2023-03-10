@@ -26,6 +26,15 @@
 // !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
 // cmk rule: don't create an assign method if it is not more efficient
 // cmk rule: generate HTML: criterion = { version = "0.4", features = ["html_reports"] }
+// cmk rule: pick another similar data structure and implement everything that makes sense (copy docs as much as possible)
+// cmk000 match python documentation
+// cmk000 finish constructor list
+// cmk000 add documentation
+// cmk000 look at btreeset and match API
+// cmk000 finish the benchmark story
+// cmk000 move integer trait into integer.rs.
+// cmk000 could the methods defined on Integer be done with existing traits?
+// cmk00 in docs, be sure `bitor` is a live link to the bitor method
 
 mod integer;
 pub mod not_iter;
@@ -83,7 +92,7 @@ pub trait Integer:
         + num_traits::NumCast
         + std::ops::AddAssign
         + std::ops::SubAssign
-        + Clone
+        + Copy
         + PartialEq
         + Eq
         + PartialOrd
@@ -123,6 +132,35 @@ impl<T: Integer> fmt::Display for RangeSetInt<T> {
     }
 }
 
+/// cmk0000 see ranges()
+/// Gets an iterator that visits the elements in the `RangeSetInt` in ascending
+/// order.
+///
+/// # Examples
+///
+/// ```
+/// use range_set_int::RangeSetInt;
+///
+/// let set = RangeSetInt::from([1..=3]);
+/// let mut set_iter = set.iter();
+/// assert_eq!(set_iter.next(), Some(1));
+/// assert_eq!(set_iter.next(), Some(2));
+/// assert_eq!(set_iter.next(), Some(3));
+/// assert_eq!(set_iter.next(), None);
+/// ```
+///
+/// Values returned by the iterator are returned in ascending order:
+///
+/// ```
+/// use range_set_int::RangeSetInt;
+///
+/// let set = RangeSetInt::from([3, 1, 2]);
+/// let mut set_iter = set.iter();
+/// assert_eq!(set_iter.next(), Some(1));
+/// assert_eq!(set_iter.next(), Some(2));
+/// assert_eq!(set_iter.next(), Some(3));
+/// assert_eq!(set_iter.next(), None);
+/// ```
 impl<T: Integer> RangeSetInt<T> {
     // If the user asks for an iter, we give them a borrow to a Ranges iterator
     // and we iterate that one integer at a time.
@@ -134,10 +172,64 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
+    /// Returns the first element in the set, if any.
+    /// This element is always the minimum of all elements in the set.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut set = RangeSetInt::new();
+    /// assert_eq!(set.first(), None);
+    /// set.insert(1);
+    /// assert_eq!(set.first(), Some(1));
+    /// set.insert(2);
+    /// assert_eq!(set.first(), Some(1));
+    /// ```
     pub fn first(&self) -> Option<T> {
         self.btree_map.iter().next().map(|(x, _)| *x)
     }
 
+    /// Returns the element in the set, if any, that is equal to
+    /// the value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let set = RangeSetInt::from([1, 2, 3]);
+    /// assert_eq!(set.get(2), Some(2));
+    /// assert_eq!(set.get(4), None);
+    /// ```
+    pub fn get(&self, value: T) -> Option<T> {
+        if self.contains(value) {
+            Some(value)
+        } else {
+            None
+        }
+    }
+
+    /// Returns the last element in the set, if any.
+    /// This element is always the maximum of all elements in the set.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut set = RangeSetInt::new();
+    /// assert_eq!(set.last(), None);
+    /// set.insert(1);
+    /// assert_eq!(set.last(), Some(1));
+    /// set.insert(2);
+    /// assert_eq!(set.last(), Some(2));
+    /// ```
     pub fn last(&self) -> Option<T> {
         self.btree_map.iter().next_back().map(|(_, x)| *x)
     }
@@ -151,11 +243,11 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
         union(input.into_iter().map(|x| x.ranges())).into()
     }
 
-    pub fn intersection<I>(input: I) -> Self
+    pub fn multiway_intersection<I>(input: I) -> Self
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        intersection(input.into_iter().map(|x| x.ranges())).into()
+        multiway_intersection(input.into_iter().map(|x| x.ranges())).into()
     }
 }
 
@@ -174,6 +266,10 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     /// Moves all elements from `other` into `self`, leaving `other` empty.
+    ///
+    /// # Performance
+    /// It adds the ranges in `other` to `self` in O(n log m) time, where n is the number of ranges in `other` and m is the number of ranges in `self`.
+    /// When n is large, consider using `bitor` which is O(n+m) time.
     ///
     /// # Examples
     ///
@@ -195,8 +291,6 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert!(a.contains(5));
     ///
     /// ```
-    /// cmk add a note about the performance compared
-    /// to bitor
     pub fn append(&mut self, other: &mut Self) {
         for range_inclusive in other.ranges() {
             self.internal_add(range_inclusive);
@@ -204,9 +298,88 @@ impl<T: Integer> RangeSetInt<T> {
         other.clear();
     }
 
+    /// Clears the set, removing all elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut v = RangeSetInt::new();
+    /// v.insert(1);
+    /// v.clear();
+    /// assert!(v.is_empty());
+    /// ```
     pub fn clear(&mut self) {
         self.btree_map.clear();
         self.len = <T as Integer>::SafeLen::zero();
+    }
+
+    /// Returns `true` if the set contains no elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut v = RangeSetInt::new();
+    /// assert!(v.is_empty());
+    /// v.insert(1);
+    /// assert!(!v.is_empty());
+    /// ```
+    pub fn is_empty(&self) -> bool {
+        self.ranges_len() == 0
+    }
+
+    /// Returns `true` if the set is a subset of another,
+    /// i.e., `other` contains at least all the elements in `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let sup = RangeSetInt::from([1..=3]);
+    /// let mut set = RangeSetInt::new();
+    ///
+    /// assert_eq!(set.is_subset(&sup), true);
+    /// set.insert(2);
+    /// assert_eq!(set.is_subset(&sup), true);
+    /// set.insert(4);
+    /// assert_eq!(set.is_subset(&sup), false);
+    /// ```
+    #[must_use]
+    pub fn is_subset(&self, other: &RangeSetInt<T>) -> bool {
+        // Add a fast path
+        if self.len() > other.len() {
+            return false;
+        }
+        self.difference(other).next().is_none()
+    }
+
+    /// Returns `true` if the set is a superset of another,
+    /// i.e., `self` contains at least all the elements in `other`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let sub = RangeSetInt::from([1, 2]);
+    /// let mut set = RangeSetInt::new();
+    ///
+    /// assert_eq!(set.is_superset(&sub), false);
+    ///
+    /// set.insert(0);
+    /// set.insert(1);
+    /// assert_eq!(set.is_superset(&sub), false);
+    ///
+    /// set.insert(2);
+    /// assert_eq!(set.is_superset(&sub), true);
+    /// ```
+    #[must_use]
+    pub fn is_superset(&self, other: &RangeSetInt<T>) -> bool {
+        other.is_subset(self)
     }
 
     /// Returns `true` if the set contains an element equal to the value.
@@ -225,6 +398,75 @@ impl<T: Integer> RangeSetInt<T> {
             .range(..=value)
             .next_back()
             .map_or(false, |(_, stop)| value <= *stop)
+    }
+
+    /// !!!cmk0000 add note to see - or sub
+    /// Visits the range_inclusives representing the difference,
+    /// i.e., the range_inclusives that are in `self` but not in `other`,
+    /// in ascending order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1..=2]);
+    /// let b = RangeSetInt::from([2..=3]);
+    ///
+    /// let diff: Vec<_> = a.difference(&b).collect();
+    /// assert_eq!(diff, [1..=1]);
+    /// ```
+    pub fn difference<'a>(
+        &'a self,
+        other: &'a RangeSetInt<T>,
+    ) -> BitSubMerge<T, Ranges<T>, Ranges<T>> {
+        self.ranges() - other.ranges()
+    }
+
+    /// !!!cmk0000 add note to see & or ???
+    /// Visits the elements representing the intersection,
+    /// i.e., the elements that are both in `self` and `other`,
+    /// in ascending order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1..=2]);
+    /// let b = RangeSetInt::from([2..=3]);
+    ///
+    /// let intersection: Vec<_> = a.intersection(&b).collect();
+    /// assert_eq!(intersection, [2..=2]);
+    /// ```
+    pub fn intersection<'a>(
+        &'a self,
+        other: &'a RangeSetInt<T>,
+    ) -> BitAndMerge<T, Ranges<T>, Ranges<T>> {
+        self.ranges() & other.ranges()
+    }
+
+    /// Returns `true` if `self` has no elements in common with `other`.
+    /// This is equivalent to checking for an empty intersection.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from([1..=3]);
+    /// let mut b = RangeSetInt::new();
+    ///
+    /// assert_eq!(a.is_disjoint(&b), true);
+    /// b.insert(4);
+    /// assert_eq!(a.is_disjoint(&b), true);
+    /// b.insert(1);
+    /// assert_eq!(a.is_disjoint(&b), false);
+    /// ```
+    ///cmk00 which functions should be must_use?
+    #[must_use]
+    pub fn is_disjoint(&self, other: &RangeSetInt<T>) -> bool {
+        self.intersection(other).next().is_none()
     }
 
     fn delete_extra(&mut self, internal_inclusive: &RangeInclusive<T>) {
@@ -255,9 +497,68 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    pub fn insert(&mut self, item: T) {
+    /// Adds a value to the set.
+    ///
+    /// Returns whether the value was newly inserted. That is:
+    ///
+    /// - If the set did not previously contain an equal value, `true` is
+    ///   returned.
+    /// - If the set already contained an equal value, `false` is returned, and
+    ///   the entry is not updated.
+    ///
+    /// # Performance
+    /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
+    /// When n is large, consider using `cmk00000` which is O(n+m) time.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut set = RangeSetInt::new();
+    ///
+    /// assert_eq!(set.insert(2), true);
+    /// assert_eq!(set.insert(2), false);
+    /// assert_eq!(set.len(), 1usize);
+    /// ```
+    pub fn insert(&mut self, item: T) -> bool {
+        let len_before = self.len;
         self.internal_add(item..=item);
+        self.len != len_before
     }
+
+    /// Adds a range_inclusive to the set.
+    ///
+    /// Returns whether any values where newly inserted. That is:
+    ///
+    /// - If the set did not previously contain some value in the range_inclusive, `true` is
+    ///   returned.
+    /// - If the set already contained every value in the range_inclusive, `false` is returned, and
+    ///   the entry is not updated.
+    ///
+    /// # Performance
+    /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
+    /// When n is large, consider using `cmk00000` which is O(n+m) time.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut set = RangeSetInt::new();
+    ///
+    /// assert_eq!(set.insert_range_inclusive(2..=5), true);
+    /// assert_eq!(set.insert_range_inclusive(5..=6), true);
+    /// assert_eq!(set.insert_range_inclusive(3..=4), false);
+    /// assert_eq!(set.len(), 5usize);
+    /// ```
+    pub fn insert_range_inclusive(&mut self, range_inclusive: RangeInclusive<T>) -> bool {
+        let len_before = self.len;
+        self.internal_add(range_inclusive);
+        self.len != len_before
+    }
+
+    //cmk00000 insert of ranges
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
@@ -295,7 +596,7 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     pub fn len(&self) -> <T as Integer>::SafeLen {
-        self.len.clone()
+        self.len
     }
 
     pub fn new() -> RangeSetInt<T> {
@@ -305,6 +606,34 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
+    /// cmk00000 see .iter()
+    /// cmk0000 if this is 'ranges' then it should be 'insert_ranges', 'len_ranges", etc.
+    /// Gets an iterator that visits the range_inclusives in the `RangeSetInt` in ascending
+    /// order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let set = RangeSetInt::from([10..=20, 15..=25, 30..=40]);
+    /// let mut set_ranges = set.ranges();
+    /// assert_eq!(set_ranges.next(), Some(10..=25));
+    /// assert_eq!(set_ranges.next(), Some(30..=40));
+    /// assert_eq!(set_ranges.next(), None);
+    /// ```
+    ///
+    /// Values returned by the iterator are returned in ascending order:
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let set = RangeSetInt::from([30..=40, 15..=25, 10..=20]);
+    /// let mut set_ranges = set.ranges();
+    /// assert_eq!(set_ranges.next(), Some(10..=25));
+    /// assert_eq!(set_ranges.next(), Some(30..=40));
+    /// assert_eq!(set_ranges.next(), None);
+    /// ```    
     pub fn ranges(&self) -> Ranges<'_, T> {
         let ranges = Ranges {
             iter: self.btree_map.iter(),
@@ -312,6 +641,7 @@ impl<T: Integer> RangeSetInt<T> {
         ranges
     }
 
+    // cmk00 understand 'const'
     pub fn ranges_len(&self) -> usize {
         self.btree_map.len()
     }
@@ -487,8 +817,9 @@ where
     )
 }
 
+// cmk000 is multiway_ the best name?
 // cmk rule: don't for get these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
-pub fn intersection<T, I, J>(into_iter: I) -> BitAndKMerge<T, J::IntoIter>
+pub fn multiway_intersection<T, I, J>(into_iter: I) -> BitAndKMerge<T, J::IntoIter>
 where
     // cmk rule prefer IntoIterator over Iterator (here is example)
     I: IntoIterator<Item = J>,
@@ -909,7 +1240,7 @@ impl<'a, I: Iterator + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
 
 #[macro_export]
 macro_rules! intersection_dyn {
-    ($($val:expr),*) => {intersection([$($val.dyn_sorted_disjoint()),*])}
+    ($($val:expr),*) => {multiway_intersection([$($val.dyn_sorted_disjoint()),*])}
 }
 
 #[macro_export]

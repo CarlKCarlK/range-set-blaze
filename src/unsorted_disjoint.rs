@@ -134,7 +134,7 @@ where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     pub fn len_so_far(&self) -> <T as Integer>::SafeLen {
-        self.len.clone()
+        self.len
     }
 }
 

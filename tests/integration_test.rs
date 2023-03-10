@@ -14,10 +14,10 @@ use tests_common::{
 };
 
 // !!!cmk should users use a prelude? If not, are these reasonable imports?
-use range_set_int::{intersection, union};
 use range_set_int::{
     intersection_dyn, union_dyn, DynSortedDisjointExt, RangeSetInt, Ranges, SortedDisjointIterator,
 };
+use range_set_int::{multiway_intersection, union};
 
 #[test]
 fn insert_255u8() {
@@ -75,8 +75,8 @@ fn doctest3() -> Result<(), Box<dyn std::error::Error>> {
 
     a.append(&mut b);
 
-    assert_eq!(a.len(), 5);
-    assert_eq!(b.len(), 0);
+    assert_eq!(a.len(), 5usize);
+    assert_eq!(b.len(), 0usize);
 
     assert!(a.contains(1));
     assert!(a.contains(2));
@@ -241,7 +241,7 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     // !!!cmk0 must with on empty, with ref and with owned
 
     let _ = RangeSetInt::union([&a, &b, &c]);
-    let d = RangeSetInt::intersection([a, b, c].iter());
+    let d = RangeSetInt::multiway_intersection([a, b, c].iter());
     assert_eq!(d, RangeSetInt::new());
 
     assert_eq!(!RangeSetInt::<u8>::union([]), RangeSetInt::from([0..=255]));
@@ -252,13 +252,13 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
 
     // cmk0 list all the ways that we and BTreeMap does intersection. Do they make sense? Work when empty?
     let _ = &a & &b;
-    let d = RangeSetInt::intersection([&a, &b, &c]);
+    let d = RangeSetInt::multiway_intersection([&a, &b, &c]);
     // let d = RangeSetInt::intersection([a, b, c]);
     println!("{d}");
     assert_eq!(d, RangeSetInt::from([5..=6, 8..=9, 11..=13]));
 
     assert_eq!(
-        RangeSetInt::<u8>::intersection([]),
+        RangeSetInt::<u8>::multiway_intersection([]),
         RangeSetInt::from([0..=255])
     );
     Ok(())
@@ -321,9 +321,9 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
         RangeSetInt::from([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
-    let _d = range_set_int::intersection([a.ranges()]);
-    let _parity: RangeSetInt<u8> = union([intersection([a.ranges()])]).into();
-    let _parity: RangeSetInt<u8> = intersection([a.ranges()]).into();
+    let _d = range_set_int::multiway_intersection([a.ranges()]);
+    let _parity: RangeSetInt<u8> = union([multiway_intersection([a.ranges()])]).into();
+    let _parity: RangeSetInt<u8> = multiway_intersection([a.ranges()]).into();
     let _parity: RangeSetInt<u8> = union([a.ranges()]).into();
     println!("!b {}", !b);
     println!("!c {}", !c);
@@ -551,11 +551,11 @@ fn empty_it() {
     assert!(c4.equal(answer.ranges()));
 
     let c0 = !(a.ranges() & b.ranges());
-    let c1 = !intersection([a.ranges(), b.ranges()]);
+    let c1 = !multiway_intersection([a.ranges(), b.ranges()]);
     let c_list2: [Ranges<i32>; 0] = [];
-    let c2 = !!intersection(c_list2.clone());
+    let c2 = !!multiway_intersection(c_list2.clone());
     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
-    let c4 = !!intersection(c_list2.map(|x| x.dyn_sorted_disjoint()));
+    let c4 = !!multiway_intersection(c_list2.map(|x| x.dyn_sorted_disjoint()));
 
     let answer = !RangeSetInt::from([0; 0]);
     assert!(c0.equal(answer.ranges()));
@@ -692,7 +692,7 @@ fn k_play(c: &mut Criterion) {
                 },
                 |sets| {
                     let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
-                    let _answer: RangeSetInt<_> = intersection(sets).into();
+                    let _answer: RangeSetInt<_> = multiway_intersection(sets).into();
                 },
                 BatchSize::SmallInput,
             );
@@ -879,4 +879,24 @@ fn vs_btree_set() {
         // range_inclusive without dups
         // fraction
     }
+}
+
+#[test]
+fn doc_test_difference() {
+    use range_set_int::RangeSetInt;
+
+    let a = RangeSetInt::from([1..=2]);
+    let b = RangeSetInt::from([2..=3]);
+
+    let diff: Vec<_> = a.difference(&b).collect();
+    assert_eq!(diff, [1..=1]);
+}
+
+#[test]
+fn doc_test_insert1() {
+    let mut set = RangeSetInt::new();
+
+    assert!(set.insert(2));
+    assert!(!set.insert(2));
+    assert_eq!(set.len(), 1usize);
 }

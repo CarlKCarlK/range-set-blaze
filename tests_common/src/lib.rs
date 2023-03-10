@@ -73,10 +73,10 @@ impl<'a, T: Integer> Iterator for MemorylessRange<'a, T> {
             let actual_width: T::SafeLen;
             if self.average_width < 1.0 {
                 if self.rng.gen::<f64>() < self.average_width {
-                    //cmk0000 precompute
+                    //could precompute
                     actual_width = T::safe_inclusive_len(&(T::zero()..=T::zero()));
                 } else {
-                    //cmk0000 precompute
+                    //could precompute
                     return Some(T::one()..=T::zero()); // empty range
                 }
             } else if self.range_len >= 30 {
@@ -148,19 +148,24 @@ impl<'a, T: Integer> Iterator for MemorylessIter<'a, T> {
 
     #[allow(clippy::reversed_empty_ranges)]
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(range_inclusive) = &self.option_range_inclusive {
-            let (start, stop) = range_inclusive.clone().into_inner();
-            if start == stop {
-                self.option_range_inclusive = None;
+        loop {
+            if let Some(range_inclusive) = &self.option_range_inclusive {
+                let (start, stop) = range_inclusive.clone().into_inner();
+                if start < stop {
+                    self.option_range_inclusive = Some(start + T::one()..=stop);
+                } else {
+                    self.option_range_inclusive = None;
+                    if start > stop {
+                        continue; // skip empty ranges
+                    }
+                }
+                return Some(start);
+            } else if let Some(range_inclusive) = self.iter.next() {
+                self.option_range_inclusive = Some(range_inclusive);
+                continue;
             } else {
-                self.option_range_inclusive = Some(start + T::one()..=stop);
+                return None;
             }
-            Some(start)
-        } else if let Some(range_inclusive) = self.iter.next() {
-            self.option_range_inclusive = Some(range_inclusive);
-            self.next() // will recurse at most once
-        } else {
-            None
         }
     }
 }
