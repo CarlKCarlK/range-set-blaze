@@ -167,7 +167,7 @@ fn iters() -> Result<(), Box<dyn std::error::Error>> {
     for i in range_set_int.iter() {
         println!("{i}");
     }
-    range_set_int.len();
+    // range_set_int.len();
 
     let mut rs = range_set_int.ranges().not();
     println!("{:?}", rs.next());
@@ -899,4 +899,40 @@ fn doc_test_insert1() {
     assert!(set.insert(2));
     assert!(!set.insert(2));
     assert_eq!(set.len(), 1usize);
+}
+
+#[test]
+fn doc_test_len() {
+    let mut v = RangeSetInt::new();
+    assert_eq!(v.len(), 0usize);
+    v.insert(1);
+    assert_eq!(v.len(), 1usize);
+
+    let v = RangeSetInt::from([
+        -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,
+        -10..=170_141_183_460_469_231_731_687_303_715_884_105_726,
+    ]);
+    assert_eq!(
+        v.len(),
+        340_282_366_920_938_463_463_374_607_431_768_211_455u128
+    );
+}
+
+#[test]
+fn test_pops() {
+    let mut set = RangeSetInt::from([1..=2, 4..=5, 10..=11]);
+    let len = set.len();
+    assert_eq!(set.pop_first(), Some(1));
+    assert_eq!(set.len(), len - 1usize);
+    assert_eq!(set, RangeSetInt::from([2..=2, 4..=5, 10..=11]));
+    assert_eq!(set.pop_last(), Some(11));
+    println!("{set:#?}");
+    assert_eq!(set, RangeSetInt::from([2..=2, 4..=5, 10..=10]));
+    assert_eq!(set.len(), len - 2usize);
+    assert_eq!(set.pop_last(), Some(10));
+    assert_eq!(set.len(), len - 3usize);
+    assert_eq!(set, RangeSetInt::from([2..=2, 4..=5]));
+    assert_eq!(set.pop_first(), Some(2));
+    assert_eq!(set.len(), len - 4usize);
+    assert_eq!(set, RangeSetInt::from([4..=5]));
 }

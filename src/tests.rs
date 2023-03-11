@@ -695,7 +695,7 @@ fn iters() -> Result<(), RangeIntSetError> {
     for i in range_set_int.iter() {
         println!("{i}");
     }
-    range_set_int.len();
+    // range_set_int.len();
 
     let mut rs = !range_set_int.ranges();
     println!("{:?}", rs.next());

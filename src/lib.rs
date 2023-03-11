@@ -595,14 +595,115 @@ impl<T: Integer> RangeSetInt<T> {
         self.len += T::safe_inclusive_len(internal_inclusive);
     }
 
+    /// Returns the number of elements in the set.
+    ///
+    /// The number is allowed to be very, very large.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut v = RangeSetInt::new();
+    /// assert_eq!(v.len(), 0usize);
+    /// v.insert(1);
+    /// assert_eq!(v.len(), 1usize);
+    ///
+    /// let v = RangeSetInt::from([
+    ///     -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,
+    ///     -10..=170_141_183_460_469_231_731_687_303_715_884_105_726,
+    /// ]);
+    /// assert_eq!(
+    ///     v.len(),
+    ///     340_282_366_920_938_463_463_374_607_431_768_211_455u128
+    /// );
+    /// ```
+    #[must_use]
     pub fn len(&self) -> <T as Integer>::SafeLen {
         self.len
     }
 
+    /// Makes a new, empty `RangeIntSet`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #![allow(unused_mut)]
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut set: RangeSetInt<i32> = RangeSetInt::new();
+    /// ```
+    #[must_use]
     pub fn new() -> RangeSetInt<T> {
         RangeSetInt {
             btree_map: BTreeMap::new(),
             len: <T as Integer>::SafeLen::zero(),
+        }
+    }
+
+    // cmk00000 first_range, last_range????
+    /// Removes the first element from the set and returns it, if any.
+    /// The first element is always the minimum element in the set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut set = RangeSetInt::new();
+    ///
+    /// set.insert(1);
+    /// while let Some(n) = set.pop_first() {
+    ///     assert_eq!(n, 1);
+    /// }
+    /// assert!(set.is_empty());
+    /// ```
+    pub fn pop_first(&mut self) -> Option<T> {
+        if let Some(entry) = self.btree_map.first_entry() {
+            let (start, stop) = entry.remove_entry();
+            self.len -= T::safe_inclusive_len(&(start..=stop));
+            if start != stop {
+                let start = start + T::one();
+                self.btree_map.insert(start, stop);
+                self.len += T::safe_inclusive_len(&(start..=stop));
+            }
+            Some(start)
+        } else {
+            None
+        }
+    }
+
+    /// Removes the last value from the set and returns it, if any.
+    /// The last value is always the maximum value in the set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut set = RangeSetInt::new();
+    ///
+    /// set.insert(1);
+    /// while let Some(n) = set.pop_last() {
+    ///     assert_eq!(n, 1);
+    /// }
+    /// assert!(set.is_empty());
+    /// ```
+    pub fn pop_last(&mut self) -> Option<T> {
+        if let Some(mut entry) = self.btree_map.last_entry() {
+            let start = *entry.key();
+            let stop = entry.get_mut();
+            let result = *stop;
+            self.len -= T::safe_inclusive_len(&(start..=*stop));
+            if start == *stop {
+                entry.remove_entry();
+            } else {
+                *stop -= T::one();
+                self.len += T::safe_inclusive_len(&(start..=*stop));
+            }
+            Some(result)
+        } else {
+            None
         }
     }
 
