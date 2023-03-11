@@ -240,11 +240,14 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
 
     // !!!cmk0 must with on empty, with ref and with owned
 
-    let _ = RangeSetInt::union([&a, &b, &c]);
+    let _ = RangeSetInt::multiway_union([&a, &b, &c]);
     let d = RangeSetInt::multiway_intersection([a, b, c].iter());
     assert_eq!(d, RangeSetInt::new());
 
-    assert_eq!(!RangeSetInt::<u8>::union([]), RangeSetInt::from([0..=255]));
+    assert_eq!(
+        !RangeSetInt::<u8>::multiway_union([]),
+        RangeSetInt::from([0..=255])
+    );
 
     let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
     let b = RangeSetInt::from([5..=13, 18..=29]);
@@ -935,4 +938,21 @@ fn test_pops() {
     assert_eq!(set.pop_first(), Some(2));
     assert_eq!(set.len(), len - 4usize);
     assert_eq!(set, RangeSetInt::from([4..=5]));
+}
+
+// cmk000000000 working on this
+// cmk0000 what about "range" and "replace"
+#[test]
+fn remove() {
+    let mut set = RangeSetInt::from([1..=2, 4..=5, 10..=11]);
+    let len = set.len();
+    assert!(set.remove(4));
+    assert_eq!(set.len(), len - 1usize);
+    assert_eq!(set, RangeSetInt::from([2..=2, 5..=5, 10..=11]));
+    assert!(!set.remove(4));
+    assert_eq!(set.len(), len - 1usize);
+    assert_eq!(set, RangeSetInt::from([2..=2, 5..=5, 10..=11]));
+    assert!(set.remove(5));
+    assert_eq!(set.len(), len - 2usize);
+    assert_eq!(set, RangeSetInt::from([2..=2, 10..=11]));
 }

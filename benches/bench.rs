@@ -811,7 +811,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                     |sets| {
                         let _answer = match how {
                             How::Intersection => RangeSetInt::multiway_intersection(sets.iter()),
-                            How::Union => RangeSetInt::union(sets),
+                            How::Union => RangeSetInt::multiway_union(sets),
                             How::None => panic!("should not happen"),
                         };
                     },

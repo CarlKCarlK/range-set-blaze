@@ -30,7 +30,7 @@
 // cmk000 match python documentation
 // cmk000 finish constructor list
 // cmk000 add documentation
-// cmk000 look at btreeset and match API
+// cmk000 look at btreeset and match API - range, remove, replace, split_off, take
 // cmk000 finish the benchmark story
 // cmk000 move integer trait into integer.rs.
 // cmk000 could the methods defined on Integer be done with existing traits?
@@ -236,7 +236,7 @@ impl<T: Integer> RangeSetInt<T> {
 }
 
 impl<'a, T: Integer + 'a> RangeSetInt<T> {
-    pub fn union<I>(input: I) -> Self
+    pub fn multiway_union<I>(input: I) -> Self
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
@@ -423,6 +423,73 @@ impl<T: Integer> RangeSetInt<T> {
         self.ranges() - other.ranges()
     }
 
+    /// Visits the range_inclusives representing the union,
+    /// i.e., all the range_inclusives in `self` or `other`, without duplicates,
+    /// in ascending order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut a = RangeSetInt::new();
+    /// a.insert(1);
+    ///
+    /// let mut b = RangeSetInt::new();
+    /// b.insert(2);
+    ///
+    /// let union: Vec<_> = a.union(&b).collect();
+    /// assert_eq!(union, [1..=2]);
+    /// ```
+    pub fn union<'a>(&'a self, other: &'a RangeSetInt<T>) -> BitOrMerge<T, Ranges<T>, Ranges<T>> {
+        self.ranges() | other.ranges()
+    }
+    /// Visits the range_inclusives representing the complement,
+    /// i.e., all the range_inclusives not in `self`, without duplicates,
+    /// in ascending order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut a = RangeSetInt::<i16>::from([-10..=0, 1000..=2000]);
+    ///
+    /// let complement: Vec<_> = a.complement().collect();
+    /// assert_eq!(complement, [-32768..=-11, 1..=999, 2001..=32767]);
+    /// ```
+    pub fn complement(&self) -> NotIter<T, Ranges<T>> {
+        !self.ranges()
+    }
+
+    /// Visits the range_inclusives representing the symmetric difference,
+    /// i.e., the range_inclusives that are in `self` or in `other` but not in both,
+    /// in ascending order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut a = RangeSetInt::new();
+    /// a.insert(1);
+    /// a.insert(2);
+    ///
+    /// let mut b = RangeSetInt::new();
+    /// b.insert(2);
+    /// b.insert(3);
+    ///
+    /// let sym_diff: Vec<_> = a.symmetric_difference(&b).collect();
+    /// assert_eq!(sym_diff, [1..=1, 3..=3]);
+    /// ```
+    pub fn symmetric_difference<'a>(
+        &'a self,
+        other: &'a RangeSetInt<T>,
+    ) -> BitXOr<T, Ranges<T>, Ranges<T>> {
+        self.ranges() ^ other.ranges()
+    }
+
+    // cmk0000 also do union and complement and ???
     /// !!!cmk0000 add note to see & or ???
     /// Visits the elements representing the intersection,
     /// i.e., the elements that are both in `self` and `other`,
@@ -467,6 +534,25 @@ impl<T: Integer> RangeSetInt<T> {
     #[must_use]
     pub fn is_disjoint(&self, other: &RangeSetInt<T>) -> bool {
         self.intersection(other).next().is_none()
+    }
+
+    /// If the set contains an element equal to the value, removes it from the
+    /// set and drops it. Returns whether such an element was present.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut set = RangeSetInt::new();
+    ///
+    /// set.insert(2);
+    /// assert_eq!(set.remove(2), true);
+    /// assert_eq!(set.remove(2), false);
+    /// ```
+    pub fn remove(&mut self, value: T) -> bool {
+        self.delete_extra(&(value..=value));
+        todo!();
     }
 
     fn delete_extra(&mut self, internal_inclusive: &RangeInclusive<T>) {
@@ -745,6 +831,28 @@ impl<T: Integer> RangeSetInt<T> {
     // cmk00 understand 'const'
     pub fn ranges_len(&self) -> usize {
         self.btree_map.len()
+    }
+
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// In other words, remove all elements `e` for which `f(&e)` returns `false`.
+    /// The elements are visited in ascending order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut set = RangeSetInt::from([1..=6]);
+    /// // Keep only the even numbers.
+    /// set.retain(|&k| k % 2 == 0);
+    /// assert!(set.iter().eq([2, 4, 6].iter()));
+    /// ```
+    pub fn retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&T) -> bool,
+    {
+        *self = self.iter().filter(|v| !f(v)).collect();
     }
 }
 
