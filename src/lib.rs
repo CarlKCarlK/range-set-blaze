@@ -30,7 +30,7 @@
 // cmk000 match python documentation
 // cmk000 finish constructor list
 // cmk000 add documentation
-// cmk000 look at btreeset and match API - range, remove, replace, split_off, take -- look at there code via the docs
+// cmk000 look at btreeset and match API - range, split_off -- look at there code via the docs
 // cmk000 finish the benchmark story
 // cmk000 move integer trait into integer.rs.
 // cmk000 could the methods defined on Integer be done with existing traits?
@@ -648,32 +648,153 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn remove(&mut self, value: T) -> bool {
         assert!(value <= T::max_value2()); //cmk0 panic
 
-        let start0;
-        let stop0;
-        if let Some((start, stop)) = self.btree_map.range_mut(..=value).rev().next() {
-            if *stop == value && *start < value {
-                // special case: we are removing the last element of a range
-                self.len -= <T::SafeLen>::one();
-                *stop -= T::one();
-                return true;
+        // The code can have only one mutable reference to self.btree_map.
+        let start;
+        let stop;
+        if let Some((start_ref, stop_ref)) = self.btree_map.range_mut(..=value).rev().next() {
+            stop = *stop_ref;
+            if stop < value {
+                return false;
             }
-            start0 = *start;
-            stop0 = *stop;
+            start = *start_ref;
+            // special case if in range and start strictly less than value
+            if start < value {
+                *stop_ref = value - T::one();
+                // special, special case if value == end
+                if value == stop {
+                    self.len -= <T::SafeLen>::one();
+                    return true;
+                }
+            }
         } else {
             return false;
         };
-        if value <= stop0 {
-            self.len -= <T::SafeLen>::one();
-            self.btree_map.remove(&start0);
-            if start0 < value {
-                self.btree_map.insert(start0, value - T::one());
+        self.len -= <T::SafeLen>::one();
+        if start == value {
+            self.btree_map.remove(&start);
+        };
+        if value < stop {
+            self.btree_map.insert(value + T::one(), stop);
+        }
+        true
+    }
+
+    /// Splits the collection into two at the value. Returns a new collection
+    /// with all elements greater than or equal to the value.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut a = RangeSetInt::new();
+    /// a.insert(1);
+    /// a.insert(2);
+    /// a.insert(3);
+    /// a.insert(17);
+    /// a.insert(41);
+    ///
+    /// let b = a.split_off(&3);
+    ///
+    /// assert_eq!(a, RangeSetInt::from([1, 2]));
+    /// assert_eq!(b, RangeSetInt::from([3, 17, 41]));
+    /// ```
+    pub fn split_off(&mut self, value: T) -> Self {
+        let old_len = self.len;
+        let mut b = self.btree_map.split_off(&value);
+        let last_entry = self.btree_map.last_entry();
+        if let Some(mut entry) = last_entry {
+            let start_ref = entry.key();
+            let start = *start_ref;
+            let stop_ref = entry.get_mut();
+            let stop = *stop_ref;
+            debug_assert!(start < value); // real assert
+            println!("split_off: start: {start:?}, stop: {stop:?}");
+            // match(stop.cmp(value))
+            // {}
+            if stop < value {
+                self.len = RangeSetInt::btree_map_len(&self.btree_map);
+                return RangeSetInt {
+                    btree_map: b,
+                    len: old_len - self.len,
+                };
+            } else if stop == value {
+                *stop_ref = value - T::one();
+                self.len = RangeSetInt::btree_map_len(&self.btree_map);
+                b.insert(value, value);
+                return RangeSetInt {
+                    btree_map: b,
+                    len: old_len - self.len,
+                };
+            } else {
+                // stop > value -- cmk0000 add match
+                *stop_ref = value - T::one();
+                self.len = RangeSetInt::btree_map_len(&self.btree_map);
+                b.insert(value, stop);
+                return RangeSetInt {
+                    btree_map: b,
+                    len: old_len - self.len,
+                };
             }
-            if value < stop0 {
-                self.btree_map.insert(value + T::one(), stop0);
-            }
-            true
         } else {
-            false
+            self.len = <T::SafeLen>::zero();
+            return RangeSetInt {
+                btree_map: b,
+                len: old_len,
+            };
+        }
+    }
+
+    // cmk0000 inline? use in _slow_len?
+    fn btree_map_len(btree_map: &BTreeMap<T, T>) -> T::SafeLen {
+        btree_map
+            .iter()
+            .fold(<T as Integer>::SafeLen::zero(), |acc, (start, stop)| {
+                acc + T::safe_inclusive_len(&(*start..=*stop))
+            })
+    }
+
+    /// Removes and returns the element in the set, if any, that is equal to
+    /// the value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut set = RangeSetInt::from([1, 2, 3]);
+    /// assert_eq!(set.take(2), Some(2));
+    /// assert_eq!(set.take(2), None);
+    /// ```
+    pub fn take(&mut self, value: T) -> Option<T> {
+        if self.remove(value) {
+            Some(value)
+        } else {
+            None
+        }
+    }
+
+    /// Adds a value to the set, replacing the existing element, if any, that is
+    /// equal to the value. Returns the replaced element.
+    ///
+    /// Note: This is very similar to `insert`. It is included for consistency with `BTreeSet`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut set = RangeSetInt::new();
+    /// assert!(set.replace(5).is_none());
+    /// assert!(set.replace(5).is_some());
+    /// ```
+    pub fn replace(&mut self, value: T) -> Option<T> {
+        if self.insert(value) {
+            None
+        } else {
+            Some(value)
         }
     }
 

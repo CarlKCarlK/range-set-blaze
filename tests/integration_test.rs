@@ -989,7 +989,7 @@ fn eq() {
 // cmk000000000 working on this
 // cmk0000 what about "range" and "replace"
 #[test]
-fn remove0() {
+fn remove() {
     let mut set = RangeSetInt::from([1..=2, 4..=5, 10..=11]);
     let len = set.len();
     assert!(set.remove(4));
@@ -1001,10 +1001,7 @@ fn remove0() {
     assert!(set.remove(5));
     assert_eq!(set.len(), len - 2usize);
     assert_eq!(set, RangeSetInt::from([1..=2, 10..=11]));
-}
 
-#[test]
-fn remove1() {
     let mut set = RangeSetInt::from([1..=2, 4..=5, 10..=100, 1000..=1000]);
     let len = set.len();
     assert!(!set.remove(0));
@@ -1020,4 +1017,19 @@ fn remove1() {
     assert!(set.remove(50));
     assert_eq!(set.len(), len - 4usize);
     assert_eq!(set, RangeSetInt::from([1..=1, 4..=5, 11..=49, 51..=100]));
+}
+
+#[test]
+fn split_off() {
+    let set = RangeSetInt::from([1..=2, 4..=5, 10..=20, 30..=30]);
+    for split in 0..=31 {
+        println!("splitting at {split}");
+        let mut a = set.clone();
+        let mut a2: BTreeSet<_> = a.iter().collect();
+        let b2 = a2.split_off(&split);
+        let b = a.split_off(split);
+        assert_eq!(a, RangeSetInt::from_iter(a2.iter().cloned()));
+        assert_eq!(b, RangeSetInt::from_iter(b2.iter().cloned()));
+        // cmk000 add test for all lengths
+    }
 }
