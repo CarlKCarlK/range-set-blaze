@@ -959,7 +959,9 @@ fn remove() {
 
 #[test]
 fn eq() {
-    assert!(!(RangeSetInt::from([2..=2]) <= RangeSetInt::from([1..=2])));
+    assert!(RangeSetInt::from([0, 2]) > RangeSetInt::from([0, 1]));
+    assert!(RangeSetInt::from([0, 2]) > RangeSetInt::from([0..=100]));
+    assert!(RangeSetInt::from([2..=2]) > RangeSetInt::from([1..=2]));
     for use_0 in [false, true] {
         for use_1 in [false, true] {
             for use_2 in [false, true] {

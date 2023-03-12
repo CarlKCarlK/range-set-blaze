@@ -30,7 +30,7 @@
 // cmk000 match python documentation
 // cmk000 finish constructor list
 // cmk000 add documentation
-// cmk000 look at btreeset and match API - range, remove, replace, split_off, take
+// cmk000 look at btreeset and match API - range, remove, replace, split_off, take -- look at there code via the docs
 // cmk000 finish the benchmark story
 // cmk000 move integer trait into integer.rs.
 // cmk000 could the methods defined on Integer be done with existing traits?
@@ -1462,7 +1462,44 @@ macro_rules! union_dyn {
 impl<T: Integer> Ord for RangeSetInt<T> {
     // cmk00000 #[inline]
     fn cmp(&self, other: &RangeSetInt<T>) -> Ordering {
-        self.iter().cmp(other.iter())
+        // slow return self.iter().cmp(other.iter());
+
+        let mut a = self.ranges();
+        let mut b = other.ranges();
+        let mut a_rx = a.next();
+        let mut b_rx = b.next();
+        loop {
+            match (a_rx.clone(), b_rx.clone()) {
+                (Some(a_r), Some(b_r)) => {
+                    let cmp = a_r.start().cmp(b_r.start());
+                    if cmp != Ordering::Equal {
+                        return cmp;
+                    }
+                    let cmp = a_r.end().cmp(b_r.end());
+                    match cmp {
+                        Ordering::Equal => {}
+                        Ordering::Less => {
+                            a_rx = a.next();
+                            b_rx = Some(*a_r.end() + T::one()..=*b_r.end());
+                            continue;
+                        }
+                        Ordering::Greater => {
+                            b_rx = b.next();
+                            a_rx = Some(*b_r.end() + T::one()..=*a_r.end());
+                            continue;
+                        }
+                    }
+                    if cmp != Ordering::Equal {
+                        return cmp;
+                    }
+                }
+                (Some(_), None) => return Ordering::Greater,
+                (None, Some(_)) => return Ordering::Less,
+                (None, None) => return Ordering::Equal,
+            }
+            a_rx = a.next();
+            b_rx = b.next();
+        }
     }
 
     fn max(self, other: Self) -> Self {
