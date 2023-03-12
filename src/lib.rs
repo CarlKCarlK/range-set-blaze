@@ -704,36 +704,27 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn split_off(&mut self, value: T) -> Self {
         let old_len = self.len;
         let mut b = self.btree_map.split_off(&value);
-        let last_entry = self.btree_map.last_entry();
-        if let Some(mut entry) = last_entry {
-            let start_ref = entry.key();
-            let start = *start_ref;
-            let stop_ref = entry.get_mut();
-            let stop = *stop_ref;
-            debug_assert!(start < value); // real assert
-            println!("cmk split_off: start: {start:?}, stop: {stop:?}");
-            if value <= stop {
+        if let Some(mut last_entry) = self.btree_map.last_entry() {
+            // Can assume start strictly less than value
+            let stop_ref = last_entry.get_mut();
+            if value <= *stop_ref {
+                b.insert(value, *stop_ref);
                 *stop_ref = value - T::one();
-                b.insert(value, stop);
             }
-            let (self_len, b_len) = if self.btree_map.len() < b.len() {
-                let self_len = RangeSetInt::btree_map_len(&self.btree_map);
-                (self_len, old_len - self_len)
-            } else {
-                let b_len = RangeSetInt::btree_map_len(&b);
-                (old_len - b_len, b_len)
-            };
-            self.len = self_len;
-            RangeSetInt {
-                btree_map: b,
-                len: b_len,
-            }
+        }
+
+        // Find the length of the smaller map and then length of self & b.
+        let b_len = if self.btree_map.len() < b.len() {
+            self.len = RangeSetInt::btree_map_len(&self.btree_map);
+            old_len - self.len
         } else {
-            self.len = <T::SafeLen>::zero();
-            RangeSetInt {
-                btree_map: b,
-                len: old_len,
-            }
+            let b_len = RangeSetInt::btree_map_len(&b);
+            self.len = old_len - b_len;
+            b_len
+        };
+        RangeSetInt {
+            btree_map: b,
+            len: b_len,
         }
     }
 
