@@ -51,6 +51,7 @@ use itertools::MergeBy;
 use itertools::Tee;
 use not_iter::NotIter;
 use num_traits::ops::overflowing::OverflowingSub;
+use num_traits::One;
 use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
 use sorted_disjoint_iter::SortedDisjointIter;
@@ -92,6 +93,7 @@ pub trait Integer:
         + num_traits::NumAssignOps
         + num_traits::Bounded
         + num_traits::NumCast
+        + num_traits::One
         + std::ops::AddAssign
         + std::ops::SubAssign
         + Copy
@@ -538,25 +540,6 @@ impl<T: Integer> RangeSetInt<T> {
         self.intersection(other).next().is_none()
     }
 
-    /// If the set contains an element equal to the value, removes it from the
-    /// set and drops it. Returns whether such an element was present.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_int::RangeSetInt;
-    ///
-    /// let mut set = RangeSetInt::new();
-    ///
-    /// set.insert(2);
-    /// assert_eq!(set.remove(2), true);
-    /// assert_eq!(set.remove(2), false);
-    /// ```
-    pub fn remove(&mut self, value: T) -> bool {
-        self.delete_extra(&(value..=value));
-        todo!();
-    }
-
     fn delete_extra(&mut self, internal_inclusive: &RangeInclusive<T>) {
         let (start, stop) = internal_inclusive.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
@@ -647,6 +630,52 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     //cmk00000 insert of ranges
+
+    /// If the set contains an element equal to the value, removes it from the
+    /// set and drops it. Returns whether such an element was present.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut set = RangeSetInt::new();
+    ///
+    /// set.insert(2);
+    /// assert!(set.remove(2));
+    /// assert!(!set.remove(2));
+    /// ```
+    pub fn remove(&mut self, value: T) -> bool {
+        assert!(value <= T::max_value2()); //cmk0 panic
+
+        let start0;
+        let stop0;
+        if let Some((start, stop)) = self.btree_map.range_mut(..=value).rev().next() {
+            if *stop == value && *start < value {
+                // special case: we are removing the last element of a range
+                self.len -= <T::SafeLen>::one();
+                *stop -= T::one();
+                return true;
+            }
+            start0 = *start;
+            stop0 = *stop;
+        } else {
+            return false;
+        };
+        if value <= stop0 {
+            self.len -= <T::SafeLen>::one();
+            self.btree_map.remove(&start0);
+            if start0 < value {
+                self.btree_map.insert(start0, value - T::one());
+            }
+            if value < stop0 {
+                self.btree_map.insert(value + T::one(), stop0);
+            }
+            true
+        } else {
+            false
+        }
+    }
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
@@ -1460,7 +1489,8 @@ macro_rules! union_dyn {
 }
 
 impl<T: Integer> Ord for RangeSetInt<T> {
-    // cmk00000 #[inline]
+    /// cmk00 document this. clarify that this is lexicographic order not subset/superset
+    #[inline]
     fn cmp(&self, other: &RangeSetInt<T>) -> Ordering {
         // slow return self.iter().cmp(other.iter());
 
@@ -1501,17 +1531,6 @@ impl<T: Integer> Ord for RangeSetInt<T> {
             b_rx = b.next();
         }
     }
-
-    fn max(self, other: Self) -> Self {
-        todo!();
-    }
-    fn min(self, other: Self) -> Self {
-        todo!();
-    }
-
-    fn clamp(self, min: Self, max: Self) -> Self {
-        todo!();
-    }
 }
 
 impl<T: Integer> PartialOrd for RangeSetInt<T> {
@@ -1520,11 +1539,5 @@ impl<T: Integer> PartialOrd for RangeSetInt<T> {
         Some(self.cmp(other))
     }
 }
-
-// impl<T: Integer> PartialEq for RangeSetInt<T> {
-//     fn eq(&self, other: &Self) -> bool {
-//         self.len == other.len && self.btree_map == other.btree_map
-//     }
-// }
 
 impl<T: Integer> Eq for RangeSetInt<T> {}

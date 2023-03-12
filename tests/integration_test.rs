@@ -940,23 +940,6 @@ fn test_pops() {
     assert_eq!(set, RangeSetInt::from([4..=5]));
 }
 
-// cmk000000000 working on this
-// cmk0000 what about "range" and "replace"
-#[test]
-fn remove() {
-    let mut set = RangeSetInt::from([1..=2, 4..=5, 10..=11]);
-    let len = set.len();
-    assert!(set.remove(4));
-    assert_eq!(set.len(), len - 1usize);
-    assert_eq!(set, RangeSetInt::from([2..=2, 5..=5, 10..=11]));
-    assert!(!set.remove(4));
-    assert_eq!(set.len(), len - 1usize);
-    assert_eq!(set, RangeSetInt::from([2..=2, 5..=5, 10..=11]));
-    assert!(set.remove(5));
-    assert_eq!(set.len(), len - 2usize);
-    assert_eq!(set, RangeSetInt::from([2..=2, 10..=11]));
-}
-
 #[test]
 fn eq() {
     assert!(RangeSetInt::from([0, 2]) > RangeSetInt::from([0, 1]));
@@ -1001,4 +984,40 @@ fn eq() {
             }
         }
     }
+}
+
+// cmk000000000 working on this
+// cmk0000 what about "range" and "replace"
+#[test]
+fn remove0() {
+    let mut set = RangeSetInt::from([1..=2, 4..=5, 10..=11]);
+    let len = set.len();
+    assert!(set.remove(4));
+    assert_eq!(set.len(), len - 1usize);
+    assert_eq!(set, RangeSetInt::from([1..=2, 5..=5, 10..=11]));
+    assert!(!set.remove(4));
+    assert_eq!(set.len(), len - 1usize);
+    assert_eq!(set, RangeSetInt::from([1..=2, 5..=5, 10..=11]));
+    assert!(set.remove(5));
+    assert_eq!(set.len(), len - 2usize);
+    assert_eq!(set, RangeSetInt::from([1..=2, 10..=11]));
+}
+
+#[test]
+fn remove1() {
+    let mut set = RangeSetInt::from([1..=2, 4..=5, 10..=100, 1000..=1000]);
+    let len = set.len();
+    assert!(!set.remove(0));
+    assert_eq!(set.len(), len);
+    assert!(!set.remove(3));
+    assert_eq!(set.len(), len);
+    assert!(set.remove(2));
+    assert_eq!(set.len(), len - 1usize);
+    assert!(set.remove(1000));
+    assert_eq!(set.len(), len - 2usize);
+    assert!(set.remove(10));
+    assert_eq!(set.len(), len - 3usize);
+    assert!(set.remove(50));
+    assert_eq!(set.len(), len - 4usize);
+    assert_eq!(set, RangeSetInt::from([1..=1, 4..=5, 11..=49, 51..=100]));
 }
