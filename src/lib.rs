@@ -30,12 +30,13 @@
 // cmk000 match python documentation
 // cmk000 finish constructor list
 // cmk000 add documentation
-// cmk000 look at btreeset and match API - range, split_off -- look at there code via the docs
+// cmk000 look at btreeset and match API - range,  -- look at there code via the docs
 // cmk000 finish the benchmark story
 // cmk000 move integer trait into integer.rs.
 // cmk000 could the methods defined on Integer be done with existing traits?
 // cmk00 in docs, be sure `bitor` is a live link to the bitor method
 // cmk rule: define and understand PartialOrd, Ord, Eq, etc.
+// cmk00 document that we implement most methods of BTreeSet -- exceptions 'range', drain_filter & new_in (nightly-only). Also, it's iter is a double-ended iterator. and ours is not.
 
 mod integer;
 pub mod not_iter;
@@ -696,7 +697,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// a.insert(17);
     /// a.insert(41);
     ///
-    /// let b = a.split_off(&3);
+    /// let b = a.split_off(3);
     ///
     /// assert_eq!(a, RangeSetInt::from([1, 2]));
     /// assert_eq!(b, RangeSetInt::from([3, 17, 41]));
@@ -978,14 +979,14 @@ impl<T: Integer> RangeSetInt<T> {
     ///
     /// let mut set = RangeSetInt::from([1..=6]);
     /// // Keep only the even numbers.
-    /// set.retain(|&k| k % 2 == 0);
-    /// assert!(set.iter().eq([2, 4, 6].iter()));
+    /// set.retain(|k| k % 2 == 0);
+    /// assert_eq!(set, RangeSetInt::from([2, 4, 6]));
     /// ```
     pub fn retain<F>(&mut self, mut f: F)
     where
         F: FnMut(&T) -> bool,
     {
-        *self = self.iter().filter(|v| !f(v)).collect();
+        *self = self.iter().filter(|v| f(v)).collect();
     }
 }
 

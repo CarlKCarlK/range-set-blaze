@@ -1033,3 +1033,11 @@ fn split_off() {
         // cmk000 add test for all lengths
     }
 }
+
+#[test]
+fn retrain() {
+    let mut set = RangeSetInt::from([1..=6]);
+    // Keep only the even numbers.
+    set.retain(|k| k % 2 == 0);
+    assert_eq!(set, RangeSetInt::from([2, 4, 6]));
+}
