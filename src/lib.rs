@@ -711,39 +711,29 @@ impl<T: Integer> RangeSetInt<T> {
             let stop_ref = entry.get_mut();
             let stop = *stop_ref;
             debug_assert!(start < value); // real assert
-            println!("split_off: start: {start:?}, stop: {stop:?}");
-            // match(stop.cmp(value))
-            // {}
-            if stop < value {
-                self.len = RangeSetInt::btree_map_len(&self.btree_map);
-                return RangeSetInt {
-                    btree_map: b,
-                    len: old_len - self.len,
-                };
-            } else if stop == value {
+            println!("cmk split_off: start: {start:?}, stop: {stop:?}");
+            if value <= stop {
                 *stop_ref = value - T::one();
-                self.len = RangeSetInt::btree_map_len(&self.btree_map);
-                b.insert(value, value);
-                return RangeSetInt {
-                    btree_map: b,
-                    len: old_len - self.len,
-                };
-            } else {
-                // stop > value -- cmk0000 add match
-                *stop_ref = value - T::one();
-                self.len = RangeSetInt::btree_map_len(&self.btree_map);
                 b.insert(value, stop);
-                return RangeSetInt {
-                    btree_map: b,
-                    len: old_len - self.len,
-                };
+            }
+            let (self_len, b_len) = if self.btree_map.len() < b.len() {
+                let self_len = RangeSetInt::btree_map_len(&self.btree_map);
+                (self_len, old_len - self_len)
+            } else {
+                let b_len = RangeSetInt::btree_map_len(&b);
+                (old_len - b_len, b_len)
+            };
+            self.len = self_len;
+            RangeSetInt {
+                btree_map: b,
+                len: b_len,
             }
         } else {
             self.len = <T::SafeLen>::zero();
-            return RangeSetInt {
+            RangeSetInt {
                 btree_map: b,
                 len: old_len,
-            };
+            }
         }
     }
 
