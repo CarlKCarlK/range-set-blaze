@@ -35,6 +35,7 @@
 // cmk000 move integer trait into integer.rs.
 // cmk000 could the methods defined on Integer be done with existing traits?
 // cmk00 in docs, be sure `bitor` is a live link to the bitor method
+// cmk rule: define and understand PartialOrd, Ord, Eq, etc.
 
 mod integer;
 pub mod not_iter;
@@ -54,6 +55,7 @@ use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
 use sorted_disjoint_iter::SortedDisjointIter;
 use std::cmp::max;
+use std::cmp::Ordering;
 use std::collections::btree_map;
 use std::collections::BTreeMap;
 use std::convert::From;
@@ -114,7 +116,7 @@ pub trait Integer:
     fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self;
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Clone, Hash, Default, PartialEq)]
 pub struct RangeSetInt<T: Integer> {
     len: <T as Integer>::SafeLen,
     btree_map: BTreeMap<T, T>,
@@ -1302,7 +1304,7 @@ impl<'a, T: 'a + Integer> Extend<&'a RangeInclusive<T>> for RangeSetInt<T> {
 
 // !!!cmk0 just "Error" or remove if unused?
 #[derive(ThisError, Debug)]
-pub enum RangeIntSetError {
+pub enum RangeSetIntError {
     // #[error("after splitting on ',' tried to split on '..=' but failed on {0}")]
     // ParseSplitError(String),
     // #[error("error parsing integer {0}")]
@@ -1456,3 +1458,36 @@ macro_rules! intersection_dyn {
 macro_rules! union_dyn {
     ($($val:expr),*) => {union([$($val.dyn_sorted_disjoint()),*])}
 }
+
+impl<T: Integer> Ord for RangeSetInt<T> {
+    // cmk00000 #[inline]
+    fn cmp(&self, other: &RangeSetInt<T>) -> Ordering {
+        self.iter().cmp(other.iter())
+    }
+
+    fn max(self, other: Self) -> Self {
+        todo!();
+    }
+    fn min(self, other: Self) -> Self {
+        todo!();
+    }
+
+    fn clamp(self, min: Self, max: Self) -> Self {
+        todo!();
+    }
+}
+
+impl<T: Integer> PartialOrd for RangeSetInt<T> {
+    #[inline] // cmk00000
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+// impl<T: Integer> PartialEq for RangeSetInt<T> {
+//     fn eq(&self, other: &Self) -> bool {
+//         self.len == other.len && self.btree_map == other.btree_map
+//     }
+// }
+
+impl<T: Integer> Eq for RangeSetInt<T> {}

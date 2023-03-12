@@ -956,3 +956,47 @@ fn remove() {
     assert_eq!(set.len(), len - 2usize);
     assert_eq!(set, RangeSetInt::from([2..=2, 10..=11]));
 }
+
+#[test]
+fn eq() {
+    assert!(!(RangeSetInt::from([2..=2]) <= RangeSetInt::from([1..=2])));
+    for use_0 in [false, true] {
+        for use_1 in [false, true] {
+            for use_2 in [false, true] {
+                for use_3 in [false, true] {
+                    for use_4 in [false, true] {
+                        for use_5 in [false, true] {
+                            let mut a = RangeSetInt::new();
+                            let mut b = RangeSetInt::new();
+                            if use_0 {
+                                a.insert(0);
+                            };
+                            if use_1 {
+                                a.insert(1);
+                            };
+                            if use_2 {
+                                a.insert(2);
+                            };
+                            if use_3 {
+                                b.insert(0);
+                            };
+                            if use_4 {
+                                b.insert(1);
+                            };
+                            if use_5 {
+                                b.insert(2);
+                            };
+                            let a2: BTreeSet<_> = a.iter().collect();
+                            let b2: BTreeSet<_> = b.iter().collect();
+                            assert!((a == b) == (a2 == b2));
+                            println!("{a:?} <= {b:?}? RSI {}", a <= b);
+                            println!("{a:?} <= {b:?}? BTS {}", a2 <= b2);
+                            assert!((a <= b) == (a2 <= b2));
+                            assert!((a < b) == (a2 < b2));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

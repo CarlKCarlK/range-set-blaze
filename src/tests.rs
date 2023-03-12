@@ -73,7 +73,7 @@ fn repro_bit_and() {
 }
 
 #[test]
-fn repro1() -> Result<(), RangeIntSetError> {
+fn repro1() -> Result<(), RangeSetIntError> {
     let mut range_set_int = RangeSetInt::from([20..=21, 24..=24, 25..=29]);
     println!("{range_set_int}");
     assert!(range_set_int.to_string() == "20..=21, 24..=29");
@@ -108,7 +108,7 @@ fn doctest2() {
 }
 
 #[test]
-fn doctest3() -> Result<(), RangeIntSetError> {
+fn doctest3() -> Result<(), RangeSetIntError> {
     let mut a = RangeSetInt::from([1..=3]);
     let mut b = RangeSetInt::from([3..=5]);
 
@@ -145,7 +145,7 @@ fn compare() {
 }
 
 #[test]
-fn demo_c1() -> Result<(), RangeIntSetError> {
+fn demo_c1() -> Result<(), RangeSetIntError> {
     // before_or_equal_exists	1
     // equal?	0
     // is_included	0
@@ -158,7 +158,7 @@ fn demo_c1() -> Result<(), RangeIntSetError> {
 }
 
 #[test]
-fn demo_c2() -> Result<(), RangeIntSetError> {
+fn demo_c2() -> Result<(), RangeSetIntError> {
     // before_or_equal_exists	1
     // equal?	0
     // is_included	0
@@ -171,7 +171,7 @@ fn demo_c2() -> Result<(), RangeIntSetError> {
 }
 
 #[test]
-fn demo_f1() -> Result<(), RangeIntSetError> {
+fn demo_f1() -> Result<(), RangeSetIntError> {
     // before_or_equal_exists	0
     //     INSERT, etc
 
@@ -190,7 +190,7 @@ fn demo_f1() -> Result<(), RangeIntSetError> {
 }
 
 #[test]
-fn demo_d1() -> Result<(), RangeIntSetError> {
+fn demo_d1() -> Result<(), RangeSetIntError> {
     // before_or_equal_exists	1
     // equal?	1
     // is_included	n/a
@@ -205,7 +205,7 @@ fn demo_d1() -> Result<(), RangeIntSetError> {
 }
 
 #[test]
-fn demo_e1() -> Result<(), RangeIntSetError> {
+fn demo_e1() -> Result<(), RangeSetIntError> {
     // before_or_equal_exists	1
     // equal?	1
     // is_included	n/a
@@ -221,7 +221,7 @@ fn demo_e1() -> Result<(), RangeIntSetError> {
 }
 
 #[test]
-fn demo_b1() -> Result<(), RangeIntSetError> {
+fn demo_b1() -> Result<(), RangeSetIntError> {
     // before_or_equal_exists	1
     // equal?	0
     // is_included	1
@@ -237,7 +237,7 @@ fn demo_b1() -> Result<(), RangeIntSetError> {
 }
 
 #[test]
-fn demo_b2() -> Result<(), RangeIntSetError> {
+fn demo_b2() -> Result<(), RangeSetIntError> {
     // before_or_equal_exists	1
     // equal?	0
     // is_included	1
@@ -254,7 +254,7 @@ fn demo_b2() -> Result<(), RangeIntSetError> {
 }
 
 #[test]
-fn demo_b3() -> Result<(), RangeIntSetError> {
+fn demo_b3() -> Result<(), RangeSetIntError> {
     // before_or_equal_exists	1
     // equal?	0
     // is_included	1
@@ -271,7 +271,7 @@ fn demo_b3() -> Result<(), RangeIntSetError> {
 }
 
 #[test]
-fn demo_a() -> Result<(), RangeIntSetError> {
+fn demo_a() -> Result<(), RangeSetIntError> {
     // before_or_equal_exists	1
     // equal?	0
     // is_included	1
@@ -674,7 +674,7 @@ fn understand_bitand_assign() {
 }
 
 #[test]
-fn iters() -> Result<(), RangeIntSetError> {
+fn iters() -> Result<(), RangeSetIntError> {
     let range_set_int = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
     assert!(range_set_int.len() == 13usize);
     // !!!cmk0
@@ -752,7 +752,7 @@ fn missing_doctest_ops() {
 }
 
 #[test]
-fn multi_op() -> Result<(), RangeIntSetError> {
+fn multi_op() -> Result<(), RangeSetIntError> {
     let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
     let b = RangeSetInt::from([5..=13, 18..=29]);
     let c = RangeSetInt::from([38..=42]);
@@ -804,7 +804,7 @@ fn multi_op() -> Result<(), RangeIntSetError> {
 // }
 
 #[test]
-fn custom_multi() -> Result<(), RangeIntSetError> {
+fn custom_multi() -> Result<(), RangeSetIntError> {
     let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
     let b = RangeSetInt::from([5..=13, 18..=29]);
     let c = RangeSetInt::from([38..=42]);
@@ -820,14 +820,14 @@ fn custom_multi() -> Result<(), RangeIntSetError> {
 }
 
 #[test]
-fn from_string() -> Result<(), RangeIntSetError> {
+fn from_string() -> Result<(), RangeSetIntError> {
     let a = RangeSetInt::from([0..=4, 14..=17, 30..=255, 0..=37, 43..=65535]);
     assert_eq!(a, RangeSetInt::from([0..=65535]));
     Ok(())
 }
 
 #[test]
-fn nand_repro() -> Result<(), RangeIntSetError> {
+fn nand_repro() -> Result<(), RangeSetIntError> {
     let b = &RangeSetInt::from([5u8..=13, 18..=29]);
     let c = &RangeSetInt::from([38..=42]);
     println!("about to nand");
@@ -841,7 +841,7 @@ fn nand_repro() -> Result<(), RangeIntSetError> {
 }
 
 #[test]
-fn parity() -> Result<(), RangeIntSetError> {
+fn parity() -> Result<(), RangeSetIntError> {
     let a = &RangeSetInt::from([1..=6, 8..=9, 11..=15]);
     let b = &RangeSetInt::from([5..=13, 18..=29]);
     let c = &RangeSetInt::from([38..=42]);
@@ -897,7 +897,7 @@ fn bit_or_iter() {
 }
 
 #[test]
-fn empty() -> Result<(), RangeIntSetError> {
+fn empty() -> Result<(), RangeSetIntError> {
     let universe: SortedDisjointIter<u8, _> = [0..=255].into_iter().collect();
     let arr: [u8; 0] = [];
     let a0 = RangeSetInt::<u8>::from(arr);
