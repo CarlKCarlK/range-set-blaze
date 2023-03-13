@@ -106,24 +106,24 @@ where
     fn next(&mut self) -> Option<RangeInclusive<T>> {
         loop {
             if let Some(range_inclusive) = self.iter.next() {
-                let (start, stop) = range_inclusive.into_inner();
-                if stop < start {
+                let (start, end) = range_inclusive.into_inner();
+                if end < start {
                     return self.next(); // !!!cmk00 test this
                 }
                 if let Some(current_range_inclusive) = self.option_range_inclusive.clone() {
-                    let (current_start, current_stop) = current_range_inclusive.into_inner();
+                    let (current_start, current_end) = current_range_inclusive.into_inner();
                     debug_assert!(current_start <= start); // cmk debug panic if not sorted
-                    if start <= current_stop
-                        || (current_stop < T::max_value2() && start <= current_stop + T::one())
+                    if start <= current_end
+                        || (current_end < T::max_value2() && start <= current_end + T::one())
                     {
-                        self.option_range_inclusive = Some(current_start..=max(current_stop, stop));
+                        self.option_range_inclusive = Some(current_start..=max(current_end, end));
                         continue;
                     } else {
-                        self.option_range_inclusive = Some(start..=stop);
-                        return Some(current_start..=current_stop);
+                        self.option_range_inclusive = Some(start..=end);
+                        return Some(current_start..=current_end);
                     }
                 } else {
-                    self.option_range_inclusive = Some(start..=stop);
+                    self.option_range_inclusive = Some(start..=end);
                     continue;
                 }
             } else {

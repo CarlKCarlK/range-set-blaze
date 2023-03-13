@@ -397,7 +397,7 @@ impl<T: Integer> RangeSetInt<T> {
         self.btree_map
             .range(..=value)
             .next_back()
-            .map_or(false, |(_, stop)| value <= *stop)
+            .map_or(false, |(_, end)| value <= *end)
     }
 
     /// !!!cmk0doc add note to see - or sub
@@ -536,27 +536,27 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     fn delete_extra(&mut self, internal_inclusive: &RangeInclusive<T>) {
-        let (start, stop) = internal_inclusive.clone().into_inner();
+        let (start, end) = internal_inclusive.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
-        let (start_after, stop_after) = after.next().unwrap(); // there will always be a next
-        debug_assert!(start == *start_after && stop == *stop_after); // real assert
-                                                                     // !!!cmk would be nice to have a delete_range function
-        let mut stop_new = stop;
+        let (start_after, end_after) = after.next().unwrap(); // there will always be a next
+        debug_assert!(start == *start_after && end == *end_after); // real assert
+                                                                   // !!!cmk would be nice to have a delete_range function
+        let mut end_new = end;
         let delete_list = after
-            .map_while(|(start_delete, stop_delete)| {
+            .map_while(|(start_delete, end_delete)| {
                 // must check this in two parts to avoid overflow
-                if *start_delete <= stop || *start_delete <= stop + T::one() {
-                    stop_new = max(stop_new, *stop_delete);
-                    self.len -= T::safe_inclusive_len(&(*start_delete..=*stop_delete));
+                if *start_delete <= end || *start_delete <= end + T::one() {
+                    end_new = max(end_new, *end_delete);
+                    self.len -= T::safe_inclusive_len(&(*start_delete..=*end_delete));
                     Some(*start_delete)
                 } else {
                     None
                 }
             })
             .collect::<Vec<_>>();
-        if stop_new > stop {
-            self.len += T::safe_inclusive_len(&(stop..=stop_new - T::one()));
-            *stop_after = stop_new;
+        if end_new > end {
+            self.len += T::safe_inclusive_len(&(end..=end_new - T::one()));
+            *end_after = end_new;
         }
         for start in delete_list {
             self.btree_map.remove(&start);
@@ -643,18 +643,18 @@ impl<T: Integer> RangeSetInt<T> {
 
         // The code can have only one mutable reference to self.btree_map.
         let start;
-        let stop;
-        if let Some((start_ref, stop_ref)) = self.btree_map.range_mut(..=value).rev().next() {
-            stop = *stop_ref;
-            if stop < value {
+        let end;
+        if let Some((start_ref, end_ref)) = self.btree_map.range_mut(..=value).rev().next() {
+            end = *end_ref;
+            if end < value {
                 return false;
             }
             start = *start_ref;
             // special case if in range and start strictly less than value
             if start < value {
-                *stop_ref = value - T::one();
+                *end_ref = value - T::one();
                 // special, special case if value == end
-                if value == stop {
+                if value == end {
                     self.len -= <T::SafeLen>::one();
                     return true;
                 }
@@ -666,8 +666,8 @@ impl<T: Integer> RangeSetInt<T> {
         if start == value {
             self.btree_map.remove(&start);
         };
-        if value < stop {
-            self.btree_map.insert(value + T::one(), stop);
+        if value < end {
+            self.btree_map.insert(value + T::one(), end);
         }
         true
     }
@@ -699,10 +699,10 @@ impl<T: Integer> RangeSetInt<T> {
         let mut b = self.btree_map.split_off(&value);
         if let Some(mut last_entry) = self.btree_map.last_entry() {
             // Can assume start strictly less than value
-            let stop_ref = last_entry.get_mut();
-            if value <= *stop_ref {
-                b.insert(value, *stop_ref);
-                *stop_ref = value - T::one();
+            let end_ref = last_entry.get_mut();
+            if value <= *end_ref {
+                b.insert(value, *end_ref);
+                *end_ref = value - T::one();
             }
         }
 
@@ -724,8 +724,8 @@ impl<T: Integer> RangeSetInt<T> {
     fn btree_map_len(btree_map: &BTreeMap<T, T>) -> T::SafeLen {
         btree_map
             .iter()
-            .fold(<T as Integer>::SafeLen::zero(), |acc, (start, stop)| {
-                acc + T::safe_inclusive_len(&(*start..=*stop))
+            .fold(<T as Integer>::SafeLen::zero(), |acc, (start, end)| {
+                acc + T::safe_inclusive_len(&(*start..=*end))
             })
     }
 
@@ -774,22 +774,22 @@ impl<T: Integer> RangeSetInt<T> {
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     fn internal_add(&mut self, range_inclusive: RangeInclusive<T>) {
-        let (start, stop) = range_inclusive.clone().into_inner();
-        if stop < start {
+        let (start, end) = range_inclusive.clone().into_inner();
+        if end < start {
             return;
         }
-        assert!(stop <= T::max_value2()); //cmk0 panic
-                                          // !!! cmk would be nice to have a partition_point function that returns two iterators
+        assert!(end <= T::max_value2()); //cmk0 panic
+                                         // !!! cmk would be nice to have a partition_point function that returns two iterators
         let mut before = self.btree_map.range_mut(..=start).rev();
-        if let Some((start_before, stop_before)) = before.next() {
+        if let Some((start_before, end_before)) = before.next() {
             // Must check this in two parts to avoid overflow
-            if *stop_before < start && *stop_before + T::one() < start {
+            if *end_before < start && *end_before + T::one() < start {
                 self.internal_add2(&range_inclusive);
-            } else if *stop_before < stop {
-                self.len += T::safe_inclusive_len(&(*stop_before..=stop - T::one()));
-                *stop_before = stop;
+            } else if *end_before < end {
+                self.len += T::safe_inclusive_len(&(*end_before..=end - T::one()));
+                *end_before = end;
                 let start_before = *start_before;
-                self.delete_extra(&(start_before..=stop));
+                self.delete_extra(&(start_before..=end));
             } else {
                 // completely contained, so do nothing
             }
@@ -799,8 +799,8 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     fn internal_add2(&mut self, internal_inclusive: &RangeInclusive<T>) {
-        let (start, stop) = internal_inclusive.clone().into_inner();
-        let was_there = self.btree_map.insert(start, stop);
+        let (start, end) = internal_inclusive.clone().into_inner();
+        let was_there = self.btree_map.insert(start, end);
         debug_assert!(was_there.is_none()); // real assert
         self.delete_extra(internal_inclusive);
         self.len += T::safe_inclusive_len(internal_inclusive);
@@ -870,12 +870,12 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     pub fn pop_first(&mut self) -> Option<T> {
         if let Some(entry) = self.btree_map.first_entry() {
-            let (start, stop) = entry.remove_entry();
-            self.len -= T::safe_inclusive_len(&(start..=stop));
-            if start != stop {
+            let (start, end) = entry.remove_entry();
+            self.len -= T::safe_inclusive_len(&(start..=end));
+            if start != end {
                 let start = start + T::one();
-                self.btree_map.insert(start, stop);
-                self.len += T::safe_inclusive_len(&(start..=stop));
+                self.btree_map.insert(start, end);
+                self.len += T::safe_inclusive_len(&(start..=end));
             }
             Some(start)
         } else {
@@ -902,14 +902,14 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn pop_last(&mut self) -> Option<T> {
         if let Some(mut entry) = self.btree_map.last_entry() {
             let start = *entry.key();
-            let stop = entry.get_mut();
-            let result = *stop;
-            self.len -= T::safe_inclusive_len(&(start..=*stop));
-            if start == *stop {
+            let end = entry.get_mut();
+            let result = *end;
+            self.len -= T::safe_inclusive_len(&(start..=*end));
+            if start == *end {
                 entry.remove_entry();
             } else {
-                *stop -= T::one();
-                self.len += T::safe_inclusive_len(&(start..=*stop));
+                *end -= T::one();
+                self.len += T::safe_inclusive_len(&(start..=*end));
             }
             Some(result)
         } else {
@@ -1027,7 +1027,7 @@ impl<'a, T: Integer> Iterator for Ranges<'a, T> {
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(start, stop)| *start..=*stop)
+        self.iter.next().map(|(start, end)| *start..=*end)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -1218,8 +1218,8 @@ pub trait SortedDisjointIterator<T: Integer>:
     // cmk rule: You can't define traits on combinations of traits, so use this method to define methods on traits
     fn to_string(self) -> String {
         self.map(|range_inclusive| {
-            let (start, stop) = range_inclusive.into_inner();
-            format!("{start}..={stop}") // cmk could we format RangeInclusive directly?
+            let (start, end) = range_inclusive.into_inner();
+            format!("{start}..={end}") // cmk could we format RangeInclusive directly?
         })
         .join(", ")
     }
@@ -1321,11 +1321,11 @@ where
     fn next(&mut self) -> Option<T> {
         loop {
             if let Some(range_inclusive) = self.option_range_inclusive.clone() {
-                let (start, stop) = range_inclusive.into_inner();
-                debug_assert!(start <= stop && stop <= T::max_value2());
+                let (start, end) = range_inclusive.into_inner();
+                debug_assert!(start <= end && end <= T::max_value2());
                 self.current = start;
-                if start < stop {
-                    self.option_range_inclusive = Some(start + T::one()..=stop);
+                if start < end {
+                    self.option_range_inclusive = Some(start + T::one()..=end);
                 } else {
                     self.option_range_inclusive = None;
                 }
@@ -1357,16 +1357,16 @@ impl<T: Integer> Iterator for IntoIter<T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range_inclusive) = self.option_range_inclusive.clone() {
-            let (start, stop) = range_inclusive.into_inner();
-            debug_assert!(start <= stop && stop <= T::max_value2());
-            if start < stop {
-                self.option_range_inclusive = Some(start + T::one()..=stop);
+            let (start, end) = range_inclusive.into_inner();
+            debug_assert!(start <= end && end <= T::max_value2());
+            if start < end {
+                self.option_range_inclusive = Some(start + T::one()..=end);
             } else {
                 self.option_range_inclusive = None;
             }
             Some(start)
-        } else if let Some((start, stop)) = self.into_iter.next() {
-            self.option_range_inclusive = Some(start..=stop);
+        } else if let Some((start, end)) = self.into_iter.next() {
+            self.option_range_inclusive = Some(start..=end);
             self.next() // will recurse at most once
         } else {
             None
@@ -1461,18 +1461,18 @@ pub enum RangeSetIntError {
 //     let start_result = start.parse::<T>();
 //     match start_result {
 //         Ok(start) => {
-//             let stop = range
+//             let end = range
 //                 .next()
 //                 .ok_or(RangeIntSetError::ParseSplitError("second item".to_string()))?;
-//             let stop_result = stop.parse::<T>();
-//             match stop_result {
-//                 Ok(stop) => {
+//             let end_result = end.parse::<T>();
+//             match end_result {
+//                 Ok(end) => {
 //                     if range.next().is_some() {
 //                         Err(RangeIntSetError::ParseSplitError(
 //                             "unexpected third item".to_string(),
 //                         ))
 //                     } else {
-//                         Ok(start..=stop)
+//                         Ok(start..=end)
 //                     }
 //                 }
 //                 Err(e) => {
@@ -1495,10 +1495,10 @@ pub enum RangeSetIntError {
 // where
 //     <T as std::str::FromStr>::Err: std::fmt::Debug,
 // {
-//     let stop = range.next().ok_or(RangeIntSetError::ParseSplitError)?;
-//     let stop_result = stop.parse::<T>();
-//     match stop_result {
-//         Ok(stop) => Ok((start, stop)),
+//     let end = range.next().ok_or(RangeIntSetError::ParseSplitError)?;
+//     let end_result = end.parse::<T>();
+//     match end_result {
+//         Ok(end) => Ok((start, end)),
 //         Err(e) => {
 //             let msg = format!("{e:?}");
 //             Err(RangeIntSetError::ParseIntegerError(msg))

@@ -1,4 +1,4 @@
-// !!!cmk make the names consistent, start/lower vs stop/upper/end/...
+// !!!cmk make the names consistent, start/lower vs end/upper/end/...
 // !!!cmk replace OptionRange with Option<RangeInclusive<T>>
 
 use crate::{Integer, SortedDisjoint, SortedStarts};
@@ -99,8 +99,8 @@ where
     #[allow(clippy::inherent_to_string)]
     pub fn to_string(self) -> String {
         self.map(|range_inclusive| {
-            let (start, stop) = range_inclusive.into_inner();
-            format!("{start}..={stop}") // cmk could we format RangeInclusive directly?
+            let (start, end) = range_inclusive.into_inner();
+            format!("{start}..={end}") // cmk could we format RangeInclusive directly?
         })
         .join(", ")
     }
@@ -146,10 +146,10 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range_inclusive) = self.iter.next() {
-            let (start, stop) = range_inclusive.clone().into_inner();
-            debug_assert!(start <= stop && stop <= T::max_value2());
+            let (start, end) = range_inclusive.clone().into_inner();
+            debug_assert!(start <= end && end <= T::max_value2());
             self.len += T::safe_inclusive_len(&range_inclusive);
-            Some((start, stop))
+            Some((start, end))
         } else {
             None
         }

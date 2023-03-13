@@ -565,11 +565,11 @@ fn add_in_order() {
 
 #[test]
 fn optimize() {
-    let stop = 8u8;
-    for a in 0..=stop {
-        for b in 0..=stop {
-            for c in 0..=stop {
-                for d in 0..=stop {
+    let end = 8u8;
+    for a in 0..=end {
+        for b in 0..=end {
+            for c in 0..=end {
+                for d in 0..=end {
                     let restart = (a >= 2 && a - 2 >= d) || (c >= 2 && c - 2 >= b);
                     print!("{a}\t{b}\t{c}\t{d}\t");
                     if a > b {
@@ -684,8 +684,8 @@ fn iters() -> Result<(), RangeSetIntError> {
         println!("{i}");
     }
     for range_inclusive in range_set_int.ranges() {
-        let (start, stop) = range_inclusive.into_inner();
-        println!("{start}..={stop}");
+        let (start, end) = range_inclusive.into_inner();
+        println!("{start}..={end}");
     }
     let mut rs = range_set_int.ranges();
     println!("{:?}", rs.next());

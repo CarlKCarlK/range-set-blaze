@@ -46,20 +46,20 @@ where
         }
         let next_item = self.iter.next();
         if let Some(range_inclusive) = next_item {
-            let (start, stop) = range_inclusive.into_inner();
-            debug_assert!(start <= stop && stop <= T::max_value2());
+            let (start, end) = range_inclusive.into_inner();
+            debug_assert!(start <= end && end <= T::max_value2());
             if self.start_not < start {
                 // We can subtract with underflow worry because
                 // we know that start > start_not and so not min_value
                 let result = Some(self.start_not..=start - T::one());
-                if stop < T::max_value2() {
-                    self.start_not = stop + T::one();
+                if end < T::max_value2() {
+                    self.start_not = end + T::one();
                 } else {
                     self.next_time_return_none = true;
                 }
                 result
-            } else if stop < T::max_value2() {
-                self.start_not = stop + T::one();
+            } else if end < T::max_value2() {
+                self.start_not = end + T::one();
                 self.next() // will recurse at most once
             } else {
                 self.next_time_return_none = true;

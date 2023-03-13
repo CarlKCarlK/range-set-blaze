@@ -156,8 +156,8 @@ fn iters() -> Result<(), Box<dyn std::error::Error>> {
         println!("{i}");
     }
     for range_inclusive in range_set_int.ranges() {
-        let (start, stop) = range_inclusive.into_inner();
-        println!("{start}..={stop}");
+        let (start, end) = range_inclusive.into_inner();
+        println!("{start}..={end}");
     }
     let mut rs = range_set_int.ranges();
     println!("{:?}", rs.next());

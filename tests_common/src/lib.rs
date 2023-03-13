@@ -151,12 +151,12 @@ impl<'a, T: Integer> Iterator for MemorylessIter<'a, T> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if let Some(range_inclusive) = &self.option_range_inclusive {
-                let (start, stop) = range_inclusive.clone().into_inner();
-                if start < stop {
-                    self.option_range_inclusive = Some(start + T::one()..=stop);
+                let (start, end) = range_inclusive.clone().into_inner();
+                if start < end {
+                    self.option_range_inclusive = Some(start + T::one()..=end);
                 } else {
                     self.option_range_inclusive = None;
-                    if start > stop {
+                    if start > end {
                         continue; // skip empty ranges
                     }
                 }
