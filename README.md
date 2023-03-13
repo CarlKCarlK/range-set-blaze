@@ -1,4 +1,4 @@
-rangeset-int
+range-set-int
 ==========
 
 cmk
@@ -18,7 +18,7 @@ Here we take the union (operator “|”) of two RangeSetInt's:
 ![Example 1](doc/example1.png "Example 1")
 
 ```rust
-use rangeset_int::RangeSetInt;
+use range_set_int::RangeSetInt;
 
  // a is the set of integers from 100 to 499 (inclusive) and 501 to 1000 (inclusive)
 let a = RangeSetInt::from([100..=499,501..=999]);
@@ -40,7 +40,7 @@ We create a `RangeSetInt` for the transcription region and a `RangeSetInt` for a
 Then we take the difference of the transcription region and exon regions to find the intron regions.
 
 ```rust
-use rangeset_int::RangeSetInt;
+use range_set_int::RangeSetInt;
 
 let line = "chr15   29370   37380   29370,32358,36715   30817,32561,37380";
 
@@ -74,147 +74,3 @@ for range in intron.ranges() {
     println!("{chr}\t{start}\t{end}");
 }
 ```
-
-As we add nesting and multiple inputs, the macro becomes more useful.
-Here we create a function with two inputs. One input accepts any iterator-like
-thing of `usize`. The second input accepts any iterator-like thing of string-like things. The function returns the sum of the numbers and string lengths.
-
-We apply the function to the range `1..=10` and a slice of `&str`'s.
-
-```rust
-use anyinput::anyinput;
-
-#[anyinput]
-fn two_iterator_sum(iter1: AnyIter<usize>, iter2: AnyIter<AnyString>) -> usize {
-    let mut sum = iter1.sum();
-    for any_string in iter2 {
-        // Needs .as_ref to turn the nested AnyString into a &str.
-        sum += any_string.as_ref().len();
-    }
-    sum
-}
-
-assert_eq!(two_iterator_sum(1..=10, ["a", "bb", "ccc"]), 61);
-```
-
-Create a function that accepts an array-like thing of path-like things.
-Return the number of path components at an index.
-
-```rust
-use anyinput::anyinput;
-use anyhow::Result;
-
-#[anyinput]
-fn indexed_component_count(
-    array: AnyArray<AnyPath>,
-    index: usize,
-) -> Result<usize, anyhow::Error> {
-    // Needs .as_ref to turn the nested AnyPath into a &Path.
-    let path = array[index].as_ref();
-    let count = path.iter().count();
-    Ok(count)
-}
-
-assert_eq!(
-    indexed_component_count(vec!["usr/files/home", "usr/data"], 1)?,
-    2
-);
-# // '# OK...' needed for doctest
-# Ok::<(), anyhow::Error>(())
-```
-
-You can easily apply `NdArray` functions to any array-like thing of numbers. For example,
-here we create  a function that accepts an `NdArray`-like thing of `f32` and returns the mean.
-We apply the function to both a `Vec` and an `Array1<f32>`.
-
-Support for `NdArray` is provided by the optional feature `ndarray`.
-
-```rust
-use anyinput::anyinput;
-use anyhow::Result;
-
-# // '#[cfg...' needed for doctest
-# #[cfg(feature = "ndarray")]
-#[anyinput]
-fn any_mean(array: AnyNdArray<f32>) -> Result<f32, anyhow::Error> {
-    if let Some(mean) = array.mean() {
-        Ok(mean)
-    } else {
-        Err(anyhow::anyhow!("empty array"))
-    }
-}
-
-// 'AnyNdArray' works with any 1-D array-like thing, but must be borrowed.
-# #[cfg(feature = "ndarray")]
-assert_eq!(any_mean(&vec![10.0, 20.0, 30.0, 40.0])?, 25.0);
-# #[cfg(feature = "ndarray")]
-assert_eq!(any_mean(&ndarray::array![10.0, 20.0, 30.0, 40.0])?, 25.0);
-# // '# OK...' needed for doctest
-# Ok::<(), anyhow::Error>(())
-```
-
-The AnyInputs
----------
-
-| AnyInput   | Description                            | Creates Concrete Type           |
-| ---------- | -------------------------------------- | ------------------------------- |
-| AnyString  | Any string-like thing                  | `&str`                          |
-| AnyPath    | Any path-like or string-like thing     | `&Path`                         |
-| AnyIter    | Any iterator-like thing                | `<I as IntoIterator>::IntoIter` |
-| AnyArray   | Any array-like thing                   | `&[T]`                          |
-| AnyNdArray | Any 1-D array-like thing (borrow-only) | `ndarray::ArrayView1<T>`        |
-
-Notes & Features
---------
-
-- Suggestions, feature requests, and contributions are welcome.
-- Works with nesting, multiple inputs, and generics.
-- Automatically and efficiently converts an top-level AnyInput into a concrete type.
-- Elements of AnyArray, AnyIter, and AnyNdArray must be a single type. So, `AnyArray<AnyString>`
-  accepts a vector of all `&str` or all `String`, but not mixed.
-- When nesting, efficiently convert the nested AnyInput to the concrete type with
-  - `.as_ref()` -- AnyString, AnyPath, AnyArray
-  - `.into_iter()` -- AnyIter
-  - `.into()` -- AnyNdArray
-
-  (The iterator and array examples above show this.)
-
-- Let's you easily apply `NdArray` functions to regular Rust arrays, slices, and `Vec`s.
-- Used by [bed-reader](https://docs.rs/bed-reader/latest/bed_reader/) (genomics crate) and [fetch-data](https://crates.io/crates/fetch-data) (sample-file download crate).
-
-How It Works
---------
-
-The `#[anyinput]` macro uses standard Rust generics to support multiple input types. To do this, it
- rewrites your function with the appropriate generics. It also adds lines to your function to efficiently convert from any top-level generic to a concrete type. For example, the macro transforms `len_plus_2` from:
-
-```rust
-use anyinput::anyinput;
-
-#[anyinput]
-fn len_plus_2(s: AnyString) -> usize {
-    s.len()+2
-}
-```
-
-into
-
-```rust
-fn len_plus_2<AnyString0: AsRef<str>>(s: AnyString0) -> usize {
-    let s = s.as_ref();
-    s.len() + 2
-}
-```
-
-Here `AnyString0` is the generic type. The line `let s = s.as_ref()` converts from generic type `AnyString0` to concrete type `&str`.
-
-As with all Rust generics, the compiler creates a separate function for each combination of concrete types used by the calling code.
-
-Project Links
------
-
-- [**Installation**](https://crates.io/crates/anyinput)
-- [**Documentation**](https://docs.rs/anyinput/)
-- [**Source code**](https://github.com/CarlKCarlK/anyinput)
-- [**Discussion**](https://github.com/CarlKCarlK/anyinput/discussions/)
-- [**Bug Reports and Feature Requests**](https://github.com/CarlKCarlK/anyinput/issues)
