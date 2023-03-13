@@ -112,7 +112,7 @@ where
                 }
                 if let Some(current_range_inclusive) = self.option_range_inclusive.clone() {
                     let (current_start, current_end) = current_range_inclusive.into_inner();
-                    debug_assert!(current_start <= start); // cmk debug panic if not sorted
+                    debug_assert!(current_start <= start); // real assert
                     if start <= current_end
                         || (current_end < T::max_value2() && start <= current_end + T::one())
                     {

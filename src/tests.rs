@@ -73,14 +73,13 @@ fn repro_bit_and() {
 }
 
 #[test]
-fn repro1() -> Result<(), RangeSetIntError> {
+fn repro1() {
     let mut range_set_int = RangeSetInt::from([20..=21, 24..=24, 25..=29]);
     println!("{range_set_int}");
     assert!(range_set_int.to_string() == "20..=21, 24..=29");
     range_set_int.internal_add(25..=25);
     println!("{range_set_int}");
     assert!(range_set_int.to_string() == "20..=21, 24..=29");
-    Ok(())
 }
 
 #[test]
@@ -108,7 +107,7 @@ fn doctest2() {
 }
 
 #[test]
-fn doctest3() -> Result<(), RangeSetIntError> {
+fn doctest3() {
     let mut a = RangeSetInt::from([1..=3]);
     let mut b = RangeSetInt::from([3..=5]);
 
@@ -122,8 +121,6 @@ fn doctest3() -> Result<(), RangeSetIntError> {
     assert!(a.contains(3));
     assert!(a.contains(4));
     assert!(a.contains(5));
-
-    Ok(())
 }
 
 #[test]
@@ -145,7 +142,7 @@ fn compare() {
 }
 
 #[test]
-fn demo_c1() -> Result<(), RangeSetIntError> {
+fn demo_c1() {
     // before_or_equal_exists	1
     // equal?	0
     // is_included	0
@@ -154,11 +151,10 @@ fn demo_c1() -> Result<(), RangeSetIntError> {
     range_set_int.internal_add(12..=12);
     assert!(range_set_int.to_string() == "10..=10, 12..=12");
     assert!(range_set_int._len_slow() == range_set_int.len());
-    Ok(())
 }
 
 #[test]
-fn demo_c2() -> Result<(), RangeSetIntError> {
+fn demo_c2() {
     // before_or_equal_exists	1
     // equal?	0
     // is_included	0
@@ -167,11 +163,10 @@ fn demo_c2() -> Result<(), RangeSetIntError> {
     range_set_int.internal_add(12..=12);
     assert!(range_set_int.to_string() == "10..=10, 12..=13");
     assert!(range_set_int._len_slow() == range_set_int.len());
-    Ok(())
 }
 
 #[test]
-fn demo_f1() -> Result<(), RangeSetIntError> {
+fn demo_f1() {
     // before_or_equal_exists	0
     //     INSERT, etc
 
@@ -186,11 +181,10 @@ fn demo_f1() -> Result<(), RangeSetIntError> {
     );
 
     assert!(range_set_int._len_slow() == range_set_int.len());
-    Ok(())
 }
 
 #[test]
-fn demo_d1() -> Result<(), RangeSetIntError> {
+fn demo_d1() {
     // before_or_equal_exists	1
     // equal?	1
     // is_included	n/a
@@ -201,11 +195,10 @@ fn demo_d1() -> Result<(), RangeSetIntError> {
     range_set_int.internal_add(10..=10);
     assert!(range_set_int.to_string() == "10..=14");
     assert!(range_set_int._len_slow() == range_set_int.len());
-    Ok(())
 }
 
 #[test]
-fn demo_e1() -> Result<(), RangeSetIntError> {
+fn demo_e1() {
     // before_or_equal_exists	1
     // equal?	1
     // is_included	n/a
@@ -217,11 +210,10 @@ fn demo_e1() -> Result<(), RangeSetIntError> {
     range_set_int.internal_add(10..=19);
     assert!(range_set_int.to_string() == "10..=19");
     assert!(range_set_int._len_slow() == range_set_int.len());
-    Ok(())
 }
 
 #[test]
-fn demo_b1() -> Result<(), RangeSetIntError> {
+fn demo_b1() {
     // before_or_equal_exists	1
     // equal?	0
     // is_included	1
@@ -233,11 +225,10 @@ fn demo_b1() -> Result<(), RangeSetIntError> {
     range_set_int.internal_add(12..=17);
     assert!(range_set_int.to_string() == "10..=17");
     assert!(range_set_int._len_slow() == range_set_int.len());
-    Ok(())
 }
 
 #[test]
-fn demo_b2() -> Result<(), RangeSetIntError> {
+fn demo_b2() {
     // before_or_equal_exists	1
     // equal?	0
     // is_included	1
@@ -250,11 +241,10 @@ fn demo_b2() -> Result<(), RangeSetIntError> {
     range_set_int.internal_add(12..=17);
     assert!(range_set_int.to_string() == "10..=17");
     assert!(range_set_int._len_slow() == range_set_int.len());
-    Ok(())
 }
 
 #[test]
-fn demo_b3() -> Result<(), RangeSetIntError> {
+fn demo_b3() {
     // before_or_equal_exists	1
     // equal?	0
     // is_included	1
@@ -267,11 +257,10 @@ fn demo_b3() -> Result<(), RangeSetIntError> {
     range_set_int.internal_add(12..=17);
     assert!(range_set_int.to_string() == "10..=17, 160..=160");
     assert!(range_set_int._len_slow() == range_set_int.len());
-    Ok(())
 }
 
 #[test]
-fn demo_a() -> Result<(), RangeSetIntError> {
+fn demo_a() {
     // before_or_equal_exists	1
     // equal?	0
     // is_included	1
@@ -287,7 +276,6 @@ fn demo_a() -> Result<(), RangeSetIntError> {
         range_set_int.len()
     );
     assert!(range_set_int._len_slow() == range_set_int.len());
-    Ok(())
 }
 
 // #[test]
@@ -674,7 +662,7 @@ fn understand_bitand_assign() {
 }
 
 #[test]
-fn iters() -> Result<(), RangeSetIntError> {
+fn iters() {
     let range_set_int = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
     assert!(range_set_int.len() == 13usize);
     // !!!cmk0
@@ -701,7 +689,6 @@ fn iters() -> Result<(), RangeSetIntError> {
     println!("{:?}", rs.next());
     println!("{range_set_int}");
     // !!! assert that can't use range_set_int again
-    Ok(())
 }
 
 #[test]
@@ -752,7 +739,7 @@ fn missing_doctest_ops() {
 }
 
 #[test]
-fn multi_op() -> Result<(), RangeSetIntError> {
+fn multi_op() {
     let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
     let b = RangeSetInt::from([5..=13, 18..=29]);
     let c = RangeSetInt::from([38..=42]);
@@ -791,7 +778,6 @@ fn multi_op() -> Result<(), RangeSetIntError> {
         RangeSetInt::<u8>::multiway_intersection([]),
         RangeSetInt::from([0..=255])
     );
-    Ok(())
 }
 
 // cmk0 use merge in example
@@ -804,7 +790,7 @@ fn multi_op() -> Result<(), RangeSetIntError> {
 // }
 
 #[test]
-fn custom_multi() -> Result<(), RangeSetIntError> {
+fn custom_multi() {
     let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
     let b = RangeSetInt::from([5..=13, 18..=29]);
     let c = RangeSetInt::from([38..=42]);
@@ -816,18 +802,16 @@ fn custom_multi() -> Result<(), RangeSetIntError> {
 
     let d: RangeSetInt<_> = (a.ranges() - union([b.ranges(), c.ranges()])).into();
     println!("{d}");
-    Ok(())
 }
 
 #[test]
-fn from_string() -> Result<(), RangeSetIntError> {
+fn from_string() {
     let a = RangeSetInt::from([0..=4, 14..=17, 30..=255, 0..=37, 43..=65535]);
     assert_eq!(a, RangeSetInt::from([0..=65535]));
-    Ok(())
 }
 
 #[test]
-fn nand_repro() -> Result<(), RangeSetIntError> {
+fn nand_repro() {
     let b = &RangeSetInt::from([5u8..=13, 18..=29]);
     let c = &RangeSetInt::from([38..=42]);
     println!("about to nand");
@@ -837,11 +821,10 @@ fn nand_repro() -> Result<(), RangeSetIntError> {
         d,
         RangeSetInt::from([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
     );
-    Ok(())
 }
 
 #[test]
-fn parity() -> Result<(), RangeSetIntError> {
+fn parity() {
     let a = &RangeSetInt::from([1..=6, 8..=9, 11..=15]);
     let b = &RangeSetInt::from([5..=13, 18..=29]);
     let c = &RangeSetInt::from([38..=42]);
@@ -883,7 +866,6 @@ fn parity() -> Result<(), RangeSetIntError> {
         RangeSetInt::from(u),
         RangeSetInt::from([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
-    Ok(())
 }
 
 #[test]
@@ -897,7 +879,7 @@ fn bit_or_iter() {
 }
 
 #[test]
-fn empty() -> Result<(), RangeSetIntError> {
+fn empty() {
     let universe: SortedDisjointIter<u8, _> = [0..=255].into_iter().collect();
     let arr: [u8; 0] = [];
     let a0 = RangeSetInt::<u8>::from(arr);
@@ -967,8 +949,6 @@ fn empty() -> Result<(), RangeSetIntError> {
     assert!(c2.equal(answer.ranges()));
     assert!(c3.equal(answer.ranges()));
     assert!(c4.equal(answer.ranges()));
-
-    Ok(())
 }
 
 #[allow(clippy::reversed_empty_ranges)]

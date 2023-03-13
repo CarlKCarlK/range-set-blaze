@@ -31,10 +31,9 @@
 // cmk000 finish constructor list
 // cmk0doc add documentation
 // cmk000 finish the benchmark story
-// cmk000 could the methods defined on Integer be done with existing traits?
-// cmk00 in docs, be sure `bitor` is a live link to the bitor method
+// cmk0doc in docs, be sure `bitor` is a live link to the bitor method
 // cmk rule: define and understand PartialOrd, Ord, Eq, etc.
-// cmk00 document that we implement most methods of BTreeSet -- exceptions 'range', drain_filter & new_in (nightly-only). Also, it's iter is a double-ended iterator. and ours is not.
+// cmk0doc document that we implement most methods of BTreeSet -- exceptions 'range', drain_filter & new_in (nightly-only). Also, it's iter is a double-ended iterator. and ours is not.
 
 mod integer;
 pub mod not_iter;
@@ -60,11 +59,9 @@ use std::collections::btree_map;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
-use std::fmt::Debug;
 use std::ops::RangeInclusive;
 use std::ops::Sub;
 use std::str::FromStr;
-use thiserror::Error as ThisError;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
 
@@ -951,7 +948,7 @@ impl<T: Integer> RangeSetInt<T> {
         ranges
     }
 
-    // cmk00 understand 'const'
+    // FUTURE BTreeSet some of these as 'const' but it uses unstable. When stable, add them here and elsewhere.
     pub fn ranges_len(&self) -> usize {
         self.btree_map.len()
     }
@@ -1302,6 +1299,13 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     }
 }
 
+/// An iterator over the entries of a `RangeSetInt`.
+///
+/// This `struct` is created by the [`iter`] method on [`RangeSetInt`]. See its
+/// documentation for more.
+///
+/// [`iter`]: RangeSetInt::iter
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone)]
 pub struct Iter<T, I>
 where
@@ -1347,6 +1351,7 @@ where
     }
 }
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct IntoIter<T: Integer> {
     option_range_inclusive: Option<RangeInclusive<T>>,
     into_iter: std::collections::btree_map::IntoIter<T, T>,
@@ -1423,100 +1428,6 @@ impl<'a, T: 'a + Integer> Extend<&'a RangeInclusive<T>> for RangeSetInt<T> {
 // !!!cmk are the unwraps OK?
 // !!!cmk what about bad input?
 
-// !!!cmk0 just "Error" or remove if unused?
-#[derive(ThisError, Debug)]
-pub enum RangeSetIntError {
-    // #[error("after splitting on ',' tried to split on '..=' but failed on {0}")]
-    // ParseSplitError(String),
-    // #[error("error parsing integer {0}")]
-    // ParseIntegerError(String),
-}
-
-// impl<T: Integer> FromStr for RangeSetInt<T>
-// where
-//     // !!! cmk understand this
-//     <T as std::str::FromStr>::Err: std::fmt::Debug,
-// {
-//     type Err = RangeIntSetError;
-
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         if s.is_empty() {
-//             return Ok(RangeSetInt::new());
-//         }
-//         let result: Result<RangeSetInt<T>, Self::Err> = s.split(',').map(process_bit1).collect();
-//         result
-//     }
-// }
-
-// // !!!cmk00 test all errors
-// // !!!cmk00 rename
-// fn process_bit1<T: Integer>(s: &str) -> Result<RangeInclusive<T>, RangeIntSetError>
-// where
-//     <T as std::str::FromStr>::Err: std::fmt::Debug,
-// {
-//     let mut range = s.split("..=");
-//     let start = range
-//         .next()
-//         .ok_or(RangeIntSetError::ParseSplitError("first item".to_string()))?;
-//     let start_result = start.parse::<T>();
-//     match start_result {
-//         Ok(start) => {
-//             let end = range
-//                 .next()
-//                 .ok_or(RangeIntSetError::ParseSplitError("second item".to_string()))?;
-//             let end_result = end.parse::<T>();
-//             match end_result {
-//                 Ok(end) => {
-//                     if range.next().is_some() {
-//                         Err(RangeIntSetError::ParseSplitError(
-//                             "unexpected third item".to_string(),
-//                         ))
-//                     } else {
-//                         Ok(start..=end)
-//                     }
-//                 }
-//                 Err(e) => {
-//                     let msg = format!("second item: {e:?}");
-//                     Err(RangeIntSetError::ParseIntegerError(msg))
-//                 }
-//             }
-//         }
-//         Err(e) => {
-//             let msg = format!("first item: {e:?}");
-//             Err(RangeIntSetError::ParseIntegerError(msg))
-//         }
-//     }
-// }
-
-// fn process_bit2<T: Integer>(
-//     mut range: std::str::Split<&str>,
-//     start: T,
-// ) -> Result<RangeInclusive<T>, RangeIntSetError>
-// where
-//     <T as std::str::FromStr>::Err: std::fmt::Debug,
-// {
-//     let end = range.next().ok_or(RangeIntSetError::ParseSplitError)?;
-//     let end_result = end.parse::<T>();
-//     match end_result {
-//         Ok(end) => Ok((start, end)),
-//         Err(e) => {
-//             let msg = format!("{e:?}");
-//             Err(RangeIntSetError::ParseIntegerError(msg))
-//         }
-//     }
-// }
-
-// impl<T: Integer> TryFrom<&str> for RangeSetInt<T>
-// where
-//     // !!! cmk understand this
-//     <T as std::str::FromStr>::Err: std::fmt::Debug,
-// {
-//     type Error = RangeIntSetError;
-//     fn try_from(s: &str) -> Result<Self, Self::Error> {
-//         FromStr::from_str(s)
-//     }
-// }
-
 pub trait SortedStarts {}
 pub trait SortedDisjoint: SortedStarts {}
 
@@ -1536,6 +1447,7 @@ pub trait SortedDisjoint: SortedStarts {}
 
 // cmk sort-iter uses peekable. Is that better?
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct DynSortedDisjoint<'a, T> {
     iter: Box<dyn Iterator<Item = T> + 'a>,
 }
@@ -1581,7 +1493,7 @@ macro_rules! union_dyn {
 }
 
 impl<T: Integer> Ord for RangeSetInt<T> {
-    /// cmk00 document this. clarify that this is lexicographic order not subset/superset
+    /// cmk0doc clarify that this is lexicographic order not subset/superset
     #[inline]
     fn cmp(&self, other: &RangeSetInt<T>) -> Ordering {
         // slow return self.iter().cmp(other.iter());
