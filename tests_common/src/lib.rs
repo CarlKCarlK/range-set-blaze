@@ -19,6 +19,7 @@ pub fn width_to_range_inclusive(
 
 // Not reliable if the range_inclusive is too small, especially if the range_len
 // is small. Might have some off-by-one errors that aren't material in practice.
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MemorylessRange<'a, T: Integer> {
     rng: &'a mut StdRng,
     range_len: usize,
@@ -121,6 +122,7 @@ impl<'a, T: Integer> Iterator for MemorylessRange<'a, T> {
     }
 }
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MemorylessIter<'a, T: Integer> {
     option_range_inclusive: Option<RangeInclusive<T>>,
     iter: MemorylessRange<'a, T>,

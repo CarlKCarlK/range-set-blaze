@@ -526,7 +526,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// b.insert(1);
     /// assert_eq!(a.is_disjoint(&b), false);
     /// ```
-    ///cmk00 which functions should be must_use?
+    /// cmk rule cmk0000 which functions should be must_use? iterator, constructor, predicates, first, last,
     #[must_use]
     pub fn is_disjoint(&self, other: &RangeSetInt<T>) -> bool {
         self.intersection(other).next().is_none()
@@ -949,6 +949,7 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     // FUTURE BTreeSet some of these as 'const' but it uses unstable. When stable, add them here and elsewhere.
+    #[must_use]
     pub fn ranges_len(&self) -> usize {
         self.btree_map.len()
     }
@@ -977,6 +978,7 @@ impl<T: Integer> RangeSetInt<T> {
 }
 
 #[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Ranges<'a, T: Integer> {
     iter: btree_map::Iter<'a, T, T>,
 }
@@ -1014,6 +1016,7 @@ impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedS
 impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedDisjoint for Tee<I> {}
 
 impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
+    #[must_use]
     fn len(&self) -> usize {
         self.iter.len()
     }
@@ -1545,3 +1548,5 @@ impl<T: Integer> PartialOrd for RangeSetInt<T> {
 }
 
 impl<T: Integer> Eq for RangeSetInt<T> {}
+
+// cmk00000 add must_use to every iter and other places ala https://doc.rust-lang.org/src/alloc/collections/btree/map.rs.html#1259-1261

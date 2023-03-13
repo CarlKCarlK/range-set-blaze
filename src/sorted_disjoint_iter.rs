@@ -9,6 +9,7 @@ use crate::{
 
 // cmk00 maybe not the best name
 #[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct SortedDisjointIter<T, I>
 where
     T: Integer,

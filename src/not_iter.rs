@@ -4,6 +4,7 @@ use crate::{Integer, SortedDisjoint};
 
 // cmk rule: Make structs clonable when possible.
 #[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct NotIter<T, I>
 where
     T: Integer,

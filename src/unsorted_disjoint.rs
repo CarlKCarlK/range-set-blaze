@@ -9,6 +9,7 @@ use std::{
     ops::RangeInclusive,
 };
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct UnsortedDisjoint<T, I>
 where
     T: Integer,
@@ -106,6 +107,7 @@ where
     }
 }
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct SortedDisjointWithLenSoFar<T, I>
 where
     T: Integer,
@@ -168,6 +170,7 @@ impl<T: Integer, I> SortedStarts for SortedDisjointWithLenSoFar<T, I> where
 }
 
 #[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct AssumeSortedStarts<T, I>
 where
     T: Integer,
