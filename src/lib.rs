@@ -29,7 +29,7 @@
 // cmk rule: don't create an assign method if it is not more efficient
 // cmk rule: generate HTML: criterion = { version = "0.4", features = ["html_reports"] }
 // cmk rule: pick another similar data structure and implement everything that makes sense (copy docs as much as possible)
-// cmk000 match python documentation
+// cmk000 write a straight-forward README.md by merging the Python range_int_set and Rust anytype
 // cmk000 finish constructor list
 // cmk0doc add documentation
 // cmk000 finish the benchmark story
@@ -38,23 +38,23 @@
 // cmk0doc document that we implement most methods of BTreeSet -- exceptions 'range', drain_filter & new_in (nightly-only). Also, it's iter is a double-ended iterator. and ours is not.
 
 mod integer;
-pub mod not_iter;
+mod not_iter;
 mod ops;
-pub mod sorted_disjoint_iter;
+mod sorted_disjoint_iter;
 mod tests;
-pub mod unsorted_disjoint;
+mod unsorted_disjoint;
 
 use gen_ops::gen_ops_ex;
 use itertools::Itertools;
 use itertools::KMergeBy;
 use itertools::MergeBy;
 use itertools::Tee;
-use not_iter::NotIter;
+pub use not_iter::NotIter;
 use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::One;
 use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
-use sorted_disjoint_iter::SortedDisjointIter;
+pub use sorted_disjoint_iter::SortedDisjointIter;
 use std::cmp::max;
 use std::cmp::Ordering;
 use std::collections::btree_map;
@@ -64,8 +64,9 @@ use std::fmt;
 use std::ops::RangeInclusive;
 use std::ops::Sub;
 use std::str::FromStr;
-use unsorted_disjoint::SortedDisjointWithLenSoFar;
-use unsorted_disjoint::UnsortedDisjoint;
+pub use unsorted_disjoint::AssumeSortedStarts;
+pub use unsorted_disjoint::SortedDisjointWithLenSoFar;
+pub use unsorted_disjoint::UnsortedDisjoint;
 
 // cmk rule: Support Send and Sync (what about Clone (Copy?) and ExactSizeIterator?)
 // cmk rule: Test Send and Sync with a test (see example)
@@ -418,7 +419,6 @@ impl<T: Integer> RangeSetInt<T> {
     /// let diff: Vec<_> = a.difference(&b).collect();
     /// assert_eq!(diff, [1..=1]);
     /// ```
-    #[must_use]
     pub fn difference<'a>(
         &'a self,
         other: &'a RangeSetInt<T>,
@@ -444,7 +444,6 @@ impl<T: Integer> RangeSetInt<T> {
     /// let union: Vec<_> = a.union(&b).collect();
     /// assert_eq!(union, [1..=2]);
     /// ```
-    #[must_use]
     pub fn union<'a>(&'a self, other: &'a RangeSetInt<T>) -> BitOrMerge<T, Ranges<T>, Ranges<T>> {
         self.ranges() | other.ranges()
     }
@@ -462,7 +461,6 @@ impl<T: Integer> RangeSetInt<T> {
     /// let complement: Vec<_> = a.complement().collect();
     /// assert_eq!(complement, [-32768..=-11, 1..=999, 2001..=32767]);
     /// ```
-    #[must_use]
     pub fn complement(&self) -> NotIter<T, Ranges<T>> {
         !self.ranges()
     }
@@ -487,7 +485,6 @@ impl<T: Integer> RangeSetInt<T> {
     /// let sym_diff: Vec<_> = a.symmetric_difference(&b).collect();
     /// assert_eq!(sym_diff, [1..=1, 3..=3]);
     /// ```
-    #[must_use]
     pub fn symmetric_difference<'a>(
         &'a self,
         other: &'a RangeSetInt<T>,
@@ -511,7 +508,6 @@ impl<T: Integer> RangeSetInt<T> {
     /// let intersection: Vec<_> = a.intersection(&b).collect();
     /// assert_eq!(intersection, [2..=2]);
     /// ```
-    #[must_use]
     pub fn intersection<'a>(
         &'a self,
         other: &'a RangeSetInt<T>,
@@ -594,10 +590,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(set.insert(2), false);
     /// assert_eq!(set.len(), 1usize);
     /// ```
-    pub fn insert(&mut self, item: T) -> bool {
-        // cmk0000 call this 'item' or 'value'?
+    pub fn insert(&mut self, value: T) -> bool {
         let len_before = self.len;
-        self.internal_add(item..=item);
+        self.internal_add(value..=value);
         self.len != len_before
     }
 
@@ -954,7 +949,6 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```    
-    #[must_use]
     pub fn ranges(&self) -> Ranges<'_, T> {
         let ranges = Ranges {
             iter: self.btree_map.iter(),
@@ -1147,7 +1141,6 @@ pub type BitEq<T, L, R> = BitOrMerge<
     NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
 >;
 
-#[must_use]
 pub fn union<T, I, J>(into_iter: I) -> BitOrKMerge<T, J::IntoIter>
 where
     I: IntoIterator<Item = J>,
@@ -1562,4 +1555,4 @@ impl<T: Integer> PartialOrd for RangeSetInt<T> {
 
 impl<T: Integer> Eq for RangeSetInt<T> {}
 
-// cmk00000 add must_use to every iter and other places ala https://doc.rust-lang.org/src/alloc/collections/btree/map.rs.html#1259-1261
+// cmk rule add must_use to every iter and other places ala https://doc.rust-lang.org/src/alloc/collections/btree/map.rs.html#1259-1261
