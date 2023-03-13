@@ -29,10 +29,8 @@
 // cmk rule: pick another similar data structure and implement everything that makes sense (copy docs as much as possible)
 // cmk000 match python documentation
 // cmk000 finish constructor list
-// cmk000 add documentation
-// cmk000 look at btreeset and match API - range,  -- look at there code via the docs
+// cmk0doc add documentation
 // cmk000 finish the benchmark story
-// cmk000 move integer trait into integer.rs.
 // cmk000 could the methods defined on Integer be done with existing traits?
 // cmk00 in docs, be sure `bitor` is a live link to the bitor method
 // cmk rule: define and understand PartialOrd, Ord, Eq, etc.
@@ -71,6 +69,7 @@ use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
 
 // cmk rule: Support Send and Sync (what about Clone (Copy?) and ExactSizeIterator?)
+// cmk rule: Test Send and Sync with a test (see example)
 
 // cmk rule: Define your element type
 pub trait Integer:
@@ -137,7 +136,7 @@ impl<T: Integer> fmt::Display for RangeSetInt<T> {
     }
 }
 
-/// cmk0000 see ranges()
+/// cmk0doc see ranges()
 /// Gets an iterator that visits the elements in the `RangeSetInt` in ascending
 /// order.
 ///
@@ -263,11 +262,7 @@ impl<T: Integer> RangeSetInt<T> {
     where
         for<'a> &'a T: Sub<&'a T, Output = T>,
     {
-        self.btree_map
-            .iter()
-            .fold(<T as Integer>::SafeLen::zero(), |acc, (start, stop)| {
-                acc + T::safe_inclusive_len(&(*start..=*stop))
-            })
+        RangeSetInt::btree_map_len(&self.btree_map)
     }
 
     /// Moves all elements from `other` into `self`, leaving `other` empty.
@@ -405,7 +400,7 @@ impl<T: Integer> RangeSetInt<T> {
             .map_or(false, |(_, stop)| value <= *stop)
     }
 
-    /// !!!cmk0000 add note to see - or sub
+    /// !!!cmk0doc add note to see - or sub
     /// Visits the range_inclusives representing the difference,
     /// i.e., the range_inclusives that are in `self` but not in `other`,
     /// in ascending order.
@@ -494,8 +489,7 @@ impl<T: Integer> RangeSetInt<T> {
         self.ranges() ^ other.ranges()
     }
 
-    // cmk0000 also do union and complement and ???
-    /// !!!cmk0000 add note to see & or ???
+    /// !!!cmk0doc add note to see & or ???
     /// Visits the elements representing the intersection,
     /// i.e., the elements that are both in `self` and `other`,
     /// in ascending order.
@@ -580,7 +574,7 @@ impl<T: Integer> RangeSetInt<T> {
     ///
     /// # Performance
     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
-    /// When n is large, consider using `cmk00000` which is O(n+m) time.
+    /// When n is large, consider using `cmk0doc` which is O(n+m) time.
     ///
     /// # Examples
     ///
@@ -610,7 +604,7 @@ impl<T: Integer> RangeSetInt<T> {
     ///
     /// # Performance
     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
-    /// When n is large, consider using `cmk00000` which is O(n+m) time.
+    /// When n is large, consider using `cmk0doc` which is O(n+m) time.
     ///
     /// # Examples
     ///
@@ -619,18 +613,16 @@ impl<T: Integer> RangeSetInt<T> {
     ///
     /// let mut set = RangeSetInt::new();
     ///
-    /// assert_eq!(set.insert_range_inclusive(2..=5), true);
-    /// assert_eq!(set.insert_range_inclusive(5..=6), true);
-    /// assert_eq!(set.insert_range_inclusive(3..=4), false);
+    /// assert_eq!(set.ranges_insert(2..=5), true);
+    /// assert_eq!(set.ranges_insert(5..=6), true);
+    /// assert_eq!(set.ranges_insert(3..=4), false);
     /// assert_eq!(set.len(), 5usize);
     /// ```
-    pub fn insert_range_inclusive(&mut self, range_inclusive: RangeInclusive<T>) -> bool {
+    pub fn ranges_insert(&mut self, range_inclusive: RangeInclusive<T>) -> bool {
         let len_before = self.len;
         self.internal_add(range_inclusive);
         self.len != len_before
     }
-
-    //cmk00000 insert of ranges
 
     /// If the set contains an element equal to the value, removes it from the
     /// set and drops it. Returns whether such an element was present.
@@ -729,7 +721,6 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    // cmk0000 inline? use in _slow_len?
     fn btree_map_len(btree_map: &BTreeMap<T, T>) -> T::SafeLen {
         btree_map
             .iter()
@@ -861,7 +852,6 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    // cmk00000 first_range, last_range????
     /// Removes the first element from the set and returns it, if any.
     /// The first element is always the minimum element in the set.
     ///
@@ -927,8 +917,7 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    /// cmk00000 see .iter()
-    /// cmk0000 if this is 'ranges' then it should be 'insert_ranges', 'len_ranges", etc.
+    /// cmk0doc see .iter()
     /// Gets an iterator that visits the range_inclusives in the `RangeSetInt` in ascending
     /// order.
     ///
@@ -938,10 +927,10 @@ impl<T: Integer> RangeSetInt<T> {
     /// use range_set_int::RangeSetInt;
     ///
     /// let set = RangeSetInt::from([10..=20, 15..=25, 30..=40]);
-    /// let mut set_ranges = set.ranges();
-    /// assert_eq!(set_ranges.next(), Some(10..=25));
-    /// assert_eq!(set_ranges.next(), Some(30..=40));
-    /// assert_eq!(set_ranges.next(), None);
+    /// let mut ranges = set.ranges();
+    /// assert_eq!(ranges.next(), Some(10..=25));
+    /// assert_eq!(ranges.next(), Some(30..=40));
+    /// assert_eq!(ranges.next(), None);
     /// ```
     ///
     /// Values returned by the iterator are returned in ascending order:
@@ -950,10 +939,10 @@ impl<T: Integer> RangeSetInt<T> {
     /// use range_set_int::RangeSetInt;
     ///
     /// let set = RangeSetInt::from([30..=40, 15..=25, 10..=20]);
-    /// let mut set_ranges = set.ranges();
-    /// assert_eq!(set_ranges.next(), Some(10..=25));
-    /// assert_eq!(set_ranges.next(), Some(30..=40));
-    /// assert_eq!(set_ranges.next(), None);
+    /// let mut ranges = set.ranges();
+    /// assert_eq!(ranges.next(), Some(10..=25));
+    /// assert_eq!(ranges.next(), Some(30..=40));
+    /// assert_eq!(ranges.next(), None);
     /// ```    
     pub fn ranges(&self) -> Ranges<'_, T> {
         let ranges = Ranges {
@@ -1637,7 +1626,7 @@ impl<T: Integer> Ord for RangeSetInt<T> {
 }
 
 impl<T: Integer> PartialOrd for RangeSetInt<T> {
-    #[inline] // cmk00000
+    #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }

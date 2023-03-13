@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 rand = "0.8.4"
 range-set-int = { path = ".." }
+num-integer = "0.1.44"
+num-traits = "0.2.14"

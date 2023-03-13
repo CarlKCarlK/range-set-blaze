@@ -1,5 +1,6 @@
 use std::ops::RangeInclusive;
 
+use num_traits::identities::One;
 use rand::rngs::StdRng;
 use rand::Rng;
 use range_set_int::Integer;
@@ -74,7 +75,7 @@ impl<'a, T: Integer> Iterator for MemorylessRange<'a, T> {
             if self.average_width < 1.0 {
                 if self.rng.gen::<f64>() < self.average_width {
                     //could precompute
-                    actual_width = T::safe_inclusive_len(&(T::zero()..=T::zero()));
+                    actual_width = <T::SafeLen>::one();
                 } else {
                     //could precompute
                     return Some(T::one()..=T::zero()); // empty range
@@ -190,12 +191,4 @@ pub fn k_sets<T: Integer>(
             ))
         })
         .collect()
-}
-
-pub fn fraction<T: Integer>(
-    range_int_set: &RangeSetInt<T>,
-    range_inclusive: &RangeInclusive<T>,
-) -> f64 {
-    T::safe_len_to_f64(range_int_set.len())
-        / T::safe_len_to_f64(T::safe_inclusive_len(range_inclusive))
 }

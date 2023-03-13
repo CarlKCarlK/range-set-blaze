@@ -7,15 +7,15 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 use range_set_int::sorted_disjoint_iter::SortedDisjointIter;
 use range_set_int::unsorted_disjoint::AssumeSortedStarts;
+use std::ops::RangeInclusive;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
-use tests_common::{
-    fraction, k_sets, width_to_range_inclusive, How, MemorylessIter, MemorylessRange,
-};
+use tests_common::{k_sets, width_to_range_inclusive, How, MemorylessIter, MemorylessRange};
 
 // !!!cmk should users use a prelude? If not, are these reasonable imports?
 use range_set_int::{
-    intersection_dyn, union_dyn, DynSortedDisjointExt, RangeSetInt, Ranges, SortedDisjointIterator,
+    intersection_dyn, union_dyn, DynSortedDisjointExt, Integer, RangeSetInt, Ranges,
+    SortedDisjointIterator,
 };
 use range_set_int::{multiway_intersection, union};
 
@@ -1000,7 +1000,6 @@ fn insert2() {
     }
 }
 
-// cmk0000 what about "range" and "replace"
 #[test]
 fn remove() {
     let mut set = RangeSetInt::from([1..=2, 4..=5, 10..=11]);
@@ -1086,4 +1085,19 @@ fn retrain() {
     // Keep only the even numbers.
     set.retain(|k| k % 2 == 0);
     assert_eq!(set, RangeSetInt::from([2, 4, 6]));
+}
+
+#[test]
+fn sync_and_send() {
+    fn assert_sync_and_send<S: Sync + Send>() {}
+    assert_sync_and_send::<RangeSetInt<i32>>();
+    assert_sync_and_send::<Ranges<i32>>();
+}
+
+fn fraction<T: Integer>(
+    range_int_set: &RangeSetInt<T>,
+    range_inclusive: &RangeInclusive<T>,
+) -> f64 {
+    T::safe_len_to_f64(range_int_set.len())
+        / T::safe_len_to_f64(T::safe_inclusive_len(range_inclusive))
 }

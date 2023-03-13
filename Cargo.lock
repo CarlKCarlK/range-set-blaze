@@ -578,6 +578,8 @@ dependencies = [
 name = "tests_common"
 version = "0.1.0"
 dependencies = [
+ "num-integer",
+ "num-traits",
  "rand",
  "range-set-int",
 ]
