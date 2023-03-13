@@ -986,7 +986,20 @@ fn eq() {
     }
 }
 
-// cmk000000000 working on this
+#[test]
+fn insert2() {
+    let set = RangeSetInt::from([1..=2, 4..=5, 10..=20, 30..=30]);
+    for insert in 0..=31 {
+        println!("inserting  {insert}");
+        let mut a = set.clone();
+        let mut a2: BTreeSet<_> = a.iter().collect();
+        let b2 = a2.insert(insert);
+        let b = a.insert(insert);
+        assert_eq!(a, RangeSetInt::from_iter(a2.iter().cloned()));
+        assert_eq!(b, b2);
+    }
+}
+
 // cmk0000 what about "range" and "replace"
 #[test]
 fn remove() {
@@ -1020,6 +1033,30 @@ fn remove() {
 }
 
 #[test]
+fn remove2() {
+    let set = RangeSetInt::from([1..=2, 4..=5, 10..=20, 30..=30]);
+    for remove in 0..=31 {
+        println!("removing  {remove}");
+        let mut a = set.clone();
+        let mut a2: BTreeSet<_> = a.iter().collect();
+        let b2 = a2.remove(&remove);
+        let b = a.remove(remove);
+        assert_eq!(a, RangeSetInt::from_iter(a2.iter().cloned()));
+        assert_eq!(b, b2);
+    }
+    let set = RangeSetInt::new();
+    for remove in 0..=0 {
+        println!("removing  {remove}");
+        let mut a = set.clone();
+        let mut a2: BTreeSet<_> = a.iter().collect();
+        let b2 = a2.remove(&remove);
+        let b = a.remove(remove);
+        assert_eq!(a, RangeSetInt::from_iter(a2.iter().cloned()));
+        assert_eq!(b, b2);
+    }
+}
+
+#[test]
 fn split_off() {
     let set = RangeSetInt::from([1..=2, 4..=5, 10..=20, 30..=30]);
     for split in 0..=31 {
@@ -1030,7 +1067,16 @@ fn split_off() {
         let b = a.split_off(split);
         assert_eq!(a, RangeSetInt::from_iter(a2.iter().cloned()));
         assert_eq!(b, RangeSetInt::from_iter(b2.iter().cloned()));
-        // cmk000 add test for all lengths
+    }
+    let set = RangeSetInt::new();
+    for split in 0..=0 {
+        println!("splitting at {split}");
+        let mut a = set.clone();
+        let mut a2: BTreeSet<_> = a.iter().collect();
+        let b2 = a2.split_off(&split);
+        let b = a.split_off(split);
+        assert_eq!(a, RangeSetInt::from_iter(a2.iter().cloned()));
+        assert_eq!(b, RangeSetInt::from_iter(b2.iter().cloned()));
     }
 }
 
