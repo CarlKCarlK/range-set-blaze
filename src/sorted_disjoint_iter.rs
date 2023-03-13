@@ -98,6 +98,7 @@ where
     }
 }
 
+// cmk00 be sure that every function that accepts a val isn't max_value u128, i128 and returns an error
 impl<T: Integer, I> Iterator for SortedDisjointIter<T, I>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,

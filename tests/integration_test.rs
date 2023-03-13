@@ -7,6 +7,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 use range_set_int::sorted_disjoint_iter::SortedDisjointIter;
 use range_set_int::unsorted_disjoint::AssumeSortedStarts;
+use std::error::Error;
 use std::ops::RangeInclusive;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
@@ -1100,4 +1101,35 @@ fn fraction<T: Integer>(
 ) -> f64 {
     T::safe_len_to_f64(range_int_set.len())
         / T::safe_len_to_f64(T::safe_inclusive_len(range_inclusive))
+}
+
+#[test]
+fn example_2() -> Result<(), Box<dyn Error>> {
+    let line = "chr15   29370   37380   29370,32358,36715   30817,32561,37380";
+    // split the line on white space
+    let mut iter = line.split_whitespace();
+    let chr = iter.next().unwrap();
+    let trans_start: i32 = iter.next().unwrap().parse()?;
+    let trans_end: i32 = iter.next().unwrap().parse()?;
+    // creates a RangeSetInt from 29370 (inclusive) to 37380 (inclusive)
+    let range_set_int = RangeSetInt::from([trans_start..=trans_end]);
+    assert_eq!(range_set_int, RangeSetInt::from([29370..=37380]));
+
+    let exon_starts = iter.next().unwrap().split(",").map(|s| s.parse::<i32>());
+    let exon_ends = iter.next().unwrap().split(",").map(|s| s.parse::<i32>());
+    let exon_ranges = exon_starts
+        .zip(exon_ends)
+        .map(|(s, e)| s.unwrap()..=e.unwrap());
+
+    let range_set_int = range_set_int - RangeSetInt::from_iter(exon_ranges);
+    assert_eq!(
+        range_set_int,
+        RangeSetInt::from([30818..=32357, 32562..=36714])
+    );
+
+    for range in range_set_int.ranges() {
+        let (start, end) = range.into_inner();
+        println!("{chr}\t{start}\t{end}");
+    }
+    Ok(())
 }

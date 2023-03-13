@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 // https://docs.rs/range_bounds_map/latest/range_bounds_map/range_bounds_set/struct.RangeBoundsSet.html
 // Here are some relevant crates I found whilst searching around the topic area:
 
@@ -190,6 +192,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// set.insert(2);
     /// assert_eq!(set.first(), Some(1));
     /// ```
+    #[must_use]
     pub fn first(&self) -> Option<T> {
         self.btree_map.iter().next().map(|(x, _)| *x)
     }
@@ -231,6 +234,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// set.insert(2);
     /// assert_eq!(set.last(), Some(2));
     /// ```
+    #[must_use]
     pub fn last(&self) -> Option<T> {
         self.btree_map.iter().next_back().map(|(_, x)| *x)
     }
@@ -391,6 +395,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(set.contains(4), false);
     /// ```
     pub fn contains(&self, value: T) -> bool {
+        assert!(value <= T::max_value2()); //cmk0 panic
         self.btree_map
             .range(..=value)
             .next_back()
@@ -413,6 +418,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// let diff: Vec<_> = a.difference(&b).collect();
     /// assert_eq!(diff, [1..=1]);
     /// ```
+    #[must_use]
     pub fn difference<'a>(
         &'a self,
         other: &'a RangeSetInt<T>,
@@ -438,6 +444,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// let union: Vec<_> = a.union(&b).collect();
     /// assert_eq!(union, [1..=2]);
     /// ```
+    #[must_use]
     pub fn union<'a>(&'a self, other: &'a RangeSetInt<T>) -> BitOrMerge<T, Ranges<T>, Ranges<T>> {
         self.ranges() | other.ranges()
     }
@@ -455,6 +462,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// let complement: Vec<_> = a.complement().collect();
     /// assert_eq!(complement, [-32768..=-11, 1..=999, 2001..=32767]);
     /// ```
+    #[must_use]
     pub fn complement(&self) -> NotIter<T, Ranges<T>> {
         !self.ranges()
     }
@@ -479,6 +487,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// let sym_diff: Vec<_> = a.symmetric_difference(&b).collect();
     /// assert_eq!(sym_diff, [1..=1, 3..=3]);
     /// ```
+    #[must_use]
     pub fn symmetric_difference<'a>(
         &'a self,
         other: &'a RangeSetInt<T>,
@@ -502,6 +511,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// let intersection: Vec<_> = a.intersection(&b).collect();
     /// assert_eq!(intersection, [2..=2]);
     /// ```
+    #[must_use]
     pub fn intersection<'a>(
         &'a self,
         other: &'a RangeSetInt<T>,
@@ -526,7 +536,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// b.insert(1);
     /// assert_eq!(a.is_disjoint(&b), false);
     /// ```
-    /// cmk rule cmk0000 which functions should be must_use? iterator, constructor, predicates, first, last,
+    /// cmk rule which functions should be must_use? iterator, constructor, predicates, first, last,
     #[must_use]
     pub fn is_disjoint(&self, other: &RangeSetInt<T>) -> bool {
         self.intersection(other).next().is_none()
@@ -585,6 +595,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(set.len(), 1usize);
     /// ```
     pub fn insert(&mut self, item: T) -> bool {
+        // cmk0000 call this 'item' or 'value'?
         let len_before = self.len;
         self.internal_add(item..=item);
         self.len != len_before
@@ -692,6 +703,8 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(b, RangeSetInt::from([3, 17, 41]));
     /// ```
     pub fn split_off(&mut self, value: T) -> Self {
+        assert!(value <= T::max_value2()); //cmk0 panic
+
         let old_len = self.len;
         let mut b = self.btree_map.split_off(&value);
         if let Some(mut last_entry) = self.btree_map.last_entry() {
@@ -772,11 +785,11 @@ impl<T: Integer> RangeSetInt<T> {
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     fn internal_add(&mut self, range_inclusive: RangeInclusive<T>) {
         let (start, end) = range_inclusive.clone().into_inner();
+        assert!(end <= T::max_value2()); //cmk0 panic
         if end < start {
             return;
         }
-        assert!(end <= T::max_value2()); //cmk0 panic
-                                         // !!! cmk would be nice to have a partition_point function that returns two iterators
+        // !!! cmk would be nice to have a partition_point function that returns two iterators
         let mut before = self.btree_map.range_mut(..=start).rev();
         if let Some((start_before, end_before)) = before.next() {
             // Must check this in two parts to avoid overflow
@@ -941,6 +954,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```    
+    #[must_use]
     pub fn ranges(&self) -> Ranges<'_, T> {
         let ranges = Ranges {
             iter: self.btree_map.iter(),
@@ -1133,8 +1147,7 @@ pub type BitEq<T, L, R> = BitOrMerge<
     NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
 >;
 
-// !!!mk000 remove support for TryFrom from strings
-
+#[must_use]
 pub fn union<T, I, J>(into_iter: I) -> BitOrKMerge<T, J::IntoIter>
 where
     I: IntoIterator<Item = J>,
@@ -1150,7 +1163,7 @@ where
 }
 
 // cmk000 is multiway_ the best name?
-// cmk rule: don't for get these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
+// cmk rule: don't forget these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
 pub fn multiway_intersection<T, I, J>(into_iter: I) -> BitAndKMerge<T, J::IntoIter>
 where
     // cmk rule prefer IntoIterator over Iterator (here is example)
