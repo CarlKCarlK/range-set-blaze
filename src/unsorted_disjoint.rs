@@ -171,6 +171,13 @@ impl<T: Integer, I> SortedStarts for SortedDisjointWithLenSoFar<T, I> where
 
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+
+/// A wrapper around an iterator of ranges that
+/// assumes that the ranges are sorted by start, but not necessarily by end.
+///
+/// It implements the [`SortedStarts`] trait which is required on inputs to
+/// `SortedDisjointIter` iterator.
+// cmk0000 bad link
 pub struct AssumeSortedStarts<T, I>
 where
     T: Integer,

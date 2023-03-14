@@ -140,7 +140,7 @@ impl<T: Integer> fmt::Display for RangeSetInt<T> {
 }
 
 /// cmk0doc see ranges()
-/// Gets an iterator that visits the elements in the [`RangeSetInt`] in ascending
+/// Gets an iterator that visits the elements in the `RangeSetInt` in ascending
 /// order.
 ///
 /// # Examples
@@ -178,7 +178,6 @@ impl<T: Integer> RangeSetInt<T> {
             iter: self.ranges(),
         }
     }
-
     /// Returns the first element in the set, if any.
     /// This element is always the minimum of all elements in the set.
     ///
@@ -1292,7 +1291,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
 
-    /// Gets an iterator for moving out the [`RangeSetInt`]'s contents.
+    /// Gets an iterator for moving out the `RangeSetInt`'s contents.
     ///
     /// # Examples
     ///
@@ -1312,9 +1311,9 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     }
 }
 
-/// An iterator over the entries of a [`RangeSetInt`].
+/// An iterator over the integer elements of a [`RangeSetInt`].
 ///
-/// This `struct` is created by the [`iter`] method on [[`RangeSetInt`]]. See its
+/// This `struct` is created by the [`iter`] method on [`RangeSetInt`]. See its
 /// documentation for more.
 ///
 /// [`iter`]: RangeSetInt::iter
@@ -1365,8 +1364,14 @@ where
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+/// An iterator over the integer elements of a [`RangeSetInt`].
+///
+/// This `struct` is created by the [`iter`] method on [`RangeSetInt`]. See its
+/// documentation for more.
+///
+/// [`iter`]: RangeSetInt::iter
 pub struct IntoIter<T: Integer> {
-    option_range_inclusive: Option<RangeInclusive<T>>,
+    option_range_inclusive: Option<RangeInclusive<T>>, // cmk000 replace option_range_inclusive: with option_range or range
     into_iter: std::collections::btree_map::IntoIter<T, T>,
 }
 
@@ -1461,6 +1466,14 @@ pub trait SortedDisjoint: SortedStarts {}
 // cmk sort-iter uses peekable. Is that better?
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+/// A wrapper around [`SortedDisjoint`] iterators to created new iterators
+/// of consistent type.
+///
+/// It is useful when you need three or more different types of iterators to have
+/// the same type, for example when you want to use them in with [`multiway_union`].
+/// Also see [`DynSortedDisjointExt::dyn_sorted_disjoint`].
+// !!!cmk00000 can this fail to check for sorted disjoint?
+// !!!cmk00000 could multiway_union be less global the says way that dyn_sorted_disjoint is?
 pub struct DynSortedDisjoint<'a, T> {
     iter: Box<dyn Iterator<Item = T> + 'a>,
 }
@@ -1509,7 +1522,7 @@ impl<'a, I: Iterator + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
 // !!!cmk00000 Need to better says what kind of iterators are allowed.
 // !!!cmk00000 the 'use' here is terrible
 // !!!cmk00000 make SortedDisjoint' be a link
-/// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
+/// Intersects the given `SortedDisjoint` iterators, creating a new `SortedDisjoint` iterator.
 /// The input iterators need not to be of the same type.
 /// Any number of input iterators can be given.
 ///
@@ -1518,7 +1531,7 @@ impl<'a, I: Iterator + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
 ///
 /// # Example: 3-Input Parity
 ///
-/// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
+/// Find the integers that appear an odd number of times in the `SortedDisjoint` iterators.
 ///
 /// ```
 /// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
@@ -1543,7 +1556,7 @@ macro_rules! intersection_dyn {
     ($($val:expr),*) => {$crate::multiway_intersection([$($crate::DynSortedDisjoint::new($val)),*])}
 }
 
-/// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
+/// Unions the given `SortedDisjoint` iterators, creating a new [`SortedDisjoint`] iterator.
 /// The input iterators need not to be of the same type.
 /// Any number of input iterators can be given.
 ///
@@ -1575,7 +1588,7 @@ macro_rules! intersection_dyn {
 #[macro_export]
 macro_rules! union_dyn {
     ($($val:expr),*) => {
-                        $crate::union([$($crate::DynSortedDisjoint::new($val)),*])
+                        $crate::multiway_union([$($crate::DynSortedDisjoint::new($val)),*])
                         }
 }
 
