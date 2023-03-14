@@ -544,8 +544,8 @@ impl<T: Integer> RangeSetInt<T> {
         self.intersection(other).next().is_none()
     }
 
-    fn delete_extra(&mut self, internal_inclusive: &RangeInclusive<T>) {
-        let (start, end) = internal_inclusive.clone().into_inner();
+    fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
+        let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
         let (start_after, end_after) = after.next().unwrap(); // there will always be a next
         debug_assert!(start == *start_after && end == *end_after); // real assert
@@ -809,12 +809,12 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    fn internal_add2(&mut self, internal_inclusive: &RangeInclusive<T>) {
-        let (start, end) = internal_inclusive.clone().into_inner();
+    fn internal_add2(&mut self, internal_range: &RangeInclusive<T>) {
+        let (start, end) = internal_range.clone().into_inner();
         let was_there = self.btree_map.insert(start, end);
         debug_assert!(was_there.is_none()); // real assert
-        self.delete_extra(internal_inclusive);
-        self.len += T::safe_len(internal_inclusive);
+        self.delete_extra(internal_range);
+        self.len += T::safe_len(internal_range);
     }
 
     /// Returns the number of elements in the set.
