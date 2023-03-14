@@ -11,9 +11,9 @@ error[E0277]: the trait bound `std::array::IntoIter<RangeInclusive<{integer}>, 2
  --> tests/ui/union_intersection.rs:4:14
   |
 4 |     let _u = union([[1..=3, 2..=4].into_iter()]);
-  |              ^^^^^ the trait `SortedDisjoint` is not implemented for `std::array::IntoIter<RangeInclusive<{integer}>, 2>`
+  |              ^^^^^ the trait [`SortedDisjoint`] is not implemented for `std::array::IntoIter<RangeInclusive<{integer}>, 2>`
   |
-  = help: the following other types implement trait `SortedDisjoint`:
+  = help: the following other types implement trait [`SortedDisjoint`]:
             DynSortedDisjoint<'a, T>
             NotIter<T, I>
             Ranges<'_, T>

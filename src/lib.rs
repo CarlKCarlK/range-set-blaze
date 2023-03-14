@@ -140,7 +140,7 @@ impl<T: Integer> fmt::Display for RangeSetInt<T> {
 }
 
 /// cmk0doc see ranges()
-/// Gets an iterator that visits the elements in the `RangeSetInt` in ascending
+/// Gets an iterator that visits the elements in the [`RangeSetInt`] in ascending
 /// order.
 ///
 /// # Examples
@@ -927,7 +927,7 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     /// cmk0doc see .iter()
-    /// Gets an iterator that visits the range_inclusives in the `RangeSetInt` in ascending
+    /// Gets an iterator that visits the range_inclusives in the [`RangeSetInt`] in ascending
     /// order.
     ///
     /// # Examples
@@ -1246,7 +1246,7 @@ where
 gen_ops_ex!(
     <T>;
     types ref RangeSetInt<T>, ref RangeSetInt<T> => RangeSetInt<T>;
-    // Returns the union of `self` and `rhs` as a new `RangeSetInt`.
+    // Returns the union of `self` and `rhs` as a new [`RangeSetInt`].
     //
     // # Examples
     //
@@ -1292,7 +1292,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
 
-    /// Gets an iterator for moving out the `RangeSetInt`'s contents.
+    /// Gets an iterator for moving out the [`RangeSetInt`]'s contents.
     ///
     /// # Examples
     ///
@@ -1312,9 +1312,9 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     }
 }
 
-/// An iterator over the entries of a `RangeSetInt`.
+/// An iterator over the entries of a [`RangeSetInt`].
 ///
-/// This `struct` is created by the [`iter`] method on [`RangeSetInt`]. See its
+/// This `struct` is created by the [`iter`] method on [[`RangeSetInt`]]. See its
 /// documentation for more.
 ///
 /// [`iter`]: RangeSetInt::iter
@@ -1509,7 +1509,7 @@ impl<'a, I: Iterator + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
 // !!!cmk00000 Need to better says what kind of iterators are allowed.
 // !!!cmk00000 the 'use' here is terrible
 // !!!cmk00000 make SortedDisjoint' be a link
-/// Intersects the given `SortedDisjoint` iterators, creating a new `SortedDisjoint` iterator.
+/// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
 /// The input iterators need not to be of the same type.
 /// Any number of input iterators can be given.
 ///
@@ -1518,7 +1518,7 @@ impl<'a, I: Iterator + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
 ///
 /// # Example: 3-Input Parity
 ///
-/// Find the integers that appear an odd number of times in the `SortedDisjoint` iterators.
+/// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
 ///
 /// ```
 /// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
@@ -1543,7 +1543,7 @@ macro_rules! intersection_dyn {
     ($($val:expr),*) => {$crate::multiway_intersection([$($crate::DynSortedDisjoint::new($val)),*])}
 }
 
-/// Unions the given `SortedDisjoint` iterators, creating a new `SortedDisjoint` iterator.
+/// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
 /// The input iterators need not to be of the same type.
 /// Any number of input iterators can be given.
 ///
@@ -1552,7 +1552,7 @@ macro_rules! intersection_dyn {
 ///
 /// # Example: 3-Input Parity
 ///
-/// Find the integers that appear an odd number of times in the `SortedDisjoint` iterators.
+/// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
 ///
 /// ```
 /// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};

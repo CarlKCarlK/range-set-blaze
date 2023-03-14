@@ -180,7 +180,7 @@ fn iters() -> Result<(), Box<dyn std::error::Error>> {
 fn missing_doctest_ops() {
     // note that may be borrowed or owned in any combination.
 
-    // Returns the union of `self` and `rhs` as a new `RangeSetInt`.
+    // Returns the union of `self` and `rhs` as a new [`RangeSetInt`].
     let a = RangeSetInt::from([1, 2, 3]);
     let b = RangeSetInt::from([3, 4, 5]);
 
@@ -189,7 +189,7 @@ fn missing_doctest_ops() {
     let result = a | &b;
     assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
 
-    // Returns the complement of `self` as a new `RangeSetInt`.
+    // Returns the complement of `self` as a new [`RangeSetInt`].
     let a = RangeSetInt::<i8>::from([1, 2, 3]);
 
     let result = !&a;

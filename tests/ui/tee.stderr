@@ -1,4 +1,4 @@
-warning: unused import: `RangeSetInt`
+warning: unused import: [`RangeSetInt`]
  --> tests/ui/tee.rs:2:21
   |
 2 | use range_set_int::{RangeSetInt, SortedDisjointIterator};

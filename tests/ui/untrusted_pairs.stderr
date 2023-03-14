@@ -17,9 +17,9 @@ error[E0277]: the trait bound `std::slice::Iter<'_, ({integer}, {integer})>: Sor
 8 |     let range_set_int: RangeSetInt<_> = untrusted.iter().into();
   |                                         ^^^^^^^^^^^^^^^^ ---- required by a bound introduced by this call
   |                                         |
-  |                                         the trait `SortedDisjoint` is not implemented for `std::slice::Iter<'_, ({integer}, {integer})>`
+  |                                         the trait [`SortedDisjoint`] is not implemented for `std::slice::Iter<'_, ({integer}, {integer})>`
   |
-  = help: the following other types implement trait `SortedDisjoint`:
+  = help: the following other types implement trait [`SortedDisjoint`]:
             DynSortedDisjoint<'a, T>
             NotIter<T, I>
             Ranges<'_, T>
