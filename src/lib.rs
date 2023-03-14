@@ -1,5 +1,8 @@
 #![doc = include_str!("../README.md")]
 
+// !!!cmk0doc give a link to RangSetInt struct at top of the docs.
+// !!!cmk000 understand the two multiway_union/intersection functions
+
 // https://docs.rs/range_bounds_map/latest/range_bounds_map/range_bounds_set/struct.RangeBoundsSet.html
 // Here are some relevant crates I found whilst searching around the topic area:
 
@@ -246,7 +249,7 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        union(input.into_iter().map(|x| x.ranges())).into()
+        multiway_union(input.into_iter().map(|x| x.ranges())).into()
     }
 
     pub fn multiway_intersection<I>(input: I) -> Self
@@ -403,6 +406,7 @@ impl<T: Integer> RangeSetInt<T> {
             .map_or(false, |(_, end)| value <= *end)
     }
 
+    /// cmk0000 replace 'range_inclusive' in docs with 'range'
     /// !!!cmk0doc add note to see - or sub
     /// Visits the range_inclusives representing the difference,
     /// i.e., the range_inclusives that are in `self` but not in `other`,
@@ -1141,7 +1145,7 @@ pub type BitEq<T, L, R> = BitOrMerge<
     NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
 >;
 
-pub fn union<T, I, J>(into_iter: I) -> BitOrKMerge<T, J::IntoIter>
+pub fn multiway_union<T, I, J>(into_iter: I) -> BitOrKMerge<T, J::IntoIter>
 where
     I: IntoIterator<Item = J>,
     J: IntoIterator<Item = RangeInclusive<T>>,
@@ -1165,7 +1169,7 @@ where
     J::IntoIter: SortedDisjoint,
     T: Integer,
 {
-    union(into_iter.into_iter().map(|seq| seq.into_iter().not())).not()
+    multiway_union(into_iter.into_iter().map(|seq| seq.into_iter().not())).not()
 }
 
 // define mathematical set methods, e.g. left_iter.left(right_iter) returns the left_iter.
@@ -1461,6 +1465,17 @@ pub struct DynSortedDisjoint<'a, T> {
     iter: Box<dyn Iterator<Item = T> + 'a>,
 }
 
+impl<'a, T> DynSortedDisjoint<'a, T> {
+    pub fn new<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = T> + 'a,
+    {
+        Self {
+            iter: Box::new(iter),
+        }
+    }
+}
+
 // All DynSortedDisjoint's are SortedDisjoint's
 impl<'a, T> SortedStarts for DynSortedDisjoint<'a, T> {}
 impl<'a, T> SortedDisjoint for DynSortedDisjoint<'a, T> {}
@@ -1491,14 +1506,77 @@ pub trait DynSortedDisjointExt<'a>: Iterator + SortedDisjoint + Sized + 'a {
 // !!!cmk understand this
 impl<'a, I: Iterator + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
 
+// !!!cmk00000 Need to better says what kind of iterators are allowed.
+// !!!cmk00000 the 'use' here is terrible
+// !!!cmk00000 make SortedDisjoint' be a link
+/// Intersects the given `SortedDisjoint` iterators, creating a new `SortedDisjoint` iterator.
+/// The input iterators need not to be of the same type.
+/// Any number of input iterators can be given.
+///
+/// # Performance
+///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
+///
+/// # Example: 3-Input Parity
+///
+/// Find the integers that appear an odd number of times in the `SortedDisjoint` iterators.
+///
+/// ```
+/// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
+///
+/// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+/// let b = RangeSetInt::from([5..=13, 18..=29]);
+/// let c = RangeSetInt::from([38..=42]);
+///
+/// let parity = union_dyn!(
+///     intersection_dyn!(a.ranges(), !b.ranges(), !c.ranges()),
+///     intersection_dyn!(!a.ranges(), b.ranges(), !c.ranges()),
+///     intersection_dyn!(!a.ranges(), !b.ranges(), c.ranges()),
+///     intersection_dyn!(a.ranges(), b.ranges(), c.ranges())
+/// );
+/// assert_eq!(
+///     parity.to_string(),
+///     "1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42"
+/// );
+/// ```
 #[macro_export]
 macro_rules! intersection_dyn {
-    ($($val:expr),*) => {multiway_intersection([$($val.dyn_sorted_disjoint()),*])}
+    ($($val:expr),*) => {$crate::multiway_intersection([$($crate::DynSortedDisjoint::new($val)),*])}
 }
 
+/// Unions the given `SortedDisjoint` iterators, creating a new `SortedDisjoint` iterator.
+/// The input iterators need not to be of the same type.
+/// Any number of input iterators can be given.
+///
+/// # Performance
+///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
+///
+/// # Example: 3-Input Parity
+///
+/// Find the integers that appear an odd number of times in the `SortedDisjoint` iterators.
+///
+/// ```
+/// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
+///
+/// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+/// let b = RangeSetInt::from([5..=13, 18..=29]);
+/// let c = RangeSetInt::from([38..=42]);
+///
+/// let parity = union_dyn!(
+///     intersection_dyn!(a.ranges(), !b.ranges(), !c.ranges()),
+///     intersection_dyn!(!a.ranges(), b.ranges(), !c.ranges()),
+///     intersection_dyn!(!a.ranges(), !b.ranges(), c.ranges()),
+///     intersection_dyn!(a.ranges(), b.ranges(), c.ranges())
+/// );
+/// assert_eq!(
+///     parity.to_string(),
+///     "1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42"
+/// );
+/// ```
 #[macro_export]
 macro_rules! union_dyn {
-    ($($val:expr),*) => {union([$($val.dyn_sorted_disjoint()),*])}
+    ($($val:expr),*) => {
+                        $crate::union([$($crate::DynSortedDisjoint::new($val)),*])
+                        }
 }
 
 impl<T: Integer> Ord for RangeSetInt<T> {

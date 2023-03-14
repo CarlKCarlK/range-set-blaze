@@ -800,7 +800,7 @@ fn custom_multi() {
     let d: RangeSetInt<_> = a_less.into();
     println!("{d}");
 
-    let d: RangeSetInt<_> = (a.ranges() - union([b.ranges(), c.ranges()])).into();
+    let d: RangeSetInt<_> = (a.ranges() - multiway_union([b.ranges(), c.ranges()])).into();
     println!("{d}");
 }
 
@@ -836,9 +836,9 @@ fn parity() {
         RangeSetInt::from([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
     let _d = multiway_intersection([a.ranges()]);
-    let _parity: RangeSetInt<u8> = union([multiway_intersection([a.ranges()])]).into();
+    let _parity: RangeSetInt<u8> = multiway_union([multiway_intersection([a.ranges()])]).into();
     let _parity: RangeSetInt<u8> = multiway_intersection([a.ranges()]).into();
-    let _parity: RangeSetInt<u8> = union([a.ranges()]).into();
+    let _parity: RangeSetInt<u8> = multiway_union([a.ranges()]).into();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
@@ -856,7 +856,7 @@ fn parity() {
         RangeSetInt::from([1..=15, 18..=29, 38..=42])
     );
 
-    let u = union([
+    let u = multiway_union([
         intersection_dyn!(a.ranges(), !b.ranges(), !c.ranges()),
         intersection_dyn!(!a.ranges(), b.ranges(), !c.ranges()),
         intersection_dyn!(!a.ranges(), !b.ranges(), c.ranges()),
@@ -923,11 +923,11 @@ fn empty() {
     let b = RangeSetInt::from([0i32; 0]);
 
     let c0 = a.ranges() | b.ranges();
-    let c1 = union([a.ranges(), b.ranges()]);
+    let c1 = multiway_union([a.ranges(), b.ranges()]);
     let c_list2: [Ranges<i32>; 0] = [];
-    let c2 = union(c_list2.clone());
+    let c2 = multiway_union(c_list2.clone());
     let c3 = union_dyn!(a.ranges(), b.ranges());
-    let c4 = union(c_list2.map(|x| x.dyn_sorted_disjoint()));
+    let c4 = multiway_union(c_list2.map(|x| x.dyn_sorted_disjoint()));
 
     let answer = RangeSetInt::from(arr);
     assert!(c0.equal(answer.ranges()));

@@ -19,7 +19,9 @@ use rand::{
     distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, SeedableRng,
 };
 // use pprof::criterion::Output; //PProfProfiler
-use range_set_int::{multiway_intersection, union, DynSortedDisjointExt, Integer, RangeSetInt};
+use range_set_int::{
+    multiway_intersection, multiway_union, DynSortedDisjointExt, Integer, RangeSetInt,
+};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range_inclusive, How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
@@ -794,7 +796,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                         let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
                         let _answer: RangeSetInt<_> = match how {
                             How::Intersection => multiway_intersection(sets).into(),
-                            How::Union => union(sets).into(),
+                            How::Union => multiway_union(sets).into(),
                             How::None => panic!("should not happen"),
                         };
                     },
