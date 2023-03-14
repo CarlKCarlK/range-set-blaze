@@ -39,6 +39,8 @@
 // cmk0doc in docs, be sure `bitor` is a live link to the bitor method
 // cmk rule: define and understand PartialOrd, Ord, Eq, etc.
 // cmk0doc document that we implement most methods of BTreeSet -- exceptions 'range', drain_filter & new_in (nightly-only). Also, it's iter is a double-ended iterator. and ours is not.
+// cmk implement "ranges" by using log n search and then SortedDisjoint intersection.
+// cmk000 is 'ranges' a good name for the function or confusing with btreeset's 'range'?
 
 mod integer;
 mod not_iter;
@@ -108,7 +110,7 @@ pub trait Integer:
         + Default
         + fmt::Debug
         + fmt::Display;
-    fn safe_inclusive_len(range_inclusive: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen;
+    fn safe_len(range: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen;
 
     fn max_value2() -> Self {
         Self::max_value()
@@ -139,47 +141,48 @@ impl<T: Integer> fmt::Display for RangeSetInt<T> {
     }
 }
 
-/// cmk0doc see ranges()
-/// Gets an iterator that visits the elements in the `RangeSetInt` in ascending
-/// order.
-///
-/// # Examples
-///
-/// ```
-/// use range_set_int::RangeSetInt;
-///
-/// let set = RangeSetInt::from([1..=3]);
-/// let mut set_iter = set.iter();
-/// assert_eq!(set_iter.next(), Some(1));
-/// assert_eq!(set_iter.next(), Some(2));
-/// assert_eq!(set_iter.next(), Some(3));
-/// assert_eq!(set_iter.next(), None);
-/// ```
-///
-/// Values returned by the iterator are returned in ascending order:
-///
-/// ```
-/// use range_set_int::RangeSetInt;
-///
-/// let set = RangeSetInt::from([3, 1, 2]);
-/// let mut set_iter = set.iter();
-/// assert_eq!(set_iter.next(), Some(1));
-/// assert_eq!(set_iter.next(), Some(2));
-/// assert_eq!(set_iter.next(), Some(3));
-/// assert_eq!(set_iter.next(), None);
-/// ```
 impl<T: Integer> RangeSetInt<T> {
-    // If the user asks for an iter, we give them a borrow to a Ranges iterator
-    // and we iterate that one integer at a time.
+    /// Gets an iterator that visits the integer elements in the `RangeSetInt` in ascending
+    /// order.
+    ///
+    /// Also see the [`RangeSetInt::ranges`] method.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let set = RangeSetInt::from([1..=3]);
+    /// let mut set_iter = set.iter();
+    /// assert_eq!(set_iter.next(), Some(1));
+    /// assert_eq!(set_iter.next(), Some(2));
+    /// assert_eq!(set_iter.next(), Some(3));
+    /// assert_eq!(set_iter.next(), None);
+    /// ```
+    ///
+    /// Values returned by the iterator are returned in ascending order:
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let set = RangeSetInt::from([3, 1, 2]);
+    /// let mut set_iter = set.iter();
+    /// assert_eq!(set_iter.next(), Some(1));
+    /// assert_eq!(set_iter.next(), Some(2));
+    /// assert_eq!(set_iter.next(), Some(3));
+    /// assert_eq!(set_iter.next(), None);
+    /// ```
     pub fn iter(&self) -> Iter<T, impl Iterator<Item = RangeInclusive<T>> + SortedDisjoint + '_> {
+        // If the user asks for an iter, we give them a borrow to a Ranges iterator
+        // and we iterate that one integer at a time.
         Iter {
             current: T::zero(),
-            option_range_inclusive: None,
+            option_range: None,
             iter: self.ranges(),
         }
     }
     /// Returns the first element in the set, if any.
-    /// This element is always the minimum of all elements in the set.
+    /// This element is always the minimum of all integer elements in the set.
     ///
     /// # Examples
     ///
@@ -296,13 +299,13 @@ impl<T: Integer> RangeSetInt<T> {
     ///
     /// ```
     pub fn append(&mut self, other: &mut Self) {
-        for range_inclusive in other.ranges() {
-            self.internal_add(range_inclusive);
+        for range in other.ranges() {
+            self.internal_add(range);
         }
         other.clear();
     }
 
-    /// Clears the set, removing all elements.
+    /// Clears the set, removing all integer elements.
     ///
     /// # Examples
     ///
@@ -405,10 +408,10 @@ impl<T: Integer> RangeSetInt<T> {
             .map_or(false, |(_, end)| value <= *end)
     }
 
-    /// cmk0000 replace 'range_inclusive' in docs with 'range'
+    /// cmk0000 replace 'range' in docs with 'range'
     /// !!!cmk0doc add note to see - or sub
-    /// Visits the range_inclusives representing the difference,
-    /// i.e., the range_inclusives that are in `self` but not in `other`,
+    /// Visits the ranges representing the difference,
+    /// i.e., the ranges that are in `self` but not in `other`,
     /// in ascending order.
     ///
     /// # Examples
@@ -429,8 +432,8 @@ impl<T: Integer> RangeSetInt<T> {
         self.ranges() - other.ranges()
     }
 
-    /// Visits the range_inclusives representing the union,
-    /// i.e., all the range_inclusives in `self` or `other`, without duplicates,
+    /// Visits the ranges representing the union,
+    /// i.e., all the ranges in `self` or `other`, without duplicates,
     /// in ascending order.
     ///
     /// # Examples
@@ -450,8 +453,8 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn union<'a>(&'a self, other: &'a RangeSetInt<T>) -> BitOrMerge<T, Ranges<T>, Ranges<T>> {
         self.ranges() | other.ranges()
     }
-    /// Visits the range_inclusives representing the complement,
-    /// i.e., all the range_inclusives not in `self`, without duplicates,
+    /// Visits the ranges representing the complement,
+    /// i.e., all the ranges not in `self`, without duplicates,
     /// in ascending order.
     ///
     /// # Examples
@@ -468,8 +471,8 @@ impl<T: Integer> RangeSetInt<T> {
         !self.ranges()
     }
 
-    /// Visits the range_inclusives representing the symmetric difference,
-    /// i.e., the range_inclusives that are in `self` or in `other` but not in both,
+    /// Visits the ranges representing the symmetric difference,
+    /// i.e., the ranges that are in `self` or in `other` but not in both,
     /// in ascending order.
     ///
     /// # Examples
@@ -496,8 +499,8 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     /// !!!cmk0doc add note to see & or ???
-    /// Visits the elements representing the intersection,
-    /// i.e., the elements that are both in `self` and `other`,
+    /// Visits the integer elements representing the intersection,
+    /// i.e., the integers that are both in `self` and `other`,
     /// in ascending order.
     ///
     /// # Examples
@@ -553,7 +556,7 @@ impl<T: Integer> RangeSetInt<T> {
                 // must check this in two parts to avoid overflow
                 if *start_delete <= end || *start_delete <= end + T::one() {
                     end_new = max(end_new, *end_delete);
-                    self.len -= T::safe_inclusive_len(&(*start_delete..=*end_delete));
+                    self.len -= T::safe_len(&(*start_delete..=*end_delete));
                     Some(*start_delete)
                 } else {
                     None
@@ -561,7 +564,7 @@ impl<T: Integer> RangeSetInt<T> {
             })
             .collect::<Vec<_>>();
         if end_new > end {
-            self.len += T::safe_inclusive_len(&(end..=end_new - T::one()));
+            self.len += T::safe_len(&(end..=end_new - T::one()));
             *end_after = end_new;
         }
         for start in delete_list {
@@ -599,13 +602,13 @@ impl<T: Integer> RangeSetInt<T> {
         self.len != len_before
     }
 
-    /// Adds a range_inclusive to the set.
+    /// Adds a range to the set.
     ///
     /// Returns whether any values where newly inserted. That is:
     ///
-    /// - If the set did not previously contain some value in the range_inclusive, `true` is
+    /// - If the set did not previously contain some value in the range, `true` is
     ///   returned.
-    /// - If the set already contained every value in the range_inclusive, `false` is returned, and
+    /// - If the set already contained every value in the range, `false` is returned, and
     ///   the entry is not updated.
     ///
     /// # Performance
@@ -624,9 +627,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(set.ranges_insert(3..=4), false);
     /// assert_eq!(set.len(), 5usize);
     /// ```
-    pub fn ranges_insert(&mut self, range_inclusive: RangeInclusive<T>) -> bool {
+    pub fn ranges_insert(&mut self, range: RangeInclusive<T>) -> bool {
         let len_before = self.len;
-        self.internal_add(range_inclusive);
+        self.internal_add(range);
         self.len != len_before
     }
 
@@ -733,7 +736,7 @@ impl<T: Integer> RangeSetInt<T> {
         btree_map
             .iter()
             .fold(<T as Integer>::SafeLen::zero(), |acc, (start, end)| {
-                acc + T::safe_inclusive_len(&(*start..=*end))
+                acc + T::safe_len(&(*start..=*end))
             })
     }
 
@@ -781,8 +784,8 @@ impl<T: Integer> RangeSetInt<T> {
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-    fn internal_add(&mut self, range_inclusive: RangeInclusive<T>) {
-        let (start, end) = range_inclusive.clone().into_inner();
+    fn internal_add(&mut self, range: RangeInclusive<T>) {
+        let (start, end) = range.clone().into_inner();
         assert!(end <= T::max_value2()); //cmk0 panic
         if end < start {
             return;
@@ -792,9 +795,9 @@ impl<T: Integer> RangeSetInt<T> {
         if let Some((start_before, end_before)) = before.next() {
             // Must check this in two parts to avoid overflow
             if *end_before < start && *end_before + T::one() < start {
-                self.internal_add2(&range_inclusive);
+                self.internal_add2(&range);
             } else if *end_before < end {
-                self.len += T::safe_inclusive_len(&(*end_before..=end - T::one()));
+                self.len += T::safe_len(&(*end_before..=end - T::one()));
                 *end_before = end;
                 let start_before = *start_before;
                 self.delete_extra(&(start_before..=end));
@@ -802,7 +805,7 @@ impl<T: Integer> RangeSetInt<T> {
                 // completely contained, so do nothing
             }
         } else {
-            self.internal_add2(&range_inclusive);
+            self.internal_add2(&range);
         }
     }
 
@@ -811,7 +814,7 @@ impl<T: Integer> RangeSetInt<T> {
         let was_there = self.btree_map.insert(start, end);
         debug_assert!(was_there.is_none()); // real assert
         self.delete_extra(internal_inclusive);
-        self.len += T::safe_inclusive_len(internal_inclusive);
+        self.len += T::safe_len(internal_inclusive);
     }
 
     /// Returns the number of elements in the set.
@@ -879,11 +882,11 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn pop_first(&mut self) -> Option<T> {
         if let Some(entry) = self.btree_map.first_entry() {
             let (start, end) = entry.remove_entry();
-            self.len -= T::safe_inclusive_len(&(start..=end));
+            self.len -= T::safe_len(&(start..=end));
             if start != end {
                 let start = start + T::one();
                 self.btree_map.insert(start, end);
-                self.len += T::safe_inclusive_len(&(start..=end));
+                self.len += T::safe_len(&(start..=end));
             }
             Some(start)
         } else {
@@ -912,12 +915,12 @@ impl<T: Integer> RangeSetInt<T> {
             let start = *entry.key();
             let end = entry.get_mut();
             let result = *end;
-            self.len -= T::safe_inclusive_len(&(start..=*end));
+            self.len -= T::safe_len(&(start..=*end));
             if start == *end {
                 entry.remove_entry();
             } else {
                 *end -= T::one();
-                self.len += T::safe_inclusive_len(&(start..=*end));
+                self.len += T::safe_len(&(start..=*end));
             }
             Some(result)
         } else {
@@ -926,8 +929,10 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     /// cmk0doc see .iter()
-    /// Gets an iterator that visits the range_inclusives in the [`RangeSetInt`] in ascending
+    /// Gets an iterator that visits the ranges in the [`RangeSetInt`] in ascending
     /// order.
+    ///
+    /// Also see [`RangeSetInt::iter`].
     ///
     /// # Examples
     ///
@@ -967,8 +972,8 @@ impl<T: Integer> RangeSetInt<T> {
 
     /// Retains only the elements specified by the predicate.
     ///
-    /// In other words, remove all elements `e` for which `f(&e)` returns `false`.
-    /// The elements are visited in ascending order.
+    /// In other words, remove all integers `e` for which `f(&e)` returns `false`.
+    /// The integer elements are visited in ascending order.
     ///
     /// # Examples
     ///
@@ -1226,8 +1231,8 @@ pub trait SortedDisjointIterator<T: Integer>:
 
     // cmk rule: You can't define traits on combinations of traits, so use this method to define methods on traits
     fn to_string(self) -> String {
-        self.map(|range_inclusive| {
-            let (start, end) = range_inclusive.into_inner();
+        self.map(|range| {
+            let (start, end) = range.into_inner();
             format!("{start}..={end}") // cmk could we format RangeInclusive directly?
         })
         .join(", ")
@@ -1305,7 +1310,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     /// ```
     fn into_iter(self) -> IntoIter<T> {
         IntoIter {
-            option_range_inclusive: None,
+            option_range: None,
             into_iter: self.btree_map.into_iter(),
         }
     }
@@ -1326,7 +1331,7 @@ where
 {
     iter: I,
     current: T, // !!!cmk can't we write this without current? (likewise IntoIter)
-    option_range_inclusive: Option<RangeInclusive<T>>,
+    option_range: Option<RangeInclusive<T>>,
 }
 
 impl<T: Integer, I> Iterator for Iter<T, I>
@@ -1336,18 +1341,18 @@ where
     type Item = T;
     fn next(&mut self) -> Option<T> {
         loop {
-            if let Some(range_inclusive) = self.option_range_inclusive.clone() {
-                let (start, end) = range_inclusive.into_inner();
+            if let Some(range) = self.option_range.clone() {
+                let (start, end) = range.into_inner();
                 debug_assert!(start <= end && end <= T::max_value2());
                 self.current = start;
                 if start < end {
-                    self.option_range_inclusive = Some(start + T::one()..=end);
+                    self.option_range = Some(start + T::one()..=end);
                 } else {
-                    self.option_range_inclusive = None;
+                    self.option_range = None;
                 }
                 return Some(self.current);
-            } else if let Some(range_inclusive) = self.iter.next() {
-                self.option_range_inclusive = Some(range_inclusive);
+            } else if let Some(range) = self.iter.next() {
+                self.option_range = Some(range);
                 continue;
             } else {
                 return None;
@@ -1366,12 +1371,12 @@ where
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 /// An iterator over the integer elements of a [`RangeSetInt`].
 ///
-/// This `struct` is created by the [`iter`] method on [`RangeSetInt`]. See its
+/// This `struct` is created by the [`into_iter`] method on [`RangeSetInt`]. See its
 /// documentation for more.
 ///
-/// [`iter`]: RangeSetInt::iter
+/// [`into_iter`]: RangeSetInt::into_iter
 pub struct IntoIter<T: Integer> {
-    option_range_inclusive: Option<RangeInclusive<T>>, // cmk000 replace option_range_inclusive: with option_range or range
+    option_range: Option<RangeInclusive<T>>, // cmk000 replace option_range: with option_range or range
     into_iter: std::collections::btree_map::IntoIter<T, T>,
 }
 
@@ -1379,17 +1384,17 @@ impl<T: Integer> Iterator for IntoIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(range_inclusive) = self.option_range_inclusive.clone() {
-            let (start, end) = range_inclusive.into_inner();
+        if let Some(range) = self.option_range.clone() {
+            let (start, end) = range.into_inner();
             debug_assert!(start <= end && end <= T::max_value2());
             if start < end {
-                self.option_range_inclusive = Some(start + T::one()..=end);
+                self.option_range = Some(start + T::one()..=end);
             } else {
-                self.option_range_inclusive = None;
+                self.option_range = None;
             }
             Some(start)
         } else if let Some((start, end)) = self.into_iter.next() {
-            self.option_range_inclusive = Some(start..=end);
+            self.option_range = Some(start..=end);
             self.next() // will recurse at most once
         } else {
             None
@@ -1411,8 +1416,8 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
         I: IntoIterator<Item = T>,
     {
         let iter = iter.into_iter();
-        for range_inclusive in UnsortedDisjoint::from(iter.map(|x| x..=x)) {
-            self.internal_add(range_inclusive);
+        for range in UnsortedDisjoint::from(iter.map(|x| x..=x)) {
+            self.internal_add(range);
         }
     }
 }
@@ -1423,8 +1428,8 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetInt<T> {
         I: IntoIterator<Item = RangeInclusive<T>>,
     {
         let iter = iter.into_iter();
-        for range_inclusive in iter {
-            self.internal_add(range_inclusive);
+        for range in iter {
+            self.internal_add(range);
         }
     }
 }

@@ -16,7 +16,7 @@ where
     I: Iterator<Item = RangeInclusive<T>>,
 {
     iter: I,
-    option_range_inclusive: Option<RangeInclusive<T>>,
+    option_range: Option<RangeInclusive<T>>,
     min_value_plus_2: T,
     two: T,
 }
@@ -29,7 +29,7 @@ where
     fn from(into_iter: I) -> Self {
         UnsortedDisjoint {
             iter: into_iter.into_iter(),
-            option_range_inclusive: None,
+            option_range: None,
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
         }
@@ -45,33 +45,33 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let Some(range_inclusive) = self.iter.next() {
-                let (next_start, next_end) = range_inclusive.into_inner();
+            if let Some(range) = self.iter.next() {
+                let (next_start, next_end) = range.into_inner();
                 if next_start > next_end {
                     continue;
                 }
                 assert!(next_end <= T::max_value2()); // !!!cmk0 raise error on panic?
-                if let Some(self_range_inclusive) = self.option_range_inclusive.clone() {
-                    let (self_start, self_end) = self_range_inclusive.into_inner();
+                if let Some(self_range) = self.option_range.clone() {
+                    let (self_start, self_end) = self_range.into_inner();
                     if (next_start >= self.min_value_plus_2 && self_end <= next_start - self.two)
                         || (self_start >= self.min_value_plus_2
                             && next_end <= self_start - self.two)
                     {
                         let result = Some(self_start..=self_end);
-                        self.option_range_inclusive = Some(next_start..=next_end);
+                        self.option_range = Some(next_start..=next_end);
                         return result;
                     } else {
-                        self.option_range_inclusive =
+                        self.option_range =
                             Some(min(self_start, next_start)..=max(self_end, next_end));
                         continue;
                     }
                 } else {
-                    self.option_range_inclusive = Some(next_start..=next_end);
+                    self.option_range = Some(next_start..=next_end);
                     continue;
                 }
-            } else if let Some(range_inclusive) = self.option_range_inclusive.clone() {
-                self.option_range_inclusive = None;
-                return Some(range_inclusive);
+            } else if let Some(range) = self.option_range.clone() {
+                self.option_range = None;
+                return Some(range);
             } else {
                 return None;
             }
@@ -79,11 +79,11 @@ where
     }
 
     // As few as one (or zero if iter is empty) and as many as iter.len()
-    // There could be one extra if option_range_inclusive is Some.
+    // There could be one extra if option_range is Some.
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (lower, upper) = self.iter.size_hint();
         let lower = if lower == 0 { 0 } else { 1 };
-        if self.option_range_inclusive.is_some() {
+        if self.option_range.is_some() {
             (lower, upper.map(|x| x + 1))
         } else {
             (lower, upper)
@@ -99,8 +99,8 @@ where
 {
     #[allow(clippy::inherent_to_string)]
     pub fn to_string(self) -> String {
-        self.map(|range_inclusive| {
-            let (start, end) = range_inclusive.into_inner();
+        self.map(|range| {
+            let (start, end) = range.into_inner();
             format!("{start}..={end}") // cmk could we format RangeInclusive directly?
         })
         .join(", ")
@@ -147,10 +147,10 @@ where
     type Item = (T, T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(range_inclusive) = self.iter.next() {
-            let (start, end) = range_inclusive.clone().into_inner();
+        if let Some(range) = self.iter.next() {
+            let (start, end) = range.clone().into_inner();
             debug_assert!(start <= end && end <= T::max_value2());
-            self.len += T::safe_inclusive_len(&range_inclusive);
+            self.len += T::safe_len(&range);
             Some((start, end))
         } else {
             None

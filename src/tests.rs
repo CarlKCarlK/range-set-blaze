@@ -33,14 +33,14 @@ fn insert_max_u128() {
 fn sub() {
     for start in i8::MIN..i8::MAX {
         for end in start..i8::MAX {
-            let diff = i8::safe_inclusive_len(&(start..=end));
+            let diff = i8::safe_len(&(start..=end));
             let diff2 = (end as i16) - (start as i16) + 1;
             assert_eq!(diff as i16, diff2);
         }
     }
     for start in u8::MIN..u8::MAX {
         for end in start..u8::MAX {
-            let diff = u8::safe_inclusive_len(&(start..=end));
+            let diff = u8::safe_len(&(start..=end));
             let diff2 = (end as i16) - (start as i16) + 1;
             assert_eq!(diff as i16, diff2);
         }
@@ -671,8 +671,8 @@ fn iters() {
     for i in range_set_int.iter() {
         println!("{i}");
     }
-    for range_inclusive in range_set_int.ranges() {
-        let (start, end) = range_inclusive.into_inner();
+    for range in range_set_int.ranges() {
+        let (start, end) = range.into_inner();
         println!("{start}..={end}");
     }
     let mut rs = range_set_int.ranges();

@@ -6,24 +6,24 @@ use rand::Rng;
 use range_set_int::Integer;
 use range_set_int::RangeSetInt;
 
-pub fn width_to_range_inclusive(
+pub fn width_to_range(
     iter_len: usize,
     average_width: usize,
     coverage_goal: f64,
 ) -> (usize, std::ops::RangeInclusive<i32>) {
     let range_len = iter_len / average_width;
     let one_fraction: f64 = 1.0 - (1.0 - coverage_goal).powf(1.0 / range_len as f64);
-    let range_inclusive = 0..=(((average_width as f64 / one_fraction) - 0.5) as i32);
-    (range_len, range_inclusive)
+    let range = 0..=(((average_width as f64 / one_fraction) - 0.5) as i32);
+    (range_len, range)
 }
 
-// Not reliable if the range_inclusive is too small, especially if the range_len
+// Not reliable if the range is too small, especially if the range_len
 // is small. Might have some off-by-one errors that aren't material in practice.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MemorylessRange<'a, T: Integer> {
     rng: &'a mut StdRng,
     range_len: usize,
-    range_inclusive: RangeInclusive<T>,
+    range: RangeInclusive<T>,
     average_width: f64,
 }
 
@@ -38,12 +38,12 @@ impl<'a, T: Integer> MemorylessRange<'a, T> {
     pub fn new(
         rng: &'a mut StdRng,
         range_len: usize,
-        range_inclusive: RangeInclusive<T>,
+        range: RangeInclusive<T>,
         coverage_goal: f64,
         k: usize,
         how: How,
     ) -> Self {
-        let len: f64 = T::safe_len_to_f64(T::safe_inclusive_len(&range_inclusive));
+        let len: f64 = T::safe_len_to_f64(T::safe_len(&range));
         let average_coverage_per_clump = match how {
             How::Intersection => {
                 let goal2 = coverage_goal.powf(1.0 / (k as f64));
@@ -55,7 +55,7 @@ impl<'a, T: Integer> MemorylessRange<'a, T> {
         Self {
             rng,
             range_len,
-            range_inclusive,
+            range,
             average_width: average_coverage_per_clump * len,
         }
     }
@@ -100,19 +100,19 @@ impl<'a, T: Integer> Iterator for MemorylessRange<'a, T> {
                 actual_width = T::f64_to_safe_len(actual_width_f64);
             }
 
-            // choose random one point in the range_inclusive
-            let one_point: T = self.rng.gen_range(self.range_inclusive.clone());
-            // go up or down from this point, but not past the ends of the range_inclusive
+            // choose random one point in the range
+            let one_point: T = self.rng.gen_range(self.range.clone());
+            // go up or down from this point, but not past the ends of the range
             if self.rng.gen::<f64>() > 0.5 {
-                let rest = one_point..=*self.range_inclusive.end();
-                if actual_width <= T::safe_inclusive_len(&rest) {
+                let rest = one_point..=*self.range.end();
+                if actual_width <= T::safe_len(&rest) {
                     Some(one_point..=T::add_len_less_one(one_point, actual_width))
                 } else {
                     Some(rest)
                 }
             } else {
-                let rest = *self.range_inclusive.start()..=one_point;
-                if actual_width <= T::safe_inclusive_len(&rest) {
+                let rest = *self.range.start()..=one_point;
+                if actual_width <= T::safe_len(&rest) {
                     Some(T::sub_len_less_one(one_point, actual_width)..=one_point)
                 } else {
                     Some(rest)
@@ -124,7 +124,7 @@ impl<'a, T: Integer> Iterator for MemorylessRange<'a, T> {
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MemorylessIter<'a, T: Integer> {
-    option_range_inclusive: Option<RangeInclusive<T>>,
+    option_range: Option<RangeInclusive<T>>,
     iter: MemorylessRange<'a, T>,
 }
 
@@ -132,15 +132,14 @@ impl<'a, T: Integer> MemorylessIter<'a, T> {
     pub fn new(
         rng: &'a mut StdRng,
         range_len: usize,
-        range_inclusive: RangeInclusive<T>,
+        range: RangeInclusive<T>,
         coverage_goal: f64,
         k: usize,
         how: How,
     ) -> Self {
-        let memoryless_range =
-            MemorylessRange::new(rng, range_len, range_inclusive, coverage_goal, k, how);
+        let memoryless_range = MemorylessRange::new(rng, range_len, range, coverage_goal, k, how);
         Self {
-            option_range_inclusive: None,
+            option_range: None,
             iter: memoryless_range,
         }
     }
@@ -152,19 +151,19 @@ impl<'a, T: Integer> Iterator for MemorylessIter<'a, T> {
     #[allow(clippy::reversed_empty_ranges)]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let Some(range_inclusive) = &self.option_range_inclusive {
-                let (start, end) = range_inclusive.clone().into_inner();
+            if let Some(range) = &self.option_range {
+                let (start, end) = range.clone().into_inner();
                 if start < end {
-                    self.option_range_inclusive = Some(start + T::one()..=end);
+                    self.option_range = Some(start + T::one()..=end);
                 } else {
-                    self.option_range_inclusive = None;
+                    self.option_range = None;
                     if start > end {
                         continue; // skip empty ranges
                     }
                 }
                 return Some(start);
-            } else if let Some(range_inclusive) = self.iter.next() {
-                self.option_range_inclusive = Some(range_inclusive);
+            } else if let Some(range) = self.iter.next() {
+                self.option_range = Some(range);
                 continue;
             } else {
                 return None;
@@ -176,7 +175,7 @@ impl<'a, T: Integer> Iterator for MemorylessIter<'a, T> {
 pub fn k_sets<T: Integer>(
     k: usize,
     range_len: usize,
-    range_inclusive: &RangeInclusive<T>,
+    range: &RangeInclusive<T>,
     coverage_goal: f64,
     how: How,
     rng: &mut StdRng,
@@ -186,7 +185,7 @@ pub fn k_sets<T: Integer>(
             RangeSetInt::<T>::from_iter(MemorylessRange::new(
                 rng,
                 range_len,
-                range_inclusive.clone(),
+                range.clone(),
                 coverage_goal,
                 k,
                 how,

@@ -16,7 +16,7 @@ where
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
     iter: I,
-    option_range_inclusive: Option<RangeInclusive<T>>,
+    option_range: Option<RangeInclusive<T>>,
 }
 
 impl<T, I> SortedDisjointIter<T, I>
@@ -27,7 +27,7 @@ where
     pub fn new(iter: I) -> Self {
         Self {
             iter,
-            option_range_inclusive: None,
+            option_range: None,
         }
     }
 }
@@ -89,11 +89,11 @@ where
 {
     fn from(unsorted_disjoint: UnsortedDisjoint<T, I>) -> Self {
         let iter = AssumeSortedStarts {
-            iter: unsorted_disjoint.sorted_by_key(|range_inclusive| *range_inclusive.start()),
+            iter: unsorted_disjoint.sorted_by_key(|range| *range.start()),
         };
         Self {
             iter,
-            option_range_inclusive: None,
+            option_range: None,
         }
     }
 }
@@ -107,41 +107,41 @@ where
 
     fn next(&mut self) -> Option<RangeInclusive<T>> {
         loop {
-            if let Some(range_inclusive) = self.iter.next() {
-                let (start, end) = range_inclusive.into_inner();
+            if let Some(range) = self.iter.next() {
+                let (start, end) = range.into_inner();
                 if end < start {
                     return self.next(); // !!!cmk00 test this
                 }
-                if let Some(current_range_inclusive) = self.option_range_inclusive.clone() {
-                    let (current_start, current_end) = current_range_inclusive.into_inner();
+                if let Some(current_range) = self.option_range.clone() {
+                    let (current_start, current_end) = current_range.into_inner();
                     debug_assert!(current_start <= start); // real assert
                     if start <= current_end
                         || (current_end < T::max_value2() && start <= current_end + T::one())
                     {
-                        self.option_range_inclusive = Some(current_start..=max(current_end, end));
+                        self.option_range = Some(current_start..=max(current_end, end));
                         continue;
                     } else {
-                        self.option_range_inclusive = Some(start..=end);
+                        self.option_range = Some(start..=end);
                         return Some(current_start..=current_end);
                     }
                 } else {
-                    self.option_range_inclusive = Some(start..=end);
+                    self.option_range = Some(start..=end);
                     continue;
                 }
             } else {
-                let result = self.option_range_inclusive.clone();
-                self.option_range_inclusive = None;
+                let result = self.option_range.clone();
+                self.option_range = None;
                 return result;
             }
         }
     }
 
     // There could be a few as 1 (or 0 if the iter is empty) or as many as the iter.
-    // Plus, possibly one more if we have a range_inclusive is in progress.
+    // Plus, possibly one more if we have a range is in progress.
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (low, high) = self.iter.size_hint();
         let low = low.min(1);
-        if self.option_range_inclusive.is_some() {
+        if self.option_range.is_some() {
             (low, high.map(|x| x + 1))
         } else {
             (low, high)

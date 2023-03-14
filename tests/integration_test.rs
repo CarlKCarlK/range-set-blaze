@@ -10,7 +10,7 @@ use range_set_int::SortedDisjointIter;
 use std::ops::RangeInclusive;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
-use tests_common::{k_sets, width_to_range_inclusive, How, MemorylessIter, MemorylessRange};
+use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
 
 // !!!cmk should users use a prelude? If not, are these reasonable imports?
 use range_set_int::{
@@ -155,8 +155,8 @@ fn iters() -> Result<(), Box<dyn std::error::Error>> {
     for i in range_set_int.iter() {
         println!("{i}");
     }
-    for range_inclusive in range_set_int.ranges() {
-        let (start, end) = range_inclusive.into_inner();
+    for range in range_set_int.ranges() {
+        let (start, end) = range.into_inner();
         println!("{start}..={end}");
     }
     let mut rs = range_set_int.ranges();
@@ -622,13 +622,13 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     // #12 into / from slice T
     _range_set_int = [1, 5, 6, 5][1..=2].into();
     _range_set_int = RangeSetInt::from([1, 5, 6, 5].as_slice());
-    //#13 collect / from_iter range_inclusive
+    //#13 collect / from_iter range
     _range_set_int = [5..=6, 1..=5].into_iter().collect();
     _range_set_int = RangeSetInt::from_iter([5..=6, 1..=5]);
-    // #14 from into array range_inclusive
+    // #14 from into array range
     _range_set_int = [5..=6, 1..=5].into();
     _range_set_int = RangeSetInt::from([5..=6, 1..=5]);
-    // #15 from into slice range_inclusive
+    // #15 from into slice range
     _range_set_int = [5..=6, 1..=5][0..=1].into();
     _range_set_int = RangeSetInt::from([5..=6, 1..=5].as_slice());
     // #16 into / from iter (T,T) + SortedDisjoint
@@ -650,13 +650,13 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     // // #12 into / from slice T
     _sorted_disjoint_iter = [1, 5, 6, 5][1..=2].into();
     _sorted_disjoint_iter = SortedDisjointIter::from([1, 5, 6, 5].as_slice());
-    // //#13 collect / from_iter range_inclusive
+    // //#13 collect / from_iter range
     _sorted_disjoint_iter = [5..=6, 1..=5].into_iter().collect();
     _sorted_disjoint_iter = SortedDisjointIter::from_iter([5..=6, 1..=5]);
-    // // #14 from into array range_inclusive
+    // // #14 from into array range
     _sorted_disjoint_iter = [5..=6, 1..=5].into();
     _sorted_disjoint_iter = SortedDisjointIter::from([5..=6, 1..=5]);
-    // // #15 from into slice range_inclusive
+    // // #15 from into slice range
     _sorted_disjoint_iter = [5..=6, 1..=5][0..=1].into();
     _sorted_disjoint_iter = SortedDisjointIter::from([5..=6, 1..=5].as_slice());
     // // #16 into / from iter (T,T) + SortedDisjoint
@@ -676,7 +676,7 @@ fn debug_k_play() {
 }
 
 fn k_play(c: &mut Criterion) {
-    let range_inclusive = 0..=9_999_999;
+    let range = 0..=9_999_999;
     let range_len = 1000; //1_000;
     let coverage_goal = 0.50;
 
@@ -690,7 +690,7 @@ fn k_play(c: &mut Criterion) {
                     k_sets(
                         k,
                         range_len,
-                        &range_inclusive,
+                        &range,
                         coverage_goal,
                         How::Intersection,
                         &mut StdRng::seed_from_u64(0),
@@ -709,7 +709,7 @@ fn k_play(c: &mut Criterion) {
 
 #[test]
 fn data_gen() {
-    let range_inclusive = -10_000_000i32..=10_000_000;
+    let range = -10_000_000i32..=10_000_000;
     let range_len = 1000;
     let coverage_goal = 0.75;
     let k = 100;
@@ -720,7 +720,7 @@ fn data_gen() {
             let r2: RangeSetInt<i32> = MemorylessRange::new(
                 &mut StdRng::seed_from_u64(seed),
                 range_len,
-                range_inclusive.clone(),
+                range.clone(),
                 coverage_goal,
                 k,
                 how,
@@ -739,21 +739,21 @@ fn data_gen() {
             println!(
                 "range_int_set.len={}, ri={:#?}, how={how:#?} {seed} range_len={}, fraction={}",
                 range_int_set.len(),
-                &range_inclusive,
+                &range,
                 range_int_set.ranges_len(),
-                fraction(range_int_set, &range_inclusive)
+                fraction(range_int_set, &range)
             );
         }
         let range_int_set = option_range_int_set.unwrap();
-        let fraction = fraction(&range_int_set, &range_inclusive);
+        let fraction = fraction(&range_int_set, &range);
         println!("how={how:#?}, goal={coverage_goal}, fraction={fraction}");
         assert!(coverage_goal * 0.95 < fraction && fraction < coverage_goal * 1.05);
         // Don't check this because of known off-by-one-error that don't matter in practice.
         // let first = range_int_set.first().unwrap();
         // let last = range_int_set.last().unwrap();
-        // println!("first={first}, last={last}, range_inclusive={range_inclusive:#?}");
-        // assert!(first >= *range_inclusive.start());
-        // assert!(last <= *range_inclusive.end());
+        // println!("first={first}, last={last}, range={range:#?}");
+        // assert!(first >= *range.start());
+        // assert!(last <= *range.end());
     }
 }
 
@@ -761,7 +761,7 @@ fn data_gen() {
 fn vary_coverage_goal() {
     let k = 2;
     let range_len = 1_000;
-    let range_inclusive = 0..=99_999_999;
+    let range = 0..=99_999_999;
     let coverage_goal_list = [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99];
     let setup_vec = coverage_goal_list
         .iter()
@@ -771,7 +771,7 @@ fn vary_coverage_goal() {
                 k_sets(
                     k,
                     range_len,
-                    &range_inclusive,
+                    &range,
                     *coverage_goal,
                     How::None,
                     &mut StdRng::seed_from_u64(0),
@@ -784,7 +784,7 @@ fn vary_coverage_goal() {
         let parameter = *range_len;
 
         let answer = &sets[0] | &sets[1];
-        let fraction_val = fraction(&answer, &range_inclusive);
+        let fraction_val = fraction(&answer, &range);
         println!(
             "u: {parameter}, {fraction_val}, {}+{}={}",
             sets[0].ranges_len(),
@@ -792,7 +792,7 @@ fn vary_coverage_goal() {
             answer.ranges_len()
         );
         let answer = &sets[0] & &sets[1];
-        let fraction_val = fraction(&answer, &range_inclusive);
+        let fraction_val = fraction(&answer, &range);
         println!(
             "i: {parameter}, {fraction_val}, {}+{}={}",
             sets[0].ranges_len(),
@@ -818,7 +818,7 @@ fn vs_btree_set() {
         "average_width",
         "coverage_goal",
         "iter_len",
-        "range_inclusive",
+        "range",
         "range_count_with_dups",
         "item_count_with_dups",
         "range_count_without_dups",
@@ -827,50 +827,31 @@ fn vs_btree_set() {
     );
 
     for average_width in average_width_list {
-        let (range_len, range_inclusive) =
-            width_to_range_inclusive(iter_len, average_width, coverage_goal);
+        let (range_len, range) = width_to_range(iter_len, average_width, coverage_goal);
 
         let mut rng = StdRng::seed_from_u64(seed);
-        let memoryless_range = MemorylessRange::new(
-            &mut rng,
-            range_len,
-            range_inclusive.clone(),
-            coverage_goal,
-            k,
-            how,
-        );
+        let memoryless_range =
+            MemorylessRange::new(&mut rng, range_len, range.clone(), coverage_goal, k, how);
         let range_count_with_dups = memoryless_range.count();
         let mut rng = StdRng::seed_from_u64(seed);
-        let memoryless_iter = MemorylessIter::new(
-            &mut rng,
-            range_len,
-            range_inclusive.clone(),
-            coverage_goal,
-            k,
-            how,
-        );
+        let memoryless_iter =
+            MemorylessIter::new(&mut rng, range_len, range.clone(), coverage_goal, k, how);
         let item_count_with_dups = memoryless_iter.count();
         let mut rng = StdRng::seed_from_u64(seed);
-        let range_set_int: RangeSetInt<_> = MemorylessRange::new(
-            &mut rng,
-            range_len,
-            range_inclusive.clone(),
-            coverage_goal,
-            k,
-            how,
-        )
-        .collect();
+        let range_set_int: RangeSetInt<_> =
+            MemorylessRange::new(&mut rng, range_len, range.clone(), coverage_goal, k, how)
+                .collect();
 
         let range_count_no_dups = range_set_int.ranges_len();
         let item_count_no_dups = range_set_int.len();
-        let fraction_value = fraction(&range_set_int, &range_inclusive);
+        let fraction_value = fraction(&range_set_int, &range);
         println!(
             "{:#?},{:#?},{:#?},{:#?},{:#?},{:#?},{:#?},{:#?},{:#?},{:#?}",
             seed,
             average_width,
             coverage_goal,
             iter_len,
-            range_inclusive.end() + 1,
+            range.end() + 1,
             range_count_with_dups,
             item_count_with_dups,
             range_count_no_dups,
@@ -881,8 +862,8 @@ fn vs_btree_set() {
 
         // count of iter with dups
         // count of iter without dups
-        // range_inclusive with dups
-        // range_inclusive without dups
+        // range with dups
+        // range without dups
         // fraction
     }
 }
@@ -1097,12 +1078,8 @@ fn sync_and_send() {
     assert_sync_and_send::<Ranges<i32>>();
 }
 
-fn fraction<T: Integer>(
-    range_int_set: &RangeSetInt<T>,
-    range_inclusive: &RangeInclusive<T>,
-) -> f64 {
-    T::safe_len_to_f64(range_int_set.len())
-        / T::safe_len_to_f64(T::safe_inclusive_len(range_inclusive))
+fn fraction<T: Integer>(range_int_set: &RangeSetInt<T>, range: &RangeInclusive<T>) -> f64 {
+    T::safe_len_to_f64(range_int_set.len()) / T::safe_len_to_f64(T::safe_len(range))
 }
 
 #[test]

@@ -46,8 +46,8 @@ where
             return None;
         }
         let next_item = self.iter.next();
-        if let Some(range_inclusive) = next_item {
-            let (start, end) = range_inclusive.into_inner();
+        if let Some(range) = next_item {
+            let (start, end) = range.into_inner();
             debug_assert!(start <= end && end <= T::max_value2());
             if self.start_not < start {
                 // We can subtract with underflow worry because
