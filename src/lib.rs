@@ -59,6 +59,7 @@ use num_traits::One;
 use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
 use sorted_disjoint_iter::SortedDisjointIter;
+use sorted_disjoint_iter::SortedStarts;
 use std::cmp::max;
 use std::cmp::Ordering;
 use std::collections::btree_map;
@@ -1586,9 +1587,6 @@ impl<'a, T: 'a + Integer> Extend<&'a RangeInclusive<T>> for RangeSetInt<T> {
 // !!!cmk are the unwraps OK?
 // !!!cmk what about bad input?
 
-/// The trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
-/// and may overlap.
-pub trait SortedStarts {}
 /// The trait used to mark iterators that provide ranges that are sorted by start and that do not overlap.
 pub trait SortedDisjoint: SortedStarts {}
 
@@ -1609,14 +1607,11 @@ pub trait SortedDisjoint: SortedStarts {}
 // cmk sort-iter uses peekable. Is that better?
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-/// A wrapper around [`SortedDisjoint`] iterators to create new iterators
-/// of a consistent type.
-///
-/// This is used, for example, by the [`union_dyn`] macro to give all
-/// its input iterators the same type
-/// so that they can be used in the [`union`] function.
+/// Internally, used by the [`union_dyn`] and [`intersection_dyn`] macros to give all
+/// their input iterators the same type.
 ///
 /// [`union`]: MultiwaySortedDisjoint::union
+/// [`intersection`]: MultiwaySortedDisjoint::intersection
 
 pub struct DynSortedDisjoint<'a, T> {
     iter: Box<dyn Iterator<Item = T> + 'a>,
@@ -1649,7 +1644,6 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
         self.iter.size_hint()
     }
 }
-
 // !!!cmk00000 Need to better says what kind of iterators are allowed.
 /// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
 /// The input iterators need not to be of the same type.

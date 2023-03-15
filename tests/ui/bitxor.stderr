@@ -67,9 +67,9 @@ error[E0271]: expected `std::array::IntoIter<({integer}, {integer}), 2>` to be a
   |
   = note: expected struct `RangeInclusive<_>`
               found tuple `({integer}, {integer})`
-  = note: required for `itertools::tee::Tee<std::array::IntoIter<({integer}, {integer}), 2>>` to implement `SortedStarts`
+  = note: required for `itertools::tee::Tee<std::array::IntoIter<({integer}, {integer}), 2>>` to implement `range_set_int::sorted_disjoint_iter::SortedStarts`
   = note: 1 redundant requirement hidden
-  = note: required for `itertools::adaptors::MergeBy<NotIter<{integer}, itertools::tee::Tee<Ranges<'_, {integer}>>>, ..., ...>` to implement `SortedStarts`
+  = note: required for `itertools::adaptors::MergeBy<NotIter<{integer}, itertools::tee::Tee<Ranges<'_, {integer}>>>, ..., ...>` to implement `range_set_int::sorted_disjoint_iter::SortedStarts`
 note: required by a bound in `range_set_int::sorted_disjoint_iter::SortedDisjointIter`
  --> src/sorted_disjoint_iter.rs
   |

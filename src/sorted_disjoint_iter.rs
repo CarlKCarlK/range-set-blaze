@@ -4,8 +4,12 @@ use itertools::Itertools;
 
 use crate::{
     unsorted_disjoint::{AssumeSortedStarts, UnsortedDisjoint},
-    Integer, SortedStarts,
+    Integer,
 };
+
+/// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
+/// and may overlap.
+pub trait SortedStarts {}
 
 // cmk00 if this is for internal use only, then it's doc should be different
 // cmk00 maybe not the best name
