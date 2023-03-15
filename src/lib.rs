@@ -70,8 +70,8 @@ use std::ops::RangeInclusive;
 use std::ops::Sub;
 use std::str::FromStr;
 pub use unsorted_disjoint::AssumeSortedStarts;
-pub use unsorted_disjoint::SortedDisjointWithLenSoFar;
-pub use unsorted_disjoint::UnsortedDisjoint;
+use unsorted_disjoint::SortedDisjointWithLenSoFar;
+use unsorted_disjoint::UnsortedDisjoint;
 
 // cmk rule: Support Send and Sync (what about Clone (Copy?) and ExactSizeIterator?)
 // cmk rule: Test Send and Sync with a test (see example)
@@ -1489,7 +1489,7 @@ pub trait SortedDisjoint: SortedStarts {}
 ///
 /// It is useful when you need three or more different types of iterators to have
 /// the same type, for example when you want to use them in with [`multiway_union`].
-/// Also see [`DynSortedDisjointExt::dyn_sorted_disjoint`].
+/// Also see [`DynSortedDisjoint::new`].
 // !!!cmk00000 can this fail to check for sorted disjoint?
 // !!!cmk00000 could multiway_union be less global the says way that dyn_sorted_disjoint is?
 pub struct DynSortedDisjoint<'a, T> {
@@ -1499,7 +1499,7 @@ pub struct DynSortedDisjoint<'a, T> {
 impl<'a, T> DynSortedDisjoint<'a, T> {
     pub fn new<I>(iter: I) -> Self
     where
-        I: Iterator<Item = T> + 'a,
+        I: Iterator<Item = T> + SortedDisjoint + 'a,
     {
         Self {
             iter: Box::new(iter),
@@ -1523,19 +1523,6 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
         self.iter.size_hint()
     }
 }
-
-/// extension trait for any iterator to add a assume_sorted_by_item method
-pub trait DynSortedDisjointExt<'a>: Iterator + SortedDisjoint + Sized + 'a {
-    /// create dynamic version of the iterator
-    fn dyn_sorted_disjoint(self) -> DynSortedDisjoint<'a, Self::Item> {
-        DynSortedDisjoint {
-            iter: Box::new(self),
-        }
-    }
-}
-
-// !!!cmk understand this
-impl<'a, I: Iterator + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
 
 // !!!cmk00000 Need to better says what kind of iterators are allowed.
 /// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.

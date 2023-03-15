@@ -20,7 +20,7 @@ use rand::{
 };
 // use pprof::criterion::Output; //PProfProfiler
 use range_set_int::{
-    multiway_intersection, multiway_union, DynSortedDisjointExt, Integer, RangeSetInt,
+    multiway_intersection, multiway_union, DynSortedDisjoint, Integer, RangeSetInt,
 };
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
@@ -537,7 +537,7 @@ fn k_intersect(c: &mut Criterion) {
                 )
             },
             |sets| {
-                let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
+                let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
                 let _answer: RangeSetInt<_> = multiway_intersection(sets).into();
             },
             BatchSize::SmallInput,
@@ -605,7 +605,7 @@ fn coverage_goal(c: &mut Criterion) {
                         )
                     },
                     |sets| {
-                        let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
+                        let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
                         let _answer: RangeSetInt<_> = multiway_intersection(sets).into();
                     },
                     BatchSize::SmallInput,
@@ -793,7 +793,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                 b.iter_batched(
                     || setup,
                     |sets| {
-                        let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
+                        let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
                         let _answer: RangeSetInt<_> = match how {
                             How::Intersection => multiway_intersection(sets).into(),
                             How::Union => multiway_union(sets).into(),

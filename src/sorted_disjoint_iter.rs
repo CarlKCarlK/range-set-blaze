@@ -8,6 +8,15 @@ use crate::{
 };
 
 // cmk00 maybe not the best name
+/// An iterator that turns a [`SortedStarts`]-trait iterator into a [`SortedDisjoint`]-trait iterator.
+///
+/// Both iterators work on ranges of integers.
+/// The ranges of a [`SortedStarts`]-trait iterator are sorted by start, but not necessarily by end,
+/// and may overlap. The ranges of a [`SortedDisjoint`]-trait iterator are sorted by start and may
+/// not overlap (and so their ends are also sorted).
+///
+/// Used internally by `union`-related functions.
+
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct SortedDisjointIter<T, I>

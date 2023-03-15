@@ -927,7 +927,7 @@ fn empty() {
     let c_list2: [Ranges<i32>; 0] = [];
     let c2 = multiway_union(c_list2.clone());
     let c3 = union_dyn!(a.ranges(), b.ranges());
-    let c4 = multiway_union(c_list2.map(|x| x.dyn_sorted_disjoint()));
+    let c4 = multiway_union(c_list2.map(DynSortedDisjoint::new));
 
     let answer = RangeSetInt::from(arr);
     assert!(c0.equal(answer.ranges()));
@@ -941,7 +941,7 @@ fn empty() {
     let c_list2: [Ranges<i32>; 0] = [];
     let c2 = !!multiway_intersection(c_list2.clone());
     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
-    let c4 = !!multiway_intersection(c_list2.map(|x| x.dyn_sorted_disjoint()));
+    let c4 = !!multiway_intersection(c_list2.map(DynSortedDisjoint::new));
 
     let answer = !RangeSetInt::from([0i32; 0]);
     assert!(c0.equal(answer.ranges()));
@@ -951,6 +951,22 @@ fn empty() {
     assert!(c4.equal(answer.ranges()));
 }
 
+// Can't implement fmt::Display fmt must take ownership
+impl<T, I> UnsortedDisjoint<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>>,
+{
+    #[allow(clippy::inherent_to_string)]
+    #[allow(clippy::wrong_self_convention)]
+    pub(crate) fn to_string(self) -> String {
+        self.map(|range| {
+            let (start, end) = range.into_inner();
+            format!("{start}..={end}") // cmk could we format RangeInclusive directly?
+        })
+        .join(", ")
+    }
+}
 #[allow(clippy::reversed_empty_ranges)]
 #[test]
 fn private_constructor() {

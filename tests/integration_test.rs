@@ -6,6 +6,7 @@ use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use range_set_int::AssumeSortedStarts;
+use range_set_int::DynSortedDisjoint;
 use range_set_int::SortedDisjointIter;
 use std::ops::RangeInclusive;
 use std::{collections::BTreeSet, ops::BitOr};
@@ -14,8 +15,7 @@ use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange}
 
 // !!!cmk should users use a prelude? If not, are these reasonable imports?
 use range_set_int::{
-    intersection_dyn, union_dyn, DynSortedDisjointExt, Integer, RangeSetInt, Ranges,
-    SortedDisjointIterator,
+    intersection_dyn, union_dyn, Integer, RangeSetInt, Ranges, SortedDisjointIterator,
 };
 use range_set_int::{multiway_intersection, multiway_union};
 
@@ -340,7 +340,7 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let _a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
-    let u = multiway_union([a.ranges().dyn_sorted_disjoint()]);
+    let u = multiway_union([DynSortedDisjoint::new(a.ranges())]);
     assert_eq!(
         RangeSetInt::from(u),
         RangeSetInt::from([1..=6, 8..=9, 11..=15])
@@ -547,7 +547,7 @@ fn empty_it() {
     let c_list2: [Ranges<i32>; 0] = [];
     let c2 = multiway_union(c_list2.clone());
     let c3 = union_dyn!(a.ranges(), b.ranges());
-    let c4 = multiway_union(c_list2.map(|x| x.dyn_sorted_disjoint()));
+    let c4 = multiway_union(c_list2.map(DynSortedDisjoint::new));
 
     let answer = RangeSetInt::from([0; 0]);
     assert!(c0.equal(answer.ranges()));
@@ -561,7 +561,7 @@ fn empty_it() {
     let c_list2: [Ranges<i32>; 0] = [];
     let c2 = !!multiway_intersection(c_list2.clone());
     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
-    let c4 = !!multiway_intersection(c_list2.map(|x| x.dyn_sorted_disjoint()));
+    let c4 = !!multiway_intersection(c_list2.map(DynSortedDisjoint::new));
 
     let answer = !RangeSetInt::from([0; 0]);
     assert!(c0.equal(answer.ranges()));
@@ -697,7 +697,7 @@ fn k_play(c: &mut Criterion) {
                     )
                 },
                 |sets| {
-                    let sets = sets.iter().map(|x| x.ranges().dyn_sorted_disjoint());
+                    let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
                     let _answer: RangeSetInt<_> = multiway_intersection(sets).into();
                 },
                 BatchSize::SmallInput,
@@ -1115,4 +1115,12 @@ fn example_2() {
         let (start, end) = range.into_inner();
         println!("{chr}\t{start}\t{end}");
     }
+}
+
+#[test]
+fn trick_dyn() {
+    let bad = [1..=2, 0..=5];
+    // let u = union_dyn!(bad.iter().cloned());
+    let good = RangeSetInt::from(bad);
+    let _u = union_dyn!(good.ranges());
 }

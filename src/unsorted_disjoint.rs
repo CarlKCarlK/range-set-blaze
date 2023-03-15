@@ -2,7 +2,6 @@
 // !!!cmk replace OptionRange with Option<RangeInclusive<T>>
 
 use crate::{Integer, SortedDisjoint, SortedStarts};
-use itertools::Itertools;
 use num_traits::Zero;
 use std::{
     cmp::{max, min},
@@ -10,7 +9,7 @@ use std::{
 };
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct UnsortedDisjoint<T, I>
+pub(crate) struct UnsortedDisjoint<T, I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>,
@@ -91,24 +90,8 @@ where
     }
 }
 
-// Can't implement fmt::Display fmt must take ownership
-impl<T, I> UnsortedDisjoint<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = RangeInclusive<T>>,
-{
-    #[allow(clippy::inherent_to_string)]
-    pub fn to_string(self) -> String {
-        self.map(|range| {
-            let (start, end) = range.into_inner();
-            format!("{start}..={end}") // cmk could we format RangeInclusive directly?
-        })
-        .join(", ")
-    }
-}
-
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct SortedDisjointWithLenSoFar<T, I>
+pub(crate) struct SortedDisjointWithLenSoFar<T, I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
@@ -176,7 +159,7 @@ impl<T: Integer, I> SortedStarts for SortedDisjointWithLenSoFar<T, I> where
 /// assumes that the ranges are sorted by start, but not necessarily by end.
 ///
 /// It implements the [`SortedStarts`] trait which is required on inputs to
-/// `SortedDisjointIter` iterator.
+/// the `SortedDisjointIter` iterator.
 // cmk0000 bad link
 pub struct AssumeSortedStarts<T, I>
 where
