@@ -1163,6 +1163,30 @@ pub type BitEq<T, L, R> = BitOrMerge<
     NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
 >;
 
+/// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
+/// The input iterators must be of the same type. Any number of input iterators can be given.
+///
+/// For input iterators of different types, use the [`union_dyn`] macro.
+///
+/// # Performance
+///
+///  All work is done on demand, in one pass through the input iterators. Minimal memory is used.
+///
+/// # Example
+///
+/// Find the integers that appear in any of the [`SortedDisjoint`] iterators.
+///
+/// ```
+/// use range_set_int::{multiway_union, RangeSetInt, SortedDisjointIterator};
+///
+/// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+/// let b = RangeSetInt::from([5..=13, 18..=29]);
+/// let c = RangeSetInt::from([25..=100]);
+///
+/// let union = multiway_union([a.ranges(), b.ranges(), c.ranges()]);
+///
+/// assert_eq!(union.to_string(), "1..=15, 18..=100");
+/// ```
 pub fn multiway_union<T, I, J>(into_iter: I) -> BitOrKMerge<T, J::IntoIter>
 where
     I: IntoIterator<Item = J>,
@@ -1179,6 +1203,30 @@ where
 
 // cmk000 is multiway_ the best name?
 // cmk rule: don't forget these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
+/// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
+/// The input iterators must be of the same type. Any number of input iterators can be given.
+///
+/// For input iterators of different types, use the [`intersection_dyn`] macro.
+///
+/// # Performance
+///
+///  All work is done on demand, in one pass through the input iterators. Minimal memory is used.
+///
+/// # Example
+///
+/// Find the integers that appear in all the [`SortedDisjoint`] iterators.
+///
+/// ```
+/// use range_set_int::{multiway_intersection, RangeSetInt, SortedDisjointIterator};
+///
+/// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+/// let b = RangeSetInt::from([5..=13, 18..=29]);
+/// let c = RangeSetInt::from([-100..=100]);
+///
+/// let intersection = multiway_intersection([a.ranges(), b.ranges(), c.ranges()]);
+///
+/// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
+/// ```
 pub fn multiway_intersection<T, I, J>(into_iter: I) -> BitAndKMerge<T, J::IntoIter>
 where
     // cmk rule prefer IntoIterator over Iterator (here is example)
@@ -1190,10 +1238,17 @@ where
     multiway_union(into_iter.into_iter().map(|seq| seq.into_iter().not())).not()
 }
 
+/// The trait used to define methods and operators common to iterators with the [`SortedDisjoint`] trait.
+/// Methods include 'to_string' and 'equal'. Operators include '&', '|', '^', '!', '-'.
+// !!!cmk0000 could equal be don't with PartialEq? and thus ==?
+// !!!cmk0000 link to all methods and operators.
+// !!!cmk0000 should the readme include a table or example, etc.
 pub trait SortedDisjointIterator<T: Integer>:
     Iterator<Item = RangeInclusive<T>> + SortedDisjoint + Sized
 {
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
+
+    /// cmk0doc
     fn bitor<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
@@ -1464,10 +1519,10 @@ impl<'a, T: 'a + Integer> Extend<&'a RangeInclusive<T>> for RangeSetInt<T> {
 // !!!cmk are the unwraps OK?
 // !!!cmk what about bad input?
 
-/// The trait implemented by iterators to mark them as providing ranges that are sorted by start, but not necessarily by end,
+/// The trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
 pub trait SortedStarts {}
-/// The trait implemented by iterators to mark them as providing a sorted & disjoint ranges of integers.
+/// The trait used to mark iterators that provide ranges that are sorted by start and that do not overlap (and are, thus, also sorted by end.).
 pub trait SortedDisjoint: SortedStarts {}
 
 // cmk This code from sorted-iter shows how to define clone when possible
@@ -1532,6 +1587,8 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
 /// The input iterators need not to be of the same type.
 /// Any number of input iterators can be given.
 ///
+/// For input iterators of the same type, [`multiway_intersection`] may be slightly faster.
+///
 /// # Performance
 ///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
 ///
@@ -1565,6 +1622,8 @@ macro_rules! intersection_dyn {
 /// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
 /// The input iterators need not to be of the same type.
 /// Any number of input iterators can be given.
+///
+/// For input iterators of the same type, [`multiway_union`] may be slightly faster.
 ///
 /// # Performance
 ///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
