@@ -755,12 +755,12 @@ fn multi_op() {
 
     // !!!cmk0 must work on empty, with ref and with owned
 
-    let _ = RangeSetInt::multiway_union([&a, &b, &c]);
-    let d = RangeSetInt::multiway_intersection([a, b, c].iter());
+    let _ = [&a, &b, &c].union();
+    let d = [a, b, c].iter().intersection();
     assert_eq!(d, RangeSetInt::new());
 
     assert_eq!(
-        !RangeSetInt::<u8>::multiway_union([]),
+        !MultiwayRangeSetInt::<u8>::union([]),
         RangeSetInt::from([0..=255])
     );
 
@@ -769,13 +769,13 @@ fn multi_op() {
     let c = RangeSetInt::from([1..=42]);
 
     let _ = &a & &b;
-    let d = RangeSetInt::multiway_intersection([&a, &b, &c]);
+    let d = [&a, &b, &c].intersection();
     // let d = RangeSetInt::intersection([a, b, c]);
     println!("{d}");
     assert_eq!(d, RangeSetInt::from([5..=6, 8..=9, 11..=13]));
 
     assert_eq!(
-        RangeSetInt::<u8>::multiway_intersection([]),
+        MultiwayRangeSetInt::<u8>::intersection([]),
         RangeSetInt::from([0..=255])
     );
 }

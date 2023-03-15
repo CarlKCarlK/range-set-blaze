@@ -254,21 +254,22 @@ impl<T: Integer> RangeSetInt<T> {
     }
 }
 
-impl<'a, T: Integer + 'a> RangeSetInt<T> {
-    pub fn multiway_union<I>(input: I) -> Self
-    where
-        I: IntoIterator<Item = &'a RangeSetInt<T>>,
-    {
-        input.into_iter().map(|x| x.ranges()).union().into()
-    }
+// cmk0000 remove
+// impl<'a, T: Integer + 'a> RangeSetInt<T> {
+//     pub fn multiway_union<I>(input: I) -> Self
+//     where
+//         I: IntoIterator<Item = &'a RangeSetInt<T>>,
+//     {
+//         input.into_iter().map(|x| x.ranges()).union().into()
+//     }
 
-    pub fn multiway_intersection<I>(input: I) -> Self
-    where
-        I: IntoIterator<Item = &'a RangeSetInt<T>>,
-    {
-        input.into_iter().map(|x| x.ranges()).intersection().into()
-    }
-}
+//     pub fn multiway_intersection<I>(input: I) -> Self
+//     where
+//         I: IntoIterator<Item = &'a RangeSetInt<T>>,
+//     {
+//         input.into_iter().map(|x| x.ranges()).intersection().into()
+//     }
+// }
 
 impl<T: Integer> RangeSetInt<T> {
     /// !!! cmk understand the 'where for'
@@ -1164,16 +1165,86 @@ pub type BitEq<T, L, R> = BitOrMerge<
 >;
 
 // cmk0 explain why this is needed
-impl<T, I, T2> MultiwaySortedDisjoint<T, T2> for I
+impl<'a, T, I> MultiwayRangeSetInt<'a, T> for I
+where
+    T: Integer + 'a,
+    I: IntoIterator<Item = &'a RangeSetInt<T>>,
+{
+}
+
+/// The trait used to define methods on multiple [`RangeSetInt`] structs,
+/// specifically [`MultiwayRangeSetInt::union`] and [`MultiwayRangeSetInt::intersection`].
+pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
+    IntoIterator<Item = &'a RangeSetInt<T>> + Sized //cmk0000 sized needed??
+{
+    /// Unions the given [`RangeSetInt`] struct, creating a new [`RangeSetInt`] struct.
+    /// The input iterators must be of the same type. Any number of input iterators can be given.
+    ///
+    /// For input iterators of different types, use the [`union_dyn`] macro.
+    ///
+    /// # Performance
+    ///
+    ///  All work is done on demand, in one pass through the input iterators. Minimal memory is used.
+    ///
+    /// # Example
+    ///
+    /// Find the integers that appear in any of the [`RangeSetInt`] iterators.
+    ///
+    /// ```
+    /// use range_set_int::{MultiwaySortedDisjoint, RangeSetInt, SortedDisjointIterator};
+    ///
+    /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetInt::from([5..=13, 18..=29]);
+    /// let c = RangeSetInt::from([25..=100]);
+    ///
+    /// let union = [a.ranges(), b.ranges(), c.ranges()].union();
+    ///
+    /// assert_eq!(union.to_string(), "1..=15, 18..=100");
+    /// ```
+    fn union(self) -> RangeSetInt<T> {
+        self.into_iter().map(|x| x.ranges()).union().into()
+    }
+
+    /// Intersects the given [`RangeSetInt`] iterators, creating a new [`RangeSetInt`] iterator.
+    /// The input iterators must be of the same type. Any number of input iterators can be given.
+    ///
+    /// For input iterators of different types, use the [`intersection_dyn`] macro.
+    ///
+    /// # Performance
+    ///
+    ///  All work is done on demand, in one pass through the input iterators. Minimal memory is used.
+    ///
+    /// # Example
+    ///
+    /// Find the integers that appear in all the [`RangeSetInt`] iterators.
+    ///
+    /// ```
+    /// use range_set_int::{MultiwaySortedDisjoint, RangeSetInt, SortedDisjointIterator};
+    ///
+    /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetInt::from([5..=13, 18..=29]);
+    /// let c = RangeSetInt::from([-100..=100]);
+    ///
+    /// let intersection = [a.ranges(), b.ranges(), c.ranges()].intersection();
+    ///
+    /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
+    /// ```
+    fn intersection(self) -> RangeSetInt<T> {
+        self.into_iter().map(|x| x.ranges()).intersection().into()
+    }
+}
+
+// cmk0 explain why this is needed
+impl<T, II, I> MultiwaySortedDisjoint<T, I> for II
 where
     T: Integer,
-    T2: SortedDisjointIterator<T>,
-    I: IntoIterator<Item = T2>,
+    I: SortedDisjointIterator<T>,
+    II: IntoIterator<Item = I>,
 {
 }
 
 /// The trait used to define methods on multiple [`SortedDisjoint`] iterators,
-/// specifically [`MultiwaySortedDisjoint::multiway_union`] and [`MultiwaySortedDisjoint::multiway_intersection`].
+/// specifically [`MultiwaySortedDisjoint::union`] and [`MultiwaySortedDisjoint::intersection`].
 pub trait MultiwaySortedDisjoint<T: Integer, I>: IntoIterator<Item = I> + Sized
 where
     I: SortedDisjointIterator<T>,

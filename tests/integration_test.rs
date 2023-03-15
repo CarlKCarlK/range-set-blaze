@@ -14,10 +14,10 @@ use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
 
 // !!!cmk should users use a prelude? If not, are these reasonable imports?
-use range_set_int::MultiwaySortedDisjoint;
 use range_set_int::{
     intersection_dyn, union_dyn, Integer, RangeSetInt, Ranges, SortedDisjointIterator,
 };
+use range_set_int::{MultiwayRangeSetInt, MultiwaySortedDisjoint};
 
 #[test]
 fn insert_255u8() {
@@ -240,12 +240,12 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
 
     // !!!cmk0 must with on empty, with ref and with owned
 
-    let _ = RangeSetInt::multiway_union([&a, &b, &c]);
-    let d = RangeSetInt::multiway_intersection([a, b, c].iter());
+    let _ = [&a, &b, &c].union();
+    let d = [a, b, c].intersection();
     assert_eq!(d, RangeSetInt::new());
 
     assert_eq!(
-        !RangeSetInt::<u8>::multiway_union([]),
+        !MultiwayRangeSetInt::<u8>::union([]),
         RangeSetInt::from([0..=255])
     );
 
@@ -255,13 +255,13 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
 
     // cmk0 list all the ways that we and BTreeMap does intersection. Do they make sense? Work when empty?
     let _ = &a & &b;
-    let d = RangeSetInt::multiway_intersection([&a, &b, &c]);
+    let d = [&a, &b, &c].intersection();
     // let d = RangeSetInt::intersection([a, b, c]);
     println!("{d}");
     assert_eq!(d, RangeSetInt::from([5..=6, 8..=9, 11..=13]));
 
     assert_eq!(
-        RangeSetInt::<u8>::multiway_intersection([]),
+        MultiwayRangeSetInt::<u8>::intersection([]),
         RangeSetInt::from([0..=255])
     );
     Ok(())

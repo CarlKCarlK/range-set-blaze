@@ -19,7 +19,9 @@ use rand::{
     distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, SeedableRng,
 };
 // use pprof::criterion::Output; //PProfProfiler
-use range_set_int::{DynSortedDisjoint, Integer, MultiwaySortedDisjoint, RangeSetInt};
+use range_set_int::{
+    DynSortedDisjoint, Integer, MultiwayRangeSetInt, MultiwaySortedDisjoint, RangeSetInt,
+};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
@@ -517,7 +519,7 @@ fn k_intersect(c: &mut Criterion) {
                 )
             },
             |sets| {
-                let _answer = RangeSetInt::multiway_intersection(sets.iter());
+                let _answer = sets.intersection();
             },
             BatchSize::SmallInput,
         );
@@ -626,7 +628,7 @@ fn coverage_goal(c: &mut Criterion) {
                         )
                     },
                     |sets| {
-                        let _answer = RangeSetInt::multiway_intersection(sets.iter());
+                        let _answer = sets.intersection();
                     },
                     BatchSize::SmallInput,
                 );
@@ -810,8 +812,8 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                     || setup,
                     |sets| {
                         let _answer = match how {
-                            How::Intersection => RangeSetInt::multiway_intersection(sets.iter()),
-                            How::Union => RangeSetInt::multiway_union(sets),
+                            How::Intersection => sets.intersection(),
+                            How::Union => sets.union(),
                             How::None => panic!("should not happen"),
                         };
                     },
