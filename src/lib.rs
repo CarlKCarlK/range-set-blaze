@@ -1180,6 +1180,8 @@ where
 {
 }
 
+/// The trait used to define methods on multiple [`SortedDisjoint`] iterators,
+/// specifically [`MultiwaySortedDisjoint::multiway_union`] and [`MultiwaySortedDisjoint::multiway_intersection`].
 pub trait MultiwaySortedDisjoint<T: Integer, I>: IntoIterator<Item = I> + Sized
 where
     I: SortedDisjointIterator<T>,
