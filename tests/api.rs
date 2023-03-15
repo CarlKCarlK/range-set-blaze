@@ -2,7 +2,7 @@
 use std::{collections::BTreeSet, ops::BitOr};
 
 use range_set_int::{
-    multiway_union, union_dyn, DynSortedDisjoint, RangeSetInt, SortedDisjointIterator,
+    union_dyn, DynSortedDisjoint, MultiwaySortedDisjoint, RangeSetInt, SortedDisjointIterator,
 };
 
 #[test]
@@ -69,10 +69,12 @@ fn sorted_disjoint() {
     let b = RangeSetInt::from([2, 3, 4]);
 
     let c0 = a.ranges() | b.ranges();
-    let c1 = multiway_union([a.ranges(), b.ranges()]);
-    let c2 = multiway_union([a.ranges(), b.ranges()]);
+    let c1 = [a.ranges(), b.ranges()].multiway_union();
+    let c2 = [a.ranges(), b.ranges()].multiway_union();
     let c3 = union_dyn!(a.ranges(), b.ranges());
-    let c4 = multiway_union([a.ranges(), b.ranges()].map(DynSortedDisjoint::new));
+    let c4 = [a.ranges(), b.ranges()]
+        .map(DynSortedDisjoint::new)
+        .multiway_union();
 
     let answer = RangeSetInt::from([1, 2, 3, 4]);
     assert!(c0.equal(answer.ranges()));

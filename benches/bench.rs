@@ -19,9 +19,7 @@ use rand::{
     distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, SeedableRng,
 };
 // use pprof::criterion::Output; //PProfProfiler
-use range_set_int::{
-    multiway_intersection, multiway_union, DynSortedDisjoint, Integer, RangeSetInt,
-};
+use range_set_int::{DynSortedDisjoint, Integer, MultiwaySortedDisjoint, RangeSetInt};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
@@ -538,7 +536,7 @@ fn k_intersect(c: &mut Criterion) {
             },
             |sets| {
                 let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-                let _answer: RangeSetInt<_> = multiway_intersection(sets).into();
+                let _answer: RangeSetInt<_> = sets.multiway_intersection().into();
             },
             BatchSize::SmallInput,
         );
@@ -606,7 +604,7 @@ fn coverage_goal(c: &mut Criterion) {
                     },
                     |sets| {
                         let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-                        let _answer: RangeSetInt<_> = multiway_intersection(sets).into();
+                        let _answer: RangeSetInt<_> = sets.multiway_intersection().into();
                     },
                     BatchSize::SmallInput,
                 );
@@ -795,8 +793,8 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                     |sets| {
                         let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
                         let _answer: RangeSetInt<_> = match how {
-                            How::Intersection => multiway_intersection(sets).into(),
-                            How::Union => multiway_union(sets).into(),
+                            How::Intersection => sets.multiway_intersection().into(),
+                            How::Union => sets.multiway_union().into(),
                             How::None => panic!("should not happen"),
                         };
                     },

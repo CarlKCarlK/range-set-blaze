@@ -259,14 +259,22 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        multiway_union(input.into_iter().map(|x| x.ranges())).into()
+        input
+            .into_iter()
+            .map(|x| x.ranges())
+            .multiway_union()
+            .into()
     }
 
     pub fn multiway_intersection<I>(input: I) -> Self
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        multiway_intersection(input.into_iter().map(|x| x.ranges())).into()
+        input
+            .into_iter()
+            .map(|x| x.ranges())
+            .multiway_intersection()
+            .into()
     }
 }
 
@@ -1168,13 +1176,13 @@ impl<T, I, T2> MultiwaySortedDisjoint<T, T2> for I
 where
     T: Integer,
     T2: SortedDisjointIterator<T>,
-    I: Iterator<Item = T2>,
+    I: IntoIterator<Item = T2>,
 {
 }
 
-pub trait MultiwaySortedDisjoint<T: Integer, T2>: Iterator<Item = T2> + Sized
+pub trait MultiwaySortedDisjoint<T: Integer, I>: IntoIterator<Item = I> + Sized
 where
-    T2: SortedDisjointIterator<T>,
+    I: SortedDisjointIterator<T>,
 {
     /// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
     /// The input iterators must be of the same type. Any number of input iterators can be given.
@@ -1190,98 +1198,68 @@ where
     /// Find the integers that appear in any of the [`SortedDisjoint`] iterators.
     ///
     /// ```
-    /// use range_set_int::{Multiway, RangeSetInt, SortedDisjointIterator};
+    /// use range_set_int::{MultiwaySortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
     /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
     /// let b = RangeSetInt::from([5..=13, 18..=29]);
     /// let c = RangeSetInt::from([25..=100]);
     ///
-    /// let union = [a.ranges(), b.ranges(), c.ranges()].iter().multiway_union();
+    /// let union = [a.ranges(), b.ranges(), c.ranges()].multiway_union();
     ///
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
-    fn multiway_union(self) -> BitOrKMerge<T, T2> {
+    fn multiway_union(self) -> BitOrKMerge<T, I> {
         SortedDisjointIter::new(
             self.into_iter()
                 .kmerge_by(|pair0, pair1| pair0.start() <= pair1.start()),
         )
     }
-}
 
-/// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
-/// The input iterators must be of the same type. Any number of input iterators can be given.
-///
-/// For input iterators of different types, use the [`union_dyn`] macro.
-///
-/// # Performance
-///
-///  All work is done on demand, in one pass through the input iterators. Minimal memory is used.
-///
-/// # Example
-///
-/// Find the integers that appear in any of the [`SortedDisjoint`] iterators.
-///
-/// ```
-/// use range_set_int::{multiway_union, RangeSetInt, SortedDisjointIterator};
-///
-/// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
-/// let b = RangeSetInt::from([5..=13, 18..=29]);
-/// let c = RangeSetInt::from([25..=100]);
-///
-/// let union = multiway_union([a.ranges(), b.ranges(), c.ranges()]);
-///
-/// assert_eq!(union.to_string(), "1..=15, 18..=100");
-/// ```
-pub fn multiway_union<T, I, J>(into_iter: I) -> BitOrKMerge<T, J::IntoIter>
-where
-    I: IntoIterator<Item = J>,
-    J: IntoIterator<Item = RangeInclusive<T>>,
-    J::IntoIter: SortedDisjoint,
-    T: Integer,
-{
-    SortedDisjointIter::new(
-        into_iter
-            .into_iter()
-            .kmerge_by(|pair0, pair1| pair0.start() <= pair1.start()),
-    )
+    /// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
+    /// The input iterators must be of the same type. Any number of input iterators can be given.
+    ///
+    /// For input iterators of different types, use the [`intersection_dyn`] macro.
+    ///
+    /// # Performance
+    ///
+    ///  All work is done on demand, in one pass through the input iterators. Minimal memory is used.
+    ///
+    /// # Example
+    ///
+    /// Find the integers that appear in all the [`SortedDisjoint`] iterators.
+    ///
+    /// ```
+    /// use range_set_int::{MultiwaySortedDisjoint, RangeSetInt, SortedDisjointIterator};
+    ///
+    /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetInt::from([5..=13, 18..=29]);
+    /// let c = RangeSetInt::from([-100..=100]);
+    ///
+    /// let intersection = [a.ranges(), b.ranges(), c.ranges()].multiway_intersection();
+    ///
+    /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
+    /// ```
+    fn multiway_intersection(self) -> BitAndKMerge<T, I> {
+        self.into_iter()
+            .map(|seq| seq.into_iter().not())
+            .multiway_union()
+            .not()
+    }
 }
 
 // cmk000 is multiway_ the best name?
 // cmk rule: don't forget these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
-/// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
-/// The input iterators must be of the same type. Any number of input iterators can be given.
-///
-/// For input iterators of different types, use the [`intersection_dyn`] macro.
-///
-/// # Performance
-///
-///  All work is done on demand, in one pass through the input iterators. Minimal memory is used.
-///
-/// # Example
-///
-/// Find the integers that appear in all the [`SortedDisjoint`] iterators.
-///
-/// ```
-/// use range_set_int::{multiway_intersection, RangeSetInt, SortedDisjointIterator};
-///
-/// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
-/// let b = RangeSetInt::from([5..=13, 18..=29]);
-/// let c = RangeSetInt::from([-100..=100]);
-///
-/// let intersection = multiway_intersection([a.ranges(), b.ranges(), c.ranges()]);
-///
-/// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
-/// ```
-pub fn multiway_intersection<T, I, J>(into_iter: I) -> BitAndKMerge<T, J::IntoIter>
-where
-    // cmk rule prefer IntoIterator over Iterator (here is example)
-    I: IntoIterator<Item = J>,
-    J: IntoIterator<Item = RangeInclusive<T>>,
-    J::IntoIter: SortedDisjoint,
-    T: Integer,
-{
-    multiway_union(into_iter.into_iter().map(|seq| seq.into_iter().not())).not()
-}
+
+// pub fn multiway_intersection<T, I, J>(into_iter: I) -> BitAndKMerge<T, J::IntoIter>
+// where
+//     // cmk rule prefer IntoIterator over Iterator (here is example)
+//     I: IntoIterator<Item = J>,
+//     J: IntoIterator<Item = RangeInclusive<T>>,
+//     J::IntoIter: SortedDisjoint,
+//     T: Integer,
+// {
+//     multiway_union(into_iter.into_iter().map(|seq| seq.into_iter().not())).not()
+// }
 
 /// The trait used to define methods and operators common to iterators with the [`SortedDisjoint`] trait.
 /// Methods include 'to_string' and 'equal'. Operators include '&', '|', '^', '!', '-'.
@@ -1659,7 +1637,7 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
 /// ```
 #[macro_export]
 macro_rules! intersection_dyn {
-    ($($val:expr),*) => {$crate::multiway_intersection([$($crate::DynSortedDisjoint::new($val)),*])}
+    ($($val:expr),*) => {$crate::MultiwaySortedDisjoint::multiway_intersection([$($crate::DynSortedDisjoint::new($val)),*])}
 }
 
 /// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
@@ -1696,7 +1674,7 @@ macro_rules! intersection_dyn {
 #[macro_export]
 macro_rules! union_dyn {
     ($($val:expr),*) => {
-                        $crate::multiway_union([$($crate::DynSortedDisjoint::new($val)),*])
+                        $crate::MultiwaySortedDisjoint::multiway_union([$($crate::DynSortedDisjoint::new($val)),*])
                         }
 }
 
