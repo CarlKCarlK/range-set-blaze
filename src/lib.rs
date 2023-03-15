@@ -124,6 +124,13 @@ pub trait Integer:
 }
 
 #[derive(Clone, Hash, Default, PartialEq)]
+
+/// A set of integers stored as sorted & disjoint ranges.
+///
+/// Internally, it uses a cache-efficient `BTreeMap` to store the ranges.
+/// See the [module-level documentation] for more details.
+///
+/// [module-level documentation]: index.html
 pub struct RangeSetInt<T: Integer> {
     len: <T as Integer>::SafeLen,
     btree_map: BTreeMap<T, T>,
@@ -142,7 +149,7 @@ impl<T: Integer> fmt::Display for RangeSetInt<T> {
 }
 
 impl<T: Integer> RangeSetInt<T> {
-    /// Gets an iterator that visits the integer elements in the `RangeSetInt` in ascending
+    /// Gets an iterator that visits the integer elements in the [`RangeSetInt`] in ascending
     /// order.
     ///
     /// Also see the [`RangeSetInt::ranges`] method.
@@ -275,8 +282,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// Moves all elements from `other` into `self`, leaving `other` empty.
     ///
     /// # Performance
-    /// It adds the ranges in `other` to `self` in O(n log m) time, where n is the number of ranges in `other` and m is the number of ranges in `self`.
-    /// When n is large, consider using `bitor` which is O(n+m) time.
+    /// It adds the integers in `other` to `self` in O(n log m) time, where n is the number of ranges in `other`
+    /// and m is the number of ranges in `self`.
+    /// When n is large, consider using `bitor` which is O(n+m) time. cmk000 advise
     ///
     /// # Examples
     ///
@@ -408,11 +416,10 @@ impl<T: Integer> RangeSetInt<T> {
             .map_or(false, |(_, end)| value <= *end)
     }
 
-    /// cmk0000 replace 'range' in docs with 'range'
-    /// !!!cmk0doc add note to see - or sub
+    // !!!cmk0doc add note to see - or sub
     /// Visits the ranges representing the difference,
-    /// i.e., the ranges that are in `self` but not in `other`,
-    /// in ascending order.
+    /// i.e., the integers that are in `self` but not in `other`,
+    /// as sorted & disjoint ranges.
     ///
     /// # Examples
     ///
@@ -433,8 +440,8 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     /// Visits the ranges representing the union,
-    /// i.e., all the ranges in `self` or `other`, without duplicates,
-    /// in ascending order.
+    /// i.e., all the integers in `self` or `other`,
+    /// as sorted & disjoint ranges.
     ///
     /// # Examples
     ///
@@ -454,8 +461,8 @@ impl<T: Integer> RangeSetInt<T> {
         self.ranges() | other.ranges()
     }
     /// Visits the ranges representing the complement,
-    /// i.e., all the ranges not in `self`, without duplicates,
-    /// in ascending order.
+    /// i.e., all the integers not in `self`,
+    /// as sorted & disjoint ranges.
     ///
     /// # Examples
     ///
@@ -472,8 +479,8 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     /// Visits the ranges representing the symmetric difference,
-    /// i.e., the ranges that are in `self` or in `other` but not in both,
-    /// in ascending order.
+    /// i.e., the integers that are in `self` or in `other` but not in both,
+    /// as sorted & disjoint ranges.
     ///
     /// # Examples
     ///
@@ -845,7 +852,7 @@ impl<T: Integer> RangeSetInt<T> {
         self.len
     }
 
-    /// Makes a new, empty `RangeIntSet`.
+    /// Makes a new, empty [`RangeSetInt`].
     ///
     /// # Examples
     ///
@@ -928,9 +935,8 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    /// cmk0doc see .iter()
-    /// Gets an iterator that visits the ranges in the [`RangeSetInt`] in ascending
-    /// order.
+    /// An iterator that visits the ranges in the [`RangeSetInt`],
+    /// i.e., the integers as sorted & disjoint ranges.
     ///
     /// Also see [`RangeSetInt::iter`].
     ///
@@ -995,6 +1001,13 @@ impl<T: Integer> RangeSetInt<T> {
 
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+/// An iterator that visits the ranges in the [`RangeSetInt`],
+/// i.e., the integers as sorted & disjoint ranges.
+///
+/// This `struct` is created by the [`ranges`] method on [`RangeSetInt`]. See its
+/// documentation for more.
+///
+/// [`ranges`]: RangeSetInt::ranges
 pub struct Ranges<'a, T: Integer> {
     iter: btree_map::Iter<'a, T, T>,
 }
@@ -1296,7 +1309,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
 
-    /// Gets an iterator for moving out the `RangeSetInt`'s contents.
+    /// Gets an iterator for moving out the [`RangeSetInt`]'s contents.
     ///
     /// # Examples
     ///
@@ -1471,8 +1484,8 @@ pub trait SortedDisjoint: SortedStarts {}
 // cmk sort-iter uses peekable. Is that better?
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-/// A wrapper around [`SortedDisjoint`] iterators to created new iterators
-/// of consistent type.
+/// A wrapper around [`SortedDisjoint`] iterators to create new iterators
+/// of a consistent type.
 ///
 /// It is useful when you need three or more different types of iterators to have
 /// the same type, for example when you want to use them in with [`multiway_union`].
@@ -1525,9 +1538,7 @@ pub trait DynSortedDisjointExt<'a>: Iterator + SortedDisjoint + Sized + 'a {
 impl<'a, I: Iterator + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
 
 // !!!cmk00000 Need to better says what kind of iterators are allowed.
-// !!!cmk00000 the 'use' here is terrible
-// !!!cmk00000 make SortedDisjoint' be a link
-/// Intersects the given `SortedDisjoint` iterators, creating a new `SortedDisjoint` iterator.
+/// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
 /// The input iterators need not to be of the same type.
 /// Any number of input iterators can be given.
 ///
@@ -1536,7 +1547,7 @@ impl<'a, I: Iterator + SortedDisjoint + 'a> DynSortedDisjointExt<'a> for I {}
 ///
 /// # Example: 3-Input Parity
 ///
-/// Find the integers that appear an odd number of times in the `SortedDisjoint` iterators.
+/// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
 ///
 /// ```
 /// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
@@ -1561,7 +1572,7 @@ macro_rules! intersection_dyn {
     ($($val:expr),*) => {$crate::multiway_intersection([$($crate::DynSortedDisjoint::new($val)),*])}
 }
 
-/// Unions the given `SortedDisjoint` iterators, creating a new [`SortedDisjoint`] iterator.
+/// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
 /// The input iterators need not to be of the same type.
 /// Any number of input iterators can be given.
 ///

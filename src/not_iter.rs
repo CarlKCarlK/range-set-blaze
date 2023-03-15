@@ -3,6 +3,8 @@ use std::ops::RangeInclusive;
 use crate::{Integer, SortedDisjoint};
 
 // cmk rule: Make structs clonable when possible.
+/// An iterator that visits the ranges representing the complement,
+/// i.e., all the integers not in the original iterator, as sorted & disjoint ranges.
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct NotIter<T, I>
