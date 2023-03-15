@@ -160,8 +160,9 @@ impl<T: Integer, I> SortedStarts for SortedDisjointWithLenSoFar<T, I> where
 /// and may overlap.
 ///
 /// It implements the [`SortedStarts`] trait which is required on inputs to
-/// the `SortedDisjointIter` iterator.
-// cmk0000 bad link
+/// the [`SortedDisjointIter`] iterator.
+///
+/// [`SortedDisjointIter`]: crate::SortedDisjointIter
 pub struct AssumeSortedStarts<T, I>
 where
     T: Integer,

@@ -15,7 +15,7 @@ The main trait is [`SortedDisjoint`]. It is implemented by iterators of sorted &
 
 > It performs set operations in one iterator pass and with minimal (constant) memory. It enforces the "sorted & disjoint" constraint at compile time.
 This trait is inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. [`SortedDisjoint`] differs from its
-inspiration by being specialized on integer ranges that it requires be disjoint.
+inspiration by specializing on disjoint integer ranges.
 
 Example 1
 ---------

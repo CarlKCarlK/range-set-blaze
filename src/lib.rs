@@ -1590,7 +1590,7 @@ impl<'a, T: 'a + Integer> Extend<&'a RangeInclusive<T>> for RangeSetInt<T> {
 /// The trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
 pub trait SortedStarts {}
-/// The trait used to mark iterators that provide ranges that are sorted by start and that do not overlap (and are, thus, also sorted by end.).
+/// The trait used to mark iterators that provide ranges that are sorted by start and that do not overlap.
 pub trait SortedDisjoint: SortedStarts {}
 
 // cmk This code from sorted-iter shows how to define clone when possible

@@ -13,7 +13,7 @@ use crate::{
 /// Both iterators work on ranges of integers.
 /// The ranges of a [`SortedStarts`]-trait iterator are sorted by start, but not necessarily by end,
 /// and may overlap. The ranges of a [`SortedDisjoint`]-trait iterator are sorted by start and may
-/// not overlap (and so their ends are also sorted).
+/// not overlap.
 ///
 /// Used internally by `union`-related functions.
 ///
