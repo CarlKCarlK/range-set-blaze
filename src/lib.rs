@@ -58,7 +58,7 @@ use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::One;
 use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
-pub use sorted_disjoint_iter::SortedDisjointIter;
+use sorted_disjoint_iter::SortedDisjointIter;
 use std::cmp::max;
 use std::cmp::Ordering;
 use std::collections::btree_map;
@@ -68,7 +68,6 @@ use std::fmt;
 use std::ops::RangeInclusive;
 use std::ops::Sub;
 use std::str::FromStr;
-pub use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
 

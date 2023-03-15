@@ -7,6 +7,7 @@ use crate::{
     Integer, SortedStarts,
 };
 
+// cmk00 if this is for internal use only, then it's doc should be different
 // cmk00 maybe not the best name
 /// An iterator that turns a [`SortedStarts`]-trait iterator into a [`SortedDisjoint`]-trait iterator.
 ///

@@ -26,8 +26,8 @@ error[E0277]: the trait bound `std::array::IntoIter<({integer}, {integer}), 2>: 
             DynSortedDisjoint<'a, T>
             NotIter<T, I>
             Ranges<'_, T>
-            SortedDisjointIter<T, I>
             itertools::tee::Tee<I>
+            range_set_int::sorted_disjoint_iter::SortedDisjointIter<T, I>
 note: required by a bound in `range_set_int::SortedDisjointIterator::bitxor`
  --> src/lib.rs
   |
@@ -70,8 +70,8 @@ error[E0271]: expected `std::array::IntoIter<({integer}, {integer}), 2>` to be a
   = note: required for `itertools::tee::Tee<std::array::IntoIter<({integer}, {integer}), 2>>` to implement `SortedStarts`
   = note: 1 redundant requirement hidden
   = note: required for `itertools::adaptors::MergeBy<NotIter<{integer}, itertools::tee::Tee<Ranges<'_, {integer}>>>, ..., ...>` to implement `SortedStarts`
-note: required by a bound in `SortedDisjointIter`
+note: required by a bound in `range_set_int::sorted_disjoint_iter::SortedDisjointIter`
  --> src/sorted_disjoint_iter.rs
   |
   |     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
-  |                                             ^^^^^^^^^^^^ required by this bound in `SortedDisjointIter`
+  |                                             ^^^^^^^^^^^^ required by this bound in `range_set_int::sorted_disjoint_iter::SortedDisjointIter`
