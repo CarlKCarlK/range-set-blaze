@@ -1163,6 +1163,51 @@ pub type BitEq<T, L, R> = BitOrMerge<
     NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
 >;
 
+// cmk0 explain why this is needed
+impl<T, I, T2> MultiwaySortedDisjoint<T, T2> for I
+where
+    T: Integer,
+    T2: SortedDisjointIterator<T>,
+    I: Iterator<Item = T2>,
+{
+}
+
+pub trait MultiwaySortedDisjoint<T: Integer, T2>: Iterator<Item = T2> + Sized
+where
+    T2: SortedDisjointIterator<T>,
+{
+    /// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
+    /// The input iterators must be of the same type. Any number of input iterators can be given.
+    ///
+    /// For input iterators of different types, use the [`union_dyn`] macro.
+    ///
+    /// # Performance
+    ///
+    ///  All work is done on demand, in one pass through the input iterators. Minimal memory is used.
+    ///
+    /// # Example
+    ///
+    /// Find the integers that appear in any of the [`SortedDisjoint`] iterators.
+    ///
+    /// ```
+    /// use range_set_int::{Multiway, RangeSetInt, SortedDisjointIterator};
+    ///
+    /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetInt::from([5..=13, 18..=29]);
+    /// let c = RangeSetInt::from([25..=100]);
+    ///
+    /// let union = [a.ranges(), b.ranges(), c.ranges()].iter().multiway_union();
+    ///
+    /// assert_eq!(union.to_string(), "1..=15, 18..=100");
+    /// ```
+    fn multiway_union(self) -> BitOrKMerge<T, T2> {
+        SortedDisjointIter::new(
+            self.into_iter()
+                .kmerge_by(|pair0, pair1| pair0.start() <= pair1.start()),
+        )
+    }
+}
+
 /// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
 /// The input iterators must be of the same type. Any number of input iterators can be given.
 ///
@@ -1547,8 +1592,6 @@ pub trait SortedDisjoint: SortedStarts {}
 ///
 /// It is useful when you need three or more different types of iterators to have
 /// the same type, for example when you want to use them in with [`multiway_union`].
-/// Also see [`DynSortedDisjoint::new`].
-// !!!cmk00000 can this fail to check for sorted disjoint?
 // !!!cmk00000 could multiway_union be less global the says way that dyn_sorted_disjoint is?
 pub struct DynSortedDisjoint<'a, T> {
     iter: Box<dyn Iterator<Item = T> + 'a>,

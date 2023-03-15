@@ -1124,3 +1124,18 @@ fn trick_dyn() {
     let good = RangeSetInt::from(bad);
     let _u = union_dyn!(good.ranges());
 }
+
+#[test]
+fn multiway2() {
+    use range_set_int::MultiwaySortedDisjoint;
+
+    let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetInt::from([5..=13, 18..=29]);
+    let c = RangeSetInt::from([25..=100]);
+
+    let union = [a.ranges(), b.ranges(), c.ranges()]
+        .into_iter()
+        .multiway_union();
+
+    assert_eq!(union.to_string(), "1..=15, 18..=100");
+}
