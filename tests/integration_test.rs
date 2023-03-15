@@ -286,10 +286,7 @@ fn custom_multi() -> Result<(), Box<dyn std::error::Error>> {
     let d: RangeSetInt<_> = a_less.into();
     println!("{d}");
 
-    let d: RangeSetInt<_> = a
-        .ranges()
-        .sub([b.ranges(), c.ranges()].multiway_union())
-        .into();
+    let d: RangeSetInt<_> = a.ranges().sub([b.ranges(), c.ranges()].union()).into();
     println!("{d}");
     Ok(())
 }
@@ -327,12 +324,10 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
         RangeSetInt::from([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
-    let _d = [a.ranges()].multiway_intersection();
-    let _parity: RangeSetInt<u8> = [[a.ranges()].multiway_intersection()]
-        .multiway_union()
-        .into();
-    let _parity: RangeSetInt<u8> = [a.ranges()].multiway_intersection().into();
-    let _parity: RangeSetInt<u8> = [a.ranges()].multiway_union().into();
+    let _d = [a.ranges()].intersection();
+    let _parity: RangeSetInt<u8> = [[a.ranges()].intersection()].union().into();
+    let _parity: RangeSetInt<u8> = [a.ranges()].intersection().into();
+    let _parity: RangeSetInt<u8> = [a.ranges()].union().into();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
@@ -342,7 +337,7 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let _a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
-    let u = [DynSortedDisjoint::new(a.ranges())].multiway_union();
+    let u = [DynSortedDisjoint::new(a.ranges())].union();
     assert_eq!(
         RangeSetInt::from(u),
         RangeSetInt::from([1..=6, 8..=9, 11..=15])
@@ -364,7 +359,7 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
         intersection_dyn!(a.ranges().not(), b.ranges().not(), c.ranges()),
         intersection_dyn!(a.ranges(), b.ranges(), c.ranges()),
     ]
-    .multiway_union();
+    .union();
     assert_eq!(
         RangeSetInt::from(u),
         RangeSetInt::from([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
@@ -546,11 +541,11 @@ fn empty_it() {
     let b = RangeSetInt::from([0; 0]);
 
     let c0 = a.ranges() | b.ranges();
-    let c1 = [a.ranges(), b.ranges()].multiway_union();
+    let c1 = [a.ranges(), b.ranges()].union();
     let c_list2: [Ranges<i32>; 0] = [];
-    let c2 = c_list2.clone().multiway_union();
+    let c2 = c_list2.clone().union();
     let c3 = union_dyn!(a.ranges(), b.ranges());
-    let c4 = c_list2.map(DynSortedDisjoint::new).multiway_union();
+    let c4 = c_list2.map(DynSortedDisjoint::new).union();
 
     let answer = RangeSetInt::from([0; 0]);
     assert!(c0.equal(answer.ranges()));
@@ -560,11 +555,11 @@ fn empty_it() {
     assert!(c4.equal(answer.ranges()));
 
     let c0 = !(a.ranges() & b.ranges());
-    let c1 = ![a.ranges(), b.ranges()].multiway_intersection();
+    let c1 = ![a.ranges(), b.ranges()].intersection();
     let c_list2: [Ranges<i32>; 0] = [];
-    let c2 = !!c_list2.clone().multiway_intersection();
+    let c2 = !!c_list2.clone().intersection();
     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
-    let c4 = !!c_list2.map(DynSortedDisjoint::new).multiway_intersection();
+    let c4 = !!c_list2.map(DynSortedDisjoint::new).intersection();
 
     let answer = !RangeSetInt::from([0; 0]);
     assert!(c0.equal(answer.ranges()));
@@ -701,7 +696,7 @@ fn k_play(c: &mut Criterion) {
                 },
                 |sets| {
                     let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-                    let _answer: RangeSetInt<_> = sets.multiway_intersection().into();
+                    let _answer: RangeSetInt<_> = sets.intersection().into();
                 },
                 BatchSize::SmallInput,
             );
@@ -1136,9 +1131,9 @@ fn multiway2() {
     let b = RangeSetInt::from([5..=13, 18..=29]);
     let c = RangeSetInt::from([25..=100]);
 
-    let union = [a.ranges(), b.ranges(), c.ranges()].multiway_union();
+    let union = [a.ranges(), b.ranges(), c.ranges()].union();
     assert_eq!(union.to_string(), "1..=15, 18..=100");
 
-    let union = MultiwaySortedDisjoint::multiway_union([a.ranges(), b.ranges(), c.ranges()]);
+    let union = MultiwaySortedDisjoint::union([a.ranges(), b.ranges(), c.ranges()]);
     assert_eq!(union.to_string(), "1..=15, 18..=100");
 }

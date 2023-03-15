@@ -259,22 +259,14 @@ impl<'a, T: Integer + 'a> RangeSetInt<T> {
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        input
-            .into_iter()
-            .map(|x| x.ranges())
-            .multiway_union()
-            .into()
+        input.into_iter().map(|x| x.ranges()).union().into()
     }
 
     pub fn multiway_intersection<I>(input: I) -> Self
     where
         I: IntoIterator<Item = &'a RangeSetInt<T>>,
     {
-        input
-            .into_iter()
-            .map(|x| x.ranges())
-            .multiway_intersection()
-            .into()
+        input.into_iter().map(|x| x.ranges()).intersection().into()
     }
 }
 
@@ -1206,11 +1198,11 @@ where
     /// let b = RangeSetInt::from([5..=13, 18..=29]);
     /// let c = RangeSetInt::from([25..=100]);
     ///
-    /// let union = [a.ranges(), b.ranges(), c.ranges()].multiway_union();
+    /// let union = [a.ranges(), b.ranges(), c.ranges()].union();
     ///
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
-    fn multiway_union(self) -> BitOrKMerge<T, I> {
+    fn union(self) -> BitOrKMerge<T, I> {
         SortedDisjointIter::new(
             self.into_iter()
                 .kmerge_by(|pair0, pair1| pair0.start() <= pair1.start()),
@@ -1237,14 +1229,14 @@ where
     /// let b = RangeSetInt::from([5..=13, 18..=29]);
     /// let c = RangeSetInt::from([-100..=100]);
     ///
-    /// let intersection = [a.ranges(), b.ranges(), c.ranges()].multiway_intersection();
+    /// let intersection = [a.ranges(), b.ranges(), c.ranges()].intersection();
     ///
     /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
     /// ```
-    fn multiway_intersection(self) -> BitAndKMerge<T, I> {
+    fn intersection(self) -> BitAndKMerge<T, I> {
         self.into_iter()
             .map(|seq| seq.into_iter().not())
-            .multiway_union()
+            .union()
             .not()
     }
 }
@@ -1639,7 +1631,7 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
 /// ```
 #[macro_export]
 macro_rules! intersection_dyn {
-    ($($val:expr),*) => {$crate::MultiwaySortedDisjoint::multiway_intersection([$($crate::DynSortedDisjoint::new($val)),*])}
+    ($($val:expr),*) => {$crate::MultiwaySortedDisjoint::intersection([$($crate::DynSortedDisjoint::new($val)),*])}
 }
 
 /// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
@@ -1676,7 +1668,7 @@ macro_rules! intersection_dyn {
 #[macro_export]
 macro_rules! union_dyn {
     ($($val:expr),*) => {
-                        $crate::MultiwaySortedDisjoint::multiway_union([$($crate::DynSortedDisjoint::new($val)),*])
+                        $crate::MultiwaySortedDisjoint::union([$($crate::DynSortedDisjoint::new($val)),*])
                         }
 }
 

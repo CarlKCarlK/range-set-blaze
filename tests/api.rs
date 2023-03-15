@@ -69,12 +69,10 @@ fn sorted_disjoint() {
     let b = RangeSetInt::from([2, 3, 4]);
 
     let c0 = a.ranges() | b.ranges();
-    let c1 = [a.ranges(), b.ranges()].multiway_union();
-    let c2 = [a.ranges(), b.ranges()].multiway_union();
+    let c1 = [a.ranges(), b.ranges()].union();
+    let c2 = [a.ranges(), b.ranges()].union();
     let c3 = union_dyn!(a.ranges(), b.ranges());
-    let c4 = [a.ranges(), b.ranges()]
-        .map(DynSortedDisjoint::new)
-        .multiway_union();
+    let c4 = [a.ranges(), b.ranges()].map(DynSortedDisjoint::new).union();
 
     let answer = RangeSetInt::from([1, 2, 3, 4]);
     assert!(c0.equal(answer.ranges()));

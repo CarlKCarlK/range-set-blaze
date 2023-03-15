@@ -536,7 +536,7 @@ fn k_intersect(c: &mut Criterion) {
             },
             |sets| {
                 let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-                let _answer: RangeSetInt<_> = sets.multiway_intersection().into();
+                let _answer: RangeSetInt<_> = sets.intersection().into();
             },
             BatchSize::SmallInput,
         );
@@ -604,7 +604,7 @@ fn coverage_goal(c: &mut Criterion) {
                     },
                     |sets| {
                         let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-                        let _answer: RangeSetInt<_> = sets.multiway_intersection().into();
+                        let _answer: RangeSetInt<_> = sets.intersection().into();
                     },
                     BatchSize::SmallInput,
                 );
@@ -793,8 +793,8 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                     |sets| {
                         let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
                         let _answer: RangeSetInt<_> = match how {
-                            How::Intersection => sets.multiway_intersection().into(),
-                            How::Union => sets.multiway_union().into(),
+                            How::Intersection => sets.intersection().into(),
+                            How::Union => sets.union().into(),
                             How::None => panic!("should not happen"),
                         };
                     },
