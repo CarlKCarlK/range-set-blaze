@@ -16,6 +16,9 @@ use crate::{
 /// not overlap (and so their ends are also sorted).
 ///
 /// Used internally by `union`-related functions.
+///
+/// [`SortedDisjoint`]: crate::SortedDisjoint
+/// [`SortedDisjoint`]: crate::SortedDisjoint
 
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]

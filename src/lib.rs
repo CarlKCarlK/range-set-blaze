@@ -1,7 +1,6 @@
 #![doc = include_str!("../README.md")]
 
 // !!!cmk0doc give a link to RangSetInt struct at top of the docs.
-// !!!cmk000 understand the two multiway_union/intersection functions
 
 // https://docs.rs/range_bounds_map/latest/range_bounds_map/range_bounds_set/struct.RangeBoundsSet.html
 // Here are some relevant crates I found whilst searching around the topic area:
@@ -254,23 +253,7 @@ impl<T: Integer> RangeSetInt<T> {
     }
 }
 
-// cmk0000 remove
-// impl<'a, T: Integer + 'a> RangeSetInt<T> {
-//     pub fn multiway_union<I>(input: I) -> Self
-//     where
-//         I: IntoIterator<Item = &'a RangeSetInt<T>>,
-//     {
-//         input.into_iter().map(|x| x.ranges()).union().into()
-//     }
-
-//     pub fn multiway_intersection<I>(input: I) -> Self
-//     where
-//         I: IntoIterator<Item = &'a RangeSetInt<T>>,
-//     {
-//         input.into_iter().map(|x| x.ranges()).intersection().into()
-//     }
-// }
-
+// cmk0000 link regular union with multiway union, etc etc etc
 impl<T: Integer> RangeSetInt<T> {
     /// !!! cmk understand the 'where for'
     /// !!! cmk understand the operator 'Sub'
@@ -1172,65 +1155,71 @@ where
 {
 }
 
-/// The trait used to define methods on multiple [`RangeSetInt`] structs,
-/// specifically [`MultiwayRangeSetInt::union`] and [`MultiwayRangeSetInt::intersection`].
+/// The trait used to define methods on multiple [`RangeSetInt`]'s,
+/// specifically [`union`] and [`intersection`].
+///
+/// [`union`]: MultiwayRangeSetInt::union
+/// [`intersection`]: MultiwayRangeSetInt::intersection
 pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
-    IntoIterator<Item = &'a RangeSetInt<T>> + Sized //cmk0000 sized needed??
+    IntoIterator<Item = &'a RangeSetInt<T>> + Sized
 {
-    /// Unions the given [`RangeSetInt`] struct, creating a new [`RangeSetInt`] struct.
-    /// The input iterators must be of the same type. Any number of input iterators can be given.
+    /// Unions the given [`RangeSetInt`]'s, creating a new [`RangeSetInt`].
+    /// Any number of input can be given.
     ///
-    /// For input iterators of different types, use the [`union_dyn`] macro.
+    /// For exactly two inputs, you can also use the '|' operator.
     ///
     /// # Performance
     ///
-    ///  All work is done on demand, in one pass through the input iterators. Minimal memory is used.
+    ///  All work is done on demand, in one pass through the inputs. Minimal memory is used.
     ///
     /// # Example
     ///
-    /// Find the integers that appear in any of the [`RangeSetInt`] iterators.
+    /// Find the integers that appear in any of the [`RangeSetInt`]'s.
     ///
     /// ```
-    /// use range_set_int::{MultiwaySortedDisjoint, RangeSetInt, SortedDisjointIterator};
+    /// use range_set_int::{MultiwayRangeSetInt, RangeSetInt};
     ///
     /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
     /// let b = RangeSetInt::from([5..=13, 18..=29]);
     /// let c = RangeSetInt::from([25..=100]);
     ///
-    /// let union = [a.ranges(), b.ranges(), c.ranges()].union();
+    /// let union = [a, b, c].union();
     ///
-    /// assert_eq!(union.to_string(), "1..=15, 18..=100");
+    /// assert_eq!(union, RangeSetInt::from([1..=15, 18..=100]));
     /// ```
     fn union(self) -> RangeSetInt<T> {
-        self.into_iter().map(|x| x.ranges()).union().into()
+        self.into_iter().map(RangeSetInt::ranges).union().into()
     }
 
-    /// Intersects the given [`RangeSetInt`] iterators, creating a new [`RangeSetInt`] iterator.
-    /// The input iterators must be of the same type. Any number of input iterators can be given.
+    /// Intersects the given [`RangeSetInt`]'s, creating a new [`RangeSetInt`].
+    /// Any number of input can be given.
     ///
-    /// For input iterators of different types, use the [`intersection_dyn`] macro.
+    /// For exactly two inputs, you can also use the '&' operator.
     ///
     /// # Performance
     ///
-    ///  All work is done on demand, in one pass through the input iterators. Minimal memory is used.
+    ///  All work is done on demand, in one pass through the inputs. Minimal memory is used.
     ///
     /// # Example
     ///
-    /// Find the integers that appear in all the [`RangeSetInt`] iterators.
+    /// Find the integers that appear in all the [`RangeSetInt`]'s.
     ///
     /// ```
-    /// use range_set_int::{MultiwaySortedDisjoint, RangeSetInt, SortedDisjointIterator};
+    /// use range_set_int::{MultiwayRangeSetInt, RangeSetInt};
     ///
     /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
     /// let b = RangeSetInt::from([5..=13, 18..=29]);
     /// let c = RangeSetInt::from([-100..=100]);
     ///
-    /// let intersection = [a.ranges(), b.ranges(), c.ranges()].intersection();
+    /// let intersection = [a, b, c].intersection();
     ///
-    /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
+    /// assert_eq!(intersection, RangeSetInt::from([5..=6, 8..=9, 11..=13]));
     /// ```
     fn intersection(self) -> RangeSetInt<T> {
-        self.into_iter().map(|x| x.ranges()).intersection().into()
+        self.into_iter()
+            .map(RangeSetInt::ranges)
+            .intersection()
+            .into()
     }
 }
 
@@ -1244,7 +1233,10 @@ where
 }
 
 /// The trait used to define methods on multiple [`SortedDisjoint`] iterators,
-/// specifically [`MultiwaySortedDisjoint::union`] and [`MultiwaySortedDisjoint::intersection`].
+/// specifically [`union`] and [`intersection`].
+///
+/// [`union`]: MultiwaySortedDisjoint::union
+/// [`intersection`]: MultiwaySortedDisjoint::intersection
 pub trait MultiwaySortedDisjoint<T: Integer, I>: IntoIterator<Item = I> + Sized
 where
     I: SortedDisjointIterator<T>,
@@ -1312,19 +1304,7 @@ where
     }
 }
 
-// cmk000 is multiway_ the best name?
 // cmk rule: don't forget these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
-
-// pub fn multiway_intersection<T, I, J>(into_iter: I) -> BitAndKMerge<T, J::IntoIter>
-// where
-//     // cmk rule prefer IntoIterator over Iterator (here is example)
-//     I: IntoIterator<Item = J>,
-//     J: IntoIterator<Item = RangeInclusive<T>>,
-//     J::IntoIter: SortedDisjoint,
-//     T: Integer,
-// {
-//     multiway_union(into_iter.into_iter().map(|seq| seq.into_iter().not())).not()
-// }
 
 /// The trait used to define methods and operators common to iterators with the [`SortedDisjoint`] trait.
 /// Methods include 'to_string' and 'equal'. Operators include '&', '|', '^', '!', '-'.
@@ -1633,9 +1613,12 @@ pub trait SortedDisjoint: SortedStarts {}
 /// A wrapper around [`SortedDisjoint`] iterators to create new iterators
 /// of a consistent type.
 ///
-/// It is useful when you need three or more different types of iterators to have
-/// the same type, for example when you want to use them in with [`multiway_union`].
-// !!!cmk00000 could multiway_union be less global the says way that dyn_sorted_disjoint is?
+/// This is used, for example, by the [`union_dyn`] macro to give all
+/// its input iterators the same type
+/// so that they can be used in the [`union`] function.
+///
+/// [`union`]: MultiwaySortedDisjoint::union
+
 pub struct DynSortedDisjoint<'a, T> {
     iter: Box<dyn Iterator<Item = T> + 'a>,
 }
@@ -1673,7 +1656,7 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
 /// The input iterators need not to be of the same type.
 /// Any number of input iterators can be given.
 ///
-/// For input iterators of the same type, [`multiway_intersection`] may be slightly faster.
+/// For input iterators of the same type, [`intersection`] may be slightly faster.
 ///
 /// # Performance
 ///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
@@ -1682,6 +1665,7 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
 ///
 /// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
 ///
+/// [`intersection`]: MultiwaySortedDisjoint::intersection
 /// ```
 /// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
 ///
@@ -1709,7 +1693,7 @@ macro_rules! intersection_dyn {
 /// The input iterators need not to be of the same type.
 /// Any number of input iterators can be given.
 ///
-/// For input iterators of the same type, [`multiway_union`] may be slightly faster.
+/// For input iterators of the same type, [`union`] may be slightly faster.
 ///
 /// # Performance
 ///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
@@ -1718,6 +1702,7 @@ macro_rules! intersection_dyn {
 ///
 /// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
 ///
+/// [`union`]: MultiwaySortedDisjoint::union
 /// ```
 /// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
 ///
