@@ -77,6 +77,7 @@ use unsorted_disjoint::UnsortedDisjoint;
 // cmk rule: Test Send and Sync with a test (see example)
 
 // cmk rule: Define your element type
+/// The element trait of the [`RangeSetInt`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
 pub trait Integer:
     num_integer::Integer
     + FromStr
@@ -1189,11 +1190,10 @@ where
     multiway_union(into_iter.into_iter().map(|seq| seq.into_iter().not())).not()
 }
 
-// define mathematical set methods, e.g. left_iter.left(right_iter) returns the left_iter.
 pub trait SortedDisjointIterator<T: Integer>:
     Iterator<Item = RangeInclusive<T>> + SortedDisjoint + Sized
-// I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 {
+    // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
     fn bitor<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
@@ -1464,7 +1464,10 @@ impl<'a, T: 'a + Integer> Extend<&'a RangeInclusive<T>> for RangeSetInt<T> {
 // !!!cmk are the unwraps OK?
 // !!!cmk what about bad input?
 
+/// The trait implemented by iterators to mark them as providing ranges that are sorted by start, but not necessarily by end,
+/// and may overlap.
 pub trait SortedStarts {}
+/// The trait implemented by iterators to mark them as providing a sorted & disjoint ranges of integers.
 pub trait SortedDisjoint: SortedStarts {}
 
 // cmk This code from sorted-iter shows how to define clone when possible

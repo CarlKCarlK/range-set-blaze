@@ -156,7 +156,8 @@ impl<T: Integer, I> SortedStarts for SortedDisjointWithLenSoFar<T, I> where
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 
 /// A wrapper around an iterator of ranges that
-/// assumes that the ranges are sorted by start, but not necessarily by end.
+/// assumes that the ranges are sorted by start, but not necessarily by end,
+/// and may overlap.
 ///
 /// It implements the [`SortedStarts`] trait which is required on inputs to
 /// the `SortedDisjointIter` iterator.
