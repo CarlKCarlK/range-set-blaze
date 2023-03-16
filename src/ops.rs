@@ -7,7 +7,8 @@ use crate::{
     SortedDisjoint, SortedDisjointIter, SortedDisjointIterator, SortedStarts,
 };
 
-// Not: Ranges, NotIter, BitOrMerge
+// Not: Ranges, NotIter, SortedDisjointIter
+
 impl<T: Integer> ops::Not for Ranges<'_, T> {
     type Output = NotIter<T, Self>;
 
@@ -78,7 +79,7 @@ where
     }
 }
 
-// Sub: Ranges, NotIter, BitOrMerge
+// Sub: Ranges, NotIter, SortedDisjointIter
 
 impl<T: Integer, I> ops::Sub<I> for Ranges<'_, T>
 where
@@ -117,7 +118,7 @@ where
     }
 }
 
-// BitXor: Ranges, NotIter, BitOrMerge
+// BitXor: Ranges, NotIter, SortedDisjointIter
 
 impl<T: Integer, I> ops::BitXor<I> for Ranges<'_, T>
 where
@@ -167,7 +168,7 @@ where
     }
 }
 
-// BitAnd: Ranges, NotIter, BitOrMerge
+// BitAnd: Ranges, NotIter, SortedDisjointIter
 
 impl<T: Integer, I> ops::BitAnd<I> for Ranges<'_, T>
 where

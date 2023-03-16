@@ -11,19 +11,20 @@ error[E0271]: expected `std::slice::Iter<'_, ({integer}, {integer})>` to be an i
   = note: required for `RangeSetInt<_>` to implement `From<std::slice::Iter<'_, ({integer}, {integer})>>`
   = note: required for `std::slice::Iter<'_, ({integer}, {integer})>` to implement `Into<RangeSetInt<_>>`
 
-error[E0277]: the trait bound `std::slice::Iter<'_, ({integer}, {integer})>: range_set_int::sorted_disjoint_iter::SortedDisjoint` is not satisfied
+error[E0277]: the trait bound `std::slice::Iter<'_, ({integer}, {integer})>: SortedDisjoint` is not satisfied
  --> tests/ui/untrusted_pairs.rs:8:41
   |
 8 |     let range_set_int: RangeSetInt<_> = untrusted.iter().into();
   |                                         ^^^^^^^^^^^^^^^^ ---- required by a bound introduced by this call
   |                                         |
-  |                                         the trait `range_set_int::sorted_disjoint_iter::SortedDisjoint` is not implemented for `std::slice::Iter<'_, ({integer}, {integer})>`
+  |                                         the trait `SortedDisjoint` is not implemented for `std::slice::Iter<'_, ({integer}, {integer})>`
   |
-  = help: the following other types implement trait `range_set_int::sorted_disjoint_iter::SortedDisjoint`:
+  = help: the following other types implement trait `SortedDisjoint`:
+            AssumeSortedDisjoint<T, I>
             DynSortedDisjoint<'a, T>
             NotIter<T, I>
             Ranges<'_, T>
+            SortedDisjointIter<T, I>
             itertools::tee::Tee<I>
-            range_set_int::sorted_disjoint_iter::SortedDisjointIter<T, I>
   = note: required for `RangeSetInt<_>` to implement `From<std::slice::Iter<'_, ({integer}, {integer})>>`
   = note: required for `std::slice::Iter<'_, ({integer}, {integer})>` to implement `Into<RangeSetInt<_>>`

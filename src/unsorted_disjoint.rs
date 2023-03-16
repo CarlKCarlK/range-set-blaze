@@ -1,7 +1,10 @@
 // !!!cmk make the names consistent, start/lower vs end/upper/end/...
 // !!!cmk replace OptionRange with Option<RangeInclusive<T>>
 
-use crate::{Integer, NotIter, SortedDisjoint, SortedStarts};
+use crate::{
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjoint,
+    SortedDisjointIterator, SortedStarts,
+};
 use num_traits::Zero;
 use std::{
     cmp::{max, min},
@@ -255,5 +258,53 @@ where
 
     fn not(self) -> Self::Output {
         NotIter::new(self)
+    }
+}
+
+impl<T: Integer, R, L> ops::BitOr<R> for AssumeSortedDisjoint<T, L>
+where
+    L: Iterator<Item = RangeInclusive<T>>,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitOrMerge<T, Self, R>;
+
+    fn bitor(self, rhs: R) -> Self::Output {
+        SortedDisjointIterator::bitor(self, rhs)
+    }
+}
+
+impl<T: Integer, R, L> ops::BitAnd<R> for AssumeSortedDisjoint<T, L>
+where
+    L: Iterator<Item = RangeInclusive<T>>,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitAndMerge<T, Self, R>;
+
+    fn bitand(self, rhs: R) -> Self::Output {
+        SortedDisjointIterator::bitand(self, rhs)
+    }
+}
+
+impl<T: Integer, R, L> ops::Sub<R> for AssumeSortedDisjoint<T, L>
+where
+    L: Iterator<Item = RangeInclusive<T>>,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitSubMerge<T, Self, R>;
+
+    fn sub(self, rhs: R) -> Self::Output {
+        SortedDisjointIterator::sub(self, rhs)
+    }
+}
+
+impl<T: Integer, R, L> ops::BitXor<R> for AssumeSortedDisjoint<T, L>
+where
+    L: Iterator<Item = RangeInclusive<T>>,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitXOrTee<T, Self, R>;
+
+    fn bitxor(self, rhs: R) -> Self::Output {
+        SortedDisjointIterator::bitxor(self, rhs)
     }
 }

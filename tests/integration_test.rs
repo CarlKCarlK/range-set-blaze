@@ -1141,17 +1141,9 @@ fn multiway2() {
 fn assume_sorted_disjoint() {
     use range_set_int::AssumeSortedDisjoint;
 
-    let a = RangeSetInt::from([1..=2, 5..=100]);
-    let b = RangeSetInt::from([2..=6]);
-    let a = !a.ranges();
-    let b = !b.ranges();
-    // let c = a.ranges() | b.ranges();
-    let c = a | b;
-
     let a = AssumeSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
     let b = AssumeSortedDisjoint::new(vec![2..=6].into_iter());
-    // let c = a.bitor(b);
-    let c = !a;
-    // let c = a.bitor(b);
+    let c = a | b;
+
     assert_eq!(c.to_string(), "1..==100]");
 }
