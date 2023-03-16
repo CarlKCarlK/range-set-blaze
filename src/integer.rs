@@ -174,7 +174,7 @@ impl Integer for i128 {
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u128 as <Self as Integer>::SafeLen + 1
     }
-    fn max_value2() -> Self {
+    fn safe_max_value() -> Self {
         Self::max_value() - 1
     }
     fn f64_to_t(f: f64) -> Self {
@@ -204,7 +204,7 @@ impl Integer for u128 {
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
     }
-    fn max_value2() -> Self {
+    fn safe_max_value() -> Self {
         Self::max_value() - 1
     }
     fn f64_to_t(f: f64) -> Self {

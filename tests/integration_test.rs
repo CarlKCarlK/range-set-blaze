@@ -1167,4 +1167,16 @@ fn not_iter_example() {
     let a = CheckSortedDisjoint::new([1u8..=2, 5..=100].into_iter());
     let b = NotIter::new(a);
     assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
+
+    // Or, equivalently:
+    let b = !CheckSortedDisjoint::new([1u8..=2, 5..=100].into_iter());
+    assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
+}
+
+#[test]
+fn len_demo() {
+    let len: <u8 as Integer>::SafeLen = RangeSetInt::from([0u8..=255]).len();
+    assert_eq!(len, 256);
+
+    assert_eq!(<u8 as Integer>::safe_len(&(0..=255)), 256);
 }

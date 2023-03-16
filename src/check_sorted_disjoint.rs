@@ -60,6 +60,7 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>,
 {
+    /// Creates a new [`CheckSortedDisjoint`] from an iterator of ranges. See [`CheckSortedDisjoint`] for details and examples.
     pub fn new(iter: I) -> Self {
         CheckSortedDisjoint {
             iter,
@@ -85,15 +86,15 @@ where
                 "iterator cannot return Some after returning None"
             );
             let (start, end) = range.clone().into_inner();
-            assert!(start < end, "start must be less than end");
+            assert!(start <= end, "start must be less or equal to end");
             assert!(
-                end <= T::max_value2(),
-                "end must be less than or equal to max_value2"
+                end <= T::safe_max_value(),
+                "end must be less than or equal to safe_max_value"
             );
-            //cmk give max_value2 a better name and do a text search
+            //cmk give safe_max_value a better name and do a text search
             if let Some(prev_end) = self.prev_end {
                 assert!(
-                    prev_end < T::max_value2() && prev_end + T::one() < start,
+                    prev_end < T::safe_max_value() && prev_end + T::one() < start,
                     "ranges must be disjoint"
                 );
             }

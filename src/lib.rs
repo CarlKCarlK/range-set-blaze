@@ -1,5 +1,5 @@
 #![doc = include_str!("../README.md")]
-//cmk0000 #![warn(missing_docs)]
+#![warn(missing_docs)]
 
 // !!!cmk0doc give a link to RangSetInt struct at top of the docs.
 
@@ -78,7 +78,7 @@ use unsorted_disjoint::UnsortedDisjoint;
 // cmk rule: Test Send and Sync with a test (see example)
 
 // cmk rule: Define your element type
-/// The element trait of the [`RangeSetInt`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
+/// The element trait of the [`RangeSetInt`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
 pub trait Integer:
     num_integer::Integer
     + FromStr
@@ -95,6 +95,20 @@ pub trait Integer:
     + OverflowingSub
     + SampleUniform
 {
+    /// The type of the length of a [`RangeSetInt`]. For example, the length of a `RangeSetInt<u8>` is `usize`. Note
+    /// that it can't be `u8` because the length ranges from 0 to 256, which is one too large for `u8`.
+    ///
+    /// In general, `SafeLen` will be `usize` if `usize` is always large enough. If not, `SafeLen` will be the smallest unsigned integer
+    /// type that is always large enough. However, for `u128` and `i128`, nothing is always large enough so
+    ///  `SafeLen` will be `u128` and we prohibit the largest value from being used in [`Integer`].
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_int::{RangeSetInt, Integer};
+    ///
+    /// let len: <u8 as Integer>::SafeLen = RangeSetInt::from([0u8..=255]).len();
+    /// assert_eq!(len, 256);
+    /// ```
     type SafeLen: std::hash::Hash
         + num_integer::Integer
         + num_traits::NumAssignOps
@@ -112,16 +126,55 @@ pub trait Integer:
         + Default
         + fmt::Debug
         + fmt::Display;
+
+    /// Returns the length of a range without any overflow.
+    ///
+    /// #Example
+    /// ```
+    /// use range_set_int::Integer;
+    ///
+    /// assert_eq!(<u8 as Integer>::safe_len(&(0..=255)), 256);
+    /// ```
     fn safe_len(range: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen;
 
-    fn max_value2() -> Self {
+    /// For a given `Integer` type, returns the largest value that can be used. For all types other than `u128` and `i128`,
+    /// this is the same as `Self::MAX`. For `u128` and `i128`, this is one less than `Self::MAX`.
+    ///
+    /// # Example
+    /// ```
+    /// use range_set_int::{Integer, RangeSetInt};
+    ///
+    /// // for i8, we can use up to 127
+    /// let a = RangeSetInt::<i8>::from([i8::MAX]);
+    /// // for i128, we can use up to 170141183460469231731687303715884105726
+    /// let a = RangeSetInt::<i128>::from([<i128 as Integer>::safe_max_value()]);
+    /// ```
+    /// # Panics
+    /// ```should_panic
+    /// use range_set_int::{Integer, RangeSetInt};
+    ///
+    /// // for i128, using 170141183460469231731687303715884105727 throws a panic.
+    /// let a = RangeSetInt::<i128>::from([i128::MAX]);
+    /// ```
+    fn safe_max_value() -> Self {
         Self::max_value()
     }
 
+    // !!!cmk we should define .len() SortedDisjoint
+
+    /// Converts a `f64` to [`Integer`] using the formula `f as Self`. For large integer types, this will result in a loss of precision.
     fn f64_to_t(f: f64) -> Self;
+
+    /// Converts a `f64` to [`Integer::SafeLen`] using the formula `f as Self::SafeLen`. For large integer types, this will result in a loss of precision.
     fn f64_to_safe_len(f: f64) -> Self::SafeLen;
+
+    /// Converts [`Integer::SafeLen`] to `f64` using the formula `len as f64`. For large integer types, this will result in a loss of precision.
     fn safe_len_to_f64(len: Self::SafeLen) -> f64;
+
+    /// Computes `a + (b - 1) as Self`
     fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self;
+
+    /// Computes `a - (b - 1) as Self`
     fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self;
 }
 
@@ -396,7 +449,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(set.contains(4), false);
     /// ```
     pub fn contains(&self, value: T) -> bool {
-        assert!(value <= T::max_value2()); //cmk0 panic
+        assert!(value <= T::safe_max_value()); //cmk0 panic
         self.btree_map
             .range(..=value)
             .next_back()
@@ -642,7 +695,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert!(!set.remove(2));
     /// ```
     pub fn remove(&mut self, value: T) -> bool {
-        assert!(value <= T::max_value2()); //cmk0 panic
+        assert!(value <= T::safe_max_value()); //cmk0 panic
 
         // The code can have only one mutable reference to self.btree_map.
         let start;
@@ -698,7 +751,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(b, RangeSetInt::from([3, 17, 41]));
     /// ```
     pub fn split_off(&mut self, value: T) -> Self {
-        assert!(value <= T::max_value2()); //cmk0 panic
+        assert!(value <= T::safe_max_value()); //cmk0 panic
 
         let old_len = self.len;
         let mut b = self.btree_map.split_off(&value);
@@ -780,7 +833,7 @@ impl<T: Integer> RangeSetInt<T> {
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     fn internal_add(&mut self, range: RangeInclusive<T>) {
         let (start, end) = range.clone().into_inner();
-        assert!(end <= T::max_value2()); //cmk0 panic
+        assert!(end <= T::safe_max_value()); //cmk0 panic
         if end < start {
             return;
         }
@@ -951,13 +1004,33 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(ranges.next(), None);
     /// ```    
     pub fn ranges(&self) -> Ranges<'_, T> {
-        let ranges = Ranges {
+        Ranges {
             iter: self.btree_map.iter(),
-        };
-        ranges
+        }
     }
 
+    // FUTURE: Could create an into_ranges method that would take ownership of self and return an IntoRanges.
+    // pub fn into_ranges(self) -> IntoRanges<T> {
+    //     IntoRanges {
+    //         iter: self.btree_map.into_iter(),
+    //     }
+    // }
+
     // FUTURE BTreeSet some of these as 'const' but it uses unstable. When stable, add them here and elsewhere.
+
+    /// Returns the number of sorted & disjoint ranges in the set.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// // We put in three ranges, but they are not sorted & disjoint.
+    /// let set = RangeSetInt::from([10..=20, 15..=25, 30..=40]);
+    /// // After RangeSetInt sorts & 'disjoint's them, we see two ranges.
+    /// assert_eq!(set.ranges_len(), 2);
+    /// assert_eq!(set.to_string(), "10..=25, 30..=40");
+    /// ```
     #[must_use]
     pub fn ranges_len(&self) -> usize {
         self.btree_map.len()
@@ -1130,19 +1203,32 @@ where
 {
 }
 
+#[doc(hidden)]
 pub type Merge<T, L, R> = MergeBy<L, R, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>;
+#[doc(hidden)]
 pub type KMerge<T, I> = KMergeBy<I, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>;
+#[doc(hidden)]
 pub type BitOrMerge<T, L, R> = SortedDisjointIter<T, Merge<T, L, R>>;
+#[doc(hidden)]
 pub type BitOrKMerge<T, I> = SortedDisjointIter<T, KMerge<T, I>>;
+#[doc(hidden)]
 pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
+#[doc(hidden)]
 pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
+#[doc(hidden)]
 pub type BitNandMerge<T, L, R> = BitOrMerge<T, NotIter<T, L>, NotIter<T, R>>;
+#[doc(hidden)]
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
+#[doc(hidden)]
 pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
+#[doc(hidden)]
 pub type BitSubMerge<T, L, R> = NotIter<T, BitOrMerge<T, NotIter<T, L>, R>>;
+#[doc(hidden)]
 pub type BitXOrTee<T, L, R> =
     BitOrMerge<T, BitSubMerge<T, Tee<L>, Tee<R>>, BitSubMerge<T, Tee<R>, Tee<L>>>;
+#[doc(hidden)]
 pub type BitXOr<T, L, R> = BitOrMerge<T, BitSubMerge<T, L, Tee<R>>, BitSubMerge<T, Tee<R>, L>>;
+#[doc(hidden)]
 pub type BitEq<T, L, R> = BitOrMerge<
     T,
     NotIter<T, BitOrMerge<T, NotIter<T, Tee<L>>, NotIter<T, Tee<R>>>>,
@@ -1308,8 +1394,16 @@ where
 
 // cmk rule: don't forget these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
 
-/// The trait used to define methods and operators common to iterators with the [`SortedDisjoint`] trait.
-/// Methods include 'to_string' and 'equal'. Operators include '&', '|', '^', '!', '-'.
+/// The trait used to define methods common to iterators with the [`SortedDisjoint`] trait.
+/// Methods include [`to_string`], [`equal`], [`bitor`] (union), [`bitand`] (intersection), [`bitxor`], [`sub`], [`not`].
+///
+/// [`to_string`]: SortedDisjointIterator::to_string
+/// [`equal`]: SortedDisjointIterator::equal
+/// [`bitor`]: SortedDisjointIterator::bitor
+/// [`bitand`]: SortedDisjointIterator::bitand
+/// [`bitxor`]: SortedDisjointIterator::bitxor
+/// [`sub`]: SortedDisjointIterator::sub
+/// [`not`]: SortedDisjointIterator::not
 // !!!cmk0000 could equal be don't with PartialEq? and thus ==?
 // !!!cmk0000 link to all methods and operators.
 // !!!cmk0000 should the readme include a table or example, etc.
@@ -1318,7 +1412,18 @@ pub trait SortedDisjointIterator<T: Integer>:
 {
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 
-    /// cmk0doc
+    /// Given two [`SortedDisjoint`] iterators, returns a [`SortedDisjoint`] iterator of their union.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
+    ///
+    /// let a = CheckSortedDisjoint::new([1..=1].into_iter());
+    /// let b = CheckSortedDisjoint::new([2..=2].into_iter());
+    /// let c = a.bitor(b);
+    /// assert_eq!(c.to_string(), "1..=2");
+    /// ```
     fn bitor<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
@@ -1481,7 +1586,7 @@ where
         loop {
             if let Some(range) = self.option_range.clone() {
                 let (start, end) = range.into_inner();
-                debug_assert!(start <= end && end <= T::max_value2());
+                debug_assert!(start <= end && end <= T::safe_max_value());
                 self.current = start;
                 if start < end {
                     self.option_range = Some(start + T::one()..=end);
@@ -1524,7 +1629,7 @@ impl<T: Integer> Iterator for IntoIter<T> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range) = self.option_range.clone() {
             let (start, end) = range.into_inner();
-            debug_assert!(start <= end && end <= T::max_value2());
+            debug_assert!(start <= end && end <= T::safe_max_value());
             if start < end {
                 self.option_range = Some(start + T::one()..=end);
             } else {

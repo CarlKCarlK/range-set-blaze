@@ -14,6 +14,10 @@ use crate::{Integer, SortedDisjoint};
 /// let a = CheckSortedDisjoint::new([1u8..=2, 5..=100].into_iter());
 /// let b = NotIter::new(a);
 /// assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
+///
+/// // Or, equivalently:
+/// let b = !CheckSortedDisjoint::new([1u8..=2, 5..=100].into_iter());
+/// assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
 /// ```
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -54,25 +58,25 @@ where
 {
     type Item = RangeInclusive<T>;
     fn next(&mut self) -> Option<RangeInclusive<T>> {
-        debug_assert!(T::min_value() <= T::max_value2()); // real assert
+        debug_assert!(T::min_value() <= T::safe_max_value()); // real assert
         if self.next_time_return_none {
             return None;
         }
         let next_item = self.iter.next();
         if let Some(range) = next_item {
             let (start, end) = range.into_inner();
-            debug_assert!(start <= end && end <= T::max_value2());
+            debug_assert!(start <= end && end <= T::safe_max_value());
             if self.start_not < start {
                 // We can subtract with underflow worry because
                 // we know that start > start_not and so not min_value
                 let result = Some(self.start_not..=start - T::one());
-                if end < T::max_value2() {
+                if end < T::safe_max_value() {
                     self.start_not = end + T::one();
                 } else {
                     self.next_time_return_none = true;
                 }
                 result
-            } else if end < T::max_value2() {
+            } else if end < T::safe_max_value() {
                 self.start_not = end + T::one();
                 self.next() // will recurse at most once
             } else {
@@ -81,7 +85,7 @@ where
             }
         } else {
             self.next_time_return_none = true;
-            Some(self.start_not..=T::max_value2())
+            Some(self.start_not..=T::safe_max_value())
         }
     }
 

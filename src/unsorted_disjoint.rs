@@ -49,7 +49,7 @@ where
                 if next_start > next_end {
                     continue;
                 }
-                assert!(next_end <= T::max_value2()); // !!!cmk0 raise error on panic?
+                assert!(next_end <= T::safe_max_value()); // !!!cmk0 raise error on panic?
                 if let Some(self_range) = self.option_range.clone() {
                     let (self_start, self_end) = self_range.into_inner();
                     if (next_start >= self.min_value_plus_2 && self_end <= next_start - self.two)
@@ -132,7 +132,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range) = self.iter.next() {
             let (start, end) = range.clone().into_inner();
-            debug_assert!(start <= end && end <= T::max_value2());
+            debug_assert!(start <= end && end <= T::safe_max_value());
             self.len += T::safe_len(&range);
             Some((start, end))
         } else {

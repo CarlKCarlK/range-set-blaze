@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 // !!!cmk rule: Use the same testing as with macros to check that the types are correct
-// !!!cmk rule make illegal states unpresentable (example u8.len->usize, but u128 needs max_value2), SortedDisjointIter
+// !!!cmk rule make illegal states unpresentable (example u8.len->usize, but u128 needs safe_max_value), SortedDisjointIter
 // !!!cmk rule detail: Note that this nicely fails to compile if you try to chain when you shouldn't
 // !!!cmk rule detail:  let chain = b.ranges().chain(c.ranges());
 // !!!cmk rule detail:  let a_less = a.ranges().sub(chain);
