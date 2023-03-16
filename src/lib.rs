@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+//cmk0000 #![warn(missing_docs)]
 
 // !!!cmk0doc give a link to RangSetInt struct at top of the docs.
 
@@ -58,8 +59,6 @@ use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::One;
 use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
-use sorted_disjoint_iter::SortedDisjointIter;
-use sorted_disjoint_iter::SortedStarts;
 use std::cmp::max;
 use std::cmp::Ordering;
 use std::collections::btree_map;
@@ -71,6 +70,7 @@ use std::ops::Sub;
 use std::str::FromStr;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
+pub use unsorted_disjoint::{AssumeSortedDisjoint, AssumeSortedStarts};
 
 // cmk rule: Support Send and Sync (what about Clone (Copy?) and ExactSizeIterator?)
 // cmk rule: Test Send and Sync with a test (see example)
@@ -1004,6 +1004,15 @@ impl<'a, T: Integer> AsRef<Ranges<'a, T>> for Ranges<'a, T> {
     }
 }
 
+impl<T: Integer, I> SortedDisjoint for AssumeSortedDisjoint<T, I> where
+    I: Iterator<Item = RangeInclusive<T>>
+{
+}
+impl<T: Integer, I> SortedStarts for AssumeSortedDisjoint<T, I> where
+    I: Iterator<Item = RangeInclusive<T>>
+{
+}
+
 // Ranges (one of the iterators from RangeSetInt) is SortedDisjoint
 impl<T: Integer> SortedStarts for Ranges<'_, T> {}
 impl<T: Integer> SortedDisjoint for Ranges<'_, T> {}
@@ -1587,9 +1596,6 @@ impl<'a, T: 'a + Integer> Extend<&'a RangeInclusive<T>> for RangeSetInt<T> {
 // !!!cmk are the unwraps OK?
 // !!!cmk what about bad input?
 
-/// The trait used to mark iterators that provide ranges that are sorted by start and that do not overlap.
-pub trait SortedDisjoint: SortedStarts {}
-
 // cmk This code from sorted-iter shows how to define clone when possible
 // impl<I: Iterator + Clone, J: Iterator + Clone> Clone for Union<I, J>
 // where
@@ -1644,10 +1650,8 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
         self.iter.size_hint()
     }
 }
-// !!!cmk00000 Need to better says what kind of iterators are allowed.
-/// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
+/// Intersects one or more [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
 /// The input iterators need not to be of the same type.
-/// Any number of input iterators can be given.
 ///
 /// For input iterators of the same type, [`intersection`] may be slightly faster.
 ///
@@ -1682,9 +1686,8 @@ macro_rules! intersection_dyn {
     ($($val:expr),*) => {$crate::MultiwaySortedDisjoint::intersection([$($crate::DynSortedDisjoint::new($val)),*])}
 }
 
-/// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
+/// Unions one or more [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
 /// The input iterators need not to be of the same type.
-/// Any number of input iterators can be given.
 ///
 /// For input iterators of the same type, [`union`] may be slightly faster.
 ///
@@ -1774,5 +1777,50 @@ impl<T: Integer> PartialOrd for RangeSetInt<T> {
 }
 
 impl<T: Integer> Eq for RangeSetInt<T> {}
+
+/// The trait used to mark iterators that provide ranges that are sorted by start and that do not overlap.
+pub trait SortedDisjoint: SortedStarts {}
+
+/// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
+/// and may overlap.
+pub trait SortedStarts {}
+
+// cmk00 if this is for internal use only, then it's doc should be different
+// cmk00 maybe not the best name
+/// An iterator that turns a [`SortedStarts`]-trait iterator into a [`SortedDisjoint`]-trait iterator.
+///
+/// Both iterators work on ranges of integers.
+/// The ranges of a [`SortedStarts`]-trait iterator are sorted by start, but not necessarily by end,
+/// and may overlap. The ranges of a [`SortedDisjoint`]-trait iterator are sorted by start and may
+/// not overlap.
+///
+/// Used internally by `union`-related functions.
+///
+/// [`SortedDisjoint`]: crate::SortedDisjoint
+/// [`SortedDisjoint`]: crate::SortedDisjoint
+
+#[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+pub struct SortedDisjointIter<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+{
+    iter: I,
+    option_range: Option<RangeInclusive<T>>,
+}
+
+impl<T, I> SortedDisjointIter<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+{
+    pub fn new(iter: I) -> Self {
+        Self {
+            iter,
+            option_range: None,
+        }
+    }
+}
 
 // cmk rule add must_use to every iter and other places ala https://doc.rust-lang.org/src/alloc/collections/btree/map.rs.html#1259-1261

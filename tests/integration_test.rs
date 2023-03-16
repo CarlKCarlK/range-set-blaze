@@ -5,7 +5,7 @@ use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use range_set_int::DynSortedDisjoint;
+use range_set_int::{DynSortedDisjoint, SortedDisjointIter};
 use std::ops::RangeInclusive;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
@@ -13,9 +13,9 @@ use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange}
 
 // !!!cmk should users use a prelude? If not, are these reasonable imports?
 use range_set_int::{
-    intersection_dyn, union_dyn, Integer, RangeSetInt, Ranges, SortedDisjointIterator,
+    intersection_dyn, union_dyn, AssumeSortedStarts, Integer, MultiwayRangeSetInt,
+    MultiwaySortedDisjoint, RangeSetInt, Ranges, SortedDisjointIterator,
 };
-use range_set_int::{MultiwayRangeSetInt, MultiwaySortedDisjoint};
 
 #[test]
 fn insert_255u8() {
@@ -383,18 +383,17 @@ fn complement() -> Result<(), Box<dyn std::error::Error>> {
     let d = a0.ranges() | a1.ranges();
     let (e, _) = a.ranges().tee();
 
-    // cmk0 delete move to test.rs?
-    // let f = SortedDisjointIter::from([15, 14, 15, 13, 12, 11, 9, 9, 8, 6, 4, 5, 3, 2, 1, 1, 1]);
+    let f = SortedDisjointIter::from([15, 14, 15, 13, 12, 11, 9, 9, 8, 6, 4, 5, 3, 2, 1, 1, 1]);
     let not_b = !b;
     let not_c = !c;
     let not_d = !d;
     let not_e = e.not();
-    // let not_f = !f;
+    let not_f = !f;
     assert!(not_a.ranges().equal(not_b));
     assert!(not_a.ranges().equal(not_c));
     assert!(not_a.ranges().equal(not_d));
     assert!(not_a.ranges().equal(not_e));
-    // assert!(not_a.ranges().equal(not_f));
+    assert!(not_a.ranges().equal(not_f));
     Ok(())
 }
 
@@ -413,15 +412,14 @@ fn union_test() -> Result<(), Box<dyn std::error::Error>> {
     let d = a0.ranges() | a1.ranges() | a2.ranges();
     let e = a0_tee.bitor(a12.ranges());
 
-    // cmk0 delete move to test.rs?
-    // let f = a0.iter().collect::<SortedDisjointIter<_, _>>()
-    //     | a1.iter().collect::<SortedDisjointIter<_, _>>()
-    //     | a2.iter().collect::<SortedDisjointIter<_, _>>();
+    let f = SortedDisjointIter::from_iter(a0.iter())
+        | SortedDisjointIter::from_iter(a1.iter())
+        | SortedDisjointIter::from_iter(a2.iter());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
-    // cmk0 assert!(a.ranges().equal(f));
+    assert!(a.ranges().equal(f));
     Ok(())
 }
 
@@ -439,14 +437,12 @@ fn sub() -> Result<(), Box<dyn std::error::Error>> {
     let c = !not_a01.ranges() - a2.ranges();
     let d = (a0.ranges() | a1.ranges()) - a2.ranges();
     let e = a01_tee.sub(a2.ranges());
-    // cmk0 delete move to test.rs?
-    // let f = a01.iter().collect::<SortedDisjointIter<_, _>>()
-    //     - a2.iter().collect::<SortedDisjointIter<_, _>>();
+    let f = SortedDisjointIter::from_iter(a01.iter()) - SortedDisjointIter::from_iter(a2.iter());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
-    // assert!(a.ranges().equal(f));
+    assert!(a.ranges().equal(f));
 
     Ok(())
 }
@@ -465,14 +461,12 @@ fn xor() -> Result<(), Box<dyn std::error::Error>> {
     let c = !not_a01.ranges() ^ a2.ranges();
     let d = (a0.ranges() | a1.ranges()) ^ a2.ranges();
     let e = a01_tee.bitxor(a2.ranges());
-    // cmk0 delete move to test.rs?
-    // let f = a01.iter().collect::<SortedDisjointIter<_, _>>()
-    //     ^ a2.iter().collect::<SortedDisjointIter<_, _>>();
+    let f = SortedDisjointIter::from_iter(a01.iter()) ^ SortedDisjointIter::from_iter(a2.iter());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
-    // assert!(a.ranges().equal(f));
+    assert!(a.ranges().equal(f));
     Ok(())
 }
 
@@ -490,14 +484,12 @@ fn bitand() -> Result<(), Box<dyn std::error::Error>> {
     let c = !not_a01.ranges() & a2.ranges();
     let d = (a0.ranges() | a1.ranges()) & a2.ranges();
     let e = a01_tee.bitand(a2.ranges());
-    // cmk0 delete move to test.rs?
-    // let f = a01.iter().collect::<SortedDisjointIter<_, _>>()
-    //     & a2.iter().collect::<SortedDisjointIter<_, _>>();
+    let f = SortedDisjointIter::from_iter(a01.iter()) & SortedDisjointIter::from_iter(a2.iter());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
-    // assert!(a.ranges().equal(f));
+    assert!(a.ranges().equal(f));
     Ok(())
 }
 
@@ -638,38 +630,38 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     // #16 into / from iter (T,T) + SortedDisjoint
     _range_set_int = _range_set_int.ranges().into();
     _range_set_int = RangeSetInt::from(_range_set_int.ranges());
-    // // try_into / try_from string cmk`
-    // _range_set_int = [5..=6, 1..=5].into();
-    // _range_set_int = RangeSetInt::from([5..=6, 1..=5]);
+    // try_into / try_from string cmk`
+    _range_set_int = [5..=6, 1..=5].into();
+    _range_set_int = RangeSetInt::from([5..=6, 1..=5]);
 
     // !!!cmk0 delete? move to test.rs?
-    // let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10].into_iter());
-    // let mut _sorted_disjoint_iter;
-    // _sorted_disjoint_iter = SortedDisjointIter::new(sorted_starts);
-    // // #10 collect / from_iter T
-    // let mut _sorted_disjoint_iter: SortedDisjointIter<_, _> = [1, 5, 6, 5].into_iter().collect();
-    // _sorted_disjoint_iter = SortedDisjointIter::from_iter([1, 5, 6, 5]);
-    // // // #11 into / from array T
-    // _sorted_disjoint_iter = [1, 5, 6, 5].into();
-    // _sorted_disjoint_iter = SortedDisjointIter::from([1, 5, 6, 5]);
-    // // // #12 into / from slice T
-    // _sorted_disjoint_iter = [1, 5, 6, 5][1..=2].into();
-    // _sorted_disjoint_iter = SortedDisjointIter::from([1, 5, 6, 5].as_slice());
-    // // //#13 collect / from_iter range
-    // _sorted_disjoint_iter = [5..=6, 1..=5].into_iter().collect();
-    // _sorted_disjoint_iter = SortedDisjointIter::from_iter([5..=6, 1..=5]);
-    // // // #14 from into array range
-    // _sorted_disjoint_iter = [5..=6, 1..=5].into();
-    // _sorted_disjoint_iter = SortedDisjointIter::from([5..=6, 1..=5]);
-    // // // #15 from into slice range
-    // _sorted_disjoint_iter = [5..=6, 1..=5][0..=1].into();
-    // _sorted_disjoint_iter = SortedDisjointIter::from([5..=6, 1..=5].as_slice());
-    // // // #16 into / from iter (T,T) + SortedDisjoint
-    // let mut _sorted_disjoint_iter: SortedDisjointIter<_, _> = _range_set_int.ranges().collect();
-    // _sorted_disjoint_iter = SortedDisjointIter::from_iter(_range_set_int.ranges());
-    // // // // try_into / try_from string cmk
-    // // // _range_set_int = [5..=6, 1..=5].into();
-    // // // _range_set_int = SortedDisjointIter::from([5..=6, 1..=5]);
+    let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10].into_iter());
+    let mut _sorted_disjoint_iter;
+    _sorted_disjoint_iter = SortedDisjointIter::new(sorted_starts);
+    // #10 collect / from_iter T
+    let mut _sorted_disjoint_iter: SortedDisjointIter<_, _> = [1, 5, 6, 5].into_iter().collect();
+    _sorted_disjoint_iter = SortedDisjointIter::from_iter([1, 5, 6, 5]);
+    // // #11 into / from array T
+    _sorted_disjoint_iter = [1, 5, 6, 5].into();
+    _sorted_disjoint_iter = SortedDisjointIter::from([1, 5, 6, 5]);
+    // // #12 into / from slice T
+    _sorted_disjoint_iter = [1, 5, 6, 5][1..=2].into();
+    _sorted_disjoint_iter = SortedDisjointIter::from([1, 5, 6, 5].as_slice());
+    // //#13 collect / from_iter range
+    _sorted_disjoint_iter = [5..=6, 1..=5].into_iter().collect();
+    _sorted_disjoint_iter = SortedDisjointIter::from_iter([5..=6, 1..=5]);
+    // // #14 from into array range
+    _sorted_disjoint_iter = [5..=6, 1..=5].into();
+    _sorted_disjoint_iter = SortedDisjointIter::from([5..=6, 1..=5]);
+    // // #15 from into slice range
+    _sorted_disjoint_iter = [5..=6, 1..=5][0..=1].into();
+    _sorted_disjoint_iter = SortedDisjointIter::from([5..=6, 1..=5].as_slice());
+    // // #16 into / from iter (T,T) + SortedDisjoint
+    let mut _sorted_disjoint_iter: SortedDisjointIter<_, _> = _range_set_int.ranges().collect();
+    _sorted_disjoint_iter = SortedDisjointIter::from_iter(_range_set_int.ranges());
+    // // // try_into / try_from string cmk
+    // // _range_set_int = [5..=6, 1..=5].into();
+    // // _range_set_int = SortedDisjointIter::from([5..=6, 1..=5]);
 
     Ok(())
 }
@@ -1143,4 +1135,23 @@ fn multiway2() {
 
     let union = MultiwaySortedDisjoint::union([a.ranges(), b.ranges(), c.ranges()]);
     assert_eq!(union.to_string(), "1..=15, 18..=100");
+}
+
+#[test]
+fn assume_sorted_disjoint() {
+    use range_set_int::AssumeSortedDisjoint;
+
+    let a = RangeSetInt::from([1..=2, 5..=100]);
+    let b = RangeSetInt::from([2..=6]);
+    let a = !a.ranges();
+    let b = !b.ranges();
+    // let c = a.ranges() | b.ranges();
+    let c = a | b;
+
+    let a = AssumeSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+    let b = AssumeSortedDisjoint::new(vec![2..=6].into_iter());
+    // let c = a.bitor(b);
+    let c = !a;
+    // let c = a.bitor(b);
+    assert_eq!(c.to_string(), "1..==100]");
 }

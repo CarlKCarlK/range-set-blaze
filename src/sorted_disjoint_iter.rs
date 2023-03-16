@@ -4,50 +4,8 @@ use itertools::Itertools;
 
 use crate::{
     unsorted_disjoint::{AssumeSortedStarts, UnsortedDisjoint},
-    Integer,
+    Integer, SortedDisjointIter, SortedStarts,
 };
-
-/// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
-/// and may overlap.
-pub trait SortedStarts {}
-
-// cmk00 if this is for internal use only, then it's doc should be different
-// cmk00 maybe not the best name
-/// An iterator that turns a [`SortedStarts`]-trait iterator into a [`SortedDisjoint`]-trait iterator.
-///
-/// Both iterators work on ranges of integers.
-/// The ranges of a [`SortedStarts`]-trait iterator are sorted by start, but not necessarily by end,
-/// and may overlap. The ranges of a [`SortedDisjoint`]-trait iterator are sorted by start and may
-/// not overlap.
-///
-/// Used internally by `union`-related functions.
-///
-/// [`SortedDisjoint`]: crate::SortedDisjoint
-/// [`SortedDisjoint`]: crate::SortedDisjoint
-
-#[derive(Clone)]
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct SortedDisjointIter<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
-{
-    iter: I,
-    option_range: Option<RangeInclusive<T>>,
-}
-
-impl<T, I> SortedDisjointIter<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
-{
-    pub fn new(iter: I) -> Self {
-        Self {
-            iter,
-            option_range: None,
-        }
-    }
-}
 
 impl<T: Integer, const N: usize> From<[T; N]>
     for SortedDisjointIter<T, SortedRangeInclusiveVec<T>>

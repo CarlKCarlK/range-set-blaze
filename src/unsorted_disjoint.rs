@@ -1,11 +1,11 @@
 // !!!cmk make the names consistent, start/lower vs end/upper/end/...
 // !!!cmk replace OptionRange with Option<RangeInclusive<T>>
 
-use crate::{Integer, SortedDisjoint, SortedStarts};
+use crate::{Integer, NotIter, SortedDisjoint, SortedStarts};
 use num_traits::Zero;
 use std::{
     cmp::{max, min},
-    ops::RangeInclusive,
+    ops::{self, RangeInclusive},
 };
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -155,15 +155,8 @@ impl<T: Integer, I> SortedStarts for SortedDisjointWithLenSoFar<T, I> where
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 
-/// A wrapper around an iterator of ranges that
-/// assumes that the ranges are sorted by start, but not necessarily by end,
-/// and may overlap.
-///
-/// It implements the [`SortedStarts`] trait which is required on inputs to
-/// the [`SortedDisjointIter`] iterator.
-///
-/// [`SortedDisjointIter`]: crate::SortedDisjointIter
-pub(crate) struct AssumeSortedStarts<T, I>
+/// Give any iterator of ranges the [`SortedStarts`] trait without any checking.
+pub struct AssumeSortedStarts<T, I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>,
@@ -176,16 +169,15 @@ impl<T: Integer, I> SortedStarts for AssumeSortedStarts<T, I> where
 {
 }
 
-// cmk0 delete?
-// impl<T, I> AssumeSortedStarts<T, I>
-// where
-//     T: Integer,
-//     I: Iterator<Item = RangeInclusive<T>>,
-// {
-//     pub fn new(iter: I) -> Self {
-//         AssumeSortedStarts { iter }
-//     }
-// }
+impl<T, I> AssumeSortedStarts<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>>,
+{
+    pub fn new(iter: I) -> Self {
+        AssumeSortedStarts { iter }
+    }
+}
 
 impl<T, I> Iterator for AssumeSortedStarts<T, I>
 where
@@ -201,5 +193,67 @@ where
     // !!!cmk rule add a size hint, but think about if it is correct with respect to other fields
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
+    }
+}
+
+#[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+
+/// Give any iterator of ranges the [`SortedDisjoint`] trait without any checking.
+///
+/// # Example
+///
+/// ```
+/// use range_set_int::{AssumeSortedDisjoint, SortedDisjointIterator};
+///
+/// let a = AssumeSortedDisjoint::new([1..=2, 5..=100].into_iter());
+/// let b = AssumeSortedDisjoint::new([2..=6].into_iter());
+/// let c = a | b;
+/// assert_eq!(c.to_string(), "1..==100]");
+/// ```
+pub struct AssumeSortedDisjoint<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>>,
+{
+    pub(crate) iter: I,
+}
+
+impl<T, I> AssumeSortedDisjoint<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>>,
+{
+    pub fn new(iter: I) -> Self {
+        AssumeSortedDisjoint { iter }
+    }
+}
+
+impl<T, I> Iterator for AssumeSortedDisjoint<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>>,
+{
+    type Item = RangeInclusive<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+
+    // !!!cmk rule add a size hint, but think about if it is correct with respect to other fields
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
+impl<T, I> ops::Not for AssumeSortedDisjoint<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>>,
+{
+    type Output = NotIter<T, Self>;
+
+    fn not(self) -> Self::Output {
+        NotIter::new(self)
     }
 }

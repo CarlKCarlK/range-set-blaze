@@ -3,9 +3,8 @@ use std::ops::{self, RangeInclusive};
 use itertools::Itertools;
 
 use crate::{
-    not_iter::NotIter, sorted_disjoint_iter::SortedDisjointIter, BitAndMerge, BitOrMerge,
-    BitSubMerge, BitXOr, BitXOrTee, Integer, Ranges, SortedDisjoint, SortedDisjointIterator,
-    SortedStarts,
+    not_iter::NotIter, BitAndMerge, BitOrMerge, BitSubMerge, BitXOr, BitXOrTee, Integer, Ranges,
+    SortedDisjoint, SortedDisjointIter, SortedDisjointIterator, SortedStarts,
 };
 
 // Not: Ranges, NotIter, BitOrMerge
