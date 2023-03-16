@@ -20,7 +20,7 @@ error[E0277]: the trait bound `std::slice::Iter<'_, ({integer}, {integer})>: Sor
   |                                         the trait `SortedDisjoint` is not implemented for `std::slice::Iter<'_, ({integer}, {integer})>`
   |
   = help: the following other types implement trait `SortedDisjoint`:
-            AssumeSortedDisjoint<T, I>
+            CheckSortedDisjoint<T, I>
             DynSortedDisjoint<'a, T>
             NotIter<T, I>
             Ranges<'_, T>

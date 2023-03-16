@@ -70,7 +70,7 @@ use std::ops::Sub;
 use std::str::FromStr;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
-pub use unsorted_disjoint::{AssumeSortedDisjoint, AssumeSortedStarts};
+pub use unsorted_disjoint::{AssumeSortedStarts, CheckSortedDisjoint};
 
 // cmk rule: Support Send and Sync (what about Clone (Copy?) and ExactSizeIterator?)
 // cmk rule: Test Send and Sync with a test (see example)
@@ -1004,11 +1004,11 @@ impl<'a, T: Integer> AsRef<Ranges<'a, T>> for Ranges<'a, T> {
     }
 }
 
-impl<T: Integer, I> SortedDisjoint for AssumeSortedDisjoint<T, I> where
+impl<T: Integer, I> SortedDisjoint for CheckSortedDisjoint<T, I> where
     I: Iterator<Item = RangeInclusive<T>>
 {
 }
-impl<T: Integer, I> SortedStarts for AssumeSortedDisjoint<T, I> where
+impl<T: Integer, I> SortedStarts for CheckSortedDisjoint<T, I> where
     I: Iterator<Item = RangeInclusive<T>>
 {
 }

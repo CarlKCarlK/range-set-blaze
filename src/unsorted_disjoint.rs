@@ -207,40 +207,70 @@ where
 /// # Example
 ///
 /// ```
-/// use range_set_int::{AssumeSortedDisjoint, SortedDisjointIterator};
+/// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
 ///
-/// let a = AssumeSortedDisjoint::new([1..=2, 5..=100].into_iter());
-/// let b = AssumeSortedDisjoint::new([2..=6].into_iter());
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+/// let b = CheckSortedDisjoint::new([2..=6].into_iter());
 /// let c = a | b;
-/// assert_eq!(c.to_string(), "1..==100]");
+/// assert_eq!(c.to_string(), "1..=100");
 /// ```
-pub struct AssumeSortedDisjoint<T, I>
+pub struct CheckSortedDisjoint<T, I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>,
 {
     pub(crate) iter: I,
+    prev_end: Option<T>,
+    seen_none: bool,
 }
 
-impl<T, I> AssumeSortedDisjoint<T, I>
+impl<T, I> CheckSortedDisjoint<T, I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>,
 {
     pub fn new(iter: I) -> Self {
-        AssumeSortedDisjoint { iter }
+        CheckSortedDisjoint {
+            iter,
+            prev_end: None,
+            seen_none: false,
+        }
     }
 }
 
-impl<T, I> Iterator for AssumeSortedDisjoint<T, I>
+impl<T, I> Iterator for CheckSortedDisjoint<T, I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>,
 {
     type Item = RangeInclusive<T>;
 
+    //cmk coverage test every panic
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        let next = self.iter.next();
+        if let Some(range) = next.as_ref() {
+            assert!(
+                !self.seen_none,
+                "iterator cannot return Some after returning None"
+            );
+            let (start, end) = range.clone().into_inner();
+            assert!(start < end, "start must be less than end");
+            assert!(
+                end <= T::max_value2(),
+                "end must be less than or equal to max_value2"
+            );
+            //cmk give max_value2 a better name and do a text search
+            if let Some(prev_end) = self.prev_end {
+                assert!(
+                    prev_end < T::max_value2() && prev_end + T::one() < start,
+                    "ranges must be disjoint"
+                );
+            }
+            self.prev_end = Some(end);
+        } else {
+            self.seen_none = true;
+        }
+        next
     }
 
     // !!!cmk rule add a size hint, but think about if it is correct with respect to other fields
@@ -249,7 +279,7 @@ where
     }
 }
 
-impl<T, I> ops::Not for AssumeSortedDisjoint<T, I>
+impl<T, I> ops::Not for CheckSortedDisjoint<T, I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>,
@@ -261,7 +291,7 @@ where
     }
 }
 
-impl<T: Integer, R, L> ops::BitOr<R> for AssumeSortedDisjoint<T, L>
+impl<T: Integer, R, L> ops::BitOr<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
@@ -273,7 +303,7 @@ where
     }
 }
 
-impl<T: Integer, R, L> ops::BitAnd<R> for AssumeSortedDisjoint<T, L>
+impl<T: Integer, R, L> ops::BitAnd<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
@@ -285,7 +315,7 @@ where
     }
 }
 
-impl<T: Integer, R, L> ops::Sub<R> for AssumeSortedDisjoint<T, L>
+impl<T: Integer, R, L> ops::Sub<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
@@ -297,7 +327,7 @@ where
     }
 }
 
-impl<T: Integer, R, L> ops::BitXor<R> for AssumeSortedDisjoint<T, L>
+impl<T: Integer, R, L> ops::BitXor<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
