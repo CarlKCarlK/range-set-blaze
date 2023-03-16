@@ -4,32 +4,68 @@ use itertools::Itertools;
 
 use crate::{
     unsorted_disjoint::{AssumeSortedStarts, UnsortedDisjoint},
-    Integer, SortedDisjointIter, SortedStarts,
+    Integer, SortedStarts,
 };
 
-impl<T: Integer, const N: usize> From<[T; N]>
-    for SortedDisjointIter<T, SortedRangeInclusiveVec<T>>
+// cmk00 if this is for internal use only, then it's doc should be different
+// cmk00 maybe not the best name
+/// An iterator that turns a [`SortedStarts`]-trait iterator into a [`SortedDisjoint`]-trait iterator.
+///
+/// Both iterators work on ranges of integers.
+/// The ranges of a [`SortedStarts`]-trait iterator are sorted by start, but not necessarily by end,
+/// and may overlap. The ranges of a [`SortedDisjoint`]-trait iterator are sorted by start and may
+/// not overlap.
+///
+/// Used internally by `union`-related functions.
+///
+/// [`SortedDisjoint`]: crate::SortedDisjoint
+/// [`SortedDisjoint`]: crate::SortedDisjoint
+
+#[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+pub struct UnionIter<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
+    iter: I,
+    option_range: Option<RangeInclusive<T>>,
+}
+
+impl<T, I> UnionIter<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+{
+    pub fn new(iter: I) -> Self {
+        Self {
+            iter,
+            option_range: None,
+        }
+    }
+}
+
+impl<T: Integer, const N: usize> From<[T; N]> for UnionIter<T, SortedRangeInclusiveVec<T>> {
     fn from(arr: [T; N]) -> Self {
         arr.as_slice().into()
     }
 }
 
-impl<T: Integer> From<&[T]> for SortedDisjointIter<T, SortedRangeInclusiveVec<T>> {
+impl<T: Integer> From<&[T]> for UnionIter<T, SortedRangeInclusiveVec<T>> {
     fn from(slice: &[T]) -> Self {
         slice.iter().cloned().collect()
     }
 }
 
 impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]>
-    for SortedDisjointIter<T, SortedRangeInclusiveVec<T>>
+    for UnionIter<T, SortedRangeInclusiveVec<T>>
 {
     fn from(arr: [RangeInclusive<T>; N]) -> Self {
         arr.as_slice().into()
     }
 }
 
-impl<T: Integer> From<&[RangeInclusive<T>]> for SortedDisjointIter<T, SortedRangeInclusiveVec<T>> {
+impl<T: Integer> From<&[RangeInclusive<T>]> for UnionIter<T, SortedRangeInclusiveVec<T>> {
     fn from(slice: &[RangeInclusive<T>]) -> Self {
         slice.iter().cloned().collect()
     }
@@ -37,7 +73,7 @@ impl<T: Integer> From<&[RangeInclusive<T>]> for SortedDisjointIter<T, SortedRang
 
 type SortedRangeInclusiveVec<T> = AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>;
 
-impl<T: Integer> FromIterator<T> for SortedDisjointIter<T, SortedRangeInclusiveVec<T>> {
+impl<T: Integer> FromIterator<T> for UnionIter<T, SortedRangeInclusiveVec<T>> {
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = T>,
@@ -46,9 +82,7 @@ impl<T: Integer> FromIterator<T> for SortedDisjointIter<T, SortedRangeInclusiveV
     }
 }
 
-impl<T: Integer> FromIterator<RangeInclusive<T>>
-    for SortedDisjointIter<T, SortedRangeInclusiveVec<T>>
-{
+impl<T: Integer> FromIterator<RangeInclusive<T>> for UnionIter<T, SortedRangeInclusiveVec<T>> {
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = RangeInclusive<T>>,
@@ -57,7 +91,7 @@ impl<T: Integer> FromIterator<RangeInclusive<T>>
     }
 }
 
-impl<T, I> From<UnsortedDisjoint<T, I>> for SortedDisjointIter<T, SortedRangeInclusiveVec<T>>
+impl<T, I> From<UnsortedDisjoint<T, I>> for UnionIter<T, SortedRangeInclusiveVec<T>>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>, // Any iterator is OK, because we will sort
@@ -74,7 +108,7 @@ where
 }
 
 // cmk00 be sure that every function that accepts a val isn't max_value u128, i128 and returns an error
-impl<T: Integer, I> Iterator for SortedDisjointIter<T, I>
+impl<T: Integer, I> Iterator for UnionIter<T, I>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {

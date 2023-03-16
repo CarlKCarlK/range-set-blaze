@@ -46,8 +46,8 @@ mod check_sorted_disjoint;
 mod integer;
 mod not_iter;
 mod ops;
-mod sorted_disjoint_iter;
 mod tests;
+mod union_iter;
 mod unsorted_disjoint;
 
 pub use check_sorted_disjoint::CheckSortedDisjoint;
@@ -70,6 +70,7 @@ use std::fmt;
 use std::ops::RangeInclusive;
 use std::ops::Sub;
 use std::str::FromStr;
+pub use union_iter::UnionIter;
 pub use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
@@ -1084,11 +1085,11 @@ impl<T: Integer> SortedStarts for Ranges<'_, T> {}
 impl<T: Integer> SortedDisjoint for Ranges<'_, T> {}
 // If the iterator inside a BitOrIter is SortedStart, the output will be SortedDisjoint
 impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedStarts> SortedStarts
-    for SortedDisjointIter<T, I>
+    for UnionIter<T, I>
 {
 }
 impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedStarts> SortedDisjoint
-    for SortedDisjointIter<T, I>
+    for UnionIter<T, I>
 {
 }
 // If the iterator inside NotIter is SortedDisjoint, the output will be SortedDisjoint
@@ -1142,8 +1143,8 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
     where
         I: IntoIterator<Item = RangeInclusive<T>>,
     {
-        let sorted_disjoint_iter: SortedDisjointIter<T, _> = into_iter.into_iter().collect();
-        sorted_disjoint_iter.into()
+        let union_iter: UnionIter<T, _> = into_iter.into_iter().collect();
+        union_iter.into()
     }
 }
 
@@ -1208,9 +1209,9 @@ pub type Merge<T, L, R> = MergeBy<L, R, fn(&RangeInclusive<T>, &RangeInclusive<T
 #[doc(hidden)]
 pub type KMerge<T, I> = KMergeBy<I, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>;
 #[doc(hidden)]
-pub type BitOrMerge<T, L, R> = SortedDisjointIter<T, Merge<T, L, R>>;
+pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
-pub type BitOrKMerge<T, I> = SortedDisjointIter<T, KMerge<T, I>>;
+pub type BitOrKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
 #[doc(hidden)]
 pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
 #[doc(hidden)]
@@ -1354,7 +1355,7 @@ where
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
     fn union(self) -> BitOrKMerge<T, I> {
-        SortedDisjointIter::new(
+        UnionIter::new(
             self.into_iter()
                 .kmerge_by(|pair0, pair1| pair0.start() <= pair1.start()),
         )
@@ -1429,7 +1430,7 @@ pub trait SortedDisjointIterator<T: Integer>:
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint,
     {
-        SortedDisjointIter::new(self.merge_by(other.into_iter(), |a, b| a.start() <= b.start()))
+        UnionIter::new(self.merge_by(other.into_iter(), |a, b| a.start() <= b.start()))
     }
 
     fn bitand<R>(self, other: R) -> BitAndMerge<T, Self, R::IntoIter>
@@ -1900,43 +1901,5 @@ pub trait SortedDisjoint: SortedStarts {}
 /// and may overlap.
 #[doc(hidden)]
 pub trait SortedStarts {}
-
-// cmk00 if this is for internal use only, then it's doc should be different
-// cmk00 maybe not the best name
-/// An iterator that turns a [`SortedStarts`]-trait iterator into a [`SortedDisjoint`]-trait iterator.
-///
-/// Both iterators work on ranges of integers.
-/// The ranges of a [`SortedStarts`]-trait iterator are sorted by start, but not necessarily by end,
-/// and may overlap. The ranges of a [`SortedDisjoint`]-trait iterator are sorted by start and may
-/// not overlap.
-///
-/// Used internally by `union`-related functions.
-///
-/// [`SortedDisjoint`]: crate::SortedDisjoint
-/// [`SortedDisjoint`]: crate::SortedDisjoint
-
-#[derive(Clone)]
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct SortedDisjointIter<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
-{
-    iter: I,
-    option_range: Option<RangeInclusive<T>>,
-}
-
-impl<T, I> SortedDisjointIter<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
-{
-    pub fn new(iter: I) -> Self {
-        Self {
-            iter,
-            option_range: None,
-        }
-    }
-}
 
 // cmk rule add must_use to every iter and other places ala https://doc.rust-lang.org/src/alloc/collections/btree/map.rs.html#1259-1261

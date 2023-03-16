@@ -4,10 +4,10 @@ use itertools::Itertools;
 
 use crate::{
     not_iter::NotIter, BitAndMerge, BitOrMerge, BitSubMerge, BitXOr, BitXOrTee, Integer, Ranges,
-    SortedDisjoint, SortedDisjointIter, SortedDisjointIterator, SortedStarts,
+    SortedDisjoint, SortedDisjointIterator, SortedStarts, UnionIter,
 };
 
-// Not: Ranges, NotIter, SortedDisjointIter
+// Not: Ranges, NotIter, UnionIter
 
 impl<T: Integer> ops::Not for Ranges<'_, T> {
     type Output = NotIter<T, Self>;
@@ -30,7 +30,7 @@ where
     }
 }
 
-impl<T: Integer, I> ops::Not for SortedDisjointIter<T, I>
+impl<T: Integer, I> ops::Not for UnionIter<T, I>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
@@ -65,7 +65,7 @@ where
     }
 }
 
-impl<T: Integer, R, L> ops::BitOr<R> for SortedDisjointIter<T, L>
+impl<T: Integer, R, L> ops::BitOr<R> for UnionIter<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
@@ -79,7 +79,7 @@ where
     }
 }
 
-// Sub: Ranges, NotIter, SortedDisjointIter
+// Sub: Ranges, NotIter, UnionIter
 
 impl<T: Integer, I> ops::Sub<I> for Ranges<'_, T>
 where
@@ -106,7 +106,7 @@ where
     }
 }
 
-impl<T: Integer, R, L> ops::Sub<R> for SortedDisjointIter<T, L>
+impl<T: Integer, R, L> ops::Sub<R> for UnionIter<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
@@ -118,7 +118,7 @@ where
     }
 }
 
-// BitXor: Ranges, NotIter, SortedDisjointIter
+// BitXor: Ranges, NotIter, UnionIter
 
 impl<T: Integer, I> ops::BitXor<I> for Ranges<'_, T>
 where
@@ -153,7 +153,7 @@ where
     }
 }
 
-impl<T: Integer, R, L> ops::BitXor<R> for SortedDisjointIter<T, L>
+impl<T: Integer, R, L> ops::BitXor<R> for UnionIter<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
@@ -168,7 +168,7 @@ where
     }
 }
 
-// BitAnd: Ranges, NotIter, SortedDisjointIter
+// BitAnd: Ranges, NotIter, UnionIter
 
 impl<T: Integer, I> ops::BitAnd<I> for Ranges<'_, T>
 where
@@ -197,7 +197,7 @@ where
 }
 
 // cmk name all generics in a sensible way
-impl<T: Integer, R, L> ops::BitAnd<R> for SortedDisjointIter<T, L>
+impl<T: Integer, R, L> ops::BitAnd<R> for UnionIter<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,

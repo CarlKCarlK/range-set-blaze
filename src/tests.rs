@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 // !!!cmk rule: Use the same testing as with macros to check that the types are correct
-// !!!cmk rule make illegal states unpresentable (example u8.len->usize, but u128 needs safe_max_value), SortedDisjointIter
+// !!!cmk rule make illegal states unpresentable (example u8.len->usize, but u128 needs safe_max_value), UnionIter
 // !!!cmk rule detail: Note that this nicely fails to compile if you try to chain when you shouldn't
 // !!!cmk rule detail:  let chain = b.ranges().chain(c.ranges());
 // !!!cmk rule detail:  let a_less = a.ranges().sub(chain);
@@ -871,8 +871,8 @@ fn parity() {
 
 #[test]
 fn bit_or_iter() {
-    let i = SortedDisjointIter::from([1, 3, 4, 2, 2, 43, -1, 4, 22]);
-    let j = SortedDisjointIter::from([11, 3, 4, 42, 2, 43, 23, 2, 543]);
+    let i = UnionIter::from([1, 3, 4, 2, 2, 43, -1, 4, 22]);
+    let j = UnionIter::from([11, 3, 4, 42, 2, 43, 23, 2, 543]);
 
     let _not_i = !i.clone();
     let k = i - j;
@@ -881,7 +881,7 @@ fn bit_or_iter() {
 
 #[test]
 fn empty() {
-    let universe: SortedDisjointIter<u8, _> = [0..=255].into_iter().collect();
+    let universe: UnionIter<u8, _> = [0..=255].into_iter().collect();
     let arr: [u8; 0] = [];
     let a0 = RangeSetInt::<u8>::from(arr);
     assert!(!(a0.ranges()).equal(universe.clone()));
@@ -976,12 +976,12 @@ fn private_constructor() {
     assert_eq!(unsorted_disjoint.to_string(), "1..=6, -12..=-10, 3..=3");
 
     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
-    let sorted_disjoint_iter = SortedDisjointIter::from(unsorted_disjoint);
-    // println!("{}", sorted_disjoint_iter.fmt());
-    assert_eq!(sorted_disjoint_iter.to_string(), "-12..=-10, 1..=6");
+    let union_iter = UnionIter::from(unsorted_disjoint);
+    // println!("{}", union_iter.fmt());
+    assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
 
-    let sorted_disjoint_iter: SortedDisjointIter<_, _> = [5, 6, 1, 2, 3, 4, 5, -12, -11, -10, 3]
+    let union_iter: UnionIter<_, _> = [5, 6, 1, 2, 3, 4, 5, -12, -11, -10, 3]
         .into_iter()
         .collect();
-    assert_eq!(sorted_disjoint_iter.to_string(), "-12..=-10, 1..=6");
+    assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
 }

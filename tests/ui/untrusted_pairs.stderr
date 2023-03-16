@@ -24,7 +24,7 @@ error[E0277]: the trait bound `std::slice::Iter<'_, ({integer}, {integer})>: Sor
             DynSortedDisjoint<'a, T>
             NotIter<T, I>
             Ranges<'_, T>
-            SortedDisjointIter<T, I>
+            UnionIter<T, I>
             itertools::tee::Tee<I>
   = note: required for `RangeSetInt<_>` to implement `From<std::slice::Iter<'_, ({integer}, {integer})>>`
   = note: required for `std::slice::Iter<'_, ({integer}, {integer})>` to implement `Into<RangeSetInt<_>>`
