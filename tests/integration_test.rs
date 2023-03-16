@@ -5,7 +5,7 @@ use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use range_set_int::{DynSortedDisjoint, SortedDisjointIter};
+use range_set_int::{CheckSortedDisjoint, DynSortedDisjoint, NotIter, SortedDisjointIter};
 use std::ops::RangeInclusive;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
@@ -1138,7 +1138,7 @@ fn multiway2() {
 }
 
 #[test]
-fn assume_sorted_disjoint() {
+fn check_sorted_disjoint() {
     use range_set_int::CheckSortedDisjoint;
 
     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
@@ -1146,4 +1146,25 @@ fn assume_sorted_disjoint() {
     let c = a | b;
 
     assert_eq!(c.to_string(), "1..=100");
+}
+
+#[test]
+fn dyn_sorted_disjoint_example() {
+    let a = RangeSetInt::from([1u8..=6, 8..=9, 11..=15]);
+    let b = RangeSetInt::from([5..=13, 18..=29]);
+    let c = RangeSetInt::from([38..=42]);
+    let union = [
+        DynSortedDisjoint::new(a.ranges()),
+        DynSortedDisjoint::new(!b.ranges()),
+        DynSortedDisjoint::new(c.ranges()),
+    ]
+    .union();
+    assert_eq!(union.to_string(), "0..=6, 8..=9, 11..=17, 30..=255");
+}
+
+#[test]
+fn not_iter_example() {
+    let a = CheckSortedDisjoint::new([1u8..=2, 5..=100].into_iter());
+    let b = NotIter::new(a);
+    assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
 }

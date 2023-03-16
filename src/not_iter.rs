@@ -3,8 +3,18 @@ use std::ops::RangeInclusive;
 use crate::{Integer, SortedDisjoint};
 
 // cmk rule: Make structs clonable when possible.
-/// An iterator that visits the ranges representing the complement,
+/// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
 /// i.e., all the integers not in the original iterator, as sorted & disjoint ranges.
+///
+/// # Example
+///
+/// ```
+/// use range_set_int::{NotIter, SortedDisjointIterator, CheckSortedDisjoint};
+///
+/// let a = CheckSortedDisjoint::new([1u8..=2, 5..=100].into_iter());
+/// let b = NotIter::new(a);
+/// assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
+/// ```
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct NotIter<T, I>
@@ -23,6 +33,7 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
+    /// Create a new [`NotIter`] from a [`SortedDisjoint`] iterator. See [`NotIter`] for an example.
     pub fn new<J>(into_iter: J) -> Self
     where
         J: IntoIterator<Item = RangeInclusive<T>, IntoIter = I>,

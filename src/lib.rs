@@ -42,6 +42,7 @@
 // cmk implement "ranges" by using log n search and then SortedDisjoint intersection.
 // cmk000 is 'ranges' a good name for the function or confusing with btreeset's 'range'?
 
+mod check_sorted_disjoint;
 mod integer;
 mod not_iter;
 mod ops;
@@ -49,6 +50,7 @@ mod sorted_disjoint_iter;
 mod tests;
 mod unsorted_disjoint;
 
+pub use check_sorted_disjoint::CheckSortedDisjoint;
 use gen_ops::gen_ops_ex;
 use itertools::Itertools;
 use itertools::KMergeBy;
@@ -68,9 +70,9 @@ use std::fmt;
 use std::ops::RangeInclusive;
 use std::ops::Sub;
 use std::str::FromStr;
+pub use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
-pub use unsorted_disjoint::{AssumeSortedStarts, CheckSortedDisjoint};
 
 // cmk rule: Support Send and Sync (what about Clone (Copy?) and ExactSizeIterator?)
 // cmk rule: Test Send and Sync with a test (see example)
@@ -1004,15 +1006,6 @@ impl<'a, T: Integer> AsRef<Ranges<'a, T>> for Ranges<'a, T> {
     }
 }
 
-impl<T: Integer, I> SortedDisjoint for CheckSortedDisjoint<T, I> where
-    I: Iterator<Item = RangeInclusive<T>>
-{
-}
-impl<T: Integer, I> SortedStarts for CheckSortedDisjoint<T, I> where
-    I: Iterator<Item = RangeInclusive<T>>
-{
-}
-
 // Ranges (one of the iterators from RangeSetInt) is SortedDisjoint
 impl<T: Integer> SortedStarts for Ranges<'_, T> {}
 impl<T: Integer> SortedDisjoint for Ranges<'_, T> {}
@@ -1613,16 +1606,33 @@ impl<'a, T: 'a + Integer> Extend<&'a RangeInclusive<T>> for RangeSetInt<T> {
 // cmk sort-iter uses peekable. Is that better?
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-/// Internally, used by the [`union_dyn`] and [`intersection_dyn`] macros to give all
+/// Gives [`SortedDisjoint`] iterators a uniform type. Used by the [`union_dyn`] and [`intersection_dyn`] macros to give all
 /// their input iterators the same type.
 ///
 /// [`union`]: MultiwaySortedDisjoint::union
 /// [`intersection`]: MultiwaySortedDisjoint::intersection
+///
+/// # Example
+/// ```
+/// use range_set_int::{DynSortedDisjoint, MultiwaySortedDisjoint, SortedDisjointIterator, RangeSetInt};
+///
+/// let a = RangeSetInt::from([1u8..=6, 8..=9, 11..=15]);
+/// let b = RangeSetInt::from([5..=13, 18..=29]);
+/// let c = RangeSetInt::from([38..=42]);
+/// let union = [
+///     DynSortedDisjoint::new(a.ranges()),
+///     DynSortedDisjoint::new(!b.ranges()),
+///     DynSortedDisjoint::new(c.ranges()),
+/// ]
+/// .union();
+/// assert_eq!(union.to_string(), "0..=6, 8..=9, 11..=17, 30..=255");
+/// ```
 
 pub struct DynSortedDisjoint<'a, T> {
     iter: Box<dyn Iterator<Item = T> + 'a>,
 }
 
+/// Create a [`DynSortedDisjoint`] from any [`SortedDisjoint`] iterator. See [`DynSortedDisjoint`] for an example.
 impl<'a, T> DynSortedDisjoint<'a, T> {
     pub fn new<I>(iter: I) -> Self
     where
@@ -1783,6 +1793,7 @@ pub trait SortedDisjoint: SortedStarts {}
 
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
+#[doc(hidden)]
 pub trait SortedStarts {}
 
 // cmk00 if this is for internal use only, then it's doc should be different
