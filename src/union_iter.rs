@@ -20,7 +20,33 @@ use crate::{
 ///
 /// [`SortedDisjoint`]: crate::SortedDisjoint
 /// [`SortedDisjoint`]: crate::SortedDisjoint
+/// /// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
+///
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+/// let b = CheckSortedDisjoint::new([2..=6].into_iter());
+/// let c = a | b;
+/// assert_eq!(c.to_string(), "1..=100")
 
+/// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
+/// i.e., all the integers any input iterator, as sorted & disjoint ranges.
+///
+/// # Example
+///
+/// ```
+/// use itertools::Itertools;
+/// use range_set_int::{UnionIter, SortedDisjointIterator, CheckSortedDisjoint};
+///
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+/// let b = CheckSortedDisjoint::new([2..=6].into_iter());
+/// let c = UnionIter::new(a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()));
+/// assert_eq!(c.to_string(), "1..=100");
+///
+/// // Or, equivalently:
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+/// let b = CheckSortedDisjoint::new([2..=6].into_iter());
+/// let c = a.bitor(b);
+/// assert_eq!(c.to_string(), "1..=100")
+/// ```
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct UnionIter<T, I>
@@ -28,8 +54,8 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
-    iter: I,
-    option_range: Option<RangeInclusive<T>>,
+    pub(crate) iter: I,
+    pub(crate) option_range: Option<RangeInclusive<T>>,
 }
 
 impl<T, I> UnionIter<T, I>

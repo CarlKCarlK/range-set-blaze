@@ -1180,3 +1180,21 @@ fn len_demo() {
 
     assert_eq!(<u8 as Integer>::safe_len(&(0..=255)), 256);
 }
+
+#[test]
+fn union_iter() {
+    use range_set_int::{CheckSortedDisjoint, UnionIter};
+
+    let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+    let b = CheckSortedDisjoint::new([2..=6].into_iter());
+    let c = UnionIter::new(AssumeSortedStarts::new(
+        a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
+    ));
+    assert_eq!(c.to_string(), "1..=100");
+
+    // Or, equivalently:
+    let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+    let b = CheckSortedDisjoint::new([2..=6].into_iter());
+    let c = SortedDisjointIterator::bitor(a, b);
+    assert_eq!(c.to_string(), "1..=100")
+}
