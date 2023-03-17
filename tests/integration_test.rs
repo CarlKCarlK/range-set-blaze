@@ -1198,3 +1198,20 @@ fn union_iter() {
     let c = SortedDisjointIterator::bitor(a, b);
     assert_eq!(c.to_string(), "1..=100")
 }
+
+#[test]
+fn bitor() {
+    let a = CheckSortedDisjoint::new([1..=1].into_iter());
+    let b = CheckSortedDisjoint::new([2..=2].into_iter());
+    let c = range_set_int::SortedDisjointIterator::bitor(a, b);
+
+    let a = CheckSortedDisjoint::new([1..=1].into_iter());
+    let b = CheckSortedDisjoint::new([2..=2].into_iter());
+    let c = std::ops::BitOr::bitor(a, b);
+    assert_eq!(c.to_string(), "1..=2");
+
+    // let a = CheckSortedDisjoint::new([1..=1].into_iter());
+    // let b = (&RangeSetInt::from([2..=2])).ranges();
+    // let c = std::ops::BitOr::bitor(a, b);
+    // assert_eq!(c.to_string(), "1..=2");
+}

@@ -1,5 +1,5 @@
 #![doc = include_str!("../README.md")]
-//cmk0000 #![warn(missing_docs)]
+#![warn(missing_docs)]
 
 // !!!cmk0doc give a link to RangSetInt struct at top of the docs.
 
@@ -1226,7 +1226,7 @@ where
 {
 }
 
-/// The trait used to define methods on multiple [`RangeSetInt`]'s,
+/// The trait used to provide methods on multiple [`RangeSetInt`]'s,
 /// specifically [`union`] and [`intersection`].
 ///
 /// [`union`]: MultiwayRangeSetInt::union
@@ -1374,7 +1374,7 @@ where
 
 // cmk rule: don't forget these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
 
-/// The trait used to define methods common to iterators with the [`SortedDisjoint`] trait.
+/// The trait used to provide methods common to iterators with the [`SortedDisjoint`] trait.
 /// Methods include [`to_string`], [`equal`], [`bitor`] (union), [`bitand`] (intersection), [`bitxor`], [`sub`], [`not`].
 ///
 /// [`to_string`]: SortedDisjointIterator::to_string
@@ -1392,7 +1392,7 @@ pub trait SortedDisjointIterator<T: Integer>:
 {
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 
-    /// Given two [`SortedDisjoint`] iterators, returns a [`SortedDisjoint`] iterator of their union.
+    /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their union.
     ///
     /// # Examples
     ///

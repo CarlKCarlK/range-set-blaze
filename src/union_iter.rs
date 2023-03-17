@@ -10,9 +10,12 @@ use crate::{
 // cmk00 if this is for internal use only, then it's doc should be different
 // cmk00 maybe not the best name
 /// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
-/// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
+/// i.e., all the integers in any input iterator, as sorted & disjoint ranges. Works with [`Merge`]
+/// and [`KMerge`].
 ///
 /// [`SortedDisjoint`]: crate::SortedDisjoint
+/// [`Merge`]: crate::Merge
+/// [`KMerge`]: crate::KMerge
 ///
 /// # Examples
 ///
@@ -22,14 +25,14 @@ use crate::{
 ///
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::new([2..=6].into_iter());
-/// let c = UnionIter::new(Merge::new(a, b));
-/// assert_eq!(c.to_string(), "1..=100");
+/// let union = UnionIter::new(Merge::new(a, b));
+/// assert_eq!(union.to_string(), "1..=100");
 ///
 /// // Or, equivalently:
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::new([2..=6].into_iter());
-/// let c = a | b;
-/// assert_eq!(c.to_string(), "1..=100")
+/// let union = a | b;
+/// assert_eq!(union.to_string(), "1..=100")
 /// ```
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]

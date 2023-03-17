@@ -22,8 +22,8 @@ use crate::{
 ///
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::new([2..=6].into_iter());
-/// let c = a | b;
-/// assert_eq!(c.to_string(), "1..=100");
+/// let union = a | b;
+/// assert_eq!(union.to_string(), "1..=100");
 /// ```
 ///
 /// Here the ranges are not sorted and disjoint, so the iterator will panic.
@@ -32,8 +32,8 @@ use crate::{
 ///
 /// let a = CheckSortedDisjoint::new([1..=5, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::new([2..=6,-10..=-5].into_iter());
-/// let c = a | b;
-/// assert_eq!(c.to_string(), "1..=100");
+/// let union = a | b;
+/// assert_eq!(union.to_string(), "1..=100");
 /// ```
 
 pub struct CheckSortedDisjoint<T, I>
