@@ -42,6 +42,7 @@
 // cmk implement "ranges" by using log n search and then SortedDisjoint intersection.
 // cmk000 is 'ranges' a good name for the function or confusing with btreeset's 'range'?
 
+// FUTURE: Support serde via optional feature
 mod integer;
 mod merge;
 mod not_iter;
@@ -413,7 +414,7 @@ impl<T: Integer> RangeSetInt<T> {
         if self.len() > other.len() {
             return false;
         }
-        self.difference(other).next().is_none()
+        (self.ranges() - other.ranges()).next().is_none()
     }
 
     /// Returns `true` if the set is a superset of another,
@@ -460,121 +461,6 @@ impl<T: Integer> RangeSetInt<T> {
             .map_or(false, |(_, end)| value <= *end)
     }
 
-    // !!!cmk0doc add note to see - or sub
-    /// Visits the ranges representing the difference,
-    /// i.e., the integers that are in `self` but not in `other`,
-    /// as sorted & disjoint ranges.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_int::RangeSetInt;
-    ///
-    /// let a = RangeSetInt::from([1..=2]);
-    /// let b = RangeSetInt::from([2..=3]);
-    ///
-    /// let diff: Vec<_> = a.difference(&b).collect();
-    /// assert_eq!(diff, [1..=1]);
-    /// ```
-    pub fn difference<'a>(
-        &'a self,
-        other: &'a RangeSetInt<T>,
-    ) -> BitSubMerge<T, RangesIter<T>, RangesIter<T>> {
-        self.ranges() - other.ranges()
-    }
-
-    /// Visits the ranges representing the union,
-    /// i.e., all the integers in `self` or `other`,
-    /// as sorted & disjoint ranges.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_int::RangeSetInt;
-    ///
-    /// let mut a = RangeSetInt::new();
-    /// a.insert(1);
-    ///
-    /// let mut b = RangeSetInt::new();
-    /// b.insert(2);
-    ///
-    /// let union: Vec<_> = a.union(&b).collect();
-    /// assert_eq!(union, [1..=2]);
-    /// ```
-    pub fn union<'a>(
-        &'a self,
-        other: &'a RangeSetInt<T>,
-    ) -> BitOrMerge<T, RangesIter<T>, RangesIter<T>> {
-        self.ranges() | other.ranges()
-    }
-    /// Visits the ranges representing the complement,
-    /// i.e., all the integers not in `self`,
-    /// as sorted & disjoint ranges.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_int::RangeSetInt;
-    ///
-    /// let mut a = RangeSetInt::<i16>::from([-10..=0, 1000..=2000]);
-    ///
-    /// let complement: Vec<_> = a.complement().collect();
-    /// assert_eq!(complement, [-32768..=-11, 1..=999, 2001..=32767]);
-    /// ```
-    pub fn complement(&self) -> NotIter<T, RangesIter<T>> {
-        !self.ranges()
-    }
-
-    /// Visits the ranges representing the symmetric difference,
-    /// i.e., the integers that are in `self` or in `other` but not in both,
-    /// as sorted & disjoint ranges.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_int::RangeSetInt;
-    ///
-    /// let mut a = RangeSetInt::new();
-    /// a.insert(1);
-    /// a.insert(2);
-    ///
-    /// let mut b = RangeSetInt::new();
-    /// b.insert(2);
-    /// b.insert(3);
-    ///
-    /// let sym_diff: Vec<_> = a.symmetric_difference(&b).collect();
-    /// assert_eq!(sym_diff, [1..=1, 3..=3]);
-    /// ```
-    pub fn symmetric_difference<'a>(
-        &'a self,
-        other: &'a RangeSetInt<T>,
-    ) -> BitXOr<T, RangesIter<T>, RangesIter<T>> {
-        self.ranges() ^ other.ranges()
-    }
-
-    /// !!!cmk0doc add note to see & or ???
-    /// Visits the integer elements representing the intersection,
-    /// i.e., the integers that are both in `self` and `other`,
-    /// in ascending order.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_int::RangeSetInt;
-    ///
-    /// let a = RangeSetInt::from([1..=2]);
-    /// let b = RangeSetInt::from([2..=3]);
-    ///
-    /// let intersection: Vec<_> = a.intersection(&b).collect();
-    /// assert_eq!(intersection, [2..=2]);
-    /// ```
-    pub fn intersection<'a>(
-        &'a self,
-        other: &'a RangeSetInt<T>,
-    ) -> BitAndMerge<T, RangesIter<T>, RangesIter<T>> {
-        self.ranges() & other.ranges()
-    }
-
     /// Returns `true` if `self` has no elements in common with `other`.
     /// This is equivalent to checking for an empty intersection.
     ///
@@ -595,7 +481,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// cmk rule which functions should be must_use? iterator, constructor, predicates, first, last,
     #[must_use]
     pub fn is_disjoint(&self, other: &RangeSetInt<T>) -> bool {
-        self.intersection(other).next().is_none()
+        (self.ranges() & other.ranges()).next().is_none()
     }
 
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {

@@ -866,17 +866,6 @@ fn vs_btree_set() {
 }
 
 #[test]
-fn doc_test_difference() {
-    use range_set_int::RangeSetInt;
-
-    let a = RangeSetInt::from([1..=2]);
-    let b = RangeSetInt::from([2..=3]);
-
-    let diff: Vec<_> = a.difference(&b).collect();
-    assert_eq!(diff, [1..=1]);
-}
-
-#[test]
 fn doc_test_insert1() {
     let mut set = RangeSetInt::new();
 
