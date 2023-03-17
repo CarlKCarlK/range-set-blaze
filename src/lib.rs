@@ -1365,7 +1365,8 @@ pub trait SortedDisjointIterator<T: Integer>:
     ///
     /// let a = CheckSortedDisjoint::new([1..=1].into_iter());
     /// let b = RangeSetInt::from([2..=2]).into_ranges();
-    /// let union = SortedDisjointIterator::bitor(a, b);
+    /// // CheckSortedDisjoint defines ops::bitor as SortedDisjointIterator::bitor so we can use '!'
+    /// let union = a | b;
     /// assert_eq!(union.to_string(), "1..=2");
     /// ```
     #[inline]
@@ -1386,7 +1387,8 @@ pub trait SortedDisjointIterator<T: Integer>:
     ///
     /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
     /// let b = RangeSetInt::from([2..=3]).into_ranges();
-    /// let intersection = SortedDisjointIterator::bitand(a, b);
+    /// // CheckSortedDisjoint defines ops::bitand as SortedDisjointIterator::bitand so we can use '&'
+    /// let intersection = a & b;
     /// assert_eq!(intersection.to_string(), "2..=2");
     /// ```
     #[inline]
@@ -1407,7 +1409,8 @@ pub trait SortedDisjointIterator<T: Integer>:
     ///
     /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
     /// let b = RangeSetInt::from([2..=3]).into_ranges();
-    /// let diff = SortedDisjointIterator::sub(a, b);
+    /// // CheckSortedDisjoint defines ops::sub as SortedDisjointIterator::sub so we can use '-'
+    /// let diff = a - b;
     /// assert_eq!(diff.to_string(), "1..=1");
     /// ```
     #[inline]
@@ -1416,7 +1419,7 @@ pub trait SortedDisjointIterator<T: Integer>:
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint,
     {
-        !(self.not().bitor(other.into_iter()))
+        (self.not().bitor(other.into_iter())).not()
     }
 
     /// Given a [`SortedDisjoint`] iterator, efficiently returns a [`SortedDisjoint`] iterator of its complement.
@@ -1427,7 +1430,8 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
     /// let a = CheckSortedDisjoint::new([-10i16..=0, 1000..=2000].into_iter());
-    /// let complement = SortedDisjointIterator::not(a);
+    /// // CheckSortedDisjoint defines ops::not as SortedDisjointIterator::not so we can use '!'
+    /// let complement = !a;
     /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
     /// ```
     #[inline]
@@ -1436,6 +1440,19 @@ pub trait SortedDisjointIterator<T: Integer>:
     }
 
     // !!! cmk test the speed of this
+    /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their set difference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
+    ///
+    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let b = RangeSetInt::from([2..=3]).into_ranges();
+    /// // CheckSortedDisjoint defines ops::sub as SortedDisjointIterator::sub so we can use '^'
+    /// let sym_diff = a ^ b;
+    /// assert_eq!(sym_diff.to_string(), "1..=1, 3..=3");
+    /// ```
     #[inline]
     fn bitxor<R>(self, other: R) -> BitXOrTee<T, Self, R::IntoIter>
     where
