@@ -25,11 +25,11 @@ error[E0277]: the trait bound `std::array::IntoIter<({integer}, {integer}), 2>: 
   = help: the following other types implement trait `SortedDisjoint`:
             CheckSortedDisjoint<T, I>
             DynSortedDisjoint<'a, T>
+            IntoRangesIter<T>
             NotIter<T, I>
             RangesIter<'_, T>
             UnionIter<T, I>
             itertools::tee::Tee<I>
-            range_set_int::ranges::IntoRangesIter<T>
 note: required by a bound in `range_set_int::SortedDisjointIterator::bitxor`
  --> src/lib.rs
   |

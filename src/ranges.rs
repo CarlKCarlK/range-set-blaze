@@ -7,10 +7,11 @@ use crate::{Integer, SortedDisjoint, SortedStarts};
 /// An iterator that visits the ranges in the [`RangeSetInt`],
 /// i.e., the integers as sorted & disjoint ranges.
 ///
-/// This `struct` is created by the [`ranges`] method on [`RangeSetInt`]. See its
+/// This `struct` is created by the [`ranges`] method on [`RangeSetInt`]. See [`ranges`]'s
 /// documentation for more.
 ///
-/// [`ranges`]: RangeSetInt::ranges
+/// [`RangeSetInt`]: crate::RangeSetInt
+/// [`ranges`]: crate::RangeSetInt::ranges
 pub struct RangesIter<'a, T: Integer> {
     pub(crate) iter: btree_map::Iter<'a, T, T>,
 }
@@ -51,10 +52,11 @@ impl<'a, T: Integer> Iterator for RangesIter<'a, T> {
 /// An iterator that visits the ranges in the [`RangeSetInt`],
 /// i.e., the integers as sorted & disjoint ranges.
 ///
-/// This `struct` is created by the [`into_ranges`] method on [`RangeSetInt`]. See its
+/// This `struct` is created by the [`into_ranges`] method on [`RangeSetInt`]. See [`into_ranges`]'s
 /// documentation for more.
 ///
-/// [`into_ranges`]: RangeSetInt::into_ranges
+/// [`RangeSetInt`]: crate::RangeSetInt
+/// [`into_ranges`]: crate::RangeSetInt::into_ranges
 pub struct IntoRangesIter<T: Integer> {
     pub(crate) iter: std::collections::btree_map::IntoIter<T, T>,
 }

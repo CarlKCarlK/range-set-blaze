@@ -63,7 +63,7 @@ use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::One;
 use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
-use ranges::IntoRangesIter;
+pub use ranges::IntoRangesIter;
 pub use ranges::RangesIter;
 use std::cmp::max;
 use std::cmp::Ordering;
@@ -985,7 +985,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// An iterator that visits the ranges in the [`RangeSetInt`],
     /// i.e., the integers as sorted & disjoint ranges.
     ///
-    /// Also see [`RangeSetInt::iter`].
+    /// Also see [`RangeSetInt::iter`] and [`RangeSetInt::into_ranges`].
     ///
     /// # Examples
     ///
@@ -1016,18 +1016,37 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
+    /// An iterator that visits the ranges in the [`RangeSetInt`],
+    /// i.e., the integers as sorted & disjoint ranges.
+    ///
+    /// Also see [`RangeSetInt::into_iter`] and [`RangeSetInt::ranges`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut ranges = RangeSetInt::from([10..=20, 15..=25, 30..=40]).into_ranges();
+    /// assert_eq!(ranges.next(), Some(10..=25));
+    /// assert_eq!(ranges.next(), Some(30..=40));
+    /// assert_eq!(ranges.next(), None);
+    /// ```
+    ///
+    /// Values returned by the iterator are returned in ascending order:
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut ranges = RangeSetInt::from([30..=40, 15..=25, 10..=20]).into_ranges();
+    /// assert_eq!(ranges.next(), Some(10..=25));
+    /// assert_eq!(ranges.next(), Some(30..=40));
+    /// assert_eq!(ranges.next(), None);
+    /// ```    
     pub fn into_ranges(self) -> IntoRangesIter<T> {
         IntoRangesIter {
             iter: self.btree_map.into_iter(),
         }
     }
-
-    // FUTURE: Could create an into_ranges method that would take ownership of self and return an IntoRanges.
-    // pub fn into_ranges(self) -> IntoRanges<T> {
-    //     IntoRanges {
-    //         iter: self.btree_map.into_iter(),
-    //     }
-    // }
 
     // FUTURE BTreeSet some of these as 'const' but it uses unstable. When stable, add them here and elsewhere.
 

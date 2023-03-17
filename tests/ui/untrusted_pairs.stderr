@@ -22,10 +22,10 @@ error[E0277]: the trait bound `std::slice::Iter<'_, ({integer}, {integer})>: Sor
   = help: the following other types implement trait `SortedDisjoint`:
             CheckSortedDisjoint<T, I>
             DynSortedDisjoint<'a, T>
+            IntoRangesIter<T>
             NotIter<T, I>
             RangesIter<'_, T>
             UnionIter<T, I>
             itertools::tee::Tee<I>
-            range_set_int::ranges::IntoRangesIter<T>
   = note: required for `RangeSetInt<_>` to implement `From<std::slice::Iter<'_, ({integer}, {integer})>>`
   = note: required for `std::slice::Iter<'_, ({integer}, {integer})>` to implement `Into<RangeSetInt<_>>`
