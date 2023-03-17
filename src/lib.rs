@@ -42,16 +42,15 @@
 // cmk implement "ranges" by using log n search and then SortedDisjoint intersection.
 // cmk000 is 'ranges' a good name for the function or confusing with btreeset's 'range'?
 
-mod check_sorted_disjoint;
 mod integer;
 mod merge;
 mod not_iter;
 mod ranges;
+mod sorted_disjoint;
 mod tests;
 mod union_iter;
 mod unsorted_disjoint;
 
-pub use check_sorted_disjoint::CheckSortedDisjoint;
 use gen_ops::gen_ops_ex;
 use itertools::Itertools;
 use itertools::Tee;
@@ -64,6 +63,8 @@ use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
 pub use ranges::IntoRangesIter;
 pub use ranges::RangesIter;
+pub use sorted_disjoint::CheckSortedDisjoint;
+pub use sorted_disjoint::DynSortedDisjoint;
 use std::cmp::max;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
@@ -1733,135 +1734,6 @@ impl<'a, T: 'a + Integer> Extend<&'a RangeInclusive<T>> for RangeSetInt<T> {
 // }
 
 // cmk sort-iter uses peekable. Is that better?
-
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-/// Gives [`SortedDisjoint`] iterators a uniform type. Used by the [`union_dyn`] and [`intersection_dyn`] macros to give all
-/// their input iterators the same type.
-///
-/// [`union`]: MultiwaySortedDisjoint::union
-/// [`intersection`]: MultiwaySortedDisjoint::intersection
-///
-/// # Example
-/// ```
-/// use range_set_int::{DynSortedDisjoint, MultiwaySortedDisjoint, SortedDisjointIterator, RangeSetInt};
-///
-/// let a = RangeSetInt::from([1u8..=6, 8..=9, 11..=15]);
-/// let b = RangeSetInt::from([5..=13, 18..=29]);
-/// let c = RangeSetInt::from([38..=42]);
-/// let union = [
-///     DynSortedDisjoint::new(a.ranges()),
-///     DynSortedDisjoint::new(!b.ranges()),
-///     DynSortedDisjoint::new(c.ranges()),
-/// ]
-/// .union();
-/// assert_eq!(union.to_string(), "0..=6, 8..=9, 11..=17, 30..=255");
-/// ```
-
-pub struct DynSortedDisjoint<'a, T> {
-    iter: Box<dyn Iterator<Item = T> + 'a>,
-}
-
-impl<'a, T> DynSortedDisjoint<'a, T> {
-    /// Create a [`DynSortedDisjoint`] from any [`SortedDisjoint`] iterator. See [`DynSortedDisjoint`] for an example.
-    pub fn new<I>(iter: I) -> Self
-    where
-        I: Iterator<Item = T> + SortedDisjoint + 'a,
-    {
-        Self {
-            iter: Box::new(iter),
-        }
-    }
-}
-
-// All DynSortedDisjoint's are SortedDisjoint's
-impl<'a, T> SortedStarts for DynSortedDisjoint<'a, T> {}
-impl<'a, T> SortedDisjoint for DynSortedDisjoint<'a, T> {}
-
-impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
-    }
-
-    // cmk rule Implement size_hint if possible and ExactSizeIterator if possible
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
-    }
-}
-/// Intersects one or more [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
-/// The input iterators need not to be of the same type.
-///
-/// For input iterators of the same type, [`intersection`] may be slightly faster.
-///
-/// # Performance
-///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
-///
-/// # Example: 3-Input Parity
-///
-/// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
-///
-/// [`intersection`]: MultiwaySortedDisjoint::intersection
-/// ```
-/// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
-///
-/// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
-/// let b = RangeSetInt::from([5..=13, 18..=29]);
-/// let c = RangeSetInt::from([38..=42]);
-///
-/// let parity = union_dyn!(
-///     intersection_dyn!(a.ranges(), !b.ranges(), !c.ranges()),
-///     intersection_dyn!(!a.ranges(), b.ranges(), !c.ranges()),
-///     intersection_dyn!(!a.ranges(), !b.ranges(), c.ranges()),
-///     intersection_dyn!(a.ranges(), b.ranges(), c.ranges())
-/// );
-/// assert_eq!(
-///     parity.to_string(),
-///     "1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42"
-/// );
-/// ```
-#[macro_export]
-macro_rules! intersection_dyn {
-    ($($val:expr),*) => {$crate::MultiwaySortedDisjoint::intersection([$($crate::DynSortedDisjoint::new($val)),*])}
-}
-
-/// Unions one or more [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
-/// The input iterators need not to be of the same type.
-///
-/// For input iterators of the same type, [`union`] may be slightly faster.
-///
-/// # Performance
-///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
-///
-/// # Example: 3-Input Parity
-///
-/// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
-///
-/// [`union`]: MultiwaySortedDisjoint::union
-/// ```
-/// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
-///
-/// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
-/// let b = RangeSetInt::from([5..=13, 18..=29]);
-/// let c = RangeSetInt::from([38..=42]);
-///
-/// let parity = union_dyn!(
-///     intersection_dyn!(a.ranges(), !b.ranges(), !c.ranges()),
-///     intersection_dyn!(!a.ranges(), b.ranges(), !c.ranges()),
-///     intersection_dyn!(!a.ranges(), !b.ranges(), c.ranges()),
-///     intersection_dyn!(a.ranges(), b.ranges(), c.ranges())
-/// );
-/// assert_eq!(
-///     parity.to_string(),
-///     "1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42"
-/// );
-/// ```
-#[macro_export]
-macro_rules! union_dyn {
-    ($($val:expr),*) => {
-                        $crate::MultiwaySortedDisjoint::union([$($crate::DynSortedDisjoint::new($val)),*])
-                        }
-}
 
 impl<T: Integer> Ord for RangeSetInt<T> {
     /// cmk0doc clarify that this is lexicographic order not subset/superset
