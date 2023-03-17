@@ -1465,6 +1465,18 @@ pub trait SortedDisjointIterator<T: Integer>:
     }
 
     // cmk rule: Prefer IntoIterator to Iterator
+    /// Given two [`SortedDisjoint`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
+    /// this method takes ownership of the iterators and consumes them.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
+    ///
+    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let b = RangeSetInt::from([1..=2]).into_ranges();
+    /// assert!(a.equal(b));
+    /// ```
     fn equal<R>(self, other: R) -> bool
     where
         R: IntoIterator<Item = Self::Item>,
@@ -1474,6 +1486,17 @@ pub trait SortedDisjointIterator<T: Integer>:
     }
 
     // cmk rule: You can't define traits on combinations of traits, so use this method to define methods on traits
+    /// Given a [`SortedDisjoint`] iterators, produces a string version. Unlike most `to_string` and `fmt` in Rust,
+    /// this method takes ownership of the iterator and consumes it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
+    ///
+    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// assert_eq!(a.to_string(), "1..=2");
+    /// ```
     fn to_string(self) -> String {
         self.map(|range| {
             let (start, end) = range.into_inner();
@@ -1738,8 +1761,8 @@ pub struct DynSortedDisjoint<'a, T> {
     iter: Box<dyn Iterator<Item = T> + 'a>,
 }
 
-/// Create a [`DynSortedDisjoint`] from any [`SortedDisjoint`] iterator. See [`DynSortedDisjoint`] for an example.
 impl<'a, T> DynSortedDisjoint<'a, T> {
+    /// Create a [`DynSortedDisjoint`] from any [`SortedDisjoint`] iterator. See [`DynSortedDisjoint`] for an example.
     pub fn new<I>(iter: I) -> Self
     where
         I: Iterator<Item = T> + SortedDisjoint + 'a,

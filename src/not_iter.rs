@@ -1,7 +1,5 @@
 use std::ops::{self, RangeInclusive};
 
-use itertools::Itertools;
-
 use crate::{
     BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisjoint,
     SortedDisjointIterator,

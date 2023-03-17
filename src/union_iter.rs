@@ -54,6 +54,7 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
 {
+    /// Creates a new [`UnionIter`] from zero or more [`SortedDisjoint`] iterators. See [`UnionIter`] for more details and examples.
     pub fn new(iter: I) -> Self {
         Self {
             iter,

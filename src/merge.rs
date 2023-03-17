@@ -47,6 +47,7 @@ where
     L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
+    /// Creates a new [`Merge`] iterator from two [`SortedDisjoint`] iterators. See [`Merge`] for more details and examples.
     pub fn new(left: L, right: R) -> Self {
         Self {
             iter: left.merge_by(right, |a, b| a.start() < b.start()),
@@ -122,6 +123,7 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
+    /// Creates a new [`KMerge`] iterator from zero or more [`SortedDisjoint`] iterators. See [`KMerge`] for more details and examples.
     pub fn new<J>(iter: J) -> Self
     where
         J: IntoIterator<Item = I>,
