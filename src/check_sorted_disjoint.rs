@@ -130,8 +130,8 @@ where
 {
     type Output = BitOrMerge<T, Self, R>;
 
-    fn bitor(self, rhs: R) -> Self::Output {
-        SortedDisjointIterator::bitor(self, rhs)
+    fn bitor(self, other: R) -> Self::Output {
+        SortedDisjointIterator::bitor(self, other)
     }
 }
 
@@ -142,8 +142,8 @@ where
 {
     type Output = BitAndMerge<T, Self, R>;
 
-    fn bitand(self, rhs: R) -> Self::Output {
-        SortedDisjointIterator::bitand(self, rhs)
+    fn bitand(self, other: R) -> Self::Output {
+        SortedDisjointIterator::bitand(self, other)
     }
 }
 
@@ -154,8 +154,8 @@ where
 {
     type Output = BitSubMerge<T, Self, R>;
 
-    fn sub(self, rhs: R) -> Self::Output {
-        SortedDisjointIterator::sub(self, rhs)
+    fn sub(self, other: R) -> Self::Output {
+        SortedDisjointIterator::sub(self, other)
     }
 }
 
@@ -166,7 +166,7 @@ where
 {
     type Output = BitXOrTee<T, Self, R>;
 
-    fn bitxor(self, rhs: R) -> Self::Output {
-        SortedDisjointIterator::bitxor(self, rhs)
+    fn bitxor(self, other: R) -> Self::Output {
+        SortedDisjointIterator::bitxor(self, other)
     }
 }

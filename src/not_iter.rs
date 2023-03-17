@@ -43,12 +43,12 @@ where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     /// Create a new [`NotIter`] from a [`SortedDisjoint`] iterator. See [`NotIter`] for an example.
-    pub fn new<J>(into_iter: J) -> Self
+    pub fn new<J>(iter: J) -> Self
     where
         J: IntoIterator<Item = RangeInclusive<T>, IntoIter = I>,
     {
         NotIter {
-            iter: into_iter.into_iter(),
+            iter: iter.into_iter(),
             start_not: T::min_value(),
             next_time_return_none: false,
         }
@@ -118,7 +118,7 @@ where
     fn not(self) -> Self::Output {
         // It would be fun to optimize to self.iter, but that would require
         // also considering fields 'start_not' and 'next_time_return_none'.
-        NotIter::new(self)
+        SortedDisjointIterator::not(self)
     }
 }
 
@@ -129,8 +129,8 @@ where
 {
     type Output = BitOrMerge<T, Self, R>;
 
-    fn bitor(self, rhs: R) -> Self::Output {
-        SortedDisjointIterator::bitor(self, rhs)
+    fn bitor(self, other: R) -> Self::Output {
+        SortedDisjointIterator::bitor(self, other)
     }
 }
 
@@ -141,10 +141,10 @@ where
 {
     type Output = BitSubMerge<T, Self, R>;
 
-    fn sub(self, rhs: R) -> Self::Output {
+    fn sub(self, other: R) -> Self::Output {
         // It would be fun to optimize !!self.iter into self.iter
         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-        !(!self | rhs)
+        SortedDisjointIterator::sub(self, other)
     }
 }
 
@@ -156,13 +156,11 @@ where
     type Output = BitXOrTee<T, Self, R>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn bitxor(self, rhs: R) -> Self::Output {
+    fn bitxor(self, other: R) -> Self::Output {
         // It would be fine optimize !!self.iter into self.iter, ala
         // ¬(¬n ∨ ¬r) ∨ ¬(n ∨ r) // https://www.wolframalpha.com/input?i=%28not+n%29+xor+r
         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-        let (lhs0, lhs1) = self.tee();
-        let (rhs0, rhs1) = rhs.tee();
-        lhs0.sub(rhs0) | rhs1.sub(lhs1)
+        SortedDisjointIterator::bitxor(self, other)
     }
 }
 
@@ -173,9 +171,9 @@ where
 {
     type Output = BitAndMerge<T, Self, R>;
 
-    fn bitand(self, rhs: R) -> Self::Output {
+    fn bitand(self, other: R) -> Self::Output {
         // It would be fun to optimize !!self.iter into self.iter
         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-        !(!self | rhs.not())
+        SortedDisjointIterator::bitand(self, other)
     }
 }

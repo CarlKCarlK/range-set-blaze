@@ -69,8 +69,8 @@ use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
+use std::ops;
 use std::ops::RangeInclusive;
-use std::ops::Sub;
 use std::str::FromStr;
 pub use union_iter::UnionIter;
 pub use unsorted_disjoint::AssumeSortedStarts;
@@ -317,7 +317,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// !!! cmk understand the operator 'Sub'
     fn _len_slow(&self) -> <T as Integer>::SafeLen
     where
-        for<'a> &'a T: Sub<&'a T, Output = T>,
+        for<'a> &'a T: ops::Sub<&'a T, Output = T>,
     {
         RangeSetInt::btree_map_len(&self.btree_map)
     }
@@ -1368,6 +1368,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// let union = SortedDisjointIterator::bitor(a, b);
     /// assert_eq!(union.to_string(), "1..=2");
     /// ```
+    #[inline]
     fn bitor<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
@@ -1376,6 +1377,19 @@ pub trait SortedDisjointIterator<T: Integer>:
         UnionIter::new(Merge::new(self, other.into_iter()))
     }
 
+    /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their intersection.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
+    ///
+    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let b = RangeSetInt::from([2..=3]).into_ranges();
+    /// let intersection = SortedDisjointIterator::bitand(a, b);
+    /// assert_eq!(intersection.to_string(), "2..=2");
+    /// ```
+    #[inline]
     fn bitand<R>(self, other: R) -> BitAndMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
@@ -1384,6 +1398,19 @@ pub trait SortedDisjointIterator<T: Integer>:
         !(self.not().bitor(other.into_iter().not()))
     }
 
+    /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their set difference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
+    ///
+    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let b = RangeSetInt::from([2..=3]).into_ranges();
+    /// let diff = SortedDisjointIterator::sub(a, b);
+    /// assert_eq!(diff.to_string(), "1..=1");
+    /// ```
+    #[inline]
     fn sub<R>(self, other: R) -> BitSubMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
@@ -1392,11 +1419,24 @@ pub trait SortedDisjointIterator<T: Integer>:
         !(self.not().bitor(other.into_iter()))
     }
 
+    /// Given a [`SortedDisjoint`] iterator, efficiently returns a [`SortedDisjoint`] iterator of its complement.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
+    ///
+    /// let a = CheckSortedDisjoint::new([-10i16..=0, 1000..=2000].into_iter());
+    /// let complement = SortedDisjointIterator::not(a);
+    /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
+    /// ```
+    #[inline]
     fn not(self) -> NotIter<T, Self> {
         NotIter::new(self)
     }
 
     // !!! cmk test the speed of this
+    #[inline]
     fn bitxor<R>(self, other: R) -> BitXOrTee<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,

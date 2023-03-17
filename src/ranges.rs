@@ -96,7 +96,7 @@ impl<T: Integer> ops::Not for RangesIter<'_, T> {
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        NotIter::new(self)
+        SortedDisjointIterator::not(self)
     }
 }
 
@@ -104,7 +104,7 @@ impl<T: Integer> ops::Not for IntoRangesIter<T> {
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        NotIter::new(self)
+        SortedDisjointIterator::not(self)
     }
 }
 
@@ -114,8 +114,8 @@ where
 {
     type Output = BitOrMerge<T, Self, I>;
 
-    fn bitor(self, rhs: I) -> Self::Output {
-        SortedDisjointIterator::bitor(self, rhs)
+    fn bitor(self, other: I) -> Self::Output {
+        SortedDisjointIterator::bitor(self, other)
     }
 }
 
@@ -125,8 +125,8 @@ where
 {
     type Output = BitOrMerge<T, Self, I>;
 
-    fn bitor(self, rhs: I) -> Self::Output {
-        SortedDisjointIterator::bitor(self, rhs)
+    fn bitor(self, other: I) -> Self::Output {
+        SortedDisjointIterator::bitor(self, other)
     }
 }
 
@@ -136,8 +136,8 @@ where
 {
     type Output = BitSubMerge<T, Self, I>;
 
-    fn sub(self, rhs: I) -> Self::Output {
-        !(!self | rhs)
+    fn sub(self, other: I) -> Self::Output {
+        SortedDisjointIterator::sub(self, other)
     }
 }
 
@@ -147,8 +147,8 @@ where
 {
     type Output = BitSubMerge<T, Self, I>;
 
-    fn sub(self, rhs: I) -> Self::Output {
-        !(!self | rhs)
+    fn sub(self, other: I) -> Self::Output {
+        SortedDisjointIterator::sub(self, other)
     }
 }
 
@@ -159,10 +159,10 @@ where
     type Output = BitXOr<T, Self, I>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn bitxor(self, rhs: I) -> Self::Output {
+    fn bitxor(self, other: I) -> Self::Output {
         // We optimize by using self.clone() instead of tee
         let lhs1 = self.clone();
-        let (rhs0, rhs1) = rhs.tee();
+        let (rhs0, rhs1) = other.tee();
         (self - rhs0) | (rhs1.sub(lhs1))
     }
 }
@@ -174,9 +174,9 @@ where
     type Output = BitXOrTee<T, Self, I>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn bitxor(self, rhs: I) -> Self::Output {
+    fn bitxor(self, other: I) -> Self::Output {
         // cmk000000000 we could like to optimize by using self.clone() instead of tee
-        SortedDisjointIterator::bitxor(self, rhs)
+        SortedDisjointIterator::bitxor(self, other)
     }
 }
 
@@ -187,8 +187,8 @@ where
     type Output = BitAndMerge<T, Self, I>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn bitand(self, rhs: I) -> Self::Output {
-        !(!self | rhs.not())
+    fn bitand(self, other: I) -> Self::Output {
+        SortedDisjointIterator::bitand(self, other)
     }
 }
 
@@ -199,7 +199,7 @@ where
     type Output = BitAndMerge<T, Self, I>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn bitand(self, rhs: I) -> Self::Output {
-        !(!self | rhs.not())
+    fn bitand(self, other: I) -> Self::Output {
+        SortedDisjointIterator::bitand(self, other)
     }
 }
