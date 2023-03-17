@@ -10,6 +10,7 @@
 use std::{collections::BTreeSet, ops::BitOr}; // , time::Instant
 
 use super::*;
+use itertools::Itertools;
 // use sorted_iter::assume::AssumeSortedByKeyExt;
 // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use syntactic_for::syntactic_for;

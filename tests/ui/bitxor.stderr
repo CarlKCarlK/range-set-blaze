@@ -9,7 +9,7 @@ error[E0271]: type mismatch resolving `<std::array::IntoIter<({integer}, {intege
   = note: expected struct `RangeInclusive<{integer}>`
               found tuple `({integer}, {integer})`
 note: required by a bound in `range_set_int::SortedDisjointIterator::bitxor`
- --> src/lib.rs
+ --> src/sorted_disjoint_iterator.rs
   |
   |         R: IntoIterator<Item = Self::Item>,
   |                         ^^^^^^^^^^^^^^^^^ required by this bound in `range_set_int::SortedDisjointIterator::bitxor`
@@ -31,7 +31,7 @@ error[E0277]: the trait bound `std::array::IntoIter<({integer}, {integer}), 2>: 
             UnionIter<T, I>
             itertools::tee::Tee<I>
 note: required by a bound in `range_set_int::SortedDisjointIterator::bitxor`
- --> src/lib.rs
+ --> src/sorted_disjoint_iterator.rs
   |
   |         R::IntoIter: SortedDisjoint,
   |                      ^^^^^^^^^^^^^^ required by this bound in `range_set_int::SortedDisjointIterator::bitxor`
