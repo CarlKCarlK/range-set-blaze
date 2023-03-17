@@ -55,7 +55,7 @@ pub use check_sorted_disjoint::CheckSortedDisjoint;
 use gen_ops::gen_ops_ex;
 use itertools::Itertools;
 use itertools::Tee;
-use merge::KMerge;
+pub use merge::KMerge;
 pub use merge::Merge;
 pub use not_iter::NotIter;
 use num_traits::ops::overflowing::OverflowingSub;

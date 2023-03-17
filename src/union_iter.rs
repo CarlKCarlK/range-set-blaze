@@ -9,28 +9,12 @@ use crate::{
 
 // cmk00 if this is for internal use only, then it's doc should be different
 // cmk00 maybe not the best name
-/// An iterator that turns a [`SortedStarts`]-trait iterator into a [`SortedDisjoint`]-trait iterator.
-///
-/// Both iterators work on ranges of integers.
-/// The ranges of a [`SortedStarts`]-trait iterator are sorted by start, but not necessarily by end,
-/// and may overlap. The ranges of a [`SortedDisjoint`]-trait iterator are sorted by start and may
-/// not overlap.
-///
-/// Used internally by `union`-related functions.
-///
-/// [`SortedDisjoint`]: crate::SortedDisjoint
-/// [`SortedDisjoint`]: crate::SortedDisjoint
-/// /// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
-///
-/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-/// let b = CheckSortedDisjoint::new([2..=6].into_iter());
-/// let c = a | b;
-/// assert_eq!(c.to_string(), "1..=100")
-
 /// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
-/// i.e., all the integers any input iterator, as sorted & disjoint ranges.
+/// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
 ///
-/// # Example
+/// [`SortedDisjoint`]: crate::SortedDisjoint
+///
+/// # Examples
 ///
 /// ```
 /// use itertools::Itertools;
@@ -44,7 +28,7 @@ use crate::{
 /// // Or, equivalently:
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::new([2..=6].into_iter());
-/// let c = a.bitor(b);
+/// let c = a | b;
 /// assert_eq!(c.to_string(), "1..=100")
 /// ```
 #[derive(Clone)]
