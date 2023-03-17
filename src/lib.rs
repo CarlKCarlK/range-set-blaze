@@ -44,6 +44,7 @@
 
 mod check_sorted_disjoint;
 mod integer;
+mod merge;
 mod not_iter;
 mod ops;
 mod tests;
@@ -53,9 +54,9 @@ mod unsorted_disjoint;
 pub use check_sorted_disjoint::CheckSortedDisjoint;
 use gen_ops::gen_ops_ex;
 use itertools::Itertools;
-use itertools::KMergeBy;
-use itertools::MergeBy;
 use itertools::Tee;
+use merge::KMerge;
+pub use merge::Merge;
 pub use not_iter::NotIter;
 use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::One;
@@ -1189,35 +1190,6 @@ where
     }
 }
 
-// cmk000000
-// impl<T, L, R> SortedStarts for Merge<T, L, R>
-// where
-//     T: Integer,
-//     L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
-//     R: Iterator<Item = RangeInclusive<T>> + SortedStarts,
-// {
-// }
-
-// // cmk000000 Not true
-// impl<T, I> SortedStarts for KMerge<T, I>
-// where
-//     T: Integer,
-//     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
-// {
-// }
-
-// #[inline]
-// fn is_first<T: Integer>(a: &RangeInclusive<T>, b: &RangeInclusive<T>) -> bool {
-//     a.start() <= b.start()
-// }
-
-// cmk000000
-#[doc(hidden)]
-pub type Merge<T, L, R> =
-    AssumeSortedStarts<T, MergeBy<L, R, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>>;
-#[doc(hidden)]
-pub type KMerge<T, I> =
-    AssumeSortedStarts<T, KMergeBy<I, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>>;
 #[doc(hidden)]
 pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
@@ -1365,10 +1337,7 @@ where
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
     fn union(self) -> BitOrKMerge<T, I> {
-        UnionIter::new(AssumeSortedStarts::new(
-            self.into_iter()
-                .kmerge_by(|pair0, pair1| pair0.start() <= pair1.start()),
-        ))
+        UnionIter::new(KMerge::new(self))
     }
 
     /// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
@@ -1440,21 +1409,7 @@ pub trait SortedDisjointIterator<T: Integer>:
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint,
     {
-        //        let x = ;
-        // UnionIter::new(x)
-        let other = other.into_iter();
-        // cmk00000000
-        #[inline]
-        fn is_first<T: Integer>(a: &RangeInclusive<T>, b: &RangeInclusive<T>) -> bool {
-            a.start() <= b.start()
-        }
-        // let iter = self.merge_by(other, is_first);
-        // UnionIter {
-        //     iter: self.merge_by(other, is_first),
-        //     option_range: None,
-        // }
-        // cmk0000000
-        UnionIter::new(AssumeSortedStarts::new(self.merge_by(other, is_first)))
+        UnionIter::new(Merge::new(self, other.into_iter()))
     }
 
     fn bitand<R>(self, other: R) -> BitAndMerge<T, Self, R::IntoIter>

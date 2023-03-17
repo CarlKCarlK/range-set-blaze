@@ -34,11 +34,11 @@ use crate::{
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_int::{UnionIter, SortedDisjointIterator, CheckSortedDisjoint};
+/// use range_set_int::{UnionIter, Merge, SortedDisjointIterator, CheckSortedDisjoint};
 ///
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::new([2..=6].into_iter());
-/// let c = UnionIter::new(a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()));
+/// let c = UnionIter::new(Merge::new(a, b));
 /// assert_eq!(c.to_string(), "1..=100");
 ///
 /// // Or, equivalently:

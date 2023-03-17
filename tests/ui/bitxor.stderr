@@ -35,6 +35,21 @@ note: required by a bound in `range_set_int::SortedDisjointIterator::bitxor`
   |         R::IntoIter: SortedDisjoint,
   |                      ^^^^^^^^^^^^^^ required by this bound in `range_set_int::SortedDisjointIterator::bitxor`
 
+error[E0271]: expected `std::array::IntoIter<({integer}, {integer}), 2>` to be an iterator that yields `RangeInclusive<_>`, but it yields `({integer}, {integer})`
+ --> tests/ui/bitxor.rs:7:16
+  |
+7 |     let _c = a.bitxor(b);
+  |                ^^^^^^ expected struct `RangeInclusive`, found tuple
+  |
+  = note: expected struct `RangeInclusive<_>`
+              found tuple `({integer}, {integer})`
+  = note: required for `itertools::tee::Tee<std::array::IntoIter<({integer}, {integer}), 2>>` to implement `SortedDisjoint`
+note: required by a bound in `Merge`
+ --> src/merge.rs
+  |
+  |     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+  |                                             ^^^^^^^^^^^^^^ required by this bound in `Merge`
+
 error[E0271]: expected `std::array::IntoIter<({integer}, {integer}), 2>` to be an iterator that yields `RangeInclusive<{integer}>`, but it yields `({integer}, {integer})`
  --> tests/ui/bitxor.rs:7:16
   |
@@ -43,19 +58,23 @@ error[E0271]: expected `std::array::IntoIter<({integer}, {integer}), 2>` to be a
   |
   = note: expected struct `RangeInclusive<{integer}>`
               found tuple `({integer}, {integer})`
-note: required by a bound in `itertools::adaptors::MergeBy`
- --> $CARGO/itertools-0.10.5/src/adaptors/mod.rs
+note: required by a bound in `Merge`
+ --> src/merge.rs
   |
-  |           J: Iterator<Item = I::Item>
-  |                       ^^^^^^^^^^^^^^ required by this bound in `itertools::adaptors::MergeBy`
+  |     R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Merge`
 
 error[E0271]: expected `std::array::IntoIter<({integer}, {integer}), 2>` to be an iterator that yields `RangeInclusive<_>`, but it yields `({integer}, {integer})`
  --> tests/ui/bitxor.rs:7:16
   |
 7 |     let _c = a.bitxor(b);
-  |                ^^^^^^ expected tuple, found struct `RangeInclusive`
+  |                ^^^^^^ expected struct `RangeInclusive`, found tuple
   |
-  = note: expected tuple `({integer}, {integer})`
-            found struct `RangeInclusive<_>`
+  = note: expected struct `RangeInclusive<_>`
+              found tuple `({integer}, {integer})`
   = note: required for `itertools::tee::Tee<std::array::IntoIter<({integer}, {integer}), 2>>` to implement `SortedDisjoint`
-  = note: required for `NotIter<{integer}, itertools::tee::Tee<std::array::IntoIter<({integer}, {integer}), 2>>>` to implement `Iterator`
+note: required by a bound in `NotIter`
+ --> src/not_iter.rs
+  |
+  |     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+  |                                             ^^^^^^^^^^^^^^ required by this bound in `NotIter`
