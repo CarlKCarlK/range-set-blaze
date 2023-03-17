@@ -1,7 +1,7 @@
 error[E0271]: expected `std::slice::Iter<'_, ({integer}, {integer})>` to be an iterator that yields `RangeInclusive<_>`, but it yields `&({integer}, {integer})`
- --> tests/ui/untrusted_pairs.rs:8:41
+ --> tests/ui/untrusted_pairs.rs:7:41
   |
-8 |     let range_set_int: RangeSetInt<_> = untrusted.iter().into();
+7 |     let range_set_int: RangeSetInt<_> = untrusted.iter().into();
   |                                         ^^^^^^^^^^^^^^^^ ---- required by a bound introduced by this call
   |                                         |
   |                                         expected struct `RangeInclusive`, found reference
@@ -12,9 +12,9 @@ error[E0271]: expected `std::slice::Iter<'_, ({integer}, {integer})>` to be an i
   = note: required for `std::slice::Iter<'_, ({integer}, {integer})>` to implement `Into<RangeSetInt<_>>`
 
 error[E0277]: the trait bound `std::slice::Iter<'_, ({integer}, {integer})>: SortedDisjoint` is not satisfied
- --> tests/ui/untrusted_pairs.rs:8:41
+ --> tests/ui/untrusted_pairs.rs:7:41
   |
-8 |     let range_set_int: RangeSetInt<_> = untrusted.iter().into();
+7 |     let range_set_int: RangeSetInt<_> = untrusted.iter().into();
   |                                         ^^^^^^^^^^^^^^^^ ---- required by a bound introduced by this call
   |                                         |
   |                                         the trait `SortedDisjoint` is not implemented for `std::slice::Iter<'_, ({integer}, {integer})>`
@@ -23,8 +23,9 @@ error[E0277]: the trait bound `std::slice::Iter<'_, ({integer}, {integer})>: Sor
             CheckSortedDisjoint<T, I>
             DynSortedDisjoint<'a, T>
             NotIter<T, I>
-            Ranges<'_, T>
+            RangesIter<'_, T>
             UnionIter<T, I>
             itertools::tee::Tee<I>
+            range_set_int::ranges::IntoRangesIter<T>
   = note: required for `RangeSetInt<_>` to implement `From<std::slice::Iter<'_, ({integer}, {integer})>>`
   = note: required for `std::slice::Iter<'_, ({integer}, {integer})>` to implement `Into<RangeSetInt<_>>`

@@ -14,7 +14,7 @@ use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange}
 // !!!cmk should users use a prelude? If not, are these reasonable imports?
 use range_set_int::{
     intersection_dyn, union_dyn, AssumeSortedStarts, Integer, MultiwayRangeSetInt,
-    MultiwaySortedDisjoint, RangeSetInt, Ranges, SortedDisjointIterator,
+    MultiwaySortedDisjoint, RangeSetInt, RangesIter, SortedDisjointIterator,
 };
 
 #[test]
@@ -373,7 +373,7 @@ fn ui() {
 
 #[test]
 fn complement() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetInt, Ranges, NotIter, UnionIter, Tee, UnionIter(g)
+    // RangeSetInt, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
     let a0 = RangeSetInt::from([1..=6]);
     let a1 = RangeSetInt::from([8..=9, 11..=15]);
     let a = &a0 | &a1;
@@ -399,7 +399,7 @@ fn complement() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn union_test() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetInt, Ranges, NotIter, UnionIter, Tee, UnionIter(g)
+    // RangeSetInt, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
     let a0 = RangeSetInt::from([1..=6]);
     let (a0_tee, _) = a0.ranges().tee();
     let a1 = RangeSetInt::from([8..=9]);
@@ -425,7 +425,7 @@ fn union_test() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn sub() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetInt, Ranges, NotIter, UnionIter, Tee, UnionIter(g)
+    // RangeSetInt, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
     let a0 = RangeSetInt::from([1..=6]);
     let a1 = RangeSetInt::from([8..=9]);
     let a2 = RangeSetInt::from([11..=15]);
@@ -449,7 +449,7 @@ fn sub() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn xor() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetInt, Ranges, NotIter, UnionIter, Tee, UnionIter(g)
+    // RangeSetInt, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
     let a0 = RangeSetInt::from([1..=6]);
     let a1 = RangeSetInt::from([8..=9]);
     let a2 = RangeSetInt::from([11..=15]);
@@ -472,7 +472,7 @@ fn xor() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn bitand() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetInt, Ranges, NotIter, UnionIter, Tee, UnionIter(g)
+    // RangeSetInt, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
     let a0 = RangeSetInt::from([1..=6]);
     let a1 = RangeSetInt::from([8..=9]);
     let a2 = RangeSetInt::from([11..=15]);
@@ -540,7 +540,7 @@ fn empty_it() {
 
     let c0 = a.ranges() | b.ranges();
     let c1 = [a.ranges(), b.ranges()].union();
-    let c_list2: [Ranges<i32>; 0] = [];
+    let c_list2: [RangesIter<i32>; 0] = [];
     let c2 = c_list2.clone().union();
     let c3 = union_dyn!(a.ranges(), b.ranges());
     let c4 = c_list2.map(DynSortedDisjoint::new).union();
@@ -554,7 +554,7 @@ fn empty_it() {
 
     let c0 = !(a.ranges() & b.ranges());
     let c1 = ![a.ranges(), b.ranges()].intersection();
-    let c_list2: [Ranges<i32>; 0] = [];
+    let c_list2: [RangesIter<i32>; 0] = [];
     let c2 = !!c_list2.clone().intersection();
     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
     let c4 = !!c_list2.map(DynSortedDisjoint::new).intersection();
@@ -1072,7 +1072,7 @@ fn retrain() {
 fn sync_and_send() {
     fn assert_sync_and_send<S: Sync + Send>() {}
     assert_sync_and_send::<RangeSetInt<i32>>();
-    assert_sync_and_send::<Ranges<i32>>();
+    assert_sync_and_send::<RangesIter<i32>>();
 }
 
 fn fraction<T: Integer>(range_int_set: &RangeSetInt<T>, range: &RangeInclusive<T>) -> f64 {
@@ -1204,14 +1204,15 @@ fn bitor() {
     let a = CheckSortedDisjoint::new([1..=1].into_iter());
     let b = CheckSortedDisjoint::new([2..=2].into_iter());
     let c = range_set_int::SortedDisjointIterator::bitor(a, b);
+    assert_eq!(c.to_string(), "1..=2");
 
     let a = CheckSortedDisjoint::new([1..=1].into_iter());
     let b = CheckSortedDisjoint::new([2..=2].into_iter());
     let c = std::ops::BitOr::bitor(a, b);
     assert_eq!(c.to_string(), "1..=2");
 
-    // let a = CheckSortedDisjoint::new([1..=1].into_iter());
-    // let b = (&RangeSetInt::from([2..=2])).ranges();
-    // let c = std::ops::BitOr::bitor(a, b);
-    // assert_eq!(c.to_string(), "1..=2");
+    let a = CheckSortedDisjoint::new([1..=1].into_iter());
+    let b = RangeSetInt::from([2..=2]).into_ranges();
+    let c = range_set_int::SortedDisjointIterator::bitor(a, b);
+    assert_eq!(c.to_string(), "1..=2");
 }

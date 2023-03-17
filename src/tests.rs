@@ -925,7 +925,7 @@ fn empty() {
 
     let c0 = a.ranges() | b.ranges();
     let c1 = [a.ranges(), b.ranges()].union();
-    let c_list2: [Ranges<i32>; 0] = [];
+    let c_list2: [RangesIter<i32>; 0] = [];
     let c2 = c_list2.clone().union();
     let c3 = union_dyn!(a.ranges(), b.ranges());
     let c4 = c_list2.map(DynSortedDisjoint::new).union();
@@ -939,7 +939,7 @@ fn empty() {
 
     let c0 = !(a.ranges() & b.ranges());
     let c1 = ![a.ranges(), b.ranges()].intersection();
-    let c_list2: [Ranges<i32>; 0] = [];
+    let c_list2: [RangesIter<i32>; 0] = [];
     let c2 = !!c_list2.clone().intersection();
     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
     let c4 = !!c_list2.map(DynSortedDisjoint::new).intersection();

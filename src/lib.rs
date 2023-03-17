@@ -1,5 +1,5 @@
 #![doc = include_str!("../README.md")]
-#![warn(missing_docs)]
+//cmk000000 #![warn(missing_docs)]
 
 // !!!cmk0doc give a link to RangSetInt struct at top of the docs.
 
@@ -9,11 +9,11 @@
 // https://crates.io/crates/sorted-iter
 //    cmk0 Look at sorted-iter's note about exporting.
 //    cmk0 Look at sorted-iter's note about their testing tool.
-// https://docs.rs/rangemap Very similar to this crate but can only use Ranges and RangeInclusives as keys in it's map and set structs (separately).
+// https://docs.rs/rangemap Very similar to this crate but can only use RangesIter and RangeInclusives as keys in it's map and set structs (separately).
 // https://docs.rs/btree-range-map
-// https://docs.rs/ranges Cool library for fully-generic ranges (unlike std::ops ranges), along with a Ranges data structure for storing them (Vec-based unfortunately)
+// https://docs.rs/ranges Cool library for fully-generic ranges (unlike std::ops ranges), along with a RangesIter data structure for storing them (Vec-based unfortunately)
 // https://docs.rs/intervaltree Allows overlapping intervals but is immutable unfortunately
-// https://docs.rs/nonoverlapping_interval_tree Very similar to rangemap except without a gaps() function and only for Ranges and not RangeInclusives. And also no fancy coalescing functions.
+// https://docs.rs/nonoverlapping_interval_tree Very similar to rangemap except without a gaps() function and only for RangesIter and not RangeInclusives. And also no fancy coalescing functions.
 // https://docs.rs/unbounded-interval-tree A data structure based off of a 2007 published paper! It supports any RangeBounds as keys too, except it is implemented with a non-balancing Box<Node> based tree, however it also supports overlapping RangeBounds which my library does not.
 // https://docs.rs/rangetree I'm not entirely sure what this library is or isn't, but it looks like a custom red-black tree/BTree implementation used specifically for a Range Tree. Interesting but also quite old (5 years) and uses unsafe.
 // https://docs.rs/btree-range-map/latest/btree_range_map/
@@ -47,6 +47,7 @@ mod integer;
 mod merge;
 mod not_iter;
 mod ops;
+mod ranges;
 mod tests;
 mod union_iter;
 mod unsorted_disjoint;
@@ -62,9 +63,10 @@ use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::One;
 use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
+use ranges::IntoRangesIter;
+pub use ranges::RangesIter;
 use std::cmp::max;
 use std::cmp::Ordering;
-use std::collections::btree_map;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
@@ -237,7 +239,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(set_iter.next(), None);
     /// ```
     pub fn iter(&self) -> Iter<T, impl Iterator<Item = RangeInclusive<T>> + SortedDisjoint + '_> {
-        // If the user asks for an iter, we give them a borrow to a Ranges iterator
+        // If the user asks for an iter, we give them a borrow to a RangesIter iterator
         // and we iterate that one integer at a time.
         Iter {
             current: T::zero(),
@@ -477,7 +479,7 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn difference<'a>(
         &'a self,
         other: &'a RangeSetInt<T>,
-    ) -> BitSubMerge<T, Ranges<T>, Ranges<T>> {
+    ) -> BitSubMerge<T, RangesIter<T>, RangesIter<T>> {
         self.ranges() - other.ranges()
     }
 
@@ -499,7 +501,10 @@ impl<T: Integer> RangeSetInt<T> {
     /// let union: Vec<_> = a.union(&b).collect();
     /// assert_eq!(union, [1..=2]);
     /// ```
-    pub fn union<'a>(&'a self, other: &'a RangeSetInt<T>) -> BitOrMerge<T, Ranges<T>, Ranges<T>> {
+    pub fn union<'a>(
+        &'a self,
+        other: &'a RangeSetInt<T>,
+    ) -> BitOrMerge<T, RangesIter<T>, RangesIter<T>> {
         self.ranges() | other.ranges()
     }
     /// Visits the ranges representing the complement,
@@ -516,7 +521,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// let complement: Vec<_> = a.complement().collect();
     /// assert_eq!(complement, [-32768..=-11, 1..=999, 2001..=32767]);
     /// ```
-    pub fn complement(&self) -> NotIter<T, Ranges<T>> {
+    pub fn complement(&self) -> NotIter<T, RangesIter<T>> {
         !self.ranges()
     }
 
@@ -543,7 +548,7 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn symmetric_difference<'a>(
         &'a self,
         other: &'a RangeSetInt<T>,
-    ) -> BitXOr<T, Ranges<T>, Ranges<T>> {
+    ) -> BitXOr<T, RangesIter<T>, RangesIter<T>> {
         self.ranges() ^ other.ranges()
     }
 
@@ -566,7 +571,7 @@ impl<T: Integer> RangeSetInt<T> {
     pub fn intersection<'a>(
         &'a self,
         other: &'a RangeSetInt<T>,
-    ) -> BitAndMerge<T, Ranges<T>, Ranges<T>> {
+    ) -> BitAndMerge<T, RangesIter<T>, RangesIter<T>> {
         self.ranges() & other.ranges()
     }
 
@@ -1005,9 +1010,15 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```    
-    pub fn ranges(&self) -> Ranges<'_, T> {
-        Ranges {
+    pub fn ranges(&self) -> RangesIter<'_, T> {
+        RangesIter {
             iter: self.btree_map.iter(),
+        }
+    }
+
+    pub fn into_ranges(self) -> IntoRangesIter<T> {
+        IntoRangesIter {
+            iter: self.btree_map.into_iter(),
         }
     }
 
@@ -1058,71 +1069,6 @@ impl<T: Integer> RangeSetInt<T> {
         F: FnMut(&T) -> bool,
     {
         *self = self.iter().filter(|v| f(v)).collect();
-    }
-}
-
-#[derive(Clone)]
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-/// An iterator that visits the ranges in the [`RangeSetInt`],
-/// i.e., the integers as sorted & disjoint ranges.
-///
-/// This `struct` is created by the [`ranges`] method on [`RangeSetInt`]. See its
-/// documentation for more.
-///
-/// [`ranges`]: RangeSetInt::ranges
-pub struct Ranges<'a, T: Integer> {
-    iter: btree_map::Iter<'a, T, T>,
-}
-
-impl<'a, T: Integer> AsRef<Ranges<'a, T>> for Ranges<'a, T> {
-    fn as_ref(&self) -> &Self {
-        // Self is Ranges<'a>, the type for which we impl AsRef
-        self
-    }
-}
-
-// Ranges (one of the iterators from RangeSetInt) is SortedDisjoint
-impl<T: Integer> SortedStarts for Ranges<'_, T> {}
-impl<T: Integer> SortedDisjoint for Ranges<'_, T> {}
-// If the iterator inside a BitOrIter is SortedStart, the output will be SortedDisjoint
-impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedStarts> SortedStarts
-    for UnionIter<T, I>
-{
-}
-impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedStarts> SortedDisjoint
-    for UnionIter<T, I>
-{
-}
-// If the iterator inside NotIter is SortedDisjoint, the output will be SortedDisjoint
-impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedStarts
-    for NotIter<T, I>
-{
-}
-impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedDisjoint
-    for NotIter<T, I>
-{
-}
-// If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
-impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedStarts for Tee<I> {}
-impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedDisjoint for Tee<I> {}
-
-impl<T: Integer> ExactSizeIterator for Ranges<'_, T> {
-    #[must_use]
-    fn len(&self) -> usize {
-        self.iter.len()
-    }
-}
-
-// Range's iterator is just the inside BTreeMap iterator as values
-impl<'a, T: Integer> Iterator for Ranges<'a, T> {
-    type Item = RangeInclusive<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(start, end)| *start..=*end)
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
     }
 }
 
@@ -1328,11 +1274,11 @@ where
     /// ```
     /// use range_set_int::{MultiwaySortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
-    /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
-    /// let b = RangeSetInt::from([5..=13, 18..=29]);
-    /// let c = RangeSetInt::from([25..=100]);
+    /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]).into_ranges();
+    /// let b = RangeSetInt::from([5..=13, 18..=29]).into_ranges();
+    /// let c = RangeSetInt::from([25..=100]).into_ranges();
     ///
-    /// let union = [a.ranges(), b.ranges(), c.ranges()].union();
+    /// let union = [a, b, c].union();
     ///
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
@@ -1356,11 +1302,11 @@ where
     /// ```
     /// use range_set_int::{MultiwaySortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
-    /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
-    /// let b = RangeSetInt::from([5..=13, 18..=29]);
-    /// let c = RangeSetInt::from([-100..=100]);
+    /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]).into_ranges();
+    /// let b = RangeSetInt::from([5..=13, 18..=29]).into_ranges();
+    /// let c = RangeSetInt::from([-100..=100]).into_ranges();
     ///
-    /// let intersection = [a.ranges(), b.ranges(), c.ranges()].intersection();
+    /// let intersection = [a, b, c].intersection();
     ///
     /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
     /// ```
@@ -1882,3 +1828,25 @@ pub trait SortedDisjoint: SortedStarts {}
 pub trait SortedStarts {}
 
 // cmk rule add must_use to every iter and other places ala https://doc.rust-lang.org/src/alloc/collections/btree/map.rs.html#1259-1261
+
+// If the iterator inside a BitOrIter is SortedStart, the output will be SortedDisjoint
+impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedStarts> SortedStarts
+    for UnionIter<T, I>
+{
+}
+impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedStarts> SortedDisjoint
+    for UnionIter<T, I>
+{
+}
+// If the iterator inside NotIter is SortedDisjoint, the output will be SortedDisjoint
+impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedStarts
+    for NotIter<T, I>
+{
+}
+impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedDisjoint
+    for NotIter<T, I>
+{
+}
+// If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
+impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedStarts for Tee<I> {}
+impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedDisjoint for Tee<I> {}

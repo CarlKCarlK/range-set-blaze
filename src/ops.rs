@@ -3,13 +3,13 @@ use std::ops::{self, RangeInclusive};
 use itertools::Itertools;
 
 use crate::{
-    not_iter::NotIter, BitAndMerge, BitOrMerge, BitSubMerge, BitXOr, BitXOrTee, Integer, Ranges,
-    SortedDisjoint, SortedDisjointIterator, SortedStarts, UnionIter,
+    not_iter::NotIter, BitAndMerge, BitOrMerge, BitSubMerge, BitXOr, BitXOrTee, Integer,
+    RangesIter, SortedDisjoint, SortedDisjointIterator, SortedStarts, UnionIter,
 };
 
-// Not: Ranges, NotIter, UnionIter
+// Not: RangesIter, NotIter, UnionIter
 
-impl<T: Integer> ops::Not for Ranges<'_, T> {
+impl<T: Integer> ops::Not for RangesIter<'_, T> {
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
@@ -41,8 +41,8 @@ where
     }
 }
 
-// BitOr: Ranges, NotIter, BitOrMerge
-impl<T: Integer, I> ops::BitOr<I> for Ranges<'_, T>
+// BitOr: RangesIter, NotIter, BitOrMerge
+impl<T: Integer, I> ops::BitOr<I> for RangesIter<'_, T>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
@@ -79,9 +79,9 @@ where
     }
 }
 
-// Sub: Ranges, NotIter, UnionIter
+// Sub: RangesIter, NotIter, UnionIter
 
-impl<T: Integer, I> ops::Sub<I> for Ranges<'_, T>
+impl<T: Integer, I> ops::Sub<I> for RangesIter<'_, T>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
@@ -118,9 +118,9 @@ where
     }
 }
 
-// BitXor: Ranges, NotIter, UnionIter
+// BitXor: RangesIter, NotIter, UnionIter
 
-impl<T: Integer, I> ops::BitXor<I> for Ranges<'_, T>
+impl<T: Integer, I> ops::BitXor<I> for RangesIter<'_, T>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
@@ -168,9 +168,9 @@ where
     }
 }
 
-// BitAnd: Ranges, NotIter, UnionIter
+// BitAnd: RangesIter, NotIter, UnionIter
 
-impl<T: Integer, I> ops::BitAnd<I> for Ranges<'_, T>
+impl<T: Integer, I> ops::BitAnd<I> for RangesIter<'_, T>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
