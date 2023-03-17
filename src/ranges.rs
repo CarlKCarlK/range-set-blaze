@@ -1,6 +1,14 @@
-use std::{collections::btree_map, ops::RangeInclusive};
+use std::{
+    collections::btree_map,
+    ops::{self, RangeInclusive},
+};
 
-use crate::{Integer, SortedDisjoint, SortedStarts};
+use itertools::Itertools;
+
+use crate::{
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXOr, BitXOrTee, Integer, NotIter, SortedDisjoint,
+    SortedDisjointIterator, SortedStarts,
+};
 
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -81,5 +89,117 @@ impl<T: Integer> Iterator for IntoRangesIter<T> {
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
+    }
+}
+
+impl<T: Integer> ops::Not for RangesIter<'_, T> {
+    type Output = NotIter<T, Self>;
+
+    fn not(self) -> Self::Output {
+        NotIter::new(self)
+    }
+}
+
+impl<T: Integer> ops::Not for IntoRangesIter<T> {
+    type Output = NotIter<T, Self>;
+
+    fn not(self) -> Self::Output {
+        NotIter::new(self)
+    }
+}
+
+impl<T: Integer, I> ops::BitOr<I> for RangesIter<'_, T>
+where
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitOrMerge<T, Self, I>;
+
+    fn bitor(self, rhs: I) -> Self::Output {
+        SortedDisjointIterator::bitor(self, rhs)
+    }
+}
+
+impl<T: Integer, I> ops::BitOr<I> for IntoRangesIter<T>
+where
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitOrMerge<T, Self, I>;
+
+    fn bitor(self, rhs: I) -> Self::Output {
+        SortedDisjointIterator::bitor(self, rhs)
+    }
+}
+
+impl<T: Integer, I> ops::Sub<I> for RangesIter<'_, T>
+where
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitSubMerge<T, Self, I>;
+
+    fn sub(self, rhs: I) -> Self::Output {
+        !(!self | rhs)
+    }
+}
+
+impl<T: Integer, I> ops::Sub<I> for IntoRangesIter<T>
+where
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitSubMerge<T, Self, I>;
+
+    fn sub(self, rhs: I) -> Self::Output {
+        !(!self | rhs)
+    }
+}
+
+impl<T: Integer, I> ops::BitXor<I> for RangesIter<'_, T>
+where
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitXOr<T, Self, I>;
+
+    #[allow(clippy::suspicious_arithmetic_impl)]
+    fn bitxor(self, rhs: I) -> Self::Output {
+        // We optimize by using self.clone() instead of tee
+        let lhs1 = self.clone();
+        let (rhs0, rhs1) = rhs.tee();
+        (self - rhs0) | (rhs1.sub(lhs1))
+    }
+}
+
+impl<T: Integer, I> ops::BitXor<I> for IntoRangesIter<T>
+where
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitXOrTee<T, Self, I>;
+
+    #[allow(clippy::suspicious_arithmetic_impl)]
+    fn bitxor(self, rhs: I) -> Self::Output {
+        // cmk000000000 we could like to optimize by using self.clone() instead of tee
+        SortedDisjointIterator::bitxor(self, rhs)
+    }
+}
+
+impl<T: Integer, I> ops::BitAnd<I> for RangesIter<'_, T>
+where
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitAndMerge<T, Self, I>;
+
+    #[allow(clippy::suspicious_arithmetic_impl)]
+    fn bitand(self, rhs: I) -> Self::Output {
+        !(!self | rhs.not())
+    }
+}
+
+impl<T: Integer, I> ops::BitAnd<I> for IntoRangesIter<T>
+where
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitAndMerge<T, Self, I>;
+
+    #[allow(clippy::suspicious_arithmetic_impl)]
+    fn bitand(self, rhs: I) -> Self::Output {
+        !(!self | rhs.not())
     }
 }

@@ -1,10 +1,14 @@
-use std::{cmp::max, ops::RangeInclusive};
+use std::{
+    cmp::max,
+    ops::{self, RangeInclusive},
+};
 
 use itertools::Itertools;
 
 use crate::{
     unsorted_disjoint::{AssumeSortedStarts, UnsortedDisjoint},
-    Integer, SortedStarts,
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjoint,
+    SortedDisjointIterator, SortedStarts,
 };
 
 // cmk00 if this is for internal use only, then it's doc should be different
@@ -168,5 +172,69 @@ where
         } else {
             (low, high)
         }
+    }
+}
+
+impl<T: Integer, I> ops::Not for UnionIter<T, I>
+where
+    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+{
+    type Output = NotIter<T, Self>;
+
+    fn not(self) -> Self::Output {
+        NotIter::new(self)
+    }
+}
+
+impl<T: Integer, R, L> ops::BitOr<R> for UnionIter<T, L>
+where
+    L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitOrMerge<T, Self, R>;
+
+    fn bitor(self, rhs: R) -> Self::Output {
+        // It might be fine to optimize to self.iter, but that would require
+        // also considering field 'range'
+        SortedDisjointIterator::bitor(self, rhs)
+    }
+}
+
+impl<T: Integer, R, L> ops::Sub<R> for UnionIter<T, L>
+where
+    L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitSubMerge<T, Self, R>;
+
+    fn sub(self, rhs: R) -> Self::Output {
+        !(!self | rhs)
+    }
+}
+
+impl<T: Integer, R, L> ops::BitXor<R> for UnionIter<T, L>
+where
+    L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitXOrTee<T, Self, R>;
+
+    #[allow(clippy::suspicious_arithmetic_impl)]
+    fn bitxor(self, rhs: R) -> Self::Output {
+        let (lhs0, lhs1) = self.tee();
+        let (rhs0, rhs1) = rhs.tee();
+        lhs0.sub(rhs0) | rhs1.sub(lhs1)
+    }
+}
+
+impl<T: Integer, R, L> ops::BitAnd<R> for UnionIter<T, L>
+where
+    L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitAndMerge<T, Self, R>;
+
+    fn bitand(self, rhs: R) -> Self::Output {
+        !(!self | rhs.not())
     }
 }

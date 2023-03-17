@@ -1202,6 +1202,11 @@ fn union_iter() {
 #[test]
 fn bitor() {
     let a = CheckSortedDisjoint::new([1..=1].into_iter());
+    let b = RangeSetInt::from([2..=2]).into_ranges();
+    let union = std::ops::BitOr::bitor(a, b);
+    assert_eq!(union.to_string(), "1..=2");
+
+    let a = CheckSortedDisjoint::new([1..=1].into_iter());
     let b = CheckSortedDisjoint::new([2..=2].into_iter());
     let c = range_set_int::SortedDisjointIterator::bitor(a, b);
     assert_eq!(c.to_string(), "1..=2");

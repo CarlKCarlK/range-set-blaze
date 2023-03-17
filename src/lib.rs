@@ -1,5 +1,5 @@
 #![doc = include_str!("../README.md")]
-//cmk000000 #![warn(missing_docs)]
+#![warn(missing_docs)]
 
 // !!!cmk0doc give a link to RangSetInt struct at top of the docs.
 
@@ -46,7 +46,6 @@ mod check_sorted_disjoint;
 mod integer;
 mod merge;
 mod not_iter;
-mod ops;
 mod ranges;
 mod tests;
 mod union_iter;
@@ -1362,12 +1361,12 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
+    /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
     /// let a = CheckSortedDisjoint::new([1..=1].into_iter());
-    /// let b = CheckSortedDisjoint::new([2..=2].into_iter());
-    /// let c = a.bitor(b);
-    /// assert_eq!(c.to_string(), "1..=2");
+    /// let b = RangeSetInt::from([2..=2]).into_ranges();
+    /// let union = SortedDisjointIterator::bitor(a, b);
+    /// assert_eq!(union.to_string(), "1..=2");
     /// ```
     fn bitor<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
     where

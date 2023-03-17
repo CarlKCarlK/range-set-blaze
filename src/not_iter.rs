@@ -1,6 +1,11 @@
-use std::ops::RangeInclusive;
+use std::ops::{self, RangeInclusive};
 
-use crate::{Integer, SortedDisjoint};
+use itertools::Itertools;
+
+use crate::{
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisjoint,
+    SortedDisjointIterator,
+};
 
 // cmk rule: Make structs clonable when possible.
 /// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
@@ -101,5 +106,76 @@ where
             }
         });
         (low, high)
+    }
+}
+
+impl<T: Integer, I> ops::Not for NotIter<T, I>
+where
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = NotIter<T, Self>;
+
+    fn not(self) -> Self::Output {
+        // It would be fun to optimize to self.iter, but that would require
+        // also considering fields 'start_not' and 'next_time_return_none'.
+        NotIter::new(self)
+    }
+}
+
+impl<T: Integer, R, L> ops::BitOr<R> for NotIter<T, L>
+where
+    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitOrMerge<T, Self, R>;
+
+    fn bitor(self, rhs: R) -> Self::Output {
+        SortedDisjointIterator::bitor(self, rhs)
+    }
+}
+
+impl<T: Integer, R, L> ops::Sub<R> for NotIter<T, L>
+where
+    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitSubMerge<T, Self, R>;
+
+    fn sub(self, rhs: R) -> Self::Output {
+        // It would be fun to optimize !!self.iter into self.iter
+        // but that would require also considering fields 'start_not' and 'next_time_return_none'.
+        !(!self | rhs)
+    }
+}
+
+impl<T: Integer, R, L> ops::BitXor<R> for NotIter<T, L>
+where
+    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitXOrTee<T, Self, R>;
+
+    #[allow(clippy::suspicious_arithmetic_impl)]
+    fn bitxor(self, rhs: R) -> Self::Output {
+        // It would be fine optimize !!self.iter into self.iter, ala
+        // ¬(¬n ∨ ¬r) ∨ ¬(n ∨ r) // https://www.wolframalpha.com/input?i=%28not+n%29+xor+r
+        // but that would require also considering fields 'start_not' and 'next_time_return_none'.
+        let (lhs0, lhs1) = self.tee();
+        let (rhs0, rhs1) = rhs.tee();
+        lhs0.sub(rhs0) | rhs1.sub(lhs1)
+    }
+}
+
+impl<T: Integer, R, L> ops::BitAnd<R> for NotIter<T, L>
+where
+    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
+    type Output = BitAndMerge<T, Self, R>;
+
+    fn bitand(self, rhs: R) -> Self::Output {
+        // It would be fun to optimize !!self.iter into self.iter
+        // but that would require also considering fields 'start_not' and 'next_time_return_none'.
+        !(!self | rhs.not())
     }
 }
