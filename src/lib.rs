@@ -153,16 +153,16 @@ pub trait Integer:
     /// use range_set_int::{Integer, RangeSetInt};
     ///
     /// // for i8, we can use up to 127
-    /// let a = RangeSetInt::<i8>::from([i8::MAX]);
+    /// let a = RangeSetInt::from_iter([i8::MAX]);
     /// // for i128, we can use up to 170141183460469231731687303715884105726
-    /// let a = RangeSetInt::<i128>::from([<i128 as Integer>::safe_max_value()]);
+    /// let a = RangeSetInt::from_iter([<i128 as Integer>::safe_max_value()]);
     /// ```
     /// # Panics
     /// ```should_panic
     /// use range_set_int::{Integer, RangeSetInt};
     ///
     /// // for i128, using 170141183460469231731687303715884105727 throws a panic.
-    /// let a = RangeSetInt::<i128>::from([i128::MAX]);
+    /// let a = RangeSetInt::from_iter([i128::MAX]);
     /// ```
     fn safe_max_value() -> Self {
         Self::max_value()
@@ -240,7 +240,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let set = RangeSetInt::from([3, 1, 2]);
+    /// let set = RangeSetInt::from_iter([3, 1, 2]);
     /// let mut set_iter = set.iter();
     /// assert_eq!(set_iter.next(), Some(1));
     /// assert_eq!(set_iter.next(), Some(2));
@@ -286,7 +286,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let set = RangeSetInt::from([1, 2, 3]);
+    /// let set = RangeSetInt::from_iter([1, 2, 3]);
     /// assert_eq!(set.get(2), Some(2));
     /// assert_eq!(set.get(4), None);
     /// ```
@@ -433,7 +433,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let sub = RangeSetInt::from([1, 2]);
+    /// let sub = RangeSetInt::from_iter([1, 2]);
     /// let mut set = RangeSetInt::new();
     ///
     /// assert_eq!(set.is_superset(&sub), false);
@@ -457,7 +457,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let set = RangeSetInt::from([1, 2, 3]);
+    /// let set = RangeSetInt::from_iter([1, 2, 3]);
     /// assert_eq!(set.contains(1), true);
     /// assert_eq!(set.contains(4), false);
     /// ```
@@ -648,8 +648,8 @@ impl<T: Integer> RangeSetInt<T> {
     ///
     /// let b = a.split_off(3);
     ///
-    /// assert_eq!(a, RangeSetInt::from([1, 2]));
-    /// assert_eq!(b, RangeSetInt::from([3, 17, 41]));
+    /// assert_eq!(a, RangeSetInt::from_iter([1, 2]));
+    /// assert_eq!(b, RangeSetInt::from_iter([3, 17, 41]));
     /// ```
     pub fn split_off(&mut self, value: T) -> Self {
         assert!(value <= T::safe_max_value()); //cmk0 panic
@@ -696,7 +696,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let mut set = RangeSetInt::from([1, 2, 3]);
+    /// let mut set = RangeSetInt::from_iter([1, 2, 3]);
     /// assert_eq!(set.take(2), Some(2));
     /// assert_eq!(set.take(2), None);
     /// ```
@@ -975,7 +975,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// let mut set = RangeSetInt::from_iter([1..=6]);
     /// // Keep only the even numbers.
     /// set.retain(|k| k % 2 == 0);
-    /// assert_eq!(set, RangeSetInt::from([2, 4, 6]));
+    /// assert_eq!(set, RangeSetInt::from_iter([2, 4, 6]));
     /// ```
     pub fn retain<F>(&mut self, mut f: F)
     where
@@ -1008,27 +1008,9 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
     }
 }
 
-// impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]> for RangeSetInt<T> {
-//     fn from(arr: [RangeInclusive<T>; N]) -> Self {
-//         arr.as_slice().into()
-//     }
-// }
-
-impl<T: Integer> From<&[RangeInclusive<T>]> for RangeSetInt<T> {
-    fn from(slice: &[RangeInclusive<T>]) -> Self {
-        slice.iter().cloned().collect()
-    }
-}
-
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     fn from(arr: [T; N]) -> Self {
-        arr.as_slice().into()
-    }
-}
-
-impl<T: Integer> From<&[T]> for RangeSetInt<T> {
-    fn from(slice: &[T]) -> Self {
-        slice.iter().cloned().collect()
+        arr.into_iter().collect()
     }
 }
 
@@ -1241,13 +1223,13 @@ where
 // ```
 // use range_set_int::RangeSetInt;
 //
-// let a = RangeSetInt::from([1, 2, 3]);
-// let b = RangeSetInt::from([3, 4, 5]);
+// let a = RangeSetInt::from_iter([1, 2, 3]);
+// let b = RangeSetInt::from_iter([3, 4, 5]);
 //
 // let result = &a | &b;
-// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+// assert_eq!(result, RangeSetInt::from_iter([1, 2, 3, 4, 5]));
 // let result = a | b;
-// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+// assert_eq!(result, RangeSetInt::from_iter([1, 2, 3, 4, 5]));
 // ```
 gen_ops_ex!(
     <T>;
@@ -1290,7 +1272,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let set = RangeSetInt::from([1, 2, 3, 4]);
+    /// let set = RangeSetInt::from_iter([1, 2, 3, 4]);
     ///
     /// let v: Vec<_> = set.into_iter().collect();
     /// assert_eq!(v, [1, 2, 3, 4]);

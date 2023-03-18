@@ -19,14 +19,14 @@ use std::ops::BitAndAssign;
 
 #[test]
 fn insert_255u8() {
-    let range_set_int = RangeSetInt::<u8>::from([255]);
+    let range_set_int = RangeSetInt::<u8>::from_iter([255]);
     assert!(range_set_int.to_string() == "255..=255");
 }
 
 #[test]
 #[should_panic]
 fn insert_max_u128() {
-    let a = RangeSetInt::<u128>::from([u128::MAX]);
+    let a = RangeSetInt::<u128>::from_iter([u128::MAX]);
     println!("a: {a}");
 }
 
@@ -65,12 +65,12 @@ fn complement0() {
 
 #[test]
 fn repro_bit_and() {
-    let a = RangeSetInt::from([1u8, 2, 3]);
-    let b = RangeSetInt::from([2u8, 3, 4]);
+    let a = RangeSetInt::from_iter([1u8, 2, 3]);
+    let b = RangeSetInt::from_iter([2u8, 3, 4]);
 
     let result = &a & &b;
     println!("{result}");
-    assert_eq!(result, RangeSetInt::from([2u8, 3]));
+    assert_eq!(result, RangeSetInt::from_iter([2u8, 3]));
 }
 
 #[test]
@@ -85,7 +85,7 @@ fn repro1() {
 
 #[test]
 fn repro2() {
-    let mut range_set_int = RangeSetInt::<i8>::from([-8, 8, -2, -1, 3, 2]);
+    let mut range_set_int = RangeSetInt::<i8>::from_iter([-8, 8, -2, -1, 3, 2]);
     range_set_int.internal_add(25..=25);
     println!("{range_set_int}");
     assert!(range_set_int.to_string() == "-8..=-8, -2..=-1, 2..=3, 8..=8, 25..=25");
@@ -93,16 +93,16 @@ fn repro2() {
 
 #[test]
 fn doctest1() {
-    let a = RangeSetInt::<u8>::from([1, 2, 3]);
-    let b = RangeSetInt::<u8>::from([3, 4, 5]);
+    let a = RangeSetInt::<u8>::from_iter([1, 2, 3]);
+    let b = RangeSetInt::<u8>::from_iter([3, 4, 5]);
 
     let result = &a | &b;
-    assert_eq!(result, RangeSetInt::<u8>::from([1, 2, 3, 4, 5]));
+    assert_eq!(result, RangeSetInt::<u8>::from_iter([1, 2, 3, 4, 5]));
 }
 
 #[test]
 fn doctest2() {
-    let set = RangeSetInt::<u8>::from([1, 2, 3]);
+    let set = RangeSetInt::<u8>::from_iter([1, 2, 3]);
     assert!(set.contains(1));
     assert!(!set.contains(4));
 }
@@ -126,7 +126,7 @@ fn doctest3() {
 
 #[test]
 fn doctest4() {
-    let a = RangeSetInt::<i8>::from([1, 2, 3]);
+    let a = RangeSetInt::<i8>::from_iter([1, 2, 3]);
 
     let result = !&a;
     assert_eq!(result.to_string(), "-128..=0, 4..=127");
@@ -697,16 +697,16 @@ fn missing_doctest_ops() {
     // note that may be borrowed or owned in any combination.
 
     // Returns the union of `self` and `rhs` as a new [`RangeSetInt`].
-    let a = RangeSetInt::from([1, 2, 3]);
-    let b = RangeSetInt::from([3, 4, 5]);
+    let a = RangeSetInt::from_iter([1, 2, 3]);
+    let b = RangeSetInt::from_iter([3, 4, 5]);
 
     let result = &a | &b;
-    assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+    assert_eq!(result, RangeSetInt::from_iter([1, 2, 3, 4, 5]));
     let result = a | &b;
-    assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+    assert_eq!(result, RangeSetInt::from_iter([1, 2, 3, 4, 5]));
 
     // Returns the complement of `self` as a new [`RangeSetInt`].
-    let a = RangeSetInt::<i8>::from([1, 2, 3]);
+    let a = RangeSetInt::<i8>::from_iter([1, 2, 3]);
 
     let result = !&a;
     assert_eq!(result.to_string(), "-128..=0, 4..=127");
@@ -715,28 +715,28 @@ fn missing_doctest_ops() {
 
     // Returns the intersection of `self` and `rhs` as a new `RangeSetInt<T>`.
 
-    let a = RangeSetInt::from([1, 2, 3]);
-    let b = RangeSetInt::from([2, 3, 4]);
+    let a = RangeSetInt::from_iter([1, 2, 3]);
+    let b = RangeSetInt::from_iter([2, 3, 4]);
 
     let result = a & &b;
-    assert_eq!(result, RangeSetInt::from([2, 3]));
-    let a = RangeSetInt::from([1, 2, 3]);
+    assert_eq!(result, RangeSetInt::from_iter([2, 3]));
+    let a = RangeSetInt::from_iter([1, 2, 3]);
     let result = a & b;
-    assert_eq!(result, RangeSetInt::from([2, 3]));
+    assert_eq!(result, RangeSetInt::from_iter([2, 3]));
 
     // Returns the symmetric difference of `self` and `rhs` as a new `RangeSetInt<T>`.
-    let a = RangeSetInt::from([1, 2, 3]);
-    let b = RangeSetInt::from([2, 3, 4]);
+    let a = RangeSetInt::from_iter([1, 2, 3]);
+    let b = RangeSetInt::from_iter([2, 3, 4]);
 
     let result = a ^ b;
-    assert_eq!(result, RangeSetInt::from([1, 4]));
+    assert_eq!(result, RangeSetInt::from_iter([1, 4]));
 
     // Returns the set difference of `self` and `rhs` as a new `RangeSetInt<T>`.
-    let a = RangeSetInt::from([1, 2, 3]);
-    let b = RangeSetInt::from([2, 3, 4]);
+    let a = RangeSetInt::from_iter([1, 2, 3]);
+    let b = RangeSetInt::from_iter([2, 3, 4]);
 
     let result = a - b;
-    assert_eq!(result, RangeSetInt::from([1]));
+    assert_eq!(result, RangeSetInt::from_iter([1]));
 }
 
 #[test]
@@ -884,7 +884,7 @@ fn bit_or_iter() {
 fn empty() {
     let universe: UnionIter<u8, _> = [0..=255].into_iter().collect();
     let arr: [u8; 0] = [];
-    let a0 = RangeSetInt::<u8>::from(arr);
+    let a0 = RangeSetInt::<u8>::from_iter(arr);
     assert!(!(a0.ranges()).equal(universe.clone()));
     assert!((!a0).ranges().equal(universe));
     let _a0 = RangeSetInt::from_iter([0..=0; 0]);
@@ -893,7 +893,7 @@ fn empty() {
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
     let a = a_iter.collect::<RangeSetInt<i32>>();
     let arr: [i32; 0] = [];
-    let b = RangeSetInt::from(arr);
+    let b = RangeSetInt::from_iter(arr);
     let b_ref: [&i32; 0] = [];
     let mut c3 = a.clone();
     let mut c4 = a.clone();
@@ -909,7 +909,7 @@ fn empty() {
     c4.extend(b_ref);
     c5.extend(b);
 
-    let answer = RangeSetInt::from(arr);
+    let answer = RangeSetInt::from_iter(arr);
     assert_eq!(&c0, &answer);
     assert_eq!(&c1a, &answer);
     assert_eq!(&c1b, &answer);
@@ -922,7 +922,7 @@ fn empty() {
 
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
     let a = a_iter.collect::<RangeSetInt<i32>>();
-    let b = RangeSetInt::from([0i32; 0]);
+    let b = RangeSetInt::from_iter([0i32; 0]);
 
     let c0 = a.ranges() | b.ranges();
     let c1 = [a.ranges(), b.ranges()].union();
@@ -931,7 +931,7 @@ fn empty() {
     let c3 = union_dyn!(a.ranges(), b.ranges());
     let c4 = c_list2.map(DynSortedDisjoint::new).union();
 
-    let answer = RangeSetInt::from(arr);
+    let answer = RangeSetInt::from_iter(arr);
     assert!(c0.equal(answer.ranges()));
     assert!(c1.equal(answer.ranges()));
     assert!(c2.equal(answer.ranges()));
@@ -945,7 +945,7 @@ fn empty() {
     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
     let c4 = !!c_list2.map(DynSortedDisjoint::new).intersection();
 
-    let answer = !RangeSetInt::from([0i32; 0]);
+    let answer = !RangeSetInt::from_iter([0i32; 0]);
     assert!(c0.equal(answer.ranges()));
     assert!(c1.equal(answer.ranges()));
     assert!(c2.equal(answer.ranges()));

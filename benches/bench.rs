@@ -269,7 +269,7 @@ fn gen_data_descending(_seed: u64, len: u32) -> Vec<u32> {
 }
 
 fn range_set_test(data: Vec<u32>, range_len: usize, len: usize) {
-    let range_set_int = RangeSetInt::<u32>::from(data.as_slice());
+    let range_set_int = RangeSetInt::<u32>::from_iter(data);
     assert!(range_set_int.ranges_len() == range_len && range_set_int.len() == len);
 }
 
@@ -442,7 +442,7 @@ fn two_sets1<T: Integer>(
             How::Intersection,
         )
         .collect(),
-        [*range.start()].into(),
+        [*range.start()].into_iter().collect(),
     )
 }
 fn btree_two_sets<T: Integer>(

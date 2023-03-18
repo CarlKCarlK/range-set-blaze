@@ -32,7 +32,7 @@ fn b_tree_set() {
 #[test]
 fn range_set_int() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();
-    let b = RangeSetInt::from([2, 3, 4]);
+    let b = RangeSetInt::from_iter([2, 3, 4]);
     let b2 = 2;
     let b3 = 3;
     let b4 = 4;
@@ -51,7 +51,7 @@ fn range_set_int() {
     c4.extend(b_ref);
     c5.extend(b);
 
-    let answer = RangeSetInt::from([1, 2, 3, 4]);
+    let answer = RangeSetInt::from_iter([1, 2, 3, 4]);
     assert_eq!(&c0, &answer);
     assert_eq!(&c1a, &answer);
     assert_eq!(&c1b, &answer);
@@ -66,7 +66,7 @@ fn range_set_int() {
 #[test]
 fn sorted_disjoint() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();
-    let b = RangeSetInt::from([2, 3, 4]);
+    let b = RangeSetInt::from_iter([2, 3, 4]);
 
     let c0 = a.ranges() | b.ranges();
     let c1 = [a.ranges(), b.ranges()].union();
@@ -74,7 +74,7 @@ fn sorted_disjoint() {
     let c3 = union_dyn!(a.ranges(), b.ranges());
     let c4 = [a.ranges(), b.ranges()].map(DynSortedDisjoint::new).union();
 
-    let answer = RangeSetInt::from([1, 2, 3, 4]);
+    let answer = RangeSetInt::from_iter([1, 2, 3, 4]);
     assert!(c0.equal(answer.ranges()));
     assert!(c1.equal(answer.ranges()));
     assert!(c2.equal(answer.ranges()));
