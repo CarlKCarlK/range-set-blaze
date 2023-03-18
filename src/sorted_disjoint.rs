@@ -182,9 +182,9 @@ where
 /// ```
 /// use range_set_int::{DynSortedDisjoint, MultiwaySortedDisjoint, SortedDisjointIterator, RangeSetInt};
 ///
-/// let a = RangeSetInt::from([1u8..=6, 8..=9, 11..=15]);
-/// let b = RangeSetInt::from([5..=13, 18..=29]);
-/// let c = RangeSetInt::from([38..=42]);
+/// let a = RangeSetInt::from_iter([1u8..=6, 8..=9, 11..=15]);
+/// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
+/// let c = RangeSetInt::from_iter([38..=42]);
 /// let union = [
 ///     DynSortedDisjoint::new(a.ranges()),
 ///     DynSortedDisjoint::new(!b.ranges()),
@@ -242,9 +242,9 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
 /// ```
 /// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
 ///
-/// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
-/// let b = RangeSetInt::from([5..=13, 18..=29]);
-/// let c = RangeSetInt::from([38..=42]);
+/// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
+/// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
+/// let c = RangeSetInt::from_iter([38..=42]);
 ///
 /// let parity = union_dyn!(
 ///     intersection_dyn!(a.ranges(), !b.ranges(), !c.ranges()),
@@ -278,9 +278,9 @@ macro_rules! intersection_dyn {
 /// ```
 /// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
 ///
-/// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
-/// let b = RangeSetInt::from([5..=13, 18..=29]);
-/// let c = RangeSetInt::from([38..=42]);
+/// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
+/// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
+/// let c = RangeSetInt::from_iter([38..=42]);
 ///
 /// let parity = union_dyn!(
 ///     intersection_dyn!(a.ranges(), !b.ranges(), !c.ranges()),

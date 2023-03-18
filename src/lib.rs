@@ -114,7 +114,7 @@ pub trait Integer:
     /// ```
     /// use range_set_int::{RangeSetInt, Integer};
     ///
-    /// let len: <u8 as Integer>::SafeLen = RangeSetInt::from([0u8..=255]).len();
+    /// let len: <u8 as Integer>::SafeLen = RangeSetInt::from_iter([0u8..=255]).len();
     /// assert_eq!(len, 256);
     /// ```
     type SafeLen: std::hash::Hash
@@ -191,7 +191,12 @@ pub trait Integer:
 /// A set of integers stored as sorted & disjoint ranges.
 ///
 /// Internally, it uses a cache-efficient `BTreeMap` to store the ranges.
-/// See the [module-level documentation] for more details.
+///
+/// # Constructors
+///
+/// cmk00000
+///
+/// See the [module-level documentation] for additional examples.
 ///
 /// [module-level documentation]: index.html
 pub struct RangeSetInt<T: Integer> {
@@ -222,7 +227,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let set = RangeSetInt::from([1..=3]);
+    /// let set = RangeSetInt::from_iter([1..=3]);
     /// let mut set_iter = set.iter();
     /// assert_eq!(set_iter.next(), Some(1));
     /// assert_eq!(set_iter.next(), Some(2));
@@ -339,8 +344,8 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let mut a = RangeSetInt::from([1..=3]);
-    /// let mut b = RangeSetInt::from([3..=5]);
+    /// let mut a = RangeSetInt::from_iter([1..=3]);
+    /// let mut b = RangeSetInt::from_iter([3..=5]);
     ///
     /// a.append(&mut b);
     ///
@@ -402,7 +407,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let sup = RangeSetInt::from([1..=3]);
+    /// let sup = RangeSetInt::from_iter([1..=3]);
     /// let mut set = RangeSetInt::new();
     ///
     /// assert_eq!(set.is_subset(&sup), true);
@@ -472,7 +477,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let a = RangeSetInt::from([1..=3]);
+    /// let a = RangeSetInt::from_iter([1..=3]);
     /// let mut b = RangeSetInt::new();
     ///
     /// assert_eq!(a.is_disjoint(&b), true);
@@ -774,7 +779,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// v.insert(1);
     /// assert_eq!(v.len(), 1usize);
     ///
-    /// let v = RangeSetInt::from([
+    /// let v = RangeSetInt::from_iter([
     ///     -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,
     ///     -10..=170_141_183_460_469_231_731_687_303_715_884_105_726,
     /// ]);
@@ -881,7 +886,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let set = RangeSetInt::from([10..=20, 15..=25, 30..=40]);
+    /// let set = RangeSetInt::from_iter([10..=20, 15..=25, 30..=40]);
     /// let mut ranges = set.ranges();
     /// assert_eq!(ranges.next(), Some(10..=25));
     /// assert_eq!(ranges.next(), Some(30..=40));
@@ -893,7 +898,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let set = RangeSetInt::from([30..=40, 15..=25, 10..=20]);
+    /// let set = RangeSetInt::from_iter([30..=40, 15..=25, 10..=20]);
     /// let mut ranges = set.ranges();
     /// assert_eq!(ranges.next(), Some(10..=25));
     /// assert_eq!(ranges.next(), Some(30..=40));
@@ -915,7 +920,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let mut ranges = RangeSetInt::from([10..=20, 15..=25, 30..=40]).into_ranges();
+    /// let mut ranges = RangeSetInt::from_iter([10..=20, 15..=25, 30..=40]).into_ranges();
     /// assert_eq!(ranges.next(), Some(10..=25));
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
@@ -926,7 +931,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let mut ranges = RangeSetInt::from([30..=40, 15..=25, 10..=20]).into_ranges();
+    /// let mut ranges = RangeSetInt::from_iter([30..=40, 15..=25, 10..=20]).into_ranges();
     /// assert_eq!(ranges.next(), Some(10..=25));
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
@@ -947,7 +952,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// use range_set_int::RangeSetInt;
     ///
     /// // We put in three ranges, but they are not sorted & disjoint.
-    /// let set = RangeSetInt::from([10..=20, 15..=25, 30..=40]);
+    /// let set = RangeSetInt::from_iter([10..=20, 15..=25, 30..=40]);
     /// // After RangeSetInt sorts & 'disjoint's them, we see two ranges.
     /// assert_eq!(set.ranges_len(), 2);
     /// assert_eq!(set.to_string(), "10..=25, 30..=40");
@@ -967,7 +972,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// use range_set_int::RangeSetInt;
     ///
-    /// let mut set = RangeSetInt::from([1..=6]);
+    /// let mut set = RangeSetInt::from_iter([1..=6]);
     /// // Keep only the even numbers.
     /// set.retain(|k| k % 2 == 0);
     /// assert_eq!(set, RangeSetInt::from([2, 4, 6]));
@@ -981,33 +986,33 @@ impl<T: Integer> RangeSetInt<T> {
 }
 
 // We create a RangeSetInt from an iterator of integers or integer ranges by
-// 1. turning them into a BitOrIter (internally, it collects into intervals and sorts by start).
+// 1. turning them into a UnionIter (internally, it collects into intervals and sorts by start).
 // 2. Turning the SortedDisjoint into a BTreeMap.
 impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
-    fn from_iter<I>(into_iter: I) -> Self
+    fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = T>,
     {
-        into_iter.into_iter().map(|x| x..=x).collect()
+        iter.into_iter().map(|x| x..=x).collect()
     }
 }
 
 // cmk rules: Follow Rust conventions. For example this as empty let cmk = 1..=-1; we do the same
 impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
-    fn from_iter<I>(into_iter: I) -> Self
+    fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = RangeInclusive<T>>,
     {
-        let union_iter: UnionIter<T, _> = into_iter.into_iter().collect();
+        let union_iter: UnionIter<T, _> = iter.into_iter().collect();
         union_iter.into()
     }
 }
 
-impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]> for RangeSetInt<T> {
-    fn from(arr: [RangeInclusive<T>; N]) -> Self {
-        arr.as_slice().into()
-    }
-}
+// impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]> for RangeSetInt<T> {
+//     fn from(arr: [RangeInclusive<T>; N]) -> Self {
+//         arr.as_slice().into()
+//     }
+// }
 
 impl<T: Integer> From<&[RangeInclusive<T>]> for RangeSetInt<T> {
     fn from(slice: &[RangeInclusive<T>]) -> Self {
@@ -1104,13 +1109,13 @@ pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
     /// ```
     /// use range_set_int::{MultiwayRangeSetInt, RangeSetInt};
     ///
-    /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
-    /// let b = RangeSetInt::from([5..=13, 18..=29]);
-    /// let c = RangeSetInt::from([25..=100]);
+    /// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
+    /// let c = RangeSetInt::from_iter([25..=100]);
     ///
     /// let union = [a, b, c].union();
     ///
-    /// assert_eq!(union, RangeSetInt::from([1..=15, 18..=100]));
+    /// assert_eq!(union, RangeSetInt::from_iter([1..=15, 18..=100]));
     /// ```
     fn union(self) -> RangeSetInt<T> {
         self.into_iter().map(RangeSetInt::ranges).union().into()
@@ -1132,13 +1137,13 @@ pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
     /// ```
     /// use range_set_int::{MultiwayRangeSetInt, RangeSetInt};
     ///
-    /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]);
-    /// let b = RangeSetInt::from([5..=13, 18..=29]);
-    /// let c = RangeSetInt::from([-100..=100]);
+    /// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
+    /// let c = RangeSetInt::from_iter([-100..=100]);
     ///
     /// let intersection = [a, b, c].intersection();
     ///
-    /// assert_eq!(intersection, RangeSetInt::from([5..=6, 8..=9, 11..=13]));
+    /// assert_eq!(intersection, RangeSetInt::from_iter([5..=6, 8..=9, 11..=13]));
     /// ```
     fn intersection(self) -> RangeSetInt<T> {
         self.into_iter()
@@ -1182,9 +1187,9 @@ where
     /// ```
     /// use range_set_int::{MultiwaySortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
-    /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]).into_ranges();
-    /// let b = RangeSetInt::from([5..=13, 18..=29]).into_ranges();
-    /// let c = RangeSetInt::from([25..=100]).into_ranges();
+    /// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
+    /// let b = RangeSetInt::from_iter([5..=13, 18..=29]).into_ranges();
+    /// let c = RangeSetInt::from_iter([25..=100]).into_ranges();
     ///
     /// let union = [a, b, c].union();
     ///
@@ -1210,9 +1215,9 @@ where
     /// ```
     /// use range_set_int::{MultiwaySortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
-    /// let a = RangeSetInt::from([1..=6, 8..=9, 11..=15]).into_ranges();
-    /// let b = RangeSetInt::from([5..=13, 18..=29]).into_ranges();
-    /// let c = RangeSetInt::from([-100..=100]).into_ranges();
+    /// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
+    /// let b = RangeSetInt::from_iter([5..=13, 18..=29]).into_ranges();
+    /// let c = RangeSetInt::from_iter([-100..=100]).into_ranges();
     ///
     /// let intersection = [a, b, c].intersection();
     ///
@@ -1228,24 +1233,25 @@ where
 
 // cmk rule: don't forget these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
 
+// cmk0000 not used
+// Returns the union of `self` and `rhs` as a new [`RangeSetInt`].
+//
+// # Examples
+//
+// ```
+// use range_set_int::RangeSetInt;
+//
+// let a = RangeSetInt::from([1, 2, 3]);
+// let b = RangeSetInt::from([3, 4, 5]);
+//
+// let result = &a | &b;
+// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+// let result = a | b;
+// assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
+// ```
 gen_ops_ex!(
     <T>;
     types ref RangeSetInt<T>, ref RangeSetInt<T> => RangeSetInt<T>;
-    // Returns the union of `self` and `rhs` as a new [`RangeSetInt`].
-    //
-    // # Examples
-    //
-    // ```
-    // use range_set_int::RangeSetInt;
-    //
-    // let a = RangeSetInt::from([1, 2, 3]);
-    // let b = RangeSetInt::from([3, 4, 5]);
-    //
-    // let result = &a | &b;
-    // assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
-    // let result = a | b;
-    // assert_eq!(result, RangeSetInt::from([1, 2, 3, 4, 5]));
-    // ```
     for | call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         (a.ranges()|b.ranges()).into()
     };
