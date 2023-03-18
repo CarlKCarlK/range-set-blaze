@@ -79,7 +79,7 @@ pub trait SortedDisjointIterator<T: Integer>:
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint,
     {
-        (self.not().union(other.into_iter().not())).not()
+        !(self.complement() | other.into_iter().complement())
     }
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their set difference.
@@ -91,17 +91,23 @@ pub trait SortedDisjointIterator<T: Integer>:
     ///
     /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
     /// let b = RangeSetInt::from_iter([2..=3]).into_ranges();
-    /// // CheckSortedDisjoint defines ops::sub as SortedDisjointIterator::sub so we can use '-'
-    /// let diff = a - b;
-    /// assert_eq!(diff.to_string(), "1..=1");
+    /// let difference = a.difference(b);
+    /// assert_eq!(difference.to_string(), "1..=1");
+    ///
+    /// // Alternatively, we can use "-" because CheckSortedDisjoint defines
+    /// // ops::sub as SortedDisjointIterator::difference.
+    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let b = RangeSetInt::from_iter([2..=3]).into_ranges();
+    /// let difference = a - b;
+    /// assert_eq!(difference.to_string(), "1..=1");
     /// ```
     #[inline]
-    fn sub<R>(self, other: R) -> BitSubMerge<T, Self, R::IntoIter>
+    fn difference<R>(self, other: R) -> BitSubMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint,
     {
-        (self.not().union(other.into_iter())).not()
+        !(self.complement() | other.into_iter())
     }
 
     /// Given a [`SortedDisjoint`] iterator, efficiently returns a [`SortedDisjoint`] iterator of its complement.
@@ -112,17 +118,23 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
     /// let a = CheckSortedDisjoint::new([-10i16..=0, 1000..=2000].into_iter());
-    /// // CheckSortedDisjoint defines ops::not as SortedDisjointIterator::not so we can use '!'
+    /// let complement = a.complement();
+    /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
+    ///
+    /// // Alternatively, we can use "!" because CheckSortedDisjoint defines
+    /// // ops::not as SortedDisjointIterator::complement.
+    /// let a = CheckSortedDisjoint::new([-10i16..=0, 1000..=2000].into_iter());
     /// let complement = !a;
     /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
     /// ```
     #[inline]
-    fn not(self) -> NotIter<T, Self> {
+    fn complement(self) -> NotIter<T, Self> {
         NotIter::new(self)
     }
 
     // !!! cmk test the speed of this
-    /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their set difference.
+    /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator
+    /// of their symmetric difference.
     ///
     /// # Examples
     ///
@@ -131,19 +143,25 @@ pub trait SortedDisjointIterator<T: Integer>:
     ///
     /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
     /// let b = RangeSetInt::from_iter([2..=3]).into_ranges();
-    /// // CheckSortedDisjoint defines ops::sub as SortedDisjointIterator::sub so we can use '^'
-    /// let sym_diff = a ^ b;
-    /// assert_eq!(sym_diff.to_string(), "1..=1, 3..=3");
+    /// let symmetric_difference = a.symmetric_difference(b);
+    /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
+    ///
+    /// // Alternatively, we can use "^" because CheckSortedDisjoint defines
+    /// // ops::bitxor as SortedDisjointIterator::symmetric_difference.
+    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let b = RangeSetInt::from_iter([2..=3]).into_ranges();
+    /// let symmetric_difference = a ^ b;
+    /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
     #[inline]
-    fn bitxor<R>(self, other: R) -> BitXOrTee<T, Self, R::IntoIter>
+    fn symmetric_difference<R>(self, other: R) -> BitXOrTee<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint,
     {
         let (lhs0, lhs1) = self.tee();
         let (rhs0, rhs1) = other.into_iter().tee();
-        lhs0.sub(rhs0) | rhs1.sub(lhs1)
+        lhs0.difference(rhs0) | rhs1.difference(lhs1)
     }
 
     // cmk rule: Prefer IntoIterator to Iterator

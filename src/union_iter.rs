@@ -183,7 +183,7 @@ where
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        SortedDisjointIterator::not(self)
+        SortedDisjointIterator::complement(self)
     }
 }
 
@@ -209,7 +209,7 @@ where
     type Output = BitSubMerge<T, Self, R>;
 
     fn sub(self, rhs: R) -> Self::Output {
-        SortedDisjointIterator::sub(self, rhs)
+        SortedDisjointIterator::difference(self, rhs)
     }
 }
 
@@ -222,7 +222,7 @@ where
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitxor(self, rhs: R) -> Self::Output {
-        SortedDisjointIterator::bitxor(self, rhs)
+        SortedDisjointIterator::symmetric_difference(self, rhs)
     }
 }
 

@@ -155,7 +155,7 @@ where
     type Output = BitSubMerge<T, Self, R>;
 
     fn sub(self, other: R) -> Self::Output {
-        SortedDisjointIterator::sub(self, other)
+        SortedDisjointIterator::difference(self, other)
     }
 }
 
@@ -167,7 +167,7 @@ where
     type Output = BitXOrTee<T, Self, R>;
 
     fn bitxor(self, other: R) -> Self::Output {
-        SortedDisjointIterator::bitxor(self, other)
+        SortedDisjointIterator::symmetric_difference(self, other)
     }
 }
 

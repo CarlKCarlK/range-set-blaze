@@ -96,7 +96,7 @@ impl<T: Integer> ops::Not for RangesIter<'_, T> {
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        SortedDisjointIterator::not(self)
+        SortedDisjointIterator::complement(self)
     }
 }
 
@@ -104,7 +104,7 @@ impl<T: Integer> ops::Not for IntoRangesIter<T> {
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        SortedDisjointIterator::not(self)
+        SortedDisjointIterator::complement(self)
     }
 }
 
@@ -137,7 +137,7 @@ where
     type Output = BitSubMerge<T, Self, I>;
 
     fn sub(self, other: I) -> Self::Output {
-        SortedDisjointIterator::sub(self, other)
+        SortedDisjointIterator::difference(self, other)
     }
 }
 
@@ -148,7 +148,7 @@ where
     type Output = BitSubMerge<T, Self, I>;
 
     fn sub(self, other: I) -> Self::Output {
-        SortedDisjointIterator::sub(self, other)
+        SortedDisjointIterator::difference(self, other)
     }
 }
 
@@ -163,7 +163,7 @@ where
         // We optimize by using self.clone() instead of tee
         let lhs1 = self.clone();
         let (rhs0, rhs1) = other.tee();
-        (self - rhs0) | (rhs1.sub(lhs1))
+        (self - rhs0) | (rhs1.difference(lhs1))
     }
 }
 
@@ -176,7 +176,7 @@ where
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitxor(self, other: I) -> Self::Output {
         // cmk000000000 we could like to optimize by using self.clone() instead of tee
-        SortedDisjointIterator::bitxor(self, other)
+        SortedDisjointIterator::symmetric_difference(self, other)
     }
 }
 

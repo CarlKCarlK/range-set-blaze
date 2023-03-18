@@ -167,7 +167,7 @@ fn iters() -> Result<(), Box<dyn std::error::Error>> {
     }
     // range_set_int.len();
 
-    let mut rs = range_set_int.ranges().not();
+    let mut rs = range_set_int.ranges().complement();
     println!("{:?}", rs.next());
     println!("{range_set_int}");
     // !!! assert that can't use range_set_int again
@@ -280,11 +280,14 @@ fn custom_multi() -> Result<(), Box<dyn std::error::Error>> {
     let c = RangeSetInt::from_iter([38..=42]);
 
     let union_stream = b.ranges() | c.ranges();
-    let a_less = a.ranges().sub(union_stream);
+    let a_less = a.ranges().difference(union_stream);
     let d: RangeSetInt<_> = a_less.into();
     println!("{d}");
 
-    let d: RangeSetInt<_> = a.ranges().sub([b.ranges(), c.ranges()].union()).into();
+    let d: RangeSetInt<_> = a
+        .ranges()
+        .difference([b.ranges(), c.ranges()].union())
+        .into();
     println!("{d}");
     Ok(())
 }
@@ -331,7 +334,7 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
     println!("!b|!c {}", !b | !c);
     println!(
         "!b|!c {}",
-        RangeSetInt::from(b.ranges().not() | c.ranges().not())
+        RangeSetInt::from(b.ranges().complement() | c.ranges().complement())
     );
 
     let _a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
@@ -352,9 +355,9 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let u = [
-        intersection_dyn!(a.ranges(), b.ranges().not(), c.ranges().not()),
-        intersection_dyn!(a.ranges().not(), b.ranges(), c.ranges().not()),
-        intersection_dyn!(a.ranges().not(), b.ranges().not(), c.ranges()),
+        intersection_dyn!(a.ranges(), b.ranges().complement(), c.ranges().complement()),
+        intersection_dyn!(a.ranges().complement(), b.ranges(), c.ranges().complement()),
+        intersection_dyn!(a.ranges().complement(), b.ranges().complement(), c.ranges()),
         intersection_dyn!(a.ranges(), b.ranges(), c.ranges()),
     ]
     .union();
@@ -387,7 +390,7 @@ fn complement() -> Result<(), Box<dyn std::error::Error>> {
     let not_b = !b;
     let not_c = !c;
     let not_d = !d;
-    let not_e = e.not();
+    let not_e = e.complement();
     let not_f = !f;
     assert!(not_a.ranges().equal(not_b));
     assert!(not_a.ranges().equal(not_c));
@@ -436,7 +439,7 @@ fn sub() -> Result<(), Box<dyn std::error::Error>> {
     let b = a01.ranges() - a2.ranges();
     let c = !not_a01.ranges() - a2.ranges();
     let d = (a0.ranges() | a1.ranges()) - a2.ranges();
-    let e = a01_tee.sub(a2.ranges());
+    let e = a01_tee.difference(a2.ranges());
     let f = UnionIter::from_iter(a01.iter()) - UnionIter::from_iter(a2.iter());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
@@ -460,7 +463,7 @@ fn xor() -> Result<(), Box<dyn std::error::Error>> {
     let b = a01.ranges() ^ a2.ranges();
     let c = !not_a01.ranges() ^ a2.ranges();
     let d = (a0.ranges() | a1.ranges()) ^ a2.ranges();
-    let e = a01_tee.bitxor(a2.ranges());
+    let e = a01_tee.symmetric_difference(a2.ranges());
     let f = UnionIter::from_iter(a01.iter()) ^ UnionIter::from_iter(a2.iter());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
@@ -677,7 +680,7 @@ fn debug_k_play() {
 
 fn k_play(c: &mut Criterion) {
     let range = 0..=9_999_999;
-    let range_len = 1000; //1_000;
+    let range_len = 1_000;
     let coverage_goal = 0.50;
 
     let mut group = c.benchmark_group("k_play");

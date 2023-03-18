@@ -116,7 +116,7 @@ where
     fn not(self) -> Self::Output {
         // It would be fun to optimize to self.iter, but that would require
         // also considering fields 'start_not' and 'next_time_return_none'.
-        SortedDisjointIterator::not(self)
+        SortedDisjointIterator::complement(self)
     }
 }
 
@@ -142,7 +142,7 @@ where
     fn sub(self, other: R) -> Self::Output {
         // It would be fun to optimize !!self.iter into self.iter
         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-        SortedDisjointIterator::sub(self, other)
+        SortedDisjointIterator::difference(self, other)
     }
 }
 
@@ -158,7 +158,7 @@ where
         // It would be fine optimize !!self.iter into self.iter, ala
         // ¬(¬n ∨ ¬r) ∨ ¬(n ∨ r) // https://www.wolframalpha.com/input?i=%28not+n%29+xor+r
         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-        SortedDisjointIterator::bitxor(self, other)
+        SortedDisjointIterator::symmetric_difference(self, other)
     }
 }
 

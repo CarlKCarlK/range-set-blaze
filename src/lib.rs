@@ -1207,9 +1207,9 @@ where
     /// ```
     fn intersection(self) -> BitAndKMerge<T, I> {
         self.into_iter()
-            .map(|seq| seq.into_iter().not())
+            .map(|seq| seq.into_iter().complement())
             .union()
-            .not()
+            .complement()
     }
 }
 
