@@ -175,8 +175,8 @@ where
 /// Gives [`SortedDisjoint`] iterators a uniform type. Used by the [`union_dyn`] and [`intersection_dyn`] macros to give all
 /// their input iterators the same type.
 ///
-/// [`union`]: MultiwaySortedDisjoint::union
-/// [`intersection`]: MultiwaySortedDisjoint::intersection
+/// [`union_dyn`]: crate::union_dyn
+/// [`intersection_dyn`]: crate::intersection_dyn
 ///
 /// # Example
 /// ```
@@ -238,7 +238,7 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
 ///
 /// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
 ///
-/// [`intersection`]: MultiwaySortedDisjoint::intersection
+/// [`intersection`]: crate::MultiwaySortedDisjoint::intersection
 /// ```
 /// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
 ///
@@ -274,7 +274,7 @@ macro_rules! intersection_dyn {
 ///
 /// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
 ///
-/// [`union`]: MultiwaySortedDisjoint::union
+/// [`union`]: crate::MultiwaySortedDisjoint::union
 /// ```
 /// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
 ///

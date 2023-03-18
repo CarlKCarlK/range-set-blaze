@@ -1,7 +1,10 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
-// !!!cmk0doc give a link to RangSetInt struct at top of the docs.
+// !!!cmk Implement default and other traits mentioned in the video.
+// !!!cmk0000 For RangeSetInt make table of constructor and set operations.
+// !!!cmk0000 For SortedDisjoint make table of constructor and set operations.
+// !!!cmk0doc give a link to RangeSetInt struct at top of the docs.
 
 // https://docs.rs/range_bounds_map/latest/range_bounds_map/range_bounds_set/struct.RangeBoundsSet.html
 // Here are some relevant crates I found whilst searching around the topic area:
@@ -64,8 +67,7 @@ use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
 pub use ranges::IntoRangesIter;
 pub use ranges::RangesIter;
-pub use sorted_disjoint::CheckSortedDisjoint;
-pub use sorted_disjoint::DynSortedDisjoint;
+pub use sorted_disjoint::{CheckSortedDisjoint, DynSortedDisjoint};
 pub use sorted_disjoint_iterator::SortedDisjointIterator;
 use std::cmp::max;
 use std::cmp::Ordering;
@@ -1158,8 +1160,8 @@ where
 /// The trait used to define methods on multiple [`SortedDisjoint`] iterators,
 /// specifically [`union`] and [`intersection`].
 ///
-/// [`union`]: MultiwaySortedDisjoint::union
-/// [`intersection`]: MultiwaySortedDisjoint::intersection
+/// [`union`]: crate::MultiwaySortedDisjoint::union
+/// [`intersection`]: crate::MultiwaySortedDisjoint::intersection
 pub trait MultiwaySortedDisjoint<T: Integer, I>: IntoIterator<Item = I> + Sized
 where
     I: SortedDisjointIterator<T>,
