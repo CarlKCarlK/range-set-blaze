@@ -1255,3 +1255,49 @@ fn range_set_int_constructors() {
     let a1: RangeSetInt<i32> = [3, 2, 1, 100, 1].into();
     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 }
+
+#[test]
+fn range_set_int_operators() {
+    let a = RangeSetInt::from_iter([1..=2, 5..=100].into_iter());
+    let b = RangeSetInt::from_iter([2..=6].into_iter());
+
+    // Union of two 'RangeSetInt's.
+    let result = &a | &b;
+    // Alternatively, we can take ownership via 'a | b'.
+    assert_eq!(result.to_string(), "1..=100");
+
+    // Intersection of two 'RangeSetInt's.
+    let result = &a & &b; // Alternatively, 'a & b'.
+    assert_eq!(result.to_string(), "2..=2, 5..=6");
+
+    // Set difference of two 'RangeSetInt's.
+    let result = &a - &b; // Alternatively, 'a - b'.
+    assert_eq!(result.to_string(), "1..=1, 7..=100");
+
+    // Symmetric difference of two 'RangeSetInt's.
+    let result = &a ^ &b; // Alternatively, 'a ^ b'.
+    assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
+
+    // Negation of a 'RangeSetInt'.
+    let result = !&a; // Alternatively, '!a'.
+    assert_eq!(
+        result.to_string(),
+        "-2147483648..=0, 3..=4, 101..=2147483647"
+    );
+
+    // Multiway union of 'RangeSetInt's.
+    let c = RangeSetInt::from_iter([2..=2, 6..=200].into_iter());
+    let result = [&a, &b, &c].union();
+    assert_eq!(result.to_string(), "1..=200");
+
+    // Multiway intersection of 'RangeSetInt's.
+    let result = [&a, &b, &c].intersection();
+    assert_eq!(result.to_string(), "2..=2, 6..=6");
+
+    // Combining multiple operations
+    let result0 = &a - (&b | &c); // Creates a temporary 'RangeSetInt'.
+
+    // Alternatively, we can use the 'SortedDisjoint' API and avoid the temporary 'RangeSetInt'.
+    let result1 = RangeSetInt::from(a.ranges() - (b.ranges() | c.ranges()));
+    assert!(result0 == result1 && result0.to_string() == "1..=1");
+}

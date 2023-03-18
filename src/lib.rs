@@ -192,7 +192,12 @@ pub trait Integer:
 ///
 /// Internally, it uses a cache-efficient [`BTreeMap`] to store the ranges.
 ///
-/// cmk00000 need toc here
+/// # Table of Contents
+/// * [Constructors](#constructors)
+///    * [Examples](struct.RangeSetInt.html#constructor-examples)
+/// * [Set Operations](#set-operations)
+///    * [Performance](struct.RangeSetInt.html#set-operation-performance)
+///    * [Examples](struct.RangeSetInt.html#set-operation-examples)
 ///
 /// # Constructors
 ///
@@ -248,6 +253,78 @@ pub trait Integer:
 /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 /// ```
 ///
+/// # Set Operations
+///
+/// | Set Operation           | Operator                   |  Multiway Method |
+/// |-------------------|-------------------------|-------------------------|
+/// | union       |  `a` &#124; `b`                     | `[a, b, c].`[`union`]`()` |
+/// | intersection       |  `a & b`                     | `[a, b, c].`[`intersection`]`()` |
+/// | difference       |  `a - b`                     | *n/a* |
+/// | symmetric difference       |  `a ^ b`                     | *n/a* |
+/// | complement       |  `!a`                     | *n/a* |
+///
+///
+/// [`union`]: trait.MultiwayRangeSetInt.html#method.union
+/// [`intersection`]: trait.MultiwayRangeSetInt.html#method.intersection
+///
+/// ## Set Operation Performance
+///
+/// Every operation is implemented as
+/// 1. a single pass over the sorted & disjoint ranges
+/// 2. the construction of a new [`RangeSetInt`]
+///
+/// Thus, applying multiple operators creates intermediate
+/// [`RangeSetInt`]'s. You can avoid these intermediate
+/// [`RangeSetInt`]'s by switching to the [`SortedDisjoint`] API. The last example below
+/// demonstrates this.
+///
+/// ## Set Operation Examples
+///
+/// ```
+/// use range_set_int::{RangeSetInt, MultiwayRangeSetInt};
+///
+/// let a = RangeSetInt::from_iter([1..=2, 5..=100].into_iter());
+/// let b = RangeSetInt::from_iter([2..=6].into_iter());
+///
+/// // Union of two 'RangeSetInt's.
+/// let result = &a | &b;
+/// // Alternatively, we can take ownership via 'a | b'.
+/// assert_eq!(result.to_string(), "1..=100");
+///
+/// // Intersection of two 'RangeSetInt's.
+/// let result = &a & &b; // Alternatively, 'a & b'.
+/// assert_eq!(result.to_string(), "2..=2, 5..=6");
+///
+/// // Set difference of two 'RangeSetInt's.
+/// let result = &a - &b; // Alternatively, 'a - b'.
+/// assert_eq!(result.to_string(), "1..=1, 7..=100");
+///
+/// // Symmetric difference of two 'RangeSetInt's.
+/// let result = &a ^ &b; // Alternatively, 'a ^ b'.
+/// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
+///
+/// // Negation of a 'RangeSetInt'.
+/// let result = !&a; // Alternatively, '!a'.
+/// assert_eq!(
+///     result.to_string(),
+///     "-2147483648..=0, 3..=4, 101..=2147483647"
+/// );
+///
+/// // Multiway union of 'RangeSetInt's.
+/// let c = RangeSetInt::from_iter([2..=2, 6..=200].into_iter());
+/// let result = [&a, &b, &c].union();
+/// assert_eq!(result.to_string(), "1..=200");
+///
+/// // Multiway intersection of 'RangeSetInt's.
+/// let result = [&a, &b, &c].intersection();
+/// assert_eq!(result.to_string(), "2..=2, 6..=6");
+///
+/// // Applying multiple operators
+/// let result0 = &a - (&b | &c); // Creates an intermediate 'RangeSetInt'.
+/// // Alternatively, we can use the 'SortedDisjoint' API and avoid the intermediate 'RangeSetInt'.
+/// let result1 = RangeSetInt::from(a.ranges() - (b.ranges() | c.ranges()));
+/// assert!(result0 == result1 && result0.to_string() == "1..=1");
+/// ```
 /// cmk00000
 ///
 /// See the [module-level documentation] for additional examples.
@@ -1382,7 +1459,10 @@ gen_ops_ex!(
         (a.ranges() & b.ranges()).into()
     };
     for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        (a.ranges() ^ b.ranges()).into()
+        // We optimize this by using clone() rather than tee()
+        let lhs1 = a.clone();
+        let rhs1 = b.clone();
+        (a - b) | (rhs1 - lhs1)
     };
     for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         (a.ranges() - b.ranges()).into()
