@@ -190,7 +190,7 @@ pub trait Integer:
 
 /// A set of integers stored as sorted & disjoint ranges.
 ///
-/// Internally, it uses a cache-efficient `BTreeMap` to store the ranges.
+/// Internally, it uses a cache-efficient [`BTreeMap`] to store the ranges.
 ///
 /// cmk00000 need toc here
 ///
@@ -202,8 +202,9 @@ pub trait Integer:
 /// | [`from_iter`][1]/[`collect`][1] | integer iterator        |
 /// | [`from_iter`][2]/[`collect`][2] | ranges iterator         |
 /// | [`from`][3] /[`into`][3]         | [`SortedDisjoint`] iterator |
-/// | [`from`][4] /[`into`][4]         | array of integer       |
+/// | [`from`][4] /[`into`][4]         | array of integers       |
 ///
+/// [`BTreeMap`]: std::collections::BTreeMap
 /// [`new`]: RangeSetInt::new
 /// [`default`]: RangeSetInt::default
 /// [1]: struct.RangeSetInt.html#impl-FromIterator<T>-for-RangeSetInt<T>
@@ -764,7 +765,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// Adds a value to the set, replacing the existing element, if any, that is
     /// equal to the value. Returns the replaced element.
     ///
-    /// Note: This is very similar to `insert`. It is included for consistency with `BTreeSet`.
+    /// Note: This is very similar to `insert`. It is included for consistency with [`BTreeSet`].
+    ///
+    /// [`BTreeSet`]: std::collections::BTreeSet
     ///
     /// # Examples
     ///
@@ -1042,6 +1045,27 @@ impl<T: Integer> RangeSetInt<T> {
 // 1. turning them into a UnionIter (internally, it collects into intervals and sorts by start).
 // 2. Turning the SortedDisjoint into a BTreeMap.
 impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
+    /// Create a [`RangeSetInt`] from an iterator of integers. Duplicates and out-of-order elements are fine.
+    ///
+    /// *For more about constructors, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
+    ///
+    /// # Performance
+    ///
+    /// This constructor works fast on clumpy data. Internally, it
+    ///  * collects adjacent integers into ranges (linear)
+    ///  * sorts the ranges by start (log * linear)
+    ///  * merges adjacent and overlapping ranges (linear)
+    ///  * creates a BTreeMap from the now sorted & adjacent ranges (log * linear)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let a0 = RangeSetInt::from_iter([3, 2, 1, 100, 1]);
+    /// let a1: RangeSetInt<i32> = [3, 2, 1, 100, 1].into_iter().collect();
+    /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+    /// ```
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = T>,
@@ -1052,6 +1076,29 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
 
 // cmk rules: Follow Rust conventions. For example this as empty let cmk = 1..=-1; we do the same
 impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
+    /// Create a [`RangeSetInt`] from an iterator of inclusive ranges, `start..=end`.
+    /// Overlapping, out-of-order, and empty ranges are fine.
+    ///
+    /// *For more about constructors, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
+    ///
+    /// # Performance
+    ///
+    /// This constructor works fast on clumpy data. Internally, it
+    ///  * sorts the ranges by start (log * linear)
+    ///  * merges adjacent and overlapping ranges (linear)
+    ///  * creates a BTreeMap from the now sorted & adjacent ranges (log * linear)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// #[allow(clippy::reversed_empty_ranges)]
+    /// let a0 = RangeSetInt::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
+    /// #[allow(clippy::reversed_empty_ranges)]
+    /// let a1: RangeSetInt<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// ```
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = RangeInclusive<T>>,
@@ -1062,6 +1109,29 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
 }
 
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
+    /// For compatibility with [`BTreeSet`] you may create a [`RangeSetInt`] from an array of integers.
+    ///
+    /// *For more about constructors, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
+    ///
+    /// # Performance
+    ///
+    /// This constructor works fast on clumpy data. Internally, it
+    ///  * collects adjacent integers into ranges (linear)
+    ///  * sorts the ranges by start (log * linear)
+    ///  * merges adjacent and overlapping ranges (linear)
+    ///  * creates a BTreeMap from the now sorted & adjacent ranges (log * linear)
+    ///
+    /// [`BTreeSet`]: std::collections::BTreeSet
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let a0 = RangeSetInt::from([3, 2, 1, 100, 1]);
+    /// let a1: RangeSetInt<i32> = [3, 2, 1, 100, 1].into();
+    /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100")
+    /// ```
     fn from(arr: [T; N]) -> Self {
         arr.into_iter().collect()
     }
@@ -1074,6 +1144,24 @@ where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
     // cmk0 understand why this can't be  I: IntoIterator<Item = RangeInclusive<T>>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
 {
+    /// Create a [`RangeSetInt`] from a [`SortedDisjoint`] iterator.
+    ///
+    /// *For more about constructors, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
+    ///
+    /// # Performance
+    ///
+    /// This constructor works fast on clumpy data. Internally, it
+    ///  * creates a BTreeMap from the sorted & adjacent ranges (log * linear)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::{RangeSetInt, CheckSortedDisjoint};
+    ///
+    /// let a0 = RangeSetInt::from(CheckSortedDisjoint::new([-10..=-5, 1..=2].into_iter()));
+    /// let a1: RangeSetInt<i32> = CheckSortedDisjoint::new([-10..=-5, 1..=2].into_iter()).into();
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");    
+    /// ```
     fn from(iter: I) -> Self {
         let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);

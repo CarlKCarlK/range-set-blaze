@@ -9,13 +9,17 @@ A crate for efficiently manipulating sets of integers using set operations such 
 
 The main struct is [`RangeSetInt`], a set of integers.
 
-> Unlike the standard `BTreeSet` and `HashSet`, it does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient `BTreeMap`. It differs from other interval libraries (that we know of) by being specialized and optimized for integer elements.
+> Unlike the standard [`BTreeSet`] and [`HashSet`], it does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from other interval libraries (that we know of) by being specialized and optimized for integer elements.
 
 The main trait is [`SortedDisjoint`]. It is implemented by iterators of sorted & disjoint ranges of integers.
 
 > It performs set operations in one iterator pass and with minimal (constant) memory. It enforces the "sorted & disjoint" constraint at compile time.
 This trait is inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. [`SortedDisjoint`] differs from its
 inspiration by specializing on disjoint integer ranges.
+
+[`BTreeSet`]: std::collections::BTreeSet
+[`HashSet`]: std::collections::HashSet
+[`BTreeMap`]: std::collections::BTreeMap
 
 Example 1
 ---------
