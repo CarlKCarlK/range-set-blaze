@@ -410,7 +410,7 @@ fn union_test() -> Result<(), Box<dyn std::error::Error>> {
     let b = a0.ranges() | a1.ranges() | a2.ranges();
     let c = !not_a0.ranges() | a12.ranges();
     let d = a0.ranges() | a1.ranges() | a2.ranges();
-    let e = a0_tee.bitor(a12.ranges());
+    let e = a0_tee.union(a12.ranges());
 
     let f = UnionIter::from_iter(a0.iter())
         | UnionIter::from_iter(a1.iter())
@@ -483,7 +483,7 @@ fn bitand() -> Result<(), Box<dyn std::error::Error>> {
     let b = a01.ranges() & a2.ranges();
     let c = !not_a01.ranges() & a2.ranges();
     let d = (a0.ranges() | a1.ranges()) & a2.ranges();
-    let e = a01_tee.bitand(a2.ranges());
+    let e = a01_tee.intersection(a2.ranges());
     let f = UnionIter::from_iter(a01.iter()) & UnionIter::from_iter(a2.iter());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
@@ -1193,7 +1193,7 @@ fn union_iter() {
     // Or, equivalently:
     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
     let b = CheckSortedDisjoint::new([2..=6].into_iter());
-    let c = SortedDisjointIterator::bitor(a, b);
+    let c = SortedDisjointIterator::union(a, b);
     assert_eq!(c.to_string(), "1..=100")
 }
 
@@ -1206,7 +1206,7 @@ fn bitor() {
 
     let a = CheckSortedDisjoint::new([1..=1].into_iter());
     let b = CheckSortedDisjoint::new([2..=2].into_iter());
-    let c = range_set_int::SortedDisjointIterator::bitor(a, b);
+    let c = range_set_int::SortedDisjointIterator::union(a, b);
     assert_eq!(c.to_string(), "1..=2");
 
     let a = CheckSortedDisjoint::new([1..=1].into_iter());
@@ -1216,6 +1216,6 @@ fn bitor() {
 
     let a = CheckSortedDisjoint::new([1..=1].into_iter());
     let b = RangeSetInt::from_iter([2..=2]).into_ranges();
-    let c = range_set_int::SortedDisjointIterator::bitor(a, b);
+    let c = range_set_int::SortedDisjointIterator::union(a, b);
     assert_eq!(c.to_string(), "1..=2");
 }

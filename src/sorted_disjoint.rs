@@ -131,7 +131,7 @@ where
     type Output = BitOrMerge<T, Self, R>;
 
     fn bitor(self, other: R) -> Self::Output {
-        SortedDisjointIterator::bitor(self, other)
+        SortedDisjointIterator::union(self, other)
     }
 }
 
@@ -143,7 +143,7 @@ where
     type Output = BitAndMerge<T, Self, R>;
 
     fn bitand(self, other: R) -> Self::Output {
-        SortedDisjointIterator::bitand(self, other)
+        SortedDisjointIterator::intersection(self, other)
     }
 }
 

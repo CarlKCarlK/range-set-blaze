@@ -92,6 +92,6 @@ fn sorted_disjoint_ops() {
     let _e = !a.clone() | b.clone();
     let _f = !(!a.clone() | !b.clone());
     let _g = BitOr::bitor(a.clone().not(), b.clone().not()).not();
-    let _h = SortedDisjointIterator::bitor(a.clone().not(), b.clone().not()).not();
+    let _h = SortedDisjointIterator::union(a.clone().not(), b.clone().not()).not();
     let _z = !(!a | !b);
 }

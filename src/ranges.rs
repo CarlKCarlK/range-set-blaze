@@ -115,7 +115,7 @@ where
     type Output = BitOrMerge<T, Self, I>;
 
     fn bitor(self, other: I) -> Self::Output {
-        SortedDisjointIterator::bitor(self, other)
+        SortedDisjointIterator::union(self, other)
     }
 }
 
@@ -126,7 +126,7 @@ where
     type Output = BitOrMerge<T, Self, I>;
 
     fn bitor(self, other: I) -> Self::Output {
-        SortedDisjointIterator::bitor(self, other)
+        SortedDisjointIterator::union(self, other)
     }
 }
 
@@ -188,7 +188,7 @@ where
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitand(self, other: I) -> Self::Output {
-        SortedDisjointIterator::bitand(self, other)
+        SortedDisjointIterator::intersection(self, other)
     }
 }
 
@@ -200,6 +200,6 @@ where
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitand(self, other: I) -> Self::Output {
-        SortedDisjointIterator::bitand(self, other)
+        SortedDisjointIterator::intersection(self, other)
     }
 }

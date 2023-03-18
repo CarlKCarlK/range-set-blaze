@@ -8,15 +8,16 @@ use crate::{
 };
 
 /// The trait used to provide methods common to iterators with the [`SortedDisjoint`] trait.
-/// Methods include [`to_string`], [`equal`], [`bitor`] (union), [`bitand`] (intersection), [`bitxor`], [`sub`], [`not`].
+/// Methods include [`to_string`], [`equal`], [`union`], [`intersection`]
+/// [`symmetric_difference`], [`difference`], [`complement`].
 ///
 /// [`to_string`]: SortedDisjointIterator::to_string
 /// [`equal`]: SortedDisjointIterator::equal
-/// [`bitor`]: SortedDisjointIterator::bitor
-/// [`bitand`]: SortedDisjointIterator::bitand
-/// [`bitxor`]: SortedDisjointIterator::bitxor
-/// [`sub`]: SortedDisjointIterator::sub
-/// [`not`]: SortedDisjointIterator::not
+/// [`union`]: SortedDisjointIterator::union
+/// [`intersection`]: SortedDisjointIterator::intersection
+/// [`symmetric_difference`]: SortedDisjointIterator::symmetric_difference
+/// [`difference`]: SortedDisjointIterator::difference
+/// [`complement`]: SortedDisjointIterator::complement
 // !!!cmk0000 could equal be don't with PartialEq? and thus ==?
 // !!!cmk0000 link to all methods and operators.
 // !!!cmk0000 should the readme include a table or example, etc.
@@ -34,12 +35,18 @@ pub trait SortedDisjointIterator<T: Integer>:
     ///
     /// let a = CheckSortedDisjoint::new([1..=1].into_iter());
     /// let b = RangeSetInt::from_iter([2..=2]).into_ranges();
-    /// // CheckSortedDisjoint defines ops::bitor as SortedDisjointIterator::bitor so we can use '!'
+    /// let union = a.union(b);
+    /// assert_eq!(union.to_string(), "1..=2");
+    ///
+    /// // Alternatively, we can use "|" because CheckSortedDisjoint defines
+    /// // ops::bitor as SortedDisjointIterator::union.
+    /// let a = CheckSortedDisjoint::new([1..=1].into_iter());
+    /// let b = RangeSetInt::from_iter([2..=2]).into_ranges();
     /// let union = a | b;
     /// assert_eq!(union.to_string(), "1..=2");
     /// ```
     #[inline]
-    fn bitor<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
+    fn union<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint,
@@ -56,17 +63,23 @@ pub trait SortedDisjointIterator<T: Integer>:
     ///
     /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
     /// let b = RangeSetInt::from_iter([2..=3]).into_ranges();
-    /// // CheckSortedDisjoint defines ops::bitand as SortedDisjointIterator::bitand so we can use '&'
+    /// let intersection = a.intersection(b);
+    /// assert_eq!(intersection.to_string(), "2..=2");
+    ///
+    /// // Alternatively, we can use "&" because CheckSortedDisjoint defines
+    /// // ops::bitand as SortedDisjointIterator::intersection.
+    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let b = RangeSetInt::from_iter([2..=3]).into_ranges();
     /// let intersection = a & b;
     /// assert_eq!(intersection.to_string(), "2..=2");
     /// ```
     #[inline]
-    fn bitand<R>(self, other: R) -> BitAndMerge<T, Self, R::IntoIter>
+    fn intersection<R>(self, other: R) -> BitAndMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint,
     {
-        !(self.not().bitor(other.into_iter().not()))
+        (self.not().union(other.into_iter().not())).not()
     }
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their set difference.
@@ -88,7 +101,7 @@ pub trait SortedDisjointIterator<T: Integer>:
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint,
     {
-        (self.not().bitor(other.into_iter())).not()
+        (self.not().union(other.into_iter())).not()
     }
 
     /// Given a [`SortedDisjoint`] iterator, efficiently returns a [`SortedDisjoint`] iterator of its complement.

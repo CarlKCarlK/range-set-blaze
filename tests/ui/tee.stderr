@@ -6,10 +6,10 @@ warning: unused import: `RangeSetInt`
   |
   = note: `#[warn(unused_imports)]` on by default
 
-error[E0599]: the method `bitor` exists for struct `Tee<std::slice::Iter<'_, ({integer}, {integer})>>`, but its trait bounds were not satisfied
+error[E0599]: the method `union` exists for struct `Tee<std::slice::Iter<'_, ({integer}, {integer})>>`, but its trait bounds were not satisfied
  --> tests/ui/tee.rs:7:17
   |
-7 |     let _c = a0.bitor(a1);
+7 |     let _c = a0.union(a1);
   |                 ^^^^^ method cannot be called on `Tee<std::slice::Iter<'_, ({integer}, {integer})>>` due to unsatisfied trait bounds
   |
  ::: $CARGO/itertools-0.10.5/src/tee.rs

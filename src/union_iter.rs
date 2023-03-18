@@ -197,7 +197,7 @@ where
     fn bitor(self, rhs: R) -> Self::Output {
         // It might be fine to optimize to self.iter, but that would require
         // also considering field 'range'
-        SortedDisjointIterator::bitor(self, rhs)
+        SortedDisjointIterator::union(self, rhs)
     }
 }
 
@@ -233,7 +233,7 @@ where
 {
     type Output = BitAndMerge<T, Self, R>;
 
-    fn bitand(self, rhs: R) -> Self::Output {
-        SortedDisjointIterator::bitand(self, rhs)
+    fn bitand(self, other: R) -> Self::Output {
+        SortedDisjointIterator::intersection(self, other)
     }
 }
