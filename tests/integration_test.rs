@@ -1222,3 +1222,36 @@ fn bitor() {
     let c = range_set_int::SortedDisjointIterator::union(a, b);
     assert_eq!(c.to_string(), "1..=2");
 }
+
+#[test]
+fn range_set_int_constructors() {
+    // Create an empty set with 'new' or 'default'.
+    let a0 = RangeSetInt::<i32>::new();
+    let a1 = RangeSetInt::<i32>::default();
+    assert!(a0 == a1 && a0.is_empty());
+
+    // 'from_iter'/'collect': From an iterator of integers.
+    // Duplicates and out-of-order elements are fine.
+    let a0 = RangeSetInt::from_iter([3, 2, 1, 100, 1]);
+    let a1: RangeSetInt<i32> = [3, 2, 1, 100, 1].into_iter().collect();
+    assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+
+    // 'from_iter'/'collect': From an iterator of inclusive ranges, start..=end.
+    // Overlapping, out-of-order, and empty ranges are fine.
+    #[allow(clippy::reversed_empty_ranges)]
+    let a0 = RangeSetInt::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
+    #[allow(clippy::reversed_empty_ranges)]
+    let a1: RangeSetInt<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
+    assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+
+    // If we know the ranges are sorted and disjoint, we can use 'from'/'into'.
+    let a0 = RangeSetInt::from(CheckSortedDisjoint::new([-10..=-5, 1..=2].into_iter()));
+    let a1: RangeSetInt<i32> = CheckSortedDisjoint::new([-10..=-5, 1..=2].into_iter()).into();
+    assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+
+    // For compatibility with `BTreeSet`, we also support
+    // 'from'/'into' from arrays of integers.
+    let a0 = RangeSetInt::from([3, 2, 1, 100, 1]);
+    let a1: RangeSetInt<i32> = [3, 2, 1, 100, 1].into();
+    assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+}
