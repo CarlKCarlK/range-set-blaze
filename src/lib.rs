@@ -1459,10 +1459,12 @@ gen_ops_ex!(
         (a.ranges() & b.ranges()).into()
     };
     for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
-        // We optimize this by using clone() rather than tee()
-        let lhs1 = a.clone();
-        let rhs1 = b.clone();
-        (a - b) | (rhs1 - lhs1)
+        // We optimize this by using ranges() twice per input, rather than tee()
+        let lhs0 = a.ranges();
+        let lhs1 = a.ranges();
+        let rhs0 = b.ranges();
+        let rhs1 = b.ranges();
+        ((lhs0 - rhs0) | (rhs1 - lhs1)).into()
     };
     for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         (a.ranges() - b.ranges()).into()
