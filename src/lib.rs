@@ -195,6 +195,7 @@ pub trait Integer:
 ///
 /// # Table of Contents
 /// * [`RangeSetInt` Constructors](#rangesetint-constructors)
+///    * [Performance](#constructor-performance)
 ///    * [Examples](struct.RangeSetInt.html#constructor-examples)
 /// * [`RangeSetInt` Set Operations](#rangesetint-set-operations)
 ///    * [Performance](struct.RangeSetInt.html#set-operation-performance)
@@ -217,6 +218,28 @@ pub trait Integer:
 /// [2]: struct.RangeSetInt.html#impl-FromIterator<RangeInclusive<T>>-for-RangeSetInt<T>
 /// [3]: struct.RangeSetInt.html#impl-From<I>-for-RangeSetInt<T>
 /// [4]: struct.RangeSetInt.html#impl-From<%5BT%3B%20N%5D>-for-RangeSetInt<T>
+///
+/// # Constructor Performance
+///
+/// The [`from_iter`][1]/[`collect`][1] constructors are designed to work fast on clumpy data. Internally, they:
+/// * collect adjacent integers/ranges into disjoint ranges, O(*n₁*)
+/// * sort the disjoint ranges by `start`, O(*n₂* log *n₂*)
+/// * merge adjacent ranges, O(*n₂*)
+/// * create a `BTreeMap` from the now sorted & disjoint ranges, O(*n₃* log *n₃*)
+///
+/// where *n₁* is the number of input integers/ranges, *n₂* is the number of unsorted & disjoint ranges,
+/// and *n₃* is the final number of sorted & disjoint ranges.
+///
+/// For example, an input of
+///  *  `3, 2, 1, 4, 5, 6, 7, 0, 8, 8, 8, 100, 1`, becomes
+///  * `0..=8, 100..=100, 1..=1`, and then
+///  * `0..=8, 1..=1, 100..=100`, and finally
+///  * `0..=8, 100..=100`.
+///
+/// Notice that if because of clumpy data, *n₂* ≈ sqrt(*n₁*), then construction is O(*n₁*).
+/// (Indeed, as long as *n₂* ≤ *n₁*/ln(*n₁*), then construction is O(*n₁*).)
+/// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*))
+/// a quadratic improvement an O(*n₁*) implementation that ignores the clumps.
 ///
 /// ## Constructor Examples
 ///
