@@ -7,16 +7,22 @@ range-set-int
 
 A crate for efficiently manipulating sets of integers using set operations such as `union()`, `intersection()`, and `difference()`. The integers can be any size ([`u8`] to [`u128`]) and may be signed ([`i8`] to [`i128`]). cmk0000link
 
-The main struct is [`RangeSetInt`], a set of integers.
+The main struct is [`RangeSetInt`], a set of integers. See the [`RangeSetInt` documentation] for details.
 
 > Unlike the standard [`BTreeSet`] and [`HashSet`], it does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from other interval libraries (that we know of) by being specialized and optimized for integer elements.
 
-The main trait is [`SortedDisjoint`]. It is implemented by iterators of sorted & disjoint ranges of integers.
+The main trait is [`SortedDisjoint`]. It is implemented by iterators of sorted & disjoint ranges of integers. See the [`SortedDisjoint` documentation] for details.
 
 > It performs set operations in one iterator pass and with minimal (constant) memory. It enforces the "sorted & disjoint" constraint at compile time.
 This trait is inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. [`SortedDisjoint`] differs from its
 inspiration by specializing on disjoint integer ranges.
 
+[`u8`]: https://doc.rust-lang.org/std/primitive.u8.html
+[`u128`]: https://doc.rust-lang.org/std/primitive.u128.html
+[`i8`]: https://doc.rust-lang.org/std/primitive.i8.html
+[`i128`]: https://doc.rust-lang.org/std/primitive.i128.html
+[`RangeSetInt` documentation]: struct.RangeSetInt.html
+[`SortedDisjoint` documentation]: trait.SortedDisjoint.html
 [`BTreeSet`]: std::collections::BTreeSet
 [`HashSet`]: std::collections::HashSet
 [`BTreeMap`]: std::collections::BTreeMap

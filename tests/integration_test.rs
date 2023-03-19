@@ -1301,3 +1301,31 @@ fn range_set_int_operators() {
     let result1 = RangeSetInt::from(a.ranges() - (b.ranges() | c.ranges()));
     assert!(result0 == result1 && result0.to_string() == "1..=1");
 }
+
+#[test]
+fn sorted_disjoint_constructors() {
+    // RangeSetInt's .ranges(), .range().clone() and .into_ranges()
+    let r = RangeSetInt::from_iter([3, 2, 1, 100, 1]);
+    let a = r.ranges();
+    let b = a.clone();
+    assert!(a.to_string() == "1..=3, 100..=100");
+    assert!(b.to_string() == "1..=3, 100..=100");
+    //    'into_ranges' takes ownership of the 'RangeSetInt'
+    let a = RangeSetInt::from_iter([3, 2, 1, 100, 1]).into_ranges();
+    assert!(a.to_string() == "1..=3, 100..=100");
+
+    // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
+    let a = CheckSortedDisjoint::new([1..=3, 100..=100].into_iter());
+    assert!(a.to_string() == "1..=3, 100..=100");
+
+    // tee of a SortedDisjoint iterator
+    let a = CheckSortedDisjoint::new([1..=3, 100..=100].into_iter());
+    let (a, b) = a.tee();
+    assert!(a.to_string() == "1..=3, 100..=100");
+    assert!(b.to_string() == "1..=3, 100..=100");
+
+    // DynamicSortedDisjoint of a SortedDisjoint iterator
+    let a = CheckSortedDisjoint::new([1..=3, 100..=100].into_iter());
+    let b = DynSortedDisjoint::new(a);
+    assert!(b.to_string() == "1..=3, 100..=100");
+}

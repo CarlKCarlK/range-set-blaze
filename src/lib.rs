@@ -1714,6 +1714,64 @@ impl<T: Integer> PartialOrd for RangeSetInt<T> {
 impl<T: Integer> Eq for RangeSetInt<T> {}
 
 /// The trait used to mark iterators that provide ranges that are sorted by start and that do not overlap.
+///
+/// # Constructors
+///
+/// | Input type | Method |
+/// |------------|--------|
+/// | [`RangeSetInt`] | [`ranges`] |
+/// | [`RangeSetInt`] | [`into_ranges`] |
+/// | [`RangeSetInt`]'s [`RangesIter`] | [`clone`] |
+/// | sorted & disjoint ranges | [`CheckSortedDisjoint::new`] |
+/// | `SortedDisjoint` iterator | [itertools `tee`] |
+/// | `SortedDisjoint` iterator | [`DynSortedDisjoint::new`] |
+/// |  *your type* | *[How to mark your type as `SortedDisjoint`][1]* |
+///
+/// [`ranges`]: RangeSetInt::ranges
+/// [`into_ranges`]: RangeSetInt::into_ranges
+/// [`clone`]: RangesIter::clone
+/// [itertools `tee`]: https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.tee
+/// [1]: #how-to-mark-your-type-as-sorteddisjoint
+///
+/// ## Constructor Examples
+///
+/// ```
+/// use range_set_int::{RangeSetInt, CheckSortedDisjoint, DynSortedDisjoint};
+/// use range_set_int::SortedDisjointIterator;
+/// use itertools::Itertools;
+///
+/// // RangeSetInt's .ranges(), .range().clone() and .into_ranges()
+/// let r = RangeSetInt::from_iter([3, 2, 1, 100, 1]);
+/// let a = r.ranges();
+/// let b = a.clone();
+/// assert!(a.to_string() == "1..=3, 100..=100");
+/// assert!(b.to_string() == "1..=3, 100..=100");
+/// //    'into_ranges' takes ownership of the 'RangeSetInt'
+/// let a = RangeSetInt::from_iter([3, 2, 1, 100, 1]).into_ranges();
+/// assert!(a.to_string() == "1..=3, 100..=100");
+///
+/// // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
+/// let a = CheckSortedDisjoint::new([1..=3, 100..=100].into_iter());
+/// assert!(a.to_string() == "1..=3, 100..=100");
+///
+/// // tee of a SortedDisjoint iterator
+/// let a = CheckSortedDisjoint::new([1..=3, 100..=100].into_iter());
+/// let (a, b) = a.tee();
+/// assert!(a.to_string() == "1..=3, 100..=100");
+/// assert!(b.to_string() == "1..=3, 100..=100");
+///
+/// // DynamicSortedDisjoint of a SortedDisjoint iterator
+/// let a = CheckSortedDisjoint::new([1..=3, 100..=100].into_iter());
+/// let b = DynSortedDisjoint::new(a);
+/// assert!(b.to_string() == "1..=3, 100..=100");
+/// ```
+///
+/// ## How to mark your type as `SortedDisjoint`
+///
+/// # Set and Other Operations
+///
+/// ## Performance
+/// ## Examples
 pub trait SortedDisjoint: SortedStarts {}
 
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
