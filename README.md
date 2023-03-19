@@ -5,22 +5,18 @@ range-set-int
 [![crates.io](https://img.shields.io/crates/v/range-set-int.svg?flat&color=fc8d62&logo=rust")](https://crates.io/crates/range-set-int)
 [![docs.rs](https://img.shields.io/badge/docs.rs-range-set-int-66c2a5?flat&labelColor=555555&logoColor=white&logo=core:image/svg+xml;base64,PHN2ZyByb2xlPSJpbWciIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDUxMiA1MTIiPjxwYXRoIGZpbGw9IiNmNWY1ZjUiIGQ9Ik00ODguNiAyNTAuMkwzOTIgMjE0VjEwNS41YzAtMTUtOS4zLTI4LjQtMjMuNC0zMy43bC0xMDAtMzcuNWMtOC4xLTMuMS0xNy4xLTMuMS0yNS4zIDBsLTEwMCAzNy41Yy0xNC4xIDUuMy0yMy40IDE4LjctMjMuNCAzMy43VjIxNGwtOTYuNiAzNi4yQzkuMyAyNTUuNSAwIDI2OC45IDAgMjgzLjlWMzk0YzAgMTMuNiA3LjcgMjYuMSAxOS45IDMyLjJsMTAwIDUwYzEwLjEgNS4xIDIyLjEgNS4xIDMyLjIgMGwxMDMuOS01MiAxMDMuOSA1MmMxMC4xIDUuMSAyMi4xIDUuMSAzMi4yIDBsMTAwLTUwYzEyLjItNi4xIDE5LjktMTguNiAxOS45LTMyLjJWMjgzLjljMC0xNS05LjMtMjguNC0yMy40LTMzLjd6TTM1OCAyMTQuOGwtODUgMzEuOXYtNjguMmw4NS0zN3Y3My4zek0xNTQgMTA0LjFsMTAyLTM4LjIgMTAyIDM4LjJ2LjZsLTEwMiA0MS40LTEwMi00MS40di0uNnptODQgMjkxLjFsLTg1IDQyLjV2LTc5LjFsODUtMzguOHY3NS40em0wLTExMmwtMTAyIDQxLjQtMTAyLTQxLjR2LS42bDEwMi0zOC4yIDEwMiAzOC4ydi42em0yNDAgMTEybC04NSA0Mi41di03OS4xbDg1LTM4Ljh2NzUuNHptMC0xMTJsLTEwMiA0MS40LTEwMi00MS40di0uNmwxMDItMzguMiAxMDIgMzguMnYuNnoiPjwvcGF0aD48L3N2Zz4K)](https://docs.rs/range-set-int)[![CI](https://github.com/CarlKCarlK/range-set-int/actions/workflows/ci.yml/badge.svg)](https://github.com/CarlKCarlK/range-set-int/actions/workflows/ci.yml)
 
-A crate for efficiently manipulating sets of integers using [set operations] such as `union`, `intersection`, and `difference`.
-The integers can be any size ([`u8`] to [`u128`]) and may be signed ([`i8`] to [`i128`]). We can construct a [`RangeSetInt`] from
-unsorted, redundant, and integers or ranges. If the inputs are 'clumpy', construction will fast.
-
+A crate for efficiently manipulating ['clumpy'][1] sets of integers using [set operations] such as `union`, `intersection`, and `difference`.
+The integers can be any size ([`u8`] to [`u128`]) and may be signed ([`i8`] to [`i128`]).
 
 The main struct is [`RangeSetInt`], a set of integers. See the [`RangeSetInt` documentation] for details.
 
-> Unlike the standard [`BTreeSet`] and [`HashSet`], [`RangeSetInt`] does not store every integer in the set.
-Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from other interval libraries (that we know of) by being specialized and optimized for integer elements.
+> Unlike the standard [`BTreeSet`] and [`HashSet`], [`RangeSetInt`] does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from other interval libraries (that we know of) by being specialized and optimized for integer elements.
+
+> We can construct a [`RangeSetInt`] from unsorted & redundant, integers (or ranges). If the inputs are 'clumpy', construction will [linear][1] in the number of inputs and set operations will speed up [quadratically][1].
 
 The main trait is [`SortedDisjoint`]. It is implemented by iterators of sorted & disjoint ranges of integers. See the [`SortedDisjoint` documentation] for details.
 
-> With [`SortedDisjoint`] we can perform set operations in one iterator pass and with minimal (constant) memory.
-It enforces the "sorted & disjoint" constraint at compile time.
-This trait is inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. [`SortedDisjoint`] differs from its
-inspiration by specializing on disjoint integer ranges.
+> With [`SortedDisjoint`] we can perform set operations in one pass through the ranges and with minimal (constant) memory. It enforces the "sorted & disjoint" constraint at compile time. This trait is inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. [`SortedDisjoint`] differs from its inspiration by specializing on disjoint integer ranges.
 
 [`u8`]: https://doc.rust-lang.org/std/primitive.u8.html
 [`u128`]: https://doc.rust-lang.org/std/primitive.u128.html
@@ -32,6 +28,7 @@ inspiration by specializing on disjoint integer ranges.
 [`HashSet`]: std::collections::HashSet
 [`BTreeMap`]: std::collections::BTreeMap
 [set operations]: rangesetint-set-operations
+[1]: struct.RangeSetInt.html#constructor-performance
 
 Example 1
 ---------

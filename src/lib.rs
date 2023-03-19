@@ -221,9 +221,13 @@ pub trait Integer:
 ///
 /// # Constructor Performance
 ///
-/// The [`from_iter`][1]/[`collect`][1] constructors are designed to work fast on clumpy data. Internally, they:
+/// The [`from_iter`][1]/[`collect`][1] constructors are designed to work fast on 'clumpy' data.
+/// By 'clumpy', we mean that the number of ranges needed to represent the data is
+/// small compared to the number of input integers.
+///
+///  Internally, the constructors:
 /// * collect adjacent integers/ranges into disjoint ranges, O(*n₁*)
-/// * sort the disjoint ranges by `start`, O(*n₂* log *n₂*)
+/// * sort the disjoint ranges by their `start`, O(*n₂* log *n₂*)
 /// * merge adjacent ranges, O(*n₂*)
 /// * create a `BTreeMap` from the now sorted & disjoint ranges, O(*n₃* log *n₃*)
 ///
@@ -238,7 +242,7 @@ pub trait Integer:
 ///
 /// Notice that if because of clumpy data, *n₂* ≈ sqrt(*n₁*), then construction is O(*n₁*).
 /// (Indeed, as long as *n₂* ≤ *n₁*/ln(*n₁*), then construction is O(*n₁*).)
-/// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*))
+/// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*),
 /// a quadratic improvement an O(*n₁*) implementation that ignores the clumps.
 ///
 /// ## Constructor Examples
@@ -265,7 +269,8 @@ pub trait Integer:
 /// let a1: RangeSetInt<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
 /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 ///
-/// // If we know the ranges are sorted and disjoint, we can use 'from'/'into'.
+/// // If we know the ranges are already sorted and disjoint,
+/// // we can avoid work and use 'from'/'into'.
 /// let a0 = RangeSetInt::from(CheckSortedDisjoint::new([-10..=-5, 1..=2].into_iter()));
 /// let a1: RangeSetInt<i32> = CheckSortedDisjoint::new([-10..=-5, 1..=2].into_iter()).into();
 /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
@@ -1150,7 +1155,7 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     ///
     /// *For more about constructors, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
     ///
-    /// # Performance
+    /// # Performance cmk00000
     ///
     /// This constructor works fast on clumpy data. Internally, it
     ///  * collects adjacent integers into ranges (linear)
@@ -1182,7 +1187,7 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
     ///
     /// *For more about constructors, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
     ///
-    /// # Performance
+    /// # Performance cmk00000
     ///
     /// This constructor works fast on clumpy data. Internally, it
     ///  * sorts the ranges by start (log * linear)
@@ -1214,7 +1219,7 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     ///
     /// *For more about constructors, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
     ///
-    /// # Performance
+    /// # Performance cmk00000
     ///
     /// This constructor works fast on clumpy data. Internally, it
     ///  * collects adjacent integers into ranges (linear)
@@ -1249,7 +1254,7 @@ where
     ///
     /// *For more about constructors, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
     ///
-    /// # Performance
+    /// # Performance cmk0000
     ///
     /// This constructor works fast on clumpy data. Internally, it
     ///  * creates a BTreeMap from the sorted & adjacent ranges (log * linear)
