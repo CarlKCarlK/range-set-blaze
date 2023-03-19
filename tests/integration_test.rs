@@ -1260,8 +1260,8 @@ fn range_set_int_constructors() {
 
 #[test]
 fn range_set_int_operators() {
-    let a = RangeSetInt::from_iter([1..=2, 5..=100].into_iter());
-    let b = RangeSetInt::from_iter([2..=6].into_iter());
+    let a = RangeSetInt::from_iter([1..=2, 5..=100]);
+    let b = RangeSetInt::from_iter([2..=6]);
 
     // Union of two 'RangeSetInt's.
     let result = &a | &b;
@@ -1288,7 +1288,7 @@ fn range_set_int_operators() {
     );
 
     // Multiway union of 'RangeSetInt's.
-    let c = RangeSetInt::from_iter([2..=2, 6..=200].into_iter());
+    let c = RangeSetInt::from_iter([2..=2, 6..=200]);
     let result = [&a, &b, &c].union();
     assert_eq!(result.to_string(), "1..=200");
 
@@ -1365,4 +1365,31 @@ fn iterator_example() {
         sept_weekdays.to_string(),
         "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
     );
+}
+
+#[test]
+fn sorted_disjoint_operators() {
+    let a0 = RangeSetInt::from_iter([1..=2, 5..=100]);
+    let b0 = RangeSetInt::from_iter([2..=6]);
+    let c0 = RangeSetInt::from_iter([2..=2, 6..=200]);
+
+    // 'union' method and 'to_string' method
+    let (a, b) = (a0.ranges(), b0.ranges());
+    let result = a.union(b);
+    assert_eq!(result.to_string(), "1..=100");
+
+    // '|' operator and 'equal' method
+    let (a, b) = (a0.ranges(), b0.ranges());
+    let result = a | b;
+    assert!(result.equal(CheckSortedDisjoint::new([1..=100].into_iter())));
+
+    // multiway union of same type
+    let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
+    let result = [a, b, c].union();
+    assert_eq!(result.to_string(), "1..=200");
+
+    // multiway union of different types
+    let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
+    let result = union_dyn!(a, b, !c);
+    assert_eq!(result.to_string(), "-2147483648..=100, 201..=2147483647");
 }

@@ -1,6 +1,7 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
+// !!!cmk add is_subset, etc to SortedDisjointIterator?
 // !!!cmk Implement default and other traits mentioned in the video.
 // !!!cmk0000 For RangeSetInt make table of constructor and set operations.
 // !!!cmk0000 For SortedDisjoint make table of constructor and set operations.
@@ -193,13 +194,13 @@ pub trait Integer:
 /// Internally, it uses a cache-efficient [`BTreeMap`] to store the ranges.
 ///
 /// # Table of Contents
-/// * [Constructors](#constructors)
+/// * [`RangeSetInt` Constructors](#rangesetint-constructors)
 ///    * [Examples](struct.RangeSetInt.html#constructor-examples)
-/// * [Set Operations](#set-operations)
+/// * [`RangeSetInt` Set Operations](#rangesetint-set-operations)
 ///    * [Performance](struct.RangeSetInt.html#set-operation-performance)
 ///    * [Examples](struct.RangeSetInt.html#set-operation-examples)
 ///
-/// # Constructors
+/// # `RangeSetInt` Constructors
 ///
 /// | Methods           | Input                   |
 /// |-------------------|-------------------------|
@@ -253,7 +254,7 @@ pub trait Integer:
 /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 /// ```
 ///
-/// # Set Operations
+/// # `RangeSetInt` Set Operations
 ///
 /// | Set Operation           | Operator                   |  Multiway Method |
 /// |-------------------|-------------------------|-------------------------|
@@ -283,8 +284,8 @@ pub trait Integer:
 /// ```
 /// use range_set_int::{RangeSetInt, MultiwayRangeSetInt};
 ///
-/// let a = RangeSetInt::from_iter([1..=2, 5..=100].into_iter());
-/// let b = RangeSetInt::from_iter([2..=6].into_iter());
+/// let a = RangeSetInt::from_iter([1..=2, 5..=100]);
+/// let b = RangeSetInt::from_iter([2..=6]);
 ///
 /// // Union of two 'RangeSetInt's.
 /// let result = &a | &b;
@@ -311,7 +312,7 @@ pub trait Integer:
 /// );
 ///
 /// // Multiway union of 'RangeSetInt's.
-/// let c = RangeSetInt::from_iter([2..=2, 6..=200].into_iter());
+/// let c = RangeSetInt::from_iter([2..=2, 6..=200]);
 /// let result = [&a, &b, &c].union();
 /// assert_eq!(result.to_string(), "1..=200");
 ///
@@ -1713,9 +1714,23 @@ impl<T: Integer> PartialOrd for RangeSetInt<T> {
 
 impl<T: Integer> Eq for RangeSetInt<T> {}
 
-/// The trait used to mark iterators that provide ranges that are sorted by start and that do not overlap.
+/// The trait used to mark iterators that provide ranges that are sorted by start and disjoint. Set operations on
+/// iterators that implement this trait can be performed in linear time.
 ///
-/// # Constructors
+/// # Table of Contents
+/// * [`SortedDisjoint` Constructors](#sorteddisjoint-constructors)
+///   * [Examples](#constructor-examples)
+/// * [`SortedDisjoint` Set and Other Operations](#sorteddisjoint-set-and-other-operations)
+///   * [Performance](#performance)
+///   * [Examples](#examples)
+/// * [How to mark your type as `SortedDisjoint`](#how-to-mark-your-type-as-sorteddisjoint)
+///   * [Example – Find the ordinal weekdays in September 2023](#example--find-the-ordinal-weekdays-in-september-2023)
+///
+/// # `SortedDisjoint` Constructors
+///
+/// You'll usually construct a `SortedDisjoint` iterator from a [`RangeSetInt`] or a [`CheckSortedDisjoint`].
+/// Here is a summary table, followed by [examples](#constructor-examples). You can also [define your own
+/// `SortedDisjoint`](#how-to-mark-your-type-as-sorteddisjoint).
 ///
 /// | Input type | Method |
 /// |------------|--------|
@@ -1766,26 +1781,83 @@ impl<T: Integer> Eq for RangeSetInt<T> {}
 /// assert!(b.to_string() == "1..=3, 100..=100");
 /// ```
 ///
+/// # `SortedDisjoint` Set and Other Operations
 ///
-/// # Set and Other Operations
+/// | Method | Operator | Multiway (same type) | Multiway (different types) |
+/// |--------|----------|----------------------|----------------------------|
+/// | `a.`[`union`]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][multiway_union]`()` | [`union_dyn`]`!(a, b, c)` |
+/// | `a.`[`intersection`]`(b)` | `a & b` | `[a, b, c].`[`intersection`][multiway_intersection]`()` | [`intersection_dyn`]`!(a, b, c)` |
+/// | `a.`[`difference`]`(b)` | `a - b` |  |  |
+/// | `a.`[`symmetric_difference`]`(b)` | `a ^ b` |  |  |
+/// | `a.`[`complement`]`()` | `!a` |  |  |
+///
+/// See [`SortedDisjointIterator`] for all methods including [`equal`] and [`to_string`].
 ///
 /// ## Performance
+///
+/// Every operation is implemented as a single pass over the sorted & disjoint ranges, with minimal memory.
+///
+/// This is true even when applying multiple operations. The last example below demonstrates this.
+///
 /// ## Examples
+///
+/// ```
+/// use range_set_int::{SortedDisjointIterator, CheckSortedDisjoint, RangeSetInt};
+///
+/// let a0 = RangeSetInt::from_iter([1..=2, 5..=100]);
+/// let b0 = RangeSetInt::from_iter([2..=6]);
+/// let c0 = RangeSetInt::from_iter([2..=2, 6..=200]);
+///
+/// // 'union' method and 'to_string' method
+/// let (a, b) = (a0.ranges(), b0.ranges());
+/// let result = a.union(b);
+/// assert_eq!(result.to_string(), "1..=100");
+///
+/// // '|' operator and 'equal' method
+/// let (a, b) = (a0.ranges(), b0.ranges());
+/// let result = a | b;
+/// assert!(result.equal(CheckSortedDisjoint::new([1..=100].into_iter())));
+///
+/// // multiway union of same type
+/// use range_set_int::MultiwaySortedDisjoint;
+/// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
+/// let result = [a, b, c].union();
+/// assert_eq!(result.to_string(), "1..=200");
+///
+/// // multiway union of different types
+/// use range_set_int::union_dyn;
+/// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
+/// let result = union_dyn!(a, b, !c);
+/// assert_eq!(result.to_string(), "-2147483648..=100, 201..=2147483647");
+///
+/// // Applying multiple operators makes only one pass through the inputs with minimal memory.
+/// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
+/// let result = a - (b | c);
+/// assert!(result.to_string() == "1..=1");
+
+/// ```
 ///
 /// # How to mark your type as `SortedDisjoint`
 ///
-/// To mark your iterator type as `SortedDisjoint`, you implement the `SortedStarts` and [`SortedDisjoint`] traits.
-/// This is your promise to the compiler that your iterator will provide inclusive ranges that are sorted by start and that do not overlap.
+/// To mark your iterator type as `SortedDisjoint`, you implement the `SortedStarts` and `SortedDisjoint` traits.
+/// This is your promise to the compiler that your iterator will provide inclusive ranges that are sorted by start and disjoint.
 ///
 /// When you do this, your iterator will get access to the
 /// efficient set operations methods, such as [`intersection`] and [`complement`]. The example below shows this.
 ///
-/// > For access to operators such as `&` and `!`, you must also implement the [`BitAnd`], [`Not`], etc. traits.
+/// > For use to operators such as `&` and `!`, you must also implement the [`BitAnd`], [`Not`], etc. traits.
 ///
 /// [`BitAnd`]: https://doc.rust-lang.org/std/ops/trait.BitAnd.html
 /// [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
 /// [`intersection`]: SortedDisjointIterator::intersection
 /// [`complement`]: SortedDisjointIterator::complement
+/// [`union`]: SortedDisjointIterator::union
+/// [`symmetric_difference`]: SortedDisjointIterator::symmetric_difference
+/// [`difference`]: SortedDisjointIterator::difference
+/// [`to_string`]: SortedDisjointIterator::to_string
+/// [`equal`]: SortedDisjointIterator::equal
+/// [multiway_union]: MultiwaySortedDisjoint::union
+/// [multiway_intersection]: MultiwaySortedDisjoint::intersection
 ///
 /// ## Example -- Find the ordinal weekdays in September 2023
 /// ```
