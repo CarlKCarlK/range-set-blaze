@@ -1725,7 +1725,7 @@ impl<T: Integer> Eq for RangeSetInt<T> {}
 /// | sorted & disjoint ranges | [`CheckSortedDisjoint::new`] |
 /// | `SortedDisjoint` iterator | [itertools `tee`] |
 /// | `SortedDisjoint` iterator | [`DynSortedDisjoint::new`] |
-/// |  *your type* | *[How to mark your type as `SortedDisjoint`][1]* |
+/// |  *your iterator type* | *[How to mark your type as `SortedDisjoint`][1]* |
 ///
 /// [`ranges`]: RangeSetInt::ranges
 /// [`into_ranges`]: RangeSetInt::into_ranges
@@ -1766,12 +1766,70 @@ impl<T: Integer> Eq for RangeSetInt<T> {}
 /// assert!(b.to_string() == "1..=3, 100..=100");
 /// ```
 ///
-/// ## How to mark your type as `SortedDisjoint`
 ///
 /// # Set and Other Operations
 ///
 /// ## Performance
 /// ## Examples
+///
+/// # How to mark your type as `SortedDisjoint`
+///
+/// To mark your iterator type as `SortedDisjoint`, you implement the `SortedStarts` and [`SortedDisjoint`] traits.
+/// This is your promise to the compiler that your iterator will provide inclusive ranges that are sorted by start and that do not overlap.
+///
+/// When you do this, your iterator will get access to the
+/// efficient set operations methods, such as [`intersection`] and [`complement`]. The example below shows this.
+///
+/// > For access to operators such as `&` and `!`, you must also implement the [`BitAnd`], [`Not`], etc. traits.
+///
+/// [`BitAnd`]: https://doc.rust-lang.org/std/ops/trait.BitAnd.html
+/// [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
+/// [`intersection`]: SortedDisjointIterator::intersection
+/// [`complement`]: SortedDisjointIterator::complement
+///
+/// ## Example -- Find the ordinal weekdays in September 2023
+/// ```
+/// use std::ops::RangeInclusive;
+/// use range_set_int::{SortedDisjoint, SortedStarts};
+///
+/// // Ordinal dates count January 1 as day 1, February 1 as day 32, etc.
+/// struct OrdinalWeekends2023 {
+///     next_range: RangeInclusive<i32>,
+/// }
+///
+/// // We promise the compiler that our iterator will provide
+/// // ranges that are sorted and disjoint.
+/// impl SortedStarts for OrdinalWeekends2023 {}
+/// impl SortedDisjoint for OrdinalWeekends2023 {}
+///
+/// impl OrdinalWeekends2023 {
+///     fn new() -> Self {
+///         Self { next_range: 0..=1 }
+///     }
+/// }
+/// impl Iterator for OrdinalWeekends2023 {
+///     type Item = RangeInclusive<i32>;
+///     fn next(&mut self) -> Option<Self::Item> {
+///         let (start, end) = self.next_range.clone().into_inner();
+///         if start > 365 {
+///             None
+///         } else {
+///             self.next_range = (start + 7)..=(end + 7);
+///             Some(start.max(1)..=end.min(365))
+///         }
+///     }
+/// }
+///
+/// use range_set_int::{SortedDisjointIterator, CheckSortedDisjoint};
+///
+/// let weekends = OrdinalWeekends2023::new();
+/// let september = CheckSortedDisjoint::new([244..=273].into_iter());
+/// let september_weekdays = september.intersection(weekends.complement());
+/// assert_eq!(
+///     september_weekdays.to_string(),
+///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
+/// );
+/// ```
 pub trait SortedDisjoint: SortedStarts {}
 
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,

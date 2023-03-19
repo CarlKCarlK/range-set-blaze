@@ -5,7 +5,9 @@ use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use range_set_int::{CheckSortedDisjoint, DynSortedDisjoint, NotIter, UnionIter};
+use range_set_int::{
+    CheckSortedDisjoint, DynSortedDisjoint, NotIter, SortedDisjoint, SortedStarts, UnionIter,
+};
 use std::ops::RangeInclusive;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
@@ -1328,4 +1330,39 @@ fn sorted_disjoint_constructors() {
     let a = CheckSortedDisjoint::new([1..=3, 100..=100].into_iter());
     let b = DynSortedDisjoint::new(a);
     assert!(b.to_string() == "1..=3, 100..=100");
+}
+
+#[test]
+fn iterator_example() {
+    struct OrdinalWeekends2023 {
+        next_range: RangeInclusive<i32>,
+    }
+    impl SortedStarts for OrdinalWeekends2023 {}
+    impl SortedDisjoint for OrdinalWeekends2023 {}
+
+    impl OrdinalWeekends2023 {
+        fn new() -> Self {
+            Self { next_range: 0..=1 }
+        }
+    }
+    impl Iterator for OrdinalWeekends2023 {
+        type Item = RangeInclusive<i32>;
+        fn next(&mut self) -> Option<Self::Item> {
+            let (start, end) = self.next_range.clone().into_inner();
+            if start > 365 {
+                None
+            } else {
+                self.next_range = (start + 7)..=(end + 7);
+                Some(start.max(1)..=end.min(365))
+            }
+        }
+    }
+
+    let weekends = OrdinalWeekends2023::new();
+    let sept = CheckSortedDisjoint::new([244..=273].into_iter());
+    let sept_weekdays = sept.intersection(weekends.complement());
+    assert_eq!(
+        sept_weekdays.to_string(),
+        "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
+    );
 }
