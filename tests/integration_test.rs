@@ -1132,8 +1132,8 @@ fn multiway2() {
 fn check_sorted_disjoint() {
     use range_set_int::CheckSortedDisjoint;
 
-    let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-    let b = CheckSortedDisjoint::new([2..=6].into_iter());
+    let a = CheckSortedDisjoint::from([1..=2, 5..=100]);
+    let b = CheckSortedDisjoint::from([2..=6]);
     let c = a | b;
 
     assert_eq!(c.to_string(), "1..=100");
@@ -1155,12 +1155,12 @@ fn dyn_sorted_disjoint_example() {
 
 #[test]
 fn not_iter_example() {
-    let a = CheckSortedDisjoint::new([1u8..=2, 5..=100].into_iter());
+    let a = CheckSortedDisjoint::from([1u8..=2, 5..=100]);
     let b = NotIter::new(a);
     assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
 
     // Or, equivalently:
-    let b = !CheckSortedDisjoint::new([1u8..=2, 5..=100].into_iter());
+    let b = !CheckSortedDisjoint::from([1u8..=2, 5..=100]);
     assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
 }
 
@@ -1176,38 +1176,38 @@ fn len_demo() {
 fn union_iter() {
     use range_set_int::{CheckSortedDisjoint, UnionIter};
 
-    let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-    let b = CheckSortedDisjoint::new([2..=6].into_iter());
+    let a = CheckSortedDisjoint::from([1..=2, 5..=100]);
+    let b = CheckSortedDisjoint::from([2..=6]);
     let c = UnionIter::new(AssumeSortedStarts::new(
         a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
     ));
     assert_eq!(c.to_string(), "1..=100");
 
     // Or, equivalently:
-    let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-    let b = CheckSortedDisjoint::new([2..=6].into_iter());
+    let a = CheckSortedDisjoint::from([1..=2, 5..=100]);
+    let b = CheckSortedDisjoint::from([2..=6]);
     let c = SortedDisjointIterator::union(a, b);
     assert_eq!(c.to_string(), "1..=100")
 }
 
 #[test]
 fn bitor() {
-    let a = CheckSortedDisjoint::new([1..=1].into_iter());
+    let a = CheckSortedDisjoint::from([1..=1]);
     let b = RangeSetInt::from_iter([2..=2]).into_ranges();
     let union = std::ops::BitOr::bitor(a, b);
     assert_eq!(union.to_string(), "1..=2");
 
-    let a = CheckSortedDisjoint::new([1..=1].into_iter());
-    let b = CheckSortedDisjoint::new([2..=2].into_iter());
+    let a = CheckSortedDisjoint::from([1..=1]);
+    let b = CheckSortedDisjoint::from([2..=2]);
     let c = range_set_int::SortedDisjointIterator::union(a, b);
     assert_eq!(c.to_string(), "1..=2");
 
-    let a = CheckSortedDisjoint::new([1..=1].into_iter());
-    let b = CheckSortedDisjoint::new([2..=2].into_iter());
+    let a = CheckSortedDisjoint::from([1..=1]);
+    let b = CheckSortedDisjoint::from([2..=2]);
     let c = std::ops::BitOr::bitor(a, b);
     assert_eq!(c.to_string(), "1..=2");
 
-    let a = CheckSortedDisjoint::new([1..=1].into_iter());
+    let a = CheckSortedDisjoint::from([1..=1]);
     let b = RangeSetInt::from_iter([2..=2]).into_ranges();
     let c = range_set_int::SortedDisjointIterator::union(a, b);
     assert_eq!(c.to_string(), "1..=2");
@@ -1235,8 +1235,8 @@ fn range_set_int_constructors() {
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 
     // If we know the ranges are sorted and disjoint, we can use 'from'/'into'.
-    let a0 = RangeSetInt::from(CheckSortedDisjoint::new([-10..=-5, 1..=2].into_iter()));
-    let a1: RangeSetInt<i32> = CheckSortedDisjoint::new([-10..=-5, 1..=2].into_iter()).into();
+    let a0 = RangeSetInt::from(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+    let a1: RangeSetInt<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into();
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 
     // For compatibility with `BTreeSet`, we also support
@@ -1305,17 +1305,17 @@ fn sorted_disjoint_constructors() {
     assert!(a.to_string() == "1..=3, 100..=100");
 
     // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
-    let a = CheckSortedDisjoint::new([1..=3, 100..=100].into_iter());
+    let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
     assert!(a.to_string() == "1..=3, 100..=100");
 
     // tee of a SortedDisjoint iterator
-    let a = CheckSortedDisjoint::new([1..=3, 100..=100].into_iter());
+    let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
     let (a, b) = a.tee();
     assert!(a.to_string() == "1..=3, 100..=100");
     assert!(b.to_string() == "1..=3, 100..=100");
 
     // DynamicSortedDisjoint of a SortedDisjoint iterator
-    let a = CheckSortedDisjoint::new([1..=3, 100..=100].into_iter());
+    let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
     let b = DynSortedDisjoint::new(a);
     assert!(b.to_string() == "1..=3, 100..=100");
 }
@@ -1347,7 +1347,7 @@ fn iterator_example() {
     }
 
     let weekends = OrdinalWeekends2023::new();
-    let sept = CheckSortedDisjoint::new([244..=273].into_iter());
+    let sept = CheckSortedDisjoint::from([244..=273]);
     let sept_weekdays = sept.intersection(weekends.complement());
     assert_eq!(
         sept_weekdays.to_string(),
@@ -1369,7 +1369,7 @@ fn sorted_disjoint_operators() {
     // '|' operator and 'equal' method
     let (a, b) = (a0.ranges(), b0.ranges());
     let result = a | b;
-    assert!(result.equal(CheckSortedDisjoint::new([1..=100].into_iter())));
+    assert!(result.equal(CheckSortedDisjoint::from([1..=100])));
 
     // multiway union of same type
     let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
@@ -1412,6 +1412,7 @@ fn range_test() {
 }
 
 #[test]
+#[allow(clippy::bool_assert_comparison)]
 fn is_subset_check() {
     let sup = CheckSortedDisjoint::from([1..=3]);
     let set: CheckSortedDisjoint<i32, _> = [].into();

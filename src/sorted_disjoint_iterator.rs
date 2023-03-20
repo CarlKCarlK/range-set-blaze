@@ -30,14 +30,14 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// ```
     /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
-    /// let a = CheckSortedDisjoint::new([1..=1].into_iter());
+    /// let a = CheckSortedDisjoint::from([1..=1]);
     /// let b = RangeSetInt::from_iter([2..=2]).into_ranges();
     /// let union = a.union(b);
     /// assert_eq!(union.to_string(), "1..=2");
     ///
     /// // Alternatively, we can use "|" because CheckSortedDisjoint defines
     /// // ops::bitor as SortedDisjointIterator::union.
-    /// let a = CheckSortedDisjoint::new([1..=1].into_iter());
+    /// let a = CheckSortedDisjoint::from([1..=1]);
     /// let b = RangeSetInt::from_iter([2..=2]).into_ranges();
     /// let union = a | b;
     /// assert_eq!(union.to_string(), "1..=2");
@@ -58,14 +58,14 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// ```
     /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
-    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetInt::from_iter([2..=3]).into_ranges();
     /// let intersection = a.intersection(b);
     /// assert_eq!(intersection.to_string(), "2..=2");
     ///
     /// // Alternatively, we can use "&" because CheckSortedDisjoint defines
     /// // ops::bitand as SortedDisjointIterator::intersection.
-    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetInt::from_iter([2..=3]).into_ranges();
     /// let intersection = a & b;
     /// assert_eq!(intersection.to_string(), "2..=2");
@@ -86,14 +86,14 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// ```
     /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
-    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetInt::from_iter([2..=3]).into_ranges();
     /// let difference = a.difference(b);
     /// assert_eq!(difference.to_string(), "1..=1");
     ///
     /// // Alternatively, we can use "-" because CheckSortedDisjoint defines
     /// // ops::sub as SortedDisjointIterator::difference.
-    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetInt::from_iter([2..=3]).into_ranges();
     /// let difference = a - b;
     /// assert_eq!(difference.to_string(), "1..=1");
@@ -114,13 +114,13 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// ```
     /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
-    /// let a = CheckSortedDisjoint::new([-10i16..=0, 1000..=2000].into_iter());
+    /// let a = CheckSortedDisjoint::from([-10i16..=0, 1000..=2000]);
     /// let complement = a.complement();
     /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
     ///
     /// // Alternatively, we can use "!" because CheckSortedDisjoint defines
     /// // ops::not as SortedDisjointIterator::complement.
-    /// let a = CheckSortedDisjoint::new([-10i16..=0, 1000..=2000].into_iter());
+    /// let a = CheckSortedDisjoint::from([-10i16..=0, 1000..=2000]);
     /// let complement = !a;
     /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
     /// ```
@@ -138,14 +138,14 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// ```
     /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
-    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetInt::from_iter([2..=3]).into_ranges();
     /// let symmetric_difference = a.symmetric_difference(b);
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     ///
     /// // Alternatively, we can use "^" because CheckSortedDisjoint defines
     /// // ops::bitxor as SortedDisjointIterator::symmetric_difference.
-    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetInt::from_iter([2..=3]).into_ranges();
     /// let symmetric_difference = a ^ b;
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
@@ -170,7 +170,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// ```
     /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
-    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetInt::from_iter([1..=2]).into_ranges();
     /// assert!(a.equal(b));
     /// ```
@@ -191,7 +191,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// ```
     /// use range_set_int::{CheckSortedDisjoint, RangeSetInt, SortedDisjointIterator};
     ///
-    /// let a = CheckSortedDisjoint::new([1..=2].into_iter());
+    /// let a = CheckSortedDisjoint::from([1..=2]);
     /// assert_eq!(a.to_string(), "1..=2");
     /// ```
     fn to_string(self) -> String {
