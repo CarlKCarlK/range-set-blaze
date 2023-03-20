@@ -11,8 +11,6 @@ use crate::{
     SortedDisjointIterator, SortedStarts,
 };
 
-// cmk00 if this is for internal use only, then it's doc should be different
-// cmk00 maybe not the best name
 /// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
 /// i.e., all the integers in any input iterator, as sorted & disjoint ranges. Works with [`Merge`]
 /// and [`KMerge`].
@@ -125,7 +123,7 @@ where
     }
 }
 
-// cmk00 be sure that every function that accepts a val isn't max_value u128, i128 and returns an error
+// cmk0 be sure that every function that accepts a val isn't max_value u128, i128 and returns an error
 impl<T: Integer, I> Iterator for UnionIter<T, I>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
@@ -137,7 +135,7 @@ where
             if let Some(range) = self.iter.next() {
                 let (start, end) = range.into_inner();
                 if end < start {
-                    return self.next(); // !!!cmk00 test this
+                    return self.next(); // !!!cmk0 test this
                 }
                 if let Some(current_range) = self.option_range.clone() {
                     let (current_start, current_end) = current_range.into_inner();

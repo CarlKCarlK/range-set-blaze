@@ -11,7 +11,7 @@ The integers can be any size ([`u8`] to [`u128`]) and may be signed ([`i8`] to [
 The crate's main struct is [`RangeSetInt`], a set of integers. See the [`RangeSetInt` documentation] for details.
 
 > Unlike the standard [`BTreeSet`] and [`HashSet`], [`RangeSetInt`] does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from other interval libraries (that we know of) by being specialized and optimized for integer elements.
-
+>
 > We can construct a [`RangeSetInt`] from unsorted & redundant integers (or ranges). If the inputs are 'clumpy', construction will [linear][1] in the number of inputs and set operations will speed up [quadratically][1].
 
 The crate's main trait is [`SortedDisjoint`]. It is implemented by iterators of sorted & disjoint ranges of integers. See the [`SortedDisjoint` documentation] for details.

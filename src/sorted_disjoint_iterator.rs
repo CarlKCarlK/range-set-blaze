@@ -18,9 +18,6 @@ use crate::{
 /// [`symmetric_difference`]: SortedDisjointIterator::symmetric_difference
 /// [`difference`]: SortedDisjointIterator::difference
 /// [`complement`]: SortedDisjointIterator::complement
-// !!!cmk0000 could equal be don't with PartialEq? and thus ==?
-// !!!cmk0000 link to all methods and operators.
-// !!!cmk0000 should the readme include a table or example, etc.
 pub trait SortedDisjointIterator<T: Integer>:
     Iterator<Item = RangeInclusive<T>> + SortedDisjoint + Sized
 {

@@ -55,7 +55,6 @@ impl<'a, T: Integer> Iterator for RangesIter<'a, T> {
     }
 }
 
-//cmk0000 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 /// An iterator that visits the ranges in the [`RangeSetInt`],
 /// i.e., the integers as sorted & disjoint ranges.
@@ -175,7 +174,6 @@ where
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitxor(self, other: I) -> Self::Output {
-        // cmk000000000 we could like to optimize by using self.clone() instead of tee
         SortedDisjointIterator::symmetric_difference(self, other)
     }
 }

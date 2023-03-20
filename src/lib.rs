@@ -3,8 +3,6 @@
 
 // !!!cmk add is_subset, etc to SortedDisjointIterator?
 // !!!cmk Implement default and other traits mentioned in the video.
-// !!!cmk0000 For RangeSetInt make table of constructor and set operations.
-// !!!cmk0000 For SortedDisjoint make table of constructor and set operations.
 // !!!cmk0doc give a link to RangeSetInt struct at top of the docs.
 
 // https://docs.rs/range_bounds_map/latest/range_bounds_map/range_bounds_set/struct.RangeBoundsSet.html
@@ -36,15 +34,13 @@
 // cmk rule: don't create an assign method if it is not more efficient
 // cmk rule: generate HTML: criterion = { version = "0.4", features = ["html_reports"] }
 // cmk rule: pick another similar data structure and implement everything that makes sense (copy docs as much as possible)
-// cmk000 write a straight-forward README.md by merging the Python range_int_set and Rust anytype
-// cmk000 finish constructor list
 // cmk0doc add documentation
-// cmk000 finish the benchmark story
+// cmk0 finish the benchmark story
 // cmk0doc in docs, be sure `bitor` is a live link to the bitor method
 // cmk rule: define and understand PartialOrd, Ord, Eq, etc.
 // cmk0doc document that we implement most methods of BTreeSet -- exceptions 'range', drain_filter & new_in (nightly-only). Also, it's iter is a double-ended iterator. and ours is not.
 // cmk implement "ranges" by using log n search and then SortedDisjoint intersection.
-// cmk000 is 'ranges' a good name for the function or confusing with btreeset's 'range'?
+// cmk00 is 'ranges' a good name for the function or confusing with btreeset's 'range'?
 
 // FUTURE: Support serde via optional feature
 mod integer;
@@ -493,7 +489,6 @@ impl<T: Integer> RangeSetInt<T> {
     }
 }
 
-// cmk0000 link regular union with multiway union, etc etc etc
 impl<T: Integer> RangeSetInt<T> {
     /// !!! cmk understand the 'where for'
     /// !!! cmk understand the operator 'Sub'
@@ -509,7 +504,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Performance
     /// It adds the integers in `other` to `self` in O(n log m) time, where n is the number of ranges in `other`
     /// and m is the number of ranges in `self`.
-    /// When n is large, consider using `bitor` which is O(n+m) time. cmk000 advise
+    /// When n is large, consider using `|` which is O(n+m) time.
     ///
     /// # Examples
     ///
@@ -1165,15 +1160,7 @@ impl<T: Integer> RangeSetInt<T> {
 impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     /// Create a [`RangeSetInt`] from an iterator of integers. Duplicates and out-of-order elements are fine.
     ///
-    /// *For more about constructors, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
-    ///
-    /// # Performance cmk00000
-    ///
-    /// This constructor works fast on clumpy data. Internally, it
-    ///  * collects adjacent integers into ranges (linear)
-    ///  * sorts the ranges by start (log * linear)
-    ///  * merges adjacent and overlapping ranges (linear)
-    ///  * creates a BTreeMap from the now sorted & adjacent ranges (log * linear)
+    /// *For more about constructors and performance, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
     ///
     /// # Examples
     ///
@@ -1197,14 +1184,7 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
     /// Create a [`RangeSetInt`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
-    /// *For more about constructors, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
-    ///
-    /// # Performance cmk00000
-    ///
-    /// This constructor works fast on clumpy data. Internally, it
-    ///  * sorts the ranges by start (log * linear)
-    ///  * merges adjacent and overlapping ranges (linear)
-    ///  * creates a BTreeMap from the now sorted & adjacent ranges (log * linear)
+    /// *For more about constructors and performance, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
     ///
     /// # Examples
     ///
@@ -1229,15 +1209,7 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     /// For compatibility with [`BTreeSet`] you may create a [`RangeSetInt`] from an array of integers.
     ///
-    /// *For more about constructors, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
-    ///
-    /// # Performance cmk00000
-    ///
-    /// This constructor works fast on clumpy data. Internally, it
-    ///  * collects adjacent integers into ranges (linear)
-    ///  * sorts the ranges by start (log * linear)
-    ///  * merges adjacent and overlapping ranges (linear)
-    ///  * creates a BTreeMap from the now sorted & adjacent ranges (log * linear)
+    /// *For more about constructors and performance, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
     ///
     /// [`BTreeSet`]: std::collections::BTreeSet
     ///
@@ -1264,12 +1236,7 @@ where
 {
     /// Create a [`RangeSetInt`] from a [`SortedDisjoint`] iterator.
     ///
-    /// *For more about constructors, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
-    ///
-    /// # Performance cmk0000
-    ///
-    /// This constructor works fast on clumpy data. Internally, it
-    ///  * creates a BTreeMap from the sorted & adjacent ranges (log * linear)
+    /// *For more about constructors and performance, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
     ///
     /// # Examples
     ///
@@ -1473,23 +1440,6 @@ where
 }
 
 // cmk rule: don't forget these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
-
-// cmk0000 not used
-// Returns the union of `self` and `rhs` as a new [`RangeSetInt`].
-//
-// # Examples
-//
-// ```
-// use range_set_int::RangeSetInt;
-//
-// let a = RangeSetInt::from_iter([1, 2, 3]);
-// let b = RangeSetInt::from_iter([3, 4, 5]);
-//
-// let result = &a | &b;
-// assert_eq!(result, RangeSetInt::from_iter([1, 2, 3, 4, 5]));
-// let result = a | b;
-// assert_eq!(result, RangeSetInt::from_iter([1, 2, 3, 4, 5]));
-// ```
 gen_ops_ex!(
     <T>;
     types ref RangeSetInt<T>, ref RangeSetInt<T> => RangeSetInt<T>;
@@ -1609,7 +1559,7 @@ where
 ///
 /// [`into_iter`]: RangeSetInt::into_iter
 pub struct IntoIter<T: Integer> {
-    option_range: Option<RangeInclusive<T>>, // cmk000 replace option_range: with option_range or range
+    option_range: Option<RangeInclusive<T>>,
     into_iter: std::collections::btree_map::IntoIter<T, T>,
 }
 

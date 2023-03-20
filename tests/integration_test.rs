@@ -626,21 +626,9 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     //#13 collect / from_iter range
     _range_set_int = [5..=6, 1..=5].into_iter().collect();
     _range_set_int = RangeSetInt::from_iter([5..=6, 1..=5]);
-    // #14 from into array range
-    // cmk00000
-    // _range_set_int = [5..=6, 1..=5].into();
-    // _range_set_int = RangeSetInt::from_iter([5..=6, 1..=5]);
-    // #15 from into slice range
-    // cmk00000
-    // _range_set_int = [5..=6, 1..=5][0..=1].into();
-    // _range_set_int = RangeSetInt::from_iter([5..=6, 1..=5].as_slice());
     // #16 into / from iter (T,T) + SortedDisjoint
     _range_set_int = _range_set_int.ranges().into();
     _range_set_int = RangeSetInt::from(_range_set_int.ranges());
-    // try_into / try_from string cmk`
-    // cmk00000
-    // _range_set_int = [5..=6, 1..=5].into();
-    // _range_set_int = RangeSetInt::from_iter([5..=6, 1..=5]);
 
     // !!!cmk0 delete? move to test.rs?
     let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10].into_iter());
