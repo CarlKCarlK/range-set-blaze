@@ -49,7 +49,10 @@ where
                 if next_start > next_end {
                     continue;
                 }
-                assert!(next_end <= T::safe_max_value()); // !!!cmk0 raise error on panic?
+                assert!(
+                    next_end <= T::safe_max_value(),
+                    "end must be <= T::safe_max_value()"
+                );
                 if let Some(self_range) = self.option_range.clone() {
                     let (self_start, self_end) = self_range.into_inner();
                     if (next_start >= self.min_value_plus_2 && self_end <= next_start - self.two)

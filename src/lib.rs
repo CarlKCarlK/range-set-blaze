@@ -25,7 +25,6 @@
 // https://lib.rs/crates/ranges
 // https://lib.rs/crates/nonoverlapping_interval_tree
 // https://stackoverflow.com/questions/30540766/how-can-i-add-new-methods-to-iterator
-// !!!cmk0 how could you write your own subtraction that subtracted many sets from one set via iterators?
 // cmk rules: When should use Iterator and when IntoIterator?
 // cmk rules: When should use: from_iter, from, new from_something?
 // !!! cmk rule: Don't have a function and a method. Pick one (method)
@@ -35,6 +34,7 @@
 // cmk rule: pick another similar data structure and implement everything that makes sense (copy docs as much as possible)
 // cmk0 finish the benchmark story
 // cmk rule: define and understand PartialOrd, Ord, Eq, etc.
+// cmk00 check/understand PartialOrd, Ord, Eq, etc. and Clone, Default, Debug, etc
 
 // FUTURE: Support serde via optional feature
 mod integer;
@@ -649,7 +649,10 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(set.contains(4), false);
     /// ```
     pub fn contains(&self, value: T) -> bool {
-        assert!(value <= T::safe_max_value()); //cmk0 panic
+        assert!(
+            value <= T::safe_max_value(),
+            "value must be <= T::safe_max_value()"
+        );
         self.btree_map
             .range(..=value)
             .next_back()
@@ -835,7 +838,10 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert!(!set.remove(2));
     /// ```
     pub fn remove(&mut self, value: T) -> bool {
-        assert!(value <= T::safe_max_value()); //cmk0 panic
+        assert!(
+            value <= T::safe_max_value(),
+            "value must be <= T::safe_max_value()"
+        );
 
         // The code can have only one mutable reference to self.btree_map.
         let start;
@@ -891,8 +897,10 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(b, RangeSetInt::from_iter([3, 17, 41]));
     /// ```
     pub fn split_off(&mut self, value: T) -> Self {
-        assert!(value <= T::safe_max_value()); //cmk0 panic
-
+        assert!(
+            value <= T::safe_max_value(),
+            "value must be <= T::safe_max_value()"
+        );
         let old_len = self.len;
         let mut b = self.btree_map.split_off(&value);
         if let Some(mut last_entry) = self.btree_map.last_entry() {
@@ -975,7 +983,10 @@ impl<T: Integer> RangeSetInt<T> {
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     fn internal_add(&mut self, range: RangeInclusive<T>) {
         let (start, end) = range.clone().into_inner();
-        assert!(end <= T::safe_max_value()); //cmk0 panic
+        assert!(
+            end <= T::safe_max_value(),
+            "end must be <= T::safe_max_value()"
+        );
         if end < start {
             return;
         }
@@ -1304,7 +1315,7 @@ where
     T: Integer,
     // !!!cmk what does IntoIterator's ' IntoIter = I::IntoIter' mean?
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
-    // cmk0 understand why this can't be  I: IntoIterator<Item = RangeInclusive<T>>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
+    // cmk understand why this can't be  I: IntoIterator<Item = RangeInclusive<T>>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
 {
     /// Create a [`RangeSetInt`] from a [`SortedDisjoint`] iterator.
     ///
@@ -1357,7 +1368,7 @@ pub type BitEq<T, L, R> = BitOrMerge<
     NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
 >;
 
-// cmk0 explain why this is needed
+// cmkRule Offer methods of traits
 impl<'a, T, I> MultiwayRangeSetInt<'a, T> for I
 where
     T: Integer + 'a,
@@ -1433,7 +1444,7 @@ pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
     }
 }
 
-// cmk0 explain why this is needed
+// cmkRule Offer methods of traits
 impl<T, II, I> MultiwaySortedDisjoint<T, I> for II
 where
     T: Integer,
@@ -1512,6 +1523,7 @@ where
 }
 
 // cmk rule: don't forget these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
+// cmk define operator on owned and borrowed
 gen_ops_ex!(
     <T>;
     types ref RangeSetInt<T>, ref RangeSetInt<T> => RangeSetInt<T>;
@@ -1532,8 +1544,6 @@ gen_ops_ex!(
     for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
         (a.ranges() - b.ranges()).into()
     };
-    // cmk0 must/should we support both operators and methods?
-
     where T: Integer //Where clause for all impl's
 );
 

@@ -202,8 +202,6 @@ pub trait SortedDisjointIterator<T: Integer>:
         .join(", ")
     }
 
-    //cmk000000 is_disjoint, is_subset, is_empty, is_superset,
-
     /// Returns `true` if the set contains no elements.
     ///
     /// # Examples
@@ -314,7 +312,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     }
 }
 
-// cmk0 explain why this is needed
+// cmk rule: You can't define traits on combinations of traits, so use this method to define methods on traits
 impl<T, I> SortedDisjointIterator<T> for I
 where
     T: Integer,

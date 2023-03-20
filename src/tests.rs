@@ -666,9 +666,6 @@ fn understand_bitand_assign() {
 fn iters() {
     let range_set_int = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
     assert!(range_set_int.len() == 13usize);
-    // !!!cmk0
-    // assert!(range_set_int.ranges.len() == 3);
-    // // !!!cmk0 i is &u8
     for i in range_set_int.iter() {
         println!("{i}");
     }
@@ -754,8 +751,6 @@ fn multi_op() {
     let b = RangeSetInt::from_iter([5..=13, 18..=29]);
     let c = RangeSetInt::from_iter([38..=42]);
 
-    // !!!cmk0 must work on empty, with ref and with owned
-
     let _ = [&a, &b, &c].union();
     let d = [a, b, c].iter().intersection();
     assert_eq!(d, RangeSetInt::new());
@@ -780,10 +775,6 @@ fn multi_op() {
         RangeSetInt::from_iter([0..=255])
     );
 }
-
-// cmk0 use merge in example
-// cmk0 support 'collect' not just 'from'
-// cmk much too easy to make errors -- need types!
 
 // https://stackoverflow.com/questions/21747136/how-do-i-print-in-rust-the-type-of-a-variable/58119924#58119924
 // fn print_type_of<T>(_: &T) {
@@ -829,9 +820,6 @@ fn parity() {
     let a = &RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
     let b = &RangeSetInt::from_iter([5..=13, 18..=29]);
     let c = &RangeSetInt::from_iter([38..=42]);
-    // !!!cmk0 time itertools.split (?) vs range.clone()
-    // !!!cmk explain why need both "Merge" with "KMerge"
-    // !!!cmk0 empty needs to work. Go back to slices?
     assert_eq!(
         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
         RangeSetInt::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])

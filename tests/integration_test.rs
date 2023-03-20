@@ -150,9 +150,6 @@ fn add_in_order() {
 fn iters() -> Result<(), Box<dyn std::error::Error>> {
     let range_set_int = RangeSetInt::from_iter([1u8..=6, 8..=9, 11..=15]);
     assert!(range_set_int.len() == 13);
-    // !!!cmk0
-    // assert!(range_set_int.ranges.len() == 3);
-    // // !!!cmk0 i is &u8
     for i in range_set_int.iter() {
         println!("{i}");
     }
@@ -239,8 +236,6 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let b = RangeSetInt::from_iter([5..=13, 18..=29]);
     let c = RangeSetInt::from_iter([38..=42]);
 
-    // !!!cmk0 must with on empty, with ref and with owned
-
     let _ = [&a, &b, &c].union();
     let d = [a, b, c].intersection();
     assert_eq!(d, RangeSetInt::new());
@@ -254,7 +249,6 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let b = RangeSetInt::from_iter([5..=13, 18..=29]);
     let c = RangeSetInt::from_iter([1..=42]);
 
-    // cmk0 list all the ways that we and BTreeMap does intersection. Do they make sense? Work when empty?
     let _ = &a & &b;
     let d = [&a, &b, &c].intersection();
     // let d = RangeSetInt::intersection([a, b, c]);
@@ -267,14 +261,6 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     );
     Ok(())
 }
-
-// cmk0 use merge in example
-// cmk0 support 'collect' not just 'from'
-
-// https://stackoverflow.com/questions/21747136/how-do-i-print-in-rust-the-type-of-a-variable/58119924#58119924
-// fn print_type_of<T>(_: &T) {
-//     println!("{}", std::any::type_name::<T>())
-// }
 
 #[test]
 fn custom_multi() -> Result<(), Box<dyn std::error::Error>> {
@@ -321,9 +307,6 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
     let a = &RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
     let b = &RangeSetInt::from_iter([5..=13, 18..=29]);
     let c = &RangeSetInt::from_iter([38..=42]);
-    // !!!cmk0 time itertools.tee (?) vs range.clone()
-    // !!!cmk explain why need both "Merge" with "KMerge"
-    // !!!cmk0 empty needs to work. Go back to slices?
     assert_eq!(
         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
         RangeSetInt::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
@@ -499,7 +482,6 @@ fn bitand() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// // !!!cmk should each type have a .universe() and .empty() method? e.g. 0..=255 for u8
 #[test]
 fn empty_it() {
     let universe = RangeSetInt::from_iter([0u8..=255]);
@@ -631,7 +613,6 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     _range_set_int = _range_set_int.ranges().into();
     _range_set_int = RangeSetInt::from(_range_set_int.ranges());
 
-    // !!!cmk0 delete? move to test.rs?
     let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10].into_iter());
     let mut _sorted_disjoint_iter;
     _sorted_disjoint_iter = UnionIter::new(sorted_starts);
