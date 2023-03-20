@@ -3,7 +3,6 @@
 
 // !!!cmk add is_subset, etc to SortedDisjointIterator?
 // !!!cmk Implement default and other traits mentioned in the video.
-// !!!cmk0doc give a link to RangeSetInt struct at top of the docs.
 
 // https://docs.rs/range_bounds_map/latest/range_bounds_map/range_bounds_set/struct.RangeBoundsSet.html
 // Here are some relevant crates I found whilst searching around the topic area:
@@ -34,13 +33,8 @@
 // cmk rule: don't create an assign method if it is not more efficient
 // cmk rule: generate HTML: criterion = { version = "0.4", features = ["html_reports"] }
 // cmk rule: pick another similar data structure and implement everything that makes sense (copy docs as much as possible)
-// cmk0doc add documentation
 // cmk0 finish the benchmark story
-// cmk0doc in docs, be sure `bitor` is a live link to the bitor method
 // cmk rule: define and understand PartialOrd, Ord, Eq, etc.
-// cmk0doc document that we implement most methods of BTreeSet -- exceptions 'range', drain_filter & new_in (nightly-only). Also, it's iter is a double-ended iterator. and ours is not.
-// cmk implement "ranges" by using log n search and then SortedDisjoint intersection.
-// cmk00 is 'ranges' a good name for the function or confusing with btreeset's 'range'?
 
 // FUTURE: Support serde via optional feature
 mod integer;
@@ -198,8 +192,8 @@ pub trait Integer:
 /// * [`RangeSetInt` Set Operations](#rangesetint-set-operations)
 ///    * [Performance](struct.RangeSetInt.html#set-operation-performance)
 ///    * [Examples](struct.RangeSetInt.html#set-operation-examples)
-///
-/// # `RangeSetInt` Constructors
+///  * [`RangeSetInt` Comparisons](#rangesetint-comparisons)
+///  * [Additional Examples](#additional-examples)
 ///
 /// You can also create `RangeSetInt`'s from unsorted and overlapping integers (or ranges).
 /// However, if you know that your input is sorted and disjoint, you can speed up construction.
@@ -368,6 +362,24 @@ pub trait Integer:
 /// let result1 = RangeSetInt::from(a.ranges() - (b.ranges() | c.ranges()));
 /// assert!(result0 == result1 && result0.to_string() == "1..=1");
 /// ```
+/// # `RangeSetInt` Comparisons
+///
+/// We can compare `RangeSetInt`s using the following operators:
+/// `<`, `<=`, `>`, `>=`.  Following the convention of `BTreeSet`,
+/// these comparisons are lexicographic. See [`cmp`] for more examples.
+///
+/// Use the [`is_subset`] and [`is_superset`] methods to check if one `RangeSetInt` is a subset
+/// or superset of another.
+///
+/// Use `==`, `!=` to check if two `RangeSetInt`s are equal or not.
+///
+/// [`BTreeSet`]: std::collections::BTreeSet
+/// [`is_subset`]: RangeSetInt::is_subset
+/// [`is_superset`]: RangeSetInt::is_superset
+/// [`cmp`]: RangeSetInt::cmp
+///
+/// # Additional Examples
+///
 /// See the [module-level documentation] for additional examples.
 ///
 /// [module-level documentation]: index.html
@@ -707,7 +719,7 @@ impl<T: Integer> RangeSetInt<T> {
     ///
     /// # Performance
     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
-    /// When n is large, consider using `cmk0doc` which is O(n+m) time.
+    /// When n is large, consider using `|` which is O(n+m) time.
     ///
     /// # Examples
     ///
@@ -788,7 +800,7 @@ impl<T: Integer> RangeSetInt<T> {
     ///
     /// # Performance
     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
-    /// When n is large, consider using `cmk0doc` which is O(n+m) time.
+    /// When n is large, consider using `|` which is O(n+m) time.
     ///
     /// # Examples
     ///
@@ -1711,7 +1723,30 @@ impl<'a, T: 'a + Integer> Extend<&'a RangeInclusive<T>> for RangeSetInt<T> {
 // cmk sort-iter uses peekable. Is that better?
 
 impl<T: Integer> Ord for RangeSetInt<T> {
-    /// cmk0doc clarify that this is lexicographic order not subset/superset
+    /// We define a total ordering on RangeSetInt. Following the convention of
+    /// [`BTreeSet`], the ordering is lexicographic, *not* by subset/superset.
+    ///
+    /// [`BTreeSet`]: std::collections::BTreeSet
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from_iter([1..=3, 5..=7]);
+    /// let b = RangeSetInt::from_iter([2..=2]);
+    /// assert!(a < b); // Lexicographic comparison
+    /// assert!(b.is_subset(&a)); // Subset comparison
+    /// // More lexicographic comparisons
+    /// assert!(a <= b);
+    /// assert!(b > a);
+    /// assert!(b >= a);
+    /// assert!(a != b);
+    /// assert!(a == a);
+    /// use std::cmp::Ordering;
+    /// assert_eq!(a.cmp(&b), Ordering::Less);
+    /// assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
+    /// ```
+
     #[inline]
     fn cmp(&self, other: &RangeSetInt<T>) -> Ordering {
         // slow return self.iter().cmp(other.iter());

@@ -8,6 +8,7 @@ use rand::SeedableRng;
 use range_set_int::{
     CheckSortedDisjoint, DynSortedDisjoint, NotIter, SortedDisjoint, SortedStarts, UnionIter,
 };
+use std::cmp::Ordering;
 use std::ops::RangeInclusive;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
@@ -1425,4 +1426,21 @@ fn is_subset_check() {
     let sup = CheckSortedDisjoint::from([1..=3]);
     let set = CheckSortedDisjoint::from([2..=2, 4..=4]);
     assert_eq!(set.is_subset(sup), false);
+}
+
+#[test]
+fn cmp_range_set_int() {
+    let a = RangeSetInt::from_iter([1..=3, 5..=7]);
+    let b = RangeSetInt::from_iter([2..=2]);
+    assert!(a < b); // Lexicographic comparison
+    assert!(b.is_subset(&a)); // Subset comparison
+
+    // Lexicographic comparisons
+    assert!(a <= b);
+    assert!(b > a);
+    assert!(b >= a);
+    assert!(a != b);
+    assert!(a == a);
+    assert_eq!(a.cmp(&b), Ordering::Less);
+    assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
 }
