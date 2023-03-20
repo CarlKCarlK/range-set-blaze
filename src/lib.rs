@@ -203,6 +203,10 @@ pub trait Integer:
 ///
 /// # `RangeSetInt` Constructors
 ///
+/// You can create a new empty `RangeSetInt`'s. You can also create `RangeSetInt`'s from unsorted and overlapping integers (or ranges).
+/// However, if you know that your input is sorted and disjoint, you can speed up construction. Here are the constructors, followed by a
+/// description of the performance, and then some examples.
+///
 /// | Methods           | Input                   |
 /// |-------------------|-------------------------|
 /// | [`new`]/[`default`]       |                         |
@@ -223,7 +227,8 @@ pub trait Integer:
 ///
 /// The [`from_iter`][1]/[`collect`][1] constructors are designed to work fast on 'clumpy' data.
 /// By 'clumpy', we mean that the number of ranges needed to represent the data is
-/// small compared to the number of input integers.
+/// small compared to the number of input integers. To understand why, consider the internals
+/// of the constructors:
 ///
 ///  Internally, the constructors:
 /// * collect adjacent integers/ranges into disjoint ranges, O(*n₁*)
@@ -240,9 +245,10 @@ pub trait Integer:
 ///  * `0..=8, 1..=1, 100..=100`, and finally
 ///  * `0..=8, 100..=100`.
 ///
-/// Notice that if because of clumpy data, *n₂* ≈ sqrt(*n₁*), then construction is O(*n₁*).
+/// What is the effect of clumpy data?
+/// Notice that if *n₂* ≈ sqrt(*n₁*), then construction is O(*n₁*).
 /// (Indeed, as long as *n₂* ≤ *n₁*/ln(*n₁*), then construction is O(*n₁*).)
-/// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*),
+/// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*)),
 /// a quadratic improvement an O(*n₁*) implementation that ignores the clumps.
 ///
 /// ## Constructor Examples
@@ -284,6 +290,8 @@ pub trait Integer:
 ///
 /// # `RangeSetInt` Set Operations
 ///
+/// You can perform set operations on `RangeSetInt`s using operators.
+///
 /// | Set Operation           | Operator                   |  Multiway Method |
 /// |-------------------|-------------------------|-------------------------|
 /// | union       |  `a` &#124; `b`                     | `[a, b, c].`[`union`]`()` |
@@ -292,9 +300,15 @@ pub trait Integer:
 /// | symmetric difference       |  `a ^ b`                     | *n/a* |
 /// | complement       |  `!a`                     | *n/a* |
 ///
+/// `RangeSetInt` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
+/// these methods match those of `BTreeSet`.
 ///
 /// [`union`]: trait.MultiwayRangeSetInt.html#method.union
 /// [`intersection`]: trait.MultiwayRangeSetInt.html#method.intersection
+/// [`insert`]: RangeSetInt::insert
+/// [`pop_first`]: RangeSetInt::pop_first
+/// [`split_off`]: RangeSetInt::split_off
+///
 ///
 /// ## Set Operation Performance
 ///
@@ -354,8 +368,6 @@ pub trait Integer:
 /// let result1 = RangeSetInt::from(a.ranges() - (b.ranges() | c.ranges()));
 /// assert!(result0 == result1 && result0.to_string() == "1..=1");
 /// ```
-/// cmk00000
-///
 /// See the [module-level documentation] for additional examples.
 ///
 /// [module-level documentation]: index.html

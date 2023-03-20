@@ -8,15 +8,15 @@ range-set-int
 A crate for efficiently manipulating ['clumpy'][1] sets of integers using [set operations] such as `union`, `intersection`, and `difference`.
 The integers can be any size ([`u8`] to [`u128`]) and may be signed ([`i8`] to [`i128`]).
 
-The main struct is [`RangeSetInt`], a set of integers. See the [`RangeSetInt` documentation] for details.
+The crate's main struct is [`RangeSetInt`], a set of integers. See the [`RangeSetInt` documentation] for details.
 
 > Unlike the standard [`BTreeSet`] and [`HashSet`], [`RangeSetInt`] does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from other interval libraries (that we know of) by being specialized and optimized for integer elements.
 
-> We can construct a [`RangeSetInt`] from unsorted & redundant, integers (or ranges). If the inputs are 'clumpy', construction will [linear][1] in the number of inputs and set operations will speed up [quadratically][1].
+> We can construct a [`RangeSetInt`] from unsorted & redundant integers (or ranges). If the inputs are 'clumpy', construction will [linear][1] in the number of inputs and set operations will speed up [quadratically][1].
 
-The main trait is [`SortedDisjoint`]. It is implemented by iterators of sorted & disjoint ranges of integers. See the [`SortedDisjoint` documentation] for details.
+The crate's main trait is [`SortedDisjoint`]. It is implemented by iterators of sorted & disjoint ranges of integers. See the [`SortedDisjoint` documentation] for details.
 
-> With [`SortedDisjoint`] we can perform set operations in one pass through the ranges and with minimal (constant) memory. It enforces the "sorted & disjoint" constraint at compile time. This trait is inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. [`SortedDisjoint`] differs from its inspiration by specializing on disjoint integer ranges.
+> With any [`SortedDisjoint`] we can perform set operations in one pass through the ranges and with minimal (constant) memory. It enforces the "sorted & disjoint" constraint at compile time. This trait is inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. [`SortedDisjoint`] differs from its inspiration by specializing on disjoint integer ranges.
 
 [`u8`]: https://doc.rust-lang.org/std/primitive.u8.html
 [`u128`]: https://doc.rust-lang.org/std/primitive.u128.html
@@ -86,7 +86,7 @@ assert_eq!(
     RangeSetInt::from_iter([29370..=30817, 32358..=32561, 36715..=37380])
 );
 
-// Use 'set subtraction' to find the introns
+// Use 'set difference' to find the introns
 let intron = trans - exons;
 assert_eq!(intron, RangeSetInt::from_iter([30818..=32357, 32562..=36714]));
 for range in intron.ranges() {
