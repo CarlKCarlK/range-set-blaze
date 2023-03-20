@@ -56,7 +56,7 @@ impl<'a, T: Integer> Iterator for RangesIter<'a, T> {
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-/// An iterator that visits the ranges in the [`RangeSetInt`],
+/// An iterator that moves out the ranges in the [`RangeSetInt`],
 /// i.e., the integers as sorted & disjoint ranges.
 ///
 /// This `struct` is created by the [`into_ranges`] method on [`RangeSetInt`]. See [`into_ranges`]'s

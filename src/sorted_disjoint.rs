@@ -20,7 +20,7 @@ use crate::{
 /// ```
 /// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
 ///
-/// let a = CheckSortedDisjoint::from([1..=2, 5..=100]);
+/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100");
@@ -30,7 +30,7 @@ use crate::{
 ///```should_panic
 /// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
 ///
-/// let a = CheckSortedDisjoint::from([1..=5, 5..=100]);
+/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6,-10..=-5]);
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100");

@@ -189,7 +189,7 @@ pub trait Integer:
 
 /// A set of integers stored as sorted & disjoint ranges.
 ///
-/// Internally, it uses a cache-efficient [`BTreeMap`] to store the ranges.
+/// Internally, it stores the ranges in a cache-efficient [`BTreeMap`].
 ///
 /// # Table of Contents
 /// * [`RangeSetInt` Constructors](#rangesetint-constructors)
@@ -201,8 +201,10 @@ pub trait Integer:
 ///
 /// # `RangeSetInt` Constructors
 ///
-/// You can create a new empty `RangeSetInt`'s. You can also create `RangeSetInt`'s from unsorted and overlapping integers (or ranges).
-/// However, if you know that your input is sorted and disjoint, you can speed up construction. Here are the constructors, followed by a
+/// You can also create `RangeSetInt`'s from unsorted and overlapping integers (or ranges).
+/// However, if you know that your input is sorted and disjoint, you can speed up construction.
+///
+/// Here are the constructors, followed by a
 /// description of the performance, and then some examples.
 ///
 /// | Methods           | Input                   |
@@ -225,16 +227,16 @@ pub trait Integer:
 ///
 /// The [`from_iter`][1]/[`collect`][1] constructors are designed to work fast on 'clumpy' data.
 /// By 'clumpy', we mean that the number of ranges needed to represent the data is
-/// small compared to the number of input integers. To understand why, consider the internals
+/// small compared to the number of input integers. To understand this, consider the internals
 /// of the constructors:
 ///
-///  Internally, the constructors:
+///  Internally, the constructors take these steps:
 /// * collect adjacent integers/ranges into disjoint ranges, O(*n₁*)
 /// * sort the disjoint ranges by their `start`, O(*n₂* log *n₂*)
 /// * merge adjacent ranges, O(*n₂*)
 /// * create a `BTreeMap` from the now sorted & disjoint ranges, O(*n₃* log *n₃*)
 ///
-/// where *n₁* is the number of input integers/ranges, *n₂* is the number of unsorted & disjoint ranges,
+/// where *n₁* is the number of input integers/ranges, *n₂* is the number of disjoint & unsorted ranges,
 /// and *n₃* is the final number of sorted & disjoint ranges.
 ///
 /// For example, an input of
@@ -1137,7 +1139,7 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    /// An iterator that visits the ranges in the [`RangeSetInt`],
+    /// An iterator that moves out the ranges in the [`RangeSetInt`],
     /// i.e., the integers as sorted & disjoint ranges.
     ///
     /// Also see [`RangeSetInt::into_iter`] and [`RangeSetInt::ranges`].
@@ -1537,7 +1539,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
 
-    /// Gets an iterator for moving out the [`RangeSetInt`]'s contents.
+    /// Gets an iterator for moving out the [`RangeSetInt`]'s integer contents.
     ///
     /// # Examples
     ///
@@ -1893,7 +1895,7 @@ impl<T: Integer> Eq for RangeSetInt<T> {}
 /// When you do this, your iterator will get access to the
 /// efficient set operations methods, such as [`intersection`] and [`complement`]. The example below shows this.
 ///
-/// > For use to operators such as `&` and `!`, you must also implement the [`BitAnd`], [`Not`], etc. traits.
+/// > To use operators such as `&` and `!`, you must also implement the [`BitAnd`], [`Not`], etc. traits.
 ///
 /// [`BitAnd`]: https://doc.rust-lang.org/std/ops/trait.BitAnd.html
 /// [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html

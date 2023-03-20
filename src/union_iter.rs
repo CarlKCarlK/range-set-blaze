@@ -12,8 +12,8 @@ use crate::{
 };
 
 /// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
-/// i.e., all the integers in any input iterator, as sorted & disjoint ranges. Works with [`Merge`]
-/// and [`KMerge`].
+/// i.e., all the integers in any input iterator, as sorted & disjoint ranges. Uses [`Merge`]
+/// or [`KMerge`].
 ///
 /// [`SortedDisjoint`]: crate::SortedDisjoint
 /// [`Merge`]: crate::Merge
@@ -25,13 +25,13 @@ use crate::{
 /// use itertools::Itertools;
 /// use range_set_int::{UnionIter, Merge, SortedDisjointIterator, CheckSortedDisjoint};
 ///
-/// let a = CheckSortedDisjoint::from([1..=2, 5..=100]);
+/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = UnionIter::new(Merge::new(a, b));
 /// assert_eq!(union.to_string(), "1..=100");
 ///
 /// // Or, equivalently:
-/// let a = CheckSortedDisjoint::from([1..=2, 5..=100]);
+/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100")

@@ -1132,7 +1132,7 @@ fn multiway2() {
 fn check_sorted_disjoint() {
     use range_set_int::CheckSortedDisjoint;
 
-    let a = CheckSortedDisjoint::from([1..=2, 5..=100]);
+    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
     let b = CheckSortedDisjoint::from([2..=6]);
     let c = a | b;
 
@@ -1176,7 +1176,7 @@ fn len_demo() {
 fn union_iter() {
     use range_set_int::{CheckSortedDisjoint, UnionIter};
 
-    let a = CheckSortedDisjoint::from([1..=2, 5..=100]);
+    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
     let b = CheckSortedDisjoint::from([2..=6]);
     let c = UnionIter::new(AssumeSortedStarts::new(
         a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
@@ -1184,7 +1184,7 @@ fn union_iter() {
     assert_eq!(c.to_string(), "1..=100");
 
     // Or, equivalently:
-    let a = CheckSortedDisjoint::from([1..=2, 5..=100]);
+    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
     let b = CheckSortedDisjoint::from([2..=6]);
     let c = SortedDisjointIterator::union(a, b);
     assert_eq!(c.to_string(), "1..=100")

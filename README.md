@@ -12,11 +12,11 @@ The crate's main struct is [`RangeSetInt`], a set of integers. See the [`RangeSe
 
 > Unlike the standard [`BTreeSet`] and [`HashSet`], [`RangeSetInt`] does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from other interval libraries (that we know of) by being specialized and optimized for integer elements.
 >
-> We can construct a [`RangeSetInt`] from unsorted & redundant integers (or ranges). If the inputs are 'clumpy', construction will [linear][1] in the number of inputs and set operations will speed up [quadratically][1].
+> We can construct a [`RangeSetInt`] from unsorted & redundant integers (or ranges). When the inputs are clumpy, construction will be [linear][1] in the number of inputs and set operations will be sped up [quadratically][1].
 
 The crate's main trait is [`SortedDisjoint`]. It is implemented by iterators of sorted & disjoint ranges of integers. See the [`SortedDisjoint` documentation] for details.
 
-> With any [`SortedDisjoint`] we can perform set operations in one pass through the ranges and with minimal (constant) memory. It enforces the "sorted & disjoint" constraint at compile time. This trait is inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. [`SortedDisjoint`] differs from its inspiration by specializing on disjoint integer ranges.
+> With any [`SortedDisjoint`] iterator we can perform set operations in one pass through the ranges and with minimal (constant) memory. It enforces the "sorted & disjoint" constraint at compile time. This trait is inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. [`SortedDisjoint`] differs from its inspiration by specializing on disjoint integer ranges.
 
 [`u8`]: https://doc.rust-lang.org/std/primitive.u8.html
 [`u128`]: https://doc.rust-lang.org/std/primitive.u128.html
