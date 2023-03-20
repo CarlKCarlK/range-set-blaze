@@ -1031,7 +1031,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// let mut set: RangeSetInt<i32> = RangeSetInt::new();
     /// ```
     #[must_use]
-    pub fn new() -> RangeSetInt<T> {
+    pub fn new() -> Self {
         RangeSetInt {
             btree_map: BTreeMap::new(),
             len: <T as Integer>::SafeLen::zero(),

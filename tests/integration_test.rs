@@ -1410,3 +1410,18 @@ fn range_test() {
     }
     assert_eq!(Some(5), set.range(4..).next());
 }
+
+#[test]
+fn is_subset_check() {
+    let sup = CheckSortedDisjoint::from([1..=3]);
+    let set: CheckSortedDisjoint<i32, _> = [].into();
+    assert_eq!(set.is_subset(sup), true);
+
+    let sup = CheckSortedDisjoint::from([1..=3]);
+    let set = CheckSortedDisjoint::from([2..=2]);
+    assert_eq!(set.is_subset(sup), true);
+
+    let sup = CheckSortedDisjoint::from([1..=3]);
+    let set = CheckSortedDisjoint::from([2..=2, 4..=4]);
+    assert_eq!(set.is_subset(sup), false);
+}

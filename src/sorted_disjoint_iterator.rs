@@ -228,17 +228,19 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::CheckSortedDisjoint;
+    /// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
     ///
-    /// // cmk000000 make CheckSortedDisjoint constructors match RangeSetInt
-    /// let sup = CheckSortedDisjoint::new([1..=3].into_iter());
-    /// let mut set = CheckSortedDisjoint::new([1..=0].into_iter());
+    /// let sup = CheckSortedDisjoint::from([1..=3]);
+    /// let set: CheckSortedDisjoint<i32, _> = [].into();
+    /// assert_eq!(set.is_subset(sup), true);
     ///
-    /// assert_eq!(set.is_subset(&sup), true);
-    /// set.insert(2);
-    /// assert_eq!(set.is_subset(&sup), true);
-    /// set.insert(4);
-    /// assert_eq!(set.is_subset(&sup), false);
+    /// let sup = CheckSortedDisjoint::from([1..=3]);
+    /// let set = CheckSortedDisjoint::from([2..=2]);
+    /// assert_eq!(set.is_subset(sup), true);
+    ///
+    /// let sup = CheckSortedDisjoint::from([1..=3]);
+    /// let set = CheckSortedDisjoint::from([2..=2, 4..=4]);
+    /// assert_eq!(set.is_subset(sup), false);
     /// ```
     #[must_use]
     #[inline]

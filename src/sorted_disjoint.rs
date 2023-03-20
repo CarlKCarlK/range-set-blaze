@@ -111,6 +111,27 @@ where
     }
 }
 
+impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]>
+    for CheckSortedDisjoint<T, std::array::IntoIter<RangeInclusive<T>, N>>
+{
+    /// You may create a [`CheckSortedDisjoint`] from an array of integers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
+    ///
+    /// let a0 = CheckSortedDisjoint::from([1..=3, 100..=100]);
+    /// let a1: CheckSortedDisjoint<_,_> = [1..=3, 100..=100].into();
+    /// assert_eq!(a0.to_string(), "1..=3, 100..=100");
+    /// assert_eq!(a1.to_string(), "1..=3, 100..=100");
+    /// ```
+    fn from(arr: [RangeInclusive<T>; N]) -> Self {
+        let iter = arr.into_iter();
+        Self::new(iter)
+    }
+}
+
 impl<T, I> ops::Not for CheckSortedDisjoint<T, I>
 where
     T: Integer,
@@ -171,33 +192,34 @@ where
     }
 }
 
-impl<T, I> From<I> for CheckSortedDisjoint<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = RangeInclusive<T>>,
-{
-    /// Create a [`CheckSortedDisjoint`] from an iterator of ranges.
-    /// The ranges should be sorted and disjoint, however, this won't be
-    /// checked until they are consumed.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
-    ///
-    /// let a0 = CheckSortedDisjoint::from([-10..=-5, 1..=2].into_iter());
-    /// let a1: CheckSortedDisjoint<_,_> = [-10..=-5, 1..=2].into_iter().into();
-    /// assert_eq!(a0.to_string(), "-10..=-5, 1..=2" );
-    /// assert_eq!(a1.to_string(), "-10..=-5, 1..=2" );
-    /// ```
-    fn from(iter: I) -> Self {
-        CheckSortedDisjoint {
-            iter,
-            prev_end: None,
-            seen_none: false,
-        }
-    }
-}
+// cmk0000 delete
+// impl<T, I> From<I> for CheckSortedDisjoint<T, I>
+// where
+//     T: Integer,
+//     I: Iterator<Item = RangeInclusive<T>>,
+// {
+//     /// Create a [`CheckSortedDisjoint`] from an iterator of ranges.
+//     /// The ranges should be sorted and disjoint, however, this won't be
+//     /// checked until they are consumed.
+//     ///
+//     /// # Examples
+//     ///
+//     /// ```
+//     /// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
+//     ///
+//     /// let a0 = CheckSortedDisjoint::from([-10..=-5, 1..=2].into_iter());
+//     /// let a1: CheckSortedDisjoint<_,_> = [-10..=-5, 1..=2].into_iter().into();
+//     /// assert_eq!(a0.to_string(), "-10..=-5, 1..=2" );
+//     /// assert_eq!(a1.to_string(), "-10..=-5, 1..=2" );
+//     /// ```
+//     fn from(iter: I) -> Self {
+//         CheckSortedDisjoint {
+//             iter,
+//             prev_end: None,
+//             seen_none: false,
+//         }
+//     }
+// }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 /// Gives [`SortedDisjoint`] iterators a uniform type. Used by the [`union_dyn`] and [`intersection_dyn`] macros to give all
