@@ -201,6 +201,115 @@ pub trait SortedDisjointIterator<T: Integer>:
         })
         .join(", ")
     }
+
+    //cmk000000 is_disjoint, is_subset, is_empty, is_superset,
+
+    /// Returns `true` if the set contains no elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let mut v = RangeSetInt::new();
+    /// assert!(v.is_empty());
+    /// v.insert(1);
+    /// assert!(!v.is_empty());
+    /// ```
+    #[inline]
+    #[allow(clippy::wrong_self_convention)]
+    fn is_empty(mut self) -> bool {
+        self.next().is_none()
+    }
+
+    /// Returns `true` if the set is a subset of another,
+    /// i.e., `other` contains at least all the elements in `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::CheckSortedDisjoint;
+    ///
+    /// // cmk000000 make CheckSortedDisjoint constructors match RangeSetInt
+    /// let sup = CheckSortedDisjoint::new([1..=3].into_iter());
+    /// let mut set = CheckSortedDisjoint::new([1..=0].into_iter());
+    ///
+    /// assert_eq!(set.is_subset(&sup), true);
+    /// set.insert(2);
+    /// assert_eq!(set.is_subset(&sup), true);
+    /// set.insert(4);
+    /// assert_eq!(set.is_subset(&sup), false);
+    /// ```
+    #[must_use]
+    #[inline]
+    #[allow(clippy::wrong_self_convention)]
+    fn is_subset<R>(self, other: R) -> bool
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint,
+    {
+        self.difference(other).is_empty()
+    }
+
+    /// Returns `true` if the set is a superset of another,
+    /// i.e., `self` contains at least all the elements in `other`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let sub = RangeSetInt::from_iter([1, 2]);
+    /// let mut set = RangeSetInt::new();
+    ///
+    /// assert_eq!(set.is_superset(&sub), false);
+    ///
+    /// set.insert(0);
+    /// set.insert(1);
+    /// assert_eq!(set.is_superset(&sub), false);
+    ///
+    /// set.insert(2);
+    /// assert_eq!(set.is_superset(&sub), true);
+    /// ```
+    #[inline]
+    #[must_use]
+    #[allow(clippy::wrong_self_convention)]
+    fn is_superset<R>(self, other: R) -> bool
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint,
+    {
+        other.into_iter().is_subset(self)
+    }
+
+    /// Returns `true` if `self` has no elements in common with `other`.
+    /// This is equivalent to checking for an empty intersection.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// let a = RangeSetInt::from_iter([1..=3]);
+    /// let mut b = RangeSetInt::new();
+    ///
+    /// assert_eq!(a.is_disjoint(&b), true);
+    /// b.insert(4);
+    /// assert_eq!(a.is_disjoint(&b), true);
+    /// b.insert(1);
+    /// assert_eq!(a.is_disjoint(&b), false);
+    /// ```
+    /// cmk rule which functions should be must_use? iterator, constructor, predicates, first, last,
+    #[must_use]
+    #[inline]
+    #[allow(clippy::wrong_self_convention)]
+    fn is_disjoint<R>(self, other: R) -> bool
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint,
+    {
+        self.intersection(other).is_empty()
+    }
 }
 
 // cmk0 explain why this is needed

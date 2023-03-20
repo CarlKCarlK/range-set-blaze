@@ -72,6 +72,8 @@ use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
 use std::ops;
+use std::ops::Bound;
+use std::ops::RangeBounds;
 use std::ops::RangeInclusive;
 use std::str::FromStr;
 pub use union_iter::UnionIter;
@@ -424,6 +426,7 @@ impl<T: Integer> RangeSetInt<T> {
             iter: self.ranges(),
         }
     }
+
     /// Returns the first element in the set, if any.
     /// This element is always the minimum of all integer elements in the set.
     ///
@@ -562,6 +565,8 @@ impl<T: Integer> RangeSetInt<T> {
     /// v.insert(1);
     /// assert!(!v.is_empty());
     /// ```
+    #[must_use]
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.ranges_len() == 0
     }
@@ -584,12 +589,13 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(set.is_subset(&sup), false);
     /// ```
     #[must_use]
+    #[inline]
     pub fn is_subset(&self, other: &RangeSetInt<T>) -> bool {
         // Add a fast path
         if self.len() > other.len() {
             return false;
         }
-        (self.ranges() - other.ranges()).next().is_none()
+        self.ranges().is_subset(other.ranges())
     }
 
     /// Returns `true` if the set is a superset of another,
@@ -655,8 +661,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     /// cmk rule which functions should be must_use? iterator, constructor, predicates, first, last,
     #[must_use]
+    #[inline]
     pub fn is_disjoint(&self, other: &RangeSetInt<T>) -> bool {
-        (self.ranges() & other.ranges()).next().is_none()
+        self.ranges().is_disjoint(other.ranges())
     }
 
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
@@ -715,6 +722,57 @@ impl<T: Integer> RangeSetInt<T> {
         let len_before = self.len;
         self.internal_add(value..=value);
         self.len != len_before
+    }
+
+    /// Constructs an iterator over a sub-range of elements in the set.
+    /// The simplest way is to use the range syntax `min..max`, thus `range(min..max)` will
+    /// yield elements from min (inclusive) to max (exclusive).
+    /// The range may also be entered as `(Bound<T>, Bound<T>)`, so for example
+    /// `range((Excluded(4), Included(10)))` will yield a left-exclusive, right-inclusive
+    /// range from 4 to 10.
+    ///
+    /// # Panics
+    ///
+    /// Panics if range `start > end`.
+    /// Panics if range `start == end` and both bounds are `Excluded`.
+    ///
+    /// # Performance
+    ///
+    /// Although this could be written to run in time O(ln(n)) in the number of ranges, it is currently O(n) in the number of ranges.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    /// use std::ops::Bound::Included;
+    ///
+    /// let mut set = RangeSetInt::new();
+    /// set.insert(3);
+    /// set.insert(5);
+    /// set.insert(8);
+    /// for elem in set.range((Included(4), Included(8))) {
+    ///     println!("{elem}");
+    /// }
+    /// assert_eq!(Some(5), set.range(4..).next());
+    /// ```
+    pub fn range<R>(&self, range: R) -> IntoIter<T>
+    where
+        R: RangeBounds<T>,
+    {
+        let start = match range.start_bound() {
+            Bound::Included(n) => *n,
+            Bound::Excluded(n) => *n + T::one(),
+            Bound::Unbounded => T::min_value(),
+        };
+        let end = match range.end_bound() {
+            Bound::Included(n) => *n,
+            Bound::Excluded(n) => *n - T::one(),
+            Bound::Unbounded => T::safe_max_value(),
+        };
+        assert!(start <= end);
+
+        let bounds = CheckSortedDisjoint::new([start..=end].into_iter());
+        RangeSetInt::from(self.ranges() & bounds).into_iter()
     }
 
     /// Adds a range to the set.

@@ -1381,3 +1381,32 @@ fn sorted_disjoint_operators() {
     let result = union_dyn!(a, b, !c);
     assert_eq!(result.to_string(), "-2147483648..=100, 201..=2147483647");
 }
+
+#[test]
+fn range_example() {
+    let mut set = RangeSetInt::new();
+    set.insert(3);
+    set.insert(5);
+    set.insert(8);
+    for elem in (&set & RangeSetInt::from_iter([4..=8])).iter() {
+        println!("{elem}");
+    }
+
+    let intersection = &set & RangeSetInt::from_iter([4..=i32::MAX]);
+    assert_eq!(Some(5), intersection.iter().next());
+}
+
+#[test]
+fn range_test() {
+    use range_set_int::RangeSetInt;
+    use std::ops::Bound::Included;
+
+    let mut set = RangeSetInt::new();
+    set.insert(3);
+    set.insert(5);
+    set.insert(8);
+    for elem in set.range((Included(4), Included(8))) {
+        println!("{elem}");
+    }
+    assert_eq!(Some(5), set.range(4..).next());
+}
