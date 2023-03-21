@@ -1,5 +1,6 @@
 use std::{
     collections::btree_map,
+    iter::FusedIterator,
     ops::{self, RangeInclusive},
 };
 
@@ -10,7 +11,7 @@ use crate::{
     SortedDisjointIterator, SortedStarts,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 /// An iterator that visits the ranges in the [`RangeSetInt`],
 /// i.e., the integers as sorted & disjoint ranges.
@@ -42,6 +43,8 @@ impl<T: Integer> ExactSizeIterator for RangesIter<'_, T> {
     }
 }
 
+impl<'a, T: Integer> FusedIterator for RangesIter<'a, T> {}
+
 // Range's iterator is just the inside BTreeMap iterator as values
 impl<'a, T: Integer> Iterator for RangesIter<'a, T> {
     type Item = RangeInclusive<T>;
@@ -64,6 +67,7 @@ impl<'a, T: Integer> Iterator for RangesIter<'a, T> {
 ///
 /// [`RangeSetInt`]: crate::RangeSetInt
 /// [`into_ranges`]: crate::RangeSetInt::into_ranges
+#[derive(Debug)]
 pub struct IntoRangesIter<T: Integer> {
     pub(crate) iter: std::collections::btree_map::IntoIter<T, T>,
 }
@@ -77,6 +81,8 @@ impl<T: Integer> ExactSizeIterator for IntoRangesIter<T> {
         self.iter.len()
     }
 }
+
+impl<T: Integer> FusedIterator for IntoRangesIter<T> {}
 
 // Range's iterator is just the inside BTreeMap iterator as values
 impl<T: Integer> Iterator for IntoRangesIter<T> {

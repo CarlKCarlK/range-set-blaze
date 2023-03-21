@@ -7,7 +7,14 @@
 // !!!cmk rule detail:  let a_less = a.ranges().sub(chain);
 // !!!cmk rule test near extreme values
 // !!!cmk test it across threads
-use std::{collections::BTreeSet, ops::BitOr}; // , time::Instant
+use std::{
+    any::Any,
+    collections::BTreeSet,
+    fmt::Display,
+    iter::FusedIterator,
+    ops::BitOr,
+    panic::{RefUnwindSafe, UnwindSafe},
+}; // , time::Instant
 
 use super::*;
 use itertools::Itertools;
@@ -973,4 +980,119 @@ fn private_constructor() {
         .into_iter()
         .collect();
     assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
+}
+
+fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
+
+fn is_ddcppdheo<
+    T: std::fmt::Debug
+        + Display
+        + Clone
+        + PartialEq
+        + PartialOrd
+        + Default
+        + std::hash::Hash
+        + Eq
+        + Ord
+        + Send
+        + Sync,
+>() {
+}
+
+// DoubleEndedIterator +ExactSizeIterator
+fn is_like_btreeset_iter<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
+fn is_like_btreeset_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {}
+
+fn is_like_btreeset<
+    T: Clone
+        + std::fmt::Debug
+        + Default
+        + Eq
+        + std::hash::Hash
+        + IntoIterator
+        + Ord
+        + PartialEq
+        + PartialOrd
+        + RefUnwindSafe
+        + Send
+        + Sync
+        + Unpin
+        + UnwindSafe
+        + Any
+        + ToOwned,
+>() {
+}
+
+fn is_like_check_sorted_disjoint<
+    T: Clone
+        + std::fmt::Debug
+        + Default
+        + IntoIterator
+        + RefUnwindSafe
+        + Send
+        + Sync
+        + Unpin
+        + UnwindSafe
+        + Any
+        + ToOwned,
+>() {
+}
+
+fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
+
+// cmk rule: Test that you're implementing all the traits from the data structures you're using as a model. I was leaving out Debug and FusedIterator
+#[test]
+fn check_traits() {
+    // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
+    type ARangeSetInt = RangeSetInt<i32>;
+    is_sssu::<ARangeSetInt>();
+    is_ddcppdheo::<ARangeSetInt>();
+    is_like_btreeset::<ARangeSetInt>();
+
+    type ARangesIter<'a> = RangesIter<'a, i32>;
+    is_sssu::<ARangesIter>();
+    is_like_btreeset_iter::<ARangesIter>();
+
+    type AIter<'a> = Iter<i32, ARangesIter<'a>>;
+    is_sssu::<AIter>();
+    is_like_btreeset_iter::<AIter>();
+
+    is_sssu::<IntoIter<i32>>();
+    is_like_btreeset_into_iter::<IntoIter<i32>>();
+
+    type AMerge<'a> = Merge<i32, ARangesIter<'a>, ARangesIter<'a>>;
+    is_sssu::<AMerge>();
+    is_like_btreeset_iter::<AMerge>();
+
+    let a = RangeSetInt::from_iter([1..=2, 3..=4]);
+    println!("{:?}", a.ranges());
+
+    type AKMerge<'a> = KMerge<i32, ARangesIter<'a>>;
+    is_sssu::<AKMerge>();
+    is_like_btreeset_iter::<AKMerge>();
+
+    type ANotIter<'a> = NotIter<i32, ARangesIter<'a>>;
+    is_sssu::<ANotIter>();
+    is_like_btreeset_iter::<ANotIter>();
+
+    type AIntoRangesIter = IntoRangesIter<i32>;
+    is_sssu::<AIntoRangesIter>();
+    is_like_btreeset_into_iter::<AIntoRangesIter>();
+
+    type ACheckSortedDisjoint<'a> = CheckSortedDisjoint<i32, ARangesIter<'a>>;
+    is_sssu::<ACheckSortedDisjoint>();
+    type BCheckSortedDisjoint =
+        CheckSortedDisjoint<i32, std::array::IntoIter<RangeInclusive<i32>, 0>>;
+    is_like_check_sorted_disjoint::<BCheckSortedDisjoint>();
+
+    type ADynSortedDisjoint<'a> = DynSortedDisjoint<'a, i32>;
+    is_like_dyn_sorted_disjoint::<ADynSortedDisjoint>();
+
+    type AUnionIter<'a> = UnionIter<i32, ARangesIter<'a>>;
+    is_sssu::<AUnionIter>();
+    is_like_btreeset_iter::<AUnionIter>();
+
+    type AAssumeSortedStarts<'a> = AssumeSortedStarts<i32, ARangesIter<'a>>;
+    is_sssu::<AAssumeSortedStarts>();
+    is_like_btreeset_iter::<AAssumeSortedStarts>();
 }

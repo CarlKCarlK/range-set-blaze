@@ -1,4 +1,4 @@
-use std::ops::RangeInclusive;
+use std::{iter::FusedIterator, ops::RangeInclusive};
 
 use itertools::{Itertools, KMergeBy, MergeBy};
 
@@ -29,7 +29,7 @@ use crate::{Integer, SortedDisjoint, SortedStarts};
 /// let c = a | b;
 /// assert_eq!(c.to_string(), "1..=100")
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Merge<T, L, R>
 where
@@ -53,6 +53,14 @@ where
             iter: left.merge_by(right, |a, b| a.start() < b.start()),
         }
     }
+}
+
+impl<T, L, R> FusedIterator for Merge<T, L, R>
+where
+    T: Integer,
+    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
 }
 
 impl<T, L, R> Iterator for Merge<T, L, R>
@@ -107,7 +115,7 @@ where
 /// let union = [a, b, c].union();
 /// assert_eq!(union.to_string(), "-1..=-1, 1..=100");
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct KMerge<T, I>
 where
@@ -132,6 +140,13 @@ where
             iter: iter.into_iter().kmerge_by(|a, b| a.start() < b.start()),
         }
     }
+}
+
+impl<T, I> FusedIterator for KMerge<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+{
 }
 
 impl<T, I> Iterator for KMerge<T, I>

@@ -5,6 +5,7 @@ use crate::{Integer, SortedDisjoint, SortedStarts};
 use num_traits::Zero;
 use std::{
     cmp::{max, min},
+    iter::FusedIterator,
     ops::RangeInclusive,
 };
 
@@ -33,6 +34,13 @@ where
             two: T::one() + T::one(),
         }
     }
+}
+
+impl<T, I> FusedIterator for UnsortedDisjoint<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
+{
 }
 
 impl<T, I> Iterator for UnsortedDisjoint<T, I>
@@ -126,6 +134,11 @@ where
     }
 }
 
+impl<T: Integer, I> FusedIterator for SortedDisjointWithLenSoFar<T, I> where
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint + FusedIterator
+{
+}
+
 impl<T: Integer, I> Iterator for SortedDisjointWithLenSoFar<T, I>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
@@ -155,7 +168,7 @@ impl<T: Integer, I> SortedStarts for SortedDisjointWithLenSoFar<T, I> where
 {
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 
 /// Gives any iterator of ranges the [`SortedStarts`] trait without any checking.
@@ -181,6 +194,13 @@ where
     pub fn new(iter: I) -> Self {
         AssumeSortedStarts { iter }
     }
+}
+
+impl<T, I> FusedIterator for AssumeSortedStarts<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
+{
 }
 
 impl<T, I> Iterator for AssumeSortedStarts<T, I>

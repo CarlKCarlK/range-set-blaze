@@ -1,5 +1,6 @@
 use std::{
     cmp::max,
+    iter::FusedIterator,
     ops::{self, RangeInclusive},
 };
 
@@ -36,7 +37,7 @@ use crate::{
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100")
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct UnionIter<T, I>
 where
@@ -121,6 +122,11 @@ where
             option_range: None,
         }
     }
+}
+
+impl<T: Integer, I> FusedIterator for UnionIter<T, I> where
+    I: Iterator<Item = RangeInclusive<T>> + SortedStarts + FusedIterator
+{
 }
 
 // cmk00 be sure that every function that accepts a val isn't max_value u128, i128 and returns an error

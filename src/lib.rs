@@ -65,6 +65,7 @@ use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
+use std::iter::FusedIterator;
 use std::ops;
 use std::ops::Bound;
 use std::ops::RangeBounds;
@@ -388,6 +389,7 @@ pub struct RangeSetInt<T: Integer> {
     btree_map: BTreeMap<T, T>,
 }
 
+// FUTURE: Make all RangeSetInt iterators DoubleEndedIterator and ExactSizeIterator.
 impl<T: Integer> fmt::Debug for RangeSetInt<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.ranges().to_string())
@@ -1588,7 +1590,7 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
 ///
 /// [`iter`]: RangeSetInt::iter
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Iter<T, I>
 where
     T: Integer,
@@ -1597,6 +1599,11 @@ where
     iter: I,
     current: T, // !!!cmk can't we write this without current? (likewise IntoIter)
     option_range: Option<RangeInclusive<T>>,
+}
+
+impl<T: Integer, I> FusedIterator for Iter<T, I> where
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint + FusedIterator
+{
 }
 
 impl<T: Integer, I> Iterator for Iter<T, I>
@@ -1634,6 +1641,7 @@ where
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Debug)]
 /// An iterator over the integer elements of a [`RangeSetInt`].
 ///
 /// This `struct` is created by the [`into_iter`] method on [`RangeSetInt`]. See its
@@ -1644,6 +1652,8 @@ pub struct IntoIter<T: Integer> {
     option_range: Option<RangeInclusive<T>>,
     into_iter: std::collections::btree_map::IntoIter<T, T>,
 }
+
+impl<T: Integer> FusedIterator for IntoIter<T> {}
 
 impl<T: Integer> Iterator for IntoIter<T> {
     type Item = T;

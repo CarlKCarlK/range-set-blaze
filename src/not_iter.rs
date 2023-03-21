@@ -1,4 +1,7 @@
-use std::ops::{self, RangeInclusive};
+use std::{
+    iter::FusedIterator,
+    ops::{self, RangeInclusive},
+};
 
 use crate::{
     BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisjoint,
@@ -22,7 +25,7 @@ use crate::{
 /// let b = !CheckSortedDisjoint::from([1u8..=2, 5..=100]);
 /// assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct NotIter<T, I>
 where
@@ -51,6 +54,13 @@ where
             next_time_return_none: false,
         }
     }
+}
+
+impl<T, I> FusedIterator for NotIter<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint + FusedIterator,
+{
 }
 
 // !!!cmk00 create coverage tests

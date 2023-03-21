@@ -1,4 +1,7 @@
-use std::ops::{self, RangeInclusive};
+use std::{
+    iter::FusedIterator,
+    ops::{self, RangeInclusive},
+};
 
 use crate::{
     BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjoint,
@@ -36,6 +39,7 @@ use crate::{
 /// assert_eq!(union.to_string(), "1..=100");
 /// ```
 
+#[derive(Debug)]
 pub struct CheckSortedDisjoint<T, I>
 where
     T: Integer,
@@ -68,6 +72,23 @@ where
             seen_none: false,
         }
     }
+}
+
+impl<T> Default for CheckSortedDisjoint<T, std::array::IntoIter<RangeInclusive<T>, 0>>
+where
+    T: Integer,
+{
+    // Default is an empty iterator.
+    fn default() -> Self {
+        Self::new([].into_iter())
+    }
+}
+
+impl<T, I> FusedIterator for CheckSortedDisjoint<T, I>
+where
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
+{
 }
 
 impl<T, I> Iterator for CheckSortedDisjoint<T, I>
@@ -247,6 +268,7 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
         self.iter.size_hint()
     }
 }
+
 /// Intersects one or more [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
 /// The input iterators need not to be of the same type.
 ///
