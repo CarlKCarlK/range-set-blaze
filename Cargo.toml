@@ -22,6 +22,8 @@ syntactic-for = "0.1.1"
 criterion = { version = "0.4", features = ["html_reports"] }
 trybuild = "1.0.53"
 thousands = "0.2.0"
+quickcheck = "1.0.3"
+quickcheck_macros = "1.0.0"
 
 
 # Declare a benchmark called “bench” without the standard benchmarking harness. 
