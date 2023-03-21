@@ -1265,6 +1265,29 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     }
 }
 
+impl<'a, T: Integer> FromIterator<&'a T> for RangeSetInt<T> {
+    /// Create a [`RangeSetInt`] from an iterator of integers. Duplicates and out-of-order elements are fine.
+    ///
+    /// *For more about constructors and performance, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    /// //cmk0000 update to show references
+    /// //cmk0000add from_iter & range, too
+    /// let a0 = RangeSetInt::from_iter([3, 2, 1, 100, 1]);
+    /// let a1: RangeSetInt<i32> = [3, 2, 1, 100, 1].into_iter().collect();
+    /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+    /// ```
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = &'a T>,
+    {
+        iter.into_iter().map(|x| *x..=*x).collect()
+    }
+}
+
 // cmk rules: Follow Rust conventions. For example this as empty let cmk = 1..=-1; we do the same
 impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
     /// Create a [`RangeSetInt`] from an iterator of inclusive ranges, `start..=end`.
@@ -1372,13 +1395,29 @@ pub type BitEq<T, L, R> = BitOrMerge<
 >;
 
 // cmkRule Offer methods of traits
+impl<T, I> MultiwayRangeSetInt2<T> for I
+where
+    T: Integer,
+    I: IntoIterator<Item = RangeSetInt<T>>,
+{
+}
+
+/// cmk00000 improve name
+/// cmk0000 repeat for Intersection
+/// cmk0000 docs
+pub trait MultiwayRangeSetInt2<T: Integer>: IntoIterator<Item = RangeSetInt<T>> + Sized {
+    /// cmk0000 docs
+    fn union(self) -> RangeSetInt<T> {
+        self.into_iter().map(|x| x.into_ranges()).union().into()
+    }
+}
+// cmkRule Offer methods of traits
 impl<'a, T, I> MultiwayRangeSetInt<'a, T> for I
 where
     T: Integer + 'a,
     I: IntoIterator<Item = &'a RangeSetInt<T>>,
 {
 }
-
 /// The trait used to provide methods on multiple [`RangeSetInt`]'s,
 /// specifically [`union`] and [`intersection`].
 ///

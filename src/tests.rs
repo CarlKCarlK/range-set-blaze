@@ -1543,22 +1543,22 @@ type Reference = std::collections::BTreeSet<Element>;
 
 #[quickcheck]
 fn disjoint(a: Reference, b: Reference) -> bool {
-    let a_r = RangeSetInt::from_iter(a.iter().cloned());
-    let b_r = RangeSetInt::from_iter(b.iter().cloned());
+    let a_r = RangeSetInt::from_iter(&a);
+    let b_r = RangeSetInt::from_iter(&b);
     a.is_disjoint(&b) == a_r.is_disjoint(&b_r)
 }
 
 #[quickcheck]
 fn subset(a: Reference, b: Reference) -> bool {
-    let a_r = RangeSetInt::from_iter(a.iter().cloned());
-    let b_r = RangeSetInt::from_iter(b.iter().cloned());
+    let a_r = RangeSetInt::from_iter(&a);
+    let b_r = RangeSetInt::from_iter(&b);
     a.is_subset(&b) == a_r.is_subset(&b_r)
 }
 
 #[quickcheck]
 fn superset(a: Reference, b: Reference) -> bool {
-    let a_r = RangeSetInt::from_iter(a.iter().cloned());
-    let b_r = RangeSetInt::from_iter(b.iter().cloned());
+    let a_r = RangeSetInt::from_iter(&a);
+    let b_r = RangeSetInt::from_iter(&b);
     a.is_superset(&b) == a_r.is_superset(&b_r)
 }
 
@@ -1571,10 +1571,24 @@ fn binary_op<E: Debug, R: Eq + Debug>(a: E, b: E, expected: R, actual: R) -> boo
     res
 }
 
+/// from: https://github.com/rklaehn/sorted-iter
+/// just a helper to get good output when a check fails
+fn check_size_hint<E: Debug>(
+    input: E,
+    expected: usize,
+    (min, max): (usize, Option<usize>),
+) -> bool {
+    let res = min <= expected && max.map_or(true, |max| expected <= max && min <= max);
+    if !res {
+        println!("input:{input:?} expected:{expected:?} min:{min:?} max:{max:?}");
+    }
+    res
+}
+
 #[quickcheck]
 fn intersection(a: Reference, b: Reference) -> bool {
-    let a_r = RangeSetInt::from_iter(a.iter().cloned());
-    let b_r = RangeSetInt::from_iter(b.iter().cloned());
+    let a_r = RangeSetInt::from_iter(&a);
+    let b_r = RangeSetInt::from_iter(&b);
     let expected: Reference = a.intersection(&b).cloned().collect();
     let actual: Reference = (a_r & b_r).into_iter().collect();
     binary_op(a, b, expected, actual)
@@ -1582,8 +1596,8 @@ fn intersection(a: Reference, b: Reference) -> bool {
 
 #[quickcheck]
 fn union(a: Reference, b: Reference) -> bool {
-    let a_r = RangeSetInt::from_iter(a.iter().cloned());
-    let b_r = RangeSetInt::from_iter(b.iter().cloned());
+    let a_r = RangeSetInt::from_iter(&a);
+    let b_r = RangeSetInt::from_iter(&b);
     let expected: Reference = a.union(&b).cloned().collect();
     let actual: Reference = (a_r | b_r).into_iter().collect();
     binary_op(a, b, expected, actual)
@@ -1591,14 +1605,11 @@ fn union(a: Reference, b: Reference) -> bool {
 
 #[quickcheck]
 fn multi_union(inputs: Vec<Reference>) -> bool {
-    use crate::MultiwayRangeSetInt;
+    use crate::MultiwayRangeSetInt2;
 
     let expected: Reference = inputs.iter().flatten().copied().collect();
-    let actual = inputs
-        .iter()
-        .map(|x| RangeSetInt::from_iter(x.iter().cloned()));
-    let actual: Vec<_> = actual.collect();
-    let actual = MultiwayRangeSetInt::union(actual.iter());
+    let actual = inputs.iter().map(RangeSetInt::from_iter).union();
+
     let res = actual.iter().eq(expected.iter().cloned());
     if !res {
         let actual: Reference = actual.iter().collect();
@@ -1607,59 +1618,68 @@ fn multi_union(inputs: Vec<Reference>) -> bool {
     res
 }
 
-// #[quickcheck]
-// fn difference(a: Reference, b: Reference) -> bool {
-//     let expected: Reference = a.difference(&b).cloned().collect();
-//     let actual: Reference = a
-//         .clone()
-//         .into_iter()
-//         .difference(b.clone().into_iter())
-//         .collect();
-//     binary_op(a, b, expected, actual)
-// }
+#[quickcheck]
+fn difference(a: Reference, b: Reference) -> bool {
+    let a_r = RangeSetInt::from_iter(&a);
+    let b_r = RangeSetInt::from_iter(&b);
+    let expected: Reference = a.difference(&b).cloned().collect();
+    let actual: Reference = (a_r - b_r).into_iter().collect();
+    binary_op(a, b, expected, actual)
+}
 
-// #[quickcheck]
-// fn symmetric_difference(a: Reference, b: Reference) -> bool {
-//     let expected: Reference = a.symmetric_difference(&b).cloned().collect();
-//     let actual: Reference = a
-//         .clone()
-//         .into_iter()
-//         .symmetric_difference(b.clone().into_iter())
-//         .collect();
-//     binary_op(a, b, expected, actual)
-// }
+#[quickcheck]
+fn symmetric_difference(a: Reference, b: Reference) -> bool {
+    let a_r = RangeSetInt::from_iter(&a);
+    let b_r = RangeSetInt::from_iter(&b);
+    let expected: Reference = a.symmetric_difference(&b).cloned().collect();
+    let actual: Reference = (a_r ^ b_r).into_iter().collect();
+    binary_op(a, b, expected, actual)
+}
 
-// #[quickcheck]
-// fn intersection_size_hint(a: Reference, b: Reference) -> bool {
-//     let expected = a.intersection(&b).count();
-//     let actual = a.iter().intersection(b.iter()).size_hint();
-//     check_size_hint((a, b), expected, actual)
-// }
+#[quickcheck]
+fn intersection_size_hint(a: Reference, b: Reference) -> bool {
+    let expected = a.intersection(&b).count();
+    let a_r = RangeSetInt::from_iter(&a);
+    let b_r = RangeSetInt::from_iter(&b);
+    let actual = (a_r & b_r).into_iter().size_hint();
+    check_size_hint((a, b), expected, actual)
+}
 
-// #[quickcheck]
-// fn union_size_hint(a: Reference, b: Reference) -> bool {
-//     let expected = a.union(&b).count();
-//     let actual = a.iter().union(b.iter()).size_hint();
-//     check_size_hint((a, b), expected, actual)
-// }
+#[quickcheck]
+fn union_size_hint(a: Reference, b: Reference) -> bool {
+    let expected = a.union(&b).count();
+    let a_r = RangeSetInt::from_iter(&a);
+    let b_r = RangeSetInt::from_iter(&b);
+    let actual = (a_r | b_r).into_iter().size_hint();
+    check_size_hint((a, b), expected, actual)
+}
 
-// #[quickcheck]
-// fn multi_union_size_hint(inputs: Vec<Reference>) -> bool {
-//     let expected: Reference = inputs.iter().flatten().copied().collect();
-//     let actual = MultiwayUnion::from_iter(inputs.iter().map(|i| i.iter())).size_hint();
-//     check_size_hint(inputs, expected.len(), actual)
-// }
+#[quickcheck]
+fn multi_union_size_hint(inputs: Vec<Reference>) -> bool {
+    let expected: Reference = inputs.iter().flatten().copied().collect();
+    let actual = inputs
+        .iter()
+        .map(RangeSetInt::from_iter)
+        .union()
+        .iter()
+        .size_hint();
+    check_size_hint(inputs, expected.len(), actual)
+}
 
-// #[quickcheck]
-// fn difference_size_hint(a: Reference, b: Reference) -> bool {
-//     let expected = a.difference(&b).count();
-//     let actual = a.iter().difference(b.iter()).size_hint();
-//     check_size_hint((a, b), expected, actual)
-// }
+#[quickcheck]
+fn difference_size_hint(a: Reference, b: Reference) -> bool {
+    let expected = a.difference(&b).count();
+    let a_r = RangeSetInt::from_iter(&a);
+    let b_r = RangeSetInt::from_iter(&b);
+    let actual = (a_r - b_r).into_iter().size_hint();
+    check_size_hint((a, b), expected, actual)
+}
 
-// #[quickcheck]
-// fn symmetric_difference_size_hint(a: Reference, b: Reference) -> bool {
-//     let expected = a.symmetric_difference(&b).count();
-//     let actual = a.iter().symmetric_difference(b.iter()).size_hint();
-//     check_size_hint((a, b), expected, actual)
-// }
+#[quickcheck]
+fn symmetric_difference_size_hint(a: Reference, b: Reference) -> bool {
+    let expected = a.symmetric_difference(&b).count();
+    let a_r = RangeSetInt::from_iter(&a);
+    let b_r = RangeSetInt::from_iter(&b);
+    let actual = (a_r ^ b_r).into_iter().size_hint();
+    check_size_hint((a, b), expected, actual)
+}
