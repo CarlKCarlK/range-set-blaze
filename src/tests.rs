@@ -19,9 +19,11 @@ use std::{
 
 use super::*;
 use itertools::Itertools;
+use rand::{rngs::StdRng, SeedableRng};
 // use sorted_iter::assume::AssumeSortedByKeyExt;
 // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use syntactic_for::syntactic_for;
+use tests_common::{How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
 use std::ops::BitAndAssign;
 
@@ -1439,6 +1441,18 @@ fn ranges_coverage_0() {
 fn sorted_disjoint_coverage_0() {
     let a = CheckSortedDisjoint::<i32, _>::default();
     assert!(a.is_empty());
+
+    let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+    let b = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+    assert!((a & b).equal(CheckSortedDisjoint::new([1..=2, 5..=100].into_iter())));
+
+    let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+    let b = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+    assert!((a - b).is_empty());
+
+    let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+    let b = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+    assert!((a ^ b).is_empty());
 }
 
 #[test]
@@ -1480,4 +1494,52 @@ fn sorted_disjoint_coverage_3() {
     let mut a = CheckSortedDisjoint::new([1..=1, 2..=2].into_iter());
     a.next();
     a.next();
+}
+
+#[test]
+#[should_panic]
+fn sorted_disjoint_coverage_4() {
+    #[allow(clippy::reversed_empty_ranges)]
+    let mut a = CheckSortedDisjoint::new([0..=i128::MAX].into_iter());
+    a.next();
+}
+
+#[test]
+fn sorted_disjoint_iterator_coverage_0() {
+    let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+    let b = CheckSortedDisjoint::new([1..=2, 5..=101].into_iter());
+    assert!(b.is_superset(a));
+}
+
+#[test]
+fn union_iter_coverage_0() {
+    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+    let b = CheckSortedDisjoint::new(vec![1..=2, 5..=101].into_iter());
+    let c = a.union(b);
+    assert!(format!("{c:?}").starts_with("UnionIter"));
+}
+
+#[test]
+fn unsorted_disjoint_coverage_0() {
+    let a = AssumeSortedStarts::new([1..=2, 5..=100].into_iter());
+    assert!(format!("{a:?}").starts_with("AssumeSortedStarts"));
+}
+
+#[test]
+fn test_coverage_0() {
+    let a = BooleanVector(vec![true, true, false, false]);
+    assert!(format!("{a:?}").starts_with("BooleanVector"));
+
+    let a = How::Union;
+    #[allow(clippy::clone_on_copy)]
+    let _b = a.clone();
+
+    let mut rng = StdRng::seed_from_u64(0);
+    let a = MemorylessRange::new(&mut rng, 1000, 0..=10, 0.5, 1, How::Intersection);
+    let v: Vec<_> = a.take(100).collect();
+    println!("{v:?}");
+
+    let a = MemorylessIter::new(&mut rng, 1000, 0..=10, 0.5, 1, How::Intersection);
+    let v: Vec<_> = a.take(100).collect();
+    println!("{v:?}");
 }
