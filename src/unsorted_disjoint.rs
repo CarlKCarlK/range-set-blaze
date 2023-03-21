@@ -1,6 +1,3 @@
-// !!!cmk make the names consistent, start/lower vs end/upper/end/...
-// !!!cmk replace OptionRange with Option<RangeInclusive<T>>
-
 use crate::{Integer, SortedDisjoint, SortedStarts};
 use num_traits::Zero;
 use std::{
@@ -111,7 +108,7 @@ where
     len: <T as Integer>::SafeLen,
 }
 
-// cmk Rule there is no reason From's should be into iterators
+// todo rule there is no reason From's should be into iterators
 impl<T: Integer, I> From<I> for SortedDisjointWithLenSoFar<T, I::IntoIter>
 where
     I: IntoIterator<Item = RangeInclusive<T>>,
@@ -214,7 +211,7 @@ where
         self.iter.next()
     }
 
-    // !!!cmk rule add a size hint, but think about if it is correct with respect to other fields
+    // !!!todo rule add a size hint, but think about if it is correct with respect to other fields
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }

@@ -3,7 +3,7 @@
 // https://www.jibbow.com/posts/criterion-flamegraphs/
 // https://github.com/orlp/glidesort
 // https://nnethercote.github.io/perf-book/profiling.html
-// cmk rule: When benchmarking, don't fight criterion.  It's smarter than you are. Make 'em fast.
+// todo rule: When benchmarking, don't fight criterion.  It's smarter than you are. Make 'em fast.
 
 use std::{
     collections::{BTreeSet, HashSet},
@@ -194,7 +194,7 @@ use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange}
 
 pub fn shuffled(c: &mut Criterion) {
     let seed = 0;
-    let len = 2u32.pow(23); // 25 cmk
+    let len = 2u32.pow(23); // 25 cmk bench
     let mut group = c.benchmark_group("shuffled");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
@@ -223,7 +223,7 @@ fn gen_data_shuffled(seed: u64, len: u32) -> Vec<u32> {
 
 pub fn ascending(c: &mut Criterion) {
     let seed = 0;
-    let len = 2u32.pow(20); // 25 cmk
+    let len = 2u32.pow(20); // 25 cmk bench
     let mut group = c.benchmark_group("ascending");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
@@ -238,7 +238,7 @@ pub fn ascending(c: &mut Criterion) {
 
 pub fn descending(c: &mut Criterion) {
     let seed = 0;
-    let len = 2u32.pow(20); // 25 cmk
+    let len = 2u32.pow(20); // 25 cmk bench
     let mut group = c.benchmark_group("descending");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
@@ -496,7 +496,7 @@ fn btree_two_sets1<T: Integer>(
 //     targets = clumps
 // }
 
-// cmk rule use benchmarking -- your random data is important -- automate graphs
+// todo rule use benchmarking -- your random data is important -- automate graphs
 fn k_intersect(c: &mut Criterion) {
     let k = 100;
     let range = 0..=9_999_999;
@@ -556,7 +556,7 @@ fn k_intersect(c: &mut Criterion) {
                 )
             },
             |sets| {
-                // !!!cmk need code for size zero
+                // FUTURE need code for size zero
                 let mut answer = sets[0].clone();
                 for set in sets.iter().skip(1) {
                     answer = answer & set;
@@ -565,19 +565,6 @@ fn k_intersect(c: &mut Criterion) {
             BatchSize::SmallInput,
         );
     });
-    // group.bench_function("BTreeSet intersect 2-at-a-time", |b| {
-    //     b.iter_batched(
-    //         || btree_k_sets(k, range_len, len, coverage_goal),
-    //         |sets| {
-    //             // !!!cmk need code for size zero
-    //             let mut answer = sets[0].clone();
-    //             for set in sets.iter().skip(1) {
-    //                 answer = &answer & set;
-    //             }
-    //         },
-    //         BatchSize::SmallInput,
-    //     );
-    // });
 }
 
 fn coverage_goal(c: &mut Criterion) {
@@ -650,7 +637,7 @@ fn coverage_goal(c: &mut Criterion) {
                         )
                     },
                     |sets| {
-                        // !!!cmk need code for size zero
+                        // FUTURE need code for size zero
                         let mut answer = sets[0].clone();
                         for set in sets.iter().skip(1) {
                             answer = answer & set;
@@ -829,7 +816,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                     b.iter_batched(
                         || setup,
                         |sets| {
-                            // !!!cmk need code for size zero
+                            // FUTURE need code for size zero
                             let mut answer = sets[0].clone();
                             match how {
                                 How::Intersection => {
@@ -1220,4 +1207,4 @@ criterion_group! {
 }
 criterion_main!(benches);
 
-// cmk rule cargo bench intersect
+// todo rule cargo bench intersect

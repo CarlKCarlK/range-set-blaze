@@ -1,12 +1,11 @@
 #![cfg(test)]
 
-// !!!cmk rule: Use the same testing as with macros to check that the types are correct
-// !!!cmk rule make illegal states unpresentable (example u8.len->usize, but u128 needs safe_max_value), UnionIter
-// !!!cmk rule detail: Note that this nicely fails to compile if you try to chain when you shouldn't
-// !!!cmk rule detail:  let chain = b.ranges().chain(c.ranges());
-// !!!cmk rule detail:  let a_less = a.ranges().sub(chain);
-// !!!cmk rule test near extreme values
-// !!!cmk test it across threads
+// !!!todo rule: Use the same testing as with macros to check that the types are correct
+// !!!todo rule make illegal states unpresentable (example u8.len->usize, but u128 needs safe_max_value), UnionIter
+// !!!todo rule detail: Note that this nicely fails to compile if you try to chain when you shouldn't
+// !!!todo rule detail:  let chain = b.ranges().chain(c.ranges());
+// !!!todo rule detail:  let a_less = a.ranges().sub(chain);
+// !!!todo rule test near extreme values
 use super::*;
 use itertools::Itertools;
 use quickcheck_macros::quickcheck;
@@ -290,238 +289,6 @@ fn demo_a() {
     assert!(range_set_int._len_slow() == range_set_int.len());
 }
 
-// #[test]
-// fn test7a() {
-//     let mut range_set = RangeSetInt::new();
-//     range_set._internal_add(38, 1);
-//     range_set._internal_add(39, 1);
-//     assert!(range_set.len() == 2);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 38);
-//     assert!(*first_entry.get() == 2);
-// }
-
-// #[test]
-// fn test1() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 3);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 2);
-//     assert!(*first_entry.get() == 3);
-// }
-
-// #[test]
-// fn test1_c2() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(1, 1);
-//     range_set._internal_add(1, 4);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 1);
-//     assert!(*first_entry.get() == 4);
-// }
-
-// #[test]
-// fn test1_c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 3);
-//     range_set._internal_add(1, 1);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 1);
-//     assert!(*first_entry.get() == 4);
-// }
-
-// // !!!cmk what if connects with next range(s)?
-// #[test]
-// fn test2() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 3);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 2);
-//     assert!(*first_entry.get() == 3);
-//     range_set._internal_add(2, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 2);
-//     assert!(*first_entry.get() == 3);
-//     range_set._internal_add(2, 4);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 1);
-//     let first_entry = range_set._items.first_entry().unwrap();
-//     assert!(*first_entry.key() == 2);
-//     assert!(*first_entry.get() == 4);
-// }
-
-// !!!cmk bring back in
-
-//#[test]
-// fn test2_c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 1);
-//     range_set._internal_add(4, 1);
-//     range_set._internal_add(6, 2);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 3);
-//     assert!(range_set._items[0].start == 2);
-//     assert!(range_set._items[0].length == 1);
-//     assert!(range_set._items[1].start == 4);
-//     assert!(range_set._items[1].length == 1);
-//     assert!(range_set._items[2].start == 6);
-//     assert!(range_set._items[2].length == 2);
-//     range_set._internal_add(2, 10);
-//     assert!(range_set.len() == 10);
-//     assert!(range_set._items.len() == 1);
-//     assert!(range_set._items[0].start == 2);
-//     assert!(range_set._items[0].length == 10);
-// }
-
-//#[test]
-// fn test2_c2() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 1);
-//     range_set._internal_add(4, 1);
-//     range_set._internal_add(6, 20);
-//     assert!(range_set.len() == 22);
-//     assert!(range_set._items.len() == 3);
-//     assert!(range_set._items[0].start == 2);
-//     assert!(range_set._items[0].length == 1);
-//     assert!(range_set._items[1].start == 4);
-//     assert!(range_set._items[1].length == 1);
-//     assert!(range_set._items[2].start == 6);
-//     assert!(range_set._items[2].length == 20);
-//     range_set._internal_add(2, 10);
-//     assert!(range_set.len() == 24);
-//     assert!(range_set._items.len() == 1);
-//     assert!(range_set._items[0].start == 2);
-//     assert!(range_set._items[0].length == 24);
-// }
-
-//#[test]
-// fn test3() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 3);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 1);
-//     range_set._internal_add(0, 1);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 2);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 1);
-//     assert!(range_set._items[1].start == 2);
-//     assert!(range_set._items[1].length == 3);
-// }
-
-//#[test]
-// fn test3c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(2, 3);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 1);
-//     range_set._internal_add(0, 3);
-//     assert!(range_set.len() == 5);
-//     assert!(range_set._items.len() == 1);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 5);
-// }
-
-//#[test]
-// fn test4() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(1, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 2);
-//     assert!(range_set._items[1].start == 5);
-//     assert!(range_set._items[1].length == 1);
-// }
-//#[test]
-// fn test5() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(1, 2);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 2);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 3);
-//     assert!(range_set._items[1].start == 5);
-//     assert!(range_set._items[1].length == 1);
-// }
-//#[test]
-// fn test5_c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(1, 10);
-//     assert!(range_set.len() == 11);
-//     assert!(range_set._items.len() == 1);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 11);
-// }
-//#[test]
-// fn test6() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(3, 1);
-//     assert!(range_set.len() == 4);
-//     assert!(range_set._items.len() == 3);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 2);
-//     assert!(range_set._items[1].start == 3);
-//     assert!(range_set._items[1].length == 1);
-//     assert!(range_set._items[2].start == 5);
-//     assert!(range_set._items[2].length == 1);
-// }
-//#[test]
-// fn test6_c() {
-//     let mut range_set = RangeSetInt::new();
-//     assert!(range_set.len() == 0);
-//     range_set._internal_add(0, 2);
-//     range_set._internal_add(5, 1);
-//     assert!(range_set.len() == 3);
-//     assert!(range_set._items.len() == 2);
-//     range_set._internal_add(3, 2);
-//     assert!(range_set.len() == 5);
-//     assert!(range_set._items.len() == 2);
-//     assert!(range_set._items[0].start == 0);
-//     assert!(range_set._items[0].length == 2);
-//     assert!(range_set._items[1].start == 3);
-//     assert!(range_set._items[1].length == 3);
-// }
-
 #[test]
 fn add_in_order() {
     let mut range_set = RangeSetInt::new();
@@ -529,39 +296,6 @@ fn add_in_order() {
         range_set.insert(i);
     }
 }
-
-// #[test]
-// fn memoryless_data() {
-//     let len = 100_000_000;
-//     let coverage_goal = 0.75;
-//     let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
-//     let range_set_int = RangeSetInt::from_iter(memoryless_data);
-//     let coverage = range_set_int.len() as f64 / len as f64;
-//     println!(
-//         "coverage {coverage:?} range_len {:?}",
-//         range_set_int.range_len().separate_with_commas()
-//     );
-// }
-
-// #[test]
-// fn memoryless_vec() {
-//     let len = 100_000_000;
-//     let coverage_goal = 0.75;
-//     let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
-//     let data_as_vec: Vec<u64> = memoryless_data.collect();
-//     let start = Instant::now();
-//     // let range_set_int = RangeSetInt::from_mut_slice(data_as_vec.as_mut_slice());
-//     let range_set_int = RangeSetInt::from_iter(data_as_vec);
-//     let coverage = range_set_int.len() as f64 / len as f64;
-//     println!(
-//         "coverage {coverage:?} range_len {:?}",
-//         range_set_int.range_len().separate_with_commas()
-//     );
-//     println!(
-//         "xTime elapsed in expensive_function() is: {} ms",
-//         start.elapsed().as_millis()
-//     );
-// }
 
 #[test]
 fn optimize() {
@@ -639,7 +373,6 @@ fn understand_into_iter() {
     // let len = rsi.len();
 }
 
-// !!!cmk what's this about?
 #[derive(Debug, PartialEq)]
 struct BooleanVector(Vec<bool>);
 
@@ -681,8 +414,7 @@ fn iters() {
         println!("{i}");
     }
     for range in range_set_int.ranges() {
-        let (start, end) = range.into_inner();
-        println!("{start}..={end}");
+        println!("{range:?}");
     }
     let mut rs = range_set_int.ranges();
     println!("{:?}", rs.next());
@@ -752,7 +484,7 @@ fn multi_op() {
     let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetInt::from_iter([5..=13, 18..=29]);
     let c = RangeSetInt::from_iter([38..=42]);
-    // cmkRule make these work d= a|b; d= a|b|c; d=&a|&b|&c;
+    // todo rule make these work d= a|b; d= a|b|c; d=&a|&b|&c;
     let d = &(&a | &b) | &c;
     println!("{d}");
     let d = a | b | &c;
@@ -819,7 +551,6 @@ fn nand_repro() {
     let c = &RangeSetInt::from_iter([38..=42]);
     println!("about to nand");
     let d = !b | !c;
-    println!("cmk '{d}'");
     assert_eq!(
         d,
         RangeSetInt::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
@@ -957,11 +688,7 @@ where
     #[allow(clippy::inherent_to_string)]
     #[allow(clippy::wrong_self_convention)]
     pub(crate) fn to_string(self) -> String {
-        self.map(|range| {
-            let (start, end) = range.into_inner();
-            format!("{start}..={end}") // cmk could we format RangeInclusive directly?
-        })
-        .join(", ")
+        self.map(|range| format!("{range:?}")).join(", ")
     }
 }
 #[allow(clippy::reversed_empty_ranges)]
@@ -1040,7 +767,7 @@ fn is_like_check_sorted_disjoint<
 
 fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
 
-// cmk rule: Test that you're implementing all the traits from the data structures you're using as a model. I was leaving out Debug and FusedIterator
+// todo rule: Test that you're implementing all the traits from the data structures you're using as a model. I was leaving out Debug and FusedIterator
 #[test]
 fn check_traits() {
     // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
@@ -1605,7 +1332,7 @@ fn union(a: Reference, b: Reference) -> bool {
 
 #[quickcheck]
 fn multi_union(inputs: Vec<Reference>) -> bool {
-    use crate::MultiwayRangeSetInt2;
+    use crate::MultiwayRangeSetIntRef;
 
     let expected: Reference = inputs.iter().flatten().copied().collect();
     let actual = inputs.iter().map(RangeSetInt::from_iter).union();

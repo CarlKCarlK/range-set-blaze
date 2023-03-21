@@ -1,4 +1,4 @@
-// !!!cmk can you optimize a | b | c to automatically call union([a,b,c])?
+// FUTURE can (should?) you optimize a | b | c to automatically call union([a,b,c])?
 use std::{collections::BTreeSet, ops::BitOr};
 
 use range_set_int::{

@@ -1,4 +1,4 @@
-// !!!cmkRule add integration tests
+// !!!todo rule add integration tests
 #![cfg(test)]
 
 use criterion::{BatchSize, BenchmarkId, Criterion};
@@ -14,7 +14,7 @@ use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
 
-// !!!cmk should users use a prelude? If not, are these reasonable imports?
+// !!!cmk00 should users use a prelude? If not, are these reasonable imports?
 use range_set_int::{
     intersection_dyn, union_dyn, AssumeSortedStarts, Integer, MultiwayRangeSetInt,
     MultiwaySortedDisjoint, RangeSetInt, RangesIter, SortedDisjointIterator,
@@ -154,8 +154,7 @@ fn iters() -> Result<(), Box<dyn std::error::Error>> {
         println!("{i}");
     }
     for range in range_set_int.ranges() {
-        let (start, end) = range.into_inner();
-        println!("{start}..={end}");
+        println!("{range:?}");
     }
     let mut rs = range_set_int.ranges();
     println!("{:?}", rs.next());
@@ -226,7 +225,7 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetInt::from_iter([5..=13, 18..=29]);
     let c = RangeSetInt::from_iter([38..=42]);
-    // cmkRule make these work d= a|b; d= a|b|c; d=&a|&b|&c;
+    // todo rule make these work d= a|b; d= a|b|c; d=&a|&b|&c;
     let d = &(&a | &b) | &c;
     println!("{d}");
     let d = a | b | &c;
@@ -294,7 +293,6 @@ fn nand_repro() -> Result<(), Box<dyn std::error::Error>> {
     let c = &RangeSetInt::from_iter([38..=42]);
     println!("about to nand");
     let d = !b | !c;
-    println!("cmk '{d}'");
     assert_eq!(
         d,
         RangeSetInt::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
@@ -633,9 +631,6 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     // // #16 into / from iter (T,T) + SortedDisjoint
     let mut _sorted_disjoint_iter: UnionIter<_, _> = _range_set_int.ranges().collect();
     _sorted_disjoint_iter = UnionIter::from_iter(_range_set_int.ranges());
-    // // // try_into / try_from string cmk
-    // // _range_set_int = [5..=6, 1..=5].into();
-    // // _range_set_int = UnionIter::from([5..=6, 1..=5]);
 
     Ok(())
 }

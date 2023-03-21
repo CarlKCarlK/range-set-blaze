@@ -129,7 +129,7 @@ pub trait SortedDisjointIterator<T: Integer>:
         NotIter::new(self)
     }
 
-    // !!! cmk test the speed of this
+    // !!! cmk bench test the speed of this
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator
     /// of their symmetric difference.
     ///
@@ -161,7 +161,7 @@ pub trait SortedDisjointIterator<T: Integer>:
         lhs0.difference(rhs0) | rhs1.difference(lhs1)
     }
 
-    // cmk rule: Prefer IntoIterator to Iterator
+    // todo rule: Prefer IntoIterator to Iterator
     /// Given two [`SortedDisjoint`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
     /// this method takes ownership of the iterators and consumes them.
     ///
@@ -182,7 +182,7 @@ pub trait SortedDisjointIterator<T: Integer>:
         itertools::equal(self, other)
     }
 
-    // cmk rule: You can't define traits on combinations of traits, so use this method to define methods on traits
+    // todo rule: You can't define traits on combinations of traits, so use this method to define methods on traits
     /// Given a [`SortedDisjoint`] iterators, produces a string version. Unlike most `to_string` and `fmt` in Rust,
     /// this method takes ownership of the iterator and consumes it.
     ///
@@ -195,11 +195,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// assert_eq!(a.to_string(), "1..=2");
     /// ```
     fn to_string(self) -> String {
-        self.map(|range| {
-            let (start, end) = range.into_inner();
-            format!("{start}..={end}") // cmk could we format RangeInclusive directly?
-        })
-        .join(", ")
+        self.map(|range| format!("{range:?}")).join(", ")
     }
 
     /// Returns `true` if the set contains no elements.
@@ -299,7 +295,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// b.insert(1);
     /// assert_eq!(a.is_disjoint(&b), false);
     /// ```
-    /// cmk rule which functions should be must_use? iterator, constructor, predicates, first, last,
+    /// todo rule which functions should be must_use? iterator, constructor, predicates, first, last,
     #[must_use]
     #[inline]
     #[allow(clippy::wrong_self_convention)]
@@ -312,7 +308,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     }
 }
 
-// cmk rule: You can't define traits on combinations of traits, so use this method to define methods on traits
+// todo rule: You can't define traits on combinations of traits, so use this method to define methods on traits
 impl<T, I> SortedDisjointIterator<T> for I
 where
     T: Integer,

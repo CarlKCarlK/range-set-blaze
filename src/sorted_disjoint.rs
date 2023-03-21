@@ -124,7 +124,7 @@ where
         next
     }
 
-    // !!!cmk rule add a size hint, but think about if it is correct with respect to other fields
+    // !!!todo rule add a size hint, but think about if it is correct with respect to other fields
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -261,7 +261,7 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
         self.iter.next()
     }
 
-    // cmk rule Implement size_hint if possible and ExactSizeIterator if possible
+    // todo rule Implement size_hint if possible and ExactSizeIterator if possible
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }

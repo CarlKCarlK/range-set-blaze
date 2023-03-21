@@ -1,15 +1,11 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
-// !!!cmk add is_subset, etc to SortedDisjointIterator?
-// !!!cmk Implement default and other traits mentioned in the video.
-
 // https://docs.rs/range_bounds_map/latest/range_bounds_map/range_bounds_set/struct.RangeBoundsSet.html
 // Here are some relevant crates I found whilst searching around the topic area:
 
 // https://crates.io/crates/sorted-iter
-//    cmk0 Look at sorted-iter's note about exporting.
-//    cmk0 Look at sorted-iter's note about their testing tool.
+// todo rule: fizz test with quickcheck (ala sorted-iter)
 // https://docs.rs/rangemap Very similar to this crate but can only use RangesIter and RangeInclusives as keys in it's map and set structs (separately).
 // https://docs.rs/btree-range-map
 // https://docs.rs/ranges Cool library for fully-generic ranges (unlike std::ops ranges), along with a RangesIter data structure for storing them (Vec-based unfortunately)
@@ -25,17 +21,17 @@
 // https://lib.rs/crates/ranges
 // https://lib.rs/crates/nonoverlapping_interval_tree
 // https://stackoverflow.com/questions/30540766/how-can-i-add-new-methods-to-iterator
-// cmk rules: When should use Iterator and when IntoIterator?
-// cmk rules: When should use: from_iter, from, new from_something?
-// !!! cmk rule: Don't have a function and a method. Pick one (method)
-// !!!cmk rule: Follow the rules of good API design including accepting almost any type of input
-// cmk rule: don't create an assign method if it is not more efficient
-// cmk rule: generate HTML: criterion = { version = "0.4", features = ["html_reports"] }
-// cmk rule: pick another similar data structure and implement everything that makes sense (copy docs as much as possible)
-// cmk0 finish the benchmark story
-// cmk rule: define and understand PartialOrd, Ord, Eq, etc.
-// cmk rule check/understand PartialOrd, Ord, Eq, etc. and Clone, Default, Debug, etc
-// cmk rule: Do coverage testing (it's really good, see PowerPoint)
+// todo rules: When should use Iterator and when IntoIterator?
+// todo rules: When should use: from_iter, from, new from_something?
+// !!! todo rule: Don't have a function and a method. Pick one (method)
+// !!!todo rule: Follow the rules of good API design including accepting almost any type of input
+// todo rule: don't create an assign method if it is not more efficient
+// todo rule: generate HTML: criterion = { version = "0.4", features = ["html_reports"] }
+// todo rule: pick another similar data structure and implement everything that makes sense (copy docs as much as possible)
+// cmk bench finish the benchmark story
+// todo rule: define and understand PartialOrd, Ord, Eq, etc.
+// todo rule check/understand PartialOrd, Ord, Eq, etc. and Clone, Default, Debug, etc
+// todo rule: Do coverage testing (it's really good, see PowerPoint)
 
 // FUTURE: Support serde via optional feature
 mod integer;
@@ -77,10 +73,10 @@ pub use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
 
-// cmk rule: Support Send and Sync (what about Clone (Copy?) and ExactSizeIterator?)
-// cmk rule: Test Send and Sync with a test (see example)
+// todo rule: Support Send and Sync (what about Clone (Copy?) and ExactSizeIterator?)
+// todo rule: Test Send and Sync with a test (see example)
 
-// cmk rule: Define your element type
+// todo rule: Define your element type
 /// The element trait of the [`RangeSetInt`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
 pub trait Integer:
     num_integer::Integer
@@ -163,7 +159,7 @@ pub trait Integer:
         Self::max_value()
     }
 
-    // !!!cmk we should define .len() SortedDisjoint
+    // !!!cmk00 we should define .len() SortedDisjoint
 
     /// Converts a `f64` to [`Integer::SafeLen`] using the formula `f as Self::SafeLen`. For large integer types, this will result in a loss of precision.
     fn f64_to_safe_len(f: f64) -> Self::SafeLen;
@@ -676,7 +672,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// b.insert(1);
     /// assert_eq!(a.is_disjoint(&b), false);
     /// ```
-    /// cmk rule which functions should be must_use? iterator, constructor, predicates, first, last,
+    /// todo rule which functions should be must_use? iterator, constructor, predicates, first, last,
     #[must_use]
     #[inline]
     pub fn is_disjoint(&self, other: &RangeSetInt<T>) -> bool {
@@ -687,8 +683,8 @@ impl<T: Integer> RangeSetInt<T> {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
         let (start_after, end_after) = after.next().unwrap(); // there will always be a next
-        debug_assert!(start == *start_after && end == *end_after); // real assert
-                                                                   // !!!cmk would be nice to have a delete_range function
+        debug_assert!(start == *start_after && end == *end_after);
+
         let mut end_new = end;
         let delete_list = after
             .map_while(|(start_delete, end_delete)| {
@@ -993,7 +989,7 @@ impl<T: Integer> RangeSetInt<T> {
         if end < start {
             return;
         }
-        // !!! cmk would be nice to have a partition_point function that returns two iterators
+        // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
         let mut before = self.btree_map.range_mut(..=start).rev();
         if let Some((start_before, end_before)) = before.next() {
             // Must check this in two parts to avoid overflow
@@ -1266,7 +1262,7 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
 }
 
 impl<'a, T: Integer> FromIterator<&'a T> for RangeSetInt<T> {
-    /// Create a [`RangeSetInt`] from an iterator of integers. Duplicates and out-of-order elements are fine.
+    /// Create a [`RangeSetInt`] from an iterator of integers references. Duplicates and out-of-order elements are fine.
     ///
     /// *For more about constructors and performance, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
     ///
@@ -1274,10 +1270,8 @@ impl<'a, T: Integer> FromIterator<&'a T> for RangeSetInt<T> {
     ///
     /// ```
     /// use range_set_int::RangeSetInt;
-    /// //cmk0000 update to show references
-    /// //cmk0000add from_iter & range, too
-    /// let a0 = RangeSetInt::from_iter([3, 2, 1, 100, 1]);
-    /// let a1: RangeSetInt<i32> = [3, 2, 1, 100, 1].into_iter().collect();
+    /// let a0 = RangeSetInt::from_iter(vec![3, 2, 1, 100, 1]);
+    /// let a1: RangeSetInt<i32> = vec![3, 2, 1, 100, 1].into_iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
     /// ```
     fn from_iter<I>(iter: I) -> Self
@@ -1288,7 +1282,7 @@ impl<'a, T: Integer> FromIterator<&'a T> for RangeSetInt<T> {
     }
 }
 
-// cmk rules: Follow Rust conventions. For example this as empty let cmk = 1..=-1; we do the same
+// todo rules: Follow Rust conventions. For example this as empty let  a = 1..=0; we do the same
 impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
     /// Create a [`RangeSetInt`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
@@ -1315,6 +1309,31 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
     }
 }
 
+impl<'a, T: Integer + 'a> FromIterator<&'a RangeInclusive<T>> for RangeSetInt<T> {
+    /// Create a [`RangeSetInt`] from an iterator of inclusive ranges, `start..=end`.
+    /// Overlapping, out-of-order, and empty ranges are fine.
+    ///
+    /// *For more about constructors and performance, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    ///
+    /// #[allow(clippy::reversed_empty_ranges)]
+    /// let a0 = RangeSetInt::from_iter(vec![1..=2, 2..=2, -10..=-5, 1..=0]);
+    /// #[allow(clippy::reversed_empty_ranges)]
+    /// let a1: RangeSetInt<i32> = vec![1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// ```
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = &'a RangeInclusive<T>>,
+    {
+        let union_iter: UnionIter<T, _> = iter.into_iter().cloned().collect();
+        union_iter.into()
+    }
+}
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     /// For compatibility with [`BTreeSet`] you may create a [`RangeSetInt`] from an array of integers.
     ///
@@ -1339,7 +1358,7 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
 impl<T, I> From<I> for RangeSetInt<T>
 where
     T: Integer,
-    // !!!cmk what does IntoIterator's ' IntoIter = I::IntoIter' mean?
+    // cmk understand what does IntoIterator's ' IntoIter = I::IntoIter' mean?
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
     // cmk understand why this can't be  I: IntoIterator<Item = RangeInclusive<T>>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
 {
@@ -1394,24 +1413,84 @@ pub type BitEq<T, L, R> = BitOrMerge<
     NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
 >;
 
-// cmkRule Offer methods of traits
-impl<T, I> MultiwayRangeSetInt2<T> for I
+// todo rule Offer methods of traits
+impl<T, I> MultiwayRangeSetIntRef<T> for I
 where
     T: Integer,
     I: IntoIterator<Item = RangeSetInt<T>>,
 {
 }
 
-/// cmk00000 improve name
-/// cmk0000 repeat for Intersection
-/// cmk0000 docs
-pub trait MultiwayRangeSetInt2<T: Integer>: IntoIterator<Item = RangeSetInt<T>> + Sized {
-    /// cmk0000 docs
+/// The trait used to provide methods on multiple [`RangeSetInt`] references,
+/// specifically [`union`] and [`intersection`].
+///
+/// Also see [`MultiwayRangeSetInt`].
+///
+/// [`union`]: MultiwayRangeSetIntRef::union
+/// [`intersection`]: MultiwayRangeSetIntRef::intersection
+pub trait MultiwayRangeSetIntRef<T: Integer>: IntoIterator<Item = RangeSetInt<T>> + Sized {
+    /// Unions the given [`RangeSetInt`] references, creating a new [`RangeSetInt`].
+    /// Any number of input can be given.
+    ///
+    /// For exactly two inputs, you can also use the '|' operator.
+    /// Also see [`MultiwayRangeSetInt::union`].
+    ///
+    /// # Performance
+    ///
+    ///  All work is done on demand, in one pass through the inputs. Minimal memory is used.
+    ///
+    /// # Example
+    ///
+    /// Find the integers that appear in any of the [`RangeSetInt`]'s.
+    ///
+    /// ```
+    /// use range_set_int::{MultiwayRangeSetIntRef, RangeSetInt};
+    ///
+    /// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
+    /// let c = RangeSetInt::from_iter([25..=100]);
+    ///
+    /// let union = vec![a, b, c].into_iter().union();
+    ///
+    /// assert_eq!(union, RangeSetInt::from_iter([1..=15, 18..=100]));
+    /// ```
     fn union(self) -> RangeSetInt<T> {
         self.into_iter().map(|x| x.into_ranges()).union().into()
     }
+
+    /// Intersects the given [`RangeSetInt`] references, creating a new [`RangeSetInt`].
+    /// Any number of input can be given.
+    ///
+    /// For exactly two inputs, you can also use the '&' operator.
+    /// Also see [`MultiwayRangeSetInt::intersection`].
+    ///
+    /// # Performance
+    ///
+    ///  All work is done on demand, in one pass through the inputs. Minimal memory is used.
+    ///
+    /// # Example
+    ///
+    /// Find the integers that appear in all the [`RangeSetInt`]'s.
+    ///
+    /// ```
+    /// use range_set_int::{MultiwayRangeSetIntRef, RangeSetInt};
+    ///
+    /// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
+    /// let c = RangeSetInt::from_iter([-100..=100]);
+    ///
+    /// let intersection = vec![a, b, c].into_iter().intersection();
+    ///
+    /// assert_eq!(intersection, RangeSetInt::from_iter([5..=6, 8..=9, 11..=13]));
+    /// ```
+    fn intersection(self) -> RangeSetInt<T> {
+        self.into_iter()
+            .map(RangeSetInt::into_ranges)
+            .intersection()
+            .into()
+    }
 }
-// cmkRule Offer methods of traits
+// todo rule Offer methods of traits
 impl<'a, T, I> MultiwayRangeSetInt<'a, T> for I
 where
     T: Integer + 'a,
@@ -1420,6 +1499,8 @@ where
 }
 /// The trait used to provide methods on multiple [`RangeSetInt`]'s,
 /// specifically [`union`] and [`intersection`].
+///
+/// Also see [`MultiwayRangeSetIntRef`].
 ///
 /// [`union`]: MultiwayRangeSetInt::union
 /// [`intersection`]: MultiwayRangeSetInt::intersection
@@ -1430,6 +1511,7 @@ pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '|' operator.
+    /// Also see [`MultiwayRangeSetIntRef::union`].
     ///
     /// # Performance
     ///
@@ -1458,6 +1540,7 @@ pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '&' operator.
+    /// Also see [`MultiwayRangeSetIntRef::intersection`].
     ///
     /// # Performance
     ///
@@ -1486,7 +1569,7 @@ pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
     }
 }
 
-// cmkRule Offer methods of traits
+// todo rule Offer methods of traits
 impl<T, II, I> MultiwaySortedDisjoint<T, I> for II
 where
     T: Integer,
@@ -1564,8 +1647,8 @@ where
     }
 }
 
-// cmk rule: don't forget these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
-// cmk define operator on owned and borrowed
+// todo rule: don't forget these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
+// todo rule: define operator on owned and borrowed
 gen_ops_ex!(
     <T>;
     types ref RangeSetInt<T>, ref RangeSetInt<T> => RangeSetInt<T>;
@@ -1637,7 +1720,7 @@ where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     iter: I,
-    current: T, // !!!cmk can't we write this without current? (likewise IntoIter)
+    current: T, // !!!cmk00 can't we write this without current? (likewise IntoIter)
     option_range: Option<RangeInclusive<T>>,
 }
 
@@ -1782,26 +1865,7 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetInt<T> {
     }
 }
 
-// !!!cmk support =, and single numbers
-// !!!cmk error to use -
-// !!!cmk are the unwraps OK?
-// !!!cmk what about bad input?
-
-// cmk This code from sorted-iter shows how to define clone when possible
-// impl<I: Iterator + Clone, J: Iterator + Clone> Clone for Union<I, J>
-// where
-//     I::Item: Clone,
-//     J::Item: Clone,
-// {
-//     fn clone(&self) -> Self {
-//         Self {
-//             a: self.a.clone(),
-//             b: self.b.clone(),
-//         }
-//     }
-// }
-
-// cmk sort-iter uses peekable. Is that better?
+// cmk00 sort-iter uses peekable. Is that better?
 
 impl<T: Integer> Ord for RangeSetInt<T> {
     /// We define a total ordering on RangeSetInt. Following the convention of
@@ -2009,6 +2073,9 @@ impl<T: Integer> Eq for RangeSetInt<T> {}
 /// efficient set operations methods, such as [`intersection`] and [`complement`]. The example below shows this.
 ///
 /// > To use operators such as `&` and `!`, you must also implement the [`BitAnd`], [`Not`], etc. traits.
+/// >
+/// > If you want others to use your marked iterator type, reexport:
+/// > `pub use range_set_int::{SortedDisjoint, SortedStarts};`
 ///
 /// [`BitAnd`]: https://doc.rust-lang.org/std/ops/trait.BitAnd.html
 /// [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
@@ -2025,7 +2092,7 @@ impl<T: Integer> Eq for RangeSetInt<T> {}
 /// ## Example -- Find the ordinal weekdays in September 2023
 /// ```
 /// use std::ops::RangeInclusive;
-/// use range_set_int::{SortedDisjoint, SortedStarts};
+/// pub use range_set_int::{SortedDisjoint, SortedStarts};
 ///
 /// // Ordinal dates count January 1 as day 1, February 1 as day 32, etc.
 /// struct OrdinalWeekends2023 {
@@ -2072,7 +2139,7 @@ pub trait SortedDisjoint: SortedStarts {}
 #[doc(hidden)]
 pub trait SortedStarts {}
 
-// cmk rule add must_use to every iter and other places ala https://doc.rust-lang.org/src/alloc/collections/btree/map.rs.html#1259-1261
+// todo rule add must_use to every iter and other places ala https://doc.rust-lang.org/src/alloc/collections/btree/map.rs.html#1259-1261
 
 // If the iterator inside a BitOrIter is SortedStart, the output will be SortedDisjoint
 impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedStarts> SortedStarts
