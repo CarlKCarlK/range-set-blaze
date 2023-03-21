@@ -33,12 +33,7 @@ fn b_tree_set() {
 fn range_set_int() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetInt<i32>>();
     let b = RangeSetInt::from_iter([2, 3, 4]);
-    let b2 = 2;
-    let b3 = 3;
-    let b4 = 4;
-    let b_ref = [&b2, &b3, &b4];
     let mut c3 = a.clone();
-    let mut c4 = a.clone();
     let mut c5 = a.clone();
 
     let c0 = (&a).bitor(&b);
@@ -48,7 +43,6 @@ fn range_set_int() {
     let c1d = a.clone() | b.clone();
     let c2: RangeSetInt<_> = (a.ranges() | b.ranges()).into();
     c3.append(&mut b.clone());
-    c4.extend(b_ref);
     c5.extend(b);
 
     let answer = RangeSetInt::from_iter([1, 2, 3, 4]);
@@ -59,7 +53,6 @@ fn range_set_int() {
     assert_eq!(&c1d, &answer);
     assert_eq!(&c2, &answer);
     assert_eq!(&c3, &answer);
-    assert_eq!(&c4, &answer);
     assert_eq!(&c5, &answer);
 }
 

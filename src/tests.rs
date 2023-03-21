@@ -892,9 +892,7 @@ fn empty() {
     let a = a_iter.collect::<RangeSetInt<i32>>();
     let arr: [i32; 0] = [];
     let b = RangeSetInt::from_iter(arr);
-    let b_ref: [&i32; 0] = [];
     let mut c3 = a.clone();
-    let mut c4 = a.clone();
     let mut c5 = a.clone();
 
     let c0 = (&a).bitor(&b);
@@ -904,7 +902,6 @@ fn empty() {
     let c1d = a.clone() | b.clone();
     let c2: RangeSetInt<_> = (a.ranges() | b.ranges()).into();
     c3.append(&mut b.clone());
-    c4.extend(b_ref);
     c5.extend(b);
 
     let answer = RangeSetInt::from_iter(arr);
@@ -915,7 +912,6 @@ fn empty() {
     assert_eq!(&c1d, &answer);
     assert_eq!(&c2, &answer);
     assert_eq!(&c3, &answer);
-    assert_eq!(&c4, &answer);
     assert_eq!(&c5, &answer);
 
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
@@ -1275,9 +1271,6 @@ fn lib_coverage_0() {
     let mut a = RangeSetInt::from_iter([1..=3]);
     a.extend([1..=3]);
     assert_eq!(a.len(), 3usize);
-    let ra = 4..=5;
-    a.extend([&ra]);
-    assert_eq!(a.len(), 5usize);
 
     let a = RangeSetInt::from_iter([1..=3]);
     let b = <RangeSetInt<i32> as Clone>::clone(&a);

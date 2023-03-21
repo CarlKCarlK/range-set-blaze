@@ -63,7 +63,7 @@ where
 {
 }
 
-// !!!cmk00 create coverage tests
+// !!!cmk rule create coverage tests
 impl<T, I> Iterator for NotIter<T, I>
 where
     T: Integer,

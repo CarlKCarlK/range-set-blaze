@@ -129,7 +129,6 @@ impl<T: Integer, I> FusedIterator for UnionIter<T, I> where
 {
 }
 
-// cmk00 be sure that every function that accepts a val isn't max_value u128, i128 and returns an error
 impl<T: Integer, I> Iterator for UnionIter<T, I>
 where
     I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
@@ -141,7 +140,7 @@ where
             if let Some(range) = self.iter.next() {
                 let (start, end) = range.into_inner();
                 if end < start {
-                    return self.next(); // !!!cmk00 coverage test
+                    return self.next();
                 }
                 if let Some(current_range) = self.option_range.clone() {
                     let (current_start, current_end) = current_range.into_inner();

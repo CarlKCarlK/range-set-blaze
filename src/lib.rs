@@ -1685,9 +1685,24 @@ impl<T: Integer> Iterator for IntoIter<T> {
     }
 }
 
-/// cmk warn that adds one-by-one
-/// cmk000 needs docs
 impl<T: Integer> Extend<T> for RangeSetInt<T> {
+    /// Extends the [`RangeSetInt`] with the contents of an iterator.
+    ///
+    /// Elements are added one-by-one, which may not be as fast as adding
+    /// via the union operator, `|`. The example below shows show both methods.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    /// let mut a = RangeSetInt::from_iter([1..=4]);
+    /// a.extend([0,0,3,5,10]);
+    /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
+    ///
+    /// let mut a = RangeSetInt::from_iter([1..=4]);
+    /// let mut b = RangeSetInt::from_iter([0,0,3,5,10]);
+    /// let a = a | b;
+    /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
+    /// ```
     fn extend<I>(&mut self, iter: I)
     where
         I: IntoIterator<Item = T>,
@@ -1700,6 +1715,23 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
 }
 
 impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetInt<T> {
+    /// Extends the [`RangeSetInt`] with the contents of an iterator.
+    ///
+    /// Elements are added one-by-one, which may not be as fast as adding
+    /// via the union operator, `|`. The example below shows show both methods.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    /// let mut a = RangeSetInt::from_iter([1..=4]);
+    /// a.extend([0..=0,3..=5,10..=10]);
+    /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
+    ///
+    /// let mut a = RangeSetInt::from_iter([1..=4]);
+    /// let mut b = RangeSetInt::from_iter([0..=0,3..=5,10..=10]);
+    /// let a = a | b;
+    /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
+    /// ```
     fn extend<I>(&mut self, iter: I)
     where
         I: IntoIterator<Item = RangeInclusive<T>>,
@@ -1708,18 +1740,6 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetInt<T> {
         for range in iter {
             self.internal_add(range);
         }
-    }
-}
-
-impl<'a, T: 'a + Integer> Extend<&'a T> for RangeSetInt<T> {
-    fn extend<I: IntoIterator<Item = &'a T>>(&mut self, iter: I) {
-        self.extend(iter.into_iter().cloned());
-    }
-}
-
-impl<'a, T: 'a + Integer> Extend<&'a RangeInclusive<T>> for RangeSetInt<T> {
-    fn extend<I: IntoIterator<Item = &'a RangeInclusive<T>>>(&mut self, iter: I) {
-        self.extend(iter.into_iter().cloned());
     }
 }
 

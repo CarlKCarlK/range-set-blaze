@@ -496,9 +496,7 @@ fn empty_it() {
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
     let a = a_iter.collect::<RangeSetInt<i32>>();
     let b = RangeSetInt::from_iter([0i32; 0]);
-    let b_ref: [&i32; 0] = [];
     let mut c3 = a.clone();
-    let mut c4 = a.clone();
     let mut c5 = a.clone();
 
     let c0 = (&a).bitor(&b);
@@ -508,7 +506,6 @@ fn empty_it() {
     let c1d = a.clone() | b.clone();
     let c2: RangeSetInt<_> = (a.ranges() | b.ranges()).into();
     c3.append(&mut b.clone());
-    c4.extend(b_ref);
     c5.extend(b);
 
     let answer = RangeSetInt::from_iter([0; 0]);
@@ -519,7 +516,6 @@ fn empty_it() {
     assert_eq!(&c1d, &answer);
     assert_eq!(&c2, &answer);
     assert_eq!(&c3, &answer);
-    assert_eq!(&c4, &answer);
     assert_eq!(&c5, &answer);
 
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
