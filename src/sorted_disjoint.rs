@@ -98,7 +98,6 @@ where
 {
     type Item = RangeInclusive<T>;
 
-    //cmk coverage test every panic
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.iter.next();
         if let Some(range) = next.as_ref() {
@@ -112,7 +111,6 @@ where
                 end <= T::safe_max_value(),
                 "end must be less than or equal to safe_max_value"
             );
-            //cmk give safe_max_value a better name and do a text search
             if let Some(prev_end) = self.prev_end {
                 assert!(
                     prev_end < T::safe_max_value() && prev_end + T::one() < start,

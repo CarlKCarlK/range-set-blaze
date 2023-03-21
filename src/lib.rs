@@ -34,7 +34,8 @@
 // cmk rule: pick another similar data structure and implement everything that makes sense (copy docs as much as possible)
 // cmk0 finish the benchmark story
 // cmk rule: define and understand PartialOrd, Ord, Eq, etc.
-// cmk00 check/understand PartialOrd, Ord, Eq, etc. and Clone, Default, Debug, etc
+// cmk rule check/understand PartialOrd, Ord, Eq, etc. and Clone, Default, Debug, etc
+// cmk rule: Do coverage testing (it's really good, see PowerPoint)
 
 // FUTURE: Support serde via optional feature
 mod integer;
@@ -163,9 +164,6 @@ pub trait Integer:
     }
 
     // !!!cmk we should define .len() SortedDisjoint
-
-    /// Converts a `f64` to [`Integer`] using the formula `f as Self`. For large integer types, this will result in a loss of precision.
-    fn f64_to_t(f: f64) -> Self;
 
     /// Converts a `f64` to [`Integer::SafeLen`] using the formula `f as Self::SafeLen`. For large integer types, this will result in a loss of precision.
     fn f64_to_safe_len(f: f64) -> Self::SafeLen;
@@ -433,7 +431,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(set_iter.next(), Some(3));
     /// assert_eq!(set_iter.next(), None);
     /// ```
-    pub fn iter(&self) -> Iter<T, impl Iterator<Item = RangeInclusive<T>> + SortedDisjoint + '_> {
+    pub fn iter(&self) -> Iter<T, RangesIter<'_, T>> {
         // If the user asks for an iter, we give them a borrow to a RangesIter iterator
         // and we iterate that one integer at a time.
         Iter {
@@ -744,6 +742,9 @@ impl<T: Integer> RangeSetInt<T> {
     }
 
     /// Constructs an iterator over a sub-range of elements in the set.
+    ///
+    /// Not to be confused with [`RangeSetInt::ranges`], which returns an iterator over the ranges in the set.
+    ///
     /// The simplest way is to use the range syntax `min..max`, thus `range(min..max)` will
     /// yield elements from min (inclusive) to max (exclusive).
     /// The range may also be entered as `(Bound<T>, Bound<T>)`, so for example
@@ -1685,6 +1686,7 @@ impl<T: Integer> Iterator for IntoIter<T> {
 }
 
 /// cmk warn that adds one-by-one
+/// cmk000 needs docs
 impl<T: Integer> Extend<T> for RangeSetInt<T> {
     fn extend<I>(&mut self, iter: I)
     where
@@ -1769,8 +1771,9 @@ impl<T: Integer> Ord for RangeSetInt<T> {
 
     #[inline]
     fn cmp(&self, other: &RangeSetInt<T>) -> Ordering {
-        // slow return self.iter().cmp(other.iter());
+        // slow one by one: return self.iter().cmp(other.iter());
 
+        // fast by ranges:
         let mut a = self.ranges();
         let mut b = other.ranges();
         let mut a_rx = a.next();
@@ -1778,34 +1781,30 @@ impl<T: Integer> Ord for RangeSetInt<T> {
         loop {
             match (a_rx.clone(), b_rx.clone()) {
                 (Some(a_r), Some(b_r)) => {
-                    let cmp = a_r.start().cmp(b_r.start());
-                    if cmp != Ordering::Equal {
-                        return cmp;
+                    let cmp_start = a_r.start().cmp(b_r.start());
+                    if cmp_start != Ordering::Equal {
+                        return cmp_start;
                     }
-                    let cmp = a_r.end().cmp(b_r.end());
-                    match cmp {
-                        Ordering::Equal => {}
+                    let cmp_end = a_r.end().cmp(b_r.end());
+                    match cmp_end {
+                        Ordering::Equal => {
+                            a_rx = a.next();
+                            b_rx = b.next();
+                        }
                         Ordering::Less => {
                             a_rx = a.next();
                             b_rx = Some(*a_r.end() + T::one()..=*b_r.end());
-                            continue;
                         }
                         Ordering::Greater => {
-                            b_rx = b.next();
                             a_rx = Some(*b_r.end() + T::one()..=*a_r.end());
-                            continue;
+                            b_rx = b.next();
                         }
-                    }
-                    if cmp != Ordering::Equal {
-                        return cmp;
                     }
                 }
                 (Some(_), None) => return Ordering::Greater,
                 (None, Some(_)) => return Ordering::Less,
                 (None, None) => return Ordering::Equal,
             }
-            a_rx = a.next();
-            b_rx = b.next();
         }
     }
 }

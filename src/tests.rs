@@ -9,8 +9,9 @@
 // !!!cmk test it across threads
 use std::{
     any::Any,
-    collections::BTreeSet,
+    collections::{hash_map::DefaultHasher, BTreeSet},
     fmt::Display,
+    hash::Hash,
     iter::FusedIterator,
     ops::BitOr,
     panic::{RefUnwindSafe, UnwindSafe},
@@ -1095,4 +1096,388 @@ fn check_traits() {
     type AAssumeSortedStarts<'a> = AssumeSortedStarts<i32, ARangesIter<'a>>;
     is_sssu::<AAssumeSortedStarts>();
     is_like_btreeset_iter::<AAssumeSortedStarts>();
+}
+
+#[test]
+fn integer_coverage() {
+    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+        $(
+            let len = <$ty as Integer>::SafeLen::one();
+            let a = $ty::zero();
+            assert_eq!($ty::safe_len_to_f64(len), 1.0);
+            assert_eq!($ty::add_len_less_one(a,len), a);
+            assert_eq!($ty::sub_len_less_one(a,len), a);
+            assert_eq!($ty::f64_to_safe_len(1.0), len);
+            assert!($ty::safe_max_value()<=$ty::max_value());
+            assert!(<$ty as Integer>::safe_max_value()<=$ty::max_value());
+
+        )*
+    }};
+}
+
+#[test]
+#[allow(clippy::bool_assert_comparison)]
+fn lib_coverage_0() {
+    let a = RangeSetInt::from_iter([1..=2, 3..=4]);
+    let _b = a.clone();
+    let mut hasher = DefaultHasher::new();
+    a.hash(&mut hasher);
+    let _d = RangeSetInt::<i32>::default();
+    assert_eq!(a, a);
+
+    let mut set = RangeSetInt::new();
+    assert_eq!(set.first(), None);
+    set.insert(1);
+    assert_eq!(set.first(), Some(1));
+    set.insert(2);
+    assert_eq!(set.first(), Some(1));
+
+    let set = RangeSetInt::from_iter([1, 2, 3]);
+    assert_eq!(set.get(2), Some(2));
+    assert_eq!(set.get(4), None);
+
+    let mut set = RangeSetInt::new();
+    assert_eq!(set.last(), None);
+    set.insert(1);
+    assert_eq!(set.last(), Some(1));
+    set.insert(2);
+    assert_eq!(set.last(), Some(2));
+
+    assert_eq!(a.len(), a._len_slow());
+
+    let mut a = RangeSetInt::from_iter([1..=3]);
+    let mut b = RangeSetInt::from_iter([3..=5]);
+
+    a.append(&mut b);
+
+    assert_eq!(a.len(), 5usize);
+    assert_eq!(b.len(), 0usize);
+
+    assert!(a.contains(1));
+    assert!(a.contains(2));
+    assert!(a.contains(3));
+    assert!(a.contains(4));
+    assert!(a.contains(5));
+
+    let mut v = RangeSetInt::new();
+    v.insert(1);
+    v.clear();
+    assert!(v.is_empty());
+
+    let mut v = RangeSetInt::new();
+    assert!(v.is_empty());
+    v.insert(1);
+    assert!(!v.is_empty());
+
+    let sup = RangeSetInt::from_iter([1..=3]);
+    let mut set = RangeSetInt::new();
+
+    assert_eq!(set.is_subset(&sup), true);
+    set.insert(2);
+    assert_eq!(set.is_subset(&sup), true);
+    set.insert(4);
+    assert_eq!(set.is_subset(&sup), false);
+
+    let sub = RangeSetInt::from_iter([1, 2]);
+    let mut set = RangeSetInt::new();
+
+    assert_eq!(set.is_superset(&sub), false);
+
+    set.insert(0);
+    set.insert(1);
+    assert_eq!(set.is_superset(&sub), false);
+
+    set.insert(2);
+    assert_eq!(set.is_superset(&sub), true);
+
+    let a = RangeSetInt::from_iter([1..=3]);
+    let mut b = RangeSetInt::new();
+
+    assert_eq!(a.is_disjoint(&b), true);
+    b.insert(4);
+    assert_eq!(a.is_disjoint(&b), true);
+    b.insert(1);
+    assert_eq!(a.is_disjoint(&b), false);
+
+    let mut set = RangeSetInt::new();
+    set.insert(3);
+    set.insert(5);
+    set.insert(8);
+    assert_eq!(Some(5), set.range(4..).next());
+    assert_eq!(Some(3), set.range(..).next());
+    assert_eq!(None, set.range(..=2).next());
+    assert_eq!(None, set.range(1..2).next());
+    assert_eq!(
+        Some(3),
+        set.range((Bound::Excluded(2), Bound::Excluded(4))).next()
+    );
+
+    let mut set = RangeSetInt::new();
+
+    assert_eq!(set.ranges_insert(2..=5), true);
+    assert_eq!(set.ranges_insert(5..=6), true);
+    assert_eq!(set.ranges_insert(3..=4), false);
+    assert_eq!(set.len(), 5usize);
+    let mut set = RangeSetInt::from_iter([1, 2, 3]);
+    assert_eq!(set.take(2), Some(2));
+    assert_eq!(set.take(2), None);
+
+    let mut set = RangeSetInt::new();
+    assert!(set.replace(5).is_none());
+    assert!(set.replace(5).is_some());
+
+    let mut a = RangeSetInt::from_iter([1..=3]);
+    #[allow(clippy::reversed_empty_ranges)]
+    a.internal_add(2..=1);
+
+    assert_eq!(a.partial_cmp(&a), Some(Ordering::Equal));
+
+    let mut a = RangeSetInt::from_iter([1..=3]);
+    a.extend(std::iter::once(4));
+    assert_eq!(a.len(), 4usize);
+
+    let mut a = RangeSetInt::from_iter([1..=3]);
+    a.extend(4..=5);
+    assert_eq!(a.len(), 5usize);
+
+    let mut set = RangeSetInt::new();
+
+    set.insert(1);
+    while let Some(n) = set.pop_first() {
+        assert_eq!(n, 1);
+    }
+    assert!(set.is_empty());
+
+    let mut set = RangeSetInt::new();
+
+    set.insert(1);
+    while let Some(n) = set.pop_last() {
+        assert_eq!(n, 1);
+    }
+    assert!(set.is_empty());
+
+    let a = RangeSetInt::from_iter([1..=3]);
+    let i = a.iter();
+    let j = i.clone();
+    assert_eq!(i.size_hint(), j.size_hint());
+    assert_eq!(format!("{:?}", &i), format!("{:?}", &j));
+
+    let a = RangeSetInt::from_iter([1..=3]);
+    let i = a.into_iter();
+    assert_eq!(i.size_hint(), j.size_hint());
+    assert_eq!(
+        format!("{:?}", &i),
+        "IntoIter { option_range: None, into_iter: [(1, 3)] }"
+    );
+
+    let mut a = RangeSetInt::from_iter([1..=3]);
+    a.extend([1..=3]);
+    assert_eq!(a.len(), 3usize);
+    let ra = 4..=5;
+    a.extend([&ra]);
+    assert_eq!(a.len(), 5usize);
+
+    let a = RangeSetInt::from_iter([1..=3]);
+    let b = <RangeSetInt<i32> as Clone>::clone(&a);
+    assert_eq!(a, b);
+    let c = <RangeSetInt<i32> as Default>::default();
+    assert_eq!(c, RangeSetInt::new());
+
+    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+        $(
+            let a = RangeSetInt::<$ty>::new();
+            println!("{a:#?}");
+            assert_eq!(a.iter().next(), None);
+
+            let mut a = RangeSetInt::from_iter([$ty::one()..=3]);
+            let mut b = RangeSetInt::from_iter([3..=5]);
+
+            a.append(&mut b);
+
+            // assert_eq!(a.len(), 5usize);
+            assert_eq!(b.len(), <$ty as Integer>::SafeLen::zero());
+
+            assert!(a.contains(1));
+            assert!(a.contains(2));
+            assert!(a.contains(3));
+            assert!(a.contains(4));
+            assert!(a.contains(5));
+
+            assert!(b.is_empty());
+
+            let a = RangeSetInt::from_iter([$ty::one()..=3]);
+            let b = RangeSetInt::from_iter([3..=5]);
+            assert!(!a.is_subset(&b));
+            assert!(!a.is_superset(&b));
+
+        )*
+    }};
+
+    let a = RangeSetInt::from_iter([1u128..=3]);
+    assert!(a.contains(1));
+    assert!(!a.is_disjoint(&a));
+}
+
+#[test]
+#[should_panic]
+fn lib_coverage_2() {
+    let v = RangeSetInt::<u128>::new();
+    v.contains(u128::MAX);
+}
+
+#[test]
+#[should_panic]
+fn lib_coverage_3() {
+    let mut v = RangeSetInt::<u128>::new();
+    v.remove(u128::MAX);
+}
+
+#[test]
+#[should_panic]
+fn lib_coverage_4() {
+    let mut v = RangeSetInt::<u128>::new();
+    v.split_off(u128::MAX);
+}
+
+#[test]
+#[should_panic]
+fn lib_coverage_5() {
+    let mut v = RangeSetInt::<u128>::new();
+    v.internal_add(0..=u128::MAX);
+}
+
+#[test]
+fn lib_coverage_6() {
+    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+        $(
+            let mut a = RangeSetInt::<$ty>::from_iter([1..=3, 5..=7, 9..=120]);
+            a.ranges_insert(2..=100);
+            assert_eq!(a, RangeSetInt::from_iter([1..=120]));
+
+
+        )*
+    }};
+}
+
+#[test]
+fn merge_coverage_0() {
+    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+    let b = CheckSortedDisjoint::from([2..=6]);
+    let m = Merge::new(a, b);
+    let n = m.clone();
+    let p = n.clone();
+    let union1 = UnionIter::new(m);
+    let union2 = UnionIter::new(n);
+    assert!(union1.equal(union2));
+    assert!(format!("{p:?}").starts_with("Merge"));
+
+    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+    let b = CheckSortedDisjoint::new(vec![2..=6].into_iter());
+    let c = CheckSortedDisjoint::new(vec![-1..=-1].into_iter());
+    let m = KMerge::new([a, b, c]);
+    let n = m.clone();
+    let p = n.clone();
+    let union1 = UnionIter::new(m);
+    let union2 = UnionIter::new(n);
+    assert!(union1.equal(union2));
+    assert!(format!("{p:?}").starts_with("KMerge"));
+}
+
+#[test]
+fn not_iter_coverage_0() {
+    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+    let n = NotIter::new(a);
+    let p = n.clone();
+    let m = p.clone();
+    assert!(n.equal(m));
+    assert!(format!("{p:?}").starts_with("NotIter"));
+}
+
+#[test]
+fn ranges_coverage_0() {
+    let a = RangeSetInt::from_iter([1..=2, 5..=100]);
+    let r = a.ranges();
+    let p = r.as_ref();
+    assert!(format!("{p:?}").starts_with("Ranges"));
+    assert_eq!(r.len(), 2);
+
+    let r2 = a.into_ranges();
+    let n2 = !!r2;
+    let a = RangeSetInt::from_iter([1..=2, 5..=100]);
+    assert!(n2.equal(a.ranges()));
+    let a = RangeSetInt::from_iter([1..=2, 5..=100]);
+    let b = a.into_ranges();
+    let a = RangeSetInt::from_iter([1..=2, 5..=100]);
+    let c = a.into_ranges();
+    let a = RangeSetInt::from_iter([1..=2, 5..=100]);
+    assert!((b | c).equal(a.ranges()));
+
+    let a = RangeSetInt::from_iter([1..=2, 5..=100]).into_ranges();
+    let b = RangeSetInt::from_iter([1..=2, 5..=100]).into_ranges();
+    assert!((a - b).is_empty());
+
+    let a = RangeSetInt::from_iter([1..=2, 5..=100]).into_ranges();
+    let b = RangeSetInt::from_iter([1..=2, 5..=100]).into_ranges();
+    assert!((a ^ b).is_empty());
+
+    let a = RangeSetInt::from_iter([1..=2, 5..=100]).into_ranges();
+    let b = RangeSetInt::from_iter([1..=2, 5..=100]).into_ranges();
+    assert!((a & b).equal(RangeSetInt::from_iter([1..=2, 5..=100]).into_ranges()));
+
+    assert_eq!(
+        RangeSetInt::from_iter([1..=2, 5..=100]).into_ranges().len(),
+        2
+    );
+    assert!(format!(
+        "{:?}",
+        RangeSetInt::from_iter([1..=2, 5..=100]).into_ranges()
+    )
+    .starts_with("IntoRanges"));
+}
+
+#[test]
+fn sorted_disjoint_coverage_0() {
+    let a = CheckSortedDisjoint::<i32, _>::default();
+    assert!(a.is_empty());
+}
+
+#[test]
+#[should_panic]
+fn sorted_disjoint_coverage_1() {
+    struct SomeAfterNone {
+        a: i32,
+    }
+    impl Iterator for SomeAfterNone {
+        type Item = RangeInclusive<i32>;
+        fn next(&mut self) -> Option<Self::Item> {
+            self.a += 1;
+            if self.a % 2 == 0 {
+                Some(self.a..=self.a)
+            } else {
+                None
+            }
+        }
+    }
+
+    let mut a = CheckSortedDisjoint::new(SomeAfterNone { a: 0 });
+    a.next();
+    a.next();
+    a.next();
+}
+
+#[test]
+#[should_panic]
+fn sorted_disjoint_coverage_2() {
+    #[allow(clippy::reversed_empty_ranges)]
+    let mut a = CheckSortedDisjoint::new([1..=0].into_iter());
+    a.next();
+}
+
+#[test]
+#[should_panic]
+fn sorted_disjoint_coverage_3() {
+    #[allow(clippy::reversed_empty_ranges)]
+    let mut a = CheckSortedDisjoint::new([1..=1, 2..=2].into_iter());
+    a.next();
+    a.next();
 }
