@@ -26,7 +26,7 @@ quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"
 
 
-# Declare a benchmark called “bench” without the standard benchmarking harness. 
+# Declare a benchmark called ""bench" without the standard benchmarking harness. 
 [[bench]]
 name = "bench"
 harness = false
