@@ -1,26 +1,7 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
-// https://docs.rs/range_bounds_map/latest/range_bounds_map/range_bounds_set/struct.RangeBoundsSet.html
-// Here are some relevant crates I found whilst searching around the topic area:
-
-// https://crates.io/crates/sorted-iter
 // todo rule: fizz test with quickcheck (ala sorted-iter)
-// https://docs.rs/rangemap Very similar to this crate but can only use RangesIter and RangeInclusives as keys in it's map and set structs (separately).
-// https://docs.rs/btree-range-map
-// https://docs.rs/ranges Cool library for fully-generic ranges (unlike std::ops ranges), along with a RangesIter data structure for storing them (Vec-based unfortunately)
-// https://docs.rs/intervaltree Allows overlapping intervals but is immutable unfortunately
-// https://docs.rs/nonoverlapping_interval_tree Very similar to rangemap except without a gaps() function and only for RangesIter and not RangeInclusives. And also no fancy coalescing functions.
-// https://docs.rs/unbounded-interval-tree A data structure based off of a 2007 published paper! It supports any RangeBounds as keys too, except it is implemented with a non-balancing Box<Node> based tree, however it also supports overlapping RangeBounds which my library does not.
-// https://docs.rs/rangetree I'm not entirely sure what this library is or isn't, but it looks like a custom red-black tree/BTree implementation used specifically for a Range Tree. Interesting but also quite old (5 years) and uses unsafe.
-// https://docs.rs/btree-range-map/latest/btree_range_map/
-// Related: https://lib.rs/crates/iset
-// https://lib.rs/crates/interval_tree
-// https://lib.rs/crates/range-set
-// https://lib.rs/crates/rangemap
-// https://lib.rs/crates/ranges
-// https://lib.rs/crates/nonoverlapping_interval_tree
-// https://stackoverflow.com/questions/30540766/how-can-i-add-new-methods-to-iterator
 // todo rules: When should use Iterator and when IntoIterator?
 // todo rules: When should use: from_iter, from, new from_something?
 // !!! todo rule: Don't have a function and a method. Pick one (method)
