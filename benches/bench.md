@@ -41,7 +41,7 @@ RangeSetInt is a great choice for clumpy integers.
 <!-- cmk000 rename case  -->
 
 * **Measure**: intake speed
-* **Candidates**: RangeSetInt, rangeset, segmap
+* **Candidates**: RangeSetInt, rangeset
 * **Vary**: *average clump size* from 100 to 1000 (a subset of the 'vs_btree_set' case)
 * **Details**: We generate 1M integers in clumps. Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. The clumps are random uniform in a range of roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover 10% of the range.
 
@@ -57,7 +57,7 @@ RangeSetInt is the only crate that batches its input. This lets it ingest ranges
 <!-- cmk000 rename case  -->
 
 * **Measure**: intake speed
-* **Candidates**: RangeSetInt, rangeset, segmap, BTreeSet, HashSet
+* **Candidates**: RangeSetInt, rangeset, BTreeSet, HashSet
 * **Vary**: *average clump size* from 100 to 1000 (a subset of the 'vs_btree_set' case)
 * **Details**: We generate 1M integers in clumps. Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. The clumps are random uniform in a range of roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover 10% of the range.
 
@@ -75,7 +75,7 @@ Again, we can attribute this speedup to RangeSetInt's input batching, which the 
 <!-- cmk000 rename case  -->
 
 * **Measure**: adding ranges to an existing set
-* **Candidates**: RangeSetInt::BitOrAssign, rangemap extend, segmap extend, segmap union
+* **Candidates**: RangeSetInt::BitOrAssign, rangemap extend
 * **Vary**: number of clumps in the second set, from 1 to 100K.
 * **Details**: We first create two clump iterators, each with the desired number clumps and a coverage of 10%. Their range is 0..=99_999_999.
 We, next, turn these two iterators into two sets. The first set is made from 1000 clumps. Finally, we measure the 
@@ -87,9 +87,7 @@ RangeSetInt uses a hybrid approach. When adding a few clumps, it adds them one a
 
 When adding one clump to the first set, RangeSetInt is about 30% faster than the other crates. The one-at-a-time methods are about 4 times faster than than the all-at-once method.
 
-As the number-of-clumps-to-add grows, RangeSetInt automatically switches from one-at-a-time to all-at-once. This allows it to be 6 times faster than the one-at-a-time methods. It is about 60% faster than the other all-at-once method.
-
-The segmap crate could easily implement the same hybrid approach.
+As the number-of-clumps-to-add grows, RangeSetInt automatically switches from one-at-a-time to all-at-once. This allows it to be 6 times faster than the one-at-a-time methods.
 
 ### stream_vs_ad_hoc' Conclusion
 

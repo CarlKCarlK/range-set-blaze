@@ -609,11 +609,6 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
     for (k_and_range_len, setup) in &setup_vec {
         let parameter = access(k_and_range_len);
 
-        let segmap_setup = setup
-            .iter()
-            .map(|x| segmap::SegmentSet::<i32>::from_iter(x.ranges()))
-            .collect::<Vec<_>>();
-
         group.bench_with_input(
             BenchmarkId::new("dyn", parameter),
             &parameter,
@@ -670,30 +665,6 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                                         answer |= set; // cmk0000
                                     }
                                 }
-                                How::None => panic!("should not happen"),
-                            }
-                        },
-                        BatchSize::SmallInput,
-                    );
-                },
-            );
-
-            group.bench_with_input(
-                BenchmarkId::new("segmap (2-at-a-time)", parameter),
-                &parameter,
-                |b, _k| {
-                    b.iter_batched(
-                        || segmap_setup.iter(),
-                        |mut sets| {
-                            let mut answer = sets.next().unwrap().clone();
-                            match how {
-                                How::Intersection => {
-                                    for set in sets {
-                                        // Can't figure out how to avoid this extra clone
-                                        answer = answer & set.clone();
-                                    }
-                                }
-                                How::Union => panic!("should not happen"),
                                 How::None => panic!("should not happen"),
                             }
                         },
@@ -894,12 +865,10 @@ fn stream_vs_adhoc(c: &mut Criterion) {
     for coverage_goal in coverage_goal_list {
         let set0 = &k_sets(1, range_len0, &range, coverage_goal, how, &mut rng)[0];
         let rangemap_set0 = &rangemap::RangeInclusiveSet::from_iter(set0.ranges());
-        let segmap_set0: segmap::SegmentSet<i32> = segmap::SegmentSet::from_iter(set0.ranges());
 
         for range_len1 in &range_len_list1 {
             let set1 = &k_sets(1, *range_len1, &range, coverage_goal, how, &mut rng)[0];
             let rangemap_set1 = rangemap::RangeInclusiveSet::from_iter(set1.ranges());
-            let segmap_set1: segmap::SegmentSet<i32> = segmap::SegmentSet::from_iter(set1.ranges());
 
             let parameter = set1.ranges_len();
 
@@ -952,31 +921,6 @@ fn stream_vs_adhoc(c: &mut Criterion) {
                         |mut set00| {
                             set00.extend(rangemap_set1.iter().cloned());
                         },
-                        BatchSize::SmallInput,
-                    );
-                },
-            );
-
-            group.bench_with_input(
-                BenchmarkId::new(format!("segmap (one-at-a-time) {coverage_goal}"), parameter),
-                &parameter,
-                |b, _| {
-                    b.iter_batched(
-                        || segmap_set0.clone(),
-                        |mut set00| {
-                            set00.extend(segmap_set1.iter());
-                        },
-                        BatchSize::SmallInput,
-                    );
-                },
-            );
-            group.bench_with_input(
-                BenchmarkId::new(format!("segmap (all-at-once) {coverage_goal}"), parameter),
-                &parameter,
-                |b, _| {
-                    b.iter_batched(
-                        || segmap_set0.clone(),
-                        |set00| &set00 | &segmap_set1,
                         BatchSize::SmallInput,
                     );
                 },
@@ -1151,16 +1095,6 @@ fn ingest_integers(c: &mut Criterion) {
             },
         );
         group.bench_with_input(
-            BenchmarkId::new("segmap (integers)", parameter),
-            &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer: segmap::SegmentSet<i32> =
-                        segmap::SegmentSet::from_iter(vec.iter().map(|x| *x..=*x));
-                })
-            },
-        );
-        group.bench_with_input(
             BenchmarkId::new("BTreeSet", parameter),
             &parameter,
             |b, _| {
@@ -1217,16 +1151,6 @@ fn ingest_ranges(c: &mut Criterion) {
                 b.iter(|| {
                     let _answer: rangemap::RangeInclusiveSet<i32> =
                         rangemap::RangeInclusiveSet::from_iter(vec_range.iter().cloned());
-                })
-            },
-        );
-        group.bench_with_input(
-            BenchmarkId::new("segmap (ranges)", parameter),
-            &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer: segmap::SegmentSet<i32> =
-                        segmap::SegmentSet::from_iter(vec_range.iter().cloned());
                 })
             },
         );
@@ -1291,30 +1215,43 @@ fn worst(c: &mut Criterion) {
     group.finish();
 }
 
+// criterion_group! {
+//     name = benches;
+//     config = Criterion::default();
+//     targets =
+//     shuffled,
+//     ascending,
+//     descending,
+//     clumps,
+//     bitxor,
+//     bitor,
+//     bitor1,
+//     k_intersect,
+//     coverage_goal,
+//     union_vary_k,
+//     union_vary_k_w_2_at_a_time,
+//     intersection_vary_k,
+//     intersection_k_w_2_at_a_time,
+//     union_vary_range_len,
+//     intersection_vary_range_len,
+//     every_op,
+//     vary_coverage_goal,
+//     vary_type,
+//     stream_vs_adhoc,
+//     str_vs_ad_by_cover,
+//     vs_btree_set,
+//     worst,
+//     ingest_integers,
+//     ingest_ranges,
+// }
+
 criterion_group! {
     name = benches;
     config = Criterion::default();
     targets =
-    shuffled,
-    ascending,
-    descending,
-    clumps,
-    bitxor,
-    bitor,
-    bitor1,
-    k_intersect,
-    coverage_goal,
-    union_vary_k,
-    union_vary_k_w_2_at_a_time,
-    intersection_vary_k,
     intersection_k_w_2_at_a_time,
-    union_vary_range_len,
-    intersection_vary_range_len,
     every_op,
-    vary_coverage_goal,
-    vary_type,
     stream_vs_adhoc,
-    str_vs_ad_by_cover,
     vs_btree_set,
     worst,
     ingest_integers,
