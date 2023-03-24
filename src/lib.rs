@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![doc = include_str!("../benches/bench.md")]
 #![warn(missing_docs)]
 
 // todo rule: fizz test with quickcheck (ala sorted-iter)
@@ -25,6 +26,8 @@ mod tests;
 mod union_iter;
 mod unsorted_disjoint;
 
+pub use crate::ranges::IntoRangesIter;
+pub use crate::ranges::RangesIter;
 use gen_ops::gen_ops_ex;
 use itertools::Tee;
 pub use merge::KMerge;
@@ -34,8 +37,6 @@ use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::One;
 use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
-pub use ranges::IntoRangesIter;
-pub use ranges::RangesIter;
 pub use sorted_disjoint::{CheckSortedDisjoint, DynSortedDisjoint};
 pub use sorted_disjoint_iterator::SortedDisjointIterator;
 use std::cmp::max;

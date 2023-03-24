@@ -24,6 +24,11 @@ trybuild = "1.0.53"
 thousands = "0.2.0"
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"
+rangemap = "1.3.0"
+ranges = "0.3.3"
+iset = "0.1.1"
+range-collections = "0.4.0"
+segmap = "0.1.0"
 
 
 # Declare a benchmark called ""bench" without the standard benchmarking harness. 

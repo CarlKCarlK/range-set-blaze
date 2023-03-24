@@ -401,17 +401,20 @@ fn k_intersect(c: &mut Criterion) {
 }
 
 fn coverage_goal(c: &mut Criterion) {
-    let k = 10; // 100;
-    let range = 0..=999_999; // 0..=99_999_999;
-    let range_len = 100; //1_000;
-    let how = How::Union;
+    let k = 100;
+    let range = 0..=99_999_999;
+    let range_len = 1_000;
+    let how = How::Intersection;
+    let coverage_goal_list = [0.01, 0.25, 0.5, 0.75, 0.99];
 
     let mut group = c.benchmark_group("coverage_goal");
-    for coverage_goal in [0.1, 0.5, 0.75, 0.90, 0.95, 0.99].iter() {
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    for coverage_goal in coverage_goal_list {
         // group.throughput(Throughput::Bytes(*size as u64));
         group.bench_with_input(
             BenchmarkId::new("dyn", coverage_goal),
-            coverage_goal,
+            &coverage_goal,
             |b, &coverage_goal| {
                 b.iter_batched(
                     || {
@@ -434,7 +437,7 @@ fn coverage_goal(c: &mut Criterion) {
         );
         group.bench_with_input(
             BenchmarkId::new("static", coverage_goal),
-            coverage_goal,
+            &coverage_goal,
             |b, &coverage_goal| {
                 b.iter_batched(
                     || {
@@ -456,7 +459,7 @@ fn coverage_goal(c: &mut Criterion) {
         );
         group.bench_with_input(
             BenchmarkId::new("two-at-a-time", coverage_goal),
-            coverage_goal,
+            &coverage_goal,
             |b, &coverage_goal| {
                 b.iter_batched(
                     || {
@@ -581,8 +584,8 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
     range_len_list: &[usize],
     access: F,
 ) {
-    let range = 0..=99_999;
-    let coverage_goal = 0.75;
+    let range = 0..=99_999_999;
+    let coverage_goal = 0.25;
     let setup_vec = iproduct!(k_list, range_len_list)
         .map(|(k, range_len)| {
             let k = *k;
@@ -679,7 +682,7 @@ fn every_op(c: &mut Criterion) {
     let k = 2;
     let range_len_list = [1usize, 10, 100, 1000, 10_000, 100_000];
     let range = 0..=99_999_999;
-    let coverage_goal = 0.50;
+    let coverage_goal = 0.5;
     let how = How::None;
     let mut group = c.benchmark_group(group_name);
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
@@ -700,8 +703,8 @@ fn every_op(c: &mut Criterion) {
         })
         .collect::<Vec<_>>();
 
-    for (range_len, setup) in &setup_vec {
-        let parameter = *range_len;
+    for (_range_len, setup) in &setup_vec {
+        let parameter = setup[0].ranges_len();
         group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
             b.iter_batched(
                 || setup,
@@ -850,8 +853,8 @@ fn stream_vs_adhoc(c: &mut Criterion) {
     // let k = 2;
     let range = 0..=99_999_999;
     let range_len0 = 1_000;
-    let range_len_list1 = [1, 5, 10, 100, 1000, 10_000, 100_000];
-    let coverage_goal = 0.5;
+    let range_len_list1 = [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal_list = [0.1];
     let how = How::None;
     let seed = 0;
 
@@ -859,12 +862,64 @@ fn stream_vs_adhoc(c: &mut Criterion) {
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
     let mut rng = StdRng::seed_from_u64(seed);
 
-    let set0 = &k_sets(1, range_len0, &range, coverage_goal, how, &mut rng)[0];
+    for coverage_goal in coverage_goal_list {
+        let set0 = &k_sets(1, range_len0, &range, coverage_goal, how, &mut rng)[0];
 
-    for range_len1 in &range_len_list1 {
-        let parameter = range_len1;
+        for range_len1 in &range_len_list1 {
+            let set1 = &k_sets(1, *range_len1, &range, coverage_goal, how, &mut rng)[0];
+            let parameter = set1.ranges_len();
 
-        let set1 = &k_sets(1, *range_len1, &range, coverage_goal, how, &mut rng)[0];
+            group.bench_with_input(
+                BenchmarkId::new(format!("stream {coverage_goal}"), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || set0,
+                        |set00| {
+                            let _answer = set00 | set1;
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+            group.bench_with_input(
+                BenchmarkId::new(format!("ad_hoc {coverage_goal}"), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || set0.clone(),
+                        |mut set00| {
+                            set00.extend(set1.ranges());
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+        }
+    }
+    group.finish();
+}
+
+fn str_vs_ad_by_cover(c: &mut Criterion) {
+    let group_name = "str_vs_ad_by_cover";
+    // let k = 2;
+    let range = 0..=99_999_999;
+    let range_len0 = 1_000;
+    let range_len1 = 1_000;
+    let coverage_goal_list = [0.01, 0.1, 0.5, 0.9, 0.99];
+    let how = How::None;
+    let seed = 0;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    let mut rng = StdRng::seed_from_u64(seed);
+
+    for coverage_goal in coverage_goal_list {
+        let set0 = &k_sets(1, range_len0, &range, coverage_goal, how, &mut rng)[0];
+
+        let set1 = &k_sets(1, range_len1, &range, coverage_goal, how, &mut rng)[0];
+        let parameter = coverage_goal;
+
         group.bench_with_input(BenchmarkId::new("stream", parameter), &parameter, |b, _| {
             b.iter_batched(
                 || set0,
@@ -886,7 +941,6 @@ fn stream_vs_adhoc(c: &mut Criterion) {
     }
     group.finish();
 }
-
 fn vs_btree_set(c: &mut Criterion) {
     let group_name = "vs_btree_set";
     let k = 1;
@@ -898,6 +952,7 @@ fn vs_btree_set(c: &mut Criterion) {
 
     let mut group = c.benchmark_group(group_name);
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    // group.sample_size(40);
 
     for average_width in average_width_list {
         let parameter = average_width;
@@ -932,6 +987,26 @@ fn vs_btree_set(c: &mut Criterion) {
                 })
             },
         );
+        // group.bench_with_input(
+        //     BenchmarkId::new("rangeset (integers)", parameter),
+        //     &parameter,
+        //     |b, _| {
+        //         b.iter(|| {
+        //             let _answer: RangeInclusiveSet<i32> =
+        //                 RangeInclusiveSet::from_iter(vec.iter().map(|x| *x..=*x));
+        //         })
+        //     },
+        // );
+        // group.bench_with_input(
+        //     BenchmarkId::new("rangeset (ranges)", parameter),
+        //     &parameter,
+        //     |b, _| {
+        //         b.iter(|| {
+        //             let _answer: RangeInclusiveSet<i32> =
+        //                 RangeInclusiveSet::from_iter(vec_range.iter().cloned());
+        //         })
+        //     },
+        // );
         group.bench_with_input(
             BenchmarkId::new("RangeSetInt (ranges)", parameter),
             &parameter,
@@ -941,7 +1016,6 @@ fn vs_btree_set(c: &mut Criterion) {
                 })
             },
         );
-
         group.bench_with_input(
             BenchmarkId::new("BTreeSet", parameter),
             &parameter,
@@ -964,6 +1038,165 @@ fn vs_btree_set(c: &mut Criterion) {
     group.finish();
 }
 
+fn ingest_integers(c: &mut Criterion) {
+    let group_name = "ingest_integers";
+    let k = 1;
+    let average_width_list = [100, 1000];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    group.sample_size(40);
+
+    for average_width in average_width_list {
+        let parameter = average_width;
+
+        let (range_len, range) = width_to_range(iter_len, average_width, coverage_goal);
+
+        let vec: Vec<i32> = MemorylessIter::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetInt (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetInt::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("iset (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = iset::IntervalSet::from_iter(vec.iter().map(|x| *x..*x + 1));
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("rangeset (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: rangemap::RangeInclusiveSet<i32> =
+                        rangemap::RangeInclusiveSet::from_iter(vec.iter().map(|x| *x..=*x));
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("segmap (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: segmap::SegmentSet<i32> =
+                        segmap::SegmentSet::from_iter(vec.iter().map(|x| *x..=*x));
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("BTreeSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("HashSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: HashSet<i32> = HashSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+    }
+    group.finish();
+}
+
+fn ingest_ranges(c: &mut Criterion) {
+    let group_name = "ingest_ranges";
+    let k = 1;
+    let average_width_list = [100, 1000];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    group.sample_size(40);
+
+    for average_width in average_width_list {
+        let parameter = average_width;
+
+        let (range_len, range) = width_to_range(iter_len, average_width, coverage_goal);
+
+        let vec_range: Vec<RangeInclusive<i32>> = MemorylessRange::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("iset (ranges)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = iset::IntervalSet::from_iter(
+                        vec_range.iter().map(|x| *x.start()..*x.end() + 1),
+                    );
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("rangeset (ranges)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: rangemap::RangeInclusiveSet<i32> =
+                        rangemap::RangeInclusiveSet::from_iter(vec_range.iter().cloned());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("segmap (ranges)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: segmap::SegmentSet<i32> =
+                        segmap::SegmentSet::from_iter(vec_range.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetInt (ranges)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetInt::from_iter(vec_range.iter().cloned());
+                })
+            },
+        );
+    }
+    group.finish();
+}
 fn worst(c: &mut Criterion) {
     let group_name = "worst";
     let range = 0..=999;
@@ -1035,8 +1268,11 @@ criterion_group! {
     vary_coverage_goal,
     vary_type,
     stream_vs_adhoc,
+    str_vs_ad_by_cover,
     vs_btree_set,
-    worst
+    worst,
+    ingest_integers,
+    ingest_ranges,
 }
 criterion_main!(benches);
 

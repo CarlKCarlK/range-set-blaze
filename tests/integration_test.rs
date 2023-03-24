@@ -10,6 +10,7 @@ use range_set_int::{
 };
 use std::cmp::Ordering;
 use std::ops::RangeInclusive;
+use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
@@ -1415,4 +1416,89 @@ fn cmp_range_set_int() {
     assert!(a == a);
     assert_eq!(a.cmp(&b), Ordering::Less);
     assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
+}
+
+// #[test]
+// // cargo test run_ranges_crate --release -- --nocapture
+// fn run_ranges_crate() {
+//     let mut rng = StdRng::seed_from_u64(0);
+//     let range_len = 10_000;
+
+//     let vec_range: Vec<_> =
+//         MemorylessRange::new(&mut rng, range_len, 0..=99_999_999, 0.01, 1, How::None).collect();
+
+//     let start = Instant::now();
+//     let _set = ranges::Ranges::from_iter(
+//         vec_range
+//             .iter()
+//             .map(|x| ranges::GenericRange::new_closed(*x.start(), *x.end())),
+//     );
+//     println!("Time elapsed {:?}", start.elapsed());
+
+//     let start = Instant::now();
+//     let _set = RangeSetInt::from_iter(vec_range.iter());
+//     println!("Time elapsed {:?}", start.elapsed());
+// }
+
+#[test]
+// cargo test run_iset_crate --release -- --nocapture
+fn run_iset_crate() {
+    let mut rng = StdRng::seed_from_u64(0);
+    let range_len = 1_000_000;
+
+    let vec_range: Vec<_> =
+        MemorylessRange::new(&mut rng, range_len, 0..=99_999_999, 0.01, 1, How::None).collect();
+
+    let start = Instant::now();
+    let _set = iset::IntervalSet::from_iter(vec_range.iter().map(|x| *x.start()..*x.end() + 1));
+    println!("Time elapsed {:?}", start.elapsed());
+
+    let start = Instant::now();
+    let _set = RangeSetInt::from_iter(vec_range.iter());
+    println!("Time elapsed {:?}", start.elapsed());
+}
+
+#[test]
+// cargo test run_range_collection_crate --release -- --nocapture
+fn run_range_collection_crate() {
+    let mut rng = StdRng::seed_from_u64(0);
+    let range_len = 100_000;
+
+    let vec_range: Vec<_> =
+        MemorylessRange::new(&mut rng, range_len, 0..=99_999_999, 0.01, 1, How::None).collect();
+
+    let start = Instant::now();
+    let mut set: range_collections::RangeSet2<i32> = range_collections::RangeSet::from(1..1);
+    for r in vec_range.iter() {
+        let (start, end) = r.clone().into_inner();
+        let b: range_collections::RangeSet2<i32> =
+            range_collections::RangeSet::from(start..end + 1);
+        set |= b;
+    }
+    println!("cmk0000 {}", set.boundaries().len());
+    println!("Time elapsed {:?}", start.elapsed());
+
+    let start = Instant::now();
+    let _set = RangeSetInt::from_iter(vec_range.iter());
+    println!("Time elapsed {:?}", start.elapsed());
+}
+
+#[test]
+// cargo test run_segmap_crate --release -- --nocapture
+fn run_segmap_crate() {
+    let mut rng = StdRng::seed_from_u64(0);
+    let range_len = 1_000_000;
+
+    let vec_range: Vec<_> =
+        MemorylessRange::new(&mut rng, range_len, 0..=99_999_999, 0.01, 1, How::None).collect();
+
+    let start = Instant::now();
+
+    let _set = segmap::SegmentSet::<i32>::from_iter(vec_range.iter().cloned());
+
+    println!("Time elapsed {:?}", start.elapsed());
+
+    let start = Instant::now();
+    let _set = RangeSetInt::from_iter(vec_range.iter());
+    println!("Time elapsed {:?}", start.elapsed());
 }
