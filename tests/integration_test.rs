@@ -1459,6 +1459,39 @@ fn run_iset_crate() {
 }
 
 #[test]
+fn insert_iset_crate() {
+    let mut rng = StdRng::seed_from_u64(0);
+    let range_len0 = 1_000;
+    let range_len1 = 100;
+
+    let vec_range0: Vec<_> =
+        MemorylessRange::new(&mut rng, range_len0, 0..=99_999_999, 0.1, 1, How::None).collect();
+    let mut iset_set0 =
+        iset::IntervalSet::from_iter(vec_range0.iter().map(|x| *x.start()..*x.end() + 1));
+    let mut set0 = RangeSetInt::from_iter(vec_range0.iter());
+
+    let vec_range1: Vec<_> =
+        MemorylessRange::new(&mut rng, range_len1, 0..=99_999_999, 0.1, 1, How::None).collect();
+    let iset_set1 =
+        iset::IntervalSet::from_iter(vec_range1.iter().map(|x| *x.start()..*x.end() + 1));
+    let set1 = RangeSetInt::from_iter(vec_range1.iter());
+
+    let start = Instant::now();
+    iset_set1.unsorted_iter().for_each(|x| {
+        iset_set0.insert(x);
+    });
+    println!("iset insert {} {:?}", iset_set0.len(), start.elapsed());
+
+    let start = Instant::now();
+    set0.extend(set1.ranges());
+    println!(
+        "RangeSetInt extend {} {:?}",
+        set0.ranges_len(),
+        start.elapsed()
+    );
+}
+
+#[test]
 // cargo test run_range_collection_crate --release -- --nocapture
 fn run_range_collection_crate() {
     let mut rng = StdRng::seed_from_u64(0);

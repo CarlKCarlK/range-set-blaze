@@ -1,0 +1,1 @@
+cargo test %1 --release -- --nocapture

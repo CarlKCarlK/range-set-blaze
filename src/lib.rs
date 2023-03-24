@@ -46,6 +46,7 @@ use std::convert::From;
 use std::fmt;
 use std::iter::FusedIterator;
 use std::ops;
+use std::ops::BitOrAssign;
 use std::ops::Bound;
 use std::ops::RangeBounds;
 use std::ops::RangeInclusive;
@@ -1818,11 +1819,38 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
     }
 }
 
+impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
+    /// cmk0000
+    /// Adds the contents of another [`RangeSetInt`] to this one.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    /// let mut a = RangeSetInt::from_iter([1..=4]);
+    /// let mut b = RangeSetInt::from_iter([0..=0,3..=5,10..=10]);
+    /// a |= b;
+    /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
+    /// ```
+    fn bitor_assign(&mut self, other: &Self) {
+        let a_len = self.ranges_len();
+        if a_len == 0 {
+            *self = other.clone();
+        }
+        let b_len = other.ranges_len();
+        if b_len * (a_len.ilog2() as usize + 1) < a_len + b_len {
+            self.extend(other.ranges());
+        } else {
+            *self = (self.ranges() | other.ranges()).into();
+        }
+    }
+}
+
 impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetInt<T> {
     /// Extends the [`RangeSetInt`] with the contents of an iterator.
     ///
     /// Elements are added one-by-one, which may not be as fast as adding
     /// via the union operator, `|`. The example below shows show both methods.
+    /// cmk0000
     ///
     /// # Examples
     /// ```

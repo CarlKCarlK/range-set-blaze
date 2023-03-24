@@ -662,7 +662,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                                 }
                                 How::Union => {
                                     for set in sets.iter().skip(1) {
-                                        answer = answer | set;
+                                        answer |= set; // cmk0000
                                     }
                                 }
                                 How::None => panic!("should not happen"),
@@ -864,40 +864,59 @@ fn stream_vs_adhoc(c: &mut Criterion) {
 
     for coverage_goal in coverage_goal_list {
         let set0 = &k_sets(1, range_len0, &range, coverage_goal, how, &mut rng)[0];
-
         let rangemap_set0 = &rangemap::RangeInclusiveSet::from_iter(set0.ranges());
+        let iset_set0 =
+            iset::IntervalSet::from_iter(set0.ranges().map(|x| *x.start()..*x.end() + 1));
+        let segmap_set0: segmap::SegmentSet<i32> = segmap::SegmentSet::from_iter(set0.ranges());
 
         for range_len1 in &range_len_list1 {
             let set1 = &k_sets(1, *range_len1, &range, coverage_goal, how, &mut rng)[0];
             let rangemap_set1 = rangemap::RangeInclusiveSet::from_iter(set1.ranges());
+            let iset_set1 =
+                iset::IntervalSet::from_iter(set1.ranges().map(|x| *x.start()..*x.end() + 1));
+            let segmap_set1: segmap::SegmentSet<i32> = segmap::SegmentSet::from_iter(set1.ranges());
+
             let parameter = set1.ranges_len();
 
+            // group.bench_with_input(
+            //     BenchmarkId::new(format!("RangeSetInt stream {coverage_goal}"), parameter),
+            //     &parameter,
+            //     |b, _| {
+            //         b.iter_batched(
+            //             || set0,
+            //             |set00| {
+            //                 let _answer = set00 | set1;
+            //             },
+            //             BatchSize::SmallInput,
+            //         );
+            //     },
+            // );
             group.bench_with_input(
-                BenchmarkId::new(format!("RangeSetInt stream {coverage_goal}"), parameter),
-                &parameter,
-                |b, _| {
-                    b.iter_batched(
-                        || set0,
-                        |set00| {
-                            let _answer = set00 | set1;
-                        },
-                        BatchSize::SmallInput,
-                    );
-                },
-            );
-            group.bench_with_input(
-                BenchmarkId::new(format!("RangeSetInt ad_hoc {coverage_goal}"), parameter),
+                BenchmarkId::new(format!("RangeSetInt hybrid {coverage_goal}"), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
                         || set0.clone(),
                         |mut set00| {
-                            set00.extend(set1.ranges());
+                            set00 |= set1;
                         },
                         BatchSize::SmallInput,
                     );
                 },
             );
+            // group.bench_with_input(
+            //     BenchmarkId::new(format!("RangeSetInt ad_hoc {coverage_goal}"), parameter),
+            //     &parameter,
+            //     |b, _| {
+            //         b.iter_batched(
+            //             || set0.clone(),
+            //             |mut set00| {
+            //                 set00.extend(set1.ranges());
+            //             },
+            //             BatchSize::SmallInput,
+            //         );
+            //     },
+            // );
 
             group.bench_with_input(
                 BenchmarkId::new(format!("rangemap {coverage_goal}"), parameter),
@@ -908,6 +927,47 @@ fn stream_vs_adhoc(c: &mut Criterion) {
                         |mut set00| {
                             set00.extend(rangemap_set1.iter().cloned());
                         },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+
+            group.bench_with_input(
+                BenchmarkId::new(format!("iset {coverage_goal}"), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || iset_set0.clone(),
+                        |mut set00| {
+                            iset_set1.unsorted_iter().for_each(|x| {
+                                set00.insert(x);
+                            });
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+
+            group.bench_with_input(
+                BenchmarkId::new(format!("segmap (extend) {coverage_goal}"), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || segmap_set0.clone(),
+                        |mut set00| {
+                            set00.extend(segmap_set1.iter());
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+            group.bench_with_input(
+                BenchmarkId::new(format!("segmap (union) {coverage_goal}"), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || segmap_set0.clone(),
+                        |set00| &set00 | &segmap_set1,
                         BatchSize::SmallInput,
                     );
                 },
