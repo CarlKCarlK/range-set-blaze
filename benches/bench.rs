@@ -610,7 +610,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
         let parameter = access(k_and_range_len);
 
         group.bench_with_input(
-            BenchmarkId::new("dyn", parameter),
+            BenchmarkId::new("RangeSetInt (multiway dyn)", parameter),
             &parameter,
             |b, _k_and_range_len| {
                 b.iter_batched(
@@ -628,7 +628,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
             },
         );
         group.bench_with_input(
-            BenchmarkId::new("static", parameter),
+            BenchmarkId::new("RangeSetInt (multiway static)", parameter),
             &parameter,
             |b, _k| {
                 b.iter_batched(
@@ -646,7 +646,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
         );
         if include_two_at_a_time {
             group.bench_with_input(
-                BenchmarkId::new("2-at-a-time", parameter),
+                BenchmarkId::new("RangeSetInt (2-at-a-time)", parameter),
                 &parameter,
                 |b, _k| {
                     b.iter_batched(
@@ -665,6 +665,36 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                                         answer |= set; // cmk0000
                                     }
                                 }
+                                How::None => panic!("should not happen"),
+                            }
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+
+            let rangemap_setup = setup
+                .iter()
+                .map(|x| rangemap::RangeInclusiveSet::from_iter(x.ranges()))
+                .collect::<Vec<_>>();
+
+            group.bench_with_input(
+                BenchmarkId::new("rangemap", parameter),
+                &parameter,
+                |b, _k| {
+                    b.iter_batched(
+                        || rangemap_setup.iter(),
+                        |mut sets| {
+                            let mut answer = sets.next().unwrap().clone();
+                            match how {
+                                How::Intersection => {
+                                    for set in sets {
+                                        for range in set.iter() {
+                                            answer.remove(range.clone());
+                                        }
+                                    }
+                                }
+                                How::Union => panic!("should not happen"),
                                 How::None => panic!("should not happen"),
                             }
                         },
