@@ -1502,3 +1502,17 @@ fn run_segmap_crate() {
     let _set = RangeSetInt::from_iter(vec_range.iter());
     println!("Time elapsed {:?}", start.elapsed());
 }
+
+#[test]
+fn run_rangemap_crate() {
+    let mut rng = StdRng::seed_from_u64(0);
+    let range_len = 1_000_000;
+
+    let vec_range: Vec<_> =
+        MemorylessRange::new(&mut rng, range_len, 0..=99_999_999, 0.01, 1, How::None).collect();
+
+    let _start = Instant::now();
+
+    let rangemap_set0 = &rangemap::RangeInclusiveSet::from_iter(vec_range.iter().cloned());
+    let _rangemap_set1 = &rangemap::RangeInclusiveSet::from_iter(rangemap_set0.iter().cloned());
+}

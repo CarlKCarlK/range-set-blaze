@@ -37,6 +37,40 @@ RangeSetInt is a great choice for clumpy integers.
 
 ![vs_btree_set](../target/criterion/vs_btree_set/report/lines.svg "vs_btree_set")
 
+## 'ingest_ranges': Measure Various range set crates on the clumpy integers
+<!-- cmk000 rename case  -->
+
+* **Measure**: intake speed
+* **Candidates**: RangeSetInt, iset, rangeset, segmap
+* **Vary**: *average clump size* from 100 to 1000 (a subset of the 'vs_btree_set' case)
+* **Details**: We generate 1M integers in clumps. Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. The clumps are random uniform in a range of roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover 10% of the range.
+
+We give each crate the clumps as ranges (instead of as individual integers).
+
+### 'ingest_ranges' Results & Conclusion
+
+RangeSetInt is the only crate that batches its input. This lets it ingest ranges 2 to 4 times faster than the other crates. (The other crates could add batching.)
+
+![ingest_ranges](../target/criterion/ingest_ranges/report/lines.svg "ingest_ranges")
+
+## 'ingest_integers': Measure Various range set crates on the clumpy integers
+<!-- cmk000 rename case  -->
+
+* **Measure**: intake speed
+* **Candidates**: RangeSetInt, iset, rangeset, segmap, BTreeSet, HashSet
+* **Vary**: *average clump size* from 100 to 1000 (a subset of the 'vs_btree_set' case)
+* **Details**: We generate 1M integers in clumps. Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. The clumps are random uniform in a range of roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover 10% of the range.
+
+We give each crate the clumps as individual integers.
+
+### 'ingest_integers' Results & Conclusion
+
+Over this range of clumpiness, RangeSetInt is 11 times faster than BTreeSet and HashSet and about 100 times faster than the other range creates.
+
+Again, we can attribute this speedup to RangeSetInt's input batching, which the other crates could add.
+
+![ingest_integers](../target/criterion/ingest_integers/report/lines.svg "ingest_integers")
+
 ## 'stream_vs_ad_hoc': Compare 'union' vs 'insert'
 <!-- cmk000 rename case  -->
 

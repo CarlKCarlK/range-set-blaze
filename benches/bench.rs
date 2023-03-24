@@ -865,12 +865,15 @@ fn stream_vs_adhoc(c: &mut Criterion) {
     for coverage_goal in coverage_goal_list {
         let set0 = &k_sets(1, range_len0, &range, coverage_goal, how, &mut rng)[0];
 
+        let rangemap_set0 = &rangemap::RangeInclusiveSet::from_iter(set0.ranges());
+
         for range_len1 in &range_len_list1 {
             let set1 = &k_sets(1, *range_len1, &range, coverage_goal, how, &mut rng)[0];
+            let rangemap_set1 = rangemap::RangeInclusiveSet::from_iter(set1.ranges());
             let parameter = set1.ranges_len();
 
             group.bench_with_input(
-                BenchmarkId::new(format!("stream {coverage_goal}"), parameter),
+                BenchmarkId::new(format!("RangeSetInt stream {coverage_goal}"), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
@@ -883,13 +886,27 @@ fn stream_vs_adhoc(c: &mut Criterion) {
                 },
             );
             group.bench_with_input(
-                BenchmarkId::new(format!("ad_hoc {coverage_goal}"), parameter),
+                BenchmarkId::new(format!("RangeSetInt ad_hoc {coverage_goal}"), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
                         || set0.clone(),
                         |mut set00| {
                             set00.extend(set1.ranges());
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+
+            group.bench_with_input(
+                BenchmarkId::new(format!("rangemap {coverage_goal}"), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || rangemap_set0.clone(),
+                        |mut set00| {
+                            set00.extend(rangemap_set1.iter().cloned());
                         },
                         BatchSize::SmallInput,
                     );
@@ -987,26 +1004,6 @@ fn vs_btree_set(c: &mut Criterion) {
                 })
             },
         );
-        // group.bench_with_input(
-        //     BenchmarkId::new("rangeset (integers)", parameter),
-        //     &parameter,
-        //     |b, _| {
-        //         b.iter(|| {
-        //             let _answer: RangeInclusiveSet<i32> =
-        //                 RangeInclusiveSet::from_iter(vec.iter().map(|x| *x..=*x));
-        //         })
-        //     },
-        // );
-        // group.bench_with_input(
-        //     BenchmarkId::new("rangeset (ranges)", parameter),
-        //     &parameter,
-        //     |b, _| {
-        //         b.iter(|| {
-        //             let _answer: RangeInclusiveSet<i32> =
-        //                 RangeInclusiveSet::from_iter(vec_range.iter().cloned());
-        //         })
-        //     },
-        // );
         group.bench_with_input(
             BenchmarkId::new("RangeSetInt (ranges)", parameter),
             &parameter,
@@ -1084,7 +1081,7 @@ fn ingest_integers(c: &mut Criterion) {
             },
         );
         group.bench_with_input(
-            BenchmarkId::new("rangeset (integers)", parameter),
+            BenchmarkId::new("rangemap (integers)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1165,7 +1162,7 @@ fn ingest_ranges(c: &mut Criterion) {
             },
         );
         group.bench_with_input(
-            BenchmarkId::new("rangeset (ranges)", parameter),
+            BenchmarkId::new("rangemap (ranges)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
