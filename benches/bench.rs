@@ -672,36 +672,6 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                     );
                 },
             );
-
-            let rangemap_setup = setup
-                .iter()
-                .map(|x| rangemap::RangeInclusiveSet::from_iter(x.ranges()))
-                .collect::<Vec<_>>();
-
-            group.bench_with_input(
-                BenchmarkId::new("rangemap", parameter),
-                &parameter,
-                |b, _k| {
-                    b.iter_batched(
-                        || rangemap_setup.iter(),
-                        |mut sets| {
-                            let mut answer = sets.next().unwrap().clone();
-                            match how {
-                                How::Intersection => {
-                                    for set in sets {
-                                        for range in set.iter() {
-                                            answer.remove(range.clone());
-                                        }
-                                    }
-                                }
-                                How::Union => panic!("should not happen"),
-                                How::None => panic!("should not happen"),
-                            }
-                        },
-                        BatchSize::SmallInput,
-                    );
-                },
-            );
         }
     }
     group.finish();
