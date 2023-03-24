@@ -2,7 +2,7 @@
 #![cfg(test)]
 
 use criterion::{BatchSize, BenchmarkId, Criterion};
-use itertools::Itertools;
+use itertools::{iproduct, Itertools};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use range_set_int::{
@@ -1497,4 +1497,69 @@ fn run_rangemap_crate() {
 
     let rangemap_set0 = &rangemap::RangeInclusiveSet::from_iter(vec_range.iter().cloned());
     let _rangemap_set1 = &rangemap::RangeInclusiveSet::from_iter(rangemap_set0.iter().cloned());
+}
+
+#[test]
+fn segmap_intersection() {
+    // let k_list = [100];
+    // let range_len_list = [1000usize];
+    let k_list = [2];
+    let range_len_list = [10usize];
+    let how = How::Intersection;
+
+    let range = 0..=999;
+    let coverage_goal = 0.25;
+
+    let setup_vec = iproduct!(k_list, range_len_list)
+        .map(|(k, range_len)| {
+            let k = k;
+            let range_len = range_len;
+            (
+                (k, range_len),
+                k_sets(
+                    k,
+                    range_len,
+                    &range,
+                    coverage_goal,
+                    how,
+                    &mut StdRng::seed_from_u64(0),
+                ),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let setup = &setup_vec[0];
+
+    let segmap_setup = setup
+        .1
+        .iter()
+        .map(|x| segmap::SegmentSet::<i32>::from_iter(x.ranges()))
+        .collect::<Vec<_>>();
+
+    let mut sets = segmap_setup.iter();
+
+    let start = Instant::now();
+    let mut answer = sets.next().unwrap().clone();
+    for set in sets {
+        let before = answer.clone(); // cmk0000 extra clone
+        answer = answer & set.clone();
+        println!("cmk0000 {before:?}  & {set:?} = {answer:?} ");
+        println!(
+            "cmk0000 {} & {} = {} ",
+            before.len(),
+            set.len(),
+            answer.len()
+        );
+    }
+    println!("Time elapsed {:?}", start.elapsed());
+}
+
+#[test]
+fn segmap_intersection_repro() {
+    let set0 = segmap::SegmentSet::<i32>::from_iter([1..=3].into_iter());
+    let set1 = segmap::SegmentSet::<i32>::from_iter([2..=4].into_iter());
+    let union = &set0 | &set1;
+    println!("{union:?}"); // got {[1, 3], [2, 4]}, expect ranges to be merged
+    let intersection = set0 & set1;
+    println!("{intersection:?}"); // got {}, expect {[2, 3]}
 }

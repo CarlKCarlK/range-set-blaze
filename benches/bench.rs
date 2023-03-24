@@ -527,7 +527,7 @@ fn intersection_vary_k(c: &mut Criterion) {
         access_k,
     );
 }
-fn intersection_vary_k_w_2_at_a_time(c: &mut Criterion) {
+fn intersection_k_w_2_at_a_time(c: &mut Criterion) {
     let k_list = [2usize, 5, 10, 25, 50, 100];
     let range_len_list = [1000usize];
     parameter_vary_internal(
@@ -608,7 +608,12 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
     for (k_and_range_len, setup) in &setup_vec {
         let parameter = access(k_and_range_len);
-        // group.throughput(Throughput::Bytes(*size as u64));
+
+        let segmap_setup = setup
+            .iter()
+            .map(|x| segmap::SegmentSet::<i32>::from_iter(x.ranges()))
+            .collect::<Vec<_>>();
+
         group.bench_with_input(
             BenchmarkId::new("dyn", parameter),
             &parameter,
@@ -665,6 +670,30 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                                         answer |= set; // cmk0000
                                     }
                                 }
+                                How::None => panic!("should not happen"),
+                            }
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+
+            group.bench_with_input(
+                BenchmarkId::new("segmap (2-at-a-time)", parameter),
+                &parameter,
+                |b, _k| {
+                    b.iter_batched(
+                        || segmap_setup.iter(),
+                        |mut sets| {
+                            let mut answer = sets.next().unwrap().clone();
+                            match how {
+                                How::Intersection => {
+                                    for set in sets {
+                                        // Can't figure out how to avoid this extra clone
+                                        answer = answer & set.clone();
+                                    }
+                                }
+                                How::Union => panic!("should not happen"),
                                 How::None => panic!("should not happen"),
                             }
                         },
@@ -1278,7 +1307,7 @@ criterion_group! {
     union_vary_k,
     union_vary_k_w_2_at_a_time,
     intersection_vary_k,
-    intersection_vary_k_w_2_at_a_time,
+    intersection_k_w_2_at_a_time,
     union_vary_range_len,
     intersection_vary_range_len,
     every_op,
