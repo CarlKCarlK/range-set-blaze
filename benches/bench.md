@@ -41,7 +41,7 @@ RangeSetInt is a great choice for clumpy integers.
 <!-- cmk000 rename case  -->
 
 * **Measure**: intake speed
-* **Candidates**: RangeSetInt, iset, rangeset, segmap
+* **Candidates**: RangeSetInt, rangeset, segmap
 * **Vary**: *average clump size* from 100 to 1000 (a subset of the 'vs_btree_set' case)
 * **Details**: We generate 1M integers in clumps. Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. The clumps are random uniform in a range of roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover 10% of the range.
 
@@ -57,7 +57,7 @@ RangeSetInt is the only crate that batches its input. This lets it ingest ranges
 <!-- cmk000 rename case  -->
 
 * **Measure**: intake speed
-* **Candidates**: RangeSetInt, iset, rangeset, segmap, BTreeSet, HashSet
+* **Candidates**: RangeSetInt, rangeset, segmap, BTreeSet, HashSet
 * **Vary**: *average clump size* from 100 to 1000 (a subset of the 'vs_btree_set' case)
 * **Details**: We generate 1M integers in clumps. Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. The clumps are random uniform in a range of roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover 10% of the range.
 
@@ -74,22 +74,26 @@ Again, we can attribute this speedup to RangeSetInt's input batching, which the 
 ## 'stream_vs_ad_hoc': Compare 'union' vs 'insert'
 <!-- cmk000 rename case  -->
 
-* **Measure**: intake/union speed
-* **Candidates**: RangeSetInt::union, RangeSetInt::insert
-* **Vary**: number of clumps in the set, from 1 to 100K.
+* **Measure**: adding ranges to an existing set
+* **Candidates**: RangeSetInt::BitOrAssign, rangemap extend, segmap extend, segmap union
+* **Vary**: number of clumps in the second set, from 1 to 100K.
 * **Details**: We first create two clump iterators, each with the desired number clumps and a coverage of 10%. Their range is 0..=99_999_999.
-We, next, turn these two iterators into two sets. Finally, we measure the time it takes to union the two sets.
+We, next, turn these two iterators into two sets. The first set is made from 1000 clumps. Finally, we measure the 
+time it takes to add the second set to the first set.
 
-We union two different ways: one-at-a-time (using RangeSetInt::insert) vs all-at-once (using RangeSetInt::union).
+RangeSetInt uses a hybrid approach. When adding a few clumps, it adds them one at a time. When adding many clumps, it unions the two sets all at once.
 
 ### 'stream_vs_ad_hoc' Results
 
-All-at-once goes from being about 5 times slower to being 5 times faster. The crossover point is around 200 clumps.
-(Not shown, but for coverage of 50%, the crossover point is around 10 clumps.)
+When adding one clump to the first set, RangeSetInt is about 30% faster than the other crates. The one-at-a-time methods are about 4 times faster than than the all-at-once method.
+
+As the number-of-clumps-to-add grows, RangeSetInt automatically switches from one-at-a-time to all-at-once. This allows it to be 6 times faster than the one-at-a-time methods. It is about 60% faster than the other all-at-once method.
+
+The segmap crate could easily implement the same hybrid approach.
 
 ### stream_vs_ad_hoc' Conclusion
 
-For sets with many ranges, use RangeSetInt::union. For sets with few ranges, use RangeSetInt::insert.
+Over the whole range of clumpiness, RangeSetInt is faster. Compared to non-hybrid methods it is many times faster at the extremes.
 
 ![stream_vs_adhoc](../target/criterion/stream_vs_adhoc/report/lines.svg "stream_vs_adhoc")
 

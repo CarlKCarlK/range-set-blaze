@@ -865,15 +865,11 @@ fn stream_vs_adhoc(c: &mut Criterion) {
     for coverage_goal in coverage_goal_list {
         let set0 = &k_sets(1, range_len0, &range, coverage_goal, how, &mut rng)[0];
         let rangemap_set0 = &rangemap::RangeInclusiveSet::from_iter(set0.ranges());
-        let iset_set0 =
-            iset::IntervalSet::from_iter(set0.ranges().map(|x| *x.start()..*x.end() + 1));
         let segmap_set0: segmap::SegmentSet<i32> = segmap::SegmentSet::from_iter(set0.ranges());
 
         for range_len1 in &range_len_list1 {
             let set1 = &k_sets(1, *range_len1, &range, coverage_goal, how, &mut rng)[0];
             let rangemap_set1 = rangemap::RangeInclusiveSet::from_iter(set1.ranges());
-            let iset_set1 =
-                iset::IntervalSet::from_iter(set1.ranges().map(|x| *x.start()..*x.end() + 1));
             let segmap_set1: segmap::SegmentSet<i32> = segmap::SegmentSet::from_iter(set1.ranges());
 
             let parameter = set1.ranges_len();
@@ -892,7 +888,7 @@ fn stream_vs_adhoc(c: &mut Criterion) {
             //     },
             // );
             group.bench_with_input(
-                BenchmarkId::new(format!("RangeSetInt hybrid {coverage_goal}"), parameter),
+                BenchmarkId::new(format!("RangeSetInt (hybrid) {coverage_goal}"), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
@@ -933,23 +929,7 @@ fn stream_vs_adhoc(c: &mut Criterion) {
             );
 
             group.bench_with_input(
-                BenchmarkId::new(format!("iset {coverage_goal}"), parameter),
-                &parameter,
-                |b, _| {
-                    b.iter_batched(
-                        || iset_set0.clone(),
-                        |mut set00| {
-                            iset_set1.unsorted_iter().for_each(|x| {
-                                set00.insert(x);
-                            });
-                        },
-                        BatchSize::SmallInput,
-                    );
-                },
-            );
-
-            group.bench_with_input(
-                BenchmarkId::new(format!("segmap (extend) {coverage_goal}"), parameter),
+                BenchmarkId::new(format!("segmap (one-at-a-time) {coverage_goal}"), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
@@ -962,7 +942,7 @@ fn stream_vs_adhoc(c: &mut Criterion) {
                 },
             );
             group.bench_with_input(
-                BenchmarkId::new(format!("segmap (union) {coverage_goal}"), parameter),
+                BenchmarkId::new(format!("segmap (all-at-once) {coverage_goal}"), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
@@ -1132,15 +1112,6 @@ fn ingest_integers(c: &mut Criterion) {
             },
         );
         group.bench_with_input(
-            BenchmarkId::new("iset (integers)", parameter),
-            &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer = iset::IntervalSet::from_iter(vec.iter().map(|x| *x..*x + 1));
-                })
-            },
-        );
-        group.bench_with_input(
             BenchmarkId::new("rangemap (integers)", parameter),
             &parameter,
             |b, _| {
@@ -1210,17 +1181,6 @@ fn ingest_ranges(c: &mut Criterion) {
         )
         .collect();
 
-        group.bench_with_input(
-            BenchmarkId::new("iset (ranges)", parameter),
-            &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer = iset::IntervalSet::from_iter(
-                        vec_range.iter().map(|x| *x.start()..*x.end() + 1),
-                    );
-                })
-            },
-        );
         group.bench_with_input(
             BenchmarkId::new("rangemap (ranges)", parameter),
             &parameter,
