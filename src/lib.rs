@@ -46,6 +46,7 @@ use std::convert::From;
 use std::fmt;
 use std::iter::FusedIterator;
 use std::ops;
+use std::ops::BitOr;
 use std::ops::BitOrAssign;
 use std::ops::Bound;
 use std::ops::RangeBounds;
@@ -1637,9 +1638,6 @@ where
 gen_ops_ex!(
     <T>;
     types ref RangeSetBlaze<T>, ref RangeSetBlaze<T> => RangeSetBlaze<T>;
-    for | call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-        (a.ranges()|b.ranges()).into()
-    };
     for & call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         (a.ranges() & b.ranges()).into()
     };
@@ -1795,7 +1793,7 @@ impl<T: Integer> Iterator for IntoIter<T> {
 impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
     /// Extends the [`RangeSetBlaze`] with the contents of an Integer iterator.
     ///
-    /// Elements are added one-by-one. There is also a version
+    /// Integers are added one-by-one. There is also a version
     /// that takes a range iterator.
     ///
     /// The [`|=`](RangeSetBlaze::bitor_assign) operator extends a [`RangeSetBlaze`]
@@ -1828,7 +1826,11 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
 impl<T: Integer> BitOrAssign<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
     /// Adds the contents of another [`RangeSetBlaze`] to this one.
     ///
-    /// It is never slower than [`RangeSetBlaze::extend`] and
+    /// Passing the right-hand side by ownership rather than borrow
+    /// will allow a many-times faster speed up when the
+    /// right-hand side is much larger than the left-hand side.
+    ///
+    /// Also, this operation is never slower than [`RangeSetBlaze::extend`] and
     /// can often be many times faster.
     ///
     /// # Examples
@@ -1843,6 +1845,7 @@ impl<T: Integer> BitOrAssign<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
         let a_len = self.ranges_len();
         if a_len == 0 {
             *self = other.clone();
+            return;
         }
         let b_len = other.ranges_len();
         if b_len * (a_len.ilog2() as usize + 1) < a_len + b_len {
@@ -1853,11 +1856,17 @@ impl<T: Integer> BitOrAssign<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
     }
 }
 
+// cmk000 coverage tests
 impl<T: Integer> BitOrAssign<RangeSetBlaze<T>> for RangeSetBlaze<T> {
     /// Adds the contents of another [`RangeSetBlaze`] to this one.
     ///
-    /// It is never slower than [`RangeSetBlaze::extend`] and
+    /// Passing the right-hand side by ownership rather than borrow
+    /// will allow a many-times faster speed up when the
+    /// right-hand side is much larger than the left-hand side.
+    ///
+    /// Also, this operation is never slower than [`RangeSetBlaze::extend`] and
     /// can often be many times faster.
+    ///
     ///
     /// # Examples
     /// ```
@@ -1867,19 +1876,101 @@ impl<T: Integer> BitOrAssign<RangeSetBlaze<T>> for RangeSetBlaze<T> {
     /// a |= b;
     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
-    fn bitor_assign(&mut self, other: Self) {
+    fn bitor_assign(&mut self, mut other: Self) {
         let a_len = self.ranges_len();
-        if a_len == 0 {
-            *self = other.clone();
-        }
         let b_len = other.ranges_len();
-        if b_len * (a_len.ilog2() as usize + 1) < a_len + b_len {
-            self.extend(other.ranges());
+        if b_len <= a_len {
+            *self |= &other;
         } else {
-            *self = (self.ranges() | other.ranges()).into();
+            other |= &*self;
+            *self = other;
         }
     }
 }
+
+impl<T: Integer> BitOr<RangeSetBlaze<T>> for RangeSetBlaze<T> {
+    /// Unions the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Passing ownership rather than borrow sometimes allows a many-times
+    /// faster speed up.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+    /// let mut b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let union = a | b;
+    /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
+    /// ```
+    type Output = RangeSetBlaze<T>;
+    fn bitor(mut self, other: Self) -> RangeSetBlaze<T> {
+        self |= other;
+        self
+    }
+}
+
+impl<T: Integer> BitOr<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
+    /// Unions the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Passing ownership rather than borrow sometimes allows a many-times
+    /// faster speed up.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+    /// let mut b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let union = a | &b;
+    /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
+    /// ```
+    type Output = RangeSetBlaze<T>;
+    fn bitor(mut self, other: &Self) -> RangeSetBlaze<T> {
+        self |= other;
+        self
+    }
+}
+
+impl<T: Integer> BitOr<RangeSetBlaze<T>> for &RangeSetBlaze<T> {
+    type Output = RangeSetBlaze<T>;
+    /// Unions the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Passing ownership rather than borrow sometimes allows a many-times
+    /// faster speed up.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+    /// let mut b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let union = &a | b;
+    /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
+    /// ```
+    fn bitor(self, mut other: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        other |= self;
+        other
+    }
+}
+
+impl<T: Integer> BitOr<&RangeSetBlaze<T>> for &RangeSetBlaze<T> {
+    type Output = RangeSetBlaze<T>;
+    /// Unions the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Passing ownership rather than borrow sometimes allows a many-times
+    /// faster speed up.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+    /// let mut b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let union = &a | &b;
+    /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
+    /// ```
+    fn bitor(self, other: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        (self.ranges() | other.ranges()).into()
+    }
+}
+
 impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
     /// Extends the [`RangeSetBlaze`] with the contents of a
     /// range iterator.
@@ -2211,3 +2302,16 @@ impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedD
 // If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
 impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedStarts for Tee<I> {}
 impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedDisjoint for Tee<I> {}
+
+// cmk 0000 if we own inputs, we can do work in place, and we can do it faster. (union)
+// FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
+// cmk Rule Plus features:
+//   batch ingest (how much faster?)
+//   hybrid union (how much faster?)
+//   full set operations (union, intersection, difference, symmetric_difference, complement) including multiway union and intersection
+//   and sub-library for creating others.
+// Minus features:
+//  only set, no map
+// only ints, no floats, dates, etc
+// no serde
+// one way iterators
