@@ -972,7 +972,7 @@ fn str_vs_ad_by_cover(c: &mut Criterion) {
 fn ingest_clumps_base(c: &mut Criterion) {
     let group_name = "ingest_clumps_base";
     let k = 1;
-    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000, 1_000_000];
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000];
     let coverage_goal = 0.10;
     let how = How::None;
     let seed = 0;
@@ -1049,7 +1049,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
 fn ingest_clumps_integers(c: &mut Criterion) {
     let group_name = "ingest_clumps_integers";
     let k = 1;
-    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000, 1_000_000];
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000];
     let coverage_goal = 0.10;
     let how = How::None;
     let seed = 0;
@@ -1117,7 +1117,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
 fn ingest_clumps_ranges(c: &mut Criterion) {
     let group_name = "ingest_clumps_ranges";
     let k = 1;
-    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000, 1_000_000];
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000];
     let coverage_goal = 0.10;
     let how = How::None;
     let seed = 0;

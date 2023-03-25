@@ -1426,3 +1426,11 @@ fn run_rangemap_crate() {
     let rangemap_set0 = &rangemap::RangeInclusiveSet::from_iter(vec_range.iter().cloned());
     let _rangemap_set1 = &rangemap::RangeInclusiveSet::from_iter(rangemap_set0.iter().cloned());
 }
+
+#[test]
+fn from_iter_coverage() {
+    let vec_range = vec![1..=2, 2..=2, -10..=-5];
+    let a0 = RangeSetBlaze::from_iter(vec_range.iter());
+    let a1: RangeSetBlaze<i32> = vec_range.iter().collect();
+    assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+}

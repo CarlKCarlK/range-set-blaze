@@ -129,7 +129,6 @@ pub trait SortedDisjointIterator<T: Integer>:
         NotIter::new(self)
     }
 
-    // !!! cmk bench test the speed of this
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator
     /// of their symmetric difference.
     ///

@@ -1305,9 +1305,9 @@ impl<'a, T: Integer + 'a> FromIterator<&'a RangeInclusive<T>> for RangeSetBlaze<
     /// use range_set_blaze::RangeSetBlaze;
     ///
     /// #[allow(clippy::reversed_empty_ranges)]
-    /// let a0 = RangeSetBlaze::from_iter(vec![1..=2, 2..=2, -10..=-5, 1..=0]);
-    /// #[allow(clippy::reversed_empty_ranges)]
-    /// let a1: RangeSetBlaze<i32> = vec![1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
+    /// let vec_range = vec![1..=2, 2..=2, -10..=-5, 1..=0];
+    /// let a0 = RangeSetBlaze::from_iter(vec_range.iter());
+    /// let a1: RangeSetBlaze<i32> = vec_range.iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
     fn from_iter<I>(iter: I) -> Self
@@ -2309,3 +2309,5 @@ impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedD
 // one way iterators
 
 // todo Rule: Look for rust-only optimizations, such as in-place union (when it would be faster)
+// todo Rule: think about creating a prelude for the crate
+// todo Rule: docs is good. Instead of telling you when to use Extend vs Union, I fixed it.
