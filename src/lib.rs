@@ -1791,21 +1791,25 @@ impl<T: Integer> Iterator for IntoIter<T> {
 }
 
 impl<T: Integer> Extend<T> for RangeSetInt<T> {
-    /// Extends the [`RangeSetInt`] with the contents of an iterator.
+    /// Extends the [`RangeSetInt`] with the contents of an Integer iterator.
     ///
-    /// Elements are added one-by-one, which may not be as fast as adding
-    /// via the union operator, `|`. The example below shows show both methods.
+    /// Elements are added one-by-one. There is also a version
+    /// that takes a range iterator.
+    ///
+    /// The [`|=`](RangeSetInt::bitor_assign) operator extends a [`RangeSetInt`]
+    /// from another [`RangeSetInt`]. It is never slower
+    /// than  [`RangeSetInt::extend`] and often several times faster.
     ///
     /// # Examples
     /// ```
     /// use range_set_int::RangeSetInt;
     /// let mut a = RangeSetInt::from_iter([1..=4]);
-    /// a.extend([0,0,3,5,10]);
+    /// a.extend([5, 0, 0, 3, 4, 10]);
     /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
     ///
     /// let mut a = RangeSetInt::from_iter([1..=4]);
-    /// let mut b = RangeSetInt::from_iter([0,0,3,5,10]);
-    /// let a = a | b;
+    /// let mut b = RangeSetInt::from_iter([5, 0, 0, 3, 4, 10]);
+    /// a |= b;
     /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
     /// ```
     fn extend<I>(&mut self, iter: I)
@@ -1820,15 +1824,17 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
 }
 
 impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
-    /// cmk0000
     /// Adds the contents of another [`RangeSetInt`] to this one.
+    ///
+    /// It is never slower than [`RangeSetInt::extend`] and
+    /// can often be many times faster.
     ///
     /// # Examples
     /// ```
     /// use range_set_int::RangeSetInt;
     /// let mut a = RangeSetInt::from_iter([1..=4]);
     /// let mut b = RangeSetInt::from_iter([0..=0,3..=5,10..=10]);
-    /// a |= b;
+    /// a |= &b;
     /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor_assign(&mut self, other: &Self) {
@@ -1845,23 +1851,54 @@ impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     }
 }
 
-impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetInt<T> {
-    /// Extends the [`RangeSetInt`] with the contents of an iterator.
+impl<T: Integer> BitOrAssign<RangeSetInt<T>> for RangeSetInt<T> {
+    /// Adds the contents of another [`RangeSetInt`] to this one.
     ///
-    /// Elements are added one-by-one, which may not be as fast as adding
-    /// via the union operator, `|`. The example below shows show both methods.
-    /// cmk0000
+    /// It is never slower than [`RangeSetInt::extend`] and
+    /// can often be many times faster.
     ///
     /// # Examples
     /// ```
     /// use range_set_int::RangeSetInt;
     /// let mut a = RangeSetInt::from_iter([1..=4]);
-    /// a.extend([0..=0,3..=5,10..=10]);
+    /// let mut b = RangeSetInt::from_iter([0..=0,3..=5,10..=10]);
+    /// a |= b;
+    /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
+    /// ```
+    fn bitor_assign(&mut self, other: Self) {
+        let a_len = self.ranges_len();
+        if a_len == 0 {
+            *self = other.clone();
+        }
+        let b_len = other.ranges_len();
+        if b_len * (a_len.ilog2() as usize + 1) < a_len + b_len {
+            self.extend(other.ranges());
+        } else {
+            *self = (self.ranges() | other.ranges()).into();
+        }
+    }
+}
+impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetInt<T> {
+    /// Extends the [`RangeSetInt`] with the contents of a
+    /// range iterator.
+
+    /// Elements are added one-by-one. There is also a version
+    /// that takes an integer iterator.
+    ///
+    /// The [`|=`](RangeSetInt::bitor_assign) operator extends a [`RangeSetInt`]
+    /// from another [`RangeSetInt`]. It is never slower
+    ///  than  [`RangeSetInt::extend`] and often several times faster.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_int::RangeSetInt;
+    /// let mut a = RangeSetInt::from_iter([1..=4]);
+    /// a.extend([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
     /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
     ///
     /// let mut a = RangeSetInt::from_iter([1..=4]);
-    /// let mut b = RangeSetInt::from_iter([0..=0,3..=5,10..=10]);
-    /// let a = a | b;
+    /// let mut b = RangeSetInt::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
+    /// a |= b;
     /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
     /// ```
     fn extend<I>(&mut self, iter: I)
