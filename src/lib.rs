@@ -415,7 +415,6 @@ impl<T: Integer> RangeSetBlaze<T> {
         // If the user asks for an iter, we give them a borrow to a RangesIter iterator
         // and we iterate that one integer at a time.
         Iter {
-            current: T::zero(),
             option_range: None,
             iter: self.ranges(),
         }
@@ -1703,7 +1702,6 @@ where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
 {
     iter: I,
-    current: T, // !!!cmk00 can't we write this without current? (likewise IntoIter)
     option_range: Option<RangeInclusive<T>>,
 }
 
@@ -1722,13 +1720,12 @@ where
             if let Some(range) = self.option_range.clone() {
                 let (start, end) = range.into_inner();
                 debug_assert!(start <= end && end <= T::safe_max_value());
-                self.current = start;
                 if start < end {
                     self.option_range = Some(start + T::one()..=end);
                 } else {
                     self.option_range = None;
                 }
-                return Some(self.current);
+                return Some(start);
             } else if let Some(range) = self.iter.next() {
                 self.option_range = Some(range);
                 continue;

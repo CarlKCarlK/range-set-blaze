@@ -68,8 +68,7 @@ Again, we can attribute this speedup to RangeSetBlaze's input batching, which th
 
 ![ingest_clumps_integers](../target/criterion/ingest_clumps_integers/report/lines.svg "ingest_clumps_integers")
 
-## 'stream_vs_ad_hoc': Compare 'union' vs 'insert'
-<!-- cmk000 rename case  -->
+## 'union_two_sets': Compare 'union' vs 'insert'
 
 * **Measure**: adding ranges to an existing set
 * **Candidates**: RangeSetBlaze::BitOrAssign, rangemap extend
@@ -80,13 +79,13 @@ time it takes to add the second set to the first set.
 
 RangeSetBlaze uses a hybrid approach. When adding a few clumps, it adds them one at a time. When adding many clumps, it unions the two sets all at once.
 
-### 'stream_vs_ad_hoc' Results
+### 'union_two_sets' Results
 
 When adding one clump to the first set, RangeSetBlaze is about 30% faster than the other crates. The one-at-a-time methods are about 4 times faster than than the all-at-once method.
 
 As the number-of-clumps-to-add grows, RangeSetBlaze automatically switches from one-at-a-time to all-at-once. This allows it to be 6 times faster than the one-at-a-time methods.
 
-### stream_vs_ad_hoc' Conclusion
+### union_two_sets' Conclusion
 
 Over the whole range of clumpiness, RangeSetBlaze is faster. Compared to non-hybrid methods it is many times faster at the extremes.
 

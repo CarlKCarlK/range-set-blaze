@@ -527,12 +527,12 @@ fn intersection_vary_k(c: &mut Criterion) {
         access_k,
     );
 }
-fn intersection_k_w_2_at_a_time(c: &mut Criterion) {
+fn intersect_k_sets(c: &mut Criterion) {
     let k_list = [2usize, 5, 10, 25, 50, 100];
     let range_len_list = [1000usize];
     parameter_vary_internal(
         c,
-        "intersection_k_w_2_at_a_time",
+        "intersect_k_sets",
         true,
         How::Intersection,
         &k_list,
@@ -1215,48 +1215,48 @@ fn worst(c: &mut Criterion) {
     group.finish();
 }
 
-// criterion_group! {
-//     name = benches;
-//     config = Criterion::default();
-//     targets =
-//     shuffled,
-//     ascending,
-//     descending,
-//     clumps,
-//     bitxor,
-//     bitor,
-//     bitor1,
-//     k_intersect,
-//     coverage_goal,
-//     union_vary_k,
-//     union_vary_k_w_2_at_a_time,
-//     intersection_vary_k,
-//     intersection_k_w_2_at_a_time,
-//     union_vary_range_len,
-//     intersection_vary_range_len,
-//     every_op,
-//     vary_coverage_goal,
-//     vary_type,
-//     stream_vs_adhoc,
-//     str_vs_ad_by_cover,
-//     ingest_clumps_base,
-//     worst,
-//     ingest_clumps_integers,
-//     ingest_clumps_ranges,
-// }
-
 criterion_group! {
     name = benches;
     config = Criterion::default();
     targets =
-    intersection_k_w_2_at_a_time,
+    shuffled,
+    ascending,
+    descending,
+    clumps,
+    bitxor,
+    bitor,
+    bitor1,
+    k_intersect,
+    coverage_goal,
+    union_vary_k,
+    union_vary_k_w_2_at_a_time,
+    intersection_vary_k,
+    intersect_k_sets,
+    union_vary_range_len,
+    intersection_vary_range_len,
     every_op,
+    vary_coverage_goal,
+    vary_type,
     stream_vs_adhoc,
+    str_vs_ad_by_cover,
     ingest_clumps_base,
     worst,
     ingest_clumps_integers,
     ingest_clumps_ranges,
 }
+
+// criterion_group! {
+//     name = benches;
+//     config = Criterion::default();
+//     targets =
+//     intersect_k_sets,
+//     every_op,
+//     stream_vs_adhoc,
+//     ingest_clumps_base,
+//     worst,
+//     ingest_clumps_integers,
+//     ingest_clumps_ranges,
+// }
 criterion_main!(benches);
 
 // todo rule cargo bench intersect
