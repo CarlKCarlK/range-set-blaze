@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use range_set_int::{RangeSetInt, SortedDisjointIterator};
+use range_set_blaze::{RangeSetBlaze, SortedDisjointIterator};
 
 fn main() {
     let a = [(1, -1), (-3, 4)];

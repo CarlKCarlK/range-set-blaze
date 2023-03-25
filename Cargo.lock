@@ -485,7 +485,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "range-set-int"
+name = "range-set-blaze"
 version = "0.1.0"
 dependencies = [
  "criterion",
@@ -639,7 +639,7 @@ dependencies = [
  "num-integer",
  "num-traits",
  "rand",
- "range-set-int",
+ "range-set-blaze",
 ]
 
 [[package]]

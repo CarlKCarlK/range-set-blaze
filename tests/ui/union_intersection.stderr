@@ -1,8 +1,8 @@
-error[E0432]: unresolved imports `range_set_int::intersection`, `range_set_int::union`
- --> tests/ui/union_intersection.rs:1:21
+error[E0432]: unresolved imports `range_set_blaze::intersection`, `range_set_blaze::union`
+ --> tests/ui/union_intersection.rs:1:23
   |
-1 | use range_set_int::{intersection, union};
-  |                     ^^^^^^^^^^^^  ^^^^^ no `union` in the root
-  |                     |
-  |                     no `intersection` in the root
-  |                     help: a similar name exists in the module: `intersection_dyn`
+1 | use range_set_blaze::{intersection, union};
+  |                       ^^^^^^^^^^^^  ^^^^^ no `union` in the root
+  |                       |
+  |                       no `intersection` in the root
+  |                       help: a similar name exists in the module: `intersection_dyn`

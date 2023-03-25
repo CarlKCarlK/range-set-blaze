@@ -1,8 +1,8 @@
-warning: unused import: `RangeSetInt`
- --> tests/ui/tee.rs:2:21
+warning: unused import: `RangeSetBlaze`
+ --> tests/ui/tee.rs:2:23
   |
-2 | use range_set_int::{RangeSetInt, SortedDisjointIterator};
-  |                     ^^^^^^^^^^^
+2 | use range_set_blaze::{RangeSetBlaze, SortedDisjointIterator};
+  |                       ^^^^^^^^^^^^^
   |
   = note: `#[warn(unused_imports)]` on by default
 
@@ -38,7 +38,7 @@ error[E0599]: the method `union` exists for struct `Tee<std::slice::Iter<'_, ({i
           which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
 
 warning: unused import: `SortedDisjointIterator`
- --> tests/ui/tee.rs:2:34
+ --> tests/ui/tee.rs:2:38
   |
-2 | use range_set_int::{RangeSetInt, SortedDisjointIterator};
-  |                                  ^^^^^^^^^^^^^^^^^^^^^^
+2 | use range_set_blaze::{RangeSetBlaze, SortedDisjointIterator};
+  |                                      ^^^^^^^^^^^^^^^^^^^^^^

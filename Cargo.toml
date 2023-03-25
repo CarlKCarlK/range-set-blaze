@@ -1,5 +1,5 @@
 [package]
-name = "range-set-int"
+name = "range-set-blaze"
 version = "0.1.0"
 edition = "2021"
 

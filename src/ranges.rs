@@ -13,14 +13,14 @@ use crate::{
 
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-/// An iterator that visits the ranges in the [`RangeSetInt`],
+/// An iterator that visits the ranges in the [`RangeSetBlaze`],
 /// i.e., the integers as sorted & disjoint ranges.
 ///
-/// This `struct` is created by the [`ranges`] method on [`RangeSetInt`]. See [`ranges`]'s
+/// This `struct` is created by the [`ranges`] method on [`RangeSetBlaze`]. See [`ranges`]'s
 /// documentation for more.
 ///
-/// [`RangeSetInt`]: crate::RangeSetInt
-/// [`ranges`]: crate::RangeSetInt::ranges
+/// [`RangeSetBlaze`]: crate::RangeSetBlaze
+/// [`ranges`]: crate::RangeSetBlaze::ranges
 pub struct RangesIter<'a, T: Integer> {
     pub(crate) iter: btree_map::Iter<'a, T, T>,
 }
@@ -32,7 +32,7 @@ impl<'a, T: Integer> AsRef<RangesIter<'a, T>> for RangesIter<'a, T> {
     }
 }
 
-// RangesIter (one of the iterators from RangeSetInt) is SortedDisjoint
+// RangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
 impl<T: Integer> SortedStarts for RangesIter<'_, T> {}
 impl<T: Integer> SortedDisjoint for RangesIter<'_, T> {}
 
@@ -59,14 +59,14 @@ impl<'a, T: Integer> Iterator for RangesIter<'a, T> {
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-/// An iterator that moves out the ranges in the [`RangeSetInt`],
+/// An iterator that moves out the ranges in the [`RangeSetBlaze`],
 /// i.e., the integers as sorted & disjoint ranges.
 ///
-/// This `struct` is created by the [`into_ranges`] method on [`RangeSetInt`]. See [`into_ranges`]'s
+/// This `struct` is created by the [`into_ranges`] method on [`RangeSetBlaze`]. See [`into_ranges`]'s
 /// documentation for more.
 ///
-/// [`RangeSetInt`]: crate::RangeSetInt
-/// [`into_ranges`]: crate::RangeSetInt::into_ranges
+/// [`RangeSetBlaze`]: crate::RangeSetBlaze
+/// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
 #[derive(Debug)]
 pub struct IntoRangesIter<T: Integer> {
     pub(crate) iter: std::collections::btree_map::IntoIter<T, T>,

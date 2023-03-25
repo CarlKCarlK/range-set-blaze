@@ -19,8 +19,8 @@ use rand::{
     distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, SeedableRng,
 };
 // use pprof::criterion::Output; //PProfProfiler
-use range_set_int::{
-    DynSortedDisjoint, Integer, MultiwayRangeSetInt, MultiwaySortedDisjoint, RangeSetInt,
+use range_set_blaze::{
+    DynSortedDisjoint, Integer, MultiwayRangeSetInt, MultiwaySortedDisjoint, RangeSetBlaze,
 };
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
@@ -31,7 +31,7 @@ pub fn shuffled(c: &mut Criterion) {
     let mut group = c.benchmark_group("shuffled");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
-    group.bench_function("shuffled RangeSetInt", |b| {
+    group.bench_function("shuffled RangeSetBlaze", |b| {
         b.iter_batched(
             || gen_data_shuffled(seed, len),
             |data| range_set_test(data, 1, len as usize),
@@ -75,7 +75,7 @@ pub fn descending(c: &mut Criterion) {
     let mut group = c.benchmark_group("descending");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
-    group.bench_function("descending range_set_int", |b| {
+    group.bench_function("descending range_set_blaze", |b| {
         b.iter_batched(
             || gen_data_descending(seed, len),
             |data| range_set_test(data, 1, len as usize),
@@ -102,8 +102,8 @@ fn gen_data_descending(_seed: u64, len: u32) -> Vec<u32> {
 }
 
 fn range_set_test(data: Vec<u32>, range_len: usize, len: usize) {
-    let range_set_int = RangeSetInt::<u32>::from_iter(data);
-    assert!(range_set_int.ranges_len() == range_len && range_set_int.len() == len);
+    let range_set_blaze = RangeSetBlaze::<u32>::from_iter(data);
+    assert!(range_set_blaze.ranges_len() == range_len && range_set_blaze.len() == len);
 }
 
 fn btree_set_test(data: Vec<u32>, _range_len: usize, len: usize) {
@@ -117,7 +117,7 @@ pub fn clumps(c: &mut Criterion) {
     let mut group = c.benchmark_group("clumps");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
-    group.bench_function("clumps range_set_int", |b| {
+    group.bench_function("clumps range_set_blaze", |b| {
         b.iter_batched(
             || {
                 MemorylessIter::new(
@@ -130,7 +130,7 @@ pub fn clumps(c: &mut Criterion) {
                 )
                 .collect::<Vec<_>>()
             },
-            RangeSetInt::<u64>::from_iter,
+            RangeSetBlaze::<u64>::from_iter,
             BatchSize::SmallInput,
         );
     });
@@ -160,7 +160,7 @@ fn bitxor(c: &mut Criterion) {
     let mut group = c.benchmark_group("operations");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
-    group.bench_function("RangeSetInt bitxor", |b| {
+    group.bench_function("RangeSetBlaze bitxor", |b| {
         b.iter_batched(
             || two_sets(range_len, range.clone(), coverage_goal),
             |(set0, set1)| {
@@ -187,7 +187,7 @@ fn bitor(c: &mut Criterion) {
     let mut group = c.benchmark_group("operations");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
-    group.bench_function("RangeSetInt bitor", |b| {
+    group.bench_function("RangeSetBlaze bitor", |b| {
         b.iter_batched(
             || two_sets(range_len, range.clone(), coverage_goal),
             |(set0, set1)| {
@@ -214,7 +214,7 @@ fn bitor1(c: &mut Criterion) {
     let mut group = c.benchmark_group("operations");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
-    group.bench_function("RangeSetInt bitor1", |b| {
+    group.bench_function("RangeSetBlaze bitor1", |b| {
         b.iter_batched(
             || two_sets1(range_len, range.clone(), coverage_goal),
             |(set0, set1)| {
@@ -237,7 +237,7 @@ fn two_sets<T: Integer>(
     range_len: usize,
     range: RangeInclusive<T>,
     coverage_goal: f64,
-) -> (RangeSetInt<T>, RangeSetInt<T>) {
+) -> (RangeSetBlaze<T>, RangeSetBlaze<T>) {
     (
         MemorylessIter::new(
             &mut StdRng::seed_from_u64(0),
@@ -264,7 +264,7 @@ fn two_sets1<T: Integer>(
     range_len: usize,
     range: RangeInclusive<T>,
     coverage_goal: f64,
-) -> (RangeSetInt<T>, RangeSetInt<T>) {
+) -> (RangeSetBlaze<T>, RangeSetBlaze<T>) {
     (
         MemorylessRange::new(
             &mut StdRng::seed_from_u64(0),
@@ -339,7 +339,7 @@ fn k_intersect(c: &mut Criterion) {
     let how = How::Union;
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
-    group.bench_function("RangeSetInt intersect", |b| {
+    group.bench_function("RangeSetBlaze intersect", |b| {
         b.iter_batched(
             || {
                 k_sets(
@@ -357,7 +357,7 @@ fn k_intersect(c: &mut Criterion) {
             BatchSize::SmallInput,
         );
     });
-    group.bench_function("RangeSetInt dyn intersect", |b| {
+    group.bench_function("RangeSetBlaze dyn intersect", |b| {
         b.iter_batched(
             || {
                 k_sets(
@@ -371,12 +371,12 @@ fn k_intersect(c: &mut Criterion) {
             },
             |sets| {
                 let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-                let _answer: RangeSetInt<_> = sets.intersection().into();
+                let _answer: RangeSetBlaze<_> = sets.intersection().into();
             },
             BatchSize::SmallInput,
         );
     });
-    group.bench_function("RangeSetInt intersect 2-at-a-time", |b| {
+    group.bench_function("RangeSetBlaze intersect 2-at-a-time", |b| {
         b.iter_batched(
             || {
                 k_sets(
@@ -429,7 +429,7 @@ fn coverage_goal(c: &mut Criterion) {
                     },
                     |sets| {
                         let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-                        let _answer: RangeSetInt<_> = sets.intersection().into();
+                        let _answer: RangeSetBlaze<_> = sets.intersection().into();
                     },
                     BatchSize::SmallInput,
                 );
@@ -610,14 +610,14 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
         let parameter = access(k_and_range_len);
 
         group.bench_with_input(
-            BenchmarkId::new("RangeSetInt (multiway dyn)", parameter),
+            BenchmarkId::new("RangeSetBlaze (multiway dyn)", parameter),
             &parameter,
             |b, _k_and_range_len| {
                 b.iter_batched(
                     || setup,
                     |sets| {
                         let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-                        let _answer: RangeSetInt<_> = match how {
+                        let _answer: RangeSetBlaze<_> = match how {
                             How::Intersection => sets.intersection().into(),
                             How::Union => sets.union().into(),
                             How::None => panic!("should not happen"),
@@ -628,7 +628,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
             },
         );
         group.bench_with_input(
-            BenchmarkId::new("RangeSetInt (multiway static)", parameter),
+            BenchmarkId::new("RangeSetBlaze (multiway static)", parameter),
             &parameter,
             |b, _k| {
                 b.iter_batched(
@@ -646,7 +646,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
         );
         if include_two_at_a_time {
             group.bench_with_input(
-                BenchmarkId::new("RangeSetInt (2-at-a-time)", parameter),
+                BenchmarkId::new("RangeSetBlaze (2-at-a-time)", parameter),
                 &parameter,
                 |b, _k| {
                     b.iter_batched(
@@ -873,7 +873,7 @@ fn stream_vs_adhoc(c: &mut Criterion) {
             let parameter = set1.ranges_len();
 
             // group.bench_with_input(
-            //     BenchmarkId::new(format!("RangeSetInt stream {coverage_goal}"), parameter),
+            //     BenchmarkId::new(format!("RangeSetBlaze stream {coverage_goal}"), parameter),
             //     &parameter,
             //     |b, _| {
             //         b.iter_batched(
@@ -886,7 +886,7 @@ fn stream_vs_adhoc(c: &mut Criterion) {
             //     },
             // );
             group.bench_with_input(
-                BenchmarkId::new(format!("RangeSetInt (hybrid) {coverage_goal}"), parameter),
+                BenchmarkId::new(format!("RangeSetBlaze (hybrid) {coverage_goal}"), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
@@ -899,7 +899,7 @@ fn stream_vs_adhoc(c: &mut Criterion) {
                 },
             );
             // group.bench_with_input(
-            //     BenchmarkId::new(format!("RangeSetInt ad_hoc {coverage_goal}"), parameter),
+            //     BenchmarkId::new(format!("RangeSetBlaze ad_hoc {coverage_goal}"), parameter),
             //     &parameter,
             //     |b, _| {
             //         b.iter_batched(
@@ -1009,20 +1009,20 @@ fn vs_btree_set(c: &mut Criterion) {
         .collect();
 
         group.bench_with_input(
-            BenchmarkId::new("RangeSetInt (integers)", parameter),
+            BenchmarkId::new("RangeSetBlaze (integers)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetInt::from_iter(vec.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
                 })
             },
         );
         group.bench_with_input(
-            BenchmarkId::new("RangeSetInt (ranges)", parameter),
+            BenchmarkId::new("RangeSetBlaze (ranges)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetInt::from_iter(vec_range.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec_range.iter().cloned());
                 })
             },
         );
@@ -1076,11 +1076,11 @@ fn ingest_integers(c: &mut Criterion) {
         )
         .collect();
         group.bench_with_input(
-            BenchmarkId::new("RangeSetInt (integers)", parameter),
+            BenchmarkId::new("RangeSetBlaze (integers)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetInt::from_iter(vec.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
                 })
             },
         );
@@ -1156,11 +1156,11 @@ fn ingest_ranges(c: &mut Criterion) {
         );
 
         group.bench_with_input(
-            BenchmarkId::new("RangeSetInt (ranges)", parameter),
+            BenchmarkId::new("RangeSetBlaze (ranges)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetInt::from_iter(vec_range.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec_range.iter().cloned());
                 })
             },
         );
@@ -1184,11 +1184,11 @@ fn worst(c: &mut Criterion) {
         let vec: Vec<i32> = (0..iter_len).map(|_| uniform.sample(&mut rng)).collect();
 
         group.bench_with_input(
-            BenchmarkId::new("RangeSetInt", parameter),
+            BenchmarkId::new("RangeSetBlaze", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetInt::from_iter(vec.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
                 })
             },
         );

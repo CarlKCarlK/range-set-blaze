@@ -24,7 +24,7 @@ use crate::{
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_int::{UnionIter, Merge, SortedDisjointIterator, CheckSortedDisjoint};
+/// use range_set_blaze::{UnionIter, Merge, SortedDisjointIterator, CheckSortedDisjoint};
 ///
 /// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);

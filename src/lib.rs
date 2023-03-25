@@ -60,7 +60,7 @@ use unsorted_disjoint::UnsortedDisjoint;
 // todo rule: Test Send and Sync with a test (see example)
 
 // todo rule: Define your element type
-/// The element trait of the [`RangeSetInt`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
+/// The element trait of the [`RangeSetBlaze`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
 pub trait Integer:
     num_integer::Integer
     + FromStr
@@ -77,7 +77,7 @@ pub trait Integer:
     + OverflowingSub
     + SampleUniform
 {
-    /// The type of the length of a [`RangeSetInt`]. For example, the length of a `RangeSetInt<u8>` is `usize`. Note
+    /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note
     /// that it can't be `u8` because the length ranges from 0 to 256, which is one too large for `u8`.
     ///
     /// In general, `SafeLen` will be `usize` if `usize` is always large enough. If not, `SafeLen` will be the smallest unsigned integer
@@ -86,9 +86,9 @@ pub trait Integer:
     ///
     /// # Examples
     /// ```
-    /// use range_set_int::{RangeSetInt, Integer};
+    /// use range_set_blaze::{RangeSetBlaze, Integer};
     ///
-    /// let len: <u8 as Integer>::SafeLen = RangeSetInt::from_iter([0u8..=255]).len();
+    /// let len: <u8 as Integer>::SafeLen = RangeSetBlaze::from_iter([0u8..=255]).len();
     /// assert_eq!(len, 256);
     /// ```
     type SafeLen: std::hash::Hash
@@ -113,7 +113,7 @@ pub trait Integer:
     ///
     /// #Example
     /// ```
-    /// use range_set_int::Integer;
+    /// use range_set_blaze::Integer;
     ///
     /// assert_eq!(<u8 as Integer>::safe_len(&(0..=255)), 256);
     /// ```
@@ -124,19 +124,19 @@ pub trait Integer:
     ///
     /// # Example
     /// ```
-    /// use range_set_int::{Integer, RangeSetInt};
+    /// use range_set_blaze::{Integer, RangeSetBlaze};
     ///
     /// // for i8, we can use up to 127
-    /// let a = RangeSetInt::from_iter([i8::MAX]);
+    /// let a = RangeSetBlaze::from_iter([i8::MAX]);
     /// // for i128, we can use up to 170141183460469231731687303715884105726
-    /// let a = RangeSetInt::from_iter([<i128 as Integer>::safe_max_value()]);
+    /// let a = RangeSetBlaze::from_iter([<i128 as Integer>::safe_max_value()]);
     /// ```
     /// # Panics
     /// ```should_panic
-    /// use range_set_int::{Integer, RangeSetInt};
+    /// use range_set_blaze::{Integer, RangeSetBlaze};
     ///
     /// // for i128, using 170141183460469231731687303715884105727 throws a panic.
-    /// let a = RangeSetInt::from_iter([i128::MAX]);
+    /// let a = RangeSetBlaze::from_iter([i128::MAX]);
     /// ```
     fn safe_max_value() -> Self {
         Self::max_value()
@@ -164,16 +164,16 @@ pub trait Integer:
 /// Internally, it stores the ranges in a cache-efficient [`BTreeMap`].
 ///
 /// # Table of Contents
-/// * [`RangeSetInt` Constructors](#rangesetint-constructors)
+/// * [`RangeSetBlaze` Constructors](#rangesetint-constructors)
 ///    * [Performance](#constructor-performance)
-///    * [Examples](struct.RangeSetInt.html#constructor-examples)
-/// * [`RangeSetInt` Set Operations](#rangesetint-set-operations)
-///    * [Performance](struct.RangeSetInt.html#set-operation-performance)
-///    * [Examples](struct.RangeSetInt.html#set-operation-examples)
-///  * [`RangeSetInt` Comparisons](#rangesetint-comparisons)
+///    * [Examples](struct.RangeSetBlaze.html#constructor-examples)
+/// * [`RangeSetBlaze` Set Operations](#rangesetint-set-operations)
+///    * [Performance](struct.RangeSetBlaze.html#set-operation-performance)
+///    * [Examples](struct.RangeSetBlaze.html#set-operation-examples)
+///  * [`RangeSetBlaze` Comparisons](#rangesetint-comparisons)
 ///  * [Additional Examples](#additional-examples)
 ///
-/// You can also create `RangeSetInt`'s from unsorted and overlapping integers (or ranges).
+/// You can also create `RangeSetBlaze`'s from unsorted and overlapping integers (or ranges).
 /// However, if you know that your input is sorted and disjoint, you can speed up construction.
 ///
 /// Here are the constructors, followed by a
@@ -188,12 +188,12 @@ pub trait Integer:
 /// | [`from`][4] /[`into`][4]         | array of integers       |
 ///
 /// [`BTreeMap`]: std::collections::BTreeMap
-/// [`new`]: RangeSetInt::new
-/// [`default`]: RangeSetInt::default
-/// [1]: struct.RangeSetInt.html#impl-FromIterator<T>-for-RangeSetInt<T>
-/// [2]: struct.RangeSetInt.html#impl-FromIterator<RangeInclusive<T>>-for-RangeSetInt<T>
-/// [3]: struct.RangeSetInt.html#impl-From<I>-for-RangeSetInt<T>
-/// [4]: struct.RangeSetInt.html#impl-From<%5BT%3B%20N%5D>-for-RangeSetInt<T>
+/// [`new`]: RangeSetBlaze::new
+/// [`default`]: RangeSetBlaze::default
+/// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
+/// [2]: struct.RangeSetBlaze.html#impl-FromIterator<RangeInclusive<T>>-for-RangeSetBlaze<T>
+/// [3]: struct.RangeSetBlaze.html#impl-From<I>-for-RangeSetBlaze<T>
+/// [4]: struct.RangeSetBlaze.html#impl-From<%5BT%3B%20N%5D>-for-RangeSetBlaze<T>
 ///
 /// # Constructor Performance
 ///
@@ -226,43 +226,43 @@ pub trait Integer:
 /// ## Constructor Examples
 ///
 /// ```
-/// use range_set_int::{RangeSetInt, CheckSortedDisjoint};
+/// use range_set_blaze::{RangeSetBlaze, CheckSortedDisjoint};
 ///
 /// // Create an empty set with 'new' or 'default'.
-/// let a0 = RangeSetInt::<i32>::new();
-/// let a1 = RangeSetInt::<i32>::default();
+/// let a0 = RangeSetBlaze::<i32>::new();
+/// let a1 = RangeSetBlaze::<i32>::default();
 /// assert!(a0 == a1 && a0.is_empty());
 ///
 /// // 'from_iter'/'collect': From an iterator of integers.
 /// // Duplicates and out-of-order elements are fine.
-/// let a0 = RangeSetInt::from_iter([3, 2, 1, 100, 1]);
-/// let a1: RangeSetInt<i32> = [3, 2, 1, 100, 1].into_iter().collect();
+/// let a0 = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
+/// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into_iter().collect();
 /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 ///
 /// // 'from_iter'/'collect': From an iterator of inclusive ranges, start..=end.
 /// // Overlapping, out-of-order, and empty ranges are fine.
 /// #[allow(clippy::reversed_empty_ranges)]
-/// let a0 = RangeSetInt::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
+/// let a0 = RangeSetBlaze::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
 /// #[allow(clippy::reversed_empty_ranges)]
-/// let a1: RangeSetInt<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
+/// let a1: RangeSetBlaze<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
 /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 ///
 /// // If we know the ranges are already sorted and disjoint,
 /// // we can avoid work and use 'from'/'into'.
-/// let a0 = RangeSetInt::from(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-/// let a1: RangeSetInt<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into();
+/// let a0 = RangeSetBlaze::from(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+/// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into();
 /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 ///
 /// // For compatibility with `BTreeSet`, we also support
 /// // 'from'/'into' from arrays of integers.
-/// let a0 = RangeSetInt::from([3, 2, 1, 100, 1]);
-/// let a1: RangeSetInt<i32> = [3, 2, 1, 100, 1].into();
+/// let a0 = RangeSetBlaze::from([3, 2, 1, 100, 1]);
+/// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
 /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 /// ```
 ///
-/// # `RangeSetInt` Set Operations
+/// # `RangeSetBlaze` Set Operations
 ///
-/// You can perform set operations on `RangeSetInt`s using operators.
+/// You can perform set operations on `RangeSetBlaze`s using operators.
 ///
 /// | Set Operation           | Operator                   |  Multiway Method |
 /// |-------------------|-------------------------|-------------------------|
@@ -272,125 +272,125 @@ pub trait Integer:
 /// | symmetric difference       |  `a ^ b`                     | *n/a* |
 /// | complement       |  `!a`                     | *n/a* |
 ///
-/// `RangeSetInt` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
+/// `RangeSetBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
 /// these methods match those of `BTreeSet`.
 ///
 /// [`union`]: trait.MultiwayRangeSetInt.html#method.union
 /// [`intersection`]: trait.MultiwayRangeSetInt.html#method.intersection
-/// [`insert`]: RangeSetInt::insert
-/// [`pop_first`]: RangeSetInt::pop_first
-/// [`split_off`]: RangeSetInt::split_off
+/// [`insert`]: RangeSetBlaze::insert
+/// [`pop_first`]: RangeSetBlaze::pop_first
+/// [`split_off`]: RangeSetBlaze::split_off
 ///
 ///
 /// ## Set Operation Performance
 ///
 /// Every operation is implemented as
 /// 1. a single pass over the sorted & disjoint ranges
-/// 2. the construction of a new [`RangeSetInt`]
+/// 2. the construction of a new [`RangeSetBlaze`]
 ///
 /// Thus, applying multiple operators creates intermediate
-/// [`RangeSetInt`]'s. You can avoid these intermediate
-/// [`RangeSetInt`]'s by switching to the [`SortedDisjoint`] API. The last example below
+/// [`RangeSetBlaze`]'s. You can avoid these intermediate
+/// [`RangeSetBlaze`]'s by switching to the [`SortedDisjoint`] API. The last example below
 /// demonstrates this.
 ///
 /// ## Set Operation Examples
 ///
 /// ```
-/// use range_set_int::{RangeSetInt, MultiwayRangeSetInt};
+/// use range_set_blaze::{RangeSetBlaze, MultiwayRangeSetInt};
 ///
-/// let a = RangeSetInt::from_iter([1..=2, 5..=100]);
-/// let b = RangeSetInt::from_iter([2..=6]);
+/// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+/// let b = RangeSetBlaze::from_iter([2..=6]);
 ///
-/// // Union of two 'RangeSetInt's.
+/// // Union of two 'RangeSetBlaze's.
 /// let result = &a | &b;
 /// // Alternatively, we can take ownership via 'a | b'.
 /// assert_eq!(result.to_string(), "1..=100");
 ///
-/// // Intersection of two 'RangeSetInt's.
+/// // Intersection of two 'RangeSetBlaze's.
 /// let result = &a & &b; // Alternatively, 'a & b'.
 /// assert_eq!(result.to_string(), "2..=2, 5..=6");
 ///
-/// // Set difference of two 'RangeSetInt's.
+/// // Set difference of two 'RangeSetBlaze's.
 /// let result = &a - &b; // Alternatively, 'a - b'.
 /// assert_eq!(result.to_string(), "1..=1, 7..=100");
 ///
-/// // Symmetric difference of two 'RangeSetInt's.
+/// // Symmetric difference of two 'RangeSetBlaze's.
 /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
 /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
 ///
-/// // Negation of a 'RangeSetInt'.
+/// // Negation of a 'RangeSetBlaze'.
 /// let result = !&a; // Alternatively, '!a'.
 /// assert_eq!(
 ///     result.to_string(),
 ///     "-2147483648..=0, 3..=4, 101..=2147483647"
 /// );
 ///
-/// // Multiway union of 'RangeSetInt's.
-/// let c = RangeSetInt::from_iter([2..=2, 6..=200]);
+/// // Multiway union of 'RangeSetBlaze's.
+/// let c = RangeSetBlaze::from_iter([2..=2, 6..=200]);
 /// let result = [&a, &b, &c].union();
 /// assert_eq!(result.to_string(), "1..=200");
 ///
-/// // Multiway intersection of 'RangeSetInt's.
+/// // Multiway intersection of 'RangeSetBlaze's.
 /// let result = [&a, &b, &c].intersection();
 /// assert_eq!(result.to_string(), "2..=2, 6..=6");
 ///
 /// // Applying multiple operators
-/// let result0 = &a - (&b | &c); // Creates an intermediate 'RangeSetInt'.
-/// // Alternatively, we can use the 'SortedDisjoint' API and avoid the intermediate 'RangeSetInt'.
-/// let result1 = RangeSetInt::from(a.ranges() - (b.ranges() | c.ranges()));
+/// let result0 = &a - (&b | &c); // Creates an intermediate 'RangeSetBlaze'.
+/// // Alternatively, we can use the 'SortedDisjoint' API and avoid the intermediate 'RangeSetBlaze'.
+/// let result1 = RangeSetBlaze::from(a.ranges() - (b.ranges() | c.ranges()));
 /// assert!(result0 == result1 && result0.to_string() == "1..=1");
 /// ```
-/// # `RangeSetInt` Comparisons
+/// # `RangeSetBlaze` Comparisons
 ///
-/// We can compare `RangeSetInt`s using the following operators:
+/// We can compare `RangeSetBlaze`s using the following operators:
 /// `<`, `<=`, `>`, `>=`.  Following the convention of `BTreeSet`,
 /// these comparisons are lexicographic. See [`cmp`] for more examples.
 ///
-/// Use the [`is_subset`] and [`is_superset`] methods to check if one `RangeSetInt` is a subset
+/// Use the [`is_subset`] and [`is_superset`] methods to check if one `RangeSetBlaze` is a subset
 /// or superset of another.
 ///
-/// Use `==`, `!=` to check if two `RangeSetInt`s are equal or not.
+/// Use `==`, `!=` to check if two `RangeSetBlaze`s are equal or not.
 ///
 /// [`BTreeSet`]: std::collections::BTreeSet
-/// [`is_subset`]: RangeSetInt::is_subset
-/// [`is_superset`]: RangeSetInt::is_superset
-/// [`cmp`]: RangeSetInt::cmp
+/// [`is_subset`]: RangeSetBlaze::is_subset
+/// [`is_superset`]: RangeSetBlaze::is_superset
+/// [`cmp`]: RangeSetBlaze::cmp
 ///
 /// # Additional Examples
 ///
 /// See the [module-level documentation] for additional examples.
 ///
 /// [module-level documentation]: index.html
-pub struct RangeSetInt<T: Integer> {
+pub struct RangeSetBlaze<T: Integer> {
     len: <T as Integer>::SafeLen,
     btree_map: BTreeMap<T, T>,
 }
 
-// FUTURE: Make all RangeSetInt iterators DoubleEndedIterator and ExactSizeIterator.
-impl<T: Integer> fmt::Debug for RangeSetInt<T> {
+// FUTURE: Make all RangeSetBlaze iterators DoubleEndedIterator and ExactSizeIterator.
+impl<T: Integer> fmt::Debug for RangeSetBlaze<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.ranges().to_string())
     }
 }
 
-impl<T: Integer> fmt::Display for RangeSetInt<T> {
+impl<T: Integer> fmt::Display for RangeSetBlaze<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.ranges().to_string())
     }
 }
 
-impl<T: Integer> RangeSetInt<T> {
-    /// Gets an iterator that visits the integer elements in the [`RangeSetInt`] in ascending
+impl<T: Integer> RangeSetBlaze<T> {
+    /// Gets an iterator that visits the integer elements in the [`RangeSetBlaze`] in ascending
     /// order.
     ///
-    /// Also see the [`RangeSetInt::ranges`] method.
+    /// Also see the [`RangeSetBlaze::ranges`] method.
     ///
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetInt::from_iter([1..=3]);
+    /// let set = RangeSetBlaze::from_iter([1..=3]);
     /// let mut set_iter = set.iter();
     /// assert_eq!(set_iter.next(), Some(1));
     /// assert_eq!(set_iter.next(), Some(2));
@@ -401,9 +401,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// Values returned by the iterator are returned in ascending order:
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetInt::from_iter([3, 1, 2]);
+    /// let set = RangeSetBlaze::from_iter([3, 1, 2]);
     /// let mut set_iter = set.iter();
     /// assert_eq!(set_iter.next(), Some(1));
     /// assert_eq!(set_iter.next(), Some(2));
@@ -428,9 +428,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// Basic usage:
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut set = RangeSetInt::new();
+    /// let mut set = RangeSetBlaze::new();
     /// assert_eq!(set.first(), None);
     /// set.insert(1);
     /// assert_eq!(set.first(), Some(1));
@@ -448,9 +448,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetInt::from_iter([1, 2, 3]);
+    /// let set = RangeSetBlaze::from_iter([1, 2, 3]);
     /// assert_eq!(set.get(2), Some(2));
     /// assert_eq!(set.get(4), None);
     /// ```
@@ -470,9 +470,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// Basic usage:
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut set = RangeSetInt::new();
+    /// let mut set = RangeSetBlaze::new();
     /// assert_eq!(set.last(), None);
     /// set.insert(1);
     /// assert_eq!(set.last(), Some(1));
@@ -485,14 +485,14 @@ impl<T: Integer> RangeSetInt<T> {
     }
 }
 
-impl<T: Integer> RangeSetInt<T> {
+impl<T: Integer> RangeSetBlaze<T> {
     /// !!! cmk understand the 'where for'
     /// !!! cmk understand the operator 'Sub'
     fn _len_slow(&self) -> <T as Integer>::SafeLen
     where
         for<'a> &'a T: ops::Sub<&'a T, Output = T>,
     {
-        RangeSetInt::btree_map_len(&self.btree_map)
+        RangeSetBlaze::btree_map_len(&self.btree_map)
     }
 
     /// Moves all elements from `other` into `self`, leaving `other` empty.
@@ -505,10 +505,10 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut a = RangeSetInt::from_iter([1..=3]);
-    /// let mut b = RangeSetInt::from_iter([3..=5]);
+    /// let mut a = RangeSetBlaze::from_iter([1..=3]);
+    /// let mut b = RangeSetBlaze::from_iter([3..=5]);
     ///
     /// a.append(&mut b);
     ///
@@ -534,9 +534,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut v = RangeSetInt::new();
+    /// let mut v = RangeSetBlaze::new();
     /// v.insert(1);
     /// v.clear();
     /// assert!(v.is_empty());
@@ -551,9 +551,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut v = RangeSetInt::new();
+    /// let mut v = RangeSetBlaze::new();
     /// assert!(v.is_empty());
     /// v.insert(1);
     /// assert!(!v.is_empty());
@@ -570,10 +570,10 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let sup = RangeSetInt::from_iter([1..=3]);
-    /// let mut set = RangeSetInt::new();
+    /// let sup = RangeSetBlaze::from_iter([1..=3]);
+    /// let mut set = RangeSetBlaze::new();
     ///
     /// assert_eq!(set.is_subset(&sup), true);
     /// set.insert(2);
@@ -583,7 +583,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// ```
     #[must_use]
     #[inline]
-    pub fn is_subset(&self, other: &RangeSetInt<T>) -> bool {
+    pub fn is_subset(&self, other: &RangeSetBlaze<T>) -> bool {
         // Add a fast path
         if self.len() > other.len() {
             return false;
@@ -597,10 +597,10 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let sub = RangeSetInt::from_iter([1, 2]);
-    /// let mut set = RangeSetInt::new();
+    /// let sub = RangeSetBlaze::from_iter([1, 2]);
+    /// let mut set = RangeSetBlaze::new();
     ///
     /// assert_eq!(set.is_superset(&sub), false);
     ///
@@ -612,7 +612,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// assert_eq!(set.is_superset(&sub), true);
     /// ```
     #[must_use]
-    pub fn is_superset(&self, other: &RangeSetInt<T>) -> bool {
+    pub fn is_superset(&self, other: &RangeSetBlaze<T>) -> bool {
         other.is_subset(self)
     }
 
@@ -621,9 +621,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetInt::from_iter([1, 2, 3]);
+    /// let set = RangeSetBlaze::from_iter([1, 2, 3]);
     /// assert_eq!(set.contains(1), true);
     /// assert_eq!(set.contains(4), false);
     /// ```
@@ -644,10 +644,10 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let a = RangeSetInt::from_iter([1..=3]);
-    /// let mut b = RangeSetInt::new();
+    /// let a = RangeSetBlaze::from_iter([1..=3]);
+    /// let mut b = RangeSetBlaze::new();
     ///
     /// assert_eq!(a.is_disjoint(&b), true);
     /// b.insert(4);
@@ -658,7 +658,7 @@ impl<T: Integer> RangeSetInt<T> {
     /// todo rule which functions should be must_use? iterator, constructor, predicates, first, last,
     #[must_use]
     #[inline]
-    pub fn is_disjoint(&self, other: &RangeSetInt<T>) -> bool {
+    pub fn is_disjoint(&self, other: &RangeSetBlaze<T>) -> bool {
         self.ranges().is_disjoint(other.ranges())
     }
 
@@ -706,9 +706,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut set = RangeSetInt::new();
+    /// let mut set = RangeSetBlaze::new();
     ///
     /// assert_eq!(set.insert(2), true);
     /// assert_eq!(set.insert(2), false);
@@ -722,7 +722,7 @@ impl<T: Integer> RangeSetInt<T> {
 
     /// Constructs an iterator over a sub-range of elements in the set.
     ///
-    /// Not to be confused with [`RangeSetInt::ranges`], which returns an iterator over the ranges in the set.
+    /// Not to be confused with [`RangeSetBlaze::ranges`], which returns an iterator over the ranges in the set.
     ///
     /// The simplest way is to use the range syntax `min..max`, thus `range(min..max)` will
     /// yield elements from min (inclusive) to max (exclusive).
@@ -742,10 +742,10 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     /// use std::ops::Bound::Included;
     ///
-    /// let mut set = RangeSetInt::new();
+    /// let mut set = RangeSetBlaze::new();
     /// set.insert(3);
     /// set.insert(5);
     /// set.insert(8);
@@ -771,7 +771,7 @@ impl<T: Integer> RangeSetInt<T> {
         assert!(start <= end);
 
         let bounds = CheckSortedDisjoint::from([start..=end]);
-        RangeSetInt::from(self.ranges() & bounds).into_iter()
+        RangeSetBlaze::from(self.ranges() & bounds).into_iter()
     }
 
     /// Adds a range to the set.
@@ -790,9 +790,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut set = RangeSetInt::new();
+    /// let mut set = RangeSetBlaze::new();
     ///
     /// assert_eq!(set.ranges_insert(2..=5), true);
     /// assert_eq!(set.ranges_insert(5..=6), true);
@@ -811,9 +811,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut set = RangeSetInt::new();
+    /// let mut set = RangeSetBlaze::new();
     ///
     /// set.insert(2);
     /// assert!(set.remove(2));
@@ -864,9 +864,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// Basic usage:
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut a = RangeSetInt::new();
+    /// let mut a = RangeSetBlaze::new();
     /// a.insert(1);
     /// a.insert(2);
     /// a.insert(3);
@@ -875,8 +875,8 @@ impl<T: Integer> RangeSetInt<T> {
     ///
     /// let b = a.split_off(3);
     ///
-    /// assert_eq!(a, RangeSetInt::from_iter([1, 2]));
-    /// assert_eq!(b, RangeSetInt::from_iter([3, 17, 41]));
+    /// assert_eq!(a, RangeSetBlaze::from_iter([1, 2]));
+    /// assert_eq!(b, RangeSetBlaze::from_iter([3, 17, 41]));
     /// ```
     pub fn split_off(&mut self, value: T) -> Self {
         assert!(
@@ -896,14 +896,14 @@ impl<T: Integer> RangeSetInt<T> {
 
         // Find the length of the smaller map and then length of self & b.
         let b_len = if self.btree_map.len() < b.len() {
-            self.len = RangeSetInt::btree_map_len(&self.btree_map);
+            self.len = RangeSetBlaze::btree_map_len(&self.btree_map);
             old_len - self.len
         } else {
-            let b_len = RangeSetInt::btree_map_len(&b);
+            let b_len = RangeSetBlaze::btree_map_len(&b);
             self.len = old_len - b_len;
             b_len
         };
-        RangeSetInt {
+        RangeSetBlaze {
             btree_map: b,
             len: b_len,
         }
@@ -923,9 +923,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut set = RangeSetInt::from_iter([1, 2, 3]);
+    /// let mut set = RangeSetBlaze::from_iter([1, 2, 3]);
     /// assert_eq!(set.take(2), Some(2));
     /// assert_eq!(set.take(2), None);
     /// ```
@@ -947,9 +947,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut set = RangeSetInt::new();
+    /// let mut set = RangeSetBlaze::new();
     /// assert!(set.replace(5).is_none());
     /// assert!(set.replace(5).is_some());
     /// ```
@@ -1006,14 +1006,14 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut v = RangeSetInt::new();
+    /// let mut v = RangeSetBlaze::new();
     /// assert_eq!(v.len(), 0usize);
     /// v.insert(1);
     /// assert_eq!(v.len(), 1usize);
     ///
-    /// let v = RangeSetInt::from_iter([
+    /// let v = RangeSetBlaze::from_iter([
     ///     -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,
     ///     -10..=170_141_183_460_469_231_731_687_303_715_884_105_726,
     /// ]);
@@ -1027,19 +1027,19 @@ impl<T: Integer> RangeSetInt<T> {
         self.len
     }
 
-    /// Makes a new, empty [`RangeSetInt`].
+    /// Makes a new, empty [`RangeSetBlaze`].
     ///
     /// # Examples
     ///
     /// ```
     /// # #![allow(unused_mut)]
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut set: RangeSetInt<i32> = RangeSetInt::new();
+    /// let mut set: RangeSetBlaze<i32> = RangeSetBlaze::new();
     /// ```
     #[must_use]
     pub fn new() -> Self {
-        RangeSetInt {
+        RangeSetBlaze {
             btree_map: BTreeMap::new(),
             len: <T as Integer>::SafeLen::zero(),
         }
@@ -1051,9 +1051,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut set = RangeSetInt::new();
+    /// let mut set = RangeSetBlaze::new();
     ///
     /// set.insert(1);
     /// while let Some(n) = set.pop_first() {
@@ -1082,9 +1082,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut set = RangeSetInt::new();
+    /// let mut set = RangeSetBlaze::new();
     ///
     /// set.insert(1);
     /// while let Some(n) = set.pop_last() {
@@ -1110,17 +1110,17 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    /// An iterator that visits the ranges in the [`RangeSetInt`],
+    /// An iterator that visits the ranges in the [`RangeSetBlaze`],
     /// i.e., the integers as sorted & disjoint ranges.
     ///
-    /// Also see [`RangeSetInt::iter`] and [`RangeSetInt::into_ranges`].
+    /// Also see [`RangeSetBlaze::iter`] and [`RangeSetBlaze::into_ranges`].
     ///
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetInt::from_iter([10..=20, 15..=25, 30..=40]);
+    /// let set = RangeSetBlaze::from_iter([10..=20, 15..=25, 30..=40]);
     /// let mut ranges = set.ranges();
     /// assert_eq!(ranges.next(), Some(10..=25));
     /// assert_eq!(ranges.next(), Some(30..=40));
@@ -1130,9 +1130,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// Values returned by the iterator are returned in ascending order:
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetInt::from_iter([30..=40, 15..=25, 10..=20]);
+    /// let set = RangeSetBlaze::from_iter([30..=40, 15..=25, 10..=20]);
     /// let mut ranges = set.ranges();
     /// assert_eq!(ranges.next(), Some(10..=25));
     /// assert_eq!(ranges.next(), Some(30..=40));
@@ -1144,17 +1144,17 @@ impl<T: Integer> RangeSetInt<T> {
         }
     }
 
-    /// An iterator that moves out the ranges in the [`RangeSetInt`],
+    /// An iterator that moves out the ranges in the [`RangeSetBlaze`],
     /// i.e., the integers as sorted & disjoint ranges.
     ///
-    /// Also see [`RangeSetInt::into_iter`] and [`RangeSetInt::ranges`].
+    /// Also see [`RangeSetBlaze::into_iter`] and [`RangeSetBlaze::ranges`].
     ///
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut ranges = RangeSetInt::from_iter([10..=20, 15..=25, 30..=40]).into_ranges();
+    /// let mut ranges = RangeSetBlaze::from_iter([10..=20, 15..=25, 30..=40]).into_ranges();
     /// assert_eq!(ranges.next(), Some(10..=25));
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
@@ -1163,9 +1163,9 @@ impl<T: Integer> RangeSetInt<T> {
     /// Values returned by the iterator are returned in ascending order:
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut ranges = RangeSetInt::from_iter([30..=40, 15..=25, 10..=20]).into_ranges();
+    /// let mut ranges = RangeSetBlaze::from_iter([30..=40, 15..=25, 10..=20]).into_ranges();
     /// assert_eq!(ranges.next(), Some(10..=25));
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
@@ -1183,11 +1183,11 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Example
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
     /// // We put in three ranges, but they are not sorted & disjoint.
-    /// let set = RangeSetInt::from_iter([10..=20, 15..=25, 30..=40]);
-    /// // After RangeSetInt sorts & 'disjoint's them, we see two ranges.
+    /// let set = RangeSetBlaze::from_iter([10..=20, 15..=25, 30..=40]);
+    /// // After RangeSetBlaze sorts & 'disjoint's them, we see two ranges.
     /// assert_eq!(set.ranges_len(), 2);
     /// assert_eq!(set.to_string(), "10..=25, 30..=40");
     /// ```
@@ -1204,12 +1204,12 @@ impl<T: Integer> RangeSetInt<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut set = RangeSetInt::from_iter([1..=6]);
+    /// let mut set = RangeSetBlaze::from_iter([1..=6]);
     /// // Keep only the even numbers.
     /// set.retain(|k| k % 2 == 0);
-    /// assert_eq!(set, RangeSetInt::from_iter([2, 4, 6]));
+    /// assert_eq!(set, RangeSetBlaze::from_iter([2, 4, 6]));
     /// ```
     pub fn retain<F>(&mut self, mut f: F)
     where
@@ -1219,21 +1219,21 @@ impl<T: Integer> RangeSetInt<T> {
     }
 }
 
-// We create a RangeSetInt from an iterator of integers or integer ranges by
+// We create a RangeSetBlaze from an iterator of integers or integer ranges by
 // 1. turning them into a UnionIter (internally, it collects into intervals and sorts by start).
 // 2. Turning the SortedDisjoint into a BTreeMap.
-impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
-    /// Create a [`RangeSetInt`] from an iterator of integers. Duplicates and out-of-order elements are fine.
+impl<T: Integer> FromIterator<T> for RangeSetBlaze<T> {
+    /// Create a [`RangeSetBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
     ///
-    /// *For more about constructors and performance, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
     ///
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let a0 = RangeSetInt::from_iter([3, 2, 1, 100, 1]);
-    /// let a1: RangeSetInt<i32> = [3, 2, 1, 100, 1].into_iter().collect();
+    /// let a0 = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
+    /// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into_iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
     /// ```
     fn from_iter<I>(iter: I) -> Self
@@ -1244,17 +1244,17 @@ impl<T: Integer> FromIterator<T> for RangeSetInt<T> {
     }
 }
 
-impl<'a, T: Integer> FromIterator<&'a T> for RangeSetInt<T> {
-    /// Create a [`RangeSetInt`] from an iterator of integers references. Duplicates and out-of-order elements are fine.
+impl<'a, T: Integer> FromIterator<&'a T> for RangeSetBlaze<T> {
+    /// Create a [`RangeSetBlaze`] from an iterator of integers references. Duplicates and out-of-order elements are fine.
     ///
-    /// *For more about constructors and performance, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
     ///
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
-    /// let a0 = RangeSetInt::from_iter(vec![3, 2, 1, 100, 1]);
-    /// let a1: RangeSetInt<i32> = vec![3, 2, 1, 100, 1].into_iter().collect();
+    /// use range_set_blaze::RangeSetBlaze;
+    /// let a0 = RangeSetBlaze::from_iter(vec![3, 2, 1, 100, 1]);
+    /// let a1: RangeSetBlaze<i32> = vec![3, 2, 1, 100, 1].into_iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
     /// ```
     fn from_iter<I>(iter: I) -> Self
@@ -1266,21 +1266,21 @@ impl<'a, T: Integer> FromIterator<&'a T> for RangeSetInt<T> {
 }
 
 // todo rules: Follow Rust conventions. For example this as empty let  a = 1..=0; we do the same
-impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
-    /// Create a [`RangeSetInt`] from an iterator of inclusive ranges, `start..=end`.
+impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetBlaze<T> {
+    /// Create a [`RangeSetBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
-    /// *For more about constructors and performance, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
     ///
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
     /// #[allow(clippy::reversed_empty_ranges)]
-    /// let a0 = RangeSetInt::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
+    /// let a0 = RangeSetBlaze::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
     /// #[allow(clippy::reversed_empty_ranges)]
-    /// let a1: RangeSetInt<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
+    /// let a1: RangeSetBlaze<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
     fn from_iter<I>(iter: I) -> Self
@@ -1292,21 +1292,21 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetInt<T> {
     }
 }
 
-impl<'a, T: Integer + 'a> FromIterator<&'a RangeInclusive<T>> for RangeSetInt<T> {
-    /// Create a [`RangeSetInt`] from an iterator of inclusive ranges, `start..=end`.
+impl<'a, T: Integer + 'a> FromIterator<&'a RangeInclusive<T>> for RangeSetBlaze<T> {
+    /// Create a [`RangeSetBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
-    /// *For more about constructors and performance, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
     ///
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
     /// #[allow(clippy::reversed_empty_ranges)]
-    /// let a0 = RangeSetInt::from_iter(vec![1..=2, 2..=2, -10..=-5, 1..=0]);
+    /// let a0 = RangeSetBlaze::from_iter(vec![1..=2, 2..=2, -10..=-5, 1..=0]);
     /// #[allow(clippy::reversed_empty_ranges)]
-    /// let a1: RangeSetInt<i32> = vec![1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
+    /// let a1: RangeSetBlaze<i32> = vec![1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
     fn from_iter<I>(iter: I) -> Self
@@ -1317,20 +1317,20 @@ impl<'a, T: Integer + 'a> FromIterator<&'a RangeInclusive<T>> for RangeSetInt<T>
         union_iter.into()
     }
 }
-impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
-    /// For compatibility with [`BTreeSet`] you may create a [`RangeSetInt`] from an array of integers.
+impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
+    /// For compatibility with [`BTreeSet`] you may create a [`RangeSetBlaze`] from an array of integers.
     ///
-    /// *For more about constructors and performance, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
     ///
     /// [`BTreeSet`]: std::collections::BTreeSet
     ///
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let a0 = RangeSetInt::from([3, 2, 1, 100, 1]);
-    /// let a1: RangeSetInt<i32> = [3, 2, 1, 100, 1].into();
+    /// let a0 = RangeSetBlaze::from([3, 2, 1, 100, 1]);
+    /// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
     /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100")
     /// ```
     fn from(arr: [T; N]) -> Self {
@@ -1338,30 +1338,30 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetInt<T> {
     }
 }
 
-impl<T, I> From<I> for RangeSetInt<T>
+impl<T, I> From<I> for RangeSetBlaze<T>
 where
     T: Integer,
     // cmk understand what does IntoIterator's ' IntoIter = I::IntoIter' mean?
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
     // cmk understand why this can't be  I: IntoIterator<Item = RangeInclusive<T>>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
 {
-    /// Create a [`RangeSetInt`] from a [`SortedDisjoint`] iterator.
+    /// Create a [`RangeSetBlaze`] from a [`SortedDisjoint`] iterator.
     ///
-    /// *For more about constructors and performance, see [`RangeSetInt` Constructors](struct.RangeSetInt.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
     ///
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::{RangeSetInt, CheckSortedDisjoint};
+    /// use range_set_blaze::{RangeSetBlaze, CheckSortedDisjoint};
     ///
-    /// let a0 = RangeSetInt::from(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-    /// let a1: RangeSetInt<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into();
+    /// let a0 = RangeSetBlaze::from(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+    /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");    
     /// ```
     fn from(iter: I) -> Self {
         let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
-        RangeSetInt {
+        RangeSetBlaze {
             btree_map,
             len: iter_with_len.len_so_far(),
         }
@@ -1400,19 +1400,21 @@ pub type BitEq<T, L, R> = BitOrMerge<
 impl<T, I> MultiwayRangeSetIntRef<T> for I
 where
     T: Integer,
-    I: IntoIterator<Item = RangeSetInt<T>>,
+    I: IntoIterator<Item = RangeSetBlaze<T>>,
 {
 }
 
-/// The trait used to provide methods on multiple [`RangeSetInt`] references,
+/// The trait used to provide methods on multiple [`RangeSetBlaze`] references,
 /// specifically [`union`] and [`intersection`].
 ///
 /// Also see [`MultiwayRangeSetInt`].
 ///
 /// [`union`]: MultiwayRangeSetIntRef::union
 /// [`intersection`]: MultiwayRangeSetIntRef::intersection
-pub trait MultiwayRangeSetIntRef<T: Integer>: IntoIterator<Item = RangeSetInt<T>> + Sized {
-    /// Unions the given [`RangeSetInt`] references, creating a new [`RangeSetInt`].
+pub trait MultiwayRangeSetIntRef<T: Integer>:
+    IntoIterator<Item = RangeSetBlaze<T>> + Sized
+{
+    /// Unions the given [`RangeSetBlaze`] references, creating a new [`RangeSetBlaze`].
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '|' operator.
@@ -1424,24 +1426,24 @@ pub trait MultiwayRangeSetIntRef<T: Integer>: IntoIterator<Item = RangeSetInt<T>
     ///
     /// # Example
     ///
-    /// Find the integers that appear in any of the [`RangeSetInt`]'s.
+    /// Find the integers that appear in any of the [`RangeSetBlaze`]'s.
     ///
     /// ```
-    /// use range_set_int::{MultiwayRangeSetIntRef, RangeSetInt};
+    /// use range_set_blaze::{MultiwayRangeSetIntRef, RangeSetBlaze};
     ///
-    /// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
-    /// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
-    /// let c = RangeSetInt::from_iter([25..=100]);
+    /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    /// let c = RangeSetBlaze::from_iter([25..=100]);
     ///
     /// let union = vec![a, b, c].into_iter().union();
     ///
-    /// assert_eq!(union, RangeSetInt::from_iter([1..=15, 18..=100]));
+    /// assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
     /// ```
-    fn union(self) -> RangeSetInt<T> {
+    fn union(self) -> RangeSetBlaze<T> {
         self.into_iter().map(|x| x.into_ranges()).union().into()
     }
 
-    /// Intersects the given [`RangeSetInt`] references, creating a new [`RangeSetInt`].
+    /// Intersects the given [`RangeSetBlaze`] references, creating a new [`RangeSetBlaze`].
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '&' operator.
@@ -1453,22 +1455,22 @@ pub trait MultiwayRangeSetIntRef<T: Integer>: IntoIterator<Item = RangeSetInt<T>
     ///
     /// # Example
     ///
-    /// Find the integers that appear in all the [`RangeSetInt`]'s.
+    /// Find the integers that appear in all the [`RangeSetBlaze`]'s.
     ///
     /// ```
-    /// use range_set_int::{MultiwayRangeSetIntRef, RangeSetInt};
+    /// use range_set_blaze::{MultiwayRangeSetIntRef, RangeSetBlaze};
     ///
-    /// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
-    /// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
-    /// let c = RangeSetInt::from_iter([-100..=100]);
+    /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    /// let c = RangeSetBlaze::from_iter([-100..=100]);
     ///
     /// let intersection = vec![a, b, c].into_iter().intersection();
     ///
-    /// assert_eq!(intersection, RangeSetInt::from_iter([5..=6, 8..=9, 11..=13]));
+    /// assert_eq!(intersection, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
     /// ```
-    fn intersection(self) -> RangeSetInt<T> {
+    fn intersection(self) -> RangeSetBlaze<T> {
         self.into_iter()
-            .map(RangeSetInt::into_ranges)
+            .map(RangeSetBlaze::into_ranges)
             .intersection()
             .into()
     }
@@ -1477,10 +1479,10 @@ pub trait MultiwayRangeSetIntRef<T: Integer>: IntoIterator<Item = RangeSetInt<T>
 impl<'a, T, I> MultiwayRangeSetInt<'a, T> for I
 where
     T: Integer + 'a,
-    I: IntoIterator<Item = &'a RangeSetInt<T>>,
+    I: IntoIterator<Item = &'a RangeSetBlaze<T>>,
 {
 }
-/// The trait used to provide methods on multiple [`RangeSetInt`]'s,
+/// The trait used to provide methods on multiple [`RangeSetBlaze`]'s,
 /// specifically [`union`] and [`intersection`].
 ///
 /// Also see [`MultiwayRangeSetIntRef`].
@@ -1488,9 +1490,9 @@ where
 /// [`union`]: MultiwayRangeSetInt::union
 /// [`intersection`]: MultiwayRangeSetInt::intersection
 pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
-    IntoIterator<Item = &'a RangeSetInt<T>> + Sized
+    IntoIterator<Item = &'a RangeSetBlaze<T>> + Sized
 {
-    /// Unions the given [`RangeSetInt`]'s, creating a new [`RangeSetInt`].
+    /// Unions the given [`RangeSetBlaze`]'s, creating a new [`RangeSetBlaze`].
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '|' operator.
@@ -1502,24 +1504,24 @@ pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
     ///
     /// # Example
     ///
-    /// Find the integers that appear in any of the [`RangeSetInt`]'s.
+    /// Find the integers that appear in any of the [`RangeSetBlaze`]'s.
     ///
     /// ```
-    /// use range_set_int::{MultiwayRangeSetInt, RangeSetInt};
+    /// use range_set_blaze::{MultiwayRangeSetInt, RangeSetBlaze};
     ///
-    /// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
-    /// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
-    /// let c = RangeSetInt::from_iter([25..=100]);
+    /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    /// let c = RangeSetBlaze::from_iter([25..=100]);
     ///
     /// let union = [a, b, c].union();
     ///
-    /// assert_eq!(union, RangeSetInt::from_iter([1..=15, 18..=100]));
+    /// assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
     /// ```
-    fn union(self) -> RangeSetInt<T> {
-        self.into_iter().map(RangeSetInt::ranges).union().into()
+    fn union(self) -> RangeSetBlaze<T> {
+        self.into_iter().map(RangeSetBlaze::ranges).union().into()
     }
 
-    /// Intersects the given [`RangeSetInt`]'s, creating a new [`RangeSetInt`].
+    /// Intersects the given [`RangeSetBlaze`]'s, creating a new [`RangeSetBlaze`].
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '&' operator.
@@ -1531,22 +1533,22 @@ pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
     ///
     /// # Example
     ///
-    /// Find the integers that appear in all the [`RangeSetInt`]'s.
+    /// Find the integers that appear in all the [`RangeSetBlaze`]'s.
     ///
     /// ```
-    /// use range_set_int::{MultiwayRangeSetInt, RangeSetInt};
+    /// use range_set_blaze::{MultiwayRangeSetInt, RangeSetBlaze};
     ///
-    /// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
-    /// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
-    /// let c = RangeSetInt::from_iter([-100..=100]);
+    /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    /// let c = RangeSetBlaze::from_iter([-100..=100]);
     ///
     /// let intersection = [a, b, c].intersection();
     ///
-    /// assert_eq!(intersection, RangeSetInt::from_iter([5..=6, 8..=9, 11..=13]));
+    /// assert_eq!(intersection, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
     /// ```
-    fn intersection(self) -> RangeSetInt<T> {
+    fn intersection(self) -> RangeSetBlaze<T> {
         self.into_iter()
-            .map(RangeSetInt::ranges)
+            .map(RangeSetBlaze::ranges)
             .intersection()
             .into()
     }
@@ -1584,11 +1586,11 @@ where
     /// Find the integers that appear in any of the [`SortedDisjoint`] iterators.
     ///
     /// ```
-    /// use range_set_int::{MultiwaySortedDisjoint, RangeSetInt, SortedDisjointIterator};
+    /// use range_set_blaze::{MultiwaySortedDisjoint, RangeSetBlaze, SortedDisjointIterator};
     ///
-    /// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
-    /// let b = RangeSetInt::from_iter([5..=13, 18..=29]).into_ranges();
-    /// let c = RangeSetInt::from_iter([25..=100]).into_ranges();
+    /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
+    /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
+    /// let c = RangeSetBlaze::from_iter([25..=100]).into_ranges();
     ///
     /// let union = [a, b, c].union();
     ///
@@ -1612,11 +1614,11 @@ where
     /// Find the integers that appear in all the [`SortedDisjoint`] iterators.
     ///
     /// ```
-    /// use range_set_int::{MultiwaySortedDisjoint, RangeSetInt, SortedDisjointIterator};
+    /// use range_set_blaze::{MultiwaySortedDisjoint, RangeSetBlaze, SortedDisjointIterator};
     ///
-    /// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
-    /// let b = RangeSetInt::from_iter([5..=13, 18..=29]).into_ranges();
-    /// let c = RangeSetInt::from_iter([-100..=100]).into_ranges();
+    /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
+    /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
+    /// let c = RangeSetBlaze::from_iter([-100..=100]).into_ranges();
     ///
     /// let intersection = [a, b, c].intersection();
     ///
@@ -1634,14 +1636,14 @@ where
 // todo rule: define operator on owned and borrowed
 gen_ops_ex!(
     <T>;
-    types ref RangeSetInt<T>, ref RangeSetInt<T> => RangeSetInt<T>;
-    for | call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
+    types ref RangeSetBlaze<T>, ref RangeSetBlaze<T> => RangeSetBlaze<T>;
+    for | call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         (a.ranges()|b.ranges()).into()
     };
-    for & call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
+    for & call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         (a.ranges() & b.ranges()).into()
     };
-    for ^ call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
+    for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         // We optimize this by using ranges() twice per input, rather than tee()
         let lhs0 = a.ranges();
         let lhs1 = a.ranges();
@@ -1649,7 +1651,7 @@ gen_ops_ex!(
         let rhs1 = b.ranges();
         ((lhs0 - rhs0) | (rhs1 - lhs1)).into()
     };
-    for - call |a: &RangeSetInt<T>, b: &RangeSetInt<T>| {
+    for - call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         (a.ranges() - b.ranges()).into()
     };
     where T: Integer //Where clause for all impl's
@@ -1657,26 +1659,26 @@ gen_ops_ex!(
 
 gen_ops_ex!(
     <T>;
-    types ref RangeSetInt<T> => RangeSetInt<T>;
-    for ! call |a: &RangeSetInt<T>| {
+    types ref RangeSetBlaze<T> => RangeSetBlaze<T>;
+    for ! call |a: &RangeSetBlaze<T>| {
         (!a.ranges()).into()
     };
 
     where T: Integer //Where clause for all impl's
 );
 
-impl<T: Integer> IntoIterator for RangeSetInt<T> {
+impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
 
-    /// Gets an iterator for moving out the [`RangeSetInt`]'s integer contents.
+    /// Gets an iterator for moving out the [`RangeSetBlaze`]'s integer contents.
     ///
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetInt::from_iter([1, 2, 3, 4]);
+    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
     ///
     /// let v: Vec<_> = set.into_iter().collect();
     /// assert_eq!(v, [1, 2, 3, 4]);
@@ -1689,12 +1691,12 @@ impl<T: Integer> IntoIterator for RangeSetInt<T> {
     }
 }
 
-/// An iterator over the integer elements of a [`RangeSetInt`].
+/// An iterator over the integer elements of a [`RangeSetBlaze`].
 ///
-/// This `struct` is created by the [`iter`] method on [`RangeSetInt`]. See its
+/// This `struct` is created by the [`iter`] method on [`RangeSetBlaze`]. See its
 /// documentation for more.
 ///
-/// [`iter`]: RangeSetInt::iter
+/// [`iter`]: RangeSetBlaze::iter
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
 pub struct Iter<T, I>
@@ -1748,12 +1750,12 @@ where
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug)]
-/// An iterator over the integer elements of a [`RangeSetInt`].
+/// An iterator over the integer elements of a [`RangeSetBlaze`].
 ///
-/// This `struct` is created by the [`into_iter`] method on [`RangeSetInt`]. See its
+/// This `struct` is created by the [`into_iter`] method on [`RangeSetBlaze`]. See its
 /// documentation for more.
 ///
-/// [`into_iter`]: RangeSetInt::into_iter
+/// [`into_iter`]: RangeSetBlaze::into_iter
 pub struct IntoIter<T: Integer> {
     option_range: Option<RangeInclusive<T>>,
     into_iter: std::collections::btree_map::IntoIter<T, T>,
@@ -1790,27 +1792,27 @@ impl<T: Integer> Iterator for IntoIter<T> {
     }
 }
 
-impl<T: Integer> Extend<T> for RangeSetInt<T> {
-    /// Extends the [`RangeSetInt`] with the contents of an Integer iterator.
+impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
+    /// Extends the [`RangeSetBlaze`] with the contents of an Integer iterator.
     ///
     /// Elements are added one-by-one. There is also a version
     /// that takes a range iterator.
     ///
-    /// The [`|=`](RangeSetInt::bitor_assign) operator extends a [`RangeSetInt`]
-    /// from another [`RangeSetInt`]. It is never slower
-    /// than  [`RangeSetInt::extend`] and often several times faster.
+    /// The [`|=`](RangeSetBlaze::bitor_assign) operator extends a [`RangeSetBlaze`]
+    /// from another [`RangeSetBlaze`]. It is never slower
+    /// than  [`RangeSetBlaze::extend`] and often several times faster.
     ///
     /// # Examples
     /// ```
-    /// use range_set_int::RangeSetInt;
-    /// let mut a = RangeSetInt::from_iter([1..=4]);
+    /// use range_set_blaze::RangeSetBlaze;
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
     /// a.extend([5, 0, 0, 3, 4, 10]);
-    /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
+    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     ///
-    /// let mut a = RangeSetInt::from_iter([1..=4]);
-    /// let mut b = RangeSetInt::from_iter([5, 0, 0, 3, 4, 10]);
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+    /// let mut b = RangeSetBlaze::from_iter([5, 0, 0, 3, 4, 10]);
     /// a |= b;
-    /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
+    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn extend<I>(&mut self, iter: I)
     where
@@ -1823,19 +1825,19 @@ impl<T: Integer> Extend<T> for RangeSetInt<T> {
     }
 }
 
-impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
-    /// Adds the contents of another [`RangeSetInt`] to this one.
+impl<T: Integer> BitOrAssign<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
+    /// Adds the contents of another [`RangeSetBlaze`] to this one.
     ///
-    /// It is never slower than [`RangeSetInt::extend`] and
+    /// It is never slower than [`RangeSetBlaze::extend`] and
     /// can often be many times faster.
     ///
     /// # Examples
     /// ```
-    /// use range_set_int::RangeSetInt;
-    /// let mut a = RangeSetInt::from_iter([1..=4]);
-    /// let mut b = RangeSetInt::from_iter([0..=0,3..=5,10..=10]);
+    /// use range_set_blaze::RangeSetBlaze;
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+    /// let mut b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
     /// a |= &b;
-    /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
+    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor_assign(&mut self, other: &Self) {
         let a_len = self.ranges_len();
@@ -1851,19 +1853,19 @@ impl<T: Integer> BitOrAssign<&RangeSetInt<T>> for RangeSetInt<T> {
     }
 }
 
-impl<T: Integer> BitOrAssign<RangeSetInt<T>> for RangeSetInt<T> {
-    /// Adds the contents of another [`RangeSetInt`] to this one.
+impl<T: Integer> BitOrAssign<RangeSetBlaze<T>> for RangeSetBlaze<T> {
+    /// Adds the contents of another [`RangeSetBlaze`] to this one.
     ///
-    /// It is never slower than [`RangeSetInt::extend`] and
+    /// It is never slower than [`RangeSetBlaze::extend`] and
     /// can often be many times faster.
     ///
     /// # Examples
     /// ```
-    /// use range_set_int::RangeSetInt;
-    /// let mut a = RangeSetInt::from_iter([1..=4]);
-    /// let mut b = RangeSetInt::from_iter([0..=0,3..=5,10..=10]);
+    /// use range_set_blaze::RangeSetBlaze;
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+    /// let mut b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
     /// a |= b;
-    /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
+    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor_assign(&mut self, other: Self) {
         let a_len = self.ranges_len();
@@ -1878,28 +1880,28 @@ impl<T: Integer> BitOrAssign<RangeSetInt<T>> for RangeSetInt<T> {
         }
     }
 }
-impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetInt<T> {
-    /// Extends the [`RangeSetInt`] with the contents of a
+impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
+    /// Extends the [`RangeSetBlaze`] with the contents of a
     /// range iterator.
 
     /// Elements are added one-by-one. There is also a version
     /// that takes an integer iterator.
     ///
-    /// The [`|=`](RangeSetInt::bitor_assign) operator extends a [`RangeSetInt`]
-    /// from another [`RangeSetInt`]. It is never slower
-    ///  than  [`RangeSetInt::extend`] and often several times faster.
+    /// The [`|=`](RangeSetBlaze::bitor_assign) operator extends a [`RangeSetBlaze`]
+    /// from another [`RangeSetBlaze`]. It is never slower
+    ///  than  [`RangeSetBlaze::extend`] and often several times faster.
     ///
     /// # Examples
     /// ```
-    /// use range_set_int::RangeSetInt;
-    /// let mut a = RangeSetInt::from_iter([1..=4]);
+    /// use range_set_blaze::RangeSetBlaze;
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
     /// a.extend([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
-    /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
+    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     ///
-    /// let mut a = RangeSetInt::from_iter([1..=4]);
-    /// let mut b = RangeSetInt::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+    /// let mut b = RangeSetBlaze::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
     /// a |= b;
-    /// assert_eq!(a, RangeSetInt::from_iter([0..=5, 10..=10]));
+    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn extend<I>(&mut self, iter: I)
     where
@@ -1914,18 +1916,18 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetInt<T> {
 
 // cmk00 sort-iter uses peekable. Is that better?
 
-impl<T: Integer> Ord for RangeSetInt<T> {
-    /// We define a total ordering on RangeSetInt. Following the convention of
+impl<T: Integer> Ord for RangeSetBlaze<T> {
+    /// We define a total ordering on RangeSetBlaze. Following the convention of
     /// [`BTreeSet`], the ordering is lexicographic, *not* by subset/superset.
     ///
     /// [`BTreeSet`]: std::collections::BTreeSet
     ///
     /// # Examples
     /// ```
-    /// use range_set_int::RangeSetInt;
+    /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let a = RangeSetInt::from_iter([1..=3, 5..=7]);
-    /// let b = RangeSetInt::from_iter([2..=2]);
+    /// let a = RangeSetBlaze::from_iter([1..=3, 5..=7]);
+    /// let b = RangeSetBlaze::from_iter([2..=2]);
     /// assert!(a < b); // Lexicographic comparison
     /// assert!(b.is_subset(&a)); // Subset comparison
     /// // More lexicographic comparisons
@@ -1940,7 +1942,7 @@ impl<T: Integer> Ord for RangeSetInt<T> {
     /// ```
 
     #[inline]
-    fn cmp(&self, other: &RangeSetInt<T>) -> Ordering {
+    fn cmp(&self, other: &RangeSetBlaze<T>) -> Ordering {
         // slow one by one: return self.iter().cmp(other.iter());
 
         // fast by ranges:
@@ -1979,14 +1981,14 @@ impl<T: Integer> Ord for RangeSetInt<T> {
     }
 }
 
-impl<T: Integer> PartialOrd for RangeSetInt<T> {
+impl<T: Integer> PartialOrd for RangeSetBlaze<T> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<T: Integer> Eq for RangeSetInt<T> {}
+impl<T: Integer> Eq for RangeSetBlaze<T> {}
 
 /// The trait used to mark iterators that provide ranges that are sorted by start and disjoint. Set operations on
 /// iterators that implement this trait can be performed in linear time.
@@ -2002,22 +2004,22 @@ impl<T: Integer> Eq for RangeSetInt<T> {}
 ///
 /// # `SortedDisjoint` Constructors
 ///
-/// You'll usually construct a `SortedDisjoint` iterator from a [`RangeSetInt`] or a [`CheckSortedDisjoint`].
+/// You'll usually construct a `SortedDisjoint` iterator from a [`RangeSetBlaze`] or a [`CheckSortedDisjoint`].
 /// Here is a summary table, followed by [examples](#constructor-examples). You can also [define your own
 /// `SortedDisjoint`](#how-to-mark-your-type-as-sorteddisjoint).
 ///
 /// | Input type | Method |
 /// |------------|--------|
-/// | [`RangeSetInt`] | [`ranges`] |
-/// | [`RangeSetInt`] | [`into_ranges`] |
-/// | [`RangeSetInt`]'s [`RangesIter`] | [`clone`] |
+/// | [`RangeSetBlaze`] | [`ranges`] |
+/// | [`RangeSetBlaze`] | [`into_ranges`] |
+/// | [`RangeSetBlaze`]'s [`RangesIter`] | [`clone`] |
 /// | sorted & disjoint ranges | [`CheckSortedDisjoint::new`] |
 /// | `SortedDisjoint` iterator | [itertools `tee`] |
 /// | `SortedDisjoint` iterator | [`DynSortedDisjoint::new`] |
 /// |  *your iterator type* | *[How to mark your type as `SortedDisjoint`][1]* |
 ///
-/// [`ranges`]: RangeSetInt::ranges
-/// [`into_ranges`]: RangeSetInt::into_ranges
+/// [`ranges`]: RangeSetBlaze::ranges
+/// [`into_ranges`]: RangeSetBlaze::into_ranges
 /// [`clone`]: RangesIter::clone
 /// [itertools `tee`]: https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.tee
 /// [1]: #how-to-mark-your-type-as-sorteddisjoint
@@ -2025,18 +2027,18 @@ impl<T: Integer> Eq for RangeSetInt<T> {}
 /// ## Constructor Examples
 ///
 /// ```
-/// use range_set_int::{RangeSetInt, CheckSortedDisjoint, DynSortedDisjoint};
-/// use range_set_int::SortedDisjointIterator;
+/// use range_set_blaze::{RangeSetBlaze, CheckSortedDisjoint, DynSortedDisjoint};
+/// use range_set_blaze::SortedDisjointIterator;
 /// use itertools::Itertools;
 ///
-/// // RangeSetInt's .ranges(), .range().clone() and .into_ranges()
-/// let r = RangeSetInt::from_iter([3, 2, 1, 100, 1]);
+/// // RangeSetBlaze's .ranges(), .range().clone() and .into_ranges()
+/// let r = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
 /// let a = r.ranges();
 /// let b = a.clone();
 /// assert!(a.to_string() == "1..=3, 100..=100");
 /// assert!(b.to_string() == "1..=3, 100..=100");
-/// //    'into_ranges' takes ownership of the 'RangeSetInt'
-/// let a = RangeSetInt::from_iter([3, 2, 1, 100, 1]).into_ranges();
+/// //    'into_ranges' takes ownership of the 'RangeSetBlaze'
+/// let a = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]).into_ranges();
 /// assert!(a.to_string() == "1..=3, 100..=100");
 ///
 /// // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
@@ -2076,11 +2078,11 @@ impl<T: Integer> Eq for RangeSetInt<T> {}
 /// ## Examples
 ///
 /// ```
-/// use range_set_int::{SortedDisjointIterator, CheckSortedDisjoint, RangeSetInt};
+/// use range_set_blaze::{SortedDisjointIterator, CheckSortedDisjoint, RangeSetBlaze};
 ///
-/// let a0 = RangeSetInt::from_iter([1..=2, 5..=100]);
-/// let b0 = RangeSetInt::from_iter([2..=6]);
-/// let c0 = RangeSetInt::from_iter([2..=2, 6..=200]);
+/// let a0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+/// let b0 = RangeSetBlaze::from_iter([2..=6]);
+/// let c0 = RangeSetBlaze::from_iter([2..=2, 6..=200]);
 ///
 /// // 'union' method and 'to_string' method
 /// let (a, b) = (a0.ranges(), b0.ranges());
@@ -2093,13 +2095,13 @@ impl<T: Integer> Eq for RangeSetInt<T> {}
 /// assert!(result.equal(CheckSortedDisjoint::from([1..=100])));
 ///
 /// // multiway union of same type
-/// use range_set_int::MultiwaySortedDisjoint;
+/// use range_set_blaze::MultiwaySortedDisjoint;
 /// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
 /// let result = [a, b, c].union();
 /// assert_eq!(result.to_string(), "1..=200");
 ///
 /// // multiway union of different types
-/// use range_set_int::union_dyn;
+/// use range_set_blaze::union_dyn;
 /// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
 /// let result = union_dyn!(a, b, !c);
 /// assert_eq!(result.to_string(), "-2147483648..=100, 201..=2147483647");
@@ -2122,7 +2124,7 @@ impl<T: Integer> Eq for RangeSetInt<T> {}
 /// > To use operators such as `&` and `!`, you must also implement the [`BitAnd`], [`Not`], etc. traits.
 /// >
 /// > If you want others to use your marked iterator type, reexport:
-/// > `pub use range_set_int::{SortedDisjoint, SortedStarts};`
+/// > `pub use range_set_blaze::{SortedDisjoint, SortedStarts};`
 ///
 /// [`BitAnd`]: https://doc.rust-lang.org/std/ops/trait.BitAnd.html
 /// [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
@@ -2139,7 +2141,7 @@ impl<T: Integer> Eq for RangeSetInt<T> {}
 /// ## Example -- Find the ordinal weekdays in September 2023
 /// ```
 /// use std::ops::RangeInclusive;
-/// pub use range_set_int::{SortedDisjoint, SortedStarts};
+/// pub use range_set_blaze::{SortedDisjoint, SortedStarts};
 ///
 /// // Ordinal dates count January 1 as day 1, February 1 as day 32, etc.
 /// struct OrdinalWeekends2023 {
@@ -2169,7 +2171,7 @@ impl<T: Integer> Eq for RangeSetInt<T> {}
 ///     }
 /// }
 ///
-/// use range_set_int::{SortedDisjointIterator, CheckSortedDisjoint};
+/// use range_set_blaze::{SortedDisjointIterator, CheckSortedDisjoint};
 ///
 /// let weekends = OrdinalWeekends2023::new();
 /// let september = CheckSortedDisjoint::from([244..=273]);

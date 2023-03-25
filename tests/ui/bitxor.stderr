@@ -1,8 +1,8 @@
 warning: unused import: `SortedDisjointIterator`
- --> tests/ui/bitxor.rs:1:34
+ --> tests/ui/bitxor.rs:1:38
   |
-1 | use range_set_int::{RangeSetInt, SortedDisjointIterator};
-  |                                  ^^^^^^^^^^^^^^^^^^^^^^
+1 | use range_set_blaze::{RangeSetBlaze, SortedDisjointIterator};
+  |                                      ^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: `#[warn(unused_imports)]` on by default
 

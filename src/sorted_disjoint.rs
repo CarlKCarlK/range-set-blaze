@@ -21,7 +21,7 @@ use crate::{
 /// # Example
 ///
 /// ```
-/// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
+/// use range_set_blaze::{CheckSortedDisjoint, SortedDisjointIterator};
 ///
 /// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
@@ -31,7 +31,7 @@ use crate::{
 ///
 /// Here the ranges are not sorted and disjoint, so the iterator will panic.
 ///```should_panic
-/// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
+/// use range_set_blaze::{CheckSortedDisjoint, SortedDisjointIterator};
 ///
 /// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6,-10..=-5]);
@@ -138,7 +138,7 @@ impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]>
     /// # Examples
     ///
     /// ```
-    /// use range_set_int::{CheckSortedDisjoint, SortedDisjointIterator};
+    /// use range_set_blaze::{CheckSortedDisjoint, SortedDisjointIterator};
     ///
     /// let a0 = CheckSortedDisjoint::from([1..=3, 100..=100]);
     /// let a1: CheckSortedDisjoint<_,_> = [1..=3, 100..=100].into();
@@ -220,11 +220,11 @@ where
 ///
 /// # Example
 /// ```
-/// use range_set_int::{DynSortedDisjoint, MultiwaySortedDisjoint, SortedDisjointIterator, RangeSetInt};
+/// use range_set_blaze::{DynSortedDisjoint, MultiwaySortedDisjoint, SortedDisjointIterator, RangeSetBlaze};
 ///
-/// let a = RangeSetInt::from_iter([1u8..=6, 8..=9, 11..=15]);
-/// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
-/// let c = RangeSetInt::from_iter([38..=42]);
+/// let a = RangeSetBlaze::from_iter([1u8..=6, 8..=9, 11..=15]);
+/// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+/// let c = RangeSetBlaze::from_iter([38..=42]);
 /// let union = [
 ///     DynSortedDisjoint::new(a.ranges()),
 ///     DynSortedDisjoint::new(!b.ranges()),
@@ -281,11 +281,11 @@ impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
 ///
 /// [`intersection`]: crate::MultiwaySortedDisjoint::intersection
 /// ```
-/// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
+/// use range_set_blaze::{intersection_dyn, union_dyn, RangeSetBlaze, SortedDisjointIterator};
 ///
-/// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
-/// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
-/// let c = RangeSetInt::from_iter([38..=42]);
+/// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+/// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+/// let c = RangeSetBlaze::from_iter([38..=42]);
 ///
 /// let parity = union_dyn!(
 ///     intersection_dyn!(a.ranges(), !b.ranges(), !c.ranges()),
@@ -317,11 +317,11 @@ macro_rules! intersection_dyn {
 ///
 /// [`union`]: crate::MultiwaySortedDisjoint::union
 /// ```
-/// use range_set_int::{intersection_dyn, union_dyn, RangeSetInt, SortedDisjointIterator};
+/// use range_set_blaze::{intersection_dyn, union_dyn, RangeSetBlaze, SortedDisjointIterator};
 ///
-/// let a = RangeSetInt::from_iter([1..=6, 8..=9, 11..=15]);
-/// let b = RangeSetInt::from_iter([5..=13, 18..=29]);
-/// let c = RangeSetInt::from_iter([38..=42]);
+/// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+/// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+/// let c = RangeSetBlaze::from_iter([38..=42]);
 ///
 /// let parity = union_dyn!(
 ///     intersection_dyn!(a.ranges(), !b.ranges(), !c.ranges()),

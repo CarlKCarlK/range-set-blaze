@@ -1,23 +1,23 @@
 error[E0271]: expected `std::slice::Iter<'_, ({integer}, {integer})>` to be an iterator that yields `RangeInclusive<_>`, but it yields `&({integer}, {integer})`
- --> tests/ui/untrusted_pairs.rs:6:41
+ --> tests/ui/untrusted_pairs.rs:6:45
   |
-6 |     let range_set_int: RangeSetInt<_> = untrusted.iter().into();
-  |                                         ^^^^^^^^^^^^^^^^ ---- required by a bound introduced by this call
-  |                                         |
-  |                                         expected struct `RangeInclusive`, found reference
+6 |     let range_set_blaze: RangeSetBlaze<_> = untrusted.iter().into();
+  |                                             ^^^^^^^^^^^^^^^^ ---- required by a bound introduced by this call
+  |                                             |
+  |                                             expected struct `RangeInclusive`, found reference
   |
   = note: expected struct `RangeInclusive<_>`
           found reference `&({integer}, {integer})`
-  = note: required for `RangeSetInt<_>` to implement `From<std::slice::Iter<'_, ({integer}, {integer})>>`
-  = note: required for `std::slice::Iter<'_, ({integer}, {integer})>` to implement `Into<RangeSetInt<_>>`
+  = note: required for `RangeSetBlaze<_>` to implement `From<std::slice::Iter<'_, ({integer}, {integer})>>`
+  = note: required for `std::slice::Iter<'_, ({integer}, {integer})>` to implement `Into<RangeSetBlaze<_>>`
 
 error[E0277]: the trait bound `std::slice::Iter<'_, ({integer}, {integer})>: SortedDisjoint` is not satisfied
- --> tests/ui/untrusted_pairs.rs:6:41
+ --> tests/ui/untrusted_pairs.rs:6:45
   |
-6 |     let range_set_int: RangeSetInt<_> = untrusted.iter().into();
-  |                                         ^^^^^^^^^^^^^^^^ ---- required by a bound introduced by this call
-  |                                         |
-  |                                         the trait `SortedDisjoint` is not implemented for `std::slice::Iter<'_, ({integer}, {integer})>`
+6 |     let range_set_blaze: RangeSetBlaze<_> = untrusted.iter().into();
+  |                                             ^^^^^^^^^^^^^^^^ ---- required by a bound introduced by this call
+  |                                             |
+  |                                             the trait `SortedDisjoint` is not implemented for `std::slice::Iter<'_, ({integer}, {integer})>`
   |
   = help: the following other types implement trait `SortedDisjoint`:
             CheckSortedDisjoint<T, I>
@@ -27,5 +27,5 @@ error[E0277]: the trait bound `std::slice::Iter<'_, ({integer}, {integer})>: Sor
             RangesIter<'_, T>
             UnionIter<T, I>
             itertools::tee::Tee<I>
-  = note: required for `RangeSetInt<_>` to implement `From<std::slice::Iter<'_, ({integer}, {integer})>>`
-  = note: required for `std::slice::Iter<'_, ({integer}, {integer})>` to implement `Into<RangeSetInt<_>>`
+  = note: required for `RangeSetBlaze<_>` to implement `From<std::slice::Iter<'_, ({integer}, {integer})>>`
+  = note: required for `std::slice::Iter<'_, ({integer}, {integer})>` to implement `Into<RangeSetBlaze<_>>`

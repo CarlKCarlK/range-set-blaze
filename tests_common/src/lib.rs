@@ -3,8 +3,8 @@ use std::ops::RangeInclusive;
 use num_traits::identities::One;
 use rand::rngs::StdRng;
 use rand::Rng;
-use range_set_int::Integer;
-use range_set_int::RangeSetInt;
+use range_set_blaze::Integer;
+use range_set_blaze::RangeSetBlaze;
 
 pub fn width_to_range(
     iter_len: usize,
@@ -179,10 +179,10 @@ pub fn k_sets<T: Integer>(
     coverage_goal: f64,
     how: How,
     rng: &mut StdRng,
-) -> Vec<RangeSetInt<T>> {
+) -> Vec<RangeSetBlaze<T>> {
     (0..k)
         .map(|_i| {
-            RangeSetInt::<T>::from_iter(MemorylessRange::new(
+            RangeSetBlaze::<T>::from_iter(MemorylessRange::new(
                 rng,
                 range_len,
                 range.clone(),

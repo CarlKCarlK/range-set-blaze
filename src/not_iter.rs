@@ -15,7 +15,7 @@ use crate::{
 /// # Example
 ///
 /// ```
-/// use range_set_int::{NotIter, SortedDisjointIterator, CheckSortedDisjoint};
+/// use range_set_blaze::{NotIter, SortedDisjointIterator, CheckSortedDisjoint};
 ///
 /// let a = CheckSortedDisjoint::from([1u8..=2, 5..=100]);
 /// let b = NotIter::new(a);

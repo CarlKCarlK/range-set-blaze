@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'rangeset-int'",
+            "name": "Debug executable 'range-set-blaze'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=rangeset-int",
-                    "--package=rangeset-int"
+                    "--bin=range-set-blaze",
+                    "--package=range-set-blaze"
                 ],
                 "filter": {
-                    "name": "rangeset-int",
+                    "name": "range-set-blaze",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'rangeset-int'",
+            "name": "Debug unit tests in executable 'range-set-blaze'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=rangeset-int",
-                    "--package=rangeset-int"
+                    "--bin=range-set-blaze",
+                    "--package=range-set-blaze"
                 ],
                 "filter": {
-                    "name": "rangeset-int",
+                    "name": "range-set-blaze",
                     "kind": "bin"
                 }
             },

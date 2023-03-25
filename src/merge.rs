@@ -16,7 +16,7 @@ use crate::{Integer, SortedDisjoint, SortedStarts};
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_int::{UnionIter, Merge, SortedDisjointIterator, CheckSortedDisjoint};
+/// use range_set_blaze::{UnionIter, Merge, SortedDisjointIterator, CheckSortedDisjoint};
 ///
 /// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
@@ -100,7 +100,7 @@ where
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_int::{UnionIter, KMerge, MultiwaySortedDisjoint, SortedDisjointIterator, CheckSortedDisjoint};
+/// use range_set_blaze::{UnionIter, KMerge, MultiwaySortedDisjoint, SortedDisjointIterator, CheckSortedDisjoint};
 ///
 /// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::new(vec![2..=6].into_iter());
