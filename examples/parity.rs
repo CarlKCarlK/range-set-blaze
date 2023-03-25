@@ -1,4 +1,4 @@
-use range_set_blaze::{intersection_dyn, union_dyn, RangeSetBlaze, SortedDisjointIterator};
+use range_set_blaze::prelude::*;
 
 fn main() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);

@@ -1,11 +1,3 @@
-warning: unused import: `SortedDisjointIterator`
- --> tests/ui/bitxor.rs:1:38
-  |
-1 | use range_set_blaze::{RangeSetBlaze, SortedDisjointIterator};
-  |                                      ^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
-
 error[E0599]: no method named `bitxor` found for struct `IntoRangesIter` in the current scope
  --> tests/ui/bitxor.rs:6:16
   |

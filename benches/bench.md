@@ -39,7 +39,7 @@ RangeSetBlaze is a great choice for clumpy integers.
 ## 'ingest_clumps_ranges': Measure Various range set crates on the clumpy integers
 
 * **Measure**: intake speed
-* **Candidates**: RangeSetBlaze, rangeset
+* **Candidates**: RangeSetBlaze, rangemap
 * **Vary**: *average clump size* from 100 to 1000 (a subset of the 'ingest_clumps_base' case)
 * **Details**: We generate 1M integers in clumps. Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. The clumps are random uniform in a range of roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover 10% of the range.
 
@@ -54,7 +54,7 @@ RangeSetBlaze is the only crate that batches its input. This lets it ingest rang
 ## 'ingest_clumps_integers': Measure Various range set crates on the clumpy integers
 
 * **Measure**: intake speed
-* **Candidates**: RangeSetBlaze, rangeset, BTreeSet, HashSet
+* **Candidates**: RangeSetBlaze, rangemap, BTreeSet, HashSet
 * **Vary**: *average clump size* from 100 to 1000 (a subset of the 'ingest_clumps_base' case)
 * **Details**: We generate 1M integers in clumps. Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. The clumps are random uniform in a range of roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover 10% of the range.
 

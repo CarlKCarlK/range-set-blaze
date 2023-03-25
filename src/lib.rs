@@ -19,6 +19,7 @@
 mod integer;
 mod merge;
 mod not_iter;
+pub mod prelude;
 mod ranges;
 mod sorted_disjoint;
 mod sorted_disjoint_iterator;
@@ -165,13 +166,13 @@ pub trait Integer:
 /// Internally, it stores the ranges in a cache-efficient [`BTreeMap`].
 ///
 /// # Table of Contents
-/// * [`RangeSetBlaze` Constructors](#rangesetint-constructors)
+/// * [`RangeSetBlaze` Constructors](#rangesetblaze-constructors)
 ///    * [Performance](#constructor-performance)
 ///    * [Examples](struct.RangeSetBlaze.html#constructor-examples)
-/// * [`RangeSetBlaze` Set Operations](#rangesetint-set-operations)
+/// * [`RangeSetBlaze` Set Operations](#rangesetblaze-set-operations)
 ///    * [Performance](struct.RangeSetBlaze.html#set-operation-performance)
 ///    * [Examples](struct.RangeSetBlaze.html#set-operation-examples)
-///  * [`RangeSetBlaze` Comparisons](#rangesetint-comparisons)
+///  * [`RangeSetBlaze` Comparisons](#rangesetblaze-comparisons)
 ///  * [Additional Examples](#additional-examples)
 ///
 /// You can also create `RangeSetBlaze`'s from unsorted and overlapping integers (or ranges).
@@ -227,7 +228,7 @@ pub trait Integer:
 /// ## Constructor Examples
 ///
 /// ```
-/// use range_set_blaze::{RangeSetBlaze, CheckSortedDisjoint};
+/// use range_set_blaze::prelude::*;
 ///
 /// // Create an empty set with 'new' or 'default'.
 /// let a0 = RangeSetBlaze::<i32>::new();
@@ -276,8 +277,8 @@ pub trait Integer:
 /// `RangeSetBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
 /// these methods match those of `BTreeSet`.
 ///
-/// [`union`]: trait.MultiwayRangeSetInt.html#method.union
-/// [`intersection`]: trait.MultiwayRangeSetInt.html#method.intersection
+/// [`union`]: trait.MultiwayRangeSetBlaze.html#method.union
+/// [`intersection`]: trait.MultiwayRangeSetBlaze.html#method.intersection
 /// [`insert`]: RangeSetBlaze::insert
 /// [`pop_first`]: RangeSetBlaze::pop_first
 /// [`split_off`]: RangeSetBlaze::split_off
@@ -297,7 +298,7 @@ pub trait Integer:
 /// ## Set Operation Examples
 ///
 /// ```
-/// use range_set_blaze::{RangeSetBlaze, MultiwayRangeSetInt};
+/// use range_set_blaze::prelude::*;
 ///
 /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
 /// let b = RangeSetBlaze::from_iter([2..=6]);
@@ -1352,7 +1353,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::{RangeSetBlaze, CheckSortedDisjoint};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a0 = RangeSetBlaze::from(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
     /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into();
@@ -1397,7 +1398,7 @@ pub type BitEq<T, L, R> = BitOrMerge<
 >;
 
 // todo rule Offer methods of traits
-impl<T, I> MultiwayRangeSetIntRef<T> for I
+impl<T, I> MultiwayRangeSetBlazeRef<T> for I
 where
     T: Integer,
     I: IntoIterator<Item = RangeSetBlaze<T>>,
@@ -1407,18 +1408,18 @@ where
 /// The trait used to provide methods on multiple [`RangeSetBlaze`] references,
 /// specifically [`union`] and [`intersection`].
 ///
-/// Also see [`MultiwayRangeSetInt`].
+/// Also see [`MultiwayRangeSetBlaze`].
 ///
-/// [`union`]: MultiwayRangeSetIntRef::union
-/// [`intersection`]: MultiwayRangeSetIntRef::intersection
-pub trait MultiwayRangeSetIntRef<T: Integer>:
+/// [`union`]: MultiwayRangeSetBlazeRef::union
+/// [`intersection`]: MultiwayRangeSetBlazeRef::intersection
+pub trait MultiwayRangeSetBlazeRef<T: Integer>:
     IntoIterator<Item = RangeSetBlaze<T>> + Sized
 {
     /// Unions the given [`RangeSetBlaze`] references, creating a new [`RangeSetBlaze`].
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '|' operator.
-    /// Also see [`MultiwayRangeSetInt::union`].
+    /// Also see [`MultiwayRangeSetBlaze::union`].
     ///
     /// # Performance
     ///
@@ -1429,7 +1430,7 @@ pub trait MultiwayRangeSetIntRef<T: Integer>:
     /// Find the integers that appear in any of the [`RangeSetBlaze`]'s.
     ///
     /// ```
-    /// use range_set_blaze::{MultiwayRangeSetIntRef, RangeSetBlaze};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
@@ -1447,7 +1448,7 @@ pub trait MultiwayRangeSetIntRef<T: Integer>:
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '&' operator.
-    /// Also see [`MultiwayRangeSetInt::intersection`].
+    /// Also see [`MultiwayRangeSetBlaze::intersection`].
     ///
     /// # Performance
     ///
@@ -1458,7 +1459,7 @@ pub trait MultiwayRangeSetIntRef<T: Integer>:
     /// Find the integers that appear in all the [`RangeSetBlaze`]'s.
     ///
     /// ```
-    /// use range_set_blaze::{MultiwayRangeSetIntRef, RangeSetBlaze};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
@@ -1476,7 +1477,7 @@ pub trait MultiwayRangeSetIntRef<T: Integer>:
     }
 }
 // todo rule Offer methods of traits
-impl<'a, T, I> MultiwayRangeSetInt<'a, T> for I
+impl<'a, T, I> MultiwayRangeSetBlaze<'a, T> for I
 where
     T: Integer + 'a,
     I: IntoIterator<Item = &'a RangeSetBlaze<T>>,
@@ -1485,18 +1486,18 @@ where
 /// The trait used to provide methods on multiple [`RangeSetBlaze`]'s,
 /// specifically [`union`] and [`intersection`].
 ///
-/// Also see [`MultiwayRangeSetIntRef`].
+/// Also see [`MultiwayRangeSetBlazeRef`].
 ///
-/// [`union`]: MultiwayRangeSetInt::union
-/// [`intersection`]: MultiwayRangeSetInt::intersection
-pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
+/// [`union`]: MultiwayRangeSetBlaze::union
+/// [`intersection`]: MultiwayRangeSetBlaze::intersection
+pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
     IntoIterator<Item = &'a RangeSetBlaze<T>> + Sized
 {
     /// Unions the given [`RangeSetBlaze`]'s, creating a new [`RangeSetBlaze`].
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '|' operator.
-    /// Also see [`MultiwayRangeSetIntRef::union`].
+    /// Also see [`MultiwayRangeSetBlazeRef::union`].
     ///
     /// # Performance
     ///
@@ -1507,7 +1508,7 @@ pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
     /// Find the integers that appear in any of the [`RangeSetBlaze`]'s.
     ///
     /// ```
-    /// use range_set_blaze::{MultiwayRangeSetInt, RangeSetBlaze};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
@@ -1525,7 +1526,7 @@ pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '&' operator.
-    /// Also see [`MultiwayRangeSetIntRef::intersection`].
+    /// Also see [`MultiwayRangeSetBlazeRef::intersection`].
     ///
     /// # Performance
     ///
@@ -1536,7 +1537,7 @@ pub trait MultiwayRangeSetInt<'a, T: Integer + 'a>:
     /// Find the integers that appear in all the [`RangeSetBlaze`]'s.
     ///
     /// ```
-    /// use range_set_blaze::{MultiwayRangeSetInt, RangeSetBlaze};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
@@ -1586,7 +1587,7 @@ where
     /// Find the integers that appear in any of the [`SortedDisjoint`] iterators.
     ///
     /// ```
-    /// use range_set_blaze::{MultiwaySortedDisjoint, RangeSetBlaze, SortedDisjointIterator};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
@@ -1614,7 +1615,7 @@ where
     /// Find the integers that appear in all the [`SortedDisjoint`] iterators.
     ///
     /// ```
-    /// use range_set_blaze::{MultiwaySortedDisjoint, RangeSetBlaze, SortedDisjointIterator};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
@@ -2002,8 +2003,6 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
     }
 }
 
-// cmk00 sort-iter uses peekable. Is that better?
-
 impl<T: Integer> Ord for RangeSetBlaze<T> {
     /// We define a total ordering on RangeSetBlaze. Following the convention of
     /// [`BTreeSet`], the ordering is lexicographic, *not* by subset/superset.
@@ -2115,8 +2114,7 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 /// ## Constructor Examples
 ///
 /// ```
-/// use range_set_blaze::{RangeSetBlaze, CheckSortedDisjoint, DynSortedDisjoint};
-/// use range_set_blaze::SortedDisjointIterator;
+/// use range_set_blaze::prelude::*;
 /// use itertools::Itertools;
 ///
 /// // RangeSetBlaze's .ranges(), .range().clone() and .into_ranges()
@@ -2166,7 +2164,7 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 /// ## Examples
 ///
 /// ```
-/// use range_set_blaze::{SortedDisjointIterator, CheckSortedDisjoint, RangeSetBlaze};
+/// use range_set_blaze::prelude::*;
 ///
 /// let a0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
 /// let b0 = RangeSetBlaze::from_iter([2..=6]);
@@ -2183,13 +2181,11 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 /// assert!(result.equal(CheckSortedDisjoint::from([1..=100])));
 ///
 /// // multiway union of same type
-/// use range_set_blaze::MultiwaySortedDisjoint;
 /// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
 /// let result = [a, b, c].union();
 /// assert_eq!(result.to_string(), "1..=200");
 ///
 /// // multiway union of different types
-/// use range_set_blaze::union_dyn;
 /// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
 /// let result = union_dyn!(a, b, !c);
 /// assert_eq!(result.to_string(), "-2147483648..=100, 201..=2147483647");
@@ -2259,7 +2255,7 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 ///     }
 /// }
 ///
-/// use range_set_blaze::{SortedDisjointIterator, CheckSortedDisjoint};
+/// use range_set_blaze::prelude::*;
 ///
 /// let weekends = OrdinalWeekends2023::new();
 /// let september = CheckSortedDisjoint::from([244..=273]);

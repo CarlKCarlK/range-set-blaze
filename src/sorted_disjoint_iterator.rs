@@ -28,7 +28,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::{CheckSortedDisjoint, RangeSetBlaze, SortedDisjointIterator};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([1..=1]);
     /// let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
@@ -56,7 +56,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::{CheckSortedDisjoint, RangeSetBlaze, SortedDisjointIterator};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
@@ -84,7 +84,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::{CheckSortedDisjoint, RangeSetBlaze, SortedDisjointIterator};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
@@ -112,7 +112,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::{CheckSortedDisjoint, RangeSetBlaze, SortedDisjointIterator};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([-10i16..=0, 1000..=2000]);
     /// let complement = a.complement();
@@ -136,7 +136,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::{CheckSortedDisjoint, RangeSetBlaze, SortedDisjointIterator};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
@@ -168,7 +168,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::{CheckSortedDisjoint, RangeSetBlaze, SortedDisjointIterator};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetBlaze::from_iter([1..=2]).into_ranges();
@@ -189,7 +189,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::{CheckSortedDisjoint, RangeSetBlaze, SortedDisjointIterator};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([1..=2]);
     /// assert_eq!(a.to_string(), "1..=2");
@@ -222,7 +222,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::{CheckSortedDisjoint, SortedDisjointIterator};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let sup = CheckSortedDisjoint::from([1..=3]);
     /// let set: CheckSortedDisjoint<i32, _> = [].into();

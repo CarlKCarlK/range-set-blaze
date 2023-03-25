@@ -499,7 +499,7 @@ fn multi_op() {
     assert_eq!(d, RangeSetBlaze::new());
 
     assert_eq!(
-        !MultiwayRangeSetInt::<u8>::union([]),
+        !MultiwayRangeSetBlaze::<u8>::union([]),
         RangeSetBlaze::from_iter([0..=255])
     );
 
@@ -514,7 +514,7 @@ fn multi_op() {
     assert_eq!(d, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
 
     assert_eq!(
-        MultiwayRangeSetInt::<u8>::intersection([]),
+        MultiwayRangeSetBlaze::<u8>::intersection([]),
         RangeSetBlaze::from_iter([0..=255])
     );
 }
@@ -771,10 +771,10 @@ fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
 #[test]
 fn check_traits() {
     // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
-    type ARangeSetInt = RangeSetBlaze<i32>;
-    is_sssu::<ARangeSetInt>();
-    is_ddcppdheo::<ARangeSetInt>();
-    is_like_btreeset::<ARangeSetInt>();
+    type ARangeSetBlaze = RangeSetBlaze<i32>;
+    is_sssu::<ARangeSetBlaze>();
+    is_ddcppdheo::<ARangeSetBlaze>();
+    is_like_btreeset::<ARangeSetBlaze>();
 
     type ARangesIter<'a> = RangesIter<'a, i32>;
     is_sssu::<ARangesIter>();
@@ -1334,7 +1334,7 @@ fn union(a: Reference, b: Reference) -> bool {
 
 #[quickcheck]
 fn multi_union(inputs: Vec<Reference>) -> bool {
-    use crate::MultiwayRangeSetIntRef;
+    use crate::MultiwayRangeSetBlazeRef;
 
     let expected: Reference = inputs.iter().flatten().copied().collect();
     let actual = inputs.iter().map(RangeSetBlaze::from_iter).union();

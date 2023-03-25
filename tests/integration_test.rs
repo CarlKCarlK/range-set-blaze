@@ -6,7 +6,8 @@ use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use range_set_blaze::{
-    CheckSortedDisjoint, DynSortedDisjoint, NotIter, SortedDisjoint, SortedStarts, UnionIter,
+    prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedDisjoint, SortedStarts,
+    UnionIter,
 };
 use std::cmp::Ordering;
 use std::ops::RangeInclusive;
@@ -14,12 +15,6 @@ use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
-
-// !!!cmk00 should users use a prelude? If not, are these reasonable imports?
-use range_set_blaze::{
-    intersection_dyn, union_dyn, AssumeSortedStarts, Integer, MultiwayRangeSetInt,
-    MultiwaySortedDisjoint, RangeSetBlaze, RangesIter, SortedDisjointIterator,
-};
 
 #[test]
 fn insert_255u8() {
@@ -241,7 +236,7 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(d, RangeSetBlaze::new());
 
     assert_eq!(
-        !MultiwayRangeSetInt::<u8>::union([]),
+        !MultiwayRangeSetBlaze::<u8>::union([]),
         RangeSetBlaze::from_iter([0..=255])
     );
 
@@ -256,7 +251,7 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(d, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
 
     assert_eq!(
-        MultiwayRangeSetInt::<u8>::intersection([]),
+        MultiwayRangeSetBlaze::<u8>::intersection([]),
         RangeSetBlaze::from_iter([0..=255])
     );
     Ok(())

@@ -1,4 +1,4 @@
-use range_set_blaze::{RangeSetBlaze, SortedDisjointIterator};
+use range_set_blaze::prelude::*;
 
 fn main() {
     let a = RangeSetBlaze::from_iter([1, 2, 3]).into_ranges();

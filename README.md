@@ -29,7 +29,7 @@ The crate's main trait is [`SortedDisjoint`]. It is implemented by iterators of 
 [`BTreeSet`]: std::collections::BTreeSet
 [`HashSet`]: std::collections::HashSet
 [`BTreeMap`]: std::collections::BTreeMap
-[set operations]: rangesetint-set-operations
+[set operations]: rangesetblaze-set-operations
 [1]: struct.RangeSetBlaze.html#constructor-performance
 
 Example 1

@@ -1,11 +1,3 @@
-warning: unused import: `RangeSetBlaze`
- --> tests/ui/tee.rs:2:23
-  |
-2 | use range_set_blaze::{RangeSetBlaze, SortedDisjointIterator};
-  |                       ^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
-
 error[E0599]: the method `union` exists for struct `Tee<std::slice::Iter<'_, ({integer}, {integer})>>`, but its trait bounds were not satisfied
  --> tests/ui/tee.rs:7:17
   |
@@ -17,28 +9,54 @@ error[E0599]: the method `union` exists for struct `Tee<std::slice::Iter<'_, ({i
   | pub struct Tee<I>
   | -----------------
   | |
+  | doesn't satisfy `<_ as IntoIterator>::Item = &RangeSetBlaze<_>`
+  | doesn't satisfy `<_ as IntoIterator>::Item = RangeSetBlaze<_>`
   | doesn't satisfy `<_ as Iterator>::Item = RangeInclusive<_>`
-  | doesn't satisfy `_: SortedDisjointIterator<_>`
   | doesn't satisfy `_: SortedDisjoint`
+  | doesn't satisfy `_: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
+  | doesn't satisfy `_: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
+  | doesn't satisfy `_: range_set_blaze::SortedDisjointIterator<_>`
   |
   = note: the following trait bounds were not satisfied:
+          `<Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
+          which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
+          `<Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = RangeSetBlaze<_>`
+          which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
           `<Tee<std::slice::Iter<'_, ({integer}, {integer})>> as Iterator>::Item = RangeInclusive<_>`
-          which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
+          which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
           `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjoint`
-          which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
+          which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
+          `<&Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
+          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
+          `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: IntoIterator`
+          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
+          `<&Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = RangeSetBlaze<_>`
+          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
+          `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: IntoIterator`
+          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
+          `<&Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = _`
+          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwaySortedDisjoint<_, _>`
+          `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: IntoIterator`
+          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwaySortedDisjoint<_, _>`
           `<&Tee<std::slice::Iter<'_, ({integer}, {integer})>> as Iterator>::Item = RangeInclusive<_>`
-          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
+          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
           `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: Iterator`
-          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
+          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
           `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjoint`
-          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
+          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
+          `<&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
+          which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
+          `<&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = RangeSetBlaze<_>`
+          which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
           `<&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>> as Iterator>::Item = RangeInclusive<_>`
-          which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
+          which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
           `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjoint`
-          which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjointIterator<_>`
+          which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
 
-warning: unused import: `SortedDisjointIterator`
- --> tests/ui/tee.rs:2:38
+warning: unused import: `range_set_blaze::prelude`
+ --> tests/ui/tee.rs:2:5
   |
-2 | use range_set_blaze::{RangeSetBlaze, SortedDisjointIterator};
-  |                                      ^^^^^^^^^^^^^^^^^^^^^^
+2 | use range_set_blaze::prelude::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
