@@ -27,7 +27,7 @@ use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange}
 
 pub fn shuffled(c: &mut Criterion) {
     let seed = 0;
-    let len = 2u32.pow(23); // 25 cmk bench
+    let len = 2u32.pow(23); // was 25
     let mut group = c.benchmark_group("shuffled");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
@@ -56,7 +56,7 @@ fn gen_data_shuffled(seed: u64, len: u32) -> Vec<u32> {
 
 pub fn ascending(c: &mut Criterion) {
     let seed = 0;
-    let len = 2u32.pow(20); // 25 cmk bench
+    let len = 2u32.pow(20); // was 25
     let mut group = c.benchmark_group("ascending");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
@@ -71,7 +71,7 @@ pub fn ascending(c: &mut Criterion) {
 
 pub fn descending(c: &mut Criterion) {
     let seed = 0;
-    let len = 2u32.pow(20); // 25 cmk bench
+    let len = 2u32.pow(20); // was 25
     let mut group = c.benchmark_group("descending");
     group.sample_size(10);
     // group.measurement_time(Duration::from_secs(170));
@@ -971,8 +971,8 @@ fn str_vs_ad_by_cover(c: &mut Criterion) {
     }
     group.finish();
 }
-fn vs_btree_set(c: &mut Criterion) {
-    let group_name = "vs_btree_set";
+fn ingest_clumps_base(c: &mut Criterion) {
+    let group_name = "ingest_clumps_base";
     let k = 1;
     let average_width_list = [1, 10, 100, 1000, 10_000, 100_000, 1_000_000];
     let coverage_goal = 0.10;
@@ -1048,10 +1048,10 @@ fn vs_btree_set(c: &mut Criterion) {
     group.finish();
 }
 
-fn ingest_integers(c: &mut Criterion) {
-    let group_name = "ingest_integers";
+fn ingest_clumps_integers(c: &mut Criterion) {
+    let group_name = "ingest_clumps_integers";
     let k = 1;
-    let average_width_list = [100, 1000];
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000, 1_000_000];
     let coverage_goal = 0.10;
     let how = How::None;
     let seed = 0;
@@ -1116,10 +1116,10 @@ fn ingest_integers(c: &mut Criterion) {
     group.finish();
 }
 
-fn ingest_ranges(c: &mut Criterion) {
-    let group_name = "ingest_ranges";
+fn ingest_clumps_ranges(c: &mut Criterion) {
+    let group_name = "ingest_clumps_ranges";
     let k = 1;
-    let average_width_list = [100, 1000];
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000, 1_000_000];
     let coverage_goal = 0.10;
     let how = How::None;
     let seed = 0;
@@ -1215,48 +1215,48 @@ fn worst(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group! {
-    name = benches;
-    config = Criterion::default();
-    targets =
-    shuffled,
-    ascending,
-    descending,
-    clumps,
-    bitxor,
-    bitor,
-    bitor1,
-    k_intersect,
-    coverage_goal,
-    union_vary_k,
-    union_vary_k_w_2_at_a_time,
-    intersection_vary_k,
-    intersection_k_w_2_at_a_time,
-    union_vary_range_len,
-    intersection_vary_range_len,
-    every_op,
-    vary_coverage_goal,
-    vary_type,
-    stream_vs_adhoc,
-    str_vs_ad_by_cover,
-    vs_btree_set,
-    worst,
-    ingest_integers,
-    ingest_ranges,
-}
-
 // criterion_group! {
 //     name = benches;
 //     config = Criterion::default();
 //     targets =
+//     shuffled,
+//     ascending,
+//     descending,
+//     clumps,
+//     bitxor,
+//     bitor,
+//     bitor1,
+//     k_intersect,
+//     coverage_goal,
+//     union_vary_k,
+//     union_vary_k_w_2_at_a_time,
+//     intersection_vary_k,
 //     intersection_k_w_2_at_a_time,
+//     union_vary_range_len,
+//     intersection_vary_range_len,
 //     every_op,
+//     vary_coverage_goal,
+//     vary_type,
 //     stream_vs_adhoc,
-//     vs_btree_set,
+//     str_vs_ad_by_cover,
+//     ingest_clumps_base,
 //     worst,
-//     ingest_integers,
-//     ingest_ranges,
+//     ingest_clumps_integers,
+//     ingest_clumps_ranges,
 // }
+
+criterion_group! {
+    name = benches;
+    config = Criterion::default();
+    targets =
+    intersection_k_w_2_at_a_time,
+    every_op,
+    stream_vs_adhoc,
+    ingest_clumps_base,
+    worst,
+    ingest_clumps_integers,
+    ingest_clumps_ranges,
+}
 criterion_main!(benches);
 
 // todo rule cargo bench intersect

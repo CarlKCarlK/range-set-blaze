@@ -770,7 +770,7 @@ fn vary_coverage_goal() {
 }
 
 #[test]
-fn vs_btree_set() {
+fn ingest_clumps_base() {
     let k = 1;
     let average_width_list = [2, 1, 3, 4, 5, 10, 100, 1000, 10_000, 100_000, 1_000_000];
     let coverage_goal = 0.10;

@@ -143,7 +143,7 @@ pub trait Integer:
         Self::max_value()
     }
 
-    // !!!cmk00 we should define .len() SortedDisjoint
+    // FUTURE define .len() SortedDisjoint
 
     /// Converts a `f64` to [`Integer::SafeLen`] using the formula `f as Self::SafeLen`. For large integer types, this will result in a loss of precision.
     fn f64_to_safe_len(f: f64) -> Self::SafeLen;
@@ -2303,9 +2303,8 @@ impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedD
 impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedStarts for Tee<I> {}
 impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedDisjoint for Tee<I> {}
 
-// cmk 0000 if we own inputs, we can do work in place, and we can do it faster. (union)
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
-// cmk Rule Plus features:
+// todo Rule Plus features:
 //   batch ingest (how much faster?)
 //   hybrid union (how much faster?)
 //   full set operations (union, intersection, difference, symmetric_difference, complement) including multiway union and intersection
@@ -2315,3 +2314,5 @@ impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedD
 // only ints, no floats, dates, etc
 // no serde
 // one way iterators
+
+// todo Rule: Look for rust-only optimizations, such as in-place union (when it would be faster)

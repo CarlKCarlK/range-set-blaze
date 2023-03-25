@@ -17,59 +17,56 @@ RangeSetBlaze is not a good choice non-clumpy integers. However, it is not catas
 
 ![worst lines](https://raw.githubusercontent.com/fastlmm/PySnpTools/master/doc/source/lines.svg "worst lines")
 
-## 'vs_btree_set': Measure RangeSetBlaze on increasing clumpy integers
-<!-- cmk000 rename case  -->
+## 'ingest_clumps_base': Measure RangeSetBlaze on increasing clumpy integers
 
 * **Measure**: intake speed
 * **Candidates**: HashSet, BTreeSet, RangeSetBlaze
 * **Vary**: *average clump size* from 1 (no clumps) to 1M (one big clump)
 * **Details**: We generate 1M integers in clumps. Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. The clumps are random uniform in a range of roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover 10% of the range.
 
-### 'vs_btree_set' Results
+### 'ingest_clumps_base' Results
 
 With no clumps, RangeSetBlaze is about 2.6 times slower than HashSet. As the average clump size reaches 3, it becomes the best performer. As the average clump size goes past 100, it is a steady 30 times faster than HashTable and 10 times faster than BTreeSet.
 
 If we are allowed to input the clumps as ranges (instead of as individual integers), then RangeSetBlaze is 200 times faster than HashTable and 60 times faster than BTreeSet.
 
-### vs_btree_set' Conclusion
+### ingest_clumps_base' Conclusion
 
 RangeSetBlaze is a great choice for clumpy integers.
 
-![vs_btree_set](../target/criterion/vs_btree_set/report/lines.svg "vs_btree_set")
+![ingest_clumps_base](../target/criterion/ingest_clumps_base/report/lines.svg "ingest_clumps_base")
 
-## 'ingest_ranges': Measure Various range set crates on the clumpy integers
-<!-- cmk000 rename case  -->
+## 'ingest_clumps_ranges': Measure Various range set crates on the clumpy integers
 
 * **Measure**: intake speed
 * **Candidates**: RangeSetBlaze, rangeset
-* **Vary**: *average clump size* from 100 to 1000 (a subset of the 'vs_btree_set' case)
+* **Vary**: *average clump size* from 100 to 1000 (a subset of the 'ingest_clumps_base' case)
 * **Details**: We generate 1M integers in clumps. Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. The clumps are random uniform in a range of roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover 10% of the range.
 
 We give each crate the clumps as ranges (instead of as individual integers).
 
-### 'ingest_ranges' Results & Conclusion
+### 'ingest_clumps_ranges' Results & Conclusion
 
 RangeSetBlaze is the only crate that batches its input. This lets it ingest ranges 2 to 4 times faster than the other crates. (The other crates could add batching.)
 
-![ingest_ranges](../target/criterion/ingest_ranges/report/lines.svg "ingest_ranges")
+![ingest_clumps_ranges](../target/criterion/ingest_clumps_ranges/report/lines.svg "ingest_clumps_ranges")
 
-## 'ingest_integers': Measure Various range set crates on the clumpy integers
-<!-- cmk000 rename case  -->
+## 'ingest_clumps_integers': Measure Various range set crates on the clumpy integers
 
 * **Measure**: intake speed
 * **Candidates**: RangeSetBlaze, rangeset, BTreeSet, HashSet
-* **Vary**: *average clump size* from 100 to 1000 (a subset of the 'vs_btree_set' case)
+* **Vary**: *average clump size* from 100 to 1000 (a subset of the 'ingest_clumps_base' case)
 * **Details**: We generate 1M integers in clumps. Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. The clumps are random uniform in a range of roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover 10% of the range.
 
 We give each crate the clumps as individual integers.
 
-### 'ingest_integers' Results & Conclusion
+### 'ingest_clumps_integers' Results & Conclusion
 
 Over this range of clumpiness, RangeSetBlaze is 11 times faster than BTreeSet and HashSet and about 100 times faster than the other range creates.
 
 Again, we can attribute this speedup to RangeSetBlaze's input batching, which the other crates could add.
 
-![ingest_integers](../target/criterion/ingest_integers/report/lines.svg "ingest_integers")
+![ingest_clumps_integers](../target/criterion/ingest_clumps_integers/report/lines.svg "ingest_clumps_integers")
 
 ## 'stream_vs_ad_hoc': Compare 'union' vs 'insert'
 <!-- cmk000 rename case  -->
@@ -78,7 +75,7 @@ Again, we can attribute this speedup to RangeSetBlaze's input batching, which th
 * **Candidates**: RangeSetBlaze::BitOrAssign, rangemap extend
 * **Vary**: number of clumps in the second set, from 1 to 100K.
 * **Details**: We first create two clump iterators, each with the desired number clumps and a coverage of 10%. Their range is 0..=99_999_999.
-We, next, turn these two iterators into two sets. The first set is made from 1000 clumps. Finally, we measure the 
+We, next, turn these two iterators into two sets. The first set is made from 1000 clumps. Finally, we measure the
 time it takes to add the second set to the first set.
 
 RangeSetBlaze uses a hybrid approach. When adding a few clumps, it adds them one at a time. When adding many clumps, it unions the two sets all at once.
