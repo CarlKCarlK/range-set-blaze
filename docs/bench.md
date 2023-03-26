@@ -97,7 +97,7 @@ We give each crate the clumps as individual integers.
 
 `RangeSetBlaze` batches its integer input by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any range-based crate.
 
-![ingest_clumps_integers]([../target/criterion/ingest_clumps_integers/report/lines.svg](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_integers/report/lines.svg) "ingest_clumps_integers")
+![ingest_clumps_integers](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_integers/report/lines.svg "ingest_clumps_integers")
 
 ## 'ingest_clumps_ranges': Measure Various range set crates on the clumpy integers
 
