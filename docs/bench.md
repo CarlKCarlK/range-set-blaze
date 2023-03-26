@@ -139,22 +139,22 @@ The fastest vector-based method is 14 times slower than the slowest tree-based m
 * **Details**: We first create two clump iterators, each with the desired number clumps. Their integer span is 0..=99_999_999.
 Each clump iterator is designed to cover about 10% of this span. We, next, turn these two iterators into two sets. The first set is made from 1000 clumps. Finally, we measure the time it takes to add the second set to the first set.
 
-RangeSetBlaze unions with a hybrid algorithm. When adding a few ranges, it adds them one at a time. When adding many ranges, it
-merges the two sets of ranges by iterating over them in sorted order.
+`RangeSetBlaze` uses a hybrid algorithm for "union". When adding a few ranges, it adds them one at a time. When adding many ranges, it
+merges the two sets of ranges by iterating over them in sorted order and merging.
 
 ### 'union_two_sets' Results
 
-When adding one clump to the first set, RangeSetBlaze is about 30% faster than the other crate.
+When adding one clump to the first set, `RangeSetBlaze` is about 30% faster than the other crate.
 
-As the number-of-clumps-to-add grows, RangeSetBlaze automatically switches algorithms. This allows it to be 6 times faster than the one-at-a-time method.
+As the number-of-clumps-to-add grows, `RangeSetBlaze` automatically switches algorithms. This allows it to be 6 times faster than the one-at-a-time method.
 
 ### union_two_sets' Conclusion
 
-Over the whole range of clumpiness, RangeSetBlaze is faster. Compared to non-hybrid methods, it is many times faster as the size of the second set grows.
+Over the whole range of clumpiness, `RangeSetBlaze` is faster. Compared to one-at-time methods, it is many times faster when the second sect is large.
 
 ![union_two_sets](https://carlkcarlk.github.io/range-set-blaze/criterion/union_two_sets/report/lines.svg "union_two_sets")
 
-## Benchmark #7: 'every_op': Compare the set operations
+## Benchmark #7: 'every_op': Compare `RangeSetBlaze`'s set operations to each other
 
 * **Measure**: set operation speed
 * **Candidates**: union, intersection, difference, symmetric_difference, complement
@@ -165,20 +165,22 @@ Over the whole range of clumpiness, RangeSetBlaze is faster. Compared to non-hyb
 
 Complement (which works on just once set) is twice as fast as union, intersection, and difference. Symmetric difference is 2.9 times slower.
 
+Under the covers, all the operations are implemented in terms of complement and union. The speed of each operation is a reflection of its complexity in terms of complement and union.
+
 ![every_op](https://carlkcarlk.github.io/range-set-blaze/criterion/every_op/report/lines.svg "every_op")
 
-## Benchmark #8: 'intersect_k_sets': Multiway vs 2-way intersection
+## Benchmark #8: 'intersect_k_sets': Multiway vs 2-at-time intersection
 
 * **Measure**: intersection speed
-* **Candidates**: 2-at-a-time intersection multiway intersection (static and dynamic)
+* **Candidates**: 2-at-a-time intersection, multiway intersection (static and dynamic)
 * **Vary**: number of sets, from 2 to 100.
-* **Details**: We create *n* iterators. Each iterator generates 1,000 clumps. The iterators are designed such that the coverage of the final intersection is about 25%. The span of integers in the clumps is 0..=99_999_999. We, next, turn these *n* iterators into *n* sets. Finally, we measure the time it takes to operate on the sets.
+* **Details**: We create *n* iterators. Each iterator generates 1,000 clumps. The iterators are designed such that the coverage of the final intersection is about 25%. The span of integers in the clumps is 0..=99_999_999. We turn the *n* iterators into *n* sets. Finally, we measure the time it takes to operate on the *n* sets.
 
 ### 'intersect_k_sets' Results and Conclusion
 
 On two sets, all methods are similar but beyond that two-at-a-time gets slower and slower. For 100 sets, it must create about 100 intermediate sets and is about 14 times slower than multiway.
 
-Dynamic multiway is not needed with `RangeSetBlaze` but is sometimes needed on `SortedDisjoint` iterators
+Dynamic multiway is not used by `RangeSetBlaze` but is sometimes needed by `SortedDisjoint` iterators
 (also available from the `range-set-blaze` crate). It is 5% to 10% slower than static multiway.
 
 ![intersect_k_sets](https://carlkcarlk.github.io/range-set-blaze/criterion/intersect_k_sets/report/lines.svg "intersect_k_sets")
