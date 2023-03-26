@@ -129,7 +129,7 @@ We give each crate the clumps as ranges (instead of as individual integers).
 
 The fastest vector-based method is 14 times slower than than the slowest tree-based method. It is 50 times slower than `RangeSetBlaze`. This is expected because vector-based methods are not designed for a large numbers of inserts.
 
-![ingest_clumps_easy](../target/criterion/ingest_clumps_easy/report/lines.svg "ingest_clumps_easy")
+![ingest_clumps_easy](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_easy/report/lines.svg "ingest_clumps_easy")
 
 ## 'union_two_sets': Union two sets of clumpy integers
 
