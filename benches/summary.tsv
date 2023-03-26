@@ -1,143 +1,143 @@
-every_op	intersection	1 	 126.28060149451723
-every_op	intersection	482 	 18587.148193981207
-every_op	intersection	5 	 255.07251830811128
-every_op	intersection	50220 	 2075942.8749999998
-every_op	intersection	5030 	 191979.84906171847
-every_op	intersection	52 	 2088.478850419574
-every_op	negation	1 	 131.42840843619643
-every_op	negation	482 	 6564.650314185408
-every_op	negation	5 	 147.59202163977557
-every_op	negation	50220 	 668956.5561323307
-every_op	negation	5030 	 67179.83475607319
-every_op	negation	52 	 820.1667511871517
-every_op	sub	1 	 106.74888039471026
-every_op	sub	482 	 15616.059307518197
-every_op	sub	5 	 296.7591068677296
-every_op	sub	50220 	 1824356.2178010282
-every_op	sub	5030 	 174929.85173948677
-every_op	sub	52 	 1667.0570723040987
-every_op	symmetric difference	1 	 176.0767863619575
-every_op	symmetric difference	482 	 41693.6772154235
-every_op	symmetric difference	5 	 584.0442242513661
-every_op	symmetric difference	50220 	 5012288.727272728
-every_op	symmetric difference	5030 	 458269.2433841494
-every_op	symmetric difference	52 	 4187.937130930894
-every_op	union	1 	 85.09357735037912
-every_op	union	482 	 12189.33752003363
-every_op	union	5 	 219.99088290698478
-every_op	union	50220 	 1470331.560859197
-every_op	union	5030 	 131927.04747378352
-every_op	union	52 	 1453.0942999620904
-ingest_clumps_base	btreeset	1 	 41226354.5
-ingest_clumps_base	btreeset	10 	 29351963.0
-ingest_clumps_base	btreeset	100 	 23872408.333333325
-ingest_clumps_base	btreeset	1000 	 18710878.000000004
-ingest_clumps_base	btreeset	10000 	 13789472.75
-ingest_clumps_base	btreeset	100000 	 9395817.499999998
-ingest_clumps_base	hashset	1 	 21053977.0
-ingest_clumps_base	hashset	10 	 20584790.666666664
-ingest_clumps_base	hashset	100 	 20277426.333333336
-ingest_clumps_base	hashset	1000 	 20267183.666666668
-ingest_clumps_base	hashset	10000 	 20210513.33333333
-ingest_clumps_base	hashset	100000 	 20552483.66666667
-ingest_clumps_base	rangesetblaze (integers)	1 	 54146348.0
-ingest_clumps_base	rangesetblaze (integers)	10 	 5412631.0
-ingest_clumps_base	rangesetblaze (integers)	100 	 1002935.7126680701
-ingest_clumps_base	rangesetblaze (integers)	1000 	 663290.1470571008
-ingest_clumps_base	rangesetblaze (integers)	10000 	 638280.4134263103
-ingest_clumps_base	rangesetblaze (integers)	100000 	 640492.2046355281
-ingest_clumps_base	rangesetblaze (ranges)	1 	 54245399.0
-ingest_clumps_base	rangesetblaze (ranges)	10 	 4578073.363636363
-ingest_clumps_base	rangesetblaze (ranges)	100 	 313219.0508503191
-ingest_clumps_base	rangesetblaze (ranges)	1000 	 26287.59894711937
-ingest_clumps_base	rangesetblaze (ranges)	10000 	 2463.6524396049294
-ingest_clumps_base	rangesetblaze (ranges)	100000 	 312.4937906240602
-ingest_clumps_easy	rangemap (ranges, btreeset)	1 	 18822668.214285716
-ingest_clumps_easy	rangemap (ranges, btreeset)	10 	 1491257.9944206146
-ingest_clumps_easy	rangesetblaze (ranges, btreeset)	1 	 4670138.592508367
-ingest_clumps_easy	rangesetblaze (ranges, btreeset)	10 	 322592.4433409436
-ingest_clumps_easy	range_collections (ranges, smallvec)	1 	 422642137.5
-ingest_clumps_easy	range_collections (ranges, smallvec)	10 	 5245953.868662045
-ingest_clumps_easy	range_set (ranges, smallvec)	1 	 274535567.5
-ingest_clumps_easy	range_set (ranges, smallvec)	10 	 3800447.008778604
-ingest_clumps_integers	btreeset	1 	 41166554.375
-ingest_clumps_integers	btreeset	10 	 29081728.0
-ingest_clumps_integers	btreeset	100 	 24244465.416666668
-ingest_clumps_integers	btreeset	1000 	 18953752.14285714
-ingest_clumps_integers	btreeset	10000 	 13765683.25
-ingest_clumps_integers	btreeset	100000 	 9560659.891084053
-ingest_clumps_integers	hashset	1 	 21303498.333333332
-ingest_clumps_integers	hashset	10 	 22446465.833333336
-ingest_clumps_integers	hashset	100 	 20520478.571428575
-ingest_clumps_integers	hashset	1000 	 20216243.57142857
-ingest_clumps_integers	hashset	10000 	 20343218.571428575
-ingest_clumps_integers	hashset	100000 	 20516765.35714286
-ingest_clumps_integers	rangemap (integers)	1 	 246402500.0
-ingest_clumps_integers	rangemap (integers)	10 	 111206275.0
-ingest_clumps_integers	rangemap (integers)	100 	 79871362.5
-ingest_clumps_integers	rangemap (integers)	1000 	 68963687.5
-ingest_clumps_integers	rangemap (integers)	10000 	 62368718.75
-ingest_clumps_integers	rangemap (integers)	100000 	 53503497.5
-ingest_clumps_integers	rangesetblaze (integers)	1 	 53988443.333333336
-ingest_clumps_integers	rangesetblaze (integers)	10 	 5432340.756123772
-ingest_clumps_integers	rangesetblaze (integers)	100 	 1029432.6062752133
-ingest_clumps_integers	rangesetblaze (integers)	1000 	 695648.0586416075
-ingest_clumps_integers	rangesetblaze (integers)	10000 	 666234.610399572
-ingest_clumps_integers	rangesetblaze (integers)	100000 	 659951.7079040718
-ingest_clumps_ranges	rangemap (ranges)	1 	 248564185.0
-ingest_clumps_ranges	rangemap (ranges)	10 	 18699444.642857146
-ingest_clumps_ranges	rangemap (ranges)	100 	 1501194.1347405817
-ingest_clumps_ranges	rangemap (ranges)	1000 	 65670.24707122582
-ingest_clumps_ranges	rangemap (ranges)	10000 	 5254.9350601498845
-ingest_clumps_ranges	rangemap (ranges)	100000 	 434.70396177947725
-ingest_clumps_ranges	rangesetblaze (ranges)	1 	 54990789.16666667
-ingest_clumps_ranges	rangesetblaze (ranges)	10 	 4655098.948370767
-ingest_clumps_ranges	rangesetblaze (ranges)	100 	 322558.6921704719
-ingest_clumps_ranges	rangesetblaze (ranges)	1000 	 26593.487239268376
-ingest_clumps_ranges	rangesetblaze (ranges)	10000 	 2371.3744740080406
-ingest_clumps_ranges	rangesetblaze (ranges)	100000 	 322.431183549728
-intersect_k_sets	rangesetblaze (2-at-a-time)	10 	 103005.86136888569
-intersect_k_sets	rangesetblaze (2-at-a-time)	100 	 812025.5369015806
-intersect_k_sets	rangesetblaze (2-at-a-time)	2 	 22453.7351172628
-intersect_k_sets	rangesetblaze (2-at-a-time)	25 	 230648.20646037871
-intersect_k_sets	rangesetblaze (2-at-a-time)	5 	 57625.28019856045
-intersect_k_sets	rangesetblaze (2-at-a-time)	50 	 419614.22062326176
-intersect_k_sets	rangesetblaze (multiway dyn)	10 	 31818.903857599034
-intersect_k_sets	rangesetblaze (multiway dyn)	100 	 60634.41784971783
-intersect_k_sets	rangesetblaze (multiway dyn)	2 	 20623.46950825054
-intersect_k_sets	rangesetblaze (multiway dyn)	25 	 41908.75999021331
-intersect_k_sets	rangesetblaze (multiway dyn)	5 	 26617.577624468602
-intersect_k_sets	rangesetblaze (multiway dyn)	50 	 49208.50965025701
-intersect_k_sets	rangesetblaze (multiway static)	10 	 29230.1729864456
-intersect_k_sets	rangesetblaze (multiway static)	100 	 55573.208715604276
-intersect_k_sets	rangesetblaze (multiway static)	2 	 19736.68836515838
-intersect_k_sets	rangesetblaze (multiway static)	25 	 37974.91274410725
-intersect_k_sets	rangesetblaze (multiway static)	5 	 24798.08244015714
-intersect_k_sets	rangesetblaze (multiway static)	50 	 44503.55481942237
-stream_vs_adhoc	rangemap 0.1	1 	 7270.097913185792
-stream_vs_adhoc	rangemap 0.1	8 	 8468.594931670408
-stream_vs_adhoc	rangemap 0.1	90 	 15001.271298950978
-stream_vs_adhoc	rangemap 0.1	90089 	 10835277.6
-stream_vs_adhoc	rangemap 0.1	9027 	 1086411.2213456607
-stream_vs_adhoc	rangemap 0.1	915 	 74479.69207456346
-stream_vs_adhoc	rangesetblaze (hybrid) 0.1	1 	 5406.630085178689
-stream_vs_adhoc	rangesetblaze (hybrid) 0.1	8 	 6688.511446674359
-stream_vs_adhoc	rangesetblaze (hybrid) 0.1	90 	 13845.34609470159
-stream_vs_adhoc	rangesetblaze (hybrid) 0.1	90089 	 1784751.3604536848
-stream_vs_adhoc	rangesetblaze (hybrid) 0.1	9027 	 183416.66910352148
-stream_vs_adhoc	rangesetblaze (hybrid) 0.1	915 	 34011.09956794035
-worst	btreeset	1 	 54.36838805192815
-worst	btreeset	10 	 115.5452263318633
-worst	btreeset	100 	 1412.4099185730788
-worst	btreeset	1000 	 17330.858615579644
-worst	btreeset	10000 	 196549.42083555993
-worst	hashset	1 	 38.603464788663615
-worst	hashset	10 	 134.28481665710814
-worst	hashset	100 	 1164.3494562023486
-worst	hashset	1000 	 10442.095107589006
-worst	hashset	10000 	 89154.6426703807
-worst	rangesetblaze	1 	 105.2865256294265
-worst	rangesetblaze	10 	 327.74021069833384
-worst	rangesetblaze	100 	 2385.580755226677
-worst	rangesetblaze	1000 	 19584.172640249
-worst	rangesetblaze	10000 	 229430.07850609702
+every_op	complement	1 	 74.74400904571343
+every_op	complement	482 	 6172.422992045628
+every_op	complement	5 	 146.59995045850712
+every_op	complement	50220 	 654466.6112749128
+every_op	complement	5030 	 65209.16227670035
+every_op	complement	52 	 793.0980759530652
+every_op	difference	1 	 107.02088459851277
+every_op	difference	482 	 15368.649128437815
+every_op	difference	5 	 281.522969083984
+every_op	difference	50220 	 1802654.6875542975
+every_op	difference	5030 	 174503.2976738469
+every_op	difference	52 	 1661.3897874471418
+every_op	intersection	1 	 125.50546568298883
+every_op	intersection	482 	 18122.21234896954
+every_op	intersection	5 	 253.64278033808398
+every_op	intersection	50220 	 2079514.833333333
+every_op	intersection	5030 	 204544.1578197524
+every_op	intersection	52 	 1908.6403230201506
+every_op	symmetric difference	1 	 172.43244191139144
+every_op	symmetric difference	482 	 39819.04657392604
+every_op	symmetric difference	5 	 578.0642045106349
+every_op	symmetric difference	50220 	 4768663.72727273
+every_op	symmetric difference	5030 	 486605.8164020676
+every_op	symmetric difference	52 	 4019.592049390876
+every_op	union	1 	 84.71599717076242
+every_op	union	482 	 12230.783137695016
+every_op	union	5 	 214.1428245158943
+every_op	union	50220 	 1502418.5495023332
+every_op	union	5030 	 132656.10240383417
+every_op	union	52 	 1375.0669057681487
+ingest_clumps_base	btreeset	1 	 42316224.5
+ingest_clumps_base	btreeset	10 	 30238390.5
+ingest_clumps_base	btreeset	100 	 25000063.0
+ingest_clumps_base	btreeset	1000 	 19570332.666666668
+ingest_clumps_base	btreeset	10000 	 14248971.25
+ingest_clumps_base	btreeset	100000 	 9947637.500000002
+ingest_clumps_base	hashset	1 	 24079653.0
+ingest_clumps_base	hashset	10 	 22898328.333333325
+ingest_clumps_base	hashset	100 	 22487867.000000004
+ingest_clumps_base	hashset	1000 	 22653570.66666667
+ingest_clumps_base	hashset	10000 	 22072816.0
+ingest_clumps_base	hashset	100000 	 22372361.33333333
+ingest_clumps_base	rangesetblaze (integers)	1 	 56020163.0
+ingest_clumps_base	rangesetblaze (integers)	10 	 5610857.222222223
+ingest_clumps_base	rangesetblaze (integers)	100 	 1000131.9020957277
+ingest_clumps_base	rangesetblaze (integers)	1000 	 669410.3655699549
+ingest_clumps_base	rangesetblaze (integers)	10000 	 644450.4668454055
+ingest_clumps_base	rangesetblaze (integers)	100000 	 645495.2611095142
+ingest_clumps_base	rangesetblaze (ranges)	1 	 55777288.0
+ingest_clumps_base	rangesetblaze (ranges)	10 	 4663468.272727273
+ingest_clumps_base	rangesetblaze (ranges)	100 	 320702.2246945798
+ingest_clumps_base	rangesetblaze (ranges)	1000 	 25811.447600062726
+ingest_clumps_base	rangesetblaze (ranges)	10000 	 2345.4100925929843
+ingest_clumps_base	rangesetblaze (ranges)	100000 	 315.6134558314267
+ingest_clumps_easy	rangemap (ranges, btreeset)	1 	 18525250.0
+ingest_clumps_easy	rangemap (ranges, btreeset)	10 	 1455761.0421948563
+ingest_clumps_easy	rangesetblaze (ranges, btreeset)	1 	 4700358.3209891105
+ingest_clumps_easy	rangesetblaze (ranges, btreeset)	10 	 309513.16420293786
+ingest_clumps_easy	range_collections (ranges, smallvec)	1 	 413936272.5
+ingest_clumps_easy	range_collections (ranges, smallvec)	10 	 5159915.733173263
+ingest_clumps_easy	range_set (ranges, smallvec)	1 	 270183887.5
+ingest_clumps_easy	range_set (ranges, smallvec)	10 	 3743758.382526343
+ingest_clumps_integers	btreeset	1 	 42190161.66666667
+ingest_clumps_integers	btreeset	10 	 30835383.5
+ingest_clumps_integers	btreeset	100 	 25035836.5
+ingest_clumps_integers	btreeset	1000 	 19644585.357142854
+ingest_clumps_integers	btreeset	10000 	 14217331.11111111
+ingest_clumps_integers	btreeset	100000 	 10040921.736112922
+ingest_clumps_integers	hashset	1 	 24448114.5
+ingest_clumps_integers	hashset	10 	 23735891.0
+ingest_clumps_integers	hashset	100 	 22977499.58333334
+ingest_clumps_integers	hashset	1000 	 22172560.833333332
+ingest_clumps_integers	hashset	10000 	 23280064.16666666
+ingest_clumps_integers	hashset	100000 	 22565426.25
+ingest_clumps_integers	rangemap (integers)	1 	 272808847.5
+ingest_clumps_integers	rangemap (integers)	10 	 111045717.5
+ingest_clumps_integers	rangemap (integers)	100 	 78710422.5
+ingest_clumps_integers	rangemap (integers)	1000 	 67286065.0
+ingest_clumps_integers	rangemap (integers)	10000 	 61550836.66666667
+ingest_clumps_integers	rangemap (integers)	100000 	 54206225.0
+ingest_clumps_integers	rangesetblaze (integers)	1 	 56955841.66666667
+ingest_clumps_integers	rangesetblaze (integers)	10 	 5555760.71811759
+ingest_clumps_integers	rangesetblaze (integers)	100 	 1019392.4846726924
+ingest_clumps_integers	rangesetblaze (integers)	1000 	 675591.2873760951
+ingest_clumps_integers	rangesetblaze (integers)	10000 	 652763.5069863772
+ingest_clumps_integers	rangesetblaze (integers)	100000 	 650603.3955460121
+ingest_clumps_ranges	rangemap (ranges)	1 	 271314652.5
+ingest_clumps_ranges	rangemap (ranges)	10 	 18598762.85714286
+ingest_clumps_ranges	rangemap (ranges)	100 	 1467882.3861588857
+ingest_clumps_ranges	rangemap (ranges)	1000 	 61655.492301831066
+ingest_clumps_ranges	rangemap (ranges)	10000 	 5376.6429873093775
+ingest_clumps_ranges	rangemap (ranges)	100000 	 436.0859004747846
+ingest_clumps_ranges	rangesetblaze (ranges)	1 	 55865419.999999985
+ingest_clumps_ranges	rangesetblaze (ranges)	10 	 4708430.441508404
+ingest_clumps_ranges	rangesetblaze (ranges)	100 	 315922.8386698216
+ingest_clumps_ranges	rangesetblaze (ranges)	1000 	 26244.340979900917
+ingest_clumps_ranges	rangesetblaze (ranges)	10000 	 2593.3964443152286
+ingest_clumps_ranges	rangesetblaze (ranges)	100000 	 317.0569715932696
+intersect_k_sets	rangesetblaze (2-at-a-time)	10 	 101411.04512949553
+intersect_k_sets	rangesetblaze (2-at-a-time)	100 	 807735.282553997
+intersect_k_sets	rangesetblaze (2-at-a-time)	2 	 22407.403802715507
+intersect_k_sets	rangesetblaze (2-at-a-time)	25 	 218284.67188275268
+intersect_k_sets	rangesetblaze (2-at-a-time)	5 	 57062.23647864205
+intersect_k_sets	rangesetblaze (2-at-a-time)	50 	 407825.94760965684
+intersect_k_sets	rangesetblaze (multiway dyn)	10 	 31937.40078176427
+intersect_k_sets	rangesetblaze (multiway dyn)	100 	 61476.39582222864
+intersect_k_sets	rangesetblaze (multiway dyn)	2 	 20198.304450275096
+intersect_k_sets	rangesetblaze (multiway dyn)	25 	 39535.77651713269
+intersect_k_sets	rangesetblaze (multiway dyn)	5 	 26293.65733837237
+intersect_k_sets	rangesetblaze (multiway dyn)	50 	 46643.09902687288
+intersect_k_sets	rangesetblaze (multiway static)	10 	 29254.157049597623
+intersect_k_sets	rangesetblaze (multiway static)	100 	 54624.299260070446
+intersect_k_sets	rangesetblaze (multiway static)	2 	 19371.093647728718
+intersect_k_sets	rangesetblaze (multiway static)	25 	 35822.34406216191
+intersect_k_sets	rangesetblaze (multiway static)	5 	 24680.452354369154
+intersect_k_sets	rangesetblaze (multiway static)	50 	 43554.16016653815
+union_two_sets	rangemap 0.1	1 	 7397.147490102815
+union_two_sets	rangemap 0.1	8 	 8517.438286264953
+union_two_sets	rangemap 0.1	90 	 14048.288473753142
+union_two_sets	rangemap 0.1	90089 	 11716293.6
+union_two_sets	rangemap 0.1	9027 	 1077105.8014207678
+union_two_sets	rangemap 0.1	915 	 77668.30163785911
+union_two_sets	rangesetblaze 0.1	1 	 5034.970626283692
+union_two_sets	rangesetblaze 0.1	8 	 6777.789598913199
+union_two_sets	rangesetblaze 0.1	90 	 13522.388321366678
+union_two_sets	rangesetblaze 0.1	90089 	 1785551.7638249404
+union_two_sets	rangesetblaze 0.1	9027 	 184275.531831368
+union_two_sets	rangesetblaze 0.1	915 	 34423.68692308181
+worst	btreeset	1 	 54.22959297769181
+worst	btreeset	10 	 104.11431827546932
+worst	btreeset	100 	 1410.1211054233202
+worst	btreeset	1000 	 17521.050893887492
+worst	btreeset	10000 	 196996.57384199277
+worst	hashset	1 	 38.69691601767686
+worst	hashset	10 	 133.44164326511304
+worst	hashset	100 	 1107.9594842639149
+worst	hashset	1000 	 10168.15905861631
+worst	hashset	10000 	 90242.34847163175
+worst	rangesetblaze	1 	 104.82566577548494
+worst	rangesetblaze	10 	 335.21812096036854
+worst	rangesetblaze	100 	 2373.5706270767128
+worst	rangesetblaze	1000 	 19939.088034889213
+worst	rangesetblaze	10000 	 238322.5793803313

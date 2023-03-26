@@ -14,3 +14,5 @@ target\llvm-cov\html\index.html
 
 # bench
 cargo bench worst & target\criterion\report\index.html
+
+python benches\summary.py > benches\summary.tsv
