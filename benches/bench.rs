@@ -1310,6 +1310,44 @@ fn worst(c: &mut Criterion) {
     group.finish();
 }
 
+fn cmk0000(c: &mut Criterion) {
+    let group_name = "cmk0000";
+    let range = 0..=999;
+    let iter_len_list = [1, 10];
+    let seed = 0;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    for iter_len in iter_len_list {
+        let parameter = iter_len;
+
+        let mut rng = StdRng::seed_from_u64(seed);
+        let uniform = Uniform::from(range.clone());
+        let vec: Vec<i32> = (0..iter_len).map(|_| uniform.sample(&mut rng)).collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("BTreeSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+    }
+    group.finish();
+}
+
 // criterion_group! {
 //     name = benches;
 //     config = Criterion::default();
@@ -1352,6 +1390,7 @@ criterion_group! {
     ingest_clumps_integers,
     ingest_clumps_ranges,
     ingest_clumps_easy,
+    cmk0000,
 }
 criterion_main!(benches);
 
