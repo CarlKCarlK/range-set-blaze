@@ -58,7 +58,7 @@ Here are benchmarks that allow us to understand `range-set-blaze` and compare cr
 
 `HashSet`, not `RangeSetBlaze` is a good choice non-clumpy integers. However, `RangeSetBlaze` is not catastrophically worse; it is just 2.5 times worse.
 
-![worst lines](https://raw.githubusercontent.com/fastlmm/PySnpTools/master/doc/source/lines.svg "worst lines")
+![worst lines](https://carlkcarlk.github.io/range-set-blaze/criterion/worst/report/lines.svg "worst lines")
 
 ## 'ingest_clumps_base': Measure `RangeSetBlaze` on increasing clumpy integers
 
@@ -80,7 +80,7 @@ times faster than `HashSet` and `BTreeSet`.
 Range-based methods such as `RangeSetBlaze` are a great choice for clumpy integers.
 They are the only sensible choice when such input is given as ranges.
 
-![ingest_clumps_base](../target/criterion/ingest_clumps_base/report/lines.svg "ingest_clumps_base")
+![ingest_clumps_base](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_base/report/lines.svg "ingest_clumps_base")
 
 ## 'ingest_clumps_integers': Measure Various range set crates on the clumpy integers
 
@@ -97,7 +97,7 @@ We give each crate the clumps as individual integers.
 
 `RangeSetBlaze` batches its integer input by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any range-based crate.
 
-![ingest_clumps_integers](../target/criterion/ingest_clumps_integers/report/lines.svg "ingest_clumps_integers")
+![ingest_clumps_integers]([../target/criterion/ingest_clumps_integers/report/lines.svg](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_integers/report/lines.svg) "ingest_clumps_integers")
 
 ## 'ingest_clumps_ranges': Measure Various range set crates on the clumpy integers
 
@@ -114,7 +114,7 @@ Over most clump sizes, `RangeSetBlaze` is about 4 times faster than `rangemap`. 
 
 `RangeSetBlaze` batches range inputs by sorting them and then merging adjacent ranges. This batching is not implemented in `rangemap` but could easily be added to it or any range-based crate.
 
-![ingest_clumps_ranges](../target/criterion/ingest_clumps_ranges/report/lines.svg "ingest_clumps_ranges")
+![ingest_clumps_ranges](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_ranges/report/lines.svg "ingest_clumps_ranges")
 
 ## 'ingest_clumps_easy': Measure Various range set crates on the clumpy integers
 
@@ -152,7 +152,7 @@ As the number-of-clumps-to-add grows, RangeSetBlaze automatically switches algor
 
 Over the whole range of clumpiness, RangeSetBlaze is faster. Compared to non-hybrid methods, it is many times faster as the size of the second set grows.
 
-![union_two_sets](../target/criterion/union_two_sets/report/lines.svg "union_two_sets")
+![union_two_sets](https://carlkcarlk.github.io/range-set-blaze/criterion/union_two_sets/report/lines.svg "union_two_sets")
 
 ## 'every_op': Compare the set operations
 
@@ -165,7 +165,7 @@ Over the whole range of clumpiness, RangeSetBlaze is faster. Compared to non-hyb
 
 Complement (which works on just once set) is twice as fast as union, intersection, and difference. Symmetric difference is 2.9 times slower.
 
-![every_op](../target/criterion/every_op/report/lines.svg "every_op")
+![every_op](https://carlkcarlk.github.io/range-set-blaze/criterion/every_op/report/lines.svg "every_op")
 
 ## 'intersect_k_sets': Multiway vs 2-way intersection
 
@@ -181,4 +181,4 @@ On two sets, all methods are similar but beyond that two-at-a-time gets slower a
 Dynamic multiway is not needed with `RangeSetBlaze` but is sometimes needed on `SortedDisjoint` iterators
 (also available from the `range-set-blaze` crate). It is 5% to 10% slower than static multiway.
 
-![intersect_k_sets](../target/criterion/intersect_k_sets/report/lines.svg "intersect_k_sets")
+![intersect_k_sets](https://carlkcarlk.github.io/range-set-blaze/criterion/intersect_k_sets/report/lines.svg "intersect_k_sets")
