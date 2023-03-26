@@ -320,7 +320,7 @@ pub trait Integer:
 /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
 /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
 ///
-/// // Negation of a 'RangeSetBlaze'.
+/// // complement of a 'RangeSetBlaze'.
 /// let result = !&a; // Alternatively, '!a'.
 /// assert_eq!(
 ///     result.to_string(),

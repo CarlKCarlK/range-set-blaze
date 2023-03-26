@@ -26,8 +26,8 @@ if __name__ == "__main__":
         with open(file) as f:
             data = json.load(f)
             try:
-                time = data["slope"]["point_estimate"]
+                time = data["mean"]["point_estimate"]
             except Exception:
                 time = "missing"
             # print path and time separated by a commas
-            print(",".join(path), time)
+            print("\t".join(path), "\t", time)

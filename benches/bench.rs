@@ -738,15 +738,19 @@ fn every_op(c: &mut Criterion) {
                 );
             },
         );
-        group.bench_with_input(BenchmarkId::new("sub", parameter), &parameter, |b, _k| {
-            b.iter_batched(
-                || setup,
-                |sets| {
-                    let _answer = &sets[0] - &sets[1];
-                },
-                BatchSize::SmallInput,
-            );
-        });
+        group.bench_with_input(
+            BenchmarkId::new("difference", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup,
+                    |sets| {
+                        let _answer = &sets[0] - &sets[1];
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
         group.bench_with_input(
             BenchmarkId::new("symmetric difference", parameter),
             &parameter,
@@ -761,7 +765,7 @@ fn every_op(c: &mut Criterion) {
             },
         );
         group.bench_with_input(
-            BenchmarkId::new("negation", parameter),
+            BenchmarkId::new("complement", parameter),
             &parameter,
             |b, _k| {
                 b.iter_batched(
@@ -861,8 +865,8 @@ fn vary_type(c: &mut Criterion) {
     group.finish();
 }
 
-fn stream_vs_adhoc(c: &mut Criterion) {
-    let group_name = "stream_vs_adhoc";
+fn union_two_sets(c: &mut Criterion) {
+    let group_name = "union_two_sets";
     // let k = 2;
     let range = 0..=99_999_999;
     let range_len0 = 1_000;
@@ -885,21 +889,8 @@ fn stream_vs_adhoc(c: &mut Criterion) {
 
             let parameter = set1.ranges_len();
 
-            // group.bench_with_input(
-            //     BenchmarkId::new(format!("RangeSetBlaze stream {coverage_goal}"), parameter),
-            //     &parameter,
-            //     |b, _| {
-            //         b.iter_batched(
-            //             || set0,
-            //             |set00| {
-            //                 let _answer = set00 | set1;
-            //             },
-            //             BatchSize::SmallInput,
-            //         );
-            //     },
-            // );
             group.bench_with_input(
-                BenchmarkId::new(format!("RangeSetBlaze (hybrid) {coverage_goal}"), parameter),
+                BenchmarkId::new(format!("RangeSetBlaze {coverage_goal}"), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
@@ -911,20 +902,6 @@ fn stream_vs_adhoc(c: &mut Criterion) {
                     );
                 },
             );
-            // group.bench_with_input(
-            //     BenchmarkId::new(format!("RangeSetBlaze ad_hoc {coverage_goal}"), parameter),
-            //     &parameter,
-            //     |b, _| {
-            //         b.iter_batched(
-            //             || set0.clone(),
-            //             |mut set00| {
-            //                 set00.extend(set1.ranges());
-            //             },
-            //             BatchSize::SmallInput,
-            //         );
-            //     },
-            // );
-
             group.bench_with_input(
                 BenchmarkId::new(format!("rangemap {coverage_goal}"), parameter),
                 &parameter,
@@ -1310,43 +1287,43 @@ fn worst(c: &mut Criterion) {
     group.finish();
 }
 
-fn cmk0000(c: &mut Criterion) {
-    let group_name = "cmk0000";
-    let range = 0..=999;
-    let iter_len_list = [1, 10];
-    let seed = 0;
+// fn cmk0000(c: &mut Criterion) {
+//     let group_name = "cmk0000";
+//     let range = 0..=999;
+//     let iter_len_list = [1, 10];
+//     let seed = 0;
 
-    let mut group = c.benchmark_group(group_name);
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+//     let mut group = c.benchmark_group(group_name);
+//     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
-    for iter_len in iter_len_list {
-        let parameter = iter_len;
+//     for iter_len in iter_len_list {
+//         let parameter = iter_len;
 
-        let mut rng = StdRng::seed_from_u64(seed);
-        let uniform = Uniform::from(range.clone());
-        let vec: Vec<i32> = (0..iter_len).map(|_| uniform.sample(&mut rng)).collect();
+//         let mut rng = StdRng::seed_from_u64(seed);
+//         let uniform = Uniform::from(range.clone());
+//         let vec: Vec<i32> = (0..iter_len).map(|_| uniform.sample(&mut rng)).collect();
 
-        group.bench_with_input(
-            BenchmarkId::new("RangeSetBlaze", parameter),
-            &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
-                })
-            },
-        );
-        group.bench_with_input(
-            BenchmarkId::new("BTreeSet", parameter),
-            &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
-                })
-            },
-        );
-    }
-    group.finish();
-}
+//         group.bench_with_input(
+//             BenchmarkId::new("RangeSetBlaze", parameter),
+//             &parameter,
+//             |b, _| {
+//                 b.iter(|| {
+//                     let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
+//                 })
+//             },
+//         );
+//         group.bench_with_input(
+//             BenchmarkId::new("BTreeSet", parameter),
+//             &parameter,
+//             |b, _| {
+//                 b.iter(|| {
+//                     let _answer = BTreeSet::from_iter(vec.iter().cloned());
+//                 })
+//             },
+//         );
+//     }
+//     group.finish();
+// }
 
 // criterion_group! {
 //     name = benches;
@@ -1370,7 +1347,7 @@ fn cmk0000(c: &mut Criterion) {
 //     every_op,
 //     vary_coverage_goal,
 //     vary_type,
-//     stream_vs_adhoc,
+//     union_two_sets,
 //     str_vs_ad_by_cover,
 //     ingest_clumps_base,
 //     worst,
@@ -1384,13 +1361,13 @@ criterion_group! {
     targets =
     intersect_k_sets,
     every_op,
-    stream_vs_adhoc,
+    union_two_sets,
     ingest_clumps_base,
     worst,
     ingest_clumps_integers,
     ingest_clumps_ranges,
     ingest_clumps_easy,
-    cmk0000,
+    //cmk0000,
 }
 criterion_main!(benches);
 
