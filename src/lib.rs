@@ -1854,7 +1854,6 @@ impl<T: Integer> BitOrAssign<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
     }
 }
 
-// cmk000 coverage tests
 impl<T: Integer> BitOrAssign<RangeSetBlaze<T>> for RangeSetBlaze<T> {
     /// Adds the contents of another [`RangeSetBlaze`] to this one.
     ///

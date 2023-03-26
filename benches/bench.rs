@@ -151,6 +151,7 @@ pub fn clumps(c: &mut Criterion) {
     });
 }
 
+#[allow(dead_code)]
 fn bitxor(c: &mut Criterion) {
     let range = 0..=9_999_999;
     let range_len = 10_000;
@@ -178,6 +179,7 @@ fn bitxor(c: &mut Criterion) {
     });
 }
 
+#[allow(dead_code)]
 fn bitor(c: &mut Criterion) {
     let range = 0..=9_999_999;
     let range_len = 10_000;
@@ -205,6 +207,7 @@ fn bitor(c: &mut Criterion) {
     });
 }
 
+#[allow(dead_code)]
 fn bitor1(c: &mut Criterion) {
     let range = 0..=9_999_999;
     let range_len = 10_000usize;
@@ -258,6 +261,7 @@ fn two_sets<T: Integer>(
     )
 }
 
+#[allow(dead_code)]
 fn two_sets1<T: Integer>(
     range_len: usize,
     range: RangeInclusive<T>,
@@ -302,6 +306,7 @@ fn btree_two_sets<T: Integer>(
         .collect(),
     )
 }
+#[allow(dead_code)]
 fn btree_two_sets1<T: Integer>(
     range_len: usize,
     range: RangeInclusive<T>,
@@ -328,6 +333,7 @@ fn btree_two_sets1<T: Integer>(
 // }
 
 // todo rule use benchmarking -- your random data is important -- automate graphs
+#[allow(dead_code)]
 fn k_intersect(c: &mut Criterion) {
     let k = 100;
     let range = 0..=9_999_999;
@@ -398,6 +404,7 @@ fn k_intersect(c: &mut Criterion) {
     });
 }
 
+#[allow(dead_code)]
 fn coverage_goal(c: &mut Criterion) {
     let k = 100;
     let range = 0..=99_999_999;
@@ -485,6 +492,7 @@ fn coverage_goal(c: &mut Criterion) {
     group.finish();
 }
 
+#[allow(dead_code)]
 fn union_vary_k(c: &mut Criterion) {
     let k_list = [2usize, 5, 10, 25, 50, 100];
     let range_len_list = [1000usize];
@@ -498,6 +506,7 @@ fn union_vary_k(c: &mut Criterion) {
         access_k,
     );
 }
+#[allow(dead_code)]
 fn union_vary_k_w_2_at_a_time(c: &mut Criterion) {
     let k_list = [2usize, 5, 10, 25, 50, 100];
     let range_len_list = [1000usize];
@@ -512,6 +521,7 @@ fn union_vary_k_w_2_at_a_time(c: &mut Criterion) {
     );
 }
 
+#[allow(dead_code)]
 fn intersection_vary_k(c: &mut Criterion) {
     let k_list = [2usize, 5, 10, 25, 50, 100];
     let range_len_list = [1000usize];
@@ -539,6 +549,7 @@ fn intersect_k_sets(c: &mut Criterion) {
     );
 }
 
+#[allow(dead_code)]
 fn union_vary_range_len(c: &mut Criterion) {
     let k_list = [2usize];
     let range_len_list = [1usize, 10, 100, 1000, 10_000, 100_000];
@@ -556,9 +567,11 @@ fn union_vary_range_len(c: &mut Criterion) {
 fn access_k(&x: &(usize, usize)) -> usize {
     x.0
 }
+#[allow(dead_code)]
 fn access_r(&x: &(usize, usize)) -> usize {
     x.1
 }
+#[allow(dead_code)]
 fn intersection_vary_range_len(c: &mut Criterion) {
     let k_list = [2usize];
     let range_len_list = [1usize, 10, 100, 1000, 10_000, 100_000];
@@ -764,6 +777,7 @@ fn every_op(c: &mut Criterion) {
     group.finish();
 }
 
+#[allow(dead_code)]
 fn vary_coverage_goal(c: &mut Criterion) {
     let group_name = "vary_coverage_goal";
     let k = 2;
@@ -819,6 +833,7 @@ fn vary_coverage_goal(c: &mut Criterion) {
     group.finish();
 }
 
+#[allow(dead_code)]
 fn vary_type(c: &mut Criterion) {
     let group_name = "vary_type";
     let k = 2;
@@ -928,6 +943,7 @@ fn stream_vs_adhoc(c: &mut Criterion) {
     group.finish();
 }
 
+#[allow(dead_code)]
 fn str_vs_ad_by_cover(c: &mut Criterion) {
     let group_name = "str_vs_ad_by_cover";
     // let k = 2;
@@ -1165,6 +1181,87 @@ fn ingest_clumps_ranges(c: &mut Criterion) {
     }
     group.finish();
 }
+
+fn ingest_clumps_easy(c: &mut Criterion) {
+    let group_name = "ingest_clumps_easy";
+    let k = 1;
+    let average_width_list = [1, 10];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 100_000;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    group.sample_size(40);
+
+    for average_width in average_width_list {
+        let parameter = average_width;
+
+        let (range_len, range) = width_to_range(iter_len, average_width, coverage_goal);
+
+        let vec_range: Vec<RangeInclusive<i32>> = MemorylessRange::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (ranges, BTreeSet)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: rangemap::RangeInclusiveSet<i32> =
+                        rangemap::RangeInclusiveSet::from_iter(vec_range.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze (ranges, BTreeSet)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_iter(vec_range.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("range_collections (ranges, SmallVec)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let mut answer = range_collections::RangeSet2::from(1..1);
+                    for range in vec_range.iter() {
+                        let (start, end) = range.clone().into_inner();
+                        let b = range_collections::RangeSet::from(start..end + 1);
+                        answer |= b;
+                    }
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("range_set (ranges, SmallVec)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let mut answer = range_set::RangeSet::<[RangeInclusive<i32>; 1]>::new();
+                    for range in vec_range.iter() {
+                        answer.insert_range(range.clone());
+                    }
+                })
+            },
+        );
+    }
+    group.finish();
+}
+
 fn worst(c: &mut Criterion) {
     let group_name = "worst";
     let range = 0..=999;
@@ -1213,48 +1310,49 @@ fn worst(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group! {
-    name = benches;
-    config = Criterion::default();
-    targets =
-    shuffled,
-    ascending,
-    descending,
-    clumps,
-    bitxor,
-    bitor,
-    bitor1,
-    k_intersect,
-    coverage_goal,
-    union_vary_k,
-    union_vary_k_w_2_at_a_time,
-    intersection_vary_k,
-    intersect_k_sets,
-    union_vary_range_len,
-    intersection_vary_range_len,
-    every_op,
-    vary_coverage_goal,
-    vary_type,
-    stream_vs_adhoc,
-    str_vs_ad_by_cover,
-    ingest_clumps_base,
-    worst,
-    ingest_clumps_integers,
-    ingest_clumps_ranges,
-}
-
 // criterion_group! {
 //     name = benches;
 //     config = Criterion::default();
 //     targets =
+//     shuffled,
+//     ascending,
+//     descending,
+//     clumps,
+//     bitxor,
+//     bitor,
+//     bitor1,
+//     k_intersect,
+//     coverage_goal,
+//     union_vary_k,
+//     union_vary_k_w_2_at_a_time,
+//     intersection_vary_k,
 //     intersect_k_sets,
+//     union_vary_range_len,
+//     intersection_vary_range_len,
 //     every_op,
+//     vary_coverage_goal,
+//     vary_type,
 //     stream_vs_adhoc,
+//     str_vs_ad_by_cover,
 //     ingest_clumps_base,
 //     worst,
 //     ingest_clumps_integers,
 //     ingest_clumps_ranges,
 // }
+
+criterion_group! {
+    name = benches;
+    config = Criterion::default();
+    targets =
+    intersect_k_sets,
+    every_op,
+    stream_vs_adhoc,
+    ingest_clumps_base,
+    worst,
+    ingest_clumps_integers,
+    ingest_clumps_ranges,
+    ingest_clumps_easy,
+}
 criterion_main!(benches);
 
-// todo rule cargo bench intersect
+// todo rule cargo bench intersect_k_sets

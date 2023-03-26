@@ -1,5 +1,46 @@
 # Benchmarks
 
+## Range-Related Rust Crates
+
+| Crate | # Downloads | Ranges | Element Type | Set Operations? | Internal | Maps, too? |
+| --- | --- | --- | --- | --- | --- | --- |
+[range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) | zero | Disjoint | Integer | Set Ops | BTreeMap | Only Sets |
+[rangemap](https://crates.io/crates/rangemap) | 243,612 | Disjoint | Ord | No Set Ops | BTreeMap | Sets/Maps |
+[iset](https://crates.io/crates/iset) | 128,824 | Overlapping | PartialOrd | No Set Ops | Red Black | Sets/Maps ||
+[theban_interval_tree](https://crates.io/crates/theban_interval_tree) |72,000 | Overlapping(?) | ? | No Set Ops | interval tree | Sets/Maps ||
+[Range-collections](https://crates.io/crates/range-collections) | 44,974 | Disjoint | Ord | Set Ops | SmallVec | Sets/Maps |
+[range-set](https://crates.io/crates/range-set) | 19,526 | Disjoint | Ord? | No Set Ops | SmallVec | Only Sets |
+[sorted-iter](https://crates.io/crates/sorted-iter) | 19,183 | No | Ord | Set Ops | *n/a* | Sets/Maps |
+[ranges](https://crates.io/crates/ranges) | 14,964 | Disjoint | 'Domain' | Set Ops | Vec | Only Sets |
+[unbounded-interval-tree](https://crates.io/crates/unbounded-interval-tree) | 3,780 | Overlapping | Ord | No Set Ops | Red Black | Only Sets ||
+[ranged_set](https://crates.io/crates/ranged_set) | 2,116 | Disjoint | Ord | No Set Ops | ? | Only Sets |
+[btree-range-map](https://crates.io/crates/btree-range-map) |  1,897 | Yes | Measure | No Set Ops | BTreeMap | Only Sets |
+[nonoverlapping_interval_tree](https://crates.io/crates/nonoverlapping_interval_tree)|  <1000 | Yes | ? | No Set Ops | BTreeMap | Only Sets | |
+[segmap](https://crates.io/crates/segmap)|  <1000 | Yes | Ord | not tested | BTreeMap | Sets/Maps |
+[interval-map](https://crates.io/crates/interval-map)|  <1000 | Yes | Ord | No Set Ops | sorted vec | Sets/Maps |
+[range_bounds_map](https://crates.io/crates/range_bounds_map)|  <1000 | Yes | Ord | No Set Ops | ? | Sets/Maps |
+[int_range_set](https://crates.io/crates/int_range_set)|  <1000 | Yes | u64 | No Set Ops | tinyvec | Only Sets |
+
+> *The # of downloads as of 3/2023*
+
+## Benchmark Selection Criteria
+
+I ended up evaluating:
+
+* `BTreeSet`, `HashSet` (from standard library)
+* `range_map`, the most popular crate that works with ranges in a tree
+* `Range-collections` and `range-set`, the most popular crates that store ranges in a vector
+
+I eliminated crates with overlapping ranges, a different data structure (`iset`, `theban_interval_tree`, and `unbounded-interval-tree`).
+
+When I first tried vector-based crates, they timed out. A simplified benchmark, called `ingest_clumps_easy` is included below. The task is to ingest 100,000 ranges. The slowest tree-based crate was 14 times faster than the fastest vector-based crate. So, after than benchmark, I eliminated vector-based crates.
+
+Finally, I looked for crates that supported set operations but none of the remaining crates offered tested set operations. (The inspirational `sorted-iter` does, but it is designed to work on sorted values, not ranges, and so is not included.)
+
+If I misunderstood any of the crates, please let me know. If you'd like to benchmark a crate, the benchmark code is in the `benches` directory of this repository.
+
+## Benchmark Results
+
 ## 'worst': Worst case for RangeSetBlaze
 
 * **Measure**: intake speed
@@ -7,13 +48,13 @@
 * **Vary**: *n* from 1 to 10,000, number of random integers
 * **Details**: Select *n* random integers randomly and uniformly from the range 0..=999 (with replacement).
 
-### Results
+### 'worst' Results
 
 RangeSetBlaze is consistently 2.5 times slower than HashSet. On small sets, BTreeSet is competitive with HashSet, but gets almost as slow as RangeSetBlaze as the sets grow.
 
-### Conclusion
+### 'worst' Conclusion
 
-RangeSetBlaze is not a good choice non-clumpy integers. However, it is not catastrophically worse. It is just 2.5 times worse.
+RangeSetBlaze is not a good choice non-clumpy integers. However, it is not catastrophically worse; it is just 2.5 times worse.
 
 ![worst lines](https://raw.githubusercontent.com/fastlmm/PySnpTools/master/doc/source/lines.svg "worst lines")
 
@@ -22,7 +63,7 @@ RangeSetBlaze is not a good choice non-clumpy integers. However, it is not catas
 * **Measure**: intake speed
 * **Candidates**: HashSet, BTreeSet, RangeSetBlaze
 * **Vary**: *average clump size* from 1 (no clumps) to 1M (one big clump)
-* **Details**: We generate 1M integers in clumps. Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. The clumps are random uniform in a range of roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover 10% of the range.
+* **Details**: We generate 1M integers with clumps. Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. The integers are random uniform in a range from roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover 10% of the range.
 
 ### 'ingest_clumps_base' Results
 

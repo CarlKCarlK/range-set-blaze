@@ -25,6 +25,8 @@ thousands = "0.2.0"
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"
 rangemap = "1.3.0"
+range-collections = "0.4.0"
+range-set = "0.0.9"
 
 
 # Declare a benchmark called ""bench" without the standard benchmarking harness. 
