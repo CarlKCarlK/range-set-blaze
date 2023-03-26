@@ -6,7 +6,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 [range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) | zero | Disjoint | Integer | Set Ops | BTreeMap | Only Sets |
 [rangemap](https://crates.io/crates/rangemap) | 243,612 | Disjoint | Ord | No Set Ops | BTreeMap | Sets/Maps |
-[iset](https://crates.io/crates/iset) | 128,824 | Overlapping | PartialOrd | No Set Ops | Red Black | Sets/Maps ||
+[iset](https://crates.io/crates/iset) | 128,824 | Overlapping | PartialOrd | No Set Ops | Red Black | Sets/Maps |
 [theban_interval_tree](https://crates.io/crates/theban_interval_tree) |72,000 | Overlapping(?) | ? | No Set Ops | interval tree | Sets/Maps ||
 [Range-collections](https://crates.io/crates/range-collections) | 44,974 | Disjoint | Ord | Set Ops | SmallVec | Sets/Maps |
 [range-set](https://crates.io/crates/range-set) | 19,526 | Disjoint | Ord? | No Set Ops | SmallVec | Only Sets |
@@ -27,28 +27,28 @@
 
 I ended up evaluating:
 
-* `BTreeSet`, `HashSet`, from standard library
+* `BTreeSet`, `HashSet`, from the standard library
 * `range_map`, the most popular crate that works with ranges in a tree
 * `Range-collections` and `range-set`, the most popular crates that store ranges in a vector
 
-These crates store disjoint ranges. I eliminated crates with overlapping ranges, a different data structure (`iset`, `theban_interval_tree`, and `unbounded-interval-tree`).
+These crates store disjoint ranges. I eliminated crates for overlapping ranges, a different data structure (`iset`, `theban_interval_tree`, and `unbounded-interval-tree`).
 
-The disjoint ranges can be stored in a tree or a vector. With a tree, we expect inserts to be much faster than with a vector, O(log *n*) vs O(*n*). Benchmark `ingest_clumps_easy` showed this to be true. Because I care about such inserts, I remove vector-based crates from further consideration.
+The disjoint ranges can be stored in a tree or a vector. With a tree, we expect inserts to be much faster than with a vector, O(log *n*) vs O(*n*). Benchmark `ingest_clumps_easy` below showed this to be true. Because I care about such inserts, after the benchmark, I remove vector-based crates from further consideration.
 
-Finally, I looked for crates that supported set operations but none of the remaining crates offered tested set operations. (The inspirational `sorted-iter` does, but it is designed to work on sorted values, not ranges, and so is not included.)
+Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). None of the remaining crates offered tested set operations. (The inspirational `sorted-iter` does, but it is designed to work on sorted values, not ranges, and so is not included.)
 
-If I misunderstood any of the crates, please let me know. If you'd like to benchmark a crate, the benchmark code is in the `benches` directory of this repository.
+If I misunderstood any of the crates, please let me know. If you'd like to benchmark a crate, the benchmarking code is in the `benches` directory of this repository.
 
 ## Benchmark Results
 
-Here are benchmarks that allow us to understand `range-set-blaze` and compare crates.
+These benchmarks that allow us to understand the `range-set-blaze::RangeSetBlaze` data structure and to compare it to similar data structures from other crates.
 
-## 'worst': Worst case for RangeSetBlaze
+## Benchmark #1: 'worst': Worst case for RangeSetBlaze
 
 * **Measure**: intake speed
 * **Candidates**: `HashSet`, `BTreeSet`, `RangeSetBlaze`
 * **Vary**: *n* from 1 to 10,000, number of random integers
-* **Details**: Select *n* random integers randomly and uniformly from the range 0..=999 (with replacement).
+* **Details**: Select *n* integers randomly and uniformly from the range 0..=999 (with replacement).
 
 ### 'worst' Results
 
@@ -56,17 +56,17 @@ Here are benchmarks that allow us to understand `range-set-blaze` and compare cr
 
 ### 'worst' Conclusion
 
-`HashSet`, not `RangeSetBlaze` is a good choice non-clumpy integers. However, `RangeSetBlaze` is not catastrophically worse; it is just 2.5 times worse.
+`HashSet`, not `RangeSetBlaze` is a good choice for sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just 2.5 times worse.
 
 ![worst lines](https://carlkcarlk.github.io/range-set-blaze/criterion/worst/report/lines.svg "worst lines")
 
-## 'ingest_clumps_base': Measure `RangeSetBlaze` on increasing clumpy integers
+## ## Benchmark #2: 'ingest_clumps_base': Measure `RangeSetBlaze` on increasingly clumpy integers
 
 * **Measure**: integer intake speed
 * **Candidates**: `HashSet`, `BTreeSet`, `RangeSetBlaze`
 * **Vary**: *average clump size* from 1 (no clumps) to 100K (ten big clumps)
-* **Details**: We generate 1M integers with clumps and ingest them one at a time.
-Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. (The integers are random uniform, with-replacement, in a range from roughly 1 to 10M. The exact range is sized so that the union of the 1M integers will cover about 10% of the range.)
+* **Details**: We generate 1M integers with clumps. We ingest the integers one at a time.
+Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. (The integer clumps are random uniform, with-replacement, in a span from 0 to roughly 10M. The exact span is sized so that the union of the 1M integers will cover about 10% of the span. In other words, a given integer in the span will have a 10% chance of being in the 1M integers generated.)
 
 ### 'ingest_clumps_base' Results
 
