@@ -60,13 +60,13 @@ These benchmarks that allow us to understand the `range-set-blaze::RangeSetBlaze
 
 ![worst lines](https://carlkcarlk.github.io/range-set-blaze/criterion/worst/report/lines.svg "worst lines")
 
-## ## Benchmark #2: 'ingest_clumps_base': Measure `RangeSetBlaze` on increasingly clumpy integers
+## Benchmark #2: 'ingest_clumps_base': Measure `RangeSetBlaze` on increasingly clumpy integers
 
 * **Measure**: integer intake speed
 * **Candidates**: `HashSet`, `BTreeSet`, `RangeSetBlaze`
 * **Vary**: *average clump size* from 1 (no clumps) to 100K (ten big clumps)
 * **Details**: We generate 1M integers with clumps. We ingest the integers one at a time.
-Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. (The integer clumps are random uniform, with-replacement, in a span from 0 to roughly 10M. The exact span is sized so that the union of the 1M integers will cover about 10% of the span. In other words, a given integer in the span will have a 10% chance of being in the 1M integers generated.)
+Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. (The integer clumps are random uniform, with-replacement, in a span from 0 to roughly 10M. The exact span is sized so that the union of the 1M integers will cover about 10% of the span. In other words, a given integer in the span will have a 10% chance of being one of the 1M integers generated.)
 
 ### 'ingest_clumps_base' Results
 
@@ -78,11 +78,11 @@ times faster than `HashSet` and `BTreeSet`.
 ### ingest_clumps_base' Conclusion
 
 Range-based methods such as `RangeSetBlaze` are a great choice for clumpy integers.
-They are the only sensible choice when such input is given as ranges.
+When the input is given as ranges, they are the only sensible choice.
 
 ![ingest_clumps_base](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_base/report/lines.svg "ingest_clumps_base")
 
-## 'ingest_clumps_integers': Measure Various range set crates on the clumpy integers
+## Benchmark #3: 'ingest_clumps_integers': Measure the `rangemap` crate on clumpy integers
 
 * **Measure**: integer intake speed
 * **Candidates**: `base` + rangemap,
@@ -93,13 +93,13 @@ We give each crate the clumps as individual integers.
 
 ### 'ingest_clumps_integers' Results & Conclusion
 
-`rangemap` is typically three times slower as `HashSet` and 75 times slower than `RangeSetBlaze`. However ...
+`rangemap` is typically three times slower than `HashSet` and 75 times slower than `RangeSetBlaze`. However ...
 
-`RangeSetBlaze` batches its integer input by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any range-based crate.
+`RangeSetBlaze` batches its integer input by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate.
 
 ![ingest_clumps_integers](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_integers/report/lines.svg "ingest_clumps_integers")
 
-## 'ingest_clumps_ranges': Measure Various range set crates on the clumpy integers
+## Benchmark #4: 'ingest_clumps_ranges': Measure rangemap on ranges of clumpy integers
 
 * **Measure**: range intake speed
 * **Candidates**: RangeSetBlaze + rangemap
@@ -112,11 +112,11 @@ We give each crate the clumps as ranges (instead of as individual integers).
 
 Over most clump sizes, `RangeSetBlaze` is about 4 times faster than `rangemap`. However ...
 
-`RangeSetBlaze` batches range inputs by sorting them and then merging adjacent ranges. This batching is not implemented in `rangemap` but could easily be added to it or any range-based crate.
+`RangeSetBlaze` batches range inputs by sorting them and then merging adjacent ranges. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate.
 
 ![ingest_clumps_ranges](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_ranges/report/lines.svg "ingest_clumps_ranges")
 
-## 'ingest_clumps_easy': Measure Various range set crates on the clumpy integers
+## Benchmark #5: 'ingest_clumps_easy': Measure various crates on (easier) ranges of clumpy integers
 
 * **Measure**: range intake speed
 * **Candidates**: Tree based (RangeSetBlaze rangemap), Vector based (`range_collections`, `range_set`)
@@ -127,17 +127,17 @@ We give each crate the clumps as ranges (instead of as individual integers).
 
 ### 'ingest_clumps_easy' Results & Conclusion
 
-The fastest vector-based method is 14 times slower than than the slowest tree-based method. It is 50 times slower than `RangeSetBlaze`. This is expected because vector-based methods are not designed for a large numbers of inserts.
+The fastest vector-based method is 14 times slower than the slowest tree-based method. It is 50 times slower than `RangeSetBlaze`. This is expected because vector-based methods are not designed for a large numbers of inserts.
 
 ![ingest_clumps_easy](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_easy/report/lines.svg "ingest_clumps_easy")
 
-## 'union_two_sets': Union two sets of clumpy integers
+## Benchmark #6: 'union_two_sets': Union two sets of clumpy integers
 
 * **Measure**: adding ranges to an existing set
 * **Candidates**: RangeSetBlaze, rangemap
 * **Vary**: Number of clumps in the second set, from 1 to about 90K.
-* **Details**: We first create two clump iterators, each with the desired number clumps. Their integer range is 0..=99_999_999.
-Each clump iterator is designed to cover about 10% of the integer range. We, next, turn these two iterators into two sets. The first set is made from 1000 clumps. Finally, we measure the time it takes to add the second set to the first set.
+* **Details**: We first create two clump iterators, each with the desired number clumps. Their integer span is 0..=99_999_999.
+Each clump iterator is designed to cover about 10% of this span. We, next, turn these two iterators into two sets. The first set is made from 1000 clumps. Finally, we measure the time it takes to add the second set to the first set.
 
 RangeSetBlaze unions with a hybrid algorithm. When adding a few ranges, it adds them one at a time. When adding many ranges, it
 merges the two sets of ranges by iterating over them in sorted order.
@@ -154,12 +154,12 @@ Over the whole range of clumpiness, RangeSetBlaze is faster. Compared to non-hyb
 
 ![union_two_sets](https://carlkcarlk.github.io/range-set-blaze/criterion/union_two_sets/report/lines.svg "union_two_sets")
 
-## 'every_op': Compare the set operations
+## Benchmark #7: 'every_op': Compare the set operations
 
 * **Measure**: set operation speed
 * **Candidates**: union, intersection, difference, symmetric_difference, complement
 * **Vary**: number of ranges in the set, from 1 to about 50K.
-* **Details**: We create two clump iterators, each with the desired number of clumps and a coverage of 0.5. Their range is 0..=99_999_999. We, next, turn these two iterators into two sets. Finally, we measure the time it takes to operate on the two sets.
+* **Details**: We create two clump iterators, each with the desired number of clumps and a coverage of 0.5. Their span is 0..=99_999_999. We, next, turn these two iterators into two sets. Finally, we measure the time it takes to operate on the two sets.
 
 ### 'every_op' Results and Conclusion
 
@@ -167,12 +167,12 @@ Complement (which works on just once set) is twice as fast as union, intersectio
 
 ![every_op](https://carlkcarlk.github.io/range-set-blaze/criterion/every_op/report/lines.svg "every_op")
 
-## 'intersect_k_sets': Multiway vs 2-way intersection
+## Benchmark #8: 'intersect_k_sets': Multiway vs 2-way intersection
 
 * **Measure**: intersection speed
 * **Candidates**: 2-at-a-time intersection multiway intersection (static and dynamic)
 * **Vary**: number of sets, from 2 to 100.
-* **Details**: We create *n* iterators. Each iterator generates 1,000 clumps. The iterators are designed such that the coverage of the final intersection is about 25%. The range of integers in the clumps is 0..=99_999_999. We, next, turn these *n* iterators into *n* sets. Finally, we measure the time it takes to operate on the sets.
+* **Details**: We create *n* iterators. Each iterator generates 1,000 clumps. The iterators are designed such that the coverage of the final intersection is about 25%. The span of integers in the clumps is 0..=99_999_999. We, next, turn these *n* iterators into *n* sets. Finally, we measure the time it takes to operate on the sets.
 
 ### 'intersect_k_sets' Results and Conclusion
 
