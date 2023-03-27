@@ -1,5 +1,6 @@
 /target
 .vs/
-
 doc/~*.*
+.vscode/
+*.bat
 

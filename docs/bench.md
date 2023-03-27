@@ -31,9 +31,9 @@ I ended up evaluating:
 * `range_map`, the most popular crate that works with ranges in a tree
 * `Range-collections` and `range-set`, the most popular crates that store ranges in a vector
 
-These crates store disjoint ranges. I eliminated crates for overlapping ranges, a different data structure (`iset`, `theban_interval_tree`, and `unbounded-interval-tree`).
+The `range_map`, `Range-collections`, and `range-set` crates store disjoint ranges. I eliminated crates for overlapping ranges, a different data structure (`iset`, `theban_interval_tree`, and `unbounded-interval-tree`).
 
-The disjoint ranges can be stored in a tree or a vector. With a tree, we expect inserts to be much faster than with a vector, O(log *n*) vs O(*n*). Benchmark `ingest_clumps_easy` below showed this to be true. Because I care about such inserts, after the benchmark, I remove vector-based crates from further consideration.
+Disjoint ranges can be stored in a tree or a vector. With a tree, we expect inserts to be much faster than with a vector, O(log *n*) vs O(*n*). Benchmark `ingest_clumps_easy` below showed this to be true. Because I care about such inserts, after that benchmark, I removed vector-based crates from consideration.
 
 Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). None of the remaining crates offered tested set operations. (The inspirational `sorted-iter` does, but it is designed to work on sorted values, not ranges, and so is not included.)
 

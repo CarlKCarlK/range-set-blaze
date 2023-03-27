@@ -34,5 +34,6 @@ range-set = "0.0.9"
 name = "bench"
 harness = false
 
-[profile.release]
-debug = true
+# TODO Rule: for running profiling
+# [profile.release]
+# debug = true

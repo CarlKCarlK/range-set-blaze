@@ -32,12 +32,24 @@ The crate's main trait is [`SortedDisjoint`]. It is implemented by iterators of 
 [set operations]: rangesetblaze-set-operations
 [1]: struct.RangeSetBlaze.html#constructor-performance
 
+Benchmarks
+-----------
+
+See the [benchmarks](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) for performance comparisons with other range-related crates.
+
+Generally, for many tasks involving clumpy integers and ranges, `RangeSetBlaze` is much faster than alternatives. It also offers a full set of fast set operations.
+
+The benchmarks are in the `benches` directory. To run them, use `cargo bench`.
+
+Examples
+-----------
+
 Example 1
----------
+- - - - - -
 
 Here we take the union (operator “|”) of two [`RangeSetBlaze`]'s:
 
-![Example 1](https://raw.githubusercontent.com/fastlmm/PySnpTools/master/doc/source/rust_example1.png "Example 1")
+![Example 1](https://raw.githubusercontent.com/CarlKCarlK/range-set-blaze/main/docs/rust_example1.png "Example 1")
 
 ```rust
 use range_set_blaze::RangeSetBlaze;
@@ -52,11 +64,11 @@ assert_eq!(c, RangeSetBlaze::from_iter([-20..=-20,100..=999]));
 ```
 
 Example 2
----------
+- - - - - -
 
 In biology, suppose we want to find the intron regions of a gene but we are given only the transcription region and the exon regions.
 
-![Example 2](https://raw.githubusercontent.com/fastlmm/PySnpTools/master/doc/source/rust_example2.png "Example 2")
+![Example 2](https://raw.githubusercontent.com/CarlKCarlK/range-set-blaze/main/docs/rust_example2.png "Example 2")
 
 We create a [`RangeSetBlaze`] for the transcription region and a [`RangeSetBlaze`] for all the exon regions.
 Then we take the difference between the transcription region and exon regions to find the intron regions.
