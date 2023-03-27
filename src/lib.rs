@@ -1,5 +1,4 @@
 #![doc = include_str!("../README.md")]
-#![doc = include_str!("../benches/bench.md")]
 #![warn(missing_docs)]
 
 // todo rule: fizz test with quickcheck (ala sorted-iter)
@@ -10,7 +9,6 @@
 // todo rule: don't create an assign method if it is not more efficient
 // todo rule: generate HTML: criterion = { version = "0.4", features = ["html_reports"] }
 // todo rule: pick another similar data structure and implement everything that makes sense (copy docs as much as possible)
-// cmk bench finish the benchmark story
 // todo rule: define and understand PartialOrd, Ord, Eq, etc.
 // todo rule check/understand PartialOrd, Ord, Eq, etc. and Clone, Default, Debug, etc
 // todo rule: Do coverage testing (it's really good, see PowerPoint)
@@ -46,7 +44,6 @@ use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
 use std::iter::FusedIterator;
-use std::ops;
 use std::ops::BitOr;
 use std::ops::BitOrAssign;
 use std::ops::Bound;
@@ -487,12 +484,7 @@ impl<T: Integer> RangeSetBlaze<T> {
 }
 
 impl<T: Integer> RangeSetBlaze<T> {
-    /// !!! cmk understand the 'where for'
-    /// !!! cmk understand the operator 'Sub'
-    fn _len_slow(&self) -> <T as Integer>::SafeLen
-    where
-        for<'a> &'a T: ops::Sub<&'a T, Output = T>,
-    {
+    fn _len_slow(&self) -> <T as Integer>::SafeLen {
         RangeSetBlaze::btree_map_len(&self.btree_map)
     }
 
@@ -1342,9 +1334,7 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
 impl<T, I> From<I> for RangeSetBlaze<T>
 where
     T: Integer,
-    // cmk understand what does IntoIterator's ' IntoIter = I::IntoIter' mean?
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
-    // cmk understand why this can't be  I: IntoIterator<Item = RangeInclusive<T>>, <I as IntoIterator>::IntoIter: SortedDisjoint, some conflict with from[]
 {
     /// Create a [`RangeSetBlaze`] from a [`SortedDisjoint`] iterator.
     ///
