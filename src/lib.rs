@@ -24,9 +24,7 @@ mod sorted_disjoint_iterator;
 mod tests;
 mod union_iter;
 mod unsorted_disjoint;
-
-pub use crate::ranges::IntoRangesIter;
-pub use crate::ranges::RangesIter;
+pub use crate::ranges::{IntoRangesIter, RangesIter};
 use gen_ops::gen_ops_ex;
 use itertools::Tee;
 pub use merge::KMerge;
@@ -38,6 +36,7 @@ use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
 pub use sorted_disjoint::{CheckSortedDisjoint, DynSortedDisjoint};
 pub use sorted_disjoint_iterator::SortedDisjointIterator;
+pub use sorted_disjoint_iterator::SortedStartsIterator;
 use std::cmp::max;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
@@ -248,8 +247,8 @@ pub trait Integer:
 ///
 /// // If we know the ranges are already sorted and disjoint,
 /// // we can avoid work and use 'from'/'into'.
-/// let a0 = RangeSetBlaze::from(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-/// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into();
+/// let a0 = RangeSetBlaze::from_cmk(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+/// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
 /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 ///
 /// // For compatibility with `BTreeSet`, we also support
@@ -336,7 +335,7 @@ pub trait Integer:
 /// // Applying multiple operators
 /// let result0 = &a - (&b | &c); // Creates an intermediate 'RangeSetBlaze'.
 /// // Alternatively, we can use the 'SortedDisjoint' API and avoid the intermediate 'RangeSetBlaze'.
-/// let result1 = RangeSetBlaze::from(a.ranges() - (b.ranges() | c.ranges()));
+/// let result1 = RangeSetBlaze::from_cmk(a.ranges() - (b.ranges() | c.ranges()));
 /// assert!(result0 == result1 && result0.to_string() == "1..=1");
 /// ```
 /// # `RangeSetBlaze` Comparisons
@@ -764,7 +763,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         assert!(start <= end);
 
         let bounds = CheckSortedDisjoint::from([start..=end]);
-        RangeSetBlaze::from(self.ranges() & bounds).into_iter()
+        RangeSetBlaze::from_cmk(self.ranges() & bounds).into_iter()
     }
 
     /// Adds a range to the set.
@@ -1281,7 +1280,7 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetBlaze<T> {
         I: IntoIterator<Item = RangeInclusive<T>>,
     {
         let union_iter: UnionIter<T, _> = iter.into_iter().collect();
-        union_iter.into()
+        RangeSetBlaze::from_cmk(union_iter)
     }
 }
 
@@ -1307,7 +1306,7 @@ impl<'a, T: Integer + 'a> FromIterator<&'a RangeInclusive<T>> for RangeSetBlaze<
         I: IntoIterator<Item = &'a RangeInclusive<T>>,
     {
         let union_iter: UnionIter<T, _> = iter.into_iter().cloned().collect();
-        union_iter.into()
+        RangeSetBlaze::from_cmk(union_iter)
     }
 }
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
@@ -1331,11 +1330,8 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     }
 }
 
-impl<T, I> From<I> for RangeSetBlaze<T>
-where
-    T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
-{
+// cmk333
+impl<T: Integer> RangeSetBlaze<T> {
     /// Create a [`RangeSetBlaze`] from a [`SortedDisjoint`] iterator.
     ///
     /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
@@ -1345,11 +1341,15 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a0 = RangeSetBlaze::from(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-    /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into();
-    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");    
+    /// let a0 = RangeSetBlaze::from_cmk(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+    /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
-    fn from(iter: I) -> Self {
+    pub fn from_cmk<I>(iter: I) -> Self
+    where
+        I: SortedDisjointIterator<T>,
+    {
+        // cmk just remove that SortedDisjointWithLenSoFar is SortedDisjoint and then can return (s, e) again.
         let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
         RangeSetBlaze {
@@ -1431,7 +1431,7 @@ pub trait MultiwayRangeSetBlazeRef<T: Integer>:
     /// assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
     /// ```
     fn union(self) -> RangeSetBlaze<T> {
-        self.into_iter().map(|x| x.into_ranges()).union().into()
+        RangeSetBlaze::from_cmk(self.into_iter().map(|x| x.into_ranges()).union())
     }
 
     /// Intersects the given [`RangeSetBlaze`] references, creating a new [`RangeSetBlaze`].
@@ -1463,7 +1463,7 @@ pub trait MultiwayRangeSetBlazeRef<T: Integer>:
         self.into_iter()
             .map(RangeSetBlaze::into_ranges)
             .intersection()
-            .into()
+            .into_range_set_blaze()
     }
 }
 // todo rule Offer methods of traits
@@ -1509,7 +1509,10 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
     /// assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
     /// ```
     fn union(self) -> RangeSetBlaze<T> {
-        self.into_iter().map(RangeSetBlaze::ranges).union().into()
+        self.into_iter()
+            .map(RangeSetBlaze::ranges)
+            .union()
+            .into_range_set_blaze()
     }
 
     /// Intersects the given [`RangeSetBlaze`]'s, creating a new [`RangeSetBlaze`].
@@ -1541,7 +1544,7 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
         self.into_iter()
             .map(RangeSetBlaze::ranges)
             .intersection()
-            .into()
+            .into_range_set_blaze()
     }
 }
 
@@ -1629,7 +1632,7 @@ gen_ops_ex!(
     <T>;
     types ref RangeSetBlaze<T>, ref RangeSetBlaze<T> => RangeSetBlaze<T>;
     for & call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-        (a.ranges() & b.ranges()).into()
+        (a.ranges() & b.ranges()).into_range_set_blaze()
     };
     for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         // We optimize this by using ranges() twice per input, rather than tee()
@@ -1637,10 +1640,10 @@ gen_ops_ex!(
         let lhs1 = a.ranges();
         let rhs0 = b.ranges();
         let rhs1 = b.ranges();
-        ((lhs0 - rhs0) | (rhs1 - lhs1)).into()
+        ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze()
     };
     for - call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-        (a.ranges() - b.ranges()).into()
+        (a.ranges() - b.ranges()).into_range_set_blaze()
     };
     where T: Integer //Where clause for all impl's
 );
@@ -1649,7 +1652,7 @@ gen_ops_ex!(
     <T>;
     types ref RangeSetBlaze<T> => RangeSetBlaze<T>;
     for ! call |a: &RangeSetBlaze<T>| {
-        (!a.ranges()).into()
+        (!a.ranges()).into_range_set_blaze()
     };
 
     where T: Integer //Where clause for all impl's
@@ -1690,20 +1693,17 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
 pub struct Iter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     iter: I,
     option_range: Option<RangeInclusive<T>>,
 }
 
-impl<T: Integer, I> FusedIterator for Iter<T, I> where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint + FusedIterator
-{
-}
+impl<T: Integer, I> FusedIterator for Iter<T, I> where I: SortedDisjointIterator<T> + FusedIterator {}
 
 impl<T: Integer, I> Iterator for Iter<T, I>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     type Item = T;
     fn next(&mut self) -> Option<T> {
@@ -1839,7 +1839,7 @@ impl<T: Integer> BitOrAssign<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
         if b_len * (a_len.ilog2() as usize + 1) < a_len + b_len {
             self.extend(other.ranges());
         } else {
-            *self = (self.ranges() | other.ranges()).into();
+            *self = (self.ranges() | other.ranges()).into_range_set_blaze();
         }
     }
 }
@@ -1954,7 +1954,7 @@ impl<T: Integer> BitOr<&RangeSetBlaze<T>> for &RangeSetBlaze<T> {
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor(self, other: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
-        (self.ranges() | other.ranges()).into()
+        (self.ranges() | other.ranges()).into_range_set_blaze()
     }
 }
 
@@ -2197,7 +2197,7 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 /// > To use operators such as `&` and `!`, you must also implement the [`BitAnd`], [`Not`], etc. traits.
 /// >
 /// > If you want others to use your marked iterator type, reexport:
-/// > `pub use range_set_blaze::{SortedDisjoint, SortedStarts};`
+/// > `pub use range_set_blaze::{SortedDisjointIterator, SortedStartsIterator};`
 ///
 /// [`BitAnd`]: https://doc.rust-lang.org/std/ops/trait.BitAnd.html
 /// [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
@@ -2214,7 +2214,7 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 /// ## Example -- Find the ordinal weekdays in September 2023
 /// ```
 /// use std::ops::RangeInclusive;
-/// pub use range_set_blaze::{SortedDisjoint, SortedStarts};
+/// pub use range_set_blaze::{SortedDisjointIterator, SortedStartsIterator};
 ///
 /// // Ordinal dates count January 1 as day 1, February 1 as day 32, etc.
 /// struct OrdinalWeekends2023 {
@@ -2223,8 +2223,8 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 ///
 /// // We promise the compiler that our iterator will provide
 /// // ranges that are sorted and disjoint.
-/// impl SortedStarts for OrdinalWeekends2023 {}
-/// impl SortedDisjoint for OrdinalWeekends2023 {}
+/// impl SortedStartsIterator<i32> for OrdinalWeekends2023 {}
+/// impl SortedDisjointIterator<i32> for OrdinalWeekends2023 {}
 ///
 /// impl OrdinalWeekends2023 {
 ///     fn new() -> Self {
@@ -2254,36 +2254,26 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 ///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
 /// );
 /// ```
-pub trait SortedDisjoint: SortedStarts {}
+// cmk pub trait SortedDisjoint: SortedStarts {}
 
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
 #[doc(hidden)]
-pub trait SortedStarts {}
+// cmk pub trait SortedStarts {}
 
 // todo rule add must_use to every iter and other places ala https://doc.rust-lang.org/src/alloc/collections/btree/map.rs.html#1259-1261
 
 // If the iterator inside a BitOrIter is SortedStart, the output will be SortedDisjoint
-impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedStarts> SortedStarts
-    for UnionIter<T, I>
-{
-}
-impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedStarts> SortedDisjoint
-    for UnionIter<T, I>
-{
-}
+impl<T: Integer, I: SortedStartsIterator<T>> SortedStartsIterator<T> for UnionIter<T, I> {}
+impl<T: Integer, I: SortedStartsIterator<T>> SortedDisjointIterator<T> for UnionIter<T, I> {}
 // If the iterator inside NotIter is SortedDisjoint, the output will be SortedDisjoint
-impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedStarts
-    for NotIter<T, I>
-{
-}
-impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedDisjoint
-    for NotIter<T, I>
-{
-}
+impl<T: Integer, I: SortedDisjointIterator<T>> SortedStartsIterator<T> for NotIter<T, I> {}
+impl<T: Integer, I: SortedDisjointIterator<T>> SortedDisjointIterator<T> for NotIter<T, I> {}
 // If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
-impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedStarts for Tee<I> {}
-impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedDisjoint for Tee<I> {}
+impl<T: Integer, I: SortedDisjointIterator<T>> SortedStartsIterator<T> for Tee<I> {}
+impl<T: Integer, I: SortedDisjointIterator<T>> SortedDisjointIterator<T> for Tee<I> {}
+
+// impl<T: Integer, I: Cmk<T>> Cmk<T> for Tee<I> {}
 
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 // todo Rule Plus features:
@@ -2304,3 +2294,11 @@ impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedD
 // cmk add license files, keywords, categories, etc.
 // cmk fix badges in README
 // cmk fix visible square brackets in docs
+
+// pub trait Cmk<T: Integer>: Sized + Iterator<Item = RangeInclusive<T>> {
+//     fn cmk(self) -> String {
+//         self.map(|range| format!("{range:?}")).join(", ")
+//     }
+// }
+
+// cmk: Can I get an iterator to run cmk without implementing the trait?

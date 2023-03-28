@@ -11,20 +11,21 @@ error[E0599]: the method `union` exists for struct `Tee<std::slice::Iter<'_, ({i
   | |
   | doesn't satisfy `<_ as IntoIterator>::Item = &RangeSetBlaze<_>`
   | doesn't satisfy `<_ as IntoIterator>::Item = RangeSetBlaze<_>`
-  | doesn't satisfy `<_ as Iterator>::Item = RangeInclusive<_>`
-  | doesn't satisfy `_: SortedDisjoint`
   | doesn't satisfy `_: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
   | doesn't satisfy `_: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
   | doesn't satisfy `_: range_set_blaze::SortedDisjointIterator<_>`
+  |
+ ::: $RUST/core/src/slice/iter.rs
+  |
+  | pub struct Iter<'a, T: 'a> {
+  | -------------------------- doesn't satisfy `_: range_set_blaze::SortedDisjointIterator<_>`
   |
   = note: the following trait bounds were not satisfied:
           `<Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
           which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
           `<Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = RangeSetBlaze<_>`
           which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
-          `<Tee<std::slice::Iter<'_, ({integer}, {integer})>> as Iterator>::Item = RangeInclusive<_>`
-          which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
-          `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjoint`
+          `std::slice::Iter<'_, ({integer}, {integer})>: range_set_blaze::SortedDisjointIterator<_>`
           which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
           `<&Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
           which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
@@ -38,20 +39,10 @@ error[E0599]: the method `union` exists for struct `Tee<std::slice::Iter<'_, ({i
           which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwaySortedDisjoint<_, _>`
           `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: IntoIterator`
           which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwaySortedDisjoint<_, _>`
-          `<&Tee<std::slice::Iter<'_, ({integer}, {integer})>> as Iterator>::Item = RangeInclusive<_>`
-          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
-          `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: Iterator`
-          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
-          `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjoint`
-          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
           `<&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
           which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
           `<&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = RangeSetBlaze<_>`
           which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
-          `<&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>> as Iterator>::Item = RangeInclusive<_>`
-          which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
-          `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: SortedDisjoint`
-          which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
 
 warning: unused import: `range_set_blaze::prelude`
  --> tests/ui/tee.rs:2:5

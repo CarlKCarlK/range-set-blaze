@@ -4,8 +4,8 @@ use std::{
 };
 
 use crate::{
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjoint,
-    SortedDisjointIterator, SortedStarts,
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjointIterator,
+    SortedStartsIterator,
 };
 
 #[derive(Clone)]
@@ -50,11 +50,11 @@ where
     seen_none: bool,
 }
 
-impl<T: Integer, I> SortedDisjoint for CheckSortedDisjoint<T, I> where
+impl<T: Integer, I> SortedDisjointIterator<T> for CheckSortedDisjoint<T, I> where
     I: Iterator<Item = RangeInclusive<T>>
 {
 }
-impl<T: Integer, I> SortedStarts for CheckSortedDisjoint<T, I> where
+impl<T: Integer, I> SortedStartsIterator<T> for CheckSortedDisjoint<T, I> where
     I: Iterator<Item = RangeInclusive<T>>
 {
 }
@@ -166,7 +166,7 @@ where
 impl<T: Integer, R, L> ops::BitOr<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,
-    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: SortedDisjointIterator<T>,
 {
     type Output = BitOrMerge<T, Self, R>;
 
@@ -178,7 +178,7 @@ where
 impl<T: Integer, R, L> ops::BitAnd<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,
-    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: SortedDisjointIterator<T>,
 {
     type Output = BitAndMerge<T, Self, R>;
 
@@ -190,7 +190,7 @@ where
 impl<T: Integer, R, L> ops::Sub<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,
-    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: SortedDisjointIterator<T>,
 {
     type Output = BitSubMerge<T, Self, R>;
 
@@ -202,7 +202,7 @@ where
 impl<T: Integer, R, L> ops::BitXor<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,
-    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    R: SortedDisjointIterator<T>,
 {
     type Output = BitXOrTee<T, Self, R>;
 
@@ -234,15 +234,15 @@ where
 /// assert_eq!(union.to_string(), "0..=6, 8..=9, 11..=17, 30..=255");
 /// ```
 
-pub struct DynSortedDisjoint<'a, T> {
-    iter: Box<dyn Iterator<Item = T> + 'a>,
+pub struct DynSortedDisjoint<'a, T: Integer> {
+    iter: Box<dyn Iterator<Item = RangeInclusive<T>> + 'a>,
 }
 
-impl<'a, T> DynSortedDisjoint<'a, T> {
+impl<'a, T: Integer> DynSortedDisjoint<'a, T> {
     /// Create a [`DynSortedDisjoint`] from any [`SortedDisjoint`] iterator. See [`DynSortedDisjoint`] for an example.
     pub fn new<I>(iter: I) -> Self
     where
-        I: Iterator<Item = T> + SortedDisjoint + 'a,
+        I: SortedDisjointIterator<T> + 'a,
     {
         Self {
             iter: Box::new(iter),
@@ -251,11 +251,11 @@ impl<'a, T> DynSortedDisjoint<'a, T> {
 }
 
 // All DynSortedDisjoint's are SortedDisjoint's
-impl<'a, T> SortedStarts for DynSortedDisjoint<'a, T> {}
-impl<'a, T> SortedDisjoint for DynSortedDisjoint<'a, T> {}
+impl<'a, T: Integer> SortedStartsIterator<T> for DynSortedDisjoint<'a, T> {}
+impl<'a, T: Integer> SortedDisjointIterator<T> for DynSortedDisjoint<'a, T> {}
 
-impl<'a, T> Iterator for DynSortedDisjoint<'a, T> {
-    type Item = T;
+impl<'a, T: Integer> Iterator for DynSortedDisjoint<'a, T> {
+    type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()

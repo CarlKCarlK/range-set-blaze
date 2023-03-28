@@ -1,4 +1,4 @@
-use crate::{Integer, SortedDisjoint, SortedStarts};
+use crate::{Integer, SortedDisjointIterator, SortedStartsIterator};
 use num_traits::Zero;
 use std::{
     cmp::{max, min},
@@ -102,7 +102,7 @@ where
 pub(crate) struct SortedDisjointWithLenSoFar<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     iter: I,
     len: <T as Integer>::SafeLen,
@@ -112,7 +112,7 @@ where
 impl<T: Integer, I> From<I> for SortedDisjointWithLenSoFar<T, I::IntoIter>
 where
     I: IntoIterator<Item = RangeInclusive<T>>,
-    I::IntoIter: SortedDisjoint,
+    I::IntoIter: SortedDisjointIterator<T>,
 {
     fn from(into_iter: I) -> Self {
         SortedDisjointWithLenSoFar {
@@ -124,7 +124,7 @@ where
 
 impl<T: Integer, I> SortedDisjointWithLenSoFar<T, I>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     pub fn len_so_far(&self) -> <T as Integer>::SafeLen {
         self.len
@@ -132,13 +132,13 @@ where
 }
 
 impl<T: Integer, I> FusedIterator for SortedDisjointWithLenSoFar<T, I> where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint + FusedIterator
+    I: SortedDisjointIterator<T> + FusedIterator
 {
 }
 
 impl<T: Integer, I> Iterator for SortedDisjointWithLenSoFar<T, I>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     type Item = (T, T);
 
@@ -156,14 +156,16 @@ where
         self.iter.size_hint()
     }
 }
-impl<T: Integer, I> SortedDisjoint for SortedDisjointWithLenSoFar<T, I> where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint
-{
-}
-impl<T: Integer, I> SortedStarts for SortedDisjointWithLenSoFar<T, I> where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint
-{
-}
+
+// // cmk
+// impl<T: Integer, I> SortedDisjointIterator<T> for SortedDisjointWithLenSoFar<T, I> where
+//     I: SortedDisjointIterator<T>
+// {
+// }
+// impl<T: Integer, I> SortedStartsIterator<T> for SortedDisjointWithLenSoFar<T, I> where
+//     I: SortedDisjointIterator<T>
+// {
+// }
 
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -178,7 +180,7 @@ where
     pub(crate) iter: I,
 }
 
-impl<T: Integer, I> SortedStarts for AssumeSortedStarts<T, I> where
+impl<T: Integer, I> SortedStartsIterator<T> for AssumeSortedStarts<T, I> where
     I: Iterator<Item = RangeInclusive<T>>
 {
 }

@@ -6,8 +6,7 @@ use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use range_set_blaze::{
-    prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedDisjoint, SortedStarts,
-    UnionIter,
+    prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStartsIterator, UnionIter,
 };
 use std::cmp::Ordering;
 use std::ops::RangeInclusive;
@@ -265,13 +264,13 @@ fn custom_multi() -> Result<(), Box<dyn std::error::Error>> {
 
     let union_stream = b.ranges() | c.ranges();
     let a_less = a.ranges().difference(union_stream);
-    let d: RangeSetBlaze<_> = a_less.into();
+    let d: RangeSetBlaze<_> = a_less.into_range_set_blaze();
     println!("{d}");
 
     let d: RangeSetBlaze<_> = a
         .ranges()
         .difference([b.ranges(), c.ranges()].union())
-        .into();
+        .into_range_set_blaze();
     println!("{d}");
     Ok(())
 }
@@ -306,31 +305,31 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
         RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
     let _d = [a.ranges()].intersection();
-    let _parity: RangeSetBlaze<u8> = [[a.ranges()].intersection()].union().into();
-    let _parity: RangeSetBlaze<u8> = [a.ranges()].intersection().into();
-    let _parity: RangeSetBlaze<u8> = [a.ranges()].union().into();
+    let _parity: RangeSetBlaze<u8> = [[a.ranges()].intersection()].union().into_range_set_blaze();
+    let _parity: RangeSetBlaze<u8> = [a.ranges()].intersection().into_range_set_blaze();
+    let _parity: RangeSetBlaze<u8> = [a.ranges()].union().into_range_set_blaze();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
     println!(
         "!b|!c {}",
-        RangeSetBlaze::from(b.ranges().complement() | c.ranges().complement())
+        RangeSetBlaze::from_cmk(b.ranges().complement() | c.ranges().complement())
     );
 
     let _a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let u = [DynSortedDisjoint::new(a.ranges())].union();
     assert_eq!(
-        RangeSetBlaze::from(u),
+        RangeSetBlaze::from_cmk(u),
         RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15])
     );
     let u = union_dyn!(a.ranges());
     assert_eq!(
-        RangeSetBlaze::from(u),
+        RangeSetBlaze::from_cmk(u),
         RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15])
     );
     let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
     assert_eq!(
-        RangeSetBlaze::from(u),
+        RangeSetBlaze::from_cmk(u),
         RangeSetBlaze::from_iter([1..=15, 18..=29, 38..=42])
     );
 
@@ -342,7 +341,7 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
     ]
     .union();
     assert_eq!(
-        RangeSetBlaze::from(u),
+        RangeSetBlaze::from_cmk(u),
         RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
     Ok(())
@@ -498,7 +497,7 @@ fn empty_it() {
     let c1b = &a | b.clone();
     let c1c = a.clone() | &b;
     let c1d = a.clone() | b.clone();
-    let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into();
+    let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze();
     c3.append(&mut b.clone());
     c5.extend(b);
 
@@ -600,8 +599,8 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     _range_set_int = [5..=6, 1..=5].into_iter().collect();
     _range_set_int = RangeSetBlaze::from_iter([5..=6, 1..=5]);
     // #16 into / from iter (T,T) + SortedDisjoint
-    _range_set_int = _range_set_int.ranges().into();
-    _range_set_int = RangeSetBlaze::from(_range_set_int.ranges());
+    _range_set_int = _range_set_int.ranges().into_range_set_blaze();
+    _range_set_int = RangeSetBlaze::from_cmk(_range_set_int.ranges());
 
     let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10].into_iter());
     let mut _sorted_disjoint_iter;
@@ -660,7 +659,7 @@ fn k_play(c: &mut Criterion) {
                 },
                 |sets| {
                     let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-                    let _answer: RangeSetBlaze<_> = sets.intersection().into();
+                    let _answer: RangeSetBlaze<_> = sets.intersection().into_range_set_blaze();
                 },
                 BatchSize::SmallInput,
             );
@@ -1204,8 +1203,9 @@ fn range_set_int_constructors() {
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 
     // If we know the ranges are sorted and disjoint, we can use 'from'/'into'.
-    let a0 = RangeSetBlaze::from(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-    let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into();
+    let a0 = RangeSetBlaze::from_cmk(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+    let a1: RangeSetBlaze<i32> =
+        CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 
     // For compatibility with `BTreeSet`, we also support
@@ -1257,7 +1257,7 @@ fn range_set_int_operators() {
     let result0 = &a - (&b | &c); // Creates a temporary 'RangeSetBlaze'.
 
     // Alternatively, we can use the 'SortedDisjoint' API and avoid the temporary 'RangeSetBlaze'.
-    let result1 = RangeSetBlaze::from(a.ranges() - (b.ranges() | c.ranges()));
+    let result1 = RangeSetBlaze::from_cmk(a.ranges() - (b.ranges() | c.ranges()));
     assert!(result0 == result1 && result0.to_string() == "1..=1");
 }
 
@@ -1294,8 +1294,8 @@ fn iterator_example() {
     struct OrdinalWeekends2023 {
         next_range: RangeInclusive<i32>,
     }
-    impl SortedStarts for OrdinalWeekends2023 {}
-    impl SortedDisjoint for OrdinalWeekends2023 {}
+    impl SortedStartsIterator<i32> for OrdinalWeekends2023 {}
+    impl SortedDisjointIterator<i32> for OrdinalWeekends2023 {}
 
     impl OrdinalWeekends2023 {
         fn new() -> Self {
@@ -1445,4 +1445,9 @@ fn from_iter_coverage() {
 // fn _some_fn() {
 //     let _integer_set = RangeSetBlaze::from_iter([1, 2, 3, 5]);
 //     let _char_set = RangeSetBlaze::from_iter(['a', 'b', 'c', 'd']);
+// }
+
+// fn fn3() {
+//     let a = CheckSortedDisjoint::from([1..=2]);
+//     Cmk::cmk(a);
 // }

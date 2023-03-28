@@ -7,8 +7,8 @@ use std::{
 use itertools::Itertools;
 
 use crate::{
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXOr, BitXOrTee, Integer, NotIter, SortedDisjoint,
-    SortedDisjointIterator, SortedStarts,
+    sorted_disjoint_iterator::SortedStartsIterator, BitAndMerge, BitOrMerge, BitSubMerge, BitXOr,
+    BitXOrTee, Integer, NotIter, SortedDisjointIterator,
 };
 
 /// An iterator that visits the ranges in the [`RangeSetBlaze`],
@@ -32,9 +32,11 @@ impl<'a, T: Integer> AsRef<RangesIter<'a, T>> for RangesIter<'a, T> {
     }
 }
 
+// impl<T: Integer> Cmk<T> for RangesIter<'_, T> {}
+
 // RangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
-impl<T: Integer> SortedStarts for RangesIter<'_, T> {}
-impl<T: Integer> SortedDisjoint for RangesIter<'_, T> {}
+impl<T: Integer> SortedStartsIterator<T> for RangesIter<'_, T> {}
+impl<T: Integer> SortedDisjointIterator<T> for RangesIter<'_, T> {}
 
 impl<T: Integer> ExactSizeIterator for RangesIter<'_, T> {
     #[must_use]
@@ -72,8 +74,8 @@ pub struct IntoRangesIter<T: Integer> {
     pub(crate) iter: std::collections::btree_map::IntoIter<T, T>,
 }
 
-impl<T: Integer> SortedStarts for IntoRangesIter<T> {}
-impl<T: Integer> SortedDisjoint for IntoRangesIter<T> {}
+impl<T: Integer> SortedStartsIterator<T> for IntoRangesIter<T> {}
+impl<T: Integer> SortedDisjointIterator<T> for IntoRangesIter<T> {}
 
 impl<T: Integer> ExactSizeIterator for IntoRangesIter<T> {
     #[must_use]
@@ -115,7 +117,7 @@ impl<T: Integer> ops::Not for IntoRangesIter<T> {
 
 impl<T: Integer, I> ops::BitOr<I> for RangesIter<'_, T>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     type Output = BitOrMerge<T, Self, I>;
 
@@ -126,7 +128,7 @@ where
 
 impl<T: Integer, I> ops::BitOr<I> for IntoRangesIter<T>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     type Output = BitOrMerge<T, Self, I>;
 
@@ -137,7 +139,7 @@ where
 
 impl<T: Integer, I> ops::Sub<I> for RangesIter<'_, T>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     type Output = BitSubMerge<T, Self, I>;
 
@@ -148,7 +150,7 @@ where
 
 impl<T: Integer, I> ops::Sub<I> for IntoRangesIter<T>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     type Output = BitSubMerge<T, Self, I>;
 
@@ -159,7 +161,7 @@ where
 
 impl<T: Integer, I> ops::BitXor<I> for RangesIter<'_, T>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     type Output = BitXOr<T, Self, I>;
 
@@ -174,7 +176,7 @@ where
 
 impl<T: Integer, I> ops::BitXor<I> for IntoRangesIter<T>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     type Output = BitXOrTee<T, Self, I>;
 
@@ -186,7 +188,7 @@ where
 
 impl<T: Integer, I> ops::BitAnd<I> for RangesIter<'_, T>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     type Output = BitAndMerge<T, Self, I>;
 
@@ -198,7 +200,7 @@ where
 
 impl<T: Integer, I> ops::BitAnd<I> for IntoRangesIter<T>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     type Output = BitAndMerge<T, Self, I>;
 

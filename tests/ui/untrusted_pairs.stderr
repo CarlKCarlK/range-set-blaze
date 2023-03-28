@@ -1,17 +1,19 @@
-error[E0277]: the trait bound `std::array::IntoIter<RangeInclusive<{integer}>, 3>: SortedDisjoint` is not satisfied
- --> tests/ui/untrusted_pairs.rs:6:46
+error[E0277]: the trait bound `RangeSetBlaze<_>: From<IntoRangesIter<{integer}>>` is not satisfied
+ --> tests/ui/untrusted_pairs.rs:5:46
   |
-6 |     let _range_set_int = RangeSetBlaze::from(untrusted);
-  |                          ------------------- ^^^^^^^^^ the trait `SortedDisjoint` is not implemented for `std::array::IntoIter<RangeInclusive<{integer}>, 3>`
+5 |     let _range_set_int = RangeSetBlaze::from(trusted);
+  |                          ------------------- ^^^^^^^ the trait `From<IntoRangesIter<{integer}>>` is not implemented for `RangeSetBlaze<_>`
   |                          |
   |                          required by a bound introduced by this call
   |
-  = help: the following other types implement trait `SortedDisjoint`:
-            CheckSortedDisjoint<T, I>
-            DynSortedDisjoint<'a, T>
-            IntoRangesIter<T>
-            NotIter<T, I>
-            RangesIter<'_, T>
-            UnionIter<T, I>
-            itertools::tee::Tee<I>
-  = note: required for `RangeSetBlaze<{integer}>` to implement `From<std::array::IntoIter<RangeInclusive<{integer}>, 3>>`
+  = help: the trait `From<[T; N]>` is implemented for `RangeSetBlaze<T>`
+
+error[E0277]: the trait bound `RangeSetBlaze<_>: From<std::array::IntoIter<RangeInclusive<{integer}>, 3>>` is not satisfied
+ --> tests/ui/untrusted_pairs.rs:7:46
+  |
+7 |     let _range_set_int = RangeSetBlaze::from(untrusted);
+  |                          ------------------- ^^^^^^^^^ the trait `From<std::array::IntoIter<RangeInclusive<{integer}>, 3>>` is not implemented for `RangeSetBlaze<_>`
+  |                          |
+  |                          required by a bound introduced by this call
+  |
+  = help: the trait `From<[T; N]>` is implemented for `RangeSetBlaze<T>`

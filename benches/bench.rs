@@ -19,7 +19,7 @@ use rand::{
     distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, SeedableRng,
 };
 // use pprof::criterion::Output; //PProfProfiler
-use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer};
+use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjointIterator};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
 
@@ -375,7 +375,7 @@ fn k_intersect(c: &mut Criterion) {
             },
             |sets| {
                 let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-                let _answer: RangeSetBlaze<_> = sets.intersection().into();
+                let _answer: RangeSetBlaze<_> = sets.intersection().into_range_set_blaze();
             },
             BatchSize::SmallInput,
         );
@@ -434,7 +434,7 @@ fn coverage_goal(c: &mut Criterion) {
                     },
                     |sets| {
                         let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-                        let _answer: RangeSetBlaze<_> = sets.intersection().into();
+                        let _answer: RangeSetBlaze<_> = sets.intersection().into_range_set_blaze();
                     },
                     BatchSize::SmallInput,
                 );
@@ -629,8 +629,8 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
                     |sets| {
                         let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
                         let _answer: RangeSetBlaze<_> = match how {
-                            How::Intersection => sets.intersection().into(),
-                            How::Union => sets.union().into(),
+                            How::Intersection => sets.intersection().into_range_set_blaze(),
+                            How::Union => sets.union().into_range_set_blaze(),
                             How::None => panic!("should not happen"),
                         };
                     },

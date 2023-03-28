@@ -3,9 +3,12 @@ use std::ops::RangeInclusive;
 use itertools::Itertools;
 
 use crate::{
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, Merge, NotIter, SortedDisjoint,
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, Merge, NotIter, RangeSetBlaze,
     UnionIter,
 };
+
+/// cmk000
+pub trait SortedStartsIterator<T: Integer>: Iterator<Item = RangeInclusive<T>> + Sized {}
 
 /// The trait used to provide methods common to iterators with the [`SortedDisjoint`] trait.
 /// Methods include [`to_string`], [`equal`], [`union`], [`intersection`]
@@ -18,9 +21,7 @@ use crate::{
 /// [`symmetric_difference`]: SortedDisjointIterator::symmetric_difference
 /// [`difference`]: SortedDisjointIterator::difference
 /// [`complement`]: SortedDisjointIterator::complement
-pub trait SortedDisjointIterator<T: Integer>:
-    Iterator<Item = RangeInclusive<T>> + SortedDisjoint + Sized
-{
+pub trait SortedDisjointIterator<T: Integer>: SortedStartsIterator<T> + Sized {
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their union.
@@ -46,7 +47,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     fn union<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjoint,
+        R::IntoIter: SortedDisjointIterator<T>,
     {
         UnionIter::new(Merge::new(self, other.into_iter()))
     }
@@ -74,7 +75,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     fn intersection<R>(self, other: R) -> BitAndMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjoint,
+        R::IntoIter: SortedDisjointIterator<T>,
     {
         !(self.complement() | other.into_iter().complement())
     }
@@ -102,7 +103,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     fn difference<R>(self, other: R) -> BitSubMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjoint,
+        R::IntoIter: SortedDisjointIterator<T>,
     {
         !(self.complement() | other.into_iter())
     }
@@ -153,7 +154,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     fn symmetric_difference<R>(self, other: R) -> BitXOrTee<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjoint,
+        R::IntoIter: SortedDisjointIterator<T>,
     {
         let (lhs0, lhs1) = self.tee();
         let (rhs0, rhs1) = other.into_iter().tee();
@@ -176,7 +177,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     fn equal<R>(self, other: R) -> bool
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjoint,
+        R::IntoIter: SortedDisjointIterator<T>,
     {
         itertools::equal(self, other)
     }
@@ -241,7 +242,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     fn is_subset<R>(self, other: R) -> bool
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjoint,
+        R::IntoIter: SortedDisjointIterator<T>,
     {
         self.difference(other).is_empty()
     }
@@ -272,7 +273,7 @@ pub trait SortedDisjointIterator<T: Integer>:
     fn is_superset<R>(self, other: R) -> bool
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjoint,
+        R::IntoIter: SortedDisjointIterator<T>,
     {
         other.into_iter().is_subset(self)
     }
@@ -301,16 +302,25 @@ pub trait SortedDisjointIterator<T: Integer>:
     fn is_disjoint<R>(self, other: R) -> bool
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjoint,
+        R::IntoIter: SortedDisjointIterator<T>,
     {
         self.intersection(other).is_empty()
     }
+
+    /// cmk000
+    fn into_range_set_blaze(self) -> RangeSetBlaze<T>
+    where
+        T: Integer,
+    {
+        RangeSetBlaze::from_cmk(self)
+    }
 }
 
-// todo rule: You can't define traits on combinations of traits, so use this method to define methods on traits
-impl<T, I> SortedDisjointIterator<T> for I
-where
-    T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
-{
-}
+// cmk
+// // todo rule: You can't define traits on combinations of traits, so use this method to define methods on traits
+// impl<T, I> SortedDisjointIterator<T> for I
+// where
+//     T: Integer,
+//     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+// {
+// }

@@ -8,8 +8,8 @@ use itertools::Itertools;
 
 use crate::{
     unsorted_disjoint::{AssumeSortedStarts, UnsortedDisjoint},
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjoint,
-    SortedDisjointIterator, SortedStarts,
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjointIterator,
+    SortedStartsIterator,
 };
 
 /// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
@@ -42,7 +42,7 @@ use crate::{
 pub struct UnionIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+    I: SortedStartsIterator<T>,
 {
     pub(crate) iter: I,
     pub(crate) option_range: Option<RangeInclusive<T>>,
@@ -51,7 +51,7 @@ where
 impl<T, I> UnionIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+    I: SortedStartsIterator<T>,
 {
     /// Creates a new [`UnionIter`] from zero or more [`SortedDisjoint`] iterators. See [`UnionIter`] for more details and examples.
     pub fn new(iter: I) -> Self {
@@ -125,13 +125,13 @@ where
 }
 
 impl<T: Integer, I> FusedIterator for UnionIter<T, I> where
-    I: Iterator<Item = RangeInclusive<T>> + SortedStarts + FusedIterator
+    I: SortedStartsIterator<T> + FusedIterator
 {
 }
 
 impl<T: Integer, I> Iterator for UnionIter<T, I>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+    I: SortedStartsIterator<T>,
 {
     type Item = RangeInclusive<T>;
 
@@ -181,7 +181,7 @@ where
 
 impl<T: Integer, I> ops::Not for UnionIter<T, I>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedStarts,
+    I: SortedStartsIterator<T>,
 {
     type Output = NotIter<T, Self>;
 
@@ -192,8 +192,8 @@ where
 
 impl<T: Integer, R, L> ops::BitOr<R> for UnionIter<T, L>
 where
-    L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
-    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    L: SortedStartsIterator<T>,
+    R: SortedDisjointIterator<T>,
 {
     type Output = BitOrMerge<T, Self, R>;
 
@@ -206,8 +206,8 @@ where
 
 impl<T: Integer, R, L> ops::Sub<R> for UnionIter<T, L>
 where
-    L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
-    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    L: SortedStartsIterator<T>,
+    R: SortedDisjointIterator<T>,
 {
     type Output = BitSubMerge<T, Self, R>;
 
@@ -218,8 +218,8 @@ where
 
 impl<T: Integer, R, L> ops::BitXor<R> for UnionIter<T, L>
 where
-    L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
-    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    L: SortedStartsIterator<T>,
+    R: SortedDisjointIterator<T>,
 {
     type Output = BitXOrTee<T, Self, R>;
 
@@ -231,8 +231,8 @@ where
 
 impl<T: Integer, R, L> ops::BitAnd<R> for UnionIter<T, L>
 where
-    L: Iterator<Item = RangeInclusive<T>> + SortedStarts,
-    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    L: SortedStartsIterator<T>,
+    R: SortedDisjointIterator<T>,
 {
     type Output = BitAndMerge<T, Self, R>;
 

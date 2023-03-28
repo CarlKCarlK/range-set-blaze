@@ -3,10 +3,7 @@ use std::{
     ops::{self, RangeInclusive},
 };
 
-use crate::{
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisjoint,
-    SortedDisjointIterator,
-};
+use crate::{BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisjointIterator};
 
 // todo rule: Make structs clonable when possible.
 /// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
@@ -30,7 +27,7 @@ use crate::{
 pub struct NotIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     iter: I,
     start_not: T,
@@ -41,7 +38,7 @@ where
 impl<T, I> NotIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     /// Create a new [`NotIter`] from a [`SortedDisjoint`] iterator. See [`NotIter`] for an example.
     pub fn new<J>(iter: J) -> Self
@@ -59,7 +56,7 @@ where
 impl<T, I> FusedIterator for NotIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint + FusedIterator,
+    I: SortedDisjointIterator<T> + FusedIterator,
 {
 }
 
@@ -67,7 +64,7 @@ where
 impl<T, I> Iterator for NotIter<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     type Item = RangeInclusive<T>;
     fn next(&mut self) -> Option<RangeInclusive<T>> {
@@ -119,7 +116,7 @@ where
 
 impl<T: Integer, I> ops::Not for NotIter<T, I>
 where
-    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    I: SortedDisjointIterator<T>,
 {
     type Output = NotIter<T, Self>;
 
@@ -132,8 +129,8 @@ where
 
 impl<T: Integer, R, L> ops::BitOr<R> for NotIter<T, L>
 where
-    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
-    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    L: SortedDisjointIterator<T>,
+    R: SortedDisjointIterator<T>,
 {
     type Output = BitOrMerge<T, Self, R>;
 
@@ -144,8 +141,8 @@ where
 
 impl<T: Integer, R, L> ops::Sub<R> for NotIter<T, L>
 where
-    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
-    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    L: SortedDisjointIterator<T>,
+    R: SortedDisjointIterator<T>,
 {
     type Output = BitSubMerge<T, Self, R>;
 
@@ -158,8 +155,8 @@ where
 
 impl<T: Integer, R, L> ops::BitXor<R> for NotIter<T, L>
 where
-    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
-    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    L: SortedDisjointIterator<T>,
+    R: SortedDisjointIterator<T>,
 {
     type Output = BitXOrTee<T, Self, R>;
 
@@ -174,8 +171,8 @@ where
 
 impl<T: Integer, R, L> ops::BitAnd<R> for NotIter<T, L>
 where
-    L: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
-    R: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+    L: SortedDisjointIterator<T>,
+    R: SortedDisjointIterator<T>,
 {
     type Output = BitAndMerge<T, Self, R>;
 

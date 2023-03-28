@@ -532,10 +532,11 @@ fn custom_multi() {
 
     let union_stream = b.ranges() | c.ranges();
     let a_less = a.ranges() - union_stream;
-    let d: RangeSetBlaze<_> = a_less.into();
+    let d: RangeSetBlaze<_> = a_less.into_range_set_blaze();
     println!("{d}");
 
-    let d: RangeSetBlaze<_> = (a.ranges() - [b.ranges(), c.ranges()].union()).into();
+    let d: RangeSetBlaze<_> =
+        (a.ranges() - [b.ranges(), c.ranges()].union()).into_range_set_blaze();
     println!("{d}");
 }
 
@@ -567,23 +568,26 @@ fn parity() {
         RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
     let _d = [a.ranges()].intersection();
-    let _parity: RangeSetBlaze<u8> = [[a.ranges()].intersection()].union().into();
-    let _parity: RangeSetBlaze<u8> = [a.ranges()].intersection().into();
-    let _parity: RangeSetBlaze<u8> = [a.ranges()].union().into();
+    let _parity: RangeSetBlaze<u8> = [[a.ranges()].intersection()].union().into_range_set_blaze();
+    let _parity: RangeSetBlaze<u8> = [a.ranges()].intersection().into_range_set_blaze();
+    let _parity: RangeSetBlaze<u8> = [a.ranges()].union().into_range_set_blaze();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
-    println!("!b|!c {}", RangeSetBlaze::from(!b.ranges() | !c.ranges()));
+    println!(
+        "!b|!c {}",
+        RangeSetBlaze::from_cmk(!b.ranges() | !c.ranges())
+    );
 
     let _a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let u = union_dyn!(a.ranges());
     assert_eq!(
-        RangeSetBlaze::from(u),
+        RangeSetBlaze::from_cmk(u),
         RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15])
     );
     let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
     assert_eq!(
-        RangeSetBlaze::from(u),
+        RangeSetBlaze::from_cmk(u),
         RangeSetBlaze::from_iter([1..=15, 18..=29, 38..=42])
     );
 
@@ -595,7 +599,7 @@ fn parity() {
     ]
     .union();
     assert_eq!(
-        RangeSetBlaze::from(u),
+        RangeSetBlaze::from_cmk(u),
         RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
 }
@@ -632,7 +636,7 @@ fn empty() {
     let c1b = &a | b.clone();
     let c1c = a.clone() | &b;
     let c1d = a.clone() | b.clone();
-    let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into();
+    let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze();
     c3.append(&mut b.clone());
     c5.extend(b);
 
