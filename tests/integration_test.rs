@@ -6,7 +6,7 @@ use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use range_set_blaze::{
-    prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStartsIterator, UnionIter,
+    prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts, UnionIter,
 };
 use std::cmp::Ordering;
 use std::ops::RangeInclusive;
@@ -1154,7 +1154,7 @@ fn union_iter() {
     // Or, equivalently:
     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
     let b = CheckSortedDisjoint::from([2..=6]);
-    let c = SortedDisjointIterator::union(a, b);
+    let c = SortedDisjoint::union(a, b);
     assert_eq!(c.to_string(), "1..=100")
 }
 
@@ -1167,7 +1167,7 @@ fn bitor() {
 
     let a = CheckSortedDisjoint::from([1..=1]);
     let b = CheckSortedDisjoint::from([2..=2]);
-    let c = range_set_blaze::SortedDisjointIterator::union(a, b);
+    let c = range_set_blaze::SortedDisjoint::union(a, b);
     assert_eq!(c.to_string(), "1..=2");
 
     let a = CheckSortedDisjoint::from([1..=1]);
@@ -1177,7 +1177,7 @@ fn bitor() {
 
     let a = CheckSortedDisjoint::from([1..=1]);
     let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
-    let c = range_set_blaze::SortedDisjointIterator::union(a, b);
+    let c = range_set_blaze::SortedDisjoint::union(a, b);
     assert_eq!(c.to_string(), "1..=2");
 }
 
@@ -1294,8 +1294,8 @@ fn iterator_example() {
     struct OrdinalWeekends2023 {
         next_range: RangeInclusive<i32>,
     }
-    impl SortedStartsIterator<i32> for OrdinalWeekends2023 {}
-    impl SortedDisjointIterator<i32> for OrdinalWeekends2023 {}
+    impl SortedStarts<i32> for OrdinalWeekends2023 {}
+    impl SortedDisjoint<i32> for OrdinalWeekends2023 {}
 
     impl OrdinalWeekends2023 {
         fn new() -> Self {

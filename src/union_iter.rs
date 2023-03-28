@@ -8,8 +8,8 @@ use itertools::Itertools;
 
 use crate::{
     unsorted_disjoint::{AssumeSortedStarts, UnsortedDisjoint},
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjointIterator,
-    SortedStartsIterator,
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjoint,
+    SortedStarts,
 };
 
 /// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
@@ -24,7 +24,7 @@ use crate::{
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_blaze::{UnionIter, Merge, SortedDisjointIterator, CheckSortedDisjoint};
+/// use range_set_blaze::{UnionIter, Merge, SortedDisjoint, CheckSortedDisjoint};
 ///
 /// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
@@ -42,7 +42,7 @@ use crate::{
 pub struct UnionIter<T, I>
 where
     T: Integer,
-    I: SortedStartsIterator<T>,
+    I: SortedStarts<T>,
 {
     pub(crate) iter: I,
     pub(crate) option_range: Option<RangeInclusive<T>>,
@@ -51,7 +51,7 @@ where
 impl<T, I> UnionIter<T, I>
 where
     T: Integer,
-    I: SortedStartsIterator<T>,
+    I: SortedStarts<T>,
 {
     /// Creates a new [`UnionIter`] from zero or more [`SortedDisjoint`] iterators. See [`UnionIter`] for more details and examples.
     pub fn new(iter: I) -> Self {
@@ -124,14 +124,11 @@ where
     }
 }
 
-impl<T: Integer, I> FusedIterator for UnionIter<T, I> where
-    I: SortedStartsIterator<T> + FusedIterator
-{
-}
+impl<T: Integer, I> FusedIterator for UnionIter<T, I> where I: SortedStarts<T> + FusedIterator {}
 
 impl<T: Integer, I> Iterator for UnionIter<T, I>
 where
-    I: SortedStartsIterator<T>,
+    I: SortedStarts<T>,
 {
     type Item = RangeInclusive<T>;
 
@@ -181,62 +178,62 @@ where
 
 impl<T: Integer, I> ops::Not for UnionIter<T, I>
 where
-    I: SortedStartsIterator<T>,
+    I: SortedStarts<T>,
 {
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        SortedDisjointIterator::complement(self)
+        SortedDisjoint::complement(self)
     }
 }
 
 impl<T: Integer, R, L> ops::BitOr<R> for UnionIter<T, L>
 where
-    L: SortedStartsIterator<T>,
-    R: SortedDisjointIterator<T>,
+    L: SortedStarts<T>,
+    R: SortedDisjoint<T>,
 {
     type Output = BitOrMerge<T, Self, R>;
 
     fn bitor(self, rhs: R) -> Self::Output {
         // It might be fine to optimize to self.iter, but that would require
         // also considering field 'range'
-        SortedDisjointIterator::union(self, rhs)
+        SortedDisjoint::union(self, rhs)
     }
 }
 
 impl<T: Integer, R, L> ops::Sub<R> for UnionIter<T, L>
 where
-    L: SortedStartsIterator<T>,
-    R: SortedDisjointIterator<T>,
+    L: SortedStarts<T>,
+    R: SortedDisjoint<T>,
 {
     type Output = BitSubMerge<T, Self, R>;
 
     fn sub(self, rhs: R) -> Self::Output {
-        SortedDisjointIterator::difference(self, rhs)
+        SortedDisjoint::difference(self, rhs)
     }
 }
 
 impl<T: Integer, R, L> ops::BitXor<R> for UnionIter<T, L>
 where
-    L: SortedStartsIterator<T>,
-    R: SortedDisjointIterator<T>,
+    L: SortedStarts<T>,
+    R: SortedDisjoint<T>,
 {
     type Output = BitXOrTee<T, Self, R>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitxor(self, rhs: R) -> Self::Output {
-        SortedDisjointIterator::symmetric_difference(self, rhs)
+        SortedDisjoint::symmetric_difference(self, rhs)
     }
 }
 
 impl<T: Integer, R, L> ops::BitAnd<R> for UnionIter<T, L>
 where
-    L: SortedStartsIterator<T>,
-    R: SortedDisjointIterator<T>,
+    L: SortedStarts<T>,
+    R: SortedDisjoint<T>,
 {
     type Output = BitAndMerge<T, Self, R>;
 
     fn bitand(self, other: R) -> Self::Output {
-        SortedDisjointIterator::intersection(self, other)
+        SortedDisjoint::intersection(self, other)
     }
 }

@@ -19,7 +19,7 @@ use rand::{
     distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, SeedableRng,
 };
 // use pprof::criterion::Output; //PProfProfiler
-use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjointIterator};
+use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjoint};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
 

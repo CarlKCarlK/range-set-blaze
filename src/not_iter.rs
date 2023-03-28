@@ -3,7 +3,7 @@ use std::{
     ops::{self, RangeInclusive},
 };
 
-use crate::{BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisjointIterator};
+use crate::{BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisjoint};
 
 // todo rule: Make structs clonable when possible.
 /// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
@@ -12,7 +12,7 @@ use crate::{BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisj
 /// # Example
 ///
 /// ```
-/// use range_set_blaze::{NotIter, SortedDisjointIterator, CheckSortedDisjoint};
+/// use range_set_blaze::{NotIter, SortedDisjoint, CheckSortedDisjoint};
 ///
 /// let a = CheckSortedDisjoint::from([1u8..=2, 5..=100]);
 /// let b = NotIter::new(a);
@@ -27,7 +27,7 @@ use crate::{BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisj
 pub struct NotIter<T, I>
 where
     T: Integer,
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     iter: I,
     start_not: T,
@@ -38,7 +38,7 @@ where
 impl<T, I> NotIter<T, I>
 where
     T: Integer,
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     /// Create a new [`NotIter`] from a [`SortedDisjoint`] iterator. See [`NotIter`] for an example.
     pub fn new<J>(iter: J) -> Self
@@ -56,7 +56,7 @@ where
 impl<T, I> FusedIterator for NotIter<T, I>
 where
     T: Integer,
-    I: SortedDisjointIterator<T> + FusedIterator,
+    I: SortedDisjoint<T> + FusedIterator,
 {
 }
 
@@ -64,7 +64,7 @@ where
 impl<T, I> Iterator for NotIter<T, I>
 where
     T: Integer,
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     type Item = RangeInclusive<T>;
     fn next(&mut self) -> Option<RangeInclusive<T>> {
@@ -116,47 +116,47 @@ where
 
 impl<T: Integer, I> ops::Not for NotIter<T, I>
 where
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
         // It would be fun to optimize to self.iter, but that would require
         // also considering fields 'start_not' and 'next_time_return_none'.
-        SortedDisjointIterator::complement(self)
+        SortedDisjoint::complement(self)
     }
 }
 
 impl<T: Integer, R, L> ops::BitOr<R> for NotIter<T, L>
 where
-    L: SortedDisjointIterator<T>,
-    R: SortedDisjointIterator<T>,
+    L: SortedDisjoint<T>,
+    R: SortedDisjoint<T>,
 {
     type Output = BitOrMerge<T, Self, R>;
 
     fn bitor(self, other: R) -> Self::Output {
-        SortedDisjointIterator::union(self, other)
+        SortedDisjoint::union(self, other)
     }
 }
 
 impl<T: Integer, R, L> ops::Sub<R> for NotIter<T, L>
 where
-    L: SortedDisjointIterator<T>,
-    R: SortedDisjointIterator<T>,
+    L: SortedDisjoint<T>,
+    R: SortedDisjoint<T>,
 {
     type Output = BitSubMerge<T, Self, R>;
 
     fn sub(self, other: R) -> Self::Output {
         // It would be fun to optimize !!self.iter into self.iter
         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-        SortedDisjointIterator::difference(self, other)
+        SortedDisjoint::difference(self, other)
     }
 }
 
 impl<T: Integer, R, L> ops::BitXor<R> for NotIter<T, L>
 where
-    L: SortedDisjointIterator<T>,
-    R: SortedDisjointIterator<T>,
+    L: SortedDisjoint<T>,
+    R: SortedDisjoint<T>,
 {
     type Output = BitXOrTee<T, Self, R>;
 
@@ -165,20 +165,20 @@ where
         // It would be fine optimize !!self.iter into self.iter, ala
         // ¬(¬n ∨ ¬r) ∨ ¬(n ∨ r) // https://www.wolframalpha.com/input?i=%28not+n%29+xor+r
         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-        SortedDisjointIterator::symmetric_difference(self, other)
+        SortedDisjoint::symmetric_difference(self, other)
     }
 }
 
 impl<T: Integer, R, L> ops::BitAnd<R> for NotIter<T, L>
 where
-    L: SortedDisjointIterator<T>,
-    R: SortedDisjointIterator<T>,
+    L: SortedDisjoint<T>,
+    R: SortedDisjoint<T>,
 {
     type Output = BitAndMerge<T, Self, R>;
 
     fn bitand(self, other: R) -> Self::Output {
         // It would be fun to optimize !!self.iter into self.iter
         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-        SortedDisjointIterator::intersection(self, other)
+        SortedDisjoint::intersection(self, other)
     }
 }

@@ -2,7 +2,7 @@ use std::{iter::FusedIterator, ops::RangeInclusive};
 
 use itertools::{Itertools, KMergeBy, MergeBy};
 
-use crate::{sorted_disjoint_iterator::SortedStartsIterator, Integer, SortedDisjointIterator};
+use crate::{Integer, SortedDisjoint, SortedStarts};
 
 /// Works with [`UnionIter`] to turn any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
 /// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
@@ -16,7 +16,7 @@ use crate::{sorted_disjoint_iterator::SortedStartsIterator, Integer, SortedDisjo
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_blaze::{UnionIter, Merge, SortedDisjointIterator, CheckSortedDisjoint};
+/// use range_set_blaze::{UnionIter, Merge, SortedDisjoint, CheckSortedDisjoint};
 ///
 /// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
@@ -34,8 +34,8 @@ use crate::{sorted_disjoint_iterator::SortedStartsIterator, Integer, SortedDisjo
 pub struct Merge<T, L, R>
 where
     T: Integer,
-    L: SortedDisjointIterator<T>,
-    R: SortedDisjointIterator<T>,
+    L: SortedDisjoint<T>,
+    R: SortedDisjoint<T>,
 {
     #[allow(clippy::type_complexity)]
     iter: MergeBy<L, R, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>,
@@ -44,8 +44,8 @@ where
 impl<T, L, R> Merge<T, L, R>
 where
     T: Integer,
-    L: SortedDisjointIterator<T>,
-    R: SortedDisjointIterator<T>,
+    L: SortedDisjoint<T>,
+    R: SortedDisjoint<T>,
 {
     /// Creates a new [`Merge`] iterator from two [`SortedDisjoint`] iterators. See [`Merge`] for more details and examples.
     pub fn new(left: L, right: R) -> Self {
@@ -58,16 +58,16 @@ where
 impl<T, L, R> FusedIterator for Merge<T, L, R>
 where
     T: Integer,
-    L: SortedDisjointIterator<T>,
-    R: SortedDisjointIterator<T>,
+    L: SortedDisjoint<T>,
+    R: SortedDisjoint<T>,
 {
 }
 
 impl<T, L, R> Iterator for Merge<T, L, R>
 where
     T: Integer,
-    L: SortedDisjointIterator<T>,
-    R: SortedDisjointIterator<T>,
+    L: SortedDisjoint<T>,
+    R: SortedDisjoint<T>,
 {
     type Item = RangeInclusive<T>;
 
@@ -80,11 +80,11 @@ where
     }
 }
 
-impl<T, L, R> SortedStartsIterator<T> for Merge<T, L, R>
+impl<T, L, R> SortedStarts<T> for Merge<T, L, R>
 where
     T: Integer,
-    L: SortedDisjointIterator<T>,
-    R: SortedDisjointIterator<T>,
+    L: SortedDisjoint<T>,
+    R: SortedDisjoint<T>,
 {
 }
 
@@ -100,7 +100,7 @@ where
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_blaze::{UnionIter, KMerge, MultiwaySortedDisjoint, SortedDisjointIterator, CheckSortedDisjoint};
+/// use range_set_blaze::{UnionIter, KMerge, MultiwaySortedDisjoint, SortedDisjoint, CheckSortedDisjoint};
 ///
 /// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::new(vec![2..=6].into_iter());
@@ -120,7 +120,7 @@ where
 pub struct KMerge<T, I>
 where
     T: Integer,
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     #[allow(clippy::type_complexity)]
     iter: KMergeBy<I, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>,
@@ -129,7 +129,7 @@ where
 impl<T, I> KMerge<T, I>
 where
     T: Integer,
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     /// Creates a new [`KMerge`] iterator from zero or more [`SortedDisjoint`] iterators. See [`KMerge`] for more details and examples.
     pub fn new<J>(iter: J) -> Self
@@ -145,14 +145,14 @@ where
 impl<T, I> FusedIterator for KMerge<T, I>
 where
     T: Integer,
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
 }
 
 impl<T, I> Iterator for KMerge<T, I>
 where
     T: Integer,
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     type Item = RangeInclusive<T>;
 
@@ -165,9 +165,9 @@ where
     }
 }
 
-impl<T, I> SortedStartsIterator<T> for KMerge<T, I>
+impl<T, I> SortedStarts<T> for KMerge<T, I>
 where
     T: Integer,
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
 }

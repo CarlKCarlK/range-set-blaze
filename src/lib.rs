@@ -20,7 +20,6 @@ mod not_iter;
 pub mod prelude;
 mod ranges;
 mod sorted_disjoint;
-mod sorted_disjoint_iterator;
 mod tests;
 mod union_iter;
 mod unsorted_disjoint;
@@ -34,9 +33,7 @@ use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::One;
 use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
-pub use sorted_disjoint::{CheckSortedDisjoint, DynSortedDisjoint};
-pub use sorted_disjoint_iterator::SortedDisjointIterator;
-pub use sorted_disjoint_iterator::SortedStartsIterator;
+pub use sorted_disjoint::{CheckSortedDisjoint, DynSortedDisjoint, SortedDisjoint, SortedStarts};
 use std::cmp::max;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
@@ -1347,7 +1344,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     pub fn from_cmk<I>(iter: I) -> Self
     where
-        I: SortedDisjointIterator<T>,
+        I: SortedDisjoint<T>,
     {
         // cmk just remove that SortedDisjointWithLenSoFar is SortedDisjoint and then can return (s, e) again.
         let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
@@ -1552,7 +1549,7 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
 impl<T, II, I> MultiwaySortedDisjoint<T, I> for II
 where
     T: Integer,
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
     II: IntoIterator<Item = I>,
 {
 }
@@ -1564,7 +1561,7 @@ where
 /// [`intersection`]: crate::MultiwaySortedDisjoint::intersection
 pub trait MultiwaySortedDisjoint<T: Integer, I>: IntoIterator<Item = I> + Sized
 where
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     /// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
     /// The input iterators must be of the same type. Any number of input iterators can be given.
@@ -1693,17 +1690,17 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
 pub struct Iter<T, I>
 where
     T: Integer,
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     iter: I,
     option_range: Option<RangeInclusive<T>>,
 }
 
-impl<T: Integer, I> FusedIterator for Iter<T, I> where I: SortedDisjointIterator<T> + FusedIterator {}
+impl<T: Integer, I> FusedIterator for Iter<T, I> where I: SortedDisjoint<T> + FusedIterator {}
 
 impl<T: Integer, I> Iterator for Iter<T, I>
 where
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     type Item = T;
     fn next(&mut self) -> Option<T> {
@@ -2142,7 +2139,7 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 /// | `a.`[`symmetric_difference`]`(b)` | `a ^ b` |  |  |
 /// | `a.`[`complement`]`()` | `!a` |  |  |
 ///
-/// See [`SortedDisjointIterator`] for all methods including [`equal`] and [`to_string`].
+/// See [`SortedDisjoint`] for all methods including [`equal`] and [`to_string`].
 ///
 /// ## Performance
 ///
@@ -2197,24 +2194,24 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 /// > To use operators such as `&` and `!`, you must also implement the [`BitAnd`], [`Not`], etc. traits.
 /// >
 /// > If you want others to use your marked iterator type, reexport:
-/// > `pub use range_set_blaze::{SortedDisjointIterator, SortedStartsIterator};`
+/// > `pub use range_set_blaze::{SortedDisjoint, SortedStarts};`
 ///
 /// [`BitAnd`]: https://doc.rust-lang.org/std/ops/trait.BitAnd.html
 /// [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
-/// [`intersection`]: SortedDisjointIterator::intersection
-/// [`complement`]: SortedDisjointIterator::complement
-/// [`union`]: SortedDisjointIterator::union
-/// [`symmetric_difference`]: SortedDisjointIterator::symmetric_difference
-/// [`difference`]: SortedDisjointIterator::difference
-/// [`to_string`]: SortedDisjointIterator::to_string
-/// [`equal`]: SortedDisjointIterator::equal
+/// [`intersection`]: SortedDisjoint::intersection
+/// [`complement`]: SortedDisjoint::complement
+/// [`union`]: SortedDisjoint::union
+/// [`symmetric_difference`]: SortedDisjoint::symmetric_difference
+/// [`difference`]: SortedDisjoint::difference
+/// [`to_string`]: SortedDisjoint::to_string
+/// [`equal`]: SortedDisjoint::equal
 /// [multiway_union]: MultiwaySortedDisjoint::union
 /// [multiway_intersection]: MultiwaySortedDisjoint::intersection
 ///
 /// ## Example -- Find the ordinal weekdays in September 2023
 /// ```
 /// use std::ops::RangeInclusive;
-/// pub use range_set_blaze::{SortedDisjointIterator, SortedStartsIterator};
+/// pub use range_set_blaze::{SortedDisjoint, SortedStarts};
 ///
 /// // Ordinal dates count January 1 as day 1, February 1 as day 32, etc.
 /// struct OrdinalWeekends2023 {
@@ -2223,8 +2220,8 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 ///
 /// // We promise the compiler that our iterator will provide
 /// // ranges that are sorted and disjoint.
-/// impl SortedStartsIterator<i32> for OrdinalWeekends2023 {}
-/// impl SortedDisjointIterator<i32> for OrdinalWeekends2023 {}
+/// impl SortedStarts<i32> for OrdinalWeekends2023 {}
+/// impl SortedDisjoint<i32> for OrdinalWeekends2023 {}
 ///
 /// impl OrdinalWeekends2023 {
 ///     fn new() -> Self {
@@ -2264,14 +2261,14 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 // todo rule add must_use to every iter and other places ala https://doc.rust-lang.org/src/alloc/collections/btree/map.rs.html#1259-1261
 
 // If the iterator inside a BitOrIter is SortedStart, the output will be SortedDisjoint
-impl<T: Integer, I: SortedStartsIterator<T>> SortedStartsIterator<T> for UnionIter<T, I> {}
-impl<T: Integer, I: SortedStartsIterator<T>> SortedDisjointIterator<T> for UnionIter<T, I> {}
+impl<T: Integer, I: SortedStarts<T>> SortedStarts<T> for UnionIter<T, I> {}
+impl<T: Integer, I: SortedStarts<T>> SortedDisjoint<T> for UnionIter<T, I> {}
 // If the iterator inside NotIter is SortedDisjoint, the output will be SortedDisjoint
-impl<T: Integer, I: SortedDisjointIterator<T>> SortedStartsIterator<T> for NotIter<T, I> {}
-impl<T: Integer, I: SortedDisjointIterator<T>> SortedDisjointIterator<T> for NotIter<T, I> {}
+impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for NotIter<T, I> {}
+impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for NotIter<T, I> {}
 // If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
-impl<T: Integer, I: SortedDisjointIterator<T>> SortedStartsIterator<T> for Tee<I> {}
-impl<T: Integer, I: SortedDisjointIterator<T>> SortedDisjointIterator<T> for Tee<I> {}
+impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
+impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 // impl<T: Integer, I: Cmk<T>> Cmk<T> for Tee<I> {}
 

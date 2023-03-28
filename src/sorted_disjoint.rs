@@ -3,10 +3,330 @@ use std::{
     ops::{self, RangeInclusive},
 };
 
+use itertools::Itertools;
+
 use crate::{
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjointIterator,
-    SortedStartsIterator,
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, Merge, NotIter, RangeSetBlaze,
+    UnionIter,
 };
+
+/// cmk000
+pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + Sized {}
+
+/// The trait used to provide methods common to iterators with the [`SortedDisjoint`] trait.
+/// Methods include [`to_string`], [`equal`], [`union`], [`intersection`]
+/// [`symmetric_difference`], [`difference`], [`complement`].
+///
+/// [`to_string`]: SortedDisjoint::to_string
+/// [`equal`]: SortedDisjoint::equal
+/// [`union`]: SortedDisjoint::union
+/// [`intersection`]: SortedDisjoint::intersection
+/// [`symmetric_difference`]: SortedDisjoint::symmetric_difference
+/// [`difference`]: SortedDisjoint::difference
+/// [`complement`]: SortedDisjoint::complement
+pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
+    // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
+
+    /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their union.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = CheckSortedDisjoint::from([1..=1]);
+    /// let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
+    /// let union = a.union(b);
+    /// assert_eq!(union.to_string(), "1..=2");
+    ///
+    /// // Alternatively, we can use "|" because CheckSortedDisjoint defines
+    /// // ops::bitor as SortedDisjoint::union.
+    /// let a = CheckSortedDisjoint::from([1..=1]);
+    /// let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
+    /// let union = a | b;
+    /// assert_eq!(union.to_string(), "1..=2");
+    /// ```
+    #[inline]
+    fn union<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint<T>,
+    {
+        UnionIter::new(Merge::new(self, other.into_iter()))
+    }
+
+    /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their intersection.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
+    /// let intersection = a.intersection(b);
+    /// assert_eq!(intersection.to_string(), "2..=2");
+    ///
+    /// // Alternatively, we can use "&" because CheckSortedDisjoint defines
+    /// // ops::bitand as SortedDisjoint::intersection.
+    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
+    /// let intersection = a & b;
+    /// assert_eq!(intersection.to_string(), "2..=2");
+    /// ```
+    #[inline]
+    fn intersection<R>(self, other: R) -> BitAndMerge<T, Self, R::IntoIter>
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint<T>,
+    {
+        !(self.complement() | other.into_iter().complement())
+    }
+
+    /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their set difference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
+    /// let difference = a.difference(b);
+    /// assert_eq!(difference.to_string(), "1..=1");
+    ///
+    /// // Alternatively, we can use "-" because CheckSortedDisjoint defines
+    /// // ops::sub as SortedDisjoint::difference.
+    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
+    /// let difference = a - b;
+    /// assert_eq!(difference.to_string(), "1..=1");
+    /// ```
+    #[inline]
+    fn difference<R>(self, other: R) -> BitSubMerge<T, Self, R::IntoIter>
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint<T>,
+    {
+        !(self.complement() | other.into_iter())
+    }
+
+    /// Given a [`SortedDisjoint`] iterator, efficiently returns a [`SortedDisjoint`] iterator of its complement.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = CheckSortedDisjoint::from([-10i16..=0, 1000..=2000]);
+    /// let complement = a.complement();
+    /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
+    ///
+    /// // Alternatively, we can use "!" because CheckSortedDisjoint defines
+    /// // ops::not as SortedDisjoint::complement.
+    /// let a = CheckSortedDisjoint::from([-10i16..=0, 1000..=2000]);
+    /// let complement = !a;
+    /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
+    /// ```
+    #[inline]
+    fn complement(self) -> NotIter<T, Self> {
+        NotIter::new(self)
+    }
+
+    /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator
+    /// of their symmetric difference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
+    /// let symmetric_difference = a.symmetric_difference(b);
+    /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
+    ///
+    /// // Alternatively, we can use "^" because CheckSortedDisjoint defines
+    /// // ops::bitxor as SortedDisjoint::symmetric_difference.
+    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
+    /// let symmetric_difference = a ^ b;
+    /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
+    /// ```
+    #[inline]
+    fn symmetric_difference<R>(self, other: R) -> BitXOrTee<T, Self, R::IntoIter>
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint<T>,
+    {
+        let (lhs0, lhs1) = self.tee();
+        let (rhs0, rhs1) = other.into_iter().tee();
+        lhs0.difference(rhs0) | rhs1.difference(lhs1)
+    }
+
+    // todo rule: Prefer IntoIterator to Iterator
+    /// Given two [`SortedDisjoint`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
+    /// this method takes ownership of the iterators and consumes them.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let b = RangeSetBlaze::from_iter([1..=2]).into_ranges();
+    /// assert!(a.equal(b));
+    /// ```
+    fn equal<R>(self, other: R) -> bool
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint<T>,
+    {
+        itertools::equal(self, other)
+    }
+
+    // todo rule: You can't define traits on combinations of traits, so use this method to define methods on traits
+    /// Given a [`SortedDisjoint`] iterators, produces a string version. Unlike most `to_string` and `fmt` in Rust,
+    /// this method takes ownership of the iterator and consumes it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// assert_eq!(a.to_string(), "1..=2");
+    /// ```
+    fn to_string(self) -> String {
+        self.map(|range| format!("{range:?}")).join(", ")
+    }
+
+    /// Returns `true` if the set contains no elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let mut v = RangeSetBlaze::new();
+    /// assert!(v.is_empty());
+    /// v.insert(1);
+    /// assert!(!v.is_empty());
+    /// ```
+    #[inline]
+    #[allow(clippy::wrong_self_convention)]
+    fn is_empty(mut self) -> bool {
+        self.next().is_none()
+    }
+
+    /// Returns `true` if the set is a subset of another,
+    /// i.e., `other` contains at least all the elements in `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let sup = CheckSortedDisjoint::from([1..=3]);
+    /// let set: CheckSortedDisjoint<i32, _> = [].into();
+    /// assert_eq!(set.is_subset(sup), true);
+    ///
+    /// let sup = CheckSortedDisjoint::from([1..=3]);
+    /// let set = CheckSortedDisjoint::from([2..=2]);
+    /// assert_eq!(set.is_subset(sup), true);
+    ///
+    /// let sup = CheckSortedDisjoint::from([1..=3]);
+    /// let set = CheckSortedDisjoint::from([2..=2, 4..=4]);
+    /// assert_eq!(set.is_subset(sup), false);
+    /// ```
+    #[must_use]
+    #[inline]
+    #[allow(clippy::wrong_self_convention)]
+    fn is_subset<R>(self, other: R) -> bool
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint<T>,
+    {
+        self.difference(other).is_empty()
+    }
+
+    /// Returns `true` if the set is a superset of another,
+    /// i.e., `self` contains at least all the elements in `other`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let sub = RangeSetBlaze::from_iter([1, 2]);
+    /// let mut set = RangeSetBlaze::new();
+    ///
+    /// assert_eq!(set.is_superset(&sub), false);
+    ///
+    /// set.insert(0);
+    /// set.insert(1);
+    /// assert_eq!(set.is_superset(&sub), false);
+    ///
+    /// set.insert(2);
+    /// assert_eq!(set.is_superset(&sub), true);
+    /// ```
+    #[inline]
+    #[must_use]
+    #[allow(clippy::wrong_self_convention)]
+    fn is_superset<R>(self, other: R) -> bool
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint<T>,
+    {
+        other.into_iter().is_subset(self)
+    }
+
+    /// Returns `true` if `self` has no elements in common with `other`.
+    /// This is equivalent to checking for an empty intersection.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=3]);
+    /// let mut b = RangeSetBlaze::new();
+    ///
+    /// assert_eq!(a.is_disjoint(&b), true);
+    /// b.insert(4);
+    /// assert_eq!(a.is_disjoint(&b), true);
+    /// b.insert(1);
+    /// assert_eq!(a.is_disjoint(&b), false);
+    /// ```
+    /// todo rule which functions should be must_use? iterator, constructor, predicates, first, last,
+    #[must_use]
+    #[inline]
+    #[allow(clippy::wrong_self_convention)]
+    fn is_disjoint<R>(self, other: R) -> bool
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint<T>,
+    {
+        self.intersection(other).is_empty()
+    }
+
+    /// cmk000
+    fn into_range_set_blaze(self) -> RangeSetBlaze<T>
+    where
+        T: Integer,
+    {
+        RangeSetBlaze::from_cmk(self)
+    }
+}
+
+// cmk
+// // todo rule: You can't define traits on combinations of traits, so use this method to define methods on traits
+// impl<T, I> SortedDisjoint<T> for I
+// where
+//     T: Integer,
+//     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
+// {
+// }
 
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -50,11 +370,11 @@ where
     seen_none: bool,
 }
 
-impl<T: Integer, I> SortedDisjointIterator<T> for CheckSortedDisjoint<T, I> where
+impl<T: Integer, I> SortedDisjoint<T> for CheckSortedDisjoint<T, I> where
     I: Iterator<Item = RangeInclusive<T>>
 {
 }
-impl<T: Integer, I> SortedStartsIterator<T> for CheckSortedDisjoint<T, I> where
+impl<T: Integer, I> SortedStarts<T> for CheckSortedDisjoint<T, I> where
     I: Iterator<Item = RangeInclusive<T>>
 {
 }
@@ -166,48 +486,48 @@ where
 impl<T: Integer, R, L> ops::BitOr<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,
-    R: SortedDisjointIterator<T>,
+    R: SortedDisjoint<T>,
 {
     type Output = BitOrMerge<T, Self, R>;
 
     fn bitor(self, other: R) -> Self::Output {
-        SortedDisjointIterator::union(self, other)
+        SortedDisjoint::union(self, other)
     }
 }
 
 impl<T: Integer, R, L> ops::BitAnd<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,
-    R: SortedDisjointIterator<T>,
+    R: SortedDisjoint<T>,
 {
     type Output = BitAndMerge<T, Self, R>;
 
     fn bitand(self, other: R) -> Self::Output {
-        SortedDisjointIterator::intersection(self, other)
+        SortedDisjoint::intersection(self, other)
     }
 }
 
 impl<T: Integer, R, L> ops::Sub<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,
-    R: SortedDisjointIterator<T>,
+    R: SortedDisjoint<T>,
 {
     type Output = BitSubMerge<T, Self, R>;
 
     fn sub(self, other: R) -> Self::Output {
-        SortedDisjointIterator::difference(self, other)
+        SortedDisjoint::difference(self, other)
     }
 }
 
 impl<T: Integer, R, L> ops::BitXor<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,
-    R: SortedDisjointIterator<T>,
+    R: SortedDisjoint<T>,
 {
     type Output = BitXOrTee<T, Self, R>;
 
     fn bitxor(self, other: R) -> Self::Output {
-        SortedDisjointIterator::symmetric_difference(self, other)
+        SortedDisjoint::symmetric_difference(self, other)
     }
 }
 
@@ -242,7 +562,7 @@ impl<'a, T: Integer> DynSortedDisjoint<'a, T> {
     /// Create a [`DynSortedDisjoint`] from any [`SortedDisjoint`] iterator. See [`DynSortedDisjoint`] for an example.
     pub fn new<I>(iter: I) -> Self
     where
-        I: SortedDisjointIterator<T> + 'a,
+        I: SortedDisjoint<T> + 'a,
     {
         Self {
             iter: Box::new(iter),
@@ -251,8 +571,8 @@ impl<'a, T: Integer> DynSortedDisjoint<'a, T> {
 }
 
 // All DynSortedDisjoint's are SortedDisjoint's
-impl<'a, T: Integer> SortedStartsIterator<T> for DynSortedDisjoint<'a, T> {}
-impl<'a, T: Integer> SortedDisjointIterator<T> for DynSortedDisjoint<'a, T> {}
+impl<'a, T: Integer> SortedStarts<T> for DynSortedDisjoint<'a, T> {}
+impl<'a, T: Integer> SortedDisjoint<T> for DynSortedDisjoint<'a, T> {}
 
 impl<'a, T: Integer> Iterator for DynSortedDisjoint<'a, T> {
     type Item = RangeInclusive<T>;

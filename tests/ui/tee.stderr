@@ -13,20 +13,20 @@ error[E0599]: the method `union` exists for struct `Tee<std::slice::Iter<'_, ({i
   | doesn't satisfy `<_ as IntoIterator>::Item = RangeSetBlaze<_>`
   | doesn't satisfy `_: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
   | doesn't satisfy `_: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
-  | doesn't satisfy `_: range_set_blaze::SortedDisjointIterator<_>`
+  | doesn't satisfy `_: range_set_blaze::SortedDisjoint<_>`
   |
  ::: $RUST/core/src/slice/iter.rs
   |
   | pub struct Iter<'a, T: 'a> {
-  | -------------------------- doesn't satisfy `_: range_set_blaze::SortedDisjointIterator<_>`
+  | -------------------------- doesn't satisfy `_: range_set_blaze::SortedDisjoint<_>`
   |
   = note: the following trait bounds were not satisfied:
           `<Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
           which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
           `<Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = RangeSetBlaze<_>`
           which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
-          `std::slice::Iter<'_, ({integer}, {integer})>: range_set_blaze::SortedDisjointIterator<_>`
-          which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjointIterator<_>`
+          `std::slice::Iter<'_, ({integer}, {integer})>: range_set_blaze::SortedDisjoint<_>`
+          which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjoint<_>`
           `<&Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
           which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
           `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: IntoIterator`

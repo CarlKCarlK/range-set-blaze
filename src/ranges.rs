@@ -7,8 +7,8 @@ use std::{
 use itertools::Itertools;
 
 use crate::{
-    sorted_disjoint_iterator::SortedStartsIterator, BitAndMerge, BitOrMerge, BitSubMerge, BitXOr,
-    BitXOrTee, Integer, NotIter, SortedDisjointIterator,
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXOr, BitXOrTee, Integer, NotIter, SortedDisjoint,
+    SortedStarts,
 };
 
 /// An iterator that visits the ranges in the [`RangeSetBlaze`],
@@ -35,8 +35,8 @@ impl<'a, T: Integer> AsRef<RangesIter<'a, T>> for RangesIter<'a, T> {
 // impl<T: Integer> Cmk<T> for RangesIter<'_, T> {}
 
 // RangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
-impl<T: Integer> SortedStartsIterator<T> for RangesIter<'_, T> {}
-impl<T: Integer> SortedDisjointIterator<T> for RangesIter<'_, T> {}
+impl<T: Integer> SortedStarts<T> for RangesIter<'_, T> {}
+impl<T: Integer> SortedDisjoint<T> for RangesIter<'_, T> {}
 
 impl<T: Integer> ExactSizeIterator for RangesIter<'_, T> {
     #[must_use]
@@ -74,8 +74,8 @@ pub struct IntoRangesIter<T: Integer> {
     pub(crate) iter: std::collections::btree_map::IntoIter<T, T>,
 }
 
-impl<T: Integer> SortedStartsIterator<T> for IntoRangesIter<T> {}
-impl<T: Integer> SortedDisjointIterator<T> for IntoRangesIter<T> {}
+impl<T: Integer> SortedStarts<T> for IntoRangesIter<T> {}
+impl<T: Integer> SortedDisjoint<T> for IntoRangesIter<T> {}
 
 impl<T: Integer> ExactSizeIterator for IntoRangesIter<T> {
     #[must_use]
@@ -103,7 +103,7 @@ impl<T: Integer> ops::Not for RangesIter<'_, T> {
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        SortedDisjointIterator::complement(self)
+        SortedDisjoint::complement(self)
     }
 }
 
@@ -111,57 +111,57 @@ impl<T: Integer> ops::Not for IntoRangesIter<T> {
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        SortedDisjointIterator::complement(self)
+        SortedDisjoint::complement(self)
     }
 }
 
 impl<T: Integer, I> ops::BitOr<I> for RangesIter<'_, T>
 where
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     type Output = BitOrMerge<T, Self, I>;
 
     fn bitor(self, other: I) -> Self::Output {
-        SortedDisjointIterator::union(self, other)
+        SortedDisjoint::union(self, other)
     }
 }
 
 impl<T: Integer, I> ops::BitOr<I> for IntoRangesIter<T>
 where
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     type Output = BitOrMerge<T, Self, I>;
 
     fn bitor(self, other: I) -> Self::Output {
-        SortedDisjointIterator::union(self, other)
+        SortedDisjoint::union(self, other)
     }
 }
 
 impl<T: Integer, I> ops::Sub<I> for RangesIter<'_, T>
 where
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     type Output = BitSubMerge<T, Self, I>;
 
     fn sub(self, other: I) -> Self::Output {
-        SortedDisjointIterator::difference(self, other)
+        SortedDisjoint::difference(self, other)
     }
 }
 
 impl<T: Integer, I> ops::Sub<I> for IntoRangesIter<T>
 where
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     type Output = BitSubMerge<T, Self, I>;
 
     fn sub(self, other: I) -> Self::Output {
-        SortedDisjointIterator::difference(self, other)
+        SortedDisjoint::difference(self, other)
     }
 }
 
 impl<T: Integer, I> ops::BitXor<I> for RangesIter<'_, T>
 where
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     type Output = BitXOr<T, Self, I>;
 
@@ -176,36 +176,36 @@ where
 
 impl<T: Integer, I> ops::BitXor<I> for IntoRangesIter<T>
 where
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     type Output = BitXOrTee<T, Self, I>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitxor(self, other: I) -> Self::Output {
-        SortedDisjointIterator::symmetric_difference(self, other)
+        SortedDisjoint::symmetric_difference(self, other)
     }
 }
 
 impl<T: Integer, I> ops::BitAnd<I> for RangesIter<'_, T>
 where
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     type Output = BitAndMerge<T, Self, I>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitand(self, other: I) -> Self::Output {
-        SortedDisjointIterator::intersection(self, other)
+        SortedDisjoint::intersection(self, other)
     }
 }
 
 impl<T: Integer, I> ops::BitAnd<I> for IntoRangesIter<T>
 where
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     type Output = BitAndMerge<T, Self, I>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn bitand(self, other: I) -> Self::Output {
-        SortedDisjointIterator::intersection(self, other)
+        SortedDisjoint::intersection(self, other)
     }
 }

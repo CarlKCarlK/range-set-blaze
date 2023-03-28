@@ -1,4 +1,4 @@
-use crate::{Integer, SortedDisjointIterator, SortedStartsIterator};
+use crate::{Integer, SortedDisjoint, SortedStarts};
 use num_traits::Zero;
 use std::{
     cmp::{max, min},
@@ -102,7 +102,7 @@ where
 pub(crate) struct SortedDisjointWithLenSoFar<T, I>
 where
     T: Integer,
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     iter: I,
     len: <T as Integer>::SafeLen,
@@ -112,7 +112,7 @@ where
 impl<T: Integer, I> From<I> for SortedDisjointWithLenSoFar<T, I::IntoIter>
 where
     I: IntoIterator<Item = RangeInclusive<T>>,
-    I::IntoIter: SortedDisjointIterator<T>,
+    I::IntoIter: SortedDisjoint<T>,
 {
     fn from(into_iter: I) -> Self {
         SortedDisjointWithLenSoFar {
@@ -124,7 +124,7 @@ where
 
 impl<T: Integer, I> SortedDisjointWithLenSoFar<T, I>
 where
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     pub fn len_so_far(&self) -> <T as Integer>::SafeLen {
         self.len
@@ -132,13 +132,13 @@ where
 }
 
 impl<T: Integer, I> FusedIterator for SortedDisjointWithLenSoFar<T, I> where
-    I: SortedDisjointIterator<T> + FusedIterator
+    I: SortedDisjoint<T> + FusedIterator
 {
 }
 
 impl<T: Integer, I> Iterator for SortedDisjointWithLenSoFar<T, I>
 where
-    I: SortedDisjointIterator<T>,
+    I: SortedDisjoint<T>,
 {
     type Item = (T, T);
 
@@ -158,12 +158,12 @@ where
 }
 
 // // cmk
-// impl<T: Integer, I> SortedDisjointIterator<T> for SortedDisjointWithLenSoFar<T, I> where
-//     I: SortedDisjointIterator<T>
+// impl<T: Integer, I> SortedDisjoint<T> for SortedDisjointWithLenSoFar<T, I> where
+//     I: SortedDisjoint<T>
 // {
 // }
-// impl<T: Integer, I> SortedStartsIterator<T> for SortedDisjointWithLenSoFar<T, I> where
-//     I: SortedDisjointIterator<T>
+// impl<T: Integer, I> SortedStarts<T> for SortedDisjointWithLenSoFar<T, I> where
+//     I: SortedDisjoint<T>
 // {
 // }
 
@@ -180,7 +180,7 @@ where
     pub(crate) iter: I,
 }
 
-impl<T: Integer, I> SortedStartsIterator<T> for AssumeSortedStarts<T, I> where
+impl<T: Integer, I> SortedStarts<T> for AssumeSortedStarts<T, I> where
     I: Iterator<Item = RangeInclusive<T>>
 {
 }
