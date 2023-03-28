@@ -11,8 +11,6 @@ use crate::{
     SortedDisjointIterator, SortedStarts,
 };
 
-#[derive(Clone, Debug)]
-#[must_use = "iterators are lazy and do nothing unless consumed"]
 /// An iterator that visits the ranges in the [`RangeSetBlaze`],
 /// i.e., the integers as sorted & disjoint ranges.
 ///
@@ -21,6 +19,8 @@ use crate::{
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`ranges`]: crate::RangeSetBlaze::ranges
+#[derive(Clone, Debug)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct RangesIter<'a, T: Integer> {
     pub(crate) iter: btree_map::Iter<'a, T, T>,
 }

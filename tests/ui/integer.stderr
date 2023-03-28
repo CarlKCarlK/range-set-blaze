@@ -1,0 +1,61 @@
+error[E0277]: the trait bound `char: Integer` is not satisfied
+ --> tests/ui/integer.rs:5:21
+  |
+5 |     let _char_set = RangeSetBlaze::from_iter(['a', 'b', 'c', 'd']);
+  |                     ^^^^^^^^^^^^^ the trait `Integer` is not implemented for `char`
+  |
+  = help: the following other types implement trait `Integer`:
+            i128
+            i16
+            i32
+            i64
+            i8
+            isize
+            u128
+            u16
+          and $N others
+note: required by a bound in `RangeSetBlaze`
+ --> src/lib.rs
+  |
+  | pub struct RangeSetBlaze<T: Integer> {
+  |                             ^^^^^^^ required by this bound in `RangeSetBlaze`
+
+error[E0277]: the trait bound `char: Integer` is not satisfied
+ --> tests/ui/integer.rs:5:21
+  |
+5 |     let _char_set = RangeSetBlaze::from_iter(['a', 'b', 'c', 'd']);
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Integer` is not implemented for `char`
+  |
+  = help: the following other types implement trait `Integer`:
+            i128
+            i16
+            i32
+            i64
+            i8
+            isize
+            u128
+            u16
+          and $N others
+  = note: required for `RangeSetBlaze<char>` to implement `FromIterator<char>`
+
+error[E0277]: the trait bound `char: Integer` is not satisfied
+ --> tests/ui/integer.rs:5:21
+  |
+5 |     let _char_set = RangeSetBlaze::from_iter(['a', 'b', 'c', 'd']);
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Integer` is not implemented for `char`
+  |
+  = help: the following other types implement trait `Integer`:
+            i128
+            i16
+            i32
+            i64
+            i8
+            isize
+            u128
+            u16
+          and $N others
+note: required by a bound in `RangeSetBlaze`
+ --> src/lib.rs
+  |
+  | pub struct RangeSetBlaze<T: Integer> {
+  |                             ^^^^^^^ required by this bound in `RangeSetBlaze`

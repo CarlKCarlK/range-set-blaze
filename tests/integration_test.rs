@@ -1434,3 +1434,15 @@ fn from_iter_coverage() {
     let a1: RangeSetBlaze<i32> = vec_range.iter().collect();
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 }
+
+// fn _some_fn() {
+//     let trusted = RangeSetBlaze::from_iter([1..=2, 3..=4, 5..=6]).into_ranges();
+//     let _range_set_int = RangeSetBlaze::from(trusted);
+//     let untrusted = [1..=2, 3..=4, 5..=6].into_iter();
+//     let _range_set_int = RangeSetBlaze::from(untrusted);
+// }
+
+// fn _some_fn() {
+//     let _integer_set = RangeSetBlaze::from_iter([1, 2, 3, 5]);
+//     let _char_set = RangeSetBlaze::from_iter(['a', 'b', 'c', 'd']);
+// }

@@ -409,8 +409,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(set_iter.next(), Some(3));
     /// assert_eq!(set_iter.next(), None);
     /// ```
-    pub fn iter(&self) -> Iter<T, RangesIter<'_, T>> {
-        // If the user asks for an iter, we give them a borrow to a RangesIter iterator
+    pub fn iter(&self) -> Iter<T, RangesIter<T>> {
+        // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
         Iter {
             option_range: None,
@@ -1016,7 +1016,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// );
     /// ```
     #[must_use]
-    pub fn len(&self) -> <T as Integer>::SafeLen {
+    pub const fn len(&self) -> <T as Integer>::SafeLen {
         self.len
     }
 
@@ -2300,3 +2300,7 @@ impl<T: Integer, I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint> SortedD
 // todo Rule: Look for rust-only optimizations, such as in-place union (when it would be faster)
 // todo Rule: think about creating a prelude for the crate
 // todo Rule: docs is good. Instead of telling you when to use Extend vs Union, I fixed it.
+
+// cmk add license files, keywords, categories, etc.
+// cmk fix badges in README
+// cmk fix visible square brackets in docs
