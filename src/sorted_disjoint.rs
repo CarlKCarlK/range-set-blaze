@@ -10,9 +10,201 @@ use crate::{
     UnionIter,
 };
 
-/// cmk000
+/// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
+/// and may overlap.
+#[doc(hidden)]
 pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + Sized {}
 
+/// The trait used to mark iterators that provide ranges that are sorted by start and disjoint. Set operations on
+/// iterators that implement this trait can be performed in linear time.
+///
+/// # Table of Contents
+/// * [`SortedDisjoint` Constructors](#sorteddisjoint-constructors)
+///   * [Examples](#constructor-examples)
+/// * [`SortedDisjoint` Set and Other Operations](#sorteddisjoint-set-and-other-operations)
+///   * [Performance](#performance)
+///   * [Examples](#examples)
+/// * [How to mark your type as `SortedDisjoint`](#how-to-mark-your-type-as-sorteddisjoint)
+///   * [Example – Find the ordinal weekdays in September 2023](#example--find-the-ordinal-weekdays-in-september-2023)
+///
+/// # `SortedDisjoint` Constructors
+///
+/// You'll usually construct a `SortedDisjoint` iterator from a [`RangeSetBlaze`] or a [`CheckSortedDisjoint`].
+/// Here is a summary table, followed by [examples](#constructor-examples). You can also [define your own
+/// `SortedDisjoint`](#how-to-mark-your-type-as-sorteddisjoint).
+///
+/// | Input type | Method |
+/// |------------|--------|
+/// | [`RangeSetBlaze`] | [`ranges`] |
+/// | [`RangeSetBlaze`] | [`into_ranges`] |
+/// | [`RangeSetBlaze`]'s [`RangesIter`] | [`clone`] |
+/// | sorted & disjoint ranges | [`CheckSortedDisjoint::new`] |
+/// | `SortedDisjoint` iterator | [itertools `tee`] |
+/// | `SortedDisjoint` iterator | [`DynSortedDisjoint::new`] |
+/// |  *your iterator type* | *[How to mark your type as `SortedDisjoint`][1]* |
+///
+/// [`ranges`]: RangeSetBlaze::ranges
+/// [`into_ranges`]: RangeSetBlaze::into_ranges
+/// [`clone`]: RangesIter::clone
+/// [itertools `tee`]: https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.tee
+/// [1]: #how-to-mark-your-type-as-sorteddisjoint
+///
+/// ## Constructor Examples
+///
+/// ```
+/// use range_set_blaze::prelude::*;
+/// use itertools::Itertools;
+///
+/// // RangeSetBlaze's .ranges(), .range().clone() and .into_ranges()
+/// let r = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
+/// let a = r.ranges();
+/// let b = a.clone();
+/// assert!(a.to_string() == "1..=3, 100..=100");
+/// assert!(b.to_string() == "1..=3, 100..=100");
+/// //    'into_ranges' takes ownership of the 'RangeSetBlaze'
+/// let a = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]).into_ranges();
+/// assert!(a.to_string() == "1..=3, 100..=100");
+///
+/// // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
+/// let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
+/// assert!(a.to_string() == "1..=3, 100..=100");
+///
+/// // tee of a SortedDisjoint iterator
+/// let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
+/// let (a, b) = a.tee();
+/// assert!(a.to_string() == "1..=3, 100..=100");
+/// assert!(b.to_string() == "1..=3, 100..=100");
+///
+/// // DynamicSortedDisjoint of a SortedDisjoint iterator
+/// let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
+/// let b = DynSortedDisjoint::new(a);
+/// assert!(b.to_string() == "1..=3, 100..=100");
+/// ```
+///
+/// # `SortedDisjoint` Set and Other Operations
+///
+/// | Method | Operator | Multiway (same type) | Multiway (different types) |
+/// |--------|----------|----------------------|----------------------------|
+/// | `a.`[`union`]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][multiway_union]`()` | [`union_dyn`]`!(a, b, c)` |
+/// | `a.`[`intersection`]`(b)` | `a & b` | `[a, b, c].`[`intersection`][multiway_intersection]`()` | [`intersection_dyn`]`!(a, b, c)` |
+/// | `a.`[`difference`]`(b)` | `a - b` |  |  |
+/// | `a.`[`symmetric_difference`]`(b)` | `a ^ b` |  |  |
+/// | `a.`[`complement`]`()` | `!a` |  |  |
+///
+/// See [`SortedDisjoint`] for all methods including [`equal`] and [`to_string`].
+///
+/// ## Performance
+///
+/// Every operation is implemented as a single pass over the sorted & disjoint ranges, with minimal memory.
+///
+/// This is true even when applying multiple operations. The last example below demonstrates this.
+///
+/// ## Examples
+///
+/// ```
+/// use range_set_blaze::prelude::*;
+///
+/// let a0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+/// let b0 = RangeSetBlaze::from_iter([2..=6]);
+/// let c0 = RangeSetBlaze::from_iter([2..=2, 6..=200]);
+///
+/// // 'union' method and 'to_string' method
+/// let (a, b) = (a0.ranges(), b0.ranges());
+/// let result = a.union(b);
+/// assert_eq!(result.to_string(), "1..=100");
+///
+/// // '|' operator and 'equal' method
+/// let (a, b) = (a0.ranges(), b0.ranges());
+/// let result = a | b;
+/// assert!(result.equal(CheckSortedDisjoint::from([1..=100])));
+///
+/// // multiway union of same type
+/// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
+/// let result = [a, b, c].union();
+/// assert_eq!(result.to_string(), "1..=200");
+///
+/// // multiway union of different types
+/// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
+/// let result = union_dyn!(a, b, !c);
+/// assert_eq!(result.to_string(), "-2147483648..=100, 201..=2147483647");
+///
+/// // Applying multiple operators makes only one pass through the inputs with minimal memory.
+/// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
+/// let result = a - (b | c);
+/// assert!(result.to_string() == "1..=1");
+
+/// ```
+///
+/// # How to mark your type as `SortedDisjoint`
+///
+/// To mark your iterator type as `SortedDisjoint`, you implement the `SortedStarts` and `SortedDisjoint` traits.
+/// This is your promise to the compiler that your iterator will provide inclusive ranges that are sorted by start and disjoint.
+///
+/// When you do this, your iterator will get access to the
+/// efficient set operations methods, such as [`intersection`] and [`complement`]. The example below shows this.
+///
+/// > To use operators such as `&` and `!`, you must also implement the [`BitAnd`], [`Not`], etc. traits.
+/// >
+/// > If you want others to use your marked iterator type, reexport:
+/// > `pub use range_set_blaze::{SortedDisjoint, SortedStarts};`
+///
+/// [`BitAnd`]: https://doc.rust-lang.org/std/ops/trait.BitAnd.html
+/// [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
+/// [`intersection`]: SortedDisjoint::intersection
+/// [`complement`]: SortedDisjoint::complement
+/// [`union`]: SortedDisjoint::union
+/// [`symmetric_difference`]: SortedDisjoint::symmetric_difference
+/// [`difference`]: SortedDisjoint::difference
+/// [`to_string`]: SortedDisjoint::to_string
+/// [`equal`]: SortedDisjoint::equal
+/// [multiway_union]: MultiwaySortedDisjoint::union
+/// [multiway_intersection]: MultiwaySortedDisjoint::intersection
+///
+/// ## Example -- Find the ordinal weekdays in September 2023
+/// ```
+/// use std::ops::RangeInclusive;
+/// pub use range_set_blaze::{SortedDisjoint, SortedStarts};
+///
+/// // Ordinal dates count January 1 as day 1, February 1 as day 32, etc.
+/// struct OrdinalWeekends2023 {
+///     next_range: RangeInclusive<i32>,
+/// }
+///
+/// // We promise the compiler that our iterator will provide
+/// // ranges that are sorted and disjoint.
+/// impl SortedStarts<i32> for OrdinalWeekends2023 {}
+/// impl SortedDisjoint<i32> for OrdinalWeekends2023 {}
+///
+/// impl OrdinalWeekends2023 {
+///     fn new() -> Self {
+///         Self { next_range: 0..=1 }
+///     }
+/// }
+/// impl Iterator for OrdinalWeekends2023 {
+///     type Item = RangeInclusive<i32>;
+///     fn next(&mut self) -> Option<Self::Item> {
+///         let (start, end) = self.next_range.clone().into_inner();
+///         if start > 365 {
+///             None
+///         } else {
+///             self.next_range = (start + 7)..=(end + 7);
+///             Some(start.max(1)..=end.min(365))
+///         }
+///     }
+/// }
+///
+/// use range_set_blaze::prelude::*;
+///
+/// let weekends = OrdinalWeekends2023::new();
+/// let september = CheckSortedDisjoint::from([244..=273]);
+/// let september_weekdays = september.intersection(weekends.complement());
+/// assert_eq!(
+///     september_weekdays.to_string(),
+///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
+/// );
+/// ```
+///
+/// cmk read these docs
 /// The trait used to provide methods common to iterators with the [`SortedDisjoint`] trait.
 /// Methods include [`to_string`], [`equal`], [`union`], [`intersection`]
 /// [`symmetric_difference`], [`difference`], [`complement`].

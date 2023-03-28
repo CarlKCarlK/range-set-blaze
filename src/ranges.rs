@@ -32,8 +32,6 @@ impl<'a, T: Integer> AsRef<RangesIter<'a, T>> for RangesIter<'a, T> {
     }
 }
 
-// impl<T: Integer> Cmk<T> for RangesIter<'_, T> {}
-
 // RangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
 impl<T: Integer> SortedStarts<T> for RangesIter<'_, T> {}
 impl<T: Integer> SortedDisjoint<T> for RangesIter<'_, T> {}

@@ -1446,8 +1446,3 @@ fn from_iter_coverage() {
 //     let _integer_set = RangeSetBlaze::from_iter([1, 2, 3, 5]);
 //     let _char_set = RangeSetBlaze::from_iter(['a', 'b', 'c', 'd']);
 // }
-
-// fn fn3() {
-//     let a = CheckSortedDisjoint::from([1..=2]);
-//     Cmk::cmk(a);
-// }
