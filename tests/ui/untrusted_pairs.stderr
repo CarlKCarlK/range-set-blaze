@@ -1,8 +1,8 @@
 error[E0277]: the trait bound `std::array::IntoIter<RangeInclusive<{integer}>, 3>: SortedDisjoint<_>` is not satisfied
  --> tests/ui/untrusted_pairs.rs:7:62
   |
-7 |     let _range_set_int = RangeSetBlaze::from_sorted_disjoint(untrusted);
-  |                          ----------------------------------- ^^^^^^^^^ the trait `SortedDisjoint<_>` is not implemented for `std::array::IntoIter<RangeInclusive<{integer}>, 3>`
+7 |     let _range_set_int = RangeSetBlaze::from_sorted_disjoint(not_guaranteed);
+  |                          ----------------------------------- ^^^^^^^^^^^^^^ the trait `SortedDisjoint<_>` is not implemented for `std::array::IntoIter<RangeInclusive<{integer}>, 3>`
   |                          |
   |                          required by a bound introduced by this call
   |
