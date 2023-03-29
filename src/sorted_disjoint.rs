@@ -216,6 +216,8 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + Sized {
 /// [`symmetric_difference`]: SortedDisjoint::symmetric_difference
 /// [`difference`]: SortedDisjoint::difference
 /// [`complement`]: SortedDisjoint::complement
+///
+
 pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 
@@ -507,7 +509,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     where
         T: Integer,
     {
-        RangeSetBlaze::from_cmk(self)
+        RangeSetBlaze::from_sorted_disjoint(self)
     }
 }
 

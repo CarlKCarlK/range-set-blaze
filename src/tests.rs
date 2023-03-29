@@ -576,18 +576,18 @@ fn parity() {
     println!("!b|!c {}", !b | !c);
     println!(
         "!b|!c {}",
-        RangeSetBlaze::from_cmk(!b.ranges() | !c.ranges())
+        RangeSetBlaze::from_sorted_disjoint(!b.ranges() | !c.ranges())
     );
 
     let _a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let u = union_dyn!(a.ranges());
     assert_eq!(
-        RangeSetBlaze::from_cmk(u),
+        RangeSetBlaze::from_sorted_disjoint(u),
         RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15])
     );
     let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
     assert_eq!(
-        RangeSetBlaze::from_cmk(u),
+        RangeSetBlaze::from_sorted_disjoint(u),
         RangeSetBlaze::from_iter([1..=15, 18..=29, 38..=42])
     );
 
@@ -599,7 +599,7 @@ fn parity() {
     ]
     .union();
     assert_eq!(
-        RangeSetBlaze::from_cmk(u),
+        RangeSetBlaze::from_sorted_disjoint(u),
         RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
 }

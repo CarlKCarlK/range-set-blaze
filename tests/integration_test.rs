@@ -313,23 +313,23 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
     println!("!b|!c {}", !b | !c);
     println!(
         "!b|!c {}",
-        RangeSetBlaze::from_cmk(b.ranges().complement() | c.ranges().complement())
+        RangeSetBlaze::from_sorted_disjoint(b.ranges().complement() | c.ranges().complement())
     );
 
     let _a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let u = [DynSortedDisjoint::new(a.ranges())].union();
     assert_eq!(
-        RangeSetBlaze::from_cmk(u),
+        RangeSetBlaze::from_sorted_disjoint(u),
         RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15])
     );
     let u = union_dyn!(a.ranges());
     assert_eq!(
-        RangeSetBlaze::from_cmk(u),
+        RangeSetBlaze::from_sorted_disjoint(u),
         RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15])
     );
     let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
     assert_eq!(
-        RangeSetBlaze::from_cmk(u),
+        RangeSetBlaze::from_sorted_disjoint(u),
         RangeSetBlaze::from_iter([1..=15, 18..=29, 38..=42])
     );
 
@@ -341,7 +341,7 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
     ]
     .union();
     assert_eq!(
-        RangeSetBlaze::from_cmk(u),
+        RangeSetBlaze::from_sorted_disjoint(u),
         RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
     Ok(())
@@ -600,7 +600,7 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     _range_set_int = RangeSetBlaze::from_iter([5..=6, 1..=5]);
     // #16 into / from iter (T,T) + SortedDisjoint
     _range_set_int = _range_set_int.ranges().into_range_set_blaze();
-    _range_set_int = RangeSetBlaze::from_cmk(_range_set_int.ranges());
+    _range_set_int = RangeSetBlaze::from_sorted_disjoint(_range_set_int.ranges());
 
     let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10].into_iter());
     let mut _sorted_disjoint_iter;
@@ -1203,7 +1203,7 @@ fn range_set_int_constructors() {
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 
     // If we know the ranges are sorted and disjoint, we can use 'from'/'into'.
-    let a0 = RangeSetBlaze::from_cmk(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+    let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
     let a1: RangeSetBlaze<i32> =
         CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
@@ -1257,7 +1257,7 @@ fn range_set_int_operators() {
     let result0 = &a - (&b | &c); // Creates a temporary 'RangeSetBlaze'.
 
     // Alternatively, we can use the 'SortedDisjoint' API and avoid the temporary 'RangeSetBlaze'.
-    let result1 = RangeSetBlaze::from_cmk(a.ranges() - (b.ranges() | c.ranges()));
+    let result1 = RangeSetBlaze::from_sorted_disjoint(a.ranges() - (b.ranges() | c.ranges()));
     assert!(result0 == result1 && result0.to_string() == "1..=1");
 }
 
