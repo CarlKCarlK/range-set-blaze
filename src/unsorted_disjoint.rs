@@ -157,16 +157,6 @@ where
     }
 }
 
-// // cmk
-// impl<T: Integer, I> SortedDisjoint<T> for SortedDisjointWithLenSoFar<T, I> where
-//     I: SortedDisjoint<T>
-// {
-// }
-// impl<T: Integer, I> SortedStarts<T> for SortedDisjointWithLenSoFar<T, I> where
-//     I: SortedDisjoint<T>
-// {
-// }
-
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 

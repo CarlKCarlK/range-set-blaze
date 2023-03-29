@@ -1,4 +1,4 @@
-//! The purpose of this module is to provide a convenient way to import the most commonly used
+//! This prelude module provides a convenient way to import the most commonly used
 //! types, traits, and functions.
 //!
 //! ```

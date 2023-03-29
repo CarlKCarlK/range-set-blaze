@@ -168,6 +168,8 @@ pub trait Integer:
 ///  * [`RangeSetBlaze` Comparisons](#rangesetblaze-comparisons)
 ///  * [Additional Examples](#additional-examples)
 ///
+/// # `RangeSetBlaze` Constructors
+///
 /// You can also create `RangeSetBlaze`'s from unsorted and overlapping integers (or ranges).
 /// However, if you know that your input is sorted and disjoint, you can speed up construction.
 ///
@@ -179,7 +181,7 @@ pub trait Integer:
 /// | [`new`]/[`default`]       |                         |
 /// | [`from_iter`][1]/[`collect`][1] | integer iterator        |
 /// | [`from_iter`][2]/[`collect`][2] | ranges iterator         |
-/// | [`from`][3] /[`into`][3]         | [`SortedDisjoint`] iterator |
+/// | [`from_sorted_disjoint`][3] /[`into_range_set_blaze`][3]         | [`SortedDisjoint`] iterator |
 /// | [`from`][4] /[`into`][4]         | array of integers       |
 ///
 /// [`BTreeMap`]: std::collections::BTreeMap
@@ -187,8 +189,8 @@ pub trait Integer:
 /// [`default`]: RangeSetBlaze::default
 /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
 /// [2]: struct.RangeSetBlaze.html#impl-FromIterator<RangeInclusive<T>>-for-RangeSetBlaze<T>
-/// [3]: struct.RangeSetBlaze.html#impl-From<I>-for-RangeSetBlaze<T>
-/// [4]: struct.RangeSetBlaze.html#impl-From<%5BT%3B%20N%5D>-for-RangeSetBlaze<T>
+/// [3]: RangeSetBlaze::from_sorted_disjoint
+/// [4]: SortedDisjoint::into_range_set_blaze
 ///
 /// # Constructor Performance
 ///
@@ -480,7 +482,7 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     /// Create a [`RangeSetBlaze`] from a [`SortedDisjoint`] iterator.
     ///
-    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
     /// # Examples
     ///
@@ -1237,7 +1239,7 @@ impl<T: Integer> RangeSetBlaze<T> {
 impl<T: Integer> FromIterator<T> for RangeSetBlaze<T> {
     /// Create a [`RangeSetBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
     ///
-    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
     /// # Examples
     ///
@@ -1259,7 +1261,7 @@ impl<T: Integer> FromIterator<T> for RangeSetBlaze<T> {
 impl<'a, T: Integer> FromIterator<&'a T> for RangeSetBlaze<T> {
     /// Create a [`RangeSetBlaze`] from an iterator of integers references. Duplicates and out-of-order elements are fine.
     ///
-    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
     /// # Examples
     ///
@@ -1282,7 +1284,7 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetBlaze<T> {
     /// Create a [`RangeSetBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
-    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
     /// # Examples
     ///
@@ -1308,7 +1310,7 @@ impl<'a, T: Integer + 'a> FromIterator<&'a RangeInclusive<T>> for RangeSetBlaze<
     /// Create a [`RangeSetBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
-    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
     /// # Examples
     ///
@@ -1332,7 +1334,7 @@ impl<'a, T: Integer + 'a> FromIterator<&'a RangeInclusive<T>> for RangeSetBlaze<
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     /// For compatibility with [`BTreeSet`] you may create a [`RangeSetBlaze`] from an array of integers.
     ///
-    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
     /// [`BTreeSet`]: std::collections::BTreeSet
     ///
@@ -2087,4 +2089,3 @@ impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 // cmk add license files, keywords, categories, etc.
 // cmk fix badges in README
-// cmk fix visible square brackets in docs

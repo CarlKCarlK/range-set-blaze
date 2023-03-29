@@ -45,9 +45,10 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + Sized {
 ///
 /// [`ranges`]: RangeSetBlaze::ranges
 /// [`into_ranges`]: RangeSetBlaze::into_ranges
-/// [`clone`]: RangesIter::clone
+/// [`clone`]: crate::RangesIter::clone
 /// [itertools `tee`]: https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.tee
 /// [1]: #how-to-mark-your-type-as-sorteddisjoint
+/// [`RangesIter`]: crate::RangesIter
 ///
 /// ## Constructor Examples
 ///
@@ -81,17 +82,16 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + Sized {
 /// assert!(b.to_string() == "1..=3, 100..=100");
 /// ```
 ///
-/// # `SortedDisjoint` Set and Other Operations
+/// # `SortedDisjoint` Set Operations
 ///
 /// | Method | Operator | Multiway (same type) | Multiway (different types) |
 /// |--------|----------|----------------------|----------------------------|
-/// | `a.`[`union`]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][multiway_union]`()` | [`union_dyn`]`!(a, b, c)` |
-/// | `a.`[`intersection`]`(b)` | `a & b` | `[a, b, c].`[`intersection`][multiway_intersection]`()` | [`intersection_dyn`]`!(a, b, c)` |
+/// | `a.`[`union`]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][crate::MultiwaySortedDisjoint::union]`()` | [`crate::MultiwayRangeSetBlaze::union`]`!(a, b, c)` |
+/// | `a.`[`intersection`]`(b)` | `a & b` | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjoint::intersection]`()` | [`crate::MultiwayRangeSetBlaze::intersection`]`!(a, b, c)` |
 /// | `a.`[`difference`]`(b)` | `a - b` |  |  |
 /// | `a.`[`symmetric_difference`]`(b)` | `a ^ b` |  |  |
 /// | `a.`[`complement`]`()` | `!a` |  |  |
 ///
-/// See [`SortedDisjoint`] for all methods including [`equal`] and [`to_string`].
 ///
 /// ## Performance
 ///
@@ -138,7 +138,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + Sized {
 /// # How to mark your type as `SortedDisjoint`
 ///
 /// To mark your iterator type as `SortedDisjoint`, you implement the `SortedStarts` and `SortedDisjoint` traits.
-/// This is your promise to the compiler that your iterator will provide inclusive ranges that are sorted by start and disjoint.
+/// This is your promise to the compiler that your iterator will provide inclusive ranges that disjoint and sorted by start.
 ///
 /// When you do this, your iterator will get access to the
 /// efficient set operations methods, such as [`intersection`] and [`complement`]. The example below shows this.
@@ -157,8 +157,8 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + Sized {
 /// [`difference`]: SortedDisjoint::difference
 /// [`to_string`]: SortedDisjoint::to_string
 /// [`equal`]: SortedDisjoint::equal
-/// [multiway_union]: MultiwaySortedDisjoint::union
-/// [multiway_intersection]: MultiwaySortedDisjoint::intersection
+/// [multiway_union]: crate::MultiwaySortedDisjoint::union
+/// [multiway_intersection]: crate::MultiwaySortedDisjoint::intersection
 ///
 /// ## Example -- Find the ordinal weekdays in September 2023
 /// ```
@@ -203,21 +203,6 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + Sized {
 ///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
 /// );
 /// ```
-///
-/// cmk read these docs
-/// The trait used to provide methods common to iterators with the [`SortedDisjoint`] trait.
-/// Methods include [`to_string`], [`equal`], [`union`], [`intersection`]
-/// [`symmetric_difference`], [`difference`], [`complement`].
-///
-/// [`to_string`]: SortedDisjoint::to_string
-/// [`equal`]: SortedDisjoint::equal
-/// [`union`]: SortedDisjoint::union
-/// [`intersection`]: SortedDisjoint::intersection
-/// [`symmetric_difference`]: SortedDisjoint::symmetric_difference
-/// [`difference`]: SortedDisjoint::difference
-/// [`complement`]: SortedDisjoint::complement
-///
-
 pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 
@@ -504,7 +489,19 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
         self.intersection(other).is_empty()
     }
 
-    /// cmk000
+    /// Create a [`RangeSetBlaze`] from a [`SortedDisjoint`] iterator.
+    ///
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+    /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// ```
     fn into_range_set_blaze(self) -> RangeSetBlaze<T>
     where
         T: Integer,
@@ -512,15 +509,6 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
         RangeSetBlaze::from_sorted_disjoint(self)
     }
 }
-
-// cmk
-// // todo rule: You can't define traits on combinations of traits, so use this method to define methods on traits
-// impl<T, I> SortedDisjoint<T> for I
-// where
-//     T: Integer,
-//     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint,
-// {
-// }
 
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
