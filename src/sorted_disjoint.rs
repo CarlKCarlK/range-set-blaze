@@ -202,7 +202,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> {}
 ///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
 /// );
 /// ```
-pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
+pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their union.
@@ -229,6 +229,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
+        Self: Sized,
     {
         UnionIter::new(Merge::new(self, other.into_iter()))
     }
@@ -257,6 +258,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
+        Self: Sized,
     {
         !(self.complement() | other.into_iter().complement())
     }
@@ -285,6 +287,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
+        Self: Sized,
     {
         !(self.complement() | other.into_iter())
     }
@@ -307,7 +310,10 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
     /// ```
     #[inline]
-    fn complement(self) -> NotIter<T, Self> {
+    fn complement(self) -> NotIter<T, Self>
+    where
+        Self: Sized,
+    {
         NotIter::new(self)
     }
 
@@ -336,6 +342,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
+        Self: Sized,
     {
         let (lhs0, lhs1) = self.tee();
         let (rhs0, rhs1) = other.into_iter().tee();
@@ -359,6 +366,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
+        Self: Sized,
     {
         itertools::equal(self, other)
     }
@@ -375,7 +383,10 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     /// let a = CheckSortedDisjoint::from([1..=2]);
     /// assert_eq!(a.to_string(), "1..=2");
     /// ```
-    fn to_string(self) -> String {
+    fn to_string(self) -> String
+    where
+        Self: Sized,
+    {
         self.map(|range| format!("{range:?}")).join(", ")
     }
 
@@ -393,7 +404,10 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     /// ```
     #[inline]
     #[allow(clippy::wrong_self_convention)]
-    fn is_empty(mut self) -> bool {
+    fn is_empty(mut self) -> bool
+    where
+        Self: Sized,
+    {
         self.next().is_none()
     }
 
@@ -424,6 +438,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
+        Self: Sized,
     {
         self.difference(other).is_empty()
     }
@@ -455,6 +470,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
+        Self: Sized,
     {
         other.into_iter().is_subset(self)
     }
@@ -484,6 +500,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
+        Self: Sized,
     {
         self.intersection(other).is_empty()
     }
@@ -501,7 +518,10 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
-    fn into_range_set_blaze(self) -> RangeSetBlaze<T> {
+    fn into_range_set_blaze(self) -> RangeSetBlaze<T>
+    where
+        Self: Sized,
+    {
         RangeSetBlaze::from_sorted_disjoint(self)
     }
 }
