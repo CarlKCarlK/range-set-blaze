@@ -1,19 +1,21 @@
-error[E0277]: the trait bound `RangeSetBlaze<_>: From<IntoRangesIter<{integer}>>` is not satisfied
- --> tests/ui/untrusted_pairs.rs:5:46
+error[E0277]: the trait bound `std::array::IntoIter<RangeInclusive<{integer}>, 3>: SortedDisjoint<_>` is not satisfied
+ --> tests/ui/untrusted_pairs.rs:7:62
   |
-5 |     let _range_set_int = RangeSetBlaze::from(trusted);
-  |                          ------------------- ^^^^^^^ the trait `From<IntoRangesIter<{integer}>>` is not implemented for `RangeSetBlaze<_>`
+7 |     let _range_set_int = RangeSetBlaze::from_sorted_disjoint(untrusted);
+  |                          ----------------------------------- ^^^^^^^^^ the trait `SortedDisjoint<_>` is not implemented for `std::array::IntoIter<RangeInclusive<{integer}>, 3>`
   |                          |
   |                          required by a bound introduced by this call
   |
-  = help: the trait `From<[T; N]>` is implemented for `RangeSetBlaze<T>`
-
-error[E0277]: the trait bound `RangeSetBlaze<_>: From<std::array::IntoIter<RangeInclusive<{integer}>, 3>>` is not satisfied
- --> tests/ui/untrusted_pairs.rs:7:46
+  = help: the following other types implement trait `SortedDisjoint<T>`:
+            CheckSortedDisjoint<T, I>
+            DynSortedDisjoint<'a, T>
+            IntoRangesIter<T>
+            NotIter<T, I>
+            RangesIter<'_, T>
+            UnionIter<T, I>
+            itertools::tee::Tee<I>
+note: required by a bound in `RangeSetBlaze::<T>::from_sorted_disjoint`
+ --> src/lib.rs
   |
-7 |     let _range_set_int = RangeSetBlaze::from(untrusted);
-  |                          ------------------- ^^^^^^^^^ the trait `From<std::array::IntoIter<RangeInclusive<{integer}>, 3>>` is not implemented for `RangeSetBlaze<_>`
-  |                          |
-  |                          required by a bound introduced by this call
-  |
-  = help: the trait `From<[T; N]>` is implemented for `RangeSetBlaze<T>`
+  |         I: SortedDisjoint<T>,
+  |            ^^^^^^^^^^^^^^^^^ required by this bound in `RangeSetBlaze::<T>::from_sorted_disjoint`

@@ -13,7 +13,7 @@ use crate::{
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
 #[doc(hidden)]
-pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + Sized {}
+pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> {}
 
 /// The trait used to mark iterators that provide ranges that are sorted by start and disjoint. Set operations on
 /// iterators that implement this trait can be performed in linear time.
@@ -132,7 +132,6 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + Sized {
 /// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
 /// let result = a - (b | c);
 /// assert!(result.to_string() == "1..=1");
-
 /// ```
 ///
 /// # How to mark your type as `SortedDisjoint`
@@ -502,14 +501,10 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> + Sized {
     /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
-    fn into_range_set_blaze(self) -> RangeSetBlaze<T>
-    where
-        T: Integer,
-    {
+    fn into_range_set_blaze(self) -> RangeSetBlaze<T> {
         RangeSetBlaze::from_sorted_disjoint(self)
     }
 }
-
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 
