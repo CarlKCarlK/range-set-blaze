@@ -183,7 +183,7 @@ where
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        SortedDisjoint::complement(self)
+        self.complement()
     }
 }
 
@@ -198,6 +198,7 @@ where
         // It might be fine to optimize to self.iter, but that would require
         // also considering field 'range'
         SortedDisjoint::union(self, rhs)
+        // cmk00 change all these to self.union(rhs)
     }
 }
 

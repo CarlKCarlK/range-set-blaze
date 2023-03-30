@@ -123,7 +123,7 @@ where
     fn not(self) -> Self::Output {
         // It would be fun to optimize to self.iter, but that would require
         // also considering fields 'start_not' and 'next_time_return_none'.
-        SortedDisjoint::complement(self)
+        self.complement()
     }
 }
 
@@ -182,3 +182,5 @@ where
         SortedDisjoint::intersection(self, other)
     }
 }
+
+// cmk00 define Not, etc on DynSortedDisjoint

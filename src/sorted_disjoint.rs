@@ -525,8 +525,6 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         RangeSetBlaze::from_sorted_disjoint(self)
     }
 }
-#[derive(Clone)]
-#[must_use = "iterators are lazy and do nothing unless consumed"]
 
 /// Gives the [`SortedDisjoint`] trait to any iterator of ranges. The iterator will panic
 /// if/when it finds that the ranges are not actually sorted and disjoint.
@@ -555,8 +553,8 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100");
 /// ```
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct CheckSortedDisjoint<T, I>
 where
     T: Integer,
@@ -668,15 +666,14 @@ impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]>
     }
 }
 
-impl<T, I> ops::Not for CheckSortedDisjoint<T, I>
+impl<T: Integer, I> ops::Not for CheckSortedDisjoint<T, I>
 where
-    T: Integer,
     I: Iterator<Item = RangeInclusive<T>>,
 {
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        NotIter::new(self)
+        self.complement()
     }
 }
 

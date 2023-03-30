@@ -1446,3 +1446,9 @@ fn from_iter_coverage() {
 //     let _integer_set = RangeSetBlaze::from_iter([1, 2, 3, 5]);
 //     let _char_set = RangeSetBlaze::from_iter(['a', 'b', 'c', 'd']);
 // }
+
+#[test]
+fn print_first_complement_gap() {
+    let a = CheckSortedDisjoint::from([-10i16..=0, 1000..=2000]);
+    println!("{:?}", (!a).next().unwrap()); // prints -32768..=-11
+}

@@ -101,7 +101,7 @@ impl<T: Integer> ops::Not for RangesIter<'_, T> {
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        SortedDisjoint::complement(self)
+        self.complement()
     }
 }
 
@@ -109,7 +109,7 @@ impl<T: Integer> ops::Not for IntoRangesIter<T> {
     type Output = NotIter<T, Self>;
 
     fn not(self) -> Self::Output {
-        SortedDisjoint::complement(self)
+        self.complement()
     }
 }
 
