@@ -1452,3 +1452,22 @@ fn print_first_complement_gap() {
     let a = CheckSortedDisjoint::from([-10i16..=0, 1000..=2000]);
     println!("{:?}", (!a).next().unwrap()); // prints -32768..=-11
 }
+
+#[test]
+fn multiway_failure_example() {
+    use range_set_blaze::prelude::*;
+
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze::from_iter([38..=42]);
+
+    let _i0 = [a.ranges(), b.ranges(), c.ranges()].intersection();
+    // let _i1 = [!a.ranges(), b.ranges(), c.ranges()].intersection();
+    let _i2 = [
+        DynSortedDisjoint::new(!a.ranges()),
+        DynSortedDisjoint::new(b.ranges()),
+        DynSortedDisjoint::new(c.ranges()),
+    ]
+    .intersection();
+    let _i3 = intersection_dyn!(!a.ranges(), b.ranges(), c.ranges());
+}

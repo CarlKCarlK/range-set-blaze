@@ -14,6 +14,7 @@
 // todo rule: Do coverage testing (it's really good, see PowerPoint)
 
 // FUTURE: Support serde via optional feature
+mod dyn_sorted_disjoint;
 mod integer;
 mod merge;
 mod not_iter;
@@ -24,6 +25,7 @@ mod tests;
 mod union_iter;
 mod unsorted_disjoint;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
+pub use dyn_sorted_disjoint::DynSortedDisjoint;
 use gen_ops::gen_ops_ex;
 use itertools::Tee;
 pub use merge::KMerge;
@@ -33,7 +35,7 @@ use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::One;
 use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
-pub use sorted_disjoint::{CheckSortedDisjoint, DynSortedDisjoint, SortedDisjoint, SortedStarts};
+pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
 use std::cmp::max;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
