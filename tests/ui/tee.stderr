@@ -1,8 +1,8 @@
-error[E0599]: the method `union` exists for struct `Tee<Iter<'_, ({integer}, {integer})>>`, but its trait bounds were not satisfied
+error[E0599]: the method `union` exists for struct `Tee<std::slice::Iter<'_, ({integer}, {integer})>>`, but its trait bounds were not satisfied
  --> tests/ui/tee.rs:7:17
   |
 7 |     let _c = a0.union(a1);
-  |                 ^^^^^ method cannot be called on `Tee<Iter<'_, ({integer}, {integer})>>` due to unsatisfied trait bounds
+  |                 ^^^^^ method cannot be called on `Tee<std::slice::Iter<'_, ({integer}, {integer})>>` due to unsatisfied trait bounds
   |
  ::: $CARGO/itertools-0.10.5/src/tee.rs
   |
@@ -11,14 +11,14 @@ error[E0599]: the method `union` exists for struct `Tee<Iter<'_, ({integer}, {in
   | |
   | doesn't satisfy `<_ as IntoIterator>::Item = &RangeSetBlaze<_>`
   | doesn't satisfy `<_ as IntoIterator>::Item = RangeSetBlaze<_>`
-  | doesn't satisfy `_: MultiwayRangeSetBlaze<'_, _>`
-  | doesn't satisfy `_: MultiwayRangeSetBlazeRef<_>`
-  | doesn't satisfy `_: SortedDisjoint<_>`
+  | doesn't satisfy `_: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
+  | doesn't satisfy `_: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
+  | doesn't satisfy `_: range_set_blaze::SortedDisjoint<_>`
   |
  ::: $RUST/core/src/slice/iter.rs
   |
   | pub struct Iter<'a, T: 'a> {
-  | -------------------------- doesn't satisfy `_: SortedDisjoint<_>`
+  | -------------------------- doesn't satisfy `_: range_set_blaze::SortedDisjoint<_>`
   |
   = note: the following trait bounds were not satisfied:
           `<Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`

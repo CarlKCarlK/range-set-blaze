@@ -21,7 +21,7 @@ members = [".", "tests_common"]
 [dependencies]
 itertools = "0.10.1"
 num-integer = "0.1.44"
-num-traits = "0.2.14"
+num-traits = "0.2.15"
 gen_ops = "0.2.0"
 thiserror = "1.0"
 rand = "0.8.4"
