@@ -2,6 +2,17 @@
 name = "range-set-blaze"
 version = "0.1.0"
 edition = "2021"
+description = "Integer sets as fast, sorted, integer ranges with full set operations"
+repository = "https://github.com/CarlKCarlK/range-set-blaze"
+readme = "README.md"
+documentation = "https://docs.rs/range-set-blaze/latest/range-set-blaze/"
+authors = ["Carl Kadie"]
+exclude = []
+license = "MIT OR Apache-2.0"
+keywords = ["set", "range", "data-structures", "btree", "interval"]
+categories = ["data-structures"]
+homepage = "https://github.com/CarlKCarlK/range-set-blaze"
+
 
 [workspace]
 
