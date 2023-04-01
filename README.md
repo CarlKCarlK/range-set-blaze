@@ -7,12 +7,14 @@ range-set-blaze
 
 <!-- FUTURE: Add coverage badge? -->
 
-A crate for efficiently manipulating ['clumpy'][1] sets of integers using [set operations] such as `union`, `intersection`, and `difference`.
-The integers can be any size ([`u8`] to [`u128`]) and may be signed ([`i8`] to [`i128`]).
+Integer sets as fast, sorted, integer ranges with full set operations
+
+The integers can be any size ([`u8`] to [`u128`]) and may be signed ([`i8`] to [`i128`]). The [set operations] include `union`, `intersection`, `difference`, `symmetric difference`, and `complement`.
 
 The crate's main struct is [`RangeSetBlaze`], a set of integers. See the [`RangeSetBlaze` documentation] for details.
 
-> Unlike the standard [`BTreeSet`] and [`HashSet`], [`RangeSetBlaze`] does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from other interval libraries (that we know of) by being specialized and optimized for integer elements.
+> Unlike the standard [`BTreeSet`] and [`HashSet`], [`RangeSetBlaze`] does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from [other interval libraries](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) -- that we know of -- by
+offering full set operations and by being optimized for sets of [clumpy](1) integers.
 >
 > We can construct a [`RangeSetBlaze`] from unsorted & redundant integers (or ranges). When the inputs are clumpy, construction will be [linear][1] in the number of inputs and set operations will be sped up [quadratically][1].
 
@@ -20,6 +22,8 @@ The crate's main trait is [`SortedDisjoint`]. It is implemented by iterators of 
 
 > With any [`SortedDisjoint`] iterator we can perform set operations in one pass through the ranges and with minimal (constant) memory. It enforces the "sorted & disjoint" constraint at compile time. This trait is inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. [`SortedDisjoint`] differs from its inspiration by specializing on disjoint integer ranges.
 
+[`RangeSetBlaze`]: struct.RangeSetBlaze.html
+[`SortedDisjoint`]: trait.SortedDisjoint.html
 [`u8`]: https://doc.rust-lang.org/std/primitive.u8.html
 [`u128`]: https://doc.rust-lang.org/std/primitive.u128.html
 [`i8`]: https://doc.rust-lang.org/std/primitive.i8.html
@@ -37,7 +41,7 @@ Benchmarks
 
 See the [benchmarks](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) for performance comparisons with other range-related crates.
 
-Generally, for many tasks involving clumpy integers and ranges, `RangeSetBlaze` is much faster than alternatives. It also offers a full set of fast set operations.
+Generally, for many tasks involving clumpy integers and ranges, `RangeSetBlaze` is much faster than alternatives.
 
 The benchmarks are in the `benches` directory. To run them, use `cargo bench`.
 

@@ -7,7 +7,6 @@ repository = "https://github.com/CarlKCarlK/range-set-blaze"
 readme = "README.md"
 documentation = "https://docs.rs/range-set-blaze/latest/range-set-blaze/"
 authors = ["Carl Kadie"]
-exclude = []
 license = "MIT OR Apache-2.0"
 keywords = ["set", "range", "data-structures", "btree", "interval"]
 categories = ["data-structures"]
