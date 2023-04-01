@@ -11,16 +11,16 @@ Integer sets as fast, sorted, integer ranges with full set operations
 
 The integers can be any size ([`u8`] to [`u128`]) and may be signed ([`i8`] to [`i128`]). The [set operations] include `union`, `intersection`, `difference`, `symmetric difference`, and `complement`.
 
-The crate's main struct is [`RangeSetBlaze`], a set of integers. See the [`RangeSetBlaze` documentation] for details.
+The crate's main struct is [`RangeSetBlaze`], a set of integers. See the [documentation] for details.
 
-> Unlike the standard [`BTreeSet`] and [`HashSet`], [`RangeSetBlaze`] does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from [other interval libraries](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) -- that we know of -- by
-offering full set operations and by being optimized for sets of [clumpy](1) integers.
+> Unlike the standard [`BTreeSet`] and [`HashSet`], `RangeSetBlaze` does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from [other interval libraries](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) -- that we know of -- by
+offering full set operations and by being optimized for sets of [clumpy][1] integers.
 >
-> We can construct a [`RangeSetBlaze`] from unsorted & redundant integers (or ranges). When the inputs are clumpy, construction will be [linear][1] in the number of inputs and set operations will be sped up [quadratically][1].
+> We can construct a `RangeSetBlaze` from unsorted & redundant integers (or ranges). When the inputs are clumpy, construction will be [linear][1] in the number of inputs and set operations will be sped up [quadratically][1].
 
 The crate's main trait is [`SortedDisjoint`]. It is implemented by iterators of sorted & disjoint ranges of integers. See the [`SortedDisjoint` documentation] for details.
 
-> With any [`SortedDisjoint`] iterator we can perform set operations in one pass through the ranges and with minimal (constant) memory. It enforces the "sorted & disjoint" constraint at compile time. This trait is inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. [`SortedDisjoint`] differs from its inspiration by specializing on disjoint integer ranges.
+> With any `SortedDisjoint` iterator we can perform set operations in one pass through the ranges and with minimal (constant) memory. It enforces the "sorted & disjoint" constraint at compile time. This trait is inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. `SortedDisjoint` differs from its inspiration by specializing on disjoint integer ranges.
 
 [`RangeSetBlaze`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
 [`SortedDisjoint`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html
@@ -28,7 +28,7 @@ The crate's main trait is [`SortedDisjoint`]. It is implemented by iterators of 
 [`u128`]: https://doc.rust-lang.org/std/primitive.u128.html
 [`i8`]: https://doc.rust-lang.org/std/primitive.i8.html
 [`i128`]: https://doc.rust-lang.org/std/primitive.i128.html
-[`RangeSetBlaze` documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
+[documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
 [`SortedDisjoint` documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html
 [`BTreeSet`]: https://doc.rust-lang.org/std/collections/struct.BTreeSet.html
 [`HashSet`]: https://doc.rust-lang.org/std/collections/struct.HashSet.html
@@ -51,7 +51,7 @@ Examples
 Example 1
 - - - - - -
 
-Here we take the union (operator “|”) of two [`RangeSetBlaze`]'s:
+Here we take the union (operator “|”) of two `RangeSetBlaze`'s:
 
 ![Example 1](https://raw.githubusercontent.com/CarlKCarlK/range-set-blaze/main/docs/rust_example1.png "Example 1")
 
@@ -74,7 +74,7 @@ In biology, suppose we want to find the intron regions of a gene but we are give
 
 ![Example 2](https://raw.githubusercontent.com/CarlKCarlK/range-set-blaze/main/docs/rust_example2.png "Example 2")
 
-We create a [`RangeSetBlaze`] for the transcription region and a [`RangeSetBlaze`] for all the exon regions.
+We create a `RangeSetBlaze` for the transcription region and a `RangeSetBlaze` for all the exon regions.
 Then we take the difference between the transcription region and exon regions to find the intron regions.
 
 ```rust
