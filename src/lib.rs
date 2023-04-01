@@ -285,11 +285,11 @@ pub trait Integer:
 ///
 /// Every operation is implemented as
 /// 1. a single pass over the sorted & disjoint ranges
-/// 2. the construction of a new [`RangeSetBlaze`]
+/// 2. the construction of a new `RangeSetBlaze`
 ///
 /// Thus, applying multiple operators creates intermediate
-/// [`RangeSetBlaze`]'s. You can avoid these intermediate
-/// [`RangeSetBlaze`]'s by switching to the [`SortedDisjoint`] API. The last example below
+/// `RangeSetBlaze`'s. If you wish, you can avoid these intermediate
+/// `RangeSetBlaze`'s by switching to the [`SortedDisjoint`] API. The last example below
 /// demonstrates this.
 ///
 /// ## Set Operation Examples
