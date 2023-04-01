@@ -713,8 +713,6 @@ fn private_constructor() {
     assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
 }
 
-fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
-
 fn is_ddcppdheo<
     T: std::fmt::Debug
         + Display
@@ -730,8 +728,17 @@ fn is_ddcppdheo<
 >() {
 }
 
-// DoubleEndedIterator +ExactSizeIterator
+fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
 fn is_like_btreeset_iter<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
+// removed DoubleEndedIterator +ExactSizeIterator for now
+#[test]
+fn iter_traits() {
+    type ARangesIter<'a> = RangesIter<'a, i32>;
+    type AIter<'a> = Iter<i32, ARangesIter<'a>>;
+    is_sssu::<AIter>();
+    is_like_btreeset_iter::<AIter>();
+}
+
 fn is_like_btreeset_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {}
 
 fn is_like_btreeset<
