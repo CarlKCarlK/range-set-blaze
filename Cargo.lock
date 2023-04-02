@@ -523,10 +523,11 @@ dependencies = [
 
 [[package]]
 name = "range-set-blaze"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "criterion",
  "gen_ops",
+ "glob",
  "itertools",
  "num-integer",
  "num-traits",

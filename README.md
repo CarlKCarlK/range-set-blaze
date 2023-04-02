@@ -59,12 +59,12 @@ Here we take the union (operator “|”) of two `RangeSetBlaze`'s:
 use range_set_blaze::RangeSetBlaze;
 
  // a is the set of integers from 100 to 499 (inclusive) and 501 to 1000 (inclusive)
-let a = RangeSetBlaze::from_iter([100..=499,501..=999]);
+let a = RangeSetBlaze::from_iter([100..=499, 501..=999]);
  // b is the set of integers -20 and the range 400 to 599 (inclusive)
-let b = RangeSetBlaze::from_iter([-20..=-20,400..=599]);
+let b = RangeSetBlaze::from_iter([-20..=-20, 400..=599]);
 // c is the union of a and b, namely -20 and 100 to 999 (inclusive)
 let c = a | b;
-assert_eq!(c, RangeSetBlaze::from_iter([-20..=-20,100..=999]));
+assert_eq!(c, RangeSetBlaze::from_iter([-20..=-20, 100..=999]));
 ```
 
 Example 2
