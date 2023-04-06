@@ -36,6 +36,12 @@ The crate's main trait is [`SortedDisjoint`]. It is implemented by iterators of 
 [set operations]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#rangesetblaze-set-operations
 [1]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#constructor-performance
 
+Article
+-----------
+
+See  [Nine Rules for Creating Fast, Safe, and Compatible Data Structures in Rust (Part 1):
+Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3) in *Towards Data Science*. It provides a high-level overview of the crate and its design.
+
 Benchmarks
 -----------
 
