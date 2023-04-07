@@ -156,9 +156,7 @@ where
                     continue;
                 }
             } else {
-                let result = self.option_range.clone();
-                self.option_range = None;
-                return result;
+                return self.option_range.take();
             }
         }
     }

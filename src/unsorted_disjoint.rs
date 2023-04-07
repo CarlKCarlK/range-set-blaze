@@ -76,11 +76,8 @@ where
                     self.option_range = Some(next_start..=next_end);
                     continue;
                 }
-            } else if let Some(range) = self.option_range.clone() {
-                self.option_range = None;
-                return Some(range);
             } else {
-                return None;
+                return self.option_range.take();
             }
         }
     }
