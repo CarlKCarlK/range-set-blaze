@@ -137,7 +137,7 @@ where
             if let Some(range) = self.iter.next() {
                 let (start, end) = range.into_inner();
                 if end < start {
-                    return self.next();
+                    continue;
                 }
                 if let Some(current_range) = self.option_range.clone() {
                     let (current_start, current_end) = current_range.into_inner();
