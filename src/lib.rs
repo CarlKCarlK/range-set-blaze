@@ -1153,7 +1153,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(ranges.next(), Some(10..=25));
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
-    /// ```    
+    /// ```
     pub fn ranges(&self) -> RangesIter<'_, T> {
         RangesIter {
             iter: self.btree_map.iter(),
@@ -1185,7 +1185,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(ranges.next(), Some(10..=25));
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
-    /// ```    
+    /// ```
     pub fn into_ranges(self) -> IntoRangesIter<T> {
         IntoRangesIter {
             iter: self.btree_map.into_iter(),
@@ -1702,23 +1702,13 @@ where
 {
     type Item = T;
     fn next(&mut self) -> Option<T> {
-        loop {
-            if let Some(range) = self.option_range.clone() {
-                let (start, end) = range.into_inner();
-                debug_assert!(start <= end && end <= T::safe_max_value());
-                if start < end {
-                    self.option_range = Some(start + T::one()..=end);
-                } else {
-                    self.option_range = None;
-                }
-                return Some(start);
-            } else if let Some(range) = self.iter.next() {
-                self.option_range = Some(range);
-                continue;
-            } else {
-                return None;
-            }
+        let range = self.option_range.take().or_else(|| self.iter.next())?;
+        let (start, end) = range.into_inner();
+        debug_assert!(start <= end && end <= T::safe_max_value());
+        if start < end {
+            self.option_range = Some(start + T::one()..=end);
         }
+        Some(start)
     }
 
     // We'll have at least as many integers as intervals. There could be more that usize MAX
@@ -1748,21 +1738,16 @@ impl<T: Integer> Iterator for IntoIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(range) = self.option_range.clone() {
-            let (start, end) = range.into_inner();
-            debug_assert!(start <= end && end <= T::safe_max_value());
-            if start < end {
-                self.option_range = Some(start + T::one()..=end);
-            } else {
-                self.option_range = None;
-            }
-            Some(start)
-        } else if let Some((start, end)) = self.into_iter.next() {
-            self.option_range = Some(start..=end);
-            self.next() // will recurse at most once
-        } else {
-            None
+        let range = self
+            .option_range
+            .take()
+            .or_else(|| self.into_iter.next().map(|(start, end)| start..=end))?;
+        let (start, end) = range.into_inner();
+        debug_assert!(start <= end && end <= T::safe_max_value());
+        if start < end {
+            self.option_range = Some(start + T::one()..=end);
         }
+        Some(start)
     }
 
     // We'll have at least as many integers as intervals. There could be more that usize MAX
