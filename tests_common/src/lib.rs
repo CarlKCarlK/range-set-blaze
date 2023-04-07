@@ -148,27 +148,16 @@ impl<'a, T: Integer> MemorylessIter<'a, T> {
 impl<'a, T: Integer> Iterator for MemorylessIter<'a, T> {
     type Item = T;
 
-    #[allow(clippy::reversed_empty_ranges)]
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some(range) = &self.option_range {
-                let (start, end) = range.clone().into_inner();
-                if start < end {
-                    self.option_range = Some(start + T::one()..=end);
-                } else {
-                    self.option_range = None;
-                    if start > end {
-                        continue; // skip empty ranges
-                    }
-                }
-                return Some(start);
-            } else if let Some(range) = self.iter.next() {
-                self.option_range = Some(range);
-                continue;
-            } else {
-                return None;
-            }
+        let range = self
+            .option_range
+            .take()
+            .or_else(|| self.iter.find(|range| range.start() <= range.end()))?;
+        let (start, end) = range.into_inner();
+        if start < end {
+            self.option_range = Some(start + T::one()..=end);
         }
+        Some(start)
     }
 }
 
