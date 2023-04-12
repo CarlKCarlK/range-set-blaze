@@ -349,7 +349,6 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         lhs0.difference(rhs0) | rhs1.difference(lhs1)
     }
 
-    // todo rule: Prefer IntoIterator to Iterator
     /// Given two [`SortedDisjoint`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
     /// this method takes ownership of the iterators and consumes them.
     ///
@@ -371,7 +370,6 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         itertools::equal(self, other)
     }
 
-    // todo rule: You can't define traits on combinations of traits, so use this method to define methods on traits
     /// Given a [`SortedDisjoint`] iterators, produces a string version. Unlike most `to_string` and `fmt` in Rust,
     /// this method takes ownership of the iterator and consumes it.
     ///
@@ -492,7 +490,6 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// b.insert(1);
     /// assert_eq!(a.is_disjoint(&b), false);
     /// ```
-    /// todo rule which functions should be must_use? iterator, constructor, predicates, first, last,
     #[must_use]
     #[inline]
     #[allow(clippy::wrong_self_convention)]
@@ -639,7 +636,6 @@ where
         next
     }
 
-    // !!!todo rule add a size hint, but think about if it is correct with respect to other fields
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
