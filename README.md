@@ -40,7 +40,7 @@ Article
 -----------
 
 See  [Nine Rules for Creating Fast, Safe, and Compatible Data Structures in Rust:
-Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3) in *Towards Data Science*. It provides a high-level overview of the crate and its design: [Part 1]((https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3)), [Part 2](https://towardsdatascience.com/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-2-da5e6961a0b7)
+Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3) in *Towards Data Science*. It provides a high-level overview of the crate and its design: [Part 1](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3), [Part 2](https://towardsdatascience.com/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-2-da5e6961a0b7)
 
 Benchmarks
 -----------
