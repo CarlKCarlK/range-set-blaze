@@ -1,4 +1,3 @@
-// !!!todo rule add integration tests
 #![cfg(test)]
 
 use criterion::{BatchSize, BenchmarkId, Criterion};
@@ -220,7 +219,6 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
     let c = RangeSetBlaze::from_iter([38..=42]);
-    // todo rule make these work d= a|b; d= a|b|c; d=&a|&b|&c;
     let d = &(&a | &b) | &c;
     println!("{d}");
     let d = a | b | &c;
@@ -1470,4 +1468,10 @@ fn multiway_failure_example() {
     ]
     .intersection();
     let _i3 = intersection_dyn!(!a.ranges(), b.ranges(), c.ranges());
+}
+
+#[test]
+fn complement_sample() {
+    let c = !RangeSetBlaze::from([0, 3, 4, 5, 10]);
+    println!("{},{},{}", c.len(), c.ranges_len(), c);
 }

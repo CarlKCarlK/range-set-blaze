@@ -5,7 +5,6 @@ use std::{
 
 use crate::{BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisjoint};
 
-// todo rule: Make structs clonable when possible.
 /// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
 /// i.e., all the integers not in the original iterator, as sorted & disjoint ranges.
 ///
@@ -34,7 +33,6 @@ where
     next_time_return_none: bool,
 }
 
-// todo rule: Create a new function when setup is complicated and the function is used in multiple places.
 impl<T, I> NotIter<T, I>
 where
     T: Integer,
@@ -60,7 +58,6 @@ where
 {
 }
 
-// !!!todo rule create coverage tests
 impl<T, I> Iterator for NotIter<T, I>
 where
     T: Integer,
@@ -183,4 +180,4 @@ where
     }
 }
 
-// cmk00 define Not, etc on DynSortedDisjoint
+// FUTURE define Not, etc on DynSortedDisjoint

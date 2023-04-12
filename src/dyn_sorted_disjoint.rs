@@ -52,7 +52,6 @@ impl<'a, T: Integer> Iterator for DynSortedDisjoint<'a, T> {
         self.iter.next()
     }
 
-    // todo rule Implement size_hint if possible and ExactSizeIterator if possible
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }

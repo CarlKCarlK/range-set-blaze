@@ -108,7 +108,6 @@ where
     len: <T as Integer>::SafeLen,
 }
 
-// todo rule there is no reason From's should be into iterators
 impl<T: Integer, I> From<I> for SortedDisjointWithLenSoFar<T, I::IntoIter>
 where
     I: IntoIterator<Item = RangeInclusive<T>>,
@@ -203,7 +202,6 @@ where
         self.iter.next()
     }
 
-    // !!!todo rule add a size hint, but think about if it is correct with respect to other fields
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }

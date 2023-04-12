@@ -1,11 +1,5 @@
 #![cfg(test)]
 
-// !!!todo rule: Use the same testing as with macros to check that the types are correct
-// !!!todo rule make illegal states unpresentable (example u8.len->usize, but u128 needs safe_max_value), UnionIter
-// !!!todo rule detail: Note that this nicely fails to compile if you try to chain when you shouldn't
-// !!!todo rule detail:  let chain = b.ranges().chain(c.ranges());
-// !!!todo rule detail:  let a_less = a.ranges().sub(chain);
-// !!!todo rule test near extreme values
 use super::*;
 use itertools::Itertools;
 use quickcheck_macros::quickcheck;
@@ -484,7 +478,6 @@ fn multi_op() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
     let c = RangeSetBlaze::from_iter([38..=42]);
-    // todo rule make these work d= a|b; d= a|b|c; d=&a|&b|&c;
     let d = &(&a | &b) | &c;
     println!("{d}");
     let d = a | b | &c;
@@ -778,7 +771,6 @@ fn is_like_check_sorted_disjoint<
 
 fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
 
-// todo rule: Test that you're implementing all the traits from the data structures you're using as a model. I was leaving out Debug and FusedIterator
 #[test]
 fn check_traits() {
     // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync

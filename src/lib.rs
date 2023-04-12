@@ -1,18 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
-// todo rule: fizz test with quickcheck (ala sorted-iter)
-// todo rules: When should use Iterator and when IntoIterator?
-// todo rules: When should use: from_iter, from, new from_something?
-// !!! todo rule: Don't have a function and a method. Pick one (method)
-// !!!todo rule: Follow the rules of good API design including accepting almost any type of input
-// todo rule: don't create an assign method if it is not more efficient
-// todo rule: generate HTML: criterion = { version = "0.4", features = ["html_reports"] }
-// todo rule: pick another similar data structure and implement everything that makes sense (copy docs as much as possible)
-// todo rule: define and understand PartialOrd, Ord, Eq, etc.
-// todo rule check/understand PartialOrd, Ord, Eq, etc. and Clone, Default, Debug, etc
-// todo rule: Do coverage testing (it's really good, see PowerPoint)
-
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
 mod integer;
@@ -53,10 +41,6 @@ pub use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
 
-// todo rule: Support Send and Sync (what about Clone (Copy?) and ExactSizeIterator?)
-// todo rule: Test Send and Sync with a test (see example)
-
-// todo rule: Define your element type
 /// The element trait of the [`RangeSetBlaze`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
 pub trait Integer:
     num_integer::Integer
@@ -671,7 +655,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// b.insert(1);
     /// assert_eq!(a.is_disjoint(&b), false);
     /// ```
-    /// todo rule which functions should be must_use? iterator, constructor, predicates, first, last,
     #[must_use]
     #[inline]
     pub fn is_disjoint(&self, other: &RangeSetBlaze<T>) -> bool {
@@ -1281,7 +1264,6 @@ impl<'a, T: Integer> FromIterator<&'a T> for RangeSetBlaze<T> {
     }
 }
 
-// todo rules: Follow Rust conventions. For example this as empty let  a = 1..=0; we do the same
 impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetBlaze<T> {
     /// Create a [`RangeSetBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
@@ -1382,7 +1364,6 @@ pub type BitEq<T, L, R> = BitOrMerge<
     NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
 >;
 
-// todo rule Offer methods of traits
 impl<T, I> MultiwayRangeSetBlazeRef<T> for I
 where
     T: Integer,
@@ -1461,7 +1442,6 @@ pub trait MultiwayRangeSetBlazeRef<T: Integer>:
             .into_range_set_blaze()
     }
 }
-// todo rule Offer methods of traits
 impl<'a, T, I> MultiwayRangeSetBlaze<'a, T> for I
 where
     T: Integer + 'a,
@@ -1543,7 +1523,6 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
     }
 }
 
-// todo rule Offer methods of traits
 impl<T, II, I> MultiwaySortedDisjoint<T, I> for II
 where
     T: Integer,
@@ -1621,8 +1600,6 @@ where
     }
 }
 
-// todo rule: don't forget these '+ SortedDisjoint'. They are easy to forget and hard to test, but must be tested (via "UI")
-// todo rule: define operator on owned and borrowed
 gen_ops_ex!(
     <T>;
     types ref RangeSetBlaze<T>, ref RangeSetBlaze<T> => RangeSetBlaze<T>;
@@ -1879,8 +1856,8 @@ impl<T: Integer> BitOr<RangeSetBlaze<T>> for RangeSetBlaze<T> {
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
-    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// let mut b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let a = RangeSetBlaze::from_iter([1..=4]);
+    /// let b = RangeSetBlaze::from_iter([0..=0, 3..=5, 10..=10]);
     /// let union = a | b;
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
@@ -2061,8 +2038,6 @@ impl<T: Integer> PartialOrd for RangeSetBlaze<T> {
 
 impl<T: Integer> Eq for RangeSetBlaze<T> {}
 
-// todo rule add must_use to every iter and other places ala https://doc.rust-lang.org/src/alloc/collections/btree/map.rs.html#1259-1261
-
 // If the iterator inside a BitOrIter is SortedStart, the output will be SortedDisjoint
 impl<T: Integer, I: SortedStarts<T>> SortedStarts<T> for UnionIter<T, I> {}
 impl<T: Integer, I: SortedStarts<T>> SortedDisjoint<T> for UnionIter<T, I> {}
@@ -2074,20 +2049,3 @@ impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
-// todo Rule Plus features:
-//   batch ingest (how much faster?)
-//   hybrid union (how much faster?)
-//   full set operations (union, intersection, difference, symmetric_difference, complement) including multiway union and intersection
-//   and sub-library for creating others.
-// Minus features:
-//  only set, no map
-// only ints, no floats, dates, etc
-// no serde
-// one way iterators
-
-// todo Rule: Look for rust-only optimizations, such as in-place union (when it would be faster)
-// todo Rule: think about creating a prelude for the crate
-// todo Rule: docs is good. Instead of telling you when to use Extend vs Union, I fixed it.
-
-// cmk add license files, keywords, categories, etc.
-// cmk fix badges in README

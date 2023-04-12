@@ -3,7 +3,6 @@
 // https://www.jibbow.com/posts/criterion-flamegraphs/
 // https://github.com/orlp/glidesort
 // https://nnethercote.github.io/perf-book/profiling.html
-// todo rule: When benchmarking, don't fight criterion.  It's smarter than you are. Make 'em fast.
 
 use std::{
     collections::{BTreeSet, HashSet},
@@ -332,7 +331,6 @@ fn btree_two_sets1<T: Integer>(
 //     targets = clumps
 // }
 
-// todo rule use benchmarking -- your random data is important -- automate graphs
 #[allow(dead_code)]
 fn k_intersect(c: &mut Criterion) {
     let k = 100;
@@ -1287,74 +1285,6 @@ fn worst(c: &mut Criterion) {
     group.finish();
 }
 
-// fn cmk0000(c: &mut Criterion) {
-//     let group_name = "cmk0000";
-//     let range = 0..=999;
-//     let iter_len_list = [1, 10];
-//     let seed = 0;
-
-//     let mut group = c.benchmark_group(group_name);
-//     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-
-//     for iter_len in iter_len_list {
-//         let parameter = iter_len;
-
-//         let mut rng = StdRng::seed_from_u64(seed);
-//         let uniform = Uniform::from(range.clone());
-//         let vec: Vec<i32> = (0..iter_len).map(|_| uniform.sample(&mut rng)).collect();
-
-//         group.bench_with_input(
-//             BenchmarkId::new("RangeSetBlaze", parameter),
-//             &parameter,
-//             |b, _| {
-//                 b.iter(|| {
-//                     let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
-//                 })
-//             },
-//         );
-//         group.bench_with_input(
-//             BenchmarkId::new("BTreeSet", parameter),
-//             &parameter,
-//             |b, _| {
-//                 b.iter(|| {
-//                     let _answer = BTreeSet::from_iter(vec.iter().cloned());
-//                 })
-//             },
-//         );
-//     }
-//     group.finish();
-// }
-
-// criterion_group! {
-//     name = benches;
-//     config = Criterion::default();
-//     targets =
-//     shuffled,
-//     ascending,
-//     descending,
-//     clumps,
-//     bitxor,
-//     bitor,
-//     bitor1,
-//     k_intersect,
-//     coverage_goal,
-//     union_vary_k,
-//     union_vary_k_w_2_at_a_time,
-//     intersection_vary_k,
-//     intersect_k_sets,
-//     union_vary_range_len,
-//     intersection_vary_range_len,
-//     every_op,
-//     vary_coverage_goal,
-//     vary_type,
-//     union_two_sets,
-//     str_vs_ad_by_cover,
-//     ingest_clumps_base,
-//     worst,
-//     ingest_clumps_integers,
-//     ingest_clumps_ranges,
-// }
-
 criterion_group! {
     name = benches;
     config = Criterion::default();
@@ -1367,8 +1297,5 @@ criterion_group! {
     ingest_clumps_integers,
     ingest_clumps_ranges,
     ingest_clumps_easy,
-    //cmk0000,
 }
 criterion_main!(benches);
-
-// todo rule cargo bench intersect_k_sets
