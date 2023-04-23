@@ -22,7 +22,7 @@ members = [".", "tests_common"]
 itertools = "0.10.1"
 num-integer = "0.1.44"
 num-traits = "0.2.15"
-gen_ops = "0.2.0"
+gen_ops = "0.3.0"
 thiserror = "1.0"
 rand = "0.8.4"
 
