@@ -4,9 +4,9 @@ use crate::Integer;
 
 impl Integer for i8 {
     #[cfg(target_pointer_width = "16")]
-    type Output = usize;
+    type SafeLen = usize;
     #[cfg(target_pointer_width = "32")]
-    type Output = usize;
+    type SafeLen = usize;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -28,9 +28,9 @@ impl Integer for i8 {
 
 impl Integer for u8 {
     #[cfg(target_pointer_width = "16")]
-    type Output = usize;
+    type SafeLen = usize;
     #[cfg(target_pointer_width = "32")]
-    type Output = usize;
+    type SafeLen = usize;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -53,9 +53,9 @@ impl Integer for u8 {
 
 impl Integer for i32 {
     #[cfg(target_pointer_width = "16")]
-    type Output = u64;
+    type SafeLen = u64;
     #[cfg(target_pointer_width = "32")]
-    type Output = u64;
+    type SafeLen = u64;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -78,9 +78,9 @@ impl Integer for i32 {
 
 impl Integer for u32 {
     #[cfg(target_pointer_width = "16")]
-    type Output = u64;
+    type SafeLen = u64;
     #[cfg(target_pointer_width = "32")]
-    type Output = u64;
+    type SafeLen = u64;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -105,9 +105,9 @@ impl Integer for u32 {
 
 impl Integer for i64 {
     #[cfg(target_pointer_width = "16")]
-    type Output = u128;
+    type SafeLen = u128;
     #[cfg(target_pointer_width = "32")]
-    type Output = u128;
+    type SafeLen = u128;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -129,9 +129,9 @@ impl Integer for i64 {
 
 impl Integer for u64 {
     #[cfg(target_pointer_width = "16")]
-    type Output = u128;
+    type SafeLen = u128;
     #[cfg(target_pointer_width = "32")]
-    type Output = u128;
+    type SafeLen = u128;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -153,9 +153,9 @@ impl Integer for u64 {
 
 impl Integer for i128 {
     #[cfg(target_pointer_width = "16")]
-    type Output = u128;
+    type SafeLen = u128;
     #[cfg(target_pointer_width = "32")]
-    type Output = u128;
+    type SafeLen = u128;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -181,9 +181,9 @@ impl Integer for i128 {
 
 impl Integer for u128 {
     #[cfg(target_pointer_width = "16")]
-    type Output = u128;
+    type SafeLen = u128;
     #[cfg(target_pointer_width = "32")]
-    type Output = u128;
+    type SafeLen = u128;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -208,9 +208,9 @@ impl Integer for u128 {
 
 impl Integer for isize {
     #[cfg(target_pointer_width = "16")]
-    type Output = u32;
+    type SafeLen = u32;
     #[cfg(target_pointer_width = "32")]
-    type Output = u64;
+    type SafeLen = u64;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -233,9 +233,9 @@ impl Integer for isize {
 
 impl Integer for usize {
     #[cfg(target_pointer_width = "16")]
-    type Output = u32;
+    type SafeLen = u32;
     #[cfg(target_pointer_width = "32")]
-    type Output = u64;
+    type SafeLen = u64;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -258,9 +258,9 @@ impl Integer for usize {
 
 impl Integer for i16 {
     #[cfg(target_pointer_width = "16")]
-    type Output = u32;
+    type SafeLen = u32;
     #[cfg(target_pointer_width = "32")]
-    type Output = usize;
+    type SafeLen = usize;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -283,9 +283,9 @@ impl Integer for i16 {
 
 impl Integer for u16 {
     #[cfg(target_pointer_width = "16")]
-    type Output = u32;
+    type SafeLen = u32;
     #[cfg(target_pointer_width = "32")]
-    type Output = usize;
+    type SafeLen = usize;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {

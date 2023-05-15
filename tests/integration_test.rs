@@ -833,15 +833,15 @@ fn doc_test_insert1() {
 
     assert!(set.insert(2));
     assert!(!set.insert(2));
-    assert_eq!(set.len(), 1usize);
+    assert_eq!(set.len() as usize, 1usize);
 }
 
 #[test]
 fn doc_test_len() {
     let mut v = RangeSetBlaze::new();
-    assert_eq!(v.len(), 0usize);
+    assert_eq!(v.len() as usize, 0usize);
     v.insert(1);
-    assert_eq!(v.len(), 1usize);
+    assert_eq!(v.len() as usize, 1usize);
 
     let v = RangeSetBlaze::from_iter([
         -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,
@@ -856,19 +856,19 @@ fn doc_test_len() {
 #[test]
 fn test_pops() {
     let mut set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=11]);
-    let len = set.len();
+    let len = set.len() as usize;
     assert_eq!(set.pop_first(), Some(1));
-    assert_eq!(set.len(), len - 1usize);
+    assert_eq!(set.len() as usize, len - 1usize);
     assert_eq!(set, RangeSetBlaze::from_iter([2..=2, 4..=5, 10..=11]));
     assert_eq!(set.pop_last(), Some(11));
     println!("{set:#?}");
     assert_eq!(set, RangeSetBlaze::from_iter([2..=2, 4..=5, 10..=10]));
-    assert_eq!(set.len(), len - 2usize);
+    assert_eq!(set.len() as usize, len - 2usize);
     assert_eq!(set.pop_last(), Some(10));
-    assert_eq!(set.len(), len - 3usize);
+    assert_eq!(set.len() as usize, len - 3usize);
     assert_eq!(set, RangeSetBlaze::from_iter([2..=2, 4..=5]));
     assert_eq!(set.pop_first(), Some(2));
-    assert_eq!(set.len(), len - 4usize);
+    assert_eq!(set.len() as usize, len - 4usize);
     assert_eq!(set, RangeSetBlaze::from_iter([4..=5]));
 }
 
@@ -935,31 +935,31 @@ fn insert2() {
 #[test]
 fn remove() {
     let mut set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=11]);
-    let len = set.len();
+    let len = set.len() as usize;
     assert!(set.remove(4));
-    assert_eq!(set.len(), len - 1usize);
+    assert_eq!(set.len() as usize, len - 1usize);
     assert_eq!(set, RangeSetBlaze::from_iter([1..=2, 5..=5, 10..=11]));
     assert!(!set.remove(4));
-    assert_eq!(set.len(), len - 1usize);
+    assert_eq!(set.len() as usize, len - 1usize);
     assert_eq!(set, RangeSetBlaze::from_iter([1..=2, 5..=5, 10..=11]));
     assert!(set.remove(5));
-    assert_eq!(set.len(), len - 2usize);
+    assert_eq!(set.len() as usize, len - 2usize);
     assert_eq!(set, RangeSetBlaze::from_iter([1..=2, 10..=11]));
 
     let mut set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=100, 1000..=1000]);
-    let len = set.len();
+    let len = set.len() as usize;
     assert!(!set.remove(0));
-    assert_eq!(set.len(), len);
+    assert_eq!(set.len() as usize, len);
     assert!(!set.remove(3));
-    assert_eq!(set.len(), len);
+    assert_eq!(set.len() as usize, len);
     assert!(set.remove(2));
-    assert_eq!(set.len(), len - 1usize);
+    assert_eq!(set.len() as usize, len - 1usize);
     assert!(set.remove(1000));
-    assert_eq!(set.len(), len - 2usize);
+    assert_eq!(set.len() as usize, len - 2usize);
     assert!(set.remove(10));
-    assert_eq!(set.len(), len - 3usize);
+    assert_eq!(set.len() as usize, len - 3usize);
     assert!(set.remove(50));
-    assert_eq!(set.len(), len - 4usize);
+    assert_eq!(set.len() as usize, len - 4usize);
     assert_eq!(
         set,
         RangeSetBlaze::from_iter([1..=1, 4..=5, 11..=49, 51..=100])
