@@ -31,7 +31,9 @@ jobs:
           toolchain: stable
           override: true
       - name: Test Rust
-        run: cargo test --verbose --no-default-features
+        run: |
+          cargo clippy --verbose --all-targets --all-features -- -D warnings
+          cargo test --verbose --no-default-features
       - name: Test Rust 32-bit Ubuntu
         if: runner.os == 'Ubuntu'
         run: |
