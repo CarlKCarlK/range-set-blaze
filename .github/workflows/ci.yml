@@ -36,6 +36,8 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           rustup target add i686-unknown-linux-gnu
+          choco install mingw -y
+          choco install mingw-w64-x86_64-gcc -y
           cargo test --verbose --no-default-features --target i686-unknown-linux-gnu
       - name: Test Rust 32-bit Windows
         if: runner.os == 'Windows'
