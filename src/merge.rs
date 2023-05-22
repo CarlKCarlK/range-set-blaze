@@ -37,7 +37,7 @@ where
     L: SortedDisjoint<T>,
     R: SortedDisjoint<T>,
 {
-    // cmk #[allow(clippy::type_complexity)]
+    #[allow(clippy::type_complexity)]
     iter: MergeBy<L, R, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>,
 }
 
