@@ -41,6 +41,7 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           rustup target add i686-pc-windows-gnu
+          apt-get install -y libc6-dev-i386 linux-libc-dev libc6-i386 gcc-multilib
           cargo test --verbose --no-default-features --target=i686-pc-windows-gnu
   
   
