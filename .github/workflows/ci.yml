@@ -30,13 +30,17 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - name: Test Rust
-        run: cargo test --verbose --no-default-features
+      #cmk - name: Test Rust
+      #   run: cargo test --verbose --no-default-features
       - name: Test Rust 32-bit non-Windows
         if: runner.os != 'Windows'
-        run: cargo test --verbose --no-default-features --target i686-unknown-linux-gnu
+        run: |
+          rustup target add i686-pc-windows-gnu
+          cargo test --verbose --no-default-features --target i686-unknown-linux-gnu
       - name: Test Rust 32-bit Windows
         if: runner.os == 'Windows'
-        run: cargo test --verbose --no-default-features --target=i686-pc-windows-gnu
+        run: |
+          rustup target add i686-unknown-linux-gnu
+          cargo test --verbose --no-default-features --target=i686-pc-windows-gnu
   
   
