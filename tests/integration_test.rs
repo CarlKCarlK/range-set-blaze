@@ -347,7 +347,6 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// cmk
 // #[test]
 // fn ui() {
 //     let t = trybuild::TestCases::new();

@@ -1604,12 +1604,37 @@ gen_ops_ex!(
     <T>;
     types ref RangeSetBlaze<T>, ref RangeSetBlaze<T> => RangeSetBlaze<T>;
 
-    /// cmk
+
+    /// Intersects the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Either, neither, or both inputs may be borrowed.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let b = RangeSetBlaze::from_iter([2..=6]);
+    /// let result = &a & &b; // Alternatively, 'a & b'.
+    /// assert_eq!(result.to_string(), "2..=2, 5..=6");
+    /// ```
     for & call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         (a.ranges() & b.ranges()).into_range_set_blaze()
     };
 
-    /// cmk
+    /// Symmetric difference the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Either, neither, or both inputs may be borrowed.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let b = RangeSetBlaze::from_iter([2..=6]);
+    /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
+    /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
+    /// ```
     for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         // We optimize this by using ranges() twice per input, rather than tee()
         let lhs0 = a.ranges();
@@ -1619,7 +1644,19 @@ gen_ops_ex!(
         ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze()
     };
 
-    /// cmk
+    /// Difference the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Either, neither, or both inputs may be borrowed.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let b = RangeSetBlaze::from_iter([2..=6]);
+    /// let result = &a - &b; // Alternatively, 'a - b'.
+    /// assert_eq!(result.to_string(), "1..=1, 7..=100");
+    /// ```
     for - call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         (a.ranges() - b.ranges()).into_range_set_blaze()
     };
@@ -1630,7 +1667,21 @@ gen_ops_ex!(
     <T>;
     types ref RangeSetBlaze<T> => RangeSetBlaze<T>;
 
-    /// cmk
+    /// Complement the contents of a [`RangeSetBlaze`].
+    ///
+    /// The input may be borrowed or not.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let result = !&a; // Alternatively, '!a'.
+    /// assert_eq!(
+    ///     result.to_string(),
+    ///     "-2147483648..=0, 3..=4, 101..=2147483647"
+    /// );
+    /// ```
     for ! call |a: &RangeSetBlaze<T>| {
         (!a.ranges()).into_range_set_blaze()
     };
