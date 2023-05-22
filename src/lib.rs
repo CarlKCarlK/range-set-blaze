@@ -1603,9 +1603,13 @@ where
 gen_ops_ex!(
     <T>;
     types ref RangeSetBlaze<T>, ref RangeSetBlaze<T> => RangeSetBlaze<T>;
+
+    /// cmk
     for & call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         (a.ranges() & b.ranges()).into_range_set_blaze()
     };
+
+    /// cmk
     for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         // We optimize this by using ranges() twice per input, rather than tee()
         let lhs0 = a.ranges();
@@ -1614,6 +1618,8 @@ gen_ops_ex!(
         let rhs1 = b.ranges();
         ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze()
     };
+
+    /// cmk
     for - call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         (a.ranges() - b.ranges()).into_range_set_blaze()
     };
@@ -1623,6 +1629,8 @@ gen_ops_ex!(
 gen_ops_ex!(
     <T>;
     types ref RangeSetBlaze<T> => RangeSetBlaze<T>;
+
+    /// cmk
     for ! call |a: &RangeSetBlaze<T>| {
         (!a.ranges()).into_range_set_blaze()
     };
