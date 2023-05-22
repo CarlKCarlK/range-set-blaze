@@ -7,3 +7,4 @@ doc/~*.*
 flamegraph.svg
 perf.data
 perf.data.old
+docs/criterion/*
