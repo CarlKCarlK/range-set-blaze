@@ -24,12 +24,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-          override: true
       - name: Test Rust
         run: |
           cargo clippy --verbose --all-targets --all-features -- -D warnings
@@ -49,5 +48,3 @@ jobs:
         run: |
           rustup target add i686-pc-windows-gnu
           cargo test --verbose --no-default-features --target=i686-pc-windows-gnu
-  
-  
