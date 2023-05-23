@@ -33,6 +33,7 @@ jobs:
         run: |
           cargo clippy --verbose --all-targets --all-features -- -D warnings
           cargo test --verbose --no-default-features
+          echo "runner.os: ${{ runner.os }}"
       - name: Test Rust 32-bit Ubuntu
         if: runner.os == 'Ubuntu'
         run: |
