@@ -36,7 +36,7 @@ jobs:
       - name: Test Rust 32-bit Ubuntu
         if: runner.os == 'Linux'
         run: |
-          rustup target add i686-unknown-linux-gnu
+          sudo rustup target add i686-unknown-linux-gnu
           apt-get install -y libc6-dev-i386 linux-libc-dev libc6-i386 gcc-multilib
           cargo test --verbose --no-default-features --target i686-unknown-linux-gnu
       - name: Test Rust 32-bit Windows
