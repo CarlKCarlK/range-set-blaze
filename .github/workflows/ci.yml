@@ -33,9 +33,8 @@ jobs:
         run: |
           cargo clippy --verbose --all-targets --all-features -- -D warnings
           cargo test --verbose --no-default-features
-          echo "runner.os: ${{ runner.os }}"
       - name: Test Rust 32-bit Ubuntu
-        if: runner.os == 'Ubuntu'
+        if: runner.os == 'Linux'
         run: |
           rustup target add i686-unknown-linux-gnu
           apt-get install -y libc6-dev-i386 linux-libc-dev libc6-i386 gcc-multilib
