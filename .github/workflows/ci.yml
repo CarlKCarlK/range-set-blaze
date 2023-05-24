@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest] #cmk , macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -29,18 +29,17 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-      # - name: Test Rust
-      #   run: |
-      #     cargo clippy --verbose --all-targets --all-features -- -D warnings
-      #     cargo test --verbose --no-default-features
+      - name: Test Rust
+        run: |
+          cargo clippy --verbose --all-targets --all-features -- -D warnings
+          cargo test --verbose --no-default-features
       - name: Test Rust 32-bit Ubuntu
         if: runner.os == 'Linux'
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libc6-dev-i386 linux-libc-dev libc6-i386 gcc-multilib
           version: 1
-      - name: Test Rust 32-bit Ubuntu
-        if: runner.os == 'Linux'
+      - if: runner.os == 'Linux'
         run: |
           rustup target add i686-unknown-linux-gnu
           cargo test --verbose --no-default-features --target i686-unknown-linux-gnu
