@@ -15,7 +15,7 @@ use criterion::{
 };
 use itertools::iproduct;
 use rand::{
-    distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, SeedableRng,
+    distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, SeedableRng, Rng,
 };
 // use pprof::criterion::Output; //PProfProfiler
 use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjoint};
@@ -1285,6 +1285,64 @@ fn worst(c: &mut Criterion) {
     group.finish();
 }
 
+
+fn overflow(c: &mut Criterion) {
+    let group_name = "overflow";
+    let seed = 0;
+    let parameter = 0;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+
+    group.bench_with_input("cast", &parameter, |bencher, _| {
+        let mut rng = StdRng::seed_from_u64(seed);
+        bencher.iter_batched(
+            || gen_pair(&mut rng),
+            |(a ,b)|
+            {
+                let result = (a as i64) + 1 < (b as i64);
+                criterion::black_box(result);
+            },
+            BatchSize::SmallInput,
+        );
+    });
+
+    group.bench_with_input("short curcuit", &parameter, |bencher, _| {
+        let mut rng = StdRng::seed_from_u64(seed);
+        bencher.iter_batched(
+            || gen_pair(&mut rng),
+            |(a ,b)|
+            {
+                let result = a < b && a+1 < b;
+                criterion::black_box(result);
+            },
+            BatchSize::SmallInput,
+        );
+    });
+
+    group.bench_with_input("branchless", &parameter, |bencher, _| {
+        let mut rng = StdRng::seed_from_u64(seed);
+        bencher.iter_batched(
+            || gen_pair(&mut rng),
+            |(a ,b)|
+            {
+                let (plus_1_maybe_bad, overflow) = a.overflowing_add(1);
+                let result = (a < b) & !overflow & (plus_1_maybe_bad < b);
+                criterion::black_box(result);
+            },
+            BatchSize::SmallInput,
+        );
+    });
+
+
+    group.finish();
+}
+
+fn gen_pair(rng: &mut StdRng) -> (i32, i32) {
+    (rng.gen_range(std::i32::MIN..=std::i32::MAX),rng.gen_range(std::i32::MIN..=std::i32::MAX))
+}
+
 criterion_group! {
     name = benches;
     config = Criterion::default();
@@ -1297,5 +1355,6 @@ criterion_group! {
     ingest_clumps_integers,
     ingest_clumps_ranges,
     ingest_clumps_easy,
+    overflow,
 }
 criterion_main!(benches);
