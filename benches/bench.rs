@@ -15,7 +15,7 @@ use criterion::{
 };
 use itertools::iproduct;
 use rand::{
-    distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, SeedableRng, Rng,
+    distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, Rng, SeedableRng,
 };
 // use pprof::criterion::Output; //PProfProfiler
 use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjoint};
@@ -1285,62 +1285,153 @@ fn worst(c: &mut Criterion) {
     group.finish();
 }
 
-
 fn overflow(c: &mut Criterion) {
     let group_name = "overflow";
-    let seed = 0;
-    let parameter = 0;
-
     let mut group = c.benchmark_group(group_name);
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    // group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    for seed in 0..=4 {
+        let parameter = seed;
 
-
-    group.bench_with_input("cast", &parameter, |bencher, _| {
-        let mut rng = StdRng::seed_from_u64(seed);
-        bencher.iter_batched(
-            || gen_pair(&mut rng),
-            |(a ,b)|
-            {
-                let result = (a as i64) + 1 < (b as i64);
-                criterion::black_box(result);
+        group.bench_with_input(
+            BenchmarkId::new("A: cast i64", parameter),
+            &parameter,
+            |bencher, _| {
+                let mut rng = StdRng::seed_from_u64(seed);
+                bencher.iter_batched(
+                    || gen_pair(&mut rng),
+                    |(a, b)| {
+                        let result = (a as i64) + 1 < (b as i64);
+                        criterion::black_box(result);
+                    },
+                    BatchSize::SmallInput,
+                );
             },
-            BatchSize::SmallInput,
         );
-    });
 
-    group.bench_with_input("short curcuit", &parameter, |bencher, _| {
-        let mut rng = StdRng::seed_from_u64(seed);
-        bencher.iter_batched(
-            || gen_pair(&mut rng),
-            |(a ,b)|
-            {
-                let result = a < b && a+1 < b;
-                criterion::black_box(result);
+        group.bench_with_input(
+            BenchmarkId::new("B: cast i128", parameter),
+            &parameter,
+            |bencher, _| {
+                let mut rng = StdRng::seed_from_u64(seed);
+                bencher.iter_batched(
+                    || gen_pair(&mut rng),
+                    |(a, b)| {
+                        let result = (a as i128) + 1 < (b as i128);
+                        criterion::black_box(result);
+                    },
+                    BatchSize::SmallInput,
+                );
             },
-            BatchSize::SmallInput,
         );
-    });
-
-    group.bench_with_input("branchless", &parameter, |bencher, _| {
-        let mut rng = StdRng::seed_from_u64(seed);
-        bencher.iter_batched(
-            || gen_pair(&mut rng),
-            |(a ,b)|
-            {
-                let (plus_1_maybe_bad, overflow) = a.overflowing_add(1);
-                let result = (a < b) & !overflow & (plus_1_maybe_bad < b);
-                criterion::black_box(result);
+        group.bench_with_input(
+            BenchmarkId::new("C: short curcuit", parameter),
+            &parameter,
+            |bencher, _| {
+                let mut rng = StdRng::seed_from_u64(seed);
+                bencher.iter_batched(
+                    || gen_pair(&mut rng),
+                    |(a, b)| {
+                        let result = a < b && a + 1 < b;
+                        criterion::black_box(result);
+                    },
+                    BatchSize::SmallInput,
+                );
             },
-            BatchSize::SmallInput,
         );
-    });
 
+        // group.bench_with_input(
+        //     BenchmarkId::new("human_branchless", parameter),
+        //     &parameter,
+        //     |bencher, _| {
+        //         let mut rng = StdRng::seed_from_u64(seed);
+        //         bencher.iter_batched(
+        //             || gen_pair(&mut rng),
+        //             |(a, b)| {
+        //                 let (plus_1_maybe_bad, overflow) = a.overflowing_add(1);
+        //                 let result = (a < b) & !overflow & (plus_1_maybe_bad < b);
+        //                 criterion::black_box(result);
+        //             },
+        //             BatchSize::SmallInput,
+        //         );
+        //     },
+        // );
+
+        group.bench_with_input(
+            BenchmarkId::new("D: ChatGPT", parameter),
+            &parameter,
+            |bencher, _| {
+                let mut rng = StdRng::seed_from_u64(seed);
+                bencher.iter_batched(
+                    || gen_pair(&mut rng),
+                    |(a, b)| {
+                        let result = match a.checked_add(1) {
+                            Some(sum) => sum < b,
+                            None => false,
+                        };
+                        criterion::black_box(result);
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+
+        // group.bench_with_input(
+        //     BenchmarkId::new("E: Human2", parameter),
+        //     &parameter,
+        //     |bencher, _| {
+        //         let mut rng = StdRng::seed_from_u64(seed);
+        //         bencher.iter_batched(
+        //             || gen_pair(&mut rng),
+        //             |(a, b)| {
+        //                 let result = a.saturating_add(1) < b;
+        //                 criterion::black_box(result);
+        //             },
+        //             BatchSize::SmallInput,
+        //         );
+        //     },
+        // );
+
+        //     group.bench_with_input(
+        //         BenchmarkId::new("not max short curcuit", parameter),
+        //         &parameter,
+        //         |bencher, _| {
+        //             let mut rng = StdRng::seed_from_u64(seed);
+        //             bencher.iter_batched(
+        //                 || gen_pair(&mut rng),
+        //                 |(a, b)| {
+        //                     let result = a != i32::MAX && a + 1 < b;
+        //                     criterion::black_box(result);
+        //                 },
+        //                 BatchSize::SmallInput,
+        //             );
+        //         },
+        //     );
+
+        //     group.bench_with_input(
+        //         BenchmarkId::new("chat 4 map", parameter),
+        //         &parameter,
+        //         |bencher, _| {
+        //             let mut rng = StdRng::seed_from_u64(seed);
+        //             bencher.iter_batched(
+        //                 || gen_pair(&mut rng),
+        //                 |(a, b)| {
+        //                     let result = a.checked_add(1).map_or(false, |val| val < b);
+        //                     criterion::black_box(result);
+        //                 },
+        //                 BatchSize::SmallInput,
+        //             );
+        //         },
+        //     );
+    }
 
     group.finish();
 }
 
 fn gen_pair(rng: &mut StdRng) -> (i32, i32) {
-    (rng.gen_range(std::i32::MIN..=std::i32::MAX),rng.gen_range(std::i32::MIN..=std::i32::MAX))
+    (
+        rng.gen_range(std::i32::MIN..=std::i32::MAX),
+        rng.gen_range(std::i32::MIN..=std::i32::MAX),
+    )
 }
 
 criterion_group! {

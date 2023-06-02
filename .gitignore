@@ -8,3 +8,4 @@ flamegraph.svg
 perf.data
 perf.data.old
 docs/criterion/*
+benches/summary*.tsv
