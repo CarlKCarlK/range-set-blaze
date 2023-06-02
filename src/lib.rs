@@ -20,6 +20,7 @@ pub use merge::KMerge;
 pub use merge::Merge;
 pub use not_iter::NotIter;
 use num_traits::ops::overflowing::OverflowingSub;
+use num_traits::CheckedAdd;
 use num_traits::One;
 use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
@@ -57,6 +58,7 @@ pub trait Integer:
     + Sync
     + OverflowingSub
     + SampleUniform
+    + CheckedAdd
 {
     /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note
     /// that it can't be `u8` because the length ranges from 0 to 256, which is one too large for `u8`.
@@ -975,7 +977,10 @@ impl<T: Integer> RangeSetBlaze<T> {
         let mut before = self.btree_map.range_mut(..=start).rev();
         if let Some((start_before, end_before)) = before.next() {
             // Must check this in two parts to avoid overflow
-            if *end_before < start && *end_before + T::one() < start {
+            if match (*end_before).checked_add(&T::one()) {
+                Some(sum) => sum < start,
+                None => false,
+            } {
                 self.internal_add2(&range);
             } else if *end_before < end {
                 self.len += T::safe_len(&(*end_before..=end - T::one()));
