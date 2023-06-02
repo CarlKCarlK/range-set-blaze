@@ -21,7 +21,7 @@ use tests_common::{How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
 use std::ops::BitAndAssign;
 
-type I32SafeLen =  <i32 as crate::Integer>::SafeLen;
+type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
 #[test]
 fn insert_255u8() {
@@ -850,7 +850,6 @@ fn integer_coverage() {
 #[allow(clippy::bool_assert_comparison)]
 fn lib_coverage_0() {
     let a = RangeSetBlaze::from_iter([1..=2, 3..=4]);
-    let _b = a.clone();
     let mut hasher = DefaultHasher::new();
     a.hash(&mut hasher);
     let _d = RangeSetBlaze::<i32>::default();

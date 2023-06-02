@@ -962,6 +962,35 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
+    // fn internal_add_chatgpt(&mut self, range: RangeInclusive<T>) {
+    //     let (start, end) = range.into_inner();
+
+    //     // Find the first overlapping range or the nearest one before it
+    //     let mut next = self.btree_map.range(..=start).next_back();
+
+    //     // Find all overlapping ranges
+    //     while let Some((&start_key, &end_value)) = next {
+    //         // If this range doesn't overlap, we're done
+    //         if end_value < start {
+    //             break;
+    //         }
+
+    //         // If this range overlaps or is adjacent, merge it
+    //         if end_value >= start - T::one() {
+    //             let new_end = end.max(end_value);
+    //             let new_start = start.min(start_key);
+
+    //             self.btree_map.remove(&start_key);
+    //             self.btree_map.insert(new_start, new_end);
+
+    //             // Restart from the beginning
+    //             next = self.btree_map.range(..=new_start).next_back();
+    //         } else {
+    //             next = self.btree_map.range(..start_key).next_back();
+    //         }
+    //     }
+    // }
+
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     fn internal_add(&mut self, range: RangeInclusive<T>) {
