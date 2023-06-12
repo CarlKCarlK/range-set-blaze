@@ -1411,21 +1411,21 @@ fn overflow(c: &mut Criterion) {
         },
     );
 
-    // group.bench_with_input(
-    //     BenchmarkId::new("E: Human2", parameter),
-    //     &parameter,
-    //     |bencher, _| {
-    //         let mut rng = StdRng::seed_from_u64(seed);
-    //         bencher.iter_batched(
-    //             || gen_pair(&mut rng),
-    //             |(a, b)| {
-    //                 let result = a.saturating_add(1) < b;
-    //                 criterion::black_box(result);
-    //             },
-    //             BatchSize::NumIterations(num_iterations),
-    //         );
-    //     },
-    // );
+    group.bench_with_input(
+        BenchmarkId::new("Z: Human2", parameter),
+        &parameter,
+        |bencher, _| {
+            let mut rng = StdRng::seed_from_u64(seed);
+            bencher.iter_batched(
+                || gen_pair(&mut rng),
+                |(a, b)| {
+                    let result = a.saturating_add(1) < b;
+                    criterion::black_box(result);
+                },
+                BatchSize::NumIterations(num_iterations),
+            );
+        },
+    );
 
     //     group.bench_with_input(
     //         BenchmarkId::new("not max short curcuit", parameter),
