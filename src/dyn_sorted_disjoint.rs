@@ -1,4 +1,6 @@
-use std::ops::RangeInclusive;
+use core::ops::RangeInclusive;
+
+use alloc::boxed::Box;
 
 use crate::{Integer, SortedDisjoint, SortedStarts};
 

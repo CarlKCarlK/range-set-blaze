@@ -12,11 +12,12 @@ keywords = ["set", "range", "data-structures", "btree", "interval"]
 categories = ["data-structures"]
 homepage = "https://github.com/CarlKCarlK/range-set-blaze"
 
-
 [workspace]
-
 members = [".", "tests_common"]
+
 [lib]
+no_std = true
+crate-type = ["staticlib"]
 
 [dependencies]
 itertools = "0.10.1"
@@ -29,6 +30,7 @@ rand = "0.8.4"
 [dev-dependencies]
 tests_common = { path = "tests_common" }
 syntactic-for = "0.1.1"
+# cmk update
 criterion = { version = "0.4", features = ["html_reports"] }
 trybuild = "1.0.53"
 thousands = "0.2.0"

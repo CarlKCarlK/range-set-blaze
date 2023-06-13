@@ -1,3 +1,4 @@
+#![no_std]
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
@@ -13,6 +14,18 @@ mod tests;
 mod union_iter;
 mod unsorted_disjoint;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
+use alloc::vec::Vec;
+use core::cmp::max;
+use core::cmp::Ordering;
+use core::convert::From;
+use core::fmt;
+use core::iter::FusedIterator;
+use core::ops::BitOr;
+use core::ops::BitOrAssign;
+use core::ops::Bound;
+use core::ops::RangeBounds;
+use core::ops::RangeInclusive;
+use core::str::FromStr;
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 use gen_ops::gen_ops_ex;
 use itertools::Tee;
@@ -25,18 +38,9 @@ use num_traits::One;
 use num_traits::Zero;
 use rand::distributions::uniform::SampleUniform;
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
-use std::cmp::max;
-use std::cmp::Ordering;
-use std::collections::BTreeMap;
-use std::convert::From;
-use std::fmt;
-use std::iter::FusedIterator;
-use std::ops::BitOr;
-use std::ops::BitOrAssign;
-use std::ops::Bound;
-use std::ops::RangeBounds;
-use std::ops::RangeInclusive;
-use std::str::FromStr;
+// cmk use std::collections::BTreeMap;
+extern crate alloc;
+use alloc::collections::BTreeMap;
 pub use union_iter::UnionIter;
 pub use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
@@ -48,7 +52,7 @@ pub trait Integer:
     + FromStr
     + fmt::Display
     + fmt::Debug
-    + std::iter::Sum
+    + core::iter::Sum
     + num_traits::NumAssignOps
     + FromStr
     + Copy
@@ -74,14 +78,14 @@ pub trait Integer:
     /// let len: <u8 as Integer>::SafeLen = RangeSetBlaze::from_iter([0u8..=255]).len();
     /// assert_eq!(len, 256);
     /// ```
-    type SafeLen: std::hash::Hash
+    type SafeLen: core::hash::Hash
         + num_integer::Integer
         + num_traits::NumAssignOps
         + num_traits::Bounded
         + num_traits::NumCast
         + num_traits::One
-        + std::ops::AddAssign
-        + std::ops::SubAssign
+        + core::ops::AddAssign
+        + core::ops::SubAssign
         + Copy
         + PartialEq
         + Eq
@@ -1799,7 +1803,7 @@ where
 /// [`into_iter`]: RangeSetBlaze::into_iter
 pub struct IntoIter<T: Integer> {
     option_range: Option<RangeInclusive<T>>,
-    into_iter: std::collections::btree_map::IntoIter<T, T>,
+    into_iter: alloc::collections::btree_map::IntoIter<T, T>,
 }
 
 impl<T: Integer> FusedIterator for IntoIter<T> {}
