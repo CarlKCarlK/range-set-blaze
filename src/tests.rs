@@ -1,25 +1,28 @@
 #![cfg(test)]
 
 use super::*;
-use itertools::Itertools;
-use quickcheck_macros::quickcheck;
-use rand::{rngs::StdRng, SeedableRng};
-use std::fmt::Debug;
-use std::{
+use alloc::borrow::ToOwned;
+use alloc::{collections::BTreeSet, vec::Vec};
+use core::fmt::Debug;
+
+use core::{
     any::Any,
-    collections::{hash_map::DefaultHasher, BTreeSet},
     fmt::Display,
     hash::Hash,
     iter::FusedIterator,
     ops::BitOr,
     panic::{RefUnwindSafe, UnwindSafe},
-}; // , time::Instant
-   // use sorted_iter::assume::AssumeSortedByKeyExt;
-   // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
+};
+use itertools::Itertools;
+use quickcheck_macros::quickcheck;
+use rand::{rngs::StdRng, SeedableRng};
+use std::collections::hash_map::DefaultHasher; // , time::Instant
+                                               // use sorted_iter::assume::AssumeSortedByKeyExt;
+                                               // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use syntactic_for::syntactic_for;
 use tests_common::{How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
-use std::ops::BitAndAssign;
+use core::ops::BitAndAssign;
 
 type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
@@ -619,7 +622,7 @@ fn empty() {
     let _a0 = RangeSetBlaze::from_iter([0..=0; 0]);
     let _a = RangeSetBlaze::<i32>::new();
 
-    let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
+    let a_iter: core::array::IntoIter<i32, 0> = [].into_iter();
     let a = a_iter.collect::<RangeSetBlaze<i32>>();
     let arr: [i32; 0] = [];
     let b = RangeSetBlaze::from_iter(arr);
@@ -758,7 +761,7 @@ fn is_like_btreeset<
 
 fn is_like_check_sorted_disjoint<
     T: Clone
-        + std::fmt::Debug
+        + core::fmt::Debug
         + Default
         + IntoIterator
         + RefUnwindSafe

@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
@@ -27,7 +27,7 @@ use core::ops::RangeBounds;
 use core::ops::RangeInclusive;
 use core::str::FromStr;
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
-use gen_ops::gen_ops_ex;
+// use gen_ops::gen_ops_ex;
 use itertools::Tee;
 pub use merge::KMerge;
 pub use merge::Merge;
@@ -36,7 +36,7 @@ use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::CheckedAdd;
 use num_traits::One;
 use num_traits::Zero;
-use rand::distributions::uniform::SampleUniform;
+// cmk use rand::distributions::uniform::SampleUniform;
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
 // cmk use std::collections::BTreeMap;
 extern crate alloc;
@@ -61,7 +61,6 @@ pub trait Integer:
     + Send
     + Sync
     + OverflowingSub
-    + SampleUniform
     + CheckedAdd
 {
     /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note
@@ -1638,11 +1637,76 @@ where
     }
 }
 
-gen_ops_ex!(
-    <T>;
-    types ref RangeSetBlaze<T>, ref RangeSetBlaze<T> => RangeSetBlaze<T>;
+// gen_ops_ex!(
+//     <T>;
+//     types ref RangeSetBlaze<T>, ref RangeSetBlaze<T> => RangeSetBlaze<T>;
 
+//     /// Intersects the contents of two [`RangeSetBlaze`]'s.
+//     ///
+//     /// Either, neither, or both inputs may be borrowed.
+//     ///
+//     /// # Examples
+//     /// ```
+//     /// use range_set_blaze::prelude::*;
+//     ///
+//     /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+//     /// let b = RangeSetBlaze::from_iter([2..=6]);
+//     /// let result = &a & &b; // Alternatively, 'a & b'.
+//     /// assert_eq!(result.to_string(), "2..=2, 5..=6");
+//     /// ```
+//     for & call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+//         (a.ranges() & b.ranges()).into_range_set_blaze()
+//     };
 
+//     /// Symmetric difference the contents of two [`RangeSetBlaze`]'s.
+//     ///
+//     /// Either, neither, or both inputs may be borrowed.
+//     ///
+//     /// # Examples
+//     /// ```
+//     /// use range_set_blaze::prelude::*;
+//     ///
+//     /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+//     /// let b = RangeSetBlaze::from_iter([2..=6]);
+//     /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
+//     /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
+//     /// ```
+//     for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+//         // We optimize this by using ranges() twice per input, rather than tee()
+//         let lhs0 = a.ranges();
+//         let lhs1 = a.ranges();
+//         let rhs0 = b.ranges();
+//         let rhs1 = b.ranges();
+//         ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze()
+//     };
+
+//     /// Difference the contents of two [`RangeSetBlaze`]'s.
+//     ///
+//     /// Either, neither, or both inputs may be borrowed.
+//     ///
+//     /// # Examples
+//     /// ```
+//     /// use range_set_blaze::prelude::*;
+//     ///
+//     /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+//     /// let b = RangeSetBlaze::from_iter([2..=6]);
+//     /// let result = &a - &b; // Alternatively, 'a - b'.
+//     /// assert_eq!(result.to_string(), "1..=1, 7..=100");
+//     /// ```
+//     for - call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+//         (a.ranges() - b.ranges()).into_range_set_blaze()
+//     };
+//     where T: Integer //Where clause for all impl's
+// );
+
+//
+
+// CMK
+impl<T> ::core::ops::BitAnd<&RangeSetBlaze<T>> for &RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
     /// Intersects the contents of two [`RangeSetBlaze`]'s.
     ///
     /// Either, neither, or both inputs may be borrowed.
@@ -1656,10 +1720,18 @@ gen_ops_ex!(
     /// let result = &a & &b; // Alternatively, 'a & b'.
     /// assert_eq!(result.to_string(), "2..=2, 5..=6");
     /// ```
-    for & call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-        (a.ranges() & b.ranges()).into_range_set_blaze()
-    };
-
+    #[inline]
+    fn bitand(self, rhs: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+            (a.ranges() & b.ranges()).into_range_set_blaze()
+        })(self, rhs)
+    }
+}
+impl<T> ::core::ops::BitXor<&RangeSetBlaze<T>> for &RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
     /// Symmetric difference the contents of two [`RangeSetBlaze`]'s.
     ///
     /// Either, neither, or both inputs may be borrowed.
@@ -1673,15 +1745,22 @@ gen_ops_ex!(
     /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
     /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
     /// ```
-    for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-        // We optimize this by using ranges() twice per input, rather than tee()
-        let lhs0 = a.ranges();
-        let lhs1 = a.ranges();
-        let rhs0 = b.ranges();
-        let rhs1 = b.ranges();
-        ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze()
-    };
-
+    #[inline]
+    fn bitxor(self, rhs: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+            let lhs0 = a.ranges();
+            let lhs1 = a.ranges();
+            let rhs0 = b.ranges();
+            let rhs1 = b.ranges();
+            ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze()
+        })(self, rhs)
+    }
+}
+impl<T> ::core::ops::Sub<&RangeSetBlaze<T>> for &RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
     /// Difference the contents of two [`RangeSetBlaze`]'s.
     ///
     /// Either, neither, or both inputs may be borrowed.
@@ -1695,16 +1774,255 @@ gen_ops_ex!(
     /// let result = &a - &b; // Alternatively, 'a - b'.
     /// assert_eq!(result.to_string(), "1..=1, 7..=100");
     /// ```
-    for - call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-        (a.ranges() - b.ranges()).into_range_set_blaze()
-    };
-    where T: Integer //Where clause for all impl's
-);
-
-gen_ops_ex!(
-    <T>;
-    types ref RangeSetBlaze<T> => RangeSetBlaze<T>;
-
+    #[inline]
+    fn sub(self, rhs: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+            (a.ranges() - b.ranges()).into_range_set_blaze()
+        })(self, rhs)
+    }
+}
+impl<T> ::core::ops::BitAnd<RangeSetBlaze<T>> for &RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
+    /// Intersects the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Either, neither, or both inputs may be borrowed.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let b = RangeSetBlaze::from_iter([2..=6]);
+    /// let result = &a & &b; // Alternatively, 'a & b'.
+    /// assert_eq!(result.to_string(), "2..=2, 5..=6");
+    /// ```
+    #[inline]
+    fn bitand(self, rhs: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+            (a.ranges() & b.ranges()).into_range_set_blaze()
+        })(self, &rhs)
+    }
+}
+impl<T> ::core::ops::BitXor<RangeSetBlaze<T>> for &RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
+    /// Symmetric difference the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Either, neither, or both inputs may be borrowed.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let b = RangeSetBlaze::from_iter([2..=6]);
+    /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
+    /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
+    /// ```
+    #[inline]
+    fn bitxor(self, rhs: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+            let lhs0 = a.ranges();
+            let lhs1 = a.ranges();
+            let rhs0 = b.ranges();
+            let rhs1 = b.ranges();
+            ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze()
+        })(self, &rhs)
+    }
+}
+impl<T> ::core::ops::Sub<RangeSetBlaze<T>> for &RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
+    /// Difference the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Either, neither, or both inputs may be borrowed.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let b = RangeSetBlaze::from_iter([2..=6]);
+    /// let result = &a - &b; // Alternatively, 'a - b'.
+    /// assert_eq!(result.to_string(), "1..=1, 7..=100");
+    /// ```
+    #[inline]
+    fn sub(self, rhs: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+            (a.ranges() - b.ranges()).into_range_set_blaze()
+        })(self, &rhs)
+    }
+}
+impl<T> ::core::ops::BitAnd<&RangeSetBlaze<T>> for RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
+    /// Intersects the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Either, neither, or both inputs may be borrowed.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let b = RangeSetBlaze::from_iter([2..=6]);
+    /// let result = &a & &b; // Alternatively, 'a & b'.
+    /// assert_eq!(result.to_string(), "2..=2, 5..=6");
+    /// ```
+    #[inline]
+    fn bitand(self, rhs: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+            (a.ranges() & b.ranges()).into_range_set_blaze()
+        })(&self, rhs)
+    }
+}
+impl<T> ::core::ops::BitXor<&RangeSetBlaze<T>> for RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
+    /// Symmetric difference the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Either, neither, or both inputs may be borrowed.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let b = RangeSetBlaze::from_iter([2..=6]);
+    /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
+    /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
+    /// ```
+    #[inline]
+    fn bitxor(self, rhs: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+            let lhs0 = a.ranges();
+            let lhs1 = a.ranges();
+            let rhs0 = b.ranges();
+            let rhs1 = b.ranges();
+            ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze()
+        })(&self, rhs)
+    }
+}
+impl<T> ::core::ops::Sub<&RangeSetBlaze<T>> for RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
+    /// Difference the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Either, neither, or both inputs may be borrowed.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let b = RangeSetBlaze::from_iter([2..=6]);
+    /// let result = &a - &b; // Alternatively, 'a - b'.
+    /// assert_eq!(result.to_string(), "1..=1, 7..=100");
+    /// ```
+    #[inline]
+    fn sub(self, rhs: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+            (a.ranges() - b.ranges()).into_range_set_blaze()
+        })(&self, rhs)
+    }
+}
+impl<T> ::core::ops::BitAnd<RangeSetBlaze<T>> for RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
+    /// Intersects the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Either, neither, or both inputs may be borrowed.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let b = RangeSetBlaze::from_iter([2..=6]);
+    /// let result = &a & &b; // Alternatively, 'a & b'.
+    /// assert_eq!(result.to_string(), "2..=2, 5..=6");
+    /// ```
+    #[inline]
+    fn bitand(self, rhs: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+            (a.ranges() & b.ranges()).into_range_set_blaze()
+        })(&self, &rhs)
+    }
+}
+impl<T> ::core::ops::BitXor<RangeSetBlaze<T>> for RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
+    /// Symmetric difference the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Either, neither, or both inputs may be borrowed.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let b = RangeSetBlaze::from_iter([2..=6]);
+    /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
+    /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
+    /// ```
+    #[inline]
+    fn bitxor(self, rhs: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+            let lhs0 = a.ranges();
+            let lhs1 = a.ranges();
+            let rhs0 = b.ranges();
+            let rhs1 = b.ranges();
+            ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze()
+        })(&self, &rhs)
+    }
+}
+impl<T> ::core::ops::Sub<RangeSetBlaze<T>> for RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
+    /// Difference the contents of two [`RangeSetBlaze`]'s.
+    ///
+    /// Either, neither, or both inputs may be borrowed.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let b = RangeSetBlaze::from_iter([2..=6]);
+    /// let result = &a - &b; // Alternatively, 'a - b'.
+    /// assert_eq!(result.to_string(), "1..=1, 7..=100");
+    /// ```
+    #[inline]
+    fn sub(self, rhs: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+            (a.ranges() - b.ranges()).into_range_set_blaze()
+        })(&self, &rhs)
+    }
+}
+impl<T> core::ops::Not for &RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
     /// Complement the contents of a [`RangeSetBlaze`].
     ///
     /// The input may be borrowed or not.
@@ -1720,12 +2038,36 @@ gen_ops_ex!(
     ///     "-2147483648..=0, 3..=4, 101..=2147483647"
     /// );
     /// ```
-    for ! call |a: &RangeSetBlaze<T>| {
-        (!a.ranges()).into_range_set_blaze()
-    };
-
-    where T: Integer //Where clause for all impl's
-);
+    #[inline]
+    fn not(self) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>| (!a.ranges()).into_range_set_blaze())(&self)
+    }
+}
+impl<T> core::ops::Not for RangeSetBlaze<T>
+where
+    T: Integer,
+{
+    type Output = RangeSetBlaze<T>;
+    /// Complement the contents of a [`RangeSetBlaze`].
+    ///
+    /// The input may be borrowed or not.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    /// let result = !&a; // Alternatively, '!a'.
+    /// assert_eq!(
+    ///     result.to_string(),
+    ///     "-2147483648..=0, 3..=4, 101..=2147483647"
+    /// );
+    /// ```
+    #[inline]
+    fn not(self) -> RangeSetBlaze<T> {
+        (|a: &RangeSetBlaze<T>| (!a.ranges()).into_range_set_blaze())(&self)
+    }
+}
 
 impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
     type Item = T;

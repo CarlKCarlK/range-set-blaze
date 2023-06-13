@@ -1,6 +1,7 @@
 use std::ops::RangeInclusive;
 
 use num_traits::identities::One;
+use rand::distributions::uniform::SampleUniform;
 use rand::rngs::StdRng;
 use rand::Rng;
 use range_set_blaze::Integer;
@@ -61,7 +62,7 @@ impl<'a, T: Integer> MemorylessRange<'a, T> {
     }
 }
 
-impl<'a, T: Integer> Iterator for MemorylessRange<'a, T> {
+impl<'a, T: Integer + SampleUniform> Iterator for MemorylessRange<'a, T> {
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -145,7 +146,7 @@ impl<'a, T: Integer> MemorylessIter<'a, T> {
     }
 }
 
-impl<'a, T: Integer> Iterator for MemorylessIter<'a, T> {
+impl<'a, T: Integer + SampleUniform> Iterator for MemorylessIter<'a, T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -161,7 +162,7 @@ impl<'a, T: Integer> Iterator for MemorylessIter<'a, T> {
     }
 }
 
-pub fn k_sets<T: Integer>(
+pub fn k_sets<T: Integer + SampleUniform>(
     k: usize,
     range_len: usize,
     range: &RangeInclusive<T>,

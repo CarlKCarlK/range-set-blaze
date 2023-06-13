@@ -1,6 +1,6 @@
 [package]
 name = "range-set-blaze"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 description = "Integer sets as fast, sorted, integer ranges with full set operations"
 repository = "https://github.com/CarlKCarlK/range-set-blaze"
@@ -16,8 +16,7 @@ homepage = "https://github.com/CarlKCarlK/range-set-blaze"
 members = [".", "tests_common"]
 
 [lib]
-no_std = true
-crate-type = ["staticlib"]
+
 
 [dependencies]
 itertools = "0.10.1"
@@ -25,13 +24,13 @@ num-integer = "0.1.44"
 num-traits = "0.2.15"
 gen_ops = "0.3.0"
 thiserror = "1.0"
-rand = "0.8.4"
 
 [dev-dependencies]
+rand = "0.8.4"
 tests_common = { path = "tests_common" }
 syntactic-for = "0.1.1"
 # cmk update
-criterion = { version = "0.4", features = ["html_reports"] }
+criterion = { version = "0.5.1", features = ["html_reports"] }
 trybuild = "1.0.53"
 thousands = "0.2.0"
 quickcheck = "1.0.3"

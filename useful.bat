@@ -20,3 +20,4 @@ python benches\summary.py > benches\summary.tsv
 
 # publish
 cargo publish --dry-run
+
