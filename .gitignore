@@ -11,3 +11,5 @@ docs/criterion/*
 benches/summary*.tsv
 bench.bat
 test.bat
+.cargo/config
+benches/results7.xlsx

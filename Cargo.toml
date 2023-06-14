@@ -18,7 +18,7 @@ members = [".", "tests_common"]
 [lib]
 
 [features]
-default = ["use_std"]
+default = ["use_alloc"]
 use_std = ["itertools", "num-integer_default", "num-traits_default"]
 use_alloc  = ["itertools_no_default", "num-integer_no_default", "num-traits_no_default"]
 

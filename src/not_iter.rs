@@ -3,7 +3,8 @@ use core::{
     ops::{self, RangeInclusive},
 };
 
-use crate::{BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisjoint};
+use crate::BitAndMerge;
+use crate::{BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisjoint};
 
 /// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
 /// i.e., all the integers not in the original iterator, as sorted & disjoint ranges.

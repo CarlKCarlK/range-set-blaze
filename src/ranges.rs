@@ -11,9 +11,9 @@ use itertools_no_default as itertools;
 
 use itertools::Itertools;
 
+use crate::BitAndMerge;
 use crate::{
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXOr, BitXOrTee, Integer, NotIter, SortedDisjoint,
-    SortedStarts,
+    BitOrMerge, BitSubMerge, BitXOr, BitXOrTee, Integer, NotIter, SortedDisjoint, SortedStarts,
 };
 
 /// An iterator that visits the ranges in the [`RangeSetBlaze`],

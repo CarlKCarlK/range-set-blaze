@@ -11,10 +11,10 @@ use itertools_no_default as itertools;
 
 use itertools::Itertools;
 
+use crate::BitAndMerge;
 use crate::{
     unsorted_disjoint::{AssumeSortedStarts, UnsortedDisjoint},
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjoint,
-    SortedStarts,
+    BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjoint, SortedStarts,
 };
 
 /// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,

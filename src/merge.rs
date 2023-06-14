@@ -7,8 +7,7 @@ use itertools;
 use itertools_no_default as itertools;
 
 use itertools::{Itertools, MergeBy};
-// only use KMergeBy, when not no_std
-#[cfg(not(no_std))]
+
 use itertools::KMergeBy;
 
 use crate::{Integer, SortedDisjoint, SortedStarts};
