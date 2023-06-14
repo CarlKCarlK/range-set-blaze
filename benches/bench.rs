@@ -13,7 +13,11 @@ use criterion::{
     criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
     PlotConfiguration,
 };
+#[cfg(feature = "use_std")]
+use itertools;
 use itertools::iproduct;
+#[cfg(feature = "use_alloc")]
+use itertools_no_default as itertools;
 use rand::{
     distributions::{uniform::SampleUniform, Uniform},
     prelude::Distribution,

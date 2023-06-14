@@ -244,12 +244,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gen_ops"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7c56cad8ee78109d547e40bf4ad78968a25157e7963d799d79921655629825a"
-
-[[package]]
 name = "getrandom"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -551,7 +545,6 @@ name = "range-set-blaze"
 version = "0.1.7"
 dependencies = [
  "criterion",
- "gen_ops",
  "glob",
  "itertools",
  "num-integer",
@@ -564,7 +557,6 @@ dependencies = [
  "rangemap",
  "syntactic-for",
  "tests_common",
- "thiserror",
  "thousands",
  "trybuild",
 ]
@@ -756,26 +748,6 @@ dependencies = [
  "num-traits",
  "rand",
  "range-set-blaze",
-]
-
-[[package]]
-name = "thiserror"
-version = "1.0.40"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "978c9a314bd8dc99be594bc3c175faaa9794be04a5a5e153caba6915336cebac"
-dependencies = [
- "thiserror-impl",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "1.0.40"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9456a42c5b0d803c8cd86e73dd7cc9edd429499f37a3550d286d5e86720569f"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.14",
 ]
 
 [[package]]

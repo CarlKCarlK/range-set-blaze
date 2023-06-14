@@ -1,6 +1,7 @@
-use core::ops::RangeInclusive;
-
 use alloc::boxed::Box;
+use core::iter::Iterator;
+use core::ops::RangeInclusive;
+use core::option::Option;
 
 use crate::{Integer, SortedDisjoint, SortedStarts};
 

@@ -1,6 +1,15 @@
+use core::option::Option;
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
-use itertools::{Itertools, KMergeBy, MergeBy};
+#[cfg(feature = "use_std")]
+use itertools;
+#[cfg(feature = "use_alloc")]
+use itertools_no_default as itertools;
+
+use itertools::{Itertools, MergeBy};
+// only use KMergeBy, when not no_std
+#[cfg(not(no_std))]
+use itertools::KMergeBy;
 
 use crate::{Integer, SortedDisjoint, SortedStarts};
 

@@ -4,6 +4,11 @@ use core::{
     ops::{self, RangeInclusive},
 };
 
+#[cfg(feature = "use_std")]
+use itertools;
+#[cfg(feature = "use_alloc")]
+use itertools_no_default as itertools;
+
 use itertools::Itertools;
 
 use crate::{

@@ -1,7 +1,11 @@
 #![cfg(test)]
 
 use criterion::{BatchSize, BenchmarkId, Criterion};
+#[cfg(feature = "use_std")]
+use itertools;
 use itertools::Itertools;
+#[cfg(feature = "use_alloc")]
+use itertools_no_default as itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use range_set_blaze::{
@@ -14,7 +18,7 @@ use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
 
-type I32SafeLen =  <i32 as range_set_blaze::Integer>::SafeLen;
+type I32SafeLen = <i32 as range_set_blaze::Integer>::SafeLen;
 
 #[test]
 fn insert_255u8() {

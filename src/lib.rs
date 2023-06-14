@@ -1,4 +1,3 @@
-#![cfg_attr(not(test), no_std)]
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
@@ -15,23 +14,47 @@ mod union_iter;
 mod unsorted_disjoint;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
 use alloc::vec::Vec;
+use core::assert;
+use core::clone::Clone;
 use core::cmp::max;
 use core::cmp::Ordering;
+use core::cmp::{Eq, Ord, PartialEq, PartialOrd};
 use core::convert::From;
+use core::debug_assert;
+use core::default::Default;
 use core::fmt;
+use core::hash::Hash;
+use core::include_str;
 use core::iter::FusedIterator;
+use core::marker::Sized;
+use core::marker::{Copy, Send, Sync};
 use core::ops::BitOr;
 use core::ops::BitOrAssign;
 use core::ops::Bound;
+use core::ops::FnMut;
 use core::ops::RangeBounds;
 use core::ops::RangeInclusive;
+use core::option::Option;
+use core::option::Option::{None, Some};
 use core::str::FromStr;
+use core::write;
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 // use gen_ops::gen_ops_ex;
+#[cfg(feature = "use_std")]
+use itertools;
+#[cfg(feature = "use_alloc")]
+use itertools_no_default as itertools;
+
 use itertools::Tee;
 pub use merge::KMerge;
 pub use merge::Merge;
 pub use not_iter::NotIter;
+
+#[cfg(feature = "use_std")]
+use num_traits_default as num_traits;
+#[cfg(feature = "use_alloc")]
+use num_traits_no_default as num_traits;
+
 use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::CheckedAdd;
 use num_traits::One;
@@ -45,6 +68,11 @@ pub use union_iter::UnionIter;
 pub use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
+
+#[cfg(feature = "use_std")]
+use num_integer_default as num_integer;
+#[cfg(feature = "use_alloc")]
+use num_integer_no_default as num_integer;
 
 /// The element trait of the [`RangeSetBlaze`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
 pub trait Integer:
