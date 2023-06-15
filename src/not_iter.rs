@@ -152,7 +152,6 @@ where
     }
 }
 
-// cmk #[cfg(not(feature = "alloc"))]
 impl<T: Integer, R, L> ops::BitXor<R> for NotIter<T, L>
 where
     L: SortedDisjoint<T>,

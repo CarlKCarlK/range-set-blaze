@@ -4,7 +4,6 @@
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
 mod integer;
-mod kmergeby;
 mod merge;
 mod not_iter;
 pub mod prelude;
@@ -40,8 +39,7 @@ use core::option::Option::{None, Some};
 use core::str::FromStr;
 use core::write;
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
-// use kmergeby::CMKTee;
-// use gen_ops::gen_ops_ex;
+// use gen_ops::gen_ops_ex; // awaiting bug fix
 use itertools::Tee;
 pub use merge::KMerge;
 pub use merge::Merge;
@@ -1402,32 +1400,16 @@ pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
 #[doc(hidden)]
 pub type BitSubMerge<T, L, R> = NotIter<T, BitOrMerge<T, NotIter<T, L>, R>>;
 #[doc(hidden)]
-// #[cfg(not(feature = "alloc"))]
 pub type BitXOrTee<T, L, R> =
     BitOrMerge<T, BitSubMerge<T, Tee<L>, Tee<R>>, BitSubMerge<T, Tee<R>, Tee<L>>>;
-// #[cfg(feature = "alloc")]
-// pub type BitXOrTee<T, L, R> =
-//     BitOrMerge<T, BitSubMerge<T, CMKTee<L>, CMKTee<R>>, BitSubMerge<T, CMKTee<R>, CMKTee<L>>>;
-
 #[doc(hidden)]
-// #[cfg(not(feature = "alloc"))]
 pub type BitXOr<T, L, R> = BitOrMerge<T, BitSubMerge<T, L, Tee<R>>, BitSubMerge<T, Tee<R>, L>>;
-// #[cfg(feature = "alloc")]
-// pub type BitXOr<T, L, R> =
-//     BitOrMerge<T, BitSubMerge<T, L, CMKTee<R>>, BitSubMerge<T, CMKTee<R>, L>>;
 #[doc(hidden)]
-// #[cfg(not(feature = "alloc"))]
 pub type BitEq<T, L, R> = BitOrMerge<
     T,
     NotIter<T, BitOrMerge<T, NotIter<T, Tee<L>>, NotIter<T, Tee<R>>>>,
     NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
 >;
-// #[cfg(feature = "alloc")]
-// pub type BitEq<T, L, R> = BitOrMerge<
-//     T,
-//     NotIter<T, BitOrMerge<T, NotIter<T, CMKTee<L>>, NotIter<T, CMKTee<R>>>>,
-//     NotIter<T, BitOrMerge<T, CMKTee<L>, CMKTee<R>>>,
-// >;
 
 impl<T, I> MultiwayRangeSetBlazeRef<T> for I
 where
@@ -2496,14 +2478,7 @@ impl<T: Integer, I: SortedStarts<T>> SortedDisjoint<T> for UnionIter<T, I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for NotIter<T, I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for NotIter<T, I> {}
 // If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
-// #[cfg(not(feature = "alloc"))]
 impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
-// #[cfg(feature = "alloc")]
-// impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for CMKTee<I> {}
-
-// #[cfg(not(feature = "alloc"))]
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
-// #[cfg(feature = "alloc")]
-// impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for CMKTee<I> {}
 
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.

@@ -7,7 +7,6 @@ use core::{
 use itertools::Itertools;
 
 use crate::BitAndMerge;
-// cmk #[cfg(not(feature = "alloc"))]
 use crate::BitXOrTee;
 use crate::{
     unsorted_disjoint::{AssumeSortedStarts, UnsortedDisjoint},
@@ -213,7 +212,6 @@ where
     }
 }
 
-// cmk #[cfg(not(feature = "alloc"))]
 impl<T: Integer, R, L> ops::BitXor<R> for UnionIter<T, L>
 where
     L: SortedStarts<T>,

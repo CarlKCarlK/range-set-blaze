@@ -4,13 +4,12 @@ use core::{
     ops::{self, RangeInclusive},
 };
 
-// cmk #[cfg(not(feature = "alloc"))]
-use itertools;
 use itertools::Itertools;
 
-use crate::BitAndMerge;
-use crate::{BitOrMerge, BitSubMerge, Integer, NotIter, SortedDisjoint, SortedStarts};
-use crate::{BitXOr, BitXOrTee};
+use crate::{
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXOr, BitXOrTee, Integer, NotIter, SortedDisjoint,
+    SortedStarts,
+};
 
 /// An iterator that visits the ranges in the [`RangeSetBlaze`],
 /// i.e., the integers as sorted & disjoint ranges.
@@ -173,23 +172,7 @@ where
         (self - rhs0) | (rhs1.difference(lhs1))
     }
 }
-// cmk #[cfg(feature = "alloc")]
-// impl<T: Integer, I> ops::BitXor<I> for RangesIter<'_, T>
-// where
-//     I: SortedDisjoint<T>,
-// {
-//     type Output = BitXOr<T, Self, I>;
 
-//     #[allow(clippy::suspicious_arithmetic_impl)]
-//     fn bitxor(self, other: I) -> Self::Output {
-//         // We optimize by using self.clone() instead of tee
-//         let lhs1 = self.clone();
-//         let (rhs0, rhs1) = other.tee();
-//         (self - rhs0) | (rhs1.difference(lhs1))
-//     }
-// }
-
-// cmk #[cfg(not(feature = "alloc"))]
 impl<T: Integer, I> ops::BitXor<I> for IntoRangesIter<T>
 where
     I: SortedDisjoint<T>,

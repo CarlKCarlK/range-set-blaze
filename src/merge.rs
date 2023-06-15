@@ -1,17 +1,7 @@
+use crate::{Integer, SortedDisjoint, SortedStarts};
 use core::option::Option;
 use core::{iter::FusedIterator, ops::RangeInclusive};
-
-// #[cfg(not(feature = "alloc"))]
-use itertools;
-
-use itertools::{Itertools, MergeBy};
-
-use itertools::KMergeBy;
-
-// #[cfg(feature = "alloc")]
-// use crate::kmergeby::CMKMerge;
-
-use crate::{Integer, SortedDisjoint, SortedStarts};
+use itertools::{Itertools, KMergeBy, MergeBy};
 
 /// Works with [`UnionIter`] to turn any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
 /// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
@@ -141,7 +131,6 @@ where
     I: SortedDisjoint<T>,
 {
     /// Creates a new [`KMerge`] iterator from zero or more [`SortedDisjoint`] iterators. See [`KMerge`] for more details and examples.
-    // #[cfg(not(feature = "alloc"))]
     pub fn new<J>(iter: J) -> Self
     where
         J: IntoIterator<Item = I>,
@@ -150,16 +139,6 @@ where
             iter: iter.into_iter().kmerge_by(|a, b| a.start() < b.start()),
         }
     }
-    //     #[cfg(feature = "alloc")]
-    //     #[doc(hidden)] // cmk
-    //     pub fn new<J>(iter: J) -> Self
-    //     where
-    //         J: IntoIterator<Item = I>,
-    //     {
-    //         Self {
-    //             iter: CMKMerge::new(iter),
-    //         }
-    //     }
 }
 
 impl<T, I> FusedIterator for KMerge<T, I>
