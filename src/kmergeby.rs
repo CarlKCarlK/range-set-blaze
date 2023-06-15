@@ -4,6 +4,7 @@ use itertools::{Itertools, MergeBy};
 
 use crate::{Integer, SortedDisjoint, SortedStarts};
 
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub(crate) enum CMKMerge<T: Integer, I>
 where
@@ -30,6 +31,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 impl<'a, T: Integer, I> CMKMerge<T, I>
 where
     I: SortedDisjoint<T>,

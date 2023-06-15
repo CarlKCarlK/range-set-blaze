@@ -50,9 +50,7 @@ pub use not_iter::NotIter;
 use num_traits::{Bounded, NumAssignOps, NumCast, One};
 
 use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, Zero};
-// cmk use rand::distributions::uniform::SampleUniform;
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
-// cmk use std::collections::BTreeMap;
 extern crate alloc;
 use alloc::collections::BTreeMap;
 pub use union_iter::UnionIter;
@@ -1718,7 +1716,6 @@ where
 
 //
 
-// CMK
 impl<T> ::core::ops::BitAnd<&RangeSetBlaze<T>> for &RangeSetBlaze<T>
 where
     T: Integer,
