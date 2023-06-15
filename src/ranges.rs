@@ -4,7 +4,7 @@ use core::{
     ops::{self, RangeInclusive},
 };
 
-#[cfg(not(feature = "alloc"))]
+// cmk #[cfg(not(feature = "alloc"))]
 use itertools;
 use itertools::Itertools;
 
@@ -158,7 +158,7 @@ where
     }
 }
 
-#[cfg(not(feature = "alloc"))]
+// #[cfg(not(feature = "alloc"))]
 impl<T: Integer, I> ops::BitXor<I> for RangesIter<'_, T>
 where
     I: SortedDisjoint<T>,
@@ -173,23 +173,23 @@ where
         (self - rhs0) | (rhs1.difference(lhs1))
     }
 }
-#[cfg(feature = "alloc")]
-impl<T: Integer, I> ops::BitXor<I> for RangesIter<'_, T>
-where
-    I: SortedDisjoint<T>,
-{
-    type Output = BitXOr<T, Self, I>;
+// cmk #[cfg(feature = "alloc")]
+// impl<T: Integer, I> ops::BitXor<I> for RangesIter<'_, T>
+// where
+//     I: SortedDisjoint<T>,
+// {
+//     type Output = BitXOr<T, Self, I>;
 
-    #[allow(clippy::suspicious_arithmetic_impl)]
-    fn bitxor(self, other: I) -> Self::Output {
-        // We optimize by using self.clone() instead of tee
-        let lhs1 = self.clone();
-        let (rhs0, rhs1) = other.tee();
-        (self - rhs0) | (rhs1.difference(lhs1))
-    }
-}
+//     #[allow(clippy::suspicious_arithmetic_impl)]
+//     fn bitxor(self, other: I) -> Self::Output {
+//         // We optimize by using self.clone() instead of tee
+//         let lhs1 = self.clone();
+//         let (rhs0, rhs1) = other.tee();
+//         (self - rhs0) | (rhs1.difference(lhs1))
+//     }
+// }
 
-#[cfg(not(feature = "alloc"))]
+// cmk #[cfg(not(feature = "alloc"))]
 impl<T: Integer, I> ops::BitXor<I> for IntoRangesIter<T>
 where
     I: SortedDisjoint<T>,

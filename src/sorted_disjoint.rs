@@ -7,7 +7,7 @@ use alloc::string::String;
 
 use itertools::Itertools;
 
-#[cfg(not(feature = "alloc"))]
+// cmk #[cfg(not(feature = "alloc"))]
 use crate::BitXOrTee;
 use crate::{
     BitAndMerge, BitOrMerge, BitSubMerge, Integer, Merge, NotIter, RangeSetBlaze, UnionIter,
@@ -340,7 +340,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// let symmetric_difference = a ^ b;
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
-    #[cfg(not(feature = "alloc"))]
+    // cmk #[cfg(not(feature = "alloc"))]
     #[inline]
     fn symmetric_difference<R>(self, other: R) -> BitXOrTee<T, Self, R::IntoIter>
     where
@@ -713,7 +713,7 @@ where
     }
 }
 
-#[cfg(not(feature = "alloc"))]
+// cmk #[cfg(not(feature = "alloc"))]
 impl<T: Integer, R, L> ops::BitXor<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,
