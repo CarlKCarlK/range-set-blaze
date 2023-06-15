@@ -13,7 +13,6 @@ use criterion::{
     criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
     PlotConfiguration,
 };
-use itertools;
 use itertools::iproduct;
 use rand::{
     distributions::{uniform::SampleUniform, Uniform},

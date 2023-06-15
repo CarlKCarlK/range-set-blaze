@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
+#![cfg_attr(not(test), no_std)]
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
@@ -1731,9 +1732,7 @@ where
     /// ```
     #[inline]
     fn bitand(self, rhs: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
-        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-            (a.ranges() & b.ranges()).into_range_set_blaze()
-        })(self, rhs)
+        (self.ranges() & rhs.ranges()).into_range_set_blaze()
     }
 }
 impl<T> ::core::ops::BitXor<&RangeSetBlaze<T>> for &RangeSetBlaze<T>
@@ -1756,13 +1755,11 @@ where
     /// ```
     #[inline]
     fn bitxor(self, rhs: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
-        (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-            let lhs0 = a.ranges();
-            let lhs1 = a.ranges();
-            let rhs0 = b.ranges();
-            let rhs1 = b.ranges();
-            ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze()
-        })(self, rhs)
+        let lhs0 = self.ranges();
+        let lhs1 = self.ranges();
+        let rhs0 = rhs.ranges();
+        let rhs1 = rhs.ranges();
+        ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze()
     }
 }
 impl<T> ::core::ops::Sub<&RangeSetBlaze<T>> for &RangeSetBlaze<T>
@@ -1785,6 +1782,7 @@ where
     /// ```
     #[inline]
     fn sub(self, rhs: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        #[allow(clippy::redundant_closure_call)]
         (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
             (a.ranges() - b.ranges()).into_range_set_blaze()
         })(self, rhs)
@@ -1810,6 +1808,7 @@ where
     /// ```
     #[inline]
     fn bitand(self, rhs: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        #[allow(clippy::redundant_closure_call)]
         (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
             (a.ranges() & b.ranges()).into_range_set_blaze()
         })(self, &rhs)
@@ -1835,6 +1834,7 @@ where
     /// ```
     #[inline]
     fn bitxor(self, rhs: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        #[allow(clippy::redundant_closure_call)]
         (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
             let lhs0 = a.ranges();
             let lhs1 = a.ranges();
@@ -1864,6 +1864,7 @@ where
     /// ```
     #[inline]
     fn sub(self, rhs: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        #[allow(clippy::redundant_closure_call)]
         (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
             (a.ranges() - b.ranges()).into_range_set_blaze()
         })(self, &rhs)
@@ -1889,6 +1890,7 @@ where
     /// ```
     #[inline]
     fn bitand(self, rhs: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        #[allow(clippy::redundant_closure_call)]
         (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
             (a.ranges() & b.ranges()).into_range_set_blaze()
         })(&self, rhs)
@@ -1914,6 +1916,7 @@ where
     /// ```
     #[inline]
     fn bitxor(self, rhs: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        #[allow(clippy::redundant_closure_call)]
         (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
             let lhs0 = a.ranges();
             let lhs1 = a.ranges();
@@ -1943,6 +1946,7 @@ where
     /// ```
     #[inline]
     fn sub(self, rhs: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        #[allow(clippy::redundant_closure_call)]
         (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
             (a.ranges() - b.ranges()).into_range_set_blaze()
         })(&self, rhs)
@@ -1968,6 +1972,7 @@ where
     /// ```
     #[inline]
     fn bitand(self, rhs: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        #[allow(clippy::redundant_closure_call)]
         (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
             (a.ranges() & b.ranges()).into_range_set_blaze()
         })(&self, &rhs)
@@ -1993,6 +1998,7 @@ where
     /// ```
     #[inline]
     fn bitxor(self, rhs: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        #[allow(clippy::redundant_closure_call)]
         (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
             let lhs0 = a.ranges();
             let lhs1 = a.ranges();
@@ -2022,6 +2028,7 @@ where
     /// ```
     #[inline]
     fn sub(self, rhs: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        #[allow(clippy::redundant_closure_call)]
         (|a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
             (a.ranges() - b.ranges()).into_range_set_blaze()
         })(&self, &rhs)
@@ -2049,7 +2056,8 @@ where
     /// ```
     #[inline]
     fn not(self) -> RangeSetBlaze<T> {
-        (|a: &RangeSetBlaze<T>| (!a.ranges()).into_range_set_blaze())(&self)
+        #[allow(clippy::redundant_closure_call)]
+        (|a: &RangeSetBlaze<T>| (!a.ranges()).into_range_set_blaze())(self)
     }
 }
 impl<T> core::ops::Not for RangeSetBlaze<T>
@@ -2074,6 +2082,7 @@ where
     /// ```
     #[inline]
     fn not(self) -> RangeSetBlaze<T> {
+        #[allow(clippy::redundant_closure_call)]
         (|a: &RangeSetBlaze<T>| (!a.ranges()).into_range_set_blaze())(&self)
     }
 }

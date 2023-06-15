@@ -1,7 +1,6 @@
 #![cfg(test)]
 
 use criterion::{BatchSize, BenchmarkId, Criterion};
-use itertools;
 use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;

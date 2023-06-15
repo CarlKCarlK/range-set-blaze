@@ -33,6 +33,7 @@ jobs:
         run: |
           cargo clippy --verbose --all-targets --all-features -- -D warnings
           cargo test --verbose --no-default-features
+          cargo test --verbose --no-default-features --features alloc
       - name: Test Rust 32-bit Ubuntu
         if: runner.os == 'Linux'
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -43,6 +44,7 @@ jobs:
         run: |
           rustup target add i686-unknown-linux-gnu
           cargo test --verbose --no-default-features --target i686-unknown-linux-gnu
+          cargo test --verbose --no-default-features --target i686-unknown-linux-gnu --features alloc
       - name: Test Rust 32-bit Windows
         if: runner.os == 'Windows'
         uses: egor-tensin/setup-mingw@v2
@@ -52,3 +54,4 @@ jobs:
         run: |
           rustup target add i686-pc-windows-gnu
           cargo test --verbose --no-default-features --target=i686-pc-windows-gnu
+          cargo test --verbose --no-default-features --target i686-unknown-linux-gnu --features alloc
