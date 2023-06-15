@@ -54,4 +54,4 @@ jobs:
         run: |
           rustup target add i686-pc-windows-gnu
           cargo test --verbose --no-default-features --target=i686-pc-windows-gnu
-          cargo test --verbose --no-default-features --target i686-unknown-linux-gnu --features alloc
+          cargo test --verbose --no-default-features --target=i686-pc-windows-gnu --features alloc
