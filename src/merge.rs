@@ -1,15 +1,15 @@
 use core::option::Option;
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
-#[cfg(not(feature = "use_alloc"))]
+#[cfg(not(feature = "alloc"))]
 use itertools;
 
 use itertools::{Itertools, MergeBy};
 
-#[cfg(not(feature = "use_alloc"))]
+#[cfg(not(feature = "alloc"))]
 use itertools::KMergeBy;
 
-#[cfg(feature = "use_alloc")]
+#[cfg(feature = "alloc")]
 use crate::kmergeby::CMKMerge;
 
 use crate::{Integer, SortedDisjoint, SortedStarts};
@@ -133,9 +133,9 @@ where
     I: SortedDisjoint<T>,
 {
     #[allow(clippy::type_complexity)]
-    #[cfg(not(feature = "use_alloc"))]
+    #[cfg(not(feature = "alloc"))]
     iter: KMergeBy<I, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>,
-    #[cfg(feature = "use_alloc")]
+    #[cfg(feature = "alloc")]
     iter: CMKMerge<T, I>,
 }
 
@@ -145,7 +145,7 @@ where
     I: SortedDisjoint<T>,
 {
     /// Creates a new [`KMerge`] iterator from zero or more [`SortedDisjoint`] iterators. See [`KMerge`] for more details and examples.
-    #[cfg(not(feature = "use_alloc"))]
+    #[cfg(not(feature = "alloc"))]
     pub fn new<J>(iter: J) -> Self
     where
         J: IntoIterator<Item = I>,
@@ -154,7 +154,7 @@ where
             iter: iter.into_iter().kmerge_by(|a, b| a.start() < b.start()),
         }
     }
-    #[cfg(feature = "use_alloc")]
+    #[cfg(feature = "alloc")]
     #[doc(hidden)] // cmk
     pub fn new<J>(iter: J) -> Self
     where
@@ -184,7 +184,7 @@ where
         self.iter.next()
     }
 
-    #[cfg(not(feature = "use_alloc"))]
+    #[cfg(not(feature = "alloc"))]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }

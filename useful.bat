@@ -23,3 +23,8 @@ cargo publish --dry-run
 
 
 cargo check --no-default-features
+
+# test `alloc`
+cargo test --no-default-features --features alloc
+
+# cmk test wasm

@@ -49,3 +49,21 @@ where
         })
     }
 }
+
+pub struct CMKTee<I>
+where
+    I: Iterator,
+{
+    vec_buffer: Vec<I::Item>,
+}
+
+impl<I> Iterator for CMKTee<I>
+where
+    I: Iterator,
+    I::Item: Clone,
+{
+    type Item = I::Item;
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!()
+    }
+}

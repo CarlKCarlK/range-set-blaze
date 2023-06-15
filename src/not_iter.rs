@@ -4,7 +4,6 @@ use core::{
 };
 
 use crate::BitAndMerge;
-#[cfg(not(feature = "use_alloc"))]
 use crate::BitXOrTee;
 use crate::{BitOrMerge, BitSubMerge, Integer, SortedDisjoint};
 
@@ -153,7 +152,7 @@ where
     }
 }
 
-#[cfg(not(feature = "use_alloc"))]
+#[cfg(not(feature = "alloc"))]
 impl<T: Integer, R, L> ops::BitXor<R> for NotIter<T, L>
 where
     L: SortedDisjoint<T>,
