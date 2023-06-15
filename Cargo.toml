@@ -18,19 +18,14 @@ members = [".", "tests_common"]
 [lib]
 
 [features]
-default = ["use_alloc"]
-use_std = ["itertools", "num-integer_default", "num-traits_default"]
-use_alloc  = ["itertools_no_default", "num-integer_no_default", "num-traits_no_default"]
+default = ["use_std"]
+use_std = ["itertools/use_std"]
+use_alloc  = ["itertools/use_alloc"]
 
 [dependencies]
-itertools = { package = "itertools", version = "0.10.1", default-features = true, optional = true }
-itertools_no_default = { package = "itertools", version = "0.10.1", default-features = false, optional = true }
-num-integer_default = { package = "num-integer", version = "0.1.44", default-features = true, optional = true }
-num-integer_no_default = { package = "num-integer", version = "0.1.44", default-features = false, optional = true }
-num-traits_default = { package = "num-traits", version = "0.2.15", default-features = true, optional = true }
-num-traits_no_default = { package = "num-traits", version = "0.2.15", default-features = false, optional = true }
-
-
+itertools = {version = "0.10.1", default-features = false}
+num-integer = {version = "0.1.44"}
+num-traits = {version = "0.2.15"}
 
 # gen_ops = "0.3.0"
 # thiserror = "1.0"

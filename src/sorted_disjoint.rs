@@ -5,16 +5,12 @@ use core::{
 
 use alloc::string::String;
 
-#[cfg(feature = "use_std")]
-use itertools;
-#[cfg(feature = "use_alloc")]
-use itertools_no_default as itertools;
-
 use itertools::Itertools;
 
+#[cfg(not(feature = "use_alloc"))]
+use crate::BitXOrTee;
 use crate::{
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, Merge, NotIter, RangeSetBlaze,
-    UnionIter,
+    BitAndMerge, BitOrMerge, BitSubMerge, Integer, Merge, NotIter, RangeSetBlaze, UnionIter,
 };
 
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
@@ -344,6 +340,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// let symmetric_difference = a ^ b;
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
+    #[cfg(not(feature = "use_alloc"))]
     #[inline]
     fn symmetric_difference<R>(self, other: R) -> BitXOrTee<T, Self, R::IntoIter>
     where
@@ -716,6 +713,7 @@ where
     }
 }
 
+#[cfg(not(feature = "use_alloc"))]
 impl<T: Integer, R, L> ops::BitXor<R> for CheckSortedDisjoint<T, L>
 where
     L: Iterator<Item = RangeInclusive<T>>,

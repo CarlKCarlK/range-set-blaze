@@ -4,7 +4,9 @@ use core::{
 };
 
 use crate::BitAndMerge;
-use crate::{BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisjoint};
+#[cfg(not(feature = "use_alloc"))]
+use crate::BitXOrTee;
+use crate::{BitOrMerge, BitSubMerge, Integer, SortedDisjoint};
 
 /// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
 /// i.e., all the integers not in the original iterator, as sorted & disjoint ranges.
@@ -151,6 +153,7 @@ where
     }
 }
 
+#[cfg(not(feature = "use_alloc"))]
 impl<T: Integer, R, L> ops::BitXor<R> for NotIter<T, L>
 where
     L: SortedDisjoint<T>,

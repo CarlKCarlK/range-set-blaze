@@ -4,17 +4,14 @@ use core::{
     ops::{self, RangeInclusive},
 };
 
-#[cfg(feature = "use_std")]
-use itertools;
-#[cfg(feature = "use_alloc")]
-use itertools_no_default as itertools;
-
 use itertools::Itertools;
 
 use crate::BitAndMerge;
+#[cfg(not(feature = "use_alloc"))]
+use crate::BitXOrTee;
 use crate::{
     unsorted_disjoint::{AssumeSortedStarts, UnsortedDisjoint},
-    BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjoint, SortedStarts,
+    BitOrMerge, BitSubMerge, Integer, NotIter, SortedDisjoint, SortedStarts,
 };
 
 /// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
@@ -216,6 +213,7 @@ where
     }
 }
 
+#[cfg(not(feature = "use_alloc"))]
 impl<T: Integer, R, L> ops::BitXor<R> for UnionIter<T, L>
 where
     L: SortedStarts<T>,

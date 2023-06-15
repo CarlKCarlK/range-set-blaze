@@ -4,10 +4,6 @@ use core::{
     iter::FusedIterator,
     ops::RangeInclusive,
 };
-#[cfg(feature = "use_std")]
-use num_traits_default as num_traits;
-#[cfg(feature = "use_alloc")]
-use num_traits_no_default as num_traits;
 
 use num_traits::Zero;
 

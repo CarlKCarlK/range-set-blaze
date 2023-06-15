@@ -1,11 +1,8 @@
 #![cfg(test)]
 
 use criterion::{BatchSize, BenchmarkId, Criterion};
-#[cfg(feature = "use_std")]
 use itertools;
 use itertools::Itertools;
-#[cfg(feature = "use_alloc")]
-use itertools_no_default as itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use range_set_blaze::{

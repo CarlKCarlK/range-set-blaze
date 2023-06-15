@@ -4,6 +4,7 @@
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
 mod integer;
+mod kmergeby;
 mod merge;
 mod not_iter;
 pub mod prelude;
@@ -40,25 +41,15 @@ use core::str::FromStr;
 use core::write;
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 // use gen_ops::gen_ops_ex;
-#[cfg(feature = "use_std")]
-use itertools;
-#[cfg(feature = "use_alloc")]
-use itertools_no_default as itertools;
-
+#[cfg(not(feature = "use_alloc"))]
 use itertools::Tee;
 pub use merge::KMerge;
 pub use merge::Merge;
 pub use not_iter::NotIter;
 
-#[cfg(feature = "use_std")]
-use num_traits_default as num_traits;
-#[cfg(feature = "use_alloc")]
-use num_traits_no_default as num_traits;
+use num_traits::{Bounded, NumAssignOps, NumCast, One};
 
-use num_traits::ops::overflowing::OverflowingSub;
-use num_traits::CheckedAdd;
-use num_traits::One;
-use num_traits::Zero;
+use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, Zero};
 // cmk use rand::distributions::uniform::SampleUniform;
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
 // cmk use std::collections::BTreeMap;
@@ -69,11 +60,6 @@ pub use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
 
-#[cfg(feature = "use_std")]
-use num_integer_default as num_integer;
-#[cfg(feature = "use_alloc")]
-use num_integer_no_default as num_integer;
-
 /// The element trait of the [`RangeSetBlaze`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
 pub trait Integer:
     num_integer::Integer
@@ -81,11 +67,11 @@ pub trait Integer:
     + fmt::Display
     + fmt::Debug
     + core::iter::Sum
-    + num_traits::NumAssignOps
+    + NumAssignOps
     + FromStr
     + Copy
-    + num_traits::Bounded
-    + num_traits::NumCast
+    + Bounded
+    + NumCast
     + Send
     + Sync
     + OverflowingSub
@@ -107,10 +93,10 @@ pub trait Integer:
     /// ```
     type SafeLen: core::hash::Hash
         + num_integer::Integer
-        + num_traits::NumAssignOps
-        + num_traits::Bounded
-        + num_traits::NumCast
-        + num_traits::One
+        + NumAssignOps
+        + Bounded
+        + NumCast
+        + One
         + core::ops::AddAssign
         + core::ops::SubAssign
         + Copy
@@ -1418,11 +1404,14 @@ pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
 #[doc(hidden)]
 pub type BitSubMerge<T, L, R> = NotIter<T, BitOrMerge<T, NotIter<T, L>, R>>;
 #[doc(hidden)]
+#[cfg(not(feature = "use_alloc"))]
 pub type BitXOrTee<T, L, R> =
     BitOrMerge<T, BitSubMerge<T, Tee<L>, Tee<R>>, BitSubMerge<T, Tee<R>, Tee<L>>>;
 #[doc(hidden)]
+#[cfg(not(feature = "use_alloc"))]
 pub type BitXOr<T, L, R> = BitOrMerge<T, BitSubMerge<T, L, Tee<R>>, BitSubMerge<T, Tee<R>, L>>;
 #[doc(hidden)]
+#[cfg(not(feature = "use_alloc"))]
 pub type BitEq<T, L, R> = BitOrMerge<
     T,
     NotIter<T, BitOrMerge<T, NotIter<T, Tee<L>>, NotIter<T, Tee<R>>>>,
@@ -2497,7 +2486,9 @@ impl<T: Integer, I: SortedStarts<T>> SortedDisjoint<T> for UnionIter<T, I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for NotIter<T, I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for NotIter<T, I> {}
 // If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
+#[cfg(not(feature = "use_alloc"))]
 impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
+#[cfg(not(feature = "use_alloc"))]
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.

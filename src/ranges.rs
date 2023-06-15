@@ -4,17 +4,15 @@ use core::{
     ops::{self, RangeInclusive},
 };
 
-#[cfg(feature = "use_std")]
+#[cfg(not(feature = "use_alloc"))]
 use itertools;
-#[cfg(feature = "use_alloc")]
-use itertools_no_default as itertools;
-
+#[cfg(not(feature = "use_alloc"))]
 use itertools::Itertools;
 
 use crate::BitAndMerge;
-use crate::{
-    BitOrMerge, BitSubMerge, BitXOr, BitXOrTee, Integer, NotIter, SortedDisjoint, SortedStarts,
-};
+use crate::{BitOrMerge, BitSubMerge, Integer, NotIter, SortedDisjoint, SortedStarts};
+#[cfg(not(feature = "use_alloc"))]
+use crate::{BitXOr, BitXOrTee};
 
 /// An iterator that visits the ranges in the [`RangeSetBlaze`],
 /// i.e., the integers as sorted & disjoint ranges.
@@ -162,6 +160,7 @@ where
     }
 }
 
+#[cfg(not(feature = "use_alloc"))]
 impl<T: Integer, I> ops::BitXor<I> for RangesIter<'_, T>
 where
     I: SortedDisjoint<T>,
@@ -177,6 +176,7 @@ where
     }
 }
 
+#[cfg(not(feature = "use_alloc"))]
 impl<T: Integer, I> ops::BitXor<I> for IntoRangesIter<T>
 where
     I: SortedDisjoint<T>,
