@@ -29,6 +29,10 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
+      - if: runner.os == 'Linux'
+        uses: jetli/wasm-pack-action@v0.4.0
+      - if: runner.os == 'Linux'        
+        run: wasm-pack test --chrome --headless
       - name: Test Rust
         run: |
           cargo clippy --verbose --all-targets --all-features -- -D warnings
