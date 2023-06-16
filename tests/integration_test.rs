@@ -1398,6 +1398,7 @@ fn is_subset_check() {
 }
 
 #[test]
+#[allow(clippy::eq_op)]
 fn cmp_range_set_int() {
     let a = RangeSetBlaze::from_iter([1..=3, 5..=7]);
     let b = RangeSetBlaze::from_iter([2..=2]);
