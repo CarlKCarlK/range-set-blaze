@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 
 use super::*;
 use alloc::borrow::ToOwned;

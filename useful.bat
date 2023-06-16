@@ -28,3 +28,4 @@ cargo check --no-default-features
 cargo test --no-default-features --features alloc
 
 # cmk test wasm
+wasm-pack test --chrome --headless
