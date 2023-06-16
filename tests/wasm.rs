@@ -819,7 +819,7 @@ fn retrain() {
     let mut set = RangeSetBlaze::from_iter([1..=6]);
     // Keep only the even numbers.
     set.retain(|k| k % 2 == 0);
-    assert_eq!(set, RangeSetBlaze::from_iter([12, 4, 6]));
+    assert_eq!(set, RangeSetBlaze::from_iter([2, 4, 6]));
 }
 
 #[wasm_bindgen_test]
