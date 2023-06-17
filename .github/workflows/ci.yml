@@ -29,6 +29,17 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
+      - name: Test Embedded
+        if: runner.os == 'Linux'
+        run: |
+          rustup override set nightly
+          rustup target add --toolchain stable thumbv7m-none-eabi
+          cd testing/embedded
+          cargo build
+          sudo apt-get update && sudo apt-get install qemu qemu-system-arm
+          qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-config enable=on,target=native -kernel ../../target\thumbv7m-none-eabi\debug\app
+          cd ../..
+          rustup override set stable
       - name: Test WASM
         if: runner.os == 'Linux'
         uses: jetli/wasm-pack-action@v0.4.0

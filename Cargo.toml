@@ -13,19 +13,19 @@ categories = ["data-structures"]
 homepage = "https://github.com/CarlKCarlK/range-set-blaze"
 
 [workspace]
-members = [".", "tests_common"]
+members = [".", "tests_common", "tests/embedded"]
 
 [lib]
 
 [features]
 default = ["alloc"]
-std = ["itertools/use_std"]
+std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 alloc  = ["itertools/use_alloc"]
 
 [dependencies]
 itertools = {version = "0.10.1", default-features = false}
-num-integer = {version = "0.1.44"}
-num-traits = {version = "0.2.15"}
+num-integer = {version = "0.1.44", default-features = false}
+num-traits = {version = "0.2.15", default-features = false}
 # gen_ops = "0.3.0" -- https://github.com/K-Vinayak/gen_ops/issues/2
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
