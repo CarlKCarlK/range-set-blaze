@@ -34,10 +34,10 @@ jobs:
         run: |
           rustup override set nightly
           rustup target add --toolchain stable thumbv7m-none-eabi
-          cd testing/embedded
+          cd tests/embedded
           cargo build
           sudo apt-get update && sudo apt-get install qemu qemu-system-arm
-          qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-config enable=on,target=native -kernel ../../target\thumbv7m-none-eabi\debug\app
+          qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-config enable=on,target=native -kernel ../../target/thumbv7m-none-eabi/debug/embedded
           cd ../..
           rustup override set stable
       - name: Test WASM
