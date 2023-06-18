@@ -157,7 +157,6 @@ where
     }
 }
 
-// #[cfg(not(feature = "alloc"))]
 impl<T: Integer, I> ops::BitXor<I> for RangesIter<'_, T>
 where
     I: SortedDisjoint<T>,

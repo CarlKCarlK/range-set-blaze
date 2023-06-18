@@ -342,6 +342,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "gen_ops"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "304de19db7028420975a296ab0fcbbc8e69438c4ed254a1e41e2a7f37d5f0e0a"
+
+[[package]]
 name = "getrandom"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -667,6 +673,7 @@ name = "range-set-blaze"
 version = "0.1.7"
 dependencies = [
  "criterion",
+ "gen_ops",
  "glob",
  "itertools",
  "num-integer",

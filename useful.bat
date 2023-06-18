@@ -22,10 +22,10 @@ python benches\summary.py > benches\summary.tsv
 cargo publish --dry-run
 
 
-cargo check --no-default-features
+cargo check
 
 # test `alloc`
-cargo test --no-default-features --features alloc
+cargo test --features alloc
 
 # test wasm
 wasm-pack test --chrome --headless

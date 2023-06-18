@@ -9,7 +9,7 @@ documentation = "https://docs.rs/range-set-blaze/latest/range-set-blaze/"
 authors = ["Carl Kadie"]
 license = "MIT OR Apache-2.0"
 keywords = ["set", "range", "data-structures", "btree", "interval"]
-categories = ["data-structures"]
+categories = ["data-structures","no-std","embedded"]
 homepage = "https://github.com/CarlKCarlK/range-set-blaze"
 
 [workspace]
@@ -18,7 +18,7 @@ members = [".", "tests_common", "tests/embedded"]
 [lib]
 
 [features]
-default = ["alloc"]
+default = ["std"]
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 alloc  = ["itertools/use_alloc"]
 
@@ -26,7 +26,7 @@ alloc  = ["itertools/use_alloc"]
 itertools = {version = "0.10.1", default-features = false}
 num-integer = {version = "0.1.44", default-features = false}
 num-traits = {version = "0.2.15", default-features = false}
-# gen_ops = "0.3.0" -- https://github.com/K-Vinayak/gen_ops/issues/2
+gen_ops = "0.4.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 rand = "0.8.4"
