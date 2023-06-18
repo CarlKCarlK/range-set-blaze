@@ -33,7 +33,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           rustup override set nightly
-          rustup target add --toolchain stable thumbv7m-none-eabi
+          rustup target add thumbv7m-none-eabi
           cd tests/embedded
           cargo build
           sudo apt-get update && sudo apt-get install qemu qemu-system-arm
