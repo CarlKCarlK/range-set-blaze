@@ -37,7 +37,7 @@ fn main() -> ! {
 
     hprintln!("{:?}", result);
 
-    panic!("will cause endless loop-- only here to test the testing");
+    // panic!("will cause endless loop-- only here to test the testing");
 
     // exit QEMU
     // NOTE do not run this on hardware; it can corrupt OpenOCD state

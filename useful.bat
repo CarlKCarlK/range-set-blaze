@@ -27,7 +27,7 @@ cargo check --no-default-features
 # test `alloc`
 cargo test --no-default-features --features alloc
 
-# cmk test wasm
+# test wasm
 wasm-pack test --chrome --headless
 
 See: https://docs.rust-embedded.org/book/start/qemu.html
