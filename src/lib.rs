@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
-#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
 
 // FUTURE: Support serde via optional feature
@@ -2131,3 +2131,40 @@ impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
+
+#[cfg(feature = "std")]
+use std::fs::File;
+#[cfg(feature = "std")]
+use std::io::{self, BufRead};
+#[cfg(feature = "std")]
+use std::path::Path;
+
+#[cfg(feature = "std")]
+#[allow(missing_docs)]
+pub fn read_ranges_from_file<P, T>(path: P) -> io::Result<RangeSetBlaze<T>>
+where
+    P: AsRef<Path>,
+    T: FromStr + Integer,
+{
+    let file = File::open(&path)?;
+    let lines = io::BufReader::new(file).lines();
+
+    let mut set = RangeSetBlaze::new();
+    for line in lines {
+        let line = line?;
+        let mut split = line.split('\t');
+        let start = split
+            .next()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Missing start of range"))?
+            .parse::<T>()
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid start of range"))?;
+        let end = split
+            .next()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Missing end of range"))?
+            .parse::<T>()
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid end of range"))?;
+        set.ranges_insert(start..=end);
+    }
+
+    Ok(set)
+}
