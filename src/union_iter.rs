@@ -1,9 +1,10 @@
-use std::{
+use core::{
     cmp::max,
     iter::FusedIterator,
     ops::{self, RangeInclusive},
 };
 
+use alloc::vec;
 use itertools::Itertools;
 
 use crate::{
@@ -88,7 +89,7 @@ impl<T: Integer> From<&[RangeInclusive<T>]> for UnionIter<T, SortedRangeInclusiv
     }
 }
 
-type SortedRangeInclusiveVec<T> = AssumeSortedStarts<T, std::vec::IntoIter<RangeInclusive<T>>>;
+type SortedRangeInclusiveVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
 impl<T: Integer> FromIterator<T> for UnionIter<T, SortedRangeInclusiveVec<T>> {
     fn from_iter<I>(iter: I) -> Self
