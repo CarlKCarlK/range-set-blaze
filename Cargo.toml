@@ -21,7 +21,6 @@ members = [".", "tests_common"]
 [features]
 default = ["std"]
 std = ["getrandom"]
-alloc = ["getrandom/js"]
 
 
 [dependencies]
@@ -30,7 +29,7 @@ num-integer = "0.1.44"
 num-traits = "0.2.15"
 gen_ops = "0.4.0"
 thiserror = "1.0"
-getrandom = { version = "0.2", optional = true }
+getrandom = { version = "0.2", optional = true, features = ["js"] }
 rand = "0.8.4"
 
 [dev-dependencies]

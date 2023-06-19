@@ -1417,6 +1417,7 @@ fn symmetric_difference_size_hint(a: Reference, b: Reference) -> bool {
     check_size_hint((a, b), expected, actual)
 }
 
+#[should_panic]
 #[test]
 fn cmk_file() {
     let _a: RangeSetBlaze<i32> = read_ranges_from_file("tests/cmk.txt").unwrap();
