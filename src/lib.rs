@@ -2140,3 +2140,37 @@ impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
+
+// use std::fs::File;
+// use std::io::{self, BufRead};
+// use std::ops::RangeInclusive;
+// use std::path::Path;
+// use std::str::FromStr;
+
+// pub fn read_ranges_from_file<T>(path: T) -> io::Result<Vec<RangeInclusive<T>>>
+// where
+//     T: FromStr + Integer + Copy,
+//     <T as FromStr>::Err: core::fmt::Debug,
+// {
+//     let file = File::open(&path)?;
+//     let lines = io::BufReader::new(file).lines();
+
+//     let mut ranges = Vec::new();
+//     for line in lines {
+//         let line = line?;
+//         let mut split = line.split('\t');
+//         let start = split
+//             .next()
+//             .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Missing start of range"))?
+//             .parse::<T>()
+//             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid start of range"))?;
+//         let end = split
+//             .next()
+//             .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Missing end of range"))?
+//             .parse::<T>()
+//             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid end of range"))?;
+//         ranges.push(start..=end);
+//     }
+
+//     Ok(ranges)
+// }
