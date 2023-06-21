@@ -14,8 +14,8 @@ homepage = "https://github.com/CarlKCarlK/range-set-blaze"
 
 
 [workspace]
+members = [".", "tests_common", "tests/wasm-demo"]
 
-members = [".", "tests_common"]
 [lib]
 
 [features]
