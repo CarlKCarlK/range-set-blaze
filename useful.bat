@@ -29,6 +29,8 @@ cargo test --features alloc
 
 # test wasm
 wasm-pack test --chrome --headless --features alloc
+# cmk test wasm
+wasm-pack test --chrome --headless
 
 See: https://docs.rust-embedded.org/book/start/qemu.html
 set PATH="C:\Program Files\qemu\";%PATH%

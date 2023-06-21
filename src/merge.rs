@@ -159,6 +159,7 @@ where
         self.iter.next()
     }
 
+    // cmk #[cfg(not(feature = "alloc"))]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
