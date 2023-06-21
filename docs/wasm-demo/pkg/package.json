@@ -1,0 +1,14 @@
+{
+  "name": "wasm-demo",
+  "version": "0.1.0",
+  "files": [
+    "wasm_demo_bg.wasm",
+    "wasm_demo.js",
+    "wasm_demo.d.ts"
+  ],
+  "module": "wasm_demo.js",
+  "types": "wasm_demo.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
