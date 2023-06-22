@@ -20,7 +20,8 @@ members = [".", "tests_common", "tests/wasm-demo"]
 
 [features]
 default = ["std"]
-std = ["getrandom"]
+std = ["getrandom/std"]
+alloc = ["getrandom/js"]
 
 
 [dependencies]
@@ -29,7 +30,7 @@ num-integer = "0.1.44"
 num-traits = "0.2.15"
 gen_ops = "0.4.0"
 thiserror = "1.0"
-getrandom = { version = "0.2", optional = true, features = ["js"] }
+getrandom = "0.2"
 rand = "0.8.4"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
