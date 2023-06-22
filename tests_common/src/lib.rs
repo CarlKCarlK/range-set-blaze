@@ -1,4 +1,4 @@
-use std::ops::RangeInclusive;
+use core::ops::RangeInclusive;
 
 use num_traits::identities::One;
 use rand::rngs::StdRng;
@@ -10,7 +10,7 @@ pub fn width_to_range(
     iter_len: usize,
     average_width: usize,
     coverage_goal: f64,
-) -> (usize, std::ops::RangeInclusive<i32>) {
+) -> (usize, core::ops::RangeInclusive<i32>) {
     let range_len = iter_len / average_width;
     let one_fraction: f64 = 1.0 - (1.0 - coverage_goal).powf(1.0 / range_len as f64);
     let range = 0..=(((average_width as f64 / one_fraction) - 0.5) as i32);

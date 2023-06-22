@@ -1,5 +1,5 @@
-use std::{
-    collections::btree_map,
+use alloc::collections::btree_map;
+use core::{
     iter::FusedIterator,
     ops::{self, RangeInclusive},
 };
@@ -69,7 +69,7 @@ impl<'a, T: Integer> Iterator for RangesIter<'a, T> {
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
 #[derive(Debug)]
 pub struct IntoRangesIter<T: Integer> {
-    pub(crate) iter: std::collections::btree_map::IntoIter<T, T>,
+    pub(crate) iter: alloc::collections::btree_map::IntoIter<T, T>,
 }
 
 impl<T: Integer> SortedStarts<T> for IntoRangesIter<T> {}

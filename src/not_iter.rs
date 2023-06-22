@@ -1,4 +1,4 @@
-use std::{
+use core::{
     iter::FusedIterator,
     ops::{self, RangeInclusive},
 };
