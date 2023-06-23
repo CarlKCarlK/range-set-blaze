@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 
 use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
@@ -14,7 +15,7 @@ use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
 
-type I32SafeLen =  <i32 as range_set_blaze::Integer>::SafeLen;
+type I32SafeLen = <i32 as range_set_blaze::Integer>::SafeLen;
 
 #[test]
 fn insert_255u8() {
