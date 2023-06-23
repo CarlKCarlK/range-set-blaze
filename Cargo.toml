@@ -21,8 +21,8 @@ members = [".", "tests_common"]
 
 [features]
 default = ["std"]
-std = []
-alloc = []
+std = ["getrandom/std"]
+alloc = ["getrandom/js"]
 
 [dependencies]
 itertools = "0.10.1"
@@ -31,6 +31,7 @@ num-traits = "0.2.15"
 gen_ops = "0.4.0"
 thiserror = "1.0"
 rand = "0.8.4"
+getrandom = "0.2.10"
 
 [dev-dependencies]
 tests_common = { path = "tests_common" }
