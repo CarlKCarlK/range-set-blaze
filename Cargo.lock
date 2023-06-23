@@ -218,9 +218,9 @@ dependencies = [
 
 [[package]]
 name = "gen_ops"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7c56cad8ee78109d547e40bf4ad78968a25157e7963d799d79921655629825a"
+checksum = "304de19db7028420975a296ab0fcbbc8e69438c4ed254a1e41e2a7f37d5f0e0a"
 
 [[package]]
 name = "getrandom"

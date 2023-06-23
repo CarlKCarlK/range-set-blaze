@@ -11,18 +11,24 @@ license = "MIT OR Apache-2.0"
 keywords = ["set", "range", "data-structures", "btree", "interval"]
 categories = ["data-structures"]
 homepage = "https://github.com/CarlKCarlK/range-set-blaze"
+resolver = "2"
 
 
 [workspace]
-
 members = [".", "tests_common"]
+
 [lib]
+
+[features]
+default = ["std"]
+std = []
+alloc = []
 
 [dependencies]
 itertools = "0.10.1"
 num-integer = "0.1.44"
 num-traits = "0.2.15"
-gen_ops = "0.3.0"
+gen_ops = "0.4.0"
 thiserror = "1.0"
 rand = "0.8.4"
 
