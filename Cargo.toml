@@ -18,6 +18,7 @@ resolver = "2"
 members = [".", "tests_common", "tests/wasm-demo"]
 
 [lib]
+crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["std"]

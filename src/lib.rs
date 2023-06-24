@@ -1,8 +1,12 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
-#[cfg(all(feature = "std", feature = "alloc"))]
-compile_error!("feature \"std\" and feature \"alloc\" cannot be enabled at the same time");
+// #[cfg(all(feature = "std", feature = "alloc"))]
+// compile_error!("feature \"std\" and feature \"alloc\" cannot be enabled at the same time");
+// #[cfg(feature = "std")]
+// compile_error!("The 'std' feature is active");
+// #[cfg(feature = "alloc")]
+// compile_error!("The 'alloc' feature is active");
 extern crate alloc;
 
 // FUTURE: Support serde via optional feature
