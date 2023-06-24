@@ -15,7 +15,11 @@ use criterion::{
 };
 use itertools::iproduct;
 use rand::{
-    distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, Rng, SeedableRng,
+    distributions::{uniform::SampleUniform, Uniform},
+    prelude::Distribution,
+    rngs::StdRng,
+    seq::SliceRandom,
+    Rng, SeedableRng,
 };
 // use pprof::criterion::Output; //PProfProfiler
 use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjoint};
@@ -233,7 +237,7 @@ fn bitor1(c: &mut Criterion) {
         );
     });
 }
-fn two_sets<T: Integer>(
+fn two_sets<T: Integer + SampleUniform>(
     range_len: usize,
     range: RangeInclusive<T>,
     coverage_goal: f64,
@@ -261,7 +265,7 @@ fn two_sets<T: Integer>(
 }
 
 #[allow(dead_code)]
-fn two_sets1<T: Integer>(
+fn two_sets1<T: Integer + SampleUniform>(
     range_len: usize,
     range: RangeInclusive<T>,
     coverage_goal: f64,
@@ -279,7 +283,7 @@ fn two_sets1<T: Integer>(
         [*range.start()].into_iter().collect(),
     )
 }
-fn btree_two_sets<T: Integer>(
+fn btree_two_sets<T: Integer + SampleUniform>(
     range_len: usize,
     range: RangeInclusive<T>,
     coverage_goal: f64,
@@ -306,7 +310,7 @@ fn btree_two_sets<T: Integer>(
     )
 }
 #[allow(dead_code)]
-fn btree_two_sets1<T: Integer>(
+fn btree_two_sets1<T: Integer + SampleUniform>(
     range_len: usize,
     range: RangeInclusive<T>,
     coverage_goal: f64,
