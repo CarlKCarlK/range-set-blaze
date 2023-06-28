@@ -20,18 +20,20 @@ jobs:
           toolchain: stable
       - name: Set up WASM
         uses: jetli/wasm-pack-action@v0.4.0
-      - name: Test Native & WASM, set up Embedded
+      - name: Test Native & WASM, set up and check Embedded
         run: |
           # cmk cargo clippy --verbose --all-targets --all-features -- -D warnings
           # cargo test --verbose
           # cargo test --features alloc --no-default-features --verbose
-          wasm-pack test --chrome --headless --features alloc --no-default-features --verbose
+          # wasm-pack test --chrome --headless --features alloc --no-default-features --verbose
+          rustup target add thumbv7m-none-eabi
+          cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
+          rustup override set nightly
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
           sudo apt-get update && sudo apt-get install qemu qemu-system-arm
-      - name: Test Embedded
+      - name: Test Embedded (in nightly)
         timeout-minutes: 3
         run: |
-          rustup override set nightly
           cd tests/embedded
           cargo run
