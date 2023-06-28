@@ -1,58 +1,78 @@
-# cmk
-# name: test
+name: test
 
-# on:
-#   push:
-#   schedule:
-#     - cron: '0 0 1 * *'
-#   pull_request:
-#   workflow_dispatch:
+on:
+  push:
+  schedule:
+    - cron: '0 0 1 * *'
+  pull_request:
+  workflow_dispatch:
     
-# env:
-#   CARGO_TERM_COLOR: always
+env:
+  CARGO_TERM_COLOR: always
 
-# permissions:
-#   contents: read
+permissions:
+  contents: read
 
-# jobs:
+jobs:
 
-#   test_rust:
-#     name: Test Rust
-#     strategy:
-#       fail-fast: false
-#       matrix:
-#         os: [ubuntu-latest, macos-latest, windows-latest]
-#     runs-on: ${{ matrix.os }}
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v3
-#       - name: Set up Rust
-#         uses: dtolnay/rust-toolchain@master
-#         with:
-#           toolchain: stable
-#       - name: Test Rust
-#         run: |
-#           cargo clippy --verbose --all-targets --all-features -- -D warnings
-#           cargo test --verbose
-#           cargo test --features alloc --no-default-features --verbose
-#       - name: Test Rust 32-bit Ubuntu
-#         if: runner.os == 'Linux'
-#         uses: awalsh128/cache-apt-pkgs-action@latest
-#         with:
-#           packages: libc6-dev-i386 linux-libc-dev libc6-i386 gcc-multilib
-#           version: 1
-#       - if: runner.os == 'Linux'
-#         run: |
-#           rustup target add i686-unknown-linux-gnu
-#           cargo test --verbose --target i686-unknown-linux-gnu
-#           cargo test --features alloc --no-default-features --verbose --target i686-unknown-linux-gnu
-#       - name: Test Rust 32-bit Windows
-#         if: runner.os == 'Windows'
-#         uses: egor-tensin/setup-mingw@v2
-#         with:
-#           platform: any
-#       - if: runner.os == 'Windows'          
-#         run: |
-#           rustup target add i686-pc-windows-gnu
-#           cargo test --verbose --target=i686-pc-windows-gnu
-#           cargo test --features alloc --no-default-features --verbose --target=i686-pc-windows-gnu
+  test_rust:
+    name: Test Rust
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Set up WASM
+        if: runner.os == 'Linux'
+        uses: jetli/wasm-pack-action@v0.4.0
+      - name: Test WASM, set up and check Embedded
+        if: runner.os == 'Linux'
+        run: |
+          wasm-pack test --chrome --headless --features alloc --no-default-features --verbose
+          rustup target add thumbv7m-none-eabi
+          cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
+          rustup override set nightly
+          rustup target add thumbv7m-none-eabi
+          cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
+          sudo apt-get update && sudo apt-get install qemu qemu-system-arm
+      - name: Test Embedded (in nightly)
+        if: runner.os == 'Linux'
+        timeout-minutes: 3
+        run: |
+          cd tests/embedded
+          cargo run
+          cd ../..
+          rustup override set stable
+      - name: Test Rust Native
+        run: |
+          cargo clippy --verbose --all-targets --all-features -- -D warnings
+          cargo test --verbose
+          cargo test --features alloc --no-default-features --verbose
+      - name: Test Rust 32-bit Ubuntu
+        if: runner.os == 'Linux'
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libc6-dev-i386 linux-libc-dev libc6-i386 gcc-multilib
+          version: 1
+      - if: runner.os == 'Linux'
+        run: |
+          rustup target add i686-unknown-linux-gnu
+          cargo test --verbose --target i686-unknown-linux-gnu
+          cargo test --features alloc --no-default-features --verbose --target i686-unknown-linux-gnu
+      - name: Test Rust 32-bit Windows
+        if: runner.os == 'Windows'
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: any
+      - if: runner.os == 'Windows'          
+        run: |
+          rustup target add i686-pc-windows-gnu
+          cargo test --verbose --target=i686-pc-windows-gnu
+          cargo test --features alloc --no-default-features --verbose --target=i686-pc-windows-gnu
