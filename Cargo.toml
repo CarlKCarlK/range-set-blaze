@@ -15,7 +15,7 @@ resolver = "2"
 
 
 [workspace]
-members = [".", "tests_common", "tests/wasm-demo"]
+members = [".", "tests_common", "tests/wasm-demo", "tests/embedded"]
 
 [lib]
 
