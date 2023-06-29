@@ -1,7 +1,5 @@
 [package]
-authors = ["Carl Kadie <carlk@msn.com>"]
 edition = "2021"
-readme = "README.md"
 name = "embedded"
 version = "0.1.0"
 
@@ -10,7 +8,9 @@ cortex-m = "0.7.7"
 cortex-m-rt = "0.7.3"
 cortex-m-semihosting = "0.5.0"
 panic-halt = "0.2.0"
-range-set-blaze = { path = "../..", features = ["alloc"] }
+range-set-blaze = { path = "../..", features = [
+    "alloc",
+], default-features = false }
 alloc-cortex-m = "0.4.0"
 
 [[bin]]

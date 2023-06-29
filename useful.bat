@@ -35,4 +35,4 @@ set PATH="C:\Program Files\qemu\";%PATH%
 rustup target add thumbv7m-none-eabi
 rustup override set nightly
 cargo build
-qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-config enable=on,target=native -kernel ..\..\target\thumbv7m-none-eabi\debug\app
+qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-config enable=on,target=native -kernel ..\..\target\thumbv7m-none-eabi\debug\thumbv7m-none-eabi\debug\embedded
