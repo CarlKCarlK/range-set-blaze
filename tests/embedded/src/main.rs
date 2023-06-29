@@ -1,13 +1,12 @@
 // based on https://github.com/rust-embedded/cortex-m-quickstart/blob/master/examples/allocator.rs
+// and https://github.com/rust-lang/rust/issues/51540
 #![feature(alloc_error_handler)]
 #![no_main]
-#![no_std]
 
 extern crate alloc;
 use alloc::string::ToString;
 use alloc_cortex_m::CortexMHeap;
-use core::{alloc::Layout, iter::FromIterator};
-use cortex_m::asm;
+use core::iter::FromIterator;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::{debug, hprintln};
 use panic_halt as _;
@@ -28,11 +27,5 @@ fn main() -> ! {
 
     // exit QEMU/ NOTE do not run this on hardware; it can corrupt OpenOCD state
     debug::exit(debug::EXIT_SUCCESS);
-    loop {}
-}
-
-#[alloc_error_handler]
-fn alloc_error(_layout: Layout) -> ! {
-    asm::bkpt();
     loop {}
 }
