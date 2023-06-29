@@ -36,6 +36,16 @@ The crate's main trait is [`SortedDisjoint`]. It is implemented by iterators of 
 [set operations]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#rangesetblaze-set-operations
 [1]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#constructor-performance
 
+The crate supports no_std, WASM, and embedded projects:
+
+```toml
+[dependencies]
+range-set-blaze = { features = ["alloc"], default-features = false, version=VERSION }
+
+```
+
+ *Relace VERSION with the current version.
+
 Article
 -----------
 
