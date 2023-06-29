@@ -14,11 +14,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Set up Rust
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-      - name: Set up WASM
+      - name: Setup WASM
         uses: jetli/wasm-pack-action@v0.4.0
       - name: Test Native & WASM
         run: |
@@ -26,7 +26,7 @@ jobs:
           cargo test --verbose
           cargo test --features alloc --no-default-features --verbose
           wasm-pack test --chrome --headless --features alloc --no-default-features --verbose
-      - name: Set up and check Embedded
+      - name: Setup and check Embedded
         run: |
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --features alloc --no-default-features

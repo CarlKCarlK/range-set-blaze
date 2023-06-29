@@ -1,6 +1,6 @@
 [package]
 name = "range-set-blaze"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 description = "Integer sets as fast, sorted, integer ranges with full set operations"
 repository = "https://github.com/CarlKCarlK/range-set-blaze"
@@ -8,8 +8,18 @@ readme = "README.md"
 documentation = "https://docs.rs/range-set-blaze/latest/range-set-blaze/"
 authors = ["Carl Kadie"]
 license = "MIT OR Apache-2.0"
-keywords = ["set", "range", "data-structures", "btree", "interval"]
-categories = ["data-structures"]
+keywords = [
+    "set",
+    "range",
+    "data-structures",
+    "btree",
+    "interval",
+    "no_std",
+    "no-std",
+    "wasm",
+    "webassembly",
+]
+categories = ["data-structures", "No standard library support", "WebAssembly"]
 homepage = "https://github.com/CarlKCarlK/range-set-blaze"
 resolver = "2"
 

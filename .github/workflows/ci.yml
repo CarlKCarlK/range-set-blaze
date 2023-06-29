@@ -25,14 +25,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Set up Rust
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-      - name: Set up WASM
+      - name: Setup WASM
         if: runner.os == 'Linux'
         uses: jetli/wasm-pack-action@v0.4.0
-      - name: Test WASM, set up and check Embedded
+      - name: Test WASM, setup and check Embedded
         if: runner.os == 'Linux'
         run: |
           wasm-pack test --chrome --headless --features alloc --no-default-features --verbose
