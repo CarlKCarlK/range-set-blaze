@@ -179,7 +179,7 @@ pub trait Integer:
 /// | [`from_sorted_disjoint`][3] /[`into_range_set_blaze`][3]         | [`SortedDisjoint`] iterator |
 /// | [`from`][4] /[`into`][4]         | array of integers       |
 ///
-/// [`BTreeMap`]: core::collections::BTreeMap
+/// [`BTreeMap`]: alloc::collections::BTreeMap
 /// [`new`]: RangeSetBlaze::new
 /// [`default`]: RangeSetBlaze::default
 /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
@@ -343,7 +343,7 @@ pub trait Integer:
 ///
 /// Use `==`, `!=` to check if two `RangeSetBlaze`s are equal or not.
 ///
-/// [`BTreeSet`]: core::collections::BTreeSet
+/// [`BTreeSet`]: alloc::collections::BTreeSet
 /// [`is_subset`]: RangeSetBlaze::is_subset
 /// [`is_superset`]: RangeSetBlaze::is_superset
 /// [`cmp`]: RangeSetBlaze::cmp
@@ -950,7 +950,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// Note: This is very similar to `insert`. It is included for consistency with [`BTreeSet`].
     ///
-    /// [`BTreeSet`]: core::collections::BTreeSet
+    /// [`BTreeSet`]: alloc::collections::BTreeSet
     ///
     /// # Examples
     ///
@@ -1361,7 +1361,7 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     ///
     /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
-    /// [`BTreeSet`]: core::collections::BTreeSet
+    /// [`BTreeSet`]: alloc::collections::BTreeSet
     ///
     /// # Examples
     ///
@@ -2053,7 +2053,7 @@ impl<T: Integer> Ord for RangeSetBlaze<T> {
     /// We define a total ordering on RangeSetBlaze. Following the convention of
     /// [`BTreeSet`], the ordering is lexicographic, *not* by subset/superset.
     ///
-    /// [`BTreeSet`]: core::collections::BTreeSet
+    /// [`BTreeSet`]: alloc::collections::BTreeSet
     ///
     /// # Examples
     /// ```
