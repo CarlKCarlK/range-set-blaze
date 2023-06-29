@@ -44,7 +44,7 @@ range-set-blaze = { features = ["alloc"], default-features = false, version=VERS
 
 ```
 
- *Relace VERSION with the current version.
+ *Replace VERSION with the current version.*
 
 Article
 -----------
