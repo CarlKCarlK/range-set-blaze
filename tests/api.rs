@@ -1,5 +1,8 @@
 // FUTURE can (should?) you optimize a | b | c to automatically call union([a,b,c])?
-use std::{collections::BTreeSet, ops::BitOr};
+extern crate alloc;
+
+use alloc::collections::BTreeSet;
+use core::ops::BitOr;
 
 use range_set_blaze::prelude::*;
 

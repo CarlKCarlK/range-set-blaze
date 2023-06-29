@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
 
 use super::*;
 use itertools::Itertools;
@@ -1415,4 +1416,10 @@ fn symmetric_difference_size_hint(a: Reference, b: Reference) -> bool {
     let b_r = RangeSetBlaze::from_iter(&b);
     let actual = (a_r ^ b_r).into_iter().size_hint();
     check_size_hint((a, b), expected, actual)
+}
+
+#[should_panic]
+#[test]
+fn demo_read() {
+    let _a: RangeSetBlaze<i32> = demo_read_ranges_from_file("tests/no_such_file").unwrap();
 }

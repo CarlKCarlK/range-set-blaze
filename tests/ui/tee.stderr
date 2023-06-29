@@ -21,28 +21,28 @@ error[E0599]: the method `union` exists for struct `Tee<Iter<'_, ({integer}, {in
   | -------------------------- doesn't satisfy `_: SortedDisjoint<_>`
   |
   = note: the following trait bounds were not satisfied:
-          `<Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
-          which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
-          `<Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = RangeSetBlaze<_>`
-          which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
-          `std::slice::Iter<'_, ({integer}, {integer})>: range_set_blaze::SortedDisjoint<_>`
-          which is required by `Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjoint<_>`
-          `<&Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
-          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
-          `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: IntoIterator`
-          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
-          `<&Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = RangeSetBlaze<_>`
-          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
-          `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: IntoIterator`
-          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
-          `<&Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = _`
-          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwaySortedDisjoint<_, _>`
-          `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: IntoIterator`
-          which is required by `&Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwaySortedDisjoint<_, _>`
-          `<&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
-          which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
-          `<&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = RangeSetBlaze<_>`
-          which is required by `&mut Tee<std::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
+          `<Tee<core::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
+          which is required by `Tee<core::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
+          `<Tee<core::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = RangeSetBlaze<_>`
+          which is required by `Tee<core::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
+          `core::slice::Iter<'_, ({integer}, {integer})>: range_set_blaze::SortedDisjoint<_>`
+          which is required by `Tee<core::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::SortedDisjoint<_>`
+          `<&Tee<core::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
+          which is required by `&Tee<core::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
+          `&Tee<core::slice::Iter<'_, ({integer}, {integer})>>: IntoIterator`
+          which is required by `&Tee<core::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
+          `<&Tee<core::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = RangeSetBlaze<_>`
+          which is required by `&Tee<core::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
+          `&Tee<core::slice::Iter<'_, ({integer}, {integer})>>: IntoIterator`
+          which is required by `&Tee<core::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
+          `<&Tee<core::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = _`
+          which is required by `&Tee<core::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwaySortedDisjoint<_, _>`
+          `&Tee<core::slice::Iter<'_, ({integer}, {integer})>>: IntoIterator`
+          which is required by `&Tee<core::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwaySortedDisjoint<_, _>`
+          `<&mut Tee<core::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = &RangeSetBlaze<_>`
+          which is required by `&mut Tee<core::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlaze<'_, _>`
+          `<&mut Tee<core::slice::Iter<'_, ({integer}, {integer})>> as IntoIterator>::Item = RangeSetBlaze<_>`
+          which is required by `&mut Tee<core::slice::Iter<'_, ({integer}, {integer})>>: range_set_blaze::MultiwayRangeSetBlazeRef<_>`
 
 warning: unused import: `range_set_blaze::prelude`
  --> tests/ui/tee.rs:2:5

@@ -15,7 +15,11 @@ use criterion::{
 };
 use itertools::iproduct;
 use rand::{
-    distributions::Uniform, prelude::Distribution, rngs::StdRng, seq::SliceRandom, Rng, SeedableRng,
+    distributions::{uniform::SampleUniform, Uniform},
+    prelude::Distribution,
+    rngs::StdRng,
+    seq::SliceRandom,
+    Rng, SeedableRng,
 };
 // use pprof::criterion::Output; //PProfProfiler
 use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjoint};
@@ -233,7 +237,7 @@ fn bitor1(c: &mut Criterion) {
         );
     });
 }
-fn two_sets<T: Integer>(
+fn two_sets<T: Integer + SampleUniform>(
     range_len: usize,
     range: RangeInclusive<T>,
     coverage_goal: f64,
@@ -261,7 +265,7 @@ fn two_sets<T: Integer>(
 }
 
 #[allow(dead_code)]
-fn two_sets1<T: Integer>(
+fn two_sets1<T: Integer + SampleUniform>(
     range_len: usize,
     range: RangeInclusive<T>,
     coverage_goal: f64,
@@ -279,7 +283,7 @@ fn two_sets1<T: Integer>(
         [*range.start()].into_iter().collect(),
     )
 }
-fn btree_two_sets<T: Integer>(
+fn btree_two_sets<T: Integer + SampleUniform>(
     range_len: usize,
     range: RangeInclusive<T>,
     coverage_goal: f64,
@@ -306,7 +310,7 @@ fn btree_two_sets<T: Integer>(
     )
 }
 #[allow(dead_code)]
-fn btree_two_sets1<T: Integer>(
+fn btree_two_sets1<T: Integer + SampleUniform>(
     range_len: usize,
     range: RangeInclusive<T>,
     coverage_goal: f64,
@@ -1411,21 +1415,21 @@ fn overflow(c: &mut Criterion) {
         },
     );
 
-    // group.bench_with_input(
-    //     BenchmarkId::new("E: Human2", parameter),
-    //     &parameter,
-    //     |bencher, _| {
-    //         let mut rng = StdRng::seed_from_u64(seed);
-    //         bencher.iter_batched(
-    //             || gen_pair(&mut rng),
-    //             |(a, b)| {
-    //                 let result = a.saturating_add(1) < b;
-    //                 criterion::black_box(result);
-    //             },
-    //             BatchSize::NumIterations(num_iterations)
-    //         );
-    //     },
-    // );
+    group.bench_with_input(
+        BenchmarkId::new("Z: Human2", parameter),
+        &parameter,
+        |bencher, _| {
+            let mut rng = StdRng::seed_from_u64(seed);
+            bencher.iter_batched(
+                || gen_pair(&mut rng),
+                |(a, b)| {
+                    let result = a.saturating_add(1) < b;
+                    criterion::black_box(result);
+                },
+                BatchSize::NumIterations(num_iterations),
+            );
+        },
+    );
 
     //     group.bench_with_input(
     //         BenchmarkId::new("not max short curcuit", parameter),
@@ -1459,12 +1463,110 @@ fn overflow(c: &mut Criterion) {
     //         },
     //     );
 
+    group.bench_with_input(
+        BenchmarkId::new("E: i8bit to 16bit", parameter),
+        &parameter,
+        |bencher, _| {
+            let mut rng = StdRng::seed_from_u64(seed);
+            bencher.iter_batched(
+                || gen_pair_i8(&mut rng),
+                |(a, b)| {
+                    let result = a as i16 + 1 < b as i16;
+                    criterion::black_box(result);
+                },
+                BatchSize::NumIterations(num_iterations),
+            );
+        },
+    );
+
+    group.bench_with_input(
+        BenchmarkId::new("F: i8bit to isize", parameter),
+        &parameter,
+        |bencher, _| {
+            let mut rng = StdRng::seed_from_u64(seed);
+            bencher.iter_batched(
+                || gen_pair_i8(&mut rng),
+                |(a, b)| {
+                    let result = a as isize + 1 < b as isize;
+                    criterion::black_box(result);
+                },
+                BatchSize::NumIterations(num_iterations),
+            );
+        },
+    );
+
+    group.bench_with_input(
+        BenchmarkId::new("F: u8bit to isize", parameter),
+        &parameter,
+        |bencher, _| {
+            let mut rng = StdRng::seed_from_u64(seed);
+            bencher.iter_batched(
+                || gen_pair_u8(&mut rng),
+                |(a, b)| {
+                    let result = a as isize + 1 < b as isize;
+                    criterion::black_box(result);
+                },
+                BatchSize::NumIterations(num_iterations),
+            );
+        },
+    );
+
+    group.bench_with_input(
+        BenchmarkId::new("G: u8bit to usize", parameter),
+        &parameter,
+        |bencher, _| {
+            let mut rng = StdRng::seed_from_u64(seed);
+            bencher.iter_batched(
+                || gen_pair_u8(&mut rng),
+                |(a, b)| {
+                    let result = a as usize + 1 < b as usize;
+                    criterion::black_box(result);
+                },
+                BatchSize::NumIterations(num_iterations),
+            );
+        },
+    );
+
+    group.bench_with_input(
+        BenchmarkId::new("H: u8 reddit2", parameter),
+        &parameter,
+        |bencher, _| {
+            let mut rng = StdRng::seed_from_u64(seed);
+            bencher.iter_batched(
+                || gen_pair_u8(&mut rng),
+                |(a, b)| {
+                    let result = if u8::BITS < isize::BITS {
+                        (a as isize + 1) < (b as isize)
+                    } else {
+                        Some(a) < b.checked_sub(1)
+                    };
+                    criterion::black_box(result);
+                },
+                BatchSize::NumIterations(num_iterations),
+            );
+        },
+    );
+
     group.finish();
 }
 fn gen_pair(rng: &mut StdRng) -> (i32, i32) {
     (
         rng.gen_range(std::i32::MIN..=std::i32::MAX),
         rng.gen_range(std::i32::MIN..=std::i32::MAX),
+    )
+}
+
+fn gen_pair_i8(rng: &mut StdRng) -> (i8, i8) {
+    (
+        rng.gen_range(std::i8::MIN..=std::i8::MAX),
+        rng.gen_range(std::i8::MIN..=std::i8::MAX),
+    )
+}
+
+fn gen_pair_u8(rng: &mut StdRng) -> (u8, u8) {
+    (
+        rng.gen_range(std::u8::MIN..=std::u8::MAX),
+        rng.gen_range(std::u8::MIN..=std::u8::MAX),
     )
 }
 

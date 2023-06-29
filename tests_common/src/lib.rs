@@ -1,6 +1,7 @@
-use std::ops::RangeInclusive;
+use core::ops::RangeInclusive;
 
 use num_traits::identities::One;
+use rand::distributions::uniform::SampleUniform;
 use rand::rngs::StdRng;
 use rand::Rng;
 use range_set_blaze::Integer;
@@ -10,7 +11,7 @@ pub fn width_to_range(
     iter_len: usize,
     average_width: usize,
     coverage_goal: f64,
-) -> (usize, std::ops::RangeInclusive<i32>) {
+) -> (usize, core::ops::RangeInclusive<i32>) {
     let range_len = iter_len / average_width;
     let one_fraction: f64 = 1.0 - (1.0 - coverage_goal).powf(1.0 / range_len as f64);
     let range = 0..=(((average_width as f64 / one_fraction) - 0.5) as i32);
@@ -20,7 +21,7 @@ pub fn width_to_range(
 // Not reliable if the range is too small, especially if the range_len
 // is small. Might have some off-by-one errors that aren't material in practice.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct MemorylessRange<'a, T: Integer> {
+pub struct MemorylessRange<'a, T: Integer + SampleUniform> {
     rng: &'a mut StdRng,
     range_len: usize,
     range: RangeInclusive<T>,
@@ -34,7 +35,7 @@ pub enum How {
     None,
 }
 
-impl<'a, T: Integer> MemorylessRange<'a, T> {
+impl<'a, T: Integer + SampleUniform> MemorylessRange<'a, T> {
     pub fn new(
         rng: &'a mut StdRng,
         range_len: usize,
@@ -61,7 +62,7 @@ impl<'a, T: Integer> MemorylessRange<'a, T> {
     }
 }
 
-impl<'a, T: Integer> Iterator for MemorylessRange<'a, T> {
+impl<'a, T: Integer + SampleUniform> Iterator for MemorylessRange<'a, T> {
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -123,12 +124,12 @@ impl<'a, T: Integer> Iterator for MemorylessRange<'a, T> {
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct MemorylessIter<'a, T: Integer> {
+pub struct MemorylessIter<'a, T: Integer + SampleUniform> {
     option_range: Option<RangeInclusive<T>>,
     iter: MemorylessRange<'a, T>,
 }
 
-impl<'a, T: Integer> MemorylessIter<'a, T> {
+impl<'a, T: Integer + SampleUniform> MemorylessIter<'a, T> {
     pub fn new(
         rng: &'a mut StdRng,
         range_len: usize,
@@ -145,7 +146,7 @@ impl<'a, T: Integer> MemorylessIter<'a, T> {
     }
 }
 
-impl<'a, T: Integer> Iterator for MemorylessIter<'a, T> {
+impl<'a, T: Integer + SampleUniform> Iterator for MemorylessIter<'a, T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -161,7 +162,7 @@ impl<'a, T: Integer> Iterator for MemorylessIter<'a, T> {
     }
 }
 
-pub fn k_sets<T: Integer>(
+pub fn k_sets<T: Integer + SampleUniform>(
     k: usize,
     range_len: usize,
     range: &RangeInclusive<T>,
