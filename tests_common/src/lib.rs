@@ -18,6 +18,17 @@ pub fn width_to_range(
     (range_len, range)
 }
 
+pub fn width_to_range_u32(
+    iter_len: usize,
+    average_width: usize,
+    coverage_goal: f64,
+) -> (usize, core::ops::RangeInclusive<u32>) {
+    let range_len = iter_len / average_width;
+    let one_fraction: f64 = 1.0 - (1.0 - coverage_goal).powf(1.0 / range_len as f64);
+    let range = 0..=((average_width as f64 / one_fraction) as u32);
+    (range_len, range)
+}
+
 // Not reliable if the range is too small, especially if the range_len
 // is small. Might have some off-by-one errors that aren't material in practice.
 #[must_use = "iterators are lazy and do nothing unless consumed"]

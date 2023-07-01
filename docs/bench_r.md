@@ -1,10 +1,13 @@
 # Benchmarks for (some) Range-Related Rust Crates
 
+> *first notes on Roaring benchmarks-cmk*
+
 ## Range-Related Rust Crates
 
 | Crate | # Downloads | Ranges | Element Type | Set Operations? | Internal | Maps, too? |
 | --- | --- | --- | --- | --- | --- | --- |
-[range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) | zero | Disjoint | Integer | Set Ops | BTreeMap | Only Sets |
+[range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) | 488* | Disjoint | Integer | Set Ops | BTreeMap | Only Sets |
+[roaring]([Title](https://crates.io/crates/roaring)) | 1,588,056* | compressed bitmaps | u32 | SetOps | compressed bitmaps | Only Sets |
 [rangemap](https://crates.io/crates/rangemap) | 243,612 | Disjoint | Ord | No Set Ops | BTreeMap | Sets/Maps |
 [iset](https://crates.io/crates/iset) | 128,824 | Overlapping | PartialOrd | No Set Ops | Red Black | Sets/Maps |
 [theban_interval_tree](https://crates.io/crates/theban_interval_tree) |72,000 | Overlapping(?) | ? | No Set Ops | interval tree | Sets/Maps ||
@@ -22,6 +25,8 @@
 [int_range_set](https://crates.io/crates/int_range_set)|  <1000 | Yes | u64 | No Set Ops | tinyvec | Only Sets |
 
 > *The # of downloads as of March 2023*
+
+> *\* # as of June 30, 2023*
 
 ## Benchmark Selection Criteria
 

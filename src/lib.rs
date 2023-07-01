@@ -836,7 +836,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         // The code can have only one mutable reference to self.btree_map.
         let start;
         let end;
-        if let Some((start_ref, end_ref)) = self.btree_map.range_mut(..=value).rev().next() {
+        if let Some((start_ref, end_ref)) = self.btree_map.range_mut(..=value).next_back() {
             end = *end_ref;
             if end < value {
                 return false;

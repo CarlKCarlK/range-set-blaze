@@ -4,13 +4,16 @@
 // https://github.com/orlp/glidesort
 // https://nnethercote.github.io/perf-book/profiling.html
 
+use roaring::RoaringBitmap;
 use std::{
-    collections::{BTreeSet, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
+    fs,
     ops::RangeInclusive,
+    path::Path,
 };
 
 use criterion::{
-    criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
+    black_box, criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
     PlotConfiguration,
 };
 use itertools::iproduct;
@@ -24,7 +27,9 @@ use rand::{
 // use pprof::criterion::Output; //PProfProfiler
 use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjoint};
 use syntactic_for::syntactic_for;
-use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
+use tests_common::{
+    k_sets, width_to_range, width_to_range_u32, How, MemorylessIter, MemorylessRange,
+};
 
 pub fn shuffled(c: &mut Criterion) {
     let seed = 0;
@@ -783,6 +788,110 @@ fn every_op(c: &mut Criterion) {
     group.finish();
 }
 
+fn every_op_roaring(c: &mut Criterion) {
+    let group_name = "every_op_roaring";
+    let k = 2;
+    let range_len_list = [1usize, 10, 100, 1000, 10_000, 100_000];
+    let range = 0..=99_999_999u32;
+    let coverage_goal = 0.5;
+    let how = How::None;
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    let setup_vec_0 = range_len_list
+        .iter()
+        .map(|range_len| {
+            (
+                range_len,
+                k_sets(
+                    k,
+                    *range_len,
+                    &range,
+                    coverage_goal,
+                    how,
+                    &mut StdRng::seed_from_u64(0),
+                ),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let mut setup_vec: Vec<(&usize, Vec<RoaringBitmap>)> = Vec::new();
+    for (range_len, k_sets) in &setup_vec_0 {
+        let mut range_vec_0 = Vec::new();
+        for set in k_sets {
+            let roaring = set.iter().collect::<RoaringBitmap>();
+            range_vec_0.push(roaring);
+        }
+        setup_vec.push((range_len, range_vec_0));
+    }
+
+    for (i, (_range_len, setup)) in setup_vec.iter().enumerate() {
+        let (_ignore, setup_0) = &setup_vec_0[i];
+        let parameter = setup_0[0].ranges_len();
+        group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
+            b.iter_batched(
+                || setup,
+                |sets| {
+                    let _answer = &sets[0] | &sets[1];
+                },
+                BatchSize::SmallInput,
+            );
+        });
+        group.bench_with_input(
+            BenchmarkId::new("intersection", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup,
+                    |sets| {
+                        let _answer = &sets[0] & &sets[1];
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("difference", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup,
+                    |sets| {
+                        let _answer = &sets[0] - &sets[1];
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("symmetric difference", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup,
+                    |sets| {
+                        let _answer = &sets[0] ^ &sets[1];
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        // group.bench_with_input(
+        //     BenchmarkId::new("complement", parameter),
+        //     &parameter,
+        //     |b, _k| {
+        //         b.iter_batched(
+        //             || setup,
+        //             |sets| {
+        //                 let _answer = !&sets[0];
+        //             },
+        //             BatchSize::SmallInput,
+        //         );
+        //     },
+        // );
+    }
+    group.finish();
+}
+
 #[allow(dead_code)]
 fn vary_coverage_goal(c: &mut Criterion) {
     let group_name = "vary_coverage_goal";
@@ -922,6 +1031,78 @@ fn union_two_sets(c: &mut Criterion) {
     group.finish();
 }
 
+fn union_two_sets_u32(c: &mut Criterion) {
+    let group_name = "union_two_sets_u32";
+    // let k = 2;
+    let range = 0..=99_999_999u32;
+    let range_len0 = 1_000;
+    let range_len_list1 = [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal_list = [0.1];
+    let how = How::None;
+    let seed = 0;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    let mut rng = StdRng::seed_from_u64(seed);
+
+    for coverage_goal in coverage_goal_list {
+        let temp: Vec<RangeSetBlaze<u32>> =
+            k_sets(1, range_len0, &range, coverage_goal, how, &mut rng);
+        let set0 = &temp[0];
+        let rangemap_set0 = &rangemap::RangeInclusiveSet::from_iter(set0.ranges());
+        let roaring_set0 = RoaringBitmap::from_iter(set0.iter());
+
+        for range_len1 in &range_len_list1 {
+            let set1 = &k_sets(1, *range_len1, &range, coverage_goal, how, &mut rng)[0];
+            let rangemap_set1 = rangemap::RangeInclusiveSet::from_iter(set1.ranges());
+            let roaring_set1 = RoaringBitmap::from_iter(set1.iter());
+
+            let parameter = set1.ranges_len();
+
+            group.bench_with_input(
+                BenchmarkId::new(format!("RangeSetBlaze {coverage_goal}"), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || set0.clone(),
+                        |mut set00| {
+                            set00 |= set1;
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+            group.bench_with_input(
+                BenchmarkId::new(format!("Roaring {coverage_goal}"), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || roaring_set0.clone(),
+                        |mut set00| {
+                            set00 |= &roaring_set1;
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+            group.bench_with_input(
+                BenchmarkId::new(format!("rangemap {coverage_goal}"), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || rangemap_set0.clone(),
+                        |mut set00| {
+                            set00.extend(rangemap_set1.iter().cloned());
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+        }
+    }
+    group.finish();
+}
+
 #[allow(dead_code)]
 fn str_vs_ad_by_cover(c: &mut Criterion) {
     let group_name = "str_vs_ad_by_cover";
@@ -964,6 +1145,7 @@ fn str_vs_ad_by_cover(c: &mut Criterion) {
     }
     group.finish();
 }
+
 fn ingest_clumps_base(c: &mut Criterion) {
     let group_name = "ingest_clumps_base";
     let k = 1;
@@ -1041,6 +1223,108 @@ fn ingest_clumps_base(c: &mut Criterion) {
     group.finish();
 }
 
+fn ingest_clumps_base_u32(c: &mut Criterion) {
+    let group_name = "ingest_clumps_base_u32";
+    let k = 1;
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    // group.sample_size(40);
+
+    for average_width in average_width_list {
+        let parameter = average_width;
+
+        let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+
+        let vec: Vec<u32> = MemorylessIter::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+        let vec_range: Vec<RangeInclusive<u32>> = MemorylessRange::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("Roaring (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RoaringBitmap::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze (ranges)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_iter(vec_range.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("Roaring (ranges)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let mut answer = RoaringBitmap::new();
+                    for range in vec_range.iter().cloned() {
+                        answer.insert_range(range);
+                    }
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("BTreeSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("HashSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: HashSet<u32> = HashSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+    }
+    group.finish();
+}
+
 fn ingest_clumps_integers(c: &mut Criterion) {
     let group_name = "ingest_clumps_integers";
     let k = 1;
@@ -1109,6 +1393,86 @@ fn ingest_clumps_integers(c: &mut Criterion) {
     group.finish();
 }
 
+fn ingest_clumps_integers_u32(c: &mut Criterion) {
+    let group_name = "ingest_clumps_integers_u32";
+    let k = 1;
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    group.sample_size(40);
+
+    for average_width in average_width_list {
+        let parameter = average_width;
+
+        let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+
+        let vec: Vec<u32> = MemorylessIter::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("Roaring (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RoaringBitmap::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: rangemap::RangeInclusiveSet<u32> =
+                        rangemap::RangeInclusiveSet::from_iter(vec.iter().map(|x| *x..=*x));
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("BTreeSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("HashSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: HashSet<u32> = HashSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+    }
+    group.finish();
+}
+
 fn ingest_clumps_ranges(c: &mut Criterion) {
     let group_name = "ingest_clumps_ranges";
     let k = 1;
@@ -1154,6 +1518,71 @@ fn ingest_clumps_ranges(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let _answer = RangeSetBlaze::from_iter(vec_range.iter().cloned());
+                })
+            },
+        );
+    }
+    group.finish();
+}
+
+fn ingest_clumps_ranges_u32(c: &mut Criterion) {
+    let group_name = "ingest_clumps_ranges_u32";
+    let k = 1;
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    group.sample_size(40);
+
+    for average_width in average_width_list {
+        let parameter = average_width;
+
+        let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+
+        let vec_range: Vec<RangeInclusive<u32>> = MemorylessRange::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (ranges)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: rangemap::RangeInclusiveSet<u32> =
+                        rangemap::RangeInclusiveSet::from_iter(vec_range.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze (ranges)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_iter(vec_range.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("Roaring (ranges)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let mut answer = RoaringBitmap::new();
+                    for range in vec_range.iter().cloned() {
+                        answer.insert_range(range);
+                    }
                 })
             },
         );
@@ -1241,6 +1670,99 @@ fn ingest_clumps_easy(c: &mut Criterion) {
     group.finish();
 }
 
+fn ingest_clumps_easy_u32(c: &mut Criterion) {
+    let group_name = "ingest_clumps_easy_u32";
+    let k = 1;
+    let average_width_list = [1, 10];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 100_000;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    group.sample_size(40);
+
+    for average_width in average_width_list {
+        let parameter = average_width;
+
+        let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+
+        let vec_range: Vec<RangeInclusive<u32>> = MemorylessRange::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (ranges, BTreeSet)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: rangemap::RangeInclusiveSet<u32> =
+                        rangemap::RangeInclusiveSet::from_iter(vec_range.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze (ranges, BTreeSet)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_iter(vec_range.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("Roaring (ranges)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let mut answer = RoaringBitmap::new();
+                    for range in vec_range.iter().cloned() {
+                        answer.insert_range(range);
+                    }
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("range_collections (ranges, SmallVec)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let mut answer = range_collections::RangeSet2::from(1..1);
+                    for range in vec_range.iter() {
+                        let (start, end) = range.clone().into_inner();
+                        let b = range_collections::RangeSet::from(start..end + 1);
+                        answer |= b;
+                    }
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("range_set (ranges, SmallVec)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let mut answer = range_set::RangeSet::<[RangeInclusive<u32>; 1]>::new();
+                    for range in vec_range.iter() {
+                        answer.insert_range(range.clone());
+                    }
+                })
+            },
+        );
+    }
+    group.finish();
+}
+
 fn worst(c: &mut Criterion) {
     let group_name = "worst";
     let range = 0..=999;
@@ -1282,6 +1804,64 @@ fn worst(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let _answer: HashSet<i32> = HashSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+    }
+    group.finish();
+}
+
+fn worst_u32(c: &mut Criterion) {
+    let group_name = "worst_u32";
+    let range = 0..=999u32;
+    let iter_len_list = [1u32, 10, 100, 1_000, 10_000];
+    let seed = 0;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    for iter_len in iter_len_list {
+        let parameter = iter_len;
+
+        let mut rng = StdRng::seed_from_u64(seed);
+        let uniform = Uniform::from(range.clone());
+        let vec: Vec<u32> = (0..iter_len).map(|_| uniform.sample(&mut rng)).collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("BTreeSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("HashSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: HashSet<u32> = HashSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("Roaring", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: RoaringBitmap = RoaringBitmap::from_iter(vec.iter().cloned());
                 })
             },
         );
@@ -1570,18 +2150,122 @@ fn gen_pair_u8(rng: &mut StdRng) -> (u8, u8) {
     )
 }
 
+// cmk similar code appears elsewhere
+fn read_roaring_data(top: &Path) -> Result<HashMap<String, Vec<Vec<u32>>>, std::io::Error> {
+    let subfolders: Vec<_> = top.read_dir()?.map(|entry| entry.unwrap().path()).collect();
+    let mut name_to_vec_vec: HashMap<String, Vec<Vec<u32>>> = HashMap::new();
+    for subfolder in subfolders {
+        let subfolder_name = subfolder.file_name().unwrap().to_string_lossy().to_string();
+        let mut data: Vec<Vec<u32>> = Vec::new();
+        for file in subfolder.read_dir()? {
+            let file = file.unwrap().path();
+            let contents = fs::read_to_string(&file)?;
+            let contents = contents.trim_end_matches('\n');
+            let nums: Vec<u32> = contents.split(',').map(|s| s.parse().unwrap()).collect();
+            data.push(nums);
+        }
+        name_to_vec_vec.insert(subfolder_name, data);
+    }
+    Ok(name_to_vec_vec)
+}
+
+fn ingest_roaring_data(c: &mut Criterion) {
+    let group_name = "ingest_roaring_data";
+
+    let top = Path::new(r"M:\projects\roaring_data");
+    let name_to_vec_vec = read_roaring_data(top).unwrap();
+
+    for (name, vec_vec) in &name_to_vec_vec {
+        let vec_vec = &name_to_vec_vec["census1881"]; // ["wikileaks-noquotes_srt"];
+
+        let subdata_count_list = [1, 2, 5, 10, 25, 100, 200];
+        let mut group = c.benchmark_group(group_name);
+        group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+        group.sample_size(40);
+
+        for subdata_count in subdata_count_list {
+            let parameter = subdata_count;
+
+            // merge the first subdata_count vectors in vec_vec into a vector
+            let vec = vec_vec
+                .iter()
+                .take(subdata_count)
+                .flat_map(|v| v.iter().cloned())
+                .collect::<Vec<u32>>();
+
+            group.bench_with_input(
+                BenchmarkId::new("RangeSetBlaze (integers)", parameter),
+                &parameter,
+                |b, _| {
+                    b.iter(|| {
+                        let _answer = black_box(RangeSetBlaze::from_iter(vec.iter()));
+                    })
+                },
+            );
+
+            group.bench_with_input(
+                BenchmarkId::new("Roaring (integers)", parameter),
+                &parameter,
+                |b, _| {
+                    b.iter(|| {
+                        let _answer = black_box(RoaringBitmap::from_iter(vec.iter()));
+                    })
+                },
+            );
+
+            group.bench_with_input(
+                BenchmarkId::new("rangemap (integers)", parameter),
+                &parameter,
+                |b, _| {
+                    b.iter(|| {
+                        let _answer: rangemap::RangeInclusiveSet<u32> =
+                            rangemap::RangeInclusiveSet::from_iter(vec.iter().map(|x| *x..=*x));
+                    })
+                },
+            );
+            group.bench_with_input(
+                BenchmarkId::new("BTreeSet", parameter),
+                &parameter,
+                |b, _| {
+                    b.iter(|| {
+                        let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                    })
+                },
+            );
+            group.bench_with_input(
+                BenchmarkId::new("HashSet", parameter),
+                &parameter,
+                |b, _| {
+                    b.iter(|| {
+                        let _answer: HashSet<u32> = HashSet::from_iter(vec.iter().cloned());
+                    })
+                },
+            );
+        }
+    }
+    group.finish();
+}
+
 criterion_group! {
     name = benches;
     config = Criterion::default();
     targets =
     intersect_k_sets,
     every_op,
+    every_op_roaring,
     union_two_sets,
+    union_two_sets_u32,
     ingest_clumps_base,
+    ingest_clumps_base_u32,
     worst,
+    worst_u32,
     ingest_clumps_integers,
+    ingest_clumps_integers_u32,
     ingest_clumps_ranges,
+    ingest_clumps_ranges_u32,
     ingest_clumps_easy,
+    ingest_clumps_easy_u32,
     overflow,
+    ingest_roaring_data,
 }
 criterion_main!(benches);
