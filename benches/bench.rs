@@ -2169,79 +2169,116 @@ fn read_roaring_data(top: &Path) -> Result<HashMap<String, Vec<Vec<u32>>>, std::
     Ok(name_to_vec_vec)
 }
 
-fn ingest_roaring_data(c: &mut Criterion) {
-    let group_name = "ingest_roaring_data";
+
+fn ingest_roaring_data_census1881(c: &mut Criterion) {
+    ingest_roaring_data(c, "census1881");
+}
+fn ingest_roaring_data_census1881_srt(c: &mut Criterion) {
+    ingest_roaring_data(c, "census1881");
+}
+fn ingest_roaring_data_census_income(c: &mut Criterion) {
+    ingest_roaring_data(c, "census1881");
+}
+fn ingest_roaring_data_census_income_srt(c: &mut Criterion) {
+    ingest_roaring_data(c, "census1881");
+}
+fn ingest_roaring_data_weather_sept_85(c: &mut Criterion) {
+    ingest_roaring_data(c, "census1881");
+}
+fn ingest_roaring_data_census1881(c: &mut Criterion) {
+    ingest_roaring_data(c, "census1881");
+}
+fn ingest_roaring_data_census1881(c: &mut Criterion) {
+    ingest_roaring_data(c, "census1881");
+}
+fn ingest_roaring_data_census1881(c: &mut Criterion) {
+    ingest_roaring_data(c, "census1881");
+}
+fn ingest_roaring_data_census1881(c: &mut Criterion) {
+    ingest_roaring_data(c, "census1881");
+}
+
+
+ingest_roaring_data_census1881_srt,
+ingest_roaring_data_census_income,
+ingest_roaring_data_census_income_srt,
+ingest_roaring_data_uscensus2000,
+ingest_roaring_data_weather_sept_85,
+ingest_roaring_data_weather_sept_85_srt,
+ingest_roaring_data_wikileaks_noquotes,
+ingest_roaring_data_wikileaks_noquotes_srt,
+
+
+fn ingest_roaring_data(c: &mut Criterion, name: &str) {
+    let group_name = format!("ingest_roaring_data_{name}");
 
     let top = Path::new(r"M:\projects\roaring_data");
     let name_to_vec_vec = read_roaring_data(top).unwrap();
 
-    for (name, vec_vec) in &name_to_vec_vec {
-        let vec_vec = &name_to_vec_vec["census1881"]; // ["wikileaks-noquotes_srt"];
+    let subdata_count_list = [1, 2, 5, 10, 25, 100, 200];
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    group.sample_size(40);
 
-        let subdata_count_list = [1, 2, 5, 10, 25, 100, 200];
-        let mut group = c.benchmark_group(group_name);
-        group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-        group.sample_size(40);
+    for subdata_count in subdata_count_list {
+        let parameter = subdata_count;
+        let parameter = name;
 
-        for subdata_count in subdata_count_list {
-            let parameter = subdata_count;
+        // merge vec_vec into a single vec, keeping everything in the same order
+        let vec = name_to_vec_vec[name]
+            .iter()
+            .take(subdata_count)
+            .flat_map(|v| v.iter().cloned())
+            .collect::<Vec<u32>>();
 
-            // merge the first subdata_count vectors in vec_vec into a vector
-            let vec = vec_vec
-                .iter()
-                .take(subdata_count)
-                .flat_map(|v| v.iter().cloned())
-                .collect::<Vec<u32>>();
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = black_box(RangeSetBlaze::from_iter(vec.iter()));
+                })
+            },
+        );
 
-            group.bench_with_input(
-                BenchmarkId::new("RangeSetBlaze (integers)", parameter),
-                &parameter,
-                |b, _| {
-                    b.iter(|| {
-                        let _answer = black_box(RangeSetBlaze::from_iter(vec.iter()));
-                    })
-                },
-            );
+        group.bench_with_input(
+            BenchmarkId::new("Roaring (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = black_box(RoaringBitmap::from_iter(vec.iter()));
+                })
+            },
+        );
 
-            group.bench_with_input(
-                BenchmarkId::new("Roaring (integers)", parameter),
-                &parameter,
-                |b, _| {
-                    b.iter(|| {
-                        let _answer = black_box(RoaringBitmap::from_iter(vec.iter()));
-                    })
-                },
-            );
-
-            group.bench_with_input(
-                BenchmarkId::new("rangemap (integers)", parameter),
-                &parameter,
-                |b, _| {
-                    b.iter(|| {
-                        let _answer: rangemap::RangeInclusiveSet<u32> =
-                            rangemap::RangeInclusiveSet::from_iter(vec.iter().map(|x| *x..=*x));
-                    })
-                },
-            );
-            group.bench_with_input(
-                BenchmarkId::new("BTreeSet", parameter),
-                &parameter,
-                |b, _| {
-                    b.iter(|| {
-                        let _answer = BTreeSet::from_iter(vec.iter().cloned());
-                    })
-                },
-            );
-            group.bench_with_input(
-                BenchmarkId::new("HashSet", parameter),
-                &parameter,
-                |b, _| {
-                    b.iter(|| {
-                        let _answer: HashSet<u32> = HashSet::from_iter(vec.iter().cloned());
-                    })
-                },
-            );
-        }
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: rangemap::RangeInclusiveSet<u32> =
+                        rangemap::RangeInclusiveSet::from_iter(vec.iter().map(|x| *x..=*x));
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("BTreeSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("HashSet", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: HashSet<u32> = HashSet::from_iter(vec.iter().cloned());
+                })
+            },
+        );
     }
     group.finish();
 }
@@ -2266,6 +2303,15 @@ criterion_group! {
     ingest_clumps_easy,
     ingest_clumps_easy_u32,
     overflow,
-    ingest_roaring_data,
+    ingest_roaring_data_census1881,
+    ingest_roaring_data_census1881_srt,
+    ingest_roaring_data_census_income,
+    ingest_roaring_data_census_income_srt,
+    ingest_roaring_data_uscensus2000,
+    ingest_roaring_data_weather_sept_85,
+    ingest_roaring_data_weather_sept_85_srt,
+    ingest_roaring_data_wikileaks_noquotes,
+    ingest_roaring_data_wikileaks_noquotes_srt,
+
 }
 criterion_main!(benches);
