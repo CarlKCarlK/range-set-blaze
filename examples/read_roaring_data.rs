@@ -18,8 +18,22 @@ fn main() -> std::io::Result<()> {
         let unique_count = range_set_blaze.len();
         let range_count = range_set_blaze.ranges_len();
         println!("{name}, {value_count}, {unique_count}, {range_count}");
-        if range_count < 5 {
-            println!("    {:?}", range_set_blaze);
+        // if range_count < 5 {
+        //     println!("    {:?}", range_set_blaze);
+        // }
+    }
+
+    println!("name, value_count, unique_count, range_count");
+    for (name, vec_vec) in name_and_vec_vec_list.iter() {
+        if name != "census1881_srt" {
+            continue;
+        }
+        for vec in vec_vec {
+            let value_count = vec.len();
+            let range_set_blaze = vec.iter().collect::<RangeSetBlaze<_>>();
+            let unique_count = range_set_blaze.len();
+            let range_count = range_set_blaze.ranges_len();
+            println!("{name}, {value_count}, {unique_count}, {range_count}");
         }
     }
 

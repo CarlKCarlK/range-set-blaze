@@ -1,13 +1,11 @@
 # Benchmarks for (some) Range-Related Rust Crates
 
-> *first notes on Roaring benchmarks-cmk*
-
 ## Range-Related Rust Crates
 
 | Crate | # Downloads | Ranges | Element Type | Set Operations? | Internal | Maps, too? |
 | --- | --- | --- | --- | --- | --- | --- |
 [range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) | 488* | Disjoint | Integer | Set Ops | BTreeMap | Only Sets |
-[roaring]([Title](https://crates.io/crates/roaring)) | 1,588,056* | compressed bitmaps | u32 | SetOps | compressed bitmaps | Only Sets |
+[roaring]([Title](https://crates.io/crates/roaring)) | 1,588,056* | Disjoint | u32 | SetOps | Compressed Bitmaps | Only Sets |
 [rangemap](https://crates.io/crates/rangemap) | 243,612 | Disjoint | Ord | No Set Ops | BTreeMap | Sets/Maps |
 [iset](https://crates.io/crates/iset) | 128,824 | Overlapping | PartialOrd | No Set Ops | Red Black | Sets/Maps |
 [theban_interval_tree](https://crates.io/crates/theban_interval_tree) |72,000 | Overlapping(?) | ? | No Set Ops | interval tree | Sets/Maps ||
@@ -25,22 +23,26 @@
 [int_range_set](https://crates.io/crates/int_range_set)|  <1000 | Yes | u64 | No Set Ops | tinyvec | Only Sets |
 
 > *The # of downloads as of March 2023*
-
-> *\* # as of June 30, 2023*
+>
+> *\* The # of downloads as of June 30, 2023*
 
 ## Benchmark Selection Criteria
 
-I ended up evaluating:
+I started by evaluating:
 
 * `BTreeSet`, `HashSet`, from the standard library
 * `range_map`, the most popular crate that works with ranges in a tree
 * `Range-collections` and `range-set`, the most popular crates that store ranges in a vector
 
-The `range_map`, `Range-collections`, and `range-set` crates store disjoint ranges. I eliminated crates for overlapping ranges, a different data structure (`iset`, `theban_interval_tree`, and `unbounded-interval-tree`).
+and later added
 
-Disjoint ranges can be stored in a tree or a vector. With a tree, we expect inserts to be much faster than with a vector, O(log *n*) vs O(*n*). Benchmark `ingest_clumps_easy` below showed this to be true. Because I care about such inserts, after that benchmark, I removed vector-based crates from consideration.
+* `roaring`, a "compressed bitset" library with over a millions Rust downloads and versions in many other language. It stores u32 values in 65K chunks of 65K values. Each chunk is represented as either a vector of intergers, a vector of ranges, or a bitmap.
 
-Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). None of the remaining crates offered tested set operations. (The inspirational `sorted-iter` does, but it is designed to work on sorted values, not ranges, and so is not included.)
+The `range_map`, `Range-collections`, `range-set`, and `roaring` crates store disjoint ranges. I eliminated crates for overlapping ranges, a different data structure (`iset`, `theban_interval_tree`, and `unbounded-interval-tree`).
+
+Disjoint ranges can be stored in a tree or a vector. With a tree, we expect inserts to be much faster than with a vector, O(log *n*) vs O(*n*). Benchmark `ingest_clumps_easy` below showed this to be true. Because I care about such inserts, after that benchmark, I removed vector-based crates from consideration except for `roaring`.
+
+Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). Only `roaring` of the remaining crates offered tested set operations. (The inspirational `sorted-iter` does, but it is designed to work on sorted values, not ranges, and so is not included.)
 
 If I misunderstood any of the crates, please let me know. If you'd like to benchmark a crate, the benchmarking code is in the `benches` directory of this repository.
 
@@ -48,18 +50,18 @@ If I misunderstood any of the crates, please let me know. If you'd like to bench
 
 These benchmarks that allow us to understand the `range-set-blaze::RangeSetBlaze` data structure and to compare it to similar data structures from other crates.
 
-## Benchmark #1: 'worst': Worst case for RangeSetBlaze
+## Benchmark #1: 'worst_u32': Worst case for RangeSetBlaze
 
 * **Measure**: intake speed
-* **Candidates**: `HashSet`, `BTreeSet`, `RangeSetBlaze`
+* **Candidates**: `HashSet`, `BTreeSet`, `Roaring`, `RangeSetBlaze`
 * **Vary**: *n* from 1 to 10,000, number of random integers
 * **Details**: Select *n* integers randomly and uniformly from the range 0..=999 (with replacement).
 
-### 'worst' Results
+### 'worst_u32' Results
 
-`RangeSetBlaze` is consistently about 2.5 times slower than `HashSet`. On small sets, `BTreeSet` is competitive with `HashSet`, but gets almost as slow as `RangeSetBlaze` as the sets grow.
+`RangeSetBlaze` is consistently about 2.5 times slower than `HashSet`. On small sets, `Roaring` and `BTreeSet` are in the middle, but get as slow as `RangeSetBlaze` as the sets grow.
 
-### 'worst' Conclusion
+### 'worst_u32' Conclusion
 
 `HashSet`, not `RangeSetBlaze` is a good choice for sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just 2.5 times worse.
 
@@ -68,22 +70,21 @@ These benchmarks that allow us to understand the `range-set-blaze::RangeSetBlaze
 ## Benchmark #2: 'ingest_clumps_base': Measure `RangeSetBlaze` on increasingly clumpy integers
 
 * **Measure**: integer intake speed
-* **Candidates**: `HashSet`, `BTreeSet`, `RangeSetBlaze`
+* **Candidates**: `HashSet`, `BTreeSet`, `Roaring`, `RangeSetBlaze`
 * **Vary**: *average clump size* from 1 (no clumps) to 100K (ten big clumps)
 * **Details**: We generate 1M integers with clumps. We ingest the integers one at a time.
-Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. (The integer clumps are random uniform, with-replacement, in a span from 0 to roughly 10M. The exact span is sized so that the union of the 1M integers will cover about 10% of the span. In other words, a given integer in the span will have a 10% chance of being one of the 1M integers generated.)
+Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. (The integer clumps are random uniform, with-replacement, in a span from 0 to roughly 10M. The exact span is sized so that the union of the 1M integers will cover about 10% of the span. In other words, a given integer in the span will have a 10% chance of being in one of the 1M integers generated.)
 
 ### 'ingest_clumps_base' Results
 
-As before, with no clumps, `RangeSetBlaze` is more than 2.5 times slower than `HashSet`. Somewhere around clump size 3, `RangeSetBlaze` becomes the best performer. As the average clump size goes past 100, `RangeSetBlaze` is a steady 30 times faster than HashTable and 15 times faster than BTreeSet.
+As before, with no clumps, `RangeSetBlaze` is more than 2.5 times slower than `HashSet`. Somewhere around clump size 3, `RangeSetBlaze` becomes the best performer. As the average clump size goes past 100, `RangeSetBlaze` is a steady 30 times faster than `HashSet` and 15 times faster than `BTreeSet` and roughly 10 times faster than `Roaring`.
 
 If we are allowed to input the clumps as ranges (instead of as individual integers), then when the average clump size is 1000 `RangeSetBlaze` is 700
-times faster than `HashSet` and `BTreeSet`.
+times faster than `HashSet` and `BTreeSet` and more than 10 times faster than `Roaring`.
 
 ### ingest_clumps_base' Conclusion
 
-Range-based methods such as `RangeSetBlaze` are a great choice for clumpy integers.
-When the input is given as ranges, they are the only sensible choice.
+Range-based methods such as `RangeSetBlaze` and `Roaring` are a great choice for clumpy integers. When the input is given as ranges, they are the only sensible choice.
 
 ![ingest_clumps_base](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_base/report/lines.svg "ingest_clumps_base")
 
