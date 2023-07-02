@@ -12,3 +12,5 @@ benches/summary*.tsv
 benches/results*.xlsx
 benches/~$summary_r.tsv.xlsx
 benches/summary_r.tsv.xlsx
+benches/~$summary_r5.tsv.xlsx
+benches/summary_r5.tsv.xlsx

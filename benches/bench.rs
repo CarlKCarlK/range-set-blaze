@@ -6,8 +6,7 @@
 
 use roaring::RoaringBitmap;
 use std::{
-    collections::{BTreeSet, HashMap, HashSet},
-    fs,
+    collections::{BTreeSet, HashSet},
     ops::RangeInclusive,
     path::Path,
 };
@@ -16,7 +15,7 @@ use criterion::{
     black_box, criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
     PlotConfiguration,
 };
-use itertools::iproduct;
+use itertools::{iproduct, Itertools};
 use rand::{
     distributions::{uniform::SampleUniform, Uniform},
     prelude::Distribution,
@@ -25,10 +24,13 @@ use rand::{
     Rng, SeedableRng,
 };
 // use pprof::criterion::Output; //PProfProfiler
+use range_set_blaze::RangeSetBlaze;
 use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjoint};
+use std::ops::BitAnd;
 use syntactic_for::syntactic_for;
 use tests_common::{
-    k_sets, width_to_range, width_to_range_u32, How, MemorylessIter, MemorylessRange,
+    k_sets, read_roaring_data, width_to_range, width_to_range_u32, How, MemorylessIter,
+    MemorylessRange,
 };
 
 pub fn shuffled(c: &mut Criterion) {
@@ -788,11 +790,13 @@ fn every_op(c: &mut Criterion) {
     group.finish();
 }
 
-fn every_op_roaring(c: &mut Criterion) {
-    let group_name = "every_op_roaring";
+fn every_op_u32(c: &mut Criterion) {
+    let group_name = "every_op_u32";
     let k = 2;
     let range_len_list = [1usize, 10, 100, 1000, 10_000, 100_000];
     let range = 0..=99_999_999u32;
+    let mut universe = RoaringBitmap::new();
+    universe.insert_range(range.clone());
     let coverage_goal = 0.5;
     let how = How::None;
     let mut group = c.benchmark_group(group_name);
@@ -875,19 +879,19 @@ fn every_op_roaring(c: &mut Criterion) {
                 );
             },
         );
-        // group.bench_with_input(
-        //     BenchmarkId::new("complement", parameter),
-        //     &parameter,
-        //     |b, _k| {
-        //         b.iter_batched(
-        //             || setup,
-        //             |sets| {
-        //                 let _answer = !&sets[0];
-        //             },
-        //             BatchSize::SmallInput,
-        //         );
-        //     },
-        // );
+        group.bench_with_input(
+            BenchmarkId::new("complement", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup,
+                    |sets| {
+                        let _answer = &universe - &sets[0];
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
     }
     group.finish();
 }
@@ -1188,7 +1192,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec.iter());
                 })
             },
         );
@@ -1197,7 +1201,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec_range.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec_range.iter());
                 })
             },
         );
@@ -1206,7 +1210,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                    let _answer = BTreeSet::from_iter(vec.iter());
                 })
             },
         );
@@ -1265,7 +1269,7 @@ fn ingest_clumps_base_u32(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec.iter());
                 })
             },
         );
@@ -1275,7 +1279,7 @@ fn ingest_clumps_base_u32(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RoaringBitmap::from_iter(vec.iter().cloned());
+                    let _answer = RoaringBitmap::from_iter(vec.iter());
                 })
             },
         );
@@ -1285,7 +1289,7 @@ fn ingest_clumps_base_u32(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec_range.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec_range.iter());
                 })
             },
         );
@@ -1308,7 +1312,7 @@ fn ingest_clumps_base_u32(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                    let _answer = BTreeSet::from_iter(vec.iter());
                 })
             },
         );
@@ -1357,7 +1361,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec.iter());
                 })
             },
         );
@@ -1376,7 +1380,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                    let _answer = BTreeSet::from_iter(vec.iter());
                 })
             },
         );
@@ -1426,7 +1430,7 @@ fn ingest_clumps_integers_u32(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec.iter());
                 })
             },
         );
@@ -1436,7 +1440,7 @@ fn ingest_clumps_integers_u32(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RoaringBitmap::from_iter(vec.iter().cloned());
+                    let _answer = RoaringBitmap::from_iter(vec.iter());
                 })
             },
         );
@@ -1456,7 +1460,7 @@ fn ingest_clumps_integers_u32(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                    let _answer = BTreeSet::from_iter(vec.iter());
                 })
             },
         );
@@ -1517,7 +1521,7 @@ fn ingest_clumps_ranges(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec_range.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec_range.iter());
                 })
             },
         );
@@ -1569,7 +1573,7 @@ fn ingest_clumps_ranges_u32(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec_range.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec_range.iter());
                 })
             },
         );
@@ -1634,7 +1638,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec_range.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec_range.iter());
                 })
             },
         );
@@ -1714,7 +1718,7 @@ fn ingest_clumps_easy_u32(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec_range.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec_range.iter());
                 })
             },
         );
@@ -1784,7 +1788,7 @@ fn worst(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec.iter());
                 })
             },
         );
@@ -1793,7 +1797,7 @@ fn worst(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                    let _answer = BTreeSet::from_iter(vec.iter());
                 })
             },
         );
@@ -1832,7 +1836,7 @@ fn worst_u32(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec.iter().cloned());
+                    let _answer = RangeSetBlaze::from_iter(vec.iter());
                 })
             },
         );
@@ -1841,7 +1845,7 @@ fn worst_u32(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                    let _answer = BTreeSet::from_iter(vec.iter());
                 })
             },
         );
@@ -1861,7 +1865,7 @@ fn worst_u32(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer: RoaringBitmap = RoaringBitmap::from_iter(vec.iter().cloned());
+                    let _answer: RoaringBitmap = RoaringBitmap::from_iter(vec.iter());
                 })
             },
         );
@@ -2150,84 +2154,21 @@ fn gen_pair_u8(rng: &mut StdRng) -> (u8, u8) {
     )
 }
 
-// cmk similar code appears elsewhere
-fn read_roaring_data(top: &Path) -> Result<HashMap<String, Vec<Vec<u32>>>, std::io::Error> {
-    let subfolders: Vec<_> = top.read_dir()?.map(|entry| entry.unwrap().path()).collect();
-    let mut name_to_vec_vec: HashMap<String, Vec<Vec<u32>>> = HashMap::new();
-    for subfolder in subfolders {
-        let subfolder_name = subfolder.file_name().unwrap().to_string_lossy().to_string();
-        let mut data: Vec<Vec<u32>> = Vec::new();
-        for file in subfolder.read_dir()? {
-            let file = file.unwrap().path();
-            let contents = fs::read_to_string(&file)?;
-            let contents = contents.trim_end_matches('\n');
-            let nums: Vec<u32> = contents.split(',').map(|s| s.parse().unwrap()).collect();
-            data.push(nums);
-        }
-        name_to_vec_vec.insert(subfolder_name, data);
-    }
-    Ok(name_to_vec_vec)
-}
-
-
-fn ingest_roaring_data_census1881(c: &mut Criterion) {
-    ingest_roaring_data(c, "census1881");
-}
-fn ingest_roaring_data_census1881_srt(c: &mut Criterion) {
-    ingest_roaring_data(c, "census1881");
-}
-fn ingest_roaring_data_census_income(c: &mut Criterion) {
-    ingest_roaring_data(c, "census1881");
-}
-fn ingest_roaring_data_census_income_srt(c: &mut Criterion) {
-    ingest_roaring_data(c, "census1881");
-}
-fn ingest_roaring_data_weather_sept_85(c: &mut Criterion) {
-    ingest_roaring_data(c, "census1881");
-}
-fn ingest_roaring_data_census1881(c: &mut Criterion) {
-    ingest_roaring_data(c, "census1881");
-}
-fn ingest_roaring_data_census1881(c: &mut Criterion) {
-    ingest_roaring_data(c, "census1881");
-}
-fn ingest_roaring_data_census1881(c: &mut Criterion) {
-    ingest_roaring_data(c, "census1881");
-}
-fn ingest_roaring_data_census1881(c: &mut Criterion) {
-    ingest_roaring_data(c, "census1881");
-}
-
-
-ingest_roaring_data_census1881_srt,
-ingest_roaring_data_census_income,
-ingest_roaring_data_census_income_srt,
-ingest_roaring_data_uscensus2000,
-ingest_roaring_data_weather_sept_85,
-ingest_roaring_data_weather_sept_85_srt,
-ingest_roaring_data_wikileaks_noquotes,
-ingest_roaring_data_wikileaks_noquotes_srt,
-
-
-fn ingest_roaring_data(c: &mut Criterion, name: &str) {
-    let group_name = format!("ingest_roaring_data_{name}");
-
+fn ingest_roaring_data(c: &mut Criterion) {
     let top = Path::new(r"M:\projects\roaring_data");
-    let name_to_vec_vec = read_roaring_data(top).unwrap();
+    let name_and_vec_vec_list = read_roaring_data(top).unwrap();
 
-    let subdata_count_list = [1, 2, 5, 10, 25, 100, 200];
-    let mut group = c.benchmark_group(group_name);
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    let mut group = c.benchmark_group("ingest_roaring_data");
+    // group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
     group.sample_size(40);
 
-    for subdata_count in subdata_count_list {
-        let parameter = subdata_count;
-        let parameter = name;
+    for (i, (_name, vec_vec)) in name_and_vec_vec_list.iter().enumerate() {
+        let parameter = i;
 
         // merge vec_vec into a single vec, keeping everything in the same order
-        let vec = name_to_vec_vec[name]
+        let vec = vec_vec
             .iter()
-            .take(subdata_count)
+            // .take(subdata_count)
             .flat_map(|v| v.iter().cloned())
             .collect::<Vec<u32>>();
 
@@ -2266,7 +2207,7 @@ fn ingest_roaring_data(c: &mut Criterion, name: &str) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = BTreeSet::from_iter(vec.iter().cloned());
+                    let _answer = BTreeSet::from_iter(vec.iter());
                 })
             },
         );
@@ -2283,13 +2224,66 @@ fn ingest_roaring_data(c: &mut Criterion, name: &str) {
     group.finish();
 }
 
+fn stand_alone_and(c: &mut Criterion) {
+    let top = Path::new(r"M:\projects\roaring_data");
+    let name_and_vec_vec_list = read_roaring_data(top).unwrap();
+
+    let op_roaring = |a, b| BitAnd::bitand(a, b);
+    let op_blaze = |a, b| RangeSetBlaze::bitand(a, b);
+
+    let mut group = c.benchmark_group("stand_alone_and");
+    // group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    group.sample_size(40);
+
+    for (i, (_name, vec_vec)) in name_and_vec_vec_list.iter().enumerate() {
+        let parameter = i;
+
+        let pairs_roaring = &vec_vec
+            .iter()
+            .map(|v| RoaringBitmap::from_iter(v.iter()))
+            .tuple_windows::<(_, _)>()
+            .collect::<Vec<_>>();
+
+        let pairs_blaze = &vec_vec
+            .iter()
+            .map(|v| RangeSetBlaze::from_iter(v.iter()))
+            .tuple_windows::<(_, _)>()
+            .collect::<Vec<_>>();
+
+        group.bench_function(BenchmarkId::new("Roaring", parameter), |b| {
+            b.iter_batched(
+                || pairs_roaring.clone(),
+                |bitmaps| {
+                    for (a, b) in bitmaps {
+                        black_box(op_roaring(a, b));
+                    }
+                },
+                BatchSize::SmallInput,
+            );
+        });
+
+        group.bench_function(BenchmarkId::new("RangeSetBlaze", parameter), |b| {
+            b.iter_batched(
+                || pairs_blaze.clone(),
+                |sets| {
+                    for (a, b) in sets {
+                        black_box(op_blaze(a, b));
+                    }
+                },
+                BatchSize::SmallInput,
+            );
+        });
+    }
+    group.finish();
+}
+
 criterion_group! {
     name = benches;
     config = Criterion::default();
     targets =
     intersect_k_sets,
     every_op,
-    every_op_roaring,
+    every_op_u32,
     union_two_sets,
     union_two_sets_u32,
     ingest_clumps_base,
@@ -2303,15 +2297,8 @@ criterion_group! {
     ingest_clumps_easy,
     ingest_clumps_easy_u32,
     overflow,
-    ingest_roaring_data_census1881,
-    ingest_roaring_data_census1881_srt,
-    ingest_roaring_data_census_income,
-    ingest_roaring_data_census_income_srt,
-    ingest_roaring_data_uscensus2000,
-    ingest_roaring_data_weather_sept_85,
-    ingest_roaring_data_weather_sept_85_srt,
-    ingest_roaring_data_wikileaks_noquotes,
-    ingest_roaring_data_wikileaks_noquotes_srt,
+    ingest_roaring_data,
+    stand_alone_and,
 
 }
 criterion_main!(benches);

@@ -1,4 +1,7 @@
 use core::ops::RangeInclusive;
+use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
 
 use num_traits::identities::One;
 use rand::distributions::uniform::SampleUniform;
@@ -193,4 +196,33 @@ pub fn k_sets<T: Integer + SampleUniform>(
             ))
         })
         .collect()
+}
+
+#[allow(clippy::type_complexity)]
+pub fn read_roaring_data(top: &Path) -> Result<Vec<(String, Vec<Vec<u32>>)>, std::io::Error> {
+    let subfolders: Vec<_> = top.read_dir()?.map(|entry| entry.unwrap().path()).collect();
+    let mut name_to_vec_vec: HashMap<String, Vec<Vec<u32>>> = HashMap::new();
+    for subfolder in subfolders {
+        let subfolder_name = subfolder.file_name().unwrap().to_string_lossy().to_string();
+        let mut data: Vec<Vec<u32>> = Vec::new();
+        for file in subfolder.read_dir()? {
+            let file = file.unwrap().path();
+            let contents = fs::read_to_string(&file)?;
+            let contents = contents.trim_end_matches('\n');
+            let nums: Vec<u32> = contents.split(',').map(|s| s.parse().unwrap()).collect();
+            data.push(nums);
+        }
+        name_to_vec_vec.insert(subfolder_name, data);
+    }
+
+    // sort the keys
+    let mut keys: Vec<String> = name_to_vec_vec.keys().cloned().collect();
+    keys.sort();
+    let mut name_and_vec_vec_list: Vec<(String, Vec<Vec<u32>>)> = Vec::new();
+    for key in keys {
+        let vec_vec = name_to_vec_vec.remove(&key).unwrap();
+        name_and_vec_vec_list.push((key, vec_vec));
+    }
+
+    Ok(name_and_vec_vec_list)
 }

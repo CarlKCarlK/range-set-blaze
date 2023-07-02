@@ -1,35 +1,27 @@
-use std::{
-    collections::HashMap,
-    fs::{self},
-    path::Path,
-};
+use std::path::Path;
+
+use range_set_blaze::RangeSetBlaze;
+use tests_common::read_roaring_data;
 
 fn main() -> std::io::Result<()> {
     let top = Path::new(r"M:\projects\roaring_data");
-    let name_to_vec_vec = read_roaring_data(top)?;
+    let name_and_vec_vec_list = read_roaring_data(top)?;
 
-    println!(
-        "name_to_vec_vec: {:?}",
-        name_to_vec_vec.keys().collect::<Vec<_>>()
-    );
+    println!("name, value_count, unique_count, range_count");
+    for (name, vec_vec) in name_and_vec_vec_list.iter() {
+        let vec = vec_vec
+            .iter()
+            .flat_map(|v| v.iter().cloned())
+            .collect::<Vec<u32>>();
+        let value_count = vec.len();
+        let range_set_blaze = vec.iter().collect::<RangeSetBlaze<_>>();
+        let unique_count = range_set_blaze.len();
+        let range_count = range_set_blaze.ranges_len();
+        println!("{name}, {value_count}, {unique_count}, {range_count}");
+        if range_count < 5 {
+            println!("    {:?}", range_set_blaze);
+        }
+    }
 
     Ok(())
-}
-
-fn read_roaring_data(top: &Path) -> Result<HashMap<String, Vec<Vec<u32>>>, std::io::Error> {
-    let subfolders: Vec<_> = top.read_dir()?.map(|entry| entry.unwrap().path()).collect();
-    let mut name_to_vec_vec: HashMap<String, Vec<Vec<u32>>> = HashMap::new();
-    for subfolder in subfolders {
-        let subfolder_name = subfolder.file_name().unwrap().to_string_lossy().to_string();
-        let mut data: Vec<Vec<u32>> = Vec::new();
-        for file in subfolder.read_dir()? {
-            let file = file.unwrap().path();
-            let contents = fs::read_to_string(&file)?;
-            let contents = contents.trim_end_matches('\n');
-            let nums: Vec<u32> = contents.split(',').map(|s| s.parse().unwrap()).collect();
-            data.push(nums);
-        }
-        name_to_vec_vec.insert(subfolder_name, data);
-    }
-    Ok(name_to_vec_vec)
 }
