@@ -50,18 +50,18 @@ If I misunderstood any of the crates, please let me know. If you'd like to bench
 
 These benchmarks that allow us to understand the `range-set-blaze::RangeSetBlaze` data structure and to compare it to similar data structures from other crates.
 
-## Benchmark #1: 'worst_u32': Worst case for RangeSetBlaze
+## Benchmark #1: 'worst': Worst case for RangeSetBlaze
 
 * **Measure**: intake speed
 * **Candidates**: `HashSet`, `BTreeSet`, `Roaring`, `RangeSetBlaze`
 * **Vary**: *n* from 1 to 10,000, number of random integers
 * **Details**: Select *n* integers randomly and uniformly from the range 0..=999 (with replacement).
 
-### 'worst_u32' Results
+### 'worst' Results
 
 `RangeSetBlaze` is consistently about 2.5 times slower than `HashSet`. On small sets, `Roaring` and `BTreeSet` are in the middle, but get as slow as `RangeSetBlaze` as the sets grow.
 
-### 'worst_u32' Conclusion
+### 'worst' Conclusion
 
 `HashSet`, not `RangeSetBlaze` is a good choice for sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just 2.5 times worse.
 
@@ -77,10 +77,10 @@ Each clump has size chosen uniformly random from roughly 1 to double *average cl
 
 ### 'ingest_clumps_base' Results
 
-As before, with no clumps, `RangeSetBlaze` is more than 2.5 times slower than `HashSet`. Somewhere around clump size 3, `RangeSetBlaze` becomes the best performer. As the average clump size goes past 100, `RangeSetBlaze` is a steady 30 times faster than `HashSet` and 15 times faster than `BTreeSet` and roughly 10 times faster than `Roaring`.
+As before, with no clumps, `RangeSetBlaze` is more than 2.5 times slower than `HashSet`. Somewhere around clump size 3, `RangeSetBlaze` becomes the best performer. As the average clump size goes past 100, `RangeSetBlaze` is a steady 30 times faster than `HashSet` and 15 times faster than `BTreeSet` and roughly 10 to 30 times faster than `Roaring`.
 
-If we are allowed to input the clumps as ranges (instead of as individual integers), then when the average clump size is 1000 `RangeSetBlaze` is 700
-times faster than `HashSet` and `BTreeSet` and more than 10 times faster than `Roaring`.
+If we are allowed to input the clumps as ranges (instead of as individual integers), then when the average clump size is 1000 `RangeSetBlaze` is 640
+times faster than `HashSet` and `BTreeSet` and more than 20 times faster than `Roaring`.
 
 ### ingest_clumps_base' Conclusion
 
@@ -103,12 +103,14 @@ We give each crate the clumps as individual integers.
 
 `RangeSetBlaze` batches its integer input by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate.
 
+`Roaring` is 10 to 30 times slower than `RangeSetBlaze`. I don't know if it is exploiting consecutive integers. If not, it could for a speed up.
+
 ![ingest_clumps_integers](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_integers/report/lines.svg "ingest_clumps_integers")
 
 ## Benchmark #4: 'ingest_clumps_ranges': Measure rangemap on ranges of clumpy integers
 
 * **Measure**: range intake speed
-* **Candidates**: RangeSetBlaze + rangemap
+* **Candidates**: RangeSetBlaze + rangemap + Roaring
 * **Vary**: *average clump size* from 1 (no clumps) to 100K (ten big clumps)
 * **Details**: As with `base`.
 
@@ -116,16 +118,16 @@ We give each crate the clumps as ranges (instead of as individual integers).
 
 ### 'ingest_clumps_ranges' Results & Conclusion
 
-Over most clump sizes, `RangeSetBlaze` is about 4 times faster than `rangemap`. However ...
+Over the clump sizes, `RangeSetBlaze` averges about 3 times faster than `rangemap` and 10 times faster than `Roaring`, However ...
 
-`RangeSetBlaze` batches range inputs by sorting them and then merging adjacent ranges. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate.
+`RangeSetBlaze` batches range inputs by sorting them and then merging adjacent ranges. This batching is likely not implemented in `rangemap` or `roaring` but could easily be added to it or any other range-based crate.
 
 ![ingest_clumps_ranges](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_ranges/report/lines.svg "ingest_clumps_ranges")
 
 ## Benchmark #5: 'ingest_clumps_easy': Measure various crates on (easier) ranges of clumpy integers
 
 * **Measure**: range intake speed
-* **Candidates**: Tree based (RangeSetBlaze rangemap), Vector based (`range_collections`, `range_set`)
+* **Candidates**: Tree based (RangeSetBlaze rangemap), Vector based (`range_collections`, `range_set`), Compressed Bitsets (`Roaring`)
 * **Vary**: *average clump size* from 1 (100K ranges) to 10 (10K ranges)
 * **Details**: We generate 100K integers with clumps (down from 1M)
 
@@ -135,12 +137,14 @@ We give each crate the clumps as ranges (instead of as individual integers).
 
 The fastest vector-based method is 14 times slower than the slowest tree-based method. It is 50 times slower than `RangeSetBlaze`. This is expected because vector-based methods are not designed for a large numbers of inserts.
 
+The hybrid method, `Roaring`, does better than any method except `RangeSetBlaze`.
+
 ![ingest_clumps_easy](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_easy/report/lines.svg "ingest_clumps_easy")
 
 ## Benchmark #6: 'union_two_sets': Union two sets of clumpy integers
 
 * **Measure**: adding ranges to an existing set
-* **Candidates**: RangeSetBlaze, rangemap
+* **Candidates**: RangeSetBlaze, rangemap, Roaring
 * **Vary**: Number of clumps in the second set, from 1 to about 90K.
 * **Details**: We first create two clump iterators, each with the desired number clumps. Their integer span is 0..=99_999_999.
 Each clump iterator is designed to cover about 10% of this span. We, next, turn these two iterators into two sets. The first set is made from 1000 clumps. Finally, we measure the time it takes to add the second set to the first set.
@@ -150,13 +154,13 @@ merges the two sets of ranges by iterating over them in sorted order and merging
 
 ### 'union_two_sets' Results
 
-When adding one clump to the first set, `RangeSetBlaze` is about 30% faster than the other crate.
+When adding one clump to the first set, `RangeSetBlaze` is about 30% faster than `rangemap` and 38 times faster than `Roaring`.
 
-As the number-of-clumps-to-add grows, `RangeSetBlaze` automatically switches algorithms. This allows it to be 6 times faster than the one-at-a-time method.
+As the number-of-clumps-to-add grows, `RangeSetBlaze` automatically switches algorithms. This allows it to be 6 times faster than the `rangemap`. `Roaring` and `RangeSetBlaze` use very similar `union` algorithms here and get similar results.
 
 ### union_two_sets' Conclusion
 
-Over the whole range of clumpiness, `RangeSetBlaze` is faster. Compared to one-at-time methods, it is many times faster when the second set is large.
+Over the whole range of clumpiness, `RangeSetBlaze` is faster because it uses a hybrid algorithm.
 
 ![union_two_sets](https://carlkcarlk.github.io/range-set-blaze/criterion/union_two_sets/report/lines.svg "union_two_sets")
 
