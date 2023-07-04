@@ -8,14 +8,13 @@ use roaring::RoaringBitmap;
 use std::{
     collections::{BTreeSet, HashSet},
     ops::RangeInclusive,
-    path::Path,
 };
 
 use criterion::{
     black_box, criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
     PlotConfiguration,
 };
-use itertools::{iproduct, Itertools};
+use itertools::iproduct;
 use rand::{
     distributions::{uniform::SampleUniform, Uniform},
     prelude::Distribution,
@@ -23,14 +22,11 @@ use rand::{
     seq::SliceRandom,
     Rng, SeedableRng,
 };
-// use pprof::criterion::Output; //PProfProfiler
+
 use range_set_blaze::RangeSetBlaze;
 use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjoint};
-use std::ops::BitAnd;
 use syntactic_for::syntactic_for;
-use tests_common::{
-    k_sets, read_roaring_data, width_to_range_u32, How, MemorylessIter, MemorylessRange,
-};
+use tests_common::{k_sets, width_to_range_u32, How, MemorylessIter, MemorylessRange};
 
 pub fn shuffled(c: &mut Criterion) {
     let seed = 0;
@@ -1788,58 +1784,58 @@ fn gen_pair_u8(rng: &mut StdRng) -> (u8, u8) {
     )
 }
 
-fn stand_alone_and(c: &mut Criterion) {
-    let top = Path::new(r"M:\projects\roaring_data");
-    let name_and_vec_vec_list = read_roaring_data(top).unwrap();
+// fn stand_alone_and(c: &mut Criterion) {
+//     let top = Path::new(r"M:\projects\roaring_data");
+//     let name_and_vec_vec_list = read_roaring_data(top).unwrap();
 
-    let op_roaring = BitAnd::bitand;
-    let op_blaze = RangeSetBlaze::bitand;
+//     let op_roaring = BitAnd::bitand;
+//     let op_blaze = RangeSetBlaze::bitand;
 
-    let mut group = c.benchmark_group("stand_alone_and");
-    // group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-    group.sample_size(40);
+//     let mut group = c.benchmark_group("stand_alone_and");
+//     // group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+//     group.sample_size(40);
 
-    for (i, (_name, vec_vec)) in name_and_vec_vec_list.iter().enumerate() {
-        let parameter = i;
+//     for (i, (_name, vec_vec)) in name_and_vec_vec_list.iter().enumerate() {
+//         let parameter = i;
 
-        let pairs_roaring = &vec_vec
-            .iter()
-            .map(|v| RoaringBitmap::from_iter(v.iter()))
-            .tuple_windows::<(_, _)>()
-            .collect::<Vec<_>>();
+//         let pairs_roaring = &vec_vec
+//             .iter()
+//             .map(|v| RoaringBitmap::from_iter(v.iter()))
+//             .tuple_windows::<(_, _)>()
+//             .collect::<Vec<_>>();
 
-        let pairs_blaze = &vec_vec
-            .iter()
-            .map(|v| RangeSetBlaze::from_iter(v.iter()))
-            .tuple_windows::<(_, _)>()
-            .collect::<Vec<_>>();
+//         let pairs_blaze = &vec_vec
+//             .iter()
+//             .map(|v| RangeSetBlaze::from_iter(v.iter()))
+//             .tuple_windows::<(_, _)>()
+//             .collect::<Vec<_>>();
 
-        group.bench_function(BenchmarkId::new("Roaring", parameter), |b| {
-            b.iter_batched(
-                || pairs_roaring.clone(),
-                |bitmaps| {
-                    for (a, b) in bitmaps {
-                        black_box(op_roaring(a, b));
-                    }
-                },
-                BatchSize::SmallInput,
-            );
-        });
+//         group.bench_function(BenchmarkId::new("Roaring", parameter), |b| {
+//             b.iter_batched(
+//                 || pairs_roaring.clone(),
+//                 |bitmaps| {
+//                     for (a, b) in bitmaps {
+//                         black_box(op_roaring(a, b));
+//                     }
+//                 },
+//                 BatchSize::SmallInput,
+//             );
+//         });
 
-        group.bench_function(BenchmarkId::new("RangeSetBlaze", parameter), |b| {
-            b.iter_batched(
-                || pairs_blaze.clone(),
-                |sets| {
-                    for (a, b) in sets {
-                        black_box(op_blaze(a, b));
-                    }
-                },
-                BatchSize::SmallInput,
-            );
-        });
-    }
-    group.finish();
-}
+//         group.bench_function(BenchmarkId::new("RangeSetBlaze", parameter), |b| {
+//             b.iter_batched(
+//                 || pairs_blaze.clone(),
+//                 |sets| {
+//                     for (a, b) in sets {
+//                         black_box(op_blaze(a, b));
+//                     }
+//                 },
+//                 BatchSize::SmallInput,
+//             );
+//         });
+//     }
+//     group.finish();
+// }
 
 fn worst_op_blaze(c: &mut Criterion) {
     let group_name = "worst_op_blaze";
@@ -2018,7 +2014,6 @@ criterion_group! {
     ingest_clumps_ranges,
     ingest_clumps_easy,
     overflow,
-    stand_alone_and,
     worst_op_blaze,
 
 }
