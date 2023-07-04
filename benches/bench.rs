@@ -1484,7 +1484,6 @@ fn worst(c: &mut Criterion) {
                 })
             },
         );
-
         group.bench_with_input(
             BenchmarkId::new("HashSet", parameter),
             &parameter,
@@ -1494,7 +1493,6 @@ fn worst(c: &mut Criterion) {
                 })
             },
         );
-
         group.bench_with_input(
             BenchmarkId::new("Roaring", parameter),
             &parameter,
@@ -1768,6 +1766,7 @@ fn overflow(c: &mut Criterion) {
 
     group.finish();
 }
+
 fn gen_pair(rng: &mut StdRng) -> (i32, i32) {
     (
         rng.gen_range(std::i32::MIN..=std::i32::MAX),
@@ -1842,6 +1841,133 @@ fn stand_alone_and(c: &mut Criterion) {
     group.finish();
 }
 
+fn worst_op_blaze(c: &mut Criterion) {
+    let group_name = "worst_op_blaze";
+    let iter_len_list = [
+        1usize, 3, 10, 30, 100, 300, 1000, 3_000, 10_000, 30_000, 100_000, 300_000, 1_000_000,
+    ];
+    let pair_count = 20;
+    let range = 0..=100_000;
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    let seed = 0;
+    let mut rng = StdRng::seed_from_u64(seed);
+    let uniform = Uniform::from(range);
+
+    // a list of number a vec of sets
+    let setup_vec_blaze = iter_len_list
+        .iter()
+        .map(|iter_len| {
+            (
+                *iter_len,
+                (0..pair_count)
+                    .map(|_| {
+                        (0..2)
+                            .map(|_| {
+                                (0..*iter_len)
+                                    .map(|_| uniform.sample(&mut rng))
+                                    .collect::<RangeSetBlaze<_>>()
+                            })
+                            .collect::<Vec<_>>()
+                    })
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let setup_vec_roaring = &setup_vec_blaze
+        .iter()
+        .map(|(iter_len, vec_of_set)| {
+            (
+                iter_len,
+                vec_of_set
+                    .iter()
+                    .map(|list_of_sets| {
+                        list_of_sets
+                            .iter()
+                            .map(|set| RoaringBitmap::from_iter(set.iter()))
+                            .collect::<Vec<_>>()
+                    })
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let setup_vec_btree = &setup_vec_blaze
+        .iter()
+        .map(|(iter_len, vec_of_set)| {
+            (
+                iter_len,
+                vec_of_set
+                    .iter()
+                    .map(|list_of_sets| {
+                        list_of_sets
+                            .iter()
+                            .map(|set| BTreeSet::from_iter(set.iter()))
+                            .collect::<Vec<_>>()
+                    })
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    for (i, (range_len, setup)) in setup_vec_roaring.iter().enumerate() {
+        let (_ignore, setup_0) = &setup_vec_blaze[i];
+        let (_, setup_1) = &setup_vec_btree[i];
+        let parameter = range_len;
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze (intersection)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup_0,
+                    |sets_list| {
+                        for sets in sets_list {
+                            let _answer = black_box(&sets[0] & &sets[1]);
+                        }
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("Roaring (intersection)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup,
+                    |sets_list| {
+                        for sets in sets_list {
+                            let _answer = black_box(&sets[0] & &sets[1]);
+                        }
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("BTree (intersection)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup_1,
+                    |sets_list| {
+                        for sets in sets_list {
+                            let _answer = black_box(&sets[0] & &sets[1]);
+                        }
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+    }
+    group.finish();
+}
+
 criterion_group! {
     name = benches;
     config = Criterion::default();
@@ -1857,6 +1983,7 @@ criterion_group! {
     ingest_clumps_easy,
     overflow,
     stand_alone_and,
+    worst_op_blaze,
 
 }
 criterion_main!(benches);

@@ -65,7 +65,9 @@ These benchmarks that allow us to understand the `range-set-blaze::RangeSetBlaze
 
 `HashSet`, not `RangeSetBlaze` is a good choice for sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just 2.5 times worse.
 
-![worst lines](https://carlkcarlk.github.io/range-set-blaze/criterion/worst/report/lines.svg "worst lines")
+> See cmk below for worst-case set operators
+
+![worst lines](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/worst/report/lines.svg "worst lines")
 
 ## Benchmark #2: 'ingest_clumps_base': Measure `RangeSetBlaze` on increasingly clumpy integers
 
@@ -86,7 +88,7 @@ times faster than `HashSet` and `BTreeSet` and more than 20 times faster than `R
 
 Range-based methods such as `RangeSetBlaze` and `Roaring` are a great choice for clumpy integers. When the input is given as ranges, they are the only sensible choice.
 
-![ingest_clumps_base](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_base/report/lines.svg "ingest_clumps_base")
+![ingest_clumps_base](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/ingest_clumps_base/report/lines.svg "ingest_clumps_base")
 
 ## Benchmark #3: 'ingest_clumps_integers': Measure the `rangemap` crate on clumpy integers
 
@@ -105,7 +107,7 @@ We give each crate the clumps as individual integers.
 
 `Roaring` is 10 to 30 times slower than `RangeSetBlaze`. I don't know if it is exploiting consecutive integers. If not, it could for a speed up.
 
-![ingest_clumps_integers](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_integers/report/lines.svg "ingest_clumps_integers")
+![ingest_clumps_integers](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/ingest_clumps_integers/report/lines.svg "ingest_clumps_integers")
 
 ## Benchmark #4: 'ingest_clumps_ranges': Measure rangemap on ranges of clumpy integers
 
@@ -122,7 +124,7 @@ Over the clump sizes, `RangeSetBlaze` averges about 3 times faster than `rangema
 
 `RangeSetBlaze` batches range inputs by sorting them and then merging adjacent ranges. This batching is likely not implemented in `rangemap` or `roaring` but could easily be added to it or any other range-based crate.
 
-![ingest_clumps_ranges](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_ranges/report/lines.svg "ingest_clumps_ranges")
+![ingest_clumps_ranges](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/ingest_clumps_ranges/report/lines.svg "ingest_clumps_ranges")
 
 ## Benchmark #5: 'ingest_clumps_easy': Measure various crates on (easier) ranges of clumpy integers
 
@@ -139,7 +141,7 @@ The fastest vector-based method is 14 times slower than the slowest tree-based m
 
 The hybrid method, `Roaring`, does better than any method except `RangeSetBlaze`.
 
-![ingest_clumps_easy](https://carlkcarlk.github.io/range-set-blaze/criterion/ingest_clumps_easy/report/lines.svg "ingest_clumps_easy")
+![ingest_clumps_easy](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/ingest_clumps_easy/report/lines.svg "ingest_clumps_easy")
 
 ## Benchmark #6: 'union_two_sets': Union two sets of clumpy integers
 
@@ -162,24 +164,53 @@ As the number-of-clumps-to-add grows, `RangeSetBlaze` automatically switches alg
 
 Over the whole range of clumpiness, `RangeSetBlaze` is faster because it uses a hybrid algorithm.
 
-![union_two_sets](https://carlkcarlk.github.io/range-set-blaze/criterion/union_two_sets/report/lines.svg "union_two_sets")
+![union_two_sets](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/union_two_sets/report/lines.svg "union_two_sets")
 
-## Benchmark #7: 'every_op': Compare `RangeSetBlaze`'s set operations to each other
+## Benchmark #7a: 'every_op': Compare `RangeSetBlaze`'s set operations to each other on clumpy data
 
 * **Measure**: set operation speed
 * **Candidates**: union, intersection, difference, symmetric_difference, complement
 * **Vary**: number of ranges in the set, from 1 to about 50K.
 * **Details**: We create two clump iterators, each with the desired number of clumps and a coverage of 0.5. Their span is 0..=99_999_999. We, next, turn these two iterators into two sets. Finally, we measure the time it takes to operate on the two sets.
 
-### 'every_op' Results and Conclusion
+### 'every_op' `RangeSetBlaze` Results and Conclusion
 
 Complement (which works on just once set) is twice as fast as union, intersection, and difference. Symmetric difference is 2.9 times slower.
 
 Under the covers, all the operations are implemented in terms of complement and union. The speed of each operation is a reflection of its complexity in terms of complement and union.
 
-![every_op](https://carlkcarlk.github.io/range-set-blaze/criterion/every_op/report/lines.svg "every_op")
+![every_op](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/every_op_blaze/report/lines.svg "every_op")
 
-## Benchmark #8: 'intersect_k_sets': Multiway vs 2-at-time intersection
+## Benchmark #7b: 'every_op': Compare `Roaring`'s set operations to each other on clumpy data
+
+*Set up same as in #7a*
+
+### 'every_op' `Roaring` Results and Conclusion
+
+Complement (which works on just once set) is twice as fast as union, intersection, and difference. Symmetric difference is 2.9 times slower.
+
+Under the covers, all the operations are implemented in terms of complement and union. The speed of each operation is a reflection of its complexity in terms of complement and union.
+
+Intersection is much faster than union. Complement is slowest because it is not defined by `Roaring` but can be defined by the user as `Universe - a_set`.
+
+![every_op](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/every_op_roaring/report/lines.svg "every_op")
+
+## Benchmark #7c: 'every_op': Compare `RangeSetBlaze and`Roaring`'s set operations on clumpy data
+
+*Set up same as in #7a*
+
+### 'every_op' `RangeSetBlaze` and `Roaring` Results and Conclusion
+
+When the number of ranges (or clumps) is very small, `RangeSetBlaze` operates on the data 1000's of
+times faster than `Roaring`. As the number of clumps goes into the 100's and 1000's, it is still to 15 to 200 times faster. When the number of ranges get large, it is slightly faster.
+
+The plot shows the results for intersection, `Roaring`'s fastest operator on this data.
+
+![every_op](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/every_op_roaring/compare.png "every_op")
+
+> See cmk for a comparison of `RangeSetBlaze and`Roaring` on uniform, non-clumpy data.
+
+## Benchmark #8: 'intersect_k_sets': `RangeSetBlaze` ` Multiway vs 2-at-time intersection
 
 * **Measure**: intersection speed
 * **Candidates**: 2-at-a-time intersection, multiway intersection (static and dynamic)
@@ -193,4 +224,19 @@ On two sets, all methods are similar but beyond that two-at-a-time gets slower a
 Dynamic multiway is not used by `RangeSetBlaze` but is sometimes needed by `SortedDisjoint` iterators
 (also available from the `range-set-blaze` crate). It is 5% to 10% slower than static multiway.
 
-![intersect_k_sets](https://carlkcarlk.github.io/range-set-blaze/criterion/intersect_k_sets/report/lines.svg "intersect_k_sets")
+![intersect_k_sets](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/intersect_k_sets/report/lines.svg "intersect_k_sets")
+
+## Benchmark #9: 'worst_op_blaze': Compare `Roaring` and `RangeSetBlaze` operators on uniform data
+
+* **Measure**: set intersection speed
+* **Candidates**: `BTreeSet`, `Roaring`, `RangeSetBlaze`
+* **Vary**: Number of uniform-random integers in the set from 1 to about 1M.
+* **Details**: We select integers uniformally from 0..100,000.
+We create 20 pairs of set at each length.
+
+### 'worst_op_blaze' Results and Conclusion
+
+Over almost the whole range `Roaring` is best. Roughly 10 times better than `RangeSetBlaze` when the number of intergers is less than 10,000. As the number of integers increases beyond 10,000 `RangeSetBlaze` and `BTreeSet` continue to get slower. `Roaring`, on the other hand, gets faster;
+presumably as it switches to bitmaps.
+
+![worst_op_blaze](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/worst_op_blaze/report/lines.svg "worst_op_blaze")

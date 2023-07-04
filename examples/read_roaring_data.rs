@@ -17,7 +17,9 @@ fn main() -> std::io::Result<()> {
         let range_set_blaze = vec.iter().collect::<RangeSetBlaze<_>>();
         let unique_count = range_set_blaze.len();
         let range_count = range_set_blaze.ranges_len();
-        println!("{name}, {value_count}, {unique_count}, {range_count}");
+        let min = range_set_blaze.first().unwrap();
+        let max = range_set_blaze.last().unwrap();
+        println!("{name}, {value_count}, {unique_count}, {range_count}, {min}, {max}");
         // if range_count < 5 {
         //     println!("    {:?}", range_set_blaze);
         // }
@@ -33,7 +35,9 @@ fn main() -> std::io::Result<()> {
             let range_set_blaze = vec.iter().collect::<RangeSetBlaze<_>>();
             let unique_count = range_set_blaze.len();
             let range_count = range_set_blaze.ranges_len();
-            println!("{name}, {value_count}, {unique_count}, {range_count}");
+            let min = range_set_blaze.first().unwrap();
+            let max = range_set_blaze.last().unwrap();
+            println!("{name}, {value_count}, {unique_count}, {range_count}, {min}, {max}");
         }
     }
 
