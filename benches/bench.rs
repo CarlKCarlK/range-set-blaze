@@ -1894,7 +1894,7 @@ fn worst_op_blaze(c: &mut Criterion) {
         })
         .collect::<Vec<_>>();
 
-    let setup_vec_btree = &setup_vec_blaze
+    let setup_vec_btreeset = &setup_vec_blaze
         .iter()
         .map(|(iter_len, vec_of_set)| {
             (
@@ -1912,9 +1912,28 @@ fn worst_op_blaze(c: &mut Criterion) {
         })
         .collect::<Vec<_>>();
 
-    for (i, (range_len, setup)) in setup_vec_roaring.iter().enumerate() {
-        let (_ignore, setup_0) = &setup_vec_blaze[i];
-        let (_, setup_1) = &setup_vec_btree[i];
+    let setup_vec_hashset = &setup_vec_blaze
+        .iter()
+        .map(|(iter_len, vec_of_set)| {
+            (
+                iter_len,
+                vec_of_set
+                    .iter()
+                    .map(|list_of_sets| {
+                        list_of_sets
+                            .iter()
+                            .map(|set| HashSet::from_iter(set.iter()))
+                            .collect::<Vec<HashSet<_>>>()
+                    })
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    for (i, (range_len, setup_roaring)) in setup_vec_roaring.iter().enumerate() {
+        let (_ignore, setup_blaze) = &setup_vec_blaze[i];
+        let (_, setup_btreeset) = &setup_vec_btreeset[i];
+        let (_, setup_hashset) = &setup_vec_hashset[i];
         let parameter = range_len;
 
         group.bench_with_input(
@@ -1922,7 +1941,7 @@ fn worst_op_blaze(c: &mut Criterion) {
             &parameter,
             |b, _k| {
                 b.iter_batched(
-                    || setup_0,
+                    || setup_blaze,
                     |sets_list| {
                         for sets in sets_list {
                             let _answer = black_box(&sets[0] & &sets[1]);
@@ -1938,7 +1957,7 @@ fn worst_op_blaze(c: &mut Criterion) {
             &parameter,
             |b, _k| {
                 b.iter_batched(
-                    || setup,
+                    || setup_roaring,
                     |sets_list| {
                         for sets in sets_list {
                             let _answer = black_box(&sets[0] & &sets[1]);
@@ -1950,11 +1969,27 @@ fn worst_op_blaze(c: &mut Criterion) {
         );
 
         group.bench_with_input(
-            BenchmarkId::new("BTree (intersection)", parameter),
+            BenchmarkId::new("BTreeSet (intersection)", parameter),
             &parameter,
             |b, _k| {
                 b.iter_batched(
-                    || setup_1,
+                    || setup_btreeset,
+                    |sets_list| {
+                        for sets in sets_list {
+                            let _answer = black_box(&sets[0] & &sets[1]);
+                        }
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("HashSet (intersection)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup_hashset,
                     |sets_list| {
                         for sets in sets_list {
                             let _answer = black_box(&sets[0] & &sets[1]);
@@ -1965,6 +2000,7 @@ fn worst_op_blaze(c: &mut Criterion) {
             },
         );
     }
+
     group.finish();
 }
 
