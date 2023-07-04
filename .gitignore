@@ -7,5 +7,5 @@ doc/~*.*
 flamegraph.svg
 perf.data
 perf.data.old
-docs/criterion/*
+# docs/criterion/*
 benches/summary*.tsv
