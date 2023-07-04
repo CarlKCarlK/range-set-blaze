@@ -36,7 +36,7 @@ I started by evaluating:
 
 and later added
 
-* `roaring`, a "compressed bitset" library with over a millions Rust downloads and versions in many other language. It stores u32 values in 65K chunks of 65K values. Each chunk is represented as either a vector of intergers, a vector of ranges, or a bitmap.
+* `roaring`, a "compressed bitset" library with over a millions Rust downloads and versions in many other languages. It stores u32 values in 65K chunks of 65K values. Each chunk is represented as either a vector of intergers, a vector of ranges, or a bitmap.
 
 The `range_map`, `Range-collections`, `range-set`, and `roaring` crates store disjoint ranges. I eliminated crates for overlapping ranges, a different data structure (`iset`, `theban_interval_tree`, and `unbounded-interval-tree`).
 
@@ -206,7 +206,7 @@ times faster than `Roaring`. As the number of clumps goes into the 100's and 100
 
 The plot shows the results for intersection, `Roaring`'s fastest operator on this data.
 
-![every_op](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/every_op_roaring/compare.png "every_op")
+![every_op](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/every_op_roaring/report/compare.png "every_op")
 
 > See cmk for a comparison of `RangeSetBlaze and`Roaring` on uniform, non-clumpy data.
 
@@ -239,4 +239,4 @@ We create 20 pairs of set at each length.
 Over almost the whole range `Roaring` is best. Roughly 10 times better than `RangeSetBlaze` when the number of intergers is less than 10,000. As the number of integers increases beyond 10,000 `RangeSetBlaze` and `BTreeSet` continue to get slower. `Roaring`, on the other hand, gets faster;
 presumably as it switches to bitmaps.
 
-![worst_op_blaze](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/worst_op_blaze/report/lines.svg "worst_op_blaze")
+![worst_op_blaze  ](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/worst_op_blaze/report/lines.png "worst_op_blaze")
