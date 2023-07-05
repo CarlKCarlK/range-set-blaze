@@ -1,6 +1,6 @@
 [package]
 name = "range-set-blaze"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2021"
 description = "Integer sets as fast, sorted, integer ranges with full set operations"
 repository = "https://github.com/CarlKCarlK/range-set-blaze"

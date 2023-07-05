@@ -26,9 +26,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          components: rust-src
       - name: Setup WASM
         if: runner.os == 'Linux'
         uses: jetli/wasm-pack-action@v0.4.0

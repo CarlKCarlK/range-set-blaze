@@ -46,11 +46,13 @@ range-set-blaze = { features = ["alloc"], default-features = false, version=VERS
 
  *Replace VERSION with the current version.*
 
-Article
+Articles
 -----------
 
-See  [Nine Rules for Creating Fast, Safe, and Compatible Data Structures in Rust:
+* [Nine Rules for Creating Fast, Safe, and Compatible Data Structures in Rust:
 Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3) in *Towards Data Science*. It provides a high-level overview of the crate and its design: [Part 1](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3), [Part 2](https://towardsdatascience.com/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-2-da5e6961a0b7)
+
+* [Nine Rules for Running Rust on the Web and on Embedded: Practical Lessons from Porting range-set-blaze to no_std and WASM](https://medium.com/towards-data-science/nine-rules-for-running-rust-on-the-web-and-on-embedded-94462ef249a2) in *Towards Data Science*. It covers porting to "no_std".
 
 Benchmarks
 -----------
