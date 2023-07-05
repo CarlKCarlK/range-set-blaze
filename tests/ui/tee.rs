@@ -1,4 +1,5 @@
 use itertools::Itertools;
+#[allow(unused_imports)]
 use range_set_blaze::prelude::*;
 
 fn main() {

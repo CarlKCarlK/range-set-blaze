@@ -1,16 +1,17 @@
-error[E0599]: no method named `bitxor` found for struct `IntoRangesIter` in the current scope
- --> tests/ui/bitxor.rs:6:16
+error[E0277]: the trait bound `std::array::IntoIter<({integer}, {integer}), 2>: SortedDisjoint<{integer}>` is not satisfied
+ --> tests/ui/bitxor.rs:7:23
   |
-6 |     let _c = a.bitxor(b);
-  |                ^^^^^^ method not found in `IntoRangesIter<{integer}>`
+7 |     let _c = a.bitxor(b);
+  |                ------ ^ the trait `SortedDisjoint<{integer}>` is not implemented for `std::array::IntoIter<({integer}, {integer}), 2>`
+  |                |
+  |                required by a bound introduced by this call
   |
- ::: $RUST/core/src/ops/bit.rs
-  |
-  |     fn bitxor(self, rhs: Rhs) -> Self::Output;
-  |        ------ the method is available for `IntoRangesIter<{integer}>` here
-  |
-  = help: items from traits can only be used if the trait is in scope
-help: the following trait is implemented but not in scope; perhaps add a `use` for it:
-    |
-1   | use core::ops::BitXor;
-    |
+  = help: the following other types implement trait `SortedDisjoint<T>`:
+            CheckSortedDisjoint<T, I>
+            DynSortedDisjoint<'a, T>
+            IntoRangesIter<T>
+            NotIter<T, I>
+            RangesIter<'_, T>
+            UnionIter<T, I>
+            itertools::tee::Tee<I>
+  = note: required for `IntoRangesIter<{integer}>` to implement `BitXor<std::array::IntoIter<({integer}, {integer}), 2>>`
