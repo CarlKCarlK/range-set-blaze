@@ -2134,11 +2134,11 @@ impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 #[cfg(feature = "std")]
-use std::fs::File;
-#[cfg(feature = "std")]
-use std::io::{self, BufRead};
-#[cfg(feature = "std")]
-use std::path::Path;
+use std::{
+    fs::File,
+    io::{self, BufRead, BufReader},
+    path::Path,
+};
 
 #[cfg(feature = "std")]
 #[allow(missing_docs)]
@@ -2147,8 +2147,7 @@ where
     P: AsRef<Path>,
     T: FromStr + Integer,
 {
-    let file = File::open(&path)?;
-    let lines = io::BufReader::new(file).lines();
+    let lines = BufReader::new(File::open(&path)?).lines();
 
     let mut set = RangeSetBlaze::new();
     for line in lines {
