@@ -56,6 +56,9 @@ error[E0277]: the trait bound `[std::array::IntoIter<RangeInclusive<{integer}>, 
 note: required by a bound in `Merge`
  --> src/merge.rs
   |
+  | pub struct Merge<T, L, R>
+  |            ----- required by a bound in this struct
+...
   |     L: SortedDisjoint<T>,
   |        ^^^^^^^^^^^^^^^^^ required by this bound in `Merge`
 
@@ -117,5 +120,8 @@ error[E0277]: the trait bound `[std::array::IntoIter<RangeInclusive<{integer}>, 
 note: required by a bound in `NotIter`
  --> src/not_iter.rs
   |
+  | pub struct NotIter<T, I>
+  |            ------- required by a bound in this struct
+...
   |     I: SortedDisjoint<T>,
   |        ^^^^^^^^^^^^^^^^^ required by this bound in `NotIter`
