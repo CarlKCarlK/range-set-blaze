@@ -1014,7 +1014,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         if let Some((start_before, end_before)) = before.next() {
             // Must check this in two parts to avoid overflow
             if match (*end_before).checked_add(&T::one()) {
-                Some(sum) => sum < start,
+                Some(end_before_succ) => end_before_succ < start,
                 None => false,
             } {
                 self.internal_add2(&range);

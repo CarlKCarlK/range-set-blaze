@@ -2,7 +2,6 @@
 .vs/
 doc/~*.*
 .vscode/
-*.bat
 
 flamegraph.svg
 perf.data
@@ -11,3 +10,11 @@ perf.data.old
 benches/summary*.tsv
 benches/~$summary_r.tsv.xlsx
 benches/*.xlsx
+bench.bat
+test.bat
+tests/formal/Step5.dfy
+tests/formal/Step6a.dfy
+tests/formal/Step6b.dfy
+tests/formal/Step7.dfy
+tests/formal/*.dll
+tests/formal/*.json
