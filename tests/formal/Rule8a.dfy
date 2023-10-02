@@ -1,5 +1,3 @@
-// doesn't validate
-
 include "Rule3.dfy"
 
 method InternalAdd(xs: seq<NeIntRange>, range: IntRange) returns (r: seq<NeIntRange>)
@@ -10,6 +8,7 @@ method InternalAdd(xs: seq<NeIntRange>, range: IntRange) returns (r: seq<NeIntRa
   var (start, end) := range;
   if end < start {
     r := xs;
+    assert SeqToSet(r) == SeqToSet(xs) + RangeToSet(range); // case 0 - validates
     return;
   }
 
@@ -18,18 +17,34 @@ method InternalAdd(xs: seq<NeIntRange>, range: IntRange) returns (r: seq<NeIntRa
     var (startBefore, endBefore) := xs[beforeHi-1];
     if endBefore+1 < start {
       r := InternalAdd2(xs, range);
+      assert SeqToSet(r) == SeqToSet(xs) + RangeToSet(range); // case 1 - validates
     } else if endBefore < end {
       r := xs[..beforeHi-1] + [(startBefore, end)] + xs[beforeHi..];
+      assume exists i: nat :: i < |r| && r[i] == (startBefore,end) && ValidSeq(r[..i+1]) && ValidSeq(r[i+1..]);
       r := DeleteExtra(r, (startBefore,end));
+      assert SeqToSet(r) == SeqToSet(xs) + RangeToSet(range); // case 2 - fails
     } else{
       r := xs;
+      assert RangeToSet(xs[beforeHi-1]) >= RangeToSet(range);
+      assert xs[beforeHi-1] in xs;
+      SupersetOfPartsLemma(xs, xs[beforeHi-1]);
+      assert SeqToSet(r) == SeqToSet(xs) + RangeToSet(range); // case 3 - now validates
     }
   }
   else // goes at front
   {
     r := InternalAdd2(xs, range);
+    assert SeqToSet(r) == SeqToSet(xs) + RangeToSet(range); // case 4 - validates
   }
 }
+
+lemma SupersetOfPartsLemma(xs: seq<NeIntRange>, range: NeIntRange)
+  requires ValidSeq(xs)
+  requires range in xs
+  ensures SeqToSet(xs) >= RangeToSet(range)
+{
+}
+
 
 method IndexAtOrBeforePlusOne(xs: seq<NeIntRange>, start: int) returns (i: nat)
   requires ValidSeq(xs)
@@ -130,6 +145,7 @@ method InsertNe(s: seq<NeIntRange>, pair: NeIntRange) returns (r: seq<NeIntRange
   ensures exists i: nat :: i < |r| && r[i] == pair && SeqToSet(r[..i+1]) + SeqToSet(r[i+1..]) == SeqToSet(s) + RangeToSet(pair)
 {
   var i := IndexAtOrAfter(s, pair.0);
+  assert i <= |s|;
   if i == |s| {
     r := s[..i] + [pair] + s[i..];
   }
@@ -137,6 +153,7 @@ method InsertNe(s: seq<NeIntRange>, pair: NeIntRange) returns (r: seq<NeIntRange
   {
     r := s[..i] + [pair] + s[i..];
   }
+
   wasThere := false;
 }
 
