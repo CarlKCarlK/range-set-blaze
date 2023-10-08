@@ -42,6 +42,7 @@ pub use merge::Merge;
 pub use not_iter::NotIter;
 use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::CheckedAdd;
+use num_traits::NumCast;
 use num_traits::One;
 use num_traits::Zero;
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
@@ -645,6 +646,52 @@ impl<T: Integer> RangeSetBlaze<T> {
             .range(..=value)
             .next_back()
             .map_or(false, |(_, end)| value <= *end)
+    }
+
+    /// Returns a `(bool, T::SafeLen)` tuple representing the clump starting at
+    /// the given `from` value. The first element is `true` when `from` is
+    /// present, and `false` when it is not. The second element is the length of
+    /// the range starting at `from` within the same disjoint range or space
+    /// between ranges, or `None` if `from` was past the last range in the set.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let set = RangeSetBlaze::from_iter([3..=5, 8..=10, 12..=13]);
+    /// assert_eq!(set.clump_from(6), (false, Some(2usize)));
+    /// assert_eq!(set.clump_from(0), (false, Some(3usize)));
+    /// assert_eq!(set.clump_from(9), (true, Some(2usize)));
+    /// assert_eq!(set.clump_from(13), (true, Some(1usize)));
+    /// assert_eq!(set.clump_from(14), (false, None));
+    /// ```
+    pub fn clump_from(&self, from: T) -> (bool, Option<T::SafeLen>) {
+        assert!(
+            from <= T::safe_max_value(),
+            "value must be <= T::safe_max_value()"
+        );
+        // Ideally this would be implemented with a single traversal of the
+        // tree. However, this is not possible on stable as far as I can tell
+        // until `btree_cursors` is stablized. We can still avoid
+        // iterating all the ranges though.
+        match self.btree_map.range(..=from).next_back() {
+            Some((_, &end)) if from <= end => (
+                true,
+                Some(<T::SafeLen as NumCast>::from(end - from + T::one()).unwrap()),
+            ),
+            Some(_) => (
+                false,
+                self.btree_map
+                    .range(from..)
+                    .next()
+                    .map(|(&start, _)| <T::SafeLen as NumCast>::from(start - from).unwrap()),
+            ),
+            None => (
+                false,
+                self.first()
+                    .map(|first| <T::SafeLen as NumCast>::from(first - from).unwrap()),
+            ),
+        }
     }
 
     /// Returns `true` if `self` has no elements in common with `other`.
