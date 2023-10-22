@@ -1,3 +1,5 @@
+// usually doesn't validate, but it could
+
 include "Rule3.dfy"
 
 method InternalAdd(xs: seq<NeIntRange>, range: IntRange) returns (r: seq<NeIntRange>)
