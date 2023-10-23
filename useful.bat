@@ -1,6 +1,7 @@
 # tests
 cargo test --doc intersection_dyn
 cargo test coverage -- --nocapture
+cargo test test_rog_functionality -- --nocapture
 
 # examples
 cargo run --example parity

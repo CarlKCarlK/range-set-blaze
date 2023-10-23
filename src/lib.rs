@@ -16,6 +16,7 @@ mod merge;
 mod not_iter;
 pub mod prelude;
 mod ranges;
+mod rog;
 mod sorted_disjoint;
 mod tests;
 mod union_iter;
