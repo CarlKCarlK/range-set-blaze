@@ -2,13 +2,14 @@
 cargo test --doc intersection_dyn
 cargo test coverage -- --nocapture
 cargo test test_rog_functionality -- --nocapture
+cargo test --features rog-experimental
 
 # examples
 cargo run --example parity
 cargo run --example missing
 
 # Docs
-cargo doc --no-deps --open & cargo test --doc
+cargo doc --no-deps --features rog-experimental --open & cargo test --features rog-experimental --doc
 
 # coverage
 cargo llvm-cov --open

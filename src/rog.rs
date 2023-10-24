@@ -1,8 +1,8 @@
-// cmk
-// #![cfg(feature = "rog-experimental")]
-// #![deprecated(
-//     note = "The rog ('range or gap') module is experimental and may be changed or removed in future versions."
-// )]
+#![cfg(feature = "rog-experimental")]
+#![deprecated(
+    note = "The rog ('range or gap') module is experimental and may be changed or removed in future versions.
+    Changes may not be reflected in the semantic versioning."
+)]
 
 use core::ops::{Bound, RangeBounds, RangeInclusive};
 

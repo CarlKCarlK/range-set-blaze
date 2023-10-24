@@ -5,12 +5,18 @@ use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+#[cfg(feature = "rog-experimental")]
+use range_set_blaze::Rog;
 use range_set_blaze::{
-    prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, Rog, SortedStarts, UnionIter,
+    prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts, UnionIter,
 };
 use std::cmp::Ordering;
-use std::ops::{Bound, RangeInclusive};
+#[cfg(feature = "rog-experimental")]
+use std::ops::Bound;
+use std::ops::RangeInclusive;
+#[cfg(feature = "rog-experimental")]
 use std::panic::AssertUnwindSafe;
+#[cfg(feature = "rog-experimental")]
 use std::panic::{self};
 use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
@@ -1482,6 +1488,7 @@ fn complement_sample() {
     println!("{},{},{}", c.len(), c.ranges_len(), c);
 }
 
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_functionality() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -1521,6 +1528,7 @@ fn test_rog_functionality() {
     }
 }
 
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rogs_get_functionality() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -1529,6 +1537,8 @@ fn test_rogs_get_functionality() {
         assert_eq!(a.rogs_get_slow(value), a.rogs_get(value));
     }
 }
+
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_repro1() {
     let a = RangeSetBlaze::from_iter([1u8..=6u8]);
@@ -1538,6 +1548,7 @@ fn test_rog_repro1() {
     );
 }
 
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_repro2() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -1547,6 +1558,7 @@ fn test_rog_repro2() {
     );
 }
 
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_coverage1() {
     let a = RangeSetBlaze::from_iter([1u8..=6u8]);
@@ -1557,6 +1569,7 @@ fn test_rog_coverage1() {
     assert!(panic::catch_unwind(AssertUnwindSafe(|| a.rogs_range(0..0))).is_err());
 }
 
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_extremes_u8() {
     for a in [
@@ -1578,6 +1591,7 @@ fn test_rog_extremes_u8() {
     }
 }
 
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_get_extremes_u8() {
     for a in [
@@ -1594,6 +1608,7 @@ fn test_rog_get_extremes_u8() {
     }
 }
 
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_extremes_i128() {
     for a in [
@@ -1618,6 +1633,7 @@ fn test_rog_extremes_i128() {
     }
 }
 
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_extremes_get_i128() {
     for a in [
@@ -1634,6 +1650,7 @@ fn test_rog_extremes_get_i128() {
     }
 }
 
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_should_fail_i128() {
     for a in [
@@ -1661,6 +1678,7 @@ fn test_rog_should_fail_i128() {
     }
 }
 
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_get_should_fail_i128() {
     for a in [
@@ -1679,6 +1697,7 @@ fn test_rog_get_should_fail_i128() {
     }
 }
 
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_get_doc() {
     use crate::RangeSetBlaze;
@@ -1687,6 +1706,7 @@ fn test_rog_get_doc() {
     assert_eq!(range_set_blaze.rogs_get(4), Rog::Gap(4..=2_147_483_647));
 }
 
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_range_doc() {
     use std::ops::Bound::Included;

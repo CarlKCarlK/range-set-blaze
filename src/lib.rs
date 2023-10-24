@@ -16,6 +16,7 @@ mod merge;
 mod not_iter;
 pub mod prelude;
 mod ranges;
+#[cfg(feature = "rog-experimental")]
 mod rog;
 mod sorted_disjoint;
 mod tests;
@@ -45,6 +46,7 @@ use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::CheckedAdd;
 use num_traits::One;
 use num_traits::Zero;
+#[cfg(feature = "rog-experimental")]
 pub use rog::{Rog, RogsIter};
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
 pub use union_iter::UnionIter;

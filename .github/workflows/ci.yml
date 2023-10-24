@@ -52,9 +52,9 @@ jobs:
           rustup override set stable
       - name: Test Rust Native
         run: |
-          cargo clippy --verbose --all-targets --all-features -- -D warnings
-          cargo test --verbose
-          cargo test --features alloc --no-default-features --verbose
+          cargo clippy --verbose --all-targets --all-features -- -D clippy::all -A deprecated
+          cargo test --verbose --features rog-experimental
+          cargo test --features alloc --no-default-features --verbose --features rog-experimental
       - name: Test Rust 32-bit Ubuntu
         if: runner.os == 'Linux'
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -64,8 +64,8 @@ jobs:
       - if: runner.os == 'Linux'
         run: |
           rustup target add i686-unknown-linux-gnu
-          cargo test --verbose --target i686-unknown-linux-gnu
-          cargo test --features alloc --no-default-features --verbose --target i686-unknown-linux-gnu
+          cargo test --verbose --target i686-unknown-linux-gnu --features rog-experimental
+          cargo test --features alloc --no-default-features --verbose --target i686-unknown-linux-gnu --features rog-experimental
       # - name: Test Rust 32-bit Windows
       #   if: runner.os == 'Windows'
       #   uses: egor-tensin/setup-mingw@v2
