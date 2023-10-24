@@ -119,40 +119,40 @@ impl<T: Integer> RangeSetBlaze<T> {
         let (start_in, end_in) = extract_range(range);
 
         let mut before = self.btree_map.range(..=start_in).rev();
-
-        let first_rog: Option<Rog<T>>;
-        let gap_start: Option<T>;
-        let btree_map_range: Option<btree_map::Range<T, T>>;
-
-        if let Some((_, end_before)) = before.next() {
+        let rogs_iter = if let Some((_, end_before)) = before.next() {
             if end_before < &start_in {
                 // case 1: range doesn't touch the before range
-                first_rog = None;
-                gap_start = Some(start_in);
-                btree_map_range = Some(self.btree_map.range(start_in..));
+                RogsIter {
+                    end_in,
+                    first_rog: None,
+                    gap_start: Some(start_in),
+                    btree_map_range: Some(self.btree_map.range(start_in..)),
+                }
             } else if end_before < &end_in {
                 // case 2: the range touches and extends beyond the before range
-                first_rog = Some(Rog::Range(start_in..=*end_before));
-                gap_start = Some(*end_before + T::one()); // cmk check all arithmetic
-                btree_map_range = Some(self.btree_map.range(start_in..));
+                RogsIter {
+                    end_in,
+                    first_rog: Some(Rog::Range(start_in..=*end_before)),
+                    gap_start: Some(*end_before + T::one()), // cmk check all arithmetic
+                    btree_map_range: Some(self.btree_map.range(start_in..)),
+                }
             } else {
                 // case 3 the range is completely contained in the before range
-                first_rog = Some(Rog::Range(start_in..=end_in));
-                gap_start = None;
-                btree_map_range = None;
+                RogsIter {
+                    end_in,
+                    first_rog: Some(Rog::Range(start_in..=end_in)),
+                    gap_start: None,
+                    btree_map_range: None,
+                }
             }
         } else {
             // case 4: there is no before range
-            first_rog = None;
-            gap_start = Some(start_in);
-            btree_map_range = Some(self.btree_map.range(start_in..));
-        };
-
-        let rogs_iter = RogsIter {
-            end_in,
-            first_rog,
-            gap_start,
-            btree_map_range,
+            RogsIter {
+                end_in,
+                first_rog: None,
+                gap_start: Some(start_in),
+                btree_map_range: Some(self.btree_map.range(start_in..)),
+            }
         };
 
         rogs_iter.collect::<Vec<Rog<T>>>()
