@@ -4,9 +4,9 @@
     Changes may not be reflected in the semantic versioning."
 )]
 
-use core::ops::{Bound, RangeBounds, RangeInclusive};
-
 use alloc::collections::btree_map;
+use alloc::vec::Vec;
+use core::ops::{Bound, RangeBounds, RangeInclusive};
 
 use crate::{Integer, RangeSetBlaze};
 
