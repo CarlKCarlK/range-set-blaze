@@ -10,11 +10,11 @@ use alloc::collections::btree_map;
 
 use crate::{Integer, RangeSetBlaze};
 
-struct RogsIter<'a, T: Integer> {
+pub struct RogsIter<'a, T: Integer> {
     end_in: T,
     first_rog: Option<Rog<T>>,
     gap_start: Option<T>,
-    btree_map_range: Option<btree_map::Range<'a, T, T>>,
+    btree_map_range: btree_map::Range<'a, T, T>,
 }
 
 impl<T: Integer> Iterator for RogsIter<'_, T> {
@@ -25,23 +25,19 @@ impl<T: Integer> Iterator for RogsIter<'_, T> {
             return Some(rog);
         };
 
-        if let Some(btree_map_range) = &mut self.btree_map_range {
-            if let Some((start_el, end_el)) = btree_map_range.next() {
-                if self.end_in < *start_el {
-                    self.btree_map_range = None;
-                } else {
-                    let result = Rog::Gap(self.gap_start.unwrap()..=*start_el - T::one());
-                    if end_el < &self.end_in {
-                        self.first_rog = Some(Rog::Range(*start_el..=*end_el));
-                        self.gap_start = Some(*end_el + T::one());
-                    } else {
-                        self.first_rog = Some(Rog::Range(*start_el..=self.end_in));
-                        self.gap_start = None;
-                    }
-                    return Some(result);
-                }
+        if let Some((start_el, end_el)) = self.btree_map_range.next() {
+            if self.end_in < *start_el {
+                self.btree_map_range = btree_map::Range::default();
             } else {
-                self.btree_map_range = None;
+                let result = Rog::Gap(self.gap_start.unwrap()..=*start_el - T::one());
+                if end_el < &self.end_in {
+                    self.first_rog = Some(Rog::Range(*start_el..=*end_el));
+                    self.gap_start = Some(*end_el + T::one());
+                } else {
+                    self.first_rog = Some(Rog::Range(*start_el..=self.end_in));
+                    self.gap_start = None;
+                }
+                return Some(result);
             }
         };
 
@@ -49,7 +45,7 @@ impl<T: Integer> Iterator for RogsIter<'_, T> {
             return Some(Rog::Gap(gap_start..=self.end_in));
         };
 
-        return None;
+        None
     }
 }
 
@@ -76,22 +72,6 @@ impl<T: Integer> Rog<T> {
 }
 
 impl<T: Integer> RangeSetBlaze<T> {
-    fn rogs_range_slow<R>(&self, range: R) -> Vec<Rog<T>>
-    where
-        R: RangeBounds<T>,
-    {
-        // cmk similar code elsewhere
-        let (start_in, end_in) = extract_range(range);
-        let rsb_in = RangeSetBlaze::from_iter([start_in..=end_in]);
-        let ranges = &rsb_in & self;
-        let gaps = rsb_in - self;
-        let ranges = ranges.ranges().into_iter().map(|r| Rog::Range(r));
-        let gaps = gaps.ranges().into_iter().map(|r| Rog::Gap(r));
-        let mut result = ranges.chain(gaps).collect::<Vec<Rog<T>>>();
-        result.sort_by_key(|a| a.start());
-        result
-    }
-
     /// Constructs an iterator over a sub-range of elements in the set. The iterator will yield
     /// Rogs, which are either a range or a gap.
     ///
@@ -111,7 +91,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// }
     /// assert_eq!(Some(&5), set.range(4..).next());
     /// ```
-    pub fn rogs_range<R>(&self, range: R) -> Vec<Rog<T>>
+    pub fn rogs_range<R>(&self, range: R) -> RogsIter<T>
     where
         R: RangeBounds<T>,
     {
@@ -119,14 +99,14 @@ impl<T: Integer> RangeSetBlaze<T> {
         let (start_in, end_in) = extract_range(range);
 
         let mut before = self.btree_map.range(..=start_in).rev();
-        let rogs_iter = if let Some((_, end_before)) = before.next() {
+        if let Some((_, end_before)) = before.next() {
             if end_before < &start_in {
                 // case 1: range doesn't touch the before range
                 RogsIter {
                     end_in,
                     first_rog: None,
                     gap_start: Some(start_in),
-                    btree_map_range: Some(self.btree_map.range(start_in..)),
+                    btree_map_range: self.btree_map.range(start_in..),
                 }
             } else if end_before < &end_in {
                 // case 2: the range touches and extends beyond the before range
@@ -134,7 +114,7 @@ impl<T: Integer> RangeSetBlaze<T> {
                     end_in,
                     first_rog: Some(Rog::Range(start_in..=*end_before)),
                     gap_start: Some(*end_before + T::one()), // cmk check all arithmetic
-                    btree_map_range: Some(self.btree_map.range(start_in..)),
+                    btree_map_range: self.btree_map.range(start_in..),
                 }
             } else {
                 // case 3 the range is completely contained in the before range
@@ -142,7 +122,7 @@ impl<T: Integer> RangeSetBlaze<T> {
                     end_in,
                     first_rog: Some(Rog::Range(start_in..=end_in)),
                     gap_start: None,
-                    btree_map_range: None,
+                    btree_map_range: btree_map::Range::default(),
                 }
             }
         } else {
@@ -151,11 +131,9 @@ impl<T: Integer> RangeSetBlaze<T> {
                 end_in,
                 first_rog: None,
                 gap_start: Some(start_in),
-                btree_map_range: Some(self.btree_map.range(start_in..)),
+                btree_map_range: self.btree_map.range(start_in..),
             }
-        };
-
-        rogs_iter.collect::<Vec<Rog<T>>>()
+        }
     }
 }
 
@@ -183,30 +161,60 @@ where
 mod tests {
     use super::*; // Import the parent module's contents.
 
+    impl<T: Integer> RangeSetBlaze<T> {
+        fn rogs_range_slow<R>(&self, range: R) -> Vec<Rog<T>>
+        where
+            R: RangeBounds<T>,
+        {
+            // cmk similar code elsewhere
+            let (start_in, end_in) = extract_range(range);
+            let rsb_in = RangeSetBlaze::from_iter([start_in..=end_in]);
+            let ranges = &rsb_in & self;
+            let gaps = rsb_in - self;
+            let ranges = ranges.ranges().map(|r| Rog::Range(r));
+            let gaps = gaps.ranges().map(|r| Rog::Gap(r));
+            let mut result = ranges.chain(gaps).collect::<Vec<Rog<T>>>();
+            result.sort_by_key(|a| a.start());
+            result
+        }
+    }
+
     #[test]
     fn test_rog_functionality() {
         let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
         // case 1:
         for end in 7..=16 {
             println!("case 1: {:?}", a.rogs_range_slow(7..=end));
-            assert_eq!(a.rogs_range_slow(7..=end), a.rogs_range(7..=end));
+            assert_eq!(
+                a.rogs_range_slow(7..=end),
+                a.rogs_range(7..=end).collect::<Vec<_>>()
+            );
         }
         // case 2:
         for end in 7..=16 {
             println!("case 2: {:?}", a.rogs_range_slow(4..=end));
-            assert_eq!(a.rogs_range_slow(4..=end), a.rogs_range(4..=end));
+            assert_eq!(
+                a.rogs_range_slow(4..=end),
+                a.rogs_range(4..=end).collect::<Vec<_>>()
+            );
         }
         // case 3:
         for start in 11..=15 {
             for end in start..=15 {
                 println!("case 3: {:?}", a.rogs_range_slow(start..=end));
-                assert_eq!(a.rogs_range_slow(start..=end), a.rogs_range(start..=end));
+                assert_eq!(
+                    a.rogs_range_slow(start..=end),
+                    a.rogs_range(start..=end).collect::<Vec<_>>()
+                );
             }
         }
         // case 4:
         for end in -1..=16 {
             println!("case 4: {:?}", a.rogs_range_slow(-1..=end));
-            assert_eq!(a.rogs_range_slow(-1..=end), a.rogs_range(-1..=end));
+            assert_eq!(
+                a.rogs_range_slow(-1..=end),
+                a.rogs_range(-1..=end).collect::<Vec<_>>()
+            );
         }
 
         // let rri = a.rogs_range(7..);
