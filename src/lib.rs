@@ -45,6 +45,7 @@ use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::CheckedAdd;
 use num_traits::One;
 use num_traits::Zero;
+pub use rog::Rog;
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
 pub use union_iter::UnionIter;
 pub use unsorted_disjoint::AssumeSortedStarts;

@@ -52,26 +52,66 @@ impl<T: Integer> Iterator for RogsIter<'_, T> {
     }
 }
 
-/// Enum to represent either a range or a gap.
+/// Represents an range or gap in a [`RangeSetBlaze`].
+///
+/// # Example
+///
+/// ```
+/// use range_set_blaze::{RangeSetBlaze, Rog};
+///
+/// let range_set_blaze = RangeSetBlaze::from([1, 2, 3]);
+/// assert_eq!(range_set_blaze.rogs_get(2), Rog::Range(1..=3));
+/// assert_eq!(range_set_blaze.rogs_get(4), Rog::Gap(4..=2_147_483_647));
+/// ```
+
 #[derive(Debug, PartialEq)]
 pub enum Rog<T: Integer> {
+    /// A range of integers in a [`RangeSetBlaze`].
     Range(RangeInclusive<T>),
+    /// A gap between integers in a [`RangeSetBlaze`].
     Gap(RangeInclusive<T>),
 }
 
 impl<T: Integer> Rog<T> {
+    /// Returns the start of a [`Rog`] (range or gap).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::Rog;
+    /// assert_eq!(Rog::Gap(1..=3).start(), 1);
+    /// ```
     pub fn start(&self) -> T {
         match self {
             Rog::Range(r) => *r.start(),
             Rog::Gap(r) => *r.start(),
         }
     }
+
+    /// Returns the inclusive end of a [`Rog`] (range or gap).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::Rog;
+    /// assert_eq!(Rog::Gap(1..=3).end(), 3);
+    /// ```
     pub fn end(&self) -> T {
         match self {
             Rog::Range(r) => *r.end(),
             Rog::Gap(r) => *r.end(),
         }
     }
+
+    /// Returns `true` if the [`Rog`] (range or gap) contains the given integer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::Rog;
+    /// assert!(Rog::Gap(1..=3).contains(2));
+    /// assert!(!Rog::Gap(1..=3).contains(4));
+    /// ```
     pub fn contains(&self, value: T) -> bool {
         match self {
             Rog::Range(r) => r.contains(&value),
@@ -81,17 +121,34 @@ impl<T: Integer> Rog<T> {
 }
 
 impl<T: Integer> RangeSetBlaze<T> {
-    pub fn rogs_at(&self, at: T) -> Rog<T> {
+    /// Returns the [`Rog`] (range or gap) containing the given integer. If the
+    /// [`RangeSetBlaze`] contains the integer, returns a [`Rog::Range`]. If the
+    /// [`RangeSetBlaze`] does not contain the integer, returns a [`Rog::Gap`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value > T::safe_max_value().
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::{RangeSetBlaze, Rog};
+    ///
+    /// let range_set_blaze = RangeSetBlaze::from([1, 2, 3]);
+    /// assert_eq!(range_set_blaze.rogs_get(2), Rog::Range(1..=3));
+    /// assert_eq!(range_set_blaze.rogs_get(4), Rog::Gap(4..=2_147_483_647));
+    /// ```
+    pub fn rogs_get(&self, value: T) -> Rog<T> {
         assert!(
-            at <= T::safe_max_value(),
-            "at must be <= T::safe_max_value()"
+            value <= T::safe_max_value(),
+            "value must be <= T::safe_max_value()"
         );
-        let mut before = self.btree_map.range(..=at).rev();
+        let mut before = self.btree_map.range(..=value).rev();
         if let Some((start_before, end_before)) = before.next() {
-            if end_before < &at {
+            if end_before < &value {
                 // case 1: range doesn't touch the before range
                 let start_out = *end_before + T::one();
-                if let Some((start_next, _)) = self.btree_map.range(at..).next() {
+                if let Some((start_next, _)) = self.btree_map.range(value..).next() {
                     debug_assert!(start_before < start_next); // so -1 is safe
                     Rog::Gap(start_out..=*start_next - T::one())
                 } else {
@@ -103,8 +160,8 @@ impl<T: Integer> RangeSetBlaze<T> {
             }
         } else {
             // case 4: there is no before range
-            if let Some((start_next, _)) = self.btree_map.range(at..).next() {
-                debug_assert!(at < *start_next); // so -1 is safe
+            if let Some((start_next, _)) = self.btree_map.range(value..).next() {
+                debug_assert!(value < *start_next); // so -1 is safe
                 Rog::Gap(T::min_value()..=*start_next - T::one())
             } else {
                 Rog::Gap(T::min_value()..=T::safe_max_value())
@@ -112,24 +169,46 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    /// Constructs an iterator over a sub-range of elements in the set. The iterator will yield
-    /// Rogs, which are either a range or a gap.
+    /// Constructs an iterator over a sub-range of [`Rog`]'s (ranges and gaps) in the [`RangeSetBlaze`].
+    /// The simplest way is to use the range syntax `min..=max`, thus `range(min..=max)` will
+    /// yield elements from min (inclusive) to max (inclusive).
+    /// The range may also be entered as `(Bound<T>, Bound<T>)`, so for example
+    /// `range((Excluded(4), Included(10)))` will yield a left-exclusive, right-inclusive
+    /// range from 4 to 10.
     ///
-    /// cmk update based on docs in https://doc.rust-lang.org/std/collections/struct.BTreeSet.html#method.range
+    /// # Panics
+    ///
+    /// Panics if range `start > end`.
+    /// Panics if range `start == end` and both bounds are `Excluded`.
+    /// Panics if range `end > T::safe_max_value()`.
     ///
     /// # Examples
     ///
-    /// ```
-    /// use range_set_blaze::RangeSetBlaze;
+    /// ```rangesetblaze::new()//
+    /// use range_set_blaze::{RangeSetBlaze, Rog;};
+    /// use std::ops::Bound::Included;
     ///
     /// let mut set = RangeSetBlaze::new();
     /// set.insert(3);
     /// set.insert(5);
-    /// set.insert(8);
-    /// for &elem in set.range(4..=8) {
-    ///     println!("{elem}");
-    /// }
-    /// assert_eq!(Some(&5), set.range(4..).next());
+    /// set.insert(6);
+    /// for rog in set.rogs_range((Included(4), Included(8))) {
+    ///     println!("{rog:?}");
+    /// } // prints: Gap(4..=4)\nRange(5..=6)\nGap(7..=8)
+    ///
+    /// assert_eq!(Some(Rog::Gap(4..=4)), set.rogs_range(4..).next());
+    ///
+    /// let a = RangeSetBlaze::from_iter([1..=6, 11..=15]);
+    /// assert_eq!(
+    ///     a.rogs_range(-5..=8).collect::<Vec<_>>(),
+    ///     vec![Rog::Gap(-5..=0), Rog::Range(1..=6), Rog::Gap(7..=8)]
+    /// );
+    ///
+    /// let empty = RangeSetBlaze::<u8>::new();
+    /// assert_eq!(
+    ///     empty.rogs_range(..).collect::<Vec<_>>(),
+    ///     vec![Rog::Gap(0..=255)]
+    /// );
     /// ```
     pub fn rogs_range<R>(&self, range: R) -> RogsIter<T>
     where
@@ -176,6 +255,37 @@ impl<T: Integer> RangeSetBlaze<T> {
             }
         }
     }
+
+    /// cmk
+    pub fn rogs_range_slow<R>(&self, range: R) -> Vec<Rog<T>>
+    where
+        R: RangeBounds<T>,
+    {
+        let (start_in, end_in) = extract_range(range);
+        let rsb_in = RangeSetBlaze::from_iter([start_in..=end_in]);
+        let ranges = &rsb_in & self;
+        let gaps = rsb_in - self;
+        let ranges = ranges.ranges().map(|r| Rog::Range(r));
+        let gaps = gaps.ranges().map(|r| Rog::Gap(r));
+        let mut result = ranges.chain(gaps).collect::<Vec<Rog<T>>>();
+        result.sort_by_key(|a| a.start());
+        result
+    }
+
+    /// cmk
+    pub fn rogs_get_slow(&self, value: T) -> Rog<T> {
+        assert!(
+            value <= T::safe_max_value(),
+            "value must be <= T::safe_max_value()"
+        );
+        let all_rogs = self.rogs_range_slow(..);
+        for rog in all_rogs {
+            if rog.contains(value) {
+                return rog;
+            }
+        }
+        unreachable!("value must be in something");
+    }
 }
 
 fn extract_range<T: Integer, R>(range: R) -> (T, T)
@@ -213,238 +323,10 @@ where
     (start, end)
 }
 
-#[cfg(test)]
-mod tests {
-    use std::panic::{self, AssertUnwindSafe};
+// cmk
+// #[cfg(test)]
+// mod tests {
+//     use std::panic::{self, AssertUnwindSafe};
 
-    use super::*; // Import the parent module's contents.
-
-    impl<T: Integer> RangeSetBlaze<T> {
-        fn rogs_range_slow<R>(&self, range: R) -> Vec<Rog<T>>
-        where
-            R: RangeBounds<T>,
-        {
-            let (start_in, end_in) = extract_range(range);
-            let rsb_in = RangeSetBlaze::from_iter([start_in..=end_in]);
-            let ranges = &rsb_in & self;
-            let gaps = rsb_in - self;
-            let ranges = ranges.ranges().map(|r| Rog::Range(r));
-            let gaps = gaps.ranges().map(|r| Rog::Gap(r));
-            let mut result = ranges.chain(gaps).collect::<Vec<Rog<T>>>();
-            result.sort_by_key(|a| a.start());
-            result
-        }
-
-        fn rogs_at_slow(&self, at: T) -> Rog<T> {
-            assert!(
-                at <= T::safe_max_value(),
-                "at must be <= T::safe_max_value()"
-            );
-            let all_rogs = self.rogs_range_slow(..);
-            for rog in all_rogs {
-                if rog.contains(at) {
-                    return rog;
-                }
-            }
-            unreachable!("at must be in something");
-        }
-    }
-
-    #[test]
-    fn test_rog_functionality() {
-        let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-        // case 1:
-        for end in 7..=16 {
-            println!("case 1: {:?}", a.rogs_range_slow(7..=end));
-            assert_eq!(
-                a.rogs_range_slow(7..=end),
-                a.rogs_range(7..=end).collect::<Vec<_>>()
-            );
-        }
-        // case 2:
-        for end in 7..=16 {
-            println!("case 2: {:?}", a.rogs_range_slow(4..=end));
-            assert_eq!(
-                a.rogs_range_slow(4..=end),
-                a.rogs_range(4..=end).collect::<Vec<_>>()
-            );
-        }
-        // case 3:
-        for start in 11..=15 {
-            for end in start..=15 {
-                println!("case 3: {:?}", a.rogs_range_slow(start..=end));
-                assert_eq!(
-                    a.rogs_range_slow(start..=end),
-                    a.rogs_range(start..=end).collect::<Vec<_>>()
-                );
-            }
-        }
-        // case 4:
-        for end in -1..=16 {
-            println!("case 4: {:?}", a.rogs_range_slow(-1..=end));
-            assert_eq!(
-                a.rogs_range_slow(-1..=end),
-                a.rogs_range(-1..=end).collect::<Vec<_>>()
-            );
-        }
-    }
-
-    #[test]
-    fn test_rogs_at_functionality() {
-        let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-        for at in 0..=16 {
-            println!("{:?}", a.rogs_at_slow(at));
-            assert_eq!(a.rogs_at_slow(at), a.rogs_at(at));
-        }
-    }
-    #[test]
-    fn test_rog_repro1() {
-        let a = RangeSetBlaze::from_iter([1u8..=6u8]);
-        assert_eq!(
-            a.rogs_range_slow(1..=7),
-            a.rogs_range(1..=7).collect::<Vec<_>>()
-        );
-    }
-
-    #[test]
-    fn test_rog_repro2() {
-        let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-        assert_eq!(
-            a.rogs_range_slow(4..=8),
-            a.rogs_range(4..=8).collect::<Vec<_>>()
-        );
-    }
-
-    #[test]
-    fn test_rog_coverage1() {
-        let a = RangeSetBlaze::from_iter([1u8..=6u8]);
-        assert!(panic::catch_unwind(AssertUnwindSafe(
-            || a.rogs_range((Bound::Excluded(&255), Bound::Included(&255)))
-        ))
-        .is_err());
-        assert!(panic::catch_unwind(AssertUnwindSafe(|| a.rogs_range(0..0))).is_err());
-    }
-
-    #[test]
-    fn test_rog_extremes_u8() {
-        for a in [
-            RangeSetBlaze::from_iter([1u8..=6u8]),
-            RangeSetBlaze::from_iter([0u8..=6u8]),
-            RangeSetBlaze::from_iter([200u8..=255u8]),
-            RangeSetBlaze::from_iter([0u8..=255u8]),
-            RangeSetBlaze::from_iter([0u8..=5u8, 20u8..=255]),
-        ] {
-            for start in 0u8..=255 {
-                for end in start..=255 {
-                    println!("{start}..={end}");
-                    assert_eq!(
-                        a.rogs_range_slow(start..=end),
-                        a.rogs_range(start..=end).collect::<Vec<_>>()
-                    );
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn test_rog_at_extremes_u8() {
-        for a in [
-            RangeSetBlaze::from_iter([1u8..=6u8]),
-            RangeSetBlaze::from_iter([0u8..=6u8]),
-            RangeSetBlaze::from_iter([200u8..=255u8]),
-            RangeSetBlaze::from_iter([0u8..=255u8]),
-            RangeSetBlaze::from_iter([0u8..=5u8, 20u8..=255]),
-        ] {
-            for at in 0u8..=255 {
-                println!("{at}");
-                assert_eq!(a.rogs_at_slow(at), a.rogs_at(at));
-            }
-        }
-    }
-
-    #[test]
-    fn test_rog_extremes_i128() {
-        for a in [
-            RangeSetBlaze::from_iter([1i128..=6i128]),
-            RangeSetBlaze::from_iter([i128::MIN..=6]),
-            RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
-            RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
-            RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
-        ] {
-            for start in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 2, i128::MAX - 1] {
-                for end in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 2, i128::MAX - 1] {
-                    if end < start {
-                        continue;
-                    }
-                    println!("{start}..={end}");
-                    assert_eq!(
-                        a.rogs_range_slow(start..=end),
-                        a.rogs_range(start..=end).collect::<Vec<_>>()
-                    );
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn test_rog_extremes_at_i128() {
-        for a in [
-            RangeSetBlaze::from_iter([1i128..=6i128]),
-            RangeSetBlaze::from_iter([i128::MIN..=6]),
-            RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
-            RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
-            RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
-        ] {
-            for at in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 2, i128::MAX - 1] {
-                println!("{at}");
-                assert_eq!(a.rogs_at_slow(at), a.rogs_at(at));
-            }
-        }
-    }
-
-    #[test]
-    fn test_rog_should_fail_i128() {
-        for a in [
-            RangeSetBlaze::from_iter([1i128..=6i128]),
-            RangeSetBlaze::from_iter([i128::MIN..=6]),
-            RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
-            RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
-            RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
-        ] {
-            for start in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 1, i128::MAX] {
-                for end in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 1, i128::MAX] {
-                    if end < start {
-                        continue;
-                    }
-                    println!("{start}..={end}");
-                    let slow =
-                        panic::catch_unwind(AssertUnwindSafe(|| a.rogs_range_slow(start..=end)))
-                            .ok();
-                    let fast = panic::catch_unwind(AssertUnwindSafe(|| {
-                        a.rogs_range(start..=end).collect::<Vec<_>>()
-                    }))
-                    .ok();
-                    assert_eq!(slow, fast,);
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn test_rog_at_should_fail_i128() {
-        for a in [
-            RangeSetBlaze::from_iter([1i128..=6i128]),
-            RangeSetBlaze::from_iter([i128::MIN..=6]),
-            RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
-            RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
-            RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
-        ] {
-            for at in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 1, i128::MAX] {
-                println!("{at}");
-                let slow = panic::catch_unwind(AssertUnwindSafe(|| a.rogs_at_slow(at))).ok();
-                let fast = panic::catch_unwind(AssertUnwindSafe(|| a.rogs_at(at))).ok();
-                assert_eq!(slow, fast,);
-            }
-        }
-    }
-}
+//     use super::*; // Import the parent module's contents.
+// }

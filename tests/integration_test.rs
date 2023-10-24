@@ -6,10 +6,12 @@ use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use range_set_blaze::{
-    prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts, UnionIter,
+    prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, Rog, SortedStarts, UnionIter,
 };
 use std::cmp::Ordering;
-use std::ops::RangeInclusive;
+use std::ops::{Bound, RangeInclusive};
+use std::panic::AssertUnwindSafe;
+use std::panic::{self};
 use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
@@ -1478,4 +1480,236 @@ fn multiway_failure_example() {
 fn complement_sample() {
     let c = !RangeSetBlaze::from([0, 3, 4, 5, 10]);
     println!("{},{},{}", c.len(), c.ranges_len(), c);
+}
+
+#[test]
+fn test_rog_functionality() {
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    // case 1:
+    for end in 7..=16 {
+        println!("case 1: {:?}", a.rogs_range_slow(7..=end));
+        assert_eq!(
+            a.rogs_range_slow(7..=end),
+            a.rogs_range(7..=end).collect::<Vec<_>>()
+        );
+    }
+    // case 2:
+    for end in 7..=16 {
+        println!("case 2: {:?}", a.rogs_range_slow(4..=end));
+        assert_eq!(
+            a.rogs_range_slow(4..=end),
+            a.rogs_range(4..=end).collect::<Vec<_>>()
+        );
+    }
+    // case 3:
+    for start in 11..=15 {
+        for end in start..=15 {
+            println!("case 3: {:?}", a.rogs_range_slow(start..=end));
+            assert_eq!(
+                a.rogs_range_slow(start..=end),
+                a.rogs_range(start..=end).collect::<Vec<_>>()
+            );
+        }
+    }
+    // case 4:
+    for end in -1..=16 {
+        println!("case 4: {:?}", a.rogs_range_slow(-1..=end));
+        assert_eq!(
+            a.rogs_range_slow(-1..=end),
+            a.rogs_range(-1..=end).collect::<Vec<_>>()
+        );
+    }
+}
+
+#[test]
+fn test_rogs_get_functionality() {
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    for value in 0..=16 {
+        println!("{:?}", a.rogs_get_slow(value));
+        assert_eq!(a.rogs_get_slow(value), a.rogs_get(value));
+    }
+}
+#[test]
+fn test_rog_repro1() {
+    let a = RangeSetBlaze::from_iter([1u8..=6u8]);
+    assert_eq!(
+        a.rogs_range_slow(1..=7),
+        a.rogs_range(1..=7).collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn test_rog_repro2() {
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    assert_eq!(
+        a.rogs_range_slow(4..=8),
+        a.rogs_range(4..=8).collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn test_rog_coverage1() {
+    let a = RangeSetBlaze::from_iter([1u8..=6u8]);
+    assert!(panic::catch_unwind(AssertUnwindSafe(
+        || a.rogs_range((Bound::Excluded(&255), Bound::Included(&255)))
+    ))
+    .is_err());
+    assert!(panic::catch_unwind(AssertUnwindSafe(|| a.rogs_range(0..0))).is_err());
+}
+
+#[test]
+fn test_rog_extremes_u8() {
+    for a in [
+        RangeSetBlaze::from_iter([1u8..=6u8]),
+        RangeSetBlaze::from_iter([0u8..=6u8]),
+        RangeSetBlaze::from_iter([200u8..=255u8]),
+        RangeSetBlaze::from_iter([0u8..=255u8]),
+        RangeSetBlaze::from_iter([0u8..=5u8, 20u8..=255]),
+    ] {
+        for start in 0u8..=255 {
+            for end in start..=255 {
+                println!("{start}..={end}");
+                assert_eq!(
+                    a.rogs_range_slow(start..=end),
+                    a.rogs_range(start..=end).collect::<Vec<_>>()
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn test_rog_get_extremes_u8() {
+    for a in [
+        RangeSetBlaze::from_iter([1u8..=6u8]),
+        RangeSetBlaze::from_iter([0u8..=6u8]),
+        RangeSetBlaze::from_iter([200u8..=255u8]),
+        RangeSetBlaze::from_iter([0u8..=255u8]),
+        RangeSetBlaze::from_iter([0u8..=5u8, 20u8..=255]),
+    ] {
+        for value in 0u8..=255 {
+            println!("{value}");
+            assert_eq!(a.rogs_get_slow(value), a.rogs_get(value));
+        }
+    }
+}
+
+#[test]
+fn test_rog_extremes_i128() {
+    for a in [
+        RangeSetBlaze::from_iter([1i128..=6i128]),
+        RangeSetBlaze::from_iter([i128::MIN..=6]),
+        RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
+        RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
+        RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
+    ] {
+        for start in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 2, i128::MAX - 1] {
+            for end in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 2, i128::MAX - 1] {
+                if end < start {
+                    continue;
+                }
+                println!("{start}..={end}");
+                assert_eq!(
+                    a.rogs_range_slow(start..=end),
+                    a.rogs_range(start..=end).collect::<Vec<_>>()
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn test_rog_extremes_get_i128() {
+    for a in [
+        RangeSetBlaze::from_iter([1i128..=6i128]),
+        RangeSetBlaze::from_iter([i128::MIN..=6]),
+        RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
+        RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
+        RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
+    ] {
+        for value in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 2, i128::MAX - 1] {
+            println!("{value}");
+            assert_eq!(a.rogs_get_slow(value), a.rogs_get(value));
+        }
+    }
+}
+
+#[test]
+fn test_rog_should_fail_i128() {
+    for a in [
+        RangeSetBlaze::from_iter([1i128..=6i128]),
+        RangeSetBlaze::from_iter([i128::MIN..=6]),
+        RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
+        RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
+        RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
+    ] {
+        for start in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 1, i128::MAX] {
+            for end in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 1, i128::MAX] {
+                if end < start {
+                    continue;
+                }
+                println!("{start}..={end}");
+                let slow =
+                    panic::catch_unwind(AssertUnwindSafe(|| a.rogs_range_slow(start..=end))).ok();
+                let fast = panic::catch_unwind(AssertUnwindSafe(|| {
+                    a.rogs_range(start..=end).collect::<Vec<_>>()
+                }))
+                .ok();
+                assert_eq!(slow, fast,);
+            }
+        }
+    }
+}
+
+#[test]
+fn test_rog_get_should_fail_i128() {
+    for a in [
+        RangeSetBlaze::from_iter([1i128..=6i128]),
+        RangeSetBlaze::from_iter([i128::MIN..=6]),
+        RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
+        RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
+        RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
+    ] {
+        for value in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 1, i128::MAX] {
+            println!("{value}");
+            let slow = panic::catch_unwind(AssertUnwindSafe(|| a.rogs_get_slow(value))).ok();
+            let fast = panic::catch_unwind(AssertUnwindSafe(|| a.rogs_get(value))).ok();
+            assert_eq!(slow, fast,);
+        }
+    }
+}
+
+#[test]
+fn test_rog_get_doc() {
+    use crate::RangeSetBlaze;
+    let range_set_blaze = RangeSetBlaze::from([1, 2, 3]);
+    assert_eq!(range_set_blaze.rogs_get(2), Rog::Range(1..=3));
+    assert_eq!(range_set_blaze.rogs_get(4), Rog::Gap(4..=2_147_483_647));
+}
+
+#[test]
+fn test_rog_range_doc() {
+    use std::ops::Bound::Included;
+
+    let mut set = RangeSetBlaze::new();
+    set.insert(3);
+    set.insert(5);
+    set.insert(6);
+    for rog in set.rogs_range((Included(4), Included(8))) {
+        println!("{rog:?}");
+    } // prints: Gap(4..=4)\nRange(5..=6)\nGap(7..=8)
+
+    assert_eq!(Some(Rog::Gap(4..=4)), set.rogs_range(4..).next());
+
+    let a = RangeSetBlaze::from_iter([1..=6, 11..=15]);
+    assert_eq!(
+        a.rogs_range(-5..=8).collect::<Vec<_>>(),
+        vec![Rog::Gap(-5..=0), Rog::Range(1..=6), Rog::Gap(7..=8)]
+    );
+
+    let empty = RangeSetBlaze::<u8>::new();
+    assert_eq!(
+        empty.rogs_range(..).collect::<Vec<_>>(),
+        vec![Rog::Gap(0..=255)]
+    );
 }
