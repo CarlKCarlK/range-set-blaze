@@ -10,6 +10,9 @@ use alloc::collections::btree_map;
 
 use crate::{Integer, RangeSetBlaze};
 
+/// An iterator over [`Rog`]s (ranges or gaps) in a [`RangeSetBlaze`].
+///
+/// See [`RangeSetBlaze::rogs_range`] for more information.
 pub struct RogsIter<'a, T: Integer> {
     end_in: T,
     next_rog: Option<Rog<T>>,
@@ -53,6 +56,8 @@ impl<T: Integer> Iterator for RogsIter<'_, T> {
 }
 
 /// Represents an range or gap in a [`RangeSetBlaze`].
+///
+/// See [`RangeSetBlaze::rogs_range`] and [`RangeSetBlaze::rogs_get`] for more information.
 ///
 /// # Example
 ///
@@ -127,7 +132,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// # Panics
     ///
-    /// Panics if the value > T::safe_max_value().
+    /// Panics if the `value > T::safe_max_value()`.
     ///
     /// # Examples
     ///
@@ -179,7 +184,9 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// # Panics
     ///
     /// Panics if range `start > end`.
+    ///
     /// Panics if range `start == end` and both bounds are `Excluded`.
+    ///
     /// Panics if range `end > T::safe_max_value()`.
     ///
     /// # Examples
@@ -256,8 +263,9 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    /// cmk
-    pub fn rogs_range_slow<R>(&self, range: R) -> Vec<Rog<T>>
+    /// Used internally to test `rogs_range`.
+    #[doc(hidden)]
+    pub fn _rogs_range_slow<R>(&self, range: R) -> Vec<Rog<T>>
     where
         R: RangeBounds<T>,
     {
@@ -272,13 +280,14 @@ impl<T: Integer> RangeSetBlaze<T> {
         result
     }
 
-    /// cmk
+    /// Used internally to test `rogs_get`.
+    #[doc(hidden)]
     pub fn rogs_get_slow(&self, value: T) -> Rog<T> {
         assert!(
             value <= T::safe_max_value(),
             "value must be <= T::safe_max_value()"
         );
-        let all_rogs = self.rogs_range_slow(..);
+        let all_rogs = self._rogs_range_slow(..);
         for rog in all_rogs {
             if rog.contains(value) {
                 return rog;

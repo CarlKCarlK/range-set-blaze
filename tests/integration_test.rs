@@ -1487,35 +1487,35 @@ fn test_rog_functionality() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     // case 1:
     for end in 7..=16 {
-        println!("case 1: {:?}", a.rogs_range_slow(7..=end));
+        println!("case 1: {:?}", a._rogs_range_slow(7..=end));
         assert_eq!(
-            a.rogs_range_slow(7..=end),
+            a._rogs_range_slow(7..=end),
             a.rogs_range(7..=end).collect::<Vec<_>>()
         );
     }
     // case 2:
     for end in 7..=16 {
-        println!("case 2: {:?}", a.rogs_range_slow(4..=end));
+        println!("case 2: {:?}", a._rogs_range_slow(4..=end));
         assert_eq!(
-            a.rogs_range_slow(4..=end),
+            a._rogs_range_slow(4..=end),
             a.rogs_range(4..=end).collect::<Vec<_>>()
         );
     }
     // case 3:
     for start in 11..=15 {
         for end in start..=15 {
-            println!("case 3: {:?}", a.rogs_range_slow(start..=end));
+            println!("case 3: {:?}", a._rogs_range_slow(start..=end));
             assert_eq!(
-                a.rogs_range_slow(start..=end),
+                a._rogs_range_slow(start..=end),
                 a.rogs_range(start..=end).collect::<Vec<_>>()
             );
         }
     }
     // case 4:
     for end in -1..=16 {
-        println!("case 4: {:?}", a.rogs_range_slow(-1..=end));
+        println!("case 4: {:?}", a._rogs_range_slow(-1..=end));
         assert_eq!(
-            a.rogs_range_slow(-1..=end),
+            a._rogs_range_slow(-1..=end),
             a.rogs_range(-1..=end).collect::<Vec<_>>()
         );
     }
@@ -1533,7 +1533,7 @@ fn test_rogs_get_functionality() {
 fn test_rog_repro1() {
     let a = RangeSetBlaze::from_iter([1u8..=6u8]);
     assert_eq!(
-        a.rogs_range_slow(1..=7),
+        a._rogs_range_slow(1..=7),
         a.rogs_range(1..=7).collect::<Vec<_>>()
     );
 }
@@ -1542,7 +1542,7 @@ fn test_rog_repro1() {
 fn test_rog_repro2() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     assert_eq!(
-        a.rogs_range_slow(4..=8),
+        a._rogs_range_slow(4..=8),
         a.rogs_range(4..=8).collect::<Vec<_>>()
     );
 }
@@ -1570,7 +1570,7 @@ fn test_rog_extremes_u8() {
             for end in start..=255 {
                 println!("{start}..={end}");
                 assert_eq!(
-                    a.rogs_range_slow(start..=end),
+                    a._rogs_range_slow(start..=end),
                     a.rogs_range(start..=end).collect::<Vec<_>>()
                 );
             }
@@ -1610,7 +1610,7 @@ fn test_rog_extremes_i128() {
                 }
                 println!("{start}..={end}");
                 assert_eq!(
-                    a.rogs_range_slow(start..=end),
+                    a._rogs_range_slow(start..=end),
                     a.rogs_range(start..=end).collect::<Vec<_>>()
                 );
             }
@@ -1650,7 +1650,7 @@ fn test_rog_should_fail_i128() {
                 }
                 println!("{start}..={end}");
                 let slow =
-                    panic::catch_unwind(AssertUnwindSafe(|| a.rogs_range_slow(start..=end))).ok();
+                    panic::catch_unwind(AssertUnwindSafe(|| a._rogs_range_slow(start..=end))).ok();
                 let fast = panic::catch_unwind(AssertUnwindSafe(|| {
                     a.rogs_range(start..=end).collect::<Vec<_>>()
                 }))
