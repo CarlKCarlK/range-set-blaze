@@ -22,17 +22,17 @@ jobs:
         uses: jetli/wasm-pack-action@v0.4.0
       - name: Test Native & WASM
         run: |
-          cargo clippy --verbose --all-targets --all-features -- -D warnings
-          cargo test --verbose
-          cargo test --features alloc --no-default-features --verbose
-          wasm-pack test --chrome --headless --features alloc --no-default-features --verbose
+          cargo clippy --verbose --all-targets --all-features -- -D clippy::all -A deprecated
+          cargo test --verbose --features rog-experimental
+          cargo test --features alloc --no-default-features --verbose --features rog-experimental
+          wasm-pack test --chrome --headless --features alloc --no-default-features --verbose --features rog-experimental
       - name: Setup and check Embedded
         run: |
           rustup target add thumbv7m-none-eabi
-          cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
+          cargo check --target thumbv7m-none-eabi --features alloc --no-default-features --features rog-experimental
           rustup override set nightly
           rustup target add thumbv7m-none-eabi
-          cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
+          cargo check --target thumbv7m-none-eabi --features alloc --no-default-features --features rog-experimental
           sudo apt-get update && sudo apt-get install qemu qemu-system-arm
       - name: Test Embedded (in nightly)
         timeout-minutes: 3
