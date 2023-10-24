@@ -81,73 +81,38 @@ impl<T: Integer> RangeSetBlaze<T> {
         let (start_in, end_in) = extract_range(range);
 
         let mut before = self.btree_map.range(..=start_in).rev();
-        if let Some((start_before, end_before)) = before.next() {
+        let mut gap_start = if let Some((_, end_before)) = before.next() {
             if end_before < &start_in {
                 // case 1: range doesn't touch the before range
-                println!("cmk (case 1)");
-                let mut gap_start = Some(start_in);
-                for (start_el, end_el) in self.btree_map.range(start_in..) {
-                    if end_in < *start_el {
-                        break;
-                    }
-                    result.push(Rog::Gap(gap_start.unwrap()..=*start_el - T::one()));
-                    if end_el < &end_in {
-                        result.push(Rog::Range(*start_el..=*end_el));
-                        gap_start = Some(*end_el + T::one());
-                    } else {
-                        result.push(Rog::Range(*start_el..=end_in));
-                        gap_start = None;
-                    }
-                }
-                if let Some(gap_start) = gap_start {
-                    result.push(Rog::Gap(gap_start..=end_in));
-                }
+                Some(start_in)
             } else if end_before < &end_in {
                 // case 2: the range touches and extends beyond the before range
-                println!("cmk (case 2)");
                 result.push(Rog::Range(start_in..=*end_before));
-                let mut gap_start = Some(*end_before + T::one());
-                for (start_el, end_el) in self.btree_map.range(start_in..) {
-                    if end_in < *start_el {
-                        break;
-                    }
-                    result.push(Rog::Gap(gap_start.unwrap()..=*start_el - T::one()));
-                    if end_el < &end_in {
-                        result.push(Rog::Range(*start_el..=*end_el));
-                        gap_start = Some(*end_el + T::one());
-                    } else {
-                        result.push(Rog::Range(*start_el..=end_in));
-                        gap_start = None;
-                    }
-                }
-                if let Some(gap_start) = gap_start {
-                    result.push(Rog::Gap(gap_start..=end_in));
-                }
+                Some(*end_before + T::one())
             } else {
                 // case 3 the range is completely contained in the before range
-                println!("cmk (case 3)");
                 result.push(Rog::Range(start_in..=end_in));
+                return result;
             }
         } else {
             // case 4: there is no before range
-            println!("cmk (case 4)");
-            let mut gap_start = Some(start_in);
-            for (start_el, end_el) in self.btree_map.range(start_in..) {
-                if end_in < *start_el {
-                    break;
-                }
-                result.push(Rog::Gap(gap_start.unwrap()..=*start_el - T::one()));
-                if end_el < &end_in {
-                    result.push(Rog::Range(*start_el..=*end_el));
-                    gap_start = Some(*end_el + T::one());
-                } else {
-                    result.push(Rog::Range(*start_el..=end_in));
-                    gap_start = None;
-                }
+            Some(start_in)
+        };
+        for (start_el, end_el) in self.btree_map.range(start_in..) {
+            if end_in < *start_el {
+                break;
             }
-            if let Some(gap_start) = gap_start {
-                result.push(Rog::Gap(gap_start..=end_in));
+            result.push(Rog::Gap(gap_start.unwrap()..=*start_el - T::one()));
+            if end_el < &end_in {
+                result.push(Rog::Range(*start_el..=*end_el));
+                gap_start = Some(*end_el + T::one());
+            } else {
+                result.push(Rog::Range(*start_el..=end_in));
+                gap_start = None;
             }
+        }
+        if let Some(gap_start) = gap_start {
+            result.push(Rog::Gap(gap_start..=end_in));
         }
 
         result
