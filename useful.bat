@@ -23,6 +23,7 @@ cargo bench ingest_roaring_data & target\criterion\ingest_roaring_data\report\in
 
 # publish
 cargo publish --dry-run
+# set version  = "1.0.0-alpha"
 
 
 cargo check --no-default-features
