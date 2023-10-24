@@ -6,12 +6,51 @@
 
 use core::ops::{Bound, RangeBounds, RangeInclusive};
 
+use alloc::collections::btree_map;
+
 use crate::{Integer, RangeSetBlaze};
 
-struct RogIter<'a, T: Integer> {
-    range: RangeInclusive<T>,
-    set: &'a RangeSetBlaze<T>,
-    iter: RangeInclusive<T>,
+struct RogsIter<'a, T: Integer> {
+    end_in: T,
+    first_rog: Option<Rog<T>>,
+    gap_start: Option<T>,
+    btree_map_range: Option<btree_map::Range<'a, T, T>>,
+}
+
+impl<T: Integer> Iterator for RogsIter<'_, T> {
+    type Item = Rog<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(rog) = self.first_rog.take() {
+            return Some(rog);
+        };
+
+        if let Some(btree_map_range) = &mut self.btree_map_range {
+            if let Some((start_el, end_el)) = btree_map_range.next() {
+                if self.end_in < *start_el {
+                    self.btree_map_range = None;
+                } else {
+                    let result = Rog::Gap(self.gap_start.unwrap()..=*start_el - T::one());
+                    if end_el < &self.end_in {
+                        self.first_rog = Some(Rog::Range(*start_el..=*end_el));
+                        self.gap_start = Some(*end_el + T::one());
+                    } else {
+                        self.first_rog = Some(Rog::Range(*start_el..=self.end_in));
+                        self.gap_start = None;
+                    }
+                    return Some(result);
+                }
+            } else {
+                self.btree_map_range = None;
+            }
+        };
+
+        if let Some(gap_start) = self.gap_start.take() {
+            return Some(Rog::Gap(gap_start..=self.end_in));
+        };
+
+        return None;
+    }
 }
 
 /// Enum to represent either a range or a gap.
@@ -76,46 +115,47 @@ impl<T: Integer> RangeSetBlaze<T> {
     where
         R: RangeBounds<T>,
     {
-        let mut result = Vec::new();
         // cmk similar code elsewhere
         let (start_in, end_in) = extract_range(range);
 
         let mut before = self.btree_map.range(..=start_in).rev();
-        let mut gap_start = if let Some((_, end_before)) = before.next() {
+
+        let first_rog: Option<Rog<T>>;
+        let gap_start: Option<T>;
+        let btree_map_range: Option<btree_map::Range<T, T>>;
+
+        if let Some((_, end_before)) = before.next() {
             if end_before < &start_in {
                 // case 1: range doesn't touch the before range
-                Some(start_in)
+                first_rog = None;
+                gap_start = Some(start_in);
+                btree_map_range = Some(self.btree_map.range(start_in..));
             } else if end_before < &end_in {
                 // case 2: the range touches and extends beyond the before range
-                result.push(Rog::Range(start_in..=*end_before));
-                Some(*end_before + T::one())
+                first_rog = Some(Rog::Range(start_in..=*end_before));
+                gap_start = Some(*end_before + T::one()); // cmk check all arithmetic
+                btree_map_range = Some(self.btree_map.range(start_in..));
             } else {
                 // case 3 the range is completely contained in the before range
-                result.push(Rog::Range(start_in..=end_in));
-                return result;
+                first_rog = Some(Rog::Range(start_in..=end_in));
+                gap_start = None;
+                btree_map_range = None;
             }
         } else {
             // case 4: there is no before range
-            Some(start_in)
+            first_rog = None;
+            gap_start = Some(start_in);
+            btree_map_range = Some(self.btree_map.range(start_in..));
         };
-        for (start_el, end_el) in self.btree_map.range(start_in..) {
-            if end_in < *start_el {
-                break;
-            }
-            result.push(Rog::Gap(gap_start.unwrap()..=*start_el - T::one()));
-            if end_el < &end_in {
-                result.push(Rog::Range(*start_el..=*end_el));
-                gap_start = Some(*end_el + T::one());
-            } else {
-                result.push(Rog::Range(*start_el..=end_in));
-                gap_start = None;
-            }
-        }
-        if let Some(gap_start) = gap_start {
-            result.push(Rog::Gap(gap_start..=end_in));
-        }
 
-        result
+        let rogs_iter = RogsIter {
+            end_in,
+            first_rog,
+            gap_start,
+            btree_map_range,
+        };
+
+        rogs_iter.collect::<Vec<Rog<T>>>()
     }
 }
 
