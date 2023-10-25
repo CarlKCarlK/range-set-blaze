@@ -732,7 +732,7 @@ dependencies = [
 
 [[package]]
 name = "range-set-blaze"
-version = "0.1.13-beta.2"
+version = "0.1.13-beta.3"
 dependencies = [
  "criterion",
  "gen_ops",
