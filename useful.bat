@@ -22,8 +22,8 @@ python benches\summary.py > benches\summary_r.tsv
 cargo bench ingest_roaring_data & target\criterion\ingest_roaring_data\report\index.html 
 
 # publish
-cargo publish --dry-run
-# set version  = "1.0.0-alpha"
+cargo publish --all-features --dry-run
+# set version  = "1.0.0-beta.2"
 
 
 cargo check --no-default-features
