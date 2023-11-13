@@ -504,6 +504,11 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
+    /// cmk
+    pub fn from_slice(slice: &[T]) -> Self {
+        slice.iter().map(|x| *x..=*x).collect()
+    }
+
     fn _len_slow(&self) -> <T as Integer>::SafeLen {
         RangeSetBlaze::btree_map_len(&self.btree_map)
     }

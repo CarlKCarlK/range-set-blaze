@@ -1288,6 +1288,57 @@ fn ingest_clumps_integers(c: &mut Criterion) {
     group.finish();
 }
 
+fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
+    let group_name = "ingest_clumps_iter_v_slice";
+    let k = 1;
+    let average_width_list = [1000]; // [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    group.sample_size(40);
+
+    for average_width in average_width_list {
+        let parameter = average_width;
+
+        let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+
+        let vec: Vec<u32> = MemorylessIter::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze (integers, iter)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_iter(vec.iter());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze (integers, slice)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_slice(vec.as_slice());
+                })
+            },
+        );
+    }
+    group.finish();
+}
+
 fn ingest_clumps_ranges(c: &mut Criterion) {
     let group_name = "ingest_clumps_ranges";
     let k = 1;
@@ -2015,6 +2066,7 @@ criterion_group! {
     ingest_clumps_easy,
     overflow,
     worst_op_blaze,
+    ingest_clumps_iter_v_slice
 
 }
 criterion_main!(benches);
