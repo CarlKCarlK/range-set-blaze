@@ -1226,6 +1226,48 @@ fn range_set_int_constructors() {
 }
 
 #[test]
+fn range_set_int_slice_constructor() {
+    let v: Vec<i32> = (100..=150).collect();
+    let a2 = RangeSetBlaze::from_slice(&v);
+    assert!(a2.to_string() == "100..=150");
+
+    let k = 1;
+    let average_width = 1000;
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    let (range_len, range) =
+        tests_common::width_to_range_u32(iter_len, average_width, coverage_goal);
+
+    let vec: Vec<u32> = MemorylessIter::new(
+        &mut StdRng::seed_from_u64(seed),
+        range_len,
+        range.clone(),
+        coverage_goal,
+        k,
+        how,
+    )
+    .collect();
+    let b0 = RangeSetBlaze::from_iter(&vec);
+    // println!("{:#?}", b0);
+    let b1 = RangeSetBlaze::from_slice(&vec);
+    assert!(b0 == b1);
+
+    // For compatibility with `BTreeSet`, we also support
+    // 'from'/'into' from arrays of integers.
+    let a0 = RangeSetBlaze::from([3, 2, 1, 100, 1]);
+    let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
+    assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+
+    // cmk accept slice or reference to slice
+    let a2 = RangeSetBlaze::from_slice(&[3, 2, 1, 100, 1]);
+    // cmk should there be an slice_into()?
+    assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
+}
+
+#[test]
 fn range_set_int_operators() {
     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
     let b = RangeSetBlaze::from_iter([2..=6]);

@@ -504,9 +504,29 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    /// cmk
+    /// cmk need docs
+    /// cmk be sure ints don't wrap in a way that could be bad.
     pub fn from_slice(slice: &[T]) -> Self {
-        slice.iter().map(|x| *x..=*x).collect()
+        let mut result: Vec<RangeInclusive<T>> = Vec::new();
+        // Look at slice in blocks of 16 elements.
+        // If the block is adjacent increasing ints, add the first and last.
+        let chunk_size = 16;
+        let mut is_adjacent = true;
+        for block in slice.chunks(chunk_size) {
+            let block_size = block.len();
+            for i in 1..block_size {
+                if block[i] != block[i - 1] + T::one() {
+                    is_adjacent = false;
+                    break;
+                }
+            }
+            if is_adjacent {
+                result.push(block[0]..=block[block_size - 1]);
+            } else {
+                block.iter().for_each(|x| result.push(*x..=*x));
+            }
+        }
+        result.iter().collect()
     }
 
     fn _len_slow(&self) -> <T as Integer>::SafeLen {
