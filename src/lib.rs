@@ -189,7 +189,7 @@ pub trait Integer:
 /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
 /// [2]: struct.RangeSetBlaze.html#impl-FromIterator<RangeInclusive<T>>-for-RangeSetBlaze<T>
 /// [3]: RangeSetBlaze::from_sorted_disjoint
-/// [4]: SortedDisjoint::into_range_set_blaze
+/// [4]: RangeSetBlaze::from
 ///
 /// # Constructor Performance
 ///
