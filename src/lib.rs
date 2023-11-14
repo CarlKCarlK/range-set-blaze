@@ -26,6 +26,7 @@ pub use crate::ranges::{IntoRangesIter, RangesIter};
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 use core::cmp::max;
+use core::cmp::min;
 use core::cmp::Ordering;
 use core::convert::From;
 use core::fmt;
@@ -506,26 +507,89 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     /// cmk need docs
     /// cmk be sure ints don't wrap in a way that could be bad.
+    /// cmk handle alignment at the start and end.
     pub fn from_slice(slice: &[T]) -> Self {
         let mut result: Vec<RangeInclusive<T>> = Vec::new();
         // Look at slice in blocks of 16 elements.
         // If the block is adjacent increasing ints, add the first and last.
         let chunk_size = 16;
-        let mut is_adjacent = true;
-        for block in slice.chunks(chunk_size) {
-            let block_size = block.len();
-            for i in 1..block_size {
-                if block[i] != block[i - 1] + T::one() {
-                    is_adjacent = false;
-                    break;
+
+        let mut slice_index = 0usize;
+        let mut previous_range: Option<RangeInclusive<T>> = None;
+
+        while slice_index < slice.len() {
+            println!(
+                "cmk {slice_index}: {}",
+                slice[slice_index..min(slice_index + chunk_size, slice.len())]
+                    .iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            );
+            // Look at the next "chunk_size" elements in the slice. Return
+            // None if not increasing (or gaps) or a range_inclusive if increasing with no gaps.
+            let mut this_range: Option<RangeInclusive<T>>;
+            if slice_index + chunk_size > slice.len() {
+                this_range = None;
+            } else {
+                this_range = Some(slice[slice_index]..=slice[slice_index + chunk_size - 1]);
+                for i in slice_index + 1..slice_index + chunk_size {
+                    if slice[i] != slice[i - 1] + T::one() {
+                        this_range = None;
+                        break;
+                    }
                 }
             }
-            if is_adjacent {
-                result.push(block[0]..=block[block_size - 1]);
-            } else {
-                block.iter().for_each(|x| result.push(*x..=*x));
+            println!("cmk previous_range: {:#?}", &previous_range);
+            println!("cmk this_range: {:#?}", &this_range);
+
+            // If none, flush previous range, set it to none, output this chunk as a bunch of singletons.
+            if this_range.is_none() {
+                if previous_range.is_some() {
+                    result.push(previous_range.unwrap());
+                }
+                previous_range = None;
+                slice[slice_index..min(slice_index + chunk_size, slice.len())]
+                    .iter()
+                    .for_each(|x| result.push(*x..=*x));
+                slice_index += chunk_size;
             }
+            // if some and previous is None, set previous to this range.
+            else if this_range.is_some() && previous_range.is_none() {
+                previous_range = this_range.clone();
+                slice_index += chunk_size;
+            }
+            // if some and previous is some and adjacent, combine
+            else if this_range.is_some()
+                && previous_range.is_some()
+                && *previous_range.clone().unwrap().end() + T::one()
+                    == *this_range.clone().unwrap().start()
+            {
+                previous_range = Some(
+                    *(previous_range.as_ref().unwrap().start())
+                        ..=*(this_range.as_ref().unwrap().end()),
+                );
+                slice_index += chunk_size;
+            }
+            // if some and previous is some but not adjacent, flush previous, set previous to this range.
+            // AT the very, very end, flush previous.
+            else if this_range.is_some()
+                && previous_range.is_some()
+                && *previous_range.clone().unwrap().end() + T::one()
+                    != *this_range.clone().unwrap().start()
+            {
+                result.push(previous_range.unwrap());
+                previous_range = this_range.clone();
+                slice_index += chunk_size;
+            }
+            println!("cmk previous_range: {:#?}", &previous_range);
+            println!("cmk this_range: {:#?}", &this_range);
         }
+
+        if previous_range.is_some() {
+            result.push(previous_range.unwrap());
+        }
+
         result.iter().collect()
     }
 

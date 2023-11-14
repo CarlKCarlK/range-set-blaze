@@ -1227,33 +1227,40 @@ fn range_set_int_constructors() {
 
 #[test]
 fn range_set_int_slice_constructor() {
-    let v: Vec<i32> = (100..=150).collect();
-    let a2 = RangeSetBlaze::from_slice(&v);
-    assert!(a2.to_string() == "100..=150");
-
     let k = 1;
     let average_width = 1000;
     let coverage_goal = 0.10;
     let how = How::None;
     let seed = 0;
-    let iter_len = 1_000_000;
 
-    let (range_len, range) =
-        tests_common::width_to_range_u32(iter_len, average_width, coverage_goal);
+    for iter_len in [2000] {
+        // cmk 1000, 1500, 1750, 2000, 10_000, 1_000_000] {
+        let (range_len, range) =
+            tests_common::width_to_range_u32(iter_len, average_width, coverage_goal);
 
-    let vec: Vec<u32> = MemorylessIter::new(
-        &mut StdRng::seed_from_u64(seed),
-        range_len,
-        range.clone(),
-        coverage_goal,
-        k,
-        how,
-    )
-    .collect();
-    let b0 = RangeSetBlaze::from_iter(&vec);
-    // println!("{:#?}", b0);
-    let b1 = RangeSetBlaze::from_slice(&vec);
-    assert!(b0 == b1);
+        let vec: Vec<u32> = MemorylessIter::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+        let b0 = RangeSetBlaze::from_iter(&vec);
+        let b1 = RangeSetBlaze::from_slice(&vec);
+        if b0 != b1 {
+            println!(
+                "{iter_len} error: b0={b0:#?}, b1={b1:#?}, diff={:#?}",
+                &b0 ^ &b1
+            );
+        }
+        assert!(b0 == b1);
+    }
+
+    let v: Vec<i32> = (100..=150).collect();
+    let a2 = RangeSetBlaze::from_slice(&v);
+    assert!(a2.to_string() == "100..=150");
 
     // For compatibility with `BTreeSet`, we also support
     // 'from'/'into' from arrays of integers.
