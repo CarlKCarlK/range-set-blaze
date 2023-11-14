@@ -1233,6 +1233,7 @@ fn range_set_int_slice_constructor() {
     let how = How::None;
     let seed = 0;
 
+    #[allow(clippy::single_element_loop)]
     for iter_len in [2000] {
         // cmk 1000, 1500, 1750, 2000, 10_000, 1_000_000] {
         let (range_len, range) =

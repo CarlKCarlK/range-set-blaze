@@ -11,6 +11,7 @@ extern crate alloc;
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
+mod from_slice_iter;
 mod integer;
 mod merge;
 mod not_iter;
@@ -38,6 +39,7 @@ use core::ops::RangeBounds;
 use core::ops::RangeInclusive;
 use core::str::FromStr;
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
+use from_slice_iter::FromSliceIter;
 use gen_ops::gen_ops_ex;
 use itertools::Tee;
 pub use merge::KMerge;
@@ -509,57 +511,58 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// cmk be sure ints don't wrap in a way that could be bad.
     /// cmk handle alignment at the start and end.
     pub fn from_slice(slice: &[T]) -> Self {
-        let mut result: Vec<RangeInclusive<T>> = Vec::new();
-        // Look at slice in blocks of 16 elements.
-        // If the block is adjacent increasing ints, add the first and last.
-        let chunk_size = 16;
+        FromSliceIter::new(slice).collect()
+        // let mut result: Vec<RangeInclusive<T>> = Vec::new();
+        // // Look at slice in blocks of 16 elements.
+        // // If the block is adjacent increasing ints, add the first and last.
+        // let chunk_size = 16;
 
-        let mut previous_range: Option<RangeInclusive<T>> = None;
+        // let mut previous_range: Option<RangeInclusive<T>> = None;
 
-        let chunks = slice.chunks_exact(chunk_size);
-        let remainder = chunks.remainder();
-        for chunk in chunks {
-            // print_chunk(slice, slice_index, chunk_size);
-            // Look at the next "chunk_size" elements in the slice. Return
-            // None if not increasing (or gaps) or a range_inclusive if increasing with no gaps.
-            // println!("cmk previous_range: {:#?}", &previous_range);
-            // println!("cmk this_range: {:#?}", &this_range);
+        // let chunks = slice.chunks_exact(chunk_size);
+        // let remainder = chunks.remainder();
+        // for chunk in chunks {
+        //     // print_chunk(slice, slice_index, chunk_size);
+        //     // Look at the next "chunk_size" elements in the slice. Return
+        //     // None if not increasing (or gaps) or a range_inclusive if increasing with no gaps.
+        //     // println!("cmk previous_range: {:#?}", &previous_range);
+        //     // println!("cmk this_range: {:#?}", &this_range);
 
-            // if some and previous is some and adjacent, combine
-            if is_good(chunk) {
-                let this_start = chunk[0];
-                let this_end = chunk[chunk.len() - 1];
-                if let Some(inner_previous_range) = &previous_range {
-                    if *inner_previous_range.end() + T::one() == this_start {
-                        previous_range = Some(*(inner_previous_range.start())..=this_end);
-                    } else {
-                        // if some and previous is some but not adjacent, flush previous, set previous to this range.
-                        result.push(inner_previous_range.clone());
-                        previous_range = Some(this_start..=this_end);
-                    }
-                } else {
-                    // if some and previous is None, set previous to this range.
-                    previous_range = Some(this_start..=this_end);
-                }
-            } else {
-                // If none, flush previous range, set it to none, output this chunk as a bunch of singletons.
-                if let Some(previous) = previous_range.take() {
-                    result.push(previous);
-                }
-                chunk.iter().for_each(|x| result.push(*x..=*x));
-            }
+        //     if is_good(chunk) {
+        //         let this_start = chunk[0];
+        //         let this_end = chunk[chunk.len() - 1];
+        //         // if some and previous is some and adjacent, combine
+        //         if let Some(inner_previous_range) = &previous_range {
+        //             if *inner_previous_range.end() + T::one() == this_start {
+        //                 previous_range = Some(*(inner_previous_range.start())..=this_end);
+        //             } else {
+        //                 // if some and previous is some but not adjacent, flush previous, set previous to this range.
+        //                 result.push(inner_previous_range.clone());
+        //                 previous_range = Some(this_start..=this_end);
+        //             }
+        //         } else {
+        //             // if some and previous is None, set previous to this range.
+        //             previous_range = Some(this_start..=this_end);
+        //         }
+        //     } else {
+        //         // If none, flush previous range, set it to none, output this chunk as a bunch of singletons.
+        //         if let Some(previous) = previous_range.take() {
+        //             result.push(previous);
+        //         }
+        //         chunk.iter().for_each(|x| result.push(*x..=*x));
+        //     }
 
-            // println!("cmk previous_range: {:#?}", &previous_range);
-        }
+        //     // println!("cmk previous_range: {:#?}", &previous_range);
+        // }
 
-        // at the very, very end, flush previous.
-        if let Some(previous) = previous_range {
-            result.push(previous);
-        }
-        // if there are any left over, add them as singletons.
-        remainder.iter().for_each(|x| result.push(*x..=*x));
+        // // at the very, very end, flush previous.
+        // if let Some(previous) = previous_range {
+        //     result.push(previous);
+        // }
+        // // if there are any left over, add them as singletons.
+        // remainder.iter().for_each(|x| result.push(*x..=*x));
 
-        result.iter().collect()
+        // result.iter().collect()
     }
 
     fn _len_slow(&self) -> <T as Integer>::SafeLen {
