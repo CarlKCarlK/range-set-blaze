@@ -29,11 +29,15 @@ pub struct FromSliceIter<'a, T>
 where
     T: Integer,
 {
-    before_iter: core::slice::Iter<'a, T>,
+    slice: &'a [T],
+    before_start: usize,
+    before_end_exclusive: usize,
     chunk_size: usize, //  = 16;
     previous_range: Option<RangeInclusive<T>>,
-    chunks: ChunksExact<'a, T>,
-    remainder: &'a [T],
+    chunks_start: usize,
+    chunks_end_exclusive: usize,
+    remainder_start: usize,
+    remainder_end_exclusive: usize,
 }
 
 impl<'a, T: 'a> FromSliceIter<'a, T>
@@ -43,11 +47,15 @@ where
     /// cmk Create a new [`NotIter`] from a [`SortedDisjoint`] iterator. See [`NotIter`] for an example.
     pub fn new(slice: &'a [T]) -> Self {
         FromSliceIter {
-            before_iter: [].iter(),
+            slice,
+            before_start: 0,
+            before_end_exclusive: 0,
             chunk_size: 16, // cmk const
             previous_range: None,
-            chunks: slice.chunks_exact(16),
-            remainder: slice.chunks_exact(16).remainder(), // cmk rep
+            chunks_start: 0,
+            chunks_end_exclusive: slice.len() / 16 * 16,
+            remainder_start: slice.len() / 16 * 16,
+            remainder_end_exclusive: slice.len(),
         }
     }
 }
@@ -62,13 +70,18 @@ where
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<RangeInclusive<T>> {
-        if let Some(before) = self.before_iter.next() {
-            return Some(*before..=*before);
+        if self.before_start < self.before_end_exclusive {
+            let element = self.slice[self.before_start];
+            self.before_start += 1;
+            return Some(element..=element);
         }
-        for chunk in self.chunks.by_ref() {
+        while self.chunks_start < self.chunks_end_exclusive {
+            // cmk
+            let chunk_end_exclusive = self.chunks_start + self.chunk_size;
+            let chunk = &self.slice[self.chunks_start..chunk_end_exclusive];
             if is_good(chunk) {
-                let this_start = chunk[0];
-                let this_end = chunk[chunk.len() - 1];
+                let this_start = self.slice[self.chunks_start];
+                let this_end = self.slice[chunk_end_exclusive - 1];
 
                 if let Some(inner_previous_range) = self.previous_range.as_mut() {
                     // if some and previous is some and adjacent, combine
@@ -78,6 +91,7 @@ where
                         // if some and previous is some but not adjacent, flush previous, set previous to this range.
                         let result = Some(inner_previous_range.clone());
                         *inner_previous_range = this_start..=this_end;
+                        self.chunks_start += self.chunk_size;
                         return result;
                     }
                 } else {
@@ -86,15 +100,22 @@ where
                 }
             } else {
                 // If none, flush previous range, set it to none, output this chunk as a bunch of singletons.
-                self.before_iter = chunk.iter();
+                self.before_start = self.chunks_start;
+                self.before_end_exclusive = chunk_end_exclusive;
                 if let Some(previous) = self.previous_range.take() {
                     debug_assert!(self.previous_range.is_none());
+                    self.chunks_start += self.chunk_size;
                     return Some(previous);
                 }
-                if let Some(before) = self.before_iter.next() {
-                    return Some(*before..=*before);
+                // cmk similar code elsewhere
+                if self.before_start < self.before_end_exclusive {
+                    let element = self.slice[self.before_start];
+                    self.before_start += 1;
+                    self.chunks_start += self.chunk_size;
+                    return Some(element..=element);
                 }
             }
+            self.chunks_start += self.chunk_size;
         }
 
         // at the very, very end, flush previous.
@@ -103,10 +124,17 @@ where
             return Some(previous.clone());
         }
 
-        self.before_iter = self.remainder.iter();
-        self.remainder = &[];
-
-        self.before_iter.next().map(|before| *before..=*before)
+        self.before_start = self.remainder_start;
+        self.before_end_exclusive = self.remainder_end_exclusive;
+        self.remainder_start = self.remainder_end_exclusive;
+        // cmk similar code elsewhere
+        if self.before_start < self.before_end_exclusive {
+            let element = self.slice[self.before_start];
+            self.before_start += 1;
+            Some(element..=element)
+        } else {
+            None
+        }
     }
 
     // cmk
