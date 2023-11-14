@@ -526,39 +526,29 @@ impl<T: Integer> RangeSetBlaze<T> {
             println!("cmk previous_range: {:#?}", &previous_range);
             println!("cmk this_range: {:#?}", &this_range);
 
-            // If none, flush previous range, set it to none, output this chunk as a bunch of singletons.
-            if this_range.is_none() {
+            // if some and previous is some and adjacent, combine
+            if let Some(inner_this_range) = &this_range {
+                if let Some(inner_previous_range) = &previous_range {
+                    if *inner_previous_range.end() + T::one() == *inner_this_range.start() {
+                        previous_range =
+                            Some(*(inner_previous_range.start())..=*(inner_this_range.end()));
+                    } else {
+                        // if some and previous is some but not adjacent, flush previous, set previous to this range.
+                        // AT the very, very end, flush previous.
+
+                        result.push(previous_range.unwrap());
+                        previous_range = this_range;
+                    }
+                } else {
+                    // if some and previous is None, set previous to this range.
+                    previous_range = this_range;
+                }
+            } else {
+                // If none, flush previous range, set it to none, output this chunk as a bunch of singletons.
                 if let Some(previous) = previous_range.take() {
                     result.push(previous);
                 }
-                slice[slice_index..min(slice_index + chunk_size, slice.len())]
-                    .iter()
-                    .for_each(|x| result.push(*x..=*x));
-            }
-            // if some and previous is None, set previous to this range.
-            else if this_range.is_some() && previous_range.is_none() {
-                previous_range = this_range;
-            }
-            // if some and previous is some and adjacent, combine
-            else if this_range.is_some()
-                && previous_range.is_some()
-                && *previous_range.clone().unwrap().end() + T::one()
-                    == *this_range.clone().unwrap().start()
-            {
-                previous_range = Some(
-                    *(previous_range.as_ref().unwrap().start())
-                        ..=*(this_range.as_ref().unwrap().end()),
-                );
-            }
-            // if some and previous is some but not adjacent, flush previous, set previous to this range.
-            // AT the very, very end, flush previous.
-            else if this_range.is_some()
-                && previous_range.is_some()
-                && *previous_range.clone().unwrap().end() + T::one()
-                    != *this_range.clone().unwrap().start()
-            {
-                result.push(previous_range.unwrap());
-                previous_range = this_range.clone();
+                chunk.iter().for_each(|x| result.push(*x..=*x));
             }
             slice_index += chunk_size;
 
