@@ -517,47 +517,27 @@ impl<T: Integer> RangeSetBlaze<T> {
         let mut slice_index = 0usize;
         let mut previous_range: Option<RangeInclusive<T>> = None;
 
-        while slice_index < slice.len() {
-            println!(
-                "cmk {slice_index}: {}",
-                slice[slice_index..min(slice_index + chunk_size, slice.len())]
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<String>>()
-                    .join(", ")
-            );
+        while slice_index + chunk_size <= slice.len() {
+            let chunk = &slice[slice_index..slice_index + chunk_size];
+            // print_chunk(slice, slice_index, chunk_size);
             // Look at the next "chunk_size" elements in the slice. Return
             // None if not increasing (or gaps) or a range_inclusive if increasing with no gaps.
-            let mut this_range: Option<RangeInclusive<T>>;
-            if slice_index + chunk_size > slice.len() {
-                this_range = None;
-            } else {
-                this_range = Some(slice[slice_index]..=slice[slice_index + chunk_size - 1]);
-                for i in slice_index + 1..slice_index + chunk_size {
-                    if slice[i] != slice[i - 1] + T::one() {
-                        this_range = None;
-                        break;
-                    }
-                }
-            }
+            let this_range = is_good(&chunk);
             println!("cmk previous_range: {:#?}", &previous_range);
             println!("cmk this_range: {:#?}", &this_range);
 
             // If none, flush previous range, set it to none, output this chunk as a bunch of singletons.
             if this_range.is_none() {
-                if previous_range.is_some() {
-                    result.push(previous_range.unwrap());
+                if let Some(previous) = previous_range.take() {
+                    result.push(previous);
                 }
-                previous_range = None;
                 slice[slice_index..min(slice_index + chunk_size, slice.len())]
                     .iter()
                     .for_each(|x| result.push(*x..=*x));
-                slice_index += chunk_size;
             }
             // if some and previous is None, set previous to this range.
             else if this_range.is_some() && previous_range.is_none() {
-                previous_range = this_range.clone();
-                slice_index += chunk_size;
+                previous_range = this_range;
             }
             // if some and previous is some and adjacent, combine
             else if this_range.is_some()
@@ -569,7 +549,6 @@ impl<T: Integer> RangeSetBlaze<T> {
                     *(previous_range.as_ref().unwrap().start())
                         ..=*(this_range.as_ref().unwrap().end()),
                 );
-                slice_index += chunk_size;
             }
             // if some and previous is some but not adjacent, flush previous, set previous to this range.
             // AT the very, very end, flush previous.
@@ -580,15 +559,18 @@ impl<T: Integer> RangeSetBlaze<T> {
             {
                 result.push(previous_range.unwrap());
                 previous_range = this_range.clone();
-                slice_index += chunk_size;
             }
+            slice_index += chunk_size;
+
             println!("cmk previous_range: {:#?}", &previous_range);
-            println!("cmk this_range: {:#?}", &this_range);
         }
 
         if previous_range.is_some() {
             result.push(previous_range.unwrap());
         }
+        slice[slice_index..slice.len()]
+            .iter()
+            .for_each(|x| result.push(*x..=*x));
 
         result.iter().collect()
     }
@@ -1350,6 +1332,29 @@ impl<T: Integer> RangeSetBlaze<T> {
     {
         *self = self.iter().filter(|v| f(v)).collect();
     }
+}
+
+fn is_good<T: Integer>(chunk: &[T]) -> Option<RangeInclusive<T>> {
+    for i in 1..chunk.len() {
+        // watch for overflow
+        if chunk[i] != chunk[i - 1] + T::one() {
+            return None;
+        }
+    }
+
+    Some(chunk[0]..=chunk[chunk.len() - 1])
+}
+
+#[allow(dead_code)]
+fn print_chunk<T: Integer>(slice: &[T], slice_index: usize, chunk_size: usize) {
+    println!(
+        "cmk {slice_index}: {}",
+        slice[slice_index..min(slice_index + chunk_size, slice.len())]
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+            .join(", ")
+    );
 }
 
 // We create a RangeSetBlaze from an iterator of integers or integer ranges by
