@@ -70,14 +70,15 @@ where
                 let this_start = chunk[0];
                 let this_end = chunk[chunk.len() - 1];
 
-                if let Some(inner_previous_range) = self.previous_range.clone() {
+                if let Some(inner_previous_range) = self.previous_range.as_mut() {
                     // if some and previous is some and adjacent, combine
                     if *inner_previous_range.end() + T::one() == this_start {
-                        self.previous_range = Some(*(inner_previous_range.start())..=this_end);
+                        *inner_previous_range = *(inner_previous_range.start())..=this_end;
                     } else {
                         // if some and previous is some but not adjacent, flush previous, set previous to this range.
-                        self.previous_range = Some(this_start..=this_end);
-                        return Some(inner_previous_range.clone());
+                        let result = Some(inner_previous_range.clone());
+                        *inner_previous_range = this_start..=this_end;
+                        return result;
                     }
                 } else {
                     // if some and previous is None, set previous to this range.
