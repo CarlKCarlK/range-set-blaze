@@ -1227,11 +1227,6 @@ fn range_set_int_constructors() {
 
 #[test]
 fn range_set_int_slice_constructor() {
-    let v: Vec<i32> = (100..=150).collect();
-    let a2 = RangeSetBlaze::from_slice(&v);
-    println!("{:#?}", a2);
-    assert!(a2.to_string() == "100..=150");
-
     let k = 1;
     let average_width = 1000;
     let coverage_goal = 0.10;
@@ -1239,7 +1234,7 @@ fn range_set_int_slice_constructor() {
     let seed = 0;
 
     #[allow(clippy::single_element_loop)]
-    for iter_len in [2005] {
+    for iter_len in [2000] {
         // cmk 1000, 1500, 1750, 2000, 10_000, 1_000_000] {
         let (range_len, range) =
             tests_common::width_to_range_u32(iter_len, average_width, coverage_goal);
@@ -1263,6 +1258,10 @@ fn range_set_int_slice_constructor() {
         }
         assert!(b0 == b1);
     }
+
+    let v: Vec<i32> = (100..=150).collect();
+    let a2 = RangeSetBlaze::from_slice(&v);
+    assert!(a2.to_string() == "100..=150");
 
     // For compatibility with `BTreeSet`, we also support
     // 'from'/'into' from arrays of integers.

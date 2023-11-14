@@ -1423,15 +1423,3 @@ fn symmetric_difference_size_hint(a: Reference, b: Reference) -> bool {
 fn demo_read() {
     let _a: RangeSetBlaze<i32> = demo_read_ranges_from_file("tests/no_such_file").unwrap();
 }
-
-#[test]
-fn internal_slice_constructor() {
-    let v: Vec<i32> = (100..=150).collect();
-    let a2 = RangeSetBlaze::from_slice(&v);
-    println!("{:#?}", a2);
-    assert!(a2.to_string() == "100..=150");
-
-    let fsi = FromSliceIter::new(&v);
-    let vsi: Vec<_> = fsi.collect();
-    println!("{:#?}", vsi);
-}
