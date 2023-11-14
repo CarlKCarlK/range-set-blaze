@@ -76,10 +76,8 @@ where
             return Some(element..=element);
         }
         while self.chunks_start < self.chunks_end_exclusive {
-            // cmk
             let chunk_end_exclusive = self.chunks_start + self.chunk_size;
-            let chunk = &self.slice[self.chunks_start..chunk_end_exclusive];
-            if is_good(chunk) {
+            if is_good(self.slice, self.chunks_start, chunk_end_exclusive) {
                 let this_start = self.slice[self.chunks_start];
                 let this_end = self.slice[chunk_end_exclusive - 1];
 

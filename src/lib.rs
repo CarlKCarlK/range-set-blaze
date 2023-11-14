@@ -1324,10 +1324,10 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 }
 
-fn is_good<T: Integer>(chunk: &[T]) -> bool {
-    for i in 1..chunk.len() {
+fn is_good<T: Integer>(slice: &[T], start: usize, end_exclusive: usize) -> bool {
+    for i in start + 1..end_exclusive {
         // watch for overflow
-        if chunk[i] != chunk[i - 1] + T::one() {
+        if slice[i] != slice[i - 1] + T::one() {
             return false;
         }
     }
