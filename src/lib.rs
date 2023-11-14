@@ -514,34 +514,32 @@ impl<T: Integer> RangeSetBlaze<T> {
         // If the block is adjacent increasing ints, add the first and last.
         let chunk_size = 16;
 
-        let mut slice_index = 0usize;
         let mut previous_range: Option<RangeInclusive<T>> = None;
 
-        while slice_index + chunk_size <= slice.len() {
-            let chunk = &slice[slice_index..slice_index + chunk_size];
+        let chunks = slice.chunks_exact(chunk_size);
+        let remainder = chunks.remainder();
+        for chunk in chunks {
             // print_chunk(slice, slice_index, chunk_size);
             // Look at the next "chunk_size" elements in the slice. Return
             // None if not increasing (or gaps) or a range_inclusive if increasing with no gaps.
-            let this_range = is_good(&chunk);
-            println!("cmk previous_range: {:#?}", &previous_range);
-            println!("cmk this_range: {:#?}", &this_range);
+            // println!("cmk previous_range: {:#?}", &previous_range);
+            // println!("cmk this_range: {:#?}", &this_range);
 
             // if some and previous is some and adjacent, combine
-            if let Some(inner_this_range) = &this_range {
+            if is_good(chunk) {
+                let this_start = chunk[0];
+                let this_end = chunk[chunk.len() - 1];
                 if let Some(inner_previous_range) = &previous_range {
-                    if *inner_previous_range.end() + T::one() == *inner_this_range.start() {
-                        previous_range =
-                            Some(*(inner_previous_range.start())..=*(inner_this_range.end()));
+                    if *inner_previous_range.end() + T::one() == this_start {
+                        previous_range = Some(*(inner_previous_range.start())..=this_end);
                     } else {
                         // if some and previous is some but not adjacent, flush previous, set previous to this range.
-                        // AT the very, very end, flush previous.
-
-                        result.push(previous_range.unwrap());
-                        previous_range = this_range;
+                        result.push(inner_previous_range.clone());
+                        previous_range = Some(this_start..=this_end);
                     }
                 } else {
                     // if some and previous is None, set previous to this range.
-                    previous_range = this_range;
+                    previous_range = Some(this_start..=this_end);
                 }
             } else {
                 // If none, flush previous range, set it to none, output this chunk as a bunch of singletons.
@@ -550,17 +548,16 @@ impl<T: Integer> RangeSetBlaze<T> {
                 }
                 chunk.iter().for_each(|x| result.push(*x..=*x));
             }
-            slice_index += chunk_size;
 
-            println!("cmk previous_range: {:#?}", &previous_range);
+            // println!("cmk previous_range: {:#?}", &previous_range);
         }
 
-        if previous_range.is_some() {
-            result.push(previous_range.unwrap());
+        // at the very, very end, flush previous.
+        if let Some(previous) = previous_range {
+            result.push(previous);
         }
-        slice[slice_index..slice.len()]
-            .iter()
-            .for_each(|x| result.push(*x..=*x));
+        // if there are any left over, add them as singletons.
+        remainder.iter().for_each(|x| result.push(*x..=*x));
 
         result.iter().collect()
     }
@@ -1324,15 +1321,15 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 }
 
-fn is_good<T: Integer>(chunk: &[T]) -> Option<RangeInclusive<T>> {
+fn is_good<T: Integer>(chunk: &[T]) -> bool {
     for i in 1..chunk.len() {
         // watch for overflow
         if chunk[i] != chunk[i - 1] + T::one() {
-            return None;
+            return false;
         }
     }
 
-    Some(chunk[0]..=chunk[chunk.len() - 1])
+    true
 }
 
 #[allow(dead_code)]
