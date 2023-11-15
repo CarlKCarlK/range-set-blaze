@@ -1,6 +1,43 @@
+use core::mem::align_of;
+use core::mem::size_of;
 use core::ops::RangeInclusive;
+use packed_simd::i32x16;
+use packed_simd::u32x16;
 
 use crate::Integer;
+
+macro_rules! is_consecutive {
+    ($chunk:expr, $scalar:ty, $simd:ty, $decrease:expr) => {{
+        debug_assert!($chunk.len() == <$simd>::lanes(), "Chunk is wrong length");
+        debug_assert!(
+            $chunk.as_ptr() as usize % align_of::<$simd>() == 0,
+            "Chunk is not aligned"
+        );
+
+        const LAST_INDEX: usize = <$simd>::lanes() - 1;
+        let (expected, overflowed) = $chunk[0].overflowing_add(LAST_INDEX as $scalar);
+        if overflowed || expected != $chunk[LAST_INDEX] {
+            return false;
+        }
+
+        let a = unsafe { <$simd>::from_slice_aligned_unchecked($chunk) } + $decrease;
+        let compare_mask = a.eq(<$simd>::splat(a.extract(0)));
+        compare_mask.all()
+    }};
+}
+
+macro_rules! alignment_offset {
+    ($slice:expr, $simd:ty, $scalar:ty) => {{
+        let alignment = align_of::<$simd>();
+        let misalignment = ($slice.as_ptr() as usize) % alignment;
+
+        if misalignment == 0 {
+            0 // Already aligned
+        } else {
+            (alignment - misalignment) / size_of::<$scalar>()
+        }
+    }};
+}
 
 impl Integer for i8 {
     #[cfg(target_pointer_width = "32")]
@@ -49,7 +86,6 @@ impl Integer for u8 {
     }
 }
 
-// cmk see if passing this into the loop is faster
 #[cfg(target_feature = "avx512f")]
 lazy_static! {
     static ref DECREASE_I32: packed_simd::Simd<[i32; 16]> =
@@ -86,27 +122,13 @@ impl Integer for i32 {
     }
 
     #[cfg(target_feature = "avx512f")]
-    fn is_consecutive(chunk: &[Self]) -> bool {
-        use packed_simd::i32x16;
-
-        // cmk make sure this "aligned" is true.
-        // cmk this won't catch if the original numbers wrap around.
-        // cmk predefine the 15, ..., 0 vector.
-        let a = i32x16::from_slice_aligned(chunk) + *DECREASE_I32;
-        let compare_mask = a.eq(i32x16::splat(a.extract(0)));
-        compare_mask.all()
+    fn is_consecutive(chunk: &[i32]) -> bool {
+        is_consecutive!(chunk, i32, i32x16, *DECREASE_I32)
     }
 
     #[cfg(target_feature = "avx512f")]
     fn alignment_offset(slice: &[Self]) -> usize {
-        let alignment = 64; // 64 bytes for AVX512F
-        let ptr = slice.as_ptr() as usize;
-        let misalignment = ptr % alignment;
-        if misalignment == 0 {
-            0 // Already aligned
-        } else {
-            (alignment - misalignment) / std::mem::size_of::<i32>()
-        }
+        alignment_offset!(slice, i32x16, i32)
     }
 }
 
@@ -117,35 +139,19 @@ impl Integer for u32 {
     type SafeLen = usize;
 
     #[cfg(target_feature = "avx512f")]
-    fn is_consecutive(chunk: &[Self]) -> bool {
-        use packed_simd::u32x16;
-
-        // cmk make sure this "aligned" is true.
-        // cmk this won't catch if the original numbers wrap around.
-        // cmk predefine the 15, ..., 0 vector.
-        let a = unsafe { u32x16::from_slice_aligned_unchecked(chunk) } + *DECREASE_U32;
-        let compare_mask = a.eq(u32x16::splat(a.extract(0)));
-        compare_mask.all()
+    fn is_consecutive(chunk: &[u32]) -> bool {
+        is_consecutive!(chunk, u32, u32x16, *DECREASE_U32)
     }
 
     #[cfg(target_feature = "avx512f")]
     fn alignment_offset(slice: &[Self]) -> usize {
-        let alignment = 64; // 64 bytes for AVX512F
-        let ptr = slice.as_ptr() as usize;
-        let misalignment = ptr % alignment;
-        if misalignment == 0 {
-            0 // Already aligned
-        } else {
-            (alignment - misalignment) / std::mem::size_of::<u32>()
-        }
+        alignment_offset!(slice, u32x16, u32)
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
     }
-    // fn f64_to_t(f: f64) -> Self {
-    //     f as Self
-    // }
+
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
     }

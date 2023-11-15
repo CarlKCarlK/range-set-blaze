@@ -21,7 +21,7 @@ cargo llvm-cov --open
 target\llvm-cov\html\index.html
 
 # bench
-cargo bench ingest_clumps_iter_v_slice & target\criterion\ingest_clumps_iter_v_slice\report\index.html 
+bench.bat ingest_clumps_iter_v_slice
 cargo bench worst & target\criterion\report\index.html
 cargo bench overflow & target\criterion\overflow\report\index.html 
 python benches\summary.py > benches\summary_r.tsv

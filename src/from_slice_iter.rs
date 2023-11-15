@@ -1,4 +1,4 @@
-use core::{iter::FusedIterator, ops::RangeInclusive, slice::ChunksExact};
+use core::{cmp::min, iter::FusedIterator, ops::RangeInclusive, slice::ChunksExact};
 // cmk don't leave: cargo bench ingest_clumps_iter_v_slice & target\criterion\ingest_clumps_iter_v_slice\report\index.html
 
 use crate::Integer;
@@ -53,7 +53,7 @@ where
             0 // No SIMD support detected
         };
 
-        let offset = T::alignment_offset(slice);
+        let offset = min(T::alignment_offset(slice), slice.len());
         let chunk_size = core::cmp::max(1, simd_width / 8 / std::mem::size_of::<T>());
         let chunks = slice[offset..].chunks_exact(chunk_size);
         let remainder = chunks.remainder();
