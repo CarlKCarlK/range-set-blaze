@@ -51,3 +51,11 @@ qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-conf
 cargo run --example read_roaring_data
 
 set TRYBUILD=overwrite
+
+# Disassemble
+
+cargo install cargo-binutils
+rustup component add llvm-tools-preview
+cargo objdump --example targets -- --disassemble --no-show-raw-insn --print-imm-hex
+
+cargo objdump --release --example simdtest -- --disassemble --no-show-raw-insn --print-imm-hex > target\release\examples\simdtest.asm.txt
