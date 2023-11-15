@@ -1,3 +1,4 @@
+#![feature(portable_simd)]
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -8,6 +9,8 @@
 // #[cfg(feature = "alloc")]
 // compile_error!("The 'alloc' feature is active");
 extern crate alloc;
+#[macro_use]
+extern crate lazy_static;
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
@@ -74,6 +77,24 @@ pub trait Integer:
     + OverflowingSub
     + CheckedAdd
 {
+    /// cmk
+    fn is_consecutive(chunk: &[Self]) -> bool
+    where
+        Self: Sized,
+    {
+        for i in 1..chunk.len() {
+            if chunk[i] != chunk[i - 1] + Self::one() {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// cmk
+    fn alignment_offset(_: &[Self]) -> usize {
+        0
+    }
+
     /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note
     /// that it can't be `u8` because the length ranges from 0 to 256, which is one too large for `u8`.
     ///
@@ -1322,17 +1343,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     {
         *self = self.iter().filter(|v| f(v)).collect();
     }
-}
-
-fn is_good<T: Integer>(chunk: &[T]) -> bool {
-    for i in 1..chunk.len() {
-        // watch for overflow
-        if chunk[i] != chunk[i - 1] + T::one() {
-            return false;
-        }
-    }
-
-    true
 }
 
 #[allow(dead_code)]

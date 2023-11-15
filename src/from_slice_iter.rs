@@ -1,10 +1,7 @@
-use core::{
-    iter::FusedIterator,
-    ops::{self, RangeInclusive},
-    slice::ChunksExact,
-};
+use core::{iter::FusedIterator, ops::RangeInclusive, slice::ChunksExact};
+// cmk don't leave: cargo bench ingest_clumps_iter_v_slice & target\criterion\ingest_clumps_iter_v_slice\report\index.html
 
-use crate::{is_good, BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisjoint};
+use crate::Integer;
 
 /// cmk
 /// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
@@ -30,7 +27,6 @@ where
     T: Integer,
 {
     before_iter: core::slice::Iter<'a, T>,
-    chunk_size: usize, //  = 16;
     previous_range: Option<RangeInclusive<T>>,
     chunks: ChunksExact<'a, T>,
     remainder: &'a [T],
@@ -42,18 +38,36 @@ where
 {
     /// cmk Create a new [`NotIter`] from a [`SortedDisjoint`] iterator. See [`NotIter`] for an example.
     pub fn new(slice: &'a [T]) -> Self {
+        // cmk make more concise
+        // cmk should likely use cfg!() instead of is_x86_feature_detected!()
+        let simd_width = if cfg!(target_feature = "avx512f") {
+            512
+        } else if cfg!(target_feature = "avx2") {
+            256
+        } else if cfg!(target_feature = "avx") {
+            128
+        } else if cfg!(target_feature = "sse") {
+            64
+        } else {
+            0 // No SIMD support detected
+        };
+
+        let offset = T::alignment_offset(slice);
+        let chunk_size = core::cmp::max(1, simd_width / 8 / std::mem::size_of::<T>());
+        let chunks = slice[offset..].chunks_exact(chunk_size);
+        let remainder = chunks.remainder();
+
+        // cmk handle allignment
         FromSliceIter {
-            before_iter: [].iter(),
-            chunk_size: 16, // cmk const
+            before_iter: slice[..offset].iter(),
             previous_range: None,
-            chunks: slice.chunks_exact(16),
-            remainder: slice.chunks_exact(16).remainder(), // cmk rep
+            chunks,
+            remainder,
         }
     }
 }
 
-// cmk what's this about?
-// impl<T, I> FusedIterator for FromSliceIter<'a, T> where T: Integer {}
+impl<T, I> FusedIterator for FromSliceIter<'a, T> where T: Integer {}
 
 impl<'a, T: 'a> Iterator for FromSliceIter<'a, T>
 where
@@ -66,7 +80,7 @@ where
             return Some(*before..=*before);
         }
         for chunk in self.chunks.by_ref() {
-            if is_good(chunk) {
+            if T::is_consecutive(chunk) {
                 let this_start = chunk[0];
                 let this_end = chunk[chunk.len() - 1];
 
@@ -109,7 +123,6 @@ where
         self.before_iter.next().map(|before| *before..=*before)
     }
 
-    // cmk
     // // We could have one less or one more than the iter.
     // fn size_hint(&self) -> (usize, Option<usize>) {
     //     let (low, high) = self.iter.size_hint();
@@ -124,74 +137,3 @@ where
     //     (low, high)
     // }
 }
-
-// impl<T: Integer, I> ops::Not for NotIter<T, I>
-// where
-//     I: SortedDisjoint<T>,
-// {
-//     type Output = NotIter<T, Self>;
-
-//     fn not(self) -> Self::Output {
-//         // It would be fun to optimize to self.iter, but that would require
-//         // also considering fields 'start_not' and 'next_time_return_none'.
-//         self.complement()
-//     }
-// }
-
-// impl<T: Integer, R, L> ops::BitOr<R> for NotIter<T, L>
-// where
-//     L: SortedDisjoint<T>,
-//     R: SortedDisjoint<T>,
-// {
-//     type Output = BitOrMerge<T, Self, R>;
-
-//     fn bitor(self, other: R) -> Self::Output {
-//         SortedDisjoint::union(self, other)
-//     }
-// }
-
-// impl<T: Integer, R, L> ops::Sub<R> for NotIter<T, L>
-// where
-//     L: SortedDisjoint<T>,
-//     R: SortedDisjoint<T>,
-// {
-//     type Output = BitSubMerge<T, Self, R>;
-
-//     fn sub(self, other: R) -> Self::Output {
-//         // It would be fun to optimize !!self.iter into self.iter
-//         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-//         SortedDisjoint::difference(self, other)
-//     }
-// }
-
-// impl<T: Integer, R, L> ops::BitXor<R> for NotIter<T, L>
-// where
-//     L: SortedDisjoint<T>,
-//     R: SortedDisjoint<T>,
-// {
-//     type Output = BitXOrTee<T, Self, R>;
-
-//     #[allow(clippy::suspicious_arithmetic_impl)]
-//     fn bitxor(self, other: R) -> Self::Output {
-//         // It would be fine optimize !!self.iter into self.iter, ala
-//         // ¬(¬n ∨ ¬r) ∨ ¬(n ∨ r) // https://www.wolframalpha.com/input?i=%28not+n%29+xor+r
-//         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-//         SortedDisjoint::symmetric_difference(self, other)
-//     }
-// }
-
-// impl<T: Integer, R, L> ops::BitAnd<R> for NotIter<T, L>
-// where
-//     L: SortedDisjoint<T>,
-//     R: SortedDisjoint<T>,
-// {
-//     type Output = BitAndMerge<T, Self, R>;
-
-//     fn bitand(self, other: R) -> Self::Output {
-//         // It would be fun to optimize !!self.iter into self.iter
-//         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-//         SortedDisjoint::intersection(self, other)
-//     }
-// }
-
-// // FUTURE define Not, etc on DynSortedDisjoint

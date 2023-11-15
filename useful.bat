@@ -1,10 +1,15 @@
+# nightly etc
+rustup override set nightly
+
 # tests
+cargo test range_set_int_slice_constructor -- --nocapture
 cargo test --doc intersection_dyn
 cargo test coverage -- --nocapture
 cargo test test_rog_functionality -- --nocapture
 cargo test --features rog-experimental
 
 # examples
+cargo run --example targets
 cargo run --example parity
 cargo run --example missing
 

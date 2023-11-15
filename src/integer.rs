@@ -49,6 +49,19 @@ impl Integer for u8 {
     }
 }
 
+// cmk see if passing this into the loop is faster
+#[cfg(target_feature = "avx512f")]
+lazy_static! {
+    static ref DECREASE_I32: packed_simd::Simd<[i32; 16]> =
+        packed_simd::i32x16::from([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
+}
+
+#[cfg(target_feature = "avx512f")]
+lazy_static! {
+    static ref DECREASE_U32: packed_simd::Simd<[u32; 16]> =
+        packed_simd::u32x16::from([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
+}
+
 impl Integer for i32 {
     #[cfg(target_pointer_width = "32")]
     type SafeLen = u64;
@@ -71,6 +84,30 @@ impl Integer for i32 {
     fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
         a - (b - 1) as Self
     }
+
+    #[cfg(target_feature = "avx512f")]
+    fn is_consecutive(chunk: &[Self]) -> bool {
+        use packed_simd::i32x16;
+
+        // cmk make sure this "aligned" is true.
+        // cmk this won't catch if the original numbers wrap around.
+        // cmk predefine the 15, ..., 0 vector.
+        let a = i32x16::from_slice_aligned(chunk) + *DECREASE_I32;
+        let compare_mask = a.eq(i32x16::splat(a.extract(0)));
+        compare_mask.all()
+    }
+
+    #[cfg(target_feature = "avx512f")]
+    fn alignment_offset(slice: &[Self]) -> usize {
+        let alignment = 64; // 64 bytes for AVX512F
+        let ptr = slice.as_ptr() as usize;
+        let misalignment = ptr % alignment;
+        if misalignment == 0 {
+            0 // Already aligned
+        } else {
+            (alignment - misalignment) / std::mem::size_of::<i32>()
+        }
+    }
 }
 
 impl Integer for u32 {
@@ -78,6 +115,30 @@ impl Integer for u32 {
     type SafeLen = u64;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
+
+    #[cfg(target_feature = "avx512f")]
+    fn is_consecutive(chunk: &[Self]) -> bool {
+        use packed_simd::u32x16;
+
+        // cmk make sure this "aligned" is true.
+        // cmk this won't catch if the original numbers wrap around.
+        // cmk predefine the 15, ..., 0 vector.
+        let a = unsafe { u32x16::from_slice_aligned_unchecked(chunk) } + *DECREASE_U32;
+        let compare_mask = a.eq(u32x16::splat(a.extract(0)));
+        compare_mask.all()
+    }
+
+    #[cfg(target_feature = "avx512f")]
+    fn alignment_offset(slice: &[Self]) -> usize {
+        let alignment = 64; // 64 bytes for AVX512F
+        let ptr = slice.as_ptr() as usize;
+        let misalignment = ptr % alignment;
+        if misalignment == 0 {
+            0 // Already aligned
+        } else {
+            (alignment - misalignment) / std::mem::size_of::<u32>()
+        }
+    }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1

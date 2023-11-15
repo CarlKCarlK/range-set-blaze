@@ -1225,8 +1225,56 @@ fn range_set_int_constructors() {
     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 }
 
+fn print_features() {
+    println!("feature\tcould\tare");
+    syntactic_for! { feature in [
+        "aes",
+        "pclmulqdq",
+        "rdrand",
+        "rdseed",
+        "tsc",
+        "mmx",
+        "sse",
+        "sse2",
+        "sse3",
+        "ssse3",
+        "sse4.1",
+        "sse4.2",
+        "sse4a",
+        "sha",
+        "avx",
+        "avx2",
+        "avx512f",
+        "avx512cd",
+        "avx512er",
+        "avx512pf",
+        "avx512bw",
+        "avx512dq",
+        "avx512vl",
+        "avx512ifma",
+        "avx512vbmi",
+        "avx512vpopcntdq",
+        "fma",
+        "bmi1",
+        "bmi2",
+        "abm",
+        "lzcnt",
+        "tbm",
+        "popcnt",
+        "fxsr",
+        "xsave",
+        "xsaveopt",
+        "xsaves",
+        "xsavec",
+        ] {$(
+            println!("{}\t{}\t{}",$feature,is_x86_feature_detected!($feature),cfg!(target_feature = $feature));
+
+    )*}};
+}
+
 #[test]
 fn range_set_int_slice_constructor() {
+    print_features();
     let k = 1;
     let average_width = 1000;
     let coverage_goal = 0.10;
