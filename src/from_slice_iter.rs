@@ -30,6 +30,7 @@ where
     previous_range: Option<RangeInclusive<T>>,
     chunks: ChunksExact<'a, T>,
     remainder: &'a [T],
+    slice_len: usize,
 }
 
 impl<'a, T: 'a> FromSliceIter<'a, T>
@@ -63,11 +64,12 @@ where
             previous_range: None,
             chunks,
             remainder,
+            slice_len: slice.len(),
         }
     }
 }
 
-impl<T, I> FusedIterator for FromSliceIter<'a, T> where T: Integer {}
+impl<'a, T> FusedIterator for FromSliceIter<'a, T> where T: Integer {}
 
 impl<'a, T: 'a> Iterator for FromSliceIter<'a, T>
 where
@@ -123,17 +125,20 @@ where
         self.before_iter.next().map(|before| *before..=*before)
     }
 
-    // // We could have one less or one more than the iter.
-    // fn size_hint(&self) -> (usize, Option<usize>) {
-    //     let (low, high) = self.iter.size_hint();
-    //     let low = if low > 0 { low - 1 } else { 0 };
-    //     let high = high.map(|high| {
-    //         if high < usize::MAX {
-    //             high + 1
-    //         } else {
-    //             usize::MAX
-    //         }
-    //     });
-    //     (low, high)
-    // }
+    // We could have one less or one more than the iter.
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let low = if self.slice_len > 0 {
+            self.slice_len - 1
+        } else {
+            0
+        };
+        let high = if self.slice_len < usize::MAX {
+            self.slice_len + 1
+        } else {
+            usize::MAX
+        };
+        (low, Some(high))
+    }
 }
+
+// cmk: would it be faster to spot check the first and last elements? (could this avoid wraparound issues?)
