@@ -88,13 +88,13 @@ impl Integer for u8 {
 
 #[cfg(target_feature = "avx512f")]
 lazy_static! {
-    static ref DECREASE_I32: packed_simd::Simd<[i32; 16]> =
+    static ref DECREASE_I32X16: packed_simd::Simd<[i32; 16]> =
         packed_simd::i32x16::from([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
 }
 
 #[cfg(target_feature = "avx512f")]
 lazy_static! {
-    static ref DECREASE_U32: packed_simd::Simd<[u32; 16]> =
+    static ref DECREASE_U32X16: packed_simd::Simd<[u32; 16]> =
         packed_simd::u32x16::from([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
 }
 
@@ -123,7 +123,7 @@ impl Integer for i32 {
 
     #[cfg(target_feature = "avx512f")]
     fn is_consecutive(chunk: &[i32]) -> bool {
-        is_consecutive!(chunk, i32, i32x16, *DECREASE_I32)
+        is_consecutive!(chunk, i32, i32x16, *DECREASE_I32X16)
     }
 
     #[cfg(target_feature = "avx512f")]
@@ -140,7 +140,7 @@ impl Integer for u32 {
 
     #[cfg(target_feature = "avx512f")]
     fn is_consecutive(chunk: &[u32]) -> bool {
-        is_consecutive!(chunk, u32, u32x16, *DECREASE_U32)
+        is_consecutive!(chunk, u32, u32x16, *DECREASE_U32X16)
     }
 
     #[cfg(target_feature = "avx512f")]

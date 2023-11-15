@@ -3,7 +3,7 @@ use packed_simd::u32x16;
 use std::mem::align_of;
 
 lazy_static! {
-    static ref DECREASE_U32: packed_simd::Simd<[u32; 16]> =
+    static ref DECREASE_U32X16: packed_simd::Simd<[u32; 16]> =
         packed_simd::u32x16::from([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
 }
 
@@ -28,7 +28,7 @@ macro_rules! is_consecutive {
 }
 
 fn is_consecutive(chunk: &[u32]) -> bool {
-    is_consecutive!(chunk, u32, u32x16, *DECREASE_U32)
+    is_consecutive!(chunk, u32, u32x16, *DECREASE_U32X16)
 }
 
 #[repr(align(64))]
