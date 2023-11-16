@@ -39,26 +39,12 @@ where
 {
     /// cmk Create a new [`NotIter`] from a [`SortedDisjoint`] iterator. See [`NotIter`] for an example.
     pub fn new(slice: &'a [T]) -> Self {
-        // cmk make more concise
-        // cmk should likely use cfg!() instead of is_x86_feature_detected!()
-        let simd_width = if cfg!(target_feature = "avx512f") {
-            512
-        } else if cfg!(target_feature = "avx2") {
-            256
-        } else if cfg!(target_feature = "avx") {
-            128
-        } else if cfg!(target_feature = "sse") {
-            64
-        } else {
-            0 // No SIMD support detected
-        };
-
-        let offset = min(T::alignment_offset(slice), slice.len());
-        let chunk_size = core::cmp::max(1, simd_width / 8 / std::mem::size_of::<T>());
+        let (bit_size, offset) = T::bit_size_and_offset(slice);
+        let offset = min(offset, slice.len());
+        let chunk_size = core::cmp::max(1, bit_size / 8 / std::mem::size_of::<T>());
         let chunks = slice[offset..].chunks_exact(chunk_size);
         let remainder = chunks.remainder();
 
-        // cmk handle allignment
         FromSliceIter {
             before_iter: slice[..offset].iter(),
             previous_range: None,

@@ -1,41 +1,57 @@
 use core::mem::align_of;
 use core::mem::size_of;
 use core::ops::RangeInclusive;
+#[cfg(target_feature = "avx512f")]
 use packed_simd::i32x16;
+#[cfg(all(target_feature = "sse", not(target_feature = "avx")))]
+use packed_simd::i32x2;
+#[cfg(all(target_feature = "avx", not(target_feature = "avx2")))]
+use packed_simd::i32x4;
+#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+use packed_simd::i32x8;
+#[cfg(target_feature = "avx512f")]
 use packed_simd::u32x16;
+#[cfg(all(target_feature = "sse", not(target_feature = "avx")))]
+use packed_simd::u32x2;
+#[cfg(all(target_feature = "avx", not(target_feature = "avx2")))]
+use packed_simd::u32x4;
+#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+use packed_simd::u32x8;
 
 use crate::Integer;
 
 macro_rules! is_consecutive {
-    ($chunk:expr, $scalar:ty, $simd:ty, $decrease:expr) => {{
-        debug_assert!($chunk.len() == <$simd>::lanes(), "Chunk is wrong length");
-        debug_assert!(
-            $chunk.as_ptr() as usize % align_of::<$simd>() == 0,
-            "Chunk is not aligned"
-        );
+    ($scalar:ty, $simd:ty, $decrease:expr) => {
+        fn is_consecutive(chunk: &[$scalar]) -> bool {
+            debug_assert!(chunk.len() == <$simd>::lanes(), "Chunk is wrong length");
+            debug_assert!(
+                chunk.as_ptr() as usize % align_of::<$simd>() == 0,
+                "Chunk is not aligned"
+            );
 
-        const LAST_INDEX: usize = <$simd>::lanes() - 1;
-        let (expected, overflowed) = $chunk[0].overflowing_add(LAST_INDEX as $scalar);
-        if overflowed || expected != $chunk[LAST_INDEX] {
-            return false;
+            const LAST_INDEX: usize = <$simd>::lanes() - 1;
+            let (expected, overflowed) = chunk[0].overflowing_add(LAST_INDEX as $scalar);
+            if overflowed || expected != chunk[LAST_INDEX] {
+                return false;
+            }
+
+            let a = unsafe { <$simd>::from_slice_aligned_unchecked(chunk) } + $decrease;
+            let compare_mask = a.eq(<$simd>::splat(a.extract(0)));
+            compare_mask.all()
         }
-
-        let a = unsafe { <$simd>::from_slice_aligned_unchecked($chunk) } + $decrease;
-        let compare_mask = a.eq(<$simd>::splat(a.extract(0)));
-        compare_mask.all()
-    }};
+    };
 }
 
-macro_rules! alignment_offset {
+macro_rules! bit_size_and_offset {
     ($slice:expr, $simd:ty, $scalar:ty) => {{
         let alignment = align_of::<$simd>();
         let misalignment = ($slice.as_ptr() as usize) % alignment;
 
-        if misalignment == 0 {
-            0 // Already aligned
-        } else {
-            (alignment - misalignment) / size_of::<$scalar>()
-        }
+        // return bit_size, offset
+        (
+            size_of::<$simd>() * 8,
+            (alignment - misalignment) / size_of::<$scalar>(),
+        )
     }};
 }
 
@@ -86,17 +102,32 @@ impl Integer for u8 {
     }
 }
 
-#[cfg(target_feature = "avx512f")]
-lazy_static! {
-    static ref DECREASE_I32X16: packed_simd::Simd<[i32; 16]> =
-        packed_simd::i32x16::from([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
+#[allow(unused_macros)]
+macro_rules! init_decrease_simd {
+    ($name:ident, $el_type:ty, $simd_type:ty) => {
+        lazy_static! {
+            static ref $name: $simd_type = {
+                let mut temp = <$simd_type>::splat(0);
+                for i in 0..<$simd_type>::lanes() {
+                    temp = temp.replace(i, (<$simd_type>::lanes() - i) as $el_type);
+                }
+                temp
+            };
+        }
+    };
 }
 
 #[cfg(target_feature = "avx512f")]
-lazy_static! {
-    static ref DECREASE_U32X16: packed_simd::Simd<[u32; 16]> =
-        packed_simd::u32x16::from([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
-}
+init_decrease_simd!(DECREASE_I32, i32, i32x16);
+
+#[cfg(target_feature = "avx512f")]
+init_decrease_simd!(DECREASE_U32, u32, u32x16);
+
+#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+init_decrease_simd!(DECREASE_I32, i32, i32x8);
+
+#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+init_decrease_simd!(DECREASE_U32, u32, u32x8);
 
 impl Integer for i32 {
     #[cfg(target_pointer_width = "32")]
@@ -122,13 +153,19 @@ impl Integer for i32 {
     }
 
     #[cfg(target_feature = "avx512f")]
-    fn is_consecutive(chunk: &[i32]) -> bool {
-        is_consecutive!(chunk, i32, i32x16, *DECREASE_I32X16)
-    }
+    is_consecutive!(i32, i32x16, *DECREASE_I32);
 
     #[cfg(target_feature = "avx512f")]
-    fn alignment_offset(slice: &[Self]) -> usize {
-        alignment_offset!(slice, i32x16, i32)
+    fn bit_size_and_offset(slice: &[Self]) -> (usize, usize) {
+        bit_size_and_offset!(slice, i32x16, i32)
+    }
+
+    #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+    is_consecutive!(i32, i32x8, *DECREASE_I32);
+
+    #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+    fn bit_size_and_offset(slice: &[Self]) -> (usize, usize) {
+        bit_size_and_offset!(slice, i32x8, i32)
     }
 }
 
@@ -139,13 +176,19 @@ impl Integer for u32 {
     type SafeLen = usize;
 
     #[cfg(target_feature = "avx512f")]
-    fn is_consecutive(chunk: &[u32]) -> bool {
-        is_consecutive!(chunk, u32, u32x16, *DECREASE_U32X16)
-    }
+    is_consecutive!(u32, u32x16, *DECREASE_U32);
 
     #[cfg(target_feature = "avx512f")]
-    fn alignment_offset(slice: &[Self]) -> usize {
-        alignment_offset!(slice, u32x16, u32)
+    fn bit_size_and_offset(slice: &[Self]) -> (usize, usize) {
+        bit_size_and_offset!(slice, u32x16, u32)
+    }
+
+    #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+    is_consecutive!(u32, u32x8, *DECREASE_U32);
+
+    #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+    fn bit_size_and_offset(slice: &[Self]) -> (usize, usize) {
+        bit_size_and_offset!(slice, u32x8, u32)
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
