@@ -20,7 +20,7 @@ use packed_simd::u32x8;
 
 use crate::Integer;
 
-macro_rules! is_consecutive {
+macro_rules! is_consecutive_etc {
     ($scalar:ty, $simd:ty, $decrease:expr) => {
         fn is_consecutive(chunk: &[$scalar]) -> bool {
             debug_assert!(chunk.len() == <$simd>::lanes(), "Chunk is wrong length");
@@ -39,20 +39,19 @@ macro_rules! is_consecutive {
             let compare_mask = a.eq(<$simd>::splat(a.extract(0)));
             compare_mask.all()
         }
+        fn bit_size_and_offset(slice: &[Self]) -> (usize, usize) {
+            {
+                let alignment = align_of::<$simd>();
+                let misalignment = (slice.as_ptr() as usize) % alignment;
+
+                // return bit_size, offset
+                (
+                    size_of::<$simd>() * 8,
+                    (alignment - misalignment) / size_of::<$scalar>(),
+                )
+            }
+        }
     };
-}
-
-macro_rules! bit_size_and_offset {
-    ($slice:expr, $simd:ty, $scalar:ty) => {{
-        let alignment = align_of::<$simd>();
-        let misalignment = ($slice.as_ptr() as usize) % alignment;
-
-        // return bit_size, offset
-        (
-            size_of::<$simd>() * 8,
-            (alignment - misalignment) / size_of::<$scalar>(),
-        )
-    }};
 }
 
 impl Integer for i8 {
@@ -153,20 +152,10 @@ impl Integer for i32 {
     }
 
     #[cfg(target_feature = "avx512f")]
-    is_consecutive!(i32, i32x16, *DECREASE_I32);
-
-    #[cfg(target_feature = "avx512f")]
-    fn bit_size_and_offset(slice: &[Self]) -> (usize, usize) {
-        bit_size_and_offset!(slice, i32x16, i32)
-    }
+    is_consecutive_etc!(i32, i32x16, *DECREASE_I32);
 
     #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    is_consecutive!(i32, i32x8, *DECREASE_I32);
-
-    #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    fn bit_size_and_offset(slice: &[Self]) -> (usize, usize) {
-        bit_size_and_offset!(slice, i32x8, i32)
-    }
+    is_consecutive_etc!(i32, i32x8, *DECREASE_I32);
 }
 
 impl Integer for u32 {
@@ -176,20 +165,10 @@ impl Integer for u32 {
     type SafeLen = usize;
 
     #[cfg(target_feature = "avx512f")]
-    is_consecutive!(u32, u32x16, *DECREASE_U32);
-
-    #[cfg(target_feature = "avx512f")]
-    fn bit_size_and_offset(slice: &[Self]) -> (usize, usize) {
-        bit_size_and_offset!(slice, u32x16, u32)
-    }
+    is_consecutive_etc!(u32, u32x16, *DECREASE_U32);
 
     #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    is_consecutive!(u32, u32x8, *DECREASE_U32);
-
-    #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    fn bit_size_and_offset(slice: &[Self]) -> (usize, usize) {
-        bit_size_and_offset!(slice, u32x8, u32)
-    }
+    is_consecutive_etc!(u32, u32x8, *DECREASE_U32);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
