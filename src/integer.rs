@@ -128,6 +128,18 @@ init_decrease_simd!(DECREASE_I32, i32, i32x8);
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
 init_decrease_simd!(DECREASE_U32, u32, u32x8);
 
+#[cfg(all(target_feature = "avx", not(target_feature = "avx2")))]
+init_decrease_simd!(DECREASE_I32, i32, i32x4);
+
+#[cfg(all(target_feature = "avx", not(target_feature = "avx2")))]
+init_decrease_simd!(DECREASE_U32, u32, u32x4);
+
+#[cfg(all(target_feature = "sse", not(target_feature = "avx")))]
+init_decrease_simd!(DECREASE_I32, i32, i32x2);
+
+#[cfg(all(target_feature = "sse", not(target_feature = "avx")))]
+init_decrease_simd!(DECREASE_U32, u32, u32x2);
+
 impl Integer for i32 {
     #[cfg(target_pointer_width = "32")]
     type SafeLen = u64;
@@ -156,6 +168,12 @@ impl Integer for i32 {
 
     #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
     is_consecutive_etc!(i32, i32x8, *DECREASE_I32);
+
+    #[cfg(all(target_feature = "avx", not(target_feature = "avx2")))]
+    is_consecutive_etc!(i32, i32x4, *DECREASE_I32);
+
+    #[cfg(all(target_feature = "sse", not(target_feature = "avx")))]
+    is_consecutive_etc!(i32, i32x2, *DECREASE_I32);
 }
 
 impl Integer for u32 {
@@ -169,6 +187,13 @@ impl Integer for u32 {
 
     #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
     is_consecutive_etc!(u32, u32x8, *DECREASE_U32);
+
+    #[cfg(all(target_feature = "avx", not(target_feature = "avx2")))]
+    is_consecutive_etc!(u32, u32x4, *DECREASE_U32);
+
+    // cmk defining sse makes it slower
+    #[cfg(all(target_feature = "sse", not(target_feature = "avx")))]
+    is_consecutive_etc!(u32, u32x2, *DECREASE_U32);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
