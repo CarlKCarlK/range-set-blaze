@@ -1239,7 +1239,7 @@ fn print_features() {
         "sse3",
         "ssse3",
         "sse4.1",
-        "sse4.2",
+        "sse2",
         "sse4a",
         "sha",
         "avx",
