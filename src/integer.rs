@@ -14,6 +14,7 @@ use core::simd::u32x16;
 use core::simd::u32x4;
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
 use core::simd::u32x8;
+use std::simd::prelude::*; // cmk use? when?
 
 use crate::Integer;
 
@@ -27,19 +28,20 @@ macro_rules! is_consecutive_etc {
                 "Chunk is not aligned"
             );
 
-            const LAST_INDEX: usize = <$simd>::LANES - 1;
-            let (expected, overflowed) = chunk[0].overflowing_add(LAST_INDEX as $scalar);
-            if overflowed || expected != chunk[LAST_INDEX] {
-                return false;
-            }
+            // const LAST_INDEX: usize = <$simd>::LANES - 1;
+            // let (expected, overflowed) = chunk[0].overflowing_add(LAST_INDEX as $scalar);
+            // if overflowed || expected != chunk[LAST_INDEX] {
+            //     return false;
+            // }
 
             // cmk should do with from_slice_uncheck unsafe????
             let a = <$simd>::from_slice(chunk) + $decrease;
             // cmk is a[0] the best way to extract an element?
             // cmk is a[0] and then splat the best way to create a simd from one element?
             // cmk is eq the best way to compare two simds?
-            // let b = simd_swizzle!(a, 0);
-            a == <$simd>::splat(a[0])
+            let b = <$simd>::splat(a[0]); // cmk seems same as simd_swizzle!
+                                          // cmk let b = simd_swizzle!(a, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+            a == b
         }
         fn bit_size_and_offset(slice: &[Self]) -> (usize, usize) {
             {
@@ -109,9 +111,11 @@ macro_rules! init_decrease_simd {
     ($name:ident, $el_type:ty, $simd_type:ty) => {
         lazy_static! {
             static ref $name: $simd_type = {
-                let mut temp = <$simd_type>::splat(0);
+                // cmk rename "temp"
+                let mut temp = <$simd_type>::splat(0); // cmk use simd_zero! or new???
                 for i in 0..<$simd_type>::LANES {
-                    temp[i] = (<$simd_type>::LANES - i) as $el_type;
+                    // cmk this allows us to add the negative which seems faster
+                    temp[i] = (!(i as $el_type)).wrapping_add(1);
                 }
                 temp
             };
