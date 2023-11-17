@@ -2,39 +2,44 @@ use core::mem::align_of;
 use core::mem::size_of;
 use core::ops::RangeInclusive;
 #[cfg(target_feature = "avx512f")]
-use packed_simd::i32x16;
+use core::simd::i32x16;
 #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-use packed_simd::i32x4;
+use core::simd::i32x4;
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-use packed_simd::i32x8;
+use core::simd::i32x8;
 #[cfg(target_feature = "avx512f")]
-use packed_simd::u32x16;
+use core::simd::u32x16;
 // cmk may want to turn this off because it is slower than the non-simd version
 #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-use packed_simd::u32x4;
+use core::simd::u32x4;
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-use packed_simd::u32x8;
+use core::simd::u32x8;
 
 use crate::Integer;
 
 macro_rules! is_consecutive_etc {
     ($scalar:ty, $simd:ty, $decrease:expr) => {
         fn is_consecutive(chunk: &[$scalar]) -> bool {
-            debug_assert!(chunk.len() == <$simd>::lanes(), "Chunk is wrong length");
+            debug_assert!(chunk.len() == <$simd>::LANES, "Chunk is wrong length");
             debug_assert!(
+                // cmk is there a more built in way to do this?
                 chunk.as_ptr() as usize % align_of::<$simd>() == 0,
                 "Chunk is not aligned"
             );
 
-            const LAST_INDEX: usize = <$simd>::lanes() - 1;
+            const LAST_INDEX: usize = <$simd>::LANES - 1;
             let (expected, overflowed) = chunk[0].overflowing_add(LAST_INDEX as $scalar);
             if overflowed || expected != chunk[LAST_INDEX] {
                 return false;
             }
 
-            let a = unsafe { <$simd>::from_slice_aligned_unchecked(chunk) } + $decrease;
-            let compare_mask = a.eq(<$simd>::splat(a.extract(0)));
-            compare_mask.all()
+            // cmk should do with from_slice_uncheck unsafe????
+            let a = <$simd>::from_slice(chunk) + $decrease;
+            // cmk is a[0] the best way to extract an element?
+            // cmk is a[0] and then splat the best way to create a simd from one element?
+            // cmk is eq the best way to compare two simds?
+            // let b = simd_swizzle!(a, 0);
+            a == <$simd>::splat(a[0])
         }
         fn bit_size_and_offset(slice: &[Self]) -> (usize, usize) {
             {
@@ -98,14 +103,15 @@ impl Integer for u8 {
     }
 }
 
+// cmk should it be called $simd or $simd_type? etc
 #[allow(unused_macros)]
 macro_rules! init_decrease_simd {
     ($name:ident, $el_type:ty, $simd_type:ty) => {
         lazy_static! {
             static ref $name: $simd_type = {
                 let mut temp = <$simd_type>::splat(0);
-                for i in 0..<$simd_type>::lanes() {
-                    temp = temp.replace(i, (<$simd_type>::lanes() - i) as $el_type);
+                for i in 0..<$simd_type>::LANES {
+                    temp[i] = (<$simd_type>::LANES - i) as $el_type;
                 }
                 temp
             };
@@ -391,3 +397,18 @@ impl Integer for u16 {
         a - (b - 1) as Self
     }
 }
+
+// cmk: Rule: Look at the docs in a way that lets you see every useful command (how?)
+// cmk: Rule: You have to use nightly, so not usefull. (how to turn on for just one project)
+// cmk: Rule: As soon as you think about SIMD algorithms, you'll likely make non-faster
+// cmk: Rule: Set up for multiple levels of support
+// cmk  Rule: AMD 512 might be slower than Intel (but maybe not for permutations)
+// cmk  Rule: Docs: https://doc.rust-lang.org/nightly/std/simd/index.html
+// cmk: Rule: Docs: more https://doc.rust-lang.org/nightly/std/simd/struct.Simd.html
+// cmk  Tigher clippy, etc.
+// cmk look at Rust meet up photos, including way to get alignment
+// cmk Rule: Expect operations to wrap. Unlike scalar it is the default.
+// cmk Rule: Use #[inline] on functions that take a SIMD input and return a SIMD output (see docs)
+// cmk Rule: It's generally OK to use the read "unaligned" on aligned. There is no penalty. (cmk test this)
+// cmk Rule: Useful: https://github.com/rust-lang/portable-simd/blob/master/beginners-guide.md (talks about reduce_and, etc)
+// cmk Rule: Do const values like ... https://rust-lang.zulipchat.com/#narrow/stream/122651-general/topic/const.20SIMD.20values

@@ -1,4 +1,4 @@
-#![feature(portable_simd)]
+#![feature(portable_simd)] // #cmk RULE
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]

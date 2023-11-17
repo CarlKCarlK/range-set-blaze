@@ -1,8 +1,8 @@
 # cmk may not want this in the project's config
 [build]
 rustflags = [
-    #     # "-C",
-    #     # "target-cpu=native",
+    "-C",
+    "target-cpu=native",
     #     #     "-C",
     #     #     "target-feature=+avx512f",
     #     #     "-C",
