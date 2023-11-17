@@ -106,28 +106,41 @@ impl Integer for u8 {
 }
 
 // cmk should it be called $simd or $simd_type? etc
-#[allow(unused_macros)]
-macro_rules! init_decrease_simd {
-    ($name:ident, $el_type:ty, $simd_type:ty) => {
-        lazy_static! {
-            static ref $name: $simd_type = {
-                // cmk rename "temp"
-                let mut temp = <$simd_type>::splat(0); // cmk use simd_zero! or new???
-                for i in 0..<$simd_type>::LANES {
-                    // cmk this allows us to add the negative which seems faster
-                    temp[i] = (!(i as $el_type)).wrapping_add(1);
-                }
-                temp
-            };
-        }
-    };
-}
+
+// #[allow(unused_macros)]
+// macro_rules! init_decrease_simd {
+//     ($name:ident, $el_type:ty, $simd_type:ty) => {
+//         lazy_static! {
+//             static ref $name: $simd_type = {
+//                 // cmk rename "temp"
+//                 let mut temp = <$simd_type>::splat(0); // cmk use simd_zero! or new???
+//                 for i in 0..<$simd_type>::LANES {
+//                     temp[i] = (!(i as $el_type)).wrapping_add(1);
+//                 }
+//                 temp
+//             };
+//         }
+//     };
+// }
+
+// cmk this allows us to add the negative which seems faster
+// cmk is there a way to extract $el_type from $simd_type?
 
 #[cfg(target_feature = "avx512f")]
-init_decrease_simd!(DECREASE_I32, i32, i32x16);
+// init_decrease_simd!(DECREASE_I32, i32, i32x16);
+const DECREASE_I32: i32x16 = unsafe {
+    std::mem::transmute([
+        0i32, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15,
+    ])
+};
 
 #[cfg(target_feature = "avx512f")]
-init_decrease_simd!(DECREASE_U32, u32, u32x16);
+// init_decrease_simd!(DECREASE_U32, u32, u32x16);
+const DECREASE_U32: u32x16 = unsafe {
+    std::mem::transmute([
+        0i32, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15,
+    ])
+};
 
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
 init_decrease_simd!(DECREASE_I32, i32, i32x8);
@@ -165,7 +178,7 @@ impl Integer for i32 {
     }
 
     #[cfg(target_feature = "avx512f")]
-    is_consecutive_etc!(i32, i32x16, *DECREASE_I32);
+    is_consecutive_etc!(i32, i32x16, DECREASE_I32);
 
     #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
     is_consecutive_etc!(i32, i32x8, *DECREASE_I32);
@@ -181,7 +194,7 @@ impl Integer for u32 {
     type SafeLen = usize;
 
     #[cfg(target_feature = "avx512f")]
-    is_consecutive_etc!(u32, u32x16, *DECREASE_U32);
+    is_consecutive_etc!(u32, u32x16, DECREASE_U32);
 
     #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
     is_consecutive_etc!(u32, u32x8, *DECREASE_U32);
