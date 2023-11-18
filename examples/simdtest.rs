@@ -50,5 +50,5 @@ pub fn main() {
     let result = is_consecutive(&CHUNK2.0);
     println!("result: {}", result);
 
-    // cmk <u32x16>::SCALAR;
+    let x: u32x16::SCALAR = 0;
 }

@@ -32,8 +32,6 @@ itertools = { version = "0.12.0", optional = true, default-features = false }
 num-integer = { version = "0.1.44", optional = true, default-features = false }
 num-traits = { version = "0.2.15", optional = true, default-features = false }
 gen_ops = "0.4.0"
-# cmk core::simd = "0.3.9"
-lazy_static = "1.4.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tests_common = { path = "tests_common" }

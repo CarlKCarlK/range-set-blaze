@@ -9,8 +9,6 @@
 // #[cfg(feature = "alloc")]
 // compile_error!("The 'alloc' feature is active");
 extern crate alloc;
-#[macro_use]
-extern crate lazy_static;
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;

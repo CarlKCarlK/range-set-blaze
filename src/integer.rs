@@ -7,19 +7,20 @@ use core::simd::i32x16;
 use core::simd::i32x4;
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
 use core::simd::i32x8;
+// #[cfg(target_feature = "avx512f")]
+// use core::simd::u32x16;
 #[cfg(target_feature = "avx512f")]
-use core::simd::u32x16;
-// cmk may want to turn this off because it is slower than the non-simd version
+use std::simd::prelude::*; // cmk use? when?
+                           // cmk may want to turn this off because it is slower than the non-simd version
 #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
 use core::simd::u32x4;
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
 use core::simd::u32x8;
-use std::simd::prelude::*; // cmk use? when?
 
 use crate::Integer;
 
 macro_rules! is_consecutive_etc {
-    ($scalar:ty, $simd:ty, $decrease:expr) => {
+    ($scalar:ty, $simd:ty, $expected:expr) => {
         fn is_consecutive(chunk: &[$scalar]) -> bool {
             debug_assert!(chunk.len() == <$simd>::LANES, "Chunk is wrong length");
             debug_assert!(
@@ -34,15 +35,21 @@ macro_rules! is_consecutive_etc {
             //     return false;
             // }
 
-            // cmk should do with from_slice_uncheck unsafe????
-            let a = <$simd>::from_slice(chunk) + $decrease;
-            // cmk is a[0] the best way to extract an element?
-            // cmk is a[0] and then splat the best way to create a simd from one element?
-            // cmk is eq the best way to compare two simds?
-            let b = <$simd>::splat(a[0]); // cmk seems same as simd_swizzle!
-                                          // cmk let b = simd_swizzle!(a, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-            a == b
+            // // cmk should do with from_slice_uncheck unsafe????
+            // // cmk is a[0] the best way to extract an element?
+            // // cmk is a[0] and then splat the best way to create a simd from one element?
+            // // cmk is eq the best way to compare two simds?
+            // let b = <$simd>::splat(a[0]); // cmk seems same as simd_swizzle!
+            //                               // cmk let b = simd_swizzle!(a, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+            // let a = <$simd>::from_slice(chunk) + $decrease; // decrease is 0, -1, -2 ...
+            // a == <$simd>::splat(a.extract(0))
+
+            let a = <$simd>::from_slice(chunk);
+            let b = a.rotate_lanes_right::<1>();
+            a - b == $expected
         }
+
+        // Is there a std way to get offset?
         fn bit_size_and_offset(slice: &[Self]) -> (usize, usize) {
             {
                 let alignment = align_of::<$simd>();
@@ -134,6 +141,9 @@ const DECREASE_I32: i32x16 = unsafe {
     ])
 };
 
+const EXPECTED_I32: i32x16 =
+    unsafe { std::mem::transmute([-15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
+
 #[cfg(target_feature = "avx512f")]
 // init_decrease_simd!(DECREASE_U32, u32, u32x16);
 const DECREASE_U32: u32x16 = unsafe {
@@ -141,6 +151,9 @@ const DECREASE_U32: u32x16 = unsafe {
         0i32, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15,
     ])
 };
+
+const EXPECTED_U32: u32x16 =
+    unsafe { std::mem::transmute([-15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
 
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
 init_decrease_simd!(DECREASE_I32, i32, i32x8);
@@ -178,7 +191,7 @@ impl Integer for i32 {
     }
 
     #[cfg(target_feature = "avx512f")]
-    is_consecutive_etc!(i32, i32x16, DECREASE_I32);
+    is_consecutive_etc!(i32, i32x16, EXPECTED_I32);
 
     #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
     is_consecutive_etc!(i32, i32x8, *DECREASE_I32);
@@ -194,7 +207,7 @@ impl Integer for u32 {
     type SafeLen = usize;
 
     #[cfg(target_feature = "avx512f")]
-    is_consecutive_etc!(u32, u32x16, DECREASE_U32);
+    is_consecutive_etc!(u32, u32x16, EXPECTED_U32);
 
     #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
     is_consecutive_etc!(u32, u32x8, *DECREASE_U32);
