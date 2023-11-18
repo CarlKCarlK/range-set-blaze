@@ -3,15 +3,6 @@
 
 use syntactic_for::syntactic_for;
 
-// use std::simd::f32x16;
-// use std::simd::f32x4;
-
-// fn sample1() {
-//     let a = f32x4::splat(10.0);
-//     let b = f32x4::from_array([1.0, 2.0, 3.0, 4.0]);
-//     println!("{:?}", a + b);
-// }
-
 fn sample2() {
     println!("feature\tcould\tare");
     syntactic_for! { feature in [

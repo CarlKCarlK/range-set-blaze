@@ -1,9 +1,8 @@
 use core::{cmp::min, iter::FusedIterator, ops::RangeInclusive, slice::ChunksExact};
-// cmk don't leave: cargo bench ingest_clumps_iter_v_slice & target\criterion\ingest_clumps_iter_v_slice\report\index.html
 
 use crate::Integer;
 
-/// cmk
+/// cmk update docs
 /// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
 /// i.e., all the integers not in the original iterator, as sorted & disjoint ranges.
 ///
@@ -37,7 +36,7 @@ impl<'a, T: 'a> FromSliceIter<'a, T>
 where
     T: Integer,
 {
-    /// cmk Create a new [`NotIter`] from a [`SortedDisjoint`] iterator. See [`NotIter`] for an example.
+    /// cmk update docs Create a new [`NotIter`] from a [`SortedDisjoint`] iterator. See [`NotIter`] for an example.
     pub fn new(slice: &'a [T]) -> Self {
         let (bit_size, offset) = T::bit_size_and_offset(slice);
         let offset = min(offset, slice.len());
@@ -126,5 +125,3 @@ where
         (low, Some(high))
     }
 }
-
-// cmk: would it be faster to spot check the first and last elements? (could this avoid wraparound issues?)

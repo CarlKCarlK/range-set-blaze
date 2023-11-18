@@ -75,7 +75,7 @@ pub trait Integer:
     + OverflowingSub
     + CheckedAdd
 {
-    /// cmk
+    /// cmk document
     fn is_consecutive(chunk: &[Self]) -> bool
     where
         Self: Sized,
@@ -88,7 +88,7 @@ pub trait Integer:
         true
     }
 
-    /// cmk
+    /// cmk document
     fn bit_size_and_offset(_: &[Self]) -> (usize, usize) {
         // By default, we work in chunks of 512 bits. No offset is needed.
         (512, 0)
@@ -528,8 +528,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 
     /// cmk need docs
-    /// cmk be sure ints don't wrap in a way that could be bad.
-    /// cmk handle alignment at the start and end.
+    /// cmk RULE be sure ints don't wrap in a way that could be bad.
+    /// cmk RULE handle alignment at the start and end.
     pub fn from_slice(slice: &[T]) -> Self {
         FromSliceIter::new(slice).collect()
     }

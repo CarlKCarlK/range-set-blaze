@@ -2,20 +2,8 @@ use core::mem::align_of;
 use core::mem::size_of;
 use core::ops::RangeInclusive;
 #[cfg(target_feature = "avx512f")]
-use core::simd::i32x16;
-#[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-use core::simd::i32x4;
-#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-use core::simd::i32x8;
-// #[cfg(target_feature = "avx512f")]
-// use core::simd::u32x16;
-#[cfg(target_feature = "avx512f")]
 use std::simd::prelude::*; // cmk use? when?
-                           // cmk may want to turn this off because it is slower than the non-simd version
-#[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-use core::simd::u32x4;
-#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-use core::simd::u32x8;
+                           // cmk may want to skip sse2 (128) because it is slower than the non-simd version
 
 use crate::Integer;
 
@@ -24,7 +12,7 @@ macro_rules! is_consecutive_etc {
         fn is_consecutive(chunk: &[$scalar]) -> bool {
             debug_assert!(chunk.len() == <$simd>::LANES, "Chunk is wrong length");
             debug_assert!(
-                // cmk is there a more built in way to do this?
+                // cmk00 is there a more built in way to do this?
                 chunk.as_ptr() as usize % align_of::<$simd>() == 0,
                 "Chunk is not aligned"
             );
@@ -35,14 +23,14 @@ macro_rules! is_consecutive_etc {
             //     return false;
             // }
 
-            // // cmk should do with from_slice_uncheck unsafe????
-            // // cmk is a[0] the best way to extract an element?
-            // // cmk is a[0] and then splat the best way to create a simd from one element?
-            // // cmk is eq the best way to compare two simds?
-            // let b = <$simd>::splat(a[0]); // cmk seems same as simd_swizzle!
-            //                               // cmk let b = simd_swizzle!(a, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+            // // cmk0 should do with from_slice_uncheck unsafe????
+            // // cmk0 is a[0] the best way to extract an element?
+            // // cmk0 is a[0] and then splat the best way to create a simd from one element?
+            // // cmk0 is eq the best way to compare two simds?
+            // let b = <$simd>::splat(a[0]); // cmk0 seems same as simd_swizzle!
+            //                               // cmk0 let b = simd_swizzle!(a, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
             // let a = <$simd>::from_slice(chunk) + $decrease; // decrease is 0, -1, -2 ...
-            // a == <$simd>::splat(a.extract(0))
+            // a == <$simd>::splat(a[0])
 
             let a = <$simd>::from_slice(chunk);
             let b = a.rotate_lanes_right::<1>();
@@ -112,45 +100,8 @@ impl Integer for u8 {
     }
 }
 
-// cmk should it be called $simd or $simd_type? etc
-
-// #[allow(unused_macros)]
-// macro_rules! init_decrease_simd {
-//     ($name:ident, $el_type:ty, $simd_type:ty) => {
-//         lazy_static! {
-//             static ref $name: $simd_type = {
-//                 // cmk rename "temp"
-//                 let mut temp = <$simd_type>::splat(0); // cmk use simd_zero! or new???
-//                 for i in 0..<$simd_type>::LANES {
-//                     temp[i] = (!(i as $el_type)).wrapping_add(1);
-//                 }
-//                 temp
-//             };
-//         }
-//     };
-// }
-
-// cmk this allows us to add the negative which seems faster
-// cmk is there a way to extract $el_type from $simd_type?
-
-#[cfg(target_feature = "avx512f")]
-// init_decrease_simd!(DECREASE_I32, i32, i32x16);
-const DECREASE_I32: i32x16 = unsafe {
-    std::mem::transmute([
-        0i32, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15,
-    ])
-};
-
 const EXPECTED_I32: i32x16 =
     unsafe { std::mem::transmute([-15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
-
-#[cfg(target_feature = "avx512f")]
-// init_decrease_simd!(DECREASE_U32, u32, u32x16);
-const DECREASE_U32: u32x16 = unsafe {
-    std::mem::transmute([
-        0i32, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15,
-    ])
-};
 
 const EXPECTED_U32: u32x16 =
     unsafe { std::mem::transmute([-15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
@@ -439,6 +390,6 @@ impl Integer for u16 {
 // cmk look at Rust meet up photos, including way to get alignment
 // cmk Rule: Expect operations to wrap. Unlike scalar it is the default.
 // cmk Rule: Use #[inline] on functions that take a SIMD input and return a SIMD output (see docs)
-// cmk Rule: It's generally OK to use the read "unaligned" on aligned. There is no penalty. (cmk test this)
+// cmk0 Rule: It's generally OK to use the read "unaligned" on aligned. There is no penalty. (cmk test this)
 // cmk Rule: Useful: https://github.com/rust-lang/portable-simd/blob/master/beginners-guide.md (talks about reduce_and, etc)
 // cmk Rule: Do const values like ... https://rust-lang.zulipchat.com/#narrow/stream/122651-general/topic/const.20SIMD.20values
