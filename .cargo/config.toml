@@ -23,8 +23,8 @@ rustflags = [
     #     # "target-feature=+avx2",
     #     # "-C",
     #     # "target-feature=+avx",
-    "-C",
-    "target-feature=+sse2",
+    # "-C",
+    # "target-feature=+sse2",
     #     "-C",
     #     "target-feature=+sse",
 ]

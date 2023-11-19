@@ -1,9 +1,9 @@
 use core::mem::{align_of, size_of};
 use core::ops::RangeInclusive;
-use core::simd::{LaneCount, SimdElement, SupportedLaneCount};
+use core::simd::{LaneCount, SupportedLaneCount};
 use core::slice::ChunksExact;
 use std::cmp::{max, min};
-#[cfg(target_feature = "avx512f")]
+// cmk #[cfg(target_feature = "avx512f")]
 use std::simd::prelude::*; // cmk use? when?
 
 // cmk may want to skip sse2 (128) because it is slower than the non-simd version
@@ -117,11 +117,12 @@ init_decrease_simd!(DECREASE_I32, i32, i32x8);
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
 init_decrease_simd!(DECREASE_U32, u32, u32x8);
 
-#[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-init_decrease_simd!(DECREASE_I32, i32, i32x4);
+// cmk
+// #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
+// init_decrease_simd!(DECREASE_I32, i32, i32x4);
 
-#[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-init_decrease_simd!(DECREASE_U32, u32, u32x4);
+// #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
+// init_decrease_simd!(DECREASE_U32, u32, u32x4);
 
 impl Integer for i32 {
     #[cfg(target_pointer_width = "32")]
@@ -146,7 +147,7 @@ impl Integer for i32 {
         a - (b - 1) as Self
     }
 
-    #[cfg(target_feature = "avx512f")]
+    // #[cfg(target_feature = "avx512f")]
     is_consecutive_etc!(i32x16, EXPECTED_I32);
     // fn is_consecutive<const N: usize>(chunk: &Simd<Self, N>) -> bool
     // where
@@ -175,11 +176,12 @@ impl Integer for i32 {
     //     }
     // }
 
-    #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    is_consecutive_etc!(i32x8, *DECREASE_I32);
+    // cmk
+    // #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+    // is_consecutive_etc!(i32x8, *DECREASE_I32);
 
-    #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-    is_consecutive_etc!(i32x4, *DECREASE_I32);
+    // #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
+    // is_consecutive_etc!(i32x4, *DECREASE_I32);
 }
 
 impl Integer for u32 {
@@ -188,14 +190,14 @@ impl Integer for u32 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    #[cfg(target_feature = "avx512f")]
+    // #[cfg(target_feature = "avx512f")]
     is_consecutive_etc!(u32x16, EXPECTED_U32);
 
-    #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    is_consecutive_etc!(u32x8, *DECREASE_U32);
+    // #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+    // is_consecutive_etc!(u32x8, *DECREASE_U32);
 
-    #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-    is_consecutive_etc!(u32x4, *DECREASE_U32);
+    // #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
+    // is_consecutive_etc!(u32x4, *DECREASE_U32);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -417,10 +419,11 @@ impl Integer for u16 {
 // cmk  Rule: AMD 512 might be slower than Intel (but maybe not for permutations)
 // cmk  Rule: Docs: https://doc.rust-lang.org/nightly/std/simd/index.html
 // cmk: Rule: Docs: more https://doc.rust-lang.org/nightly/std/simd/struct.Simd.html
-// cmk  Tigher clippy, etc.
+// cmk  Tighter clippy, etc.
 // cmk look at Rust meet up photos, including way to get alignment
 // cmk Rule: Expect operations to wrap. Unlike scalar it is the default.
 // cmk Rule: Use #[inline] on functions that take a SIMD input and return a SIMD output (see docs)
 // cmk0 Rule: It's generally OK to use the read "unaligned" on aligned. There is no penalty. (cmk test this)
 // cmk Rule: Useful: https://github.com/rust-lang/portable-simd/blob/master/beginners-guide.md (talks about reduce_and, etc)
 // cmk Rule: Do const values like ... https://rust-lang.zulipchat.com/#narrow/stream/122651-general/topic/const.20SIMD.20values
+// cmk Rule: Use SIMD rust command even without SIMD.

@@ -2,6 +2,7 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
+use core::mem::size_of;
 use core::simd::{LaneCount, SimdElement, SupportedLaneCount};
 use std::simd::prelude::*; // cmk use? when?
 
@@ -89,6 +90,7 @@ pub trait Integer:
         // cmk Should we count from the far end for better chance to end early?
         // cmk also compare to the first element?
         for i in 1..N {
+            // cmk is there any risk of overflow here? what aboout max value for 128's?
             if chunk[i] != chunk[i - 1] + Self::one() {
                 return false;
             }
@@ -548,8 +550,14 @@ impl<T: Integer> RangeSetBlaze<T> {
     where
         T: SimdElement,
     {
-        // cmk what if not 16?
-        FromSliceIter::<T, 16>::new(slice).collect()
+        match size_of::<T>() {
+            1 => FromSliceIter::<T, 64>::new(slice).collect(),
+            2 => FromSliceIter::<T, 32>::new(slice).collect(),
+            4 => FromSliceIter::<T, 16>::new(slice).collect(),
+            8 => FromSliceIter::<T, 8>::new(slice).collect(),
+            16 => FromSliceIter::<T, 4>::new(slice).collect(),
+            _ => panic!("Unsupported type size for SIMD operations"),
+        }
     }
 
     fn _len_slow(&self) -> <T as Integer>::SafeLen {
@@ -2236,3 +2244,7 @@ where
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 // cmk RULE: Explain there is a great .as_simd method that we are not using because we want to code
 // cmk RULE: to also work without SIMD. Also, getting generic constants to work is a pain/impossible.
+// cmk00 Can you use SIMD Rust methods without SIMD?
+// cmk Rule: Create a .cargo/config.toml, but think about what you check in.
+// cmk Rule: spot test and benchmark
+// cmk Rule: Look at assembly. Use AI tools to understand it (but they may not be perfect)
