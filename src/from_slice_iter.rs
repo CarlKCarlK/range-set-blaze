@@ -25,10 +25,10 @@ pub struct FromSliceIter<'a, T>
 where
     T: Integer,
 {
-    before_iter: core::slice::Iter<'a, T>,
+    prefix_iter: core::slice::Iter<'a, T>,
     previous_range: Option<RangeInclusive<T>>,
     chunks: ChunksExact<'a, T>,
-    remainder: &'a [T],
+    suffix: &'a [T],
     slice_len: usize,
 }
 
@@ -40,10 +40,10 @@ where
     pub fn new(slice: &'a [T]) -> Self {
         let (prefix, chunks, suffix) = T::as_aligned_chunks(slice);
         FromSliceIter {
-            before_iter: prefix.iter(),
+            prefix_iter: prefix.iter(),
             previous_range: None,
             chunks,
-            remainder: suffix,
+            suffix,
             slice_len: slice.len(),
         }
     }
@@ -58,7 +58,7 @@ where
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<RangeInclusive<T>> {
-        if let Some(before) = self.before_iter.next() {
+        if let Some(before) = self.prefix_iter.next() {
             return Some(*before..=*before);
         }
         for chunk in self.chunks.by_ref() {
@@ -82,12 +82,12 @@ where
                 }
             } else {
                 // If none, flush previous range, set it to none, output this chunk as a bunch of singletons.
-                self.before_iter = chunk.iter();
+                self.prefix_iter = chunk.iter();
                 if let Some(previous) = self.previous_range.take() {
                     debug_assert!(self.previous_range.is_none());
                     return Some(previous);
                 }
-                if let Some(before) = self.before_iter.next() {
+                if let Some(before) = self.prefix_iter.next() {
                     return Some(*before..=*before);
                 }
             }
@@ -99,10 +99,10 @@ where
             return Some(previous.clone());
         }
 
-        self.before_iter = self.remainder.iter();
-        self.remainder = &[];
+        self.prefix_iter = self.suffix.iter();
+        self.suffix = &[];
 
-        self.before_iter.next().map(|before| *before..=*before)
+        self.prefix_iter.next().map(|before| *before..=*before)
     }
 
     // We could have one less or one more than the iter.

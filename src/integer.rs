@@ -13,7 +13,8 @@ macro_rules! is_consecutive_etc {
         fn is_consecutive(chunk: &[Self]) -> bool {
             debug_assert!(chunk.len() == <$simd>::LANES, "Chunk is wrong length");
             debug_assert!(
-                // cmk00 is there a more built in way to do this?
+                // cmk0
+                // There is a 'is_aligned_to' in nightly, but it is not in stable.
                 chunk.as_ptr() as usize % align_of::<$simd>() == 0,
                 "Chunk is not aligned"
             );
@@ -27,6 +28,7 @@ macro_rules! is_consecutive_etc {
             // let a = <$simd>::from_slice(chunk) + $decrease; // decrease is 0, -1, -2 ...
             // a == <$simd>::splat(a[0])
 
+            // This needlessly check's length and fixes the alignment, but that doesn't to slow things.
             let a = <$simd>::from_slice(chunk);
             let b = a.rotate_lanes_right::<1>();
             a - b == $expected
