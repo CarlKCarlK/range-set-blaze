@@ -1,6 +1,7 @@
-use core::{iter::FusedIterator, ops::RangeInclusive, slice::ChunksExact};
-
 use crate::Integer;
+use core::simd::{LaneCount, SimdElement, SupportedLaneCount};
+use core::{iter::FusedIterator, ops::RangeInclusive};
+use std::simd::prelude::*; // cmk use? when?
 
 /// cmk update docs
 /// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
@@ -21,39 +22,47 @@ use crate::Integer;
 /// ```
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct FromSliceIter<'a, T>
+pub struct FromSliceIter<'a, T, const N: usize>
 where
-    T: Integer,
+    T: Integer + SimdElement,
+    LaneCount<N>: SupportedLaneCount,
 {
     prefix_iter: core::slice::Iter<'a, T>,
     previous_range: Option<RangeInclusive<T>>,
-    chunks: ChunksExact<'a, T>,
+    chunks: core::slice::Iter<'a, Simd<T, N>>,
     suffix: &'a [T],
     slice_len: usize,
 }
 
-impl<'a, T: 'a> FromSliceIter<'a, T>
+impl<'a, T: 'a, const N: usize> FromSliceIter<'a, T, N>
 where
-    T: Integer,
+    T: Integer + SimdElement,
+    LaneCount<N>: SupportedLaneCount,
 {
     /// cmk update docs Create a new [`NotIter`] from a [`SortedDisjoint`] iterator. See [`NotIter`] for an example.
     pub fn new(slice: &'a [T]) -> Self {
-        let (prefix, chunks, suffix) = T::as_aligned_chunks(slice);
+        let (prefix, middle, suffix) = slice.as_simd();
         FromSliceIter {
             prefix_iter: prefix.iter(),
             previous_range: None,
-            chunks,
+            chunks: middle.iter(),
             suffix,
             slice_len: slice.len(),
         }
     }
 }
 
-impl<'a, T> FusedIterator for FromSliceIter<'a, T> where T: Integer {}
-
-impl<'a, T: 'a> Iterator for FromSliceIter<'a, T>
+impl<'a, T, const N: usize> FusedIterator for FromSliceIter<'a, T, N>
 where
-    T: Integer,
+    T: Integer + SimdElement,
+    LaneCount<N>: SupportedLaneCount,
+{
+}
+
+impl<'a, T: 'a, const N: usize> Iterator for FromSliceIter<'a, T, N>
+where
+    T: Integer + SimdElement,
+    LaneCount<N>: SupportedLaneCount,
 {
     type Item = RangeInclusive<T>;
 
@@ -64,7 +73,7 @@ where
         for chunk in self.chunks.by_ref() {
             if T::is_consecutive(chunk) {
                 let this_start = chunk[0];
-                let this_end = chunk[chunk.len() - 1];
+                let this_end = chunk[chunk.lanes() - 1];
 
                 if let Some(inner_previous_range) = self.previous_range.as_mut() {
                     // if some and previous is some and adjacent, combine
@@ -82,7 +91,7 @@ where
                 }
             } else {
                 // If none, flush previous range, set it to none, output this chunk as a bunch of singletons.
-                self.prefix_iter = chunk.iter();
+                self.prefix_iter = chunk.as_array().iter();
                 if let Some(previous) = self.previous_range.take() {
                     debug_assert!(self.previous_range.is_none());
                     return Some(previous);

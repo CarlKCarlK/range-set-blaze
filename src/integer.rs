@@ -1,38 +1,49 @@
 use core::mem::{align_of, size_of};
 use core::ops::RangeInclusive;
+use core::simd::{LaneCount, SimdElement, SupportedLaneCount};
 use core::slice::ChunksExact;
 use std::cmp::{max, min};
 #[cfg(target_feature = "avx512f")]
 use std::simd::prelude::*; // cmk use? when?
-                           // cmk may want to skip sse2 (128) because it is slower than the non-simd version
+
+// cmk may want to skip sse2 (128) because it is slower than the non-simd version
 
 use crate::Integer;
 
 macro_rules! is_consecutive_etc {
     ($simd:ty, $expected:expr) => {
-        fn is_consecutive(chunk: &[Self]) -> bool {
-            debug_assert!(chunk.len() == <$simd>::LANES, "Chunk is wrong length");
-            debug_assert!(
-                // cmk0
-                // There is a 'is_aligned_to' in nightly, but it is not in stable.
-                chunk.as_ptr() as usize % align_of::<$simd>() == 0,
-                "Chunk is not aligned"
-            );
-
-            // // cmk0 should do with from_slice_uncheck unsafe????
-            // // cmk0 is a[0] the best way to extract an element?
-            // // cmk0 is a[0] and then splat the best way to create a simd from one element?
-            // // cmk0 is eq the best way to compare two simds?
-            // let b = <$simd>::splat(a[0]); // cmk0 seems same as simd_swizzle!
-            //                               // cmk0 let b = simd_swizzle!(a, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-            // let a = <$simd>::from_slice(chunk) + $decrease; // decrease is 0, -1, -2 ...
-            // a == <$simd>::splat(a[0])
-
-            // This needlessly check's length and fixes the alignment, but that doesn't to slow things.
-            let a = <$simd>::from_slice(chunk);
-            let b = a.rotate_lanes_right::<1>();
-            a - b == $expected
+        fn is_consecutive<const N: usize>(chunk: &Simd<Self, N>) -> bool
+        where
+            LaneCount<N>: SupportedLaneCount,
+        {
+            assert!(N == <$simd>::LANES, "Chunk is wrong length");
+            let b = chunk.rotate_lanes_right::<1>();
+            let expected: &Simd<Self, N> = unsafe { std::mem::transmute(&$expected) };
+            chunk - b == *expected
         }
+
+        //     // debug_assert!(chunk.lanes() == <$simd>::LANES, "Chunk is wrong length");
+        //     // debug_assert!(
+        //     //     // cmk0
+        //     //     // There is a 'is_aligned_to' in nightly, but it is not in stable.
+        //     //     chunk.as_ptr() as usize % align_of::<$simd>() == 0,
+        //     //     "Chunk is not aligned"
+        //     // );
+
+        //     // // cmk0 should do with from_slice_uncheck unsafe????
+        //     // // cmk0 is a[0] the best way to extract an element?
+        //     // // cmk0 is a[0] and then splat the best way to create a simd from one element?
+        //     // // cmk0 is eq the best way to compare two simds?
+        //     // let b = <$simd>::splat(a[0]); // cmk0 seems same as simd_swizzle!
+        //     //                               // cmk0 let b = simd_swizzle!(a, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        //     // let a = <$simd>::from_slice(chunk) + $decrease; // decrease is 0, -1, -2 ...
+        //     // a == <$simd>::splat(a[0])
+
+        //     // This needlessly check's length and fixes the alignment, but that doesn't to slow things.
+        //     // let a = <$simd>::from_slice(chunk);
+        //     let b = chunk.rotate_lanes_right::<1>();
+        //     chunk - b == $expected
+        // }
 
         fn as_aligned_chunks(slice: &[Self]) -> (&[Self], ChunksExact<Self>, &[Self]) {
             let align_offset = slice.as_ptr().align_offset(align_of::<$simd>());
@@ -94,7 +105,7 @@ impl Integer for u8 {
     }
 }
 
-const EXPECTED_I32: i32x16 =
+const EXPECTED_I32: Simd<i32, 16> =
     unsafe { std::mem::transmute([-15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
 
 const EXPECTED_U32: u32x16 =
@@ -137,6 +148,32 @@ impl Integer for i32 {
 
     #[cfg(target_feature = "avx512f")]
     is_consecutive_etc!(i32x16, EXPECTED_I32);
+    // fn is_consecutive<const N: usize>(chunk: &Simd<Self, N>) -> bool
+    // where
+    //     Self: Sized + SimdElement,
+    //     LaneCount<N>: SupportedLaneCount,
+    // {
+    //     if N == 16 {
+    //         let b = chunk.rotate_lanes_right::<1>();
+    //         chunk - b == EXPECTED_I32
+    //     } else {
+    //         false
+    //     }
+    // }
+    // fn is_consecutive<const N: usize>(chunk: &Simd<Self, N>) -> bool
+    // where
+    //     LaneCount<N>: SupportedLaneCount,
+    // {
+    //     assert!(N == 16, "Chunk is wrong length");
+    //     if N == 16 {
+    //         let b = chunk.rotate_lanes_right::<1>();
+    //         let expected: &Simd<i32, N> = unsafe { std::mem::transmute(&EXPECTED_I32) };
+    //         chunk - b == *expected
+    //     } else {
+    //         // Fallback or generic logic
+    //         false
+    //     }
+    // }
 
     #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
     is_consecutive_etc!(i32x8, *DECREASE_I32);

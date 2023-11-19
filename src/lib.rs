@@ -2,6 +2,9 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
+use core::simd::{LaneCount, SimdElement, SupportedLaneCount};
+use std::simd::prelude::*; // cmk use? when?
+
 // #[cfg(all(feature = "std", feature = "alloc"))]
 // compile_error!("feature \"std\" and feature \"alloc\" cannot be enabled at the same time");
 // #[cfg(feature = "std")]
@@ -77,11 +80,15 @@ pub trait Integer:
     + CheckedAdd
 {
     /// cmk document
-    fn is_consecutive(chunk: &[Self]) -> bool
+    fn is_consecutive<const N: usize>(chunk: &Simd<Self, N>) -> bool
     where
-        Self: Sized,
+        Self: Sized + SimdElement,
+        LaneCount<N>: SupportedLaneCount,
     {
-        for i in 1..chunk.len() {
+        let chunk = chunk.as_array();
+        // cmk Should we count from the far end for better chance to end early?
+        // cmk also compare to the first element?
+        for i in 1..N {
             if chunk[i] != chunk[i - 1] + Self::one() {
                 return false;
             }
@@ -537,8 +544,12 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// cmk need docs
     /// cmk RULE be sure ints don't wrap in a way that could be bad.
     /// cmk RULE handle alignment at the start and end.
-    pub fn from_slice(slice: &[T]) -> Self {
-        FromSliceIter::new(slice).collect()
+    pub fn from_slice(slice: &[T]) -> Self
+    where
+        T: SimdElement,
+    {
+        // cmk what if not 16?
+        FromSliceIter::<T, 16>::new(slice).collect()
     }
 
     fn _len_slow(&self) -> <T as Integer>::SafeLen {
