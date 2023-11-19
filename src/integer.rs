@@ -1,34 +1,59 @@
-use core::mem::{align_of, size_of};
 use core::ops::RangeInclusive;
 use core::simd::{LaneCount, SupportedLaneCount};
-use core::slice::ChunksExact;
-use std::cmp::{max, min};
-// cmk #[cfg(target_feature = "avx512f")]
 use std::simd::prelude::*; // cmk use? when?
 
 // cmk may want to skip sse2 (128) because it is slower than the non-simd version
 
 use crate::Integer;
 
-macro_rules! is_consecutive_etc {
-    ($simd:ty, $expected:expr) => {
+// macro_rules! create_const_array {
+//     ($element:ty, $create_constant_id:ident) => {
+//         #[repr(align(64))] // cmk 64 is a guess
+//         struct AlignedArray<T, const N: usize> {
+//             data: [T; N],
+//         }
+
+//         // cmk better name?
+//         #[allow(dead_code)]
+//         const fn $create_constant_id<const N: usize>() -> [$element; N] {
+//             let mut arr = AlignedArray { data: [1; N] };
+//             // cmk000 make this right
+//             arr.data[0] = !(N as $element) + 1;
+//             arr.data
+//         }
+//     };
+// }
+
+// cmk is 'chunk' the best name?
+#[allow(unused_macros)] // cmk
+macro_rules! is_consecutive {
+    ($element:ty, $N:tt, $expected:ident) => {
+        // cmk better name?
+
+        // fn is_consecutive<const N: usize>(chunk: &Simd<Self, N>) -> bool
+        // where
+        //     LaneCount<N>: SupportedLaneCount,
+        // {
+        //     debug_assert!(N == $N, "Chunk is wrong length");
+        //     let expected: &Simd<$element, N> = unsafe { std::mem::transmute(&EXPECTED_I32X16) };
+        //     let b = chunk.rotate_lanes_right::<1>();
+        //     chunk - b == *expected
+        // }
+
         fn is_consecutive<const N: usize>(chunk: &Simd<Self, N>) -> bool
         where
             LaneCount<N>: SupportedLaneCount,
         {
-            assert!(N == <$simd>::LANES, "Chunk is wrong length");
-            let b = chunk.rotate_lanes_right::<1>();
-            let expected: &Simd<Self, N> = unsafe { std::mem::transmute(&$expected) };
-            chunk - b == *expected
+            assert!(N == 16, "Chunk is wrong length");
+            if N == 16 {
+                let b = chunk.rotate_lanes_right::<1>();
+                let expected: &Simd<$element, N> = unsafe { std::mem::transmute(&$expected) };
+                chunk - b == *expected
+            } else {
+                // Fallback or generic logic
+                false
+            }
         }
-
-        //     // debug_assert!(chunk.lanes() == <$simd>::LANES, "Chunk is wrong length");
-        //     // debug_assert!(
-        //     //     // cmk0
-        //     //     // There is a 'is_aligned_to' in nightly, but it is not in stable.
-        //     //     chunk.as_ptr() as usize % align_of::<$simd>() == 0,
-        //     //     "Chunk is not aligned"
-        //     // );
 
         //     // // cmk0 should do with from_slice_uncheck unsafe????
         //     // // cmk0 is a[0] the best way to extract an element?
@@ -44,17 +69,6 @@ macro_rules! is_consecutive_etc {
         //     let b = chunk.rotate_lanes_right::<1>();
         //     chunk - b == $expected
         // }
-
-        fn as_aligned_chunks(slice: &[Self]) -> (&[Self], ChunksExact<Self>, &[Self]) {
-            let align_offset = slice.as_ptr().align_offset(align_of::<$simd>());
-            let align_offset = min(align_offset, slice.len()); // cmk needed?
-            let prefix = &slice[..align_offset];
-            let chunk_size = size_of::<$simd>() / size_of::<Self>();
-            let chunk_size = max(1, chunk_size); // cmk needed?
-            let chunks = slice[align_offset..].chunks_exact(chunk_size);
-            let suffix = chunks.remainder();
-            (prefix, chunks, suffix)
-        }
     };
 }
 
@@ -105,24 +119,31 @@ impl Integer for u8 {
     }
 }
 
-const EXPECTED_I32: Simd<i32, 16> =
+// create_const_array!(i32, create_constant_i32);
+// // create_const_array!(u32, create_constant_u32);
+
+// // #[allow(dead_code)] // cmk
+// const EXPECTED_I32X16: i32x16 = unsafe { std::mem::transmute(create_constant_i32::<16>()) };
+
+// // #[allow(dead_code)] // cmk
+// // const EXPECTED_U32X16: u32x16 = unsafe { std::mem::transmute(create_constant_u32::<16>()) };
+const EXPECTED_I32X16: Simd<i32, 16> =
     unsafe { std::mem::transmute([-15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
 
-const EXPECTED_U32: u32x16 =
+const EXPECTED_U32X16: u32x16 =
     unsafe { std::mem::transmute([-15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
 
-#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-init_decrease_simd!(DECREASE_I32, i32, i32x8);
+// #[allow(dead_code)] // cmk
+// const EXPECTED_I32X8: i32x8 = unsafe { std::mem::transmute([-7, 1, 1, 1, 1, 1, 1, 1]) };
 
-#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-init_decrease_simd!(DECREASE_U32, u32, u32x8);
+// #[allow(dead_code)] // cmk
+// const EXPECTED_U32X8: u32x8 = unsafe { std::mem::transmute([-7, 1, 1, 1, 1, 1, 1, 1]) };
 
-// cmk
-// #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-// init_decrease_simd!(DECREASE_I32, i32, i32x4);
+// #[allow(dead_code)] // cmk
+// const EXPECTED_I32X4: Simd<i32, 4> = unsafe { std::mem::transmute([-3, 1, 1, 1]) };
 
-// #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-// init_decrease_simd!(DECREASE_U32, u32, u32x4);
+// #[allow(dead_code)] // cmk
+// const EXPECTED_U32X4: u32x4 = unsafe { std::mem::transmute([-3, 1, 1, 1]) };
 
 impl Integer for i32 {
     #[cfg(target_pointer_width = "32")]
@@ -147,41 +168,20 @@ impl Integer for i32 {
         a - (b - 1) as Self
     }
 
-    // #[cfg(target_feature = "avx512f")]
-    is_consecutive_etc!(i32x16, EXPECTED_I32);
-    // fn is_consecutive<const N: usize>(chunk: &Simd<Self, N>) -> bool
-    // where
-    //     Self: Sized + SimdElement,
-    //     LaneCount<N>: SupportedLaneCount,
-    // {
-    //     if N == 16 {
-    //         let b = chunk.rotate_lanes_right::<1>();
-    //         chunk - b == EXPECTED_I32
-    //     } else {
-    //         false
-    //     }
-    // }
-    // fn is_consecutive<const N: usize>(chunk: &Simd<Self, N>) -> bool
-    // where
-    //     LaneCount<N>: SupportedLaneCount,
-    // {
-    //     assert!(N == 16, "Chunk is wrong length");
-    //     if N == 16 {
-    //         let b = chunk.rotate_lanes_right::<1>();
-    //         let expected: &Simd<i32, N> = unsafe { std::mem::transmute(&EXPECTED_I32) };
-    //         chunk - b == *expected
-    //     } else {
-    //         // Fallback or generic logic
-    //         false
-    //     }
-    // }
+    // avx512f or scalar
+    #[cfg(any(
+        target_feature = "avx512f",
+        all(not(target_feature = "sse2"), not(target_feature = "avx2"))
+    ))]
+    is_consecutive!(i32, 16, EXPECTED_I32X16);
 
-    // cmk
-    // #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    // is_consecutive_etc!(i32x8, *DECREASE_I32);
+    // avx2 (256 bits)
+    #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+    is_consecutive!(i32x8, EXPECTED_I32X8);
 
-    // #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-    // is_consecutive_etc!(i32x4, *DECREASE_I32);
+    // sse2 (128 bits)
+    #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
+    is_consecutive!(i32x4, EXPECTED_I32X4);
 }
 
 impl Integer for u32 {
@@ -190,14 +190,20 @@ impl Integer for u32 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    // #[cfg(target_feature = "avx512f")]
-    is_consecutive_etc!(u32x16, EXPECTED_U32);
+    // avx512f or scalar
+    #[cfg(any(
+        target_feature = "avx512f",
+        all(not(target_feature = "sse2"), not(target_feature = "avx2"))
+    ))]
+    is_consecutive!(u32, 16, EXPECTED_U32X16);
 
-    // #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    // is_consecutive_etc!(u32x8, *DECREASE_U32);
+    // avx2 (256 bits)
+    #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+    is_consecutive!(u32x8, EXPECTED_U32X8);
 
-    // #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-    // is_consecutive_etc!(u32x4, *DECREASE_U32);
+    // sse2 (128 bits)
+    #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
+    is_consecutive!(u32x4, EXPECTED_U32X4);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -427,3 +433,4 @@ impl Integer for u16 {
 // cmk Rule: Useful: https://github.com/rust-lang/portable-simd/blob/master/beginners-guide.md (talks about reduce_and, etc)
 // cmk Rule: Do const values like ... https://rust-lang.zulipchat.com/#narrow/stream/122651-general/topic/const.20SIMD.20values
 // cmk Rule: Use SIMD rust command even without SIMD.
+// cmk Rule: Use unsafe where you need to.

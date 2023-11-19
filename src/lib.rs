@@ -42,7 +42,6 @@ use core::ops::BitOrAssign;
 use core::ops::Bound;
 use core::ops::RangeBounds;
 use core::ops::RangeInclusive;
-use core::slice::ChunksExact;
 use core::str::FromStr;
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 use from_slice_iter::FromSliceIter;
@@ -80,34 +79,14 @@ pub trait Integer:
     + OverflowingSub
     + CheckedAdd
 {
+    // cmk instead of giving a default impl, we say every type must implement this.
     /// cmk document
-    fn is_consecutive<const N: usize>(chunk: &Simd<Self, N>) -> bool
+    fn is_consecutive<const N: usize>(_chunk: &Simd<Self, N>) -> bool
     where
         Self: Sized + SimdElement,
         LaneCount<N>: SupportedLaneCount,
     {
-        let chunk = chunk.as_array();
-        // cmk Should we count from the far end for better chance to end early?
-        // cmk also compare to the first element?
-        for i in 1..N {
-            // cmk is there any risk of overflow here? what aboout max value for 128's?
-            if chunk[i] != chunk[i - 1] + Self::one() {
-                return false;
-            }
-        }
-        true
-    }
-
-    /// cmk document
-    /// Like `as_simd` but doesn't require simd.
-    /// Like `align_to` but safe.
-    ///
-    fn as_aligned_chunks(slice: &[Self]) -> (&[Self], ChunksExact<Self>, &[Self]) {
-        // cmk should we align? Should the chunk size depend on the size of Self?
-        let prefix = &slice[..0];
-        let chunks = slice.chunks_exact(16);
-        let suffix = chunks.remainder();
-        (prefix, chunks, suffix)
+        panic!("cmk Not implemented");
     }
 
     /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note

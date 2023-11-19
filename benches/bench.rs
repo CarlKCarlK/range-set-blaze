@@ -1327,21 +1327,21 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
         .collect();
 
         group.bench_with_input(
-            BenchmarkId::new("RangeSetBlaze (integers, iter)", parameter),
-            &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec.iter());
-                })
-            },
-        );
-
-        group.bench_with_input(
             BenchmarkId::new("RangeSetBlaze (integers, slice)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
                     let _answer = RangeSetBlaze::from_slice(vec.as_slice());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze (integers, iter)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_iter(vec.iter());
                 })
             },
         );
