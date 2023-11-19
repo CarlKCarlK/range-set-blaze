@@ -38,6 +38,7 @@ use core::ops::BitOrAssign;
 use core::ops::Bound;
 use core::ops::RangeBounds;
 use core::ops::RangeInclusive;
+use core::slice::ChunksExact;
 use core::str::FromStr;
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 use from_slice_iter::FromSliceIter;
@@ -89,9 +90,15 @@ pub trait Integer:
     }
 
     /// cmk document
-    fn bit_size_and_offset(_: &[Self]) -> (usize, usize) {
-        // By default, we work in chunks of 512 bits. No offset is needed.
-        (512, 0)
+    /// Like `as_simd` but doesn't require simd.
+    /// Like `align_to` but safe.
+    ///
+    fn as_aligned_chunks(slice: &[Self]) -> (&[Self], ChunksExact<Self>, &[Self]) {
+        // cmk should we align? Should the chunk size depend on the size of Self?
+        let prefix = &slice[..0];
+        let chunks = slice.chunks_exact(16);
+        let suffix = chunks.remainder();
+        (prefix, chunks, suffix)
     }
 
     /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note
@@ -2216,3 +2223,5 @@ where
 }
 
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
+// cmk RULE: Explain there is a great .as_simd method that we are not using because we want to code
+// cmk RULE: to also work without SIMD. Also, getting generic constants to work is a pain/impossible.

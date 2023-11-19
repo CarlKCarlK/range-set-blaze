@@ -1,4 +1,4 @@
-use core::{cmp::min, iter::FusedIterator, ops::RangeInclusive, slice::ChunksExact};
+use core::{iter::FusedIterator, ops::RangeInclusive, slice::ChunksExact};
 
 use crate::Integer;
 
@@ -38,17 +38,12 @@ where
 {
     /// cmk update docs Create a new [`NotIter`] from a [`SortedDisjoint`] iterator. See [`NotIter`] for an example.
     pub fn new(slice: &'a [T]) -> Self {
-        let (bit_size, offset) = T::bit_size_and_offset(slice);
-        let offset = min(offset, slice.len());
-        let chunk_size = core::cmp::max(1, bit_size / 8 / std::mem::size_of::<T>());
-        let chunks = slice[offset..].chunks_exact(chunk_size);
-        let remainder = chunks.remainder();
-
+        let (prefix, chunks, suffix) = T::as_aligned_chunks(slice);
         FromSliceIter {
-            before_iter: slice[..offset].iter(),
+            before_iter: prefix.iter(),
             previous_range: None,
             chunks,
-            remainder,
+            remainder: suffix,
             slice_len: slice.len(),
         }
     }

@@ -1,6 +1,7 @@
-use core::mem::align_of;
-use core::mem::size_of;
+use core::mem::{align_of, size_of};
 use core::ops::RangeInclusive;
+use core::slice::ChunksExact;
+use std::cmp::{max, min};
 #[cfg(target_feature = "avx512f")]
 use std::simd::prelude::*; // cmk use? when?
                            // cmk may want to skip sse2 (128) because it is slower than the non-simd version
@@ -8,20 +9,14 @@ use std::simd::prelude::*; // cmk use? when?
 use crate::Integer;
 
 macro_rules! is_consecutive_etc {
-    ($scalar:ty, $simd:ty, $expected:expr) => {
-        fn is_consecutive(chunk: &[$scalar]) -> bool {
+    ($simd:ty, $expected:expr) => {
+        fn is_consecutive(chunk: &[Self]) -> bool {
             debug_assert!(chunk.len() == <$simd>::LANES, "Chunk is wrong length");
             debug_assert!(
                 // cmk00 is there a more built in way to do this?
                 chunk.as_ptr() as usize % align_of::<$simd>() == 0,
                 "Chunk is not aligned"
             );
-
-            // const LAST_INDEX: usize = <$simd>::LANES - 1;
-            // let (expected, overflowed) = chunk[0].overflowing_add(LAST_INDEX as $scalar);
-            // if overflowed || expected != chunk[LAST_INDEX] {
-            //     return false;
-            // }
 
             // // cmk0 should do with from_slice_uncheck unsafe????
             // // cmk0 is a[0] the best way to extract an element?
@@ -37,18 +32,15 @@ macro_rules! is_consecutive_etc {
             a - b == $expected
         }
 
-        // Is there a std way to get offset?
-        fn bit_size_and_offset(slice: &[Self]) -> (usize, usize) {
-            {
-                let alignment = align_of::<$simd>();
-                let misalignment = (slice.as_ptr() as usize) % alignment;
-
-                // return bit_size, offset
-                (
-                    size_of::<$simd>() * 8,
-                    (alignment - misalignment) / size_of::<$scalar>(),
-                )
-            }
+        fn as_aligned_chunks(slice: &[Self]) -> (&[Self], ChunksExact<Self>, &[Self]) {
+            let align_offset = slice.as_ptr().align_offset(align_of::<$simd>());
+            let align_offset = min(align_offset, slice.len()); // cmk needed?
+            let prefix = &slice[..align_offset];
+            let chunk_size = size_of::<$simd>() / size_of::<Self>();
+            let chunk_size = max(1, chunk_size); // cmk needed?
+            let chunks = slice[align_offset..].chunks_exact(chunk_size);
+            let suffix = chunks.remainder();
+            (prefix, chunks, suffix)
         }
     };
 }
@@ -142,13 +134,13 @@ impl Integer for i32 {
     }
 
     #[cfg(target_feature = "avx512f")]
-    is_consecutive_etc!(i32, i32x16, EXPECTED_I32);
+    is_consecutive_etc!(i32x16, EXPECTED_I32);
 
     #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    is_consecutive_etc!(i32, i32x8, *DECREASE_I32);
+    is_consecutive_etc!(i32x8, *DECREASE_I32);
 
     #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-    is_consecutive_etc!(i32, i32x4, *DECREASE_I32);
+    is_consecutive_etc!(i32x4, *DECREASE_I32);
 }
 
 impl Integer for u32 {
@@ -158,13 +150,13 @@ impl Integer for u32 {
     type SafeLen = usize;
 
     #[cfg(target_feature = "avx512f")]
-    is_consecutive_etc!(u32, u32x16, EXPECTED_U32);
+    is_consecutive_etc!(u32x16, EXPECTED_U32);
 
     #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    is_consecutive_etc!(u32, u32x8, *DECREASE_U32);
+    is_consecutive_etc!(u32x8, *DECREASE_U32);
 
     #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-    is_consecutive_etc!(u32, u32x4, *DECREASE_U32);
+    is_consecutive_etc!(u32x4, *DECREASE_U32);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
