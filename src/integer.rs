@@ -1,16 +1,15 @@
 use crate::{from_slice_iter::FromSliceIter, RangeSetBlaze};
 
 use core::ops::RangeInclusive;
-use core::simd::{LaneCount, SupportedLaneCount};
+use core::simd::{i16x32, i32x16, i64x8, i8x64, LaneCount, Simd, SupportedLaneCount};
 use std::mem::size_of;
-use std::simd::prelude::*; // cmk use? when?
 
-// cmk RULE may want to skip sse2 (128) because it is slower than the non-simd version
+// cmk Rule may want to skip sse2 (128) because it is slower than the non-simd version
 
 use crate::Integer;
 
-// cmk is 'chunk' the best name?
-#[allow(unused_macros)] // cmk
+// cmk5 is 'chunk' the best name?
+#[allow(unused_macros)] // cmk5
 macro_rules! from_slice_etc {
     ($expected:ident) => {
         // avx512 (512 bits) or scalar
@@ -91,8 +90,8 @@ impl Integer for u8 {
     }
 }
 
-// cmk might be better to define these without the x16, x8, x4, etc.
-// cmk then we would get a compile error if defined more than once
+// cmk5 might be better to define these without the x16, x8, x4, etc.
+// cmk5 then we would get a compile error if defined more than once
 
 // avx512 (512 bits) or scalar
 #[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
@@ -121,7 +120,7 @@ const EXPECTED_X16: i16x32 = unsafe {
         1, 1, 1,
     ])
 };
-// cmk write a test that checks that the first value is correct for all of these.
+// cmk5 write a test that checks that the first value is correct for all of these.
 
 // avx2 (256 bits)
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
@@ -420,18 +419,18 @@ impl Integer for u16 {
     }
 }
 
-// cmk: Rule: Look at the docs in a way that lets you see every useful command (how?)
-// cmk: Rule: You have to use nightly, so not usefull. (how to turn on for just one project)
-// cmk: Rule: As soon as you think about SIMD algorithms, you'll likely make non-faster
-// cmk: Rule: Set up for multiple levels of support
-// cmk  Rule: AMD 512 might be slower than Intel (but maybe not for permutations)
-// cmk  Rule: Docs: https://doc.rust-lang.org/nightly/std/simd/index.html
-// cmk: Rule: Docs: more https://doc.rust-lang.org/nightly/std/simd/struct.Simd.html
-// cmk  Tighter clippy, etc.
-// cmk look at Rust meet up photos, including way to get alignment
+// cmk Rule: Look at the docs in a way that lets you see every useful command (how?)
+// cmk Rule: You have to use nightly, so not usefull. (how to turn on for just one project)
+// cmk Rule: As soon as you think about SIMD algorithms, you'll likely make non-faster
+// cmk Rule: Set up for multiple levels of support
+// cmk5  Rule: AMD 512 might be slower than Intel (but maybe not for permutations)
+// cmk5  Rule: Docs: https://doc.rust-lang.org/nightly/std/simd/index.html
+// cmk Rule: Docs: more https://doc.rust-lang.org/nightly/std/simd/struct.Simd.html
+// cmk5  Tighter clippy, etc.
+// cmk5 look at Rust meet up photos, including way to get alignment
 // cmk Rule: Expect operations to wrap. Unlike scalar it is the default.
 // cmk Rule: Use #[inline] on functions that take a SIMD input and return a SIMD output (see docs)
-// cmk0 Rule: It's generally OK to use the read "unaligned" on aligned. There is no penalty. (cmk test this)
+// cmk Rule: It's generally OK to use the read "unaligned" on aligned. There is no penalty. (see https://doc.rust-lang.org/std/simd/struct.Simd.html#safe-simd-with-unsafe-rust)
 // cmk Rule: Useful: https://github.com/rust-lang/portable-simd/blob/master/beginners-guide.md (talks about reduce_and, etc)
 // cmk Rule: Do const values like ... https://rust-lang.zulipchat.com/#narrow/stream/122651-general/topic/const.20SIMD.20values
 // cmk Rule: Use SIMD rust command even without SIMD.

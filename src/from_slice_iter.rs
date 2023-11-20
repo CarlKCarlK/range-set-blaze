@@ -1,28 +1,10 @@
 use crate::Integer;
-use core::simd::{LaneCount, SimdElement, SupportedLaneCount};
+use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive};
-use std::simd::prelude::*; // cmk use? when?
 
-/// cmk update docs
-/// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
-/// i.e., all the integers not in the original iterator, as sorted & disjoint ranges.
-///
-/// # Example
-///
-/// ```
-/// use range_set_blaze::{NotIter, SortedDisjoint, CheckSortedDisjoint};
-///
-/// let a = CheckSortedDisjoint::from([1u8..=2, 5..=100]);
-/// let b = NotIter::new(a);
-/// assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
-///
-/// // Or, equivalently:
-/// let b = !CheckSortedDisjoint::from([1u8..=2, 5..=100]);
-/// assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
-/// ```
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct FromSliceIter<'a, T, const N: usize>
+pub(crate) struct FromSliceIter<'a, T, const N: usize>
 where
     T: Integer + SimdElement,
     LaneCount<N>: SupportedLaneCount,
@@ -39,8 +21,7 @@ where
     T: Integer + SimdElement,
     LaneCount<N>: SupportedLaneCount,
 {
-    /// cmk update docs Create a new [`NotIter`] from a [`SortedDisjoint`] iterator. See [`NotIter`] for an example.
-    pub fn new(slice: &'a [T]) -> Self {
+    pub(crate) fn new(slice: &'a [T]) -> Self {
         let (prefix, middle, suffix) = slice.as_simd();
         FromSliceIter {
             prefix_iter: prefix.iter(),

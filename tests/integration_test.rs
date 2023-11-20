@@ -1275,7 +1275,7 @@ fn print_features() {
 
 #[test]
 fn from_slice_all_types() {
-    syntactic_for! { ty in [i8, u8] { // cmk}, isize, usize,   isize, usize, i128, u128] {
+    syntactic_for! { ty in [i8, u8] { // cmk5}, isize, usize,   isize, usize, i128, u128] {
         $(
             println!("ty={:#?}",size_of::<$ty>() * 8);
             let v: Vec<$ty> = (0..=127).collect();
@@ -1305,7 +1305,7 @@ fn range_set_int_slice_constructor() {
 
     #[allow(clippy::single_element_loop)]
     for iter_len in [2000] {
-        // cmk 1000, 1500, 1750, 2000, 10_000, 1_000_000] {
+        // cmk5 1000, 1500, 1750, 2000, 10_000, 1_000_000] {
         let (range_len, range) =
             tests_common::width_to_range_u32(iter_len, average_width, coverage_goal);
 
@@ -1339,9 +1339,9 @@ fn range_set_int_slice_constructor() {
     let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 
-    // cmk accept slice or reference to slice
+    // cmk5 accept slice or reference to slice
     let a2 = RangeSetBlaze::from_slice(&[3, 2, 1, 100, 1]);
-    // cmk should there be an slice_into()?
+    // cmk5 should there be an slice_into()?
     assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
 }
 

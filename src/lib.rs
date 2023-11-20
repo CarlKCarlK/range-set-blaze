@@ -1,10 +1,9 @@
-#![feature(portable_simd)] // #cmk RULE
+#![feature(portable_simd)] // #cmk Rule
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 use core::mem::size_of;
-use core::simd::{LaneCount, SimdElement, SupportedLaneCount};
-use std::simd::prelude::*; // cmk use? when?
+use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 
 // #[cfg(all(feature = "std", feature = "alloc"))]
 // compile_error!("feature \"std\" and feature \"alloc\" cannot be enabled at the same time");
@@ -70,18 +69,18 @@ pub trait Integer:
     + OverflowingSub
     + CheckedAdd
 {
-    // cmk instead of giving a default impl, we say every type must implement this.
-    /// cmk document
+    // cmk5 instead of giving a default impl, we say every type must implement this.
+    /// cmk5 document
     #[inline]
     fn is_consecutive<const N: usize>(_chunk: &Simd<Self, N>) -> bool
     where
         Self: Sized + SimdElement,
         LaneCount<N>: SupportedLaneCount,
     {
-        panic!("cmk Not implemented size {}", size_of::<Self>() * 8);
+        panic!("cmk5 Not implemented size {}", size_of::<Self>() * 8);
     }
 
-    /// cmk document
+    /// cmk5 document
     fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self>;
 
     /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note
@@ -517,9 +516,9 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    /// cmk need docs
-    /// cmk RULE be sure ints don't wrap in a way that could be bad.
-    /// cmk RULE handle alignment at the start and end.
+    /// cmk5 need docs
+    /// cmk Rule be sure ints don't wrap in a way that could be bad.
+    /// cmk Rule handle alignment at the start and end.
     #[inline]
     pub fn from_slice(slice: &[T]) -> Self
 // where
@@ -1299,7 +1298,7 @@ impl<T: Integer> RangeSetBlaze<T> {
 #[allow(dead_code)]
 fn print_chunk<T: Integer>(slice: &[T], slice_index: usize, chunk_size: usize) {
     println!(
-        "cmk {slice_index}: {}",
+        "cmk5 {slice_index}: {}",
         slice[slice_index..min(slice_index + chunk_size, slice.len())]
             .iter()
             .map(|x| x.to_string())
@@ -2219,9 +2218,9 @@ where
 }
 
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
-// cmk RULE: Explain there is a great .as_simd method that we are not using because we want to code
-// cmk RULE: to also work without SIMD. Also, getting generic constants to work is a pain/impossible.
-// cmk00 Can you use SIMD Rust methods without SIMD?
+// cmk Rule: Explain there is a great .as_simd method that we are not using because we want to code
+// cmk Rule: to also work without SIMD. Also, getting generic constants to work is a pain/impossible.
+// cmk Rule: Can you use SIMD Rust methods without SIMD?
 // cmk Rule: Create a .cargo/config.toml, but think about what you check in.
 // cmk Rule: spot test and benchmark
 // cmk Rule: Look at assembly. Use AI tools to understand it (but they may not be perfect)
