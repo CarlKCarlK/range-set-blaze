@@ -529,12 +529,37 @@ impl<T: Integer> RangeSetBlaze<T> {
     where
         T: SimdElement,
     {
+        #[cfg(any(
+            target_feature = "avx512f",
+            all(not(target_feature = "sse2"), not(target_feature = "avx2"))
+        ))]
         match size_of::<T>() {
             1 => FromSliceIter::<T, 64>::new(slice).collect(),
             2 => FromSliceIter::<T, 32>::new(slice).collect(),
             4 => FromSliceIter::<T, 16>::new(slice).collect(),
             8 => FromSliceIter::<T, 8>::new(slice).collect(),
             16 => FromSliceIter::<T, 4>::new(slice).collect(),
+            _ => panic!("Unsupported type size for SIMD operations"),
+        }
+        // avx2 (256 bits)
+        #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+        match size_of::<T>() {
+            1 => FromSliceIter::<T, 32>::new(slice).collect(),
+            2 => FromSliceIter::<T, 16>::new(slice).collect(),
+            4 => FromSliceIter::<T, 8>::new(slice).collect(),
+            8 => FromSliceIter::<T, 4>::new(slice).collect(),
+            16 => FromSliceIter::<T, 2>::new(slice).collect(),
+            _ => panic!("Unsupported type size for SIMD operations"),
+        }
+
+        // sse2 (128 bits)
+        #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
+        match size_of::<T>() {
+            1 => FromSliceIter::<T, 16>::new(slice).collect(),
+            2 => FromSliceIter::<T, 8>::new(slice).collect(),
+            4 => FromSliceIter::<T, 4>::new(slice).collect(),
+            8 => FromSliceIter::<T, 2>::new(slice).collect(),
+            16 => FromSliceIter::<T, 1>::new(slice).collect(),
             _ => panic!("Unsupported type size for SIMD operations"),
         }
     }

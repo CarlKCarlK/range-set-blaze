@@ -71,7 +71,7 @@ where
             return Some(*before..=*before);
         }
         for chunk in self.chunks.by_ref() {
-            if T::is_consecutive(chunk) {
+            if T::is_consecutive::<N>(chunk) {
                 let this_start = chunk[0];
                 let this_end = chunk[chunk.lanes() - 1];
 

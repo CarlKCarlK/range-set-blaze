@@ -16,41 +16,11 @@ macro_rules! is_consecutive {
         where
             LaneCount<N>: SupportedLaneCount,
         {
-            assert!(N == $expected.lanes(), "cmk Chunk is wrong length");
+            assert!(N == $expected.lanes());
             let expected: &Simd<Self, N> = unsafe { std::mem::transmute(&$expected) };
             let b = chunk.rotate_lanes_right::<1>();
             chunk - b == *expected
         }
-
-        // fn is_consecutive<const N: usize>(chunk: &Simd<Self, N>) -> bool
-        // where
-        //     LaneCount<N>: SupportedLaneCount,
-        // {
-        //     assert!(N == 16, "Chunk is wrong length");
-        //     if N == 16 {
-        //         let b = chunk.rotate_lanes_right::<1>();
-        //         let expected: &Simd<$element, N> = unsafe { std::mem::transmute(&$expected) };
-        //         chunk - b == *expected
-        //     } else {
-        //         // Fallback or generic logic
-        //         false
-        //     }
-        // }
-
-        //     // // cmk0 should do with from_slice_uncheck unsafe????
-        //     // // cmk0 is a[0] the best way to extract an element?
-        //     // // cmk0 is a[0] and then splat the best way to create a simd from one element?
-        //     // // cmk0 is eq the best way to compare two simds?
-        //     // let b = <$simd>::splat(a[0]); // cmk0 seems same as simd_swizzle!
-        //     //                               // cmk0 let b = simd_swizzle!(a, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-        //     // let a = <$simd>::from_slice(chunk) + $decrease; // decrease is 0, -1, -2 ...
-        //     // a == <$simd>::splat(a[0])
-
-        //     // This needlessly check's length and fixes the alignment, but that doesn't to slow things.
-        //     // let a = <$simd>::from_slice(chunk);
-        //     let b = chunk.rotate_lanes_right::<1>();
-        //     chunk - b == $expected
-        // }
     };
 }
 
@@ -101,22 +71,26 @@ impl Integer for u8 {
     }
 }
 
-const EXPECTED_I32X16: Simd<i32, 16> =
+// cmk might be better to define these without the x16, x8, x4, etc.
+// cmk then we would get a compile error if defined more than once
+#[allow(dead_code)]
+const EXPECTED_I32X16: i32x16 =
     unsafe { std::mem::transmute([-15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
 
+#[allow(dead_code)]
 const EXPECTED_U32X16: u32x16 =
     unsafe { std::mem::transmute([-15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
 
-#[allow(dead_code)] // cmk
+#[allow(dead_code)]
 const EXPECTED_I32X8: i32x8 = unsafe { std::mem::transmute([-7, 1, 1, 1, 1, 1, 1, 1]) };
 
-#[allow(dead_code)] // cmk
+#[allow(dead_code)]
 const EXPECTED_U32X8: u32x8 = unsafe { std::mem::transmute([-7, 1, 1, 1, 1, 1, 1, 1]) };
 
-#[allow(dead_code)] // cmk
-const EXPECTED_I32X4: Simd<i32, 4> = unsafe { std::mem::transmute([-3, 1, 1, 1]) };
+#[allow(dead_code)]
+const EXPECTED_I32X4: i32x4 = unsafe { std::mem::transmute([-3, 1, 1, 1]) };
 
-#[allow(dead_code)] // cmk
+#[allow(dead_code)]
 const EXPECTED_U32X4: u32x4 = unsafe { std::mem::transmute([-3, 1, 1, 1]) };
 
 impl Integer for i32 {
@@ -151,11 +125,11 @@ impl Integer for i32 {
 
     // avx2 (256 bits)
     #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    is_consecutive!(i32x8, EXPECTED_I32X8);
+    is_consecutive!(EXPECTED_I32X8);
 
     // sse2 (128 bits)
     #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-    is_consecutive!(i32x4, EXPECTED_I32X4);
+    is_consecutive!(EXPECTED_I32X4);
 }
 
 impl Integer for u32 {
@@ -173,11 +147,11 @@ impl Integer for u32 {
 
     // avx2 (256 bits)
     #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    is_consecutive!(u32x8, EXPECTED_U32X8);
+    is_consecutive!(EXPECTED_U32X8);
 
     // sse2 (128 bits)
     #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-    is_consecutive!(u32x4, EXPECTED_U32X4);
+    is_consecutive!(EXPECTED_U32X4);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
