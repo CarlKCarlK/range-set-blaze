@@ -2,7 +2,7 @@ use core::ops::RangeInclusive;
 use core::simd::{LaneCount, SupportedLaneCount};
 use std::simd::prelude::*; // cmk use? when?
 
-// cmk may want to skip sse2 (128) because it is slower than the non-simd version
+// cmk RULE may want to skip sse2 (128) because it is slower than the non-simd version
 
 use crate::Integer;
 
@@ -73,25 +73,22 @@ impl Integer for u8 {
 
 // cmk might be better to define these without the x16, x8, x4, etc.
 // cmk then we would get a compile error if defined more than once
-#[allow(dead_code)]
-const EXPECTED_I32X16: i32x16 =
+
+// avx512 (512 bits) or scalar
+#[cfg(not(target_feature = "avx2"))]
+const EXPECTED_I32: i32x16 =
     unsafe { std::mem::transmute([-15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
 
-#[allow(dead_code)]
-const EXPECTED_U32X16: u32x16 =
+#[cfg(not(target_feature = "avx2"))]
+const EXPECTED_U32: u32x16 =
     unsafe { std::mem::transmute([-15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
 
-#[allow(dead_code)]
-const EXPECTED_I32X8: i32x8 = unsafe { std::mem::transmute([-7, 1, 1, 1, 1, 1, 1, 1]) };
+// avx2 (256 bits)
+#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+const EXPECTED_I32: i32x8 = unsafe { std::mem::transmute([-7, 1, 1, 1, 1, 1, 1, 1]) };
 
-#[allow(dead_code)]
-const EXPECTED_U32X8: u32x8 = unsafe { std::mem::transmute([-7, 1, 1, 1, 1, 1, 1, 1]) };
-
-#[allow(dead_code)]
-const EXPECTED_I32X4: i32x4 = unsafe { std::mem::transmute([-3, 1, 1, 1]) };
-
-#[allow(dead_code)]
-const EXPECTED_U32X4: u32x4 = unsafe { std::mem::transmute([-3, 1, 1, 1]) };
+#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+const EXPECTED_U32: u32x8 = unsafe { std::mem::transmute([-7, 1, 1, 1, 1, 1, 1, 1]) };
 
 impl Integer for i32 {
     #[cfg(target_pointer_width = "32")]
@@ -116,20 +113,7 @@ impl Integer for i32 {
         a - (b - 1) as Self
     }
 
-    // avx512f or scalar
-    #[cfg(any(
-        target_feature = "avx512f",
-        all(not(target_feature = "sse2"), not(target_feature = "avx2"))
-    ))]
-    is_consecutive!(EXPECTED_I32X16);
-
-    // avx2 (256 bits)
-    #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    is_consecutive!(EXPECTED_I32X8);
-
-    // sse2 (128 bits)
-    #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-    is_consecutive!(EXPECTED_I32X4);
+    is_consecutive!(EXPECTED_I32);
 }
 
 impl Integer for u32 {
@@ -138,20 +122,7 @@ impl Integer for u32 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    // avx512f or scalar
-    #[cfg(any(
-        target_feature = "avx512f",
-        all(not(target_feature = "sse2"), not(target_feature = "avx2"))
-    ))]
-    is_consecutive!(EXPECTED_U32X16);
-
-    // avx2 (256 bits)
-    #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    is_consecutive!(EXPECTED_U32X8);
-
-    // sse2 (128 bits)
-    #[cfg(all(target_feature = "sse2", not(target_feature = "avx2")))]
-    is_consecutive!(EXPECTED_U32X4);
+    is_consecutive!(EXPECTED_U32);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
