@@ -30,6 +30,8 @@ impl Integer for i8 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
+    is_consecutive!(EXPECTED_X8);
+
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u8 as <Self as Integer>::SafeLen + 1
     }
@@ -53,6 +55,8 @@ impl Integer for u8 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
+    is_consecutive!(EXPECTED_X8);
+
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
     }
@@ -75,20 +79,32 @@ impl Integer for u8 {
 // cmk then we would get a compile error if defined more than once
 
 // avx512 (512 bits) or scalar
-#[cfg(not(target_feature = "avx2"))]
-const EXPECTED_I32: i32x16 =
-    unsafe { std::mem::transmute([-15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
-
-#[cfg(not(target_feature = "avx2"))]
-const EXPECTED_U32: u32x16 =
-    unsafe { std::mem::transmute([-15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
+#[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
+const EXPECTED_X32: i32x16 =
+    unsafe { std::mem::transmute([-15i32, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) };
 
 // avx2 (256 bits)
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-const EXPECTED_I32: i32x8 = unsafe { std::mem::transmute([-7, 1, 1, 1, 1, 1, 1, 1]) };
+const EXPECTED_X32: i32x8 = unsafe { std::mem::transmute([-7i32, 1, 1, 1, 1, 1, 1, 1]) };
 
+// avx512 (512 bits) or scalar
+#[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
+const EXPECTED_X8: i8x64 = unsafe {
+    std::mem::transmute([
+        -15i8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1,
+    ])
+};
+
+// avx2 (256 bits)
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-const EXPECTED_U32: u32x8 = unsafe { std::mem::transmute([-7, 1, 1, 1, 1, 1, 1, 1]) };
+const EXPECTED_X8: i8x32 = unsafe {
+    std::mem::transmute([
+        -7i8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1,
+    ])
+};
 
 impl Integer for i32 {
     #[cfg(target_pointer_width = "32")]
@@ -113,7 +129,7 @@ impl Integer for i32 {
         a - (b - 1) as Self
     }
 
-    is_consecutive!(EXPECTED_I32);
+    is_consecutive!(EXPECTED_X32);
 }
 
 impl Integer for u32 {
@@ -122,7 +138,7 @@ impl Integer for u32 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    is_consecutive!(EXPECTED_U32);
+    is_consecutive!(EXPECTED_X32);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1

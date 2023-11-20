@@ -530,7 +530,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         T: SimdElement,
     {
         // avx512 (512 bits) or scalar
-        #[cfg(not(target_feature = "avx2"))]
+        #[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
         match size_of::<T>() {
             1 => FromSliceIter::<T, 64>::new(slice).collect(),
             2 => FromSliceIter::<T, 32>::new(slice).collect(),

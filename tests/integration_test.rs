@@ -1273,6 +1273,17 @@ fn print_features() {
 }
 
 #[test]
+fn from_slice_all_types() {
+    syntactic_for! { ty in [i8, u8] { // cmk}, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+        $(
+            let v: Vec<$ty> = (100..=120).collect();
+            let a2 = RangeSetBlaze::from_slice(&v);
+            assert!(a2.to_string() == "100..=120");
+        )*
+    }};
+}
+
+#[test]
 fn range_set_int_slice_constructor() {
     print_features();
     let k = 1;
