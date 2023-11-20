@@ -39,6 +39,7 @@ use core::{
     str::FromStr,
 };
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
+// use from_slice_iter::FromSliceIter;
 use gen_ops::gen_ops_ex;
 use itertools::Tee;
 pub use merge::{KMerge, Merge};
@@ -71,6 +72,7 @@ pub trait Integer:
 {
     // cmk instead of giving a default impl, we say every type must implement this.
     /// cmk document
+    #[inline]
     fn is_consecutive<const N: usize>(_chunk: &Simd<Self, N>) -> bool
     where
         Self: Sized + SimdElement,
@@ -518,9 +520,21 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// cmk need docs
     /// cmk RULE be sure ints don't wrap in a way that could be bad.
     /// cmk RULE handle alignment at the start and end.
-    pub fn from_slice(slice: &[T]) -> Self {
+    #[inline]
+    pub fn from_slice(slice: &[T]) -> Self
+// where
+    //     T: SimdElement,
+    {
         // make sure this is inline
         T::from_slice(slice)
+        // match size_of::<T>() {
+        //     1 => FromSliceIter::<T, 64>::new(slice).collect(),
+        //     2 => FromSliceIter::<T, 32>::new(slice).collect(),
+        //     4 => FromSliceIter::<T, 16>::new(slice).collect(),
+        //     8 => FromSliceIter::<T, 8>::new(slice).collect(),
+        //     16 => FromSliceIter::<T, 4>::new(slice).collect(),
+        //     _ => panic!("Unsupported type size for SIMD operations"),
+        // }
     }
 
     fn _len_slow(&self) -> <T as Integer>::SafeLen {

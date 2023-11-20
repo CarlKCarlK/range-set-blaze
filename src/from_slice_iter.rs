@@ -66,6 +66,7 @@ where
 {
     type Item = RangeInclusive<T>;
 
+    #[inline]
     fn next(&mut self) -> Option<RangeInclusive<T>> {
         if let Some(before) = self.prefix_iter.next() {
             return Some(*before..=*before);

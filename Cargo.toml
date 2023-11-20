@@ -63,3 +63,5 @@ all-features = true
 # TODO Rule: for running profiling
 # [profile.release]
 # debug = true
+[profile.release]
+opt-level = 3 # Maximum optimization

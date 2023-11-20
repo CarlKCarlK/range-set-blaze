@@ -16,7 +16,6 @@ macro_rules! from_slice_etc {
         // avx512 (512 bits) or scalar
         #[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
         // cmk Rule: Making this inline reduced time from 146 to 92
-        #[inline]
         fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self> {
             // cmk Rule: const expressions are handy.
             // Note: Does the right thing for isize, usize
@@ -24,11 +23,11 @@ macro_rules! from_slice_etc {
         }
         // avx2 (256 bits)
         #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-        #[inline]
         fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self> {
             FromSliceIter::<Self, { 64 / size_of::<Self>() }>::new(slice).collect()
         }
 
+        #[inline]
         fn is_consecutive<const N: usize>(chunk: &Simd<Self, N>) -> bool
         where
             LaneCount<N>: SupportedLaneCount,
