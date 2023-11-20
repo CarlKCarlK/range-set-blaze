@@ -29,31 +29,21 @@ mod tests;
 mod union_iter;
 mod unsorted_disjoint;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
-use alloc::collections::BTreeMap;
-use alloc::vec::Vec;
-use core::cmp::max;
-use core::cmp::min;
-use core::cmp::Ordering;
-use core::convert::From;
-use core::fmt;
-use core::iter::FusedIterator;
-use core::ops::BitOr;
-use core::ops::BitOrAssign;
-use core::ops::Bound;
-use core::ops::RangeBounds;
-use core::ops::RangeInclusive;
-use core::str::FromStr;
+use alloc::{collections::BTreeMap, vec::Vec};
+use core::{
+    cmp::{max, min, Ordering},
+    convert::From,
+    fmt,
+    iter::FusedIterator,
+    ops::{BitOr, BitOrAssign, Bound, RangeBounds, RangeInclusive},
+    str::FromStr,
+};
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
-use from_slice_iter::FromSliceIter;
 use gen_ops::gen_ops_ex;
 use itertools::Tee;
-pub use merge::KMerge;
-pub use merge::Merge;
+pub use merge::{KMerge, Merge};
 pub use not_iter::NotIter;
-use num_traits::ops::overflowing::OverflowingSub;
-use num_traits::CheckedAdd;
-use num_traits::One;
-use num_traits::Zero;
+use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, One, Zero};
 #[cfg(feature = "rog-experimental")]
 pub use rog::{Rog, RogsIter};
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
@@ -86,8 +76,11 @@ pub trait Integer:
         Self: Sized + SimdElement,
         LaneCount<N>: SupportedLaneCount,
     {
-        panic!("cmk Not implemented");
+        panic!("cmk Not implemented size {}", size_of::<Self>() * 8);
     }
+
+    /// cmk document
+    fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self>;
 
     /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note
     /// that it can't be `u8` because the length ranges from 0 to 256, which is one too large for `u8`.
@@ -525,30 +518,9 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// cmk need docs
     /// cmk RULE be sure ints don't wrap in a way that could be bad.
     /// cmk RULE handle alignment at the start and end.
-    pub fn from_slice(slice: &[T]) -> Self
-    where
-        T: SimdElement,
-    {
-        // avx512 (512 bits) or scalar
-        #[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
-        match size_of::<T>() {
-            1 => FromSliceIter::<T, 64>::new(slice).collect(),
-            2 => FromSliceIter::<T, 32>::new(slice).collect(),
-            4 => FromSliceIter::<T, 16>::new(slice).collect(),
-            8 => FromSliceIter::<T, 8>::new(slice).collect(),
-            16 => FromSliceIter::<T, 4>::new(slice).collect(),
-            _ => panic!("Unsupported type size for SIMD operations"),
-        }
-        // avx2 (256 bits)
-        #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-        match size_of::<T>() {
-            1 => FromSliceIter::<T, 32>::new(slice).collect(),
-            2 => FromSliceIter::<T, 16>::new(slice).collect(),
-            4 => FromSliceIter::<T, 8>::new(slice).collect(),
-            8 => FromSliceIter::<T, 4>::new(slice).collect(),
-            16 => FromSliceIter::<T, 2>::new(slice).collect(),
-            _ => panic!("Unsupported type size for SIMD operations"),
-        }
+    pub fn from_slice(slice: &[T]) -> Self {
+        // make sure this is inline
+        T::from_slice(slice)
     }
 
     fn _len_slow(&self) -> <T as Integer>::SafeLen {

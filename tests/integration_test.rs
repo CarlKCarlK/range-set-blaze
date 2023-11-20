@@ -11,6 +11,7 @@ use range_set_blaze::{
     prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts, UnionIter,
 };
 use std::cmp::Ordering;
+use std::mem::size_of;
 #[cfg(feature = "rog-experimental")]
 use std::ops::Bound;
 use std::ops::RangeInclusive;
@@ -1274,11 +1275,21 @@ fn print_features() {
 
 #[test]
 fn from_slice_all_types() {
-    syntactic_for! { ty in [i8, u8] { // cmk}, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+    syntactic_for! { ty in [i8, u8] { // cmk}, isize, usize,   isize, usize, i128, u128] {
         $(
-            let v: Vec<$ty> = (100..=120).collect();
+            println!("ty={:#?}",size_of::<$ty>() * 8);
+            let v: Vec<$ty> = (0..=127).collect();
             let a2 = RangeSetBlaze::from_slice(&v);
-            assert!(a2.to_string() == "100..=120");
+            assert!(a2.to_string() == "0..=127");
+        )*
+    }};
+
+    syntactic_for! { ty in [i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+        $(
+            println!("ty={:#?}",size_of::<$ty>() * 8);
+            let v: Vec<$ty> = (0..=5000).collect();
+            let a2 = RangeSetBlaze::from_slice(&v);
+            assert!(a2.to_string() == "0..=5000");
         )*
     }};
 }
