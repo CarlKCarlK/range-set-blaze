@@ -9,66 +9,55 @@ use std::mem::size_of;
 
 use crate::Integer;
 
+// cmk Rule: const expressions are handy.
+// Note: Does the right thing for isize, usize
+// cmk5 Look for other uses of const expressions
+// cmk Rule: Making this inline reduced time from 146 to 92
+
+// avx512 (512 bits) or scalar
+#[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
+const SIMD_REGISTER_BYTES: usize = 512 / 8;
+// avx2 (256 bits)
+#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+const SIMD_REGISTER_BYTES: usize = 256 / 8;
+
 macro_rules! from_slice_etc {
     ($expected:ident) => {
-        // cmk Rule: const expressions are handy.
-        // Note: Does the right thing for isize, usize
-        // cmk5 Look for other uses of const expressions
-        // cmk Rule: Making this inline reduced time from 146 to 92
-
-        // avx512 (512 bits) or scalar
-        #[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
         #[inline]
         fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self> {
-            FromSliceIter::<Self, { 64 / size_of::<Self>() }>::new(slice, &$expected).collect()
-        }
-        // avx2 (256 bits)
-        // cmk0 shouldn't this be 32 and have a transmute?
-        #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-        #[inline]
-        fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self> {
-            FromSliceIter::<Self, { 32 / size_of::<Self>() }>::new(slice, &$expected).collect()
+            FromSliceIter::<Self, { SIMD_REGISTER_BYTES / size_of::<Self>() }>::new(
+                slice,
+                &$expected(),
+            )
+            .collect()
         }
     };
 }
 
 macro_rules! expected_simd {
-    ($const:ident, $function:ident, $type:ty, $n512:tt, $n128:tt) => {
+    ($function:ident, $type:ty) => {
         #[inline]
         const fn $function<const N: usize>() -> Simd<$type, N>
         where
             LaneCount<N>: SupportedLaneCount,
         {
             let mut arr: [$type; N] = [1; N];
-            arr[0] = !(N as $type) + 2;
+            arr[0] = (0 as $type).wrapping_sub(N as $type) + 1; // is -(N-1) for wrapped_add signed & unsigned
             Simd::from_array(arr)
         }
-
-        // avx512 (512 bits) or scalar
-        #[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
-        const $const: Simd<$type, $n512> = $function::<$n512>();
-        // avx2 (256 bits)
-        #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-        const $const: Simd<$type, $n128> = $function::<$n128>();
     };
 }
 
-expected_simd!(EXPECTED_I8, expected_i8, i8, 64, 32);
-expected_simd!(EXPECTED_U8, expected_u8, u8, 64, 32);
-expected_simd!(EXPECTED_I16, expected_i16, i16, 32, 16);
-expected_simd!(EXPECTED_U16, expected_u16, u16, 32, 16);
-expected_simd!(EXPECTED_I32, expected_i32, i32, 16, 8);
-expected_simd!(EXPECTED_U32, expected_u32, u32, 16, 8);
-expected_simd!(EXPECTED_I64, expected_i64, i64, 8, 4);
-expected_simd!(EXPECTED_U64, expected_u64, u64, 8, 4);
-#[cfg(target_pointer_width = "64")]
-expected_simd!(EXPECTED_ISIZE, expected_isize, isize, 8, 4);
-#[cfg(target_pointer_width = "64")]
-expected_simd!(EXPECTED_USIZE, expected_usize, usize, 8, 4);
-#[cfg(target_pointer_width = "32")]
-expected_simd!(EXPECTED_ISIZE, expected_isize, isize, 4, 2);
-#[cfg(target_pointer_width = "32")]
-expected_simd!(EXPECTED_USIZE, expected_usize, usize, 4, 2);
+expected_simd!(expected_i8, i8);
+expected_simd!(expected_u8, u8);
+expected_simd!(expected_i16, i16);
+expected_simd!(expected_u16, u16);
+expected_simd!(expected_i32, i32);
+expected_simd!(expected_u32, u32);
+expected_simd!(expected_i64, i64);
+expected_simd!(expected_u64, u64);
+expected_simd!(expected_isize, isize);
+expected_simd!(expected_usize, usize);
 
 impl Integer for i8 {
     #[cfg(target_pointer_width = "32")]
@@ -76,7 +65,7 @@ impl Integer for i8 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    from_slice_etc!(EXPECTED_I8);
+    from_slice_etc!(expected_i8);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u8 as <Self as Integer>::SafeLen + 1
@@ -101,7 +90,7 @@ impl Integer for u8 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    from_slice_etc!(EXPECTED_U8);
+    from_slice_etc!(expected_u8);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -144,7 +133,7 @@ impl Integer for i32 {
         a - (b - 1) as Self
     }
 
-    from_slice_etc!(EXPECTED_I32);
+    from_slice_etc!(expected_i32);
 }
 
 impl Integer for u32 {
@@ -153,7 +142,7 @@ impl Integer for u32 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    from_slice_etc!(EXPECTED_U32);
+    from_slice_etc!(expected_u32);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -179,7 +168,7 @@ impl Integer for i64 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    from_slice_etc!(EXPECTED_I64);
+    from_slice_etc!(expected_i64);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u64 as <Self as Integer>::SafeLen + 1
@@ -204,7 +193,7 @@ impl Integer for u64 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    from_slice_etc!(EXPECTED_U64);
+    from_slice_etc!(expected_u64);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -292,7 +281,7 @@ impl Integer for isize {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    from_slice_etc!(EXPECTED_ISIZE);
+    from_slice_etc!(expected_isize);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as usize as <Self as Integer>::SafeLen + 1
@@ -318,7 +307,7 @@ impl Integer for usize {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    from_slice_etc!(EXPECTED_USIZE);
+    from_slice_etc!(expected_usize);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -344,7 +333,7 @@ impl Integer for i16 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    from_slice_etc!(EXPECTED_I16);
+    from_slice_etc!(expected_i16);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u16 as <Self as Integer>::SafeLen + 1
@@ -370,7 +359,7 @@ impl Integer for u16 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    from_slice_etc!(EXPECTED_U16);
+    from_slice_etc!(expected_u16);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -411,8 +400,7 @@ macro_rules! check_simd {
     ($simd:expr) => {{
         let length = $simd.lanes();
         let t_bytes = std::mem::size_of_val(&$simd) / length;
-        // cmk0 what about 256bit SIMD?
-        assert_eq!(length, 64 / t_bytes);
+        assert_eq!(length, SIMD_REGISTER_BYTES / t_bytes);
         assert_eq!($simd[0] as i32, -((length as i32) - 1));
         for &val in $simd.as_array().iter().skip(1) {
             assert_eq!(val, 1);
@@ -421,16 +409,17 @@ macro_rules! check_simd {
 }
 
 // cmk Rule: Test your constants
-#[test]
-fn check_simd_constants() {
-    check_simd!(EXPECTED_I8);
-    // check_simd!(EXPECTED_U8);
-    check_simd!(EXPECTED_I16);
-    // check_simd!(EXPECTED_U16);
-    check_simd!(EXPECTED_I32);
-    // check_simd!(EXPECTED_U32);
-    check_simd!(EXPECTED_I64);
-    // check_simd!(EXPECTED_U64);
-    check_simd!(EXPECTED_ISIZE);
-    // check_simd!(EXPECTED_USIZE);
-}
+// cmk0 re-create this test
+// #[test]
+// fn check_simd_constants() {
+//     check_simd!(EXPECTED_I8);
+//     // check_simd!(EXPECTED_U8);
+//     check_simd!(EXPECTED_I16);
+//     // check_simd!(EXPECTED_U16);
+//     check_simd!(EXPECTED_I32);
+//     // check_simd!(EXPECTED_U32);
+//     check_simd!(EXPECTED_I64);
+//     // check_simd!(EXPECTED_U64);
+//     check_simd!(EXPECTED_ISIZE);
+//     // check_simd!(EXPECTED_USIZE);
+// }

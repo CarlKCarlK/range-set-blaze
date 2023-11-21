@@ -41,7 +41,7 @@ use gen_ops::gen_ops_ex;
 use itertools::Tee;
 pub use merge::{KMerge, Merge};
 pub use not_iter::NotIter;
-use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, One, Zero};
+use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, One, WrappingSub, Zero};
 #[cfg(feature = "rog-experimental")]
 pub use rog::{Rog, RogsIter};
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
@@ -66,6 +66,7 @@ pub trait Integer:
     + Sync
     + OverflowingSub
     + CheckedAdd
+    + WrappingSub
 {
     /// cmk doc
     fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self>;
