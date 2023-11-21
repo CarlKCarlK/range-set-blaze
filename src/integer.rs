@@ -32,7 +32,7 @@ macro_rules! expected_simd {
             LaneCount<N>: SupportedLaneCount,
         {
             let mut arr: [$type; N] = [1; N];
-            arr[0] = (0 as $type).wrapping_sub(N as $type) + 1; // is -(N-1) for signed & unsigned
+            arr[0] = (1 as $type).wrapping_sub(N as $type); // is -(N-1) for signed & unsigned
             Simd::from_array(arr)
         }
     };
