@@ -2,7 +2,7 @@ use crate::{from_slice_iter::FromSliceIter, RangeSetBlaze};
 
 use core::ops::RangeInclusive;
 use core::simd::prelude::*;
-use core::simd::{LaneCount, SupportedLaneCount};
+use core::simd::{LaneCount, SimdElement, SupportedLaneCount};
 use std::mem::size_of;
 
 // cmk Rule may want to skip sse2 (128) because it is slower than the non-simd version
@@ -14,35 +14,25 @@ use crate::Integer;
 // cmk5 Look for other uses of const expressions
 // cmk Rule: Making this inline reduced time from 146 to 92
 
-// avx512 (512 bits) or scalar
-#[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
-const SIMD_REGISTER_BYTES: usize = 512 / 8;
-// avx2 (256 bits)
-#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-const SIMD_REGISTER_BYTES: usize = 256 / 8;
-
-macro_rules! from_slice_etc {
-    ($expected:ident) => {
-        #[inline]
-        fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self> {
-            FromSliceIter::<Self, { SIMD_REGISTER_BYTES / size_of::<Self>() }>::new(
-                slice,
-                &$expected(),
-            )
-            .collect()
-        }
-    };
+#[inline]
+pub(crate) fn is_consecutive<T, const N: usize>(chunk: &Simd<T, N>, expected: Simd<T, N>) -> bool
+where
+    T: Integer + SimdElement,
+    LaneCount<N>: SupportedLaneCount,
+    Simd<T, N>: std::ops::Sub<Output = Simd<T, N>>,
+{
+    let b = chunk.rotate_lanes_right::<1>();
+    chunk - b == expected
 }
 
 macro_rules! expected_simd {
     ($function:ident, $type:ty) => {
-        #[inline]
         const fn $function<const N: usize>() -> Simd<$type, N>
         where
             LaneCount<N>: SupportedLaneCount,
         {
             let mut arr: [$type; N] = [1; N];
-            arr[0] = (0 as $type).wrapping_sub(N as $type) + 1; // is -(N-1) for wrapped_add signed & unsigned
+            arr[0] = (0 as $type).wrapping_sub(N as $type) + 1; // is -(N-1) for signed & unsigned
             Simd::from_array(arr)
         }
     };
@@ -59,13 +49,33 @@ expected_simd!(expected_u64, u64);
 expected_simd!(expected_isize, isize);
 expected_simd!(expected_usize, usize);
 
+// avx512 (512 bits) or scalar
+#[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
+const SIMD_REGISTER_BYTES: usize = 512 / 8;
+// avx2 (256 bits)
+#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+const SIMD_REGISTER_BYTES: usize = 256 / 8;
+
+macro_rules! from_slice {
+    ($expected:ident) => {
+        #[inline]
+        fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self> {
+            FromSliceIter::<Self, { SIMD_REGISTER_BYTES / size_of::<Self>() }>::new(
+                slice,
+                &$expected(),
+            )
+            .collect()
+        }
+    };
+}
+
 impl Integer for i8 {
     #[cfg(target_pointer_width = "32")]
     type SafeLen = usize;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    from_slice_etc!(expected_i8);
+    from_slice!(expected_i8);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u8 as <Self as Integer>::SafeLen + 1
@@ -90,7 +100,7 @@ impl Integer for u8 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    from_slice_etc!(expected_u8);
+    from_slice!(expected_u8);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -133,7 +143,7 @@ impl Integer for i32 {
         a - (b - 1) as Self
     }
 
-    from_slice_etc!(expected_i32);
+    from_slice!(expected_i32);
 }
 
 impl Integer for u32 {
@@ -142,7 +152,7 @@ impl Integer for u32 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    from_slice_etc!(expected_u32);
+    from_slice!(expected_u32);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -168,7 +178,7 @@ impl Integer for i64 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    from_slice_etc!(expected_i64);
+    from_slice!(expected_i64);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u64 as <Self as Integer>::SafeLen + 1
@@ -193,7 +203,7 @@ impl Integer for u64 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    from_slice_etc!(expected_u64);
+    from_slice!(expected_u64);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -281,7 +291,7 @@ impl Integer for isize {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    from_slice_etc!(expected_isize);
+    from_slice!(expected_isize);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as usize as <Self as Integer>::SafeLen + 1
@@ -307,7 +317,7 @@ impl Integer for usize {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    from_slice_etc!(expected_usize);
+    from_slice!(expected_usize);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -333,7 +343,7 @@ impl Integer for i16 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    from_slice_etc!(expected_i16);
+    from_slice!(expected_i16);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u16 as <Self as Integer>::SafeLen + 1
@@ -359,7 +369,7 @@ impl Integer for u16 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    from_slice_etc!(expected_u16);
+    from_slice!(expected_u16);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1

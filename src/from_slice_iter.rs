@@ -1,3 +1,4 @@
+use crate::integer::is_consecutive;
 use crate::Integer;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive};
@@ -43,19 +44,6 @@ where
 {
 }
 
-impl<'a, T: 'a, const N: usize> FromSliceIter<'a, T, N>
-where
-    T: Integer + SimdElement,
-    LaneCount<N>: SupportedLaneCount,
-    Simd<T, N>: std::ops::Sub<Output = Simd<T, N>>,
-{
-    #[inline]
-    fn is_consecutive(chunk: &Simd<T, N>, expected: Simd<T, N>) -> bool {
-        let b = chunk.rotate_lanes_right::<1>();
-        chunk - b == expected
-    }
-}
-
 impl<'a, T: 'a, const N: usize> Iterator for FromSliceIter<'a, T, N>
 where
     T: Integer + SimdElement,
@@ -71,7 +59,7 @@ where
         }
         let expected = self.expected;
         for chunk in self.chunks.by_ref() {
-            if Self::is_consecutive(chunk, expected) {
+            if is_consecutive(chunk, expected) {
                 let this_start = chunk[0];
                 let this_end = chunk[N - 1];
 
