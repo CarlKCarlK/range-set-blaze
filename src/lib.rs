@@ -69,18 +69,7 @@ pub trait Integer:
     + OverflowingSub
     + CheckedAdd
 {
-    // cmk5 instead of giving a default impl, we say every type must implement this.
-    /// cmk5 document
-    #[inline]
-    fn is_consecutive<const N: usize>(_chunk: &Simd<Self, N>) -> bool
-    where
-        Self: Sized + SimdElement,
-        LaneCount<N>: SupportedLaneCount,
-    {
-        panic!("cmk5 Not implemented size {}", size_of::<Self>() * 8);
-    }
-
-    /// cmk5 document
+    /// cmk doc
     fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self>;
 
     /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note
@@ -1295,18 +1284,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 }
 
-#[allow(dead_code)]
-fn print_chunk<T: Integer>(slice: &[T], slice_index: usize, chunk_size: usize) {
-    println!(
-        "cmk5 {slice_index}: {}",
-        slice[slice_index..min(slice_index + chunk_size, slice.len())]
-            .iter()
-            .map(|x| x.to_string())
-            .collect::<Vec<String>>()
-            .join(", ")
-    );
-}
-
 // We create a RangeSetBlaze from an iterator of integers or integer ranges by
 // 1. turning them into a UnionIter (internally, it collects into intervals and sorts by start).
 // 2. Turning the SortedDisjoint into a BTreeMap.
@@ -2224,3 +2201,4 @@ where
 // cmk Rule: Create a .cargo/config.toml, but think about what you check in.
 // cmk Rule: spot test and benchmark
 // cmk Rule: Look at assembly. Use AI tools to understand it (but they may not be perfect)
+// cmk Thanks to B3NNY (or name) at the Seattle Rust Meetup for pointing me in the right direction on SIMD.")

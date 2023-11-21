@@ -14,6 +14,7 @@ where
     chunks: core::slice::Iter<'a, Simd<T, N>>,
     suffix: &'a [T],
     slice_len: usize,
+    expected: Simd<T, N>,
 }
 
 impl<'a, T: 'a, const N: usize> FromSliceIter<'a, T, N>
@@ -21,7 +22,7 @@ where
     T: Integer + SimdElement,
     LaneCount<N>: SupportedLaneCount,
 {
-    pub(crate) fn new(slice: &'a [T]) -> Self {
+    pub(crate) fn new(slice: &'a [T], expected: &Simd<T, N>) -> Self {
         let (prefix, middle, suffix) = slice.as_simd();
         FromSliceIter {
             prefix_iter: prefix.iter(),
@@ -29,6 +30,7 @@ where
             chunks: middle.iter(),
             suffix,
             slice_len: slice.len(),
+            expected: *expected,
         }
     }
 }
@@ -37,13 +39,28 @@ impl<'a, T, const N: usize> FusedIterator for FromSliceIter<'a, T, N>
 where
     T: Integer + SimdElement,
     LaneCount<N>: SupportedLaneCount,
+    Simd<T, N>: std::ops::Sub<Output = Simd<T, N>>,
 {
+}
+
+impl<'a, T: 'a, const N: usize> FromSliceIter<'a, T, N>
+where
+    T: Integer + SimdElement,
+    LaneCount<N>: SupportedLaneCount,
+    Simd<T, N>: std::ops::Sub<Output = Simd<T, N>>,
+{
+    #[inline]
+    fn is_consecutive(chunk: &Simd<T, N>, expected: Simd<T, N>) -> bool {
+        let b = chunk.rotate_lanes_right::<1>();
+        chunk - b == expected
+    }
 }
 
 impl<'a, T: 'a, const N: usize> Iterator for FromSliceIter<'a, T, N>
 where
     T: Integer + SimdElement,
     LaneCount<N>: SupportedLaneCount,
+    Simd<T, N>: std::ops::Sub<Output = Simd<T, N>>,
 {
     type Item = RangeInclusive<T>;
 
@@ -52,10 +69,11 @@ where
         if let Some(before) = self.prefix_iter.next() {
             return Some(*before..=*before);
         }
+        let expected = self.expected;
         for chunk in self.chunks.by_ref() {
-            if T::is_consecutive::<N>(chunk) {
+            if Self::is_consecutive(chunk, expected) {
                 let this_start = chunk[0];
-                let this_end = chunk[chunk.lanes() - 1];
+                let this_end = chunk[N - 1];
 
                 if let Some(inner_previous_range) = self.previous_range.as_mut() {
                     // if some and previous is some and adjacent, combine
