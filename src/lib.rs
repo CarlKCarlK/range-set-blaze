@@ -2,8 +2,6 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
-use core::mem::size_of;
-use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 
 // #[cfg(all(feature = "std", feature = "alloc"))]
 // compile_error!("feature \"std\" and feature \"alloc\" cannot be enabled at the same time");
@@ -30,7 +28,7 @@ mod unsorted_disjoint;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
 use alloc::{collections::BTreeMap, vec::Vec};
 use core::{
-    cmp::{max, min, Ordering},
+    cmp::{max, Ordering},
     convert::From,
     fmt,
     iter::FusedIterator,
@@ -2202,3 +2200,5 @@ where
 // cmk Rule: spot test and benchmark
 // cmk Rule: Look at assembly. Use AI tools to understand it (but they may not be perfect)
 // cmk Thanks to B3NNY (or name) at the Seattle Rust Meetup for pointing me in the right direction on SIMD.")
+// cmk Understand Benny's use of godbolt: https://godbolt.org/z/3P3jGej3h
+// cmk Rule: Use Godbolt.
