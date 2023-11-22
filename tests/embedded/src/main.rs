@@ -27,6 +27,10 @@ fn main() -> ! {
     assert!(range_set_blaze.to_string() == "-4..=-3, 100..=103");
     hprintln!("{:?}", range_set_blaze.to_string()).unwrap();
 
+    let range_set_blaze = RangeSetBlaze::from_slice(&[100, 103, 101, 102, -3, -4]);
+    assert!(range_set_blaze.to_string() == "-4..=-3, 100..=103");
+    hprintln!("{:?}", range_set_blaze.to_string()).unwrap();
+
     // exit QEMU/ NOTE do not run this on hardware; it can corrupt OpenOCD state
     debug::exit(debug::EXIT_SUCCESS);
     loop {}
