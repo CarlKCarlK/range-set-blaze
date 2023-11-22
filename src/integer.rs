@@ -1,10 +1,12 @@
 #[cfg(feature = "from_slice")]
-use crate::{from_slice_iter::FromSliceIter, RangeSetBlaze};
-
-#[cfg(feature = "from_slice")]
-use crate::from_slice_iter::{
-    reference_i16, reference_i32, reference_i64, reference_i8, reference_isize, reference_u16,
-    reference_u32, reference_u64, reference_u8, reference_usize, SIMD_REGISTER_BYTES,
+use crate::{
+    from_slice,
+    from_slice::{
+        reference_i16, reference_i32, reference_i64, reference_i8, reference_isize, reference_u16,
+        reference_u32, reference_u64, reference_u8, reference_usize, FromSliceIter,
+        SIMD_REGISTER_BYTES,
+    },
+    RangeSetBlaze,
 };
 use core::ops::RangeInclusive;
 
@@ -16,28 +18,14 @@ use crate::Integer;
 // cmk5 Look for other uses of const expressions
 // cmk Rule: Making this inline reduced time from 146 to 92
 
-#[cfg(feature = "from_slice")]
-macro_rules! from_slice {
-    ($reference:ident) => {
-        #[inline]
-        fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self> {
-            FromSliceIter::<Self, { SIMD_REGISTER_BYTES / core::mem::size_of::<Self>() }>::new(
-                slice,
-                $reference(),
-            )
-            .collect()
-        }
-    };
-}
-
 impl Integer for i8 {
-    #[cfg(feature = "from_slice")]
-    from_slice!(reference_i8);
-
     #[cfg(target_pointer_width = "32")]
     type SafeLen = usize;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
+
+    #[cfg(feature = "from_slice")]
+    from_slice!(reference_i8);
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u8 as <Self as Integer>::SafeLen + 1
@@ -377,32 +365,3 @@ impl Integer for u16 {
 // cmk Rule: Do const values like ... https://rust-lang.zulipchat.com/#narrow/stream/122651-general/topic/const.20SIMD.20values
 // cmk Rule: Use SIMD rust command even without SIMD.
 // cmk Rule: Use unsafe where you need to.
-
-#[allow(unused_macros)]
-macro_rules! check_simd {
-    ($simd:expr) => {{
-        let length = $simd.lanes();
-        let t_bytes = std::mem::size_of_val(&$simd) / length;
-        assert_eq!(length, SIMD_REGISTER_BYTES / t_bytes);
-        assert_eq!($simd[0] as i32, -((length as i32) - 1));
-        for &val in $simd.as_array().iter().skip(1) {
-            assert_eq!(val, 1);
-        }
-    }};
-}
-
-// cmk Rule: Test your constants
-// cmk0 re-create this test
-// #[test]
-// fn check_simd_constants() {
-//     check_simd!(EXPECTED_I8);
-//     // check_simd!(EXPECTED_U8);
-//     check_simd!(EXPECTED_I16);
-//     // check_simd!(EXPECTED_U16);
-//     check_simd!(EXPECTED_I32);
-//     // check_simd!(EXPECTED_U32);
-//     check_simd!(EXPECTED_I64);
-//     // check_simd!(EXPECTED_U64);
-//     check_simd!(EXPECTED_ISIZE);
-//     // check_simd!(EXPECTED_USIZE);
-// }

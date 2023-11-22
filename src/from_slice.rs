@@ -1,10 +1,23 @@
 #![cfg(feature = "from_slice")]
 
-// cmk00 rename to 'from_slice.rs' ???
-
 use crate::Integer;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive};
+
+#[macro_export]
+#[doc(hidden)]
+macro_rules! from_slice {
+    ($reference:ident) => {
+        #[inline]
+        fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self> {
+            FromSliceIter::<Self, { SIMD_REGISTER_BYTES / core::mem::size_of::<Self>() }>::new(
+                slice,
+                $reference(),
+            )
+            .collect()
+        }
+    };
+}
 
 #[inline]
 pub(crate) fn is_consecutive<T, const N: usize>(chunk: Simd<T, N>, reference: Simd<T, N>) -> bool
@@ -16,7 +29,7 @@ where
     // let b = chunk.rotate_lanes_right::<1>();
     // chunk - b == reference
     let subtracted = chunk - reference;
-    Simd::<T, N>::splat(subtracted[0]) == subtracted
+    Simd::<T, N>::splat(chunk[0]) == subtracted
     // const SWIZZLE_CONST: [usize; N] = [0; N];
     // simd_swizzle!(subtracted, SWIZZLE_CONST) == subtracted
 }

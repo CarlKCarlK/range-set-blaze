@@ -14,7 +14,7 @@ extern crate alloc;
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
-mod from_slice_iter;
+mod from_slice;
 mod integer;
 mod merge;
 mod not_iter;

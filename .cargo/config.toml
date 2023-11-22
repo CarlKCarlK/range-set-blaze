@@ -1,8 +1,9 @@
-# Rule may not want this in the project's config
+# cmk Rule may not want this in the project's config
+# cmk if you check this in, it will mess up, wasm builds
 [build]
 rustflags = [
-    # "-C",
-    # "target-cpu=native",
+    "-C",
+    "target-cpu=native",
     #     #     "-C",
     #     #     "target-feature=+avx512f",
     #     #     "-C",

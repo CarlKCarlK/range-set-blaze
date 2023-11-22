@@ -50,7 +50,7 @@ jobs:
           cargo run
           cd ../..
           rustup override set stable
-      - name: Test Rust Native
+      - name: Test Rust Native # cmk add nightly tests
         run: |
           cargo clippy --verbose --all-targets --features "std alloc rog-experimental" -- -D clippy::all -A deprecated
           cargo test --verbose --features rog-experimental

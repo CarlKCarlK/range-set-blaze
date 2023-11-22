@@ -3,6 +3,7 @@ edition = "2021"
 name = "embedded"
 version = "0.1.0"
 
+# cmk update versions
 [dependencies]
 alloc-cortex-m = "0.4.4"
 cortex-m = "0.6.0"
