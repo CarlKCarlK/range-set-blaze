@@ -1331,7 +1331,7 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_slice(vec.as_slice());
+                    black_box(RangeSetBlaze::from_slice(vec.as_slice()));
                 })
             },
         );
@@ -1341,7 +1341,7 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec.iter());
+                    black_box(RangeSetBlaze::from_iter(vec.iter()));
                 })
             },
         );
@@ -2096,7 +2096,7 @@ fn ingest_clumps_vary_type(c: &mut Criterion) {
         &parameter,
         |b, _| {
             b.iter(|| {
-                let _answer = RangeSetBlaze::from_slice(vec.as_slice());
+                black_box(RangeSetBlaze::from_slice(vec.as_slice()));
             })
         },
     );

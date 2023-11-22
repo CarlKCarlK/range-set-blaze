@@ -54,12 +54,11 @@ use unsorted_disjoint::UnsortedDisjoint;
 pub trait Integer:
     num_integer::Integer
     + FromStr
+    + Copy
     + fmt::Display
     + fmt::Debug
     + core::iter::Sum
     + num_traits::NumAssignOps
-    + FromStr
-    + Copy
     + num_traits::Bounded
     + num_traits::NumCast
     + Send

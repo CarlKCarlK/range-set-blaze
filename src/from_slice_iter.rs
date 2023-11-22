@@ -15,7 +15,7 @@ where
     chunks: core::slice::Iter<'a, Simd<T, N>>,
     suffix: &'a [T],
     slice_len: usize,
-    expected: Simd<T, N>,
+    reference: Simd<T, N>,
 }
 
 impl<'a, T: 'a, const N: usize> FromSliceIter<'a, T, N>
@@ -23,7 +23,7 @@ where
     T: Integer + SimdElement,
     LaneCount<N>: SupportedLaneCount,
 {
-    pub(crate) fn new(slice: &'a [T], expected: &Simd<T, N>) -> Self {
+    pub(crate) fn new(slice: &'a [T], reference: &Simd<T, N>) -> Self {
         let (prefix, middle, suffix) = slice.as_simd();
         FromSliceIter {
             prefix_iter: prefix.iter(),
@@ -31,7 +31,7 @@ where
             chunks: middle.iter(),
             suffix,
             slice_len: slice.len(),
-            expected: *expected,
+            reference: *reference,
         }
     }
 }
@@ -57,9 +57,9 @@ where
         if let Some(before) = self.prefix_iter.next() {
             return Some(*before..=*before);
         }
-        let expected = self.expected;
+        let reference = self.reference;
         for chunk in self.chunks.by_ref() {
-            if is_consecutive(chunk, expected) {
+            if is_consecutive(chunk, reference) {
                 let this_start = chunk[0];
                 let this_end = chunk[N - 1];
 
