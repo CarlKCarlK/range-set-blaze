@@ -21,7 +21,7 @@ members = [".", "tests_common", "tests/wasm-demo", "tests/embedded"]
 [lib]
 
 [features]
-default = ["std", "from_slice"]                                  # cmk00
+default = ["std"]                                                #, "from_slice"]                                  # cmk00
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 alloc = ["itertools/use_alloc", "num-traits", "num-integer"]
 rog-experimental = []

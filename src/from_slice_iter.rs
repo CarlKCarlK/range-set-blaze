@@ -1,20 +1,24 @@
 #![cfg(feature = "from_slice")]
 
+// cmk00 rename to 'from_slice.rs' ???
+
 use crate::Integer;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
 #[inline]
-pub(crate) fn is_consecutive<T, const N: usize>(chunk: &Simd<T, N>, reference: Simd<T, N>) -> bool
+pub(crate) fn is_consecutive<T, const N: usize>(chunk: Simd<T, N>, reference: Simd<T, N>) -> bool
 where
     T: Integer + SimdElement,
     LaneCount<N>: SupportedLaneCount,
     Simd<T, N>: std::ops::Sub<Output = Simd<T, N>>,
 {
-    let b = chunk.rotate_lanes_right::<1>();
-    chunk - b == reference
-    // let subtracted = chunk - reference;
-    // Simd::<T, N>::splat(chunk[0]) == subtracted
+    // let b = chunk.rotate_lanes_right::<1>();
+    // chunk - b == reference
+    let subtracted = chunk - reference;
+    Simd::<T, N>::splat(subtracted[0]) == subtracted
+    // const SWIZZLE_CONST: [usize; N] = [0; N];
+    // simd_swizzle!(subtracted, SWIZZLE_CONST) == subtracted
 }
 
 macro_rules! reference_t {
@@ -23,15 +27,15 @@ macro_rules! reference_t {
         where
             LaneCount<N>: SupportedLaneCount,
         {
-            let mut arr: [$type; N] = [1; N];
-            arr[0] = (1 as $type).wrapping_sub(N as $type); // is -(N-1) for signed & unsigned
+            // let mut arr: [$type; N] = [1; N];
+            // arr[0] = (1 as $type).wrapping_sub(N as $type); // is -(N-1) for signed & unsigned
 
-            // let mut arr: [$type; N] = [0; N];
-            // let mut i = 0;
-            // while i < N {
-            //     arr[i] = i as $type;
-            //     i += 1;
-            // }
+            let mut arr: [$type; N] = [0; N];
+            let mut i = 0;
+            while i < N {
+                arr[i] = i as $type;
+                i += 1;
+            }
             Simd::from_array(arr)
         }
     };
@@ -75,7 +79,7 @@ where
     T: Integer + SimdElement,
     LaneCount<N>: SupportedLaneCount,
 {
-    pub(crate) fn new(slice: &'a [T], reference: &Simd<T, N>) -> Self {
+    pub(crate) fn new(slice: &'a [T], reference: Simd<T, N>) -> Self {
         let (prefix, middle, suffix) = slice.as_simd();
         FromSliceIter {
             prefix_iter: prefix.iter(),
@@ -83,7 +87,7 @@ where
             chunks: middle.iter(),
             suffix,
             slice_len: slice.len(),
-            reference: *reference,
+            reference,
         }
     }
 }
@@ -111,7 +115,7 @@ where
         }
         let reference = self.reference;
         for chunk in self.chunks.by_ref() {
-            if is_consecutive(chunk, reference) {
+            if is_consecutive(*chunk, reference) {
                 let this_start = chunk[0];
                 let this_end = chunk[N - 1];
 

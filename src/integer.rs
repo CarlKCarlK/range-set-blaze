@@ -1,15 +1,12 @@
 #[cfg(feature = "from_slice")]
 use crate::{from_slice_iter::FromSliceIter, RangeSetBlaze};
 
+#[cfg(feature = "from_slice")]
 use crate::from_slice_iter::{
     reference_i16, reference_i32, reference_i64, reference_i8, reference_isize, reference_u16,
     reference_u32, reference_u64, reference_u8, reference_usize, SIMD_REGISTER_BYTES,
 };
 use core::ops::RangeInclusive;
-#[cfg(feature = "from_slice")]
-use core::simd::prelude::*;
-#[cfg(feature = "from_slice")]
-use core::simd::{LaneCount, SimdElement, SupportedLaneCount};
 
 // cmk Rule may want to skip sse2 (128) because it is slower than the non-simd version
 use crate::Integer;
@@ -19,13 +16,14 @@ use crate::Integer;
 // cmk5 Look for other uses of const expressions
 // cmk Rule: Making this inline reduced time from 146 to 92
 
+#[cfg(feature = "from_slice")]
 macro_rules! from_slice {
     ($reference:ident) => {
         #[inline]
         fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self> {
             FromSliceIter::<Self, { SIMD_REGISTER_BYTES / std::mem::size_of::<Self>() }>::new(
                 slice,
-                &$reference(),
+                $reference(),
             )
             .collect()
         }

@@ -1,4 +1,5 @@
-#![feature(portable_simd)] // #cmk Rule
+#![cfg_attr(feature = "from_slice", feature(portable_simd))]
+// #cmk Rule
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
