@@ -1,6 +1,11 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+#[cfg(feature = "from_slice")]
+use core::mem::size_of;
+#[cfg(feature = "rog-experimental")]
+use core::ops::Bound;
+use core::ops::RangeInclusive;
 use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
@@ -11,11 +16,6 @@ use range_set_blaze::{
     prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts, UnionIter,
 };
 use std::cmp::Ordering;
-#[cfg(feature = "from_slice")]
-use std::mem::size_of;
-#[cfg(feature = "rog-experimental")]
-use std::ops::Bound;
-use std::ops::RangeInclusive;
 #[cfg(feature = "rog-experimental")]
 use std::panic::AssertUnwindSafe;
 #[cfg(feature = "rog-experimental")]
@@ -1174,7 +1174,7 @@ fn union_iter() {
 fn bitor() {
     let a = CheckSortedDisjoint::from([1..=1]);
     let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
-    let union = std::ops::BitOr::bitor(a, b);
+    let union = core::ops::BitOr::bitor(a, b);
     assert_eq!(union.to_string(), "1..=2");
 
     let a = CheckSortedDisjoint::from([1..=1]);
@@ -1184,7 +1184,7 @@ fn bitor() {
 
     let a = CheckSortedDisjoint::from([1..=1]);
     let b = CheckSortedDisjoint::from([2..=2]);
-    let c = std::ops::BitOr::bitor(a, b);
+    let c = core::ops::BitOr::bitor(a, b);
     assert_eq!(c.to_string(), "1..=2");
 
     let a = CheckSortedDisjoint::from([1..=1]);
@@ -1500,8 +1500,8 @@ fn range_example() {
 
 #[test]
 fn range_test() {
+    use core::ops::Bound::Included;
     use range_set_blaze::RangeSetBlaze;
-    use std::ops::Bound::Included;
 
     let mut set = RangeSetBlaze::new();
     set.insert(3);
@@ -1832,7 +1832,7 @@ fn test_rog_get_doc() {
 #[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_range_doc() {
-    use std::ops::Bound::Included;
+    use core::ops::Bound::Included;
 
     let mut set = RangeSetBlaze::new();
     set.insert(3);

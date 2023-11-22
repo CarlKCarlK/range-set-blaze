@@ -20,7 +20,7 @@ use std::{
 use syntactic_for::syntactic_for;
 use tests_common::{How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
-use std::ops::BitAndAssign;
+use core::ops::BitAndAssign;
 
 type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 

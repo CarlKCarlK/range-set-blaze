@@ -21,7 +21,7 @@ macro_rules! from_slice {
     ($reference:ident) => {
         #[inline]
         fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self> {
-            FromSliceIter::<Self, { SIMD_REGISTER_BYTES / std::mem::size_of::<Self>() }>::new(
+            FromSliceIter::<Self, { SIMD_REGISTER_BYTES / core::mem::size_of::<Self>() }>::new(
                 slice,
                 $reference(),
             )

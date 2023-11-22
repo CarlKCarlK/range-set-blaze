@@ -11,7 +11,7 @@ pub(crate) fn is_consecutive<T, const N: usize>(chunk: Simd<T, N>, reference: Si
 where
     T: Integer + SimdElement,
     LaneCount<N>: SupportedLaneCount,
-    Simd<T, N>: std::ops::Sub<Output = Simd<T, N>>,
+    Simd<T, N>: core::ops::Sub<Output = Simd<T, N>>,
 {
     // let b = chunk.rotate_lanes_right::<1>();
     // chunk - b == reference
@@ -96,7 +96,7 @@ impl<'a, T, const N: usize> FusedIterator for FromSliceIter<'a, T, N>
 where
     T: Integer + SimdElement,
     LaneCount<N>: SupportedLaneCount,
-    Simd<T, N>: std::ops::Sub<Output = Simd<T, N>>,
+    Simd<T, N>: core::ops::Sub<Output = Simd<T, N>>,
 {
 }
 
@@ -104,7 +104,7 @@ impl<'a, T: 'a, const N: usize> Iterator for FromSliceIter<'a, T, N>
 where
     T: Integer + SimdElement,
     LaneCount<N>: SupportedLaneCount,
-    Simd<T, N>: std::ops::Sub<Output = Simd<T, N>>,
+    Simd<T, N>: core::ops::Sub<Output = Simd<T, N>>,
 {
     type Item = RangeInclusive<T>;
 

@@ -1,8 +1,10 @@
 // #![feature(portable_simd)]
 #![allow(dead_code)]
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 use syntactic_for::syntactic_for;
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 fn sample2() {
     println!("feature\tcould\tare");
     syntactic_for! { feature in [
@@ -60,5 +62,7 @@ fn sample2() {
 // }
 
 fn main() {
+    // cmk does this get run by wasm?
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     sample2();
 }

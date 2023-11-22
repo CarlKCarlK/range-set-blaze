@@ -193,7 +193,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// ```rangesetblaze::new()//
     /// use range_set_blaze::{RangeSetBlaze, Rog;};
-    /// use std::ops::Bound::Included;
+    /// use core::ops::Bound::Included;
     ///
     /// let mut set = RangeSetBlaze::new();
     /// set.insert(3);
