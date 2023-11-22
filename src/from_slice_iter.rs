@@ -1,7 +1,59 @@
-use crate::integer::is_consecutive;
+#![cfg(feature = "from_slice")]
+
 use crate::Integer;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive};
+
+#[inline]
+pub(crate) fn is_consecutive<T, const N: usize>(chunk: &Simd<T, N>, reference: Simd<T, N>) -> bool
+where
+    T: Integer + SimdElement,
+    LaneCount<N>: SupportedLaneCount,
+    Simd<T, N>: std::ops::Sub<Output = Simd<T, N>>,
+{
+    let b = chunk.rotate_lanes_right::<1>();
+    chunk - b == reference
+    // let subtracted = chunk - reference;
+    // Simd::<T, N>::splat(chunk[0]) == subtracted
+}
+
+macro_rules! reference_t {
+    ($function:ident, $type:ty) => {
+        pub(crate) const fn $function<const N: usize>() -> Simd<$type, N>
+        where
+            LaneCount<N>: SupportedLaneCount,
+        {
+            let mut arr: [$type; N] = [1; N];
+            arr[0] = (1 as $type).wrapping_sub(N as $type); // is -(N-1) for signed & unsigned
+
+            // let mut arr: [$type; N] = [0; N];
+            // let mut i = 0;
+            // while i < N {
+            //     arr[i] = i as $type;
+            //     i += 1;
+            // }
+            Simd::from_array(arr)
+        }
+    };
+}
+
+reference_t!(reference_i8, i8);
+reference_t!(reference_u8, u8);
+reference_t!(reference_i16, i16);
+reference_t!(reference_u16, u16);
+reference_t!(reference_i32, i32);
+reference_t!(reference_u32, u32);
+reference_t!(reference_i64, i64);
+reference_t!(reference_u64, u64);
+reference_t!(reference_isize, isize);
+reference_t!(reference_usize, usize);
+
+// avx512 (512 bits) or scalar
+#[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
+pub(crate) const SIMD_REGISTER_BYTES: usize = 512 / 8;
+// avx2 (256 bits)
+#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+pub(crate) const SIMD_REGISTER_BYTES: usize = 256 / 8;
 
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]

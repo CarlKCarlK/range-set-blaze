@@ -1153,6 +1153,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
             },
         );
 
+        #[cfg(feature = "from_slice")]
         group.bench_with_input(
             BenchmarkId::new("RangeSetBlaze (integers, slice)", parameter),
             &parameter,
@@ -1298,6 +1299,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "from_slice")]
 fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
     let group_name = "ingest_clumps_iter_v_slice";
     let k = 1;
@@ -2061,6 +2063,7 @@ fn worst_op_blaze(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "from_slice")]
 fn ingest_clumps_vary_type(c: &mut Criterion) {
     let group_name = "ingest_clumps_vary_type";
     let k = 1;
@@ -2106,8 +2109,40 @@ fn ingest_clumps_vary_type(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group! {
-    name = benches;
+// criterion_group! {
+//     name = benches;
+//     config = Criterion::default();
+//     targets =
+//     intersect_k_sets,
+//     every_op_blaze,
+//     every_op_roaring,
+//     union_two_sets,
+//     ingest_clumps_base,
+//     worst,
+//     ingest_clumps_integers,
+//     ingest_clumps_ranges,
+//     ingest_clumps_easy,
+//     overflow,
+//     worst_op_blaze,
+//     #[cfg(feature = "from_slice")]
+//     ingest_clumps_iter_v_slice,
+//     #[cfg(feature = "from_slice")]
+//     ingest_clumps_vary_type
+// }
+// criterion_main!(benches);
+
+// Define two separate criterion groups for different features
+#[cfg(feature = "from_slice")]
+criterion_group!(
+    name = benches_with_from_slice;
+    config = Criterion::default();
+    targets =
+    ingest_clumps_iter_v_slice,
+    ingest_clumps_vary_type
+);
+
+criterion_group!(
+    name = benches_without_from_slice;
     config = Criterion::default();
     targets =
     intersect_k_sets,
@@ -2120,8 +2155,11 @@ criterion_group! {
     ingest_clumps_ranges,
     ingest_clumps_easy,
     overflow,
-    worst_op_blaze,
-    ingest_clumps_iter_v_slice,
-    ingest_clumps_vary_type
-}
-criterion_main!(benches);
+    worst_op_blaze
+);
+
+// Conditionally select and execute the appropriate group based on the feature
+#[cfg(feature = "from_slice")]
+criterion_main!(benches_with_from_slice);
+#[cfg(not(feature = "from_slice"))]
+criterion_main!(benches_without_from_slice);

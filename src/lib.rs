@@ -67,6 +67,7 @@ pub trait Integer:
     + CheckedAdd
     + WrappingSub
 {
+    #[cfg(feature = "from_slice")]
     /// cmk doc
     fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self>;
 
@@ -506,21 +507,10 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// cmk5 need docs
     /// cmk Rule be sure ints don't wrap in a way that could be bad.
     /// cmk Rule handle alignment at the start and end.
+    #[cfg(feature = "from_slice")]
     #[inline]
-    pub fn from_slice(slice: &[T]) -> Self
-// where
-    //     T: SimdElement,
-    {
-        // make sure this is inline
+    pub fn from_slice(slice: &[T]) -> Self {
         T::from_slice(slice)
-        // match size_of::<T>() {
-        //     1 => FromSliceIter::<T, 64>::new(slice).collect(),
-        //     2 => FromSliceIter::<T, 32>::new(slice).collect(),
-        //     4 => FromSliceIter::<T, 16>::new(slice).collect(),
-        //     8 => FromSliceIter::<T, 8>::new(slice).collect(),
-        //     16 => FromSliceIter::<T, 4>::new(slice).collect(),
-        //     _ => panic!("Unsupported type size for SIMD operations"),
-        // }
     }
 
     fn _len_slow(&self) -> <T as Integer>::SafeLen {

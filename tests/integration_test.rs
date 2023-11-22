@@ -11,6 +11,7 @@ use range_set_blaze::{
     prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts, UnionIter,
 };
 use std::cmp::Ordering;
+#[cfg(feature = "from_slice")]
 use std::mem::size_of;
 #[cfg(feature = "rog-experimental")]
 use std::ops::Bound;
@@ -1226,6 +1227,7 @@ fn range_set_int_constructors() {
     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 }
 
+#[cfg(feature = "from_slice")]
 fn print_features() {
     println!("feature\tcould\tare");
     syntactic_for! { feature in [
@@ -1273,6 +1275,7 @@ fn print_features() {
     )*}};
 }
 
+#[cfg(feature = "from_slice")]
 #[test]
 fn from_slice_all_types() {
     syntactic_for! { ty in [i8, u8] {
@@ -1294,6 +1297,7 @@ fn from_slice_all_types() {
     }};
 }
 
+#[cfg(feature = "from_slice")]
 #[test]
 fn range_set_int_slice_constructor() {
     print_features();
