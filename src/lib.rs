@@ -531,8 +531,9 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// feature in your `Cargo.toml`. For example:**
     /// ```toml
     /// [dependencies]
-    /// range-set-blaze = { version = "SOME_VERSION", features = ["std", "from_slice"] }
+    /// range-set-blaze = { features = ["std", "from_slice"], version=VERSION }
     /// ```
+    /// *Replace VERSION with the current version.*
     ///
     /// The function accepts any type that can be referenced as a slice of integers,
     /// including slices, arrays, and vectors. Duplicates and out-of-order elements are fine.
