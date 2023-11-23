@@ -2,12 +2,10 @@
 
 // cmk00 go back eariler and see if can get benchmark back to 87 instead of 95.
 
+use alloc::slice;
+
 use crate::Integer;
-// cmk5 compine the "cores"
-use core::iter;
-use core::ops::Sub;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
-use core::slice;
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
 #[macro_export]
@@ -87,33 +85,26 @@ where
 {
     prefix_iter: core::slice::Iter<'a, T>,
     previous_range: Option<RangeInclusive<T>>,
-    chunks_plus: iter::Zip<slice::Iter<'a, Simd<T, N>>, std::vec::IntoIter<bool>>,
+    chunks: slice::Iter<'a, Simd<T, N>>,
     suffix: &'a [T],
     slice_len: usize,
-    // reference: Simd<T, N>, // cmk00 not used
+    reference: Simd<T, N>,
 }
 
 impl<'a, T: 'a, const N: usize> FromSliceIter<'a, T, N>
 where
     T: Integer + SimdElement,
     LaneCount<N>: SupportedLaneCount,
-    Simd<T, N>: Sub<Output = Simd<T, N>>,
 {
     pub(crate) fn new(slice: &'a [T], reference: Simd<T, N>) -> Self {
         let (prefix, middle, suffix) = slice.as_simd();
-        // cmk00 could is_consecutive_list iteslef a rangesetblaze?
-        // cmk warn users that allocating more much memory.
-        let is_consecutive_list = middle
-            .iter()
-            .map(|chunk| is_consecutive(*chunk, reference))
-            .collect::<Vec<_>>();
-        let chunks_plus = middle.iter().zip(is_consecutive_list);
         FromSliceIter {
             prefix_iter: prefix.iter(),
             previous_range: None,
-            chunks_plus,
+            chunks: middle.iter(),
             suffix,
             slice_len: slice.len(),
+            reference,
         }
     }
 }
@@ -139,8 +130,9 @@ where
         if let Some(before) = self.prefix_iter.next() {
             return Some(*before..=*before);
         }
-        for (chunk, is_consecutive) in self.chunks_plus.by_ref() {
-            if is_consecutive {
+        let reference = self.reference;
+        for chunk in self.chunks.by_ref() {
+            if is_consecutive(*chunk, reference) {
                 let this_start = chunk[0];
                 let this_end = chunk[N - 1];
 

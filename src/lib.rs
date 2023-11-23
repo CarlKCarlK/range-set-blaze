@@ -223,9 +223,10 @@ pub trait Integer:
 /// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*)),
 /// a quadratic improvement an O(*n₁*) implementation that ignores the clumps.
 ///
-/// The [`from_slice`][5] constructor is even faster for array-like collections of clumpy integers.
-/// It scans the input for blocks of consecutive integers, and then uses `from_iter` on the results.
-/// Where available, it uses SIMD instructions.
+/// The [`from_slice`][5] constructor typically provides a constant-time speed up for array-like collections of clumpy integers.
+/// On a representative benchmark, the speed up was 6×.
+/// The method works by scanning the input for blocks of consecutive integers, and then using `from_iter` on the results.
+/// Where available, it uses SIMD instructions. It is nightly only and enabled by the `from_slice` feature.
 ///
 /// ## Constructor Examples
 ///
@@ -524,6 +525,7 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     /// Creates a [`RangeSetBlaze`] from a collection of integers. It is typically many
     /// times faster than [`from_iter`][1]/[`collect`][1].
+    /// On a representative benchmark, the speed up was 6×.
     ///
     /// **Warning: Requires the nightly compiler. Also, you must enable the `from_slice`
     /// feature in your `Cargo.toml`. For example:**

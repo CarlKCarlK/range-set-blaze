@@ -1,8 +1,8 @@
 # rust flags
  set RUSTFLAGS=-C target-cpu=native
  # "target-feature=+avx2",
+ set BUILDFEATURES=from_slice
 
-# nightly etc
 rustup override set nightly
 
 # tests
@@ -18,8 +18,8 @@ cargo run --example parity
 cargo run --example missing
 
 # Docs
-cargo doc --no-deps --features rog-experimental --open & cargo test --features rog-experimental --doc
 cargo doc --no-deps --all-features --open
+cargo doc --no-deps --features rog-experimental --open & cargo test --features rog-experimental --doc
 cargo test --all-features --doc
 
 # coverage
