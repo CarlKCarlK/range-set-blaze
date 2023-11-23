@@ -1,0 +1,126 @@
+thread 'rustc' panicked at compiler\rustc_middle\src\dep_graph\dep_node.rs:198:17:
+Failed to extract DefId: opt_local_def_id_to_hir_id 7c357ddf10aa57ec-cee4da017e39ce9d
+stack backtrace:
+   0:     0x7ff8f6b2ddff - std::backtrace::Backtrace::force_capture::hcc7755c17f9764f5
+   1:     0x7ff8f6b2dd64 - std::backtrace::Backtrace::force_capture::hcc7755c17f9764f5
+   2:     0x7ff8fb4c8a39 - <tracing_subscriber[df18d642b9e4bee4]::util::TryInitError as core[8b37808080cf1b36]::fmt::Display>::fmt
+   3:     0x7ff8f6b46903 - std::panicking::rust_panic_with_hook::h10f5dc913abbfa4f
+   4:     0x7ff8f6b467a5 - <std::panicking::begin_panic_handler::StaticStrPayload as core::panic::PanicPayload>::take_box::h557cb91c58779144
+   5:     0x7ff8f6b43949 - <std::sys_common::backtrace::_print::DisplayBacktrace as core::fmt::Display>::fmt::h9b10430456dff104
+   6:     0x7ff8f6b464b4 - rust_begin_unwind
+   7:     0x7ff8f6b9b407 - core::panicking::panic_fmt::hf2ff3502ae41f6da
+   8:     0x7ff8fc812961 - <rustc_middle[305afc65ac3c2b19]::mir::interpret::GlobalId as rustc_middle[305afc65ac3c2b19]::query::keys::Key>::default_span
+   9:     0x7ff8fb314e3d - <rustc_query_system[dc6c7833580c9b4a]::dep_graph::dep_node::DepNode as rustc_middle[305afc65ac3c2b19]::dep_graph::dep_node::DepNodeExt>::extract_def_id
+  10:     0x7ff8f9fba1df - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  11:     0x7ff8fadd4b9b - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  12:     0x7ff8fadd4b33 - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  13:     0x7ff8fae4c27c - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  14:     0x7ff8fad7be48 - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  15:     0x7ff8fa54b8a8 - rustc_hir_typeck[979448842e7da98f]::typeck
+  16:     0x7ff8fad5f95f - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  17:     0x7ff8fadc84bf - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  18:     0x7ff8fae84c91 - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  19:     0x7ff8fa034ada - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  20:     0x7ff8f9fbaf69 - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  21:     0x7ff8fadd4b9b - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  22:     0x7ff8fae83be9 - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  23:     0x7ff8fad3e070 - <rustc_mir_dataflow[e65dd04aa8547346]::impls::storage_liveness::MaybeStorageDead as rustc_mir_dataflow[e65dd04aa8547346]::framework::AnalysisDomain>::initialize_start_block
+  24:     0x7ff8fa68c2ea - <rustc_hir_analysis[92dea21dc55577a1]::bounds::Bounds>::push_sized
+  25:     0x7ff8f9fcc26d - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  26:     0x7ff8f9fafec9 - rustc_query_impl[7d3d524e22853c19]::dynamic_queries
+  27:     0x7ff8f9fd0ddc - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  28:     0x7ff8fa036c30 - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  29:     0x7ff8f9fd549f - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  30:     0x7ff8fa68734c - rustc_hir_analysis[92dea21dc55577a1]::check_crate
+  31:     0x7ff8fa44657d - rustc_interface[b93c06f44505b0f8]::passes::analysis
+  32:     0x7ff8f9fce22d - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  33:     0x7ff8fa010739 - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  34:     0x7ff8f9fd113c - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  35:     0x7ff8fa03dd77 - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  36:     0x7ff8f9fe18c7 - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  37:     0x7ff8f74d96c6 - rustc_driver_impl[cca2ed2e5feb4e5f]::main
+  38:     0x7ff8f74e837e - rustc_driver_impl[cca2ed2e5feb4e5f]::main
+  39:     0x7ff8f74df5e3 - rustc_driver_impl[cca2ed2e5feb4e5f]::main
+  40:     0x7ff8f7525ccc - <rustc_middle[305afc65ac3c2b19]::ty::SymbolName as core[8b37808080cf1b36]::fmt::Display>::fmt
+  41:     0x7ff8f74e0111 - rustc_driver_impl[cca2ed2e5feb4e5f]::main
+  42:     0x7ff8f75284cf - <rustc_middle[305afc65ac3c2b19]::ty::SymbolName as core[8b37808080cf1b36]::fmt::Display>::fmt
+  43:     0x7ff8f75285e8 - <rustc_middle[305afc65ac3c2b19]::ty::SymbolName as core[8b37808080cf1b36]::fmt::Display>::fmt
+  44:     0x7ff8f6b58b6c - std::sys::windows::thread::Thread::new::hf50a910e653f80d8
+  45:     0x7ff9ed67257d - BaseThreadInitThunk
+  46:     0x7ff9ef26aa58 - RtlUserThreadStart
+
+
+rustc version: 1.76.0-nightly (2f8d81f9d 2023-11-21)
+platform: x86_64-pc-windows-msvc
+
+query stack during panic:
+#0 [type_of] computing type of `from_slice::FromSliceIter::{constant#1}`
+#1 [typeck] type-checking `from_slice::FromSliceIter::{constant#1}`
+#2 [used_trait_imports] finding used_trait_imports `from_slice::FromSliceIter::{constant#1}`
+#3 [check_unused_traits] checking unused trait imports in crate
+#4 [analysis] running analysis passes on this crate
+end of query stack
+thread 'rustc' panicked at compiler\rustc_middle\src\dep_graph\dep_node.rs:198:17:
+Failed to extract DefId: opt_def_kind 7c357ddf10aa57ec-cee4da017e39ce9d
+stack backtrace:
+   0:     0x7ff8f6b2ddff - std::backtrace::Backtrace::force_capture::hcc7755c17f9764f5
+   1:     0x7ff8f6b2dd64 - std::backtrace::Backtrace::force_capture::hcc7755c17f9764f5
+   2:     0x7ff8fb4c8a39 - <tracing_subscriber[df18d642b9e4bee4]::util::TryInitError as core[8b37808080cf1b36]::fmt::Display>::fmt
+   3:     0x7ff8f6b46903 - std::panicking::rust_panic_with_hook::h10f5dc913abbfa4f
+   4:     0x7ff8f6b467a5 - <std::panicking::begin_panic_handler::StaticStrPayload as core::panic::PanicPayload>::take_box::h557cb91c58779144
+   5:     0x7ff8f6b43949 - <std::sys_common::backtrace::_print::DisplayBacktrace as core::fmt::Display>::fmt::h9b10430456dff104
+   6:     0x7ff8f6b464b4 - rust_begin_unwind
+   7:     0x7ff8f6b9b407 - core::panicking::panic_fmt::hf2ff3502ae41f6da
+   8:     0x7ff8fc812961 - <rustc_middle[305afc65ac3c2b19]::mir::interpret::GlobalId as rustc_middle[305afc65ac3c2b19]::query::keys::Key>::default_span
+   9:     0x7ff8fb314e3d - <rustc_query_system[dc6c7833580c9b4a]::dep_graph::dep_node::DepNode as rustc_middle[305afc65ac3c2b19]::dep_graph::dep_node::DepNodeExt>::extract_def_id
+  10:     0x7ff8fb5d3ebe - rustc_interface[b93c06f44505b0f8]::callbacks::dep_node_debug
+  11:     0x7ff8fc93b649 - <rustc_query_system[dc6c7833580c9b4a]::dep_graph::dep_node::DepNode as core[8b37808080cf1b36]::fmt::Debug>::fmt
+  12:     0x7ff8f6b75a3d - core::fmt::write::h645c9e3aa2f0ce85
+  13:     0x7ff8f6b37c16 - <&std::io::stdio::Stderr as std::io::Write>::write_fmt::hf993513d0b643fcd
+  14:     0x7ff8f6b385d6 - std::io::stdio::_eprint::hcc3b8916092c7005
+  15:     0x7ff8fc0f4ad8 - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::depth_limit_error
+  16:     0x7ff8fadd5c31 - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  17:     0x7ff8fadd4b33 - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  18:     0x7ff8fae4c27c - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  19:     0x7ff8fad7be48 - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  20:     0x7ff8fa54b8a8 - rustc_hir_typeck[979448842e7da98f]::typeck
+  21:     0x7ff8fad5f95f - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  22:     0x7ff8fadc84bf - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  23:     0x7ff8fae84c91 - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  24:     0x7ff8fa034ada - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  25:     0x7ff8f9fbaf69 - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  26:     0x7ff8fadd4b9b - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  27:     0x7ff8fae83be9 - <rustc_query_impl[7d3d524e22853c19]::plumbing::QueryCtxt as rustc_query_system[dc6c7833580c9b4a]::query::QueryContext>::load_side_effects
+  28:     0x7ff8fad3e070 - <rustc_mir_dataflow[e65dd04aa8547346]::impls::storage_liveness::MaybeStorageDead as rustc_mir_dataflow[e65dd04aa8547346]::framework::AnalysisDomain>::initialize_start_block
+  29:     0x7ff8fa68c2ea - <rustc_hir_analysis[92dea21dc55577a1]::bounds::Bounds>::push_sized
+  30:     0x7ff8f9fcc26d - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  31:     0x7ff8f9fafec9 - rustc_query_impl[7d3d524e22853c19]::dynamic_queries
+  32:     0x7ff8f9fd0ddc - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  33:     0x7ff8fa036c30 - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  34:     0x7ff8f9fd549f - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  35:     0x7ff8fa68734c - rustc_hir_analysis[92dea21dc55577a1]::check_crate
+  36:     0x7ff8fa44657d - rustc_interface[b93c06f44505b0f8]::passes::analysis
+  37:     0x7ff8f9fce22d - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  38:     0x7ff8fa010739 - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  39:     0x7ff8f9fd113c - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  40:     0x7ff8fa03dd77 - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  41:     0x7ff8f9fe18c7 - rustc_query_impl[7d3d524e22853c19]::profiling_support::alloc_self_profile_query_strings
+  42:     0x7ff8f74d96c6 - rustc_driver_impl[cca2ed2e5feb4e5f]::main
+  43:     0x7ff8f74e837e - rustc_driver_impl[cca2ed2e5feb4e5f]::main
+  44:     0x7ff8f74df5e3 - rustc_driver_impl[cca2ed2e5feb4e5f]::main
+  45:     0x7ff8f7525ccc - <rustc_middle[305afc65ac3c2b19]::ty::SymbolName as core[8b37808080cf1b36]::fmt::Display>::fmt
+  46:     0x7ff8f74e0111 - rustc_driver_impl[cca2ed2e5feb4e5f]::main
+  47:     0x7ff8f75284cf - <rustc_middle[305afc65ac3c2b19]::ty::SymbolName as core[8b37808080cf1b36]::fmt::Display>::fmt
+  48:     0x7ff8f75285e8 - <rustc_middle[305afc65ac3c2b19]::ty::SymbolName as core[8b37808080cf1b36]::fmt::Display>::fmt
+  49:     0x7ff8f6b58b6c - std::sys::windows::thread::Thread::new::hf50a910e653f80d8
+  50:     0x7ff9ed67257d - BaseThreadInitThunk
+  51:     0x7ff9ef26aa58 - RtlUserThreadStart
+
+
+query stack during panic:
+#0 [type_of] computing type of `from_slice::FromSliceIter::{constant#1}`
+#1 [typeck] type-checking `from_slice::FromSliceIter::{constant#1}`
+#2 [used_trait_imports] finding used_trait_imports `from_slice::FromSliceIter::{constant#1}`
+#3 [check_unused_traits] checking unused trait imports in crate
+#4 [analysis] running analysis passes on this crate
+end of query stack

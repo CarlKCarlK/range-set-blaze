@@ -1,3 +1,7 @@
+# rust flags
+ set RUSTFLAGS=-C target-cpu=native
+ # "target-feature=+avx2",
+
 # nightly etc
 rustup override set nightly
 

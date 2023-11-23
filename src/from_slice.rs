@@ -1,7 +1,13 @@
 #![cfg(feature = "from_slice")]
 
+// cmk00 go back eariler and see if can get benchmark back to 87 instead of 95.
+
 use crate::Integer;
+// cmk5 compine the "cores"
+use core::iter;
+use core::ops::Sub;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
+use core::slice;
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
 #[macro_export]
@@ -29,7 +35,7 @@ where
     // let b = chunk.rotate_lanes_right::<1>();
     // chunk - b == reference
     let subtracted = chunk - reference;
-    Simd::<T, N>::splat(chunk[0]) == subtracted
+    Simd::<T, N>::splat(subtracted[0]) == subtracted
     // const SWIZZLE_CONST: [usize; N] = [0; N];
     // simd_swizzle!(subtracted, SWIZZLE_CONST) == subtracted
 }
@@ -81,26 +87,33 @@ where
 {
     prefix_iter: core::slice::Iter<'a, T>,
     previous_range: Option<RangeInclusive<T>>,
-    chunks: core::slice::Iter<'a, Simd<T, N>>,
+    chunks_plus: iter::Zip<slice::Iter<'a, Simd<T, N>>, std::vec::IntoIter<bool>>,
     suffix: &'a [T],
     slice_len: usize,
-    reference: Simd<T, N>,
+    // reference: Simd<T, N>, // cmk00 not used
 }
 
 impl<'a, T: 'a, const N: usize> FromSliceIter<'a, T, N>
 where
     T: Integer + SimdElement,
     LaneCount<N>: SupportedLaneCount,
+    Simd<T, N>: Sub<Output = Simd<T, N>>,
 {
     pub(crate) fn new(slice: &'a [T], reference: Simd<T, N>) -> Self {
         let (prefix, middle, suffix) = slice.as_simd();
+        // cmk00 could is_consecutive_list iteslef a rangesetblaze?
+        // cmk warn users that allocating more much memory.
+        let is_consecutive_list = middle
+            .iter()
+            .map(|chunk| is_consecutive(*chunk, reference))
+            .collect::<Vec<_>>();
+        let chunks_plus = middle.iter().zip(is_consecutive_list);
         FromSliceIter {
             prefix_iter: prefix.iter(),
             previous_range: None,
-            chunks: middle.iter(),
+            chunks_plus,
             suffix,
             slice_len: slice.len(),
-            reference,
         }
     }
 }
@@ -126,9 +139,8 @@ where
         if let Some(before) = self.prefix_iter.next() {
             return Some(*before..=*before);
         }
-        let reference = self.reference;
-        for chunk in self.chunks.by_ref() {
-            if is_consecutive(*chunk, reference) {
+        for (chunk, is_consecutive) in self.chunks_plus.by_ref() {
+            if is_consecutive {
                 let this_start = chunk[0];
                 let this_end = chunk[N - 1];
 
