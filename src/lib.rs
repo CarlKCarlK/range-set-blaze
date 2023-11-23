@@ -1,8 +1,19 @@
-#![cfg_attr(feature = "from_slice", feature(portable_simd))]
 // #cmk Rule
+#![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
+
+// Developer notes:
+//
+// To run tests with different settings, environment variables are recommended.
+// For example, the Windows steps to run one of the SIMD-related benchmark is:
+// ```bash
+// rustup override set nightly # use nightly compiler
+// set RUSTFLAGS=-C target-cpu=native # use current CPUs full instruction set
+// set BUILDFEATURES=from_slice # enable the from_slice feature via build.rs
+// cargo bench ingest_clumps_iter_v_slice
+// ```
 
 // #[cfg(all(feature = "std", feature = "alloc"))]
 // compile_error!("feature \"std\" and feature \"alloc\" cannot be enabled at the same time");
@@ -528,13 +539,10 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// On a representative benchmark, the speed up was 6×.
     ///
     /// **Warning: Requires the nightly compiler. Also, you must enable the `from_slice`
-    /// feature in your `Cargo.toml`. For example:**
-    /// ```toml
-    /// [dependencies]
-    /// range-set-blaze = { features = ["std", "from_slice"], version=VERSION }
+    /// feature in your `Cargo.toml`. For example, with the command:**
+    /// ```bash
+    ///  cargo add range-set-blaze --features "from_slice"
     /// ```
-    /// *Replace VERSION with the current version.*
-    ///
     /// The function accepts any type that can be referenced as a slice of integers,
     /// including slices, arrays, and vectors. Duplicates and out-of-order elements are fine.
     ///

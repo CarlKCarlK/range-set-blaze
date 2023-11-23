@@ -36,15 +36,20 @@ The crate's main trait is [`SortedDisjoint`]. It is implemented by iterators of 
 [set operations]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#rangesetblaze-set-operations
 [1]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#constructor-performance
 
-The crate supports no_std, WASM, and embedded projects:
+The crate supports no_std, WASM, and embedded projects. Use the command:
 
-```toml
-[dependencies]
-range-set-blaze = { features = ["alloc"], default-features = false, version=VERSION }
-
+```bash
+cargo add range-set-blaze --features "alloc" --no-default-features
 ```
 
- *Replace VERSION with the current version.*
+Benchmarks
+-----------
+
+See the [benchmarks](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) for performance comparisons with other range-related crates.
+
+Generally, for many tasks involving clumpy integers and ranges, `RangeSetBlaze` is much faster than alternatives.
+
+The benchmarks are in the `benches` directory. To run them, use `cargo bench`.
 
 Articles
 -----------
@@ -59,14 +64,7 @@ My Experience Applying Kani’s Formal Verification to ChatGPT-Suggested Rust Co
 
 * [Nine Rules to Formally Validate Rust Algorithms with Dafny](https://medium.com/towards-data-science/nine-rules-to-formally-validate-rust-algorithms-with-dafny-part-1-5cb8c8a0bb92) in *Towards Data Science*. It shows how to formally validate one of the crate's algorithms.
 
-Benchmarks
------------
-
-See the [benchmarks](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) for performance comparisons with other range-related crates.
-
-Generally, for many tasks involving clumpy integers and ranges, `RangeSetBlaze` is much faster than alternatives.
-
-The benchmarks are in the `benches` directory. To run them, use `cargo bench`.
+* *Also see:* [CHANGELOG](https://github.com/CarlKCarlK/range-set-blaze/blob/main/CHANGELOG.md)
 
 Examples
 -----------

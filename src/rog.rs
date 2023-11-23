@@ -126,13 +126,20 @@ impl<T: Integer> Rog<T> {
 }
 
 impl<T: Integer> RangeSetBlaze<T> {
-    /// Returns the [`Rog`] (range or gap) containing the given integer. If the
+    /// Experimental: Returns the [`Rog`] (range or gap) containing the given integer. If the
     /// [`RangeSetBlaze`] contains the integer, returns a [`Rog::Range`]. If the
     /// [`RangeSetBlaze`] does not contain the integer, returns a [`Rog::Gap`].
     ///
     /// # Panics
     ///
     /// Panics if the `value > T::safe_max_value()`.
+    ///
+    /// # Enabling
+    ///
+    /// This method is experimental and must be enabled with the `rog-experimental` feature.
+    /// ```bash
+    /// cargo add range-set-blaze --features "rog-experimental"
+    /// ```
     ///
     /// # Examples
     ///
@@ -188,6 +195,14 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// Panics if range `start == end` and both bounds are `Excluded`.
     ///
     /// Panics if range `end > T::safe_max_value()`.
+    ///
+    /// # Enabling
+    ///
+    /// This method is experimental and must be enabled with the `rog-experimental` feature.
+    /// ```bash
+    /// cargo add range-set-blaze --features "rog-experimental"
+    /// ```
+
     ///
     /// # Examples
     ///

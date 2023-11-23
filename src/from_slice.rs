@@ -1,7 +1,5 @@
 #![cfg(feature = "from_slice")]
 
-// cmk00 go back eariler and see if can get benchmark back to 87 instead of 95.
-
 use alloc::slice;
 
 use crate::Integer;
