@@ -15,7 +15,6 @@ use crate::Integer;
 
 // cmk Rule: const expressions are handy.
 // Note: Does the right thing for isize, usize
-// cmk5 Look for other uses of const expressions
 // cmk Rule: Making this inline reduced time from 146 to 92
 
 impl Integer for i8 {

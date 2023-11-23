@@ -1333,7 +1333,7 @@ fn range_set_int_slice_constructor() {
     }
 
     let v: Vec<i32> = (100..=150).collect();
-    let a2 = RangeSetBlaze::from_slice(&v);
+    let a2 = RangeSetBlaze::from_slice(v);
     assert!(a2.to_string() == "100..=150");
 
     // For compatibility with `BTreeSet`, we also support
@@ -1342,9 +1342,11 @@ fn range_set_int_slice_constructor() {
     let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 
-    // cmk5 accept slice or reference to slice
+    #[allow(clippy::needless_borrows_for_generic_args)]
     let a2 = RangeSetBlaze::from_slice(&[3, 2, 1, 100, 1]);
-    // cmk5 should there be an slice_into()?
+    assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
+
+    let a2 = RangeSetBlaze::from_slice([3, 2, 1, 100, 1]);
     assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
 }
 

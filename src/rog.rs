@@ -10,7 +10,7 @@ use core::ops::{Bound, RangeBounds, RangeInclusive};
 
 use crate::{Integer, RangeSetBlaze};
 
-/// An iterator over [`Rog`]s (ranges or gaps) in a [`RangeSetBlaze`].
+/// Experimental: An iterator over [`Rog`]s (ranges or gaps) in a [`RangeSetBlaze`].
 ///
 /// See [`RangeSetBlaze::rogs_range`] for more information.
 pub struct RogsIter<'a, T: Integer> {
@@ -55,7 +55,7 @@ impl<T: Integer> Iterator for RogsIter<'_, T> {
     }
 }
 
-/// Represents an range or gap in a [`RangeSetBlaze`].
+/// Experimental: Represents an range or gap in a [`RangeSetBlaze`].
 ///
 /// See [`RangeSetBlaze::rogs_range`] and [`RangeSetBlaze::rogs_get`] for more information.
 ///
@@ -174,7 +174,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    /// Constructs an iterator over a sub-range of [`Rog`]'s (ranges and gaps) in the [`RangeSetBlaze`].
+    /// Experimental: Constructs an iterator over a sub-range of [`Rog`]'s (ranges and gaps) in the [`RangeSetBlaze`].
     /// The simplest way is to use the range syntax `min..=max`, thus `range(min..=max)` will
     /// yield elements from min (inclusive) to max (inclusive).
     /// The range may also be entered as `(Bound<T>, Bound<T>)`, so for example

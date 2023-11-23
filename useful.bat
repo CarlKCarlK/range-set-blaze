@@ -15,6 +15,8 @@ cargo run --example missing
 
 # Docs
 cargo doc --no-deps --features rog-experimental --open & cargo test --features rog-experimental --doc
+cargo doc --no-deps --all-features --open
+cargo test --all-features --doc
 
 # coverage
 cargo llvm-cov --open

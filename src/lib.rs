@@ -106,7 +106,7 @@ pub trait Integer:
 
     /// Returns the length of a range without any overflow.
     ///
-    /// #Example
+    /// # Example
     /// ```
     /// use range_set_blaze::Integer;
     ///
@@ -194,6 +194,7 @@ pub trait Integer:
 ///
 /// # Constructor Performance
 ///
+/// cmk doc add from_slice
 /// The [`from_iter`][1]/[`collect`][1] constructors are designed to work fast on 'clumpy' data.
 /// By 'clumpy', we mean that the number of ranges needed to represent the data is
 /// small compared to the number of input integers. To understand this, consider the internals
@@ -505,13 +506,16 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    /// cmk5 need docs
+    /// cmk docs
     /// cmk Rule be sure ints don't wrap in a way that could be bad.
     /// cmk Rule handle alignment at the start and end.
     #[cfg(feature = "from_slice")]
     #[inline]
-    pub fn from_slice(slice: &[T]) -> Self {
-        T::from_slice(slice)
+    pub fn from_slice<S>(slice: S) -> Self
+    where
+        S: AsRef<[T]>,
+    {
+        T::from_slice(slice.as_ref())
     }
 
     fn _len_slow(&self) -> <T as Integer>::SafeLen {
