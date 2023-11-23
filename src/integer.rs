@@ -184,8 +184,8 @@ impl Integer for i128 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: &[Self]) -> crate::RangeSetBlaze<Self> {
-        return slice.iter().collect();
+    fn from_slice(slice: impl AsRef<[Self]>) -> crate::RangeSetBlaze<Self> {
+        return slice.as_ref().iter().collect();
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -217,8 +217,8 @@ impl Integer for u128 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: &[Self]) -> crate::RangeSetBlaze<Self> {
-        return slice.iter().collect();
+    fn from_slice(slice: impl AsRef<[Self]>) -> crate::RangeSetBlaze<Self> {
+        return slice.as_ref().iter().collect();
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {

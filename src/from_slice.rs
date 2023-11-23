@@ -9,9 +9,9 @@ use core::{iter::FusedIterator, ops::RangeInclusive};
 macro_rules! from_slice {
     ($reference:ident) => {
         #[inline]
-        fn from_slice(slice: &[Self]) -> RangeSetBlaze<Self> {
+        fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
             FromSliceIter::<Self, { SIMD_REGISTER_BYTES / core::mem::size_of::<Self>() }>::new(
-                slice,
+                slice.as_ref(),
                 $reference(),
             )
             .collect()
