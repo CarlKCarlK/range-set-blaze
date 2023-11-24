@@ -1245,3 +1245,15 @@ fn complement_sample() {
     let c = !RangeSetBlaze::from([0, 3, 4, 5, 10]);
     println!("{},{},{}", c.len(), c.ranges_len(), c);
 }
+
+#[cfg(feature = "from_slice")]
+#[wasm_bindgen_test]
+fn from_slice_test() {
+    let range_set_blaze = RangeSetBlaze::from_iter([100, 103, 101, 102, -3, -4]);
+    assert!(range_set_blaze.to_string() == "-4..=-3, 100..=103");
+    println!("{:?}", range_set_blaze.to_string());
+
+    let range_set_blaze = RangeSetBlaze::from_slice(&[100, 103, 101, 102, -3, -4]);
+    assert!(range_set_blaze.to_string() == "-4..=-3, 100..=103");
+    println!("{:?}", range_set_blaze.to_string());
+}

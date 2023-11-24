@@ -18,3 +18,4 @@ tests/formal/Step6b.dfy
 tests/formal/Step7.dfy
 tests/formal/*.dll
 tests/formal/*.json
+examples/*/target/*

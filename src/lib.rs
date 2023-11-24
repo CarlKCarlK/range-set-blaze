@@ -2251,6 +2251,7 @@ where
 // cmk Rule: Create a .cargo/config.toml, but think about what you check in.
 // cmk Rule: spot test and benchmark
 // cmk Rule: Look at assembly. Use AI tools to understand it (but they may not be perfect)
-// cmk Thanks to B3NNY (or name) at the Seattle Rust Meetup for pointing me in the right direction on SIMD.")
-// cmk Understand Benny's use of godbolt: https://godbolt.org/z/3P3jGej3h
+// cmk Rule: Thanks to B3NNY (or name) at the Seattle Rust Meetup for pointing me in the right direction on SIMD.")
+// cmk Rule: Understand Benny's use of godbolt: https://godbolt.org/z/3P3jGej3h
 // cmk Rule: Use Godbolt.
+// cmk5 update tests to run nightly --all-features and stable with rog-experimental

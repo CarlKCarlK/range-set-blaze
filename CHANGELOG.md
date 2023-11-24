@@ -1,6 +1,6 @@
 # Changelog
 
-cmk update this and link to it in the README.md
+cmk5 update this and link to it in the README.md
 
 All notable changes to this project will be documented in this file.
 

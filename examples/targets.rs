@@ -62,7 +62,7 @@ fn sample2() {
 // }
 
 fn main() {
-    // cmk does this get run by wasm?
+    // cmk5 does this get run by wasm?
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     sample2();
 }
