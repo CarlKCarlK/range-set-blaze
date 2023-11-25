@@ -1,7 +1,9 @@
 # rust flags
- set RUSTFLAGS=-C target-cpu=native
- # "target-feature=+avx2",
- set BUILDFEATURES=from_slice
+set RUSTFLAGS=
+set RUSTFLAGS=-C target-cpu=native
+set RUSTFLAGS=-C target-feature=+avx2
+set RUSTFLAGS=-C target-feature=+avx512f
+set BUILDFEATURES=from_slice
 
 rustup override set nightly
 

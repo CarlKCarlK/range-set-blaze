@@ -67,12 +67,14 @@ reference_t!(reference_u64, u64);
 reference_t!(reference_isize, isize);
 reference_t!(reference_usize, usize);
 
-// avx512 (512 bits) or scalar
-#[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
-pub(crate) const SIMD_REGISTER_BYTES: usize = 512 / 8;
-// avx2 (256 bits)
-#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-pub(crate) const SIMD_REGISTER_BYTES: usize = 256 / 8;
+// cmk
+pub(crate) const SIMD_REGISTER_BYTES: usize = 1024 / 8;
+// // avx512 (512 bits) or scalar
+// #[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
+// pub(crate) const SIMD_REGISTER_BYTES: usize = 512 / 8;
+// // avx2 (256 bits)
+// #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
+// pub(crate) const SIMD_REGISTER_BYTES: usize = 256 / 8;
 
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
