@@ -16,8 +16,18 @@ exclude = ["docs/**/*"]
 
 
 [workspace]
-members = [".", "tests_common", "tests/wasm-demo", "tests/embedded"]
-exclude = ["examples/simd_hello", "examples/simd_detect"]
+members = [
+    ".",
+    "tests_common",
+    "tests/wasm-demo",
+    "tests/embedded",
+    "examples/is_consecutive",
+]
+exclude = [
+    "examples/simd/simd_hello",
+    "examples/simd/simd_detect",
+    "examples/simd/is_consectutive",
+]
 
 [lib]
 
