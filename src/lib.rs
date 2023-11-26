@@ -2255,3 +2255,4 @@ where
 // cmk Rule: Understand Benny's use of godbolt: https://godbolt.org/z/3P3jGej3h
 // cmk Rule: Use Godbolt.
 // cmk5 update tests to run nightly --all-features and stable with rog-experimental
+// cmk Rule: When making generic use const funs including 'while'

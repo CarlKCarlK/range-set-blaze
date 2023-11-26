@@ -14,20 +14,26 @@ homepage = "https://github.com/CarlKCarlK/range-set-blaze"
 resolver = "2"
 exclude = ["docs/**/*"]
 
-
+# cmk
 [workspace]
 members = [
     ".",
     "tests_common",
     "tests/wasm-demo",
     "tests/embedded",
-    "examples/is_consecutive",
-]
-exclude = [
     "examples/simd/simd_hello",
     "examples/simd/simd_detect",
-    "examples/simd/is_consectutive",
+    "examples/simd/is_consecutive",
 ]
+
+
+# [workspace]
+# members = [".", "tests_common", "tests/wasm-demo", "tests/embedded"]
+# exclude = [
+#     "examples/simd/simd_hello",
+#     "examples/simd/simd_detect",
+#     "examples/simd/is_consecutive",
+# ]
 
 [lib]
 

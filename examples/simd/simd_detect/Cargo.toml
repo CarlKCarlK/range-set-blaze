@@ -1,4 +1,4 @@
-[workspace]
+# cmk [workspace]
 
 [package]
 name = "simd_detect"
