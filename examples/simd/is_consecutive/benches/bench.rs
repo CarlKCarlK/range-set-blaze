@@ -14,8 +14,8 @@ fn compare_is_consecutive(c: &mut Criterion) {
 
     group.bench_function("regular", |b| {
         b.iter(|| {
-            black_box(is_consecutive_regular(&a));
-            black_box(is_consecutive_regular(&ninety_nines));
+            assert!(black_box(is_consecutive_regular(&a)));
+            // black_box(is_consecutive_regular(&ninety_nines));
         });
     });
 
@@ -25,36 +25,36 @@ fn compare_is_consecutive(c: &mut Criterion) {
 
     group.bench_function("splat0", |b| {
         b.iter(|| {
-            black_box(is_consecutive_splat0(a));
-            black_box(is_consecutive_splat0(ninety_nines));
+            assert!(black_box(is_consecutive_splat0(a)));
+            // black_box(is_consecutive_splat0(ninety_nines));
         });
     });
 
     group.bench_function("splat1", |b| {
         b.iter(|| {
-            black_box(is_consecutive_splat1(a));
-            black_box(is_consecutive_splat1(ninety_nines));
+            assert!(black_box(is_consecutive_splat1(a)));
+            // black_box(is_consecutive_splat1(ninety_nines));
         });
     });
 
     group.bench_function("splat2", |b| {
         b.iter(|| {
-            black_box(is_consecutive_splat2(a));
-            black_box(is_consecutive_splat2(ninety_nines));
+            assert!(black_box(is_consecutive_splat2(a)));
+            // black_box(is_consecutive_splat2(ninety_nines));
         });
     });
 
     group.bench_function("sizzle", |b| {
         b.iter(|| {
-            black_box(is_consecutive_sizzle(a));
-            black_box(is_consecutive_sizzle(ninety_nines));
+            assert!(black_box(is_consecutive_sizzle(a)));
+            // black_box(is_consecutive_sizzle(ninety_nines));
         });
     });
 
     group.bench_function("rotate", |b| {
         b.iter(|| {
-            black_box(is_consecutive_rotate(a));
-            black_box(is_consecutive_rotate(ninety_nines));
+            assert!(black_box(is_consecutive_rotate(a)));
+            // black_box(is_consecutive_rotate(ninety_nines));
         });
     });
 

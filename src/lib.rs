@@ -910,24 +910,24 @@ impl<T: Integer> RangeSetBlaze<T> {
         // The code can have only one mutable reference to self.btree_map.
         let start;
         let end;
-        if let Some((start_ref, end_ref)) = self.btree_map.range_mut(..=value).next_back() {
-            end = *end_ref;
-            if end < value {
-                return false;
-            }
-            start = *start_ref;
-            // special case if in range and start strictly less than value
-            if start < value {
-                *end_ref = value - T::one();
-                // special, special case if value == end
-                if value == end {
-                    self.len -= <T::SafeLen>::one();
-                    return true;
-                }
-            }
-        } else {
+        let Some((start_ref, end_ref)) = self.btree_map.range_mut(..=value).next_back() else {
             return false;
         };
+
+        end = *end_ref;
+        if end < value {
+            return false;
+        }
+        start = *start_ref;
+        // special case if in range and start strictly less than value
+        if start < value {
+            *end_ref = value - T::one();
+            // special, special case if value == end
+            if value == end {
+                self.len -= <T::SafeLen>::one();
+                return true;
+            }
+        }
         self.len -= <T::SafeLen>::one();
         if start == value {
             self.btree_map.remove(&start);
@@ -1207,21 +1207,21 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert!(set.is_empty());
     /// ```
     pub fn pop_last(&mut self) -> Option<T> {
-        if let Some(mut entry) = self.btree_map.last_entry() {
-            let start = *entry.key();
-            let end = entry.get_mut();
-            let result = *end;
-            self.len -= T::safe_len(&(start..=*end));
-            if start == *end {
-                entry.remove_entry();
-            } else {
-                *end -= T::one();
-                self.len += T::safe_len(&(start..=*end));
-            }
-            Some(result)
+        let Some(mut entry) = self.btree_map.last_entry() else {
+            return None;
+        };
+
+        let start = *entry.key();
+        let end = entry.get_mut();
+        let result = *end;
+        self.len -= T::safe_len(&(start..=*end));
+        if start == *end {
+            entry.remove_entry();
         } else {
-            None
+            *end -= T::one();
+            self.len += T::safe_len(&(start..=*end));
         }
+        Some(result)
     }
 
     /// An iterator that visits the ranges in the [`RangeSetBlaze`],
