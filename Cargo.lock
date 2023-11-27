@@ -393,6 +393,9 @@ dependencies = [
 [[package]]
 name = "is_consecutive"
 version = "0.1.0"
+dependencies = [
+ "criterion",
+]
 
 [[package]]
 name = "itertools"

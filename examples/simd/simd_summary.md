@@ -2,8 +2,14 @@
 
 ## Stucts
 
-- [`Simd`](https://doc.rust-lang.org/nightly/core/simd/struct.Simd.html) - a struct representing a SIMD vector with fixed-length and alignment.
-- [`Mask`](https://doc.rust-lang.org/nightly/core/simd/struct.Mask.html) - a struct representing boolean inclusion/exclusion on a per-lane basis.
+- [`Simd`](https://doc.rust-lang.org/nightly/core/simd/struct.Simd.html) - a special, aligned, fixed-length array of [`SimdElement`](https://doc.rust-lang.org/std/simd/trait.SimdElement.html).
+- [`Mask`](https://doc.rust-lang.org/nightly/core/simd/struct.Mask.html) - a special boolean array showing inclusion/exclusion on a per-lane basis.
+
+## SimdElements
+
+- Floating-Point Types: `f32`, `f64`
+- Integer Types: `i8`, `u8`, `i16`, `u16`, `i32`, `u32`, `i64`, `u64`, `isize`, `usize`
+- -- [*but not `i128`, `u128`*](https://medium.com/r/?url=https%3A%2F%2Fgithub.com%2Frust-lang%2Fportable-simd%2Fissues%2F108)
 
 ## `Simd` constructors
 
