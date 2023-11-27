@@ -6,16 +6,24 @@ use crate::Integer;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
+pub(crate) const fn const_min(a: usize, b: usize) -> usize {
+    if a < b {
+        a
+    } else {
+        b
+    }
+}
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! from_slice {
     ($reference:ident) => {
         #[inline]
         fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-            FromSliceIter::<Self, { SIMD_REGISTER_BYTES / core::mem::size_of::<Self>() }>::new(
-                slice.as_ref(),
-                $reference(),
-            )
+            FromSliceIter::<
+                Self,
+                { const_min(64, SIMD_REGISTER_BYTES / core::mem::size_of::<Self>()) },
+            >::new(slice.as_ref(), $reference())
             .collect()
         }
     };

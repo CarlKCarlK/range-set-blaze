@@ -24,6 +24,7 @@ members = [
     "examples/simd/simd_hello",
     "examples/simd/simd_detect",
     "examples/simd/is_consecutive",
+    "examples/simd/summarize",
 ]
 
 

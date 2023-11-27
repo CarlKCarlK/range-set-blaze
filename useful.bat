@@ -7,6 +7,9 @@ set BUILDFEATURES=from_slice
 
 rustup override set nightly
 
+# run packages
+cargo run --package summarize
+
 # tests
 cargo test range_set_int_slice_constructor -- --nocapture
 cargo test --doc intersection_dyn

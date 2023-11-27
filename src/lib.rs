@@ -908,17 +908,15 @@ impl<T: Integer> RangeSetBlaze<T> {
         );
 
         // The code can have only one mutable reference to self.btree_map.
-        let start;
-        let end;
         let Some((start_ref, end_ref)) = self.btree_map.range_mut(..=value).next_back() else {
             return false;
         };
 
-        end = *end_ref;
+        let end = *end_ref;
         if end < value {
             return false;
         }
-        start = *start_ref;
+        let start = *start_ref;
         // special case if in range and start strictly less than value
         if start < value {
             *end_ref = value - T::one();
@@ -2256,3 +2254,5 @@ where
 // cmk Rule: Use Godbolt.
 // cmk5 update tests to run nightly --all-features and stable with rog-experimental
 // cmk Rule: When making generic use const funs including 'while'
+// cmk Rule: Use Python to summarize the results of the benchmarks.
+// cmk Rule??? [profile.release] opt-level = 3 # Maximum optimization
