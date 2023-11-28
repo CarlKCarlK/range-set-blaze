@@ -2254,5 +2254,5 @@ where
 // cmk Rule: Use Godbolt.
 // cmk5 update tests to run nightly --all-features and stable with rog-experimental
 // cmk Rule: When making generic use const funs including 'while'
-// cmk Rule: Use Python to summarize the results of the benchmarks.
+// cmk Rule: Use Python to bench_means the results of the benchmarks.
 // cmk Rule??? [profile.release] opt-level = 3 # Maximum optimization
