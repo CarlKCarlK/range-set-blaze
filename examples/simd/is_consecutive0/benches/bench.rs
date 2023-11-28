@@ -6,11 +6,11 @@ use is_consecutive::*;
 use std::simd::prelude::*;
 
 const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {
-    "avx512f"
+    "512-avx512f"
 } else if cfg!(target_feature = "avx2") {
-    "avx2"
+    "256-avx2"
 } else if cfg!(target_feature = "sse2") {
-    "sse2"
+    "128-sse2"
 } else {
     "error"
 };

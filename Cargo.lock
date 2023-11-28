@@ -58,14 +58,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bench_means"
-version = "0.1.0"
-dependencies = [
- "serde_json",
- "walkdir",
-]
-
-[[package]]
 name = "binary-merge"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -399,7 +391,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "is_consecutive"
+name = "is_consecutive0"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+]
+
+[[package]]
+name = "is_consecutive1"
 version = "0.1.0"
 dependencies = [
  "criterion",

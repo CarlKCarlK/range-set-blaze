@@ -23,18 +23,10 @@ members = [
     "tests/embedded",
     "examples/simd/simd_hello",
     "examples/simd/simd_detect",
-    "examples/simd/is_consecutive",
-    "examples/simd/bench_means",
+    "examples/simd/is_consecutive0",
+    "examples/simd/is_consecutive1",
 ]
 
-
-# [workspace]
-# members = [".", "tests_common", "tests/wasm-demo", "tests/embedded"]
-# exclude = [
-#     "examples/simd/simd_hello",
-#     "examples/simd/simd_detect",
-#     "examples/simd/is_consecutive",
-# ]
 
 [lib]
 

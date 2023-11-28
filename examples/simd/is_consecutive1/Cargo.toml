@@ -1,7 +1,7 @@
 # cmk [workspace]
 
 [package]
-name = "is_consecutive"
+name = "is_consecutive1"
 version = "0.1.0"
 edition = "2021"
 
