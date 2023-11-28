@@ -1,16 +1,16 @@
 use serde_json::Value;
-use std::ffi::OsStr;
-use std::fs;
+use std::{env, ffi::OsStr, fs, path::PathBuf};
 use walkdir::WalkDir;
 
 fn main() {
-    println!("Group\tId\tMean(ns)\tStdErr(ns)");
+    // Get the first command line argument or use "." as default
+    let base_dir = env::args().nth(1).unwrap_or_else(|| ".".to_string());
+    let start_dir = PathBuf::from(base_dir).join("target/criterion");
 
-    // cmk this ../../.. is hard to explain
-    for entry in WalkDir::new("../../../target/criterion")
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
+    println!("start_dir: {}", start_dir.display());
+
+    println!("Group,Id,Mean(ns),StdErr(ns)");
+    for entry in WalkDir::new(start_dir).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();
         // println!("path: {}", path.display());
         if path.is_file()
@@ -39,11 +39,11 @@ fn main() {
                         let benchmark_group = components[components.len() - 4];
                         let function = components[components.len() - 3];
                         println!(
-                            "{}\t{}\t{}\t{}",
+                            "{},{},{},{}",
                             benchmark_group, function, mean, standard_error
                         );
                     } else {
-                        println!("{}\tmissing", path.display());
+                        println!("{},missing", path.display());
                     }
                 }
                 Err(_) => println!("Error reading file: {}", path.display()),
