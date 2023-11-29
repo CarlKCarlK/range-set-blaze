@@ -402,6 +402,9 @@ name = "is_consecutive1"
 version = "0.1.0"
 dependencies = [
  "criterion",
+ "num-integer",
+ "num-traits",
+ "syntactic-for",
 ]
 
 [[package]]
