@@ -66,8 +66,6 @@ macro_rules! reference_splat {
     };
 }
 
-reference_splat!(reference_splat_u32, u32);
-
 #[inline]
 pub fn is_consecutive_splat2<T, const N: usize>(chunk: Simd<T, N>, reference: Simd<T, N>) -> bool
 where
@@ -106,29 +104,34 @@ where
     chunk - rotated == reference
 }
 
+pub type Integer = i64;
+
+#[cfg(test)]
+use syntactic_for::syntactic_for;
+
 #[test]
 fn test_is_consecutive() {
-    use syntactic_for::syntactic_for;
+    reference_splat!(reference_splat_integer, Integer);
 
     syntactic_for! {LANES in [2, 4, 8, 16, 32, 64]  {$(
 
-        let a: Vec<u32> = (100u32..100 + $LANES).collect();
-        let ninety_nines: Vec<u32> = vec![99; $LANES];
-        let a = Simd::<u32, $LANES>::from_slice(&a);
-        let ninety_nines = Simd::<u32, $LANES>::from_slice(ninety_nines.as_slice());
+        let a: Vec<Integer> = (100 as Integer..100 + $LANES).collect();
+        let ninety_nines: Vec<Integer> = vec![99; $LANES];
+        let a = Simd::<Integer, $LANES>::from_slice(&a);
+        let ninety_nines = Simd::<Integer, $LANES>::from_slice(ninety_nines.as_slice());
 
-        assert!(is_consecutive_regular(a.as_array(), 1, u32::MAX));
-        assert!(!is_consecutive_regular(ninety_nines.as_array(), 1, u32::MAX));
+        assert!(is_consecutive_regular(a.as_array(), 1, Integer::MAX));
+        assert!(!is_consecutive_regular(ninety_nines.as_array(), 1, Integer::MAX));
 
 
         // assert!(is_consecutive_splat0(a));
         // assert!(!is_consecutive_splat0(ninety_nines));
 
-        assert!(is_consecutive_splat1(a, reference_splat_u32()));
-        assert!(!is_consecutive_splat1(ninety_nines, reference_splat_u32()));
+        assert!(is_consecutive_splat1(a, reference_splat_integer()));
+        assert!(!is_consecutive_splat1(ninety_nines, reference_splat_integer()));
 
-        assert!(is_consecutive_splat2(a, reference_splat_u32()));
-        assert!(!is_consecutive_splat2(ninety_nines, reference_splat_u32()));
+        assert!(is_consecutive_splat2(a, reference_splat_integer()));
+        assert!(!is_consecutive_splat2(ninety_nines, reference_splat_integer()));
 
         // assert!(is_consecutive_sizzle(a));
         // assert!(!is_consecutive_sizzle(ninety_nines));
@@ -137,3 +140,14 @@ fn test_is_consecutive() {
         // assert!(!is_consecutive_rotate(ninety_nines));
     )*}}
 }
+
+// #[test]
+// fn test_nested() {
+//     syntactic_for! {INTEGER in [i16, u32, u64]  {
+//         syntactic_for! {LANES in [2, 4, 8, 16, 32, 64]  {
+//         $(
+//         println!("INTEGER: {}, LANES: {}", stringify!($INTEGER), $LANES);
+//         )
+//         }}
+//     *}}
+// }

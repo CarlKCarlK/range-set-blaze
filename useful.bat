@@ -9,6 +9,8 @@ rustup override set nightly
 
 # Run criterion-means
 cargo install cargo-criterion-means --version 0.1.0-beta.1
+set SIMD_LANES=8
+set SIMD_INTEGER=i16
 cargo criterion-means ..\..\..
 
 # run packages
