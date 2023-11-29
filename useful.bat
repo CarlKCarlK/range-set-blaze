@@ -7,8 +7,12 @@ set BUILDFEATURES=from_slice
 
 rustup override set nightly
 
+# Run criterion-means
+cargo install cargo-criterion-means --version 0.1.0-beta.1
+cargo criterion-means ..\..\..
+
 # run packages
-cargo run --package bench_means ..\..\..
+cargo run --package criterion-means ..\..\..
 
 # tests
 cargo test range_set_int_slice_constructor -- --nocapture

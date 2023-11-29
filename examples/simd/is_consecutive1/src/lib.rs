@@ -48,6 +48,7 @@ where
     Simd::<T, N>::splat(chunk[0]) == subtracted
 }
 
+#[macro_export]
 macro_rules! reference_splat {
     ($function:ident, $type:ty) => {
         pub const fn $function<const N: usize>() -> Simd<$type, N>
@@ -123,8 +124,8 @@ fn test_is_consecutive() {
         // assert!(is_consecutive_splat0(a));
         // assert!(!is_consecutive_splat0(ninety_nines));
 
-        assert!(is_consecutive_splat1(a));
-        assert!(!is_consecutive_splat1(ninety_nines));
+        assert!(is_consecutive_splat1(a, reference_splat_u32()));
+        assert!(!is_consecutive_splat1(ninety_nines, reference_splat_u32()));
 
         assert!(is_consecutive_splat2(a, reference_splat_u32()));
         assert!(!is_consecutive_splat2(ninety_nines, reference_splat_u32()));

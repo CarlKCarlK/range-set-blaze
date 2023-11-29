@@ -2,7 +2,7 @@
 
 use core::array;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use is_consecutive::*;
+use is_consecutive0::*;
 use std::simd::prelude::*;
 
 const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {
