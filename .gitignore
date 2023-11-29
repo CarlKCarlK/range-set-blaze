@@ -19,3 +19,4 @@ tests/formal/Step7.dfy
 tests/formal/*.dll
 tests/formal/*.json
 **/target/*
+examples/simd/is_consecutive1/delme.csv

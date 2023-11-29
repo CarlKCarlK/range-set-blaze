@@ -18,6 +18,22 @@ where
     true
 }
 
+#[inline]
+pub fn is_consecutive_regular_i64_32(chunk: &[i64; 32]) -> bool {
+    is_consecutive_regular::<i64, 32>(chunk, 1, i64::MAX)
+}
+
+#[test]
+fn test_regular() {
+    let a: Vec<i64> = (100..132).collect();
+    let ninety_nines: Vec<i64> = vec![99; 32];
+    let a = Simd::<i64, 32>::from_slice(&a);
+    let ninety_nines = Simd::<i64, 32>::from_slice(ninety_nines.as_slice());
+
+    assert!(is_consecutive_regular_i64_32(a.as_array()));
+    assert!(!is_consecutive_regular_i64_32(ninety_nines.as_array()));
+}
+
 // const REFERENCE_SPLAT0: Simd<T, N> =
 //     Simd::from_array([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
 

@@ -98,21 +98,21 @@ fn compare_is_consecutive(c: &mut Criterion) {
         },
     );
 
-    for (name, func) in FUNCTIONS {
-        let name = format!(
-            "{},{},{},{},{}",
-            name,
-            SIMD_SUFFIX,
-            LANES,
-            env!("SIMD_INTEGER"),
-            Integer::BITS
-        );
-        group.bench_function(name, |b| {
-            b.iter(|| {
-                assert!(black_box(func(a_simd, reference_splat())));
-            });
-        });
-    }
+    // for (name, func) in FUNCTIONS {
+    //     let name = format!(
+    //         "{},{},{},{},{}",
+    //         name,
+    //         SIMD_SUFFIX,
+    //         LANES,
+    //         env!("SIMD_INTEGER"),
+    //         Integer::BITS
+    //     );
+    //     group.bench_function(name, |b| {
+    //         b.iter(|| {
+    //             assert!(black_box(func(a_simd, reference_splat())));
+    //         });
+    //     });
+    // }
 
     group.finish();
 }
