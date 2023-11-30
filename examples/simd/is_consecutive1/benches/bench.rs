@@ -31,7 +31,7 @@ const LANES: usize = if cfg!(simd_lanes = "2") {
 } else if cfg!(simd_lanes = "64") {
     64
 } else {
-    0
+    64
 };
 
 #[cfg(simd_integer = "i8")]
@@ -72,16 +72,13 @@ reference_splat0!(reference_splat0_integer, Integer);
 reference_splat!(reference_splat_integer, Integer);
 reference_rotate!(reference_rotate_integer, Integer);
 
-// cmk00 does this loop stop inlining?
-type IsConsecutiveFn = fn(Simd<Integer, LANES>, Simd<Integer, LANES>) -> bool;
-
 fn create_benchmark_id(name: &str, n: usize) -> BenchmarkId {
     BenchmarkId::new(
         format!(
             "{},{},{},{},{}",
             name,
             SIMD_SUFFIX,
-            env!("SIMD_INTEGER"),
+            option_env!("SIMD_INTEGER").unwrap_or("i32"),
             Integer::BITS,
             LANES,
         ),

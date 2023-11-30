@@ -1,5 +1,5 @@
-$SIMD_INTEGER_VALUES = "i64", "i32", "i16", "i8" # cmk, "isize", "u64", "u32", "u16", "u8", "usize"
-$SIMD_LANES_VALUES = 64 # cmk, 32, 16, 8, 4
+$SIMD_INTEGER_VALUES = "i64", "i32", "i16", "i8", "isize", "u64", "u32", "u16", "u8", "usize"
+$SIMD_LANES_VALUES = 64, 32, 16, 8, 4
 $RUSTFLAGS_VALUES = @("-C target-feature=+avx512f", "-C target-feature=+avx2", "")
 
 foreach ($simdLanes in $SIMD_LANES_VALUES) {
