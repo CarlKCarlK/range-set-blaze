@@ -69,6 +69,7 @@ type Integer = usize;
 )))]
 type Integer = i32;
 
+// cmk00 does this loop stop inlining?
 type IsConsecutiveFn = fn(Simd<Integer, LANES>, Simd<Integer, LANES>) -> bool;
 const FUNCTIONS: [(&str, IsConsecutiveFn); 2] = [
     // cmk ("splat0", is_consecutive_splat0 as IsConsecutiveFn),
@@ -122,7 +123,7 @@ fn compare_is_consecutive(c: &mut Criterion) {
 }
 
 fn vector(c: &mut Criterion) {
-    let ns = [100usize, 1000, 10_000, 100_000, 1_000_000];
+    let ns = [100, 1000, 10_000, 100_000, 1_000_000];
 
     let mut group = c.benchmark_group("vector");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
@@ -151,9 +152,10 @@ fn vector(c: &mut Criterion) {
             ),
             |b| {
                 b.iter(|| {
-                    black_box(
+                    let _: usize = black_box(
                         v.array_chunks::<LANES>()
-                            .all(|chunk| is_consecutive_regular(&chunk, 1, Integer::MAX)),
+                            .map(|chunk| is_consecutive_regular(chunk, 1, Integer::MAX) as usize)
+                            .sum(),
                     );
                 });
             },
@@ -173,8 +175,11 @@ fn vector(c: &mut Criterion) {
             );
             group.bench_function(id, |b| {
                 b.iter(|| {
-                    black_box(s.iter().all(|chunk| func(*chunk, reference_splat())));
-                    // cmk we ignore the remainder
+                    let _: usize = black_box(
+                        s.iter()
+                            .map(|chunk| func(*chunk, reference_splat()) as usize)
+                            .sum(),
+                    );
                 });
             });
         }

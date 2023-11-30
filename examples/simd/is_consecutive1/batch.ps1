@@ -1,6 +1,6 @@
-$SIMD_INTEGER_VALUES = "i8", "i16", "i32", "i64", "isize", "u8", "u16", "u32", "u64", "usize"
-$SIMD_LANES_VALUES = 2, 4, 8, 16, 32, 64
-$RUSTFLAGS_VALUES = @("", "-C target-feature=+avx2", "-C target-feature=+avx512f")
+$SIMD_INTEGER_VALUES = "i64", "i32", "i16", "i8", "isize", "u64", "u32", "u16", "u8", "usize"
+$SIMD_LANES_VALUES = 64, 32, 16, 8, 4, 2
+$RUSTFLAGS_VALUES = @("-C target-feature=+avx512f", "-C target-feature=+avx2", "")
 
 foreach ($simdInteger in $SIMD_INTEGER_VALUES) {
     $env:SIMD_INTEGER = $simdInteger

@@ -1,8 +1,11 @@
 #![feature(portable_simd)]
+#![feature(array_chunks)]
 
 use core::cmp::PartialEq;
 use core::ops::{Add, Sub};
 use core::simd::{prelude::*, LaneCount, SimdElement, SupportedLaneCount};
+#[cfg(test)]
+use std::hint::black_box;
 
 // cmk wouldn't checkadd be even faster?
 #[inline]
@@ -121,7 +124,7 @@ where
     chunk - rotated == reference
 }
 
-pub type Integer = i64;
+pub type Integer = i16;
 
 #[cfg(test)]
 use syntactic_for::syntactic_for;
@@ -168,3 +171,46 @@ fn test_is_consecutive() {
 //         }}
 //     *}}
 // }
+
+#[test]
+fn test_vector() {
+    const LANES: usize = 16;
+    type Integer = i16;
+    type IsConsecutiveFn = fn(Simd<Integer, LANES>, Simd<Integer, LANES>) -> bool;
+    const FUNCTIONS: [(&str, IsConsecutiveFn); 2] = [
+        // cmk ("splat0", is_consecutive_splat0 as IsConsecutiveFn),
+        ("splat1", is_consecutive_splat1 as IsConsecutiveFn),
+        ("splat2", is_consecutive_splat2 as IsConsecutiveFn),
+        // cmk ("sizzle", is_consecutive_sizzle as IsConsecutiveFn),
+        // cmk ("rotate", is_consecutive_rotate as IsConsecutiveFn),
+    ];
+    reference_splat!(reference_splatx, Integer);
+
+    let ns = [100_000, 1_000_000]; // 100usize, 1000, 10_000, cmk
+
+    for n in ns.iter() {
+        let v = (100..n + 100)
+            .map(|i| (i % (Integer::MAX as usize)) as Integer)
+            .collect::<Vec<Integer>>();
+        let (prefix_s, s, reminder_s) = v.as_simd::<LANES>();
+        println!("s.len()*LANES: {}", s.len() * LANES);
+        let v = &v[prefix_s.len()..v.len() - reminder_s.len()];
+        println!("v.len(): {}", v.len());
+
+        // Everyone ignores the prefix and remainder. Everything is aligned.
+
+        let _: usize = black_box(
+            v.array_chunks::<LANES>()
+                .map(|chunk| is_consecutive_regular(chunk, 1, Integer::MAX) as usize)
+                .sum(),
+        );
+
+        for (_name, func) in FUNCTIONS {
+            let _: usize = black_box(
+                s.iter()
+                    .map(|chunk| func(*chunk, reference_splatx()) as usize)
+                    .sum(),
+            );
+        }
+    }
+}
