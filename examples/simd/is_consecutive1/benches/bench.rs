@@ -1,16 +1,20 @@
 #![feature(portable_simd)]
+#![feature(array_chunks)]
 
 use core::array;
 use core::simd::{prelude::*, LaneCount, SupportedLaneCount};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{
+    black_box, criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion,
+    PlotConfiguration,
+};
 use is_consecutive1::*;
 
 const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {
-    "512-avx512f"
+    "avx512f,512"
 } else if cfg!(target_feature = "avx2") {
-    "256-avx2"
+    "avx2,256"
 } else if cfg!(target_feature = "sse2") {
-    "128-sse2"
+    "sse2,128"
 } else {
     "error"
 };
@@ -87,9 +91,9 @@ fn compare_is_consecutive(c: &mut Criterion) {
         format!(
             "regular,{},{},{},{}",
             SIMD_SUFFIX,
-            LANES,
             env!("SIMD_INTEGER"),
-            Integer::BITS
+            Integer::BITS,
+            LANES,
         ),
         |b| {
             b.iter(|| {
@@ -98,24 +102,86 @@ fn compare_is_consecutive(c: &mut Criterion) {
         },
     );
 
-    // for (name, func) in FUNCTIONS {
-    //     let name = format!(
-    //         "{},{},{},{},{}",
-    //         name,
-    //         SIMD_SUFFIX,
-    //         LANES,
-    //         env!("SIMD_INTEGER"),
-    //         Integer::BITS
-    //     );
-    //     group.bench_function(name, |b| {
-    //         b.iter(|| {
-    //             assert!(black_box(func(a_simd, reference_splat())));
-    //         });
-    //     });
-    // }
+    for (name, func) in FUNCTIONS {
+        let name = format!(
+            "{},{},{},{},{}",
+            name,
+            SIMD_SUFFIX,
+            env!("SIMD_INTEGER"),
+            Integer::BITS,
+            LANES,
+        );
+        group.bench_function(name, |b| {
+            b.iter(|| {
+                assert!(black_box(func(a_simd, reference_splat())));
+            });
+        });
+    }
 
     group.finish();
 }
 
-criterion_group!(benches, compare_is_consecutive);
+fn vector(c: &mut Criterion) {
+    let ns = [100usize, 1000, 10_000, 100_000, 1_000_000];
+
+    let mut group = c.benchmark_group("vector");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    group.sample_size(1000);
+
+    for n in ns.iter() {
+        let v = (100..n + 100)
+            .map(|i| (i % (Integer::MAX as usize)) as Integer)
+            .collect::<Vec<Integer>>();
+        let (prefix_s, s, reminder_s) = v.as_simd::<LANES>();
+        let v = &v[prefix_s.len()..v.len() - reminder_s.len()];
+
+        // Everyone ignores the prefix and remainder. Everything is aligned.
+
+        group.bench_function(
+            BenchmarkId::new(
+                format!(
+                    "regular,{},{},{},{}",
+                    SIMD_SUFFIX,
+                    env!("SIMD_INTEGER"),
+                    Integer::BITS,
+                    LANES,
+                ),
+                n,
+            ),
+            |b| {
+                b.iter(|| {
+                    black_box(
+                        v.array_chunks::<LANES>()
+                            .all(|chunk| is_consecutive_regular(&chunk, 1, Integer::MAX)),
+                    );
+                });
+            },
+        );
+
+        for (name, func) in FUNCTIONS {
+            let id = BenchmarkId::new(
+                format!(
+                    "{},{},{},{},{}",
+                    name,
+                    SIMD_SUFFIX,
+                    env!("SIMD_INTEGER"),
+                    Integer::BITS,
+                    LANES,
+                ),
+                n,
+            );
+            group.bench_function(id, |b| {
+                b.iter(|| {
+                    black_box(s.iter().all(|chunk| func(*chunk, reference_splat())));
+                    // cmk we ignore the remainder
+                });
+            });
+        }
+    }
+
+    group.finish();
+}
+
+criterion_group!(benches, compare_is_consecutive, vector);
 criterion_main!(benches);

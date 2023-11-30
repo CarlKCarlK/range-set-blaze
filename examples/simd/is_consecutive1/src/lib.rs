@@ -4,6 +4,7 @@ use core::cmp::PartialEq;
 use core::ops::{Add, Sub};
 use core::simd::{prelude::*, LaneCount, SimdElement, SupportedLaneCount};
 
+// cmk wouldn't checkadd be even faster?
 #[inline]
 pub fn is_consecutive_regular<T, const N: usize>(chunk: &[T; N], one: T, max: T) -> bool
 where
