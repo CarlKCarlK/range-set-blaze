@@ -1,7 +1,6 @@
 #![feature(portable_simd)]
 #![feature(array_chunks)]
 
-use core::array;
 use core::simd::{prelude::*, LaneCount, SupportedLaneCount};
 use criterion::{
     black_box, criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion,
@@ -69,61 +68,29 @@ type Integer = usize;
 )))]
 type Integer = i32;
 
+reference_splat0!(reference_splat0_integer, Integer);
+reference_splat!(reference_splat_integer, Integer);
+reference_rotate!(reference_rotate_integer, Integer);
+
 // cmk00 does this loop stop inlining?
 type IsConsecutiveFn = fn(Simd<Integer, LANES>, Simd<Integer, LANES>) -> bool;
-const FUNCTIONS: [(&str, IsConsecutiveFn); 2] = [
-    // cmk ("splat0", is_consecutive_splat0 as IsConsecutiveFn),
-    ("splat1", is_consecutive_splat1 as IsConsecutiveFn),
-    ("splat2", is_consecutive_splat2 as IsConsecutiveFn),
-    // cmk ("sizzle", is_consecutive_sizzle as IsConsecutiveFn),
-    // cmk ("rotate", is_consecutive_rotate as IsConsecutiveFn),
-];
 
-reference_splat!(reference_splat, Integer);
-
-fn compare_is_consecutive(c: &mut Criterion) {
-    let a_array: [Integer; LANES] = black_box(array::from_fn(|i| 100 + i as Integer));
-    let a_simd: Simd<Integer, LANES> = Simd::from_array(a_array);
-
-    let mut group = c.benchmark_group("compare_is_consecutive");
-    group.sample_size(1000);
-
-    group.bench_function(
+fn create_benchmark_id(name: &str, n: usize) -> BenchmarkId {
+    BenchmarkId::new(
         format!(
-            "regular,{},{},{},{}",
-            SIMD_SUFFIX,
-            env!("SIMD_INTEGER"),
-            Integer::BITS,
-            LANES,
-        ),
-        |b| {
-            b.iter(|| {
-                assert!(black_box(is_consecutive_regular(&a_array, 1, Integer::MAX)));
-            });
-        },
-    );
-
-    for (name, func) in FUNCTIONS {
-        let name = format!(
             "{},{},{},{},{}",
             name,
             SIMD_SUFFIX,
             env!("SIMD_INTEGER"),
             Integer::BITS,
             LANES,
-        );
-        group.bench_function(name, |b| {
-            b.iter(|| {
-                assert!(black_box(func(a_simd, reference_splat())));
-            });
-        });
-    }
-
-    group.finish();
+        ),
+        n,
+    )
 }
 
 fn vector(c: &mut Criterion) {
-    let ns = [100, 1000, 10_000, 100_000, 1_000_000];
+    let ns = [1_024_000, 102_400, 10_240, 1024];
 
     let mut group = c.benchmark_group("vector");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
@@ -139,54 +106,71 @@ fn vector(c: &mut Criterion) {
 
         // Everyone ignores the prefix and remainder. Everything is aligned.
 
-        group.bench_function(
-            BenchmarkId::new(
-                format!(
-                    "regular,{},{},{},{}",
-                    SIMD_SUFFIX,
-                    env!("SIMD_INTEGER"),
-                    Integer::BITS,
-                    LANES,
-                ),
-                n,
-            ),
-            |b| {
-                b.iter(|| {
-                    let _: usize = black_box(
-                        v.array_chunks::<LANES>()
-                            .map(|chunk| is_consecutive_regular(chunk, 1, Integer::MAX) as usize)
-                            .sum(),
-                    );
-                });
-            },
-        );
-
-        for (name, func) in FUNCTIONS {
-            let id = BenchmarkId::new(
-                format!(
-                    "{},{},{},{},{}",
-                    name,
-                    SIMD_SUFFIX,
-                    env!("SIMD_INTEGER"),
-                    Integer::BITS,
-                    LANES,
-                ),
-                n,
-            );
-            group.bench_function(id, |b| {
-                b.iter(|| {
-                    let _: usize = black_box(
-                        s.iter()
-                            .map(|chunk| func(*chunk, reference_splat()) as usize)
-                            .sum(),
-                    );
-                });
+        group.bench_function(create_benchmark_id("regular", *n), |b| {
+            b.iter(|| {
+                let _: usize = black_box(
+                    v.array_chunks::<LANES>()
+                        .map(|chunk| is_consecutive_regular(chunk) as usize)
+                        .sum(),
+                );
             });
-        }
+        });
+
+        group.bench_function(create_benchmark_id("splat0", *n), |b| {
+            b.iter(|| {
+                let _: usize = black_box(
+                    s.iter()
+                        .map(|chunk| {
+                            is_consecutive_splat0(
+                                *chunk,
+                                reference_splat0_integer(),
+                                (LANES - 1) as Integer,
+                            ) as usize
+                        })
+                        .sum(),
+                );
+            });
+        });
+
+        group.bench_function(create_benchmark_id("splat1", *n), |b| {
+            b.iter(|| {
+                let _: usize = black_box(
+                    s.iter()
+                        .map(|chunk| {
+                            is_consecutive_splat1(*chunk, reference_splat_integer()) as usize
+                        })
+                        .sum(),
+                );
+            });
+        });
+
+        group.bench_function(create_benchmark_id("splat2", *n), |b| {
+            b.iter(|| {
+                let _: usize = black_box(
+                    s.iter()
+                        .map(|chunk| {
+                            is_consecutive_splat2(*chunk, reference_splat_integer()) as usize
+                        })
+                        .sum(),
+                );
+            });
+        });
+
+        group.bench_function(create_benchmark_id("rotate", *n), |b| {
+            b.iter(|| {
+                let _: usize = black_box(
+                    s.iter()
+                        .map(|chunk| {
+                            is_consecutive_rotate(*chunk, reference_rotate_integer()) as usize
+                        })
+                        .sum(),
+                );
+            });
+        });
     }
 
     group.finish();
 }
 
-criterion_group!(benches, compare_is_consecutive, vector);
+criterion_group!(benches, vector);
 criterion_main!(benches);

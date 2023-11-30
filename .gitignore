@@ -20,3 +20,5 @@ tests/formal/*.dll
 tests/formal/*.json
 **/target/*
 examples/simd/is_consecutive1/delme.csv
+examples/simd/is_consecutive1/src/del1.asm
+examples/simd/is_consecutive1/src/del2.asm
