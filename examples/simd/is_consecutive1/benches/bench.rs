@@ -28,8 +28,6 @@ const LANES: usize = if cfg!(simd_lanes = "2") {
     16
 } else if cfg!(simd_lanes = "32") {
     32
-} else if cfg!(simd_lanes = "64") {
-    64
 } else {
     64
 };
@@ -86,6 +84,7 @@ fn create_benchmark_id(name: &str, n: usize) -> BenchmarkId {
     )
 }
 
+#[inline(never)]
 fn vector(c: &mut Criterion) {
     let ns = [1_024_000, 102_400, 10_240, 1024];
 
@@ -99,10 +98,10 @@ fn vector(c: &mut Criterion) {
             .map(|i| (i % (Integer::MAX as usize)) as Integer)
             .collect::<Vec<Integer>>();
         let (prefix_s, s, reminder_s) = v.as_simd::<LANES>();
-        let v = &v[prefix_s.len()..v.len() - reminder_s.len()];
 
         // Everyone ignores the prefix and remainder. Everything is aligned.
 
+        let v = &v[prefix_s.len()..v.len() - reminder_s.len()];
         group.bench_function(create_benchmark_id("regular", *n), |b| {
             b.iter(|| {
                 let _: usize = black_box(

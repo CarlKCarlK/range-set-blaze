@@ -3,16 +3,17 @@
 use alloc::slice;
 
 use crate::Integer;
-use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
-use core::{iter::FusedIterator, ops::RangeInclusive};
+use core::simd::{Simd, SimdElement};
+use core::{iter::FusedIterator, ops::RangeInclusive, ops::Sub};
 
-pub(crate) const fn const_min(a: usize, b: usize) -> usize {
-    if a < b {
-        a
-    } else {
-        b
-    }
-}
+// cmk delete
+// pub(crate) const fn const_min(a: usize, b: usize) -> usize {
+//     if a < b {
+//         a
+//     } else {
+//         b
+//     }
+// }
 
 #[macro_export]
 #[doc(hidden)]
@@ -20,42 +21,36 @@ macro_rules! from_slice {
     ($reference:ident) => {
         #[inline]
         fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-            FromSliceIter::<
-                Self,
-                { const_min(64, SIMD_REGISTER_BYTES / core::mem::size_of::<Self>()) },
-            >::new(slice.as_ref(), $reference())
-            .collect()
+            FromSliceIter::<Self>::new(slice.as_ref(), $reference()).collect()
         }
     };
 }
 
+pub(crate) const LANES: usize = 8;
+
 #[inline]
-pub(crate) fn is_consecutive<T, const N: usize>(chunk: Simd<T, N>, reference: Simd<T, N>) -> bool
+pub(crate) fn is_consecutive<T>(chunk: Simd<T, LANES>, reference: Simd<T, LANES>) -> bool
 where
     T: Integer + SimdElement,
-    LaneCount<N>: SupportedLaneCount,
-    Simd<T, N>: core::ops::Sub<Output = Simd<T, N>>,
+    Simd<T, LANES>: Sub<Output = Simd<T, LANES>>,
 {
-    // let b = chunk.rotate_lanes_right::<1>();
+    // let b = chunk.rotate_lanes_right::<1>(); // cmk
     // chunk - b == reference
     let subtracted = chunk - reference;
-    Simd::<T, N>::splat(subtracted[0]) == subtracted
-    // const SWIZZLE_CONST: [usize; N] = [0; N];
+    Simd::<T, LANES>::splat(subtracted[0]) == subtracted
+    // const SWIZZLE_CONST: [usize; N] = [0; N]; // cmk
     // simd_swizzle!(subtracted, SWIZZLE_CONST) == subtracted
 }
 
 macro_rules! reference_t {
     ($function:ident, $type:ty) => {
-        pub(crate) const fn $function<const N: usize>() -> Simd<$type, N>
-        where
-            LaneCount<N>: SupportedLaneCount,
-        {
-            // let mut arr: [$type; N] = [1; N];
+        pub(crate) const fn $function() -> Simd<$type, LANES> {
+            // let mut arr: [$type; N] = [1; N]; // cmk
             // arr[0] = (1 as $type).wrapping_sub(N as $type); // is -(N-1) for signed & unsigned
 
-            let mut arr: [$type; N] = [0; N];
+            let mut arr: [$type; LANES] = [0; LANES];
             let mut i = 0;
-            while i < N {
+            while i < LANES {
                 arr[i] = i as $type;
                 i += 1;
             }
@@ -76,35 +71,26 @@ reference_t!(reference_isize, isize);
 reference_t!(reference_usize, usize);
 
 // cmk
-pub(crate) const SIMD_REGISTER_BYTES: usize = 1024 / 8;
-// // avx512 (512 bits) or scalar
-// #[cfg(any(target_feature = "avx512f", not(target_feature = "avx2")))]
-// pub(crate) const SIMD_REGISTER_BYTES: usize = 512 / 8;
-// // avx2 (256 bits)
-// #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-// pub(crate) const SIMD_REGISTER_BYTES: usize = 256 / 8;
 
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub(crate) struct FromSliceIter<'a, T, const N: usize>
+pub(crate) struct FromSliceIter<'a, T>
 where
     T: Integer + SimdElement,
-    LaneCount<N>: SupportedLaneCount,
 {
     prefix_iter: core::slice::Iter<'a, T>,
     previous_range: Option<RangeInclusive<T>>,
-    chunks: slice::Iter<'a, Simd<T, N>>,
+    chunks: slice::Iter<'a, Simd<T, LANES>>,
     suffix: &'a [T],
     slice_len: usize,
-    reference: Simd<T, N>,
+    reference: Simd<T, LANES>,
 }
 
-impl<'a, T: 'a, const N: usize> FromSliceIter<'a, T, N>
+impl<'a, T: 'a> FromSliceIter<'a, T>
 where
     T: Integer + SimdElement,
-    LaneCount<N>: SupportedLaneCount,
 {
-    pub(crate) fn new(slice: &'a [T], reference: Simd<T, N>) -> Self {
+    pub(crate) fn new(slice: &'a [T], reference: Simd<T, LANES>) -> Self {
         let (prefix, middle, suffix) = slice.as_simd();
         FromSliceIter {
             prefix_iter: prefix.iter(),
@@ -117,19 +103,17 @@ where
     }
 }
 
-impl<'a, T, const N: usize> FusedIterator for FromSliceIter<'a, T, N>
+impl<'a, T> FusedIterator for FromSliceIter<'a, T>
 where
     T: Integer + SimdElement,
-    LaneCount<N>: SupportedLaneCount,
-    Simd<T, N>: core::ops::Sub<Output = Simd<T, N>>,
+    Simd<T, LANES>: core::ops::Sub<Output = Simd<T, LANES>>,
 {
 }
 
-impl<'a, T: 'a, const N: usize> Iterator for FromSliceIter<'a, T, N>
+impl<'a, T: 'a> Iterator for FromSliceIter<'a, T>
 where
     T: Integer + SimdElement,
-    LaneCount<N>: SupportedLaneCount,
-    Simd<T, N>: core::ops::Sub<Output = Simd<T, N>>,
+    Simd<T, LANES>: Sub<Output = Simd<T, LANES>>,
 {
     type Item = RangeInclusive<T>;
 
@@ -142,7 +126,7 @@ where
         for chunk in self.chunks.by_ref() {
             if is_consecutive(*chunk, reference) {
                 let this_start = chunk[0];
-                let this_end = chunk[N - 1];
+                let this_end = chunk[LANES - 1];
 
                 if let Some(inner_previous_range) = self.previous_range.as_mut() {
                     // if some and previous is some and adjacent, combine

@@ -3,9 +3,8 @@ use crate::{
     from_slice,
     // cmk00 can we apply the macro in place and avoid all these?
     from_slice::{
-        const_min, reference_i16, reference_i32, reference_i64, reference_i8, reference_isize,
-        reference_u16, reference_u32, reference_u64, reference_u8, reference_usize, FromSliceIter,
-        SIMD_REGISTER_BYTES,
+        reference_i16, reference_i32, reference_i64, reference_i8, reference_isize, reference_u16,
+        reference_u32, reference_u64, reference_u8, reference_usize, FromSliceIter,
     },
     RangeSetBlaze,
 };

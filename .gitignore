@@ -10,7 +10,7 @@ perf.data.old
 benches/summary*.tsv
 benches/~$summary_r.tsv.xlsx
 benches/*.xlsx
-bench.bat
+# bench.bat
 test.bat
 tests/formal/Step5.dfy
 tests/formal/Step6a.dfy
@@ -22,3 +22,5 @@ tests/formal/*.json
 examples/simd/is_consecutive1/delme.csv
 examples/simd/is_consecutive1/src/del1.asm
 examples/simd/is_consecutive1/src/del2.asm
+examples/simd/is_consecutive1/delme.asm
+examples/simd/is_consecutive1/delme2.asm
