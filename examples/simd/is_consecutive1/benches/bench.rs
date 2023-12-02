@@ -1,7 +1,7 @@
 #![feature(portable_simd)]
 #![feature(array_chunks)]
 
-use core::simd::{prelude::*, LaneCount, SupportedLaneCount};
+use core::simd::prelude::*;
 use criterion::{
     black_box, criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion,
     PlotConfiguration,
@@ -52,9 +52,26 @@ type Integer = usize;
 )))]
 type Integer = i32;
 
-reference_splat0!(reference_splat0_integer, Integer);
-reference_splat!(reference_splat_integer, Integer);
-reference_rotate!(reference_rotate_integer, Integer);
+const LANES: usize = if cfg!(simd_lanes = "2") {
+    2
+} else if cfg!(simd_lanes = "4") {
+    4
+} else if cfg!(simd_lanes = "8") {
+    8
+} else if cfg!(simd_lanes = "16") {
+    16
+} else if cfg!(simd_lanes = "32") {
+    32
+} else {
+    64
+};
+
+define_is_consecutive_regular!(is_consecutive_regular, Integer, LANES);
+define_is_consecutive_splat0!(is_consecutive_splat0, Integer, LANES);
+define_is_consecutive_splat1!(is_consecutive_splat1, Integer, LANES);
+define_is_consecutive_splat2!(is_consecutive_splat2, Integer, LANES);
+define_is_consecutive_rotate!(is_consecutive_rotate, Integer, LANES);
+define_is_consecutive_swizzle!(is_consecutive_swizzle, Integer, LANES);
 
 fn create_benchmark_id(name: &str, n: usize) -> BenchmarkId {
     BenchmarkId::new(
@@ -102,13 +119,7 @@ fn vector(c: &mut Criterion) {
             b.iter(|| {
                 let _: usize = black_box(
                     s.iter()
-                        .map(|chunk| {
-                            is_consecutive_splat0(
-                                *chunk,
-                                reference_splat0_integer(),
-                                (LANES - 1) as Integer,
-                            ) as usize
-                        })
+                        .map(|chunk| is_consecutive_splat0(*chunk) as usize)
                         .sum(),
                 );
             });
@@ -118,9 +129,7 @@ fn vector(c: &mut Criterion) {
             b.iter(|| {
                 let _: usize = black_box(
                     s.iter()
-                        .map(|chunk| {
-                            is_consecutive_splat1(*chunk, reference_splat_integer()) as usize
-                        })
+                        .map(|chunk| is_consecutive_splat1(*chunk) as usize)
                         .sum(),
                 );
             });
@@ -130,9 +139,7 @@ fn vector(c: &mut Criterion) {
             b.iter(|| {
                 let _: usize = black_box(
                     s.iter()
-                        .map(|chunk| {
-                            is_consecutive_splat2(*chunk, reference_splat_integer()) as usize
-                        })
+                        .map(|chunk| is_consecutive_splat2(*chunk) as usize)
                         .sum(),
                 );
             });
@@ -142,9 +149,17 @@ fn vector(c: &mut Criterion) {
             b.iter(|| {
                 let _: usize = black_box(
                     s.iter()
-                        .map(|chunk| {
-                            is_consecutive_rotate(*chunk, reference_rotate_integer()) as usize
-                        })
+                        .map(|chunk| is_consecutive_rotate(*chunk) as usize)
+                        .sum(),
+                );
+            });
+        });
+
+        group.bench_function(create_benchmark_id("swizzle", *n), |b| {
+            b.iter(|| {
+                let _: usize = black_box(
+                    s.iter()
+                        .map(|chunk| is_consecutive_swizzle(*chunk) as usize)
                         .sum(),
                 );
             });

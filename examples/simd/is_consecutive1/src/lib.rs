@@ -1,8 +1,6 @@
 #![feature(portable_simd)]
 #![feature(array_chunks)]
 
-use std::simd::Simd;
-
 const LANES: usize = if cfg!(simd_lanes = "2") {
     2
 } else if cfg!(simd_lanes = "4") {
@@ -19,10 +17,10 @@ const LANES: usize = if cfg!(simd_lanes = "2") {
 
 #[macro_export]
 macro_rules! define_is_consecutive_regular {
-    ($function:ident, $type:ty) => {
+    ($function:ident, $type:ty, $lanes:expr) => {
         #[inline]
-        pub fn $function(chunk: &[$type; LANES]) -> bool {
-            for i in 1..LANES {
+        pub fn $function(chunk: &[$type; $lanes]) -> bool {
+            for i in 1..$lanes {
                 if chunk[i - 1].checked_add(1) != Some(chunk[i]) {
                     return false;
                 }
@@ -32,7 +30,10 @@ macro_rules! define_is_consecutive_regular {
     };
 }
 
-define_is_consecutive_regular!(is_consecutive_regular_i64, i64);
+define_is_consecutive_regular!(is_consecutive_regular_i64, i64, LANES);
+
+#[cfg(test)]
+use core::simd::Simd;
 
 #[test]
 fn test_regular() {
@@ -47,27 +48,27 @@ fn test_regular() {
 
 #[macro_export]
 macro_rules! define_is_consecutive_splat0 {
-    ($function:ident, $type:ty) => {
+    ($function:ident, $type:ty, $lanes:expr) => {
         #[inline]
-        pub fn $function(chunk: Simd<$type, LANES>) -> bool {
-            define_reference_splat0!(reference_splat0, $type);
+        pub fn $function(chunk: Simd<$type, $lanes>) -> bool {
+            define_reference_splat0!(reference, $type, $lanes);
 
-            if chunk[0].checked_add(LANES as $type - 1) != Some(chunk[LANES - 1]) {
+            if chunk[0].checked_add($lanes as $type - 1) != Some(chunk[$lanes - 1]) {
                 return false;
             }
-            let added = chunk + reference_splat0();
+            let added = chunk + reference();
             Simd::splat(added[0]) == added
         }
     };
 }
-#[allow(unused_macros)]
+#[macro_export]
 macro_rules! define_reference_splat0 {
-    ($function:ident, $type:ty) => {
-        pub const fn $function() -> Simd<$type, LANES> {
-            let mut arr: [$type; LANES] = [0; LANES];
+    ($function:ident, $type:ty, $lanes:expr) => {
+        pub const fn $function() -> Simd<$type, $lanes> {
+            let mut arr: [$type; $lanes] = [0; $lanes];
             let mut i = 0;
-            while i < LANES {
-                arr[i] = (LANES - 1 - i) as $type;
+            while i < $lanes {
+                arr[i] = ($lanes - 1 - i) as $type;
                 i += 1;
             }
             Simd::from_array(arr)
@@ -77,24 +78,24 @@ macro_rules! define_reference_splat0 {
 
 #[macro_export]
 macro_rules! define_is_consecutive_splat1 {
-    ($function:ident, $type:ty) => {
+    ($function:ident, $type:ty, $lanes:expr) => {
         #[inline]
-        pub fn $function(chunk: Simd<$type, LANES>) -> bool {
-            define_reference_splat!(reference_splat, $type);
+        pub fn $function(chunk: Simd<$type, $lanes>) -> bool {
+            define_reference_splat!(reference, $type, $lanes);
 
-            let subtracted = chunk - reference_splat();
+            let subtracted = chunk - reference();
             Simd::splat(chunk[0]) == subtracted
         }
     };
 }
 
-#[allow(unused_macros)]
+#[macro_export]
 macro_rules! define_reference_splat {
-    ($function:ident, $type:ty) => {
-        pub const fn $function() -> Simd<$type, LANES> {
-            let mut arr: [$type; LANES] = [0; LANES];
+    ($function:ident, $type:ty, $lanes:expr) => {
+        pub const fn $function() -> Simd<$type, $lanes> {
+            let mut arr: [$type; $lanes] = [0; $lanes];
             let mut i = 0;
-            while i < LANES {
+            while i < $lanes {
                 arr[i] = i as $type;
                 i += 1;
             }
@@ -105,12 +106,12 @@ macro_rules! define_reference_splat {
 
 #[macro_export]
 macro_rules! define_is_consecutive_splat2 {
-    ($function:ident, $type:ty) => {
+    ($function:ident, $type:ty, $lanes:expr) => {
         #[inline]
-        pub fn $function(chunk: Simd<$type, LANES>) -> bool {
-            define_reference_splat!(reference_splat, $type);
+        pub fn $function(chunk: Simd<$type, $lanes>) -> bool {
+            define_reference_splat!(reference, $type, $lanes);
 
-            let subtracted = chunk - reference_splat();
+            let subtracted = chunk - reference();
             Simd::splat(subtracted[0]) == subtracted
         }
     };
@@ -118,37 +119,54 @@ macro_rules! define_is_consecutive_splat2 {
 
 #[macro_export]
 macro_rules! define_is_consecutive_rotate {
-    ($function:ident, $type:ty) => {
+    ($function:ident, $type:ty, $lanes:expr) => {
         #[inline]
-        pub fn $function(chunk: Simd<$type, LANES>) -> bool {
-            define_reference_rotate!(reference_rotate, $type);
+        pub fn $function(chunk: Simd<$type, $lanes>) -> bool {
+            define_reference_rotate!(reference, $type, $lanes);
 
             let rotated = chunk.rotate_lanes_right::<1>();
-            chunk - rotated == reference_rotate()
+            chunk - rotated == reference()
         }
     };
 }
 
-#[allow(unused_macros)]
+#[macro_export]
 macro_rules! define_reference_rotate {
-    ($function:ident, $type:ty) => {
-        pub const fn $function() -> Simd<$type, LANES> {
-            let mut arr: [$type; LANES] = [1; LANES];
-            arr[0] = (1 as $type).wrapping_sub(LANES as $type);
+    ($function:ident, $type:ty, $lanes:expr) => {
+        pub const fn $function() -> Simd<$type, $lanes> {
+            let mut arr: [$type; $lanes] = [1; $lanes];
+            arr[0] = (1 as $type).wrapping_sub($lanes as $type);
             Simd::from_array(arr)
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! define_is_consecutive_swizzle {
+    ($function:ident, $type:ty, $lanes:expr) => {
+        #[inline]
+        pub fn $function(chunk: Simd<$type, $lanes>) -> bool {
+            define_reference_splat!(reference, $type, $lanes);
+
+            let subtracted = chunk - reference();
+            simd_swizzle!(subtracted, [0; $lanes]) == subtracted
         }
     };
 }
 
 #[test]
 fn test_is_consecutive() {
+    use core::simd::simd_swizzle;
+    use core::simd::Simd;
+
     pub type Integer = i16;
 
-    define_is_consecutive_regular!(is_consecutive_regular, Integer);
-    define_is_consecutive_splat0!(is_consecutive_splat0, Integer);
-    define_is_consecutive_splat1!(is_consecutive_splat1, Integer);
-    define_is_consecutive_splat2!(is_consecutive_splat2, Integer);
-    define_is_consecutive_rotate!(is_consecutive_rotate, Integer);
+    define_is_consecutive_regular!(is_consecutive_regular, Integer, LANES);
+    define_is_consecutive_splat0!(is_consecutive_splat0, Integer, LANES);
+    define_is_consecutive_splat1!(is_consecutive_splat1, Integer, LANES);
+    define_is_consecutive_splat2!(is_consecutive_splat2, Integer, LANES);
+    define_is_consecutive_rotate!(is_consecutive_rotate, Integer, LANES);
+    define_is_consecutive_swizzle!(is_consecutive_swizzle, Integer, LANES);
 
     let a: Vec<Integer> = (100..100 + LANES as Integer).collect();
     let ninety_nines: Vec<Integer> = vec![99; LANES];
@@ -162,11 +180,14 @@ fn test_is_consecutive() {
     assert!(!is_consecutive_splat0(ninety_nines));
 
     assert!(is_consecutive_splat1(a));
-    assert!(!is_consecutive_splat1(ninety_nines,));
+    assert!(!is_consecutive_splat1(ninety_nines));
 
     assert!(is_consecutive_splat2(a));
-    assert!(!is_consecutive_splat2(ninety_nines,));
+    assert!(!is_consecutive_splat2(ninety_nines));
 
     assert!(is_consecutive_rotate(a));
-    assert!(!is_consecutive_rotate(ninety_nines,));
+    assert!(!is_consecutive_rotate(ninety_nines));
+
+    assert!(is_consecutive_swizzle(a));
+    assert!(!is_consecutive_swizzle(ninety_nines));
 }

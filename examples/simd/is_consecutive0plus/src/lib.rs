@@ -44,10 +44,10 @@ where
 
 #[macro_export]
 macro_rules! define_is_consecutive_splat1 {
-    ($function:ident, $type:ty) => {
+    ($function:ident, $type:ty, $lanes:expr) => {
         #[inline]
-        pub fn $function(chunk: Simd<$type, LANES>) -> bool {
-            define_reference_splat!(reference_splat, $type);
+        pub fn $function(chunk: Simd<$type, $lanes>) -> bool {
+            define_reference_splat!(reference_splat, $type, $lanes);
 
             let subtracted = chunk - reference_splat();
             Simd::splat(chunk[0]) == subtracted
@@ -56,11 +56,11 @@ macro_rules! define_is_consecutive_splat1 {
 }
 #[allow(unused_macros)]
 macro_rules! define_reference_splat {
-    ($function:ident, $type:ty) => {
-        pub const fn $function() -> Simd<$type, LANES> {
-            let mut arr: [$type; LANES] = [0; LANES];
+    ($function:ident, $type:ty, $lanes:expr) => {
+        pub const fn $function() -> Simd<$type, $lanes> {
+            let mut arr: [$type; $lanes] = [0; $lanes];
             let mut i = 0;
-            while i < LANES {
+            while i < $lanes {
                 arr[i] = i as $type;
                 i += 1;
             }
@@ -83,7 +83,7 @@ fn test_is_consecutive() {
     let a = black_box(Simd::from_array(a));
     let ninety_nines = black_box(Simd::from_array(ninety_nines));
 
-    define_is_consecutive_splat1!(is_consecutive_splat1_i8, i8);
+    define_is_consecutive_splat1!(is_consecutive_splat1_i8, i8, LANES);
     assert!(is_consecutive_splat1_i8(a));
     assert!(!is_consecutive_splat1_i8(ninety_nines));
 }
