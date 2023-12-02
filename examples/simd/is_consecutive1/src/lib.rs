@@ -92,6 +92,7 @@ macro_rules! define_is_consecutive_splat1 {
 #[macro_export]
 macro_rules! define_reference_splat {
     ($function:ident, $type:ty, $lanes:expr) => {
+        #[inline] // cmk00 be sure this in 0plus, too
         pub const fn $function() -> Simd<$type, $lanes> {
             let mut arr: [$type; $lanes] = [0; $lanes];
             let mut i = 0;
