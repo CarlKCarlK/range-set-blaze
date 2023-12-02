@@ -177,12 +177,6 @@ impl_is_consecutive!(usize);
 
 #[test]
 fn test_is_consecutive() {
-    let mut arr: [i8; 16] = [0; 16];
-    let mut i = 0;
-    while i < 16 {
-        arr[i] = i as i8;
-        i += 1;
-    }
-    let simd = Simd::from_array(arr);
+    let simd: Simd<i8, 64> = Simd::from_array(core::array::from_fn(|i| 100 + i as i8));
     assert!(i8::is_consecutive(simd));
 }

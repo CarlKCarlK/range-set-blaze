@@ -44,10 +44,13 @@ where
 
 #[macro_export]
 macro_rules! define_is_consecutive_splat1 {
-    ($function:ident, $type:ty, $lanes:expr) => {
+    ($function:ident, $type:ty) => {
         #[inline]
-        pub fn $function(chunk: Simd<$type, $lanes>) -> bool {
-            define_reference_splat!(reference_splat, $type, $lanes);
+        pub fn $function<const N: usize>(chunk: Simd<$type, N>) -> bool
+        where
+            LaneCount<N>: SupportedLaneCount,
+        {
+            define_reference_splat!(reference_splat, $type);
 
             let subtracted = chunk - reference_splat();
             Simd::splat(chunk[0]) == subtracted
@@ -56,11 +59,14 @@ macro_rules! define_is_consecutive_splat1 {
 }
 #[allow(unused_macros)]
 macro_rules! define_reference_splat {
-    ($function:ident, $type:ty, $lanes:expr) => {
-        pub const fn $function() -> Simd<$type, $lanes> {
-            let mut arr: [$type; $lanes] = [0; $lanes];
+    ($function:ident, $type:ty) => {
+        pub const fn $function<const N: usize>() -> Simd<$type, N>
+        where
+            LaneCount<N>: SupportedLaneCount,
+        {
+            let mut arr: [$type; N] = [0; N];
             let mut i = 0;
-            while i < $lanes {
+            while i < N {
                 arr[i] = i as $type;
                 i += 1;
             }
@@ -69,7 +75,44 @@ macro_rules! define_reference_splat {
     };
 }
 
-pub const LANES: usize = 16;
+// cmk see https://godbolt.org/z/69dY1fvGj and see that it compiles well.
+
+trait IsConsecutive {
+    fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
+    where
+        Self: SimdElement,
+        Simd<Self, N>: Sub<Simd<Self, N>, Output = Simd<Self, N>>,
+        LaneCount<N>: SupportedLaneCount;
+}
+
+macro_rules! impl_is_consecutive {
+    ($type:ty) => {
+        // Repeat for each integer type (i8, i16, i32, i64, isize, u8, u16, u32, u64, usize)
+        impl IsConsecutive for $type {
+            #[inline] // cmk important
+            fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
+            where
+                Self: SimdElement,
+                Simd<Self, N>: Sub<Simd<Self, N>, Output = Simd<Self, N>>,
+                LaneCount<N>: SupportedLaneCount,
+            {
+                define_is_consecutive_splat1!(is_consecutive_splat1, $type);
+                is_consecutive_splat1(chunk)
+            }
+        }
+    };
+}
+
+impl_is_consecutive!(i8);
+impl_is_consecutive!(i16);
+impl_is_consecutive!(i32);
+impl_is_consecutive!(i64);
+impl_is_consecutive!(isize);
+impl_is_consecutive!(u8);
+impl_is_consecutive!(u16);
+impl_is_consecutive!(u32);
+impl_is_consecutive!(u64);
+impl_is_consecutive!(usize);
 
 #[cfg(test)]
 use std::hint::black_box;
@@ -78,14 +121,17 @@ use std::hint::black_box;
 fn test_is_consecutive() {
     use std::array;
 
-    let a: [i8; LANES] = array::from_fn(|i| 100 + i as i8);
-    let ninety_nines: [i8; LANES] = [99; LANES];
-    let a = black_box(Simd::from_array(a));
-    let ninety_nines = black_box(Simd::from_array(ninety_nines));
+    // Works on i32 and 16 lanes
+    let a: Simd<i32, 16> = black_box(Simd::from_array(array::from_fn(|i| 100 + i as i32)));
+    let ninety_nines: Simd<i32, 16> = black_box(Simd::from_array([99; 16]));
 
-    define_is_consecutive_splat1!(is_consecutive_splat1_i8, i8, LANES);
-    assert!(is_consecutive_splat1_i8(a));
-    assert!(!is_consecutive_splat1_i8(ninety_nines));
+    assert!(IsConsecutive::is_consecutive(a));
+    assert!(!IsConsecutive::is_consecutive(ninety_nines));
+
+    // Works on i8 and 64 lanes
+    let a: Simd<i8, 64> = black_box(Simd::from_array(array::from_fn(|i| 100 + i as i8)));
+    let ninety_nines: Simd<i8, 64> = black_box(Simd::from_array([99; 64]));
+
+    assert!(IsConsecutive::is_consecutive(a));
+    assert!(!IsConsecutive::is_consecutive(ninety_nines));
 }
-
-// cmk see https://godbolt.org/z/69dY1fvGj and see that it compiles well.
