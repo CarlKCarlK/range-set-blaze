@@ -17,7 +17,7 @@ where
     LaneCount<N>: SupportedLaneCount,
 {
     let subtracted = chunk - reference;
-    Simd::<T, N>::splat(chunk[0]) == subtracted
+    Simd::splat(chunk[0]) == subtracted
 }
 
 // // But can we safely make the const reference_splat generic for type and # of lanes?
@@ -47,22 +47,24 @@ macro_rules! define_is_consecutive_splat1 {
     ($function:ident, $type:ty) => {
         #[inline]
         pub fn $function(chunk: Simd<$type, LANES>) -> bool {
-            pub const fn reference_fun<const N: usize>() -> Simd<$type, N>
-            where
-                LaneCount<N>: SupportedLaneCount,
-            {
-                let mut arr: [$type; N] = [0; N];
-                let mut i = 0;
-                while i < N {
-                    arr[i] = i as $type;
-                    i += 1;
-                }
-                Simd::from_array(arr)
-            }
-            const REFERENCE: Simd<$type, LANES> = reference_fun::<LANES>();
+            define_reference_splat!(reference_splat, $type);
 
-            let subtracted = chunk - REFERENCE;
-            Simd::<$type, LANES>::splat(chunk[0]) == subtracted
+            let subtracted = chunk - reference_splat();
+            Simd::splat(chunk[0]) == subtracted
+        }
+    };
+}
+#[allow(unused_macros)]
+macro_rules! define_reference_splat {
+    ($function:ident, $type:ty) => {
+        pub const fn $function() -> Simd<$type, LANES> {
+            let mut arr: [$type; LANES] = [0; LANES];
+            let mut i = 0;
+            while i < LANES {
+                arr[i] = i as $type;
+                i += 1;
+            }
+            Simd::from_array(arr)
         }
     };
 }
@@ -86,4 +88,4 @@ fn test_is_consecutive() {
     assert!(!is_consecutive_splat1_i8(ninety_nines));
 }
 
-// see https://godbolt.org/z/hx91qGsbx
+// cmk see https://godbolt.org/z/69dY1fvGj and see that it compiles well.

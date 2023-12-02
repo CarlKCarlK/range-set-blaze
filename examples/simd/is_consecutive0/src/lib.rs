@@ -21,7 +21,7 @@ pub fn is_consecutive_splat0(chunk: Simd<u32, LANES>) -> bool {
         return false;
     }
     let added = chunk + REFERENCE_SPLAT0;
-    Simd::<u32, LANES>::splat(added[0]) == added
+    Simd::splat(added[0]) == added
 }
 
 const REFERENCE_SPLAT1: Simd<u32, LANES> =
@@ -29,12 +29,12 @@ const REFERENCE_SPLAT1: Simd<u32, LANES> =
 
 pub fn is_consecutive_splat1(chunk: Simd<u32, LANES>) -> bool {
     let subtracted = chunk - REFERENCE_SPLAT1;
-    Simd::<u32, LANES>::splat(chunk[0]) == subtracted
+    Simd::splat(chunk[0]) == subtracted
 }
 
 pub fn is_consecutive_splat2(chunk: Simd<u32, LANES>) -> bool {
     let subtracted = chunk - REFERENCE_SPLAT1;
-    Simd::<u32, LANES>::splat(subtracted[0]) == subtracted
+    Simd::splat(subtracted[0]) == subtracted
 }
 
 pub fn is_consecutive_sizzle(chunk: Simd<u32, LANES>) -> bool {

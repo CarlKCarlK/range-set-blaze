@@ -18,20 +18,6 @@ const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {
     "error"
 };
 
-const LANES: usize = if cfg!(simd_lanes = "2") {
-    2
-} else if cfg!(simd_lanes = "4") {
-    4
-} else if cfg!(simd_lanes = "8") {
-    8
-} else if cfg!(simd_lanes = "16") {
-    16
-} else if cfg!(simd_lanes = "32") {
-    32
-} else {
-    64
-};
-
 #[cfg(simd_integer = "i8")]
 type Integer = i8;
 #[cfg(simd_integer = "i16")]

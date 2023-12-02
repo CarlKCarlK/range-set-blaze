@@ -37,7 +37,7 @@ where
     // let b = chunk.rotate_lanes_right::<1>(); // cmk
     // chunk - b == reference
     let subtracted = chunk - reference;
-    Simd::<T, LANES>::splat(subtracted[0]) == subtracted
+    Simd::splat(subtracted[0]) == subtracted
     // const SWIZZLE_CONST: [usize; N] = [0; N]; // cmk
     // simd_swizzle!(subtracted, SWIZZLE_CONST) == subtracted
 }
