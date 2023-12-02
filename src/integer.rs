@@ -1,6 +1,8 @@
 #[cfg(feature = "from_slice")]
-use crate::{from_slice, from_slice::FromSliceIter, RangeSetBlaze};
+use crate::{from_slice::FromSliceIter, RangeSetBlaze};
 use core::ops::RangeInclusive;
+
+const LANES: usize = 16;
 
 // cmk Rule may want to skip sse2 (128) because it is slower than the non-simd version
 use crate::Integer;
@@ -18,7 +20,7 @@ impl Integer for i8 {
     #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        FromSliceIter::<Self>::new(slice.as_ref()).collect()
+        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -45,7 +47,10 @@ impl Integer for u8 {
     type SafeLen = usize;
 
     #[cfg(feature = "from_slice")]
-    from_slice!(is_consecutive_u8);
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+    }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -89,7 +94,10 @@ impl Integer for i32 {
     }
 
     #[cfg(feature = "from_slice")]
-    from_slice!(is_consecutive_i32);
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+    }
 }
 
 impl Integer for u32 {
@@ -99,7 +107,10 @@ impl Integer for u32 {
     type SafeLen = usize;
 
     #[cfg(feature = "from_slice")]
-    from_slice!(is_consecutive_u32);
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+    }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -126,7 +137,10 @@ impl Integer for i64 {
     type SafeLen = u128;
 
     #[cfg(feature = "from_slice")]
-    from_slice!(is_consecutive_i64);
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+    }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u64 as <Self as Integer>::SafeLen + 1
@@ -152,7 +166,10 @@ impl Integer for u64 {
     type SafeLen = u128;
 
     #[cfg(feature = "from_slice")]
-    from_slice!(is_consecutive_u64);
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+    }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -243,7 +260,10 @@ impl Integer for isize {
     type SafeLen = u128;
 
     #[cfg(feature = "from_slice")]
-    from_slice!(is_consecutive_isize);
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+    }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as usize as <Self as Integer>::SafeLen + 1
@@ -270,7 +290,10 @@ impl Integer for usize {
     type SafeLen = u128;
 
     #[cfg(feature = "from_slice")]
-    from_slice!(is_consecutive_usize);
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+    }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1
@@ -297,7 +320,10 @@ impl Integer for i16 {
     type SafeLen = usize;
 
     #[cfg(feature = "from_slice")]
-    from_slice!(is_consecutive_i16);
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+    }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u16 as <Self as Integer>::SafeLen + 1
@@ -324,7 +350,10 @@ impl Integer for u16 {
     type SafeLen = usize;
 
     #[cfg(feature = "from_slice")]
-    from_slice!(is_consecutive_u16);
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+    }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as <Self as Integer>::SafeLen + 1

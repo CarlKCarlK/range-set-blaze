@@ -3,47 +3,27 @@
 use alloc::slice;
 
 use crate::Integer;
-use core::simd::{Simd, SimdElement};
+use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive, ops::Sub};
-
-// cmk delete
-// pub(crate) const fn const_min(a: usize, b: usize) -> usize {
-//     if a < b {
-//         a
-//     } else {
-//         b
-//     }
-// }
-
-#[macro_export]
-#[doc(hidden)]
-macro_rules! from_slice {
-    ($reference:ident) => {
-        #[inline]
-        fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-            FromSliceIter::<Self>::new(slice.as_ref()).collect()
-        }
-    };
-}
-
-pub(crate) const LANES: usize = 16;
 
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub(crate) struct FromSliceIter<'a, T>
+pub(crate) struct FromSliceIter<'a, T, const N: usize>
 where
     T: Integer + SimdElement + IsConsecutive,
+    LaneCount<N>: SupportedLaneCount,
 {
     prefix_iter: core::slice::Iter<'a, T>,
     previous_range: Option<RangeInclusive<T>>,
-    chunks: slice::Iter<'a, Simd<T, LANES>>,
+    chunks: slice::Iter<'a, Simd<T, N>>,
     suffix: &'a [T],
     slice_len: usize,
 }
 
-impl<'a, T: 'a> FromSliceIter<'a, T>
+impl<'a, T: 'a, const N: usize> FromSliceIter<'a, T, N>
 where
     T: Integer + SimdElement + IsConsecutive,
+    LaneCount<N>: SupportedLaneCount,
 {
     pub(crate) fn new(slice: &'a [T]) -> Self {
         let (prefix, middle, suffix) = slice.as_simd();
@@ -57,17 +37,19 @@ where
     }
 }
 
-impl<'a, T> FusedIterator for FromSliceIter<'a, T>
+impl<'a, T, const N: usize> FusedIterator for FromSliceIter<'a, T, N>
 where
     T: Integer + SimdElement + IsConsecutive,
-    Simd<T, LANES>: core::ops::Sub<Output = Simd<T, LANES>>,
+    Simd<T, N>: core::ops::Sub<Output = Simd<T, N>>,
+    LaneCount<N>: SupportedLaneCount,
 {
 }
 
-impl<'a, T: 'a> Iterator for FromSliceIter<'a, T>
+impl<'a, T: 'a, const N: usize> Iterator for FromSliceIter<'a, T, N>
 where
     T: Integer + SimdElement + IsConsecutive,
-    Simd<T, LANES>: Sub<Output = Simd<T, LANES>>,
+    Simd<T, N>: Sub<Output = Simd<T, N>>,
+    LaneCount<N>: SupportedLaneCount,
 {
     type Item = RangeInclusive<T>;
 
@@ -79,7 +61,7 @@ where
         for chunk in self.chunks.by_ref() {
             if T::is_consecutive(*chunk) {
                 let this_start = chunk[0];
-                let this_end = chunk[LANES - 1];
+                let this_end = chunk[N - 1];
 
                 if let Some(inner_previous_range) = self.previous_range.as_mut() {
                     // if some and previous is some and adjacent, combine
@@ -137,27 +119,43 @@ where
 }
 
 pub trait IsConsecutive {
-    fn is_consecutive(chunk: Simd<Self, LANES>) -> bool
+    fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
     where
-        Self: SimdElement;
+        Self: SimdElement,
+        Simd<Self, N>: Sub<Simd<Self, N>, Output = Simd<Self, N>>,
+        LaneCount<N>: SupportedLaneCount;
 }
 
-macro_rules! impl_is_consecutive_for {
-    ($type:ty, $lanes:expr) => {
+macro_rules! define_const_reference {
+    ($type:ty) => {
+        const fn reference<const N: usize>() -> Simd<$type, N>
+        where
+            LaneCount<N>: SupportedLaneCount,
+        {
+            let mut arr: [$type; N] = [0; N];
+            let mut i = 0;
+            while i < N {
+                arr[i] = i as $type;
+                i += 1;
+            }
+            Simd::from_array(arr)
+        }
+    };
+}
+
+macro_rules! impl_is_consecutive {
+    ($type:ty) => {
+        // Repeat for each integer type (i8, i16, i32, i64, isize, u8, u16, u32, u64, usize)
+
         impl IsConsecutive for $type {
             #[inline] // cmk00 make this it's own macro for better readability
-            fn is_consecutive(chunk: Simd<Self, $lanes>) -> bool {
-                #[inline] // cmk rule this #inline is important
-                pub const fn reference() -> Simd<$type, $lanes> {
-                    let mut arr: [$type; $lanes] = [0; $lanes];
-                    let mut i = 0;
-                    while i < $lanes {
-                        arr[i] = i as $type;
-                        i += 1;
-                    }
-                    Simd::from_array(arr)
-                }
-
+            fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
+            where
+                Self: SimdElement,
+                Simd<Self, N>: Sub<Simd<Self, N>, Output = Simd<Self, N>>,
+                LaneCount<N>: SupportedLaneCount,
+            {
+                define_const_reference!($type);
                 let subtracted = chunk - reference();
                 Simd::splat(chunk[0]) == subtracted
             }
@@ -166,13 +164,25 @@ macro_rules! impl_is_consecutive_for {
 }
 
 // Apply the macro to each integer type
-impl_is_consecutive_for!(i8, LANES);
-impl_is_consecutive_for!(i16, LANES);
-impl_is_consecutive_for!(i32, LANES);
-impl_is_consecutive_for!(i64, LANES);
-impl_is_consecutive_for!(isize, LANES);
-impl_is_consecutive_for!(u8, LANES);
-impl_is_consecutive_for!(u16, LANES);
-impl_is_consecutive_for!(u32, LANES);
-impl_is_consecutive_for!(u64, LANES);
-impl_is_consecutive_for!(usize, LANES);
+impl_is_consecutive!(i8);
+impl_is_consecutive!(i16);
+impl_is_consecutive!(i32);
+impl_is_consecutive!(i64);
+impl_is_consecutive!(isize);
+impl_is_consecutive!(u8);
+impl_is_consecutive!(u16);
+impl_is_consecutive!(u32);
+impl_is_consecutive!(u64);
+impl_is_consecutive!(usize);
+
+#[test]
+fn test_is_consecutive() {
+    let mut arr: [i8; 16] = [0; 16];
+    let mut i = 0;
+    while i < 16 {
+        arr[i] = i as i8;
+        i += 1;
+    }
+    let simd = Simd::from_array(arr);
+    assert!(i8::is_consecutive(simd));
+}
