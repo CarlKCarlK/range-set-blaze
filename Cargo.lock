@@ -872,10 +872,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "simd_detect"
-version = "0.1.0"
-
-[[package]]
 name = "simd_hello"
 version = "0.1.0"
 

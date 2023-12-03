@@ -3,10 +3,9 @@
 use std::simd::prelude::*;
 
 pub const LANES: usize = 16;
-
 pub fn is_consecutive_regular(chunk: &[u32; LANES]) -> bool {
     for i in 1..LANES {
-        if chunk[i - 1] == u32::MAX || chunk[i - 1] + 1 != chunk[i] {
+        if chunk[i - 1].checked_add(1) != Some(chunk[i]) {
             return false;
         }
     }

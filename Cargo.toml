@@ -22,9 +22,9 @@ members = [
     "tests/wasm-demo",
     "tests/embedded",
     "examples/simd/simd_hello",
-    "examples/simd/simd_detect",
     "examples/simd/is_consecutive0",
-    "examples/simd/is_consecutive1", "examples/simd/is_consecutive0plus",
+    "examples/simd/is_consecutive1",
+    "examples/simd/is_consecutive0plus",
 ]
 
 

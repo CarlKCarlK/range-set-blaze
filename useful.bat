@@ -8,11 +8,11 @@ set BUILDFEATURES=from_slice
 rustup override set nightly
 
 # Run criterion-means
-cargo install cargo-criterion-means --version 0.1.0-beta.1
+cargo install cargo-criterion-means --version 0.1.0-beta.3
 set SIMD_LANES=64
 set SIMD_INTEGER=i16
 set RUSTFLAGS=-C target-feature=+avx512f
-cargo criterion-means ..\..\..
+cargo criterion-means ..\..\.. > delme.csv
 
 # run packages
 cargo run --package criterion-means ..\..\..
