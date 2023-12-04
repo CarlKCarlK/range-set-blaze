@@ -1,19 +1,10 @@
-# cmk [workspace]
-
 [package]
-name = "is_consecutive1"
+name = "is_consecutive2"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
-num-traits = "0.2.15"
-
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
-syntactic-for = "0.1.1"
-
-
-[lib]
 
 [[bench]]
 name = "bench"

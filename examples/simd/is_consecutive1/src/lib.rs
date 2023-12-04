@@ -97,7 +97,7 @@ fn test_is_consecutive_macros() {
 
 // We can also make a trait for this, allowing type to also be generic.
 
-trait IsConsecutive {
+pub trait IsConsecutive {
     fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
     where
         Self: SimdElement,

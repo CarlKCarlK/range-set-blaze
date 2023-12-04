@@ -1,15 +1,4 @@
-# cmk [workspace]
-
 [package]
 name = "is_consecutive0"
 version = "0.1.0"
 edition = "2021"
-
-[dev-dependencies]
-criterion = { version = "0.5.1", features = ["html_reports"] }
-
-[lib]
-
-[[bench]]
-name = "bench"
-harness = false

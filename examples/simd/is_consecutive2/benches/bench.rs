@@ -7,7 +7,7 @@ use criterion::{
     black_box, criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion,
     PlotConfiguration,
 };
-use is_consecutive1::*;
+use is_consecutive2::*;
 use std::simd::SimdElement;
 
 const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {

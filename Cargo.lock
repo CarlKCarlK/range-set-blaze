@@ -393,21 +393,19 @@ dependencies = [
 [[package]]
 name = "is_consecutive0"
 version = "0.1.0"
-dependencies = [
- "criterion",
-]
-
-[[package]]
-name = "is_consecutive0plus"
-version = "0.1.0"
 
 [[package]]
 name = "is_consecutive1"
 version = "0.1.0"
 dependencies = [
  "criterion",
- "num-traits",
- "syntactic-for",
+]
+
+[[package]]
+name = "is_consecutive2"
+version = "0.1.0"
+dependencies = [
+ "criterion",
 ]
 
 [[package]]
