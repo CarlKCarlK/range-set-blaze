@@ -373,18 +373,10 @@ impl Integer for u16 {
     }
 }
 
-// cmk Rule: Look at the docs in a way that lets you see every useful command (how?)
-// cmk Rule: You have to use nightly, so not usefull. (how to turn on for just one project)
 // cmk Rule: As soon as you think about SIMD algorithms, you'll likely make non-faster
-// cmk Rule: Set up for multiple levels of support
 // cmk Rule: AMD 512 might be slower than Intel (but maybe not for permutations)
-// cmk Rule: Docs: https://doc.rust-lang.org/nightly/std/simd/index.html
-// cmk Rule: Docs: more https://doc.rust-lang.org/nightly/std/simd/struct.Simd.html
 // cmk5 Tighter clippy, etc.
-// cmk Rule: Expect operations to wrap. Unlike scalar it is the default.
 // cmk Rule: Use #[inline] on functions that take a SIMD input and return a SIMD output (see docs)
 // cmk Rule: It's generally OK to use the read "unaligned" on aligned. There is no penalty. (see https://doc.rust-lang.org/std/simd/struct.Simd.html#safe-simd-with-unsafe-rust)
 // cmk Rule: Useful: https://github.com/rust-lang/portable-simd/blob/master/beginners-guide.md (talks about reduce_and, etc)
 // cmk Rule: Do const values like ... https://rust-lang.zulipchat.com/#narrow/stream/122651-general/topic/const.20SIMD.20values
-// cmk Rule: Use SIMD rust command even without SIMD.
-// cmk Rule: Use unsafe where you need to.

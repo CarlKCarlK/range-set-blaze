@@ -57,7 +57,7 @@ macro_rules! define_is_consecutive_splat1 {
         }
     };
 }
-#[allow(unused_macros)]
+#[macro_export]
 macro_rules! define_reference_splat {
     ($function:ident, $type:ty) => {
         pub const fn $function<const N: usize>() -> Simd<$type, N>
@@ -75,6 +75,30 @@ macro_rules! define_reference_splat {
     };
 }
 
+#[cfg(test)]
+use std::hint::black_box;
+
+#[test]
+fn test_is_consecutive_macros() {
+    use std::array;
+
+    // Works on i32 and 16 lanes
+    define_is_consecutive_splat1!(is_consecutive_splat1_i32, i32);
+
+    let a: Simd<i32, 16> = black_box(Simd::from_array(array::from_fn(|i| 100 + i as i32)));
+    let ninety_nines: Simd<i32, 16> = black_box(Simd::from_array([99; 16]));
+    assert!(is_consecutive_splat1_i32(a));
+    assert!(!is_consecutive_splat1_i32(ninety_nines));
+
+    // Works on i8 and 64 lanes
+    define_is_consecutive_splat1!(is_consecutive_splat1_i8, i8);
+
+    let a: Simd<i8, 64> = black_box(Simd::from_array(array::from_fn(|i| 100 + i as i8)));
+    let ninety_nines: Simd<i8, 64> = black_box(Simd::from_array([99; 64]));
+    assert!(is_consecutive_splat1_i8(a));
+    assert!(!is_consecutive_splat1_i8(ninety_nines));
+}
+
 // cmk see https://godbolt.org/z/69dY1fvGj and see that it compiles well.
 
 trait IsConsecutive {
@@ -87,9 +111,8 @@ trait IsConsecutive {
 
 macro_rules! impl_is_consecutive {
     ($type:ty) => {
-        // Repeat for each integer type (i8, i16, i32, i64, isize, u8, u16, u32, u64, usize)
         impl IsConsecutive for $type {
-            #[inline] // cmk important
+            #[inline] // very important
             fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
             where
                 Self: SimdElement,
@@ -114,16 +137,15 @@ impl_is_consecutive!(u32);
 impl_is_consecutive!(u64);
 impl_is_consecutive!(usize);
 
-#[cfg(test)]
-use std::hint::black_box;
-
 #[test]
-fn test_is_consecutive() {
+fn test_is_consecutive_trait() {
     use std::array;
 
     // Works on i32 and 16 lanes
     let a: Simd<i32, 16> = black_box(Simd::from_array(array::from_fn(|i| 100 + i as i32)));
     let ninety_nines: Simd<i32, 16> = black_box(Simd::from_array([99; 16]));
+
+    println!("a: {:?}", a);
 
     assert!(IsConsecutive::is_consecutive(a));
     assert!(!IsConsecutive::is_consecutive(ninety_nines));
@@ -131,6 +153,8 @@ fn test_is_consecutive() {
     // Works on i8 and 64 lanes
     let a: Simd<i8, 64> = black_box(Simd::from_array(array::from_fn(|i| 100 + i as i8)));
     let ninety_nines: Simd<i8, 64> = black_box(Simd::from_array([99; 64]));
+
+    println!("a: {:?}", a);
 
     assert!(IsConsecutive::is_consecutive(a));
     assert!(!IsConsecutive::is_consecutive(ninety_nines));

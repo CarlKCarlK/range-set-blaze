@@ -531,9 +531,6 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    // cmk Rule be sure ints don't wrap in a way that could be bad.
-    // cmk Rule handle alignment at the start and end.
-
     /// Creates a [`RangeSetBlaze`] from a collection of integers. It is typically many
     /// times faster than [`from_iter`][1]/[`collect`][1].
     /// On a representative benchmark, the speed up was 6×.
@@ -2245,13 +2242,8 @@ where
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 // cmk Rule: Explain there is a great .as_simd method that we are not using because we want to code
 // cmk Rule: to also work without SIMD. Also, getting generic constants to work is a pain/impossible.
-// cmk Rule: Can you use SIMD Rust methods without SIMD?
-// cmk Rule: Create a .cargo/config.toml, but think about what you check in.
 // cmk Rule: spot test and benchmark
-// cmk Rule: Look at assembly. Use AI tools to understand it (but they may not be perfect)
 // cmk Rule: Thanks to B3NNY (or name) at the Seattle Rust Meetup for pointing me in the right direction on SIMD.")
-// cmk Rule: Understand Benny's use of godbolt: https://godbolt.org/z/3P3jGej3h
-// cmk Rule: Use Godbolt.
 // cmk5 update tests to run nightly --all-features and stable with rog-experimental
 // cmk Rule: When making generic use const funs including 'while'
 // cmk Rule: Use Python to bench_means the results of the benchmarks.
