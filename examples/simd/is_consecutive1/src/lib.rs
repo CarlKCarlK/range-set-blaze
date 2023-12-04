@@ -146,6 +146,7 @@ macro_rules! define_is_consecutive_rotate {
 #[macro_export]
 macro_rules! define_reference_rotate {
     ($function:ident, $type:ty) => {
+        #[inline]
         pub const fn $function<const N: usize>() -> Simd<$type, N>
         where
             $type: SimdElement,
@@ -218,6 +219,7 @@ pub trait IsConsecutive {
 macro_rules! impl_is_consecutive {
     ($type:ty) => {
         impl IsConsecutive for $type {
+            #[inline]
             fn is_consecutive_regular<const N: usize>(chunk: &[$type; N]) -> bool
             where
                 LaneCount<N>: SupportedLaneCount,
