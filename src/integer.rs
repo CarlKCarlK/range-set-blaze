@@ -2,7 +2,8 @@
 use crate::{from_slice::FromSliceIter, RangeSetBlaze};
 use core::ops::RangeInclusive;
 
-const LANES: usize = 16;
+#[cfg(feature = "from_slice")]
+pub const LANES: usize = 16;
 
 // cmk Rule may want to skip sse2 (128) because it is slower than the non-simd version
 use crate::Integer;
