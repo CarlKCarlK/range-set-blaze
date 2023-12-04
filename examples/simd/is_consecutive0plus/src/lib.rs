@@ -21,7 +21,7 @@ where
 }
 
 // // But can we safely make the const reference_splat generic for type and # of lanes?
-// // Not curretly, because we need From or One to be const.
+// // Not currently, because we need From or One to be const.
 // use std::ops::AddAssign;
 
 // pub const fn reference_splat_gen<T, const N: usize>() -> Simd<T, N>
@@ -93,7 +93,7 @@ fn test_is_consecutive_macros() {
     // Works on i8 and 64 lanes
     define_is_consecutive_splat1!(is_consecutive_splat1_i8, i8);
 
-    let a: Simd<i8, 64> = black_box(Simd::from_array(array::from_fn(|i| 100 + i as i8)));
+    let a: Simd<i8, 64> = black_box(Simd::from_array(array::from_fn(|i| 10 + i as i8)));
     let ninety_nines: Simd<i8, 64> = black_box(Simd::from_array([99; 64]));
     assert!(is_consecutive_splat1_i8(a));
     assert!(!is_consecutive_splat1_i8(ninety_nines));
@@ -145,16 +145,12 @@ fn test_is_consecutive_trait() {
     let a: Simd<i32, 16> = black_box(Simd::from_array(array::from_fn(|i| 100 + i as i32)));
     let ninety_nines: Simd<i32, 16> = black_box(Simd::from_array([99; 16]));
 
-    println!("a: {:?}", a);
-
     assert!(IsConsecutive::is_consecutive(a));
     assert!(!IsConsecutive::is_consecutive(ninety_nines));
 
     // Works on i8 and 64 lanes
-    let a: Simd<i8, 64> = black_box(Simd::from_array(array::from_fn(|i| 100 + i as i8)));
+    let a: Simd<i8, 64> = black_box(Simd::from_array(array::from_fn(|i| 10 + i as i8)));
     let ninety_nines: Simd<i8, 64> = black_box(Simd::from_array([99; 64]));
-
-    println!("a: {:?}", a);
 
     assert!(IsConsecutive::is_consecutive(a));
     assert!(!IsConsecutive::is_consecutive(ninety_nines));
