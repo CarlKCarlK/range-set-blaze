@@ -188,7 +188,7 @@ fn test_is_consecutive() {
     assert!(!IsConsecutive::is_consecutive_rotate(ninety_nines));
 }
 
-trait IsConsecutive {
+pub trait IsConsecutive {
     fn is_consecutive_regular<const N: usize>(chunk: &[Self; N]) -> bool
     where
         Self: Sized,
