@@ -1,9 +1,9 @@
 #![feature(portable_simd)]
 #![feature(array_chunks)]
-
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use is_consecutive1::*;
 
+// create a string from the SIMD extension used
 const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {
     "avx512f,512"
 } else if cfg!(target_feature = "avx2") {
@@ -17,6 +17,8 @@ const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {
 type Integer = i32;
 const LANES: usize = 64;
 
+// compare against this
+#[inline]
 pub fn is_consecutive_regular(chunk: &[Integer; LANES]) -> bool {
     for i in 1..LANES {
         if chunk[i - 1].checked_add(1) != Some(chunk[i]) {
@@ -26,15 +28,16 @@ pub fn is_consecutive_regular(chunk: &[Integer; LANES]) -> bool {
     true
 }
 
+// define a benchmark called "simple"
 fn simple(c: &mut Criterion) {
     let mut group = c.benchmark_group("simple");
     group.sample_size(1000);
 
-    let v = (100..1_024_000 + 100)
-        .map(|i| (i % (Integer::MAX as usize)) as Integer)
-        .collect::<Vec<Integer>>();
-    let (prefix_s, s, reminder_s) = v.as_simd::<LANES>();
-    let v = &v[prefix_s.len()..v.len() - reminder_s.len()];
+    // generate about 1 million aligned elements
+    let parameter: Integer = 1_024_000;
+    let v = (100..parameter + 100).collect::<Vec<_>>();
+    let (prefix, simd_chunks, reminder) = v.as_simd::<LANES>(); // keep aligned part
+    let v = &v[prefix.len()..v.len() - reminder.len()]; // keep aligned part
 
     group.bench_function(format!("regular,{}", SIMD_SUFFIX), |b| {
         b.iter(|| {
@@ -49,7 +52,8 @@ fn simple(c: &mut Criterion) {
     group.bench_function(format!("splat1,{}", SIMD_SUFFIX), |b| {
         b.iter(|| {
             let _: usize = black_box(
-                s.iter()
+                simd_chunks
+                    .iter()
                     .map(|chunk| IsConsecutive::is_consecutive(*chunk) as usize)
                     .sum(),
             );

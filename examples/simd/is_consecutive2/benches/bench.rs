@@ -108,6 +108,7 @@ fn vector(c: &mut Criterion) {
             |b| {
                 b.iter(|| {
                     let _: usize = black_box(
+                        // cmk move array chunks out
                         v.array_chunks::<LANES>()
                             .map(|chunk| IsConsecutive::is_consecutive_regular(chunk) as usize)
                             .sum(),
