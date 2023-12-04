@@ -38,9 +38,7 @@ where
 //     Simd::from_array(arr)
 // }
 
-// We can use a macro for the type and leave lane count a const generic.
-// However, in my case, I need to run on different types, but I need only one lane count at a time.
-// So, we use a macro from the type and a const for lane count.
+// So, we'll next use a macro over the type and make LANES const generic.
 
 #[macro_export]
 macro_rules! define_is_consecutive_splat1 {
@@ -75,12 +73,10 @@ macro_rules! define_reference_splat {
     };
 }
 
-#[cfg(test)]
-use std::hint::black_box;
-
 #[test]
 fn test_is_consecutive_macros() {
     use std::array;
+    use std::hint::black_box;
 
     // Works on i32 and 16 lanes
     define_is_consecutive_splat1!(is_consecutive_splat1_i32, i32);
@@ -99,7 +95,7 @@ fn test_is_consecutive_macros() {
     assert!(!is_consecutive_splat1_i8(ninety_nines));
 }
 
-// cmk see https://godbolt.org/z/69dY1fvGj and see that it compiles well.
+// We can also make a trait for this, allowing type to also be generic.
 
 trait IsConsecutive {
     fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
@@ -140,6 +136,7 @@ impl_is_consecutive!(usize);
 #[test]
 fn test_is_consecutive_trait() {
     use std::array;
+    use std::hint::black_box;
 
     // Works on i32 and 16 lanes
     let a: Simd<i32, 16> = black_box(Simd::from_array(array::from_fn(|i| 100 + i as i32)));
