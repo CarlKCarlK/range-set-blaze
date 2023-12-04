@@ -1,20 +1,8 @@
-# cmk [workspace]
-
 [package]
-name = "is_consecutive1"
+name = "is_consecutive0plus"
 version = "0.1.0"
 edition = "2021"
 
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [dependencies]
-num-traits = "0.2.15"
-
-[dev-dependencies]
-criterion = { version = "0.5.1", features = ["html_reports"] }
-syntactic-for = "0.1.1"
-
-
-[lib]
-
-[[bench]]
-name = "bench"
-harness = false
