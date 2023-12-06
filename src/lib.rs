@@ -1,4 +1,3 @@
-// #cmk Rule
 #![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
@@ -2240,11 +2239,4 @@ where
 }
 
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
-// cmk Rule: Explain there is a great .as_simd method that we are not using because we want to code
-// cmk Rule: to also work without SIMD. Also, getting generic constants to work is a pain/impossible.
-// cmk Rule: spot test and benchmark
-// cmk Rule: Thanks to B3NNY (or name) at the Seattle Rust Meetup for pointing me in the right direction on SIMD.")
 // cmk5 update tests to run nightly --all-features and stable with rog-experimental
-// cmk Rule: When making generic use const funs including 'while'
-// cmk Rule: Use Python to bench_means the results of the benchmarks.
-// cmk Rule??? [profile.release] opt-level = 3 # Maximum optimization

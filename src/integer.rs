@@ -5,12 +5,7 @@ use core::ops::RangeInclusive;
 #[cfg(feature = "from_slice")]
 pub const LANES: usize = 16;
 
-// cmk Rule may want to skip sse2 (128) because it is slower than the non-simd version
 use crate::Integer;
-
-// cmk Rule: const expressions are handy.
-// Note: Does the right thing for isize, usize
-// cmk Rule: Making this inline reduced time from 146 to 92
 
 impl Integer for i8 {
     #[cfg(target_pointer_width = "32")]
@@ -373,11 +368,3 @@ impl Integer for u16 {
         a - (b - 1) as Self
     }
 }
-
-// cmk Rule: As soon as you think about SIMD algorithms, you'll likely make non-faster
-// cmk Rule: AMD 512 might be slower than Intel (but maybe not for permutations)
-// cmk5 Tighter clippy, etc.
-// cmk Rule: Use #[inline] on functions that take a SIMD input and return a SIMD output (see docs)
-// cmk Rule: It's generally OK to use the read "unaligned" on aligned. There is no penalty. (see https://doc.rust-lang.org/std/simd/struct.Simd.html#safe-simd-with-unsafe-rust)
-// cmk Rule: Useful: https://github.com/rust-lang/portable-simd/blob/master/beginners-guide.md (talks about reduce_and, etc)
-// cmk Rule: Do const values like ... https://rust-lang.zulipchat.com/#narrow/stream/122651-general/topic/const.20SIMD.20values

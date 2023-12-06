@@ -148,7 +148,7 @@ macro_rules! impl_is_consecutive {
         // Repeat for each integer type (i8, i16, i32, i64, isize, u8, u16, u32, u64, usize)
 
         impl IsConsecutive for $type {
-            #[inline] // cmk00 make this it's own macro for better readability
+            #[inline]
             fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
             where
                 Self: SimdElement,
