@@ -1441,8 +1441,13 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     /// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
     /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100")
     /// ```
+    #[cfg(not(feature = "from_slice"))]
     fn from(arr: [T; N]) -> Self {
         arr.into_iter().collect()
+    }
+    #[cfg(feature = "from_slice")]
+    fn from(arr: [T; N]) -> Self {
+        RangeSetBlaze::from_slice(arr)
     }
 }
 
