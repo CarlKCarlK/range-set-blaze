@@ -45,7 +45,7 @@ const REFERENCE_ROTATE: Simd<u32, LANES> =
     Simd::from_array([4294967281, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
 
 pub fn is_consecutive_rotate(chunk: Simd<u32, LANES>) -> bool {
-    let rotated = chunk.rotate_lanes_right::<1>();
+    let rotated = chunk.rotate_elements_right::<1>();
     chunk - rotated == REFERENCE_ROTATE
 }
 

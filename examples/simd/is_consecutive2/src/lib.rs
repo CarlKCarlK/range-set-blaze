@@ -137,7 +137,7 @@ macro_rules! define_is_consecutive_rotate {
         {
             define_reference_rotate!(reference, $type);
 
-            let rotated = chunk.rotate_lanes_right::<1>();
+            let rotated = chunk.rotate_elements_right::<1>();
             chunk - rotated == reference()
         }
     };
