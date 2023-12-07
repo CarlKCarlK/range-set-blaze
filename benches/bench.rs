@@ -24,7 +24,7 @@ use rand::{
 };
 
 use range_set_blaze::RangeSetBlaze;
-// use range_set_blaze::LANES;
+use range_set_blaze::LANES; // cmk
 use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjoint};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range_u32, How, MemorylessIter, MemorylessRange};
@@ -1317,7 +1317,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
 fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
     let group_name = "ingest_clumps_iter_v_slice";
     let k = 1;
-    let average_width_list = [1000]; // [1, 10, 100, 1000, 10_000, 100_000];
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000];
     let coverage_goal = 0.10;
     let how = How::None;
     let seed = 0;
@@ -1344,7 +1344,8 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
 
         group.bench_with_input(
             // format!("RangeSetBlaze (from_slice_{})", LANES)
-            BenchmarkId::new("RangeSetBlaze (from_slice)", parameter),
+            // "RangeSetBlaze (from_slice)"
+            BenchmarkId::new(format!("RangeSetBlaze (from_slice_{})", LANES), parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -2168,7 +2169,7 @@ criterion_group!(
     config = Criterion::default();
     targets =
     ingest_clumps_iter_v_slice,
-    ingest_clumps_vary_type,
+    // cmk ingest_clumps_vary_type,
     ingest_clumps_integers,
     worst
 );

@@ -3,7 +3,7 @@ use crate::{from_slice::FromSliceIter, RangeSetBlaze};
 use core::ops::RangeInclusive;
 
 #[cfg(feature = "from_slice")]
-const LANES: usize = 16;
+pub const LANES: usize = 16; // cmk
 
 use crate::Integer;
 

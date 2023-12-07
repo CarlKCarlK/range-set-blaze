@@ -47,9 +47,9 @@ use core::{
     str::FromStr,
 };
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
-// use from_slice_iter::FromSliceIter;
 use gen_ops::gen_ops_ex;
-// pub use integer::LANES;
+#[cfg(feature = "from_slice")]
+pub use integer::LANES; // cmk
 use itertools::Tee;
 pub use merge::{KMerge, Merge};
 pub use not_iter::NotIter;
