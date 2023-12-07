@@ -48,8 +48,6 @@ use core::{
 };
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 use gen_ops::gen_ops_ex;
-#[cfg(feature = "from_slice")]
-pub use integer::LANES; // cmk
 use itertools::Tee;
 pub use merge::{KMerge, Merge};
 pub use not_iter::NotIter;
@@ -2245,4 +2243,4 @@ where
 }
 
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
-// cmk5 update tests to run nightly --all-features and stable with rog-experimental
+// cmk update tests to run nightly --all-features and stable with rog-experimental

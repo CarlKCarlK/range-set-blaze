@@ -30,7 +30,7 @@ members = [
 [lib]
 
 [features]
-default = ["std"]                                                # cmk -- can this be set from the command line?
+default = ["std"]
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 alloc = ["itertools/use_alloc", "num-traits", "num-integer"]
 rog-experimental = []

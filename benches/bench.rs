@@ -24,11 +24,13 @@ use rand::{
 };
 
 use range_set_blaze::RangeSetBlaze;
-use range_set_blaze::LANES; // cmk
 use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjoint};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range_u32, How, MemorylessIter, MemorylessRange};
 
+#[cfg(feature = "from_slice")]
+const LANES: usize = 16;
+#[cfg(feature = "from_slice")]
 const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {
     "avx512f"
 } else if cfg!(target_feature = "avx2") {
@@ -1739,7 +1741,7 @@ fn overflow(c: &mut Criterion) {
     );
 
     //     group.bench_with_input(
-    //         BenchmarkId::new("not max short curcuit", parameter),
+    //         BenchmarkId::new("not max short circuit", parameter),
     //         &parameter,
     //         |bencher, _| {
     //             let mut rng = StdRng::seed_from_u64(seed);
@@ -2094,74 +2096,6 @@ fn worst_op_blaze(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "from_slice")]
-fn ingest_clumps_vary_type(c: &mut Criterion) {
-    let group_name = "ingest_clumps_vary_type";
-    let k = 1;
-    let average_width = 1000;
-    let coverage_goal = 0.10;
-    let how = How::None;
-    let seed = 0;
-    let iter_len = 1_000_000;
-
-    let mut group = c.benchmark_group(group_name);
-    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
-    group.sample_size(40);
-
-    syntactic_for! { ty in [u16, u32, u64, u128] { // u16, u32, u64] { // , u128
-        $(
-    let parameter = $ty::BITS;
-
-    let (range_len, range_u32) = width_to_range_u32(iter_len, average_width, coverage_goal);
-    let range = *range_u32.start() as $ty..=*range_u32.end() as $ty;
-
-    let vec: Vec<$ty> = MemorylessIter::<$ty>::new(
-        &mut StdRng::seed_from_u64(seed),
-        range_len,
-        range.clone(),
-        coverage_goal,
-        k,
-        how,
-    )
-    .collect();
-
-    group.bench_with_input(
-        BenchmarkId::new("from_slice", parameter),
-        &parameter,
-        |b, _| {
-            b.iter(|| {
-                black_box(RangeSetBlaze::from_slice(vec.as_slice()));
-            })
-        },
-    );
-        )*}
-    };
-
-    group.finish();
-}
-
-// criterion_group! {
-//     name = benches;
-//     config = Criterion::default();
-//     targets =
-//     intersect_k_sets,
-//     every_op_blaze,
-//     every_op_roaring,
-//     union_two_sets,
-//     ingest_clumps_base,
-//     worst,
-//     ingest_clumps_integers,
-//     ingest_clumps_ranges,
-//     ingest_clumps_easy,
-//     overflow,
-//     worst_op_blaze,
-//     #[cfg(feature = "from_slice")]
-//     ingest_clumps_iter_v_slice,
-//     #[cfg(feature = "from_slice")]
-//     ingest_clumps_vary_type
-// }
-// criterion_main!(benches);
-
 // Define two separate criterion groups for different features
 #[cfg(feature = "from_slice")]
 criterion_group!(
@@ -2169,7 +2103,6 @@ criterion_group!(
     config = Criterion::default();
     targets =
     ingest_clumps_iter_v_slice,
-    // cmk ingest_clumps_vary_type,
     ingest_clumps_integers,
     worst
 );
