@@ -19,3 +19,4 @@ tests/formal/*.dll
 tests/formal/*.json
 **/target/*
 examples/simd/*/del*.*
+del*.csv

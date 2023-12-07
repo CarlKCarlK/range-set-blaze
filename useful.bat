@@ -1,8 +1,8 @@
 # rust flags
 set RUSTFLAGS=
-set RUSTFLAGS=-C target-cpu=native
 set RUSTFLAGS=-C target-feature=+avx2
 set RUSTFLAGS=-C target-feature=+avx512f
+set RUSTFLAGS=-C target-cpu=native
 set BUILDFEATURES=from_slice
 
 rustup override set nightly
@@ -71,10 +71,20 @@ cargo run --example read_roaring_data
 
 set TRYBUILD=overwrite
 
-# Disassemble
+# Bench in-context from_slice
 
-cargo install cargo-binutils
-rustup component add llvm-tools-preview
-cargo objdump --example targets -- --disassemble --no-show-raw-insn --print-imm-hex
+set RUSTFLAGS=
+set RUSTFLAGS=-C target-feature=+avx2
+set RUSTFLAGS=-C target-feature=+avx512f
+set RUSTFLAGS=-C target-cpu=native
+set BUILDFEATURES=from_slice
 
-cargo objdump --release --example simdtest -- --disassemble --no-show-raw-insn --print-imm-hex > target\release\examples\simdtest.asm.txt
+rustup override set nightly
+
+# check that still around 90 µs
+bench.bat ingest_clumps_iter_v_slice
+
+bench.bat ingest_clumps_integers
+
+set RUSTFLAGS=-C target-feature=+avx512f
+bench.bat worst

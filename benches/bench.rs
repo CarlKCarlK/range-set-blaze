@@ -24,9 +24,20 @@ use rand::{
 };
 
 use range_set_blaze::RangeSetBlaze;
+// use range_set_blaze::LANES;
 use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjoint};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range_u32, How, MemorylessIter, MemorylessRange};
+
+const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {
+    "avx512f"
+} else if cfg!(target_feature = "avx2") {
+    "avx2"
+} else if cfg!(target_feature = "sse2") {
+    "sse2"
+} else {
+    "error"
+};
 
 pub fn shuffled(c: &mut Criterion) {
     let seed = 0;
@@ -1153,17 +1164,6 @@ fn ingest_clumps_base(c: &mut Criterion) {
             },
         );
 
-        #[cfg(feature = "from_slice")]
-        group.bench_with_input(
-            BenchmarkId::new("RangeSetBlaze (integers, slice)", parameter),
-            &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer = RangeSetBlaze::from_slice(vec.as_slice());
-                })
-            },
-        );
-
         group.bench_with_input(
             BenchmarkId::new("Roaring (integers)", parameter),
             &parameter,
@@ -1257,6 +1257,20 @@ fn ingest_clumps_integers(c: &mut Criterion) {
             },
         );
 
+        #[cfg(feature = "from_slice")]
+        group.bench_with_input(
+            BenchmarkId::new(
+                format!("RangeSetBlaze (from_slice_{})", SIMD_SUFFIX),
+                parameter,
+            ),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_slice(&vec);
+                })
+            },
+        );
+
         group.bench_with_input(
             BenchmarkId::new("Roaring (integers)", parameter),
             &parameter,
@@ -1329,7 +1343,8 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
         .collect();
 
         group.bench_with_input(
-            BenchmarkId::new("RangeSetBlaze (integers, slice)", parameter),
+            // format!("RangeSetBlaze (from_slice_{})", LANES)
+            BenchmarkId::new("RangeSetBlaze (from_slice)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1339,7 +1354,7 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
         );
 
         group.bench_with_input(
-            BenchmarkId::new("RangeSetBlaze (integers, iter)", parameter),
+            BenchmarkId::new("RangeSetBlaze (from_iter)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1526,7 +1541,7 @@ fn worst(c: &mut Criterion) {
         let vec: Vec<u32> = (0..iter_len).map(|_| uniform.sample(&mut rng)).collect();
 
         group.bench_with_input(
-            BenchmarkId::new("RangeSetBlaze", parameter),
+            BenchmarkId::new("RangeSetBlaze (from_iter)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1534,6 +1549,21 @@ fn worst(c: &mut Criterion) {
                 })
             },
         );
+
+        #[cfg(feature = "from_slice")]
+        group.bench_with_input(
+            BenchmarkId::new(
+                format!("RangeSetBlaze (from_slice_{})", SIMD_SUFFIX),
+                parameter,
+            ),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_slice(&vec);
+                })
+            },
+        );
+
         group.bench_with_input(
             BenchmarkId::new("BTreeSet", parameter),
             &parameter,
@@ -2138,7 +2168,9 @@ criterion_group!(
     config = Criterion::default();
     targets =
     ingest_clumps_iter_v_slice,
-    ingest_clumps_vary_type
+    ingest_clumps_vary_type,
+    ingest_clumps_integers,
+    worst
 );
 
 criterion_group!(

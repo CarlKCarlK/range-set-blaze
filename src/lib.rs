@@ -49,6 +49,7 @@ use core::{
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 // use from_slice_iter::FromSliceIter;
 use gen_ops::gen_ops_ex;
+// pub use integer::LANES;
 use itertools::Tee;
 pub use merge::{KMerge, Merge};
 pub use not_iter::NotIter;
