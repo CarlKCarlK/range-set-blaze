@@ -1,4 +1,4 @@
-# Selected Rust `Simd` structs, Methods, etc
+# Rust `Simd` Cheatsheet
 
 ## Structs
 
