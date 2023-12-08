@@ -12,41 +12,41 @@ pub fn is_consecutive_regular(chunk: &[u32; LANES]) -> bool {
     true
 }
 
-const REFERENCE_SPLAT0: Simd<u32, LANES> =
+const COMPARISON_VALUE_SPLAT0: Simd<u32, LANES> =
     Simd::from_array([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
 
 pub fn is_consecutive_splat0(chunk: Simd<u32, LANES>) -> bool {
     if chunk[0].overflowing_add(LANES as u32 - 1) != (chunk[LANES - 1], false) {
         return false;
     }
-    let added = chunk + REFERENCE_SPLAT0;
+    let added = chunk + COMPARISON_VALUE_SPLAT0;
     Simd::splat(added[0]) == added
 }
 
-const REFERENCE_SPLAT1: Simd<u32, LANES> =
+const COMPARISON_VALUE_SPLAT1: Simd<u32, LANES> =
     Simd::from_array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
 pub fn is_consecutive_splat1(chunk: Simd<u32, LANES>) -> bool {
-    let subtracted = chunk - REFERENCE_SPLAT1;
+    let subtracted = chunk - COMPARISON_VALUE_SPLAT1;
     Simd::splat(chunk[0]) == subtracted
 }
 
 pub fn is_consecutive_splat2(chunk: Simd<u32, LANES>) -> bool {
-    let subtracted = chunk - REFERENCE_SPLAT1;
+    let subtracted = chunk - COMPARISON_VALUE_SPLAT1;
     Simd::splat(subtracted[0]) == subtracted
 }
 
 pub fn is_consecutive_sizzle(chunk: Simd<u32, LANES>) -> bool {
-    let subtracted = chunk - REFERENCE_SPLAT1;
+    let subtracted = chunk - COMPARISON_VALUE_SPLAT1;
     simd_swizzle!(subtracted, [0; LANES]) == subtracted
 }
 
-const REFERENCE_ROTATE: Simd<u32, LANES> =
+const COMPARISON_VALUE_ROTATE: Simd<u32, LANES> =
     Simd::from_array([4294967281, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
 
 pub fn is_consecutive_rotate(chunk: Simd<u32, LANES>) -> bool {
     let rotated = chunk.rotate_elements_right::<1>();
-    chunk - rotated == REFERENCE_ROTATE
+    chunk - rotated == COMPARISON_VALUE_ROTATE
 }
 
 #[test]

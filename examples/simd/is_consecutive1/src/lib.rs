@@ -9,22 +9,22 @@ use std::{
 #[inline]
 pub fn is_consecutive_splat1_gen<T, const N: usize>(
     chunk: Simd<T, N>,
-    reference: Simd<T, N>,
+    comparison_value: Simd<T, N>,
 ) -> bool
 where
     T: SimdElement + PartialEq,
     Simd<T, N>: Sub<Simd<T, N>, Output = Simd<T, N>>,
     LaneCount<N>: SupportedLaneCount,
 {
-    let subtracted = chunk - reference;
+    let subtracted = chunk - comparison_value;
     Simd::splat(chunk[0]) == subtracted
 }
 
-// // But can we safely make the const reference_splat generic for type and # of lanes?
+// // But can we safely make the const comparison_value_splat generic for type and # of lanes?
 // // Not currently, because we need From or One to be const.
 // use std::ops::AddAssign;
 
-// pub const fn reference_splat_gen<T, const N: usize>() -> Simd<T, N>
+// pub const fn comparison_value_splat_gen<T, const N: usize>() -> Simd<T, N>
 // where
 //     T: SimdElement + Default + From<usize> + AddAssign,
 //     LaneCount<N>: SupportedLaneCount,
@@ -48,15 +48,15 @@ macro_rules! define_is_consecutive_splat1 {
         where
             LaneCount<N>: SupportedLaneCount,
         {
-            define_reference_splat!(reference_splat, $type);
+            define_comparison_value_splat!(comparison_value_splat, $type);
 
-            let subtracted = chunk - reference_splat();
+            let subtracted = chunk - comparison_value_splat();
             Simd::splat(chunk[0]) == subtracted
         }
     };
 }
 #[macro_export]
-macro_rules! define_reference_splat {
+macro_rules! define_comparison_value_splat {
     ($function:ident, $type:ty) => {
         pub const fn $function<const N: usize>() -> Simd<$type, N>
         where

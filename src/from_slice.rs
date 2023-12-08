@@ -128,7 +128,7 @@ pub trait IsConsecutive {
 
 macro_rules! define_const_reference {
     ($type:ty) => {
-        const fn reference<const N: usize>() -> Simd<$type, N>
+        const fn comparison_value<const N: usize>() -> Simd<$type, N>
         where
             LaneCount<N>: SupportedLaneCount,
         {
@@ -156,7 +156,7 @@ macro_rules! impl_is_consecutive {
                 LaneCount<N>: SupportedLaneCount,
             {
                 define_const_reference!($type);
-                let subtracted = chunk - reference();
+                let subtracted = chunk - comparison_value();
                 Simd::splat(chunk[0]) == subtracted
             }
         }

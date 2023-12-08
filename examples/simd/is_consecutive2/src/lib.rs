@@ -34,18 +34,18 @@ macro_rules! define_is_consecutive_splat0 {
             Simd<$type, N>: Add<Simd<$type, N>, Output = Simd<$type, N>>,
             LaneCount<N>: SupportedLaneCount,
         {
-            define_reference_splat0!(reference_splat0, $type);
+            define_comparison_value_splat0!(comparison_value_splat0, $type);
 
             if chunk[0].overflowing_add(N as $type - 1) != (chunk[N - 1], false) {
                 return false;
             }
-            let added = chunk + reference_splat0();
+            let added = chunk + comparison_value_splat0();
             Simd::splat(added[0]) == added
         }
     };
 }
 #[macro_export]
-macro_rules! define_reference_splat0 {
+macro_rules! define_comparison_value_splat0 {
     ($function:ident, $type:ty) => {
         pub const fn $function<const N: usize>() -> Simd<$type, N>
         where
@@ -70,16 +70,16 @@ macro_rules! define_is_consecutive_splat1 {
         where
             LaneCount<N>: SupportedLaneCount,
         {
-            define_reference_splat!(reference_splat, $type);
+            define_comparison_value_splat!(comparison_value_splat, $type);
 
-            let subtracted = chunk - reference_splat();
+            let subtracted = chunk - comparison_value_splat();
             Simd::splat(chunk[0]) == subtracted
         }
     };
 }
 
 #[macro_export]
-macro_rules! define_reference_splat {
+macro_rules! define_comparison_value_splat {
     ($function:ident, $type:ty) => {
         pub const fn $function<const N: usize>() -> Simd<$type, N>
         where
@@ -104,9 +104,9 @@ macro_rules! define_is_consecutive_splat2 {
         where
             LaneCount<N>: SupportedLaneCount,
         {
-            define_reference_splat!(reference_splat, $type);
+            define_comparison_value_splat!(comparison_value_splat, $type);
 
-            let subtracted = chunk - reference_splat();
+            let subtracted = chunk - comparison_value_splat();
             Simd::splat(subtracted[0]) == subtracted
         }
     };
@@ -135,16 +135,16 @@ macro_rules! define_is_consecutive_rotate {
             $type: SimdElement,
             LaneCount<N>: SupportedLaneCount,
         {
-            define_reference_rotate!(reference, $type);
+            define_comparison_value_rotate!(comparison_value, $type);
 
             let rotated = chunk.rotate_elements_right::<1>();
-            chunk - rotated == reference()
+            chunk - rotated == comparison_value()
         }
     };
 }
 
 #[macro_export]
-macro_rules! define_reference_rotate {
+macro_rules! define_comparison_value_rotate {
     ($function:ident, $type:ty) => {
         #[inline]
         pub const fn $function<const N: usize>() -> Simd<$type, N>
