@@ -110,20 +110,34 @@ impl Integer for u32 {
     // }
 
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        use crate::MultiwayRangeSetBlaze;
+        use crate::{
+            unsorted_disjoint::{self, UnsortedDisjoint},
+            UnionIter,
+        };
         // cmk
         // FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
-        let num_cpus = 32usize; // cmk const
+        let num_cpus = 2usize; // cmk const
         let slice_ref = slice.as_ref();
         let chunk_size = (slice_ref.len() + num_cpus - 1) / num_cpus; // ensure rounding up
 
-        let range_set_blaze: RangeSetBlaze<Self> = slice_ref
+        // maybe use crossbeam to collect
+        let v: Vec<_> = slice_ref
             .par_chunks(chunk_size)
-            .map(|chunk| FromSliceIter::<Self, LANES>::new(chunk).collect())
-            .reduce_with(|a, b| a | b)
-            .unwrap();
+            .map(|chunk| FromSliceIter::<Self, LANES>::new(chunk))
+            .collect();
 
-        range_set_blaze
+        RangeSetBlaze::from_iter(v.into_iter())
+
+        // let iter = slice_ref.par_chunks(chunk_size).flat_map(|chunk| {
+        //     let from_slice_iter = FromSliceIter::<Self, LANES>::new(chunk);
+        //     from_slice_iter;
+        //     // let unsorted_disjoint: UnsortedDisjoint<Self, _> = from_slice_iter.into();
+        //     // unsorted_disjoint
+        // });
+        // let v: Vec<_> = iter.collect();
+        // let range_set_blaze: RangeSetBlaze<Self> = v.into_iter().collect();
+
+        // range_set_blaze
 
         // let (first, second) = match range_set_blaze_vec.as_slice() {
         //     [first, second] => (first, second),

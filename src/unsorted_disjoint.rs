@@ -33,6 +33,16 @@ where
     }
 }
 
+impl<T, I> Default for UnsortedDisjoint<T, I>
+where
+    T: Integer,
+    I: Default + Iterator<Item = RangeInclusive<T>>,
+{
+    fn default() -> Self {
+        UnsortedDisjoint::from(I::default())
+    }
+}
+
 impl<T, I> FusedIterator for UnsortedDisjoint<T, I>
 where
     T: Integer,
