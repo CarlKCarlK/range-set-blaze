@@ -1,6 +1,7 @@
 #[cfg(feature = "from_slice")]
 use crate::{from_slice::FromSliceIter, RangeSetBlaze};
 use core::ops::RangeInclusive;
+use rayon::prelude::*;
 
 #[cfg(feature = "from_slice")]
 const LANES: usize = 16;
@@ -104,8 +105,33 @@ impl Integer for u32 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
+    // fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+    //     FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+    // }
+
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+        use crate::MultiwayRangeSetBlaze;
+        // cmk
+        // FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+        let num_cpus = 32usize; // cmk const
+        let slice_ref = slice.as_ref();
+        let chunk_size = (slice_ref.len() + num_cpus - 1) / num_cpus; // ensure rounding up
+
+        let range_set_blaze: RangeSetBlaze<Self> = slice_ref
+            .par_chunks(chunk_size)
+            .map(|chunk| FromSliceIter::<Self, LANES>::new(chunk).collect())
+            .reduce_with(|a, b| a | b)
+            .unwrap();
+
+        range_set_blaze
+
+        // let (first, second) = match range_set_blaze_vec.as_slice() {
+        //     [first, second] => (first, second),
+        //     _ => panic!("Expected exactly two elements in the vector"),
+        // };
+
+        // first | second
+        // MultiwayRangeSetBlaze::union(range_set_blaze_vec.as_slice())
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {

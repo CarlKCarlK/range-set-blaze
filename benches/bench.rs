@@ -1319,7 +1319,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
 fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
     let group_name = "ingest_clumps_iter_v_slice";
     let k = 1;
-    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000];
+    let average_width_list = [1000]; // cmk [1, 10, 100, 1000, 10_000, 100_000];
     let coverage_goal = 0.10;
     let how = How::None;
     let seed = 0;
