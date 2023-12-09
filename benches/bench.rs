@@ -1166,6 +1166,20 @@ fn ingest_clumps_base(c: &mut Criterion) {
             },
         );
 
+        #[cfg(feature = "from_slice")]
+        group.bench_with_input(
+            BenchmarkId::new(
+                format!("RangeSetBlaze (integers, slice_{})", SIMD_SUFFIX),
+                parameter,
+            ),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeSetBlaze::from_slice(&vec);
+                })
+            },
+        );
+
         group.bench_with_input(
             BenchmarkId::new("Roaring (integers)", parameter),
             &parameter,
@@ -2104,6 +2118,7 @@ criterion_group!(
     targets =
     ingest_clumps_iter_v_slice,
     ingest_clumps_integers,
+    ingest_clumps_base,
     worst
 );
 
