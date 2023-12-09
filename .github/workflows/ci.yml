@@ -50,11 +50,17 @@ jobs:
           cargo run
           cd ../..
           rustup override set stable
-      - name: Test Rust Native # cmk add nightly tests
+      - name: Test Rust Native
         run: |
           cargo clippy --verbose --all-targets --features "std alloc rog-experimental" -- -D clippy::all -A deprecated
           cargo test --verbose --features rog-experimental
           cargo test --features alloc --no-default-features --verbose --features rog-experimental
+      - name: Test Rust Native (in nightly)
+        run: |
+          rustup override set nightly
+          cargo clippy --verbose --all-targets --features "std alloc rog-experimental from_slice" -- -D clippy::all -A deprecated
+          cargo test --verbose --features "rog-experimental from_slice"
+          cargo test --features alloc --no-default-features --verbose --features "rog-experimental from_slice"
       - name: Test Rust 32-bit Ubuntu
         if: runner.os == 'Linux'
         uses: awalsh128/cache-apt-pkgs-action@latest
