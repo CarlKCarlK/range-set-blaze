@@ -1,5 +1,8 @@
 # Rust `Simd` Cheatsheet
 
+> Extracted from [Nine Rules for SIMD Acceleration of your Rust Code:
+General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x](https://medium.com/towards-data-science/nine-rules-for-simd-acceleration-of-your-rust-code-part-1-c16fe639ce21) in *Towards Data Science*
+
 ## Structs
 
 - [`Simd`](https://doc.rust-lang.org/nightly/core/simd/struct.Simd.html) - a special, aligned, fixed-length array of [`SimdElement`](https://doc.rust-lang.org/std/simd/trait.SimdElement.html). We refer to a position in the array and the element stored at that position as a "lane".
