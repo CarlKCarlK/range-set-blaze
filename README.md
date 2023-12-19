@@ -55,7 +55,7 @@ Articles
 -----------
 
 * [Nine Rules for Creating Fast, Safe, and Compatible Data Structures in Rust:
-Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3) in *Towards Data Science*. It provides a high-level overview of the crate and its design: [Part 1](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3), [Part 2](https://towardsdatascience.com/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-2-da5e6961a0b7)
+Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3) in *Towards Data Science*. It provides a high-level overview of the crate and its design.
 
 * [Nine Rules for Running Rust on the Web and on Embedded: Practical Lessons from Porting range-set-blaze to no_std and WASM](https://medium.com/towards-data-science/nine-rules-for-running-rust-on-the-web-and-on-embedded-94462ef249a2) in *Towards Data Science*. It covers porting to "no_std".
 
@@ -63,6 +63,9 @@ Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-f
 My Experience Applying Kani’s Formal Verification to ChatGPT-Suggested Rust Code](https://medium.com/@carlmkadie/check-ai-generated-code-perfectly-and-automatically-d5b61acff741). Shows how to prove overflow safety.
 
 * [Nine Rules to Formally Validate Rust Algorithms with Dafny](https://medium.com/towards-data-science/nine-rules-to-formally-validate-rust-algorithms-with-dafny-part-1-5cb8c8a0bb92) in *Towards Data Science*. It shows how to formally validate one of the crate's algorithms.
+
+* [Nine Rules for SIMD Acceleration of your Rust Code:
+General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x](https://towardsdatascience.com/nine-rules-for-simd-acceleration-of-your-rust-code-part-2-6a104b3be6f3) in *Towards Data Science*
 
 * *Also see:* [CHANGELOG](https://github.com/CarlKCarlK/range-set-blaze/blob/main/CHANGELOG.md)
 
