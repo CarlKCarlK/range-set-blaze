@@ -614,27 +614,30 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.iter.next();
-        if let Some(range) = next.as_ref() {
-            assert!(
-                !self.seen_none,
-                "iterator cannot return Some after returning None"
-            );
-            let (start, end) = range.clone().into_inner();
-            assert!(start <= end, "start must be less or equal to end");
-            assert!(
-                end <= T::safe_max_value(),
-                "end must be less than or equal to safe_max_value"
-            );
-            if let Some(prev_end) = self.prev_end {
-                assert!(
-                    prev_end < T::safe_max_value() && prev_end + T::one() < start,
-                    "ranges must be disjoint"
-                );
-            }
-            self.prev_end = Some(end);
-        } else {
+
+        let Some(range) = next.as_ref() else {
             self.seen_none = true;
+            return next;
+        };
+
+        assert!(
+            !self.seen_none,
+            "iterator cannot return Some after returning None"
+        );
+        let (start, end) = range.clone().into_inner();
+        assert!(start <= end, "start must be less or equal to end");
+        assert!(
+            end <= T::safe_max_value(),
+            "end must be less than or equal to safe_max_value"
+        );
+        if let Some(prev_end) = self.prev_end {
+            assert!(
+                prev_end < T::safe_max_value() && prev_end + T::one() < start,
+                "ranges must be disjoint"
+            );
         }
+        self.prev_end = Some(end);
+
         next
     }
 

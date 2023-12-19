@@ -36,28 +36,11 @@ The crate's main trait is [`SortedDisjoint`]. It is implemented by iterators of 
 [set operations]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#rangesetblaze-set-operations
 [1]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#constructor-performance
 
-The crate supports no_std, WASM, and embedded projects:
+The crate supports no_std, WASM, and embedded projects. Use the command:
 
-```toml
-[dependencies]
-range-set-blaze = { features = ["alloc"], default-features = false, version=VERSION }
-
+```bash
+cargo add range-set-blaze --features "alloc" --no-default-features
 ```
-
- *Replace VERSION with the current version.*
-
-Articles
------------
-
-* [Nine Rules for Creating Fast, Safe, and Compatible Data Structures in Rust:
-Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3) in *Towards Data Science*. It provides a high-level overview of the crate and its design: [Part 1](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3), [Part 2](https://towardsdatascience.com/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-2-da5e6961a0b7)
-
-* [Nine Rules for Running Rust on the Web and on Embedded: Practical Lessons from Porting range-set-blaze to no_std and WASM](https://medium.com/towards-data-science/nine-rules-for-running-rust-on-the-web-and-on-embedded-94462ef249a2) in *Towards Data Science*. It covers porting to "no_std".
-
-* [Check AI-Generated Code Perfectly and Automatically
-My Experience Applying Kani’s Formal Verification to ChatGPT-Suggested Rust Code](https://medium.com/@carlmkadie/check-ai-generated-code-perfectly-and-automatically-d5b61acff741). Shows how to prove overflow safety.
-
-* [Nine Rules to Formally Validate Rust Algorithms with Dafny](https://medium.com/towards-data-science/nine-rules-to-formally-validate-rust-algorithms-with-dafny-part-1-5cb8c8a0bb92) in *Towards Data Science*. It shows how to formally validate one of the crate's algorithms.
 
 Benchmarks
 -----------
@@ -67,6 +50,24 @@ See the [benchmarks](https://github.com/CarlKCarlK/range-set-blaze/blob/main/doc
 Generally, for many tasks involving clumpy integers and ranges, `RangeSetBlaze` is much faster than alternatives.
 
 The benchmarks are in the `benches` directory. To run them, use `cargo bench`.
+
+Articles
+-----------
+
+* [Nine Rules for Creating Fast, Safe, and Compatible Data Structures in Rust:
+Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3) in *Towards Data Science*. It provides a high-level overview of the crate and its design.
+
+* [Nine Rules for Running Rust on the Web and on Embedded: Practical Lessons from Porting range-set-blaze to no_std and WASM](https://medium.com/towards-data-science/nine-rules-for-running-rust-on-the-web-and-on-embedded-94462ef249a2) in *Towards Data Science*. It covers porting to "no_std".
+
+* [Check AI-Generated Code Perfectly and Automatically
+My Experience Applying Kani’s Formal Verification to ChatGPT-Suggested Rust Code](https://medium.com/@carlmkadie/check-ai-generated-code-perfectly-and-automatically-d5b61acff741). Shows how to prove overflow safety.
+
+* [Nine Rules to Formally Validate Rust Algorithms with Dafny](https://medium.com/towards-data-science/nine-rules-to-formally-validate-rust-algorithms-with-dafny-part-1-5cb8c8a0bb92) in *Towards Data Science*. It shows how to formally validate one of the crate's algorithms.
+
+* [Nine Rules for SIMD Acceleration of your Rust Code:
+General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x](https://medium.com/towards-data-science/nine-rules-for-simd-acceleration-of-your-rust-code-part-1-c16fe639ce21) in *Towards Data Science*
+
+* *Also see:* [CHANGELOG](https://github.com/CarlKCarlK/range-set-blaze/blob/main/CHANGELOG.md)
 
 Examples
 -----------

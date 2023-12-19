@@ -20,7 +20,7 @@ use std::{
 use syntactic_for::syntactic_for;
 use tests_common::{How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
-use std::ops::BitAndAssign;
+use core::ops::BitAndAssign;
 
 type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
@@ -61,7 +61,7 @@ fn sub() {
 
 #[test]
 fn complement0() {
-    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+    syntactic_for! { ty in [i8, u8 , isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
         let empty = RangeSetBlaze::<$ty>::new();
         let full = !&empty;

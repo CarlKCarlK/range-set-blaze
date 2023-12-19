@@ -1,5 +1,5 @@
+use core::ops::BitXor;
 use range_set_blaze::prelude::*;
-use std::ops::BitXor;
 
 fn main() {
     let a = RangeSetBlaze::from_iter([1, 2, 3]).into_ranges();

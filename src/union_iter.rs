@@ -135,29 +135,34 @@ where
 
     fn next(&mut self) -> Option<RangeInclusive<T>> {
         loop {
-            if let Some(range) = self.iter.next() {
-                let (start, end) = range.into_inner();
-                if end < start {
-                    continue;
-                }
-                if let Some(current_range) = self.option_range.clone() {
-                    let (current_start, current_end) = current_range.into_inner();
-                    debug_assert!(current_start <= start); // real assert
-                    if start <= current_end
-                        || (current_end < T::safe_max_value() && start <= current_end + T::one())
-                    {
-                        self.option_range = Some(current_start..=max(current_end, end));
-                        continue;
-                    } else {
-                        self.option_range = Some(start..=end);
-                        return Some(current_start..=current_end);
-                    }
-                } else {
+            let range = match self.iter.next() {
+                Some(r) => r,
+                None => return self.option_range.take(),
+            };
+
+            let (start, end) = range.into_inner();
+            if end < start {
+                continue;
+            }
+
+            let current_range = match self.option_range.clone() {
+                Some(cr) => cr,
+                None => {
                     self.option_range = Some(start..=end);
                     continue;
                 }
+            };
+
+            let (current_start, current_end) = current_range.into_inner();
+            debug_assert!(current_start <= start); // real assert
+            if start <= current_end
+                || (current_end < T::safe_max_value() && start <= current_end + T::one())
+            {
+                self.option_range = Some(current_start..=max(current_end, end));
+                continue;
             } else {
-                return self.option_range.take();
+                self.option_range = Some(start..=end);
+                return Some(current_start..=current_end);
             }
         }
     }

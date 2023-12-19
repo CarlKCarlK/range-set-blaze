@@ -10,7 +10,7 @@ use core::ops::{Bound, RangeBounds, RangeInclusive};
 
 use crate::{Integer, RangeSetBlaze};
 
-/// An iterator over [`Rog`]s (ranges or gaps) in a [`RangeSetBlaze`].
+/// Experimental: An iterator over [`Rog`]s (ranges or gaps) in a [`RangeSetBlaze`].
 ///
 /// See [`RangeSetBlaze::rogs_range`] for more information.
 pub struct RogsIter<'a, T: Integer> {
@@ -55,7 +55,7 @@ impl<T: Integer> Iterator for RogsIter<'_, T> {
     }
 }
 
-/// Represents an range or gap in a [`RangeSetBlaze`].
+/// Experimental: Represents an range or gap in a [`RangeSetBlaze`].
 ///
 /// See [`RangeSetBlaze::rogs_range`] and [`RangeSetBlaze::rogs_get`] for more information.
 ///
@@ -126,13 +126,20 @@ impl<T: Integer> Rog<T> {
 }
 
 impl<T: Integer> RangeSetBlaze<T> {
-    /// Returns the [`Rog`] (range or gap) containing the given integer. If the
+    /// Experimental: Returns the [`Rog`] (range or gap) containing the given integer. If the
     /// [`RangeSetBlaze`] contains the integer, returns a [`Rog::Range`]. If the
     /// [`RangeSetBlaze`] does not contain the integer, returns a [`Rog::Gap`].
     ///
     /// # Panics
     ///
     /// Panics if the `value > T::safe_max_value()`.
+    ///
+    /// # Enabling
+    ///
+    /// This method is experimental and must be enabled with the `rog-experimental` feature.
+    /// ```bash
+    /// cargo add range-set-blaze --features "rog-experimental"
+    /// ```
     ///
     /// # Examples
     ///
@@ -174,7 +181,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    /// Constructs an iterator over a sub-range of [`Rog`]'s (ranges and gaps) in the [`RangeSetBlaze`].
+    /// Experimental: Constructs an iterator over a sub-range of [`Rog`]'s (ranges and gaps) in the [`RangeSetBlaze`].
     /// The simplest way is to use the range syntax `min..=max`, thus `range(min..=max)` will
     /// yield elements from min (inclusive) to max (inclusive).
     /// The range may also be entered as `(Bound<T>, Bound<T>)`, so for example
@@ -189,11 +196,19 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// Panics if range `end > T::safe_max_value()`.
     ///
+    /// # Enabling
+    ///
+    /// This method is experimental and must be enabled with the `rog-experimental` feature.
+    /// ```bash
+    /// cargo add range-set-blaze --features "rog-experimental"
+    /// ```
+
+    ///
     /// # Examples
     ///
     /// ```rangesetblaze::new()//
     /// use range_set_blaze::{RangeSetBlaze, Rog;};
-    /// use std::ops::Bound::Included;
+    /// use core::ops::Bound::Included;
     ///
     /// let mut set = RangeSetBlaze::new();
     /// set.insert(3);

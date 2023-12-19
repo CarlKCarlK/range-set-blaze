@@ -22,7 +22,7 @@ jobs:
         uses: jetli/wasm-pack-action@v0.4.0
       - name: Test Native & WASM
         run: |
-          cargo clippy --verbose --all-targets --all-features -- -D clippy::all -A deprecated
+          cargo clippy --verbose --all-targets --features "std alloc rog-experimental" -- -D clippy::all -A deprecated
           cargo test --verbose --features rog-experimental
           cargo test --features alloc --no-default-features --verbose --features rog-experimental
           wasm-pack test --chrome --headless --features alloc --no-default-features --verbose --features rog-experimental

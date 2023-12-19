@@ -1,6 +1,11 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+#[cfg(feature = "from_slice")]
+use core::mem::size_of;
+#[cfg(feature = "rog-experimental")]
+use core::ops::Bound;
+use core::ops::RangeInclusive;
 use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
@@ -11,9 +16,6 @@ use range_set_blaze::{
     prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts, UnionIter,
 };
 use std::cmp::Ordering;
-#[cfg(feature = "rog-experimental")]
-use std::ops::Bound;
-use std::ops::RangeInclusive;
 #[cfg(feature = "rog-experimental")]
 use std::panic::AssertUnwindSafe;
 #[cfg(feature = "rog-experimental")]
@@ -1172,7 +1174,7 @@ fn union_iter() {
 fn bitor() {
     let a = CheckSortedDisjoint::from([1..=1]);
     let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
-    let union = std::ops::BitOr::bitor(a, b);
+    let union = core::ops::BitOr::bitor(a, b);
     assert_eq!(union.to_string(), "1..=2");
 
     let a = CheckSortedDisjoint::from([1..=1]);
@@ -1182,7 +1184,7 @@ fn bitor() {
 
     let a = CheckSortedDisjoint::from([1..=1]);
     let b = CheckSortedDisjoint::from([2..=2]);
-    let c = std::ops::BitOr::bitor(a, b);
+    let c = core::ops::BitOr::bitor(a, b);
     assert_eq!(c.to_string(), "1..=2");
 
     let a = CheckSortedDisjoint::from([1..=1]);
@@ -1223,6 +1225,129 @@ fn range_set_int_constructors() {
     let a0 = RangeSetBlaze::from([3, 2, 1, 100, 1]);
     let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+}
+
+#[cfg(feature = "from_slice")]
+fn print_features() {
+    println!("feature\tcould\tare");
+    syntactic_for! { feature in [
+        "aes",
+        "pclmulqdq",
+        "rdrand",
+        "rdseed",
+        "tsc",
+        "mmx",
+        "sse",
+        "sse2",
+        "sse3",
+        "ssse3",
+        "sse4.1",
+        "sse2",
+        "sse4a",
+        "sha",
+        "avx",
+        "avx2",
+        "avx512f",
+        "avx512cd",
+        "avx512er",
+        "avx512pf",
+        "avx512bw",
+        "avx512dq",
+        "avx512vl",
+        "avx512ifma",
+        "avx512vbmi",
+        "avx512vpopcntdq",
+        "fma",
+        "bmi1",
+        "bmi2",
+        "abm",
+        "lzcnt",
+        "tbm",
+        "popcnt",
+        "fxsr",
+        "xsave",
+        "xsaveopt",
+        "xsaves",
+        "xsavec",
+        ] {$(
+            println!("{}\t{}\t{}",$feature,is_x86_feature_detected!($feature),cfg!(target_feature = $feature));
+
+    )*}};
+}
+
+#[cfg(feature = "from_slice")]
+#[test]
+fn from_slice_all_types() {
+    syntactic_for! { ty in [i8, u8] {
+        $(
+            println!("ty={:#?}",size_of::<$ty>() * 8);
+            let v: Vec<$ty> = (0..=127).collect();
+            let a2 = RangeSetBlaze::from_slice(&v);
+            assert!(a2.to_string() == "0..=127");
+        )*
+    }};
+
+    syntactic_for! { ty in [i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+        $(
+            println!("ty={:#?}",size_of::<$ty>() * 8);
+            let v: Vec<$ty> = (0..=5000).collect();
+            let a2 = RangeSetBlaze::from_slice(&v);
+            assert!(a2.to_string() == "0..=5000");
+        )*
+    }};
+}
+
+#[cfg(feature = "from_slice")]
+#[test]
+fn range_set_int_slice_constructor() {
+    print_features();
+    let k = 1;
+    let average_width = 1000;
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+
+    #[allow(clippy::single_element_loop)]
+    for iter_len in [1000, 1500, 1750, 2000, 10_000, 1_000_000] {
+        let (range_len, range) =
+            tests_common::width_to_range_u32(iter_len, average_width, coverage_goal);
+
+        let vec: Vec<u32> = MemorylessIter::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+        let b0 = RangeSetBlaze::from_iter(&vec);
+        let b1 = RangeSetBlaze::from_slice(&vec);
+        if b0 != b1 {
+            println!(
+                "{iter_len} error: b0={b0:#?}, b1={b1:#?}, diff={:#?}",
+                &b0 ^ &b1
+            );
+        }
+        assert!(b0 == b1);
+    }
+
+    let v: Vec<i32> = (100..=150).collect();
+    let a2 = RangeSetBlaze::from_slice(v);
+    assert!(a2.to_string() == "100..=150");
+
+    // For compatibility with `BTreeSet`, we also support
+    // 'from'/'into' from arrays of integers.
+    let a0 = RangeSetBlaze::from([3, 2, 1, 100, 1]);
+    let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
+    assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+
+    #[allow(clippy::needless_borrows_for_generic_args)]
+    let a2 = RangeSetBlaze::from_slice(&[3, 2, 1, 100, 1]);
+    assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
+
+    let a2 = RangeSetBlaze::from_slice([3, 2, 1, 100, 1]);
+    assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
 }
 
 #[test]
@@ -1377,8 +1502,8 @@ fn range_example() {
 
 #[test]
 fn range_test() {
+    use core::ops::Bound::Included;
     use range_set_blaze::RangeSetBlaze;
-    use std::ops::Bound::Included;
 
     let mut set = RangeSetBlaze::new();
     set.insert(3);
@@ -1709,7 +1834,7 @@ fn test_rog_get_doc() {
 #[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_range_doc() {
-    use std::ops::Bound::Included;
+    use core::ops::Bound::Included;
 
     let mut set = RangeSetBlaze::new();
     set.insert(3);

@@ -1,6 +1,19 @@
+#![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
+
+// Developer notes:
+//
+// To run tests with different settings, environment variables are recommended.
+// For example, the Windows steps to run one of the SIMD-related benchmark is:
+// ```bash
+// rustup override set nightly # use nightly compiler
+// set RUSTFLAGS=-C target-cpu=native # use current CPUs full instruction set
+// set BUILDFEATURES=from_slice # enable the from_slice feature via build.rs
+// cargo bench ingest_clumps_iter_v_slice
+// ```
+
 // #[cfg(all(feature = "std", feature = "alloc"))]
 // compile_error!("feature \"std\" and feature \"alloc\" cannot be enabled at the same time");
 // #[cfg(feature = "std")]
@@ -11,6 +24,7 @@ extern crate alloc;
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
+mod from_slice;
 mod integer;
 mod merge;
 mod not_iter;
@@ -23,29 +37,21 @@ mod tests;
 mod union_iter;
 mod unsorted_disjoint;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
-use alloc::collections::BTreeMap;
-use alloc::vec::Vec;
-use core::cmp::max;
-use core::cmp::Ordering;
-use core::convert::From;
-use core::fmt;
-use core::iter::FusedIterator;
-use core::ops::BitOr;
-use core::ops::BitOrAssign;
-use core::ops::Bound;
-use core::ops::RangeBounds;
-use core::ops::RangeInclusive;
-use core::str::FromStr;
+use alloc::{collections::BTreeMap, vec::Vec};
+use core::{
+    cmp::{max, Ordering},
+    convert::From,
+    fmt,
+    iter::FusedIterator,
+    ops::{BitOr, BitOrAssign, Bound, RangeBounds, RangeInclusive},
+    str::FromStr,
+};
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 use gen_ops::gen_ops_ex;
 use itertools::Tee;
-pub use merge::KMerge;
-pub use merge::Merge;
+pub use merge::{KMerge, Merge};
 pub use not_iter::NotIter;
-use num_traits::ops::overflowing::OverflowingSub;
-use num_traits::CheckedAdd;
-use num_traits::One;
-use num_traits::Zero;
+use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, One, WrappingSub, Zero};
 #[cfg(feature = "rog-experimental")]
 pub use rog::{Rog, RogsIter};
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
@@ -58,19 +64,23 @@ use unsorted_disjoint::UnsortedDisjoint;
 pub trait Integer:
     num_integer::Integer
     + FromStr
+    + Copy
     + fmt::Display
     + fmt::Debug
     + core::iter::Sum
     + num_traits::NumAssignOps
-    + FromStr
-    + Copy
     + num_traits::Bounded
     + num_traits::NumCast
     + Send
     + Sync
     + OverflowingSub
     + CheckedAdd
+    + WrappingSub
 {
+    #[cfg(feature = "from_slice")]
+    /// A definition of [`RangeSetBlaze::from_slice()`] specific to this integer type.
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self>;
+
     /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note
     /// that it can't be `u8` because the length ranges from 0 to 256, which is one too large for `u8`.
     ///
@@ -105,7 +115,7 @@ pub trait Integer:
 
     /// Returns the length of a range without any overflow.
     ///
-    /// #Example
+    /// # Example
     /// ```
     /// use range_set_blaze::Integer;
     ///
@@ -175,13 +185,15 @@ pub trait Integer:
 /// Here are the constructors, followed by a
 /// description of the performance, and then some examples.
 ///
-/// | Methods           | Input                   |
-/// |-------------------|-------------------------|
-/// | [`new`]/[`default`]       |                         |
-/// | [`from_iter`][1]/[`collect`][1] | integer iterator        |
-/// | [`from_iter`][2]/[`collect`][2] | ranges iterator         |
-/// | [`from_sorted_disjoint`][3] /[`into_range_set_blaze`][3]         | [`SortedDisjoint`] iterator |
-/// | [`from`][4] /[`into`][4]         | array of integers       |
+/// | Methods                                     | Input                        | Notes                    |
+/// |---------------------------------------------|------------------------------|--------------------------|
+/// | [`new`]/[`default`]                         |                              |                          |
+/// | [`from_iter`][1]/[`collect`][1]             | integer iterator             |                          |
+/// | [`from_iter`][2]/[`collect`][2]             | ranges iterator              |                          |
+/// | [`from_slice`][5]                           | slice of integers            | Fast, but nightly-only  |
+/// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze`][3] | [`SortedDisjoint`] iterator |               |
+/// | [`from`][4] /[`into`][4]                    | array of integers            |                          |
+///
 ///
 /// [`BTreeMap`]: alloc::collections::BTreeMap
 /// [`new`]: RangeSetBlaze::new
@@ -190,6 +202,7 @@ pub trait Integer:
 /// [2]: struct.RangeSetBlaze.html#impl-FromIterator<RangeInclusive<T>>-for-RangeSetBlaze<T>
 /// [3]: RangeSetBlaze::from_sorted_disjoint
 /// [4]: RangeSetBlaze::from
+/// [5]: RangeSetBlaze::from_slice()
 ///
 /// # Constructor Performance
 ///
@@ -198,7 +211,7 @@ pub trait Integer:
 /// small compared to the number of input integers. To understand this, consider the internals
 /// of the constructors:
 ///
-///  Internally, the constructors take these steps:
+///  Internally, the `from_iter`/`collect` constructors take these steps:
 /// * collect adjacent integers/ranges into disjoint ranges, O(*n₁*)
 /// * sort the disjoint ranges by their `start`, O(*n₂* log *n₂*)
 /// * merge adjacent ranges, O(*n₂*)
@@ -218,6 +231,11 @@ pub trait Integer:
 /// (Indeed, as long as *n₂* ≤ *n₁*/ln(*n₁*), then construction is O(*n₁*).)
 /// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*)),
 /// a quadratic improvement an O(*n₁*) implementation that ignores the clumps.
+///
+/// The [`from_slice`][5] constructor typically provides a constant-time speed up for array-like collections of clumpy integers.
+/// On a representative benchmark, the speed up was 7×.
+/// The method works by scanning the input for blocks of consecutive integers, and then using `from_iter` on the results.
+/// Where available, it uses SIMD instructions. It is nightly only and enabled by the `from_slice` feature.
 ///
 /// ## Constructor Examples
 ///
@@ -242,6 +260,13 @@ pub trait Integer:
 /// #[allow(clippy::reversed_empty_ranges)]
 /// let a1: RangeSetBlaze<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
 /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+///
+/// // 'from_slice': From any array-like collection of integers.
+/// // Nightly-only, but faster than 'from_iter'/'collect' on integers.
+/// #[cfg(feature = "from_slice")]
+/// let a0 = RangeSetBlaze::from_slice(vec![3, 2, 1, 100, 1]);
+/// #[cfg(feature = "from_slice")]
+/// assert!(a0.to_string() == "1..=3, 100..=100");
 ///
 /// // If we know the ranges are already sorted and disjoint,
 /// // we can avoid work and use 'from'/'into'.
@@ -502,6 +527,46 @@ impl<T: Integer> RangeSetBlaze<T> {
             btree_map,
             len: iter_with_len.len_so_far(),
         }
+    }
+
+    /// Creates a [`RangeSetBlaze`] from a collection of integers. It is typically many
+    /// times faster than [`from_iter`][1]/[`collect`][1].
+    /// On a representative benchmark, the speed up was 7×.
+    ///
+    /// **Warning: Requires the nightly compiler. Also, you must enable the `from_slice`
+    /// feature in your `Cargo.toml`. For example, with the command:**
+    /// ```bash
+    ///  cargo add range-set-blaze --features "from_slice"
+    /// ```
+    /// The function accepts any type that can be referenced as a slice of integers,
+    /// including slices, arrays, and vectors. Duplicates and out-of-order elements are fine.
+    ///
+    /// Where available, this function leverages SIMD (Single Instruction, Multiple Data) instructions
+    /// for performance optimization. To enable SIMD optimizations, compile with the Rust compiler
+    /// (rustc) flag `-C target-cpu=native`. This instructs rustc to use the native instruction set
+    /// of the CPU on the machine compiling the code, potentially enabling more SIMD optimizations.
+    ///
+    /// **Caution**: Compiling with `-C target-cpu=native` optimizes the binary for your current CPU architecture,
+    /// which may lead to compatibility issues on other machines with different architectures.
+    /// This is particularly important for distributing the binary or running it in varied environments.
+    ///
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let a0 = RangeSetBlaze::from_slice(&[3, 2, 1, 100, 1]); // reference to a slice
+    /// let a1 = RangeSetBlaze::from_slice([3, 2, 1, 100, 1]);   // array
+    /// let a2 = RangeSetBlaze::from_slice(vec![3, 2, 1, 100, 1]); // vector
+    /// assert!(a0 == a1 && a1 == a2 && a0.to_string() == "1..=3, 100..=100");
+    /// ```
+    /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
+    #[cfg(feature = "from_slice")]
+    #[inline]
+    pub fn from_slice(slice: impl AsRef<[T]>) -> Self {
+        T::from_slice(slice)
     }
 
     fn _len_slow(&self) -> <T as Integer>::SafeLen {
@@ -838,26 +903,24 @@ impl<T: Integer> RangeSetBlaze<T> {
         );
 
         // The code can have only one mutable reference to self.btree_map.
-        let start;
-        let end;
-        if let Some((start_ref, end_ref)) = self.btree_map.range_mut(..=value).next_back() {
-            end = *end_ref;
-            if end < value {
-                return false;
-            }
-            start = *start_ref;
-            // special case if in range and start strictly less than value
-            if start < value {
-                *end_ref = value - T::one();
-                // special, special case if value == end
-                if value == end {
-                    self.len -= <T::SafeLen>::one();
-                    return true;
-                }
-            }
-        } else {
+        let Some((start_ref, end_ref)) = self.btree_map.range_mut(..=value).next_back() else {
             return false;
         };
+
+        let end = *end_ref;
+        if end < value {
+            return false;
+        }
+        let start = *start_ref;
+        // special case if in range and start strictly less than value
+        if start < value {
+            *end_ref = value - T::one();
+            // special, special case if value == end
+            if value == end {
+                self.len -= <T::SafeLen>::one();
+                return true;
+            }
+        }
         self.len -= <T::SafeLen>::one();
         if start == value {
             self.btree_map.remove(&start);
@@ -1137,21 +1200,21 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert!(set.is_empty());
     /// ```
     pub fn pop_last(&mut self) -> Option<T> {
-        if let Some(mut entry) = self.btree_map.last_entry() {
-            let start = *entry.key();
-            let end = entry.get_mut();
-            let result = *end;
-            self.len -= T::safe_len(&(start..=*end));
-            if start == *end {
-                entry.remove_entry();
-            } else {
-                *end -= T::one();
-                self.len += T::safe_len(&(start..=*end));
-            }
-            Some(result)
+        let Some(mut entry) = self.btree_map.last_entry() else {
+            return None;
+        };
+
+        let start = *entry.key();
+        let end = entry.get_mut();
+        let result = *end;
+        self.len -= T::safe_len(&(start..=*end));
+        if start == *end {
+            entry.remove_entry();
         } else {
-            None
+            *end -= T::one();
+            self.len += T::safe_len(&(start..=*end));
         }
+        Some(result)
     }
 
     /// An iterator that visits the ranges in the [`RangeSetBlaze`],
@@ -1297,6 +1360,7 @@ impl<'a, T: Integer> FromIterator<&'a T> for RangeSetBlaze<T> {
     ///
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
+    ///
     /// let a0 = RangeSetBlaze::from_iter(vec![3, 2, 1, 100, 1]);
     /// let a1: RangeSetBlaze<i32> = vec![3, 2, 1, 100, 1].into_iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
@@ -1376,8 +1440,13 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     /// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
     /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100")
     /// ```
+    #[cfg(not(feature = "from_slice"))]
     fn from(arr: [T; N]) -> Self {
         arr.into_iter().collect()
+    }
+    #[cfg(feature = "from_slice")]
+    fn from(arr: [T; N]) -> Self {
+        RangeSetBlaze::from_slice(arr)
     }
 }
 
@@ -2145,7 +2214,7 @@ use std::{
 };
 
 #[cfg(feature = "std")]
-#[allow(missing_docs)]
+#[doc(hidden)]
 pub fn demo_read_ranges_from_file<P, T>(path: P) -> io::Result<RangeSetBlaze<T>>
 where
     P: AsRef<Path>,
