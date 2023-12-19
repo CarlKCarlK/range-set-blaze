@@ -65,7 +65,7 @@ My Experience Applying Kani’s Formal Verification to ChatGPT-Suggested Rust Co
 * [Nine Rules to Formally Validate Rust Algorithms with Dafny](https://medium.com/towards-data-science/nine-rules-to-formally-validate-rust-algorithms-with-dafny-part-1-5cb8c8a0bb92) in *Towards Data Science*. It shows how to formally validate one of the crate's algorithms.
 
 * [Nine Rules for SIMD Acceleration of your Rust Code:
-General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x](https://towardsdatascience.com/nine-rules-for-simd-acceleration-of-your-rust-code-part-2-6a104b3be6f3) in *Towards Data Science*
+General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x](https://medium.com/towards-data-science/nine-rules-for-simd-acceleration-of-your-rust-code-part-1-c16fe639ce21) in *Towards Data Science*
 
 * *Also see:* [CHANGELOG](https://github.com/CarlKCarlK/range-set-blaze/blob/main/CHANGELOG.md)
 
