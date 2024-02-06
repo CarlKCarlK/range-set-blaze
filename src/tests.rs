@@ -998,7 +998,7 @@ fn lib_coverage_0() {
     assert_eq!(i.size_hint(), j.size_hint());
     assert_eq!(
         format!("{:?}", &i),
-        "IntoIter { option_range: None, into_iter: [(1, 3)] }"
+        "IntoIter { option_range_front: None, option_range_back: None, into_iter: [(1, 3)] }"
     );
 
     let mut a = RangeSetBlaze::from_iter([1..=3]);
@@ -1422,4 +1422,71 @@ fn symmetric_difference_size_hint(a: Reference, b: Reference) -> bool {
 #[test]
 fn demo_read() {
     let _a: RangeSetBlaze<i32> = demo_read_ranges_from_file("tests/no_such_file").unwrap();
+}
+
+
+#[test]
+fn double_end_iter() {
+    let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
+
+    assert_eq!(
+        a.iter().rev().collect::<Vec<usize>>(),
+        vec![25, 24, 23, 22, 21, 20, 12, 10, 9, 8, 7, 6, 5, 4, 3]
+    );
+
+    {
+        let mut iter = a.iter();
+
+        assert_eq!(iter.next(), Some(3));
+        assert_eq!(iter.next_back(), Some(25));
+        assert_eq!(iter.next(), Some(4));
+        assert_eq!(iter.next_back(), Some(24));
+        assert_eq!(iter.next_back(), Some(23));
+        assert_eq!(iter.next_back(), Some(22));
+        assert_eq!(iter.next_back(), Some(21));
+        assert_eq!(iter.next_back(), Some(20));
+
+        // Next interval
+        assert_eq!(iter.next_back(), Some(12));
+
+        // Next interval, now same interval as front of the iterator
+        assert_eq!(iter.next_back(), Some(10));
+        assert_eq!(iter.next(), Some(5));
+    }
+}
+#[test]
+fn double_end_intoiter() {
+    let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
+
+    assert_eq!(
+        a.clone().into_iter().rev().collect::<Vec<usize>>(),
+        vec![25, 24, 23, 22, 21, 20, 12, 10, 9, 8, 7, 6, 5, 4, 3]
+    );
+
+    let mut iter = a.into_iter();
+
+    assert_eq!(iter.next(), Some(3));
+    assert_eq!(iter.next_back(), Some(25));
+    assert_eq!(iter.next(), Some(4));
+    assert_eq!(iter.next_back(), Some(24));
+    assert_eq!(iter.next_back(), Some(23));
+    assert_eq!(iter.next_back(), Some(22));
+    assert_eq!(iter.next_back(), Some(21));
+    assert_eq!(iter.next_back(), Some(20));
+
+    // Next interval
+    assert_eq!(iter.next_back(), Some(12));
+
+    // Next interval, now same interval as front of the iterator
+    assert_eq!(iter.next_back(), Some(10));
+    assert_eq!(iter.next(), Some(5));
+}
+#[test]
+fn double_end_range() {
+    let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
+
+    let mut range = a.range(11..=22);
+    assert_eq!(range.next_back(), Some(22));
+    assert_eq!(range.next(), Some(12));
+    assert_eq!(range.next(), Some(20));
 }

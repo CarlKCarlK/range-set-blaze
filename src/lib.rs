@@ -435,7 +435,8 @@ impl<T: Integer> RangeSetBlaze<T> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
         Iter {
-            option_range: None,
+            option_range_front: None,
+            option_range_back: None,
             iter: self.ranges(),
         }
     }
@@ -1821,7 +1822,8 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
     /// ```
     fn into_iter(self) -> IntoIter<T> {
         IntoIter {
-            option_range: None,
+            option_range_front: None,
+            option_range_back: None,
             into_iter: self.btree_map.into_iter(),
         }
     }
@@ -1841,7 +1843,8 @@ where
     I: SortedDisjoint<T>,
 {
     iter: I,
-    option_range: Option<RangeInclusive<T>>,
+    option_range_front: Option<RangeInclusive<T>>,
+    option_range_back: Option<RangeInclusive<T>>,
 }
 
 impl<T: Integer, I> FusedIterator for Iter<T, I> where I: SortedDisjoint<T> + FusedIterator {}
@@ -1852,11 +1855,14 @@ where
 {
     type Item = T;
     fn next(&mut self) -> Option<T> {
-        let range = self.option_range.take().or_else(|| self.iter.next())?;
+        let range = self.option_range_front.take()
+            .or_else(|| self.iter.next())
+            .or_else(|| self.option_range_back.take())?;
+
         let (start, end) = range.into_inner();
         debug_assert!(start <= end && end <= T::safe_max_value());
         if start < end {
-            self.option_range = Some(start + T::one()..=end);
+            self.option_range_front = Some(start + T::one()..=end);
         }
         Some(start)
     }
@@ -1869,6 +1875,24 @@ where
     }
 }
 
+impl<T: Integer, I> DoubleEndedIterator for Iter<T, I>
+where
+    I: SortedDisjoint<T> + DoubleEndedIterator
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let range = self.option_range_back.take()
+            .or_else(|| self.iter.next_back())
+            .or_else(|| self.option_range_front.take())?;
+        let (start, end) = range.into_inner();
+        debug_assert!(start <= end && end <= T::safe_max_value());
+        if start < end {
+            self.option_range_back = Some(start..=end - T::one());
+        }
+
+        Some(end)
+    }
+}
+
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug)]
 /// An iterator over the integer elements of a [`RangeSetBlaze`].
@@ -1878,7 +1902,8 @@ where
 ///
 /// [`into_iter`]: RangeSetBlaze::into_iter
 pub struct IntoIter<T: Integer> {
-    option_range: Option<RangeInclusive<T>>,
+    option_range_front: Option<RangeInclusive<T>>,
+    option_range_back: Option<RangeInclusive<T>>,
     into_iter: alloc::collections::btree_map::IntoIter<T, T>,
 }
 
@@ -1889,13 +1914,15 @@ impl<T: Integer> Iterator for IntoIter<T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let range = self
-            .option_range
+            .option_range_front
             .take()
-            .or_else(|| self.into_iter.next().map(|(start, end)| start..=end))?;
+            .or_else(|| self.into_iter.next().map(|(start, end)| start..=end))
+            .or_else(|| self.option_range_back.take())?;
+
         let (start, end) = range.into_inner();
         debug_assert!(start <= end && end <= T::safe_max_value());
         if start < end {
-            self.option_range = Some(start + T::one()..=end);
+            self.option_range_front = Some(start + T::one()..=end);
         }
         Some(start)
     }
@@ -1905,6 +1932,24 @@ impl<T: Integer> Iterator for IntoIter<T> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (low, _high) = self.into_iter.size_hint();
         (low, None)
+    }
+}
+
+impl<T: Integer> DoubleEndedIterator for IntoIter<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let range = self
+            .option_range_back
+            .take()
+            .or_else(|| self.into_iter.next_back().map(|(start, end)| start..=end))
+            .or_else(|| self.option_range_front.take())?;
+
+        let (start, end) = range.into_inner();
+        debug_assert!(start <= end && end <= T::safe_max_value());
+        if start < end {
+            self.option_range_back = Some(start..=end - T::one());
+        }
+
+        Some(end)
     }
 }
 

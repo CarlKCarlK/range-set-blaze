@@ -58,6 +58,13 @@ impl<'a, T: Integer> Iterator for RangesIter<'a, T> {
     }
 }
 
+impl<T: Integer> DoubleEndedIterator for RangesIter<'_, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back()
+            .map(|(start, end)| *start..=*end)
+    }
+}
+
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 /// An iterator that moves out the ranges in the [`RangeSetBlaze`],
 /// i.e., the integers as sorted & disjoint ranges.
@@ -96,6 +103,14 @@ impl<T: Integer> Iterator for IntoRangesIter<T> {
         self.iter.size_hint()
     }
 }
+
+impl<T: Integer> DoubleEndedIterator for IntoRangesIter<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back()
+            .map(|(start, end)| start..=end)
+    }
+}
+
 
 impl<T: Integer> ops::Not for RangesIter<'_, T> {
     type Output = NotIter<T, Self>;
