@@ -401,8 +401,8 @@ impl<T: Integer> fmt::Display for RangeSetBlaze<T> {
 }
 
 impl<T: Integer> RangeSetBlaze<T> {
-    /// Gets an iterator that visits the integer elements in the [`RangeSetBlaze`] in ascending
-    /// order.
+    /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeSetBlaze`] in
+    /// ascending and/or descending order.
     ///
     /// Also see the [`RangeSetBlaze::ranges`] method.
     ///
@@ -419,7 +419,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(set_iter.next(), None);
     /// ```
     ///
-    /// Values returned by the iterator are returned in ascending order:
+    /// Values returned by `.next()` are in ascending order.
+    /// Values returned by `.next_back()` are in descending order.
     ///
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
@@ -427,9 +428,9 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// let set = RangeSetBlaze::from_iter([3, 1, 2]);
     /// let mut set_iter = set.iter();
     /// assert_eq!(set_iter.next(), Some(1));
+    /// assert_eq!(set_iter.next_back(), Some(3));
     /// assert_eq!(set_iter.next(), Some(2));
-    /// assert_eq!(set_iter.next(), Some(3));
-    /// assert_eq!(set_iter.next(), None);
+    /// assert_eq!(set_iter.next_back(), None);
     /// ```
     pub fn iter(&self) -> Iter<T, RangesIter<T>> {
         // If the user asks for an iter, we give them a RangesIter iterator
@@ -1808,7 +1809,7 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
 
-    /// Gets an iterator for moving out the [`RangeSetBlaze`]'s integer contents.
+    /// Gets a (double-ended) iterator for moving out the [`RangeSetBlaze`]'s integer contents.
     ///
     /// # Examples
     ///
@@ -1819,6 +1820,10 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
     ///
     /// let v: Vec<_> = set.into_iter().collect();
     /// assert_eq!(v, [1, 2, 3, 4]);
+    ///
+    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
+    /// let v: Vec<_> = set.into_iter().rev().collect();
+    /// assert_eq!(v, [4, 3, 2, 1]);
     /// ```
     fn into_iter(self) -> IntoIter<T> {
         IntoIter {
@@ -1829,7 +1834,7 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
     }
 }
 
-/// An iterator over the integer elements of a [`RangeSetBlaze`].
+/// A (double-ended) iterator over the integer elements of a [`RangeSetBlaze`].
 ///
 /// This `struct` is created by the [`iter`] method on [`RangeSetBlaze`]. See its
 /// documentation for more.
@@ -1855,7 +1860,9 @@ where
 {
     type Item = T;
     fn next(&mut self) -> Option<T> {
-        let range = self.option_range_front.take()
+        let range = self
+            .option_range_front
+            .take()
             .or_else(|| self.iter.next())
             .or_else(|| self.option_range_back.take())?;
 
@@ -1877,10 +1884,12 @@ where
 
 impl<T: Integer, I> DoubleEndedIterator for Iter<T, I>
 where
-    I: SortedDisjoint<T> + DoubleEndedIterator
+    I: SortedDisjoint<T> + DoubleEndedIterator,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let range = self.option_range_back.take()
+        let range = self
+            .option_range_back
+            .take()
             .or_else(|| self.iter.next_back())
             .or_else(|| self.option_range_front.take())?;
         let (start, end) = range.into_inner();
@@ -1895,7 +1904,7 @@ where
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug)]
-/// An iterator over the integer elements of a [`RangeSetBlaze`].
+/// A (double-ended) iterator over the integer elements of a [`RangeSetBlaze`].
 ///
 /// This `struct` is created by the [`into_iter`] method on [`RangeSetBlaze`]. See its
 /// documentation for more.

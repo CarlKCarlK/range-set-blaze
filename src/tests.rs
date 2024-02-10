@@ -1424,7 +1424,6 @@ fn demo_read() {
     let _a: RangeSetBlaze<i32> = demo_read_ranges_from_file("tests/no_such_file").unwrap();
 }
 
-
 #[test]
 fn double_end_iter() {
     let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
@@ -1455,7 +1454,7 @@ fn double_end_iter() {
     }
 }
 #[test]
-fn double_end_intoiter() {
+fn double_end_into_iter() {
     let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
 
     assert_eq!(
