@@ -26,6 +26,7 @@ extern crate alloc;
 mod dyn_sorted_disjoint;
 mod from_slice;
 mod integer;
+mod map;
 mod merge;
 mod not_iter;
 pub mod prelude;
@@ -36,6 +37,7 @@ mod sorted_disjoint;
 mod tests;
 mod union_iter;
 mod unsorted_disjoint;
+pub use crate::map::RangeMapBlaze;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
 use alloc::{collections::BTreeMap, vec::Vec};
 use core::{
@@ -162,7 +164,6 @@ pub trait Integer:
 }
 
 #[derive(Clone, Hash, Default, PartialEq)]
-
 /// A set of integers stored as sorted & disjoint ranges.
 ///
 /// Internally, it stores the ranges in a cache-efficient [`BTreeMap`].
