@@ -7,11 +7,8 @@ use core::{
 use alloc::vec;
 use itertools::Itertools;
 
-use crate::{
-    map::{BitAndMergeMap, BitXOrTeeMap},
-    Integer,
-};
-use crate::{not_iter_map::NotIterMap, unsorted_disjoint_map::AssumeSortedStartsMap};
+use crate::Integer;
+use crate::{map::BitOrMergeMap, unsorted_disjoint_map::AssumeSortedStartsMap};
 use crate::{
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
     unsorted_disjoint_map::UnsortedDisjointMap,
@@ -199,16 +196,17 @@ where
     }
 }
 
-impl<T: Integer, V: PartialEq, I> ops::Not for UnionIterMap<T, V, I>
-where
-    I: SortedStartsMap<T, V>,
-{
-    type Output = NotIterMap<T, V, Self>;
+// cmk
+// impl<T: Integer, V: PartialEq, I> ops::Not for UnionIterMap<T, V, I>
+// where
+//     I: SortedStartsMap<T, V>,
+// {
+//     type Output = NotIterMap<T, V, Self>;
 
-    fn not(self) -> Self::Output {
-        self.complement()
-    }
-}
+//     fn not(self) -> Self::Output {
+//         self.complement()
+//     }
+// }
 
 impl<T: Integer, V: PartialEq, R, L> ops::BitOr<R> for UnionIterMap<T, V, L>
 where
@@ -224,39 +222,39 @@ where
     }
 }
 
-impl<T: Integer, V: PartialEq, R, L> ops::Sub<R> for UnionIterMap<T, V, L>
-where
-    L: SortedStartsMap<T, V>,
-    R: SortedDisjointMap<T, V>,
-{
-    type Output = BitSubMergeMap<T, V, Self, R>;
+// impl<T: Integer, V: PartialEq, R, L> ops::Sub<R> for UnionIterMap<T, V, L>
+// where
+//     L: SortedStartsMap<T, V>,
+//     R: SortedDisjointMap<T, V>,
+// {
+//     type Output = BitSubMergeMap<T, V, Self, R>;
 
-    fn sub(self, rhs: R) -> Self::Output {
-        SortedDisjointMap::difference(self, rhs)
-    }
-}
+//     fn sub(self, rhs: R) -> Self::Output {
+//         SortedDisjointMap::difference(self, rhs)
+//     }
+// }
 
-impl<T: Integer, V: PartialEq, R, L> ops::BitXor<R> for UnionIterMap<T, V, L>
-where
-    L: SortedStartsMap<T, V>,
-    R: SortedDisjointMap<T, V>,
-{
-    type Output = BitXOrTeeMap<T, V, Self, R>;
+// impl<T: Integer, V: PartialEq, R, L> ops::BitXor<R> for UnionIterMap<T, V, L>
+// where
+//     L: SortedStartsMap<T, V>,
+//     R: SortedDisjointMap<T, V>,
+// {
+//     type Output = BitXOrTeeMap<T, V, Self, R>;
 
-    #[allow(clippy::suspicious_arithmetic_impl)]
-    fn bitxor(self, rhs: R) -> Self::Output {
-        SortedDisjointMap::symmetric_difference(self, rhs)
-    }
-}
+//     #[allow(clippy::suspicious_arithmetic_impl)]
+//     fn bitxor(self, rhs: R) -> Self::Output {
+//         SortedDisjointMap::symmetric_difference(self, rhs)
+//     }
+// }
 
-impl<T: Integer, V: PartialEq, R, L> ops::BitAnd<R> for UnionIterMap<T, V, L>
-where
-    L: SortedStartsMap<T, V>,
-    R: SortedDisjointMap<T, V>,
-{
-    type Output = BitAndMergeMap<T, V, Self, R>;
+// impl<T: Integer, V: PartialEq, R, L> ops::BitAnd<R> for UnionIterMap<T, V, L>
+// where
+//     L: SortedStartsMap<T, V>,
+//     R: SortedDisjointMap<T, V>,
+// {
+//     type Output = BitAndMergeMap<T, V, Self, R>;
 
-    fn bitand(self, other: R) -> Self::Output {
-        SortedDisjointMap::intersection(self, other)
-    }
-}
+//     fn bitand(self, other: R) -> Self::Output {
+//         SortedDisjointMap::intersection(self, other)
+//     }
+// }

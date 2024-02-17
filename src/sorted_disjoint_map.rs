@@ -10,11 +10,7 @@
 use core::ops::RangeInclusive;
 
 use crate::{
-    map::{BitAndMergeMap, BitOrMergeMap, BitSubMergeMap, BitXOrTeeMap},
-    merge_map::MergeMap,
-    not_iter_map::NotIterMap,
-    union_iter_map::UnionIterMap,
-    Integer, RangeMapBlaze,
+    map::BitOrMergeMap, merge_map::MergeMap, union_iter_map::UnionIterMap, Integer, RangeMapBlaze,
 };
 
 pub(crate) struct RangeValue<T: Integer, V: PartialEq> {
@@ -265,15 +261,16 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     /// let intersection = a & b;
     /// assert_eq!(intersection.to_string(), "2..=2");
     /// ```
-    #[inline]
-    fn intersection<R>(self, other: R) -> BitAndMergeMap<T, V, Self, R::IntoIter>
-    where
-        R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, V>,
-        Self: Sized,
-    {
-        !(self.complement() | other.into_iter().complement())
-    }
+    // cmk
+    // #[inline]
+    // fn intersection<R>(self, other: R) -> BitAndMergeMap<T, V, Self, R::IntoIter>
+    // where
+    //     R: IntoIterator<Item = Self::Item>,
+    //     R::IntoIter: SortedDisjointMap<T, V>,
+    //     Self: Sized,
+    // {
+    //     !(self.complement() | other.into_iter().complement())
+    // }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
     ///
@@ -294,15 +291,16 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     /// let difference = a - b;
     /// assert_eq!(difference.to_string(), "1..=1");
     /// ```
-    #[inline]
-    fn difference<R>(self, other: R) -> BitSubMergeMap<T, V, Self, R::IntoIter>
-    where
-        R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, V>,
-        Self: Sized,
-    {
-        !(self.complement() | other.into_iter())
-    }
+    // cmk
+    // #[inline]
+    // fn difference<R>(self, other: R) -> BitSubMergeMap<T, V, Self, R::IntoIter>
+    // where
+    //     R: IntoIterator<Item = Self::Item>,
+    //     R::IntoIter: SortedDisjointMap<T, V>,
+    //     Self: Sized,
+    // {
+    //     !(self.complement() | other.into_iter())
+    // }
 
     /// Given a [`SortedDisjointMap`] iterator, efficiently returns a [`SortedDisjointMap`] iterator of its complement.
     ///
@@ -321,13 +319,14 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     /// let complement = !a;
     /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
     /// ```
-    #[inline]
-    fn complement(self) -> NotIterMap<T, V, Self>
-    where
-        Self: Sized,
-    {
-        NotIterMap::new(self)
-    }
+    // cmk
+    // #[inline]
+    // fn complement(self) -> NotIterMap<T, V, Self>
+    // where
+    //     Self: Sized,
+    // {
+    //     NotIterMap::new(self)
+    // }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator
     /// of their symmetric difference.
@@ -349,17 +348,18 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     /// let symmetric_difference = a ^ b;
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
-    #[inline]
-    fn symmetric_difference<R>(self, other: R) -> BitXOrTeeMap<T, V, Self, R::IntoIter>
-    where
-        R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, V>,
-        Self: Sized,
-    {
-        let (lhs0, lhs1) = self.tee();
-        let (rhs0, rhs1) = other.into_iter().tee();
-        lhs0.difference(rhs0) | rhs1.difference(lhs1)
-    }
+    // cmk
+    // #[inline]
+    // fn symmetric_difference<R>(self, other: R) -> BitXOrTeeMap<T, V, Self, R::IntoIter>
+    // where
+    //     R: IntoIterator<Item = Self::Item>,
+    //     R::IntoIter: SortedDisjointMap<T, V>,
+    //     Self: Sized,
+    // {
+    //     let (lhs0, lhs1) = self.tee();
+    //     let (rhs0, rhs1) = other.into_iter().tee();
+    //     lhs0.difference(rhs0) | rhs1.difference(lhs1)
+    // }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
     /// this method takes ownership of the iterators and consumes them.
@@ -531,7 +531,7 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     where
         Self: Sized,
     {
-        RangeMapBlaze::from_sorted_disjoint(self)
+        RangeMapBlaze::from_sorted_disjoint_map(self)
     }
 }
 

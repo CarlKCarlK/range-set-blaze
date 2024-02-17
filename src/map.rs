@@ -1,8 +1,8 @@
 use crate::merge_map::{KMergeMap, MergeMap};
-use crate::not_iter_map::NotIterMap;
+use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
-use crate::{Integer, SortedDisjoint, UnionIter};
+use crate::Integer;
 use alloc::collections::BTreeMap;
 use core::{
     cmp::{max, Ordering},
@@ -50,15 +50,15 @@ struct EndValue<T: Integer, V: PartialEq> {
 /// | [`from_iter`][1]/[`collect`][1]             | integer iterator             |                          |
 /// | [`from_iter`][2]/[`collect`][2]             | ranges iterator              |                          |
 /// | [`from_slice`][5]                           | slice of integers            | Fast, but nightly-only  |
-/// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze`][3] | [`SortedDisjoint`] iterator |               |
+/// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze`][3] | [`SortedDisjointMap`] iterator |               |
 /// | [`from`][4] /[`into`][4]                    | array of integers            |                          |
 ///
 ///
 /// [`BTreeMap`]: alloc::collections::BTreeMap
 /// [`new`]: RangeMapBlaze::new
 /// [`default`]: RangeMapBlaze::default
-/// [1]: struct.RangeMapBlaze.html#impl-FromIterator<T>-for-RangeMapBlaze<T, V>
-/// [2]: struct.RangeMapBlaze.html#impl-FromIterator<RangeInclusive<T>>-for-RangeMapBlaze<T, V>
+/// [1]: struct.RangeMapBlaze.html#impl-FromIterator<T, V>-for-RangeMapBlaze<T, V>
+/// [2]: struct.RangeMapBlaze.html#impl-FromIterator<RangeInclusive<T, V>>-for-RangeMapBlaze<T, V>
 /// [3]: RangeMapBlaze::from_sorted_disjoint
 /// [4]: RangeMapBlaze::from
 /// [5]: RangeMapBlaze::from_slice()
@@ -170,7 +170,7 @@ struct EndValue<T: Integer, V: PartialEq> {
 ///
 /// Thus, applying multiple operators creates intermediate
 /// `RangeMapBlaze`'s. If you wish, you can avoid these intermediate
-/// `RangeMapBlaze`'s by switching to the [`SortedDisjoint`] API. The last example below
+/// `RangeMapBlaze`'s by switching to the [`SortedDisjointMap`] API. The last example below
 /// demonstrates this.
 ///
 /// ## Set Operation Examples
@@ -216,7 +216,7 @@ struct EndValue<T: Integer, V: PartialEq> {
 ///
 /// // Applying multiple operators
 /// let result0 = &a - (&b | &c); // Creates an intermediate 'RangeMapBlaze'.
-/// // Alternatively, we can use the 'SortedDisjoint' API and avoid the intermediate 'RangeMapBlaze'.
+/// // Alternatively, we can use the 'SortedDisjointMap' API and avoid the intermediate 'RangeMapBlaze'.
 /// let result1 = RangeMapBlaze::from_sorted_disjoint(a.ranges() - (b.ranges() | c.ranges()));
 /// assert!(result0 == result1 && result0.to_string() == "1..=1");
 /// ```
@@ -293,7 +293,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// assert_eq!(set_iter.next_back(), None);
     /// ```
     // cmk
-    // pub fn iter(&self) -> Iter<T, RangesIter<T>> {
+    // pub fn iter(&self) -> Iter<T, RangesIter<T, V>> {
     //     // If the user asks for an iter, we give them a RangesIter iterator
     //     // and we iterate that one integer at a time.
     //     Iter {
@@ -303,27 +303,28 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     //     }
     // }
 
-    /// Returns the first element in the set, if any.
-    /// This element is always the minimum of all integer elements in the set.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// use range_set_blaze::RangeMapBlaze;
-    ///
-    /// let mut set = RangeMapBlaze::new();
-    /// assert_eq!(set.first(), None);
-    /// set.insert(1);
-    /// assert_eq!(set.first(), Some(1));
-    /// set.insert(2);
-    /// assert_eq!(set.first(), Some(1));
-    /// ```
-    #[must_use]
-    pub fn first(&self) -> Option<T> {
-        self.btree_map.iter().next().map(|(x, _)| *x)
-    }
+    // cmk BTreeMap does not have a first method (I think)
+    // /// Returns the first element in the set, if any.
+    // /// This element is always the minimum of all integer elements in the set.
+    // ///
+    // /// # Examples
+    // ///
+    // /// Basic usage:
+    // ///
+    // /// ```
+    // /// use range_set_blaze::RangeMapBlaze;
+    // ///
+    // /// let mut set = RangeMapBlaze::new();
+    // /// assert_eq!(set.first(), None);
+    // /// set.insert(1);
+    // /// assert_eq!(set.first(), Some(1));
+    // /// set.insert(2);
+    // /// assert_eq!(set.first(), Some(1));
+    // /// ```
+    // #[must_use]
+    // pub fn first(&self) -> Option<T, V, I> {
+    //     self.btree_map.iter().next().map(|(x, _)| *x)
+    // }
 
     /// Returns the element in the set, if any, that is equal to
     /// the value.
@@ -337,39 +338,41 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// assert_eq!(set.get(2), Some(2));
     /// assert_eq!(set.get(4), None);
     /// ```
-    pub fn get(&self, value: T) -> Option<T> {
-        if self.contains(value) {
-            Some(value)
-        } else {
-            None
-        }
+    pub fn get(&self, value: T) -> Option<&V> {
+        todo!("cmk RangeMapBlaze::get");
+        // if self.contains(value) {
+        //     Some(value)
+        // } else {
+        //     None
+        // }
     }
 
-    /// Returns the last element in the set, if any.
-    /// This element is always the maximum of all elements in the set.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// use range_set_blaze::RangeMapBlaze;
-    ///
-    /// let mut set = RangeMapBlaze::new();
-    /// assert_eq!(set.last(), None);
-    /// set.insert(1);
-    /// assert_eq!(set.last(), Some(1));
-    /// set.insert(2);
-    /// assert_eq!(set.last(), Some(2));
-    /// ```
-    #[must_use]
-    pub fn last(&self) -> Option<T> {
-        self.btree_map.iter().next_back().map(|(_, x)| x.end)
-    }
+    // cmk btree_map does not have a last method (I think)
+    // /// Returns the last element in the set, if any.
+    // /// This element is always the maximum of all elements in the set.
+    // ///
+    // /// # Examples
+    // ///
+    // /// Basic usage:
+    // ///
+    // /// ```
+    // /// use range_set_blaze::RangeMapBlaze;
+    // ///
+    // /// let mut set = RangeMapBlaze::new();
+    // /// assert_eq!(set.last(), None);
+    // /// set.insert(1);
+    // /// assert_eq!(set.last(), Some(1));
+    // /// set.insert(2);
+    // /// assert_eq!(set.last(), Some(2));
+    // /// ```
+    // #[must_use]
+    // pub fn last(&self) -> Option<T, V> {
+    //     self.btree_map.iter().next_back().map(|(_, x)| x.end)
+    // }
 
     // cmk look at HashMap, etc for last related methods to see if when return the value.
 
-    /// Create a [`RangeMapBlaze`] from a [`SortedDisjoint`] iterator.
+    /// Create a [`RangeMapBlaze`] from a [`SortedDisjointMap`] iterator.
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
     ///
@@ -382,9 +385,9 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// let a1: RangeMapBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
-    pub fn from_sorted_disjoint<I>(iter: I) -> Self
+    pub fn from_sorted_disjoint_map<I>(iter: I) -> Self
     where
-        I: SortedDisjoint<T>,
+        I: SortedDisjointMap<T, V>,
     {
         let mut iter_with_len = SortedDisjointWithLenSoFarMap::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
@@ -427,7 +430,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// let a2 = RangeMapBlaze::from_slice(vec![3, 2, 1, 100, 1]); // vector
     /// assert!(a0 == a1 && a1 == a2 && a0.to_string() == "1..=3, 100..=100");
     /// ```
-    /// [1]: struct.RangeMapBlaze.html#impl-FromIterator<T>-for-RangeMapBlaze<T, V>
+    /// [1]: struct.RangeMapBlaze.html#impl-FromIterator<T, V>-for-RangeMapBlaze<T, V>
     // cmk
     // #[cfg(feature = "from_slice")]
     // #[inline]
@@ -609,7 +612,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     //     self.ranges().is_disjoint(other.ranges())
     // }
 
-    fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
+    fn delete_extra(&mut self, internal_range: &RangeValue<T, V>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
         let (start_after, end_value_after) = after.next().unwrap(); // there will always be a next
@@ -673,7 +676,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     ///
     /// The simplest way is to use the range syntax `min..max`, thus `range(min..max)` will
     /// yield elements from min (inclusive) to max (exclusive).
-    /// The range may also be entered as `(Bound<T>, Bound<T>)`, so for example
+    /// The range may also be entered as `(Bound<T, V>, Bound<T, V>)`, so for example
     /// `range((Excluded(4), Included(10)))` will yield a left-exclusive, right-inclusive
     /// range from 4 to 10.
     ///
@@ -702,9 +705,9 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// assert_eq!(Some(5), set.range(4..).next());
     /// ```
     // cmk
-    // pub fn range<R>(&self, range: R) -> IntoIter<T>
+    // pub fn range<R>(&self, range: R) -> IntoIter<T, V>
     // where
-    //     R: RangeBounds<T>,
+    //     R: RangeBounds<T, V>,
     // {
     //     let start = match range.start_bound() {
     //         Bound::Included(n) => *n,
@@ -747,7 +750,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// assert_eq!(set.ranges_insert(3..=4), false);
     /// assert_eq!(set.len(), 5usize);
     /// ```
-    pub fn ranges_insert(&mut self, range: RangeInclusive<T>, value: V) -> bool {
+    pub fn ranges_insert(&mut self, range: RangeValue<T, V>, value: V) -> bool {
         let len_before = self.len;
         self.internal_add(range, value);
         self.len != len_before
@@ -878,7 +881,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     // /// assert_eq!(set.take(2), None);
     // /// ```
     // cmk
-    // pub fn take(&mut self, value: T) -> Option<T> {
+    // pub fn take(&mut self, value: T) -> Option<T, V> {
     //     if self.remove(value) {
     //         Some(value)
     //     } else {
@@ -903,7 +906,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// assert!(set.replace(5).is_some());
     /// ```
     // cmk
-    // pub fn replace(&mut self, value: T) -> Option<T> {
+    // pub fn replace(&mut self, value: T) -> Option<T, V> {
     //     if self.insert(value) {
     //         None
     //     } else {
@@ -911,7 +914,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     //     }
     // }
 
-    // fn internal_add_chatgpt(&mut self, range: RangeInclusive<T>) {
+    // fn internal_add_chatgpt(&mut self, range: RangeInclusive<T, V>) {
     //     let (start, end) = range.into_inner();
 
     //     // Find the first overlapping range or the nearest one before it
@@ -942,7 +945,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-    fn internal_add(&mut self, range: RangeInclusive<T>, value: V) {
+    fn internal_add(&mut self, range: RangeValue<T, V>, value: V) {
         let (start, end) = range.clone().into_inner();
         assert!(
             end <= T::safe_max_value(),
@@ -973,7 +976,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
         }
     }
 
-    fn internal_add2(&mut self, internal_range: &RangeInclusive<T>, value: V) {
+    fn internal_add2(&mut self, internal_range: &RangeValue<T, V>, value: V) {
         let (start, end) = internal_range.clone().into_inner();
         let end_value = EndValue { end, value };
         let was_there = self.btree_map.insert(start, end_value);
@@ -1044,7 +1047,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// }
     /// assert!(set.is_empty());
     /// ```
-    pub fn pop_first(&mut self) -> Option<T> {
+    pub fn pop_first(&mut self) -> Option<(T, V)> {
         if let Some(entry) = self.btree_map.first_entry() {
             let (start, end_value) = entry.remove_entry();
             self.len -= T::safe_len(&(start..=end_value.end));
@@ -1076,7 +1079,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// assert!(set.is_empty());
     /// ```
     // cmk
-    // pub fn pop_last(&mut self) -> Option<T> {
+    // pub fn pop_last(&mut self) -> Option<T, V> {
     //     let Some(mut entry) = self.btree_map.last_entry() else {
     //         return None;
     //     };
@@ -1156,7 +1159,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// assert_eq!(ranges.next(), None);
     /// ```
     // cmk
-    // pub fn into_ranges(self) -> IntoRangesIter<T> {
+    // pub fn into_ranges(self) -> IntoRangesIter<T, V> {
     //     IntoRangesIter {
     //         iter: self.btree_map.into_iter(),
     //     }
@@ -1207,9 +1210,9 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
 }
 
 // We create a RangeMapBlaze from an iterator of integers or integer ranges by
-// 1. turning them into a UnionIter (internally, it collects into intervals and sorts by start).
-// 2. Turning the SortedDisjoint into a BTreeMap.
-impl<T: Integer, V: PartialEq> FromIterator<T> for RangeMapBlaze<T, V> {
+// 1. turning them into a UnionIterMap (internally, it collects into intervals and sorts by start).
+// 2. Turning the SortedDisjointMap into a BTreeMap.
+impl<T: Integer, V: PartialEq> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
     /// Create a [`RangeMapBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
@@ -1253,7 +1256,7 @@ impl<'a, T: Integer, V: PartialEq> FromIterator<&'a T> for RangeMapBlaze<T, V> {
     }
 }
 
-impl<T: Integer, V: PartialEq> FromIterator<RangeInclusive<T>> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEq> FromIterator<(RangeInclusive<T>, V)> for RangeMapBlaze<T, V> {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
@@ -1272,14 +1275,14 @@ impl<T: Integer, V: PartialEq> FromIterator<RangeInclusive<T>> for RangeMapBlaze
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = RangeInclusive<T>>,
+        I: IntoIterator<Item = (RangeInclusive<T>, V)>,
     {
-        let union_iter: UnionIter<T, _> = iter.into_iter().collect();
-        RangeMapBlaze::from_sorted_disjoint(union_iter)
+        let union_iter: UnionIterMap<T, _> = iter.into_iter().collect();
+        RangeMapBlaze::from_sorted_disjoint_map(union_iter)
     }
 }
 
-impl<'a, T: Integer + 'a, V: PartialEq> FromIterator<&'a RangeInclusive<T>>
+impl<'a, T: Integer + 'a, V: PartialEq> FromIterator<&'a (RangeInclusive<T>, V)>
     for RangeMapBlaze<T, V>
 {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
@@ -1300,10 +1303,10 @@ impl<'a, T: Integer + 'a, V: PartialEq> FromIterator<&'a RangeInclusive<T>>
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = &'a RangeInclusive<T>>,
+        I: IntoIterator<Item = &'a (RangeInclusive<T>, V)>,
     {
-        let union_iter: UnionIter<T, _> = iter.into_iter().cloned().collect();
-        RangeMapBlaze::from_sorted_disjoint(union_iter)
+        let union_iter_map: UnionIterMap<T, _> = iter.into_iter().cloned().collect();
+        RangeMapBlaze::from_sorted_disjoint_map(union_iter_map)
     }
 }
 
@@ -1311,29 +1314,38 @@ impl<'a, T: Integer + 'a, V: PartialEq> FromIterator<&'a RangeInclusive<T>>
 pub type BitOrMergeMap<T, V, L, R> = UnionIterMap<T, V, MergeMap<T, V, L, R>>;
 #[doc(hidden)]
 pub type BitOrKMergeMap<T, V, I> = UnionIterMap<T, V, KMergeMap<T, V, I>>;
-#[doc(hidden)]
-pub type BitAndMergeMap<T, V, L, R> = NotIterMap<T, V, BitNandMergeMap<T, V, L, R>>;
-#[doc(hidden)]
-pub type BitAndKMergeMap<T, V, I> = NotIterMap<T, V, BitNandKMergeMap<T, V, I>>;
-#[doc(hidden)]
-pub type BitNandMergeMap<T, V, L, R> =
-    BitOrMergeMap<T, V, NotIterMap<T, V, L>, NotIterMap<T, V, R>>;
-#[doc(hidden)]
-pub type BitNandKMergeMap<T, V, I> = BitOrKMergeMap<T, V, NotIterMap<T, V, I>>;
-#[doc(hidden)]
-pub type BitNorMergeMap<T, V, L, R> = NotIterMap<T, V, BitOrMergeMap<T, V, L, R>>;
-#[doc(hidden)]
-pub type BitSubMergeMap<T, V, L, R> = NotIterMap<T, V, BitOrMergeMap<T, V, NotIterMap<T, V, L>, R>>;
-#[doc(hidden)]
-pub type BitXOrTeeMap<T, V, L, R> =
-    BitOrMergeMap<T, V, BitSubMergeMap<T, V, Tee<L>, Tee<R>>, BitSubMergeMap<T, V, Tee<R>, Tee<L>>>;
-#[doc(hidden)]
-pub type BitXOrMap<T, V, L, R> =
-    BitOrMergeMap<T, V, BitSubMergeMap<T, V, L, Tee<R>>, BitSubMergeMap<T, V, Tee<R>, L>>;
-#[doc(hidden)]
-pub type BitEqMap<T, V, L, R> = BitOrMergeMap<
-    T,
-    V,
-    NotIterMap<T, V, BitOrMergeMap<T, V, NotIterMap<T, V, Tee<L>>, NotIterMap<T, V, Tee<R>>>>,
-    NotIterMap<T, V, BitOrMergeMap<T, V, Tee<L>, Tee<R>>>,
->;
+// #[doc(hidden)]
+// pub type BitAndMergeMap<T, V, L, R> = NotIterMap<T, V, BitNandMergeMap<T, V, L, R>>;
+// #[doc(hidden)]
+// pub type BitAndKMergeMap<T, V, I> = NotIterMap<T, V, BitNandKMergeMap<T, V, I>>;
+// #[doc(hidden)]
+// pub type BitNandMergeMap<T, V, L, R> =
+//     BitOrMergeMap<T, V, NotIterMap<T, V, L>, NotIterMap<T, V, R>>;
+// #[doc(hidden)]
+// pub type BitNandKMergeMap<T, V, I> = BitOrKMergeMap<T, V, NotIterMap<T, V, I>>;
+// #[doc(hidden)]
+// pub type BitNorMergeMap<T, V, L, R> = NotIterMap<T, V, BitOrMergeMap<T, V, L, R>>;
+// #[doc(hidden)]
+// pub type BitSubMergeMap<T, V, L, R> = NotIterMap<T, V, BitOrMergeMap<T, V, NotIterMap<T, V, L>, R>>;
+// #[doc(hidden)]
+// pub type BitXOrTeeMap<T, V, L, R> =
+//     BitOrMergeMap<T, V, BitSubMergeMap<T, V, Tee<L>, Tee<R>>, BitSubMergeMap<T, V, Tee<R>, Tee<L>>>;
+// #[doc(hidden)]
+// pub type BitXOrMap<T, V, L, R> =
+//     BitOrMergeMap<T, V, BitSubMergeMap<T, V, L, Tee<R>>, BitSubMergeMap<T, V, Tee<R>, L>>;
+// #[doc(hidden)]
+// pub type BitEqMap<T, V, L, R> = BitOrMergeMap<
+//     T,
+//     V,
+//     NotIterMap<T, V, BitOrMergeMap<T, V, NotIterMap<T, V, Tee<L>>, NotIterMap<T, V, Tee<R>>>>,
+//     NotIterMap<T, V, BitOrMergeMap<T, V, Tee<L>, Tee<R>>>,
+// >;
+
+impl<T: Integer, V: PartialEq, I: SortedStartsMap<T, V>> SortedStartsMap<T, V>
+    for UnionIterMap<T, V, I>
+{
+}
+impl<T: Integer, V: PartialEq, I: SortedStartsMap<T, V>> SortedDisjointMap<T, V>
+    for UnionIterMap<T, V, I>
+{
+}

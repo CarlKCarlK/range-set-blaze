@@ -1,10 +1,11 @@
 use crate::{
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
-    Integer, SortedDisjoint,
+    Integer, SortedDisjointMap,
 };
 use core::{
     cmp::{max, min},
     iter::FusedIterator,
+    marker::PhantomData,
 };
 use num_traits::Zero;
 
@@ -110,24 +111,27 @@ where
 {
     iter: I,
     len: <T as Integer>::SafeLen,
+    _phantom_data: PhantomData<V>,
 }
 
-impl<T: Integer, V: PartialEq, I> From<I> for SortedDisjointWithLenSoFarMap<T, V, I::IntoIter>
-where
-    I: IntoIterator<Item = RangeValue<T, V>>,
-    I::IntoIter: SortedDisjoint<T>,
-{
-    fn from(into_iter: I) -> Self {
-        SortedDisjointWithLenSoFarMap {
-            iter: into_iter.into_iter(),
-            len: <T as Integer>::SafeLen::zero(),
-        }
-    }
-}
+// cmk
+// impl<T: Integer, V: PartialEq, I> From<I> for SortedDisjointWithLenSoFarMap<T, V, I::IntoIterMap>
+// where
+//     I: IntoIterator<Item = RangeValue<T, V>>,
+//     I::IntoIter: SortedDisjointMap<T, V>,
+// {
+//     fn from(into_iter: I) -> Self {
+//         SortedDisjointWithLenSoFarMap {
+//             iter: into_iter.into_iter(),
+//             len: <T as Integer>::SafeLen::zero(),
+//             _phantom_data: PhantomData,
+//         }
+//     }
+// }
 
 impl<T: Integer, V: PartialEq, I> SortedDisjointWithLenSoFarMap<T, V, I>
 where
-    I: SortedDisjoint<T>,
+    I: SortedDisjointMap<T, V>,
 {
     pub fn len_so_far(&self) -> <T as Integer>::SafeLen {
         self.len
@@ -135,13 +139,13 @@ where
 }
 
 impl<T: Integer, V: PartialEq, I> FusedIterator for SortedDisjointWithLenSoFarMap<T, V, I> where
-    I: SortedDisjoint<T> + FusedIterator
+    I: SortedDisjointMap<T, V> + FusedIterator
 {
 }
 
 impl<T: Integer, V: PartialEq, I> Iterator for SortedDisjointWithLenSoFarMap<T, V, I>
 where
-    I: SortedDisjoint<T>,
+    I: SortedDisjointMap<T, V>,
 {
     type Item = (T, T);
 
