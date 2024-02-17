@@ -1,4 +1,8 @@
-use crate::{unsorted_disjoint::SortedDisjointWithLenSoFar, Integer, SortedDisjoint};
+use crate::merge_map::{KMergeMap, MergeMap};
+use crate::not_iter_map::NotIterMap;
+use crate::union_iter_map::UnionIterMap;
+use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
+use crate::{Integer, SortedDisjoint, UnionIter};
 use alloc::collections::BTreeMap;
 use core::{
     cmp::{max, Ordering},
@@ -8,6 +12,7 @@ use core::{
     ops::{BitOr, BitOrAssign, Bound, RangeBounds, RangeInclusive},
     str::FromStr,
 };
+use itertools::Tee;
 use num_traits::{One, Zero};
 
 #[derive(Clone, Hash, Default, PartialEq)]
@@ -364,31 +369,30 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
 
     // cmk look at HashMap, etc for last related methods to see if when return the value.
 
-    // /// Create a [`RangeMapBlaze`] from a [`SortedDisjoint`] iterator.
-    // ///
-    // /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
-    // ///
-    // /// # Examples
-    // ///
-    // /// ```
-    // /// use range_set_blaze::prelude::*;
-    // ///
-    // /// let a0 = RangeMapBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-    // /// let a1: RangeMapBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
-    // /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
-    // /// ```
-    // cmk
-    // pub fn from_sorted_disjoint<I>(iter: I) -> Self
-    // where
-    //     I: SortedDisjoint<T>,
-    // {
-    //     let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
-    //     let btree_map = BTreeMap::from_iter(&mut iter_with_len);
-    //     RangeMapBlaze {
-    //         btree_map,
-    //         len: iter_with_len.len_so_far(),
-    //     }
-    // }
+    /// Create a [`RangeMapBlaze`] from a [`SortedDisjoint`] iterator.
+    ///
+    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a0 = RangeMapBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+    /// let a1: RangeMapBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// ```
+    pub fn from_sorted_disjoint<I>(iter: I) -> Self
+    where
+        I: SortedDisjoint<T>,
+    {
+        let mut iter_with_len = SortedDisjointWithLenSoFarMap::from(iter);
+        let btree_map = BTreeMap::from_iter(&mut iter_with_len);
+        RangeMapBlaze {
+            btree_map,
+            len: iter_with_len.len_so_far(),
+        }
+    }
 
     /// Creates a [`RangeMapBlaze`] from a collection of integers. It is typically many
     /// times faster than [`from_iter`][1]/[`collect`][1].
@@ -1202,27 +1206,134 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     // }
 }
 
-// // We create a RangeMapBlaze from an iterator of integers or integer ranges by
-// // 1. turning them into a UnionIter (internally, it collects into intervals and sorts by start).
-// // 2. Turning the SortedDisjoint into a BTreeMap.
-// impl<T: Integer, V: PartialEq> FromIterator<T> for RangeMapBlaze<T, V> {
-//     /// Create a [`RangeMapBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
-//     ///
-//     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use range_set_blaze::RangeMapBlaze;
-//     ///
-//     /// let a0 = RangeMapBlaze::from_iter([3, 2, 1, 100, 1]);
-//     /// let a1: RangeMapBlaze<i32> = [3, 2, 1, 100, 1].into_iter().collect();
-//     /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
-//     /// ```
-//     fn from_iter<I>(iter: I) -> Self
-//     where
-//         I: IntoIterator<Item = T>,
-//     {
-//         iter.into_iter().map(|x| x..=x).collect()
-//     }
-// }
+// We create a RangeMapBlaze from an iterator of integers or integer ranges by
+// 1. turning them into a UnionIter (internally, it collects into intervals and sorts by start).
+// 2. Turning the SortedDisjoint into a BTreeMap.
+impl<T: Integer, V: PartialEq> FromIterator<T> for RangeMapBlaze<T, V> {
+    /// Create a [`RangeMapBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
+    ///
+    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let a0 = RangeMapBlaze::from_iter([3, 2, 1, 100, 1]);
+    /// let a1: RangeMapBlaze<i32> = [3, 2, 1, 100, 1].into_iter().collect();
+    /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+    /// ```
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+    {
+        iter.into_iter().map(|x| x..=x).collect()
+    }
+}
+
+impl<'a, T: Integer, V: PartialEq> FromIterator<&'a T> for RangeMapBlaze<T, V> {
+    /// Create a [`RangeMapBlaze`] from an iterator of integers references. Duplicates and out-of-order elements are fine.
+    ///
+    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let a0 = RangeMapBlaze::from_iter(vec![3, 2, 1, 100, 1]);
+    /// let a1: RangeMapBlaze<i32> = vec![3, 2, 1, 100, 1].into_iter().collect();
+    /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+    /// ```
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = &'a T>,
+    {
+        iter.into_iter().map(|x| *x..=*x).collect()
+    }
+}
+
+impl<T: Integer, V: PartialEq> FromIterator<RangeInclusive<T>> for RangeMapBlaze<T, V> {
+    /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
+    /// Overlapping, out-of-order, and empty ranges are fine.
+    ///
+    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// #[allow(clippy::reversed_empty_ranges)]
+    /// let a0 = RangeMapBlaze::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
+    /// #[allow(clippy::reversed_empty_ranges)]
+    /// let a1: RangeMapBlaze<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// ```
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = RangeInclusive<T>>,
+    {
+        let union_iter: UnionIter<T, _> = iter.into_iter().collect();
+        RangeMapBlaze::from_sorted_disjoint(union_iter)
+    }
+}
+
+impl<'a, T: Integer + 'a, V: PartialEq> FromIterator<&'a RangeInclusive<T>>
+    for RangeMapBlaze<T, V>
+{
+    /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
+    /// Overlapping, out-of-order, and empty ranges are fine.
+    ///
+    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// #[allow(clippy::reversed_empty_ranges)]
+    /// let vec_range = vec![1..=2, 2..=2, -10..=-5, 1..=0];
+    /// let a0 = RangeMapBlaze::from_iter(vec_range.iter());
+    /// let a1: RangeMapBlaze<i32> = vec_range.iter().collect();
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// ```
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = &'a RangeInclusive<T>>,
+    {
+        let union_iter: UnionIter<T, _> = iter.into_iter().cloned().collect();
+        RangeMapBlaze::from_sorted_disjoint(union_iter)
+    }
+}
+
+#[doc(hidden)]
+pub type BitOrMergeMap<T, V, L, R> = UnionIterMap<T, V, MergeMap<T, V, L, R>>;
+#[doc(hidden)]
+pub type BitOrKMergeMap<T, V, I> = UnionIterMap<T, V, KMergeMap<T, V, I>>;
+#[doc(hidden)]
+pub type BitAndMergeMap<T, V, L, R> = NotIterMap<T, V, BitNandMergeMap<T, V, L, R>>;
+#[doc(hidden)]
+pub type BitAndKMergeMap<T, V, I> = NotIterMap<T, V, BitNandKMergeMap<T, V, I>>;
+#[doc(hidden)]
+pub type BitNandMergeMap<T, V, L, R> =
+    BitOrMergeMap<T, V, NotIterMap<T, V, L>, NotIterMap<T, V, R>>;
+#[doc(hidden)]
+pub type BitNandKMergeMap<T, V, I> = BitOrKMergeMap<T, V, NotIterMap<T, V, I>>;
+#[doc(hidden)]
+pub type BitNorMergeMap<T, V, L, R> = NotIterMap<T, V, BitOrMergeMap<T, V, L, R>>;
+#[doc(hidden)]
+pub type BitSubMergeMap<T, V, L, R> = NotIterMap<T, V, BitOrMergeMap<T, V, NotIterMap<T, V, L>, R>>;
+#[doc(hidden)]
+pub type BitXOrTeeMap<T, V, L, R> =
+    BitOrMergeMap<T, V, BitSubMergeMap<T, V, Tee<L>, Tee<R>>, BitSubMergeMap<T, V, Tee<R>, Tee<L>>>;
+#[doc(hidden)]
+pub type BitXOrMap<T, V, L, R> =
+    BitOrMergeMap<T, V, BitSubMergeMap<T, V, L, Tee<R>>, BitSubMergeMap<T, V, Tee<R>, L>>;
+#[doc(hidden)]
+pub type BitEqMap<T, V, L, R> = BitOrMergeMap<
+    T,
+    V,
+    NotIterMap<T, V, BitOrMergeMap<T, V, NotIterMap<T, V, Tee<L>>, NotIterMap<T, V, Tee<R>>>>,
+    NotIterMap<T, V, BitOrMergeMap<T, V, Tee<L>, Tee<R>>>,
+>;

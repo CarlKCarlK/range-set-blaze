@@ -34,9 +34,12 @@ mod ranges;
 #[cfg(feature = "rog-experimental")]
 mod rog;
 mod sorted_disjoint;
+mod sorted_disjoint_map;
 mod tests;
 mod union_iter;
+mod union_iter_map;
 mod unsorted_disjoint;
+mod unsorted_disjoint_map;
 pub use crate::map::RangeMapBlaze;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
 use alloc::{collections::BTreeMap, vec::Vec};
@@ -52,6 +55,8 @@ pub use dyn_sorted_disjoint::DynSortedDisjoint;
 use gen_ops::gen_ops_ex;
 use itertools::Tee;
 pub use merge::{KMerge, Merge};
+mod merge_map;
+mod not_iter_map;
 pub use not_iter::NotIter;
 use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, One, WrappingSub, Zero};
 #[cfg(feature = "rog-experimental")]
@@ -1427,6 +1432,7 @@ impl<'a, T: Integer + 'a> FromIterator<&'a RangeInclusive<T>> for RangeSetBlaze<
         RangeSetBlaze::from_sorted_disjoint(union_iter)
     }
 }
+
 impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     /// For compatibility with [`BTreeSet`] you may create a [`RangeSetBlaze`] from an array of integers.
     ///
