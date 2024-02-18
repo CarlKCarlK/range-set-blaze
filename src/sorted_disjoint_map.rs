@@ -10,21 +10,24 @@
 use core::ops::RangeInclusive;
 
 use crate::{
-    map::BitOrMergeMap, merge_map::MergeMap, union_iter_map::UnionIterMap, Integer, RangeMapBlaze,
+    map::{BitOrMergeMap, PartialEqClone},
+    merge_map::MergeMap,
+    union_iter_map::UnionIterMap,
+    Integer, RangeMapBlaze,
 };
 
 // cmk should this be pub/crate or replaced with a tuple?
 #[derive(PartialEq)]
-pub struct RangeValue<T: Integer, V: PartialEq> {
+pub struct RangeValue<'a, T: Integer, V: PartialEqClone + 'a> {
     pub(crate) range: RangeInclusive<T>,
-    pub(crate) value: V,
+    pub(crate) value: &'a V,
 }
 
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
 #[doc(hidden)]
-pub trait SortedStartsMap<'a, T: Integer, V: PartialEq + 'a>:
-    Iterator<Item = RangeValue<T, &'a V>>
+pub trait SortedStartsMap<'a, T: Integer, V: PartialEqClone + 'a>:
+    Iterator<Item = RangeValue<'a, T, V>>
 {
 }
 
@@ -215,7 +218,11 @@ pub trait SortedStartsMap<'a, T: Integer, V: PartialEq + 'a>:
 ///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
 /// );
 /// ```
-pub trait SortedDisjointMap<'a, T: Integer, V: PartialEq + 'a>: SortedStartsMap<'a, T, V> {
+pub trait SortedDisjointMap<'a, T: Integer, V: PartialEqClone + 'a>:
+    SortedStartsMap<'a, T, V>
+where
+    <V as ToOwned>::Owned: PartialEq,
+{
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their union.

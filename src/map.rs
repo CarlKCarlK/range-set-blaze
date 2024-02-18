@@ -7,8 +7,16 @@ use alloc::collections::BTreeMap;
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use num_traits::Zero;
 
+// cmk fix name aka 'Clone'
+pub trait PartialEqClone: PartialEq + ToOwned {}
+
+impl<T> PartialEqClone for T where T: PartialEq + ToOwned {}
+
 #[derive(Clone, Hash, Default, PartialEq)]
-pub(crate) struct EndValue<T: Integer, V: PartialEq> {
+pub(crate) struct EndValue<T: Integer, V: PartialEqClone>
+where
+    <V as ToOwned>::Owned: PartialEq,
+{
     pub(crate) end: T,
     pub(crate) value: V,
 }
@@ -233,26 +241,32 @@ pub(crate) struct EndValue<T: Integer, V: PartialEq> {
 /// See the [module-level documentation] for additional examples.
 ///
 /// [module-level documentation]: index.html
-pub struct RangeMapBlaze<T: Integer, V: PartialEq> {
+pub struct RangeMapBlaze<T: Integer, V: PartialEqClone>
+where
+    <V as ToOwned>::Owned: PartialEq,
+{
     len: <T as Integer>::SafeLen,
     btree_map: BTreeMap<T, EndValue<T, V>>,
 }
 
 // cmk
 // // FUTURE: Make all RangeMapBlaze iterators DoubleEndedIterator and ExactSizeIterator.
-// impl<T: Integer, V: PartialEq> fmt::Debug for RangeMapBlaze<T, V> {
+// impl<T: Integer, V: PartialEqClone> fmt::Debug for RangeMapBlaze<T, V> {
 //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 //         write!(f, "{}", self.ranges().to_string())
 //     }
 // }
 
-// impl<T: Integer, V: PartialEq> fmt::Display for RangeMapBlaze<T, V> {
+// impl<T: Integer, V: PartialEqClone> fmt::Display for RangeMapBlaze<T, V> {
 //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 //         write!(f, "{}", self.ranges().to_string())
 //     }
 // }
 
-impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V>
+where
+    <V as ToOwned>::Owned: PartialEq,
+{
     /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
     /// ascending and/or descending order.
     ///
@@ -379,8 +393,9 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// ```
     pub fn from_sorted_disjoint_map<'a, I>(iter: I) -> Self
     where
+        V: PartialEqClone + 'a,
+        <V as ToOwned>::Owned: PartialEq,
         I: SortedDisjointMap<'a, T, V>,
-        V: 'a + Clone,
     {
         let mut iter_with_len = SortedDisjointWithLenSoFarMap::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
@@ -1213,7 +1228,10 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
 // We create a RangeMapBlaze from an iterator of integers or integer ranges by
 // 1. turning them into a UnionIterMap (internally, it collects into intervals and sorts by start).
 // 2. Turning the SortedDisjointMap into a BTreeMap.
-impl<'a, T: Integer, V: PartialEq + Clone + 'a> FromIterator<(T, &'a V)> for RangeMapBlaze<T, V> {
+impl<'a, T: Integer, V: PartialEqClone + 'a> FromIterator<(T, &'a V)> for RangeMapBlaze<T, V>
+where
+    <V as ToOwned>::Owned: PartialEq,
+{
     /// Create a [`RangeMapBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
@@ -1235,8 +1253,10 @@ impl<'a, T: Integer, V: PartialEq + Clone + 'a> FromIterator<(T, &'a V)> for Ran
     }
 }
 
-impl<'a, T: Integer + 'a, V: PartialEq + Clone + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
+impl<'a, T: Integer + 'a, V: PartialEqClone + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
     for RangeMapBlaze<T, V>
+where
+    <V as ToOwned>::Owned: PartialEq,
 {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
@@ -1264,7 +1284,7 @@ impl<'a, T: Integer + 'a, V: PartialEq + Clone + 'a> FromIterator<(RangeInclusiv
     }
 }
 
-// impl<'a, T: Integer + 'a, V: PartialEq> FromIterator<&'a (RangeInclusive<T>, V)>
+// impl<'a, T: Integer + 'a, V: PartialEqClone> FromIterator<&'a (RangeInclusive<T>, V)>
 //     for RangeMapBlaze<T, V>
 // {
 //     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
@@ -1323,11 +1343,13 @@ pub type BitOrMergeMap<'a, T, V, L, R> = UnionIterMap<'a, T, V, MergeMap<'a, T, 
 //     NotIterMap<T, V, BitOrMergeMap<T, V, Tee<L>, Tee<R>>>,
 // >;
 
-impl<'a, T: Integer, V: PartialEq + 'a, I: SortedStartsMap<'a, T, V>> SortedStartsMap<'a, T, V>
+impl<'a, T: Integer, V: PartialEqClone + 'a, I: SortedStartsMap<'a, T, V>> SortedStartsMap<'a, T, V>
     for UnionIterMap<'a, T, V, I>
 {
 }
-impl<'a, T: Integer, V: PartialEq + 'a, I: SortedStartsMap<'a, T, V>> SortedDisjointMap<'a, T, V>
-    for UnionIterMap<'a, T, V, I>
+impl<'a, T: Integer, V: PartialEqClone + 'a, I: SortedStartsMap<'a, T, V>>
+    SortedDisjointMap<'a, T, V> for UnionIterMap<'a, T, V, I>
+where
+    <V as ToOwned>::Owned: PartialEq,
 {
 }

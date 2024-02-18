@@ -2,6 +2,7 @@ use core::iter::FusedIterator;
 
 use itertools::{Itertools, MergeBy};
 
+use crate::map::PartialEqClone;
 use crate::Integer;
 
 use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap};
@@ -35,20 +36,22 @@ use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap}
 pub struct MergeMap<'a, T, V, L, R>
 where
     T: Integer,
-    V: PartialEq + 'a,
+    V: PartialEqClone + 'a,
     L: SortedDisjointMap<'a, T, V>,
     R: SortedDisjointMap<'a, T, V>,
+    <V as ToOwned>::Owned: PartialEq,
 {
     #[allow(clippy::type_complexity)]
-    iter: MergeBy<L, R, fn(&RangeValue<T, &'a V>, &RangeValue<T, &'a V>) -> bool>,
+    iter: MergeBy<L, R, fn(&RangeValue<'a, T, V>, &RangeValue<'a, T, V>) -> bool>,
 }
 
 impl<'a, T, V, L, R> MergeMap<'a, T, V, L, R>
 where
     T: Integer,
-    V: PartialEq + 'a,
+    V: PartialEqClone + 'a,
     L: SortedDisjointMap<'a, T, V>,
     R: SortedDisjointMap<'a, T, V>,
+    <V as ToOwned>::Owned: PartialEq,
 {
     /// Creates a new [`MergeMap`] iterator from two [`SortedDisjointMap`] iterators. See [`MergeMap`] for more details and examples.
     pub fn new(left: L, right: R) -> Self {
@@ -61,20 +64,22 @@ where
 impl<'a, T, V, L, R> FusedIterator for MergeMap<'a, T, V, L, R>
 where
     T: Integer,
-    V: PartialEq + 'a,
+    V: PartialEqClone + 'a,
     L: SortedDisjointMap<'a, T, V>,
     R: SortedDisjointMap<'a, T, V>,
+    <V as ToOwned>::Owned: PartialEq,
 {
 }
 
 impl<'a, T, V, L, R> Iterator for MergeMap<'a, T, V, L, R>
 where
     T: Integer,
-    V: PartialEq + 'a,
+    V: PartialEqClone + 'a,
     L: SortedDisjointMap<'a, T, V>,
     R: SortedDisjointMap<'a, T, V>,
+    <V as ToOwned>::Owned: PartialEq,
 {
-    type Item = RangeValue<T, &'a V>;
+    type Item = RangeValue<'a, T, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
@@ -88,9 +93,10 @@ where
 impl<'a, T, V, L, R> SortedStartsMap<'a, T, V> for MergeMap<'a, T, V, L, R>
 where
     T: Integer,
-    V: PartialEq + 'a,
+    V: PartialEqClone + 'a,
     L: SortedDisjointMap<'a, T, V>,
     R: SortedDisjointMap<'a, T, V>,
+    <V as ToOwned>::Owned: PartialEq,
 {
 }
 
@@ -126,7 +132,7 @@ where
 // pub struct KMergeMap<T, V, I>
 // where
 //     T: Integer,
-//     V: PartialEq,
+//     V: PartialEqClone,
 //     I: SortedDisjointMap<'a, T, V>,
 // {
 //     #[allow(clippy::type_complexity)]
@@ -136,7 +142,7 @@ where
 // impl<T, V, I> KMergeMap<T, V, I>
 // where
 //     T: Integer,
-//     V: PartialEq,
+//     V: PartialEqClone,
 //     I: SortedDisjointMap<'a, T, V>,
 // {
 //     /// Creates a new [`KMergeMap`] iterator from zero or more [`SortedDisjointMap`] iterators. See [`KMergeMap`] for more details and examples.
@@ -153,7 +159,7 @@ where
 // impl<T, V, I> FusedIterator for KMergeMap<T, V, I>
 // where
 //     T: Integer,
-//     V: PartialEq,
+//     V: PartialEqClone,
 //     I: SortedDisjointMap<'a, T, V>,
 // {
 // }
@@ -161,7 +167,7 @@ where
 // impl<T, V, I> Iterator for KMergeMap<T, V, I>
 // where
 //     T: Integer,
-//     V: PartialEq,
+//     V: PartialEqClone,
 //     I: SortedDisjointMap<'a, T, V>,
 // {
 //     type Item = RangeValue<T, V>;
@@ -178,7 +184,7 @@ where
 // impl<T, V, I> SortedStartsMap<T, V> for KMergeMap<T, V, I>
 // where
 //     T: Integer,
-//     V: PartialEq,
+//     V: PartialEqClone,
 //     I: SortedDisjointMap<'a, T, V>,
 // {
 // }

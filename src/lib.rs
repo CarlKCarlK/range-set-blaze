@@ -36,6 +36,7 @@ mod rog;
 mod sorted_disjoint;
 mod sorted_disjoint_map;
 mod tests;
+mod tests_map;
 mod union_iter;
 mod union_iter_map;
 mod unsorted_disjoint;

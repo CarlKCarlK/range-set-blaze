@@ -31,14 +31,14 @@ use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange}
 
 type I32SafeLen = <i32 as range_set_blaze::Integer>::SafeLen;
 
-#[test]
-fn insert_255u8() {
-    let btree_map = BTreeMap::from_iter([(255u8, "First")]);
-    assert_eq!(btree_map.get(&255u8), Some(&"First"));
-    // cmk
-    let range_set_blaze = RangeMapBlaze::from_iter([(255u8, "First")]);
-    // assert!(range_set_blaze.to_string() == "255..=255");
-}
+// #[test]
+// fn insert_255u8() {
+//     let btree_map = BTreeMap::from_iter([(255u8, "First")]);
+//     assert_eq!(btree_map.get(&255u8), Some(&"First"));
+//     // cmk
+//     let range_set_blaze = RangeMapBlaze::from_iter([(255u8, "First".to_string())]);
+//     // assert!(range_set_blaze.to_string() == "255..=255");
+// }
 
 // #[test]
 // #[should_panic]

@@ -7,8 +7,8 @@ use core::{
 use alloc::vec;
 use itertools::Itertools;
 
-use crate::Integer;
 use crate::{map::BitOrMergeMap, unsorted_disjoint_map::AssumeSortedStartsMap};
+use crate::{map::PartialEqClone, Integer};
 use crate::{
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
     unsorted_disjoint_map::UnsortedDisjointMap,
@@ -44,17 +44,17 @@ use crate::{
 pub struct UnionIterMap<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEq,
+    V: PartialEqClone,
     I: SortedStartsMap<'a, T, V>,
 {
     pub(crate) iter: I,
-    pub(crate) option_range_value: Option<RangeValue<T, &'a V>>,
+    pub(crate) option_range_value: Option<RangeValue<'a, T, V>>,
 }
 
 impl<'a, T, V, I> UnionIterMap<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEq,
+    V: PartialEqClone,
     I: SortedStartsMap<'a, T, V>,
 {
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`UnionIterMap`] for more details and examples.
@@ -66,7 +66,7 @@ where
     }
 }
 
-// impl<T: Integer, V: PartialEq, const N: usize> From<[T; N]>
+// impl<T: Integer, V: PartialEqClone, const N: usize> From<[T; N]>
 //     for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
 // {
 //     fn from(arr: [T; N]) -> Self {
@@ -74,13 +74,13 @@ where
 //     }
 // }
 
-// impl<T: Integer, V: PartialEq> From<&[T]> for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>> {
+// impl<T: Integer, V: PartialEqClone> From<&[T]> for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>> {
 //     fn from(slice: &[T]) -> Self {
 //         slice.iter().cloned().collect()
 //     }
 // }
 
-// impl<T: Integer, V: PartialEq, const N: usize> From<[RangeValue<T, V>; N]>
+// impl<T: Integer, V: PartialEqClone, const N: usize> From<[RangeValue<T, V>; N]>
 //     for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
 // {
 //     fn from(arr: [RangeValue<T, V>; N]) -> Self {
@@ -89,10 +89,10 @@ where
 // }
 
 type SortedRangeInclusiveVec<'a, T, V> =
-    AssumeSortedStartsMap<'a, T, V, vec::IntoIter<RangeValue<T, &'a V>>>;
+    AssumeSortedStartsMap<'a, T, V, vec::IntoIter<RangeValue<'a, T, V>>>;
 
 // from iter (T, V) to UnionIterMap
-impl<'a, T: Integer + 'a, V: PartialEq + 'a> FromIterator<(T, &'a V)>
+impl<'a, T: Integer + 'a, V: PartialEqClone + 'a> FromIterator<(T, &'a V)>
     for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
 {
     fn from_iter<I>(iter: I) -> Self
@@ -103,8 +103,8 @@ impl<'a, T: Integer + 'a, V: PartialEq + 'a> FromIterator<(T, &'a V)>
     }
 }
 
-// from iter (RangeInclusive<T>, V) to UnionIterMap
-impl<'a, T: Integer + 'a, V: PartialEq + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
+// from iter (RangeInclusive<T>, &V) to UnionIterMap
+impl<'a, T: Integer + 'a, V: PartialEqClone + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
     for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
 {
     fn from_iter<I>(iter: I) -> Self
@@ -118,12 +118,12 @@ impl<'a, T: Integer + 'a, V: PartialEq + 'a> FromIterator<(RangeInclusive<T>, &'
 }
 
 // from iter RangeValue<T, V> to UnionIterMap
-impl<'a, T: Integer + 'a, V: PartialEq + 'a> FromIterator<RangeValue<T, &'a V>>
+impl<'a, T: Integer + 'a, V: PartialEqClone + 'a> FromIterator<RangeValue<'a, T, V>>
     for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = RangeValue<T, &'a V>>,
+        I: IntoIterator<Item = RangeValue<'a, T, V>>,
     {
         UnsortedDisjointMap::from(iter.into_iter()).into()
     }
@@ -134,8 +134,8 @@ impl<'a, T, V, I> From<UnsortedDisjointMap<'a, T, V, I>>
     for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
 where
     T: Integer,
-    V: PartialEq + 'a,
-    I: Iterator<Item = RangeValue<T, &'a V>>,
+    V: PartialEqClone + 'a,
+    I: Iterator<Item = RangeValue<'a, T, V>>,
 {
     #[allow(clippy::clone_on_copy)]
     fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, I>) -> Self {
@@ -151,18 +151,18 @@ where
     }
 }
 
-impl<'a, T: Integer, V: PartialEq, I> FusedIterator for UnionIterMap<'a, T, V, I> where
+impl<'a, T: Integer, V: PartialEqClone, I> FusedIterator for UnionIterMap<'a, T, V, I> where
     I: SortedStartsMap<'a, T, V> + FusedIterator
 {
 }
 
-impl<'a, T: Integer, V: PartialEq, I> Iterator for UnionIterMap<'a, T, V, I>
+impl<'a, T: Integer, V: PartialEqClone, I> Iterator for UnionIterMap<'a, T, V, I>
 where
     I: SortedStartsMap<'a, T, V>,
 {
-    type Item = RangeValue<T, &'a V>;
+    type Item = RangeValue<'a, T, V>;
 
-    fn next(&mut self) -> Option<RangeValue<T, &'a V>> {
+    fn next(&mut self) -> Option<RangeValue<'a, T, V>> {
         loop {
             // range_value is the next range_value from the iterator or self.option_range_value
             // cmk rewrite with if let
@@ -224,7 +224,7 @@ where
 }
 
 // cmk
-// impl<T: Integer, V: PartialEq, I> ops::Not for UnionIterMap<T, V, I>
+// impl<T: Integer, V: PartialEqClone, I> ops::Not for UnionIterMap<T, V, I>
 // where
 //     I: SortedStartsMap<T, V>,
 // {
@@ -235,10 +235,11 @@ where
 //     }
 // }
 
-impl<'a, T: Integer, V: PartialEq + 'a, R, L> ops::BitOr<R> for UnionIterMap<'a, T, V, L>
+impl<'a, T: Integer, V: PartialEqClone + 'a, R, L> ops::BitOr<R> for UnionIterMap<'a, T, V, L>
 where
     L: SortedStartsMap<'a, T, V>,
     R: SortedDisjointMap<'a, T, V>,
+    <V as ToOwned>::Owned: PartialEq,
 {
     type Output = BitOrMergeMap<'a, T, V, Self, R>;
 
@@ -249,7 +250,7 @@ where
     }
 }
 
-// impl<T: Integer, V: PartialEq, R, L> ops::Sub<R> for UnionIterMap<T, V, L>
+// impl<T: Integer, V: PartialEqClone, R, L> ops::Sub<R> for UnionIterMap<T, V, L>
 // where
 //     L: SortedStartsMap<T, V>,
 //     R: SortedDisjointMap<T, V>,
@@ -261,7 +262,7 @@ where
 //     }
 // }
 
-// impl<T: Integer, V: PartialEq, R, L> ops::BitXor<R> for UnionIterMap<T, V, L>
+// impl<T: Integer, V: PartialEqClone, R, L> ops::BitXor<R> for UnionIterMap<T, V, L>
 // where
 //     L: SortedStartsMap<T, V>,
 //     R: SortedDisjointMap<T, V>,
@@ -274,7 +275,7 @@ where
 //     }
 // }
 
-// impl<T: Integer, V: PartialEq, R, L> ops::BitAnd<R> for UnionIterMap<T, V, L>
+// impl<T: Integer, V: PartialEqClone, R, L> ops::BitAnd<R> for UnionIterMap<T, V, L>
 // where
 //     L: SortedStartsMap<T, V>,
 //     R: SortedDisjointMap<T, V>,
