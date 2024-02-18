@@ -92,7 +92,7 @@ type SortedRangeInclusiveVec<'a, T, V> =
     AssumeSortedStartsMap<'a, T, V, vec::IntoIter<RangeValue<T, &'a V>>>;
 
 // from iter (T, V) to UnionIterMap
-impl<'a, T: Integer, V: PartialEq + 'a> FromIterator<(T, &'a V)>
+impl<'a, T: Integer + 'a, V: PartialEq + 'a> FromIterator<(T, &'a V)>
     for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
 {
     fn from_iter<I>(iter: I) -> Self
@@ -104,7 +104,7 @@ impl<'a, T: Integer, V: PartialEq + 'a> FromIterator<(T, &'a V)>
 }
 
 // from iter (RangeInclusive<T>, V) to UnionIterMap
-impl<'a, T: Integer, V: PartialEq + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
+impl<'a, T: Integer + 'a, V: PartialEq + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
     for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
 {
     fn from_iter<I>(iter: I) -> Self
@@ -118,7 +118,7 @@ impl<'a, T: Integer, V: PartialEq + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
 }
 
 // from iter RangeValue<T, V> to UnionIterMap
-impl<'a, T: Integer, V: PartialEq + 'a> FromIterator<RangeValue<T, &'a V>>
+impl<'a, T: Integer + 'a, V: PartialEq + 'a> FromIterator<RangeValue<T, &'a V>>
     for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
 {
     fn from_iter<I>(iter: I) -> Self
@@ -133,14 +133,15 @@ impl<'a, T: Integer, V: PartialEq + 'a> FromIterator<RangeValue<T, &'a V>>
 impl<'a, T, V, I> From<UnsortedDisjointMap<'a, T, V, I>>
     for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
 where
-    T: Integer,
+    T: Integer + 'a,
     V: PartialEq + 'a,
-    I: Iterator<Item = RangeValue<T, &'a V>>, // Any iterator is OK, because we will sort
+    I: Iterator<Item = RangeValue<T, &'a V>> + 'a, // Ensure I also respects the 'a lifetime
 {
     fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, I>) -> Self {
-        let iter = AssumeSortedStartsMap {
-            iter: unsorted_disjoint.sorted_by_key(|range_value| range_value.range.start()),
-        };
+        let mut v = Vec::from_iter(unsorted_disjoint);
+        v.sort_by_key(|range_value| range_value.range.start().clone());
+        let iter0: alloc::vec::IntoIter<RangeValue<T, &'a V>> = v.into_iter();
+        let iter = AssumeSortedStartsMap { iter: iter0 };
         Self {
             iter,
             option_range_value: None,
@@ -171,7 +172,7 @@ where
                 continue;
             }
 
-            let current_range_value = match self.option_range_value {
+            let current_range_value = match &self.option_range_value {
                 Some(crv) => crv,
                 None => {
                     let crv = RangeValue {

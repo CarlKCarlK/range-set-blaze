@@ -1242,7 +1242,7 @@ impl<'a, T: Integer, V: PartialEq + Clone + 'a> FromIterator<(T, &'a V)> for Ran
     }
 }
 
-impl<'a, T: Integer, V: PartialEq + Clone + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
+impl<'a, T: Integer + 'a, V: PartialEq + Clone + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
     for RangeMapBlaze<T, V>
 {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
