@@ -4,16 +4,21 @@ use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
 use crate::Integer;
 use alloc::collections::BTreeMap;
+use core::ops::Deref;
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use num_traits::Zero;
 
 // cmk fix name aka 'Clone'
-pub trait PartialEqClone: PartialEq + ToOwned {}
+pub trait ValueOwned: PartialEq + Clone {}
 
-impl<T> PartialEqClone for T where T: PartialEq + ToOwned {}
+// pub trait ValueRef: PartialEq + ToOwned {
+//     type Owned: ValueOwned<Ref = Self>;
+// }
+
+impl<T> ValueOwned for T where T: PartialEq + Clone {}
 
 #[derive(Clone, Hash, Default, PartialEq)]
-pub(crate) struct EndValue<T: Integer, V: PartialEqClone>
+pub(crate) struct EndValue<T: Integer, V: ValueOwned>
 where
     <V as ToOwned>::Owned: PartialEq,
 {
@@ -241,7 +246,7 @@ where
 /// See the [module-level documentation] for additional examples.
 ///
 /// [module-level documentation]: index.html
-pub struct RangeMapBlaze<T: Integer, V: PartialEqClone>
+pub struct RangeMapBlaze<T: Integer, V: ValueOwned>
 where
     <V as ToOwned>::Owned: PartialEq,
 {
@@ -263,10 +268,7 @@ where
 //     }
 // }
 
-impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V>
-where
-    <V as ToOwned>::Owned: PartialEq,
-{
+impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
     /// ascending and/or descending order.
     ///
@@ -391,11 +393,11 @@ where
     /// let a1: RangeMapBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
-    pub fn from_sorted_disjoint_map<'a, I>(iter: I) -> Self
+    pub fn from_sorted_disjoint_map<'a, VR, I>(iter: I) -> Self
     where
-        V: PartialEqClone + 'a,
-        <V as ToOwned>::Owned: PartialEq,
-        I: SortedDisjointMap<'a, T, V>,
+        VR: Deref<Target = V> + 'a,
+        I: SortedDisjointMap<'a, T, V, VR>,
+        V: 'a,
     {
         let mut iter_with_len = SortedDisjointWithLenSoFarMap::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
@@ -1228,9 +1230,11 @@ where
 // We create a RangeMapBlaze from an iterator of integers or integer ranges by
 // 1. turning them into a UnionIterMap (internally, it collects into intervals and sorts by start).
 // 2. Turning the SortedDisjointMap into a BTreeMap.
-impl<'a, T: Integer, V: PartialEqClone + 'a> FromIterator<(T, &'a V)> for RangeMapBlaze<T, V>
+impl<'a, T, V, R> FromIterator<(T, R)> for RangeMapBlaze<T, V>
 where
-    <V as ToOwned>::Owned: PartialEq,
+    T: Integer,
+    V: ValueOwned + 'a,
+    R: Deref<Target = V> + 'a,
 {
     /// Create a [`RangeMapBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
     ///
@@ -1247,16 +1251,17 @@ where
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (T, &'a V)>,
+        I: IntoIterator<Item = (T, R)>,
     {
-        iter.into_iter().map(|(x, v)| (x..=x, v)).collect()
+        iter.into_iter().map(|(x, r)| (x..=x, r)).collect()
     }
 }
 
-impl<'a, T: Integer + 'a, V: PartialEqClone + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
-    for RangeMapBlaze<T, V>
+impl<'a, T, V, VR> FromIterator<(RangeInclusive<T>, VR)> for RangeMapBlaze<T, V>
 where
-    <V as ToOwned>::Owned: PartialEq,
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: Deref<Target = V> + 'a,
 {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
@@ -1276,10 +1281,10 @@ where
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
+        I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
     {
         let iter = iter.into_iter();
-        let union_iter = UnionIterMap::<T, V, _>::from_iter(iter);
+        let union_iter = UnionIterMap::<T, V, VR, _>::from_iter(iter);
         RangeMapBlaze::from_sorted_disjoint_map(union_iter)
     }
 }
@@ -1313,7 +1318,8 @@ where
 // }
 
 #[doc(hidden)]
-pub type BitOrMergeMap<'a, T, V, L, R> = UnionIterMap<'a, T, V, MergeMap<'a, T, V, L, R>>;
+pub type BitOrMergeMap<'a, T, V, VR, L, R> =
+    UnionIterMap<'a, T, V, VR, MergeMap<'a, T, V, VR, L, R>>;
 // #[doc(hidden)]
 // pub type BitOrKMergeMap<T, V, I> = UnionIterMap<T, V, KMergeMap<T, V, I>>;
 // #[doc(hidden)]
@@ -1343,12 +1349,22 @@ pub type BitOrMergeMap<'a, T, V, L, R> = UnionIterMap<'a, T, V, MergeMap<'a, T, 
 //     NotIterMap<T, V, BitOrMergeMap<T, V, Tee<L>, Tee<R>>>,
 // >;
 
-impl<'a, T: Integer, V: PartialEqClone + 'a, I: SortedStartsMap<'a, T, V>> SortedStartsMap<'a, T, V>
-    for UnionIterMap<'a, T, V, I>
+impl<
+        'a,
+        T: Integer,
+        V: ValueOwned + 'a,
+        VR: Deref<Target = V> + 'a,
+        I: SortedStartsMap<'a, T, V, VR>,
+    > SortedStartsMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
 {
 }
-impl<'a, T: Integer, V: PartialEqClone + 'a, I: SortedStartsMap<'a, T, V>>
-    SortedDisjointMap<'a, T, V> for UnionIterMap<'a, T, V, I>
+impl<
+        'a,
+        T: Integer,
+        V: ValueOwned + 'a,
+        VR: Deref<Target = V> + 'a,
+        I: SortedStartsMap<'a, T, V, VR>,
+    > SortedDisjointMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
 where
     <V as ToOwned>::Owned: PartialEq,
 {

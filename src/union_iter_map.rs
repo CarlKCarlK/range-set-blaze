@@ -1,14 +1,15 @@
 use core::{
     cmp::max,
     iter::FusedIterator,
-    ops::{self, RangeInclusive},
+    marker::PhantomData,
+    ops::{self, Deref, RangeInclusive},
 };
 
 use alloc::vec;
 use itertools::Itertools;
 
 use crate::{map::BitOrMergeMap, unsorted_disjoint_map::AssumeSortedStartsMap};
-use crate::{map::PartialEqClone, Integer};
+use crate::{map::ValueOwned, Integer};
 use crate::{
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
     unsorted_disjoint_map::UnsortedDisjointMap,
@@ -41,21 +42,23 @@ use crate::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct UnionIterMap<'a, T, V, I>
+pub struct UnionIterMap<'a, T, V, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    I: SortedStartsMap<'a, T, V>,
+    V: ValueOwned,
+    VR: Deref<Target = V> + 'a,
+    I: SortedStartsMap<'a, T, V, VR>,
 {
     pub(crate) iter: I,
-    pub(crate) option_range_value: Option<RangeValue<'a, T, V>>,
+    pub(crate) option_range_value: Option<RangeValue<'a, T, V, VR>>,
 }
 
-impl<'a, T, V, I> UnionIterMap<'a, T, V, I>
+impl<'a, T, V, VR, I> UnionIterMap<'a, T, V, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    I: SortedStartsMap<'a, T, V>,
+    V: ValueOwned,
+    VR: Deref<Target = V> + 'a,
+    I: SortedStartsMap<'a, T, V, VR>,
 {
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`UnionIterMap`] for more details and examples.
     pub fn new(iter: I) -> Self {
@@ -88,12 +91,12 @@ where
 //     }
 // }
 
-type SortedRangeInclusiveVec<'a, T, V> =
-    AssumeSortedStartsMap<'a, T, V, vec::IntoIter<RangeValue<'a, T, V>>>;
+type SortedRangeInclusiveVec<'a, T, V, VR> =
+    AssumeSortedStartsMap<'a, T, V, VR, vec::IntoIter<RangeValue<'a, T, V, VR>>>;
 
 // from iter (T, V) to UnionIterMap
-impl<'a, T: Integer + 'a, V: PartialEqClone + 'a> FromIterator<(T, &'a V)>
-    for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a> FromIterator<(T, &'a V)>
+    for UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -104,41 +107,48 @@ impl<'a, T: Integer + 'a, V: PartialEqClone + 'a> FromIterator<(T, &'a V)>
 }
 
 // from iter (RangeInclusive<T>, &V) to UnionIterMap
-impl<'a, T: Integer + 'a, V: PartialEqClone + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
-    for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a>
+    FromIterator<(RangeInclusive<T>, &'a V)>
+    for UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
         let iter = iter.into_iter();
-        let iter = iter.map(|(range, value)| RangeValue { range, value });
+        let iter = iter.map(|(range, value)| RangeValue {
+            range,
+            value,
+            phantom_data: PhantomData,
+        });
         iter.collect()
     }
 }
 
 // from iter RangeValue<T, V> to UnionIterMap
-impl<'a, T: Integer + 'a, V: PartialEqClone + 'a> FromIterator<RangeValue<'a, T, V>>
-    for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a>
+    FromIterator<RangeValue<'a, T, V, VR>>
+    for UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = RangeValue<'a, T, V>>,
+        I: IntoIterator<Item = RangeValue<'a, T, V, VR>>,
     {
         UnsortedDisjointMap::from(iter.into_iter()).into()
     }
 }
 
 // from from UnsortedDisjointMap to UnionIterMap
-impl<'a, T, V, I> From<UnsortedDisjointMap<'a, T, V, I>>
-    for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
+impl<'a, T, V, VR, I> From<UnsortedDisjointMap<'a, T, V, VR, I>>
+    for UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>>
 where
     T: Integer,
-    V: PartialEqClone + 'a,
-    I: Iterator<Item = RangeValue<'a, T, V>>,
+    V: ValueOwned + 'a,
+    VR: Deref<Target = V> + 'a,
+    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     #[allow(clippy::clone_on_copy)]
-    fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, I>) -> Self {
+    fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, VR, I>) -> Self {
         let iter = unsorted_disjoint
             .into_iter()
             .sorted_by_key(|range_value| range_value.range.start().clone());
@@ -151,18 +161,21 @@ where
     }
 }
 
-impl<'a, T: Integer, V: PartialEqClone, I> FusedIterator for UnionIterMap<'a, T, V, I> where
-    I: SortedStartsMap<'a, T, V> + FusedIterator
+impl<'a, T: Integer, V: ValueOwned, VR: Deref<Target = V> + 'a, I> FusedIterator
+    for UnionIterMap<'a, T, V, VR, I>
+where
+    I: SortedStartsMap<'a, T, V, VR> + FusedIterator,
 {
 }
 
-impl<'a, T: Integer, V: PartialEqClone, I> Iterator for UnionIterMap<'a, T, V, I>
+impl<'a, T: Integer, V: ValueOwned, VR: Deref<Target = V> + 'a, I> Iterator
+    for UnionIterMap<'a, T, V, VR, I>
 where
-    I: SortedStartsMap<'a, T, V>,
+    I: SortedStartsMap<'a, T, V, VR>,
 {
-    type Item = RangeValue<'a, T, V>;
+    type Item = RangeValue<'a, T, V, VR>;
 
-    fn next(&mut self) -> Option<RangeValue<'a, T, V>> {
+    fn next(&mut self) -> Option<RangeValue<'a, T, V, VR>> {
         loop {
             // range_value is the next range_value from the iterator or self.option_range_value
             // cmk rewrite with if let
@@ -180,6 +193,7 @@ where
                 self.option_range_value = Some(RangeValue {
                     range: start..=end,
                     value: range_value.value,
+                    phantom_data: PhantomData,
                 });
                 continue;
             };
@@ -192,6 +206,7 @@ where
                 let crv = RangeValue {
                     range: current_start..=max(current_end, end),
                     value: current_range_value.value,
+                    phantom_data: PhantomData,
                 };
                 self.option_range_value = Some(crv);
                 continue;
@@ -199,11 +214,13 @@ where
                 let cr0 = RangeValue {
                     range: start..=end,
                     value: range_value.value,
+                    phantom_data: PhantomData,
                 };
                 self.option_range_value = Some(cr0);
                 let cr1 = RangeValue {
                     range: current_start..=current_end,
                     value: current_range_value.value,
+                    phantom_data: PhantomData,
                 };
                 return Some(cr1);
             }
@@ -235,13 +252,13 @@ where
 //     }
 // }
 
-impl<'a, T: Integer, V: PartialEqClone + 'a, R, L> ops::BitOr<R> for UnionIterMap<'a, T, V, L>
+impl<'a, T: Integer, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a, R, L> ops::BitOr<R>
+    for UnionIterMap<'a, T, V, VR, L>
 where
-    L: SortedStartsMap<'a, T, V>,
-    R: SortedDisjointMap<'a, T, V>,
-    <V as ToOwned>::Owned: PartialEq,
+    L: SortedStartsMap<'a, T, V, VR>,
+    R: SortedDisjointMap<'a, T, V, VR>,
 {
-    type Output = BitOrMergeMap<'a, T, V, Self, R>;
+    type Output = BitOrMergeMap<'a, T, V, VR, Self, R>;
 
     fn bitor(self, rhs: R) -> Self::Output {
         // It might be fine to optimize to self.iter, but that would require

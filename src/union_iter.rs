@@ -191,6 +191,7 @@ where
     }
 }
 
+// cmk fix everywhere that is R, L rather than L, R
 impl<T: Integer, R, L> ops::BitOr<R> for UnionIter<T, L>
 where
     L: SortedStarts<T>,

@@ -40,7 +40,7 @@ fn understand_cmk() {
 
 #[test]
 fn insert_255u8_map() {
-    let range_map_blaze = RangeMapBlaze::<u8, String>::from_iter([(255, "Hello".into())]);
+    let range_map_blaze = RangeMapBlaze::<u8, String>::from_iter([(255, "Hello")]);
     // assert!(range_map_blaze.to_string() == "255..=255");
 }
 
