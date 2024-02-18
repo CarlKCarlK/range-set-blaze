@@ -1,6 +1,6 @@
 use core::iter::FusedIterator;
 
-use itertools::{Itertools, KMergeBy, MergeBy};
+use itertools::{Itertools, MergeBy};
 
 use crate::Integer;
 

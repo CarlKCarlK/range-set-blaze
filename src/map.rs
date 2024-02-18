@@ -1,19 +1,11 @@
 use crate::merge_map::MergeMap;
-use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap};
+use crate::sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
 use crate::Integer;
 use alloc::collections::BTreeMap;
-use core::{
-    cmp::{max, Ordering},
-    convert::From,
-    fmt,
-    iter::FusedIterator,
-    ops::{BitOr, BitOrAssign, Bound, RangeBounds, RangeInclusive},
-    str::FromStr,
-};
-use itertools::Tee;
-use num_traits::{One, Zero};
+use core::{cmp::max, convert::From, ops::RangeInclusive};
+use num_traits::Zero;
 
 #[derive(Clone, Hash, Default, PartialEq)]
 pub(crate) struct EndValue<T: Integer, V: PartialEq> {
@@ -338,14 +330,14 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// assert_eq!(set.get(2), Some(2));
     /// assert_eq!(set.get(4), None);
     /// ```
-    pub fn get(&self, value: T) -> Option<&V> {
-        todo!("cmk RangeMapBlaze::get");
-        // if self.contains(value) {
-        //     Some(value)
-        // } else {
-        //     None
-        // }
-    }
+    // pub fn get(&self, value: T) -> Option<&V> {
+    //     todo!("cmk RangeMapBlaze::get");
+    //     // if self.contains(value) {
+    //     //     Some(value)
+    //     // } else {
+    //     //     None
+    //     // }
+    // }
 
     // cmk btree_map does not have a last method (I think)
     // /// Returns the last element in the set, if any.
@@ -862,6 +854,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     //     }
     // }
 
+    #[allow(dead_code)] // cmk
     fn btree_map_len(btree_map: &BTreeMap<T, EndValue<T, V>>) -> T::SafeLen {
         btree_map.iter().fold(
             <T as Integer>::SafeLen::zero(),

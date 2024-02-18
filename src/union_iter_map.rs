@@ -135,8 +135,9 @@ impl<'a, T, V, I> From<UnsortedDisjointMap<'a, T, V, I>>
 where
     T: Integer,
     V: PartialEq + 'a,
-    I: Iterator<Item = RangeValue<T, &'a V>> + 'a,
+    I: Iterator<Item = RangeValue<T, &'a V>>,
 {
+    #[allow(clippy::clone_on_copy)]
     fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, I>) -> Self {
         let iter = unsorted_disjoint
             .into_iter()
@@ -163,6 +164,8 @@ where
 
     fn next(&mut self) -> Option<RangeValue<T, &'a V>> {
         loop {
+            // range_value is the next range_value from the iterator or self.option_range_value
+            // cmk rewrite with if let
             let range_value = match self.iter.next() {
                 Some(range_value) => range_value,
                 None => return self.option_range_value.take(),
@@ -173,16 +176,12 @@ where
                 continue;
             }
 
-            let current_range_value = match &self.option_range_value {
-                Some(crv) => crv,
-                None => {
-                    let crv = RangeValue {
-                        range: start..=end,
-                        value: range_value.value,
-                    };
-                    self.option_range_value = Some(crv);
-                    continue;
-                }
+            let Some(current_range_value) = self.option_range_value.take() else {
+                self.option_range_value = Some(RangeValue {
+                    range: start..=end,
+                    value: range_value.value,
+                });
+                continue;
             };
 
             let (current_start, current_end) = current_range_value.range.into_inner();

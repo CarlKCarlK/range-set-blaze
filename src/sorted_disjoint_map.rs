@@ -13,8 +13,9 @@ use crate::{
     map::BitOrMergeMap, merge_map::MergeMap, union_iter_map::UnionIterMap, Integer, RangeMapBlaze,
 };
 
+// cmk should this be pub/crate or replaced with a tuple?
 #[derive(PartialEq)]
-pub(crate) struct RangeValue<T: Integer, V: PartialEq> {
+pub struct RangeValue<T: Integer, V: PartialEq> {
     pub(crate) range: RangeInclusive<T>,
     pub(crate) value: V,
 }

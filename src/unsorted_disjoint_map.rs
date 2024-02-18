@@ -3,12 +3,10 @@ use crate::{
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
     Integer,
 };
-use alloc::collections::btree_map::Range;
 use core::{
     cmp::{max, min},
     iter::FusedIterator,
     marker::PhantomData,
-    ops::RangeInclusive,
 };
 use num_traits::Zero;
 
