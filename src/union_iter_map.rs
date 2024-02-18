@@ -41,27 +41,27 @@ use crate::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct UnionIterMap<T, V, I>
+pub struct UnionIterMap<'a, T, V, I>
 where
     T: Integer,
     V: PartialEq,
-    I: SortedStartsMap<T, V>,
+    I: SortedStartsMap<'a, T, V>,
 {
     pub(crate) iter: I,
-    pub(crate) option_range: Option<RangeValue<T, V>>,
+    pub(crate) option_range_value: Option<RangeValue<T, &'a V>>,
 }
 
-impl<T, V, I> UnionIterMap<T, V, I>
+impl<'a, T, V, I> UnionIterMap<'a, T, V, I>
 where
     T: Integer,
     V: PartialEq,
-    I: SortedStartsMap<T, V>,
+    I: SortedStartsMap<'a, T, V>,
 {
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`UnionIterMap`] for more details and examples.
     pub fn new(iter: I) -> Self {
         Self {
             iter,
-            option_range: None,
+            option_range_value: None,
         }
     }
 }
@@ -88,101 +88,106 @@ where
 //     }
 // }
 
-type SortedRangeInclusiveVec<T, V> = AssumeSortedStartsMap<T, V, vec::IntoIter<RangeValue<T, V>>>;
+type SortedRangeInclusiveVec<'a, T, V> =
+    AssumeSortedStartsMap<'a, T, V, vec::IntoIter<RangeValue<T, &'a V>>>;
 
-impl<T: Integer, V: PartialEq> FromIterator<(T, V)>
-    for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
+// from iter (T, V) to UnionIterMap
+impl<'a, T: Integer, V: PartialEq + 'a> FromIterator<(T, &'a V)>
+    for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (T, V)>,
+        I: IntoIterator<Item = (T, &'a V)>,
     {
         iter.into_iter().map(|(x, value)| (x..=x, value)).collect()
     }
 }
 
-impl<T: Integer, V: PartialEq> FromIterator<(RangeInclusive<T>, V)>
-    for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
+// from iter (RangeInclusive<T>, V) to UnionIterMap
+impl<'a, T: Integer, V: PartialEq + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
+    for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (RangeInclusive<T>, V)>,
+        I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
-        iter.into_iter()
-            .map(|(range, v)| RangeValue { range, value: v })
-            .collect()
+        let iter = iter.into_iter();
+        let iter = iter.map(|(range, value)| RangeValue { range, value });
+        iter.collect()
     }
 }
 
-// impl<T: Integer, V: PartialEq> FromIterator<RangeValue<T, V>>
-//     for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
-// {
-//     fn from_iter<I>(iter: I) -> Self
-//     where
-//         I: IntoIterator<Item = RangeValue<T, V>>,
-//     {
-//         UnsortedDisjointMap::from(iter.into_iter()).into()
-//     }
-// }
+// from iter RangeValue<T, V> to UnionIterMap
+impl<'a, T: Integer, V: PartialEq + 'a> FromIterator<RangeValue<T, &'a V>>
+    for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
+{
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = RangeValue<T, &'a V>>,
+    {
+        UnsortedDisjointMap::from(iter.into_iter()).into()
+    }
+}
 
-impl<T, V, I> From<UnsortedDisjointMap<T, V, I>>
-    for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
+// from from UnsortedDisjointMap to UnionIterMap
+impl<'a, T, V, I> From<UnsortedDisjointMap<'a, T, V, I>>
+    for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
 where
     T: Integer,
     V: PartialEq,
-    I: Iterator<Item = RangeValue<T, V>>, // Any iterator is OK, because we will sort
+    I: Iterator<Item = RangeValue<T, &'a V>>, // Any iterator is OK, because we will sort
 {
-    fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, I>) -> Self {
+    fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, I>) -> Self {
         let iter = AssumeSortedStartsMap {
-            iter: unsorted_disjoint.sorted_by_key(|range| *range.start()),
+            iter: unsorted_disjoint.sorted_by_key(|range_value| range_value.range.start()),
         };
         Self {
             iter,
-            option_range: None,
+            option_range_value: None,
         }
     }
 }
 
-impl<T: Integer, V: PartialEq, I> FusedIterator for UnionIterMap<T, V, I> where
-    I: SortedStartsMap<T, V> + FusedIterator
+impl<'a, T: Integer, V: PartialEq, I> FusedIterator for UnionIterMap<'a, T, V, I> where
+    I: SortedStartsMap<'a, T, V> + FusedIterator
 {
 }
 
-impl<T: Integer, V: PartialEq, I> Iterator for UnionIterMap<T, V, I>
+impl<'a, T: Integer, V: PartialEq, I> Iterator for UnionIterMap<'a, T, V, I>
 where
-    I: SortedStartsMap<T, V>,
+    I: SortedStartsMap<'a, T, V>,
 {
-    type Item = RangeValue<T, V>;
+    type Item = RangeValue<T, &'a V>;
 
-    fn next(&mut self) -> Option<RangeValue<T, V>> {
+    fn next(&mut self) -> Option<RangeValue<T, &'a V>> {
         loop {
-            let range = match self.iter.next() {
-                Some(r) => r,
-                None => return self.option_range.take(),
+            let range_value = match self.iter.next() {
+                Some(range_value) => range_value,
+                None => return self.option_range_value.take(),
             };
 
-            let (start, end) = range.into_inner();
+            let (start, end) = range_value.range.into_inner();
             if end < start {
                 continue;
             }
 
-            let current_range = match self.option_range.clone() {
+            let current_range_value = match self.option_range_value {
                 Some(cr) => cr,
                 None => {
-                    self.option_range = Some(start..=end);
+                    self.option_range_value = Some(start..=end);
                     continue;
                 }
             };
 
-            let (current_start, current_end) = current_range.into_inner();
+            let (current_start, current_end) = current_range_value.into_inner();
             debug_assert!(current_start <= start); // real assert
             if start <= current_end
                 || (current_end < T::safe_max_value() && start <= current_end + T::one())
             {
-                self.option_range = Some(current_start..=max(current_end, end));
+                self.option_range_value = Some(current_start..=max(current_end, end));
                 continue;
             } else {
-                self.option_range = Some(start..=end);
+                self.option_range_value = Some(start..=end);
                 return Some(current_start..=current_end);
             }
         }
@@ -193,7 +198,7 @@ where
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (low, high) = self.iter.size_hint();
         let low = low.min(1);
-        if self.option_range.is_some() {
+        if self.option_range_value.is_some() {
             (low, high.map(|x| x + 1))
         } else {
             (low, high)
@@ -213,12 +218,12 @@ where
 //     }
 // }
 
-impl<T: Integer, V: PartialEq, R, L> ops::BitOr<R> for UnionIterMap<T, V, L>
+impl<'a, T: Integer, V: PartialEq + 'a, R, L> ops::BitOr<R> for UnionIterMap<'a, T, V, L>
 where
-    L: SortedStartsMap<T, V>,
-    R: SortedDisjointMap<T, V>,
+    L: SortedStartsMap<'a, T, V>,
+    R: SortedDisjointMap<'a, T, V>,
 {
-    type Output = BitOrMergeMap<T, V, Self, R>;
+    type Output = BitOrMergeMap<'a, T, V, Self, R>;
 
     fn bitor(self, rhs: R) -> Self::Output {
         // It might be fine to optimize to self.iter, but that would require

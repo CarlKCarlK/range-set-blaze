@@ -1,4 +1,4 @@
-use crate::merge_map::{KMergeMap, MergeMap};
+use crate::merge_map::MergeMap;
 use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
@@ -385,9 +385,10 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// let a1: RangeMapBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
-    pub fn from_sorted_disjoint_map<I>(iter: I) -> Self
+    pub fn from_sorted_disjoint_map<'a, I>(iter: I) -> Self
     where
-        I: SortedDisjointMap<T, V>,
+        I: SortedDisjointMap<'a, T, V>,
+        V: 'a + Clone,
     {
         let mut iter_with_len = SortedDisjointWithLenSoFarMap::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
@@ -1212,7 +1213,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
 // We create a RangeMapBlaze from an iterator of integers or integer ranges by
 // 1. turning them into a UnionIterMap (internally, it collects into intervals and sorts by start).
 // 2. Turning the SortedDisjointMap into a BTreeMap.
-impl<T: Integer, V: PartialEq> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
+impl<'a, T: Integer, V: PartialEq + Clone + 'a> FromIterator<(T, &'a V)> for RangeMapBlaze<T, V> {
     /// Create a [`RangeMapBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
@@ -1228,13 +1229,15 @@ impl<T: Integer, V: PartialEq> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (T, V)>,
+        I: IntoIterator<Item = (T, &'a V)>,
     {
         iter.into_iter().map(|(x, v)| (x..=x, v)).collect()
     }
 }
 
-impl<T: Integer, V: PartialEq> FromIterator<(RangeInclusive<T>, V)> for RangeMapBlaze<T, V> {
+impl<'a, T: Integer, V: PartialEq + Clone + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
+    for RangeMapBlaze<T, V>
+{
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
@@ -1253,9 +1256,10 @@ impl<T: Integer, V: PartialEq> FromIterator<(RangeInclusive<T>, V)> for RangeMap
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (RangeInclusive<T>, V)>,
+        I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
-        let union_iter: UnionIterMap<T, V, _> = iter.into_iter().collect();
+        let iter = iter.into_iter();
+        let union_iter = UnionIterMap::<T, V, _>::from_iter(iter);
         RangeMapBlaze::from_sorted_disjoint_map(union_iter)
     }
 }
@@ -1289,9 +1293,9 @@ impl<T: Integer, V: PartialEq> FromIterator<(RangeInclusive<T>, V)> for RangeMap
 // }
 
 #[doc(hidden)]
-pub type BitOrMergeMap<T, V, L, R> = UnionIterMap<T, V, MergeMap<T, V, L, R>>;
-#[doc(hidden)]
-pub type BitOrKMergeMap<T, V, I> = UnionIterMap<T, V, KMergeMap<T, V, I>>;
+pub type BitOrMergeMap<'a, T, V, L, R> = UnionIterMap<'a, T, V, MergeMap<'a, T, V, L, R>>;
+// #[doc(hidden)]
+// pub type BitOrKMergeMap<T, V, I> = UnionIterMap<T, V, KMergeMap<T, V, I>>;
 // #[doc(hidden)]
 // pub type BitAndMergeMap<T, V, L, R> = NotIterMap<T, V, BitNandMergeMap<T, V, L, R>>;
 // #[doc(hidden)]
@@ -1319,11 +1323,11 @@ pub type BitOrKMergeMap<T, V, I> = UnionIterMap<T, V, KMergeMap<T, V, I>>;
 //     NotIterMap<T, V, BitOrMergeMap<T, V, Tee<L>, Tee<R>>>,
 // >;
 
-impl<T: Integer, V: PartialEq, I: SortedStartsMap<T, V>> SortedStartsMap<T, V>
-    for UnionIterMap<T, V, I>
+impl<'a, T: Integer, V: PartialEq + 'a, I: SortedStartsMap<'a, T, V>> SortedStartsMap<'a, T, V>
+    for UnionIterMap<'a, T, V, I>
 {
 }
-impl<T: Integer, V: PartialEq, I: SortedStartsMap<T, V>> SortedDisjointMap<T, V>
-    for UnionIterMap<T, V, I>
+impl<'a, T: Integer, V: PartialEq + 'a, I: SortedStartsMap<'a, T, V>> SortedDisjointMap<'a, T, V>
+    for UnionIterMap<'a, T, V, I>
 {
 }

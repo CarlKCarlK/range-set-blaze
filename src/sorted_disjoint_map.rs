@@ -13,6 +13,7 @@ use crate::{
     map::BitOrMergeMap, merge_map::MergeMap, union_iter_map::UnionIterMap, Integer, RangeMapBlaze,
 };
 
+#[derive(PartialEq)]
 pub(crate) struct RangeValue<T: Integer, V: PartialEq> {
     pub(crate) range: RangeInclusive<T>,
     pub(crate) value: V,
@@ -21,7 +22,10 @@ pub(crate) struct RangeValue<T: Integer, V: PartialEq> {
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
 #[doc(hidden)]
-pub trait SortedStartsMap<T: Integer, V: PartialEq>: Iterator<Item = RangeValue<T, V>> {}
+pub trait SortedStartsMap<'a, T: Integer, V: PartialEq + 'a>:
+    Iterator<Item = RangeValue<T, &'a V>>
+{
+}
 
 /// The trait used to mark iterators that provide ranges that are sorted by start and disjoint. Set operations on
 /// iterators that implement this trait can be performed in linear time.
@@ -210,7 +214,7 @@ pub trait SortedStartsMap<T: Integer, V: PartialEq>: Iterator<Item = RangeValue<
 ///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
 /// );
 /// ```
-pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
+pub trait SortedDisjointMap<'a, T: Integer, V: PartialEq + 'a>: SortedStartsMap<'a, T, V> {
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their union.
@@ -233,10 +237,10 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     /// assert_eq!(union.to_string(), "1..=2");
     /// ```
     #[inline]
-    fn union<R>(self, other: R) -> BitOrMergeMap<T, V, Self, R::IntoIter>
+    fn union<R>(self, other: R) -> BitOrMergeMap<'a, T, V, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, V>,
+        R::IntoIter: SortedDisjointMap<'a, T, V>,
         Self: Sized,
     {
         UnionIterMap::new(MergeMap::new(self, other.into_iter()))
@@ -266,7 +270,7 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     // fn intersection<R>(self, other: R) -> BitAndMergeMap<T, V, Self, R::IntoIter>
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<T, V>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
     //     Self: Sized,
     // {
     //     !(self.complement() | other.into_iter().complement())
@@ -296,7 +300,7 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     // fn difference<R>(self, other: R) -> BitSubMergeMap<T, V, Self, R::IntoIter>
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<T, V>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
     //     Self: Sized,
     // {
     //     !(self.complement() | other.into_iter())
@@ -353,7 +357,7 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     // fn symmetric_difference<R>(self, other: R) -> BitXOrTeeMap<T, V, Self, R::IntoIter>
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<T, V>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
     //     Self: Sized,
     // {
     //     let (lhs0, lhs1) = self.tee();
@@ -376,29 +380,29 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     fn equal<R>(self, other: R) -> bool
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, V>,
+        R::IntoIter: SortedDisjointMap<'a, T, V>,
         Self: Sized,
     {
         itertools::equal(self, other)
     }
 
-    /// Given a [`SortedDisjointMap`] iterators, produces a string version. Unlike most `to_string` and `fmt` in Rust,
-    /// this method takes ownership of the iterator and consumes it.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_blaze::prelude::*;
-    ///
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
-    /// assert_eq!(a.to_string(), "1..=2");
-    /// ```
-    fn to_string(self) -> String
-    where
-        Self: Sized,
-    {
-        self.map(|range| format!("{range:?}")).join(", ")
-    }
+    // /// Given a [`SortedDisjointMap`] iterators, produces a string version. Unlike most `to_string` and `fmt` in Rust,
+    // /// this method takes ownership of the iterator and consumes it.
+    // ///
+    // /// # Examples
+    // ///
+    // /// ```
+    // /// use range_set_blaze::prelude::*;
+    // ///
+    // /// let a = CheckSortedDisjointMap::from([1..=2]);
+    // /// assert_eq!(a.to_string(), "1..=2");
+    // /// ```
+    // fn to_string(self) -> String
+    // where
+    //     Self: Sized,
+    // {
+    //     self.map(|range| format!("{range:?}")).join(", ")
+    // }
 
     /// Returns `true` if the set contains no elements.
     ///
@@ -441,17 +445,17 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     /// let set = CheckSortedDisjointMap::from([2..=2, 4..=4]);
     /// assert_eq!(set.is_subset(sup), false);
     /// ```
-    #[must_use]
-    #[inline]
-    #[allow(clippy::wrong_self_convention)]
-    fn is_subset<R>(self, other: R) -> bool
-    where
-        R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, V>,
-        Self: Sized,
-    {
-        self.difference(other).is_empty()
-    }
+    // #[must_use]
+    // #[inline]
+    // #[allow(clippy::wrong_self_convention)]
+    // fn is_subset<R>(self, other: R) -> bool
+    // where
+    //     R: IntoIterator<Item = Self::Item>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
+    //     Self: Sized,
+    // {
+    //     self.difference(other).is_empty()
+    // }
 
     /// Returns `true` if the set is a superset of another,
     /// i.e., `self` contains at least all the elements in `other`.
@@ -473,17 +477,17 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     /// set.insert(2);
     /// assert_eq!(set.is_superset(&sub), true);
     /// ```
-    #[inline]
-    #[must_use]
-    #[allow(clippy::wrong_self_convention)]
-    fn is_superset<R>(self, other: R) -> bool
-    where
-        R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, V>,
-        Self: Sized,
-    {
-        other.into_iter().is_subset(self)
-    }
+    // #[inline]
+    // #[must_use]
+    // #[allow(clippy::wrong_self_convention)]
+    // fn is_superset<R>(self, other: R) -> bool
+    // where
+    //     R: IntoIterator<Item = Self::Item>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
+    //     Self: Sized,
+    // {
+    //     other.into_iter().is_subset(self)
+    // }
 
     /// Returns `true` if `self` has no elements in common with `other`.
     /// This is equivalent to checking for an empty intersection.
@@ -502,17 +506,17 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     /// b.insert(1);
     /// assert_eq!(a.is_disjoint(&b), false);
     /// ```
-    #[must_use]
-    #[inline]
-    #[allow(clippy::wrong_self_convention)]
-    fn is_disjoint<R>(self, other: R) -> bool
-    where
-        R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, V>,
-        Self: Sized,
-    {
-        self.intersection(other).is_empty()
-    }
+    // #[must_use]
+    // #[inline]
+    // #[allow(clippy::wrong_self_convention)]
+    // fn is_disjoint<R>(self, other: R) -> bool
+    // where
+    //     R: IntoIterator<Item = Self::Item>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
+    //     Self: Sized,
+    // {
+    //     self.intersection(other).is_empty()
+    // }
 
     /// Create a [`RangeMapBlaze`] from a [`SortedDisjointMap`] iterator.
     ///
@@ -530,6 +534,7 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
     fn into_range_map_blaze(self) -> RangeMapBlaze<T, V>
     where
         Self: Sized,
+        V: Clone,
     {
         RangeMapBlaze::from_sorted_disjoint_map(self)
     }
@@ -574,7 +579,7 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
 //     seen_none: bool,
 // }
 
-// impl<T: Integer, I> SortedDisjointMap<T, V> for CheckSortedDisjointMap<T, I> where
+// impl<T: Integer, I> SortedDisjointMap<'a, T, V> for CheckSortedDisjointMap<T, I> where
 //     I: Iterator<Item = RangeInclusive<T, V>>
 // {
 // }
@@ -691,7 +696,7 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
 // impl<T: Integer, R, L> ops::BitOr<R> for CheckSortedDisjointMap<T, L>
 // where
 //     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<T, V>,
+//     R: SortedDisjointMap<'a, T, V>,
 // {
 //     type Output = BitOrMergeMap<T, V, Self, R>;
 
@@ -703,7 +708,7 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
 // impl<T: Integer, R, L> ops::BitAnd<R> for CheckSortedDisjointMap<T, L>
 // where
 //     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<T, V>,
+//     R: SortedDisjointMap<'a, T, V>,
 // {
 //     type Output = BitAndMergeMap<T, V, Self, R>;
 
@@ -715,7 +720,7 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
 // impl<T: Integer, R, L> ops::Sub<R> for CheckSortedDisjointMap<T, L>
 // where
 //     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<T, V>,
+//     R: SortedDisjointMap<'a, T, V>,
 // {
 //     type Output = BitSubMergeMap<T, V, Self, R>;
 
@@ -727,7 +732,7 @@ pub trait SortedDisjointMap<T: Integer, V: PartialEq>: SortedStartsMap<T, V> {
 // impl<T: Integer, R, L> ops::BitXor<R> for CheckSortedDisjointMap<T, L>
 // where
 //     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<T, V>,
+//     R: SortedDisjointMap<'a, T, V>,
 // {
 //     type Output = BitXOrTeeMap<T, V, Self, R>;
 

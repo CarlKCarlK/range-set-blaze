@@ -1,7 +1,7 @@
 use crate::{
     map::EndValue,
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
-    Integer, SortedDisjointMap,
+    Integer,
 };
 use alloc::collections::btree_map::Range;
 use core::{
@@ -13,23 +13,23 @@ use core::{
 use num_traits::Zero;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub(crate) struct UnsortedDisjointMap<T, V, I>
+pub(crate) struct UnsortedDisjointMap<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEq,
-    I: Iterator<Item = RangeValue<T, V>>,
+    V: PartialEq + 'a,
+    I: Iterator<Item = RangeValue<T, &'a V>>,
 {
     iter: I,
-    option_range: Option<RangeValue<T, V>>,
+    option_range: Option<RangeValue<T, &'a V>>,
     min_value_plus_2: T,
     two: T,
 }
 
-impl<T, V, I> From<I> for UnsortedDisjointMap<T, V, I::IntoIter>
+impl<'a, T, V, I> From<I> for UnsortedDisjointMap<'a, T, V, I::IntoIter>
 where
     T: Integer,
-    V: PartialEq,
-    I: IntoIterator<Item = RangeValue<T, V>>, // Any iterator is fine
+    V: PartialEq + 'a,
+    I: IntoIterator<Item = RangeValue<T, &'a V>>, // Any iterator is fine
 {
     fn from(into_iter: I) -> Self {
         UnsortedDisjointMap {
@@ -41,21 +41,22 @@ where
     }
 }
 
-impl<T, V, I> FusedIterator for UnsortedDisjointMap<T, V, I>
-where
-    T: Integer,
-    V: PartialEq,
-    I: Iterator<Item = RangeValue<T, V>> + FusedIterator,
-{
-}
+// cmk
+// impl<'a, T, V, I> FusedIterator for UnsortedDisjointMap<'a, T, V, I>
+// where
+//     T: Integer,
+//     V: PartialEq + 'a,
+//     I: Iterator<Item = RangeValue<T, &'a V>> + FusedIterator,
+// {
+// }
 
-impl<T, V, I> Iterator for UnsortedDisjointMap<T, V, I>
+impl<'a, T, V, I> Iterator for UnsortedDisjointMap<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEq,
-    I: Iterator<Item = RangeValue<T, V>>,
+    V: PartialEq + 'a,
+    I: Iterator<Item = RangeValue<T, &'a V>>,
 {
-    type Item = RangeValue<T, V>;
+    type Item = RangeValue<T, &'a V>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -106,15 +107,15 @@ where
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub(crate) struct SortedDisjointWithLenSoFarMap<T, V, I>
+pub(crate) struct SortedDisjointWithLenSoFarMap<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEq,
-    I: SortedDisjointMap<T, V>,
+    V: PartialEq + Clone + 'a,
+    I: SortedDisjointMap<'a, T, V>,
 {
     iter: I,
     len: <T as Integer>::SafeLen,
-    _phantom_data: PhantomData<V>,
+    _phantom_data: PhantomData<&'a V>,
 }
 
 // cmk
@@ -132,23 +133,25 @@ where
 //     }
 // }
 
-impl<T: Integer, V: PartialEq, I> SortedDisjointWithLenSoFarMap<T, V, I>
+impl<'a, T: Integer, V: PartialEq + Clone + 'a, I> SortedDisjointWithLenSoFarMap<'a, T, V, I>
 where
-    I: SortedDisjointMap<T, V>,
+    I: SortedDisjointMap<'a, T, V>,
 {
     pub fn len_so_far(&self) -> <T as Integer>::SafeLen {
         self.len
     }
 }
 
-impl<T: Integer, V: PartialEq, I> FusedIterator for SortedDisjointWithLenSoFarMap<T, V, I> where
-    I: SortedDisjointMap<T, V> + FusedIterator
-{
-}
+// cmk
+// impl<T: Integer, V: PartialEq, I> FusedIterator for SortedDisjointWithLenSoFarMap<T, V, I> where
+//     I: SortedDisjointMap<T, V> + FusedIterator
+// {
+// }
 
-impl<T: Integer, V: PartialEq, I> Iterator for SortedDisjointWithLenSoFarMap<T, V, I>
+impl<'a, T: Integer, V: PartialEq + Clone + 'a, I> Iterator
+    for SortedDisjointWithLenSoFarMap<'a, T, V, I>
 where
-    I: SortedDisjointMap<T, V>,
+    I: SortedDisjointMap<'a, T, V>,
 {
     type Item = (T, EndValue<T, V>);
 
@@ -159,7 +162,7 @@ where
             self.len += T::safe_len(&range_value.range);
             let end_value = EndValue {
                 end,
-                value: range_value.value,
+                value: range_value.value.clone(),
             };
             Some((start, end_value))
         } else {
@@ -176,46 +179,48 @@ where
 
 /// Gives any iterator of ranges the [`SortedStartsMap`] trait without any checking.
 #[doc(hidden)]
-pub struct AssumeSortedStartsMap<T, V, I>
+pub struct AssumeSortedStartsMap<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEq,
-    I: Iterator<Item = RangeValue<T, V>>,
+    V: PartialEq + 'a,
+    I: Iterator<Item = RangeValue<T, &'a V>>,
 {
     pub(crate) iter: I,
 }
 
-impl<T: Integer, V: PartialEq, I> SortedStartsMap<T, V> for AssumeSortedStartsMap<T, V, I> where
-    I: Iterator<Item = RangeValue<T, V>>
+impl<'a, T: Integer, V: PartialEq + 'a, I> SortedStartsMap<'a, T, V>
+    for AssumeSortedStartsMap<'a, T, V, I>
+where
+    I: Iterator<Item = RangeValue<T, &'a V>>,
 {
 }
 
-impl<T, V, I> AssumeSortedStartsMap<T, V, I>
+impl<'a, T, V, I> AssumeSortedStartsMap<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEq,
-    I: Iterator<Item = RangeValue<T, V>>,
+    V: PartialEq + 'a,
+    I: Iterator<Item = RangeValue<T, &'a V>>,
 {
     pub fn new(iter: I) -> Self {
         AssumeSortedStartsMap { iter }
     }
 }
 
-impl<T, V, I> FusedIterator for AssumeSortedStartsMap<T, V, I>
+impl<'a, T, V, I> FusedIterator for AssumeSortedStartsMap<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEq,
-    I: Iterator<Item = RangeValue<T, V>> + FusedIterator,
+    V: PartialEq + 'a,
+    I: Iterator<Item = RangeValue<T, &'a V>> + FusedIterator,
 {
 }
 
-impl<T, V, I> Iterator for AssumeSortedStartsMap<T, V, I>
+impl<'a, T, V, I> Iterator for AssumeSortedStartsMap<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEq,
-    I: Iterator<Item = RangeValue<T, V>>,
+    V: PartialEq + 'a,
+    I: Iterator<Item = RangeValue<T, &'a V>>,
 {
-    type Item = RangeValue<T, V>;
+    type Item = RangeValue<T, &'a V>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
@@ -226,10 +231,11 @@ where
     }
 }
 
-impl<T: Integer, V: PartialEq, I> From<I> for SortedDisjointWithLenSoFarMap<T, V, I::IntoIter>
+impl<'a, T: Integer, V: PartialEq + Clone + 'a, I> From<I>
+    for SortedDisjointWithLenSoFarMap<'a, T, V, I::IntoIter>
 where
-    I: IntoIterator<Item = RangeValue<T, V>>,
-    I::IntoIter: SortedDisjointMap<T, V>,
+    I: IntoIterator<Item = RangeValue<T, &'a V>>,
+    I::IntoIter: SortedDisjointMap<'a, T, V>,
 {
     fn from(into_iter: I) -> Self {
         SortedDisjointWithLenSoFarMap {
