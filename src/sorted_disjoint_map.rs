@@ -14,8 +14,8 @@ use crate::{
 };
 
 pub(crate) struct RangeValue<T: Integer, V: PartialEq> {
-    range: RangeInclusive<T>,
-    value: V,
+    pub(crate) range: RangeInclusive<T>,
+    pub(crate) value: V,
 }
 
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,

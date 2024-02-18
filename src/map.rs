@@ -16,9 +16,9 @@ use itertools::Tee;
 use num_traits::{One, Zero};
 
 #[derive(Clone, Hash, Default, PartialEq)]
-struct EndValue<T: Integer, V: PartialEq> {
-    end: T,
-    value: V,
+pub(crate) struct EndValue<T: Integer, V: PartialEq> {
+    pub(crate) end: T,
+    pub(crate) value: V,
 }
 
 #[derive(Clone, Hash, Default, PartialEq)]
@@ -612,7 +612,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     //     self.ranges().is_disjoint(other.ranges())
     // }
 
-    fn delete_extra(&mut self, internal_range: &RangeValue<T, V>) {
+    fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
         let (start_after, end_value_after) = after.next().unwrap(); // there will always be a next
@@ -750,7 +750,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// assert_eq!(set.ranges_insert(3..=4), false);
     /// assert_eq!(set.len(), 5usize);
     /// ```
-    pub fn ranges_insert(&mut self, range: RangeValue<T, V>, value: V) -> bool {
+    pub fn ranges_insert(&mut self, range: RangeInclusive<T>, value: V) -> bool {
         let len_before = self.len;
         self.internal_add(range, value);
         self.len != len_before
@@ -945,7 +945,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-    fn internal_add(&mut self, range: RangeValue<T, V>, value: V) {
+    fn internal_add(&mut self, range: RangeInclusive<T>, value: V) {
         let (start, end) = range.clone().into_inner();
         assert!(
             end <= T::safe_max_value(),
@@ -976,7 +976,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
         }
     }
 
-    fn internal_add2(&mut self, internal_range: &RangeValue<T, V>, value: V) {
+    fn internal_add2(&mut self, internal_range: &RangeInclusive<T>, value: V) {
         let (start, end) = internal_range.clone().into_inner();
         let end_value = EndValue { end, value };
         let was_there = self.btree_map.insert(start, end_value);
@@ -1056,7 +1056,7 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
                 self.len += T::safe_len(&(start..=end_value.end));
                 self.btree_map.insert(start, end_value);
             }
-            Some(start)
+            Some((start, end_value.value))
         } else {
             None
         }
@@ -1228,31 +1228,9 @@ impl<T: Integer, V: PartialEq> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = T>,
+        I: IntoIterator<Item = (T, V)>,
     {
-        iter.into_iter().map(|x| x..=x).collect()
-    }
-}
-
-impl<'a, T: Integer, V: PartialEq> FromIterator<&'a T> for RangeMapBlaze<T, V> {
-    /// Create a [`RangeMapBlaze`] from an iterator of integers references. Duplicates and out-of-order elements are fine.
-    ///
-    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_blaze::RangeMapBlaze;
-    ///
-    /// let a0 = RangeMapBlaze::from_iter(vec![3, 2, 1, 100, 1]);
-    /// let a1: RangeMapBlaze<i32> = vec![3, 2, 1, 100, 1].into_iter().collect();
-    /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
-    /// ```
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = &'a T>,
-    {
-        iter.into_iter().map(|x| *x..=*x).collect()
+        iter.into_iter().map(|(x, v)| (x..=x, v)).collect()
     }
 }
 
@@ -1277,38 +1255,38 @@ impl<T: Integer, V: PartialEq> FromIterator<(RangeInclusive<T>, V)> for RangeMap
     where
         I: IntoIterator<Item = (RangeInclusive<T>, V)>,
     {
-        let union_iter: UnionIterMap<T, _> = iter.into_iter().collect();
+        let union_iter: UnionIterMap<T, V, _> = iter.into_iter().collect();
         RangeMapBlaze::from_sorted_disjoint_map(union_iter)
     }
 }
 
-impl<'a, T: Integer + 'a, V: PartialEq> FromIterator<&'a (RangeInclusive<T>, V)>
-    for RangeMapBlaze<T, V>
-{
-    /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
-    /// Overlapping, out-of-order, and empty ranges are fine.
-    ///
-    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_blaze::RangeMapBlaze;
-    ///
-    /// #[allow(clippy::reversed_empty_ranges)]
-    /// let vec_range = vec![1..=2, 2..=2, -10..=-5, 1..=0];
-    /// let a0 = RangeMapBlaze::from_iter(vec_range.iter());
-    /// let a1: RangeMapBlaze<i32> = vec_range.iter().collect();
-    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
-    /// ```
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = &'a (RangeInclusive<T>, V)>,
-    {
-        let union_iter_map: UnionIterMap<T, _> = iter.into_iter().cloned().collect();
-        RangeMapBlaze::from_sorted_disjoint_map(union_iter_map)
-    }
-}
+// impl<'a, T: Integer + 'a, V: PartialEq> FromIterator<&'a (RangeInclusive<T>, V)>
+//     for RangeMapBlaze<T, V>
+// {
+//     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
+//     /// Overlapping, out-of-order, and empty ranges are fine.
+//     ///
+//     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
+//     ///
+//     /// # Examples
+//     ///
+//     /// ```
+//     /// use range_set_blaze::RangeMapBlaze;
+//     ///
+//     /// #[allow(clippy::reversed_empty_ranges)]
+//     /// let vec_range = vec![1..=2, 2..=2, -10..=-5, 1..=0];
+//     /// let a0 = RangeMapBlaze::from_iter(vec_range.iter());
+//     /// let a1: RangeMapBlaze<i32> = vec_range.iter().collect();
+//     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+//     /// ```
+//     fn from_iter<I>(iter: I) -> Self
+//     where
+//         I: IntoIterator<Item = &'a (RangeInclusive<T>, V)>,
+//     {
+//         let union_iter_map: UnionIterMap<T, V, _> = iter.into_iter().collect();
+//         RangeMapBlaze::from_sorted_disjoint_map(union_iter_map)
+//     }
+// }
 
 #[doc(hidden)]
 pub type BitOrMergeMap<T, V, L, R> = UnionIterMap<T, V, MergeMap<T, V, L, R>>;

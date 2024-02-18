@@ -1,7 +1,7 @@
 use core::{
     cmp::max,
     iter::FusedIterator,
-    ops::{self},
+    ops::{self, RangeInclusive},
 };
 
 use alloc::vec;
@@ -39,7 +39,7 @@ use crate::{
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100")
 /// ```
-#[derive(Clone, Debug)]
+// cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct UnionIterMap<T, V, I>
 where
@@ -66,35 +66,27 @@ where
     }
 }
 
-impl<T: Integer, V: PartialEq, const N: usize> From<[T; N]>
-    for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
-{
-    fn from(arr: [T; N]) -> Self {
-        arr.as_slice().into()
-    }
-}
+// impl<T: Integer, V: PartialEq, const N: usize> From<[T; N]>
+//     for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
+// {
+//     fn from(arr: [T; N]) -> Self {
+//         arr.as_slice().into()
+//     }
+// }
 
-impl<T: Integer, V: PartialEq> From<&[T]> for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>> {
-    fn from(slice: &[T]) -> Self {
-        slice.iter().cloned().collect()
-    }
-}
+// impl<T: Integer, V: PartialEq> From<&[T]> for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>> {
+//     fn from(slice: &[T]) -> Self {
+//         slice.iter().cloned().collect()
+//     }
+// }
 
-impl<T: Integer, V: PartialEq, const N: usize> From<[RangeValue<T, V>; N]>
-    for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
-{
-    fn from(arr: [RangeValue<T, V>; N]) -> Self {
-        arr.as_slice().into()
-    }
-}
-
-impl<T: Integer, V: PartialEq> From<&[RangeValue<T, V>]>
-    for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
-{
-    fn from(slice: &[RangeValue<T, V>]) -> Self {
-        slice.iter().cloned().collect()
-    }
-}
+// impl<T: Integer, V: PartialEq, const N: usize> From<[RangeValue<T, V>; N]>
+//     for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
+// {
+//     fn from(arr: [RangeValue<T, V>; N]) -> Self {
+//         arr.as_slice().into()
+//     }
+// }
 
 type SortedRangeInclusiveVec<T, V> = AssumeSortedStartsMap<T, V, vec::IntoIter<RangeValue<T, V>>>;
 
@@ -105,20 +97,33 @@ impl<T: Integer, V: PartialEq> FromIterator<(T, V)>
     where
         I: IntoIterator<Item = (T, V)>,
     {
-        iter.into_iter().map(|x| x..=x).collect()
+        iter.into_iter().map(|(x, value)| (x..=x, value)).collect()
     }
 }
 
-impl<T: Integer, V: PartialEq> FromIterator<RangeValue<T, V>>
+impl<T: Integer, V: PartialEq> FromIterator<(RangeInclusive<T>, V)>
     for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = RangeValue<T, V>>,
+        I: IntoIterator<Item = (RangeInclusive<T>, V)>,
     {
-        UnsortedDisjointMap::from(iter.into_iter()).into()
+        iter.into_iter()
+            .map(|(range, v)| RangeValue { range, value: v })
+            .collect()
     }
 }
+
+// impl<T: Integer, V: PartialEq> FromIterator<RangeValue<T, V>>
+//     for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
+// {
+//     fn from_iter<I>(iter: I) -> Self
+//     where
+//         I: IntoIterator<Item = RangeValue<T, V>>,
+//     {
+//         UnsortedDisjointMap::from(iter.into_iter()).into()
+//     }
+// }
 
 impl<T, V, I> From<UnsortedDisjointMap<T, V, I>>
     for UnionIterMap<T, V, SortedRangeInclusiveVec<T, V>>

@@ -1,11 +1,14 @@
 use crate::{
+    map::EndValue,
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
     Integer, SortedDisjointMap,
 };
+use alloc::collections::btree_map::Range;
 use core::{
     cmp::{max, min},
     iter::FusedIterator,
     marker::PhantomData,
+    ops::RangeInclusive,
 };
 use num_traits::Zero;
 
@@ -147,14 +150,18 @@ impl<T: Integer, V: PartialEq, I> Iterator for SortedDisjointWithLenSoFarMap<T, 
 where
     I: SortedDisjointMap<T, V>,
 {
-    type Item = (T, T);
+    type Item = (T, EndValue<T, V>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(range) = self.iter.next() {
-            let (start, end) = range.clone().into_inner();
+        if let Some(range_value) = self.iter.next() {
+            let (start, end) = range_value.range.clone().into_inner();
             debug_assert!(start <= end && end <= T::safe_max_value());
-            self.len += T::safe_len(&range);
-            Some((start, end))
+            self.len += T::safe_len(&range_value.range);
+            let end_value = EndValue {
+                end,
+                value: range_value.value,
+            };
+            Some((start, end_value))
         } else {
             None
         }
@@ -216,5 +223,19 @@ where
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
+    }
+}
+
+impl<T: Integer, V: PartialEq, I> From<I> for SortedDisjointWithLenSoFarMap<T, V, I::IntoIter>
+where
+    I: IntoIterator<Item = RangeValue<T, V>>,
+    I::IntoIter: SortedDisjointMap<T, V>,
+{
+    fn from(into_iter: I) -> Self {
+        SortedDisjointWithLenSoFarMap {
+            iter: into_iter.into_iter(),
+            len: <T as Integer>::SafeLen::zero(),
+            _phantom_data: PhantomData,
+        }
     }
 }

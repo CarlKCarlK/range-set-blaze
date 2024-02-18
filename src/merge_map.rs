@@ -31,7 +31,6 @@ use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap}
 /// let c = a | b;
 /// assert_eq!(c.to_string(), "1..=100")
 /// ```
-#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MergeMap<T, V, L, R>
 where
