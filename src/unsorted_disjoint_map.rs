@@ -20,7 +20,7 @@ where
     I: Iterator<Item = RangeValue<T, &'a V>>,
 {
     iter: I,
-    option_range: Option<RangeValue<T, &'a V>>,
+    option_range_value: Option<RangeValue<T, &'a V>>,
     min_value_plus_2: T,
     two: T,
 }
@@ -34,7 +34,7 @@ where
     fn from(into_iter: I) -> Self {
         UnsortedDisjointMap {
             iter: into_iter.into_iter(),
-            option_range: None,
+            option_range_value: None,
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
         }
@@ -60,12 +60,12 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let range = match self.iter.next() {
+            let range_value = match self.iter.next() {
                 Some(r) => r,
-                None => return self.option_range.take(),
+                None => return self.option_range_value.take(),
             };
 
-            let (next_start, next_end) = range.into_inner();
+            let (next_start, next_end) = range_value.range.into_inner();
             if next_start > next_end {
                 continue;
             }
@@ -74,20 +74,36 @@ where
                 "end must be <= T::safe_max_value()"
             );
 
-            let Some(self_range) = self.option_range.clone() else {
-                self.option_range = Some(next_start..=next_end);
+            let Some(self_range_value) = &self.option_range_value else {
+                let ncr = RangeValue {
+                    range: next_start..=next_end,
+                    value: range_value.value,
+                };
+                self.option_range_value = Some(ncr);
                 continue;
             };
 
-            let (self_start, self_end) = self_range.into_inner();
+            let (self_start, self_end) = self_range_value.range.clone().into_inner();
             if (next_start >= self.min_value_plus_2 && self_end <= next_start - self.two)
                 || (self_start >= self.min_value_plus_2 && next_end <= self_start - self.two)
             {
-                let result = Some(self_start..=self_end);
-                self.option_range = Some(next_start..=next_end);
+                let scr = RangeValue {
+                    range: self_start..=self_end,
+                    value: self_range_value.value,
+                };
+                let result = Some(scr);
+                let ncr = RangeValue {
+                    range: next_start..=next_end,
+                    value: range_value.value,
+                };
+                self.option_range_value = Some(ncr);
                 return result;
             } else {
-                self.option_range = Some(min(self_start, next_start)..=max(self_end, next_end));
+                let xcr = RangeValue {
+                    range: min(self_start, next_start)..=max(self_end, next_end),
+                    value: self_range_value.value,
+                };
+                self.option_range_value = Some(xcr);
                 continue;
             }
         }
@@ -98,7 +114,7 @@ where
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (lower, upper) = self.iter.size_hint();
         let lower = if lower == 0 { 0 } else { 1 };
-        if self.option_range.is_some() {
+        if self.option_range_value.is_some() {
             (lower, upper.map(|x| x + 1))
         } else {
             (lower, upper)

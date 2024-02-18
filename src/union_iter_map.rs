@@ -134,7 +134,7 @@ impl<'a, T, V, I> From<UnsortedDisjointMap<'a, T, V, I>>
     for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
 where
     T: Integer,
-    V: PartialEq,
+    V: PartialEq + 'a,
     I: Iterator<Item = RangeValue<T, &'a V>>, // Any iterator is OK, because we will sort
 {
     fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, I>) -> Self {
@@ -172,23 +172,39 @@ where
             }
 
             let current_range_value = match self.option_range_value {
-                Some(cr) => cr,
+                Some(crv) => crv,
                 None => {
-                    self.option_range_value = Some(start..=end);
+                    let crv = RangeValue {
+                        range: start..=end,
+                        value: range_value.value,
+                    };
+                    self.option_range_value = Some(crv);
                     continue;
                 }
             };
 
-            let (current_start, current_end) = current_range_value.into_inner();
+            let (current_start, current_end) = current_range_value.range.into_inner();
             debug_assert!(current_start <= start); // real assert
             if start <= current_end
                 || (current_end < T::safe_max_value() && start <= current_end + T::one())
             {
-                self.option_range_value = Some(current_start..=max(current_end, end));
+                let crv = RangeValue {
+                    range: current_start..=max(current_end, end),
+                    value: current_range_value.value,
+                };
+                self.option_range_value = Some(crv);
                 continue;
             } else {
-                self.option_range_value = Some(start..=end);
-                return Some(current_start..=current_end);
+                let cr0 = RangeValue {
+                    range: start..=end,
+                    value: range_value.value,
+                };
+                self.option_range_value = Some(cr0);
+                let cr1 = RangeValue {
+                    range: current_start..=current_end,
+                    value: current_range_value.value,
+                };
+                return Some(cr1);
             }
         }
     }

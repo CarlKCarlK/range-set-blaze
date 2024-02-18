@@ -1048,16 +1048,23 @@ impl<T: Integer, V: PartialEq> RangeMapBlaze<T, V> {
     /// }
     /// assert!(set.is_empty());
     /// ```
-    pub fn pop_first(&mut self) -> Option<(T, V)> {
+    // cmk doc that often must clone
+    pub fn pop_first(&mut self) -> Option<(T, V)>
+    where
+        V: Clone,
+    {
         if let Some(entry) = self.btree_map.first_entry() {
             let (start, end_value) = entry.remove_entry();
             self.len -= T::safe_len(&(start..=end_value.end));
             if start != end_value.end {
                 let start = start + T::one();
                 self.len += T::safe_len(&(start..=end_value.end));
+                let value = end_value.value.clone();
                 self.btree_map.insert(start, end_value);
+                Some((start, value))
+            } else {
+                Some((start, end_value.value))
             }
-            Some((start, end_value.value))
         } else {
             None
         }
