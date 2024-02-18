@@ -133,15 +133,16 @@ impl<'a, T: Integer + 'a, V: PartialEq + 'a> FromIterator<RangeValue<T, &'a V>>
 impl<'a, T, V, I> From<UnsortedDisjointMap<'a, T, V, I>>
     for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
 where
-    T: Integer + 'a,
+    T: Integer,
     V: PartialEq + 'a,
-    I: Iterator<Item = RangeValue<T, &'a V>> + 'a, // Ensure I also respects the 'a lifetime
+    I: Iterator<Item = RangeValue<T, &'a V>> + 'a,
 {
     fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, I>) -> Self {
-        let mut v = Vec::from_iter(unsorted_disjoint);
-        v.sort_by_key(|range_value| range_value.range.start().clone());
-        let iter0: alloc::vec::IntoIter<RangeValue<T, &'a V>> = v.into_iter();
-        let iter = AssumeSortedStartsMap { iter: iter0 };
+        let iter = unsorted_disjoint
+            .into_iter()
+            .sorted_by_key(|range_value| range_value.range.start().clone());
+        let iter = AssumeSortedStartsMap { iter };
+
         Self {
             iter,
             option_range_value: None,
