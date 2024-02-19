@@ -1,9 +1,11 @@
 use crate::merge_map::MergeMap;
+use crate::range_values::RangeValuesIter;
 use crate::sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
 use crate::Integer;
 use alloc::collections::BTreeMap;
+use core::fmt;
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use num_traits::Zero;
 
@@ -61,8 +63,8 @@ where
 /// [`BTreeMap`]: alloc::collections::BTreeMap
 /// [`new`]: RangeMapBlaze::new
 /// [`default`]: RangeMapBlaze::default
-/// [1]: struct.RangeMapBlaze.html#impl-FromIterator<T, V>-for-RangeMapBlaze<T, V>
-/// [2]: struct.RangeMapBlaze.html#impl-FromIterator<RangeInclusive<T, V>>-for-RangeMapBlaze<T, V>
+/// [1]: struct.RangeMapBlaze.html#impl-FromIterator<T, V, VR>-for-RangeMapBlaze<T, V>
+/// [2]: struct.RangeMapBlaze.html#impl-FromIterator<RangeInclusive<T, V, VR>>-for-RangeMapBlaze<T, V>
 /// [3]: RangeMapBlaze::from_sorted_disjoint
 /// [4]: RangeMapBlaze::from
 /// [5]: RangeMapBlaze::from_slice()
@@ -251,18 +253,17 @@ pub struct RangeMapBlaze<T: Integer, V: ValueOwned> {
 }
 
 // cmk
-// // FUTURE: Make all RangeMapBlaze iterators DoubleEndedIterator and ExactSizeIterator.
-// impl<T: Integer, V: PartialEqClone> fmt::Debug for RangeMapBlaze<T, V> {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{}", self.ranges().to_string())
-//     }
-// }
+impl<T: Integer, V: ValueOwned> fmt::Debug for RangeMapBlaze<T, V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.range_values().to_string())
+    }
+}
 
-// impl<T: Integer, V: PartialEqClone> fmt::Display for RangeMapBlaze<T, V> {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{}", self.ranges().to_string())
-//     }
-// }
+impl<T: Integer, V: ValueOwned> fmt::Display for RangeMapBlaze<T, V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.range_values().to_string())
+    }
+}
 
 impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
@@ -297,7 +298,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(set_iter.next_back(), None);
     /// ```
     // cmk
-    // pub fn iter(&self) -> Iter<T, RangesIter<T, V>> {
+    // pub fn iter(&self) -> Iter<T, RangesIter<T, V, VR>> {
     //     // If the user asks for an iter, we give them a RangesIter iterator
     //     // and we iterate that one integer at a time.
     //     Iter {
@@ -370,7 +371,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     // /// assert_eq!(set.last(), Some(2));
     // /// ```
     // #[must_use]
-    // pub fn last(&self) -> Option<T, V> {
+    // pub fn last(&self) -> Option<T, V, VR> {
     //     self.btree_map.iter().next_back().map(|(_, x)| x.end)
     // }
 
@@ -436,7 +437,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// let a2 = RangeMapBlaze::from_slice(vec![3, 2, 1, 100, 1]); // vector
     /// assert!(a0 == a1 && a1 == a2 && a0.to_string() == "1..=3, 100..=100");
     /// ```
-    /// [1]: struct.RangeMapBlaze.html#impl-FromIterator<T, V>-for-RangeMapBlaze<T, V>
+    /// [1]: struct.RangeMapBlaze.html#impl-FromIterator<T, V, VR>-for-RangeMapBlaze<T, V>
     // cmk
     // #[cfg(feature = "from_slice")]
     // #[inline]
@@ -682,7 +683,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     ///
     /// The simplest way is to use the range syntax `min..max`, thus `range(min..max)` will
     /// yield elements from min (inclusive) to max (exclusive).
-    /// The range may also be entered as `(Bound<T, V>, Bound<T, V>)`, so for example
+    /// The range may also be entered as `(Bound<T, V, VR>, Bound<T, V, VR>)`, so for example
     /// `range((Excluded(4), Included(10)))` will yield a left-exclusive, right-inclusive
     /// range from 4 to 10.
     ///
@@ -711,9 +712,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(Some(5), set.range(4..).next());
     /// ```
     // cmk
-    // pub fn range<R>(&self, range: R) -> IntoIter<T, V>
+    // pub fn range<R>(&self, range: R) -> IntoIter<T, V, VR>
     // where
-    //     R: RangeBounds<T, V>,
+    //     R: RangeBounds<T, V, VR>,
     // {
     //     let start = match range.start_bound() {
     //         Bound::Included(n) => *n,
@@ -888,7 +889,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     // /// assert_eq!(set.take(2), None);
     // /// ```
     // cmk
-    // pub fn take(&mut self, value: T) -> Option<T, V> {
+    // pub fn take(&mut self, value: T) -> Option<T, V, VR> {
     //     if self.remove(value) {
     //         Some(value)
     //     } else {
@@ -913,7 +914,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert!(set.replace(5).is_some());
     /// ```
     // cmk
-    // pub fn replace(&mut self, value: T) -> Option<T, V> {
+    // pub fn replace(&mut self, value: T) -> Option<T, V, VR> {
     //     if self.insert(value) {
     //         None
     //     } else {
@@ -921,7 +922,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     //     }
     // }
 
-    // fn internal_add_chatgpt(&mut self, range: RangeInclusive<T, V>) {
+    // fn internal_add_chatgpt(&mut self, range: RangeInclusive<T, V, VR>) {
     //     let (start, end) = range.into_inner();
 
     //     // Find the first overlapping range or the nearest one before it
@@ -1093,7 +1094,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert!(set.is_empty());
     /// ```
     // cmk
-    // pub fn pop_last(&mut self) -> Option<T, V> {
+    // pub fn pop_last(&mut self) -> Option<T, V, VR> {
     //     let Some(mut entry) = self.btree_map.last_entry() else {
     //         return None;
     //     };
@@ -1139,12 +1140,11 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    // cmk
-    // pub fn ranges(&self) -> RangesIter<'_, T> {
-    //     RangesIter {
-    //         iter: self.btree_map.iter(),
-    //     }
-    // }
+    pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
+        RangeValuesIter {
+            iter: self.btree_map.iter(),
+        }
+    }
 
     /// An iterator that moves out the ranges in the [`RangeMapBlaze`],
     /// i.e., the integers as sorted & disjoint ranges.
@@ -1173,7 +1173,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(ranges.next(), None);
     /// ```
     // cmk
-    // pub fn into_ranges(self) -> IntoRangesIter<T, V> {
+    // pub fn into_ranges(self) -> IntoRangesIter<T, V, VR> {
     //     IntoRangesIter {
     //         iter: self.btree_map.into_iter(),
     //     }

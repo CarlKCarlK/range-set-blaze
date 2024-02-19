@@ -30,6 +30,7 @@ mod map;
 mod merge;
 mod not_iter;
 pub mod prelude;
+mod range_values;
 mod ranges;
 #[cfg(feature = "rog-experimental")]
 mod rog;
