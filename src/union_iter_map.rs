@@ -2,7 +2,7 @@ use core::{
     cmp::max,
     iter::FusedIterator,
     marker::PhantomData,
-    ops::{self, Deref, RangeInclusive},
+    ops::{self, RangeInclusive},
 };
 
 use alloc::vec;
@@ -46,7 +46,7 @@ pub struct UnionIterMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
     I: SortedStartsMap<'a, T, V, VR>,
 {
     pub(crate) iter: I,
@@ -57,7 +57,7 @@ impl<'a, T, V, VR, I> UnionIterMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
     I: SortedStartsMap<'a, T, V, VR>,
 {
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`UnionIterMap`] for more details and examples.
@@ -95,25 +95,25 @@ type SortedRangeInclusiveVec<'a, T, V, VR> =
     AssumeSortedStartsMap<'a, T, V, VR, vec::IntoIter<RangeValue<'a, T, V, VR>>>;
 
 // from iter (T, V) to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a> FromIterator<(T, &'a V)>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a> FromIterator<(T, VR)>
     for UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (T, &'a V)>,
+        I: IntoIterator<Item = (T, VR)>,
     {
         iter.into_iter().map(|(x, value)| (x..=x, value)).collect()
     }
 }
 
 // from iter (RangeInclusive<T>, &V) to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a>
-    FromIterator<(RangeInclusive<T>, &'a V)>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a>
+    FromIterator<(RangeInclusive<T>, VR)>
     for UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
+        I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
     {
         let iter = iter.into_iter();
         let iter = iter.map(|(range, value)| RangeValue {
@@ -126,7 +126,7 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a>
 }
 
 // from iter RangeValue<T, V> to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a>
     FromIterator<RangeValue<'a, T, V, VR>>
     for UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>>
 {
@@ -144,7 +144,7 @@ impl<'a, T, V, VR, I> From<UnsortedDisjointMap<'a, T, V, VR, I>>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     #[allow(clippy::clone_on_copy)]
@@ -161,14 +161,14 @@ where
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned, VR: Deref<Target = V> + 'a, I> FusedIterator
+impl<'a, T: Integer, V: ValueOwned, VR: ToOwned<Owned = V> + 'a, I> FusedIterator
     for UnionIterMap<'a, T, V, VR, I>
 where
     I: SortedStartsMap<'a, T, V, VR> + FusedIterator,
 {
 }
 
-impl<'a, T: Integer, V: ValueOwned, VR: Deref<Target = V> + 'a, I> Iterator
+impl<'a, T: Integer, V: ValueOwned, VR: ToOwned<Owned = V> + 'a, I> Iterator
     for UnionIterMap<'a, T, V, VR, I>
 where
     I: SortedStartsMap<'a, T, V, VR>,
@@ -252,7 +252,7 @@ where
 //     }
 // }
 
-impl<'a, T: Integer, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a, R, L> ops::BitOr<R>
+impl<'a, T: Integer, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a, R, L> ops::BitOr<R>
     for UnionIterMap<'a, T, V, VR, L>
 where
     L: SortedStartsMap<'a, T, V, VR>,

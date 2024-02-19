@@ -7,10 +7,7 @@
 
 // use itertools::Itertools;
 
-use core::{
-    marker::PhantomData,
-    ops::{Deref, RangeInclusive},
-};
+use core::{marker::PhantomData, ops::RangeInclusive};
 
 use crate::{
     map::{BitOrMergeMap, ValueOwned},
@@ -25,17 +22,17 @@ pub struct RangeValue<'a, T, V, VR>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
 {
     pub(crate) range: RangeInclusive<T>,
     pub(crate) value: VR,
-    pub(crate) phantom_data: PhantomData<&'a V>,
+    pub(crate) phantom_data: PhantomData<&'a VR>,
 }
 
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
 #[doc(hidden)]
-pub trait SortedStartsMap<'a, T: Integer, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a>:
+pub trait SortedStartsMap<'a, T: Integer, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a>:
     Iterator<Item = RangeValue<'a, T, V, VR>>
 {
 }
@@ -227,7 +224,7 @@ pub trait SortedStartsMap<'a, T: Integer, V: ValueOwned + 'a, VR: Deref<Target =
 ///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
 /// );
 /// ```
-pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a>:
+pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a>:
     SortedStartsMap<'a, T, V, VR>
 where
     <V as ToOwned>::Owned: PartialEq,

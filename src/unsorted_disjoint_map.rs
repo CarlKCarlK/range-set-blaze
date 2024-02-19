@@ -7,7 +7,6 @@ use core::{
     cmp::{max, min},
     iter::FusedIterator,
     marker::PhantomData,
-    ops::Deref,
 };
 use num_traits::Zero;
 
@@ -16,7 +15,7 @@ pub(crate) struct UnsortedDisjointMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     iter: I,
@@ -29,7 +28,7 @@ impl<'a, T, V, VR, I> From<I> for UnsortedDisjointMap<'a, T, V, VR, I::IntoIter>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
     I: IntoIterator<Item = RangeValue<'a, T, V, VR>>, // Any iterator is fine
 {
     fn from(into_iter: I) -> Self {
@@ -55,63 +54,46 @@ impl<'a, T, V, VR, I> Iterator for UnsortedDisjointMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     type Item = RangeValue<'a, T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let range_value = match self.iter.next() {
-                Some(r) => r,
-                None => return self.option_range_value.take(),
+            // get the next range_value, if none, return the current range_value
+            let Some(next_range_value) = self.iter.next() else {
+                return self.option_range_value.take();
             };
 
-            let (next_start, next_end) = range_value.range.into_inner();
-            if next_start > next_end {
-                continue;
-            }
+            // check the next range is valid and non-empty
+            let (next_start, next_end) = next_range_value.range.clone().into_inner();
             assert!(
                 next_end <= T::safe_max_value(),
                 "end must be <= T::safe_max_value()"
             );
+            if next_start > next_end {
+                continue;
+            }
 
-            let Some(self_range_value) = &self.option_range_value else {
-                let ncr = RangeValue {
-                    range: next_start..=next_end,
-                    value: range_value.value,
-                    phantom_data: PhantomData,
-                };
-                self.option_range_value = Some(ncr);
+            // get the current range (if none, set the current range to the next range and loop)
+            let Some(mut current_range_value) = self.option_range_value.take() else {
+                self.option_range_value = Some(next_range_value);
                 continue;
             };
 
-            let (self_start, self_end) = self_range_value.range.clone().into_inner();
-            if (next_start >= self.min_value_plus_2 && self_end <= next_start - self.two)
-                || (self_start >= self.min_value_plus_2 && next_end <= self_start - self.two)
+            // if the ranges do not touch or overlap, return the current range and set the current range to the next range
+            let (current_start, current_end) = current_range_value.range.clone().into_inner();
+            if (next_start >= self.min_value_plus_2 && current_end <= next_start - self.two)
+                || (current_start >= self.min_value_plus_2 && next_end <= current_start - self.two)
             {
-                let scr = RangeValue {
-                    range: self_start..=self_end,
-                    value: self_range_value.value,
-                    phantom_data: PhantomData,
-                };
-                let result = Some(scr);
-                let ncr = RangeValue {
-                    range: next_start..=next_end,
-                    value: range_value.value,
-                    phantom_data: PhantomData,
-                };
-                self.option_range_value = Some(ncr);
-                return result;
-            } else {
-                let xcr = RangeValue {
-                    range: min(self_start, next_start)..=max(self_end, next_end),
-                    value: self_range_value.value,
-                    phantom_data: PhantomData,
-                };
-                self.option_range_value = Some(xcr);
-                continue;
+                self.option_range_value = Some(next_range_value);
+                return Some(current_range_value);
             }
+
+            // they touch or overlap, so merge them and loop
+            current_range_value.range = min(current_start, next_start)..=max(current_end, next_end);
+            self.option_range_value = Some(current_range_value);
         }
     }
 
@@ -133,7 +115,7 @@ pub(crate) struct SortedDisjointWithLenSoFarMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
     I: SortedDisjointMap<'a, T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
 {
@@ -157,7 +139,7 @@ where
 //     }
 // }
 
-impl<'a, T: Integer, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a, I>
+impl<'a, T: Integer, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a, I>
     SortedDisjointWithLenSoFarMap<'a, T, V, VR, I>
 where
     I: SortedDisjointMap<'a, T, V, VR>,
@@ -178,7 +160,7 @@ impl<'a, T, V, VR, I> Iterator for SortedDisjointWithLenSoFarMap<'a, T, V, VR, I
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
     <V as ToOwned>::Owned: PartialEq,
     I: SortedDisjointMap<'a, T, V, VR>,
 {
@@ -212,13 +194,13 @@ pub struct AssumeSortedStartsMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     pub(crate) iter: I,
 }
 
-impl<'a, T: Integer, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a, I>
+impl<'a, T: Integer, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a, I>
     SortedStartsMap<'a, T, V, VR> for AssumeSortedStartsMap<'a, T, V, VR, I>
 where
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
@@ -229,7 +211,7 @@ impl<'a, T, V, VR, I> AssumeSortedStartsMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     pub fn new(iter: I) -> Self {
@@ -241,7 +223,7 @@ impl<'a, T, V, VR, I> FusedIterator for AssumeSortedStartsMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>> + FusedIterator,
 {
 }
@@ -250,7 +232,7 @@ impl<'a, T, V, VR, I> Iterator for AssumeSortedStartsMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     type Item = RangeValue<'a, T, V, VR>;
@@ -264,7 +246,7 @@ where
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned + 'a, VR: Deref<Target = V> + 'a, I> From<I>
+impl<'a, T: Integer, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a, I> From<I>
     for SortedDisjointWithLenSoFarMap<'a, T, V, VR, I::IntoIter>
 where
     I: IntoIterator<Item = RangeValue<'a, T, V, VR>>,

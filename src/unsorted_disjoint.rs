@@ -49,36 +49,38 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let range = match self.iter.next() {
-                Some(r) => r,
-                None => return self.option_range.take(),
+            // get the next range, if none, return the current range
+            let Some(next_range) = self.iter.next() else {
+                return self.option_range.take();
             };
 
-            let (next_start, next_end) = range.into_inner();
-            if next_start > next_end {
-                continue;
-            }
+            // check the next range is valid and non-empty
+            let (next_start, next_end) = next_range.clone().into_inner();
             assert!(
                 next_end <= T::safe_max_value(),
                 "end must be <= T::safe_max_value()"
             );
+            if next_start > next_end {
+                continue;
+            }
 
-            let Some(self_range) = self.option_range.clone() else {
-                self.option_range = Some(next_start..=next_end);
+            // get the current range (if none, set the current range to the next range and loop)
+            let Some(current_range) = self.option_range.take() else {
+                self.option_range = Some(next_range);
                 continue;
             };
 
-            let (self_start, self_end) = self_range.into_inner();
-            if (next_start >= self.min_value_plus_2 && self_end <= next_start - self.two)
-                || (self_start >= self.min_value_plus_2 && next_end <= self_start - self.two)
+            // if the ranges do not touch or overlap, return the current range and set the current range to the next range
+            let (current_start, current_end) = current_range.clone().into_inner();
+            if (next_start >= self.min_value_plus_2 && current_end <= next_start - self.two)
+                || (current_start >= self.min_value_plus_2 && next_end <= current_start - self.two)
             {
-                let result = Some(self_start..=self_end);
-                self.option_range = Some(next_start..=next_end);
-                return result;
-            } else {
-                self.option_range = Some(min(self_start, next_start)..=max(self_end, next_end));
-                continue;
+                self.option_range = Some(next_range);
+                return Some(current_range);
             }
+
+            // they touch or overlap, so merge them and loop
+            self.option_range = Some(min(current_start, next_start)..=max(current_end, next_end));
         }
     }
 

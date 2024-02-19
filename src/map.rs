@@ -4,7 +4,6 @@ use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
 use crate::Integer;
 use alloc::collections::BTreeMap;
-use core::ops::Deref;
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use num_traits::Zero;
 
@@ -246,12 +245,9 @@ where
 /// See the [module-level documentation] for additional examples.
 ///
 /// [module-level documentation]: index.html
-pub struct RangeMapBlaze<T: Integer, V: ValueOwned>
-where
-    <V as ToOwned>::Owned: PartialEq,
-{
+pub struct RangeMapBlaze<T: Integer, V: ValueOwned> {
     len: <T as Integer>::SafeLen,
-    btree_map: BTreeMap<T, EndValue<T, V>>,
+    pub(crate) btree_map: BTreeMap<T, EndValue<T, V>>,
 }
 
 // cmk
@@ -395,7 +391,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     pub fn from_sorted_disjoint_map<'a, VR, I>(iter: I) -> Self
     where
-        VR: Deref<Target = V> + 'a,
+        VR: ToOwned<Owned = V> + 'a,
         I: SortedDisjointMap<'a, T, V, VR>,
         V: 'a,
     {
@@ -1230,11 +1226,11 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
 // We create a RangeMapBlaze from an iterator of integers or integer ranges by
 // 1. turning them into a UnionIterMap (internally, it collects into intervals and sorts by start).
 // 2. Turning the SortedDisjointMap into a BTreeMap.
-impl<'a, T, V, R> FromIterator<(T, R)> for RangeMapBlaze<T, V>
+impl<'a, T, V, VR> FromIterator<(T, VR)> for RangeMapBlaze<T, V>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    R: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
 {
     /// Create a [`RangeMapBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
     ///
@@ -1251,7 +1247,7 @@ where
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (T, R)>,
+        I: IntoIterator<Item = (T, VR)>,
     {
         iter.into_iter().map(|(x, r)| (x..=x, r)).collect()
     }
@@ -1261,7 +1257,7 @@ impl<'a, T, V, VR> FromIterator<(RangeInclusive<T>, VR)> for RangeMapBlaze<T, V>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Deref<Target = V> + 'a,
+    VR: ToOwned<Owned = V> + 'a,
 {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
@@ -1353,7 +1349,7 @@ impl<
         'a,
         T: Integer,
         V: ValueOwned + 'a,
-        VR: Deref<Target = V> + 'a,
+        VR: ToOwned<Owned = V> + 'a,
         I: SortedStartsMap<'a, T, V, VR>,
     > SortedStartsMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
 {
@@ -1362,7 +1358,7 @@ impl<
         'a,
         T: Integer,
         V: ValueOwned + 'a,
-        VR: Deref<Target = V> + 'a,
+        VR: ToOwned<Owned = V> + 'a,
         I: SortedStartsMap<'a, T, V, VR>,
     > SortedDisjointMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
 where

@@ -24,23 +24,30 @@ use core::ops::BitAndAssign;
 
 type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
-#[test]
-fn understand_cmk() {
-    let vec = vec![(1, "a"), (2, "b"), (3, "c")]; // Vec<(i32, &str)>
-    let iter = vec.into_iter(); // Consumes vec, creating an iterator of (i32, &str)
+// #[test]
+// fn understand_cmk() {
+//     let vec = vec![(1, "a"), (2, "b"), (3, "c")]; // Vec<(i32, &str)>
+//     let iter = vec.into_iter(); // Consumes vec, creating an iterator of (i32, &str)
 
-    // Transform the iterator of (i32, &str) into an iterator of (i32, &&str)
-    let iter_of_refs = iter.map(|(k, v)| (k, &v));
+//     // Transform the iterator of (i32, &str) into an iterator of (i32, &&str)
+//     let iter_of_refs = iter.map(|(k, v)| (k, &v));
 
-    // Consume the transformed iterator and print the results
-    for (key, value) in iter_of_refs {
-        println!("Key: {}, Value: {}", key, value);
-    }
-}
+//     // Consume the transformed iterator and print the results
+//     for (key, value) in iter_of_refs {
+//         println!("Key: {}, Value: {}", key, value);
+//     }
+// }
 
 #[test]
 fn insert_255u8_map() {
-    let range_map_blaze = RangeMapBlaze::<u8, String>::from_iter([(255, "Hello")]);
+    let range_map_blaze = RangeMapBlaze::<u8, &str>::from_iter([(255, "Hello"), (25, "There")]);
+
+    for range_value in range_map_blaze.btree_map.iter() {
+        println!(
+            "{}..={} => {}",
+            range_value.0, range_value.1.end, range_value.1.value
+        );
+    }
     // assert!(range_map_blaze.to_string() == "255..=255");
 }
 
