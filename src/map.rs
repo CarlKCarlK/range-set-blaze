@@ -1,5 +1,5 @@
 use crate::merge_map::MergeMap;
-use crate::range_values::RangeValuesIter;
+// use crate::range_values::RangeValuesIter;
 use crate::sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
@@ -252,18 +252,18 @@ pub struct RangeMapBlaze<T: Integer, V: ValueOwned> {
     pub(crate) btree_map: BTreeMap<T, EndValue<T, V>>,
 }
 
-// cmk
-impl<T: Integer, V: ValueOwned> fmt::Debug for RangeMapBlaze<T, V> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.range_values().to_string())
-    }
-}
+// // cmk
+// impl<T: Integer, V: ValueOwned> fmt::Debug for RangeMapBlaze<T, V> {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "{}", self.range_values().to_string())
+//     }
+// }
 
-impl<T: Integer, V: ValueOwned> fmt::Display for RangeMapBlaze<T, V> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.range_values().to_string())
-    }
-}
+// impl<T: Integer, V: ValueOwned> fmt::Display for RangeMapBlaze<T, V> {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "{}", self.range_values().to_string())
+//     }
+// }
 
 impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
@@ -390,10 +390,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// let a1: RangeMapBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
-    pub fn from_sorted_disjoint_map<'a, VR, I>(iter: I) -> Self
+    pub fn from_sorted_disjoint_map<'a, I>(iter: I) -> Self
     where
-        VR: ToOwned<Owned = V> + 'a,
-        I: SortedDisjointMap<'a, T, V, VR>,
+        I: SortedDisjointMap<'a, T, V>,
         V: 'a,
     {
         let mut iter_with_len = SortedDisjointWithLenSoFarMap::from(iter);
@@ -1140,11 +1139,11 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
-        RangeValuesIter {
-            iter: self.btree_map.iter(),
-        }
-    }
+    // pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
+    //     RangeValuesIter {
+    //         iter: self.btree_map.iter(),
+    //     }
+    // }
 
     /// An iterator that moves out the ranges in the [`RangeMapBlaze`],
     /// i.e., the integers as sorted & disjoint ranges.
@@ -1226,11 +1225,10 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
 // We create a RangeMapBlaze from an iterator of integers or integer ranges by
 // 1. turning them into a UnionIterMap (internally, it collects into intervals and sorts by start).
 // 2. Turning the SortedDisjointMap into a BTreeMap.
-impl<'a, T, V, VR> FromIterator<(T, VR)> for RangeMapBlaze<T, V>
+impl<'a, T, V> FromIterator<(T, &'a V)> for RangeMapBlaze<T, V>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: ToOwned<Owned = V> + 'a,
 {
     /// Create a [`RangeMapBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
     ///
@@ -1247,17 +1245,16 @@ where
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (T, VR)>,
+        I: IntoIterator<Item = (T, &'a V)>,
     {
         iter.into_iter().map(|(x, r)| (x..=x, r)).collect()
     }
 }
 
-impl<'a, T, V, VR> FromIterator<(RangeInclusive<T>, VR)> for RangeMapBlaze<T, V>
+impl<'a, T, V> FromIterator<(RangeInclusive<T>, &'a V)> for RangeMapBlaze<T, V>
 where
-    T: Integer,
+    T: Integer + 'a,
     V: ValueOwned + 'a,
-    VR: ToOwned<Owned = V> + 'a,
 {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
@@ -1277,10 +1274,10 @@ where
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
+        I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
         let iter = iter.into_iter();
-        let union_iter = UnionIterMap::<T, V, VR, _>::from_iter(iter);
+        let union_iter = UnionIterMap::<'a, T, V, _>::from_iter(iter);
         RangeMapBlaze::from_sorted_disjoint_map(union_iter)
     }
 }
@@ -1314,8 +1311,7 @@ where
 // }
 
 #[doc(hidden)]
-pub type BitOrMergeMap<'a, T, V, VR, L, R> =
-    UnionIterMap<'a, T, V, VR, MergeMap<'a, T, V, VR, L, R>>;
+pub type BitOrMergeMap<'a, T, V, L, R> = UnionIterMap<'a, T, V, MergeMap<'a, T, V, L, R>>;
 // #[doc(hidden)]
 // pub type BitOrKMergeMap<T, V, I> = UnionIterMap<T, V, KMergeMap<T, V, I>>;
 // #[doc(hidden)]
@@ -1345,22 +1341,12 @@ pub type BitOrMergeMap<'a, T, V, VR, L, R> =
 //     NotIterMap<T, V, BitOrMergeMap<T, V, Tee<L>, Tee<R>>>,
 // >;
 
-impl<
-        'a,
-        T: Integer,
-        V: ValueOwned + 'a,
-        VR: ToOwned<Owned = V> + 'a,
-        I: SortedStartsMap<'a, T, V, VR>,
-    > SortedStartsMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
+impl<'a, T: Integer, V: ValueOwned + 'a, I: SortedStartsMap<'a, T, V>> SortedStartsMap<'a, T, V>
+    for UnionIterMap<'a, T, V, I>
 {
 }
-impl<
-        'a,
-        T: Integer,
-        V: ValueOwned + 'a,
-        VR: ToOwned<Owned = V> + 'a,
-        I: SortedStartsMap<'a, T, V, VR>,
-    > SortedDisjointMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
+impl<'a, T: Integer, V: ValueOwned + 'a, I: SortedStartsMap<'a, T, V>> SortedDisjointMap<'a, T, V>
+    for UnionIterMap<'a, T, V, I>
 where
     <V as ToOwned>::Owned: PartialEq,
 {

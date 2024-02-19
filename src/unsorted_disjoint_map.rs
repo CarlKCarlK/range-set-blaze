@@ -11,25 +11,23 @@ use core::{
 use num_traits::Zero;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub(crate) struct UnsortedDisjointMap<'a, T, V, VR, I>
+pub(crate) struct UnsortedDisjointMap<'a, T, V, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: ToOwned<Owned = V> + 'a,
-    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+    I: Iterator<Item = RangeValue<'a, T, V>>,
 {
     iter: I,
-    option_range_value: Option<RangeValue<'a, T, V, VR>>,
+    option_range_value: Option<RangeValue<'a, T, V>>,
     min_value_plus_2: T,
     two: T,
 }
 
-impl<'a, T, V, VR, I> From<I> for UnsortedDisjointMap<'a, T, V, VR, I::IntoIter>
+impl<'a, T, V, I> From<I> for UnsortedDisjointMap<'a, T, V, I::IntoIter>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: ToOwned<Owned = V> + 'a,
-    I: IntoIterator<Item = RangeValue<'a, T, V, VR>>, // Any iterator is fine
+    I: IntoIterator<Item = RangeValue<'a, T, V>>, // Any iterator is fine
 {
     fn from(into_iter: I) -> Self {
         UnsortedDisjointMap {
@@ -46,18 +44,17 @@ where
 // where
 //     T: Integer,
 //     V: PartialEqClone + 'a,
-//     I: Iterator<Item = RangeValue<'a, T, V, VR>> + FusedIterator,
+//     I: Iterator<Item = RangeValue<'a, T, V>> + FusedIterator,
 // {
 // }
 
-impl<'a, T, V, VR, I> Iterator for UnsortedDisjointMap<'a, T, V, VR, I>
+impl<'a, T, V, I> Iterator for UnsortedDisjointMap<'a, T, V, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: ToOwned<Owned = V> + 'a,
-    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+    I: Iterator<Item = RangeValue<'a, T, V>>,
 {
-    type Item = RangeValue<'a, T, V, VR>;
+    type Item = RangeValue<'a, T, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -111,17 +108,16 @@ where
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub(crate) struct SortedDisjointWithLenSoFarMap<'a, T, V, VR, I>
+pub(crate) struct SortedDisjointWithLenSoFarMap<'a, T, V, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: ToOwned<Owned = V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    I: SortedDisjointMap<'a, T, V>,
     <V as ToOwned>::Owned: PartialEq,
 {
     iter: I,
     len: <T as Integer>::SafeLen,
-    _phantom_data: PhantomData<&'a VR>,
+    _phantom_data: PhantomData<&'a V>,
 }
 
 // cmk
@@ -139,10 +135,9 @@ where
 //     }
 // }
 
-impl<'a, T: Integer, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a, I>
-    SortedDisjointWithLenSoFarMap<'a, T, V, VR, I>
+impl<'a, T: Integer, V: ValueOwned + 'a, I> SortedDisjointWithLenSoFarMap<'a, T, V, I>
 where
-    I: SortedDisjointMap<'a, T, V, VR>,
+    I: SortedDisjointMap<'a, T, V>,
     <V as ToOwned>::Owned: PartialEq,
 {
     pub fn len_so_far(&self) -> <T as Integer>::SafeLen {
@@ -156,13 +151,12 @@ where
 // {
 // }
 
-impl<'a, T, V, VR, I> Iterator for SortedDisjointWithLenSoFarMap<'a, T, V, VR, I>
+impl<'a, T, V, I> Iterator for SortedDisjointWithLenSoFarMap<'a, T, V, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: ToOwned<Owned = V> + 'a,
     <V as ToOwned>::Owned: PartialEq,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    I: SortedDisjointMap<'a, T, V>,
 {
     type Item = (T, EndValue<T, V>);
 
@@ -190,52 +184,48 @@ where
 
 /// Gives any iterator of ranges the [`SortedStartsMap`] trait without any checking.
 #[doc(hidden)]
-pub struct AssumeSortedStartsMap<'a, T, V, VR, I>
+pub struct AssumeSortedStartsMap<'a, T, V, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: ToOwned<Owned = V> + 'a,
-    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+    I: Iterator<Item = RangeValue<'a, T, V>>,
 {
     pub(crate) iter: I,
 }
 
-impl<'a, T: Integer, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a, I>
-    SortedStartsMap<'a, T, V, VR> for AssumeSortedStartsMap<'a, T, V, VR, I>
+impl<'a, T: Integer, V: ValueOwned + 'a, I> SortedStartsMap<'a, T, V>
+    for AssumeSortedStartsMap<'a, T, V, I>
 where
-    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+    I: Iterator<Item = RangeValue<'a, T, V>>,
 {
 }
 
-impl<'a, T, V, VR, I> AssumeSortedStartsMap<'a, T, V, VR, I>
+impl<'a, T, V, I> AssumeSortedStartsMap<'a, T, V, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: ToOwned<Owned = V> + 'a,
-    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+    I: Iterator<Item = RangeValue<'a, T, V>>,
 {
     pub fn new(iter: I) -> Self {
         AssumeSortedStartsMap { iter }
     }
 }
 
-impl<'a, T, V, VR, I> FusedIterator for AssumeSortedStartsMap<'a, T, V, VR, I>
+impl<'a, T, V, I> FusedIterator for AssumeSortedStartsMap<'a, T, V, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: ToOwned<Owned = V> + 'a,
-    I: Iterator<Item = RangeValue<'a, T, V, VR>> + FusedIterator,
+    I: Iterator<Item = RangeValue<'a, T, V>> + FusedIterator,
 {
 }
 
-impl<'a, T, V, VR, I> Iterator for AssumeSortedStartsMap<'a, T, V, VR, I>
+impl<'a, T, V, I> Iterator for AssumeSortedStartsMap<'a, T, V, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: ToOwned<Owned = V> + 'a,
-    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+    I: Iterator<Item = RangeValue<'a, T, V>>,
 {
-    type Item = RangeValue<'a, T, V, VR>;
+    type Item = RangeValue<'a, T, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
@@ -246,11 +236,11 @@ where
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a, I> From<I>
-    for SortedDisjointWithLenSoFarMap<'a, T, V, VR, I::IntoIter>
+impl<'a, T: Integer, V: ValueOwned + 'a, I> From<I>
+    for SortedDisjointWithLenSoFarMap<'a, T, V, I::IntoIter>
 where
-    I: IntoIterator<Item = RangeValue<'a, T, V, VR>>,
-    I::IntoIter: SortedDisjointMap<'a, T, V, VR>,
+    I: IntoIterator<Item = RangeValue<'a, T, V>>,
+    I::IntoIter: SortedDisjointMap<'a, T, V>,
     <V as ToOwned>::Owned: PartialEq,
 {
     fn from(into_iter: I) -> Self {

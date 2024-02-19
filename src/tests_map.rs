@@ -40,7 +40,9 @@ type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
 #[test]
 fn insert_255u8_map() {
-    let range_map_blaze = RangeMapBlaze::<u8, &str>::from_iter([(255, "Hello"), (25, "There")]);
+    let s1 = "Hello".to_string();
+    let s2 = "There".to_string();
+    let range_map_blaze = RangeMapBlaze::<u8, String>::from_iter([(255, &s1), (25, &s2)]);
 
     for range_value in range_map_blaze.btree_map.iter() {
         println!(

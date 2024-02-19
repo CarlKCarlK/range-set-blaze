@@ -7,7 +7,7 @@
 
 // use itertools::Itertools;
 
-use core::{marker::PhantomData, ops::RangeInclusive};
+use core::ops::RangeInclusive;
 
 use crate::{
     map::{BitOrMergeMap, ValueOwned},
@@ -18,22 +18,20 @@ use crate::{
 
 // cmk should this be pub/crate or replaced with a tuple?
 #[derive(PartialEq)]
-pub struct RangeValue<'a, T, V, VR>
+pub struct RangeValue<'a, T, V>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: ToOwned<Owned = V> + 'a,
 {
     pub(crate) range: RangeInclusive<T>,
-    pub(crate) value: VR,
-    pub(crate) phantom_data: PhantomData<&'a VR>,
+    pub(crate) value: &'a V,
 }
 
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
 #[doc(hidden)]
-pub trait SortedStartsMap<'a, T: Integer, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a>:
-    Iterator<Item = RangeValue<'a, T, V, VR>>
+pub trait SortedStartsMap<'a, T: Integer, V: ValueOwned + 'a>:
+    Iterator<Item = RangeValue<'a, T, V>>
 {
 }
 
@@ -224,8 +222,7 @@ pub trait SortedStartsMap<'a, T: Integer, V: ValueOwned + 'a, VR: ToOwned<Owned 
 ///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
 /// );
 /// ```
-pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a, VR: ToOwned<Owned = V> + 'a>:
-    SortedStartsMap<'a, T, V, VR>
+pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap<'a, T, V>
 where
     <V as ToOwned>::Owned: PartialEq,
 {
@@ -251,10 +248,10 @@ where
     /// assert_eq!(union.to_string(), "1..=2");
     /// ```
     #[inline]
-    fn union<R>(self, other: R) -> BitOrMergeMap<'a, T, V, VR, Self, R::IntoIter>
+    fn union<R>(self, other: R) -> BitOrMergeMap<'a, T, V, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
+        R::IntoIter: SortedDisjointMap<'a, T, V>,
         Self: Sized,
     {
         UnionIterMap::new(MergeMap::new(self, other.into_iter()))
@@ -284,7 +281,7 @@ where
     // fn intersection<R>(self, other: R) -> BitAndMergeMap<T, V, Self, R::IntoIter>
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
     //     Self: Sized,
     // {
     //     !(self.complement() | other.into_iter().complement())
@@ -314,7 +311,7 @@ where
     // fn difference<R>(self, other: R) -> BitSubMergeMap<T, V, Self, R::IntoIter>
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
     //     Self: Sized,
     // {
     //     !(self.complement() | other.into_iter())
@@ -371,7 +368,7 @@ where
     // fn symmetric_difference<R>(self, other: R) -> BitXOrTeeMap<T, V, Self, R::IntoIter>
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
     //     Self: Sized,
     // {
     //     let (lhs0, lhs1) = self.tee();
@@ -395,7 +392,7 @@ where
     // fn equal<R>(self, other: R) -> bool
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
     //     Self: Sized,
     // {
     //     itertools::equal(self, other)
@@ -466,7 +463,7 @@ where
     // fn is_subset<R>(self, other: R) -> bool
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
     //     Self: Sized,
     // {
     //     self.difference(other).is_empty()
@@ -498,7 +495,7 @@ where
     // fn is_superset<R>(self, other: R) -> bool
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
     //     Self: Sized,
     // {
     //     other.into_iter().is_subset(self)
@@ -527,7 +524,7 @@ where
     // fn is_disjoint<R>(self, other: R) -> bool
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
     //     Self: Sized,
     // {
     //     self.intersection(other).is_empty()
@@ -594,7 +591,7 @@ where
 //     seen_none: bool,
 // }
 
-// impl<T: Integer, I> SortedDisjointMap<'a, T, V, VR> for CheckSortedDisjointMap<T, I> where
+// impl<T: Integer, I> SortedDisjointMap<'a, T, V> for CheckSortedDisjointMap<T, I> where
 //     I: Iterator<Item = RangeInclusive<T, V>>
 // {
 // }
@@ -711,7 +708,7 @@ where
 // impl<T: Integer, R, L> ops::BitOr<R> for CheckSortedDisjointMap<T, L>
 // where
 //     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<'a, T, V, VR>,
+//     R: SortedDisjointMap<'a, T, V>,
 // {
 //     type Output = BitOrMergeMap<T, V, Self, R>;
 
@@ -723,7 +720,7 @@ where
 // impl<T: Integer, R, L> ops::BitAnd<R> for CheckSortedDisjointMap<T, L>
 // where
 //     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<'a, T, V, VR>,
+//     R: SortedDisjointMap<'a, T, V>,
 // {
 //     type Output = BitAndMergeMap<T, V, Self, R>;
 
@@ -735,7 +732,7 @@ where
 // impl<T: Integer, R, L> ops::Sub<R> for CheckSortedDisjointMap<T, L>
 // where
 //     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<'a, T, V, VR>,
+//     R: SortedDisjointMap<'a, T, V>,
 // {
 //     type Output = BitSubMergeMap<T, V, Self, R>;
 
@@ -747,7 +744,7 @@ where
 // impl<T: Integer, R, L> ops::BitXor<R> for CheckSortedDisjointMap<T, L>
 // where
 //     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<'a, T, V, VR>,
+//     R: SortedDisjointMap<'a, T, V>,
 // {
 //     type Output = BitXOrTeeMap<T, V, Self, R>;
 
