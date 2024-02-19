@@ -1,5 +1,6 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::sorted_disjoint_map::DebugToString; // cmk what if they forget to import this?
 
 use super::*;
 use itertools::Itertools;
@@ -43,14 +44,10 @@ fn insert_255u8_map() {
     let s1 = "Hello".to_string();
     let s2 = "There".to_string();
     let range_map_blaze = RangeMapBlaze::<u8, String>::from_iter([(255, &s1), (25, &s2)]);
-
-    for range_value in range_map_blaze.btree_map.iter() {
-        println!(
-            "{}..={} => {}",
-            range_value.0, range_value.1.end, range_value.1.value
-        );
-    }
-    // assert!(range_map_blaze.to_string() == "255..=255");
+    assert_eq!(
+        range_map_blaze.to_string(),
+        r#"(25..=25, "There"), (255..=255, "Hello")"#
+    );
 }
 
 // #[test]

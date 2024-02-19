@@ -1,5 +1,7 @@
 use crate::merge_map::MergeMap;
+use crate::range_values::RangeValuesIter;
 // use crate::range_values::RangeValuesIter;
+use crate::sorted_disjoint_map::DebugToString;
 use crate::sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
@@ -252,18 +254,17 @@ pub struct RangeMapBlaze<T: Integer, V: ValueOwned> {
     pub(crate) btree_map: BTreeMap<T, EndValue<T, V>>,
 }
 
-// // cmk
-// impl<T: Integer, V: ValueOwned> fmt::Debug for RangeMapBlaze<T, V> {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{}", self.range_values().to_string())
-//     }
-// }
+impl<T: Integer, V: ValueOwned + fmt::Debug> fmt::Debug for RangeMapBlaze<T, V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.range_values().to_string())
+    }
+}
 
-// impl<T: Integer, V: ValueOwned> fmt::Display for RangeMapBlaze<T, V> {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{}", self.range_values().to_string())
-//     }
-// }
+impl<T: Integer, V: ValueOwned + fmt::Debug> fmt::Display for RangeMapBlaze<T, V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.range_values().to_string())
+    }
+}
 
 impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
@@ -1139,11 +1140,11 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    // pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
-    //     RangeValuesIter {
-    //         iter: self.btree_map.iter(),
-    //     }
-    // }
+    pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
+        RangeValuesIter {
+            iter: self.btree_map.iter(),
+        }
+    }
 
     /// An iterator that moves out the ranges in the [`RangeMapBlaze`],
     /// i.e., the integers as sorted & disjoint ranges.

@@ -4,6 +4,7 @@
 //     iter::FusedIterator,
 //     ops::{self, RangeInclusive},
 // };
+use core::fmt;
 
 // use itertools::Itertools;
 
@@ -25,6 +26,19 @@ where
 {
     pub(crate) range: RangeInclusive<T>,
     pub(crate) value: &'a V,
+}
+
+impl<'a, T, V> fmt::Debug for RangeValue<'a, T, V>
+where
+    T: Integer + fmt::Debug, // Ensure T also implements Debug for completeness.
+    V: ValueOwned + fmt::Debug + 'a, // Add Debug bound for V.
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RangeValue")
+            .field("range", &self.range)
+            .field("value", self.value)
+            .finish()
+    }
 }
 
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
@@ -398,24 +412,6 @@ where
     //     itertools::equal(self, other)
     // }
 
-    // /// Given a [`SortedDisjointMap`] iterators, produces a string version. Unlike most `to_string` and `fmt` in Rust,
-    // /// this method takes ownership of the iterator and consumes it.
-    // ///
-    // /// # Examples
-    // ///
-    // /// ```
-    // /// use range_set_blaze::prelude::*;
-    // ///
-    // /// let a = CheckSortedDisjointMap::from([1..=2]);
-    // /// assert_eq!(a.to_string(), "1..=2");
-    // /// ```
-    // fn to_string(self) -> String
-    // where
-    //     Self: Sized,
-    // {
-    //     self.map(|range| format!("{range:?}")).join(", ")
-    // }
-
     /// Returns `true` if the set contains no elements.
     ///
     /// # Examples
@@ -752,3 +748,27 @@ where
 //         SortedDisjointMap::symmetric_difference(self, other)
 //     }
 // }
+
+// cmk could this have a better name
+pub trait DebugToString<'a, T: Integer, V: ValueOwned + 'a> {
+    fn to_string(self) -> String;
+}
+
+use std::fmt::Debug;
+
+impl<'a, T, V, M> DebugToString<'a, T, V> for M
+where
+    T: Integer + Debug,
+    V: ValueOwned + Debug + 'a,
+    M: SortedDisjointMap<'a, T, V> + Sized,
+{
+    fn to_string(self) -> String {
+        self.map(|range_value| {
+            let range = range_value.range;
+            let value = range_value.value;
+            format!("({:?}, {:?})", range, value)
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+    }
+}
