@@ -88,7 +88,7 @@ where
 //     }
 // }
 
-type SortedRangeInclusiveVec<'a, T, V> =
+pub(crate) type SortedRangeInclusiveVec<'a, T, V> =
     AssumeSortedStartsMap<'a, T, V, vec::IntoIter<RangeValue<'a, T, V>>>;
 
 // from iter (T, V) to UnionIterMap
@@ -143,7 +143,7 @@ where
     fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, I>) -> Self {
         let iter = unsorted_disjoint
             .into_iter()
-            .sorted_by_key(|range_value| range_value.range.start().clone());
+            .sorted_by_key(|range_value| *range_value.range.start());
         let iter = AssumeSortedStartsMap { iter };
 
         Self {

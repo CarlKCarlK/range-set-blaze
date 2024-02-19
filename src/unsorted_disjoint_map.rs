@@ -19,6 +19,7 @@ where
 {
     iter: I,
     option_range_value: Option<RangeValue<'a, T, V>>,
+    min_value_plus_1: T,
     min_value_plus_2: T,
     two: T,
 }
@@ -33,6 +34,7 @@ where
         UnsortedDisjointMap {
             iter: into_iter.into_iter(),
             option_range_value: None,
+            min_value_plus_1: T::min_value() + T::one(),
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
         }
@@ -83,6 +85,16 @@ where
             let (current_start, current_end) = current_range_value.range.clone().into_inner();
             if (next_start >= self.min_value_plus_2 && current_end <= next_start - self.two)
                 || (current_start >= self.min_value_plus_2 && next_end <= current_start - self.two)
+            {
+                self.option_range_value = Some(next_range_value);
+                return Some(current_range_value);
+            }
+
+            // cmk think about combining this with the previous if
+            // if the ranges touch and their values are different, return the current range and set the current range to the next range
+            if ((next_start >= self.min_value_plus_1 && current_end == next_start - T::one())
+                || (current_start >= self.min_value_plus_1 && next_end == current_start - T::one()))
+                && current_range_value.value != next_range_value.value
             {
                 self.option_range_value = Some(next_range_value);
                 return Some(current_range_value);

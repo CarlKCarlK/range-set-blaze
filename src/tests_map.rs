@@ -1,6 +1,8 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-use crate::sorted_disjoint_map::DebugToString; // cmk what if they forget to import this?
+use crate::sorted_disjoint_map::{DebugToString, RangeValue};
+use crate::union_iter_map::{SortedRangeInclusiveVec, UnionIterMap};
+use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, UnsortedDisjointMap}; // cmk what if they forget to import this?
 
 use super::*;
 use itertools::Itertools;
@@ -40,7 +42,7 @@ type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 // }
 
 #[test]
-fn insert_255u8_map() {
+fn map_insert_255u8() {
     let s1 = "Hello".to_string();
     let s2 = "There".to_string();
     let range_map_blaze = RangeMapBlaze::<u8, String>::from_iter([(255, &s1), (25, &s2)]);
@@ -50,13 +52,27 @@ fn insert_255u8_map() {
     );
 }
 
+// cmk
 // #[test]
-// #[should_panic]
-// fn insert_max_u128() {
-//     let a = RangeMapBlaze::<u128>::from_iter([u128::MAX]);
-//     println!("a: {a}");
+// fn map_insert_str() {
+//     let s1 = "Hello";
+//     let s2 = "There";
+//     let range_map_blaze = RangeMapBlaze::<u8, str>::from_iter([(255, &s1), (25, &s2)]);
+//     assert_eq!(
+//         range_map_blaze.to_string(),
+//         r#"(25..=25, "There"), (255..=255, "Hello")"#
+//     );
 // }
 
+#[test]
+#[should_panic]
+fn map_insert_max_u128() {
+    let s1 = "Hello".to_string();
+    let a = RangeMapBlaze::from_iter([(u128::MAX, &s1)]);
+    println!("a: {a}");
+}
+
+// cmk
 // #[test]
 // fn sub() {
 //     for start in i8::MIN..i8::MAX {
@@ -100,15 +116,91 @@ fn insert_255u8_map() {
 //     assert_eq!(result, RangeMapBlaze::from_iter([2u8, 3]));
 // }
 
-// #[test]
-// fn repro1() {
-//     let mut range_map_blaze = RangeMapBlaze::from_iter([20..=21, 24..=24, 25..=29]);
-//     println!("{range_map_blaze}");
-//     assert!(range_map_blaze.to_string() == "20..=21, 24..=29");
-//     range_map_blaze.internal_add(25..=25);
-//     println!("{range_map_blaze}");
-//     assert!(range_map_blaze.to_string() == "20..=21, 24..=29");
-// }
+#[test]
+fn map_step_by_step() {
+    let (s1, s2, s3) = ("a".to_string(), "b".to_string(), "c".to_string());
+    let input = [(1, &s2), (2, &s2), (0, &s1)];
+
+    let iter = input.into_iter();
+    let iter = iter.map(|(x, value)| (x..=x, value));
+    let iter = iter.map(|(range, value)| RangeValue { range, value });
+    let iter = UnsortedDisjointMap::from(iter.into_iter());
+    let vs = format!("{:?}", iter.collect::<Vec<_>>());
+    println!("{vs}");
+    assert_eq!(
+        vs,
+        r#"[RangeValue { range: 1..=2, value: "b" }, RangeValue { range: 0..=0, value: "a" }]"#
+    );
+
+    let iter = input.into_iter();
+    let iter = iter.map(|(x, value)| (x..=x, value));
+    let iter = iter.map(|(range, value)| RangeValue { range, value });
+    let iter = UnsortedDisjointMap::from(iter.into_iter());
+    let iter = iter
+        .into_iter()
+        .sorted_by_key(|range_value| *range_value.range.start());
+    let iter = AssumeSortedStartsMap { iter };
+    let vs = format!("{:?}", iter.collect::<Vec<_>>());
+    println!("{vs}");
+    assert_eq!(
+        vs,
+        r#"[RangeValue { range: 0..=0, value: "a" }, RangeValue { range: 1..=2, value: "b" }]"#
+    );
+
+    let iter = input.into_iter();
+    let iter = iter.map(|(x, value)| (x..=x, value));
+    let iter = iter.map(|(range, value)| RangeValue { range, value });
+    let iter = UnsortedDisjointMap::from(iter.into_iter());
+    let iter = iter
+        .into_iter()
+        .sorted_by_key(|range_value| *range_value.range.start());
+    let iter = AssumeSortedStartsMap { iter };
+    let iter = UnionIterMap {
+        iter,
+        option_range_value: None,
+    };
+    let vs = format!("{:?}", iter.collect::<Vec<_>>());
+    println!("{vs}");
+    assert!(vs != r#"[RangeValue { range: 0..=2, value: "a" }]"#);
+
+    // let iter = UnionIterMap::from(iter);
+    // let vs = format!("{:?}", iter.collect::<Vec<_>>());
+    // println!("{vs}");
+    // assert!(vs != r#"[RangeValue { range: 0..=2, value: "a" }]"#);
+
+    // let iter = UnionIterMap::from_iter(iter);
+    // let vs = format!("{:?}", iter.collect::<Vec<_>>());
+    // println!("{vs}");
+    // assert!(vs != r#"[RangeValue { range: 0..=2, value: "a" }]"#);
+
+    // let union_iter = UnionIterMap::from_iter(iter);
+    // let vs = format!("{:?}", union_iter.collect::<Vec<_>>());
+    // println!("{vs}");
+    // assert!(vs != r#"(0..=2, "a")"#);
+    // let range_map_blaze = RangeMapBlaze::from_sorted_disjoint_map(union_iter);
+    // println!("{range_map_blaze}");
+    // assert_eq!(range_map_blaze.to_string(), r#"(0..=1, "a"), (2..=2, "b")"#);
+
+    let range_map_blaze = RangeMapBlaze::from_iter(input);
+    println!("{range_map_blaze}");
+    assert_eq!(range_map_blaze.to_string(), r#"(0..=1, "a"), (2..=2, "b")"#);
+}
+
+#[test]
+fn map_repro1() {
+    let (s1, s2, s3) = ("a".to_string(), "b".to_string(), "c".to_string());
+    let range_map_blaze =
+        RangeMapBlaze::from_iter([(20..=21, &s1), (24..=24, &s2), (25..=29, &s2)]);
+    println!("{range_map_blaze}");
+    assert_eq!(
+        range_map_blaze.to_string(),
+        r#"(20..=21, "a"), (24..=29, "b")"#
+    );
+    // cmk
+    // range_map_blaze.internal_add((25..=25,&s3));
+    // println!("{range_map_blaze}");
+    // assert_eq!(range_map_blaze.to_string(), "20..=21, 24..=29"));
+}
 
 // #[test]
 // fn repro2() {
