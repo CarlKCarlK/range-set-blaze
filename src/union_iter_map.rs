@@ -64,7 +64,7 @@ where
     pub fn new(iter: I) -> Self {
         // By default all ends are inclusive (different that most programs)
         let mut vec_in = iter.collect_vec();
-        // cmk println!("vec_in: {:?}", vec_in.len());
+        println!("vec_in: {:?}", vec_in.len()); // cmk
         let mut vec_mid = Vec::<RangeValue<'a, T, V>>::new();
         let mut workspace = Vec::<RangeValue<'a, T, V>>::new();
         let mut bar_priority = 0usize;
@@ -114,10 +114,14 @@ where
             // trim the start of the ranges in workspace to output_end+1, remove any that are empty
             // also find the best priority and the new bar_end
             workspace.retain(|x| *x.range.end() > output_end);
-            // cmk check for overflow?
-            let new_start = output_end + T::one();
             bar_priority = 0;
             bar_end = output_end;
+            // this avoids overflow
+            if workspace.is_empty() {
+                continue;
+            }
+
+            let new_start = output_end + T::one();
             for x in workspace.iter_mut() {
                 x.range = new_start..=*x.range.end();
                 if x.priority > bar_priority {
@@ -130,9 +134,12 @@ where
         let mut vec_out = Vec::<RangeValue<'a, T, V>>::new();
         let mut index = 0;
         while index < vec_mid.len() {
-            let mut index_exclusive_end = index;
+            let mut index_exclusive_end = index + 1;
             while index_exclusive_end < vec_mid.len()
-                && vec_mid[index_exclusive_end].value == vec_mid[index].value
+                && vec_mid[index].value == vec_mid[index_exclusive_end].value
+                // cmk overflow?                
+                && *vec_mid[index].range.end() + T::one()
+                    == *vec_mid[index_exclusive_end].range.start()
             {
                 index_exclusive_end += 1;
             }

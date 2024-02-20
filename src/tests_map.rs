@@ -34,13 +34,17 @@ fn map_random_data() {
     let values = ['a', 'b', 'c', 'd', 'e'];
     for _ in 0..500 {
         let key = rng.gen_range(0..=255u8);
-        let value = values.choose(&mut rng).unwrap();
+        let value = values.choose(&mut rng).unwrap(); // cmk allow more than references
         print!("{key}{value} ");
         inputs.push((key, value));
 
+        // cmk fix so don't need to clone and can use .iter()
         let range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
         btree_map.insert(key, value);
-        assert!(equal_maps(&range_map_blaze, &btree_map));
+        if !equal_maps(&range_map_blaze, &btree_map) {
+            let range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+            panic!();
+        }
     }
 }
 
@@ -51,6 +55,8 @@ fn equal_maps<T: Integer + std::iter::Step, V: ValueOwned + fmt::Debug + std::fm
 where
     usize: std::convert::From<<T as Integer>::SafeLen>,
 {
+    // cmk range_values should return a tuple not a struct
+    // cmk implement iter for RangeMapBlaze
     for range_value in range_map_blaze.range_values() {
         let v = range_value.value;
         let range = range_value.range.clone();
@@ -74,7 +80,77 @@ where
         return false; // Different number of elements means they can't be the same map
     }
 
-    return true;
+    true
+}
+
+#[test]
+fn map_repro_123() {
+    let s1 = 'a';
+    let s2 = 'b';
+    let input = [(123, &s1), (123, &s2)];
+
+    let iter = input.into_iter();
+    let iter = iter.map(|(x, value)| (x..=x, value));
+    let iter = iter.map(|(range, value)| RangeValue {
+        range,
+        value,
+        priority: 0,
+    });
+    let iter = UnsortedDisjointMap::from(iter.into_iter());
+    let vs = format!("{:?}", iter.collect::<Vec<_>>());
+    println!("{vs}");
+    assert_eq!(
+        vs,
+        "[RangeValue { range: 123..=123, value: 'a', priority: 0 }, RangeValue { range: 123..=123, value: 'b', priority: 1 }]"
+    );
+
+    let iter = input.into_iter();
+    let iter = iter.map(|(x, value)| (x..=x, value));
+    let iter = iter.map(|(range, value)| RangeValue {
+        range,
+        value,
+        priority: 0,
+    });
+    let iter = UnsortedDisjointMap::from(iter.into_iter());
+    let iter = iter
+        .into_iter()
+        .sorted_by(|a, b| match a.range.start().cmp(&b.range.start()) {
+            std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
+            other => other,
+        });
+    let iter = AssumeSortedStartsMap { iter };
+    let vs = format!("{:?}", iter.collect::<Vec<_>>());
+    println!("{vs}");
+    assert_eq!(
+        vs,
+        "[RangeValue { range: 123..=123, value: 'b', priority: 1 }, RangeValue { range: 123..=123, value: 'a', priority: 0 }]"
+    );
+
+    let iter = input.into_iter();
+    let iter = iter.map(|(x, value)| (x..=x, value));
+    let iter = iter.map(|(range, value)| RangeValue {
+        range,
+        value,
+        priority: 0,
+    });
+    let iter = UnsortedDisjointMap::from(iter.into_iter());
+    let iter = iter
+        .into_iter()
+        .sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
+            std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
+            other => other,
+        });
+    let iter = AssumeSortedStartsMap { iter };
+    let iter = UnionIterMap::new(iter);
+    let vs = format!("{:?}", iter.collect::<Vec<_>>());
+    println!("{vs}");
+    assert_eq!(
+        vs,
+        "[RangeValue { range: 123..=123, value: 'b', priority: 0 }]"
+    );
+
+    let range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(input.clone());
+    assert_eq!(range_map_blaze.to_string(), "(123..=123, 'b')");
 }
 
 #[test]
@@ -216,24 +292,6 @@ fn map_step_by_step() {
         vs,
         r#"[RangeValue { range: 0..=0, value: "a", priority: 0 }, RangeValue { range: 1..=2, value: "b", priority: 0 }]"#
     );
-
-    // let iter = UnionIterMap::from(iter);
-    // let vs = format!("{:?}", iter.collect::<Vec<_>>());
-    // println!("{vs}");
-    // assert!(vs != r#"[RangeValue { range: 0..=2, value: "a" }]"#);
-
-    // let iter = UnionIterMap::from_iter(iter);
-    // let vs = format!("{:?}", iter.collect::<Vec<_>>());
-    // println!("{vs}");
-    // assert!(vs != r#"[RangeValue { range: 0..=2, value: "a" }]"#);
-
-    // let union_iter = UnionIterMap::from_iter(iter);
-    // let vs = format!("{:?}", union_iter.collect::<Vec<_>>());
-    // println!("{vs}");
-    // assert!(vs != r#"(0..=2, "a")"#);
-    // let range_map_blaze = RangeMapBlaze::from_sorted_disjoint_map(union_iter);
-    // println!("{range_map_blaze}");
-    // assert_eq!(range_map_blaze.to_string(), r#"(0..=1, "a"), (2..=2, "b")"#);
 
     let range_map_blaze = RangeMapBlaze::from_iter(input);
     println!("{range_map_blaze}");

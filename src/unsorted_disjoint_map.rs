@@ -94,19 +94,19 @@ where
                 return Some(current_range_value);
             }
 
+            // So, they touch or overlap.
+
             // cmk think about combining this with the previous if
-            // if the ranges touch and their values are different, return the current range and set the current range to the next range
-            if ((next_start >= self.min_value_plus_1 && current_end == next_start - T::one())
-                || (current_start >= self.min_value_plus_1 && next_end == current_start - T::one()))
-                && current_range_value.value != next_range_value.value
-            {
+            // if values are different, return the current range and set the current range to the next range
+            if current_range_value.value != next_range_value.value {
                 self.option_range_value = Some(next_range_value);
                 return Some(current_range_value);
             }
 
-            // they touch or overlap, so merge them and loop
+            // they touch or overlap and have the same value, so merge
             current_range_value.range = min(current_start, next_start)..=max(current_end, next_end);
             self.option_range_value = Some(current_range_value);
+            // continue;
         }
     }
 
