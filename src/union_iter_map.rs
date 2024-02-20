@@ -64,7 +64,7 @@ where
     pub fn new(iter: I) -> Self {
         // By default all ends are inclusive (different that most programs)
         let mut vec_in = iter.collect_vec();
-        println!("vec_in: {:?}", vec_in.len());
+        // cmk println!("vec_in: {:?}", vec_in.len());
         let mut vec_mid = Vec::<RangeValue<'a, T, V>>::new();
         let mut workspace = Vec::<RangeValue<'a, T, V>>::new();
         let mut bar_priority = 0usize;

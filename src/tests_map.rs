@@ -1,45 +1,81 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-use crate::sorted_disjoint_map::{DebugToString, RangeValue};
-use crate::union_iter_map::{SortedRangeInclusiveVec, UnionIterMap};
-use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, UnsortedDisjointMap}; // cmk what if they forget to import this?
-
+use self::map::ValueOwned;
 use super::*;
+use crate::sorted_disjoint_map::RangeValue;
+use crate::union_iter_map::UnionIterMap;
+use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, UnsortedDisjointMap};
+use core::fmt::Display;
 use itertools::Itertools;
-use quickcheck_macros::quickcheck;
-use rand::{rngs::StdRng, SeedableRng};
-use std::fmt::Debug;
+use rand::seq::SliceRandom;
+use rand::{rngs::StdRng, Rng, SeedableRng};
+// cmk what if they forget to import this?
 use std::{
-    any::Any,
     collections::{hash_map::DefaultHasher, BTreeSet},
-    fmt::Display,
     hash::Hash,
     iter::FusedIterator,
     ops::BitOr,
     panic::{RefUnwindSafe, UnwindSafe},
-}; // , time::Instant
-   // use sorted_iter::assume::AssumeSortedByKeyExt;
-   // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
+};
 use syntactic_for::syntactic_for;
 use tests_common::{How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
 use core::ops::BitAndAssign;
-
 type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
-// #[test]
-// fn understand_cmk() {
-//     let vec = vec![(1, "a"), (2, "b"), (3, "c")]; // Vec<(i32, &str)>
-//     let iter = vec.into_iter(); // Consumes vec, creating an iterator of (i32, &str)
+#[test]
+fn map_random_data() {
+    let seed = 0;
+    let mut rng = StdRng::seed_from_u64(seed);
 
-//     // Transform the iterator of (i32, &str) into an iterator of (i32, &&str)
-//     let iter_of_refs = iter.map(|(k, v)| (k, &v));
+    let mut btree_map = BTreeMap::new();
 
-//     // Consume the transformed iterator and print the results
-//     for (key, value) in iter_of_refs {
-//         println!("Key: {}, Value: {}", key, value);
-//     }
-// }
+    let mut inputs = Vec::<(u8, &char)>::new();
+    let values = ['a', 'b', 'c', 'd', 'e'];
+    for _ in 0..500 {
+        let key = rng.gen_range(0..=255u8);
+        let value = values.choose(&mut rng).unwrap();
+        print!("{key}{value} ");
+        inputs.push((key, value));
+
+        let range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+        btree_map.insert(key, value);
+        assert!(equal_maps(&range_map_blaze, &btree_map));
+    }
+}
+
+fn equal_maps<T: Integer + std::iter::Step, V: ValueOwned + fmt::Debug + std::fmt::Display>(
+    range_map_blaze: &RangeMapBlaze<T, V>,
+    btree_map: &BTreeMap<T, &V>,
+) -> bool
+where
+    usize: std::convert::From<<T as Integer>::SafeLen>,
+{
+    for range_value in range_map_blaze.range_values() {
+        let v = range_value.value;
+        let range = range_value.range.clone();
+        for k in range {
+            if btree_map.get(&k).map_or(true, |v2| v != *v2) {
+                eprintln!(
+                    "range_map_blaze contains {k} -> {v}, btree_map contains {k} -> {:?}",
+                    btree_map.get(&k)
+                );
+                return false;
+            }
+        }
+    }
+
+    let len0: usize = range_map_blaze.len().try_into().unwrap();
+    if len0 != btree_map.len() {
+        eprintln!(
+            "range_map_blaze.len() = {len0}, btree_map.len() = {}",
+            btree_map.len()
+        );
+        return false; // Different number of elements means they can't be the same map
+    }
+
+    return true;
+}
 
 #[test]
 fn map_insert_255u8() {
