@@ -1,6 +1,7 @@
 use core::{
-    cmp::max,
+    cmp::{max, min},
     iter::FusedIterator,
+    marker::PhantomData,
     ops::{self, RangeInclusive},
 };
 
@@ -47,8 +48,9 @@ where
     V: ValueOwned,
     I: SortedStartsMap<'a, T, V>,
 {
-    pub(crate) iter: I,
-    pub(crate) option_range_value: Option<RangeValue<'a, T, V>>,
+    iter: <std::vec::Vec<RangeValue<'a, T, V>> as std::iter::IntoIterator>::IntoIter,
+    phantom: PhantomData<I>,
+    // option_range_value: Option<RangeValue<'a, T, V>>,
 }
 
 impl<'a, T, V, I> UnionIterMap<'a, T, V, I>
@@ -57,11 +59,95 @@ where
     V: ValueOwned,
     I: SortedStartsMap<'a, T, V>,
 {
-    /// Creates a new [`UnionIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`UnionIterMap`] for more details and examples.
+    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
+    /// Creates a new [`UnionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
     pub fn new(iter: I) -> Self {
+        // By default all ends are inclusive (different that most programs)
+        let mut vec_in = iter.collect_vec();
+        println!("vec_in: {:?}", vec_in.len());
+        let mut vec_mid = Vec::<RangeValue<'a, T, V>>::new();
+        let mut workspace = Vec::<RangeValue<'a, T, V>>::new();
+        let mut bar_priority = 0usize;
+        let mut bar_end = T::zero();
+        while !vec_in.is_empty() || !workspace.is_empty() {
+            if !vec_in.is_empty() {
+                // find the index (of any) of the first index with a different start that the first one
+                let first_start = *vec_in[0].range.start();
+                // if bar_end is None, set it to first_start
+                bar_end = max(bar_end, first_start);
+                let first_diff = vec_in.iter().position(|x| *x.range.start() != first_start);
+                // If None, then set it to the length
+                let first_diff = first_diff.unwrap_or(vec_in.len());
+                // set same_start to the first first_diff elements. Allocate for this
+                // remove the first first_diff elements from vec_in. do this in place.
+                let same_starts: Vec<_> = vec_in.drain(0..first_diff).collect();
+                for same_start in same_starts {
+                    if same_start.priority < bar_priority && same_start.range.end() < &bar_end {
+                        continue;
+                    }
+                    if same_start.priority >= bar_priority {
+                        bar_priority = same_start.priority;
+                        bar_end = *same_start.range.end();
+                    }
+                    workspace.push(same_start);
+                }
+            }
+
+            // find the one element with priority = bar_priority
+            // cmk use priority queue
+            let index_of_best = workspace.iter().position(|x| x.priority == bar_priority);
+            let best = &workspace[index_of_best.unwrap()];
+            // output_end is the smallest wend in workspace
+            let mut output_end = *workspace.iter().map(|x| x.range.end()).min().unwrap();
+            // if vec_is is not empty, then output_end is the minimum of output_end and the start of the first element in vec_in -1
+            if !vec_in.is_empty() {
+                let next_start = *vec_in[0].range.start();
+                // cmk underflow?
+                output_end = min(output_end, next_start - T::one())
+            };
+            let first_start = *workspace[0].range.start();
+            vec_mid.push(RangeValue {
+                range: first_start..=output_end,
+                value: best.value,
+                priority: best.priority,
+            });
+            // trim the start of the ranges in workspace to output_end+1, remove any that are empty
+            // also find the best priority and the new bar_end
+            workspace.retain(|x| *x.range.end() > output_end);
+            // cmk check for overflow?
+            let new_start = output_end + T::one();
+            bar_priority = 0;
+            bar_end = output_end;
+            for x in workspace.iter_mut() {
+                x.range = new_start..=*x.range.end();
+                if x.priority > bar_priority {
+                    bar_priority = x.priority;
+                    bar_end = *x.range.end();
+                }
+            }
+        }
+
+        let mut vec_out = Vec::<RangeValue<'a, T, V>>::new();
+        let mut index = 0;
+        while index < vec_mid.len() {
+            let mut index_exclusive_end = index;
+            while index_exclusive_end < vec_mid.len()
+                && vec_mid[index_exclusive_end].value == vec_mid[index].value
+            {
+                index_exclusive_end += 1;
+            }
+            vec_out.push(RangeValue {
+                range: *vec_mid[index].range.start()
+                    ..=*vec_mid[index_exclusive_end - 1].range.end(),
+                value: vec_mid[index].value,
+                priority: 0, // cmk priority should never be exposed or re-used.
+            });
+            index = index_exclusive_end;
+        }
+
         Self {
-            iter,
-            option_range_value: None,
+            iter: vec_out.into_iter(),
+            phantom: PhantomData,
         }
     }
 }
@@ -152,10 +238,7 @@ where
         });
         let iter = AssumeSortedStartsMap { iter };
 
-        Self {
-            iter,
-            option_range_value: None,
-        }
+        Self::new(iter)
     }
 }
 
@@ -171,66 +254,20 @@ where
     type Item = RangeValue<'a, T, V>;
 
     fn next(&mut self) -> Option<RangeValue<'a, T, V>> {
-        loop {
-            // If there is no next range, return the current range (if any)
-            let Some(next_range_value) = self.iter.next() else {
-                return self.option_range_value.take();
-            };
-
-            // if the next range is empty, try again
-            let (next_start, next_end) = next_range_value.range.clone().into_inner();
-            if next_end < next_start {
-                continue;
-            }
-
-            // if the current range is empty, replace it with the next range and try again
-            let Some(current_range_value) = self.option_range_value.take() else {
-                self.option_range_value = Some(next_range_value);
-                continue;
-            };
-
-            let (current_start, current_end) = current_range_value.range.clone().into_inner();
-            debug_assert!(current_start <= next_start); // real assert
-
-            // if not touching or overlapping  then return the current range and replace it with the next range
-            let touch_or_overlap = next_start <= current_end
-                || (current_end < T::safe_max_value() && next_start <= current_end + T::one());
-            if !touch_or_overlap {
-                self.option_range_value = Some(next_range_value);
-                return Some(current_range_value);
-            }
-
-            // if touching or overlapping and the values are the same, then merge the ranges and try again
-            let same_value = next_range_value.value == current_range_value.value;
-            if touch_or_overlap && same_value {
-                let crv = RangeValue {
-                    range: current_start..=max(current_end, next_end),
-                    value: current_range_value.value,
-                    priority: current_range_value.priority,
-                };
-                self.option_range_value = Some(crv);
-                continue;
-            }
-
-            debug_assert!(touch_or_overlap && !same_value); // real assert
-                                                            // if current starts before next, we could return a range from current to next_start - 1 but the remainders remain in play.
-            todo!("return a range from current to next_start - 1");
-
-            debug_assert!(current_start == next_start);
-        }
+        self.iter.next()
     }
 
-    // There could be a few as 1 (or 0 if the iter is empty) or as many as the iter.
-    // Plus, possibly one more if we have a range is in progress.
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let (low, high) = self.iter.size_hint();
-        let low = low.min(1);
-        if self.option_range_value.is_some() {
-            (low, high.map(|x| x + 1))
-        } else {
-            (low, high)
-        }
-    }
+    // // There could be a few as 1 (or 0 if the iter is empty) or as many as the iter.
+    // // Plus, possibly one more if we have a range is in progress.
+    // fn size_hint(&self) -> (usize, Option<usize>) {
+    //     let (low, high) = self.iter.size_hint();
+    //     let low = low.min(1);
+    //     if self.option_range_value.is_some() {
+    //         (low, high.map(|x| x + 1))
+    //     } else {
+    //         (low, high)
+    //     }
+    // }
 }
 
 // cmk

@@ -168,18 +168,18 @@ fn map_step_by_step() {
     let iter = UnsortedDisjointMap::from(iter.into_iter());
     let iter = iter
         .into_iter()
-        .sorted_by(|a, b| match a.range.start().cmp(&b.range.start()) {
+        .sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
             std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
             other => other,
         });
     let iter = AssumeSortedStartsMap { iter };
-    let iter = UnionIterMap {
-        iter,
-        option_range_value: None,
-    };
+    let iter = UnionIterMap::new(iter);
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
     println!("{vs}");
-    assert!(vs != r#"[RangeValue { range: 0..=2, value: "a" }]"#);
+    assert_eq!(
+        vs,
+        r#"[RangeValue { range: 0..=0, value: "a", priority: 0 }, RangeValue { range: 1..=2, value: "b", priority: 0 }]"#
+    );
 
     // let iter = UnionIterMap::from(iter);
     // let vs = format!("{:?}", iter.collect::<Vec<_>>());
@@ -201,7 +201,7 @@ fn map_step_by_step() {
 
     let range_map_blaze = RangeMapBlaze::from_iter(input);
     println!("{range_map_blaze}");
-    assert_eq!(range_map_blaze.to_string(), r#"(0..=1, "a"), (2..=2, "b")"#);
+    assert_eq!(range_map_blaze.to_string(), r#"(0..=0, "a"), (1..=2, "b")"#);
 }
 
 #[test]
