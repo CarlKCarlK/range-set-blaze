@@ -123,37 +123,55 @@ fn map_step_by_step() {
 
     let iter = input.into_iter();
     let iter = iter.map(|(x, value)| (x..=x, value));
-    let iter = iter.map(|(range, value)| RangeValue { range, value });
+    let iter = iter.map(|(range, value)| RangeValue {
+        range,
+        value,
+        priority: 0,
+    });
     let iter = UnsortedDisjointMap::from(iter.into_iter());
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
     println!("{vs}");
     assert_eq!(
         vs,
-        r#"[RangeValue { range: 1..=2, value: "b" }, RangeValue { range: 0..=0, value: "a" }]"#
+        r#"[RangeValue { range: 1..=2, value: "b", priority: 0 }, RangeValue { range: 0..=0, value: "a", priority: 2 }]"#
     );
 
     let iter = input.into_iter();
     let iter = iter.map(|(x, value)| (x..=x, value));
-    let iter = iter.map(|(range, value)| RangeValue { range, value });
+    let iter = iter.map(|(range, value)| RangeValue {
+        range,
+        value,
+        priority: 0,
+    });
     let iter = UnsortedDisjointMap::from(iter.into_iter());
     let iter = iter
         .into_iter()
-        .sorted_by_key(|range_value| *range_value.range.start());
+        .sorted_by(|a, b| match a.range.start().cmp(&b.range.start()) {
+            std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
+            other => other,
+        });
     let iter = AssumeSortedStartsMap { iter };
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
     println!("{vs}");
     assert_eq!(
         vs,
-        r#"[RangeValue { range: 0..=0, value: "a" }, RangeValue { range: 1..=2, value: "b" }]"#
+        r#"[RangeValue { range: 0..=0, value: "a", priority: 2 }, RangeValue { range: 1..=2, value: "b", priority: 0 }]"#
     );
 
     let iter = input.into_iter();
     let iter = iter.map(|(x, value)| (x..=x, value));
-    let iter = iter.map(|(range, value)| RangeValue { range, value });
+    let iter = iter.map(|(range, value)| RangeValue {
+        range,
+        value,
+        priority: 0,
+    });
     let iter = UnsortedDisjointMap::from(iter.into_iter());
     let iter = iter
         .into_iter()
-        .sorted_by_key(|range_value| *range_value.range.start());
+        .sorted_by(|a, b| match a.range.start().cmp(&b.range.start()) {
+            std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
+            other => other,
+        });
     let iter = AssumeSortedStartsMap { iter };
     let iter = UnionIterMap {
         iter,

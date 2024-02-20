@@ -112,7 +112,12 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &
         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
         let iter = iter.into_iter();
-        let iter = iter.map(|(range, value)| RangeValue { range, value });
+        let iter = iter.enumerate();
+        let iter = iter.map(|(priority, (range, value))| RangeValue {
+            range,
+            value,
+            priority,
+        });
         let iter: UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>> =
             UnionIterMap::from_iter(iter);
         iter
@@ -141,9 +146,10 @@ where
 {
     #[allow(clippy::clone_on_copy)]
     fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, I>) -> Self {
-        let iter = unsorted_disjoint
-            .into_iter()
-            .sorted_by_key(|range_value| *range_value.range.start());
+        let iter = unsorted_disjoint.sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
+            std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
+            other => other,
+        });
         let iter = AssumeSortedStartsMap { iter };
 
         Self {
@@ -166,49 +172,51 @@ where
 
     fn next(&mut self) -> Option<RangeValue<'a, T, V>> {
         loop {
-            // range_value is the next range_value from the iterator or self.option_range_value
-            // cmk rewrite with if let
-            let range_value = match self.iter.next() {
-                Some(range_value) => range_value,
-                None => return self.option_range_value.take(),
+            // If there is no next range, return the current range (if any)
+            let Some(next_range_value) = self.iter.next() else {
+                return self.option_range_value.take();
             };
 
-            let (start, end) = range_value.range.into_inner();
-            if end < start {
+            // if the next range is empty, try again
+            let (next_start, next_end) = next_range_value.range.clone().into_inner();
+            if next_end < next_start {
                 continue;
             }
 
+            // if the current range is empty, replace it with the next range and try again
             let Some(current_range_value) = self.option_range_value.take() else {
-                self.option_range_value = Some(RangeValue {
-                    range: start..=end,
-                    value: range_value.value,
-                });
+                self.option_range_value = Some(next_range_value);
                 continue;
             };
 
-            let (current_start, current_end) = current_range_value.range.into_inner();
-            debug_assert!(current_start <= start); // real assert
-            if start <= current_end
-                || (current_end < T::safe_max_value() && start <= current_end + T::one())
-            {
+            let (current_start, current_end) = current_range_value.range.clone().into_inner();
+            debug_assert!(current_start <= next_start); // real assert
+
+            // if not touching or overlapping  then return the current range and replace it with the next range
+            let touch_or_overlap = next_start <= current_end
+                || (current_end < T::safe_max_value() && next_start <= current_end + T::one());
+            if !touch_or_overlap {
+                self.option_range_value = Some(next_range_value);
+                return Some(current_range_value);
+            }
+
+            // if touching or overlapping and the values are the same, then merge the ranges and try again
+            let same_value = next_range_value.value == current_range_value.value;
+            if touch_or_overlap && same_value {
                 let crv = RangeValue {
-                    range: current_start..=max(current_end, end),
+                    range: current_start..=max(current_end, next_end),
                     value: current_range_value.value,
+                    priority: current_range_value.priority,
                 };
                 self.option_range_value = Some(crv);
                 continue;
-            } else {
-                let cr0 = RangeValue {
-                    range: start..=end,
-                    value: range_value.value,
-                };
-                self.option_range_value = Some(cr0);
-                let cr1 = RangeValue {
-                    range: current_start..=current_end,
-                    value: current_range_value.value,
-                };
-                return Some(cr1);
             }
+
+            debug_assert!(touch_or_overlap && !same_value); // real assert
+                                                            // if current starts before next, we could return a range from current to next_start - 1 but the remainders remain in play.
+            todo!("return a range from current to next_start - 1");
+
+            debug_assert!(current_start == next_start);
         }
     }
 

@@ -26,6 +26,7 @@ where
 {
     pub(crate) range: RangeInclusive<T>,
     pub(crate) value: &'a V,
+    pub(crate) priority: usize,
 }
 
 impl<'a, T, V> fmt::Debug for RangeValue<'a, T, V>
@@ -37,6 +38,7 @@ where
         f.debug_struct("RangeValue")
             .field("range", &self.range)
             .field("value", self.value)
+            .field("priority", &self.priority)
             .finish()
     }
 }

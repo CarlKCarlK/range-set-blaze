@@ -53,6 +53,7 @@ where
         self.iter.next().map(|(start, end_value)| RangeValue {
             range: *start..=end_value.end,
             value: &end_value.value,
+            priority: 0, // cmk don't use RangeValue here
         })
     }
 

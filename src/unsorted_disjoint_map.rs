@@ -22,6 +22,7 @@ where
     min_value_plus_1: T,
     min_value_plus_2: T,
     two: T,
+    priority: usize,
 }
 
 impl<'a, T, V, I> From<I> for UnsortedDisjointMap<'a, T, V, I::IntoIter>
@@ -37,6 +38,7 @@ where
             min_value_plus_1: T::min_value() + T::one(),
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
+            priority: 0,
         }
     }
 }
@@ -61,9 +63,11 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             // get the next range_value, if none, return the current range_value
-            let Some(next_range_value) = self.iter.next() else {
+            let Some(mut next_range_value) = self.iter.next() else {
                 return self.option_range_value.take();
             };
+            next_range_value.priority = self.priority;
+            self.priority += 1;
 
             // check the next range is valid and non-empty
             let (next_start, next_end) = next_range_value.range.clone().into_inner();
