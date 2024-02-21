@@ -145,12 +145,14 @@ where
         let mut index = 0;
         while index < vec_mid.len() {
             let mut index_exclusive_end = index + 1;
+            let mut previous_index = index;
             while index_exclusive_end < vec_mid.len()
-                && vec_mid[index].value == vec_mid[index_exclusive_end].value
+                && vec_mid[previous_index].value == vec_mid[index_exclusive_end].value
                 // cmk overflow?                
-                && *vec_mid[index].range.end() + T::one()
+                && *vec_mid[previous_index].range.end() + T::one()
                     == *vec_mid[index_exclusive_end].range.start()
             {
+                previous_index = index_exclusive_end;
                 index_exclusive_end += 1;
             }
             vec_out.push(RangeValue {

@@ -24,10 +24,9 @@ use core::ops::BitAndAssign;
 type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
 #[test]
-fn map_random_data() {
+fn map_random_from_iter() {
     let values = ['a', 'b', 'c', 'd', 'e'];
-    for seed in 1..=1 {
-        // 0 to 20
+    for seed in 0..20 {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
 
@@ -37,7 +36,8 @@ fn map_random_data() {
         for _ in 0..500 {
             let key = rng.gen_range(0..=255u8);
             let value = values.choose(&mut rng).unwrap(); // cmk allow more than references
-            print!("{key}{value} ");
+
+            // print!("{key}{value} ");
             inputs.push((key, value));
 
             // cmk fix so don't need to clone and can use .iter()
@@ -51,6 +51,37 @@ fn map_random_data() {
     }
 }
 
+#[test]
+fn map_random_insert() {
+    let values = ['a', 'b', 'c', 'd', 'e'];
+    for seed in 0..20 {
+        println!("seed: {seed}");
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        let mut btree_map = BTreeMap::new();
+        let mut range_map_blaze = RangeMapBlaze::new();
+
+        for _ in 0..500 {
+            let key = rng.gen_range(0..=255u8);
+            let value = values.choose(&mut rng).unwrap();
+            print!("{key}{value} ");
+
+            btree_map.insert(key, value);
+            range_map_blaze.insert(key, *value);
+            assert!(equal_maps(&range_map_blaze, &btree_map));
+        }
+    }
+}
+
+#[test]
+fn map_repro_insert_1() {
+    let values = ['a', 'b', 'c', 'd', 'e'];
+    let mut range_map_blaze = RangeMapBlaze::new();
+    range_map_blaze.insert(123, values[0]);
+    range_map_blaze.insert(123, values[1]);
+    assert_eq!(range_map_blaze.to_string(), "(123..=123, 'b')");
+}
+
 fn equal_maps<T: Integer + std::iter::Step, V: ValueOwned + fmt::Debug + std::fmt::Display>(
     range_map_blaze: &RangeMapBlaze<T, V>,
     btree_map: &BTreeMap<T, &V>,
@@ -58,11 +89,25 @@ fn equal_maps<T: Integer + std::iter::Step, V: ValueOwned + fmt::Debug + std::fm
 where
     usize: std::convert::From<<T as Integer>::SafeLen>,
 {
+    // also, check that the ranges are really sorted and disjoint
     // cmk range_values should return a tuple not a struct
     // cmk implement iter for RangeMapBlaze
+    let mut previous: Option<RangeValue<T, V>> = None;
     for range_value in range_map_blaze.range_values() {
         let v = range_value.value;
         let range = range_value.range.clone();
+
+        if let Some(previous) = previous {
+            if (previous.value == v && *previous.range.end() + T::one() >= *range.start())
+                || previous.range.end() >= range.start()
+            {
+                eprintln!(
+                    "two ranges are not disjoint: {:?}->{} and {range:?}->{v}",
+                    previous.range, previous.value
+                );
+                return false;
+            }
+        }
         for k in range {
             if btree_map.get(&k).map_or(true, |v2| v != *v2) {
                 eprintln!(
@@ -72,6 +117,7 @@ where
                 return false;
             }
         }
+        previous = Some(range_value);
     }
 
     let len0: usize = range_map_blaze.len().try_into().unwrap();
@@ -142,8 +188,8 @@ fn map_repro_106() {
 }
 
 #[test]
-fn map_repro_99() {
-    let input_string = "97d 218c 211b 59d 166c 234b 220a 241e 2b 251c 23b 216a 8d 15b 3d 200d 191a 106b 34d 126e 5a 0a 245b 188a 13d 50a 113e 11e 73b 250d 32a 100e 199e 48b 150d 57a 123d 65b 128d 27e 123d 230d 40a 11b 107e 63d 86b 63c 201b 131d 245e 73d 139e 184b 253c 49a 40b 60d 145b 228b 29c 234c 116c 134e 78a 42c 229e 200d 239a 216a 14c 14d 177e 156d 93b 157d 190d 253e 86e 168e 122c 111d 123b 249a 32c 186d 8e 34b 186a 54b 29e 72a 39b 44b 87b 14d 29e 113b 83d 247d 42c 3a 152a 219a 91b 106b 38e 96a 34d 138b 250d 231d 162d 172d 179d 95c 124c 11a 219b 50d 160d 88c 122d 182e 74e 17b 173c 234c 134a 11d 24c 219a 20e 15a 54b 62a 67e 50c 33a 224c 248b 97c 98c 53e 227d 22b 153c 59e 148e 128a 186d 133a 82c 86a 72e 124a 65d 124a 0a 24c 60d 222a 193a 44e 162d 90d 29b 85b 110b 223a 1d 92e 15d 113b 24a 0a 22e 60c 120c 94a 116b 248c 252a 92d 65a 196e 89e 224b 195a 169c 97e";
+fn map_repro_206() {
+    let input_string = "127e 2d 29e 84a 17a 79d 174e 125b 123a 123b 98c 132d 99e 186b 253d 31d 121c 151a 168e 208c 47e 42e 86a 21b 7b 238d 148a 151a 227d 173d 145b 18e 219e 16c 214b 213a 155e 27e 24d 38c 59c 16c 183d 125d 210d 99e 43e 189e 147a 90d 42a 220e 35b 120d 185d 177a 102a 22b 124b 140a 199e 143c 32d 225a 223e 137e 177e 234e 97a 166a 83e 213a 147b 128a 150c 12c 199c 152c 79b 164b 204b 235e 37e 14c 19b 49a 1c 115b 31d 102b 59b 129b 104d 70c 229b 205b 101c 58d 114a 228d 173e 139d 147b 32c 198e 194c 18a 77a 100e 196a 46b 81a 63d 198a 242a 131b 153e 113b 19d 253e 195c 209e 201c 139d 47a 223d 240b 203d 84a 214d 129e 73d 55d 193e 129d 7c 193e 2c 235c 39c 88d 175c 190c 239a 219d 121a 88d 175d 117e 23a 102d 165a 58a 229a 100b 13b 113e 26a 49e 37e 126a 251b 47e 77a 206b ";
     let mut input = Vec::<(u8, &u8)>::new();
     for pair in input_string.split_whitespace() {
         let bytes = pair.as_bytes(); // Get the byte slice of the pair
@@ -159,43 +205,10 @@ fn map_repro_99() {
         value,
         priority: 0,
     });
-    let iter = UnsortedDisjointMap::from(iter.into_iter());
-    let vs = format_range_values(iter);
-    println!("{vs}");
-    assert_eq!(
-        vs,
-        "97..=97d 218..=218c 211..=211b 59..=59d 166..=166c 234..=234b 220..=220a 241..=241e 2..=2b 251..=251c 23..=23b 216..=216a 8..=8d 15..=15b 3..=3d 200..=200d 191..=191a 106..=106b 34..=34d 126..=126e 5..=5a 0..=0a 245..=245b 188..=188a 13..=13d 50..=50a 113..=113e 11..=11e 73..=73b 250..=250d 32..=32a 100..=100e 199..=199e 48..=48b 150..=150d 57..=57a 123..=123d 65..=65b 128..=128d 27..=27e 123..=123d 230..=230d 40..=40a 11..=11b 107..=107e 63..=63d 86..=86b 63..=63c 201..=201b 131..=131d 245..=245e 73..=73d 139..=139e 184..=184b 253..=253c 49..=49a 40..=40b 60..=60d 145..=145b 228..=228b 29..=29c 234..=234c 116..=116c 134..=134e 78..=78a 42..=42c 229..=229e 200..=200d 239..=239a 216..=216a 14..=14c 14..=14d 177..=177e 156..=156d 93..=93b 157..=157d 190..=190d 253..=253e 86..=86e 168..=168e 122..=122c 111..=111d 123..=123b 249..=249a 32..=32c 186..=186d 8..=8e 34..=34b 186..=186a 54..=54b 29..=29e 72..=72a 39..=39b 44..=44b 87..=87b 14..=14d 29..=29e 113..=113b 83..=83d 247..=247d 42..=42c 3..=3a 152..=152a 219..=219a 91..=91b 106..=106b 38..=38e 96..=96a 34..=34d 138..=138b 250..=250d 231..=231d 162..=162d 172..=172d 179..=179d 95..=95c 124..=124c 11..=11a 219..=219b 50..=50d 160..=160d 88..=88c 122..=122d 182..=182e 74..=74e 17..=17b 173..=173c 234..=234c 134..=134a 11..=11d 24..=24c 219..=219a 20..=20e 15..=15a 54..=54b 62..=62a 67..=67e 50..=50c 33..=33a 224..=224c 248..=248b 97..=98c 53..=53e 227..=227d 22..=22b 153..=153c 59..=59e 148..=148e 128..=128a 186..=186d 133..=133a 82..=82c 86..=86a 72..=72e 124..=124a 65..=65d 124..=124a 0..=0a 24..=24c 60..=60d 222..=222a 193..=193a 44..=44e 162..=162d 90..=90d 29..=29b 85..=85b 110..=110b 223..=223a 1..=1d 92..=92e 15..=15d 113..=113b 24..=24a 0..=0a 22..=22e 60..=60c 120..=120c 94..=94a 116..=116b 248..=248c 252..=252a 92..=92d 65..=65a 196..=196e 89..=89e 224..=224b 195..=195a 169..=169c 97..=97e "
-    );
+    // let vs = format_range_values(iter);
+    // println!("{vs}");
+    // assert_eq!(vs, "127..=127e 2..=2d 29..=29e 84..=84a 17..=17a 79..=79d 174..=174e 125..=125b 123..=123a 123..=123b 98..=98c 132..=132d 99..=99e 186..=186b 253..=253d 31..=31d 121..=121c 151..=151a 168..=168e 208..=208c 47..=47e 42..=42e 86..=86a 21..=21b 7..=7b 238..=238d 148..=148a 151..=151a 227..=227d 173..=173d 145..=145b 18..=18e 219..=219e 16..=16c 214..=214b 213..=213a 155..=155e 27..=27e 24..=24d 38..=38c 59..=59c 16..=16c 183..=183d 125..=125d 210..=210d 99..=99e 43..=43e 189..=189e 147..=147a 90..=90d 42..=42a 220..=220e 35..=35b 120..=120d 185..=185d 177..=177a 102..=102a 22..=22b 124..=124b 140..=140a 199..=199e 143..=143c 32..=32d 225..=225a 223..=223e 137..=137e 177..=177e 234..=234e 97..=97a 166..=166a 83..=83e 213..=213a 147..=147b 128..=128a 150..=150c 12..=12c 199..=199c 152..=152c 79..=79b 164..=164b 204..=204b 235..=235e 37..=37e 14..=14c 19..=19b 49..=49a 1..=1c 115..=115b 31..=31d 102..=102b 59..=59b 129..=129b 104..=104d 70..=70c 229..=229b 205..=205b 101..=101c 58..=58d 114..=114a 228..=228d 173..=173e 139..=139d 147..=147b 32..=32c 198..=198e 194..=194c 18..=18a 77..=77a 100..=100e 196..=196a 46..=46b 81..=81a 63..=63d 198..=198a 242..=242a 131..=131b 153..=153e 113..=113b 19..=19d 253..=253e 195..=195c 209..=209e 201..=201c 139..=139d 47..=47a 223..=223d 240..=240b 203..=203d 84..=84a 214..=214d 129..=129e 73..=73d 55..=55d 193..=193e 129..=129d 7..=7c 193..=193e 2..=2c 235..=235c 39..=39c 88..=88d 175..=175c 190..=190c 239..=239a 219..=219d 121..=121a 88..=88d 175..=175d 117..=117e 23..=23a 102..=102d 165..=165a 58..=58a 229..=229a 100..=100b 13..=13b 113..=113e 26..=26a 49..=49e 37..=37e 126..=126a 251..=251b 47..=47e 77..=77a 206..=206b ");
 
-    let iter = input.clone().into_iter();
-    let iter = iter.map(|(x, value)| (x..=x, value));
-    let iter = iter.map(|(range, value)| RangeValue {
-        range,
-        value,
-        priority: 0,
-    });
-    let iter = UnsortedDisjointMap::from(iter.into_iter());
-    let iter = iter
-        .into_iter()
-        .sorted_by(|a, b| match a.range.start().cmp(&b.range.start()) {
-            std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
-            other => other,
-        });
-    let iter = AssumeSortedStartsMap { iter };
-    let vs = format_range_values(iter);
-    println!("{vs}");
-    assert_eq!(
-        vs,
-        "0..=0a 0..=0a 0..=0a 1..=1d 2..=2b 3..=3a 3..=3d 5..=5a 8..=8e 8..=8d 11..=11d 11..=11a 11..=11b 11..=11e 13..=13d 14..=14d 14..=14d 14..=14c 15..=15d 15..=15a 15..=15b 17..=17b 20..=20e 22..=22e 22..=22b 23..=23b 24..=24a 24..=24c 24..=24c 27..=27e 29..=29b 29..=29e 29..=29e 29..=29c 32..=32c 32..=32a 33..=33a 34..=34d 34..=34b 34..=34d 38..=38e 39..=39b 40..=40b 40..=40a 42..=42c 42..=42c 44..=44e 44..=44b 48..=48b 49..=49a 50..=50c 50..=50d 50..=50a 53..=53e 54..=54b 54..=54b 57..=57a 59..=59e 59..=59d 60..=60c 60..=60d 60..=60d 62..=62a 63..=63c 63..=63d 65..=65a 65..=65d 65..=65b 67..=67e 72..=72e 72..=72a 73..=73d 73..=73b 74..=74e 78..=78a 82..=82c 83..=83d 85..=85b 86..=86a 86..=86e 86..=86b 87..=87b 88..=88c 89..=89e 90..=90d 91..=91b 92..=92d 92..=92e 93..=93b 94..=94a 95..=95c 96..=96a 97..=97e 97..=98c 97..=97d 100..=100e 106..=106b 106..=106b 107..=107e 110..=110b 111..=111d 113..=113b 113..=113b 113..=113e 116..=116b 116..=116c 120..=120c 122..=122d 122..=122c 123..=123b 123..=123d 123..=123d 124..=124a 124..=124a 124..=124c 126..=126e 128..=128a 128..=128d 131..=131d 133..=133a 134..=134a 134..=134e 138..=138b 139..=139e 145..=145b 148..=148e 150..=150d 152..=152a 153..=153c 156..=156d 157..=157d 160..=160d 162..=162d 162..=162d 166..=166c 168..=168e 169..=169c 172..=172d 173..=173c 177..=177e 179..=179d 182..=182e 184..=184b 186..=186d 186..=186a 186..=186d 188..=188a 190..=190d 191..=191a 193..=193a 195..=195a 196..=196e 199..=199e 200..=200d 200..=200d 201..=201b 211..=211b 216..=216a 216..=216a 218..=218c 219..=219a 219..=219b 219..=219a 220..=220a 222..=222a 223..=223a 224..=224b 224..=224c 227..=227d 228..=228b 229..=229e 230..=230d 231..=231d 234..=234c 234..=234c 234..=234b 239..=239a 241..=241e 245..=245e 245..=245b 247..=247d 248..=248c 248..=248b 249..=249a 250..=250d 250..=250d 251..=251c 252..=252a 253..=253e 253..=253c "
-    );
-
-    let iter = input.clone().into_iter();
-    let iter = iter.map(|(x, value)| (x..=x, value));
-    let iter = iter.map(|(range, value)| RangeValue {
-        range,
-        value,
-        priority: 0,
-    });
     let iter = UnsortedDisjointMap::from(iter.into_iter());
     let iter = iter
         .into_iter()
@@ -204,13 +217,20 @@ fn map_repro_99() {
             other => other,
         });
     let iter = AssumeSortedStartsMap { iter };
+    // let vs = format_range_values(iter);
+    // println!("{vs}");
+    // assert_eq!(vs, "1..=1c 2..=2c 2..=2d 7..=7c 7..=7b 12..=12c 13..=13b 14..=14c 16..=16c 16..=16c 17..=17a 18..=18a 18..=18e 19..=19d 19..=19b 21..=21b 22..=22b 23..=23a 24..=24d 26..=26a 27..=27e 29..=29e 31..=31d 31..=31d 32..=32c 32..=32d 35..=35b 37..=37e 37..=37e 38..=38c 39..=39c 42..=42a 42..=42e 43..=43e 46..=46b 47..=47e 47..=47a 47..=47e 49..=49e 49..=49a 55..=55d 58..=58a 58..=58d 59..=59b 59..=59c 63..=63d 70..=70c 73..=73d 77..=77a 77..=77a 79..=79b 79..=79d 81..=81a 83..=83e 84..=84a 84..=84a 86..=86a 88..=88d 88..=88d 90..=90d 97..=97a 98..=98c 99..=99e 99..=99e 100..=100b 100..=100e 101..=101c 102..=102d 102..=102b 102..=102a 104..=104d 113..=113e 113..=113b 114..=114a 115..=115b 117..=117e 120..=120d 121..=121a 121..=121c 123..=123b 123..=123a 124..=124b 125..=125d 125..=125b 126..=126a 127..=127e 128..=128a 129..=129d 129..=129e 129..=129b 131..=131b 132..=132d 137..=137e 139..=139d 139..=139d 140..=140a 143..=143c 145..=145b 147..=147b 147..=147b 147..=147a 148..=148a 150..=150c 151..=151a 151..=151a 152..=152c 153..=153e 155..=155e 164..=164b 165..=165a 166..=166a 168..=168e 173..=173e 173..=173d 174..=174e 175..=175d 175..=175c 177..=177e 177..=177a 183..=183d 185..=185d 186..=186b 189..=189e 190..=190c 193..=193e 193..=193e 194..=194c 195..=195c 196..=196a 198..=198a 198..=198e 199..=199c 199..=199e 201..=201c 203..=203d 204..=204b 205..=205b 206..=206b 208..=208c 209..=209e 210..=210d 213..=213a 213..=213a 214..=214d 214..=214b 219..=219d 219..=219e 220..=220e 223..=223d 223..=223e 225..=225a 227..=227d 228..=228d 229..=229a 229..=229b 234..=234e 235..=235c 235..=235e 238..=238d 239..=239a 240..=240b 242..=242a 251..=251b 253..=253e 253..=253d ");
+
     let iter = UnionIterMap::new(iter);
     let vs = format_range_values(iter);
     println!("{vs}");
-    assert_eq!(vs, "NOPE");
+    assert_eq!(vs, "1..=2c 7..=7c 12..=12c 13..=13b 14..=14c 16..=16c 17..=18a 19..=19d 21..=22b 23..=23a 24..=24d 26..=26a 27..=27e 29..=29e 31..=31d 32..=32c 35..=35b 37..=37e 38..=39c 42..=42a 43..=43e 46..=46b 47..=47e 49..=49e 55..=55d 58..=58a 59..=59b 63..=63d 70..=70c 73..=73d 77..=77a 79..=79b 81..=81a 83..=83e 84..=84a 86..=86a 88..=88d 90..=90d 97..=97a 98..=98c 99..=99e 100..=100b 101..=101c 102..=102d 104..=104d 113..=113e 114..=114a 115..=115b 117..=117e 120..=120d 121..=121a 123..=124b 125..=125d 126..=126a 127..=127e 128..=128a 129..=129d 131..=131b 132..=132d 137..=137e 139..=139d 140..=140a 143..=143c 145..=145b 147..=147b 148..=148a 150..=150c 151..=151a 152..=152c 153..=153e 155..=155e 164..=164b 165..=166a 168..=168e 173..=174e 175..=175d 177..=177e 183..=183d 185..=185d 186..=186b 189..=189e 190..=190c 193..=193e 194..=195c 196..=196a 198..=198a 199..=199c 201..=201c 203..=203d 204..=206b 208..=208c 209..=209e 210..=210d 213..=213a 214..=214d 219..=219d 220..=220e 223..=223d 225..=225a 227..=228d 229..=229a 234..=234e 235..=235c 238..=238d 239..=239a 240..=240b 242..=242a 251..=251b 253..=253e ");
 
-    let range_map_blaze = RangeMapBlaze::<u8, u8>::from_iter(input.clone());
-    assert_eq!(range_map_blaze.to_string(), "(123..=123, 'b')");
+    // let range_map_blaze = RangeMapBlaze::<u8, u8>::from_iter(input.clone());
+    // assert_eq!(
+    //     range_map_blaze.to_string(),
+    //     "(97..=97, 101), (98..=98, 99), (100..=100, 101), (106..=106, 98)"
+    // );
 }
 
 #[test]
@@ -295,16 +315,16 @@ fn map_insert_255u8() {
 }
 
 // cmk
-// #[test]
-// fn map_insert_str() {
-//     let s1 = "Hello";
-//     let s2 = "There";
-//     let range_map_blaze = RangeMapBlaze::<u8, str>::from_iter([(255, &s1), (25, &s2)]);
-//     assert_eq!(
-//         range_map_blaze.to_string(),
-//         r#"(25..=25, "There"), (255..=255, "Hello")"#
-//     );
-// }
+#[test]
+fn map_insert_str() {
+    let s1 = "Hello".to_string();
+    let s2 = "There".to_string();
+    let range_map_blaze = RangeMapBlaze::<u8, String>::from_iter([(255, &s1), (25, &s2)]);
+    assert_eq!(
+        range_map_blaze.to_string(),
+        r#"(25..=25, "There"), (255..=255, "Hello")"#
+    );
+}
 
 #[test]
 #[should_panic]
@@ -313,29 +333,6 @@ fn map_insert_max_u128() {
     let a = RangeMapBlaze::from_iter([(u128::MAX, &s1)]);
     println!("a: {a}");
 }
-
-// cmk
-// #[test]
-// fn sub() {
-//     for start in i8::MIN..i8::MAX {
-//         for end in start..i8::MAX {
-//             let diff = i8::safe_len(&(start..=end));
-//             let diff2 = (end as i16) - (start as i16) + 1;
-//             assert_eq!(diff as i16, diff2);
-//         }
-//     }
-//     for start in u8::MIN..u8::MAX {
-//         for end in start..u8::MAX {
-//             let diff = u8::safe_len(&(start..=end));
-//             let diff2 = (end as i16) - (start as i16) + 1;
-//             assert_eq!(diff as i16, diff2);
-//         }
-//     }
-
-//     let before = 127i8.overflowing_sub(-128i8).0;
-//     let after = before as u8;
-//     println!("before: {before}, after: {after}");
-// }
 
 // #[test]
 // fn complement0() {
@@ -444,13 +441,26 @@ fn map_repro1() {
     // assert_eq!(range_map_blaze.to_string(), "20..=21, 24..=29"));
 }
 
-// #[test]
-// fn repro2() {
-//     let mut range_map_blaze = RangeMapBlaze::<i8>::from_iter([-8, 8, -2, -1, 3, 2]);
-//     range_map_blaze.internal_add(25..=25);
-//     println!("{range_map_blaze}");
-//     assert!(range_map_blaze.to_string() == "-8..=-8, -2..=-1, 2..=3, 8..=8, 25..=25");
-// }
+#[test]
+fn map_repro2() {
+    let a = "a".to_string();
+    let b = "b".to_string();
+    let c = "c".to_string();
+    let mut range_map_blaze = RangeMapBlaze::<i8, _>::from_iter([
+        (-8, &a),
+        (8, &a),
+        (-2, &a),
+        (-1, &a),
+        (3, &a),
+        (2, &b),
+    ]);
+    range_map_blaze.ranges_insert(25..=25, c);
+    println!("{range_map_blaze}");
+    assert!(
+        range_map_blaze.to_string()
+            == r#"(-8..=-8, "a"), (-2..=-1, "a"), (2..=2, "b"), (3..=3, "a"), (8..=8, "a"), (25..=25, "c")"#
+    );
+}
 
 // #[test]
 // fn doctest1() {
