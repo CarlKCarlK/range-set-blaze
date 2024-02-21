@@ -25,25 +25,28 @@ type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
 #[test]
 fn map_random_data() {
-    let seed = 0;
-    let mut rng = StdRng::seed_from_u64(seed);
-
-    let mut btree_map = BTreeMap::new();
-
-    let mut inputs = Vec::<(u8, &char)>::new();
     let values = ['a', 'b', 'c', 'd', 'e'];
-    for _ in 0..500 {
-        let key = rng.gen_range(0..=255u8);
-        let value = values.choose(&mut rng).unwrap(); // cmk allow more than references
-        print!("{key}{value} ");
-        inputs.push((key, value));
+    for seed in 1..=1 {
+        // 0 to 20
+        println!("seed: {seed}");
+        let mut rng = StdRng::seed_from_u64(seed);
 
-        // cmk fix so don't need to clone and can use .iter()
-        let range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
-        btree_map.insert(key, value);
-        if !equal_maps(&range_map_blaze, &btree_map) {
+        let mut btree_map = BTreeMap::new();
+
+        let mut inputs = Vec::<(u8, &char)>::new();
+        for _ in 0..500 {
+            let key = rng.gen_range(0..=255u8);
+            let value = values.choose(&mut rng).unwrap(); // cmk allow more than references
+            print!("{key}{value} ");
+            inputs.push((key, value));
+
+            // cmk fix so don't need to clone and can use .iter()
             let range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
-            panic!();
+            btree_map.insert(key, value);
+            if !equal_maps(&range_map_blaze, &btree_map) {
+                let range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+                panic!();
+            }
         }
     }
 }
@@ -81,6 +84,133 @@ where
     }
 
     true
+}
+
+fn format_range_values<'a, T>(iter: impl Iterator<Item = RangeValue<'a, T, u8>>) -> String
+where
+    T: Integer + fmt::Display + 'a, // Assuming T implements Display for formatting
+                                    // V: ValueOwned + fmt::Display + 'a, // V must implement Display to be formatted with {}
+{
+    let mut vs = String::new();
+    for range_value in iter {
+        vs.push_str(&format!(
+            "{}..={}{} ",
+            range_value.range.start(),
+            range_value.range.end(),
+            *range_value.value as char,
+        ));
+    }
+    vs
+}
+
+#[test]
+fn map_repro_106() {
+    let input_string = "100e 106b 97c 98c 97e";
+    let mut input = Vec::<(u8, &u8)>::new();
+    for pair in input_string.split_whitespace() {
+        let bytes = pair.as_bytes(); // Get the byte slice of the pair
+        let c = &bytes[bytes.len() - 1]; // Last byte as char
+        let num = pair[..pair.len() - 1].parse::<u8>().unwrap();
+        input.push((num, c)); // Add the (u8, &str) pair to inputs
+    }
+
+    let iter = input.clone().into_iter();
+    let iter = iter.map(|(x, value)| (x..=x, value));
+    let iter = iter.map(|(range, value)| RangeValue {
+        range,
+        value,
+        priority: 0,
+    });
+    let iter = UnsortedDisjointMap::from(iter.into_iter());
+    let iter = iter
+        .into_iter()
+        .sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
+            std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
+            other => other,
+        });
+    let iter = AssumeSortedStartsMap { iter };
+    let iter = UnionIterMap::new(iter);
+    let vs = format_range_values(iter);
+    println!("{vs}");
+    assert_eq!(vs, "97..=97e 98..=98c 100..=100e 106..=106b ");
+
+    let range_map_blaze = RangeMapBlaze::<u8, u8>::from_iter(input.clone());
+    assert_eq!(
+        range_map_blaze.to_string(),
+        "(97..=97, 101), (98..=98, 99), (100..=100, 101), (106..=106, 98)"
+    );
+}
+
+#[test]
+fn map_repro_99() {
+    let input_string = "97d 218c 211b 59d 166c 234b 220a 241e 2b 251c 23b 216a 8d 15b 3d 200d 191a 106b 34d 126e 5a 0a 245b 188a 13d 50a 113e 11e 73b 250d 32a 100e 199e 48b 150d 57a 123d 65b 128d 27e 123d 230d 40a 11b 107e 63d 86b 63c 201b 131d 245e 73d 139e 184b 253c 49a 40b 60d 145b 228b 29c 234c 116c 134e 78a 42c 229e 200d 239a 216a 14c 14d 177e 156d 93b 157d 190d 253e 86e 168e 122c 111d 123b 249a 32c 186d 8e 34b 186a 54b 29e 72a 39b 44b 87b 14d 29e 113b 83d 247d 42c 3a 152a 219a 91b 106b 38e 96a 34d 138b 250d 231d 162d 172d 179d 95c 124c 11a 219b 50d 160d 88c 122d 182e 74e 17b 173c 234c 134a 11d 24c 219a 20e 15a 54b 62a 67e 50c 33a 224c 248b 97c 98c 53e 227d 22b 153c 59e 148e 128a 186d 133a 82c 86a 72e 124a 65d 124a 0a 24c 60d 222a 193a 44e 162d 90d 29b 85b 110b 223a 1d 92e 15d 113b 24a 0a 22e 60c 120c 94a 116b 248c 252a 92d 65a 196e 89e 224b 195a 169c 97e";
+    let mut input = Vec::<(u8, &u8)>::new();
+    for pair in input_string.split_whitespace() {
+        let bytes = pair.as_bytes(); // Get the byte slice of the pair
+        let c = &bytes[bytes.len() - 1]; // Last byte as char
+        let num = pair[..pair.len() - 1].parse::<u8>().unwrap();
+        input.push((num, c)); // Add the (u8, &str) pair to inputs
+    }
+
+    let iter = input.clone().into_iter();
+    let iter = iter.map(|(x, value)| (x..=x, value));
+    let iter = iter.map(|(range, value)| RangeValue {
+        range,
+        value,
+        priority: 0,
+    });
+    let iter = UnsortedDisjointMap::from(iter.into_iter());
+    let vs = format_range_values(iter);
+    println!("{vs}");
+    assert_eq!(
+        vs,
+        "97..=97d 218..=218c 211..=211b 59..=59d 166..=166c 234..=234b 220..=220a 241..=241e 2..=2b 251..=251c 23..=23b 216..=216a 8..=8d 15..=15b 3..=3d 200..=200d 191..=191a 106..=106b 34..=34d 126..=126e 5..=5a 0..=0a 245..=245b 188..=188a 13..=13d 50..=50a 113..=113e 11..=11e 73..=73b 250..=250d 32..=32a 100..=100e 199..=199e 48..=48b 150..=150d 57..=57a 123..=123d 65..=65b 128..=128d 27..=27e 123..=123d 230..=230d 40..=40a 11..=11b 107..=107e 63..=63d 86..=86b 63..=63c 201..=201b 131..=131d 245..=245e 73..=73d 139..=139e 184..=184b 253..=253c 49..=49a 40..=40b 60..=60d 145..=145b 228..=228b 29..=29c 234..=234c 116..=116c 134..=134e 78..=78a 42..=42c 229..=229e 200..=200d 239..=239a 216..=216a 14..=14c 14..=14d 177..=177e 156..=156d 93..=93b 157..=157d 190..=190d 253..=253e 86..=86e 168..=168e 122..=122c 111..=111d 123..=123b 249..=249a 32..=32c 186..=186d 8..=8e 34..=34b 186..=186a 54..=54b 29..=29e 72..=72a 39..=39b 44..=44b 87..=87b 14..=14d 29..=29e 113..=113b 83..=83d 247..=247d 42..=42c 3..=3a 152..=152a 219..=219a 91..=91b 106..=106b 38..=38e 96..=96a 34..=34d 138..=138b 250..=250d 231..=231d 162..=162d 172..=172d 179..=179d 95..=95c 124..=124c 11..=11a 219..=219b 50..=50d 160..=160d 88..=88c 122..=122d 182..=182e 74..=74e 17..=17b 173..=173c 234..=234c 134..=134a 11..=11d 24..=24c 219..=219a 20..=20e 15..=15a 54..=54b 62..=62a 67..=67e 50..=50c 33..=33a 224..=224c 248..=248b 97..=98c 53..=53e 227..=227d 22..=22b 153..=153c 59..=59e 148..=148e 128..=128a 186..=186d 133..=133a 82..=82c 86..=86a 72..=72e 124..=124a 65..=65d 124..=124a 0..=0a 24..=24c 60..=60d 222..=222a 193..=193a 44..=44e 162..=162d 90..=90d 29..=29b 85..=85b 110..=110b 223..=223a 1..=1d 92..=92e 15..=15d 113..=113b 24..=24a 0..=0a 22..=22e 60..=60c 120..=120c 94..=94a 116..=116b 248..=248c 252..=252a 92..=92d 65..=65a 196..=196e 89..=89e 224..=224b 195..=195a 169..=169c 97..=97e "
+    );
+
+    let iter = input.clone().into_iter();
+    let iter = iter.map(|(x, value)| (x..=x, value));
+    let iter = iter.map(|(range, value)| RangeValue {
+        range,
+        value,
+        priority: 0,
+    });
+    let iter = UnsortedDisjointMap::from(iter.into_iter());
+    let iter = iter
+        .into_iter()
+        .sorted_by(|a, b| match a.range.start().cmp(&b.range.start()) {
+            std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
+            other => other,
+        });
+    let iter = AssumeSortedStartsMap { iter };
+    let vs = format_range_values(iter);
+    println!("{vs}");
+    assert_eq!(
+        vs,
+        "0..=0a 0..=0a 0..=0a 1..=1d 2..=2b 3..=3a 3..=3d 5..=5a 8..=8e 8..=8d 11..=11d 11..=11a 11..=11b 11..=11e 13..=13d 14..=14d 14..=14d 14..=14c 15..=15d 15..=15a 15..=15b 17..=17b 20..=20e 22..=22e 22..=22b 23..=23b 24..=24a 24..=24c 24..=24c 27..=27e 29..=29b 29..=29e 29..=29e 29..=29c 32..=32c 32..=32a 33..=33a 34..=34d 34..=34b 34..=34d 38..=38e 39..=39b 40..=40b 40..=40a 42..=42c 42..=42c 44..=44e 44..=44b 48..=48b 49..=49a 50..=50c 50..=50d 50..=50a 53..=53e 54..=54b 54..=54b 57..=57a 59..=59e 59..=59d 60..=60c 60..=60d 60..=60d 62..=62a 63..=63c 63..=63d 65..=65a 65..=65d 65..=65b 67..=67e 72..=72e 72..=72a 73..=73d 73..=73b 74..=74e 78..=78a 82..=82c 83..=83d 85..=85b 86..=86a 86..=86e 86..=86b 87..=87b 88..=88c 89..=89e 90..=90d 91..=91b 92..=92d 92..=92e 93..=93b 94..=94a 95..=95c 96..=96a 97..=97e 97..=98c 97..=97d 100..=100e 106..=106b 106..=106b 107..=107e 110..=110b 111..=111d 113..=113b 113..=113b 113..=113e 116..=116b 116..=116c 120..=120c 122..=122d 122..=122c 123..=123b 123..=123d 123..=123d 124..=124a 124..=124a 124..=124c 126..=126e 128..=128a 128..=128d 131..=131d 133..=133a 134..=134a 134..=134e 138..=138b 139..=139e 145..=145b 148..=148e 150..=150d 152..=152a 153..=153c 156..=156d 157..=157d 160..=160d 162..=162d 162..=162d 166..=166c 168..=168e 169..=169c 172..=172d 173..=173c 177..=177e 179..=179d 182..=182e 184..=184b 186..=186d 186..=186a 186..=186d 188..=188a 190..=190d 191..=191a 193..=193a 195..=195a 196..=196e 199..=199e 200..=200d 200..=200d 201..=201b 211..=211b 216..=216a 216..=216a 218..=218c 219..=219a 219..=219b 219..=219a 220..=220a 222..=222a 223..=223a 224..=224b 224..=224c 227..=227d 228..=228b 229..=229e 230..=230d 231..=231d 234..=234c 234..=234c 234..=234b 239..=239a 241..=241e 245..=245e 245..=245b 247..=247d 248..=248c 248..=248b 249..=249a 250..=250d 250..=250d 251..=251c 252..=252a 253..=253e 253..=253c "
+    );
+
+    let iter = input.clone().into_iter();
+    let iter = iter.map(|(x, value)| (x..=x, value));
+    let iter = iter.map(|(range, value)| RangeValue {
+        range,
+        value,
+        priority: 0,
+    });
+    let iter = UnsortedDisjointMap::from(iter.into_iter());
+    let iter = iter
+        .into_iter()
+        .sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
+            std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
+            other => other,
+        });
+    let iter = AssumeSortedStartsMap { iter };
+    let iter = UnionIterMap::new(iter);
+    let vs = format_range_values(iter);
+    println!("{vs}");
+    assert_eq!(vs, "NOPE");
+
+    let range_map_blaze = RangeMapBlaze::<u8, u8>::from_iter(input.clone());
+    assert_eq!(range_map_blaze.to_string(), "(123..=123, 'b')");
 }
 
 #[test]

@@ -64,23 +64,28 @@ where
     pub fn new(iter: I) -> Self {
         // By default all ends are inclusive (different that most programs)
         let mut vec_in = iter.collect_vec();
-        println!("vec_in: {:?}", vec_in.len()); // cmk
+        // println!("vec_in: {:?}", vec_in.len()); // cmk
         let mut vec_mid = Vec::<RangeValue<'a, T, V>>::new();
         let mut workspace = Vec::<RangeValue<'a, T, V>>::new();
         let mut bar_priority = 0usize;
         let mut bar_end = T::zero();
         while !vec_in.is_empty() || !workspace.is_empty() {
-            if !vec_in.is_empty() {
+            // If there are new ranges to process and they they have the same start as the workspace
+            if !vec_in.is_empty()
+                && (workspace.is_empty() || *vec_in[0].range.start() == *workspace[0].range.start())
+            {
                 // find the index (of any) of the first index with a different start that the first one
                 let first_start = *vec_in[0].range.start();
+
                 // if bar_end is None, set it to first_start
                 bar_end = max(bar_end, first_start);
-                let first_diff = vec_in.iter().position(|x| *x.range.start() != first_start);
-                // If None, then set it to the length
-                let first_diff = first_diff.unwrap_or(vec_in.len());
-                // set same_start to the first first_diff elements. Allocate for this
-                // remove the first first_diff elements from vec_in. do this in place.
-                let same_starts: Vec<_> = vec_in.drain(0..first_diff).collect();
+                let split_index = vec_in
+                    .iter()
+                    .position(|x| *x.range.start() != first_start)
+                    .unwrap_or(vec_in.len());
+                // set same_start to the first split_index elements. Allocate for this
+                // remove the first split_index elements from vec_in. do this in place.
+                let same_starts: Vec<_> = vec_in.drain(0..split_index).collect();
                 for same_start in same_starts {
                     if same_start.priority < bar_priority && same_start.range.end() < &bar_end {
                         continue;
@@ -93,11 +98,17 @@ where
                 }
             }
 
+            // The workspace is now full of ranges with the same start. We need to find the best one.
+
             // find the one element with priority = bar_priority
             // cmk use priority queue
-            let index_of_best = workspace.iter().position(|x| x.priority == bar_priority);
-            let best = &workspace[index_of_best.unwrap()];
-            // output_end is the smallest wend in workspace
+            let index_of_best = workspace
+                .iter()
+                .position(|x| x.priority == bar_priority)
+                .unwrap();
+            let best = &workspace[index_of_best];
+
+            // output_end is the smallest end in workspace
             let mut output_end = *workspace.iter().map(|x| x.range.end()).min().unwrap();
             // if vec_is is not empty, then output_end is the minimum of output_end and the start of the first element in vec_in -1
             if !vec_in.is_empty() {
@@ -105,15 +116,14 @@ where
                 // cmk underflow?
                 output_end = min(output_end, next_start - T::one())
             };
-            let first_start = *workspace[0].range.start();
             vec_mid.push(RangeValue {
-                range: first_start..=output_end,
+                range: *best.range.start()..=output_end,
                 value: best.value,
                 priority: best.priority,
             });
             // trim the start of the ranges in workspace to output_end+1, remove any that are empty
             // also find the best priority and the new bar_end
-            workspace.retain(|x| *x.range.end() > output_end);
+            workspace.retain(|range_value| *range_value.range.end() > output_end);
             bar_priority = 0;
             bar_end = output_end;
             // this avoids overflow
@@ -122,11 +132,11 @@ where
             }
 
             let new_start = output_end + T::one();
-            for x in workspace.iter_mut() {
-                x.range = new_start..=*x.range.end();
-                if x.priority > bar_priority {
-                    bar_priority = x.priority;
-                    bar_end = *x.range.end();
+            for range_value in workspace.iter_mut() {
+                range_value.range = new_start..=*range_value.range.end();
+                if range_value.priority > bar_priority {
+                    bar_priority = range_value.priority;
+                    bar_end = *range_value.range.end();
                 }
             }
         }
