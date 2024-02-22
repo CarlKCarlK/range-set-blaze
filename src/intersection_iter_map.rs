@@ -52,6 +52,8 @@ where
 {
     iter_set: IS,
     iter_map: IM,
+    current_range: Option<RangeInclusive<T>>,
+    current_range_value: Option<RangeValue<'a, T, V>>,
     _phantom0: PhantomData<&'a T>,
     _phantom1: PhantomData<&'a V>,
 }
@@ -69,6 +71,8 @@ where
         Self {
             iter_set,
             iter_map,
+            current_range: None,
+            current_range_value: None,
             _phantom0: PhantomData,
             _phantom1: PhantomData,
         }
@@ -105,7 +109,51 @@ where
     type Item = RangeValue<'a, T, V>;
 
     fn next(&mut self) -> Option<RangeValue<'a, T, V>> {
-        todo!();
+        loop {
+            // Be sure both currents are loaded.
+            self.current_range = self.current_range.take().or_else(|| self.iter_set.next());
+            self.current_range_value = self
+                .current_range_value
+                .take()
+                .or_else(|| self.iter_map.next());
+
+            // If either is still none, we are done.
+            let (Some(current_range), Some(current_range_value)) =
+                (self.current_range.take(), self.current_range_value.take())
+            else {
+                return None;
+            };
+
+            // if current_range ends before current_range_value, clear it and loop for a new value.
+            if current_range.end() < current_range_value.range.start() {
+                self.current_range = None;
+                continue;
+            }
+
+            // if current_range_value ends before current_range, clear it and loop for a new value.
+            if current_range_value.range.end() < current_range.start() {
+                self.current_range_value = None;
+                continue;
+            }
+
+            // Thus, they overlap
+            let start = *max(current_range.start(), current_range_value.range.start());
+            let end = *min(current_range.end(), current_range_value.range.end());
+            let range_value = RangeValue {
+                range: start..=end,
+                value: current_range_value.value,
+                priority: 0,
+            };
+
+            // remove any ranges that match "end" and set them None
+            if *current_range.end() == end {
+                self.current_range = None;
+            }
+            if *current_range_value.range.end() == end {
+                self.current_range_value = None;
+            }
+            return Some(range_value);
+        }
     }
 
     // // There could be a few as 1 (or 0 if the iter is empty) or as many as the iter.
