@@ -27,6 +27,7 @@ extern crate alloc;
 mod dyn_sorted_disjoint;
 mod from_slice;
 mod integer;
+mod intersection_iter_map;
 mod map;
 mod merge;
 mod not_iter;
