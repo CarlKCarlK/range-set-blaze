@@ -997,11 +997,15 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             end <= T::safe_max_value(),
             "end must be <= T::safe_max_value()"
         );
+
+        // === case: empty
         if end < start {
             return;
         }
         // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
         let mut before_iter = self.btree_map.range_mut(..=start).rev();
+
+        // === case: no before
         let Some((start_before, end_value_before)) = before_iter.next() else {
             // no before, so must be first
             self.internal_add2(&range, value);
@@ -1011,7 +1015,8 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
 
         let start_before = *start_before;
         let end_before = end_value_before.end;
-        // Must check this in two parts to avoid overflow
+
+        // === case: gap between before and new
         if Self::has_gap(end_before, start) {
             // there is a gap between the before and the new
             // ??? aa...
@@ -1019,10 +1024,19 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             return;
         }
 
-        let before_ends_first = end_before < end;
+        let before_contains_new = end_before >= end;
         let same_value = value == end_value_before.value;
 
-        if before_ends_first && same_value {
+        // === case: before contains new and same value
+        if before_contains_new && same_value {
+            // same value, so do nothing
+            // AAAAA
+            //  aaa
+            return;
+        };
+
+        // === case: new goes beyond before and same value
+        if !before_contains_new && same_value {
             // same value, so just extend the before
             // AAA
             //  aaaa...
@@ -1031,7 +1045,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             self.delete_extra(&(start_before..=end));
             return;
         }
-        if before_ends_first && !same_value {
+
+        // === case: new goes beyond before and different values
+        if !before_contains_new && !same_value {
             // different value, so must trim the before and then insert the new
             // BBB
             //  aaaa...
@@ -1042,19 +1058,13 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             self.internal_add2(&range, value);
             return;
         }
-        if !before_ends_first && same_value {
-            // same value, so do nothing
-            // AAAAA
-            //  aaa
-            return;
-        };
 
-        debug_assert!(!before_ends_first && !same_value);
+        debug_assert!(before_contains_new && !same_value);
         let same_start = start == start_before;
         let same_end = end == end_before;
-        end == end_before;
 
         if !same_start && same_end {
+            debug_assert!(before_contains_new && !same_value);
             // Different values still ...
             // The new starts later but they end together,
             // BBBBB???
@@ -1068,6 +1078,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         }
 
         if !same_start && !same_end {
+            debug_assert!(before_contains_new && !same_value);
             // Different values still ...
             // The new starts later and ends before,
             // BBBBBB
@@ -1087,7 +1098,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             return;
         }
 
-        debug_assert!(!before_ends_first && !same_value && same_start);
+        debug_assert!(before_contains_new && !same_value && same_start);
+
+        // an interesting before-before: something before before, touching and with the same value as new
         if let Some(bb) = before_iter.next() {
             if bb.1.end + T::one() == start && bb.1.value == value {
                 // AABBBB???
@@ -1100,6 +1113,8 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
                 return;
             }
         }
+
+        debug_assert!(before_contains_new && !same_value && same_start); // && !an interesting before-before
         if same_end {
             // ^BBBB???
             //  aaaa
@@ -1108,6 +1123,8 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             self.delete_extra(&(start_before..=end));
             return;
         }
+
+        debug_assert!(before_contains_new && !same_value && same_start); // && !an interesting before-before
         if !same_end {
             // ^BBBB
             //  aaa
