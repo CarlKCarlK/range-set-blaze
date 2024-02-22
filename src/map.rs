@@ -626,10 +626,20 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         debug_assert!(start == *start_after && end == end_value_after.end);
 
         let mut end_new = end;
+        let mut end_new_same_val = end;
         let delete_list = after
             .map_while(|(start_delete, end_value_delete)| {
                 // must check this in two parts to avoid overflow
-                if *start_delete <= end || *start_delete <= end + T::one() {
+                if end_value_after.value == end_value_delete.value {
+                    if *start_delete <= end || *start_delete <= end + T::one() {
+                        end_new_same_val = max(end_new_same_val, end_value_delete.end);
+                        end_new = max(end_new, end_value_delete.end);
+                        self.len -= T::safe_len(&(*start_delete..=end_value_delete.end));
+                        Some(*start_delete)
+                    } else {
+                        None
+                    }
+                } else if *start_delete <= end {
                     end_new = max(end_new, end_value_delete.end);
                     self.len -= T::safe_len(&(*start_delete..=end_value_delete.end));
                     Some(*start_delete)
@@ -638,12 +648,30 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
                 }
             })
             .collect::<Vec<_>>();
-        if end_new > end {
+        if end >= end_new {
+            for start in delete_list {
+                self.btree_map.remove(&start);
+            }
+        } else if end_new_same_val > end {
+            // last item is the same as the new and extends beyond the new
             self.len += T::safe_len(&(end..=end_new - T::one()));
             end_value_after.end = end_new;
-        }
-        for start in delete_list {
-            self.btree_map.remove(&start);
+            for start in delete_list {
+                self.btree_map.remove(&start);
+            }
+        } else {
+            // last item extends beyond the new but has a different value.
+            for &start in delete_list[0..delete_list.len() - 1].iter() {
+                self.btree_map.remove(&start);
+                // take the last one
+            }
+            let last = self
+                .btree_map
+                .remove(&delete_list[delete_list.len() - 1])
+                .unwrap(); // there will always be a last
+            let last_end = last.end;
+            self.btree_map.insert(end + T::one(), last);
+            self.len += T::safe_len(&(end + T::one()..=last_end));
         }
     }
 
@@ -963,8 +991,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             return;
         }
         // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
-        let mut before = self.btree_map.range_mut(..=start).rev();
-        if let Some((start_before, end_value_before)) = before.next() {
+        let mut before_iter = self.btree_map.range_mut(..=start).rev();
+        if let Some((start_before, end_value_before)) = before_iter.next() {
+            let start_before = *start_before;
             let end_before = end_value_before.end;
             // Must check this in two parts to avoid overflow
             if match end_before.checked_add(&T::one()) {
@@ -975,7 +1004,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
                 // ??? aa...
                 self.internal_add2(&range, value);
             } else if end_before < end {
-                // they overlap and the new extends beyond the before
+                // they at least touch and the new extends beyond the before
                 // ???
                 //  aaaa...
                 if value == end_value_before.value {
@@ -984,14 +1013,15 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
                     //  aaaa...
                     self.len += T::safe_len(&(end_before..=end - T::one()));
                     end_value_before.end = end;
-                    let start_before = *start_before;
                     self.delete_extra(&(start_before..=end));
                 } else {
                     // different value, so must trim the before and then insert the new
                     // BBB
                     //  aaaa...
-                    self.len -= T::safe_len(&(end_before..=start - T::one()));
-                    end_value_before.end = start - T::one(); // cmk overflow danger?
+                    if end_before >= start {
+                        self.len -= T::safe_len(&(end_before + T::one()..=start - T::one()));
+                        end_value_before.end = start - T::one(); // cmk overflow danger?
+                    }
                     self.internal_add2(&range, value);
                 }
             } else {
@@ -1007,69 +1037,68 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
                     // BBBBB
                     //  aaa
                     // If they start the same, then take over the before
-                    if start == *start_before {
+                    if start == start_before {
                         // ???BBBBB
                         //    aaa
-                        // cmk let value_before = std::mem::replace(&mut end_value_before.value, value);
-                        if end == end_before {
-                            // they share a start and end, but what if AAA precedes and/or follows BBBBB?
-                            // ???BBBBB???
-                            //    aaaaa
-                            // delete BBBB and insert aaaaa recursively? (what if too recursive?)
-                            if todo!() {
-                                // if no next item or next if different than new value, so nothing
-                                // BBBBBCCC
-                                // aaaaa
-                            } else {
-                                // if next is same value, then extend the before and delete the next
-                                // BBBBBAAA
-                                // aaaaa
+                        match before_iter.next() {
+                            Some(bb) if bb.1.end + T::one() == start && bb.1.value == value => {
+                                // AABBBB???
+                                //   aaaa
+                                // AAAAAA???
+                                self.len += T::safe_len(&(bb.1.end + T::one()..=end));
+                                bb.1.end = end;
+                                let bb_start = *bb.0;
+                                self.delete_extra(&(bb_start..=end));
                             }
-                        } else {
-                            // They start together but the new is shorter than the before,
-                            // BBBBB
-                            // aaa
-                            // so must insert the rest of the before.
-                            // We know it will not bump into later ranges.
-                            self.btree_map.insert(
-                                end + T::one(),
-                                EndValue {
-                                    end: end_before,
-                                    value: value_before,
-                                },
-                            );
+                            _ => {
+                                if end_before == end {
+                                    // ^BBBB???
+                                    //  aaaa
+                                    // ^AAAA???
+                                    end_value_before.value = value;
+                                    self.delete_extra(&(start_before..=end));
+                                } else {
+                                    // ^BBBB
+                                    //  aaa
+                                    // ^AAAB
+                                    let value_before =
+                                        std::mem::replace(&mut end_value_before.value, value);
+                                    end_value_before.end = end;
+                                    self.btree_map.insert(
+                                        end + T::one(),
+                                        EndValue {
+                                            end: end_before,
+                                            value: value_before,
+                                        },
+                                    );
+                                }
+                            }
                         }
                     } else if end == end_before {
                         // Different values still ...
                         // The new starts later but they end together,
                         // BBBBB???
                         //   aaa
+                        // BBAAA???
                         //  so trim the before and then insert the new.
                         end_value_before.end = start - T::one();
-                        if todo!() {
-                            // if no next item or next if different than new value, just insert the new
-                            // BBBBBCCC
-                            //   aaa
-                            self.btree_map.insert(start, EndValue { end, value });
-                        } else {
-                            // if next is same value, then extend the new and insert it and delete the next
-                            // BBBBBAAA
-                            //   aaa
-                        }
+                        self.btree_map.insert(start, EndValue { end, value });
+                        self.delete_extra(&(start..=end));
                     } else {
                         // Different values still ...
-                        // The new starts after the before and ends before the before.
-                        let value_before = end_value_before.value.clone();
-                        // Trim the before
+                        // The new starts later and ends before,
+                        // BBBBBB
+                        //   aaa
+                        // BBAAAB
+                        //  so trim the before and then insert two
                         end_value_before.end = start - T::one();
-                        // insert the new
+                        let before_value = end_value_before.value.clone();
                         self.btree_map.insert(start, EndValue { end, value });
-                        // insert the rest of the before
                         self.btree_map.insert(
                             end + T::one(),
                             EndValue {
                                 end: end_before,
-                                value: value_before,
+                                value: before_value,
                             },
                         );
                     }

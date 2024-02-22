@@ -5,6 +5,7 @@ use super::*;
 use crate::sorted_disjoint_map::RangeValue;
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, UnsortedDisjointMap};
+use alloc::collections::btree_map;
 use core::fmt::Display;
 use itertools::Itertools;
 use rand::seq::SliceRandom;
@@ -25,7 +26,7 @@ type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
 #[test]
 fn map_random_from_iter() {
-    let values = ['a', 'b', 'c', 'd', 'e'];
+    let values = ['a', 'b', 'c'];
     for seed in 0..20 {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
@@ -53,13 +54,14 @@ fn map_random_from_iter() {
 
 #[test]
 fn map_random_insert() {
-    let values = ['a', 'b', 'c', 'd', 'e'];
+    let values = ['a', 'b', 'c'];
     for seed in 0..20 {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
 
         let mut btree_map = BTreeMap::new();
         let mut range_map_blaze = RangeMapBlaze::new();
+        let mut inputs = Vec::<(u8, &char)>::new();
 
         for _ in 0..500 {
             let key = rng.gen_range(0..=255u8);
@@ -68,6 +70,15 @@ fn map_random_insert() {
 
             btree_map.insert(key, value);
             range_map_blaze.insert(key, *value);
+            if equal_maps(&range_map_blaze, &btree_map) {
+                inputs.push((key, value));
+                continue;
+            }
+
+            let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+            // will do something wrong
+            range_map_blaze.insert(key, *value);
+            // will fail
             assert!(equal_maps(&range_map_blaze, &btree_map));
         }
     }
