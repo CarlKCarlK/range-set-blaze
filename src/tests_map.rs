@@ -85,6 +85,41 @@ fn map_random_insert() {
 }
 
 #[test]
+fn map_random_ranges() {
+    let values = ['a', 'b', 'c'];
+    for seed in 0..20 {
+        println!("seed: {seed}");
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        let mut range_set_blaze = RangeSetBlaze::new();
+        let mut range_map_blaze = RangeMapBlaze::new();
+        let mut inputs = Vec::<(u8, &char)>::new();
+
+        for _ in 0..500 {
+            let key = rng.gen_range(0..=255u8);
+            let value = values.choose(&mut rng).unwrap();
+            // print!("{key}{value} ");
+
+            range_set_blaze.insert(key);
+            range_map_blaze.insert(key, *value);
+            if range_set_blaze.ranges().eq(range_map_blaze.ranges()) {
+                inputs.push((key, value));
+                continue;
+            }
+
+            let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+            // will do something wrong
+            range_map_blaze.insert(key, *value);
+            // println!("A: {range_set_blaze}");
+            // println!("B: {range_map_blaze}");
+            // println!("C: {}", range_map_blaze.ranges().to_string());
+            // will fail
+            assert!(range_set_blaze.ranges().eq(range_map_blaze.ranges()));
+        }
+    }
+}
+
+#[test]
 fn map_repro_insert_1() {
     let values = ['a', 'b', 'c', 'd', 'e'];
     let mut range_map_blaze = RangeMapBlaze::new();

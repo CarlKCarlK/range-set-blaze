@@ -1,5 +1,5 @@
 use crate::{sorted_disjoint_map::RangeValue, Integer};
-use alloc::collections::btree_map;
+use alloc::collections::btree_map::{self};
 use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
 
 use crate::{
@@ -119,6 +119,62 @@ impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<'a, T,
 // impl<'a, T: Integer, V: ValueOwned> DoubleEndedIterator for IntoRangeValuesIter<'a, T, V> {
 //     fn next_back(&mut self) -> Option<Self::Item> {
 //         self.iter.next_back().map(|(start, end)| start..=end)
+//     }
+// }
+
+/// cmk
+#[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+pub struct RangesFromMapIter<'a, T: Integer, V: ValueOwned> {
+    pub(crate) iter: btree_map::Iter<'a, T, EndValue<T, V>>,
+    pub(crate) option_ranges: Option<RangeInclusive<T>>,
+}
+
+// RangesFromMapIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
+impl<'a, T: Integer, V: ValueOwned> crate::SortedStarts<T> for RangesFromMapIter<'a, T, V> {}
+impl<'a, T: Integer, V: ValueOwned> crate::SortedDisjoint<T> for RangesFromMapIter<'a, T, V> {}
+
+impl<'a, T: Integer, V: ValueOwned> FusedIterator for RangesFromMapIter<'a, T, V> {}
+
+// Range's iterator is just the inside BTreeMap iterator as values
+impl<'a, T, V> Iterator for RangesFromMapIter<'a, T, V>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+{
+    type Item = RangeInclusive<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            // If no next value, return whatever is current (could be None)
+            let Some((next_start, next_end_value)) = self.iter.next() else {
+                return self.option_ranges.take();
+            };
+            let (next_start, next_end) = (*next_start, next_end_value.end);
+
+            // If no current value, set current to next and loop
+            let Some(current_range) = self.option_ranges.take() else {
+                self.option_ranges = Some(next_start..=next_end);
+                continue;
+            };
+            let (current_start, current_end) = current_range.into_inner();
+
+            // If current range and next range are adjacent, merge them and loop
+            if current_end + T::one() == next_start {
+                self.option_ranges = Some(current_start..=next_end);
+                continue;
+            }
+
+            self.option_ranges = Some(next_start..=next_end);
+            return Some(current_start..=current_end);
+        }
+    }
+}
+
+// cmk
+// impl<T: Integer, V: ValueOwned> DoubleEndedIterator for RangesFromMapIter<'_, T, V> {
+//     fn next_back(&mut self) -> Option<Self::Item> {
+//         self.iter.next_back().map(|(start, end)| *start..=*end)
 //     }
 // }
 

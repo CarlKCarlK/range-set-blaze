@@ -1,5 +1,5 @@
 use crate::merge_map::MergeMap;
-use crate::range_values::RangeValuesIter;
+use crate::range_values::{RangeValuesIter, RangesFromMapIter};
 // use crate::range_values::RangeValuesIter;
 use crate::sorted_disjoint_map::DebugToString;
 use crate::sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
@@ -516,7 +516,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     #[must_use]
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.ranges_len() == 0
+        self.range_values_len() == 0
     }
 
     /// Returns `true` if the set is a subset of another,
@@ -630,8 +630,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         let mut end_new_same_val = end;
         let delete_list = after
             .map_while(|(start_delete, end_value_delete)| {
-                // must check this in two parts to avoid overflow
+                // same values
                 if end_value_after.value == end_value_delete.value {
+                    // must check this in two parts to avoid overflow
                     if *start_delete <= end || *start_delete <= end + T::one() {
                         end_new_same_val = max(end_new_same_val, end_value_delete.end);
                         end_new = max(end_new, end_value_delete.end);
@@ -640,6 +641,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
                     } else {
                         None
                     }
+                // different values
                 } else if *start_delete <= end {
                     end_new = max(end_new, end_value_delete.end);
                     self.len -= T::safe_len(&(*start_delete..=end_value_delete.end));
@@ -1326,6 +1328,14 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         }
     }
 
+    /// cmk
+    pub fn ranges(&self) -> RangesFromMapIter<T, V> {
+        RangesFromMapIter {
+            iter: self.btree_map.iter(),
+            option_ranges: None,
+        }
+    }
+
     /// An iterator that moves out the ranges in the [`RangeMapBlaze`],
     /// i.e., the integers as sorted & disjoint ranges.
     ///
@@ -1375,7 +1385,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(set.to_string(), "10..=25, 30..=40");
     /// ```
     #[must_use]
-    pub fn ranges_len(&self) -> usize {
+    pub fn range_values_len(&self) -> usize {
         self.btree_map.len()
     }
 

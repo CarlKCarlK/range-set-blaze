@@ -19,7 +19,6 @@ where
 {
     iter: I,
     option_range_value: Option<RangeValue<'a, T, V>>,
-    min_value_plus_1: T,
     min_value_plus_2: T,
     two: T,
     priority: usize,
@@ -35,7 +34,6 @@ where
         UnsortedDisjointMap {
             iter: into_iter.into_iter(),
             option_range_value: None,
-            min_value_plus_1: T::min_value() + T::one(),
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
             priority: 0,
