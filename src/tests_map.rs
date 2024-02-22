@@ -66,7 +66,7 @@ fn map_random_insert() {
         for _ in 0..500 {
             let key = rng.gen_range(0..=255u8);
             let value = values.choose(&mut rng).unwrap();
-            print!("{key}{value} ");
+            // print!("{key}{value} ");
 
             btree_map.insert(key, value);
             range_map_blaze.insert(key, *value);
