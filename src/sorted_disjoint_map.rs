@@ -238,10 +238,7 @@ pub trait SortedStartsMap<'a, T: Integer, V: ValueOwned + 'a>:
 ///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
 /// );
 /// ```
-pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap<'a, T, V>
-where
-    <V as ToOwned>::Owned: PartialEq,
-{
+pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap<'a, T, V> {
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their union.
@@ -266,10 +263,12 @@ where
     #[inline]
     fn union<R>(self, other: R) -> BitOrMergeMap<'a, T, V, Self, R::IntoIter>
     where
+        // cmk why must say SortedDisjointMap here by sorted_disjoint doesn't.
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<'a, T, V>,
         Self: Sized,
     {
+        // cmk why this into iter stuff that is not used?
         UnionIterMap::new(MergeMap::new(self, other.into_iter()))
     }
 

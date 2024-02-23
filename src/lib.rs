@@ -59,6 +59,7 @@ pub use dyn_sorted_disjoint::DynSortedDisjoint;
 use gen_ops::gen_ops_ex;
 use itertools::Tee;
 pub use merge::{KMerge, Merge};
+pub use merge_map::MergeMap; // cmk KMergeMap
 mod merge_map;
 mod not_iter_map;
 pub use not_iter::NotIter;
@@ -66,10 +67,15 @@ use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, One, WrappingSub,
 #[cfg(feature = "rog-experimental")]
 pub use rog::{Rog, RogsIter};
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
+// cmk use sorted_disjoint_map::SortedDisjointMapWithLenSoFar;
+pub use sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap}; // cmk CheckSortedDisjointMap
 pub use union_iter::UnionIter;
+pub use union_iter_map::UnionIterMap;
 pub use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
 use unsorted_disjoint::UnsortedDisjoint;
+// cmk pub use unsorted_disjoint_map::UnsortedDisjointMap;
+// cmk use unsorted_disjoint_map::UnsortedDisjointMap;
 
 /// The element trait of the [`RangeSetBlaze`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
 pub trait Integer:

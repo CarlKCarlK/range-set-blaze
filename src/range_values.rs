@@ -1,6 +1,10 @@
-use crate::{sorted_disjoint_map::RangeValue, Integer};
+use crate::{map::BitOrMergeMap, sorted_disjoint_map::RangeValue, Integer};
 use alloc::collections::btree_map::{self};
-use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
+use core::{
+    iter::FusedIterator,
+    marker::PhantomData,
+    ops::{self, RangeInclusive},
+};
 
 use crate::{
     map::{EndValue, ValueOwned},
@@ -83,14 +87,14 @@ pub struct IntoRangeValuesIter<'a, T: Integer + 'a, V: ValueOwned + 'a> {
     phantom: PhantomData<&'a V>,
 }
 
-// impl<'a, T: Integer, V: ValueOwned + 'a> SortedStartsMap<'a, T, V>
-//     for IntoRangeValuesIter<'a, T, V>
-// {
-// }
-// impl<'a, T: Integer, V: ValueOwned + 'a> SortedDisjointMap<'a, T, V>
-//     for IntoRangeValuesIter<'a, T, V>
-// {
-// }
+impl<'a, T: Integer, V: ValueOwned + 'a> SortedStartsMap<'a, T, V>
+    for IntoRangeValuesIter<'a, T, V>
+{
+}
+impl<'a, T: Integer, V: ValueOwned + 'a> SortedDisjointMap<'a, T, V>
+    for IntoRangeValuesIter<'a, T, V>
+{
+}
 
 impl<'a, T: Integer, V: ValueOwned> ExactSizeIterator for IntoRangeValuesIter<'a, T, V> {
     #[must_use]
@@ -105,9 +109,10 @@ impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<'a, T,
     type Item = (RangeInclusive<T>, V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter
-            .next()
-            .map(|(start, end_value)| (start..=end_value.end, end_value.value))
+        self.iter.next().map(|(start, end_value)| {
+            let range = start..=end_value.end;
+            (range, end_value.value)
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -195,27 +200,27 @@ where
 //     }
 // }
 
-// impl<T: Integer, V: ValueOwned, I> ops::BitOr<I> for RangeValuesIter<'_, T, V>
-// where
-//     I: SortedDisjointMap<'a, T, V>,
-// {
-//     type Output = BitOrMerge<T, Self, I>;
+impl<'a, T: Integer, V: ValueOwned, I> ops::BitOr<I> for RangeValuesIter<'a, T, V>
+where
+    I: SortedDisjointMap<'a, T, V>,
+{
+    type Output = BitOrMergeMap<'a, T, V, Self, I>;
 
-//     fn bitor(self, other: I) -> Self::Output {
-//         SortedDisjoint::union(self, other)
-//     }
-// }
+    fn bitor(self, other: I) -> Self::Output {
+        SortedDisjointMap::union(self, other)
+    }
+}
 
-// impl<T: Integer, V: ValueOwned, I> ops::BitOr<I> for IntoRangeValuesIter<'a, T, V>
-// where
-//     I: SortedDisjointMap<'a, T, V>,
-// {
-//     type Output = BitOrMerge<T, Self, I>;
+impl<'a, T: Integer, V: ValueOwned, I> ops::BitOr<I> for IntoRangeValuesIter<'a, T, V>
+where
+    I: SortedDisjointMap<'a, T, V>,
+{
+    type Output = BitOrMergeMap<'a, T, V, Self, I>;
 
-//     fn bitor(self, other: I) -> Self::Output {
-//         SortedDisjoint::union(self, other)
-//     }
-// }
+    fn bitor(self, other: I) -> Self::Output {
+        SortedDisjointMap::union(self, other)
+    }
+}
 
 // impl<T: Integer, V: ValueOwned, I> ops::Sub<I> for RangeValuesIter<'_, T, V>
 // where

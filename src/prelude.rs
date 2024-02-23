@@ -6,5 +6,6 @@
 //! ```
 pub use crate::{
     intersection_dyn, union_dyn, CheckSortedDisjoint, DynSortedDisjoint, MultiwayRangeSetBlaze,
-    MultiwayRangeSetBlazeRef, MultiwaySortedDisjoint, RangeSetBlaze, SortedDisjoint,
+    MultiwayRangeSetBlazeRef, MultiwaySortedDisjoint, RangeMapBlaze, RangeSetBlaze, SortedDisjoint,
+    SortedDisjointMap,
 };

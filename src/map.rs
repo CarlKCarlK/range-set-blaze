@@ -8,6 +8,7 @@ use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
 use crate::Integer;
 use alloc::collections::BTreeMap;
 use core::fmt;
+use core::ops::BitOr;
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use num_traits::Zero;
 
@@ -1549,4 +1550,92 @@ impl<'a, T: Integer, V: ValueOwned + 'a, I: SortedStartsMap<'a, T, V>> SortedDis
 where
     <V as ToOwned>::Owned: PartialEq,
 {
+}
+
+impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze<T, V> {
+    /// Unions the contents of two [`RangeMapBlaze`]'s.
+    ///
+    /// Passing ownership rather than borrow sometimes allows a many-times
+    /// faster speed up.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    /// let a = RangeMapBlaze::from_iter([1..=4]);
+    /// let b = RangeMapBlaze::from_iter([0..=0, 3..=5, 10..=10]);
+    /// let union = a | b;
+    /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
+    /// ```
+    type Output = RangeMapBlaze<T, V>;
+    fn bitor(mut self, other: Self) -> RangeMapBlaze<T, V> {
+        // cmk
+        // self |= other;
+        // self
+        (self.range_values() | other.range_values()).into_range_map_blaze()
+    }
+}
+
+impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for RangeMapBlaze<T, V> {
+    /// Unions the contents of two [`RangeMapBlaze`]'s.
+    ///
+    /// Passing ownership rather than borrow sometimes allows a many-times
+    /// faster speed up.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    /// let mut a = RangeMapBlaze::from_iter([1..=4]);
+    /// let mut b = RangeMapBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let union = a | &b;
+    /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
+    /// ```
+    type Output = RangeMapBlaze<T, V>;
+    fn bitor(mut self, other: &Self) -> RangeMapBlaze<T, V> {
+        // self |= other;
+        // self
+        (self.range_values() | other.range_values()).into_range_map_blaze()
+    }
+}
+
+impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
+    type Output = RangeMapBlaze<T, V>;
+    /// Unions the contents of two [`RangeMapBlaze`]'s.
+    ///
+    /// Passing ownership rather than borrow sometimes allows a many-times
+    /// faster speed up.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    /// let mut a = RangeMapBlaze::from_iter([1..=4]);
+    /// let mut b = RangeMapBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let union = &a | b;
+    /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
+    /// ```
+    fn bitor(self, mut other: RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
+        // cmk
+        // other |= self;
+        // other
+        (self.range_values() | other.range_values()).into_range_map_blaze()
+    }
+}
+
+impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
+    type Output = RangeMapBlaze<T, V>;
+    /// Unions the contents of two [`RangeMapBlaze`]'s.
+    ///
+    /// Passing ownership rather than borrow sometimes allows a many-times
+    /// faster speed up.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    /// let mut a = RangeMapBlaze::from_iter([1..=4]);
+    /// let mut b = RangeMapBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let union = &a | &b;
+    /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
+    /// ```
+    fn bitor(self, other: &RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
+        (self.range_values() | other.range_values()).into_range_map_blaze()
+    }
 }

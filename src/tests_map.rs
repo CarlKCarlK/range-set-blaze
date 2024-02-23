@@ -3,7 +3,7 @@
 use self::map::ValueOwned;
 use super::*;
 use crate::intersection_iter_map::IntersectionIterMap;
-use crate::sorted_disjoint_map::RangeValue;
+use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, UnsortedDisjointMap};
 use alloc::collections::btree_map::{self, Range};
@@ -167,24 +167,6 @@ fn map_random_intersection() {
                 // eprintln!("{map0}");
                 panic!("expected_keys should be empty: {expected_keys}");
             }
-
-            //  = IntersectionIterMap::new(
-            //     iter_set: set0.ranges(),
-            //     iter_map: map0.range_values(),
-            //                 );
-            // if range_set_blaze.ranges().eq(range_map_blaze.ranges()) {
-            //     inputs.push((key, value));
-            //     continue;
-            // }
-
-            // let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
-            // // will do something wrong
-            // range_map_blaze.insert(key, *value);
-            // // println!("A: {range_set_blaze}");
-            // // println!("B: {range_map_blaze}");
-            // // println!("C: {}", range_map_blaze.ranges().to_string());
-            // // will fail
-            // assert!(range_set_blaze.ranges().eq(range_map_blaze.ranges()));
         }
     }
 }
@@ -450,6 +432,7 @@ fn map_insert_max_u128() {
     println!("a: {a}");
 }
 
+// cmk complement not defined on map
 // #[test]
 // fn complement0() {
 //     syntactic_for! { ty in [i8, u8 , isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
@@ -461,15 +444,41 @@ fn map_insert_max_u128() {
 //     }};
 // }
 
-// #[test]
-// fn repro_bit_and() {
-//     let a = RangeMapBlaze::from_iter([1u8, 2, 3]);
-//     let b = RangeMapBlaze::from_iter([2u8, 3, 4]);
+#[test]
+fn repro_bit_or() {
+    let a = RangeSetBlaze::from_iter([1u8, 2, 3]);
+    let b = RangeSetBlaze::from_iter([2u8, 3, 4]);
 
-//     let result = &a & &b;
-//     println!("{result}");
-//     assert_eq!(result, RangeMapBlaze::from_iter([2u8, 3]));
-// }
+    let result = a.ranges().union(b.ranges());
+    let result = result.into_range_set_blaze();
+    println!("{result}");
+    assert_eq!(result, RangeSetBlaze::from_iter([1u8, 2, 3, 4]));
+
+    let result = a | b;
+    println!("{result}");
+    assert_eq!(result, RangeSetBlaze::from_iter([1u8, 2, 3, 4]));
+
+    let s1 = "Hello".to_string();
+    let s2 = "There".to_string();
+    let a = RangeMapBlaze::from_iter([(1u8, &s1), (2, &s1), (3, &s1)]);
+    let b = RangeMapBlaze::from_iter([(2u8, &s2), (3, &s2), (4, &s2)]);
+    let result = a
+        .range_values()
+        .union(b.range_values())
+        .into_range_map_blaze();
+    println!("{result}");
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([(1u8, &s1), (2u8, &s2), (3, &s2), (4, &s2)])
+    );
+
+    let result = a | b;
+    println!("{result}");
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([(1u8, &s1), (2u8, &s2), (3, &s2), (4, &s2)])
+    );
+}
 
 #[test]
 fn map_step_by_step() {
