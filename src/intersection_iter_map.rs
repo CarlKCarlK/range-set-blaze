@@ -109,6 +109,7 @@ where
     type Item = RangeValue<'a, T, V>;
 
     fn next(&mut self) -> Option<RangeValue<'a, T, V>> {
+        // println!("cmk begin next");
         loop {
             // Be sure both currents are loaded.
             self.current_range = self.current_range.take().or_else(|| self.iter_set.next());
@@ -123,15 +124,20 @@ where
             else {
                 return None;
             };
+            // println!("cmk {:?} {:?}", current_range, current_range_value.range);
 
             // if current_range ends before current_range_value, clear it and loop for a new value.
             if current_range.end() < current_range_value.range.start() {
+                // println!("cmk getting new range");
                 self.current_range = None;
+                self.current_range_value = Some(current_range_value);
                 continue;
             }
 
             // if current_range_value ends before current_range, clear it and loop for a new value.
             if current_range_value.range.end() < current_range.start() {
+                // println!("cmk getting new range value");
+                self.current_range = Some(current_range);
                 self.current_range_value = None;
                 continue;
             }
@@ -146,12 +152,16 @@ where
             };
 
             // remove any ranges that match "end" and set them None
-            if *current_range.end() == end {
-                self.current_range = None;
-            }
-            if *current_range_value.range.end() == end {
-                self.current_range_value = None;
-            }
+            self.current_range = if *current_range.end() == end {
+                None
+            } else {
+                Some(current_range)
+            };
+            self.current_range_value = if *current_range_value.range.end() == end {
+                None
+            } else {
+                Some(current_range_value)
+            };
             return Some(range_value);
         }
     }

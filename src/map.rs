@@ -344,14 +344,22 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(set.get(2), Some(2));
     /// assert_eq!(set.get(4), None);
     /// ```
-    // pub fn get(&self, value: T) -> Option<&V> {
-    //     todo!("cmk RangeMapBlaze::get");
-    //     // if self.contains(value) {
-    //     //     Some(value)
-    //     // } else {
-    //     //     None
-    //     // }
-    // }
+    pub fn get(&self, key: T) -> Option<&V> {
+        assert!(
+            key <= T::safe_max_value(),
+            "key must be <= T::safe_max_value()"
+        );
+        self.btree_map
+            .range(..=key)
+            .next_back()
+            .and_then(|(_, end_value)| {
+                if key <= end_value.end {
+                    Some(&end_value.value)
+                } else {
+                    None
+                }
+            })
+    }
 
     // cmk btree_map does not have a last method (I think)
     // /// Returns the last element in the set, if any.

@@ -2,10 +2,11 @@
 #![cfg(not(target_arch = "wasm32"))]
 use self::map::ValueOwned;
 use super::*;
+use crate::intersection_iter_map::IntersectionIterMap;
 use crate::sorted_disjoint_map::RangeValue;
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, UnsortedDisjointMap};
-use alloc::collections::btree_map;
+use alloc::collections::btree_map::{self, Range};
 use core::fmt::Display;
 use itertools::Itertools;
 use rand::seq::SliceRandom;
@@ -115,6 +116,75 @@ fn map_random_ranges() {
             // println!("C: {}", range_map_blaze.ranges().to_string());
             // will fail
             assert!(range_set_blaze.ranges().eq(range_map_blaze.ranges()));
+        }
+    }
+}
+
+#[test]
+fn map_random_intersection() {
+    let values = ['a', 'b', 'c'];
+    for seed in 0..20 {
+        println!("seed: {seed}");
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        let mut set0 = RangeSetBlaze::new();
+        let mut map0 = RangeMapBlaze::new();
+        // let mut inputs = Vec::<(u8, &char)>::new();
+
+        for _ in 0..500 {
+            let element = rng.gen_range(0..=255u8);
+            let key = rng.gen_range(0..=255u8);
+            let value = values.choose(&mut rng).unwrap();
+            // print!("{element},{key}{value} ");
+
+            set0.insert(element);
+            map0.insert(key, *value);
+
+            let intersection = IntersectionIterMap::new(set0.ranges(), map0.range_values());
+
+            let mut expected_keys = map0
+                .ranges()
+                .intersection(set0.ranges())
+                .collect::<RangeSetBlaze<_>>();
+            if !expected_keys.is_empty() {
+                // println!("expected_keys: {expected_keys}");
+            }
+            for range_value in intersection {
+                let range = range_value.range;
+                let value = range_value.value;
+                // println!();
+                // print!("removing ");
+                for k in range {
+                    assert_eq!(map0.get(k), Some(value));
+                    assert!(set0.contains(k));
+                    // print!("{k} ");
+                    assert!(expected_keys.remove(k));
+                }
+                // println!();
+            }
+            if !expected_keys.is_empty() {
+                // eprintln!("{set0}");
+                // eprintln!("{map0}");
+                panic!("expected_keys should be empty: {expected_keys}");
+            }
+
+            //  = IntersectionIterMap::new(
+            //     iter_set: set0.ranges(),
+            //     iter_map: map0.range_values(),
+            //                 );
+            // if range_set_blaze.ranges().eq(range_map_blaze.ranges()) {
+            //     inputs.push((key, value));
+            //     continue;
+            // }
+
+            // let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+            // // will do something wrong
+            // range_map_blaze.insert(key, *value);
+            // // println!("A: {range_set_blaze}");
+            // // println!("B: {range_map_blaze}");
+            // // println!("C: {}", range_map_blaze.ranges().to_string());
+            // // will fail
+            // assert!(range_set_blaze.ranges().eq(range_map_blaze.ranges()));
         }
     }
 }
