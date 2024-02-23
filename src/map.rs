@@ -1547,8 +1547,6 @@ impl<'a, T: Integer, V: ValueOwned + 'a, I: SortedStartsMap<'a, T, V>> SortedSta
 }
 impl<'a, T: Integer, V: ValueOwned + 'a, I: SortedStartsMap<'a, T, V>> SortedDisjointMap<'a, T, V>
     for UnionIterMap<'a, T, V, I>
-where
-    <V as ToOwned>::Owned: PartialEq,
 {
 }
 
