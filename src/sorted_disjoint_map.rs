@@ -5,12 +5,13 @@ use core::marker::PhantomData;
 //     iter::FusedIterator,
 //     ops::{self, RangeInclusive},
 // };
-use core::{borrow::Borrow, fmt};
+use core::fmt;
 
 // use itertools::Itertools;
 
 use core::ops::RangeInclusive;
 
+use crate::map::CloneBorrow;
 use crate::{
     map::{BitOrMergeMap, ValueOwned},
     merge_map::MergeMap,
@@ -24,7 +25,7 @@ pub struct RangeValue<'a, T, V, VR>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
 {
     pub(crate) range: RangeInclusive<T>,
     pub(crate) value: VR,
@@ -36,7 +37,7 @@ impl<'a, T, V, VR> fmt::Debug for RangeValue<'a, T, V, VR>
 where
     T: Integer + fmt::Debug, // Ensure T also implements Debug for completeness.
     V: ValueOwned + fmt::Debug + 'a, // Add Debug bound for V.
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("RangeValue")
@@ -53,7 +54,7 @@ where
 pub trait SortedStartsMap<'a, T: Integer, V: ValueOwned + 'a, VR>:
     Iterator<Item = RangeValue<'a, T, V, VR>>
 where
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
 {
 }
 
@@ -247,7 +248,7 @@ where
 pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a, VR>:
     SortedStartsMap<'a, T, V, VR>
 where
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
 {
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 
@@ -763,7 +764,7 @@ where
 // cmk could this have a better name
 pub trait DebugToString<'a, T: Integer, V: ValueOwned + 'a, VR>
 where
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
 {
     fn to_string(self) -> String;
 }
@@ -774,7 +775,7 @@ impl<'a, T, V, VR, M> DebugToString<'a, T, V, VR> for M
 where
     T: Integer + Debug,
     V: ValueOwned + Debug + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     M: SortedDisjointMap<'a, T, V, VR> + Sized,
 {
     fn to_string(self) -> String {

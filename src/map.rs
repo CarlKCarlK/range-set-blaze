@@ -7,9 +7,10 @@ use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
 use crate::Integer;
 use alloc::collections::BTreeMap;
+use alloc::rc::Rc;
+use alloc::sync::Arc;
 use core::borrow::Borrow;
 use core::fmt;
-use core::marker::PhantomData;
 use core::ops::BitOr;
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use num_traits::Zero;
@@ -23,6 +24,27 @@ pub trait ValueOwned: PartialEq + Clone {}
 
 impl<T> ValueOwned for T where T: PartialEq + Clone {}
 
+pub trait CloneBorrow<V: ?Sized>: Borrow<V> {
+    fn clone_borrow(&self) -> Self;
+}
+
+impl<V: ?Sized> CloneBorrow<V> for &V {
+    fn clone_borrow(&self) -> Self {
+        self
+    }
+}
+
+impl<V> CloneBorrow<V> for Rc<V> {
+    fn clone_borrow(&self) -> Self {
+        Rc::clone(self)
+    }
+}
+
+impl<V> CloneBorrow<V> for Arc<V> {
+    fn clone_borrow(&self) -> Self {
+        Arc::clone(self)
+    }
+}
 #[derive(Clone, Hash, Default, PartialEq)]
 pub(crate) struct EndValue<T: Integer, V: ValueOwned>
 where
@@ -404,7 +426,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     pub fn from_sorted_disjoint_map<'a, VR, I>(iter: I) -> Self
     where
-        VR: Borrow<V> + 'a,
+        VR: CloneBorrow<V> + 'a,
         I: SortedDisjointMap<'a, T, V, VR>,
         V: 'a,
     {
@@ -1334,10 +1356,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    pub fn range_values<VR>(&self) -> RangeValuesIter<'_, T, V, &V> {
+    pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
         RangeValuesIter {
             iter: self.btree_map.iter(),
-            phantom: PhantomData,
         }
     }
 
@@ -1549,13 +1570,13 @@ pub type BitOrMergeMap<'a, T, V, VR, L, R> =
 impl<'a, T: Integer, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
     SortedStartsMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
 where
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
 {
 }
 impl<'a, T: Integer, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
     SortedDisjointMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
 where
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
 {
 }
 
@@ -1574,7 +1595,7 @@ impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze<T, 
     /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     type Output = RangeMapBlaze<T, V>;
-    fn bitor(mut self, other: Self) -> RangeMapBlaze<T, V> {
+    fn bitor(self, other: Self) -> RangeMapBlaze<T, V> {
         // cmk
         // self |= other;
         // self
@@ -1597,7 +1618,7 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for RangeMapBlaze<T,
     /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     type Output = RangeMapBlaze<T, V>;
-    fn bitor(mut self, other: &Self) -> RangeMapBlaze<T, V> {
+    fn bitor(self, other: &Self) -> RangeMapBlaze<T, V> {
         // self |= other;
         // self
         (self.range_values() | other.range_values()).into_range_map_blaze()
@@ -1619,7 +1640,7 @@ impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
     /// let union = &a | b;
     /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
     /// ```
-    fn bitor(self, mut other: RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
+    fn bitor(self, other: RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
         // cmk
         // other |= self;
         // other

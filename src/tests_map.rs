@@ -8,6 +8,7 @@ use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, UnsortedDisjointMap};
 use alloc::collections::btree_map::{self, Range};
 use core::fmt::Display;
+use core::marker::PhantomData;
 use itertools::Itertools;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -190,7 +191,7 @@ where
     // also, check that the ranges are really sorted and disjoint
     // cmk range_values should return a tuple not a struct
     // cmk implement iter for RangeMapBlaze
-    let mut previous: Option<RangeValue<T, V>> = None;
+    let mut previous: Option<RangeValue<T, V, &V>> = None;
     for range_value in range_map_blaze.range_values() {
         let v = range_value.value;
         let range = range_value.range.clone();
@@ -230,7 +231,7 @@ where
     true
 }
 
-fn format_range_values<'a, T>(iter: impl Iterator<Item = RangeValue<'a, T, u8>>) -> String
+fn format_range_values<'a, T>(iter: impl Iterator<Item = RangeValue<'a, T, u8, &'a u8>>) -> String
 where
     T: Integer + fmt::Display + 'a, // Assuming T implements Display for formatting
                                     // V: ValueOwned + fmt::Display + 'a, // V must implement Display to be formatted with {}
@@ -264,6 +265,7 @@ fn map_repro_106() {
         range,
         value,
         priority: 0,
+        phantom: PhantomData,
     });
     let iter = UnsortedDisjointMap::from(iter.into_iter());
     let iter = iter
@@ -302,6 +304,7 @@ fn map_repro_206() {
         range,
         value,
         priority: 0,
+        phantom: PhantomData,
     });
     // let vs = format_range_values(iter);
     // println!("{vs}");
@@ -343,6 +346,7 @@ fn map_repro_123() {
         range,
         value,
         priority: 0,
+        phantom: PhantomData,
     });
     let iter = UnsortedDisjointMap::from(iter.into_iter());
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
@@ -358,6 +362,7 @@ fn map_repro_123() {
         range,
         value,
         priority: 0,
+        phantom: PhantomData,
     });
     let iter = UnsortedDisjointMap::from(iter.into_iter());
     let iter = iter
@@ -380,6 +385,7 @@ fn map_repro_123() {
         range,
         value,
         priority: 0,
+        phantom: PhantomData,
     });
     let iter = UnsortedDisjointMap::from(iter.into_iter());
     let iter = iter
@@ -491,6 +497,7 @@ fn map_step_by_step() {
         range,
         value,
         priority: 0,
+        phantom: PhantomData,
     });
     let iter = UnsortedDisjointMap::from(iter.into_iter());
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
@@ -506,6 +513,7 @@ fn map_step_by_step() {
         range,
         value,
         priority: 0,
+        phantom: PhantomData,
     });
     let iter = UnsortedDisjointMap::from(iter.into_iter());
     let iter = iter
@@ -528,6 +536,7 @@ fn map_step_by_step() {
         range,
         value,
         priority: 0,
+        phantom: PhantomData,
     });
     let iter = UnsortedDisjointMap::from(iter.into_iter());
     let iter = iter

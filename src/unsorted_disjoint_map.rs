@@ -1,10 +1,9 @@
 use crate::{
-    map::{EndValue, ValueOwned},
+    map::{CloneBorrow, EndValue, ValueOwned},
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
     Integer,
 };
 use core::{
-    borrow::Borrow,
     cmp::{max, min},
     iter::FusedIterator,
     marker::PhantomData,
@@ -16,7 +15,7 @@ pub(crate) struct UnsortedDisjointMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     iter: I,
@@ -30,7 +29,7 @@ impl<'a, T, V, VR, I> From<I> for UnsortedDisjointMap<'a, T, V, VR, I::IntoIter>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     I: IntoIterator<Item = RangeValue<'a, T, V, VR>>, // Any iterator is fine
 {
     fn from(into_iter: I) -> Self {
@@ -57,7 +56,7 @@ impl<'a, T, V, VR, I> Iterator for UnsortedDisjointMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     type Item = RangeValue<'a, T, V, VR>;
@@ -130,7 +129,7 @@ pub(crate) struct SortedDisjointWithLenSoFarMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     I: SortedDisjointMap<'a, T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
 {
@@ -157,7 +156,7 @@ where
 
 impl<'a, T: Integer, V: ValueOwned + 'a, VR, I> SortedDisjointWithLenSoFarMap<'a, T, V, VR, I>
 where
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     I: SortedDisjointMap<'a, T, V, VR>,
 {
     pub fn len_so_far(&self) -> <T as Integer>::SafeLen {
@@ -174,7 +173,7 @@ where
 impl<'a, T, V, VR, I> Iterator for SortedDisjointWithLenSoFarMap<'a, T, V, VR, I>
 where
     T: Integer,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     V: ValueOwned + 'a,
     <V as ToOwned>::Owned: PartialEq,
     I: SortedDisjointMap<'a, T, V, VR>,
@@ -209,7 +208,7 @@ pub struct AssumeSortedStartsMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     pub(crate) iter: I,
@@ -218,7 +217,7 @@ where
 impl<'a, T: Integer, V: ValueOwned + 'a, VR, I> SortedStartsMap<'a, T, V, VR>
     for AssumeSortedStartsMap<'a, T, V, VR, I>
 where
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
 }
@@ -227,7 +226,7 @@ impl<'a, T, V, VR, I> AssumeSortedStartsMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     pub fn new(iter: I) -> Self {
@@ -239,7 +238,7 @@ impl<'a, T, V, VR, I> FusedIterator for AssumeSortedStartsMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>> + FusedIterator,
 {
 }
@@ -248,7 +247,7 @@ impl<'a, T, V, VR, I> Iterator for AssumeSortedStartsMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     type Item = RangeValue<'a, T, V, VR>;
@@ -265,7 +264,7 @@ where
 impl<'a, T: Integer, V: ValueOwned + 'a, VR, I> From<I>
     for SortedDisjointWithLenSoFarMap<'a, T, V, VR, I::IntoIter>
 where
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     I: IntoIterator<Item = RangeValue<'a, T, V, VR>>,
     I::IntoIter: SortedDisjointMap<'a, T, V, VR>,
 {

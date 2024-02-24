@@ -1,10 +1,9 @@
-use core::borrow::Borrow;
 use core::iter::FusedIterator;
 use core::marker::PhantomData;
 
 use itertools::{Itertools, MergeBy};
 
-use crate::map::ValueOwned;
+use crate::map::{CloneBorrow, ValueOwned};
 use crate::Integer;
 
 use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap};
@@ -39,7 +38,7 @@ pub struct MergeMap<'a, T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     L: SortedDisjointMap<'a, T, V, VR>,
     R: SortedDisjointMap<'a, T, V, VR>,
 {
@@ -52,7 +51,7 @@ impl<'a, T, V, VR, L, R> MergeMap<'a, T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     L: SortedDisjointMap<'a, T, V, VR>,
     R: SortedDisjointMap<'a, T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
@@ -70,7 +69,7 @@ impl<'a, T, V, VR, L, R> FusedIterator for MergeMap<'a, T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     L: SortedDisjointMap<'a, T, V, VR>,
     R: SortedDisjointMap<'a, T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
@@ -81,7 +80,7 @@ impl<'a, T, V, VR, L, R> Iterator for MergeMap<'a, T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     L: SortedDisjointMap<'a, T, V, VR>,
     R: SortedDisjointMap<'a, T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
@@ -101,7 +100,7 @@ impl<'a, T, V, VR, L, R> SortedStartsMap<'a, T, V, VR> for MergeMap<'a, T, V, VR
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     L: SortedDisjointMap<'a, T, V, VR>,
     R: SortedDisjointMap<'a, T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,

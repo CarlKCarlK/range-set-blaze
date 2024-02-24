@@ -1,16 +1,19 @@
 use core::{
-    borrow::Borrow,
     cmp::{max, min},
     iter::FusedIterator,
     marker::PhantomData,
     ops::{self, RangeInclusive},
 };
 
-use alloc::vec;
+use alloc::{borrow::Cow, vec};
 use itertools::Itertools;
 
-use crate::{map::BitOrMergeMap, unsorted_disjoint_map::AssumeSortedStartsMap, SortedDisjoint};
 use crate::{map::ValueOwned, Integer};
+use crate::{
+    map::{BitOrMergeMap, CloneBorrow},
+    unsorted_disjoint_map::AssumeSortedStartsMap,
+    SortedDisjoint,
+};
 use crate::{
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
     unsorted_disjoint_map::UnsortedDisjointMap,
@@ -48,7 +51,7 @@ pub struct IntersectionIterMap<'a, T, V, VR, IS, IM>
 where
     T: Integer,
     V: ValueOwned,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     IS: SortedDisjoint<T>,
     IM: SortedDisjointMap<'a, T, V, VR> + 'a,
 {
@@ -64,7 +67,7 @@ impl<'a, T, V, VR, IS, IM> IntersectionIterMap<'a, T, V, VR, IS, IM>
 where
     T: Integer,
     V: ValueOwned,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     IS: SortedDisjoint<T>,
     IM: SortedDisjointMap<'a, T, V, VR> + 'a,
 {
@@ -108,7 +111,7 @@ impl<'a, T, V, VR, IS, IM> Iterator for IntersectionIterMap<'a, T, V, VR, IS, IM
 where
     T: Integer,
     V: ValueOwned,
-    VR: Borrow<V> + 'a,
+    VR: CloneBorrow<V> + 'a,
     IS: SortedDisjoint<T>,
     IM: SortedDisjointMap<'a, T, V, VR>,
 {
@@ -151,23 +154,39 @@ where
             // Thus, they overlap
             let start = *max(current_range.start(), current_range_value.range.start());
             let end = *min(current_range.end(), current_range_value.range.end());
-            let range_value = RangeValue {
-                range: start..=end,
-                value: current_range_value.value,
-                priority: 0,
-                phantom: PhantomData,
-            };
 
             // remove any ranges that match "end" and set them None
-            self.current_range = if *current_range.end() == end {
-                None
-            } else {
-                Some(current_range)
+
+            let value = match (
+                *current_range.end() == end,
+                *current_range_value.range.end() == end,
+            ) {
+                (true, true) => {
+                    self.current_range = None;
+                    self.current_range_value = None;
+                    current_range_value.value
+                }
+                (true, false) => {
+                    self.current_range = None;
+                    let value = current_range_value.value.clone_borrow();
+                    self.current_range_value = Some(current_range_value);
+                    value
+                }
+                (false, true) => {
+                    self.current_range = Some(current_range);
+                    self.current_range_value = None;
+                    current_range_value.value
+                }
+                (false, false) => {
+                    panic!("impossible case")
+                }
             };
-            self.current_range_value = if *current_range_value.range.end() == end {
-                None
-            } else {
-                Some(current_range_value)
+
+            let range_value = RangeValue {
+                range: start..=end,
+                value,
+                priority: 0,
+                phantom: PhantomData,
             };
             return Some(range_value);
         }

@@ -1,7 +1,6 @@
 use crate::{map::BitOrMergeMap, sorted_disjoint_map::RangeValue, Integer};
 use alloc::{collections::btree_map, rc::Rc};
 use core::{
-    borrow::Borrow,
     iter::FusedIterator,
     marker::PhantomData,
     ops::{self, RangeInclusive},
@@ -22,19 +21,11 @@ use crate::{
 /// [`ranges`]: crate::RangeSetBlaze::ranges
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct RangeValuesIter<'a, T: Integer, V: ValueOwned, VR>
-where
-    VR: Borrow<V> + 'a,
-{
+pub struct RangeValuesIter<'a, T: Integer, V: ValueOwned> {
     pub(crate) iter: btree_map::Iter<'a, T, EndValue<T, V>>,
-    pub(crate) phantom: PhantomData<VR>,
 }
 
-impl<'a, T: Integer, V: ValueOwned, VR> AsRef<RangeValuesIter<'a, T, V, VR>>
-    for RangeValuesIter<'a, T, V, VR>
-where
-    VR: Borrow<V> + 'a,
-{
+impl<'a, T: Integer, V: ValueOwned> AsRef<RangeValuesIter<'a, T, V>> for RangeValuesIter<'a, T, V> {
     fn as_ref(&self) -> &Self {
         // Self is RangeValuesIter<'a>, the type for which we impl AsRef
         self
@@ -42,42 +33,28 @@ where
 }
 
 // RangeValuesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
-impl<'a, T: Integer, V: ValueOwned, VR> SortedStartsMap<'a, T, V, VR>
-    for RangeValuesIter<'a, T, V, VR>
-where
-    VR: Borrow<V> + 'a,
-{
-}
-impl<'a, T: Integer, V: ValueOwned, VR> SortedDisjointMap<'a, T, V, VR>
-    for RangeValuesIter<'a, T, V, VR>
-where
-    VR: Borrow<V> + 'a,
+impl<'a, T: Integer, V: ValueOwned> SortedStartsMap<'a, T, V, &'a V> for RangeValuesIter<'a, T, V> {}
+impl<'a, T: Integer, V: ValueOwned> SortedDisjointMap<'a, T, V, &'a V>
+    for RangeValuesIter<'a, T, V>
 {
 }
 
-impl<T: Integer, V: ValueOwned, VR> ExactSizeIterator for RangeValuesIter<'_, T, V, VR>
-where
-    VR: Borrow<V>,
-{
+impl<T: Integer, V: ValueOwned> ExactSizeIterator for RangeValuesIter<'_, T, V> {
     #[must_use]
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned, VR> FusedIterator for RangeValuesIter<'a, T, V, VR> where
-    VR: Borrow<V> + 'a
-{
-}
+impl<'a, T: Integer, V: ValueOwned> FusedIterator for RangeValuesIter<'a, T, V> {}
 
 // Range's iterator is just the inside BTreeMap iterator as values
-impl<'a, T, V, VR> Iterator for RangeValuesIter<'a, T, V, VR>
+impl<'a, T, V> Iterator for RangeValuesIter<'a, T, V>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: Borrow<V> + 'a,
 {
-    type Item = RangeValue<'a, T, V, VR>; // Assuming VR is always &'a V for next
+    type Item = RangeValue<'a, T, V, &'a V>; // Assuming VR is always &'a V for next
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(start, end_value)| RangeValue {
@@ -109,56 +86,38 @@ where
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
-pub struct IntoRangeValuesIter<'a, T: Integer + 'a, V: ValueOwned + 'a, VR>
-where
-    VR: Borrow<V> + 'a,
-{
+pub struct IntoRangeValuesIter<'a, T: Integer + 'a, V: ValueOwned + 'a> {
     pub(crate) iter: btree_map::IntoIter<T, EndValue<T, V>>,
-    phantom0: PhantomData<&'a V>,
-    phantom1: PhantomData<VR>,
+    phantom: PhantomData<&'a V>,
 }
 
-impl<'a, T: Integer, V: ValueOwned + 'a, VR> SortedStartsMap<'a, T, V, VR>
-    for IntoRangeValuesIter<'a, T, V, VR>
-where
-    VR: Borrow<V> + 'a,
+impl<'a, T: Integer, V: ValueOwned + 'a> SortedStartsMap<'a, T, V, Rc<V>>
+    for IntoRangeValuesIter<'a, T, V>
 {
 }
-impl<'a, T: Integer, V: ValueOwned + 'a, VR> SortedDisjointMap<'a, T, V, VR>
-    for IntoRangeValuesIter<'a, T, V, VR>
-where
-    VR: Borrow<V> + 'a,
+impl<'a, T: Integer, V: ValueOwned + 'a> SortedDisjointMap<'a, T, V, Rc<V>>
+    for IntoRangeValuesIter<'a, T, V>
 {
 }
 
-impl<'a, T: Integer, V: ValueOwned, VR> ExactSizeIterator for IntoRangeValuesIter<'a, T, V, VR>
-where
-    VR: Borrow<V> + 'a,
-{
+impl<'a, T: Integer, V: ValueOwned> ExactSizeIterator for IntoRangeValuesIter<'a, T, V> {
     #[must_use]
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned, VR> FusedIterator for IntoRangeValuesIter<'a, T, V, VR> where
-    VR: Borrow<V> + 'a
-{
-}
+impl<'a, T: Integer, V: ValueOwned> FusedIterator for IntoRangeValuesIter<'a, T, V> {}
 
-impl<'a, T: Integer, V: ValueOwned + 'a, VR> Iterator for IntoRangeValuesIter<'a, T, V, VR>
-where
-    VR: Borrow<V> + 'a,
-{
-    type Item = RangeValue<'a, T, V, VR>;
+impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<'a, T, V> {
+    type Item = RangeValue<'a, T, V, Rc<V>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(start, end_value)| {
-            let vr = Rc::new(end_value.value);
             let range = start..=end_value.end;
             RangeValue {
                 range,
-                value: Rc::clone(&vr),
+                value: Rc::new(end_value.value),
                 priority: 0, // cmk don't use RangeValue here
                 phantom: PhantomData,
             }
@@ -171,7 +130,7 @@ where
 }
 
 // cmk
-// impl<'a, T: Integer, V: ValueOwned> DoubleEndedIterator for IntoRangeValuesIter<'a, T, V, VR> {
+// impl<'a, T: Integer, V: ValueOwned> DoubleEndedIterator for IntoRangeValuesIter<'a, T, V> {
 //     fn next_back(&mut self) -> Option<Self::Item> {
 //         self.iter.next_back().map(|(start, end)| start..=end)
 //     }
@@ -242,7 +201,7 @@ where
 //     }
 // }
 
-// impl<T: Integer, V: ValueOwned> ops::Not for IntoRangeValuesIter<'a, T, V, VR> {
+// impl<T: Integer, V: ValueOwned> ops::Not for IntoRangeValuesIter<'a, T, V> {
 //     type Output = NotIter<T, Self>;
 
 //     fn not(self) -> Self::Output {
@@ -250,24 +209,22 @@ where
 //     }
 // }
 
-impl<'a, T: Integer, V: ValueOwned, VR, I> ops::BitOr<I> for RangeValuesIter<'a, T, V, VR>
+impl<'a, T: Integer, V: ValueOwned, I> ops::BitOr<I> for RangeValuesIter<'a, T, V>
 where
-    VR: Borrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    I: SortedDisjointMap<'a, T, V, &'a V>,
 {
-    type Output = BitOrMergeMap<'a, T, V, VR, Self, I>;
+    type Output = BitOrMergeMap<'a, T, V, &'a V, Self, I>;
 
     fn bitor(self, other: I) -> Self::Output {
         SortedDisjointMap::union(self, other)
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned, VR, I> ops::BitOr<I> for IntoRangeValuesIter<'a, T, V, VR>
+impl<'a, T: Integer, V: ValueOwned, I> ops::BitOr<I> for IntoRangeValuesIter<'a, T, V>
 where
-    VR: Borrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    I: SortedDisjointMap<'a, T, V, Rc<V>>,
 {
-    type Output = BitOrMergeMap<'a, T, V, VR, Self, I>;
+    type Output = BitOrMergeMap<'a, T, V, Rc<V>, Self, I>;
 
     fn bitor(self, other: I) -> Self::Output {
         SortedDisjointMap::union(self, other)
@@ -285,7 +242,7 @@ where
 //     }
 // }
 
-// impl<T: Integer, V: ValueOwned, I> ops::Sub<I> for IntoRangeValuesIter<'a, T, V, VR>
+// impl<T: Integer, V: ValueOwned, I> ops::Sub<I> for IntoRangeValuesIter<'a, T, V>
 // where
 //     I: SortedDisjointMap<'a, T, V, VR>,
 // {
@@ -311,7 +268,7 @@ where
 //     }
 // }
 
-// impl<T: Integer, V: ValueOwned, I> ops::BitXor<I> for IntoRangeValuesIter<'a, T, V, VR>
+// impl<T: Integer, V: ValueOwned, I> ops::BitXor<I> for IntoRangeValuesIter<'a, T, V>
 // where
 //     I: SortedDisjointMap<'a, T, V, VR>,
 // {
@@ -335,7 +292,7 @@ where
 //     }
 // }
 
-// impl<T: Integer, V: ValueOwned, I> ops::BitAnd<I> for IntoRangeValuesIter<'a, T, V, VR>
+// impl<T: Integer, V: ValueOwned, I> ops::BitAnd<I> for IntoRangeValuesIter<'a, T, V>
 // where
 //     I: SortedDisjointMap<'a, T, V, VR>,
 // {
