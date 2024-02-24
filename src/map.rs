@@ -7,7 +7,9 @@ use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
 use crate::Integer;
 use alloc::collections::BTreeMap;
+use core::borrow::Borrow;
 use core::fmt;
+use core::marker::PhantomData;
 use core::ops::BitOr;
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use num_traits::Zero;
@@ -400,9 +402,10 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// let a1: RangeMapBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
-    pub fn from_sorted_disjoint_map<'a, I>(iter: I) -> Self
+    pub fn from_sorted_disjoint_map<'a, VR, I>(iter: I) -> Self
     where
-        I: SortedDisjointMap<'a, T, V>,
+        VR: Borrow<V> + 'a,
+        I: SortedDisjointMap<'a, T, V, VR>,
         V: 'a,
     {
         let mut iter_with_len = SortedDisjointWithLenSoFarMap::from(iter);
@@ -1331,9 +1334,10 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
+    pub fn range_values<VR>(&self) -> RangeValuesIter<'_, T, V, &V> {
         RangeValuesIter {
             iter: self.btree_map.iter(),
+            phantom: PhantomData,
         }
     }
 
@@ -1477,7 +1481,7 @@ where
         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
         let iter = iter.into_iter();
-        let union_iter = UnionIterMap::<'a, T, V, _>::from_iter(iter);
+        let union_iter = UnionIterMap::<'a, T, V, &V, _>::from_iter(iter);
         RangeMapBlaze::from_sorted_disjoint_map(union_iter)
     }
 }
@@ -1511,7 +1515,8 @@ where
 // }
 
 #[doc(hidden)]
-pub type BitOrMergeMap<'a, T, V, L, R> = UnionIterMap<'a, T, V, MergeMap<'a, T, V, L, R>>;
+pub type BitOrMergeMap<'a, T, V, VR, L, R> =
+    UnionIterMap<'a, T, V, VR, MergeMap<'a, T, V, VR, L, R>>;
 // #[doc(hidden)]
 // pub type BitOrKMergeMap<T, V, I> = UnionIterMap<T, V, KMergeMap<T, V, I>>;
 // #[doc(hidden)]
@@ -1541,12 +1546,16 @@ pub type BitOrMergeMap<'a, T, V, L, R> = UnionIterMap<'a, T, V, MergeMap<'a, T, 
 //     NotIterMap<T, V, BitOrMergeMap<T, V, Tee<L>, Tee<R>>>,
 // >;
 
-impl<'a, T: Integer, V: ValueOwned + 'a, I: SortedStartsMap<'a, T, V>> SortedStartsMap<'a, T, V>
-    for UnionIterMap<'a, T, V, I>
+impl<'a, T: Integer, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
+    SortedStartsMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
+where
+    VR: Borrow<V> + 'a,
 {
 }
-impl<'a, T: Integer, V: ValueOwned + 'a, I: SortedStartsMap<'a, T, V>> SortedDisjointMap<'a, T, V>
-    for UnionIterMap<'a, T, V, I>
+impl<'a, T: Integer, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
+    SortedDisjointMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
+where
+    VR: Borrow<V> + 'a,
 {
 }
 

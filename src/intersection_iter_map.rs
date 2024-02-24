@@ -1,4 +1,5 @@
 use core::{
+    borrow::Borrow,
     cmp::{max, min},
     iter::FusedIterator,
     marker::PhantomData,
@@ -43,27 +44,29 @@ use crate::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct IntersectionIterMap<'a, T, V, IS, IM>
+pub struct IntersectionIterMap<'a, T, V, VR, IS, IM>
 where
     T: Integer,
     V: ValueOwned,
+    VR: Borrow<V> + 'a,
     IS: SortedDisjoint<T>,
-    IM: SortedDisjointMap<'a, T, V> + 'a,
+    IM: SortedDisjointMap<'a, T, V, VR> + 'a,
 {
     iter_set: IS,
     iter_map: IM,
     current_range: Option<RangeInclusive<T>>,
-    current_range_value: Option<RangeValue<'a, T, V>>,
+    current_range_value: Option<RangeValue<'a, T, V, VR>>,
     _phantom0: PhantomData<&'a T>,
     _phantom1: PhantomData<&'a V>,
 }
 
-impl<'a, T, V, IS, IM> IntersectionIterMap<'a, T, V, IS, IM>
+impl<'a, T, V, VR, IS, IM> IntersectionIterMap<'a, T, V, VR, IS, IM>
 where
     T: Integer,
     V: ValueOwned,
+    VR: Borrow<V> + 'a,
     IS: SortedDisjoint<T>,
-    IM: SortedDisjointMap<'a, T, V> + 'a,
+    IM: SortedDisjointMap<'a, T, V, VR> + 'a,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`IntersectionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`IntersectionIterMap`] for more details and examples.
@@ -101,14 +104,17 @@ where
 //     }
 // }
 
-impl<'a, T: Integer, V: ValueOwned, IS, IM> Iterator for IntersectionIterMap<'a, T, V, IS, IM>
+impl<'a, T, V, VR, IS, IM> Iterator for IntersectionIterMap<'a, T, V, VR, IS, IM>
 where
+    T: Integer,
+    V: ValueOwned,
+    VR: Borrow<V> + 'a,
     IS: SortedDisjoint<T>,
-    IM: SortedDisjointMap<'a, T, V>,
+    IM: SortedDisjointMap<'a, T, V, VR>,
 {
-    type Item = RangeValue<'a, T, V>;
+    type Item = RangeValue<'a, T, V, VR>;
 
-    fn next(&mut self) -> Option<RangeValue<'a, T, V>> {
+    fn next(&mut self) -> Option<RangeValue<'a, T, V, VR>> {
         // println!("cmk begin next");
         loop {
             // Be sure both currents are loaded.
@@ -149,6 +155,7 @@ where
                 range: start..=end,
                 value: current_range_value.value,
                 priority: 0,
+                phantom: PhantomData,
             };
 
             // remove any ranges that match "end" and set them None

@@ -1,10 +1,11 @@
+use core::marker::PhantomData;
 // use alloc::format;
 // use alloc::string::String;
 // use core::{
 //     iter::FusedIterator,
 //     ops::{self, RangeInclusive},
 // };
-use core::fmt;
+use core::{borrow::Borrow, fmt};
 
 // use itertools::Itertools;
 
@@ -19,25 +20,28 @@ use crate::{
 
 // cmk should this be pub/crate or replaced with a tuple?
 #[derive(PartialEq)]
-pub struct RangeValue<'a, T, V>
+pub struct RangeValue<'a, T, V, VR>
 where
     T: Integer,
     V: ValueOwned + 'a,
+    VR: Borrow<V> + 'a,
 {
     pub(crate) range: RangeInclusive<T>,
-    pub(crate) value: &'a V,
+    pub(crate) value: VR,
     pub(crate) priority: usize,
+    pub(crate) phantom: PhantomData<&'a V>,
 }
 
-impl<'a, T, V> fmt::Debug for RangeValue<'a, T, V>
+impl<'a, T, V, VR> fmt::Debug for RangeValue<'a, T, V, VR>
 where
     T: Integer + fmt::Debug, // Ensure T also implements Debug for completeness.
     V: ValueOwned + fmt::Debug + 'a, // Add Debug bound for V.
+    VR: Borrow<V> + 'a,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("RangeValue")
             .field("range", &self.range)
-            .field("value", self.value)
+            .field("value", self.value.borrow())
             .field("priority", &self.priority)
             .finish()
     }
@@ -46,8 +50,10 @@ where
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
 #[doc(hidden)]
-pub trait SortedStartsMap<'a, T: Integer, V: ValueOwned + 'a>:
-    Iterator<Item = RangeValue<'a, T, V>>
+pub trait SortedStartsMap<'a, T: Integer, V: ValueOwned + 'a, VR>:
+    Iterator<Item = RangeValue<'a, T, V, VR>>
+where
+    VR: Borrow<V> + 'a,
 {
 }
 
@@ -238,7 +244,11 @@ pub trait SortedStartsMap<'a, T: Integer, V: ValueOwned + 'a>:
 ///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
 /// );
 /// ```
-pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap<'a, T, V> {
+pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a, VR>:
+    SortedStartsMap<'a, T, V, VR>
+where
+    VR: Borrow<V> + 'a,
+{
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their union.
@@ -261,11 +271,11 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
     /// assert_eq!(union.to_string(), "1..=2");
     /// ```
     #[inline]
-    fn union<R>(self, other: R) -> BitOrMergeMap<'a, T, V, Self, R::IntoIter>
+    fn union<R>(self, other: R) -> BitOrMergeMap<'a, T, V, VR, Self, R::IntoIter>
     where
         // cmk why must say SortedDisjointMap here by sorted_disjoint doesn't.
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<'a, T, V>,
+        R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
         Self: Sized,
     {
         // cmk why this into iter stuff that is not used?
@@ -296,7 +306,7 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
     // fn intersection<R>(self, other: R) -> BitAndMergeMap<T, V, Self, R::IntoIter>
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
     //     Self: Sized,
     // {
     //     !(self.complement() | other.into_iter().complement())
@@ -326,7 +336,7 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
     // fn difference<R>(self, other: R) -> BitSubMergeMap<T, V, Self, R::IntoIter>
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
     //     Self: Sized,
     // {
     //     !(self.complement() | other.into_iter())
@@ -383,7 +393,7 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
     // fn symmetric_difference<R>(self, other: R) -> BitXOrTeeMap<T, V, Self, R::IntoIter>
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
     //     Self: Sized,
     // {
     //     let (lhs0, lhs1) = self.tee();
@@ -407,7 +417,7 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
     // fn equal<R>(self, other: R) -> bool
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
     //     Self: Sized,
     // {
     //     itertools::equal(self, other)
@@ -460,7 +470,7 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
     // fn is_subset<R>(self, other: R) -> bool
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
     //     Self: Sized,
     // {
     //     self.difference(other).is_empty()
@@ -492,7 +502,7 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
     // fn is_superset<R>(self, other: R) -> bool
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
     //     Self: Sized,
     // {
     //     other.into_iter().is_subset(self)
@@ -521,7 +531,7 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
     // fn is_disjoint<R>(self, other: R) -> bool
     // where
     //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V>,
+    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
     //     Self: Sized,
     // {
     //     self.intersection(other).is_empty()
@@ -588,7 +598,7 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
 //     seen_none: bool,
 // }
 
-// impl<T: Integer, I> SortedDisjointMap<'a, T, V> for CheckSortedDisjointMap<T, I> where
+// impl<T: Integer, I> SortedDisjointMap<'a, T, V, VR> for CheckSortedDisjointMap<T, I> where
 //     I: Iterator<Item = RangeInclusive<T, V>>
 // {
 // }
@@ -705,7 +715,7 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
 // impl<T: Integer, R, L> ops::BitOr<R> for CheckSortedDisjointMap<T, L>
 // where
 //     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<'a, T, V>,
+//     R: SortedDisjointMap<'a, T, V, VR>,
 // {
 //     type Output = BitOrMergeMap<T, V, Self, R>;
 
@@ -717,7 +727,7 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
 // impl<T: Integer, R, L> ops::BitAnd<R> for CheckSortedDisjointMap<T, L>
 // where
 //     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<'a, T, V>,
+//     R: SortedDisjointMap<'a, T, V, VR>,
 // {
 //     type Output = BitAndMergeMap<T, V, Self, R>;
 
@@ -729,7 +739,7 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
 // impl<T: Integer, R, L> ops::Sub<R> for CheckSortedDisjointMap<T, L>
 // where
 //     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<'a, T, V>,
+//     R: SortedDisjointMap<'a, T, V, VR>,
 // {
 //     type Output = BitSubMergeMap<T, V, Self, R>;
 
@@ -741,7 +751,7 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
 // impl<T: Integer, R, L> ops::BitXor<R> for CheckSortedDisjointMap<T, L>
 // where
 //     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<'a, T, V>,
+//     R: SortedDisjointMap<'a, T, V, VR>,
 // {
 //     type Output = BitXOrTeeMap<T, V, Self, R>;
 
@@ -751,23 +761,27 @@ pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a>: SortedStartsMap
 // }
 
 // cmk could this have a better name
-pub trait DebugToString<'a, T: Integer, V: ValueOwned + 'a> {
+pub trait DebugToString<'a, T: Integer, V: ValueOwned + 'a, VR>
+where
+    VR: Borrow<V> + 'a,
+{
     fn to_string(self) -> String;
 }
 
 use std::fmt::Debug;
 
-impl<'a, T, V, M> DebugToString<'a, T, V> for M
+impl<'a, T, V, VR, M> DebugToString<'a, T, V, VR> for M
 where
     T: Integer + Debug,
     V: ValueOwned + Debug + 'a,
-    M: SortedDisjointMap<'a, T, V> + Sized,
+    VR: Borrow<V> + 'a,
+    M: SortedDisjointMap<'a, T, V, VR> + Sized,
 {
     fn to_string(self) -> String {
         self.map(|range_value| {
             let range = range_value.range;
             let value = range_value.value;
-            format!("({:?}, {:?})", range, value)
+            format!("({:?}, {:?})", range, value.borrow())
         })
         .collect::<Vec<_>>()
         .join(", ")

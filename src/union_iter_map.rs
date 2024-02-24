@@ -1,4 +1,5 @@
 use core::{
+    borrow::Borrow,
     cmp::{max, min},
     iter::FusedIterator,
     marker::PhantomData,
@@ -42,22 +43,24 @@ use crate::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct UnionIterMap<'a, T, V, I>
+pub struct UnionIterMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
-    I: SortedStartsMap<'a, T, V>,
+    VR: Borrow<V> + 'a,
+    I: SortedStartsMap<'a, T, V, VR>,
 {
-    iter: <std::vec::Vec<RangeValue<'a, T, V>> as std::iter::IntoIterator>::IntoIter,
+    iter: <std::vec::Vec<RangeValue<'a, T, V, VR>> as std::iter::IntoIterator>::IntoIter,
     phantom: PhantomData<I>,
-    // option_range_value: Option<RangeValue<'a, T, V>>,
+    // option_range_value: Option<RangeValue<'a, T, V, VR>>,
 }
 
-impl<'a, T, V, I> UnionIterMap<'a, T, V, I>
+impl<'a, T, V, VR, I> UnionIterMap<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
-    I: SortedStartsMap<'a, T, V>,
+    VR: Borrow<V> + 'a,
+    I: SortedStartsMap<'a, T, V, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
@@ -65,8 +68,8 @@ where
         // By default all ends are inclusive (different that most programs)
         let mut vec_in = iter.collect_vec();
         // println!("vec_in: {:?}", vec_in.len()); // cmk
-        let mut vec_mid = Vec::<RangeValue<'a, T, V>>::new();
-        let mut workspace = Vec::<RangeValue<'a, T, V>>::new();
+        let mut vec_mid = Vec::<RangeValue<'a, T, V, VR>>::new();
+        let mut workspace = Vec::<RangeValue<'a, T, V, VR>>::new();
         let mut bar_priority = 0usize;
         let mut bar_end = T::zero();
         while !vec_in.is_empty() || !workspace.is_empty() {
@@ -120,6 +123,7 @@ where
                 range: *best.range.start()..=output_end,
                 value: best.value,
                 priority: best.priority,
+                phantom: PhantomData,
             });
             // trim the start of the ranges in workspace to output_end+1, remove any that are empty
             // also find the best priority and the new bar_end
@@ -141,13 +145,13 @@ where
             }
         }
 
-        let mut vec_out = Vec::<RangeValue<'a, T, V>>::new();
+        let mut vec_out = Vec::<RangeValue<'a, T, V, VR>>::new();
         let mut index = 0;
         while index < vec_mid.len() {
             let mut index_exclusive_end = index + 1;
             let mut previous_index = index;
             while index_exclusive_end < vec_mid.len()
-                && vec_mid[previous_index].value == vec_mid[index_exclusive_end].value
+                && vec_mid[previous_index].value.borrow() == vec_mid[index_exclusive_end].value.borrow()
                 // cmk overflow?                
                 && *vec_mid[previous_index].range.end() + T::one()
                     == *vec_mid[index_exclusive_end].range.start()
@@ -160,6 +164,7 @@ where
                     ..=*vec_mid[index_exclusive_end - 1].range.end(),
                 value: vec_mid[index].value,
                 priority: 0, // cmk priority should never be exposed or re-used.
+                phantom: PhantomData,
             });
             index = index_exclusive_end;
         }
@@ -193,12 +198,14 @@ where
 //     }
 // }
 
-pub(crate) type SortedRangeInclusiveVec<'a, T, V> =
-    AssumeSortedStartsMap<'a, T, V, vec::IntoIter<RangeValue<'a, T, V>>>;
+pub(crate) type SortedRangeInclusiveVec<'a, T, V, VR> =
+    AssumeSortedStartsMap<'a, T, V, VR, vec::IntoIter<RangeValue<'a, T, V, VR>>>;
 
 // from iter (T, V) to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(T, &'a V)>
-    for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR> FromIterator<(T, &'a V)>
+    for UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>>
+where
+    VR: Borrow<V> + 'a,
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -209,8 +216,10 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(T, &'a V)>
 }
 
 // from iter (RangeInclusive<T>, &V) to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
-    for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR> FromIterator<(RangeInclusive<T>, &'a V)>
+    for UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>>
+where
+    VR: Borrow<V> + 'a,
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -222,35 +231,39 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &
             range,
             value,
             priority,
+            phantom: PhantomData,
         });
-        let iter: UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>> =
+        let iter: UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>> =
             UnionIterMap::from_iter(iter);
         iter
     }
 }
 
 // from iter RangeValue<T, V> to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<RangeValue<'a, T, V>>
-    for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR> FromIterator<RangeValue<'a, T, V, VR>>
+    for UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>>
+where
+    VR: Borrow<V> + 'a,
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = RangeValue<'a, T, V>>,
+        I: IntoIterator<Item = RangeValue<'a, T, V, VR>>,
     {
         UnsortedDisjointMap::from(iter.into_iter()).into()
     }
 }
 
 // from from UnsortedDisjointMap to UnionIterMap
-impl<'a, T, V, I> From<UnsortedDisjointMap<'a, T, V, I>>
-    for UnionIterMap<'a, T, V, SortedRangeInclusiveVec<'a, T, V>>
+impl<'a, T, V, VR, I> From<UnsortedDisjointMap<'a, T, V, VR, I>>
+    for UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    I: Iterator<Item = RangeValue<'a, T, V>>,
+    VR: Borrow<V> + 'a,
+    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     #[allow(clippy::clone_on_copy)]
-    fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, I>) -> Self {
+    fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, VR, I>) -> Self {
         let iter = unsorted_disjoint.sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
             std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
             other => other,
@@ -261,18 +274,21 @@ where
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned, I> FusedIterator for UnionIterMap<'a, T, V, I> where
-    I: SortedStartsMap<'a, T, V> + FusedIterator
+impl<'a, T: Integer, V: ValueOwned, VR, I> FusedIterator for UnionIterMap<'a, T, V, VR, I>
+where
+    VR: Borrow<V> + 'a,
+    I: SortedStartsMap<'a, T, V, VR> + FusedIterator,
 {
 }
 
-impl<'a, T: Integer, V: ValueOwned, I> Iterator for UnionIterMap<'a, T, V, I>
+impl<'a, T: Integer, V: ValueOwned, VR, I> Iterator for UnionIterMap<'a, T, V, VR, I>
 where
-    I: SortedStartsMap<'a, T, V>,
+    VR: Borrow<V> + 'a,
+    I: SortedStartsMap<'a, T, V, VR>,
 {
-    type Item = RangeValue<'a, T, V>;
+    type Item = RangeValue<'a, T, V, VR>;
 
-    fn next(&mut self) -> Option<RangeValue<'a, T, V>> {
+    fn next(&mut self) -> Option<RangeValue<'a, T, V, VR>> {
         self.iter.next()
     }
 
@@ -301,12 +317,13 @@ where
 //     }
 // }
 
-impl<'a, T: Integer, V: ValueOwned + 'a, R, L> ops::BitOr<R> for UnionIterMap<'a, T, V, L>
+impl<'a, T: Integer, V: ValueOwned + 'a, VR, R, L> ops::BitOr<R> for UnionIterMap<'a, T, V, VR, L>
 where
-    L: SortedStartsMap<'a, T, V>,
-    R: SortedDisjointMap<'a, T, V>,
+    VR: Borrow<V> + 'a,
+    L: SortedStartsMap<'a, T, V, VR>,
+    R: SortedDisjointMap<'a, T, V, VR> + 'a,
 {
-    type Output = BitOrMergeMap<'a, T, V, Self, R>;
+    type Output = BitOrMergeMap<'a, T, V, VR, Self, R>;
 
     fn bitor(self, rhs: R) -> Self::Output {
         // It might be fine to optimize to self.iter, but that would require

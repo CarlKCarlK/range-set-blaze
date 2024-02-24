@@ -1,4 +1,6 @@
+use core::borrow::Borrow;
 use core::iter::FusedIterator;
+use core::marker::PhantomData;
 
 use itertools::{Itertools, MergeBy};
 
@@ -33,52 +35,58 @@ use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap}
 /// assert_eq!(c.to_string(), "1..=100")
 /// ```
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct MergeMap<'a, T, V, L, R>
+pub struct MergeMap<'a, T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    L: SortedDisjointMap<'a, T, V>,
-    R: SortedDisjointMap<'a, T, V>,
+    VR: Borrow<V> + 'a,
+    L: SortedDisjointMap<'a, T, V, VR>,
+    R: SortedDisjointMap<'a, T, V, VR>,
 {
     #[allow(clippy::type_complexity)]
-    iter: MergeBy<L, R, fn(&RangeValue<'a, T, V>, &RangeValue<'a, T, V>) -> bool>,
+    iter: MergeBy<L, R, fn(&RangeValue<'a, T, V, VR>, &RangeValue<'a, T, V, VR>) -> bool>,
+    phantom: PhantomData<VR>,
 }
 
-impl<'a, T, V, L, R> MergeMap<'a, T, V, L, R>
+impl<'a, T, V, VR, L, R> MergeMap<'a, T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    L: SortedDisjointMap<'a, T, V>,
-    R: SortedDisjointMap<'a, T, V>,
+    VR: Borrow<V> + 'a,
+    L: SortedDisjointMap<'a, T, V, VR>,
+    R: SortedDisjointMap<'a, T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
 {
     /// Creates a new [`MergeMap`] iterator from two [`SortedDisjointMap`] iterators. See [`MergeMap`] for more details and examples.
     pub fn new(left: L, right: R) -> Self {
         Self {
             iter: left.merge_by(right, |a, b| a.range.start() < b.range.start()),
+            phantom: PhantomData,
         }
     }
 }
 
-impl<'a, T, V, L, R> FusedIterator for MergeMap<'a, T, V, L, R>
+impl<'a, T, V, VR, L, R> FusedIterator for MergeMap<'a, T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    L: SortedDisjointMap<'a, T, V>,
-    R: SortedDisjointMap<'a, T, V>,
+    VR: Borrow<V> + 'a,
+    L: SortedDisjointMap<'a, T, V, VR>,
+    R: SortedDisjointMap<'a, T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
 {
 }
 
-impl<'a, T, V, L, R> Iterator for MergeMap<'a, T, V, L, R>
+impl<'a, T, V, VR, L, R> Iterator for MergeMap<'a, T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    L: SortedDisjointMap<'a, T, V>,
-    R: SortedDisjointMap<'a, T, V>,
+    VR: Borrow<V> + 'a,
+    L: SortedDisjointMap<'a, T, V, VR>,
+    R: SortedDisjointMap<'a, T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
 {
-    type Item = RangeValue<'a, T, V>;
+    type Item = RangeValue<'a, T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
@@ -89,12 +97,13 @@ where
     }
 }
 
-impl<'a, T, V, L, R> SortedStartsMap<'a, T, V> for MergeMap<'a, T, V, L, R>
+impl<'a, T, V, VR, L, R> SortedStartsMap<'a, T, V, VR> for MergeMap<'a, T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    L: SortedDisjointMap<'a, T, V>,
-    R: SortedDisjointMap<'a, T, V>,
+    VR: Borrow<V> + 'a,
+    L: SortedDisjointMap<'a, T, V, VR>,
+    R: SortedDisjointMap<'a, T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
 {
 }
@@ -132,7 +141,7 @@ where
 // where
 //     T: Integer,
 //     V: PartialEqClone,
-//     I: SortedDisjointMap<'a, T, V>,
+//     I: SortedDisjointMap<'a, T, V, VR>,
 // {
 //     #[allow(clippy::type_complexity)]
 //     iter: KMergeBy<I, fn(&RangeValue<T, V>, &RangeValue<T, V>) -> bool>,
@@ -142,7 +151,7 @@ where
 // where
 //     T: Integer,
 //     V: PartialEqClone,
-//     I: SortedDisjointMap<'a, T, V>,
+//     I: SortedDisjointMap<'a, T, V, VR>,
 // {
 //     /// Creates a new [`KMergeMap`] iterator from zero or more [`SortedDisjointMap`] iterators. See [`KMergeMap`] for more details and examples.
 //     pub fn new<J>(iter: J) -> Self
@@ -159,7 +168,7 @@ where
 // where
 //     T: Integer,
 //     V: PartialEqClone,
-//     I: SortedDisjointMap<'a, T, V>,
+//     I: SortedDisjointMap<'a, T, V, VR>,
 // {
 // }
 
@@ -167,7 +176,7 @@ where
 // where
 //     T: Integer,
 //     V: PartialEqClone,
-//     I: SortedDisjointMap<'a, T, V>,
+//     I: SortedDisjointMap<'a, T, V, VR>,
 // {
 //     type Item = RangeValue<T, V>;
 
@@ -184,6 +193,6 @@ where
 // where
 //     T: Integer,
 //     V: PartialEqClone,
-//     I: SortedDisjointMap<'a, T, V>,
+//     I: SortedDisjointMap<'a, T, V, VR>,
 // {
 // }
