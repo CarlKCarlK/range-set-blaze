@@ -1536,7 +1536,7 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
         let iter = iter.into_iter().map(|(r, v)| {
             let n: RangeValue<T, V, UniqueValue<V>> = RangeValue {
                 range: r.clone(),
-                value: UniqueValue { value: v },
+                value: UniqueValue { value: Some(v) },
                 priority: 0, // cmk00000 Must increment this!!!!
                 phantom: PhantomData,
             };
@@ -1685,7 +1685,7 @@ pub struct UniqueValue<V>
 where
     V: ValueOwned,
 {
-    value: V,
+    value: Option<V>,
 }
 
 impl<V> CloneBorrow<V> for UniqueValue<V>
@@ -1693,11 +1693,15 @@ where
     V: ValueOwned,
 {
     fn clone_borrow(&self) -> Self {
-        todo!()
+        UniqueValue {
+            value: self.value.clone(),
+        }
     }
 
     fn borrow_clone(&self) -> V {
-        todo!()
+        // cmk will panic if None
+        let v = self.value.take().unwrap();
+        v
     }
 }
 
@@ -1706,6 +1710,8 @@ where
     V: ValueOwned,
 {
     fn borrow(&self) -> &V {
-        &self.value
+        // cmk will panic if None
+        self.value.as_ref().unwrap()
+        // &self.value
     }
 }
