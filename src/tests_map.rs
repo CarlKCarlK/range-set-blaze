@@ -29,7 +29,6 @@ type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
 #[test]
 fn map_random_from_iter() {
-    let values = ['a', 'b', 'c'];
     for seed in 0..20 {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
@@ -39,7 +38,7 @@ fn map_random_from_iter() {
         let mut inputs = Vec::<(u8, &char)>::new();
         for _ in 0..500 {
             let key = rng.gen_range(0..=255u8);
-            let value = values.choose(&mut rng).unwrap(); // cmk allow more than references
+            let value = ['a', 'b', 'c'].choose(&mut rng).unwrap(); // cmk allow more than references
 
             // print!("{key}{value} ");
             inputs.push((key, value));
@@ -333,8 +332,6 @@ fn map_repro_206() {
     //     "(97..=97, 101), (98..=98, 99), (100..=100, 101), (106..=106, 98)"
     // );
 }
-
-// cmk00 put this back in
 
 #[test]
 fn map_repro_123() {

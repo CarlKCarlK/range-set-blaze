@@ -665,7 +665,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     //     self.ranges().is_disjoint(other.ranges())
     // }
 
-    // cmk00 might be able to shorten code by combining cases
+    // cmk might be able to shorten code by combining cases
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
