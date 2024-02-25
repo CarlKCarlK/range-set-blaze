@@ -127,7 +127,7 @@ where
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub(crate) struct SortedDisjointWithLenSoFarMap<'a, T, V, VR, I>
 where
-    T: Integer,
+    T: Integer + 'a,
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
     I: SortedDisjointMap<'a, T, V, VR>,
@@ -275,5 +275,72 @@ where
             phantom_data0: PhantomData,
             phantom_data1: PhantomData,
         }
+    }
+}
+
+/// Gives any iterator of cmk implements the [`SortedDisjointMap`] trait without any checking.
+#[doc(hidden)]
+pub struct AssumeSortedDisjointMap<'a, T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+{
+    pub(crate) iter: I,
+}
+
+impl<'a, T: Integer, V: ValueOwned + 'a, VR, I> SortedStartsMap<'a, T, V, VR>
+    for AssumeSortedDisjointMap<'a, T, V, VR, I>
+where
+    VR: CloneBorrow<V> + 'a,
+    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+{
+}
+
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I> SortedDisjointMap<'a, T, V, VR>
+    for AssumeSortedDisjointMap<'a, T, V, VR, I>
+where
+    VR: CloneBorrow<V> + 'a,
+    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+{
+}
+
+impl<'a, T, V, VR, I> AssumeSortedDisjointMap<'a, T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+{
+    pub fn new(iter: I) -> Self {
+        AssumeSortedDisjointMap { iter }
+    }
+}
+
+impl<'a, T, V, VR, I> FusedIterator for AssumeSortedDisjointMap<'a, T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: Iterator<Item = RangeValue<'a, T, V, VR>> + FusedIterator,
+{
+}
+
+impl<'a, T, V, VR, I> Iterator for AssumeSortedDisjointMap<'a, T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+{
+    type Item = RangeValue<'a, T, V, VR>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }

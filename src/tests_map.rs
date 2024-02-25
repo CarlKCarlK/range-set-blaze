@@ -12,6 +12,8 @@ use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 // cmk what if they forget to import this the thing that lets | work?
 
+// cmk must test coverage
+
 #[test]
 fn map_random_from_iter() {
     for seed in 0..20 {
@@ -112,8 +114,8 @@ fn map_random_insert_range() {
         let mut inputs = Vec::new();
 
         for _ in 0..500 {
-            let start = rng.gen_range(0..=255); // cmk000 u8
-            let end = rng.gen_range(start..=255); // cmk000 u8
+            let start = rng.gen_range(0..=255u8);
+            let end = rng.gen_range(start..=255u8);
             let key = start..=end;
             let value = ["aaa", "bbb", "ccc"].choose(&mut rng).unwrap();
             // print!("{key}{value} ");
@@ -458,20 +460,8 @@ fn map_insert_max_u128() {
     println!("a: {a}");
 }
 
-// cmk complement not defined on map
-// #[test]
-// fn complement0() {
-//     syntactic_for! { ty in [i8, u8 , isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
-//         $(
-//         let empty = RangeMapBlaze::<$ty>::new();
-//         let full = !&empty;
-//         println!("empty: {empty} (len {}), full: {full} (len {})", empty.len(), full.len());
-//         )*
-//     }};
-// }
-
 #[test]
-fn repro_bit_or() {
+fn map_repro_bit_or() {
     let a = RangeSetBlaze::from_iter([1u8, 2, 3]);
     let b = RangeSetBlaze::from_iter([2u8, 3, 4]);
 
@@ -489,6 +479,41 @@ fn repro_bit_or() {
     let result = a
         .range_values()
         .union(b.range_values())
+        .into_range_map_blaze();
+    println!("{result}");
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([(1u8, "Hello"), (2u8, "World"), (3, "World"), (4, "World")])
+    );
+
+    let result = a | b;
+    println!("{result}");
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([(1u8, "Hello"), (2u8, "World"), (3, "World"), (4, "World")])
+    );
+}
+
+#[test]
+fn map_repro_bit_and() {
+    let a = RangeSetBlaze::from_iter([1u8, 2, 3]);
+    let b = RangeSetBlaze::from_iter([2u8, 3, 4]);
+
+    let result = a.ranges().intersection(b.ranges());
+    let result = result.into_range_set_blaze();
+    println!("{result}");
+    assert_eq!(result, RangeSetBlaze::from_iter([2, 3]));
+
+    let result = a & b;
+    println!("{result}");
+    assert_eq!(result, RangeSetBlaze::from_iter([2, 3]));
+
+    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+    let b = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
+
+    let result = a
+        .range_values()
+        .intersection(b.range_values())
         .into_range_map_blaze();
     println!("{result}");
     assert_eq!(
@@ -659,348 +684,48 @@ fn map_doctest3() {
 }
 
 // #[test]
-// fn map_doctest4() {
-//     let a = RangeMapBlaze::<i8>::from_iter([1, 2, 3]);
-
-//     let result = !&a;
-//     assert_eq!(result.to_string(), "-128..=0, 4..=127");
-// }
-
-// #[test]
-// fn compare() {
-//     let mut btree_set = BTreeSet::<u128>::new();
-//     btree_set.insert(3);
-//     btree_set.insert(1);
-//     let string = btree_set.iter().join(", ");
-//     println!("{string:#?}");
-//     assert!(string == "1, 3");
-// }
-
-// #[test]
-// fn demo_c1() {
-//     // before_or_equal_exists	1
-//     // equal?	0
-//     // is_included	0
-//     //     INSERT
-//     let mut range_map_blaze = RangeMapBlaze::from_iter([10..=10]);
-//     range_map_blaze.internal_add(12..=12);
-//     assert!(range_map_blaze.to_string() == "10..=10, 12..=12");
-//     assert!(range_map_blaze._len_slow() == range_map_blaze.len());
-// }
-
-// #[test]
-// fn demo_c2() {
-//     // before_or_equal_exists	1
-//     // equal?	0
-//     // is_included	0
-//     //     INSERT
-//     let mut range_map_blaze = RangeMapBlaze::from_iter([10..=10, 13..=13]);
-//     range_map_blaze.internal_add(12..=12);
-//     assert!(range_map_blaze.to_string() == "10..=10, 12..=13");
-//     assert!(range_map_blaze._len_slow() == range_map_blaze.len());
-// }
-
-// #[test]
-// fn demo_f1() {
-//     // before_or_equal_exists	0
-//     //     INSERT, etc
-
-//     let mut range_map_blaze = RangeMapBlaze::from_iter([11..=14, 22..=26]);
-//     range_map_blaze.internal_add(10..=10);
-//     assert!(range_map_blaze.to_string() == "10..=14, 22..=26");
-//     println!(
-//         "demo_1 range_map_blaze = {:?}, _len_slow = {}, len = {}",
-//         range_map_blaze,
-//         range_map_blaze._len_slow(),
-//         range_map_blaze.len()
-//     );
-
-//     assert!(range_map_blaze._len_slow() == range_map_blaze.len());
-// }
-
-// #[test]
-// fn demo_d1() {
-//     // before_or_equal_exists	1
-//     // equal?	1
-//     // is_included	n/a
-//     // fits?	1
-//     //     DONE
-
-//     let mut range_map_blaze = RangeMapBlaze::from_iter([10..=14]);
-//     range_map_blaze.internal_add(10..=10);
-//     assert!(range_map_blaze.to_string() == "10..=14");
-//     assert!(range_map_blaze._len_slow() == range_map_blaze.len());
-// }
-
-// #[test]
-// fn demo_e1() {
-//     // before_or_equal_exists	1
-//     // equal?	1
-//     // is_included	n/a
-//     // fits?	0
-//     // next?    0
-//     //     DONE
-
-//     let mut range_map_blaze = RangeMapBlaze::from_iter([10..=14, 16..=16]);
-//     range_map_blaze.internal_add(10..=19);
-//     assert!(range_map_blaze.to_string() == "10..=19");
-//     assert!(range_map_blaze._len_slow() == range_map_blaze.len());
-// }
-
-// #[test]
-// fn demo_b1() {
-//     // before_or_equal_exists	1
-//     // equal?	0
-//     // is_included	1
-//     // fits?	0
-//     // next?    0
-//     //     DONE
-
-//     let mut range_map_blaze = RangeMapBlaze::from_iter([10..=14]);
-//     range_map_blaze.internal_add(12..=17);
-//     assert!(range_map_blaze.to_string() == "10..=17");
-//     assert!(range_map_blaze._len_slow() == range_map_blaze.len());
-// }
-
-// #[test]
-// fn demo_b2() {
-//     // before_or_equal_exists	1
-//     // equal?	0
-//     // is_included	1
-//     // fits?	0
-//     // next?    1
-//     // delete how many? 1
-//     //     DONE
-
-//     let mut range_map_blaze = RangeMapBlaze::from_iter([10..=14, 16..=16]);
-//     range_map_blaze.internal_add(12..=17);
-//     assert!(range_map_blaze.to_string() == "10..=17");
-//     assert!(range_map_blaze._len_slow() == range_map_blaze.len());
-// }
-
-// #[test]
-// fn demo_b3() {
-//     // before_or_equal_exists	1
-//     // equal?	0
-//     // is_included	1
-//     // fits?	0
-//     // next?    1
-//     // delete how many? 0
-//     //     DONE
-
-//     let mut range_map_blaze = RangeMapBlaze::from_iter([10..=15, 160..=160]);
-//     range_map_blaze.internal_add(12..=17);
-//     assert!(range_map_blaze.to_string() == "10..=17, 160..=160");
-//     assert!(range_map_blaze._len_slow() == range_map_blaze.len());
-// }
-
-// #[test]
-// fn demo_a() {
-//     // before_or_equal_exists	1
-//     // equal?	0
-//     // is_included	1
-//     // fits?	1
-//     //     DONE
-//     let mut range_map_blaze = RangeMapBlaze::from_iter([10..=14]);
-//     range_map_blaze.internal_add(12..=12);
-//     assert!(range_map_blaze.to_string() == "10..=14");
-//     println!(
-//         "demo_a range_map_blaze = {:?}, _len_slow = {}, len = {}",
-//         range_map_blaze,
-//         range_map_blaze._len_slow(),
-//         range_map_blaze.len()
-//     );
-//     assert!(range_map_blaze._len_slow() == range_map_blaze.len());
-// }
-
-// #[test]
-// fn add_in_order() {
-//     let mut range_set = RangeMapBlaze::new();
-//     for i in 0u64..1000 {
-//         range_set.insert(i);
-//     }
-// }
-
-// #[test]
-// fn optimize() {
-//     let end = 8u8;
-//     for a in 0..=end {
-//         for b in 0..=end {
-//             for c in 0..=end {
-//                 for d in 0..=end {
-//                     let restart = (a >= 2 && a - 2 >= d) || (c >= 2 && c - 2 >= b);
-//                     print!("{a}\t{b}\t{c}\t{d}\t");
-//                     if a > b {
-//                         println!("impossible");
-//                     } else if c > d {
-//                         println!("error");
-//                     } else {
-//                         let mut range_map_blaze = RangeMapBlaze::new();
-//                         range_map_blaze.internal_add(a..=b);
-//                         range_map_blaze.internal_add(c..=d);
-//                         if range_map_blaze.ranges_len() == 1 {
-//                             let vec = range_map_blaze.into_iter().collect::<Vec<u8>>();
-//                             println! {"combine\t{}\t{}", vec[0], vec[vec.len()-1]};
-//                             assert!(!restart);
-//                         } else {
-//                             println!("restart");
-//                             assert!(restart);
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
-
-// #[test]
-// fn understand_into_iter() {
-//     let btree_set = BTreeSet::from([1, 2, 3, 4, 5]);
-//     for i in btree_set.iter() {
-//         println!("{i}");
-//     }
-
-//     let s = "abc".to_string();
-//     for c in s.chars() {
-//         println!("{c}");
-//     }
-//     println!("{s:?}");
-//     // println!("{btree_set:?}");
-
-//     // let ri = 1..=5;
-//     // let rii = ri.into_iter();
-//     // let val = rii.next();
-//     // let len = rii.len();
-//     // // for i in ri() {
-//     // //     println!("{i} {}", ri.len());
-//     // // }
-//     // // println!("{ri:?}");
-//     let s = "hello".to_string();
-//     let mut si = s.bytes();
-//     let _val = si.next();
-//     let _len = si.len();
-//     let _len2 = s.len();
-
-//     let arr = [1, 2, 3, 4, 5];
-//     for i in arr.iter() {
-//         println!("{i}");
-//     }
-
-//     for i in arr {
-//         println!("{i}");
-//     }
-
-//     // let rsi = RangeMapBlaze::from_iter(1..=5);
-//     // for i in rsi.iter() {
-//     //     println!("{i}");
-//     // }
-//     // let len = rsi.len();
-// }
-
-// #[derive(Debug, PartialEq)]
-// struct BooleanVector(Vec<bool>);
-
-// impl BitAndAssign for BooleanVector {
-//     // `rhs` is the "right-hand side" of the expression `a &= b`.
-//     fn bitand_assign(&mut self, rhs: Self) {
-//         assert_eq!(self.0.len(), rhs.0.len());
-//         *self = BooleanVector(
-//             self.0
-//                 .iter()
-//                 .zip(rhs.0.iter())
-//                 .map(|(x, y)| *x && *y)
-//                 .collect(),
-//         );
-//     }
-// }
-
-// #[test]
-// fn understand_bitand_assign() {
-//     let mut a = 3u8;
-//     let b = 5u8;
-//     a &= b;
-//     println!("{a}");
-//     println!("{b}");
-
-//     let mut bv = BooleanVector(vec![true, true, false, false]);
-//     let bv2 = BooleanVector(vec![true, false, true, false]);
-//     bv &= bv2;
-//     let expected = BooleanVector(vec![true, false, false, false]);
-//     assert_eq!(bv, expected);
-//     // println!("{bv2:?}");
-// }
-
-// #[test]
-// fn iters() {
-//     let range_map_blaze = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-//     assert!(range_map_blaze.len() == 13 as I32SafeLen);
-//     for i in range_map_blaze.iter() {
-//         println!("{i}");
-//     }
-//     for range in range_map_blaze.ranges() {
-//         println!("{range:?}");
-//     }
-//     let mut rs = range_map_blaze.ranges();
-//     println!("{:?}", rs.next());
-//     println!("{range_map_blaze}");
-//     println!("{:?}", rs.len());
-//     println!("{:?}", rs.next());
-//     for i in range_map_blaze.iter() {
-//         println!("{i}");
-//     }
-//     // range_map_blaze.len();
-
-//     let mut rs = !range_map_blaze.ranges();
-//     println!("{:?}", rs.next());
-//     println!("{range_map_blaze}");
-//     // !!! assert that can't use range_map_blaze again
-// }
-
-// #[test]
 // fn missing_doctest_ops() {
 //     // note that may be borrowed or owned in any combination.
 
 //     // Returns the union of `self` and `rhs` as a new [`RangeMapBlaze`].
-//     let a = RangeMapBlaze::from_iter([1, 2, 3]);
-//     let b = RangeMapBlaze::from_iter([3, 4, 5]);
+//     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+//     let b = RangeMapBlaze::from_iter([(3, "Go"), (4, "Go"), (5, "Go")]);
 
 //     let result = &a | &b;
-//     assert_eq!(result, RangeMapBlaze::from_iter([1, 2, 3, 4, 5]));
+//     assert_eq!(
+//         result,
+//         RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "Go"), (4, "Go"), (5, "Go")])
+//     );
 //     let result = a | &b;
-//     assert_eq!(result, RangeMapBlaze::from_iter([1, 2, 3, 4, 5]));
-
-//     // Returns the complement of `self` as a new [`RangeMapBlaze`].
-//     let a = RangeMapBlaze::<i8>::from_iter([1, 2, 3]);
-
-//     let result = !&a;
-//     assert_eq!(result.to_string(), "-128..=0, 4..=127");
-//     let result = !a;
-//     assert_eq!(result.to_string(), "-128..=0, 4..=127");
+//     assert_eq!(
+//         result,
+//         RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "Go"), (4, "Go"), (5, "Go")])
+//     );
 
 //     // Returns the intersection of `self` and `rhs` as a new `RangeMapBlaze<T>`.
 
-//     let a = RangeMapBlaze::from_iter([1, 2, 3]);
-//     let b = RangeMapBlaze::from_iter([2, 3, 4]);
+//     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+//     let b = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
 
 //     let result = a & &b;
-//     assert_eq!(result, RangeMapBlaze::from_iter([2, 3]));
-//     let a = RangeMapBlaze::from_iter([1, 2, 3]);
+//     assert_eq!(result, RangeMapBlaze::from_iter([(2, "Go"), (3, "Go")]));
+//     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
 //     let result = a & b;
-//     assert_eq!(result, RangeMapBlaze::from_iter([2, 3]));
+//     assert_eq!(result, RangeMapBlaze::from_iter([(2, "Go"), (3, "Go")]));
 
 //     // Returns the symmetric difference of `self` and `rhs` as a new `RangeMapBlaze<T>`.
-//     let a = RangeMapBlaze::from_iter([1, 2, 3]);
-//     let b = RangeMapBlaze::from_iter([2, 3, 4]);
+//     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+//     let b = RangeMapBlaze::from_iter([(3, "Go"), (4, "Go"), (5, "Go")]);
 
 //     let result = a ^ b;
-//     assert_eq!(result, RangeMapBlaze::from_iter([1, 4]));
+//     assert_eq!(result, RangeMapBlaze::from_iter([(1, "Hello"), (4, "Go")]));
 
 //     // Returns the set difference of `self` and `rhs` as a new `RangeMapBlaze<T>`.
-//     let a = RangeMapBlaze::from_iter([1, 2, 3]);
-//     let b = RangeMapBlaze::from_iter([2, 3, 4]);
+//     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+//     let b = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
 
 //     let result = a - b;
-//     assert_eq!(result, RangeMapBlaze::from_iter([1]));
+//     assert_eq!(result, RangeMapBlaze::from_iter([(1, "Hello")]));
 // }
 
 // #[test]
@@ -1390,7 +1115,7 @@ fn map_doctest3() {
 //     set.insert(2);
 //     assert_eq!(set.first(), Some(1));
 
-//     let set = RangeMapBlaze::from_iter([1, 2, 3]);
+//     let set = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
 //     assert_eq!(set.get(2), Some(2));
 //     assert_eq!(set.get(4), None);
 
@@ -1476,7 +1201,7 @@ fn map_doctest3() {
 //     assert_eq!(set.ranges_insert(5..=6), true);
 //     assert_eq!(set.ranges_insert(3..=4), false);
 //     assert_eq!(set.len(), 5 as I32SafeLen);
-//     let mut set = RangeMapBlaze::from_iter([1, 2, 3]);
+//     let mut set = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
 //     assert_eq!(set.take(2), Some(2));
 //     assert_eq!(set.take(2), None);
 

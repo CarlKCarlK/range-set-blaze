@@ -4,9 +4,12 @@ use core::{
     ops::RangeInclusive,
 };
 
-use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap};
 use crate::{map::CloneBorrow, SortedDisjoint};
 use crate::{map::ValueOwned, Integer};
+use crate::{
+    sorted_disjoint_map::{RangeValue, SortedDisjointMap},
+    SortedStartsMap,
+};
 
 /// Turns one [`SortedDisjoint`] iterator and one [`SortedDisjointMap`] iterator into
 /// the [`SortedDisjointMap`] iterator of their intersection,
@@ -258,3 +261,24 @@ where
 //         SortedDisjointMap::intersection(self, other)
 //     }
 // }
+
+impl<'a, T, V, VR, IS, IM> SortedStartsMap<'a, T, V, VR>
+    for IntersectionIterMap<'a, T, V, VR, IS, IM>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V> + 'a,
+    IS: SortedDisjoint<T>,
+    IM: SortedDisjointMap<'a, T, V, VR> + 'a,
+{
+}
+impl<'a, T, V, VR, IS, IM> SortedDisjointMap<'a, T, V, VR>
+    for IntersectionIterMap<'a, T, V, VR, IS, IM>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V> + 'a,
+    IS: SortedDisjoint<T>,
+    IM: SortedDisjointMap<'a, T, V, VR> + 'a,
+{
+}

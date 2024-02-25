@@ -316,8 +316,10 @@ where
 //     }
 // }
 
-impl<'a, T: Integer, V: ValueOwned + 'a, VR, R, L> ops::BitOr<R> for UnionIterMap<'a, T, V, VR, L>
+impl<'a, T, V, VR, R, L> ops::BitOr<R> for UnionIterMap<'a, T, V, VR, L>
 where
+    T: Integer + 'a,
+    V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
     L: SortedStartsMap<'a, T, V, VR>,
     R: SortedDisjointMap<'a, T, V, VR> + 'a,

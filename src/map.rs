@@ -4,7 +4,7 @@ use crate::range_values::{RangeValuesIter, RangesFromMapIter};
 use crate::sorted_disjoint_map::{DebugToString, RangeValue};
 use crate::sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 use crate::union_iter_map::UnionIterMap;
-use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
+use crate::unsorted_disjoint_map::{AssumeSortedDisjointMap, SortedDisjointWithLenSoFarMap};
 use crate::Integer;
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
@@ -440,6 +440,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         VR: CloneBorrow<V> + 'a,
         I: SortedDisjointMap<'a, T, V, VR>,
         V: 'a,
+        T: 'a,
     {
         let mut iter_with_len = SortedDisjointWithLenSoFarMap::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
@@ -1102,57 +1103,54 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         let same_start = start == start_before;
 
         // === case: new goes beyond before and different values
-        if !before_contains_new && !same_value {
-            if same_start {
-                // Thus, values are different, before contains new, and they start together
+        if !before_contains_new && !same_value && same_start {
+            // Thus, values are different, before contains new, and they start together
 
-                let interesting_before_before = match before_iter.next() {
-                    Some(bb) if bb.1.end + T::one() == start && bb.1.value == value => Some(bb),
-                    _ => None,
-                };
+            let interesting_before_before = match before_iter.next() {
+                Some(bb) if bb.1.end + T::one() == start && bb.1.value == value => Some(bb),
+                _ => None,
+            };
 
-                // === case: values are different, new extends beyond before, and they start together and an interesting before-before
-                // an interesting before-before: something before before, touching and with the same value as new
-                if let Some(bb) = interesting_before_before {
-                    debug_assert!(!before_contains_new && !same_value && same_start);
+            // === case: values are different, new extends beyond before, and they start together and an interesting before-before
+            // an interesting before-before: something before before, touching and with the same value as new
+            if let Some(bb) = interesting_before_before {
+                debug_assert!(!before_contains_new && !same_value && same_start);
 
-                    // AABBBB
-                    //   aaaaaaa
-                    // AAAAAAAAA
-                    self.len += T::safe_len(&(bb.1.end + T::one()..=end));
-                    let bb_start = *bb.0;
-                    debug_assert!(bb_start <= end); // real assert
-                    bb.1.end = end;
-                    self.delete_extra(&(bb_start..=end));
-                    return;
-                }
-
-                // === case: values are different, they start and end together and no interesting before-before
-                {
-                    debug_assert!(!same_value && same_start && interesting_before_before.is_none());
-
-                    // ^BBBB
-                    //  aaaaaaa
-                    // ^AAAAAAA
-                    debug_assert!(end_before < end); // real assert
-                    self.len += T::safe_len(&(end_before + T::one()..=end));
-                    end_value_before.end = end;
-                    end_value_before.value = value;
-                    self.delete_extra(&range);
-                    return;
-                }
-            } else {
-                // different value, so must trim the before and then insert the new
-                // BBB
-                //  aaaa...
-                if end_before >= start {
-                    self.len -= T::safe_len(&(start..=end_before));
-                    debug_assert!(start_before <= start - T::one()); // real assert
-                    end_value_before.end = start - T::one(); // cmk overflow danger?
-                }
-                self.internal_add2(&range, value);
+                // AABBBB
+                //   aaaaaaa
+                // AAAAAAAAA
+                self.len += T::safe_len(&(bb.1.end + T::one()..=end));
+                let bb_start = *bb.0;
+                debug_assert!(bb_start <= end); // real assert
+                bb.1.end = end;
+                self.delete_extra(&(bb_start..=end));
                 return;
             }
+
+            // === case: values are different, they start together but new ends later and no interesting before-before
+            debug_assert!(!same_value && same_start && interesting_before_before.is_none());
+
+            // ^BBBB
+            //  aaaaaaa
+            // ^AAAAAAA
+            debug_assert!(end_before < end); // real assert
+            self.len += T::safe_len(&(end_before + T::one()..=end));
+            end_value_before.end = end;
+            end_value_before.value = value;
+            self.delete_extra(&range);
+            return;
+        }
+        if !before_contains_new && !same_value && !same_start {
+            // different value, so must trim the before and then insert the new
+            // BBB
+            //  aaaa...
+            if end_before >= start {
+                self.len -= T::safe_len(&(start..=end_before));
+                debug_assert!(start_before <= start - T::one()); // real assert
+                end_value_before.end = start - T::one(); // cmk overflow danger?
+            }
+            self.internal_add2(&range, value);
+            return;
         }
 
         // Thus, the values are different and before contains new
@@ -1431,11 +1429,30 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     }
 
     /// cmk
-    pub fn ranges(&self) -> RangesFromMapIter<T, V> {
-        RangesFromMapIter {
-            iter: self.btree_map.iter(),
+    pub fn ranges(&self) -> i32
+//  AssumeSortedStartsMap<
+    //     '_,
+    //     T,
+    //     V,
+    //     &V,
+    //     RangesFromMapIter<T, V, &V, btree_map::Iter<T, EndValue<T, V>>>,
+    // >
+    {
+        let iter = self.btree_map.iter().map(|(start, end_value)| RangeValue {
+            range: *start..=end_value.end,
+            value: &end_value.value,
+            priority: 0,
+            phantom: PhantomData,
+        });
+        let iter = AssumeSortedDisjointMap::new(iter);
+        let _result = RangesFromMapIter {
+            iter,
             option_ranges: None,
-        }
+            phantom0: PhantomData,
+            phantom1: PhantomData,
+        };
+        // let n = result.next();
+        todo!("cmk")
     }
 
     /// An iterator that moves out the ranges in the [`RangeMapBlaze`],
@@ -1669,13 +1686,13 @@ pub type BitOrMergeMap<'a, T, V, VR, L, R> =
 //     NotIterMap<T, V, BitOrMergeMap<T, V, Tee<L>, Tee<R>>>,
 // >;
 
-impl<'a, T: Integer, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
     SortedStartsMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
 where
     VR: CloneBorrow<V> + 'a,
 {
 }
-impl<'a, T: Integer, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
     SortedDisjointMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
 where
     VR: CloneBorrow<V> + 'a,
@@ -1807,3 +1824,69 @@ where
         // &self.value
     }
 }
+
+// cmk000
+// gen_ops_ex!(
+//     <T, V>;
+//     types ref RangeMapBlaze<T,V>, ref RangeMapBlaze<T,V> => RangeMapBlaze<T,V>;
+
+//     /// Intersects the contents of two [`RangeMapBlaze`]'s.
+//     ///
+//     /// Either, neither, or both inputs may be borrowed.
+//     ///
+//     /// # Examples
+//     /// ```
+//     /// use range_set_blaze::prelude::*;
+//     ///
+//     /// let a = RangeMapBlaze::from_iter([1..=2, 5..=100]);
+//     /// let b = RangeMapBlaze::from_iter([2..=6]);
+//     /// let result = &a & &b; // Alternatively, 'a & b'.
+//     /// assert_eq!(result.to_string(), "2..=2, 5..=6");
+//     /// ```
+//     // cmk000
+//     // for & call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
+//     //     (a.range_values() & b.range_values()).into_range_map_blaze()
+//     // };
+
+//     /// Symmetric difference the contents of two [`RangeMapBlaze`]'s.
+//     ///
+//     /// Either, neither, or both inputs may be borrowed.
+//     ///
+//     /// # Examples
+//     /// ```
+//     /// use range_set_blaze::prelude::*;
+//     ///
+//     /// let a = RangeMapBlaze::from_iter([1..=2, 5..=100]);
+//     /// let b = RangeMapBlaze::from_iter([2..=6]);
+//     /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
+//     /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
+//     /// ```
+//     // cmk
+//     // for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
+//     //     // We optimize this by using ranges() twice per input, rather than tee()
+//     //     let lhs0 = a.range_values();
+//     //     let lhs1 = a.range_values();
+//     //     let rhs0 = b.range_values();
+//     //     let rhs1 = b.range_values();
+//     //     ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_map_blaze()
+//     // };
+//     /// Difference the contents of two [`RangeSetBlaze`]'s.
+//     ///
+//     /// Either, neither, or both inputs may be borrowed.
+//     ///
+//     /// # Examples
+//     /// ```
+//     /// use range_set_blaze::prelude::*;
+//     ///
+//     /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+//     /// let b = RangeSetBlaze::from_iter([2..=6]);
+//     /// let result = &a - &b; // Alternatively, 'a - b'.
+//     /// assert_eq!(result.to_string(), "1..=1, 7..=100");
+//     /// ```
+//     // cmk
+//     // for - call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
+//     //     (a.range_values() - b.range_values()).into_range_map_blaze()
+//     // };
+//     // cmk000
+//     where T: Integer, V: ValueOwned
+// );

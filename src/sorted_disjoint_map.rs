@@ -11,7 +11,9 @@ use core::fmt;
 
 use core::ops::RangeInclusive;
 
+use crate::intersection_iter_map::IntersectionIterMap;
 use crate::map::CloneBorrow;
+use crate::range_values::RangesFromMapIter;
 use crate::{
     map::{BitOrMergeMap, ValueOwned},
     merge_map::MergeMap,
@@ -245,7 +247,7 @@ where
 ///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
 /// );
 /// ```
-pub trait SortedDisjointMap<'a, T: Integer, V: ValueOwned + 'a, VR>:
+pub trait SortedDisjointMap<'a, T: Integer + 'a, V: ValueOwned + 'a, VR>:
     SortedStartsMap<'a, T, V, VR>
 where
     VR: CloneBorrow<V> + 'a,
@@ -302,16 +304,25 @@ where
     /// let intersection = a & b;
     /// assert_eq!(intersection.to_string(), "2..=2");
     /// ```
-    // cmk
-    // #[inline]
-    // fn intersection<R>(self, other: R) -> BitAndMergeMap<T, V, Self, R::IntoIter>
-    // where
-    //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
-    //     Self: Sized,
-    // {
-    //     !(self.complement() | other.into_iter().complement())
-    // }
+    #[inline]
+    fn intersection<R>(self, other: R) -> u32
+    // IntersectionIterMap<'a, T, V, VR, RangesFromMapIter<T, V>, R>
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
+        <R as IntoIterator>::IntoIter: 'a,
+        Self: Sized,
+    {
+        let sorted_disjoint = RangesFromMapIter {
+            iter: self,
+            option_ranges: None,
+            phantom0: PhantomData,
+            phantom1: PhantomData,
+        };
+        let _result = IntersectionIterMap::new(sorted_disjoint, other.into_iter());
+
+        todo!();
+    }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
     ///
@@ -725,8 +736,10 @@ where
 //     }
 // }
 
-// impl<T: Integer, R, L> ops::BitAnd<R> for CheckSortedDisjointMap<T, L>
+// impl<'a, T: Integer, V, VR, R, L> ops::BitAnd<R> for CheckSortedDisjointMap<T, V, VR, L>
 // where
+//     V: ValueOwned + 'a,
+//     VR: CloneBorrow<V> + 'a,
 //     L: Iterator<Item = RangeInclusive<T, V>>,
 //     R: SortedDisjointMap<'a, T, V, VR>,
 // {
@@ -773,7 +786,7 @@ use std::fmt::Debug;
 
 impl<'a, T, V, VR, M> DebugToString<'a, T, V, VR> for M
 where
-    T: Integer + Debug,
+    T: Integer + Debug + 'a,
     V: ValueOwned + Debug + 'a,
     VR: CloneBorrow<V> + 'a,
     M: SortedDisjointMap<'a, T, V, VR> + Sized,

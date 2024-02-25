@@ -37,6 +37,7 @@ mod ranges;
 #[cfg(feature = "rog-experimental")]
 mod rog;
 mod sorted_disjoint;
+use gen_ops::gen_ops_ex;
 mod sorted_disjoint_map;
 mod tests;
 mod tests_map;
@@ -56,7 +57,6 @@ use core::{
     str::FromStr,
 };
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
-use gen_ops::gen_ops_ex;
 use itertools::Tee;
 pub use merge::{KMerge, Merge};
 pub use merge_map::MergeMap; // cmk KMergeMap

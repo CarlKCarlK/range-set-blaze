@@ -36,7 +36,7 @@ use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap}
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MergeMap<'a, T, V, VR, L, R>
 where
-    T: Integer,
+    T: Integer + 'a,
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
     L: SortedDisjointMap<'a, T, V, VR>,

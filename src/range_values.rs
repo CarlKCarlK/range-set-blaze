@@ -1,4 +1,8 @@
-use crate::{map::BitOrMergeMap, sorted_disjoint_map::RangeValue, Integer};
+use crate::{
+    map::{BitOrMergeMap, CloneBorrow},
+    sorted_disjoint_map::RangeValue,
+    Integer,
+};
 use alloc::{collections::btree_map, rc::Rc};
 use core::{
     iter::FusedIterator,
@@ -140,32 +144,62 @@ impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<'a, T,
 /// cmk
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct RangesFromMapIter<'a, T: Integer, V: ValueOwned> {
-    pub(crate) iter: btree_map::Iter<'a, T, EndValue<T, V>>,
+pub struct RangesFromMapIter<'a, T, V, VR, I>
+where
+    T: Integer + 'a,
+    V: ValueOwned,
+    VR: CloneBorrow<V> + 'a,
+    I: SortedDisjointMap<'a, T, V, VR>,
+{
+    pub(crate) iter: I,
     pub(crate) option_ranges: Option<RangeInclusive<T>>,
+    pub(crate) phantom0: PhantomData<&'a V>,
+    pub(crate) phantom1: PhantomData<VR>,
 }
-
 // RangesFromMapIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
-impl<'a, T: Integer, V: ValueOwned> crate::SortedStarts<T> for RangesFromMapIter<'a, T, V> {}
-impl<'a, T: Integer, V: ValueOwned> crate::SortedDisjoint<T> for RangesFromMapIter<'a, T, V> {}
-
-impl<'a, T: Integer, V: ValueOwned> FusedIterator for RangesFromMapIter<'a, T, V> {}
-
-// Range's iterator is just the inside BTreeMap iterator as values
-impl<'a, T, V> Iterator for RangesFromMapIter<'a, T, V>
+impl<'a, T, V, VR, I> crate::SortedStarts<T> for RangesFromMapIter<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: SortedDisjointMap<'a, T, V, VR>,
+{
+}
+impl<'a, T, V, VR, I> crate::SortedDisjoint<T> for RangesFromMapIter<'a, T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: SortedDisjointMap<'a, T, V, VR>,
+{
+}
+
+impl<'a, T, V, VR, I> FusedIterator for RangesFromMapIter<'a, T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: SortedDisjointMap<'a, T, V, VR>,
+{
+}
+
+// Range's iterator is just the inside BTreeMap iterator as values
+impl<'a, T, V, VR, I> Iterator for RangesFromMapIter<'a, T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: SortedDisjointMap<'a, T, V, VR>,
 {
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             // If no next value, return whatever is current (could be None)
-            let Some((next_start, next_end_value)) = self.iter.next() else {
+            let Some(next_range_value) = self.iter.next() else {
                 return self.option_ranges.take();
             };
-            let (next_start, next_end) = (*next_start, next_end_value.end);
+            let (next_start, next_end) = next_range_value.range.into_inner();
 
             // If no current value, set current to next and loop
             let Some(current_range) = self.option_ranges.take() else {
@@ -281,15 +315,15 @@ where
 //     }
 // }
 
-// impl<T: Integer, V: ValueOwned, I> ops::BitAnd<I> for RangeValuesIter<'_, T, V, VR>
-// where
-//     I: SortedDisjointMap<'a, T, V, VR>,
+// cmk00
+// impl<'a, T: Integer, V: ValueOwned> ops::BitAnd<RangeValuesIter<'a, T, V>>
+//     for RangeValuesIter<'a, T, V>
 // {
-//     type Output = BitAndMerge<T, Self, I>;
+//     type Output = IntersectionIterMap<'a, T, V, &V, Self, I>;
 
 //     #[allow(clippy::suspicious_arithmetic_impl)]
 //     fn bitand(self, other: I) -> Self::Output {
-//         SortedDisjoint::intersection(self, other)
+//         SortedDisjointMap::intersection(self, other)
 //     }
 // }
 
@@ -297,7 +331,7 @@ where
 // where
 //     I: SortedDisjointMap<'a, T, V, VR>,
 // {
-//     type Output = BitAndMerge<T, Self, I>;
+//     type Output = IntersectionIterMap<T, V, VR, Self, I>;
 
 //     #[allow(clippy::suspicious_arithmetic_impl)]
 //     fn bitand(self, other: I) -> Self::Output {
