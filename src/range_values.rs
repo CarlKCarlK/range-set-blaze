@@ -23,6 +23,7 @@ use crate::{
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct RangeValuesIter<'a, T: Integer, V: ValueOwned> {
     pub(crate) iter: btree_map::Iter<'a, T, EndValue<T, V>>,
+    pub(crate) priority: usize,
 }
 
 impl<'a, T: Integer, V: ValueOwned> AsRef<RangeValuesIter<'a, T, V>> for RangeValuesIter<'a, T, V> {
@@ -60,7 +61,7 @@ where
         self.iter.next().map(|(start, end_value)| RangeValue {
             range: *start..=end_value.end,
             value: &end_value.value,
-            priority: 0, // cmk don't use RangeValue here
+            priority: self.priority, // cmk??? don't use RangeValue here
             phantom: PhantomData,
         })
     }

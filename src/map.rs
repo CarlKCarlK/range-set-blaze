@@ -704,6 +704,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         } else if end_new_same_val > end {
             // last item is the same as the new and extends beyond the new
             self.len += T::safe_len(&(end..=end_new - T::one()));
+            debug_assert!(*start_after <= end_new);
             end_value_after.end = end_new;
             for start in delete_list {
                 self.btree_map.remove(&start);
@@ -719,6 +720,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
                 .remove(&delete_list[delete_list.len() - 1])
                 .unwrap(); // there will always be a last
             let last_end = last.end;
+            debug_assert!(end + T::one() <= last.end); // real assert
             self.btree_map.insert(end + T::one(), last);
             self.len += T::safe_len(&(end + T::one()..=last_end));
         }
@@ -1089,6 +1091,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             // AAA
             //  aaaa...
             self.len += T::safe_len(&(end_before..=end - T::one()));
+            debug_assert!(start_before <= end); // real assert
             end_value_before.end = end;
             self.delete_extra(&(start_before..=end));
             return;
@@ -1096,23 +1099,65 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
 
         // Thus, the values are different
 
+        let same_start = start == start_before;
+
         // === case: new goes beyond before and different values
         if !before_contains_new && !same_value {
-            // different value, so must trim the before and then insert the new
-            // BBB
-            //  aaaa...
-            if end_before >= start {
-                self.len -= T::safe_len(&(end_before + T::one()..=start - T::one()));
-                end_value_before.end = start - T::one(); // cmk overflow danger?
+            if same_start {
+                // Thus, values are different, before contains new, and they start together
+
+                let interesting_before_before = match before_iter.next() {
+                    Some(bb) if bb.1.end + T::one() == start && bb.1.value == value => Some(bb),
+                    _ => None,
+                };
+
+                // === case: values are different, new extends beyond before, and they start together and an interesting before-before
+                // an interesting before-before: something before before, touching and with the same value as new
+                if let Some(bb) = interesting_before_before {
+                    debug_assert!(!before_contains_new && !same_value && same_start);
+
+                    // AABBBB
+                    //   aaaaaaa
+                    // AAAAAAAAA
+                    self.len += T::safe_len(&(bb.1.end + T::one()..=end));
+                    let bb_start = *bb.0;
+                    debug_assert!(bb_start <= end); // real assert
+                    bb.1.end = end;
+                    self.delete_extra(&(bb_start..=end));
+                    return;
+                }
+
+                // === case: values are different, they start and end together and no interesting before-before
+                {
+                    debug_assert!(!same_value && same_start && interesting_before_before.is_none());
+
+                    // ^BBBB
+                    //  aaaaaaa
+                    // ^AAAAAAA
+                    debug_assert!(end_before < end); // real assert
+                    self.len += T::safe_len(&(end_before + T::one()..=end));
+                    end_value_before.end = end;
+                    end_value_before.value = value;
+                    self.delete_extra(&range);
+                    return;
+                }
+            } else {
+                // different value, so must trim the before and then insert the new
+                // BBB
+                //  aaaa...
+                if end_before >= start {
+                    self.len -= T::safe_len(&(start..=end_before));
+                    debug_assert!(start_before <= start - T::one()); // real assert
+                    end_value_before.end = start - T::one(); // cmk overflow danger?
+                }
+                self.internal_add2(&range, value);
+                return;
             }
-            self.internal_add2(&range, value);
-            return;
         }
 
         // Thus, the values are different and before contains new
         debug_assert!(before_contains_new && !same_value);
 
-        let same_start = start == start_before;
         let same_end = end == end_before;
 
         // === case: values are different and new is surrounded by before
@@ -1125,9 +1170,12 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             //   aaa
             // BBAAAB
             //  so trim the before and then insert two
+            debug_assert!(start_before <= start - T::one()); // real assert
             end_value_before.end = start - T::one();
             let before_value = end_value_before.value.clone();
+            debug_assert!(start <= end); // real assert
             self.btree_map.insert(start, EndValue { end, value });
+            debug_assert!(end + T::one() <= end_before); // real assert
             self.btree_map.insert(
                 end + T::one(),
                 EndValue {
@@ -1148,7 +1196,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             //   aaa
             // BBAAA???
             //  so trim the before and then insert the new.
+            debug_assert!(start_before <= start - T::one()); // real assert
             end_value_before.end = start - T::one();
+            debug_assert!(start <= end); // real assert
             self.btree_map.insert(start, EndValue { end, value });
             self.delete_extra(&(start..=end));
             return;
@@ -1170,8 +1220,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             //   aaaa
             // AAAAAA???
             self.len += T::safe_len(&(bb.1.end + T::one()..=end));
-            bb.1.end = end;
             let bb_start = *bb.0;
+            debug_assert!(bb_start <= end); // real assert
+            bb.1.end = end;
             self.delete_extra(&(bb_start..=end));
             return;
         }
@@ -1201,7 +1252,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             //  aaa
             // ^AAAB
             let value_before = std::mem::replace(&mut end_value_before.value, value);
+            debug_assert!(start_before <= end); // real assert
             end_value_before.end = end;
+            debug_assert!(end + T::one() <= end_before); // real assert
             self.btree_map.insert(
                 end + T::one(),
                 EndValue {
@@ -1215,8 +1268,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>, value: V) {
         let (start, end) = internal_range.clone().into_inner();
         let end_value = EndValue { end, value };
+        debug_assert!(start <= end_value.end); // real assert
         let was_there = self.btree_map.insert(start, end_value);
-        debug_assert!(was_there.is_none()); // real assert
+        debug_assert!(was_there.is_none()); // no range with the same start should be there
         self.delete_extra(internal_range);
         self.len += T::safe_len(internal_range);
     }
@@ -1295,6 +1349,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
                 let start = start + T::one();
                 self.len += T::safe_len(&(start..=end_value.end));
                 let value = end_value.value.clone();
+                debug_assert!(start <= end_value.end); // real assert
                 self.btree_map.insert(start, end_value);
                 Some((start, value))
             } else {
@@ -1371,6 +1426,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
         RangeValuesIter {
             iter: self.btree_map.iter(),
+            priority: 0,
         }
     }
 
@@ -1710,7 +1766,11 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor(self, other: &RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
-        (self.range_values() | other.range_values()).into_range_map_blaze()
+        let mut left = self.range_values();
+        left.priority = 0;
+        let mut right = other.range_values();
+        right.priority = 1;
+        (left | right).into_range_map_blaze()
     }
 }
 

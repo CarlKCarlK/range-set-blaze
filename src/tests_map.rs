@@ -40,6 +40,37 @@ fn map_random_from_iter() {
 }
 
 #[test]
+fn map_random_from_iter_range() {
+    for seed in 0..20 {
+        println!("seed: {seed}");
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        let mut btree_map = BTreeMap::new();
+
+        let mut inputs = Vec::new();
+        for _ in 0..500 {
+            let start = rng.gen_range(0..=255u8);
+            let end = rng.gen_range(start..=255u8);
+            let key = start..=end;
+            let value = ['a', 'b', 'c'].choose(&mut rng).unwrap(); // cmk allow more than references
+
+            // print!("{key}{value} ");
+            inputs.push((key.clone(), value));
+
+            // cmk fix so don't need to clone and can use .iter()
+            let range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(inputs.clone());
+            for k in key.clone() {
+                btree_map.insert(k, value);
+            }
+            if !equal_maps(&range_map_blaze, &btree_map) {
+                let _range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(inputs.clone());
+                panic!();
+            }
+        }
+    }
+}
+
+#[test]
 fn map_random_insert() {
     for seed in 0..20 {
         println!("seed: {seed}");
@@ -65,6 +96,43 @@ fn map_random_insert() {
 
             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
             range_map_blaze.insert(key, *value);
+            assert!(equal_maps(&range_map_blaze, &btree_map));
+        }
+    }
+}
+
+#[test]
+fn map_random_insert_range() {
+    for seed in 0..20 {
+        println!("seed: {seed}");
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        let mut btree_map = BTreeMap::new();
+        let mut range_map_blaze = RangeMapBlaze::new();
+        let mut inputs = Vec::new();
+
+        for _ in 0..500 {
+            let start = rng.gen_range(0..=255); // cmk000 u8
+            let end = rng.gen_range(start..=255); // cmk000 u8
+            let key = start..=end;
+            let value = ["aaa", "bbb", "ccc"].choose(&mut rng).unwrap();
+            // print!("{key}{value} ");
+
+            for k in key.clone() {
+                btree_map.insert(k, value);
+            }
+            range_map_blaze.ranges_insert(key.clone(), *value);
+            if equal_maps(&range_map_blaze, &btree_map) {
+                inputs.push((key.clone(), value));
+                continue;
+            }
+
+            // if range_map_blaze and btree_map are not equal, then we have a bug, so repro it:
+
+            let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+            println!("{range_map_blaze}");
+            println!("About to insert {}..={} -> {value}", key.start(), key.end());
+            range_map_blaze.ranges_insert(key.clone(), *value);
             assert!(equal_maps(&range_map_blaze, &btree_map));
         }
     }
@@ -97,6 +165,40 @@ fn map_random_ranges() {
 
             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
             range_map_blaze.insert(key, *value);
+            assert!(range_set_blaze.ranges().eq(range_map_blaze.ranges()));
+        }
+    }
+}
+
+#[test]
+fn map_random_ranges_ranges() {
+    let values = ['a', 'b', 'c'];
+    for seed in 0..20 {
+        println!("seed: {seed}");
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        let mut range_set_blaze = RangeSetBlaze::new();
+        let mut range_map_blaze = RangeMapBlaze::new();
+        let mut inputs = Vec::new();
+
+        for _ in 0..500 {
+            let start = rng.gen_range(0..=255u8);
+            let end = rng.gen_range(start..=255u8);
+            let key = start..=end;
+            let value = values.choose(&mut rng).unwrap();
+            // print!("{key}{value} ");
+
+            range_set_blaze.ranges_insert(key.clone());
+            range_map_blaze.ranges_insert(key.clone(), *value);
+            if range_set_blaze.ranges().eq(range_map_blaze.ranges()) {
+                inputs.push((key.clone(), value));
+                continue;
+            }
+
+            // if range_map_blaze and btree_map are not equal, then we have a bug, so repro it:
+
+            let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+            range_map_blaze.ranges_insert(key.clone(), *value);
             assert!(range_set_blaze.ranges().eq(range_map_blaze.ranges()));
         }
     }
