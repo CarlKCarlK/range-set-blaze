@@ -7,6 +7,7 @@ use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, UnsortedDisjointMap};
 use alloc::collections::btree_map::{self, Range};
+use alloc::rc::Rc;
 use core::fmt::Display;
 use core::marker::PhantomData;
 use itertools::Itertools;
@@ -174,11 +175,10 @@ fn map_random_intersection() {
 
 #[test]
 fn map_repro_insert_1() {
-    let values = ['a', 'b', 'c', 'd', 'e'];
     let mut range_map_blaze = RangeMapBlaze::new();
-    range_map_blaze.insert(123, values[0]);
-    range_map_blaze.insert(123, values[1]);
-    assert_eq!(range_map_blaze.to_string(), "(123..=123, 'b')");
+    range_map_blaze.insert(123, "Hello");
+    range_map_blaze.insert(123, "World");
+    assert_eq!(range_map_blaze.to_string(), r#"(123..=123, "World")"#);
 }
 
 fn equal_maps<T: Integer + std::iter::Step, V: ValueOwned + fmt::Debug + std::fmt::Display>(
@@ -336,12 +336,10 @@ fn map_repro_206() {
 
 #[test]
 fn map_repro_123() {
-    let s1 = 'a';
-    let s2 = 'b';
-    let input = [(123, &s1), (123, &s2)];
+    let input = [(123, 'a'), (123, 'b')];
 
     let iter = input.into_iter();
-    let iter = iter.map(|(x, value)| (x..=x, value));
+    let iter = iter.map(|(x, value)| (x..=x, &value));
     let iter = iter.map(|(range, value)| RangeValue {
         range,
         value,
@@ -357,7 +355,7 @@ fn map_repro_123() {
     );
 
     let iter = input.into_iter();
-    let iter = iter.map(|(x, value)| (x..=x, value));
+    let iter = iter.map(|(x, value)| (x..=x, &value));
     let iter = iter.map(|(range, value)| RangeValue {
         range,
         value,
@@ -380,7 +378,7 @@ fn map_repro_123() {
     );
 
     let iter = input.into_iter();
-    let iter = iter.map(|(x, value)| (x..=x, value));
+    let iter = iter.map(|(x, value)| (x..=x, &value));
     let iter = iter.map(|(range, value)| RangeValue {
         range,
         value,
@@ -409,9 +407,7 @@ fn map_repro_123() {
 
 #[test]
 fn map_insert_255u8() {
-    let s1 = "Hello".to_string();
-    let s2 = "There".to_string();
-    let range_map_blaze = RangeMapBlaze::<u8, String>::from_iter([(255, &s1), (25, &s2)]);
+    let range_map_blaze = RangeMapBlaze::<u8, String>::from_iter([(255, "Hello"), (25, "There")]);
     assert_eq!(
         range_map_blaze.to_string(),
         r#"(25..=25, "There"), (255..=255, "Hello")"#

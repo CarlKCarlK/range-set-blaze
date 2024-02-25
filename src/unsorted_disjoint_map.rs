@@ -187,7 +187,7 @@ where
             self.len += T::safe_len(&range_value.range);
             let end_value = EndValue {
                 end,
-                value: range_value.value.borrow().clone(),
+                value: range_value.value.borrow_clone(),
             };
             Some((start, end_value))
         } else {

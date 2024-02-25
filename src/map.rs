@@ -1,7 +1,7 @@
 use crate::merge_map::MergeMap;
 use crate::range_values::{RangeValuesIter, RangesFromMapIter};
 // use crate::range_values::RangeValuesIter;
-use crate::sorted_disjoint_map::DebugToString;
+use crate::sorted_disjoint_map::{DebugToString, RangeValue};
 use crate::sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
@@ -11,6 +11,7 @@ use alloc::rc::Rc;
 use alloc::sync::Arc;
 use core::borrow::Borrow;
 use core::fmt;
+use core::marker::PhantomData;
 use core::ops::BitOr;
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use num_traits::Zero;
@@ -24,27 +25,31 @@ pub trait ValueOwned: PartialEq + Clone {}
 
 impl<T> ValueOwned for T where T: PartialEq + Clone {}
 
-pub trait CloneBorrow<V: ?Sized>: Borrow<V> {
+pub trait CloneBorrow<V: ?Sized + ValueOwned>: Borrow<V> {
     fn clone_borrow(&self) -> Self;
+    fn borrow_clone(&self) -> V {
+        self.borrow().clone()
+    }
 }
 
-impl<V: ?Sized> CloneBorrow<V> for &V {
+impl<V: ?Sized + ValueOwned> CloneBorrow<V> for &V {
     fn clone_borrow(&self) -> Self {
         self
     }
 }
 
-impl<V> CloneBorrow<V> for Rc<V> {
+impl<V: ?Sized + ValueOwned> CloneBorrow<V> for Rc<V> {
     fn clone_borrow(&self) -> Self {
         Rc::clone(self)
     }
 }
 
-impl<V> CloneBorrow<V> for Arc<V> {
+impl<V: ?Sized + ValueOwned> CloneBorrow<V> for Arc<V> {
     fn clone_borrow(&self) -> Self {
         Arc::clone(self)
     }
 }
+
 #[derive(Clone, Hash, Default, PartialEq)]
 pub(crate) struct EndValue<T: Integer, V: ValueOwned>
 where
@@ -1507,33 +1512,41 @@ where
     }
 }
 
-// impl<'a, T: Integer + 'a, V: PartialEqClone> FromIterator<&'a (RangeInclusive<T>, V)>
-//     for RangeMapBlaze<T, V>
-// {
-//     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
-//     /// Overlapping, out-of-order, and empty ranges are fine.
-//     ///
-//     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use range_set_blaze::RangeMapBlaze;
-//     ///
-//     /// #[allow(clippy::reversed_empty_ranges)]
-//     /// let vec_range = vec![1..=2, 2..=2, -10..=-5, 1..=0];
-//     /// let a0 = RangeMapBlaze::from_iter(vec_range.iter());
-//     /// let a1: RangeMapBlaze<i32> = vec_range.iter().collect();
-//     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
-//     /// ```
-//     fn from_iter<I>(iter: I) -> Self
-//     where
-//         I: IntoIterator<Item = &'a (RangeInclusive<T>, V)>,
-//     {
-//         let union_iter_map: UnionIterMap<T, V, _> = iter.into_iter().collect();
-//         RangeMapBlaze::from_sorted_disjoint_map(union_iter_map)
-//     }
-// }
+impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMapBlaze<T, V> {
+    /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
+    /// Overlapping, out-of-order, and empty ranges are fine.
+    ///
+    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// #[allow(clippy::reversed_empty_ranges)]
+    /// let vec_range = vec![1..=2, 2..=2, -10..=-5, 1..=0];
+    /// let a0 = RangeMapBlaze::from_iter(vec_range.iter());
+    /// let a1: RangeMapBlaze<i32> = vec_range.iter().collect();
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// ```
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = (RangeInclusive<T>, V)>,
+    {
+        let iter = iter.into_iter().map(|(r, v)| {
+            let n: RangeValue<T, V, UniqueValue<V>> = RangeValue {
+                range: r.clone(),
+                value: UniqueValue { value: v },
+                priority: 0, // cmk00000 Must increment this!!!!
+                phantom: PhantomData,
+            };
+            n
+        });
+        // let _n: RangeValue<T, V, UniqueValue<V>> = iter.next().unwrap();
+        let union_iter_map = UnionIterMap::<T, V, UniqueValue<V>, _>::from_iter(iter);
+        RangeMapBlaze::from_sorted_disjoint_map(union_iter_map)
+    }
+}
 
 #[doc(hidden)]
 pub type BitOrMergeMap<'a, T, V, VR, L, R> =
@@ -1665,5 +1678,34 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     /// ```
     fn bitor(self, other: &RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
         (self.range_values() | other.range_values()).into_range_map_blaze()
+    }
+}
+
+pub struct UniqueValue<V>
+where
+    V: ValueOwned,
+{
+    value: V,
+}
+
+impl<V> CloneBorrow<V> for UniqueValue<V>
+where
+    V: ValueOwned,
+{
+    fn clone_borrow(&self) -> Self {
+        todo!()
+    }
+
+    fn borrow_clone(&self) -> V {
+        todo!()
+    }
+}
+
+impl<V> Borrow<V> for UniqueValue<V>
+where
+    V: ValueOwned,
+{
+    fn borrow(&self) -> &V {
+        &self.value
     }
 }
