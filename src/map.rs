@@ -10,9 +10,10 @@ use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 use alloc::sync::Arc;
 use core::borrow::Borrow;
+use core::cell::RefCell;
 use core::fmt;
 use core::marker::PhantomData;
-use core::ops::BitOr;
+use core::ops::{BitOr, Deref};
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use num_traits::Zero;
 
@@ -25,9 +26,15 @@ pub trait ValueOwned: PartialEq + Clone {}
 
 impl<T> ValueOwned for T where T: PartialEq + Clone {}
 
-pub trait CloneBorrow<V: ?Sized + ValueOwned>: Borrow<V> {
+pub trait CloneBorrow<V: ?Sized + ValueOwned>: Borrow<V>
+where
+    Self: Sized,
+{
     fn clone_borrow(&self) -> Self;
-    fn borrow_clone(&self) -> V {
+
+    // If you intend to consume `Self`, the method signature should indeed take `self`
+    fn borrow_clone(self) -> V {
+        // Since `self` is consumed, you can do anything with it, including dropping
         self.borrow().clone()
     }
 }
@@ -1698,10 +1705,9 @@ where
         }
     }
 
-    fn borrow_clone(&self) -> V {
+    fn borrow_clone(mut self) -> V {
         // cmk will panic if None
-        let v = self.value.take().unwrap();
-        v
+        self.value.take().unwrap()
     }
 }
 
