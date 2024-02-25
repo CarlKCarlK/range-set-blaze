@@ -10,10 +10,9 @@ use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 use alloc::sync::Arc;
 use core::borrow::Borrow;
-use core::cell::RefCell;
 use core::fmt;
 use core::marker::PhantomData;
-use core::ops::{BitOr, Deref};
+use core::ops::BitOr;
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use num_traits::Zero;
 
@@ -522,13 +521,14 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert!(a.contains(5));
     ///
     /// ```
-    // cmk
-    // pub fn append(&mut self, other: &mut Self) {
-    //     for range in other.ranges() {
-    //         self.internal_add(range);
-    //     }
-    //     other.clear();
-    // }
+    pub fn append(&mut self, other: &mut Self) {
+        for range_values in other.range_values() {
+            let range = range_values.range;
+            let v = range_values.value.borrow_clone();
+            self.internal_add(range, v);
+        }
+        other.clear();
+    }
 
     /// Clears the set, removing all integer elements.
     ///
@@ -630,7 +630,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(set.contains(1), true);
     /// assert_eq!(set.contains(4), false);
     /// ```
-    pub fn contains(&self, key: T) -> bool {
+    pub fn contains_key(&self, key: T) -> bool {
         assert!(
             key <= T::safe_max_value(),
             "value must be <= T::safe_max_value()"

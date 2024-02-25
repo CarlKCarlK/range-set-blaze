@@ -6,26 +6,11 @@ use crate::intersection_iter_map::IntersectionIterMap;
 use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, UnsortedDisjointMap};
-use alloc::collections::btree_map::{self, Range};
-use alloc::rc::Rc;
-use core::fmt::Display;
 use core::marker::PhantomData;
 use itertools::Itertools;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-// cmk what if they forget to import this?
-use std::{
-    collections::{hash_map::DefaultHasher, BTreeSet},
-    hash::Hash,
-    iter::FusedIterator,
-    ops::BitOr,
-    panic::{RefUnwindSafe, UnwindSafe},
-};
-use syntactic_for::syntactic_for;
-use tests_common::{How, MemorylessIter, MemorylessRange};
-// use thousands::Separable;
-use core::ops::BitAndAssign;
-type I32SafeLen = <i32 as crate::Integer>::SafeLen;
+// cmk what if they forget to import this the thing that lets | work?
 
 #[test]
 fn map_random_from_iter() {
@@ -35,7 +20,7 @@ fn map_random_from_iter() {
 
         let mut btree_map = BTreeMap::new();
 
-        let mut inputs = Vec::<(u8, &char)>::new();
+        let mut inputs = Vec::new();
         for _ in 0..500 {
             let key = rng.gen_range(0..=255u8);
             let value = ['a', 'b', 'c'].choose(&mut rng).unwrap(); // cmk allow more than references
@@ -47,7 +32,7 @@ fn map_random_from_iter() {
             let range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(inputs.clone());
             btree_map.insert(key, value);
             if !equal_maps(&range_map_blaze, &btree_map) {
-                let range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(inputs.clone());
+                let _range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(inputs.clone());
                 panic!();
             }
         }
@@ -56,18 +41,17 @@ fn map_random_from_iter() {
 
 #[test]
 fn map_random_insert() {
-    let values = ['a', 'b', 'c'];
     for seed in 0..20 {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
 
         let mut btree_map = BTreeMap::new();
         let mut range_map_blaze = RangeMapBlaze::new();
-        let mut inputs = Vec::<(u8, &char)>::new();
+        let mut inputs = Vec::new();
 
         for _ in 0..500 {
             let key = rng.gen_range(0..=255u8);
-            let value = values.choose(&mut rng).unwrap();
+            let value = ["aaa", "bbb", "ccc"].choose(&mut rng).unwrap();
             // print!("{key}{value} ");
 
             btree_map.insert(key, value);
@@ -77,10 +61,10 @@ fn map_random_insert() {
                 continue;
             }
 
+            // if range_map_blaze and btree_map are not equal, then we have a bug, so repro it:
+
             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
-            // will do something wrong
             range_map_blaze.insert(key, *value);
-            // will fail
             assert!(equal_maps(&range_map_blaze, &btree_map));
         }
     }
@@ -109,13 +93,10 @@ fn map_random_ranges() {
                 continue;
             }
 
+            // if range_map_blaze and btree_map are not equal, then we have a bug, so repro it:
+
             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
-            // will do something wrong
             range_map_blaze.insert(key, *value);
-            // println!("A: {range_set_blaze}");
-            // println!("B: {range_map_blaze}");
-            // println!("C: {}", range_map_blaze.ranges().to_string());
-            // will fail
             assert!(range_set_blaze.ranges().eq(range_map_blaze.ranges()));
         }
     }
@@ -218,7 +199,7 @@ where
         previous = Some(range_value);
     }
 
-    let len0: usize = range_map_blaze.len().try_into().unwrap();
+    let len0: usize = range_map_blaze.len().into();
     if len0 != btree_map.len() {
         eprintln!(
             "range_map_blaze.len() = {len0}, btree_map.len() = {}",
@@ -337,70 +318,7 @@ fn map_repro_206() {
 fn map_repro_123() {
     let input = [(123, 'a'), (123, 'b')];
 
-    // let iter = input.into_iter();
-    // let iter = iter.map(|(x, value)| (x..=x, &value));
-    // let iter = iter.map(|(range, value)| RangeValue {
-    //     range,
-    //     value,
-    //     priority: 0,
-    //     phantom: PhantomData,
-    // });
-    // let iter = UnsortedDisjointMap::from(iter.into_iter());
-    // let vs = format!("{:?}", iter.collect::<Vec<_>>());
-    // println!("{vs}");
-    // assert_eq!(
-    //     vs,
-    //     "[RangeValue { range: 123..=123, value: 'a', priority: 0 }, RangeValue { range: 123..=123, value: 'b', priority: 1 }]"
-    // );
-
-    // let iter = input.into_iter();
-    // let iter = iter.map(|(x, value)| (x..=x, &value));
-    // let iter = iter.map(|(range, value)| RangeValue {
-    //     range,
-    //     value,
-    //     priority: 0,
-    //     phantom: PhantomData,
-    // });
-    // let iter = UnsortedDisjointMap::from(iter.into_iter());
-    // let iter = iter
-    //     .into_iter()
-    //     .sorted_by(|a, b| match a.range.start().cmp(&b.range.start()) {
-    //         std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
-    //         other => other,
-    //     });
-    // let iter = AssumeSortedStartsMap { iter };
-    // let vs = format!("{:?}", iter.collect::<Vec<_>>());
-    // println!("{vs}");
-    // assert_eq!(
-    //     vs,
-    //     "[RangeValue { range: 123..=123, value: 'b', priority: 1 }, RangeValue { range: 123..=123, value: 'a', priority: 0 }]"
-    // );
-
-    // let iter = input.into_iter();
-    // let iter = iter.map(|(x, value)| (x..=x, value));
-    // let iter = iter.map(|(range, value)| RangeValue {
-    //     range,
-    //     value,
-    //     priority: 0,
-    //     phantom: PhantomData,
-    // });
-    // let iter = UnsortedDisjointMap::from(iter.into_iter());
-    // let iter = iter
-    //     .into_iter()
-    //     .sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
-    //         std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
-    //         other => other,
-    //     });
-    // let iter = AssumeSortedStartsMap { iter };
-    // let iter = UnionIterMap::new(iter);
-    // let vs = format!("{:?}", iter.collect::<Vec<_>>());
-    // println!("{vs}");
-    // assert_eq!(
-    //     vs,
-    //     "[RangeValue { range: 123..=123, value: 'b', priority: 0 }]"
-    // );
-
-    let range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(input.clone());
+    let range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(input);
     assert_eq!(range_map_blaze.to_string(), "(123..=123, 'b')");
 }
 
@@ -464,10 +382,8 @@ fn repro_bit_or() {
     println!("{result}");
     assert_eq!(result, RangeSetBlaze::from_iter([1u8, 2, 3, 4]));
 
-    let s1 = "Hello".to_string();
-    let s2 = "There".to_string();
-    let a = RangeMapBlaze::from_iter([(1u8, &s1), (2, &s1), (3, &s1)]);
-    let b = RangeMapBlaze::from_iter([(2u8, &s2), (3, &s2), (4, &s2)]);
+    let a = RangeMapBlaze::from_iter([(1u8, "Hello"), (2, "Hello"), (3, "Hello")]);
+    let b = RangeMapBlaze::from_iter([(2u8, "World"), (3, "World"), (4, "World")]);
     let result = a
         .range_values()
         .union(b.range_values())
@@ -475,20 +391,20 @@ fn repro_bit_or() {
     println!("{result}");
     assert_eq!(
         result,
-        RangeMapBlaze::<u8, String>::from_iter([(1u8, &s1), (2u8, &s2), (3, &s2), (4, &s2)])
+        RangeMapBlaze::from_iter([(1u8, "Hello"), (2u8, "World"), (3, "World"), (4, "World")])
     );
 
     let result = a | b;
     println!("{result}");
     assert_eq!(
         result,
-        RangeMapBlaze::<u8, String>::from_iter([(1u8, &s1), (2u8, &s2), (3, &s2), (4, &s2)])
+        RangeMapBlaze::from_iter([(1u8, "Hello"), (2u8, "World"), (3, "World"), (4, "World")])
     );
 }
 
 #[test]
 fn map_step_by_step() {
-    let (s1, s2, s3) = ("a".to_string(), "b".to_string(), "c".to_string());
+    let (s1, s2) = ("a".to_string(), "b".to_string());
     let input = [(1, &s2), (2, &s2), (0, &s1)];
 
     let iter = input.into_iter();
@@ -518,7 +434,7 @@ fn map_step_by_step() {
     let iter = UnsortedDisjointMap::from(iter.into_iter());
     let iter = iter
         .into_iter()
-        .sorted_by(|a, b| match a.range.start().cmp(&b.range.start()) {
+        .sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
             std::cmp::Ordering::Equal => b.priority.cmp(&a.priority),
             other => other,
         });
@@ -598,41 +514,50 @@ fn map_repro2() {
     );
 }
 
+#[test]
+fn map_doctest1() {
+    let a = RangeMapBlaze::<u8, _>::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+    let b = RangeMapBlaze::<u8, _>::from_iter([(3, "Go"), (4, "Go"), (5, "Go")]);
+
+    let result = &a | &b;
+    assert_eq!(
+        result,
+        RangeMapBlaze::<u8, _>::from_iter([
+            (1, "Hello"),
+            (2, "World"),
+            (3, "Go"),
+            (4, "Go"),
+            (5, "Go")
+        ])
+    );
+}
+
+#[test]
+fn map_doctest2() {
+    let set = RangeMapBlaze::<u8, _>::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+    assert_eq!(set.get(1), Some(&"Hello"));
+    assert_eq!(set.get(4), None);
+}
+
+#[test]
+fn map_doctest3() {
+    let mut a = RangeMapBlaze::from_iter([(1..=3, "Hello")]);
+    let mut b = RangeMapBlaze::from_iter([(3..=5, "World")]);
+
+    a.append(&mut b);
+
+    assert_eq!(a.len(), 5usize);
+    assert_eq!(b.len(), 0usize);
+
+    assert_eq!(a.get(1), Some(&"Hello"));
+    assert_eq!(a.get(2), Some(&"Hello"));
+    assert_eq!(a.get(3), Some(&"World"));
+    assert_eq!(a.get(4), Some(&"World"));
+    assert_eq!(a.get(5), Some(&"World"));
+}
+
 // #[test]
-// fn doctest1() {
-//     let a = RangeMapBlaze::<u8>::from_iter([1, 2, 3]);
-//     let b = RangeMapBlaze::<u8>::from_iter([3, 4, 5]);
-
-//     let result = &a | &b;
-//     assert_eq!(result, RangeMapBlaze::<u8>::from_iter([1, 2, 3, 4, 5]));
-// }
-
-// #[test]
-// fn doctest2() {
-//     let set = RangeMapBlaze::<u8>::from_iter([1, 2, 3]);
-//     assert!(set.contains(1));
-//     assert!(!set.contains(4));
-// }
-
-// #[test]
-// fn doctest3() {
-//     let mut a = RangeMapBlaze::from_iter([1..=3]);
-//     let mut b = RangeMapBlaze::from_iter([3..=5]);
-
-//     a.append(&mut b);
-
-//     assert_eq!(a.len(), 5 as I32SafeLen);
-//     assert_eq!(b.len(), 0 as I32SafeLen);
-
-//     assert!(a.contains(1));
-//     assert!(a.contains(2));
-//     assert!(a.contains(3));
-//     assert!(a.contains(4));
-//     assert!(a.contains(5));
-// }
-
-// #[test]
-// fn doctest4() {
+// fn map_doctest4() {
 //     let a = RangeMapBlaze::<i8>::from_iter([1, 2, 3]);
 
 //     let result = !&a;

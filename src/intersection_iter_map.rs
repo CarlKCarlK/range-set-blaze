@@ -1,23 +1,12 @@
 use core::{
     cmp::{max, min},
-    iter::FusedIterator,
     marker::PhantomData,
-    ops::{self, RangeInclusive},
+    ops::RangeInclusive,
 };
 
-use alloc::{borrow::Cow, vec};
-use itertools::Itertools;
-
+use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap};
+use crate::{map::CloneBorrow, SortedDisjoint};
 use crate::{map::ValueOwned, Integer};
-use crate::{
-    map::{BitOrMergeMap, CloneBorrow},
-    unsorted_disjoint_map::AssumeSortedStartsMap,
-    SortedDisjoint,
-};
-use crate::{
-    sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
-    unsorted_disjoint_map::UnsortedDisjointMap,
-};
 
 /// Turns one [`SortedDisjoint`] iterator and one [`SortedDisjointMap`] iterator into
 /// the [`SortedDisjointMap`] iterator of their intersection,
@@ -46,6 +35,7 @@ use crate::{
 /// assert_eq!(intersection.to_string(), "1..=100")
 /// ```
 // cmk #[derive(Clone, Debug)]
+#[allow(dead_code)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct IntersectionIterMap<'a, T, V, VR, IS, IM>
 where
@@ -73,6 +63,7 @@ where
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`IntersectionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`IntersectionIterMap`] for more details and examples.
+    #[allow(dead_code)]
     pub fn new(iter_set: IS, iter_map: IM) -> Self {
         Self {
             iter_set,
