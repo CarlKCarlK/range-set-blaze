@@ -313,6 +313,7 @@ where
     VR: CloneBorrow<V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
+    #[allow(dead_code)]
     pub fn new(iter: I) -> Self {
         AssumeSortedDisjointMap { iter }
     }

@@ -1,10 +1,10 @@
 use crate::merge_map::MergeMap;
-use crate::range_values::{RangeValuesIter, RangesFromMapIter};
+use crate::range_values::{RangeValuesFromBTree, RangeValuesIter, RangesFromMapIter};
 // use crate::range_values::RangeValuesIter;
 use crate::sorted_disjoint_map::{DebugToString, RangeValue};
 use crate::sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 use crate::union_iter_map::UnionIterMap;
-use crate::unsorted_disjoint_map::{AssumeSortedDisjointMap, SortedDisjointWithLenSoFarMap};
+use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
 use crate::Integer;
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
@@ -1429,30 +1429,17 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     }
 
     /// cmk
-    pub fn ranges(&self) -> i32
-//  AssumeSortedStartsMap<
-    //     '_,
-    //     T,
-    //     V,
-    //     &V,
-    //     RangesFromMapIter<T, V, &V, btree_map::Iter<T, EndValue<T, V>>>,
-    // >
-    {
-        let iter = self.btree_map.iter().map(|(start, end_value)| RangeValue {
-            range: *start..=end_value.end,
-            value: &end_value.value,
-            priority: 0,
+    pub fn ranges(&self) -> RangesFromMapIter<T, V, &V, RangeValuesFromBTree<T, V>> {
+        let iter = RangeValuesFromBTree {
+            iter: self.btree_map.iter(),
             phantom: PhantomData,
-        });
-        let iter = AssumeSortedDisjointMap::new(iter);
-        let _result = RangesFromMapIter {
+        };
+        RangesFromMapIter {
             iter,
             option_ranges: None,
             phantom0: PhantomData,
             phantom1: PhantomData,
-        };
-        // let n = result.next();
-        todo!("cmk")
+        }
     }
 
     /// An iterator that moves out the ranges in the [`RangeMapBlaze`],
