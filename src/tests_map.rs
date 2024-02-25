@@ -516,17 +516,11 @@ fn map_repro_bit_and() {
         .intersection(b.range_values())
         .into_range_map_blaze();
     println!("{result}");
-    assert_eq!(
-        result,
-        RangeMapBlaze::from_iter([(1u8, "Hello"), (2u8, "World"), (3, "World"), (4, "World")])
-    );
+    assert_eq!(result, RangeMapBlaze::from_iter([(2..=3, "Go")]));
 
-    let result = a | b;
+    let result = a & b;
     println!("{result}");
-    assert_eq!(
-        result,
-        RangeMapBlaze::from_iter([(1u8, "Hello"), (2u8, "World"), (3, "World"), (4, "World")])
-    );
+    assert_eq!(result, RangeMapBlaze::from_iter([(2..=3, "Go")]));
 }
 
 #[test]

@@ -12,7 +12,7 @@ use core::fmt;
 use core::ops::RangeInclusive;
 
 use crate::intersection_iter_map::IntersectionIterMap;
-use crate::map::CloneBorrow;
+use crate::map::{BitAndRangesMap, CloneBorrow};
 use crate::range_values::RangesFromMapIter;
 use crate::{
     map::{BitOrMergeMap, ValueOwned},
@@ -305,8 +305,7 @@ where
     /// assert_eq!(intersection.to_string(), "2..=2");
     /// ```
     #[inline]
-    fn intersection<R>(self, other: R) -> u32
-    // IntersectionIterMap<'a, T, V, VR, RangesFromMapIter<T, V>, R>
+    fn intersection<R>(self, other: R) -> BitAndRangesMap<'a, T, V, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
@@ -319,9 +318,7 @@ where
             phantom0: PhantomData,
             phantom1: PhantomData,
         };
-        let _result = IntersectionIterMap::new(sorted_disjoint, other.into_iter());
-
-        todo!();
+        IntersectionIterMap::new(sorted_disjoint, other.into_iter())
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
