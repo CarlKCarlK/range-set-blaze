@@ -1540,11 +1540,11 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
     where
         I: IntoIterator<Item = (RangeInclusive<T>, V)>,
     {
-        let iter = iter.into_iter().map(|(r, v)| {
+        let iter = iter.into_iter().enumerate().map(|(i, (r, v))| {
             let n: RangeValue<T, V, UniqueValue<V>> = RangeValue {
                 range: r.clone(),
                 value: UniqueValue { value: Some(v) },
-                priority: 0, // cmk00000 Must increment this!!!!
+                priority: i,
                 phantom: PhantomData,
             };
             n
@@ -1552,6 +1552,32 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
         // let _n: RangeValue<T, V, UniqueValue<V>> = iter.next().unwrap();
         let union_iter_map = UnionIterMap::<T, V, UniqueValue<V>, _>::from_iter(iter);
         RangeMapBlaze::from_sorted_disjoint_map(union_iter_map)
+    }
+}
+
+impl<T: Integer, V: ValueOwned> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
+    /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
+    /// Overlapping, out-of-order, and empty ranges are fine.
+    ///
+    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// #[allow(clippy::reversed_empty_ranges)]
+    /// let vec_range = vec![1..=2, 2..=2, -10..=-5, 1..=0];
+    /// let a0 = RangeMapBlaze::from_iter(vec_range.iter());
+    /// let a1: RangeMapBlaze<i32> = vec_range.iter().collect();
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// ```
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = (T, V)>,
+    {
+        let iter = iter.into_iter().map(|(k, v)| (k..=k, v));
+        RangeMapBlaze::from_iter(iter)
     }
 }
 
