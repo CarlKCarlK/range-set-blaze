@@ -407,7 +407,6 @@ where
     //     let (rhs0, rhs1) = other.into_iter().tee();
     //     lhs0.difference(rhs0).union(rhs1.difference(lhs1))
     // }
-    // cmk000 from RangeMapBlaze we don't need to tee.
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
     /// this method takes ownership of the iterators and consumes them.

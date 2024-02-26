@@ -699,8 +699,8 @@ fn missing_doctest_ops() {
     let result = a - b;
     assert_eq!(result, RangeMapBlaze::from_iter([(1, "Hello")]));
 }
-// cmk00 allow working with Map and Set for intersection and difference
-// cmk00 do multiway operations
+// cmk0 allow working with Map and Set for intersection and difference
+// cmk0 do multiway operations
 
 // #[test]
 // fn multi_op() {

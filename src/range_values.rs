@@ -309,7 +309,7 @@ where
 //     }
 // }
 
-// cmk00
+//
 // impl<'a, T: Integer, V: ValueOwned> ops::BitAnd<RangeValuesIter<'a, T, V>>
 //     for RangeValuesIter<'a, T, V>
 // {
