@@ -176,12 +176,7 @@ where
                 }
             };
 
-            let range_value = RangeValue {
-                range: start..=end,
-                value,
-                priority: 0,
-                phantom: PhantomData,
-            };
+            let range_value = RangeValue::new(start..=end, value, 0);
             return Some(range_value);
         }
     }

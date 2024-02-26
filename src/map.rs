@@ -1603,12 +1603,8 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
         I: IntoIterator<Item = (RangeInclusive<T>, V)>,
     {
         let iter = iter.into_iter().enumerate().map(|(i, (r, v))| {
-            let n: RangeValue<T, V, UniqueValue<V>> = RangeValue {
-                range: r.clone(),
-                value: UniqueValue { value: Some(v) },
-                priority: i,
-                phantom: PhantomData,
-            };
+            let n: RangeValue<T, V, UniqueValue<V>> =
+                RangeValue::new(r.clone(), UniqueValue { value: Some(v) }, i);
             n
         });
         // let _n: RangeValue<T, V, UniqueValue<V>> = iter.next().unwrap();
@@ -1678,12 +1674,15 @@ pub type BitAndRangesMap<'a, T, V, VR, L, R> =
 //     NotIterMap<T, V, BitOrMergeMap<T, V, Tee<L>, Tee<R>>>,
 // >;
 
+// If the inputs have sorted starts, then so does the output.
 impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
     SortedStartsMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
 where
     VR: CloneBorrow<V> + 'a,
 {
 }
+
+// If the inputs have sorted starts, the output is sorted and disjoint.
 impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
     SortedDisjointMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
 where

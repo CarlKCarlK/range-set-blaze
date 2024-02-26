@@ -122,12 +122,11 @@ where
                 // cmk underflow?
                 output_end = min(output_end, next_start - T::one())
             };
-            vec_mid.push(RangeValue {
-                range: *best.range.start()..=output_end,
-                value: best.value.clone_borrow(),
-                priority: best.priority,
-                phantom: PhantomData,
-            });
+            vec_mid.push(RangeValue::new(
+                *best.range.start()..=output_end,
+                best.value.clone_borrow(),
+                best.priority,
+            ));
             // trim the start of the ranges in workspace to output_end+1, remove any that are empty
             // also find the best priority and the new bar_end
             workspace.retain(|range_value| *range_value.range.end() > output_end);
@@ -162,13 +161,11 @@ where
                 previous_index = index_exclusive_end;
                 index_exclusive_end += 1;
             }
-            vec_out.push(RangeValue {
-                range: *vec_mid[index].range.start()
-                    ..=*vec_mid[index_exclusive_end - 1].range.end(),
-                value: vec_mid[index].value.clone_borrow(),
-                priority: 0, // cmk priority should never be exposed or re-used.
-                phantom: PhantomData,
-            });
+            vec_out.push(RangeValue::new(
+                *vec_mid[index].range.start()..=*vec_mid[index_exclusive_end - 1].range.end(),
+                vec_mid[index].value.clone_borrow(),
+                0, // cmk priority should never be exposed or re-used.
+            ));
             index = index_exclusive_end;
         }
 
@@ -226,12 +223,7 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &
     {
         let iter = iter.into_iter();
         let iter = iter.enumerate();
-        let iter = iter.map(|(priority, (range, value))| RangeValue {
-            range,
-            value,
-            priority,
-            phantom: PhantomData,
-        });
+        let iter = iter.map(|(priority, (range, value))| RangeValue::new(range, value, priority));
         let iter: UnionIterMap<'a, T, V, &'a V, SortedRangeInclusiveVec<'a, T, V, &'a V>> =
             UnionIterMap::from_iter(iter);
         iter

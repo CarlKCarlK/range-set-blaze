@@ -62,11 +62,8 @@ where
     type Item = RangeValue<'a, T, V, &'a V>; // Assuming VR is always &'a V for next
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(start, end_value)| RangeValue {
-            range: *start..=end_value.end,
-            value: &end_value.value,
-            priority: self.priority, // cmk??? don't use RangeValue here
-            phantom: PhantomData,
+        self.iter.next().map(|(start, end_value)| {
+            RangeValue::new(*start..=end_value.end, &end_value.value, self.priority)
         })
     }
 
@@ -120,12 +117,11 @@ impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<'a, T,
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(start, end_value)| {
             let range = start..=end_value.end;
-            RangeValue {
+            RangeValue::new(
                 range,
-                value: Rc::new(end_value.value),
-                priority: 0, // cmk don't use RangeValue here
-                phantom: PhantomData,
-            }
+                Rc::new(end_value.value),
+                0, // cmk don't use RangeValue here
+            )
         })
     }
 
@@ -380,11 +376,13 @@ where
     type Item = RangeValue<'a, T, V, &'a V>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(start, end_value)| RangeValue {
-            range: *start..=end_value.end,
-            value: &end_value.value,
-            priority: 0, // cmk don't use RangeValue here
-            phantom: PhantomData,
+        self.iter.next().map(|(start, end_value)| {
+            RangeValue::new(
+                *start..=end_value.end,
+                &end_value.value,
+                0, // cmk don't use RangeValue here
+            )
         })
+        // cmk 'from' converter for the tuple to RangeValue?
     }
 }

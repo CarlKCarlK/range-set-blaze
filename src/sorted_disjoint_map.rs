@@ -29,10 +29,26 @@ where
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
 {
-    pub(crate) range: RangeInclusive<T>,
-    pub(crate) value: VR,
-    pub(crate) priority: usize,
-    pub(crate) phantom: PhantomData<&'a V>,
+    pub range: RangeInclusive<T>,
+    pub value: VR,
+    pub priority: usize,
+    phantom: PhantomData<&'a V>,
+}
+
+impl<'a, T, V, VR> RangeValue<'a, T, V, VR>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+{
+    pub fn new(range: RangeInclusive<T>, value: VR, priority: usize) -> Self {
+        RangeValue {
+            range,
+            value,
+            priority,
+            phantom: PhantomData,
+        }
+    }
 }
 
 impl<'a, T, V, VR> fmt::Debug for RangeValue<'a, T, V, VR>
