@@ -5,8 +5,9 @@ use crate::{
 };
 use alloc::{collections::btree_map, rc::Rc};
 use core::{
-    iter::FusedIterator,
+    iter::{Enumerate, FusedIterator},
     marker::PhantomData,
+    num::NonZeroUsize,
     ops::{self, RangeInclusive},
 };
 
@@ -27,7 +28,7 @@ use crate::{
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct RangeValuesIter<'a, T: Integer, V: ValueOwned> {
     pub(crate) iter: btree_map::Iter<'a, T, EndValue<T, V>>,
-    pub(crate) priority: usize,
+    pub(crate) priority: Option<NonZeroUsize>,
 }
 
 impl<'a, T: Integer, V: ValueOwned> AsRef<RangeValuesIter<'a, T, V>> for RangeValuesIter<'a, T, V> {
@@ -117,11 +118,8 @@ impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<'a, T,
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(start, end_value)| {
             let range = start..=end_value.end;
-            RangeValue::new(
-                range,
-                Rc::new(end_value.value),
-                0, // cmk don't use RangeValue here
-            )
+            // cmk don't use RangeValue here
+            RangeValue::new(range, Rc::new(end_value.value), None)
         })
     }
 
@@ -377,12 +375,68 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(start, end_value)| {
-            RangeValue::new(
-                *start..=end_value.end,
-                &end_value.value,
-                0, // cmk don't use RangeValue here
-            )
+            // cmk don't use RangeValue here
+            RangeValue::new(*start..=end_value.end, &end_value.value, None)
         })
         // cmk 'from' converter for the tuple to RangeValue?
+    }
+}
+
+pub struct NonZeroEnumerate<I>
+where
+    I: Iterator,
+{
+    inner: Enumerate<I>,
+    current_index: NonZeroUsize, // Start from 1
+}
+
+impl<I> Iterator for NonZeroEnumerate<I>
+where
+    I: Iterator,
+{
+    type Item = (NonZeroUsize, I::Item);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let (_, item) = self.inner.next()?;
+        let index = self.current_index;
+
+        // Increment the current index, panic on overflow
+        self.current_index = self
+            .current_index
+            .checked_add(1)
+            .expect_debug_unwrap_release("Overflow when incrementing NonZeroUsize index");
+
+        Some((index, item))
+    }
+}
+
+pub(crate) trait NonZeroEnumerateExt: Iterator + Sized {
+    fn non_zero_enumerate(self) -> NonZeroEnumerate<Self> {
+        NonZeroEnumerate {
+            inner: self.enumerate(),
+            current_index: NON_ZERO_ONE,
+        }
+    }
+}
+
+impl<I: Iterator> NonZeroEnumerateExt for I {}
+
+pub(crate) const NON_ZERO_ONE: NonZeroUsize = NonZeroUsize::new(1).unwrap();
+pub(crate) const NON_ZERO_TWO: NonZeroUsize = NonZeroUsize::new(2).unwrap();
+
+pub(crate) trait ExpectDebugUnwrapRelease<T> {
+    fn expect_debug_unwrap_release(self, msg: &str) -> T;
+}
+
+impl<T> ExpectDebugUnwrapRelease<T> for Option<T> {
+    fn expect_debug_unwrap_release(self, msg: &str) -> T {
+        #[cfg(debug_assertions)]
+        {
+            self.expect(msg)
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            self.unwrap()
+        }
     }
 }

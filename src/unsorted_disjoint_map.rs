@@ -1,3 +1,4 @@
+use crate::range_values::{ExpectDebugUnwrapRelease, NON_ZERO_ONE};
 use crate::{
     map::{CloneBorrow, EndValue, ValueOwned},
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
@@ -7,6 +8,7 @@ use core::{
     cmp::{max, min},
     iter::FusedIterator,
     marker::PhantomData,
+    num::NonZeroUsize,
 };
 use num_traits::Zero;
 
@@ -22,7 +24,7 @@ where
     option_range_value: Option<RangeValue<'a, T, V, VR>>,
     min_value_plus_2: T,
     two: T,
-    priority: usize,
+    priority: NonZeroUsize,
 }
 
 impl<'a, T, V, VR, I> From<I> for UnsortedDisjointMap<'a, T, V, VR, I::IntoIter>
@@ -38,7 +40,7 @@ where
             option_range_value: None,
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
-            priority: 0,
+            priority: NON_ZERO_ONE,
         }
     }
 }
@@ -64,11 +66,15 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             // get the next range_value, if none, return the current range_value
+            // cmk create a new range_value instead of modifying the existing one????
             let Some(mut next_range_value) = self.iter.next() else {
                 return self.option_range_value.take();
             };
-            next_range_value.priority = self.priority;
-            self.priority += 1;
+            next_range_value.priority = Some(self.priority);
+            self.priority = self
+                .priority
+                .checked_add(1)
+                .expect_debug_unwrap_release("overflow");
 
             // check the next range is valid and non-empty
             let (next_start, next_end) = next_range_value.range.clone().into_inner();

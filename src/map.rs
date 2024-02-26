@@ -1,7 +1,10 @@
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::merge_map::MergeMap;
-use crate::range_values::{RangeValuesFromBTree, RangeValuesIter, RangesFromMapIter};
+use crate::range_values::{
+    RangeValuesFromBTree, RangeValuesIter, RangesFromMapIter, NON_ZERO_ONE, NON_ZERO_TWO,
+};
 // use crate::range_values::RangeValuesIter;
+use crate::range_values::NonZeroEnumerateExt;
 use crate::sorted_disjoint_map::{DebugToString, RangeValue};
 use crate::sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 use crate::union_iter_map::UnionIterMap;
@@ -1426,7 +1429,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
         RangeValuesIter {
             iter: self.btree_map.iter(),
-            priority: 0,
+            priority: None,
         }
     }
 
@@ -1602,11 +1605,12 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
     where
         I: IntoIterator<Item = (RangeInclusive<T>, V)>,
     {
-        let iter = iter.into_iter().enumerate().map(|(i, (r, v))| {
-            let n: RangeValue<T, V, UniqueValue<V>> =
-                RangeValue::new(r.clone(), UniqueValue { value: Some(v) }, i);
-            n
-        });
+        let iter = iter
+            .into_iter()
+            .non_zero_enumerate()
+            .map(|(priority, (r, v))| {
+                RangeValue::new(r.clone(), UniqueValue { value: Some(v) }, Some(priority))
+            });
         // let _n: RangeValue<T, V, UniqueValue<V>> = iter.next().unwrap();
         let union_iter_map = UnionIterMap::<T, V, UniqueValue<V>, _>::from_iter(iter);
         RangeMapBlaze::from_sorted_disjoint_map(union_iter_map)
@@ -1775,9 +1779,9 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     /// ```
     fn bitor(self, other: &RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
         let mut left = self.range_values();
-        left.priority = 0;
+        left.priority = Some(NON_ZERO_ONE);
         let mut right = other.range_values();
-        right.priority = 1;
+        right.priority = Some(NON_ZERO_TWO);
         (left | right).into_range_map_blaze()
     }
 }

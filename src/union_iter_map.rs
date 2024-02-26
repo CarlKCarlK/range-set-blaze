@@ -8,7 +8,7 @@ use core::{
 use alloc::vec;
 use itertools::Itertools;
 
-use crate::{map::ValueOwned, Integer};
+use crate::{map::ValueOwned, range_values::NON_ZERO_ONE, Integer};
 use crate::{
     map::{BitOrMergeMap, CloneBorrow},
     unsorted_disjoint_map::AssumeSortedStartsMap,
@@ -73,7 +73,7 @@ where
         // println!("vec_in: {:?}", vec_in.len()); // cmk
         let mut vec_mid = Vec::<RangeValue<'a, T, V, VR>>::new();
         let mut workspace = Vec::<RangeValue<'a, T, V, VR>>::new();
-        let mut bar_priority = 0usize;
+        let mut bar_priority = NON_ZERO_ONE;
         let mut bar_end = T::zero();
         while !vec_in.is_empty() || !workspace.is_empty() {
             // If there are new ranges to process and they they have the same start as the workspace
@@ -93,11 +93,14 @@ where
                 // remove the first split_index elements from vec_in. do this in place.
                 let same_starts: Vec<_> = vec_in.drain(0..split_index).collect();
                 for same_start in same_starts {
-                    if same_start.priority < bar_priority && same_start.range.end() < &bar_end {
+                    let same_start_priority = same_start
+                        .priority
+                        .expect("Every range in UnionIterMap must have a priority");
+                    if same_start_priority < bar_priority && same_start.range.end() < &bar_end {
                         continue;
                     }
-                    if same_start.priority >= bar_priority {
-                        bar_priority = same_start.priority;
+                    if same_start_priority >= bar_priority {
+                        bar_priority = same_start_priority;
                         bar_end = *same_start.range.end();
                     }
                     workspace.push(same_start);
@@ -110,7 +113,7 @@ where
             // cmk use priority queue
             let index_of_best = workspace
                 .iter()
-                .position(|x| x.priority == bar_priority)
+                .position(|x| x.priority == Some(bar_priority))
                 .unwrap();
             let best = &workspace[index_of_best];
 
@@ -125,12 +128,12 @@ where
             vec_mid.push(RangeValue::new(
                 *best.range.start()..=output_end,
                 best.value.clone_borrow(),
-                best.priority,
-            ));
-            // trim the start of the ranges in workspace to output_end+1, remove any that are empty
-            // also find the best priority and the new bar_end
+                None,
+            )); // best.priority,
+                // trim the start of the ranges in workspace to output_end+1, remove any that are empty
+                // also find the best priority and the new bar_end
             workspace.retain(|range_value| *range_value.range.end() > output_end);
-            bar_priority = 0;
+            bar_priority = NON_ZERO_ONE;
             bar_end = output_end;
             // this avoids overflow
             if workspace.is_empty() {
@@ -139,9 +142,12 @@ where
 
             let new_start = output_end + T::one();
             for range_value in workspace.iter_mut() {
+                let range_value_priority = range_value
+                    .priority
+                    .expect("Every range in UnionIterMap must have a priority");
                 range_value.range = new_start..=*range_value.range.end();
-                if range_value.priority > bar_priority {
-                    bar_priority = range_value.priority;
+                if range_value_priority > bar_priority {
+                    bar_priority = range_value_priority;
                     bar_end = *range_value.range.end();
                 }
             }
@@ -164,7 +170,7 @@ where
             vec_out.push(RangeValue::new(
                 *vec_mid[index].range.start()..=*vec_mid[index_exclusive_end - 1].range.end(),
                 vec_mid[index].value.clone_borrow(),
-                0, // cmk priority should never be exposed or re-used.
+                None,
             ));
             index = index_exclusive_end;
         }
@@ -222,8 +228,7 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &
         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
         let iter = iter.into_iter();
-        let iter = iter.enumerate();
-        let iter = iter.map(|(priority, (range, value))| RangeValue::new(range, value, priority));
+        let iter = iter.map(|(range, value)| RangeValue::new(range, value, None));
         let iter: UnionIterMap<'a, T, V, &'a V, SortedRangeInclusiveVec<'a, T, V, &'a V>> =
             UnionIterMap::from_iter(iter);
         iter

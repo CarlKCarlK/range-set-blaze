@@ -9,6 +9,7 @@ use core::fmt;
 
 // use itertools::Itertools;
 
+use core::num::NonZeroUsize;
 use core::ops::RangeInclusive;
 
 use crate::intersection_iter_map::IntersectionIterMap;
@@ -31,7 +32,7 @@ where
 {
     pub range: RangeInclusive<T>,
     pub value: VR,
-    pub priority: usize,
+    pub priority: Option<NonZeroUsize>,
     phantom: PhantomData<&'a V>,
 }
 
@@ -41,7 +42,7 @@ where
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
 {
-    pub fn new(range: RangeInclusive<T>, value: VR, priority: usize) -> Self {
+    pub fn new(range: RangeInclusive<T>, value: VR, priority: Option<NonZeroUsize>) -> Self {
         RangeValue {
             range,
             value,

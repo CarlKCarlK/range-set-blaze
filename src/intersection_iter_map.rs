@@ -176,7 +176,7 @@ where
                 }
             };
 
-            let range_value = RangeValue::new(start..=end, value, 0);
+            let range_value = RangeValue::new(start..=end, value, None);
             return Some(range_value);
         }
     }
