@@ -652,50 +652,55 @@ fn map_doctest3() {
     assert_eq!(a.get(5), Some(&"World"));
 }
 
-// #[test]
-// fn missing_doctest_ops() {
-//     // note that may be borrowed or owned in any combination.
+#[test]
+fn missing_doctest_ops() {
+    // note that may be borrowed or owned in any combination.
 
-//     // Returns the union of `self` and `rhs` as a new [`RangeMapBlaze`].
-//     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
-//     let b = RangeMapBlaze::from_iter([(3, "Go"), (4, "Go"), (5, "Go")]);
+    // Returns the union of `self` and `rhs` as a new [`RangeMapBlaze`].
+    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+    let b = RangeMapBlaze::from_iter([(3, "Go"), (4, "Go"), (5, "Go")]);
 
-//     let result = &a | &b;
-//     assert_eq!(
-//         result,
-//         RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "Go"), (4, "Go"), (5, "Go")])
-//     );
-//     let result = a | &b;
-//     assert_eq!(
-//         result,
-//         RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "Go"), (4, "Go"), (5, "Go")])
-//     );
+    let result = &a | &b;
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "Go"), (4, "Go"), (5, "Go")])
+    );
+    let result = a | &b;
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "Go"), (4, "Go"), (5, "Go")])
+    );
 
-//     // Returns the intersection of `self` and `rhs` as a new `RangeMapBlaze<T>`.
+    // Returns the intersection of `self` and `rhs` as a new `RangeMapBlaze<T>`.
 
-//     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
-//     let b = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
+    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+    let b = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
 
-//     let result = a & &b;
-//     assert_eq!(result, RangeMapBlaze::from_iter([(2, "Go"), (3, "Go")]));
-//     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
-//     let result = a & b;
-//     assert_eq!(result, RangeMapBlaze::from_iter([(2, "Go"), (3, "Go")]));
+    let result = a & &b;
+    assert_eq!(result, RangeMapBlaze::from_iter([(2, "Go"), (3, "Go")]));
+    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+    let result = a & b;
+    assert_eq!(result, RangeMapBlaze::from_iter([(2, "Go"), (3, "Go")]));
 
-//     // Returns the symmetric difference of `self` and `rhs` as a new `RangeMapBlaze<T>`.
-//     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
-//     let b = RangeMapBlaze::from_iter([(3, "Go"), (4, "Go"), (5, "Go")]);
+    // Returns the symmetric difference of `self` and `rhs` as a new `RangeMapBlaze<T>`.
+    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+    let b = RangeMapBlaze::from_iter([(3, "Go"), (4, "Go"), (5, "Go")]);
 
-//     let result = a ^ b;
-//     assert_eq!(result, RangeMapBlaze::from_iter([(1, "Hello"), (4, "Go")]));
+    let result = a ^ b;
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([(1..=1, "Hello"), (2..=2, "World"), (4..=5, "Go")])
+    );
 
-//     // Returns the set difference of `self` and `rhs` as a new `RangeMapBlaze<T>`.
-//     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
-//     let b = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
+    // Returns the set difference of `self` and `rhs` as a new `RangeMapBlaze<T>`.
+    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+    let b = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
 
-//     let result = a - b;
-//     assert_eq!(result, RangeMapBlaze::from_iter([(1, "Hello")]));
-// }
+    let result = a - b;
+    assert_eq!(result, RangeMapBlaze::from_iter([(1, "Hello")]));
+}
+// cmk00 allow working with Map and Set for intersection and difference
+// cmk00 do multiway operations
 
 // #[test]
 // fn multi_op() {

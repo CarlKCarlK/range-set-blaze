@@ -67,7 +67,7 @@ where
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
-    // cmk0 do this with a vec
+    // cmk0 do not do this with a vec
     pub fn new(iter: I) -> Self {
         // By default all ends are inclusive (different that most programs)
         let mut vec_in = iter.collect_vec();

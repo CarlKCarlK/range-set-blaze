@@ -9,18 +9,19 @@ use core::fmt;
 
 // use itertools::Itertools;
 
-use core::num::NonZeroUsize;
-use core::ops::RangeInclusive;
-
 use crate::intersection_iter_map::IntersectionIterMap;
-use crate::map::{BitAndRangesMap, BitOrMergeMap, CloneBorrow};
+use crate::map::{BitAndRangesMap, BitOrMergeMap, BitSubRangesMap, CloneBorrow};
 use crate::range_values::{AdjustPriorityMap, RangesFromMapIter, NON_ZERO_ONE, NON_ZERO_TWO};
+use crate::sorted_disjoint::SortedDisjoint;
 use crate::{
     map::ValueOwned, merge_map::MergeMap, union_iter_map::UnionIterMap, Integer, RangeMapBlaze,
 };
+use core::num::NonZeroUsize;
+use core::ops::RangeInclusive;
+use itertools::Tee;
 
 // cmk should this be pub/crate or replaced with a tuple?
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct RangeValue<'a, T, V, VR>
 where
     T: Integer,
@@ -356,75 +357,57 @@ where
     /// let difference = a - b;
     /// assert_eq!(difference.to_string(), "1..=1");
     /// ```
-    // cmk
     // #[inline]
-    // fn difference<R>(self, other: R) -> BitSubMergeMap<T, V, Self, R::IntoIter>
+    fn difference<R>(self, other: R) -> BitSubRangesMap<'a, T, V, VR, R::IntoIter, Self>
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
+        Self: Sized,
+    {
+        let sorted_disjoint = RangesFromMapIter {
+            iter: other.into_iter(),
+            option_ranges: None,
+            phantom0: PhantomData,
+            phantom1: PhantomData,
+        };
+        let complement = sorted_disjoint.complement();
+        IntersectionIterMap::new(complement, self)
+    }
+
+    // cmk maybe we don't implement this, but it is OK on RangeMapBlaze
+    // /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator
+    // /// of their symmetric difference.
+    // ///
+    // /// # Examples
+    // ///
+    // /// ```
+    // /// use range_set_blaze::prelude::*;
+    // ///
+    // /// let a = CheckSortedDisjointMap::from([1..=2]);
+    // /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
+    // /// let symmetric_difference = a.symmetric_difference(b);
+    // /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
+    // ///
+    // /// // Alternatively, we can use "^" because CheckSortedDisjointMap defines
+    // /// // ops::bitxor as SortedDisjointMap::symmetric_difference.
+    // /// let a = CheckSortedDisjointMap::from([1..=2]);
+    // /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
+    // /// let symmetric_difference = a ^ b;
+    // /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
+    // /// ```
+    // #[inline]
+    // fn symmetric_difference<R>(self, other: R) -> BitXOrTeeMap<'a, T, V, VR, Self, R::IntoIter>
     // where
     //     R: IntoIterator<Item = Self::Item>,
     //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
     //     Self: Sized,
-    // {
-    //     !(self.complement() | other.into_iter())
-    // }
-
-    /// Given a [`SortedDisjointMap`] iterator, efficiently returns a [`SortedDisjointMap`] iterator of its complement.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_blaze::prelude::*;
-    ///
-    /// let a = CheckSortedDisjointMap::from([-10i16..=0, 1000..=2000]);
-    /// let complement = a.complement();
-    /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
-    ///
-    /// // Alternatively, we can use "!" because CheckSortedDisjointMap defines
-    /// // ops::not as SortedDisjointMap::complement.
-    /// let a = CheckSortedDisjointMap::from([-10i16..=0, 1000..=2000]);
-    /// let complement = !a;
-    /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
-    /// ```
-    // cmk
-    // #[inline]
-    // fn complement(self) -> NotIterMap<T, V, Self>
-    // where
-    //     Self: Sized,
-    // {
-    //     NotIterMap::new(self)
-    // }
-
-    /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator
-    /// of their symmetric difference.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_blaze::prelude::*;
-    ///
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
-    /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
-    /// let symmetric_difference = a.symmetric_difference(b);
-    /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
-    ///
-    /// // Alternatively, we can use "^" because CheckSortedDisjointMap defines
-    /// // ops::bitxor as SortedDisjointMap::symmetric_difference.
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
-    /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
-    /// let symmetric_difference = a ^ b;
-    /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
-    /// ```
-    // cmk
-    // #[inline]
-    // fn symmetric_difference<R>(self, other: R) -> BitXOrTeeMap<T, V, Self, R::IntoIter>
-    // where
-    //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
-    //     Self: Sized,
+    //     VR: Clone,
     // {
     //     let (lhs0, lhs1) = self.tee();
     //     let (rhs0, rhs1) = other.into_iter().tee();
-    //     lhs0.difference(rhs0) | rhs1.difference(lhs1)
+    //     lhs0.difference(rhs0).union(rhs1.difference(lhs1))
     // }
+    // cmk000 from RangeMapBlaze we don't need to tee.
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
     /// this method takes ownership of the iterators and consumes them.
@@ -813,4 +796,19 @@ where
         .collect::<Vec<_>>()
         .join(", ")
     }
+}
+
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
+    SortedStartsMap<'a, T, V, VR> for Tee<I>
+where
+    VR: CloneBorrow<V> + 'a + Clone, // cmk is the clone a good idea?
+{
+}
+
+// If the inputs have sorted starts, the output is sorted and disjoint.
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
+    SortedDisjointMap<'a, T, V, VR> for Tee<I>
+where
+    VR: CloneBorrow<V> + 'a + Clone, // cmk is the clone a good idea?
+{
 }
