@@ -1,7 +1,8 @@
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::merge_map::MergeMap;
 use crate::range_values::{
-    RangeValuesFromBTree, RangeValuesIter, RangesFromMapIter, NON_ZERO_ONE, NON_ZERO_TWO,
+    AdjustPriorityMap, RangeValuesFromBTree, RangeValuesIter, RangesFromMapIter, NON_ZERO_ONE,
+    NON_ZERO_TWO,
 };
 // use crate::range_values::RangeValuesIter;
 use crate::range_values::NonZeroEnumerateExt;
@@ -1644,8 +1645,14 @@ impl<T: Integer, V: ValueOwned> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
 }
 
 #[doc(hidden)]
-pub type BitOrMergeMap<'a, T, V, VR, L, R> =
-    UnionIterMap<'a, T, V, VR, MergeMap<'a, T, V, VR, L, R>>;
+pub type BitOrMergeMap<'a, T, V, VR, L, R> = UnionIterMap<
+    'a,
+    T,
+    V,
+    VR,
+    MergeMap<'a, T, V, VR, AdjustPriorityMap<'a, T, V, VR, L>, AdjustPriorityMap<'a, T, V, VR, R>>,
+>;
+
 #[doc(hidden)]
 pub type BitAndRangesMap<'a, T, V, VR, L, R> =
     IntersectionIterMap<'a, T, V, VR, RangesFromMapIter<'a, T, V, VR, L>, R>;

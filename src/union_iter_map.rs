@@ -8,10 +8,11 @@ use core::{
 use alloc::vec;
 use itertools::Itertools;
 
-use crate::{map::ValueOwned, range_values::NON_ZERO_ONE, Integer};
+use crate::{map::CloneBorrow, unsorted_disjoint_map::AssumeSortedStartsMap};
 use crate::{
-    map::{BitOrMergeMap, CloneBorrow},
-    unsorted_disjoint_map::AssumeSortedStartsMap,
+    map::{BitOrMergeMap, ValueOwned},
+    range_values::NON_ZERO_ONE,
+    Integer,
 };
 use crate::{
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},

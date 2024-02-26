@@ -13,13 +13,10 @@ use core::num::NonZeroUsize;
 use core::ops::RangeInclusive;
 
 use crate::intersection_iter_map::IntersectionIterMap;
-use crate::map::{BitAndRangesMap, CloneBorrow};
-use crate::range_values::RangesFromMapIter;
+use crate::map::{BitAndRangesMap, BitOrMergeMap, CloneBorrow};
+use crate::range_values::{AdjustPriorityMap, RangesFromMapIter, NON_ZERO_ONE, NON_ZERO_TWO};
 use crate::{
-    map::{BitOrMergeMap, ValueOwned},
-    merge_map::MergeMap,
-    union_iter_map::UnionIterMap,
-    Integer, RangeMapBlaze,
+    map::ValueOwned, merge_map::MergeMap, union_iter_map::UnionIterMap, Integer, RangeMapBlaze,
 };
 
 // cmk should this be pub/crate or replaced with a tuple?
@@ -298,8 +295,10 @@ where
         R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
         Self: Sized,
     {
+        let left = AdjustPriorityMap::new(self, Some(NON_ZERO_ONE));
+        let right = AdjustPriorityMap::new(other.into_iter(), Some(NON_ZERO_TWO));
         // cmk why this into iter stuff that is not used?
-        UnionIterMap::new(MergeMap::new(self, other.into_iter()))
+        UnionIterMap::new(MergeMap::new(left, right))
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their intersection.

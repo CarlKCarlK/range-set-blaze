@@ -440,3 +440,66 @@ impl<T> ExpectDebugUnwrapRelease<T> for Option<T> {
         }
     }
 }
+
+pub struct AdjustPriorityMap<'a, T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+{
+    iter: I,
+    new_priority: Option<NonZeroUsize>,
+    phantom: PhantomData<&'a (T, V, VR)>,
+}
+
+impl<'a, T, V, VR, I> Iterator for AdjustPriorityMap<'a, T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: SortedDisjointMap<'a, T, V, VR>,
+{
+    type Item = RangeValue<'a, T, V, VR>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|mut range_value| {
+            range_value.priority = self.new_priority;
+            range_value
+        })
+    }
+}
+
+impl<'a, T, V, VR, I> AdjustPriorityMap<'a, T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: SortedDisjointMap<'a, T, V, VR>,
+{
+    pub fn new(iter: I, new_priority: Option<NonZeroUsize>) -> Self {
+        AdjustPriorityMap {
+            iter,
+            new_priority,
+            phantom: PhantomData,
+        }
+    }
+}
+
+// all AdjustPriorityMap are also SortedDisjointMaps
+impl<'a, T, V, VR, I> SortedStartsMap<'a, T, V, VR> for AdjustPriorityMap<'a, T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: SortedDisjointMap<'a, T, V, VR>,
+{
+}
+impl<'a, T, V, VR, I> SortedDisjointMap<'a, T, V, VR> for AdjustPriorityMap<'a, T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: SortedDisjointMap<'a, T, V, VR>,
+{
+}
