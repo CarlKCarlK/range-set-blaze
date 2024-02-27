@@ -1,17 +1,16 @@
 use core::{
-    cmp::{max, min},
+    cmp::min,
     iter::FusedIterator,
     marker::PhantomData,
     ops::{self, RangeInclusive},
 };
 
-use alloc::{collections::BinaryHeap, vec};
+use alloc::collections::BinaryHeap;
 use itertools::Itertools;
 
 use crate::{map::CloneBorrow, unsorted_disjoint_map::AssumeSortedStartsMap};
 use crate::{
     map::{BitOrMergeMap, ValueOwned},
-    range_values::NON_ZERO_ONE,
     Integer,
 };
 use crate::{
@@ -96,7 +95,7 @@ where
                 };
                 if next_start == *best.range.start() {
                     // Only push if the priority is higher or the end is greater
-                    if next_item > best || next_end > best.range.end() {
+                    if next_item > *best || next_end > *best.range.end() {
                         self.workspace.push(next_item);
                     }
                     continue; // loop to get another input item
@@ -113,14 +112,16 @@ where
 
             // We buffer for output the best item up to the end of the next item (if any).
             let new_start = if let Some(next_item) = self.next_item.as_ref() {
-                min(*next_item.range.start(), best.range.end() + T::one())
+                min(*next_item.range.start(), *best.range.end() + T::one())
             } else {
-                best.range.end() + T::one()
+                *best.range.end() + T::one()
             };
 
             // add the front of best to the output buffers
-            if let Some(gather) = self.gather.take() {
-                if gather.value == best.value && gather.range.end() + T::one == best.range.start() {
+            if let Some(mut gather) = self.gather.take() {
+                if gather.value.borrow() == best.value.borrow()
+                    && *gather.range.end() + T::one() == *best.range.start()
+                {
                     // if the gather is contiguous with the best, then merge them
                     gather.range = *gather.range.start()..=*best.range.end();
                     self.gather = Some(gather);
@@ -144,7 +145,7 @@ where
 
             // We also update the workspace to removing any items that are completely covered by the new_start.
             // We also don't need to keep any items that have a lower priority and are shorter than the new best.
-            let new_workspace = BinaryHeap::new();
+            let mut new_workspace = BinaryHeap::new();
             while let Some(mut item) = self.workspace.pop() {
                 if *item.range.end() < new_start {
                     // too short, don't keep
@@ -156,7 +157,7 @@ where
                     new_workspace.push(item);
                     continue;
                 };
-                if item < new_best && *item.range.end() <= *new_best.range.end() {
+                if &item < new_best && *item.range.end() <= *new_best.range.end() {
                     // not as good as new_best, and shorter, so don't keep
                     continue;
                 }
@@ -184,7 +185,7 @@ where
             iter,
             done_with_iter: false,
             next_item: None,
-            workspace: Vec::new(),
+            workspace: BinaryHeap::new(),
             gather: None,
             ready_to_go: None,
             phantom0: PhantomData,
@@ -328,8 +329,10 @@ where
 // }
 
 // from iter (T, &V) to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(T, &'a V)>
-    for UnionIterMap<'a, T, V, &'a V, SortedRangeInclusiveVec<'a, T, V, &'a V>>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, SS> FromIterator<(T, &'a V)>
+    for UnionIterMap<'a, T, V, &'a V, SS>
+where
+    SS: SortedStartsMap<'a, T, V, &'a V>,
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -340,8 +343,10 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(T, &'a V)>
 }
 
 // from iter (RangeInclusive<T>, &V) to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
-    for UnionIterMap<'a, T, V, &'a V, SortedRangeInclusiveVec<'a, T, V, &'a V>>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, SS> FromIterator<(RangeInclusive<T>, &'a V)>
+    for UnionIterMap<'a, T, V, &'a V, SS>
+where
+    SS: SortedStartsMap<'a, T, V, &'a V>,
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -349,16 +354,16 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &
     {
         let iter = iter.into_iter();
         let iter = iter.map(|(range, value)| RangeValue::new(range, value, None));
-        let iter: UnionIterMap<'a, T, V, &'a V, SortedRangeInclusiveVec<'a, T, V, &'a V>> =
-            UnionIterMap::from_iter(iter);
+        let iter: UnionIterMap<'a, T, V, &'a V, SS> = UnionIterMap::from_iter(iter);
         iter
     }
 }
 
 // from iter RangeValue<T, V> to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR> FromIterator<RangeValue<'a, T, V, VR>>
-    for UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, SS> FromIterator<RangeValue<'a, T, V, VR>>
+    for UnionIterMap<'a, T, V, VR, SS>
 where
+    SS: SortedStartsMap<'a, T, V, VR>,
     VR: CloneBorrow<V> + 'a,
 {
     fn from_iter<I>(iter: I) -> Self
@@ -370,12 +375,13 @@ where
 }
 
 // from from UnsortedDisjointMap to UnionIterMap
-impl<'a, T, V, VR, I> From<UnsortedDisjointMap<'a, T, V, VR, I>>
-    for UnionIterMap<'a, T, V, VR, SortedRangeInclusiveVec<'a, T, V, VR>>
+impl<'a, T, V, VR, I, SS> From<UnsortedDisjointMap<'a, T, V, VR, I>>
+    for UnionIterMap<'a, T, V, VR, SS>
 where
     T: Integer,
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
+    SS: SortedStartsMap<'a, T, V, VR>,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     #[allow(clippy::clone_on_copy)]
