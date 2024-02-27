@@ -1,7 +1,6 @@
 use core::{
     cmp::min,
     iter::FusedIterator,
-    marker::PhantomData,
     ops::{self, RangeInclusive},
 };
 
@@ -53,15 +52,10 @@ where
     SS: SortedStartsMap<'a, T, V, VR>,
 {
     iter: SS,
-    done_with_iter: bool,
     next_item: Option<RangeValue<'a, T, V, VR>>,
     workspace: BinaryHeap<RangeValue<'a, T, V, VR>>,
     gather: Option<RangeValue<'a, T, V, VR>>,
     ready_to_go: Option<RangeValue<'a, T, V, VR>>,
-    phantom0: PhantomData<&'a V>,
-    phantom1: PhantomData<VR>,
-    phantom2: PhantomData<T>,
-    // option_range_value: Option<RangeValue<'a, T, V, VR>>,
 }
 
 impl<'a, T: Integer, V: ValueOwned, VR, I> Iterator for UnionIterMap<'a, T, V, VR, I>
@@ -78,12 +72,6 @@ where
                 return Some(value);
             };
 
-            // Be sure self.next_item is loaded.
-            if !self.done_with_iter && self.next_item.is_none() {
-                self.next_item = self.iter.next();
-                self.done_with_iter = self.next_item.is_none();
-            }
-
             // move self.next_item into the workspace if appropriate
             if let Some(next_item) = self.next_item.take() {
                 let (next_start, next_end) = next_item.range.clone().into_inner();
@@ -91,6 +79,7 @@ where
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
                     self.workspace.push(next_item);
+                    self.next_item = self.iter.next();
                     continue; // loop to get another input item
                 };
                 if next_start == *best.range.start() {
@@ -98,6 +87,7 @@ where
                     if next_item > *best || next_end > *best.range.end() {
                         self.workspace.push(next_item);
                     }
+                    self.next_item = self.iter.next();
                     continue; // loop to get another input item
                 }
                 self.next_item = Some(next_item);
@@ -106,7 +96,6 @@ where
             // If the workspace is empty, we are done.
             let Some(best) = self.workspace.peek() else {
                 debug_assert!(self.next_item.is_none());
-                debug_assert!(self.done_with_iter); // cmk is this needed?
                 return None;
             };
 
@@ -179,130 +168,15 @@ where
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
-    // cmk0 do not do this with a vec
-    pub fn new(iter: I) -> Self {
+    pub fn new(mut iter: I) -> Self {
+        let item = iter.next();
         Self {
             iter,
-            done_with_iter: false,
-            next_item: None,
+            next_item: item,
             workspace: BinaryHeap::new(),
             gather: None,
             ready_to_go: None,
-            phantom0: PhantomData,
-            phantom1: PhantomData,
-            phantom2: PhantomData,
         }
-        //     // By default all ends are inclusive (different that most programs)
-        //     let mut vec_in = iter.collect_vec();
-        //     // println!("vec_in: {:?}", vec_in.len()); // cmk
-        //     let mut vec_mid = Vec::<RangeValue<'a, T, V, VR>>::new();
-        //     let mut workspace = Vec::<RangeValue<'a, T, V, VR>>::new();
-        //     let mut bar_priority = NON_ZERO_ONE;
-        //     let mut bar_end = T::zero();
-        //     while !vec_in.is_empty() || !workspace.is_empty() {
-        //         // If there are new ranges to process and they they have the same start as the workspace
-        //         if !vec_in.is_empty()
-        //             && (workspace.is_empty() || *vec_in[0].range.start() == *workspace[0].range.start())
-        //         {
-        //             // find the index (of any) of the first index with a different start that the first one
-        //             let first_start = *vec_in[0].range.start();
-
-        //             // if bar_end is None, set it to first_start
-        //             bar_end = max(bar_end, first_start);
-        //             let split_index = vec_in
-        //                 .iter()
-        //                 .position(|x| *x.range.start() != first_start)
-        //                 .unwrap_or(vec_in.len());
-        //             // set same_start to the first split_index elements. Allocate for this
-        //             // remove the first split_index elements from vec_in. do this in place.
-        //             let same_starts: Vec<_> = vec_in.drain(0..split_index).collect();
-        //             for same_start in same_starts {
-        //                 let same_start_priority = same_start
-        //                     .priority
-        //                     .expect("Every range in UnionIterMap must have a priority");
-        //                 if same_start_priority < bar_priority && same_start.range.end() < &bar_end {
-        //                     continue;
-        //                 }
-        //                 if same_start_priority >= bar_priority {
-        //                     bar_priority = same_start_priority;
-        //                     bar_end = *same_start.range.end();
-        //                 }
-        //                 workspace.push(same_start);
-        //             }
-        //         }
-
-        //         // The workspace is now full of ranges with the same start. We need to find the best one.
-
-        //         // find the one element with priority = bar_priority
-        //         // cmk use priority queue
-        //         let index_of_best = workspace
-        //             .iter()
-        //             .position(|x| x.priority == Some(bar_priority))
-        //             .unwrap();
-        //         let best = &workspace[index_of_best];
-
-        //         // output_end is the smallest end in workspace
-        //         let mut output_end = *workspace.iter().map(|x| x.range.end()).min().unwrap();
-        //         // if vec_is is not empty, then output_end is the minimum of output_end and the start of the first element in vec_in -1
-        //         if !vec_in.is_empty() {
-        //             let next_start = *vec_in[0].range.start();
-        //             // cmk underflow?
-        //             output_end = min(output_end, next_start - T::one())
-        //         };
-        //         vec_mid.push(RangeValue::new(
-        //             *best.range.start()..=output_end,
-        //             best.value.clone_borrow(),
-        //             None,
-        //         )); // best.priority,
-        //             // trim the start of the ranges in workspace to output_end+1, remove any that are empty
-        //             // also find the best priority and the new bar_end
-        //         workspace.retain(|range_value| *range_value.range.end() > output_end);
-        //         bar_priority = NON_ZERO_ONE;
-        //         bar_end = output_end;
-        //         // this avoids overflow
-        //         if workspace.is_empty() {
-        //             continue;
-        //         }
-
-        //         let new_start = output_end + T::one();
-        //         for range_value in workspace.iter_mut() {
-        //             let range_value_priority = range_value
-        //                 .priority
-        //                 .expect("Every range in UnionIterMap must have a priority");
-        //             range_value.range = new_start..=*range_value.range.end();
-        //             if range_value_priority > bar_priority {
-        //                 bar_priority = range_value_priority;
-        //                 bar_end = *range_value.range.end();
-        //             }
-        //         }
-        //     }
-
-        //     let mut vec_out = Vec::<RangeValue<'a, T, V, VR>>::new();
-        //     let mut index = 0;
-        //     while index < vec_mid.len() {
-        //         let mut index_exclusive_end = index + 1;
-        //         let mut previous_index = index;
-        //         while index_exclusive_end < vec_mid.len()
-        //             && vec_mid[previous_index].value.borrow() == vec_mid[index_exclusive_end].value.borrow()
-        //             // cmk overflow?
-        //             && *vec_mid[previous_index].range.end() + T::one()
-        //                 == *vec_mid[index_exclusive_end].range.start()
-        //         {
-        //             previous_index = index_exclusive_end;
-        //             index_exclusive_end += 1;
-        //         }
-        //         vec_out.push(RangeValue::new(
-        //             *vec_mid[index].range.start()..=*vec_mid[index_exclusive_end - 1].range.end(),
-        //             vec_mid[index].value.clone_borrow(),
-        //             None,
-        //         ));
-        //         index = index_exclusive_end;
-        //     }
-
-        //     Self {
-        //         iter: vec_out.into_iter(),
-        //         phantom: PhantomData,
-        //     }
     }
 }
 
