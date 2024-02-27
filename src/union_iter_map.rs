@@ -4,13 +4,16 @@ use core::{
     ops::{self, RangeInclusive},
 };
 
-use alloc::{collections::BinaryHeap, vec};
+use alloc::collections::BinaryHeap;
 use itertools::Itertools;
 
-use crate::{map::CloneBorrow, unsorted_disjoint_map::AssumeSortedStartsMap};
 use crate::{
     map::{BitOrMergeMap, ValueOwned},
     Integer,
+};
+use crate::{
+    map::{CloneBorrow, SortedStartsInVecMap},
+    unsorted_disjoint_map::AssumeSortedStartsMap,
 };
 use crate::{
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
@@ -204,13 +207,7 @@ where
 
 // from iter (T, &V) to UnionIterMap
 impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(T, &'a V)>
-    for UnionIterMap<
-        'a,
-        T,
-        V,
-        &'a V,
-        AssumeSortedStartsMap<'a, T, V, &'a V, std::vec::IntoIter<RangeValue<'a, T, V, &'a V>>>,
-    >
+    for UnionIterMap<'a, T, V, &'a V, SortedStartsInVecMap<'a, T, V, &'a V>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -223,13 +220,7 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(T, &'a V)>
 
 // from iter (RangeInclusive<T>, &V) to UnionIterMap
 impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
-    for UnionIterMap<
-        'a,
-        T,
-        V,
-        &'a V,
-        AssumeSortedStartsMap<'a, T, V, &'a V, std::vec::IntoIter<RangeValue<'a, T, V, &'a V>>>,
-    >
+    for UnionIterMap<'a, T, V, &'a V, SortedStartsInVecMap<'a, T, V, &'a V>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -244,13 +235,7 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &
 // cmk simplify the long types
 // from iter RangeValue<T, V> to UnionIterMap
 impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR> FromIterator<RangeValue<'a, T, V, VR>>
-    for UnionIterMap<
-        'a,
-        T,
-        V,
-        VR,
-        AssumeSortedStartsMap<'a, T, V, VR, std::vec::IntoIter<RangeValue<'a, T, V, VR>>>,
-    >
+    for UnionIterMap<'a, T, V, VR, SortedStartsInVecMap<'a, T, V, VR>>
 where
     VR: CloneBorrow<V> + 'a,
 {
@@ -266,13 +251,7 @@ where
 
 // from from UnsortedDisjointMap to UnionIterMap
 impl<'a, T, V, VR, I> From<UnsortedDisjointMap<'a, T, V, VR, I>>
-    for UnionIterMap<
-        'a,
-        T,
-        V,
-        VR,
-        AssumeSortedStartsMap<'a, T, V, VR, vec::IntoIter<RangeValue<'a, T, V, VR>>>,
-    >
+    for UnionIterMap<'a, T, V, VR, SortedStartsInVecMap<'a, T, V, VR>>
 where
     T: Integer,
     V: ValueOwned + 'a,

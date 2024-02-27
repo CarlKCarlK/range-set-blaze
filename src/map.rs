@@ -9,7 +9,7 @@ use crate::range_values::NonZeroEnumerateExt;
 use crate::sorted_disjoint_map::{DebugToString, RangeValue};
 use crate::sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 use crate::union_iter_map::UnionIterMap;
-use crate::unsorted_disjoint_map::SortedDisjointWithLenSoFarMap;
+use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, SortedDisjointWithLenSoFarMap};
 use crate::{Integer, NotIter};
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
@@ -1646,19 +1646,21 @@ impl<T: Integer, V: ValueOwned> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
 }
 
 #[doc(hidden)]
-pub type BitOrMergeMap<'a, T, V, VR, L, R> = UnionIterMap<
-    'a,
-    T,
-    V,
-    VR,
-    MergeMap<'a, T, V, VR, AdjustPriorityMap<'a, T, V, VR, L>, AdjustPriorityMap<'a, T, V, VR, R>>,
->;
+pub type MergeMapAdjusted<'a, T, V, VR, L, R> =
+    MergeMap<'a, T, V, VR, AdjustPriorityMap<'a, T, V, VR, L>, AdjustPriorityMap<'a, T, V, VR, R>>;
+
+#[doc(hidden)]
+pub type BitOrMergeMap<'a, T, V, VR, L, R> =
+    UnionIterMap<'a, T, V, VR, MergeMapAdjusted<'a, T, V, VR, L, R>>;
 
 #[doc(hidden)]
 pub type BitAndRangesMap<'a, T, V, VR, L, R> =
     IntersectionIterMap<'a, T, V, VR, RangesFromMapIter<'a, T, V, VR, L>, R>;
 pub type BitSubRangesMap<'a, T, V, VR, L, R> =
     IntersectionIterMap<'a, T, V, VR, NotIter<T, RangesFromMapIter<'a, T, V, VR, L>>, R>;
+#[doc(hidden)]
+pub type SortedStartsInVecMap<'a, T, V, VR> =
+    AssumeSortedStartsMap<'a, T, V, VR, std::vec::IntoIter<RangeValue<'a, T, V, VR>>>;
 // pub type BitXOrTeeMap<'a, T, V, VR, L, R> = BitOrMergeMap<
 //     'a,
 //     T,
