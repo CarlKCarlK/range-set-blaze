@@ -1,3 +1,4 @@
+use core::cmp::Ordering;
 use core::marker::PhantomData;
 // use alloc::format;
 // use alloc::string::String;
@@ -21,7 +22,7 @@ use core::ops::RangeInclusive;
 use itertools::Tee;
 
 // cmk should this be pub/crate or replaced with a tuple?
-#[derive(PartialEq, Clone)]
+#[derive(Clone)]
 pub struct RangeValue<'a, T, V, VR>
 where
     T: Integer,
@@ -810,4 +811,50 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, V
 where
     VR: CloneBorrow<V> + 'a + Clone, // cmk is the clone a good idea?
 {
+}
+
+// Implement `PartialEq` to allow comparison (needed for `Eq`).
+impl<'a, T, V, VR> PartialEq for RangeValue<'a, T, V, VR>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.priority == other.priority
+    }
+}
+
+// Implement `Eq` because `BinaryHeap` requires it.
+impl<'a, T, V, VR> Eq for RangeValue<'a, T, V, VR>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+{
+}
+
+// Implement `Ord` so the heap knows how to compare elements.
+impl<'a, T, V, VR> Ord for RangeValue<'a, T, V, VR>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+{
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Compare priorities, handle `None` as lower than any `Some`.
+        other.priority.cmp(&self.priority)
+    }
+}
+
+// Implement `PartialOrd` to allow comparison (needed for `Ord`).
+impl<'a, T, V, VR> PartialOrd for RangeValue<'a, T, V, VR>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
