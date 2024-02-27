@@ -14,7 +14,8 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 // cmk must test coverage
 
 #[test]
-fn map_random_from_iter() {
+fn map_random_from_iter_item() {
+    // cmk all these tests should test on size zero, too.
     for seed in 0..20 {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
@@ -23,17 +24,18 @@ fn map_random_from_iter() {
 
         let mut inputs = Vec::new();
         for _ in 0..500 {
-            let key = rng.gen_range(0..=255u8);
+            let key = rng.gen_range(0..=255u32); // cmk change back to u8s
             let value = ['a', 'b', 'c'].choose(&mut rng).unwrap(); // cmk allow more than references
 
-            // print!("{key}{value} ");
+            print!("{key}{value} ");
             inputs.push((key, value));
 
             // cmk fix so don't need to clone and can use .iter()
-            let range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(inputs.clone());
+            let range_map_blaze = RangeMapBlaze::<_, char>::from_iter(inputs.clone());
             btree_map.insert(key, value);
             if !equal_maps(&range_map_blaze, &btree_map) {
-                let _range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(inputs.clone());
+                println!();
+                let _range_map_blaze = RangeMapBlaze::<_, char>::from_iter(inputs.clone());
                 panic!();
             }
         }
@@ -55,7 +57,7 @@ fn map_random_from_iter_range() {
             let key = start..=end;
             let value = ['a', 'b', 'c'].choose(&mut rng).unwrap(); // cmk allow more than references
 
-            print!("{key}{value} ");
+            // print!("{key}{value} ");
             inputs.push((key.clone(), value));
 
             // cmk fix so don't need to clone and can use .iter()

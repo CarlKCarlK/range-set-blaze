@@ -72,12 +72,12 @@ where
     type Item = RangeValue<'a, T, V, VR>;
 
     fn next(&mut self) -> Option<RangeValue<'a, T, V, VR>> {
-        if let Some(value) = self.ready_to_go.take() {
-            // If ready_to_go was Some, return the value immediately.
-            return Some(value);
-        };
-
         loop {
+            if let Some(value) = self.ready_to_go.take() {
+                // If ready_to_go was Some, return the value immediately.
+                return Some(value);
+            };
+
             // Be sure self.next_item is loaded.
             if !self.done_with_iter && self.next_item.is_none() {
                 self.next_item = self.iter.next();
@@ -111,10 +111,10 @@ where
             };
 
             // We buffer for output the best item up to the end of the next item (if any).
-            let new_start = if let Some(next_item) = self.next_item.as_ref() {
-                min(*next_item.range.start(), *best.range.end() + T::one())
+            let next_end = if let Some(next_item) = self.next_item.as_ref() {
+                min(*next_item.range.start() - T::one(), *best.range.end())
             } else {
-                *best.range.end() + T::one()
+                *best.range.end()
             };
 
             // add the front of best to the output buffers
@@ -129,7 +129,7 @@ where
                     // if the gather is not contiguous with the best, then output the gather and set the gather to the best
                     self.ready_to_go = Some(gather);
                     self.gather = Some(RangeValue::new(
-                        *best.range.start()..=new_start - T::one(),
+                        *best.range.start()..=next_end,
                         best.value.clone_borrow(),
                         None,
                     ));
@@ -137,7 +137,7 @@ where
             } else {
                 // if there is no gather, then set the gather to the best
                 self.gather = Some(RangeValue::new(
-                    *best.range.start()..=new_start - T::one(),
+                    *best.range.start()..=next_end,
                     best.value.clone_borrow(),
                     None,
                 ))
@@ -147,11 +147,11 @@ where
             // We also don't need to keep any items that have a lower priority and are shorter than the new best.
             let mut new_workspace = BinaryHeap::new();
             while let Some(mut item) = self.workspace.pop() {
-                if *item.range.end() < new_start {
+                if *item.range.end() < next_end {
                     // too short, don't keep
                     continue;
                 }
-                item.range = new_start..=*item.range.end();
+                item.range = next_end + T::one()..=*item.range.end();
                 let Some(new_best) = new_workspace.peek() else {
                     // new_workspace is empty, so keep
                     new_workspace.push(item);
