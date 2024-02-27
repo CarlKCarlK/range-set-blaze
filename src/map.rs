@@ -1580,7 +1580,8 @@ where
         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
         let iter = iter.into_iter();
-        let union_iter_map = UnionIterMap::<'a, T, V, &V, _>::from_iter(iter);
+        let union_iter_map: UnionIterMap<'_, T, V, &V, _> =
+            UnionIterMap::<'a, T, V, &V, _>::from_iter(iter);
         RangeMapBlaze::from_sorted_disjoint_map(union_iter_map)
     }
 }

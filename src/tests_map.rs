@@ -55,7 +55,7 @@ fn map_random_from_iter_range() {
             let key = start..=end;
             let value = ['a', 'b', 'c'].choose(&mut rng).unwrap(); // cmk allow more than references
 
-            // print!("{key}{value} ");
+            print!("{key}{value} ");
             inputs.push((key.clone(), value));
 
             // cmk fix so don't need to clone and can use .iter()

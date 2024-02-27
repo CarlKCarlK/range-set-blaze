@@ -5,7 +5,7 @@ use core::{
     ops::{self, RangeInclusive},
 };
 
-use alloc::collections::BinaryHeap;
+use alloc::{collections::BinaryHeap, vec};
 use itertools::Itertools;
 
 use crate::{map::CloneBorrow, unsorted_disjoint_map::AssumeSortedStartsMap};
@@ -45,14 +45,14 @@ use crate::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct UnionIterMap<'a, T, V, VR, I>
+pub struct UnionIterMap<'a, T, V, VR, SS>
 where
     T: Integer,
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
-    I: SortedStartsMap<'a, T, V, VR>,
+    SS: SortedStartsMap<'a, T, V, VR>,
 {
-    iter: I,
+    iter: SS,
     done_with_iter: bool,
     next_item: Option<RangeValue<'a, T, V, VR>>,
     workspace: BinaryHeap<RangeValue<'a, T, V, VR>>,
@@ -86,7 +86,7 @@ where
 
             // move self.next_item into the workspace if appropriate
             if let Some(next_item) = self.next_item.take() {
-                let (next_start, next_end) = next_item.range.into_inner();
+                let (next_start, next_end) = next_item.range.clone().into_inner();
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
@@ -329,24 +329,33 @@ where
 // }
 
 // from iter (T, &V) to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a, SS> FromIterator<(T, &'a V)>
-    for UnionIterMap<'a, T, V, &'a V, SS>
-where
-    SS: SortedStartsMap<'a, T, V, &'a V>,
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(T, &'a V)>
+    for UnionIterMap<
+        'a,
+        T,
+        V,
+        &'a V,
+        AssumeSortedStartsMap<'a, T, V, &'a V, std::vec::IntoIter<RangeValue<'a, T, V, &'a V>>>,
+    >
 {
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = (T, &'a V)>,
     {
-        iter.into_iter().map(|(x, value)| (x..=x, value)).collect()
+        let iter = iter.into_iter().map(|(x, value)| (x..=x, value));
+        UnionIterMap::from_iter(iter)
     }
 }
 
 // from iter (RangeInclusive<T>, &V) to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a, SS> FromIterator<(RangeInclusive<T>, &'a V)>
-    for UnionIterMap<'a, T, V, &'a V, SS>
-where
-    SS: SortedStartsMap<'a, T, V, &'a V>,
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
+    for UnionIterMap<
+        'a,
+        T,
+        V,
+        &'a V,
+        AssumeSortedStartsMap<'a, T, V, &'a V, std::vec::IntoIter<RangeValue<'a, T, V, &'a V>>>,
+    >
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -354,34 +363,46 @@ where
     {
         let iter = iter.into_iter();
         let iter = iter.map(|(range, value)| RangeValue::new(range, value, None));
-        let iter: UnionIterMap<'a, T, V, &'a V, SS> = UnionIterMap::from_iter(iter);
-        iter
+        UnionIterMap::from_iter(iter)
     }
 }
 
+// cmk simplify the long types
 // from iter RangeValue<T, V> to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, SS> FromIterator<RangeValue<'a, T, V, VR>>
-    for UnionIterMap<'a, T, V, VR, SS>
+impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR> FromIterator<RangeValue<'a, T, V, VR>>
+    for UnionIterMap<
+        'a,
+        T,
+        V,
+        VR,
+        AssumeSortedStartsMap<'a, T, V, VR, std::vec::IntoIter<RangeValue<'a, T, V, VR>>>,
+    >
 where
-    SS: SortedStartsMap<'a, T, V, VR>,
     VR: CloneBorrow<V> + 'a,
 {
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = RangeValue<'a, T, V, VR>>,
     {
-        UnsortedDisjointMap::from(iter.into_iter()).into()
+        let iter = iter.into_iter();
+        let iter = UnsortedDisjointMap::from(iter);
+        UnionIterMap::from(iter)
     }
 }
 
 // from from UnsortedDisjointMap to UnionIterMap
-impl<'a, T, V, VR, I, SS> From<UnsortedDisjointMap<'a, T, V, VR, I>>
-    for UnionIterMap<'a, T, V, VR, SS>
+impl<'a, T, V, VR, I> From<UnsortedDisjointMap<'a, T, V, VR, I>>
+    for UnionIterMap<
+        'a,
+        T,
+        V,
+        VR,
+        AssumeSortedStartsMap<'a, T, V, VR, vec::IntoIter<RangeValue<'a, T, V, VR>>>,
+    >
 where
     T: Integer,
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
-    SS: SortedStartsMap<'a, T, V, VR>,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
 {
     #[allow(clippy::clone_on_copy)]
