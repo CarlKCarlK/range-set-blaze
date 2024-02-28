@@ -843,7 +843,8 @@ where
 {
     fn cmp(&self, other: &Self) -> Ordering {
         // Compare priorities, handle `None` as lower than any `Some`.
-        other.priority.cmp(&self.priority)
+        // cmk other.priority.cmp(&self.priority)
+        self.priority.cmp(&other.priority)
     }
 }
 

@@ -420,11 +420,11 @@ fn map_repro_123() {
 #[test]
 fn map_insert_255u8() {
     let iter = [
-        (255..=255, "Hello".to_string()),
+        (255u32..=255, "Hello".to_string()), // cmk to u8
         (25..=25, "There".to_string()),
     ]
     .into_iter();
-    let range_map_blaze = RangeMapBlaze::<u8, String>::from_iter(iter);
+    let range_map_blaze = RangeMapBlaze::<_, String>::from_iter(iter);
     assert_eq!(
         range_map_blaze.to_string(),
         r#"(25..=25, "There"), (255..=255, "Hello")"#
