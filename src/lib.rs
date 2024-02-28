@@ -480,6 +480,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     pub fn first(&self) -> Option<T> {
         self.btree_map.iter().next().map(|(x, _)| *x)
     }
+    // cmk use first and last, not iter.next().
 
     /// Returns the element in the set, if any, that is equal to
     /// the value.

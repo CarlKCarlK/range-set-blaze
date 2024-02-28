@@ -21,6 +21,7 @@ use core::num::NonZeroUsize;
 use core::ops::RangeInclusive;
 use itertools::Tee;
 
+// cmk hey, about a method that gets the range or a clone of the value?
 // cmk should this be pub/crate or replaced with a tuple?
 #[derive(Clone)]
 pub struct RangeValue<'a, T, V, VR>

@@ -15,7 +15,13 @@
 // // cmk add RangeMapBlaze to prelude
 // use std::collections::BTreeMap;
 
-// use range_set_blaze::{
+use std::{
+    io::{stdout, Write},
+    thread::sleep,
+    time::Duration,
+};
+
+use range_set_blaze::prelude::*;
 //     prelude::*, AssumeSortedStarts, Integer, NotIter, RangeMapBlaze, RangesIter, SortedStarts,
 //     UnionIter,
 // };
@@ -1358,51 +1364,59 @@
 // //     assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
 // // }
 
-// // #[test]
-// // fn range_set_int_operators() {
-// //     let a = RangeMapBlaze::from_iter([1..=2, 5..=100]);
-// //     let b = RangeMapBlaze::from_iter([2..=6]);
+#[test]
+fn range_set_int_operators() {
+    let a = RangeMapBlaze::from_iter([(1..=2, "one"), (5..=100, "two")]);
+    let b = RangeMapBlaze::from_iter([(2..=6, "three")]);
 
-// //     // Union of two 'RangeMapBlaze's.
-// //     let result = &a | &b;
-// //     // Alternatively, we can take ownership via 'a | b'.
-// //     assert_eq!(result.to_string(), "1..=100");
+    // Union of two 'RangeMapBlaze's. Later values in from_iter and union have higher priority.
+    let result = &a | &b;
+    // Alternatively, we can take ownership via 'a | b'.
+    assert_eq!(
+        result.to_string(),
+        r#"(1..=1, "one"), (2..=6, "three"), (7..=100, "two")"#
+    );
 
-// //     // Intersection of two 'RangeMapBlaze's.
-// //     let result = &a & &b; // Alternatively, 'a & b'.
-// //     assert_eq!(result.to_string(), "2..=2, 5..=6");
+    // Intersection of two 'RangeMapBlaze's. Later values in intersection have higher priority so `a` acts as a filter or mask.
+    let result = &a & &b; // Alternatively, 'a & b'.
+    assert_eq!(result.to_string(), r#"(2..=2, "three"), (5..=6, "three")"#);
 
-// //     // Set difference of two 'RangeMapBlaze's.
-// //     let result = &a - &b; // Alternatively, 'a - b'.
-// //     assert_eq!(result.to_string(), "1..=1, 7..=100");
+    // Set difference of two 'RangeMapBlaze's.
+    let result = &a - &b; // Alternatively, 'a - b'.
+    assert_eq!(result.to_string(), r#"(1..=1, "one"), (7..=100, "two")"#);
 
-// //     // Symmetric difference of two 'RangeMapBlaze's.
-// //     let result = &a ^ &b; // Alternatively, 'a ^ b'.
-// //     assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
+    // Symmetric difference of two 'RangeMapBlaze's.
+    let result = &a ^ &b; // Alternatively, 'a ^ b'.
+    assert_eq!(
+        result.to_string(),
+        r#"(1..=1, "one"), (3..=4, "three"), (7..=100, "two")"#
+    );
 
-// //     // complement of a 'RangeMapBlaze'.
-// //     let result = !&a; // Alternatively, '!a'.
-// //     assert_eq!(
-// //         result.to_string(),
-// //         "-2147483648..=0, 3..=4, 101..=2147483647"
-// //     );
+    // cmk0 define complement or .to_range_set_blaze() or .into_range_set_blaze(), etc.
+    // complement of a 'RangeMapBlaze'.
+    let result = !(&a.ranges().into_range_set_blaze());
+    assert_eq!(
+        result.to_string(),
+        "-2147483648..=0, 3..=4, 101..=2147483647"
+    );
 
-// //     // Multiway union of 'RangeMapBlaze's.
-// //     let c = RangeMapBlaze::from_iter([2..=2, 6..=200]);
-// //     let result = [&a, &b, &c].union();
-// //     assert_eq!(result.to_string(), "1..=200");
+    // cmk0
+    // // Multiway union of 'RangeMapBlaze's.
+    // let c = RangeMapBlaze::from_iter([2..=2, 6..=200]);
+    // let result = [&a, &b, &c].union();
+    // assert_eq!(result.to_string(), "1..=200");
 
-// //     // Multiway intersection of 'RangeMapBlaze's.
-// //     let result = [&a, &b, &c].intersection();
-// //     assert_eq!(result.to_string(), "2..=2, 6..=6");
+    // // Multiway intersection of 'RangeMapBlaze's.
+    // let result = [&a, &b, &c].intersection();
+    // assert_eq!(result.to_string(), "2..=2, 6..=6");
 
-// //     // Combining multiple operations
-// //     let result0 = &a - (&b | &c); // Creates a temporary 'RangeMapBlaze'.
+    // // Combining multiple operations
+    // let result0 = &a - (&b | &c); // Creates a temporary 'RangeMapBlaze'.
 
-// //     // Alternatively, we can use the 'SortedDisjoint' API and avoid the temporary 'RangeMapBlaze'.
-// //     let result1 = RangeMapBlaze::from_sorted_disjoint(a.ranges() - (b.ranges() | c.ranges()));
-// //     assert!(result0 == result1 && result0.to_string() == "1..=1");
-// // }
+    // // Alternatively, we can use the 'SortedDisjoint' API and avoid the temporary 'RangeMapBlaze'.
+    // let result1 = RangeMapBlaze::from_sorted_disjoint(a.ranges() - (b.ranges() | c.ranges()));
+    // assert!(result0 == result1 && result0.to_string() == "1..=1");
+}
 
 // // #[test]
 // // fn sorted_disjoint_constructors() {
@@ -1866,3 +1880,99 @@
 // //         vec![Rog::Gap(0..=255)]
 // //     );
 // // }
+
+pub fn play_movie(frames: RangeMapBlaze<u32, String>, fps: u32) {
+    assert!(fps > 0, "fps must be positive");
+    let sleep_duration = Duration::from_secs(1) / fps;
+    // For every frame index (index) from 0 to the largest index in the frames ...
+    for index in 0..=frames.ranges().into_range_set_blaze().last().unwrap() {
+        // Look up the frame at that index (panic if none exists)
+        let frame = frames.get(index).unwrap();
+        // Clear the line and return the cursor to the beginning of the line
+        print!("\x1B[2K\r{}", frame);
+        stdout().flush().unwrap(); // Flush stdout to ensure the output is displayed
+        sleep(sleep_duration);
+    }
+}
+
+pub fn multiply(frames: &RangeMapBlaze<u32, String>, factor: u32) -> RangeMapBlaze<u32, String> {
+    assert!(factor > 0, "factor must be positive");
+    frames
+        .range_values()
+        .map(|range_value| {
+            // cmk This could be faster if we used a custom iterator with the SortedDisjointMap trait
+            // cmk could also do something in place to avoid the clone
+            let (start, end) = range_value.range.clone().into_inner();
+            println!("range {:?}", (start, end));
+            let new_range = start * factor..=((end + 1) * factor) - 1;
+            println!("new_range {new_range:?}");
+            (new_range, range_value.value.clone())
+        })
+        .collect()
+}
+
+pub fn plus(frames: &RangeMapBlaze<u32, String>, addend: u32) -> RangeMapBlaze<u32, String> {
+    assert!(addend > 0, "factor must be positive");
+    frames
+        .range_values()
+        .map(|range_value| {
+            // cmk This could be faster if we used a custom iterator with the SortedDisjointMap trait
+            // cmk could also do something in place to avoid the clone
+            let new_range = range_value.range.start() + addend..=range_value.range.end() + addend;
+            (new_range, range_value.value.clone())
+        })
+        .collect()
+}
+
+pub fn reverse(frames: &RangeMapBlaze<u32, String>) -> RangeMapBlaze<u32, String> {
+    let first = frames.first_key_value().unwrap(); // cmk all these unwraps and asserts could be Results
+    let last = frames.last_key_value().unwrap();
+    frames
+        .range_values()
+        .map(|range_value| {
+            let (start, end) = range_value.range.into_inner();
+            let new_range = (last - end + first)..=(last - start + first);
+            (new_range, range_value.value.clone())
+        })
+        .collect()
+}
+// cmk make range_values a DoubleEndedIterator
+
+#[test]
+fn string_animation() {
+    let fps: u32 = 24;
+    let length_seconds = 10;
+    let frame_count = fps * length_seconds;
+
+    let mut main = RangeMapBlaze::from_iter([(0..=frame_count - 1, "<blank>".to_string())]);
+    println!("main 0 {main:?}");
+
+    // Create frames of 0 to 9
+    let mut digits = RangeMapBlaze::from_iter((0..=9).map(|i| (i..=i, i.to_string())));
+    // Replace 0 with "start"
+    digits.insert(0, "start".to_string());
+    // Trim 8 and 9 -- panic if missing
+    println!("digits 0 {digits:?}");
+    assert!(digits.remove(8).is_some());
+    println!("digits 1 {digits:?}");
+    assert!(digits.remove(9).is_some());
+
+    // cmk ALTERNATIVES
+    // digits.ranges_remove(8..=9); // also needed on RangeSetBlaze
+    // digits =- 8..=9;
+    // digits = digits - 8..=9;
+
+    // Make each number last 1 second
+    digits = multiply(&digits, fps);
+    println!("digits m {digits:?}");
+    // reverse it
+    digits = reverse(&digits);
+    println!("digits r {digits:?}");
+    // paste it on top of main
+    main = &main | &digits;
+    println!("main d {main:?}");
+    // shift it 10 seconds and paste that on top of main
+    main = &main | &plus(&digits, 10 * fps);
+    println!("main dd {main:?}");
+    play_movie(main, fps);
+}

@@ -20,6 +20,7 @@ use core::marker::PhantomData;
 use core::ops::BitOr;
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use gen_ops::gen_ops_ex;
+use num_traits::One;
 use num_traits::Zero;
 
 // cmk fix name aka 'Clone'
@@ -351,28 +352,27 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     //     }
     // }
 
-    // cmk BTreeMap does not have a first method (I think)
-    // /// Returns the first element in the set, if any.
-    // /// This element is always the minimum of all integer elements in the set.
-    // ///
-    // /// # Examples
-    // ///
-    // /// Basic usage:
-    // ///
-    // /// ```
-    // /// use range_set_blaze::RangeMapBlaze;
-    // ///
-    // /// let mut set = RangeMapBlaze::new();
-    // /// assert_eq!(set.first(), None);
-    // /// set.insert(1);
-    // /// assert_eq!(set.first(), Some(1));
-    // /// set.insert(2);
-    // /// assert_eq!(set.first(), Some(1));
-    // /// ```
-    // #[must_use]
-    // pub fn first(&self) -> Option<T, V, I> {
-    //     self.btree_map.iter().next().map(|(x, _)| *x)
-    // }
+    /// Returns the first element in the set, if any.
+    /// This element is always the minimum of all integer elements in the set.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let mut set = RangeMapBlaze::new();
+    /// assert_eq!(set.first(), None);
+    /// set.insert(1);
+    /// assert_eq!(set.first(), Some(1));
+    /// set.insert(2);
+    /// assert_eq!(set.first(), Some(1));
+    /// ```
+    #[must_use]
+    pub fn first_key_value(&self) -> Option<T> {
+        self.btree_map.first_key_value().map(|(k, _)| *k)
+    }
 
     /// Returns the element in the set, if any, that is equal to
     /// the value.
@@ -403,28 +403,29 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             })
     }
 
-    // cmk btree_map does not have a last method (I think)
-    // /// Returns the last element in the set, if any.
-    // /// This element is always the maximum of all elements in the set.
-    // ///
-    // /// # Examples
-    // ///
-    // /// Basic usage:
-    // ///
-    // /// ```
-    // /// use range_set_blaze::RangeMapBlaze;
-    // ///
-    // /// let mut set = RangeMapBlaze::new();
-    // /// assert_eq!(set.last(), None);
-    // /// set.insert(1);
-    // /// assert_eq!(set.last(), Some(1));
-    // /// set.insert(2);
-    // /// assert_eq!(set.last(), Some(2));
-    // /// ```
-    // #[must_use]
-    // pub fn last(&self) -> Option<T, V, VR> {
-    //     self.btree_map.iter().next_back().map(|(_, x)| x.end)
-    // }
+    /// Returns the last element in the set, if any.
+    /// This element is always the maximum of all elements in the set.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let mut set = RangeMapBlaze::new();
+    /// assert_eq!(set.last(), None);
+    /// set.insert(1);
+    /// assert_eq!(set.last(), Some(1));
+    /// set.insert(2);
+    /// assert_eq!(set.last(), Some(2));
+    /// ```
+    #[must_use]
+    pub fn last_key_value(&self) -> Option<T> {
+        self.btree_map
+            .last_key_value()
+            .map(|(_, end_value)| end_value.end)
+    }
 
     // cmk look at HashMap, etc for last related methods to see if when return the value.
 
@@ -849,56 +850,62 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         self.len != len_before
     }
 
-    // /// If the set contains an element equal to the value, removes it from the
-    // /// set and drops it. Returns whether such an element was present.
-    // ///
-    // /// # Examples
-    // ///
-    // /// ```
-    // /// use range_set_blaze::RangeMapBlaze;
-    // ///
-    // /// let mut set = RangeMapBlaze::new();
-    // ///
-    // /// set.insert(2);
-    // /// assert!(set.remove(2));
-    // /// assert!(!set.remove(2));
-    // /// ```
-    // cmk
-    // pub fn remove(&mut self, value: T) -> bool {
-    //     assert!(
-    //         value <= T::safe_max_value(),
-    //         "value must be <= T::safe_max_value()"
-    //     );
+    /// If the set contains an element equal to the value, removes it from the
+    /// set and drops it. Returns whether such an element was present.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let mut set = RangeMapBlaze::new();
+    ///
+    /// set.insert(2);
+    /// assert!(set.remove(2));
+    /// assert!(!set.remove(2));
+    /// ```
+    pub fn remove(&mut self, key: T) -> Option<V> {
+        assert!(
+            key <= T::safe_max_value(),
+            "value must be <= T::safe_max_value()"
+        );
 
-    //     // The code can have only one mutable reference to self.btree_map.
-    //     let Some((start_ref, end_value_ref)) = self.btree_map.range_mut(..=value).next_back()
-    //     else {
-    //         return false;
-    //     };
+        // The code can have only one mutable reference to self.btree_map.
+        let Some((start_ref, end_value_mut)) = self.btree_map.range_mut(..=key).next_back() else {
+            return None;
+        };
 
-    //     let end_value = end_value_ref; //
-    //     if end_value.end < value {
-    //         return false;
-    //     }
-    //     let start = *start_ref;
-    //     // special case if in range and start strictly less than value
-    //     if start < value {
-    //         end_value_ref.end = value - T::one();
-    //         // special, special case if value == end
-    //         if value == end_value.end {
-    //             self.len -= <T::SafeLen>::one();
-    //             return true;
-    //         }
-    //     }
-    //     self.len -= <T::SafeLen>::one();
-    //     if start == value {
-    //         self.btree_map.remove(&start);
-    //     };
-    //     if value < end_value.end {
-    //         self.btree_map.insert(value + T::one(), end_value);
-    //     }
-    //     true
-    // }
+        if end_value_mut.end < key {
+            return None;
+        }
+        let start = *start_ref;
+        let end = end_value_mut.end;
+        let value = end_value_mut.value.clone();
+        if start < key {
+            end_value_mut.end = key - T::one();
+            // special, special case if value == end
+            if key == end {
+                self.len -= <T::SafeLen>::one();
+                return Some(value);
+            }
+        }
+
+        self.len -= <T::SafeLen>::one();
+        if start == key {
+            // unwrap is safe
+            self.btree_map.remove(&start);
+            // cmk should recycle this value
+        };
+
+        if key < end {
+            let end_value = EndValue {
+                end,
+                value: value.clone(),
+            };
+            self.btree_map.insert(key + T::one(), end_value);
+        }
+        Some(value)
+    }
 
     // /// Splits the collection into two at the value. Returns a new collection
     // /// with all elements greater than or equal to the value.
