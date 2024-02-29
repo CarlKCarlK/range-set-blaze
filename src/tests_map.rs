@@ -32,7 +32,8 @@ fn map_random_from_iter_item() {
 
             // cmk fix so don't need to clone and can use .iter()
             let range_map_blaze = RangeMapBlaze::<_, char>::from_iter(inputs.clone());
-            btree_map.insert(key, value);
+            // Only insert if the key does not already exist
+            btree_map.entry(key).or_insert(value);
             if !equal_maps(&range_map_blaze, &btree_map) {
                 println!();
                 let _range_map_blaze = RangeMapBlaze::<_, char>::from_iter(inputs.clone());
@@ -63,7 +64,7 @@ fn map_random_from_iter_range() {
             // cmk fix so don't need to clone and can use .iter()
             let range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(inputs.clone());
             for k in key.clone() {
-                btree_map.insert(k, value);
+                btree_map.entry(k).or_insert(value);
             }
             if !equal_maps(&range_map_blaze, &btree_map) {
                 let _range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(inputs.clone());
@@ -227,7 +228,7 @@ fn map_random_intersection() {
             set0.insert(element);
             map0.insert(key, *value);
 
-            let intersection = IntersectionIterMap::new(set0.ranges(), map0.range_values());
+            let intersection = IntersectionIterMap::new(map0.range_values(), set0.ranges());
 
             let mut expected_keys = map0
                 .ranges()
@@ -358,12 +359,12 @@ fn map_repro_106() {
     let iter = UnionIterMap::new(iter);
     let vs = format_range_values(iter);
     println!("{vs}");
-    assert_eq!(vs, "97..=97e 98..=98c 100..=100e 106..=106b ");
+    assert_eq!(vs, "97..=98c 100..=100e 106..=106b ");
 
     let range_map_blaze = RangeMapBlaze::<u8, u8>::from_iter(input.clone());
     assert_eq!(
         range_map_blaze.to_string(),
-        "(97..=97, 101), (98..=98, 99), (100..=100, 101), (106..=106, 98)"
+        "(97..=98, 99), (100..=100, 101), (106..=106, 98)"
     );
 }
 
@@ -400,7 +401,7 @@ fn map_repro_206() {
     let iter = UnionIterMap::new(iter);
     let vs = format_range_values(iter);
     println!("{vs}");
-    assert_eq!(vs, "1..=2c 7..=7c 12..=12c 13..=13b 14..=14c 16..=16c 17..=18a 19..=19d 21..=22b 23..=23a 24..=24d 26..=26a 27..=27e 29..=29e 31..=31d 32..=32c 35..=35b 37..=37e 38..=39c 42..=42a 43..=43e 46..=46b 47..=47e 49..=49e 55..=55d 58..=58a 59..=59b 63..=63d 70..=70c 73..=73d 77..=77a 79..=79b 81..=81a 83..=83e 84..=84a 86..=86a 88..=88d 90..=90d 97..=97a 98..=98c 99..=99e 100..=100b 101..=101c 102..=102d 104..=104d 113..=113e 114..=114a 115..=115b 117..=117e 120..=120d 121..=121a 123..=124b 125..=125d 126..=126a 127..=127e 128..=128a 129..=129d 131..=131b 132..=132d 137..=137e 139..=139d 140..=140a 143..=143c 145..=145b 147..=147b 148..=148a 150..=150c 151..=151a 152..=152c 153..=153e 155..=155e 164..=164b 165..=166a 168..=168e 173..=174e 175..=175d 177..=177e 183..=183d 185..=185d 186..=186b 189..=189e 190..=190c 193..=193e 194..=195c 196..=196a 198..=198a 199..=199c 201..=201c 203..=203d 204..=206b 208..=208c 209..=209e 210..=210d 213..=213a 214..=214d 219..=219d 220..=220e 223..=223d 225..=225a 227..=228d 229..=229a 234..=234e 235..=235c 238..=238d 239..=239a 240..=240b 242..=242a 251..=251b 253..=253e ");
+    assert_eq!(vs, "1..=1c 2..=2d 7..=7b 12..=12c 13..=13b 14..=14c 16..=16c 17..=17a 18..=18e 19..=19b 21..=22b 23..=23a 24..=24d 26..=26a 27..=27e 29..=29e 31..=32d 35..=35b 37..=37e 38..=39c 42..=43e 46..=46b 47..=47e 49..=49a 55..=55d 58..=58d 59..=59c 63..=63d 70..=70c 73..=73d 77..=77a 79..=79d 81..=81a 83..=83e 84..=84a 86..=86a 88..=88d 90..=90d 97..=97a 98..=98c 99..=100e 101..=101c 102..=102a 104..=104d 113..=113b 114..=114a 115..=115b 117..=117e 120..=120d 121..=121c 123..=123a 124..=125b 126..=126a 127..=127e 128..=128a 129..=129b 131..=131b 132..=132d 137..=137e 139..=139d 140..=140a 143..=143c 145..=145b 147..=148a 150..=150c 151..=151a 152..=152c 153..=153e 155..=155e 164..=164b 165..=166a 168..=168e 173..=173d 174..=174e 175..=175c 177..=177a 183..=183d 185..=185d 186..=186b 189..=189e 190..=190c 193..=193e 194..=195c 196..=196a 198..=199e 201..=201c 203..=203d 204..=206b 208..=208c 209..=209e 210..=210d 213..=213a 214..=214b 219..=220e 223..=223e 225..=225a 227..=228d 229..=229b 234..=235e 238..=238d 239..=239a 240..=240b 242..=242a 251..=251b 253..=253d ");
 
     // let range_map_blaze = RangeMapBlaze::<u8, u8>::from_iter(input.clone());
     // assert_eq!(
@@ -414,13 +415,13 @@ fn map_repro_123() {
     let input = [(123, 'a'), (123, 'b')];
 
     let range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(input);
-    assert_eq!(range_map_blaze.to_string(), "(123..=123, 'b')");
+    assert_eq!(range_map_blaze.to_string(), "(123..=123, 'a')");
 }
 
 #[test]
 fn map_insert_255u8() {
     let iter = [
-        (255u32..=255, "Hello".to_string()), // cmk to u8
+        (255u8..=255, "Hello".to_string()), // cmk to u8
         (25..=25, "There".to_string()),
     ]
     .into_iter();
@@ -474,14 +475,14 @@ fn map_repro_bit_or() {
     println!("{result}");
     assert_eq!(
         result,
-        RangeMapBlaze::from_iter([(1u8, "Hello"), (2u8, "World"), (3, "World"), (4, "World")])
+        RangeMapBlaze::from_iter([(1u8, "Hello"), (2u8, "Hello"), (3, "Hello"), (4, "World")])
     );
 
     let result = a | b;
     println!("{result}");
     assert_eq!(
         result,
-        RangeMapBlaze::from_iter([(1u8, "Hello"), (2u8, "World"), (3, "World"), (4, "World")])
+        RangeMapBlaze::from_iter([(1u8, "Hello"), (2u8, "Hello"), (3, "Hello"), (4, "World")])
     );
 }
 
@@ -507,11 +508,11 @@ fn map_repro_bit_and() {
         .intersection(b.range_values())
         .into_range_map_blaze();
     println!("{result}");
-    assert_eq!(result, RangeMapBlaze::from_iter([(2..=3, "Go")]));
+    assert_eq!(result, RangeMapBlaze::from_iter([(2..=3, "World")]));
 
     let result = a & b;
     println!("{result}");
-    assert_eq!(result, RangeMapBlaze::from_iter([(2..=3, "Go")]));
+    assert_eq!(result, RangeMapBlaze::from_iter([(2..=3, "World")]));
 }
 
 #[test]
@@ -528,7 +529,7 @@ fn map_step_by_step() {
     println!("{vs}");
     assert_eq!(
         vs,
-        r#"[RangeValue { range: 1..=2, value: "b", priority: Some(1) }, RangeValue { range: 0..=0, value: "a", priority: Some(3) }]"#
+        r#"[RangeValue { range: 1..=2, value: "b", priority: Some(18446744073709551615) }, RangeValue { range: 0..=0, value: "a", priority: Some(18446744073709551613) }]"#
     );
 
     let iter = input.into_iter();
@@ -546,7 +547,7 @@ fn map_step_by_step() {
     println!("{vs}");
     assert_eq!(
         vs,
-        r#"[RangeValue { range: 0..=0, value: "a", priority: Some(3) }, RangeValue { range: 1..=2, value: "b", priority: Some(1) }]"#
+        r#"[RangeValue { range: 0..=0, value: "a", priority: Some(18446744073709551613) }, RangeValue { range: 1..=2, value: "b", priority: Some(18446744073709551615) }]"#
     );
 
     let iter = input.into_iter();
@@ -623,7 +624,7 @@ fn map_doctest1() {
         RangeMapBlaze::<u8, _>::from_iter([
             (1, "Hello"),
             (2, "World"),
-            (3, "Go"),
+            (3, "World"),
             (4, "Go"),
             (5, "Go")
         ])
@@ -655,7 +656,7 @@ fn map_doctest3() {
 }
 
 #[test]
-fn missing_doctest_ops() {
+fn map_missing_doctest_ops() {
     // note that may be borrowed or owned in any combination.
 
     // Returns the union of `self` and `rhs` as a new [`RangeMapBlaze`].
@@ -665,12 +666,24 @@ fn missing_doctest_ops() {
     let result = &a | &b;
     assert_eq!(
         result,
-        RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "Go"), (4, "Go"), (5, "Go")])
+        RangeMapBlaze::from_iter([
+            (1, "Hello"),
+            (2, "World"),
+            (3, "World"),
+            (4, "Go"),
+            (5, "Go")
+        ])
     );
     let result = a | &b;
     assert_eq!(
         result,
-        RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "Go"), (4, "Go"), (5, "Go")])
+        RangeMapBlaze::from_iter([
+            (1, "Hello"),
+            (2, "World"),
+            (3, "World"),
+            (4, "Go"),
+            (5, "Go")
+        ])
     );
 
     // Returns the intersection of `self` and `rhs` as a new `RangeMapBlaze<T>`.
@@ -679,10 +692,16 @@ fn missing_doctest_ops() {
     let b = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
 
     let result = a & &b;
-    assert_eq!(result, RangeMapBlaze::from_iter([(2, "Go"), (3, "Go")]));
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([(2, "World"), (3, "World")])
+    );
     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
     let result = a & b;
-    assert_eq!(result, RangeMapBlaze::from_iter([(2, "Go"), (3, "Go")]));
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([(2, "World"), (3, "World")])
+    );
 
     // Returns the symmetric difference of `self` and `rhs` as a new `RangeMapBlaze<T>`.
     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);

@@ -40,37 +40,37 @@ use crate::{
 // cmk #[derive(Clone, Debug)]
 #[allow(dead_code)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct IntersectionIterMap<'a, T, V, VR, IS, IM>
+pub struct IntersectionIterMap<'a, T, V, VR, IM, IS>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V> + 'a,
-    IS: SortedDisjoint<T>,
     IM: SortedDisjointMap<'a, T, V, VR> + 'a,
+    IS: SortedDisjoint<T>,
 {
-    iter_set: IS,
     iter_map: IM,
+    iter_set: IS,
     current_range: Option<RangeInclusive<T>>,
     current_range_value: Option<RangeValue<'a, T, V, VR>>,
     _phantom0: PhantomData<&'a T>,
     _phantom1: PhantomData<&'a V>,
 }
 
-impl<'a, T, V, VR, IS, IM> IntersectionIterMap<'a, T, V, VR, IS, IM>
+impl<'a, T, V, VR, IM, IS> IntersectionIterMap<'a, T, V, VR, IM, IS>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V> + 'a,
-    IS: SortedDisjoint<T>,
     IM: SortedDisjointMap<'a, T, V, VR> + 'a,
+    IS: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`IntersectionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`IntersectionIterMap`] for more details and examples.
     #[allow(dead_code)]
-    pub fn new(iter_set: IS, iter_map: IM) -> Self {
+    pub fn new(iter_map: IM, iter_set: IS) -> Self {
         Self {
-            iter_set,
             iter_map,
+            iter_set,
             current_range: None,
             current_range_value: None,
             _phantom0: PhantomData,
@@ -101,7 +101,7 @@ where
 //     }
 // }
 
-impl<'a, T, V, VR, IS, IM> Iterator for IntersectionIterMap<'a, T, V, VR, IS, IM>
+impl<'a, T, V, VR, IM, IS> Iterator for IntersectionIterMap<'a, T, V, VR, IM, IS>
 where
     T: Integer,
     V: ValueOwned,
@@ -257,8 +257,8 @@ where
 //     }
 // }
 
-impl<'a, T, V, VR, IS, IM> SortedStartsMap<'a, T, V, VR>
-    for IntersectionIterMap<'a, T, V, VR, IS, IM>
+impl<'a, T, V, VR, IM, IS> SortedStartsMap<'a, T, V, VR>
+    for IntersectionIterMap<'a, T, V, VR, IM, IS>
 where
     T: Integer,
     V: ValueOwned,
@@ -267,8 +267,8 @@ where
     IM: SortedDisjointMap<'a, T, V, VR> + 'a,
 {
 }
-impl<'a, T, V, VR, IS, IM> SortedDisjointMap<'a, T, V, VR>
-    for IntersectionIterMap<'a, T, V, VR, IS, IM>
+impl<'a, T, V, VR, IM, IS> SortedDisjointMap<'a, T, V, VR>
+    for IntersectionIterMap<'a, T, V, VR, IM, IS>
 where
     T: Integer,
     V: ValueOwned,

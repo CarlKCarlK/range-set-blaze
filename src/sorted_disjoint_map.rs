@@ -298,8 +298,8 @@ where
         R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
         Self: Sized,
     {
-        let left = AdjustPriorityMap::new(self, Some(NON_ZERO_ONE));
-        let right = AdjustPriorityMap::new(other.into_iter(), Some(NON_ZERO_TWO));
+        let left = AdjustPriorityMap::new(self, Some(NON_ZERO_TWO));
+        let right = AdjustPriorityMap::new(other.into_iter(), Some(NON_ZERO_ONE));
         // cmk why this into iter stuff that is not used?
         UnionIterMap::new(MergeMap::new(left, right))
     }
@@ -332,12 +332,12 @@ where
         Self: Sized,
     {
         let sorted_disjoint = RangesFromMapIter {
-            iter: self,
+            iter: other.into_iter(),
             option_ranges: None,
             phantom0: PhantomData,
             phantom1: PhantomData,
         };
-        IntersectionIterMap::new(sorted_disjoint, other.into_iter())
+        IntersectionIterMap::new(self, sorted_disjoint)
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
@@ -360,7 +360,7 @@ where
     /// assert_eq!(difference.to_string(), "1..=1");
     /// ```
     // #[inline]
-    fn difference<R>(self, other: R) -> BitSubRangesMap<'a, T, V, VR, R::IntoIter, Self>
+    fn difference<R>(self, other: R) -> BitSubRangesMap<'a, T, V, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
@@ -373,7 +373,7 @@ where
             phantom1: PhantomData,
         };
         let complement = sorted_disjoint.complement();
-        IntersectionIterMap::new(complement, self)
+        IntersectionIterMap::new(self, complement)
     }
 
     // cmk maybe we don't implement this, but it is OK on RangeMapBlaze

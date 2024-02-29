@@ -1,4 +1,4 @@
-use crate::range_values::{ExpectDebugUnwrapRelease, NON_ZERO_ONE};
+use crate::range_values::{non_zero_checked_sub, ExpectDebugUnwrapRelease};
 use crate::{
     map::{CloneBorrow, EndValue, ValueOwned},
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
@@ -40,7 +40,7 @@ where
             option_range_value: None,
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
-            priority: NON_ZERO_ONE,
+            priority: NonZeroUsize::MAX,
         }
     }
 }
@@ -71,10 +71,8 @@ where
                 return self.option_range_value.take();
             };
             next_range_value.priority = Some(self.priority);
-            self.priority = self
-                .priority
-                .checked_add(1)
-                .expect_debug_unwrap_release("overflow");
+            self.priority =
+                non_zero_checked_sub(self.priority, 1).expect_debug_unwrap_release("overflow");
 
             // check the next range is valid and non-empty
             let (next_start, next_end) = next_range_value.range.clone().into_inner();

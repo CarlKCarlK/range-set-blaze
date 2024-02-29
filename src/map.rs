@@ -1,8 +1,7 @@
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::merge_map::MergeMap;
 use crate::range_values::{
-    AdjustPriorityMap, RangeValuesFromBTree, RangeValuesIter, RangesFromMapIter, NON_ZERO_ONE,
-    NON_ZERO_TWO,
+    AdjustPriorityMap, RangeValuesFromBTree, RangeValuesIter, RangesFromMapIter,
 };
 // use crate::range_values::RangeValuesIter;
 use crate::range_values::NonZeroEnumerateExt;
@@ -1664,9 +1663,9 @@ pub type BitOrMergeMap<'a, T, V, VR, L, R> =
 
 #[doc(hidden)]
 pub type BitAndRangesMap<'a, T, V, VR, L, R> =
-    IntersectionIterMap<'a, T, V, VR, RangesFromMapIter<'a, T, V, VR, L>, R>;
+    IntersectionIterMap<'a, T, V, VR, L, RangesFromMapIter<'a, T, V, VR, R>>;
 pub type BitSubRangesMap<'a, T, V, VR, L, R> =
-    IntersectionIterMap<'a, T, V, VR, NotIter<T, RangesFromMapIter<'a, T, V, VR, L>>, R>;
+    IntersectionIterMap<'a, T, V, VR, L, NotIter<T, RangesFromMapIter<'a, T, V, VR, R>>>;
 #[doc(hidden)]
 pub type SortedStartsInVecMap<'a, T, V, VR> =
     AssumeSortedStartsMap<'a, T, V, VR, std::vec::IntoIter<RangeValue<'a, T, V, VR>>>;
@@ -1807,10 +1806,8 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor(self, other: &RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
-        let mut left = self.range_values();
-        left.priority = Some(NON_ZERO_ONE);
-        let mut right = other.range_values();
-        right.priority = Some(NON_ZERO_TWO);
+        let left = self.range_values();
+        let right = other.range_values();
         (left | right).into_range_map_blaze()
     }
 }

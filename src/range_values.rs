@@ -28,7 +28,7 @@ use crate::{
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct RangeValuesIter<'a, T: Integer, V: ValueOwned> {
     pub(crate) iter: btree_map::Iter<'a, T, EndValue<T, V>>,
-    pub(crate) priority: Option<NonZeroUsize>,
+    pub(crate) priority: Option<NonZeroUsize>, // cmk00 I don't think this is used
 }
 
 impl<'a, T: Integer, V: ValueOwned> AsRef<RangeValuesIter<'a, T, V>> for RangeValuesIter<'a, T, V> {
@@ -401,20 +401,26 @@ where
         let index = self.current_index;
 
         // Increment the current index, panic on overflow
-        self.current_index = self
-            .current_index
-            .checked_add(1)
+        self.current_index = non_zero_checked_sub(self.current_index, 1)
             .expect_debug_unwrap_release("Overflow when incrementing NonZeroUsize index");
 
         Some((index, item))
     }
 }
 
+pub fn non_zero_checked_sub(value: NonZeroUsize, subtrahend: usize) -> Option<NonZeroUsize> {
+    // Convert to usize, perform checked subtraction, then try to make a new NonZeroUsize
+    value
+        .get()
+        .checked_sub(subtrahend)
+        .and_then(NonZeroUsize::new)
+}
+
 pub(crate) trait NonZeroEnumerateExt: Iterator + Sized {
     fn non_zero_enumerate(self) -> NonZeroEnumerate<Self> {
         NonZeroEnumerate {
             inner: self.enumerate(),
-            current_index: NON_ZERO_ONE,
+            current_index: NonZeroUsize::MAX,
         }
     }
 }
