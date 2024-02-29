@@ -1985,16 +1985,13 @@ fn string_animation() {
     // digits =- 8..=9;
     // digits = digits - 8..=9;
 
-    // Make each number last 1 second
-    // cmk could be a method on RangeMapBlaze
+    // Make each number last 1 second, and reverse, and shift to start after 1 second
+    // cmk linear could be a method on RangeMapBlaze
     digits = linear(&digits, -fps, fps);
     println!("digits m {digits:?}");
-    // reverse it
-    // digits = linear(&digits, -1, 0);
-    // println!("digits r '{digits:?}'");
     // paste it on top of main
     main = &main | &digits;
-    // // shift it 10 seconds and paste that on top of main
+    // shift digits 10 seconds and paste it again on top of main
     main = &main | &linear(&digits, 1, 10 * fps);
     println!("main dd {main:?}");
     play_movie(main, fps);
