@@ -505,7 +505,7 @@ fn map_repro_bit_and() {
 
     let result = a
         .range_values()
-        .intersection(b.range_values())
+        .intersection(b.ranges())
         .into_range_map_blaze();
     println!("{result}");
     assert_eq!(result, RangeMapBlaze::from_iter([(2..=3, "World")]));

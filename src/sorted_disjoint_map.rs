@@ -8,12 +8,11 @@ use core::marker::PhantomData;
 // };
 use core::fmt;
 
-// use itertools::Itertools;
-
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::map::{BitAndRangesMap, BitOrMergeMap, BitSubRangesMap, CloneBorrow};
 use crate::range_values::{AdjustPriorityMap, RangesFromMapIter, NON_ZERO_ONE, NON_ZERO_TWO};
 use crate::sorted_disjoint::SortedDisjoint;
+use crate::NotIter;
 use crate::{
     map::ValueOwned, merge_map::MergeMap, union_iter_map::UnionIterMap, Integer, RangeMapBlaze,
 };
@@ -269,6 +268,19 @@ pub trait SortedDisjointMap<'a, T: Integer + 'a, V: ValueOwned + 'a, VR>:
 where
     VR: CloneBorrow<V> + 'a,
 {
+    ///cmk
+    #[inline]
+    fn into_sorted_disjoint(self) -> impl SortedDisjoint<T>
+    where
+        Self: Sized,
+    {
+        RangesFromMapIter {
+            iter: self,
+            option_ranges: None,
+            phantom0: PhantomData,
+            phantom1: PhantomData,
+        }
+    }
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their union.
@@ -326,57 +338,33 @@ where
     #[inline]
     fn intersection<R>(self, other: R) -> BitAndRangesMap<'a, T, V, VR, Self, R::IntoIter>
     where
-        R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
-        <R as IntoIterator>::IntoIter: 'a,
+        R: IntoIterator<Item = RangeInclusive<T>>,
+        R::IntoIter: SortedDisjoint<T>,
         Self: Sized,
     {
-        let sorted_disjoint = RangesFromMapIter {
-            iter: other.into_iter(),
-            option_ranges: None,
-            phantom0: PhantomData,
-            phantom1: PhantomData,
-        };
+        let sorted_disjoint = other.into_iter();
         IntersectionIterMap::new(self, sorted_disjoint)
     }
 
-    // /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
-    // ///
-    // /// # Examples
-    // ///
-    // /// ```
-    // /// use range_set_blaze::prelude::*;
-    // ///
-    // /// let a = CheckSortedDisjointMap::from([1..=2]);
-    // /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
-    // /// let difference = a.difference(b);
-    // /// assert_eq!(difference.to_string(), "1..=1");
-    // ///
-    // /// // Alternatively, we can use "-" because CheckSortedDisjointMap defines
-    // /// // ops::sub as SortedDisjointMap::difference.
-    // /// let a = CheckSortedDisjointMap::from([1..=2]);
-    // /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
-    // /// let difference = a - b;
-    // /// assert_eq!(difference.to_string(), "1..=1");
-    // /// ```
-    // #[inline]
-    // fn difference<R>(self, other: R) -> BitSubRangesMap<'a, T, V, VR, Self, R::IntoIter>
-    // where
-    //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
-    //     Self: Sized,
-    // {
-    //     let sorted_disjoint = RangesFromMapIter {
-    //         iter: other.into_iter(),
-    //         option_ranges: None,
-    //         phantom0: PhantomData,
-    //         phantom1: PhantomData,
-    //     };
-    //     let complement = sorted_disjoint.complement();
-    //     IntersectionIterMap::new(self, complement)
-    // }
-
-    /// cmk
+    /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
+    /// let difference = a.difference(b);
+    /// assert_eq!(difference.to_string(), "1..=1");
+    ///
+    /// // Alternatively, we can use "-" because CheckSortedDisjointMap defines
+    /// // ops::sub as SortedDisjointMap::difference.
+    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
+    /// let difference = a - b;
+    /// assert_eq!(difference.to_string(), "1..=1");
+    /// ```
     #[inline]
     fn difference<R>(self, other: R) -> BitSubRangesMap<'a, T, V, VR, Self, R::IntoIter>
     where
@@ -387,6 +375,16 @@ where
         let sorted_disjoint = other.into_iter();
         let complement = sorted_disjoint.complement();
         IntersectionIterMap::new(self, complement)
+    }
+
+    /// cmk
+    #[inline]
+    fn complement(self) -> NotIter<T, impl SortedDisjoint<T>>
+    where
+        Self: Sized,
+    {
+        let sorted_disjoint = self.into_sorted_disjoint();
+        sorted_disjoint.complement()
     }
 
     // cmk maybe we don't implement this, but it is OK on RangeMapBlaze
@@ -411,7 +409,17 @@ where
     // /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     // /// ```
     // #[inline]
-    // fn symmetric_difference<R>(self, other: R) -> BitXOrTeeMap<'a, T, V, VR, Self, R::IntoIter>
+    // fn symmetric_difference<R>(
+    //     self,
+    //     other: R,
+    // ) -> BitAndRangesMap<
+    //     'a,
+    //     T,
+    //     V,
+    //     VR,
+    //     BitSubRangesMap<'a, T, V, VR, Self, impl SortedDisjoint<T>>,
+    //     BitSubRangesMap<'a, T, V, VR, R::IntoIter, impl SortedDisjoint<T>>,
+    // >
     // where
     //     R: IntoIterator<Item = Self::Item>,
     //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
@@ -419,7 +427,9 @@ where
     //     VR: Clone,
     // {
     //     let (lhs0, lhs1) = self.tee();
+    //     let lhs1 = lhs1.into_sorted_disjoint();
     //     let (rhs0, rhs1) = other.into_iter().tee();
+    //     let rhs0 = rhs0.into_sorted_disjoint();
     //     lhs0.difference(rhs0).union(rhs1.difference(lhs1))
     // }
 

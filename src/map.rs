@@ -9,7 +9,7 @@ use crate::sorted_disjoint_map::{DebugToString, RangeValue};
 use crate::sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, SortedDisjointWithLenSoFarMap};
-use crate::{Integer, NotIter, RangeSetBlaze};
+use crate::{Integer, NotIter, RangeSetBlaze, SortedDisjoint};
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 use alloc::sync::Arc;
@@ -1662,8 +1662,7 @@ pub type BitOrMergeMap<'a, T, V, VR, L, R> =
     UnionIterMap<'a, T, V, VR, MergeMapAdjusted<'a, T, V, VR, L, R>>;
 
 #[doc(hidden)]
-pub type BitAndRangesMap<'a, T, V, VR, L, R> =
-    IntersectionIterMap<'a, T, V, VR, L, RangesFromMapIter<'a, T, V, VR, R>>;
+pub type BitAndRangesMap<'a, T, V, VR, L, R> = IntersectionIterMap<'a, T, V, VR, L, R>;
 #[doc(hidden)]
 pub type BitSubRangesMap<'a, T, V, VR, L, R> = IntersectionIterMap<'a, T, V, VR, L, NotIter<T, R>>;
 
@@ -1866,7 +1865,7 @@ gen_ops_ex!(
     /// ```
     for & call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
         // cmk use & ???
-        a.range_values().intersection(b.range_values()).into_range_map_blaze()
+        a.range_values().intersection(b.ranges()).into_range_map_blaze()
     };
 /// Symmetric difference the contents of two [`RangeMapBlaze`]'s.
 ///
@@ -1930,6 +1929,24 @@ gen_ops_ex!(
 /// cmk
 for - call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
     a.range_values().difference(b.ranges()).into_range_map_blaze()
+};
+
+/// cmk
+for & call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
+    a.range_values().intersection(b.ranges()).into_range_map_blaze()
+};
+
+where T: Integer, V: ValueOwned
+);
+
+gen_ops_ex!(
+    <T, V>;
+    types ref RangeMapBlaze<T,V> => RangeSetBlaze<T>;
+
+
+/// cmk
+for ! call |a: &RangeMapBlaze<T, V>| {
+    a.ranges().complement().into_range_set_blaze()
 };
 where T: Integer, V: ValueOwned
 );

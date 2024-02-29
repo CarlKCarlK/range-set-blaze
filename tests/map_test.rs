@@ -37,6 +37,82 @@ use range_set_blaze::prelude::*;
 
 // type I32SafeLen = <i32 as range_set_blaze::Integer>::SafeLen;
 
+#[test]
+fn map_operators() {
+    let arm = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+    let brm = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
+    let adm = arm.range_values();
+    let bdm = brm.range_values();
+    let ads = arm.ranges();
+    let bds = brm.ranges();
+    let ars = ads.into_range_set_blaze();
+    let brs = bds.into_range_set_blaze();
+
+    // RangeSetBlaze
+    // union, intersection, difference, symmetric_difference, complement
+    let _ = &ars | &brs;
+    let _ = &ars & &brs;
+    let _ = &ars - &brs;
+    let _ = &ars ^ &brs;
+    let _ = !&ars;
+
+    // SortedDisjointSet
+    // union, intersection, difference, symmetric_difference, complement
+    let ads = arm.ranges();
+    let bds = brm.ranges();
+    let _ = ads.union(bds);
+    let ads = arm.ranges();
+    let bds = brm.ranges();
+    let _ = ads.intersection(bds);
+    let ads = arm.ranges();
+    let bds = brm.ranges();
+    let _ = ads.difference(bds);
+    let ads = arm.ranges();
+    let bds = brm.ranges();
+    let _ = ads.symmetric_difference(bds);
+    let ads = arm.ranges();
+    let _ = ads.complement();
+
+    // RangeMapBlaze/RangeMapBlaze
+    // union, intersection, difference, symmetric_difference, complement
+    let _ = &arm | &brm;
+    let _ = &arm & &brm;
+    let _ = &arm - &brm;
+    let _ = &arm ^ &brm;
+    let _ = !&arm;
+
+    // RangeMapBlaze/RangeSetBlaze
+    // intersection, difference
+    let _ = &arm & &brs;
+    let _ = &arm - &brs;
+
+    // SortedDisjointMap/SortedDisjointMap
+    // union, intersection, difference, symmetric_difference, complement
+    let _ = adm.union(bdm);
+    let adm = arm.range_values();
+    let bdm = brm.range_values();
+    let _ = adm.intersection(bdm.into_sorted_disjoint());
+    let adm = arm.range_values();
+    let bdm = brm.range_values();
+    let _ = adm.difference(bdm.into_sorted_disjoint());
+    // symmetric_difference on streams not supported because
+    // efficient implementation would require a new iterator type.
+    // let adm = arm.range_values();
+    // let bdm = brm.range_values();
+    // let _ = adm.symmetric_difference(bdm);
+    let adm = arm.range_values();
+    let _ = adm.complement();
+
+    // SortedDisjointMap/SortedDisjointSet
+    // intersection, difference
+    let adm = arm.range_values();
+    let bds = brm.ranges();
+    let _ = adm.intersection(bds);
+    let adm = arm.range_values();
+    let bds = brm.ranges();
+    let _ = adm.difference(bds);
+}
+
 // // #[test]
 // // fn insert_255u8() {
 // //     let btree_map = BTreeMap::from_iter([(255u8, "First")]);
@@ -1882,7 +1958,7 @@ fn range_map_blaze_operators() {
 // //     );
 // // }
 
-pub fn play_movie(frames: RangeMapBlaze<i32, String>, fps: i32) {
+pub fn play_movie(frames: RangeMapBlaze<i32, String>, fps: i32, skip_sleep: bool) {
     assert!(fps > 0, "fps must be positive");
     // cmk could look for missing frames
     let sleep_duration = Duration::from_secs(1) / fps as u32;
@@ -1895,51 +1971,14 @@ pub fn play_movie(frames: RangeMapBlaze<i32, String>, fps: i32) {
         // Clear the line and return the cursor to the beginning of the line
         print!("\x1B[2K\r{}", frame);
         stdout().flush().unwrap(); // Flush stdout to ensure the output is displayed
-        sleep(sleep_duration);
+        if !skip_sleep {
+            sleep(sleep_duration);
+        }
     }
 }
 
-// pub fn multiply(frames: &RangeMapBlaze<i32, String>, factor: i32) -> RangeMapBlaze<i32, String> {
-//     assert!(factor > 0, "factor must be positive");
-//     frames
-//         .range_values()
-//         .map(|range_value| {
-//             // cmk This could be faster if we used a custom iterator with the SortedDisjointMap trait
-//             // cmk could also do something in place to avoid the clone
-//             let (start, end) = range_value.range.clone().into_inner();
-//             let new_range = start * factor..=((end + 1) * factor) - 1;
-//             (new_range, range_value.value.clone())
-//         })
-//         .collect()
-// }
-
-// pub fn plus(frames: &RangeMapBlaze<i32, String>, addend: i32) -> RangeMapBlaze<i32, String> {
-//     assert!(addend > 0, "factor must be positive");
-//     frames
-//         .range_values()
-//         .map(|range_value| {
-//             // cmk This could be faster if we used a custom iterator with the SortedDisjointMap trait
-//             // cmk could also do something in place to avoid the clone
-//             let new_range = range_value.range.start() + addend..=range_value.range.end() + addend;
-//             (new_range, range_value.value.clone())
-//         })
-//         .collect()
-// }
-
-// pub fn reverse(frames: &RangeMapBlaze<i32, String>) -> RangeMapBlaze<i32, String> {
-//     let first = frames.first_key_value().unwrap().0; // cmk all these unwraps and asserts could be Results
-//     let last = frames.last_key_value().unwrap().0;
-//     frames
-//         .range_values()
-//         .map(|range_value| {
-//             let (start, end) = range_value.range.into_inner();
-//             let new_range = (last - end + first)..=(last - start + first);
-//             (new_range, range_value.value.clone())
-//         })
-//         .collect()
-// }cmk delete
-
-// try to make generic?
+// cmk try to make generic?
+// cmk linear could be a method on RangeMapBlaze
 pub fn linear(
     range_map_blaze: &RangeMapBlaze<i32, String>,
     scale: i32,
@@ -1975,29 +2014,32 @@ fn string_animation() {
     let length_seconds = 15;
     let frame_count = fps * length_seconds;
 
+    // The `main`` track starts with 15 seconds of black
     let mut main = RangeMapBlaze::from_iter([(0..=frame_count - 1, "<black>".to_string())]);
     println!("main {main:?}");
 
-    // Create frames of 0 to 9
+    // Create a 10 frame `digits` track with "0" to "9"".
     let mut digits = RangeMapBlaze::from_iter((0..=9).map(|i| (i..=i, i.to_string())));
-    // Replace 0 with "start"
-    digits.insert(0, "start".to_string());
-    // // Trim 8 and 9 -- panic if missing
-    // assert!(digits.remove(8).is_some());
-    // assert!(digits.remove(9).is_some());
 
-    // cmk ALTERNATIVES
-    // digits.ranges_remove(8..=9); // also needed on RangeSetBlaze
-    // digits =- 8..=9;
+    // Make frame 0 be "start"
+    digits.insert(0, "start".to_string());
+
+    // Oops, we've changed our mind and now don't want frames 8 and 9.
     digits = digits - RangeSetBlaze::from_iter([8..=9]);
 
-    // Make each number last 1 second, and reverse, and shift to start after 1 second
-    // cmk linear could be a method on RangeMapBlaze
+    // Apply the following linear transformation to `digits``:
+    // 1. Make each original frame last one second
+    // 2. Reverse the order of the frames
+    // 3. Shift the frames 1 second into the future
     digits = linear(&digits, -fps, fps);
     println!("digits m {digits:?}");
-    // paste it on top of main
-    // shift digits 10 seconds and paste it again on top of main, too.
-    main = &linear(&digits, 1, 10 * fps) | &digits | &main;
+
+    // Composite these together (listed from top to bottom)
+    //  1. `digits``
+    //  2. `digits` shifted 10 seconds into the future
+    //  3. `main`
+    main = &digits | &linear(&digits, 1, 10 * fps) | &main;
     println!("main dd {main:?}");
-    play_movie(main, fps);
+
+    play_movie(main, fps, true);
 }
