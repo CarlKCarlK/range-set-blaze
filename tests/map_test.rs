@@ -1951,11 +1951,15 @@ pub fn linear(
         .range_values()
         .map(|range_value| {
             let (start, end) = range_value.range.clone().into_inner();
-            let mut new_range = (start - first) * scale + first + shift
-                ..=((end + 1) - first) * scale + first + shift - 1;
+            let mut a = (start - first) * scale.abs() + first;
+            let mut b = (end + 1 - first) * scale.abs() + first - 1;
+            let last = (last + 1 - first) * scale.abs() + first - 1;
             if scale < 0 {
-                new_range = new_range.end() + last + 2..=new_range.start() + last;
+                (a, b) = (last - b + first, last - a + first);
             }
+            a += shift;
+            b += shift;
+            let new_range = a..=b;
             (new_range, range_value.value.clone())
         })
         .collect()
@@ -1984,17 +1988,15 @@ fn string_animation() {
     // digits = digits - 8..=9;
 
     // Make each number last 1 second
-    // digits = multiply(&digits, fps);
     // cmk could be a method on RangeMapBlaze
-    digits = linear(&digits, fps, 0);
+    digits = linear(&digits, -fps, 5);
     println!("digits m {digits:?}");
     // reverse it
-    // digits = reverse(&digits);
-    digits = linear(&digits, -1, 0);
-    println!("digits r '{digits:?}'");
+    // digits = linear(&digits, -1, 0);
+    // println!("digits r '{digits:?}'");
     // paste it on top of main
     main = &main | &digits;
-    // shift it 10 seconds and paste that on top of main
+    // // shift it 10 seconds and paste that on top of main
     main = &main | &linear(&digits, 1, 10 * fps);
     println!("main dd {main:?}");
     play_movie(main, fps);
