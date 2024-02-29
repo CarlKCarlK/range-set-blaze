@@ -1957,9 +1957,7 @@ pub fn linear(
             if scale < 0 {
                 (a, b) = (last - b + first, last - a + first);
             }
-            a += shift;
-            b += shift;
-            let new_range = a..=b;
+            let new_range = a + shift..=b + shift;
             (new_range, range_value.value.clone())
         })
         .collect()
@@ -1989,7 +1987,7 @@ fn string_animation() {
 
     // Make each number last 1 second
     // cmk could be a method on RangeMapBlaze
-    digits = linear(&digits, -fps, 5);
+    digits = linear(&digits, -fps, fps);
     println!("digits m {digits:?}");
     // reverse it
     // digits = linear(&digits, -1, 0);
