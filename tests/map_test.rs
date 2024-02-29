@@ -1923,8 +1923,8 @@ pub fn plus(frames: &RangeMapBlaze<i32, String>, addend: i32) -> RangeMapBlaze<i
 }
 
 pub fn reverse(frames: &RangeMapBlaze<i32, String>) -> RangeMapBlaze<i32, String> {
-    let first = frames.first_key_value().unwrap(); // cmk all these unwraps and asserts could be Results
-    let last = frames.last_key_value().unwrap();
+    let first = frames.first_key_value().unwrap().0; // cmk all these unwraps and asserts could be Results
+    let last = frames.last_key_value().unwrap().0;
     frames
         .range_values()
         .map(|range_value| {
@@ -1944,19 +1944,18 @@ pub fn linear(
         return RangeMapBlaze::new();
     }
 
-    let first = range_map_blaze.first_key_value().unwrap();
-    let last = range_map_blaze.last_key_value().unwrap();
+    let first = range_map_blaze.first_key_value().unwrap().0;
+    let last = range_map_blaze.last_key_value().unwrap().0;
 
     range_map_blaze
         .range_values()
         .map(|range_value| {
             let (start, end) = range_value.range.clone().into_inner();
-            let mut a = (start - first) * scale + first + shift;
-            let mut b = ((end + 1) - first) * scale + first + shift - 1;
+            let mut new_range = (start - first) * scale + first + shift
+                ..=((end + 1) - first) * scale + first + shift - 1;
             if scale < 0 {
-                (a, b) = (b + last + 2, a + last);
+                new_range = new_range.end() + last + 2..=new_range.start() + last;
             }
-            let new_range = a..=b;
             (new_range, range_value.value.clone())
         })
         .collect()

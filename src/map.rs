@@ -370,8 +370,10 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(set.first(), Some(1));
     /// ```
     #[must_use]
-    pub fn first_key_value(&self) -> Option<T> {
-        self.btree_map.first_key_value().map(|(k, _)| *k)
+    pub fn first_key_value(&self) -> Option<(T, &V)> {
+        self.btree_map
+            .first_key_value()
+            .map(|(k, end_value)| (*k, &end_value.value))
     }
 
     /// Returns the element in the set, if any, that is equal to
@@ -421,10 +423,10 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(set.last(), Some(2));
     /// ```
     #[must_use]
-    pub fn last_key_value(&self) -> Option<T> {
+    pub fn last_key_value(&self) -> Option<(T, &V)> {
         self.btree_map
             .last_key_value()
-            .map(|(_, end_value)| end_value.end)
+            .map(|(_, end_value)| (end_value.end, &end_value.value))
     }
 
     // cmk look at HashMap, etc for last related methods to see if when return the value.
