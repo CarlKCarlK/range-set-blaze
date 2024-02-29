@@ -1,4 +1,8 @@
+use alloc::format;
+use alloc::string::String;
+use alloc::vec::Vec;
 use core::cmp::Ordering;
+use core::fmt::Debug;
 use core::marker::PhantomData;
 // use alloc::format;
 // use alloc::string::String;
@@ -801,8 +805,6 @@ where
 {
     fn to_string(self) -> String;
 }
-
-use std::fmt::Debug;
 
 impl<'a, T, V, VR, M> DebugToString<'a, T, V, VR> for M
 where

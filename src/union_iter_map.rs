@@ -1,10 +1,12 @@
+use crate::alloc::string::ToString;
+use alloc::collections::BinaryHeap;
+use alloc::format;
+use alloc::string::String;
 use core::{
     cmp::min,
     iter::FusedIterator,
     ops::{self, RangeInclusive},
 };
-
-use alloc::collections::BinaryHeap;
 use itertools::Itertools;
 
 use crate::{
@@ -343,7 +345,7 @@ where
     #[allow(clippy::clone_on_copy)]
     fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, VR, I>) -> Self {
         let iter = unsorted_disjoint.sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
-            std::cmp::Ordering::Equal => {
+            core::cmp::Ordering::Equal => {
                 // println!(
                 //     "cmk a.priority {:?} b.priority {:?}",
                 //     a.priority, b.priority

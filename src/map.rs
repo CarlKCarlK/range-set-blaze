@@ -3,6 +3,9 @@ use crate::merge_map::MergeMap;
 use crate::range_values::{
     AdjustPriorityMap, RangeValuesFromBTree, RangeValuesIter, RangesFromMapIter,
 };
+use alloc::borrow::ToOwned;
+use alloc::vec;
+use alloc::vec::Vec;
 // use crate::range_values::RangeValuesIter;
 use crate::range_values::NonZeroEnumerateExt;
 use crate::sorted_disjoint_map::{DebugToString, RangeValue};
@@ -1263,7 +1266,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             // ^BBBB
             //  aaa
             // ^AAAB
-            let value_before = std::mem::replace(&mut end_value_before.value, value);
+            let value_before = core::mem::replace(&mut end_value_before.value, value);
             debug_assert!(start_before <= end); // real assert
             end_value_before.end = end;
             debug_assert!(end + T::one() <= end_before); // real assert
@@ -1668,7 +1671,7 @@ pub type BitSubRangesMap<'a, T, V, VR, L, R> = IntersectionIterMap<'a, T, V, VR,
 
 #[doc(hidden)]
 pub type SortedStartsInVecMap<'a, T, V, VR> =
-    AssumeSortedStartsMap<'a, T, V, VR, std::vec::IntoIter<RangeValue<'a, T, V, VR>>>;
+    AssumeSortedStartsMap<'a, T, V, VR, vec::IntoIter<RangeValue<'a, T, V, VR>>>;
 // pub type BitXOrTeeMap<'a, T, V, VR, L, R> = BitOrMergeMap<
 //     'a,
 //     T,

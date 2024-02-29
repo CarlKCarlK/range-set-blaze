@@ -4,6 +4,7 @@ use crate::{
     sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
     Integer,
 };
+use alloc::borrow::ToOwned;
 use core::{
     cmp::{max, min},
     iter::FusedIterator,

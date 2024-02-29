@@ -59,13 +59,7 @@ cargo test --features alloc --no-default-features
 # test wasm
 wasm-pack test --chrome --headless
 
-See: https://docs.rust-embedded.org/book/start/qemu.html
-set PATH="C:\Program Files\qemu\";%PATH%
-rustup target add thumbv7m-none-eabi
-rustup override set nightly
-cargo build 
-qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-config enable=on,target=native -kernel ..\..\target\thumbv7m-none-eabi\debug\app
-
+# running on embedded -- see useful.md
 
 cargo run --example read_roaring_data
 

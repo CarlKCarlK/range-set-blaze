@@ -5,6 +5,7 @@ use itertools::{Itertools, MergeBy};
 
 use crate::map::{CloneBorrow, ValueOwned};
 use crate::Integer;
+use alloc::borrow::ToOwned;
 
 use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap};
 
