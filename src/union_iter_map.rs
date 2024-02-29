@@ -193,7 +193,6 @@ where
                 ))
             };
 
-            // cmk00 don't need to do .priority < .priority because the objects define the ordering
             // We also update the workspace to removing any items that are completely covered by the new_start.
             // We also don't need to keep any items that have a lower priority and are shorter than the new best.
             let mut new_workspace = BinaryHeap::new();

@@ -16,6 +16,7 @@
 // use std::collections::BTreeMap;
 
 use std::{
+    cmp::{max, min},
     io::{stdout, Write},
     thread::sleep,
     time::Duration,
@@ -1881,9 +1882,9 @@ fn range_set_int_operators() {
 // //     );
 // // }
 
-pub fn play_movie(frames: RangeMapBlaze<u32, String>, fps: u32) {
+pub fn play_movie(frames: RangeMapBlaze<i32, String>, fps: i32) {
     assert!(fps > 0, "fps must be positive");
-    let sleep_duration = Duration::from_secs(1) / fps;
+    let sleep_duration = Duration::from_secs(1) / fps as u32;
     // For every frame index (index) from 0 to the largest index in the frames ...
     for index in 0..=frames.ranges().into_range_set_blaze().last().unwrap() {
         // Look up the frame at that index (panic if none exists)
@@ -1895,7 +1896,7 @@ pub fn play_movie(frames: RangeMapBlaze<u32, String>, fps: u32) {
     }
 }
 
-pub fn multiply(frames: &RangeMapBlaze<u32, String>, factor: u32) -> RangeMapBlaze<u32, String> {
+pub fn multiply(frames: &RangeMapBlaze<i32, String>, factor: i32) -> RangeMapBlaze<i32, String> {
     assert!(factor > 0, "factor must be positive");
     frames
         .range_values()
@@ -1903,15 +1904,13 @@ pub fn multiply(frames: &RangeMapBlaze<u32, String>, factor: u32) -> RangeMapBla
             // cmk This could be faster if we used a custom iterator with the SortedDisjointMap trait
             // cmk could also do something in place to avoid the clone
             let (start, end) = range_value.range.clone().into_inner();
-            println!("range {:?}", (start, end));
             let new_range = start * factor..=((end + 1) * factor) - 1;
-            println!("new_range {new_range:?}");
             (new_range, range_value.value.clone())
         })
         .collect()
 }
 
-pub fn plus(frames: &RangeMapBlaze<u32, String>, addend: u32) -> RangeMapBlaze<u32, String> {
+pub fn plus(frames: &RangeMapBlaze<i32, String>, addend: i32) -> RangeMapBlaze<i32, String> {
     assert!(addend > 0, "factor must be positive");
     frames
         .range_values()
@@ -1924,7 +1923,7 @@ pub fn plus(frames: &RangeMapBlaze<u32, String>, addend: u32) -> RangeMapBlaze<u
         .collect()
 }
 
-pub fn reverse(frames: &RangeMapBlaze<u32, String>) -> RangeMapBlaze<u32, String> {
+pub fn reverse(frames: &RangeMapBlaze<i32, String>) -> RangeMapBlaze<i32, String> {
     let first = frames.first_key_value().unwrap(); // cmk all these unwraps and asserts could be Results
     let last = frames.last_key_value().unwrap();
     frames
@@ -1936,25 +1935,55 @@ pub fn reverse(frames: &RangeMapBlaze<u32, String>) -> RangeMapBlaze<u32, String
         })
         .collect()
 }
+
+pub fn linear(
+    range_map_blaze: &RangeMapBlaze<i32, String>,
+    scale: i32,
+    shift: i32,
+) -> RangeMapBlaze<i32, String> {
+    if range_map_blaze.is_empty() {
+        return RangeMapBlaze::new();
+    }
+
+    let first = range_map_blaze.first_key_value().unwrap();
+    let last = range_map_blaze.last_key_value().unwrap();
+
+    range_map_blaze
+        .range_values()
+        .map(|range_value| {
+            let (start, end) = range_value.range.clone().into_inner();
+            let (new_start, new_end) = if scale < 0 {
+                // When reversing, end becomes start and start becomes end
+                let new_start = last - ((end + 1) - first) * scale.abs() + first + shift;
+                let new_end = last - (start - first) * scale.abs() + first + shift - 1;
+                (new_start, new_end)
+            } else {
+                // Scaling normally
+                let new_start = (start - first) * scale + first + shift;
+                let new_end = ((end + 1) - first) * scale + first + shift - 1;
+                (new_start, new_end)
+            }; // Range is already ordered correctly due to the "if" logic
+            (new_start..=new_end, range_value.value.clone())
+        })
+        .collect()
+}
+
 // cmk make range_values a DoubleEndedIterator
 
 #[test]
 fn string_animation() {
-    let fps: u32 = 24;
+    let fps: i32 = 24;
     let length_seconds = 10;
     let frame_count = fps * length_seconds;
 
     let mut main = RangeMapBlaze::from_iter([(0..=frame_count - 1, "<blank>".to_string())]);
-    println!("main 0 {main:?}");
 
     // Create frames of 0 to 9
     let mut digits = RangeMapBlaze::from_iter((0..=9).map(|i| (i..=i, i.to_string())));
     // Replace 0 with "start"
     digits.insert(0, "start".to_string());
     // Trim 8 and 9 -- panic if missing
-    println!("digits 0 {digits:?}");
     assert!(digits.remove(8).is_some());
-    println!("digits 1 {digits:?}");
     assert!(digits.remove(9).is_some());
 
     // cmk ALTERNATIVES
@@ -1963,14 +1992,14 @@ fn string_animation() {
     // digits = digits - 8..=9;
 
     // Make each number last 1 second
-    digits = multiply(&digits, fps);
-    println!("digits m {digits:?}");
+    // digits = multiply(&digits, fps);
+    // cmk could be a method on RangeMapBlaze
+    digits = linear(&digits, fps, 0);
+    println!("digits dd {digits:?}");
     // reverse it
     digits = reverse(&digits);
-    println!("digits r {digits:?}");
     // paste it on top of main
     main = &main | &digits;
-    println!("main d {main:?}");
     // shift it 10 seconds and paste that on top of main
     main = &main | &plus(&digits, 10 * fps);
     println!("main dd {main:?}");
