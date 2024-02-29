@@ -9,7 +9,7 @@ use crate::sorted_disjoint_map::{DebugToString, RangeValue};
 use crate::sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, SortedDisjointWithLenSoFarMap};
-use crate::{Integer, NotIter};
+use crate::{Integer, NotIter, RangeSetBlaze};
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 use alloc::sync::Arc;
@@ -1664,8 +1664,9 @@ pub type BitOrMergeMap<'a, T, V, VR, L, R> =
 #[doc(hidden)]
 pub type BitAndRangesMap<'a, T, V, VR, L, R> =
     IntersectionIterMap<'a, T, V, VR, L, RangesFromMapIter<'a, T, V, VR, R>>;
-pub type BitSubRangesMap<'a, T, V, VR, L, R> =
-    IntersectionIterMap<'a, T, V, VR, L, NotIter<T, RangesFromMapIter<'a, T, V, VR, R>>>;
+#[doc(hidden)]
+pub type BitSubRangesMap<'a, T, V, VR, L, R> = IntersectionIterMap<'a, T, V, VR, L, NotIter<T, R>>;
+
 #[doc(hidden)]
 pub type SortedStartsInVecMap<'a, T, V, VR> =
     AssumeSortedStartsMap<'a, T, V, VR, std::vec::IntoIter<RangeValue<'a, T, V, VR>>>;
@@ -1883,8 +1884,8 @@ gen_ops_ex!(
 for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
     // We optimize this by using ranges() twice per input, rather than tee()
     let lhs0 = a.range_values();
-    let lhs1 = a.range_values();
-    let rhs0 = b.range_values();
+    let lhs1 = a.ranges();
+    let rhs0 = b.ranges();
     let rhs1 = b.range_values();
     (lhs0.difference(rhs0).union(rhs1.difference(lhs1))).into_range_map_blaze()
 };
@@ -1903,7 +1904,32 @@ for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
 /// ```
 
 for - call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
-    a.range_values().difference(b.range_values()).into_range_map_blaze()
+    a.range_values().difference(b.ranges()).into_range_map_blaze()
+};
+where T: Integer, V: ValueOwned
+);
+
+gen_ops_ex!(
+    <T, V>;
+    types ref RangeMapBlaze<T,V>, ref RangeSetBlaze<T> => RangeMapBlaze<T,V>;
+
+
+/// Difference the contents of two [`RangeSetBlaze`]'s.
+///
+/// Either, neither, or both inputs may be borrowed.
+///
+/// # Examples
+/// ```
+/// use range_set_blaze::prelude::*;
+///
+/// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+/// let b = RangeSetBlaze::from_iter([2..=6]);
+/// let result = &a - &b; // Alternatively, 'a - b'.
+/// assert_eq!(result.to_string(), "1..=1, 7..=100");
+/// ```
+/// cmk
+for - call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
+    a.range_values().difference(b.ranges()).into_range_map_blaze()
 };
 where T: Integer, V: ValueOwned
 );

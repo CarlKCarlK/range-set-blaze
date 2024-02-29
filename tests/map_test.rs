@@ -1884,6 +1884,7 @@ fn range_map_blaze_operators() {
 
 pub fn play_movie(frames: RangeMapBlaze<i32, String>, fps: i32) {
     assert!(fps > 0, "fps must be positive");
+    // cmk could look for missing frames
     let sleep_duration = Duration::from_secs(1) / fps as u32;
     // For every frame index (index) from 0 to the largest index in the frames ...
     for index in 0..=frames.ranges().into_range_set_blaze().last().unwrap() {
@@ -1938,6 +1939,7 @@ pub fn play_movie(frames: RangeMapBlaze<i32, String>, fps: i32) {
 //         .collect()
 // }cmk delete
 
+// try to make generic?
 pub fn linear(
     range_map_blaze: &RangeMapBlaze<i32, String>,
     scale: i32,
@@ -1973,30 +1975,29 @@ fn string_animation() {
     let length_seconds = 15;
     let frame_count = fps * length_seconds;
 
-    let mut main = RangeMapBlaze::from_iter([(0..=frame_count - 1, "<blank>".to_string())]);
+    let mut main = RangeMapBlaze::from_iter([(0..=frame_count - 1, "<black>".to_string())]);
     println!("main {main:?}");
 
     // Create frames of 0 to 9
     let mut digits = RangeMapBlaze::from_iter((0..=9).map(|i| (i..=i, i.to_string())));
     // Replace 0 with "start"
     digits.insert(0, "start".to_string());
-    // Trim 8 and 9 -- panic if missing
-    assert!(digits.remove(8).is_some());
-    assert!(digits.remove(9).is_some());
+    // // Trim 8 and 9 -- panic if missing
+    // assert!(digits.remove(8).is_some());
+    // assert!(digits.remove(9).is_some());
 
     // cmk ALTERNATIVES
     // digits.ranges_remove(8..=9); // also needed on RangeSetBlaze
     // digits =- 8..=9;
-    // digits = digits - 8..=9;
+    digits = digits - RangeSetBlaze::from_iter([8..=9]);
 
     // Make each number last 1 second, and reverse, and shift to start after 1 second
     // cmk linear could be a method on RangeMapBlaze
     digits = linear(&digits, -fps, fps);
     println!("digits m {digits:?}");
     // paste it on top of main
-    main = &digits | &main;
-    // shift digits 10 seconds and paste it again on top of main
-    main = &linear(&digits, 1, 10 * fps) | &main;
+    // shift digits 10 seconds and paste it again on top of main, too.
+    main = &linear(&digits, 1, 10 * fps) | &digits | &main;
     println!("main dd {main:?}");
     play_movie(main, fps);
 }
