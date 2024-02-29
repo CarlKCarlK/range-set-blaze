@@ -16,7 +16,6 @@
 // use std::collections::BTreeMap;
 
 use std::{
-    cmp::{max, min},
     io::{stdout, Write},
     thread::sleep,
     time::Duration,
@@ -1952,22 +1951,16 @@ pub fn linear(
         .range_values()
         .map(|range_value| {
             let (start, end) = range_value.range.clone().into_inner();
-            let (new_start, new_end) = if scale < 0 {
-                // When reversing, end becomes start and start becomes end
-                let new_start = last - ((end + 1) - first) * scale.abs() + first + shift;
-                let new_end = last - (start - first) * scale.abs() + first + shift - 1;
-                (new_start, new_end)
-            } else {
-                // Scaling normally
-                let new_start = (start - first) * scale + first + shift;
-                let new_end = ((end + 1) - first) * scale + first + shift - 1;
-                (new_start, new_end)
-            }; // Range is already ordered correctly due to the "if" logic
-            (new_start..=new_end, range_value.value.clone())
+            let mut a = (start - first) * scale + first + shift;
+            let mut b = ((end + 1) - first) * scale + first + shift - 1;
+            if scale < 0 {
+                (a, b) = (b + last + 2, a + last);
+            }
+            let new_range = a..=b;
+            (new_range, range_value.value.clone())
         })
         .collect()
 }
-
 // cmk make range_values a DoubleEndedIterator
 
 #[test]
@@ -1995,13 +1988,15 @@ fn string_animation() {
     // digits = multiply(&digits, fps);
     // cmk could be a method on RangeMapBlaze
     digits = linear(&digits, fps, 0);
-    println!("digits dd {digits:?}");
+    println!("digits m {digits:?}");
     // reverse it
-    digits = reverse(&digits);
+    // digits = reverse(&digits);
+    digits = linear(&digits, -1, 0);
+    println!("digits r '{digits:?}'");
     // paste it on top of main
     main = &main | &digits;
     // shift it 10 seconds and paste that on top of main
-    main = &main | &plus(&digits, 10 * fps);
+    main = &main | &linear(&digits, 1, 10 * fps);
     println!("main dd {main:?}");
     play_movie(main, fps);
 }
