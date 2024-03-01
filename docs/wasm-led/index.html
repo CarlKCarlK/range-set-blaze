@@ -9,29 +9,37 @@
 
 <body>
     <div class="content">
+        <div class="left-content">
             <div id="menu">
+                <b><i>Click to play:</i></b><br/>
                 <div title="Click to play 'Hello World'">Hello World</div>
                 <div title="Click to play 'Circles'">Circles</div>
                 <div title="Click to play 'Count Down'">Count Down</div>
-            <!-- Add more as needed -->
-        </div>
-        <div class="led-wrapper">
-            <div id="led-container">
-                <!-- LED segments -->
-                <div class="segment horizontal" id="seg-a"></div>
-                <div class="segment vertical" id="seg-b"></div>
-                <div class="segment vertical" id="seg-c"></div>
-                <div class="segment horizontal" id="seg-d"></div>
-                <div class="segment vertical" id="seg-e"></div>
-                <div class="segment vertical" id="seg-f"></div>
-                <div class="segment horizontal" id="seg-g"></div>
-                <div class="decimal" id="dec"></div>
+                <!-- Add more as needed -->
+            </div>
+            <div class="led-wrapper">
+                <div id="led-container">
+                    <!-- LED segments -->
+                    <div class="segment horizontal" id="seg-a"></div>
+                    <div class="segment vertical" id="seg-b"></div>
+                    <div class="segment vertical" id="seg-c"></div>
+                    <div class="segment horizontal" id="seg-d"></div>
+                    <div class="segment vertical" id="seg-e"></div>
+                    <div class="segment vertical" id="seg-f"></div>
+                    <div class="segment horizontal" id="seg-g"></div>
+                    <div class="decimal" id="dec"></div>
+                </div>
             </div>
         </div>
-    </div>
-    <div id="explanation">
-        <p id="explanation-text">Select a movie to see its LED displays.</p>
-    </div>
+        <div id="explanation">
+            <p id="explanation-text">Select a movie to see its LED display.</p>
+            <p>
+                Check out the project on GitHub: 
+                <a href="https://github.com/CarlKCarlK/range-set-blaze/tree/feb24/tests/wasm-led" target="_blank">
+                    range-set-blaze wasm-led example
+                </a>
+            </p>
+        </div>    </div>
     <script type="module" src="script.js"></script>
 </body>
 

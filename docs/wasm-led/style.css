@@ -1,6 +1,18 @@
 .content {
     display: flex;
+    flex-direction: column; /* Change the main axis to vertical */
     height: 100vh;
+}
+
+.left-content {
+    /* Contains the menu and the LED display */
+    display: flex;
+    flex-direction: row; /* Stack them vertically */
+}
+
+#menu, .led-wrapper {
+    /* Ensure these don't expand to take up unnecessary space */
+    width: 20%; /* Take full width of their container */
 }
 
 #menu div {
@@ -91,18 +103,16 @@
     border-radius: 50px; /* First value is the horizontal radius, second value is the vertical radius */
 }
 #explanation {
-    position: fixed; /* Fixes the explanation area at the bottom */
-    left: 0;
-    right: 0;
-    bottom: 0; /* Positions it at the bottom */
-    background-color: #f8f8f8; /* Light background color */
-    color: #333; /* Text color */
-    padding: 10px 20px; /* Padding for aesthetics */
-    box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for a "lifted" effect */
-    z-index: 100; /* Ensures it's above other elements */
+    background-color: #f8f8f8;
+    color: #333;
+    padding: 10px 20px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+    margin-top: 20px; /* Space between LED display and explanation */
+    overflow-y: auto; /* Allows scrolling for overflow content */
+    flex-grow: 1; /* Takes up remaining space */
 }
 
 #explanation p {
-    margin: 0; /* Removes default paragraph margins */
-    text-align: center; /* Centers the explanation text */
+    margin-bottom: 1em; /* Add space between paragraphs if you have more than one */
+    text-align: left; /* Align text to the left for paragraph readability */
 }
