@@ -13,7 +13,7 @@ pub struct LedState {
 }
 
 lazy_static! {
-    static ref COMPILED_MOVIE: RangeMapBlaze<i32, u8> = compile_movie();
+    static ref COMPILED_MOVIE: RangeMapBlaze<i32, u8> = hello_world();
 }
 
 #[wasm_bindgen(start)]
@@ -47,12 +47,173 @@ impl Leds {
         0b01101111, // Digit 9
     ];
     const SPACE: u8 = 0b00000000;
+
+    const ASCII_TABLE: [u8; 128] = [
+        // Control characters (0-31) + space (32)
+        0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, // 0-4
+        0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, // 5-9
+        0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, // 10-14
+        0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, // 15-19
+        0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, //  20-24
+        0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, //  25-29
+        0b00000000, 0b00000000, 0b00000000, // 30-32
+        // Symbols (33-47)
+        0b10000110, // !
+        0b00000000, // "
+        0b00000000, // #
+        0b00000000, // $
+        0b00000000, // %
+        0b00000000, // &
+        0b00000000, // '
+        0b00000000, // (
+        0b00000000, // )
+        0b00000000, // *
+        0b00000000, // +
+        0b00000000, // ,
+        0b01000000, // -
+        0b10000000, // .
+        0b00000000, // /
+        // Numbers (48-57)
+        0b00111111, // 0
+        0b00000110, // 1
+        0b01011011, // 2
+        0b01001111, // 3
+        0b01100110, // 4
+        0b01101101, // 5
+        0b01111101, // 6
+        0b00000111, // 7
+        0b01111111, // 8
+        0b01101111, // 9
+        // Symbols (58-64)
+        0b00000000, // :
+        0b00000000, // ;
+        0b00000000, // <
+        0b00000000, // =
+        0b00000000, // >
+        0b00000000, // ?
+        0b00000000, // @
+        // Uppercase letters (65-90)
+        0b01110111, // A
+        0b01111100, // B (same as b)
+        0b00111001, // C
+        0b01011110, // D (same as d)
+        0b01111001, // E
+        0b01110001, // F
+        0b00111101, // G (same as 9)
+        0b01110100, // H
+        0b00000110, // I (same as 1)
+        0b00011110, // J
+        0b01110110, // K (approximation)
+        0b00111000, // L
+        0b00010101, // M (arbitrary, no good match)
+        0b01010100, // N
+        0b00111111, // O (same as 0)
+        0b01110011, // P
+        0b01100111, // Q
+        0b01010000, // R
+        0b01101101, // S (same as 5)
+        0b01111000, // T
+        0b00111110, // U
+        0b00101010, // V (arbitrary, no good match)
+        0b00011101, // W (arbitrary, no good match)
+        0b01110110, // X (same as H)
+        0b01101110, // Y
+        0b01011011, // Z (same as 2)
+        // Symbols (91-96)
+        0b00111001, // [
+        0b00000000, // \
+        0b00001111, // ]
+        0b00000000, // ^
+        0b00001000, // _
+        0b00000000, // `
+        // Lowercase letters (97-122), reusing uppercase for simplicity
+        0b01110111, // A
+        0b01111100, // B (same as b)
+        0b00111001, // C
+        0b01011110, // D (same as d)
+        0b01111001, // E
+        0b01110001, // F
+        0b00111101, // G (same as 9)
+        0b01110100, // H
+        0b00000110, // I (same as 1)
+        0b00011110, // J
+        0b01110110, // K (approximation)
+        0b00111000, // L
+        0b00010101, // M (arbitrary, no good match)
+        0b01010100, // N
+        0b00111111, // O (same as 0)
+        0b01110011, // P
+        0b01100111, // Q
+        0b01010000, // R
+        0b01101101, // S (same as 5)
+        0b01111000, // T
+        0b00111110, // U
+        0b00101010, // V (arbitrary, no good match)
+        0b00011101, // W (arbitrary, no good match)
+        0b01110110, // X (same as H)
+        0b01101110, // Y
+        0b01011011, // Z (same as 2)
+        // Placeholder for simplicity
+        0b00111001, // '{' (123)
+        0b00000110, // '|' (124)
+        0b00001111, // '}' (125)
+        0b01000000, // '~' (126)
+        0b00000000, // delete (127)
+    ];
 }
 
 const FPS: i32 = 24;
 
+pub fn hello_world() -> RangeMapBlaze<i32, u8> {
+    let message = "321 Hello world!";
+    let message: RangeMapBlaze<i32, u8> = message
+        .chars()
+        .enumerate()
+        .map(|(i, c)| (i as i32, Leds::ASCII_TABLE[c as usize]))
+        .collect();
+    let message = linear(&message, FPS, 0);
+    // add gaps of 3 frames between each character
+    let message = message
+        .range_values()
+        .enumerate()
+        .map(|(i, range_value)| {
+            let (start, end) = range_value.range.clone().into_inner();
+            let new_range = start + i as i32 * 3..=end + i as i32 * 3;
+            (new_range, range_value.value)
+        })
+        .collect();
+    message
+}
+pub fn circles() -> RangeMapBlaze<i32, u8> {
+    // Light up segments A to F
+    let circle = RangeMapBlaze::from_iter([
+        (0, Leds::SEG_A),
+        (1, Leds::SEG_B),
+        (2, Leds::SEG_C),
+        (3, Leds::SEG_D),
+        (4, Leds::SEG_E),
+        (5, Leds::SEG_F),
+    ]);
+    let mut main = RangeMapBlaze::new();
+    let mut scale = 1;
+    while scale < 24 {
+        // Slow down the circle by a factor of 1 to 24, appending to `main` each time.
+        main = &main | linear(&circle, scale, main.len() as i32);
+        scale *= 2;
+    }
+    // append main with itself, but reversed
+    main = &main | linear(&main, -1, main.len() as i32);
+
+    // append 10 copies of the fast circle
+    for _ in 0..20 {
+        main = &main | linear(&circle, -1, main.len() as i32);
+    }
+
+    main
+}
+
 // i32 means we can only go 3 weeks at a time at 24fps. Be sure the code checks this.
-fn compile_movie() -> RangeMapBlaze<i32, u8> {
+pub fn double_count_down() -> RangeMapBlaze<i32, u8> {
     let length_seconds = 30;
     let frame_count = FPS * length_seconds;
 
@@ -64,8 +225,8 @@ fn compile_movie() -> RangeMapBlaze<i32, u8> {
     let mut digits =
         RangeMapBlaze::from_iter((0i32..=9).map(|i| (i..=i, Leds::DIGITS[i as usize])));
 
-    // Make frame 0 be "start"
-    digits.insert(0, Leds::DECIMAL);
+    // Make frame 0 be the middle LED segment.
+    digits.insert(0, Leds::SEG_G);
 
     // Oops, we've changed our mind and now don't want frames 8 and 9.
     digits = digits - RangeSetBlaze::from_iter([8..=9]);
@@ -128,18 +289,27 @@ pub fn get_led_state_and_duration(now_milliseconds: f64) -> LedState {
 
     // Find the first region in the time interval (if any)
     let first_region_if_any = now_to_end_of_movie.range_values().next();
-    if let Some(range_value) = first_region_if_any {
-        // If there is a region, compute its duration in milliseconds and the frame to display
-        let duration = (range_value.range.end() + 1 - frame_index) * 1000 / FPS;
-        LedState {
-            state: *range_value.value,
-            duration,
-        }
-    } else {
-        // If there is no region, display "." for 2 weeks
-        LedState {
+
+    // If there is no region (the movie is over), display "." display "." for 2 weeks.
+    let Some(range_value) = first_region_if_any else {
+        return LedState {
             state: Leds::DECIMAL,
             duration: i32::MAX,
-        }
+        };
+    };
+
+    // Is "now" in this region? If not then we are in a gap. Display "." until a region is ready to display
+    if frame_index < *range_value.range.start() {
+        return LedState {
+            state: Leds::DECIMAL,
+            duration: (range_value.range.start() - frame_index) * 1000 / FPS,
+        };
+    }
+
+    // If we are in a region, compute its duration in milliseconds and the frame to display
+    let duration = (range_value.range.end() + 1 - frame_index) * 1000 / FPS;
+    LedState {
+        state: *range_value.value,
+        duration,
     }
 }
