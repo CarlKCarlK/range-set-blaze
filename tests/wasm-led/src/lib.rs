@@ -1,7 +1,9 @@
 #![no_std]
 extern crate alloc;
+use alloc::format;
 use range_set_blaze::prelude::*;
 use wasm_bindgen::prelude::*;
+use web_sys::console;
 
 #[macro_use]
 extern crate lazy_static;
@@ -13,12 +15,13 @@ pub struct LedState {
 }
 
 lazy_static! {
-    static ref COMPILED_MOVIE: RangeMapBlaze<i32, u8> = hello_world();
+    static ref COMPILED_MOVIES: [RangeMapBlaze<i32, u8>; 3] =
+        [hello_world(), circles(), double_count_down()];
 }
 
 #[wasm_bindgen(start)]
 pub fn on_module_load() {
-    let _ = COMPILED_MOVIE;
+    let _ = COMPILED_MOVIES;
 }
 
 struct Leds;
@@ -277,15 +280,19 @@ pub fn linear(
 }
 
 #[wasm_bindgen]
-pub fn get_led_state_and_duration(now_milliseconds: f64) -> LedState {
+pub fn get_led_state_and_duration(movie_id: f64, now_milliseconds: f64) -> LedState {
+    let movie = &COMPILED_MOVIES[movie_id as usize]; // cmk check bounds
+
     // Find what frame for 'now'
     let frame_index = (now_milliseconds * FPS as f64 / 1000.0) as i32;
+    console::log_1(&format!("rust: now_milliseconds: {}", now_milliseconds).into());
+    console::log_1(&format!("rust: frame_index: {}", frame_index).into());
 
     // Create a time interval from now to 2 weeks from now
     let now_to_2_weeks = RangeSetBlaze::from_iter([frame_index..=i32::MAX]);
 
     // Create trim the movie to the time interval
-    let now_to_end_of_movie = (&*COMPILED_MOVIE) & &now_to_2_weeks;
+    let now_to_end_of_movie = movie & &now_to_2_weeks;
 
     // Find the first region in the time interval (if any)
     let first_region_if_any = now_to_end_of_movie.range_values().next();

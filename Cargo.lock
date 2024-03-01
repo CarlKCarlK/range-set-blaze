@@ -1058,6 +1058,7 @@ dependencies = [
  "lazy_static",
  "range-set-blaze",
  "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
