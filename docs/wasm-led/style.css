@@ -1,0 +1,108 @@
+.content {
+    display: flex;
+    height: 100vh;
+}
+
+#menu div {
+    cursor: pointer; /* Changes cursor to indicate clickable items */
+    padding: 10px; /* Adds padding to each menu item for better clickability */
+    margin-bottom: 5px; /* Adds space between items */
+    transition: background-color 0.3s ease; /* Smooth transition for background color */
+}
+
+#menu div:hover {
+    background-color: #dcdcdc; /* Light shade on hover */
+    text-decoration: underline; /* Underlines text on hover */
+}
+
+#menu div:active {
+    background-color: #bbbbbb; /* Darker shade to indicate active click */
+}
+.led-wrapper {
+    /* The width of the LED wrapper is no longer a percentage of the content area;
+       it is set to be fixed at 300px. */
+    width: 150px; /* Fixed width */
+    /* The height is set directly instead of using padding-top to maintain aspect ratio. */
+    height: 200px; /* Fixed height */
+    position: relative; /* Needed for absolute positioning of child elements */
+}
+
+#led-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.segment {
+    background-color: lightgray;
+    position: absolute;
+    transform: translate(-50%, -50%);
+}
+
+/* Horizontal segments */
+#seg-a, #seg-d, #seg-g {
+    width: 33%; /* Make horizontal segments wider */
+    height: 10%; /* Make horizontal segments thinner */
+    left: 50%; /* Center horizontally */
+}
+
+#seg-a { top: 10%; }
+#seg-g { top: 50%; }
+#seg-d { top: 90%; }
+
+/* Vertical segments */
+#seg-b, #seg-c, #seg-e, #seg-f {
+    width: 10%; /* Make vertical segments narrower */
+    height: 35%; /* Make vertical segments longer */
+}
+
+#seg-b { top: 30%; right: 20%; }
+#seg-c { bottom: -5%; right: 20%; }
+#seg-e { bottom: -5%; left: 30%; }
+#seg-f { top: 30%; left: 30%; }
+
+/* Decimal point */
+.decimal {
+    width: 10%;
+    height: 10%;
+    background-color: lightgray;
+    border-radius: 50%;
+    position: absolute;
+    bottom: 0%;
+    right: 5%;
+    transform: translate(-50%, -50%);
+}
+
+/* Horizontal segments with rounded ends */
+.segment.horizontal {
+    height: 10%; /* Adjust the height to your preference */
+    border-radius: 50px; /* First value is the horizontal radius, second value is the vertical radius */
+}
+
+/* Vertical segments with rounded ends */
+.segment.vertical {
+    width: 10%; /* Adjust the width to your preference */
+    border-radius: 50px; /* First value is the horizontal radius, second value is the vertical radius */
+}
+#explanation {
+    position: fixed; /* Fixes the explanation area at the bottom */
+    left: 0;
+    right: 0;
+    bottom: 0; /* Positions it at the bottom */
+    background-color: #f8f8f8; /* Light background color */
+    color: #333; /* Text color */
+    padding: 10px 20px; /* Padding for aesthetics */
+    box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for a "lifted" effect */
+    z-index: 100; /* Ensures it's above other elements */
+}
+
+#explanation p {
+    margin: 0; /* Removes default paragraph margins */
+    text-align: center; /* Centers the explanation text */
+}

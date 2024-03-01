@@ -1,0 +1,14 @@
+{
+  "name": "wasm-led",
+  "version": "0.1.0",
+  "files": [
+    "wasm_led_bg.wasm",
+    "wasm_led.js",
+    "wasm_led.d.ts"
+  ],
+  "module": "wasm_led.js",
+  "types": "wasm_led.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
