@@ -116,10 +116,30 @@ pub fn linear(
 }
 
 #[wasm_bindgen]
-pub fn get_led_state_and_duration(milliseconds: f64) -> LedState {
-    let index = (milliseconds * FPS as f64 / 1000.0) as i32;
-    let state = *COMPILED_MOVIE.get(index).unwrap_or(&Leds::DECIMAL);
-    let duration = 1000 / FPS;
+pub fn get_led_state_and_duration(now_milliseconds: f64) -> LedState {
+    // Find what frame for 'now'
+    let frame_index = (now_milliseconds * FPS as f64 / 1000.0) as i32;
 
-    LedState { state, duration }
+    // Create a time interval from now to 2 weeks from now
+    let now_to_2_weeks = RangeSetBlaze::from_iter([frame_index..=i32::MAX]);
+
+    // Create trim the movie to the time interval
+    let now_to_end_of_movie = (&*COMPILED_MOVIE) & &now_to_2_weeks;
+
+    // Find the first region in the time interval (if any)
+    let first_region_if_any = now_to_end_of_movie.range_values().next();
+    if let Some(range_value) = first_region_if_any {
+        // If there is a region, compute its duration in milliseconds and the frame to display
+        let duration = (range_value.range.end() + 1 - frame_index) * 1000 / FPS;
+        LedState {
+            state: *range_value.value,
+            duration,
+        }
+    } else {
+        // If there is no region, display "." for 2 weeks
+        LedState {
+            state: Leds::DECIMAL,
+            duration: i32::MAX,
+        }
+    }
 }
