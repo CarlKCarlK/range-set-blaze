@@ -434,6 +434,7 @@ pub(crate) trait ExpectDebugUnwrapRelease<T> {
     fn expect_debug_unwrap_release(self, msg: &str) -> T;
 }
 
+#[allow(unused_variables)]
 impl<T> ExpectDebugUnwrapRelease<T> for Option<T> {
     fn expect_debug_unwrap_release(self, msg: &str) -> T {
         #[cfg(debug_assertions)]

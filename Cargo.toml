@@ -19,6 +19,7 @@ members = [
     ".",
     "tests_common",
     "tests/wasm-demo",
+    "tests/wasm-led",
     "tests/embedded",
     "examples/simd/simd_hello",
     "examples/simd/is_consecutive0",

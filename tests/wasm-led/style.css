@@ -8,13 +8,12 @@
 .segment {
     background-color: black;
     position: absolute;
-    transition: background-color 1s;
     transform: translate(-50%, -50%);
 }
 
 /* Horizontal segments */
 #seg-a, #seg-d, #seg-g {
-    width: 35%; /* Make horizontal segments wider */
+    width: 33%; /* Make horizontal segments wider */
     height: 10%; /* Make horizontal segments thinner */
     left: 50%; /* Center horizontally */
 }
@@ -49,11 +48,11 @@
 /* Horizontal segments with rounded ends */
 .segment.horizontal {
     height: 10%; /* Adjust the height to your preference */
-    border-radius: 25px; /* First value is the horizontal radius, second value is the vertical radius */
+    border-radius: 50px; /* First value is the horizontal radius, second value is the vertical radius */
 }
 
 /* Vertical segments with rounded ends */
 .segment.vertical {
     width: 10%; /* Adjust the width to your preference */
-    border-radius: 25px; /* First value is the horizontal radius, second value is the vertical radius */
+    border-radius: 50px; /* First value is the horizontal radius, second value is the vertical radius */
 }

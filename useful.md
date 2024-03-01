@@ -11,7 +11,7 @@ cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
 
 Running
 
-See: https://docs.rust-embedded.org/book/start/qemu.html
+See: <https://docs.rust-embedded.org/book/start/qemu.html>
 
 ```cmd
 cd O:\programs\range-set-blaze\tests\embedded
