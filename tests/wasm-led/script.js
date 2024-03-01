@@ -20,12 +20,12 @@ async function updateLedState() {
         const segmentId = `seg-${String.fromCharCode(97 + i)}`; // seg-a, seg-b, ..., seg-g
         // console.log("segmentId:", segmentId);
         const isOn = (ledState & (1 << i)) !== 0;
-        document.getElementById(segmentId).style.backgroundColor = isOn ? 'red' : 'black';
+        document.getElementById(segmentId).style.backgroundColor = isOn ? 'red' : 'lightgrey';
     }
 
     // Update the decimal point separately if needed
     const isDecimalOn = (ledState & 0b10000000) !== 0; // Check the 8th bit for the decimal point
-    document.getElementById("dec").style.backgroundColor = isDecimalOn ? 'red' : 'black';
+    document.getElementById("dec").style.backgroundColor = isDecimalOn ? 'red' : 'lightgrey';
 
     // Increment your custom time by the duration returned from WASM
     customTime += duration;

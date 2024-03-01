@@ -6,7 +6,7 @@
 }
 
 .segment {
-    background-color: black;
+    background-color: blue;
     position: absolute;
     transform: translate(-50%, -50%);
 }
@@ -37,7 +37,7 @@
 .decimal {
     width: 10%;
     height: 10%;
-    background-color: black;
+    background-color: blue;
     border-radius: 50%;
     position: absolute;
     bottom: 0%;
