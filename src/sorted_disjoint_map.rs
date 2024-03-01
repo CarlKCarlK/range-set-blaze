@@ -14,7 +14,7 @@ use core::fmt;
 
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::map::{BitAndRangesMap, BitOrMergeMap, BitSubRangesMap, CloneBorrow};
-use crate::range_values::{AdjustPriorityMap, RangesFromMapIter, NON_ZERO_ONE, NON_ZERO_TWO};
+use crate::range_values::{AdjustPriorityMap, RangesFromMapIter, NON_ZERO_MAX, NON_ZERO_MIN};
 use crate::sorted_disjoint::SortedDisjoint;
 use crate::NotIter;
 use crate::{
@@ -314,8 +314,8 @@ where
         R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
         Self: Sized,
     {
-        let left = AdjustPriorityMap::new(self, Some(NON_ZERO_TWO));
-        let right = AdjustPriorityMap::new(other.into_iter(), Some(NON_ZERO_ONE));
+        let left = AdjustPriorityMap::new(self, Some(NON_ZERO_MAX));
+        let right = AdjustPriorityMap::new(other.into_iter(), Some(NON_ZERO_MIN));
         // cmk why this into iter stuff that is not used?
         UnionIterMap::new(MergeMap::new(left, right))
     }

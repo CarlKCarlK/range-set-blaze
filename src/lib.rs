@@ -2,8 +2,9 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![feature(step_trait)] // cmk use unstable feature???
-#![feature(const_option)]
+
+// cmk #![feature(step_trait)] // cmk use unstable feature???
+// cmk #![feature(const_option)]
 
 // Developer notes:
 //

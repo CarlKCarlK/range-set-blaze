@@ -4,6 +4,8 @@ use crate::range_values::{
     AdjustPriorityMap, RangeValuesFromBTree, RangeValuesIter, RangesFromMapIter,
 };
 use alloc::borrow::ToOwned;
+#[cfg(feature = "std")]
+use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 // use crate::range_values::RangeValuesIter;
@@ -15,7 +17,6 @@ use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, SortedDisjointWithLenS
 use crate::{Integer, NotIter, RangeSetBlaze, SortedDisjoint};
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
-use alloc::sync::Arc;
 use core::borrow::Borrow;
 use core::fmt;
 use core::marker::PhantomData;
@@ -59,6 +60,7 @@ impl<V: ?Sized + ValueOwned> CloneBorrow<V> for Rc<V> {
     }
 }
 
+#[cfg(feature = "std")]
 impl<V: ?Sized + ValueOwned> CloneBorrow<V> for Arc<V> {
     fn clone_borrow(&self) -> Self {
         Arc::clone(self)

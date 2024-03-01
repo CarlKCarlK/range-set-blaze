@@ -427,8 +427,9 @@ pub(crate) trait NonZeroEnumerateExt: Iterator + Sized {
 
 impl<I: Iterator> NonZeroEnumerateExt for I {}
 
-pub(crate) const NON_ZERO_ONE: NonZeroUsize = NonZeroUsize::new(1).unwrap();
-pub(crate) const NON_ZERO_TWO: NonZeroUsize = NonZeroUsize::new(2).unwrap();
+// cmk why bother with this?
+pub(crate) const NON_ZERO_MIN: NonZeroUsize = NonZeroUsize::MIN;
+pub(crate) const NON_ZERO_MAX: NonZeroUsize = NonZeroUsize::MAX;
 
 pub(crate) trait ExpectDebugUnwrapRelease<T> {
     fn expect_debug_unwrap_release(self, msg: &str) -> T;

@@ -25,7 +25,7 @@ qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-conf
 ## WASM
 
 ```cmd
-cd O:\programs\range-set-blaze\tests\wasm-demo
+cd O:\programs\range-set-blaze\tests\wasm-led
 wasm-pack build --target web
 ```
 
