@@ -1443,7 +1443,6 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
         RangeValuesIter {
             iter: self.btree_map.iter(),
-            priority: None,
         }
     }
 

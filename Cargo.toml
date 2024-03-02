@@ -21,10 +21,10 @@ members = [
     "tests/wasm-demo",
     "tests/wasm-led",
     "tests/embedded",
-    "examples/simd/simd_hello",
-    "examples/simd/is_consecutive0",
-    "examples/simd/is_consecutive1",
-    "examples/simd/is_consecutive2",
+    # "examples/simd/simd_hello",
+    # "examples/simd/is_consecutive0",
+    # "examples/simd/is_consecutive1",
+    # "examples/simd/is_consecutive2",
 ]
 
 
@@ -34,7 +34,6 @@ members = [
 default = ["std"]
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 alloc = ["itertools/use_alloc", "num-traits", "num-integer"]
-# rog_experimental would have been better
 rog-experimental = []
 from_slice = []
 

@@ -1469,7 +1469,6 @@ fn range_map_blaze_operators() {
         r#"(1..=1, "one"), (3..=4, "three"), (7..=100, "two")"#
     );
 
-    // cmk0 define complement or .to_range_set_blaze() or .into_range_set_blaze(), etc.
     // complement of a 'RangeMapBlaze'.
     let result = !(&a.ranges().into_range_set_blaze());
     assert_eq!(

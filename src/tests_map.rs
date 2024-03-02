@@ -267,7 +267,7 @@ fn map_repro_insert_1() {
     assert_eq!(range_map_blaze.to_string(), r#"(123..=123, "World")"#);
 }
 
-fn equal_maps<T: Integer + std::iter::Step, V: ValueOwned + fmt::Debug + std::fmt::Display>(
+fn equal_maps<T: Integer, V: ValueOwned + fmt::Debug + std::fmt::Display>(
     range_map_blaze: &RangeMapBlaze<T, V>,
     btree_map: &BTreeMap<T, &V>,
 ) -> bool
@@ -293,7 +293,10 @@ where
                 return false;
             }
         }
-        for k in range {
+
+        debug_assert!(range.start() <= range.end());
+        let mut k = *range.start();
+        loop {
             if btree_map.get(&k).map_or(true, |v2| v != *v2) {
                 eprintln!(
                     "range_map_blaze contains {k} -> {v}, btree_map contains {k} -> {:?}",
@@ -301,6 +304,10 @@ where
                 );
                 return false;
             }
+            if k == *range.end() {
+                break;
+            }
+            k = k + T::one();
         }
         previous = Some(range_value);
     }
@@ -720,7 +727,6 @@ fn map_missing_doctest_ops() {
     let result = a - b;
     assert_eq!(result, RangeMapBlaze::from_iter([(1, "Hello")]));
 }
-// cmk0 allow working with Map and Set for intersection and difference
 // cmk0 do multiway operations
 
 // #[test]
