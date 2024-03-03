@@ -447,7 +447,7 @@ impl<T> ExpectDebugUnwrapRelease<T> for Option<T> {
         }
     }
 }
-
+#[derive(Clone, Debug)]
 pub struct AdjustPriorityMap<'a, T, V, VR, I>
 where
     T: Integer,

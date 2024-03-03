@@ -1482,7 +1482,7 @@ fn range_map_blaze_operators() {
     let result = [&a, &b, &c].union();
     assert_eq!(
         result.to_string(),
-        r#"(1..=2, "one"), (3..=6, "three"), (7..=100, "two"), (101..=200, "seven")"#
+        r#"(1..=2, "one"), (3..=4, "three"), (5..=100, "two"), (101..=200, "seven")"#
     );
 
     // // Multiway intersection of 'RangeMapBlaze's.

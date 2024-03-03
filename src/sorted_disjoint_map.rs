@@ -868,9 +868,13 @@ where
     VR: CloneBorrow<V> + 'a,
 {
     fn cmp(&self, other: &Self) -> Ordering {
-        // Compare priorities, handle `None` as lower than any `Some`.
-        // cmk other.priority.cmp(&self.priority)
-        self.priority.cmp(&other.priority)
+        let priority0 = self
+            .priority
+            .expect("When comparing, priority must be Some");
+        let priority1 = other
+            .priority
+            .expect("When comparing, priority must be Some");
+        priority0.cmp(&priority1)
     }
 }
 
