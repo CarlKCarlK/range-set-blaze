@@ -14,6 +14,7 @@
 // use range_set_blaze::Rog;
 // // cmk add RangeMapBlaze to prelude
 // use std::collections::BTreeMap;
+use range_set_blaze::multiway_map::MultiwayRangeMapBlaze;
 
 use std::{
     io::{stdout, Write},
@@ -1476,11 +1477,13 @@ fn range_map_blaze_operators() {
         "-2147483648..=0, 3..=4, 101..=2147483647"
     );
 
-    // cmk0
-    // // Multiway union of 'RangeMapBlaze's.
-    // let c = RangeMapBlaze::from_iter([2..=2, 6..=200]);
-    // let result = [&a, &b, &c].union();
-    // assert_eq!(result.to_string(), "1..=200");
+    // Multiway union of 'RangeMapBlaze's.
+    let c = RangeMapBlaze::from_iter([(2..=2, "six"), (6..=200, "seven")]);
+    let result = [&a, &b, &c].union();
+    assert_eq!(
+        result.to_string(),
+        r#"(1..=2, "one"), (3..=6, "three"), (7..=100, "two"), (101..=200, "seven")"#
+    );
 
     // // Multiway intersection of 'RangeMapBlaze's.
     // let result = [&a, &b, &c].intersection();

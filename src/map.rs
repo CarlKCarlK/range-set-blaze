@@ -450,10 +450,10 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     pub fn from_sorted_disjoint_map<'a, VR, I>(iter: I) -> Self
     where
+        T: 'a,
+        V: 'a,
         VR: CloneBorrow<V> + 'a,
         I: SortedDisjointMap<'a, T, V, VR>,
-        V: 'a,
-        T: 'a,
     {
         let mut iter_with_len = SortedDisjointWithLenSoFarMap::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);

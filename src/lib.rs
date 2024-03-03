@@ -40,6 +40,8 @@ mod ranges;
 mod rog;
 mod sorted_disjoint;
 use gen_ops::gen_ops_ex;
+use merge_map::KMergeMap;
+pub mod multiway_map;
 mod sorted_disjoint_map;
 mod tests;
 mod tests_map;
@@ -1475,7 +1477,12 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
 #[doc(hidden)]
 pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
+pub type BitOrMergeMap<'a, T, V, VR, L, R> =
+    UnionIterMap<'a, T, V, VR, MergeMap<'a, T, V, VR, L, R>>;
+#[doc(hidden)]
 pub type BitOrKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
+#[doc(hidden)]
+pub type BitOrKMergeMap<'a, T, V, VR, I> = UnionIterMap<'a, T, V, VR, KMergeMap<'a, T, V, VR, I>>;
 #[doc(hidden)]
 pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
 #[doc(hidden)]
