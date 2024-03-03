@@ -345,16 +345,16 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(set_iter.next(), Some(2));
     /// assert_eq!(set_iter.next_back(), None);
     /// ```
-    // cmk
-    // pub fn iter(&self) -> Iter<T, RangesIter<T, V, VR>> {
-    //     // If the user asks for an iter, we give them a RangesIter iterator
-    //     // and we iterate that one integer at a time.
-    //     Iter {
-    //         option_range_front: None,
-    //         option_range_back: None,
-    //         iter: self.ranges(),
-    //     }
-    // }
+    // cmk00 implement this
+    pub fn iter(&self) -> IterMap<T, RangesIter<T, V, VR>> {
+        // If the user asks for an iter, we give them a RangesIter iterator
+        // and we iterate that one integer at a time.
+        IterMap {
+            option_range_front: None,
+            option_range_back: None,
+            iter: self.ranges(),
+        }
+    }
 
     /// Returns the first element in the set, if any.
     /// This element is always the minimum of all integer elements in the set.
@@ -769,6 +769,8 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         self.internal_add(key..=key, value);
         self.len != len_before
     }
+
+    // cmk also define insert_under
 
     /// Constructs an iterator over a sub-range of elements in the set.
     ///

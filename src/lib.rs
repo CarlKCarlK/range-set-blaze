@@ -44,7 +44,7 @@ use intersection_iter_map::IntersectionIterMap;
 use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
 use range_values::RangesFromMapIter;
-pub mod multiway_map;
+mod multiway_map;
 mod sorted_disjoint_map;
 mod tests;
 mod tests_map;

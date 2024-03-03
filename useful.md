@@ -1,5 +1,11 @@
 # Useful commands for this project
 
+## Testing
+
+```cmd
+cargo testnc map
+cargo testnc --test test/map_test
+
 ## Embedded
 
 Checking and Testing
