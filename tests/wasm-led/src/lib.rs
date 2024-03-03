@@ -245,7 +245,7 @@ pub fn double_count_down() -> RangeMapBlaze<i32, u8> {
     //  1. `digits``
     //  2. `digits` shifted 10 seconds into the future
     //  3. `main`
-    main = &digits | &linear(&digits, 1, 10 * FPS) | &main;
+    main = [&digits, &linear(&digits, 1, 10 * FPS), &main].union();
     main
 }
 

@@ -40,7 +40,10 @@ mod ranges;
 mod rog;
 mod sorted_disjoint;
 use gen_ops::gen_ops_ex;
+use intersection_iter_map::IntersectionIterMap;
 use merge_map::KMergeMap;
+pub use multiway_map::MultiwayRangeMapBlaze;
+use range_values::RangesFromMapIter;
 pub mod multiway_map;
 mod sorted_disjoint_map;
 mod tests;
@@ -1491,6 +1494,9 @@ pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
 pub type BitNandMerge<T, L, R> = BitOrMerge<T, NotIter<T, L>, NotIter<T, R>>;
 #[doc(hidden)]
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
+#[doc(hidden)]
+pub type IntersectionMap<'a, T, V, VR, I> =
+    IntersectionIterMap<'a, T, V, VR, I, BitAndKMerge<T, RangesFromMapIter<'a, T, V, VR, I>>>;
 #[doc(hidden)]
 pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
 #[doc(hidden)]

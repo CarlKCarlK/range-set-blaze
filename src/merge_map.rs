@@ -147,7 +147,6 @@ where
     VR: CloneBorrow<V> + 'a,
     I: SortedDisjointMap<'a, T, V, VR>,
 {
-    // cmk00 shorten this type
     #[allow(clippy::type_complexity)]
     iter: KMergeBy<
         AdjustPriorityMap<'a, T, V, VR, I>,

@@ -727,7 +727,6 @@ fn map_missing_doctest_ops() {
     let result = a - b;
     assert_eq!(result, RangeMapBlaze::from_iter([(1, "Hello")]));
 }
-// cmk0 do multiway operations
 
 // #[test]
 // fn multi_op() {

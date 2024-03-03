@@ -10,7 +10,7 @@ use crate::{
     map::{CloneBorrow, ValueOwned},
     merge_map::KMergeMap,
     range_values::RangesFromMapIter,
-    BitAndKMerge, BitOrKMergeMap, Integer, RangeMapBlaze, SortedDisjointMap, UnionIterMap,
+    BitOrKMergeMap, Integer, IntersectionMap, RangeMapBlaze, SortedDisjointMap, UnionIterMap,
 };
 
 // /// The trait used to provide methods on multiple [`RangeMapBlaze`] references,
@@ -49,8 +49,8 @@ use crate::{
 //     /// assert_eq!(union, RangeMapBlaze::from_iter([1..=15, 18..=100]));
 //     /// ```
 //     fn union(self) -> RangeMapBlaze<T, V> {
-//         todo!("cmk000 note tested");
-//         // let vec: Vec<_> = self.into_iter().collect(); // cmk00 OK to hold the RangeValueIters in memory?
+//         todo!("cmk not tested");
+//         // let vec: Vec<_> = self.into_iter().collect(); // cmk OK to hold the RangeValueIters in memory?
 //         // let iter = vec.iter().map(|x| x.range_values());
 //         // let iter = iter.union();
 //         // RangeMapBlaze::from_sorted_disjoint_map(iter)
@@ -248,11 +248,7 @@ where
     ///
     /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
     /// ```
-    fn intersection(
-        self,
-    ) -> IntersectionIterMap<'a, T, V, VR, I, BitAndKMerge<T, RangesFromMapIter<'a, T, V, VR, I>>>
-// cmk00 shorten this type
-    {
+    fn intersection(self) -> IntersectionMap<'a, T, V, VR, I> {
         use crate::MultiwaySortedDisjoint;
         let mut iter = self.into_iter();
         let iter_map = iter

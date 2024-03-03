@@ -32,7 +32,6 @@ wasm-pack build --target web
 In VS Code, load O:\programs\range-set-blaze\tests\wasm-demo\index.html
 Start the Microsoft Live Preview with cntl-shift-P Live Preview ...
 
-
 ## Publish
 
 Set version, e.g., 0.1.16-alpha1

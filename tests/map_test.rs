@@ -15,7 +15,7 @@
 // // cmk add RangeMapBlaze to prelude
 // use std::collections::BTreeMap;
 use range_set_blaze::multiway_map::MultiwayRangeMapBlaze;
-// cmk00 not tested use range_set_blaze::multiway_map::MultiwayRangeMapBlazeRef;
+// cmk not tested use range_set_blaze::multiway_map::MultiwayRangeMapBlazeRef;
 
 use std::{
     io::{stdout, Write},
