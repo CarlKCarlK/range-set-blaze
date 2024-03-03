@@ -144,10 +144,10 @@ where
     VR: CloneBorrow<V> + 'a,
     I: SortedDisjointMap<'a, T, V, VR>,
 {
-    pub(crate) iter: I,
-    pub(crate) option_ranges: Option<RangeInclusive<T>>,
-    pub(crate) phantom0: PhantomData<&'a V>,
-    pub(crate) phantom1: PhantomData<VR>,
+    iter: I,
+    option_ranges: Option<RangeInclusive<T>>,
+    phantom0: PhantomData<&'a V>,
+    phantom1: PhantomData<VR>,
 }
 // RangesFromMapIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
 impl<'a, T, V, VR, I> crate::SortedStarts<T> for RangesFromMapIter<'a, T, V, VR, I>
@@ -174,6 +174,25 @@ where
     VR: CloneBorrow<V> + 'a,
     I: SortedDisjointMap<'a, T, V, VR>,
 {
+}
+
+impl<'a, T, V, VR, I> RangesFromMapIter<'a, T, V, VR, I>
+where
+    T: Integer + 'a,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: SortedDisjointMap<'a, T, V, VR>,
+{
+    /// Creates a new `RangesFromMapIter` from an existing sorted disjoint map iterator.
+    /// `option_ranges` is initialized as `None` by default.
+    pub fn new(iter: I) -> Self {
+        Self {
+            iter,
+            option_ranges: None, // Starts as None
+            phantom0: PhantomData,
+            phantom1: PhantomData,
+        }
+    }
 }
 
 // Range's iterator is just the inside BTreeMap iterator as values

@@ -278,12 +278,7 @@ where
     where
         Self: Sized,
     {
-        RangesFromMapIter {
-            iter: self,
-            option_ranges: None,
-            phantom0: PhantomData,
-            phantom1: PhantomData,
-        }
+        RangesFromMapIter::new(self)
     }
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 

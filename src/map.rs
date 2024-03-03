@@ -1452,12 +1452,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             iter: self.btree_map.iter(),
             phantom: PhantomData,
         };
-        RangesFromMapIter {
-            iter,
-            option_ranges: None,
-            phantom0: PhantomData,
-            phantom1: PhantomData,
-        }
+        RangesFromMapIter::new(iter)
     }
 
     /// An iterator that moves out the ranges in the [`RangeMapBlaze`],

@@ -15,6 +15,7 @@
 // // cmk add RangeMapBlaze to prelude
 // use std::collections::BTreeMap;
 use range_set_blaze::multiway_map::MultiwayRangeMapBlaze;
+// cmk00 not tested use range_set_blaze::multiway_map::MultiwayRangeMapBlazeRef;
 
 use std::{
     io::{stdout, Write},
@@ -1486,8 +1487,9 @@ fn range_map_blaze_operators() {
     );
 
     // // Multiway intersection of 'RangeMapBlaze's.
-    // let result = [&a, &b, &c].intersection();
-    // assert_eq!(result.to_string(), "2..=2, 6..=6");
+    let c = RangeMapBlaze::from_iter([(2..=2, "six"), (6..=200, "seven")]);
+    let result = [&a, &b, &c].intersection();
+    assert_eq!(result.to_string(), r#"(2..=2, "one"), (6..=6, "two")"#);
 
     // // Combining multiple operations
     // let result0 = &a - (&b | &c); // Creates a temporary 'RangeMapBlaze'.
