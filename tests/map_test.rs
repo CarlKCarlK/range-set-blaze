@@ -203,7 +203,10 @@ fn map_add_in_order() {
     for i in 0u64..1000 {
         range_map.insert(i, i);
     }
-    assert_eq!(range_map, RangeMapBlaze::from_iter([(0u64..=999, 0)]));
+    assert_eq!(
+        range_map,
+        RangeMapBlaze::from_iter((0..1000).map(|i| (i, i)))
+    );
 }
 
 // cmk do these benchmark related
@@ -313,16 +316,10 @@ fn map_missing_doctest_ops() {
     let b = RangeMapBlaze::from_iter([(3, "World"), (4, "World"), (5, "World")]);
 
     let result = a & &b;
-    assert_eq!(
-        result,
-        RangeMapBlaze::from_iter([(2, "Hello"), (3, "Hello")])
-    );
+    assert_eq!(result, RangeMapBlaze::from_iter([(3, "Hello")]));
     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
     let result = a & b;
-    assert_eq!(
-        result,
-        RangeMapBlaze::from_iter([(2, "Hello"), (3, "Hello")])
-    );
+    assert_eq!(result, RangeMapBlaze::from_iter([(3, "Hello")]));
 
     // Returns the symmetric difference of `self` and `rhs` as a new `RangeMapBlaze<T>`.
     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
@@ -342,45 +339,49 @@ fn map_missing_doctest_ops() {
     assert_eq!(result, RangeMapBlaze::from_iter([(1, "Hello")]));
 }
 
-// #[test]
-// fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
-//     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-//     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
-//     let c = RangeMapBlaze::from_iter([38..=42]);
-//     let d = &(&a | &b) | &c;
-//     println!("{d}");
-//     let d = a | b | &c;
-//     println!("{d}");
+#[test]
+fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
+    let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
+    let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
+    let c = RangeMapBlaze::from_iter([(38..=42, 'c')]);
+    let d = &(&a | &b) | &c;
+    println!("{d}");
+    let d = a | b | &c;
+    println!("{d}");
 
-//     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-//     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
-//     let c = RangeMapBlaze::from_iter([38..=42]);
+    let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
+    let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
+    let c = RangeMapBlaze::from_iter([(38..=42, 'c')]);
 
-//     let _ = [&a, &b, &c].union();
-//     let d = [a, b, c].intersection();
-//     assert_eq!(d, RangeMapBlaze::new());
+    let _ = [&a, &b, &c].union();
+    let d = [a, b, c].intersection();
+    assert_eq!(d, RangeMapBlaze::new());
 
-//     assert_eq!(
-//         !MultiwayRangeMapBlaze::<u8>::union([]),
-//         RangeMapBlaze::from_iter([0..=255])
-//     );
+    assert_eq!(
+        !MultiwayRangeMapBlaze::<u8, char>::union([]),
+        RangeSetBlaze::from_iter([0..=255])
+    );
 
-//     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-//     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
-//     let c = RangeMapBlaze::from_iter([1..=42]);
+    let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
+    let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
+    let c = RangeMapBlaze::from_iter([(1..=42, 'c')]);
 
-//     let _ = &a & &b;
-//     let d = [&a, &b, &c].intersection();
-//     // let d = RangeMapBlaze::intersection([a, b, c]);
-//     println!("{d}");
-//     assert_eq!(d, RangeMapBlaze::from_iter([5..=6, 8..=9, 11..=13]));
+    let _ = &a & &b;
+    let d = [&a, &b, &c].intersection();
+    // let d = RangeMapBlaze::intersection([a, b, c]);
+    println!("{d}");
+    assert_eq!(
+        d,
+        RangeMapBlaze::from_iter([(5..=6, 'a'), (8..=9, 'a'), (11..=13, 'a')])
+    );
 
-//     assert_eq!(
-//         MultiwayRangeMapBlaze::<u8>::intersection([]),
-//         RangeMapBlaze::from_iter([0..=255])
-//     );
-//     Ok(())
-// }
+    // not defined on 0 maps because the range would be the universe (fine), but we don't know what value to use.
+    // assert_eq!(
+    //     MultiwayRangeMapBlaze::<u8, char>::intersection([]),
+    //     RangeMapBlaze::from_iter([(0..=255, '?')])
+    // );
+    Ok(())
+}
 
 // // #[test]
 // // fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
