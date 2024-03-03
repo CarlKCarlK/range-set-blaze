@@ -240,121 +240,147 @@ fn map_add_in_order() {
 //     );
 // }
 
-// cmk0 continue working on tests here
-// #[test]
-// fn map_iters() -> Result<(), Box<dyn std::error::Error>> {
-//     let range_map_blaze =
-//         RangeMapBlaze::from_iter([(1u8..=6, "Hello"), (8..=9, "There"), (11..=15, "World")]);
-//     assert!(range_map_blaze.len() == 13);
-//     for (k, v) in range_map_blaze.iter() {
-//         println!("{k}:{v}");
-//     }
-//     for range in range_map_blaze.ranges() {
-//         println!("{range:?}");
-//     }
-//     let mut rs = range_map_blaze.ranges();
-//     println!("{:?}", rs.next());
-//     println!("{range_map_blaze}");
-//     println!("{:?}", rs.len());
-//     println!("{:?}", rs.next());
-//     for (k, v) in range_map_blaze.iter() {
-//         println!("{k}:{v}");
-//     }
-//     // range_map_blaze.len();
+#[test]
+fn map_iters() -> Result<(), Box<dyn std::error::Error>> {
+    let range_map_blaze =
+        RangeMapBlaze::from_iter([(1u8..=6, "Hello"), (8..=9, "There"), (11..=15, "World")]);
+    assert!(range_map_blaze.len() == 13);
+    for (k, v) in range_map_blaze.iter() {
+        println!("{k}:{v}");
+    }
+    for range in range_map_blaze.ranges() {
+        println!("{range:?}");
+    }
+    let mut rs = range_map_blaze.range_values();
+    println!("{:?}", rs.next());
+    println!("{range_map_blaze}");
+    println!("{:?}", rs.len());
+    println!("{:?}", rs.next());
+    for (k, v) in range_map_blaze.iter() {
+        println!("{k}:{v}");
+    }
+    // range_map_blaze.len();
 
-//     let mut rs = range_map_blaze.ranges().complement();
-//     println!("{:?}", rs.next());
-//     println!("{range_map_blaze}");
-//     // !!! assert that can't use range_map_blaze again
+    let mut rs = range_map_blaze.range_values().complement();
+    println!("{:?}", rs.next());
+    println!("{range_map_blaze}");
+    // !!! assert that can't use range_map_blaze again
+    Ok(())
+}
+
+#[test]
+fn map_missing_doctest_ops() {
+    // note that may be borrowed or owned in any combination.
+
+    // Returns the union of `self` and `rhs` as a new [`RangeMapBlaze`].
+    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
+    let b = RangeMapBlaze::from_iter([(3, "World"), (4, "World"), (5, "World")]);
+
+    let result = &a | &b;
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([
+            (1, "Hello"),
+            (2, "Hello"),
+            (3, "Hello"),
+            (4, "World"),
+            (5, "World")
+        ])
+    );
+    let result = a | &b;
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([
+            (1, "Hello"),
+            (2, "Hello"),
+            (3, "Hello"),
+            (4, "World"),
+            (5, "World")
+        ])
+    );
+
+    // Returns the complement of `self` as a new [`RangeMapBlaze`].
+    let a = RangeMapBlaze::<i8, _>::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
+
+    let result = !&a;
+    assert_eq!(result.to_string(), "-128..=0, 4..=127");
+    let result = !a;
+    assert_eq!(result.to_string(), "-128..=0, 4..=127");
+
+    // Returns the intersection of `self` and `rhs` as a new `RangeMapBlaze<T>`.
+
+    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
+    let b = RangeMapBlaze::from_iter([(3, "World"), (4, "World"), (5, "World")]);
+
+    let result = a & &b;
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([(2, "Hello"), (3, "Hello")])
+    );
+    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
+    let result = a & b;
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([(2, "Hello"), (3, "Hello")])
+    );
+
+    // Returns the symmetric difference of `self` and `rhs` as a new `RangeMapBlaze<T>`.
+    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
+    let b = RangeMapBlaze::from_iter([(2, "World"), (3, "World"), (4, "World")]);
+
+    let result = a ^ b;
+    assert_eq!(
+        result,
+        RangeMapBlaze::from_iter([(1, "Hello"), (4, "World")])
+    );
+
+    // Returns the set difference of `self` and `rhs` as a new `RangeMapBlaze<T>`.
+    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
+    let b = RangeMapBlaze::from_iter([(2, "World"), (3, "World"), (4, "World")]);
+
+    let result = a - b;
+    assert_eq!(result, RangeMapBlaze::from_iter([(1, "Hello")]));
+}
+
+// #[test]
+// fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
+//     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+//     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
+//     let c = RangeMapBlaze::from_iter([38..=42]);
+//     let d = &(&a | &b) | &c;
+//     println!("{d}");
+//     let d = a | b | &c;
+//     println!("{d}");
+
+//     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+//     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
+//     let c = RangeMapBlaze::from_iter([38..=42]);
+
+//     let _ = [&a, &b, &c].union();
+//     let d = [a, b, c].intersection();
+//     assert_eq!(d, RangeMapBlaze::new());
+
+//     assert_eq!(
+//         !MultiwayRangeMapBlaze::<u8>::union([]),
+//         RangeMapBlaze::from_iter([0..=255])
+//     );
+
+//     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+//     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
+//     let c = RangeMapBlaze::from_iter([1..=42]);
+
+//     let _ = &a & &b;
+//     let d = [&a, &b, &c].intersection();
+//     // let d = RangeMapBlaze::intersection([a, b, c]);
+//     println!("{d}");
+//     assert_eq!(d, RangeMapBlaze::from_iter([5..=6, 8..=9, 11..=13]));
+
+//     assert_eq!(
+//         MultiwayRangeMapBlaze::<u8>::intersection([]),
+//         RangeMapBlaze::from_iter([0..=255])
+//     );
 //     Ok(())
 // }
-
-// // #[test]
-// // fn map_missing_doctest_ops() {
-// //     // note that may be borrowed or owned in any combination.
-
-// //     // Returns the union of `self` and `rhs` as a new [`RangeMapBlaze`].
-// //     let a = RangeMapBlaze::from_iter([1, 2, 3]);
-// //     let b = RangeMapBlaze::from_iter([3, 4, 5]);
-
-// //     let result = &a | &b;
-// //     assert_eq!(result, RangeMapBlaze::from_iter([1, 2, 3, 4, 5]));
-// //     let result = a | &b;
-// //     assert_eq!(result, RangeMapBlaze::from_iter([1, 2, 3, 4, 5]));
-
-// //     // Returns the complement of `self` as a new [`RangeMapBlaze`].
-// //     let a = RangeMapBlaze::<i8>::from_iter([1, 2, 3]);
-
-// //     let result = !&a;
-// //     assert_eq!(result.to_string(), "-128..=0, 4..=127");
-// //     let result = !a;
-// //     assert_eq!(result.to_string(), "-128..=0, 4..=127");
-
-// //     // Returns the intersection of `self` and `rhs` as a new `RangeMapBlaze<T>`.
-
-// //     let a = RangeMapBlaze::from_iter([1, 2, 3]);
-// //     let b = RangeMapBlaze::from_iter([2, 3, 4]);
-
-// //     let result = a & &b;
-// //     assert_eq!(result, RangeMapBlaze::from_iter([2, 3]));
-// //     let a = RangeMapBlaze::from_iter([1, 2, 3]);
-// //     let result = a & b;
-// //     assert_eq!(result, RangeMapBlaze::from_iter([2, 3]));
-
-// //     // Returns the symmetric difference of `self` and `rhs` as a new `RangeMapBlaze<T>`.
-// //     let a = RangeMapBlaze::from_iter([1, 2, 3]);
-// //     let b = RangeMapBlaze::from_iter([2, 3, 4]);
-
-// //     let result = a ^ b;
-// //     assert_eq!(result, RangeMapBlaze::from_iter([1, 4]));
-
-// //     // Returns the set difference of `self` and `rhs` as a new `RangeMapBlaze<T>`.
-// //     let a = RangeMapBlaze::from_iter([1, 2, 3]);
-// //     let b = RangeMapBlaze::from_iter([2, 3, 4]);
-
-// //     let result = a - b;
-// //     assert_eq!(result, RangeMapBlaze::from_iter([1]));
-// // }
-
-// // #[test]
-// // fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
-// //     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-// //     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
-// //     let c = RangeMapBlaze::from_iter([38..=42]);
-// //     let d = &(&a | &b) | &c;
-// //     println!("{d}");
-// //     let d = a | b | &c;
-// //     println!("{d}");
-
-// //     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-// //     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
-// //     let c = RangeMapBlaze::from_iter([38..=42]);
-
-// //     let _ = [&a, &b, &c].union();
-// //     let d = [a, b, c].intersection();
-// //     assert_eq!(d, RangeMapBlaze::new());
-
-// //     assert_eq!(
-// //         !MultiwayRangeMapBlaze::<u8>::union([]),
-// //         RangeMapBlaze::from_iter([0..=255])
-// //     );
-
-// //     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-// //     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
-// //     let c = RangeMapBlaze::from_iter([1..=42]);
-
-// //     let _ = &a & &b;
-// //     let d = [&a, &b, &c].intersection();
-// //     // let d = RangeMapBlaze::intersection([a, b, c]);
-// //     println!("{d}");
-// //     assert_eq!(d, RangeMapBlaze::from_iter([5..=6, 8..=9, 11..=13]));
-
-// //     assert_eq!(
-// //         MultiwayRangeMapBlaze::<u8>::intersection([]),
-// //         RangeMapBlaze::from_iter([0..=255])
-// //     );
-// //     Ok(())
-// // }
 
 // // #[test]
 // // fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
@@ -362,15 +388,15 @@ fn map_add_in_order() {
 // //     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
 // //     let c = RangeMapBlaze::from_iter([38..=42]);
 
-// //     let union_stream = b.ranges() | c.ranges();
-// //     let a_less = a.ranges().difference(union_stream);
-// //     let d: RangeMapBlaze<_> = a_less.into_range_set_blaze();
+// //     let union_stream = b.range_values() | c.range_values();
+// //     let a_less = a.range_values().difference(union_stream);
+// //     let d: RangeMapBlaze<_> = a_less.into_range_map_blaze();
 // //     println!("{d}");
 
 // //     let d: RangeMapBlaze<_> = a
-// //         .ranges()
-// //         .difference([b.ranges(), c.ranges()].union())
-// //         .into_range_set_blaze();
+// //         .range_values()
+// //         .difference([b.range_values(), c.range_values()].union())
+// //         .into_range_map_blaze();
 // //     println!("{d}");
 // //     Ok(())
 // // }
@@ -404,40 +430,40 @@ fn map_add_in_order() {
 // //         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
 // //         RangeMapBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
 // //     );
-// //     let _d = [a.ranges()].intersection();
-// //     let _parity: RangeMapBlaze<u8> = [[a.ranges()].intersection()].union().into_range_set_blaze();
-// //     let _parity: RangeMapBlaze<u8> = [a.ranges()].intersection().into_range_set_blaze();
-// //     let _parity: RangeMapBlaze<u8> = [a.ranges()].union().into_range_set_blaze();
+// //     let _d = [a.range_values()].intersection();
+// //     let _parity: RangeMapBlaze<u8> = [[a.range_values()].intersection()].union().into_range_map_blaze();
+// //     let _parity: RangeMapBlaze<u8> = [a.range_values()].intersection().into_range_map_blaze();
+// //     let _parity: RangeMapBlaze<u8> = [a.range_values()].union().into_range_map_blaze();
 // //     println!("!b {}", !b);
 // //     println!("!c {}", !c);
 // //     println!("!b|!c {}", !b | !c);
 // //     println!(
 // //         "!b|!c {}",
-// //         RangeMapBlaze::from_sorted_disjoint(b.ranges().complement() | c.ranges().complement())
+// //         RangeMapBlaze::from_sorted_disjoint(b.range_values().complement() | c.range_values().complement())
 // //     );
 
 // //     let _a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-// //     let u = [DynSortedDisjoint::new(a.ranges())].union();
+// //     let u = [DynSortedDisjoint::new(a.range_values())].union();
 // //     assert_eq!(
 // //         RangeMapBlaze::from_sorted_disjoint(u),
 // //         RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15])
 // //     );
-// //     let u = union_dyn!(a.ranges());
+// //     let u = union_dyn!(a.range_values());
 // //     assert_eq!(
 // //         RangeMapBlaze::from_sorted_disjoint(u),
 // //         RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15])
 // //     );
-// //     let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
+// //     let u = union_dyn!(a.range_values(), b.range_values(), c.range_values());
 // //     assert_eq!(
 // //         RangeMapBlaze::from_sorted_disjoint(u),
 // //         RangeMapBlaze::from_iter([1..=15, 18..=29, 38..=42])
 // //     );
 
 // //     let u = [
-// //         intersection_dyn!(a.ranges(), b.ranges().complement(), c.ranges().complement()),
-// //         intersection_dyn!(a.ranges().complement(), b.ranges(), c.ranges().complement()),
-// //         intersection_dyn!(a.ranges().complement(), b.ranges().complement(), c.ranges()),
-// //         intersection_dyn!(a.ranges(), b.ranges(), c.ranges()),
+// //         intersection_dyn!(a.range_values(), b.range_values().complement(), c.range_values().complement()),
+// //         intersection_dyn!(a.range_values().complement(), b.range_values(), c.range_values().complement()),
+// //         intersection_dyn!(a.range_values().complement(), b.range_values().complement(), c.range_values()),
+// //         intersection_dyn!(a.range_values(), b.range_values(), c.range_values()),
 // //     ]
 // //     .union();
 // //     assert_eq!(
@@ -461,10 +487,10 @@ fn map_add_in_order() {
 // //     let a1 = RangeMapBlaze::from_iter([8..=9, 11..=15]);
 // //     let a = &a0 | &a1;
 // //     let not_a = !&a;
-// //     let b = a.ranges();
-// //     let c = !not_a.ranges();
-// //     let d = a0.ranges() | a1.ranges();
-// //     let (e, _) = a.ranges().tee();
+// //     let b = a.range_values();
+// //     let c = !not_a.range_values();
+// //     let d = a0.range_values() | a1.range_values();
+// //     let (e, _) = a.range_values().tee();
 
 // //     let f = UnionIter::from([15, 14, 15, 13, 12, 11, 9, 9, 8, 6, 4, 5, 3, 2, 1, 1, 1]);
 // //     let not_b = !b;
@@ -472,11 +498,11 @@ fn map_add_in_order() {
 // //     let not_d = !d;
 // //     let not_e = e.complement();
 // //     let not_f = !f;
-// //     assert!(not_a.ranges().equal(not_b));
-// //     assert!(not_a.ranges().equal(not_c));
-// //     assert!(not_a.ranges().equal(not_d));
-// //     assert!(not_a.ranges().equal(not_e));
-// //     assert!(not_a.ranges().equal(not_f));
+// //     assert!(not_a.range_values().equal(not_b));
+// //     assert!(not_a.range_values().equal(not_c));
+// //     assert!(not_a.range_values().equal(not_d));
+// //     assert!(not_a.range_values().equal(not_e));
+// //     assert!(not_a.range_values().equal(not_f));
 // //     Ok(())
 // // }
 
@@ -484,25 +510,25 @@ fn map_add_in_order() {
 // // fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
 // //     // RangeMapBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
 // //     let a0 = RangeMapBlaze::from_iter([1..=6]);
-// //     let (a0_tee, _) = a0.ranges().tee();
+// //     let (a0_tee, _) = a0.range_values().tee();
 // //     let a1 = RangeMapBlaze::from_iter([8..=9]);
 // //     let a2 = RangeMapBlaze::from_iter([11..=15]);
 // //     let a12 = &a1 | &a2;
 // //     let not_a0 = !&a0;
 // //     let a = &a0 | &a1 | &a2;
-// //     let b = a0.ranges() | a1.ranges() | a2.ranges();
-// //     let c = !not_a0.ranges() | a12.ranges();
-// //     let d = a0.ranges() | a1.ranges() | a2.ranges();
-// //     let e = a0_tee.union(a12.ranges());
+// //     let b = a0.range_values() | a1.range_values() | a2.range_values();
+// //     let c = !not_a0.range_values() | a12.range_values();
+// //     let d = a0.range_values() | a1.range_values() | a2.range_values();
+// //     let e = a0_tee.union(a12.range_values());
 
 // //     let f = UnionIter::from_iter(a0.iter())
 // //         | UnionIter::from_iter(a1.iter())
 // //         | UnionIter::from_iter(a2.iter());
-// //     assert!(a.ranges().equal(b));
-// //     assert!(a.ranges().equal(c));
-// //     assert!(a.ranges().equal(d));
-// //     assert!(a.ranges().equal(e));
-// //     assert!(a.ranges().equal(f));
+// //     assert!(a.range_values().equal(b));
+// //     assert!(a.range_values().equal(c));
+// //     assert!(a.range_values().equal(d));
+// //     assert!(a.range_values().equal(e));
+// //     assert!(a.range_values().equal(f));
 // //     Ok(())
 // // }
 
@@ -513,19 +539,19 @@ fn map_add_in_order() {
 // //     let a1 = RangeMapBlaze::from_iter([8..=9]);
 // //     let a2 = RangeMapBlaze::from_iter([11..=15]);
 // //     let a01 = &a0 | &a1;
-// //     let (a01_tee, _) = a01.ranges().tee();
+// //     let (a01_tee, _) = a01.range_values().tee();
 // //     let not_a01 = !&a01;
 // //     let a = &a01 - &a2;
-// //     let b = a01.ranges() - a2.ranges();
-// //     let c = !not_a01.ranges() - a2.ranges();
-// //     let d = (a0.ranges() | a1.ranges()) - a2.ranges();
-// //     let e = a01_tee.difference(a2.ranges());
+// //     let b = a01.range_values() - a2.range_values();
+// //     let c = !not_a01.range_values() - a2.range_values();
+// //     let d = (a0.range_values() | a1.range_values()) - a2.range_values();
+// //     let e = a01_tee.difference(a2.range_values());
 // //     let f = UnionIter::from_iter(a01.iter()) - UnionIter::from_iter(a2.iter());
-// //     assert!(a.ranges().equal(b));
-// //     assert!(a.ranges().equal(c));
-// //     assert!(a.ranges().equal(d));
-// //     assert!(a.ranges().equal(e));
-// //     assert!(a.ranges().equal(f));
+// //     assert!(a.range_values().equal(b));
+// //     assert!(a.range_values().equal(c));
+// //     assert!(a.range_values().equal(d));
+// //     assert!(a.range_values().equal(e));
+// //     assert!(a.range_values().equal(f));
 
 // //     Ok(())
 // // }
@@ -537,19 +563,19 @@ fn map_add_in_order() {
 // //     let a1 = RangeMapBlaze::from_iter([8..=9]);
 // //     let a2 = RangeMapBlaze::from_iter([11..=15]);
 // //     let a01 = &a0 | &a1;
-// //     let (a01_tee, _) = a01.ranges().tee();
+// //     let (a01_tee, _) = a01.range_values().tee();
 // //     let not_a01 = !&a01;
 // //     let a = &a01 ^ &a2;
-// //     let b = a01.ranges() ^ a2.ranges();
-// //     let c = !not_a01.ranges() ^ a2.ranges();
-// //     let d = (a0.ranges() | a1.ranges()) ^ a2.ranges();
-// //     let e = a01_tee.symmetric_difference(a2.ranges());
+// //     let b = a01.range_values() ^ a2.range_values();
+// //     let c = !not_a01.range_values() ^ a2.range_values();
+// //     let d = (a0.range_values() | a1.range_values()) ^ a2.range_values();
+// //     let e = a01_tee.symmetric_difference(a2.range_values());
 // //     let f = UnionIter::from_iter(a01.iter()) ^ UnionIter::from_iter(a2.iter());
-// //     assert!(a.ranges().equal(b));
-// //     assert!(a.ranges().equal(c));
-// //     assert!(a.ranges().equal(d));
-// //     assert!(a.ranges().equal(e));
-// //     assert!(a.ranges().equal(f));
+// //     assert!(a.range_values().equal(b));
+// //     assert!(a.range_values().equal(c));
+// //     assert!(a.range_values().equal(d));
+// //     assert!(a.range_values().equal(e));
+// //     assert!(a.range_values().equal(f));
 // //     Ok(())
 // // }
 
@@ -560,30 +586,30 @@ fn map_add_in_order() {
 // //     let a1 = RangeMapBlaze::from_iter([8..=9]);
 // //     let a2 = RangeMapBlaze::from_iter([11..=15]);
 // //     let a01 = &a0 | &a1;
-// //     let (a01_tee, _) = a01.ranges().tee();
+// //     let (a01_tee, _) = a01.range_values().tee();
 // //     let not_a01 = !&a01;
 // //     let a = &a01 & &a2;
-// //     let b = a01.ranges() & a2.ranges();
-// //     let c = !not_a01.ranges() & a2.ranges();
-// //     let d = (a0.ranges() | a1.ranges()) & a2.ranges();
-// //     let e = a01_tee.intersection(a2.ranges());
+// //     let b = a01.range_values() & a2.range_values();
+// //     let c = !not_a01.range_values() & a2.range_values();
+// //     let d = (a0.range_values() | a1.range_values()) & a2.range_values();
+// //     let e = a01_tee.intersection(a2.range_values());
 // //     let f = UnionIter::from_iter(a01.iter()) & UnionIter::from_iter(a2.iter());
-// //     assert!(a.ranges().equal(b));
-// //     assert!(a.ranges().equal(c));
-// //     assert!(a.ranges().equal(d));
-// //     assert!(a.ranges().equal(e));
-// //     assert!(a.ranges().equal(f));
+// //     assert!(a.range_values().equal(b));
+// //     assert!(a.range_values().equal(c));
+// //     assert!(a.range_values().equal(d));
+// //     assert!(a.range_values().equal(e));
+// //     assert!(a.range_values().equal(f));
 // //     Ok(())
 // // }
 
 // // #[test]
 // // fn map_empty_it() {
 // //     let universe = RangeMapBlaze::from_iter([0u8..=255]);
-// //     let universe = universe.ranges();
+// //     let universe = universe.range_values();
 // //     let arr: [u8; 0] = [];
 // //     let a0 = RangeMapBlaze::<u8>::from_iter(arr);
-// //     assert!(!(a0.ranges()).equal(universe.clone()));
-// //     assert!((!a0).ranges().equal(universe));
+// //     assert!(!(a0.range_values()).equal(universe.clone()));
+// //     assert!((!a0).range_values().equal(universe));
 // //     let _a0 = RangeMapBlaze::from_iter([0..=0; 0]);
 // //     let _a = RangeMapBlaze::<i32>::new();
 
@@ -598,7 +624,7 @@ fn map_add_in_order() {
 // //     let c1b = &a | b.clone();
 // //     let c1c = a.clone() | &b;
 // //     let c1d = a.clone() | b.clone();
-// //     let c2: RangeMapBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze();
+// //     let c2: RangeMapBlaze<_> = (a.range_values() | b.range_values()).into_range_map_blaze();
 // //     c3.append(&mut b.clone());
 // //     c5.extend(b);
 
@@ -616,33 +642,33 @@ fn map_add_in_order() {
 // //     let a = a_iter.collect::<RangeMapBlaze<i32>>();
 // //     let b = RangeMapBlaze::from_iter([0; 0]);
 
-// //     let c0 = a.ranges() | b.ranges();
-// //     let c1 = [a.ranges(), b.ranges()].union();
+// //     let c0 = a.range_values() | b.range_values();
+// //     let c1 = [a.range_values(), b.range_values()].union();
 // //     let c_list2: [RangesIter<i32>; 0] = [];
 // //     let c2 = c_list2.clone().union();
-// //     let c3 = union_dyn!(a.ranges(), b.ranges());
+// //     let c3 = union_dyn!(a.range_values(), b.range_values());
 // //     let c4 = c_list2.map(DynSortedDisjoint::new).union();
 
 // //     let answer = RangeMapBlaze::from_iter([0; 0]);
-// //     assert!(c0.equal(answer.ranges()));
-// //     assert!(c1.equal(answer.ranges()));
-// //     assert!(c2.equal(answer.ranges()));
-// //     assert!(c3.equal(answer.ranges()));
-// //     assert!(c4.equal(answer.ranges()));
+// //     assert!(c0.equal(answer.range_values()));
+// //     assert!(c1.equal(answer.range_values()));
+// //     assert!(c2.equal(answer.range_values()));
+// //     assert!(c3.equal(answer.range_values()));
+// //     assert!(c4.equal(answer.range_values()));
 
-// //     let c0 = !(a.ranges() & b.ranges());
-// //     let c1 = ![a.ranges(), b.ranges()].intersection();
+// //     let c0 = !(a.range_values() & b.range_values());
+// //     let c1 = ![a.range_values(), b.range_values()].intersection();
 // //     let c_list2: [RangesIter<i32>; 0] = [];
 // //     let c2 = !!c_list2.clone().intersection();
-// //     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
+// //     let c3 = !intersection_dyn!(a.range_values(), b.range_values());
 // //     let c4 = !!c_list2.map(DynSortedDisjoint::new).intersection();
 
 // //     let answer = !RangeMapBlaze::from_iter([0; 0]);
-// //     assert!(c0.equal(answer.ranges()));
-// //     assert!(c1.equal(answer.ranges()));
-// //     assert!(c2.equal(answer.ranges()));
-// //     assert!(c3.equal(answer.ranges()));
-// //     assert!(c4.equal(answer.ranges()));
+// //     assert!(c0.equal(answer.range_values()));
+// //     assert!(c1.equal(answer.range_values()));
+// //     assert!(c2.equal(answer.range_values()));
+// //     assert!(c3.equal(answer.range_values()));
+// //     assert!(c4.equal(answer.range_values()));
 // // }
 
 // // #[test]
@@ -651,9 +677,9 @@ fn map_add_in_order() {
 // //     let a = RangeMapBlaze::from_iter([1..=0]);
 // //     let b = RangeMapBlaze::from_iter([2..=1]);
 // //     assert_eq!(a, b);
-// //     assert!(a.ranges().equal(b.ranges()));
-// //     assert_eq!(a.ranges().len(), 0);
-// //     assert_eq!(a.ranges().len(), b.ranges().len());
+// //     assert!(a.range_values().equal(b.range_values()));
+// //     assert_eq!(a.range_values().len(), 0);
+// //     assert_eq!(a.range_values().len(), b.range_values().len());
 // //     let a = RangeMapBlaze::from_iter([i32::MIN..=i32::MAX]);
 // //     println!("tc1 '{a}'");
 // //     assert_eq!(a.len() as i128, (i32::MAX as i128) - (i32::MIN as i128) + 1);
@@ -700,8 +726,8 @@ fn map_add_in_order() {
 // //     _range_set_int = [5..=6, 1..=5].into_iter().collect();
 // //     _range_set_int = RangeMapBlaze::from_iter([5..=6, 1..=5]);
 // //     // #16 into / from iter (T,T) + SortedDisjoint
-// //     _range_set_int = _range_set_int.ranges().into_range_set_blaze();
-// //     _range_set_int = RangeMapBlaze::from_sorted_disjoint(_range_set_int.ranges());
+// //     _range_set_int = _range_set_int.range_values().into_range_map_blaze();
+// //     _range_set_int = RangeMapBlaze::from_sorted_disjoint(_range_set_int.range_values());
 
 // //     let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10].into_iter());
 // //     let mut _sorted_disjoint_iter;
@@ -725,8 +751,8 @@ fn map_add_in_order() {
 // //     _sorted_disjoint_iter = [5..=6, 1..=5][0..=1].into();
 // //     _sorted_disjoint_iter = UnionIter::from([5..=6, 1..=5].as_slice());
 // //     // // #16 into / from iter (T,T) + SortedDisjoint
-// //     let mut _sorted_disjoint_iter: UnionIter<_, _> = _range_set_int.ranges().collect();
-// //     _sorted_disjoint_iter = UnionIter::from_iter(_range_set_int.ranges());
+// //     let mut _sorted_disjoint_iter: UnionIter<_, _> = _range_set_int.range_values().collect();
+// //     _sorted_disjoint_iter = UnionIter::from_iter(_range_set_int.range_values());
 
 // //     Ok(())
 // // }
@@ -759,8 +785,8 @@ fn map_add_in_order() {
 // //                     )
 // //                 },
 // //                 |sets| {
-// //                     let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-// //                     let _answer: RangeMapBlaze<_> = sets.intersection().into_range_set_blaze();
+// //                     let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.range_values()));
+// //                     let _answer: RangeMapBlaze<_> = sets.intersection().into_range_map_blaze();
 // //                 },
 // //                 BatchSize::SmallInput,
 // //             );
@@ -1169,7 +1195,7 @@ fn map_add_in_order() {
 // //         intron,
 // //         RangeMapBlaze::from_iter([30818..=32357, 32562..=36714])
 // //     );
-// //     for range in intron.ranges() {
+// //     for range in intron.range_values() {
 // //         let (start, end) = range.into_inner();
 // //         println!("{chr}\t{start}\t{end}");
 // //     }
@@ -1180,7 +1206,7 @@ fn map_add_in_order() {
 // //     let bad = [1..=2, 0..=5];
 // //     // let u = union_dyn!(bad.iter().cloned());
 // //     let good = RangeMapBlaze::from_iter(bad);
-// //     let _u = union_dyn!(good.ranges());
+// //     let _u = union_dyn!(good.range_values());
 // // }
 
 // // #[test]
@@ -1191,10 +1217,10 @@ fn map_add_in_order() {
 // //     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
 // //     let c = RangeMapBlaze::from_iter([25..=100]);
 
-// //     let union = [a.ranges(), b.ranges(), c.ranges()].union();
+// //     let union = [a.range_values(), b.range_values(), c.range_values()].union();
 // //     assert_eq!(union.to_string(), "1..=15, 18..=100");
 
-// //     let union = MultiwaySortedDisjoint::union([a.ranges(), b.ranges(), c.ranges()]);
+// //     let union = MultiwaySortedDisjoint::union([a.range_values(), b.range_values(), c.range_values()]);
 // //     assert_eq!(union.to_string(), "1..=15, 18..=100");
 // // }
 
@@ -1215,9 +1241,9 @@ fn map_add_in_order() {
 // //     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
 // //     let c = RangeMapBlaze::from_iter([38..=42]);
 // //     let union = [
-// //         DynSortedDisjoint::new(a.ranges()),
-// //         DynSortedDisjoint::new(!b.ranges()),
-// //         DynSortedDisjoint::new(c.ranges()),
+// //         DynSortedDisjoint::new(a.range_values()),
+// //         DynSortedDisjoint::new(!b.range_values()),
+// //         DynSortedDisjoint::new(c.range_values()),
 // //     ]
 // //     .union();
 // //     assert_eq!(union.to_string(), "0..=6, 8..=9, 11..=17, 30..=255");
@@ -1307,7 +1333,7 @@ fn map_add_in_order() {
 // //     // If we know the ranges are sorted and disjoint, we can use 'from'/'into'.
 // //     let a0 = RangeMapBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
 // //     let a1: RangeMapBlaze<i32> =
-// //         CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
+// //         CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_map_blaze();
 // //     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 
 // //     // For compatibility with `BTreeSet`, we also support
@@ -1470,7 +1496,7 @@ fn map_range_map_blaze_operators() {
     );
 
     // complement of a 'RangeMapBlaze'.
-    let result = !(&a.ranges().into_range_set_blaze());
+    let result = !(&a.range_values().into_range_map_blaze());
     assert_eq!(
         result.to_string(),
         "-2147483648..=0, 3..=4, 101..=2147483647"
@@ -1493,15 +1519,15 @@ fn map_range_map_blaze_operators() {
     // let result0 = &a - (&b | &c); // Creates a temporary 'RangeMapBlaze'.
 
     // // Alternatively, we can use the 'SortedDisjoint' API and avoid the temporary 'RangeMapBlaze'.
-    // let result1 = RangeMapBlaze::from_sorted_disjoint(a.ranges() - (b.ranges() | c.ranges()));
+    // let result1 = RangeMapBlaze::from_sorted_disjoint(a.range_values() - (b.range_values() | c.range_values()));
     // assert!(result0 == result1 && result0.to_string() == "1..=1");
 }
 
 // // #[test]
 // // fn map_sorted_disjoint_constructors() {
-// //     // RangeMapBlaze's .ranges(), .range().clone() and .into_ranges()
+// //     // RangeMapBlaze's .range_values(), .range().clone() and .into_ranges()
 // //     let r = RangeMapBlaze::from_iter([3, 2, 1, 100, 1]);
-// //     let a = r.ranges();
+// //     let a = r.range_values();
 // //     let b = a.clone();
 // //     assert!(a.to_string() == "1..=3, 100..=100");
 // //     assert!(b.to_string() == "1..=3, 100..=100");
@@ -1567,22 +1593,22 @@ fn map_range_map_blaze_operators() {
 // //     let c0 = RangeMapBlaze::from_iter([2..=2, 6..=200]);
 
 // //     // 'union' method and 'to_string' method
-// //     let (a, b) = (a0.ranges(), b0.ranges());
+// //     let (a, b) = (a0.range_values(), b0.range_values());
 // //     let result = a.union(b);
 // //     assert_eq!(result.to_string(), "1..=100");
 
 // //     // '|' operator and 'equal' method
-// //     let (a, b) = (a0.ranges(), b0.ranges());
+// //     let (a, b) = (a0.range_values(), b0.range_values());
 // //     let result = a | b;
 // //     assert!(result.equal(CheckSortedDisjoint::from([1..=100])));
 
 // //     // multiway union of same type
-// //     let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
+// //     let (a, b, c) = (a0.range_values(), b0.range_values(), c0.range_values());
 // //     let result = [a, b, c].union();
 // //     assert_eq!(result.to_string(), "1..=200");
 
 // //     // multiway union of different types
-// //     let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
+// //     let (a, b, c) = (a0.range_values(), b0.range_values(), c0.range_values());
 // //     let result = union_dyn!(a, b, !c);
 // //     assert_eq!(result.to_string(), "-2147483648..=100, 201..=2147483647");
 // // }
@@ -1697,15 +1723,15 @@ fn map_range_map_blaze_operators() {
 // //     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
 // //     let c = RangeMapBlaze::from_iter([38..=42]);
 
-// //     let _i0 = [a.ranges(), b.ranges(), c.ranges()].intersection();
-// //     // let _i1 = [!a.ranges(), b.ranges(), c.ranges()].intersection();
+// //     let _i0 = [a.range_values(), b.range_values(), c.range_values()].intersection();
+// //     // let _i1 = [!a.range_values(), b.range_values(), c.range_values()].intersection();
 // //     let _i2 = [
-// //         DynSortedDisjoint::new(!a.ranges()),
-// //         DynSortedDisjoint::new(b.ranges()),
-// //         DynSortedDisjoint::new(c.ranges()),
+// //         DynSortedDisjoint::new(!a.range_values()),
+// //         DynSortedDisjoint::new(b.range_values()),
+// //         DynSortedDisjoint::new(c.range_values()),
 // //     ]
 // //     .intersection();
-// //     let _i3 = intersection_dyn!(!a.ranges(), b.ranges(), c.ranges());
+// //     let _i3 = intersection_dyn!(!a.range_values(), b.range_values(), c.range_values());
 // // }
 
 // // #[test]

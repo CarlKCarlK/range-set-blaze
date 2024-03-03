@@ -39,6 +39,7 @@ mod ranges;
 #[cfg(feature = "rog-experimental")]
 mod rog;
 mod sorted_disjoint;
+use alloc::collections::btree_map;
 use gen_ops::gen_ops_ex;
 use intersection_iter_map::IntersectionIterMap;
 use merge_map::KMergeMap;
@@ -1946,7 +1947,7 @@ where
 pub struct IntoIter<T: Integer> {
     option_range_front: Option<RangeInclusive<T>>,
     option_range_back: Option<RangeInclusive<T>>,
-    into_iter: alloc::collections::btree_map::IntoIter<T, T>,
+    into_iter: btree_map::IntoIter<T, T>,
 }
 
 impl<T: Integer> FusedIterator for IntoIter<T> {}
