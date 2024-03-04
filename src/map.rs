@@ -1460,6 +1460,15 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         RangesFromMapIter::new(iter)
     }
 
+    /// cmk
+    /// cmk it's going to clone the value
+    pub fn complement_with(&self, value: V) -> RangeMapBlaze<T, V> {
+        self.ranges()
+            .complement()
+            .map(|r| (r, value.borrow_clone()))
+            .collect()
+    }
+
     /// An iterator that moves out the ranges in the [`RangeMapBlaze`],
     /// i.e., the integers as sorted & disjoint ranges.
     ///

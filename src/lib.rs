@@ -27,6 +27,7 @@ extern crate alloc;
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
+mod dyn_sorted_disjoint_map;
 mod from_slice;
 mod integer;
 mod intersection_iter_map;
@@ -44,6 +45,7 @@ use gen_ops::gen_ops_ex;
 use intersection_iter_map::IntersectionIterMap;
 use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
+pub use multiway_map::MultiwaySortedDisjointMap;
 use range_values::RangesFromMapIter;
 mod multiway_map;
 mod sorted_disjoint_map;
@@ -65,6 +67,7 @@ use core::{
     str::FromStr,
 };
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
+pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 use itertools::Tee;
 pub use merge::{KMerge, Merge};
 pub use merge_map::MergeMap; // cmk KMergeMap

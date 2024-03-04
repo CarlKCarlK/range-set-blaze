@@ -51,7 +51,7 @@ use crate::{
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct UnionIterMap<'a, T, V, VR, SS>
 where
-    T: Integer,
+    T: Integer + 'a,
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
     SS: SortedStartsMap<'a, T, V, VR>,

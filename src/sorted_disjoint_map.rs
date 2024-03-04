@@ -73,9 +73,10 @@ where
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
 #[doc(hidden)]
-pub trait SortedStartsMap<'a, T: Integer, V: ValueOwned + 'a, VR>:
-    Iterator<Item = RangeValue<'a, T, V, VR>>
+pub trait SortedStartsMap<'a, T, V, VR>: Iterator<Item = RangeValue<'a, T, V, VR>>
 where
+    T: Integer + 'a,
+    V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
 {
 }
@@ -267,9 +268,10 @@ where
 ///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
 /// );
 /// ```
-pub trait SortedDisjointMap<'a, T: Integer + 'a, V: ValueOwned + 'a, VR>:
-    SortedStartsMap<'a, T, V, VR>
+pub trait SortedDisjointMap<'a, T, V, VR>: SortedStartsMap<'a, T, V, VR>
 where
+    T: Integer + 'a,
+    V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
 {
     ///cmk
@@ -317,6 +319,8 @@ where
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their intersection.
     ///
+    /// /// cmk Tell that right-and-side must be a set, not a map
+    ///
     /// # Examples
     ///
     /// ```
@@ -346,6 +350,8 @@ where
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
+    ///
+    /// cmk Tell that right-and-side must be a set, not a map
     ///
     /// # Examples
     ///
@@ -377,6 +383,7 @@ where
     }
 
     /// cmk
+    /// returns a set, not a map
     #[inline]
     fn complement(self) -> NotIter<T, impl SortedDisjoint<T>>
     where
@@ -384,6 +391,20 @@ where
     {
         let sorted_disjoint = self.into_sorted_disjoint();
         sorted_disjoint.complement()
+    }
+
+    /// cmk
+    /// returns a set, not a map
+    #[inline]
+    fn complement_with(
+        self,
+        v: &'a V,
+    ) -> RangeToRangeValueIter<'a, T, V, NotIter<T, impl SortedDisjoint<T>>>
+    where
+        Self: Sized,
+    {
+        let complement = self.complement();
+        RangeToRangeValueIter::new(complement, v)
     }
 
     // cmk maybe we don't implement this, but it is OK on RangeMapBlaze
@@ -883,4 +904,61 @@ where
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
+}
+
+pub struct RangeToRangeValueIter<'a, T, V, I>
+where
+    T: Integer + 'a,
+    V: ValueOwned + 'a,
+    I: SortedDisjoint<T>,
+{
+    inner: I,
+    value: &'a V,
+    phantom: PhantomData<T>,
+}
+
+impl<'a, T, V, I> RangeToRangeValueIter<'a, T, V, I>
+where
+    T: Integer + 'a,
+    V: ValueOwned + 'a,
+    I: SortedDisjoint<T>,
+{
+    pub fn new(inner: I, value: &'a V) -> Self {
+        Self {
+            inner,
+            value,
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, T, V, I> Iterator for RangeToRangeValueIter<'a, T, V, I>
+where
+    T: Integer + 'a,
+    V: ValueOwned + 'a,
+    I: SortedDisjoint<T>,
+{
+    type Item = RangeValue<'a, T, V, &'a V>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner
+            .next()
+            .map(|range| RangeValue::new(range, self.value, None))
+    }
+}
+
+// implements SortedDisjointMap
+impl<'a, T, V, I> SortedStartsMap<'a, T, V, &'a V> for RangeToRangeValueIter<'a, T, V, I>
+where
+    T: Integer + 'a,
+    V: ValueOwned + 'a,
+    I: SortedDisjoint<T>,
+{
+}
+impl<'a, T, V, I> SortedDisjointMap<'a, T, V, &'a V> for RangeToRangeValueIter<'a, T, V, I>
+where
+    T: Integer + 'a,
+    V: ValueOwned + 'a,
+    I: SortedDisjoint<T>,
+{
 }

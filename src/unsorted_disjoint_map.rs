@@ -211,7 +211,7 @@ where
 #[doc(hidden)]
 pub struct AssumeSortedStartsMap<'a, T, V, VR, I>
 where
-    T: Integer,
+    T: Integer + 'a,
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,
@@ -287,7 +287,7 @@ where
 #[doc(hidden)]
 pub struct AssumeSortedDisjointMap<'a, T, V, VR, I>
 where
-    T: Integer,
+    T: Integer + 'a,
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
     I: Iterator<Item = RangeValue<'a, T, V, VR>>,

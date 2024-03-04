@@ -383,96 +383,152 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// // #[test]
-// // fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
-// //     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-// //     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
-// //     let c = RangeMapBlaze::from_iter([38..=42]);
+#[test]
+fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
+    let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
+    let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
+    let c = RangeMapBlaze::from_iter([(38..=42, 'c')]);
 
-// //     let union_stream = b.range_values() | c.range_values();
-// //     let a_less = a.range_values().difference(union_stream);
-// //     let d: RangeMapBlaze<_> = a_less.into_range_map_blaze();
-// //     println!("{d}");
+    let union_stream = b.range_values() | c.range_values();
+    let a_less = a
+        .range_values()
+        .difference(union_stream.into_sorted_disjoint());
+    let d: RangeMapBlaze<_, _> = a_less.into_range_map_blaze();
+    println!("{d}");
 
-// //     let d: RangeMapBlaze<_> = a
-// //         .range_values()
-// //         .difference([b.range_values(), c.range_values()].union())
-// //         .into_range_map_blaze();
-// //     println!("{d}");
-// //     Ok(())
-// // }
+    let d: RangeMapBlaze<_, _> = a
+        .range_values()
+        .difference(
+            [b.range_values(), c.range_values()]
+                .union()
+                .into_sorted_disjoint(),
+        )
+        .into_range_map_blaze();
+    println!("{d}");
+    Ok(())
+}
 
-// // #[test]
-// // fn map_from_string() -> Result<(), Box<dyn std::error::Error>> {
-// //     let a = RangeMapBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=65535]);
-// //     assert_eq!(a, RangeMapBlaze::from_iter([0..=65535]));
-// //     Ok(())
-// // }
+#[test]
+fn map_from_string() -> Result<(), Box<dyn std::error::Error>> {
+    let a = RangeMapBlaze::from_iter([
+        (0..=4, 'a'),
+        (14..=17, 'a'),
+        (30..=255, 'a'),
+        (0..=37, 'a'),
+        (43..=65535, 'a'),
+    ]);
+    assert_eq!(a, RangeMapBlaze::from_iter([(0..=65535, 'a')]));
+    Ok(())
+}
 
-// // #[test]
-// // fn map_nand_repro() -> Result<(), Box<dyn std::error::Error>> {
-// //     let b = &RangeMapBlaze::from_iter([5u8..=13, 18..=29]);
-// //     let c = &RangeMapBlaze::from_iter([38..=42]);
-// //     println!("about to nand");
-// //     let d = !b | !c;
-// //     assert_eq!(
-// //         d,
-// //         RangeMapBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
-// //     );
-// //     Ok(())
-// // }
+#[test]
+fn map_nand_repro() -> Result<(), Box<dyn std::error::Error>> {
+    let b = &RangeMapBlaze::from_iter([(5u8..=13, 'a'), (18..=29, 'a')]);
+    let c = &RangeMapBlaze::from_iter([(38..=42, 'b')]);
+    println!("about to nand");
+    let d = !b | !c;
+    assert_eq!(
+        d,
+        RangeSetBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
+    );
+    Ok(())
+}
 
-// // #[test]
-// // fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
-// //     let a = &RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-// //     let b = &RangeMapBlaze::from_iter([5..=13, 18..=29]);
-// //     let c = &RangeMapBlaze::from_iter([38..=42]);
-// //     assert_eq!(
-// //         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
-// //         RangeMapBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
-// //     );
-// //     let _d = [a.range_values()].intersection();
-// //     let _parity: RangeMapBlaze<u8> = [[a.range_values()].intersection()].union().into_range_map_blaze();
-// //     let _parity: RangeMapBlaze<u8> = [a.range_values()].intersection().into_range_map_blaze();
-// //     let _parity: RangeMapBlaze<u8> = [a.range_values()].union().into_range_map_blaze();
-// //     println!("!b {}", !b);
-// //     println!("!c {}", !c);
-// //     println!("!b|!c {}", !b | !c);
-// //     println!(
-// //         "!b|!c {}",
-// //         RangeMapBlaze::from_sorted_disjoint(b.range_values().complement() | c.range_values().complement())
-// //     );
+#[test]
+fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
+    // notice these are all borrowed
+    let a = &RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
+    let b = &RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
+    let c = &RangeMapBlaze::from_iter([(38..=42, 'c')]);
+    // cmk00 why doesn't range_set_map version of this need the borrow "&"
+    assert_eq!(
+        a & b.complement_with('B') & c.complement_with('C')
+            | a.complement_with('A') & b & c.complement_with('C')
+            | a.complement_with('A') & b.complement_with('B') & c
+            | a & b & c,
+        RangeMapBlaze::from_iter([
+            (1..=4, 'a'),
+            (7..=7, 'A'),
+            (10..=10, 'A'),
+            (14..=15, 'a'),
+            (18..=29, 'A'),
+            (38..=42, 'A')
+        ])
+    );
+    let _d = [a.range_values()].intersection();
+    let _parity: RangeMapBlaze<u8, _> = [[a.range_values()].intersection()]
+        .union()
+        .into_range_map_blaze();
+    let _parity: RangeMapBlaze<u8, _> = [a.range_values()].intersection().into_range_map_blaze();
+    let _parity: RangeMapBlaze<u8, _> = [a.range_values()].union().into_range_map_blaze();
+    println!("!b {}", !b);
+    println!("!c {}", !c);
+    println!("!b|!c {}", !b | !c);
+    let b_comp = (b).range_values().complement_with(&'B');
+    let c_comp = (c).range_values().complement_with(&'C');
+    println!(
+        "!b|!c {}",
+        RangeMapBlaze::from_sorted_disjoint_map(b_comp.union(c_comp))
+    );
 
-// //     let _a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-// //     let u = [DynSortedDisjoint::new(a.range_values())].union();
-// //     assert_eq!(
-// //         RangeMapBlaze::from_sorted_disjoint(u),
-// //         RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15])
-// //     );
-// //     let u = union_dyn!(a.range_values());
-// //     assert_eq!(
-// //         RangeMapBlaze::from_sorted_disjoint(u),
-// //         RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15])
-// //     );
-// //     let u = union_dyn!(a.range_values(), b.range_values(), c.range_values());
-// //     assert_eq!(
-// //         RangeMapBlaze::from_sorted_disjoint(u),
-// //         RangeMapBlaze::from_iter([1..=15, 18..=29, 38..=42])
-// //     );
+    let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
 
-// //     let u = [
-// //         intersection_dyn!(a.range_values(), b.range_values().complement(), c.range_values().complement()),
-// //         intersection_dyn!(a.range_values().complement(), b.range_values(), c.range_values().complement()),
-// //         intersection_dyn!(a.range_values().complement(), b.range_values().complement(), c.range_values()),
-// //         intersection_dyn!(a.range_values(), b.range_values(), c.range_values()),
-// //     ]
-// //     .union();
-// //     assert_eq!(
-// //         RangeMapBlaze::from_sorted_disjoint(u),
-// //         RangeMapBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
-// //     );
-// //     Ok(())
-// // }
+    let u = [DynSortedDisjointMap::new(a.range_values())].union();
+    assert_eq!(
+        RangeMapBlaze::from_sorted_disjoint_map(u),
+        RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')])
+    );
+    let u = union_map_dyn!(a.range_values());
+    assert_eq!(
+        RangeMapBlaze::from_sorted_disjoint_map(u),
+        RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')])
+    );
+    let u = union_map_dyn!(a.range_values(), b.range_values(), c.range_values());
+    assert_eq!(
+        RangeMapBlaze::from_sorted_disjoint_map(u),
+        RangeMapBlaze::from_iter([
+            (1..=6, 'a'),
+            (7..=7, 'b'),
+            (8..=9, 'a'),
+            (10..=10, 'b'),
+            (11..=15, 'a'),
+            (18..=29, 'b'),
+            (38..=42, 'c')
+        ])
+    );
+
+    let u = [
+        intersection_map_dyn!(
+            a.range_values(),
+            b.range_values().complement_with(&'B'),
+            c.range_values().complement_with(&'C')
+        ),
+        intersection_map_dyn!(
+            a.range_values().complement_with(&'A'),
+            b.range_values(),
+            c.range_values().complement_with(&'C')
+        ),
+        intersection_map_dyn!(
+            a.range_values().complement_with(&'A'),
+            b.range_values().complement_with(&'B'),
+            c.range_values()
+        ),
+        intersection_map_dyn!(a.range_values(), b.range_values(), c.range_values()),
+    ]
+    .union();
+    assert_eq!(
+        RangeMapBlaze::from_sorted_disjoint_map(u),
+        RangeMapBlaze::from_iter([
+            (1..=4, 'a'),
+            (7..=7, 'A'),
+            (10..=10, 'A'),
+            (14..=15, 'a'),
+            (18..=29, 'A'),
+            (38..=42, 'A')
+        ])
+    );
+    Ok(())
+}
 
 // // // skip this test because the expected error message is not stable
 // // // #[test]
@@ -625,7 +681,7 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 // //     let c1b = &a | b.clone();
 // //     let c1c = a.clone() | &b;
 // //     let c1d = a.clone() | b.clone();
-// //     let c2: RangeMapBlaze<_> = (a.range_values() | b.range_values()).into_range_map_blaze();
+// //     let c2: RangeMapBlaze<_,_> = (a.range_values() | b.range_values()).into_range_map_blaze();
 // //     c3.append(&mut b.clone());
 // //     c5.extend(b);
 
@@ -647,8 +703,8 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 // //     let c1 = [a.range_values(), b.range_values()].union();
 // //     let c_list2: [RangesIter<i32>; 0] = [];
 // //     let c2 = c_list2.clone().union();
-// //     let c3 = union_dyn!(a.range_values(), b.range_values());
-// //     let c4 = c_list2.map(DynSortedDisjoint::new).union();
+// //     let c3 = union_map_dyn!(a.range_values(), b.range_values());
+// //     let c4 = c_list2.map(DynSortedDisjointMap::new).union();
 
 // //     let answer = RangeMapBlaze::from_iter([0; 0]);
 // //     assert!(c0.equal(answer.range_values()));
@@ -661,8 +717,8 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 // //     let c1 = ![a.range_values(), b.range_values()].intersection();
 // //     let c_list2: [RangesIter<i32>; 0] = [];
 // //     let c2 = !!c_list2.clone().intersection();
-// //     let c3 = !intersection_dyn!(a.range_values(), b.range_values());
-// //     let c4 = !!c_list2.map(DynSortedDisjoint::new).intersection();
+// //     let c3 = !intersection_map_dyn!(a.range_values(), b.range_values());
+// //     let c4 = !!c_list2.map(DynSortedDisjointMap::new).intersection();
 
 // //     let answer = !RangeMapBlaze::from_iter([0; 0]);
 // //     assert!(c0.equal(answer.range_values()));
@@ -728,7 +784,7 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 // //     _range_set_int = RangeMapBlaze::from_iter([5..=6, 1..=5]);
 // //     // #16 into / from iter (T,T) + SortedDisjoint
 // //     _range_set_int = _range_set_int.range_values().into_range_map_blaze();
-// //     _range_set_int = RangeMapBlaze::from_sorted_disjoint(_range_set_int.range_values());
+// //     _range_set_int = RangeMapBlaze::from_sorted_disjoint_map(_range_set_int.range_values());
 
 // //     let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10].into_iter());
 // //     let mut _sorted_disjoint_iter;
@@ -786,8 +842,8 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 // //                     )
 // //                 },
 // //                 |sets| {
-// //                     let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.range_values()));
-// //                     let _answer: RangeMapBlaze<_> = sets.intersection().into_range_map_blaze();
+// //                     let sets = sets.iter().map(|x| DynSortedDisjointMap::new(x.range_values()));
+// //                     let _answer: RangeMapBlaze<_,_> = sets.intersection().into_range_map_blaze();
 // //                 },
 // //                 BatchSize::SmallInput,
 // //             );
@@ -804,7 +860,7 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 // //     let k = 100;
 
 // //     for how in [How::None, How::Union, How::Intersection] {
-// //         let mut option_range_int_set: Option<RangeMapBlaze<_>> = None;
+// //         let mut option_range_int_set: Option<RangeMapBlaze<_,_>> = None;
 // //         for seed in 0..k as u64 {
 // //             let r2: RangeMapBlaze<i32> = MemorylessRange::new(
 // //                 &mut StdRng::seed_from_u64(seed),
@@ -927,7 +983,7 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 // //             MemorylessIter::new(&mut rng, range_len, range.clone(), coverage_goal, k, how);
 // //         let item_count_with_dups = memoryless_iter.count();
 // //         let mut rng = StdRng::seed_from_u64(seed);
-// //         let range_map_blaze: RangeMapBlaze<_> =
+// //         let range_map_blaze: RangeMapBlaze<_,_> =
 // //             MemorylessRange::new(&mut rng, range_len, range.clone(), coverage_goal, k, how)
 // //                 .collect();
 
@@ -1205,9 +1261,9 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 // // #[test]
 // // fn map_trick_dyn() {
 // //     let bad = [1..=2, 0..=5];
-// //     // let u = union_dyn!(bad.iter().cloned());
+// //     // let u = union_map_dyn!(bad.iter().cloned());
 // //     let good = RangeMapBlaze::from_iter(bad);
-// //     let _u = union_dyn!(good.range_values());
+// //     let _u = union_map_dyn!(good.range_values());
 // // }
 
 // // #[test]
@@ -1242,9 +1298,9 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 // //     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
 // //     let c = RangeMapBlaze::from_iter([38..=42]);
 // //     let union = [
-// //         DynSortedDisjoint::new(a.range_values()),
-// //         DynSortedDisjoint::new(!b.range_values()),
-// //         DynSortedDisjoint::new(c.range_values()),
+// //         DynSortedDisjointMap::new(a.range_values()),
+// //         DynSortedDisjointMap::new(!b.range_values()),
+// //         DynSortedDisjointMap::new(c.range_values()),
 // //     ]
 // //     .union();
 // //     assert_eq!(union.to_string(), "0..=6, 8..=9, 11..=17, 30..=255");
@@ -1332,7 +1388,7 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 // //     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 
 // //     // If we know the ranges are sorted and disjoint, we can use 'from'/'into'.
-// //     let a0 = RangeMapBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+// //     let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
 // //     let a1: RangeMapBlaze<i32> =
 // //         CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_map_blaze();
 // //     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
@@ -1520,7 +1576,7 @@ fn map_range_map_blaze_operators() {
     // let result0 = &a - (&b | &c); // Creates a temporary 'RangeMapBlaze'.
 
     // // Alternatively, we can use the 'SortedDisjoint' API and avoid the temporary 'RangeMapBlaze'.
-    // let result1 = RangeMapBlaze::from_sorted_disjoint(a.range_values() - (b.range_values() | c.range_values()));
+    // let result1 = RangeMapBlaze::from_sorted_disjoint_map(a.range_values() - (b.range_values() | c.range_values()));
     // assert!(result0 == result1 && result0.to_string() == "1..=1");
 }
 
@@ -1548,7 +1604,7 @@ fn map_range_map_blaze_operators() {
 
 // //     // DynamicSortedDisjoint of a SortedDisjoint iterator
 // //     let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
-// //     let b = DynSortedDisjoint::new(a);
+// //     let b = DynSortedDisjointMap::new(a);
 // //     assert!(b.to_string() == "1..=3, 100..=100");
 // // }
 
@@ -1610,7 +1666,7 @@ fn map_range_map_blaze_operators() {
 
 // //     // multiway union of different types
 // //     let (a, b, c) = (a0.range_values(), b0.range_values(), c0.range_values());
-// //     let result = union_dyn!(a, b, !c);
+// //     let result = union_map_dyn!(a, b, !c);
 // //     assert_eq!(result.to_string(), "-2147483648..=100, 201..=2147483647");
 // // }
 
@@ -1700,9 +1756,9 @@ fn map_range_map_blaze_operators() {
 
 // // // fn map__some_fn() {
 // // //     let guaranteed = RangeMapBlaze::from_iter([1..=2, 3..=4, 5..=6]).into_ranges();
-// // //     let _range_set_int = RangeMapBlaze::from_sorted_disjoint(guaranteed);
+// // //     let _range_set_int = RangeMapBlaze::from_sorted_disjoint_map(guaranteed);
 // // //     let not_guaranteed = [1..=2, 3..=4, 5..=6].into_iter();
-// // //     let _range_set_int = RangeMapBlaze::from_sorted_disjoint(not_guaranteed);
+// // //     let _range_set_int = RangeMapBlaze::from_sorted_disjoint_map(not_guaranteed);
 // // // }
 
 // // // fn map__some_fn() {
@@ -1727,12 +1783,12 @@ fn map_range_map_blaze_operators() {
 // //     let _i0 = [a.range_values(), b.range_values(), c.range_values()].intersection();
 // //     // let _i1 = [!a.range_values(), b.range_values(), c.range_values()].intersection();
 // //     let _i2 = [
-// //         DynSortedDisjoint::new(!a.range_values()),
-// //         DynSortedDisjoint::new(b.range_values()),
-// //         DynSortedDisjoint::new(c.range_values()),
+// //         DynSortedDisjointMap::new(!a.range_values()),
+// //         DynSortedDisjointMap::new(b.range_values()),
+// //         DynSortedDisjointMap::new(c.range_values()),
 // //     ]
 // //     .intersection();
-// //     let _i3 = intersection_dyn!(!a.range_values(), b.range_values(), c.range_values());
+// //     let _i3 = intersection_map_dyn!(!a.range_values(), b.range_values(), c.range_values());
 // // }
 
 // // #[test]
