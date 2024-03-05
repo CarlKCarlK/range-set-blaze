@@ -15,6 +15,7 @@
 // // cmk add RangeMapBlaze to prelude
 // use std::collections::BTreeMap;
 use range_set_blaze::prelude::*;
+use range_set_blaze::UnionIterMap;
 // use range_set_blaze::{
 //     MultiwayRangeMapBlaze, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
 // };
@@ -530,88 +531,107 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// // // skip this test because the expected error message is not stable
-// // // #[test]
-// // // fn map_ui() {
-// // //     let t = trybuild::TestCases::new();
-// // //     t.compile_fail("tests/ui/*.rs");
-// // // }
+#[test]
+fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
+    // RangeMapBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+    let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
+    let a1 = RangeMapBlaze::from_iter([(8..=9, "a1"), (11..=15, "a1")]);
+    let a = &a0 | &a1;
+    let not_a = &a.complement_with("A");
+    let b = a.range_values();
+    let c = not_a.range_values().complement_with(&"A");
+    let d = a0.range_values() | a1.range_values();
+    let e = a.range_values(); // with range instead of range values used 'tee' here
 
-// // #[test]
-// // fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
-// //     // RangeMapBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
-// //     let a0 = RangeMapBlaze::from_iter([1..=6]);
-// //     let a1 = RangeMapBlaze::from_iter([8..=9, 11..=15]);
-// //     let a = &a0 | &a1;
-// //     let not_a = !&a;
-// //     let b = a.range_values();
-// //     let c = !not_a.range_values();
-// //     let d = a0.range_values() | a1.range_values();
-// //     let (e, _) = a.range_values().tee();
+    // cmk000 stopped here, need to get this from working
+    let f = UnionIterMap::from_iter([
+        (15, &"f"),
+        (14, &"f"),
+        (15, &"f"),
+        (13, &"f"),
+        (12, &"f"),
+        (11, &"f"),
+        (9, &"f"),
+        (9, &"f"),
+        (8, &"f"),
+        (6, &"f"),
+        (4, &"f"),
+        (5, &"f"),
+        (3, &"f"),
+        (2, &"f"),
+        (1, &"f"),
+        (1, &"f"),
+        (1, &"f"),
+    ]);
 
-// //     let f = UnionIter::from([15, 14, 15, 13, 12, 11, 9, 9, 8, 6, 4, 5, 3, 2, 1, 1, 1]);
-// //     let not_b = !b;
-// //     let not_c = !c;
-// //     let not_d = !d;
-// //     let not_e = e.complement();
-// //     let not_f = !f;
-// //     assert!(not_a.range_values().equal(not_b));
-// //     assert!(not_a.range_values().equal(not_c));
-// //     assert!(not_a.range_values().equal(not_d));
-// //     assert!(not_a.range_values().equal(not_e));
-// //     assert!(not_a.range_values().equal(not_f));
-// //     Ok(())
-// // }
+    let not_b = b.complement_with(&"A");
+    let not_c = c.complement_with(&"A");
+    let not_d = d.complement_with(&"A");
+    let not_e = e.complement_with(&"A");
+    let not_f = f.complement_with(&"A");
+    // println!("not a: {:?}", not_a.range_values().into_range_map_blaze());
+    // println!("not b: {:?}", not_b.into_range_map_blaze());
+    // println!("not c: {:?}", not_c.into_range_map_blaze());
+    // println!("not d: {:?}", not_d.into_range_map_blaze());
+    // println!("not e: {:?}", not_e.into_range_map_blaze());
+    // println!("not f: {:?}", not_f.into_range_map_blaze());
+    assert!(not_a.range_values().equal(not_b));
+    assert!(not_a.range_values().equal(not_c));
+    assert!(not_a.range_values().equal(not_d));
+    assert!(not_a.range_values().equal(not_e));
+    assert!(not_a.range_values().equal(not_f));
+    Ok(())
+}
 
-// // #[test]
-// // fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
-// //     // RangeMapBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
-// //     let a0 = RangeMapBlaze::from_iter([1..=6]);
-// //     let (a0_tee, _) = a0.range_values().tee();
-// //     let a1 = RangeMapBlaze::from_iter([8..=9]);
-// //     let a2 = RangeMapBlaze::from_iter([11..=15]);
-// //     let a12 = &a1 | &a2;
-// //     let not_a0 = !&a0;
-// //     let a = &a0 | &a1 | &a2;
-// //     let b = a0.range_values() | a1.range_values() | a2.range_values();
-// //     let c = !not_a0.range_values() | a12.range_values();
-// //     let d = a0.range_values() | a1.range_values() | a2.range_values();
-// //     let e = a0_tee.union(a12.range_values());
+// #[test]
+// fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
+//     // RangeMapBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+//     let a0 = RangeMapBlaze::from_iter([1..=6]);
+//     let (a0_tee, _) = a0.range_values().tee();
+//     let a1 = RangeMapBlaze::from_iter([8..=9]);
+//     let a2 = RangeMapBlaze::from_iter([11..=15]);
+//     let a12 = &a1 | &a2;
+//     let not_a0 = !&a0;
+//     let a = &a0 | &a1 | &a2;
+//     let b = a0.range_values() | a1.range_values() | a2.range_values();
+//     let c = !not_a0.range_values() | a12.range_values();
+//     let d = a0.range_values() | a1.range_values() | a2.range_values();
+//     let e = a0_tee.union(a12.range_values());
 
-// //     let f = UnionIter::from_iter(a0.iter())
-// //         | UnionIter::from_iter(a1.iter())
-// //         | UnionIter::from_iter(a2.iter());
-// //     assert!(a.range_values().equal(b));
-// //     assert!(a.range_values().equal(c));
-// //     assert!(a.range_values().equal(d));
-// //     assert!(a.range_values().equal(e));
-// //     assert!(a.range_values().equal(f));
-// //     Ok(())
-// // }
+//     let f = UnionIter::from_iter(a0.iter())
+//         | UnionIter::from_iter(a1.iter())
+//         | UnionIter::from_iter(a2.iter());
+//     assert!(a.range_values().equal(b));
+//     assert!(a.range_values().equal(c));
+//     assert!(a.range_values().equal(d));
+//     assert!(a.range_values().equal(e));
+//     assert!(a.range_values().equal(f));
+//     Ok(())
+// }
 
-// // #[test]
-// // fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
-// //     // RangeMapBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
-// //     let a0 = RangeMapBlaze::from_iter([1..=6]);
-// //     let a1 = RangeMapBlaze::from_iter([8..=9]);
-// //     let a2 = RangeMapBlaze::from_iter([11..=15]);
-// //     let a01 = &a0 | &a1;
-// //     let (a01_tee, _) = a01.range_values().tee();
-// //     let not_a01 = !&a01;
-// //     let a = &a01 - &a2;
-// //     let b = a01.range_values() - a2.range_values();
-// //     let c = !not_a01.range_values() - a2.range_values();
-// //     let d = (a0.range_values() | a1.range_values()) - a2.range_values();
-// //     let e = a01_tee.difference(a2.range_values());
-// //     let f = UnionIter::from_iter(a01.iter()) - UnionIter::from_iter(a2.iter());
-// //     assert!(a.range_values().equal(b));
-// //     assert!(a.range_values().equal(c));
-// //     assert!(a.range_values().equal(d));
-// //     assert!(a.range_values().equal(e));
-// //     assert!(a.range_values().equal(f));
+// #[test]
+// fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
+//     // RangeMapBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+//     let a0 = RangeMapBlaze::from_iter([1..=6]);
+//     let a1 = RangeMapBlaze::from_iter([8..=9]);
+//     let a2 = RangeMapBlaze::from_iter([11..=15]);
+//     let a01 = &a0 | &a1;
+//     let (a01_tee, _) = a01.range_values().tee();
+//     let not_a01 = !&a01;
+//     let a = &a01 - &a2;
+//     let b = a01.range_values() - a2.range_values();
+//     let c = !not_a01.range_values() - a2.range_values();
+//     let d = (a0.range_values() | a1.range_values()) - a2.range_values();
+//     let e = a01_tee.difference(a2.range_values());
+//     let f = UnionIter::from_iter(a01.iter()) - UnionIter::from_iter(a2.iter());
+//     assert!(a.range_values().equal(b));
+//     assert!(a.range_values().equal(c));
+//     assert!(a.range_values().equal(d));
+//     assert!(a.range_values().equal(e));
+//     assert!(a.range_values().equal(f));
 
-// //     Ok(())
-// // }
+//     Ok(())
+// }
 
 // // #[test]
 // // fn map_xor() -> Result<(), Box<dyn std::error::Error>> {

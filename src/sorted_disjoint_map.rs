@@ -465,15 +465,33 @@ where
     /// let b = RangeMapBlaze::from_iter([1..=2]).into_ranges();
     /// assert!(a.equal(b));
     /// ```
-    // cmk
-    // fn equal<R>(self, other: R) -> bool
-    // where
-    //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
-    //     Self: Sized,
-    // {
-    //     itertools::equal(self, other)
-    // }
+    // cmk000 make the default ord on rangevalue do this, then this can use itertools
+    fn equal<R>(mut self, other: R) -> bool
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
+        Self: Sized,
+    {
+        let mut other_iter = other.into_iter();
+        let mut both_exhausted = true;
+
+        for (a, b) in self.by_ref().zip(&mut other_iter) {
+            let va = a.value.borrow_clone();
+            let vb = b.value.borrow_clone();
+
+            if a.range != b.range || va != vb {
+                return false;
+            }
+        }
+
+        // Check if there is any item left in either iterator.
+        // If there is, then both_exhausted is set to false.
+        if self.next().is_some() || other_iter.next().is_some() {
+            both_exhausted = false;
+        }
+
+        both_exhausted
+    }
 
     /// Returns `true` if the set contains no elements.
     ///
