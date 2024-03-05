@@ -669,9 +669,10 @@ impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]>
     }
 }
 
-pub trait AnythingGoes<T: Integer>: Iterator<Item = RangeInclusive<T>> {}
-
 impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, AnythingGoes);
+
+pub trait AnythingGoes<T: Integer>: Iterator<Item = RangeInclusive<T>> {}
+impl<T: Integer, I> AnythingGoes<T> for I where I: Iterator<Item = RangeInclusive<T>> {}
 
 #[macro_export]
 macro_rules! impl_sorted_traits_and_ops {
@@ -799,5 +800,3 @@ macro_rules! impl_sorted_traits_and_ops {
         }
     };
 }
-
-impl<T: Integer, I> AnythingGoes<T> for I where I: Iterator<Item = RangeInclusive<T>> {}

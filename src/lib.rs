@@ -2327,3 +2327,6 @@ where
 
 impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
+
+// cmk0 If we want this to work, we need to wrap Tee
+// impl_sorted_traits_and_ops!(Tee<I>, SortedDisjoint);
