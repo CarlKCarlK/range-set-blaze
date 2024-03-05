@@ -1,14 +1,10 @@
-use crate::{
-    map::{BitOrMergeMap, CloneBorrow},
-    sorted_disjoint_map::RangeValue,
-    Integer,
-};
+use crate::{map::CloneBorrow, sorted_disjoint_map::RangeValue, Integer};
 use alloc::{collections::btree_map, rc::Rc};
 use core::{
     iter::{Enumerate, FusedIterator},
     marker::PhantomData,
     num::NonZeroUsize,
-    ops::{self, RangeInclusive},
+    ops::RangeInclusive,
 };
 
 use crate::{
@@ -256,27 +252,27 @@ where
 //     }
 // }
 
-impl<'a, T: Integer, V: ValueOwned, I> ops::BitOr<I> for RangeValuesIter<'a, T, V>
-where
-    I: SortedDisjointMap<'a, T, V, &'a V>,
-{
-    type Output = BitOrMergeMap<'a, T, V, &'a V, Self, I>;
+// impl<'a, T: Integer, V: ValueOwned, I> ops::BitOr<I> for RangeValuesIter<'a, T, V>
+// where
+//     I: SortedDisjointMap<'a, T, V, &'a V>,
+// {
+//     type Output = BitOrMergeMap<'a, T, V, &'a V, Self, I>;
 
-    fn bitor(self, other: I) -> Self::Output {
-        SortedDisjointMap::union(self, other)
-    }
-}
+//     fn bitor(self, other: I) -> Self::Output {
+//         SortedDisjointMap::union(self, other)
+//     }
+// }
 
-impl<'a, T: Integer, V: ValueOwned, I> ops::BitOr<I> for IntoRangeValuesIter<'a, T, V>
-where
-    I: SortedDisjointMap<'a, T, V, Rc<V>>,
-{
-    type Output = BitOrMergeMap<'a, T, V, Rc<V>, Self, I>;
+// impl<'a, T: Integer, V: ValueOwned, I> ops::BitOr<I> for IntoRangeValuesIter<'a, T, V>
+// where
+//     I: SortedDisjointMap<'a, T, V, Rc<V>>,
+// {
+//     type Output = BitOrMergeMap<'a, T, V, Rc<V>, Self, I>;
 
-    fn bitor(self, other: I) -> Self::Output {
-        SortedDisjointMap::union(self, other)
-    }
-}
+//     fn bitor(self, other: I) -> Self::Output {
+//         SortedDisjointMap::union(self, other)
+//     }
+// }
 
 // impl<T: Integer, V: ValueOwned, I> ops::Sub<I> for RangeValuesIter<'_, T, V, VR>
 // where

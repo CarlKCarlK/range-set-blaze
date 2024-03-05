@@ -8,6 +8,7 @@ use alloc::vec;
 use itertools::Itertools;
 
 use crate::{
+    impl_sorted_traits_and_ops,
     unsorted_disjoint::{AssumeSortedStarts, UnsortedDisjoint},
     BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjoint,
     SortedStarts,
@@ -180,65 +181,66 @@ where
     }
 }
 
-impl<T: Integer, I> ops::Not for UnionIter<T, I>
-where
-    I: SortedStarts<T>,
-{
-    type Output = NotIter<T, Self>;
+impl_sorted_traits_and_ops!(UnionIter<T, I>, SortedStarts);
+// impl<T: Integer, I> ops::Not for UnionIter<T, I>
+// where
+//     I: SortedStarts<T>,
+// {
+//     type Output = NotIter<T, Self>;
 
-    fn not(self) -> Self::Output {
-        self.complement()
-    }
-}
+//     fn not(self) -> Self::Output {
+//         self.complement()
+//     }
+// }
 
 // cmk fix everywhere that is R, L rather than L, R
-impl<T: Integer, R, L> ops::BitOr<R> for UnionIter<T, L>
-where
-    L: SortedStarts<T>,
-    R: SortedDisjoint<T>,
-{
-    type Output = BitOrMerge<T, Self, R>;
+// impl<T: Integer, R, L> ops::BitOr<R> for UnionIter<T, L>
+// where
+//     L: SortedStarts<T>,
+//     R: SortedDisjoint<T>,
+// {
+//     type Output = BitOrMerge<T, Self, R>;
 
-    fn bitor(self, rhs: R) -> Self::Output {
-        // It might be fine to optimize to self.iter, but that would require
-        // also considering field 'range'
-        SortedDisjoint::union(self, rhs)
-    }
-}
+//     fn bitor(self, rhs: R) -> Self::Output {
+//         // It might be fine to optimize to self.iter, but that would require
+//         // also considering field 'range'
+//         SortedDisjoint::union(self, rhs)
+//     }
+// }
 
-impl<T: Integer, R, L> ops::Sub<R> for UnionIter<T, L>
-where
-    L: SortedStarts<T>,
-    R: SortedDisjoint<T>,
-{
-    type Output = BitSubMerge<T, Self, R>;
+// impl<T: Integer, R, L> ops::Sub<R> for UnionIter<T, L>
+// where
+//     L: SortedStarts<T>,
+//     R: SortedDisjoint<T>,
+// {
+//     type Output = BitSubMerge<T, Self, R>;
 
-    fn sub(self, rhs: R) -> Self::Output {
-        SortedDisjoint::difference(self, rhs)
-    }
-}
+//     fn sub(self, rhs: R) -> Self::Output {
+//         SortedDisjoint::difference(self, rhs)
+//     }
+// }
 
-impl<T: Integer, R, L> ops::BitXor<R> for UnionIter<T, L>
-where
-    L: SortedStarts<T>,
-    R: SortedDisjoint<T>,
-{
-    type Output = BitXOrTee<T, Self, R>;
+// impl<T: Integer, R, L> ops::BitXor<R> for UnionIter<T, L>
+// where
+//     L: SortedStarts<T>,
+//     R: SortedDisjoint<T>,
+// {
+//     type Output = BitXOrTee<T, Self, R>;
 
-    #[allow(clippy::suspicious_arithmetic_impl)]
-    fn bitxor(self, rhs: R) -> Self::Output {
-        SortedDisjoint::symmetric_difference(self, rhs)
-    }
-}
+//     #[allow(clippy::suspicious_arithmetic_impl)]
+//     fn bitxor(self, rhs: R) -> Self::Output {
+//         SortedDisjoint::symmetric_difference(self, rhs)
+//     }
+// }
 
-impl<T: Integer, R, L> ops::BitAnd<R> for UnionIter<T, L>
-where
-    L: SortedStarts<T>,
-    R: SortedDisjoint<T>,
-{
-    type Output = BitAndMerge<T, Self, R>;
+// impl<T: Integer, R, L> ops::BitAnd<R> for UnionIter<T, L>
+// where
+//     L: SortedStarts<T>,
+//     R: SortedDisjoint<T>,
+// {
+//     type Output = BitAndMerge<T, Self, R>;
 
-    fn bitand(self, other: R) -> Self::Output {
-        SortedDisjoint::intersection(self, other)
-    }
-}
+//     fn bitand(self, other: R) -> Self::Output {
+//         SortedDisjoint::intersection(self, other)
+//     }
+// }

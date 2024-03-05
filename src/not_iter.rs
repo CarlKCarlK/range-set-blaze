@@ -1,9 +1,13 @@
+use crate::SortedStarts;
 use core::{
     iter::FusedIterator,
     ops::{self, RangeInclusive},
 };
 
-use crate::{BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, SortedDisjoint};
+use crate::{
+    impl_sorted_traits_and_ops, BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer,
+    SortedDisjoint,
+};
 
 /// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
 /// i.e., all the integers not in the original iterator, as sorted & disjoint ranges.
@@ -111,73 +115,75 @@ where
     }
 }
 
-impl<T: Integer, I> ops::Not for NotIter<T, I>
-where
-    I: SortedDisjoint<T>,
-{
-    type Output = NotIter<T, Self>;
+impl_sorted_traits_and_ops!(NotIter<T, I>, SortedDisjoint);
 
-    fn not(self) -> Self::Output {
-        // It would be fun to optimize to self.iter, but that would require
-        // also considering fields 'start_not' and 'next_time_return_none'.
-        self.complement()
-    }
-}
+// impl<T: Integer, I> ops::Not for NotIter<T, I>
+// where
+//     I: SortedDisjoint<T>,
+// {
+//     type Output = NotIter<T, Self>;
 
-impl<T: Integer, R, L> ops::BitOr<R> for NotIter<T, L>
-where
-    L: SortedDisjoint<T>,
-    R: SortedDisjoint<T>,
-{
-    type Output = BitOrMerge<T, Self, R>;
+//     fn not(self) -> Self::Output {
+//         // It would be fun to optimize to self.iter, but that would require
+//         // also considering fields 'start_not' and 'next_time_return_none'.
+//         self.complement()
+//     }
+// }
 
-    fn bitor(self, other: R) -> Self::Output {
-        SortedDisjoint::union(self, other)
-    }
-}
+// impl<T: Integer, R, L> ops::BitOr<R> for NotIter<T, L>
+// where
+//     L: SortedDisjoint<T>,
+//     R: SortedDisjoint<T>,
+// {
+//     type Output = BitOrMerge<T, Self, R>;
 
-impl<T: Integer, R, L> ops::Sub<R> for NotIter<T, L>
-where
-    L: SortedDisjoint<T>,
-    R: SortedDisjoint<T>,
-{
-    type Output = BitSubMerge<T, Self, R>;
+//     fn bitor(self, other: R) -> Self::Output {
+//         SortedDisjoint::union(self, other)
+//     }
+// }
 
-    fn sub(self, other: R) -> Self::Output {
-        // It would be fun to optimize !!self.iter into self.iter
-        // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-        SortedDisjoint::difference(self, other)
-    }
-}
+// impl<T: Integer, R, L> ops::Sub<R> for NotIter<T, L>
+// where
+//     L: SortedDisjoint<T>,
+//     R: SortedDisjoint<T>,
+// {
+//     type Output = BitSubMerge<T, Self, R>;
 
-impl<T: Integer, R, L> ops::BitXor<R> for NotIter<T, L>
-where
-    L: SortedDisjoint<T>,
-    R: SortedDisjoint<T>,
-{
-    type Output = BitXOrTee<T, Self, R>;
+//     fn sub(self, other: R) -> Self::Output {
+//         // It would be fun to optimize !!self.iter into self.iter
+//         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
+//         SortedDisjoint::difference(self, other)
+//     }
+// }
 
-    #[allow(clippy::suspicious_arithmetic_impl)]
-    fn bitxor(self, other: R) -> Self::Output {
-        // It would be fine optimize !!self.iter into self.iter, ala
-        // ¬(¬n ∨ ¬r) ∨ ¬(n ∨ r) // https://www.wolframalpha.com/input?i=%28not+n%29+xor+r
-        // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-        SortedDisjoint::symmetric_difference(self, other)
-    }
-}
+// impl<T: Integer, R, L> ops::BitXor<R> for NotIter<T, L>
+// where
+//     L: SortedDisjoint<T>,
+//     R: SortedDisjoint<T>,
+// {
+//     type Output = BitXOrTee<T, Self, R>;
 
-impl<T: Integer, R, L> ops::BitAnd<R> for NotIter<T, L>
-where
-    L: SortedDisjoint<T>,
-    R: SortedDisjoint<T>,
-{
-    type Output = BitAndMerge<T, Self, R>;
+//     #[allow(clippy::suspicious_arithmetic_impl)]
+//     fn bitxor(self, other: R) -> Self::Output {
+//         // It would be fine optimize !!self.iter into self.iter, ala
+//         // ¬(¬n ∨ ¬r) ∨ ¬(n ∨ r) // https://www.wolframalpha.com/input?i=%28not+n%29+xor+r
+//         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
+//         SortedDisjoint::symmetric_difference(self, other)
+//     }
+// }
 
-    fn bitand(self, other: R) -> Self::Output {
-        // It would be fun to optimize !!self.iter into self.iter
-        // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-        SortedDisjoint::intersection(self, other)
-    }
-}
+// impl<T: Integer, R, L> ops::BitAnd<R> for NotIter<T, L>
+// where
+//     L: SortedDisjoint<T>,
+//     R: SortedDisjoint<T>,
+// {
+//     type Output = BitAndMerge<T, Self, R>;
+
+//     fn bitand(self, other: R) -> Self::Output {
+//         // It would be fun to optimize !!self.iter into self.iter
+//         // but that would require also considering fields 'start_not' and 'next_time_return_none'.
+//         SortedDisjoint::intersection(self, other)
+//     }
+// }
 
 // FUTURE define Not, etc on DynSortedDisjoint

@@ -2287,16 +2287,6 @@ impl<T: Integer> PartialOrd for RangeSetBlaze<T> {
 
 impl<T: Integer> Eq for RangeSetBlaze<T> {}
 
-// If the iterator inside a BitOrIter is SortedStart, the output will be SortedDisjoint
-impl<T: Integer, I: SortedStarts<T>> SortedStarts<T> for UnionIter<T, I> {}
-impl<T: Integer, I: SortedStarts<T>> SortedDisjoint<T> for UnionIter<T, I> {}
-// If the iterator inside NotIter is SortedDisjoint, the output will be SortedDisjoint
-impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for NotIter<T, I> {}
-impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for NotIter<T, I> {}
-// If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
-impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
-impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
-
 #[cfg(feature = "std")]
 use std::{
     fs::File,
@@ -2334,3 +2324,140 @@ where
 }
 
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
+
+#[macro_export]
+macro_rules! impl_sorted_traits_and_ops {
+    ($IterType:ty, $TraitBound:ident) => {
+        impl<T: Integer, I: $TraitBound<T>> SortedStarts<T> for $IterType {}
+        impl<T: Integer, I: $TraitBound<T>> SortedDisjoint<T> for $IterType {}
+
+        impl<T: Integer, I> ops::Not for $IterType
+        where
+            I: $TraitBound<T>,
+        {
+            type Output = NotIter<T, Self>;
+
+            fn not(self) -> Self::Output {
+                self.complement()
+            }
+        }
+
+        impl<T: Integer, I, R> ops::BitOr<R> for $IterType
+        where
+            I: $TraitBound<T>,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitOrMerge<T, Self, R>;
+
+            fn bitor(self, other: R) -> Self::Output {
+                SortedDisjoint::union(self, other)
+            }
+        }
+
+        impl<T: Integer, I, R> ops::Sub<R> for $IterType
+        where
+            I: $TraitBound<T>,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitSubMerge<T, Self, R>;
+
+            fn sub(self, other: R) -> Self::Output {
+                // It would be fun to optimize !!self.iter into self.iter
+                // but that would require also considering fields 'start_not' and 'next_time_return_none'.
+                SortedDisjoint::difference(self, other)
+            }
+        }
+
+        impl<T: Integer, I, R> ops::BitXor<R> for $IterType
+        where
+            I: $TraitBound<T>,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitXOrTee<T, Self, R>;
+
+            #[allow(clippy::suspicious_arithmetic_impl)]
+            fn bitxor(self, other: R) -> Self::Output {
+                SortedDisjoint::symmetric_difference(self, other)
+            }
+        }
+
+        impl<T: Integer, I, R> ops::BitAnd<R> for $IterType
+        where
+            I: $TraitBound<T>,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitAndMerge<T, Self, R>;
+
+            fn bitand(self, other: R) -> Self::Output {
+                SortedDisjoint::intersection(self, other)
+            }
+        }
+    };
+    ($IterType:ty) => {
+        impl<T: Integer> SortedStarts<T> for $IterType {}
+        impl<T: Integer> SortedDisjoint<T> for $IterType {}
+
+        impl<T: Integer> ops::Not for $IterType {
+            type Output = NotIter<T, Self>;
+
+            fn not(self) -> Self::Output {
+                self.complement()
+            }
+        }
+
+        impl<T: Integer, R> ops::BitOr<R> for $IterType
+        where
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitOrMerge<T, Self, R>;
+
+            fn bitor(self, other: R) -> Self::Output {
+                SortedDisjoint::union(self, other)
+            }
+        }
+
+        impl<T: Integer, R> ops::Sub<R> for $IterType
+        where
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitSubMerge<T, Self, R>;
+
+            fn sub(self, other: R) -> Self::Output {
+                SortedDisjoint::difference(self, other)
+            }
+        }
+
+        impl<T: Integer, R> ops::BitXor<R> for $IterType
+        where
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitXOrTee<T, Self, R>;
+
+            #[allow(clippy::suspicious_arithmetic_impl)]
+            fn bitxor(self, other: R) -> Self::Output {
+                SortedDisjoint::symmetric_difference(self, other)
+            }
+        }
+
+        impl<T: Integer, R> ops::BitAnd<R> for $IterType
+        where
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitAndMerge<T, Self, R>;
+
+            fn bitand(self, other: R) -> Self::Output {
+                SortedDisjoint::intersection(self, other)
+            }
+        }
+    };
+}
+
+// If the iterator inside a BitOrIter is SortedStart, the output will be SortedDisjoint
+// impl<T: Integer, I: SortedStarts<T>> SortedStarts<T> for UnionIter<T, I> {}
+// impl<T: Integer, I: SortedStarts<T>> SortedDisjoint<T> for UnionIter<T, I> {}
+// If the iterator inside NotIter is SortedDisjoint, the output will be SortedDisjoint
+// impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for NotIter<T, I> {}
+// impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for NotIter<T, I> {}
+// If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
+impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
+impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}

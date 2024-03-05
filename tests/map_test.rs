@@ -390,7 +390,7 @@ fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
     let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
     let c = RangeMapBlaze::from_iter([(38..=42, 'c')]);
 
-    let union_stream = b.range_values() | c.range_values();
+    let union_stream = b.range_values().union(c.range_values());
     let a_less = a
         .range_values()
         .difference(union_stream.into_sorted_disjoint());
@@ -540,7 +540,7 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
     let not_a = &a.complement_with("A");
     let b = a.range_values();
     let c = not_a.range_values().complement_with(&"A");
-    let d = a0.range_values() | a1.range_values();
+    let d = a0.range_values().union(a1.range_values());
     let e = a.range_values(); // with range instead of range values used 'tee' here
 
     // cmk000 stopped here, need to get this from working

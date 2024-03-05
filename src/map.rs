@@ -1754,7 +1754,10 @@ impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze<T, 
         // cmk
         // self |= other;
         // self
-        (self.range_values() | other.range_values()).into_range_map_blaze()
+        // cmk00 use |
+        self.range_values()
+            .union(other.range_values())
+            .into_range_map_blaze()
     }
 }
 
@@ -1776,7 +1779,10 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for RangeMapBlaze<T,
     fn bitor(self, other: &Self) -> RangeMapBlaze<T, V> {
         // self |= other;
         // self
-        (self.range_values() | other.range_values()).into_range_map_blaze()
+        // cmk00 use |
+        self.range_values()
+            .union(other.range_values())
+            .into_range_map_blaze()
     }
 }
 
@@ -1799,7 +1805,10 @@ impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
         // cmk
         // other |= self;
         // other
-        (self.range_values() | other.range_values()).into_range_map_blaze()
+        // cmk00 use |
+        self.range_values()
+            .union(other.range_values())
+            .into_range_map_blaze()
     }
 }
 
@@ -1821,7 +1830,8 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     fn bitor(self, other: &RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
         let left = self.range_values();
         let right = other.range_values();
-        (left | right).into_range_map_blaze()
+        // cmk00 use |
+        left.union(right).into_range_map_blaze()
     }
 }
 
