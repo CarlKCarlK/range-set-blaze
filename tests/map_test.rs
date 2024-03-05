@@ -29,7 +29,7 @@ use std::{
 };
 
 //     prelude::*, AssumeSortedStarts, Integer, NotIter, RangeMapBlaze, RangesIter, SortedStarts,
-//     UnionIter,
+//     UnionIterMap,
 // };
 // use std::cmp::Ordering;
 // #[cfg(feature = "rog-experimental")]
@@ -533,7 +533,7 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeMapBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+    // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
     let a1 = RangeMapBlaze::from_iter([(8..=9, "a1"), (11..=15, "a1")]);
     let a = &a0 | &a1;
@@ -569,6 +569,7 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
     let not_d = d.complement_with(&"A");
     let not_e = e.complement_with(&"A");
     let not_f = f.complement_with(&"A");
+    // cmk0 make .to_string_work
     // println!("not a: {:?}", not_a.range_values().into_range_map_blaze());
     // println!("not b: {:?}", not_b.into_range_map_blaze());
     // println!("not c: {:?}", not_c.into_range_map_blaze());
@@ -583,35 +584,44 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// #[test]
-// fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
-//     // RangeMapBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
-//     let a0 = RangeMapBlaze::from_iter([1..=6]);
-//     let (a0_tee, _) = a0.range_values().tee();
-//     let a1 = RangeMapBlaze::from_iter([8..=9]);
-//     let a2 = RangeMapBlaze::from_iter([11..=15]);
-//     let a12 = &a1 | &a2;
-//     let not_a0 = !&a0;
-//     let a = &a0 | &a1 | &a2;
-//     let b = a0.range_values() | a1.range_values() | a2.range_values();
-//     let c = !not_a0.range_values() | a12.range_values();
-//     let d = a0.range_values() | a1.range_values() | a2.range_values();
-//     let e = a0_tee.union(a12.range_values());
+#[test]
+fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
+    // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
+    let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
+    let a0_tee = a0.range_values(); // with range instead of range values used 'tee' here
+    let a1 = RangeMapBlaze::from_iter([(8..=9, "a1")]);
+    let a2 = RangeMapBlaze::from_iter([(11..=15, "a2")]);
+    let a12 = &a1 | &a2;
+    let not_a0 = &a0.complement_with(&"A0");
+    let a = &a0 | &a1 | &a2;
+    let b = a0
+        .range_values()
+        .union(a1.range_values())
+        .union(a2.range_values());
+    let c = not_a0
+        .range_values()
+        .complement_with(&"a0")
+        .union(a12.range_values());
+    let d = a0
+        .range_values()
+        .union(a1.range_values())
+        .union(a2.range_values());
+    let e = a0_tee.union(a12.range_values());
 
-//     let f = UnionIter::from_iter(a0.iter())
-//         | UnionIter::from_iter(a1.iter())
-//         | UnionIter::from_iter(a2.iter());
-//     assert!(a.range_values().equal(b));
-//     assert!(a.range_values().equal(c));
-//     assert!(a.range_values().equal(d));
-//     assert!(a.range_values().equal(e));
-//     assert!(a.range_values().equal(f));
-//     Ok(())
-// }
+    let f = UnionIterMap::from_iter(a0.iter())
+        .union(UnionIterMap::from_iter(a1.iter()))
+        .union(UnionIterMap::from_iter(a2.iter()));
+    assert!(a.range_values().equal(b));
+    assert!(a.range_values().equal(c));
+    assert!(a.range_values().equal(d));
+    assert!(a.range_values().equal(e));
+    assert!(a.range_values().equal(f));
+    Ok(())
+}
 
 // #[test]
 // fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
-//     // RangeMapBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+//     // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
 //     let a0 = RangeMapBlaze::from_iter([1..=6]);
 //     let a1 = RangeMapBlaze::from_iter([8..=9]);
 //     let a2 = RangeMapBlaze::from_iter([11..=15]);
@@ -623,7 +633,7 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
 //     let c = !not_a01.range_values() - a2.range_values();
 //     let d = (a0.range_values() | a1.range_values()) - a2.range_values();
 //     let e = a01_tee.difference(a2.range_values());
-//     let f = UnionIter::from_iter(a01.iter()) - UnionIter::from_iter(a2.iter());
+//     let f = UnionIterMap::from_iter(a01.iter()) - UnionIterMap::from_iter(a2.iter());
 //     assert!(a.range_values().equal(b));
 //     assert!(a.range_values().equal(c));
 //     assert!(a.range_values().equal(d));
@@ -635,7 +645,7 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
 
 // // #[test]
 // // fn map_xor() -> Result<(), Box<dyn std::error::Error>> {
-// //     // RangeMapBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+// //     // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
 // //     let a0 = RangeMapBlaze::from_iter([1..=6]);
 // //     let a1 = RangeMapBlaze::from_iter([8..=9]);
 // //     let a2 = RangeMapBlaze::from_iter([11..=15]);
@@ -647,7 +657,7 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
 // //     let c = !not_a01.range_values() ^ a2.range_values();
 // //     let d = (a0.range_values() | a1.range_values()) ^ a2.range_values();
 // //     let e = a01_tee.symmetric_difference(a2.range_values());
-// //     let f = UnionIter::from_iter(a01.iter()) ^ UnionIter::from_iter(a2.iter());
+// //     let f = UnionIterMap::from_iter(a01.iter()) ^ UnionIterMap::from_iter(a2.iter());
 // //     assert!(a.range_values().equal(b));
 // //     assert!(a.range_values().equal(c));
 // //     assert!(a.range_values().equal(d));
@@ -658,7 +668,7 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
 
 // // #[test]
 // // fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
-// //     // RangeMapBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+// //     // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
 // //     let a0 = RangeMapBlaze::from_iter([1..=6]);
 // //     let a1 = RangeMapBlaze::from_iter([8..=9]);
 // //     let a2 = RangeMapBlaze::from_iter([11..=15]);
@@ -670,7 +680,7 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
 // //     let c = !not_a01.range_values() & a2.range_values();
 // //     let d = (a0.range_values() | a1.range_values()) & a2.range_values();
 // //     let e = a01_tee.intersection(a2.range_values());
-// //     let f = UnionIter::from_iter(a01.iter()) & UnionIter::from_iter(a2.iter());
+// //     let f = UnionIterMap::from_iter(a01.iter()) & UnionIterMap::from_iter(a2.iter());
 // //     assert!(a.range_values().equal(b));
 // //     assert!(a.range_values().equal(c));
 // //     assert!(a.range_values().equal(d));
@@ -808,28 +818,28 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
 
 // //     let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10].into_iter());
 // //     let mut _sorted_disjoint_iter;
-// //     _sorted_disjoint_iter = UnionIter::new(sorted_starts);
+// //     _sorted_disjoint_iter = UnionIterMap::new(sorted_starts);
 // //     // #10 collect / from_iter T
-// //     let mut _sorted_disjoint_iter: UnionIter<_, _> = [1, 5, 6, 5].into_iter().collect();
-// //     _sorted_disjoint_iter = UnionIter::from_iter([1, 5, 6, 5]);
+// //     let mut _sorted_disjoint_iter: UnionIterMap<_, _> = [1, 5, 6, 5].into_iter().collect();
+// //     _sorted_disjoint_iter = UnionIterMap::from_iter([1, 5, 6, 5]);
 // //     // // #11 into / from array T
 // //     _sorted_disjoint_iter = [1, 5, 6, 5].into();
-// //     _sorted_disjoint_iter = UnionIter::from([1, 5, 6, 5]);
+// //     _sorted_disjoint_iter = UnionIterMap::from([1, 5, 6, 5]);
 // //     // // #12 into / from slice T
 // //     _sorted_disjoint_iter = [1, 5, 6, 5][1..=2].into();
-// //     _sorted_disjoint_iter = UnionIter::from([1, 5, 6, 5].as_slice());
+// //     _sorted_disjoint_iter = UnionIterMap::from([1, 5, 6, 5].as_slice());
 // //     // //#13 collect / from_iter range
 // //     _sorted_disjoint_iter = [5..=6, 1..=5].into_iter().collect();
-// //     _sorted_disjoint_iter = UnionIter::from_iter([5..=6, 1..=5]);
+// //     _sorted_disjoint_iter = UnionIterMap::from_iter([5..=6, 1..=5]);
 // //     // // #14 from into array range
 // //     _sorted_disjoint_iter = [5..=6, 1..=5].into();
-// //     _sorted_disjoint_iter = UnionIter::from([5..=6, 1..=5]);
+// //     _sorted_disjoint_iter = UnionIterMap::from([5..=6, 1..=5]);
 // //     // // #15 from into slice range
 // //     _sorted_disjoint_iter = [5..=6, 1..=5][0..=1].into();
-// //     _sorted_disjoint_iter = UnionIter::from([5..=6, 1..=5].as_slice());
+// //     _sorted_disjoint_iter = UnionIterMap::from([5..=6, 1..=5].as_slice());
 // //     // // #16 into / from iter (T,T) + SortedDisjoint
-// //     let mut _sorted_disjoint_iter: UnionIter<_, _> = _range_set_int.range_values().collect();
-// //     _sorted_disjoint_iter = UnionIter::from_iter(_range_set_int.range_values());
+// //     let mut _sorted_disjoint_iter: UnionIterMap<_, _> = _range_set_int.range_values().collect();
+// //     _sorted_disjoint_iter = UnionIterMap::from_iter(_range_set_int.range_values());
 
 // //     Ok(())
 // // }
@@ -1347,11 +1357,11 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
 
 // // #[test]
 // // fn map_union_iter() {
-// //     use range_map_blaze::{CheckSortedDisjoint, UnionIter};
+// //     use range_map_blaze::{CheckSortedDisjoint, UnionIterMap};
 
 // //     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 // //     let b = CheckSortedDisjoint::from([2..=6]);
-// //     let c = UnionIter::new(AssumeSortedStarts::new(
+// //     let c = UnionIterMap::new(AssumeSortedStarts::new(
 // //         a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
 // //     ));
 // //     assert_eq!(c.to_string(), "1..=100");

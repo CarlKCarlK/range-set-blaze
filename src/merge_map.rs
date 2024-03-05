@@ -177,7 +177,7 @@ where
             fn(&RangeValue<'a, T, V, VR>, &RangeValue<'a, T, V, VR>) -> bool,
         > = iter.kmerge_by(|a, b| match a.range.start().cmp(&b.range.start()) {
             Ordering::Less => true,
-            Ordering::Equal => a < b,
+            Ordering::Equal => a.priority < b.priority,
             Ordering::Greater => false,
         });
         Self { iter }

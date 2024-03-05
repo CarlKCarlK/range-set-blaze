@@ -1,25 +1,19 @@
 use crate::alloc::string::ToString;
+use crate::sorted_disjoint_map::Priority;
 use alloc::format;
 use alloc::string::String;
 use alloc::{collections::BinaryHeap, vec};
 use core::ops::RangeInclusive;
-use core::{
-    cmp::min,
-    iter::FusedIterator,
-    ops::{self},
-};
+use core::{cmp::min, iter::FusedIterator};
 use itertools::Itertools;
 
-use crate::{
-    map::{BitOrMergeMap, ValueOwned},
-    Integer,
-};
+use crate::{map::ValueOwned, Integer};
 use crate::{
     map::{CloneBorrow, SortedStartsInVecMap},
     unsorted_disjoint_map::AssumeSortedStartsMap,
 };
 use crate::{
-    sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
+    sorted_disjoint_map::{RangeValue, SortedStartsMap},
     unsorted_disjoint_map::UnsortedDisjointMap,
 };
 
@@ -59,7 +53,7 @@ where
 {
     iter: SS,
     next_item: Option<RangeValue<'a, T, V, VR>>,
-    workspace: BinaryHeap<RangeValue<'a, T, V, VR>>,
+    workspace: BinaryHeap<Priority<'a, T, V, VR>>,
     gather: Option<RangeValue<'a, T, V, VR>>,
     ready_to_go: Option<RangeValue<'a, T, V, VR>>,
 }
@@ -92,7 +86,7 @@ where
                     //     "cmk pushing self.next_item {:?} into empty workspace",
                     //     next_item.range
                     // );
-                    self.workspace.push(next_item);
+                    self.workspace.push(Priority(next_item));
                     self.next_item = self.iter.next();
                     // println!(
                     //     "cmk reading new self.next_item via .next() {:?}",
@@ -101,11 +95,12 @@ where
                     // println!("cmk return to top of the main processing loop");
                     continue; // return to top of the main processing loop
                 };
+                let best = &best.0;
                 if next_start == *best.range.start() {
                     // Only push if the priority is higher or the end is greater
-                    if next_item > *best || next_end > *best.range.end() {
+                    if next_item.priority > best.priority || next_end > *best.range.end() {
                         // println!("cmk pushing next_item {:?} into workspace", next_item.range);
-                        self.workspace.push(next_item);
+                        self.workspace.push(Priority(next_item));
                     } else {
                         // println!(
                         //     "cmk throwing away next_item {:?} because of priority and length",
@@ -138,6 +133,7 @@ where
 
                 return value;
             };
+            let best = &best.0;
 
             // We buffer for output the best item up to the start of the next item (if any).
 
@@ -201,7 +197,8 @@ where
             // We also update the workspace to removing any items that are completely covered by the new_start.
             // We also don't need to keep any items that have a lower priority and are shorter than the new best.
             let mut new_workspace = BinaryHeap::new();
-            while let Some(mut item) = self.workspace.pop() {
+            while let Some(item) = self.workspace.pop() {
+                let mut item = item.0;
                 if *item.range.end() <= next_end {
                     // too short, don't keep
                     // println!("cmk too short, don't keep in workspace {:?}", item.range);
@@ -211,10 +208,11 @@ where
                 let Some(new_best) = new_workspace.peek() else {
                     // println!("cmk no workspace, so keep {:?}", item.range);
                     // new_workspace is empty, so keep
-                    new_workspace.push(item);
+                    new_workspace.push(Priority(item));
                     continue; // while loop
                 };
-                if &item < new_best && *item.range.end() <= *new_best.range.end() {
+                let new_best = &new_best.0;
+                if item.priority < new_best.priority && *item.range.end() <= *new_best.range.end() {
                     // println!("cmk item is lower priority {:?} and shorter {:?} than best item {:?},{:?} in new workspace, so don't keep",
                     // item.priority, item.range, new_best.priority, new_best.range);
                     // not as good as new_best, and shorter, so don't keep
@@ -224,7 +222,7 @@ where
                 // higher priority or longer, so keep
                 // println!("cmk item is higher priority {:?} or longer {:?} than best item {:?},{:?} in new workspace, so keep",
                 // item.priority, item.range, new_best.priority, new_best.range);
-                new_workspace.push(item);
+                new_workspace.push(Priority(item));
             }
             self.workspace = new_workspace;
         } // end of main loop
@@ -333,6 +331,8 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &
     }
 }
 
+// cmk used?
+#[allow(dead_code)]
 type SortedRangeValueVec<'a, T, V, VR> =
     AssumeSortedStartsMap<'a, T, V, VR, vec::IntoIter<RangeValue<'a, T, V, VR>>>;
 
@@ -407,22 +407,22 @@ where
 //     }
 // }
 
-impl<'a, T, V, VR, R, L> ops::BitOr<R> for UnionIterMap<'a, T, V, VR, L>
-where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    L: SortedStartsMap<'a, T, V, VR>,
-    R: SortedDisjointMap<'a, T, V, VR> + 'a,
-{
-    type Output = BitOrMergeMap<'a, T, V, VR, Self, R>;
+// impl<'a, T, V, VR, R, L> ops::BitOr<R> for UnionIterMap<'a, T, V, VR, L>
+// where
+//     T: Integer + 'a,
+//     V: ValueOwned + 'a,
+//     VR: CloneBorrow<V> + 'a,
+//     L: SortedStartsMap<'a, T, V, VR>,
+//     R: SortedDisjointMap<'a, T, V, VR> + 'a,
+// {
+//     type Output = BitOrMergeMap<'a, T, V, VR, Self, R>;
 
-    fn bitor(self, rhs: R) -> Self::Output {
-        // It might be fine to optimize to self.iter, but that would require
-        // also considering field 'range'
-        SortedDisjointMap::union(self, rhs)
-    }
-}
+//     fn bitor(self, rhs: R) -> Self::Output {
+//         // It might be fine to optimize to self.iter, but that would require
+//         // also considering field 'range'
+//         SortedDisjointMap::union(self, rhs)
+//     }
+// }
 
 // impl<'a, T, V, VR, R, L> ops::Sub<R> for UnionIterMap<'a, T, V, VR, L>
 // where

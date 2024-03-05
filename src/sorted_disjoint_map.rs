@@ -465,32 +465,13 @@ where
     /// let b = RangeMapBlaze::from_iter([1..=2]).into_ranges();
     /// assert!(a.equal(b));
     /// ```
-    // cmk000 make the default ord on rangevalue do this, then this can use itertools
-    fn equal<R>(mut self, other: R) -> bool
+    fn equal<R>(self, other: R) -> bool
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
         Self: Sized,
     {
-        let mut other_iter = other.into_iter();
-        let mut both_exhausted = true;
-
-        for (a, b) in self.by_ref().zip(&mut other_iter) {
-            let va = a.value.borrow_clone();
-            let vb = b.value.borrow_clone();
-
-            if a.range != b.range || va != vb {
-                return false;
-            }
-        }
-
-        // Check if there is any item left in either iterator.
-        // If there is, then both_exhausted is set to false.
-        if self.next().is_some() || other_iter.next().is_some() {
-            both_exhausted = false;
-        }
-
-        both_exhausted
+        itertools::equal(self, other.into_iter())
     }
 
     /// Returns `true` if the set contains no elements.
@@ -873,7 +854,6 @@ where
 {
 }
 
-// Implement `PartialEq` to allow comparison (needed for `Eq`).
 impl<'a, T, V, VR> PartialEq for RangeValue<'a, T, V, VR>
 where
     T: Integer,
@@ -881,7 +861,7 @@ where
     VR: CloneBorrow<V> + 'a,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.priority == other.priority
+        self.range == other.range && self.value.borrow() == other.value.borrow()
     }
 }
 
@@ -894,8 +874,39 @@ where
 {
 }
 
+// cmk0 can we/should we have priority check that non-None, or can we create an iterator of Priorities for which this is always true because
+// the priority field is part of the wrapper, not RangeValue?
+
+#[derive(Clone)]
+pub struct Priority<'a, T, V, VR>(pub RangeValue<'a, T, V, VR>)
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a;
+
+// Implement `PartialEq` to allow comparison (needed for `Eq`).
+impl<'a, T, V, VR> PartialEq for Priority<'a, T, V, VR>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.0.priority == other.0.priority
+    }
+}
+
+// Implement `Eq` because `BinaryHeap` requires it.
+impl<'a, T, V, VR> Eq for Priority<'a, T, V, VR>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+{
+}
+
 // Implement `Ord` so the heap knows how to compare elements.
-impl<'a, T, V, VR> Ord for RangeValue<'a, T, V, VR>
+impl<'a, T, V, VR> Ord for Priority<'a, T, V, VR>
 where
     T: Integer,
     V: ValueOwned + 'a,
@@ -903,9 +914,11 @@ where
 {
     fn cmp(&self, other: &Self) -> Ordering {
         let priority0 = self
+            .0
             .priority
             .expect("When comparing, priority must be Some");
         let priority1 = other
+            .0
             .priority
             .expect("When comparing, priority must be Some");
         priority0.cmp(&priority1)
@@ -913,7 +926,7 @@ where
 }
 
 // Implement `PartialOrd` to allow comparison (needed for `Ord`).
-impl<'a, T, V, VR> PartialOrd for RangeValue<'a, T, V, VR>
+impl<'a, T, V, VR> PartialOrd for Priority<'a, T, V, VR>
 where
     T: Integer,
     V: ValueOwned + 'a,
