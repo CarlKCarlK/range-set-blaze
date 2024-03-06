@@ -277,7 +277,7 @@ where
 {
     ///cmk
     #[inline]
-    fn into_sorted_disjoint(self) -> impl SortedDisjoint<T>
+    fn into_sorted_disjoint(self) -> RangesFromMapIter<'a, T, V, VR, Self>
     where
         Self: Sized,
     {
@@ -386,11 +386,11 @@ where
     /// cmk
     /// returns a set, not a map
     #[inline]
-    fn complement(self) -> NotIter<T, impl SortedDisjoint<T>>
+    fn complement(self) -> NotIter<T, RangesFromMapIter<'a, T, V, VR, Self>>
     where
         Self: Sized,
     {
-        let sorted_disjoint = self.into_sorted_disjoint();
+        let sorted_disjoint: RangesFromMapIter<'a, T, V, VR, Self> = self.into_sorted_disjoint();
         sorted_disjoint.complement()
     }
 
@@ -1050,9 +1050,10 @@ macro_rules! impl_sorted_map_traits_and_ops {
             T: Integer,
             V: ValueOwned + 'a,
             VR: CloneBorrow<V> + 'a,
-            I: SortedDisjointMap<'a, T, V, VR>,
+            I: SortedDisjointMap<'a, T, V, VR> + 'a,
         {
-            type Output = NotIter<T, RangesFromMapIter<'a, T, V, VR, I>>;
+            type Output =
+                NotIter<T, RangesFromMapIter<'a, T, V, VR, UnionIterMap<'a, T, V, VR, I>>>;
 
             fn not(self) -> Self::Output {
                 self.complement()
@@ -1067,21 +1068,29 @@ macro_rules! impl_sorted_map_traits_and_ops {
             I: $TraitBound<'a, T, V, VR>,
             R: SortedDisjointMap<'a, T, V, VR>,
         {
-            type Output = BitOrMergeMap<'a, T, V, VR, Self, R>;
+            type Output = BitOrMergeMap<
+                'a,
+                T,
+                V,
+                VR,
+                AdjustPriorityMap<'a, T, V, VR, Self>,
+                AdjustPriorityMap<'a, T, V, VR, R>,
+            >;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjointMap::union(self, other)
             }
         }
 
-        impl<'a, T, V, VR, R> ops::Sub<R> for $IterType
+        impl<'a, T, V, VR, I, R> ops::Sub<R> for $IterType
         where
             T: Integer,
             V: ValueOwned + 'a,
             VR: CloneBorrow<V> + 'a,
+            I: $TraitBound<'a, T, V, VR> + 'a,
             R: SortedDisjoint<T>,
         {
-            type Output = BitSubRangesMap<'a, T, V, VR, Self, NotIter<T, R>>;
+            type Output = BitSubRangesMap<'a, T, V, VR, Self, R>;
             // BitSubRangesMap<'a, T, V, VR, Self, R::IntoIter>
 
             fn sub(self, other: R) -> Self::Output {
@@ -1106,11 +1115,12 @@ macro_rules! impl_sorted_map_traits_and_ops {
         //     }
         // }
 
-        impl<'a, T, V, VR, R> ops::BitAnd<R> for $IterType
+        impl<'a, T, V, VR, I, R> ops::BitAnd<R> for $IterType
         where
             T: Integer,
             V: ValueOwned + 'a,
             VR: CloneBorrow<V> + 'a,
+            I: $TraitBound<'a, T, V, VR> + 'a,
             R: SortedDisjoint<T>,
         {
             type Output = BitAndRangesMap<'a, T, V, VR, Self, R>;

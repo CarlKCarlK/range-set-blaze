@@ -268,6 +268,7 @@ where
 // cmk000
 use crate::map::BitAndRangesMap;
 use crate::map::BitSubRangesMap;
+use crate::range_values::AdjustPriorityMap;
 use crate::BitOrMergeMap;
 use crate::NotIter;
 use crate::RangesFromMapIter;
