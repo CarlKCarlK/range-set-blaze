@@ -1,4 +1,4 @@
-use crate::impl_sorted_traits_and_ops;
+use crate::{impl_sorted_traits_and_ops, IntoRangesIter, RangesIter};
 use alloc::format;
 use alloc::string::String;
 use core::{
@@ -669,8 +669,6 @@ impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]>
     }
 }
 
-impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, AnythingGoes);
-
 pub trait AnythingGoes<T: Integer>: Iterator<Item = RangeInclusive<T>> {}
 impl<T: Integer, I> AnythingGoes<T> for I where I: Iterator<Item = RangeInclusive<T>> {}
 
@@ -800,3 +798,14 @@ macro_rules! impl_sorted_traits_and_ops {
         }
     };
 }
+
+impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, AnythingGoes);
+impl_sorted_traits_and_ops!(RangesIter<'_, T>);
+impl_sorted_traits_and_ops!(IntoRangesIter<T>);
+impl_sorted_traits_and_ops!(NotIter<T, I>, SortedDisjoint);
+impl_sorted_traits_and_ops!(UnionIter<T, I>, SortedStarts);
+
+// cmk0 is there an AssumeSortedDisjoint?
+
+// cmk0 If we want this to work, we need to wrap Tee
+// impl_sorted_traits_and_ops!(Tee<I>, SortedDisjoint);

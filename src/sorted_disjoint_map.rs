@@ -1,4 +1,5 @@
 use crate::map::BitSubRangesMap;
+use crate::BitOrAdjusted;
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -11,13 +12,17 @@ use core::marker::PhantomData;
 //     iter::FusedIterator,
 //     ops::{self, RangeInclusive},
 // };
+use crate::map::BitAndRangesMap;
+use crate::range_values::AdjustPriorityMap;
+use crate::NotIter;
+use crate::RangesFromMapIter;
 use core::fmt;
+use std::ops;
 
 use crate::intersection_iter_map::IntersectionIterMap;
-use crate::map::{BitAndRangesMap, BitOrMergeMap, CloneBorrow};
-use crate::range_values::{AdjustPriorityMap, RangesFromMapIter, NON_ZERO_MAX, NON_ZERO_MIN};
+use crate::map::CloneBorrow;
+use crate::range_values::{NON_ZERO_MAX, NON_ZERO_MIN};
 use crate::sorted_disjoint::SortedDisjoint;
-use crate::NotIter;
 use crate::{
     map::ValueOwned, merge_map::MergeMap, union_iter_map::UnionIterMap, Integer, RangeMapBlaze,
 };
@@ -305,7 +310,7 @@ where
     /// assert_eq!(union.to_string(), "1..=2");
     /// ```
     #[inline]
-    fn union<R>(self, other: R) -> BitOrMergeMap<'a, T, V, VR, Self, R::IntoIter>
+    fn union<R>(self, other: R) -> BitOrAdjusted<'a, T, V, VR, Self, R::IntoIter>
     where
         // cmk why must say SortedDisjointMap here by sorted_disjoint doesn't.
         R: IntoIterator<Item = Self::Item>,
@@ -1068,14 +1073,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             I: $TraitBound<'a, T, V, VR>,
             R: SortedDisjointMap<'a, T, V, VR>,
         {
-            type Output = BitOrMergeMap<
-                'a,
-                T,
-                V,
-                VR,
-                AdjustPriorityMap<'a, T, V, VR, Self>,
-                AdjustPriorityMap<'a, T, V, VR, R>,
-            >;
+            type Output = BitOrAdjusted<'a, T, V, VR, Self, R>;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjointMap::union(self, other)
@@ -1187,3 +1185,16 @@ macro_rules! impl_sorted_map_traits_and_ops {
        //     }
        // };
 }
+
+// cmk00 should there be a CheckSortedDisjointMap? AssumeSortedDisjointMap?
+
+impl_sorted_map_traits_and_ops!(UnionIterMap<'a, T, V, VR, I>, SortedStartsMap);
+
+// impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, AnythingGoes);
+// impl_sorted_traits_and_ops!(RangesIter<'_, T>);
+// impl_sorted_traits_and_ops!(IntoRangesIter<T>);
+// impl_sorted_traits_and_ops!(NotIter<T, I>, SortedDisjoint);
+//
+
+// // cmk0 If we want this to work, we need to wrap Tee
+// // impl_sorted_traits_and_ops!(Tee<I>, SortedDisjoint);

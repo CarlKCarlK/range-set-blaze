@@ -1,14 +1,8 @@
-use core::{
-    iter::FusedIterator,
-    ops::{self, RangeInclusive},
-};
+use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use alloc::collections::btree_map;
 
-use crate::{
-    impl_sorted_traits_and_ops, BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter,
-    SortedDisjoint, SortedStarts,
-};
+use crate::Integer;
 
 /// An iterator that visits the ranges in the [`RangeSetBlaze`],
 /// i.e., the integers as sorted & disjoint ranges.
@@ -105,6 +99,3 @@ impl<T: Integer> DoubleEndedIterator for IntoRangesIter<T> {
         self.iter.next_back().map(|(start, end)| start..=end)
     }
 }
-
-impl_sorted_traits_and_ops!(RangesIter<'_, T>);
-impl_sorted_traits_and_ops!(IntoRangesIter<T>);

@@ -1,17 +1,11 @@
-use core::{
-    cmp::max,
-    iter::FusedIterator,
-    ops::{self, RangeInclusive},
-};
+use core::{cmp::max, iter::FusedIterator, ops::RangeInclusive};
 
 use alloc::vec;
 use itertools::Itertools;
 
 use crate::{
-    impl_sorted_traits_and_ops,
     unsorted_disjoint::{AssumeSortedStarts, UnsortedDisjoint},
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, NotIter, SortedDisjoint,
-    SortedStarts,
+    Integer, SortedStarts,
 };
 
 /// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
@@ -180,5 +174,3 @@ where
         }
     }
 }
-
-impl_sorted_traits_and_ops!(UnionIter<T, I>, SortedStarts);

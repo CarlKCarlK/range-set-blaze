@@ -46,6 +46,7 @@ use intersection_iter_map::IntersectionIterMap;
 use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
+use range_values::AdjustPriorityMap;
 use range_values::RangesFromMapIter;
 mod multiway_map;
 mod sorted_disjoint_map;
@@ -1487,6 +1488,16 @@ pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 pub type BitOrMergeMap<'a, T, V, VR, L, R> =
     UnionIterMap<'a, T, V, VR, MergeMap<'a, T, V, VR, L, R>>;
 #[doc(hidden)]
+pub type BitOrAdjusted<'a, T, V, VR, L, R> = BitOrMergeMap<
+    'a,
+    T,
+    V,
+    VR,
+    AdjustPriorityMap<'a, T, V, VR, L>,
+    AdjustPriorityMap<'a, T, V, VR, R>,
+>;
+
+#[doc(hidden)]
 pub type BitOrKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
 #[doc(hidden)]
 pub type BitOrKMergeMap<'a, T, V, VR, I> = UnionIterMap<'a, T, V, VR, KMergeMap<'a, T, V, VR, I>>;
@@ -2327,6 +2338,3 @@ where
 
 impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
-
-// cmk0 If we want this to work, we need to wrap Tee
-// impl_sorted_traits_and_ops!(Tee<I>, SortedDisjoint);

@@ -1,13 +1,6 @@
-use crate::SortedStarts;
-use core::{
-    iter::FusedIterator,
-    ops::{self, RangeInclusive},
-};
+use core::{iter::FusedIterator, ops::RangeInclusive};
 
-use crate::{
-    impl_sorted_traits_and_ops, BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer,
-    SortedDisjoint,
-};
+use crate::{Integer, SortedDisjoint};
 
 /// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
 /// i.e., all the integers not in the original iterator, as sorted & disjoint ranges.
@@ -114,7 +107,5 @@ where
         (low, high)
     }
 }
-
-impl_sorted_traits_and_ops!(NotIter<T, I>, SortedDisjoint);
 
 // FUTURE define Not, etc on DynSortedDisjoint
