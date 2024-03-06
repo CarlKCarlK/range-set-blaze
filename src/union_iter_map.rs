@@ -1,4 +1,5 @@
 use crate::alloc::string::ToString;
+use crate::impl_sorted_map_traits_and_ops;
 use crate::sorted_disjoint_map::Priority;
 use alloc::format;
 use alloc::string::String;
@@ -263,6 +264,18 @@ where
         }
     }
 }
+
+// cmk000
+use crate::map::BitAndRangesMap;
+use crate::map::BitSubRangesMap;
+use crate::BitOrMergeMap;
+use crate::NotIter;
+use crate::RangesFromMapIter;
+use crate::SortedDisjoint;
+use crate::SortedDisjointMap;
+use std::ops;
+
+impl_sorted_map_traits_and_ops!(UnionIterMap<'a, T, V, VR, I>, SortedStartsMap);
 
 // impl<'a, T, V, VR, const N: usize> From<[T; N]>
 //     for UnionIterMap<'a, T, V, VR, SortedRangeValueVec<'a, T, V, VR>>

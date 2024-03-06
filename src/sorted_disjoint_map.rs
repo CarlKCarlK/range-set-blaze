@@ -1,3 +1,4 @@
+use crate::map::BitSubRangesMap;
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -13,7 +14,7 @@ use core::marker::PhantomData;
 use core::fmt;
 
 use crate::intersection_iter_map::IntersectionIterMap;
-use crate::map::{BitAndRangesMap, BitOrMergeMap, BitSubRangesMap, CloneBorrow};
+use crate::map::{BitAndRangesMap, BitOrMergeMap, CloneBorrow};
 use crate::range_values::{AdjustPriorityMap, RangesFromMapIter, NON_ZERO_MAX, NON_ZERO_MIN};
 use crate::sorted_disjoint::SortedDisjoint;
 use crate::NotIter;
@@ -992,4 +993,187 @@ where
     V: ValueOwned + 'a,
     I: SortedDisjoint<T>,
 {
+}
+
+// cmk000 generalizing to maps
+pub trait AnythingGoesMap<'a, T: Integer, V: ValueOwned + 'a, VR: CloneBorrow<V> + 'a>:
+    Iterator<Item = RangeValue<'a, T, V, VR>>
+{
+}
+
+impl<'a, T, V, VR, I> AnythingGoesMap<'a, T, V, VR> for I
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+{
+}
+
+// impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
+//     SortedStartsMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
+// where
+//     VR: CloneBorrow<V> + 'a,
+// {
+// }
+
+// // If the inputs have sorted starts, the output is sorted and disjoint.
+// impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
+//     SortedDisjointMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
+// where
+//     VR: CloneBorrow<V> + 'a,
+// {
+// }
+
+#[macro_export]
+macro_rules! impl_sorted_map_traits_and_ops {
+    ($IterType:ty, $TraitBound:ident) => {
+        impl<'a, T, V, VR, I> SortedStartsMap<'a, T, V, VR> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            VR: CloneBorrow<V> + 'a,
+            I: $TraitBound<'a, T, V, VR>,
+        {
+        }
+        impl<'a, T, V, VR, I> SortedDisjointMap<'a, T, V, VR> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            VR: CloneBorrow<V> + 'a,
+            I: $TraitBound<'a, T, V, VR>,
+        {
+        }
+
+        impl<'a, T, V, VR, I> ops::Not for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            VR: CloneBorrow<V> + 'a,
+            I: SortedDisjointMap<'a, T, V, VR>,
+        {
+            type Output = NotIter<T, RangesFromMapIter<'a, T, V, VR, I>>;
+
+            fn not(self) -> Self::Output {
+                self.complement()
+            }
+        }
+
+        impl<'a, T, V, VR, I, R> ops::BitOr<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            VR: CloneBorrow<V> + 'a,
+            I: $TraitBound<'a, T, V, VR>,
+            R: SortedDisjointMap<'a, T, V, VR>,
+        {
+            type Output = BitOrMergeMap<'a, T, V, VR, Self, R>;
+
+            fn bitor(self, other: R) -> Self::Output {
+                SortedDisjointMap::union(self, other)
+            }
+        }
+
+        impl<'a, T, V, VR, R> ops::Sub<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            VR: CloneBorrow<V> + 'a,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitSubRangesMap<'a, T, V, VR, Self, NotIter<T, R>>;
+            // BitSubRangesMap<'a, T, V, VR, Self, R::IntoIter>
+
+            fn sub(self, other: R) -> Self::Output {
+                SortedDisjointMap::difference(self, other)
+            }
+        }
+
+        // cmk leaving out for now because can't because efficient implementation requires new iterator
+        // impl<'a, T, V, VR, I, R> ops::BitXor<R> for $IterType
+        // where
+        //     T: Integer,
+        //     V: ValueOwned + 'a,
+        //     VR: CloneBorrow<V> + 'a,
+        //     I: $TraitBound<'a, T, V, VR>,
+        //     R: SortedDisjointMap<'a, T, V, VR>,
+        // {
+        //     type Output = BitXOrTeeMap<'a, T, V, VR, Self, R>;
+
+        //     #[allow(clippy::suspicious_arithmetic_impl)]
+        //     fn bitxor(self, other: R) -> Self::Output {
+        //         SortedDisjointMap::symmetric_difference(self, other)
+        //     }
+        // }
+
+        impl<'a, T, V, VR, R> ops::BitAnd<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            VR: CloneBorrow<V> + 'a,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitAndRangesMap<'a, T, V, VR, Self, R>;
+
+            fn bitand(self, other: R) -> Self::Output {
+                SortedDisjointMap::intersection(self, other)
+            }
+        }
+    }; // ($IterType:ty) => {
+       //     impl<T: Integer> SortedStartsMap<'a, T, V, VR> for $IterType {}
+       //     impl<T: Integer> SortedDisjointMap<'a, T, V, VR> for $IterType {}
+
+       //     impl<T: Integer> ops::Not for $IterType {
+       //         type Output = NotIter<T, Self>;
+
+       //         fn not(self) -> Self::Output {
+       //             self.complement()
+       //         }
+       //     }
+
+       //     impl<T: Integer, R> ops::BitOr<R> for $IterType
+       //     where
+       //         R: SortedDisjointMap<'a, T, V, VR>,
+       //     {
+       //         type Output = BitOrMerge<T, Self, R>;
+
+       //         fn bitor(self, other: R) -> Self::Output {
+       //             SortedDisjointMap::union(self, other)
+       //         }
+       //     }
+
+       //     impl<T: Integer, R> ops::Sub<R> for $IterType
+       //     where
+       //         R: SortedDisjointMap<'a, T, V, VR>,
+       //     {
+       //         type Output = BitSubMerge<T, Self, R>;
+
+       //         fn sub(self, other: R) -> Self::Output {
+       //             SortedDisjointMap::difference(self, other)
+       //         }
+       //     }
+
+       //     impl<T: Integer, R> ops::BitXor<R> for $IterType
+       //     where
+       //         R: SortedDisjointMap<'a, T, V, VR>,
+       //     {
+       //         type Output = BitXOrTee<T, Self, R>;
+
+       //         #[allow(clippy::suspicious_arithmetic_impl)]
+       //         fn bitxor(self, other: R) -> Self::Output {
+       //             SortedDisjointMap::symmetric_difference(self, other)
+       //         }
+       //     }
+
+       //     impl<T: Integer, R> ops::BitAnd<R> for $IterType
+       //     where
+       //         R: SortedDisjointMap<'a, T, V, VR>,
+       //     {
+       //         type Output = BitAndMerge<T, Self, R>;
+
+       //         fn bitand(self, other: R) -> Self::Output {
+       //             SortedDisjointMap::intersection(self, other)
+       //         }
+       //     }
+       // };
 }

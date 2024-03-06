@@ -1719,21 +1719,22 @@ pub type SortedStartsInVecMap<'a, T, V, VR> =
 //     NotIterMap<T, V, BitOrMergeMap<T, V, Tee<L>, Tee<R>>>,
 // >;
 
+// cmk000
 // If the inputs have sorted starts, then so does the output.
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
-    SortedStartsMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
-where
-    VR: CloneBorrow<V> + 'a,
-{
-}
+// impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
+//     SortedStartsMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
+// where
+//     VR: CloneBorrow<V> + 'a,
+// {
+// }
 
-// If the inputs have sorted starts, the output is sorted and disjoint.
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
-    SortedDisjointMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
-where
-    VR: CloneBorrow<V> + 'a,
-{
-}
+// // If the inputs have sorted starts, the output is sorted and disjoint.
+// impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
+//     SortedDisjointMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
+// where
+//     VR: CloneBorrow<V> + 'a,
+// {
+// }
 
 impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
