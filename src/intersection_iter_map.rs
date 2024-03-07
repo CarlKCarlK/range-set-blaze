@@ -4,12 +4,9 @@ use core::{
     ops::RangeInclusive,
 };
 
+use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap};
 use crate::{map::CloneBorrow, SortedDisjoint};
 use crate::{map::ValueOwned, Integer};
-use crate::{
-    sorted_disjoint_map::{RangeValue, SortedDisjointMap},
-    SortedStartsMap,
-};
 
 /// Turns one [`SortedDisjoint`] iterator and one [`SortedDisjointMap`] iterator into
 /// the [`SortedDisjointMap`] iterator of their intersection,
@@ -257,23 +254,23 @@ where
 //     }
 // }
 
-impl<'a, T, V, VR, IM, IS> SortedStartsMap<'a, T, V, VR>
-    for IntersectionIterMap<'a, T, V, VR, IM, IS>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V> + 'a,
-    IM: SortedDisjointMap<'a, T, V, VR> + 'a,
-    IS: SortedDisjoint<T>,
-{
-}
-impl<'a, T, V, VR, IM, IS> SortedDisjointMap<'a, T, V, VR>
-    for IntersectionIterMap<'a, T, V, VR, IM, IS>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V> + 'a,
-    IM: SortedDisjointMap<'a, T, V, VR> + 'a,
-    IS: SortedDisjoint<T>,
-{
-}
+// impl<'a, T, V, VR, IM, IS> SortedStartsMap<'a, T, V, VR>
+//     for IntersectionIterMap<'a, T, V, VR, IM, IS>
+// where
+//     T: Integer,
+//     V: ValueOwned,
+//     VR: CloneBorrow<V> + 'a,
+//     IM: SortedDisjointMap<'a, T, V, VR> + 'a,
+//     IS: SortedDisjoint<T>,
+// {
+// }
+// impl<'a, T, V, VR, IM, IS> SortedDisjointMap<'a, T, V, VR>
+//     for IntersectionIterMap<'a, T, V, VR, IM, IS>
+// where
+//     T: Integer,
+//     V: ValueOwned,
+//     VR: CloneBorrow<V> + 'a,
+//     IM: SortedDisjointMap<'a, T, V, VR> + 'a,
+//     IS: SortedDisjoint<T>,
+// {
+// }
