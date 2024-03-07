@@ -1224,6 +1224,7 @@ macro_rules! impl_sorted_map_traits_and_ops1 {
 impl_sorted_map_traits_and_ops0!(UnionIterMap<'a, T, V, VR, I>, SortedStartsMap);
 impl_sorted_map_traits_and_ops1!(RangeValuesIter<'a, T, V>, &'a V);
 impl_sorted_map_traits_and_ops1!(IntoRangeValuesIter<'a, T, V>, Rc<V>);
+impl_sorted_map_traits_and_ops0!(IntersectionIterMap<'a, T, V, VR, I, I>, SortedDisjointMap);
 
 // impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, AnythingGoes);
 

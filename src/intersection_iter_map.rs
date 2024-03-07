@@ -106,8 +106,8 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V> + 'a,
-    IS: SortedDisjoint<T>,
     IM: SortedDisjointMap<'a, T, V, VR>,
+    IS: SortedDisjoint<T>,
 {
     type Item = RangeValue<'a, T, V, VR>;
 
@@ -263,8 +263,8 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V> + 'a,
-    IS: SortedDisjoint<T>,
     IM: SortedDisjointMap<'a, T, V, VR> + 'a,
+    IS: SortedDisjoint<T>,
 {
 }
 impl<'a, T, V, VR, IM, IS> SortedDisjointMap<'a, T, V, VR>
@@ -273,7 +273,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V> + 'a,
-    IS: SortedDisjoint<T>,
     IM: SortedDisjointMap<'a, T, V, VR> + 'a,
+    IS: SortedDisjoint<T>,
 {
 }
