@@ -1134,17 +1134,17 @@ macro_rules! impl_sorted_map_traits_and_ops0 {
 }
 
 macro_rules! impl_sorted_map_traits_and_ops1 {
-    ($IterType:ty) => {
+    ($IterType:ty, $VR:ty) => {
         //     impl<T: Integer> SortedStartsMap<'a, T, V, VR> for $IterType {}
         //     impl<T: Integer> SortedDisjointMap<'a, T, V, VR> for $IterType {}
 
-        impl<'a, T, V> SortedStartsMap<'a, T, V, &'a V> for $IterType
+        impl<'a, T, V> SortedStartsMap<'a, T, V, $VR> for $IterType
         where
             T: Integer + 'a,
             V: ValueOwned + 'a,
         {
         }
-        impl<'a, T, V> SortedDisjointMap<'a, T, V, &'a V> for $IterType
+        impl<'a, T, V> SortedDisjointMap<'a, T, V, $VR> for $IterType
         where
             T: Integer + 'a,
             V: ValueOwned + 'a,
@@ -1205,32 +1205,33 @@ macro_rules! impl_sorted_map_traits_and_ops1 {
         //     }
     };
 }
-macro_rules! impl_sorted_map_traits_and_ops2 {
-    ($IterType:ty) => {
-        //     impl<T: Integer> SortedStartsMap<'a, T, V, VR> for $IterType {}
-        //     impl<T: Integer> SortedDisjointMap<'a, T, V, VR> for $IterType {}
+// macro_rules! impl_sorted_map_traits_and_ops2 {
+//     ($IterType:ty) => {
+//         //     impl<T: Integer> SortedStartsMap<'a, T, V, VR> for $IterType {}
+//         //     impl<T: Integer> SortedDisjointMap<'a, T, V, VR> for $IterType {}
 
-        impl<'a, T, V> SortedStartsMap<'a, T, V, Rc<V>> for $IterType
-        where
-            T: Integer + 'a,
-            V: ValueOwned + 'a,
-        {
-        }
-        impl<'a, T, V> SortedDisjointMap<'a, T, V, Rc<V>> for $IterType
-        where
-            T: Integer + 'a,
-            V: ValueOwned + 'a,
-        {
-        }
+//         impl<'a, T, V> SortedStartsMap<'a, T, V, Rc<V>> for $IterType
+//         where
+//             T: Integer + 'a,
+//             V: ValueOwned + 'a,
+//         {
+//         }
+//         impl<'a, T, V> SortedDisjointMap<'a, T, V, Rc<V>> for $IterType
+//         where
+//             T: Integer + 'a,
+//             V: ValueOwned + 'a,
+//         {
+//         }
 
-        //     impl<T: Integer> ops::Not for $IterType {
-    };
-}
+//         //     impl<T: Integer> ops::Not for $IterType {
+//     };
+// }
 // cmk00 should there be a CheckSortedDisjointMap? AssumeSortedDisjointMap?
 
 impl_sorted_map_traits_and_ops0!(UnionIterMap<'a, T, V, VR, I>, SortedStartsMap);
-impl_sorted_map_traits_and_ops1!(RangeValuesIter<'a, T, V>);
-impl_sorted_map_traits_and_ops2!(IntoRangeValuesIter<'a, T, V>);
+impl_sorted_map_traits_and_ops1!(RangeValuesIter<'a, T, V>, &'a V);
+impl_sorted_map_traits_and_ops1!(IntoRangeValuesIter<'a, T, V>, Rc<V>);
+// impl_sorted_map_traits_and_ops2!(IntoRangeValuesIter<'a, T, V>);
 
 // impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, AnythingGoes);
 // impl_sorted_traits_and_ops!(RangesIter<'_, T>);
