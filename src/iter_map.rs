@@ -129,28 +129,41 @@ where
 /// documentation for more.
 ///
 /// [`into_iter`]: RangeMapBlaze::into_iter
-pub struct IntoIterMap<'a, T, V>
+pub struct IntoIterMap<T, V>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
+    T: Integer,
+    V: ValueOwned,
 {
     option_start_end_value_front: Option<(T, EndValue<T, V>)>,
     option_start_end_value_back: Option<(T, EndValue<T, V>)>,
     into_iter: btree_map::IntoIter<T, EndValue<T, V>>,
-    phantom: PhantomData<&'a V>, // cmk00 needed?
 }
 
-impl<'a, T, V> FusedIterator for IntoIterMap<'a, T, V>
+impl<T, V> IntoIterMap<T, V>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
+    T: Integer,
+    V: ValueOwned,
+{
+    pub fn new(into_iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
+        IntoIterMap {
+            option_start_end_value_front: None,
+            option_start_end_value_back: None,
+            into_iter,
+        }
+    }
+}
+
+impl<T, V> FusedIterator for IntoIterMap<T, V>
+where
+    T: Integer,
+    V: ValueOwned,
 {
 }
 
-impl<'a, T, V> Iterator for IntoIterMap<'a, T, V>
+impl<T, V> Iterator for IntoIterMap<T, V>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
+    T: Integer,
+    V: ValueOwned,
 {
     type Item = (T, V);
 
@@ -181,10 +194,10 @@ where
     }
 }
 
-impl<'a, T, V> DoubleEndedIterator for IntoIterMap<'a, T, V>
+impl<T, V> DoubleEndedIterator for IntoIterMap<T, V>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
+    T: Integer,
+    V: ValueOwned,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let start_end_value = self

@@ -1,4 +1,5 @@
 use crate::intersection_iter_map::IntersectionIterMap;
+use crate::iter_map::IntoIterMap;
 use crate::iter_map::{IterMap, KeysMap};
 use crate::range_values::{RangeValuesFromBTree, RangeValuesIter, RangesFromMapIter};
 use alloc::borrow::ToOwned;
@@ -11,7 +12,9 @@ use crate::range_values::NonZeroEnumerateExt;
 use crate::sorted_disjoint_map::SortedDisjointMap;
 use crate::sorted_disjoint_map::{DebugToString, RangeValue};
 use crate::union_iter_map::UnionIterMap;
-use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, SortedDisjointWithLenSoFarMap};
+use crate::unsorted_disjoint_map::{
+    AssumeSortedStartsMap, SortedDisjointWithLenSoFarMap, UnsortedDisjointMap,
+};
 use crate::{Integer, NotIter, RangeSetBlaze, SortedDisjoint};
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
@@ -1663,7 +1666,6 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
             .map(|(priority, (r, v))| {
                 RangeValue::new(r.clone(), UniqueValue { value: Some(v) }, Some(priority))
             });
-        // let _n: RangeValue<T, V, UniqueValue<V>> = iter.next().unwrap();
         let union_iter_map = UnionIterMap::<T, V, UniqueValue<V>, _>::from_iter(iter);
         RangeMapBlaze::from_sorted_disjoint_map(union_iter_map)
     }
@@ -1974,3 +1976,78 @@ for ! call |a: &RangeMapBlaze<T, V>| {
 };
 where T: Integer, V: ValueOwned
 );
+
+impl<T, V> Extend<(T, V)> for RangeMapBlaze<T, V>
+where
+    T: Integer,
+    V: ValueOwned,
+{
+    /// Extends the [`RangeSetBlaze`] with the contents of a
+    /// range iterator.
+
+    /// Elements are added one-by-one. There is also a version
+    /// that takes an integer iterator.
+    ///
+    /// The [`|=`](RangeSetBlaze::bitor_assign) operator extends a [`RangeSetBlaze`]
+    /// from another [`RangeSetBlaze`]. It is never slower
+    ///  than  [`RangeSetBlaze::extend`] and often several times faster.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+    /// a.extend([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
+    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
+    ///
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+    /// let mut b = RangeSetBlaze::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
+    /// a |= b;
+    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
+    /// ```
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = (T, V)>,
+    {
+        let iter = iter.into_iter();
+        for range_value in UnsortedDisjointMap::from(
+            iter.map(|(r, v)| RangeValue::new(r..=r, UniqueValue { value: Some(v) }, None)),
+        ) {
+            let range = range_value.range;
+            let value = range_value.value.borrow_clone();
+            self.internal_add(range, value);
+        }
+
+        // for (key, value) in iter {
+        //     self.internal_add(key..=key, value);
+        // }
+    }
+}
+
+impl<T, V> IntoIterator for RangeMapBlaze<T, V>
+where
+    T: Integer,
+    V: ValueOwned,
+{
+    type Item = (T, V);
+    type IntoIter = IntoIterMap<T, V>;
+
+    /// Gets a (double-ended) iterator for moving out the [`RangeSetBlaze`]'s integer contents.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
+    ///
+    /// let v: Vec<_> = set.into_iter().collect();
+    /// assert_eq!(v, [1, 2, 3, 4]);
+    ///
+    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
+    /// let v: Vec<_> = set.into_iter().rev().collect();
+    /// assert_eq!(v, [4, 3, 2, 1]);
+    /// ```
+    fn into_iter(self) -> IntoIterMap<T, V> {
+        IntoIterMap::new(self.btree_map.into_iter())
+    }
+}

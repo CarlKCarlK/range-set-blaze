@@ -725,7 +725,7 @@ fn map_empty_it() {
     let c1d = a.clone() | b.clone();
     let c2: RangeMapBlaze<_, _> = (a.range_values() | b.range_values()).into_range_map_blaze();
     c3.append(&mut b.clone());
-    // cmk0000 c5.extend(b);
+    c5.extend(b);
 
     let answer = RangeMapBlaze::from_iter([(0, &"ignored"); 0]);
     assert_eq!(&c0, &answer);
@@ -735,7 +735,7 @@ fn map_empty_it() {
     assert_eq!(&c1d, &answer);
     assert_eq!(&c2, &answer);
     assert_eq!(&c3, &answer);
-    // cmk0000 assert_eq!(&c5, &answer);
+    assert_eq!(&c5, &answer);
     let a_iter: std::array::IntoIter<(i32, &str), 0> = [].into_iter();
     let a = a_iter.collect::<RangeMapBlaze<i32, &str>>();
     let b = RangeMapBlaze::from_iter([(0, &"ignore"); 0]);
