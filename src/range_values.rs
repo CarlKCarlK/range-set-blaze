@@ -34,11 +34,11 @@ impl<'a, T: Integer, V: ValueOwned> AsRef<RangeValuesIter<'a, T, V>> for RangeVa
 }
 
 // RangeValuesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
-impl<'a, T: Integer, V: ValueOwned> SortedStartsMap<'a, T, V, &'a V> for RangeValuesIter<'a, T, V> {}
-impl<'a, T: Integer, V: ValueOwned> SortedDisjointMap<'a, T, V, &'a V>
-    for RangeValuesIter<'a, T, V>
-{
-}
+// impl<'a, T: Integer, V: ValueOwned> SortedStartsMap<'a, T, V, &'a V> for RangeValuesIter<'a, T, V> {}
+// impl<'a, T: Integer, V: ValueOwned> SortedDisjointMap<'a, T, V, &'a V>
+//     for RangeValuesIter<'a, T, V>
+// {
+// }
 
 impl<T: Integer, V: ValueOwned> ExactSizeIterator for RangeValuesIter<'_, T, V> {
     #[must_use]
@@ -89,14 +89,14 @@ pub struct IntoRangeValuesIter<'a, T: Integer + 'a, V: ValueOwned + 'a> {
     phantom: PhantomData<&'a V>,
 }
 
-impl<'a, T: Integer, V: ValueOwned + 'a> SortedStartsMap<'a, T, V, Rc<V>>
-    for IntoRangeValuesIter<'a, T, V>
-{
-}
-impl<'a, T: Integer, V: ValueOwned + 'a> SortedDisjointMap<'a, T, V, Rc<V>>
-    for IntoRangeValuesIter<'a, T, V>
-{
-}
+// impl<'a, T: Integer, V: ValueOwned + 'a> SortedStartsMap<'a, T, V, Rc<V>>
+//     for IntoRangeValuesIter<'a, T, V>
+// {
+// }
+// impl<'a, T: Integer, V: ValueOwned + 'a> SortedDisjointMap<'a, T, V, Rc<V>>
+//     for IntoRangeValuesIter<'a, T, V>
+// {
+// }
 
 impl<'a, T: Integer, V: ValueOwned> ExactSizeIterator for IntoRangeValuesIter<'a, T, V> {
     #[must_use]
