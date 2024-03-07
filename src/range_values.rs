@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 use crate::{map::CloneBorrow, sorted_disjoint_map::RangeValue, Integer};
 use alloc::{collections::btree_map, rc::Rc};
 use core::{

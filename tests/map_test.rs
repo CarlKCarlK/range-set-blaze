@@ -699,7 +699,9 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn map_empty_it() {
+    use core::panic::AssertUnwindSafe;
     use std::ops::BitOr;
+    use std::panic;
 
     let universe0 = RangeMapBlaze::from_iter([(0u8..=255, "Universe")]);
     let universe = universe0.range_values();
@@ -750,24 +752,35 @@ fn map_empty_it() {
     let val = "ignored";
     let answer = RangeMapBlaze::from_iter([(0, &val); 0]);
     assert!(c0.equal(answer.range_values()));
+    let answer = RangeMapBlaze::from_iter([(0, &val); 0]);
     assert!(c1.equal(answer.range_values()));
+    let answer = RangeMapBlaze::from_iter([(0, &val); 0]);
     assert!(c2.equal(answer.range_values()));
-    // cmk0000 assert!(c3.equal(answer.range_values()));
-    // cmk0000 assert!(c4.equal(answer.range_values()));
+    let answer = RangeMapBlaze::from_iter([(0, &val); 0]);
+    assert!(c3.equal(answer.range_values()));
+    let answer = RangeMapBlaze::from_iter([(0, &val); 0]);
+    assert!(c4.equal(answer.range_values()));
 
     let c0 = !(a.range_values() & b.ranges());
-    // cmk000 empty let c1 = ![a.range_values(), b.range_values()].intersection();
+    let c1 = ![a.range_values(), b.range_values()].intersection();
     let c_list2: [RangeValuesIter<i32, &str>; 0] = [];
-    // cmk000 empty let c2 = !!c_list2.clone().intersection();
-    // cmk000 empty let c3 = !intersection_map_dyn!(a.range_values(), b.range_values());
-    // cmk000 empty let c4 = !!c_list2.map(DynSortedDisjointMap::new).intersection();
+    assert!(
+        panic::catch_unwind(AssertUnwindSafe(|| { !!c_list2.clone().intersection() })).is_err(),
+        "Expected a panic."
+    );
+    let c3 = !intersection_map_dyn!(a.range_values(), b.range_values());
+    assert!(
+        panic::catch_unwind(AssertUnwindSafe(|| {
+            !!c_list2.map(DynSortedDisjointMap::new).intersection()
+        }))
+        .is_err(),
+        "Expected a panic."
+    );
 
     let answer = !RangeMapBlaze::from_iter([(0, "ignored"); 0]);
     assert!(c0.equal(answer.ranges()));
-    // cmk000 empty assert!(c1.equal(answer.ranges()));
-    // cmk000 empty assert!(c2.equal(answer.ranges()));
-    // cmk000 empty assert!(c3.equal(answer.ranges()));
-    // cmk000 empty assert!(c4.equal(answer.ranges()));
+    assert!(c1.equal(answer.ranges()));
+    assert!(c3.equal(answer.ranges()));
 }
 
 // // #[test]

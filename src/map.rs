@@ -69,7 +69,7 @@ impl<V: ?Sized + ValueOwned> CloneBorrow<V> for Arc<V> {
 }
 
 #[derive(Clone, Hash, Default, PartialEq)]
-pub(crate) struct EndValue<T: Integer, V: ValueOwned>
+pub struct EndValue<T: Integer, V: ValueOwned>
 where
     <V as ToOwned>::Owned: PartialEq,
 {
