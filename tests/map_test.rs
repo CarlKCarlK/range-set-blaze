@@ -15,6 +15,7 @@
 // // cmk add RangeMapBlaze to prelude
 // use std::collections::BTreeMap;
 use range_set_blaze::prelude::*;
+use range_set_blaze::range_values::RangeValuesIter;
 use range_set_blaze::UnionIterMap;
 // use range_set_blaze::{
 //     MultiwayRangeMapBlaze, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
@@ -696,74 +697,78 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// // #[test]
-// // fn map_empty_it() {
-// //     let universe = RangeMapBlaze::from_iter([0u8..=255]);
-// //     let universe = universe.range_values();
-// //     let arr: [u8; 0] = [];
-// //     let a0 = RangeMapBlaze::<u8>::from_iter(arr);
-// //     assert!(!(a0.range_values()).equal(universe.clone()));
-// //     assert!((!a0).range_values().equal(universe));
-// //     let _a0 = RangeMapBlaze::from_iter([0..=0; 0]);
-// //     let _a = RangeMapBlaze::<i32>::new();
+#[test]
+fn map_empty_it() {
+    use std::ops::BitOr;
 
-// //     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-// //     let a = a_iter.collect::<RangeMapBlaze<i32>>();
-// //     let b = RangeMapBlaze::from_iter([0i32; 0]);
-// //     let mut c3 = a.clone();
-// //     let mut c5 = a.clone();
+    let universe0 = RangeMapBlaze::from_iter([(0u8..=255, "Universe")]);
+    let universe = universe0.range_values();
+    let arr: [(u8, &str); 0] = [];
+    let a0 = RangeMapBlaze::<u8, &str>::from_iter(arr);
+    assert!(!(a0.ranges()).equal(universe0.ranges()));
+    assert!((a0.complement_with(&"Universe"))
+        .range_values()
+        .equal(universe));
+    let _a0 = RangeMapBlaze::from_iter([(0..=0, "One"); 0]);
+    let _a = RangeMapBlaze::<i32, &str>::new();
 
-// //     let c0 = (&a).bitor(&b);
-// //     let c1a = &a | &b;
-// //     let c1b = &a | b.clone();
-// //     let c1c = a.clone() | &b;
-// //     let c1d = a.clone() | b.clone();
-// //     let c2: RangeMapBlaze<_,_> = (a.range_values() | b.range_values()).into_range_map_blaze();
-// //     c3.append(&mut b.clone());
-// //     c5.extend(b);
+    let a_iter: std::array::IntoIter<(i32, &str), 0> = [].into_iter();
+    let a = a_iter.collect::<RangeMapBlaze<i32, &str>>();
+    let b = RangeMapBlaze::from_iter([(0i32, &"ignored"); 0]);
+    let mut c3 = a.clone();
+    let mut c5 = a.clone();
 
-// //     let answer = RangeMapBlaze::from_iter([0; 0]);
-// //     assert_eq!(&c0, &answer);
-// //     assert_eq!(&c1a, &answer);
-// //     assert_eq!(&c1b, &answer);
-// //     assert_eq!(&c1c, &answer);
-// //     assert_eq!(&c1d, &answer);
-// //     assert_eq!(&c2, &answer);
-// //     assert_eq!(&c3, &answer);
-// //     assert_eq!(&c5, &answer);
+    let c0 = (&a).bitor(&b);
+    let c1a = &a | &b;
+    let c1b = &a | b.clone();
+    let c1c = a.clone() | &b;
+    let c1d = a.clone() | b.clone();
+    let c2: RangeMapBlaze<_, _> = (a.range_values() | b.range_values()).into_range_map_blaze();
+    c3.append(&mut b.clone());
+    // cmk0000 c5.extend(b);
 
-// //     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-// //     let a = a_iter.collect::<RangeMapBlaze<i32>>();
-// //     let b = RangeMapBlaze::from_iter([0; 0]);
+    let answer = RangeMapBlaze::from_iter([(0, &"ignored"); 0]);
+    assert_eq!(&c0, &answer);
+    assert_eq!(&c1a, &answer);
+    assert_eq!(&c1b, &answer);
+    assert_eq!(&c1c, &answer);
+    assert_eq!(&c1d, &answer);
+    assert_eq!(&c2, &answer);
+    assert_eq!(&c3, &answer);
+    // cmk0000 assert_eq!(&c5, &answer);
+    let a_iter: std::array::IntoIter<(i32, &str), 0> = [].into_iter();
+    let a = a_iter.collect::<RangeMapBlaze<i32, &str>>();
+    let b = RangeMapBlaze::from_iter([(0, &"ignore"); 0]);
 
-// //     let c0 = a.range_values() | b.range_values();
-// //     let c1 = [a.range_values(), b.range_values()].union();
-// //     let c_list2: [RangesIter<i32>; 0] = [];
-// //     let c2 = c_list2.clone().union();
-// //     let c3 = union_map_dyn!(a.range_values(), b.range_values());
-// //     let c4 = c_list2.map(DynSortedDisjointMap::new).union();
+    let c0 = a.range_values() | b.range_values();
+    let c1 = [a.range_values(), b.range_values()].union();
+    let c_list2: [RangeValuesIter<i32, &str>; 0] = [];
+    let c2 = c_list2.clone().union();
+    let c3 = union_map_dyn!(a.range_values(), b.range_values());
+    let c4 = c_list2.map(DynSortedDisjointMap::new).union();
 
-// //     let answer = RangeMapBlaze::from_iter([0; 0]);
-// //     assert!(c0.equal(answer.range_values()));
-// //     assert!(c1.equal(answer.range_values()));
-// //     assert!(c2.equal(answer.range_values()));
-// //     assert!(c3.equal(answer.range_values()));
-// //     assert!(c4.equal(answer.range_values()));
+    let val = "ignored";
+    let answer = RangeMapBlaze::from_iter([(0, &val); 0]);
+    assert!(c0.equal(answer.range_values()));
+    assert!(c1.equal(answer.range_values()));
+    assert!(c2.equal(answer.range_values()));
+    // cmk0000 assert!(c3.equal(answer.range_values()));
+    // cmk0000 assert!(c4.equal(answer.range_values()));
 
-// //     let c0 = !(a.range_values() & b.range_values());
-// //     let c1 = ![a.range_values(), b.range_values()].intersection();
-// //     let c_list2: [RangesIter<i32>; 0] = [];
-// //     let c2 = !!c_list2.clone().intersection();
-// //     let c3 = !intersection_map_dyn!(a.range_values(), b.range_values());
-// //     let c4 = !!c_list2.map(DynSortedDisjointMap::new).intersection();
+    let c0 = !(a.range_values() & b.ranges());
+    // cmk000 empty let c1 = ![a.range_values(), b.range_values()].intersection();
+    let c_list2: [RangeValuesIter<i32, &str>; 0] = [];
+    // cmk000 empty let c2 = !!c_list2.clone().intersection();
+    // cmk000 empty let c3 = !intersection_map_dyn!(a.range_values(), b.range_values());
+    // cmk000 empty let c4 = !!c_list2.map(DynSortedDisjointMap::new).intersection();
 
-// //     let answer = !RangeMapBlaze::from_iter([0; 0]);
-// //     assert!(c0.equal(answer.range_values()));
-// //     assert!(c1.equal(answer.range_values()));
-// //     assert!(c2.equal(answer.range_values()));
-// //     assert!(c3.equal(answer.range_values()));
-// //     assert!(c4.equal(answer.range_values()));
-// // }
+    let answer = !RangeMapBlaze::from_iter([(0, "ignored"); 0]);
+    assert!(c0.equal(answer.ranges()));
+    // cmk000 empty assert!(c1.equal(answer.ranges()));
+    // cmk000 empty assert!(c2.equal(answer.ranges()));
+    // cmk000 empty assert!(c3.equal(answer.ranges()));
+    // cmk000 empty assert!(c4.equal(answer.ranges()));
+}
 
 // // #[test]
 // // #[allow(clippy::reversed_empty_ranges)]
@@ -899,7 +904,7 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
 // //     for how in [How::None, How::Union, How::Intersection] {
 // //         let mut option_range_int_set: Option<RangeMapBlaze<_,_>> = None;
 // //         for seed in 0..k as u64 {
-// //             let r2: RangeMapBlaze<i32> = MemorylessRange::new(
+// //             let r2: RangeMapBlaze<(i32,&str)> = MemorylessRange::new(
 // //                 &mut StdRng::seed_from_u64(seed),
 // //                 range_len,
 // //                 range.clone(),
@@ -1249,7 +1254,7 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
 // // #[test]
 // // fn map_sync_and_send() {
 // //     fn map_assert_sync_and_send<S: Sync + Send>() {}
-// //     assert_sync_and_send::<RangeMapBlaze<i32>>();
+// //     assert_sync_and_send::<RangeMapBlaze<(i32,&str)>>();
 // //     assert_sync_and_send::<RangesIter<i32>>();
 // // }
 
@@ -1413,7 +1418,7 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
 // //     // 'from_iter'/'collect': From an iterator of integers.
 // //     // Duplicates and out-of-order elements are fine.
 // //     let a0 = RangeMapBlaze::from_iter([3, 2, 1, 100, 1]);
-// //     let a1: RangeMapBlaze<i32> = [3, 2, 1, 100, 1].into_iter().collect();
+// //     let a1: RangeMapBlaze<(i32,&str)> = [3, 2, 1, 100, 1].into_iter().collect();
 // //     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 
 // //     // 'from_iter'/'collect': From an iterator of inclusive ranges, start..=end.
@@ -1421,19 +1426,19 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
 // //     #[allow(clippy::reversed_empty_ranges)]
 // //     let a0 = RangeMapBlaze::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
 // //     #[allow(clippy::reversed_empty_ranges)]
-// //     let a1: RangeMapBlaze<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
+// //     let a1: RangeMapBlaze<(i32,&str)> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
 // //     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 
 // //     // If we know the ranges are sorted and disjoint, we can use 'from'/'into'.
 // //     let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-// //     let a1: RangeMapBlaze<i32> =
+// //     let a1: RangeMapBlaze<(i32,&str)> =
 // //         CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_map_blaze();
 // //     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 
 // //     // For compatibility with `BTreeSet`, we also support
 // //     // 'from'/'into' from arrays of integers.
 // //     let a0 = RangeMapBlaze::from([3, 2, 1, 100, 1]);
-// //     let a1: RangeMapBlaze<i32> = [3, 2, 1, 100, 1].into();
+// //     let a1: RangeMapBlaze<(i32,&str)> = [3, 2, 1, 100, 1].into();
 // //     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 // // }
 
@@ -1549,7 +1554,7 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
 // //     // For compatibility with `BTreeSet`, we also support
 // //     // 'from'/'into' from arrays of integers.
 // //     let a0 = RangeMapBlaze::from([3, 2, 1, 100, 1]);
-// //     let a1: RangeMapBlaze<i32> = [3, 2, 1, 100, 1].into();
+// //     let a1: RangeMapBlaze<(i32,&str)> = [3, 2, 1, 100, 1].into();
 // //     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 
 // //     #[allow(clippy::needless_borrows_for_generic_args)]
@@ -1787,7 +1792,7 @@ fn map_range_map_blaze_operators() {
 // // fn map_from_iter_coverage() {
 // //     let vec_range = vec![1..=2, 2..=2, -10..=-5];
 // //     let a0 = RangeMapBlaze::from_iter(vec_range.iter());
-// //     let a1: RangeMapBlaze<i32> = vec_range.iter().collect();
+// //     let a1: RangeMapBlaze<(i32,&str)> = vec_range.iter().collect();
 // //     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 // // }
 
