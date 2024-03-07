@@ -1,8 +1,6 @@
 use crate::intersection_iter_map::IntersectionIterMap;
-use crate::merge_map::MergeMap;
-use crate::range_values::{
-    AdjustPriorityMap, RangeValuesFromBTree, RangeValuesIter, RangesFromMapIter,
-};
+use crate::iter_map::{IterMap, KeysMap};
+use crate::range_values::{RangeValuesFromBTree, RangeValuesIter, RangesFromMapIter};
 use alloc::borrow::ToOwned;
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
@@ -15,11 +13,10 @@ use crate::sorted_disjoint_map::{DebugToString, RangeValue};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, SortedDisjointWithLenSoFarMap};
 use crate::{Integer, NotIter, RangeSetBlaze, SortedDisjoint};
-use alloc::collections::{btree_map, BTreeMap};
+use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 use core::borrow::Borrow;
 use core::fmt;
-use core::iter::FusedIterator;
 use core::marker::PhantomData;
 use core::ops::BitOr;
 use core::{cmp::max, convert::From, ops::RangeInclusive};
@@ -350,13 +347,45 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     pub fn iter(&self) -> IterMap<'_, T, V, &V, RangeValuesIter<'_, T, V>> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
-        IterMap {
-            option_range_value_front: None,
-            option_range_value_back: None,
-            iter: self.range_values(),
-            phantom0: PhantomData,
-            phantom1: PhantomData,
-        }
+        IterMap::new(self.range_values())
+    }
+
+    /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
+    /// ascending and/or descending order.
+    ///
+    /// Also see the [`RangeMapBlaze::ranges`] method.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let set = RangeMapBlaze::from_iter([1..=3]);
+    /// let mut set_iter = set.iter();
+    /// assert_eq!(set_iter.next(), Some(1));
+    /// assert_eq!(set_iter.next(), Some(2));
+    /// assert_eq!(set_iter.next(), Some(3));
+    /// assert_eq!(set_iter.next(), None);
+    /// ```
+    ///
+    /// Values returned by `.next()` are in ascending order.
+    /// Values returned by `.next_back()` are in descending order.
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let set = RangeMapBlaze::from_iter([3, 1, 2]);
+    /// let mut set_iter = set.iter();
+    /// assert_eq!(set_iter.next(), Some(1));
+    /// assert_eq!(set_iter.next_back(), Some(3));
+    /// assert_eq!(set_iter.next(), Some(2));
+    /// assert_eq!(set_iter.next_back(), None);
+    /// ```
+    // cmk00 implement this
+    pub fn keys(&self) -> KeysMap<'_, T, V, &V, RangeValuesIter<'_, T, V>> {
+        // If the user asks for an iter, we give them a RangesIter iterator
+        // and we iterate that one integer at a time.
+        KeysMap::new(self.range_values())
     }
 
     /// Returns the first element in the set, if any.
@@ -1666,13 +1695,13 @@ impl<T: Integer, V: ValueOwned> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
     }
 }
 
-#[doc(hidden)]
-pub type MergeMapAdjusted<'a, T, V, VR, L, R> =
-    MergeMap<'a, T, V, VR, AdjustPriorityMap<'a, T, V, VR, L>, AdjustPriorityMap<'a, T, V, VR, R>>;
-
-#[doc(hidden)]
-pub type BitOrMergeMap<'a, T, V, VR, L, R> =
-    UnionIterMap<'a, T, V, VR, MergeMapAdjusted<'a, T, V, VR, L, R>>;
+// cmk remove
+// #[doc(hidden)]
+// pub type MergeMapAdjusted<'a, T, V, VR, L, R> =
+//     MergeMap<'a, T, V, VR, AdjustPriorityMap<'a, T, V, VR, L>, AdjustPriorityMap<'a, T, V, VR, R>>;
+// #[doc(hidden)]
+// pub type BitOrMergeMap<'a, T, V, VR, L, R> =
+//     UnionIterMap<'a, T, V, VR, MergeMapAdjusted<'a, T, V, VR, L, R>>;
 
 #[doc(hidden)]
 pub type BitAndRangesMap<'a, T, V, VR, L, R> = IntersectionIterMap<'a, T, V, VR, L, R>;
@@ -1719,23 +1748,6 @@ pub type SortedStartsInVecMap<'a, T, V, VR> =
 //     NotIterMap<T, V, BitOrMergeMap<T, V, Tee<L>, Tee<R>>>,
 // >;
 
-// cmk000
-// If the inputs have sorted starts, then so does the output.
-// impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
-//     SortedStartsMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
-// where
-//     VR: CloneBorrow<V> + 'a,
-// {
-// }
-
-// // If the inputs have sorted starts, the output is sorted and disjoint.
-// impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I: SortedStartsMap<'a, T, V, VR>>
-//     SortedDisjointMap<'a, T, V, VR> for UnionIterMap<'a, T, V, VR, I>
-// where
-//     VR: CloneBorrow<V> + 'a,
-// {
-// }
-
 impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
@@ -1755,10 +1767,7 @@ impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze<T, 
         // cmk
         // self |= other;
         // self
-        // cmk00 use |
-        self.range_values()
-            .union(other.range_values())
-            .into_range_map_blaze()
+        (self.range_values() | other.range_values()).into_range_map_blaze()
     }
 }
 
@@ -1780,10 +1789,7 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for RangeMapBlaze<T,
     fn bitor(self, other: &Self) -> RangeMapBlaze<T, V> {
         // self |= other;
         // self
-        // cmk00 use |
-        self.range_values()
-            .union(other.range_values())
-            .into_range_map_blaze()
+        (self.range_values() | other.range_values()).into_range_map_blaze()
     }
 }
 
@@ -1806,10 +1812,7 @@ impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
         // cmk
         // other |= self;
         // other
-        // cmk00 use |
-        self.range_values()
-            .union(other.range_values())
-            .into_range_map_blaze()
+        (self.range_values() | other.range_values()).into_range_map_blaze()
     }
 }
 
@@ -1829,10 +1832,7 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor(self, other: &RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
-        let left = self.range_values();
-        let right = other.range_values();
-        // cmk00 use |
-        left.union(right).into_range_map_blaze()
+        (self.range_values() | other.range_values()).into_range_map_blaze()
     }
 }
 
@@ -1974,180 +1974,3 @@ for ! call |a: &RangeMapBlaze<T, V>| {
 };
 where T: Integer, V: ValueOwned
 );
-
-/// A (double-ended) iterator over the integer elements of a [`RangeMapBlaze`].
-///
-/// This `struct` is created by the [`iter`] method on [`RangeMapBlaze`]. See its
-/// documentation for more.
-///
-/// [`iter`]: RangeMapBlaze::iter
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-#[derive(Clone, Debug)]
-pub struct IterMap<'a, T, V, VR, I>
-where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
-{
-    iter: I,
-    option_range_value_front: Option<RangeValue<'a, T, V, VR>>,
-    option_range_value_back: Option<RangeValue<'a, T, V, VR>>,
-    phantom0: PhantomData<&'a V>,
-    phantom1: PhantomData<VR>,
-}
-
-impl<'a, T, V, VR, I> FusedIterator for IterMap<'a, T, V, VR, I>
-where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR> + FusedIterator,
-{
-}
-
-impl<'a, T, V, VR, I> Iterator for IterMap<'a, T, V, VR, I>
-where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
-{
-    type Item = (T, VR);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut range_value = self
-            .option_range_value_front
-            .take()
-            .or_else(|| self.iter.next())
-            .or_else(|| self.option_range_value_back.take())?;
-
-        let (start, end) = range_value.range.into_inner();
-        debug_assert!(start <= end && end <= T::safe_max_value());
-        let value = range_value.value.clone_borrow();
-        if start < end {
-            range_value.range = start + T::one()..=end;
-            self.option_range_value_front = Some(range_value);
-        }
-        Some((start, value))
-    }
-
-    // We'll have at least as many integers as intervals. There could be more that usize MAX
-    // The option_range field could increase the number of integers, but we can ignore that.
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let (low, _high) = self.iter.size_hint();
-        (low, None)
-    }
-}
-
-impl<'a, T, V, VR, I> DoubleEndedIterator for IterMap<'a, T, V, VR, I>
-where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR> + DoubleEndedIterator,
-{
-    fn next_back(&mut self) -> Option<Self::Item> {
-        let mut range_value = self
-            .option_range_value_back
-            .take()
-            .or_else(|| self.iter.next_back())
-            .or_else(|| self.option_range_value_front.take())?;
-        let (start, end) = range_value.range.into_inner();
-        debug_assert!(start <= end && end <= T::safe_max_value());
-        let value = range_value.value.clone_borrow();
-        if start < end {
-            range_value.range = start..=end - T::one();
-            self.option_range_value_back = Some(range_value);
-        }
-
-        Some((end, value))
-    }
-}
-
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-/// A (double-ended) iterator over the integer elements of a [`RangeMapBlaze`].
-///
-/// This `struct` is created by the [`into_iter`] method on [`RangeMapBlaze`]. See its
-/// documentation for more.
-///
-/// [`into_iter`]: RangeMapBlaze::into_iter
-pub struct IntoIterMap<'a, T, V>
-where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-{
-    option_start_end_value_front: Option<(T, EndValue<T, V>)>,
-    option_start_end_value_back: Option<(T, EndValue<T, V>)>,
-    into_iter: btree_map::IntoIter<T, EndValue<T, V>>,
-    phantom: PhantomData<&'a V>, // cmk00 needed?
-}
-
-impl<'a, T, V> FusedIterator for IntoIterMap<'a, T, V>
-where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-{
-}
-
-impl<'a, T, V> Iterator for IntoIterMap<'a, T, V>
-where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-{
-    type Item = (T, V);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let start_end_value = self
-            .option_start_end_value_front
-            .take()
-            .or_else(|| self.into_iter.next())
-            .or_else(|| self.option_start_end_value_back.take())?;
-
-        let start = start_end_value.0;
-        let end = start_end_value.1.end;
-        let value = start_end_value.1.value.borrow_clone();
-        debug_assert!(start <= end && end <= T::safe_max_value());
-        if start < end {
-            let end_value = start_end_value.1;
-            let start_end_value = (start + T::one(), end_value);
-            self.option_start_end_value_front = Some(start_end_value);
-        }
-        Some((start, value))
-    }
-
-    // We'll have at least as many integers as intervals. There could be more that usize MAX
-    // the option_range field could increase the number of integers, but we can ignore that.
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let (low, _high) = self.into_iter.size_hint();
-        (low, None)
-    }
-}
-
-impl<'a, T, V> DoubleEndedIterator for IntoIterMap<'a, T, V>
-where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-{
-    fn next_back(&mut self) -> Option<Self::Item> {
-        let start_end_value = self
-            .option_start_end_value_back
-            .take()
-            .or_else(|| self.into_iter.next())
-            .or_else(|| self.option_start_end_value_front.take())?;
-
-        let start = start_end_value.0;
-        let end = start_end_value.1.end;
-        let value = start_end_value.1.value.borrow_clone();
-        debug_assert!(start <= end && end <= T::safe_max_value());
-
-        if start < end {
-            let mut end_value = start_end_value.1;
-            end_value.end -= T::one();
-            let start_end_value = (start, end_value);
-            self.option_start_end_value_back = Some(start_end_value);
-        }
-
-        Some((end, value))
-    }
-}

@@ -25,11 +25,6 @@ impl<'a, T: Integer> AsRef<RangesIter<'a, T>> for RangesIter<'a, T> {
     }
 }
 
-// cmk000
-// // RangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
-// impl<T: Integer> SortedStarts<T> for RangesIter<'_, T> {}
-// impl<T: Integer> SortedDisjoint<T> for RangesIter<'_, T> {}
-
 impl<T: Integer> ExactSizeIterator for RangesIter<'_, T> {
     #[must_use]
     fn len(&self) -> usize {

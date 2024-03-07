@@ -543,7 +543,6 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
     let d = a0.range_values().union(a1.range_values());
     let e = a.range_values(); // with range instead of range values used 'tee' here
 
-    // cmk000 stopped here, need to get this from working
     let f = UnionIterMap::from_iter([
         (15, &"f"),
         (14, &"f"),
@@ -619,29 +618,32 @@ fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// #[test]
-// fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
-//     // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
-//     let a0 = RangeMapBlaze::from_iter([1..=6]);
-//     let a1 = RangeMapBlaze::from_iter([8..=9]);
-//     let a2 = RangeMapBlaze::from_iter([11..=15]);
-//     let a01 = &a0 | &a1;
-//     let (a01_tee, _) = a01.range_values().tee();
-//     let not_a01 = !&a01;
-//     let a = &a01 - &a2;
-//     let b = a01.range_values() - a2.range_values();
-//     let c = !not_a01.range_values() - a2.range_values();
-//     let d = (a0.range_values() | a1.range_values()) - a2.range_values();
-//     let e = a01_tee.difference(a2.range_values());
-//     let f = UnionIterMap::from_iter(a01.iter()) - UnionIterMap::from_iter(a2.iter());
-//     assert!(a.range_values().equal(b));
-//     assert!(a.range_values().equal(c));
-//     assert!(a.range_values().equal(d));
-//     assert!(a.range_values().equal(e));
-//     assert!(a.range_values().equal(f));
+#[test]
+fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
+    use range_set_blaze::UnionIter;
 
-//     Ok(())
-// }
+    // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
+    let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
+    let a1 = RangeMapBlaze::from_iter([(8..=9, "a1")]);
+    let a2 = RangeMapBlaze::from_iter([(11..=15, "a2")]);
+
+    let a01 = &a0 | &a1;
+    let a01_tee = a01.range_values(); // with range instead of range values used 'tee' here
+    let not_a01 = &a01.complement_with(&"A01");
+    let a = &a01 - &a2;
+    let b = a01.range_values() - a2.ranges();
+    let c = !not_a01.range_values() - a2.ranges();
+    let d = (a0.range_values() | a1.range_values()) - a2.ranges();
+    let e = a01_tee.difference(a2.ranges());
+    let f = UnionIterMap::from_iter(a01.iter()) - UnionIter::from_iter(a2.keys());
+    assert!(a.range_values().equal(b));
+    assert!(a.ranges().equal(c));
+    assert!(a.range_values().equal(d));
+    assert!(a.range_values().equal(e));
+    assert!(a.range_values().equal(f));
+
+    Ok(())
+}
 
 // // #[test]
 // // fn map_xor() -> Result<(), Box<dyn std::error::Error>> {

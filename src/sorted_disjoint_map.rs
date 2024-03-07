@@ -402,14 +402,6 @@ where
         sorted_disjoint.complement()
     }
 
-    fn complement_cmk(self) -> NotIter<T, RangesFromMapIter<'a, T, V, VR, Self>>
-    where
-        Self: Sized,
-    {
-        let sorted_disjoint: RangesFromMapIter<'a, T, V, VR, Self> = self.into_sorted_disjoint();
-        sorted_disjoint.complement()
-    }
-
     /// cmk
     /// returns a set, not a map
     #[inline]
@@ -1011,7 +1003,6 @@ where
 {
 }
 
-// cmk000 generalizing to maps
 pub trait AnythingGoesMap<'a, T: Integer, V: ValueOwned + 'a, VR: CloneBorrow<V> + 'a>:
     Iterator<Item = RangeValue<'a, T, V, VR>>
 {
@@ -1041,6 +1032,7 @@ where
 // {
 // }
 
+/// cmk doc
 #[macro_export]
 macro_rules! impl_sorted_map_traits_and_ops0 {
     ($IterType:ty, $TraitBound:ident) => {
@@ -1234,6 +1226,7 @@ impl_sorted_map_traits_and_ops1!(RangeValuesIter<'a, T, V>, &'a V);
 impl_sorted_map_traits_and_ops1!(IntoRangeValuesIter<'a, T, V>, Rc<V>);
 
 // impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, AnythingGoes);
+
 // impl_sorted_traits_and_ops!(RangesIter<'_, T>);
 // impl_sorted_traits_and_ops!(IntoRangesIter<T>);
 // impl_sorted_traits_and_ops!(NotIter<T, I>, SortedDisjoint);
