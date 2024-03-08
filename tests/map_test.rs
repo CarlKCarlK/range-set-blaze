@@ -1125,24 +1125,53 @@ fn map_doc_test_len() {
     );
 }
 
-// // #[test]
-// // fn map_test_pops() {
-// //     let mut set = RangeMapBlaze::from_iter([1..=2, 4..=5, 10..=11]);
-// //     let len = set.len();
-// //     assert_eq!(set.pop_first(), Some(1));
-// //     assert_eq!(set.len(), len - 1);
-// //     assert_eq!(set, RangeMapBlaze::from_iter([2..=2, 4..=5, 10..=11]));
-// //     assert_eq!(set.pop_last(), Some(11));
-// //     println!("{set:#?}");
-// //     assert_eq!(set, RangeMapBlaze::from_iter([2..=2, 4..=5, 10..=10]));
-// //     assert_eq!(set.len(), len - 2);
-// //     assert_eq!(set.pop_last(), Some(10 as I32SafeLen));
-// //     assert_eq!(set.len(), len - 3);
-// //     assert_eq!(set, RangeMapBlaze::from_iter([2..=2, 4..=5]));
-// //     assert_eq!(set.pop_first(), Some(2));
-// //     assert_eq!(set.len(), len - 4);
-// //     assert_eq!(set, RangeMapBlaze::from_iter([4..=5]));
-// // }
+#[test]
+fn map_test_pops() {
+    // Initialize the map with ranges as keys and chars as values
+    let mut map = RangeMapBlaze::from_iter([(1..=2, 'a'), (4..=5, 'b'), (10..=11, 'c')]);
+    let len = map.len() as I32SafeLen;
+
+    // Adjusted to expect a tuple of (single integer key, value)
+    assert_eq!(map.pop_first(), Some((1, 'a')));
+    assert_eq!(map.len(), len - 1);
+    // After popping the first, the range 1..=2 should now start from 2
+    assert_eq!(
+        map,
+        RangeMapBlaze::from_iter([
+            (2..=2, 'a'), // Adjusted range after popping key 1
+            (4..=5, 'b'),
+            (10..=11, 'c')
+        ])
+    );
+
+    assert_eq!(map.pop_last(), Some((11, 'c')));
+    println!("{map:#?}");
+    // After popping the last, the range 10..=11 should now end at 10
+    assert_eq!(
+        map,
+        RangeMapBlaze::from_iter([
+            (2..=2, 'a'),
+            (4..=5, 'b'),
+            (10..=10, 'c') // Adjusted range after popping key 11
+        ])
+    );
+    assert_eq!(map.len(), len - 2);
+
+    // Continue popping and assert changes
+    assert_eq!(map.pop_last(), Some((10, 'c'))); // Pop the last remaining element of the previous last range
+    assert_eq!(map.len(), len - 3);
+    assert_eq!(map, RangeMapBlaze::from_iter([(2..=2, 'a'), (4..=5, 'b')]));
+
+    // Now pop the first element after previous pops, which should be 2 from the adjusted range
+    assert_eq!(map.pop_first(), Some((2, 'a')));
+    assert_eq!(map.len(), len - 4);
+    assert_eq!(map, RangeMapBlaze::from_iter([(4..=5, 'b')]));
+
+    // Finally, pop the last elements left in the map
+    assert_eq!(map.pop_first(), Some((4, 'b')));
+    assert_eq!(map.pop_last(), Some((5, 'b')));
+    assert!(map.is_empty());
+}
 
 // // #[test]
 // // fn map_eq() {

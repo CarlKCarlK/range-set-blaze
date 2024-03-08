@@ -1396,21 +1396,19 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     where
         V: Clone,
     {
-        if let Some(entry) = self.btree_map.first_entry() {
-            let (start, end_value) = entry.remove_entry();
-            self.len -= T::safe_len(&(start..=end_value.end));
-            if start != end_value.end {
-                let start = start + T::one();
-                self.len += T::safe_len(&(start..=end_value.end));
-                let value = end_value.value.clone();
-                debug_assert!(start <= end_value.end); // real assert
-                self.btree_map.insert(start, end_value);
-                Some((start, value))
-            } else {
-                Some((start, end_value.value))
-            }
+        let Some(entry) = self.btree_map.first_entry() else {
+            return None;
+        };
+        // We must remove the entry because the key will change
+        let (start, end_value) = entry.remove_entry();
+
+        self.len = self.len - T::SafeLen::one();
+        if start == end_value.end {
+            Some((start, end_value.value))
         } else {
-            None
+            let value = end_value.value.borrow_clone();
+            self.btree_map.insert(start + T::one(), end_value);
+            Some((start, value))
         }
     }
 
@@ -1430,24 +1428,24 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// }
     /// assert!(set.is_empty());
     /// ```
-    // cmk
-    // pub fn pop_last(&mut self) -> Option<T, V, VR> {
-    //     let Some(mut entry) = self.btree_map.last_entry() else {
-    //         return None;
-    //     };
+    pub fn pop_last(&mut self) -> Option<(T, V)> {
+        let Some(mut entry) = self.btree_map.last_entry() else {
+            return None;
+        };
 
-    //     let start = *entry.key();
-    //     let end_value = entry.get_mut();
-    //     let result = *end_value;
-    //     self.len -= T::safe_len(&(start..=end_value.end));
-    //     if start == end_value.end {
-    //         entry.remove_entry();
-    //     } else {
-    //         end_value.end -= T::one();
-    //         self.len += T::safe_len(&(start..=end_value.end));
-    //     }
-    //     Some(result.end)
-    // }
+        let start = *entry.key();
+
+        self.len = self.len - T::SafeLen::one();
+        let end = entry.get().end;
+        if start == end {
+            let value = entry.remove_entry().1.value;
+            Some((end, value))
+        } else {
+            let value = entry.get().value.borrow_clone();
+            entry.get_mut().end -= T::one();
+            Some((end, value))
+        }
+    }
 
     /// An iterator that visits the ranges in the [`RangeMapBlaze`],
     /// i.e., the integers as sorted & disjoint ranges.
