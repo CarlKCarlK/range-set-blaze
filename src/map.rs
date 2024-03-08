@@ -799,10 +799,10 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(set.insert(2), false);
     /// assert_eq!(set.len(), 1usize);
     /// ```
-    pub fn insert(&mut self, key: T, value: V) -> bool {
-        let len_before = self.len;
+    pub fn insert(&mut self, key: T, value: V) -> Option<V> {
+        let old = self.get(key).map(|v| v.borrow_clone());
         self.internal_add(key..=key, value);
-        self.len != len_before
+        old
     }
 
     // cmk also define insert_under

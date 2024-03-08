@@ -21,7 +21,8 @@ use range_set_blaze::UnionIterMap;
 //     MultiwayRangeMapBlaze, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
 // };
 // cmk not tested use range_map_blaze::multiway_map::MultiwayRangeMapBlazeRef;
-
+use range_set_blaze::Integer;
+type I32SafeLen = <i32 as Integer>::SafeLen;
 use std::{
     collections::BTreeMap,
     io::{stdout, Write},
@@ -1092,32 +1093,37 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
 // //     }
 // // }
 
-// // #[test]
-// // fn map_doc_test_insert1() {
-// //     let mut set = RangeMapBlaze::new();
+#[test]
+fn map_doc_test_insert1() {
+    let mut map = RangeMapBlaze::new();
 
-// //     assert!(set.insert(2));
-// //     assert!(!set.insert(2));
-// //     assert_eq!(set.len(), 1 as I32SafeLen);
-// // }
+    assert_eq!(map.insert(2, "a"), None);
+    assert_eq!(map.insert(2, "b"), Some("a"));
+    assert_eq!(map.len(), 1 as I32SafeLen);
+}
 
-// #[test]
-// fn map_doc_test_len() {
-//     let mut v = RangeMapBlaze::new();
-//     assert_eq!(v.len(), 0 as I32SafeLen);
-//     v.insert(1, "Hello".to_string());
-//     assert_eq!(v.len(), 1 as I32SafeLen);
+#[test]
+fn map_doc_test_len() {
+    let mut v = RangeMapBlaze::new();
+    assert_eq!(v.len(), 0 as I32SafeLen);
+    v.insert(1, "Hello");
+    assert_eq!(v.len(), 1 as I32SafeLen);
 
-//     // cmk
-//     // let v = RangeMapBlaze::from_iter([
-//     //     -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,
-//     //     -10..=170_141_183_460_469_231_731_687_303_715_884_105_726,
-//     // ]);
-//     // assert_eq!(
-//     //     v.len(),
-//     //     340_282_366_920_938_463_463_374_607_431_768_211_455u128
-//     // );
-// }
+    let v = RangeMapBlaze::from_iter([
+        (
+            -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,
+            "a",
+        ),
+        (
+            -10..=170_141_183_460_469_231_731_687_303_715_884_105_726,
+            "a",
+        ),
+    ]);
+    assert_eq!(
+        v.len(),
+        340_282_366_920_938_463_463_374_607_431_768_211_455u128
+    );
+}
 
 // // #[test]
 // // fn map_test_pops() {
