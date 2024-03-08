@@ -59,6 +59,7 @@ mod unsorted_disjoint;
 mod unsorted_disjoint_map;
 pub use crate::map::RangeMapBlaze;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
+pub use crate::unsorted_disjoint_map::{AssumeSortedDisjointMap, AssumeSortedStartsMap};
 use alloc::{collections::BTreeMap, vec::Vec};
 use core::{
     cmp::{max, Ordering},
@@ -75,6 +76,7 @@ pub use merge::{KMerge, Merge};
 pub use merge_map::MergeMap; // cmk KMergeMap
 mod merge_map;
 mod not_iter_map;
+pub use crate::sorted_disjoint_map::RangeValue;
 pub use not_iter::NotIter;
 use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, One, WrappingSub, Zero};
 #[cfg(feature = "rog-experimental")]

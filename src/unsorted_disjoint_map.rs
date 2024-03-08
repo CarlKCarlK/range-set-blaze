@@ -295,22 +295,6 @@ where
     pub(crate) iter: I,
 }
 
-impl<'a, T: Integer, V: ValueOwned + 'a, VR, I> SortedStartsMap<'a, T, V, VR>
-    for AssumeSortedDisjointMap<'a, T, V, VR, I>
-where
-    VR: CloneBorrow<V> + 'a,
-    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
-{
-}
-
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR, I> SortedDisjointMap<'a, T, V, VR>
-    for AssumeSortedDisjointMap<'a, T, V, VR, I>
-where
-    VR: CloneBorrow<V> + 'a,
-    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
-{
-}
-
 impl<'a, T, V, VR, I> AssumeSortedDisjointMap<'a, T, V, VR, I>
 where
     T: Integer,

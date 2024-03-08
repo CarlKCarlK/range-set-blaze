@@ -1663,9 +1663,7 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
         let iter = iter
             .into_iter()
             .non_zero_enumerate()
-            .map(|(priority, (r, v))| {
-                RangeValue::new(r.clone(), UniqueValue { value: Some(v) }, Some(priority))
-            });
+            .map(|(priority, (r, v))| RangeValue::new_unique(r.clone(), v, Some(priority)));
         let union_iter_map = UnionIterMap::<T, V, UniqueValue<V>, _>::from_iter(iter);
         RangeMapBlaze::from_sorted_disjoint_map(union_iter_map)
     }
@@ -1845,6 +1843,13 @@ where
     value: Option<V>,
 }
 
+impl<V: ValueOwned> UniqueValue<V> {
+    /// Creates a new `UniqueValue` with the provided value.
+    pub fn new(v: V) -> Self {
+        UniqueValue { value: Some(v) }
+    }
+}
+
 impl<V> CloneBorrow<V> for UniqueValue<V>
 where
     V: ValueOwned,
@@ -2009,9 +2014,9 @@ where
         I: IntoIterator<Item = (T, V)>,
     {
         let iter = iter.into_iter();
-        for range_value in UnsortedDisjointMap::from(
-            iter.map(|(r, v)| RangeValue::new(r..=r, UniqueValue { value: Some(v) }, None)),
-        ) {
+        for range_value in
+            UnsortedDisjointMap::from(iter.map(|(r, v)| RangeValue::new_unique(r..=r, v, None)))
+        {
             let range = range_value.range;
             let value = range_value.value.borrow_clone();
             self.internal_add(range, value);
@@ -2049,5 +2054,30 @@ where
     /// ```
     fn into_iter(self) -> IntoIterMap<T, V> {
         IntoIterMap::new(self.btree_map.into_iter())
+    }
+}
+
+impl<T, V, const N: usize> From<[(T, V); N]> for RangeMapBlaze<T, V>
+where
+    T: Integer,
+    V: ValueOwned,
+{
+    /// For compatibility with [`BTreeSet`] you may create a [`RangeSetBlaze`] from an array of integers.
+    ///
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
+    ///
+    /// [`BTreeSet`]: alloc::collections::BTreeSet
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let a0 = RangeSetBlaze::from([3, 2, 1, 100, 1]);
+    /// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
+    /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100")
+    /// ```
+    fn from(arr: [(T, V); N]) -> Self {
+        arr.into_iter().collect()
     }
 }

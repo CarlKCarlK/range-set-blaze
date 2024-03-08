@@ -1,6 +1,8 @@
 use crate::map::BitSubRangesMap;
+use crate::map::UniqueValue;
 use crate::range_values::IntoRangeValuesIter;
 use crate::range_values::RangeValuesIter;
+use crate::unsorted_disjoint_map::AssumeSortedDisjointMap;
 use crate::BitOrAdjusted;
 use alloc::format;
 use alloc::rc::Rc;
@@ -35,6 +37,7 @@ use itertools::Tee;
 
 // cmk hey, about a method that gets the range or a clone of the value?
 // cmk should this be pub/crate or replaced with a tuple?
+/// cmk doc
 #[derive(Clone)]
 pub struct RangeValue<'a, T, V, VR>
 where
@@ -42,8 +45,11 @@ where
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
 {
+    /// cmk doc
     pub range: RangeInclusive<T>,
+    /// cmk doc
     pub value: VR,
+    /// cmk doc
     pub priority: Option<NonZeroUsize>,
     phantom: PhantomData<&'a V>,
 }
@@ -54,6 +60,7 @@ where
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
 {
+    /// cmk doc
     pub fn new(range: RangeInclusive<T>, value: VR, priority: Option<NonZeroUsize>) -> Self {
         RangeValue {
             range,
@@ -61,6 +68,17 @@ where
             priority,
             phantom: PhantomData,
         }
+    }
+}
+
+impl<'a, T, V> RangeValue<'a, T, V, UniqueValue<V>>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+{
+    /// cmk doc
+    pub fn new_unique(range: RangeInclusive<T>, v: V, priority: Option<NonZeroUsize>) -> Self {
+        RangeValue::new(range, UniqueValue::new(v), priority)
     }
 }
 
@@ -1061,8 +1079,7 @@ macro_rules! impl_sorted_map_traits_and_ops0 {
             VR: CloneBorrow<V> + 'a,
             I: SortedDisjointMap<'a, T, V, VR> + 'a,
         {
-            type Output =
-                NotIter<T, RangesFromMapIter<'a, T, V, VR, UnionIterMap<'a, T, V, VR, I>>>;
+            type Output = NotIter<T, RangesFromMapIter<'a, T, V, VR, Self>>;
 
             fn not(self) -> Self::Output {
                 self.complement()
@@ -1333,6 +1350,7 @@ impl_sorted_map_traits_and_ops0!(
     SortedDisjointMap,
     SortedDisjoint
 );
+impl_sorted_map_traits_and_ops0!(AssumeSortedDisjointMap<'a, T, V, VR, I>, SortedDisjointMap);
 
 // impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, AnythingGoes);
 

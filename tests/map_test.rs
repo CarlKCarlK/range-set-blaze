@@ -783,91 +783,115 @@ fn map_empty_it() {
     assert!(c3.equal(answer.ranges()));
 }
 
-// // #[test]
-// // #[allow(clippy::reversed_empty_ranges)]
-// // fn map_tricky_case1() {
-// //     let a = RangeMapBlaze::from_iter([1..=0]);
-// //     let b = RangeMapBlaze::from_iter([2..=1]);
-// //     assert_eq!(a, b);
-// //     assert!(a.range_values().equal(b.range_values()));
-// //     assert_eq!(a.range_values().len(), 0);
-// //     assert_eq!(a.range_values().len(), b.range_values().len());
-// //     let a = RangeMapBlaze::from_iter([i32::MIN..=i32::MAX]);
-// //     println!("tc1 '{a}'");
-// //     assert_eq!(a.len() as i128, (i32::MAX as i128) - (i32::MIN as i128) + 1);
-// //     let a = !RangeMapBlaze::from_iter([1..=0]);
-// //     println!("tc1 '{a}'");
-// //     assert_eq!(a.len() as i128, (i32::MAX as i128) - (i32::MIN as i128) + 1);
+#[test]
+#[allow(clippy::reversed_empty_ranges)]
+fn map_tricky_case1() {
+    let a = RangeMapBlaze::from_iter([(1..=0, "a")]);
+    let b = RangeMapBlaze::from_iter([(2..=1, "b")]);
+    assert_eq!(a, b);
+    assert!(a.range_values().equal(b.range_values()));
+    assert_eq!(a.range_values().len(), 0);
+    assert_eq!(a.range_values().len(), b.range_values().len());
+    let a = RangeMapBlaze::from_iter([(i32::MIN..=i32::MAX, "a")]);
+    println!("tc1 '{a}'");
+    assert_eq!(a.len() as i128, (i32::MAX as i128) - (i32::MIN as i128) + 1);
+    let a = !RangeMapBlaze::from_iter([(1..=0, "a")]);
+    println!("tc1 '{a}'");
+    assert_eq!(a.len() as i128, (i32::MAX as i128) - (i32::MIN as i128) + 1);
 
-// //     let a = !RangeMapBlaze::from_iter([1i128..=0]);
-// //     println!("tc1 '{a}', {}", a.len());
-// //     assert_eq!(a.len(), u128::MAX);
-// //     let a = !RangeMapBlaze::from_iter([1u128..=0]);
-// //     println!("tc1 '{a}', {}", a.len());
-// //     assert_eq!(a.len(), u128::MAX);
-// // }
+    let a = !RangeMapBlaze::from_iter([(1i128..=0, "a")]);
+    println!("tc1 '{a}', {}", a.len());
+    assert_eq!(a.len(), u128::MAX);
+    let a = !RangeMapBlaze::from_iter([(1u128..=0, "a")]);
+    println!("tc1 '{a}', {}", a.len());
+    assert_eq!(a.len(), u128::MAX);
+}
 
-// // // should fail
-// // #[test]
-// // #[should_panic]
-// // fn map_tricky_case2() {
-// //     let _a = RangeMapBlaze::from_iter([-1..=i128::MAX]);
-// // }
+// should fail
+#[test]
+#[should_panic]
+fn map_tricky_case2() {
+    let _a = RangeMapBlaze::from_iter([(-1..=i128::MAX, "a")]);
+}
 
-// // #[test]
-// // #[should_panic]
-// // fn map_tricky_case3() {
-// //     let _a = RangeMapBlaze::from_iter([0..=u128::MAX]);
-// // }
+#[test]
+#[should_panic]
+fn map_tricky_case3() {
+    let _a = RangeMapBlaze::from_iter([(0..=u128::MAX, "a")]);
+}
 
-// // #[test]
-// // fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
-// //     // #9: new
-// //     let mut _range_set_int;
-// //     _range_set_int = RangeMapBlaze::<i32>::new();
-// //     // #10 collect / from_iter T
-// //     _range_set_int = [1, 5, 6, 5].into_iter().collect();
-// //     _range_set_int = RangeMapBlaze::from_iter([1, 5, 6, 5]);
-// //     // #11 into / from array T
-// //     _range_set_int = [1, 5, 6, 5].into();
-// //     _range_set_int = RangeMapBlaze::from_iter([1, 5, 6, 5]);
-// //     // #12 into / from slice T
-// //     // _range_set_int = [1, 5, 6, 5][1..=2].into();
-// //     // _range_set_int = RangeMapBlaze::from_iter([1, 5, 6, 5].as_slice());
-// //     //#13 collect / from_iter range
-// //     _range_set_int = [5..=6, 1..=5].into_iter().collect();
-// //     _range_set_int = RangeMapBlaze::from_iter([5..=6, 1..=5]);
-// //     // #16 into / from iter (T,T) + SortedDisjoint
-// //     _range_set_int = _range_set_int.range_values().into_range_map_blaze();
-// //     _range_set_int = RangeMapBlaze::from_sorted_disjoint_map(_range_set_int.range_values());
+#[test]
+fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
+    use range_set_blaze::AssumeSortedStartsMap;
+    use range_set_blaze::RangeValue;
 
-// //     let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10].into_iter());
-// //     let mut _sorted_disjoint_iter;
-// //     _sorted_disjoint_iter = UnionIterMap::new(sorted_starts);
-// //     // #10 collect / from_iter T
-// //     let mut _sorted_disjoint_iter: UnionIterMap<_, _> = [1, 5, 6, 5].into_iter().collect();
-// //     _sorted_disjoint_iter = UnionIterMap::from_iter([1, 5, 6, 5]);
-// //     // // #11 into / from array T
-// //     _sorted_disjoint_iter = [1, 5, 6, 5].into();
-// //     _sorted_disjoint_iter = UnionIterMap::from([1, 5, 6, 5]);
-// //     // // #12 into / from slice T
-// //     _sorted_disjoint_iter = [1, 5, 6, 5][1..=2].into();
-// //     _sorted_disjoint_iter = UnionIterMap::from([1, 5, 6, 5].as_slice());
-// //     // //#13 collect / from_iter range
-// //     _sorted_disjoint_iter = [5..=6, 1..=5].into_iter().collect();
-// //     _sorted_disjoint_iter = UnionIterMap::from_iter([5..=6, 1..=5]);
-// //     // // #14 from into array range
-// //     _sorted_disjoint_iter = [5..=6, 1..=5].into();
-// //     _sorted_disjoint_iter = UnionIterMap::from([5..=6, 1..=5]);
-// //     // // #15 from into slice range
-// //     _sorted_disjoint_iter = [5..=6, 1..=5][0..=1].into();
-// //     _sorted_disjoint_iter = UnionIterMap::from([5..=6, 1..=5].as_slice());
-// //     // // #16 into / from iter (T,T) + SortedDisjoint
-// //     let mut _sorted_disjoint_iter: UnionIterMap<_, _> = _range_set_int.range_values().collect();
-// //     _sorted_disjoint_iter = UnionIterMap::from_iter(_range_set_int.range_values());
+    // #9: new
+    let mut _range_map_blaze;
+    _range_map_blaze = RangeMapBlaze::<i32, &str>::new();
+    // #10 collect / from_iter T
+    _range_map_blaze = [(1, "a"), (5, "b"), (6, "b"), (5, "b")]
+        .into_iter()
+        .collect();
+    _range_map_blaze = RangeMapBlaze::from_iter([(1, "a"), (5, "b"), (6, "b"), (5, "b")]);
+    // #11 into / from array T
+    _range_map_blaze = [(1, "a"), (5, "b"), (6, "b"), (5, "b")].into();
+    _range_map_blaze = RangeMapBlaze::from_iter([(1, "a"), (5, "b"), (6, "b"), (5, "b")]);
+    // #12 into / from slice T
+    // _range_map_blaze = [(1, "a"), (5, "b"), (6, "b"), (5, "b")][1..=2].into();
+    // _range_map_blaze = RangeMapBlaze::from_iter([(1, "a"), (5, "b"), (6, "b"), (5, "b")].as_slice());
+    //#13 collect / from_iter range
+    _range_map_blaze = [(5..=6, "a"), (1..=5, "b")].into_iter().collect();
+    _range_map_blaze = RangeMapBlaze::from_iter([(5..=6, "a"), (1..=5, "b")]);
+    // #16 into / from iter (T,T) + SortedDisjoint
+    _range_map_blaze = _range_map_blaze.range_values().into_range_map_blaze();
+    _range_map_blaze = RangeMapBlaze::from_sorted_disjoint_map(_range_map_blaze.range_values());
 
-// //     Ok(())
-// // }
+    let sorted_starts = AssumeSortedStartsMap::new(
+        [
+            RangeValue::new_unique(5..=6, "a", None),
+            RangeValue::new_unique(1..=5, "b", None),
+        ]
+        .into_iter(),
+    );
+    let mut _sorted_disjoint_iter;
+    _sorted_disjoint_iter = UnionIterMap::new(sorted_starts);
+    // // #10 collect / from_iter T
+    let arr0 = [
+        RangeValue::new_unique(1..=1, "a", None),
+        RangeValue::new_unique(5..=5, "b", None),
+        RangeValue::new_unique(6..=6, "b", None),
+        RangeValue::new_unique(5..=5, "b", None),
+    ];
+    let mut _sorted_disjoint_iter: UnionIterMap<_, _, _, _> = arr0.into_iter().collect();
+    let arr0 = [
+        RangeValue::new_unique(1..=1, "a", None),
+        RangeValue::new_unique(5..=5, "b", None),
+        RangeValue::new_unique(6..=6, "b", None),
+        RangeValue::new_unique(5..=5, "b", None),
+    ];
+    _sorted_disjoint_iter = UnionIterMap::from_iter(arr0);
+    // // // #11 into / from array T
+    // _sorted_disjoint_iter = arr0.into(); // decided not to implement
+    // _sorted_disjoint_iter = UnionIterMap::from(arr0); // decided not to implement
+    // // // #12 into / from slice T
+    // _sorted_disjoint_iter = [(1, "a"), (5, "b"), (6, "b"), (5, "b")][1..=2].into();
+    // _sorted_disjoint_iter = UnionIterMap::from([(1, "a"), (5, "b"), (6, "b"), (5, "b")].as_slice());
+    // // //#13 collect / from_iter range
+    // _sorted_disjoint_iter = [(5..=6, "a"), (1..=5, "b")].into_iter().collect();
+    // _sorted_disjoint_iter = UnionIterMap::from_iter([(5..=6, "a"), (1..=5, "b")]);
+    // // // #14 from into array range
+    // _sorted_disjoint_iter = [(5..=6, "a"), (1..=5, "b")].into();
+    // _sorted_disjoint_iter = UnionIterMap::from([(5..=6, "a"), (1..=5, "b")]);
+    // // // #15 from into slice range
+    // _sorted_disjoint_iter = [(5..=6, "a"), (1..=5, "b")][0..=1].into();
+    // _sorted_disjoint_iter = UnionIterMap::from([(5..=6, "a"), (1..=5, "b")].as_slice());
+    // // // #16 into / from iter (T,T) + SortedDisjoint
+    let mut _sorted_disjoint_iter: UnionIterMap<_, _, _, _> =
+        _range_map_blaze.range_values().collect();
+    _sorted_disjoint_iter = UnionIterMap::from_iter(_range_map_blaze.range_values());
+
+    Ok(())
+}
 
 // // #[test]
 // // fn map_debug_k_play() {
@@ -1811,9 +1835,9 @@ fn map_range_map_blaze_operators() {
 
 // // // fn map__some_fn() {
 // // //     let guaranteed = RangeMapBlaze::from_iter([1..=2, 3..=4, 5..=6]).into_ranges();
-// // //     let _range_set_int = RangeMapBlaze::from_sorted_disjoint_map(guaranteed);
+// // //     let _range_map_blaze = RangeMapBlaze::from_sorted_disjoint_map(guaranteed);
 // // //     let not_guaranteed = [1..=2, 3..=4, 5..=6].into_iter();
-// // //     let _range_set_int = RangeMapBlaze::from_sorted_disjoint_map(not_guaranteed);
+// // //     let _range_map_blaze = RangeMapBlaze::from_sorted_disjoint_map(not_guaranteed);
 // // // }
 
 // // // fn map__some_fn() {
