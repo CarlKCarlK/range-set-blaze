@@ -593,7 +593,7 @@ where
 {
     // Default is an empty iterator.
     fn default() -> Self {
-        Self::new([].into_iter())
+        Self::new([])
     }
 }
 
