@@ -537,7 +537,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100");
@@ -547,7 +547,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 ///```should_panic
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
 /// let b = CheckSortedDisjoint::from([2..=6,-10..=-5]);
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100");
@@ -579,9 +579,9 @@ where
     I: Iterator<Item = RangeInclusive<T>>,
 {
     /// Creates a new [`CheckSortedDisjoint`] from an iterator of ranges. See [`CheckSortedDisjoint`] for details and examples.
-    pub fn new(iter: I) -> Self {
+    pub fn new<J: IntoIterator<IntoIter = I>>(iter: J) -> Self {
         CheckSortedDisjoint {
-            iter,
+            iter: iter.into_iter(),
             prev_end: None,
             seen_none: false,
         }
