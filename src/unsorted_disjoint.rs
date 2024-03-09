@@ -157,7 +157,6 @@ where
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 
 /// Gives any iterator of ranges the [`SortedStarts`] trait without any checking.
-#[doc(hidden)]
 pub struct AssumeSortedStarts<T, I>
 where
     T: Integer,
@@ -176,6 +175,7 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>,
 {
+    /// Construct [`AssumeSortedStarts`] from a range iterator.
     pub fn new<J: IntoIterator<IntoIter = I>>(iter: J) -> Self {
         AssumeSortedStarts {
             iter: iter.into_iter(),

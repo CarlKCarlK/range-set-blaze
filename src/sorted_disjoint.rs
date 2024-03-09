@@ -12,9 +12,8 @@ use crate::{
     UnionIter,
 };
 
-/// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
+/// A trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
-#[doc(hidden)]
 pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> {}
 
 /// The trait used to mark iterators that provide ranges that are sorted by start and disjoint. Set operations on
