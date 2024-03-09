@@ -107,6 +107,7 @@ where
 /// | [`from_iter`][2]/[`collect`][2]             | ranges iterator              |                          |
 /// | [`from_slice`][5]                           | slice of integers            | Fast, but nightly-only  |
 /// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze`][3] | [`SortedDisjointMap`] iterator |               |
+///  cmk from sorted starts
 /// | [`from`][4] /[`into`][4]                    | array of integers            |                          |
 ///
 ///
@@ -492,7 +493,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     {
         let mut iter_with_len = SortedDisjointWithLenSoFarMap::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
-        RangeMapBlaze {
+        Self {
             btree_map,
             len: iter_with_len.len_so_far(),
         }
@@ -983,7 +984,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         let Some(last_entry) = self.btree_map.last_entry() else {
             // Left is empty
             self.len = T::SafeLen::zero();
-            return RangeMapBlaze {
+            return Self {
                 btree_map: new_btree,
                 len: old_len,
             };
@@ -1007,7 +1008,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         new_btree.insert(key, EndValue { end, value });
         let (a_len, b_len) = self.two_element_lengths(old_btree_len, &new_btree, old_len);
         self.len = a_len;
-        RangeMapBlaze {
+        Self {
             btree_map: new_btree,
             len: b_len,
         }
@@ -1021,10 +1022,10 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         old_len: <T as Integer>::SafeLen,
     ) -> (<T as Integer>::SafeLen, <T as Integer>::SafeLen) {
         if old_btree_len / 2 < new_btree.len() {
-            let a_len = RangeMapBlaze::btree_map_len(&mut self.btree_map);
+            let a_len = Self::btree_map_len(&mut self.btree_map);
             (a_len, old_len - a_len)
         } else {
-            let b_len = RangeMapBlaze::btree_map_len(new_btree);
+            let b_len = Self::btree_map_len(new_btree);
             (old_len - b_len, b_len)
         }
     }
@@ -1394,7 +1395,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     #[must_use]
     pub fn new() -> Self {
-        RangeMapBlaze {
+        Self {
             btree_map: BTreeMap::new(),
             len: <T as Integer>::SafeLen::zero(),
         }
@@ -1627,7 +1628,7 @@ where
         I: IntoIterator<Item = (T, &'a V)>,
     {
         let iter = iter.into_iter().map(|(x, r)| (x..=x, r));
-        RangeMapBlaze::from_iter(iter)
+        Self::from_iter(iter)
     }
 }
 
@@ -1658,7 +1659,7 @@ where
     {
         let iter = iter.into_iter();
         let union_iter_map = UnionIterMap::<'a, T, V, &V, _>::from_iter(iter);
-        RangeMapBlaze::from_sorted_disjoint_map(union_iter_map)
+        Self::from_sorted_disjoint_map(union_iter_map)
     }
 }
 
@@ -1688,7 +1689,7 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
             .non_zero_enumerate()
             .map(|(priority, (r, v))| RangeValue::new_unique(r.clone(), v, Some(priority)));
         let union_iter_map = UnionIterMap::<T, V, UniqueValue<V>, _>::from_iter(iter);
-        RangeMapBlaze::from_sorted_disjoint_map(union_iter_map)
+        Self::from_sorted_disjoint_map(union_iter_map)
     }
 }
 
@@ -1714,7 +1715,7 @@ impl<T: Integer, V: ValueOwned> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
         I: IntoIterator<Item = (T, V)>,
     {
         let iter = iter.into_iter().map(|(k, v)| (k..=k, v));
-        RangeMapBlaze::from_iter(iter)
+        Self::from_iter(iter)
     }
 }
 
