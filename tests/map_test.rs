@@ -1173,99 +1173,71 @@ fn map_test_pops() {
     assert!(map.is_empty());
 }
 
-// // #[test]
-// // fn map_eq() {
-// //     assert!(RangeMapBlaze::from_iter([0, 2]) > RangeMapBlaze::from_iter([0, 1]));
-// //     assert!(RangeMapBlaze::from_iter([0, 2]) > RangeMapBlaze::from_iter([0..=100]));
-// //     assert!(RangeMapBlaze::from_iter([2..=2]) > RangeMapBlaze::from_iter([1..=2]));
-// //     for use_0 in [false, true] {
-// //         for use_1 in [false, true] {
-// //             for use_2 in [false, true] {
-// //                 for use_3 in [false, true] {
-// //                     for use_4 in [false, true] {
-// //                         for use_5 in [false, true] {
-// //                             let mut a = RangeMapBlaze::new();
-// //                             let mut b = RangeMapBlaze::new();
-// //                             if use_0 {
-// //                                 a.insert(0);
-// //                             };
-// //                             if use_1 {
-// //                                 a.insert(1);
-// //                             };
-// //                             if use_2 {
-// //                                 a.insert(2);
-// //                             };
-// //                             if use_3 {
-// //                                 b.insert(0);
-// //                             };
-// //                             if use_4 {
-// //                                 b.insert(1);
-// //                             };
-// //                             if use_5 {
-// //                                 b.insert(2);
-// //                             };
-// //                             let a2: BTreeSet<_> = a.iter().collect();
-// //                             let b2: BTreeSet<_> = b.iter().collect();
-// //                             assert!((a == b) == (a2 == b2));
-// //                             println!("{a:?} <= {b:?}? RSI {}", a <= b);
-// //                             println!("{a:?} <= {b:?}? BTS {}", a2 <= b2);
-// //                             assert!((a <= b) == (a2 <= b2));
-// //                             assert!((a < b) == (a2 < b2));
-// //                         }
-// //                     }
-// //                 }
-// //             }
-// //         }
-// //     }
-// // }
+#[test]
+fn map_insert2() {
+    let map =
+        RangeMapBlaze::from_iter([(1..=2, 'a'), (4..=5, 'a'), (10..=20, 'a'), (30..=30, 'b')]);
 
-// // #[test]
-// // fn map_insert2() {
-// //     let set = RangeMapBlaze::from_iter([1..=2, 4..=5, 10..=20, 30..=30]);
-// //     for insert in 0..=31 {
-// //         println!("inserting  {insert}");
-// //         let mut a = set.clone();
-// //         let mut a2: BTreeSet<_> = a.iter().collect();
-// //         let b2 = a2.insert(insert);
-// //         let b = a.insert(insert);
-// //         assert_eq!(a, RangeMapBlaze::from_iter(a2.iter().cloned()));
-// //         assert_eq!(b, b2);
-// //     }
-// // }
+    for insert in 0..=31 {
+        println!("inserting  {insert}");
+        let mut a = map.clone();
+        let mut a2: BTreeMap<_, _> = a.iter().map(|(k, v)| (k, *v)).collect();
+        let b2 = a2.insert(insert, 'x');
+        let b = a.insert(insert, 'x');
+        assert_eq!(
+            a,
+            RangeMapBlaze::from_iter(a2.iter().map(|(k, v)| (*k, *v)))
+        );
+        assert_eq!(b, b2);
+    }
+}
 
-// // #[test]
-// // fn map_remove() {
-// //     let mut set = RangeMapBlaze::from_iter([1..=2, 4..=5, 10..=11]);
-// //     let len = set.len();
-// //     assert!(set.remove(4));
-// //     assert_eq!(set.len(), len - 1 as I32SafeLen);
-// //     assert_eq!(set, RangeMapBlaze::from_iter([1..=2, 5..=5, 10..=11]));
-// //     assert!(!set.remove(4));
-// //     assert_eq!(set.len(), len - 1 as I32SafeLen);
-// //     assert_eq!(set, RangeMapBlaze::from_iter([1..=2, 5..=5, 10..=11]));
-// //     assert!(set.remove(5));
-// //     assert_eq!(set.len(), len - 2 as I32SafeLen);
-// //     assert_eq!(set, RangeMapBlaze::from_iter([1..=2, 10..=11]));
+#[test]
+fn map_remove() {
+    // Initialize RangeMapBlaze with char values for simplicity
+    let mut map = RangeMapBlaze::from_iter([(1..=2, 'a'), (4..=5, 'b'), (10..=11, 'c')]);
+    let len = map.len() as I32SafeLen;
 
-// //     let mut set = RangeMapBlaze::from_iter([1..=2, 4..=5, 10..=100, 1000..=1000]);
-// //     let len = set.len();
-// //     assert!(!set.remove(0));
-// //     assert_eq!(set.len(), len);
-// //     assert!(!set.remove(3));
-// //     assert_eq!(set.len(), len);
-// //     assert!(set.remove(2));
-// //     assert_eq!(set.len(), len - 1 as I32SafeLen);
-// //     assert!(set.remove(1000));
-// //     assert_eq!(set.len(), len - 2 as I32SafeLen);
-// //     assert!(set.remove(10));
-// //     assert_eq!(set.len(), len - 3 as I32SafeLen);
-// //     assert!(set.remove(50));
-// //     assert_eq!(set.len(), len - 4 as I32SafeLen);
-// //     assert_eq!(
-// //         set,
-// //         RangeMapBlaze::from_iter([1..=1, 4..=5, 11..=49, 51..=100])
-// //     );
-// // }
+    // Assume remove affects only a single key and returns true if the key was found and removed
+    assert_eq!(map.remove(4), Some('b')); // Removing a key within a range may adjust the range
+    assert_eq!(map.len(), len - 1);
+    // The range 4..=5 with 'b' is adjusted to 5..=5 after removing 4
+    assert_eq!(
+        map,
+        RangeMapBlaze::from_iter([(1..=2, 'a'), (5..=5, 'b'), (10..=11, 'c'),])
+    );
+    assert_eq!(map.remove(5), Some('b'));
+
+    assert_eq!(map.len(), len - 2 as I32SafeLen);
+    assert_eq!(
+        map,
+        RangeMapBlaze::from_iter([(1..=2, 'a'), (10..=11, 'c'),])
+    );
+
+    let mut map = RangeMapBlaze::from_iter([
+        (1..=2, 'a'),
+        (4..=5, 'b'),
+        (10..=100, 'c'),
+        (1000..=1000, 'd'),
+    ]);
+    let len = map.len() as I32SafeLen;
+    assert_eq!(map.remove(0), None);
+    assert_eq!(map.len(), len);
+    assert_eq!(map.remove(3), None);
+    assert_eq!(map.len(), len);
+    assert_eq!(map.remove(2), Some('a'));
+    assert_eq!(map.len(), len - 1 as I32SafeLen);
+    assert_eq!(map.remove(1000), Some('d'));
+    assert_eq!(map.len(), len - 2 as I32SafeLen);
+    assert_eq!(map.remove(10), Some('c'));
+    assert_eq!(map.len(), len - 3 as I32SafeLen);
+    assert_eq!(map.remove(50), Some('c'));
+    assert_eq!(map.len(), len - 4 as I32SafeLen);
+    assert_eq!(
+        map,
+        RangeMapBlaze::from_iter([(1..=1, 'a'), (4..=5, 'b'), (11..=49, 'c'), (51..=100, 'c'),])
+    );
+}
 
 // // #[test]
 // // fn map_remove2() {
