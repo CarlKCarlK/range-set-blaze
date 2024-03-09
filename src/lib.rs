@@ -224,7 +224,8 @@ pub trait Integer:
 /// | [`from_iter`][2]/[`collect`][2]             | ranges iterator              |                          |
 /// | [`from_slice`][5]                           | slice of integers            | Fast, but nightly-only  |
 /// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze`][3] | [`SortedDisjoint`] iterator |               |
-/// | [`from`][4] /[`into`][4]                    | array of integers            |                          |
+/// | [`from_sorted_starts`][4]                   | [`SortedStarts`] iterator    |                          |
+/// | [`from`][5] /[`into`][5]                    | array of integers            |                          |
 ///
 ///
 /// [`BTreeMap`]: alloc::collections::BTreeMap
@@ -233,8 +234,9 @@ pub trait Integer:
 /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
 /// [2]: struct.RangeSetBlaze.html#impl-FromIterator<RangeInclusive<T>>-for-RangeSetBlaze<T>
 /// [3]: RangeSetBlaze::from_sorted_disjoint
-/// [4]: RangeSetBlaze::from
-/// [5]: RangeSetBlaze::from_slice()
+/// [4]: RangeSetBlaze::from_sorted_starts
+/// [5]: RangeSetBlaze::from
+/// [6]: RangeSetBlaze::from_slice()
 ///
 /// # Constructor Performance
 ///
@@ -558,10 +560,30 @@ impl<T: Integer> RangeSetBlaze<T> {
     {
         let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
-        RangeSetBlaze {
+        Self {
             btree_map,
             len: iter_with_len.len_so_far(),
         }
+    }
+
+    /// Create a [`RangeSetBlaze`] from a [`SortedStarts`] iterator.
+    ///
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a0 = RangeSetBlaze::from_sorted_starts(AssumeSortedStarts::new([-10..=-5, -7..=2]));
+    /// let a1: RangeSetBlaze<i32> = AssumeSortedStarts::new([-10..=-5, -7..=2]).into_range_set_blaze();
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=2");
+    /// ```
+    pub fn from_sorted_starts<I>(iter: I) -> Self
+    where
+        I: SortedStarts<T>,
+    {
+        Self::from_sorted_disjoint(UnionIter::new(iter))
     }
 
     /// Creates a [`RangeSetBlaze`] from a collection of integers. It is typically many
@@ -605,7 +627,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 
     fn _len_slow(&self) -> <T as Integer>::SafeLen {
-        RangeSetBlaze::btree_map_len(&self.btree_map)
+        Self::btree_map_len(&self.btree_map)
     }
 
     /// Moves all elements from `other` into `self`, leaving `other` empty.
@@ -725,7 +747,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(set.is_superset(&sub), true);
     /// ```
     #[must_use]
-    pub fn is_superset(&self, other: &RangeSetBlaze<T>) -> bool {
+    pub fn is_superset(&self, other: &Self) -> bool {
         other.is_subset(self)
     }
 
@@ -770,7 +792,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     #[must_use]
     #[inline]
-    pub fn is_disjoint(&self, other: &RangeSetBlaze<T>) -> bool {
+    pub fn is_disjoint(&self, other: &Self) -> bool {
         self.ranges().is_disjoint(other.ranges())
     }
 
@@ -883,7 +905,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         assert!(start <= end);
 
         let bounds = CheckSortedDisjoint::from([start..=end]);
-        RangeSetBlaze::from_sorted_disjoint(self.ranges() & bounds).into_iter()
+        Self::from_sorted_disjoint(self.ranges() & bounds).into_iter()
     }
 
     /// Adds a range to the set.
@@ -1060,14 +1082,14 @@ impl<T: Integer> RangeSetBlaze<T> {
 
         // Find the length of the smaller map and then length of self & b.
         let b_len = if self.btree_map.len() < b.len() {
-            self.len = RangeSetBlaze::btree_map_len(&self.btree_map);
+            self.len = Self::btree_map_len(&self.btree_map);
             old_len - self.len
         } else {
-            let b_len = RangeSetBlaze::btree_map_len(&b);
+            let b_len = Self::btree_map_len(&b);
             self.len = old_len - b_len;
             b_len
         };
-        RangeSetBlaze {
+        Self {
             btree_map: b,
             len: b_len,
         }
@@ -1235,7 +1257,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     #[must_use]
     pub fn new() -> Self {
-        RangeSetBlaze {
+        Self {
             btree_map: BTreeMap::new(),
             len: <T as Integer>::SafeLen::zero(),
         }
@@ -1484,7 +1506,7 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetBlaze<T> {
         I: IntoIterator<Item = RangeInclusive<T>>,
     {
         let union_iter: UnionIter<T, _> = iter.into_iter().collect();
-        RangeSetBlaze::from_sorted_disjoint(union_iter)
+        Self::from_sorted_disjoint(union_iter)
     }
 }
 
@@ -1510,7 +1532,7 @@ impl<'a, T: Integer + 'a> FromIterator<&'a RangeInclusive<T>> for RangeSetBlaze<
         I: IntoIterator<Item = &'a RangeInclusive<T>>,
     {
         let union_iter: UnionIter<T, _> = iter.into_iter().cloned().collect();
-        RangeSetBlaze::from_sorted_disjoint(union_iter)
+        Self::from_sorted_disjoint(union_iter)
     }
 }
 
@@ -1536,7 +1558,7 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     }
     #[cfg(feature = "from_slice")]
     fn from(arr: [T; N]) -> Self {
-        RangeSetBlaze::from_slice(arr)
+        Self::from_slice(arr)
     }
 }
 

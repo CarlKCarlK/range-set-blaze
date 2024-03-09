@@ -8,7 +8,7 @@ use crate::{
     Integer, SortedStarts,
 };
 
-/// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
+/// Turns any number of [`SortedStarts`] iterators into a [`SortedDisjoint`] iterator of their union,
 /// i.e., all the integers in any input iterator, as sorted & disjoint ranges. Uses [`Merge`]
 /// or [`KMerge`].
 ///
@@ -18,20 +18,32 @@ use crate::{
 ///
 /// # Examples
 ///
+/// ## For [`SortedDisjoint`]
+///
 /// ```
 /// use itertools::Itertools;
 /// use range_set_blaze::{UnionIter, Merge, SortedDisjoint, CheckSortedDisjoint};
 ///
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = UnionIter::new(Merge::new(a, b));
 /// assert_eq!(union.to_string(), "1..=100");
 ///
 /// // Or, equivalently:
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100")
+/// ```
+///
+/// ## For [`SortedStarts`]
+///
+/// ```
+/// use itertools::Itertools;
+/// use range_set_blaze::{AssumeSortedStarts, SortedDisjoint, UnionIter};
+///
+/// let a = UnionIter::new(AssumeSortedStarts::new([1..=5, 2..=100]));
+/// assert_eq!(a.to_string(), "1..=100");
 /// ```
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]

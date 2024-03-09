@@ -18,13 +18,13 @@ use crate::{Integer, SortedDisjoint, SortedStarts};
 /// use itertools::Itertools;
 /// use range_set_blaze::{UnionIter, Merge, SortedDisjoint, CheckSortedDisjoint};
 ///
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = UnionIter::new(Merge::new(a, b));
 /// assert_eq!(union.to_string(), "1..=100");
 ///
 /// // Or, equivalently:
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let c = a | b;
 /// assert_eq!(c.to_string(), "1..=100")
@@ -102,16 +102,16 @@ where
 /// use itertools::Itertools;
 /// use range_set_blaze::{UnionIter, KMerge, MultiwaySortedDisjoint, SortedDisjoint, CheckSortedDisjoint};
 ///
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
-/// let b = CheckSortedDisjoint::new(vec![2..=6].into_iter());
-/// let c = CheckSortedDisjoint::new(vec![-1..=-1].into_iter());
+/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+/// let b = CheckSortedDisjoint::new(vec![2..=6]);
+/// let c = CheckSortedDisjoint::new(vec![-1..=-1]);
 /// let union = UnionIter::new(KMerge::new([a, b, c]));
 /// assert_eq!(union.to_string(), "-1..=-1, 1..=100");
 ///
 /// // Or, equivalently:
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
-/// let b = CheckSortedDisjoint::new(vec![2..=6].into_iter());
-/// let c = CheckSortedDisjoint::new(vec![-1..=-1].into_iter());
+/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+/// let b = CheckSortedDisjoint::new(vec![2..=6]);
+/// let c = CheckSortedDisjoint::new(vec![-1..=-1]);
 /// let union = [a, b, c].union();
 /// assert_eq!(union.to_string(), "-1..=-1, 1..=100");
 /// ```

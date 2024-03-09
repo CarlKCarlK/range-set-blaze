@@ -614,7 +614,7 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     _range_set_int = _range_set_int.ranges().into_range_set_blaze();
     _range_set_int = RangeSetBlaze::from_sorted_disjoint(_range_set_int.ranges());
 
-    let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10].into_iter());
+    let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10]);
     let mut _sorted_disjoint_iter;
     _sorted_disjoint_iter = UnionIter::new(sorted_starts);
     // #10 collect / from_iter T
@@ -1112,7 +1112,7 @@ fn multiway2() {
 fn check_sorted_disjoint() {
     use range_set_blaze::CheckSortedDisjoint;
 
-    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
     let b = CheckSortedDisjoint::from([2..=6]);
     let c = a | b;
 
@@ -1156,7 +1156,7 @@ fn len_demo() {
 fn union_iter() {
     use range_set_blaze::{CheckSortedDisjoint, UnionIter};
 
-    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
     let b = CheckSortedDisjoint::from([2..=6]);
     let c = UnionIter::new(AssumeSortedStarts::new(
         a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
@@ -1164,7 +1164,7 @@ fn union_iter() {
     assert_eq!(c.to_string(), "1..=100");
 
     // Or, equivalently:
-    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
     let b = CheckSortedDisjoint::from([2..=6]);
     let c = SortedDisjoint::union(a, b);
     assert_eq!(c.to_string(), "1..=100")

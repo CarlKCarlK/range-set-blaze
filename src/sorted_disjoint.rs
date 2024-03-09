@@ -13,9 +13,8 @@ use crate::{
     UnionIter,
 };
 
-/// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
+/// A trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
-#[doc(hidden)]
 pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> {}
 
 /// The trait used to mark iterators that provide ranges that are sorted by start and disjoint. Set operations on
@@ -538,7 +537,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100");
@@ -548,7 +547,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 ///```should_panic
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
 /// let b = CheckSortedDisjoint::from([2..=6,-10..=-5]);
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100");
@@ -581,9 +580,9 @@ where
     I: Iterator<Item = RangeInclusive<T>>,
 {
     /// Creates a new [`CheckSortedDisjoint`] from an iterator of ranges. See [`CheckSortedDisjoint`] for details and examples.
-    pub fn new(iter: I) -> Self {
+    pub fn new<J: IntoIterator<IntoIter = I>>(iter: J) -> Self {
         CheckSortedDisjoint {
-            iter,
+            iter: iter.into_iter(),
             prev_end: None,
             seen_none: false,
         }
@@ -596,7 +595,7 @@ where
 {
     // Default is an empty iterator.
     fn default() -> Self {
-        Self::new([].into_iter())
+        Self::new([])
     }
 }
 
