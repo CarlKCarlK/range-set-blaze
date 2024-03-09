@@ -614,7 +614,7 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     _range_set_int = _range_set_int.ranges().into_range_set_blaze();
     _range_set_int = RangeSetBlaze::from_sorted_disjoint(_range_set_int.ranges());
 
-    let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10].into_iter());
+    let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10]);
     let mut _sorted_disjoint_iter;
     _sorted_disjoint_iter = UnionIter::new(sorted_starts);
     // #10 collect / from_iter T

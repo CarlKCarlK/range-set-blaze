@@ -176,8 +176,10 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>,
 {
-    pub fn new(iter: I) -> Self {
-        AssumeSortedStarts { iter }
+    pub fn new<J: IntoIterator<IntoIter = I>>(iter: J) -> Self {
+        AssumeSortedStarts {
+            iter: iter.into_iter(),
+        }
     }
 }
 

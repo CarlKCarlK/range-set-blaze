@@ -1249,7 +1249,7 @@ fn union_iter_coverage_0() {
 
 #[test]
 fn unsorted_disjoint_coverage_0() {
-    let a = AssumeSortedStarts::new([1..=2, 5..=100].into_iter());
+    let a = AssumeSortedStarts::new([1..=2, 5..=100]);
     assert!(format!("{a:?}").starts_with("AssumeSortedStarts"));
 }
 
