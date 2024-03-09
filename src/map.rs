@@ -950,59 +950,84 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         Some(value)
     }
 
-    // /// Splits the collection into two at the value. Returns a new collection
-    // /// with all elements greater than or equal to the value.
-    // ///
-    // /// # Examples
-    // ///
-    // /// Basic usage:
-    // ///
-    // /// ```
-    // /// use range_set_blaze::RangeMapBlaze;
-    // ///
-    // /// let mut a = RangeMapBlaze::new();
-    // /// a.insert(1);
-    // /// a.insert(2);
-    // /// a.insert(3);
-    // /// a.insert(17);
-    // /// a.insert(41);
-    // ///
-    // /// let b = a.split_off(3);
-    // ///
-    // /// assert_eq!(a, RangeMapBlaze::from_iter([1, 2]));
-    // /// assert_eq!(b, RangeMapBlaze::from_iter([3, 17, 41]));
-    // /// ```
-    // cmk
-    // pub fn split_off(&mut self, value: T) -> Self {
-    //     assert!(
-    //         value <= T::safe_max_value(),
-    //         "value must be <= T::safe_max_value()"
-    //     );
-    //     let old_len = self.len;
-    //     let mut b = self.btree_map.split_off(&value);
-    //     if let Some(mut last_entry) = self.btree_map.last_entry() {
-    //         // Can assume start strictly less than value
-    //         let end_value_ref = last_entry.get_mut();
-    //         if value <= end_value_ref.end {
-    //             b.insert(value, *end_value_ref);
-    //             end_value_ref.end = value - T::one();
-    //         }
-    //     }
+    /// Splits the collection into two at the value. Returns a new collection
+    /// with all elements greater than or equal to the value.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let mut a = RangeMapBlaze::new();
+    /// a.insert(1);
+    /// a.insert(2);
+    /// a.insert(3);
+    /// a.insert(17);
+    /// a.insert(41);
+    ///
+    /// let b = a.split_off(3);
+    ///
+    /// assert_eq!(a, RangeMapBlaze::from_iter([1, 2]));
+    /// assert_eq!(b, RangeMapBlaze::from_iter([3, 17, 41]));
+    /// ```
+    pub fn split_off(&mut self, key: T) -> Self {
+        assert!(
+            key <= T::safe_max_value(),
+            "value must be <= T::safe_max_value()"
+        );
+        let old_len = self.len;
+        let old_btree_len = self.btree_map.len();
+        let mut new_btree = self.btree_map.split_off(&key);
+        let Some(last_entry) = self.btree_map.last_entry() else {
+            // Left is empty
+            self.len = T::SafeLen::zero();
+            return RangeMapBlaze {
+                btree_map: new_btree,
+                len: old_len,
+            };
+        };
 
-    //     // Find the length of the smaller map and then length of self & b.
-    //     let b_len = if self.btree_map.len() < b.len() {
-    //         self.len = RangeMapBlaze::btree_map_len(&self.btree_map);
-    //         old_len - self.len
-    //     } else {
-    //         let b_len = RangeMapBlaze::btree_map_len(&b);
-    //         self.len = old_len - b_len;
-    //         b_len
-    //     };
-    //     RangeMapBlaze {
-    //         btree_map: b,
-    //         len: b_len,
-    //     }
-    // }
+        let end_value = last_entry.get();
+        let end = end_value.end;
+        if end < key {
+            // The split is clean
+            let (a_len, b_len) = self.two_element_lengths(old_btree_len, &new_btree, old_len);
+            self.len = a_len;
+            return RangeMapBlaze {
+                btree_map: new_btree,
+                len: b_len,
+            };
+        }
+
+        // The split is not clean, so we must move some keys from the end of self to the start of b.
+        let value = end_value.value.borrow_clone();
+        last_entry.into_mut().end = key - T::one();
+        new_btree.insert(key, EndValue { end, value });
+        let (a_len, b_len) = self.two_element_lengths(old_btree_len, &new_btree, old_len);
+        self.len = a_len;
+        RangeMapBlaze {
+            btree_map: new_btree,
+            len: b_len,
+        }
+    }
+
+    // Find the len of the smaller btree_map and then the element len of self & b.
+    fn two_element_lengths(
+        &mut self,
+        old_btree_len: usize,
+        new_btree: &BTreeMap<T, EndValue<T, V>>,
+        old_len: <T as Integer>::SafeLen,
+    ) -> (<T as Integer>::SafeLen, <T as Integer>::SafeLen) {
+        if old_btree_len / 2 < new_btree.len() {
+            let a_len = RangeMapBlaze::btree_map_len(&mut self.btree_map);
+            (a_len, old_len - a_len)
+        } else {
+            let b_len = RangeMapBlaze::btree_map_len(new_btree);
+            (old_len - b_len, b_len)
+        }
+    }
 
     #[allow(dead_code)] // cmk
     fn btree_map_len(btree_map: &BTreeMap<T, EndValue<T, V>>) -> T::SafeLen {

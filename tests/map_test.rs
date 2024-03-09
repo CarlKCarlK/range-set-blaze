@@ -1239,53 +1239,86 @@ fn map_remove() {
     );
 }
 
-// // #[test]
-// // fn map_remove2() {
-// //     let set = RangeMapBlaze::from_iter([1..=2, 4..=5, 10..=20, 30..=30]);
-// //     for remove in 0..=31 {
-// //         println!("removing  {remove}");
-// //         let mut a = set.clone();
-// //         let mut a2: BTreeSet<_> = a.iter().collect();
-// //         let b2 = a2.remove(&remove);
-// //         let b = a.remove(remove);
-// //         assert_eq!(a, RangeMapBlaze::from_iter(a2.iter().cloned()));
-// //         assert_eq!(b, b2);
-// //     }
-// //     let set = RangeMapBlaze::new();
-// //     for remove in 0..=0 {
-// //         println!("removing  {remove}");
-// //         let mut a = set.clone();
-// //         let mut a2: BTreeSet<_> = a.iter().collect();
-// //         let b2 = a2.remove(&remove);
-// //         let b = a.remove(remove);
-// //         assert_eq!(a, RangeMapBlaze::from_iter(a2.iter().cloned()));
-// //         assert_eq!(b, b2);
-// //     }
-// // }
+#[test]
+fn map_remove2() {
+    // Initialize RangeMapBlaze with char values
+    let map =
+        RangeMapBlaze::from_iter([(1..=2, 'a'), (4..=5, 'b'), (10..=20, 'c'), (30..=30, 'd')]);
 
-// // #[test]
-// // fn map_split_off() {
-// //     let set = RangeMapBlaze::from_iter([1..=2, 4..=5, 10..=20, 30..=30]);
-// //     for split in 0..=31 {
-// //         println!("splitting at {split}");
-// //         let mut a = set.clone();
-// //         let mut a2: BTreeSet<_> = a.iter().collect();
-// //         let b2 = a2.split_off(&split);
-// //         let b = a.split_off(split);
-// //         assert_eq!(a, RangeMapBlaze::from_iter(a2.iter().cloned()));
-// //         assert_eq!(b, RangeMapBlaze::from_iter(b2.iter().cloned()));
-// //     }
-// //     let set = RangeMapBlaze::new();
-// //     for split in 0..=0 {
-// //         println!("splitting at {split}");
-// //         let mut a = set.clone();
-// //         let mut a2: BTreeSet<_> = a.iter().collect();
-// //         let b2 = a2.split_off(&split);
-// //         let b = a.split_off(split);
-// //         assert_eq!(a, RangeMapBlaze::from_iter(a2.iter().cloned()));
-// //         assert_eq!(b, RangeMapBlaze::from_iter(b2.iter().cloned()));
-// //     }
-// // }
+    for remove in 0..=31 {
+        println!("removing  {remove}");
+        let mut a = map.clone();
+        let mut a2: BTreeMap<_, _> = a.iter().map(|(k, v)| (k, *v)).collect();
+        // In a map, remove operation returns the value if the key was present
+        let b2 = a2.remove(&remove);
+        let b = a.remove(remove);
+        assert_eq!(
+            a,
+            RangeMapBlaze::from_iter(a2.iter().map(|(&k, &v)| (k, v)))
+        );
+        assert_eq!(b, b2);
+    }
+    // Testing with an empty RangeMapBlaze
+    let map: RangeMapBlaze<_, _> = RangeMapBlaze::new();
+
+    for remove in 0..=0 {
+        println!("removing  {remove}");
+        let mut a: RangeMapBlaze<_, char> = map.clone();
+        let mut a2: BTreeMap<_, _> = a.iter().map(|(k, v)| (k, *v)).collect();
+        let b2 = a2.remove(&remove);
+        let b = a.remove(remove);
+        assert_eq!(
+            a,
+            RangeMapBlaze::from_iter(a2.iter().map(|(&k, &v)| (k, v)))
+        );
+        assert_eq!(b, b2);
+    }
+}
+
+#[test]
+fn map_split_off() {
+    // Initialize RangeMapBlaze with ranges and associated char values
+    let map =
+        RangeMapBlaze::from_iter([(1..=2, 'a'), (4..=5, 'b'), (10..=20, 'c'), (30..=30, 'd')]);
+
+    for split in 0..=31 {
+        println!("splitting at {split}");
+        let mut a = map.clone();
+        let mut a2: BTreeMap<_, _> = a.iter().map(|(k, v)| (k, *v)).collect();
+        // BTreeMap split_off method returns the part of the map with keys greater than or equal to split
+        let b2 = a2.split_off(&split);
+        // Assuming RangeMapBlaze.split_off behaves similarly and splits by key, not range
+        let b = a.split_off(split);
+
+        let a_iter = a2.iter().map(|(&k, &v)| (k, v)).filter(|&(k, _)| k < split);
+        let aa = RangeMapBlaze::from_iter(a_iter);
+        assert_eq!(a.len(), aa.len());
+        assert_eq!(a, aa);
+
+        let b2_iter = b2.iter().map(|(&k, &v)| (k, v));
+        let b2b = RangeMapBlaze::from_iter(b2_iter);
+        assert_eq!(b, b2b);
+    }
+
+    // Testing with an empty RangeMapBlaze
+    let map: RangeMapBlaze<_, _> = RangeMapBlaze::new();
+
+    for split in 0..=0 {
+        println!("splitting at {split}");
+        let mut a: range_set_blaze::RangeMapBlaze<_, char> = map.clone();
+        let mut a2: BTreeMap<_, _> = a.iter().map(|(k, v)| (k, *v)).collect();
+        let b2 = a2.split_off(&split);
+        let b = a.split_off(split);
+        assert_eq!(
+            a,
+            RangeMapBlaze::from_iter(a2.iter().map(|(&k, &v)| (k, v)).filter(|&(k, _)| k < split))
+        );
+        assert_eq!(
+            b,
+            RangeMapBlaze::from_iter(b2.iter().map(|(&k, &v)| (k, v)))
+        );
+    }
+}
 
 // // #[test]
 // // fn map_retrain() {

@@ -987,7 +987,61 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(a, RangeSetBlaze::from_iter([1, 2]));
     /// assert_eq!(b, RangeSetBlaze::from_iter([3, 17, 41]));
     /// ```
-    pub fn split_off(&mut self, value: T) -> Self {
+    pub fn split_off(&mut self, key: T) -> Self {
+        assert!(
+            key <= T::safe_max_value(),
+            "value must be <= T::safe_max_value()"
+        );
+        let old_len = self.len;
+        let old_btree_len = self.btree_map.len();
+        let mut new_btree = self.btree_map.split_off(&key);
+        let Some(last_entry) = self.btree_map.last_entry() else {
+            // Left is empty
+            self.len = T::SafeLen::zero();
+            return RangeSetBlaze {
+                btree_map: new_btree,
+                len: old_len,
+            };
+        };
+
+        let end = *last_entry.get();
+        if end < key {
+            // The split is clean
+            let (a_len, b_len) = self.two_element_lengths(old_btree_len, &new_btree, old_len);
+            self.len = a_len;
+            return RangeSetBlaze {
+                btree_map: new_btree,
+                len: b_len,
+            };
+        }
+
+        // The split is not clean, so we must move some keys from the end of self to the start of b.
+        *(last_entry.into_mut()) = key - T::one();
+        new_btree.insert(key, end);
+        let (a_len, b_len) = self.two_element_lengths(old_btree_len, &new_btree, old_len);
+        self.len = a_len;
+        RangeSetBlaze {
+            btree_map: new_btree,
+            len: b_len,
+        }
+    }
+
+    // Find the len of the smaller btree_map and then the element len of self & b.
+    fn two_element_lengths(
+        &mut self,
+        old_btree_len: usize,
+        new_btree: &BTreeMap<T, T>,
+        old_len: <T as Integer>::SafeLen,
+    ) -> (<T as Integer>::SafeLen, <T as Integer>::SafeLen) {
+        if old_btree_len / 2 < new_btree.len() {
+            let a_len = RangeSetBlaze::btree_map_len(&mut self.btree_map);
+            (a_len, old_len - a_len)
+        } else {
+            let b_len = RangeSetBlaze::btree_map_len(new_btree);
+            (old_len - b_len, b_len)
+        }
+    }
+    pub fn cmk_split_off(&mut self, value: T) -> Self {
         assert!(
             value <= T::safe_max_value(),
             "value must be <= T::safe_max_value()"
