@@ -5,6 +5,7 @@
 //! use range_set_blaze::prelude::*;
 //! ```
 pub use crate::{
-    intersection_dyn, union_dyn, CheckSortedDisjoint, DynSortedDisjoint, MultiwayRangeSetBlaze,
-    MultiwayRangeSetBlazeRef, MultiwaySortedDisjoint, RangeSetBlaze, SortedDisjoint,
+    intersection_dyn, union_dyn, AssumeSortedStarts, CheckSortedDisjoint, DynSortedDisjoint,
+    MultiwayRangeSetBlaze, MultiwayRangeSetBlazeRef, MultiwaySortedDisjoint, RangeSetBlaze,
+    SortedDisjoint, SortedStarts,
 };

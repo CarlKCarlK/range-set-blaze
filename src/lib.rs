@@ -192,7 +192,8 @@ pub trait Integer:
 /// | [`from_iter`][2]/[`collect`][2]             | ranges iterator              |                          |
 /// | [`from_slice`][5]                           | slice of integers            | Fast, but nightly-only  |
 /// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze`][3] | [`SortedDisjoint`] iterator |               |
-/// | [`from`][4] /[`into`][4]                    | array of integers            |                          |
+/// | [`from_sorted_starts`][4]                   | [`SortedStarts`] iterator    |                          |
+/// | [`from`][5] /[`into`][5]                    | array of integers            |                          |
 ///
 ///
 /// [`BTreeMap`]: alloc::collections::BTreeMap
@@ -201,8 +202,9 @@ pub trait Integer:
 /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
 /// [2]: struct.RangeSetBlaze.html#impl-FromIterator<RangeInclusive<T>>-for-RangeSetBlaze<T>
 /// [3]: RangeSetBlaze::from_sorted_disjoint
-/// [4]: RangeSetBlaze::from
-/// [5]: RangeSetBlaze::from_slice()
+/// [4]: RangeSetBlaze::from_sorted_starts
+/// [5]: RangeSetBlaze::from
+/// [6]: RangeSetBlaze::from_slice()
 ///
 /// # Constructor Performance
 ///
@@ -529,6 +531,26 @@ impl<T: Integer> RangeSetBlaze<T> {
             btree_map,
             len: iter_with_len.len_so_far(),
         }
+    }
+
+    /// Create a [`RangeSetBlaze`] from a [`SortedStarts`] iterator.
+    ///
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a0 = RangeSetBlaze::from_sorted_starts(AssumeSortedStarts::new([-10..=-5, -7..=2]));
+    /// let a1: RangeSetBlaze<i32> = AssumeSortedStarts::new([-10..=-5, -7..=2]).into_range_set_blaze();
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=2");
+    /// ```
+    pub fn from_sorted_starts<I>(iter: I) -> Self
+    where
+        I: SortedStarts<T>,
+    {
+        Self::from_sorted_disjoint(UnionIter::new(iter))
     }
 
     /// Creates a [`RangeSetBlaze`] from a collection of integers. It is typically many
