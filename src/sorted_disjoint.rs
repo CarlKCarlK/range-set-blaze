@@ -1,7 +1,4 @@
-use crate::{
-    impl_sorted_traits_and_ops, range_values::RangeValuesToRangesIter, IntoRangesIter, RangesIter,
-    SortedDisjointMap,
-};
+use crate::{impl_sorted_traits_and_ops, IntoRangesIter, RangeSetBlaze2, RangesIter};
 use alloc::format;
 use alloc::string::String;
 use core::{
@@ -525,6 +522,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         Self: Sized,
     {
         RangeSetBlaze::from_sorted_disjoint(self)
+    }
+
+    /// cmk doc
+    fn into_range_set_blaze2(self) -> RangeSetBlaze2<T>
+    where
+        Self: Sized,
+    {
+        RangeSetBlaze2::from_sorted_disjoint(self)
     }
 }
 

@@ -1,4 +1,4 @@
-use core::{fmt, ops::RangeInclusive};
+use core::{fmt, marker::PhantomData, ops::RangeInclusive};
 
 use alloc::rc::Rc;
 
@@ -6,7 +6,7 @@ use crate::{
     iter_map::KeysMap,
     prelude::*,
     range_values::{IntoRangeValuesIter, RangeValuesIter, RangeValuesToRangesIter},
-    Integer,
+    Integer, RangeValue, SortedStartsMap,
 };
 
 #[derive(Clone, Hash, Default, PartialEq)]
@@ -347,32 +347,33 @@ impl<T: Integer> RangeSetBlaze2<T> {
 
     // cmk make this and all similar method into iter instead of iter.
 
-    // // cmk10
-    // /// Create a [`RangeSetBlaze2`] from a [`SortedDisjoint`] iterator.
-    // ///
-    // /// *For more about constructors and performance, see [`RangeSetBlaze2` Constructors](struct.RangeSetBlaze2.html#rangesetblaze-constructors).*
-    // ///
-    // /// # Examples
-    // ///
-    // /// ```
-    // /// use range_set_blaze::prelude::*;
-    // ///
-    // /// let a0 = RangeSetBlaze2::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-    // /// let a1: RangeSetBlaze2<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
-    // /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
-    // /// ```
-    // pub fn from_sorted_disjoint<I>(iter: I) -> Self
-    // where
-    //     I: SortedDisjoint<T>,
-    // {
-    //     let range_set_map = RangeMapBlaze::from_sorted_disjoint_map(iter);
-    //     let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
-    //     let btree_map = BTreeMap::from_iter(&mut iter_with_len);
-    //     Self {
-    //         btree_map,
-    //         len: iter_with_len.len_so_far(),
-    //     }
-    // }
+    // cmk10
+    /// Create a [`RangeSetBlaze2`] from a [`SortedDisjoint`] iterator.
+    ///
+    /// *For more about constructors and performance, see [`RangeSetBlaze2` Constructors](struct.RangeSetBlaze2.html#rangesetblaze-constructors).*
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a0 = RangeSetBlaze2::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+    /// let a1: RangeSetBlaze2<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// ```
+    // cmk should this be iter_into?
+    pub fn from_sorted_disjoint<I>(iter: I) -> Self
+    where
+        I: SortedDisjoint<T>,
+    {
+        let iter_map = SortedDisjointToUnitMap {
+            iter,
+            phantom: PhantomData,
+        };
+
+        let range_set_map = RangeMapBlaze::from_sorted_disjoint_map(iter_map);
+        Self(range_set_map)
+    }
 
     // /// Create a [`RangeSetBlaze`] from a [`SortedStarts`] iterator.
     // ///
@@ -2121,3 +2122,40 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze2<T> {
 
 // impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 // impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
+
+struct SortedDisjointToUnitMap<'a, T, I>
+where
+    T: Integer,
+    I: SortedDisjoint<T>,
+{
+    iter: I,
+    phantom: PhantomData<&'a T>,
+}
+
+impl<'a, T, I> Iterator for SortedDisjointToUnitMap<'a, T, I>
+where
+    T: Integer,
+    I: SortedDisjoint<T>,
+{
+    type Item = RangeValue<'a, T, (), &'a ()>;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter
+            .next()
+            .map(|range| RangeValue::new(range, &(), None))
+    }
+}
+
+// cmk1 move these into the macro
+impl<'a, T, I> SortedStartsMap<'a, T, (), &'a ()> for SortedDisjointToUnitMap<'a, T, I>
+where
+    T: Integer + 'a, // Now, T is bounded by 'a instead of being 'static
+    I: SortedDisjoint<T>,
+{
+}
+
+impl<'a, T, I> SortedDisjointMap<'a, T, (), &'a ()> for SortedDisjointToUnitMap<'a, T, I>
+where
+    T: Integer + 'a, // 'a reflects a more scoped lifetime
+    I: SortedDisjoint<T>,
+{
+}

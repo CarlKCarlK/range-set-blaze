@@ -36,6 +36,7 @@ mod iter_map;
 mod lib2;
 mod map;
 mod merge;
+pub use crate::lib2::RangeSetBlaze2;
 mod not_iter;
 pub mod prelude;
 pub mod range_values;
