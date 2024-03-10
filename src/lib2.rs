@@ -1,4 +1,9 @@
-use core::{cmp::Ordering, fmt, marker::PhantomData, ops::RangeInclusive};
+use core::{
+    cmp::Ordering,
+    fmt,
+    marker::PhantomData,
+    ops::{Bound, RangeBounds, RangeInclusive},
+};
 
 use alloc::rc::Rc;
 
@@ -688,6 +693,7 @@ impl<T: Integer> RangeSetBlaze2<T> {
     // /// }
     // /// assert_eq!(Some(5), set.range(4..).next());
     // /// ```
+    // cmk1
     // pub fn range<R>(&self, range: R) -> IntoIter<T>
     // where
     //     R: RangeBounds<T>,
@@ -1111,28 +1117,27 @@ impl<T: Integer> RangeSetBlaze2<T> {
         self.0.range_values_len()
     }
 
-    // cmk100
-    //     /// Retains only the elements specified by the predicate.
-    //     ///
-    //     /// In other words, remove all integers `e` for which `f(&e)` returns `false`.
-    //     /// The integer elements are visited in ascending order.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut set = RangeSetBlaze2::from_iter([1..=6]);
-    //     /// // Keep only the even numbers.
-    //     /// set.retain(|k| k % 2 == 0);
-    //     /// assert_eq!(set, RangeSetBlaze2::from_iter([2, 4, 6]));
-    //     /// ```
-    //     pub fn retain<F>(&mut self, mut f: F)
-    //     where
-    //         F: FnMut(&T) -> bool,
-    //     {
-    //         *self = self.iter().filter(|v| f(v)).collect();
-    //     }
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// In other words, remove all integers `e` for which `f(&e)` returns `false`.
+    /// The integer elements are visited in ascending order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut set = RangeSetBlaze2::from_iter([1..=6]);
+    /// // Keep only the even numbers.
+    /// set.retain(|k| k % 2 == 0);
+    /// assert_eq!(set, RangeSetBlaze2::from_iter([2, 4, 6]));
+    /// ```
+    pub fn retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&T) -> bool,
+    {
+        *self = self.iter().filter(|v| f(v)).collect();
+    }
 }
 
 // We create a RangeSetBlaze2 from an iterator of integers or integer ranges by
