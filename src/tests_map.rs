@@ -1126,7 +1126,7 @@ fn map_missing_doctest_ops() {
 //     set.insert(2);
 //     assert_eq!(set.last(), Some(2));
 
-//     assert_eq!(a.len(), a._len_slow());
+//     assert_eq!(a.len(), a.len_slow());
 
 //     let mut a = RangeMapBlaze::from_iter([1..=3]);
 //     let mut b = RangeMapBlaze::from_iter([3..=5]);

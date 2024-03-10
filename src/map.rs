@@ -540,7 +540,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     //     T::from_slice(slice)
     // }
 
-    fn _len_slow(&self) -> <T as Integer>::SafeLen {
+    pub(crate) fn len_slow(&self) -> <T as Integer>::SafeLen {
         RangeMapBlaze::btree_map_len(&self.btree_map)
     }
 
@@ -1038,51 +1038,21 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         )
     }
 
-    // /// Removes and returns the element in the set, if any, that is equal to
-    // /// the value.
-    // ///
-    // /// # Examples
-    // ///
-    // /// ```
-    // /// use range_set_blaze::RangeMapBlaze;
-    // ///
-    // /// let mut set = RangeMapBlaze::from_iter([1, 2, 3]);
-    // /// assert_eq!(set.take(2), Some(2));
-    // /// assert_eq!(set.take(2), None);
-    // /// ```
-    // cmk
-    // pub fn take(&mut self, value: T) -> Option<T, V, VR> {
-    //     if self.remove(value) {
-    //         Some(value)
-    //     } else {
-    //         None
-    //     }
-    // }
-
-    /// Adds a value to the set, replacing the existing element, if any, that is
-    /// equal to the value. Returns the replaced element.
-    ///
-    /// Note: This is very similar to `insert`. It is included for consistency with [`BTreeSet`].
-    ///
-    /// [`BTreeSet`]: alloc::collections::BTreeSet
+    /// Removes and returns the element in the set, if any, that is equal to
+    /// the value.
     ///
     /// # Examples
     ///
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let mut set = RangeMapBlaze::new();
-    /// assert!(set.replace(5).is_none());
-    /// assert!(set.replace(5).is_some());
+    /// let mut set = RangeMapBlaze::from_iter([1, 2, 3]);
+    /// assert_eq!(set.take(2), Some(2));
+    /// assert_eq!(set.take(2), None);
     /// ```
-    // cmk
-    //pub fn replace(&mut self, value: T) -> Option<T> {
-    //     if self.insert(value) {
-    //         None
-    //     } else {
-    //         Some(value)
-    //     }
-    // }
+    pub fn take(&mut self, key: T) -> Option<V> {
+        self.remove(key)
+    }
 
     // fn internal_add_chatgpt(&mut self, range: RangeInclusive<T, V, VR>) {
     //     let (start, end) = range.into_inner();

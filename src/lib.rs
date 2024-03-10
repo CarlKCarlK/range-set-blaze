@@ -627,7 +627,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         T::from_slice(slice)
     }
 
-    fn _len_slow(&self) -> <T as Integer>::SafeLen {
+    fn len_slow(&self) -> <T as Integer>::SafeLen {
         Self::btree_map_len(&self.btree_map)
     }
 

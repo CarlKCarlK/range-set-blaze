@@ -345,7 +345,7 @@ impl<T: Integer> RangeSetBlaze2<T> {
 
     // cmk make this and all similar method into iter instead of iter.
 
-    // // cmk1000000000 stopped here will working on lib.rs
+    // // cmk10
     // /// Create a [`RangeSetBlaze2`] from a [`SortedDisjoint`] iterator.
     // ///
     // /// *For more about constructors and performance, see [`RangeSetBlaze2` Constructors](struct.RangeSetBlaze2.html#rangesetblaze-constructors).*
@@ -432,176 +432,168 @@ impl<T: Integer> RangeSetBlaze2<T> {
     //         T::from_slice(slice)
     //     }
 
-    //     fn _len_slow(&self) -> <T as Integer>::SafeLen {
-    //         Self::btree_map_len(&self.btree_map)
-    //     }
+    fn len_slow(&self) -> <T as Integer>::SafeLen {
+        self.0.len_slow()
+    }
 
-    //     /// Moves all elements from `other` into `self`, leaving `other` empty.
-    //     ///
-    //     /// # Performance
-    //     /// It adds the integers in `other` to `self` in O(n log m) time, where n is the number of ranges in `other`
-    //     /// and m is the number of ranges in `self`.
-    //     /// When n is large, consider using `|` which is O(n+m) time.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut a = RangeSetBlaze2::from_iter([1..=3]);
-    //     /// let mut b = RangeSetBlaze2::from_iter([3..=5]);
-    //     ///
-    //     /// a.append(&mut b);
-    //     ///
-    //     /// assert_eq!(a.len(), 5usize);
-    //     /// assert_eq!(b.len(), 0usize);
-    //     ///
-    //     /// assert!(a.contains(1));
-    //     /// assert!(a.contains(2));
-    //     /// assert!(a.contains(3));
-    //     /// assert!(a.contains(4));
-    //     /// assert!(a.contains(5));
-    //     ///
-    //     /// ```
-    //     pub fn append(&mut self, other: &mut Self) {
-    //         for range in other.ranges() {
-    //             self.internal_add(range);
-    //         }
-    //         other.clear();
-    //     }
+    /// Moves all elements from `other` into `self`, leaving `other` empty.
+    ///
+    /// # Performance
+    /// It adds the integers in `other` to `self` in O(n log m) time, where n is the number of ranges in `other`
+    /// and m is the number of ranges in `self`.
+    /// When n is large, consider using `|` which is O(n+m) time.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut a = RangeSetBlaze2::from_iter([1..=3]);
+    /// let mut b = RangeSetBlaze2::from_iter([3..=5]);
+    ///
+    /// a.append(&mut b);
+    ///
+    /// assert_eq!(a.len(), 5usize);
+    /// assert_eq!(b.len(), 0usize);
+    ///
+    /// assert!(a.contains(1));
+    /// assert!(a.contains(2));
+    /// assert!(a.contains(3));
+    /// assert!(a.contains(4));
+    /// assert!(a.contains(5));
+    ///
+    /// ```
+    pub fn append(&mut self, other: &mut Self) {
+        self.0.append(&mut other.0);
+    }
 
-    //     /// Clears the set, removing all integer elements.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut v = RangeSetBlaze2::new();
-    //     /// v.insert(1);
-    //     /// v.clear();
-    //     /// assert!(v.is_empty());
-    //     /// ```
-    //     pub fn clear(&mut self) {
-    //         self.btree_map.clear();
-    //         self.len = <T as Integer>::SafeLen::zero();
-    //     }
+    /// Clears the set, removing all integer elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut v = RangeSetBlaze2::new();
+    /// v.insert(1);
+    /// v.clear();
+    /// assert!(v.is_empty());
+    /// ```
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
 
-    //     /// Returns `true` if the set contains no elements.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut v = RangeSetBlaze2::new();
-    //     /// assert!(v.is_empty());
-    //     /// v.insert(1);
-    //     /// assert!(!v.is_empty());
-    //     /// ```
-    //     #[must_use]
-    //     #[inline]
-    //     pub fn is_empty(&self) -> bool {
-    //         self.ranges_len() == 0
-    //     }
+    // cmk1 should these one-line methods be inline?
 
-    //     /// Returns `true` if the set is a subset of another,
-    //     /// i.e., `other` contains at least all the elements in `self`.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let sup = RangeSetBlaze2::from_iter([1..=3]);
-    //     /// let mut set = RangeSetBlaze2::new();
-    //     ///
-    //     /// assert_eq!(set.is_subset(&sup), true);
-    //     /// set.insert(2);
-    //     /// assert_eq!(set.is_subset(&sup), true);
-    //     /// set.insert(4);
-    //     /// assert_eq!(set.is_subset(&sup), false);
-    //     /// ```
-    //     #[must_use]
-    //     #[inline]
-    //     pub fn is_subset(&self, other: &RangeSetBlaze2<T>) -> bool {
-    //         // Add a fast path
-    //         if self.len() > other.len() {
-    //             return false;
-    //         }
-    //         self.ranges().is_subset(other.ranges())
-    //     }
+    /// Returns `true` if the set contains no elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut v = RangeSetBlaze2::new();
+    /// assert!(v.is_empty());
+    /// v.insert(1);
+    /// assert!(!v.is_empty());
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
 
-    //     /// Returns `true` if the set is a superset of another,
-    //     /// i.e., `self` contains at least all the elements in `other`.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let sub = RangeSetBlaze2::from_iter([1, 2]);
-    //     /// let mut set = RangeSetBlaze2::new();
-    //     ///
-    //     /// assert_eq!(set.is_superset(&sub), false);
-    //     ///
-    //     /// set.insert(0);
-    //     /// set.insert(1);
-    //     /// assert_eq!(set.is_superset(&sub), false);
-    //     ///
-    //     /// set.insert(2);
-    //     /// assert_eq!(set.is_superset(&sub), true);
-    //     /// ```
-    //     #[must_use]
-    //     pub fn is_superset(&self, other: &Self<T>) -> bool {
-    //         other.is_subset(self)
-    //     }
+    /// Returns `true` if the set is a subset of another,
+    /// i.e., `other` contains at least all the elements in `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let sup = RangeSetBlaze2::from_iter([1..=3]);
+    /// let mut set = RangeSetBlaze2::new();
+    ///
+    /// assert_eq!(set.is_subset(&sup), true);
+    /// set.insert(2);
+    /// assert_eq!(set.is_subset(&sup), true);
+    /// set.insert(4);
+    /// assert_eq!(set.is_subset(&sup), false);
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn is_subset(&self, other: &RangeSetBlaze2<T>) -> bool {
+        // Add a fast path
+        if self.len() > other.len() {
+            return false;
+        }
+        self.ranges().is_subset(other.ranges())
+    }
 
-    //     /// Returns `true` if the set contains an element equal to the value.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let set = RangeSetBlaze2::from_iter([1, 2, 3]);
-    //     /// assert_eq!(set.contains(1), true);
-    //     /// assert_eq!(set.contains(4), false);
-    //     /// ```
-    //     pub fn contains(&self, value: T) -> bool {
-    //         assert!(
-    //             value <= T::safe_max_value(),
-    //             "value must be <= T::safe_max_value()"
-    //         );
-    //         self.btree_map
-    //             .range(..=value)
-    //             .next_back()
-    //             .map_or(false, |(_, end)| value <= *end)
-    //     }
+    /// Returns `true` if the set is a superset of another,
+    /// i.e., `self` contains at least all the elements in `other`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let sub = RangeSetBlaze2::from_iter([1, 2]);
+    /// let mut set = RangeSetBlaze2::new();
+    ///
+    /// assert_eq!(set.is_superset(&sub), false);
+    ///
+    /// set.insert(0);
+    /// set.insert(1);
+    /// assert_eq!(set.is_superset(&sub), false);
+    ///
+    /// set.insert(2);
+    /// assert_eq!(set.is_superset(&sub), true);
+    /// ```
+    #[must_use]
+    pub fn is_superset(&self, other: &RangeSetBlaze2<T>) -> bool {
+        other.is_subset(self)
+    }
 
-    //     /// Returns `true` if `self` has no elements in common with `other`.
-    //     /// This is equivalent to checking for an empty intersection.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let a = RangeSetBlaze2::from_iter([1..=3]);
-    //     /// let mut b = RangeSetBlaze2::new();
-    //     ///
-    //     /// assert_eq!(a.is_disjoint(&b), true);
-    //     /// b.insert(4);
-    //     /// assert_eq!(a.is_disjoint(&b), true);
-    //     /// b.insert(1);
-    //     /// assert_eq!(a.is_disjoint(&b), false);
-    //     /// ```
-    //     #[must_use]
-    //     #[inline]
-    //     pub fn is_disjoint(&self, other: &Self<T>) -> bool {
-    //         self.ranges().is_disjoint(other.ranges())
-    //     }
+    /// Returns `true` if the set contains an element equal to the value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let set = RangeSetBlaze2::from_iter([1, 2, 3]);
+    /// assert_eq!(set.contains(1), true);
+    /// assert_eq!(set.contains(4), false);
+    /// ```
+    pub fn contains(&self, value: T) -> bool {
+        self.0.contains_key(value)
+    }
 
+    /// Returns `true` if `self` has no elements in common with `other`.
+    /// This is equivalent to checking for an empty intersection.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let a = RangeSetBlaze2::from_iter([1..=3]);
+    /// let mut b = RangeSetBlaze2::new();
+    ///
+    /// assert_eq!(a.is_disjoint(&b), true);
+    /// b.insert(4);
+    /// assert_eq!(a.is_disjoint(&b), true);
+    /// b.insert(1);
+    /// assert_eq!(a.is_disjoint(&b), false);
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn is_disjoint(&self, other: &RangeSetBlaze2<T>) -> bool {
+        self.ranges().is_disjoint(other.ranges())
+    }
+
+    // cmk1 delete this code
     //     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
     //         let (start, end) = internal_range.clone().into_inner();
     //         let mut after = self.btree_map.range_mut(start..);
@@ -630,231 +622,164 @@ impl<T: Integer> RangeSetBlaze2<T> {
     //         }
     //     }
 
-    //     /// Adds a value to the set.
-    //     ///
-    //     /// Returns whether the value was newly inserted. That is:
-    //     ///
-    //     /// - If the set did not previously contain an equal value, `true` is
-    //     ///   returned.
-    //     /// - If the set already contained an equal value, `false` is returned, and
-    //     ///   the entry is not updated.
-    //     ///
-    //     /// # Performance
-    //     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
-    //     /// When n is large, consider using `|` which is O(n+m) time.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut set = RangeSetBlaze2::new();
-    //     ///
-    //     /// assert_eq!(set.insert(2), true);
-    //     /// assert_eq!(set.insert(2), false);
-    //     /// assert_eq!(set.len(), 1usize);
-    //     /// ```
-    //     pub fn insert(&mut self, value: T) -> bool {
-    //         let len_before = self.len;
-    //         self.internal_add(value..=value);
-    //         self.len != len_before
-    //     }
+    /// Adds a value to the set.
+    ///
+    /// Returns whether the value was newly inserted. That is:
+    ///
+    /// - If the set did not previously contain an equal value, `true` is
+    ///   returned.
+    /// - If the set already contained an equal value, `false` is returned, and
+    ///   the entry is not updated.
+    ///
+    /// # Performance
+    /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
+    /// When n is large, consider using `|` which is O(n+m) time.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut set = RangeSetBlaze2::new();
+    ///
+    /// assert_eq!(set.insert(2), true);
+    /// assert_eq!(set.insert(2), false);
+    /// assert_eq!(set.len(), 1usize);
+    /// ```
+    pub fn insert(&mut self, value: T) -> bool {
+        self.0.insert(value, ()).is_none()
+    }
 
-    //     /// Constructs an iterator over a sub-range of elements in the set.
-    //     ///
-    //     /// Not to be confused with [`RangeSetBlaze2::ranges`], which returns an iterator over the ranges in the set.
-    //     ///
-    //     /// The simplest way is to use the range syntax `min..max`, thus `range(min..max)` will
-    //     /// yield elements from min (inclusive) to max (exclusive).
-    //     /// The range may also be entered as `(Bound<T>, Bound<T>)`, so for example
-    //     /// `range((Excluded(4), Included(10)))` will yield a left-exclusive, right-inclusive
-    //     /// range from 4 to 10.
-    //     ///
-    //     /// # Panics
-    //     ///
-    //     /// Panics if range `start > end`.
-    //     /// Panics if range `start == end` and both bounds are `Excluded`.
-    //     ///
-    //     /// # Performance
-    //     ///
-    //     /// Although this could be written to run in time O(ln(n)) in the number of ranges, it is currently O(n) in the number of ranges.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     /// use core::ops::Bound::Included;
-    //     ///
-    //     /// let mut set = RangeSetBlaze2::new();
-    //     /// set.insert(3);
-    //     /// set.insert(5);
-    //     /// set.insert(8);
-    //     /// for elem in set.range((Included(4), Included(8))) {
-    //     ///     println!("{elem}");
-    //     /// }
-    //     /// assert_eq!(Some(5), set.range(4..).next());
-    //     /// ```
-    //     pub fn range<R>(&self, range: R) -> IntoIter<T>
-    //     where
-    //         R: RangeBounds<T>,
-    //     {
-    //         let start = match range.start_bound() {
-    //             Bound::Included(n) => *n,
-    //             Bound::Excluded(n) => *n + T::one(),
-    //             Bound::Unbounded => T::min_value(),
-    //         };
-    //         let end = match range.end_bound() {
-    //             Bound::Included(n) => *n,
-    //             Bound::Excluded(n) => *n - T::one(),
-    //             Bound::Unbounded => T::safe_max_value(),
-    //         };
-    //         assert!(start <= end);
+    // cmk1
+    // /// Constructs an iterator over a sub-range of elements in the set.
+    // ///
+    // /// Not to be confused with [`RangeSetBlaze2::ranges`], which returns an iterator over the ranges in the set.
+    // ///
+    // /// The simplest way is to use the range syntax `min..max`, thus `range(min..max)` will
+    // /// yield elements from min (inclusive) to max (exclusive).
+    // /// The range may also be entered as `(Bound<T>, Bound<T>)`, so for example
+    // /// `range((Excluded(4), Included(10)))` will yield a left-exclusive, right-inclusive
+    // /// range from 4 to 10.
+    // ///
+    // /// # Panics
+    // ///
+    // /// Panics if range `start > end`.
+    // /// Panics if range `start == end` and both bounds are `Excluded`.
+    // ///
+    // /// # Performance
+    // ///
+    // /// Although this could be written to run in time O(ln(n)) in the number of ranges, it is currently O(n) in the number of ranges.
+    // ///
+    // /// # Examples
+    // ///
+    // /// ```
+    // /// use range_set_blaze::RangeSetBlaze2;
+    // /// use core::ops::Bound::Included;
+    // ///
+    // /// let mut set = RangeSetBlaze2::new();
+    // /// set.insert(3);
+    // /// set.insert(5);
+    // /// set.insert(8);
+    // /// for elem in set.range((Included(4), Included(8))) {
+    // ///     println!("{elem}");
+    // /// }
+    // /// assert_eq!(Some(5), set.range(4..).next());
+    // /// ```
+    // pub fn range<R>(&self, range: R) -> IntoIter<T>
+    // where
+    //     R: RangeBounds<T>,
+    // {
+    //     let start = match range.start_bound() {
+    //         Bound::Included(n) => *n,
+    //         Bound::Excluded(n) => *n + T::one(),
+    //         Bound::Unbounded => T::min_value(),
+    //     };
+    //     let end = match range.end_bound() {
+    //         Bound::Included(n) => *n,
+    //         Bound::Excluded(n) => *n - T::one(),
+    //         Bound::Unbounded => T::safe_max_value(),
+    //     };
+    //     assert!(start <= end);
 
-    //         let bounds = CheckSortedDisjoint::from([start..=end]);
-    //         Self::from_sorted_disjoint(self.ranges() & bounds).into_iter()
-    //     }
+    //     let bounds = CheckSortedDisjoint::from([start..=end]);
+    //     Self::from_sorted_disjoint(self.ranges() & bounds).into_iter()
+    // }
 
-    //     /// Adds a range to the set.
-    //     ///
-    //     /// Returns whether any values where newly inserted. That is:
-    //     ///
-    //     /// - If the set did not previously contain some value in the range, `true` is
-    //     ///   returned.
-    //     /// - If the set already contained every value in the range, `false` is returned, and
-    //     ///   the entry is not updated.
-    //     ///
-    //     /// # Performance
-    //     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
-    //     /// When n is large, consider using `|` which is O(n+m) time.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut set = RangeSetBlaze2::new();
-    //     ///
-    //     /// assert_eq!(set.ranges_insert(2..=5), true);
-    //     /// assert_eq!(set.ranges_insert(5..=6), true);
-    //     /// assert_eq!(set.ranges_insert(3..=4), false);
-    //     /// assert_eq!(set.len(), 5usize);
-    //     /// ```
-    //     pub fn ranges_insert(&mut self, range: RangeInclusive<T>) -> bool {
-    //         let len_before = self.len;
-    //         self.internal_add(range);
-    //         self.len != len_before
-    //     }
+    /// Adds a range to the set.
+    ///
+    /// Returns whether any values where newly inserted. That is:
+    ///
+    /// - If the set did not previously contain some value in the range, `true` is
+    ///   returned.
+    /// - If the set already contained every value in the range, `false` is returned, and
+    ///   the entry is not updated.
+    ///
+    /// # Performance
+    /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
+    /// When n is large, consider using `|` which is O(n+m) time.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut set = RangeSetBlaze2::new();
+    ///
+    /// assert_eq!(set.ranges_insert(2..=5), true);
+    /// assert_eq!(set.ranges_insert(5..=6), true);
+    /// assert_eq!(set.ranges_insert(3..=4), false);
+    /// assert_eq!(set.len(), 5usize);
+    /// ```
+    pub fn ranges_insert(&mut self, range: RangeInclusive<T>) -> bool {
+        self.0.ranges_insert(range, ())
+    }
 
-    //     /// If the set contains an element equal to the value, removes it from the
-    //     /// set and drops it. Returns whether such an element was present.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut set = RangeSetBlaze2::new();
-    //     ///
-    //     /// set.insert(2);
-    //     /// assert!(set.remove(2));
-    //     /// assert!(!set.remove(2));
-    //     /// ```
-    //     pub fn remove(&mut self, value: T) -> bool {
-    //         assert!(
-    //             value <= T::safe_max_value(),
-    //             "value must be <= T::safe_max_value()"
-    //         );
+    /// If the set contains an element equal to the value, removes it from the
+    /// set and drops it. Returns whether such an element was present.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut set = RangeSetBlaze2::new();
+    ///
+    /// set.insert(2);
+    /// assert!(set.remove(2));
+    /// assert!(!set.remove(2));
+    /// ```
+    pub fn remove(&mut self, value: T) -> bool {
+        self.0.remove(value).is_some()
+    }
 
-    //         // The code can have only one mutable reference to self.btree_map.
-    //         let Some((start_ref, end_ref)) = self.btree_map.range_mut(..=value).next_back() else {
-    //             return false;
-    //         };
+    /// Splits the collection into two at the value. Returns a new collection
+    /// with all elements greater than or equal to the value.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut a = RangeSetBlaze2::new();
+    /// a.insert(1);
+    /// a.insert(2);
+    /// a.insert(3);
+    /// a.insert(17);
+    /// a.insert(41);
+    ///
+    /// let b = a.split_off(3);
+    ///
+    /// assert_eq!(a, RangeSetBlaze2::from_iter([1, 2]));
+    /// assert_eq!(b, RangeSetBlaze2::from_iter([3, 17, 41]));
+    /// ```
+    pub fn split_off(&mut self, key: T) -> Self {
+        let other_range_set_map = self.0.split_off(key);
+        Self(other_range_set_map)
+    }
 
-    //         let end = *end_ref;
-    //         if end < value {
-    //             return false;
-    //         }
-    //         let start = *start_ref;
-    //         // special case if in range and start strictly less than value
-    //         if start < value {
-    //             *end_ref = value - T::one();
-    //             // special, special case if value == end
-    //             if value == end {
-    //                 self.len -= <T::SafeLen>::one();
-    //                 return true;
-    //             }
-    //         }
-    //         self.len -= <T::SafeLen>::one();
-    //         if start == value {
-    //             self.btree_map.remove(&start);
-    //         };
-    //         if value < end {
-    //             self.btree_map.insert(value + T::one(), end);
-    //         }
-    //         true
-    //     }
-
-    //     /// Splits the collection into two at the value. Returns a new collection
-    //     /// with all elements greater than or equal to the value.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// Basic usage:
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut a = RangeSetBlaze2::new();
-    //     /// a.insert(1);
-    //     /// a.insert(2);
-    //     /// a.insert(3);
-    //     /// a.insert(17);
-    //     /// a.insert(41);
-    //     ///
-    //     /// let b = a.split_off(3);
-    //     ///
-    //     /// assert_eq!(a, RangeSetBlaze2::from_iter([1, 2]));
-    //     /// assert_eq!(b, RangeSetBlaze2::from_iter([3, 17, 41]));
-    //     /// ```
-    //     pub fn split_off(&mut self, key: T) -> Self {
-    //         assert!(
-    //             key <= T::safe_max_value(),
-    //             "value must be <= T::safe_max_value()"
-    //         );
-    //         let old_len = self.len;
-    //         let old_btree_len = self.btree_map.len();
-    //         let mut new_btree = self.btree_map.split_off(&key);
-    //         let Some(last_entry) = self.btree_map.last_entry() else {
-    //             // Left is empty
-    //             self.len = T::SafeLen::zero();
-    //             return Self {
-    //                 btree_map: new_btree,
-    //                 len: old_len,
-    //             };
-    //         };
-
-    //         let end = *last_entry.get();
-    //         if end < key {
-    //             // The split is clean
-    //             let (a_len, b_len) = self.two_element_lengths(old_btree_len, &new_btree, old_len);
-    //             self.len = a_len;
-    //             return Self {
-    //                 btree_map: new_btree,
-    //                 len: b_len,
-    //             };
-    //         }
-
-    //         // The split is not clean, so we must move some keys from the end of self to the start of b.
-    //         *(last_entry.into_mut()) = key - T::one();
-    //         new_btree.insert(key, end);
-    //         let (a_len, b_len) = self.two_element_lengths(old_btree_len, &new_btree, old_len);
-    //         self.len = a_len;
-    //         Self {
-    //             btree_map: new_btree,
-    //             len: b_len,
-    //         }
-    //     }
-
+    // cmk1 delete this code
     //     // Find the len of the smaller btree_map and then the element len of self & b.
     //     fn two_element_lengths(
     //         &mut self,
@@ -909,50 +834,43 @@ impl<T: Integer> RangeSetBlaze2<T> {
     //             })
     //     }
 
-    //     /// Removes and returns the element in the set, if any, that is equal to
-    //     /// the value.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut set = RangeSetBlaze2::from_iter([1, 2, 3]);
-    //     /// assert_eq!(set.take(2), Some(2));
-    //     /// assert_eq!(set.take(2), None);
-    //     /// ```
-    //     pub fn take(&mut self, value: T) -> Option<T> {
-    //         if self.remove(value) {
-    //             Some(value)
-    //         } else {
-    //             None
-    //         }
-    //     }
+    /// Removes and returns the element in the set, if any, that is equal to
+    /// the value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut set = RangeSetBlaze2::from_iter([1, 2, 3]);
+    /// assert_eq!(set.take(2), Some(2));
+    /// assert_eq!(set.take(2), None);
+    /// ```
+    pub fn take(&mut self, value: T) -> Option<T> {
+        self.0.take(value).map(|_| value)
+    }
 
-    //     /// Adds a value to the set, replacing the existing element, if any, that is
-    //     /// equal to the value. Returns the replaced element.
-    //     ///
-    //     /// Note: This is very similar to `insert`. It is included for consistency with [`BTreeSet`].
-    //     ///
-    //     /// [`BTreeSet`]: alloc::collections::BTreeSet
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut set = RangeSetBlaze2::new();
-    //     /// assert!(set.replace(5).is_none());
-    //     /// assert!(set.replace(5).is_some());
-    //     /// ```
-    //     pub fn replace(&mut self, value: T) -> Option<T> {
-    //         if self.insert(value) {
-    //             None
-    //         } else {
-    //             Some(value)
-    //         }
-    //     }
+    /// Adds a value to the set, replacing the existing element, if any, that is
+    /// equal to the value. Returns the replaced element.
+    ///
+    /// Note: This is very similar to `insert`. It is included for consistency with [`BTreeSet`].
+    ///
+    /// [`BTreeSet`]: alloc::collections::BTreeSet
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut set = RangeSetBlaze2::new();
+    /// assert!(set.replace(5).is_none());
+    /// assert!(set.replace(5).is_some());
+    /// ```
+    pub fn replace(&mut self, value: T) -> Option<T> {
+        self.0.insert(value, ()).map(|_| value)
+    }
 
+    // cmk1 delete this code
     //     // fn internal_add_chatgpt(&mut self, range: RangeInclusive<T>) {
     //     //     let (start, end) = range.into_inner();
 
@@ -1023,116 +941,88 @@ impl<T: Integer> RangeSetBlaze2<T> {
     //         self.len += T::safe_len(internal_range);
     //     }
 
-    //     /// Returns the number of elements in the set.
-    //     ///
-    //     /// The number is allowed to be very, very large.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut v = RangeSetBlaze2::new();
-    //     /// assert_eq!(v.len(), 0usize);
-    //     /// v.insert(1);
-    //     /// assert_eq!(v.len(), 1usize);
-    //     ///
-    //     /// let v = RangeSetBlaze2::from_iter([
-    //     ///     -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,
-    //     ///     -10..=170_141_183_460_469_231_731_687_303_715_884_105_726,
-    //     /// ]);
-    //     /// assert_eq!(
-    //     ///     v.len(),
-    //     ///     340_282_366_920_938_463_463_374_607_431_768_211_455u128
-    //     /// );
-    //     /// ```
-    //     #[must_use]
-    //     pub const fn len(&self) -> <T as Integer>::SafeLen {
-    //         self.len
-    //     }
+    /// Returns the number of elements in the set.
+    ///
+    /// The number is allowed to be very, very large.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut v = RangeSetBlaze2::new();
+    /// assert_eq!(v.len(), 0usize);
+    /// v.insert(1);
+    /// assert_eq!(v.len(), 1usize);
+    ///
+    /// let v = RangeSetBlaze2::from_iter([
+    ///     -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,
+    ///     -10..=170_141_183_460_469_231_731_687_303_715_884_105_726,
+    /// ]);
+    /// assert_eq!(
+    ///     v.len(),
+    ///     340_282_366_920_938_463_463_374_607_431_768_211_455u128
+    /// );
+    /// ```
+    #[must_use]
+    pub const fn len(&self) -> <T as Integer>::SafeLen {
+        self.0.len()
+    }
 
-    //     /// Makes a new, empty [`RangeSetBlaze2`].
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// # #![allow(unused_mut)]
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut set: RangeSetBlaze2<i32> = RangeSetBlaze2::new();
-    //     /// ```
-    //     #[must_use]
-    //     pub fn new() -> Self {
-    //         Self {
-    //             btree_map: BTreeMap::new(),
-    //             len: <T as Integer>::SafeLen::zero(),
-    //         }
-    //     }
+    /// Makes a new, empty [`RangeSetBlaze2`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #![allow(unused_mut)]
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut set: RangeSetBlaze2<i32> = RangeSetBlaze2::new();
+    /// ```
+    #[must_use]
+    pub fn new() -> Self {
+        Self(RangeMapBlaze::new())
+    }
 
-    //     /// Removes the first element from the set and returns it, if any.
-    //     /// The first element is always the minimum element in the set.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut set = RangeSetBlaze2::new();
-    //     ///
-    //     /// set.insert(1);
-    //     /// while let Some(n) = set.pop_first() {
-    //     ///     assert_eq!(n, 1);
-    //     /// }
-    //     /// assert!(set.is_empty());
-    //     /// ```
-    //     pub fn pop_first(&mut self) -> Option<T> {
-    //         if let Some(entry) = self.btree_map.first_entry() {
-    //             let (start, end) = entry.remove_entry();
-    //             self.len -= T::safe_len(&(start..=end));
-    //             if start != end {
-    //                 let start = start + T::one();
-    //                 self.btree_map.insert(start, end);
-    //                 self.len += T::safe_len(&(start..=end));
-    //             }
-    //             Some(start)
-    //         } else {
-    //             None
-    //         }
-    //     }
+    /// Removes the first element from the set and returns it, if any.
+    /// The first element is always the minimum element in the set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut set = RangeSetBlaze2::new();
+    ///
+    /// set.insert(1);
+    /// while let Some(n) = set.pop_first() {
+    ///     assert_eq!(n, 1);
+    /// }
+    /// assert!(set.is_empty());
+    /// ```
+    pub fn pop_first(&mut self) -> Option<T> {
+        self.0.pop_first().map(|(key, _)| key)
+    }
 
-    //     /// Removes the last value from the set and returns it, if any.
-    //     /// The last value is always the maximum value in the set.
-    //     ///
-    //     /// # Examples
-    //     ///
-    //     /// ```
-    //     /// use range_set_blaze::RangeSetBlaze2;
-    //     ///
-    //     /// let mut set = RangeSetBlaze2::new();
-    //     ///
-    //     /// set.insert(1);
-    //     /// while let Some(n) = set.pop_last() {
-    //     ///     assert_eq!(n, 1);
-    //     /// }
-    //     /// assert!(set.is_empty());
-    //     /// ```
-    //     pub fn pop_last(&mut self) -> Option<T> {
-    //         let Some(mut entry) = self.btree_map.last_entry() else {
-    //             return None;
-    //         };
-
-    //         let start = *entry.key();
-    //         let end = entry.get_mut();
-    //         let result = *end;
-    //         self.len -= T::safe_len(&(start..=*end));
-    //         if start == *end {
-    //             entry.remove_entry();
-    //         } else {
-    //             *end -= T::one();
-    //             self.len += T::safe_len(&(start..=*end));
-    //         }
-    //         Some(result)
-    //     }
+    /// Removes the last value from the set and returns it, if any.
+    /// The last value is always the maximum value in the set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let mut set = RangeSetBlaze2::new();
+    ///
+    /// set.insert(1);
+    /// while let Some(n) = set.pop_last() {
+    ///     assert_eq!(n, 1);
+    /// }
+    /// assert!(set.is_empty());
+    /// ```
+    pub fn pop_last(&mut self) -> Option<T> {
+        self.0.pop_last().map(|(key, _)| key)
+    }
 
     /// An iterator that visits the ranges in the [`RangeSetBlaze2`],
     /// i.e., the integers as sorted & disjoint ranges.
@@ -1263,7 +1153,7 @@ impl<T: Integer> FromIterator<T> for RangeSetBlaze2<T> {
         I: IntoIterator<Item = T>,
     {
         let range_map_blaze = iter.into_iter().map(|x| (x..=x, ())).collect();
-        RangeSetBlaze2(range_map_blaze)
+        Self(range_map_blaze)
     }
 }
 
@@ -1286,7 +1176,7 @@ impl<'a, T: Integer> FromIterator<&'a T> for RangeSetBlaze2<T> {
         I: IntoIterator<Item = &'a T>,
     {
         let range_map_blaze = iter.into_iter().map(|x| (*x..=*x, ())).collect();
-        RangeSetBlaze2(range_map_blaze)
+        Self(range_map_blaze)
     }
 }
 
@@ -1312,7 +1202,7 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetBlaze2<T> {
         I: IntoIterator<Item = RangeInclusive<T>>,
     {
         let range_map_blaze = iter.into_iter().map(|range| (range, ())).collect();
-        RangeSetBlaze2(range_map_blaze)
+        Self(range_map_blaze)
     }
 }
 
@@ -1338,7 +1228,7 @@ impl<'a, T: Integer + 'a> FromIterator<&'a RangeInclusive<T>> for RangeSetBlaze2
         I: IntoIterator<Item = &'a RangeInclusive<T>>,
     {
         let range_map_blaze = iter.into_iter().map(|range| (range.clone(), ())).collect();
-        RangeSetBlaze2(range_map_blaze)
+        Self(range_map_blaze)
     }
 }
 

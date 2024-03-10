@@ -158,7 +158,7 @@ fn demo_c1() {
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=10]);
     range_set_blaze.internal_add(12..=12);
     assert!(range_set_blaze.to_string() == "10..=10, 12..=12");
-    assert!(range_set_blaze._len_slow() == range_set_blaze.len());
+    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
 }
 
 #[test]
@@ -170,7 +170,7 @@ fn demo_c2() {
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=10, 13..=13]);
     range_set_blaze.internal_add(12..=12);
     assert!(range_set_blaze.to_string() == "10..=10, 12..=13");
-    assert!(range_set_blaze._len_slow() == range_set_blaze.len());
+    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
 }
 
 #[test]
@@ -182,13 +182,13 @@ fn demo_f1() {
     range_set_blaze.internal_add(10..=10);
     assert!(range_set_blaze.to_string() == "10..=14, 22..=26");
     println!(
-        "demo_1 range_set_blaze = {:?}, _len_slow = {}, len = {}",
+        "demo_1 range_set_blaze = {:?}, len_slow = {}, len = {}",
         range_set_blaze,
-        range_set_blaze._len_slow(),
+        range_set_blaze.len_slow(),
         range_set_blaze.len()
     );
 
-    assert!(range_set_blaze._len_slow() == range_set_blaze.len());
+    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
 }
 
 #[test]
@@ -202,7 +202,7 @@ fn demo_d1() {
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=14]);
     range_set_blaze.internal_add(10..=10);
     assert!(range_set_blaze.to_string() == "10..=14");
-    assert!(range_set_blaze._len_slow() == range_set_blaze.len());
+    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
 }
 
 #[test]
@@ -217,7 +217,7 @@ fn demo_e1() {
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=14, 16..=16]);
     range_set_blaze.internal_add(10..=19);
     assert!(range_set_blaze.to_string() == "10..=19");
-    assert!(range_set_blaze._len_slow() == range_set_blaze.len());
+    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
 }
 
 #[test]
@@ -232,7 +232,7 @@ fn demo_b1() {
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=14]);
     range_set_blaze.internal_add(12..=17);
     assert!(range_set_blaze.to_string() == "10..=17");
-    assert!(range_set_blaze._len_slow() == range_set_blaze.len());
+    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
 }
 
 #[test]
@@ -248,7 +248,7 @@ fn demo_b2() {
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=14, 16..=16]);
     range_set_blaze.internal_add(12..=17);
     assert!(range_set_blaze.to_string() == "10..=17");
-    assert!(range_set_blaze._len_slow() == range_set_blaze.len());
+    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
 }
 
 #[test]
@@ -264,7 +264,7 @@ fn demo_b3() {
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=15, 160..=160]);
     range_set_blaze.internal_add(12..=17);
     assert!(range_set_blaze.to_string() == "10..=17, 160..=160");
-    assert!(range_set_blaze._len_slow() == range_set_blaze.len());
+    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
 }
 
 #[test]
@@ -278,12 +278,12 @@ fn demo_a() {
     range_set_blaze.internal_add(12..=12);
     assert!(range_set_blaze.to_string() == "10..=14");
     println!(
-        "demo_a range_set_blaze = {:?}, _len_slow = {}, len = {}",
+        "demo_a range_set_blaze = {:?}, len_slow = {}, len = {}",
         range_set_blaze,
-        range_set_blaze._len_slow(),
+        range_set_blaze.len_slow(),
         range_set_blaze.len()
     );
-    assert!(range_set_blaze._len_slow() == range_set_blaze.len());
+    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
 }
 
 #[test]
@@ -874,7 +874,7 @@ fn lib_coverage_0() {
     set.insert(2);
     assert_eq!(set.last(), Some(2));
 
-    assert_eq!(a.len(), a._len_slow());
+    assert_eq!(a.len(), a.len_slow());
 
     let mut a = RangeSetBlaze::from_iter([1..=3]);
     let mut b = RangeSetBlaze::from_iter([3..=5]);
