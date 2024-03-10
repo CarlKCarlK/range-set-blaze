@@ -3,7 +3,7 @@ use core::{fmt, ops::RangeInclusive};
 use crate::{
     iter_map::KeysMap,
     prelude::*,
-    range_values::{RangeValuesFromBTree, RangeValuesIter, RangeValuesToRangesIter},
+    range_values::{RangeValuesIter, RangeValuesToRangesIter},
     Integer,
 };
 
@@ -1052,7 +1052,7 @@ impl<T: Integer> RangeSetBlaze2<T> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    pub fn ranges(&self) -> RangeValuesToRangesIter<T, (), &(), RangeValuesFromBTree<T, ()>> {
+    pub fn ranges(&self) -> RangeValuesToRangesIter<T, (), &(), RangeValuesIter<T, ()>> {
         self.0.ranges()
     }
 

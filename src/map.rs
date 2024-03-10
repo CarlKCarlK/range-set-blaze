@@ -1,9 +1,7 @@
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::iter_map::IntoIterMap;
 use crate::iter_map::{IterMap, KeysMap};
-use crate::range_values::{
-    IntoRangeValuesIter, RangeValuesFromBTree, RangeValuesIter, RangeValuesToRangesIter,
-};
+use crate::range_values::{IntoRangeValuesIter, RangeValuesIter, RangeValuesToRangesIter};
 use alloc::borrow::ToOwned;
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
@@ -1480,10 +1478,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     }
 
     /// cmk
-    pub fn ranges(&self) -> RangeValuesToRangesIter<T, V, &V, RangeValuesFromBTree<T, V>> {
-        let iter = RangeValuesFromBTree {
+    pub fn ranges(&self) -> RangeValuesToRangesIter<T, V, &V, RangeValuesIter<T, V>> {
+        let iter = RangeValuesIter {
             iter: self.btree_map.iter(),
-            phantom: PhantomData,
         };
         RangeValuesToRangesIter::new(iter)
     }

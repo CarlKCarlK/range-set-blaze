@@ -236,55 +236,6 @@ where
 //     }
 // }
 
-/// cmk
-#[derive(Clone)]
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct RangeValuesFromBTree<'a, T, V>
-where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-{
-    pub(crate) iter: btree_map::Iter<'a, T, EndValue<T, V>>,
-    pub(crate) phantom: PhantomData<&'a V>,
-}
-// RangeValuesFromBTree (one of the iterators from RangeSetBlaze) is SortedDisjoint
-impl<'a, T, V> SortedStartsMap<'a, T, V, &'a V> for RangeValuesFromBTree<'a, T, V>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-{
-}
-impl<'a, T, V> SortedDisjointMap<'a, T, V, &'a V> for RangeValuesFromBTree<'a, T, V>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-{
-}
-
-impl<'a, T, V> FusedIterator for RangeValuesFromBTree<'a, T, V>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-{
-}
-
-// Range's iterator is just the inside BTreeMap iterator as values
-impl<'a, T, V> Iterator for RangeValuesFromBTree<'a, T, V>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-{
-    type Item = RangeValue<'a, T, V, &'a V>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(start, end_value)| {
-            // cmk don't use RangeValue here
-            RangeValue::new(*start..=end_value.end, &end_value.value, None)
-        })
-        // cmk 'from' converter for the tuple to RangeValue?
-    }
-}
-
 pub struct NonZeroEnumerate<I>
 where
     I: Iterator,
