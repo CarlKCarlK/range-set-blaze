@@ -1,11 +1,14 @@
 #![allow(missing_docs)]
-use crate::{map::CloneBorrow, sorted_disjoint_map::RangeValue, Integer};
+use crate::{
+    map::CloneBorrow, sorted_disjoint_map::RangeValue, Integer, NotIter, SortedDisjoint,
+    SortedStarts,
+};
 use alloc::{collections::btree_map, rc::Rc};
 use core::{
     iter::{Enumerate, FusedIterator},
     marker::PhantomData,
     num::NonZeroUsize,
-    ops::RangeInclusive,
+    ops::{self, RangeInclusive},
 };
 
 use crate::{
@@ -146,23 +149,37 @@ where
     phantom0: PhantomData<&'a V>,
     phantom1: PhantomData<VR>,
 }
-// RangeValuesToRangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
-impl<'a, T, V, VR, I> crate::SortedStarts<T> for RangeValuesToRangesIter<'a, T, V, VR, I>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
-{
-}
-impl<'a, T, V, VR, I> crate::SortedDisjoint<T> for RangeValuesToRangesIter<'a, T, V, VR, I>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
-{
-}
+// // RangeValuesToRangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
+// impl<'a, T, V, VR, I> SortedStarts<T> for RangeValuesToRangesIter<'a, T, V, VR, I>
+// where
+//     T: Integer,
+//     V: ValueOwned + 'a,
+//     VR: CloneBorrow<V> + 'a,
+//     I: SortedDisjointMap<'a, T, V, VR>,
+// {
+// }
+// impl<'a, T, V, VR, I> SortedDisjoint<T> for RangeValuesToRangesIter<'a, T, V, VR, I>
+// where
+//     T: Integer,
+//     V: ValueOwned + 'a,
+//     VR: CloneBorrow<V> + 'a,
+//     I: SortedDisjointMap<'a, T, V, VR>,
+// {
+// }
+
+// impl<'a, T, V, VR, I> ops::Not for RangeValuesToRangesIter<'a, T, V, VR, I>
+// where
+//     T: Integer,
+//     V: ValueOwned + 'a,
+//     VR: CloneBorrow<V> + 'a,
+//     I: SortedDisjointMap<'a, T, V, VR>,
+// {
+//     type Output = NotIter<T, Self>;
+
+//     fn not(self) -> Self::Output {
+//         self.complement()
+//     }
+// }
 
 impl<'a, T, V, VR, I> FusedIterator for RangeValuesToRangesIter<'a, T, V, VR, I>
 where

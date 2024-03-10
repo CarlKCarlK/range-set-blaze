@@ -1,4 +1,7 @@
-use crate::{impl_sorted_traits_and_ops, IntoRangesIter, RangeSetBlaze2, RangesIter};
+use crate::{
+    impl_sorted_traits_and_ops0, range_values::RangeValuesToRangesIter, IntoRangesIter,
+    RangeSetBlaze2, RangesIter,
+};
 use alloc::format;
 use alloc::string::String;
 use core::{
@@ -6,6 +9,7 @@ use core::{
     ops::{self, RangeInclusive},
 };
 
+use crate::{map::CloneBorrow, map::ValueOwned, SortedDisjointMap};
 use itertools::Itertools;
 
 use crate::{
@@ -681,7 +685,7 @@ impl<T: Integer, I> AnythingGoes<T> for I where I: Iterator<Item = RangeInclusiv
 
 /// cmk docs
 #[macro_export]
-macro_rules! impl_sorted_traits_and_ops {
+macro_rules! impl_sorted_traits_and_ops0 {
     ($IterType:ty, $TraitBound:ident) => {
         impl<T: Integer, I: $TraitBound<T>> SortedStarts<T> for $IterType {}
         impl<T: Integer, I: $TraitBound<T>> SortedDisjoint<T> for $IterType {}
@@ -807,11 +811,111 @@ macro_rules! impl_sorted_traits_and_ops {
     };
 }
 
-impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, AnythingGoes);
-impl_sorted_traits_and_ops!(RangesIter<'_, T>);
-impl_sorted_traits_and_ops!(IntoRangesIter<T>);
-impl_sorted_traits_and_ops!(NotIter<T, I>, SortedDisjoint);
-impl_sorted_traits_and_ops!(UnionIter<T, I>, SortedStarts);
+#[macro_export]
+macro_rules! impl_sorted_traits_and_ops1 {
+    ($IterType:ty) => {
+        impl<'a, T, V, VR, I> SortedStarts<T> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            VR: CloneBorrow<V> + 'a,
+            I: SortedDisjointMap<'a, T, V, VR>,
+        {
+        }
+        impl<'a, T, V, VR, I> SortedDisjoint<T> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            VR: CloneBorrow<V> + 'a,
+            I: SortedDisjointMap<'a, T, V, VR>,
+        {
+        }
+
+        impl<'a, T, V, VR, I> ops::Not for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            VR: CloneBorrow<V> + 'a,
+            I: SortedDisjointMap<'a, T, V, VR>,
+        {
+            type Output = NotIter<T, Self>;
+
+            fn not(self) -> Self::Output {
+                self.complement()
+            }
+        }
+
+        impl<'a, T, V, VR, I, R> ops::BitOr<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            VR: CloneBorrow<V> + 'a,
+            I: SortedDisjointMap<'a, T, V, VR>,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitOrMerge<T, Self, R>;
+
+            fn bitor(self, other: R) -> Self::Output {
+                SortedDisjoint::union(self, other)
+            }
+        }
+
+        impl<'a, T, V, VR, I, R> ops::Sub<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            VR: CloneBorrow<V> + 'a,
+            I: SortedDisjointMap<'a, T, V, VR>,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitSubMerge<T, Self, R>;
+
+            fn sub(self, other: R) -> Self::Output {
+                // It would be fun to optimize !!self.iter into self.iter
+                // but that would require also considering fields 'start_not' and 'next_time_return_none'.
+                SortedDisjoint::difference(self, other)
+            }
+        }
+
+        impl<'a, T, V, VR, I, R> ops::BitXor<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            VR: CloneBorrow<V> + 'a,
+            I: SortedDisjointMap<'a, T, V, VR>,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitXOrTee<T, Self, R>;
+
+            #[allow(clippy::suspicious_arithmetic_impl)]
+            fn bitxor(self, other: R) -> Self::Output {
+                SortedDisjoint::symmetric_difference(self, other)
+            }
+        }
+
+        impl<'a, T, V, VR, I, R> ops::BitAnd<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            VR: CloneBorrow<V> + 'a,
+            I: SortedDisjointMap<'a, T, V, VR>,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitAndMerge<T, Self, R>;
+
+            fn bitand(self, other: R) -> Self::Output {
+                SortedDisjoint::intersection(self, other)
+            }
+        }
+    };
+}
+
+impl_sorted_traits_and_ops0!(CheckSortedDisjoint<T, I>, AnythingGoes);
+impl_sorted_traits_and_ops0!(RangesIter<'_, T>);
+impl_sorted_traits_and_ops0!(IntoRangesIter<T>);
+impl_sorted_traits_and_ops0!(NotIter<T, I>, SortedDisjoint);
+impl_sorted_traits_and_ops0!(UnionIter<T, I>, SortedStarts);
+impl_sorted_traits_and_ops1!(RangeValuesToRangesIter<'a, T, V, VR, I>);
 //cmk10 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<'a, T, V, VR, I>, SortedDisjointMap);
 
 // cmk0 is there an AssumeSortedDisjoint?

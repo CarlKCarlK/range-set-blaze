@@ -41,16 +41,16 @@ fn two_insert_max_u128() {
 }
 
 // cmk1
-// #[test]
-// fn two_complement0() {
-//     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
-//         $(
-//         let empty = RangeSetBlaze2::<$ty>::new();
-//         let full = !&empty;
-//         println!("empty: {empty} (len {}), full: {full} (len {})", empty.len(), full.len());
-//         )*
-//     }};
-// }
+#[test]
+fn two_complement0() {
+    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+        $(
+        let empty = RangeSetBlaze2::<$ty>::new();
+        let full = !&empty;
+        println!("empty: {empty} (len {}), full: {full} (len {})", empty.len(), full.len());
+        )*
+    }};
+}
 
 // #[test]
 // fn two_repro_bit_and() {
@@ -170,7 +170,7 @@ fn two_iters() -> Result<(), Box<dyn std::error::Error>> {
     let mut rs = range_set_blaze.ranges();
     println!("{:?}", rs.next());
     println!("{range_set_blaze}");
-    // cmk1 get exactiter working: println!("{:?}", rs.len());
+    // cmk1 get exact iter working: println!("{:?}", rs.len());
     println!("{:?}", rs.next());
     for i in range_set_blaze.iter() {
         println!("{i}");
