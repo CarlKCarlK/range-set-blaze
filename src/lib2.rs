@@ -1,4 +1,4 @@
-use core::{fmt, marker::PhantomData, ops::RangeInclusive};
+use core::{cmp::Ordering, fmt, marker::PhantomData, ops::RangeInclusive};
 
 use alloc::rc::Rc;
 
@@ -2005,79 +2005,79 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze2<T> {
 //     }
 // }
 
-// impl<T: Integer> Ord for RangeSetBlaze2<T> {
-//     /// We define a total ordering on RangeSetBlaze2. Following the convention of
-//     /// [`BTreeSet`], the ordering is lexicographic, *not* by subset/superset.
-//     ///
-//     /// [`BTreeSet`]: alloc::collections::BTreeSet
-//     ///
-//     /// # Examples
-//     /// ```
-//     /// use range_set_blaze::RangeSetBlaze2;
-//     ///
-//     /// let a = RangeSetBlaze2::from_iter([1..=3, 5..=7]);
-//     /// let b = RangeSetBlaze2::from_iter([2..=2]);
-//     /// assert!(a < b); // Lexicographic comparison
-//     /// assert!(b.is_subset(&a)); // Subset comparison
-//     /// // More lexicographic comparisons
-//     /// assert!(a <= b);
-//     /// assert!(b > a);
-//     /// assert!(b >= a);
-//     /// assert!(a != b);
-//     /// assert!(a == a);
-//     /// use core::cmp::Ordering;
-//     /// assert_eq!(a.cmp(&b), Ordering::Less);
-//     /// assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
-//     /// ```
+impl<T: Integer> Ord for RangeSetBlaze2<T> {
+    /// We define a total ordering on RangeSetBlaze2. Following the convention of
+    /// [`BTreeSet`], the ordering is lexicographic, *not* by subset/superset.
+    ///
+    /// [`BTreeSet`]: alloc::collections::BTreeSet
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let a = RangeSetBlaze2::from_iter([1..=3, 5..=7]);
+    /// let b = RangeSetBlaze2::from_iter([2..=2]);
+    /// assert!(a < b); // Lexicographic comparison
+    /// assert!(b.is_subset(&a)); // Subset comparison
+    /// // More lexicographic comparisons
+    /// assert!(a <= b);
+    /// assert!(b > a);
+    /// assert!(b >= a);
+    /// assert!(a != b);
+    /// assert!(a == a);
+    /// use core::cmp::Ordering;
+    /// assert_eq!(a.cmp(&b), Ordering::Less);
+    /// assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
+    /// ```
 
-//     #[inline]
-//     fn cmp(&self, other: &RangeSetBlaze2<T>) -> Ordering {
-//         // slow one by one: return self.iter().cmp(other.iter());
+    #[inline]
+    fn cmp(&self, other: &RangeSetBlaze2<T>) -> Ordering {
+        // slow one by one: return self.iter().cmp(other.iter());
 
-//         // fast by ranges:
-//         let mut a = self.ranges();
-//         let mut b = other.ranges();
-//         let mut a_rx = a.next();
-//         let mut b_rx = b.next();
-//         loop {
-//             match (a_rx.clone(), b_rx.clone()) {
-//                 (Some(a_r), Some(b_r)) => {
-//                     let cmp_start = a_r.start().cmp(b_r.start());
-//                     if cmp_start != Ordering::Equal {
-//                         return cmp_start;
-//                     }
-//                     let cmp_end = a_r.end().cmp(b_r.end());
-//                     match cmp_end {
-//                         Ordering::Equal => {
-//                             a_rx = a.next();
-//                             b_rx = b.next();
-//                         }
-//                         Ordering::Less => {
-//                             a_rx = a.next();
-//                             b_rx = Some(*a_r.end() + T::one()..=*b_r.end());
-//                         }
-//                         Ordering::Greater => {
-//                             a_rx = Some(*b_r.end() + T::one()..=*a_r.end());
-//                             b_rx = b.next();
-//                         }
-//                     }
-//                 }
-//                 (Some(_), None) => return Ordering::Greater,
-//                 (None, Some(_)) => return Ordering::Less,
-//                 (None, None) => return Ordering::Equal,
-//             }
-//         }
-//     }
-// }
+        // fast by ranges:
+        let mut a = self.ranges();
+        let mut b = other.ranges();
+        let mut a_rx = a.next();
+        let mut b_rx = b.next();
+        loop {
+            match (a_rx.clone(), b_rx.clone()) {
+                (Some(a_r), Some(b_r)) => {
+                    let cmp_start = a_r.start().cmp(b_r.start());
+                    if cmp_start != Ordering::Equal {
+                        return cmp_start;
+                    }
+                    let cmp_end = a_r.end().cmp(b_r.end());
+                    match cmp_end {
+                        Ordering::Equal => {
+                            a_rx = a.next();
+                            b_rx = b.next();
+                        }
+                        Ordering::Less => {
+                            a_rx = a.next();
+                            b_rx = Some(*a_r.end() + T::one()..=*b_r.end());
+                        }
+                        Ordering::Greater => {
+                            a_rx = Some(*b_r.end() + T::one()..=*a_r.end());
+                            b_rx = b.next();
+                        }
+                    }
+                }
+                (Some(_), None) => return Ordering::Greater,
+                (None, Some(_)) => return Ordering::Less,
+                (None, None) => return Ordering::Equal,
+            }
+        }
+    }
+}
 
-// impl<T: Integer> PartialOrd for RangeSetBlaze2<T> {
-//     #[inline]
-//     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-//         Some(self.cmp(other))
-//     }
-// }
+impl<T: Integer> PartialOrd for RangeSetBlaze2<T> {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
 
-// impl<T: Integer> Eq for RangeSetBlaze2<T> {}
+impl<T: Integer> Eq for RangeSetBlaze2<T> {}
 
 // use core::fmt;
 // #[cfg(feature = "std")]

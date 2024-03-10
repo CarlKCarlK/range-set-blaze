@@ -647,7 +647,7 @@ fn two_constructors() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// cmk1000000 continue to uncover tests starting heres
+// cmk1
 // #[test]
 // fn two_debug_k_play() {
 //     let mut c = Criterion::default();
@@ -847,96 +847,96 @@ fn two_constructors() -> Result<(), Box<dyn std::error::Error>> {
 //     }
 // }
 
-// #[test]
-// fn two_doc_test_insert1() {
-//     let mut set = RangeSetBlaze2::new();
+#[test]
+fn two_doc_test_insert1() {
+    let mut set = RangeSetBlaze2::new();
 
-//     assert!(set.insert(2));
-//     assert!(!set.insert(2));
-//     assert_eq!(set.len(), 1 as I32SafeLen);
-// }
+    assert!(set.insert(2));
+    assert!(!set.insert(2));
+    assert_eq!(set.len(), 1 as I32SafeLen);
+}
 
-// #[test]
-// fn two_doc_test_len() {
-//     let mut v = RangeSetBlaze2::new();
-//     assert_eq!(v.len(), 0 as I32SafeLen);
-//     v.insert(1);
-//     assert_eq!(v.len(), 1 as I32SafeLen);
+#[test]
+fn two_doc_test_len() {
+    let mut v = RangeSetBlaze2::new();
+    assert_eq!(v.len(), 0 as I32SafeLen);
+    v.insert(1);
+    assert_eq!(v.len(), 1 as I32SafeLen);
 
-//     let v = RangeSetBlaze2::from_iter([
-//         -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,
-//         -10..=170_141_183_460_469_231_731_687_303_715_884_105_726,
-//     ]);
-//     assert_eq!(
-//         v.len(),
-//         340_282_366_920_938_463_463_374_607_431_768_211_455u128
-//     );
-// }
+    let v = RangeSetBlaze2::from_iter([
+        -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,
+        -10..=170_141_183_460_469_231_731_687_303_715_884_105_726,
+    ]);
+    assert_eq!(
+        v.len(),
+        340_282_366_920_938_463_463_374_607_431_768_211_455u128
+    );
+}
 
-// #[test]
-// fn two_test_pops() {
-//     let mut set = RangeSetBlaze2::from_iter([1..=2, 4..=5, 10..=11]);
-//     let len = set.len();
-//     assert_eq!(set.pop_first(), Some(1));
-//     assert_eq!(set.len(), len - 1);
-//     assert_eq!(set, RangeSetBlaze2::from_iter([2..=2, 4..=5, 10..=11]));
-//     assert_eq!(set.pop_last(), Some(11));
-//     println!("{set:#?}");
-//     assert_eq!(set, RangeSetBlaze2::from_iter([2..=2, 4..=5, 10..=10]));
-//     assert_eq!(set.len(), len - 2);
-//     assert_eq!(set.pop_last(), Some(10 as I32SafeLen));
-//     assert_eq!(set.len(), len - 3);
-//     assert_eq!(set, RangeSetBlaze2::from_iter([2..=2, 4..=5]));
-//     assert_eq!(set.pop_first(), Some(2));
-//     assert_eq!(set.len(), len - 4);
-//     assert_eq!(set, RangeSetBlaze2::from_iter([4..=5]));
-// }
+#[test]
+fn two_test_pops() {
+    let mut set = RangeSetBlaze2::from_iter([1..=2, 4..=5, 10..=11]);
+    let len = set.len();
+    assert_eq!(set.pop_first(), Some(1));
+    assert_eq!(set.len(), len - 1);
+    assert_eq!(set, RangeSetBlaze2::from_iter([2..=2, 4..=5, 10..=11]));
+    assert_eq!(set.pop_last(), Some(11));
+    println!("{set:#?}");
+    assert_eq!(set, RangeSetBlaze2::from_iter([2..=2, 4..=5, 10..=10]));
+    assert_eq!(set.len(), len - 2);
+    assert_eq!(set.pop_last(), Some(10 as I32SafeLen));
+    assert_eq!(set.len(), len - 3);
+    assert_eq!(set, RangeSetBlaze2::from_iter([2..=2, 4..=5]));
+    assert_eq!(set.pop_first(), Some(2));
+    assert_eq!(set.len(), len - 4);
+    assert_eq!(set, RangeSetBlaze2::from_iter([4..=5]));
+}
 
-// #[test]
-// fn two_eq() {
-//     assert!(RangeSetBlaze2::from_iter([0, 2]) > RangeSetBlaze2::from_iter([0, 1]));
-//     assert!(RangeSetBlaze2::from_iter([0, 2]) > RangeSetBlaze2::from_iter([0..=100]));
-//     assert!(RangeSetBlaze2::from_iter([2..=2]) > RangeSetBlaze2::from_iter([1..=2]));
-//     for use_0 in [false, true] {
-//         for use_1 in [false, true] {
-//             for use_2 in [false, true] {
-//                 for use_3 in [false, true] {
-//                     for use_4 in [false, true] {
-//                         for use_5 in [false, true] {
-//                             let mut a = RangeSetBlaze2::new();
-//                             let mut b = RangeSetBlaze2::new();
-//                             if use_0 {
-//                                 a.insert(0);
-//                             };
-//                             if use_1 {
-//                                 a.insert(1);
-//                             };
-//                             if use_2 {
-//                                 a.insert(2);
-//                             };
-//                             if use_3 {
-//                                 b.insert(0);
-//                             };
-//                             if use_4 {
-//                                 b.insert(1);
-//                             };
-//                             if use_5 {
-//                                 b.insert(2);
-//                             };
-//                             let a2: BTreeSet<_> = a.iter().collect();
-//                             let b2: BTreeSet<_> = b.iter().collect();
-//                             assert!((a == b) == (a2 == b2));
-//                             println!("{a:?} <= {b:?}? RSI {}", a <= b);
-//                             println!("{a:?} <= {b:?}? BTS {}", a2 <= b2);
-//                             assert!((a <= b) == (a2 <= b2));
-//                             assert!((a < b) == (a2 < b2));
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
+#[test]
+fn two_eq() {
+    assert!(RangeSetBlaze2::from_iter([0, 2]) > RangeSetBlaze2::from_iter([0, 1]));
+    assert!(RangeSetBlaze2::from_iter([0, 2]) > RangeSetBlaze2::from_iter([0..=100]));
+    assert!(RangeSetBlaze2::from_iter([2..=2]) > RangeSetBlaze2::from_iter([1..=2]));
+    for use_0 in [false, true] {
+        for use_1 in [false, true] {
+            for use_2 in [false, true] {
+                for use_3 in [false, true] {
+                    for use_4 in [false, true] {
+                        for use_5 in [false, true] {
+                            let mut a = RangeSetBlaze2::new();
+                            let mut b = RangeSetBlaze2::new();
+                            if use_0 {
+                                a.insert(0);
+                            };
+                            if use_1 {
+                                a.insert(1);
+                            };
+                            if use_2 {
+                                a.insert(2);
+                            };
+                            if use_3 {
+                                b.insert(0);
+                            };
+                            if use_4 {
+                                b.insert(1);
+                            };
+                            if use_5 {
+                                b.insert(2);
+                            };
+                            let a2: BTreeSet<_> = a.iter().collect();
+                            let b2: BTreeSet<_> = b.iter().collect();
+                            assert!((a == b) == (a2 == b2));
+                            println!("{a:?} <= {b:?}? RSI {}", a <= b);
+                            println!("{a:?} <= {b:?}? BTS {}", a2 <= b2);
+                            assert!((a <= b) == (a2 <= b2));
+                            assert!((a < b) == (a2 < b2));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 // #[test]
 // fn two_insert2() {
