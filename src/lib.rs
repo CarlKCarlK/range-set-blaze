@@ -628,6 +628,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         T::from_slice(slice)
     }
 
+    #[allow(dead_code)]
     fn len_slow(&self) -> <T as Integer>::SafeLen {
         Self::btree_map_len(&self.btree_map)
     }
@@ -1066,7 +1067,9 @@ impl<T: Integer> RangeSetBlaze<T> {
             (old_len - b_len, b_len)
         }
     }
-    pub fn cmk_split_off(&mut self, value: T) -> Self {
+
+    #[allow(dead_code)]
+    fn cmk_split_off(&mut self, value: T) -> Self {
         assert!(
             value <= T::safe_max_value(),
             "value must be <= T::safe_max_value()"

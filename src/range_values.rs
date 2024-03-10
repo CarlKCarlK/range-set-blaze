@@ -1,14 +1,11 @@
 #![allow(missing_docs)]
-use crate::{
-    map::CloneBorrow, sorted_disjoint_map::RangeValue, Integer, NotIter, SortedDisjoint,
-    SortedStarts,
-};
+use crate::{map::CloneBorrow, sorted_disjoint_map::RangeValue, Integer};
 use alloc::{collections::btree_map, rc::Rc};
 use core::{
     iter::{Enumerate, FusedIterator},
     marker::PhantomData,
     num::NonZeroUsize,
-    ops::{self, RangeInclusive},
+    ops::RangeInclusive,
 };
 
 use crate::{

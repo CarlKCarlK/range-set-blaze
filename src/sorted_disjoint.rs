@@ -811,6 +811,7 @@ macro_rules! impl_sorted_traits_and_ops0 {
     };
 }
 
+/// cmk doc
 #[macro_export]
 macro_rules! impl_sorted_traits_and_ops1 {
     ($IterType:ty) => {

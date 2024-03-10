@@ -18,7 +18,7 @@ use range_set_blaze::prelude::*;
 use range_set_blaze::range_values::RangeValuesIter;
 use range_set_blaze::UnionIterMap;
 // use range_set_blaze::{
-//     MultiwayRangeMapBlaze, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
+//     MultiwayRangeMapBlaze, RangeMapBlaze, RangeSetBlaze2, SortedDisjoint, SortedDisjointMap,
 // };
 // cmk not tested use range_map_blaze::multiway_map::MultiwayRangeMapBlazeRef;
 use range_set_blaze::Integer;
@@ -53,10 +53,10 @@ fn map_map_operators() {
     let bdm = brm.range_values();
     let ads = arm.ranges();
     let bds = brm.ranges();
-    let ars = ads.into_range_set_blaze();
-    let brs = bds.into_range_set_blaze();
+    let ars = ads.into_range_set_blaze2();
+    let brs = bds.into_range_set_blaze2();
 
-    // RangeSetBlaze
+    // RangeSetBlaze2
     // union, intersection, difference, symmetric_difference, complement
     let _ = &ars | &brs;
     let _ = &ars & &brs;
@@ -89,7 +89,7 @@ fn map_map_operators() {
     let _ = &arm ^ &brm;
     let _ = !&arm;
 
-    // RangeMapBlaze/RangeSetBlaze
+    // RangeMapBlaze/RangeSetBlaze2
     // intersection, difference
     let _ = &arm & &brs;
     let _ = &arm - &brs;
@@ -362,7 +362,7 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_eq!(
         !MultiwayRangeMapBlaze::<u8, char>::union([]),
-        RangeSetBlaze::from_iter([0..=255])
+        RangeSetBlaze2::from_iter([0..=255])
     );
 
     let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
@@ -432,7 +432,7 @@ fn map_nand_repro() -> Result<(), Box<dyn std::error::Error>> {
     let d = !b | !c;
     assert_eq!(
         d,
-        RangeSetBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
+        RangeSetBlaze2::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
     );
     Ok(())
 }
@@ -2167,7 +2167,7 @@ pub fn play_movie(frames: RangeMapBlaze<i32, String>, fps: i32, skip_sleep: bool
     // cmk could look for missing frames
     let sleep_duration = Duration::from_secs(1) / fps as u32;
     // For every frame index (index) from 0 to the largest index in the frames ...
-    for index in 0..=frames.ranges().into_range_set_blaze().last().unwrap() {
+    for index in 0..=frames.ranges().into_range_set_blaze2().last().unwrap() {
         // Look up the frame at that index (panic if none exists)
         let frame = frames.get(index).unwrap_or_else(|| {
             panic!("frame {} not found", index);
@@ -2229,7 +2229,7 @@ fn map_string_animation() {
     digits.insert(0, "start".to_string());
 
     // Oops, we've changed our mind and now don't want frames 8 and 9.
-    digits = digits - RangeSetBlaze::from_iter([8..=9]);
+    digits = digits - RangeSetBlaze2::from_iter([8..=9]);
 
     // Apply the following linear transformation to `digits``:
     // 1. Make each original frame last one second
