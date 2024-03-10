@@ -20,7 +20,7 @@ use core::marker::PhantomData;
 use crate::map::BitAndRangesMap;
 use crate::range_values::AdjustPriorityMap;
 use crate::NotIter;
-use crate::RangesFromMapIter;
+use crate::RangeValuesToRangesIter;
 use core::fmt;
 use std::ops;
 
@@ -303,11 +303,11 @@ where
 {
     ///cmk
     #[inline]
-    fn into_sorted_disjoint(self) -> RangesFromMapIter<'a, T, V, VR, Self>
+    fn into_sorted_disjoint(self) -> RangeValuesToRangesIter<'a, T, V, VR, Self>
     where
         Self: Sized,
     {
-        RangesFromMapIter::new(self)
+        RangeValuesToRangesIter::new(self)
     }
     // I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
 
@@ -412,11 +412,12 @@ where
     /// cmk
     /// returns a set, not a map
     #[inline]
-    fn complement(self) -> NotIter<T, RangesFromMapIter<'a, T, V, VR, Self>>
+    fn complement(self) -> NotIter<T, RangeValuesToRangesIter<'a, T, V, VR, Self>>
     where
         Self: Sized,
     {
-        let sorted_disjoint: RangesFromMapIter<'a, T, V, VR, Self> = self.into_sorted_disjoint();
+        let sorted_disjoint: RangeValuesToRangesIter<'a, T, V, VR, Self> =
+            self.into_sorted_disjoint();
         sorted_disjoint.complement()
     }
 
@@ -1079,7 +1080,7 @@ macro_rules! impl_sorted_map_traits_and_ops0 {
             VR: CloneBorrow<V> + 'a,
             I: SortedDisjointMap<'a, T, V, VR> + 'a,
         {
-            type Output = NotIter<T, RangesFromMapIter<'a, T, V, VR, Self>>;
+            type Output = NotIter<T, RangeValuesToRangesIter<'a, T, V, VR, Self>>;
 
             fn not(self) -> Self::Output {
                 self.complement()
@@ -1179,7 +1180,7 @@ macro_rules! impl_sorted_map_traits_and_ops0 {
             I0: $TraitBound0<'a, T, V, VR> + 'a,
             I1: $TraitBound1<T>,
         {
-            type Output = NotIter<T, RangesFromMapIter<'a, T, V, VR, Self>>;
+            type Output = NotIter<T, RangeValuesToRangesIter<'a, T, V, VR, Self>>;
 
             fn not(self) -> Self::Output {
                 self.complement()
@@ -1275,7 +1276,7 @@ macro_rules! impl_sorted_map_traits_and_ops1 {
             T: Integer,
             V: ValueOwned + 'a,
         {
-            type Output = NotIter<T, RangesFromMapIter<'a, T, V, $VR, Self>>;
+            type Output = NotIter<T, RangeValuesToRangesIter<'a, T, V, $VR, Self>>;
 
             fn not(self) -> Self::Output {
                 self.complement()
@@ -1351,7 +1352,6 @@ impl_sorted_map_traits_and_ops0!(
     SortedDisjoint
 );
 impl_sorted_map_traits_and_ops0!(AssumeSortedDisjointMap<'a, T, V, VR, I>, SortedDisjointMap);
-
 // impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, AnythingGoes);
 
 // impl_sorted_traits_and_ops!(RangesIter<'_, T>);

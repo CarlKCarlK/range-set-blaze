@@ -3,7 +3,7 @@ use core::{fmt, ops::RangeInclusive};
 use crate::{
     iter_map::KeysMap,
     prelude::*,
-    range_values::{RangeValuesFromBTree, RangeValuesIter, RangesFromMapIter},
+    range_values::{RangeValuesFromBTree, RangeValuesIter, RangeValuesToRangesIter},
     Integer,
 };
 
@@ -1052,7 +1052,7 @@ impl<T: Integer> RangeSetBlaze2<T> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    pub fn ranges(&self) -> RangesFromMapIter<T, (), &(), RangeValuesFromBTree<T, ()>> {
+    pub fn ranges(&self) -> RangeValuesToRangesIter<T, (), &(), RangeValuesFromBTree<T, ()>> {
         self.0.ranges()
     }
 
@@ -1288,7 +1288,7 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze2<T> {
 // pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
 // #[doc(hidden)]
 // pub type IntersectionMap<'a, T, V, VR, I> =
-//     IntersectionIterMap<'a, T, V, VR, I, BitAndKMerge<T, RangesFromMapIter<'a, T, V, VR, I>>>;
+//     IntersectionIterMap<'a, T, V, VR, I, BitAndKMerge<T, RangeValuesToRangesIter<'a, T, V, VR, I>>>;
 // #[doc(hidden)]
 // pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
 // #[doc(hidden)]

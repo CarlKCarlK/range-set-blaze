@@ -50,7 +50,7 @@ use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
 use range_values::AdjustPriorityMap;
-use range_values::RangesFromMapIter;
+use range_values::RangeValuesToRangesIter;
 mod multiway_map;
 mod sorted_disjoint_map;
 mod tests;
@@ -1592,7 +1592,7 @@ pub type BitNandMerge<T, L, R> = BitOrMerge<T, NotIter<T, L>, NotIter<T, R>>;
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
 #[doc(hidden)]
 pub type IntersectionMap<'a, T, V, VR, I> =
-    IntersectionIterMap<'a, T, V, VR, I, BitAndKMerge<T, RangesFromMapIter<'a, T, V, VR, I>>>;
+    IntersectionIterMap<'a, T, V, VR, I, BitAndKMerge<T, RangeValuesToRangesIter<'a, T, V, VR, I>>>;
 #[doc(hidden)]
 pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
 #[doc(hidden)]

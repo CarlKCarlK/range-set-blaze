@@ -134,7 +134,7 @@ impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<'a, T,
 /// cmk
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct RangesFromMapIter<'a, T, V, VR, I>
+pub struct RangeValuesToRangesIter<'a, T, V, VR, I>
 where
     T: Integer + 'a,
     V: ValueOwned,
@@ -146,8 +146,8 @@ where
     phantom0: PhantomData<&'a V>,
     phantom1: PhantomData<VR>,
 }
-// RangesFromMapIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
-impl<'a, T, V, VR, I> crate::SortedStarts<T> for RangesFromMapIter<'a, T, V, VR, I>
+// RangeValuesToRangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
+impl<'a, T, V, VR, I> crate::SortedStarts<T> for RangeValuesToRangesIter<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
@@ -155,16 +155,7 @@ where
     I: SortedDisjointMap<'a, T, V, VR>,
 {
 }
-impl<'a, T, V, VR, I> crate::SortedDisjoint<T> for RangesFromMapIter<'a, T, V, VR, I>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
-{
-}
-
-impl<'a, T, V, VR, I> FusedIterator for RangesFromMapIter<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> crate::SortedDisjoint<T> for RangeValuesToRangesIter<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
@@ -173,14 +164,23 @@ where
 {
 }
 
-impl<'a, T, V, VR, I> RangesFromMapIter<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> FusedIterator for RangeValuesToRangesIter<'a, T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+    VR: CloneBorrow<V> + 'a,
+    I: SortedDisjointMap<'a, T, V, VR>,
+{
+}
+
+impl<'a, T, V, VR, I> RangeValuesToRangesIter<'a, T, V, VR, I>
 where
     T: Integer + 'a,
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
     I: SortedDisjointMap<'a, T, V, VR>,
 {
-    /// Creates a new `RangesFromMapIter` from an existing sorted disjoint map iterator.
+    /// Creates a new `RangeValuesToRangesIter` from an existing sorted disjoint map iterator.
     /// `option_ranges` is initialized as `None` by default.
     pub fn new(iter: I) -> Self {
         Self {
@@ -193,7 +193,7 @@ where
 }
 
 // Range's iterator is just the inside BTreeMap iterator as values
-impl<'a, T, V, VR, I> Iterator for RangesFromMapIter<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> Iterator for RangeValuesToRangesIter<'a, T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
@@ -230,121 +230,9 @@ where
 }
 
 // cmk
-// impl<T: Integer, V: ValueOwned> DoubleEndedIterator for RangesFromMapIter<'_, T, V> {
+// impl<T: Integer, V: ValueOwned> DoubleEndedIterator for RangeValuesToRangesIter<'_, T, V> {
 //     fn next_back(&mut self) -> Option<Self::Item> {
 //         self.iter.next_back().map(|(start, end)| *start..=*end)
-//     }
-// }
-
-// cmk
-// impl<T: Integer, V: ValueOwned> ops::Not for RangeValuesIter<'_, T, V, VR> {
-//     type Output = NotIter<T, Self>;
-
-//     fn not(self) -> Self::Output {
-//         self.complement()
-//     }
-// }
-
-// impl<T: Integer, V: ValueOwned> ops::Not for IntoRangeValuesIter<'a, T, V> {
-//     type Output = NotIter<T, Self>;
-
-//     fn not(self) -> Self::Output {
-//         self.complement()
-//     }
-// }
-
-// impl<'a, T: Integer, V: ValueOwned, I> ops::BitOr<I> for RangeValuesIter<'a, T, V>
-// where
-//     I: SortedDisjointMap<'a, T, V, &'a V>,
-// {
-//     type Output = BitOrMergeMap<'a, T, V, &'a V, Self, I>;
-
-//     fn bitor(self, other: I) -> Self::Output {
-//         SortedDisjointMap::union(self, other)
-//     }
-// }
-
-// impl<'a, T: Integer, V: ValueOwned, I> ops::BitOr<I> for IntoRangeValuesIter<'a, T, V>
-// where
-//     I: SortedDisjointMap<'a, T, V, Rc<V>>,
-// {
-//     type Output = BitOrMergeMap<'a, T, V, Rc<V>, Self, I>;
-
-//     fn bitor(self, other: I) -> Self::Output {
-//         SortedDisjointMap::union(self, other)
-//     }
-// }
-
-// impl<T: Integer, V: ValueOwned, I> ops::Sub<I> for RangeValuesIter<'_, T, V, VR>
-// where
-//     I: SortedDisjointMap<'a, T, V, VR>,
-// {
-//     type Output = BitSubMerge<T, Self, I>;
-
-//     fn sub(self, other: I) -> Self::Output {
-//         SortedDisjoint::difference(self, other)
-//     }
-// }
-
-// impl<T: Integer, V: ValueOwned, I> ops::Sub<I> for IntoRangeValuesIter<'a, T, V>
-// where
-//     I: SortedDisjointMap<'a, T, V, VR>,
-// {
-//     type Output = BitSubMerge<T, Self, I>;
-
-//     fn sub(self, other: I) -> Self::Output {
-//         SortedDisjoint::difference(self, other)
-//     }
-// }
-
-// impl<T: Integer, V: ValueOwned, I> ops::BitXor<I> for RangeValuesIter<'_, T, V, VR>
-// where
-//     I: SortedDisjointMap<'a, T, V, VR>,
-// {
-//     type Output = BitXOr<T, Self, I>;
-
-//     #[allow(clippy::suspicious_arithmetic_impl)]
-//     fn bitxor(self, other: I) -> Self::Output {
-//         // We optimize by using self.clone() instead of tee
-//         let lhs1 = self.clone();
-//         let (rhs0, rhs1) = other.tee();
-//         (self - rhs0) | (rhs1.difference(lhs1))
-//     }
-// }
-
-// impl<T: Integer, V: ValueOwned, I> ops::BitXor<I> for IntoRangeValuesIter<'a, T, V>
-// where
-//     I: SortedDisjointMap<'a, T, V, VR>,
-// {
-//     type Output = BitXOrTee<T, Self, I>;
-
-//     #[allow(clippy::suspicious_arithmetic_impl)]
-//     fn bitxor(self, other: I) -> Self::Output {
-//         SortedDisjoint::symmetric_difference(self, other)
-//     }
-// }
-
-//
-// impl<'a, T: Integer, V: ValueOwned> ops::BitAnd<RangeValuesIter<'a, T, V>>
-//     for RangeValuesIter<'a, T, V>
-// {
-//     type Output = IntersectionIterMap<'a, T, V, &V, Self, I>;
-
-//     #[allow(clippy::suspicious_arithmetic_impl)]
-//     fn bitand(self, other: I) -> Self::Output {
-//         SortedDisjointMap::intersection(self, other)
-//     }
-// }
-
-// impl<T: Integer, V: ValueOwned, I> ops::BitAnd<I> for IntoRangeValuesIter<'a, T, V>
-// where
-//     I: SortedDisjointMap<'a, T, V, VR>,
-// {
-//     type Output = IntersectionIterMap<T, V, VR, Self, I>;
-
-//     #[allow(clippy::suspicious_arithmetic_impl)]
-//     fn bitand(self, other: I) -> Self::Output {
-//         SortedDisjoint::intersection(self, other)
 //     }
 // }
 

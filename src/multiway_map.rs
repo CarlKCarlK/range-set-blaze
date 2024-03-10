@@ -9,7 +9,7 @@ use crate::{
     intersection_iter_map::IntersectionIterMap,
     map::{CloneBorrow, ValueOwned},
     merge_map::KMergeMap,
-    range_values::RangesFromMapIter,
+    range_values::RangeValuesToRangesIter,
     BitOrKMergeMap, Integer, IntersectionMap, RangeMapBlaze, SortedDisjointMap, UnionIterMap,
 };
 
@@ -254,7 +254,7 @@ where
         let iter_map = iter
             .next()
             .expect("The intersection of 0 maps is undefined.");
-        let iter_set = iter.map(|x| RangesFromMapIter::new(x)).intersection();
+        let iter_set = iter.map(|x| RangeValuesToRangesIter::new(x)).intersection();
 
         IntersectionIterMap::new(iter_map, iter_set)
     }
