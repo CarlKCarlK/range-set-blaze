@@ -1,9 +1,11 @@
 use core::{fmt, ops::RangeInclusive};
 
+use alloc::rc::Rc;
+
 use crate::{
     iter_map::KeysMap,
     prelude::*,
-    range_values::{RangeValuesIter, RangeValuesToRangesIter},
+    range_values::{IntoRangeValuesIter, RangeValuesIter, RangeValuesToRangesIter},
     Integer,
 };
 
@@ -1082,10 +1084,11 @@ impl<T: Integer> RangeSetBlaze2<T> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    // cmk100
-    // pub fn into_ranges(self) -> IntoRangesIter<T> {
-    //     self.0.into_ranges()
-    // }
+    pub fn into_ranges<'b>(
+        self,
+    ) -> RangeValuesToRangesIter<'b, T, (), Rc<()>, IntoRangeValuesIter<'b, T, ()>> {
+        self.0.into_ranges()
+    }
 
     // FUTURE BTreeSet some of these as 'const' but it uses unstable. When stable, add them here and elsewhere.
 

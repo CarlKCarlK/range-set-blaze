@@ -87,7 +87,7 @@ where
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
 pub struct IntoRangeValuesIter<'a, T: Integer + 'a, V: ValueOwned + 'a> {
     pub(crate) iter: btree_map::IntoIter<T, EndValue<T, V>>,
-    phantom: PhantomData<&'a V>,
+    pub(crate) phantom: PhantomData<&'a V>,
 }
 
 // impl<'a, T: Integer, V: ValueOwned + 'a> SortedStartsMap<'a, T, V, Rc<V>>
@@ -231,6 +231,111 @@ where
 
 // cmk
 // impl<T: Integer, V: ValueOwned> DoubleEndedIterator for RangeValuesToRangesIter<'_, T, V> {
+//     fn next_back(&mut self) -> Option<Self::Item> {
+//         self.iter.next_back().map(|(start, end)| *start..=*end)
+//     }
+// }
+
+// /// cmk
+// #[derive(Clone)]
+// #[must_use = "iterators are lazy and do nothing unless consumed"]
+// pub struct IntoRangeValuesToRangesIter<'a, T, V, VR, I>
+// where
+//     T: Integer + 'a,
+//     V: ValueOwned,
+//     VR: CloneBorrow<V> + 'a,
+//     I: SortedDisjointMap<'a, T, V, VR>,
+// {
+//     iter: I,
+//     option_ranges: Option<RangeInclusive<T>>,
+//     phantom0: PhantomData<&'a V>,
+//     phantom1: PhantomData<VR>,
+// }
+// // IntoRangeValuesToRangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
+// impl<'a, T, V, VR, I> crate::SortedStarts<T> for IntoRangeValuesToRangesIter<'a, T, V, VR, I>
+// where
+//     T: Integer,
+//     V: ValueOwned + 'a,
+//     VR: CloneBorrow<V> + 'a,
+//     I: SortedDisjointMap<'a, T, V, VR>,
+// {
+// }
+// impl<'a, T, V, VR, I> crate::SortedDisjoint<T> for IntoRangeValuesToRangesIter<'a, T, V, VR, I>
+// where
+//     T: Integer,
+//     V: ValueOwned + 'a,
+//     VR: CloneBorrow<V> + 'a,
+//     I: SortedDisjointMap<'a, T, V, VR>,
+// {
+// }
+
+// impl<'a, T, V, VR, I> FusedIterator for IntoRangeValuesToRangesIter<'a, T, V, VR, I>
+// where
+//     T: Integer,
+//     V: ValueOwned + 'a,
+//     VR: CloneBorrow<V> + 'a,
+//     I: SortedDisjointMap<'a, T, V, VR>,
+// {
+// }
+
+// impl<'a, T, V, VR, I> IntoRangeValuesToRangesIter<'a, T, V, VR, I>
+// where
+//     T: Integer + 'a,
+//     V: ValueOwned + 'a,
+//     VR: CloneBorrow<V> + 'a,
+//     I: SortedDisjointMap<'a, T, V, VR>,
+// {
+//     /// Creates a new `IntoRangeValuesToRangesIter` from an existing sorted disjoint map iterator.
+//     /// `option_ranges` is initialized as `None` by default.
+//     pub fn new(iter: I) -> Self {
+//         Self {
+//             iter,
+//             option_ranges: None, // Starts as None
+//             phantom0: PhantomData,
+//             phantom1: PhantomData,
+//         }
+//     }
+// }
+
+// // Range's iterator is just the inside BTreeMap iterator as values
+// impl<'a, T, V, VR, I> Iterator for IntoRangeValuesToRangesIter<'a, T, V, VR, I>
+// where
+//     T: Integer,
+//     V: ValueOwned + 'a,
+//     VR: CloneBorrow<V> + 'a,
+//     I: SortedDisjointMap<'a, T, V, VR>,
+// {
+//     type Item = RangeInclusive<T>;
+
+//     fn next(&mut self) -> Option<Self::Item> {
+//         loop {
+//             // If no next value, return whatever is current (could be None)
+//             let Some(next_range_value) = self.iter.next() else {
+//                 return self.option_ranges.take();
+//             };
+//             let (next_start, next_end) = next_range_value.range.into_inner();
+
+//             // If no current value, set current to next and loop
+//             let Some(current_range) = self.option_ranges.take() else {
+//                 self.option_ranges = Some(next_start..=next_end);
+//                 continue;
+//             };
+//             let (current_start, current_end) = current_range.into_inner();
+
+//             // If current range and next range are adjacent, merge them and loop
+//             if current_end + T::one() == next_start {
+//                 self.option_ranges = Some(current_start..=next_end);
+//                 continue;
+//             }
+
+//             self.option_ranges = Some(next_start..=next_end);
+//             return Some(current_start..=current_end);
+//         }
+//     }
+// }
+
+// cmk
+// impl<T: Integer, V: ValueOwned> DoubleEndedIterator for IntoRangeValuesToRangesIter<'_, T, V> {
 //     fn next_back(&mut self) -> Option<Self::Item> {
 //         self.iter.next_back().map(|(start, end)| *start..=*end)
 //     }

@@ -1471,18 +1471,30 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
+    pub fn range_values<'b>(&'b self) -> RangeValuesIter<'b, T, V> {
         RangeValuesIter {
             iter: self.btree_map.iter(),
         }
     }
 
+    /// cmk doc
+    pub fn into_range_values<'b>(self) -> IntoRangeValuesIter<'b, T, V> {
+        IntoRangeValuesIter {
+            iter: self.btree_map.into_iter(),
+            phantom: PhantomData,
+        }
+    }
+
     /// cmk
     pub fn ranges(&self) -> RangeValuesToRangesIter<T, V, &V, RangeValuesIter<T, V>> {
-        let iter = RangeValuesIter {
-            iter: self.btree_map.iter(),
-        };
-        RangeValuesToRangesIter::new(iter)
+        RangeValuesToRangesIter::new(self.range_values())
+    }
+
+    // cmk
+    pub fn into_ranges<'b>(
+        self,
+    ) -> RangeValuesToRangesIter<'b, T, V, Rc<V>, IntoRangeValuesIter<'b, T, V>> {
+        RangeValuesToRangesIter::new(self.into_range_values())
     }
 
     /// cmk
@@ -1493,42 +1505,6 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             .map(|r| (r, value.borrow_clone()))
             .collect()
     }
-
-    /// An iterator that moves out the ranges in the [`RangeMapBlaze`],
-    /// i.e., the integers as sorted & disjoint ranges.
-    ///
-    /// Also see [`RangeMapBlaze::into_iter`] and [`RangeMapBlaze::ranges`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_blaze::RangeMapBlaze;
-    ///
-    /// let mut ranges = RangeMapBlaze::from_iter([10..=20, 15..=25, 30..=40]).into_ranges();
-    /// assert_eq!(ranges.next(), Some(10..=25));
-    /// assert_eq!(ranges.next(), Some(30..=40));
-    /// assert_eq!(ranges.next(), None);
-    /// ```
-    ///
-    /// Values returned by the iterator are returned in ascending order:
-    ///
-    /// ```
-    /// use range_set_blaze::RangeMapBlaze;
-    ///
-    /// let mut ranges = RangeMapBlaze::from_iter([30..=40, 15..=25, 10..=20]).into_ranges();
-    /// assert_eq!(ranges.next(), Some(10..=25));
-    /// assert_eq!(ranges.next(), Some(30..=40));
-    /// assert_eq!(ranges.next(), None);
-    /// ```
-    // cmk
-    // pub fn into_ranges(self) -> IntoRangeValuesIter<T, V> {
-    //     let iter = RangeValuesFromBTree {
-    //         iter: self.btree_map.into_iter(),
-    //         phantom: PhantomData,
-    //     };
-
-    //     todo!("cmk")
-    // }
 
     // FUTURE BTreeSet some of these as 'const' but it uses unstable. When stable, add them here and elsewhere.
 
