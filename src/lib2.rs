@@ -12,6 +12,7 @@ use crate::{
     iter_map::KeysMap,
     prelude::*,
     range_values::{IntoRangeValuesIter, RangeValuesIter, RangeValuesToRangesIter},
+    sorted_disjoint_map::DebugToString,
     Integer, RangeValue, SortedStartsMap,
 };
 
@@ -1395,86 +1396,90 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze2<T> {
 //             .into_range_set_blaze2()
 //     }
 // }
-// impl<'a, T, I> MultiwayRangeSetBlaze<'a, T> for I
-// where
-//     T: Integer + 'a,
-//     I: IntoIterator<Item = &'a RangeSetBlaze2<T>>,
-// {
-// }
-// /// The trait used to provide methods on multiple [`RangeSetBlaze2`]'s,
-// /// specifically [`union`] and [`intersection`].
-// ///
-// /// Also see [`MultiwayRangeSetBlazeRef`].
-// ///
-// /// [`union`]: MultiwayRangeSetBlaze::union
-// /// [`intersection`]: MultiwayRangeSetBlaze::intersection
-// pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
-//     IntoIterator<Item = &'a RangeSetBlaze2<T>> + Sized
-// {
-//     /// Unions the given [`RangeSetBlaze2`]'s, creating a new [`RangeSetBlaze2`].
-//     /// Any number of input can be given.
-//     ///
-//     /// For exactly two inputs, you can also use the '|' operator.
-//     /// Also see [`MultiwayRangeSetBlazeRef::union`].
-//     ///
-//     /// # Performance
-//     ///
-//     ///  All work is done on demand, in one pass through the inputs. Minimal memory is used.
-//     ///
-//     /// # Example
-//     ///
-//     /// Find the integers that appear in any of the [`RangeSetBlaze2`]'s.
-//     ///
-//     /// ```
-//     /// use range_set_blaze::prelude::*;
-//     ///
-//     /// let a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
-//     /// let b = RangeSetBlaze2::from_iter([5..=13, 18..=29]);
-//     /// let c = RangeSetBlaze2::from_iter([25..=100]);
-//     ///
-//     /// let union = [a, b, c].union();
-//     ///
-//     /// assert_eq!(union, RangeSetBlaze2::from_iter([1..=15, 18..=100]));
-//     /// ```
-//     fn union(self) -> RangeSetBlaze2<T> {
-//         self.into_iter()
-//             .map(RangeSetBlaze2::ranges)
-//             .union()
-//             .into_range_set_blaze2()
-//     }
+impl<'a, T, I> MultiwayRangeSetBlaze<'a, T> for I
+where
+    T: Integer + 'a,
+    I: IntoIterator<Item = &'a RangeSetBlaze2<T>>,
+{
+}
+/// The trait used to provide methods on multiple [`RangeSetBlaze2`]'s,
+/// specifically [`union`] and [`intersection`].
+///
+/// Also see [`MultiwayRangeSetBlazeRef`].
+///
+/// [`union`]: MultiwayRangeSetBlaze::union
+/// [`intersection`]: MultiwayRangeSetBlaze::intersection
+pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
+    IntoIterator<Item = &'a RangeSetBlaze2<T>> + Sized
+{
+    /// Unions the given [`RangeSetBlaze2`]'s, creating a new [`RangeSetBlaze2`].
+    /// Any number of input can be given.
+    ///
+    /// For exactly two inputs, you can also use the '|' operator.
+    /// Also see [`MultiwayRangeSetBlazeRef::union`].
+    ///
+    /// # Performance
+    ///
+    ///  All work is done on demand, in one pass through the inputs. Minimal memory is used.
+    ///
+    /// # Example
+    ///
+    /// Find the integers that appear in any of the [`RangeSetBlaze2`]'s.
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetBlaze2::from_iter([5..=13, 18..=29]);
+    /// let c = RangeSetBlaze2::from_iter([25..=100]);
+    ///
+    /// let union = [a, b, c].union();
+    ///
+    /// assert_eq!(union, RangeSetBlaze2::from_iter([1..=15, 18..=100]));
+    /// ```
+    fn union(self) -> RangeSetBlaze2<T> {
+        // cmk1 RangeMapBlaze should have its own multiway union and we should use it here
+        let range_set_map = self
+            .into_iter()
+            .map(|a| a.0.range_values())
+            .union()
+            .into_range_map_blaze();
+        RangeSetBlaze2(range_set_map)
+    }
 
-//     /// Intersects the given [`RangeSetBlaze2`]'s, creating a new [`RangeSetBlaze2`].
-//     /// Any number of input can be given.
-//     ///
-//     /// For exactly two inputs, you can also use the '&' operator.
-//     /// Also see [`MultiwayRangeSetBlazeRef::intersection`].
-//     ///
-//     /// # Performance
-//     ///
-//     ///  All work is done on demand, in one pass through the inputs. Minimal memory is used.
-//     ///
-//     /// # Example
-//     ///
-//     /// Find the integers that appear in all the [`RangeSetBlaze2`]'s.
-//     ///
-//     /// ```
-//     /// use range_set_blaze::prelude::*;
-//     ///
-//     /// let a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
-//     /// let b = RangeSetBlaze2::from_iter([5..=13, 18..=29]);
-//     /// let c = RangeSetBlaze2::from_iter([-100..=100]);
-//     ///
-//     /// let intersection = [a, b, c].intersection();
-//     ///
-//     /// assert_eq!(intersection, RangeSetBlaze2::from_iter([5..=6, 8..=9, 11..=13]));
-//     /// ```
-//     fn intersection(self) -> RangeSetBlaze2<T> {
-//         self.into_iter()
-//             .map(RangeSetBlaze2::ranges)
-//             .intersection()
-//             .into_range_set_blaze2()
-//     }
-// }
+    /// Intersects the given [`RangeSetBlaze2`]'s, creating a new [`RangeSetBlaze2`].
+    /// Any number of input can be given.
+    ///
+    /// For exactly two inputs, you can also use the '&' operator.
+    /// Also see [`MultiwayRangeSetBlazeRef::intersection`].
+    ///
+    /// # Performance
+    ///
+    ///  All work is done on demand, in one pass through the inputs. Minimal memory is used.
+    ///
+    /// # Example
+    ///
+    /// Find the integers that appear in all the [`RangeSetBlaze2`]'s.
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
+    /// let b = RangeSetBlaze2::from_iter([5..=13, 18..=29]);
+    /// let c = RangeSetBlaze2::from_iter([-100..=100]);
+    ///
+    /// let intersection = [a, b, c].intersection();
+    ///
+    /// assert_eq!(intersection, RangeSetBlaze2::from_iter([5..=6, 8..=9, 11..=13]));
+    /// ```
+    // cmk10000000000000000
+    fn intersection(self) -> RangeSetBlaze2<T> {
+        self.into_iter()
+            .map(RangeSetBlaze2::ranges)
+            .intersection()
+            .into_range_set_blaze2()
+    }
+}
 
 // impl<T, II, I> MultiwaySortedDisjoint<T, I> for II
 // where
