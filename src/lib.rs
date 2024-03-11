@@ -1847,6 +1847,14 @@ where
             .union()
             .complement()
     }
+
+    /// cmk1000000000000
+    fn intersection2(self) -> BitAndKMerge<T, I> {
+        self.into_iter()
+            .map(|seq| seq.into_iter().complement())
+            .union()
+            .complement()
+    }
 }
 
 gen_ops_ex!(

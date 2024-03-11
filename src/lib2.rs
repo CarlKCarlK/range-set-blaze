@@ -1571,7 +1571,9 @@ gen_ops_ex!(
     /// assert_eq!(result.to_string(), "2..=2, 5..=6");
     /// ```
     for & call |a: &RangeSetBlaze2<T>, b: &RangeSetBlaze2<T>| {
-        (a.ranges() & b.ranges()).into_range_set_blaze2()
+        // cmk100000
+        let range_set_map = &a.0 & &b.0;
+        RangeSetBlaze2(range_set_map)
     };
 
     /// Symmetric difference the contents of two [`RangeSetBlaze2`]'s.
@@ -1589,11 +1591,9 @@ gen_ops_ex!(
     /// ```
     for ^ call |a: &RangeSetBlaze2<T>, b: &RangeSetBlaze2<T>| {
         // We optimize this by using ranges() twice per input, rather than tee()
-        let lhs0 = a.ranges();
-        let lhs1 = a.ranges();
-        let rhs0 = b.ranges();
-        let rhs1 = b.ranges();
-        ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze2()
+        // cmk1000000
+        let range_set_map = &a.0 ^ &b.0;
+        RangeSetBlaze2(range_set_map)
     };
 
     /// Difference the contents of two [`RangeSetBlaze2`]'s.
@@ -1610,7 +1610,9 @@ gen_ops_ex!(
     /// assert_eq!(result.to_string(), "1..=1, 7..=100");
     /// ```
     for - call |a: &RangeSetBlaze2<T>, b: &RangeSetBlaze2<T>| {
-        (a.ranges() - b.ranges()).into_range_set_blaze2()
+        // cmk100
+        let range_set_map = &a.0 - &b.0;
+        RangeSetBlaze2(range_set_map)
     };
     where T: Integer //Where clause for all impl's
 );
@@ -1857,9 +1859,11 @@ impl<T: Integer> BitOrAssign<&RangeSetBlaze2<T>> for RangeSetBlaze2<T> {
         }
         let b_len = other.ranges_len();
         if b_len * (a_len.ilog2() as usize + 1) < a_len + b_len {
+            // cmk10000
             self.extend(other.ranges());
         } else {
-            *self = (self.ranges() | other.ranges()).into_range_set_blaze2();
+            // cmk1000
+            self.0 = &self.0 | &other.0;
         }
     }
 }
@@ -1886,6 +1890,7 @@ impl<T: Integer> BitOrAssign<RangeSetBlaze2<T>> for RangeSetBlaze2<T> {
     fn bitor_assign(&mut self, mut other: Self) {
         let a_len = self.ranges_len();
         let b_len = other.ranges_len();
+        // cmk1000000
         if b_len <= a_len {
             *self |= &other;
         } else {
@@ -1911,6 +1916,7 @@ impl<T: Integer> BitOr<RangeSetBlaze2<T>> for RangeSetBlaze2<T> {
     /// ```
     type Output = RangeSetBlaze2<T>;
     fn bitor(mut self, other: Self) -> RangeSetBlaze2<T> {
+        // cmk1000
         self |= other;
         self
     }
@@ -1932,6 +1938,7 @@ impl<T: Integer> BitOr<&RangeSetBlaze2<T>> for RangeSetBlaze2<T> {
     /// ```
     type Output = RangeSetBlaze2<T>;
     fn bitor(mut self, other: &Self) -> RangeSetBlaze2<T> {
+        // cmk10000
         self |= other;
         self
     }
@@ -1953,6 +1960,7 @@ impl<T: Integer> BitOr<RangeSetBlaze2<T>> for &RangeSetBlaze2<T> {
     /// assert_eq!(union, RangeSetBlaze2::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor(self, mut other: RangeSetBlaze2<T>) -> RangeSetBlaze2<T> {
+        // cmk1000
         other |= self;
         other
     }
@@ -1974,7 +1982,9 @@ impl<T: Integer> BitOr<&RangeSetBlaze2<T>> for &RangeSetBlaze2<T> {
     /// assert_eq!(union, RangeSetBlaze2::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor(self, other: &RangeSetBlaze2<T>) -> RangeSetBlaze2<T> {
-        (self.ranges() | other.ranges()).into_range_set_blaze2()
+        // cmk10000
+        let range_set_map = &self.0 | &other.0;
+        RangeSetBlaze2(range_set_map)
     }
 }
 
