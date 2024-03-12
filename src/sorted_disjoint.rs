@@ -1,6 +1,7 @@
+use crate::lib2::UnitMapToSortedDisjoint;
 use crate::{
-    impl_sorted_traits_and_ops0, range_values::RangeValuesToRangesIter, IntoRangesIter,
-    RangeSetBlaze2, RangesIter,
+    impl_sorted_traits_and_ops0, lib2::SortedDisjointToUnitMap,
+    range_values::RangeValuesToRangesIter, IntoRangesIter, RangeSetBlaze2, RangesIter,
 };
 use alloc::format;
 use alloc::string::String;
@@ -13,7 +14,7 @@ use crate::{map::CloneBorrow, map::ValueOwned, SortedDisjointMap};
 use itertools::Itertools;
 
 use crate::{
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXOrTee, Integer, Merge, NotIter, RangeSetBlaze,
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXorOldNew, Integer, Merge, NotIter, RangeSetBlaze,
     UnionIter,
 };
 
@@ -344,15 +345,16 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
     #[inline]
-    fn symmetric_difference<R>(self, other: R) -> BitXOrTee<T, Self, R::IntoIter>
+    fn symmetric_difference<'a, R>(self, other: R) -> BitXorOldNew<'a, T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
         Self: Sized,
     {
-        let (lhs0, lhs1) = self.tee();
-        let (rhs0, rhs1) = other.into_iter().tee();
-        lhs0.difference(rhs0) | rhs1.difference(lhs1)
+        let left = SortedDisjointToUnitMap::new(self);
+        let right = SortedDisjointToUnitMap::new(other.into_iter());
+        let unit_map = left.symmetric_difference(right);
+        UnitMapToSortedDisjoint::new(unit_map)
     }
 
     /// Given two [`SortedDisjoint`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
@@ -732,11 +734,12 @@ macro_rules! impl_sorted_traits_and_ops0 {
             I: $TraitBound<T>,
             R: SortedDisjoint<T>,
         {
-            type Output = BitXOrTee<T, Self, R>;
+            type Output = i32; // cmk00000 BitXOrTee<T, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
-                SortedDisjoint::symmetric_difference(self, other)
+                SortedDisjoint::symmetric_difference(self, other);
+                todo!()
             }
         }
 
@@ -790,11 +793,12 @@ macro_rules! impl_sorted_traits_and_ops0 {
         where
             R: SortedDisjoint<T>,
         {
-            type Output = BitXOrTee<T, Self, R>;
+            type Output = i32; // cmk0000 BitXOrTee<T, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
-                SortedDisjoint::symmetric_difference(self, other)
+                SortedDisjoint::symmetric_difference(self, other);
+                todo!()
             }
         }
 
@@ -886,11 +890,12 @@ macro_rules! impl_sorted_traits_and_ops1 {
             I: SortedDisjointMap<'a, T, V, VR>,
             R: SortedDisjoint<T>,
         {
-            type Output = BitXOrTee<T, Self, R>;
+            type Output = i32; // cmk0000000 BitXOrTee<T, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
-                SortedDisjoint::symmetric_difference(self, other)
+                SortedDisjoint::symmetric_difference(self, other);
+                todo!()
             }
         }
 

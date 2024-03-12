@@ -6,7 +6,7 @@ use crate::{
     map::{CloneBorrow, ValueOwned},
     range_values::{AdjustPriorityMap, NON_ZERO_MAX, NON_ZERO_MIN},
     sorted_disjoint_map::Priority,
-    Integer, MergeMap, RangeValue, SortedDisjointMap, SortedStartsMap,
+    BitXorAdjusted, Integer, MergeMap, RangeValue, SortedDisjointMap, SortedStartsMap,
 };
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
@@ -219,21 +219,7 @@ where
     }
 }
 
-impl<'a, T, V, VR, L, R>
-    SymDiffIterMap<
-        'a,
-        T,
-        V,
-        VR,
-        MergeMap<
-            'a,
-            T,
-            V,
-            VR,
-            AdjustPriorityMap<'a, T, V, VR, L>,
-            AdjustPriorityMap<'a, T, V, VR, R>,
-        >,
-    >
+impl<'a, T, V, VR, L, R> BitXorAdjusted<'a, T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned,

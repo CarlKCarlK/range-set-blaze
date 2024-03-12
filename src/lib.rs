@@ -37,6 +37,7 @@ mod lib2;
 mod map;
 mod merge;
 pub use crate::lib2::RangeSetBlaze2;
+use crate::lib2::SortedDisjointToUnitMap;
 mod not_iter;
 pub mod prelude;
 pub mod range_values;
@@ -48,11 +49,13 @@ use alloc::collections::btree_map;
 use gen_ops::gen_ops_ex;
 use intersection_iter_map::IntersectionIterMap;
 mod sym_diff_iter_map;
+use lib2::UnitMapToSortedDisjoint;
 use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
 use range_values::AdjustPriorityMap;
 use range_values::RangeValuesToRangesIter;
+use sym_diff_iter_map::SymDiffIterMap;
 mod multiway_map;
 mod sorted_disjoint_map;
 mod tests;
@@ -567,6 +570,18 @@ impl<T: Integer> RangeSetBlaze<T> {
             btree_map,
             len: iter_with_len.len_so_far(),
         }
+    }
+
+    /// cmk doc (remove?)
+    pub fn from_unit_map<'a, I>(unit_map_iter: I) -> Self
+    where
+        T: 'a,
+        I: SortedDisjointMap<'a, T, (), &'a ()> + 'a,
+    {
+        // cmk eventually remove this function
+        let iter = unit_map_iter.map(|range_values| range_values.range);
+        let iter = CheckSortedDisjoint::new(iter);
+        Self::from_sorted_disjoint(iter)
     }
 
     /// Create a [`RangeSetBlaze`] from a [`SortedStarts`] iterator.
@@ -1584,6 +1599,28 @@ pub type BitOrAdjusted<'a, T, V, VR, L, R> = BitOrMergeMap<
 >;
 
 #[doc(hidden)]
+pub type BitXorAdjusted<'a, T, V, VR, L, R> = SymDiffIterMap<
+    'a,
+    T,
+    V,
+    VR,
+    MergeMap<'a, T, V, VR, AdjustPriorityMap<'a, T, V, VR, L>, AdjustPriorityMap<'a, T, V, VR, R>>,
+>;
+
+pub type BitXorOldNew<'a, T, L, R> = UnitMapToSortedDisjoint<
+    'a,
+    T,
+    BitXorAdjusted<
+        'a,
+        T,
+        (),
+        &'a (),
+        SortedDisjointToUnitMap<'a, T, L>,
+        SortedDisjointToUnitMap<'a, T, R>,
+    >,
+>;
+
+#[doc(hidden)]
 pub type BitOrKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
 #[doc(hidden)]
 pub type BitOrKMergeMap<'a, T, V, VR, I> = UnionIterMap<'a, T, V, VR, KMergeMap<'a, T, V, VR, I>>;
@@ -1894,12 +1931,11 @@ gen_ops_ex!(
     /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
     /// ```
     for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-        // We optimize this by using ranges() twice per input, rather than tee()
-        let lhs0 = a.ranges();
-        let lhs1 = a.ranges();
-        let rhs0 = b.ranges();
-        let rhs1 = b.ranges();
-        ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze()
+        // cmk eventually remove this function
+        let left = SortedDisjointToUnitMap::new(a.ranges());
+        let right = SortedDisjointToUnitMap::new(b.ranges());
+        let unit_map = left.symmetric_difference(right);
+        RangeSetBlaze::from_unit_map(unit_map)
     };
 
     /// Difference the contents of two [`RangeSetBlaze`]'s.

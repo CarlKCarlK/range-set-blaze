@@ -5,6 +5,7 @@ use crate::range_values::RangeValuesIter;
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::unsorted_disjoint_map::AssumeSortedDisjointMap;
 use crate::BitOrAdjusted;
+use crate::BitXorAdjusted;
 use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
@@ -436,51 +437,36 @@ where
         RangeToRangeValueIter::new(complement, v)
     }
 
-    // cmk maybe we don't implement this, but it is OK on RangeMapBlaze
-    // /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator
-    // /// of their symmetric difference.
-    // ///
-    // /// # Examples
-    // ///
-    // /// ```
-    // /// use range_set_blaze::prelude::*;
-    // ///
-    // /// let a = CheckSortedDisjointMap::from([1..=2]);
-    // /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
-    // /// let symmetric_difference = a.symmetric_difference(b);
-    // /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
-    // ///
-    // /// // Alternatively, we can use "^" because CheckSortedDisjointMap defines
-    // /// // ops::bitxor as SortedDisjointMap::symmetric_difference.
-    // /// let a = CheckSortedDisjointMap::from([1..=2]);
-    // /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
-    // /// let symmetric_difference = a ^ b;
-    // /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
-    // /// ```
-    // #[inline]
-    // fn symmetric_difference<R>(
-    //     self,
-    //     other: R,
-    // ) -> BitAndRangesMap<
-    //     'a,
-    //     T,
-    //     V,
-    //     VR,
-    //     BitSubRangesMap<'a, T, V, VR, Self, impl SortedDisjoint<T>>,
-    //     BitSubRangesMap<'a, T, V, VR, R::IntoIter, impl SortedDisjoint<T>>,
-    // >
-    // where
-    //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
-    //     Self: Sized,
-    //     VR: Clone,
-    // {
-    //     let (lhs0, lhs1) = self.tee();
-    //     let lhs1 = lhs1.into_sorted_disjoint();
-    //     let (rhs0, rhs1) = other.into_iter().tee();
-    //     let rhs0 = rhs0.into_sorted_disjoint();
-    //     lhs0.difference(rhs0).union(rhs1.difference(lhs1))
-    // }
+    /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator
+    /// of their symmetric difference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
+    /// let symmetric_difference = a.symmetric_difference(b);
+    /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
+    ///
+    /// // Alternatively, we can use "^" because CheckSortedDisjointMap defines
+    /// // ops::bitxor as SortedDisjointMap::symmetric_difference.
+    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
+    /// let symmetric_difference = a ^ b;
+    /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
+    /// ```
+    #[inline]
+    fn symmetric_difference<R>(self, other: R) -> BitXorAdjusted<'a, T, V, VR, Self, R::IntoIter>
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjointMap<'a, T, V, VR>,
+        Self: Sized,
+        VR: Clone,
+    {
+        SymDiffIterMap::new2(self, other.into_iter())
+    }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
     /// this method takes ownership of the iterators and consumes them.
@@ -1311,20 +1297,19 @@ macro_rules! impl_sorted_map_traits_and_ops1 {
             }
         }
 
-        // cmk leaving out for now because can't because efficient implementation requires new iterator
-        // impl<'a, T, V, R> ops::BitXor<R> for $IterType
-        // where
-        //     T: Integer,
-        //     V: ValueOwned + 'a,
-        //     R: SortedDisjointMap<'a, T, V, $VR>,
-        // {
-        //     type Output = BitXOrTeeMap<'a, T, V, $VR, Self, R>;
+        impl<'a, T, V, R> ops::BitXor<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned + 'a,
+            R: SortedDisjointMap<'a, T, V, $VR>,
+        {
+            type Output = BitXorAdjusted<'a, T, V, $VR, Self, R>;
 
-        //     #[allow(clippy::suspicious_arithmetic_impl)]
-        //     fn bitxor(self, other: R) -> Self::Output {
-        //         SortedDisjointMap::symmetric_difference(self, other)
-        //     }
-        // }
+            #[allow(clippy::suspicious_arithmetic_impl)]
+            fn bitxor(self, other: R) -> Self::Output {
+                SortedDisjointMap::symmetric_difference(self, other)
+            }
+        }
 
         impl<'a, T, V, R> ops::BitAnd<R> for $IterType
         where
@@ -1354,6 +1339,7 @@ impl_sorted_map_traits_and_ops0!(
     SortedDisjoint
 );
 impl_sorted_map_traits_and_ops0!(AssumeSortedDisjointMap<'a, T, V, VR, I>, SortedDisjointMap);
+
 // impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, AnythingGoes);
 
 // impl_sorted_traits_and_ops!(RangesIter<'_, T>);

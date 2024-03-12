@@ -2145,13 +2145,27 @@ impl<T: Integer> Eq for RangeSetBlaze2<T> {}
 // impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 // impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
-struct SortedDisjointToUnitMap<'a, T, I>
+pub struct SortedDisjointToUnitMap<'a, T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
 {
     iter: I,
     phantom: PhantomData<&'a T>,
+}
+
+impl<'a, T, I> SortedDisjointToUnitMap<'a, T, I>
+where
+    T: Integer + 'a,
+    I: SortedDisjoint<T> + 'a,
+{
+    // Define a new method that directly accepts a SortedDisjoint iterator
+    pub fn new(iter: I) -> Self {
+        SortedDisjointToUnitMap {
+            iter,
+            phantom: PhantomData,
+        }
+    }
 }
 
 impl<'a, T, I> Iterator for SortedDisjointToUnitMap<'a, T, I>
@@ -2179,5 +2193,56 @@ impl<'a, T, I> SortedDisjointMap<'a, T, (), &'a ()> for SortedDisjointToUnitMap<
 where
     T: Integer + 'a, // 'a reflects a more scoped lifetime
     I: SortedDisjoint<T>,
+{
+}
+
+pub struct UnitMapToSortedDisjoint<'a, T, I>
+where
+    T: Integer,
+    I: SortedDisjointMap<'a, T, (), &'a ()>,
+{
+    iter: I,
+    phantom: PhantomData<&'a T>,
+}
+
+impl<'a, T, I> UnitMapToSortedDisjoint<'a, T, I>
+where
+    T: Integer,
+    I: SortedDisjointMap<'a, T, (), &'a ()>,
+{
+    // Define a new method that directly accepts a SortedDisjoint iterator
+    pub fn new(iter: I) -> Self {
+        UnitMapToSortedDisjoint {
+            iter,
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, T, I> Iterator for UnitMapToSortedDisjoint<'a, T, I>
+where
+    T: Integer,
+    I: SortedDisjointMap<'a, T, (), &'a ()>,
+{
+    type Item = RangeInclusive<T>;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter
+            .next()
+            .map(|range_value| range_value.range.clone())
+    }
+}
+
+// cmk1 move these into the macro
+impl<'a, T, I> SortedStarts<T> for UnitMapToSortedDisjoint<'a, T, I>
+where
+    T: Integer + 'a, // Now, T is bounded by 'a instead of being 'static
+    I: SortedDisjointMap<'a, T, (), &'a ()>,
+{
+}
+
+impl<'a, T, I> SortedDisjoint<T> for UnitMapToSortedDisjoint<'a, T, I>
+where
+    T: Integer + 'a, // 'a reflects a more scoped lifetime
+    I: SortedDisjointMap<'a, T, (), &'a ()>,
 {
 }
