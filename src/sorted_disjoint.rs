@@ -349,7 +349,8 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
-        Self: Sized,
+        <R as IntoIterator>::IntoIter: 'a,
+        Self: Sized + 'a,
     {
         let left = SortedDisjointToUnitMap::new(self);
         let right = SortedDisjointToUnitMap::new(other.into_iter());
@@ -729,17 +730,18 @@ macro_rules! impl_sorted_traits_and_ops0 {
             }
         }
 
-        impl<T: Integer, I, R> ops::BitXor<R> for $IterType
+        // cmk00 is 'static the right lifetime?
+        impl<T, I, R> ops::BitXor<R> for $IterType
         where
-            I: $TraitBound<T>,
-            R: SortedDisjoint<T>,
+            T: Integer + 'static,
+            I: $TraitBound<T> + 'static,
+            R: SortedDisjoint<T> + 'static,
         {
-            type Output = i32; // cmk00000 BitXOrTee<T, Self, R>;
+            type Output = BitXorOldNew<'static, T, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
-                SortedDisjoint::symmetric_difference(self, other);
-                todo!()
+                SortedDisjoint::symmetric_difference(self, other)
             }
         }
 
@@ -789,16 +791,16 @@ macro_rules! impl_sorted_traits_and_ops0 {
             }
         }
 
-        impl<T: Integer, R> ops::BitXor<R> for $IterType
+        impl<T, R> ops::BitXor<R> for $IterType
         where
-            R: SortedDisjoint<T>,
+            T: Integer + 'static,
+            R: SortedDisjoint<T> + 'static,
         {
-            type Output = i32; // cmk0000 BitXOrTee<T, Self, R>;
+            type Output = BitXorOldNew<'static, T, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
-                SortedDisjoint::symmetric_difference(self, other);
-                todo!()
+                SortedDisjoint::symmetric_difference(self, other)
             }
         }
 
@@ -884,18 +886,17 @@ macro_rules! impl_sorted_traits_and_ops1 {
 
         impl<'a, T, V, VR, I, R> ops::BitXor<R> for $IterType
         where
-            T: Integer,
+            T: Integer + 'a,
             V: ValueOwned + 'a,
             VR: CloneBorrow<V> + 'a,
-            I: SortedDisjointMap<'a, T, V, VR>,
-            R: SortedDisjoint<T>,
+            I: SortedDisjointMap<'a, T, V, VR> + 'a,
+            R: SortedDisjoint<T> + 'a,
         {
-            type Output = i32; // cmk0000000 BitXOrTee<T, Self, R>;
+            type Output = BitXorOldNew<'a, T, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
-                SortedDisjoint::symmetric_difference(self, other);
-                todo!()
+                SortedDisjoint::symmetric_difference(self, other)
             }
         }
 
@@ -916,12 +917,83 @@ macro_rules! impl_sorted_traits_and_ops1 {
     };
 }
 
+/// cmk doc
+#[macro_export]
+macro_rules! impl_sorted_traits_and_ops2 {
+    ($IterType:ty) => {
+        impl<'a, T> SortedStarts<T> for $IterType where T: Integer {}
+        impl<'a, T> SortedDisjoint<T> for $IterType where T: Integer {}
+
+        impl<'a, T> ops::Not for $IterType
+        where
+            T: Integer,
+        {
+            type Output = NotIter<T, Self>;
+
+            fn not(self) -> Self::Output {
+                self.complement()
+            }
+        }
+
+        impl<'a, T, R> ops::BitOr<R> for $IterType
+        where
+            T: Integer,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitOrMerge<T, Self, R>;
+
+            fn bitor(self, other: R) -> Self::Output {
+                SortedDisjoint::union(self, other)
+            }
+        }
+
+        impl<'a, T, R> ops::Sub<R> for $IterType
+        where
+            T: Integer,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitSubMerge<T, Self, R>;
+
+            fn sub(self, other: R) -> Self::Output {
+                // It would be fun to optimize !!self.iter into self.iter
+                // but that would require also considering fields 'start_not' and 'next_time_return_none'.
+                SortedDisjoint::difference(self, other)
+            }
+        }
+
+        impl<'a, T, R> ops::BitXor<R> for $IterType
+        where
+            T: Integer + 'a,
+            R: SortedDisjoint<T> + 'a,
+        {
+            type Output = BitXorOldNew<'a, T, Self, R>;
+
+            #[allow(clippy::suspicious_arithmetic_impl)]
+            fn bitxor(self, other: R) -> Self::Output {
+                SortedDisjoint::symmetric_difference(self, other)
+            }
+        }
+
+        impl<'a, T, R> ops::BitAnd<R> for $IterType
+        where
+            T: Integer,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitAndMerge<T, Self, R>;
+
+            fn bitand(self, other: R) -> Self::Output {
+                SortedDisjoint::intersection(self, other)
+            }
+        }
+    };
+}
+
 impl_sorted_traits_and_ops0!(CheckSortedDisjoint<T, I>, AnythingGoes);
-impl_sorted_traits_and_ops0!(RangesIter<'_, T>);
 impl_sorted_traits_and_ops0!(IntoRangesIter<T>);
 impl_sorted_traits_and_ops0!(NotIter<T, I>, SortedDisjoint);
 impl_sorted_traits_and_ops0!(UnionIter<T, I>, SortedStarts);
 impl_sorted_traits_and_ops1!(RangeValuesToRangesIter<'a, T, V, VR, I>);
+impl_sorted_traits_and_ops2!(RangesIter<'a, T>);
 //cmk10 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<'a, T, V, VR, I>, SortedDisjointMap);
 
 // cmk0 is there an AssumeSortedDisjoint?

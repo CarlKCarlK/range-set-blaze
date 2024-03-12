@@ -13,16 +13,14 @@ use rand::SeedableRng;
 use range_set_blaze::RangeSetBlaze2;
 #[cfg(feature = "rog-experimental")]
 use range_set_blaze::Rog;
-use range_set_blaze::{
-    prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts, UnionIter,
-};
+use range_set_blaze::{prelude::*, AssumeSortedStarts, Integer, RangesIter, UnionIter};
 use std::cmp::Ordering;
+use std::collections::BTreeSet;
 #[cfg(feature = "rog-experimental")]
 use std::panic::AssertUnwindSafe;
 #[cfg(feature = "rog-experimental")]
 use std::panic::{self};
 use std::time::Instant;
-use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 use tests_common::{How, MemorylessRange};
 

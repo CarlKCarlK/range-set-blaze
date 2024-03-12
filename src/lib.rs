@@ -1607,6 +1607,7 @@ pub type BitXorAdjusted<'a, T, V, VR, L, R> = SymDiffIterMap<
     MergeMap<'a, T, V, VR, AdjustPriorityMap<'a, T, V, VR, L>, AdjustPriorityMap<'a, T, V, VR, R>>,
 >;
 
+#[doc(hidden)]
 pub type BitXorOldNew<'a, T, L, R> = UnitMapToSortedDisjoint<
     'a,
     T,

@@ -327,7 +327,7 @@ fn map_random_symmetric_difference() {
                     let get0 = map0.get(k);
                     let get1 = map1.get(k);
                     match (get0, get1) {
-                        (Some(v0), Some(v1)) => {
+                        (Some(_v0), Some(_v1)) => {
                             println!();
                             println!("left: {}", map0);
                             println!("right: {}", map1);

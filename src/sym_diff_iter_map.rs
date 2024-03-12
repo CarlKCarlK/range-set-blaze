@@ -70,7 +70,7 @@ where
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
-                let (next_start, next_end) = next_item.range.clone().into_inner();
+                let (next_start, _next_end) = next_item.range.clone().into_inner();
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
@@ -117,6 +117,7 @@ where
             // We buffer for output the best item up to the start of the next item (if any).
 
             // Find the start of the next item, if any.
+            // cmk00000000 keep a running total instead of using .map().
             let mut next_end = *self
                 .workspace
                 .iter()
