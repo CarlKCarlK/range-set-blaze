@@ -2,6 +2,7 @@ use crate::map::BitSubRangesMap;
 use crate::map::UniqueValue;
 use crate::range_values::IntoRangeValuesIter;
 use crate::range_values::RangeValuesIter;
+use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::unsorted_disjoint_map::AssumeSortedDisjointMap;
 use crate::BitOrAdjusted;
 use alloc::format;
@@ -1344,6 +1345,7 @@ macro_rules! impl_sorted_map_traits_and_ops1 {
 // cmk00 should there be a CheckSortedDisjointMap? AssumeSortedDisjointMap?
 
 impl_sorted_map_traits_and_ops0!(UnionIterMap<'a, T, V, VR, I>, SortedStartsMap);
+impl_sorted_map_traits_and_ops0!(SymDiffIterMap<'a, T, V, VR, I>, SortedStartsMap);
 impl_sorted_map_traits_and_ops1!(RangeValuesIter<'a, T, V>, &'a V);
 impl_sorted_map_traits_and_ops1!(IntoRangeValuesIter<'a, T, V>, Rc<V>);
 impl_sorted_map_traits_and_ops0!(

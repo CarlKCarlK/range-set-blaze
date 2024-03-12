@@ -2,6 +2,7 @@ use crate::intersection_iter_map::IntersectionIterMap;
 use crate::iter_map::IntoIterMap;
 use crate::iter_map::{IterMap, KeysMap};
 use crate::range_values::{IntoRangeValuesIter, RangeValuesIter, RangeValuesToRangesIter};
+use crate::sym_diff_iter_map::SymDiffIterMap;
 use alloc::borrow::ToOwned;
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
@@ -1884,12 +1885,7 @@ gen_ops_ex!(
 /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
 /// ```
 for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
-    // We optimize this by using ranges() twice per input, rather than tee()
-    let lhs0 = a.range_values();
-    let lhs1 = a.ranges();
-    let rhs0 = b.ranges();
-    let rhs1 = b.range_values();
-    (lhs0.difference(rhs0).union(rhs1.difference(lhs1))).into_range_map_blaze()
+    SymDiffIterMap::new2(a.range_values(), b.range_values()).into_range_map_blaze()
 };
 /// Difference the contents of two [`RangeSetBlaze2`]'s.
 ///

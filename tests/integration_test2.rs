@@ -24,7 +24,7 @@ use std::panic::{self};
 use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
-use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
+use tests_common::{How, MemorylessRange};
 
 type I32SafeLen = <i32 as range_set_blaze::Integer>::SafeLen;
 
@@ -1049,6 +1049,7 @@ fn two_sync_and_send() {
     assert_sync_and_send::<RangesIter<i32>>();
 }
 
+#[allow(dead_code)]
 fn fraction<T: Integer>(range_int_set: &RangeSetBlaze2<T>, range: &RangeInclusive<T>) -> f64 {
     T::safe_len_to_f64(range_int_set.len()) / T::safe_len_to_f64(T::safe_len(range))
 }

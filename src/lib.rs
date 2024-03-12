@@ -53,7 +53,6 @@ pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
 use range_values::AdjustPriorityMap;
 use range_values::RangeValuesToRangesIter;
-use sym_diff_iter_map::SymDiffIterMap;
 mod multiway_map;
 mod sorted_disjoint_map;
 mod tests;

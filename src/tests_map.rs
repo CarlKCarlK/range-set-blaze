@@ -3,7 +3,9 @@
 use self::map::ValueOwned;
 use super::*;
 use crate::intersection_iter_map::IntersectionIterMap;
+use crate::sorted_disjoint_map::DebugToString;
 use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap};
+use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, UnsortedDisjointMap};
 use itertools::Itertools;
@@ -259,6 +261,107 @@ fn map_random_intersection() {
     }
 }
 
+#[test]
+fn map_tiny_symmetric_difference0() {
+    let mut map0 = RangeMapBlaze::new();
+    map0.insert(84, 'c');
+    map0.insert(85, 'c');
+    let mut map1 = RangeMapBlaze::new();
+    map1.insert(85, 'a');
+    let symmetric_difference = SymDiffIterMap::new2(map0.range_values(), map1.range_values());
+    assert_eq!(symmetric_difference.to_string(), "(84..=84, 'c')");
+}
+
+#[test]
+fn map_tiny_symmetric_difference1() {
+    let mut map0 = RangeMapBlaze::new();
+    map0.insert(187, 'a');
+    map0.insert(188, 'a');
+    map0.insert(189, 'a');
+    let mut map1 = RangeMapBlaze::new();
+    map1.insert(187, 'b');
+    map1.insert(189, 'c');
+    let symmetric_difference = SymDiffIterMap::new2(map0.range_values(), map1.range_values());
+    assert_eq!(symmetric_difference.to_string(), "(188..=188, 'a')");
+}
+
+#[test]
+fn map_random_symmetric_difference() {
+    let values = ['a', 'b', 'c'];
+    for seed in 0..20 {
+        println!("seed: {seed}");
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        let mut map0 = RangeMapBlaze::new();
+        let mut map1 = RangeMapBlaze::new();
+        // let mut inputs = Vec::<(u8, &char)>::new();
+
+        for _ in 0..500 {
+            let key = rng.gen_range(0..=255u8);
+            let value = values.choose(&mut rng).unwrap();
+            map0.insert(key, *value);
+            print!("l{key}{value} ");
+            let key = rng.gen_range(0..=255u8);
+            let value = values.choose(&mut rng).unwrap();
+            map1.insert(key, *value);
+            print!("r{key}{value} ");
+
+            let symmetric_difference =
+                SymDiffIterMap::new2(map0.range_values(), map1.range_values());
+
+            // println!(
+            //     "left ^ right = {}",
+            //     SymDiffIterMap::new2(map0.range_values(), map1.range_values()).to_string()
+            // );
+
+            let mut expected_keys = map0
+                .ranges()
+                .symmetric_difference(map1.ranges())
+                .collect::<RangeSetBlaze<_>>();
+            for range_value in symmetric_difference {
+                let range = range_value.range;
+                let value = range_value.value;
+                // println!();
+                // print!("removing ");
+                for k in range {
+                    let get0 = map0.get(k);
+                    let get1 = map1.get(k);
+                    match (get0, get1) {
+                        (Some(v0), Some(v1)) => {
+                            println!();
+                            println!("left: {}", map0);
+                            println!("right: {}", map1);
+                            let s_d =
+                                SymDiffIterMap::new2(map0.range_values(), map1.range_values())
+                                    .into_range_map_blaze();
+                            panic!("left ^ right = {s_d}");
+                        }
+                        (Some(v0), None) => {
+                            assert_eq!(v0, value);
+                        }
+                        (None, Some(v1)) => {
+                            assert_eq!(v1, value);
+                        }
+                        (None, None) => {
+                            panic!("should not happen 1");
+                        }
+                    }
+                    assert!(expected_keys.remove(k));
+                }
+                // println!();
+            }
+            if !expected_keys.is_empty() {
+                println!();
+                println!("left: {}", map0);
+                println!("right: {}", map1);
+                let s_d = SymDiffIterMap::new2(map0.range_values(), map1.range_values())
+                    .into_range_map_blaze();
+                println!("left ^ right = {s_d}");
+                panic!("expected_keys should be empty: {expected_keys}");
+            }
+        }
+    }
+}
 #[test]
 fn map_repro_insert_1() {
     let mut range_map_blaze = RangeMapBlaze::new();
