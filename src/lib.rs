@@ -68,6 +68,7 @@ pub use crate::map::RangeMapBlaze;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
 pub use crate::unsorted_disjoint_map::{AssumeSortedDisjointMap, AssumeSortedStartsMap};
 use alloc::{collections::BTreeMap, vec::Vec};
+use core::marker::PhantomData;
 use core::{
     cmp::{max, Ordering},
     convert::From,
@@ -1409,9 +1410,10 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    pub fn into_ranges(self) -> IntoRangesIter<T> {
+    pub fn into_ranges<'a>(self) -> IntoRangesIter<'a, T> {
         IntoRangesIter {
             iter: self.btree_map.into_iter(),
+            phantom: PhantomData,
         }
     }
 

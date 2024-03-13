@@ -808,7 +808,7 @@ fn check_traits() {
     is_sssu::<ANotIter>();
     is_like_btreeset_iter::<ANotIter>();
 
-    type AIntoRangesIter = IntoRangesIter<i32>;
+    type AIntoRangesIter<'a> = IntoRangesIter<'a, i32>;
     is_sssu::<AIntoRangesIter>();
     is_like_btreeset_into_iter::<AIntoRangesIter>();
 

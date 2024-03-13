@@ -734,8 +734,8 @@ macro_rules! impl_sorted_traits_and_ops0 {
         impl<T, I, R> ops::BitXor<R> for $IterType
         where
             T: Integer + 'static,
-            I: $TraitBound<T> + 'static,
-            R: SortedDisjoint<T> + 'static,
+            I: $TraitBound<T>,
+            R: SortedDisjoint<T>,
         {
             type Output = BitXorOldNew<'static, T, Self, R>;
 
@@ -794,7 +794,7 @@ macro_rules! impl_sorted_traits_and_ops0 {
         impl<T, R> ops::BitXor<R> for $IterType
         where
             T: Integer + 'static,
-            R: SortedDisjoint<T> + 'static,
+            R: SortedDisjoint<T>,
         {
             type Output = BitXorOldNew<'static, T, Self, R>;
 
@@ -989,11 +989,11 @@ macro_rules! impl_sorted_traits_and_ops2 {
 }
 
 impl_sorted_traits_and_ops0!(CheckSortedDisjoint<T, I>, AnythingGoes);
-impl_sorted_traits_and_ops0!(IntoRangesIter<T>);
 impl_sorted_traits_and_ops0!(NotIter<T, I>, SortedDisjoint);
 impl_sorted_traits_and_ops0!(UnionIter<T, I>, SortedStarts);
 impl_sorted_traits_and_ops1!(RangeValuesToRangesIter<'a, T, V, VR, I>);
 impl_sorted_traits_and_ops2!(RangesIter<'a, T>);
+impl_sorted_traits_and_ops2!(IntoRangesIter<'a, T>);
 //cmk10 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<'a, T, V, VR, I>, SortedDisjointMap);
 
 // cmk0 is there an AssumeSortedDisjoint?

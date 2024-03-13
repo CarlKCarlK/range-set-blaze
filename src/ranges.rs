@@ -1,4 +1,4 @@
-use core::{iter::FusedIterator, ops::RangeInclusive};
+use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
 
 use alloc::collections::btree_map;
 
@@ -63,21 +63,22 @@ impl<T: Integer> DoubleEndedIterator for RangesIter<'_, T> {
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
 #[derive(Debug)]
-pub struct IntoRangesIter<T: Integer> {
+pub struct IntoRangesIter<'a, T: Integer + 'a> {
     pub(crate) iter: btree_map::IntoIter<T, T>,
+    pub(crate) phantom: PhantomData<&'a T>,
 }
 
-impl<T: Integer> ExactSizeIterator for IntoRangesIter<T> {
+impl<'a, T: Integer + 'a> ExactSizeIterator for IntoRangesIter<'a, T> {
     #[must_use]
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<T: Integer> FusedIterator for IntoRangesIter<T> {}
+impl<'a, T: Integer + 'a> FusedIterator for IntoRangesIter<'a, T> {}
 
 // Range's iterator is just the inside BTreeMap iterator as values
-impl<T: Integer> Iterator for IntoRangesIter<T> {
+impl<'a, T: Integer + 'a> Iterator for IntoRangesIter<'a, T> {
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -89,7 +90,7 @@ impl<T: Integer> Iterator for IntoRangesIter<T> {
     }
 }
 
-impl<T: Integer> DoubleEndedIterator for IntoRangesIter<T> {
+impl<'a, T: Integer + 'a> DoubleEndedIterator for IntoRangesIter<'a, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter.next_back().map(|(start, end)| start..=end)
     }
