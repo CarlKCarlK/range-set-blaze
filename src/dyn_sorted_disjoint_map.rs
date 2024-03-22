@@ -30,23 +30,24 @@ use alloc::boxed::Box;
 
 pub struct DynSortedDisjointMap<'a, T, V, VR>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
 {
-    iter: Box<dyn SortedDisjointMap<'a, T, V, VR> + 'a>,
+    iter: Box<dyn SortedDisjointMap<T, V, VR> + 'a>,
 }
 
+// cmk000 compile, but should it require 'static
 impl<'a, T, V, VR> DynSortedDisjointMap<'a, T, V, VR>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
 {
     /// Create a [`DynSortedDisjointMap`] from any [`SortedDisjointMap`] iterator. See [`DynSortedDisjointMap`] for an example.
     pub fn new<I>(iter: I) -> Self
     where
-        I: SortedDisjointMap<'a, T, V, VR> + 'a,
+        I: SortedDisjointMap<T, V, VR> + 'a,
     {
         Self {
             iter: Box::new(iter),
@@ -55,28 +56,28 @@ where
 }
 
 // All DynSortedDisjointMap's are SortedDisjointMap's
-impl<'a, T, V, VR> SortedStartsMap<'a, T, V, VR> for DynSortedDisjointMap<'a, T, V, VR>
+impl<'a, T, V, VR> SortedStartsMap<T, V, VR> for DynSortedDisjointMap<'a, T, V, VR>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
 {
 }
-impl<'a, T, V, VR> SortedDisjointMap<'a, T, V, VR> for DynSortedDisjointMap<'a, T, V, VR>
+impl<'a, T, V, VR> SortedDisjointMap<T, V, VR> for DynSortedDisjointMap<'a, T, V, VR>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
 {
 }
 
 impl<'a, T, V, VR> Iterator for DynSortedDisjointMap<'a, T, V, VR>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
 {
-    type Item = RangeValue<'a, T, V, VR>;
+    type Item = RangeValue<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()

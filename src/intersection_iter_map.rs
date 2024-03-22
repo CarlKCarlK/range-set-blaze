@@ -37,28 +37,28 @@ use crate::{map::ValueOwned, Integer};
 // cmk #[derive(Clone, Debug)]
 #[allow(dead_code)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct IntersectionIterMap<'a, T, V, VR, IM, IS>
+pub struct IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
     V: ValueOwned,
-    VR: CloneBorrow<V> + 'a,
-    IM: SortedDisjointMap<'a, T, V, VR> + 'a,
+    VR: CloneBorrow<V>,
+    IM: SortedDisjointMap<T, V, VR>,
     IS: SortedDisjoint<T>,
 {
     iter_map: IM,
     iter_set: IS,
     current_range: Option<RangeInclusive<T>>,
-    current_range_value: Option<RangeValue<'a, T, V, VR>>,
-    _phantom0: PhantomData<&'a T>,
-    _phantom1: PhantomData<&'a V>,
+    current_range_value: Option<RangeValue<T, V, VR>>,
+    _phantom0: PhantomData<T>, // cmk needed?
+    _phantom1: PhantomData<V>, // cmk needed?
 }
 
-impl<'a, T, V, VR, IM, IS> IntersectionIterMap<'a, T, V, VR, IM, IS>
+impl<'a, T, V, VR, IM, IS> IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
     V: ValueOwned,
-    VR: CloneBorrow<V> + 'a,
-    IM: SortedDisjointMap<'a, T, V, VR> + 'a,
+    VR: CloneBorrow<V>,
+    IM: SortedDisjointMap<T, V, VR>,
     IS: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
@@ -98,17 +98,17 @@ where
 //     }
 // }
 
-impl<'a, T, V, VR, IM, IS> Iterator for IntersectionIterMap<'a, T, V, VR, IM, IS>
+impl<'a, T, V, VR, IM, IS> Iterator for IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
     V: ValueOwned,
-    VR: CloneBorrow<V> + 'a,
-    IM: SortedDisjointMap<'a, T, V, VR>,
+    VR: CloneBorrow<V>,
+    IM: SortedDisjointMap<T, V, VR>,
     IS: SortedDisjoint<T>,
 {
-    type Item = RangeValue<'a, T, V, VR>;
+    type Item = RangeValue<T, V, VR>;
 
-    fn next(&mut self) -> Option<RangeValue<'a, T, V, VR>> {
+    fn next(&mut self) -> Option<RangeValue<T, V, VR>> {
         // println!("cmk begin next");
         loop {
             // Be sure both currents are loaded.

@@ -174,12 +174,12 @@ pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: ValueOwned + 'a>:
     }
 }
 
-impl<'a, T, V, VR, II, I> MultiwaySortedDisjointMap<'a, T, V, VR, I> for II
+impl<T, V, VR, II, I> MultiwaySortedDisjointMap<T, V, VR, I> for II
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
     II: IntoIterator<Item = I>,
 {
 }
@@ -189,12 +189,12 @@ where
 ///
 /// [`union`]: crate::MultiwaySortedDisjointMap::union
 /// [`intersection`]: crate::MultiwaySortedDisjointMap::intersection
-pub trait MultiwaySortedDisjointMap<'a, T, V, VR, I>: IntoIterator<Item = I> + Sized
+pub trait MultiwaySortedDisjointMap<T, V, VR, I>: IntoIterator<Item = I> + Sized
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
     /// Unions the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
     /// The input iterators must be of the same type. Any number of input iterators can be given.
@@ -220,7 +220,7 @@ where
     ///
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
-    fn union(self) -> BitOrKMergeMap<'a, T, V, VR, I> {
+    fn union(self) -> BitOrKMergeMap<T, V, VR, I> {
         UnionIterMap::new(KMergeMap::new(self))
     }
 
@@ -248,7 +248,7 @@ where
     ///
     /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
     /// ```
-    fn intersection(self) -> IntersectionMap<'a, T, V, VR, I> {
+    fn intersection(self) -> IntersectionMap<T, V, VR, I> {
         use crate::MultiwaySortedDisjoint;
         let mut iter = self.into_iter();
         let iter_map = iter

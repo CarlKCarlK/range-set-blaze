@@ -44,30 +44,30 @@ use crate::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct UnionIterMap<'a, T, V, VR, SS>
+pub struct UnionIterMap<T, V, VR, SS>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    SS: SortedStartsMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    SS: SortedStartsMap<T, V, VR>,
 {
     iter: SS,
-    next_item: Option<RangeValue<'a, T, V, VR>>,
-    workspace: BinaryHeap<Priority<'a, T, V, VR>>,
-    gather: Option<RangeValue<'a, T, V, VR>>,
-    ready_to_go: Option<RangeValue<'a, T, V, VR>>,
+    next_item: Option<RangeValue<T, V, VR>>,
+    workspace: BinaryHeap<Priority<T, V, VR>>,
+    gather: Option<RangeValue<T, V, VR>>,
+    ready_to_go: Option<RangeValue<T, V, VR>>,
 }
 
-impl<'a, T, V, VR, I> Iterator for UnionIterMap<'a, T, V, VR, I>
+impl<T, V, VR, I> Iterator for UnionIterMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedStartsMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedStartsMap<T, V, VR>,
 {
-    type Item = RangeValue<'a, T, V, VR>;
+    type Item = RangeValue<T, V, VR>;
 
-    fn next(&mut self) -> Option<RangeValue<'a, T, V, VR>> {
+    fn next(&mut self) -> Option<RangeValue<T, V, VR>> {
         // Keep doing this until we have something to return.
         loop {
             if let Some(value) = self.ready_to_go.take() {
@@ -230,7 +230,7 @@ where
 }
 
 #[allow(dead_code)]
-fn cmk_debug_string<'a, T, V, VR>(item: &Option<RangeValue<'a, T, V, VR>>) -> String
+fn cmk_debug_string<'a, T, V, VR>(item: &Option<RangeValue<T, V, VR>>) -> String
 where
     T: Integer,
     V: ValueOwned,
@@ -243,12 +243,12 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> UnionIterMap<'a, T, V, VR, I>
+impl<T, V, VR, I> UnionIterMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedStartsMap<'a, T, V, VR>,
+    VR: CloneBorrow<V>,
+    I: SortedStartsMap<T, V, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
@@ -289,21 +289,21 @@ where
 // }
 
 // // cmk00
-// impl<'a, T, V, VR, const N: usize> From<[RangeValue<'a, T, V, VR>; N]>
+// impl<'a, T, V, VR, const N: usize> From<[RangeValue<T, V, VR>; N]>
 //     for UnionIterMap<'a, T, V, VR, SortedRangeValueVec<'a, T, V, VR>>
 // where
 //     T: Integer,
 //     V: ValueOwned,
 //     VR: CloneBorrow<V> + 'a,
 // {
-//     fn from(arr: [RangeValue<'a, T, V, VR>; N]) -> Self {
+//     fn from(arr: [RangeValue<T, V, VR>; N]) -> Self {
 //         arr.as_slice().into()
 //     }
 // }
 
 // from iter (T, &V) to UnionIterMap
 impl<'a, T, V> FromIterator<(T, &'a V)>
-    for UnionIterMap<'a, T, V, &'a V, SortedStartsInVecMap<'a, T, V, &'a V>>
+    for UnionIterMap<T, V, &'a V, SortedStartsInVecMap<T, V, &'a V>>
 where
     T: Integer + 'a,
     V: ValueOwned + 'a,
@@ -319,7 +319,7 @@ where
 
 // from iter (RangeInclusive<T>, &V) to UnionIterMap
 impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
-    for UnionIterMap<'a, T, V, &'a V, SortedStartsInVecMap<'a, T, V, &'a V>>
+    for UnionIterMap<T, V, &'a V, SortedStartsInVecMap<T, V, &'a V>>
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -333,19 +333,21 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &
 
 // cmk used?
 #[allow(dead_code)]
-type SortedRangeValueVec<'a, T, V, VR> =
-    AssumeSortedStartsMap<'a, T, V, VR, vec::IntoIter<RangeValue<'a, T, V, VR>>>;
+type SortedRangeValueVec<T, V, VR> =
+    AssumeSortedStartsMap<T, V, VR, vec::IntoIter<RangeValue<T, V, VR>>>;
 
 // cmk simplify the long types
-// from iter RangeValue<'a, T, V, VR> to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a, VR> FromIterator<RangeValue<'a, T, V, VR>>
-    for UnionIterMap<'a, T, V, VR, SortedStartsInVecMap<'a, T, V, VR>>
+// from iter RangeValue<T, V, VR> to UnionIterMap
+impl<T, V, VR> FromIterator<RangeValue<T, V, VR>>
+    for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>>
 where
-    VR: CloneBorrow<V> + 'a,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = RangeValue<'a, T, V, VR>>,
+        I: IntoIterator<Item = RangeValue<T, V, VR>>,
     {
         let iter = iter.into_iter();
         // let iter = iter.map(|x| {
@@ -358,16 +360,16 @@ where
 }
 
 // from from UnsortedDisjointMap to UnionIterMap
-impl<'a, T, V, VR, I> From<UnsortedDisjointMap<'a, T, V, VR, I>>
-    for UnionIterMap<'a, T, V, VR, SortedStartsInVecMap<'a, T, V, VR>>
+impl<T, V, VR, I> From<UnsortedDisjointMap<T, V, VR, I>>
+    for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>>
 where
     T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: Iterator<Item = RangeValue<T, V, VR>>,
 {
     #[allow(clippy::clone_on_copy)]
-    fn from(unsorted_disjoint: UnsortedDisjointMap<'a, T, V, VR, I>) -> Self {
+    fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, VR, I>) -> Self {
         let iter = unsorted_disjoint.sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
             core::cmp::Ordering::Equal => {
                 // println!(
@@ -386,12 +388,12 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> FusedIterator for UnionIterMap<'a, T, V, VR, I>
+impl<T, V, VR, I> FusedIterator for UnionIterMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedStartsMap<'a, T, V, VR> + FusedIterator,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedStartsMap<T, V, VR> + FusedIterator,
 {
 }
 

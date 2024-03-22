@@ -36,30 +36,30 @@ use crate::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct SymDiffIterMap<'a, T, V, VR, I>
+pub struct SymDiffIterMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedStartsMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: for<'a> SortedStartsMap<T, V, VR>,
 {
     iter: I,
-    next_item: Option<RangeValue<'a, T, V, VR>>,
-    workspace: BinaryHeap<Priority<'a, T, V, VR>>,
-    gather: Option<RangeValue<'a, T, V, VR>>,
-    ready_to_go: Option<RangeValue<'a, T, V, VR>>,
+    next_item: Option<RangeValue<T, V, VR>>,
+    workspace: BinaryHeap<Priority<T, V, VR>>,
+    gather: Option<RangeValue<T, V, VR>>,
+    ready_to_go: Option<RangeValue<T, V, VR>>,
 }
 
-impl<'a, T, V, VR, I> Iterator for SymDiffIterMap<'a, T, V, VR, I>
+impl<T, V, VR, I> Iterator for SymDiffIterMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedStartsMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedStartsMap<T, V, VR>,
 {
-    type Item = RangeValue<'a, T, V, VR>;
+    type Item = RangeValue<T, V, VR>;
 
-    fn next(&mut self) -> Option<RangeValue<'a, T, V, VR>> {
+    fn next(&mut self) -> Option<RangeValue<T, V, VR>> {
         // Keep doing this until we have something to return.
         loop {
             if let Some(value) = self.ready_to_go.take() {
@@ -207,7 +207,7 @@ where
 }
 
 #[allow(dead_code)]
-fn cmk_debug_string<'a, T, V, VR>(item: &Option<RangeValue<'a, T, V, VR>>) -> String
+fn cmk_debug_string<'a, T, V, VR>(item: &Option<RangeValue<T, V, VR>>) -> String
 where
     T: Integer,
     V: ValueOwned,
@@ -220,13 +220,13 @@ where
     }
 }
 
-impl<'a, T, V, VR, L, R> BitXorAdjusted<'a, T, V, VR, L, R>
+impl<T, V, VR, L, R> BitXorAdjusted<T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned,
-    VR: CloneBorrow<V> + 'a,
-    L: SortedDisjointMap<'a, T, V, VR>,
-    R: SortedDisjointMap<'a, T, V, VR>,
+    VR: CloneBorrow<V>,
+    L: SortedDisjointMap<T, V, VR>,
+    R: SortedDisjointMap<T, V, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.

@@ -349,7 +349,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(set_iter.next_back(), None);
     /// ```
     // cmk00 implement this
-    pub fn iter(&self) -> IterMap<'_, T, V, &V, RangeValuesIter<'_, T, V>> {
+    pub fn iter(&self) -> IterMap<T, V, &V, RangeValuesIter<'_, T, V>> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
         IterMap::new(self.range_values())
@@ -387,7 +387,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(set_iter.next_back(), None);
     /// ```
     // cmk00 implement this
-    pub fn keys(&self) -> KeysMap<'_, T, V, &V, RangeValuesIter<'_, T, V>> {
+    pub fn keys(&self) -> KeysMap<T, V, &V, RangeValuesIter<'_, T, V>> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
         KeysMap::new(self.range_values())
@@ -485,12 +485,10 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// let a1: RangeMapBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze2();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
-    pub fn from_sorted_disjoint_map<'a, VR, I>(iter: I) -> Self
+    pub fn from_sorted_disjoint_map<VR, I>(iter: I) -> Self
     where
-        T: 'a,
-        V: 'a,
-        VR: CloneBorrow<V> + 'a,
-        I: SortedDisjointMap<'a, T, V, VR>,
+        VR: CloneBorrow<V>,
+        I: SortedDisjointMap<T, V, VR>,
     {
         let mut iter_with_len = SortedDisjointWithLenSoFarMap::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
@@ -1479,7 +1477,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     }
 
     /// cmk doc
-    pub fn into_range_values<'b>(self) -> IntoRangeValuesIter<'b, T, V> {
+    pub fn into_range_values(self) -> IntoRangeValuesIter<T, V> {
         IntoRangeValuesIter {
             iter: self.btree_map.into_iter(),
             phantom: PhantomData,
@@ -1494,7 +1492,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// cmk doc
     pub fn into_ranges<'b>(
         self,
-    ) -> RangeValuesToRangesIter<'b, T, V, Rc<V>, IntoRangeValuesIter<'b, T, V>> {
+    ) -> RangeValuesToRangesIter<T, V, Rc<V>, IntoRangeValuesIter<T, V>> {
         RangeValuesToRangesIter::new(self.into_range_values())
     }
 
@@ -1607,7 +1605,7 @@ where
         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
         let iter = iter.into_iter();
-        let union_iter_map = UnionIterMap::<'a, T, V, &V, _>::from_iter(iter);
+        let union_iter_map = UnionIterMap::<T, V, &V, _>::from_iter(iter);
         Self::from_sorted_disjoint_map(union_iter_map)
     }
 }
@@ -1677,13 +1675,13 @@ impl<T: Integer, V: ValueOwned> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
 //     UnionIterMap<'a, T, V, VR, MergeMapAdjusted<'a, T, V, VR, L, R>>;
 
 #[doc(hidden)]
-pub type BitAndRangesMap<'a, T, V, VR, L, R> = IntersectionIterMap<'a, T, V, VR, L, R>;
+pub type BitAndRangesMap<T, V, VR, L, R> = IntersectionIterMap<T, V, VR, L, R>;
 #[doc(hidden)]
-pub type BitSubRangesMap<'a, T, V, VR, L, R> = IntersectionIterMap<'a, T, V, VR, L, NotIter<T, R>>;
+pub type BitSubRangesMap<T, V, VR, L, R> = IntersectionIterMap<T, V, VR, L, NotIter<T, R>>;
 
 #[doc(hidden)]
-pub type SortedStartsInVecMap<'a, T, V, VR> =
-    AssumeSortedStartsMap<'a, T, V, VR, vec::IntoIter<RangeValue<'a, T, V, VR>>>;
+pub type SortedStartsInVecMap<T, V, VR> =
+    AssumeSortedStartsMap<T, V, VR, vec::IntoIter<RangeValue<T, V, VR>>>;
 // pub type BitXOrTeeMap<'a, T, V, VR, L, R> = BitOrMergeMap<
 //     'a,
 //     T,

@@ -574,10 +574,9 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 
     /// cmk doc (remove?)
-    pub fn from_unit_map<'a, I>(unit_map_iter: I) -> Self
+    pub fn from_unit_map<I>(unit_map_iter: I) -> Self
     where
-        T: 'a,
-        I: SortedDisjointMap<'a, T, (), &'a ()> + 'a,
+        I: for<'a> SortedDisjointMap<T, (), &'a ()>,
     {
         // cmk eventually remove this function
         let iter = unit_map_iter.map(|range_values| range_values.range);
@@ -1410,7 +1409,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    pub fn into_ranges<'a>(self) -> IntoRangesIter<'a, T> {
+    pub fn into_ranges<'a>(self) -> IntoRangesIter<T> {
         IntoRangesIter {
             iter: self.btree_map.into_iter(),
             phantom: PhantomData,
@@ -1588,45 +1587,35 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
 #[doc(hidden)]
 pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
-pub type BitOrMergeMap<'a, T, V, VR, L, R> =
-    UnionIterMap<'a, T, V, VR, MergeMap<'a, T, V, VR, L, R>>;
+pub type BitOrMergeMap<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
 #[doc(hidden)]
-pub type BitOrAdjusted<'a, T, V, VR, L, R> = BitOrMergeMap<
-    'a,
+pub type BitOrAdjusted<T, V, VR, L, R> =
+    BitOrMergeMap<T, V, VR, AdjustPriorityMap<T, V, VR, L>, AdjustPriorityMap<T, V, VR, R>>;
+
+#[doc(hidden)]
+pub type BitXorAdjusted<T, V, VR, L, R> = SymDiffIterMap<
     T,
     V,
     VR,
-    AdjustPriorityMap<'a, T, V, VR, L>,
-    AdjustPriorityMap<'a, T, V, VR, R>,
+    MergeMap<T, V, VR, AdjustPriorityMap<T, V, VR, L>, AdjustPriorityMap<T, V, VR, R>>,
 >;
 
 #[doc(hidden)]
-pub type BitXorAdjusted<'a, T, V, VR, L, R> = SymDiffIterMap<
-    'a,
-    T,
-    V,
-    VR,
-    MergeMap<'a, T, V, VR, AdjustPriorityMap<'a, T, V, VR, L>, AdjustPriorityMap<'a, T, V, VR, R>>,
->;
-
-#[doc(hidden)]
-pub type BitXorOldNew<'a, T, L, R> = UnitMapToSortedDisjoint<
-    'a,
+pub type BitXorOldNew<T, L, R> = UnitMapToSortedDisjoint<
     T,
     BitXorAdjusted<
-        'a,
         T,
         (),
-        &'a (),
-        SortedDisjointToUnitMap<'a, T, L>,
-        SortedDisjointToUnitMap<'a, T, R>,
+        &'static (),
+        SortedDisjointToUnitMap<T, L>,
+        SortedDisjointToUnitMap<T, R>,
     >,
 >;
 
 #[doc(hidden)]
 pub type BitOrKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
 #[doc(hidden)]
-pub type BitOrKMergeMap<'a, T, V, VR, I> = UnionIterMap<'a, T, V, VR, KMergeMap<'a, T, V, VR, I>>;
+pub type BitOrKMergeMap<T, V, VR, I> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I>>;
 #[doc(hidden)]
 pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
 #[doc(hidden)]
@@ -1636,8 +1625,8 @@ pub type BitNandMerge<T, L, R> = BitOrMerge<T, NotIter<T, L>, NotIter<T, R>>;
 #[doc(hidden)]
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
 #[doc(hidden)]
-pub type IntersectionMap<'a, T, V, VR, I> =
-    IntersectionIterMap<'a, T, V, VR, I, BitAndKMerge<T, RangeValuesToRangesIter<'a, T, V, VR, I>>>;
+pub type IntersectionMap<T, V, VR, I> =
+    IntersectionIterMap<T, V, VR, I, BitAndKMerge<T, RangeValuesToRangesIter<T, V, VR, I>>>;
 #[doc(hidden)]
 pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
 #[doc(hidden)]
@@ -1933,13 +1922,14 @@ gen_ops_ex!(
     /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
     /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
     /// ```
-    for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-        // cmk eventually remove this function
-        let left = SortedDisjointToUnitMap::new(a.ranges());
-        let right = SortedDisjointToUnitMap::new(b.ranges());
-        let unit_map = left.symmetric_difference(right);
-        RangeSetBlaze::from_unit_map(unit_map)
-    };
+    // cmk0000
+    // for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+    //     // cmk eventually remove this function
+    //     let left = SortedDisjointToUnitMap::new(a.ranges());
+    //     let right = SortedDisjointToUnitMap::new(b.ranges());
+    //     let unit_map = left.symmetric_difference(right);
+    //     RangeSetBlaze::from_unit_map(unit_map)
+    // };
 
     /// Difference the contents of two [`RangeSetBlaze`]'s.
     ///

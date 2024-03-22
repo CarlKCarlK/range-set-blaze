@@ -56,7 +56,7 @@ where
     T: Integer,
     V: ValueOwned + 'a,
 {
-    type Item = RangeValue<'a, T, V, &'a V>; // Assuming VR is always &'a V for next
+    type Item = RangeValue<T, V, &'a V>; // Assuming VR is always &'a V for next
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(start, end_value)| {
@@ -85,9 +85,9 @@ where
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
-pub struct IntoRangeValuesIter<'a, T: Integer + 'a, V: ValueOwned + 'a> {
+pub struct IntoRangeValuesIter<T: Integer, V: ValueOwned> {
     pub(crate) iter: btree_map::IntoIter<T, EndValue<T, V>>,
-    pub(crate) phantom: PhantomData<&'a V>,
+    pub(crate) phantom: PhantomData<V>, // cmk needed?
 }
 
 // impl<'a, T: Integer, V: ValueOwned + 'a> SortedStartsMap<'a, T, V, Rc<V>>
@@ -99,17 +99,17 @@ pub struct IntoRangeValuesIter<'a, T: Integer + 'a, V: ValueOwned + 'a> {
 // {
 // }
 
-impl<'a, T: Integer, V: ValueOwned> ExactSizeIterator for IntoRangeValuesIter<'a, T, V> {
+impl<'a, T: Integer, V: ValueOwned> ExactSizeIterator for IntoRangeValuesIter<T, V> {
     #[must_use]
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned> FusedIterator for IntoRangeValuesIter<'a, T, V> {}
+impl<'a, T: Integer, V: ValueOwned> FusedIterator for IntoRangeValuesIter<T, V> {}
 
-impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<'a, T, V> {
-    type Item = RangeValue<'a, T, V, Rc<V>>;
+impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<T, V> {
+    type Item = RangeValue<T, V, Rc<V>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(start, end_value)| {
@@ -134,16 +134,16 @@ impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<'a, T,
 /// cmk
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct RangeValuesToRangesIter<'a, T, V, VR, I>
+pub struct RangeValuesToRangesIter<T, V, VR, I>
 where
-    T: Integer + 'a,
+    T: Integer,
     V: ValueOwned,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    VR: CloneBorrow<V>,
+    I: for<'a> SortedDisjointMap<T, V, VR>,
 {
     iter: I,
     option_ranges: Option<RangeInclusive<T>>,
-    phantom0: PhantomData<&'a V>,
+    phantom0: PhantomData<V>,
     phantom1: PhantomData<VR>,
 }
 // // RangeValuesToRangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
@@ -178,21 +178,21 @@ where
 //     }
 // }
 
-impl<'a, T, V, VR, I> FusedIterator for RangeValuesToRangesIter<'a, T, V, VR, I>
+impl<T, V, VR, I> FusedIterator for RangeValuesToRangesIter<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
 }
 
-impl<'a, T, V, VR, I> RangeValuesToRangesIter<'a, T, V, VR, I>
+impl<T, V, VR, I> RangeValuesToRangesIter<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
     /// Creates a new `RangeValuesToRangesIter` from an existing sorted disjoint map iterator.
     /// `option_ranges` is initialized as `None` by default.
@@ -207,12 +207,12 @@ where
 }
 
 // Range's iterator is just the inside BTreeMap iterator as values
-impl<'a, T, V, VR, I> Iterator for RangeValuesToRangesIter<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> Iterator for RangeValuesToRangesIter<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
     type Item = RangeInclusive<T>;
 
@@ -422,26 +422,26 @@ impl<T> ExpectDebugUnwrapRelease<T> for Option<T> {
     }
 }
 #[derive(Clone, Debug)]
-pub struct AdjustPriorityMap<'a, T, V, VR, I>
+pub struct AdjustPriorityMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: Iterator<Item = RangeValue<'a, T, V, VR>>,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: Iterator<Item = RangeValue<T, V, VR>>,
 {
     iter: I,
     new_priority: Option<NonZeroUsize>,
-    phantom: PhantomData<&'a (T, V, VR)>,
+    phantom: PhantomData<(T, V, VR)>, // cmk needed?
 }
 
-impl<'a, T, V, VR, I> Iterator for AdjustPriorityMap<'a, T, V, VR, I>
+impl<T, V, VR, I> Iterator for AdjustPriorityMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
-    type Item = RangeValue<'a, T, V, VR>;
+    type Item = RangeValue<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|mut range_value| {
@@ -451,12 +451,12 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> AdjustPriorityMap<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> AdjustPriorityMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
     pub fn new(iter: I, new_priority: Option<NonZeroUsize>) -> Self {
         AdjustPriorityMap {
@@ -468,19 +468,19 @@ where
 }
 
 // all AdjustPriorityMap are also SortedDisjointMaps
-impl<'a, T, V, VR, I> SortedStartsMap<'a, T, V, VR> for AdjustPriorityMap<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> SortedStartsMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
 }
-impl<'a, T, V, VR, I> SortedDisjointMap<'a, T, V, VR> for AdjustPriorityMap<'a, T, V, VR, I>
+impl<T, V, VR, I> SortedDisjointMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
 }

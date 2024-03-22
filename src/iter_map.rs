@@ -22,26 +22,26 @@ use crate::{
 /// [`iter`]: RangeMapBlaze::iter
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct IterMap<'a, T, V, VR, I>
+pub struct IterMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
     iter: I,
-    option_range_value_front: Option<RangeValue<'a, T, V, VR>>,
-    option_range_value_back: Option<RangeValue<'a, T, V, VR>>,
-    phantom0: PhantomData<&'a V>,
-    phantom1: PhantomData<VR>,
+    option_range_value_front: Option<RangeValue<T, V, VR>>,
+    option_range_value_back: Option<RangeValue<T, V, VR>>,
+    phantom0: PhantomData<V>,  // cmk needed?
+    phantom1: PhantomData<VR>, // cmk needed?
 }
 
-impl<'a, T, V, VR, I> IterMap<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> IterMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
     pub fn new(iter: I) -> Self {
         IterMap {
@@ -54,21 +54,21 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> FusedIterator for IterMap<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> FusedIterator for IterMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR> + FusedIterator,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR> + FusedIterator,
 {
 }
 
-impl<'a, T, V, VR, I> Iterator for IterMap<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> Iterator for IterMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
     type Item = (T, VR);
 
@@ -97,12 +97,12 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> DoubleEndedIterator for IterMap<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> DoubleEndedIterator for IterMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR> + DoubleEndedIterator,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR> + DoubleEndedIterator,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let mut range_value = self
@@ -230,22 +230,22 @@ where
 /// [`iter`]: RangeMapBlaze::iter
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct KeysMap<'a, T, V, VR, I>
+pub struct KeysMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
-    iter: IterMap<'a, T, V, VR, I>,
+    iter: IterMap<T, V, VR, I>,
 }
 
-impl<'a, T, V, VR, I> KeysMap<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> KeysMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
     pub fn new(iter: I) -> Self {
         KeysMap {
@@ -254,21 +254,21 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> FusedIterator for KeysMap<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> FusedIterator for KeysMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
 }
 
-impl<'a, T, V, VR, I> Iterator for KeysMap<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> Iterator for KeysMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR>,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
 {
     type Item = T;
 
@@ -281,12 +281,12 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> DoubleEndedIterator for KeysMap<'a, T, V, VR, I>
+impl<'a, T, V, VR, I> DoubleEndedIterator for KeysMap<T, V, VR, I>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: SortedDisjointMap<'a, T, V, VR> + DoubleEndedIterator,
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR> + DoubleEndedIterator,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter.next_back().map(|(key, _value)| key)
