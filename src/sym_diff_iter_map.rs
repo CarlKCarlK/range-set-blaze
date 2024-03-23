@@ -3,10 +3,12 @@ use core::cmp::min;
 use alloc::collections::BinaryHeap;
 
 use crate::{
+    lib2::SortedDisjointToUnitMap,
     map::{CloneBorrow, ValueOwned},
     range_values::{AdjustPriorityMap, NON_ZERO_MAX, NON_ZERO_MIN},
     sorted_disjoint_map::Priority,
-    BitXorAdjusted, Integer, MergeMap, RangeValue, SortedDisjointMap, SortedStartsMap,
+    BitXorAdjusted, Integer, MergeMap, RangeValue, SortedDisjoint, SortedDisjointMap,
+    SortedStartsMap,
 };
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
@@ -48,6 +50,48 @@ where
     workspace: BinaryHeap<Priority<T, V, VR>>,
     gather: Option<RangeValue<T, V, VR>>,
     ready_to_go: Option<RangeValue<T, V, VR>>,
+}
+
+impl<T, L, R> SortedDisjointMap<T, (), &'static ()>
+    for SymDiffIterMap<
+        T,
+        (),
+        &'static (),
+        MergeMap<
+            T,
+            (),
+            &'static (),
+            AdjustPriorityMap<T, (), &'static (), SortedDisjointToUnitMap<T, L>>,
+            AdjustPriorityMap<T, (), &'static (), SortedDisjointToUnitMap<T, R>>,
+        >,
+    >
+where
+    T: Integer,
+    L: SortedDisjoint<T>,
+    R: SortedDisjoint<T>,
+{
+    // Implement the methods here
+}
+
+impl<T, L, R> SortedStartsMap<T, (), &'static ()>
+    for SymDiffIterMap<
+        T,
+        (),
+        &'static (),
+        MergeMap<
+            T,
+            (),
+            &'static (),
+            AdjustPriorityMap<T, (), &'static (), SortedDisjointToUnitMap<T, L>>,
+            AdjustPriorityMap<T, (), &'static (), SortedDisjointToUnitMap<T, R>>,
+        >,
+    >
+where
+    T: Integer,
+    L: SortedDisjoint<T>,
+    R: SortedDisjoint<T>,
+{
+    // Implement the methods here
 }
 
 impl<T, V, VR, I> Iterator for SymDiffIterMap<T, V, VR, I>

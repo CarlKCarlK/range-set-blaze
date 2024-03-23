@@ -2177,9 +2177,11 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|range| RangeValue::new(range, &(), None))
+            .map(|range| RangeValue::new(range, &UNIT, None))
     }
 }
+
+pub const UNIT: () = (); // cmk000 name singleton_unit
 
 // cmk1 move these into the macro
 impl<T, I> SortedStartsMap<T, (), &'static ()> for SortedDisjointToUnitMap<T, I>

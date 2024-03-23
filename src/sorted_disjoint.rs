@@ -1,4 +1,5 @@
 use crate::lib2::UnitMapToSortedDisjoint;
+use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::{
     impl_sorted_traits_and_ops0, lib2::SortedDisjointToUnitMap,
     range_values::RangeValuesToRangesIter, RangeSetBlaze2,
@@ -346,18 +347,18 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// ```
     // cmk000
     // #[inline]
-    // fn symmetric_difference<'a, R>(self, other: R) -> BitXorOldNew<T, Self, R::IntoIter>
-    // where
-    //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjoint<T>,
-    //     <R as IntoIterator>::IntoIter:,
-    //     Self: Sized,
-    // {
-    //     let left = SortedDisjointToUnitMap::new(self);
-    //     let right = SortedDisjointToUnitMap::new(other.into_iter());
-    //     let unit_map = left.symmetric_difference(right);
-    //     UnitMapToSortedDisjoint::new(unit_map)
-    // }
+    fn symmetric_difference<R>(self, other: R) -> BitXorOldNew<'static, T, Self, R::IntoIter>
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint<T>,
+        <R as IntoIterator>::IntoIter:,
+        Self: Sized,
+    {
+        let left = SortedDisjointToUnitMap::new(self);
+        let right = SortedDisjointToUnitMap::new(other.into_iter());
+        let unit_map: SymDiffIterMap<T, (), &'static (), _> = left.symmetric_difference(right);
+        UnitMapToSortedDisjoint::new(unit_map)
+    }
 
     /// Given two [`SortedDisjoint`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
     /// this method takes ownership of the iterators and consumes them.

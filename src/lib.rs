@@ -1601,15 +1601,9 @@ pub type BitXorAdjusted<T, V, VR, L, R> = SymDiffIterMap<
 >;
 
 #[doc(hidden)]
-pub type BitXorOldNew<T, L, R> = UnitMapToSortedDisjoint<
+pub type BitXorOldNew<'a, T, L, R> = UnitMapToSortedDisjoint<
     T,
-    BitXorAdjusted<
-        T,
-        (),
-        &'static (),
-        SortedDisjointToUnitMap<T, L>,
-        SortedDisjointToUnitMap<T, R>,
-    >,
+    BitXorAdjusted<T, (), &'a (), SortedDisjointToUnitMap<T, L>, SortedDisjointToUnitMap<T, R>>,
 >;
 
 #[doc(hidden)]
@@ -1923,13 +1917,13 @@ gen_ops_ex!(
     /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
     /// ```
     // cmk0000
-    // for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-    //     // cmk eventually remove this function
-    //     let left = SortedDisjointToUnitMap::new(a.ranges());
-    //     let right = SortedDisjointToUnitMap::new(b.ranges());
-    //     let unit_map = left.symmetric_difference(right);
-    //     RangeSetBlaze::from_unit_map(unit_map)
-    // };
+    for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+        // cmk eventually remove this function
+        let left = SortedDisjointToUnitMap::new(a.ranges());
+        let right = SortedDisjointToUnitMap::new(b.ranges());
+        let unit_map = left.symmetric_difference(right);
+        RangeSetBlaze::from_unit_map(unit_map)
+    };
 
     /// Difference the contents of two [`RangeSetBlaze`]'s.
     ///
