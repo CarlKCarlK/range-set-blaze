@@ -1593,12 +1593,13 @@ gen_ops_ex!(
     /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
     /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
     /// ```
-    for ^ call |a: &RangeSetBlaze2<T>, b: &RangeSetBlaze2<T>| {
-        // We optimize this by using ranges() twice per input, rather than tee()
-        // cmk1000000
-        let range_set_map = &a.0 ^ &b.0;
-        RangeSetBlaze2(range_set_map)
-    };
+    // cmk0000
+    // for ^ call |a: &RangeSetBlaze2<T>, b: &RangeSetBlaze2<T>| {
+    //     // We optimize this by using ranges() twice per input, rather than tee()
+    //     // cmk1000000
+    //     let range_set_map = &a.0 ^ &b.0;
+    //     RangeSetBlaze2(range_set_map)
+    // };
 
     /// Difference the contents of two [`RangeSetBlaze2`]'s.
     ///
@@ -2145,16 +2146,16 @@ impl<T: Integer> Eq for RangeSetBlaze2<T> {}
 // impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 // impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
-pub struct SortedDisjointToUnitMap<T, I>
+pub struct SortedDisjointToUnitMap<'a, T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
 {
     iter: I,
-    phantom: PhantomData<T>, // cmk needed?
+    phantom: PhantomData<(T, &'a ())>, // cmk needed?
 }
 
-impl<T, I> SortedDisjointToUnitMap<T, I>
+impl<'a, T, I> SortedDisjointToUnitMap<'a, T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
@@ -2168,30 +2169,28 @@ where
     }
 }
 
-impl<T, I> Iterator for SortedDisjointToUnitMap<T, I>
+impl<'a, T, I> Iterator for SortedDisjointToUnitMap<'a, T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
 {
-    type Item = RangeValue<T, (), &'static ()>;
+    type Item = RangeValue<T, (), &'a ()>;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|range| RangeValue::new(range, &UNIT, None))
+            .map(|range| RangeValue::new(range, &(), None))
     }
 }
 
-pub const UNIT: () = (); // cmk000 name singleton_unit
-
 // cmk1 move these into the macro
-impl<T, I> SortedStartsMap<T, (), &'static ()> for SortedDisjointToUnitMap<T, I>
+impl<'a, T, I> SortedStartsMap<T, (), &'a ()> for SortedDisjointToUnitMap<'a, T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
 {
 }
 
-impl<T, I> SortedDisjointMap<T, (), &'static ()> for SortedDisjointToUnitMap<T, I>
+impl<'a, T, I> SortedDisjointMap<T, (), &'a ()> for SortedDisjointToUnitMap<'a, T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
@@ -2201,7 +2200,7 @@ where
 pub struct UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    I: for<'a> SortedDisjointMap<T, (), &'a ()>, // cmk00 could/should this be 'static? (look elsewhere, too)
+    I: SortedDisjointMap<T, (), &'static ()>, // cmk00 could/should this be 'static? (look elsewhere, too)
 {
     iter: I,
     phantom: PhantomData<T>, // cmk needed?
@@ -2210,7 +2209,7 @@ where
 impl<T, I> UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    I: for<'a> SortedDisjointMap<T, (), &'a ()>,
+    I: SortedDisjointMap<T, (), &'static ()>,
 {
     // Define a new method that directly accepts a SortedDisjoint iterator
     pub fn new(iter: I) -> Self {
@@ -2224,7 +2223,7 @@ where
 impl<T, I> Iterator for UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    I: for<'a> SortedDisjointMap<T, (), &'a ()>, // cmk00 or static??
+    I: SortedDisjointMap<T, (), &'static ()>, // cmk00 or static??
 {
     type Item = RangeInclusive<T>;
     fn next(&mut self) -> Option<Self::Item> {
@@ -2238,13 +2237,58 @@ where
 impl<T, I> SortedStarts<T> for UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    I: for<'a> SortedDisjointMap<T, (), &'a ()>,
+    I: SortedDisjointMap<T, (), &'static ()>,
 {
 }
 
 impl<T, I> SortedDisjoint<T> for UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    I: for<'a> SortedDisjointMap<T, (), &'a ()>,
+    I: SortedDisjointMap<T, (), &'static ()>,
 {
+}
+
+pub fn set_to_map() {
+    let a: RangeSetBlaze2<i32> = RangeSetBlaze2::from_iter([1..=2, 3..=4]);
+    let b = RangeSetBlaze2::from_iter([-1..=2, 3..=14]);
+    let a_ranges: RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>> = a.ranges();
+    let left: SortedDisjointToUnitMap<
+        '_,
+        i32,
+        RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
+    > = SortedDisjointToUnitMap::new(a_ranges);
+    let right = SortedDisjointToUnitMap::new(b.ranges());
+    let unit_map: crate::sym_diff_iter_map::SymDiffIterMap<
+        i32,
+        (),
+        &(),
+        crate::MergeMap<
+            i32,
+            (),
+            &(),
+            crate::range_values::AdjustPriorityMap<
+                i32,
+                (),
+                &(),
+                SortedDisjointToUnitMap<
+                    '_,
+                    i32,
+                    RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
+                >,
+            >,
+            crate::range_values::AdjustPriorityMap<
+                i32,
+                (),
+                &(),
+                SortedDisjointToUnitMap<
+                    '_,
+                    i32,
+                    RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
+                >,
+            >,
+        >,
+    > = left.symmetric_difference(right);
+    // let it: &dyn Iterator<Item = RangeValue<i32, (), &()>> = &unit_map;
+    // let it: &dyn SortedDisjointMap<i32, (), &()> = &unit_map;
+    let _result = RangeSetBlaze::from_unit_map(unit_map);
 }

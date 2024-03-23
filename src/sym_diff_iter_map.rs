@@ -52,47 +52,24 @@ where
     ready_to_go: Option<RangeValue<T, V, VR>>,
 }
 
-impl<T, L, R> SortedDisjointMap<T, (), &'static ()>
-    for SymDiffIterMap<
-        T,
-        (),
-        &'static (),
-        MergeMap<
-            T,
-            (),
-            &'static (),
-            AdjustPriorityMap<T, (), &'static (), SortedDisjointToUnitMap<T, L>>,
-            AdjustPriorityMap<T, (), &'static (), SortedDisjointToUnitMap<T, R>>,
-        >,
-    >
-where
-    T: Integer,
-    L: SortedDisjoint<T>,
-    R: SortedDisjoint<T>,
-{
-    // Implement the methods here
-}
+// cmk000
+// impl<T, V, VR, I> SortedDisjointMap<T, V, VR> for SymDiffIterMap<T, V, VR, I>
+// where
+//     T: Integer,
+//     V: ValueOwned,
+//     VR: CloneBorrow<V>,
+//     I: for<'a> SortedStartsMap<T, V, VR> + Iterator<Item = RangeValue<T, V, VR>>,
+// {
+// }
 
-impl<T, L, R> SortedStartsMap<T, (), &'static ()>
-    for SymDiffIterMap<
-        T,
-        (),
-        &'static (),
-        MergeMap<
-            T,
-            (),
-            &'static (),
-            AdjustPriorityMap<T, (), &'static (), SortedDisjointToUnitMap<T, L>>,
-            AdjustPriorityMap<T, (), &'static (), SortedDisjointToUnitMap<T, R>>,
-        >,
-    >
-where
-    T: Integer,
-    L: SortedDisjoint<T>,
-    R: SortedDisjoint<T>,
-{
-    // Implement the methods here
-}
+// impl<T, V, VR, I> SortedStartsMap<T, V, VR> for SymDiffIterMap<T, V, VR, I>
+// where
+//     T: Integer,
+//     V: ValueOwned,
+//     VR: CloneBorrow<V>,
+//     I: for<'a> SortedStartsMap<T, V, VR> + Iterator<Item = RangeValue<T, V, VR>>,
+// {
+// }
 
 impl<T, V, VR, I> Iterator for SymDiffIterMap<T, V, VR, I>
 where

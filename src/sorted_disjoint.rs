@@ -15,8 +15,8 @@ use crate::{map::CloneBorrow, map::ValueOwned, SortedDisjointMap};
 use itertools::Itertools;
 
 use crate::{
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXorOldNew, Integer, IntoRangesIter, Merge, NotIter,
-    RangeSetBlaze, RangesIter, UnionIter,
+    AssumeSortedDisjointMap, BitAndMerge, BitOrMerge, BitSubMerge, BitXorOldNew, Integer,
+    IntoRangesIter, Merge, NotIter, RangeSetBlaze, RangesIter, UnionIter,
 };
 
 /// A trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
@@ -346,19 +346,20 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
     // cmk000
-    // #[inline]
-    fn symmetric_difference<R>(self, other: R) -> BitXorOldNew<'static, T, Self, R::IntoIter>
-    where
-        R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjoint<T>,
-        <R as IntoIterator>::IntoIter:,
-        Self: Sized,
-    {
-        let left = SortedDisjointToUnitMap::new(self);
-        let right = SortedDisjointToUnitMap::new(other.into_iter());
-        let unit_map: SymDiffIterMap<T, (), &'static (), _> = left.symmetric_difference(right);
-        UnitMapToSortedDisjoint::new(unit_map)
-    }
+    // #[inline] // cmk
+    // fn symmetric_difference<'a, R>(self, other: R) -> BitXorOldNew<T, Self, R::IntoIter>
+    // where
+    //     R: IntoIterator<Item = Self::Item>,
+    //     R::IntoIter: SortedDisjoint<T>,
+    //     <R as IntoIterator>::IntoIter:,
+    //     Self: Sized,
+    // {
+    //     let left = SortedDisjointToUnitMap::new(self);
+    //     let right = SortedDisjointToUnitMap::new(other.into_iter());
+    //     let unit_map = left.symmetric_difference(right);
+    //     let result = UnitMapToSortedDisjoint::new(unit_map);
+    //     todo!("cmk000")
+    // }
 
     /// Given two [`SortedDisjoint`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
     /// this method takes ownership of the iterators and consumes them.
@@ -799,7 +800,7 @@ macro_rules! impl_sorted_traits_and_ops0 {
             T: Integer,
             R: SortedDisjoint<T>,
         {
-            type Output = BitXorOldNew<'static, T, Self, R>;
+            type Output = BitXorOldNew<'a, T, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
