@@ -33,7 +33,7 @@ mod from_slice;
 mod integer;
 mod intersection_iter_map;
 mod iter_map;
-mod lib2;
+pub mod lib2;
 mod map;
 mod merge;
 pub use crate::lib2::RangeSetBlaze2;

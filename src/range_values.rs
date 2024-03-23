@@ -243,6 +243,17 @@ where
     }
 }
 
+// implement ExactSizeIterator for one special case
+impl<'a, T> ExactSizeIterator for RangeValuesToRangesIter<T, (), &'a (), RangeValuesIter<'a, T, ()>>
+where
+    T: Integer,
+{
+    #[must_use]
+    fn len(&self) -> usize {
+        self.iter.len()
+    }
+}
+
 // cmk
 // impl<T: Integer, V: ValueOwned> DoubleEndedIterator for RangeValuesToRangesIter<'_, T, V> {
 //     fn next_back(&mut self) -> Option<Self::Item> {

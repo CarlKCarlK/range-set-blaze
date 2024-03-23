@@ -16,13 +16,13 @@ use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{
     AssumeSortedStartsMap, SortedDisjointWithLenSoFarMap, UnsortedDisjointMap,
 };
-use crate::{Integer, NotIter, RangeSetBlaze2, SortedDisjoint};
+use crate::{CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze2, SortedDisjoint};
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 use core::borrow::Borrow;
 use core::fmt;
 use core::marker::PhantomData;
-use core::ops::BitOr;
+use core::ops::{BitOr, Bound, RangeBounds};
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use gen_ops::gen_ops_ex;
 use num_traits::One;
@@ -392,6 +392,8 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         // and we iterate that one integer at a time.
         KeysMap::new(self.range_values())
     }
+
+    // cmk BTreeMap also has 'into_keys'
 
     /// Returns the first element in the set, if any.
     /// This element is always the minimum of all integer elements in the set.
@@ -841,26 +843,26 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// }
     /// assert_eq!(Some(5), set.range(4..).next());
     /// ```
-    // cmk
-    // pub fn range<R>(&self, range: R) -> IntoIter<T, V, VR>
-    // where
-    //     R: RangeBounds<T, V, VR>,
-    // {
-    //     let start = match range.start_bound() {
-    //         Bound::Included(n) => *n,
-    //         Bound::Excluded(n) => *n + T::one(),
-    //         Bound::Unbounded => T::min_value(),
-    //     };
-    //     let end = match range.end_bound() {
-    //         Bound::Included(n) => *n,
-    //         Bound::Excluded(n) => *n - T::one(),
-    //         Bound::Unbounded => T::safe_max_value(),
-    //     };
-    //     assert!(start <= end);
+    pub fn range<R>(&self, range: R) -> IntoIterMap<T, V>
+    where
+        R: RangeBounds<T>,
+    {
+        // cmk 'range' should be made more efficient (it currently creates a RangeMapBlaze for no good reason)
+        let start = match range.start_bound() {
+            Bound::Included(n) => *n,
+            Bound::Excluded(n) => *n + T::one(),
+            Bound::Unbounded => T::min_value(),
+        };
+        let end = match range.end_bound() {
+            Bound::Included(n) => *n,
+            Bound::Excluded(n) => *n - T::one(),
+            Bound::Unbounded => T::safe_max_value(),
+        };
+        assert!(start <= end);
 
-    //     let bounds = CheckSortedDisjoint::from([start..=end]);
-    //     RangeMapBlaze::from_sorted_disjoint(self.ranges() & bounds).into_iter()
-    // }
+        let bounds = CheckSortedDisjoint::from([start..=end]);
+        RangeMapBlaze::from_sorted_disjoint_map(self.range_values() & bounds).into_iter()
+    }
 
     /// Adds a range to the set.
     ///

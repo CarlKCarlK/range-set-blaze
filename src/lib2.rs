@@ -1,17 +1,20 @@
 use core::{
     cmp::Ordering,
     fmt,
+    iter::FusedIterator,
     marker::PhantomData,
-    ops::{BitOr, BitOrAssign, RangeInclusive},
+    ops::{BitOr, BitOrAssign, Bound, RangeBounds, RangeInclusive},
 };
 
-use alloc::rc::Rc;
+use alloc::{collections::btree_map, rc::Rc};
 use gen_ops::gen_ops_ex;
 
 use crate::{
-    iter_map::KeysMap,
+    iter_map::{IntoIterMap, KeysMap},
+    map::EndValue,
     prelude::*,
     range_values::{IntoRangeValuesIter, RangeValuesIter, RangeValuesToRangesIter},
+    unsorted_disjoint_map::UnsortedDisjointMap,
     Integer, RangeValue, SortedStartsMap,
 };
 
@@ -660,61 +663,60 @@ impl<T: Integer> RangeSetBlaze2<T> {
         self.0.insert(value, ()).is_none()
     }
 
-    // cmk1
-    // /// Constructs an iterator over a sub-range of elements in the set.
-    // ///
-    // /// Not to be confused with [`RangeSetBlaze2::ranges`], which returns an iterator over the ranges in the set.
-    // ///
-    // /// The simplest way is to use the range syntax `min..max`, thus `range(min..max)` will
-    // /// yield elements from min (inclusive) to max (exclusive).
-    // /// The range may also be entered as `(Bound<T>, Bound<T>)`, so for example
-    // /// `range((Excluded(4), Included(10)))` will yield a left-exclusive, right-inclusive
-    // /// range from 4 to 10.
-    // ///
-    // /// # Panics
-    // ///
-    // /// Panics if range `start > end`.
-    // /// Panics if range `start == end` and both bounds are `Excluded`.
-    // ///
-    // /// # Performance
-    // ///
-    // /// Although this could be written to run in time O(ln(n)) in the number of ranges, it is currently O(n) in the number of ranges.
-    // ///
-    // /// # Examples
-    // ///
-    // /// ```
-    // /// use range_set_blaze::RangeSetBlaze2;
-    // /// use core::ops::Bound::Included;
-    // ///
-    // /// let mut set = RangeSetBlaze2::new();
-    // /// set.insert(3);
-    // /// set.insert(5);
-    // /// set.insert(8);
-    // /// for elem in set.range((Included(4), Included(8))) {
-    // ///     println!("{elem}");
-    // /// }
-    // /// assert_eq!(Some(5), set.range(4..).next());
-    // /// ```
-    // cmk1
-    // pub fn range<R>(&self, range: R) -> IntoIter<T>
-    // where
-    //     R: RangeBounds<T>,
-    // {
-    //     let start = match range.start_bound() {
-    //         Bound::Included(n) => *n,
-    //         Bound::Excluded(n) => *n + T::one(),
-    //         Bound::Unbounded => T::min_value(),
-    //     };
-    //     let end = match range.end_bound() {
-    //         Bound::Included(n) => *n,
-    //         Bound::Excluded(n) => *n - T::one(),
-    //         Bound::Unbounded => T::safe_max_value(),
-    //     };
-    //     assert!(start <= end);
+    /// Constructs an iterator over a sub-range of elements in the set.
+    ///
+    /// Not to be confused with [`RangeSetBlaze2::ranges`], which returns an iterator over the ranges in the set.
+    ///
+    /// The simplest way is to use the range syntax `min..max`, thus `range(min..max)` will
+    /// yield elements from min (inclusive) to max (exclusive).
+    /// The range may also be entered as `(Bound<T>, Bound<T>)`, so for example
+    /// `range((Excluded(4), Included(10)))` will yield a left-exclusive, right-inclusive
+    /// range from 4 to 10.
+    ///
+    /// # Panics
+    ///
+    /// Panics if range `start > end`.
+    /// Panics if range `start == end` and both bounds are `Excluded`.
+    ///
+    /// # Performance
+    ///
+    /// Although this could be written to run in time O(ln(n)) in the number of ranges, it is currently O(n) in the number of ranges.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    /// use core::ops::Bound::Included;
+    ///
+    /// let mut set = RangeSetBlaze2::new();
+    /// set.insert(3);
+    /// set.insert(5);
+    /// set.insert(8);
+    /// for elem in set.range((Included(4), Included(8))) {
+    ///     println!("{elem}");
+    /// }
+    /// assert_eq!(Some(5), set.range(4..).next());
+    /// ```
+    pub fn range<R>(&self, range: R) -> IntoIter<T>
+    where
+        R: RangeBounds<T>,
+    {
+        // cmk both 'range' should be made more efficient (it currently creates a RangeMapBlaze for no good reason)
+        let start = match range.start_bound() {
+            Bound::Included(n) => *n,
+            Bound::Excluded(n) => *n + T::one(),
+            Bound::Unbounded => T::min_value(),
+        };
+        let end = match range.end_bound() {
+            Bound::Included(n) => *n,
+            Bound::Excluded(n) => *n - T::one(),
+            Bound::Unbounded => T::safe_max_value(),
+        };
+        assert!(start <= end);
 
-    //     let bounds = CheckSortedDisjoint::from([start..=end]);
-    //     Self::from_sorted_disjoint(self.ranges() & bounds).into_iter()
-    // }
+        let bounds = CheckSortedDisjoint::from([start..=end]);
+        RangeSetBlaze2::from_sorted_disjoint(self.ranges() & bounds).into_iter()
+    }
 
     /// Adds a range to the set.
     ///
@@ -1647,34 +1649,32 @@ gen_ops_ex!(
     where T: Integer //Where clause for all impl's
 );
 
-// impl<T: Integer> IntoIterator for RangeSetBlaze2<T> {
-//     type Item = T;
-//     type IntoIter = IntoIter<T>;
+impl<T: Integer> IntoIterator for RangeSetBlaze2<T> {
+    type Item = T;
+    type IntoIter = IntoIter<T>;
 
-//     /// Gets a (double-ended) iterator for moving out the [`RangeSetBlaze2`]'s integer contents.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use range_set_blaze::RangeSetBlaze2;
-//     ///
-//     /// let set = RangeSetBlaze2::from_iter([1, 2, 3, 4]);
-//     ///
-//     /// let v: Vec<_> = set.into_iter().collect();
-//     /// assert_eq!(v, [1, 2, 3, 4]);
-//     ///
-//     /// let set = RangeSetBlaze2::from_iter([1, 2, 3, 4]);
-//     /// let v: Vec<_> = set.into_iter().rev().collect();
-//     /// assert_eq!(v, [4, 3, 2, 1]);
-//     /// ```
-//     fn into_iter(self) -> IntoIter<T> {
-//         IntoIter {
-//             option_range_front: None,
-//             option_range_back: None,
-//             into_iter: self.btree_map.into_iter(),
-//         }
-//     }
-// }
+    /// Gets a (double-ended) iterator for moving out the [`RangeSetBlaze2`]'s integer contents.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    ///
+    /// let set = RangeSetBlaze2::from_iter([1, 2, 3, 4]);
+    ///
+    /// let v: Vec<_> = set.into_iter().collect();
+    /// assert_eq!(v, [1, 2, 3, 4]);
+    ///
+    /// let set = RangeSetBlaze2::from_iter([1, 2, 3, 4]);
+    /// let v: Vec<_> = set.into_iter().rev().collect();
+    /// assert_eq!(v, [4, 3, 2, 1]);
+    /// ```
+    fn into_iter(self) -> IntoIter<T> {
+        IntoIter {
+            into_iter_map: self.0.into_iter(),
+        }
+    }
+}
 
 // /// A (double-ended) iterator over the integer elements of a [`RangeSetBlaze2`].
 // ///
@@ -1744,98 +1744,67 @@ gen_ops_ex!(
 //     }
 // }
 
-// #[must_use = "iterators are lazy and do nothing unless consumed"]
-// #[derive(Debug)]
-// /// A (double-ended) iterator over the integer elements of a [`RangeSetBlaze2`].
-// ///
-// /// This `struct` is created by the [`into_iter`] method on [`RangeSetBlaze2`]. See its
-// /// documentation for more.
-// ///
-// /// [`into_iter`]: RangeSetBlaze2::into_iter
-// pub struct IntoIter<T: Integer> {
-//     option_range_front: Option<RangeInclusive<T>>,
-//     option_range_back: Option<RangeInclusive<T>>,
-//     into_iter: btree_map::IntoIter<T, T>,
-// }
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+// #[derive(Debug)] cmk000 add this back
+/// A (double-ended) iterator over the integer elements of a [`RangeSetBlaze2`].
+///
+/// This `struct` is created by the [`into_iter`] method on [`RangeSetBlaze2`]. See its
+/// documentation for more.
+///
+/// [`into_iter`]: RangeSetBlaze2::into_iter
+pub struct IntoIter<T: Integer> {
+    into_iter_map: IntoIterMap<T, ()>,
+}
 
-// impl<T: Integer> FusedIterator for IntoIter<T> {}
+impl<T: Integer> FusedIterator for IntoIter<T> {}
 
-// impl<T: Integer> Iterator for IntoIter<T> {
-//     type Item = T;
+impl<T: Integer> Iterator for IntoIter<T> {
+    type Item = T;
 
-//     fn next(&mut self) -> Option<Self::Item> {
-//         let range = self
-//             .option_range_front
-//             .take()
-//             .or_else(|| self.into_iter.next().map(|(start, end)| start..=end))
-//             .or_else(|| self.option_range_back.take())?;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.into_iter_map.next().map(|(key, _value)| key)
+    }
+}
 
-//         let (start, end) = range.into_inner();
-//         debug_assert!(start <= end && end <= T::safe_max_value());
-//         if start < end {
-//             self.option_range_front = Some(start + T::one()..=end);
-//         }
-//         Some(start)
-//     }
+impl<T: Integer> DoubleEndedIterator for IntoIter<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.into_iter_map.next_back().map(|(key, _value)| key)
+    }
+}
 
-//     // We'll have at least as many integers as intervals. There could be more that usize MAX
-//     // the option_range field could increase the number of integers, but we can ignore that.
-//     fn size_hint(&self) -> (usize, Option<usize>) {
-//         let (low, _high) = self.into_iter.size_hint();
-//         (low, None)
-//     }
-// }
-
-// impl<T: Integer> DoubleEndedIterator for IntoIter<T> {
-//     fn next_back(&mut self) -> Option<Self::Item> {
-//         let range = self
-//             .option_range_back
-//             .take()
-//             .or_else(|| self.into_iter.next_back().map(|(start, end)| start..=end))
-//             .or_else(|| self.option_range_front.take())?;
-
-//         let (start, end) = range.into_inner();
-//         debug_assert!(start <= end && end <= T::safe_max_value());
-//         if start < end {
-//             self.option_range_back = Some(start..=end - T::one());
-//         }
-
-//         Some(end)
-//     }
-// }
-
-// impl<T: Integer> Extend<T> for RangeSetBlaze2<T> {
-//     /// Extends the [`RangeSetBlaze2`] with the contents of an Integer iterator.
-//     ///
-//     /// Integers are added one-by-one. There is also a version
-//     /// that takes a range iterator.
-//     ///
-//     /// The [`|=`](RangeSetBlaze2::bitor_assign) operator extends a [`RangeSetBlaze2`]
-//     /// from another [`RangeSetBlaze2`]. It is never slower
-//     /// than  [`RangeSetBlaze2::extend`] and often several times faster.
-//     ///
-//     /// # Examples
-//     /// ```
-//     /// use range_set_blaze::RangeSetBlaze2;
-//     /// let mut a = RangeSetBlaze2::from_iter([1..=4]);
-//     /// a.extend([5, 0, 0, 3, 4, 10]);
-//     /// assert_eq!(a, RangeSetBlaze2::from_iter([0..=5, 10..=10]));
-//     ///
-//     /// let mut a = RangeSetBlaze2::from_iter([1..=4]);
-//     /// let mut b = RangeSetBlaze2::from_iter([5, 0, 0, 3, 4, 10]);
-//     /// a |= b;
-//     /// assert_eq!(a, RangeSetBlaze2::from_iter([0..=5, 10..=10]));
-//     /// ```
-//     fn extend<I>(&mut self, iter: I)
-//     where
-//         I: IntoIterator<Item = T>,
-//     {
-//         let iter = iter.into_iter();
-//         for range in UnsortedDisjoint::from(iter.map(|x| x..=x)) {
-//             self.internal_add(range);
-//         }
-//     }
-// }
+impl<T: Integer> Extend<T> for RangeSetBlaze2<T> {
+    /// Extends the [`RangeSetBlaze2`] with the contents of an Integer iterator.
+    ///
+    /// Integers are added one-by-one. There is also a version
+    /// that takes a range iterator.
+    ///
+    /// The [`|=`](RangeSetBlaze2::bitor_assign) operator extends a [`RangeSetBlaze2`]
+    /// from another [`RangeSetBlaze2`]. It is never slower
+    /// than  [`RangeSetBlaze2::extend`] and often several times faster.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze2;
+    /// let mut a = RangeSetBlaze2::from_iter([1..=4]);
+    /// a.extend([5, 0, 0, 3, 4, 10]);
+    /// assert_eq!(a, RangeSetBlaze2::from_iter([0..=5, 10..=10]));
+    ///
+    /// let mut a = RangeSetBlaze2::from_iter([1..=4]);
+    /// let mut b = RangeSetBlaze2::from_iter([5, 0, 0, 3, 4, 10]);
+    /// a |= b;
+    /// assert_eq!(a, RangeSetBlaze2::from_iter([0..=5, 10..=10]));
+    /// ```
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = T>,
+    {
+        let iter = iter.into_iter();
+        let unsorted = UnsortedDisjointMap::from(iter.map(|x| RangeValue::new(x..=x, &(), None)));
+        for range_value in unsorted {
+            self.0.internal_add(range_value.range, ());
+        }
+    }
+}
 
 impl<T: Integer> BitOrAssign<&RangeSetBlaze2<T>> for RangeSetBlaze2<T> {
     /// Adds the contents of another [`RangeSetBlaze2`] to this one.
