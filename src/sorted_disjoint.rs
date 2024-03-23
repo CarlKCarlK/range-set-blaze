@@ -345,21 +345,21 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// let symmetric_difference = a ^ b;
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
-    // cmk000
-    // #[inline] // cmk
-    // fn symmetric_difference<'a, R>(self, other: R) -> BitXorOldNew<T, Self, R::IntoIter>
-    // where
-    //     R: IntoIterator<Item = Self::Item>,
-    //     R::IntoIter: SortedDisjoint<T>,
-    //     <R as IntoIterator>::IntoIter:,
-    //     Self: Sized,
-    // {
-    //     let left = SortedDisjointToUnitMap::new(self);
-    //     let right = SortedDisjointToUnitMap::new(other.into_iter());
-    //     let unit_map = left.symmetric_difference(right);
-    //     let result = UnitMapToSortedDisjoint::new(unit_map);
-    //     todo!("cmk000")
-    // }
+    // cmk00
+    #[inline]
+    fn symmetric_difference<'a, R>(self, other: R) -> BitXorOldNew<T, Self, R::IntoIter>
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint<T>,
+        <R as IntoIterator>::IntoIter:,
+        Self: Sized,
+    {
+        let left = SortedDisjointToUnitMap::new(self);
+        let right = SortedDisjointToUnitMap::new(other.into_iter());
+        let unit_map = left.symmetric_difference(right);
+        let result = UnitMapToSortedDisjoint::new(unit_map);
+        result
+    }
 
     /// Given two [`SortedDisjoint`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
     /// this method takes ownership of the iterators and consumes them.
@@ -733,21 +733,21 @@ macro_rules! impl_sorted_traits_and_ops0 {
             }
         }
 
-        // cmk000
-        // // cmk00 is 'static the right lifetime?
-        // impl<T, I, R> ops::BitXor<R> for $IterType
-        // where
-        //     T: Integer,
-        //     I: $TraitBound<T>,
-        //     R: SortedDisjoint<T>,
-        // {
-        //     type Output = BitXorOldNew<T, Self, R>;
+        // cmk0
+        // // cmk0 is 'static the right lifetime?
+        impl<T, I, R> ops::BitXor<R> for $IterType
+        where
+            T: Integer,
+            I: $TraitBound<T>,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitXorOldNew<T, Self, R>;
 
-        //     #[allow(clippy::suspicious_arithmetic_impl)]
-        //     fn bitxor(self, other: R) -> Self::Output {
-        //         SortedDisjoint::symmetric_difference(self, other)
-        //     }
-        // }
+            #[allow(clippy::suspicious_arithmetic_impl)]
+            fn bitxor(self, other: R) -> Self::Output {
+                SortedDisjoint::symmetric_difference(self, other)
+            }
+        }
 
         impl<T: Integer, I, R> ops::BitAnd<R> for $IterType
         where
@@ -888,22 +888,22 @@ macro_rules! impl_sorted_traits_and_ops1 {
             }
         }
 
-        // cmk000
-        // impl<T, V, VR, I, R> ops::BitXor<R> for $IterType
-        // where
-        //     T: Integer,
-        //     V: ValueOwned,
-        //     VR: CloneBorrow<V>,
-        //     I: SortedDisjointMap<T, V, VR>,
-        //     R: SortedDisjoint<T>,
-        // {
-        //     type Output = BitXorOldNew<T, Self, R>;
+        // cmk0
+        impl<T, V, VR, I, R> ops::BitXor<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned,
+            VR: CloneBorrow<V>,
+            I: SortedDisjointMap<T, V, VR>,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitXorOldNew<T, Self, R>;
 
-        //     #[allow(clippy::suspicious_arithmetic_impl)]
-        //     fn bitxor(self, other: R) -> Self::Output {
-        //         SortedDisjoint::symmetric_difference(self, other)
-        //     }
-        // }
+            #[allow(clippy::suspicious_arithmetic_impl)]
+            fn bitxor(self, other: R) -> Self::Output {
+                SortedDisjoint::symmetric_difference(self, other)
+            }
+        }
 
         impl<T, V, VR, I, R> ops::BitAnd<R> for $IterType
         where
@@ -966,19 +966,19 @@ macro_rules! impl_sorted_traits_and_ops2 {
             }
         }
 
-        // cmk000
-        // impl<T, R> ops::BitXor<R> for $IterType
-        // where
-        //     T: Integer,
-        //     R: SortedDisjoint<T>,
-        // {
-        //     type Output = BitXorOldNew<T, Self, R>;
+        // cmk0
+        impl<T, R> ops::BitXor<R> for $IterType
+        where
+            T: Integer,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitXorOldNew<T, Self, R>;
 
-        //     #[allow(clippy::suspicious_arithmetic_impl)]
-        //     fn bitxor(self, other: R) -> Self::Output {
-        //         SortedDisjoint::symmetric_difference(self, other)
-        //     }
-        // }
+            #[allow(clippy::suspicious_arithmetic_impl)]
+            fn bitxor(self, other: R) -> Self::Output {
+                SortedDisjoint::symmetric_difference(self, other)
+            }
+        }
 
         impl<T, R> ops::BitAnd<R> for $IterType
         where
@@ -1037,19 +1037,19 @@ macro_rules! impl_sorted_traits_and_ops3 {
             }
         }
 
-        // cmk000
-        // impl<'a, T, R> ops::BitXor<R> for $IterType
-        // where
-        //     T: Integer,
-        //     R: SortedDisjoint<T>,
-        // {
-        //     type Output = BitXorOldNew<T, Self, R>;
+        // cmk0
+        impl<'a, T, R> ops::BitXor<R> for $IterType
+        where
+            T: Integer,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitXorOldNew<T, Self, R>;
 
-        //     #[allow(clippy::suspicious_arithmetic_impl)]
-        //     fn bitxor(self, other: R) -> Self::Output {
-        //         SortedDisjoint::symmetric_difference(self, other)
-        //     }
-        // }
+            #[allow(clippy::suspicious_arithmetic_impl)]
+            fn bitxor(self, other: R) -> Self::Output {
+                SortedDisjoint::symmetric_difference(self, other)
+            }
+        }
 
         impl<'a, T, R> ops::BitAnd<R> for $IterType
         where

@@ -52,24 +52,24 @@ where
     ready_to_go: Option<RangeValue<T, V, VR>>,
 }
 
-// cmk000
-// impl<T, V, VR, I> SortedDisjointMap<T, V, VR> for SymDiffIterMap<T, V, VR, I>
-// where
-//     T: Integer,
-//     V: ValueOwned,
-//     VR: CloneBorrow<V>,
-//     I: for<'a> SortedStartsMap<T, V, VR> + Iterator<Item = RangeValue<T, V, VR>>,
-// {
-// }
+// cmk00
+impl<T, V, VR, I> SortedDisjointMap<T, V, VR> for SymDiffIterMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: for<'a> SortedStartsMap<T, V, VR> + Iterator<Item = RangeValue<T, V, VR>>,
+{
+}
 
-// impl<T, V, VR, I> SortedStartsMap<T, V, VR> for SymDiffIterMap<T, V, VR, I>
-// where
-//     T: Integer,
-//     V: ValueOwned,
-//     VR: CloneBorrow<V>,
-//     I: for<'a> SortedStartsMap<T, V, VR> + Iterator<Item = RangeValue<T, V, VR>>,
-// {
-// }
+impl<T, V, VR, I> SortedStartsMap<T, V, VR> for SymDiffIterMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: for<'a> SortedStartsMap<T, V, VR> + Iterator<Item = RangeValue<T, V, VR>>,
+{
+}
 
 impl<T, V, VR, I> Iterator for SymDiffIterMap<T, V, VR, I>
 where
@@ -138,7 +138,7 @@ where
             // We buffer for output the best item up to the start of the next item (if any).
 
             // Find the start of the next item, if any.
-            // cmk00000000 keep a running total instead of using .map().
+            // cmk00 keep a running total instead of using .map().
             let mut next_end = *self
                 .workspace
                 .iter()

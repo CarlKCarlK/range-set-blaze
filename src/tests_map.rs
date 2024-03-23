@@ -427,7 +427,7 @@ where
     true
 }
 
-fn format_range_values<'a, T>(iter: impl Iterator<Item = RangeValue<'a, T, u8, &'a u8>>) -> String
+fn format_range_values<'a, T>(iter: impl Iterator<Item = RangeValue<T, u8, &'a u8>>) -> String
 where
     T: Integer + fmt::Display + 'a, // Assuming T implements Display for formatting
                                     // V: ValueOwned + fmt::Display + 'a, // V must implement Display to be formatted with {}

@@ -1593,13 +1593,12 @@ gen_ops_ex!(
     /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
     /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
     /// ```
-    // cmk0000
-    // for ^ call |a: &RangeSetBlaze2<T>, b: &RangeSetBlaze2<T>| {
-    //     // We optimize this by using ranges() twice per input, rather than tee()
-    //     // cmk1000000
-    //     let range_set_map = &a.0 ^ &b.0;
-    //     RangeSetBlaze2(range_set_map)
-    // };
+    // cmk00
+    for ^ call |a: &RangeSetBlaze2<T>, b: &RangeSetBlaze2<T>| {
+        // We optimize this by using ranges() twice per input, rather than tee()
+        let range_set_map = &a.0 ^ &b.0;
+        RangeSetBlaze2(range_set_map)
+    };
 
     /// Difference the contents of two [`RangeSetBlaze2`]'s.
     ///
@@ -2197,6 +2196,7 @@ where
 {
 }
 
+// cmk00 rename to Assume...
 pub struct UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
@@ -2210,7 +2210,7 @@ where
 impl<T, I> UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    // cmk000 I: SortedDisjointMap<T, (), &'static ()>,
+    // cmk00 I: SortedDisjointMap<T, (), &'static ()>,
     I: Iterator<Item = RangeValue<T, (), &'static ()>>,
 {
     // Define a new method that directly accepts a SortedDisjoint iterator
