@@ -576,7 +576,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// cmk doc (remove?)
     pub fn from_unit_map<I>(unit_map_iter: I) -> Self
     where
-        // cmk000 I: SortedDisjointMap<T, (), &'static ()>,
+        // cmk00 I: SortedDisjointMap<T, (), &'static ()>,
         I: Iterator<Item = RangeValue<T, (), &'static ()>>,
     {
         // cmk eventually remove this function
@@ -1923,14 +1923,14 @@ gen_ops_ex!(
     /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
     /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
     /// ```
-    // cmk0000
-    // for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-    //     // cmk eventually remove this function
-    //     let left = SortedDisjointToUnitMap::new(a.ranges());
-    //     let right = SortedDisjointToUnitMap::new(b.ranges());
-    //     let unit_map = left.symmetric_difference(right);
-    //     RangeSetBlaze::from_unit_map(unit_map)
-    // };
+    // cmk00
+    for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+        // cmk eventually remove this function
+        let left = SortedDisjointToUnitMap::new(a.ranges());
+        let right = SortedDisjointToUnitMap::new(b.ranges());
+        let unit_map = left.symmetric_difference(right);
+        RangeSetBlaze::from_unit_map(unit_map)
+    };
 
     /// Difference the contents of two [`RangeSetBlaze`]'s.
     ///

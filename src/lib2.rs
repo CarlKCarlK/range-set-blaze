@@ -2200,7 +2200,8 @@ where
 pub struct UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    I: SortedDisjointMap<T, (), &'static ()>, // cmk00 could/should this be 'static? (look elsewhere, too)
+    // I: SortedDisjointMap<T, (), &'static ()>, // cmk00 could/should this be 'static? (look elsewhere, too)
+    I: Iterator<Item = RangeValue<T, (), &'static ()>>,
 {
     iter: I,
     phantom: PhantomData<T>, // cmk needed?
@@ -2209,7 +2210,8 @@ where
 impl<T, I> UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    I: SortedDisjointMap<T, (), &'static ()>,
+    // cmk000 I: SortedDisjointMap<T, (), &'static ()>,
+    I: Iterator<Item = RangeValue<T, (), &'static ()>>,
 {
     // Define a new method that directly accepts a SortedDisjoint iterator
     pub fn new(iter: I) -> Self {
@@ -2223,7 +2225,8 @@ where
 impl<T, I> Iterator for UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    I: SortedDisjointMap<T, (), &'static ()>, // cmk00 or static??
+    // I: SortedDisjointMap<T, (), &'static ()>, // cmk00 or static??
+    I: Iterator<Item = RangeValue<T, (), &'static ()>>,
 {
     type Item = RangeInclusive<T>;
     fn next(&mut self) -> Option<Self::Item> {
@@ -2237,14 +2240,16 @@ where
 impl<T, I> SortedStarts<T> for UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    I: SortedDisjointMap<T, (), &'static ()>,
+    // I: SortedDisjointMap<T, (), &'static ()>,
+    I: Iterator<Item = RangeValue<T, (), &'static ()>>,
 {
 }
 
 impl<T, I> SortedDisjoint<T> for UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    I: SortedDisjointMap<T, (), &'static ()>,
+    // I: SortedDisjointMap<T, (), &'static ()>,
+    I: Iterator<Item = RangeValue<T, (), &'static ()>>,
 {
 }
 
@@ -2290,5 +2295,6 @@ pub fn set_to_map() {
     > = left.symmetric_difference(right);
     // let it: &dyn Iterator<Item = RangeValue<i32, (), &()>> = &unit_map;
     // let it: &dyn SortedDisjointMap<i32, (), &()> = &unit_map;
-    let _result = RangeSetBlaze::from_unit_map(unit_map);
+    // let _result = RangeSetBlaze::from_unit_map(unit_map);
+    let _result = UnitMapToSortedDisjoint::new(unit_map);
 }

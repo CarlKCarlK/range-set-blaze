@@ -37,7 +37,7 @@ where
     iter: Box<dyn SortedDisjointMap<T, V, VR> + 'a>,
 }
 
-// cmk000 compile, but should it require 'static
+// cmk00 compile, but should it require 'static
 impl<'a, T, V, VR> DynSortedDisjointMap<'a, T, V, VR>
 where
     T: Integer,
