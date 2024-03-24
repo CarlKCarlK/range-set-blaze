@@ -4,6 +4,8 @@
 // https://github.com/orlp/glidesort
 // https://nnethercote.github.io/perf-book/profiling.html
 
+// compare with hi_sparse_bitset
+
 use roaring::RoaringBitmap;
 use std::{
     collections::{BTreeSet, HashSet},

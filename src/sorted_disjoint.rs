@@ -993,6 +993,7 @@ macro_rules! impl_sorted_traits_and_ops2 {
     };
 }
 
+/// cmk doc
 #[macro_export]
 macro_rules! impl_sorted_traits_and_ops3 {
     ($IterType:ty) => {

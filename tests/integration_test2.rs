@@ -6,7 +6,7 @@ use core::mem::size_of;
 #[cfg(feature = "rog-experimental")]
 use core::ops::Bound;
 use core::ops::RangeInclusive;
-use criterion::{BatchSize, BenchmarkId, Criterion};
+// use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;

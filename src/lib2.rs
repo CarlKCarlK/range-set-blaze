@@ -1,5 +1,5 @@
+/// cmk doc
 // cmk1 rename file to range_set_blaze.rs
-
 use core::{
     cmp::Ordering,
     fmt,
@@ -2115,6 +2115,7 @@ impl<T: Integer> Eq for RangeSetBlaze2<T> {}
 // impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 // impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
+/// cmk doc
 pub struct SortedDisjointToUnitMap<'a, T, I>
 where
     T: Integer,
@@ -2130,6 +2131,7 @@ where
     I: SortedDisjoint<T>,
 {
     // Define a new method that directly accepts a SortedDisjoint iterator
+    /// cmk doc
     pub fn new(iter: I) -> Self {
         SortedDisjointToUnitMap {
             iter,
@@ -2166,6 +2168,7 @@ where
 {
 }
 
+/// cmk doc
 pub struct SortedStartsToUnitMap<'a, T, I>
 where
     T: Integer,
@@ -2181,6 +2184,8 @@ where
     I: SortedStarts<T>,
 {
     // Define a new method that directly accepts a SortedDisjoint iterator
+
+    /// cmk doc
     pub fn new(iter: I) -> Self {
         SortedStartsToUnitMap {
             iter,
@@ -2211,6 +2216,7 @@ where
 }
 
 // cmk00 rename to Assume...
+/// cmk doc
 pub struct UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
@@ -2228,6 +2234,7 @@ where
     I: Iterator<Item = RangeValue<T, (), &'static ()>>,
 {
     // Define a new method that directly accepts a SortedDisjoint iterator
+    /// cmk doc
     pub fn new(iter: I) -> Self {
         UnitMapToSortedDisjoint {
             iter,
@@ -2267,6 +2274,7 @@ where
 {
 }
 
+/// cmk doc
 pub fn set_to_map() {
     let a: RangeSetBlaze2<i32> = RangeSetBlaze2::from_iter([1..=2, 3..=4]);
     let b = RangeSetBlaze2::from_iter([-1..=2, 3..=14]);

@@ -29,21 +29,21 @@ type I32SafeLen = <i32 as range_set_blaze::Integer>::SafeLen;
 
 #[test]
 fn insert_255u8() {
-    let range_set_blaze = RangeSetBlaze::from_iter([255u8]);
+    let range_set_blaze = RangeSetBlaze2::from_iter([255u8]);
     assert!(range_set_blaze.to_string() == "255..=255");
 }
 
 #[test]
 #[should_panic]
 fn insert_max_u128() {
-    let _ = RangeSetBlaze::<u128>::from_iter([u128::MAX]);
+    let _ = RangeSetBlaze2::<u128>::from_iter([u128::MAX]);
 }
 
 #[test]
 fn complement0() {
     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
-        let empty = RangeSetBlaze::<$ty>::new();
+        let empty = RangeSetBlaze2::<$ty>::new();
         let full = !&empty;
         println!("empty: {empty} (len {}), full: {full} (len {})", empty.len(), full.len());
         )*
@@ -52,34 +52,34 @@ fn complement0() {
 
 #[test]
 fn repro_bit_and() {
-    let a = RangeSetBlaze::from_iter([1u8, 2, 3]);
-    let b = RangeSetBlaze::from_iter([2u8, 3, 4]);
+    let a = RangeSetBlaze2::from_iter([1u8, 2, 3]);
+    let b = RangeSetBlaze2::from_iter([2u8, 3, 4]);
 
     let result = &a & &b;
     println!("{result}");
-    assert_eq!(result, RangeSetBlaze::from_iter([2u8, 3]));
+    assert_eq!(result, RangeSetBlaze2::from_iter([2u8, 3]));
 }
 
 #[test]
 fn doctest1() {
-    let a = RangeSetBlaze::<u8>::from_iter([1, 2, 3]);
-    let b = RangeSetBlaze::<u8>::from_iter([3, 4, 5]);
+    let a = RangeSetBlaze2::<u8>::from_iter([1, 2, 3]);
+    let b = RangeSetBlaze2::<u8>::from_iter([3, 4, 5]);
 
     let result = &a | &b;
-    assert_eq!(result, RangeSetBlaze::<u8>::from_iter([1, 2, 3, 4, 5]));
+    assert_eq!(result, RangeSetBlaze2::<u8>::from_iter([1, 2, 3, 4, 5]));
 }
 
 #[test]
 fn doctest2() {
-    let set = RangeSetBlaze::<u8>::from_iter([1, 2, 3]);
+    let set = RangeSetBlaze2::<u8>::from_iter([1, 2, 3]);
     assert!(set.contains(1));
     assert!(!set.contains(4));
 }
 
 #[test]
 fn doctest3() -> Result<(), Box<dyn std::error::Error>> {
-    let mut a = RangeSetBlaze::from_iter([1u8..=3]);
-    let mut b = RangeSetBlaze::from_iter([3u8..=5]);
+    let mut a = RangeSetBlaze2::from_iter([1u8..=3]);
+    let mut b = RangeSetBlaze2::from_iter([3u8..=5]);
 
     a.append(&mut b);
 
@@ -96,7 +96,7 @@ fn doctest3() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn doctest4() {
-    let a = RangeSetBlaze::<i8>::from_iter([1, 2, 3]);
+    let a = RangeSetBlaze2::<i8>::from_iter([1, 2, 3]);
 
     let result = !&a;
     assert_eq!(result.to_string(), "-128..=0, 4..=127");
@@ -114,7 +114,7 @@ fn compare() {
 
 #[test]
 fn add_in_order() {
-    let mut range_set = RangeSetBlaze::new();
+    let mut range_set = RangeSetBlaze2::new();
     for i in 0u64..1000 {
         range_set.insert(i);
     }
@@ -125,7 +125,7 @@ fn add_in_order() {
 //     let len = 100_000_000;
 //     let coverage_goal = 0.75;
 //     let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
-//     let range_set_blaze = RangeSetBlaze::from_iter(memoryless_data);
+//     let range_set_blaze = RangeSetBlaze2::from_iter(memoryless_data);
 //     let coverage = range_set_blaze.len() as f64 / len as f64;
 //     println!(
 //         "coverage {coverage:?} range_len {:?}",
@@ -140,8 +140,8 @@ fn add_in_order() {
 //     let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
 //     let data_as_vec: Vec<u64> = memoryless_data.collect();
 //     let start = Instant::now();
-//     // let range_set_blaze = RangeSetBlaze::from_mut_slice(data_as_vec.as_mut_slice());
-//     let range_set_blaze = RangeSetBlaze::from_iter(data_as_vec);
+//     // let range_set_blaze = RangeSetBlaze2::from_mut_slice(data_as_vec.as_mut_slice());
+//     let range_set_blaze = RangeSetBlaze2::from_iter(data_as_vec);
 //     let coverage = range_set_blaze.len() as f64 / len as f64;
 //     println!(
 //         "coverage {coverage:?} range_len {:?}",
@@ -155,7 +155,7 @@ fn add_in_order() {
 
 #[test]
 fn iters() -> Result<(), Box<dyn std::error::Error>> {
-    let range_set_blaze = RangeSetBlaze::from_iter([1u8..=6, 8..=9, 11..=15]);
+    let range_set_blaze = RangeSetBlaze2::from_iter([1u8..=6, 8..=9, 11..=15]);
     assert!(range_set_blaze.len() == 13);
     for i in range_set_blaze.iter() {
         println!("{i}");
@@ -184,166 +184,166 @@ fn iters() -> Result<(), Box<dyn std::error::Error>> {
 fn missing_doctest_ops() {
     // note that may be borrowed or owned in any combination.
 
-    // Returns the union of `self` and `rhs` as a new [`RangeSetBlaze`].
-    let a = RangeSetBlaze::from_iter([1, 2, 3]);
-    let b = RangeSetBlaze::from_iter([3, 4, 5]);
+    // Returns the union of `self` and `rhs` as a new [`RangeSetBlaze2`].
+    let a = RangeSetBlaze2::from_iter([1, 2, 3]);
+    let b = RangeSetBlaze2::from_iter([3, 4, 5]);
 
     let result = &a | &b;
-    assert_eq!(result, RangeSetBlaze::from_iter([1, 2, 3, 4, 5]));
+    assert_eq!(result, RangeSetBlaze2::from_iter([1, 2, 3, 4, 5]));
     let result = a | &b;
-    assert_eq!(result, RangeSetBlaze::from_iter([1, 2, 3, 4, 5]));
+    assert_eq!(result, RangeSetBlaze2::from_iter([1, 2, 3, 4, 5]));
 
-    // Returns the complement of `self` as a new [`RangeSetBlaze`].
-    let a = RangeSetBlaze::<i8>::from_iter([1, 2, 3]);
+    // Returns the complement of `self` as a new [`RangeSetBlaze2`].
+    let a = RangeSetBlaze2::<i8>::from_iter([1, 2, 3]);
 
     let result = !&a;
     assert_eq!(result.to_string(), "-128..=0, 4..=127");
     let result = !a;
     assert_eq!(result.to_string(), "-128..=0, 4..=127");
 
-    // Returns the intersection of `self` and `rhs` as a new `RangeSetBlaze<T>`.
+    // Returns the intersection of `self` and `rhs` as a new `RangeSetBlaze2<T>`.
 
-    let a = RangeSetBlaze::from_iter([1, 2, 3]);
-    let b = RangeSetBlaze::from_iter([2, 3, 4]);
+    let a = RangeSetBlaze2::from_iter([1, 2, 3]);
+    let b = RangeSetBlaze2::from_iter([2, 3, 4]);
 
     let result = a & &b;
-    assert_eq!(result, RangeSetBlaze::from_iter([2, 3]));
-    let a = RangeSetBlaze::from_iter([1, 2, 3]);
+    assert_eq!(result, RangeSetBlaze2::from_iter([2, 3]));
+    let a = RangeSetBlaze2::from_iter([1, 2, 3]);
     let result = a & b;
-    assert_eq!(result, RangeSetBlaze::from_iter([2, 3]));
+    assert_eq!(result, RangeSetBlaze2::from_iter([2, 3]));
 
-    // Returns the symmetric difference of `self` and `rhs` as a new `RangeSetBlaze<T>`.
-    let a = RangeSetBlaze::from_iter([1, 2, 3]);
-    let b = RangeSetBlaze::from_iter([2, 3, 4]);
+    // Returns the symmetric difference of `self` and `rhs` as a new `RangeSetBlaze2<T>`.
+    let a = RangeSetBlaze2::from_iter([1, 2, 3]);
+    let b = RangeSetBlaze2::from_iter([2, 3, 4]);
 
     let result = a ^ b;
-    assert_eq!(result, RangeSetBlaze::from_iter([1, 4]));
+    assert_eq!(result, RangeSetBlaze2::from_iter([1, 4]));
 
-    // Returns the set difference of `self` and `rhs` as a new `RangeSetBlaze<T>`.
-    let a = RangeSetBlaze::from_iter([1, 2, 3]);
-    let b = RangeSetBlaze::from_iter([2, 3, 4]);
+    // Returns the set difference of `self` and `rhs` as a new `RangeSetBlaze2<T>`.
+    let a = RangeSetBlaze2::from_iter([1, 2, 3]);
+    let b = RangeSetBlaze2::from_iter([2, 3, 4]);
 
     let result = a - b;
-    assert_eq!(result, RangeSetBlaze::from_iter([1]));
+    assert_eq!(result, RangeSetBlaze2::from_iter([1]));
 }
 
 #[test]
 fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
-    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
-    let c = RangeSetBlaze::from_iter([38..=42]);
+    let a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze2::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze2::from_iter([38..=42]);
     let d = &(&a | &b) | &c;
     println!("{d}");
     let d = a | b | &c;
     println!("{d}");
 
-    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
-    let c = RangeSetBlaze::from_iter([38..=42]);
+    let a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze2::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze2::from_iter([38..=42]);
 
     let _ = [&a, &b, &c].union();
     let d = [a, b, c].intersection();
-    assert_eq!(d, RangeSetBlaze::new());
+    assert_eq!(d, RangeSetBlaze2::new());
 
     assert_eq!(
         !MultiwayRangeSetBlaze::<u8>::union([]),
-        RangeSetBlaze::from_iter([0..=255])
+        RangeSetBlaze2::from_iter([0..=255])
     );
 
-    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
-    let c = RangeSetBlaze::from_iter([1..=42]);
+    let a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze2::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze2::from_iter([1..=42]);
 
     let _ = &a & &b;
     let d = [&a, &b, &c].intersection();
-    // let d = RangeSetBlaze::intersection([a, b, c]);
+    // let d = RangeSetBlaze2::intersection([a, b, c]);
     println!("{d}");
-    assert_eq!(d, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
+    assert_eq!(d, RangeSetBlaze2::from_iter([5..=6, 8..=9, 11..=13]));
 
     assert_eq!(
         MultiwayRangeSetBlaze::<u8>::intersection([]),
-        RangeSetBlaze::from_iter([0..=255])
+        RangeSetBlaze2::from_iter([0..=255])
     );
     Ok(())
 }
 
 #[test]
 fn custom_multi() -> Result<(), Box<dyn std::error::Error>> {
-    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
-    let c = RangeSetBlaze::from_iter([38..=42]);
+    let a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze2::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze2::from_iter([38..=42]);
 
     let union_stream = b.ranges() | c.ranges();
     let a_less = a.ranges().difference(union_stream);
-    let d: RangeSetBlaze<_> = a_less.into_range_set_blaze();
+    let d: RangeSetBlaze2<_> = a_less.into_range_set_blaze2();
     println!("{d}");
 
-    let d: RangeSetBlaze<_> = a
+    let d: RangeSetBlaze2<_> = a
         .ranges()
         .difference([b.ranges(), c.ranges()].union())
-        .into_range_set_blaze();
+        .into_range_set_blaze2();
     println!("{d}");
     Ok(())
 }
 
 #[test]
 fn from_string() -> Result<(), Box<dyn std::error::Error>> {
-    let a = RangeSetBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=65535]);
-    assert_eq!(a, RangeSetBlaze::from_iter([0..=65535]));
+    let a = RangeSetBlaze2::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=65535]);
+    assert_eq!(a, RangeSetBlaze2::from_iter([0..=65535]));
     Ok(())
 }
 
 #[test]
 fn nand_repro() -> Result<(), Box<dyn std::error::Error>> {
-    let b = &RangeSetBlaze::from_iter([5u8..=13, 18..=29]);
-    let c = &RangeSetBlaze::from_iter([38..=42]);
+    let b = &RangeSetBlaze2::from_iter([5u8..=13, 18..=29]);
+    let c = &RangeSetBlaze2::from_iter([38..=42]);
     println!("about to nand");
     let d = !b | !c;
     assert_eq!(
         d,
-        RangeSetBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
+        RangeSetBlaze2::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
     );
     Ok(())
 }
 
 #[test]
 fn parity() -> Result<(), Box<dyn std::error::Error>> {
-    let a = &RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    let b = &RangeSetBlaze::from_iter([5..=13, 18..=29]);
-    let c = &RangeSetBlaze::from_iter([38..=42]);
+    let a = &RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = &RangeSetBlaze2::from_iter([5..=13, 18..=29]);
+    let c = &RangeSetBlaze2::from_iter([38..=42]);
     assert_eq!(
         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
-        RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
+        RangeSetBlaze2::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
     let _d = [a.ranges()].intersection();
-    let _parity: RangeSetBlaze<u8> = [[a.ranges()].intersection()]
+    let _parity: RangeSetBlaze2<u8> = [[a.ranges()].intersection()]
         .union()
-        .into_range_set_blaze_old();
-    let _parity: RangeSetBlaze<u8> = [a.ranges()].intersection().into_range_set_blaze_old();
-    let _parity: RangeSetBlaze<u8> = [a.ranges()].union().into_range_set_blaze_old();
+        .into_range_set_blaze2();
+    let _parity: RangeSetBlaze2<u8> = [a.ranges()].intersection().into_range_set_blaze2();
+    let _parity: RangeSetBlaze2<u8> = [a.ranges()].union().into_range_set_blaze2();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
     println!(
         "!b|!c {}",
-        RangeSetBlaze::from_sorted_disjoint(b.ranges().complement() | c.ranges().complement())
+        RangeSetBlaze2::from_sorted_disjoint(b.ranges().complement() | c.ranges().complement())
     );
 
-    let _a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let _a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
     let u = [DynSortedDisjoint::new(a.ranges())].union();
     assert_eq!(
-        RangeSetBlaze::from_sorted_disjoint(u),
-        RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15])
+        RangeSetBlaze2::from_sorted_disjoint(u),
+        RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15])
     );
     let u = union_dyn!(a.ranges());
     assert_eq!(
-        RangeSetBlaze::from_sorted_disjoint(u),
-        RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15])
+        RangeSetBlaze2::from_sorted_disjoint(u),
+        RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15])
     );
     let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
     assert_eq!(
-        RangeSetBlaze::from_sorted_disjoint(u),
-        RangeSetBlaze::from_iter([1..=15, 18..=29, 38..=42])
+        RangeSetBlaze2::from_sorted_disjoint(u),
+        RangeSetBlaze2::from_iter([1..=15, 18..=29, 38..=42])
     );
 
     let u = [
@@ -354,8 +354,8 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
     ]
     .union();
     assert_eq!(
-        RangeSetBlaze::from_sorted_disjoint(u),
-        RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
+        RangeSetBlaze2::from_sorted_disjoint(u),
+        RangeSetBlaze2::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
     Ok(())
 }
@@ -369,9 +369,9 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn complement() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
-    let a0 = RangeSetBlaze::from_iter([1..=6]);
-    let a1 = RangeSetBlaze::from_iter([8..=9, 11..=15]);
+    // RangeSetBlaze2, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+    let a0 = RangeSetBlaze2::from_iter([1..=6]);
+    let a1 = RangeSetBlaze2::from_iter([8..=9, 11..=15]);
     let a = &a0 | &a1;
     let not_a = !&a;
     let b = a.ranges();
@@ -395,11 +395,11 @@ fn complement() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn union_test() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
-    let a0 = RangeSetBlaze::from_iter([1..=6]);
+    // RangeSetBlaze2, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+    let a0 = RangeSetBlaze2::from_iter([1..=6]);
     let (a0_tee, _) = a0.ranges().tee();
-    let a1 = RangeSetBlaze::from_iter([8..=9]);
-    let a2 = RangeSetBlaze::from_iter([11..=15]);
+    let a1 = RangeSetBlaze2::from_iter([8..=9]);
+    let a2 = RangeSetBlaze2::from_iter([11..=15]);
     let a12 = &a1 | &a2;
     let not_a0 = !&a0;
     let a = &a0 | &a1 | &a2;
@@ -421,10 +421,10 @@ fn union_test() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn sub() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
-    let a0 = RangeSetBlaze::from_iter([1..=6]);
-    let a1 = RangeSetBlaze::from_iter([8..=9]);
-    let a2 = RangeSetBlaze::from_iter([11..=15]);
+    // RangeSetBlaze2, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+    let a0 = RangeSetBlaze2::from_iter([1..=6]);
+    let a1 = RangeSetBlaze2::from_iter([8..=9]);
+    let a2 = RangeSetBlaze2::from_iter([11..=15]);
     let a01 = &a0 | &a1;
     let (a01_tee, _) = a01.ranges().tee();
     let not_a01 = !&a01;
@@ -445,10 +445,10 @@ fn sub() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn xor() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
-    let a0 = RangeSetBlaze::from_iter([1..=6]);
-    let a1 = RangeSetBlaze::from_iter([8..=9]);
-    let a2 = RangeSetBlaze::from_iter([11..=15]);
+    // RangeSetBlaze2, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+    let a0 = RangeSetBlaze2::from_iter([1..=6]);
+    let a1 = RangeSetBlaze2::from_iter([8..=9]);
+    let a2 = RangeSetBlaze2::from_iter([11..=15]);
     let a01 = &a0 | &a1;
     let (a01_tee, _) = a01.ranges().tee();
     let not_a01 = !&a01;
@@ -468,10 +468,10 @@ fn xor() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn bitand() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
-    let a0 = RangeSetBlaze::from_iter([1..=6]);
-    let a1 = RangeSetBlaze::from_iter([8..=9]);
-    let a2 = RangeSetBlaze::from_iter([11..=15]);
+    // RangeSetBlaze2, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+    let a0 = RangeSetBlaze2::from_iter([1..=6]);
+    let a1 = RangeSetBlaze2::from_iter([8..=9]);
+    let a2 = RangeSetBlaze2::from_iter([11..=15]);
     let a01 = &a0 | &a1;
     let (a01_tee, _) = a01.ranges().tee();
     let not_a01 = !&a01;
@@ -491,18 +491,18 @@ fn bitand() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn empty_it() {
-    let universe = RangeSetBlaze::from_iter([0u8..=255]);
+    let universe = RangeSetBlaze2::from_iter([0u8..=255]);
     let universe = universe.ranges();
     let arr: [u8; 0] = [];
-    let a0 = RangeSetBlaze::<u8>::from_iter(arr);
+    let a0 = RangeSetBlaze2::<u8>::from_iter(arr);
     assert!(!(a0.ranges()).equal(universe.clone()));
     assert!((!a0).ranges().equal(universe));
-    let _a0 = RangeSetBlaze::from_iter([0..=0; 0]);
-    let _a = RangeSetBlaze::<i32>::new();
+    let _a0 = RangeSetBlaze2::from_iter([0..=0; 0]);
+    let _a = RangeSetBlaze2::<i32>::new();
 
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-    let a = a_iter.collect::<RangeSetBlaze<i32>>();
-    let b = RangeSetBlaze::from_iter([0i32; 0]);
+    let a = a_iter.collect::<RangeSetBlaze2<i32>>();
+    let b = RangeSetBlaze2::from_iter([0i32; 0]);
     let mut c3 = a.clone();
     let mut c5 = a.clone();
 
@@ -511,11 +511,11 @@ fn empty_it() {
     let c1b = &a | b.clone();
     let c1c = a.clone() | &b;
     let c1d = a.clone() | b.clone();
-    let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze();
+    let c2: RangeSetBlaze2<_> = (a.ranges() | b.ranges()).into_range_set_blaze2();
     c3.append(&mut b.clone());
     c5.extend(b);
 
-    let answer = RangeSetBlaze::from_iter([0; 0]);
+    let answer = RangeSetBlaze2::from_iter([0; 0]);
     assert_eq!(&c0, &answer);
     assert_eq!(&c1a, &answer);
     assert_eq!(&c1b, &answer);
@@ -526,8 +526,8 @@ fn empty_it() {
     assert_eq!(&c5, &answer);
 
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-    let a = a_iter.collect::<RangeSetBlaze<i32>>();
-    let b = RangeSetBlaze::from_iter([0; 0]);
+    let a = a_iter.collect::<RangeSetBlaze2<i32>>();
+    let b = RangeSetBlaze2::from_iter([0; 0]);
 
     let c0 = a.ranges() | b.ranges();
     let c1 = [a.ranges(), b.ranges()].union();
@@ -536,7 +536,7 @@ fn empty_it() {
     let c3 = union_dyn!(a.ranges(), b.ranges());
     let c4 = c_list2.map(DynSortedDisjoint::new).union();
 
-    let answer = RangeSetBlaze::from_iter([0; 0]);
+    let answer = RangeSetBlaze2::from_iter([0; 0]);
     assert!(c0.equal(answer.ranges()));
     assert!(c1.equal(answer.ranges()));
     assert!(c2.equal(answer.ranges()));
@@ -550,7 +550,7 @@ fn empty_it() {
     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
     let c4 = !!c_list2.map(DynSortedDisjoint::new).intersection();
 
-    let answer = !RangeSetBlaze::from_iter([0; 0]);
+    let answer = !RangeSetBlaze2::from_iter([0; 0]);
     assert!(c0.equal(answer.ranges()));
     assert!(c1.equal(answer.ranges()));
     assert!(c2.equal(answer.ranges()));
@@ -561,23 +561,23 @@ fn empty_it() {
 #[test]
 #[allow(clippy::reversed_empty_ranges)]
 fn tricky_case1() {
-    let a = RangeSetBlaze::from_iter([1..=0]);
-    let b = RangeSetBlaze::from_iter([2..=1]);
+    let a = RangeSetBlaze2::from_iter([1..=0]);
+    let b = RangeSetBlaze2::from_iter([2..=1]);
     assert_eq!(a, b);
     assert!(a.ranges().equal(b.ranges()));
     assert_eq!(a.ranges().len(), 0);
     assert_eq!(a.ranges().len(), b.ranges().len());
-    let a = RangeSetBlaze::from_iter([i32::MIN..=i32::MAX]);
+    let a = RangeSetBlaze2::from_iter([i32::MIN..=i32::MAX]);
     println!("tc1 '{a}'");
     assert_eq!(a.len() as i128, (i32::MAX as i128) - (i32::MIN as i128) + 1);
-    let a = !RangeSetBlaze::from_iter([1..=0]);
+    let a = !RangeSetBlaze2::from_iter([1..=0]);
     println!("tc1 '{a}'");
     assert_eq!(a.len() as i128, (i32::MAX as i128) - (i32::MIN as i128) + 1);
 
-    let a = !RangeSetBlaze::from_iter([1i128..=0]);
+    let a = !RangeSetBlaze2::from_iter([1i128..=0]);
     println!("tc1 '{a}', {}", a.len());
     assert_eq!(a.len(), u128::MAX);
-    let a = !RangeSetBlaze::from_iter([1u128..=0]);
+    let a = !RangeSetBlaze2::from_iter([1u128..=0]);
     println!("tc1 '{a}', {}", a.len());
     assert_eq!(a.len(), u128::MAX);
 }
@@ -586,35 +586,35 @@ fn tricky_case1() {
 #[test]
 #[should_panic]
 fn tricky_case2() {
-    let _a = RangeSetBlaze::from_iter([-1..=i128::MAX]);
+    let _a = RangeSetBlaze2::from_iter([-1..=i128::MAX]);
 }
 
 #[test]
 #[should_panic]
 fn tricky_case3() {
-    let _a = RangeSetBlaze::from_iter([0..=u128::MAX]);
+    let _a = RangeSetBlaze2::from_iter([0..=u128::MAX]);
 }
 
 #[test]
 fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     // #9: new
     let mut _range_set_int;
-    _range_set_int = RangeSetBlaze::<i32>::new();
+    _range_set_int = RangeSetBlaze2::<i32>::new();
     // #10 collect / from_iter T
     _range_set_int = [1, 5, 6, 5].into_iter().collect();
-    _range_set_int = RangeSetBlaze::from_iter([1, 5, 6, 5]);
+    _range_set_int = RangeSetBlaze2::from_iter([1, 5, 6, 5]);
     // #11 into / from array T
     _range_set_int = [1, 5, 6, 5].into();
-    _range_set_int = RangeSetBlaze::from_iter([1, 5, 6, 5]);
+    _range_set_int = RangeSetBlaze2::from_iter([1, 5, 6, 5]);
     // #12 into / from slice T
     // _range_set_int = [1, 5, 6, 5][1..=2].into();
-    // _range_set_int = RangeSetBlaze::from_iter([1, 5, 6, 5].as_slice());
+    // _range_set_int = RangeSetBlaze2::from_iter([1, 5, 6, 5].as_slice());
     //#13 collect / from_iter range
     _range_set_int = [5..=6, 1..=5].into_iter().collect();
-    _range_set_int = RangeSetBlaze::from_iter([5..=6, 1..=5]);
+    _range_set_int = RangeSetBlaze2::from_iter([5..=6, 1..=5]);
     // #16 into / from iter (T,T) + SortedDisjoint
-    _range_set_int = _range_set_int.ranges().into_range_set_blaze();
-    _range_set_int = RangeSetBlaze::from_sorted_disjoint(_range_set_int.ranges());
+    _range_set_int = _range_set_int.ranges().into_range_set_blaze2();
+    _range_set_int = RangeSetBlaze2::from_sorted_disjoint(_range_set_int.ranges());
 
     let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10]);
     let mut _sorted_disjoint_iter;
@@ -673,7 +673,7 @@ fn k_play(c: &mut Criterion) {
                 },
                 |sets| {
                     let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-                    let _answer: RangeSetBlaze<_> = sets.intersection().into_range_set_blaze();
+                    let _answer: RangeSetBlaze2<_> = sets.intersection().into_range_set_blaze2();
                 },
                 BatchSize::SmallInput,
             );
@@ -690,9 +690,9 @@ fn data_gen() {
     let k = 100;
 
     for how in [How::None, How::Union, How::Intersection] {
-        let mut option_range_int_set: Option<RangeSetBlaze<_>> = None;
+        let mut option_range_int_set: Option<RangeSetBlaze2<_>> = None;
         for seed in 0..k as u64 {
-            let r2: RangeSetBlaze<i32> = MemorylessRange::new(
+            let r2: RangeSetBlaze2<i32> = MemorylessRange::new(
                 &mut StdRng::seed_from_u64(seed),
                 range_len,
                 range.clone(),
@@ -813,7 +813,7 @@ fn ingest_clumps_base() {
             MemorylessIter::new(&mut rng, range_len, range.clone(), coverage_goal, k, how);
         let item_count_with_dups = memoryless_iter.count();
         let mut rng = StdRng::seed_from_u64(seed);
-        let range_set_blaze: RangeSetBlaze<_> =
+        let range_set_blaze: RangeSetBlaze2<_> =
             MemorylessRange::new(&mut rng, range_len, range.clone(), coverage_goal, k, how)
                 .collect();
 
@@ -845,7 +845,7 @@ fn ingest_clumps_base() {
 
 #[test]
 fn doc_test_insert1() {
-    let mut set = RangeSetBlaze::new();
+    let mut set = RangeSetBlaze2::new();
 
     assert!(set.insert(2));
     assert!(!set.insert(2));
@@ -854,12 +854,12 @@ fn doc_test_insert1() {
 
 #[test]
 fn doc_test_len() {
-    let mut v = RangeSetBlaze::new();
+    let mut v = RangeSetBlaze2::new();
     assert_eq!(v.len(), 0 as I32SafeLen);
     v.insert(1);
     assert_eq!(v.len(), 1 as I32SafeLen);
 
-    let v = RangeSetBlaze::from_iter([
+    let v = RangeSetBlaze2::from_iter([
         -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,
         -10..=170_141_183_460_469_231_731_687_303_715_884_105_726,
     ]);
@@ -871,36 +871,36 @@ fn doc_test_len() {
 
 #[test]
 fn test_pops() {
-    let mut set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=11]);
+    let mut set = RangeSetBlaze2::from_iter([1..=2, 4..=5, 10..=11]);
     let len = set.len();
     assert_eq!(set.pop_first(), Some(1));
     assert_eq!(set.len(), len - 1);
-    assert_eq!(set, RangeSetBlaze::from_iter([2..=2, 4..=5, 10..=11]));
+    assert_eq!(set, RangeSetBlaze2::from_iter([2..=2, 4..=5, 10..=11]));
     assert_eq!(set.pop_last(), Some(11));
     println!("{set:#?}");
-    assert_eq!(set, RangeSetBlaze::from_iter([2..=2, 4..=5, 10..=10]));
+    assert_eq!(set, RangeSetBlaze2::from_iter([2..=2, 4..=5, 10..=10]));
     assert_eq!(set.len(), len - 2);
     assert_eq!(set.pop_last(), Some(10 as I32SafeLen));
     assert_eq!(set.len(), len - 3);
-    assert_eq!(set, RangeSetBlaze::from_iter([2..=2, 4..=5]));
+    assert_eq!(set, RangeSetBlaze2::from_iter([2..=2, 4..=5]));
     assert_eq!(set.pop_first(), Some(2));
     assert_eq!(set.len(), len - 4);
-    assert_eq!(set, RangeSetBlaze::from_iter([4..=5]));
+    assert_eq!(set, RangeSetBlaze2::from_iter([4..=5]));
 }
 
 #[test]
 fn eq() {
-    assert!(RangeSetBlaze::from_iter([0, 2]) > RangeSetBlaze::from_iter([0, 1]));
-    assert!(RangeSetBlaze::from_iter([0, 2]) > RangeSetBlaze::from_iter([0..=100]));
-    assert!(RangeSetBlaze::from_iter([2..=2]) > RangeSetBlaze::from_iter([1..=2]));
+    assert!(RangeSetBlaze2::from_iter([0, 2]) > RangeSetBlaze2::from_iter([0, 1]));
+    assert!(RangeSetBlaze2::from_iter([0, 2]) > RangeSetBlaze2::from_iter([0..=100]));
+    assert!(RangeSetBlaze2::from_iter([2..=2]) > RangeSetBlaze2::from_iter([1..=2]));
     for use_0 in [false, true] {
         for use_1 in [false, true] {
             for use_2 in [false, true] {
                 for use_3 in [false, true] {
                     for use_4 in [false, true] {
                         for use_5 in [false, true] {
-                            let mut a = RangeSetBlaze::new();
-                            let mut b = RangeSetBlaze::new();
+                            let mut a = RangeSetBlaze2::new();
+                            let mut b = RangeSetBlaze2::new();
                             if use_0 {
                                 a.insert(0);
                             };
@@ -936,33 +936,33 @@ fn eq() {
 
 #[test]
 fn insert2() {
-    let set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=20, 30..=30]);
+    let set = RangeSetBlaze2::from_iter([1..=2, 4..=5, 10..=20, 30..=30]);
     for insert in 0..=31 {
         println!("inserting  {insert}");
         let mut a = set.clone();
         let mut a2: BTreeSet<_> = a.iter().collect();
         let b2 = a2.insert(insert);
         let b = a.insert(insert);
-        assert_eq!(a, RangeSetBlaze::from_iter(a2.iter().cloned()));
+        assert_eq!(a, RangeSetBlaze2::from_iter(a2.iter().cloned()));
         assert_eq!(b, b2);
     }
 }
 
 #[test]
 fn remove() {
-    let mut set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=11]);
+    let mut set = RangeSetBlaze2::from_iter([1..=2, 4..=5, 10..=11]);
     let len = set.len();
     assert!(set.remove(4));
     assert_eq!(set.len(), len - 1 as I32SafeLen);
-    assert_eq!(set, RangeSetBlaze::from_iter([1..=2, 5..=5, 10..=11]));
+    assert_eq!(set, RangeSetBlaze2::from_iter([1..=2, 5..=5, 10..=11]));
     assert!(!set.remove(4));
     assert_eq!(set.len(), len - 1 as I32SafeLen);
-    assert_eq!(set, RangeSetBlaze::from_iter([1..=2, 5..=5, 10..=11]));
+    assert_eq!(set, RangeSetBlaze2::from_iter([1..=2, 5..=5, 10..=11]));
     assert!(set.remove(5));
     assert_eq!(set.len(), len - 2 as I32SafeLen);
-    assert_eq!(set, RangeSetBlaze::from_iter([1..=2, 10..=11]));
+    assert_eq!(set, RangeSetBlaze2::from_iter([1..=2, 10..=11]));
 
-    let mut set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=100, 1000..=1000]);
+    let mut set = RangeSetBlaze2::from_iter([1..=2, 4..=5, 10..=100, 1000..=1000]);
     let len = set.len();
     assert!(!set.remove(0));
     assert_eq!(set.len(), len);
@@ -978,74 +978,74 @@ fn remove() {
     assert_eq!(set.len(), len - 4 as I32SafeLen);
     assert_eq!(
         set,
-        RangeSetBlaze::from_iter([1..=1, 4..=5, 11..=49, 51..=100])
+        RangeSetBlaze2::from_iter([1..=1, 4..=5, 11..=49, 51..=100])
     );
 }
 
 #[test]
 fn remove2() {
-    let set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=20, 30..=30]);
+    let set = RangeSetBlaze2::from_iter([1..=2, 4..=5, 10..=20, 30..=30]);
     for remove in 0..=31 {
         println!("removing  {remove}");
         let mut a = set.clone();
         let mut a2: BTreeSet<_> = a.iter().collect();
         let b2 = a2.remove(&remove);
         let b = a.remove(remove);
-        assert_eq!(a, RangeSetBlaze::from_iter(a2.iter().cloned()));
+        assert_eq!(a, RangeSetBlaze2::from_iter(a2.iter().cloned()));
         assert_eq!(b, b2);
     }
-    let set = RangeSetBlaze::new();
+    let set = RangeSetBlaze2::new();
     for remove in 0..=0 {
         println!("removing  {remove}");
         let mut a = set.clone();
         let mut a2: BTreeSet<_> = a.iter().collect();
         let b2 = a2.remove(&remove);
         let b = a.remove(remove);
-        assert_eq!(a, RangeSetBlaze::from_iter(a2.iter().cloned()));
+        assert_eq!(a, RangeSetBlaze2::from_iter(a2.iter().cloned()));
         assert_eq!(b, b2);
     }
 }
 
 #[test]
 fn split_off() {
-    let set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=20, 30..=30]);
+    let set = RangeSetBlaze2::from_iter([1..=2, 4..=5, 10..=20, 30..=30]);
     for split in 0..=31 {
         println!("splitting at {split}");
         let mut a = set.clone();
         let mut a2: BTreeSet<_> = a.iter().collect();
         let b2 = a2.split_off(&split);
         let b = a.split_off(split);
-        assert_eq!(a, RangeSetBlaze::from_iter(a2.iter().cloned()));
-        assert_eq!(b, RangeSetBlaze::from_iter(b2.iter().cloned()));
+        assert_eq!(a, RangeSetBlaze2::from_iter(a2.iter().cloned()));
+        assert_eq!(b, RangeSetBlaze2::from_iter(b2.iter().cloned()));
     }
-    let set = RangeSetBlaze::new();
+    let set = RangeSetBlaze2::new();
     for split in 0..=0 {
         println!("splitting at {split}");
         let mut a = set.clone();
         let mut a2: BTreeSet<_> = a.iter().collect();
         let b2 = a2.split_off(&split);
         let b = a.split_off(split);
-        assert_eq!(a, RangeSetBlaze::from_iter(a2.iter().cloned()));
-        assert_eq!(b, RangeSetBlaze::from_iter(b2.iter().cloned()));
+        assert_eq!(a, RangeSetBlaze2::from_iter(a2.iter().cloned()));
+        assert_eq!(b, RangeSetBlaze2::from_iter(b2.iter().cloned()));
     }
 }
 
 #[test]
 fn retrain() {
-    let mut set = RangeSetBlaze::from_iter([1..=6]);
+    let mut set = RangeSetBlaze2::from_iter([1..=6]);
     // Keep only the even numbers.
     set.retain(|k| k % 2 == 0);
-    assert_eq!(set, RangeSetBlaze::from_iter([2, 4, 6]));
+    assert_eq!(set, RangeSetBlaze2::from_iter([2, 4, 6]));
 }
 
 #[test]
 fn sync_and_send() {
     fn assert_sync_and_send<S: Sync + Send>() {}
-    assert_sync_and_send::<RangeSetBlaze<i32>>();
+    assert_sync_and_send::<RangeSetBlaze2<i32>>();
     assert_sync_and_send::<RangesIter<i32>>();
 }
 
-fn fraction<T: Integer>(range_int_set: &RangeSetBlaze<T>, range: &RangeInclusive<T>) -> f64 {
+fn fraction<T: Integer>(range_int_set: &RangeSetBlaze2<T>, range: &RangeInclusive<T>) -> f64 {
     T::safe_len_to_f64(range_int_set.len()) / T::safe_len_to_f64(T::safe_len(range))
 }
 
@@ -1057,29 +1057,29 @@ fn example_2() {
     let mut iter = line.split_whitespace();
     let chr = iter.next().unwrap();
 
-    // Parse the start and end of the transcription region into a RangeSetBlaze
+    // Parse the start and end of the transcription region into a RangeSetBlaze2
     let trans_start: i32 = iter.next().unwrap().parse().unwrap();
     let trans_end: i32 = iter.next().unwrap().parse().unwrap();
-    let trans = RangeSetBlaze::from_iter([trans_start..=trans_end]);
-    assert_eq!(trans, RangeSetBlaze::from_iter([29370..=37380]));
+    let trans = RangeSetBlaze2::from_iter([trans_start..=trans_end]);
+    assert_eq!(trans, RangeSetBlaze2::from_iter([29370..=37380]));
 
-    // Parse the start and end of the exons into a RangeSetBlaze
+    // Parse the start and end of the exons into a RangeSetBlaze2
     let exon_starts = iter.next().unwrap().split(',').map(|s| s.parse::<i32>());
     let exon_ends = iter.next().unwrap().split(',').map(|s| s.parse::<i32>());
     let exon_ranges = exon_starts
         .zip(exon_ends)
         .map(|(s, e)| s.unwrap()..=e.unwrap());
-    let exons = RangeSetBlaze::from_iter(exon_ranges);
+    let exons = RangeSetBlaze2::from_iter(exon_ranges);
     assert_eq!(
         exons,
-        RangeSetBlaze::from_iter([29370..=30817, 32358..=32561, 36715..=37380])
+        RangeSetBlaze2::from_iter([29370..=30817, 32358..=32561, 36715..=37380])
     );
 
     // Use 'set subtraction' to find the introns
     let intron = trans - exons;
     assert_eq!(
         intron,
-        RangeSetBlaze::from_iter([30818..=32357, 32562..=36714])
+        RangeSetBlaze2::from_iter([30818..=32357, 32562..=36714])
     );
     for range in intron.ranges() {
         let (start, end) = range.into_inner();
@@ -1091,7 +1091,7 @@ fn example_2() {
 fn trick_dyn() {
     let bad = [1..=2, 0..=5];
     // let u = union_dyn!(bad.iter().cloned());
-    let good = RangeSetBlaze::from_iter(bad);
+    let good = RangeSetBlaze2::from_iter(bad);
     let _u = union_dyn!(good.ranges());
 }
 
@@ -1099,9 +1099,9 @@ fn trick_dyn() {
 fn multiway2() {
     use range_set_blaze::MultiwaySortedDisjoint;
 
-    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
-    let c = RangeSetBlaze::from_iter([25..=100]);
+    let a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze2::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze2::from_iter([25..=100]);
 
     let union = [a.ranges(), b.ranges(), c.ranges()].union();
     assert_eq!(union.to_string(), "1..=15, 18..=100");
@@ -1123,9 +1123,9 @@ fn check_sorted_disjoint() {
 
 #[test]
 fn dyn_sorted_disjoint_example() {
-    let a = RangeSetBlaze::from_iter([1u8..=6, 8..=9, 11..=15]);
-    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
-    let c = RangeSetBlaze::from_iter([38..=42]);
+    let a = RangeSetBlaze2::from_iter([1u8..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze2::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze2::from_iter([38..=42]);
     let union = [
         DynSortedDisjoint::new(a.ranges()),
         DynSortedDisjoint::new(!b.ranges()),
@@ -1148,7 +1148,7 @@ fn not_iter_example() {
 
 #[test]
 fn len_demo() {
-    let len: <u8 as Integer>::SafeLen = RangeSetBlaze::from_iter([0u8..=255]).len();
+    let len: <u8 as Integer>::SafeLen = RangeSetBlaze2::from_iter([0u8..=255]).len();
     assert_eq!(len, 256);
 
     assert_eq!(<u8 as Integer>::safe_len(&(0..=255)), 256);
@@ -1175,7 +1175,7 @@ fn union_iter() {
 #[test]
 fn bitor() {
     let a = CheckSortedDisjoint::from([1..=1]);
-    let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
+    let b = RangeSetBlaze2::from_iter([2..=2]).into_ranges();
     let union = core::ops::BitOr::bitor(a, b);
     assert_eq!(union.to_string(), "1..=2");
 
@@ -1190,7 +1190,7 @@ fn bitor() {
     assert_eq!(c.to_string(), "1..=2");
 
     let a = CheckSortedDisjoint::from([1..=1]);
-    let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
+    let b = RangeSetBlaze2::from_iter([2..=2]).into_ranges();
     let c = range_set_blaze::SortedDisjoint::union(a, b);
     assert_eq!(c.to_string(), "1..=2");
 }
@@ -1198,34 +1198,34 @@ fn bitor() {
 #[test]
 fn range_set_int_constructors() {
     // Create an empty set with 'new' or 'default'.
-    let a0 = RangeSetBlaze::<i32>::new();
-    let a1 = RangeSetBlaze::<i32>::default();
+    let a0 = RangeSetBlaze2::<i32>::new();
+    let a1 = RangeSetBlaze2::<i32>::default();
     assert!(a0 == a1 && a0.is_empty());
 
     // 'from_iter'/'collect': From an iterator of integers.
     // Duplicates and out-of-order elements are fine.
-    let a0 = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
-    let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into_iter().collect();
+    let a0 = RangeSetBlaze2::from_iter([3, 2, 1, 100, 1]);
+    let a1: RangeSetBlaze2<i32> = [3, 2, 1, 100, 1].into_iter().collect();
     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 
     // 'from_iter'/'collect': From an iterator of inclusive ranges, start..=end.
     // Overlapping, out-of-order, and empty ranges are fine.
     #[allow(clippy::reversed_empty_ranges)]
-    let a0 = RangeSetBlaze::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
+    let a0 = RangeSetBlaze2::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
     #[allow(clippy::reversed_empty_ranges)]
-    let a1: RangeSetBlaze<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
+    let a1: RangeSetBlaze2<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 
     // If we know the ranges are sorted and disjoint, we can use 'from'/'into'.
-    let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-    let a1: RangeSetBlaze<i32> =
-        CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze_old();
+    let a0 = RangeSetBlaze2::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+    let a1: RangeSetBlaze2<i32> =
+        CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze2();
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 
     // For compatibility with `BTreeSet`, we also support
     // 'from'/'into' from arrays of integers.
-    let a0 = RangeSetBlaze::from([3, 2, 1, 100, 1]);
-    let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
+    let a0 = RangeSetBlaze2::from([3, 2, 1, 100, 1]);
+    let a1: RangeSetBlaze2<i32> = [3, 2, 1, 100, 1].into();
     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 }
 
@@ -1284,7 +1284,7 @@ fn from_slice_all_types() {
         $(
             println!("ty={:#?}",size_of::<$ty>() * 8);
             let v: Vec<$ty> = (0..=127).collect();
-            let a2 = RangeSetBlaze::from_slice(&v);
+            let a2 = RangeSetBlaze2::from_slice(&v);
             assert!(a2.to_string() == "0..=127");
         )*
     }};
@@ -1293,7 +1293,7 @@ fn from_slice_all_types() {
         $(
             println!("ty={:#?}",size_of::<$ty>() * 8);
             let v: Vec<$ty> = (0..=5000).collect();
-            let a2 = RangeSetBlaze::from_slice(&v);
+            let a2 = RangeSetBlaze2::from_slice(&v);
             assert!(a2.to_string() == "0..=5000");
         )*
     }};
@@ -1323,8 +1323,8 @@ fn range_set_int_slice_constructor() {
             how,
         )
         .collect();
-        let b0 = RangeSetBlaze::from_iter(&vec);
-        let b1 = RangeSetBlaze::from_slice(&vec);
+        let b0 = RangeSetBlaze2::from_iter(&vec);
+        let b1 = RangeSetBlaze2::from_slice(&vec);
         if b0 != b1 {
             println!(
                 "{iter_len} error: b0={b0:#?}, b1={b1:#?}, diff={:#?}",
@@ -1335,79 +1335,79 @@ fn range_set_int_slice_constructor() {
     }
 
     let v: Vec<i32> = (100..=150).collect();
-    let a2 = RangeSetBlaze::from_slice(v);
+    let a2 = RangeSetBlaze2::from_slice(v);
     assert!(a2.to_string() == "100..=150");
 
     // For compatibility with `BTreeSet`, we also support
     // 'from'/'into' from arrays of integers.
-    let a0 = RangeSetBlaze::from([3, 2, 1, 100, 1]);
-    let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
+    let a0 = RangeSetBlaze2::from([3, 2, 1, 100, 1]);
+    let a1: RangeSetBlaze2<i32> = [3, 2, 1, 100, 1].into();
     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 
     #[allow(clippy::needless_borrows_for_generic_args)]
-    let a2 = RangeSetBlaze::from_slice(&[3, 2, 1, 100, 1]);
+    let a2 = RangeSetBlaze2::from_slice(&[3, 2, 1, 100, 1]);
     assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
 
-    let a2 = RangeSetBlaze::from_slice([3, 2, 1, 100, 1]);
+    let a2 = RangeSetBlaze2::from_slice([3, 2, 1, 100, 1]);
     assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
 }
 
 #[test]
 fn range_set_int_operators() {
-    let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
-    let b = RangeSetBlaze::from_iter([2..=6]);
+    let a = RangeSetBlaze2::from_iter([1..=2, 5..=100]);
+    let b = RangeSetBlaze2::from_iter([2..=6]);
 
-    // Union of two 'RangeSetBlaze's.
+    // Union of two 'RangeSetBlaze2's.
     let result = &a | &b;
     // Alternatively, we can take ownership via 'a | b'.
     assert_eq!(result.to_string(), "1..=100");
 
-    // Intersection of two 'RangeSetBlaze's.
+    // Intersection of two 'RangeSetBlaze2's.
     let result = &a & &b; // Alternatively, 'a & b'.
     assert_eq!(result.to_string(), "2..=2, 5..=6");
 
-    // Set difference of two 'RangeSetBlaze's.
+    // Set difference of two 'RangeSetBlaze2's.
     let result = &a - &b; // Alternatively, 'a - b'.
     assert_eq!(result.to_string(), "1..=1, 7..=100");
 
-    // Symmetric difference of two 'RangeSetBlaze's.
+    // Symmetric difference of two 'RangeSetBlaze2's.
     let result = &a ^ &b; // Alternatively, 'a ^ b'.
     assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
 
-    // complement of a 'RangeSetBlaze'.
+    // complement of a 'RangeSetBlaze2'.
     let result = !&a; // Alternatively, '!a'.
     assert_eq!(
         result.to_string(),
         "-2147483648..=0, 3..=4, 101..=2147483647"
     );
 
-    // Multiway union of 'RangeSetBlaze's.
-    let c = RangeSetBlaze::from_iter([2..=2, 6..=200]);
+    // Multiway union of 'RangeSetBlaze2's.
+    let c = RangeSetBlaze2::from_iter([2..=2, 6..=200]);
     let result = [&a, &b, &c].union();
     assert_eq!(result.to_string(), "1..=200");
 
-    // Multiway intersection of 'RangeSetBlaze's.
+    // Multiway intersection of 'RangeSetBlaze2's.
     let result = [&a, &b, &c].intersection();
     assert_eq!(result.to_string(), "2..=2, 6..=6");
 
     // Combining multiple operations
-    let result0 = &a - (&b | &c); // Creates a temporary 'RangeSetBlaze'.
+    let result0 = &a - (&b | &c); // Creates a temporary 'RangeSetBlaze2'.
 
-    // Alternatively, we can use the 'SortedDisjoint' API and avoid the temporary 'RangeSetBlaze'.
-    let result1 = RangeSetBlaze::from_sorted_disjoint(a.ranges() - (b.ranges() | c.ranges()));
+    // Alternatively, we can use the 'SortedDisjoint' API and avoid the temporary 'RangeSetBlaze2'.
+    let result1 = RangeSetBlaze2::from_sorted_disjoint(a.ranges() - (b.ranges() | c.ranges()));
     assert!(result0 == result1 && result0.to_string() == "1..=1");
 }
 
 #[test]
 fn sorted_disjoint_constructors() {
-    // RangeSetBlaze's .ranges(), .range().clone() and .into_ranges()
-    let r = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
+    // RangeSetBlaze2's .ranges(), .range().clone() and .into_ranges()
+    let r = RangeSetBlaze2::from_iter([3, 2, 1, 100, 1]);
     let a = r.ranges();
     let b = a.clone();
     assert!(a.to_string() == "1..=3, 100..=100");
     assert!(b.to_string() == "1..=3, 100..=100");
-    //    'into_ranges' takes ownership of the 'RangeSetBlaze'
-    let a = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]).into_ranges();
+    //    'into_ranges' takes ownership of the 'RangeSetBlaze2'
+    let a = RangeSetBlaze2::from_iter([3, 2, 1, 100, 1]).into_ranges();
     assert!(a.to_string() == "1..=3, 100..=100");
 
     // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
@@ -1463,9 +1463,9 @@ fn iterator_example() {
 
 #[test]
 fn sorted_disjoint_operators() {
-    let a0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
-    let b0 = RangeSetBlaze::from_iter([2..=6]);
-    let c0 = RangeSetBlaze::from_iter([2..=2, 6..=200]);
+    let a0 = RangeSetBlaze2::from_iter([1..=2, 5..=100]);
+    let b0 = RangeSetBlaze2::from_iter([2..=6]);
+    let c0 = RangeSetBlaze2::from_iter([2..=2, 6..=200]);
 
     // 'union' method and 'to_string' method
     let (a, b) = (a0.ranges(), b0.ranges());
@@ -1490,24 +1490,24 @@ fn sorted_disjoint_operators() {
 
 #[test]
 fn range_example() {
-    let mut set = RangeSetBlaze::new();
+    let mut set = RangeSetBlaze2::new();
     set.insert(3);
     set.insert(5);
     set.insert(8);
-    for elem in (&set & RangeSetBlaze::from_iter([4..=8])).iter() {
+    for elem in (&set & RangeSetBlaze2::from_iter([4..=8])).iter() {
         println!("{elem}");
     }
 
-    let intersection = &set & RangeSetBlaze::from_iter([4..=i32::MAX]);
+    let intersection = &set & RangeSetBlaze2::from_iter([4..=i32::MAX]);
     assert_eq!(Some(5), intersection.iter().next());
 }
 
 #[test]
 fn range_test() {
     use core::ops::Bound::Included;
-    use range_set_blaze::RangeSetBlaze;
+    use range_set_blaze::RangeSetBlaze2;
 
-    let mut set = RangeSetBlaze::new();
+    let mut set = RangeSetBlaze2::new();
     set.insert(3);
     set.insert(5);
     set.insert(8);
@@ -1535,8 +1535,8 @@ fn is_subset_check() {
 
 #[test]
 fn cmp_range_set_int() {
-    let a = RangeSetBlaze::from_iter([1..=3, 5..=7]);
-    let b = RangeSetBlaze::from_iter([2..=2]);
+    let a = RangeSetBlaze2::from_iter([1..=3, 5..=7]);
+    let b = RangeSetBlaze2::from_iter([2..=2]);
     assert!(a < b); // Lexicographic comparison
     assert!(b.is_subset(&a)); // Subset comparison
 
@@ -1567,21 +1567,21 @@ fn run_rangemap_crate() {
 #[test]
 fn from_iter_coverage() {
     let vec_range = vec![1..=2, 2..=2, -10..=-5];
-    let a0 = RangeSetBlaze::from_iter(vec_range.iter());
-    let a1: RangeSetBlaze<i32> = vec_range.iter().collect();
+    let a0 = RangeSetBlaze2::from_iter(vec_range.iter());
+    let a1: RangeSetBlaze2<i32> = vec_range.iter().collect();
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 }
 
 // fn _some_fn() {
-//     let guaranteed = RangeSetBlaze::from_iter([1..=2, 3..=4, 5..=6]).into_ranges();
-//     let _range_set_int = RangeSetBlaze::from_sorted_disjoint(guaranteed);
+//     let guaranteed = RangeSetBlaze2::from_iter([1..=2, 3..=4, 5..=6]).into_ranges();
+//     let _range_set_int = RangeSetBlaze2::from_sorted_disjoint(guaranteed);
 //     let not_guaranteed = [1..=2, 3..=4, 5..=6].into_iter();
-//     let _range_set_int = RangeSetBlaze::from_sorted_disjoint(not_guaranteed);
+//     let _range_set_int = RangeSetBlaze2::from_sorted_disjoint(not_guaranteed);
 // }
 
 // fn _some_fn() {
-//     let _integer_set = RangeSetBlaze::from_iter([1, 2, 3, 5]);
-//     let _char_set = RangeSetBlaze::from_iter(['a', 'b', 'c', 'd']);
+//     let _integer_set = RangeSetBlaze2::from_iter([1, 2, 3, 5]);
+//     let _char_set = RangeSetBlaze2::from_iter(['a', 'b', 'c', 'd']);
 // }
 
 #[test]
@@ -1594,9 +1594,9 @@ fn print_first_complement_gap() {
 fn multiway_failure_example() {
     use range_set_blaze::prelude::*;
 
-    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
-    let c = RangeSetBlaze::from_iter([38..=42]);
+    let a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze2::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze2::from_iter([38..=42]);
 
     let _i0 = [a.ranges(), b.ranges(), c.ranges()].intersection();
     // let _i1 = [!a.ranges(), b.ranges(), c.ranges()].intersection();
@@ -1611,14 +1611,14 @@ fn multiway_failure_example() {
 
 #[test]
 fn complement_sample() {
-    let c = !RangeSetBlaze::from([0, 3, 4, 5, 10]);
+    let c = !RangeSetBlaze2::from([0, 3, 4, 5, 10]);
     println!("{},{},{}", c.len(), c.ranges_len(), c);
 }
 
 #[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_functionality() {
-    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
     // case 1:
     for end in 7..=16 {
         println!("case 1: {:?}", a._rogs_range_slow(7..=end));
@@ -1658,7 +1658,7 @@ fn test_rog_functionality() {
 #[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rogs_get_functionality() {
-    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
     for value in 0..=16 {
         println!("{:?}", a.rogs_get_slow(value));
         assert_eq!(a.rogs_get_slow(value), a.rogs_get(value));
@@ -1668,7 +1668,7 @@ fn test_rogs_get_functionality() {
 #[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_repro1() {
-    let a = RangeSetBlaze::from_iter([1u8..=6u8]);
+    let a = RangeSetBlaze2::from_iter([1u8..=6u8]);
     assert_eq!(
         a._rogs_range_slow(1..=7),
         a.rogs_range(1..=7).collect::<Vec<_>>()
@@ -1678,7 +1678,7 @@ fn test_rog_repro1() {
 #[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_repro2() {
-    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let a = RangeSetBlaze2::from_iter([1..=6, 8..=9, 11..=15]);
     assert_eq!(
         a._rogs_range_slow(4..=8),
         a.rogs_range(4..=8).collect::<Vec<_>>()
@@ -1688,7 +1688,7 @@ fn test_rog_repro2() {
 #[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_coverage1() {
-    let a = RangeSetBlaze::from_iter([1u8..=6u8]);
+    let a = RangeSetBlaze2::from_iter([1u8..=6u8]);
     assert!(panic::catch_unwind(AssertUnwindSafe(
         || a.rogs_range((Bound::Excluded(&255), Bound::Included(&255)))
     ))
@@ -1700,11 +1700,11 @@ fn test_rog_coverage1() {
 #[test]
 fn test_rog_extremes_u8() {
     for a in [
-        RangeSetBlaze::from_iter([1u8..=6u8]),
-        RangeSetBlaze::from_iter([0u8..=6u8]),
-        RangeSetBlaze::from_iter([200u8..=255u8]),
-        RangeSetBlaze::from_iter([0u8..=255u8]),
-        RangeSetBlaze::from_iter([0u8..=5u8, 20u8..=255]),
+        RangeSetBlaze2::from_iter([1u8..=6u8]),
+        RangeSetBlaze2::from_iter([0u8..=6u8]),
+        RangeSetBlaze2::from_iter([200u8..=255u8]),
+        RangeSetBlaze2::from_iter([0u8..=255u8]),
+        RangeSetBlaze2::from_iter([0u8..=5u8, 20u8..=255]),
     ] {
         for start in 0u8..=255 {
             for end in start..=255 {
@@ -1722,11 +1722,11 @@ fn test_rog_extremes_u8() {
 #[test]
 fn test_rog_get_extremes_u8() {
     for a in [
-        RangeSetBlaze::from_iter([1u8..=6u8]),
-        RangeSetBlaze::from_iter([0u8..=6u8]),
-        RangeSetBlaze::from_iter([200u8..=255u8]),
-        RangeSetBlaze::from_iter([0u8..=255u8]),
-        RangeSetBlaze::from_iter([0u8..=5u8, 20u8..=255]),
+        RangeSetBlaze2::from_iter([1u8..=6u8]),
+        RangeSetBlaze2::from_iter([0u8..=6u8]),
+        RangeSetBlaze2::from_iter([200u8..=255u8]),
+        RangeSetBlaze2::from_iter([0u8..=255u8]),
+        RangeSetBlaze2::from_iter([0u8..=5u8, 20u8..=255]),
     ] {
         for value in 0u8..=255 {
             println!("{value}");
@@ -1739,11 +1739,11 @@ fn test_rog_get_extremes_u8() {
 #[test]
 fn test_rog_extremes_i128() {
     for a in [
-        RangeSetBlaze::from_iter([1i128..=6i128]),
-        RangeSetBlaze::from_iter([i128::MIN..=6]),
-        RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
+        RangeSetBlaze2::from_iter([1i128..=6i128]),
+        RangeSetBlaze2::from_iter([i128::MIN..=6]),
+        RangeSetBlaze2::from_iter([200..=i128::MAX - 1]),
+        RangeSetBlaze2::from_iter([i128::MIN..=i128::MAX - 1]),
+        RangeSetBlaze2::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
     ] {
         for start in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 2, i128::MAX - 1] {
             for end in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 2, i128::MAX - 1] {
@@ -1764,11 +1764,11 @@ fn test_rog_extremes_i128() {
 #[test]
 fn test_rog_extremes_get_i128() {
     for a in [
-        RangeSetBlaze::from_iter([1i128..=6i128]),
-        RangeSetBlaze::from_iter([i128::MIN..=6]),
-        RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
+        RangeSetBlaze2::from_iter([1i128..=6i128]),
+        RangeSetBlaze2::from_iter([i128::MIN..=6]),
+        RangeSetBlaze2::from_iter([200..=i128::MAX - 1]),
+        RangeSetBlaze2::from_iter([i128::MIN..=i128::MAX - 1]),
+        RangeSetBlaze2::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
     ] {
         for value in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 2, i128::MAX - 1] {
             println!("{value}");
@@ -1781,11 +1781,11 @@ fn test_rog_extremes_get_i128() {
 #[test]
 fn test_rog_should_fail_i128() {
     for a in [
-        RangeSetBlaze::from_iter([1i128..=6i128]),
-        RangeSetBlaze::from_iter([i128::MIN..=6]),
-        RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
+        RangeSetBlaze2::from_iter([1i128..=6i128]),
+        RangeSetBlaze2::from_iter([i128::MIN..=6]),
+        RangeSetBlaze2::from_iter([200..=i128::MAX - 1]),
+        RangeSetBlaze2::from_iter([i128::MIN..=i128::MAX - 1]),
+        RangeSetBlaze2::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
     ] {
         for start in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 1, i128::MAX] {
             for end in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 1, i128::MAX] {
@@ -1809,11 +1809,11 @@ fn test_rog_should_fail_i128() {
 #[test]
 fn test_rog_get_should_fail_i128() {
     for a in [
-        RangeSetBlaze::from_iter([1i128..=6i128]),
-        RangeSetBlaze::from_iter([i128::MIN..=6]),
-        RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
+        RangeSetBlaze2::from_iter([1i128..=6i128]),
+        RangeSetBlaze2::from_iter([i128::MIN..=6]),
+        RangeSetBlaze2::from_iter([200..=i128::MAX - 1]),
+        RangeSetBlaze2::from_iter([i128::MIN..=i128::MAX - 1]),
+        RangeSetBlaze2::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
     ] {
         for value in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 1, i128::MAX] {
             println!("{value}");
@@ -1827,8 +1827,8 @@ fn test_rog_get_should_fail_i128() {
 #[cfg(feature = "rog-experimental")]
 #[test]
 fn test_rog_get_doc() {
-    use crate::RangeSetBlaze;
-    let range_set_blaze = RangeSetBlaze::from([1, 2, 3]);
+    use crate::RangeSetBlaze2;
+    let range_set_blaze = RangeSetBlaze2::from([1, 2, 3]);
     assert_eq!(range_set_blaze.rogs_get(2), Rog::Range(1..=3));
     assert_eq!(range_set_blaze.rogs_get(4), Rog::Gap(4..=2_147_483_647));
 }
@@ -1838,7 +1838,7 @@ fn test_rog_get_doc() {
 fn test_rog_range_doc() {
     use core::ops::Bound::Included;
 
-    let mut set = RangeSetBlaze::new();
+    let mut set = RangeSetBlaze2::new();
     set.insert(3);
     set.insert(5);
     set.insert(6);
@@ -1848,13 +1848,13 @@ fn test_rog_range_doc() {
 
     assert_eq!(Some(Rog::Gap(4..=4)), set.rogs_range(4..).next());
 
-    let a = RangeSetBlaze::from_iter([1..=6, 11..=15]);
+    let a = RangeSetBlaze2::from_iter([1..=6, 11..=15]);
     assert_eq!(
         a.rogs_range(-5..=8).collect::<Vec<_>>(),
         vec![Rog::Gap(-5..=0), Rog::Range(1..=6), Rog::Gap(7..=8)]
     );
 
-    let empty = RangeSetBlaze::<u8>::new();
+    let empty = RangeSetBlaze2::<u8>::new();
     assert_eq!(
         empty.rogs_range(..).collect::<Vec<_>>(),
         vec![Rog::Gap(0..=255)]
