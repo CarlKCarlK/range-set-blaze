@@ -46,8 +46,21 @@ where
     iter: I,
     next_item: Option<RangeValue<T, V, VR>>,
     workspace: BinaryHeap<Priority<T, V, VR>>,
+    workspace_next_end: Option<T>,
     gather: Option<RangeValue<T, V, VR>>,
     ready_to_go: Option<RangeValue<T, V, VR>>,
+}
+
+fn min_next_end<T, V, VR>(next_end: &Option<T>, next_item: &RangeValue<T, V, VR>) -> Option<T>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+{
+    Some(next_end.map_or_else(
+        || *next_item.range.end(),
+        |current_end| std::cmp::min(current_end, *next_item.range.end()),
+    ))
 }
 
 // cmk0 define operators for SymDiffIterMap
@@ -97,6 +110,7 @@ where
                     //     "cmk pushing self.next_item {:?} into empty workspace",
                     //     next_item.range
                     // );
+                    self.workspace_next_end = min_next_end(&self.workspace_next_end, &next_item);
                     self.workspace.push(Priority(next_item));
                     self.next_item = self.iter.next();
                     // println!(
@@ -109,6 +123,7 @@ where
                 let best = &best.0;
                 if next_start == *best.range.start() {
                     // Always push (this differs from UnionIterMap)
+                    self.workspace_next_end = min_next_end(&self.workspace_next_end, &next_item);
                     self.workspace.push(Priority(next_item));
                     self.next_item = self.iter.next();
                     continue; // return to top of the main processing loop
@@ -136,13 +151,8 @@ where
             // We buffer for output the best item up to the start of the next item (if any).
 
             // Find the start of the next item, if any.
-            // cmk000 keep a running total instead of using .map().
-            let mut next_end = *self
-                .workspace
-                .iter()
-                .map(|x| x.0.range.end())
-                .min()
-                .unwrap(); // unwrap() is safe because we know the workspace is not empty
+            // unwrap() is safe because we know the workspace is not empty
+            let mut next_end = self.workspace_next_end.take().unwrap();
             if let Some(next_item) = self.next_item.as_ref() {
                 next_end = min(*next_item.range.start() - T::one(), next_end);
             }
@@ -210,6 +220,7 @@ where
             // (Unlike UnionIterMap, we must keep any items that have a lower priority and are shorter than the new best.)
             // cmk use .filter() ?
             let mut new_workspace = BinaryHeap::new();
+            let mut new_next_end = None;
             while let Some(item) = self.workspace.pop() {
                 let mut item = item.0;
                 if *item.range.end() <= next_end {
@@ -218,9 +229,11 @@ where
                     continue; // while loop
                 }
                 item.range = next_end + T::one()..=*item.range.end();
+                new_next_end = min_next_end(&new_next_end, &item);
                 new_workspace.push(Priority(item));
             }
             self.workspace = new_workspace;
+            self.workspace_next_end = new_next_end;
         } // end of main loop
     }
 }
@@ -258,6 +271,7 @@ where
             iter,
             next_item: item,
             workspace: BinaryHeap::new(),
+            workspace_next_end: None,
             gather: None,
             ready_to_go: None,
         }
