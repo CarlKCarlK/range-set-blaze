@@ -138,12 +138,11 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: for<'a> SortedDisjointMap<T, V, VR>,
+    I: SortedDisjointMap<T, V, VR>,
 {
     iter: I,
     option_ranges: Option<RangeInclusive<T>>,
-    phantom0: PhantomData<V>,
-    phantom1: PhantomData<VR>,
+    phantom: PhantomData<(V, VR)>,
 }
 // // RangeValuesToRangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
 // impl<'a, T, V, VR, I> SortedStarts<T> for RangeValuesToRangesIter<'a, T, V, VR, I>
@@ -199,8 +198,7 @@ where
         Self {
             iter,
             option_ranges: None, // Starts as None
-            phantom0: PhantomData,
-            phantom1: PhantomData,
+            phantom: PhantomData,
         }
     }
 }

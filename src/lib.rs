@@ -1608,8 +1608,8 @@ pub type BitXorOldNew<T, L, R> = UnitMapToSortedDisjoint<
         T,
         (),
         &'static (),
-        SortedDisjointToUnitMap<'static, T, L>,
-        SortedDisjointToUnitMap<'static, T, R>,
+        SortedDisjointToUnitMap<T, L>,
+        SortedDisjointToUnitMap<T, R>,
     >,
 >;
 

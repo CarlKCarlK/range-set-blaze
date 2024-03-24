@@ -2116,16 +2116,16 @@ impl<T: Integer> Eq for RangeSetBlaze2<T> {}
 // impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 /// cmk doc
-pub struct SortedDisjointToUnitMap<'a, T, I>
+pub struct SortedDisjointToUnitMap<T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
 {
     iter: I,
-    phantom: PhantomData<(T, &'a ())>, // cmk needed?
+    phantom: PhantomData<T>,
 }
 
-impl<'a, T, I> SortedDisjointToUnitMap<'a, T, I>
+impl<'a, T, I> SortedDisjointToUnitMap<T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
@@ -2140,12 +2140,12 @@ where
     }
 }
 
-impl<'a, T, I> Iterator for SortedDisjointToUnitMap<'a, T, I>
+impl<T, I> Iterator for SortedDisjointToUnitMap<T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
 {
-    type Item = RangeValue<T, (), &'a ()>;
+    type Item = RangeValue<T, (), &'static ()>;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
@@ -2154,14 +2154,14 @@ where
 }
 
 // cmk1 move these into the macro
-impl<'a, T, I> SortedStartsMap<T, (), &'a ()> for SortedDisjointToUnitMap<'a, T, I>
+impl<T, I> SortedStartsMap<T, (), &'static ()> for SortedDisjointToUnitMap<T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
 {
 }
 
-impl<'a, T, I> SortedDisjointMap<T, (), &'a ()> for SortedDisjointToUnitMap<'a, T, I>
+impl<T, I> SortedDisjointMap<T, (), &'static ()> for SortedDisjointToUnitMap<T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
@@ -2169,16 +2169,16 @@ where
 }
 
 /// cmk doc
-pub struct SortedStartsToUnitMap<'a, T, I>
+pub struct SortedStartsToUnitMap<T, I>
 where
     T: Integer,
     I: SortedStarts<T>,
 {
     iter: I,
-    phantom: PhantomData<(T, &'a ())>, // cmk needed?
+    phantom: PhantomData<T>,
 }
 
-impl<'a, T, I> SortedStartsToUnitMap<'a, T, I>
+impl<'a, T, I> SortedStartsToUnitMap<T, I>
 where
     T: Integer,
     I: SortedStarts<T>,
@@ -2194,12 +2194,12 @@ where
     }
 }
 
-impl<'a, T, I> Iterator for SortedStartsToUnitMap<'a, T, I>
+impl<T, I> Iterator for SortedStartsToUnitMap<T, I>
 where
     T: Integer,
     I: SortedStarts<T>,
 {
-    type Item = RangeValue<T, (), &'a ()>;
+    type Item = RangeValue<T, (), &'static ()>;
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
@@ -2208,7 +2208,7 @@ where
 }
 
 // cmk1 move these into the macro
-impl<'a, T, I> SortedStartsMap<T, (), &'a ()> for SortedStartsToUnitMap<'a, T, I>
+impl<T, I> SortedStartsMap<T, (), &'static ()> for SortedStartsToUnitMap<T, I>
 where
     T: Integer,
     I: SortedStarts<T>,
@@ -2224,7 +2224,7 @@ where
     I: Iterator<Item = RangeValue<T, (), &'static ()>>,
 {
     iter: I,
-    phantom: PhantomData<T>, // cmk needed?
+    phantom: PhantomData<T>,
 }
 
 impl<T, I> UnitMapToSortedDisjoint<T, I>
@@ -2280,7 +2280,6 @@ pub fn set_to_map() {
     let b = RangeSetBlaze2::from_iter([-1..=2, 3..=14]);
     let a_ranges: RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>> = a.ranges();
     let left: SortedDisjointToUnitMap<
-        '_,
         i32,
         RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
     > = SortedDisjointToUnitMap::new(a_ranges);
@@ -2298,7 +2297,6 @@ pub fn set_to_map() {
                 (),
                 &(),
                 SortedDisjointToUnitMap<
-                    '_,
                     i32,
                     RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
                 >,
@@ -2308,7 +2306,6 @@ pub fn set_to_map() {
                 (),
                 &(),
                 SortedDisjointToUnitMap<
-                    '_,
                     i32,
                     RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
                 >,

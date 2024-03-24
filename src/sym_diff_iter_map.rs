@@ -41,7 +41,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: for<'a> SortedStartsMap<T, V, VR>,
+    I: SortedStartsMap<T, V, VR>,
 {
     iter: I,
     next_item: Option<RangeValue<T, V, VR>>,
@@ -56,7 +56,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: for<'a> SortedStartsMap<T, V, VR> + Iterator<Item = RangeValue<T, V, VR>>,
+    I: SortedStartsMap<T, V, VR> + Iterator<Item = RangeValue<T, V, VR>>,
 {
 }
 
@@ -65,7 +65,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: for<'a> SortedStartsMap<T, V, VR> + Iterator<Item = RangeValue<T, V, VR>>,
+    I: SortedStartsMap<T, V, VR> + Iterator<Item = RangeValue<T, V, VR>>,
 {
 }
 

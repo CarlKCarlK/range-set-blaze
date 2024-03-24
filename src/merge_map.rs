@@ -1,6 +1,5 @@
 use core::cmp::Ordering;
 use core::iter::FusedIterator;
-use core::marker::PhantomData;
 use core::num::NonZeroUsize;
 
 use itertools::{Itertools, KMergeBy, MergeBy};
@@ -48,7 +47,6 @@ where
 {
     #[allow(clippy::type_complexity)]
     iter: MergeBy<L, R, fn(&RangeValue<T, V, VR>, &RangeValue<T, V, VR>) -> bool>,
-    phantom: PhantomData<VR>,
 }
 
 impl<T, V, VR, L, R> MergeMap<T, V, VR, L, R>
@@ -64,7 +62,6 @@ where
     pub fn new(left: L, right: R) -> Self {
         Self {
             iter: left.merge_by(right, |a, b| a.range.start() < b.range.start()),
-            phantom: PhantomData,
         }
     }
 }

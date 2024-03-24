@@ -140,8 +140,7 @@ where
 {
     iter: I,
     len: <T as Integer>::SafeLen,
-    phantom_data0: PhantomData<V>, // cmk needed?
-    phantom_data1: PhantomData<VR>,
+    phantom_data: PhantomData<(V, VR)>,
 }
 
 // cmk
@@ -280,8 +279,7 @@ where
         SortedDisjointWithLenSoFarMap {
             iter: into_iter.into_iter(),
             len: <T as Integer>::SafeLen::zero(),
-            phantom_data0: PhantomData,
-            phantom_data1: PhantomData,
+            phantom_data: PhantomData,
         }
     }
 }
