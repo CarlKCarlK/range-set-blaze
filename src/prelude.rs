@@ -8,5 +8,5 @@ pub use crate::{
     intersection_dyn, intersection_map_dyn, lib2::MultiwayRangeSetBlaze, union_dyn, union_map_dyn,
     AssumeSortedStarts, CheckSortedDisjoint, DynSortedDisjoint, DynSortedDisjointMap,
     MultiwayRangeMapBlaze, MultiwaySortedDisjoint, MultiwaySortedDisjointMap, RangeMapBlaze,
-    RangeSetBlaze2, SortedDisjoint, SortedDisjointMap, SortedStarts,
+    RangeSetBlaze, SortedDisjoint, SortedDisjointMap, SortedStarts,
 };

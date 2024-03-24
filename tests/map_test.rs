@@ -18,7 +18,7 @@ use range_set_blaze::prelude::*;
 use range_set_blaze::range_values::RangeValuesIter;
 use range_set_blaze::UnionIterMap;
 // use range_set_blaze::{
-//     MultiwayRangeMapBlaze, RangeMapBlaze, RangeSetBlaze2, SortedDisjoint, SortedDisjointMap,
+//     MultiwayRangeMapBlaze, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
 // };
 // cmk not tested use range_map_blaze::multiway_map::MultiwayRangeMapBlazeRef;
 use range_set_blaze::Integer;
@@ -56,7 +56,7 @@ fn map_map_operators() {
     let ars = ads.into_range_set_blaze2();
     let brs = bds.into_range_set_blaze2();
 
-    // RangeSetBlaze2
+    // RangeSetBlaze
     // union, intersection, difference, symmetric_difference, complement
     let _ = &ars | &brs;
     let _ = &ars & &brs;
@@ -89,7 +89,7 @@ fn map_map_operators() {
     let _ = &arm ^ &brm;
     let _ = !&arm;
 
-    // RangeMapBlaze/RangeSetBlaze2
+    // RangeMapBlaze/RangeSetBlaze
     // intersection, difference
     let _ = &arm & &brs;
     let _ = &arm - &brs;
@@ -362,7 +362,7 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_eq!(
         !MultiwayRangeMapBlaze::<u8, char>::union([]),
-        RangeSetBlaze2::from_iter([0..=255])
+        RangeSetBlaze::from_iter([0..=255])
     );
 
     let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
@@ -432,7 +432,7 @@ fn map_nand_repro() -> Result<(), Box<dyn std::error::Error>> {
     let d = !b | !c;
     assert_eq!(
         d,
-        RangeSetBlaze2::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
+        RangeSetBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
     );
     Ok(())
 }
@@ -2229,7 +2229,7 @@ fn map_string_animation() {
     digits.insert(0, "start".to_string());
 
     // Oops, we've changed our mind and now don't want frames 8 and 9.
-    digits = digits - RangeSetBlaze2::from_iter([8..=9]);
+    digits = digits - RangeSetBlaze::from_iter([8..=9]);
 
     // Apply the following linear transformation to `digits``:
     // 1. Make each original frame last one second

@@ -1,5 +1,5 @@
 #[cfg(feature = "from_slice")]
-use crate::{from_slice::FromSliceIter, RangeSetBlaze2};
+use crate::{from_slice::FromSliceIter, RangeSetBlaze};
 use core::ops::RangeInclusive;
 
 #[cfg(feature = "from_slice")]
@@ -15,7 +15,7 @@ impl Integer for i8 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze2<Self> {
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
     }
 
@@ -44,7 +44,7 @@ impl Integer for u8 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze2<Self> {
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
     }
 
@@ -91,7 +91,7 @@ impl Integer for i32 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze2<Self> {
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
     }
 }
@@ -104,7 +104,7 @@ impl Integer for u32 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze2<Self> {
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
     }
 
@@ -134,7 +134,7 @@ impl Integer for i64 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze2<Self> {
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
     }
 
@@ -163,7 +163,7 @@ impl Integer for u64 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze2<Self> {
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
     }
 
@@ -192,7 +192,7 @@ impl Integer for i128 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> crate::RangeSetBlaze2<Self> {
+    fn from_slice(slice: impl AsRef<[Self]>) -> crate::RangeSetBlaze<Self> {
         return slice.as_ref().iter().collect();
     }
 
@@ -225,7 +225,7 @@ impl Integer for u128 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> crate::RangeSetBlaze2<Self> {
+    fn from_slice(slice: impl AsRef<[Self]>) -> crate::RangeSetBlaze<Self> {
         return slice.as_ref().iter().collect();
     }
 
@@ -257,7 +257,7 @@ impl Integer for isize {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze2<Self> {
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
     }
 
@@ -287,7 +287,7 @@ impl Integer for usize {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze2<Self> {
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
     }
 
@@ -317,7 +317,7 @@ impl Integer for i16 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze2<Self> {
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
     }
 
@@ -347,7 +347,7 @@ impl Integer for u16 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze2<Self> {
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
     }
 

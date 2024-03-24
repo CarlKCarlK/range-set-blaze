@@ -32,8 +32,8 @@ fn b_tree_set() {
 
 #[test]
 fn range_set_blaze() {
-    let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze2<i32>>();
-    let b = RangeSetBlaze2::from_iter([2, 3, 4]);
+    let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze<i32>>();
+    let b = RangeSetBlaze::from_iter([2, 3, 4]);
     let mut c3 = a.clone();
     let mut c5 = a.clone();
 
@@ -42,11 +42,11 @@ fn range_set_blaze() {
     let c1b = &a | b.clone();
     let c1c = a.clone() | &b;
     let c1d = a.clone() | b.clone();
-    let c2: RangeSetBlaze2<_> = (a.ranges() | b.ranges()).into_range_set_blaze2();
+    let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze2();
     c3.append(&mut b.clone());
     c5.extend(b);
 
-    let answer = RangeSetBlaze2::from_iter([1, 2, 3, 4]);
+    let answer = RangeSetBlaze::from_iter([1, 2, 3, 4]);
     assert_eq!(&c0, &answer);
     assert_eq!(&c1a, &answer);
     assert_eq!(&c1b, &answer);
@@ -59,8 +59,8 @@ fn range_set_blaze() {
 
 #[test]
 fn sorted_disjoint() {
-    let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze2<i32>>();
-    let b = RangeSetBlaze2::from_iter([2, 3, 4]);
+    let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze<i32>>();
+    let b = RangeSetBlaze::from_iter([2, 3, 4]);
 
     let c0 = a.ranges() | b.ranges();
     let c1 = [a.ranges(), b.ranges()].union();
@@ -68,7 +68,7 @@ fn sorted_disjoint() {
     let c3 = union_dyn!(a.ranges(), b.ranges());
     let c4 = [a.ranges(), b.ranges()].map(DynSortedDisjoint::new).union();
 
-    let answer = RangeSetBlaze2::from_iter([1, 2, 3, 4]);
+    let answer = RangeSetBlaze::from_iter([1, 2, 3, 4]);
     assert!(c0.equal(answer.ranges()));
     assert!(c1.equal(answer.ranges()));
     assert!(c2.equal(answer.ranges()));
@@ -78,7 +78,7 @@ fn sorted_disjoint() {
 
 #[test]
 fn sorted_disjoint_ops() {
-    let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze2<i32>>();
+    let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze<i32>>();
     let a = a.ranges();
     let b = !a.clone();
     let _c = !!b.clone();

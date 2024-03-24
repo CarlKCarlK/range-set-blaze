@@ -152,7 +152,7 @@ fn map_random_ranges() {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
 
-        let mut range_set_blaze = RangeSetBlaze2::new();
+        let mut range_set_blaze = RangeSetBlaze::new();
         let mut range_map_blaze = RangeMapBlaze::new();
         let mut inputs = Vec::<(u8, &char)>::new();
 
@@ -184,7 +184,7 @@ fn map_random_ranges_ranges() {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
 
-        let mut range_set_blaze = RangeSetBlaze2::new();
+        let mut range_set_blaze = RangeSetBlaze::new();
         let mut range_map_blaze = RangeMapBlaze::new();
         let mut inputs = Vec::new();
 
@@ -218,7 +218,7 @@ fn map_random_intersection() {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
 
-        let mut set0 = RangeSetBlaze2::new();
+        let mut set0 = RangeSetBlaze::new();
         let mut map0 = RangeMapBlaze::new();
         // let mut inputs = Vec::<(u8, &char)>::new();
 
@@ -236,7 +236,7 @@ fn map_random_intersection() {
             let mut expected_keys = map0
                 .ranges()
                 .intersection(set0.ranges())
-                .collect::<RangeSetBlaze2<_>>();
+                .collect::<RangeSetBlaze<_>>();
             if !expected_keys.is_empty() {
                 // println!("expected_keys: {expected_keys}");
             }
@@ -318,7 +318,7 @@ fn map_random_symmetric_difference() {
             let mut expected_keys = map0
                 .ranges()
                 .symmetric_difference(map1.ranges())
-                .collect::<RangeSetBlaze2<_>>();
+                .collect::<RangeSetBlaze<_>>();
             for range_value in symmetric_difference {
                 let range = range_value.range;
                 let value = range_value.value;
@@ -565,17 +565,17 @@ fn map_insert_max_u128() {
 
 #[test]
 fn map_repro_bit_or() {
-    let a = RangeSetBlaze2::from_iter([1u8, 2, 3]);
-    let b = RangeSetBlaze2::from_iter([2u8, 3, 4]);
+    let a = RangeSetBlaze::from_iter([1u8, 2, 3]);
+    let b = RangeSetBlaze::from_iter([2u8, 3, 4]);
 
     let result = a.ranges().union(b.ranges());
     let result = result.into_range_set_blaze2();
     println!("{result}");
-    assert_eq!(result, RangeSetBlaze2::from_iter([1u8, 2, 3, 4]));
+    assert_eq!(result, RangeSetBlaze::from_iter([1u8, 2, 3, 4]));
 
     let result = a | b;
     println!("{result}");
-    assert_eq!(result, RangeSetBlaze2::from_iter([1u8, 2, 3, 4]));
+    assert_eq!(result, RangeSetBlaze::from_iter([1u8, 2, 3, 4]));
 
     let a = RangeMapBlaze::from_iter([(1u8, "Hello"), (2, "Hello"), (3, "Hello")]);
     let b = RangeMapBlaze::from_iter([(2u8, "World"), (3, "World"), (4, "World")]);
@@ -599,17 +599,17 @@ fn map_repro_bit_or() {
 
 #[test]
 fn map_repro_bit_and() {
-    let a = RangeSetBlaze2::from_iter([1u8, 2, 3]);
-    let b = RangeSetBlaze2::from_iter([2u8, 3, 4]);
+    let a = RangeSetBlaze::from_iter([1u8, 2, 3]);
+    let b = RangeSetBlaze::from_iter([2u8, 3, 4]);
 
     let result = a.ranges().intersection(b.ranges());
     let result = result.into_range_set_blaze2();
     println!("{result}");
-    assert_eq!(result, RangeSetBlaze2::from_iter([2, 3]));
+    assert_eq!(result, RangeSetBlaze::from_iter([2, 3]));
 
     let result = a & b;
     println!("{result}");
-    assert_eq!(result, RangeSetBlaze2::from_iter([2, 3]));
+    assert_eq!(result, RangeSetBlaze::from_iter([2, 3]));
 
     let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
     let b = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);

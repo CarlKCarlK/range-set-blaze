@@ -38,7 +38,7 @@ mod iter_map;
 pub mod lib2;
 mod map;
 mod merge;
-pub use crate::lib2::RangeSetBlaze2;
+pub use crate::lib2::RangeSetBlaze;
 use crate::lib2::SortedDisjointToUnitMap;
 mod not_iter;
 pub mod prelude;
@@ -121,7 +121,7 @@ pub trait Integer:
 {
     #[cfg(feature = "from_slice")]
     /// A definition of [`OldRangeSetBlaze::from_slice()`] specific to this integer type.
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze2<Self>;
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self>;
 
     /// The type of the length of a [`OldRangeSetBlaze`]. For example, the length of a `OldRangeSetBlaze<u8>` is `usize`. Note
     /// that it can't be `u8` because the length ranges from 0 to 256, which is one too large for `u8`.
