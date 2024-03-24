@@ -1754,7 +1754,7 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
 // }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-// #[derive(Debug)] cmk000 add this back
+#[derive(Debug)]
 /// A (double-ended) iterator over the integer elements of a [`RangeSetBlaze`].
 ///
 /// This `struct` is created by the [`into_iter`] method on [`RangeSetBlaze`]. See its

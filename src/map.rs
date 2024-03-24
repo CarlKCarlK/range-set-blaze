@@ -70,6 +70,19 @@ impl<V: ?Sized + ValueOwned> CloneBorrow<V> for Arc<V> {
     }
 }
 
+impl<T> fmt::Debug for EndValue<T, ()>
+where
+    T: Integer,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // General case, possibly minimal info since we can't conditionally compile based on V being ()
+        f.debug_struct("EndValue")
+            .field("end", &self.end)
+            .field("value", &self.value)
+            .finish()
+    }
+}
+
 #[derive(Clone, Hash, Default, PartialEq)]
 pub struct EndValue<T: Integer, V: ValueOwned>
 where

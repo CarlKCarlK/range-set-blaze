@@ -1006,7 +1006,7 @@ fn lib_coverage_0() {
 
     let a = RangeSetBlaze::from_iter([1..=3]);
     let i = a.into_iter();
-    // cmk 0 get this assert working again
+    // cmk0 get this assert working again
     // assert_eq!(i.size_hint(), j.size_hint());
     // assert_eq!(
     //     format!("{:?}", &i),

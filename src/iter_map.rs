@@ -4,7 +4,7 @@
 // exact size iterator, double ended iterator, fused iterator, size_hint
 // document the exact size and double ended
 
-use core::iter::FusedIterator;
+use core::{fmt, iter::FusedIterator};
 
 use alloc::collections::btree_map;
 
@@ -218,6 +218,25 @@ where
     }
 }
 
+impl<T> fmt::Debug for IntoIterMap<T, ()>
+where
+    T: Integer,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // General case, possibly minimal info since we can't conditionally compile based on V being ()
+        f.debug_struct("IntoIterMap")
+            .field(
+                "option_start_end_value_front",
+                &self.option_start_end_value_front,
+            )
+            .field(
+                "option_start_end_value_back",
+                &self.option_start_end_value_back,
+            )
+            // .field("into_iter", &self.into_iter) // IntoIter might not be Debug, so consider how to handle this
+            .finish()
+    }
+}
 /// A (double-ended) iterator over the integer elements of a [`RangeMapBlaze`].
 ///
 /// This `struct` is created by the [`iter`] method on [`RangeMapBlaze`]. See its
