@@ -1,3 +1,4 @@
+use core::str::FromStr;
 /// cmk doc
 // cmk1 rename file to range_set_blaze.rs
 use core::{
@@ -6,6 +7,12 @@ use core::{
     iter::FusedIterator,
     marker::PhantomData,
     ops::{BitOr, BitOrAssign, Bound, RangeBounds, RangeInclusive},
+};
+#[cfg(feature = "std")]
+use std::{
+    fs::File,
+    io::{self, BufRead, BufReader},
+    path::Path,
 };
 
 use alloc::rc::Rc;
@@ -1101,6 +1108,7 @@ impl<T: Integer> RangeSetBlaze2<T> {
     ) -> RangeValuesToRangesIter<T, (), Rc<()>, IntoRangeValuesIter<T, ()>> {
         self.0.into_ranges()
     }
+    // cmk1 is it a problem that this return Rc<()> instead of &'static ()?
 
     // FUTURE BTreeSet some of these as 'const' but it uses unstable. When stable, add them here and elsewhere.
 
@@ -2316,4 +2324,33 @@ pub fn set_to_map() {
     // let it: &dyn SortedDisjointMap<i32, (), &()> = &unit_map;
     // let _result = RangeSetBlaze::from_unit_map(unit_map);
     let _result = UnitMapToSortedDisjoint::new(unit_map);
+}
+
+#[cfg(feature = "std")]
+#[doc(hidden)]
+pub fn demo_read_ranges_from_file<P, T>(path: P) -> io::Result<RangeSetBlaze2<T>>
+where
+    P: AsRef<Path>,
+    T: FromStr + Integer,
+{
+    let lines = BufReader::new(File::open(&path)?).lines();
+
+    let mut set = RangeSetBlaze2::new();
+    for line in lines {
+        let line = line?;
+        let mut split = line.split('\t');
+        let start = split
+            .next()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Missing start of range"))?
+            .parse::<T>()
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid start of range"))?;
+        let end = split
+            .next()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Missing end of range"))?
+            .parse::<T>()
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid end of range"))?;
+        set.ranges_insert(start..=end);
+    }
+
+    Ok(set)
 }

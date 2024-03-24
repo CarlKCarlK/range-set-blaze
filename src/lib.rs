@@ -2422,42 +2422,6 @@ impl<T: Integer> PartialOrd for OldRangeSetBlaze<T> {
 
 impl<T: Integer> Eq for OldRangeSetBlaze<T> {}
 
-#[cfg(feature = "std")]
-use std::{
-    fs::File,
-    io::{self, BufRead, BufReader},
-    path::Path,
-};
-
-#[cfg(feature = "std")]
-#[doc(hidden)]
-pub fn demo_read_ranges_from_file<P, T>(path: P) -> io::Result<OldRangeSetBlaze<T>>
-where
-    P: AsRef<Path>,
-    T: FromStr + Integer,
-{
-    let lines = BufReader::new(File::open(&path)?).lines();
-
-    let mut set = OldRangeSetBlaze::new();
-    for line in lines {
-        let line = line?;
-        let mut split = line.split('\t');
-        let start = split
-            .next()
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Missing start of range"))?
-            .parse::<T>()
-            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid start of range"))?;
-        let end = split
-            .next()
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Missing end of range"))?
-            .parse::<T>()
-            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid end of range"))?;
-        set.ranges_insert(start..=end);
-    }
-
-    Ok(set)
-}
-
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 
 impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}

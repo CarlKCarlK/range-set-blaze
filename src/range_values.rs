@@ -144,6 +144,18 @@ where
     option_ranges: Option<RangeInclusive<T>>,
     phantom: PhantomData<(V, VR)>,
 }
+
+// implement exact size iterator for one special case
+impl<'a, T> ExactSizeIterator for RangeValuesToRangesIter<T, (), &'a (), RangeValuesIter<'a, T, ()>>
+where
+    T: Integer,
+{
+    #[must_use]
+    fn len(&self) -> usize {
+        self.iter.len()
+    }
+}
+
 // // RangeValuesToRangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
 // impl<'a, T, V, VR, I> SortedStarts<T> for RangeValuesToRangesIter<'a, T, V, VR, I>
 // where
@@ -237,17 +249,6 @@ where
             self.option_ranges = Some(next_start..=next_end);
             return Some(current_start..=current_end);
         }
-    }
-}
-
-// implement ExactSizeIterator for one special case
-impl<'a, T> ExactSizeIterator for RangeValuesToRangesIter<T, (), &'a (), RangeValuesIter<'a, T, ()>>
-where
-    T: Integer,
-{
-    #[must_use]
-    fn len(&self) -> usize {
-        self.iter.len()
     }
 }
 
