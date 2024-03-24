@@ -63,25 +63,6 @@ where
     ))
 }
 
-// cmk0 define operators for SymDiffIterMap
-impl<T, V, VR, I> SortedDisjointMap<T, V, VR> for SymDiffIterMap<T, V, VR, I>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: SortedStartsMap<T, V, VR> + Iterator<Item = RangeValue<T, V, VR>>,
-{
-}
-
-impl<T, V, VR, I> SortedStartsMap<T, V, VR> for SymDiffIterMap<T, V, VR, I>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: SortedStartsMap<T, V, VR> + Iterator<Item = RangeValue<T, V, VR>>,
-{
-}
-
 impl<T, V, VR, I> Iterator for SymDiffIterMap<T, V, VR, I>
 where
     T: Integer,
