@@ -199,7 +199,7 @@ where
         let start_end_value = self
             .option_start_end_value_back
             .take()
-            .or_else(|| self.into_iter.next())
+            .or_else(|| self.into_iter.next_back())
             .or_else(|| self.option_start_end_value_front.take())?;
 
         let start = start_end_value.0;
