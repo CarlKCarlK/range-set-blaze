@@ -1,4 +1,4 @@
-use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
+use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use alloc::collections::btree_map;
 
@@ -65,7 +65,6 @@ impl<T: Integer> DoubleEndedIterator for RangesIter<'_, T> {
 #[derive(Debug)]
 pub struct IntoRangesIter<T: Integer> {
     pub(crate) iter: btree_map::IntoIter<T, T>,
-    pub(crate) phantom: PhantomData<T>, // cmk needed?
 }
 
 impl<'a, T: Integer + 'a> ExactSizeIterator for IntoRangesIter<T> {

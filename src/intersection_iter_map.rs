@@ -1,6 +1,5 @@
 use core::{
     cmp::{max, min},
-    marker::PhantomData,
     ops::RangeInclusive,
 };
 
@@ -49,8 +48,6 @@ where
     iter_set: IS,
     current_range: Option<RangeInclusive<T>>,
     current_range_value: Option<RangeValue<T, V, VR>>,
-    _phantom0: PhantomData<T>, // cmk needed?
-    _phantom1: PhantomData<V>, // cmk needed?
 }
 
 impl<'a, T, V, VR, IM, IS> IntersectionIterMap<T, V, VR, IM, IS>
@@ -70,8 +67,6 @@ where
             iter_set,
             current_range: None,
             current_range_value: None,
-            _phantom0: PhantomData,
-            _phantom1: PhantomData,
         }
     }
 }

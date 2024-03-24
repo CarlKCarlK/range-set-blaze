@@ -4,7 +4,7 @@
 // exact size iterator, double ended iterator, fused iterator, size_hint
 // document the exact size and double ended
 
-use core::{iter::FusedIterator, marker::PhantomData};
+use core::iter::FusedIterator;
 
 use alloc::collections::btree_map;
 
@@ -32,8 +32,6 @@ where
     iter: I,
     option_range_value_front: Option<RangeValue<T, V, VR>>,
     option_range_value_back: Option<RangeValue<T, V, VR>>,
-    phantom0: PhantomData<V>,  // cmk needed?
-    phantom1: PhantomData<VR>, // cmk needed?
 }
 
 impl<'a, T, V, VR, I> IterMap<T, V, VR, I>
@@ -48,8 +46,6 @@ where
             iter,
             option_range_value_front: None,
             option_range_value_back: None,
-            phantom0: PhantomData,
-            phantom1: PhantomData,
         }
     }
 }

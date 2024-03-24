@@ -87,7 +87,6 @@ where
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
 pub struct IntoRangeValuesIter<T: Integer, V: ValueOwned> {
     pub(crate) iter: btree_map::IntoIter<T, EndValue<T, V>>,
-    pub(crate) phantom: PhantomData<V>, // cmk needed?
 }
 
 // impl<'a, T: Integer, V: ValueOwned + 'a> SortedStartsMap<'a, T, V, Rc<V>>
@@ -442,7 +441,6 @@ where
 {
     iter: I,
     new_priority: Option<NonZeroUsize>,
-    phantom: PhantomData<(T, V, VR)>, // cmk needed?
 }
 
 impl<T, V, VR, I> Iterator for AdjustPriorityMap<T, V, VR, I>
@@ -470,11 +468,7 @@ where
     I: SortedDisjointMap<T, V, VR>,
 {
     pub fn new(iter: I, new_priority: Option<NonZeroUsize>) -> Self {
-        AdjustPriorityMap {
-            iter,
-            new_priority,
-            phantom: PhantomData,
-        }
+        AdjustPriorityMap { iter, new_priority }
     }
 }
 

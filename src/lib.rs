@@ -70,7 +70,6 @@ pub use crate::map::RangeMapBlaze;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
 pub use crate::unsorted_disjoint_map::{AssumeSortedDisjointMap, AssumeSortedStartsMap};
 use alloc::{collections::BTreeMap, vec::Vec};
-use core::marker::PhantomData;
 use core::{
     cmp::{max, Ordering},
     convert::From,
@@ -1415,7 +1414,6 @@ impl<T: Integer> OldRangeSetBlaze<T> {
     pub fn into_ranges<'a>(self) -> IntoRangesIter<T> {
         IntoRangesIter {
             iter: self.btree_map.into_iter(),
-            phantom: PhantomData,
         }
     }
 

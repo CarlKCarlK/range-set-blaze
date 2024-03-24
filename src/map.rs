@@ -23,7 +23,6 @@ use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 use core::borrow::Borrow;
 use core::fmt;
-use core::marker::PhantomData;
 use core::ops::{BitOr, Bound, RangeBounds};
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use gen_ops::gen_ops_ex;
@@ -1493,7 +1492,6 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     pub fn into_range_values(self) -> IntoRangeValuesIter<T, V> {
         IntoRangeValuesIter {
             iter: self.btree_map.into_iter(),
-            phantom: PhantomData,
         }
     }
 
