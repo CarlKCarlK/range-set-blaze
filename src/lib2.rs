@@ -2221,13 +2221,11 @@ where
 {
 }
 
-// cmk00 rename to Assume...
 /// cmk doc
 pub struct UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    // I: SortedDisjointMap<T, (), &'static ()>, // cmk00 could/should this be 'static? (look elsewhere, too)
-    I: Iterator<Item = RangeValue<T, (), &'static ()>>,
+    I: SortedDisjointMap<T, (), &'static ()>,
 {
     iter: I,
     phantom: PhantomData<T>,
@@ -2236,8 +2234,7 @@ where
 impl<T, I> UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    // cmk00 I: SortedDisjointMap<T, (), &'static ()>,
-    I: Iterator<Item = RangeValue<T, (), &'static ()>>,
+    I: SortedDisjointMap<T, (), &'static ()>,
 {
     // Define a new method that directly accepts a SortedDisjoint iterator
     /// cmk doc
@@ -2252,8 +2249,7 @@ where
 impl<T, I> Iterator for UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    // I: SortedDisjointMap<T, (), &'static ()>, // cmk00 or static??
-    I: Iterator<Item = RangeValue<T, (), &'static ()>>,
+    I: SortedDisjointMap<T, (), &'static ()>,
 {
     type Item = RangeInclusive<T>;
     fn next(&mut self) -> Option<Self::Item> {
@@ -2267,16 +2263,14 @@ where
 impl<T, I> SortedStarts<T> for UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    // I: SortedDisjointMap<T, (), &'static ()>,
-    I: Iterator<Item = RangeValue<T, (), &'static ()>>,
+    I: SortedDisjointMap<T, (), &'static ()>,
 {
 }
 
 impl<T, I> SortedDisjoint<T> for UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    // I: SortedDisjointMap<T, (), &'static ()>,
-    I: Iterator<Item = RangeValue<T, (), &'static ()>>,
+    I: SortedDisjointMap<T, (), &'static ()>,
 {
 }
 
