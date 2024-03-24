@@ -15,7 +15,7 @@ use itertools::Itertools;
 
 use crate::{
     BitAndMerge, BitOrMerge, BitSubMerge, BitXorOldNew, Integer, IntoRangesIter, Merge, NotIter,
-    OldRangeSetBlaze, RangesIter, UnionIter,
+    RangesIter, UnionIter,
 };
 
 /// A trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
@@ -526,14 +526,6 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// let a1: RangeSetBlaze2<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
-    fn into_range_set_blaze_old(self) -> OldRangeSetBlaze<T>
-    where
-        Self: Sized,
-    {
-        OldRangeSetBlaze::from_sorted_disjoint(self)
-    }
-
-    /// cmk doc
     fn into_range_set_blaze2(self) -> RangeSetBlaze2<T>
     where
         Self: Sized,

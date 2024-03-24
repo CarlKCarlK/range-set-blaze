@@ -8,6 +8,7 @@ use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap};
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, UnsortedDisjointMap};
+use alloc::collections::BTreeMap;
 use itertools::Itertools;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};

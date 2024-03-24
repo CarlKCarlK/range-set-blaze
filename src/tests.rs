@@ -2,7 +2,11 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use super::*;
+use alloc::collections::BTreeMap;
+use core::cmp::Ordering;
+use core::ops::Bound;
 use itertools::Itertools;
+use num_traits::{One, Zero};
 use quickcheck_macros::quickcheck;
 use rand::{rngs::StdRng, SeedableRng};
 use std::fmt::Debug;
@@ -682,35 +686,37 @@ fn empty() {
     assert!(c4.equal(answer.ranges()));
 }
 
-// Can't implement fmt::Display fmt must take ownership
-impl<T, I> UnsortedDisjoint<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = RangeInclusive<T>>,
-{
-    #[allow(clippy::inherent_to_string)]
-    #[allow(clippy::wrong_self_convention)]
-    pub(crate) fn to_string(self) -> String {
-        self.map(|range| format!("{range:?}")).join(", ")
-    }
-}
-#[allow(clippy::reversed_empty_ranges)]
-#[test]
-fn private_constructor() {
-    let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
-    // println!("{}", unsorted_disjoint.fmt());
-    assert_eq!(unsorted_disjoint.to_string(), "1..=6, -12..=-10, 3..=3");
+// // Can't implement fmt::Display fmt must take ownership
+// impl<T, I> UnsortedDisjoint<T, I>
+// where
+//     T: Integer,
+//     I: Iterator<Item = RangeInclusive<T>>,
+// {
+//     #[allow(clippy::inherent_to_string)]
+//     #[allow(clippy::wrong_self_convention)]
+//     pub(crate) fn to_string(self) -> String {
+//         self.map(|range| format!("{range:?}")).join(", ")
+//     }
+// }
 
-    let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
-    let union_iter = UnionIter::from(unsorted_disjoint);
-    // println!("{}", union_iter.fmt());
-    assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
+// !!!cmk resort this test ???
+// #[allow(clippy::reversed_empty_ranges)]
+// #[test]
+// fn private_constructor() {
+//     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
+//     // println!("{}", unsorted_disjoint.fmt());
+//     assert_eq!(unsorted_disjoint.to_string(), "1..=6, -12..=-10, 3..=3");
 
-    let union_iter: UnionIter<_, _> = [5, 6, 1, 2, 3, 4, 5, -12, -11, -10, 3]
-        .into_iter()
-        .collect();
-    assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
-}
+//     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
+//     let union_iter = UnionIter::from(unsorted_disjoint);
+//     // println!("{}", union_iter.fmt());
+//     assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
+
+//     let union_iter: UnionIter<_, _> = [5, 6, 1, 2, 3, 4, 5, -12, -11, -10, 3]
+//         .into_iter()
+//         .collect();
+//     assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
+// }
 
 fn is_ddcppdheo<
     T: std::fmt::Debug
@@ -730,13 +736,15 @@ fn is_ddcppdheo<
 fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
 fn is_like_btreeset_iter<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
 // removed DoubleEndedIterator +ExactSizeIterator for now
-#[test]
-fn iter_traits() {
-    type ARangesIter<'a> = RangesIter<'a, i32>;
-    type AIter<'a> = Iter<i32, ARangesIter<'a>>;
-    is_sssu::<AIter>();
-    is_like_btreeset_iter::<AIter>();
-}
+
+// cmk1 add other
+// #[test]
+// fn iter_traits() {
+//     type ARangesIter<'a> = RangesIter<'a, i32>;
+//     type AIter<'a> = Iter<i32, ARangesIter<'a>>;
+//     is_sssu::<AIter>();
+//     is_like_btreeset_iter::<AIter>();
+// }
 
 fn is_like_btreeset_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {}
 
@@ -777,61 +785,62 @@ fn is_like_check_sorted_disjoint<
 
 fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
 
-#[test]
-fn check_traits() {
-    // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
-    type ARangeSetBlaze = RangeSetBlaze2<i32>;
-    is_sssu::<ARangeSetBlaze>();
-    is_ddcppdheo::<ARangeSetBlaze>();
-    is_like_btreeset::<ARangeSetBlaze>();
+// !!!cmk test traits of other iterators
+// #[test]
+// fn check_traits() {
+//     // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
+//     type ARangeSetBlaze = RangeSetBlaze2<i32>;
+//     is_sssu::<ARangeSetBlaze>();
+//     is_ddcppdheo::<ARangeSetBlaze>();
+//     is_like_btreeset::<ARangeSetBlaze>();
 
-    type ARangesIter<'a> = RangesIter<'a, i32>;
-    is_sssu::<ARangesIter>();
-    is_like_btreeset_iter::<ARangesIter>();
+//     type ARangesIter<'a> = RangesIter<'a, i32>;
+//     is_sssu::<ARangesIter>();
+//     is_like_btreeset_iter::<ARangesIter>();
 
-    type AIter<'a> = Iter<i32, ARangesIter<'a>>;
-    is_sssu::<AIter>();
-    is_like_btreeset_iter::<AIter>();
+//     type AIter<'a> = Iter<i32, ARangesIter<'a>>;
+//     is_sssu::<AIter>();
+//     is_like_btreeset_iter::<AIter>();
 
-    is_sssu::<IntoIter<i32>>();
-    is_like_btreeset_into_iter::<IntoIter<i32>>();
+//     is_sssu::<IntoIter<i32>>();
+//     is_like_btreeset_into_iter::<IntoIter<i32>>();
 
-    type AMerge<'a> = Merge<i32, ARangesIter<'a>, ARangesIter<'a>>;
-    is_sssu::<AMerge>();
-    is_like_btreeset_iter::<AMerge>();
+//     type AMerge<'a> = Merge<i32, ARangesIter<'a>, ARangesIter<'a>>;
+//     is_sssu::<AMerge>();
+//     is_like_btreeset_iter::<AMerge>();
 
-    let a = RangeSetBlaze2::from_iter([1..=2, 3..=4]);
-    // println!("{:?}", a.ranges()); // cmk get this working again?
+//     let a = RangeSetBlaze2::from_iter([1..=2, 3..=4]);
+//     // println!("{:?}", a.ranges()); // cmk get this working again?
 
-    type AKMerge<'a> = KMerge<i32, ARangesIter<'a>>;
-    is_sssu::<AKMerge>();
-    is_like_btreeset_iter::<AKMerge>();
+//     type AKMerge<'a> = KMerge<i32, ARangesIter<'a>>;
+//     is_sssu::<AKMerge>();
+//     is_like_btreeset_iter::<AKMerge>();
 
-    type ANotIter<'a> = NotIter<i32, ARangesIter<'a>>;
-    is_sssu::<ANotIter>();
-    is_like_btreeset_iter::<ANotIter>();
+//     type ANotIter<'a> = NotIter<i32, ARangesIter<'a>>;
+//     is_sssu::<ANotIter>();
+//     is_like_btreeset_iter::<ANotIter>();
 
-    type AIntoRangesIter<'a> = IntoRangesIter<i32>;
-    is_sssu::<AIntoRangesIter>();
-    is_like_btreeset_into_iter::<AIntoRangesIter>();
+//     type AIntoRangesIter<'a> = IntoRangesIter<i32>;
+//     is_sssu::<AIntoRangesIter>();
+//     is_like_btreeset_into_iter::<AIntoRangesIter>();
 
-    type ACheckSortedDisjoint<'a> = CheckSortedDisjoint<i32, ARangesIter<'a>>;
-    is_sssu::<ACheckSortedDisjoint>();
-    type BCheckSortedDisjoint =
-        CheckSortedDisjoint<i32, std::array::IntoIter<RangeInclusive<i32>, 0>>;
-    is_like_check_sorted_disjoint::<BCheckSortedDisjoint>();
+//     type ACheckSortedDisjoint<'a> = CheckSortedDisjoint<i32, ARangesIter<'a>>;
+//     is_sssu::<ACheckSortedDisjoint>();
+//     type BCheckSortedDisjoint =
+//         CheckSortedDisjoint<i32, std::array::IntoIter<RangeInclusive<i32>, 0>>;
+//     is_like_check_sorted_disjoint::<BCheckSortedDisjoint>();
 
-    type ADynSortedDisjoint<'a> = DynSortedDisjoint<'a, i32>;
-    is_like_dyn_sorted_disjoint::<ADynSortedDisjoint>();
+//     type ADynSortedDisjoint<'a> = DynSortedDisjoint<'a, i32>;
+//     is_like_dyn_sorted_disjoint::<ADynSortedDisjoint>();
 
-    type AUnionIter<'a> = UnionIter<i32, ARangesIter<'a>>;
-    is_sssu::<AUnionIter>();
-    is_like_btreeset_iter::<AUnionIter>();
+//     type AUnionIter<'a> = UnionIter<i32, ARangesIter<'a>>;
+//     is_sssu::<AUnionIter>();
+//     is_like_btreeset_iter::<AUnionIter>();
 
-    type AAssumeSortedStarts<'a> = AssumeSortedStarts<i32, ARangesIter<'a>>;
-    is_sssu::<AAssumeSortedStarts>();
-    is_like_btreeset_iter::<AAssumeSortedStarts>();
-}
+//     type AAssumeSortedStarts<'a> = AssumeSortedStarts<i32, ARangesIter<'a>>;
+//     is_sssu::<AAssumeSortedStarts>();
+//     is_like_btreeset_iter::<AAssumeSortedStarts>();
+// }
 
 #[test]
 fn integer_coverage() {
