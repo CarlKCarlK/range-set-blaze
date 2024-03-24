@@ -264,43 +264,6 @@ where
     }
 }
 
-// impl<'a, T, V, VR, const N: usize> From<[T; N]>
-//     for UnionIterMap<'a, T, V, VR, SortedRangeValueVec<'a, T, V, VR>>
-// where
-//     T: Integer,
-//     V: ValueOwned,
-//     VR: CloneBorrow<V> + 'a,
-// {
-//     fn from(arr: [T; N]) -> Self {
-//         arr.as_slice().into()
-//     }
-// }
-
-// // cmk00
-// impl<'a, T, V, VR> From<&[T]> for UnionIterMap<'a, T, V, VR, SortedRangeValueVec<'a, T, V, VR>>
-// where
-//     T: Integer,
-//     V: ValueOwned,
-//     VR: CloneBorrow<V> + 'a,
-// {
-//     fn from(slice: &[T]) -> Self {
-//         slice.iter().cloned().collect()
-//     }
-// }
-
-// // cmk00
-// impl<'a, T, V, VR, const N: usize> From<[RangeValue<T, V, VR>; N]>
-//     for UnionIterMap<'a, T, V, VR, SortedRangeValueVec<'a, T, V, VR>>
-// where
-//     T: Integer,
-//     V: ValueOwned,
-//     VR: CloneBorrow<V> + 'a,
-// {
-//     fn from(arr: [RangeValue<T, V, VR>; N]) -> Self {
-//         arr.as_slice().into()
-//     }
-// }
-
 // from iter (T, &V) to UnionIterMap
 impl<'a, T, V> FromIterator<(T, &'a V)>
     for UnionIterMap<T, V, &'a V, SortedStartsInVecMap<T, V, &'a V>>

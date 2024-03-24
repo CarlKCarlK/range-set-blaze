@@ -1409,7 +1409,7 @@ macro_rules! impl_sorted_map_traits_and_ops2 {
         }
     };
 }
-// cmk00 should there be a CheckSortedDisjointMap? AssumeSortedDisjointMap?
+// cmk0 should there be a CheckSortedDisjointMap? AssumeSortedDisjointMap?
 
 impl_sorted_map_traits_and_ops0!(UnionIterMap<T, V, VR, I>, SortedStartsMap);
 // cmk00 impl_sorted_map_traits_and_ops0!(SymDiffIterMap<T, V, VR, I>, SortedStartsMap);

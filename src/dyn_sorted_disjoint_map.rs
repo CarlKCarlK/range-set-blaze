@@ -37,7 +37,11 @@ where
     iter: Box<dyn SortedDisjointMap<T, V, VR> + 'a>,
 }
 
-// cmk00 compile, but should it require 'static
+// Constructs a `DynSortedDisjointMap` encapsulating a `SortedDisjointMap` iterator.
+// The lifetime `'a` ensures that any references held by the iterator are valid
+// for the duration of the `DynSortedDisjointMap`'s existence. This is crucial for
+// preventing dangling references and ensuring memory safety when the iterator
+// contains references to data outside of itself.
 impl<'a, T, V, VR> DynSortedDisjointMap<'a, T, V, VR>
 where
     T: Integer,

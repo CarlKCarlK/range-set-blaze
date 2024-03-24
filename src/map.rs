@@ -362,7 +362,6 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(set_iter.next(), Some(2));
     /// assert_eq!(set_iter.next_back(), None);
     /// ```
-    // cmk00 implement this
     pub fn iter(&self) -> IterMap<T, V, &V, RangeValuesIter<'_, T, V>> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
@@ -400,7 +399,6 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(set_iter.next(), Some(2));
     /// assert_eq!(set_iter.next_back(), None);
     /// ```
-    // cmk00 implement this
     pub fn keys(&self) -> KeysMap<T, V, &V, RangeValuesIter<'_, T, V>> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
@@ -1906,7 +1904,6 @@ gen_ops_ex!(
 /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
 /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
 /// ```
-// cmk00
 for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
     SymDiffIterMap::new2(a.range_values(), b.range_values()).into_range_map_blaze()
 };

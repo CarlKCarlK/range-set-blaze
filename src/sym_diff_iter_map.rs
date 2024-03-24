@@ -50,7 +50,7 @@ where
     ready_to_go: Option<RangeValue<T, V, VR>>,
 }
 
-// cmk00
+// cmk0 define operators for SymDiffIterMap
 impl<T, V, VR, I> SortedDisjointMap<T, V, VR> for SymDiffIterMap<T, V, VR, I>
 where
     T: Integer,
@@ -136,7 +136,7 @@ where
             // We buffer for output the best item up to the start of the next item (if any).
 
             // Find the start of the next item, if any.
-            // cmk00 keep a running total instead of using .map().
+            // cmk000 keep a running total instead of using .map().
             let mut next_end = *self
                 .workspace
                 .iter()

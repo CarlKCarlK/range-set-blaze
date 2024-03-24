@@ -1586,7 +1586,6 @@ gen_ops_ex!(
     /// assert_eq!(result.to_string(), "2..=2, 5..=6");
     /// ```
     for & call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-        // cmk100000
         let range_set_map = &a.0 & &b.0;
         RangeSetBlaze(range_set_map)
     };
@@ -1604,7 +1603,6 @@ gen_ops_ex!(
     /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
     /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
     /// ```
-    // cmk00
     for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         // We optimize this by using ranges() twice per input, rather than tee()
         let range_set_map = &a.0 ^ &b.0;

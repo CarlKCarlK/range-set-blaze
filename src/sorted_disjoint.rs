@@ -344,7 +344,6 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// let symmetric_difference = a ^ b;
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
-    // cmk00
     #[inline]
     fn symmetric_difference<'a, R>(self, other: R) -> BitXorOldNew<T, Self, R::IntoIter>
     where

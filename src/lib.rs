@@ -578,7 +578,7 @@ pub trait Integer:
 //     /// cmk doc (remove?)
 //     pub fn from_unit_map<I>(unit_map_iter: I) -> Self
 //     where
-//         // cmk00 I: SortedDisjointMap<T, (), &'static ()>,
+//         //  I: SortedDisjointMap<T, (), &'static ()>,
 //         I: Iterator<Item = RangeValue<T, (), &'static ()>>,
 //     {
 //         // cmk eventually remove this function
@@ -1923,7 +1923,6 @@ where
 //     /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
 //     /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
 //     /// ```
-//     // cmk00
 //     for ^ call |a: &OldRangeSetBlaze<T>, b: &OldRangeSetBlaze<T>| {
 //         // cmk eventually remove this function
 //         let left = SortedDisjointToUnitMap::new(a.ranges());
