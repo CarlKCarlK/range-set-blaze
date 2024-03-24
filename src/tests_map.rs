@@ -151,7 +151,7 @@ fn map_random_ranges() {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
 
-        let mut range_set_blaze = RangeSetBlaze::new();
+        let mut range_set_blaze = RangeSetBlaze2::new();
         let mut range_map_blaze = RangeMapBlaze::new();
         let mut inputs = Vec::<(u8, &char)>::new();
 

@@ -3,12 +3,10 @@ use core::cmp::min;
 use alloc::collections::BinaryHeap;
 
 use crate::{
-    lib2::SortedDisjointToUnitMap,
     map::{CloneBorrow, ValueOwned},
     range_values::{AdjustPriorityMap, NON_ZERO_MAX, NON_ZERO_MIN},
     sorted_disjoint_map::Priority,
-    BitXorAdjusted, Integer, MergeMap, RangeValue, SortedDisjoint, SortedDisjointMap,
-    SortedStartsMap,
+    BitXorAdjusted, Integer, MergeMap, RangeValue, SortedDisjointMap, SortedStartsMap,
 };
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,

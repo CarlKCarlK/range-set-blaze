@@ -16,7 +16,9 @@ use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{
     AssumeSortedStartsMap, SortedDisjointWithLenSoFarMap, UnsortedDisjointMap,
 };
-use crate::{CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze2, SortedDisjoint};
+use crate::{
+    CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze2, SortedDisjoint, SortedStartsMap,
+};
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 use core::borrow::Borrow;
@@ -498,6 +500,15 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             btree_map,
             len: iter_with_len.len_so_far(),
         }
+    }
+
+    /// cmk doc
+    pub fn from_sorted_starts_map<VR, I>(iter: I) -> Self
+    where
+        VR: CloneBorrow<V>,
+        I: SortedStartsMap<T, V, VR>,
+    {
+        Self::from_sorted_disjoint_map(UnionIterMap::new(iter))
     }
 
     /// Creates a [`RangeMapBlaze`] from a collection of integers. It is typically many

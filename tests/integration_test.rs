@@ -316,9 +316,11 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
         RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
     let _d = [a.ranges()].intersection();
-    let _parity: RangeSetBlaze<u8> = [[a.ranges()].intersection()].union().into_range_set_blaze();
-    let _parity: RangeSetBlaze<u8> = [a.ranges()].intersection().into_range_set_blaze();
-    let _parity: RangeSetBlaze<u8> = [a.ranges()].union().into_range_set_blaze();
+    let _parity: RangeSetBlaze<u8> = [[a.ranges()].intersection()]
+        .union()
+        .into_range_set_blaze_old();
+    let _parity: RangeSetBlaze<u8> = [a.ranges()].intersection().into_range_set_blaze_old();
+    let _parity: RangeSetBlaze<u8> = [a.ranges()].union().into_range_set_blaze_old();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
@@ -1217,7 +1219,7 @@ fn range_set_int_constructors() {
     // If we know the ranges are sorted and disjoint, we can use 'from'/'into'.
     let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
     let a1: RangeSetBlaze<i32> =
-        CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
+        CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze_old();
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 
     // For compatibility with `BTreeSet`, we also support

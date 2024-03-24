@@ -1,4 +1,7 @@
-use crate::{Integer, RangeSetBlaze, SortedDisjoint, SortedStarts};
+use crate::{
+    lib2::SortedStartsToUnitMap, Integer, RangeMapBlaze, RangeSetBlaze2, SortedDisjoint,
+    SortedStarts,
+};
 use core::{
     cmp::{max, min},
     iter::FusedIterator,
@@ -184,24 +187,26 @@ where
         }
     }
 
-    /// Create a [`RangeSetBlaze`] from an [`AssumeSortedStarts`] iterator.
+    /// Create a [`RangeSetBlaze2`] from an [`AssumeSortedStarts`] iterator.
     ///
-    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze2` Constructors](struct.RangeSetBlaze2.html#constructors).*
     ///
     /// # Examples
     ///
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a0 = RangeSetBlaze::from_sorted_starts(AssumeSortedStarts::new([-10..=-5, -7..=2]));
-    /// let a1: RangeSetBlaze<i32> = AssumeSortedStarts::new([-10..=-5, -7..=2]).into_range_set_blaze();
+    /// let a0 = RangeSetBlaze2::from_sorted_starts(AssumeSortedStarts::new([-10..=-5, -7..=2]));
+    /// let a1: RangeSetBlaze2<i32> = AssumeSortedStarts::new([-10..=-5, -7..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=2");
     /// ```
-    pub fn into_range_set_blaze(self) -> RangeSetBlaze<T>
+    pub fn into_range_set_blaze(self) -> RangeSetBlaze2<T>
     where
         Self: Sized,
     {
-        RangeSetBlaze::from_sorted_starts(self)
+        let map = SortedStartsToUnitMap::new(self);
+        let range_map_blaze = RangeMapBlaze::from_sorted_starts_map(map);
+        RangeSetBlaze2(range_map_blaze)
     }
 }
 

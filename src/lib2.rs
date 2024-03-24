@@ -1,3 +1,5 @@
+// cmk1 rename file to range_set_blaze.rs
+
 use core::{
     cmp::Ordering,
     fmt,
@@ -6,12 +8,11 @@ use core::{
     ops::{BitOr, BitOrAssign, Bound, RangeBounds, RangeInclusive},
 };
 
-use alloc::{collections::btree_map, rc::Rc};
+use alloc::rc::Rc;
 use gen_ops::gen_ops_ex;
 
 use crate::{
     iter_map::{IntoIterMap, KeysMap},
-    map::EndValue,
     prelude::*,
     range_values::{IntoRangeValuesIter, RangeValuesIter, RangeValuesToRangesIter},
     unsorted_disjoint_map::UnsortedDisjointMap,
@@ -239,7 +240,7 @@ use crate::{
 /// See the [module-level documentation] for additional examples.
 ///
 /// [module-level documentation]: index.html
-pub struct RangeSetBlaze2<T: Integer>(RangeMapBlaze<T, ()>);
+pub struct RangeSetBlaze2<T: Integer>(pub(crate) RangeMapBlaze<T, ()>);
 
 // FUTURE: Make all RangeSetBlaze2 iterators DoubleEndedIterator and ExactSizeIterator.
 impl<T: Integer> fmt::Debug for RangeSetBlaze2<T> {
@@ -445,7 +446,7 @@ impl<T: Integer> RangeSetBlaze2<T> {
     //     }
 
     #[allow(dead_code)]
-    fn len_slow(&self) -> <T as Integer>::SafeLen {
+    pub(crate) fn len_slow(&self) -> <T as Integer>::SafeLen {
         self.0.len_slow()
     }
 
@@ -2162,6 +2163,50 @@ impl<'a, T, I> SortedDisjointMap<T, (), &'a ()> for SortedDisjointToUnitMap<'a, 
 where
     T: Integer,
     I: SortedDisjoint<T>,
+{
+}
+
+pub struct SortedStartsToUnitMap<'a, T, I>
+where
+    T: Integer,
+    I: SortedStarts<T>,
+{
+    iter: I,
+    phantom: PhantomData<(T, &'a ())>, // cmk needed?
+}
+
+impl<'a, T, I> SortedStartsToUnitMap<'a, T, I>
+where
+    T: Integer,
+    I: SortedStarts<T>,
+{
+    // Define a new method that directly accepts a SortedDisjoint iterator
+    pub fn new(iter: I) -> Self {
+        SortedStartsToUnitMap {
+            iter,
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, T, I> Iterator for SortedStartsToUnitMap<'a, T, I>
+where
+    T: Integer,
+    I: SortedStarts<T>,
+{
+    type Item = RangeValue<T, (), &'a ()>;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter
+            .next()
+            .map(|range| RangeValue::new(range, &(), None))
+    }
+}
+
+// cmk1 move these into the macro
+impl<'a, T, I> SortedStartsMap<T, (), &'a ()> for SortedStartsToUnitMap<'a, T, I>
+where
+    T: Integer,
+    I: SortedStarts<T>,
 {
 }
 

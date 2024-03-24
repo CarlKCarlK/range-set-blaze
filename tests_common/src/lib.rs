@@ -5,7 +5,7 @@ use rand::distributions::uniform::SampleUniform;
 use rand::rngs::StdRng;
 use rand::Rng;
 use range_set_blaze::Integer;
-use range_set_blaze::RangeSetBlaze;
+use range_set_blaze::RangeSetBlaze2;
 
 pub fn width_to_range(
     iter_len: usize,
@@ -180,10 +180,10 @@ pub fn k_sets<T: Integer + SampleUniform>(
     coverage_goal: f64,
     how: How,
     rng: &mut StdRng,
-) -> Vec<RangeSetBlaze<T>> {
+) -> Vec<RangeSetBlaze2<T>> {
     (0..k)
         .map(|_i| {
-            RangeSetBlaze::<T>::from_iter(MemorylessRange::new(
+            RangeSetBlaze2::<T>::from_iter(MemorylessRange::new(
                 rng,
                 range_len,
                 range.clone(),

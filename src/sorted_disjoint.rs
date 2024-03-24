@@ -1,5 +1,4 @@
 use crate::lib2::UnitMapToSortedDisjoint;
-use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::{
     impl_sorted_traits_and_ops0, lib2::SortedDisjointToUnitMap,
     range_values::RangeValuesToRangesIter, RangeSetBlaze2,
@@ -15,8 +14,8 @@ use crate::{map::CloneBorrow, map::ValueOwned, SortedDisjointMap};
 use itertools::Itertools;
 
 use crate::{
-    AssumeSortedDisjointMap, BitAndMerge, BitOrMerge, BitSubMerge, BitXorOldNew, Integer,
-    IntoRangesIter, Merge, NotIter, RangeSetBlaze, RangesIter, UnionIter,
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXorOldNew, Integer, IntoRangesIter, Merge, NotIter,
+    OldRangeSetBlaze, RangesIter, UnionIter,
 };
 
 /// A trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
@@ -37,22 +36,22 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> {}
 ///
 /// # `SortedDisjoint` Constructors
 ///
-/// You'll usually construct a `SortedDisjoint` iterator from a [`RangeSetBlaze`] or a [`CheckSortedDisjoint`].
+/// You'll usually construct a `SortedDisjoint` iterator from a [`RangeSetBlaze2`] or a [`CheckSortedDisjoint`].
 /// Here is a summary table, followed by [examples](#constructor-examples). You can also [define your own
 /// `SortedDisjoint`](#how-to-mark-your-type-as-sorteddisjoint).
 ///
 /// | Input type | Method |
 /// |------------|--------|
-/// | [`RangeSetBlaze`] | [`ranges`] |
-/// | [`RangeSetBlaze`] | [`into_ranges`] |
-/// | [`RangeSetBlaze`]'s [`RangesIter`] | [`clone`] |
+/// | [`RangeSetBlaze2`] | [`ranges`] |
+/// | [`RangeSetBlaze2`] | [`into_ranges`] |
+/// | [`RangeSetBlaze2`]'s [`RangesIter`] | [`clone`] |
 /// | sorted & disjoint ranges | [`CheckSortedDisjoint::new`] |
 /// | `SortedDisjoint` iterator | [itertools `tee`] |
 /// | `SortedDisjoint` iterator | [`crate::dyn_sorted_disjoint::DynSortedDisjoint::new`] |
 /// |  *your iterator type* | *[How to mark your type as `SortedDisjoint`][1]* |
 ///
-/// [`ranges`]: RangeSetBlaze::ranges
-/// [`into_ranges`]: RangeSetBlaze::into_ranges
+/// [`ranges`]: RangeSetBlaze2::ranges
+/// [`into_ranges`]: RangeSetBlaze2::into_ranges
 /// [`clone`]: crate::RangesIter::clone
 /// [itertools `tee`]: https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.tee
 /// [1]: #how-to-mark-your-type-as-sorteddisjoint
@@ -64,14 +63,14 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> {}
 /// use range_set_blaze::prelude::*;
 /// use itertools::Itertools;
 ///
-/// // RangeSetBlaze's .ranges(), .range().clone() and .into_ranges()
-/// let r = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
+/// // RangeSetBlaze2's .ranges(), .range().clone() and .into_ranges()
+/// let r = RangeSetBlaze2::from_iter([3, 2, 1, 100, 1]);
 /// let a = r.ranges();
 /// let b = a.clone();
 /// assert!(a.to_string() == "1..=3, 100..=100");
 /// assert!(b.to_string() == "1..=3, 100..=100");
-/// //    'into_ranges' takes ownership of the 'RangeSetBlaze'
-/// let a = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]).into_ranges();
+/// //    'into_ranges' takes ownership of the 'RangeSetBlaze2'
+/// let a = RangeSetBlaze2::from_iter([3, 2, 1, 100, 1]).into_ranges();
 /// assert!(a.to_string() == "1..=3, 100..=100");
 ///
 /// // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
@@ -112,9 +111,9 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> {}
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
-/// let b0 = RangeSetBlaze::from_iter([2..=6]);
-/// let c0 = RangeSetBlaze::from_iter([2..=2, 6..=200]);
+/// let a0 = RangeSetBlaze2::from_iter([1..=2, 5..=100]);
+/// let b0 = RangeSetBlaze2::from_iter([2..=6]);
+/// let c0 = RangeSetBlaze2::from_iter([2..=2, 6..=200]);
 ///
 /// // 'union' method and 'to_string' method
 /// let (a, b) = (a0.ranges(), b0.ranges());
@@ -221,14 +220,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([1..=1]);
-    /// let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
+    /// let b = RangeSetBlaze2::from_iter([2..=2]).into_ranges();
     /// let union = a.union(b);
     /// assert_eq!(union.to_string(), "1..=2");
     ///
     /// // Alternatively, we can use "|" because CheckSortedDisjoint defines
     /// // ops::bitor as SortedDisjoint::union.
     /// let a = CheckSortedDisjoint::from([1..=1]);
-    /// let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
+    /// let b = RangeSetBlaze2::from_iter([2..=2]).into_ranges();
     /// let union = a | b;
     /// assert_eq!(union.to_string(), "1..=2");
     /// ```
@@ -250,14 +249,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([1..=2]);
-    /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
+    /// let b = RangeSetBlaze2::from_iter([2..=3]).into_ranges();
     /// let intersection = a.intersection(b);
     /// assert_eq!(intersection.to_string(), "2..=2");
     ///
     /// // Alternatively, we can use "&" because CheckSortedDisjoint defines
     /// // ops::bitand as SortedDisjoint::intersection.
     /// let a = CheckSortedDisjoint::from([1..=2]);
-    /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
+    /// let b = RangeSetBlaze2::from_iter([2..=3]).into_ranges();
     /// let intersection = a & b;
     /// assert_eq!(intersection.to_string(), "2..=2");
     /// ```
@@ -279,14 +278,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([1..=2]);
-    /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
+    /// let b = RangeSetBlaze2::from_iter([2..=3]).into_ranges();
     /// let difference = a.difference(b);
     /// assert_eq!(difference.to_string(), "1..=1");
     ///
     /// // Alternatively, we can use "-" because CheckSortedDisjoint defines
     /// // ops::sub as SortedDisjoint::difference.
     /// let a = CheckSortedDisjoint::from([1..=2]);
-    /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
+    /// let b = RangeSetBlaze2::from_iter([2..=3]).into_ranges();
     /// let difference = a - b;
     /// assert_eq!(difference.to_string(), "1..=1");
     /// ```
@@ -334,14 +333,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([1..=2]);
-    /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
+    /// let b = RangeSetBlaze2::from_iter([2..=3]).into_ranges();
     /// let symmetric_difference = a.symmetric_difference(b);
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     ///
     /// // Alternatively, we can use "^" because CheckSortedDisjoint defines
     /// // ops::bitxor as SortedDisjoint::symmetric_difference.
     /// let a = CheckSortedDisjoint::from([1..=2]);
-    /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
+    /// let b = RangeSetBlaze2::from_iter([2..=3]).into_ranges();
     /// let symmetric_difference = a ^ b;
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
@@ -370,7 +369,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([1..=2]);
-    /// let b = RangeSetBlaze::from_iter([1..=2]).into_ranges();
+    /// let b = RangeSetBlaze2::from_iter([1..=2]).into_ranges();
     /// assert!(a.equal(b));
     /// ```
     fn equal<R>(self, other: R) -> bool
@@ -405,9 +404,9 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::RangeSetBlaze;
+    /// use range_set_blaze::RangeSetBlaze2;
     ///
-    /// let mut v = RangeSetBlaze::new();
+    /// let mut v = RangeSetBlaze2::new();
     /// assert!(v.is_empty());
     /// v.insert(1);
     /// assert!(!v.is_empty());
@@ -459,10 +458,10 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::RangeSetBlaze;
+    /// use range_set_blaze::RangeSetBlaze2;
     ///
-    /// let sub = RangeSetBlaze::from_iter([1, 2]);
-    /// let mut set = RangeSetBlaze::new();
+    /// let sub = RangeSetBlaze2::from_iter([1, 2]);
+    /// let mut set = RangeSetBlaze2::new();
     ///
     /// assert_eq!(set.is_superset(&sub), false);
     ///
@@ -491,10 +490,10 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::RangeSetBlaze;
+    /// use range_set_blaze::RangeSetBlaze2;
     ///
-    /// let a = RangeSetBlaze::from_iter([1..=3]);
-    /// let mut b = RangeSetBlaze::new();
+    /// let a = RangeSetBlaze2::from_iter([1..=3]);
+    /// let mut b = RangeSetBlaze2::new();
     ///
     /// assert_eq!(a.is_disjoint(&b), true);
     /// b.insert(4);
@@ -514,24 +513,24 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         self.intersection(other).is_empty()
     }
 
-    /// Create a [`RangeSetBlaze`] from a [`SortedDisjoint`] iterator.
+    /// Create a [`RangeSetBlaze2`] from a [`SortedDisjoint`] iterator.
     ///
-    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze2` Constructors](struct.RangeSetBlaze2.html#constructors).*
     ///
     /// # Examples
     ///
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-    /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
+    /// let a0 = RangeSetBlaze2::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+    /// let a1: RangeSetBlaze2<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
-    fn into_range_set_blaze(self) -> RangeSetBlaze<T>
+    fn into_range_set_blaze_old(self) -> OldRangeSetBlaze<T>
     where
         Self: Sized,
     {
-        RangeSetBlaze::from_sorted_disjoint(self)
+        OldRangeSetBlaze::from_sorted_disjoint(self)
     }
 
     /// cmk doc
@@ -1054,105 +1053,6 @@ macro_rules! impl_sorted_traits_and_ops3 {
         impl<'a, T, R> ops::BitAnd<R> for $IterType
         where
             T: Integer,
-            R: SortedDisjoint<T>,
-        {
-            type Output = BitAndMerge<T, Self, R>;
-
-            fn bitand(self, other: R) -> Self::Output {
-                SortedDisjoint::intersection(self, other)
-            }
-        }
-    };
-}
-
-macro_rules! impl_sorted_traits_and_ops4 {
-    ($IterType:ty) => {
-        impl<'a, T, V, VR, I> SortedStarts<T> for $IterType
-        where
-            T: Integer,
-            V: ValueOwned,
-            VR: CloneBorrow<V>,
-            I: SortedDisjointMap<T, V, VR>,
-        {
-        }
-        impl<'a, T, V, VR, I> SortedDisjoint<T> for $IterType
-        where
-            T: Integer,
-            V: ValueOwned,
-            VR: CloneBorrow<V>,
-            I: SortedDisjointMap<T, V, VR>,
-        {
-        }
-
-        impl<'a, T, V, VR, I> ops::Not for $IterType
-        where
-            T: Integer,
-            V: ValueOwned,
-            VR: CloneBorrow<V>,
-            I: SortedDisjointMap<T, V, VR>,
-        {
-            type Output = NotIter<T, Self>;
-
-            fn not(self) -> Self::Output {
-                self.complement()
-            }
-        }
-
-        impl<'a, T, V, VR, I, R> ops::BitOr<R> for $IterType
-        where
-            T: Integer,
-            V: ValueOwned,
-            VR: CloneBorrow<V>,
-            I: SortedDisjointMap<T, V, VR>,
-            R: SortedDisjoint<T>,
-        {
-            type Output = BitOrMerge<T, Self, R>;
-
-            fn bitor(self, other: R) -> Self::Output {
-                SortedDisjoint::union(self, other)
-            }
-        }
-
-        impl<'a, T, V, VR, I, R> ops::Sub<R> for $IterType
-        where
-            T: Integer,
-            V: ValueOwned,
-            VR: CloneBorrow<V>,
-            I: SortedDisjointMap<T, V, VR>,
-            R: SortedDisjoint<T>,
-        {
-            type Output = BitSubMerge<T, Self, R>;
-
-            fn sub(self, other: R) -> Self::Output {
-                // It would be fun to optimize !!self.iter into self.iter
-                // but that would require also considering fields 'start_not' and 'next_time_return_none'.
-                SortedDisjoint::difference(self, other)
-            }
-        }
-
-        // cmk0
-        impl<'a, T, V, VR, I, R> ops::BitXor<R> for $IterType
-        where
-            T: Integer,
-            V: ValueOwned,
-            VR: CloneBorrow<V>,
-            I: SortedDisjointMap<T, V, VR>,
-            R: SortedDisjoint<T>,
-        {
-            type Output = BitXorOldNew<T, Self, R>;
-
-            #[allow(clippy::suspicious_arithmetic_impl)]
-            fn bitxor(self, other: R) -> Self::Output {
-                SortedDisjoint::symmetric_difference(self, other)
-            }
-        }
-
-        impl<'a, T, V, VR, I, R> ops::BitAnd<R> for $IterType
-        where
-            T: Integer,
-            V: ValueOwned,
-            VR: CloneBorrow<V>,
-            I: SortedDisjointMap<T, V, VR>,
             R: SortedDisjoint<T>,
         {
             type Output = BitAndMerge<T, Self, R>;

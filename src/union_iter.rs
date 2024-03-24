@@ -45,6 +45,7 @@ use crate::{
 /// let a = UnionIter::new(AssumeSortedStarts::new([1..=5, 2..=100]));
 /// assert_eq!(a.to_string(), "1..=100");
 /// ```
+// cmk1 do we need this and related iterators anymore?
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct UnionIter<T, I>
