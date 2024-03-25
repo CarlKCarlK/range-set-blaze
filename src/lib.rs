@@ -1589,21 +1589,28 @@ pub trait Integer:
 #[doc(hidden)]
 pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
-pub type BitOrMergeMap<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
+pub type BitOrMergeMap<T, V, VR, L, R, P> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R, P>, P>;
 #[doc(hidden)]
-pub type BitOrAdjusted<T, V, VR, L, R> =
-    BitOrMergeMap<T, V, VR, AdjustPriorityMap<T, V, VR, L>, AdjustPriorityMap<T, V, VR, R>>;
-
-#[doc(hidden)]
-pub type BitXorAdjusted<T, V, VR, L, R> = SymDiffIterMap<
+pub type BitOrAdjusted<T, V, VR, L, R, P> = BitOrMergeMap<
     T,
     V,
     VR,
-    MergeMap<T, V, VR, AdjustPriorityMap<T, V, VR, L>, AdjustPriorityMap<T, V, VR, R>>,
+    AdjustPriorityMap<T, V, VR, L, P>,
+    AdjustPriorityMap<T, V, VR, R, P>,
+    P,
 >;
 
 #[doc(hidden)]
-pub type BitXorOldNew<T, L, R> = UnitMapToSortedDisjoint<
+pub type BitXorAdjusted<T, V, VR, L, R, P> = SymDiffIterMap<
+    T,
+    V,
+    VR,
+    MergeMap<T, V, VR, AdjustPriorityMap<T, V, VR, L, P>, AdjustPriorityMap<T, V, VR, R, P>, P>,
+    P,
+>;
+
+#[doc(hidden)]
+pub type BitXorOldNew<T, L, R, P> = UnitMapToSortedDisjoint<
     T,
     BitXorAdjusted<
         T,
@@ -1611,13 +1618,14 @@ pub type BitXorOldNew<T, L, R> = UnitMapToSortedDisjoint<
         &'static (),
         SortedDisjointToUnitMap<T, L>,
         SortedDisjointToUnitMap<T, R>,
+        P,
     >,
 >;
 
 #[doc(hidden)]
 pub type BitOrKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
 #[doc(hidden)]
-pub type BitOrKMergeMap<T, V, VR, I> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I>>;
+pub type BitOrKMergeMap<T, V, VR, I, P> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I, P>, P>;
 #[doc(hidden)]
 pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
 #[doc(hidden)]

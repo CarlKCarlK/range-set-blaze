@@ -1,5 +1,9 @@
 #![allow(missing_docs)]
-use crate::{map::CloneBorrow, sorted_disjoint_map::RangeValue, Integer};
+use crate::{
+    map::CloneBorrow,
+    sorted_disjoint_map::{Priority, RangeValue},
+    Integer,
+};
 use alloc::{collections::btree_map, rc::Rc};
 use core::{
     iter::{Enumerate, FusedIterator},
@@ -59,9 +63,9 @@ where
     type Item = RangeValue<T, V, &'a V>; // Assuming VR is always &'a V for next
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(start, end_value)| {
-            RangeValue::new(*start..=end_value.end, &end_value.value, None)
-        })
+        self.iter
+            .next()
+            .map(|(start, end_value)| RangeValue::new(*start..=end_value.end, &end_value.value))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -114,7 +118,7 @@ impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<T, V> 
         self.iter.next().map(|(start, end_value)| {
             let range = start..=end_value.end;
             // cmk don't use RangeValue here
-            RangeValue::new(range, Rc::new(end_value.value), None)
+            RangeValue::new(range, Rc::new(end_value.value))
         })
     }
 
@@ -364,6 +368,9 @@ where
 //     }
 // }
 
+// cmk000 make a new iterator that counts from 1..=usize::MAX or MAX..=1
+
+// cmk000 likely don't need this any more
 pub struct NonZeroEnumerate<I>
 where
     I: Iterator,
@@ -431,25 +438,27 @@ impl<T> ExpectDebugUnwrapRelease<T> for Option<T> {
     }
 }
 #[derive(Clone, Debug)]
-pub struct AdjustPriorityMap<T, V, VR, I>
+pub struct AdjustPriorityMap<T, V, VR, I, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: Iterator<Item = RangeValue<T, V, VR>>,
+    P: Iterator<Item = NonZeroUsize>,
 {
     iter: I,
-    new_priority: Option<NonZeroUsize>,
+    priority_iter: P,
 }
 
-impl<T, V, VR, I> Iterator for AdjustPriorityMap<T, V, VR, I>
+impl<T, V, VR, I, P> Iterator for AdjustPriorityMap<T, V, VR, I, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
+    P: Iterator<Item = NonZeroUsize>,
 {
-    type Item = RangeValue<T, V, VR>;
+    type Item = Priority<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|mut range_value| {
@@ -459,32 +468,36 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> AdjustPriorityMap<T, V, VR, I>
+impl<'a, T, V, VR, I, P> AdjustPriorityMap<T, V, VR, I, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
+    P: Iterator<Item = NonZeroUsize>,
 {
-    pub fn new(iter: I, new_priority: Option<NonZeroUsize>) -> Self {
-        AdjustPriorityMap { iter, new_priority }
+    pub fn new(iter: I, priority_iter: P) -> Self {
+        AdjustPriorityMap {
+            iter,
+            priority_iter,
+        }
     }
 }
 
-// all AdjustPriorityMap are also SortedDisjointMaps
-impl<'a, T, V, VR, I> SortedStartsMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: SortedDisjointMap<T, V, VR>,
-{
-}
-impl<T, V, VR, I> SortedDisjointMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: SortedDisjointMap<T, V, VR>,
-{
-}
+// // all AdjustPriorityMap are also SortedDisjointMaps
+// impl<'a, T, V, VR, I> SortedStartsMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
+// where
+//     T: Integer,
+//     V: ValueOwned,
+//     VR: CloneBorrow<V>,
+//     I: SortedDisjointMap<T, V, VR>,
+// {
+// }
+// impl<T, V, VR, I> SortedDisjointMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
+// where
+//     T: Integer,
+//     V: ValueOwned,
+//     VR: CloneBorrow<V>,
+//     I: SortedDisjointMap<T, V, VR>,
+// {
+// }

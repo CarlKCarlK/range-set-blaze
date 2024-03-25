@@ -5,6 +5,7 @@ use crate::{
 };
 use alloc::format;
 use alloc::string::String;
+use core::num::NonZeroUsize;
 use core::{
     iter::FusedIterator,
     ops::{self, RangeInclusive},
@@ -345,12 +346,13 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
     #[inline]
-    fn symmetric_difference<'a, R>(self, other: R) -> BitXorOldNew<T, Self, R::IntoIter>
+    fn symmetric_difference<'a, R, P>(self, other: R) -> BitXorOldNew<T, Self, R::IntoIter, P>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
         <R as IntoIterator>::IntoIter:,
         Self: Sized,
+        P: Iterator<Item = NonZeroUsize>,
     {
         let left = SortedDisjointToUnitMap::new(self);
         let right = SortedDisjointToUnitMap::new(other.into_iter());
@@ -723,13 +725,14 @@ macro_rules! impl_sorted_traits_and_ops0 {
             }
         }
 
-        impl<T, I, R> ops::BitXor<R> for $IterType
+        impl<T, I, R, P> ops::BitXor<R> for $IterType
         where
             T: Integer,
             I: $TraitBound<T>,
             R: SortedDisjoint<T>,
+            P: Iterator<Item = NonZeroUsize>,
         {
-            type Output = BitXorOldNew<T, Self, R>;
+            type Output = BitXorOldNew<T, Self, R, P>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
@@ -876,7 +879,7 @@ macro_rules! impl_sorted_traits_and_ops1 {
             }
         }
 
-        impl<T, V, VR, I, R> ops::BitXor<R> for $IterType
+        impl<T, V, VR, I, R, P> ops::BitXor<R> for $IterType
         where
             T: Integer,
             V: ValueOwned,
@@ -884,7 +887,7 @@ macro_rules! impl_sorted_traits_and_ops1 {
             I: SortedDisjointMap<T, V, VR>,
             R: SortedDisjoint<T>,
         {
-            type Output = BitXorOldNew<T, Self, R>;
+            type Output = BitXorOldNew<T, Self, R, P>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
@@ -953,12 +956,13 @@ macro_rules! impl_sorted_traits_and_ops2 {
             }
         }
 
-        impl<T, R> ops::BitXor<R> for $IterType
+        impl<T, R, P> ops::BitXor<R> for $IterType
         where
             T: Integer,
             R: SortedDisjoint<T>,
+            P: Iterator<Item = NonZeroUsize>,
         {
-            type Output = BitXorOldNew<T, Self, R>;
+            type Output = BitXorOldNew<T, Self, R, P>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
@@ -1024,12 +1028,12 @@ macro_rules! impl_sorted_traits_and_ops3 {
             }
         }
 
-        impl<'a, T, R> ops::BitXor<R> for $IterType
+        impl<'a, T, R, P> ops::BitXor<R> for $IterType
         where
             T: Integer,
             R: SortedDisjoint<T>,
         {
-            type Output = BitXorOldNew<T, Self, R>;
+            type Output = BitXorOldNew<T, Self, R, P>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {

@@ -1,9 +1,10 @@
 use crate::alloc::string::ToString;
+use crate::range_values::AdjustPriorityMap;
 use crate::sorted_disjoint_map::Priority;
 use alloc::format;
 use alloc::string::String;
 use alloc::{collections::BinaryHeap, vec};
-use core::ops::RangeInclusive;
+use core::num::NonZeroUsize;
 use core::{cmp::min, iter::FusedIterator};
 use itertools::Itertools;
 
@@ -44,26 +45,28 @@ use crate::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct UnionIterMap<T, V, VR, SS>
+pub struct UnionIterMap<T, V, VR, SS, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     SS: SortedStartsMap<T, V, VR>,
+    P: Iterator<Item = NonZeroUsize>,
 {
-    iter: SS,
+    iter: AdjustPriorityMap<T, V, VR, SS, P>,
     next_item: Option<RangeValue<T, V, VR>>,
     workspace: BinaryHeap<Priority<T, V, VR>>,
     gather: Option<RangeValue<T, V, VR>>,
     ready_to_go: Option<RangeValue<T, V, VR>>,
 }
 
-impl<T, V, VR, I> Iterator for UnionIterMap<T, V, VR, I>
+impl<T, V, VR, I, P> Iterator for UnionIterMap<T, V, VR, I, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: SortedStartsMap<T, V, VR>,
+    I: SortedStartsMap<T, V, VR>, // cmk why SS above and I here?
+    P: Iterator<Item = NonZeroUsize>,
 {
     type Item = RangeValue<T, V, VR>;
 
@@ -86,7 +89,7 @@ where
                     //     "cmk pushing self.next_item {:?} into empty workspace",
                     //     next_item.range
                     // );
-                    self.workspace.push(Priority(next_item));
+                    self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     // println!(
                     //     "cmk reading new self.next_item via .next() {:?}",
@@ -100,7 +103,7 @@ where
                     // Only push if the priority is higher or the end is greater
                     if next_item.priority > best.priority || next_end > *best.range.end() {
                         // println!("cmk pushing next_item {:?} into workspace", next_item.range);
-                        self.workspace.push(Priority(next_item));
+                        self.workspace.push(next_item);
                     } else {
                         // println!(
                         //     "cmk throwing away next_item {:?} because of priority and length",
@@ -177,7 +180,6 @@ where
                     self.gather = Some(RangeValue::new(
                         *best.range.start()..=next_end,
                         best.value.clone_borrow(),
-                        None,
                     ));
                 }
             } else {
@@ -190,7 +192,6 @@ where
                 self.gather = Some(RangeValue::new(
                     *best.range.start()..=next_end,
                     best.value.clone_borrow(),
-                    None,
                 ))
             };
 
@@ -208,7 +209,7 @@ where
                 let Some(new_best) = new_workspace.peek() else {
                     // println!("cmk no workspace, so keep {:?}", item.range);
                     // new_workspace is empty, so keep
-                    new_workspace.push(Priority(item));
+                    new_workspace.push(item);
                     continue; // while loop
                 };
                 let new_best = &new_best.0;
@@ -222,7 +223,7 @@ where
                 // higher priority or longer, so keep
                 // println!("cmk item is higher priority {:?} or longer {:?} than best item {:?},{:?} in new workspace, so keep",
                 // item.priority, item.range, new_best.priority, new_best.range);
-                new_workspace.push(Priority(item));
+                new_workspace.push(item);
             }
             self.workspace = new_workspace;
         } // end of main loop
@@ -243,16 +244,17 @@ where
     }
 }
 
-impl<T, V, VR, I> UnionIterMap<T, V, VR, I>
+impl<T, V, VR, I, P> UnionIterMap<T, V, VR, I, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedStartsMap<T, V, VR>,
+    P: Iterator<Item = NonZeroUsize>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
-    pub fn new(mut iter: I) -> Self {
+    pub fn new(mut iter: AdjustPriorityMap<T, V, VR, I, P>) -> Self {
         let item = iter.next();
         Self {
             iter,
@@ -264,72 +266,73 @@ where
     }
 }
 
-// from iter (T, &V) to UnionIterMap
-impl<'a, T, V> FromIterator<(T, &'a V)>
-    for UnionIterMap<T, V, &'a V, SortedStartsInVecMap<T, V, &'a V>>
-where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-{
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = (T, &'a V)>,
-    {
-        let iter = iter.into_iter().map(|(x, value)| (x..=x, value));
-        UnionIterMap::from_iter(iter)
-    }
-}
+// // from iter (T, &V) to UnionIterMap
+// impl<'a, T, V> FromIterator<(T, &'a V, NonZeroUsize)>
+//     for UnionIterMap<T, V, &'a V, SortedStartsInVecMap<T, V, &'a V>>
+// where
+//     T: Integer + 'a,
+//     V: ValueOwned + 'a,
+// {
+//     fn from_iter<I>(iter: I) -> Self
+//     where
+//         I: IntoIterator<Item = (T, &'a V)>,
+//     {
+//         let iter = iter.into_iter().map(|(x, value)| (x..=x, value));
+//         UnionIterMap::from_iter(iter)
+//     }
+// }
 
-// from iter (RangeInclusive<T>, &V) to UnionIterMap
-impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
-    for UnionIterMap<T, V, &'a V, SortedStartsInVecMap<T, V, &'a V>>
-{
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
-    {
-        let iter = iter.into_iter();
-        let iter = iter.map(|(range, value)| RangeValue::new(range, value, None));
-        UnionIterMap::from_iter(iter)
-    }
-}
+// // from iter (RangeInclusive<T>, &V) to UnionIterMap
+// impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
+//     for UnionIterMap<T, V, &'a V, SortedStartsInVecMap<T, V, &'a V>>
+// {
+//     fn from_iter<I>(iter: I) -> Self
+//     where
+//         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
+//     {
+//         let iter = iter.into_iter();
+//         let iter = iter.map(|(range, value)| RangeValue::new(range, value));
+//         UnionIterMap::from_iter(iter)
+//     }
+// }
 
 // cmk used?
 #[allow(dead_code)]
 type SortedRangeValueVec<T, V, VR> =
     AssumeSortedStartsMap<T, V, VR, vec::IntoIter<RangeValue<T, V, VR>>>;
 
-// cmk simplify the long types
-// from iter RangeValue<T, V, VR> to UnionIterMap
-impl<T, V, VR> FromIterator<RangeValue<T, V, VR>>
-    for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-{
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = RangeValue<T, V, VR>>,
-    {
-        let iter = iter.into_iter();
-        // let iter = iter.map(|x| {
-        //     println!("cmk x.priority {:?}", x.priority);
-        //     x
-        // });
-        let iter = UnsortedDisjointMap::from(iter);
-        UnionIterMap::from(iter)
-    }
-}
+// // cmk simplify the long types
+// // from iter RangeValue<T, V, VR> to UnionIterMap
+// impl<T, V, VR> FromIterator<RangeValue<T, V, VR>>
+//     for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>>
+// where
+//     T: Integer,
+//     V: ValueOwned,
+//     VR: CloneBorrow<V>,
+// {
+//     fn from_iter<I>(iter: I) -> Self
+//     where
+//         I: IntoIterator<Item = RangeValue<T, V, VR>>,
+//     {
+//         let iter = iter.into_iter();
+//         // let iter = iter.map(|x| {
+//         //     println!("cmk x.priority {:?}", x.priority);
+//         //     x
+//         // });
+//         let iter = UnsortedDisjointMap::from(iter);
+//         UnionIterMap::from(iter)
+//     }
+// }
 
 // from from UnsortedDisjointMap to UnionIterMap
-impl<T, V, VR, I> From<UnsortedDisjointMap<T, V, VR, I>>
-    for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>>
+impl<T, V, VR, I, P> From<UnsortedDisjointMap<T, V, VR, I>>
+    for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: Iterator<Item = RangeValue<T, V, VR>>,
+    P: Iterator<Item = NonZeroUsize>,
 {
     #[allow(clippy::clone_on_copy)]
     fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, VR, I>) -> Self {
@@ -351,12 +354,13 @@ where
     }
 }
 
-impl<T, V, VR, I> FusedIterator for UnionIterMap<T, V, VR, I>
+impl<T, V, VR, I, P> FusedIterator for UnionIterMap<T, V, VR, I, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedStartsMap<T, V, VR> + FusedIterator,
+    P: Iterator<Item = NonZeroUsize> + FusedIterator,
 {
 }
 

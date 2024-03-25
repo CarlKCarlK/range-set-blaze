@@ -37,54 +37,61 @@ use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap}
 /// assert_eq!(c.to_string(), "1..=100")
 /// ```
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct MergeMap<T, V, VR, L, R>
+pub struct MergeMap<T, V, VR, L, R, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
+    P: Iterator<Item = NonZeroUsize>,
 {
     #[allow(clippy::type_complexity)]
     iter: MergeBy<L, R, fn(&RangeValue<T, V, VR>, &RangeValue<T, V, VR>) -> bool>,
 }
 
-impl<T, V, VR, L, R> MergeMap<T, V, VR, L, R>
+impl<T, V, VR, L, R, P> MergeMap<T, V, VR, L, R, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
-    <V as ToOwned>::Owned: PartialEq,
+    <V as ToOwned>::Owned: PartialEq, // cmk is this needed?
+    P: Iterator<Item = NonZeroUsize>,
 {
     /// Creates a new [`MergeMap`] iterator from two [`SortedDisjointMap`] iterators. See [`MergeMap`] for more details and examples.
-    pub fn new(left: L, right: R) -> Self {
+    pub fn new(
+        left: AdjustPriorityMap<T, V, VR, L, P>,
+        right: AdjustPriorityMap<T, V, VR, R, P>,
+    ) -> Self {
         Self {
             iter: left.merge_by(right, |a, b| a.range.start() < b.range.start()),
         }
     }
 }
 
-impl<T, V, VR, L, R> FusedIterator for MergeMap<T, V, VR, L, R>
+impl<T, V, VR, L, R, P> FusedIterator for MergeMap<T, V, VR, L, R, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
-    <V as ToOwned>::Owned: PartialEq,
+    <V as ToOwned>::Owned: PartialEq, // cmk is this needed?
+    P: Iterator<Item = NonZeroUsize>,
 {
 }
 
-impl<T, V, VR, L, R> Iterator for MergeMap<T, V, VR, L, R>
+impl<T, V, VR, L, R, P> Iterator for MergeMap<T, V, VR, L, R, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
-    <V as ToOwned>::Owned: PartialEq,
+    <V as ToOwned>::Owned: PartialEq, // cmk is this needed?
+    P: Iterator<Item = NonZeroUsize>,
 {
     type Item = RangeValue<T, V, VR>;
 
@@ -97,14 +104,15 @@ where
     }
 }
 
-impl<T, V, VR, L, R> SortedStartsMap<T, V, VR> for MergeMap<T, V, VR, L, R>
+impl<T, V, VR, L, R, P> SortedStartsMap<T, V, VR> for MergeMap<T, V, VR, L, R, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
-    <V as ToOwned>::Owned: PartialEq,
+    <V as ToOwned>::Owned: PartialEq, // cmk is this needed?
+    P: Iterator<Item = NonZeroUsize>,
 {
 }
 
@@ -137,26 +145,28 @@ where
 /// ```
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct KMergeMap<T, V, VR, I>
+pub struct KMergeMap<T, V, VR, I, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
+    P: Iterator<Item = NonZeroUsize>,
 {
     #[allow(clippy::type_complexity)]
     iter: KMergeBy<
-        AdjustPriorityMap<T, V, VR, I>,
+        AdjustPriorityMap<T, V, VR, I, P>,
         fn(&RangeValue<T, V, VR>, &RangeValue<T, V, VR>) -> bool,
     >,
 }
 
-impl<T, V, VR, I> KMergeMap<T, V, VR, I>
+impl<T, V, VR, I, P> KMergeMap<T, V, VR, I, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
+    P: Iterator<Item = NonZeroUsize>,
 {
     /// Creates a new [`KMergeMap`] iterator from zero or more [`SortedDisjointMap`] iterators. See [`KMergeMap`] for more details and examples.
     pub fn new<J>(iter: J) -> Self
@@ -181,23 +191,23 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> FusedIterator for KMergeMap<T, V, VR, I>
+impl<'a, T, V, VR, I, P> FusedIterator for KMergeMap<T, V, VR, I, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-
     I: SortedDisjointMap<T, V, VR>,
+    P: Iterator<Item = NonZeroUsize>,
 {
 }
 
-impl<T, V, VR, I> Iterator for KMergeMap<T, V, VR, I>
+impl<T, V, VR, I, P> Iterator for KMergeMap<T, V, VR, I, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-
     I: SortedDisjointMap<T, V, VR>,
+    P: Iterator<Item = NonZeroUsize>,
 {
     type Item = RangeValue<T, V, VR>;
 
@@ -210,12 +220,12 @@ where
     }
 }
 
-impl<T, V, VR, I> SortedStartsMap<T, V, VR> for KMergeMap<T, V, VR, I>
+impl<T, V, VR, I, P> SortedStartsMap<T, V, VR> for KMergeMap<T, V, VR, I, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-
     I: SortedDisjointMap<T, V, VR>,
+    P: Iterator<Item = NonZeroUsize>,
 {
 }

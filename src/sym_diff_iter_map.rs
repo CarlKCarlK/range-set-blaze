@@ -1,4 +1,4 @@
-use core::cmp::min;
+use core::{cmp::min, num::NonZeroUsize};
 
 use alloc::collections::BinaryHeap;
 
@@ -36,14 +36,15 @@ use crate::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct SymDiffIterMap<T, V, VR, I>
+pub struct SymDiffIterMap<T, V, VR, I, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedStartsMap<T, V, VR>,
+    P: Iterator<Item = NonZeroUsize>,
 {
-    iter: I,
+    iter: AdjustPriorityMap<T, V, VR, I, P>,
     next_item: Option<RangeValue<T, V, VR>>,
     workspace: BinaryHeap<Priority<T, V, VR>>,
     workspace_next_end: Option<T>,
@@ -63,12 +64,13 @@ where
     ))
 }
 
-impl<T, V, VR, I> Iterator for SymDiffIterMap<T, V, VR, I>
+impl<T, V, VR, I, P> Iterator for SymDiffIterMap<T, V, VR, I, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedStartsMap<T, V, VR>,
+    P: Iterator<Item = NonZeroUsize>,
 {
     type Item = RangeValue<T, V, VR>;
 
@@ -92,7 +94,7 @@ where
                     //     next_item.range
                     // );
                     self.workspace_next_end = min_next_end(&self.workspace_next_end, &next_item);
-                    self.workspace.push(Priority(next_item));
+                    self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     // println!(
                     //     "cmk reading new self.next_item via .next() {:?}",
@@ -105,7 +107,7 @@ where
                 if next_start == *best.range.start() {
                     // Always push (this differs from UnionIterMap)
                     self.workspace_next_end = min_next_end(&self.workspace_next_end, &next_item);
-                    self.workspace.push(Priority(next_item));
+                    self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     continue; // return to top of the main processing loop
                 }
@@ -173,7 +175,6 @@ where
                         self.gather = Some(RangeValue::new(
                             *best.range.start()..=next_end,
                             best.value.clone_borrow(),
-                            None,
                         ));
                     } else {
                         debug_assert!(self.gather.is_none());
@@ -190,7 +191,6 @@ where
                     self.gather = Some(RangeValue::new(
                         *best.range.start()..=next_end,
                         best.value.clone_borrow(),
-                        None,
                     ));
                 } else {
                     debug_assert!(self.gather.is_none());
@@ -211,7 +211,7 @@ where
                 }
                 item.range = next_end + T::one()..=*item.range.end();
                 new_next_end = min_next_end(&new_next_end, &item);
-                new_workspace.push(Priority(item));
+                new_workspace.push(item);
             }
             self.workspace = new_workspace;
             self.workspace_next_end = new_next_end;
@@ -233,13 +233,14 @@ where
     }
 }
 
-impl<T, V, VR, L, R> BitXorAdjusted<T, V, VR, L, R>
+impl<T, V, VR, L, R, P> BitXorAdjusted<T, V, VR, L, R, P>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
+    P: Iterator<Item = NonZeroUsize>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.

@@ -52,7 +52,6 @@ where
     /// cmk doc
     pub value: VR,
     /// cmk doc
-    pub priority: Option<NonZeroUsize>,
     phantom: PhantomData<V>,
 }
 
@@ -63,11 +62,10 @@ where
     VR: CloneBorrow<V> + 'a,
 {
     /// cmk doc
-    pub fn new(range: RangeInclusive<T>, value: VR, priority: Option<NonZeroUsize>) -> Self {
+    pub fn new(range: RangeInclusive<T>, value: VR) -> Self {
         RangeValue {
             range,
             value,
-            priority,
             phantom: PhantomData,
         }
     }
@@ -79,8 +77,8 @@ where
     V: ValueOwned + 'a,
 {
     /// cmk doc
-    pub fn new_unique(range: RangeInclusive<T>, v: V, priority: Option<NonZeroUsize>) -> Self {
-        RangeValue::new(range, UniqueValue::new(v), priority)
+    pub fn new_unique(range: RangeInclusive<T>, v: V) -> Self {
+        RangeValue::new(range, UniqueValue::new(v))
     }
 }
 
@@ -333,9 +331,10 @@ where
     /// assert_eq!(union.to_string(), "1..=2");
     /// ```
     #[inline]
-    fn union<R>(self, other: R) -> BitOrAdjusted<T, V, VR, Self, R::IntoIter>
+    fn union<R, P>(self, other: R) -> BitOrAdjusted<T, V, VR, Self, R::IntoIter, P>
     where
         // cmk why must say SortedDisjointMap here by sorted_disjoint doesn't.
+        P: Iterator<Item = NonZeroUsize>,
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<T, V, VR>,
         Self: Sized,
@@ -457,12 +456,13 @@ where
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
     #[inline]
-    fn symmetric_difference<R>(self, other: R) -> BitXorAdjusted<T, V, VR, Self, R::IntoIter>
+    fn symmetric_difference<R, P>(self, other: R) -> BitXorAdjusted<T, V, VR, Self, R::IntoIter, P>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<T, V, VR>,
         Self: Sized,
         VR: Clone,
+        P: Iterator<Item = NonZeroUsize>,
     {
         SymDiffIterMap::new2(self, other.into_iter())
     }
@@ -892,11 +892,15 @@ where
 // the priority field is part of the wrapper, not RangeValue?
 
 #[derive(Clone)]
-pub struct Priority<T, V, VR>(pub RangeValue<T, V, VR>)
+pub struct Priority<T, V, VR>
 where
     T: Integer,
     V: ValueOwned,
-    VR: CloneBorrow<V>;
+    VR: CloneBorrow<V>,
+{
+    pub(crate) range_value: RangeValue<T, V, VR>,
+    pub(crate) priority: Option<NonZeroUsize>,
+}
 
 // Implement `PartialEq` to allow comparison (needed for `Eq`).
 impl<T, V, VR> PartialEq for Priority<T, V, VR>
@@ -988,7 +992,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
             .next()
-            .map(|range| RangeValue::new(range, self.value, None))
+            .map(|range| RangeValue::new(range, self.value))
     }
 }
 
@@ -1073,15 +1077,17 @@ macro_rules! impl_sorted_map_traits_and_ops0 {
             }
         }
 
-        impl<T, V, VR, I, R> ops::BitOr<R> for $IterType
+        // cmk000 may not need P -- instead use a concrete iterator type for P
+        impl<T, V, VR, I, R, P> ops::BitOr<R> for $IterType
         where
             T: Integer,
             V: ValueOwned,
             VR: CloneBorrow<V>,
             I: $TraitBound<T, V, VR>,
             R: SortedDisjointMap<T, V, VR>,
+            P: Iterator<Item = NonZeroUsize>,
         {
-            type Output = BitOrAdjusted<T, V, VR, Self, R>;
+            type Output = BitOrAdjusted<T, V, VR, Self, R, P>;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjointMap::union(self, other)
@@ -1173,7 +1179,7 @@ macro_rules! impl_sorted_map_traits_and_ops0 {
             }
         }
 
-        impl<T, V, VR, I0, I1, R> ops::BitOr<R> for $IterType
+        impl<T, V, VR, I0, I1, R, P> ops::BitOr<R> for $IterType
         where
             T: Integer,
             V: ValueOwned,
@@ -1181,8 +1187,9 @@ macro_rules! impl_sorted_map_traits_and_ops0 {
             I0: $TraitBound0<T, V, VR>,
             I1: $TraitBound1<T>,
             R: SortedDisjointMap<T, V, VR>,
+            P: Iterator<Item = NonZeroUsize>,
         {
-            type Output = BitOrAdjusted<T, V, VR, Self, R>;
+            type Output = BitOrAdjusted<T, V, VR, Self, R, P>;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjointMap::union(self, other)
@@ -1269,13 +1276,13 @@ macro_rules! impl_sorted_map_traits_and_ops1 {
             }
         }
 
-        impl<T, V, R> ops::BitOr<R> for $IterType
+        impl<T, V, R, P> ops::BitOr<R> for $IterType
         where
             T: Integer,
             V: ValueOwned,
             R: SortedDisjointMap<T, V, $VR>,
         {
-            type Output = BitOrAdjusted<T, V, $VR, Self, R>;
+            type Output = BitOrAdjusted<T, V, $VR, Self, R, P>;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjointMap::union(self, other)
@@ -1296,13 +1303,14 @@ macro_rules! impl_sorted_map_traits_and_ops1 {
             }
         }
 
-        impl<T, V, R> ops::BitXor<R> for $IterType
+        impl<T, V, R, P> ops::BitXor<R> for $IterType
         where
             T: Integer,
             V: ValueOwned,
             R: SortedDisjointMap<T, V, $VR>,
+            P: Iterator<Item = NonZeroUsize>,
         {
-            type Output = BitXorAdjusted<T, V, $VR, Self, R>;
+            type Output = BitXorAdjusted<T, V, $VR, Self, R, P>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
@@ -1353,13 +1361,14 @@ macro_rules! impl_sorted_map_traits_and_ops2 {
             }
         }
 
-        impl<'a, T, V, R> ops::BitOr<R> for $IterType
+        impl<'a, T, V, R, P> ops::BitOr<R> for $IterType
         where
             T: Integer,
             V: ValueOwned,
             R: SortedDisjointMap<T, V, $VR>,
+            P: Iterator<Item = NonZeroUsize>,
         {
-            type Output = BitOrAdjusted<T, V, $VR, Self, R>;
+            type Output = BitOrAdjusted<T, V, $VR, Self, R, P>;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjointMap::union(self, other)
@@ -1380,13 +1389,14 @@ macro_rules! impl_sorted_map_traits_and_ops2 {
             }
         }
 
-        impl<'a, T, V, R> ops::BitXor<R> for $IterType
+        impl<'a, T, V, R, P> ops::BitXor<R> for $IterType
         where
             T: Integer,
             V: ValueOwned,
             R: SortedDisjointMap<T, V, $VR>,
+            P: Iterator<Item = NonZeroUsize>,
         {
-            type Output = BitXorAdjusted<T, V, $VR, Self, R>;
+            type Output = BitXorAdjusted<T, V, $VR, Self, R, P>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
@@ -1411,8 +1421,8 @@ macro_rules! impl_sorted_map_traits_and_ops2 {
 }
 // cmk0 should there be a CheckSortedDisjointMap? AssumeSortedDisjointMap?
 
-impl_sorted_map_traits_and_ops0!(UnionIterMap<T, V, VR, I>, SortedStartsMap);
-impl_sorted_map_traits_and_ops0!(SymDiffIterMap<T, V, VR, I>, SortedStartsMap);
+impl_sorted_map_traits_and_ops0!(UnionIterMap<T, V, VR, I, P>, SortedStartsMap);
+impl_sorted_map_traits_and_ops0!(SymDiffIterMap<T, V, VR, I, P>, SortedStartsMap);
 impl_sorted_map_traits_and_ops0!(
     IntersectionIterMap< T, V, VR, I0, I1>,
     SortedDisjointMap,

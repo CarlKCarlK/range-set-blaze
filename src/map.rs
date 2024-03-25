@@ -1,7 +1,9 @@
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::iter_map::IntoIterMap;
 use crate::iter_map::{IterMap, KeysMap};
-use crate::range_values::{IntoRangeValuesIter, RangeValuesIter, RangeValuesToRangesIter};
+use crate::range_values::{
+    AdjustPriorityMap, IntoRangeValuesIter, RangeValuesIter, RangeValuesToRangesIter,
+};
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use alloc::borrow::ToOwned;
 #[cfg(feature = "std")]
@@ -1653,6 +1655,10 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
     where
         I: IntoIterator<Item = (RangeInclusive<T>, V)>,
     {
+        // cmk use the (yet to be created) 1..MAX or MAX..1 iterator
+        let iter = iter.into_iter();
+        let priority_iter = non_zero_enumerate();
+        let iter = AdjustPriorityMap(iter, priority_iter);
         let iter = iter
             .into_iter()
             .non_zero_enumerate()
@@ -2003,7 +2009,7 @@ where
     {
         let iter = iter.into_iter();
         for range_value in
-            UnsortedDisjointMap::from(iter.map(|(r, v)| RangeValue::new_unique(r..=r, v, None)))
+            UnsortedDisjointMap::from(iter.map(|(r, v)| RangeValue::new_unique(r..=r, v)))
         {
             let range = range_value.range;
             let value = range_value.value.borrow_clone();
