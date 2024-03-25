@@ -21,7 +21,7 @@ use std::{
 }; // , time::Instant
    // use sorted_iter::assume::AssumeSortedByKeyExt;
    // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
-use crate::lib2::MultiwayRangeSetBlaze;
+use crate::range_set_blaze::MultiwayRangeSetBlaze;
 use syntactic_for::syntactic_for;
 use tests_common::{How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
@@ -533,11 +533,11 @@ fn custom_multi() {
 
     let union_stream = b.ranges() | c.ranges();
     let a_less = a.ranges() - union_stream;
-    let d: RangeSetBlaze<_> = a_less.into_range_set_blaze2();
+    let d: RangeSetBlaze<_> = a_less.into_range_set_blaze();
     println!("{d}");
 
     let d: RangeSetBlaze<_> =
-        (a.ranges() - [b.ranges(), c.ranges()].union()).into_range_set_blaze2();
+        (a.ranges() - [b.ranges(), c.ranges()].union()).into_range_set_blaze();
     println!("{d}");
 }
 
@@ -569,11 +569,9 @@ fn parity() {
         RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
     let _d = [a.ranges()].intersection();
-    let _parity: RangeSetBlaze<u8> = [[a.ranges()].intersection()]
-        .union()
-        .into_range_set_blaze2();
-    let _parity: RangeSetBlaze<u8> = [a.ranges()].intersection().into_range_set_blaze2();
-    let _parity: RangeSetBlaze<u8> = [a.ranges()].union().into_range_set_blaze2();
+    let _parity: RangeSetBlaze<u8> = [[a.ranges()].intersection()].union().into_range_set_blaze();
+    let _parity: RangeSetBlaze<u8> = [a.ranges()].intersection().into_range_set_blaze();
+    let _parity: RangeSetBlaze<u8> = [a.ranges()].union().into_range_set_blaze();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
@@ -639,7 +637,7 @@ fn empty() {
     let c1b = &a | b.clone();
     let c1c = a.clone() | &b;
     let c1d = a.clone() | b.clone();
-    let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze2();
+    let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze();
     c3.append(&mut b.clone());
     c5.extend(b);
 
@@ -737,7 +735,7 @@ fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
 fn is_like_btreeset_iter<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
 // removed DoubleEndedIterator +ExactSizeIterator for now
 
-// cmk1 add other
+// cmk add others iterators and test
 // #[test]
 // fn iter_traits() {
 //     type ARangesIter<'a> = RangesIter<'a, i32>;

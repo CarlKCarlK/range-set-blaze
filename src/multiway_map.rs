@@ -254,11 +254,7 @@ where
         let iter_map = iter
             .next()
             .expect("The intersection of 0 maps is undefined.");
-        // cmk100000000000000
-        let iter_set = iter
-            .map(|x| RangeValuesToRangesIter::new(x))
-            .intersection2();
-
+        let iter_set = iter.map(|x| RangeValuesToRangesIter::new(x)).intersection();
         IntersectionIterMap::new(iter_map, iter_set)
     }
 }

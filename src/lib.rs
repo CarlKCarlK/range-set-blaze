@@ -35,11 +35,11 @@ mod intersection_iter_map;
 
 /// cmk doc
 mod iter_map;
-pub mod lib2;
 mod map;
 mod merge;
-pub use crate::lib2::RangeSetBlaze;
-use crate::lib2::SortedDisjointToUnitMap;
+pub mod range_set_blaze;
+pub use crate::range_set_blaze::RangeSetBlaze;
+use crate::range_set_blaze::SortedDisjointToUnitMap;
 mod not_iter;
 pub mod prelude;
 pub mod range_values;
@@ -52,10 +52,10 @@ mod sorted_disjoint;
 use intersection_iter_map::IntersectionIterMap;
 mod sym_diff_iter_map;
 use itertools::Tee;
-use lib2::UnitMapToSortedDisjoint;
 use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
+use range_set_blaze::UnitMapToSortedDisjoint;
 use range_values::AdjustPriorityMap;
 use range_values::RangeValuesToRangesIter;
 use sym_diff_iter_map::SymDiffIterMap;
@@ -1874,14 +1874,6 @@ where
     /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
     /// ```
     fn intersection(self) -> BitAndKMerge<T, I> {
-        self.into_iter()
-            .map(|seq| seq.into_iter().complement())
-            .union()
-            .complement()
-    }
-
-    /// cmk1000000000000
-    fn intersection2(self) -> BitAndKMerge<T, I> {
         self.into_iter()
             .map(|seq| seq.into_iter().complement())
             .union()

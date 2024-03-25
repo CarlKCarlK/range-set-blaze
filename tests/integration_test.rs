@@ -275,13 +275,13 @@ fn custom_multi() -> Result<(), Box<dyn std::error::Error>> {
 
     let union_stream = b.ranges() | c.ranges();
     let a_less = a.ranges().difference(union_stream);
-    let d: RangeSetBlaze<_> = a_less.into_range_set_blaze2();
+    let d: RangeSetBlaze<_> = a_less.into_range_set_blaze();
     println!("{d}");
 
     let d: RangeSetBlaze<_> = a
         .ranges()
         .difference([b.ranges(), c.ranges()].union())
-        .into_range_set_blaze2();
+        .into_range_set_blaze();
     println!("{d}");
     Ok(())
 }
@@ -316,11 +316,9 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
         RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
     let _d = [a.ranges()].intersection();
-    let _parity: RangeSetBlaze<u8> = [[a.ranges()].intersection()]
-        .union()
-        .into_range_set_blaze2();
-    let _parity: RangeSetBlaze<u8> = [a.ranges()].intersection().into_range_set_blaze2();
-    let _parity: RangeSetBlaze<u8> = [a.ranges()].union().into_range_set_blaze2();
+    let _parity: RangeSetBlaze<u8> = [[a.ranges()].intersection()].union().into_range_set_blaze();
+    let _parity: RangeSetBlaze<u8> = [a.ranges()].intersection().into_range_set_blaze();
+    let _parity: RangeSetBlaze<u8> = [a.ranges()].union().into_range_set_blaze();
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
@@ -511,7 +509,7 @@ fn empty_it() {
     let c1b = &a | b.clone();
     let c1c = a.clone() | &b;
     let c1d = a.clone() | b.clone();
-    let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze2();
+    let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze();
     c3.append(&mut b.clone());
     c5.extend(b);
 
@@ -613,7 +611,7 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     _range_set_int = [5..=6, 1..=5].into_iter().collect();
     _range_set_int = RangeSetBlaze::from_iter([5..=6, 1..=5]);
     // #16 into / from iter (T,T) + SortedDisjoint
-    _range_set_int = _range_set_int.ranges().into_range_set_blaze2();
+    _range_set_int = _range_set_int.ranges().into_range_set_blaze();
     _range_set_int = RangeSetBlaze::from_sorted_disjoint(_range_set_int.ranges());
 
     let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10]);
@@ -673,7 +671,7 @@ fn k_play(c: &mut Criterion) {
                 },
                 |sets| {
                     let sets = sets.iter().map(|x| DynSortedDisjoint::new(x.ranges()));
-                    let _answer: RangeSetBlaze<_> = sets.intersection().into_range_set_blaze2();
+                    let _answer: RangeSetBlaze<_> = sets.intersection().into_range_set_blaze();
                 },
                 BatchSize::SmallInput,
             );
@@ -1219,7 +1217,7 @@ fn range_set_int_constructors() {
     // If we know the ranges are sorted and disjoint, we can use 'from'/'into'.
     let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
     let a1: RangeSetBlaze<i32> =
-        CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze2();
+        CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 
     // For compatibility with `BTreeSet`, we also support

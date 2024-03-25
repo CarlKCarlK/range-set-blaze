@@ -42,7 +42,7 @@ fn range_set_blaze() {
     let c1b = &a | b.clone();
     let c1c = a.clone() | &b;
     let c1d = a.clone() | b.clone();
-    let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze2();
+    let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze();
     c3.append(&mut b.clone());
     c5.extend(b);
 

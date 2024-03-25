@@ -569,7 +569,7 @@ fn map_repro_bit_or() {
     let b = RangeSetBlaze::from_iter([2u8, 3, 4]);
 
     let result = a.ranges().union(b.ranges());
-    let result = result.into_range_set_blaze2();
+    let result = result.into_range_set_blaze();
     println!("{result}");
     assert_eq!(result, RangeSetBlaze::from_iter([1u8, 2, 3, 4]));
 
@@ -603,7 +603,7 @@ fn map_repro_bit_and() {
     let b = RangeSetBlaze::from_iter([2u8, 3, 4]);
 
     let result = a.ranges().intersection(b.ranges());
-    let result = result.into_range_set_blaze2();
+    let result = result.into_range_set_blaze();
     println!("{result}");
     assert_eq!(result, RangeSetBlaze::from_iter([2, 3]));
 

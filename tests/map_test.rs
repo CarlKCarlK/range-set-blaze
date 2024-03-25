@@ -53,8 +53,8 @@ fn map_map_operators() {
     let bdm = brm.range_values();
     let ads = arm.ranges();
     let bds = brm.ranges();
-    let ars = ads.into_range_set_blaze2();
-    let brs = bds.into_range_set_blaze2();
+    let ars = ads.into_range_set_blaze();
+    let brs = bds.into_range_set_blaze();
 
     // RangeSetBlaze
     // union, intersection, difference, symmetric_difference, complement
@@ -443,7 +443,6 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     let a = &RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
     let b = &RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
     let c = &RangeMapBlaze::from_iter([(38..=42, 'c')]);
-    // cmk00 why doesn't range_set_map version of this need the borrow "&"
     assert_eq!(
         a & b.complement_with('B') & c.complement_with('C')
             | a.complement_with('A') & b & c.complement_with('C')
@@ -2167,7 +2166,7 @@ pub fn play_movie(frames: RangeMapBlaze<i32, String>, fps: i32, skip_sleep: bool
     // cmk could look for missing frames
     let sleep_duration = Duration::from_secs(1) / fps as u32;
     // For every frame index (index) from 0 to the largest index in the frames ...
-    for index in 0..=frames.ranges().into_range_set_blaze2().last().unwrap() {
+    for index in 0..=frames.ranges().into_range_set_blaze().last().unwrap() {
         // Look up the frame at that index (panic if none exists)
         let frame = frames.get(index).unwrap_or_else(|| {
             panic!("frame {} not found", index);

@@ -1965,7 +1965,7 @@ gen_ops_ex!(
 
 /// cmk
 for ! call |a: &RangeMapBlaze<T, V>| {
-    a.ranges().complement().into_range_set_blaze2()
+    a.ranges().complement().into_range_set_blaze()
 };
 where T: Integer, V: ValueOwned
 );

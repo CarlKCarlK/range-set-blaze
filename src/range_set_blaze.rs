@@ -364,7 +364,6 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     // cmk make this and all similar method into iter instead of iter.
 
-    // cmk10
     /// Create a [`RangeSetBlaze`] from a [`SortedDisjoint`] iterator.
     ///
     /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
@@ -1274,7 +1273,7 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     fn from(arr: [T; N]) -> Self {
         arr.into_iter().collect()
     }
-    // cmk1000
+    // cmk
     // #[cfg(feature = "from_slice")]
     // fn from(arr: [T; N]) -> Self {
     //     Self::from_slice(arr)
@@ -1327,7 +1326,7 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
 //     NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
 // >;
 
-// cmk100
+// cmk1
 // impl<T, I> MultiwayRangeSetBlazeRef<T> for I
 // where
 //     T: Integer,
@@ -1482,12 +1481,11 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
     ///
     /// assert_eq!(intersection, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
     /// ```
-    // cmk10000000000000000
     fn intersection(self) -> RangeSetBlaze<T> {
         self.into_iter()
             .map(RangeSetBlaze::ranges)
             .intersection()
-            .into_range_set_blaze2()
+            .into_range_set_blaze()
     }
 }
 
@@ -1623,7 +1621,6 @@ gen_ops_ex!(
     /// assert_eq!(result.to_string(), "1..=1, 7..=100");
     /// ```
     for - call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-        // cmk100
         let range_set_map = &a.0 - &b.0;
         RangeSetBlaze(range_set_map)
     };
@@ -1650,7 +1647,7 @@ gen_ops_ex!(
     /// );
     /// ```
     for ! call |a: &RangeSetBlaze<T>| {
-        (!a.ranges()).into_range_set_blaze2()
+        (!a.ranges()).into_range_set_blaze()
     };
 
     where T: Integer //Where clause for all impl's
@@ -1839,10 +1836,8 @@ impl<T: Integer> BitOrAssign<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
         }
         let b_len = other.ranges_len();
         if b_len * (a_len.ilog2() as usize + 1) < a_len + b_len {
-            // cmk10000
             self.extend(other.ranges());
         } else {
-            // cmk1000
             self.0 = &self.0 | &other.0;
         }
     }
@@ -1870,7 +1865,6 @@ impl<T: Integer> BitOrAssign<RangeSetBlaze<T>> for RangeSetBlaze<T> {
     fn bitor_assign(&mut self, mut other: Self) {
         let a_len = self.ranges_len();
         let b_len = other.ranges_len();
-        // cmk1000000
         if b_len <= a_len {
             *self |= &other;
         } else {
@@ -1896,7 +1890,6 @@ impl<T: Integer> BitOr<RangeSetBlaze<T>> for RangeSetBlaze<T> {
     /// ```
     type Output = RangeSetBlaze<T>;
     fn bitor(mut self, other: Self) -> RangeSetBlaze<T> {
-        // cmk1000
         self |= other;
         self
     }
@@ -1918,7 +1911,6 @@ impl<T: Integer> BitOr<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
     /// ```
     type Output = RangeSetBlaze<T>;
     fn bitor(mut self, other: &Self) -> RangeSetBlaze<T> {
-        // cmk10000
         self |= other;
         self
     }
@@ -1940,7 +1932,6 @@ impl<T: Integer> BitOr<RangeSetBlaze<T>> for &RangeSetBlaze<T> {
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor(self, mut other: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
-        // cmk1000
         other |= self;
         other
     }
@@ -1962,7 +1953,6 @@ impl<T: Integer> BitOr<&RangeSetBlaze<T>> for &RangeSetBlaze<T> {
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor(self, other: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
-        // cmk10000
         let range_set_map = &self.0 | &other.0;
         RangeSetBlaze(range_set_map)
     }

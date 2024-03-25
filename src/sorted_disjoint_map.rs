@@ -1427,7 +1427,3 @@ impl_sorted_map_traits_and_ops2!(RangeValuesIter<'a, T, V>, &'a V);
 // impl_sorted_traits_and_ops!(RangesIter<'_, T>);
 // impl_sorted_traits_and_ops!(IntoRangesIter<T>);
 // impl_sorted_traits_and_ops!(NotIter<T, I>, SortedDisjoint);
-//
-
-// // cmk0 If we want this to work, we need to wrap Tee
-// // impl_sorted_traits_and_ops!(Tee<I>, SortedDisjoint);

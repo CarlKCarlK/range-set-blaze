@@ -1,5 +1,5 @@
 use crate::{
-    lib2::SortedStartsToUnitMap, Integer, RangeMapBlaze, RangeSetBlaze, SortedDisjoint,
+    range_set_blaze::SortedStartsToUnitMap, Integer, RangeMapBlaze, RangeSetBlaze, SortedDisjoint,
     SortedStarts,
 };
 use core::{

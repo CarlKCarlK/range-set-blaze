@@ -1,6 +1,6 @@
-use crate::lib2::UnitMapToSortedDisjoint;
+use crate::range_set_blaze::UnitMapToSortedDisjoint;
 use crate::{
-    impl_sorted_traits_and_ops0, lib2::SortedDisjointToUnitMap,
+    impl_sorted_traits_and_ops0, range_set_blaze::SortedDisjointToUnitMap,
     range_values::RangeValuesToRangesIter, RangeSetBlaze,
 };
 use alloc::format;
@@ -525,7 +525,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
-    fn into_range_set_blaze2(self) -> RangeSetBlaze<T>
+    fn into_range_set_blaze(self) -> RangeSetBlaze<T>
     where
         Self: Sized,
     {
@@ -723,8 +723,6 @@ macro_rules! impl_sorted_traits_and_ops0 {
             }
         }
 
-        // cmk0
-        // // cmk0 is 'static the right lifetime?
         impl<T, I, R> ops::BitXor<R> for $IterType
         where
             T: Integer,
@@ -878,7 +876,6 @@ macro_rules! impl_sorted_traits_and_ops1 {
             }
         }
 
-        // cmk0
         impl<T, V, VR, I, R> ops::BitXor<R> for $IterType
         where
             T: Integer,
@@ -956,7 +953,6 @@ macro_rules! impl_sorted_traits_and_ops2 {
             }
         }
 
-        // cmk0
         impl<T, R> ops::BitXor<R> for $IterType
         where
             T: Integer,
@@ -1028,7 +1024,6 @@ macro_rules! impl_sorted_traits_and_ops3 {
             }
         }
 
-        // cmk0
         impl<'a, T, R> ops::BitXor<R> for $IterType
         where
             T: Integer,
@@ -1064,6 +1059,3 @@ impl_sorted_traits_and_ops2!(IntoRangesIter<T>);
 impl_sorted_traits_and_ops3!(RangesIter<'a, T>);
 
 // cmk0 is there an AssumeSortedDisjoint?
-
-// cmk0 If we want this to work, we need to wrap Tee
-// impl_sorted_traits_and_ops!(Tee<I>, SortedDisjoint);
