@@ -1803,9 +1803,9 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
         I: IntoIterator<Item = T>,
     {
         let iter = iter.into_iter();
-        let unsorted = UnsortedDisjointMap::from(iter.map(|x| RangeValue::new(x..=x, &(), None)));
-        for range_value in unsorted {
-            self.0.internal_add(range_value.range, ());
+        let unsorted = UnsortedDisjointMap::from(iter.map(|x| RangeValue::new(x..=x, &())));
+        for priority in unsorted {
+            self.0.internal_add(priority.range_value.range, ());
         }
     }
 }
@@ -2143,9 +2143,7 @@ where
 {
     type Item = RangeValue<T, (), &'static ()>;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter
-            .next()
-            .map(|range| RangeValue::new(range, &(), None))
+        self.iter.next().map(|range| RangeValue::new(range, &()))
     }
 }
 
@@ -2197,9 +2195,7 @@ where
 {
     type Item = RangeValue<T, (), &'static ()>;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter
-            .next()
-            .map(|range| RangeValue::new(range, &(), None))
+        self.iter.next().map(|range| RangeValue::new(range, &()))
     }
 }
 
@@ -2282,23 +2278,13 @@ pub fn set_to_map() {
             i32,
             (),
             &(),
-            crate::range_values::AdjustPriorityMap<
+            SortedDisjointToUnitMap<
                 i32,
-                (),
-                &(),
-                SortedDisjointToUnitMap<
-                    i32,
-                    RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
-                >,
+                RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
             >,
-            crate::range_values::AdjustPriorityMap<
+            SortedDisjointToUnitMap<
                 i32,
-                (),
-                &(),
-                SortedDisjointToUnitMap<
-                    i32,
-                    RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
-                >,
+                RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
             >,
         >,
     > = left.symmetric_difference(right);

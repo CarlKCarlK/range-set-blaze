@@ -56,7 +56,7 @@ use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
 use range_set_blaze::UnitMapToSortedDisjoint;
-use range_values::AdjustPriorityMap;
+use range_values::NonZeroEnumerate;
 use range_values::RangeValuesToRangesIter;
 use sym_diff_iter_map::SymDiffIterMap;
 mod multiway_map;
@@ -1589,28 +1589,16 @@ pub trait Integer:
 #[doc(hidden)]
 pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
-pub type BitOrMergeMap<T, V, VR, L, R, P> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R, P>, P>;
+pub type BitOrMergeMap<T, V, VR, L, R> =
+    UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>, NonZeroEnumerate>;
 #[doc(hidden)]
-pub type BitOrAdjusted<T, V, VR, L, R, P> = BitOrMergeMap<
-    T,
-    V,
-    VR,
-    AdjustPriorityMap<T, V, VR, L, P>,
-    AdjustPriorityMap<T, V, VR, R, P>,
-    P,
->;
+pub type BitOrAdjusted<T, V, VR, L, R> = BitOrMergeMap<T, V, VR, L, R>;
 
 #[doc(hidden)]
-pub type BitXorAdjusted<T, V, VR, L, R, P> = SymDiffIterMap<
-    T,
-    V,
-    VR,
-    MergeMap<T, V, VR, AdjustPriorityMap<T, V, VR, L, P>, AdjustPriorityMap<T, V, VR, R, P>, P>,
-    P,
->;
+pub type BitXorAdjusted<T, V, VR, L, R> = SymDiffIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
 
 #[doc(hidden)]
-pub type BitXorOldNew<T, L, R, P> = UnitMapToSortedDisjoint<
+pub type BitXorOldNew<T, L, R> = UnitMapToSortedDisjoint<
     T,
     BitXorAdjusted<
         T,
@@ -1618,14 +1606,13 @@ pub type BitXorOldNew<T, L, R, P> = UnitMapToSortedDisjoint<
         &'static (),
         SortedDisjointToUnitMap<T, L>,
         SortedDisjointToUnitMap<T, R>,
-        P,
     >,
 >;
 
 #[doc(hidden)]
 pub type BitOrKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
 #[doc(hidden)]
-pub type BitOrKMergeMap<T, V, VR, I, P> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I, P>, P>;
+pub type BitOrKMergeMap<T, V, VR, I, P> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I>, P>;
 #[doc(hidden)]
 pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
 #[doc(hidden)]

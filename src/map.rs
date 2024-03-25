@@ -2,7 +2,8 @@ use crate::intersection_iter_map::IntersectionIterMap;
 use crate::iter_map::IntoIterMap;
 use crate::iter_map::{IterMap, KeysMap};
 use crate::range_values::{
-    AdjustPriorityMap, IntoRangeValuesIter, RangeValuesIter, RangeValuesToRangesIter,
+    AdjustPriorityMap, IntoRangeValuesIter, NonZeroEnumerate, RangeValuesIter,
+    RangeValuesToRangesIter,
 };
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use alloc::borrow::ToOwned;
@@ -11,7 +12,6 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 // use crate::range_values::RangeValuesIter;
-use crate::range_values::NonZeroEnumerateExt;
 use crate::sorted_disjoint_map::SortedDisjointMap;
 use crate::sorted_disjoint_map::{DebugToString, RangeValue};
 use crate::union_iter_map::UnionIterMap;
@@ -1629,7 +1629,7 @@ where
         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
         let iter = iter.into_iter();
-        let union_iter_map = UnionIterMap::<T, V, &V, _>::from_iter(iter);
+        let union_iter_map = UnionIterMap::<T, V, &V, _, NonZeroEnumerate>::from_iter(iter);
         Self::from_sorted_disjoint_map(union_iter_map)
     }
 }
@@ -1657,12 +1657,8 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
     {
         // cmk use the (yet to be created) 1..MAX or MAX..1 iterator
         let iter = iter.into_iter();
-        let priority_iter = non_zero_enumerate();
-        let iter = AdjustPriorityMap(iter, priority_iter);
-        let iter = iter
-            .into_iter()
-            .non_zero_enumerate()
-            .map(|(priority, (r, v))| RangeValue::new_unique(r.clone(), v, Some(priority)));
+        let priority_iter = NonZeroEnumerate::new();
+        let iter = AdjustPriorityMap::new(iter, priority_iter);
         let union_iter_map = UnionIterMap::<T, V, UniqueValue<V>, _>::from_iter(iter);
         Self::from_sorted_disjoint_map(union_iter_map)
     }

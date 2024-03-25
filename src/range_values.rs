@@ -5,16 +5,11 @@ use crate::{
     Integer,
 };
 use alloc::{collections::btree_map, rc::Rc};
-use core::{
-    iter::{Enumerate, FusedIterator},
-    marker::PhantomData,
-    num::NonZeroUsize,
-    ops::RangeInclusive,
-};
+use core::{iter::FusedIterator, marker::PhantomData, num::NonZeroUsize, ops::RangeInclusive};
 
 use crate::{
     map::{EndValue, ValueOwned},
-    sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap},
+    sorted_disjoint_map::SortedDisjointMap,
 };
 
 /// An iterator that visits the ranges in the [`RangeSetBlaze`],
@@ -370,30 +365,36 @@ where
 
 // cmk000 make a new iterator that counts from 1..=usize::MAX or MAX..=1
 
-// cmk000 likely don't need this any more
-pub struct NonZeroEnumerate<I>
-where
-    I: Iterator,
-{
-    inner: Enumerate<I>,
+pub struct NonZeroEnumerate {
     current_index: NonZeroUsize, // Start from 1
 }
 
-impl<I> Iterator for NonZeroEnumerate<I>
-where
-    I: Iterator,
-{
-    type Item = (NonZeroUsize, I::Item);
+impl Iterator for NonZeroEnumerate {
+    type Item = NonZeroUsize;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let (_, item) = self.inner.next()?;
         let index = self.current_index;
 
         // Increment the current index, panic on overflow
         self.current_index = non_zero_checked_sub(self.current_index, 1)
             .expect_debug_unwrap_release("Overflow when incrementing NonZeroUsize index");
 
-        Some((index, item))
+        Some(index)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct NonZeroConstant {
+    pub(crate) priority_number: NonZeroUsize,
+}
+// cmk0 make a "new"
+// cmk0 maybe give these better names
+
+impl Iterator for NonZeroConstant {
+    type Item = NonZeroUsize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(self.priority_number)
     }
 }
 
@@ -404,21 +405,6 @@ pub fn non_zero_checked_sub(value: NonZeroUsize, subtrahend: usize) -> Option<No
         .checked_sub(subtrahend)
         .and_then(NonZeroUsize::new)
 }
-
-pub(crate) trait NonZeroEnumerateExt: Iterator + Sized {
-    fn non_zero_enumerate(self) -> NonZeroEnumerate<Self> {
-        NonZeroEnumerate {
-            inner: self.enumerate(),
-            current_index: NonZeroUsize::MAX,
-        }
-    }
-}
-
-impl<I: Iterator> NonZeroEnumerateExt for I {}
-
-// cmk why bother with this?
-pub(crate) const NON_ZERO_MIN: NonZeroUsize = NonZeroUsize::MIN;
-pub(crate) const NON_ZERO_MAX: NonZeroUsize = NonZeroUsize::MAX;
 
 pub(crate) trait ExpectDebugUnwrapRelease<T> {
     fn expect_debug_unwrap_release(self, msg: &str) -> T;
@@ -462,8 +448,14 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|mut range_value| {
-            range_value.priority = self.new_priority;
-            range_value
+            let priority_number = self.priority_iter.next().expect_debug_unwrap_release(
+                "Priority iterator exhausted before range values iterator",
+            );
+            let priority = Priority {
+                range_value,
+                priority: Some(priority_number),
+            };
+            priority
         })
     }
 }

@@ -4,7 +4,7 @@ use alloc::collections::BinaryHeap;
 
 use crate::{
     map::{CloneBorrow, ValueOwned},
-    range_values::{AdjustPriorityMap, NON_ZERO_MAX, NON_ZERO_MIN},
+    range_values::{AdjustPriorityMap, NonZeroEnumerate},
     sorted_disjoint_map::Priority,
     BitXorAdjusted, Integer, MergeMap, RangeValue, SortedDisjointMap, SortedStartsMap,
 };
@@ -36,15 +36,14 @@ use crate::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct SymDiffIterMap<T, V, VR, I, P>
+pub struct SymDiffIterMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedStartsMap<T, V, VR>,
-    P: Iterator<Item = NonZeroUsize>,
 {
-    iter: AdjustPriorityMap<T, V, VR, I, P>,
+    iter: AdjustPriorityMap<T, V, VR, I, NonZeroEnumerate>,
     next_item: Option<RangeValue<T, V, VR>>,
     workspace: BinaryHeap<Priority<T, V, VR>>,
     workspace_next_end: Option<T>,
@@ -64,13 +63,12 @@ where
     ))
 }
 
-impl<T, V, VR, I, P> Iterator for SymDiffIterMap<T, V, VR, I, P>
+impl<T, V, VR, I> Iterator for SymDiffIterMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedStartsMap<T, V, VR>,
-    P: Iterator<Item = NonZeroUsize>,
 {
     type Item = RangeValue<T, V, VR>;
 
@@ -233,20 +231,19 @@ where
     }
 }
 
-impl<T, V, VR, L, R, P> BitXorAdjusted<T, V, VR, L, R, P>
+impl<T, V, VR, L, R> BitXorAdjusted<T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
-    P: Iterator<Item = NonZeroUsize>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
     pub fn new2(left: L, right: R) -> Self {
-        let left = AdjustPriorityMap::new(left, Some(NON_ZERO_MAX));
-        let right = AdjustPriorityMap::new(right, Some(NON_ZERO_MIN));
+        let left = AdjustPriorityMap::new(left, Some(NonZeroUsize::MAX));
+        let right = AdjustPriorityMap::new(right, Some(NonZeroUsize::MIN));
         let mut iter = MergeMap::new(left, right);
         let item = iter.next();
         Self {

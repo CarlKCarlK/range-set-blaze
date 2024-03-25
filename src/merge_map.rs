@@ -5,11 +5,13 @@ use core::num::NonZeroUsize;
 use itertools::{Itertools, KMergeBy, MergeBy};
 
 use crate::map::{CloneBorrow, ValueOwned};
-use crate::range_values::{non_zero_checked_sub, AdjustPriorityMap};
+use crate::range_values::{
+    non_zero_checked_sub, AdjustPriorityMap, NonZeroConstant, NonZeroEnumerate,
+};
 use crate::Integer;
 use alloc::borrow::ToOwned;
 
-use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap};
+use crate::sorted_disjoint_map::{Priority, RangeValue, SortedDisjointMap, SortedStartsMap};
 
 /// Works with [`UnionIter`] to turn any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
 /// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
@@ -37,20 +39,23 @@ use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap}
 /// assert_eq!(c.to_string(), "1..=100")
 /// ```
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct MergeMap<T, V, VR, L, R, P>
+pub struct MergeMap<T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
-    P: Iterator<Item = NonZeroUsize>,
 {
     #[allow(clippy::type_complexity)]
-    iter: MergeBy<L, R, fn(&RangeValue<T, V, VR>, &RangeValue<T, V, VR>) -> bool>,
+    iter: MergeBy<
+        AdjustPriorityMap<T, V, VR, L, NonZeroEnumerate>,
+        AdjustPriorityMap<T, V, VR, R, NonZeroEnumerate>,
+        fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
+    >,
 }
 
-impl<T, V, VR, L, R, P> MergeMap<T, V, VR, L, R, P>
+impl<T, V, VR, L, R> MergeMap<T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned,
@@ -58,20 +63,21 @@ where
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
     <V as ToOwned>::Owned: PartialEq, // cmk is this needed?
-    P: Iterator<Item = NonZeroUsize>,
 {
     /// Creates a new [`MergeMap`] iterator from two [`SortedDisjointMap`] iterators. See [`MergeMap`] for more details and examples.
     pub fn new(
-        left: AdjustPriorityMap<T, V, VR, L, P>,
-        right: AdjustPriorityMap<T, V, VR, R, P>,
+        left: AdjustPriorityMap<T, V, VR, L, NonZeroEnumerate>, // cmk000
+        right: AdjustPriorityMap<T, V, VR, R, NonZeroEnumerate>, // cmk000
     ) -> Self {
         Self {
-            iter: left.merge_by(right, |a, b| a.range.start() < b.range.start()),
+            iter: left.merge_by(right, |a, b| {
+                a.range_value.range.start() < b.range_value.range.start()
+            }),
         }
     }
 }
 
-impl<T, V, VR, L, R, P> FusedIterator for MergeMap<T, V, VR, L, R, P>
+impl<T, V, VR, L, R> FusedIterator for MergeMap<T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned,
@@ -79,11 +85,10 @@ where
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
     <V as ToOwned>::Owned: PartialEq, // cmk is this needed?
-    P: Iterator<Item = NonZeroUsize>,
 {
 }
 
-impl<T, V, VR, L, R, P> Iterator for MergeMap<T, V, VR, L, R, P>
+impl<T, V, VR, L, R> Iterator for MergeMap<T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned,
@@ -91,12 +96,11 @@ where
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
     <V as ToOwned>::Owned: PartialEq, // cmk is this needed?
-    P: Iterator<Item = NonZeroUsize>,
 {
     type Item = RangeValue<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        self.iter.next().map(|x| x.range_value)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -104,7 +108,7 @@ where
     }
 }
 
-impl<T, V, VR, L, R, P> SortedStartsMap<T, V, VR> for MergeMap<T, V, VR, L, R, P>
+impl<T, V, VR, L, R> SortedStartsMap<T, V, VR> for MergeMap<T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned,
@@ -112,7 +116,6 @@ where
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
     <V as ToOwned>::Owned: PartialEq, // cmk is this needed?
-    P: Iterator<Item = NonZeroUsize>,
 {
 }
 
@@ -143,30 +146,28 @@ where
 /// let union = [a, b, c].union();
 /// assert_eq!(union.to_string(), "-1..=-1, 1..=100");
 /// ```
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct KMergeMap<T, V, VR, I, P>
+pub struct KMergeMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
-    P: Iterator<Item = NonZeroUsize>,
 {
     #[allow(clippy::type_complexity)]
     iter: KMergeBy<
-        AdjustPriorityMap<T, V, VR, I, P>,
-        fn(&RangeValue<T, V, VR>, &RangeValue<T, V, VR>) -> bool,
+        AdjustPriorityMap<T, V, VR, I, NonZeroConstant>,
+        fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
     >,
 }
 
-impl<T, V, VR, I, P> KMergeMap<T, V, VR, I, P>
+impl<T, V, VR, I> KMergeMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
-    P: Iterator<Item = NonZeroUsize>,
 {
     /// Creates a new [`KMergeMap`] iterator from zero or more [`SortedDisjointMap`] iterators. See [`KMergeMap`] for more details and examples.
     pub fn new<J>(iter: J) -> Self
@@ -175,44 +176,49 @@ where
     {
         // Prioritize from left to right
         let iter = iter.into_iter().enumerate().map(|(i, x)| {
-            let priority = non_zero_checked_sub(NonZeroUsize::MAX, i).unwrap();
-            AdjustPriorityMap::new(x, Some(priority))
+            let priority_number = non_zero_checked_sub(NonZeroUsize::MAX, i).unwrap();
+            AdjustPriorityMap::new(x, NonZeroConstant { priority_number })
         });
         // Merge RangeValues by start with ties broken by priority
         let iter: KMergeBy<
-            AdjustPriorityMap<T, V, VR, I>,
-            fn(&RangeValue<T, V, VR>, &RangeValue<T, V, VR>) -> bool,
-        > = iter.kmerge_by(|a, b| match a.range.start().cmp(&b.range.start()) {
-            Ordering::Less => true,
-            Ordering::Equal => a.priority < b.priority,
-            Ordering::Greater => false,
+            AdjustPriorityMap<T, V, VR, I, NonZeroConstant>,
+            fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
+        > = iter.kmerge_by(|a, b| {
+            match a
+                .range_value
+                .range
+                .start()
+                .cmp(&b.range_value.range.start())
+            {
+                Ordering::Less => true,
+                Ordering::Equal => a.priority < b.priority,
+                Ordering::Greater => false,
+            }
         });
         Self { iter }
     }
 }
 
-impl<'a, T, V, VR, I, P> FusedIterator for KMergeMap<T, V, VR, I, P>
+impl<'a, T, V, VR, I> FusedIterator for KMergeMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
-    P: Iterator<Item = NonZeroUsize>,
 {
 }
 
-impl<T, V, VR, I, P> Iterator for KMergeMap<T, V, VR, I, P>
+impl<T, V, VR, I> Iterator for KMergeMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
-    P: Iterator<Item = NonZeroUsize>,
 {
     type Item = RangeValue<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        self.iter.next().map(|x| x.range_value)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -220,12 +226,11 @@ where
     }
 }
 
-impl<T, V, VR, I, P> SortedStartsMap<T, V, VR> for KMergeMap<T, V, VR, I, P>
+impl<T, V, VR, I> SortedStartsMap<T, V, VR> for KMergeMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
-    P: Iterator<Item = NonZeroUsize>,
 {
 }
