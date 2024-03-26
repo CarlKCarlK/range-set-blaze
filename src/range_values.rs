@@ -409,10 +409,6 @@ pub(crate) trait NonZeroEnumerateExt: Iterator + Sized {
 
 impl<I: Iterator> NonZeroEnumerateExt for I {}
 
-// cmk why bother with this?
-pub(crate) const NON_ZERO_MIN: NonZeroUsize = NonZeroUsize::MIN; // cmk0
-pub(crate) const NON_ZERO_MAX: NonZeroUsize = NonZeroUsize::MAX; // cmk0
-
 pub(crate) trait ExpectDebugUnwrapRelease<T> {
     fn expect_debug_unwrap_release(self, msg: &str) -> T;
 }
@@ -436,10 +432,11 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>, // cmk0 why not SortedDisjointMap?
+    I: SortedDisjointMap<T, V, VR>,
 {
     iter: I,
-    new_priority: Option<NonZeroUsize>, // cmk0 usize
+    new_priority: NonZeroUsize, // cmk0 usize
+    phantom_data: PhantomData<(T, V, VR)>,
 }
 
 impl<T, V, VR, I> Iterator for AdjustPriorityMap<T, V, VR, I>
@@ -447,13 +444,13 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: SortedDisjointMap<T, V, VR>, // cmk0 why SortedDisjointMap?
+    I: SortedDisjointMap<T, V, VR>,
 {
     type Item = RangeValue<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|mut range_value| {
-            range_value.priority_number = self.new_priority;
+            range_value.priority_number = Some(self.new_priority);
             range_value
         })
     }
@@ -466,8 +463,12 @@ where
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
-    pub fn new(iter: I, new_priority: Option<NonZeroUsize>) -> Self {
-        AdjustPriorityMap { iter, new_priority }
+    pub fn new(iter: I, new_priority: NonZeroUsize) -> Self {
+        AdjustPriorityMap {
+            iter,
+            new_priority,
+            phantom_data: PhantomData,
+        }
     }
 }
 

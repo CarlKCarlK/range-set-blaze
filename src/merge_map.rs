@@ -166,7 +166,7 @@ where
         // Prioritize from left to right
         let iter = iter.into_iter().enumerate().map(|(i, x)| {
             let priority = non_zero_checked_sub(NonZeroUsize::MAX, i).unwrap();
-            AdjustPriorityMap::new(x, Some(priority))
+            AdjustPriorityMap::new(x, priority)
         });
         // Merge RangeValues by start with ties broken by priority
         let iter: KMergeBy<

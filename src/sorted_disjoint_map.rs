@@ -28,7 +28,6 @@ use std::ops;
 
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::map::CloneBorrow;
-use crate::range_values::{NON_ZERO_MAX, NON_ZERO_MIN};
 use crate::sorted_disjoint::SortedDisjoint;
 use crate::{
     map::ValueOwned, merge_map::MergeMap, union_iter_map::UnionIterMap, Integer, RangeMapBlaze,
@@ -340,8 +339,8 @@ where
         R::IntoIter: SortedDisjointMap<T, V, VR>,
         Self: Sized,
     {
-        let left = AdjustPriorityMap::new(self, Some(NON_ZERO_MAX));
-        let right = AdjustPriorityMap::new(other.into_iter(), Some(NON_ZERO_MIN));
+        let left = AdjustPriorityMap::new(self, NonZeroUsize::MAX);
+        let right = AdjustPriorityMap::new(other.into_iter(), NonZeroUsize::MIN);
         // cmk why this into iter stuff that is not used?
         UnionIterMap::new(MergeMap::new(left, right))
     }
