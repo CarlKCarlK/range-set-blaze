@@ -6,7 +6,7 @@ use crate::{
     map::{CloneBorrow, ValueOwned},
     range_values::{AdjustPriorityMap, NonZeroEnumerate},
     sorted_disjoint_map::Priority,
-    BitXorAdjusted, Integer, MergeMap, RangeValue, SortedDisjointMap, SortedStartsMap,
+    BitXorAdjusted, Integer, MergeMap, RangeValue, SortedDisjointMap,
 };
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
@@ -41,7 +41,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: SortedStartsMap<T, V, VR>,
+    I: Iterator<Item = RangeValue<T, V, VR>>, // cmk0 SortedDisjointMap<T, V, VR>,
 {
     iter: AdjustPriorityMap<T, V, VR, I, NonZeroEnumerate>,
     next_item: Option<RangeValue<T, V, VR>>,
@@ -68,7 +68,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: SortedStartsMap<T, V, VR>,
+    I: SortedDisjointMap<T, V, VR>,
 {
     type Item = RangeValue<T, V, VR>;
 
@@ -241,18 +241,20 @@ where
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
+    // cmk0 rename "new"?
     pub fn new2(left: L, right: R) -> Self {
         let left = AdjustPriorityMap::new(left, Some(NonZeroUsize::MAX));
         let right = AdjustPriorityMap::new(right, Some(NonZeroUsize::MIN));
         let mut iter = MergeMap::new(left, right);
         let item = iter.next();
-        Self {
+        let result = Self {
             iter,
             next_item: item,
             workspace: BinaryHeap::new(),
             workspace_next_end: None,
             gather: None,
             ready_to_go: None,
-        }
+        };
+        result
     }
 }

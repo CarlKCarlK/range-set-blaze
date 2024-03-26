@@ -1,10 +1,12 @@
 use crate::alloc::string::ToString;
-use crate::range_values::AdjustPriorityMap;
+use crate::merge_map::KMergeMap;
+use crate::range_values::{AdjustPriorityMap, NonZeroConstant};
 use crate::sorted_disjoint_map::Priority;
+use crate::SortedDisjointMap;
 use alloc::format;
 use alloc::string::String;
 use alloc::{collections::BinaryHeap, vec};
-use core::num::NonZeroUsize;
+
 use core::{cmp::min, iter::FusedIterator};
 use itertools::Itertools;
 
@@ -45,28 +47,26 @@ use crate::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct UnionIterMap<T, V, VR, SS, P>
+pub struct UnionIterMap<T, V, VR, SS>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     SS: SortedStartsMap<T, V, VR>,
-    P: Iterator<Item = NonZeroUsize>,
 {
-    iter: AdjustPriorityMap<T, V, VR, SS, P>,
+    iter: AdjustPriorityMap<T, V, VR, SS, NonZeroConstant>,
     next_item: Option<RangeValue<T, V, VR>>,
     workspace: BinaryHeap<Priority<T, V, VR>>,
     gather: Option<RangeValue<T, V, VR>>,
     ready_to_go: Option<RangeValue<T, V, VR>>,
 }
 
-impl<T, V, VR, I, P> Iterator for UnionIterMap<T, V, VR, I, P>
+impl<T, V, VR, I> Iterator for UnionIterMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedStartsMap<T, V, VR>, // cmk why SS above and I here?
-    P: Iterator<Item = NonZeroUsize>,
 {
     type Item = RangeValue<T, V, VR>;
 
@@ -244,17 +244,16 @@ where
     }
 }
 
-impl<T, V, VR, I, P> UnionIterMap<T, V, VR, I, P>
+impl<T, V, VR, I> UnionIterMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: SortedStartsMap<T, V, VR>,
-    P: Iterator<Item = NonZeroUsize>,
+    I: SortedDisjointMap<T, V, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
-    pub fn new(mut iter: AdjustPriorityMap<T, V, VR, I, P>) -> Self {
+    pub fn new(mut iter: KMergeMap<T, V, VR, I>) -> Self {
         let item = iter.next();
         Self {
             iter,
@@ -325,14 +324,13 @@ type SortedRangeValueVec<T, V, VR> =
 // }
 
 // from from UnsortedDisjointMap to UnionIterMap
-impl<T, V, VR, I, P> From<UnsortedDisjointMap<T, V, VR, I>>
-    for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>, P>
+impl<T, V, VR, I> From<UnsortedDisjointMap<T, V, VR, I>>
+    for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: Iterator<Item = RangeValue<T, V, VR>>,
-    P: Iterator<Item = NonZeroUsize>,
 {
     #[allow(clippy::clone_on_copy)]
     fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, VR, I>) -> Self {
@@ -354,13 +352,12 @@ where
     }
 }
 
-impl<T, V, VR, I, P> FusedIterator for UnionIterMap<T, V, VR, I, P>
+impl<T, V, VR, I> FusedIterator for UnionIterMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedStartsMap<T, V, VR> + FusedIterator,
-    P: Iterator<Item = NonZeroUsize> + FusedIterator,
 {
 }
 

@@ -56,7 +56,6 @@ use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
 use range_set_blaze::UnitMapToSortedDisjoint;
-use range_values::NonZeroEnumerate;
 use range_values::RangeValuesToRangesIter;
 use sym_diff_iter_map::SymDiffIterMap;
 mod multiway_map;
@@ -1589,10 +1588,9 @@ pub trait Integer:
 #[doc(hidden)]
 pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
-pub type BitOrMergeMap<T, V, VR, L, R> =
-    UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>, NonZeroEnumerate>;
+pub type BitOrMergeMap<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
 #[doc(hidden)]
-pub type BitOrAdjusted<T, V, VR, L, R> = BitOrMergeMap<T, V, VR, L, R>;
+pub type BitOrAdjusted<T, V, VR, L, R> = BitOrMergeMap<T, V, VR, L, R>; // cmk0 doesn't do anything
 
 #[doc(hidden)]
 pub type BitXorAdjusted<T, V, VR, L, R> = SymDiffIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
@@ -1612,7 +1610,7 @@ pub type BitXorOldNew<T, L, R> = UnitMapToSortedDisjoint<
 #[doc(hidden)]
 pub type BitOrKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
 #[doc(hidden)]
-pub type BitOrKMergeMap<T, V, VR, I, P> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I>, P>;
+pub type BitOrKMergeMap<T, V, VR, I> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I>>;
 #[doc(hidden)]
 pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
 #[doc(hidden)]

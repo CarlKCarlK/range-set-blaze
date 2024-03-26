@@ -25,7 +25,6 @@ use crate::range_values::AdjustPriorityMap;
 use crate::NotIter;
 use crate::RangeValuesToRangesIter;
 use core::fmt;
-use std::ops;
 
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::map::CloneBorrow;
@@ -1460,7 +1459,7 @@ macro_rules! impl_sorted_map_traits_and_ops2 {
 }
 // cmk0 should there be a CheckSortedDisjointMap? AssumeSortedDisjointMap?
 
-impl_sorted_map_traits_and_ops0b!(UnionIterMap<T, V, VR, I, NonZeroEnumerate>, SortedStartsMap);
+impl_sorted_map_traits_and_ops0b!(UnionIterMap<T, V, VR, I>, SortedStartsMap);
 impl_sorted_map_traits_and_ops0b!(SymDiffIterMap<T, V, VR, I>, SortedStartsMap);
 impl_sorted_map_traits_and_ops0b!(
     IntersectionIterMap< T, V, VR, I0, I1>,

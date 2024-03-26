@@ -176,13 +176,12 @@ pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: ValueOwned + 'a>:
     }
 }
 
-impl<T, V, VR, II, I, P> MultiwaySortedDisjointMap<T, V, VR, I, P> for II
+impl<T, V, VR, II, I> MultiwaySortedDisjointMap<T, V, VR, I> for II
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
-    P: Iterator<Item = NonZeroUsize>,
     II: IntoIterator<Item = I>,
 {
 }
@@ -192,13 +191,12 @@ where
 ///
 /// [`union`]: crate::MultiwaySortedDisjointMap::union
 /// [`intersection`]: crate::MultiwaySortedDisjointMap::intersection
-pub trait MultiwaySortedDisjointMap<T, V, VR, I, P>: IntoIterator<Item = I> + Sized
+pub trait MultiwaySortedDisjointMap<T, V, VR, I>: IntoIterator<Item = I> + Sized
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
-    P: Iterator<Item = NonZeroUsize>,
 {
     /// Unions the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
     /// The input iterators must be of the same type. Any number of input iterators can be given.
@@ -224,7 +222,7 @@ where
     ///
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
-    fn union(self) -> BitOrKMergeMap<T, V, VR, I, P> {
+    fn union(self) -> BitOrKMergeMap<T, V, VR, I> {
         UnionIterMap::new(KMergeMap::new(self))
     }
 
