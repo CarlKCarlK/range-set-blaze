@@ -49,7 +49,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    SS: SortedStartsMap<T, V, VR>,
+    SS: Iterator<Item = RangeValue<T, V, VR>>, // cmk0
 {
     iter: SS,
     next_item: Option<RangeValue<T, V, VR>>,
@@ -63,7 +63,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: SortedStartsMap<T, V, VR>,
+    I: Iterator<Item = RangeValue<T, V, VR>>, // cmk0 SortedStartsMap<T, V, VR>,
 {
     type Item = RangeValue<T, V, VR>;
 
@@ -252,7 +252,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: SortedStartsMap<T, V, VR>,
+    I: Iterator<Item = RangeValue<T, V, VR>>, // cmk0 SortedStartsMap<T, V, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
