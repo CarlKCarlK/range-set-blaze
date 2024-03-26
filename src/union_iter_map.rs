@@ -98,7 +98,9 @@ where
                 let best = &best.0;
                 if next_start == *best.range.start() {
                     // Only push if the priority is higher or the end is greater
-                    if next_item.priority > best.priority || next_end > *best.range.end() {
+                    if next_item.priority_number > best.priority_number
+                        || next_end > *best.range.end()
+                    {
                         // println!("cmk pushing next_item {:?} into workspace", next_item.range);
                         self.workspace.push(Priority(next_item));
                     } else {
@@ -212,7 +214,9 @@ where
                     continue; // while loop
                 };
                 let new_best = &new_best.0;
-                if item.priority < new_best.priority && *item.range.end() <= *new_best.range.end() {
+                if item.priority_number < new_best.priority_number
+                    && *item.range.end() <= *new_best.range.end()
+                {
                     // println!("cmk item is lower priority {:?} and shorter {:?} than best item {:?},{:?} in new workspace, so don't keep",
                     // item.priority, item.range, new_best.priority, new_best.range);
                     // not as good as new_best, and shorter, so don't keep
@@ -331,6 +335,7 @@ where
     VR: CloneBorrow<V>,
     I: Iterator<Item = RangeValue<T, V, VR>>,
 {
+    // cmk0
     #[allow(clippy::clone_on_copy)]
     fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, VR, I>) -> Self {
         let iter = unsorted_disjoint.sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
@@ -340,8 +345,11 @@ where
                 //     a.priority, b.priority
                 // );
                 // println!("cmk a.range {:?} b.range {:?}", a.range, b.range);
-                debug_assert!(a.priority != b.priority, "Priorities must not be equal");
-                b.priority.cmp(&a.priority)
+                debug_assert!(
+                    a.priority_number != b.priority_number,
+                    "Priorities must not be equal"
+                );
+                b.priority_number.cmp(&a.priority_number)
             }
             other => other,
         });

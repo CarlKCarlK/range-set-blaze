@@ -52,7 +52,7 @@ where
     /// cmk doc
     pub value: VR,
     /// cmk doc
-    pub priority: Option<NonZeroUsize>,
+    pub priority_number: Option<NonZeroUsize>,
     phantom: PhantomData<V>,
 }
 
@@ -63,11 +63,11 @@ where
     VR: CloneBorrow<V> + 'a,
 {
     /// cmk doc
-    pub fn new(range: RangeInclusive<T>, value: VR, priority: Option<NonZeroUsize>) -> Self {
+    pub fn new(range: RangeInclusive<T>, value: VR, priority_number: Option<NonZeroUsize>) -> Self {
         RangeValue {
             range,
             value,
-            priority,
+            priority_number,
             phantom: PhantomData,
         }
     }
@@ -94,7 +94,7 @@ where
         f.debug_struct("RangeValue")
             .field("range", &self.range)
             .field("value", self.value.borrow())
-            .field("priority", &self.priority)
+            .field("priority", &self.priority_number)
             .finish()
     }
 }
@@ -906,7 +906,7 @@ where
     VR: CloneBorrow<V>,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.0.priority == other.0.priority
+        self.0.priority_number == other.0.priority_number
     }
 }
 
@@ -929,11 +929,11 @@ where
     fn cmp(&self, other: &Self) -> Ordering {
         let priority0 = self
             .0
-            .priority
+            .priority_number
             .expect("When comparing, priority must be Some");
         let priority1 = other
             .0
-            .priority
+            .priority_number
             .expect("When comparing, priority must be Some");
         priority0.cmp(&priority1)
     }
@@ -1104,7 +1104,7 @@ macro_rules! impl_sorted_map_traits_and_ops0 {
             }
         }
 
-        // cmk leaving out for now because can't because efficient implementation requires new iterator
+        // cmk0 leaving out for now because can't because efficient implementation requires new iterator
         // impl<'a, T, V, VR, I, R> ops::BitXor<R> for $IterType
         // where
         //     T: Integer,
@@ -1206,7 +1206,7 @@ macro_rules! impl_sorted_map_traits_and_ops0 {
             }
         }
 
-        // cmk leaving out for now because can't because efficient implementation requires new iterator
+        // cmk0 leaving out for now because can't because efficient implementation requires new iterator
         // impl<'a, T, V, VR, I0, I1, R> ops::BitXor<R> for $IterType
         // where
         //     T: Integer,
