@@ -60,6 +60,7 @@ where
     R: SortedDisjointMap<T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
 {
+    // cmk0 why isn't priority mentioned?
     /// Creates a new [`MergeMap`] iterator from two [`SortedDisjointMap`] iterators. See [`MergeMap`] for more details and examples.
     pub fn new(left: L, right: R) -> Self {
         Self {

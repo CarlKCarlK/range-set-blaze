@@ -128,6 +128,13 @@ where
 {
 }
 
+pub trait PrioritySortedDisjointMap<T, V, VR>: PrioritySortedStartsMap<T, V, VR>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+{
+}
 /// The trait used to mark iterators that provide ranges that are sorted by start and disjoint. Set operations on
 /// iterators that implement this trait can be performed in linear time.
 ///
