@@ -340,11 +340,6 @@ where
     fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, VR, I>) -> Self {
         let iter = unsorted_disjoint.sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
             core::cmp::Ordering::Equal => {
-                // println!(
-                //     "cmk a.priority {:?} b.priority {:?}",
-                //     a.priority, b.priority
-                // );
-                // println!("cmk a.range {:?} b.range {:?}", a.range, b.range);
                 debug_assert!(
                     a.priority_number != b.priority_number,
                     "Priorities must not be equal"
@@ -353,7 +348,7 @@ where
             }
             other => other,
         });
-        let iter = AssumeSortedStartsMap { iter };
+        let iter = AssumeSortedStartsMap::new(iter);
 
         Self::new(iter)
     }

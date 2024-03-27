@@ -217,7 +217,7 @@ where
     VR: CloneBorrow<V>,
     I: Iterator<Item = RangeValue<T, V, VR>>,
 {
-    pub(crate) iter: I,
+    iter: I,
 }
 
 impl<T, V, VR, I> SortedStartsMap<T, V, VR> for AssumeSortedStartsMap<T, V, VR, I>
