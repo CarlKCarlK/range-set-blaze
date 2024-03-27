@@ -197,22 +197,22 @@ where
             // We also don't need to keep any items that have a lower priority and are shorter than the new best.
             let mut new_workspace = BinaryHeap::new();
             while let Some(item) = self.workspace.pop() {
-                let mut item = item.0;
-                if *item.range.end() <= next_end {
+                let mut item = item;
+                if *item.0.range.end() <= next_end {
                     // too short, don't keep
                     // println!("cmk too short, don't keep in workspace {:?}", item.range);
                     continue; // while loop
                 }
-                item.range = next_end + T::one()..=*item.range.end();
+                item.0.range = next_end + T::one()..=*item.0.range.end();
                 let Some(new_best) = new_workspace.peek() else {
                     // println!("cmk no workspace, so keep {:?}", item.range);
                     // new_workspace is empty, so keep
-                    new_workspace.push(Priority(item));
+                    new_workspace.push(item);
                     continue; // while loop
                 };
-                let new_best = &new_best.0;
-                if item.priority_number_cmk() < new_best.priority_number_cmk()
-                    && *item.range.end() <= *new_best.range.end()
+                let new_best = new_best;
+                if item.priority_number() < new_best.priority_number()
+                    && *item.0.range.end() <= *new_best.0.range.end()
                 {
                     // println!("cmk item is lower priority {:?} and shorter {:?} than best item {:?},{:?} in new workspace, so don't keep",
                     // item.priority, item.range, new_best.priority, new_best.range);
@@ -223,7 +223,7 @@ where
                 // higher priority or longer, so keep
                 // println!("cmk item is higher priority {:?} or longer {:?} than best item {:?},{:?} in new workspace, so keep",
                 // item.priority, item.range, new_best.priority, new_best.range);
-                new_workspace.push(Priority(item));
+                new_workspace.push(item);
             }
             self.workspace = new_workspace;
         } // end of main loop
