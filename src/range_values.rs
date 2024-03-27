@@ -7,12 +7,7 @@ use crate::{
     Integer,
 };
 use alloc::{collections::btree_map, rc::Rc};
-use core::{
-    iter::{Enumerate, FusedIterator},
-    marker::PhantomData,
-    num::NonZeroUsize,
-    ops::RangeInclusive,
-};
+use core::{iter::FusedIterator, marker::PhantomData, num::NonZeroUsize, ops::RangeInclusive};
 
 use crate::{
     map::{EndValue, ValueOwned},
@@ -370,32 +365,6 @@ where
 //     }
 // }
 
-pub struct NonZeroEnumerate<I>
-where
-    I: Iterator,
-{
-    inner: Enumerate<I>,
-    current_index: NonZeroUsize, // Start from 1
-}
-
-impl<I> Iterator for NonZeroEnumerate<I>
-where
-    I: Iterator,
-{
-    type Item = (NonZeroUsize, I::Item);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let (_, item) = self.inner.next()?;
-        let index = self.current_index;
-
-        // Increment the current index, panic on overflow
-        self.current_index = non_zero_checked_sub(self.current_index, 1)
-            .expect_debug_unwrap_release("Overflow when incrementing NonZeroUsize index");
-
-        Some((index, item))
-    }
-}
-
 pub fn non_zero_checked_sub(value: NonZeroUsize, subtrahend: usize) -> Option<NonZeroUsize> {
     // Convert to usize, perform checked subtraction, then try to make a new NonZeroUsize
     value
@@ -403,17 +372,6 @@ pub fn non_zero_checked_sub(value: NonZeroUsize, subtrahend: usize) -> Option<No
         .checked_sub(subtrahend)
         .and_then(NonZeroUsize::new)
 }
-
-pub(crate) trait NonZeroEnumerateExt: Iterator + Sized {
-    fn non_zero_enumerate(self) -> NonZeroEnumerate<Self> {
-        NonZeroEnumerate {
-            inner: self.enumerate(),
-            current_index: NonZeroUsize::MAX,
-        }
-    }
-}
-
-impl<I: Iterator> NonZeroEnumerateExt for I {}
 
 pub(crate) trait ExpectDebugUnwrapRelease<T> {
     fn expect_debug_unwrap_release(self, msg: &str) -> T;

@@ -2,23 +2,21 @@ use crate::intersection_iter_map::IntersectionIterMap;
 use crate::iter_map::IntoIterMap;
 use crate::iter_map::{IterMap, KeysMap};
 use crate::range_values::{IntoRangeValuesIter, RangeValuesIter, RangeValuesToRangesIter};
-use crate::sym_diff_iter_map::SymDiffIterMap;
-use alloc::borrow::ToOwned;
-#[cfg(feature = "std")]
-use alloc::sync::Arc;
-use alloc::vec;
-use alloc::vec::Vec;
-// use crate::range_values::RangeValuesIter;
-use crate::range_values::NonZeroEnumerateExt;
 use crate::sorted_disjoint_map::{DebugToString, Priority, RangeValue};
 use crate::sorted_disjoint_map::{PrioritySortedStartsMap, SortedDisjointMap};
+use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{
     AssumePrioritySortedStartsMap, SortedDisjointWithLenSoFarMap, UnsortedDisjointMap,
 };
 use crate::{CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint};
+use alloc::borrow::ToOwned;
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
+#[cfg(feature = "std")]
+use alloc::sync::Arc;
+use alloc::vec;
+use alloc::vec::Vec;
 use core::borrow::Borrow;
 use core::fmt;
 use core::ops::{BitOr, Bound, RangeBounds};
@@ -1653,8 +1651,7 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
     {
         let iter = iter
             .into_iter()
-            .non_zero_enumerate()
-            .map(|(priority, (r, v))| RangeValue::new_unique(r.clone(), v, Some(priority)));
+            .map(|(r, v)| RangeValue::new_unique(r.clone(), v));
         let union_iter_map = UnionIterMap::<T, V, UniqueValue<V>, _>::from_iter(iter);
         Self::from_sorted_disjoint_map(union_iter_map)
     }
@@ -2001,7 +1998,7 @@ where
     {
         let iter = iter.into_iter();
         for priority in
-            UnsortedDisjointMap::new(iter.map(|(r, v)| RangeValue::new_unique(r..=r, v, None)))
+            UnsortedDisjointMap::new(iter.map(|(r, v)| RangeValue::new_unique(r..=r, v)))
         {
             let range = priority.range_value.range;
             let value = priority.range_value.value.borrow_clone();

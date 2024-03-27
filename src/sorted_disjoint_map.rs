@@ -75,8 +75,7 @@ where
     V: ValueOwned + 'a,
 {
     /// cmk doc
-    pub fn new_unique(range: RangeInclusive<T>, v: V, priority: Option<NonZeroUsize>) -> Self {
-        // cmk0000 ignore priority for now
+    pub fn new_unique(range: RangeInclusive<T>, v: V) -> Self {
         RangeValue::new(range, UniqueValue::new(v))
     }
 }
