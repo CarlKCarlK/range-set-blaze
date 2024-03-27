@@ -10,6 +10,7 @@ use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::vec::Vec;
+use core::cmp;
 use core::cmp::Ordering;
 use core::fmt::Debug;
 use core::marker::PhantomData;
@@ -471,7 +472,7 @@ where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<T, V, VR>,
         Self: Sized,
-        VR: Clone,
+        VR: CloneBorrow<V>,
     {
         SymDiffIterMap::new2(self, other.into_iter())
     }
@@ -931,7 +932,9 @@ where
     VR: CloneBorrow<V>,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.priority_number == other.priority_number
+        let result_cmk = self.priority_number == other.priority_number;
+        assert!(!result_cmk, "Don't expect identical priority numbers");
+        result_cmk
     }
 }
 
@@ -1121,22 +1124,21 @@ macro_rules! impl_sorted_map_traits_and_ops0 {
             }
         }
 
-        // cmk00 leaving out for now because can't because efficient implementation requires new iterator
-        // impl<'a, T, V, VR, I, R> ops::BitXor<R> for $IterType
-        // where
-        //     T: Integer,
-        //     V: ValueOwned + 'a,
-        //     VR: CloneBorrow<V> + 'a,
-        //     I: $TraitBound<'a, T, V, VR>,
-        //     R: SortedDisjointMap<'a, T, V, VR>,
-        // {
-        //     type Output = BitXOrTeeMap<'a, T, V, VR, Self, R>;
+        impl<T, V, VR, I, R> ops::BitXor<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned,
+            VR: CloneBorrow<V>,
+            I: $TraitBound<T, V, VR>,
+            R: SortedDisjointMap<T, V, VR>,
+        {
+            type Output = BitXorAdjusted<T, V, VR, Self, R>;
 
-        //     #[allow(clippy::suspicious_arithmetic_impl)]
-        //     fn bitxor(self, other: R) -> Self::Output {
-        //         SortedDisjointMap::symmetric_difference(self, other)
-        //     }
-        // }
+            #[allow(clippy::suspicious_arithmetic_impl)]
+            fn bitxor(self, other: R) -> Self::Output {
+                SortedDisjointMap::symmetric_difference(self, other)
+            }
+        }
 
         impl<T, V, VR, I, R> ops::BitAnd<R> for $IterType
         where
@@ -1223,23 +1225,22 @@ macro_rules! impl_sorted_map_traits_and_ops0 {
             }
         }
 
-        // cmk00 leaving out for now because can't because efficient implementation requires new iterator
-        // impl<'a, T, V, VR, I0, I1, R> ops::BitXor<R> for $IterType
-        // where
-        //     T: Integer,
-        //     V: ValueOwned + 'a,
-        //     VR: CloneBorrow<V> + 'a,
-        //     I0: $TraitBound0<'a, T, V, VR>,
-        //     I1: $TraitBound1<T>,
-        //     R: SortedDisjointMap<'a, T, V, VR>,
-        // {
-        //     type Output = BitXOrTeeMap<'a, T, V, VR, Self, R>;
+        impl<T, V, VR, I0, I1, R> ops::BitXor<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned,
+            VR: CloneBorrow<V>,
+            I0: $TraitBound0<T, V, VR>,
+            I1: $TraitBound1<T>,
+            R: SortedDisjointMap<T, V, VR>,
+        {
+            type Output = BitXorAdjusted<T, V, VR, Self, R>;
 
-        //     #[allow(clippy::suspicious_arithmetic_impl)]
-        //     fn bitxor(self, other: R) -> Self::Output {
-        //         SortedDisjointMap::symmetric_difference(self, other)
-        //     }
-        // }
+            #[allow(clippy::suspicious_arithmetic_impl)]
+            fn bitxor(self, other: R) -> Self::Output {
+                SortedDisjointMap::symmetric_difference(self, other)
+            }
+        }
 
         impl<T, V, VR, I0, I1, R> ops::BitAnd<R> for $IterType
         where
@@ -1279,20 +1280,19 @@ macro_rules! impl_sorted_map_traits_and_ops0b {
         {
         }
 
-        // cmk000
-        // impl<T, V, VR, I> ops::Not for $IterType
-        // where
-        //     T: Integer,
-        //     V: ValueOwned,
-        //     VR: CloneBorrow<V>,
-        //     I: SortedDisjointMap<T, V, VR>,
-        // {
-        //     type Output = NotIter<T, RangeValuesToRangesIter<T, V, VR, Self>>;
+        impl<T, V, VR, I> ops::Not for $IterType
+        where
+            T: Integer,
+            V: ValueOwned,
+            VR: CloneBorrow<V>,
+            I: $TraitBound<T, V, VR>,
+        {
+            type Output = NotIter<T, RangeValuesToRangesIter<T, V, VR, Self>>;
 
-        //     fn not(self) -> Self::Output {
-        //         self.complement()
-        //     }
-        // }
+            fn not(self) -> Self::Output {
+                self.complement()
+            }
+        }
 
         impl<T, V, VR, I, R> ops::BitOr<R> for $IterType
         where
@@ -1325,22 +1325,21 @@ macro_rules! impl_sorted_map_traits_and_ops0b {
             }
         }
 
-        // cmk00 leaving out for now because can't because efficient implementation requires new iterator
-        // impl<'a, T, V, VR, I, R> ops::BitXor<R> for $IterType
-        // where
-        //     T: Integer,
-        //     V: ValueOwned + 'a,
-        //     VR: CloneBorrow<V> + 'a,
-        //     I: $TraitBound<'a, T, V, VR>,
-        //     R: SortedDisjointMap<'a, T, V, VR>,
-        // {
-        //     type Output = BitXOrTeeMap<'a, T, V, VR, Self, R>;
+        impl<T, V, VR, I, R> ops::BitXor<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned,
+            VR: CloneBorrow<V>,
+            I: $TraitBound<T, V, VR>,
+            R: SortedDisjointMap<T, V, VR>,
+        {
+            type Output = BitXorAdjusted<T, V, VR, Self, R>;
 
-        //     #[allow(clippy::suspicious_arithmetic_impl)]
-        //     fn bitxor(self, other: R) -> Self::Output {
-        //         SortedDisjointMap::symmetric_difference(self, other)
-        //     }
-        // }
+            #[allow(clippy::suspicious_arithmetic_impl)]
+            fn bitxor(self, other: R) -> Self::Output {
+                SortedDisjointMap::symmetric_difference(self, other)
+            }
+        }
 
         impl<T, V, VR, I, R> ops::BitAnd<R> for $IterType
         where
@@ -1528,6 +1527,8 @@ macro_rules! impl_sorted_map_traits_and_ops2 {
 }
 // cmk0 should there be a CheckSortedDisjointMap? AssumeSortedDisjointMap?
 
+// cmk0 test every operator on on every iterator
+// cmk0 makes these macros (or whatever) more concise.
 impl_sorted_map_traits_and_ops0b!(UnionIterMap<T, V, VR, I>, PrioritySortedStartsMap);
 impl_sorted_map_traits_and_ops0b!(SymDiffIterMap<T, V, VR, I>, PrioritySortedStartsMap);
 impl_sorted_map_traits_and_ops0!(
