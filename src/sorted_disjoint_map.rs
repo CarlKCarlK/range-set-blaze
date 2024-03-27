@@ -898,7 +898,7 @@ where
 // cmk0 can we/should we have priority check that non-None, or can we create an iterator of Priorities for which this is always true because
 // the priority field is part of the wrapper, not RangeValue?
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Priority<T, V, VR>(pub RangeValue<T, V, VR>)
 where
     T: Integer,
@@ -1270,82 +1270,82 @@ macro_rules! impl_sorted_map_traits_and_ops0b {
         }
 
         // cmk0
-        //     impl<T, V, VR, I> ops::Not for $IterType
-        //     where
-        //         T: Integer,
-        //         V: ValueOwned,
-        //         VR: CloneBorrow<V>,
-        //         I: SortedDisjointMap<T, V, VR>,
-        //     {
-        //         type Output = NotIter<T, RangeValuesToRangesIter<T, V, VR, Self>>;
+        // impl<T, V, VR, I> ops::Not for $IterType
+        // where
+        //     T: Integer,
+        //     V: ValueOwned,
+        //     VR: CloneBorrow<V>,
+        //     I: SortedDisjointMap<T, V, VR>,
+        // {
+        //     type Output = NotIter<T, RangeValuesToRangesIter<T, V, VR, Self>>;
 
-        //         fn not(self) -> Self::Output {
-        //             self.complement()
-        //         }
+        //     fn not(self) -> Self::Output {
+        //         self.complement()
         //     }
+        // }
 
-        //     impl<T, V, VR, I, R> ops::BitOr<R> for $IterType
-        //     where
-        //         T: Integer,
-        //         V: ValueOwned,
-        //         VR: CloneBorrow<V>,
-        //         I: $TraitBound<T, V, VR>,
-        //         R: SortedDisjointMap<T, V, VR>,
-        //     {
-        //         type Output = BitOrAdjusted<T, V, VR, Self, R>;
+        impl<T, V, VR, I, R> ops::BitOr<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned,
+            VR: CloneBorrow<V>,
+            I: $TraitBound<T, V, VR>,
+            R: SortedDisjointMap<T, V, VR>,
+        {
+            type Output = BitOrAdjusted<T, V, VR, Self, R>;
 
-        //         fn bitor(self, other: R) -> Self::Output {
-        //             SortedDisjointMap::union(self, other)
-        //         }
+            fn bitor(self, other: R) -> Self::Output {
+                SortedDisjointMap::union(self, other)
+            }
+        }
+
+        impl<T, V, VR, I, R> ops::Sub<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned,
+            VR: CloneBorrow<V>,
+            I: $TraitBound<T, V, VR>,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitSubRangesMap<T, V, VR, Self, R>;
+            // BitSubRangesMap<'a, T, V, VR, Self, R::IntoIter>
+
+            fn sub(self, other: R) -> Self::Output {
+                SortedDisjointMap::difference(self, other)
+            }
+        }
+
+        // cmk0 leaving out for now because can't because efficient implementation requires new iterator
+        // impl<'a, T, V, VR, I, R> ops::BitXor<R> for $IterType
+        // where
+        //     T: Integer,
+        //     V: ValueOwned + 'a,
+        //     VR: CloneBorrow<V> + 'a,
+        //     I: $TraitBound<'a, T, V, VR>,
+        //     R: SortedDisjointMap<'a, T, V, VR>,
+        // {
+        //     type Output = BitXOrTeeMap<'a, T, V, VR, Self, R>;
+
+        //     #[allow(clippy::suspicious_arithmetic_impl)]
+        //     fn bitxor(self, other: R) -> Self::Output {
+        //         SortedDisjointMap::symmetric_difference(self, other)
         //     }
+        // }
 
-        //     impl<T, V, VR, I, R> ops::Sub<R> for $IterType
-        //     where
-        //         T: Integer,
-        //         V: ValueOwned,
-        //         VR: CloneBorrow<V>,
-        //         I: $TraitBound<T, V, VR>,
-        //         R: SortedDisjoint<T>,
-        //     {
-        //         type Output = BitSubRangesMap<T, V, VR, Self, R>;
-        //         // BitSubRangesMap<'a, T, V, VR, Self, R::IntoIter>
+        impl<T, V, VR, I, R> ops::BitAnd<R> for $IterType
+        where
+            T: Integer,
+            V: ValueOwned,
+            VR: CloneBorrow<V>,
+            I: $TraitBound<T, V, VR>,
+            R: SortedDisjoint<T>,
+        {
+            type Output = BitAndRangesMap<T, V, VR, Self, R>;
 
-        //         fn sub(self, other: R) -> Self::Output {
-        //             SortedDisjointMap::difference(self, other)
-        //         }
-        //     }
-
-        //     // cmk0 leaving out for now because can't because efficient implementation requires new iterator
-        //     // impl<'a, T, V, VR, I, R> ops::BitXor<R> for $IterType
-        //     // where
-        //     //     T: Integer,
-        //     //     V: ValueOwned + 'a,
-        //     //     VR: CloneBorrow<V> + 'a,
-        //     //     I: $TraitBound<'a, T, V, VR>,
-        //     //     R: SortedDisjointMap<'a, T, V, VR>,
-        //     // {
-        //     //     type Output = BitXOrTeeMap<'a, T, V, VR, Self, R>;
-
-        //     //     #[allow(clippy::suspicious_arithmetic_impl)]
-        //     //     fn bitxor(self, other: R) -> Self::Output {
-        //     //         SortedDisjointMap::symmetric_difference(self, other)
-        //     //     }
-        //     // }
-
-        //     impl<T, V, VR, I, R> ops::BitAnd<R> for $IterType
-        //     where
-        //         T: Integer,
-        //         V: ValueOwned,
-        //         VR: CloneBorrow<V>,
-        //         I: $TraitBound<T, V, VR>,
-        //         R: SortedDisjoint<T>,
-        //     {
-        //         type Output = BitAndRangesMap<T, V, VR, Self, R>;
-
-        //         fn bitand(self, other: R) -> Self::Output {
-        //             SortedDisjointMap::intersection(self, other)
-        //         }
-        //     }
+            fn bitand(self, other: R) -> Self::Output {
+                SortedDisjointMap::intersection(self, other)
+            }
+        }
     };
 }
 
