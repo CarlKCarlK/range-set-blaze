@@ -185,7 +185,7 @@ where
                 .cmp(&b.range_value.range.start())
             {
                 Ordering::Less => true,
-                Ordering::Equal => a.priority_number() < b.priority_number(),
+                Ordering::Equal => a.priority_number < b.priority_number,
                 Ordering::Greater => false,
             }
         });

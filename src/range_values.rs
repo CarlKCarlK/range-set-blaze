@@ -415,7 +415,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|mut range_value| Priority::new(range_value, self.new_priority))
+            .map(|range_value| Priority::new(range_value, self.new_priority))
     }
 }
 

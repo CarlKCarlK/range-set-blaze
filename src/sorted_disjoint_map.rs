@@ -909,7 +909,7 @@ where
     VR: CloneBorrow<V>,
 {
     pub(crate) range_value: RangeValue<T, V, VR>,
-    priority_number: NonZeroUsize,
+    pub(crate) priority_number: NonZeroUsize,
 }
 
 // new
@@ -927,18 +927,6 @@ where
     }
 }
 
-// access the priority_number field from .0
-impl<T, V, VR> Priority<T, V, VR>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-{
-    pub fn priority_number(&self) -> NonZeroUsize {
-        self.priority_number()
-    }
-}
-
 // Implement `PartialEq` to allow comparison (needed for `Eq`).
 impl<T, V, VR> PartialEq for Priority<T, V, VR>
 where
@@ -947,7 +935,7 @@ where
     VR: CloneBorrow<V>,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.priority_number() == other.priority_number()
+        self.priority_number == other.priority_number
     }
 }
 

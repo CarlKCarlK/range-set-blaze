@@ -2,7 +2,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use super::*;
-use alloc::collections::BTreeMap;
 use core::cmp::Ordering;
 use core::ops::Bound;
 use itertools::Itertools;
@@ -1003,7 +1002,7 @@ fn lib_coverage_0() {
     assert_eq!(i.size_hint(), j.size_hint());
 
     let a = RangeSetBlaze::from_iter([1..=3]);
-    let i = a.into_iter();
+    let _i = a.into_iter();
     // cmk0 get this assert working again
     // assert_eq!(i.size_hint(), j.size_hint());
     // assert_eq!(

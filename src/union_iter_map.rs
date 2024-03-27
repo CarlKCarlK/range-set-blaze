@@ -3,7 +3,7 @@ use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use alloc::format;
 use alloc::string::String;
 use alloc::{collections::BinaryHeap, vec};
-use core::cmp::min;
+use core::cmp::{self, min};
 use core::ops::RangeInclusive;
 use itertools::Itertools;
 
@@ -94,7 +94,7 @@ where
                 };
                 if next_start == *best.range_value.range.start() {
                     // Only push if the priority is higher or the end is greater
-                    if next_item.priority_number() > best.priority_number()
+                    if next_item.priority_number > best.priority_number
                         || next_end > *best.range_value.range.end()
                     {
                         // println!("cmk pushing next_item {:?} into workspace", next_item.range);
@@ -209,7 +209,7 @@ where
                     new_workspace.push(item);
                     continue; // while loop
                 };
-                if item.priority_number() < new_best.priority_number()
+                if item.priority_number < new_best.priority_number
                     && *item.range_value.range.end() <= *new_best.range_value.range.end()
                 {
                     // println!("cmk item is lower priority {:?} and shorter {:?} than best item {:?},{:?} in new workspace, so don't keep",
@@ -335,12 +335,12 @@ where
     fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, VR, I>) -> Self {
         let iter = unsorted_disjoint.sorted_by(|a, b| {
             match a.range_value.range.start().cmp(b.range_value.range.start()) {
-                core::cmp::Ordering::Equal => {
+                cmp::Ordering::Equal => {
                     debug_assert!(
-                        a.priority_number() != b.priority_number(),
+                        a.priority_number != b.priority_number,
                         "Priorities must not be equal"
                     );
-                    b.priority_number().cmp(&a.priority_number())
+                    b.priority_number.cmp(&a.priority_number)
                 }
                 other => other,
             }

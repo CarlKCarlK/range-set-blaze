@@ -462,7 +462,7 @@ fn map_repro_106() {
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
         match a.range_value.range.start().cmp(b.range_value.range.start()) {
-            std::cmp::Ordering::Equal => b.priority_number().cmp(&a.priority_number()),
+            std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
             other => other,
         }
     });
@@ -500,7 +500,7 @@ fn map_repro_206() {
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
         match a.range_value.range.start().cmp(b.range_value.range.start()) {
-            std::cmp::Ordering::Equal => b.priority_number().cmp(&a.priority_number()),
+            std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
             other => other,
         }
     });
@@ -640,7 +640,7 @@ fn map_step_by_step() {
     println!("{vs}");
     assert_eq!(
         vs,
-        r#"[RangeValue { range: 1..=2, value: "b", priority: Some(18446744073709551615) }, RangeValue { range: 0..=0, value: "a", priority: Some(18446744073709551613) }]"#
+        "[Priority { range_value: RangeValue { range: 1..=2, value: \"b\" }, priority_number: 18446744073709551615 }, Priority { range_value: RangeValue { range: 0..=0, value: \"a\" }, priority_number: 18446744073709551613 }]"
     );
 
     let iter = input.into_iter();
@@ -649,7 +649,7 @@ fn map_step_by_step() {
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
         match a.range_value.range.start().cmp(b.range_value.range.start()) {
-            std::cmp::Ordering::Equal => b.priority_number().cmp(&a.priority_number()),
+            std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
             other => other,
         }
     });
@@ -658,7 +658,7 @@ fn map_step_by_step() {
     println!("{vs}");
     assert_eq!(
         vs,
-        r#"[RangeValue { range: 0..=0, value: "a", priority: Some(18446744073709551613) }, RangeValue { range: 1..=2, value: "b", priority: Some(18446744073709551615) }]"#
+        "[Priority { range_value: RangeValue { range: 0..=0, value: \"a\" }, priority_number: 18446744073709551613 }, Priority { range_value: RangeValue { range: 1..=2, value: \"b\" }, priority_number: 18446744073709551615 }]"
     );
 
     let iter = input.into_iter();
@@ -667,7 +667,7 @@ fn map_step_by_step() {
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
         match a.range_value.range.start().cmp(b.range_value.range.start()) {
-            std::cmp::Ordering::Equal => b.priority_number().cmp(&a.priority_number()),
+            std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
             other => other,
         }
     });
@@ -677,7 +677,7 @@ fn map_step_by_step() {
     println!("{vs}");
     assert_eq!(
         vs,
-        r#"[RangeValue { range: 0..=0, value: "a", priority: None }, RangeValue { range: 1..=2, value: "b", priority: None }]"#
+        "[RangeValue { range: 0..=0, value: \"a\" }, RangeValue { range: 1..=2, value: \"b\" }]"
     );
 
     let range_map_blaze = RangeMapBlaze::<u8, String>::from_iter(input);
