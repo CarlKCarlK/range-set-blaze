@@ -75,7 +75,7 @@ where
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
-                let (next_start, next_end) = next_item.0.range.clone().into_inner();
+                let (next_start, next_end) = next_item.range_value.range.clone().into_inner();
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
@@ -92,11 +92,10 @@ where
                     // println!("cmk return to top of the main processing loop");
                     continue; // return to top of the main processing loop
                 };
-                let best = &best;
-                if next_start == *best.0.range.start() {
+                if next_start == *best.range_value.range.start() {
                     // Only push if the priority is higher or the end is greater
                     if next_item.priority_number() > best.priority_number()
-                        || next_end > *best.0.range.end()
+                        || next_end > *best.range_value.range.end()
                     {
                         // println!("cmk pushing next_item {:?} into workspace", next_item.range);
                         self.workspace.push(next_item);
@@ -132,7 +131,6 @@ where
 
                 return value;
             };
-            let best = &best.0;
 
             // We buffer for output the best item up to the start of the next item (if any).
 
@@ -143,16 +141,19 @@ where
                 //     next_item.range.start(),
                 //     best.range.end()
                 // );
-                min(*next_item.0.range.start() - T::one(), *best.range.end())
+                min(
+                    *next_item.range_value.range.start() - T::one(),
+                    *best.range_value.range.end(),
+                )
                 // println!("cmk min {:?}", m);
             } else {
-                *best.range.end()
+                *best.range_value.range.end()
             };
 
             // Add the front of best to the gather buffer.
             if let Some(mut gather) = self.gather.take() {
-                if gather.value.borrow() == best.value.borrow()
-                    && *gather.range.end() + T::one() == *best.range.start()
+                if gather.value.borrow() == best.range_value.value.borrow()
+                    && *gather.range.end() + T::one() == *best.range_value.range.start()
                 {
                     // if the gather is contiguous with the best, then merge them
                     gather.range = *gather.range.start()..=next_end;
@@ -174,9 +175,8 @@ where
                     // );
                     self.ready_to_go = Some(gather);
                     self.gather = Some(RangeValue::new(
-                        *best.range.start()..=next_end,
-                        best.value.clone_borrow(),
-                        None,
+                        *best.range_value.range.start()..=next_end,
+                        best.range_value.value.clone_borrow(),
                     ));
                 }
             } else {
@@ -187,9 +187,8 @@ where
                 //     *best.range.start()..=next_end
                 // );
                 self.gather = Some(RangeValue::new(
-                    *best.range.start()..=next_end,
-                    best.value.clone_borrow(),
-                    None,
+                    *best.range_value.range.start()..=next_end,
+                    best.range_value.value.clone_borrow(),
                 ))
             };
 
@@ -198,21 +197,20 @@ where
             let mut new_workspace = BinaryHeap::new();
             while let Some(item) = self.workspace.pop() {
                 let mut item = item;
-                if *item.0.range.end() <= next_end {
+                if *item.range_value.range.end() <= next_end {
                     // too short, don't keep
                     // println!("cmk too short, don't keep in workspace {:?}", item.range);
                     continue; // while loop
                 }
-                item.0.range = next_end + T::one()..=*item.0.range.end();
+                item.range_value.range = next_end + T::one()..=*item.range_value.range.end();
                 let Some(new_best) = new_workspace.peek() else {
                     // println!("cmk no workspace, so keep {:?}", item.range);
                     // new_workspace is empty, so keep
                     new_workspace.push(item);
                     continue; // while loop
                 };
-                let new_best = new_best;
                 if item.priority_number() < new_best.priority_number()
-                    && *item.0.range.end() <= *new_best.0.range.end()
+                    && *item.range_value.range.end() <= *new_best.range_value.range.end()
                 {
                     // println!("cmk item is lower priority {:?} and shorter {:?} than best item {:?},{:?} in new workspace, so don't keep",
                     // item.priority, item.range, new_best.priority, new_best.range);
@@ -290,7 +288,7 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &
         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
         let iter = iter.into_iter();
-        let iter = iter.map(|(range, value)| RangeValue::new(range, value, None));
+        let iter = iter.map(|(range, value)| RangeValue::new(range, value));
         UnionIterMap::from_iter(iter)
     }
 }
@@ -335,8 +333,8 @@ where
     // cmk0
     #[allow(clippy::clone_on_copy)]
     fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, VR, I>) -> Self {
-        let iter =
-            unsorted_disjoint.sorted_by(|a, b| match a.0.range.start().cmp(b.0.range.start()) {
+        let iter = unsorted_disjoint.sorted_by(|a, b| {
+            match a.range_value.range.start().cmp(b.range_value.range.start()) {
                 core::cmp::Ordering::Equal => {
                     debug_assert!(
                         a.priority_number() != b.priority_number(),
@@ -345,7 +343,8 @@ where
                     b.priority_number().cmp(&a.priority_number())
                 }
                 other => other,
-            });
+            }
+        });
         let iter = AssumePrioritySortedStartsMap::new(iter);
 
         Self::new(iter)

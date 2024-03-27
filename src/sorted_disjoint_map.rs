@@ -50,8 +50,6 @@ where
     pub range: RangeInclusive<T>,
     /// cmk doc
     pub value: VR,
-    /// cmk doc
-    priority_number: Option<NonZeroUsize>,
     phantom: PhantomData<V>,
 }
 
@@ -62,24 +60,12 @@ where
     VR: CloneBorrow<V> + 'a,
 {
     /// cmk doc
-    pub fn new(range: RangeInclusive<T>, value: VR, priority_number: Option<NonZeroUsize>) -> Self {
+    pub fn new(range: RangeInclusive<T>, value: VR) -> Self {
         RangeValue {
             range,
             value,
-            priority_number,
             phantom: PhantomData,
         }
-    }
-
-    /// access priority number
-
-    pub fn priority_number_cmk(&self) -> NonZeroUsize {
-        self.priority_number.unwrap()
-    }
-
-    // set priority number
-    pub fn set_priority_number_cmk(&mut self, priority_number: NonZeroUsize) {
-        self.priority_number = Some(priority_number);
     }
 }
 
@@ -90,7 +76,8 @@ where
 {
     /// cmk doc
     pub fn new_unique(range: RangeInclusive<T>, v: V, priority: Option<NonZeroUsize>) -> Self {
-        RangeValue::new(range, UniqueValue::new(v), priority)
+        // cmk0000 ignore priority for now
+        RangeValue::new(range, UniqueValue::new(v))
     }
 }
 
@@ -104,7 +91,6 @@ where
         f.debug_struct("RangeValue")
             .field("range", &self.range)
             .field("value", self.value.borrow())
-            .field("priority", &self.priority_number)
             .finish()
     }
 }
@@ -917,11 +903,30 @@ where
 // the priority field is part of the wrapper, not RangeValue?
 
 #[derive(Clone, Debug)]
-pub struct Priority<T, V, VR>(pub RangeValue<T, V, VR>)
+pub struct Priority<T, V, VR>
 where
     T: Integer,
     V: ValueOwned,
-    VR: CloneBorrow<V>;
+    VR: CloneBorrow<V>,
+{
+    pub(crate) range_value: RangeValue<T, V, VR>,
+    priority_number: NonZeroUsize,
+}
+
+// new
+impl<T, V, VR> Priority<T, V, VR>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+{
+    pub fn new(range_value: RangeValue<T, V, VR>, priority_number: NonZeroUsize) -> Self {
+        Self {
+            range_value,
+            priority_number,
+        }
+    }
+}
 
 // access the priority_number field from .0
 impl<T, V, VR> Priority<T, V, VR>
@@ -964,15 +969,7 @@ where
     VR: CloneBorrow<V> + 'a,
 {
     fn cmp(&self, other: &Self) -> Ordering {
-        let priority0 = self
-            .0
-            .priority_number
-            .expect("When comparing, priority must be Some");
-        let priority1 = other
-            .0
-            .priority_number
-            .expect("When comparing, priority must be Some");
-        priority0.cmp(&priority1)
+        self.priority_number.cmp(&other.priority_number)
     }
 }
 
@@ -1025,7 +1022,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
             .next()
-            .map(|range| RangeValue::new(range, self.value, None))
+            .map(|range| RangeValue::new(range, self.value))
     }
 }
 

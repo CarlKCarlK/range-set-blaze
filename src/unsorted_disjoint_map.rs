@@ -72,13 +72,12 @@ where
             let Some(mut next_range_value_cmk) = self.iter.next() else {
                 return self.option_priority.take();
             };
-            next_range_value_cmk.set_priority_number_cmk(self.priority);
-            let next_priority = Priority(next_range_value_cmk);
+            let next_priority = Priority::new(next_range_value_cmk, self.priority);
             self.priority =
                 non_zero_checked_sub(self.priority, 1).expect_debug_unwrap_release("overflow");
 
             // check the next range is valid and non-empty
-            let (next_start, next_end) = next_priority.0.range.clone().into_inner();
+            let (next_start, next_end) = next_priority.range_value.range.clone().into_inner();
             assert!(
                 next_end <= T::safe_max_value(),
                 "end must be <= T::safe_max_value()"
@@ -94,7 +93,8 @@ where
             };
 
             // if the ranges do not touch or overlap, return the current range and set the current range to the next range
-            let (current_start, current_end) = current_priority.0.range.clone().into_inner();
+            let (current_start, current_end) =
+                current_priority.range_value.range.clone().into_inner();
             if (next_start >= self.min_value_plus_2 && current_end <= next_start - self.two)
                 || (current_start >= self.min_value_plus_2 && next_end <= current_start - self.two)
             {
@@ -106,13 +106,16 @@ where
 
             // cmk think about combining this with the previous if
             // if values are different, return the current range and set the current range to the next range
-            if current_priority.0.value.borrow() != next_priority.0.value.borrow() {
+            if current_priority.range_value.value.borrow()
+                != next_priority.range_value.value.borrow()
+            {
                 self.option_priority = Some(next_priority);
                 return Some(current_priority);
             }
 
             // they touch or overlap and have the same value, so merge
-            current_priority.0.range = min(current_start, next_start)..=max(current_end, next_end);
+            current_priority.range_value.range =
+                min(current_start, next_start)..=max(current_end, next_end);
             self.option_priority = Some(current_priority);
             // continue;
         }

@@ -64,7 +64,9 @@ where
     /// Creates a new [`MergeMap`] iterator from two [`SortedDisjointMap`] iterators. See [`MergeMap`] for more details and examples.
     pub fn new(left: L, right: R) -> Self {
         Self {
-            iter: left.merge_by(right, |a, b| a.0.range.start() < b.0.range.start()),
+            iter: left.merge_by(right, |a, b| {
+                a.range_value.range.start() < b.range_value.range.start()
+            }),
         }
     }
 }
@@ -175,10 +177,17 @@ where
         let iter: KMergeBy<
             AdjustPriorityMap<T, V, VR, I>,
             fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
-        > = iter.kmerge_by(|a, b| match a.0.range.start().cmp(&b.0.range.start()) {
-            Ordering::Less => true,
-            Ordering::Equal => a.priority_number() < b.priority_number(),
-            Ordering::Greater => false,
+        > = iter.kmerge_by(|a, b| {
+            match a
+                .range_value
+                .range
+                .start()
+                .cmp(&b.range_value.range.start())
+            {
+                Ordering::Less => true,
+                Ordering::Equal => a.priority_number() < b.priority_number(),
+                Ordering::Greater => false,
+            }
         });
         Self { iter }
     }

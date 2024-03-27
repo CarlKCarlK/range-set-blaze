@@ -1807,9 +1807,9 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
         let iter = iter.into_iter();
         // cmk0 can we define map in terms of set or visa versa?
         // cmk0 why still using "none" for priority?
-        let unsorted = UnsortedDisjointMap::new(iter.map(|x| RangeValue::new(x..=x, &(), None)));
+        let unsorted = UnsortedDisjointMap::new(iter.map(|x| RangeValue::new(x..=x, &())));
         for priority in unsorted {
-            self.0.internal_add(priority.0.range, ());
+            self.0.internal_add(priority.range_value.range, ());
         }
     }
 }
@@ -2147,9 +2147,7 @@ where
 {
     type Item = RangeValue<T, (), &'static ()>;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter
-            .next()
-            .map(|range| RangeValue::new(range, &(), None))
+        self.iter.next().map(|range| RangeValue::new(range, &()))
     }
 }
 
@@ -2204,7 +2202,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|range| Priority(RangeValue::new(range, &(), Some(NonZeroUsize::MIN))))
+            .map(|range| Priority::new(RangeValue::new(range, &()), NonZeroUsize::MIN))
     }
 }
 

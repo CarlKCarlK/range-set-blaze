@@ -83,7 +83,7 @@ where
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
-                let (next_start, _next_end) = next_item.0.range.clone().into_inner();
+                let (next_start, _next_end) = next_item.range_value.range.clone().into_inner();
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
@@ -91,7 +91,8 @@ where
                     //     "cmk pushing self.next_item {:?} into empty workspace",
                     //     next_item.range
                     // );
-                    self.workspace_next_end = min_next_end(&self.workspace_next_end, &next_item.0);
+                    self.workspace_next_end =
+                        min_next_end(&self.workspace_next_end, &next_item.range_value);
                     self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     // println!(
@@ -101,10 +102,11 @@ where
                     // println!("cmk return to top of the main processing loop");
                     continue; // return to top of the main processing loop
                 };
-                let best = &best.0;
+                let best = &best.range_value;
                 if next_start == *best.range.start() {
                     // Always push (this differs from UnionIterMap)
-                    self.workspace_next_end = min_next_end(&self.workspace_next_end, &next_item.0);
+                    self.workspace_next_end =
+                        min_next_end(&self.workspace_next_end, &next_item.range_value);
                     self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     continue; // return to top of the main processing loop
@@ -127,7 +129,7 @@ where
 
                 return value;
             };
-            let best = &best.0;
+            let best = &best.range_value;
 
             // We buffer for output the best item up to the start of the next item (if any).
 
@@ -135,7 +137,7 @@ where
             // unwrap() is safe because we know the workspace is not empty
             let mut next_end = self.workspace_next_end.take().unwrap();
             if let Some(next_item) = self.next_item.as_ref() {
-                next_end = min(*next_item.0.range.start() - T::one(), next_end);
+                next_end = min(*next_item.range_value.range.start() - T::one(), next_end);
             }
 
             // Add the front of best to the gather buffer.
@@ -173,7 +175,6 @@ where
                         self.gather = Some(RangeValue::new(
                             *best.range.start()..=next_end,
                             best.value.clone_borrow(),
-                            None,
                         ));
                     } else {
                         debug_assert!(self.gather.is_none());
@@ -190,7 +191,6 @@ where
                     self.gather = Some(RangeValue::new(
                         *best.range.start()..=next_end,
                         best.value.clone_borrow(),
-                        None,
                     ));
                 } else {
                     debug_assert!(self.gather.is_none());
@@ -203,15 +203,15 @@ where
             let mut new_workspace = BinaryHeap::new();
             let mut new_next_end = None;
             while let Some(item) = self.workspace.pop() {
-                let mut item = item.0;
-                if *item.range.end() <= next_end {
+                let mut item = item;
+                if *item.range_value.range.end() <= next_end {
                     // too short, don't keep
                     // println!("cmk too short, don't keep in workspace {:?}", item.range);
                     continue; // while loop
                 }
-                item.range = next_end + T::one()..=*item.range.end();
-                new_next_end = min_next_end(&new_next_end, &item);
-                new_workspace.push(Priority(item));
+                item.range_value.range = next_end + T::one()..=*item.range_value.range.end();
+                new_next_end = min_next_end(&new_next_end, &item.range_value);
+                new_workspace.push(item);
             }
             self.workspace = new_workspace;
             self.workspace_next_end = new_next_end;

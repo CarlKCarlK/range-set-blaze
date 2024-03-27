@@ -2003,8 +2003,8 @@ where
         for priority in
             UnsortedDisjointMap::new(iter.map(|(r, v)| RangeValue::new_unique(r..=r, v, None)))
         {
-            let range = priority.0.range;
-            let value = priority.0.value.borrow_clone();
+            let range = priority.range_value.range;
+            let value = priority.range_value.value.borrow_clone();
             self.internal_add(range, value);
         }
 

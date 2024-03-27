@@ -65,9 +65,9 @@ where
     type Item = RangeValue<T, V, &'a V>; // Assuming VR is always &'a V for next
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(start, end_value)| {
-            RangeValue::new(*start..=end_value.end, &end_value.value, None)
-        })
+        self.iter
+            .next()
+            .map(|(start, end_value)| RangeValue::new(*start..=end_value.end, &end_value.value))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -120,7 +120,7 @@ impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<T, V> 
         self.iter.next().map(|(start, end_value)| {
             let range = start..=end_value.end;
             // cmk don't use RangeValue here
-            RangeValue::new(range, Rc::new(end_value.value), None)
+            RangeValue::new(range, Rc::new(end_value.value))
         })
     }
 
@@ -455,11 +455,9 @@ where
     type Item = Priority<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|mut range_value| {
-            range_value.set_priority_number_cmk(self.new_priority);
-            Priority(range_value)
-            // range_value
-        })
+        self.iter
+            .next()
+            .map(|mut range_value| Priority::new(range_value, self.new_priority))
     }
 }
 
