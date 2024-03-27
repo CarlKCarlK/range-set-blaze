@@ -5,8 +5,8 @@ use alloc::collections::BinaryHeap;
 use crate::{
     map::{CloneBorrow, ValueOwned},
     range_values::AdjustPriorityMap,
-    sorted_disjoint_map::Priority,
-    BitXorAdjusted, Integer, MergeMap, RangeValue, SortedDisjointMap, SortedStartsMap,
+    sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
+    BitXorAdjusted, Integer, MergeMap, RangeValue, SortedDisjointMap,
 };
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
@@ -41,10 +41,10 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: SortedStartsMap<T, V, VR>,
+    I: PrioritySortedStartsMap<T, V, VR>,
 {
     iter: I,
-    next_item: Option<RangeValue<T, V, VR>>,
+    next_item: Option<Priority<T, V, VR>>,
     workspace: BinaryHeap<Priority<T, V, VR>>,
     workspace_next_end: Option<T>,
     gather: Option<RangeValue<T, V, VR>>,
@@ -68,7 +68,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: SortedStartsMap<T, V, VR>,
+    I: PrioritySortedStartsMap<T, V, VR>,
 {
     type Item = RangeValue<T, V, VR>;
 
@@ -83,7 +83,7 @@ where
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
-                let (next_start, _next_end) = next_item.range.clone().into_inner();
+                let (next_start, _next_end) = next_item.0.range.clone().into_inner();
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
@@ -91,8 +91,8 @@ where
                     //     "cmk pushing self.next_item {:?} into empty workspace",
                     //     next_item.range
                     // );
-                    self.workspace_next_end = min_next_end(&self.workspace_next_end, &next_item);
-                    self.workspace.push(Priority(next_item));
+                    self.workspace_next_end = min_next_end(&self.workspace_next_end, &next_item.0);
+                    self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     // println!(
                     //     "cmk reading new self.next_item via .next() {:?}",
@@ -104,8 +104,8 @@ where
                 let best = &best.0;
                 if next_start == *best.range.start() {
                     // Always push (this differs from UnionIterMap)
-                    self.workspace_next_end = min_next_end(&self.workspace_next_end, &next_item);
-                    self.workspace.push(Priority(next_item));
+                    self.workspace_next_end = min_next_end(&self.workspace_next_end, &next_item.0);
+                    self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     continue; // return to top of the main processing loop
                 }
@@ -135,7 +135,7 @@ where
             // unwrap() is safe because we know the workspace is not empty
             let mut next_end = self.workspace_next_end.take().unwrap();
             if let Some(next_item) = self.next_item.as_ref() {
-                next_end = min(*next_item.range.start() - T::one(), next_end);
+                next_end = min(*next_item.0.range.start() - T::one(), next_end);
             }
 
             // Add the front of best to the gather buffer.

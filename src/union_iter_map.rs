@@ -1,10 +1,10 @@
 use crate::alloc::string::ToString;
-use crate::sorted_disjoint_map::Priority;
+use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use alloc::format;
 use alloc::string::String;
 use alloc::{collections::BinaryHeap, vec};
+use core::cmp::min;
 use core::ops::RangeInclusive;
-use core::{cmp::min, iter::FusedIterator};
 use itertools::Itertools;
 
 use crate::{map::ValueOwned, Integer};
@@ -12,10 +12,7 @@ use crate::{
     map::{CloneBorrow, SortedStartsInVecMap},
     unsorted_disjoint_map::AssumeSortedStartsMap,
 };
-use crate::{
-    sorted_disjoint_map::{RangeValue, SortedStartsMap},
-    unsorted_disjoint_map::UnsortedDisjointMap,
-};
+use crate::{sorted_disjoint_map::RangeValue, unsorted_disjoint_map::UnsortedDisjointMap};
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
 /// i.e., all the integers in any input iterator, as sorted & disjoint ranges. Uses [`Merge`]
@@ -49,10 +46,10 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    SS: Iterator<Item = RangeValue<T, V, VR>>, // cmk0
+    SS: PrioritySortedStartsMap<T, V, VR>, // cmk0
 {
     iter: SS,
-    next_item: Option<RangeValue<T, V, VR>>,
+    next_item: Option<Priority<T, V, VR>>,
     workspace: BinaryHeap<Priority<T, V, VR>>,
     gather: Option<RangeValue<T, V, VR>>,
     ready_to_go: Option<RangeValue<T, V, VR>>,
@@ -63,7 +60,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>, // cmk0 SortedStartsMap<T, V, VR>,
+    I: PrioritySortedStartsMap<T, V, VR>, // cmk0 SortedStartsMap<T, V, VR>,
 {
     type Item = RangeValue<T, V, VR>;
 
@@ -78,7 +75,7 @@ where
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
-                let (next_start, next_end) = next_item.range.clone().into_inner();
+                let (next_start, next_end) = next_item.0.range.clone().into_inner();
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
@@ -86,7 +83,7 @@ where
                     //     "cmk pushing self.next_item {:?} into empty workspace",
                     //     next_item.range
                     // );
-                    self.workspace.push(Priority(next_item));
+                    self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     // println!(
                     //     "cmk reading new self.next_item via .next() {:?}",
@@ -95,14 +92,14 @@ where
                     // println!("cmk return to top of the main processing loop");
                     continue; // return to top of the main processing loop
                 };
-                let best = &best.0;
-                if next_start == *best.range.start() {
+                let best = &best;
+                if next_start == *best.0.range.start() {
                     // Only push if the priority is higher or the end is greater
-                    if next_item.priority_number > best.priority_number
-                        || next_end > *best.range.end()
+                    if next_item.0.priority_number > best.0.priority_number
+                        || next_end > *best.0.range.end()
                     {
                         // println!("cmk pushing next_item {:?} into workspace", next_item.range);
-                        self.workspace.push(Priority(next_item));
+                        self.workspace.push(next_item);
                     } else {
                         // println!(
                         //     "cmk throwing away next_item {:?} because of priority and length",
@@ -146,7 +143,7 @@ where
                 //     next_item.range.start(),
                 //     best.range.end()
                 // );
-                min(*next_item.range.start() - T::one(), *best.range.end())
+                min(*next_item.0.range.start() - T::one(), *best.range.end())
                 // println!("cmk min {:?}", m);
             } else {
                 *best.range.end()
@@ -252,7 +249,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>, // cmk0 SortedStartsMap<T, V, VR>,
+    I: PrioritySortedStartsMap<T, V, VR>, // cmk0 SortedStartsMap<T, V, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
@@ -354,14 +351,15 @@ where
     }
 }
 
-impl<T, V, VR, I> FusedIterator for UnionIterMap<T, V, VR, I>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: SortedStartsMap<T, V, VR> + FusedIterator,
-{
-}
+// cmk0
+// impl<T, V, VR, I> FusedIterator for UnionIterMap<T, V, VR, I>
+// where
+//     T: Integer,
+//     V: ValueOwned,
+//     VR: CloneBorrow<V>,
+//     I: SortedStartsMap<T, V, VR> + FusedIterator,
+// {
+// }
 
 // cmk
 // impl<'a, T, V, VR, I> ops::Not for UnionIterMap<'a, T, V, VR, I>

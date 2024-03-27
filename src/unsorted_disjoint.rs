@@ -205,7 +205,7 @@ where
         Self: Sized,
     {
         let map = SortedStartsToUnitMap::new(self);
-        let range_map_blaze = RangeMapBlaze::from_sorted_starts_map(map);
+        let range_map_blaze = RangeMapBlaze::from_priority_sorted_starts_map(map);
         RangeSetBlaze(range_map_blaze)
     }
 }

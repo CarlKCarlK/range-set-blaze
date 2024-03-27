@@ -10,15 +10,13 @@ use alloc::vec;
 use alloc::vec::Vec;
 // use crate::range_values::RangeValuesIter;
 use crate::range_values::NonZeroEnumerateExt;
-use crate::sorted_disjoint_map::SortedDisjointMap;
 use crate::sorted_disjoint_map::{DebugToString, RangeValue};
+use crate::sorted_disjoint_map::{PrioritySortedStartsMap, SortedDisjointMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{
     AssumeSortedStartsMap, SortedDisjointWithLenSoFarMap, UnsortedDisjointMap,
 };
-use crate::{
-    CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint, SortedStartsMap,
-};
+use crate::{CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint};
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 use core::borrow::Borrow;
@@ -513,10 +511,10 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     }
 
     /// cmk doc
-    pub fn from_sorted_starts_map<VR, I>(iter: I) -> Self
+    pub fn from_priority_sorted_starts_map<VR, I>(iter: I) -> Self
     where
         VR: CloneBorrow<V>,
-        I: SortedStartsMap<T, V, VR>,
+        I: PrioritySortedStartsMap<T, V, VR>,
     {
         Self::from_sorted_disjoint_map(UnionIterMap::new(iter))
     }

@@ -9,7 +9,9 @@ use crate::range_values::{non_zero_checked_sub, AdjustPriorityMap};
 use crate::Integer;
 use alloc::borrow::ToOwned;
 
-use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap};
+use crate::sorted_disjoint_map::{
+    Priority, PrioritySortedStartsMap, RangeValue, SortedDisjointMap,
+};
 
 /// Works with [`UnionIter`] to turn any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
 /// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
@@ -86,10 +88,10 @@ where
     R: SortedDisjointMap<T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
 {
-    type Item = RangeValue<T, V, VR>;
+    type Item = Priority<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        self.iter.next().map(|x| Priority(x))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -97,14 +99,14 @@ where
     }
 }
 
-impl<T, V, VR, L, R> SortedStartsMap<T, V, VR> for MergeMap<T, V, VR, L, R>
+impl<T, V, VR, L, R> PrioritySortedStartsMap<T, V, VR> for MergeMap<T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
-    <V as ToOwned>::Owned: PartialEq,
+    <V as ToOwned>::Owned: PartialEq, // cmk0 needed?
 {
 }
 
@@ -199,10 +201,10 @@ where
 
     I: SortedDisjointMap<T, V, VR>,
 {
-    type Item = RangeValue<T, V, VR>;
+    type Item = Priority<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        self.iter.next().map(|x| Priority(x))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -210,7 +212,7 @@ where
     }
 }
 
-impl<T, V, VR, I> SortedStartsMap<T, V, VR> for KMergeMap<T, V, VR, I>
+impl<T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for KMergeMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,

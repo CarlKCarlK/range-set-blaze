@@ -1,7 +1,8 @@
 use crate::range_values::{non_zero_checked_sub, ExpectDebugUnwrapRelease};
+use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::{
     map::{CloneBorrow, EndValue, ValueOwned},
-    sorted_disjoint_map::{RangeValue, SortedDisjointMap, SortedStartsMap},
+    sorted_disjoint_map::{RangeValue, SortedDisjointMap},
     Integer,
 };
 use alloc::borrow::ToOwned;
@@ -220,7 +221,7 @@ where
     iter: I,
 }
 
-impl<T, V, VR, I> SortedStartsMap<T, V, VR> for AssumeSortedStartsMap<T, V, VR, I>
+impl<T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for AssumeSortedStartsMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -257,10 +258,10 @@ where
     VR: CloneBorrow<V>,
     I: Iterator<Item = RangeValue<T, V, VR>>,
 {
-    type Item = RangeValue<T, V, VR>;
+    type Item = Priority<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        self.iter.next().map(|x| Priority(x))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

@@ -1,3 +1,4 @@
+use core::num::NonZeroUsize;
 use core::str::FromStr;
 /// cmk doc
 // cmk1 rename file to range_set_blaze.rs
@@ -18,6 +19,7 @@ use std::{
 use alloc::rc::Rc;
 use gen_ops::gen_ops_ex;
 
+use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::{
     iter_map::{IntoIterMap, KeysMap},
     prelude::*,
@@ -2195,16 +2197,17 @@ where
     T: Integer,
     I: SortedStarts<T>,
 {
-    type Item = RangeValue<T, (), &'static ()>;
+    type Item = Priority<T, (), &'static ()>;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|range| RangeValue::new(range, &(), None))
+            .map(|range| Priority(RangeValue::new(range, &(), Some(NonZeroUsize::MIN))))
     }
 }
 
 // cmk1 move these into the macro
-impl<T, I> SortedStartsMap<T, (), &'static ()> for SortedStartsToUnitMap<T, I>
+impl<T, I> PrioritySortedStartsMap<T, (), &'static ()> for SortedStartsToUnitMap<T, I>
 where
     T: Integer,
     I: SortedStarts<T>,
