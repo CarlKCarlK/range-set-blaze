@@ -335,15 +335,17 @@ where
     // cmk0
     #[allow(clippy::clone_on_copy)]
     fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, VR, I>) -> Self {
-        let iter = unsorted_disjoint.sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
-            core::cmp::Ordering::Equal => {
-                debug_assert!(
-                    a.priority_number_cmk() != b.priority_number_cmk(),
-                    "Priorities must not be equal"
-                );
-                b.priority_number_cmk().cmp(&a.priority_number_cmk())
+        let iter = unsorted_disjoint.map(|x| x.0).sorted_by(|a, b| {
+            match a.range.start().cmp(b.range.start()) {
+                core::cmp::Ordering::Equal => {
+                    debug_assert!(
+                        a.priority_number_cmk() != b.priority_number_cmk(),
+                        "Priorities must not be equal"
+                    );
+                    b.priority_number_cmk().cmp(&a.priority_number_cmk())
+                }
+                other => other,
             }
-            other => other,
         });
         let iter = AssumeSortedStartsMap::new(iter);
 

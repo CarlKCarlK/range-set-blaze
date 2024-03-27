@@ -2000,11 +2000,11 @@ where
         I: IntoIterator<Item = (T, V)>,
     {
         let iter = iter.into_iter();
-        for range_value in
+        for priority in
             UnsortedDisjointMap::from(iter.map(|(r, v)| RangeValue::new_unique(r..=r, v, None)))
         {
-            let range = range_value.range;
-            let value = range_value.value.borrow_clone();
+            let range = priority.0.range;
+            let value = priority.0.value.borrow_clone();
             self.internal_add(range, value);
         }
 

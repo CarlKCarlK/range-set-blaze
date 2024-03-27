@@ -23,7 +23,7 @@ where
     I: Iterator<Item = RangeValue<T, V, VR>>,
 {
     iter: I,
-    option_range_value: Option<RangeValue<T, V, VR>>,
+    option_priority: Option<Priority<T, V, VR>>,
     min_value_plus_2: T,
     two: T,
     priority: NonZeroUsize,
@@ -39,7 +39,7 @@ where
     fn from(into_iter: I) -> Self {
         UnsortedDisjointMap {
             iter: into_iter.into_iter(),
-            option_range_value: None,
+            option_priority: None,
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
             priority: NonZeroUsize::MAX,
@@ -63,21 +63,22 @@ where
     VR: CloneBorrow<V>,
     I: Iterator<Item = RangeValue<T, V, VR>>,
 {
-    type Item = RangeValue<T, V, VR>;
+    type Item = Priority<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             // get the next range_value, if none, return the current range_value
             // cmk create a new range_value instead of modifying the existing one????
-            let Some(mut next_range_value) = self.iter.next() else {
-                return self.option_range_value.take();
+            let Some(mut next_range_value_cmk) = self.iter.next() else {
+                return self.option_priority.take();
             };
-            next_range_value.set_priority_number_cmk(self.priority);
+            next_range_value_cmk.set_priority_number_cmk(self.priority);
+            let next_priority = Priority(next_range_value_cmk);
             self.priority =
                 non_zero_checked_sub(self.priority, 1).expect_debug_unwrap_release("overflow");
 
             // check the next range is valid and non-empty
-            let (next_start, next_end) = next_range_value.range.clone().into_inner();
+            let (next_start, next_end) = next_priority.0.range.clone().into_inner();
             assert!(
                 next_end <= T::safe_max_value(),
                 "end must be <= T::safe_max_value()"
@@ -87,32 +88,32 @@ where
             }
 
             // get the current range (if none, set the current range to the next range and loop)
-            let Some(mut current_range_value) = self.option_range_value.take() else {
-                self.option_range_value = Some(next_range_value);
+            let Some(mut current_priority) = self.option_priority.take() else {
+                self.option_priority = Some(next_priority);
                 continue;
             };
 
             // if the ranges do not touch or overlap, return the current range and set the current range to the next range
-            let (current_start, current_end) = current_range_value.range.clone().into_inner();
+            let (current_start, current_end) = current_priority.0.range.clone().into_inner();
             if (next_start >= self.min_value_plus_2 && current_end <= next_start - self.two)
                 || (current_start >= self.min_value_plus_2 && next_end <= current_start - self.two)
             {
-                self.option_range_value = Some(next_range_value);
-                return Some(current_range_value);
+                self.option_priority = Some(next_priority);
+                return Some(current_priority);
             }
 
             // So, they touch or overlap.
 
             // cmk think about combining this with the previous if
             // if values are different, return the current range and set the current range to the next range
-            if current_range_value.value.borrow() != next_range_value.value.borrow() {
-                self.option_range_value = Some(next_range_value);
-                return Some(current_range_value);
+            if current_priority.0.value.borrow() != next_priority.0.value.borrow() {
+                self.option_priority = Some(next_priority);
+                return Some(current_priority);
             }
 
             // they touch or overlap and have the same value, so merge
-            current_range_value.range = min(current_start, next_start)..=max(current_end, next_end);
-            self.option_range_value = Some(current_range_value);
+            current_priority.0.range = min(current_start, next_start)..=max(current_end, next_end);
+            self.option_priority = Some(current_priority);
             // continue;
         }
     }
@@ -122,7 +123,7 @@ where
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (lower, upper) = self.iter.size_hint();
         let lower = if lower == 0 { 0 } else { 1 };
-        if self.option_range_value.is_some() {
+        if self.option_priority.is_some() {
             (lower, upper.map(|x| x + 1))
         } else {
             (lower, upper)

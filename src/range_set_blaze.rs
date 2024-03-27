@@ -1806,8 +1806,8 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
     {
         let iter = iter.into_iter();
         let unsorted = UnsortedDisjointMap::from(iter.map(|x| RangeValue::new(x..=x, &(), None)));
-        for range_value in unsorted {
-            self.0.internal_add(range_value.range, ());
+        for priority in unsorted {
+            self.0.internal_add(priority.0.range, ());
         }
     }
 }
