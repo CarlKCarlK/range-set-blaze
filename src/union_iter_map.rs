@@ -95,7 +95,7 @@ where
                 let best = &best;
                 if next_start == *best.0.range.start() {
                     // Only push if the priority is higher or the end is greater
-                    if next_item.0.priority_number > best.0.priority_number
+                    if next_item.priority_number() > best.priority_number()
                         || next_end > *best.0.range.end()
                     {
                         // println!("cmk pushing next_item {:?} into workspace", next_item.range);
@@ -211,7 +211,7 @@ where
                     continue; // while loop
                 };
                 let new_best = &new_best.0;
-                if item.priority_number < new_best.priority_number
+                if item.priority_number_cmk() < new_best.priority_number_cmk()
                     && *item.range.end() <= *new_best.range.end()
                 {
                     // println!("cmk item is lower priority {:?} and shorter {:?} than best item {:?},{:?} in new workspace, so don't keep",
@@ -338,10 +338,10 @@ where
         let iter = unsorted_disjoint.sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
             core::cmp::Ordering::Equal => {
                 debug_assert!(
-                    a.priority_number != b.priority_number,
+                    a.priority_number_cmk() != b.priority_number_cmk(),
                     "Priorities must not be equal"
                 );
-                b.priority_number.cmp(&a.priority_number)
+                b.priority_number_cmk().cmp(&a.priority_number_cmk())
             }
             other => other,
         });

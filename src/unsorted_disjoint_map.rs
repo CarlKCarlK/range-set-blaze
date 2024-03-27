@@ -72,7 +72,7 @@ where
             let Some(mut next_range_value) = self.iter.next() else {
                 return self.option_range_value.take();
             };
-            next_range_value.priority_number = Some(self.priority);
+            next_range_value.set_priority_number_cmk(self.priority);
             self.priority =
                 non_zero_checked_sub(self.priority, 1).expect_debug_unwrap_release("overflow");
 

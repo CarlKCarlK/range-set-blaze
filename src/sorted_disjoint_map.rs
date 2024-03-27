@@ -51,7 +51,7 @@ where
     /// cmk doc
     pub value: VR,
     /// cmk doc
-    pub priority_number: Option<NonZeroUsize>,
+    priority_number: Option<NonZeroUsize>,
     phantom: PhantomData<V>,
 }
 
@@ -69,6 +69,17 @@ where
             priority_number,
             phantom: PhantomData,
         }
+    }
+
+    /// access priority number
+
+    pub fn priority_number_cmk(&self) -> NonZeroUsize {
+        self.priority_number.unwrap()
+    }
+
+    // set priority number
+    pub fn set_priority_number_cmk(&mut self, priority_number: NonZeroUsize) {
+        self.priority_number = Some(priority_number);
     }
 }
 
@@ -905,6 +916,18 @@ where
     V: ValueOwned,
     VR: CloneBorrow<V>;
 
+// access the priority_number field from .0
+impl<T, V, VR> Priority<T, V, VR>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+{
+    pub fn priority_number(&self) -> NonZeroUsize {
+        self.priority_number()
+    }
+}
+
 // Implement `PartialEq` to allow comparison (needed for `Eq`).
 impl<T, V, VR> PartialEq for Priority<T, V, VR>
 where
@@ -913,7 +936,7 @@ where
     VR: CloneBorrow<V>,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.0.priority_number == other.0.priority_number
+        self.priority_number() == other.priority_number()
     }
 }
 

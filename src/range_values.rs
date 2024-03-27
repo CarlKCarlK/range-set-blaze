@@ -450,7 +450,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|mut range_value| {
-            range_value.priority_number = Some(self.new_priority);
+            range_value.set_priority_number_cmk(self.new_priority);
             range_value
         })
     }
@@ -489,3 +489,13 @@ where
     I: SortedDisjointMap<T, V, VR>,
 {
 }
+
+// cmk0
+// impl<T, V, VR, I> SortedDisjointMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
+// where
+//     T: Integer,
+//     V: ValueOwned,
+//     VR: CloneBorrow<V>,
+//     I: SortedDisjointMap<T, V, VR>,
+// {
+// }

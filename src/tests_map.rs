@@ -463,7 +463,7 @@ fn map_repro_106() {
     let iter = iter
         .into_iter()
         .sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
-            std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
+            std::cmp::Ordering::Equal => b.priority_number_cmk().cmp(&a.priority_number_cmk()),
             other => other,
         });
     let iter = AssumeSortedStartsMap::new(iter);
@@ -501,7 +501,7 @@ fn map_repro_206() {
     let iter = iter
         .into_iter()
         .sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
-            std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
+            std::cmp::Ordering::Equal => b.priority_number_cmk().cmp(&a.priority_number_cmk()),
             other => other,
         });
     let iter = AssumeSortedStartsMap::new(iter);
@@ -650,7 +650,7 @@ fn map_step_by_step() {
     let iter = iter
         .into_iter()
         .sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
-            std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
+            std::cmp::Ordering::Equal => b.priority_number_cmk().cmp(&a.priority_number_cmk()),
             other => other,
         });
     let iter = AssumeSortedStartsMap::new(iter);
@@ -668,7 +668,7 @@ fn map_step_by_step() {
     let iter = iter
         .into_iter()
         .sorted_by(|a, b| match a.range.start().cmp(b.range.start()) {
-            std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
+            std::cmp::Ordering::Equal => b.priority_number_cmk().cmp(&a.priority_number_cmk()),
             other => other,
         });
     let iter = AssumeSortedStartsMap::new(iter);
