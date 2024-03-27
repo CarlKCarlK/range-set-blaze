@@ -1,5 +1,11 @@
 #![allow(missing_docs)]
-use crate::{map::CloneBorrow, sorted_disjoint_map::RangeValue, Integer};
+use crate::{
+    map::CloneBorrow,
+    sorted_disjoint_map::{
+        Priority, PrioritySortedDisjointMap, PrioritySortedStartsMap, RangeValue,
+    },
+    Integer,
+};
 use alloc::{collections::btree_map, rc::Rc};
 use core::{
     iter::{Enumerate, FusedIterator},
@@ -10,7 +16,7 @@ use core::{
 
 use crate::{
     map::{EndValue, ValueOwned},
-    sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap},
+    sorted_disjoint_map::SortedDisjointMap,
 };
 
 /// An iterator that visits the ranges in the [`RangeSetBlaze`],
@@ -446,13 +452,13 @@ where
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
-    type Item = RangeValue<T, V, VR>;
+    type Item = Priority<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|mut range_value| {
             range_value.set_priority_number_cmk(self.new_priority);
-            // Priority(range_value)
-            range_value
+            Priority(range_value)
+            // range_value
         })
     }
 }
@@ -473,33 +479,8 @@ where
     }
 }
 
-// all AdjustPriorityMap are also SortedDisjointMaps
-impl<'a, T, V, VR, I> SortedStartsMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: SortedDisjointMap<T, V, VR>,
-{
-}
-
-pub trait SortedDisjointMapCmk<T, V, VR>: Iterator<Item = RangeValue<T, V, VR>>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-{
-}
-
-impl<T, V, VR, I> SortedDisjointMapCmk<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: SortedDisjointMap<T, V, VR>,
-{
-}
-// impl<'a, T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
+// // all AdjustPriorityMap are also SortedDisjointMaps
+// impl<'a, T, V, VR, I> SortedStartsMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
 // where
 //     T: Integer,
 //     V: ValueOwned,
@@ -507,7 +488,16 @@ where
 //     I: SortedDisjointMap<T, V, VR>,
 // {
 // }
-// impl<T, V, VR, I> PrioritySortedDisjointMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
+
+// pub trait SortedDisjointMapCmk<T, V, VR>: Iterator<Item = RangeValue<T, V, VR>>
+// where
+//     T: Integer,
+//     V: ValueOwned,
+//     VR: CloneBorrow<V>,
+// {
+// }
+
+// impl<T, V, VR, I> SortedDisjointMapCmk<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
 // where
 //     T: Integer,
 //     V: ValueOwned,
@@ -515,6 +505,22 @@ where
 //     I: SortedDisjointMap<T, V, VR>,
 // {
 // }
+impl<'a, T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
+{
+}
+impl<T, V, VR, I> PrioritySortedDisjointMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
+{
+}
 
 // cmk0
 // impl<T, V, VR, I> SortedDisjointMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>

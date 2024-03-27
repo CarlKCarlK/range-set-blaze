@@ -5,12 +5,12 @@ use core::num::NonZeroUsize;
 use itertools::{Itertools, KMergeBy, MergeBy};
 
 use crate::map::{CloneBorrow, ValueOwned};
-use crate::range_values::{non_zero_checked_sub, AdjustPriorityMap, SortedDisjointMapCmk};
+use crate::range_values::{non_zero_checked_sub, AdjustPriorityMap};
 use crate::Integer;
 use alloc::borrow::ToOwned;
 
 use crate::sorted_disjoint_map::{
-    Priority, PrioritySortedStartsMap, RangeValue, SortedDisjointMap,
+    Priority, PrioritySortedDisjointMap, PrioritySortedStartsMap, SortedDisjointMap,
 };
 
 /// Works with [`UnionIter`] to turn any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
@@ -44,11 +44,11 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: SortedDisjointMapCmk<T, V, VR>,
-    R: SortedDisjointMapCmk<T, V, VR>,
+    L: PrioritySortedDisjointMap<T, V, VR>,
+    R: PrioritySortedDisjointMap<T, V, VR>,
 {
     #[allow(clippy::type_complexity)]
-    iter: MergeBy<L, R, fn(&RangeValue<T, V, VR>, &RangeValue<T, V, VR>) -> bool>,
+    iter: MergeBy<L, R, fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool>,
 }
 
 impl<T, V, VR, L, R> MergeMap<T, V, VR, L, R>
@@ -56,15 +56,15 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: SortedDisjointMapCmk<T, V, VR>,
-    R: SortedDisjointMapCmk<T, V, VR>,
+    L: PrioritySortedDisjointMap<T, V, VR>,
+    R: PrioritySortedDisjointMap<T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
 {
     // cmk0 why isn't priority mentioned?
     /// Creates a new [`MergeMap`] iterator from two [`SortedDisjointMap`] iterators. See [`MergeMap`] for more details and examples.
     pub fn new(left: L, right: R) -> Self {
         Self {
-            iter: left.merge_by(right, |a, b| a.range.start() < b.range.start()),
+            iter: left.merge_by(right, |a, b| a.0.range.start() < b.0.range.start()),
         }
     }
 }
@@ -74,8 +74,8 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: SortedDisjointMapCmk<T, V, VR>,
-    R: SortedDisjointMapCmk<T, V, VR>,
+    L: PrioritySortedDisjointMap<T, V, VR>,
+    R: PrioritySortedDisjointMap<T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
 {
 }
@@ -85,14 +85,14 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: SortedDisjointMapCmk<T, V, VR>,
-    R: SortedDisjointMapCmk<T, V, VR>,
+    L: PrioritySortedDisjointMap<T, V, VR>,
+    R: PrioritySortedDisjointMap<T, V, VR>,
     <V as ToOwned>::Owned: PartialEq, // cmk0 needed?
 {
     type Item = Priority<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|x| Priority(x))
+        self.iter.next()
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -105,8 +105,8 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: SortedDisjointMapCmk<T, V, VR>,
-    R: SortedDisjointMapCmk<T, V, VR>,
+    L: PrioritySortedDisjointMap<T, V, VR>,
+    R: PrioritySortedDisjointMap<T, V, VR>,
     <V as ToOwned>::Owned: PartialEq, // cmk0 needed?
 {
 }
@@ -150,7 +150,7 @@ where
     #[allow(clippy::type_complexity)]
     iter: KMergeBy<
         AdjustPriorityMap<T, V, VR, I>,
-        fn(&RangeValue<T, V, VR>, &RangeValue<T, V, VR>) -> bool,
+        fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
     >,
 }
 
@@ -174,10 +174,10 @@ where
         // Merge RangeValues by start with ties broken by priority
         let iter: KMergeBy<
             AdjustPriorityMap<T, V, VR, I>,
-            fn(&RangeValue<T, V, VR>, &RangeValue<T, V, VR>) -> bool,
-        > = iter.kmerge_by(|a, b| match a.range.start().cmp(&b.range.start()) {
+            fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
+        > = iter.kmerge_by(|a, b| match a.0.range.start().cmp(&b.0.range.start()) {
             Ordering::Less => true,
-            Ordering::Equal => a.priority_number_cmk() < b.priority_number_cmk(),
+            Ordering::Equal => a.priority_number() < b.priority_number(),
             Ordering::Greater => false,
         });
         Self { iter }
@@ -205,7 +205,7 @@ where
     type Item = Priority<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|x| Priority(x))
+        self.iter.next()
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
