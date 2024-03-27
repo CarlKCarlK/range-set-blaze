@@ -7,7 +7,7 @@ use crate::sorted_disjoint_map::DebugToString;
 use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap};
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::union_iter_map::UnionIterMap;
-use crate::unsorted_disjoint_map::{AssumeSortedStartsMap, UnsortedDisjointMap};
+use crate::unsorted_disjoint_map::{AssumePrioritySortedStartsMap, UnsortedDisjointMap};
 use alloc::collections::BTreeMap;
 use itertools::Itertools;
 use rand::seq::SliceRandom;
@@ -465,9 +465,8 @@ fn map_repro_106() {
         .sorted_by(|a, b| match a.0.range.start().cmp(b.0.range.start()) {
             std::cmp::Ordering::Equal => b.priority_number().cmp(&a.priority_number()),
             other => other,
-        })
-        .map(|x| x.0);
-    let iter = AssumeSortedStartsMap::new(iter);
+        });
+    let iter = AssumePrioritySortedStartsMap::new(iter);
     let iter = UnionIterMap::new(iter);
     let vs = format_range_values(iter);
     println!("{vs}");
@@ -504,9 +503,8 @@ fn map_repro_206() {
         .sorted_by(|a, b| match a.0.range.start().cmp(b.0.range.start()) {
             std::cmp::Ordering::Equal => b.priority_number().cmp(&a.priority_number()),
             other => other,
-        })
-        .map(|x| x.0);
-    let iter = AssumeSortedStartsMap::new(iter);
+        });
+    let iter = AssumePrioritySortedStartsMap::new(iter);
     // let vs = format_range_values(iter);
     // println!("{vs}");
     // assert_eq!(vs, "1..=1c 2..=2c 2..=2d 7..=7c 7..=7b 12..=12c 13..=13b 14..=14c 16..=16c 16..=16c 17..=17a 18..=18a 18..=18e 19..=19d 19..=19b 21..=21b 22..=22b 23..=23a 24..=24d 26..=26a 27..=27e 29..=29e 31..=31d 31..=31d 32..=32c 32..=32d 35..=35b 37..=37e 37..=37e 38..=38c 39..=39c 42..=42a 42..=42e 43..=43e 46..=46b 47..=47e 47..=47a 47..=47e 49..=49e 49..=49a 55..=55d 58..=58a 58..=58d 59..=59b 59..=59c 63..=63d 70..=70c 73..=73d 77..=77a 77..=77a 79..=79b 79..=79d 81..=81a 83..=83e 84..=84a 84..=84a 86..=86a 88..=88d 88..=88d 90..=90d 97..=97a 98..=98c 99..=99e 99..=99e 100..=100b 100..=100e 101..=101c 102..=102d 102..=102b 102..=102a 104..=104d 113..=113e 113..=113b 114..=114a 115..=115b 117..=117e 120..=120d 121..=121a 121..=121c 123..=123b 123..=123a 124..=124b 125..=125d 125..=125b 126..=126a 127..=127e 128..=128a 129..=129d 129..=129e 129..=129b 131..=131b 132..=132d 137..=137e 139..=139d 139..=139d 140..=140a 143..=143c 145..=145b 147..=147b 147..=147b 147..=147a 148..=148a 150..=150c 151..=151a 151..=151a 152..=152c 153..=153e 155..=155e 164..=164b 165..=165a 166..=166a 168..=168e 173..=173e 173..=173d 174..=174e 175..=175d 175..=175c 177..=177e 177..=177a 183..=183d 185..=185d 186..=186b 189..=189e 190..=190c 193..=193e 193..=193e 194..=194c 195..=195c 196..=196a 198..=198a 198..=198e 199..=199c 199..=199e 201..=201c 203..=203d 204..=204b 205..=205b 206..=206b 208..=208c 209..=209e 210..=210d 213..=213a 213..=213a 214..=214d 214..=214b 219..=219d 219..=219e 220..=220e 223..=223d 223..=223e 225..=225a 227..=227d 228..=228d 229..=229a 229..=229b 234..=234e 235..=235c 235..=235e 238..=238d 239..=239a 240..=240b 242..=242a 251..=251b 253..=253e 253..=253d ");
@@ -654,9 +652,8 @@ fn map_step_by_step() {
         .sorted_by(|a, b| match a.0.range.start().cmp(b.0.range.start()) {
             std::cmp::Ordering::Equal => b.priority_number().cmp(&a.priority_number()),
             other => other,
-        })
-        .map(|x| x.0);
-    let iter = AssumeSortedStartsMap::new(iter);
+        });
+    let iter = AssumePrioritySortedStartsMap::new(iter);
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
     println!("{vs}");
     assert_eq!(
@@ -673,9 +670,8 @@ fn map_step_by_step() {
         .sorted_by(|a, b| match a.0.range.start().cmp(b.0.range.start()) {
             std::cmp::Ordering::Equal => b.priority_number().cmp(&a.priority_number()),
             other => other,
-        })
-        .map(|x| x.0);
-    let iter = AssumeSortedStartsMap::new(iter);
+        });
+    let iter = AssumePrioritySortedStartsMap::new(iter);
     let iter = UnionIterMap::new(iter);
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
     println!("{vs}");

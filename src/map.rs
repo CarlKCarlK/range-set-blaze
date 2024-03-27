@@ -10,11 +10,11 @@ use alloc::vec;
 use alloc::vec::Vec;
 // use crate::range_values::RangeValuesIter;
 use crate::range_values::NonZeroEnumerateExt;
-use crate::sorted_disjoint_map::{DebugToString, RangeValue};
+use crate::sorted_disjoint_map::{DebugToString, Priority, RangeValue};
 use crate::sorted_disjoint_map::{PrioritySortedStartsMap, SortedDisjointMap};
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{
-    AssumeSortedStartsMap, SortedDisjointWithLenSoFarMap, UnsortedDisjointMap,
+    AssumePrioritySortedStartsMap, SortedDisjointWithLenSoFarMap, UnsortedDisjointMap,
 };
 use crate::{CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint};
 use alloc::collections::BTreeMap;
@@ -1701,7 +1701,7 @@ pub type BitSubRangesMap<T, V, VR, L, R> = IntersectionIterMap<T, V, VR, L, NotI
 
 #[doc(hidden)]
 pub type SortedStartsInVecMap<T, V, VR> =
-    AssumeSortedStartsMap<T, V, VR, vec::IntoIter<RangeValue<T, V, VR>>>;
+    AssumePrioritySortedStartsMap<T, V, VR, vec::IntoIter<Priority<T, V, VR>>>;
 // pub type BitXOrTeeMap<'a, T, V, VR, L, R> = BitOrMergeMap<
 //     'a,
 //     T,

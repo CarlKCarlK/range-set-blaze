@@ -10,7 +10,7 @@ use itertools::Itertools;
 use crate::{map::ValueOwned, Integer};
 use crate::{
     map::{CloneBorrow, SortedStartsInVecMap},
-    unsorted_disjoint_map::AssumeSortedStartsMap,
+    unsorted_disjoint_map::AssumePrioritySortedStartsMap,
 };
 use crate::{sorted_disjoint_map::RangeValue, unsorted_disjoint_map::UnsortedDisjointMap};
 
@@ -298,7 +298,7 @@ impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &
 // cmk used?
 #[allow(dead_code)]
 type SortedRangeValueVec<T, V, VR> =
-    AssumeSortedStartsMap<T, V, VR, vec::IntoIter<RangeValue<T, V, VR>>>;
+    AssumePrioritySortedStartsMap<T, V, VR, vec::IntoIter<RangeValue<T, V, VR>>>;
 
 // cmk simplify the long types
 // from iter RangeValue<T, V, VR> to UnionIterMap
@@ -335,19 +335,18 @@ where
     // cmk0
     #[allow(clippy::clone_on_copy)]
     fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, VR, I>) -> Self {
-        let iter = unsorted_disjoint.map(|x| x.0).sorted_by(|a, b| {
-            match a.range.start().cmp(b.range.start()) {
+        let iter =
+            unsorted_disjoint.sorted_by(|a, b| match a.0.range.start().cmp(b.0.range.start()) {
                 core::cmp::Ordering::Equal => {
                     debug_assert!(
-                        a.priority_number_cmk() != b.priority_number_cmk(),
+                        a.priority_number() != b.priority_number(),
                         "Priorities must not be equal"
                     );
-                    b.priority_number_cmk().cmp(&a.priority_number_cmk())
+                    b.priority_number().cmp(&a.priority_number())
                 }
                 other => other,
-            }
-        });
-        let iter = AssumeSortedStartsMap::new(iter);
+            });
+        let iter = AssumePrioritySortedStartsMap::new(iter);
 
         Self::new(iter)
     }

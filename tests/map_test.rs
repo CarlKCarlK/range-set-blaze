@@ -822,7 +822,8 @@ fn map_tricky_case3() {
 
 #[test]
 fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
-    use range_set_blaze::AssumeSortedStartsMap;
+    use range_set_blaze::AssumePrioritySortedStartsMap;
+    use range_set_blaze::Priority;
     use range_set_blaze::RangeValue;
 
     // #9: new
@@ -846,10 +847,10 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
     _range_map_blaze = _range_map_blaze.range_values().into_range_map_blaze();
     _range_map_blaze = RangeMapBlaze::from_sorted_disjoint_map(_range_map_blaze.range_values());
 
-    let sorted_starts = AssumeSortedStartsMap::new(
+    let sorted_starts = AssumePrioritySortedStartsMap::new(
         [
-            RangeValue::new_unique(5..=6, "a", None),
-            RangeValue::new_unique(1..=5, "b", None),
+            Priority(RangeValue::new_unique(5..=6, "a", None)),
+            Priority(RangeValue::new_unique(1..=5, "b", None)),
         ]
         .into_iter(),
     );

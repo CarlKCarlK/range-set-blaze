@@ -212,57 +212,57 @@ where
 
 /// Gives any iterator of ranges the [`SortedStartsMap`] trait without any checking.
 #[doc(hidden)]
-pub struct AssumeSortedStartsMap<T, V, VR, I>
+pub struct AssumePrioritySortedStartsMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = Priority<T, V, VR>>,
 {
     iter: I,
 }
 
-impl<T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for AssumeSortedStartsMap<T, V, VR, I>
+impl<T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for AssumePrioritySortedStartsMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = Priority<T, V, VR>>,
 {
 }
 
-impl<T, V, VR, I> AssumeSortedStartsMap<T, V, VR, I>
+impl<T, V, VR, I> AssumePrioritySortedStartsMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = Priority<T, V, VR>>,
 {
     pub fn new(iter: I) -> Self {
-        AssumeSortedStartsMap { iter }
+        AssumePrioritySortedStartsMap { iter }
     }
 }
 
-impl<T, V, VR, I> FusedIterator for AssumeSortedStartsMap<T, V, VR, I>
+impl<T, V, VR, I> FusedIterator for AssumePrioritySortedStartsMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>> + FusedIterator,
+    I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
 {
 }
 
-impl<T, V, VR, I> Iterator for AssumeSortedStartsMap<T, V, VR, I>
+impl<T, V, VR, I> Iterator for AssumePrioritySortedStartsMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = Priority<T, V, VR>>,
 {
     type Item = Priority<T, V, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|x| Priority(x))
+        self.iter.next()
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

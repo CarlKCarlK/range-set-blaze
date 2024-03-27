@@ -69,7 +69,8 @@ mod unsorted_disjoint;
 mod unsorted_disjoint_map;
 pub use crate::map::RangeMapBlaze;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
-pub use crate::unsorted_disjoint_map::{AssumeSortedDisjointMap, AssumeSortedStartsMap};
+pub use crate::sorted_disjoint_map::Priority;
+pub use crate::unsorted_disjoint_map::{AssumePrioritySortedStartsMap, AssumeSortedDisjointMap};
 // use alloc::{collections::BTreeMap, vec::Vec};
 use core::{
     // cmp::{max, Ordering},
