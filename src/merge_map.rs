@@ -6,7 +6,6 @@ use itertools::{Itertools, KMergeBy, MergeBy};
 use crate::map::{CloneBorrow, ValueOwned};
 use crate::range_values::SetPriorityMap;
 use crate::Integer;
-use alloc::borrow::ToOwned;
 
 use crate::sorted_disjoint_map::{
     Priority, PrioritySortedDisjointMap, PrioritySortedStartsMap, SortedDisjointMap,
@@ -57,9 +56,8 @@ where
     VR: CloneBorrow<V>,
     L: PrioritySortedDisjointMap<T, V, VR>,
     R: PrioritySortedDisjointMap<T, V, VR>,
-    <V as ToOwned>::Owned: PartialEq,
 {
-    // cmk0 why isn't priority mentioned?
+    // cmk00 why isn't priority mentioned?
     /// Creates a new [`MergeMap`] iterator from two [`SortedDisjointMap`] iterators. See [`MergeMap`] for more details and examples.
     pub fn new(left: L, right: R) -> Self {
         Self {
@@ -77,7 +75,6 @@ where
     VR: CloneBorrow<V>,
     L: PrioritySortedDisjointMap<T, V, VR>,
     R: PrioritySortedDisjointMap<T, V, VR>,
-    <V as ToOwned>::Owned: PartialEq,
 {
 }
 
@@ -88,7 +85,6 @@ where
     VR: CloneBorrow<V>,
     L: PrioritySortedDisjointMap<T, V, VR>,
     R: PrioritySortedDisjointMap<T, V, VR>,
-    <V as ToOwned>::Owned: PartialEq, // cmk0 needed?
 {
     type Item = Priority<T, V, VR>;
 
@@ -108,7 +104,6 @@ where
     VR: CloneBorrow<V>,
     L: PrioritySortedDisjointMap<T, V, VR>,
     R: PrioritySortedDisjointMap<T, V, VR>,
-    <V as ToOwned>::Owned: PartialEq, // cmk0 needed?
 {
 }
 

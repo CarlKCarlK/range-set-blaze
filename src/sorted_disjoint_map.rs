@@ -897,9 +897,6 @@ where
 {
 }
 
-// cmk0 can we/should we have priority check that non-None, or can we create an iterator of Priorities for which this is always true because
-// the priority field is part of the wrapper, not RangeValue?
-
 #[derive(Clone, Debug)]
 pub struct Priority<T, V, VR>
 where
@@ -1124,7 +1121,7 @@ macro_rules! impl_sorted_map_traits_and_ops0 {
             }
         }
 
-        // cmk0 leaving out for now because can't because efficient implementation requires new iterator
+        // cmk00 leaving out for now because can't because efficient implementation requires new iterator
         // impl<'a, T, V, VR, I, R> ops::BitXor<R> for $IterType
         // where
         //     T: Integer,
@@ -1226,7 +1223,7 @@ macro_rules! impl_sorted_map_traits_and_ops0 {
             }
         }
 
-        // cmk0 leaving out for now because can't because efficient implementation requires new iterator
+        // cmk00 leaving out for now because can't because efficient implementation requires new iterator
         // impl<'a, T, V, VR, I0, I1, R> ops::BitXor<R> for $IterType
         // where
         //     T: Integer,
@@ -1282,7 +1279,7 @@ macro_rules! impl_sorted_map_traits_and_ops0b {
         {
         }
 
-        // cmk0
+        // cmk000
         // impl<T, V, VR, I> ops::Not for $IterType
         // where
         //     T: Integer,
@@ -1328,7 +1325,7 @@ macro_rules! impl_sorted_map_traits_and_ops0b {
             }
         }
 
-        // cmk0 leaving out for now because can't because efficient implementation requires new iterator
+        // cmk00 leaving out for now because can't because efficient implementation requires new iterator
         // impl<'a, T, V, VR, I, R> ops::BitXor<R> for $IterType
         // where
         //     T: Integer,

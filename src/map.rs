@@ -10,7 +10,6 @@ use crate::unsorted_disjoint_map::{
     AssumePrioritySortedStartsMap, SortedDisjointWithLenSoFarMap, UnsortedDisjointMap,
 };
 use crate::{CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint};
-use alloc::borrow::ToOwned;
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 #[cfg(feature = "std")]
@@ -80,9 +79,10 @@ where
 }
 
 #[derive(Clone, Hash, Default, PartialEq)]
-pub struct EndValue<T: Integer, V: ValueOwned>
+pub struct EndValue<T, V>
 where
-    <V as ToOwned>::Owned: PartialEq,
+    T: Integer,
+    V: ValueOwned,
 {
     pub(crate) end: T,
     pub(crate) value: V,

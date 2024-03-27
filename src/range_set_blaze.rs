@@ -1,6 +1,5 @@
 use core::str::FromStr;
 /// cmk doc
-// cmk1 rename file to range_set_blaze.rs
 use core::{
     cmp::Ordering,
     fmt,
@@ -614,35 +613,6 @@ impl<T: Integer> RangeSetBlaze<T> {
         self.ranges().is_disjoint(other.ranges())
     }
 
-    // cmk1 delete this code
-    //     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
-    //         let (start, end) = internal_range.clone().into_inner();
-    //         let mut after = self.btree_map.range_mut(start..);
-    //         let (start_after, end_after) = after.next().unwrap(); // there will always be a next
-    //         debug_assert!(start == *start_after && end == *end_after);
-
-    //         let mut end_new = end;
-    //         let delete_list = after
-    //             .map_while(|(start_delete, end_delete)| {
-    //                 // must check this in two parts to avoid overflow
-    //                 if *start_delete <= end || *start_delete <= end + T::one() {
-    //                     end_new = max(end_new, *end_delete);
-    //                     self.len -= T::safe_len(&(*start_delete..=*end_delete));
-    //                     Some(*start_delete)
-    //                 } else {
-    //                     None
-    //                 }
-    //             })
-    //             .collect::<Vec<_>>();
-    //         if end_new > end {
-    //             self.len += T::safe_len(&(end..=end_new - T::one()));
-    //             *end_after = end_new;
-    //         }
-    //         for start in delete_list {
-    //             self.btree_map.remove(&start);
-    //         }
-    //     }
-
     /// Adds a value to the set.
     ///
     /// Returns whether the value was newly inserted. That is:
@@ -890,77 +860,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     pub fn replace(&mut self, value: T) -> Option<T> {
         self.0.insert(value, ()).map(|_| value)
     }
-
-    // cmk1 delete this code
-    //     // fn internal_add_chatgpt(&mut self, range: RangeInclusive<T>) {
-    //     //     let (start, end) = range.into_inner();
-
-    //     //     // Find the first overlapping range or the nearest one before it
-    //     //     let mut next = self.btree_map.range(..=start).next_back();
-
-    //     //     // Find all overlapping ranges
-    //     //     while let Some((&start_key, &end_value)) = next {
-    //     //         // If this range doesn't overlap, we're done
-    //     //         if end_value < start {
-    //     //             break;
-    //     //         }
-
-    //     //         // If this range overlaps or is adjacent, merge it
-    //     //         if end_value >= start - T::one() {
-    //     //             let new_end = end.max(end_value);
-    //     //             let new_start = start.min(start_key);
-
-    //     //             self.btree_map.remove(&start_key);
-    //     //             self.btree_map.insert(new_start, new_end);
-
-    //     //             // Restart from the beginning
-    //     //             next = self.btree_map.range(..=new_start).next_back();
-    //     //         } else {
-    //     //             next = self.btree_map.range(..start_key).next_back();
-    //     //         }
-    //     //     }
-    //     // }
-
-    //     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
-    //     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-    //     fn internal_add(&mut self, range: RangeInclusive<T>) {
-    //         let (start, end) = range.clone().into_inner();
-    //         assert!(
-    //             end <= T::safe_max_value(),
-    //             "end must be <= T::safe_max_value()"
-    //         );
-    //         if end < start {
-    //             return;
-    //         }
-    //         // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
-    //         let mut before = self.btree_map.range_mut(..=start).rev();
-    //         if let Some((start_before, end_before)) = before.next() {
-    //             // Must check this in two parts to avoid overflow
-    //             if match (*end_before).checked_add(&T::one()) {
-    //                 Some(end_before_succ) => end_before_succ < start,
-    //                 None => false,
-    //             } {
-    //                 self.internal_add2(&range);
-    //             } else if *end_before < end {
-    //                 self.len += T::safe_len(&(*end_before..=end - T::one()));
-    //                 *end_before = end;
-    //                 let start_before = *start_before;
-    //                 self.delete_extra(&(start_before..=end));
-    //             } else {
-    //                 // completely contained, so do nothing
-    //             }
-    //         } else {
-    //             self.internal_add2(&range);
-    //         }
-    //     }
-
-    //     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>) {
-    //         let (start, end) = internal_range.clone().into_inner();
-    //         let was_there = self.btree_map.insert(start, end);
-    //         debug_assert!(was_there.is_none()); // real assert
-    //         self.delete_extra(internal_range);
-    //         self.len += T::safe_len(internal_range);
-    //     }
 
     /// Returns the number of elements in the set.
     ///

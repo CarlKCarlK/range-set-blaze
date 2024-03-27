@@ -5,7 +5,6 @@ use crate::{
     sorted_disjoint_map::{RangeValue, SortedDisjointMap},
     Integer,
 };
-use alloc::borrow::ToOwned;
 use core::{
     cmp::{max, min},
     iter::FusedIterator,
@@ -142,7 +141,6 @@ where
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
-    <V as ToOwned>::Owned: PartialEq,
 {
     iter: I,
     len: <T as Integer>::SafeLen,
@@ -187,7 +185,6 @@ where
     T: Integer,
     VR: CloneBorrow<V>,
     V: ValueOwned,
-    <V as ToOwned>::Owned: PartialEq,
     I: SortedDisjointMap<T, V, VR>,
 {
     type Item = (T, EndValue<T, V>);

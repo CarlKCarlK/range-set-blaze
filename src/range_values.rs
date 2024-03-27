@@ -469,13 +469,3 @@ where
     I: SortedDisjointMap<T, V, VR>,
 {
 }
-
-// cmk0
-// impl<T, V, VR, I> SortedDisjointMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
-// where
-//     T: Integer,
-//     V: ValueOwned,
-//     VR: CloneBorrow<V>,
-//     I: SortedDisjointMap<T, V, VR>,
-// {
-// }
