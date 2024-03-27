@@ -1,4 +1,4 @@
-use crate::range_values::{non_zero_checked_sub, ExpectDebugUnwrapRelease};
+use crate::range_values::ExpectDebugUnwrapRelease;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::{
     map::{CloneBorrow, EndValue, ValueOwned},
@@ -10,7 +10,6 @@ use core::{
     cmp::{max, min},
     iter::FusedIterator,
     marker::PhantomData,
-    num::NonZeroUsize,
 };
 use num_traits::Zero;
 
@@ -26,7 +25,7 @@ where
     option_priority: Option<Priority<T, V, VR>>,
     min_value_plus_2: T,
     two: T,
-    priority: NonZeroUsize,
+    priority: usize,
 }
 
 impl<T, V, VR, I> UnsortedDisjointMap<T, V, VR, I>
@@ -42,7 +41,7 @@ where
             option_priority: None,
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
-            priority: NonZeroUsize::MAX,
+            priority: usize::MAX,
         }
     }
 }
@@ -73,8 +72,10 @@ where
                 return self.option_priority.take();
             };
             let next_priority = Priority::new(next_range_value, self.priority);
-            self.priority =
-                non_zero_checked_sub(self.priority, 1).expect_debug_unwrap_release("overflow");
+            self.priority = self
+                .priority
+                .checked_sub(1)
+                .expect_debug_unwrap_release("overflow");
 
             // check the next range is valid and non-empty
             let (next_start, next_end) = next_priority.range_value.range.clone().into_inner();

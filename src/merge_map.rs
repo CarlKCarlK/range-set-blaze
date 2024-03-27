@@ -1,11 +1,10 @@
 use core::cmp::Ordering;
 use core::iter::FusedIterator;
-use core::num::NonZeroUsize;
 
 use itertools::{Itertools, KMergeBy, MergeBy};
 
 use crate::map::{CloneBorrow, ValueOwned};
-use crate::range_values::{non_zero_checked_sub, AdjustPriorityMap};
+use crate::range_values::SetPriorityMap;
 use crate::Integer;
 use alloc::borrow::ToOwned;
 
@@ -150,10 +149,8 @@ where
     I: SortedDisjointMap<T, V, VR>,
 {
     #[allow(clippy::type_complexity)]
-    iter: KMergeBy<
-        AdjustPriorityMap<T, V, VR, I>,
-        fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
-    >,
+    iter:
+        KMergeBy<SetPriorityMap<T, V, VR, I>, fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool>,
 }
 
 impl<T, V, VR, I> KMergeMap<T, V, VR, I>
@@ -170,12 +167,12 @@ where
     {
         // Prioritize from left to right
         let iter = iter.into_iter().enumerate().map(|(i, x)| {
-            let priority = non_zero_checked_sub(NonZeroUsize::MAX, i).unwrap();
-            AdjustPriorityMap::new(x, priority)
+            let priority = usize::MAX.checked_sub(i).unwrap();
+            SetPriorityMap::new(x, priority)
         });
         // Merge RangeValues by start with ties broken by priority
         let iter: KMergeBy<
-            AdjustPriorityMap<T, V, VR, I>,
+            SetPriorityMap<T, V, VR, I>,
             fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
         > = iter.kmerge_by(|a, b| {
             match a

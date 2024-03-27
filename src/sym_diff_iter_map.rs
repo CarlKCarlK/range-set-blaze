@@ -1,10 +1,10 @@
-use core::{cmp::min, num::NonZeroUsize};
+use core::cmp::min;
 
 use alloc::collections::BinaryHeap;
 
 use crate::{
     map::{CloneBorrow, ValueOwned},
-    range_values::AdjustPriorityMap,
+    range_values::SetPriorityMap,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
     BitXorAdjusted, Integer, MergeMap, RangeValue, SortedDisjointMap,
 };
@@ -244,8 +244,8 @@ where
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
     pub fn new2(left: L, right: R) -> Self {
-        let left = AdjustPriorityMap::new(left, NonZeroUsize::MAX);
-        let right = AdjustPriorityMap::new(right, NonZeroUsize::MIN);
+        let left = SetPriorityMap::new(left, usize::MAX);
+        let right = SetPriorityMap::new(right, usize::MIN);
         let mut iter = MergeMap::new(left, right);
         let item = iter.next();
         Self {

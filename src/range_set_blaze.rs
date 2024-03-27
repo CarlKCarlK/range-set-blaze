@@ -1,4 +1,3 @@
-use core::num::NonZeroUsize;
 use core::str::FromStr;
 /// cmk doc
 // cmk1 rename file to range_set_blaze.rs
@@ -2201,7 +2200,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|range| Priority::new(RangeValue::new(range, &()), NonZeroUsize::MIN))
+            .map(|range| Priority::new(RangeValue::new(range, &()), usize::MIN))
     }
 }
 
@@ -2284,7 +2283,7 @@ pub fn set_to_map() {
             i32,
             (),
             &(),
-            crate::range_values::AdjustPriorityMap<
+            crate::range_values::SetPriorityMap<
                 i32,
                 (),
                 &(),
@@ -2293,7 +2292,7 @@ pub fn set_to_map() {
                     RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
                 >,
             >,
-            crate::range_values::AdjustPriorityMap<
+            crate::range_values::SetPriorityMap<
                 i32,
                 (),
                 &(),

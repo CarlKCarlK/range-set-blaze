@@ -1,6 +1,5 @@
 // #![cfg(test)]
 // #![cfg(not(target_arch = "wasm32"))]
-use std::num::NonZeroUsize;
 
 // #[cfg(feature = "from_slice")]
 // use core::mem::size_of;
@@ -850,8 +849,8 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
 
     let sorted_starts = AssumePrioritySortedStartsMap::new(
         [
-            Priority::new(RangeValue::new_unique(5..=6, "a"), NonZeroUsize::MAX),
-            Priority::new(RangeValue::new_unique(1..=5, "b"), NonZeroUsize::MIN),
+            Priority::new(RangeValue::new_unique(5..=6, "a"), usize::MAX),
+            Priority::new(RangeValue::new_unique(1..=5, "b"), usize::MIN),
         ]
         .into_iter(),
     );

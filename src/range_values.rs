@@ -7,7 +7,7 @@ use crate::{
     Integer,
 };
 use alloc::{collections::btree_map, rc::Rc};
-use core::{iter::FusedIterator, marker::PhantomData, num::NonZeroUsize, ops::RangeInclusive};
+use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
 
 use crate::{
     map::{EndValue, ValueOwned},
@@ -365,14 +365,6 @@ where
 //     }
 // }
 
-pub fn non_zero_checked_sub(value: NonZeroUsize, subtrahend: usize) -> Option<NonZeroUsize> {
-    // Convert to usize, perform checked subtraction, then try to make a new NonZeroUsize
-    value
-        .get()
-        .checked_sub(subtrahend)
-        .and_then(NonZeroUsize::new)
-}
-
 pub(crate) trait ExpectDebugUnwrapRelease<T> {
     fn expect_debug_unwrap_release(self, msg: &str) -> T;
 }
@@ -391,7 +383,7 @@ impl<T> ExpectDebugUnwrapRelease<T> for Option<T> {
     }
 }
 #[derive(Clone, Debug)]
-pub struct AdjustPriorityMap<T, V, VR, I>
+pub struct SetPriorityMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -399,11 +391,11 @@ where
     I: SortedDisjointMap<T, V, VR>,
 {
     iter: I,
-    new_priority: NonZeroUsize, // cmk0 usize
+    priority: usize,
     phantom_data: PhantomData<(T, V, VR)>,
 }
 
-impl<T, V, VR, I> Iterator for AdjustPriorityMap<T, V, VR, I>
+impl<T, V, VR, I> Iterator for SetPriorityMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -415,21 +407,21 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|range_value| Priority::new(range_value, self.new_priority))
+            .map(|range_value| Priority::new(range_value, self.priority))
     }
 }
 
-impl<'a, T, V, VR, I> AdjustPriorityMap<T, V, VR, I>
+impl<'a, T, V, VR, I> SetPriorityMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
-    pub fn new(iter: I, new_priority: NonZeroUsize) -> Self {
-        AdjustPriorityMap {
+    pub fn new(iter: I, priority: usize) -> Self {
+        SetPriorityMap {
             iter,
-            new_priority,
+            priority,
             phantom_data: PhantomData,
         }
     }
@@ -461,7 +453,7 @@ where
 //     I: SortedDisjointMap<T, V, VR>,
 // {
 // }
-impl<'a, T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
+impl<'a, T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for SetPriorityMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -469,7 +461,7 @@ where
     I: SortedDisjointMap<T, V, VR>,
 {
 }
-impl<T, V, VR, I> PrioritySortedDisjointMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
+impl<T, V, VR, I> PrioritySortedDisjointMap<T, V, VR> for SetPriorityMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,

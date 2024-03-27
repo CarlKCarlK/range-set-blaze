@@ -20,7 +20,7 @@ use core::marker::PhantomData;
 //     ops::{self, RangeInclusive},
 // };
 use crate::map::BitAndRangesMap;
-use crate::range_values::AdjustPriorityMap;
+use crate::range_values::SetPriorityMap;
 use crate::NotIter;
 use crate::RangeValuesToRangesIter;
 use core::fmt;
@@ -32,7 +32,6 @@ use crate::sorted_disjoint::SortedDisjoint;
 use crate::{
     map::ValueOwned, merge_map::MergeMap, union_iter_map::UnionIterMap, Integer, RangeMapBlaze,
 };
-use core::num::NonZeroUsize;
 use core::ops::RangeInclusive;
 use itertools::Tee;
 
@@ -350,8 +349,8 @@ where
         R::IntoIter: SortedDisjointMap<T, V, VR>,
         Self: Sized,
     {
-        let left = AdjustPriorityMap::new(self, NonZeroUsize::MAX);
-        let right = AdjustPriorityMap::new(other.into_iter(), NonZeroUsize::MIN);
+        let left = SetPriorityMap::new(self, usize::MAX);
+        let right = SetPriorityMap::new(other.into_iter(), usize::MIN);
         // cmk why this into iter stuff that is not used?
         UnionIterMap::new(MergeMap::new(left, right))
     }
@@ -909,7 +908,7 @@ where
     VR: CloneBorrow<V>,
 {
     pub(crate) range_value: RangeValue<T, V, VR>,
-    pub(crate) priority_number: NonZeroUsize,
+    pub(crate) priority_number: usize,
 }
 
 // new
@@ -919,7 +918,7 @@ where
     V: ValueOwned,
     VR: CloneBorrow<V>,
 {
-    pub fn new(range_value: RangeValue<T, V, VR>, priority_number: NonZeroUsize) -> Self {
+    pub fn new(range_value: RangeValue<T, V, VR>, priority_number: usize) -> Self {
         Self {
             range_value,
             priority_number,

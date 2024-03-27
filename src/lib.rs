@@ -56,8 +56,8 @@ use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
 use range_set_blaze::UnitMapToSortedDisjoint;
-use range_values::AdjustPriorityMap;
 use range_values::RangeValuesToRangesIter;
+use range_values::SetPriorityMap;
 use sym_diff_iter_map::SymDiffIterMap;
 mod multiway_map;
 mod sorted_disjoint_map;
@@ -1593,14 +1593,14 @@ pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 pub type BitOrMergeMap<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
 #[doc(hidden)]
 pub type BitOrAdjusted<T, V, VR, L, R> =
-    BitOrMergeMap<T, V, VR, AdjustPriorityMap<T, V, VR, L>, AdjustPriorityMap<T, V, VR, R>>;
+    BitOrMergeMap<T, V, VR, SetPriorityMap<T, V, VR, L>, SetPriorityMap<T, V, VR, R>>;
 
 #[doc(hidden)]
 pub type BitXorAdjusted<T, V, VR, L, R> = SymDiffIterMap<
     T,
     V,
     VR,
-    MergeMap<T, V, VR, AdjustPriorityMap<T, V, VR, L>, AdjustPriorityMap<T, V, VR, R>>,
+    MergeMap<T, V, VR, SetPriorityMap<T, V, VR, L>, SetPriorityMap<T, V, VR, R>>,
 >;
 
 #[doc(hidden)]
