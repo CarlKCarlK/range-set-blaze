@@ -29,16 +29,16 @@ where
     priority: NonZeroUsize,
 }
 
-impl<T, V, VR, I> From<I> for UnsortedDisjointMap<T, V, VR, I::IntoIter>
+impl<T, V, VR, I> UnsortedDisjointMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: IntoIterator<Item = RangeValue<T, V, VR>>, // Any iterator is fine
+    I: Iterator<Item = RangeValue<T, V, VR>>, // Any iterator is fine
 {
-    fn from(into_iter: I) -> Self {
+    pub fn new(into_iter: I) -> Self {
         UnsortedDisjointMap {
-            iter: into_iter.into_iter(),
+            iter: into_iter,
             option_priority: None,
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),

@@ -318,7 +318,7 @@ where
         //     println!("cmk x.priority {:?}", x.priority);
         //     x
         // });
-        let iter = UnsortedDisjointMap::from(iter);
+        let iter = UnsortedDisjointMap::new(iter);
         UnionIterMap::from(iter)
     }
 }

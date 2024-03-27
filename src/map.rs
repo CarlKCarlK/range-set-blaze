@@ -2001,7 +2001,7 @@ where
     {
         let iter = iter.into_iter();
         for priority in
-            UnsortedDisjointMap::from(iter.map(|(r, v)| RangeValue::new_unique(r..=r, v, None)))
+            UnsortedDisjointMap::new(iter.map(|(r, v)| RangeValue::new_unique(r..=r, v, None)))
         {
             let range = priority.0.range;
             let value = priority.0.value.borrow_clone();
