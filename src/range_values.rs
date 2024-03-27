@@ -482,7 +482,16 @@ where
     I: SortedDisjointMap<T, V, VR>,
 {
 }
-impl<T, V, VR, I> SortedDisjointMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
+
+pub trait SortedDisjointMapCmk<T, V, VR>: Iterator<Item = RangeValue<T, V, VR>>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+{
+}
+
+impl<T, V, VR, I> SortedDisjointMapCmk<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,

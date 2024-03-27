@@ -5,7 +5,7 @@ use core::num::NonZeroUsize;
 use itertools::{Itertools, KMergeBy, MergeBy};
 
 use crate::map::{CloneBorrow, ValueOwned};
-use crate::range_values::{non_zero_checked_sub, AdjustPriorityMap};
+use crate::range_values::{non_zero_checked_sub, AdjustPriorityMap, SortedDisjointMapCmk};
 use crate::Integer;
 use alloc::borrow::ToOwned;
 
@@ -44,8 +44,8 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
+    L: SortedDisjointMapCmk<T, V, VR>,
+    R: SortedDisjointMapCmk<T, V, VR>,
 {
     #[allow(clippy::type_complexity)]
     iter: MergeBy<L, R, fn(&RangeValue<T, V, VR>, &RangeValue<T, V, VR>) -> bool>,
@@ -56,8 +56,8 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
+    L: SortedDisjointMapCmk<T, V, VR>,
+    R: SortedDisjointMapCmk<T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
 {
     // cmk0 why isn't priority mentioned?
@@ -74,8 +74,8 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
+    L: SortedDisjointMapCmk<T, V, VR>,
+    R: SortedDisjointMapCmk<T, V, VR>,
     <V as ToOwned>::Owned: PartialEq,
 {
 }
@@ -85,9 +85,9 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
-    <V as ToOwned>::Owned: PartialEq,
+    L: SortedDisjointMapCmk<T, V, VR>,
+    R: SortedDisjointMapCmk<T, V, VR>,
+    <V as ToOwned>::Owned: PartialEq, // cmk0 needed?
 {
     type Item = Priority<T, V, VR>;
 
@@ -105,8 +105,8 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
+    L: SortedDisjointMapCmk<T, V, VR>,
+    R: SortedDisjointMapCmk<T, V, VR>,
     <V as ToOwned>::Owned: PartialEq, // cmk0 needed?
 {
 }
