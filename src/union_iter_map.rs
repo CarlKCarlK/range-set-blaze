@@ -248,8 +248,10 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
+    // cmk000 push Priority into this function
     I: PrioritySortedStartsMap<T, V, VR>,
 {
+    // cmk00 should Union have a new2, too
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
     pub fn new(mut iter: I) -> Self {

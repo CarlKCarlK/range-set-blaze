@@ -1891,7 +1891,8 @@ where
     /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
     /// ```
     fn intersection(self) -> BitAndKMerge<T, I> {
-        // cmk00 should we implement this via Map rather than complement?
+        // We define set intersection in terms of complement and (set/map) union.
+        // Elsewhere, map intersection is defined -- in part -- in terms of set intersection.
         self.into_iter()
             .map(|seq| seq.into_iter().complement())
             .union()

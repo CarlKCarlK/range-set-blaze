@@ -10,6 +10,7 @@ use crate::{
     map::{CloneBorrow, ValueOwned},
     merge_map::KMergeMap,
     range_values::RangeValuesToRangesIter,
+    sym_diff_iter_map::SymDiffIterMap,
     BitOrKMergeMap, Integer, IntersectionMap, RangeMapBlaze, SortedDisjointMap, UnionIterMap,
 };
 
@@ -221,6 +222,7 @@ where
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
     fn union(self) -> BitOrKMergeMap<T, V, VR, I> {
+        // cmk0 why does this not have .into_iter() but intersection does?
         UnionIterMap::new(KMergeMap::new(self))
     }
 
@@ -249,6 +251,8 @@ where
     /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
     /// ```
     fn intersection(self) -> IntersectionMap<T, V, VR, I> {
+        // We define map intersection -- in part -- in terms of set intersection.
+        // Elsewhere, we define set intersection in terms of complement and (set/map) union.
         use crate::MultiwaySortedDisjoint;
         let mut iter = self.into_iter();
         let iter_map = iter
@@ -257,6 +261,12 @@ where
         let iter_set = iter.map(|x| RangeValuesToRangesIter::new(x)).intersection();
         IntersectionIterMap::new(iter_map, iter_set)
     }
+
+    // /// cmk000 doc
+    // fn symmetric_difference(self) -> BitOrKMergeMap<T, V, VR, I> {
+    //     let result = SymDiffIterMap::new2(KMergeMap::new(self));
+    //     result
+    // }
 }
 // cmk confirm that on ranges the union of 0 sets 0 empty and the intersection of 0 sets is the universal set.
 // cmk on maps, the union is still empty, but the intersection is undefined because we can't give a value to T.s

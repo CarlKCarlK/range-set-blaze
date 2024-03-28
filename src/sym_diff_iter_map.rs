@@ -240,9 +240,10 @@ where
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
 {
+    // cmk00 should this be new2 and have a new, too (like UnionIterMap)?
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
-    pub fn new(left: L, right: R) -> Self {
+    pub fn new2(left: L, right: R) -> Self {
         let mut iter = MergeMap::new(left, right);
         let item = iter.next();
         Self {

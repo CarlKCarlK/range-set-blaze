@@ -474,7 +474,7 @@ where
         Self: Sized,
         VR: CloneBorrow<V>,
     {
-        SymDiffIterMap::new(self, other.into_iter())
+        SymDiffIterMap::new2(self, other.into_iter())
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
