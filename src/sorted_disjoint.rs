@@ -749,3 +749,5 @@ impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: ValueOwned, VR: CloneBorrow<V>,I: SortedDisjointMap<T, V, VR>);
 impl_sorted_traits_and_ops!(IntoRangesIter<T>, 'ignore);
 impl_sorted_traits_and_ops!(RangesIter<'a, T>, 'a);
+
+// cmk00 test every iterator and every method
