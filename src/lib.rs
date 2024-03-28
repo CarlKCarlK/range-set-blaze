@@ -58,6 +58,7 @@ pub use multiway_map::MultiwaySortedDisjointMap;
 use range_set_blaze::UnitMapToSortedDisjoint;
 use range_values::RangeValuesToRangesIter;
 use sym_diff_iter_map::SymDiffIterMap;
+use union_iter::UnionIter;
 mod multiway_map;
 mod sorted_disjoint_map;
 mod tests;
@@ -94,7 +95,7 @@ pub use rog::{Rog, RogsIter};
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
 // cmk use sorted_disjoint_map::SortedDisjointMapWithLenSoFar;
 pub use sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap}; // cmk CheckSortedDisjointMap
-pub use union_iter::UnionIter;
+                                                                   // pub use union_iter::UnionIter;
 pub use union_iter_map::UnionIterMap;
 pub use unsorted_disjoint::AssumeSortedStarts;
 // use unsorted_disjoint::SortedDisjointWithLenSoFar;
@@ -1589,6 +1590,22 @@ pub trait Integer:
 #[doc(hidden)]
 pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
+pub type BitOrMerge2<T, L, R> = UnitMapToSortedDisjoint<
+    T,
+    crate::UnionIterMap<
+        T,
+        (),
+        &'static (),
+        crate::MergeMap<
+            T,
+            (),
+            &'static (),
+            SortedDisjointToUnitMap<T, L>,
+            SortedDisjointToUnitMap<T, R>,
+        >,
+    >,
+>;
+#[doc(hidden)]
 pub type BitOrMergeMap<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
 #[doc(hidden)]
 pub type BitOrAdjusted<T, V, VR, L, R> = BitOrMergeMap<T, V, VR, L, R>;
@@ -1617,16 +1634,16 @@ pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
 #[doc(hidden)]
 pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
 #[doc(hidden)]
-pub type BitNandMerge<T, L, R> = BitOrMerge<T, NotIter<T, L>, NotIter<T, R>>;
+pub type BitNandMerge<T, L, R> = BitOrMerge2<T, NotIter<T, L>, NotIter<T, R>>;
 #[doc(hidden)]
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
 #[doc(hidden)]
 pub type IntersectionMap<T, V, VR, I> =
     IntersectionIterMap<T, V, VR, I, BitAndKMerge<T, RangeValuesToRangesIter<T, V, VR, I>>>;
 #[doc(hidden)]
-pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
+pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge2<T, L, R>>;
 #[doc(hidden)]
-pub type BitSubMerge<T, L, R> = NotIter<T, BitOrMerge<T, NotIter<T, L>, R>>;
+pub type BitSubMerge<T, L, R> = NotIter<T, BitOrMerge2<T, NotIter<T, L>, R>>;
 #[doc(hidden)]
 // pub type BitXOrTee<T, L, R> =
 //     BitOrMerge<T, BitSubMerge<T, Tee<L>, Tee<R>>, BitSubMerge<T, Tee<R>, Tee<L>>>;
@@ -1840,6 +1857,7 @@ where
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
     fn union(self) -> BitOrKMerge<T, I> {
+        // cmk000
         UnionIter::new(KMerge::new(self))
     }
 

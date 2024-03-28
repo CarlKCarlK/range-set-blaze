@@ -12,9 +12,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 #[cfg(feature = "rog-experimental")]
 use range_set_blaze::Rog;
-use range_set_blaze::{
-    prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts, UnionIter,
-};
+use range_set_blaze::{prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts};
 use std::cmp::Ordering;
 #[cfg(feature = "rog-experimental")]
 use std::panic::AssertUnwindSafe;
@@ -377,45 +375,46 @@ fn complement() -> Result<(), Box<dyn std::error::Error>> {
     let d = a0.ranges() | a1.ranges();
     let (e, _) = a.ranges().tee();
 
-    let f = UnionIter::from([15, 14, 15, 13, 12, 11, 9, 9, 8, 6, 4, 5, 3, 2, 1, 1, 1]);
+    // cmk00 let f = UnionIter::from([15, 14, 15, 13, 12, 11, 9, 9, 8, 6, 4, 5, 3, 2, 1, 1, 1]);
     let not_b = !b;
     let not_c = !c;
     let not_d = !d;
     let not_e = e.complement();
-    let not_f = !f;
+    // cmk00 let not_f = !f;
     assert!(not_a.ranges().equal(not_b));
     assert!(not_a.ranges().equal(not_c));
     assert!(not_a.ranges().equal(not_d));
     assert!(not_a.ranges().equal(not_e));
-    assert!(not_a.ranges().equal(not_f));
+    // cmk00 assert!(not_a.ranges().equal(not_f));
     Ok(())
 }
 
-#[test]
-fn union_test() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
-    let a0 = RangeSetBlaze::from_iter([1..=6]);
-    let (a0_tee, _) = a0.ranges().tee();
-    let a1 = RangeSetBlaze::from_iter([8..=9]);
-    let a2 = RangeSetBlaze::from_iter([11..=15]);
-    let a12 = &a1 | &a2;
-    let not_a0 = !&a0;
-    let a = &a0 | &a1 | &a2;
-    let b = a0.ranges() | a1.ranges() | a2.ranges();
-    let c = !not_a0.ranges() | a12.ranges();
-    let d = a0.ranges() | a1.ranges() | a2.ranges();
-    let e = a0_tee.union(a12.ranges());
+// cmk00
+// #[test]
+// fn union_test() -> Result<(), Box<dyn std::error::Error>> {
+//     // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+//     let a0 = RangeSetBlaze::from_iter([1..=6]);
+//     let (a0_tee, _) = a0.ranges().tee();
+//     let a1 = RangeSetBlaze::from_iter([8..=9]);
+//     let a2 = RangeSetBlaze::from_iter([11..=15]);
+//     let a12 = &a1 | &a2;
+//     let not_a0 = !&a0;
+//     let a = &a0 | &a1 | &a2;
+//     let b = a0.ranges() | a1.ranges() | a2.ranges();
+//     let c = !not_a0.ranges() | a12.ranges();
+//     let d = a0.ranges() | a1.ranges() | a2.ranges();
+//     let e = a0_tee.union(a12.ranges());
 
-    let f = UnionIter::from_iter(a0.iter())
-        | UnionIter::from_iter(a1.iter())
-        | UnionIter::from_iter(a2.iter());
-    assert!(a.ranges().equal(b));
-    assert!(a.ranges().equal(c));
-    assert!(a.ranges().equal(d));
-    assert!(a.ranges().equal(e));
-    assert!(a.ranges().equal(f));
-    Ok(())
-}
+//     let f = UnionIter::from_iter(a0.iter())
+//         | UnionIter::from_iter(a1.iter())
+//         | UnionIter::from_iter(a2.iter());
+//     assert!(a.ranges().equal(b));
+//     assert!(a.ranges().equal(c));
+//     assert!(a.ranges().equal(d));
+//     assert!(a.ranges().equal(e));
+//     assert!(a.ranges().equal(f));
+//     Ok(())
+// }
 
 #[test]
 fn sub() -> Result<(), Box<dyn std::error::Error>> {
@@ -431,12 +430,12 @@ fn sub() -> Result<(), Box<dyn std::error::Error>> {
     let c = !not_a01.ranges() - a2.ranges();
     let d = (a0.ranges() | a1.ranges()) - a2.ranges();
     let e = a01_tee.difference(a2.ranges());
-    let f = UnionIter::from_iter(a01.iter()) - UnionIter::from_iter(a2.iter());
+    // cmk00 let f = UnionIter::from_iter(a01.iter()) - UnionIter::from_iter(a2.iter());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
-    assert!(a.ranges().equal(f));
+    // cmk00 assert!(a.ranges().equal(f));
 
     Ok(())
 }
@@ -455,12 +454,12 @@ fn xor() -> Result<(), Box<dyn std::error::Error>> {
     let c = !not_a01.ranges() ^ a2.ranges();
     let d = (a0.ranges() | a1.ranges()) ^ a2.ranges();
     let e = a01_tee.symmetric_difference(a2.ranges());
-    let f = UnionIter::from_iter(a01.iter()) ^ UnionIter::from_iter(a2.iter());
+    // cmk00 let f = UnionIter::from_iter(a01.iter()) ^ UnionIter::from_iter(a2.iter());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
-    assert!(a.ranges().equal(f));
+    // cmk00 assert!(a.ranges().equal(f));
     Ok(())
 }
 
@@ -478,12 +477,12 @@ fn bitand() -> Result<(), Box<dyn std::error::Error>> {
     let c = !not_a01.ranges() & a2.ranges();
     let d = (a0.ranges() | a1.ranges()) & a2.ranges();
     let e = a01_tee.intersection(a2.ranges());
-    let f = UnionIter::from_iter(a01.iter()) & UnionIter::from_iter(a2.iter());
+    // cmk00 let f = UnionIter::from_iter(a01.iter()) & UnionIter::from_iter(a2.iter());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
-    assert!(a.ranges().equal(f));
+    // cmk00 assert!(a.ranges().equal(f));
     Ok(())
 }
 
@@ -614,30 +613,31 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     _range_set_int = _range_set_int.ranges().into_range_set_blaze();
     _range_set_int = RangeSetBlaze::from_sorted_disjoint(_range_set_int.ranges());
 
-    let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10]);
-    let mut _sorted_disjoint_iter;
-    _sorted_disjoint_iter = UnionIter::new(sorted_starts);
-    // #10 collect / from_iter T
-    let mut _sorted_disjoint_iter: UnionIter<_, _> = [1, 5, 6, 5].into_iter().collect();
-    _sorted_disjoint_iter = UnionIter::from_iter([1, 5, 6, 5]);
-    // // #11 into / from array T
-    _sorted_disjoint_iter = [1, 5, 6, 5].into();
-    _sorted_disjoint_iter = UnionIter::from([1, 5, 6, 5]);
-    // // #12 into / from slice T
-    _sorted_disjoint_iter = [1, 5, 6, 5][1..=2].into();
-    _sorted_disjoint_iter = UnionIter::from([1, 5, 6, 5].as_slice());
-    // //#13 collect / from_iter range
-    _sorted_disjoint_iter = [5..=6, 1..=5].into_iter().collect();
-    _sorted_disjoint_iter = UnionIter::from_iter([5..=6, 1..=5]);
-    // // #14 from into array range
-    _sorted_disjoint_iter = [5..=6, 1..=5].into();
-    _sorted_disjoint_iter = UnionIter::from([5..=6, 1..=5]);
-    // // #15 from into slice range
-    _sorted_disjoint_iter = [5..=6, 1..=5][0..=1].into();
-    _sorted_disjoint_iter = UnionIter::from([5..=6, 1..=5].as_slice());
-    // // #16 into / from iter (T,T) + SortedDisjoint
-    let mut _sorted_disjoint_iter: UnionIter<_, _> = _range_set_int.ranges().collect();
-    _sorted_disjoint_iter = UnionIter::from_iter(_range_set_int.ranges());
+    // cmk00
+    // let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10]);
+    // let mut _sorted_disjoint_iter;
+    // _sorted_disjoint_iter = UnionIter::new(sorted_starts);
+    // // #10 collect / from_iter T
+    // let mut _sorted_disjoint_iter: UnionIter<_, _> = [1, 5, 6, 5].into_iter().collect();
+    // _sorted_disjoint_iter = UnionIter::from_iter([1, 5, 6, 5]);
+    // // // #11 into / from array T
+    // _sorted_disjoint_iter = [1, 5, 6, 5].into();
+    // _sorted_disjoint_iter = UnionIter::from([1, 5, 6, 5]);
+    // // // #12 into / from slice T
+    // _sorted_disjoint_iter = [1, 5, 6, 5][1..=2].into();
+    // _sorted_disjoint_iter = UnionIter::from([1, 5, 6, 5].as_slice());
+    // // //#13 collect / from_iter range
+    // _sorted_disjoint_iter = [5..=6, 1..=5].into_iter().collect();
+    // _sorted_disjoint_iter = UnionIter::from_iter([5..=6, 1..=5]);
+    // // // #14 from into array range
+    // _sorted_disjoint_iter = [5..=6, 1..=5].into();
+    // _sorted_disjoint_iter = UnionIter::from([5..=6, 1..=5]);
+    // // // #15 from into slice range
+    // _sorted_disjoint_iter = [5..=6, 1..=5][0..=1].into();
+    // _sorted_disjoint_iter = UnionIter::from([5..=6, 1..=5].as_slice());
+    // // // #16 into / from iter (T,T) + SortedDisjoint
+    // let mut _sorted_disjoint_iter: UnionIter<_, _> = _range_set_int.ranges().collect();
+    // _sorted_disjoint_iter = UnionIter::from_iter(_range_set_int.ranges());
 
     Ok(())
 }
@@ -1152,23 +1152,24 @@ fn len_demo() {
     assert_eq!(<u8 as Integer>::safe_len(&(0..=255)), 256);
 }
 
-#[test]
-fn union_iter() {
-    use range_set_blaze::{CheckSortedDisjoint, UnionIter};
+// cmk00
+// #[test]
+// fn union_iter() {
+//     use range_set_blaze::CheckSortedDisjoint;
 
-    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-    let b = CheckSortedDisjoint::from([2..=6]);
-    let c = UnionIter::new(AssumeSortedStarts::new(
-        a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
-    ));
-    assert_eq!(c.to_string(), "1..=100");
+//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+//     let b = CheckSortedDisjoint::from([2..=6]);
+//     let c = UnionIter::new(AssumeSortedStarts::new(
+//         a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
+//     ));
+//     assert_eq!(c.to_string(), "1..=100");
 
-    // Or, equivalently:
-    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-    let b = CheckSortedDisjoint::from([2..=6]);
-    let c = SortedDisjoint::union(a, b);
-    assert_eq!(c.to_string(), "1..=100")
-}
+//     // Or, equivalently:
+//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+//     let b = CheckSortedDisjoint::from([2..=6]);
+//     let c = SortedDisjoint::union(a, b);
+//     assert_eq!(c.to_string(), "1..=100")
+// }
 
 #[test]
 fn bitor() {

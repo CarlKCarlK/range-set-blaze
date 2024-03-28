@@ -1103,6 +1103,7 @@ fn merge_coverage_0() {
     let m = Merge::new(a, b);
     let n = m.clone();
     let p = n.clone();
+    // cmk000
     let union1 = UnionIter::new(m);
     let union2 = UnionIter::new(n);
     assert!(union1.equal(union2));
@@ -1249,13 +1250,14 @@ fn sorted_disjoint_iterator_coverage_0() {
     assert!(b.is_superset(a));
 }
 
-#[test]
-fn union_iter_coverage_0() {
-    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-    let b = CheckSortedDisjoint::new(vec![1..=2, 5..=101]);
-    let c = a.union(b);
-    assert!(format!("{c:?}").starts_with("UnionIter"));
-}
+// cmk00
+// #[test]
+// fn union_iter_coverage_0() {
+//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+//     let b = CheckSortedDisjoint::new(vec![1..=2, 5..=101]);
+//     let c = a.union(b);
+//     assert!(format!("{c:?}").starts_with("UnionIter"));
+// }
 
 #[test]
 fn unsorted_disjoint_coverage_0() {

@@ -13,8 +13,8 @@ use crate::{map::CloneBorrow, map::ValueOwned, SortedDisjointMap};
 use itertools::{Itertools, Tee};
 
 use crate::{
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXorOldNew, DynSortedDisjoint, Integer, IntoRangesIter,
-    Merge, NotIter, RangesIter, UnionIter,
+    BitAndMerge, BitOrMerge2, BitSubMerge, BitXorOldNew, DynSortedDisjoint, Integer,
+    IntoRangesIter, NotIter, RangesIter, UnionIter,
 };
 
 /// A trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
@@ -231,13 +231,36 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(union.to_string(), "1..=2");
     /// ```
     #[inline]
-    fn union<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
+    fn union<R>(
+        self,
+        other: R,
+    ) -> UnitMapToSortedDisjoint<
+        T,
+        crate::UnionIterMap<
+            T,
+            (),
+            &'static (),
+            crate::MergeMap<
+                T,
+                (),
+                &'static (),
+                SortedDisjointToUnitMap<T, Self>,
+                SortedDisjointToUnitMap<T, <R as IntoIterator>::IntoIter>,
+            >,
+        >,
+    >
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
         Self: Sized,
     {
-        UnionIter::new(Merge::new(self, other.into_iter()))
+        // cmk000
+        // UnionIter::new(Merge::new(self, other.into_iter()))
+        let left = SortedDisjointToUnitMap::new(self);
+        let right = SortedDisjointToUnitMap::new(other.into_iter());
+        let unit_map = left.union(right);
+        let result = UnitMapToSortedDisjoint::new(unit_map);
+        result
     }
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their intersection.
@@ -688,7 +711,7 @@ macro_rules! impl_sorted_traits_and_ops {
         where
             R: SortedDisjoint<T>,
         {
-            type Output = BitOrMerge<T, Self, R>;
+            type Output = BitOrMerge2<T, Self, R>;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjoint::union(self, other)
@@ -742,7 +765,10 @@ impl_sorted_traits_and_ops!(RangesIter<'a, T>, 'a);
 impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
 impl_sorted_traits_and_ops!(UnitMapToSortedDisjoint<T, I>, I: SortedDisjointMap<T, (), &'static ()>);
 
-impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
+// We're not allowed to define methods on outside types, so we only define the traits
+impl<T: Integer, I: SortedStarts<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 // cmk00 test every iterator and every method
+
+// cmk00 try to remove UnionIter and KMergeIter and MergerIter
