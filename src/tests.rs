@@ -604,84 +604,86 @@ fn parity() {
     );
 }
 
-#[test]
-fn bit_or_iter() {
-    let i = UnionIter::from([1, 3, 4, 2, 2, 43, -1, 4, 22]);
-    let j = UnionIter::from([11, 3, 4, 42, 2, 43, 23, 2, 543]);
+// cmk0
+// #[test]
+// fn bit_or_iter() {
+//     let i = UnionIter::from([1, 3, 4, 2, 2, 43, -1, 4, 22]);
+//     let j = UnionIter::from([11, 3, 4, 42, 2, 43, 23, 2, 543]);
 
-    let _not_i = !i.clone();
-    let k = i - j;
-    assert_eq!(k.to_string(), "-1..=-1, 1..=1, 22..=22");
-}
+//     let _not_i = !i.clone();
+//     let k = i - j;
+//     assert_eq!(k.to_string(), "-1..=-1, 1..=1, 22..=22");
+// }
 
-#[test]
-fn empty() {
-    let universe: UnionIter<u8, _> = [0..=255].into_iter().collect();
-    let arr: [u8; 0] = [];
-    let a0 = RangeSetBlaze::<u8>::from_iter(arr);
-    assert!(!(a0.ranges()).equal(universe.clone()));
-    assert!((!a0).ranges().equal(universe));
-    let _a0 = RangeSetBlaze::from_iter([0..=0; 0]);
-    let _a = RangeSetBlaze::<i32>::new();
+// cmk0
+// #[test]
+// fn empty() {
+//     let universe: UnionIter<u8, _> = [0..=255].into_iter().collect();
+//     let arr: [u8; 0] = [];
+//     let a0 = RangeSetBlaze::<u8>::from_iter(arr);
+//     assert!(!(a0.ranges()).equal(universe.clone()));
+//     assert!((!a0).ranges().equal(universe));
+//     let _a0 = RangeSetBlaze::from_iter([0..=0; 0]);
+//     let _a = RangeSetBlaze::<i32>::new();
 
-    let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-    let a = a_iter.collect::<RangeSetBlaze<i32>>();
-    let arr: [i32; 0] = [];
-    let b = RangeSetBlaze::from_iter(arr);
-    let mut c3 = a.clone();
-    let mut c5 = a.clone();
+//     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
+//     let a = a_iter.collect::<RangeSetBlaze<i32>>();
+//     let arr: [i32; 0] = [];
+//     let b = RangeSetBlaze::from_iter(arr);
+//     let mut c3 = a.clone();
+//     let mut c5 = a.clone();
 
-    let c0 = (&a).bitor(&b);
-    let c1a = &a | &b;
-    let c1b = &a | b.clone();
-    let c1c = a.clone() | &b;
-    let c1d = a.clone() | b.clone();
-    let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze();
-    c3.append(&mut b.clone());
-    c5.extend(b);
+//     let c0 = (&a).bitor(&b);
+//     let c1a = &a | &b;
+//     let c1b = &a | b.clone();
+//     let c1c = a.clone() | &b;
+//     let c1d = a.clone() | b.clone();
+//     let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze();
+//     c3.append(&mut b.clone());
+//     c5.extend(b);
 
-    let answer = RangeSetBlaze::from_iter(arr);
-    assert_eq!(&c0, &answer);
-    assert_eq!(&c1a, &answer);
-    assert_eq!(&c1b, &answer);
-    assert_eq!(&c1c, &answer);
-    assert_eq!(&c1d, &answer);
-    assert_eq!(&c2, &answer);
-    assert_eq!(&c3, &answer);
-    assert_eq!(&c5, &answer);
+//     let answer = RangeSetBlaze::from_iter(arr);
+//     assert_eq!(&c0, &answer);
+//     assert_eq!(&c1a, &answer);
+//     assert_eq!(&c1b, &answer);
+//     assert_eq!(&c1c, &answer);
+//     assert_eq!(&c1d, &answer);
+//     assert_eq!(&c2, &answer);
+//     assert_eq!(&c3, &answer);
+//     assert_eq!(&c5, &answer);
 
-    let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-    let a = a_iter.collect::<RangeSetBlaze<i32>>();
-    let b = RangeSetBlaze::from_iter([0i32; 0]);
+//     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
+//     let a = a_iter.collect::<RangeSetBlaze<i32>>();
+//     let b = RangeSetBlaze::from_iter([0i32; 0]);
 
-    let c0 = a.ranges() | b.ranges();
-    let c1 = [a.ranges(), b.ranges()].union();
-    let c_list2: [RangesIter<i32>; 0] = [];
-    let c2 = c_list2.clone().union();
-    let c3 = union_dyn!(a.ranges(), b.ranges());
-    let c4 = c_list2.map(DynSortedDisjoint::new).union();
+//     let c0 = a.ranges() | b.ranges();
+//     let c1 = [a.ranges(), b.ranges()].union();
+//     let c_list2: [RangesIter<i32>; 0] = [];
+//     let c2 = c_list2.clone().union();
+//     let c3 = union_dyn!(a.ranges(), b.ranges());
+//     let c4 = c_list2.map(DynSortedDisjoint::new).union();
 
-    let answer = RangeSetBlaze::from_iter(arr);
-    assert!(c0.equal(answer.ranges()));
-    assert!(c1.equal(answer.ranges()));
-    assert!(c2.equal(answer.ranges()));
-    assert!(c3.equal(answer.ranges()));
-    assert!(c4.equal(answer.ranges()));
+//     let answer = RangeSetBlaze::from_iter(arr);
+//     assert!(c0.equal(answer.ranges()));
+//     assert!(c1.equal(answer.ranges()));
+//     assert!(c2.equal(answer.ranges()));
+//     assert!(c3.equal(answer.ranges()));
+//     assert!(c4.equal(answer.ranges()));
 
-    let c0 = !(a.ranges() & b.ranges());
-    let c1 = ![a.ranges(), b.ranges()].intersection();
-    let c_list2: [RangesIter<i32>; 0] = [];
-    let c2 = !!c_list2.clone().intersection();
-    let c3 = !intersection_dyn!(a.ranges(), b.ranges());
-    let c4 = !!c_list2.map(DynSortedDisjoint::new).intersection();
+//     let c0 = !(a.ranges() & b.ranges());
+//     let c1 = ![a.ranges(), b.ranges()].intersection();
+//     let c_list2: [RangesIter<i32>; 0] = [];
+//     let c2 = !!c_list2.clone().intersection();
+//     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
+//     let c4 = !!c_list2.map(DynSortedDisjoint::new).intersection();
 
-    let answer = !RangeSetBlaze::from_iter([0i32; 0]);
-    assert!(c0.equal(answer.ranges()));
-    assert!(c1.equal(answer.ranges()));
-    assert!(c2.equal(answer.ranges()));
-    assert!(c3.equal(answer.ranges()));
-    assert!(c4.equal(answer.ranges()));
-}
+//     let answer = !RangeSetBlaze::from_iter([0i32; 0]);
+//     assert!(c0.equal(answer.ranges()));
+//     assert!(c1.equal(answer.ranges()));
+//     assert!(c2.equal(answer.ranges()));
+//     assert!(c3.equal(answer.ranges()));
+//     assert!(c4.equal(answer.ranges()));
+// }
 
 // // Can't implement fmt::Display fmt must take ownership
 // impl<T, I> UnsortedDisjoint<T, I>
@@ -1096,30 +1098,30 @@ fn lib_coverage_6() {
     }};
 }
 
-#[test]
-fn merge_coverage_0() {
-    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-    let b = CheckSortedDisjoint::from([2..=6]);
-    let m = Merge::new(a, b);
-    let n = m.clone();
-    let p = n.clone();
-    // cmk000
-    let union1 = UnionIter::new(m);
-    let union2 = UnionIter::new(n);
-    assert!(union1.equal(union2));
-    assert!(format!("{p:?}").starts_with("Merge"));
+// cmk0
+// #[test]
+// fn merge_coverage_0() {
+//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+//     let b = CheckSortedDisjoint::from([2..=6]);
+//     let m = Merge::new(a, b);
+//     let n = m.clone();
+//     let p = n.clone();
+//     let union1 = UnionIter::new(m);
+//     let union2 = UnionIter::new(n);
+//     assert!(union1.equal(union2));
+//     assert!(format!("{p:?}").starts_with("Merge"));
 
-    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-    let b = CheckSortedDisjoint::new(vec![2..=6]);
-    let c = CheckSortedDisjoint::new(vec![-1..=-1]);
-    let m = KMerge::new([a, b, c]);
-    let n = m.clone();
-    let p = n.clone();
-    let union1 = UnionIter::new(m);
-    let union2 = UnionIter::new(n);
-    assert!(union1.equal(union2));
-    assert!(format!("{p:?}").starts_with("KMerge"));
-}
+//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+//     let b = CheckSortedDisjoint::new(vec![2..=6]);
+//     let c = CheckSortedDisjoint::new(vec![-1..=-1]);
+//     let m = KMerge::new([a, b, c]);
+//     let n = m.clone();
+//     let p = n.clone();
+//     let union1 = UnionIter::new(m);
+//     let union2 = UnionIter::new(n);
+//     assert!(union1.equal(union2));
+//     assert!(format!("{p:?}").starts_with("KMerge"));
+// }
 
 #[test]
 fn not_iter_coverage_0() {

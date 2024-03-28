@@ -58,12 +58,10 @@ pub use multiway_map::MultiwaySortedDisjointMap;
 use range_set_blaze::UnitMapToSortedDisjoint;
 use range_values::RangeValuesToRangesIter;
 use sym_diff_iter_map::SymDiffIterMap;
-use union_iter::UnionIter;
 mod multiway_map;
 mod sorted_disjoint_map;
 mod tests;
 mod tests_map;
-mod union_iter;
 mod union_iter_map;
 mod unsorted_disjoint;
 mod unsorted_disjoint_map;
@@ -1587,8 +1585,8 @@ pub trait Integer:
 //     }
 // }
 
-#[doc(hidden)]
-pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
+// #[doc(hidden)]
+// pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
 pub type BitOrMerge2<T, L, R> = UnitMapToSortedDisjoint<
     T,
@@ -1860,8 +1858,6 @@ where
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
     fn union(self) -> BitOrKMerge2<T, I> {
-        // cmk000
-        // UnionIter::new(KMerge::new(self))
         let maps = self
             .into_iter()
             .map(|sorted_disjoint| SortedDisjointToUnitMap::new(sorted_disjoint.into_iter()));
