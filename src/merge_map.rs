@@ -159,9 +159,9 @@ where
     I: SortedDisjointMap<T, V, VR>,
 {
     /// Creates a new [`KMergeMap`] iterator from zero or more [`SortedDisjointMap`] iterators. See [`KMergeMap`] for more details and examples.
-    pub fn new<J>(iter: J) -> Self
+    pub fn new<K>(iter: K) -> Self
     where
-        J: IntoIterator<Item = I>,
+        K: IntoIterator<Item = I>,
     {
         // Prioritize from left to right
         let iter = iter.into_iter().enumerate().map(|(i, x)| {

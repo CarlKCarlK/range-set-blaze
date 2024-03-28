@@ -10,7 +10,6 @@ use crate::{
     map::{CloneBorrow, ValueOwned},
     merge_map::KMergeMap,
     range_values::RangeValuesToRangesIter,
-    sym_diff_iter_map::SymDiffIterMap,
     BitOrKMergeMap, Integer, IntersectionMap, RangeMapBlaze, SortedDisjointMap, UnionIterMap,
 };
 

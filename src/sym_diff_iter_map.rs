@@ -4,8 +4,9 @@ use alloc::collections::BinaryHeap;
 
 use crate::{
     map::{CloneBorrow, ValueOwned},
+    merge_map::KMergeMap,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
-    BitXorAdjusted, Integer, MergeMap, RangeValue, SortedDisjointMap,
+    Integer, MergeMap, RangeValue, SortedDisjointMap, SymDiffIterMapKMerge, SymDiffIterMapMerge,
 };
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
@@ -232,7 +233,13 @@ where
     }
 }
 
-impl<T, V, VR, L, R> BitXorAdjusted<T, V, VR, L, R>
+// cmk000 is there a BitOrMergeMap?
+// cmk000 is there a BitOrKMergeMap?
+// cmk000 is there a BitXOrKMergeMap
+// cmk000 Are operators defined on four results?
+// cmk000 where is this where is this new2 used and should BitOr(K)Merge map use a new(2), too?
+
+impl<T, V, VR, L, R> SymDiffIterMapMerge<T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned,
@@ -244,7 +251,42 @@ where
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
     pub fn new2(left: L, right: R) -> Self {
-        let mut iter = MergeMap::new(left, right);
+        let iter = MergeMap::new(left, right);
+        Self::new(iter)
+    }
+}
+
+/// cmk doc
+impl<T, V, VR, J> SymDiffIterMapKMerge<T, V, VR, J>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    J: SortedDisjointMap<T, V, VR>,
+{
+    // cmk00 should this be new2 and have a new, too (like UnionIterMap)?
+    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
+    /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
+    pub fn new_k<K>(k: K) -> Self
+    where
+        K: IntoIterator<Item = J>,
+    {
+        let iter = KMergeMap::new(k);
+        Self::new(iter)
+    }
+}
+
+/// cmk000
+impl<T, V, VR, I> SymDiffIterMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: PrioritySortedStartsMap<T, V, VR>,
+{
+    /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators.
+    /// See [`SymDiffIterMap`] for more details and examples.
+    pub fn new(mut iter: I) -> Self {
         let item = iter.next();
         Self {
             iter,

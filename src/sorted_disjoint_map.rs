@@ -6,8 +6,8 @@ use crate::range_values::RangeValuesIter;
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::unsorted_disjoint_map::AssumeSortedDisjointMap;
 use crate::BitOrAdjusted;
-use crate::BitXorAdjusted;
 use crate::DynSortedDisjointMap;
+use crate::SymDiffIterMapMerge;
 use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
@@ -467,7 +467,7 @@ where
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
     #[inline]
-    fn symmetric_difference<R>(self, other: R) -> BitXorAdjusted<T, V, VR, Self, R::IntoIter>
+    fn symmetric_difference<R>(self, other: R) -> SymDiffIterMapMerge<T, V, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<T, V, VR>,
@@ -1099,7 +1099,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             T: Integer,
             R: SortedDisjointMap<T, $V, $VR>,
         {
-            type Output = BitXorAdjusted<T, $V, $VR, Self, R>;
+            type Output = SymDiffIterMapMerge<T, $V, $VR, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {

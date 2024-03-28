@@ -1609,12 +1609,13 @@ pub type BitOrMergeMap<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, V
 pub type BitOrAdjusted<T, V, VR, L, R> = BitOrMergeMap<T, V, VR, L, R>;
 
 #[doc(hidden)]
-pub type BitXorAdjusted<T, V, VR, L, R> = SymDiffIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
+pub type SymDiffIterMapMerge<T, V, VR, L, R> = SymDiffIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
+pub type SymDiffIterMapKMerge<T, V, VR, II> = SymDiffIterMap<T, V, VR, KMergeMap<T, V, VR, II>>;
 
 #[doc(hidden)]
 pub type BitXorOldNew<T, L, R> = UnitMapToSortedDisjoint<
     T,
-    BitXorAdjusted<
+    SymDiffIterMapMerge<
         T,
         (),
         &'static (),
