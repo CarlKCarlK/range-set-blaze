@@ -233,12 +233,6 @@ where
     }
 }
 
-// cmk000 is there a BitOrMergeMap?
-// cmk000 is there a BitOrKMergeMap?
-// cmk000 is there a BitXOrKMergeMap
-// cmk000 Are operators defined on four results?
-// cmk000 where is this where is this new2 used and should BitOr(K)Merge map use a new(2), too?
-
 impl<T, V, VR, L, R> SymDiffIterMapMerge<T, V, VR, L, R>
 where
     T: Integer,
@@ -276,7 +270,6 @@ where
     }
 }
 
-/// cmk000
 impl<T, V, VR, I> SymDiffIterMap<T, V, VR, I>
 where
     T: Integer,

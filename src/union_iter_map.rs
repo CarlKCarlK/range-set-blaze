@@ -250,7 +250,6 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    // cmk000 push Merge/Priority into this function
     I: PrioritySortedStartsMap<T, V, VR>,
 {
     // cmk00 should Union have a new2, too
