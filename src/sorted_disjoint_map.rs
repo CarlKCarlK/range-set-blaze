@@ -1,11 +1,13 @@
 use crate::map::BitSubRangesMap;
 use crate::map::UniqueValue;
+use crate::range_set_blaze::SortedDisjointToUnitMap;
 use crate::range_values::IntoRangeValuesIter;
 use crate::range_values::RangeValuesIter;
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::unsorted_disjoint_map::AssumeSortedDisjointMap;
 use crate::BitOrAdjusted;
 use crate::BitXorAdjusted;
+use crate::DynSortedDisjointMap;
 use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
@@ -1043,67 +1045,61 @@ where
 }
 
 macro_rules! impl_sorted_map_traits_and_ops {
-    ($IterType:ty, $VR:ty, $($more_generics:tt)*) => {
+    ($IterType:ty, $V:ty, $VR:ty, $($more_generics:tt)*) => {
 
-        impl<$($more_generics)*, T, V> SortedStartsMap<T, V, $VR> for $IterType
+        impl<$($more_generics)*, T> SortedStartsMap<T, $V, $VR> for $IterType
         where
             T: Integer,
-            V: ValueOwned,
         {
         }
 
-        impl<$($more_generics)*, T, V> SortedDisjointMap<T, V, $VR> for $IterType
+        impl<$($more_generics)*, T> SortedDisjointMap<T, $V, $VR> for $IterType
         where
             T: Integer,
-            V: ValueOwned,
         {
         }
 
-        impl<$($more_generics)*, T, V> ops::Not for $IterType
+        impl<$($more_generics)*, T> ops::Not for $IterType
         where
             T: Integer,
-            V: ValueOwned,
         {
-            type Output = NotIter<T, RangeValuesToRangesIter<T, V, $VR, Self>>;
+            type Output = NotIter<T, RangeValuesToRangesIter<T, $V, $VR, Self>>;
 
             fn not(self) -> Self::Output {
                 self.complement()
             }
         }
 
-        impl<$($more_generics)*, T, V, R> ops::BitOr<R> for $IterType
+        impl<$($more_generics)*, T, R> ops::BitOr<R> for $IterType
         where
             T: Integer,
-            V: ValueOwned,
-            R: SortedDisjointMap<T, V, $VR>,
+            R: SortedDisjointMap<T, $V, $VR>,
         {
-            type Output = BitOrAdjusted<T, V, $VR, Self, R>;
+            type Output = BitOrAdjusted<T, $V, $VR, Self, R>;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjointMap::union(self, other)
             }
         }
 
-        impl<$($more_generics)*, T, V, R> ops::Sub<R> for $IterType
+        impl<$($more_generics)*, T, R> ops::Sub<R> for $IterType
         where
             T: Integer,
-            V: ValueOwned,
             R: SortedDisjoint<T>,
         {
-            type Output = BitSubRangesMap<T, V, $VR, Self, R>;
+            type Output = BitSubRangesMap<T, $V, $VR, Self, R>;
 
             fn sub(self, other: R) -> Self::Output {
                 SortedDisjointMap::difference(self, other)
             }
         }
 
-        impl<$($more_generics)*, T, V, R> ops::BitXor<R> for $IterType
+        impl<$($more_generics)*, T, R> ops::BitXor<R> for $IterType
         where
             T: Integer,
-            V: ValueOwned,
-            R: SortedDisjointMap<T, V, $VR>,
+            R: SortedDisjointMap<T, $V, $VR>,
         {
-            type Output = BitXorAdjusted<T, V, $VR, Self, R>;
+            type Output = BitXorAdjusted<T, $V, $VR, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
@@ -1111,13 +1107,12 @@ macro_rules! impl_sorted_map_traits_and_ops {
             }
         }
 
-        impl<$($more_generics)*, T, V, R> ops::BitAnd<R> for $IterType
+        impl<$($more_generics)*, T, R> ops::BitAnd<R> for $IterType
         where
             T: Integer,
-            V: ValueOwned,
             R: SortedDisjoint<T>,
         {
-            type Output = BitAndRangesMap<T, V, $VR, Self, R>;
+            type Output = BitAndRangesMap<T, $V, $VR, Self, R>;
 
             fn bitand(self, other: R) -> Self::Output {
                 SortedDisjointMap::intersection(self, other)
@@ -1127,9 +1122,11 @@ macro_rules! impl_sorted_map_traits_and_ops {
     }
 }
 
-impl_sorted_map_traits_and_ops!(UnionIterMap<T, V, VR, I>, VR, VR: CloneBorrow<V>, I: PrioritySortedStartsMap<T, V, VR>);
-impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, V, VR, I>, VR, VR: CloneBorrow<V>, I: PrioritySortedStartsMap<T, V, VR>);
-impl_sorted_map_traits_and_ops!(IntersectionIterMap< T, V, VR, I0, I1>, VR, VR: CloneBorrow<V>, I0: SortedDisjointMap<T, V, VR>, I1: SortedDisjoint<T>);
-impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, &'a V, 'a);
-impl_sorted_map_traits_and_ops!(AssumeSortedDisjointMap<T, V, VR, I>, VR, VR: CloneBorrow<V>, I: SortedDisjointMap<T, V, VR>);
-impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, Rc<V>, 'ignore);
+impl_sorted_map_traits_and_ops!(UnionIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
+impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
+impl_sorted_map_traits_and_ops!(IntersectionIterMap< T, V, VR, I0, I1>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I0: SortedDisjointMap<T, V, VR>, I1: SortedDisjoint<T>);
+impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: ValueOwned );
+impl_sorted_map_traits_and_ops!(AssumeSortedDisjointMap<T, V, VR, I>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I: SortedDisjointMap<T, V, VR>);
+impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: ValueOwned);
+impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, V, VR>, V, VR, 'a, V: ValueOwned, VR: CloneBorrow<V>);
+impl_sorted_map_traits_and_ops!(SortedDisjointToUnitMap<T, I>, (), &'static (), I: SortedDisjoint<T>);

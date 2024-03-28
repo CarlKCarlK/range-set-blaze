@@ -157,38 +157,6 @@ where
     }
 }
 
-// // RangeValuesToRangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
-// impl<'a, T, V, VR, I> SortedStarts<T> for RangeValuesToRangesIter<'a, T, V, VR, I>
-// where
-//     T: Integer,
-//     V: ValueOwned + 'a,
-//     VR: CloneBorrow<V> + 'a,
-//     I: SortedDisjointMap<'a, T, V, VR>,
-// {
-// }
-// impl<'a, T, V, VR, I> SortedDisjoint<T> for RangeValuesToRangesIter<'a, T, V, VR, I>
-// where
-//     T: Integer,
-//     V: ValueOwned + 'a,
-//     VR: CloneBorrow<V> + 'a,
-//     I: SortedDisjointMap<'a, T, V, VR>,
-// {
-// }
-
-// impl<'a, T, V, VR, I> ops::Not for RangeValuesToRangesIter<'a, T, V, VR, I>
-// where
-//     T: Integer,
-//     V: ValueOwned + 'a,
-//     VR: CloneBorrow<V> + 'a,
-//     I: SortedDisjointMap<'a, T, V, VR>,
-// {
-//     type Output = NotIter<T, Self>;
-
-//     fn not(self) -> Self::Output {
-//         self.complement()
-//     }
-// }
-
 impl<T, V, VR, I> FusedIterator for RangeValuesToRangesIter<T, V, VR, I>
 where
     T: Integer,
@@ -427,32 +395,6 @@ where
     }
 }
 
-// // all AdjustPriorityMap are also SortedDisjointMaps
-// impl<'a, T, V, VR, I> SortedStartsMap<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
-// where
-//     T: Integer,
-//     V: ValueOwned,
-//     VR: CloneBorrow<V>,
-//     I: SortedDisjointMap<T, V, VR>,
-// {
-// }
-
-// pub trait SortedDisjointMapCmk<T, V, VR>: Iterator<Item = RangeValue<T, V, VR>>
-// where
-//     T: Integer,
-//     V: ValueOwned,
-//     VR: CloneBorrow<V>,
-// {
-// }
-
-// impl<T, V, VR, I> SortedDisjointMapCmk<T, V, VR> for AdjustPriorityMap<T, V, VR, I>
-// where
-//     T: Integer,
-//     V: ValueOwned,
-//     VR: CloneBorrow<V>,
-//     I: SortedDisjointMap<T, V, VR>,
-// {
-// }
 impl<'a, T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for SetPriorityMap<T, V, VR, I>
 where
     T: Integer,

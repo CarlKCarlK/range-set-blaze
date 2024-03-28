@@ -1,7 +1,7 @@
 use crate::{
     map::{CloneBorrow, ValueOwned},
     sorted_disjoint_map::RangeValue,
-    Integer, SortedDisjointMap, SortedStartsMap,
+    Integer, SortedDisjointMap,
 };
 use alloc::boxed::Box;
 
@@ -57,22 +57,6 @@ where
             iter: Box::new(iter),
         }
     }
-}
-
-// All DynSortedDisjointMap's are SortedDisjointMap's
-impl<'a, T, V, VR> SortedStartsMap<T, V, VR> for DynSortedDisjointMap<'a, T, V, VR>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-{
-}
-impl<'a, T, V, VR> SortedDisjointMap<T, V, VR> for DynSortedDisjointMap<'a, T, V, VR>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-{
 }
 
 impl<'a, T, V, VR> Iterator for DynSortedDisjointMap<'a, T, V, VR>

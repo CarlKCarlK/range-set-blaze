@@ -52,7 +52,6 @@ mod sorted_disjoint;
 // use gen_ops::gen_ops_ex;
 use intersection_iter_map::IntersectionIterMap;
 mod sym_diff_iter_map;
-use itertools::Tee;
 use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
@@ -2409,6 +2408,3 @@ where
 // impl<T: Integer> Eq for OldRangeSetBlaze<T> {}
 
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
-
-impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
-impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}

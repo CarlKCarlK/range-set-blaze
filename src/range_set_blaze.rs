@@ -24,7 +24,7 @@ use crate::{
     prelude::*,
     range_values::{IntoRangeValuesIter, RangeValuesIter, RangeValuesToRangesIter},
     unsorted_disjoint_map::UnsortedDisjointMap,
-    Integer, RangeValue, SortedStartsMap,
+    Integer, RangeValue,
 };
 
 #[derive(Clone, Hash, Default, PartialEq)]
@@ -2014,9 +2014,6 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 
-// impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
-// impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
-
 /// cmk doc
 pub struct SortedDisjointToUnitMap<T, I>
 where
@@ -2051,21 +2048,6 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|range| RangeValue::new(range, &()))
     }
-}
-
-// cmk1 move these into the macro
-impl<T, I> SortedStartsMap<T, (), &'static ()> for SortedDisjointToUnitMap<T, I>
-where
-    T: Integer,
-    I: SortedDisjoint<T>,
-{
-}
-
-impl<T, I> SortedDisjointMap<T, (), &'static ()> for SortedDisjointToUnitMap<T, I>
-where
-    T: Integer,
-    I: SortedDisjoint<T>,
-{
 }
 
 /// cmk doc
@@ -2152,21 +2134,6 @@ where
             .next()
             .map(|range_value| range_value.range.clone())
     }
-}
-
-// cmk1 move these into the macro
-impl<T, I> SortedStarts<T> for UnitMapToSortedDisjoint<T, I>
-where
-    T: Integer,
-    I: SortedDisjointMap<T, (), &'static ()>,
-{
-}
-
-impl<T, I> SortedDisjoint<T> for UnitMapToSortedDisjoint<T, I>
-where
-    T: Integer,
-    I: SortedDisjointMap<T, (), &'static ()>,
-{
 }
 
 /// cmk remove?

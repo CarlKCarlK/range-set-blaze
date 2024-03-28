@@ -10,11 +10,11 @@ use core::{
 };
 
 use crate::{map::CloneBorrow, map::ValueOwned, SortedDisjointMap};
-use itertools::Itertools;
+use itertools::{Itertools, Tee};
 
 use crate::{
-    BitAndMerge, BitOrMerge, BitSubMerge, BitXorOldNew, Integer, IntoRangesIter, Merge, NotIter,
-    RangesIter, UnionIter,
+    BitAndMerge, BitOrMerge, BitSubMerge, BitXorOldNew, DynSortedDisjoint, Integer, IntoRangesIter,
+    Merge, NotIter, RangesIter, UnionIter,
 };
 
 /// A trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
@@ -571,16 +571,6 @@ where
     seen_none: bool,
 }
 
-// cmk
-// impl<T: Integer, I> SortedDisjoint<T> for CheckSortedDisjoint<T, I> where
-//     I: Iterator<Item = RangeInclusive<T>>
-// {
-// }
-// impl<T: Integer, I> SortedStarts<T> for CheckSortedDisjoint<T, I> where
-//     I: Iterator<Item = RangeInclusive<T>>
-// {
-// }
-
 impl<T, I> CheckSortedDisjoint<T, I>
 where
     T: Integer,
@@ -749,5 +739,10 @@ impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: ValueOwned, VR: CloneBorrow<V>,I: SortedDisjointMap<T, V, VR>);
 impl_sorted_traits_and_ops!(IntoRangesIter<T>, 'ignore);
 impl_sorted_traits_and_ops!(RangesIter<'a, T>, 'a);
+impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
+impl_sorted_traits_and_ops!(UnitMapToSortedDisjoint<T, I>, I: SortedDisjointMap<T, (), &'static ()>);
+
+impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
+impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 // cmk00 test every iterator and every method
