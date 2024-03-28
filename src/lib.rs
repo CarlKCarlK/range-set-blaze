@@ -36,7 +36,6 @@ mod intersection_iter_map;
 /// cmk doc
 mod iter_map;
 mod map;
-mod merge;
 /// cmk doc
 pub mod range_set_blaze;
 pub use crate::range_set_blaze::RangeSetBlaze;
@@ -81,7 +80,6 @@ use core::{
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 // use itertools::Tee;
-pub use merge::{KMerge, Merge};
 pub use merge_map::MergeMap; // cmk KMergeMap
 mod merge_map;
 mod not_iter_map;
