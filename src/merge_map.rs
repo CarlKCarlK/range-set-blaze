@@ -1,4 +1,3 @@
-use core::cmp::Ordering;
 use core::iter::FusedIterator;
 
 use itertools::{Itertools, KMergeBy, MergeBy};

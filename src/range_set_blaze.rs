@@ -17,6 +17,7 @@ use std::{
 use alloc::rc::Rc;
 use gen_ops::gen_ops_ex;
 
+use crate::map::ValueOwned;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::{
     iter_map::{IntoIterMap, KeysMap},
@@ -1703,7 +1704,8 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
         I: IntoIterator<Item = T>,
     {
         let iter = iter.into_iter();
-        // cmk0 can we define map in terms of set or visa versa?
+
+        // We gather adjacent values into ranges via UnsortedDisjointMap.
         let unsorted = UnsortedDisjointMap::new(iter.map(|x| RangeValue::new(x..=x, &())));
         for priority in unsorted {
             self.0.internal_add(priority.range_value.range, ());
@@ -1859,7 +1861,7 @@ impl<T: Integer> BitOr<&RangeSetBlaze<T>> for &RangeSetBlaze<T> {
     }
 }
 
-impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
+impl<T: Integer, V: ValueOwned> Extend<(RangeInclusive<T>, V)> for RangeSetBlaze<T> {
     /// Extends the [`RangeSetBlaze`] with the contents of a
     /// range iterator.
 
@@ -1884,12 +1886,15 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
     /// ```
     fn extend<I>(&mut self, iter: I)
     where
-        I: IntoIterator<Item = RangeInclusive<T>>,
+        I: IntoIterator<Item = (RangeInclusive<T>, V)>,
     {
-        // cmk1 instead define in terms of .0.extend ????
         let iter = iter.into_iter();
-        for range in iter {
-            self.0.internal_add(range, ());
+
+        // We gather adjacent values into ranges via UnsortedDisjointMap.
+        let unsorted =
+            UnsortedDisjointMap::new(iter.map(|(range, v)| RangeValue::new_unique(range, v)));
+        for priority in unsorted {
+            self.0.internal_add(priority.range_value.range, ());
         }
     }
 }
@@ -2164,7 +2169,7 @@ where
 {
 }
 
-/// cmk0 doc
+/// cmk remove?
 // pub fn set_to_map() {
 //     let a: RangeSetBlaze<i32> = RangeSetBlaze::from_iter([1..=2, 3..=4]);
 //     let b = RangeSetBlaze::from_iter([-1..=2, 3..=14]);

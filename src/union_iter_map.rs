@@ -3,7 +3,8 @@ use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use alloc::format;
 use alloc::string::String;
 use alloc::{collections::BinaryHeap, vec};
-use core::cmp::{self, min};
+use core::cmp::min;
+use core::iter::FusedIterator;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
 
@@ -330,7 +331,6 @@ where
     VR: CloneBorrow<V>,
     I: Iterator<Item = RangeValue<T, V, VR>>,
 {
-    // cmk0
     #[allow(clippy::clone_on_copy)]
     fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, VR, I>) -> Self {
         let iter = unsorted_disjoint.sorted_by(|a, b| {
@@ -343,15 +343,15 @@ where
     }
 }
 
-// cmk0
-// impl<T, V, VR, I> FusedIterator for UnionIterMap<T, V, VR, I>
-// where
-//     T: Integer,
-//     V: ValueOwned,
-//     VR: CloneBorrow<V>,
-//     I: SortedStartsMap<T, V, VR> + FusedIterator,
-// {
-// }
+// cmk test that every iterator (that can me) is FusedIterator
+impl<T, V, VR, I> FusedIterator for UnionIterMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: PrioritySortedStartsMap<T, V, VR> + FusedIterator,
+{
+}
 
 // cmk
 // impl<'a, T, V, VR, I> ops::Not for UnionIterMap<'a, T, V, VR, I>
