@@ -1626,7 +1626,10 @@ pub type BitXorOldNew<T, L, R> = UnitMapToSortedDisjoint<
 >;
 
 #[doc(hidden)]
-pub type BitOrKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
+pub type BitOrKMerge2<T, I> = UnitMapToSortedDisjoint<
+    T,
+    UnionIterMap<T, (), &'static (), KMergeMap<T, (), &'static (), SortedDisjointToUnitMap<T, I>>>,
+>;
 #[doc(hidden)]
 pub type BitOrKMergeMap<T, V, VR, I> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I>>;
 #[doc(hidden)]
@@ -1636,7 +1639,7 @@ pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
 #[doc(hidden)]
 pub type BitNandMerge<T, L, R> = BitOrMerge2<T, NotIter<T, L>, NotIter<T, R>>;
 #[doc(hidden)]
-pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
+pub type BitNandKMerge<T, I> = BitOrKMerge2<T, NotIter<T, I>>;
 #[doc(hidden)]
 pub type IntersectionMap<T, V, VR, I> =
     IntersectionIterMap<T, V, VR, I, BitAndKMerge<T, RangeValuesToRangesIter<T, V, VR, I>>>;
@@ -1856,9 +1859,15 @@ where
     ///
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
-    fn union(self) -> BitOrKMerge<T, I> {
+    fn union(self) -> BitOrKMerge2<T, I> {
         // cmk000
-        UnionIter::new(KMerge::new(self))
+        // UnionIter::new(KMerge::new(self))
+        let maps = self
+            .into_iter()
+            .map(|sorted_disjoint| SortedDisjointToUnitMap::new(sorted_disjoint.into_iter()));
+        let union_maps = maps.union();
+        let result = UnitMapToSortedDisjoint::new(union_maps);
+        result
     }
 
     /// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
@@ -1886,11 +1895,14 @@ where
     /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
     /// ```
     fn intersection(self) -> BitAndKMerge<T, I> {
+        // cmk00 should we implement this via Map rather than complement?
         self.into_iter()
             .map(|seq| seq.into_iter().complement())
             .union()
             .complement()
     }
+
+    // cmk0 can we now implement xor on any number of iterators?
 }
 
 // gen_ops_ex!(
