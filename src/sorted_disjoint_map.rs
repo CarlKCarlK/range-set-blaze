@@ -103,6 +103,7 @@ where
 {
 }
 
+/// This is sorted by starts and contains priority information, but it is not sorted by priority.
 pub trait PrioritySortedStartsMap<T, V, VR>: Iterator<Item = Priority<T, V, VR>>
 where
     T: Integer,
@@ -111,6 +112,7 @@ where
 {
 }
 
+/// This is sorted and disjoint and contains priority information, but it is not sorted by priority.
 pub trait PrioritySortedDisjointMap<T, V, VR>: PrioritySortedStartsMap<T, V, VR>
 where
     T: Integer,

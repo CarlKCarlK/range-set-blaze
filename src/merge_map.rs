@@ -59,12 +59,12 @@ where
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
 {
-    // cmk00 why isn't priority mentioned?
     /// Creates a new [`MergeMap`] iterator from two [`SortedDisjointMap`] iterators. See [`MergeMap`] for more details and examples.
     pub fn new(left: L, right: R) -> Self {
         let left = SetPriorityMap::new(left, usize::MAX);
         let right = SetPriorityMap::new(right, usize::MIN);
         Self {
+            // We sort only by start -- priority is not used until later.
             iter: left.merge_by(right, |a, b| {
                 a.range_value.range.start() < b.range_value.range.start()
             }),
@@ -174,17 +174,8 @@ where
             SetPriorityMap<T, V, VR, I>,
             fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
         > = iter.kmerge_by(|a, b| {
-            // cmk00
-            match a
-                .range_value
-                .range
-                .start()
-                .cmp(&b.range_value.range.start())
-            {
-                Ordering::Less => true,
-                Ordering::Equal => a.priority_number < b.priority_number,
-                Ordering::Greater => false,
-            }
+            // We sort only by start -- priority is not used until later.
+            a.range_value.range.start() < b.range_value.range.start()
         });
         Self { iter }
     }

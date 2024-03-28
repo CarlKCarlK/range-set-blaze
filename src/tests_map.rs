@@ -460,11 +460,8 @@ fn map_repro_106() {
     let iter = iter.map(|(range, value)| RangeValue::new(range, value));
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
-        // cmk00
-        match a.range_value.range.start().cmp(b.range_value.range.start()) {
-            std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
-            other => other,
-        }
+        // We sort only by start -- priority is not used until later.
+        a.range_value.range.start().cmp(b.range_value.range.start())
     });
     let iter = AssumePrioritySortedStartsMap::new(iter);
     let iter = UnionIterMap::new(iter);
@@ -499,11 +496,8 @@ fn map_repro_206() {
 
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
-        match a.range_value.range.start().cmp(b.range_value.range.start()) {
-            // cmk00
-            std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
-            other => other,
-        }
+        // We sort only by start -- priority is not used until later.
+        a.range_value.range.start().cmp(b.range_value.range.start())
     });
     let iter = AssumePrioritySortedStartsMap::new(iter);
     // let vs = format_range_values(iter);
@@ -649,11 +643,8 @@ fn map_step_by_step() {
     let iter = iter.map(|(range, value)| RangeValue::new(range, value));
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
-        match a.range_value.range.start().cmp(b.range_value.range.start()) {
-            // cmk00
-            std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
-            other => other,
-        }
+        // We sort only by start -- priority is not used until later.
+        a.range_value.range.start().cmp(b.range_value.range.start())
     });
     let iter = AssumePrioritySortedStartsMap::new(iter);
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
@@ -668,11 +659,8 @@ fn map_step_by_step() {
     let iter = iter.map(|(range, value)| RangeValue::new(range, value));
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
-        match a.range_value.range.start().cmp(b.range_value.range.start()) {
-            // cmk00
-            std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
-            other => other,
-        }
+        // We sort only by start -- priority is not used until later.
+        a.range_value.range.start().cmp(b.range_value.range.start())
     });
     let iter = AssumePrioritySortedStartsMap::new(iter);
     let iter = UnionIterMap::new(iter);
