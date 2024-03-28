@@ -13,8 +13,8 @@ use crate::{map::CloneBorrow, map::ValueOwned, SortedDisjointMap};
 use itertools::{Itertools, Tee};
 
 use crate::{
-    BitAndMerge, BitOrMerge2, BitSubMerge, BitXorOldNew, DynSortedDisjoint, Integer,
-    IntoRangesIter, NotIter, RangesIter,
+    BitAndMerge, BitSubMerge, BitXorOldNew, DynSortedDisjoint, Integer, IntoRangesIter, NotIter,
+    RangesIter, UnionIterMerge,
 };
 
 /// A trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
@@ -709,7 +709,7 @@ macro_rules! impl_sorted_traits_and_ops {
         where
             R: SortedDisjoint<T>,
         {
-            type Output = BitOrMerge2<T, Self, R>;
+            type Output = UnionIterMerge<T, Self, R>;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjoint::union(self, other)

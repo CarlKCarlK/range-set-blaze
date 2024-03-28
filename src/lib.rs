@@ -1588,7 +1588,7 @@ pub trait Integer:
 // #[doc(hidden)]
 // pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
-pub type BitOrMerge2<T, L, R> = UnitMapToSortedDisjoint<
+pub type UnionIterMerge<T, L, R> = UnitMapToSortedDisjoint<
     T,
     crate::UnionIterMap<
         T,
@@ -1603,10 +1603,12 @@ pub type BitOrMerge2<T, L, R> = UnitMapToSortedDisjoint<
         >,
     >,
 >;
+
+// cmk rename to Union...
 #[doc(hidden)]
-pub type BitOrMergeMap<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
+pub type UnionIterMapMerge<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
 #[doc(hidden)]
-pub type BitOrAdjusted<T, V, VR, L, R> = BitOrMergeMap<T, V, VR, L, R>;
+pub type BitOrAdjusted<T, V, VR, L, R> = UnionIterMapMerge<T, V, VR, L, R>;
 
 #[doc(hidden)]
 pub type SymDiffIterMapMerge<T, V, VR, L, R> = SymDiffIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
@@ -1625,27 +1627,29 @@ pub type BitXorOldNew<T, L, R> = UnitMapToSortedDisjoint<
 >;
 
 #[doc(hidden)]
-pub type BitOrKMerge2<T, I> = UnitMapToSortedDisjoint<
+pub type UnionIterKMerge<T, I> = UnitMapToSortedDisjoint<
     T,
     UnionIterMap<T, (), &'static (), KMergeMap<T, (), &'static (), SortedDisjointToUnitMap<T, I>>>,
 >;
+
+// cmk00 rename to Union...
 #[doc(hidden)]
-pub type BitOrKMergeMap<T, V, VR, I> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I>>;
+pub type UnionIterMapKMerge<T, V, VR, I> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I>>;
 #[doc(hidden)]
 pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
 #[doc(hidden)]
 pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
 #[doc(hidden)]
-pub type BitNandMerge<T, L, R> = BitOrMerge2<T, NotIter<T, L>, NotIter<T, R>>;
+pub type BitNandMerge<T, L, R> = UnionIterMerge<T, NotIter<T, L>, NotIter<T, R>>;
 #[doc(hidden)]
-pub type BitNandKMerge<T, I> = BitOrKMerge2<T, NotIter<T, I>>;
+pub type BitNandKMerge<T, I> = UnionIterKMerge<T, NotIter<T, I>>;
 #[doc(hidden)]
 pub type IntersectionMap<T, V, VR, I> =
     IntersectionIterMap<T, V, VR, I, BitAndKMerge<T, RangeValuesToRangesIter<T, V, VR, I>>>;
 #[doc(hidden)]
-pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge2<T, L, R>>;
+pub type BitNorMerge<T, L, R> = NotIter<T, UnionIterMerge<T, L, R>>;
 #[doc(hidden)]
-pub type BitSubMerge<T, L, R> = NotIter<T, BitOrMerge2<T, NotIter<T, L>, R>>;
+pub type BitSubMerge<T, L, R> = NotIter<T, UnionIterMerge<T, NotIter<T, L>, R>>;
 #[doc(hidden)]
 // pub type BitXOrTee<T, L, R> =
 //     BitOrMerge<T, BitSubMerge<T, Tee<L>, Tee<R>>, BitSubMerge<T, Tee<R>, Tee<L>>>;
@@ -1858,7 +1862,7 @@ where
     ///
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
-    fn union(self) -> BitOrKMerge2<T, I> {
+    fn union(self) -> UnionIterKMerge<T, I> {
         let maps = self
             .into_iter()
             .map(|sorted_disjoint| SortedDisjointToUnitMap::new(sorted_disjoint.into_iter()));
@@ -2436,3 +2440,4 @@ where
 // impl<T: Integer> Eq for OldRangeSetBlaze<T> {}
 
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
+// cmk00 Can we/should we hide MergeMapIter and KMergeMapIter and SymDiffMapIter::new and UnionMapIter::new?

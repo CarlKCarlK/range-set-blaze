@@ -8,9 +8,9 @@
 use crate::{
     intersection_iter_map::IntersectionIterMap,
     map::{CloneBorrow, ValueOwned},
-    merge_map::KMergeMap,
     range_values::RangeValuesToRangesIter,
-    BitOrKMergeMap, Integer, IntersectionMap, RangeMapBlaze, SortedDisjointMap, UnionIterMap,
+    Integer, IntersectionMap, RangeMapBlaze, SortedDisjointMap, SymDiffIterMapKMerge, UnionIterMap,
+    UnionIterMapKMerge,
 };
 
 // /// The trait used to provide methods on multiple [`RangeMapBlaze`] references,
@@ -220,9 +220,9 @@ where
     ///
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
-    fn union(self) -> BitOrKMergeMap<T, V, VR, I> {
+    fn union(self) -> UnionIterMapKMerge<T, V, VR, I> {
         // cmk0 why does this not have .into_iter() but intersection does?
-        UnionIterMap::new(KMergeMap::new(self))
+        UnionIterMap::new_k(self)
     }
 
     /// Intersects the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
@@ -261,11 +261,11 @@ where
         IntersectionIterMap::new(iter_map, iter_set)
     }
 
-    // /// cmk000 doc
-    // fn symmetric_difference(self) -> BitOrKMergeMap<T, V, VR, I> {
-    //     let result = SymDiffIterMap::new2(KMergeMap::new(self));
-    //     result
-    // }
+    /// cmk000 doc
+    fn symmetric_difference(self) -> SymDiffIterMapKMerge<T, V, VR, I> {
+        let result = SymDiffIterMapKMerge::new_k(self);
+        result
+    }
 }
 // cmk confirm that on ranges the union of 0 sets 0 empty and the intersection of 0 sets is the universal set.
 // cmk on maps, the union is still empty, but the intersection is undefined because we can't give a value to T.s

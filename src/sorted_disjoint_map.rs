@@ -30,9 +30,7 @@ use std::ops;
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::map::CloneBorrow;
 use crate::sorted_disjoint::SortedDisjoint;
-use crate::{
-    map::ValueOwned, merge_map::MergeMap, union_iter_map::UnionIterMap, Integer, RangeMapBlaze,
-};
+use crate::{map::ValueOwned, union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
 use core::ops::RangeInclusive;
 use itertools::Tee;
 
@@ -353,7 +351,7 @@ where
         Self: Sized,
     {
         // cmk why this into iter stuff that is not used?
-        UnionIterMap::new(MergeMap::new(self, other.into_iter()))
+        UnionIterMap::new2(self, other.into_iter())
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their intersection.

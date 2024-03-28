@@ -1,5 +1,7 @@
 use crate::alloc::string::ToString;
+use crate::merge_map::KMergeMap;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
+use crate::{MergeMap, SortedDisjointMap, UnionIterMapKMerge, UnionIterMapMerge};
 use alloc::format;
 use alloc::string::String;
 use alloc::{collections::BinaryHeap, vec};
@@ -31,7 +33,7 @@ use crate::{sorted_disjoint_map::RangeValue, unsorted_disjoint_map::UnsortedDisj
 ///
 /// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
-/// let union = UnionIterMap::new(Merge::new(a, b));
+/// let union = UnionIterMap::new2(a, b);
 /// assert_eq!(union.to_string(), "1..=100");
 ///
 /// // Or, equivalently:
@@ -263,6 +265,43 @@ where
             gather: None,
             ready_to_go: None,
         }
+    }
+}
+
+impl<T, V, VR, L, R> UnionIterMapMerge<T, V, VR, L, R>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    L: SortedDisjointMap<T, V, VR>,
+    R: SortedDisjointMap<T, V, VR>,
+{
+    // cmk00 should this be new2 and have a new, too (like UnionIterMap)?
+    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
+    /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
+    pub fn new2(left: L, right: R) -> Self {
+        let iter = MergeMap::new(left, right);
+        Self::new(iter)
+    }
+}
+
+/// cmk doc
+impl<T, V, VR, J> UnionIterMapKMerge<T, V, VR, J>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    J: SortedDisjointMap<T, V, VR>,
+{
+    // cmk00 should this be new2 and have a new, too (like UnionIterMap)?
+    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
+    /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
+    pub fn new_k<K>(k: K) -> Self
+    where
+        K: IntoIterator<Item = J>,
+    {
+        let iter = KMergeMap::new(k);
+        Self::new(iter)
     }
 }
 
