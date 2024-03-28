@@ -37,6 +37,7 @@ mod intersection_iter_map;
 mod iter_map;
 mod map;
 mod merge;
+/// cmk doc
 pub mod range_set_blaze;
 pub use crate::range_set_blaze::RangeSetBlaze;
 use crate::range_set_blaze::SortedDisjointToUnitMap;
@@ -57,7 +58,6 @@ pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
 use range_set_blaze::UnitMapToSortedDisjoint;
 use range_values::RangeValuesToRangesIter;
-use range_values::SetPriorityMap;
 use sym_diff_iter_map::SymDiffIterMap;
 mod multiway_map;
 mod sorted_disjoint_map;
@@ -1592,16 +1592,10 @@ pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
 pub type BitOrMergeMap<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
 #[doc(hidden)]
-pub type BitOrAdjusted<T, V, VR, L, R> =
-    BitOrMergeMap<T, V, VR, SetPriorityMap<T, V, VR, L>, SetPriorityMap<T, V, VR, R>>;
+pub type BitOrAdjusted<T, V, VR, L, R> = BitOrMergeMap<T, V, VR, L, R>;
 
 #[doc(hidden)]
-pub type BitXorAdjusted<T, V, VR, L, R> = SymDiffIterMap<
-    T,
-    V,
-    VR,
-    MergeMap<T, V, VR, SetPriorityMap<T, V, VR, L>, SetPriorityMap<T, V, VR, R>>,
->;
+pub type BitXorAdjusted<T, V, VR, L, R> = SymDiffIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
 
 #[doc(hidden)]
 pub type BitXorOldNew<T, L, R> = UnitMapToSortedDisjoint<

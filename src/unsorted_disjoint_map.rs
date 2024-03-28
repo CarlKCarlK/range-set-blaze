@@ -67,7 +67,7 @@ where
         loop {
             // get the next range_value, if none, return the current range_value
             // cmk create a new range_value instead of modifying the existing one????
-            let Some(mut next_range_value) = self.iter.next() else {
+            let Some(next_range_value) = self.iter.next() else {
                 return self.option_priority.take();
             };
             let next_priority = Priority::new(next_range_value, self.priority);

@@ -334,6 +334,7 @@ where
     #[allow(clippy::clone_on_copy)]
     fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, VR, I>) -> Self {
         let iter = unsorted_disjoint.sorted_by(|a, b| {
+            // cmk00
             match a.range_value.range.start().cmp(b.range_value.range.start()) {
                 cmp::Ordering::Equal => {
                     debug_assert!(

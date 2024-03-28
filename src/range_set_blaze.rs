@@ -2164,49 +2164,40 @@ where
 {
 }
 
-/// cmk doc
-pub fn set_to_map() {
-    let a: RangeSetBlaze<i32> = RangeSetBlaze::from_iter([1..=2, 3..=4]);
-    let b = RangeSetBlaze::from_iter([-1..=2, 3..=14]);
-    let a_ranges: RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>> = a.ranges();
-    let left: SortedDisjointToUnitMap<
-        i32,
-        RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
-    > = SortedDisjointToUnitMap::new(a_ranges);
-    let right = SortedDisjointToUnitMap::new(b.ranges());
-    let unit_map: crate::sym_diff_iter_map::SymDiffIterMap<
-        i32,
-        (),
-        &(),
-        crate::MergeMap<
-            i32,
-            (),
-            &(),
-            crate::range_values::SetPriorityMap<
-                i32,
-                (),
-                &(),
-                SortedDisjointToUnitMap<
-                    i32,
-                    RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
-                >,
-            >,
-            crate::range_values::SetPriorityMap<
-                i32,
-                (),
-                &(),
-                SortedDisjointToUnitMap<
-                    i32,
-                    RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
-                >,
-            >,
-        >,
-    > = left.symmetric_difference(right);
-    // let it: &dyn Iterator<Item = RangeValue<i32, (), &()>> = &unit_map;
-    // let it: &dyn SortedDisjointMap<i32, (), &()> = &unit_map;
-    // let _result = RangeSetBlaze::from_unit_map(unit_map);
-    let _result = UnitMapToSortedDisjoint::new(unit_map);
-}
+/// cmk0 doc
+// pub fn set_to_map() {
+//     let a: RangeSetBlaze<i32> = RangeSetBlaze::from_iter([1..=2, 3..=4]);
+//     let b = RangeSetBlaze::from_iter([-1..=2, 3..=14]);
+//     let a_ranges: RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'static, i32, ()>> =
+//         a.ranges();
+//     let left: SortedDisjointToUnitMap<
+//         i32,
+//         RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
+//     > = SortedDisjointToUnitMap::new(a_ranges);
+//     let right = SortedDisjointToUnitMap::new(b.ranges());
+//     let unit_map: crate::sym_diff_iter_map::SymDiffIterMap<
+//         i32,
+//         (),
+//         &(),
+//         crate::MergeMap<
+//             i32,
+//             (),
+//             &(),
+//             SortedDisjointToUnitMap<
+//                 i32,
+//                 RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'static, i32, ()>>,
+//             >,
+//             SortedDisjointToUnitMap<
+//                 i32,
+//                 RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'static, i32, ()>>,
+//             >,
+//         >,
+//     > = left.symmetric_difference(right);
+//     // let it: &dyn Iterator<Item = RangeValue<i32, (), &()>> = &unit_map;
+//     // let it: &dyn SortedDisjointMap<i32, (), &()> = &unit_map;
+//     // let _result = RangeSetBlaze::from_unit_map(unit_map);
+//     let _result = UnitMapToSortedDisjoint::new(unit_map);
+// }
 
 #[cfg(feature = "std")]
 #[doc(hidden)]

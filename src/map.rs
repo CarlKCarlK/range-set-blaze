@@ -1900,7 +1900,7 @@ gen_ops_ex!(
 /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
 /// ```
 for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
-    SymDiffIterMap::new2(a.range_values(), b.range_values()).into_range_map_blaze()
+    SymDiffIterMap::new(a.range_values(), b.range_values()).into_range_map_blaze()
 };
 /// Difference the contents of two [`RangeSetBlaze`]'s.
 ///

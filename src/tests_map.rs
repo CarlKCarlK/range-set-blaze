@@ -269,7 +269,7 @@ fn map_tiny_symmetric_difference0() {
     map0.insert(85, 'c');
     let mut map1 = RangeMapBlaze::new();
     map1.insert(85, 'a');
-    let symmetric_difference = SymDiffIterMap::new2(map0.range_values(), map1.range_values());
+    let symmetric_difference = SymDiffIterMap::new(map0.range_values(), map1.range_values());
     assert_eq!(symmetric_difference.to_string(), "(84..=84, 'c')");
 }
 
@@ -282,7 +282,7 @@ fn map_tiny_symmetric_difference1() {
     let mut map1 = RangeMapBlaze::new();
     map1.insert(187, 'b');
     map1.insert(189, 'c');
-    let symmetric_difference = SymDiffIterMap::new2(map0.range_values(), map1.range_values());
+    let symmetric_difference = SymDiffIterMap::new(map0.range_values(), map1.range_values());
     assert_eq!(symmetric_difference.to_string(), "(188..=188, 'a')");
 }
 
@@ -308,7 +308,7 @@ fn map_random_symmetric_difference() {
             print!("r{key}{value} ");
 
             let symmetric_difference =
-                SymDiffIterMap::new2(map0.range_values(), map1.range_values());
+                SymDiffIterMap::new(map0.range_values(), map1.range_values());
 
             // println!(
             //     "left ^ right = {}",
@@ -332,9 +332,8 @@ fn map_random_symmetric_difference() {
                             println!();
                             println!("left: {}", map0);
                             println!("right: {}", map1);
-                            let s_d =
-                                SymDiffIterMap::new2(map0.range_values(), map1.range_values())
-                                    .into_range_map_blaze();
+                            let s_d = SymDiffIterMap::new(map0.range_values(), map1.range_values())
+                                .into_range_map_blaze();
                             panic!("left ^ right = {s_d}");
                         }
                         (Some(v0), None) => {
@@ -355,7 +354,7 @@ fn map_random_symmetric_difference() {
                 println!();
                 println!("left: {}", map0);
                 println!("right: {}", map1);
-                let s_d = SymDiffIterMap::new2(map0.range_values(), map1.range_values())
+                let s_d = SymDiffIterMap::new(map0.range_values(), map1.range_values())
                     .into_range_map_blaze();
                 println!("left ^ right = {s_d}");
                 panic!("expected_keys should be empty: {expected_keys}");
@@ -461,6 +460,7 @@ fn map_repro_106() {
     let iter = iter.map(|(range, value)| RangeValue::new(range, value));
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
+        // cmk00
         match a.range_value.range.start().cmp(b.range_value.range.start()) {
             std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
             other => other,
@@ -500,6 +500,7 @@ fn map_repro_206() {
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
         match a.range_value.range.start().cmp(b.range_value.range.start()) {
+            // cmk00
             std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
             other => other,
         }
@@ -649,6 +650,7 @@ fn map_step_by_step() {
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
         match a.range_value.range.start().cmp(b.range_value.range.start()) {
+            // cmk00
             std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
             other => other,
         }
@@ -667,6 +669,7 @@ fn map_step_by_step() {
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
         match a.range_value.range.start().cmp(b.range_value.range.start()) {
+            // cmk00
             std::cmp::Ordering::Equal => b.priority_number.cmp(&a.priority_number),
             other => other,
         }

@@ -7,9 +7,7 @@ use crate::map::{CloneBorrow, ValueOwned};
 use crate::range_values::SetPriorityMap;
 use crate::Integer;
 
-use crate::sorted_disjoint_map::{
-    Priority, PrioritySortedDisjointMap, PrioritySortedStartsMap, SortedDisjointMap,
-};
+use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap, SortedDisjointMap};
 
 /// Works with [`UnionIter`] to turn any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
 /// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
@@ -42,11 +40,15 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: PrioritySortedDisjointMap<T, V, VR>,
-    R: PrioritySortedDisjointMap<T, V, VR>,
+    L: SortedDisjointMap<T, V, VR>,
+    R: SortedDisjointMap<T, V, VR>,
 {
     #[allow(clippy::type_complexity)]
-    iter: MergeBy<L, R, fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool>,
+    iter: MergeBy<
+        SetPriorityMap<T, V, VR, L>,
+        SetPriorityMap<T, V, VR, R>,
+        fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
+    >,
 }
 
 impl<T, V, VR, L, R> MergeMap<T, V, VR, L, R>
@@ -54,12 +56,14 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: PrioritySortedDisjointMap<T, V, VR>,
-    R: PrioritySortedDisjointMap<T, V, VR>,
+    L: SortedDisjointMap<T, V, VR>,
+    R: SortedDisjointMap<T, V, VR>,
 {
     // cmk00 why isn't priority mentioned?
     /// Creates a new [`MergeMap`] iterator from two [`SortedDisjointMap`] iterators. See [`MergeMap`] for more details and examples.
     pub fn new(left: L, right: R) -> Self {
+        let left = SetPriorityMap::new(left, usize::MAX);
+        let right = SetPriorityMap::new(right, usize::MIN);
         Self {
             iter: left.merge_by(right, |a, b| {
                 a.range_value.range.start() < b.range_value.range.start()
@@ -73,8 +77,8 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: PrioritySortedDisjointMap<T, V, VR>,
-    R: PrioritySortedDisjointMap<T, V, VR>,
+    L: SortedDisjointMap<T, V, VR>,
+    R: SortedDisjointMap<T, V, VR>,
 {
 }
 
@@ -83,8 +87,8 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: PrioritySortedDisjointMap<T, V, VR>,
-    R: PrioritySortedDisjointMap<T, V, VR>,
+    L: SortedDisjointMap<T, V, VR>,
+    R: SortedDisjointMap<T, V, VR>,
 {
     type Item = Priority<T, V, VR>;
 
@@ -102,8 +106,8 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    L: PrioritySortedDisjointMap<T, V, VR>,
-    R: PrioritySortedDisjointMap<T, V, VR>,
+    L: SortedDisjointMap<T, V, VR>,
+    R: SortedDisjointMap<T, V, VR>,
 {
 }
 
@@ -170,6 +174,7 @@ where
             SetPriorityMap<T, V, VR, I>,
             fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
         > = iter.kmerge_by(|a, b| {
+            // cmk00
             match a
                 .range_value
                 .range
@@ -219,7 +224,6 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-
     I: SortedDisjointMap<T, V, VR>,
 {
 }

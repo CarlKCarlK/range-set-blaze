@@ -10,7 +10,6 @@ use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::vec::Vec;
-use core::cmp;
 use core::cmp::Ordering;
 use core::fmt::Debug;
 use core::marker::PhantomData;
@@ -21,7 +20,6 @@ use core::marker::PhantomData;
 //     ops::{self, RangeInclusive},
 // };
 use crate::map::BitAndRangesMap;
-use crate::range_values::SetPriorityMap;
 use crate::NotIter;
 use crate::RangeValuesToRangesIter;
 use core::fmt;
@@ -350,10 +348,8 @@ where
         R::IntoIter: SortedDisjointMap<T, V, VR>,
         Self: Sized,
     {
-        let left = SetPriorityMap::new(self, usize::MAX);
-        let right = SetPriorityMap::new(other.into_iter(), usize::MIN);
         // cmk why this into iter stuff that is not used?
-        UnionIterMap::new(MergeMap::new(left, right))
+        UnionIterMap::new(MergeMap::new(self, other.into_iter()))
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their intersection.
@@ -474,7 +470,7 @@ where
         Self: Sized,
         VR: CloneBorrow<V>,
     {
-        SymDiffIterMap::new2(self, other.into_iter())
+        SymDiffIterMap::new(self, other.into_iter())
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
@@ -898,6 +894,7 @@ where
 {
 }
 
+/// cmk doc
 #[derive(Clone, Debug)]
 pub struct Priority<T, V, VR>
 where
@@ -916,6 +913,7 @@ where
     V: ValueOwned,
     VR: CloneBorrow<V>,
 {
+    /// cmk doc
     pub fn new(range_value: RangeValue<T, V, VR>, priority_number: usize) -> Self {
         Self {
             range_value,
