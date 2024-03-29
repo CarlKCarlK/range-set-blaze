@@ -13,8 +13,7 @@ use crate::{map::CloneBorrow, map::ValueOwned, SortedDisjointMap};
 use itertools::{Itertools, Tee};
 
 use crate::{
-    BitAndMerge, BitSubMerge, BitXorOldNew, DynSortedDisjoint, Integer, IntoRangesIter, NotIter,
-    RangesIter, UnionIterMerge,
+    BitAndMerge, BitSubMerge, BitXorOldNew, DynSortedDisjoint, Integer, NotIter, UnionIterMerge,
 };
 
 /// A trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
@@ -756,9 +755,7 @@ macro_rules! impl_sorted_traits_and_ops {
 
 impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, I: AnythingGoes<T>);
 impl_sorted_traits_and_ops!(NotIter<T, I>, I: SortedDisjoint<T>);
-impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: ValueOwned, VR: CloneBorrow<V>,I: SortedDisjointMap<T, V, VR>);
-impl_sorted_traits_and_ops!(IntoRangesIter<T>, 'ignore);
-impl_sorted_traits_and_ops!(RangesIter<'a, T>, 'a);
+impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: ValueOwned, VR: CloneBorrow<V>, I: SortedDisjointMap<T, V, VR>);
 impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
 impl_sorted_traits_and_ops!(UnitMapToSortedDisjoint<T, I>, I: SortedDisjointMap<T, (), &'static ()>);
 
@@ -766,6 +763,40 @@ impl_sorted_traits_and_ops!(UnitMapToSortedDisjoint<T, I>, I: SortedDisjointMap<
 impl<T: Integer, I: SortedStarts<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
-// cmk00 test every iterator and every method
+// cmk000 test every iterator and every method
 
-// cmk00 try to remove UnionIter and KMergeIter and MergerIter
+#[test]
+fn test_every_sorted_disjoint_method() {
+    // use range_set_blaze::range_set_blaze::SortedDisjointToUnitMap;
+    // use range_set_blaze::range_set_blaze::UnitMapToSortedDisjoint;
+    use syntactic_for::syntactic_for;
+
+    macro_rules! fresh_instances {
+        () => {{
+            let a: CheckSortedDisjoint<_, _> = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+            let b: NotIter<_, _> = !!CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+            let c0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+            let c: RangeValuesToRangesIter<_, _, _, _> = c0.into_ranges();
+            let d: DynSortedDisjoint<_> =
+                DynSortedDisjoint::new(RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges());
+            let e: UnitMapToSortedDisjoint<_, _> = UnitMapToSortedDisjoint::new(
+                SortedDisjointToUnitMap::new(CheckSortedDisjoint::from([1..=2, 5..=100])),
+            );
+
+            (a, b, c, d, e)
+        }};
+    }
+
+    let (a, b, c, d, e) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e] {$(
+        let z = ! $sd;
+        assert!(z.equal(CheckSortedDisjoint::from([-2147483648..=0, 3..=4, 101..=2147483647])));
+    )*}}
+
+    let (a, b, c, d, e) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e] {$(
+        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+        let z = $sd | z;
+        assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=100, 1000..=10000])));
+    )*}}
+}

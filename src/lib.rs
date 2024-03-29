@@ -65,7 +65,6 @@ mod union_iter_map;
 mod unsorted_disjoint;
 mod unsorted_disjoint_map;
 pub use crate::map::RangeMapBlaze;
-pub use crate::ranges::{IntoRangesIter, RangesIter};
 pub use crate::sorted_disjoint_map::Priority;
 pub use crate::unsorted_disjoint_map::{AssumePrioritySortedStartsMap, AssumeSortedDisjointMap};
 // use alloc::{collections::BTreeMap, vec::Vec};
@@ -1610,6 +1609,7 @@ pub type BitOrAdjusted<T, V, VR, L, R> = UnionIterMapMerge<T, V, VR, L, R>;
 
 #[doc(hidden)]
 pub type SymDiffIterMapMerge<T, V, VR, L, R> = SymDiffIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
+#[doc(hidden)]
 pub type SymDiffIterMapKMerge<T, V, VR, II> = SymDiffIterMap<T, V, VR, KMergeMap<T, V, VR, II>>;
 
 #[doc(hidden)]
@@ -1630,7 +1630,6 @@ pub type UnionIterKMerge<T, I> = UnitMapToSortedDisjoint<
     UnionIterMap<T, (), &'static (), KMergeMap<T, (), &'static (), SortedDisjointToUnitMap<T, I>>>,
 >;
 
-// cmk00 rename to Union...
 #[doc(hidden)]
 pub type UnionIterMapKMerge<T, V, VR, I> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I>>;
 #[doc(hidden)]

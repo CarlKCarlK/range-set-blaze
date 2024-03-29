@@ -252,7 +252,6 @@ where
     VR: CloneBorrow<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {
-    // cmk00 should Union have a new2, too
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
     pub fn new(mut iter: I) -> Self {
@@ -275,7 +274,6 @@ where
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
 {
-    // cmk00 should this be new2 and have a new, too (like UnionIterMap)?
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
     pub fn new2(left: L, right: R) -> Self {
@@ -292,7 +290,6 @@ where
     VR: CloneBorrow<V>,
     J: SortedDisjointMap<T, V, VR>,
 {
-    // cmk00 should this be new2 and have a new, too (like UnionIterMap)?
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
     pub fn new_k<K>(k: K) -> Self
@@ -383,7 +380,7 @@ where
     }
 }
 
-// cmk00 test that every iterator (that can me) is FusedIterator
+// cmk000 test that every iterator (that can me) is FusedIterator
 impl<T, V, VR, I> FusedIterator for UnionIterMap<T, V, VR, I>
 where
     T: Integer,
