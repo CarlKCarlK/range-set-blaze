@@ -14,6 +14,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 use core::fmt::Debug;
+use core::iter::FusedIterator;
 use core::marker::PhantomData;
 // use alloc::format;
 // use alloc::string::String;
@@ -32,7 +33,6 @@ use crate::map::CloneBorrow;
 use crate::sorted_disjoint::SortedDisjoint;
 use crate::{map::ValueOwned, union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
 use core::ops::RangeInclusive;
-use itertools::Tee;
 
 // cmk hey, about a method that gets the range or a clone of the value?
 // cmk should this be pub/crate or replaced with a tuple?
@@ -95,7 +95,7 @@ where
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
 #[doc(hidden)]
-pub trait SortedStartsMap<T, V, VR>: Iterator<Item = RangeValue<T, V, VR>>
+pub trait SortedStartsMap<T, V, VR>: Iterator<Item = RangeValue<T, V, VR>> + FusedIterator
 where
     T: Integer,
     V: ValueOwned,
@@ -104,7 +104,8 @@ where
 }
 
 /// This is sorted by starts and contains priority information, but it is not sorted by priority.
-pub trait PrioritySortedStartsMap<T, V, VR>: Iterator<Item = Priority<T, V, VR>>
+pub trait PrioritySortedStartsMap<T, V, VR>:
+    Iterator<Item = Priority<T, V, VR>> + FusedIterator
 where
     T: Integer,
     V: ValueOwned,
@@ -378,7 +379,7 @@ where
     #[inline]
     fn intersection<R>(self, other: R) -> BitAndRangesMap<T, V, VR, Self, R::IntoIter>
     where
-        R: IntoIterator<Item = RangeInclusive<T>>,
+        R: IntoIterator<Item = RangeInclusive<T>>, // cmk0 is this bound needed?
         R::IntoIter: SortedDisjoint<T>,
         Self: Sized,
     {
@@ -861,20 +862,21 @@ where
     }
 }
 
-impl<T: Integer, V: ValueOwned, VR, I: SortedStartsMap<T, V, VR>> SortedStartsMap<T, V, VR>
-    for Tee<I>
-where
-    VR: CloneBorrow<V> + Clone, // cmk is the clone a good idea?
-{
-}
+// cmk0
+// impl<T: Integer, V: ValueOwned, VR, I: SortedStartsMap<T, V, VR>> SortedStartsMap<T, V, VR>
+//     for Tee<I>
+// where
+//     VR: CloneBorrow<V> + Clone, // cmk is the clone a good idea?
+// {
+// }
 
-// If the inputs have sorted starts, the output is sorted and disjoint.
-impl<T: Integer, V: ValueOwned, VR, I: SortedStartsMap<T, V, VR>> SortedDisjointMap<T, V, VR>
-    for Tee<I>
-where
-    VR: CloneBorrow<V> + Clone, // cmk is the clone a good idea?
-{
-}
+// // If the inputs have sorted starts, the output is sorted and disjoint.
+// impl<T: Integer, V: ValueOwned, VR, I: SortedStartsMap<T, V, VR>> SortedDisjointMap<T, V, VR>
+//     for Tee<I>
+// where
+//     VR: CloneBorrow<V> + Clone, // cmk is the clone a good idea?
+// {
+// }
 
 impl<'a, T, V, VR> PartialEq for RangeValue<T, V, VR>
 where
@@ -995,6 +997,14 @@ where
             phantom: PhantomData,
         }
     }
+}
+
+impl<'a, T, V, I> FusedIterator for RangeToRangeValueIter<'a, T, V, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    I: SortedDisjoint<T>,
+{
 }
 
 impl<'a, T, V, I> Iterator for RangeToRangeValueIter<'a, T, V, I>
@@ -1128,3 +1138,6 @@ impl_sorted_map_traits_and_ops!(AssumeSortedDisjointMap<T, V, VR, I>, V, VR, V: 
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: ValueOwned);
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, V, VR>, V, VR, 'a, V: ValueOwned, VR: CloneBorrow<V>);
 impl_sorted_map_traits_and_ops!(SortedDisjointToUnitMap<T, I>, (), &'static (), I: SortedDisjoint<T>);
+// cmk000 RangeToRangeValueIter
+// cmk000 SetPriorityMap
+// cmk000 AssumePrioritySortedStartsMap

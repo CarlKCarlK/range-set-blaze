@@ -15,7 +15,6 @@ use std::{
     fmt::Display,
     hash::Hash,
     iter::FusedIterator,
-    ops::BitOr,
     panic::{RefUnwindSafe, UnwindSafe},
 }; // , time::Instant
    // use sorted_iter::assume::AssumeSortedByKeyExt;
@@ -1202,6 +1201,7 @@ fn sorted_disjoint_coverage_1() {
     struct SomeAfterNone {
         a: i32,
     }
+    impl FusedIterator for SomeAfterNone {}
     impl Iterator for SomeAfterNone {
         type Item = RangeInclusive<i32>;
         fn next(&mut self) -> Option<Self::Item> {

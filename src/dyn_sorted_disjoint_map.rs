@@ -1,3 +1,5 @@
+use core::iter::FusedIterator;
+
 use crate::{
     map::{CloneBorrow, ValueOwned},
     sorted_disjoint_map::RangeValue,
@@ -57,6 +59,14 @@ where
             iter: Box::new(iter),
         }
     }
+}
+
+impl<'a, T, V, VR> FusedIterator for DynSortedDisjointMap<'a, T, V, VR>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+{
 }
 
 impl<'a, T, V, VR> Iterator for DynSortedDisjointMap<'a, T, V, VR>

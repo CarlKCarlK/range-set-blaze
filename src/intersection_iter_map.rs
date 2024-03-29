@@ -1,5 +1,6 @@
 use core::{
     cmp::{max, min},
+    iter::FusedIterator,
     ops::RangeInclusive,
 };
 
@@ -92,6 +93,16 @@ where
 //         arr.as_slice().into()
 //     }
 // }
+
+impl<'a, T, V, VR, IM, IS> FusedIterator for IntersectionIterMap<T, V, VR, IM, IS>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    IM: SortedDisjointMap<T, V, VR>,
+    IS: SortedDisjoint<T>,
+{
+}
 
 impl<'a, T, V, VR, IM, IS> Iterator for IntersectionIterMap<T, V, VR, IM, IS>
 where

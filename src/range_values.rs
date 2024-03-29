@@ -363,6 +363,15 @@ where
     phantom_data: PhantomData<(T, V, VR)>,
 }
 
+impl<T, V, VR, I> FusedIterator for SetPriorityMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: SortedDisjointMap<T, V, VR>,
+{
+}
+
 impl<T, V, VR, I> Iterator for SetPriorityMap<T, V, VR, I>
 where
     T: Integer,

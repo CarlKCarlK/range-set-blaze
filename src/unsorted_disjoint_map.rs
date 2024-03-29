@@ -218,7 +218,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = Priority<T, V, VR>>,
+    I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
 {
     iter: I,
 }
@@ -228,7 +228,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = Priority<T, V, VR>>,
+    I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
 {
 }
 
@@ -237,7 +237,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = Priority<T, V, VR>>,
+    I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
 {
     pub fn new(iter: I) -> Self {
         AssumePrioritySortedStartsMap { iter }
@@ -258,7 +258,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = Priority<T, V, VR>>,
+    I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
 {
     type Item = Priority<T, V, VR>;
 
@@ -294,7 +294,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = RangeValue<T, V, VR>> + FusedIterator,
 {
     pub(crate) iter: I,
 }
@@ -304,7 +304,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = RangeValue<T, V, VR>> + FusedIterator,
 {
     #[allow(dead_code)]
     pub fn new(iter: I) -> Self {
@@ -326,7 +326,7 @@ where
     T: Integer,
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = RangeValue<T, V, VR>> + FusedIterator,
 {
     type Item = RangeValue<T, V, VR>;
 

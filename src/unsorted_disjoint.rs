@@ -165,20 +165,20 @@ where
 pub struct AssumeSortedStarts<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>>,
+    I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
 {
     pub(crate) iter: I,
 }
 
 impl<T: Integer, I> SortedStarts<T> for AssumeSortedStarts<T, I> where
-    I: Iterator<Item = RangeInclusive<T>>
+    I: Iterator<Item = RangeInclusive<T>> + FusedIterator
 {
 }
 
 impl<T, I> AssumeSortedStarts<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>>,
+    I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
 {
     /// Construct [`AssumeSortedStarts`] from a range iterator.
     pub fn new<J: IntoIterator<IntoIter = I>>(iter: J) -> Self {
@@ -220,7 +220,7 @@ where
 impl<T, I> Iterator for AssumeSortedStarts<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>>,
+    I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
 {
     type Item = RangeInclusive<T>;
 

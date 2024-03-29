@@ -10,7 +10,7 @@ use core::{
 };
 
 use crate::{map::CloneBorrow, map::ValueOwned, SortedDisjointMap};
-use itertools::{Itertools, Tee};
+use itertools::Itertools;
 
 use crate::{
     BitAndMerge, BitSubMerge, BitXorOldNew, DynSortedDisjoint, Integer, NotIter, UnionIterMerge,
@@ -18,7 +18,7 @@ use crate::{
 
 /// A trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
-pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> {}
+pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIterator {}
 
 /// The trait used to mark iterators that provide ranges that are sorted by start and disjoint. Set operations on
 /// iterators that implement this trait can be performed in linear time.
@@ -470,6 +470,8 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         self.difference(other).is_empty()
     }
 
+    // cmk define a comp that returns an Ordering and use that to define is_subset, is_superset, and equal
+
     /// Returns `true` if the set is a superset of another,
     /// i.e., `self` contains at least all the elements in `other`.
     ///
@@ -584,7 +586,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 pub struct CheckSortedDisjoint<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>>,
+    I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
 {
     pub(crate) iter: I,
     prev_end: Option<T>,
@@ -594,7 +596,7 @@ where
 impl<T, I> CheckSortedDisjoint<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>>,
+    I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
 {
     /// Creates a new [`CheckSortedDisjoint`] from an iterator of ranges. See [`CheckSortedDisjoint`] for details and examples.
     pub fn new<J: IntoIterator<IntoIter = I>>(iter: J) -> Self {
@@ -626,7 +628,7 @@ where
 impl<T, I> Iterator for CheckSortedDisjoint<T, I>
 where
     T: Integer,
-    I: Iterator<Item = RangeInclusive<T>>,
+    I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
 {
     type Item = RangeInclusive<T>;
 
@@ -685,8 +687,9 @@ impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]>
     }
 }
 
-pub trait AnythingGoes<T: Integer>: Iterator<Item = RangeInclusive<T>> {}
-impl<T: Integer, I> AnythingGoes<T> for I where I: Iterator<Item = RangeInclusive<T>> {}
+pub trait AnythingGoes<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIterator {}
+impl<T: Integer, I> AnythingGoes<T> for I where I: Iterator<Item = RangeInclusive<T>> + FusedIterator
+{}
 
 /// cmk doc
 #[macro_export]
@@ -760,8 +763,9 @@ impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
 impl_sorted_traits_and_ops!(UnitMapToSortedDisjoint<T, I>, I: SortedDisjointMap<T, (), &'static ()>);
 
 // We're not allowed to define methods on outside types, so we only define the traits
-impl<T: Integer, I: SortedStarts<T>> SortedStarts<T> for Tee<I> {}
-impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
+// cmk0
+// impl<T: Integer, I: SortedStarts<T>> SortedStarts<T> for Tee<I> {}
+// impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 // cmk000 test every iterator and every method
 
@@ -799,4 +803,34 @@ fn test_every_sorted_disjoint_method() {
         let z = $sd | z;
         assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=100, 1000..=10000])));
     )*}}
+
+    let (a, b, c, d, e) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e] {$(
+        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+        let z = $sd & z;
+        assert!(z.equal(CheckSortedDisjoint::from([50..=50])));
+    )*}}
+
+    let (a, b, c, d, e) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e] {$(
+        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+        let z = $sd ^ z;
+        assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=49, 51..=100, 1000..=10000])));
+    )*}}
+
+    let (a, b, c, d, e) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e] {$(
+        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+        let z = $sd - z;
+        assert!(z.equal(CheckSortedDisjoint::from([1..=2, 5..=49, 51..=100])));
+    )*}}
+
+    // FusedIterator
+    fn is_fused<T: FusedIterator>(iter: T) {}
+    let (a, b, c, d, e) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e] {$(
+        is_fused::<_>($sd);
+    )*}}
+
+    // confirm that implements iterator trait
 }

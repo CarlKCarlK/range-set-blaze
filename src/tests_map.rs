@@ -1074,7 +1074,7 @@ fn map_missing_doctest_ops() {
 
 // fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
 // fn is_like_btreeset_iter<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
-// // removed DoubleEndedIterator +ExactSizeIterator for now
+// // cmk removed DoubleEndedIterator +ExactSizeIterator for now
 // #[test]
 // fn iter_traits() {
 //     type ARangesIter<'a> = RangesIter<'a, i32>;

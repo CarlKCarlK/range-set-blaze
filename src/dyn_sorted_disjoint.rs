@@ -1,4 +1,4 @@
-use core::ops::RangeInclusive;
+use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use crate::{Integer, SortedDisjoint};
 use alloc::boxed::Box;
@@ -41,6 +41,8 @@ impl<'a, T: Integer> DynSortedDisjoint<'a, T> {
         }
     }
 }
+
+impl<'a, T: Integer> FusedIterator for DynSortedDisjoint<'a, T> {}
 
 impl<'a, T: Integer> Iterator for DynSortedDisjoint<'a, T> {
     type Item = RangeInclusive<T>;

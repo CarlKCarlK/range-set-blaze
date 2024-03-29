@@ -2039,6 +2039,13 @@ where
     }
 }
 
+impl<T, I> FusedIterator for SortedDisjointToUnitMap<T, I>
+where
+    T: Integer,
+    I: SortedDisjoint<T>,
+{
+}
+
 impl<T, I> Iterator for SortedDisjointToUnitMap<T, I>
 where
     T: Integer,
@@ -2076,6 +2083,13 @@ where
     }
 }
 
+impl<T, I> FusedIterator for SortedStartsToUnitMap<T, I>
+where
+    T: Integer,
+    I: SortedStarts<T>,
+{
+}
+
 impl<T, I> Iterator for SortedStartsToUnitMap<T, I>
 where
     T: Integer,
@@ -2111,7 +2125,7 @@ where
 impl<T, I> UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    I: SortedDisjointMap<T, (), &'static ()>,
+    I: SortedDisjointMap<T, (), &'static ()> + FusedIterator,
 {
     // Define a new method that directly accepts a SortedDisjoint iterator
     /// cmk doc
@@ -2123,10 +2137,17 @@ where
     }
 }
 
+impl<T, I> FusedIterator for UnitMapToSortedDisjoint<T, I>
+where
+    T: Integer,
+    I: SortedDisjointMap<T, (), &'static ()> + FusedIterator,
+{
+}
+
 impl<T, I> Iterator for UnitMapToSortedDisjoint<T, I>
 where
     T: Integer,
-    I: SortedDisjointMap<T, (), &'static ()>,
+    I: SortedDisjointMap<T, (), &'static ()> + FusedIterator,
 {
     type Item = RangeInclusive<T>;
     fn next(&mut self) -> Option<Self::Item> {

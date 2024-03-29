@@ -1,4 +1,4 @@
-use core::cmp::min;
+use core::{cmp::min, iter::FusedIterator};
 
 use alloc::collections::BinaryHeap;
 
@@ -61,6 +61,15 @@ where
         || *next_item.range.end(),
         |current_end| std::cmp::min(current_end, *next_item.range.end()),
     ))
+}
+
+impl<T, V, VR, I> FusedIterator for SymDiffIterMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: PrioritySortedStartsMap<T, V, VR>,
+{
 }
 
 impl<T, V, VR, I> Iterator for SymDiffIterMap<T, V, VR, I>
