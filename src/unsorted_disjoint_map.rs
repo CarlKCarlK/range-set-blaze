@@ -5,6 +5,7 @@ use crate::{
     sorted_disjoint_map::{RangeValue, SortedDisjointMap},
     Integer,
 };
+use core::ops::RangeInclusive;
 use core::{
     cmp::{max, min},
     iter::FusedIterator,
@@ -289,52 +290,88 @@ where
 
 /// Gives any iterator of cmk implements the [`SortedDisjointMap`] trait without any checking.
 #[doc(hidden)]
-pub struct AssumeSortedDisjointMap<T, V, VR, I>
+pub struct CheckedSortedDisjointMap<'a, T, V, I>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>> + FusedIterator,
+    V: ValueOwned + 'a,
+    I: Iterator<Item = (RangeInclusive<T>, &'a V)>,
 {
-    pub(crate) iter: I,
+    iter: I,
 }
 
-impl<T, V, VR, I> AssumeSortedDisjointMap<T, V, VR, I>
+impl<'a, T, V, I> CheckedSortedDisjointMap<'a, T, V, I>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>> + FusedIterator,
+    V: ValueOwned + 'a,
+    I: Iterator<Item = (RangeInclusive<T>, &'a V)>,
 {
-    #[allow(dead_code)]
     pub fn new(iter: I) -> Self {
-        AssumeSortedDisjointMap { iter }
+        CheckedSortedDisjointMap { iter }
     }
 }
 
-impl<'a, T, V, VR, I> FusedIterator for AssumeSortedDisjointMap<T, V, VR, I>
+impl<'a, T, V, I> FusedIterator for CheckedSortedDisjointMap<'a, T, V, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: Iterator<Item = RangeValue<T, V, VR>> + FusedIterator,
+    I: Iterator<Item = (RangeInclusive<T>, &'a V)>,
 {
 }
 
-impl<'a, T, V, VR, I> Iterator for AssumeSortedDisjointMap<T, V, VR, I>
+// cmk00 check
+// cmk00 make Fused but don't require it
+impl<'a, T, V, I> Iterator for CheckedSortedDisjointMap<'a, T, V, I>
 where
     T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: Iterator<Item = RangeValue<T, V, VR>> + FusedIterator,
+    V: ValueOwned + 'a, // cmk0 really need 'a?
+    I: Iterator<Item = (RangeInclusive<T>, &'a V)>,
 {
-    type Item = RangeValue<T, V, VR>;
+    type Item = RangeValue<T, V, &'a V>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        self.iter
+            .next()
+            .map(|(range, value)| RangeValue::new(range, value))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
 }
+
+// impl<'a, T, V, I> FromIterator<(RangeInclusive<T>, &'a V)>
+//     for CheckedSortedDisjointMap<T, V, &'a V, I>
+// where
+//     T: Integer + 'a,
+//     V: ValueOwned + 'a,
+//     I: Iterator<Item = RangeValue<T, V, &'a V>> + FusedIterator + 'a,
+// {
+//     /// Create a [`cmkRangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
+//     /// Overlapping, out-of-order, and empty ranges are fine.
+//     ///
+//     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
+//     ///
+//     /// # Examples
+//     ///
+//     /// ```
+//     /// use range_set_blaze::RangeMapBlaze;
+//     ///
+//     /// #[allow(clippy::reversed_empty_ranges)]
+//     /// let a0 = RangeMapBlaze::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
+//     /// #[allow(clippy::reversed_empty_ranges)]
+//     /// let a1: RangeMapBlaze<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
+//     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+//     /// ```
+//     fn from_iter<J>(iter: J) -> Self
+//     where
+//         J: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
+//     {
+//         // cmk0 is the tuple to RangeValue conversion done many places?
+//         let iter = iter
+//             .into_iter()
+//             .map(|(range, value)| RangeValue::new(range, value));
+//         Self::new(iter)
+//     }
+// }
+
+// cmk000 CheckSortedDisjointMap should have a Default

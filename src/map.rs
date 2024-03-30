@@ -1599,8 +1599,8 @@ where
 
 impl<'a, T, V> FromIterator<(RangeInclusive<T>, &'a V)> for RangeMapBlaze<T, V>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
+    T: Integer + 'a,    // cmk 'a needed? everywhere
+    V: ValueOwned + 'a, // cmk 'a needed? everywhere
 {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
@@ -2079,6 +2079,7 @@ where
     }
 }
 
+// cmk also from (RangeInclusive<T>, V(r))???
 impl<T, V, const N: usize> From<[(T, V); N]> for RangeMapBlaze<T, V>
 where
     T: Integer,

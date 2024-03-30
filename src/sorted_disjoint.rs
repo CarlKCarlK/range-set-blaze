@@ -4,6 +4,7 @@ use crate::{
 };
 use alloc::format;
 use alloc::string::String;
+use core::array;
 use core::{
     iter::FusedIterator,
     ops::{self, RangeInclusive},
@@ -608,7 +609,7 @@ where
     }
 }
 
-impl<T> Default for CheckSortedDisjoint<T, core::array::IntoIter<RangeInclusive<T>, 0>>
+impl<T> Default for CheckSortedDisjoint<T, array::IntoIter<RangeInclusive<T>, 0>>
 where
     T: Integer,
 {
@@ -667,7 +668,7 @@ where
 }
 
 impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]>
-    for CheckSortedDisjoint<T, core::array::IntoIter<RangeInclusive<T>, N>>
+    for CheckSortedDisjoint<T, array::IntoIter<RangeInclusive<T>, N>>
 {
     /// You may create a [`CheckSortedDisjoint`] from an array of integers.
     ///
@@ -768,69 +769,5 @@ impl_sorted_traits_and_ops!(UnitMapToSortedDisjoint<T, I>, I: SortedDisjointMap<
 // impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 // cmk000 test every iterator and every method
-
-#[test]
-fn test_every_sorted_disjoint_method() {
-    // use range_set_blaze::range_set_blaze::SortedDisjointToUnitMap;
-    // use range_set_blaze::range_set_blaze::UnitMapToSortedDisjoint;
-    use syntactic_for::syntactic_for;
-
-    macro_rules! fresh_instances {
-        () => {{
-            let a: CheckSortedDisjoint<_, _> = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-            let b: NotIter<_, _> = !!CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-            let c0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
-            let c: RangeValuesToRangesIter<_, _, _, _> = c0.into_ranges();
-            let d: DynSortedDisjoint<_> =
-                DynSortedDisjoint::new(RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges());
-            let e: UnitMapToSortedDisjoint<_, _> = UnitMapToSortedDisjoint::new(
-                SortedDisjointToUnitMap::new(CheckSortedDisjoint::from([1..=2, 5..=100])),
-            );
-
-            (a, b, c, d, e)
-        }};
-    }
-
-    let (a, b, c, d, e) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e] {$(
-        let z = ! $sd;
-        assert!(z.equal(CheckSortedDisjoint::from([-2147483648..=0, 3..=4, 101..=2147483647])));
-    )*}}
-
-    let (a, b, c, d, e) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e] {$(
-        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
-        let z = $sd | z;
-        assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=100, 1000..=10000])));
-    )*}}
-
-    let (a, b, c, d, e) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e] {$(
-        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
-        let z = $sd & z;
-        assert!(z.equal(CheckSortedDisjoint::from([50..=50])));
-    )*}}
-
-    let (a, b, c, d, e) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e] {$(
-        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
-        let z = $sd ^ z;
-        assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=49, 51..=100, 1000..=10000])));
-    )*}}
-
-    let (a, b, c, d, e) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e] {$(
-        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
-        let z = $sd - z;
-        assert!(z.equal(CheckSortedDisjoint::from([1..=2, 5..=49, 51..=100])));
-    )*}}
-
-    // FusedIterator
-    fn is_fused<T: FusedIterator>(iter: T) {}
-    let (a, b, c, d, e) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e] {$(
-        is_fused::<_>($sd);
-    )*}}
-
-    // confirm that implements iterator trait
-}
+// cmk The two Checked* structs should accept the same arrays and iterators as RangeSet/MapBlaze.
+// cmk remove core::array in code with array and a 'use'

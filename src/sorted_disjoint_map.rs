@@ -4,7 +4,7 @@ use crate::range_set_blaze::SortedDisjointToUnitMap;
 use crate::range_values::IntoRangeValuesIter;
 use crate::range_values::RangeValuesIter;
 use crate::sym_diff_iter_map::SymDiffIterMap;
-use crate::unsorted_disjoint_map::AssumeSortedDisjointMap;
+use crate::unsorted_disjoint_map::CheckedSortedDisjointMap;
 use crate::BitOrAdjusted;
 use crate::DynSortedDisjointMap;
 use crate::SymDiffIterMapMerge;
@@ -1130,14 +1130,92 @@ macro_rules! impl_sorted_map_traits_and_ops {
     }
 }
 
+// cmk000 why Assume and not Checked?
 impl_sorted_map_traits_and_ops!(UnionIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
 impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap< T, V, VR, I0, I1>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I0: SortedDisjointMap<T, V, VR>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: ValueOwned );
-impl_sorted_map_traits_and_ops!(AssumeSortedDisjointMap<T, V, VR, I>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I: SortedDisjointMap<T, V, VR>);
+impl_sorted_map_traits_and_ops!(CheckedSortedDisjointMap<'a, T, V, I>, V, &'a V, 'a, V: ValueOwned, I: Iterator<Item = (RangeInclusive<T>, &'a V)>);
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: ValueOwned);
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, V, VR>, V, VR, 'a, V: ValueOwned, VR: CloneBorrow<V>);
 impl_sorted_map_traits_and_ops!(SortedDisjointToUnitMap<T, I>, (), &'static (), I: SortedDisjoint<T>);
 // cmk000 RangeToRangeValueIter
 // cmk000 SetPriorityMap
-// cmk000 AssumePrioritySortedStartsMap
+// cmk000 CheckPrioritySortedStartsMap
+
+#[test]
+fn test_every_sorted_disjoint_map_method() {
+    use crate::CheckSortedDisjoint;
+    // use range_set_blaze::range_set_blaze::SortedDisjointToUnitMap;
+    // use range_set_blaze::range_set_blaze::UnitMapToSortedDisjoint;
+    use syntactic_for::syntactic_for;
+
+    macro_rules! fresh_instances {
+        () => {{
+            // impl_sorted_map_traits_and_ops!(AssumeSortedDisjointMap<T, V, VR, I>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I: SortedDisjointMap<T, V, VR>);
+            let a = CheckedSortedDisjointMap::new(vec![(1..=2,&'a'), (5..=100,&'a')].into_iter());
+            // // impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
+            // let b: NotIter<_, _> = !!CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+            // // impl_sorted_map_traits_and_ops!(IntersectionIterMap< T, V, VR, I0, I1>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I0: SortedDisjointMap<T, V, VR>, I1: SortedDisjoint<T>);
+            // let c0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+            // let c: RangeValuesToRangesIter<_, _, _, _> = c0.into_ranges();
+            // // impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: ValueOwned );
+            // let d: DynSortedDisjoint<_> =
+            //     DynSortedDisjoint::new(RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges());
+            // // impl_sorted_map_traits_and_ops!(UnionIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
+            // let e: UnitMapToSortedDisjoint<_, _> = UnitMapToSortedDisjoint::new(
+            // SortedDisjointToUnitMap::new(CheckSortedDisjoint::from([1..=2, 5..=100])),
+            // // impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: ValueOwned);
+            // // impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, V, VR>, V, VR, 'a, V: ValueOwned, VR: CloneBorrow<V>);
+            // // impl_sorted_map_traits_and_ops!(SortedDisjointToUnitMap<T, I>, (), &'static (), I: SortedDisjoint<T>);
+        //);
+
+            (a,) // cmk, b, c, d, e)
+        }};
+    }
+
+    // cmk0 double check that can't define anything better than to_string
+    let (a,) = fresh_instances!();
+    syntactic_for! { sd in [a] {$(
+        let z = ! $sd;
+        // println!("{:?}", z.to_string());
+        assert!(z.equal(CheckSortedDisjoint::from([-2147483648..=0, 3..=4, 101..=2147483647])));
+    )*}}
+
+    // let (a, b, c, d, e) = fresh_instances!();
+    // syntactic_for! { sd in [a, b, c, d, e] {$(
+    //     let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+    //     let z = $sd | z;
+    //     assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=100, 1000..=10000])));
+    // )*}}
+
+    // let (a, b, c, d, e) = fresh_instances!();
+    // syntactic_for! { sd in [a, b, c, d, e] {$(
+    //     let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+    //     let z = $sd & z;
+    //     assert!(z.equal(CheckSortedDisjoint::from([50..=50])));
+    // )*}}
+
+    // let (a, b, c, d, e) = fresh_instances!();
+    // syntactic_for! { sd in [a, b, c, d, e] {$(
+    //     let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+    //     let z = $sd ^ z;
+    //     assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=49, 51..=100, 1000..=10000])));
+    // )*}}
+
+    // let (a, b, c, d, e) = fresh_instances!();
+    // syntactic_for! { sd in [a, b, c, d, e] {$(
+    //     let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+    //     let z = $sd - z;
+    //     assert!(z.equal(CheckSortedDisjoint::from([1..=2, 5..=49, 51..=100])));
+    // )*}}
+
+    // // FusedIterator
+    // fn is_fused<T: FusedIterator>(iter: T) {}
+    // let (a, b, c, d, e) = fresh_instances!();
+    // syntactic_for! { sd in [a, b, c, d, e] {$(
+    //     is_fused::<_>($sd);
+    // )*}}
+
+    // confirm that implements iterator trait
+}

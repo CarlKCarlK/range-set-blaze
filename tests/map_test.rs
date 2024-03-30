@@ -822,7 +822,7 @@ fn map_tricky_case3() {
 
 #[test]
 fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
-    use range_set_blaze::AssumePrioritySortedStartsMap;
+    use range_set_blaze::AssumePrioritySortedStartsMap; // cmk000 check or checked?
     use range_set_blaze::Priority;
     use range_set_blaze::RangeValue;
 
