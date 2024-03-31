@@ -368,7 +368,7 @@ where
 /// Gives any iterator of cmk implements the [`SortedDisjointMap`] trait without any checking.
 // cmk0 why was this hidden? check for others#[doc(hidden)]
 /// doc
-pub struct CheckedSortedDisjointMap<T, V, VR, I>
+pub struct CheckSortedDisjointMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -381,7 +381,7 @@ where
 }
 
 // define new
-impl<T, V, VR, I> CheckedSortedDisjointMap<T, V, VR, I>
+impl<T, V, VR, I> CheckSortedDisjointMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -389,7 +389,7 @@ where
     I: Iterator<Item = RangeValue<T, V, VR>>,
 {
     pub fn new(iter: I) -> Self {
-        CheckedSortedDisjointMap {
+        CheckSortedDisjointMap {
             iter,
             seen_none: false,
             previous: None,
@@ -397,7 +397,7 @@ where
     }
 }
 
-impl<'a, T, V, J> CheckedSortedDisjointMap<T, V, &'a V, TupleToRangeValueIter1<'a, T, V, J>>
+impl<'a, T, V, J> CheckSortedDisjointMap<T, V, &'a V, TupleToRangeValueIter1<'a, T, V, J>>
 where
     T: Integer,
     V: ValueOwned,
@@ -405,12 +405,12 @@ where
 {
     pub fn from_ref(iter: J) -> Self {
         let iter = TupleToRangeValueIter1 { iter };
-        CheckedSortedDisjointMap::new(iter)
+        CheckSortedDisjointMap::new(iter)
     }
 }
 
 // cmk0 why is it from_values (plural) and from_ref (singular)?
-impl<T, V, J> CheckedSortedDisjointMap<T, V, UniqueValue<V>, TupleToRangeValueIter2<T, V, J>>
+impl<T, V, J> CheckSortedDisjointMap<T, V, UniqueValue<V>, TupleToRangeValueIter2<T, V, J>>
 where
     T: Integer,
     V: ValueOwned,
@@ -418,12 +418,12 @@ where
 {
     pub fn from_values(iter: J) -> Self {
         let iter = TupleToRangeValueIter2 { iter };
-        CheckedSortedDisjointMap::new(iter)
+        CheckSortedDisjointMap::new(iter)
     }
 }
 
 // cmk0 why is it from_values (plural) and from_ref (singular)?
-impl<T, V, J> CheckedSortedDisjointMap<T, V, Rc<V>, TupleToRangeValueIter3<T, V, J>>
+impl<T, V, J> CheckSortedDisjointMap<T, V, Rc<V>, TupleToRangeValueIter3<T, V, J>>
 where
     T: Integer,
     V: ValueOwned,
@@ -431,12 +431,12 @@ where
 {
     pub fn from_values_cmk(iter: J) -> Self {
         let iter = TupleToRangeValueIter3 { iter };
-        CheckedSortedDisjointMap::new(iter)
+        CheckSortedDisjointMap::new(iter)
     }
 }
 
 // implement fused
-impl<T, V, VR, I> FusedIterator for CheckedSortedDisjointMap<T, V, VR, I>
+impl<T, V, VR, I> FusedIterator for CheckSortedDisjointMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -446,7 +446,7 @@ where
 }
 
 // implement iterator
-impl<T, V, VR, I> Iterator for CheckedSortedDisjointMap<T, V, VR, I>
+impl<T, V, VR, I> Iterator for CheckSortedDisjointMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
