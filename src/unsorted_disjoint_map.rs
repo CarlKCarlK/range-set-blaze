@@ -316,7 +316,7 @@ where
 }
 
 /// cmk doc
-pub struct TupleToRangeValueIter2<T, V, I>
+pub struct TupleToRangeValueIterViaUnique<T, V, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -325,7 +325,7 @@ where
     iter: I,
 }
 
-impl<'a, T, V, I> Iterator for TupleToRangeValueIter2<T, V, I>
+impl<'a, T, V, I> Iterator for TupleToRangeValueIterViaUnique<T, V, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
@@ -341,7 +341,7 @@ where
 }
 
 /// cmk doc
-pub struct TupleToRangeValueIter3<T, V, I>
+pub struct TupleToRangeValueIterViaRc<T, V, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -350,7 +350,7 @@ where
     iter: I,
 }
 
-impl<'a, T, V, I> Iterator for TupleToRangeValueIter3<T, V, I>
+impl<'a, T, V, I> Iterator for TupleToRangeValueIterViaRc<T, V, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
@@ -410,27 +410,27 @@ where
 }
 
 // cmk0 why is it from_values (plural) and from_ref (singular)?
-impl<T, V, J> CheckSortedDisjointMap<T, V, UniqueValue<V>, TupleToRangeValueIter2<T, V, J>>
+impl<T, V, J> CheckSortedDisjointMap<T, V, UniqueValue<V>, TupleToRangeValueIterViaUnique<T, V, J>>
 where
     T: Integer,
     V: ValueOwned,
     J: Iterator<Item = (RangeInclusive<T>, V)>,
 {
-    pub fn from_values(iter: J) -> Self {
-        let iter = TupleToRangeValueIter2 { iter };
+    pub fn from_unique_values(iter: J) -> Self {
+        let iter = TupleToRangeValueIterViaUnique { iter };
         CheckSortedDisjointMap::new(iter)
     }
 }
 
 // cmk0 why is it from_values (plural) and from_ref (singular)?
-impl<T, V, J> CheckSortedDisjointMap<T, V, Rc<V>, TupleToRangeValueIter3<T, V, J>>
+impl<T, V, J> CheckSortedDisjointMap<T, V, Rc<V>, TupleToRangeValueIterViaRc<T, V, J>>
 where
     T: Integer,
     V: ValueOwned,
     J: Iterator<Item = (RangeInclusive<T>, V)>,
 {
-    pub fn from_values_cmk(iter: J) -> Self {
-        let iter = TupleToRangeValueIter3 { iter };
+    pub fn from_rc_values(iter: J) -> Self {
+        let iter = TupleToRangeValueIterViaRc { iter };
         CheckSortedDisjointMap::new(iter)
     }
 }
