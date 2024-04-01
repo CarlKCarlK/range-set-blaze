@@ -260,7 +260,6 @@ where
         let iter_set = iter.map(|x| RangeValuesToRangesIter::new(x)).intersection();
         IntersectionIterMap::new(iter_map, iter_set)
     }
-
     /// cmk doc
     fn symmetric_difference(self) -> SymDiffIterMapKMerge<T, V, VR, I> {
         let result = SymDiffIterMapKMerge::new_k(self);

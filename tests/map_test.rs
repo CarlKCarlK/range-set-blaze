@@ -99,26 +99,26 @@ fn map_map_operators() {
     let _ = adm.union(bdm);
     let adm = arm.range_values();
     let bdm = brm.range_values();
-    let _ = adm.intersection(bdm.into_sorted_disjoint());
+    let _ = adm.intersection_with_set(bdm.into_sorted_disjoint());
     let adm = arm.range_values();
     let bdm = brm.range_values();
-    let _ = adm.difference(bdm.into_sorted_disjoint());
+    let _ = adm.difference_with_set(bdm.into_sorted_disjoint());
     // symmetric_difference on streams not supported because
     // efficient implementation would require a new iterator type.
     // let adm = arm.range_values();
     // let bdm = brm.range_values();
     // let _ = adm.symmetric_difference(bdm);
     let adm = arm.range_values();
-    let _ = adm.complement();
+    let _ = adm.complement_to_set();
 
     // SortedDisjointMap/SortedDisjointSet
     // intersection, difference
     let adm = arm.range_values();
     let bds = brm.ranges();
-    let _ = adm.intersection(bds);
+    let _ = adm.intersection_with_set(bds);
     let adm = arm.range_values();
     let bds = brm.ranges();
-    let _ = adm.difference(bds);
+    let _ = adm.difference_with_set(bds);
 }
 
 #[test]
@@ -267,7 +267,7 @@ fn map_iters() -> Result<(), Box<dyn std::error::Error>> {
     }
     // range_map_blaze.len();
 
-    let mut rs = range_map_blaze.range_values().complement();
+    let mut rs = range_map_blaze.range_values().complement_to_set();
     println!("{:?}", rs.next());
     println!("{range_map_blaze}");
     // !!! assert that can't use range_map_blaze again
@@ -395,13 +395,13 @@ fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
     let union_stream = b.range_values().union(c.range_values());
     let a_less = a
         .range_values()
-        .difference(union_stream.into_sorted_disjoint());
+        .difference_with_set(union_stream.into_sorted_disjoint());
     let d: RangeMapBlaze<_, _> = a_less.into_range_map_blaze();
     println!("{d}");
 
     let d: RangeMapBlaze<_, _> = a
         .range_values()
-        .difference(
+        .difference_with_set(
             [b.range_values(), c.range_values()]
                 .union()
                 .into_sorted_disjoint(),
@@ -466,8 +466,8 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
-    let b_comp = (b).range_values().complement_with(&'B');
-    let c_comp = (c).range_values().complement_with(&'C');
+    let b_comp = (b).range_values().complement(&'B');
+    let c_comp = (c).range_values().complement(&'C');
     println!(
         "!b|!c {}",
         RangeMapBlaze::from_sorted_disjoint_map(b_comp.union(c_comp))
@@ -502,17 +502,17 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     let u = [
         intersection_map_dyn!(
             a.range_values(),
-            b.range_values().complement_with(&'B'),
-            c.range_values().complement_with(&'C')
+            b.range_values().complement(&'B'),
+            c.range_values().complement(&'C')
         ),
         intersection_map_dyn!(
-            a.range_values().complement_with(&'A'),
+            a.range_values().complement(&'A'),
             b.range_values(),
-            c.range_values().complement_with(&'C')
+            c.range_values().complement(&'C')
         ),
         intersection_map_dyn!(
-            a.range_values().complement_with(&'A'),
-            b.range_values().complement_with(&'B'),
+            a.range_values().complement(&'A'),
+            b.range_values().complement(&'B'),
             c.range_values()
         ),
         intersection_map_dyn!(a.range_values(), b.range_values(), c.range_values()),
@@ -540,7 +540,7 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
     let a = &a0 | &a1;
     let not_a = &a.complement_with("A");
     let b = a.range_values();
-    let c = not_a.range_values().complement_with(&"A");
+    let c = not_a.range_values().complement(&"A");
     let d = a0.range_values().union(a1.range_values());
     let e = a.range_values(); // with range instead of range values used 'tee' here
 
@@ -564,11 +564,11 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
         (1, &"f"),
     ]);
 
-    let not_b = b.complement_with(&"A");
-    let not_c = c.complement_with(&"A");
-    let not_d = d.complement_with(&"A");
-    let not_e = e.complement_with(&"A");
-    let not_f = f.complement_with(&"A");
+    let not_b = b.complement(&"A");
+    let not_c = c.complement(&"A");
+    let not_d = d.complement(&"A");
+    let not_e = e.complement(&"A");
+    let not_f = f.complement(&"A");
     // cmk0 make .to_string_work
     // println!("not a: {:?}", not_a.range_values().into_range_map_blaze());
     // println!("not b: {:?}", not_b.into_range_map_blaze());
@@ -600,7 +600,7 @@ fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
         .union(a2.range_values());
     let c = not_a0
         .range_values()
-        .complement_with(&"a0")
+        .complement(&"a0")
         .union(a12.range_values());
     let d = a0
         .range_values()
@@ -632,10 +632,10 @@ fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
     let a01_tee = a01.range_values(); // with range instead of range values used 'tee' here
     let not_a01 = &a01.complement_with(&"A01");
     let a = &a01 - &a2;
-    let b = a01.range_values() - a2.ranges();
+    let b = a01.range_values() - a2.range_values();
     let c = !not_a01.range_values() - a2.ranges();
-    let d = (a0.range_values() | a1.range_values()) - a2.ranges();
-    let e = a01_tee.difference(a2.ranges());
+    let d = (a0.range_values() | a1.range_values()) - a2.range_values();
+    let e = a01_tee.difference_with_set(a2.ranges());
     // cmk0 let f = UnionIterMap::from_iter(a01.iter()) - UnionIter::from_iter(a2.keys());
     assert!(a.range_values().equal(b));
     assert!(a.ranges().equal(c));
@@ -684,10 +684,10 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
     let a01_tee = a01.range_values(); // with range instead of range values used 'tee' here
     let not_a01 = &a01.complement_with(&"A01");
     let a = &a01 & &a2;
-    let b = a01.range_values() & a2.ranges();
+    let b = a01.range_values() & a2.range_values();
     let c = !not_a01.range_values() & a2.ranges();
-    let d = (a0.range_values() | a1.range_values()) & a2.ranges();
-    let e = a01_tee.intersection(a2.ranges());
+    let d = (a0.range_values() | a1.range_values()) & a2.range_values();
+    let e = a01_tee.intersection_with_set(a2.ranges());
     // cmk00 let f = UnionIterMap::from_iter(a01.iter()) & UnionIter::from_iter(a2.keys());
     assert!(a.range_values().equal(b));
     assert!(a.ranges().equal(c));
@@ -761,7 +761,7 @@ fn map_empty_it() {
     let answer = RangeMapBlaze::from_iter([(0, &val); 0]);
     assert!(c4.equal(answer.range_values()));
 
-    let c0 = !(a.range_values() & b.ranges());
+    let c0 = !(a.range_values() & b.range_values());
     let c1 = ![a.range_values(), b.range_values()].intersection();
     let c_list2: [RangeValuesIter<i32, &str>; 0] = [];
     assert!(

@@ -878,7 +878,8 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         assert!(start <= end);
 
         let bounds = CheckSortedDisjoint::from([start..=end]);
-        RangeMapBlaze::from_sorted_disjoint_map(self.range_values() & bounds).into_iter()
+        RangeMapBlaze::from_sorted_disjoint_map(self.range_values().intersection_with_set(bounds))
+            .into_iter()
     }
 
     /// Adds a range to the set.
@@ -1884,7 +1885,7 @@ gen_ops_ex!(
     /// ```
     for & call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
         // cmk use & ???
-        a.range_values().intersection(b.ranges()).into_range_map_blaze()
+        a.range_values().intersection_with_set(b.ranges()).into_range_map_blaze()
     };
 /// Symmetric difference the contents of two [`RangeMapBlaze`]'s.
 ///
@@ -1917,7 +1918,7 @@ for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
 /// ```
 
 for - call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
-    a.range_values().difference(b.ranges()).into_range_map_blaze()
+    a.range_values().difference_with_set(b.ranges()).into_range_map_blaze()
 };
 where T: Integer, V: ValueOwned
 );
@@ -1942,12 +1943,12 @@ gen_ops_ex!(
 /// ```
 /// cmk
 for - call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
-    a.range_values().difference(b.ranges()).into_range_map_blaze()
+    a.range_values().difference_with_set(b.ranges()).into_range_map_blaze()
 };
 
 /// cmk
 for & call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
-    a.range_values().intersection(b.ranges()).into_range_map_blaze()
+    a.range_values().intersection_with_set(b.ranges()).into_range_map_blaze()
 };
 
 where T: Integer, V: ValueOwned
