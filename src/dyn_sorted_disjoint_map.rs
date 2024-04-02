@@ -2,8 +2,7 @@ use core::iter::FusedIterator;
 
 use crate::{
     map::{CloneBorrow, ValueOwned},
-    sorted_disjoint_map::RangeValue,
-    Integer, SortedDisjointMap,
+    Integer, RangeValue, SortedDisjointMap,
 };
 use alloc::boxed::Box;
 

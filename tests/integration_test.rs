@@ -1882,7 +1882,6 @@ fn test_rog_range_doc() {
     );
 }
 
-// cmk00000000
 #[test]
 fn test_every_sorted_disjoint_method() {
     // use range_set_blaze::range_set_blaze::SortedDisjointToUnitMap;

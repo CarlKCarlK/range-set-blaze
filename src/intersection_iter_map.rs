@@ -4,8 +4,7 @@ use core::{
     ops::RangeInclusive,
 };
 
-use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap};
-use crate::{map::CloneBorrow, SortedDisjoint};
+use crate::{map::CloneBorrow, RangeValue, SortedDisjoint, SortedDisjointMap};
 use crate::{map::ValueOwned, Integer};
 
 /// Turns one [`SortedDisjoint`] iterator and one [`SortedDisjointMap`] iterator into
