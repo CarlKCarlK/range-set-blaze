@@ -1,4 +1,3 @@
-use crate::map::UniqueValue;
 use crate::range_values::ExpectDebugUnwrapRelease;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::{
@@ -6,7 +5,6 @@ use crate::{
     sorted_disjoint_map::{RangeValue, SortedDisjointMap},
     Integer,
 };
-use alloc::rc::Rc;
 use core::ops::RangeInclusive;
 use core::{
     cmp::{max, min},
@@ -290,8 +288,8 @@ where
     }
 }
 
-/// cmk doc
-pub struct TupleToRangeValueIter1<'a, T, V, I>
+/// cmk doc mostly for internal use. Does not check that the ranges are disjoint and sorted.
+pub struct TupleToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
@@ -300,7 +298,7 @@ where
     iter: I,
 }
 
-impl<'a, T, V, I> Iterator for TupleToRangeValueIter1<'a, T, V, I>
+impl<'a, T, V, I> Iterator for TupleToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
     V: ValueOwned + 'a,
@@ -312,56 +310,6 @@ where
         self.iter
             .next()
             .map(|(range, value)| RangeValue::new(range, value))
-    }
-}
-
-/// cmk doc
-pub struct TupleToRangeValueIterViaUnique<T, V, I>
-where
-    T: Integer,
-    V: ValueOwned,
-    I: Iterator<Item = (RangeInclusive<T>, V)>,
-{
-    iter: I,
-}
-
-impl<'a, T, V, I> Iterator for TupleToRangeValueIterViaUnique<T, V, I>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-    I: Iterator<Item = (RangeInclusive<T>, V)>,
-{
-    type Item = RangeValue<T, V, UniqueValue<V>>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter
-            .next()
-            .map(|(range, value)| RangeValue::new_unique(range, value))
-    }
-}
-
-/// cmk doc
-pub struct TupleToRangeValueIterViaRc<T, V, I>
-where
-    T: Integer,
-    V: ValueOwned,
-    I: Iterator<Item = (RangeInclusive<T>, V)>,
-{
-    iter: I,
-}
-
-impl<'a, T, V, I> Iterator for TupleToRangeValueIterViaRc<T, V, I>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-    I: Iterator<Item = (RangeInclusive<T>, V)>,
-{
-    type Item = RangeValue<T, V, Rc<V>>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter
-            .next()
-            .map(|(range, value)| RangeValue::new(range, Rc::new(value)))
     }
 }
 
@@ -397,40 +345,14 @@ where
     }
 }
 
-impl<'a, T, V, J> CheckSortedDisjointMap<T, V, &'a V, TupleToRangeValueIter1<'a, T, V, J>>
+impl<'a, T, V, J> CheckSortedDisjointMap<T, V, &'a V, TupleToRangeValueIter<'a, T, V, J>>
 where
     T: Integer,
     V: ValueOwned,
     J: Iterator<Item = (RangeInclusive<T>, &'a V)>,
 {
-    pub fn from_ref(iter: J) -> Self {
-        let iter = TupleToRangeValueIter1 { iter };
-        CheckSortedDisjointMap::new(iter)
-    }
-}
-
-// cmk0 why is it from_values (plural) and from_ref (singular)?
-impl<T, V, J> CheckSortedDisjointMap<T, V, UniqueValue<V>, TupleToRangeValueIterViaUnique<T, V, J>>
-where
-    T: Integer,
-    V: ValueOwned,
-    J: Iterator<Item = (RangeInclusive<T>, V)>,
-{
-    pub fn from_unique_values(iter: J) -> Self {
-        let iter = TupleToRangeValueIterViaUnique { iter };
-        CheckSortedDisjointMap::new(iter)
-    }
-}
-
-// cmk0 why is it from_values (plural) and from_ref (singular)?
-impl<T, V, J> CheckSortedDisjointMap<T, V, Rc<V>, TupleToRangeValueIterViaRc<T, V, J>>
-where
-    T: Integer,
-    V: ValueOwned,
-    J: Iterator<Item = (RangeInclusive<T>, V)>,
-{
-    pub fn from_rc_values(iter: J) -> Self {
-        let iter = TupleToRangeValueIterViaRc { iter };
+    pub fn from_tuples(iter: J) -> Self {
+        let iter = TupleToRangeValueIter { iter };
         CheckSortedDisjointMap::new(iter)
     }
 }
