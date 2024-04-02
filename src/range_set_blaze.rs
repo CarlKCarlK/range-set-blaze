@@ -14,16 +14,16 @@ use std::{
     path::Path,
 };
 
-use alloc::rc::Rc;
 use gen_ops::gen_ops_ex;
 
 use crate::map::ValueOwned;
+use crate::range_values::RangeValuesToRangesIter;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::unsorted_disjoint_map::UnsortedDisjointMap;
 use crate::{
     iter_map::{IntoIterMap, KeysMap},
     prelude::*,
-    range_values::{IntoRangeValuesIter, RangeValuesIter, RangeValuesToRangesIter},
+    range_values::{IntoRangeValuesToRangesIter, RangeValuesIter},
     Integer, RangeValue,
 };
 
@@ -1003,9 +1003,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    pub fn into_ranges<'b>(
-        self,
-    ) -> RangeValuesToRangesIter<T, (), Rc<()>, IntoRangeValuesIter<T, ()>> {
+    pub fn into_ranges<'b>(self) -> IntoRangeValuesToRangesIter<T, ()> {
         self.0.into_ranges()
     }
     // cmk1 is it a problem that this return Rc<()> instead of &'static ()?

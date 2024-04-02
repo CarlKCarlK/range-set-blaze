@@ -6,7 +6,7 @@ use crate::{
     },
     Integer,
 };
-use alloc::{collections::btree_map, rc::Rc};
+use alloc::collections::btree_map;
 use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
 
 use crate::{
@@ -109,13 +109,13 @@ impl<'a, T: Integer, V: ValueOwned> ExactSizeIterator for IntoRangeValuesIter<T,
 impl<'a, T: Integer, V: ValueOwned> FusedIterator for IntoRangeValuesIter<T, V> {}
 
 impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<T, V> {
-    type Item = RangeValue<T, V, Rc<V>>;
+    type Item = (RangeInclusive<T>, V);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(start, end_value)| {
             let range = start..=end_value.end;
             // cmk don't use RangeValue here
-            RangeValue::new(range, Rc::new(end_value.value))
+            (range, end_value.value)
         })
     }
 
@@ -132,6 +132,89 @@ impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<T, V> 
 // }
 
 /// cmk
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+pub struct IntoRangeValuesToRangesIter<T, V>
+where
+    T: Integer,
+    V: ValueOwned,
+{
+    iter: IntoRangeValuesIter<T, V>,
+    option_ranges: Option<RangeInclusive<T>>,
+}
+
+// cmk000
+// cmk doc this
+// // implement exact size iterator for one special case
+// impl<'a, T> ExactSizeIterator for RangeValuesToRangesIter<T, (), &'a (), RangeValuesIter<'a, T, ()>>
+// where
+//     T: Integer,
+// {
+//     #[must_use]
+//     fn len(&self) -> usize {
+//         self.iter.len()
+//     }
+// }
+
+impl<T, V> FusedIterator for IntoRangeValuesToRangesIter<T, V>
+where
+    T: Integer,
+    V: ValueOwned,
+{
+}
+
+impl<T, V> IntoRangeValuesToRangesIter<T, V>
+where
+    T: Integer,
+    V: ValueOwned,
+{
+    /// Creates a new `RangeValuesToRangesIter` from an existing sorted disjoint map iterator.
+    /// `option_ranges` is initialized as `None` by default.
+    pub fn new(iter: IntoRangeValuesIter<T, V>) -> Self {
+        Self {
+            iter,
+            option_ranges: None, // Starts as None
+        }
+    }
+}
+
+// Range's iterator is just the inside BTreeMap iterator as values
+impl<'a, T, V> Iterator for IntoRangeValuesToRangesIter<T, V>
+where
+    T: Integer,
+    V: ValueOwned,
+{
+    type Item = RangeInclusive<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            // If no next value, return whatever is current (could be None)
+            // cmk000 rename next_range_value
+            let Some(next_range_value) = self.iter.next() else {
+                return self.option_ranges.take();
+            };
+            let (next_start, next_end) = next_range_value.0.into_inner();
+
+            // If no current value, set current to next and loop
+            let Some(current_range) = self.option_ranges.take() else {
+                self.option_ranges = Some(next_start..=next_end);
+                continue;
+            };
+            let (current_start, current_end) = current_range.into_inner();
+
+            // If current range and next range are adjacent, merge them and loop
+            if current_end + T::one() == next_start {
+                self.option_ranges = Some(current_start..=next_end);
+                continue;
+            }
+
+            self.option_ranges = Some(next_start..=next_end);
+            return Some(current_start..=current_end);
+        }
+    }
+}
+
+/// cmk
+/// cmk000 the next method is very similar to the one above
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct RangeValuesToRangesIter<T, V, VR, I>

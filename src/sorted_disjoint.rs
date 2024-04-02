@@ -1,6 +1,9 @@
+use crate::map::CloneBorrow;
 use crate::range_set_blaze::UnitMapToSortedDisjoint;
+use crate::range_values::RangeValuesToRangesIter;
 use crate::{
-    range_set_blaze::SortedDisjointToUnitMap, range_values::RangeValuesToRangesIter, RangeSetBlaze,
+    range_set_blaze::SortedDisjointToUnitMap, range_values::IntoRangeValuesToRangesIter,
+    RangeSetBlaze,
 };
 use alloc::format;
 use alloc::string::String;
@@ -10,7 +13,7 @@ use core::{
     ops::{self, RangeInclusive},
 };
 
-use crate::{map::CloneBorrow, map::ValueOwned, SortedDisjointMap};
+use crate::{map::ValueOwned, SortedDisjointMap};
 use itertools::Itertools;
 
 use crate::{
@@ -759,9 +762,10 @@ macro_rules! impl_sorted_traits_and_ops {
 
 impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, I: AnythingGoes<T>);
 impl_sorted_traits_and_ops!(NotIter<T, I>, I: SortedDisjoint<T>);
-impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: ValueOwned, VR: CloneBorrow<V>, I: SortedDisjointMap<T, V, VR>);
+impl_sorted_traits_and_ops!(IntoRangeValuesToRangesIter<T, V>, V: ValueOwned);
 impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
 impl_sorted_traits_and_ops!(UnitMapToSortedDisjoint<T, I>, I: SortedDisjointMap<T, (), &'static ()>);
+impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: ValueOwned, VR: CloneBorrow<V>, I: SortedDisjointMap<T, V, VR>);
 
 // We're not allowed to define methods on outside types, so we only define the traits
 // cmk0
