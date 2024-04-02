@@ -1499,6 +1499,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     }
 
     /// cmk doc
+    // cmk000 should we rename name sense we're returning a pair, not a RangeValue?
     pub fn into_range_values(self) -> IntoRangeValuesIter<T, V> {
         IntoRangeValuesIter {
             iter: self.btree_map.into_iter(),

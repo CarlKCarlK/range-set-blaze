@@ -1231,7 +1231,9 @@ impl_sorted_map_traits_and_ops!(SortedDisjointToUnitMap<T, I>, (), &'static (), 
 // cmk000 CheckPrioritySortedStartsMap
 // cmk000 Assume... used by CheckSortedDisjointMap
 
+// cmk move this to tests
 fn understand_strings_as_values() {
+    // RangeMapBlaze string-like values can be &str, String, &String (or even &&str and &&String).
     let _: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=0, "a")]);
     let _: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=0, &"a")]);
     let _: RangeMapBlaze<i32, &&str> = RangeMapBlaze::from_iter([(0..=0, &"a")]);
@@ -1242,21 +1244,31 @@ fn understand_strings_as_values() {
     let _: RangeMapBlaze<i32, &&String> = RangeMapBlaze::from_iter([(0..=0, &&a_string)]);
     let _: RangeMapBlaze<i32, String> = RangeMapBlaze::from_iter([(0..=0, a_string)]);
 
+    // With .range_values() we iterate over references to the values.
+    // With .into_range_values() we iterate over the values themselves.
+    // cmk00 Is there also a .into_values() and .into_ranges() and .into_keys(), etc?
     let a: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=0, "a")]);
-    let _: RangeValuesIter<i32, &str> = a.range_values();
-    let _: IntoRangeValuesIter<i32, &str> = a.into_range_values();
+    let mut b: RangeValuesIter<i32, &str> = a.range_values();
+    let c: &&str = b.next().unwrap().value;
+    let mut b: IntoRangeValuesIter<i32, &str> = a.into_range_values();
+    let c: &str = b.next().unwrap().1;
 
     let a: RangeMapBlaze<i32, String> = RangeMapBlaze::from_iter([(0..=0, "a".to_string())]);
-    let _: RangeValuesIter<i32, String> = a.range_values();
-    let _: IntoRangeValuesIter<i32, String> = a.into_range_values();
+    let mut b: RangeValuesIter<i32, String> = a.range_values();
+    let c: &String = b.next().unwrap().value;
+    let mut b: IntoRangeValuesIter<i32, String> = a.into_range_values();
+    let c: String = b.next().unwrap().1;
 
     // cmk00000 when does RangeMapBlaze::from_iter ever use UniqueValue and/or Rcs
 
+    // You can get all the same types via CheckSortedDisjointMap, but values are always (clonable) references.
     let a_string = "a".to_string();
     let _: CheckSortedDisjointMap<i32, &str, &&str, _> =
         CheckSortedDisjointMap::from_ref([(0..=0, &"a")].into_iter());
-    let _: CheckSortedDisjointMap<i32, String, &String, _> =
+    let mut b: CheckSortedDisjointMap<i32, String, &String, _> =
         CheckSortedDisjointMap::from_ref([(0..=0, &a_string)].into_iter());
+    let c: &String = b.next().unwrap().value;
+    let c_clone: String = c.clone();
     let _: CheckSortedDisjointMap<i32, &String, &&String, _> =
         CheckSortedDisjointMap::from_ref([(0..=0, &&a_string)].into_iter());
     let _: CheckSortedDisjointMap<i32, String, &String, _> =
@@ -1265,13 +1277,10 @@ fn understand_strings_as_values() {
     // cmk00000 rename from_ref to new and remove the other two and their iterators.
 }
 
-// cmk000000
-// cmk000 #[test]
+// #[test]
 fn test_every_sorted_disjoint_map_method() {
     use crate::multiway_map::MultiwaySortedDisjointMap;
     use crate::CheckSortedDisjoint;
-    // use range_set_blaze::range_set_blaze::SortedDisjointToUnitMap;
-    // use range_set_blaze::range_set_blaze::UnitMapToSortedDisjoint;
     use syntactic_for::syntactic_for;
 
     let e0: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
@@ -1293,26 +1302,24 @@ fn test_every_sorted_disjoint_map_method() {
             )]
             .symmetric_difference();
             let e: RangeValuesIter<i32, &str> = e0.range_values();
-            let f: IntoRangeValuesIter<i32, &str> =
-                RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]).into_range_values();
-            let g: DynSortedDisjointMap<i32, &str, _> = DynSortedDisjointMap::new(
+            let f: DynSortedDisjointMap<i32, &str, _> = DynSortedDisjointMap::new(
                 CheckSortedDisjointMap::from_ref([(1..=2, &"a"), (5..=100, &"a")].into_iter()),
             );
-            let h: SortedDisjointToUnitMap<_, _> =
+            let g: SortedDisjointToUnitMap<i32, _> =
                 SortedDisjointToUnitMap::new(CheckSortedDisjoint::new(vec![1..=2, 5..=100]));
 
-            (a, b, c, d, e, f, g, h)
+            (a, b, c, d, e, f, g)
         }};
     }
 
     // Union cmk000000
-    let (a, b, c, d, e, f, g, h) = fresh_instances!();
-    // syntactic_for! { sd in [a, b, c, d, e, f] {$(
-    //     let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::from_ref([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")].into_iter());
-    //     let z = $sd | z;
-    //     assert!(z.equal(CheckSortedDisjointMap::from_ref([(-1..=0, &"z"), (1..=2, &"a"), (5..=100, &"a"), (1000..=10000, &"z")].into_iter())));
-    // )*}}
-    syntactic_for! { sd in [h] {$(
+    let (a, b, c, d, e, f, g) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f] {$(
+        let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::from_ref([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")].into_iter());
+        let z = $sd | z;
+        assert!(z.equal(CheckSortedDisjointMap::from_ref([(-1..=0, &"z"), (1..=2, &"a"), (5..=100, &"a"), (1000..=10000, &"z")].into_iter())));
+    )*}}
+    syntactic_for! { sd in [g] {$(
         let z = CheckSortedDisjointMap::from_ref([(-1..=0,&()), (50..=50, &()),(1000..=10_000,&())].into_iter());
         let z = $sd | z;
         assert!(z.equal(CheckSortedDisjointMap::from_ref([(-1..=2, &()), (5..=100, &()), (1000..=10000, &())].into_iter())));
@@ -1366,8 +1373,8 @@ fn test_every_sorted_disjoint_map_method() {
     // )*}}
 
     fn is_fused<T: FusedIterator>(iter: T) {}
-    let (a, b, c, d, e, f, g, h) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e, f, g, h] {$(
+    let (a, b, c, d, e, f, g) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f, g] {$(
         is_fused::<_>($sd);
     )*}}
     fn is_sorted_disjoint_map<T, V, VR, S>(iter: S)
@@ -1379,7 +1386,7 @@ fn test_every_sorted_disjoint_map_method() {
     {
         // Implementation or assertion here
     }
-    let (a, b, c, d, e, f, g, h) = fresh_instances!();
+    let (a, b, c, d, e, f, g) = fresh_instances!();
     // cmk000000
     // syntactic_for! { sd in [a, b, c, d, e, f, g, h] {$(
     //     is_sorted_disjoint_map::<_,_,_,_>($sd);
