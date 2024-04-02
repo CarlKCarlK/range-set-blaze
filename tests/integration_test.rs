@@ -1883,67 +1883,69 @@ fn test_rog_range_doc() {
 }
 
 // cmk00000000
-// #[test]
-// fn test_every_sorted_disjoint_method() {
-//     // use range_set_blaze::range_set_blaze::SortedDisjointToUnitMap;
-//     // use range_set_blaze::range_set_blaze::UnitMapToSortedDisjoint;
-//     use range_set_blaze::range_values::RangeValuesToRangesIter;
-//     use syntactic_for::syntactic_for;
+#[test]
+fn test_every_sorted_disjoint_method() {
+    // use range_set_blaze::range_set_blaze::SortedDisjointToUnitMap;
+    // use range_set_blaze::range_set_blaze::UnitMapToSortedDisjoint;
+    use range_set_blaze::range_values::RangeValuesToRangesIter;
+    use syntactic_for::syntactic_for;
+    let c0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
 
-//     macro_rules! fresh_instances {
-//         () => {{
-//             let a: CheckSortedDisjoint<_, _> = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-//             let b: NotIter<_, _> = !!CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-//             let c0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
-//             let c: RangeValuesToRangesIter<_, _, _, _> = c0.into_ranges();
-//             let d: DynSortedDisjoint<_> =
-//                 DynSortedDisjoint::new(RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges());
-//             let e: UnitMapToSortedDisjoint<_, _> = UnitMapToSortedDisjoint::new(
-//                 SortedDisjointToUnitMap::new(CheckSortedDisjoint::from([1..=2, 5..=100])),
-//             );
+    macro_rules! fresh_instances {
+        () => {{
+            let a: CheckSortedDisjoint<_, _> = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+            let b: NotIter<_, _> = !!CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+            let c: RangeValuesToRangesIter<_, _, _, _> = c0.ranges();
+            let d: IntoRangeValuesToRangesIter<_, ()> =
+                RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges();
+            let e: DynSortedDisjoint<_> =
+                DynSortedDisjoint::new(RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges());
+            let f: UnitMapToSortedDisjoint<_, _> = UnitMapToSortedDisjoint::new(
+                SortedDisjointToUnitMap::new(CheckSortedDisjoint::from([1..=2, 5..=100])),
+            );
 
-//             (a, b, c, d, e)
-//         }};
-//     }
+            (a, b, c, d, e, f)
+        }};
+    }
 
-//     let (a, b, c, d, e) = fresh_instances!();
-//     syntactic_for! { sd in [a, b, c, d, e] {$(
-//         let z = ! $sd;
-//         assert!(z.equal(CheckSortedDisjoint::from([-2147483648..=0, 3..=4, 101..=2147483647])));
-//     )*}}
+    let (a, b, c, d, e, f) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f] {$(
+        let z = ! $sd;
+        assert!(z.equal(CheckSortedDisjoint::from([-2147483648..=0, 3..=4, 101..=2147483647])));
+    )*}}
 
-//     let (a, b, c, d, e) = fresh_instances!();
-//     syntactic_for! { sd in [a, b, c, d, e] {$(
-//         let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
-//         let z = $sd | z;
-//         assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=100, 1000..=10000])));
-//     )*}}
+    let (a, b, c, d, e, f) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f] {$(
+        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+        let z = $sd | z;
+        assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=100, 1000..=10000])));
+    )*}}
 
-//     let (a, b, c, d, e) = fresh_instances!();
-//     syntactic_for! { sd in [a, b, c, d, e] {$(
-//         let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
-//         let z = $sd & z;
-//         assert!(z.equal(CheckSortedDisjoint::from([50..=50])));
-//     )*}}
+    let (a, b, c, d, e, f) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f] {$(
+        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+        let z = $sd & z;
+        assert!(z.equal(CheckSortedDisjoint::from([50..=50])));
+    )*}}
 
-//     let (a, b, c, d, e) = fresh_instances!();
-//     syntactic_for! { sd in [a, b, c, d, e] {$(
-//         let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
-//         let z = $sd ^ z;
-//         assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=49, 51..=100, 1000..=10000])));
-//     )*}}
+    let (a, b, c, d, e, f) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f] {$(
+        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+        let z = $sd ^ z;
+        assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=49, 51..=100, 1000..=10000])));
+    )*}}
 
-//     let (a, b, c, d, e) = fresh_instances!();
-//     syntactic_for! { sd in [a, b, c, d, e] {$(
-//         let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
-//         let z = $sd - z;
-//         assert!(z.equal(CheckSortedDisjoint::from([1..=2, 5..=49, 51..=100])));
-//     )*}}
+    let (a, b, c, d, e, f) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f] {$(
+        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+        let z = $sd - z;
+        assert!(z.equal(CheckSortedDisjoint::from([1..=2, 5..=49, 51..=100])));
+    )*}}
 
-//     // FusedIterator
-//     fn is_fused<T: FusedIterator>(iter: T) {}
-//     let (a, b, c, d, e) = fresh_instances!();
-//     syntactic_for! { sd in [a, b, c, d, e] {$(
-//         is_fused::<_>($sd);
-//     )*}}
-// }
+    // FusedIterator
+    fn is_fused<T: FusedIterator>(iter: T) {}
+    let (a, b, c, d, e, f) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f] {$(
+        is_fused::<_>($sd);
+    )*}}
+}
