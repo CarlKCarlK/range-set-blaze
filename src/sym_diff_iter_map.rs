@@ -1,4 +1,8 @@
-use core::{cmp::min, iter::FusedIterator, ops::RangeInclusive};
+use core::{
+    cmp::{self, min},
+    iter::FusedIterator,
+    ops::RangeInclusive,
+};
 
 use alloc::collections::BinaryHeap;
 
@@ -51,15 +55,13 @@ where
     ready_to_go: Option<(RangeInclusive<T>, VR)>,
 }
 
-fn min_next_end<T, V, VR>(next_end: &Option<T>, next_item: &(RangeInclusive<T>, VR)) -> Option<T>
+fn min_next_end<T>(next_end: &Option<T>, next_item_end: T) -> Option<T>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
 {
     Some(next_end.map_or_else(
-        || *next_item.0.end(),
-        |current_end| std::cmp::min(current_end, *next_item.0.end()),
+        || next_item_end,
+        |current_end| cmp::min(current_end, next_item_end),
     ))
 }
 
@@ -92,7 +94,7 @@ where
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
-                let (next_start, _next_end) = next_item.range_value().0.clone().into_inner();
+                let (next_start, _next_end) = next_item.start_and_end();
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
@@ -101,7 +103,7 @@ where
                     //     next_item.0
                     // );
                     self.workspace_next_end =
-                        min_next_end(&self.workspace_next_end, &next_item.range_value());
+                        min_next_end(&self.workspace_next_end, next_item.end());
                     self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     // println!(
@@ -115,7 +117,7 @@ where
                 if next_start == *best.0.start() {
                     // Always push (this differs from UnionIterMap)
                     self.workspace_next_end =
-                        min_next_end(&self.workspace_next_end, next_item.range_value());
+                        min_next_end(&self.workspace_next_end, next_item.end());
                     self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     continue; // return to top of the main processing loop
@@ -213,7 +215,7 @@ where
                     continue; // while loop
                 }
                 item.set_range(next_end + T::one()..=item.end());
-                new_next_end = min_next_end(&new_next_end, item.range_value());
+                new_next_end = min_next_end(&new_next_end, item.end());
                 new_workspace.push(item);
             }
             self.workspace = new_workspace;

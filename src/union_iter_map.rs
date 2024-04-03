@@ -78,7 +78,7 @@ where
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
-                let (next_start, next_end) = next_item.range_value().0.clone().into_inner();
+                let (next_start, next_end) = next_item.start_and_end();
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
@@ -151,7 +151,7 @@ where
 
             // Add the front of best to the gather buffer.
             if let Some(mut gather) = self.gather.take() {
-                if gather.1.borrow() == best.range_value().1.borrow()
+                if gather.1.borrow() == best.value().borrow()
                     && *gather.0.end() + T::one() == best.start()
                 {
                     // if the gather is contiguous with the best, then merge them
@@ -173,8 +173,7 @@ where
                     //     *best.0.start()..=next_end
                     // );
                     self.ready_to_go = Some(gather);
-                    self.gather =
-                        Some((best.start()..=next_end, best.range_value().1.clone_borrow()));
+                    self.gather = Some((best.start()..=next_end, best.value().clone_borrow()));
                 }
             } else {
                 // if there is no gather, then set the gather to the best
@@ -183,7 +182,7 @@ where
                 //     best.0,
                 //     *best.0.start()..=next_end
                 // );
-                self.gather = Some((best.start()..=next_end, best.range_value().1.clone_borrow()))
+                self.gather = Some((best.start()..=next_end, best.value().clone_borrow()))
             };
 
             // We also update the workspace to removing any items that are completely covered by the new_start.

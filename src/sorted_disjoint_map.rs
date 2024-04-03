@@ -1061,6 +1061,14 @@ where
     pub fn end(&self) -> T {
         *self.range_value.0.end()
     }
+
+    pub fn start_and_end(&self) -> (T, T) {
+        self.range_value.0.clone().into_inner()
+    }
+
+    pub fn value(&self) -> &VR {
+        &self.range_value.1
+    }
 }
 // Implement `PartialEq` to allow comparison (needed for `Eq`).
 impl<T, V, VR> PartialEq for Priority<T, V, VR>
