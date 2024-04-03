@@ -1002,7 +1002,7 @@ where
     VR: CloneBorrow<V>,
 {
     pub(crate) range_value: (RangeInclusive<T>, VR),
-    pub(crate) priority_number: usize,
+    priority_number: usize,
     phantom_data: PhantomData<V>,
 }
 
@@ -1023,6 +1023,32 @@ where
     }
 }
 
+impl<T, V, VR> Priority<T, V, VR>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+{
+    // // Accessor for the entire range_value tuple
+    // pub fn range_value(&self) -> &(RangeInclusive<T>, VR) {
+    //     &self.range_value
+    // }
+
+    // Accessor for the priority_number
+    pub fn priority_number(&self) -> usize {
+        self.priority_number
+    }
+
+    // // Accessor for the range part of the range_value
+    // pub fn range(&self) -> &RangeInclusive<T> {
+    //     &self.range_value.0
+    // }
+
+    // // Accessor for the value part of the range_value
+    // pub fn value(&self) -> V {
+    //     self.range_value.1.borrow_clone()
+    // }
+}
 // Implement `PartialEq` to allow comparison (needed for `Eq`).
 impl<T, V, VR> PartialEq for Priority<T, V, VR>
 where

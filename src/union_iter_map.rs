@@ -97,7 +97,7 @@ where
                 };
                 if next_start == *best.range_value.0.start() {
                     // Only push if the priority is higher or the end is greater
-                    if next_item.priority_number > best.priority_number
+                    if next_item.priority_number() > best.priority_number()
                         || next_end > *best.range_value.0.end()
                     {
                         // println!("cmk pushing next_item {:?} into workspace", next_item.0);
@@ -212,7 +212,7 @@ where
                     new_workspace.push(item);
                     continue; // while loop
                 };
-                if item.priority_number < new_best.priority_number
+                if item.priority_number() < new_best.priority_number()
                     && *item.range_value.0.end() <= *new_best.range_value.0.end()
                 {
                     // println!("cmk item is lower priority {:?} and shorter {:?} than best item {:?},{:?} in new workspace, so don't keep",
