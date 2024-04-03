@@ -1,6 +1,5 @@
 use crate::map::BitSubRangesMap;
 use crate::range_set_blaze::SortedDisjointToUnitMap;
-use crate::range_values::IntoRangeValuesIter;
 use crate::range_values::RangeValuesIter;
 use crate::range_values::RangeValuesToRangesIter;
 use crate::sym_diff_iter_map::SymDiffIterMap;
@@ -1001,7 +1000,7 @@ where
     V: ValueOwned,
     VR: CloneBorrow<V>,
 {
-    pub(crate) range_value: (RangeInclusive<T>, VR),
+    range_value: (RangeInclusive<T>, VR),
     priority_number: usize,
     phantom_data: PhantomData<V>,
 }
@@ -1029,25 +1028,27 @@ where
     V: ValueOwned,
     VR: CloneBorrow<V>,
 {
-    // // Accessor for the entire range_value tuple
-    // pub fn range_value(&self) -> &(RangeInclusive<T>, VR) {
-    //     &self.range_value
-    // }
-
     // Accessor for the priority_number
     pub fn priority_number(&self) -> usize {
         self.priority_number
     }
+    // Getter that borrows `range_value`
+    pub fn range_value(&self) -> &(RangeInclusive<T>, VR) {
+        &self.range_value
+    }
 
-    // // Accessor for the range part of the range_value
-    // pub fn range(&self) -> &RangeInclusive<T> {
-    //     &self.range_value.0
-    // }
+    // Setter that modifies `range_value`
+    pub fn set_range_value(&mut self, value: (RangeInclusive<T>, VR)) {
+        self.range_value = value;
+    }
 
-    // // Accessor for the value part of the range_value
-    // pub fn value(&self) -> V {
-    //     self.range_value.1.borrow_clone()
-    // }
+    pub fn into_range_value(self) -> (RangeInclusive<T>, VR) {
+        self.range_value
+    }
+
+    pub fn set_range(&mut self, range: RangeInclusive<T>) {
+        self.range_value.0 = range;
+    }
 }
 // Implement `PartialEq` to allow comparison (needed for `Eq`).
 impl<T, V, VR> PartialEq for Priority<T, V, VR>
@@ -1267,7 +1268,10 @@ impl_sorted_map_traits_and_ops!(SortedDisjointToUnitMap<T, I>, (), &'static (), 
 // cmk000 Assume... used by CheckSortedDisjointMap
 
 // cmk move this to tests
+#[test]
 fn understand_strings_as_values() {
+    use crate::range_values::IntoRangeValuesIter;
+
     // RangeMapBlaze string-like values can be &str, String, &String (or even &&str and &&String).
     let _: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=0, "a")]);
     let _: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=0, &"a")]);
@@ -1284,15 +1288,15 @@ fn understand_strings_as_values() {
     // cmk00 Is there also a .into_values() and .into_ranges() and .into_keys(), etc?
     let a: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=0, "a")]);
     let mut b: RangeValuesIter<i32, &str> = a.range_values();
-    let c: &&str = b.next().unwrap().1;
+    let _c: &&str = b.next().unwrap().1;
     let mut b: IntoRangeValuesIter<i32, &str> = a.into_pairs();
-    let c: &str = b.next().unwrap().1;
+    let _c: &str = b.next().unwrap().1;
 
     let a: RangeMapBlaze<i32, String> = RangeMapBlaze::from_iter([(0..=0, "a".to_string())]);
     let mut b: RangeValuesIter<i32, String> = a.range_values();
-    let c: &String = b.next().unwrap().1;
+    let _c: &String = b.next().unwrap().1;
     let mut b: IntoRangeValuesIter<i32, String> = a.into_pairs();
-    let c: String = b.next().unwrap().1;
+    let _c: String = b.next().unwrap().1;
 
     // You can get all the same types via CheckSortedDisjointMap, but values are always (clonable) references.
     let a_string = "a".to_string();
@@ -1301,7 +1305,7 @@ fn understand_strings_as_values() {
     let mut b: CheckSortedDisjointMap<i32, String, &String, _> =
         CheckSortedDisjointMap::from_pairs([(0..=0, &a_string)].into_iter());
     let c: &String = b.next().unwrap().1;
-    let c_clone: String = c.clone();
+    let _c_clone: String = c.clone();
     let _: CheckSortedDisjointMap<i32, &String, &&String, _> =
         CheckSortedDisjointMap::from_pairs([(0..=0, &&a_string)].into_iter());
     let _: CheckSortedDisjointMap<i32, String, &String, _> =
@@ -1353,7 +1357,7 @@ fn test_every_sorted_disjoint_map_method() {
     syntactic_for! { sd in [a, b, c, d, e, f, g] {$(
         is_fused::<_>($sd);
     )*}}
-    fn is_sorted_disjoint_map<T, V, VR, S>(iter: S)
+    fn is_sorted_disjoint_map<T, V, VR, S>(_iter: S)
     where
         T: Integer,
         V: ValueOwned,

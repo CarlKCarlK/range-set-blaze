@@ -1706,7 +1706,7 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
         // We gather adjacent values into ranges via UnsortedDisjointMap.
         let unsorted = UnsortedDisjointMap::new(iter.map(|x| (x..=x, &())));
         for priority in unsorted {
-            self.0.internal_add(priority.range_value.0, ());
+            self.0.internal_add(priority.into_range_value().0, ());
         }
     }
 }
@@ -1892,7 +1892,7 @@ impl<T: Integer, V: ValueOwned> Extend<(RangeInclusive<T>, V)> for RangeSetBlaze
         let unsorted =
             UnsortedDisjointMap::new(iter.map(|(range, v)| (range, UniqueValue::new(v))));
         for priority in unsorted {
-            self.0.internal_add(priority.range_value.0, ());
+            self.0.internal_add(priority.into_range_value().0, ());
         }
     }
 }

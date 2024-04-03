@@ -78,7 +78,7 @@ where
                 .expect_debug_unwrap_release("overflow");
 
             // check the next range is valid and non-empty
-            let (next_start, next_end) = next_priority.range_value.0.clone().into_inner();
+            let (next_start, next_end) = next_priority.range_value().0.clone().into_inner();
             assert!(
                 next_end <= T::safe_max_value(),
                 "end must be <= T::safe_max_value()"
@@ -94,7 +94,8 @@ where
             };
 
             // if the ranges do not touch or overlap, return the current range and set the current range to the next range
-            let (current_start, current_end) = current_priority.range_value.0.clone().into_inner();
+            let (current_start, current_end) =
+                current_priority.range_value().0.clone().into_inner();
             if (next_start >= self.min_value_plus_2 && current_end <= next_start - self.two)
                 || (current_start >= self.min_value_plus_2 && next_end <= current_start - self.two)
             {
@@ -106,14 +107,13 @@ where
 
             // cmk think about combining this with the previous if
             // if values are different, return the current range and set the current range to the next range
-            if current_priority.range_value.1.borrow() != next_priority.range_value.1.borrow() {
+            if current_priority.range_value().1.borrow() != next_priority.range_value().1.borrow() {
                 self.option_priority = Some(next_priority);
                 return Some(current_priority);
             }
 
             // they touch or overlap and have the same value, so merge
-            current_priority.range_value.0 =
-                min(current_start, next_start)..=max(current_end, next_end);
+            current_priority.set_range(min(current_start, next_start)..=max(current_end, next_end));
             self.option_priority = Some(current_priority);
             // continue;
         }

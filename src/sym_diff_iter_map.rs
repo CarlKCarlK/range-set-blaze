@@ -92,7 +92,7 @@ where
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
-                let (next_start, _next_end) = next_item.range_value.0.clone().into_inner();
+                let (next_start, _next_end) = next_item.range_value().0.clone().into_inner();
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
@@ -101,7 +101,7 @@ where
                     //     next_item.0
                     // );
                     self.workspace_next_end =
-                        min_next_end(&self.workspace_next_end, &next_item.range_value);
+                        min_next_end(&self.workspace_next_end, &next_item.range_value());
                     self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     // println!(
@@ -111,11 +111,11 @@ where
                     // println!("cmk return to top of the main processing loop");
                     continue; // return to top of the main processing loop
                 };
-                let best = &best.range_value;
+                let best = best.range_value();
                 if next_start == *best.0.start() {
                     // Always push (this differs from UnionIterMap)
                     self.workspace_next_end =
-                        min_next_end(&self.workspace_next_end, &next_item.range_value);
+                        min_next_end(&self.workspace_next_end, next_item.range_value());
                     self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     continue; // return to top of the main processing loop
@@ -138,7 +138,7 @@ where
 
                 return value;
             };
-            let best = &best.range_value;
+            let best = best.range_value();
 
             // We buffer for output the best item up to the start of the next item (if any).
 
@@ -146,7 +146,7 @@ where
             // unwrap() is safe because we know the workspace is not empty
             let mut next_end = self.workspace_next_end.take().unwrap();
             if let Some(next_item) = self.next_item.as_ref() {
-                next_end = min(*next_item.range_value.0.start() - T::one(), next_end);
+                next_end = min(*next_item.range_value().0.start() - T::one(), next_end);
             }
 
             // Add the front of best to the gather buffer.
@@ -207,13 +207,13 @@ where
             let mut new_next_end = None;
             while let Some(item) = self.workspace.pop() {
                 let mut item = item;
-                if *item.range_value.0.end() <= next_end {
+                if *item.range_value().0.end() <= next_end {
                     // too short, don't keep
                     // println!("cmk too short, don't keep in workspace {:?}", item.0);
                     continue; // while loop
                 }
-                item.range_value.0 = next_end + T::one()..=*item.range_value.0.end();
-                new_next_end = min_next_end(&new_next_end, &item.range_value);
+                item.set_range(next_end + T::one()..=*item.range_value().0.end());
+                new_next_end = min_next_end(&new_next_end, item.range_value());
                 new_workspace.push(item);
             }
             self.workspace = new_workspace;

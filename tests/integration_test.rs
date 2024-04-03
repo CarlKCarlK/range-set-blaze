@@ -528,7 +528,7 @@ fn empty_it() {
 
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
     let a = a_iter.collect::<RangeSetBlaze<i32>>();
-    let b = RangeSetBlaze::from_iter([0; 0]);
+    let _b = RangeSetBlaze::from_iter([0; 0]);
 
     // cmk0 put some of these back
     // let c0 = a.ranges() | b.ranges();
@@ -1418,7 +1418,7 @@ fn sorted_disjoint_constructors() {
     assert!(a.to_string() == "1..=3, 100..=100");
 
     // tee of a SortedDisjoint iterator
-    let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
+    let _a = CheckSortedDisjoint::from([1..=3, 100..=100]);
     // cmk00 let (a, b) = a.tee();
     // cmk00 assert!(a.to_string() == "1..=3, 100..=100");
     // cmk00 assert!(b.to_string() == "1..=3, 100..=100");
@@ -1942,7 +1942,7 @@ fn test_every_sorted_disjoint_method() {
     )*}}
 
     // FusedIterator
-    fn is_fused<T: FusedIterator>(iter: T) {}
+    fn is_fused<T: FusedIterator>(_iter: T) {}
     let (a, b, c, d, e, f) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, d, e, f] {$(
         is_fused::<_>($sd);
