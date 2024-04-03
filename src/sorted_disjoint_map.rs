@@ -1049,6 +1049,18 @@ where
     pub fn set_range(&mut self, range: RangeInclusive<T>) {
         self.range_value.0 = range;
     }
+
+    pub fn into_range(self) -> RangeInclusive<T> {
+        self.range_value.0
+    }
+
+    pub fn start(&self) -> T {
+        *self.range_value.0.start()
+    }
+
+    pub fn end(&self) -> T {
+        *self.range_value.0.end()
+    }
 }
 // Implement `PartialEq` to allow comparison (needed for `Eq`).
 impl<T, V, VR> PartialEq for Priority<T, V, VR>

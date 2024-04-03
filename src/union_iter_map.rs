@@ -95,10 +95,9 @@ where
                     // println!("cmk return to top of the main processing loop");
                     continue; // return to top of the main processing loop
                 };
-                if next_start == *best.range_value().0.start() {
+                if next_start == best.start() {
                     // Only push if the priority is higher or the end is greater
-                    if next_item.priority_number() > best.priority_number()
-                        || next_end > *best.range_value().0.end()
+                    if next_item.priority_number() > best.priority_number() || next_end > best.end()
                     {
                         // println!("cmk pushing next_item {:?} into workspace", next_item.0);
                         self.workspace.push(next_item);
@@ -144,19 +143,16 @@ where
                 //     next_item.0.start(),
                 //     best.0.end()
                 // );
-                min(
-                    *next_item.range_value().0.start() - T::one(),
-                    *best.range_value().0.end(),
-                )
+                min(next_item.start() - T::one(), best.end())
                 // println!("cmk min {:?}", m);
             } else {
-                *best.range_value().0.end()
+                best.end()
             };
 
             // Add the front of best to the gather buffer.
             if let Some(mut gather) = self.gather.take() {
                 if gather.1.borrow() == best.range_value().1.borrow()
-                    && *gather.0.end() + T::one() == *best.range_value().0.start()
+                    && *gather.0.end() + T::one() == best.start()
                 {
                     // if the gather is contiguous with the best, then merge them
                     gather.0 = *gather.0.start()..=next_end;
@@ -177,10 +173,8 @@ where
                     //     *best.0.start()..=next_end
                     // );
                     self.ready_to_go = Some(gather);
-                    self.gather = Some((
-                        *best.range_value().0.start()..=next_end,
-                        best.range_value().1.clone_borrow(),
-                    ));
+                    self.gather =
+                        Some((best.start()..=next_end, best.range_value().1.clone_borrow()));
                 }
             } else {
                 // if there is no gather, then set the gather to the best
@@ -189,10 +183,7 @@ where
                 //     best.0,
                 //     *best.0.start()..=next_end
                 // );
-                self.gather = Some((
-                    *best.range_value().0.start()..=next_end,
-                    best.range_value().1.clone_borrow(),
-                ))
+                self.gather = Some((best.start()..=next_end, best.range_value().1.clone_borrow()))
             };
 
             // We also update the workspace to removing any items that are completely covered by the new_start.
@@ -200,12 +191,12 @@ where
             let mut new_workspace = BinaryHeap::new();
             while let Some(item) = self.workspace.pop() {
                 let mut item = item;
-                if *item.range_value().0.end() <= next_end {
+                if item.end() <= next_end {
                     // too short, don't keep
                     // println!("cmk too short, don't keep in workspace {:?}", item.0);
                     continue; // while loop
                 }
-                item.set_range(next_end + T::one()..=*item.range_value().0.end());
+                item.set_range(next_end + T::one()..=item.end());
                 let Some(new_best) = new_workspace.peek() else {
                     // println!("cmk no workspace, so keep {:?}", item.0);
                     // new_workspace is empty, so keep
@@ -213,7 +204,7 @@ where
                     continue; // while loop
                 };
                 if item.priority_number() < new_best.priority_number()
-                    && *item.range_value().0.end() <= *new_best.range_value().0.end()
+                    && item.end() <= new_best.end()
                 {
                     // println!("cmk item is lower priority {:?} and shorter {:?} than best item {:?},{:?} in new workspace, so don't keep",
                     // item.priority, item.0, new_best.priority, new_best.0);
@@ -372,7 +363,7 @@ where
     fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, VR, I>) -> Self {
         let iter = unsorted_disjoint.sorted_by(|a, b| {
             // We sort only by start -- priority is not used until later.
-            a.range_value().0.start().cmp(b.range_value().0.start())
+            a.start().cmp(&b.start())
         });
         let iter = AssumePrioritySortedStartsMap::new(iter);
 

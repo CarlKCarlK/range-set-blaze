@@ -146,7 +146,7 @@ where
             // unwrap() is safe because we know the workspace is not empty
             let mut next_end = self.workspace_next_end.take().unwrap();
             if let Some(next_item) = self.next_item.as_ref() {
-                next_end = min(*next_item.range_value().0.start() - T::one(), next_end);
+                next_end = min(next_item.start() - T::one(), next_end);
             }
 
             // Add the front of best to the gather buffer.
@@ -207,12 +207,12 @@ where
             let mut new_next_end = None;
             while let Some(item) = self.workspace.pop() {
                 let mut item = item;
-                if *item.range_value().0.end() <= next_end {
+                if item.end() <= next_end {
                     // too short, don't keep
                     // println!("cmk too short, don't keep in workspace {:?}", item.0);
                     continue; // while loop
                 }
-                item.set_range(next_end + T::one()..=*item.range_value().0.end());
+                item.set_range(next_end + T::one()..=item.end());
                 new_next_end = min_next_end(&new_next_end, item.range_value());
                 new_workspace.push(item);
             }

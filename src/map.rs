@@ -2046,7 +2046,7 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
         // We gather adjacent values into ranges via UnsortedDisjointMap.
         let unsorted = UnsortedDisjointMap::new(iter.map(|x| (x, &())));
         for priority in unsorted {
-            self.0.internal_add(priority.into_range_value().0, ());
+            self.0.internal_add(priority.into_range(), ());
         }
     }
 }
