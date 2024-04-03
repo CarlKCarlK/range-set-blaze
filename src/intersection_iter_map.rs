@@ -132,10 +132,13 @@ where
             else {
                 return None;
             };
+            let (current_range_start, current_range_end) = current_range.into_inner();
+            let (current_range_value_start, current_range_value_end) =
+                (&current_range_value).0.clone().into_inner();
             // println!("cmk {:?} {:?}", current_range, current_range_value.range);
 
             // if current_range ends before current_range_value, clear it and loop for a new value.
-            if current_range.end() < current_range_value.0.start() {
+            if current_range_end < current_range_value_start {
                 // println!("cmk getting new range");
                 self.current_range = None;
                 self.current_range_value = Some(current_range_value);
@@ -144,23 +147,21 @@ where
 
             // if current_range_value ends before current_range, clear it and loop for a new value.
             // cmk00 do I want to assign .0 to something?
-            if current_range_value.0.end() < current_range.start() {
+            if current_range_value_end < current_range_start {
                 // println!("cmk getting new range value");
-                self.current_range = Some(current_range);
+                self.current_range =
+                    Some(RangeInclusive::new(current_range_start, current_range_end));
                 self.current_range_value = None;
                 continue;
             }
 
             // Thus, they overlap
-            let start = *max(current_range.start(), current_range_value.0.start());
-            let end = *min(current_range.end(), current_range_value.0.end());
+            let start = max(current_range_start, current_range_value_start);
+            let end = min(current_range_end, current_range_value_end);
 
             // remove any ranges that match "end" and set them None
 
-            let value = match (
-                *current_range.end() == end,
-                *current_range_value.0.end() == end,
-            ) {
+            let value = match (current_range_end == end, current_range_value_end == end) {
                 (true, true) => {
                     self.current_range = None;
                     self.current_range_value = None;
@@ -173,7 +174,8 @@ where
                     value
                 }
                 (false, true) => {
-                    self.current_range = Some(current_range);
+                    self.current_range =
+                        Some(RangeInclusive::new(current_range_start, current_range_end));
                     self.current_range_value = None;
                     current_range_value.1
                 }
