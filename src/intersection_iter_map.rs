@@ -49,7 +49,7 @@ where
     iter_set: IS,
     current_range: Option<RangeInclusive<T>>,
     current_range_value: Option<(RangeInclusive<T>, VR)>,
-    phantom: PhantomData<V>, // cmk000 see if needed
+    phantom: PhantomData<V>,
 }
 
 impl<'a, T, V, VR, IM, IS> IntersectionIterMap<T, V, VR, IM, IS>

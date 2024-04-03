@@ -1827,7 +1827,7 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     }
 }
 
-// cmk0000 is this still needed?
+/// doc
 pub struct UniqueValue<V>
 where
     V: ValueOwned,
