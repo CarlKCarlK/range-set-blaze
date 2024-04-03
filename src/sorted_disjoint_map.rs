@@ -186,17 +186,17 @@ where
 /// assert!(a.to_string() == "1..=3, 100..=100");
 ///
 /// // CheckSortedDisjointMap -- unsorted or overlapping input ranges will cause a panic.
-/// let a = CheckSortedDisjointMap::from([1..=3, 100..=100]);
+/// let a = CheckSortedDisjointMap::new([1..=3, 100..=100]);
 /// assert!(a.to_string() == "1..=3, 100..=100");
 ///
 /// // tee of a SortedDisjointMap iterator
-/// let a = CheckSortedDisjointMap::from([1..=3, 100..=100]);
+/// let a = CheckSortedDisjointMap::new([1..=3, 100..=100]);
 /// let (a, b) = a.tee();
 /// assert!(a.to_string() == "1..=3, 100..=100");
 /// assert!(b.to_string() == "1..=3, 100..=100");
 ///
 /// // DynamicSortedDisjointMap of a SortedDisjointMap iterator
-/// let a = CheckSortedDisjointMap::from([1..=3, 100..=100]);
+/// let a = CheckSortedDisjointMap::new([1..=3, 100..=100]);
 /// let b = DynSortedDisjointMap::new(a);
 /// assert!(b.to_string() == "1..=3, 100..=100");
 /// ```
@@ -235,7 +235,7 @@ where
 /// // '|' operator and 'equal' method
 /// let (a, b) = (a0.ranges(), b0.ranges());
 /// let result = a | b;
-/// assert!(result.equal(CheckSortedDisjointMap::from([1..=100])));
+/// assert!(result.equal(CheckSortedDisjointMap::new([1..=100])));
 ///
 /// // multiway union of same type
 /// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
@@ -314,7 +314,7 @@ where
 /// use range_set_blaze::prelude::*;
 ///
 /// let weekends = OrdinalWeekends2023::new();
-/// let september = CheckSortedDisjointMap::from([244..=273]);
+/// let september = CheckSortedDisjointMap::new([244..=273]);
 /// let september_weekdays = september.intersection(weekends.complement());
 /// assert_eq!(
 ///     september_weekdays.to_string(),
@@ -344,14 +344,14 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjointMap::from([1..=1]);
+    /// let a = CheckSortedDisjointMap::new([1..=1]);
     /// let b = RangeMapBlaze::from_iter([2..=2]).into_ranges();
     /// let union = a.union(b);
     /// assert_eq!(union.to_string(), "1..=2");
     ///
     /// // Alternatively, we can use "|" because CheckSortedDisjointMap defines
     /// // ops::bitor as SortedDisjointMap::union.
-    /// let a = CheckSortedDisjointMap::from([1..=1]);
+    /// let a = CheckSortedDisjointMap::new([1..=1]);
     /// let b = RangeMapBlaze::from_iter([2..=2]).into_ranges();
     /// let union = a | b;
     /// assert_eq!(union.to_string(), "1..=2");
@@ -377,14 +377,14 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let a = CheckSortedDisjointMap::new([1..=2]);
     /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
     /// let intersection = a.intersection(b);
     /// assert_eq!(intersection.to_string(), "2..=2");
     ///
     /// // Alternatively, we can use "&" because CheckSortedDisjointMap defines
     /// // ops::bitand as SortedDisjointMap::intersection.
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let a = CheckSortedDisjointMap::new([1..=2]);
     /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
     /// let intersection = a & b;
     /// assert_eq!(intersection.to_string(), "2..=2");
@@ -413,14 +413,14 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let a = CheckSortedDisjointMap::new([1..=2]);
     /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
     /// let intersection = a.intersection(b);
     /// assert_eq!(intersection.to_string(), "2..=2");
     ///
     /// // Alternatively, we can use "&" because CheckSortedDisjointMap defines
     /// // ops::bitand as SortedDisjointMap::intersection.
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let a = CheckSortedDisjointMap::new([1..=2]);
     /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
     /// let intersection = a & b;
     /// assert_eq!(intersection.to_string(), "2..=2");
@@ -445,14 +445,14 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let a = CheckSortedDisjointMap::new([1..=2]);
     /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
     /// let difference = a.difference(b);
     /// assert_eq!(difference.to_string(), "1..=1");
     ///
     /// // Alternatively, we can use "-" because CheckSortedDisjointMap defines
     /// // ops::sub as SortedDisjointMap::difference.
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let a = CheckSortedDisjointMap::new([1..=2]);
     /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
     /// let difference = a - b;
     /// assert_eq!(difference.to_string(), "1..=1");
@@ -481,14 +481,14 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let a = CheckSortedDisjointMap::new([1..=2]);
     /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
     /// let difference = a.difference(b);
     /// assert_eq!(difference.to_string(), "1..=1");
     ///
     /// // Alternatively, we can use "-" because CheckSortedDisjointMap defines
     /// // ops::sub as SortedDisjointMap::difference.
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let a = CheckSortedDisjointMap::new([1..=2]);
     /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
     /// let difference = a - b;
     /// assert_eq!(difference.to_string(), "1..=1");
@@ -535,14 +535,14 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let a = CheckSortedDisjointMap::new([1..=2]);
     /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
     /// let symmetric_difference = a.symmetric_difference(b);
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     ///
     /// // Alternatively, we can use "^" because CheckSortedDisjointMap defines
     /// // ops::bitxor as SortedDisjointMap::symmetric_difference.
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let a = CheckSortedDisjointMap::new([1..=2]);
     /// let b = RangeMapBlaze::from_iter([2..=3]).into_ranges();
     /// let symmetric_difference = a ^ b;
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
@@ -566,7 +566,7 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjointMap::from([1..=2]);
+    /// let a = CheckSortedDisjointMap::new([1..=2]);
     /// let b = RangeMapBlaze::from_iter([1..=2]).into_ranges();
     /// assert!(a.equal(b));
     /// ```
@@ -621,16 +621,16 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let sup = CheckSortedDisjointMap::from([1..=3]);
+    /// let sup = CheckSortedDisjointMap::new([1..=3]);
     /// let set: CheckSortedDisjointMap<i32, _> = [].into();
     /// assert_eq!(set.is_subset(sup), true);
     ///
-    /// let sup = CheckSortedDisjointMap::from([1..=3]);
-    /// let set = CheckSortedDisjointMap::from([2..=2]);
+    /// let sup = CheckSortedDisjointMap::new([1..=3]);
+    /// let set = CheckSortedDisjointMap::new([2..=2]);
     /// assert_eq!(set.is_subset(sup), true);
     ///
-    /// let sup = CheckSortedDisjointMap::from([1..=3]);
-    /// let set = CheckSortedDisjointMap::from([2..=2, 4..=4]);
+    /// let sup = CheckSortedDisjointMap::new([1..=3]);
+    /// let set = CheckSortedDisjointMap::new([2..=2, 4..=4]);
     /// assert_eq!(set.is_subset(sup), false);
     /// ```
     // #[must_use]
@@ -715,8 +715,8 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a0 = RangeMapBlaze::from_sorted_disjoint(CheckSortedDisjointMap::from([-10..=-5, 1..=2]));
-    /// let a1: RangeMapBlaze<i32> = CheckSortedDisjointMap::from([-10..=-5, 1..=2]).into_range_set_blaze();
+    /// let a0 = RangeMapBlaze::from_sorted_disjoint(CheckSortedDisjointMap::new([-10..=-5, 1..=2]));
+    /// let a1: RangeMapBlaze<i32> = CheckSortedDisjointMap::new([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
     fn into_range_map_blaze(self) -> RangeMapBlaze<T, V>
@@ -740,8 +740,8 @@ where
 // /// ```
 // /// use range_set_blaze::prelude::*;
 // ///
-// /// let a = CheckSortedDisjointMap::new(vec![1..=2, 5..=100].into_iter());
-// /// let b = CheckSortedDisjointMap::from([2..=6]);
+// /// let a = CheckSortedDisjointMap::new(vec![1..=2, 5..=100]);
+// /// let b = CheckSortedDisjointMap::new([2..=6]);
 // /// let union = a | b;
 // /// assert_eq!(union.to_string(), "1..=100");
 // /// ```
@@ -750,8 +750,8 @@ where
 // ///```should_panic
 // /// use range_set_blaze::prelude::*;
 // ///
-// /// let a = CheckSortedDisjointMap::new(vec![1..=2, 5..=100].into_iter());
-// /// let b = CheckSortedDisjointMap::from([2..=6,-10..=-5]);
+// /// let a = CheckSortedDisjointMap::new(vec![1..=2, 5..=100]);
+// /// let b = CheckSortedDisjointMap::new([2..=6,-10..=-5]);
 // /// let union = a | b;
 // /// assert_eq!(union.to_string(), "1..=100");
 // /// ```
@@ -859,7 +859,7 @@ where
 //     /// ```
 //     /// use range_set_blaze::prelude::*;
 //     ///
-//     /// let a0 = CheckSortedDisjointMap::from([1..=3, 100..=100]);
+//     /// let a0 = CheckSortedDisjointMap::new([1..=3, 100..=100]);
 //     /// let a1: CheckSortedDisjointMap<_,_> = [1..=3, 100..=100].into();
 //     /// assert_eq!(a0.to_string(), "1..=3, 100..=100");
 //     /// assert_eq!(a1.to_string(), "1..=3, 100..=100");

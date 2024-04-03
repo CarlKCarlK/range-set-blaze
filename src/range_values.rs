@@ -186,7 +186,6 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             // If no next value, return whatever is current (could be None)
-            // cmk000 rename next_range_value
             let Some(next_range_value) = self.iter.next() else {
                 return self.option_ranges.take();
             };

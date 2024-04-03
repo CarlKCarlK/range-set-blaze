@@ -2279,27 +2279,26 @@ fn understand_strings_as_values() {
     let a: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=0, "a")]);
     let mut b: RangeValuesIter<i32, &str> = a.range_values();
     let _c: &&str = b.next().unwrap().1;
-    let mut b: IntoRangeValuesIter<i32, &str> = a.into_pairs();
+    let mut b: IntoRangeValuesIter<i32, &str> = a.into_range_values();
     let _c: &str = b.next().unwrap().1;
 
     let a: RangeMapBlaze<i32, String> = RangeMapBlaze::from_iter([(0..=0, "a".to_string())]);
     let mut b: RangeValuesIter<i32, String> = a.range_values();
     let _c: &String = b.next().unwrap().1;
-    let mut b: IntoRangeValuesIter<i32, String> = a.into_pairs();
+    let mut b: IntoRangeValuesIter<i32, String> = a.into_range_values();
     let _c: String = b.next().unwrap().1;
 
     // You can get all the same types via CheckSortedDisjointMap, but values are always (clonable) references.
     let a_string = "a".to_string();
-    let _: CheckSortedDisjointMap<i32, &str, &&str, _> =
-        CheckSortedDisjointMap::from_pairs([(0..=0, &"a")].into_iter());
+    let _: CheckSortedDisjointMap<i32, &str, &&str, _> = [(0..=0, &"a")].into();
     let mut b: CheckSortedDisjointMap<i32, String, &String, _> =
-        CheckSortedDisjointMap::from_pairs([(0..=0, &a_string)].into_iter());
+        CheckSortedDisjointMap::from([(0..=0, &a_string)]);
     let c: &String = b.next().unwrap().1;
     let _c_clone: String = c.clone();
     let _: CheckSortedDisjointMap<i32, &String, &&String, _> =
-        CheckSortedDisjointMap::from_pairs([(0..=0, &&a_string)].into_iter());
+        CheckSortedDisjointMap::new([(0..=0, &&a_string)]);
     let _: CheckSortedDisjointMap<i32, String, &String, _> =
-        CheckSortedDisjointMap::from_pairs([(0..=0, &"a".to_string())].into_iter());
+        CheckSortedDisjointMap::new([(0..=0, &"a".to_string())]);
 }
 
 #[test]
@@ -2311,25 +2310,25 @@ fn test_every_sorted_disjoint_map_method() {
     macro_rules! fresh_instances {
         () => {{
             let a: CheckSortedDisjointMap<i32, &str, _, _> =
-                CheckSortedDisjointMap::from_pairs([(1..=2, &"a"), (5..=100, &"a")].into_iter());
-            let b: UnionIterMap<i32, &str, _, _> = [CheckSortedDisjointMap::from_pairs(
-                [(1..=2, &"a"), (5..=100, &"a")].into_iter(),
+                CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+            let b: UnionIterMap<i32, &str, _, _> = [CheckSortedDisjointMap::new(
+                [(1..=2, &"a"), (5..=100, &"a")],
             )]
             .union();
-            let c: IntersectionIterMap<i32, &str, _, _, _> = [CheckSortedDisjointMap::from_pairs(
-                [(1..=2, &"a"), (5..=100, &"a")].into_iter(),
+            let c: IntersectionIterMap<i32, &str, _, _, _> = [CheckSortedDisjointMap::new(
+                [(1..=2, &"a"), (5..=100, &"a")],
             )]
             .intersection();
-            let d: SymDiffIterMap<i32, &str, _, _> = [CheckSortedDisjointMap::from_pairs(
-                [(1..=2, &"a"), (5..=100, &"a")].into_iter(),
+            let d: SymDiffIterMap<i32, &str, _, _> = [CheckSortedDisjointMap::new(
+                [(1..=2, &"a"), (5..=100, &"a")],
             )]
             .symmetric_difference();
             let e: RangeValuesIter<i32, &str> = e0.range_values();
             let f: DynSortedDisjointMap<i32, &str, _> = DynSortedDisjointMap::new(
-                CheckSortedDisjointMap::from_pairs([(1..=2, &"a"), (5..=100, &"a")].into_iter()),
+                CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]),
             );
             let g: SortedDisjointToUnitMap<i32, _> =
-                SortedDisjointToUnitMap::new(CheckSortedDisjoint::new(vec![1..=2, 5..=100]));
+                SortedDisjointToUnitMap::new(CheckSortedDisjoint::new(vec![1..=2, 5..=100])); // cmk do we need vec! here?
 
             (a, b, c, d, e, f, g)
         }};
@@ -2364,57 +2363,57 @@ fn test_every_sorted_disjoint_map_method() {
     // Union
     let (a, b, c, d, e, f, g) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, d, e, f] {$(
-        let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::from_pairs([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")].into_iter());
+        let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
         let z = $sd | z;
-        assert!(z.equal(CheckSortedDisjointMap::from_pairs([(-1..=0, &"z"), (1..=2, &"a"), (5..=100, &"a"), (1000..=10000, &"z")].into_iter())));
+        assert!(z.equal(CheckSortedDisjointMap::new([(-1..=0, &"z"), (1..=2, &"a"), (5..=100, &"a"), (1000..=10000, &"z")])));
     )*}}
     syntactic_for! { sd in [g] {$(
-        let z = CheckSortedDisjointMap::from_pairs([(-1..=0,&()), (50..=50, &()),(1000..=10_000,&())].into_iter());
+        let z = CheckSortedDisjointMap::new([(-1..=0,&()), (50..=50, &()),(1000..=10_000,&())]);
         let z = $sd | z;
-        assert!(z.equal(CheckSortedDisjointMap::from_pairs([(-1..=2, &()), (5..=100, &()), (1000..=10000, &())].into_iter())));
+        assert!(z.equal(CheckSortedDisjointMap::new([(-1..=2, &()), (5..=100, &()), (1000..=10000, &())])));
     )*}}
 
     // Intersection
     let (a, b, c, d, e, f, g) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, d, e, f] {$(
-        let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::from_pairs([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")].into_iter());
+        let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
         let z = $sd & z;
         // println!("{}", z.to_string());
-        assert!(z.equal(CheckSortedDisjointMap::from_pairs([(50..=50, &"a")].into_iter())));
+        assert!(z.equal(CheckSortedDisjointMap::new([(50..=50, &"a")])));
     )*}}
     syntactic_for! { sd in [g] {$(
-        let z = CheckSortedDisjointMap::from_pairs([(-1..=0,&()), (50..=50, &()),(1000..=10_000,&())].into_iter());
+        let z = CheckSortedDisjointMap::new([(-1..=0,&()), (50..=50, &()),(1000..=10_000,&())]);
         let z = $sd & z;
-        assert!(z.equal(CheckSortedDisjointMap::from_pairs([(50..=50, &())].into_iter())));
+        assert!(z.equal(CheckSortedDisjointMap::new([(50..=50, &())])));
     )*}}
 
     // Symmetric Difference
     let (a, b, c, d, e, f, g) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, d, e,f] {$(
-        let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::from_pairs([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")].into_iter());
+        let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
         let z = $sd ^ z;
         // println!("a {}", z.to_string());
-        assert!(z.equal(CheckSortedDisjointMap::from_pairs([(-1..=0, &"z"), (1..=2, &"a"), (5..=49, &"a"), (51..=100, &"a"), (1000..=10000, &"z")].into_iter())));
+        assert!(z.equal(CheckSortedDisjointMap::new([(-1..=0, &"z"), (1..=2, &"a"), (5..=49, &"a"), (51..=100, &"a"), (1000..=10000, &"z")])));
     )*}}
     syntactic_for! { sd in [g] {$(
-        let z = CheckSortedDisjointMap::from_pairs([(-1..=0,&()), (50..=50, &()),(1000..=10_000,&())].into_iter());
+        let z = CheckSortedDisjointMap::new([(-1..=0,&()), (50..=50, &()),(1000..=10_000,&())]);
         let z = $sd ^ z;
         // println!("b {}", z.to_string());
-        assert!(z.equal(CheckSortedDisjointMap::from_pairs([(-1..=2, &()), (5..=49, &()), (51..=100, &()), (1000..=10000, &())].into_iter())));
+        assert!(z.equal(CheckSortedDisjointMap::new([(-1..=2, &()), (5..=49, &()), (51..=100, &()), (1000..=10000, &())])));
     )*}}
 
     let (a, b, c, d, e, f, g) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, d, e,f] {$(
-        let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::from_pairs([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")].into_iter());
+        let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
         let z = $sd - z;
         // println!("c {}", z.to_string());
-        assert!(z.equal(CheckSortedDisjointMap::from_pairs([(1..=2, &"a"), (5..=49, &"a"), (51..=100, &"a")].into_iter())));
+        assert!(z.equal(CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=49, &"a"), (51..=100, &"a")])));
     )*}}
     syntactic_for! { sd in [g] {$(
-        let z = CheckSortedDisjointMap::from_pairs([(-1..=0,&()), (50..=50, &()),(1000..=10_000,&())].into_iter());
+        let z = CheckSortedDisjointMap::new([(-1..=0,&()), (50..=50, &()),(1000..=10_000,&())]);
         let z = $sd - z;
         // println!("d {}", z.to_string());
-        assert!(z.equal(CheckSortedDisjointMap::from_pairs([(1..=2, &()), (5..=49, &()), (51..=100, &())].into_iter())));
+        assert!(z.equal(CheckSortedDisjointMap::new([(1..=2, &()), (5..=49, &()), (51..=100, &())])));
     )*}}
 }
 // cmk0 implement get, values, values_mut, range,

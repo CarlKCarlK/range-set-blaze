@@ -597,6 +597,7 @@ where
     seen_none: bool,
 }
 
+// cmk0 change new to accept into_iter. Update from/into to use the new new and update examples
 impl<T, I> CheckSortedDisjoint<T, I>
 where
     T: Integer,

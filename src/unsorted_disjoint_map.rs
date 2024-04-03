@@ -285,29 +285,6 @@ where
     }
 }
 
-/// cmk doc mostly for internal use. Does not check that the ranges are disjoint and sorted.
-pub struct TupleToRangeValueIter<'a, T, V, I>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-    I: Iterator<Item = (RangeInclusive<T>, &'a V)>,
-{
-    iter: I,
-}
-
-impl<'a, T, V, I> Iterator for TupleToRangeValueIter<'a, T, V, I>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-    I: Iterator<Item = (RangeInclusive<T>, &'a V)>,
-{
-    type Item = (RangeInclusive<T>, &'a V);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(range, value)| (range, value))
-    }
-}
-
 /// Gives any iterator of cmk implements the [`SortedDisjointMap`] trait without any checking.
 // cmk0 why was this hidden? check for others#[doc(hidden)]
 /// doc
@@ -332,9 +309,12 @@ where
     VR: CloneBorrow<V>,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
-    pub fn new(iter: I) -> Self {
+    pub fn new<J>(iter: J) -> Self
+    where
+        J: IntoIterator<Item = (RangeInclusive<T>, VR), IntoIter = I>,
+    {
         CheckSortedDisjointMap {
-            iter,
+            iter: iter.into_iter(),
             seen_none: false,
             previous: None,
             phantom_data: PhantomData,
@@ -342,18 +322,18 @@ where
     }
 }
 
-impl<'a, T, V, J> CheckSortedDisjointMap<T, V, &'a V, TupleToRangeValueIter<'a, T, V, J>>
+impl<T, V, VR, I, J> From<J> for CheckSortedDisjointMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
-    J: Iterator<Item = (RangeInclusive<T>, &'a V)>,
+    VR: CloneBorrow<V>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
+    J: IntoIterator<Item = (RangeInclusive<T>, VR), IntoIter = I>,
 {
-    pub fn from_pairs(iter: J) -> Self {
-        let iter = TupleToRangeValueIter { iter };
+    fn from(iter: J) -> Self {
         CheckSortedDisjointMap::new(iter)
     }
 }
-
 // implement fused
 impl<T, V, VR, I> FusedIterator for CheckSortedDisjointMap<T, V, VR, I>
 where
