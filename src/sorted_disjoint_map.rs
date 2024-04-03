@@ -1,5 +1,4 @@
 use crate::map::BitSubRangesMap;
-use crate::map::UniqueValue;
 use crate::range_set_blaze::SortedDisjointToUnitMap;
 use crate::range_values::IntoRangeValuesIter;
 use crate::range_values::RangeValuesIter;
@@ -24,7 +23,6 @@ use core::marker::PhantomData;
 // };
 use crate::map::BitAndRangesMap;
 use crate::NotIter;
-use core::fmt;
 use std::ops;
 
 use crate::intersection_iter_map::IntersectionIterMap;
@@ -36,80 +34,81 @@ use core::ops::RangeInclusive;
 // cmk hey, about a method that gets the range or a clone of the value?
 // cmk should this be pub/crate or replaced with a tuple?
 /// cmk doc
-pub struct RangeValue<T, V, VR>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-{
-    /// cmk doc
-    pub range: RangeInclusive<T>,
-    /// cmk doc
-    pub value: VR,
-    phantom: PhantomData<V>,
-}
+// pub struct RangeValue<T, V, VR>
+// where
+//     T: Integer,
+//     V: ValueOwned,
+//     VR: CloneBorrow<V>,
+// {
+//     /// cmk doc
+//     pub range: RangeInclusive<T>,
+//     /// cmk doc
+//     pub value: VR,
+//     phantom: PhantomData<V>,
+// }
 
-impl<'a, T, V, VR> RangeValue<T, V, VR>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-{
-    /// cmk doc
-    pub fn new(range: RangeInclusive<T>, value: VR) -> Self {
-        RangeValue {
-            range,
-            value,
-            phantom: PhantomData,
-        }
-    }
-}
+// impl<'a, T, V, VR> RangeValue<T, V, VR>
+// where
+//     T: Integer,
+//     V: ValueOwned + 'a,
+//     VR: CloneBorrow<V> + 'a,
+// {
+//     /// cmk doc
+//     pub fn new(range: RangeInclusive<T>, value: VR) -> Self {
+//         RangeValue {
+//             range,
+//             value,
+//             phantom: PhantomData,
+//         }
+//     }
+// }
 
-impl<'a, T, V> RangeValue<T, V, UniqueValue<V>>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-{
-    /// cmk doc
-    pub fn new_unique(range: RangeInclusive<T>, v: V) -> Self {
-        RangeValue::new(range, UniqueValue::new(v))
-    }
-}
+// impl<'a, T, V> RangeValue<T, V, UniqueValue<V>>
+// where
+//     T: Integer,
+//     V: ValueOwned + 'a,
+// {
+//     /// cmk doc
+//     pub fn new_unique(range: RangeInclusive<T>, v: V) -> Self {
+//         (range, UniqueValue::new(v))
+//     }
+// }
 
-impl<'a, T, V, VR> fmt::Debug for RangeValue<T, V, VR>
-where
-    T: Integer + fmt::Debug, // Ensure T also implements Debug for completeness.
-    V: ValueOwned + fmt::Debug + 'a, // Add Debug bound for V.
-    VR: CloneBorrow<V> + 'a,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("RangeValue")
-            .field("range", &self.range)
-            .field("value", self.value.borrow())
-            .finish()
-    }
-}
+// impl<'a, T, V, VR> fmt::Debug for RangeValue<T, V, VR>
+// where
+//     T: Integer + fmt::Debug, // Ensure T also implements Debug for completeness.
+//     V: ValueOwned + fmt::Debug + 'a, // Add Debug bound for V.
+//     VR: CloneBorrow<V> + 'a,
+// {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         f.debug_struct("RangeValue")
+//             .field("range", &self.range)
+//             .field("value", self.1.borrow())
+//             .finish()
+//     }
+// }
 
-// implement the clone trait for RangeValue
-impl<'a, T, V, VR> Clone for RangeValue<T, V, VR>
-where
-    T: Integer,
-    V: ValueOwned + Clone + 'a,
-    VR: CloneBorrow<V> + 'a,
-{
-    fn clone(&self) -> Self {
-        RangeValue {
-            range: self.range.clone(),
-            value: self.value.clone_borrow(), // cmk00 is this correct?
-            phantom: PhantomData,
-        }
-    }
-}
+// // implement the clone trait for RangeValue
+// impl<'a, T, V, VR> Clone for RangeValue<T, V, VR>
+// where
+//     T: Integer,
+//     V: ValueOwned + Clone + 'a,
+//     VR: CloneBorrow<V> + 'a,
+// {
+//     fn clone(&self) -> Self {
+//         RangeValue {
+//             range: self.range.clone(),
+//             value: self.1.clone_borrow(), // cmk00 is this correct?
+//             phantom: PhantomData,
+//         }
+//     }
+// }
 
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
-#[doc(hidden)]
-pub trait SortedStartsMap<T, V, VR>: Iterator<Item = RangeValue<T, V, VR>> + FusedIterator
+#[doc(hidden)] // cmk don't hide so much stuff.ks
+pub trait SortedStartsMap<T, V, VR>:
+    Iterator<Item = (RangeInclusive<T>, VR)> + FusedIterator
 where
     T: Integer,
     V: ValueOwned,
@@ -135,6 +134,7 @@ where
     VR: CloneBorrow<V>,
 {
 }
+
 /// The trait used to mark iterators that provide ranges that are sorted by start and disjoint. Set operations on
 /// iterators that implement this trait can be performed in linear time.
 ///
@@ -577,7 +577,20 @@ where
         R::IntoIter: SortedDisjointMap<T, V, VR>,
         Self: Sized,
     {
-        itertools::equal(self, other.into_iter())
+        use itertools::Itertools;
+
+        self.zip_longest(other.into_iter()).all(|pair| {
+            match pair {
+                itertools::EitherOrBoth::Both(
+                    (self_range, self_value),
+                    (other_range, other_value),
+                ) => {
+                    // Place your custom equality logic here for matching elements
+                    self_range == other_range && self_value.borrow() == other_value.borrow()
+                }
+                _ => false, // Handles the case where iterators are of different lengths
+            }
+        })
     }
 
     /// Returns `true` if the set contains no elements.
@@ -936,8 +949,7 @@ where
 {
     fn to_string(self) -> String {
         self.map(|range_value| {
-            let range = range_value.range;
-            let value = range_value.value;
+            let (range, value) = range_value;
             format!("({:?}, {:?})", range, value.borrow())
         })
         .collect::<Vec<_>>()
@@ -961,25 +973,25 @@ where
 // {
 // }
 
-impl<'a, T, V, VR> PartialEq for RangeValue<T, V, VR>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-{
-    fn eq(&self, other: &Self) -> bool {
-        self.range == other.range && self.value.borrow() == other.value.borrow()
-    }
-}
+// impl<'a, T, V, VR> PartialEq for RangeValue<T, V, VR>
+// where
+//     T: Integer,
+//     V: ValueOwned + 'a,
+//     VR: CloneBorrow<V> + 'a,
+// {
+//     fn eq(&self, other: &Self) -> bool {
+//         self.range == other.range && self.1.borrow() == other.1.borrow()
+//     }
+// }
 
-// Implement `Eq` because `BinaryHeap` requires it.
-impl<'a, T, V, VR> Eq for RangeValue<T, V, VR>
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-{
-}
+// // Implement `Eq` because `BinaryHeap` requires it.
+// impl<'a, T, V, VR> Eq for RangeValue<T, V, VR>
+// where
+//     T: Integer,
+//     V: ValueOwned + 'a,
+//     VR: CloneBorrow<V> + 'a,
+// {
+// }
 
 /// cmk doc
 #[derive(Clone, Debug)]
@@ -989,8 +1001,9 @@ where
     V: ValueOwned,
     VR: CloneBorrow<V>,
 {
-    pub(crate) range_value: RangeValue<T, V, VR>,
+    pub(crate) range_value: (RangeInclusive<T>, VR),
     pub(crate) priority_number: usize,
+    phantom_data: PhantomData<V>,
 }
 
 // new
@@ -1001,10 +1014,11 @@ where
     VR: CloneBorrow<V>,
 {
     /// cmk doc
-    pub fn new(range_value: RangeValue<T, V, VR>, priority_number: usize) -> Self {
+    pub fn new(range_value: (RangeInclusive<T>, VR), priority_number: usize) -> Self {
         Self {
             range_value,
             priority_number,
+            phantom_data: PhantomData,
         }
     }
 }
@@ -1096,12 +1110,10 @@ where
     V: ValueOwned,
     I: SortedDisjoint<T>,
 {
-    type Item = RangeValue<T, V, &'a V>;
+    type Item = (RangeInclusive<T>, &'a V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner
-            .next()
-            .map(|range| RangeValue::new(range, self.value))
+        self.inner.next().map(|range| (range, self.value))
     }
 }
 
@@ -1122,7 +1134,7 @@ where
 }
 
 pub trait AnythingGoesMap<'a, T: Integer, V: ValueOwned + 'a, VR: CloneBorrow<V> + 'a>:
-    Iterator<Item = RangeValue<T, V, VR>>
+    Iterator<Item = (RangeInclusive<T>, VR)>
 {
 }
 
@@ -1131,7 +1143,7 @@ where
     T: Integer,
     V: ValueOwned + 'a,
     VR: CloneBorrow<V> + 'a,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
 }
 
@@ -1215,7 +1227,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
 }
 
 // cmk000 why Assume and not Checked?
-impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, V, VR, I>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I: Iterator<Item = RangeValue<T, V, VR>>);
+impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, V, VR, I>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
 impl_sorted_map_traits_and_ops!(UnionIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap< T, V, VR, I0, I1>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I0: SortedDisjointMap<T, V, VR>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
@@ -1246,13 +1258,13 @@ fn understand_strings_as_values() {
     // cmk00 Is there also a .into_values() and .into_ranges() and .into_keys(), etc?
     let a: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=0, "a")]);
     let mut b: RangeValuesIter<i32, &str> = a.range_values();
-    let c: &&str = b.next().unwrap().value;
+    let c: &&str = b.next().unwrap().1;
     let mut b: IntoRangeValuesIter<i32, &str> = a.into_pairs();
     let c: &str = b.next().unwrap().1;
 
     let a: RangeMapBlaze<i32, String> = RangeMapBlaze::from_iter([(0..=0, "a".to_string())]);
     let mut b: RangeValuesIter<i32, String> = a.range_values();
-    let c: &String = b.next().unwrap().value;
+    let c: &String = b.next().unwrap().1;
     let mut b: IntoRangeValuesIter<i32, String> = a.into_pairs();
     let c: String = b.next().unwrap().1;
 
@@ -1262,7 +1274,7 @@ fn understand_strings_as_values() {
         CheckSortedDisjointMap::from_pairs([(0..=0, &"a")].into_iter());
     let mut b: CheckSortedDisjointMap<i32, String, &String, _> =
         CheckSortedDisjointMap::from_pairs([(0..=0, &a_string)].into_iter());
-    let c: &String = b.next().unwrap().value;
+    let c: &String = b.next().unwrap().1;
     let c_clone: String = c.clone();
     let _: CheckSortedDisjointMap<i32, &String, &&String, _> =
         CheckSortedDisjointMap::from_pairs([(0..=0, &&a_string)].into_iter());

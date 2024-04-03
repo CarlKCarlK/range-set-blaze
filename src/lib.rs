@@ -82,7 +82,6 @@ pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 pub use merge_map::MergeMap; // cmk KMergeMap
 mod merge_map;
 mod not_iter_map;
-pub use crate::sorted_disjoint_map::RangeValue;
 pub use not_iter::NotIter;
 use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, WrappingSub};
 #[cfg(feature = "rog-experimental")]

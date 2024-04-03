@@ -1,4 +1,4 @@
-use core::{cmp::min, iter::FusedIterator};
+use core::{cmp::min, iter::FusedIterator, ops::RangeInclusive};
 
 use alloc::collections::BinaryHeap;
 
@@ -6,7 +6,7 @@ use crate::{
     map::{CloneBorrow, ValueOwned},
     merge_map::KMergeMap,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
-    Integer, MergeMap, RangeValue, SortedDisjointMap, SymDiffIterMapKMerge, SymDiffIterMapMerge,
+    Integer, MergeMap, SortedDisjointMap, SymDiffIterMapKMerge, SymDiffIterMapMerge,
 };
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
@@ -47,19 +47,19 @@ where
     next_item: Option<Priority<T, V, VR>>,
     workspace: BinaryHeap<Priority<T, V, VR>>,
     workspace_next_end: Option<T>,
-    gather: Option<RangeValue<T, V, VR>>,
-    ready_to_go: Option<RangeValue<T, V, VR>>,
+    gather: Option<(RangeInclusive<T>, VR)>,
+    ready_to_go: Option<(RangeInclusive<T>, VR)>,
 }
 
-fn min_next_end<T, V, VR>(next_end: &Option<T>, next_item: &RangeValue<T, V, VR>) -> Option<T>
+fn min_next_end<T, V, VR>(next_end: &Option<T>, next_item: &(RangeInclusive<T>, VR)) -> Option<T>
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
 {
     Some(next_end.map_or_else(
-        || *next_item.range.end(),
-        |current_end| std::cmp::min(current_end, *next_item.range.end()),
+        || *next_item.0.end(),
+        |current_end| std::cmp::min(current_end, *next_item.0.end()),
     ))
 }
 
@@ -79,26 +79,26 @@ where
     VR: CloneBorrow<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {
-    type Item = RangeValue<T, V, VR>;
+    type Item = (RangeInclusive<T>, VR);
 
-    fn next(&mut self) -> Option<RangeValue<T, V, VR>> {
+    fn next(&mut self) -> Option<(RangeInclusive<T>, VR)> {
         // Keep doing this until we have something to return.
         loop {
             if let Some(value) = self.ready_to_go.take() {
                 // If ready_to_go is Some, return the value immediately.
-                // println!("cmk output1 range {:?}", value.range);
+                // println!("cmk output1 range {:?}", value.0);
                 return Some(value);
             };
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
-                let (next_start, _next_end) = next_item.range_value.range.clone().into_inner();
+                let (next_start, _next_end) = next_item.range_value.0.clone().into_inner();
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
                     // println!(
                     //     "cmk pushing self.next_item {:?} into empty workspace",
-                    //     next_item.range
+                    //     next_item.0
                     // );
                     self.workspace_next_end =
                         min_next_end(&self.workspace_next_end, &next_item.range_value);
@@ -112,7 +112,7 @@ where
                     continue; // return to top of the main processing loop
                 };
                 let best = &best.range_value;
-                if next_start == *best.range.start() {
+                if next_start == *best.0.start() {
                     // Always push (this differs from UnionIterMap)
                     self.workspace_next_end =
                         min_next_end(&self.workspace_next_end, &next_item.range_value);
@@ -124,7 +124,7 @@ where
                 // It does not go into the workspace, so just hold it and keep processing.
                 // println!(
                 //     "cmk new start, so hold self.next_item {:?} for later",
-                //     next_item.range
+                //     next_item.0
                 // );
                 self.next_item = Some(next_item);
             }
@@ -146,23 +146,23 @@ where
             // unwrap() is safe because we know the workspace is not empty
             let mut next_end = self.workspace_next_end.take().unwrap();
             if let Some(next_item) = self.next_item.as_ref() {
-                next_end = min(*next_item.range_value.range.start() - T::one(), next_end);
+                next_end = min(*next_item.range_value.0.start() - T::one(), next_end);
             }
 
             // Add the front of best to the gather buffer.
             if let Some(mut gather) = self.gather.take() {
-                if gather.value.borrow() == best.value.borrow()
-                    && *gather.range.end() + T::one() == *best.range.start()
+                if gather.1.borrow() == best.1.borrow()
+                    && *gather.0.end() + T::one() == *best.0.start()
                 {
                     if self.workspace.len() % 2 == 1 {
                         // if the gather is contiguous with the best, then merge them
-                        gather.range = *gather.range.start()..=next_end;
+                        gather.0 = *gather.0.start()..=next_end;
                         // println!(
                         //     "cmk merge gather {:?} best {:?} as {:?} -> {:?}",
-                        //     gather.range,
-                        //     best.range,
-                        //     *best.range.start()..=next_end,
-                        //     gather.range
+                        //     gather.0,
+                        //     best.0,
+                        //     *best.0.start()..=next_end,
+                        //     gather.0
                         // );
                         self.gather = Some(gather);
                     } else {
@@ -174,17 +174,14 @@ where
                     // if the gather is not contiguous with the best, then output the gather and set the gather to the best
                     // println!(
                     //     "cmk new ready-to-go {:?}, new gather front of best {:?} as {:?}",
-                    //     gather.range,
-                    //     best.range,
-                    //     *best.range.start()..=next_end
+                    //     gather.0,
+                    //     best.0,
+                    //     *best.0.start()..=next_end
                     // );
                     self.ready_to_go = Some(gather);
                     // cmk this code appear twice
                     if self.workspace.len() % 2 == 1 {
-                        self.gather = Some(RangeValue::new(
-                            *best.range.start()..=next_end,
-                            best.value.clone_borrow(),
-                        ));
+                        self.gather = Some((*best.0.start()..=next_end, best.1.clone_borrow()));
                     } else {
                         debug_assert!(self.gather.is_none());
                     }
@@ -193,14 +190,11 @@ where
                 // if there is no gather, then set the gather to the best
                 // println!(
                 //     "cmk no gather,  capture front of best {:?} as {:?}",
-                //     best.range,
-                //     *best.range.start()..=next_end
+                //     best.0,
+                //     *best.0.start()..=next_end
                 // );
                 if self.workspace.len() % 2 == 1 {
-                    self.gather = Some(RangeValue::new(
-                        *best.range.start()..=next_end,
-                        best.value.clone_borrow(),
-                    ));
+                    self.gather = Some((*best.0.start()..=next_end, best.1.clone_borrow()));
                 } else {
                     debug_assert!(self.gather.is_none());
                 }
@@ -213,12 +207,12 @@ where
             let mut new_next_end = None;
             while let Some(item) = self.workspace.pop() {
                 let mut item = item;
-                if *item.range_value.range.end() <= next_end {
+                if *item.range_value.0.end() <= next_end {
                     // too short, don't keep
-                    // println!("cmk too short, don't keep in workspace {:?}", item.range);
+                    // println!("cmk too short, don't keep in workspace {:?}", item.0);
                     continue; // while loop
                 }
-                item.range_value.range = next_end + T::one()..=*item.range_value.range.end();
+                item.range_value.0 = next_end + T::one()..=*item.range_value.0.end();
                 new_next_end = min_next_end(&new_next_end, &item.range_value);
                 new_workspace.push(item);
             }
@@ -229,14 +223,14 @@ where
 }
 
 #[allow(dead_code)]
-fn cmk_debug_string<'a, T, V, VR>(item: &Option<RangeValue<T, V, VR>>) -> String
+fn cmk_debug_string<'a, T, V, VR>(item: &Option<(RangeInclusive<T>, VR)>) -> String
 where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V> + 'a,
 {
     if let Some(item) = item {
-        format!("Some({:?})", item.range)
+        format!("Some({:?})", item.0)
     } else {
         "None".to_string()
     }

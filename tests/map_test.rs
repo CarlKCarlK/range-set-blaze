@@ -849,8 +849,8 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
 
     let sorted_starts = AssumePrioritySortedStartsMap::new(
         [
-            Priority::new(RangeValue::new_unique(5..=6, "a"), usize::MAX),
-            Priority::new(RangeValue::new_unique(1..=5, "b"), usize::MIN),
+            Priority::new((5..=6, UniqueValue::new("a")), usize::MAX),
+            Priority::new((1..=5, UniqueValue::new("b")), usize::MIN),
         ]
         .into_iter(),
     );
@@ -858,17 +858,17 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
     _sorted_disjoint_iter = UnionIterMap::new(sorted_starts);
     // // #10 collect / from_iter T
     let arr0 = [
-        RangeValue::new_unique(1..=1, "a"),
-        RangeValue::new_unique(5..=5, "b"),
-        RangeValue::new_unique(6..=6, "b"),
-        RangeValue::new_unique(5..=5, "b"),
+        (1..=1, UniqueValue::new("a")),
+        (5..=5, UniqueValue::new("b")),
+        (6..=6, UniqueValue::new("b")),
+        (5..=5, UniqueValue::new("b")),
     ];
     let mut _sorted_disjoint_iter: UnionIterMap<_, _, _, _> = arr0.into_iter().collect();
     let arr0 = [
-        RangeValue::new_unique(1..=1, "a"),
-        RangeValue::new_unique(5..=5, "b"),
-        RangeValue::new_unique(6..=6, "b"),
-        RangeValue::new_unique(5..=5, "b"),
+        (1..=1, UniqueValue::new("a")),
+        (5..=5, UniqueValue::new("b")),
+        (6..=6, UniqueValue::new("b")),
+        (5..=5, UniqueValue::new("b")),
     ];
     _sorted_disjoint_iter = UnionIterMap::from_iter(arr0);
     // // // #11 into / from array T

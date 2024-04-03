@@ -1,9 +1,7 @@
 #![allow(missing_docs)]
 use crate::{
     map::CloneBorrow,
-    sorted_disjoint_map::{
-        Priority, PrioritySortedDisjointMap, PrioritySortedStartsMap, RangeValue,
-    },
+    sorted_disjoint_map::{Priority, PrioritySortedDisjointMap, PrioritySortedStartsMap},
     Integer,
 };
 use alloc::collections::btree_map;
@@ -57,12 +55,12 @@ where
     T: Integer,
     V: ValueOwned + 'a,
 {
-    type Item = RangeValue<T, V, &'a V>; // Assuming VR is always &'a V for next
+    type Item = (RangeInclusive<T>, &'a V); // Assuming VR is always &'a V for next
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|(start, end_value)| RangeValue::new(*start..=end_value.end, &end_value.value))
+            .map(|(start, end_value)| (*start..=end_value.end, &end_value.value))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -283,7 +281,7 @@ where
             let Some(next_range_value) = self.iter.next() else {
                 return self.option_ranges.take();
             };
-            let (next_start, next_end) = next_range_value.range.into_inner();
+            let (next_start, next_end) = next_range_value.0.into_inner();
 
             // If no current value, set current to next and loop
             let Some(current_range) = self.option_ranges.take() else {

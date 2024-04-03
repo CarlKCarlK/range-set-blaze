@@ -4,13 +4,12 @@
 // exact size iterator, double ended iterator, fused iterator, size_hint
 // document the exact size and double ended
 
-use core::{fmt, iter::FusedIterator};
+use core::{fmt, iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
 
 use alloc::collections::btree_map;
 
 use crate::{
     map::{CloneBorrow, EndValue, ValueOwned},
-    sorted_disjoint_map::RangeValue,
     Integer, SortedDisjointMap,
 };
 
@@ -30,8 +29,9 @@ where
     I: SortedDisjointMap<T, V, VR>,
 {
     iter: I,
-    option_range_value_front: Option<RangeValue<T, V, VR>>,
-    option_range_value_back: Option<RangeValue<T, V, VR>>,
+    option_range_value_front: Option<(RangeInclusive<T>, VR)>,
+    option_range_value_back: Option<(RangeInclusive<T>, VR)>,
+    phantom: PhantomData<V>,
 }
 
 impl<'a, T, V, VR, I> IterMap<T, V, VR, I>
@@ -46,6 +46,7 @@ where
             iter,
             option_range_value_front: None,
             option_range_value_back: None,
+            phantom: PhantomData,
         }
     }
 }
@@ -75,11 +76,11 @@ where
             .or_else(|| self.iter.next())
             .or_else(|| self.option_range_value_back.take())?;
 
-        let (start, end) = range_value.range.into_inner();
+        let (start, end) = range_value.0.into_inner();
         debug_assert!(start <= end && end <= T::safe_max_value());
-        let value = range_value.value.clone_borrow();
+        let value = range_value.1.clone_borrow();
         if start < end {
-            range_value.range = start + T::one()..=end;
+            range_value.0 = start + T::one()..=end;
             self.option_range_value_front = Some(range_value);
         }
         Some((start, value))
@@ -106,11 +107,11 @@ where
             .take()
             .or_else(|| self.iter.next_back())
             .or_else(|| self.option_range_value_front.take())?;
-        let (start, end) = range_value.range.into_inner();
+        let (start, end) = range_value.0.into_inner();
         debug_assert!(start <= end && end <= T::safe_max_value());
-        let value = range_value.value.clone_borrow();
+        let value = range_value.1.clone_borrow();
         if start < end {
-            range_value.range = start..=end - T::one();
+            range_value.0 = start..=end - T::one();
             self.option_range_value_back = Some(range_value);
         }
 

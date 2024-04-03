@@ -2,7 +2,7 @@ use crate::range_values::ExpectDebugUnwrapRelease;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::{
     map::{CloneBorrow, EndValue, ValueOwned},
-    sorted_disjoint_map::{RangeValue, SortedDisjointMap},
+    sorted_disjoint_map::SortedDisjointMap,
     Integer,
 };
 use core::ops::RangeInclusive;
@@ -19,7 +19,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     iter: I,
     option_priority: Option<Priority<T, V, VR>>,
@@ -33,7 +33,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>, // Any iterator is fine
+    I: Iterator<Item = (RangeInclusive<T>, VR)>, // Any iterator is fine
 {
     pub fn new(into_iter: I) -> Self {
         UnsortedDisjointMap {
@@ -51,7 +51,7 @@ where
 // where
 //     T: Integer,
 //     V: PartialEqClone + 'a,
-//     I: Iterator<Item = RangeValue<T, V, VR>> + FusedIterator,
+//     I: Iterator<Item = (T,  VR)> + FusedIterator,
 // {
 // }
 
@@ -60,7 +60,7 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     type Item = Priority<T, V, VR>;
 
@@ -78,7 +78,7 @@ where
                 .expect_debug_unwrap_release("overflow");
 
             // check the next range is valid and non-empty
-            let (next_start, next_end) = next_priority.range_value.range.clone().into_inner();
+            let (next_start, next_end) = next_priority.range_value.0.clone().into_inner();
             assert!(
                 next_end <= T::safe_max_value(),
                 "end must be <= T::safe_max_value()"
@@ -94,8 +94,7 @@ where
             };
 
             // if the ranges do not touch or overlap, return the current range and set the current range to the next range
-            let (current_start, current_end) =
-                current_priority.range_value.range.clone().into_inner();
+            let (current_start, current_end) = current_priority.range_value.0.clone().into_inner();
             if (next_start >= self.min_value_plus_2 && current_end <= next_start - self.two)
                 || (current_start >= self.min_value_plus_2 && next_end <= current_start - self.two)
             {
@@ -107,15 +106,13 @@ where
 
             // cmk think about combining this with the previous if
             // if values are different, return the current range and set the current range to the next range
-            if current_priority.range_value.value.borrow()
-                != next_priority.range_value.value.borrow()
-            {
+            if current_priority.range_value.1.borrow() != next_priority.range_value.1.borrow() {
                 self.option_priority = Some(next_priority);
                 return Some(current_priority);
             }
 
             // they touch or overlap and have the same value, so merge
-            current_priority.range_value.range =
+            current_priority.range_value.0 =
                 min(current_start, next_start)..=max(current_end, next_end);
             self.option_priority = Some(current_priority);
             // continue;
@@ -192,12 +189,12 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range_value) = self.iter.next() {
-            let (start, end) = range_value.range.clone().into_inner();
+            let (start, end) = range_value.0.clone().into_inner();
             debug_assert!(start <= end && end <= T::safe_max_value());
-            self.len += T::safe_len(&range_value.range);
+            self.len += T::safe_len(&range_value.0);
             let end_value = EndValue {
                 end,
-                value: range_value.value.borrow_clone(),
+                value: range_value.1.borrow_clone(),
             };
             Some((start, end_value))
         } else {
@@ -276,7 +273,7 @@ impl<T: Integer, V: ValueOwned, VR, I> From<I>
     for SortedDisjointWithLenSoFarMap<T, V, VR, I::IntoIter>
 where
     VR: CloneBorrow<V>,
-    I: IntoIterator<Item = RangeValue<T, V, VR>>,
+    I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
     I::IntoIter: SortedDisjointMap<T, V, VR>,
 {
     fn from(into_iter: I) -> Self {
@@ -304,12 +301,10 @@ where
     V: ValueOwned + 'a,
     I: Iterator<Item = (RangeInclusive<T>, &'a V)>,
 {
-    type Item = RangeValue<T, V, &'a V>;
+    type Item = (RangeInclusive<T>, &'a V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter
-            .next()
-            .map(|(range, value)| RangeValue::new(range, value))
+        self.iter.next().map(|(range, value)| (range, value))
     }
 }
 
@@ -321,11 +316,12 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     iter: I,
     seen_none: bool,
-    previous: Option<RangeValue<T, V, VR>>,
+    previous: Option<(RangeInclusive<T>, VR)>,
+    phantom_data: PhantomData<V>,
 }
 
 // define new
@@ -334,13 +330,14 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     pub fn new(iter: I) -> Self {
         CheckSortedDisjointMap {
             iter,
             seen_none: false,
             previous: None,
+            phantom_data: PhantomData,
         }
     }
 }
@@ -363,8 +360,18 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
+}
+
+fn range_value_clone<T, V, VR>(range_value: &(RangeInclusive<T>, VR)) -> (RangeInclusive<T>, VR)
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+{
+    let (range, value) = range_value;
+    (range.clone(), value.clone_borrow())
 }
 
 // implement iterator
@@ -373,9 +380,9 @@ where
     T: Integer,
     V: ValueOwned,
     VR: CloneBorrow<V>,
-    I: Iterator<Item = RangeValue<T, V, VR>>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
-    type Item = RangeValue<T, V, VR>;
+    type Item = (RangeInclusive<T>, VR);
 
     fn next(&mut self) -> Option<Self::Item> {
         let range_value = self.iter.next();
@@ -386,12 +393,12 @@ where
         // cmk should test all these
         assert!(!self.seen_none, "A value must not be returned after None");
         let Some(previous) = self.previous.take() else {
-            self.previous = Some(range_value.clone());
+            self.previous = Some(range_value_clone(&range_value));
             return Some(range_value);
         };
 
-        let (previous_start, previous_end) = previous.range.clone().into_inner();
-        let (start, end) = range_value.range.clone().into_inner();
+        let (previous_start, previous_end) = previous.0.clone().into_inner();
+        let (start, end) = range_value.0.clone().into_inner();
         assert!(start <= end, "Start must be <= end.",);
         assert!(
             end <= T::safe_max_value(),
@@ -400,12 +407,12 @@ where
         assert!(previous_end < start, "Ranges must be disjoint and sorted");
         if previous_end + T::one() == start {
             assert!(
-                previous.value.borrow() != range_value.value.borrow(),
+                previous.1.borrow() != range_value.1.borrow(),
                 "Touching ranges must have different values"
             );
         }
-        self.previous = Some(range_value.clone());
-        Some(range_value.clone())
+        self.previous = Some(range_value_clone(&range_value));
+        Some(range_value_clone(&range_value))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

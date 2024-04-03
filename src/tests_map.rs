@@ -241,8 +241,8 @@ fn map_random_intersection() {
                 // println!("expected_keys: {expected_keys}");
             }
             for range_value in intersection {
-                let range = range_value.range;
-                let value = range_value.value;
+                let range = range_value.0;
+                let value = range_value.1;
                 // println!();
                 // print!("removing ");
                 for k in range {
@@ -320,8 +320,8 @@ fn map_random_symmetric_difference() {
                 .symmetric_difference(map1.ranges())
                 .collect::<RangeSetBlaze<_>>();
             for range_value in symmetric_difference {
-                let range = range_value.range;
-                let value = range_value.value;
+                let range = range_value.0;
+                let value = range_value.1;
                 // println!();
                 // print!("removing ");
                 for k in range {
@@ -383,16 +383,16 @@ where
     // cmk implement iter for RangeMapBlaze
     let mut previous: Option<RangeValue<T, V, &V>> = None;
     for range_value in range_map_blaze.range_values() {
-        let v = range_value.value;
-        let range = range_value.range.clone();
+        let v = range_value.1;
+        let range = range_value.0.clone();
 
         if let Some(previous) = previous {
-            if (previous.value == v && *previous.range.end() + T::one() >= *range.start())
-                || previous.range.end() >= range.start()
+            if (previous.1 == v && *previous.0.end() + T::one() >= *range.start())
+                || previous.0.end() >= range.start()
             {
                 eprintln!(
                     "two ranges are not disjoint: {:?}->{} and {range:?}->{v}",
-                    previous.range, previous.value
+                    previous.0, previous.1
                 );
                 return false;
             }
@@ -437,9 +437,9 @@ where
     for range_value in iter {
         vs.push_str(&format!(
             "{}..={}{} ",
-            range_value.range.start(),
-            range_value.range.end(),
-            *range_value.value as char,
+            range_value.0.start(),
+            range_value.0.end(),
+            *range_value.1 as char,
         ));
     }
     vs
@@ -458,11 +458,11 @@ fn map_repro_106() {
 
     let iter = input.clone().into_iter();
     let iter = iter.map(|(x, value)| (x..=x, value));
-    let iter = iter.map(|(range, value)| RangeValue::new(range, value));
+    let iter = iter.map(|(range, value)| (range, value));
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
-        a.range_value.range.start().cmp(b.range_value.range.start())
+        a.range_value.0.start().cmp(b.range_value.0.start())
     });
     let iter = AssumePrioritySortedStartsMap::new(iter);
     let iter = UnionIterMap::new(iter);
@@ -490,7 +490,7 @@ fn map_repro_206() {
 
     let iter = input.clone().into_iter();
     let iter = iter.map(|(x, value)| (x..=x, value));
-    let iter = iter.map(|(range, value)| RangeValue::new(range, value));
+    let iter = iter.map(|(range, value)| (range, value));
     // let vs = format_range_values(iter);
     // println!("{vs}");
     // assert_eq!(vs, "127..=127e 2..=2d 29..=29e 84..=84a 17..=17a 79..=79d 174..=174e 125..=125b 123..=123a 123..=123b 98..=98c 132..=132d 99..=99e 186..=186b 253..=253d 31..=31d 121..=121c 151..=151a 168..=168e 208..=208c 47..=47e 42..=42e 86..=86a 21..=21b 7..=7b 238..=238d 148..=148a 151..=151a 227..=227d 173..=173d 145..=145b 18..=18e 219..=219e 16..=16c 214..=214b 213..=213a 155..=155e 27..=27e 24..=24d 38..=38c 59..=59c 16..=16c 183..=183d 125..=125d 210..=210d 99..=99e 43..=43e 189..=189e 147..=147a 90..=90d 42..=42a 220..=220e 35..=35b 120..=120d 185..=185d 177..=177a 102..=102a 22..=22b 124..=124b 140..=140a 199..=199e 143..=143c 32..=32d 225..=225a 223..=223e 137..=137e 177..=177e 234..=234e 97..=97a 166..=166a 83..=83e 213..=213a 147..=147b 128..=128a 150..=150c 12..=12c 199..=199c 152..=152c 79..=79b 164..=164b 204..=204b 235..=235e 37..=37e 14..=14c 19..=19b 49..=49a 1..=1c 115..=115b 31..=31d 102..=102b 59..=59b 129..=129b 104..=104d 70..=70c 229..=229b 205..=205b 101..=101c 58..=58d 114..=114a 228..=228d 173..=173e 139..=139d 147..=147b 32..=32c 198..=198e 194..=194c 18..=18a 77..=77a 100..=100e 196..=196a 46..=46b 81..=81a 63..=63d 198..=198a 242..=242a 131..=131b 153..=153e 113..=113b 19..=19d 253..=253e 195..=195c 209..=209e 201..=201c 139..=139d 47..=47a 223..=223d 240..=240b 203..=203d 84..=84a 214..=214d 129..=129e 73..=73d 55..=55d 193..=193e 129..=129d 7..=7c 193..=193e 2..=2c 235..=235c 39..=39c 88..=88d 175..=175c 190..=190c 239..=239a 219..=219d 121..=121a 88..=88d 175..=175d 117..=117e 23..=23a 102..=102d 165..=165a 58..=58a 229..=229a 100..=100b 13..=13b 113..=113e 26..=26a 49..=49e 37..=37e 126..=126a 251..=251b 47..=47e 77..=77a 206..=206b ");
@@ -498,7 +498,7 @@ fn map_repro_206() {
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
-        a.range_value.range.start().cmp(b.range_value.range.start())
+        a.range_value.0.start().cmp(b.range_value.0.start())
     });
     let iter = AssumePrioritySortedStartsMap::new(iter);
     // let vs = format_range_values(iter);
@@ -629,7 +629,7 @@ fn map_step_by_step() {
 
     let iter = input.into_iter();
     let iter = iter.map(|(x, value)| (x..=x, value));
-    let iter = iter.map(|(range, value)| RangeValue::new(range, value));
+    let iter = iter.map(|(range, value)| (range, value));
 
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
@@ -641,11 +641,11 @@ fn map_step_by_step() {
 
     let iter = input.into_iter();
     let iter = iter.map(|(x, value)| (x..=x, value));
-    let iter = iter.map(|(range, value)| RangeValue::new(range, value));
+    let iter = iter.map(|(range, value)| (range, value));
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
-        a.range_value.range.start().cmp(b.range_value.range.start())
+        a.range_value.0.start().cmp(b.range_value.0.start())
     });
     let iter = AssumePrioritySortedStartsMap::new(iter);
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
@@ -657,11 +657,11 @@ fn map_step_by_step() {
 
     let iter = input.into_iter();
     let iter = iter.map(|(x, value)| (x..=x, value));
-    let iter = iter.map(|(range, value)| RangeValue::new(range, value));
+    let iter = iter.map(|(range, value)| (range, value));
     let iter = UnsortedDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
-        a.range_value.range.start().cmp(b.range_value.range.start())
+        a.range_value.0.start().cmp(b.range_value.0.start())
     });
     let iter = AssumePrioritySortedStartsMap::new(iter);
     let iter = UnionIterMap::new(iter);
@@ -1282,13 +1282,13 @@ fn map_missing_doctest_ops() {
 //     set.insert(3);
 //     set.insert(5);
 //     set.insert(8);
-//     assert_eq!(Some(5), set.range(4..).next());
-//     assert_eq!(Some(3), set.range(..).next());
-//     assert_eq!(None, set.range(..=2).next());
-//     assert_eq!(None, set.range(1..2).next());
+//     assert_eq!(Some(5), set.0(4..).next());
+//     assert_eq!(Some(3), set.0(..).next());
+//     assert_eq!(None, set.0(..=2).next());
+//     assert_eq!(None, set.0(1..2).next());
 //     assert_eq!(
 //         Some(3),
-//         set.range((Bound::Excluded(2), Bound::Excluded(4))).next()
+//         set.0((Bound::Excluded(2), Bound::Excluded(4))).next()
 //     );
 
 //     let mut set = RangeMapBlaze::new();
@@ -1831,7 +1831,7 @@ fn map_missing_doctest_ops() {
 // fn double_end_range() {
 //     let a = RangeMapBlaze::from_iter([3..=10, 12..=12, 20..=25]);
 
-//     let mut range = a.range(11..=22);
+//     let mut range = a.0(11..=22);
 //     assert_eq!(range.next_back(), Some(22));
 //     assert_eq!(range.next(), Some(12));
 //     assert_eq!(range.next(), Some(20));

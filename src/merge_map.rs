@@ -65,7 +65,7 @@ where
         Self {
             // We sort only by start -- priority is not used until later.
             iter: left.merge_by(right, |a, b| {
-                a.range_value.range.start() < b.range_value.range.start()
+                a.range_value.0.start() < b.range_value.0.start()
             }),
         }
     }
@@ -174,7 +174,7 @@ where
             fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
         > = iter.kmerge_by(|a, b| {
             // We sort only by start -- priority is not used until later.
-            a.range_value.range.start() < b.range_value.range.start()
+            a.range_value.0.start() < b.range_value.0.start()
         });
         Self { iter }
     }

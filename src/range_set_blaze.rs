@@ -16,7 +16,7 @@ use std::{
 
 use gen_ops::gen_ops_ex;
 
-use crate::map::ValueOwned;
+use crate::map::{UniqueValue, ValueOwned};
 use crate::range_values::RangeValuesToRangesIter;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::unsorted_disjoint_map::UnsortedDisjointMap;
@@ -24,7 +24,7 @@ use crate::{
     iter_map::{IntoIterMap, KeysMap},
     prelude::*,
     range_values::{IntoRangeValuesToRangesIter, RangeValuesIter},
-    Integer, RangeValue,
+    Integer,
 };
 
 #[derive(Clone, Hash, Default, PartialEq)]
@@ -1704,9 +1704,9 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
         let iter = iter.into_iter();
 
         // We gather adjacent values into ranges via UnsortedDisjointMap.
-        let unsorted = UnsortedDisjointMap::new(iter.map(|x| RangeValue::new(x..=x, &())));
+        let unsorted = UnsortedDisjointMap::new(iter.map(|x| (x..=x, &())));
         for priority in unsorted {
-            self.0.internal_add(priority.range_value.range, ());
+            self.0.internal_add(priority.range_value.0, ());
         }
     }
 }
@@ -1890,9 +1890,9 @@ impl<T: Integer, V: ValueOwned> Extend<(RangeInclusive<T>, V)> for RangeSetBlaze
 
         // We gather adjacent values into ranges via UnsortedDisjointMap.
         let unsorted =
-            UnsortedDisjointMap::new(iter.map(|(range, v)| RangeValue::new_unique(range, v)));
+            UnsortedDisjointMap::new(iter.map(|(range, v)| (range, UniqueValue::new(v))));
         for priority in unsorted {
-            self.0.internal_add(priority.range_value.range, ());
+            self.0.internal_add(priority.range_value.0, ());
         }
     }
 }
@@ -2049,9 +2049,9 @@ where
     T: Integer,
     I: SortedDisjoint<T>,
 {
-    type Item = RangeValue<T, (), &'static ()>;
+    type Item = (RangeInclusive<T>, &'static ());
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|range| RangeValue::new(range, &()))
+        self.iter.next().map(|range| (range, &()))
     }
 }
 
@@ -2098,7 +2098,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|range| Priority::new(RangeValue::new(range, &()), usize::MIN))
+            .map(|range| Priority::new((range, &()), usize::MIN))
     }
 }
 
@@ -2149,9 +2149,7 @@ where
 {
     type Item = RangeInclusive<T>;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter
-            .next()
-            .map(|range_value| range_value.range.clone())
+        self.iter.next().map(|range_value| range_value.0.clone())
     }
 }
 

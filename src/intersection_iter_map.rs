@@ -1,10 +1,11 @@
 use core::{
     cmp::{max, min},
     iter::FusedIterator,
+    marker::PhantomData,
     ops::RangeInclusive,
 };
 
-use crate::{map::CloneBorrow, RangeValue, SortedDisjoint, SortedDisjointMap};
+use crate::{map::CloneBorrow, SortedDisjoint, SortedDisjointMap};
 use crate::{map::ValueOwned, Integer};
 
 /// Turns one [`SortedDisjoint`] iterator and one [`SortedDisjointMap`] iterator into
@@ -47,7 +48,8 @@ where
     iter_map: IM,
     iter_set: IS,
     current_range: Option<RangeInclusive<T>>,
-    current_range_value: Option<RangeValue<T, V, VR>>,
+    current_range_value: Option<(RangeInclusive<T>, VR)>,
+    phantom: PhantomData<V>, // cmk000 see if needed
 }
 
 impl<'a, T, V, VR, IM, IS> IntersectionIterMap<T, V, VR, IM, IS>
@@ -67,6 +69,7 @@ where
             iter_set,
             current_range: None,
             current_range_value: None,
+            phantom: PhantomData,
         }
     }
 }
@@ -111,9 +114,9 @@ where
     IM: SortedDisjointMap<T, V, VR>,
     IS: SortedDisjoint<T>,
 {
-    type Item = RangeValue<T, V, VR>;
+    type Item = (RangeInclusive<T>, VR);
 
-    fn next(&mut self) -> Option<RangeValue<T, V, VR>> {
+    fn next(&mut self) -> Option<(RangeInclusive<T>, VR)> {
         // println!("cmk begin next");
         loop {
             // Be sure both currents are loaded.
@@ -132,7 +135,7 @@ where
             // println!("cmk {:?} {:?}", current_range, current_range_value.range);
 
             // if current_range ends before current_range_value, clear it and loop for a new value.
-            if current_range.end() < current_range_value.range.start() {
+            if current_range.end() < current_range_value.0.start() {
                 // println!("cmk getting new range");
                 self.current_range = None;
                 self.current_range_value = Some(current_range_value);
@@ -140,7 +143,8 @@ where
             }
 
             // if current_range_value ends before current_range, clear it and loop for a new value.
-            if current_range_value.range.end() < current_range.start() {
+            // cmk00 do I want to assign .0 to something?
+            if current_range_value.0.end() < current_range.start() {
                 // println!("cmk getting new range value");
                 self.current_range = Some(current_range);
                 self.current_range_value = None;
@@ -148,37 +152,37 @@ where
             }
 
             // Thus, they overlap
-            let start = *max(current_range.start(), current_range_value.range.start());
-            let end = *min(current_range.end(), current_range_value.range.end());
+            let start = *max(current_range.start(), current_range_value.0.start());
+            let end = *min(current_range.end(), current_range_value.0.end());
 
             // remove any ranges that match "end" and set them None
 
             let value = match (
                 *current_range.end() == end,
-                *current_range_value.range.end() == end,
+                *current_range_value.0.end() == end,
             ) {
                 (true, true) => {
                     self.current_range = None;
                     self.current_range_value = None;
-                    current_range_value.value
+                    current_range_value.1
                 }
                 (true, false) => {
                     self.current_range = None;
-                    let value = current_range_value.value.clone_borrow();
+                    let value = current_range_value.1.clone_borrow();
                     self.current_range_value = Some(current_range_value);
                     value
                 }
                 (false, true) => {
                     self.current_range = Some(current_range);
                     self.current_range_value = None;
-                    current_range_value.value
+                    current_range_value.1
                 }
                 (false, false) => {
                     panic!("impossible case")
                 }
             };
 
-            let range_value = RangeValue::new(start..=end, value);
+            let range_value = (start..=end, value);
             return Some(range_value);
         }
     }

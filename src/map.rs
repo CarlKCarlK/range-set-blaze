@@ -4,7 +4,7 @@ use crate::iter_map::{IterMap, KeysMap};
 use crate::range_values::{
     IntoRangeValuesIter, IntoRangeValuesToRangesIter, RangeValuesIter, RangeValuesToRangesIter,
 };
-use crate::sorted_disjoint_map::{DebugToString, Priority, RangeValue};
+use crate::sorted_disjoint_map::{DebugToString, Priority};
 use crate::sorted_disjoint_map::{PrioritySortedStartsMap, SortedDisjointMap};
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::union_iter_map::UnionIterMap;
@@ -593,8 +593,8 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     pub fn append(&mut self, other: &mut Self) {
         for range_values in other.range_values() {
-            let range = range_values.range;
-            let v = range_values.value.borrow_clone();
+            let range = range_values.0;
+            let v = range_values.1.borrow_clone();
             self.internal_add(range, v);
         }
         other.clear();
@@ -1500,6 +1500,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     }
 
     /// cmk doc
+    // cmk000 should we rename name because we're returning a pair, not a RangeValue?
     pub fn into_pairs(self) -> IntoRangeValuesIter<T, V> {
         IntoRangeValuesIter {
             iter: self.btree_map.into_iter(),
@@ -1653,7 +1654,7 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
     {
         let iter = iter
             .into_iter()
-            .map(|(r, v)| RangeValue::new_unique(r.clone(), v));
+            .map(|(r, v)| (r.clone(), UniqueValue::new(v)));
         let union_iter_map = UnionIterMap::<T, V, UniqueValue<V>, _>::from_iter(iter);
         Self::from_sorted_disjoint_map(union_iter_map)
     }
@@ -2002,12 +2003,9 @@ where
         let iter = iter.into_iter();
 
         // We gather adjacent values into ranges via UnsortedDisjointMap.
-        for priority in
-            UnsortedDisjointMap::new(iter.map(|(r, v)| RangeValue::new_unique(r..=r, v)))
-        {
-            let range = priority.range_value.range;
-            let value = priority.range_value.value.borrow_clone();
-            self.internal_add(range, value);
+        for priority in UnsortedDisjointMap::new(iter.map(|(r, v)| (r..=r, UniqueValue::new(v)))) {
+            let (range, value) = priority.range_value;
+            self.internal_add(range, value.borrow_clone());
         }
 
         // for (key, value) in iter {
@@ -2046,9 +2044,9 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
         let iter = iter.into_iter();
 
         // We gather adjacent values into ranges via UnsortedDisjointMap.
-        let unsorted = UnsortedDisjointMap::new(iter.map(|x| RangeValue::new(x, &())));
+        let unsorted = UnsortedDisjointMap::new(iter.map(|x| (x, &())));
         for priority in unsorted {
-            self.0.internal_add(priority.range_value.range, ());
+            self.0.internal_add(priority.range_value.0, ());
         }
     }
 }

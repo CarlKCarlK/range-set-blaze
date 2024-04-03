@@ -1,8 +1,8 @@
-use core::iter::FusedIterator;
+use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use crate::{
     map::{CloneBorrow, ValueOwned},
-    Integer, RangeValue, SortedDisjointMap,
+    Integer, SortedDisjointMap,
 };
 use alloc::boxed::Box;
 
@@ -74,7 +74,7 @@ where
     V: ValueOwned,
     VR: CloneBorrow<V>,
 {
-    type Item = RangeValue<T, V, VR>;
+    type Item = (RangeInclusive<T>, VR);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
