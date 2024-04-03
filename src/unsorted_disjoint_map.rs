@@ -188,12 +188,13 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range_value) = self.iter.next() {
-            let (start, end) = range_value.0.clone().into_inner();
+            let (range, value) = range_value;
+            let (start, end) = range.clone().into_inner();
             debug_assert!(start <= end && end <= T::safe_max_value());
-            self.len += T::safe_len(&range_value.0);
+            self.len += T::safe_len(&range);
             let end_value = EndValue {
                 end,
-                value: range_value.1.borrow_clone(),
+                value: value.borrow_clone(),
             };
             Some((start, end_value))
         } else {

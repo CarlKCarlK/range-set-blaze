@@ -2149,7 +2149,7 @@ where
 {
     type Item = RangeInclusive<T>;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|range_value| range_value.0.clone())
+        self.iter.next().map(|(range, _value)| range)
     }
 }
 

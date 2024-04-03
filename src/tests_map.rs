@@ -241,8 +241,7 @@ fn map_random_intersection() {
                 // println!("expected_keys: {expected_keys}");
             }
             for range_value in intersection {
-                let range = range_value.0;
-                let value = range_value.1;
+                let (range, value) = range_value;
                 // println!();
                 // print!("removing ");
                 for k in range {
@@ -320,8 +319,7 @@ fn map_random_symmetric_difference() {
                 .symmetric_difference(map1.ranges())
                 .collect::<RangeSetBlaze<_>>();
             for range_value in symmetric_difference {
-                let range = range_value.0;
-                let value = range_value.1;
+                let (range, value) = range_value;
                 // println!();
                 // print!("removing ");
                 for k in range {
