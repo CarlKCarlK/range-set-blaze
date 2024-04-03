@@ -4,7 +4,7 @@ use self::map::ValueOwned;
 use super::*;
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::sorted_disjoint_map::DebugToString;
-use crate::sorted_disjoint_map::{RangeValue, SortedDisjointMap};
+use crate::sorted_disjoint_map::SortedDisjointMap;
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{AssumePrioritySortedStartsMap, UnsortedDisjointMap};
@@ -381,7 +381,7 @@ where
     // also, check that the ranges are really sorted and disjoint
     // cmk range_values should return a tuple not a struct
     // cmk implement iter for RangeMapBlaze
-    let mut previous: Option<RangeValue<T, V, &V>> = None;
+    let mut previous: Option<(RangeInclusive<T>, &V)> = None;
     for range_value in range_map_blaze.range_values() {
         let v = range_value.1;
         let range = range_value.0.clone();
@@ -428,7 +428,7 @@ where
     true
 }
 
-fn format_range_values<'a, T>(iter: impl Iterator<Item = RangeValue<T, u8, &'a u8>>) -> String
+fn format_range_values<'a, T>(iter: impl Iterator<Item = (RangeInclusive<T>, &'a u8)>) -> String
 where
     T: Integer + fmt::Display + 'a, // Assuming T implements Display for formatting
                                     // V: ValueOwned + fmt::Display + 'a, // V must implement Display to be formatted with {}

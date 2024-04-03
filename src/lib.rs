@@ -42,6 +42,7 @@ pub use crate::range_set_blaze::RangeSetBlaze;
 use crate::range_set_blaze::SortedDisjointToUnitMap;
 mod not_iter;
 pub mod prelude;
+pub use crate::map::UniqueValue;
 pub mod range_values;
 mod ranges;
 #[cfg(feature = "rog-experimental")]

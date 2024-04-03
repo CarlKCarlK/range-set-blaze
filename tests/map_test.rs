@@ -17,6 +17,7 @@
 use range_set_blaze::prelude::*;
 use range_set_blaze::range_values::RangeValuesIter;
 use range_set_blaze::UnionIterMap;
+use range_set_blaze::UniqueValue;
 // use range_set_blaze::{
 //     MultiwayRangeMapBlaze, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
 // };
@@ -824,7 +825,6 @@ fn map_tricky_case3() {
 fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
     use range_set_blaze::AssumePrioritySortedStartsMap; // cmk000 check or checked?
     use range_set_blaze::Priority;
-    use range_set_blaze::RangeValue;
 
     // #9: new
     let mut _range_map_blaze;
@@ -1701,7 +1701,7 @@ fn map_range_map_blaze_operators() {
 
 // // #[test]
 // // fn map_sorted_disjoint_constructors() {
-// //     // RangeMapBlaze's .range_values(), .range().clone() and .into_ranges()
+// //     // RangeMapBlaze's .range_values(), .0().clone() and .into_ranges()
 // //     let r = RangeMapBlaze::from_iter([3, 2, 1, 100, 1]);
 // //     let a = r.range_values();
 // //     let b = a.clone();
@@ -2198,7 +2198,7 @@ pub fn linear(
     range_map_blaze
         .range_values()
         .map(|range_value| {
-            let (start, end) = range_value.range.clone().into_inner();
+            let (start, end) = range_value.0.clone().into_inner();
             let mut a = (start - first) * scale.abs() + first;
             let mut b = (end + 1 - first) * scale.abs() + first - 1;
             let last = (last + 1 - first) * scale.abs() + first - 1;
@@ -2206,7 +2206,7 @@ pub fn linear(
                 (a, b) = (last - b + first, last - a + first);
             }
             let new_range = a + shift..=b + shift;
-            (new_range, range_value.value.clone())
+            (new_range, range_value.1.clone())
         })
         .collect()
 }
