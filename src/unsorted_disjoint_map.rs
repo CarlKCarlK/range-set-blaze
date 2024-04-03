@@ -351,7 +351,7 @@ where
     V: ValueOwned,
     J: Iterator<Item = (RangeInclusive<T>, &'a V)>,
 {
-    pub fn from_tuples(iter: J) -> Self {
+    pub fn from_pairs(iter: J) -> Self {
         let iter = TupleToRangeValueIter { iter };
         CheckSortedDisjointMap::new(iter)
     }
