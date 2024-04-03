@@ -636,7 +636,7 @@ fn map_step_by_step() {
     println!("{vs}");
     assert_eq!(
         vs,
-        "[Priority { range_value: RangeValue { range: 1..=2, value: \"b\" }, priority_number: 18446744073709551615 }, Priority { range_value: RangeValue { range: 0..=0, value: \"a\" }, priority_number: 18446744073709551613 }]"
+        r#"[Priority { range_value: (1..=2, "b"), priority_number: 18446744073709551615, phantom_data: PhantomData<alloc::string::String> }, Priority { range_value: (0..=0, "a"), priority_number: 18446744073709551613, phantom_data: PhantomData<alloc::string::String> }]"#
     );
 
     let iter = input.into_iter();
@@ -650,10 +650,7 @@ fn map_step_by_step() {
     let iter = AssumePrioritySortedStartsMap::new(iter);
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
     println!("{vs}");
-    assert_eq!(
-        vs,
-        "[Priority { range_value: RangeValue { range: 0..=0, value: \"a\" }, priority_number: 18446744073709551613 }, Priority { range_value: RangeValue { range: 1..=2, value: \"b\" }, priority_number: 18446744073709551615 }]"
-    );
+    assert_eq!(vs, "[Priority { range_value: (0..=0, \"a\"), priority_number: 18446744073709551613, phantom_data: PhantomData<alloc::string::String> }, Priority { range_value: (1..=2, \"b\"), priority_number: 18446744073709551615, phantom_data: PhantomData<alloc::string::String> }]");
 
     let iter = input.into_iter();
     let iter = iter.map(|(x, value)| (x..=x, value));
@@ -667,10 +664,7 @@ fn map_step_by_step() {
     let iter = UnionIterMap::new(iter);
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
     println!("{vs}");
-    assert_eq!(
-        vs,
-        "[RangeValue { range: 0..=0, value: \"a\" }, RangeValue { range: 1..=2, value: \"b\" }]"
-    );
+    assert_eq!(vs, "[(0..=0, \"a\"), (1..=2, \"b\")]");
 
     let range_map_blaze = RangeMapBlaze::<u8, String>::from_iter(input);
     println!("{range_map_blaze}");
