@@ -620,6 +620,7 @@ where
     // Default is an empty iterator.
     fn default() -> Self {
         Self::new([])
+        // cmk00 Self::new(I::default())
     }
 }
 
@@ -772,7 +773,3 @@ impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: ValueOwned,
 // cmk0
 // impl<T: Integer, I: SortedStarts<T>> SortedStarts<T> for Tee<I> {}
 // impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
-
-// cmk000 test every iterator and every method
-// cmk The two Checked* structs should accept the same arrays and iterators as RangeSet/MapBlaze.
-// cmk remove core::array in code with array and a 'use'

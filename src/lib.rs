@@ -92,7 +92,7 @@ use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, WrappingSub};
 pub use rog::{Rog, RogsIter};
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
 // cmk use sorted_disjoint_map::SortedDisjointMapWithLenSoFar;
-pub use crate::unsorted_disjoint_map::CheckSortedDisjointMap;
+pub use crate::sorted_disjoint_map::CheckSortedDisjointMap;
 pub use sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 // pub use union_iter::UnionIter;
 pub use union_iter_map::UnionIterMap;

@@ -370,7 +370,7 @@ where
     }
 }
 
-// cmk000 test that every iterator (that can me) is FusedIterator
+// cmk000 test that every iterator (that can be) is FusedIterator
 impl<T, V, VR, I> FusedIterator for UnionIterMap<T, V, VR, I>
 where
     T: Integer,

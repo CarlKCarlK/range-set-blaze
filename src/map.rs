@@ -2004,7 +2004,6 @@ where
         // We gather adjacent values into ranges via UnsortedDisjointMap.
         for priority in UnsortedDisjointMap::new(iter.map(|(r, v)| (r..=r, UniqueValue::new(v)))) {
             let (range, value) = priority.into_range_value();
-            // cmk000 should this take a pair as input?
             self.internal_add(range, value.borrow_clone());
         }
 

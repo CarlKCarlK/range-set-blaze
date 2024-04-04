@@ -3,7 +3,6 @@ use crate::range_set_blaze::SortedDisjointToUnitMap;
 use crate::range_values::RangeValuesIter;
 use crate::range_values::RangeValuesToRangesIter;
 use crate::sym_diff_iter_map::SymDiffIterMap;
-use crate::unsorted_disjoint_map::CheckSortedDisjointMap;
 use crate::BitOrAdjusted;
 use crate::DynSortedDisjointMap;
 use crate::SymDiffIterMapMerge;
@@ -791,7 +790,7 @@ where
 //     }
 // }
 
-// impl<T, V> Default for CheckSortedDisjointMap<T, core::array::IntoIter<RangeInclusive<T, V>, 0>>
+// impl<T, V> Default for CheckSortedDisjointMap<T,array::IntoIter<RangeInclusive<T, V>, 0>>
 // where
 //     T: Integer,
 // {
@@ -850,7 +849,7 @@ where
 // }
 
 // impl<T: Integer, const N: usize> From<[RangeInclusive<T, V>; N]>
-//     for CheckSortedDisjointMap<T, core::array::IntoIter<RangeInclusive<T, V>, N>>
+//     for CheckSortedDisjointMap<T, array::IntoIter<RangeInclusive<T, V>, N>>
 // {
 //     /// You may create a [`CheckSortedDisjointMap`] from an array of integers.
 //     ///
@@ -991,6 +990,140 @@ where
 //     VR: CloneBorrow<V> + 'a,
 // {
 // }
+
+/// cmk000 move to other file
+/// Gives any iterator of cmk implements the [`SortedDisjointMap`] trait without any checking.
+// cmk0 why was this hidden? check for others#[doc(hidden)]
+/// doc
+pub struct CheckSortedDisjointMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
+{
+    iter: I,
+    seen_none: bool,
+    previous: Option<(RangeInclusive<T>, VR)>,
+    phantom_data: PhantomData<V>,
+}
+
+// define new
+impl<T, V, VR, I> CheckSortedDisjointMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
+{
+    pub fn new<J>(iter: J) -> Self
+    where
+        J: IntoIterator<Item = (RangeInclusive<T>, VR), IntoIter = I>,
+    {
+        CheckSortedDisjointMap {
+            iter: iter.into_iter(),
+            seen_none: false,
+            previous: None,
+            phantom_data: PhantomData,
+        }
+    }
+}
+
+impl<T, V, VR, I, J> From<J> for CheckSortedDisjointMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
+    J: IntoIterator<Item = (RangeInclusive<T>, VR), IntoIter = I>,
+{
+    fn from(iter: J) -> Self {
+        CheckSortedDisjointMap::new(iter)
+    }
+}
+
+impl<T, V, VR, I> Default for CheckSortedDisjointMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)> + Default,
+{
+    fn default() -> Self {
+        // Utilize I::default() to satisfy the iterator requirement.
+        Self::new(I::default())
+    }
+}
+// implement fused
+impl<T, V, VR, I> FusedIterator for CheckSortedDisjointMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
+{
+}
+
+fn range_value_clone<T, V, VR>(range_value: &(RangeInclusive<T>, VR)) -> (RangeInclusive<T>, VR)
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+{
+    let (range, value) = range_value;
+    (range.clone(), value.clone_borrow())
+}
+
+// implement iterator
+impl<T, V, VR, I> Iterator for CheckSortedDisjointMap<T, V, VR, I>
+where
+    T: Integer,
+    V: ValueOwned,
+    VR: CloneBorrow<V>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
+{
+    type Item = (RangeInclusive<T>, VR);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let range_value = self.iter.next();
+        let Some(range_value) = range_value else {
+            self.seen_none = true;
+            return None;
+        };
+        // cmk should test all these
+        assert!(!self.seen_none, "A value must not be returned after None");
+        let Some(previous) = self.previous.take() else {
+            self.previous = Some(range_value_clone(&range_value));
+            return Some(range_value);
+        };
+
+        let (previous_start, previous_end) = previous.0.clone().into_inner();
+        let (start, end) = range_value.0.clone().into_inner();
+        assert!(start <= end, "Start must be <= end.",);
+        assert!(
+            end <= T::safe_max_value(),
+            "End must be <= T::safe_max_value()"
+        );
+        assert!(previous_end < start, "Ranges must be disjoint and sorted");
+        if previous_end + T::one() == start {
+            assert!(
+                previous.1.borrow() != range_value.1.borrow(),
+                "Touching ranges must have different values"
+            );
+        }
+        self.previous = Some(range_value_clone(&range_value));
+        Some(range_value_clone(&range_value))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
+// // cmk00 check
+// // cmk00 make Fused but don't require it
+
+// cmk000 CheckSortedDisjointMap should have a Default
 
 /// cmk doc
 #[derive(Clone, Debug)]
@@ -1272,7 +1405,6 @@ macro_rules! impl_sorted_map_traits_and_ops {
     }
 }
 
-// cmk000 why Assume and not Checked?
 impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, V, VR, I>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
 impl_sorted_map_traits_and_ops!(UnionIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap< T, V, VR, I0, I1>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I0: SortedDisjointMap<T, V, VR>, I1: SortedDisjoint<T>);
@@ -1280,9 +1412,3 @@ impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, V, VR, I>, V, VR, VR: CloneBor
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: ValueOwned );
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, V, VR>, V, VR, 'a, V: ValueOwned, VR: CloneBorrow<V>);
 impl_sorted_map_traits_and_ops!(SortedDisjointToUnitMap<T, I>, (), &'static (), I: SortedDisjoint<T>);
-// cmk000 RangeToRangeValueIter
-// cmk000 SetPriorityMap
-// cmk000 CheckPrioritySortedStartsMap
-// cmk000 Assume... used by CheckSortedDisjointMap
-
-// cmk00 confirm that implements iterator trait
