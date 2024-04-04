@@ -16,7 +16,7 @@
 // use std::collections::BTreeMap;
 use range_set_blaze::prelude::*;
 
-// cmk000 add some to prelude?
+// cmk0 add some to prelude?
 use range_set_blaze::range_values::RangeValuesIter;
 use range_set_blaze::CloneBorrow;
 use range_set_blaze::IntoRangeValuesIter;
@@ -834,7 +834,7 @@ fn map_tricky_case3() {
 
 #[test]
 fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
-    use range_set_blaze::AssumePrioritySortedStartsMap; // cmk000 check or checked?
+    use range_set_blaze::AssumePrioritySortedStartsMap;
     use range_set_blaze::Priority;
 
     // #9: new

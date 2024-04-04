@@ -735,7 +735,7 @@ fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
 fn is_like_btreeset_iter<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
 // removed DoubleEndedIterator +ExactSizeIterator for now
 
-// cmk000 add others iterators and test
+// cmk0 add others iterators and test
 // #[test]
 // fn iter_traits() {
 //     type ARangesIter<'a> = RangesIter<'a, i32>;
@@ -783,7 +783,7 @@ fn is_like_check_sorted_disjoint<
 
 fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
 
-// !!!cmk000 test traits of other iterators
+// !!!cmk0 test traits of other iterators
 // #[test]
 // fn check_traits() {
 //     // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync

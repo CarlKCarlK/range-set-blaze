@@ -140,19 +140,6 @@ where
     option_ranges: Option<RangeInclusive<T>>,
 }
 
-// cmk000
-// cmk doc this
-// // implement exact size iterator for one special case
-// impl<'a, T> ExactSizeIterator for RangeValuesToRangesIter<T, (), &'a (), RangeValuesIter<'a, T, ()>>
-// where
-//     T: Integer,
-// {
-//     #[must_use]
-//     fn len(&self) -> usize {
-//         self.iter.len()
-//     }
-// }
-
 impl<T, V> FusedIterator for IntoRangeValuesToRangesIter<T, V>
 where
     T: Integer,
@@ -211,7 +198,6 @@ where
 }
 
 /// cmk
-/// cmk000 the next method is very similar to the one above
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct RangeValuesToRangesIter<T, V, VR, I>

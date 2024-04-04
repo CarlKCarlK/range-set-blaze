@@ -26,6 +26,7 @@ use gen_ops::gen_ops_ex;
 use num_traits::One;
 use num_traits::Zero;
 
+/// cmk doc
 // cmk fix name aka 'Clone'
 pub trait ValueOwned: PartialEq + Clone {}
 
@@ -35,13 +36,16 @@ pub trait ValueOwned: PartialEq + Clone {}
 
 impl<T> ValueOwned for T where T: PartialEq + Clone {}
 
+/// cmk doc
 pub trait CloneBorrow<V: ?Sized + ValueOwned>: Borrow<V>
 where
     Self: Sized,
 {
+    /// cmk doc
     fn clone_borrow(&self) -> Self;
 
     // If you intend to consume `Self`, the method signature should indeed take `self`
+    /// cmk doc
     fn borrow_clone(self) -> V {
         // Since `self` is consumed, you can do anything with it, including dropping
         self.borrow().clone()

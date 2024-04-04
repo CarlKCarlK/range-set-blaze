@@ -45,10 +45,10 @@ where
     IM: SortedDisjointMap<T, V, VR>,
     IS: SortedDisjoint<T>,
 {
-    iter_map: IM,
-    iter_set: IS,
-    current_range: Option<RangeInclusive<T>>,
-    current_range_value: Option<(RangeInclusive<T>, VR)>,
+    iter_left: IM,
+    iter_right: IS,
+    right: Option<RangeInclusive<T>>,
+    left: Option<(RangeInclusive<T>, VR)>,
     phantom: PhantomData<V>,
 }
 
@@ -65,10 +65,10 @@ where
     #[allow(dead_code)]
     pub fn new(iter_map: IM, iter_set: IS) -> Self {
         Self {
-            iter_map,
-            iter_set,
-            current_range: None,
-            current_range_value: None,
+            iter_left: iter_map,
+            iter_right: iter_set,
+            right: None,
+            left: None,
             phantom: PhantomData,
         }
     }
@@ -120,64 +120,55 @@ where
         // println!("cmk begin next");
         loop {
             // Be sure both currents are loaded.
-            self.current_range = self.current_range.take().or_else(|| self.iter_set.next());
-            self.current_range_value = self
-                .current_range_value
-                .take()
-                .or_else(|| self.iter_map.next());
+            self.left = self.left.take().or_else(|| self.iter_left.next());
+            self.right = self.right.take().or_else(|| self.iter_right.next());
 
             // If either is still none, we are done.
-            let (Some(current_range), Some(current_range_value)) =
-                (self.current_range.take(), self.current_range_value.take())
-            else {
+            let (Some(left), Some(right)) = (self.left.take(), self.right.take()) else {
                 return None;
             };
-            let (current_range_start, current_range_end) = current_range.into_inner();
-            let (current_range_value_start, current_range_value_end) =
-                (&current_range_value).0.clone().into_inner();
+            let (left_start, left_end) = left.0.clone().into_inner();
+            let (right_start, right_end) = right.into_inner();
             // println!("cmk {:?} {:?}", current_range, current_range_value.range);
 
             // if current_range ends before current_range_value, clear it and loop for a new value.
-            if current_range_end < current_range_value_start {
+            if right_end < left_start {
                 // println!("cmk getting new range");
-                self.current_range = None;
-                self.current_range_value = Some(current_range_value);
+                self.right = None;
+                self.left = Some(left);
                 continue;
             }
 
             // if current_range_value ends before current_range, clear it and loop for a new value.
-            // cmk00 do I want to assign .0 to something?
-            if current_range_value_end < current_range_start {
+            if left_end < right_start {
                 // println!("cmk getting new range value");
-                self.current_range =
-                    Some(RangeInclusive::new(current_range_start, current_range_end));
-                self.current_range_value = None;
+                self.right = Some(RangeInclusive::new(right_start, right_end));
+                self.left = None;
                 continue;
             }
 
             // Thus, they overlap
-            let start = max(current_range_start, current_range_value_start);
-            let end = min(current_range_end, current_range_value_end);
+            let start = max(right_start, left_start);
+            let end = min(right_end, left_end);
 
             // remove any ranges that match "end" and set them None
 
-            let value = match (current_range_end == end, current_range_value_end == end) {
+            let value = match (right_end == end, left_end == end) {
                 (true, true) => {
-                    self.current_range = None;
-                    self.current_range_value = None;
-                    current_range_value.1
+                    self.right = None;
+                    self.left = None;
+                    left.1
                 }
                 (true, false) => {
-                    self.current_range = None;
-                    let value = current_range_value.1.clone_borrow();
-                    self.current_range_value = Some(current_range_value);
+                    self.right = None;
+                    let value = left.1.clone_borrow();
+                    self.left = Some(left);
                     value
                 }
                 (false, true) => {
-                    self.current_range =
-                        Some(RangeInclusive::new(current_range_start, current_range_end));
-                    self.current_range_value = None;
-                    current_range_value.1
+                    self.right = Some(RangeInclusive::new(right_start, right_end));
+                    self.left = None;
+                    left.1
                 }
                 (false, false) => {
                     panic!("impossible case")

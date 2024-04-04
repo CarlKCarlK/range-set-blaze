@@ -377,48 +377,43 @@ fn complement() -> Result<(), Box<dyn std::error::Error>> {
     let b = a.ranges();
     let c = !not_a.ranges();
     let d = a0.ranges() | a1.ranges();
-    // cmk00 let (e, _) = a.ranges().tee();
 
-    // cmk00 let f = UnionIter::from([15, 14, 15, 13, 12, 11, 9, 9, 8, 6, 4, 5, 3, 2, 1, 1, 1]);
+    // cmk000 let f = UnionIter::from([15, 14, 15, 13, 12, 11, 9, 9, 8, 6, 4, 5, 3, 2, 1, 1, 1]);
     let not_b = !b;
     let not_c = !c;
     let not_d = !d;
-    // cmk00 let not_e = e.complement();
     // cmk00 let not_f = !f;
     assert!(not_a.ranges().equal(not_b));
     assert!(not_a.ranges().equal(not_c));
     assert!(not_a.ranges().equal(not_d));
-    // cmk00 assert!(not_a.ranges().equal(not_e));
     // cmk00 assert!(not_a.ranges().equal(not_f));
     Ok(())
 }
 
 // cmk00
-// #[test]
-// fn union_test() -> Result<(), Box<dyn std::error::Error>> {
-//     // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
-//     let a0 = RangeSetBlaze::from_iter([1..=6]);
-//     let (a0_tee, _) = a0.ranges().tee();
-//     let a1 = RangeSetBlaze::from_iter([8..=9]);
-//     let a2 = RangeSetBlaze::from_iter([11..=15]);
-//     let a12 = &a1 | &a2;
-//     let not_a0 = !&a0;
-//     let a = &a0 | &a1 | &a2;
-//     let b = a0.ranges() | a1.ranges() | a2.ranges();
-//     let c = !not_a0.ranges() | a12.ranges();
-//     let d = a0.ranges() | a1.ranges() | a2.ranges();
-//     let e = a0_tee.union(a12.ranges());
+#[test]
+fn union_test() -> Result<(), Box<dyn std::error::Error>> {
+    // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+    let a0 = RangeSetBlaze::from_iter([1..=6]);
+    let a1 = RangeSetBlaze::from_iter([8..=9]);
+    let a2 = RangeSetBlaze::from_iter([11..=15]);
+    let a12 = &a1 | &a2;
+    let not_a0 = !&a0;
+    let a = &a0 | &a1 | &a2;
+    let b = a0.ranges() | a1.ranges() | a2.ranges();
+    let c = !not_a0.ranges() | a12.ranges();
+    let d = a0.ranges() | a1.ranges() | a2.ranges();
 
-//     let f = UnionIter::from_iter(a0.iter())
-//         | UnionIter::from_iter(a1.iter())
-//         | UnionIter::from_iter(a2.iter());
-//     assert!(a.ranges().equal(b));
-//     assert!(a.ranges().equal(c));
-//     assert!(a.ranges().equal(d));
-//     assert!(a.ranges().equal(e));
-//     assert!(a.ranges().equal(f));
-//     Ok(())
-// }
+    // cmk000
+    let f = UnionIter::from_iter(a0.iter())
+        | UnionIter::from_iter(a1.iter())
+        | UnionIter::from_iter(a2.iter());
+    assert!(a.ranges().equal(b));
+    assert!(a.ranges().equal(c));
+    assert!(a.ranges().equal(d));
+    assert!(a.ranges().equal(f));
+    Ok(())
+}
 
 #[test]
 fn sub() -> Result<(), Box<dyn std::error::Error>> {

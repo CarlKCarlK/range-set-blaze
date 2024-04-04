@@ -29,79 +29,6 @@ use crate::sorted_disjoint::SortedDisjoint;
 use crate::{map::ValueOwned, union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
 use core::ops::RangeInclusive;
 
-// cmk hey, about a method that gets the range or a clone of the value?
-// cmk should this be pub/crate or replaced with a tuple?
-/// cmk doc
-// pub struct RangeValue<T, V, VR>
-// where
-//     T: Integer,
-//     V: ValueOwned,
-//     VR: CloneBorrow<V>,
-// {
-//     /// cmk doc
-//     pub range: RangeInclusive<T>,
-//     /// cmk doc
-//     pub value: VR,
-//     phantom: PhantomData<V>,
-// }
-
-// impl<'a, T, V, VR> RangeValue<T, V, VR>
-// where
-//     T: Integer,
-//     V: ValueOwned + 'a,
-//     VR: CloneBorrow<V> + 'a,
-// {
-//     /// cmk doc
-//     pub fn new(range: RangeInclusive<T>, value: VR) -> Self {
-//         RangeValue {
-//             range,
-//             value,
-//             phantom: PhantomData,
-//         }
-//     }
-// }
-
-// impl<'a, T, V> RangeValue<T, V, UniqueValue<V>>
-// where
-//     T: Integer,
-//     V: ValueOwned + 'a,
-// {
-//     /// cmk doc
-//     pub fn new_unique(range: RangeInclusive<T>, v: V) -> Self {
-//         (range, UniqueValue::new(v))
-//     }
-// }
-
-// impl<'a, T, V, VR> fmt::Debug for RangeValue<T, V, VR>
-// where
-//     T: Integer + fmt::Debug, // Ensure T also implements Debug for completeness.
-//     V: ValueOwned + fmt::Debug + 'a, // Add Debug bound for V.
-//     VR: CloneBorrow<V> + 'a,
-// {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         f.debug_struct("RangeValue")
-//             .field("range", &self.range)
-//             .field("value", self.1.borrow())
-//             .finish()
-//     }
-// }
-
-// // implement the clone trait for RangeValue
-// impl<'a, T, V, VR> Clone for RangeValue<T, V, VR>
-// where
-//     T: Integer,
-//     V: ValueOwned + Clone + 'a,
-//     VR: CloneBorrow<V> + 'a,
-// {
-//     fn clone(&self) -> Self {
-//         RangeValue {
-//             range: self.range.clone(),
-//             value: self.1.clone_borrow(), // cmk00 is this correct?
-//             phantom: PhantomData,
-//         }
-//     }
-// }
-
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
 #[doc(hidden)] // cmk don't hide so much stuff.ks
@@ -991,7 +918,6 @@ where
 // {
 // }
 
-/// cmk000 move to other file
 /// Gives any iterator of cmk implements the [`SortedDisjointMap`] trait without any checking.
 // cmk0 why was this hidden? check for others#[doc(hidden)]
 /// doc
@@ -1016,6 +942,7 @@ where
     VR: CloneBorrow<V>,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
+    /// cmk doc
     pub fn new<J>(iter: J) -> Self
     where
         J: IntoIterator<Item = (RangeInclusive<T>, VR), IntoIter = I>,
@@ -1097,7 +1024,7 @@ where
             return Some(range_value);
         };
 
-        let (previous_start, previous_end) = previous.0.clone().into_inner();
+        let previous_end = *previous.0.end();
         let (start, end) = range_value.0.clone().into_inner();
         assert!(start <= end, "Start must be <= end.",);
         assert!(
@@ -1122,8 +1049,6 @@ where
 
 // // cmk00 check
 // // cmk00 make Fused but don't require it
-
-// cmk000 CheckSortedDisjointMap should have a Default
 
 /// cmk doc
 #[derive(Clone, Debug)]
@@ -1161,44 +1086,54 @@ where
     V: ValueOwned,
     VR: CloneBorrow<V>,
 {
-    // Accessor for the priority_number
+    /// Returns the priority number.
     pub fn priority_number(&self) -> usize {
         self.priority_number
     }
-    // Getter that borrows `range_value`
+    /// Returns a reference to `range_value`.
     pub fn range_value(&self) -> &(RangeInclusive<T>, VR) {
         &self.range_value
     }
 
-    // Setter that modifies `range_value`
+    /// Updates `range_value` with the given value.
     pub fn set_range_value(&mut self, value: (RangeInclusive<T>, VR)) {
         self.range_value = value;
     }
 
+    /// Consumes `Priority` and returns `range_value`.
     pub fn into_range_value(self) -> (RangeInclusive<T>, VR) {
         self.range_value
     }
 
+    /// Updates the range part of `range_value`.
     pub fn set_range(&mut self, range: RangeInclusive<T>) {
         self.range_value.0 = range;
     }
 
+    /// Consumes `Priority` and returns the range part of `range_value`.
     pub fn into_range(self) -> RangeInclusive<T> {
         self.range_value.0
     }
 
+    /// Returns the start of the range.
     pub fn start(&self) -> T {
         *self.range_value.0.start()
     }
 
+    /// Returns the end of the range.
     pub fn end(&self) -> T {
         *self.range_value.0.end()
     }
 
+    /// Returns the start and end of the range. (Assuming direct access to start and end)
     pub fn start_and_end(&self) -> (T, T) {
-        self.range_value.0.clone().into_inner()
+        (
+            (*self.range_value.0.start()).clone(),
+            (*self.range_value.0.end()).clone(),
+        )
     }
 
+    /// Returns a reference to the value part of `range_value`.
     pub fn value(&self) -> &VR {
         &self.range_value.1
     }
