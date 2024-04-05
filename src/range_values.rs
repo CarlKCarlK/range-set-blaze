@@ -425,7 +425,7 @@ where
     I: SortedDisjointMap<T, V, VR>,
 {
     iter: I,
-    priority: usize,
+    priority_number: usize,
     phantom_data: PhantomData<(T, V, VR)>,
 }
 
@@ -450,7 +450,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|range_value| Priority::new(range_value, self.priority))
+            .map(|range_value| Priority::new(range_value, self.priority_number))
     }
 }
 
@@ -464,7 +464,7 @@ where
     pub fn new(iter: I, priority: usize) -> Self {
         SetPriorityMap {
             iter,
-            priority,
+            priority_number: priority,
             phantom_data: PhantomData,
         }
     }

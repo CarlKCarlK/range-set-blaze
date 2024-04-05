@@ -1169,7 +1169,8 @@ where
     VR: CloneBorrow<V> + 'a,
 {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.priority_number.cmp(&other.priority_number)
+        // smaller is better
+        other.priority_number.cmp(&self.priority_number)
     }
 }
 

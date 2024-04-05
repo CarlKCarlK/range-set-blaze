@@ -60,8 +60,8 @@ where
 {
     /// Creates a new [`MergeMap`] iterator from two [`SortedDisjointMap`] iterators. See [`MergeMap`] for more details and examples.
     pub fn new(left: L, right: R) -> Self {
-        let left = SetPriorityMap::new(left, usize::MAX);
-        let right = SetPriorityMap::new(right, usize::MIN);
+        let left = SetPriorityMap::new(left, 0);
+        let right = SetPriorityMap::new(right, 1);
         Self {
             // We sort only by start -- priority is not used until later.
             iter: left.merge_by(right, |a, b| a.start() < b.start()),
@@ -163,8 +163,8 @@ where
     {
         // Prioritize from left to right
         let iter = iter.into_iter().enumerate().map(|(i, x)| {
-            let priority = usize::MAX.checked_sub(i).unwrap();
-            SetPriorityMap::new(x, priority)
+            let priority_number = i;
+            SetPriorityMap::new(x, priority_number)
         });
         // Merge RangeValues by start with ties broken by priority
         let iter: KMergeBy<

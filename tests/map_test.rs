@@ -860,8 +860,8 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
 
     let sorted_starts = AssumePrioritySortedStartsMap::new(
         [
-            Priority::new((5..=6, UniqueValue::new("a")), usize::MAX),
-            Priority::new((1..=5, UniqueValue::new("b")), usize::MIN),
+            Priority::new((5..=6, UniqueValue::new("a")), 0),
+            Priority::new((1..=5, UniqueValue::new("b")), 1),
         ]
         .into_iter(),
     );

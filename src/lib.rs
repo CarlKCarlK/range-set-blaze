@@ -2471,7 +2471,7 @@ pub fn convert_challenge() {
     // cmk00 should we reverse the sense of priority_number so lower is better?
     let a = a
         .enumerate()
-        .map(|(i, range_value)| Priority::new(range_value, usize::MAX - i));
+        .map(|(i, range_value)| Priority::new(range_value, i));
     let a = AssumePrioritySortedStartsMap::new(a);
     let a = UnionIterMap::new(a);
     // is_sorted_disjoint_map::<_, _, _, _>(a);
@@ -2481,7 +2481,7 @@ pub fn convert_challenge() {
     let iter = [(5..=100, &"a"), (5..=5, &"b"), (1..=4, &"a")].into_iter();
     let iter = iter
         .enumerate()
-        .map(|(i, range_value)| Priority::new(range_value, usize::MAX - i));
+        .map(|(i, range_value)| Priority::new(range_value, i));
     let iter = iter.into_iter().sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
         a.start().cmp(&b.start())

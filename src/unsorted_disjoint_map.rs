@@ -25,7 +25,7 @@ where
     option_priority: Option<Priority<T, V, VR>>,
     min_value_plus_2: T,
     two: T,
-    priority: usize,
+    priority_number: usize,
 }
 
 impl<T, V, VR, I> UnsortedPriorityDisjointMap<T, V, VR, I>
@@ -41,7 +41,7 @@ where
             option_priority: None,
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
-            priority: usize::MAX,
+            priority_number: 0,
         }
     }
 }
@@ -71,10 +71,10 @@ where
             let Some(next_range_value) = self.iter.next() else {
                 return self.option_priority.take();
             };
-            let next_priority = Priority::new(next_range_value, self.priority);
-            self.priority = self
-                .priority
-                .checked_sub(1)
+            let next_priority = Priority::new(next_range_value, self.priority_number);
+            self.priority_number = self
+                .priority_number
+                .checked_add(1)
                 .expect_debug_unwrap_release("overflow");
 
             // check the next range is valid and non-empty
