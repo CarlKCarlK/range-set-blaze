@@ -14,7 +14,7 @@ use core::{
 use num_traits::Zero;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub(crate) struct UnsortedDisjointMap<T, V, VR, I>
+pub(crate) struct UnsortedPriorityDisjointMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -28,7 +28,7 @@ where
     priority: usize,
 }
 
-impl<T, V, VR, I> UnsortedDisjointMap<T, V, VR, I>
+impl<T, V, VR, I> UnsortedPriorityDisjointMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -36,7 +36,7 @@ where
     I: Iterator<Item = (RangeInclusive<T>, VR)>, // Any iterator is fine
 {
     pub fn new(into_iter: I) -> Self {
-        UnsortedDisjointMap {
+        UnsortedPriorityDisjointMap {
             iter: into_iter,
             option_priority: None,
             min_value_plus_2: T::min_value() + T::one() + T::one(),
@@ -55,7 +55,7 @@ where
 // {
 // }
 
-impl<T, V, VR, I> Iterator for UnsortedDisjointMap<T, V, VR, I>
+impl<T, V, VR, I> Iterator for UnsortedPriorityDisjointMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,

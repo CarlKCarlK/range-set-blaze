@@ -19,7 +19,7 @@ use gen_ops::gen_ops_ex;
 use crate::map::{UniqueValue, ValueOwned};
 use crate::range_values::RangeValuesToRangesIter;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
-use crate::unsorted_disjoint_map::UnsortedDisjointMap;
+use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 use crate::{
     iter_map::{IntoIterMap, KeysMap},
     prelude::*,
@@ -1704,7 +1704,7 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
         let iter = iter.into_iter();
 
         // We gather adjacent values into ranges via UnsortedDisjointMap.
-        let unsorted = UnsortedDisjointMap::new(iter.map(|x| (x..=x, &())));
+        let unsorted = UnsortedPriorityDisjointMap::new(iter.map(|x| (x..=x, &())));
         for priority in unsorted {
             self.0.internal_add(priority.into_range(), ());
         }
@@ -1890,7 +1890,7 @@ impl<T: Integer, V: ValueOwned> Extend<(RangeInclusive<T>, V)> for RangeSetBlaze
 
         // We gather adjacent values into ranges via UnsortedDisjointMap.
         let unsorted =
-            UnsortedDisjointMap::new(iter.map(|(range, v)| (range, UniqueValue::new(v))));
+            UnsortedPriorityDisjointMap::new(iter.map(|(range, v)| (range, UniqueValue::new(v))));
         for priority in unsorted {
             self.0.internal_add(priority.into_range(), ());
         }

@@ -6,6 +6,7 @@ use crate::Integer;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive, ops::Sub};
 
+// cmk0 be sure this is still needed.
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub(crate) struct FromSliceIter<'a, T, const N: usize>

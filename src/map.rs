@@ -9,7 +9,7 @@ use crate::sorted_disjoint_map::{PrioritySortedStartsMap, SortedDisjointMap};
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{
-    AssumePrioritySortedStartsMap, SortedDisjointWithLenSoFarMap, UnsortedDisjointMap,
+    AssumePrioritySortedStartsMap, SortedDisjointWithLenSoFarMap, UnsortedPriorityDisjointMap,
 };
 use crate::{CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint};
 use alloc::collections::BTreeMap;
@@ -2006,7 +2006,9 @@ where
         let iter = iter.into_iter();
 
         // We gather adjacent values into ranges via UnsortedDisjointMap.
-        for priority in UnsortedDisjointMap::new(iter.map(|(r, v)| (r..=r, UniqueValue::new(v)))) {
+        for priority in
+            UnsortedPriorityDisjointMap::new(iter.map(|(r, v)| (r..=r, UniqueValue::new(v))))
+        {
             let (range, value) = priority.into_range_value();
             self.internal_add(range, value.borrow_clone());
         }
@@ -2047,7 +2049,7 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
         let iter = iter.into_iter();
 
         // We gather adjacent values into ranges via UnsortedDisjointMap.
-        let unsorted = UnsortedDisjointMap::new(iter.map(|x| (x, &())));
+        let unsorted = UnsortedPriorityDisjointMap::new(iter.map(|x| (x, &())));
         for priority in unsorted {
             self.0.internal_add(priority.into_range(), ());
         }

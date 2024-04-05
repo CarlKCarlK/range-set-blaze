@@ -10,7 +10,7 @@ use core::iter::FusedIterator;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
 
-use crate::unsorted_disjoint_map::UnsortedDisjointMap;
+use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 use crate::{map::ValueOwned, Integer};
 use crate::{
     map::{CloneBorrow, SortedStartsInVecMap},
@@ -344,13 +344,13 @@ where
         //     println!("cmk x.priority {:?}", x.priority);
         //     x
         // });
-        let iter = UnsortedDisjointMap::new(iter);
+        let iter = UnsortedPriorityDisjointMap::new(iter);
         UnionIterMap::from(iter)
     }
 }
 
 // from from UnsortedDisjointMap to UnionIterMap
-impl<T, V, VR, I> From<UnsortedDisjointMap<T, V, VR, I>>
+impl<T, V, VR, I> From<UnsortedPriorityDisjointMap<T, V, VR, I>>
     for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>>
 where
     T: Integer,
@@ -359,7 +359,7 @@ where
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     #[allow(clippy::clone_on_copy)]
-    fn from(unsorted_disjoint: UnsortedDisjointMap<T, V, VR, I>) -> Self {
+    fn from(unsorted_disjoint: UnsortedPriorityDisjointMap<T, V, VR, I>) -> Self {
         let iter = unsorted_disjoint.sorted_by(|a, b| {
             // We sort only by start -- priority is not used until later.
             a.start().cmp(&b.start())

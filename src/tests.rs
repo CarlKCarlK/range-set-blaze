@@ -1261,11 +1261,12 @@ fn sorted_disjoint_iterator_coverage_0() {
 //     assert!(format!("{c:?}").starts_with("UnionIter"));
 // }
 
-#[test]
-fn unsorted_disjoint_coverage_0() {
-    let a = AssumeSortedStarts::new([1..=2, 5..=100]);
-    assert!(format!("{a:?}").starts_with("AssumeSortedStarts"));
-}
+// cmk000
+// #[test]
+// fn unsorted_disjoint_coverage_0() {
+//     let a = AssumeSortedStarts::new([1..=2, 5..=100]);
+//     assert!(format!("{a:?}").starts_with("AssumeSortedStarts"));
+// }
 
 #[test]
 fn test_coverage_0() {

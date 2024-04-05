@@ -45,7 +45,6 @@ mod not_iter;
 pub mod prelude;
 pub use crate::map::UniqueValue;
 pub mod range_values;
-mod ranges;
 #[cfg(feature = "rog-experimental")]
 mod rog;
 mod sorted_disjoint;
@@ -58,15 +57,16 @@ pub use map::ValueOwned;
 use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
+use range_set_blaze::SortedStartsToUnitMap;
 use range_set_blaze::UnitMapToSortedDisjoint;
 use range_values::RangeValuesToRangesIter;
 pub use sym_diff_iter_map::SymDiffIterMap;
+use unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 mod multiway_map;
 mod sorted_disjoint_map;
 mod tests;
 mod tests_map;
 mod union_iter_map;
-mod unsorted_disjoint;
 mod unsorted_disjoint_map;
 pub use crate::map::RangeMapBlaze;
 pub use crate::sorted_disjoint_map::Priority;
@@ -85,7 +85,6 @@ pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 // use itertools::Tee;
 pub use merge_map::MergeMap; // cmk KMergeMap
 mod merge_map;
-mod not_iter_map;
 pub use not_iter::NotIter;
 use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, WrappingSub};
 #[cfg(feature = "rog-experimental")]
@@ -96,7 +95,6 @@ pub use crate::sorted_disjoint_map::CheckSortedDisjointMap;
 pub use sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 // pub use union_iter::UnionIter;
 pub use union_iter_map::UnionIterMap;
-pub use unsorted_disjoint::AssumeSortedStarts;
 // use unsorted_disjoint::SortedDisjointWithLenSoFar;
 // use unsorted_disjoint::UnsortedDisjoint;
 // cmk pub use unsorted_disjoint_map::UnsortedDisjointMap;
@@ -2442,3 +2440,122 @@ where
 
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 // cmk00 Can we/should we hide MergeMapIter and KMergeMapIter and SymDiffMapIter::new and UnionMapIter::new?
+
+#[test]
+// cmk0000 challenge: convert from every level to sorted disjoint* for both map and set.
+pub fn convert_challenge() {
+    // use crate::sorted_disjoint_map::DebugToString; // cmk00 weird name
+    use itertools::Itertools;
+    fn is_sorted_disjoint_map<T, V, VR, S>(_iter: S)
+    where
+        T: Integer,
+        V: ValueOwned,
+        VR: CloneBorrow<V>,
+        S: SortedDisjointMap<T, V, VR>,
+    {
+    }
+
+    // Map - ranges
+
+    // * from sorted_disjoint
+    let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+    assert!(a.equal(CheckSortedDisjointMap::new([
+        (1..=2, &"a"),
+        (5..=100, &"a")
+    ])));
+
+    // cmk00 should "to_string" be "into_string" ???
+
+    // * from (priority) sorted_starts
+    let a = [(1..=4, &"a"), (5..=100, &"a"), (5..=5, &"b")].into_iter();
+    // cmk00 should we reverse the sense of priority_number so lower is better?
+    let a = a
+        .enumerate()
+        .map(|(i, range_value)| Priority::new(range_value, usize::MAX - i));
+    let a = AssumePrioritySortedStartsMap::new(a);
+    let a = UnionIterMap::new(a);
+    // is_sorted_disjoint_map::<_, _, _, _>(a);
+    assert!(a.equal(CheckSortedDisjointMap::new([(1..=100, &"a"),])));
+
+    // * from unsorted_disjoint
+    let iter = [(5..=100, &"a"), (5..=5, &"b"), (1..=4, &"a")].into_iter();
+    let iter = iter
+        .enumerate()
+        .map(|(i, range_value)| Priority::new(range_value, usize::MAX - i));
+    let iter = iter.into_iter().sorted_by(|a, b| {
+        // We sort only by start -- priority is not used until later.
+        a.start().cmp(&b.start())
+    });
+    let iter = AssumePrioritySortedStartsMap::new(iter);
+    let iter = UnionIterMap::new(iter);
+    assert!(iter.equal(CheckSortedDisjointMap::new([(1..=100, &"a"),])));
+
+    // * anything
+    let iter = [(5..=100, &"a"), (5..=5, &"b"), (1..=4, &"a")].into_iter();
+    let iter = UnsortedPriorityDisjointMap::new(iter.into_iter());
+    let iter = iter.into_iter().sorted_by(|a, b| {
+        // We sort only by start -- priority is not used until later.
+        a.start().cmp(&b.start())
+    });
+    let iter = AssumePrioritySortedStartsMap::new(iter);
+    let iter = UnionIterMap::new(iter);
+    assert!(iter.equal(CheckSortedDisjointMap::new([(1..=100, &"a"),])));
+
+    // Map - points
+    // Set - ranges
+    // Set - points
+
+    // what about multiple inputs?
+}
+
+// pub fn values_to_sorted_disjoint<T, I>(iter: I) -> SortedDisjointToUnitMap<T, I>
+// where
+//     T: Integer,
+//     I: Iterator<Item = T>, // cmk00 into_iter??? cmk00
+// {
+//     let iter = iter.map(|x| (x..=x, &()));
+//     let iter = UnsortedDisjointMap::new(iter);
+//     let sorted_disjoint_map = UnionIterMap::new(iter);
+//     let sorted_disjoint = UnitMapToSortedDisjoint::new(sorted_disjoint_map);
+//     sorted_disjoint
+// }
+
+// // cmk0000 rename and move
+// pub fn sorted_starts_to_sorted_disjoint<T, I>(
+//     sorted_starts: I,
+// ) -> UnitMapToSortedDisjoint<T, UnionIterMap<T, (), &'static (), SortedStartsToUnitMap<T, I>>>
+// where
+//     T: Integer,
+//     I: SortedStarts<T>, // into_iter??? cmk00
+// {
+//     let sorted_starts_map = SortedStartsToUnitMap::new(sorted_starts);
+//     let sorted_disjoint_map = UnionIterMap::new(sorted_starts_map);
+//     let sorted_disjoint: UnitMapToSortedDisjoint<
+//         T,
+//         UnionIterMap<T, (), &(), SortedStartsToUnitMap<T, I>>,
+//     > = UnitMapToSortedDisjoint::new(sorted_disjoint_map);
+//     sorted_disjoint
+// }
+
+// fn union_test() -> Result<(), Box<dyn std::error::Error>> {
+//     // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+//     let a0 = RangeSetBlaze::from_iter([1..=6]);
+//     let a1 = RangeSetBlaze::from_iter([8..=9]);
+//     let a2 = RangeSetBlaze::from_iter([11..=15]);
+//     let a12 = &a1 | &a2;
+//     let not_a0 = !&a0;
+//     let a = &a0 | &a1 | &a2;
+//     let b = a0.ranges() | a1.ranges() | a2.ranges();
+//     let c = !not_a0.ranges() | a12.ranges();
+//     let d = a0.ranges() | a1.ranges() | a2.ranges();
+
+//     // cmk000
+//     let f = sorted_starts_to_sorted_disjoint(a0.iter())
+//         | sorted_starts_to_sorted_disjoint(a1.iter())
+//         | sorted_starts_to_sorted_disjoint(a2.iter());
+//     assert!(a.ranges().equal(b));
+//     assert!(a.ranges().equal(c));
+//     assert!(a.ranges().equal(d));
+//     assert!(a.ranges().equal(f));
+//     Ok(())
+// }

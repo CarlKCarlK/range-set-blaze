@@ -6,7 +6,7 @@
 //! ```
 pub use crate::{
     intersection_dyn, intersection_map_dyn, range_set_blaze::MultiwayRangeSetBlaze, union_dyn,
-    union_map_dyn, AssumeSortedStarts, CheckSortedDisjoint, DynSortedDisjoint,
-    DynSortedDisjointMap, MultiwayRangeMapBlaze, MultiwaySortedDisjoint, MultiwaySortedDisjointMap,
-    RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap, SortedStarts,
+    union_map_dyn, CheckSortedDisjoint, DynSortedDisjoint, DynSortedDisjointMap,
+    MultiwayRangeMapBlaze, MultiwaySortedDisjoint, MultiwaySortedDisjointMap, RangeMapBlaze,
+    RangeSetBlaze, SortedDisjoint, SortedDisjointMap, SortedStarts,
 };
