@@ -57,11 +57,9 @@ pub use map::ValueOwned;
 use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
-use range_set_blaze::SortedStartsToUnitMap;
 use range_set_blaze::UnitMapToSortedDisjoint;
 use range_values::RangeValuesToRangesIter;
 pub use sym_diff_iter_map::SymDiffIterMap;
-use unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 mod multiway_map;
 mod sorted_disjoint_map;
 mod tests;
@@ -2444,8 +2442,10 @@ where
 #[test]
 // cmk0000 challenge: convert from every level to sorted disjoint* for both map and set.
 pub fn convert_challenge() {
-    // use crate::sorted_disjoint_map::DebugToString; // cmk00 weird name
+    use crate::sorted_disjoint_map::DebugToString; // cmk00 weird name
     use itertools::Itertools;
+    use unsorted_disjoint_map::UnsortedPriorityDisjointMap;
+
     fn is_sorted_disjoint_map<T, V, VR, S>(_iter: S)
     where
         T: Integer,
@@ -2455,7 +2455,9 @@ pub fn convert_challenge() {
     {
     }
 
+    //===========================
     // Map - ranges
+    //===========================
 
     // * from sorted_disjoint
     let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
@@ -2491,6 +2493,54 @@ pub fn convert_challenge() {
     assert!(iter.equal(CheckSortedDisjointMap::new([(1..=100, &"a"),])));
 
     // * anything
+    let iter = [(5, &"a"), (5, &"b"), (1, &"a")]
+        .into_iter()
+        .map(|(x, y)| (x..=x, y));
+    let iter = UnsortedPriorityDisjointMap::new(iter.into_iter());
+    let iter = iter.into_iter().sorted_by(|a, b| {
+        // We sort only by start -- priority is not used until later.
+        a.start().cmp(&b.start())
+    });
+    let iter = AssumePrioritySortedStartsMap::new(iter);
+    let iter = UnionIterMap::new(iter);
+    assert!(iter.equal(CheckSortedDisjointMap::new([(1..=1, &"a"), (5..=5, &"a"),])));
+
+    //===========================
+    // Map - points
+    //===========================
+
+    // * from sorted_disjoint
+    let a = [(1, &"a"), (5, &"a")].into_iter().map(|(x, y)| (x..=x, y));
+    let a = CheckSortedDisjointMap::new(a);
+    assert!(a.equal(CheckSortedDisjointMap::new([(1..=1, &"a"), (5..=5, &"a")])));
+
+    // cmk00 should "to_string" be "into_string" ???
+
+    // * from (priority) sorted_starts
+    let a = [(1, &"a"), (5, &"a"), (5, &"b")].into_iter();
+    // cmk00 should we reverse the sense of priority_number so lower is better?
+    let a = a
+        .enumerate()
+        .map(|(i, (k, v))| Priority::new((k..=k, v), i));
+    let a = AssumePrioritySortedStartsMap::new(a);
+    let a = UnionIterMap::new(a);
+    // is_sorted_disjoint_map::<_, _, _, _>(a);
+    assert!(a.equal(CheckSortedDisjointMap::new([(1..=1, &"a"), (5..=5, &"a")])));
+
+    // * from unsorted_disjoint
+    let iter = [(5, &"a"), (5, &"b"), (1, &"a")].into_iter();
+    let iter = iter
+        .enumerate()
+        .map(|(i, (k, v))| Priority::new((k..=k, v), i));
+    let iter = iter.into_iter().sorted_by(|a, b| {
+        // We sort only by start -- priority is not used until later.
+        a.start().cmp(&b.start())
+    });
+    let iter = AssumePrioritySortedStartsMap::new(iter);
+    let iter = UnionIterMap::new(iter);
+    assert!(iter.equal(CheckSortedDisjointMap::new([(1..=1, &"a"), (5..=5, &"a")])));
+
+    // * anything
     let iter = [(5..=100, &"a"), (5..=5, &"b"), (1..=4, &"a")].into_iter();
     let iter = UnsortedPriorityDisjointMap::new(iter.into_iter());
     let iter = iter.into_iter().sorted_by(|a, b| {
@@ -2501,8 +2551,48 @@ pub fn convert_challenge() {
     let iter = UnionIterMap::new(iter);
     assert!(iter.equal(CheckSortedDisjointMap::new([(1..=100, &"a"),])));
 
-    // Map - points
+    //===========================
     // Set - ranges
+    //===========================
+
+    // * from sorted_disjoint
+    let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
+    assert!(a.equal(CheckSortedDisjoint::new([1..=2, 5..=100])));
+
+    // cmk00 should "to_string" be "into_string" ???
+
+    // * from (priority) sorted_starts
+    let a = [1..=4, 5..=100, 5..=5].into_iter();
+    // cmk00 should we reverse the sense of priority_number so lower is better?
+    let a = a.map(|range| Priority::new((range, &()), 0));
+    let a = AssumePrioritySortedStartsMap::new(a);
+    let a = UnionIterMap::new(a);
+    let a = UnitMapToSortedDisjoint::new(a);
+    assert!(a.equal(CheckSortedDisjoint::new([1..=100])));
+
+    // * from unsorted_disjoint
+    let iter = [5..=100, 5..=5, 1..=4].into_iter();
+    let iter = iter.map(|range| Priority::new((range, &()), 0));
+    let iter = iter.into_iter().sorted_by(|a, b| {
+        // We sort only by start -- priority is not used until later.
+        a.start().cmp(&b.start())
+    });
+    let iter = AssumePrioritySortedStartsMap::new(iter);
+    let iter = UnionIterMap::new(iter);
+    let iter = UnitMapToSortedDisjoint::new(iter);
+    assert!(iter.equal(CheckSortedDisjoint::new([1..=100])));
+
+    // * anything
+    let iter = [5..=100, 5..=5, 1..=5].into_iter();
+    let iter = iter.map(|range| Priority::new((range, &()), 0));
+    let iter = iter.sorted_by(|a, b| {
+        // We sort only by start -- priority is not used until later.
+        a.start().cmp(&b.start())
+    });
+    let iter = AssumePrioritySortedStartsMap::new(iter);
+    let iter = UnionIterMap::new(iter);
+    let iter = UnitMapToSortedDisjoint::new(iter);
+    assert!(iter.equal(CheckSortedDisjoint::new([1..=100])));
     // Set - points
 
     // what about multiple inputs?

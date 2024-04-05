@@ -18,7 +18,6 @@ use gen_ops::gen_ops_ex;
 
 use crate::map::{UniqueValue, ValueOwned};
 use crate::range_values::RangeValuesToRangesIter;
-use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 use crate::{
     iter_map::{IntoIterMap, KeysMap},
@@ -2055,60 +2054,61 @@ where
     }
 }
 
-/// cmk doc
-pub struct SortedStartsToUnitMap<T, I>
-where
-    T: Integer,
-    I: SortedStarts<T>,
-{
-    iter: I,
-    phantom: PhantomData<T>,
-}
+// cmk000 remove
+// /// cmk doc
+// pub struct SortedStartsToUnitMap<T, I>
+// where
+//     T: Integer,
+//     I: SortedStarts<T>,
+// {
+//     iter: I,
+//     phantom: PhantomData<T>,
+// }
 
-impl<'a, T, I> SortedStartsToUnitMap<T, I>
-where
-    T: Integer,
-    I: SortedStarts<T>,
-{
-    // Define a new method that directly accepts a SortedDisjoint iterator
+// impl<'a, T, I> SortedStartsToUnitMap<T, I>
+// where
+//     T: Integer,
+//     I: SortedStarts<T>,
+// {
+//     // Define a new method that directly accepts a SortedDisjoint iterator
 
-    /// cmk doc
-    pub fn new(iter: I) -> Self {
-        SortedStartsToUnitMap {
-            iter,
-            phantom: PhantomData,
-        }
-    }
-}
+//     /// cmk doc
+//     pub fn new(iter: I) -> Self {
+//         SortedStartsToUnitMap {
+//             iter,
+//             phantom: PhantomData,
+//         }
+//     }
+// }
 
-impl<T, I> FusedIterator for SortedStartsToUnitMap<T, I>
-where
-    T: Integer,
-    I: SortedStarts<T>,
-{
-}
+// impl<T, I> FusedIterator for SortedStartsToUnitMap<T, I>
+// where
+//     T: Integer,
+//     I: SortedStarts<T>,
+// {
+// }
 
-impl<T, I> Iterator for SortedStartsToUnitMap<T, I>
-where
-    T: Integer,
-    I: SortedStarts<T>,
-{
-    type Item = Priority<T, (), &'static ()>;
+// impl<T, I> Iterator for SortedStartsToUnitMap<T, I>
+// where
+//     T: Integer,
+//     I: SortedStarts<T>,
+// {
+//     type Item = Priority<T, (), &'static ()>;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter
-            .next()
-            .map(|range| Priority::new((range, &()), usize::MIN))
-    }
-}
+//     fn next(&mut self) -> Option<Self::Item> {
+//         self.iter
+//             .next()
+//             .map(|range| Priority::new((range, &()), usize::MIN))
+//     }
+// }
 
-// cmk1 move these into the macro
-impl<T, I> PrioritySortedStartsMap<T, (), &'static ()> for SortedStartsToUnitMap<T, I>
-where
-    T: Integer,
-    I: SortedStarts<T>,
-{
-}
+// // cmk1 move these into the macro
+// impl<T, I> PrioritySortedStartsMap<T, (), &'static ()> for SortedStartsToUnitMap<T, I>
+// where
+//     T: Integer,
+//     I: SortedStarts<T>,
+// {
+// }
 
 /// cmk doc
 pub struct UnitMapToSortedDisjoint<T, I>

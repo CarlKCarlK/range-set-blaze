@@ -12,7 +12,6 @@ use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use range_set_blaze::range_set_blaze::SortedDisjointToUnitMap;
-use range_set_blaze::range_set_blaze::SortedStartsToUnitMap;
 use range_set_blaze::range_set_blaze::UnitMapToSortedDisjoint;
 use range_set_blaze::range_values::IntoRangeValuesToRangesIter;
 #[cfg(feature = "rog-experimental")]
