@@ -1,14 +1,11 @@
+use crate::{
+    merge::KMerge, Integer, Merge, SortedDisjoint, SortedStarts, SymDiffIterKMerge,
+    SymDiffIterMerge,
+};
 use core::{
     cmp::{self, min},
     iter::FusedIterator,
     ops::RangeInclusive,
-};
-
-use alloc::collections::BinaryHeap;
-
-use crate::{
-    merge::KMerge, Integer, Merge, SortedDisjoint, SortedStarts, SymDiffIterKMerge,
-    SymDiffIterMerge,
 };
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
@@ -45,7 +42,7 @@ where
 {
     iter: I,
     next_item: Option<RangeInclusive<T>>,
-    workspace: BinaryHeap<RangeInclusive<T>>,
+    workspace: Vec<RangeInclusive<T>>,
     workspace_next_end: Option<T>,
     gather: Option<RangeInclusive<T>>,
     ready_to_go: Option<RangeInclusive<T>>,
@@ -87,10 +84,10 @@ where
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
-                let (next_start, next_end) = next_item.into_inner();
+                let (next_start, next_end) = next_item.clone().into_inner();
 
                 // If workspace is empty, just push the next item
-                let Some(best) = self.workspace.peek() else {
+                let Some(best) = self.workspace.first() else {
                     // println!(
                     //     "cmk pushing self.next_item {:?} into empty workspace",
                     //     next_item.0
@@ -122,7 +119,7 @@ where
             }
 
             // If the workspace is empty, we are done.
-            let Some(best) = self.workspace.peek() else {
+            let Some(best) = self.workspace.first() else {
                 debug_assert!(self.next_item.is_none());
                 debug_assert!(self.ready_to_go.is_none());
                 let value = self.gather.take();
@@ -192,17 +189,17 @@ where
             // We also update the workspace to removing any items that are completely covered by the new_start.
             // (Unlike UnionIterMap, we must keep any items that have a lower priority and are shorter than the new best.)
             // cmk use .filter() ?
-            let mut new_workspace = BinaryHeap::new();
+            let mut new_workspace = Vec::new();
             let mut new_next_end = None;
             while let Some(item) = self.workspace.pop() {
                 let mut item = item;
-                if item.end() <= next_end {
+                if *item.end() <= next_end {
                     // too short, don't keep
                     // println!("cmk too short, don't keep in workspace {:?}", item.0);
                     continue; // while loop
                 }
-                item.set_range(next_end + T::one()..=item.end());
-                new_next_end = min_next_end(&new_next_end, item.end());
+                item = next_end + T::one()..=*item.end();
+                new_next_end = min_next_end(&new_next_end, *item.end());
                 new_workspace.push(item);
             }
             self.workspace = new_workspace;
@@ -268,7 +265,7 @@ where
         Self {
             iter,
             next_item: item,
-            workspace: BinaryHeap::new(),
+            workspace: Vec::new(),
             workspace_next_end: None,
             gather: None,
             ready_to_go: None,
