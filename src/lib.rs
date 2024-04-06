@@ -51,14 +51,17 @@ mod sorted_disjoint;
 // use alloc::collections::btree_map;
 // use gen_ops::gen_ops_ex;
 pub use intersection_iter_map::IntersectionIterMap;
+mod sym_diff_iter;
 mod sym_diff_iter_map;
 pub use map::CloneBorrow;
 pub use map::ValueOwned;
+use merge::KMerge;
 use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
 use range_set_blaze::UnitMapToSortedDisjoint;
 use range_values::RangeValuesToRangesIter;
+pub use sym_diff_iter::SymDiffIter;
 pub use sym_diff_iter_map::SymDiffIterMap;
 mod multiway_map;
 mod sorted_disjoint_map;
@@ -81,7 +84,9 @@ use core::{
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 // use itertools::Tee;
+pub use merge::Merge;
 pub use merge_map::MergeMap; // cmk KMergeMap
+mod merge;
 mod merge_map;
 pub use not_iter::NotIter;
 use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, WrappingSub};
@@ -1613,16 +1618,9 @@ pub type SymDiffIterMapMerge<T, V, VR, L, R> = SymDiffIterMap<T, V, VR, MergeMap
 pub type SymDiffIterMapKMerge<T, V, VR, II> = SymDiffIterMap<T, V, VR, KMergeMap<T, V, VR, II>>;
 
 #[doc(hidden)]
-pub type BitXorOldNew<T, L, R> = UnitMapToSortedDisjoint<
-    T,
-    SymDiffIterMapMerge<
-        T,
-        (),
-        &'static (),
-        SortedDisjointToUnitMap<T, L>,
-        SortedDisjointToUnitMap<T, R>,
-    >,
->;
+pub type SymDiffIterMerge<T, L, R> = SymDiffIter<T, Merge<T, L, R>>;
+#[doc(hidden)]
+pub type SymDiffIterKMerge<T, II> = SymDiffIter<T, KMerge<T, II>>;
 
 #[doc(hidden)]
 pub type UnionIterKMerge<T, I> = UnitMapToSortedDisjoint<

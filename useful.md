@@ -1,5 +1,11 @@
 # Useful commands for this project
 
+## Benchmarking
+
+```cmd
+cargo bench
+```
+
 ## Testing
 
 ```cmd

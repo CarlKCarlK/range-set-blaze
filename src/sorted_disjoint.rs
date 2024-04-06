@@ -17,7 +17,8 @@ use crate::{map::ValueOwned, SortedDisjointMap};
 use itertools::Itertools;
 
 use crate::{
-    BitAndMerge, BitSubMerge, BitXorOldNew, DynSortedDisjoint, Integer, NotIter, UnionIterMerge,
+    BitAndMerge, BitSubMerge, DynSortedDisjoint, Integer, NotIter, SymDiffIter, SymDiffIterMerge,
+    UnionIterMerge,
 };
 
 /// A trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
@@ -368,7 +369,37 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
     #[inline]
-    fn symmetric_difference<'a, R>(self, other: R) -> BitXorOldNew<T, Self, R::IntoIter>
+    fn symmetric_difference<'a, R>(self, other: R) -> SymDiffIterMerge<T, Self, R::IntoIter>
+    where
+        R: IntoIterator<Item = Self::Item>,
+        R::IntoIter: SortedDisjoint<T>,
+        <R as IntoIterator>::IntoIter:,
+        Self: Sized,
+    {
+        let result: SymDiffIter<T, crate::Merge<T, Self, <R as IntoIterator>::IntoIter>> =
+            SymDiffIter::new2(self, other.into_iter());
+        result
+    }
+
+    #[inline]
+    fn symmetric_difference_slow<'a, R>(
+        self,
+        other: R,
+    ) -> UnitMapToSortedDisjoint<
+        T,
+        crate::SymDiffIterMap<
+            T,
+            (),
+            &'static (),
+            crate::MergeMap<
+                T,
+                (),
+                &'static (),
+                SortedDisjointToUnitMap<T, Self>,
+                SortedDisjointToUnitMap<T, <R as IntoIterator>::IntoIter>,
+            >,
+        >,
+    >
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
@@ -378,7 +409,21 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         let left = SortedDisjointToUnitMap::new(self);
         let right = SortedDisjointToUnitMap::new(other.into_iter());
         let unit_map = left.symmetric_difference(right);
-        let result = UnitMapToSortedDisjoint::new(unit_map);
+        let result: UnitMapToSortedDisjoint<
+            T,
+            crate::SymDiffIterMap<
+                T,
+                (),
+                &(),
+                crate::MergeMap<
+                    T,
+                    (),
+                    &(),
+                    SortedDisjointToUnitMap<T, Self>,
+                    SortedDisjointToUnitMap<T, <R as IntoIterator>::IntoIter>,
+                >,
+            >,
+        > = UnitMapToSortedDisjoint::new(unit_map);
         result
     }
 
@@ -741,7 +786,7 @@ macro_rules! impl_sorted_traits_and_ops {
         where
             R: SortedDisjoint<T>,
         {
-            type Output = BitXorOldNew<T, Self, R>;
+            type Output = SymDiffIterMerge<T, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
@@ -768,6 +813,7 @@ impl_sorted_traits_and_ops!(IntoRangeValuesToRangesIter<T, V>, V: ValueOwned);
 impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
 impl_sorted_traits_and_ops!(UnitMapToSortedDisjoint<T, I>, I: SortedDisjointMap<T, (), &'static ()>);
 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: ValueOwned, VR: CloneBorrow<V>, I: SortedDisjointMap<T, V, VR>);
+impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);
 
 // We're not allowed to define methods on outside types, so we only define the traits
 // cmk0

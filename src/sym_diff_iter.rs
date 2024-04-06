@@ -7,10 +7,8 @@ use core::{
 use alloc::collections::BinaryHeap;
 
 use crate::{
-    map::{CloneBorrow, ValueOwned},
-    merge_map::KMergeMap,
-    sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
-    Integer, MergeMap, SortedDisjointMap, SymDiffIterMapKMerge, SymDiffIterMapMerge,
+    merge::KMerge, Integer, Merge, SortedDisjoint, SortedStarts, SymDiffIterKMerge,
+    SymDiffIterMerge,
 };
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
@@ -25,11 +23,11 @@ use crate::{
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_blaze::{SymDiffIterMap, Merge, SortedDisjointMap, CheckSortedDisjoint};
+/// use range_set_blaze::{SymDiffIter, Merge, SortedDisjointMap, CheckSortedDisjoint};
 ///
 /// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
-/// let union = SymDiffIterMap::new(Merge::new(a, b));
+/// let union = SymDiffIter::new(Merge::new(a, b));
 /// assert_eq!(union.to_string(), "1..=100");
 ///
 /// // Or, equivalently:
@@ -40,19 +38,17 @@ use crate::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct SymDiffIterMap<T, V, VR, I>
+pub struct SymDiffIter<T, I>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: PrioritySortedStartsMap<T, V, VR>,
+    I: SortedStarts<T>,
 {
     iter: I,
-    next_item: Option<Priority<T, V, VR>>,
-    workspace: BinaryHeap<Priority<T, V, VR>>,
+    next_item: Option<RangeInclusive<T>>,
+    workspace: BinaryHeap<RangeInclusive<T>>,
     workspace_next_end: Option<T>,
-    gather: Option<(RangeInclusive<T>, VR)>,
-    ready_to_go: Option<(RangeInclusive<T>, VR)>,
+    gather: Option<RangeInclusive<T>>,
+    ready_to_go: Option<RangeInclusive<T>>,
 }
 
 fn min_next_end<T>(next_end: &Option<T>, next_item_end: T) -> Option<T>
@@ -65,25 +61,22 @@ where
     ))
 }
 
-impl<T, V, VR, I> FusedIterator for SymDiffIterMap<T, V, VR, I>
+impl<T, I> FusedIterator for SymDiffIter<T, I>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: PrioritySortedStartsMap<T, V, VR>,
+    I: SortedStarts<T>,
 {
 }
 
-impl<T, V, VR, I> Iterator for SymDiffIterMap<T, V, VR, I>
+// cmk0000 review this for simplifications
+impl<T, I> Iterator for SymDiffIter<T, I>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: PrioritySortedStartsMap<T, V, VR>,
+    I: SortedStarts<T>,
 {
-    type Item = (RangeInclusive<T>, VR);
+    type Item = RangeInclusive<T>;
 
-    fn next(&mut self) -> Option<(RangeInclusive<T>, VR)> {
+    fn next(&mut self) -> Option<RangeInclusive<T>> {
         // Keep doing this until we have something to return.
         loop {
             if let Some(value) = self.ready_to_go.take() {
@@ -94,7 +87,7 @@ where
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
-                let (next_start, next_end) = next_item.start_and_end();
+                let (next_start, next_end) = next_item.into_inner();
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
@@ -112,8 +105,7 @@ where
                     // println!("cmk return to top of the main processing loop");
                     continue; // return to top of the main processing loop
                 };
-                let best = best.range_value();
-                if next_start == *best.0.start() {
+                if next_start == *best.start() {
                     // Always push (this differs from UnionIterMap)
                     self.workspace_next_end = min_next_end(&self.workspace_next_end, next_end);
                     self.workspace.push(next_item);
@@ -138,7 +130,6 @@ where
 
                 return value;
             };
-            let best = best.range_value();
 
             // We buffer for output the best item up to the start of the next item (if any).
 
@@ -146,17 +137,15 @@ where
             // unwrap() is safe because we know the workspace is not empty
             let mut next_end = self.workspace_next_end.take().unwrap();
             if let Some(next_item) = self.next_item.as_ref() {
-                next_end = min(next_item.start() - T::one(), next_end);
+                next_end = min(*next_item.start() - T::one(), next_end);
             }
 
             // Add the front of best to the gather buffer.
             if let Some(mut gather) = self.gather.take() {
-                if gather.1.borrow() == best.1.borrow()
-                    && *gather.0.end() + T::one() == *best.0.start()
-                {
+                if *gather.end() + T::one() == *best.start() {
                     if self.workspace.len() % 2 == 1 {
                         // if the gather is contiguous with the best, then merge them
-                        gather.0 = *gather.0.start()..=next_end;
+                        gather = *gather.start()..=next_end;
                         // println!(
                         //     "cmk merge gather {:?} best {:?} as {:?} -> {:?}",
                         //     gather.0,
@@ -181,7 +170,7 @@ where
                     self.ready_to_go = Some(gather);
                     // cmk this code appear twice
                     if self.workspace.len() % 2 == 1 {
-                        self.gather = Some((*best.0.start()..=next_end, best.1.clone_borrow()));
+                        self.gather = Some(*best.start()..=next_end);
                     } else {
                         debug_assert!(self.gather.is_none());
                     }
@@ -194,7 +183,7 @@ where
                 //     *best.0.start()..=next_end
                 // );
                 if self.workspace.len() % 2 == 1 {
-                    self.gather = Some((*best.0.start()..=next_end, best.1.clone_borrow()));
+                    self.gather = Some(*best.start()..=next_end);
                 } else {
                     debug_assert!(self.gather.is_none());
                 }
@@ -222,64 +211,58 @@ where
     }
 }
 
-#[allow(dead_code)]
-fn cmk_debug_string<'a, T, V, VR>(item: &Option<(RangeInclusive<T>, VR)>) -> String
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V> + 'a,
-{
-    if let Some(item) = item {
-        format!("Some({:?})", item.0)
-    } else {
-        "None".to_string()
-    }
-}
+// #[allow(dead_code)]
+// fn cmk_debug_string<'a, T, V, VR>(item: &Option<RangeInclusive<T>>) -> String
+// where
+//     T: Integer,
+//     V: ValueOwned,
+//     VR: CloneBorrow<V> + 'a,
+// {
+//     if let Some(item) = item {
+//         format!("Some({:?})", item.0)
+//     } else {
+//         "None".to_string()
+//     }
+// }
 
-impl<T, V, VR, L, R> SymDiffIterMapMerge<T, V, VR, L, R>
+impl<T, L, R> SymDiffIterMerge<T, L, R>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
+    L: SortedDisjoint<T>,
+    R: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
+    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIter`] for more details and examples.
     pub fn new2(left: L, right: R) -> Self {
-        let iter = MergeMap::new(left, right);
+        let iter = Merge::new(left, right);
         Self::new(iter)
     }
 }
 
 /// cmk doc
-impl<T, V, VR, J> SymDiffIterMapKMerge<T, V, VR, J>
+impl<T, J> SymDiffIterKMerge<T, J>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    J: SortedDisjointMap<T, V, VR>,
+    J: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
+    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIter`] for more details and examples.
     pub fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,
     {
-        let iter = KMergeMap::new(k);
+        let iter = KMerge::new(k);
         Self::new(iter)
     }
 }
 
-impl<T, V, VR, I> SymDiffIterMap<T, V, VR, I>
+impl<T, I> SymDiffIter<T, I>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: PrioritySortedStartsMap<T, V, VR>,
+    I: SortedStarts<T>,
 {
-    /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators.
-    /// See [`SymDiffIterMap`] for more details and examples.
+    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjointMap`] iterators.
+    /// See [`SymDiffIter`] for more details and examples.
     pub fn new(mut iter: I) -> Self {
         let item = iter.next();
         Self {
