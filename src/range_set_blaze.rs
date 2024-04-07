@@ -17,9 +17,8 @@ use std::{
 use alloc::collections::BTreeMap;
 use gen_ops::gen_ops_ex;
 
-use crate::map::{UniqueValue, ValueOwned};
-use crate::range_values::RangeValuesToRangesIter;
-use crate::unsorted_disjoint_map::{SortedDisjointWithLenSoFar, UnsortedPriorityDisjointMap};
+use crate::range_values::UnitRangesIter;
+use crate::unsorted_disjoint::SortedDisjointWithLenSoFar;
 use crate::SymDiffIter;
 use crate::{
     iter_map::{IntoIterMap, KeysMap},
@@ -384,13 +383,13 @@ impl<T: Integer> RangeSetBlaze<T> {
     where
         I: SortedDisjoint<T>,
     {
-        let iter_map = SortedDisjointToUnitMap {
-            iter,
-            phantom: PhantomData,
+        let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
+        let btree_map = BTreeMap::from_iter(&mut iter_with_len);
+        let range_map_blaze = RangeMapBlaze {
+            btree_map,
+            len: iter_with_len.len_so_far(),
         };
-
-        let range_set_map = RangeMapBlaze::from_sorted_disjoint_map(iter_map);
-        Self(range_set_map)
+        Self(range_map_blaze)
     }
 
     // /// Create a [`RangeSetBlaze`] from a [`SortedStarts`] iterator.
@@ -974,8 +973,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    pub fn ranges(&self) -> RangeValuesToRangesIter<T, (), &(), RangeValuesIter<T, ()>> {
-        self.0.ranges()
+    pub fn ranges(&self) -> UnitRangesIter<'_, T> {
+        self.0.unit_ranges()
     }
 
     /// An iterator that moves out the ranges in the [`RangeSetBlaze`],
@@ -1712,9 +1711,8 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
         let iter = iter.into_iter();
 
         // We gather adjacent values into ranges via UnsortedDisjointMap.
-        let unsorted = UnsortedPriorityDisjointMap::new(iter.map(|x| (x..=x, &())));
-        for priority in unsorted {
-            self.0.internal_add(priority.into_range(), ());
+        for x in iter {
+            self.0.internal_add(x..=x, ());
         }
     }
 }
@@ -1862,12 +1860,11 @@ impl<T: Integer> BitOr<&RangeSetBlaze<T>> for &RangeSetBlaze<T> {
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor(self, other: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
-        let range_set_map = &self.0 | &other.0;
-        RangeSetBlaze(range_set_map)
+        (self.ranges() | other.ranges()).into_range_set_blaze()
     }
 }
 
-impl<T: Integer, V: ValueOwned> Extend<(RangeInclusive<T>, V)> for RangeSetBlaze<T> {
+impl<T: Integer> Extend<(RangeInclusive<T>, ())> for RangeSetBlaze<T> {
     /// Extends the [`RangeSetBlaze`] with the contents of a
     /// range iterator.
 
@@ -1892,15 +1889,12 @@ impl<T: Integer, V: ValueOwned> Extend<(RangeInclusive<T>, V)> for RangeSetBlaze
     /// ```
     fn extend<I>(&mut self, iter: I)
     where
-        I: IntoIterator<Item = (RangeInclusive<T>, V)>,
+        I: IntoIterator<Item = (RangeInclusive<T>, ())>,
     {
         let iter = iter.into_iter();
-
-        // We gather adjacent values into ranges via UnsortedDisjointMap.
-        let unsorted =
-            UnsortedPriorityDisjointMap::new(iter.map(|(range, v)| (range, UniqueValue::new(v))));
-        for priority in unsorted {
-            self.0.internal_add(priority.into_range(), ());
+        for priority in iter {
+            todo!("cmk000000");
+            // self.0.internal_add(priority.into_range(), ());
         }
     }
 }

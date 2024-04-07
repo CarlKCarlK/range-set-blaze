@@ -1,27 +1,19 @@
-use crate::alloc::string::ToString;
-use crate::merge_map::KMergeMap;
-use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
-use crate::{MergeMap, SortedDisjointMap, UnionIterMapKMerge, UnionIterMapMerge};
-use alloc::format;
-use alloc::string::String;
-use alloc::{collections::BinaryHeap, vec};
+use crate::map::SortedStartsInVec;
+use crate::merge::KMerge;
+use crate::unsorted_disjoint::UnsortedDisjoint;
+use crate::{AssumeSortedStarts, Merge, SortedDisjoint, SortedStarts, UnionIterKMerge};
+use crate::{Integer, UnionIterMerge};
+use alloc::vec;
 use core::cmp::min;
 use core::iter::FusedIterator;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
 
-use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
-use crate::{map::ValueOwned, Integer};
-use crate::{
-    map::{CloneBorrow, SortedStartsInVecMap},
-    unsorted_disjoint_map::AssumePrioritySortedStartsMap,
-};
-
-/// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
+/// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
 /// i.e., all the integers in any input iterator, as sorted & disjoint ranges. Uses [`Merge`]
 /// or [`KMerge`].
 ///
-/// [`SortedDisjointMap`]: crate::SortedDisjointMap
+/// [`SortedDisjoint`]: crate::SortedDisjoint
 /// [`Merge`]: crate::Merge
 /// [`KMerge`]: crate::KMerge
 ///
@@ -29,11 +21,11 @@ use crate::{
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_blaze::{UnionIterMap, Merge, SortedDisjointMap, CheckSortedDisjoint};
+/// use range_set_blaze::{UnionIter, Merge, SortedDisjoint, CheckSortedDisjoint};
 ///
 /// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
-/// let union = UnionIterMap::new2(a, b);
+/// let union = UnionIter::new2(a, b);
 /// assert_eq!(union.to_string(), "1..=100");
 ///
 /// // Or, equivalently:
@@ -44,30 +36,26 @@ use crate::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct UnionIterMap<T, V, VR, SS>
+pub struct UnionIter<T, SS>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    SS: PrioritySortedStartsMap<T, V, VR>,
+    SS: SortedStarts<T>,
 {
     iter: SS,
-    next_item: Option<Priority<T, V, VR>>,
-    workspace: BinaryHeap<Priority<T, V, VR>>,
-    gather: Option<(RangeInclusive<T>, VR)>,
-    ready_to_go: Option<(RangeInclusive<T>, VR)>,
+    next_item: Option<RangeInclusive<T>>,
+    workspace: Vec<RangeInclusive<T>>,
+    gather: Option<RangeInclusive<T>>,
+    ready_to_go: Option<RangeInclusive<T>>,
 }
 
-impl<T, V, VR, I> Iterator for UnionIterMap<T, V, VR, I>
+impl<T, I> Iterator for UnionIter<T, I>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: PrioritySortedStartsMap<T, V, VR>,
+    I: SortedStarts<T>,
 {
-    type Item = (RangeInclusive<T>, VR);
+    type Item = RangeInclusive<T>;
 
-    fn next(&mut self) -> Option<(RangeInclusive<T>, VR)> {
+    fn next(&mut self) -> Option<RangeInclusive<T>> {
         // Keep doing this until we have something to return.
         loop {
             if let Some(value) = self.ready_to_go.take() {
@@ -78,10 +66,10 @@ where
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
-                let (next_start, next_end) = next_item.start_and_end();
+                let (next_start, next_end) = next_item.clone().into_inner();
 
                 // If workspace is empty, just push the next item
-                let Some(best) = self.workspace.peek() else {
+                let Some(best) = self.workspace.first() else {
                     // println!(
                     //     "cmk pushing self.next_item {:?} into empty workspace",
                     //     next_item.0
@@ -95,17 +83,8 @@ where
                     // println!("cmk return to top of the main processing loop");
                     continue; // return to top of the main processing loop
                 };
-                if next_start == best.start() {
-                    // Only push if the priority is better or the end is greater
-                    if &next_item > best || next_end > best.end() {
-                        // println!("cmk pushing next_item {:?} into workspace", next_item.0);
-                        self.workspace.push(next_item);
-                    } else {
-                        // println!(
-                        //     "cmk throwing away next_item {:?} because of priority and length",
-                        //     next_item.0
-                        // );
-                    }
+                if next_start == *best.start() {
+                    self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     // println!(
                     //     "cmk .next() self.next_item {:?}",
@@ -124,7 +103,7 @@ where
             }
 
             // If the workspace is empty, we are done.
-            let Some(best) = self.workspace.peek() else {
+            let Some(best) = self.workspace.first() else {
                 debug_assert!(self.next_item.is_none());
                 debug_assert!(self.ready_to_go.is_none());
                 let value = self.gather.take();
@@ -142,19 +121,17 @@ where
                 //     next_item.0.start(),
                 //     best.0.end()
                 // );
-                min(next_item.start() - T::one(), best.end())
+                min(*next_item.start() - T::one(), *best.end())
                 // println!("cmk min {:?}", m);
             } else {
-                best.end()
+                *best.end()
             };
 
             // Add the front of best to the gather buffer.
             if let Some(mut gather) = self.gather.take() {
-                if gather.1.borrow() == best.value().borrow()
-                    && *gather.0.end() + T::one() == best.start()
-                {
+                if *gather.end() + T::one() == *best.start() {
                     // if the gather is contiguous with the best, then merge them
-                    gather.0 = *gather.0.start()..=next_end;
+                    gather = *gather.start()..=next_end;
                     // println!(
                     //     "cmk merge gather {:?} best {:?} as {:?} -> {:?}",
                     //     gather.0,
@@ -172,7 +149,7 @@ where
                     //     *best.0.start()..=next_end
                     // );
                     self.ready_to_go = Some(gather);
-                    self.gather = Some((best.start()..=next_end, best.value().clone_borrow()));
+                    self.gather = Some(*best.start()..=next_end);
                 }
             } else {
                 // if there is no gather, then set the gather to the best
@@ -181,27 +158,27 @@ where
                 //     best.0,
                 //     *best.0.start()..=next_end
                 // );
-                self.gather = Some((best.start()..=next_end, best.value().clone_borrow()))
+                self.gather = Some(*best.start()..=next_end)
             };
 
             // We also update the workspace to removing any items that are completely covered by the new_start.
             // We also don't need to keep any items that have a lower priority and are shorter than the new best.
-            let mut new_workspace = BinaryHeap::new();
+            let mut new_workspace = Vec::new();
             while let Some(item) = self.workspace.pop() {
                 let mut item = item;
-                if item.end() <= next_end {
+                if *item.end() <= next_end {
                     // too short, don't keep
                     // println!("cmk too short, don't keep in workspace {:?}", item.0);
                     continue; // while loop
                 }
-                item.set_range(next_end + T::one()..=item.end());
-                let Some(new_best) = new_workspace.peek() else {
+                item = next_end + T::one()..=*item.end();
+                let Some(new_best) = new_workspace.first() else {
                     // println!("cmk no workspace, so keep {:?}", item.0);
                     // new_workspace is empty, so keep
                     new_workspace.push(item);
                     continue; // while loop
                 };
-                if &item < new_best && item.end() <= new_best.end() {
+                if item.end() <= new_best.end() {
                     // println!("cmk item is lower priority {:?} and shorter {:?} than best item {:?},{:?} in new workspace, so don't keep",
                     // item.priority, item.0, new_best.priority, new_best.0);
                     // not as good as new_best, and shorter, so don't keep
@@ -218,95 +195,85 @@ where
     }
 }
 
-#[allow(dead_code)]
-fn cmk_debug_string<'a, T, V, VR>(item: &Option<(RangeInclusive<T>, VR)>) -> String
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V> + 'a,
-{
-    if let Some(item) = item {
-        format!("Some({:?})", item.0)
-    } else {
-        "None".to_string()
-    }
-}
+// #[allow(dead_code)]
+// fn cmk_debug_string<'a, T>(item: &Option<RangeInclusive<T>>) -> String
+// where
+//     T: Integer,
+// {
+//     if let Some(item) = item {
+//         format!("Some({:?})", item.0)
+//     } else {
+//         "None".to_string()
+//     }
+// }
 
-impl<T, V, VR, I> UnionIterMap<T, V, VR, I>
+impl<T, I> UnionIter<T, I>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: PrioritySortedStartsMap<T, V, VR>,
+    I: SortedStarts<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`UnionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
+    /// Creates a new [`UnionIter`] from zero or more [`SortedStarts`] iterators. See [`UnionIter`] for more details and examples.
     pub fn new(mut iter: I) -> Self {
         let item = iter.next();
         Self {
             iter,
             next_item: item,
-            workspace: BinaryHeap::new(),
+            workspace: Vec::new(),
             gather: None,
             ready_to_go: None,
         }
     }
 }
 
-impl<T, V, VR, L, R> UnionIterMapMerge<T, V, VR, L, R>
+impl<T, L, R> UnionIterMerge<T, L, R>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
+    L: SortedDisjoint<T>,
+    R: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
+    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`SymDiffIter`] for more details and examples.
     pub fn new2(left: L, right: R) -> Self {
-        let iter = MergeMap::new(left, right);
+        let iter: Merge<T, L, R> = Merge::new(left, right);
         Self::new(iter)
     }
 }
 
 /// cmk doc
-impl<T, V, VR, J> UnionIterMapKMerge<T, V, VR, J>
+impl<T, J> UnionIterKMerge<T, J>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    J: SortedDisjointMap<T, V, VR>,
+    J: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
+    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`SymDiffIter`] for more details and examples.
     pub fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,
     {
-        let iter = KMergeMap::new(k);
+        let iter = KMerge::new(k);
         Self::new(iter)
     }
 }
 
-// from iter (T, &V) to UnionIterMap
-impl<'a, T, V> FromIterator<(T, &'a V)>
-    for UnionIterMap<T, V, &'a V, SortedStartsInVecMap<T, V, &'a V>>
+// from iter (T, &V) to UnionIter
+impl<T> FromIterator<T> for UnionIter<T, SortedStartsInVec<T>>
 where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
+    T: Integer,
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (T, &'a V)>,
+        I: IntoIterator<Item = T>,
     {
-        let iter = iter.into_iter().map(|(x, value)| (x..=x, value));
-        UnionIterMap::from_iter(iter)
+        let iter = iter.into_iter();
+        UnionIter::from_iter(iter)
     }
 }
 
-// // from iter (RangeInclusive<T>, &V) to UnionIterMap
+// // from iter (RangeInclusive<T>, &V) to UnionIter
 // impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
-//     for UnionIterMap<T, V, &'a V, SortedStartsInVecMap<T, V, &'a V>>
+//     for UnionIter<T, V, &'a V, SortedStartsInVec<T, V, &'a V>>
 // {
 //     fn from_iter<I>(iter: I) -> Self
 //     where
@@ -314,141 +281,130 @@ where
 //     {
 //         let iter = iter.into_iter();
 //         let iter = iter.map(|(range, value)| (range, value));
-//         UnionIterMap::from_iter(iter)
+//         UnionIter::from_iter(iter)
 //     }
 // }
 
 // cmk used?
 #[allow(dead_code)]
-type SortedRangeValueVec<T, V, VR> =
-    AssumePrioritySortedStartsMap<T, V, VR, vec::IntoIter<(RangeInclusive<T>, VR)>>;
+type SortedRangeValueVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
 // cmk simplify the long types
-// from iter (T, VR) to UnionIterMap
-impl<T, V, VR> FromIterator<(RangeInclusive<T>, VR)>
-    for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>>
+// from iter (T, VR) to UnionIter
+impl<T> FromIterator<RangeInclusive<T>> for UnionIter<T, SortedStartsInVec<T>>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
+        I: IntoIterator<Item = RangeInclusive<T>>, // cmk000 add fused??
     {
+        // cmk0000 simplify or optimize?
         let iter = iter.into_iter();
-        // let iter = iter.map(|x| {
-        //     println!("cmk x.priority {:?}", x.priority);
-        //     x
-        // });
-        let iter = UnsortedPriorityDisjointMap::new(iter);
-        UnionIterMap::from(iter)
+        let iter = UnsortedDisjoint::new(iter);
+        let iter = iter.sorted_by(|a, b| a.start().cmp(&b.start()));
+        let iter = AssumeSortedStarts::new(iter);
+        UnionIter::new(iter)
     }
 }
 
-// from from UnsortedDisjointMap to UnionIterMap
-impl<T, V, VR, I> From<UnsortedPriorityDisjointMap<T, V, VR, I>>
-    for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: Iterator<Item = (RangeInclusive<T>, VR)>,
-{
-    #[allow(clippy::clone_on_copy)]
-    fn from(unsorted_disjoint: UnsortedPriorityDisjointMap<T, V, VR, I>) -> Self {
-        let iter = unsorted_disjoint.sorted_by(|a, b| {
-            // We sort only by start -- priority is not used until later.
-            a.start().cmp(&b.start())
-        });
-        let iter = AssumePrioritySortedStartsMap::new(iter);
-        Self::new(iter)
-    }
-}
+// // from from UnsortedDisjoint to UnionIter
+// impl<T, I> From<I> for UnionIter<T, SortedStartsInVec<T>>
+// where
+//     T: Integer,
+//     I: Iterator<Item = RangeInclusive<T>>,
+// {
+//     #[allow(clippy::clone_on_copy)]
+//     fn from(unsorted_disjoint: I) -> Self {
+//         let iter = unsorted_disjoint.sorted_by(|a, b| a.start().cmp(&b.start()));
+//         let iter = AssumeSortedStarts::new(iter);
+//         let result: UnionIter<T, AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>> =
+//             Self::new(iter);
+//         result
+//     }
+// }
 
 // cmk0 test that every iterator (that can be) is FusedIterator
-impl<T, V, VR, I> FusedIterator for UnionIterMap<T, V, VR, I>
+impl<T, I> FusedIterator for UnionIter<T, I>
 where
     T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: PrioritySortedStartsMap<T, V, VR> + FusedIterator,
+    I: SortedStarts<T> + FusedIterator,
 {
 }
 
 // cmk
-// impl<'a, T, V, VR, I> ops::Not for UnionIterMap<'a, T, V, VR, I>
+// impl<'a, T, I> ops::Not for UnionIter<'a, T, I>
 // where
-//     I: SortedStartsMap<T, V>,
+//     I: SortedStarts<T, V>,
 // {
-//     type Output = NotIterMap<T, V, Self>;
+//     type Output = NotIter<T, V, Self>;
 
 //     fn not(self) -> Self::Output {
 //         self.complement()
 //     }
 // }
 
-// impl<'a, T, V, VR, R, L> ops::BitOr<R> for UnionIterMap<'a, T, V, VR, L>
+// impl<'a, T, R, L> ops::BitOr<R> for UnionIter<'a, T, L>
 // where
 //     T: Integer + 'a,
 //     V: ValueOwned + 'a,
 //     VR: CloneBorrow<V> + 'a,
-//     L: SortedStartsMap<'a, T, V, VR>,
-//     R: SortedDisjointMap<'a, T, V, VR> + 'a,
+//     L: SortedStarts<'a, T>,
+//     R: SortedDisjoint<'a, T> + 'a,
 // {
-//     type Output = BitOrMergeMap<'a, T, V, VR, Self, R>;
+//     type Output = BitOrMerge<'a, T, Self, R>;
 
 //     fn bitor(self, rhs: R) -> Self::Output {
 //         // It might be fine to optimize to self.iter, but that would require
 //         // also considering field 'range'
-//         SortedDisjointMap::union(self, rhs)
+//         SortedDisjoint::union(self, rhs)
 //     }
 // }
 
-// impl<'a, T, V, VR, R, L> ops::Sub<R> for UnionIterMap<'a, T, V, VR, L>
+// impl<'a, T, R, L> ops::Sub<R> for UnionIter<'a, T, L>
 // where
-//     L: SortedStartsMap<T, V>,
-//     R: SortedDisjointMap<T, V>,
+//     L: SortedStarts<T, V>,
+//     R: SortedDisjoint<T, V>,
 // {
-//     type Output = BitSubMergeMap<T, V, Self, R>;
+//     type Output = BitSubMerge<T, V, Self, R>;
 
 //     fn sub(self, rhs: R) -> Self::Output {
-//         SortedDisjointMap::difference(self, rhs)
+//         SortedDisjoint::difference(self, rhs)
 //     }
 // }
 
-// impl<'a, T, V, VR, R, L> ops::BitXor<R> for UnionIterMap<'a, T, V, VR, L>
+// impl<'a, T, R, L> ops::BitXor<R> for UnionIter<'a, T, L>
 // where
-//     L: SortedStartsMap<T, V>,
-//     R: SortedDisjointMap<T, V>,
+//     L: SortedStarts<T, V>,
+//     R: SortedDisjoint<T, V>,
 // {
-//     type Output = BitXOrTeeMap<T, V, Self, R>;
+//     type Output = BitXOrTee<T, V, Self, R>;
 
 //     #[allow(clippy::suspicious_arithmetic_impl)]
 //     fn bitxor(self, rhs: R) -> Self::Output {
-//         SortedDisjointMap::symmetric_difference(self, rhs)
+//         SortedDisjoint::symmetric_difference(self, rhs)
 //     }
 // }
 
-// impl<'a, T, V, VR, R, L> ops::BitAnd<R> for UnionIterMap<'a, T, V, VR, L>
+// impl<'a, T, R, L> ops::BitAnd<R> for UnionIter<'a, T, L>
 // where
-//     L: SortedStartsMap<T, V>,
-//     R: SortedDisjointMap<T, V>,
+//     L: SortedStarts<T, V>,
+//     R: SortedDisjoint<T, V>,
 // {
-//     type Output = BitAndMergeMap<T, V, Self, R>;
+//     type Output = BitAndMerge<T, V, Self, R>;
 
 //     fn bitand(self, other: R) -> Self::Output {
-//         SortedDisjointMap::intersection(self, other)
+//         SortedDisjoint::intersection(self, other)
 //     }
 // }
 
 // impl<'a, T: Integer + 'a, V: ValueOwned + 'a, const N: usize> From<[(T, V); N]>
-//     for UnionIterMap<'a, T, V, &'a V, SortedStartsInVecMap<'a, T, V, &'a V>>
+//     for UnionIter<'a, T, V, &'a V, SortedStartsInVec<'a, T, V, &'a V>>
 // {
 //     fn from(arr: [(T, &'a V); N]) -> Self {
 //         // Directly create an iterator from the array and map it as needed
 //         arr.iter()
 //             .map(|&(t, v)| (t, v)) // This is a simple identity map; adjust as needed for your actual transformation
-//             .collect() // Collect into UnionIterMap, relying on FromIterator
+//             .collect() // Collect into UnionIter, relying on FromIterator
 //     }
 // }

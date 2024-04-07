@@ -1,6 +1,5 @@
 use crate::range_values::ExpectDebugUnwrapRelease;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
-use crate::SortedDisjoint;
 use crate::{
     map::{CloneBorrow, EndValue, ValueOwned},
     sorted_disjoint_map::SortedDisjointMap,
@@ -133,7 +132,7 @@ where
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub(crate) struct SortedDisjointMapWithLenSoFarMap<T, V, VR, I>
+pub(crate) struct SortedDisjointMapWithLenSoFar<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -160,7 +159,7 @@ where
 //     }
 // }
 
-impl<T, V, VR, I> SortedDisjointMapWithLenSoFarMap<T, V, VR, I>
+impl<T, V, VR, I> SortedDisjointMapWithLenSoFar<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -178,7 +177,7 @@ where
 // {
 // }
 
-impl<T, V, VR, I> Iterator for SortedDisjointMapWithLenSoFarMap<T, V, VR, I>
+impl<T, V, VR, I> Iterator for SortedDisjointMapWithLenSoFar<T, V, VR, I>
 where
     T: Integer,
     VR: CloneBorrow<V>,
@@ -271,78 +270,17 @@ where
 }
 
 impl<T: Integer, V: ValueOwned, VR, I> From<I>
-    for SortedDisjointMapWithLenSoFarMap<T, V, VR, I::IntoIter>
+    for SortedDisjointMapWithLenSoFar<T, V, VR, I::IntoIter>
 where
     VR: CloneBorrow<V>,
     I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
     I::IntoIter: SortedDisjointMap<T, V, VR>,
 {
     fn from(into_iter: I) -> Self {
-        SortedDisjointMapWithLenSoFarMap {
+        SortedDisjointMapWithLenSoFar {
             iter: into_iter.into_iter(),
             len: <T as Integer>::SafeLen::zero(),
             phantom_data: PhantomData,
-        }
-    }
-}
-
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-pub(crate) struct SortedDisjointWithLenSoFar<T, I>
-where
-    T: Integer,
-    I: SortedDisjoint<T>,
-{
-    iter: I,
-    len: <T as Integer>::SafeLen,
-}
-impl<T, I> SortedDisjointWithLenSoFar<T, I>
-where
-    T: Integer,
-    I: SortedDisjoint<T>,
-{
-    pub fn len_so_far(&self) -> <T as Integer>::SafeLen {
-        self.len
-    }
-}
-
-// cmk
-// impl<T: Integer, V: PartialEqClone, I> FusedIterator for SortedDisjointWithLenSoFar<T, V, I> where
-//     I: SortedDisjoint<T, V> + FusedIterator
-// {
-// }
-
-impl<T, I> Iterator for SortedDisjointWithLenSoFar<T, I>
-where
-    T: Integer,
-    I: SortedDisjoint<T>,
-{
-    type Item = (T, EndValue<T, ()>);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(range) = self.iter.next() {
-            let (start, end) = range.clone().into_inner();
-            debug_assert!(start <= end && end <= T::safe_max_value());
-            self.len += T::safe_len(&range);
-            let end_value = EndValue { end, value: () };
-            Some((start, end_value))
-        } else {
-            None
-        }
-    }
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
-    }
-}
-
-impl<T: Integer, I> From<I> for SortedDisjointWithLenSoFar<T, I::IntoIter>
-where
-    I: IntoIterator<Item = RangeInclusive<T>>,
-    I::IntoIter: SortedDisjoint<T>,
-{
-    fn from(into_iter: I) -> Self {
-        SortedDisjointWithLenSoFar {
-            iter: into_iter.into_iter(),
-            len: <T as Integer>::SafeLen::zero(),
         }
     }
 }

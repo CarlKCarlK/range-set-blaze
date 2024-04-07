@@ -59,7 +59,6 @@ use merge::KMerge;
 use merge_map::KMergeMap;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
-use range_set_blaze::UnitMapToSortedDisjoint;
 use range_values::RangeValuesToRangesIter;
 pub use sym_diff_iter::SymDiffIter;
 pub use sym_diff_iter_map::SymDiffIterMap;
@@ -67,10 +66,13 @@ mod multiway_map;
 mod sorted_disjoint_map;
 mod tests;
 mod tests_map;
+mod union_iter;
 mod union_iter_map;
+mod unsorted_disjoint;
 mod unsorted_disjoint_map;
 pub use crate::map::RangeMapBlaze;
 pub use crate::sorted_disjoint_map::Priority;
+pub use crate::unsorted_disjoint::AssumeSortedStarts;
 pub use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
 // use alloc::{collections::BTreeMap, vec::Vec};
 use core::{
@@ -97,6 +99,7 @@ pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
 pub use crate::sorted_disjoint_map::CheckSortedDisjointMap;
 pub use sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
 // pub use union_iter::UnionIter;
+pub use union_iter::UnionIter;
 pub use union_iter_map::UnionIterMap;
 // use unsorted_disjoint::SortedDisjointWithLenSoFar;
 // use unsorted_disjoint::UnsortedDisjoint;
@@ -1589,26 +1592,12 @@ pub trait Integer:
 
 // #[doc(hidden)]
 // pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
-#[doc(hidden)]
-pub type UnionIterMerge<T, L, R> = UnitMapToSortedDisjoint<
-    T,
-    crate::UnionIterMap<
-        T,
-        (),
-        &'static (),
-        crate::MergeMap<
-            T,
-            (),
-            &'static (),
-            SortedDisjointToUnitMap<T, L>,
-            SortedDisjointToUnitMap<T, R>,
-        >,
-    >,
->;
 
 // cmk rename to Union...
 #[doc(hidden)]
 pub type UnionIterMapMerge<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
+#[doc(hidden)]
+pub type UnionIterMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
 pub type BitOrAdjusted<T, V, VR, L, R> = UnionIterMapMerge<T, V, VR, L, R>;
 
@@ -1623,17 +1612,15 @@ pub type SymDiffIterMerge<T, L, R> = SymDiffIter<T, Merge<T, L, R>>;
 pub type SymDiffIterKMerge<T, II> = SymDiffIter<T, KMerge<T, II>>;
 
 #[doc(hidden)]
-pub type UnionIterKMerge<T, I> = UnitMapToSortedDisjoint<
-    T,
-    UnionIterMap<T, (), &'static (), KMergeMap<T, (), &'static (), SortedDisjointToUnitMap<T, I>>>,
->;
-
-#[doc(hidden)]
 pub type UnionIterMapKMerge<T, V, VR, I> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I>>;
+#[doc(hidden)]
+pub type UnionIterKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
 #[doc(hidden)]
 pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
 #[doc(hidden)]
 pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
+
+// cmk000 'UnionIterMerge' used to be called 'BitOrMerge', put it back???
 #[doc(hidden)]
 pub type BitNandMerge<T, L, R> = UnionIterMerge<T, NotIter<T, L>, NotIter<T, R>>;
 #[doc(hidden)]
@@ -1858,12 +1845,7 @@ where
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
     fn union(self) -> UnionIterKMerge<T, I> {
-        let maps = self
-            .into_iter()
-            .map(|sorted_disjoint| SortedDisjointToUnitMap::new(sorted_disjoint.into_iter()));
-        let union_maps = maps.union();
-        let result = UnitMapToSortedDisjoint::new(union_maps);
-        result
+        UnionIter::new_k(self)
     }
 
     /// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
@@ -1898,6 +1880,8 @@ where
             .union()
             .complement()
     }
+
+    // cmk000 add sym diff and add to tests
 
     // cmk0 can we now implement xor on any number of iterators?
 }
@@ -2437,10 +2421,9 @@ where
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 // cmk00 Can we/should we hide MergeMapIter and KMergeMapIter and SymDiffMapIter::new and UnionMapIter::new?
 
-#[test]
+//cmk #[test]
 // cmk0000 challenge: convert from every level to sorted disjoint* for both map and set.
 pub fn convert_challenge() {
-    use crate::sorted_disjoint_map::DebugToString; // cmk00 weird name
     use itertools::Itertools;
     use unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 
@@ -2562,34 +2545,28 @@ pub fn convert_challenge() {
     // * from (priority) sorted_starts
     let a = [1..=4, 5..=100, 5..=5].into_iter();
     // cmk00 should we reverse the sense of priority_number so lower is better?
-    let a = a.map(|range| Priority::new((range, &()), 0));
-    let a = AssumePrioritySortedStartsMap::new(a);
-    let a = UnionIterMap::new(a);
-    let a = UnitMapToSortedDisjoint::new(a);
+    let a = AssumeSortedStarts::new(a);
+    let a = UnionIter::new(a);
     assert!(a.equal(CheckSortedDisjoint::new([1..=100])));
 
     // * from unsorted_disjoint
     let iter = [5..=100, 5..=5, 1..=4].into_iter();
-    let iter = iter.map(|range| Priority::new((range, &()), 0));
     let iter = iter.into_iter().sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
         a.start().cmp(&b.start())
     });
-    let iter = AssumePrioritySortedStartsMap::new(iter);
-    let iter = UnionIterMap::new(iter);
-    let iter = UnitMapToSortedDisjoint::new(iter);
+    let iter = AssumeSortedStarts::new(iter);
+    let iter = UnionIter::new(iter);
     assert!(iter.equal(CheckSortedDisjoint::new([1..=100])));
 
     // * anything
     let iter = [5..=100, 5..=5, 1..=5].into_iter();
-    let iter = iter.map(|range| Priority::new((range, &()), 0));
     let iter = iter.sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
         a.start().cmp(&b.start())
     });
-    let iter = AssumePrioritySortedStartsMap::new(iter);
-    let iter = UnionIterMap::new(iter);
-    let iter = UnitMapToSortedDisjoint::new(iter);
+    let iter = AssumeSortedStarts::new(iter);
+    let iter = UnionIter::new(iter);
     assert!(iter.equal(CheckSortedDisjoint::new([1..=100])));
     // Set - points
 

@@ -1,10 +1,11 @@
 use crate::map::CloneBorrow;
 use crate::range_set_blaze::UnitMapToSortedDisjoint;
-use crate::range_values::RangeValuesToRangesIter;
+use crate::range_values::{RangeValuesToRangesIter, UnitRangesIter};
 use crate::{
     range_set_blaze::SortedDisjointToUnitMap, range_values::IntoRangeValuesToRangesIter,
     RangeSetBlaze,
 };
+use crate::{UnionIter, UnionIterMerge};
 use alloc::format;
 use alloc::string::String;
 use core::array;
@@ -18,7 +19,6 @@ use itertools::Itertools;
 
 use crate::{
     BitAndMerge, BitSubMerge, DynSortedDisjoint, Integer, NotIter, SymDiffIter, SymDiffIterMerge,
-    UnionIterMerge,
 };
 
 /// A trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
@@ -235,34 +235,13 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(union.to_string(), "1..=2");
     /// ```
     #[inline]
-    fn union<R>(
-        self,
-        other: R,
-    ) -> UnitMapToSortedDisjoint<
-        T,
-        crate::UnionIterMap<
-            T,
-            (),
-            &'static (),
-            crate::MergeMap<
-                T,
-                (),
-                &'static (),
-                SortedDisjointToUnitMap<T, Self>,
-                SortedDisjointToUnitMap<T, <R as IntoIterator>::IntoIter>,
-            >,
-        >,
-    >
+    fn union<R>(self, other: R) -> UnionIterMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
         Self: Sized,
     {
-        let left = SortedDisjointToUnitMap::new(self);
-        let right = SortedDisjointToUnitMap::new(other.into_iter());
-        let unit_map = left.union(right);
-        let result = UnitMapToSortedDisjoint::new(unit_map);
-        result
+        UnionIterMerge::new2(self, other.into_iter())
     }
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their intersection.
@@ -381,6 +360,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         result
     }
 
+    /// cmk doc
     #[inline]
     fn symmetric_difference_slow<'a, R>(
         self,
@@ -814,6 +794,8 @@ impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
 impl_sorted_traits_and_ops!(UnitMapToSortedDisjoint<T, I>, I: SortedDisjointMap<T, (), &'static ()>);
 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: ValueOwned, VR: CloneBorrow<V>, I: SortedDisjointMap<T, V, VR>);
 impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);
+impl_sorted_traits_and_ops!(UnitRangesIter<'_, T>, 'a); // cmk not faster
+impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
 
 // We're not allowed to define methods on outside types, so we only define the traits
 // cmk0

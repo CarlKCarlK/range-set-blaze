@@ -737,15 +737,15 @@ fn every_op_blaze(c: &mut Criterion) {
         let parameter = setup[0].ranges_len();
 
         // cmk0000
-        // group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
-        //     b.iter_batched(
-        //         || setup,
-        //         |sets| {
-        //             let _answer = &sets[0] | &sets[1];
-        //         },
-        //         BatchSize::SmallInput,
-        //     );
-        // });
+        group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
+            b.iter_batched(
+                || setup,
+                |sets| {
+                    let _answer = &sets[0] | &sets[1];
+                },
+                BatchSize::SmallInput,
+            );
+        });
         // group.bench_with_input(
         //     BenchmarkId::new("intersection", parameter),
         //     &parameter,
@@ -772,19 +772,19 @@ fn every_op_blaze(c: &mut Criterion) {
         //         );
         //     },
         // );
-        group.bench_with_input(
-            BenchmarkId::new("symmetric difference", parameter),
-            &parameter,
-            |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |sets| {
-                        let _answer = &sets[0] ^ &sets[1];
-                    },
-                    BatchSize::SmallInput,
-                );
-            },
-        );
+        // group.bench_with_input(
+        //     BenchmarkId::new("symmetric difference", parameter),
+        //     &parameter,
+        //     |b, _k| {
+        //         b.iter_batched(
+        //             || setup,
+        //             |sets| {
+        //                 let _answer = &sets[0] ^ &sets[1];
+        //             },
+        //             BatchSize::SmallInput,
+        //         );
+        //     },
+        // );
         group.bench_with_input(
             BenchmarkId::new("complement", parameter),
             &parameter,

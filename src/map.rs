@@ -3,15 +3,18 @@ use crate::iter_map::IntoIterMap;
 use crate::iter_map::{IterMap, KeysMap};
 use crate::range_values::{
     IntoRangeValuesIter, IntoRangeValuesToRangesIter, RangeValuesIter, RangeValuesToRangesIter,
+    UnitRangesIter,
 };
 use crate::sorted_disjoint_map::{DebugToString, Priority};
 use crate::sorted_disjoint_map::{PrioritySortedStartsMap, SortedDisjointMap};
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{
-    AssumePrioritySortedStartsMap, SortedDisjointMapWithLenSoFarMap, UnsortedPriorityDisjointMap,
+    AssumePrioritySortedStartsMap, SortedDisjointMapWithLenSoFar, UnsortedPriorityDisjointMap,
 };
-use crate::{CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint};
+use crate::{
+    AssumeSortedStarts, CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint,
+};
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 #[cfg(feature = "std")]
@@ -332,6 +335,14 @@ impl<T: Integer, V: ValueOwned + fmt::Debug> fmt::Display for RangeMapBlaze<T, V
     }
 }
 
+impl<T: Integer> RangeMapBlaze<T, ()> {
+    pub fn unit_ranges(&self) -> UnitRangesIter<'_, T> {
+        UnitRangesIter {
+            iter: self.btree_map.iter(),
+        }
+    }
+}
+
 impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
     /// ascending and/or descending order.
@@ -506,7 +517,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         VR: CloneBorrow<V>,
         I: SortedDisjointMap<T, V, VR>,
     {
-        let mut iter_with_len = SortedDisjointMapWithLenSoFarMap::from(iter);
+        let mut iter_with_len = SortedDisjointMapWithLenSoFar::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
         Self {
             btree_map,
@@ -1705,6 +1716,10 @@ pub type BitSubRangesMap<T, V, VR, L, R> = IntersectionIterMap<T, V, VR, L, NotI
 #[doc(hidden)]
 pub type SortedStartsInVecMap<T, V, VR> =
     AssumePrioritySortedStartsMap<T, V, VR, vec::IntoIter<Priority<T, V, VR>>>;
+
+#[doc(hidden)]
+pub type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
+
 // pub type BitXOrTeeMap<'a, T, V, VR, L, R> = BitOrMergeMap<
 //     'a,
 //     T,

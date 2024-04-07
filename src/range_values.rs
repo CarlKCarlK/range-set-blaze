@@ -486,3 +486,58 @@ where
     I: SortedDisjointMap<T, V, VR>,
 {
 }
+
+/// An iterator that visits the ranges in the [`RangeSetBlaze`],
+/// i.e., the integers as sorted & disjoint ranges.
+///
+/// This `struct` is created by the [`ranges`] method on [`RangeSetBlaze`]. See [`ranges`]'s
+/// documentation for more.
+///
+/// [`RangeSetBlaze`]: crate::RangeSetBlaze
+/// [`ranges`]: crate::RangeSetBlaze::ranges
+#[derive(Clone)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+pub struct UnitRangesIter<'a, T: Integer> {
+    pub(crate) iter: btree_map::Iter<'a, T, EndValue<T, ()>>,
+}
+
+// impl<'a, T: Integer, V: ValueOwned> AsRef<UnitRangesIter<'a, T, V>> for UnitRangesIter<'a, T, V> {
+//     fn as_ref(&self) -> &Self {
+//         // Self is UnitRangesIter<'a>, the type for which we impl AsRef
+//         self
+//     }
+// }
+
+// UnitRangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
+// impl<'a, T: Integer, V: ValueOwned> SortedStartsMap<'a, T, V, &'a V> for UnitRangesIter<'a, T, V> {}
+// impl<'a, T: Integer, V: ValueOwned> SortedDisjointMap<'a, T, V, &'a V>
+//     for UnitRangesIter<'a, T, V>
+// {
+// }
+
+impl<'a, T: Integer> ExactSizeIterator for UnitRangesIter<'a, T> {
+    #[must_use]
+    fn len(&self) -> usize {
+        self.iter.len()
+    }
+}
+
+impl<'a, T: Integer> FusedIterator for UnitRangesIter<'a, T> {}
+
+// Range's iterator is just the inside BTreeMap iterator as values
+impl<'a, T> Iterator for UnitRangesIter<'a, T>
+where
+    T: Integer,
+{
+    type Item = RangeInclusive<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter
+            .next()
+            .map(|(start, end_value)| *start..=end_value.end)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}

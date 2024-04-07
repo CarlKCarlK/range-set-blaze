@@ -49,7 +49,6 @@ where
     /// Creates a new [`Merge`] iterator from two [`SortedDisjointMap`] iterators. See [`Merge`] for more details and examples.
     pub fn new(left: L, right: R) -> Self {
         Self {
-            // We sort only by start -- priority is not used until later.
             iter: left.merge_by(right, |a, b| a.start() < b.start()),
         }
     }
