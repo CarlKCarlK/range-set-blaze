@@ -4,6 +4,11 @@
 
 ```cmd
 cargo bench
+
+bench every_op_blaze
+
+@'rem cargo install cargo-criterion-means 
+cargo criterion-means > o:\Projects\Science\rangemapblaze\unitvalue\results.2.csv
 ```
 
 ## Testing

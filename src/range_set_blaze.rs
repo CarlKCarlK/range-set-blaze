@@ -14,11 +14,13 @@ use std::{
     path::Path,
 };
 
+use alloc::collections::BTreeMap;
 use gen_ops::gen_ops_ex;
 
 use crate::map::{UniqueValue, ValueOwned};
 use crate::range_values::RangeValuesToRangesIter;
-use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
+use crate::unsorted_disjoint_map::{SortedDisjointWithLenSoFar, UnsortedPriorityDisjointMap};
+use crate::SymDiffIter;
 use crate::{
     iter_map::{IntoIterMap, KeysMap},
     prelude::*,
@@ -1500,9 +1502,16 @@ gen_ops_ex!(
     /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
     /// ```
     for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-        // We optimize this by using ranges() twice per input, rather than tee()
-        let range_set_map = &a.0 ^ &b.0;
-        RangeSetBlaze(range_set_map)
+        let iter = SymDiffIter::new2(a.ranges(), b.ranges());
+        // cmk00 why are these two 'from' instead of 'new'?
+        // cmk000 misleading name since creates sorted disjoint maps
+        let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
+        let btree_map = BTreeMap::from_iter(&mut iter_with_len);
+        let range_map_blaze=        RangeMapBlaze {
+            btree_map,
+            len: iter_with_len.len_so_far(),
+        };
+        RangeSetBlaze(range_map_blaze)
     };
 
     /// Difference the contents of two [`RangeSetBlaze`]'s.

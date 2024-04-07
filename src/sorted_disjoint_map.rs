@@ -645,6 +645,7 @@ where
     /// let a1: RangeMapBlaze<i32> = CheckSortedDisjointMap::new([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
+    // cmk000 does RangeSetBlaze need something like this?
     fn into_range_map_blaze(self) -> RangeMapBlaze<T, V>
     where
         Self: Sized,

@@ -710,7 +710,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
 fn every_op_blaze(c: &mut Criterion) {
     let group_name = "every_op_blaze";
     let k = 2;
-    let range_len_list = [1usize, 10, 100, 1000, 10_000, 100_000];
+    let range_len_list = [100_000]; // cmk0000 1usize, 10, 100, 1000, 10_000,
     let range = 0..=99_999_999;
     let coverage_goal = 0.5;
     let how = How::None;
@@ -735,41 +735,43 @@ fn every_op_blaze(c: &mut Criterion) {
 
     for (_range_len, setup) in &setup_vec {
         let parameter = setup[0].ranges_len();
-        group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
-            b.iter_batched(
-                || setup,
-                |sets| {
-                    let _answer = &sets[0] | &sets[1];
-                },
-                BatchSize::SmallInput,
-            );
-        });
-        group.bench_with_input(
-            BenchmarkId::new("intersection", parameter),
-            &parameter,
-            |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |sets| {
-                        let _answer = &sets[0] & &sets[1];
-                    },
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-        group.bench_with_input(
-            BenchmarkId::new("difference", parameter),
-            &parameter,
-            |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |sets| {
-                        let _answer = &sets[0] - &sets[1];
-                    },
-                    BatchSize::SmallInput,
-                );
-            },
-        );
+
+        // cmk0000
+        // group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
+        //     b.iter_batched(
+        //         || setup,
+        //         |sets| {
+        //             let _answer = &sets[0] | &sets[1];
+        //         },
+        //         BatchSize::SmallInput,
+        //     );
+        // });
+        // group.bench_with_input(
+        //     BenchmarkId::new("intersection", parameter),
+        //     &parameter,
+        //     |b, _k| {
+        //         b.iter_batched(
+        //             || setup,
+        //             |sets| {
+        //                 let _answer = &sets[0] & &sets[1];
+        //             },
+        //             BatchSize::SmallInput,
+        //         );
+        //     },
+        // );
+        // group.bench_with_input(
+        //     BenchmarkId::new("difference", parameter),
+        //     &parameter,
+        //     |b, _k| {
+        //         b.iter_batched(
+        //             || setup,
+        //             |sets| {
+        //                 let _answer = &sets[0] - &sets[1];
+        //             },
+        //             BatchSize::SmallInput,
+        //         );
+        //     },
+        // );
         group.bench_with_input(
             BenchmarkId::new("symmetric difference", parameter),
             &parameter,

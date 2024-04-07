@@ -9,7 +9,7 @@ use crate::sorted_disjoint_map::{PrioritySortedStartsMap, SortedDisjointMap};
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{
-    AssumePrioritySortedStartsMap, SortedDisjointWithLenSoFarMap, UnsortedPriorityDisjointMap,
+    AssumePrioritySortedStartsMap, SortedDisjointMapWithLenSoFarMap, UnsortedPriorityDisjointMap,
 };
 use crate::{CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint};
 use alloc::collections::BTreeMap;
@@ -316,7 +316,7 @@ where
 ///
 /// [module-level documentation]: index.html
 pub struct RangeMapBlaze<T: Integer, V: ValueOwned> {
-    len: <T as Integer>::SafeLen,
+    pub(crate) len: <T as Integer>::SafeLen,
     pub(crate) btree_map: BTreeMap<T, EndValue<T, V>>,
 }
 
@@ -506,7 +506,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         VR: CloneBorrow<V>,
         I: SortedDisjointMap<T, V, VR>,
     {
-        let mut iter_with_len = SortedDisjointWithLenSoFarMap::from(iter);
+        let mut iter_with_len = SortedDisjointMapWithLenSoFarMap::from(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
         Self {
             btree_map,
@@ -1890,7 +1890,6 @@ gen_ops_ex!(
     /// assert_eq!(result.to_string(), "2..=2, 5..=6");
     /// ```
     for & call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
-        // cmk use & ???
         a.range_values().intersection_with_set(b.ranges()).into_range_map_blaze()
     };
 /// Symmetric difference the contents of two [`RangeMapBlaze`]'s.
