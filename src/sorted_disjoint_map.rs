@@ -1342,6 +1342,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
     }
 }
 
+// cmk CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_method'
 impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, V, VR, I>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
 impl_sorted_map_traits_and_ops!(UnionIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap< T, V, VR, I0, I1>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I0: SortedDisjointMap<T, V, VR>, I1: SortedDisjoint<T>);

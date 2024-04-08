@@ -295,6 +295,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(set_iter.next(), Some(2));
     /// assert_eq!(set_iter.next_back(), None);
     /// ```
+    // cmk000000000 so something faster that doesn't use RangeValuesIter
     pub fn iter(&self) -> KeysMap<T, (), &(), RangeValuesIter<'_, T, ()>> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
@@ -484,6 +485,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert!(a.contains(5));
     ///
     /// ```
+    // cmk00000000000
     pub fn append(&mut self, other: &mut Self) {
         self.0.append(&mut other.0);
     }
