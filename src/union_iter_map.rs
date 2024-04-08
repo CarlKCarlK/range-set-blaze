@@ -95,6 +95,7 @@ where
                     // println!("cmk return to top of the main processing loop");
                     continue; // return to top of the main processing loop
                 };
+                // cmk0000 special case: If next value is the same as best value and the ending is later, and the start overlaps/touches, then just extend the best value.
                 if next_start == best.start() {
                     // Only push if the priority is better or the end is greater
                     if &next_item > best || next_end > best.end() {

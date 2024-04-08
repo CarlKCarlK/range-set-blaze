@@ -1882,6 +1882,7 @@ fn test_every_sorted_disjoint_method() {
     // use range_set_blaze::range_set_blaze::SortedDisjointToUnitMap;
     // use range_set_blaze::range_set_blaze::UnitMapToSortedDisjoint;
     use range_set_blaze::range_values::RangeValuesToRangesIter;
+    use range_set_blaze::range_values::UnitRangesIter;
     use syntactic_for::syntactic_for;
     let c0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
 
@@ -1889,7 +1890,7 @@ fn test_every_sorted_disjoint_method() {
         () => {{
             let a: CheckSortedDisjoint<_, _> = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
             let b: NotIter<_, _> = !!CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-            let c: RangeValuesToRangesIter<_, _, _, _> = c0.ranges();
+            let c: UnitRangesIter<'_, _> = c0.ranges();
             let d: IntoRangeValuesToRangesIter<_, ()> =
                 RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges();
             let e: DynSortedDisjoint<_> =

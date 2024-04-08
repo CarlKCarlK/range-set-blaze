@@ -1345,6 +1345,7 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
     ///
     /// assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
     /// ```
+    // cmk00000000000000000000
     fn union(self) -> RangeSetBlaze<T> {
         // cmk1 RangeMapBlaze should have its own multiway union and we should use it here
         let range_set_map = self
@@ -1745,7 +1746,8 @@ impl<T: Integer> BitOrAssign<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
         if b_len * (a_len.ilog2() as usize + 1) < a_len + b_len {
             self.extend(other.ranges());
         } else {
-            self.0 = &self.0 | &other.0;
+            // cmk00000000000000000
+            *self = (self.ranges() | other.ranges()).into_range_set_blaze()
         }
     }
 }
@@ -1864,40 +1866,41 @@ impl<T: Integer> BitOr<&RangeSetBlaze<T>> for &RangeSetBlaze<T> {
     }
 }
 
-impl<T: Integer> Extend<(RangeInclusive<T>, ())> for RangeSetBlaze<T> {
-    /// Extends the [`RangeSetBlaze`] with the contents of a
-    /// range iterator.
+// cmk000 delete
+// impl<T: Integer> Extend<(RangeInclusive<T>, ())> for RangeSetBlaze<T> {
+//     /// Extends the [`RangeSetBlaze`] with the contents of a
+//     /// range iterator.
 
-    /// Elements are added one-by-one. There is also a version
-    /// that takes an integer iterator.
-    ///
-    /// The [`|=`](RangeSetBlaze::bitor_assign) operator extends a [`RangeSetBlaze`]
-    /// from another [`RangeSetBlaze`]. It is never slower
-    ///  than  [`RangeSetBlaze::extend`] and often several times faster.
-    ///
-    /// # Examples
-    /// ```
-    /// use range_set_blaze::RangeSetBlaze;
-    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// a.extend([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
-    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
-    ///
-    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// let mut b = RangeSetBlaze::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
-    /// a |= b;
-    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
-    /// ```
-    fn extend<I>(&mut self, iter: I)
-    where
-        I: IntoIterator<Item = (RangeInclusive<T>, ())>,
-    {
-        let iter = iter.into_iter();
-        for priority in iter {
-            todo!("cmk000000");
-            // self.0.internal_add(priority.into_range(), ());
-        }
-    }
-}
+//     /// Elements are added one-by-one. There is also a version
+//     /// that takes an integer iterator.
+//     ///
+//     /// The [`|=`](RangeSetBlaze::bitor_assign) operator extends a [`RangeSetBlaze`]
+//     /// from another [`RangeSetBlaze`]. It is never slower
+//     ///  than  [`RangeSetBlaze::extend`] and often several times faster.
+//     ///
+//     /// # Examples
+//     /// ```
+//     /// use range_set_blaze::RangeSetBlaze;
+//     /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+//     /// a.extend([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
+//     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
+//     ///
+//     /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+//     /// let mut b = RangeSetBlaze::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
+//     /// a |= b;
+//     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
+//     /// ```
+//     fn extend<I>(&mut self, iter: I)
+//     where
+//         I: IntoIterator<Item = (RangeInclusive<T>, ())>,
+//     {
+//         let iter = iter.into_iter();
+//         for priority in iter {
+//             todo!("cmk0");
+//             // self.0.internal_add(priority.into_range(), ());
+//         }
+//     }
+// }
 
 impl<T: Integer> Ord for RangeSetBlaze<T> {
     /// We define a total ordering on RangeSetBlaze. Following the convention of
@@ -2218,4 +2221,38 @@ where
     }
 
     Ok(set)
+}
+
+impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
+    /// Extends the [`RangeSetBlaze`] with the contents of a
+    /// range iterator.
+
+    /// Elements are added one-by-one. There is also a version
+    /// that takes an integer iterator.
+    ///
+    /// The [`|=`](RangeSetBlaze::bitor_assign) operator extends a [`RangeSetBlaze`]
+    /// from another [`RangeSetBlaze`]. It is never slower
+    ///  than  [`RangeSetBlaze::extend`] and often several times faster.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+    /// a.extend([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
+    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
+    ///
+    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+    /// let mut b = RangeSetBlaze::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
+    /// a |= b;
+    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
+    /// ```
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = RangeInclusive<T>>,
+    {
+        let iter = iter.into_iter();
+        for range in iter {
+            self.0.internal_add(range, ());
+        }
+    }
 }

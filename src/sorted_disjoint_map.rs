@@ -3,9 +3,9 @@ use crate::range_set_blaze::SortedDisjointToUnitMap;
 use crate::range_values::RangeValuesIter;
 use crate::range_values::RangeValuesToRangesIter;
 use crate::sym_diff_iter_map::SymDiffIterMap;
-use crate::BitOrAdjusted;
 use crate::DynSortedDisjointMap;
 use crate::SymDiffIterMapMerge;
+use crate::UnionIterMapMerge;
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -283,7 +283,7 @@ where
     /// assert_eq!(union.to_string(), "1..=2");
     /// ```
     #[inline]
-    fn union<R>(self, other: R) -> BitOrAdjusted<T, V, VR, Self, R::IntoIter>
+    fn union<R>(self, other: R) -> UnionIterMapMerge<T, V, VR, Self, R::IntoIter>
     where
         // cmk why must say SortedDisjointMap here by sorted_disjoint doesn't.
         R: IntoIterator<Item = Self::Item>,
@@ -1295,7 +1295,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             T: Integer,
             R: SortedDisjointMap<T, $V, $VR>,
         {
-            type Output = BitOrAdjusted<T, $V, $VR, Self, R>;
+            type Output = UnionIterMapMerge<T, $V, $VR, Self, R>;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjointMap::union(self, other)

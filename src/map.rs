@@ -1127,6 +1127,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         }
     }
 
+    // cmk00000000 be sure that this internal add isn't much slower than a specialized one for values of ()
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     // cmk2 might be able to shorten code by combining cases
@@ -2030,43 +2031,6 @@ where
         // for (key, value) in iter {
         //     self.internal_add(key..=key, value);
         // }
-    }
-}
-
-impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
-    /// Extends the [`RangeSetBlaze`] with the contents of a
-    /// range iterator.
-
-    /// Elements are added one-by-one. There is also a version
-    /// that takes an integer iterator.
-    ///
-    /// The [`|=`](RangeSetBlaze::bitor_assign) operator extends a [`RangeSetBlaze`]
-    /// from another [`RangeSetBlaze`]. It is never slower
-    ///  than  [`RangeSetBlaze::extend`] and often several times faster.
-    ///
-    /// # Examples
-    /// ```
-    /// use range_set_blaze::RangeSetBlaze;
-    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// a.extend([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
-    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
-    ///
-    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// let mut b = RangeSetBlaze::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
-    /// a |= b;
-    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
-    /// ```
-    fn extend<I>(&mut self, iter: I)
-    where
-        I: IntoIterator<Item = RangeInclusive<T>>,
-    {
-        let iter = iter.into_iter();
-
-        // We gather adjacent values into ranges via UnsortedDisjointMap.
-        let unsorted = UnsortedPriorityDisjointMap::new(iter.map(|x| (x, &())));
-        for priority in unsorted {
-            self.0.internal_add(priority.into_range(), ());
-        }
     }
 }
 
