@@ -1,10 +1,7 @@
 use crate::map::CloneBorrow;
 use crate::range_set_blaze::UnitMapToSortedDisjoint;
-use crate::range_values::{RangeValuesToRangesIter, UnitRangesIter};
-use crate::{
-    range_set_blaze::SortedDisjointToUnitMap, range_values::IntoRangeValuesToRangesIter,
-    RangeSetBlaze,
-};
+use crate::range_values::RangeValuesToRangesIter;
+use crate::{range_values::IntoRangeValuesToRangesIter, RangeSetBlaze};
 use crate::{UnionIter, UnionIterMerge};
 use alloc::format;
 use alloc::string::String;
@@ -357,53 +354,6 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     {
         let result: SymDiffIter<T, crate::Merge<T, Self, <R as IntoIterator>::IntoIter>> =
             SymDiffIter::new2(self, other.into_iter());
-        result
-    }
-
-    /// cmk doc
-    #[inline]
-    fn symmetric_difference_slow<'a, R>(
-        self,
-        other: R,
-    ) -> UnitMapToSortedDisjoint<
-        T,
-        crate::SymDiffIterMap<
-            T,
-            (),
-            &'static (),
-            crate::MergeMap<
-                T,
-                (),
-                &'static (),
-                SortedDisjointToUnitMap<T, Self>,
-                SortedDisjointToUnitMap<T, <R as IntoIterator>::IntoIter>,
-            >,
-        >,
-    >
-    where
-        R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjoint<T>,
-        <R as IntoIterator>::IntoIter:,
-        Self: Sized,
-    {
-        let left = SortedDisjointToUnitMap::new(self);
-        let right = SortedDisjointToUnitMap::new(other.into_iter());
-        let unit_map = left.symmetric_difference(right);
-        let result: UnitMapToSortedDisjoint<
-            T,
-            crate::SymDiffIterMap<
-                T,
-                (),
-                &(),
-                crate::MergeMap<
-                    T,
-                    (),
-                    &(),
-                    SortedDisjointToUnitMap<T, Self>,
-                    SortedDisjointToUnitMap<T, <R as IntoIterator>::IntoIter>,
-                >,
-            >,
-        > = UnitMapToSortedDisjoint::new(unit_map);
         result
     }
 
@@ -794,7 +744,7 @@ impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
 impl_sorted_traits_and_ops!(UnitMapToSortedDisjoint<T, I>, I: SortedDisjointMap<T, (), &'static ()>);
 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: ValueOwned, VR: CloneBorrow<V>, I: SortedDisjointMap<T, V, VR>);
 impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);
-impl_sorted_traits_and_ops!(UnitRangesIter<'_, T>, 'a); // cmk not faster
+// cmk remove impl_sorted_traits_and_ops!(UnitRangesIter<'_, T>, 'a); // cmk not faster
 impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
 
 // We're not allowed to define methods on outside types, so we only define the traits

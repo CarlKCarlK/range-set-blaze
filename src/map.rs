@@ -3,7 +3,6 @@ use crate::iter_map::IntoIterMap;
 use crate::iter_map::{IterMap, KeysMap};
 use crate::range_values::{
     IntoRangeValuesIter, IntoRangeValuesToRangesIter, RangeValuesIter, RangeValuesToRangesIter,
-    UnitRangesIter,
 };
 use crate::sorted_disjoint_map::{DebugToString, Priority};
 use crate::sorted_disjoint_map::{PrioritySortedStartsMap, SortedDisjointMap};
@@ -332,14 +331,6 @@ impl<T: Integer, V: ValueOwned + fmt::Debug> fmt::Debug for RangeMapBlaze<T, V> 
 impl<T: Integer, V: ValueOwned + fmt::Debug> fmt::Display for RangeMapBlaze<T, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.range_values().to_string())
-    }
-}
-
-impl<T: Integer> RangeMapBlaze<T, ()> {
-    pub fn unit_ranges(&self) -> UnitRangesIter<'_, T> {
-        UnitRangesIter {
-            iter: self.btree_map.iter(),
-        }
     }
 }
 

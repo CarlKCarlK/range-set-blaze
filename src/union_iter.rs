@@ -102,7 +102,7 @@ where
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIter`] from zero or more [`SortedStarts`] iterators. See [`UnionIter`] for more details and examples.
-    pub fn new(mut iter: I) -> Self {
+    pub fn new(iter: I) -> Self {
         Self {
             iter,
             option_range: None,
@@ -185,7 +185,7 @@ where
     {
         // cmk0000 simplify or optimize?
         let iter = iter.into_iter();
-        let iter = UnsortedDisjoint::new(iter);
+        let iter = UnsortedDisjoint::from(iter);
         let iter = iter.sorted_by(|a, b| a.start().cmp(&b.start()));
         let iter = AssumeSortedStarts::new(iter);
         UnionIter::new(iter)

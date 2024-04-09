@@ -1,5 +1,4 @@
 use crate::map::BitSubRangesMap;
-use crate::range_set_blaze::SortedDisjointToUnitMap;
 use crate::range_values::RangeValuesIter;
 use crate::range_values::RangeValuesToRangesIter;
 use crate::sym_diff_iter_map::SymDiffIterMap;
@@ -1349,4 +1348,5 @@ impl_sorted_map_traits_and_ops!(IntersectionIterMap< T, V, VR, I0, I1>, V, VR, V
 impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: ValueOwned );
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, V, VR>, V, VR, 'a, V: ValueOwned, VR: CloneBorrow<V>);
-impl_sorted_map_traits_and_ops!(SortedDisjointToUnitMap<T, I>, (), &'static (), I: SortedDisjoint<T>);
+// cmk remove impl_sorted_map_traits_and_ops!(SortedDisjointToUnitMap<T, I>, (), &'static (), I: SortedDisjoint<T>);
+// cmk RangeIter and IntoRangesIter
