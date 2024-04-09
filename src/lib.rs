@@ -108,7 +108,7 @@ pub use union_iter_map::UnionIterMap;
 // cmk pub use unsorted_disjoint_map::UnsortedDisjointMap;
 // cmk use unsorted_disjoint_map::UnsortedDisjointMap;
 
-/// The element trait of the [`OldRangeSetBlaze`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
+/// The element trait of the [`RangeSetBlaze`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
 pub trait Integer:
     num_integer::Integer
     + FromStr
@@ -126,10 +126,10 @@ pub trait Integer:
     + WrappingSub
 {
     #[cfg(feature = "from_slice")]
-    /// A definition of [`OldRangeSetBlaze::from_slice()`] specific to this integer type.
+    /// A definition of [`RangeSetBlaze::from_slice()`] specific to this integer type.
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self>;
 
-    /// The type of the length of a [`OldRangeSetBlaze`]. For example, the length of a `OldRangeSetBlaze<u8>` is `usize`. Note
+    /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note
     /// that it can't be `u8` because the length ranges from 0 to 256, which is one too large for `u8`.
     ///
     /// In general, `SafeLen` will be `usize` if `usize` is always large enough. If not, `SafeLen` will be the smallest unsigned integer
@@ -138,9 +138,9 @@ pub trait Integer:
     ///
     /// # Examples
     /// ```
-    /// use range_set_blaze::{OldRangeSetBlaze, Integer};
+    /// use range_set_blaze::{RangeSetBlaze, Integer};
     ///
-    /// let len: <u8 as Integer>::SafeLen = OldRangeSetBlaze::from_iter([0u8..=255]).len();
+    /// let len: <u8 as Integer>::SafeLen = RangeSetBlaze::from_iter([0u8..=255]).len();
     /// assert_eq!(len, 256);
     /// ```
     type SafeLen: core::hash::Hash
@@ -176,19 +176,19 @@ pub trait Integer:
     ///
     /// # Example
     /// ```
-    /// use range_set_blaze::{Integer, OldRangeSetBlaze};
+    /// use range_set_blaze::{Integer, RangeSetBlaze};
     ///
     /// // for i8, we can use up to 127
-    /// let a = OldRangeSetBlaze::from_iter([i8::MAX]);
+    /// let a = RangeSetBlaze::from_iter([i8::MAX]);
     /// // for i128, we can use up to 170141183460469231731687303715884105726
-    /// let a = OldRangeSetBlaze::from_iter([<i128 as Integer>::safe_max_value()]);
+    /// let a = RangeSetBlaze::from_iter([<i128 as Integer>::safe_max_value()]);
     /// ```
     /// # Panics
     /// ```should_panic
-    /// use range_set_blaze::{Integer, OldRangeSetBlaze};
+    /// use range_set_blaze::{Integer, RangeSetBlaze};
     ///
     /// // for i128, using 170141183460469231731687303715884105727 throws a panic.
-    /// let a = OldRangeSetBlaze::from_iter([i128::MAX]);
+    /// let a = RangeSetBlaze::from_iter([i128::MAX]);
     /// ```
     fn safe_max_value() -> Self {
         Self::max_value()

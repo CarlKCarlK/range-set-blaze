@@ -5,7 +5,6 @@ use core::{
     cmp::Ordering,
     fmt,
     iter::FusedIterator,
-    marker::PhantomData,
     ops::{BitOr, BitOrAssign, Bound, RangeBounds, RangeInclusive},
 };
 use num_traits::{One, Zero};
@@ -483,7 +482,6 @@ use crate::{IntoRangesIter, UnionIter};
 //     /// assert!(a.contains(5));
 //     ///
 //     /// ```
-//     // cmk00000000000
 //     pub fn append(&mut self, other: &mut Self) {
 //         self.0.append(&mut other.0);
 //     }
@@ -2114,48 +2112,49 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
 // {
 // }
 
-/// cmk doc
-pub struct UnitMapToSortedDisjoint<T, I>
-where
-    T: Integer,
-    I: SortedDisjointMap<T, (), &'static ()>,
-{
-    iter: I,
-    phantom: PhantomData<T>,
-}
+/// cmk000 remove
+// /// cmk doc
+// pub struct UnitMapToSortedDisjoint<T, I>
+// where
+//     T: Integer,
+//     I: SortedDisjointMap<T, (), &'static ()>,
+// {
+//     iter: I,
+//     phantom: PhantomData<T>,
+// }
 
-impl<T, I> UnitMapToSortedDisjoint<T, I>
-where
-    T: Integer,
-    I: SortedDisjointMap<T, (), &'static ()> + FusedIterator,
-{
-    // Define a new method that directly accepts a SortedDisjoint iterator
-    /// cmk doc
-    pub fn new(iter: I) -> Self {
-        UnitMapToSortedDisjoint {
-            iter,
-            phantom: PhantomData,
-        }
-    }
-}
+// impl<T, I> UnitMapToSortedDisjoint<T, I>
+// where
+//     T: Integer,
+//     I: SortedDisjointMap<T, (), &'static ()> + FusedIterator,
+// {
+//     // Define a new method that directly accepts a SortedDisjoint iterator
+//     /// cmk doc
+//     pub fn new(iter: I) -> Self {
+//         UnitMapToSortedDisjoint {
+//             iter,
+//             phantom: PhantomData,
+//         }
+//     }
+// }
 
-impl<T, I> FusedIterator for UnitMapToSortedDisjoint<T, I>
-where
-    T: Integer,
-    I: SortedDisjointMap<T, (), &'static ()> + FusedIterator,
-{
-}
+// impl<T, I> FusedIterator for UnitMapToSortedDisjoint<T, I>
+// where
+//     T: Integer,
+//     I: SortedDisjointMap<T, (), &'static ()> + FusedIterator,
+// {
+// }
 
-impl<T, I> Iterator for UnitMapToSortedDisjoint<T, I>
-where
-    T: Integer,
-    I: SortedDisjointMap<T, (), &'static ()> + FusedIterator,
-{
-    type Item = RangeInclusive<T>;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(range, _value)| range)
-    }
-}
+// impl<T, I> Iterator for UnitMapToSortedDisjoint<T, I>
+// where
+//     T: Integer,
+//     I: SortedDisjointMap<T, (), &'static ()> + FusedIterator,
+// {
+//     type Item = RangeInclusive<T>;
+//     fn next(&mut self) -> Option<Self::Item> {
+//         self.iter.next().map(|(range, _value)| range)
+//     }
+// }
 
 /// cmk remove?
 // pub fn set_to_map() {

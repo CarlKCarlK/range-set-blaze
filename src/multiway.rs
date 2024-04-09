@@ -1,11 +1,11 @@
 // impl<T, I> MultiwayRangeSetBlazeRef<T> for I
 // where
 //     T: Integer,
-//     I: IntoIterator<Item = OldRangeSetBlaze<T>>,
+//     I: IntoIterator<Item = RangeSetBlaze<T>>,
 // {
 // }
 
-// /// The trait used to provide methods on multiple [`OldRangeSetBlaze`] references,
+// /// The trait used to provide methods on multiple [`RangeSetBlaze`] references,
 // /// specifically [`union`] and [`intersection`].
 // ///
 // /// Also see [`OldMultiwayRangeSetBlaze`].
@@ -13,9 +13,9 @@
 // /// [`union`]: MultiwayRangeSetBlazeRef::union
 // /// [`intersection`]: MultiwayRangeSetBlazeRef::intersection
 // pub trait MultiwayRangeSetBlazeRef<T: Integer>:
-//     IntoIterator<Item = OldRangeSetBlaze<T>> + Sized
+//     IntoIterator<Item = RangeSetBlaze<T>> + Sized
 // {
-//     /// Unions the given [`OldRangeSetBlaze`] references, creating a new [`OldRangeSetBlaze`].
+//     /// Unions the given [`RangeSetBlaze`] references, creating a new [`RangeSetBlaze`].
 //     /// Any number of input can be given.
 //     ///
 //     /// For exactly two inputs, you can also use the '|' operator.
@@ -27,24 +27,24 @@
 //     ///
 //     /// # Example
 //     ///
-//     /// Find the integers that appear in any of the [`OldRangeSetBlaze`]'s.
+//     /// Find the integers that appear in any of the [`RangeSetBlaze`]'s.
 //     ///
 //     /// ```
 //     /// use range_set_blaze::prelude::*;
 //     ///
-//     /// let a = OldRangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-//     /// let b = OldRangeSetBlaze::from_iter([5..=13, 18..=29]);
-//     /// let c = OldRangeSetBlaze::from_iter([25..=100]);
+//     /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+//     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+//     /// let c = RangeSetBlaze::from_iter([25..=100]);
 //     ///
 //     /// let union = vec![a, b, c].into_iter().union();
 //     ///
-//     /// assert_eq!(union, OldRangeSetBlaze::from_iter([1..=15, 18..=100]));
+//     /// assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
 //     /// ```
-//     fn union(self) -> OldRangeSetBlaze<T> {
-//         OldRangeSetBlaze::from_sorted_disjoint(self.into_iter().map(|x| x.into_ranges()).union())
+//     fn union(self) -> RangeSetBlaze<T> {
+//         RangeSetBlaze::from_sorted_disjoint(self.into_iter().map(|x| x.into_ranges()).union())
 //     }
 
-//     /// Intersects the given [`OldRangeSetBlaze`] references, creating a new [`OldRangeSetBlaze`].
+//     /// Intersects the given [`RangeSetBlaze`] references, creating a new [`RangeSetBlaze`].
 //     /// Any number of input can be given.
 //     ///
 //     /// For exactly two inputs, you can also use the '&' operator.
@@ -56,22 +56,22 @@
 //     ///
 //     /// # Example
 //     ///
-//     /// Find the integers that appear in all the [`OldRangeSetBlaze`]'s.
+//     /// Find the integers that appear in all the [`RangeSetBlaze`]'s.
 //     ///
 //     /// ```
 //     /// use range_set_blaze::prelude::*;
 //     ///
-//     /// let a = OldRangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-//     /// let b = OldRangeSetBlaze::from_iter([5..=13, 18..=29]);
-//     /// let c = OldRangeSetBlaze::from_iter([-100..=100]);
+//     /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+//     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+//     /// let c = RangeSetBlaze::from_iter([-100..=100]);
 //     ///
 //     /// let intersection = vec![a, b, c].into_iter().intersection();
 //     ///
-//     /// assert_eq!(intersection, OldRangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
+//     /// assert_eq!(intersection, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
 //     /// ```
-//     fn intersection(self) -> OldRangeSetBlaze<T> {
+//     fn intersection(self) -> RangeSetBlaze<T> {
 //         self.into_iter()
-//             .map(OldRangeSetBlaze::into_ranges)
+//             .map(RangeSetBlaze::into_ranges)
 //             .intersection()
 //             .into_range_set_blaze_old()
 //     }
@@ -79,10 +79,10 @@
 // impl<'a, T, I> OldMultiwayRangeSetBlaze<'a, T> for I
 // where
 //     T: Integer + 'a,
-//     I: IntoIterator<Item = &'a OldRangeSetBlaze<T>>,
+//     I: IntoIterator<Item = &'a RangeSetBlaze<T>>,
 // {
 // }
-// /// The trait used to provide methods on multiple [`OldRangeSetBlaze`]'s,
+// /// The trait used to provide methods on multiple [`RangeSetBlaze`]'s,
 // /// specifically [`union`] and [`intersection`].
 // ///
 // /// Also see [`MultiwayRangeSetBlazeRef`].
@@ -90,9 +90,9 @@
 // /// [`union`]: OldMultiwayRangeSetBlaze::union
 // /// [`intersection`]: OldMultiwayRangeSetBlaze::intersection
 // pub trait OldMultiwayRangeSetBlaze<'a, T: Integer + 'a>:
-//     IntoIterator<Item = &'a OldRangeSetBlaze<T>> + Sized
+//     IntoIterator<Item = &'a RangeSetBlaze<T>> + Sized
 // {
-//     /// Unions the given [`OldRangeSetBlaze`]'s, creating a new [`OldRangeSetBlaze`].
+//     /// Unions the given [`RangeSetBlaze`]'s, creating a new [`RangeSetBlaze`].
 //     /// Any number of input can be given.
 //     ///
 //     /// For exactly two inputs, you can also use the '|' operator.
@@ -104,27 +104,27 @@
 //     ///
 //     /// # Example
 //     ///
-//     /// Find the integers that appear in any of the [`OldRangeSetBlaze`]'s.
+//     /// Find the integers that appear in any of the [`RangeSetBlaze`]'s.
 //     ///
 //     /// ```
 //     /// use range_set_blaze::prelude::*;
 //     ///
-//     /// let a = OldRangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-//     /// let b = OldRangeSetBlaze::from_iter([5..=13, 18..=29]);
-//     /// let c = OldRangeSetBlaze::from_iter([25..=100]);
+//     /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+//     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+//     /// let c = RangeSetBlaze::from_iter([25..=100]);
 //     ///
 //     /// let union = [a, b, c].union();
 //     ///
-//     /// assert_eq!(union, OldRangeSetBlaze::from_iter([1..=15, 18..=100]));
+//     /// assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
 //     /// ```
-//     fn union(self) -> OldRangeSetBlaze<T> {
+//     fn union(self) -> RangeSetBlaze<T> {
 //         self.into_iter()
-//             .map(OldRangeSetBlaze::ranges)
+//             .map(RangeSetBlaze::ranges)
 //             .union()
 //             .into_range_set_blaze_old()
 //     }
 
-//     /// Intersects the given [`OldRangeSetBlaze`]'s, creating a new [`OldRangeSetBlaze`].
+//     /// Intersects the given [`RangeSetBlaze`]'s, creating a new [`RangeSetBlaze`].
 //     /// Any number of input can be given.
 //     ///
 //     /// For exactly two inputs, you can also use the '&' operator.
@@ -136,22 +136,22 @@
 //     ///
 //     /// # Example
 //     ///
-//     /// Find the integers that appear in all the [`OldRangeSetBlaze`]'s.
+//     /// Find the integers that appear in all the [`RangeSetBlaze`]'s.
 //     ///
 //     /// ```
 //     /// use range_set_blaze::prelude::*;
 //     ///
-//     /// let a = OldRangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-//     /// let b = OldRangeSetBlaze::from_iter([5..=13, 18..=29]);
-//     /// let c = OldRangeSetBlaze::from_iter([-100..=100]);
+//     /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+//     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+//     /// let c = RangeSetBlaze::from_iter([-100..=100]);
 //     ///
 //     /// let intersection = [a, b, c].intersection();
 //     ///
-//     /// assert_eq!(intersection, OldRangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
+//     /// assert_eq!(intersection, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
 //     /// ```
-//     fn intersection(self) -> OldRangeSetBlaze<T> {
+//     fn intersection(self) -> RangeSetBlaze<T> {
 //         self.into_iter()
-//             .map(OldRangeSetBlaze::ranges)
+//             .map(RangeSetBlaze::ranges)
 //             .intersection()
 //             .into_range_set_blaze_old()
 //     }
@@ -192,15 +192,14 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = OldRangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
-    /// let b = OldRangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
-    /// let c = OldRangeSetBlaze::from_iter([25..=100]).into_ranges();
+    /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
+    /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
+    /// let c = RangeSetBlaze::from_iter([25..=100]).into_ranges();
     ///
     /// let union = [a, b, c].union();
     ///
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
-    // cmk00000000000000
     fn union(self) -> UnionIterKMerge<T, I> {
         UnionIter::new_k(self)
     }
@@ -221,9 +220,9 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = OldRangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
-    /// let b = OldRangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
-    /// let c = OldRangeSetBlaze::from_iter([-100..=100]).into_ranges();
+    /// let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
+    /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
+    /// let c = RangeSetBlaze::from_iter([-100..=100]).into_ranges();
     ///
     /// let intersection = [a, b, c].intersection();
     ///

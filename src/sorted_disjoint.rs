@@ -1,8 +1,8 @@
 use crate::map::CloneBorrow;
-use crate::range_set_blaze::UnitMapToSortedDisjoint;
 use crate::range_values::RangeValuesToRangesIter;
+use crate::ranges::RangesIter;
 use crate::{range_values::IntoRangeValuesToRangesIter, RangeSetBlaze};
-use crate::{UnionIter, UnionIterMerge};
+use crate::{IntoRangesIter, UnionIter, UnionIterMerge};
 use alloc::format;
 use alloc::string::String;
 use core::array;
@@ -741,11 +741,12 @@ impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, I: AnythingGoes<T>);
 impl_sorted_traits_and_ops!(NotIter<T, I>, I: SortedDisjoint<T>);
 impl_sorted_traits_and_ops!(IntoRangeValuesToRangesIter<T, V>, V: ValueOwned);
 impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
-impl_sorted_traits_and_ops!(UnitMapToSortedDisjoint<T, I>, I: SortedDisjointMap<T, (), &'static ()>);
+// impl_sorted_traits_and_ops!(UnitMapToSortedDisjoint<T, I>, I: SortedDisjointMap<T, (), &'static ()>);
 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: ValueOwned, VR: CloneBorrow<V>, I: SortedDisjointMap<T, V, VR>);
 impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);
-// cmk remove impl_sorted_traits_and_ops!(UnitRangesIter<'_, T>, 'a); // cmk not faster
 impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
+impl_sorted_traits_and_ops!(RangesIter<'a, T>, 'a);
+impl_sorted_traits_and_ops!(IntoRangesIter<T>, 'ignore);
 
 // We're not allowed to define methods on outside types, so we only define the traits
 // cmk0

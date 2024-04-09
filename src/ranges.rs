@@ -1,12 +1,6 @@
+use crate::Integer;
 use alloc::collections::btree_map;
-use core::{
-    iter::FusedIterator,
-    ops::{self, RangeInclusive},
-};
-
-use crate::{
-    BitAndMerge, BitSubMerge, Integer, NotIter, SortedDisjoint, SortedStarts, UnionIterMerge,
-};
+use core::{iter::FusedIterator, ops::RangeInclusive};
 
 /// An iterator that visits the ranges in the [`RangeSetBlaze`],
 /// i.e., the integers as sorted & disjoint ranges.
@@ -28,10 +22,6 @@ impl<'a, T: Integer> AsRef<RangesIter<'a, T>> for RangesIter<'a, T> {
         self
     }
 }
-
-// RangesIter (one of the iterators from RangeSetBlaze) is SortedDisjoint
-impl<T: Integer> SortedStarts<T> for RangesIter<'_, T> {}
-impl<T: Integer> SortedDisjoint<T> for RangesIter<'_, T> {}
 
 impl<T: Integer> ExactSizeIterator for RangesIter<'_, T> {
     #[must_use]
@@ -75,9 +65,6 @@ pub struct IntoRangesIter<T: Integer> {
     pub(crate) iter: alloc::collections::btree_map::IntoIter<T, T>,
 }
 
-impl<T: Integer> SortedStarts<T> for IntoRangesIter<T> {}
-impl<T: Integer> SortedDisjoint<T> for IntoRangesIter<T> {}
-
 impl<T: Integer> ExactSizeIterator for IntoRangesIter<T> {
     #[must_use]
     fn len(&self) -> usize {
@@ -103,117 +90,5 @@ impl<T: Integer> Iterator for IntoRangesIter<T> {
 impl<T: Integer> DoubleEndedIterator for IntoRangesIter<T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter.next_back().map(|(start, end)| start..=end)
-    }
-}
-
-impl<T: Integer> ops::Not for RangesIter<'_, T> {
-    type Output = NotIter<T, Self>;
-
-    fn not(self) -> Self::Output {
-        self.complement()
-    }
-}
-
-impl<T: Integer> ops::Not for IntoRangesIter<T> {
-    type Output = NotIter<T, Self>;
-
-    fn not(self) -> Self::Output {
-        self.complement()
-    }
-}
-
-impl<T: Integer, I> ops::BitOr<I> for RangesIter<'_, T>
-where
-    I: SortedDisjoint<T>,
-{
-    type Output = UnionIterMerge<T, Self, I>;
-
-    fn bitor(self, other: I) -> Self::Output {
-        SortedDisjoint::union(self, other)
-    }
-}
-
-impl<T: Integer, I> ops::BitOr<I> for IntoRangesIter<T>
-where
-    I: SortedDisjoint<T>,
-{
-    type Output = UnionIterMerge<T, Self, I>;
-
-    fn bitor(self, other: I) -> Self::Output {
-        SortedDisjoint::union(self, other)
-    }
-}
-
-impl<T: Integer, I> ops::Sub<I> for RangesIter<'_, T>
-where
-    I: SortedDisjoint<T>,
-{
-    type Output = BitSubMerge<T, Self, I>;
-
-    fn sub(self, other: I) -> Self::Output {
-        SortedDisjoint::difference(self, other)
-    }
-}
-
-impl<T: Integer, I> ops::Sub<I> for IntoRangesIter<T>
-where
-    I: SortedDisjoint<T>,
-{
-    type Output = BitSubMerge<T, Self, I>;
-
-    fn sub(self, other: I) -> Self::Output {
-        SortedDisjoint::difference(self, other)
-    }
-}
-
-// cmk000000
-// impl<T: Integer, I> ops::BitXor<I> for RangesIter<'_, T>
-// where
-//     I: SortedDisjoint<T>,
-// {
-//     type Output = BitXOr<T, Self, I>;
-
-//     #[allow(clippy::suspicious_arithmetic_impl)]
-//     fn bitxor(self, other: I) -> Self::Output {
-//         // We optimize by using self.clone() instead of tee
-//         let lhs1 = self.clone();
-//         let (rhs0, rhs1) = other.tee();
-//         (self - rhs0) | (rhs1.difference(lhs1))
-//     }
-// }
-
-// impl<T: Integer, I> ops::BitXor<I> for IntoRangesIter<T>
-// where
-//     I: SortedDisjoint<T>,
-// {
-//     type Output = BitXOrTee<T, Self, I>;
-
-//     #[allow(clippy::suspicious_arithmetic_impl)]
-//     fn bitxor(self, other: I) -> Self::Output {
-//         SortedDisjoint::symmetric_difference(self, other)
-//     }
-// }
-
-impl<T: Integer, I> ops::BitAnd<I> for RangesIter<'_, T>
-where
-    I: SortedDisjoint<T>,
-{
-    type Output = BitAndMerge<T, Self, I>;
-
-    #[allow(clippy::suspicious_arithmetic_impl)]
-    fn bitand(self, other: I) -> Self::Output {
-        SortedDisjoint::intersection(self, other)
-    }
-}
-
-impl<T: Integer, I> ops::BitAnd<I> for IntoRangesIter<T>
-where
-    I: SortedDisjoint<T>,
-{
-    type Output = BitAndMerge<T, Self, I>;
-
-    #[allow(clippy::suspicious_arithmetic_impl)]
-    fn bitand(self, other: I) -> Self::Output {
-        SortedDisjoint::intersection(self, other)
     }
 }
