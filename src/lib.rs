@@ -263,8 +263,7 @@ pub type BitSubMerge<T, L, R> = NotIter<T, UnionIterMerge<T, NotIter<T, L>, R>>;
 
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 // cmk00 Can we/should we hide MergeMapIter and KMergeMapIter and SymDiffMapIter::new and UnionMapIter::new?
-
-//cmk #[test]
+#[test]
 // cmk0000 challenge: convert from every level to sorted disjoint* for both map and set.
 pub fn convert_challenge() {
     use itertools::Itertools;

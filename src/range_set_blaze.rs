@@ -1346,16 +1346,11 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
     ///
     /// assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
     /// ```
-    // cmk00000000000000000000
     fn union(self) -> RangeSetBlaze<T> {
-        // cmk1 RangeMapBlaze should have its own multiway union and we should use it here
-        todo!("cmk000000");
-        // let range_set_map = self
-        //     .into_iter()
-        //     .map(|a| a.0.range_values())
-        //     .union()
-        //     .into_range_map_blaze();
-        // RangeSetBlaze(range_set_map)
+        self.into_iter()
+            .map(|x| x.ranges())
+            .union()
+            .into_range_set_blaze()
     }
 
     /// Intersects the given [`RangeSetBlaze`]'s, creating a new [`RangeSetBlaze`].
@@ -1748,7 +1743,7 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
 //         if b_len * (a_len.ilog2() as usize + 1) < a_len + b_len {
 //             self.extend(other.ranges());
 //         } else {
-//             // cmk00000000000000000
+//             // cmk00
 //             *self = (self.ranges() | other.ranges()).into_range_set_blaze()
 //         }
 //     }

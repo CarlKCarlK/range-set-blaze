@@ -566,6 +566,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     //     T::from_slice(slice)
     // }
 
+    #[allow(dead_code)]
     pub(crate) fn len_slow(&self) -> <T as Integer>::SafeLen {
         RangeMapBlaze::btree_map_len(&self.btree_map)
     }
