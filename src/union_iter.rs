@@ -141,19 +141,20 @@ where
     }
 }
 
-// from iter (T, &V) to UnionIter
-impl<T> FromIterator<T> for UnionIter<T, SortedStartsInVec<T>>
-where
-    T: Integer,
-{
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = T>,
-    {
-        let iter = iter.into_iter();
-        UnionIter::from_iter(iter)
-    }
-}
+// cmk000 remove?
+// // from iter (T, &V) to UnionIter
+// impl<T> FromIterator<T> for UnionIter<T, SortedStartsInVec<T>>
+// where
+//     T: Integer,
+// {
+//     fn from_iter<I>(iter: I) -> Self
+//     where
+//         I: IntoIterator<Item = T>,
+//     {
+//         let iter = iter.into_iter();
+//         UnionIter::new(iter)
+//     }
+// }
 
 // // from iter (RangeInclusive<T>, &V) to UnionIter
 // impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
@@ -215,72 +216,6 @@ where
     I: SortedStarts<T> + FusedIterator,
 {
 }
-
-// cmk
-// impl<'a, T, I> ops::Not for UnionIter<'a, T, I>
-// where
-//     I: SortedStarts<T, V>,
-// {
-//     type Output = NotIter<T, V, Self>;
-
-//     fn not(self) -> Self::Output {
-//         self.complement()
-//     }
-// }
-
-// impl<'a, T, R, L> ops::BitOr<R> for UnionIter<'a, T, L>
-// where
-//     T: Integer + 'a,
-//     V: ValueOwned + 'a,
-//     VR: CloneBorrow<V> + 'a,
-//     L: SortedStarts<'a, T>,
-//     R: SortedDisjoint<'a, T> + 'a,
-// {
-//     type Output = BitOrMerge<'a, T, Self, R>;
-
-//     fn bitor(self, rhs: R) -> Self::Output {
-//         // It might be fine to optimize to self.iter, but that would require
-//         // also considering field 'range'
-//         SortedDisjoint::union(self, rhs)
-//     }
-// }
-
-// impl<'a, T, R, L> ops::Sub<R> for UnionIter<'a, T, L>
-// where
-//     L: SortedStarts<T, V>,
-//     R: SortedDisjoint<T, V>,
-// {
-//     type Output = BitSubMerge<T, V, Self, R>;
-
-//     fn sub(self, rhs: R) -> Self::Output {
-//         SortedDisjoint::difference(self, rhs)
-//     }
-// }
-
-// impl<'a, T, R, L> ops::BitXor<R> for UnionIter<'a, T, L>
-// where
-//     L: SortedStarts<T, V>,
-//     R: SortedDisjoint<T, V>,
-// {
-//     type Output = BitXOrTee<T, V, Self, R>;
-
-//     #[allow(clippy::suspicious_arithmetic_impl)]
-//     fn bitxor(self, rhs: R) -> Self::Output {
-//         SortedDisjoint::symmetric_difference(self, rhs)
-//     }
-// }
-
-// impl<'a, T, R, L> ops::BitAnd<R> for UnionIter<'a, T, L>
-// where
-//     L: SortedStarts<T, V>,
-//     R: SortedDisjoint<T, V>,
-// {
-//     type Output = BitAndMerge<T, V, Self, R>;
-
-//     fn bitand(self, other: R) -> Self::Output {
-//         SortedDisjoint::intersection(self, other)
-//     }
-// }
 
 // impl<'a, T: Integer + 'a, V: ValueOwned + 'a, const N: usize> From<[(T, V); N]>
 //     for UnionIter<'a, T, V, &'a V, SortedStartsInVec<'a, T, V, &'a V>>

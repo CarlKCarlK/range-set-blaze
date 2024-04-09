@@ -292,7 +292,7 @@ use crate::{IntoRangesIter, UnionIter};
 //     /// assert_eq!(set_iter.next(), Some(2));
 //     /// assert_eq!(set_iter.next_back(), None);
 //     /// ```
-//     // cmk000000000 so something faster that doesn't use RangeValuesIter
+//     // cmk00 remove
 //     pub fn iter(&self) -> KeysMap<T, (), &(), RangeValuesIter<'_, T, ()>> {
 //         // If the user asks for an iter, we give them a RangesIter iterator
 //         // and we iterate that one integer at a time.
@@ -2389,8 +2389,8 @@ where
 /// `RangeSetBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
 /// these methods match those of `BTreeSet`.
 ///
-/// [`union`]: trait.OldMultiwayRangeSetBlaze.html#method.union
-/// [`intersection`]: trait.OldMultiwayRangeSetBlaze.html#method.intersection
+/// [`union`]: trait.MultiwayRangeSetBlaze.html#method.union
+/// [`intersection`]: trait.MultiwayRangeSetBlaze.html#method.intersection
 /// [`insert`]: RangeSetBlaze::insert
 /// [`pop_first`]: RangeSetBlaze::pop_first
 /// [`split_off`]: RangeSetBlaze::split_off
@@ -3659,14 +3659,9 @@ gen_ops_ex!(
     /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
     /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
     /// ```
-    // cmk00000000
-    // for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
-    //     // cmk eventually remove this function
-    //     let left = SortedDisjointToUnitMap::new(a.ranges());
-    //     let right = SortedDisjointToUnitMap::new(b.ranges());
-    //     let unit_map = left.symmetric_difference(right);
-    //     RangeSetBlaze::from_unit_map(unit_map)
-    // };
+    for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
+        a.ranges().symmetric_difference(b.ranges()).into_range_set_blaze()
+    };
 
     /// Difference the contents of two [`RangeSetBlaze`]'s.
     ///

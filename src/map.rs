@@ -1119,7 +1119,6 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         }
     }
 
-    // cmk00000000 be sure that this internal add isn't much slower than a specialized one for values of ()
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     // cmk2 might be able to shorten code by combining cases

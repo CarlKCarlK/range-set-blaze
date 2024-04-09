@@ -1307,10 +1307,8 @@ fn symmetric_difference(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
     let b_r = RangeSetBlaze::from_iter(&b);
     let expected: Reference = a.symmetric_difference(&b).cloned().collect();
-    // cmk000 restore this
-    // let actual: Reference = (a_r ^ b_r).into_iter().collect();
-    // binary_op(a, b, expected, actual)
-    todo!()
+    let actual: Reference = (a_r ^ b_r).into_iter().collect();
+    binary_op(a, b, expected, actual)
 }
 
 #[quickcheck]
@@ -1358,10 +1356,8 @@ fn symmetric_difference_size_hint(a: Reference, b: Reference) -> bool {
     let expected = a.symmetric_difference(&b).count();
     let a_r = RangeSetBlaze::from_iter(&a);
     let b_r = RangeSetBlaze::from_iter(&b);
-    // cmk000 restore this
-    // let actual = (a_r ^ b_r).into_iter().size_hint();
-    // check_size_hint((a, b), expected, actual)
-    todo!()
+    let actual = (a_r ^ b_r).into_iter().size_hint();
+    check_size_hint((a, b), expected, actual)
 }
 
 // cmk0 get working again

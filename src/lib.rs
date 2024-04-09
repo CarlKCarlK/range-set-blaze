@@ -50,6 +50,7 @@ mod rog;
 mod sorted_disjoint;
 // use alloc::collections::btree_map;
 // use gen_ops::gen_ops_ex;
+pub use crate::multiway::MultiwayRangeSetBlaze;
 pub use intersection_iter_map::IntersectionIterMap;
 mod sym_diff_iter;
 mod sym_diff_iter_map;
@@ -515,8 +516,8 @@ fn test_every_union() {
     // // .union()
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
-    // let c = [&a, &b].union();
-    // assert_eq!(c, RangeSetBlaze::from_iter([1..=15, 18..=29]));
+    let c = [&a, &b].union();
+    assert_eq!(c, RangeSetBlaze::from_iter([1..=15, 18..=29]));
 
     // union_dyn!
     let c = union_dyn!(a.ranges(), b.ranges());
