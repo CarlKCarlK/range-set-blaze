@@ -66,16 +66,12 @@ where
     // cmk0 does this and UnionIter do the right thing on non-fused input?
 
     fn next(&mut self) -> Option<RangeInclusive<T>> {
-        loop {
+        'read_fresh: loop {
             let Some(next_range) = self.iter.next() else {
                 loop {
                     let count = self.end_heap.len();
                     if count == 0 {
                         return None;
-                    } else if self.end_heap.len() == 1 {
-                        let end = self.end_heap.pop().unwrap().0;
-                        assert!(self.end_heap.is_empty()); // cmk
-                        return Some(self.start_or_min_value..=end);
                     };
                     let end = self.end_heap.pop().unwrap().0;
                     self.remove_same_end(end);
@@ -96,35 +92,31 @@ where
             };
 
             let (next_start, next_end) = next_range.into_inner();
-
             if self.end_heap.is_empty() {
                 self.start_or_min_value = next_start;
                 self.end_heap.push(Reverse(next_end));
-                continue;
+                continue 'read_fresh;
             }
 
             if self.start_or_min_value != next_start {
                 let count = self.end_heap.len();
-                if count == 1 {
-                    assert!(self.end_heap.peek().unwrap().0 < next_start); // cmk
-                    let result = self.start_or_min_value..=self.end_heap.pop().unwrap().0;
-                    self.start_or_min_value = next_start;
-                    self.end_heap.push(Reverse(next_end));
-                    return Some(result);
-                }
-
                 let end = self.end_heap.pop().unwrap().0;
                 self.remove_same_end(end);
                 assert!(self.end_heap.is_empty());
-                assert!(count % 2 == 1);
-                let result = Some(self.start_or_min_value..=end);
-                self.start_or_min_value = next_start;
-                self.end_heap.push(Reverse(next_end));
-                return result;
+                if count % 2 == 1 {
+                    let result = Some(self.start_or_min_value..=end);
+                    self.start_or_min_value = next_start;
+                    self.end_heap.push(Reverse(next_end));
+                    return result;
+                } else {
+                    self.start_or_min_value = next_start;
+                    self.end_heap.push(Reverse(next_end));
+                    continue 'read_fresh;
+                }
             }
 
             self.end_heap.push(Reverse(next_end));
-            continue;
+            continue 'read_fresh;
         }
     }
 }
@@ -376,13 +368,18 @@ fn sdi2() {
 
 #[test]
 fn sdi1() {
+    let a = [0..=0, 0..=0, 2..=100].into_iter();
+    let a = AssumeSortedStarts::new(a);
+    let mut iter = SymDiffIter::new(a);
+    assert_eq!(iter.next(), Some(2..=100));
+    assert_eq!(iter.next(), None);
+
     let a = [0..=0, 0..=0, 0..=0, 2..=100].into_iter();
     let a = AssumeSortedStarts::new(a);
     let mut iter = SymDiffIter::new(a);
     assert_eq!(iter.next(), Some(0..=0));
     assert_eq!(iter.next(), Some(2..=100));
     assert_eq!(iter.next(), None);
-
     {
         let a = [0..=1, 0..=0].into_iter();
         let a = AssumeSortedStarts::new(a);
