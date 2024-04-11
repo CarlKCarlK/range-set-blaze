@@ -1,4 +1,4 @@
-use alloc::collections::{btree_map::Range, BinaryHeap};
+use alloc::collections::BinaryHeap;
 #[cfg(test)]
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
@@ -25,11 +25,11 @@ use core::{
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_blaze::{SymDiffIter1, Merge, SortedDisjointMap, CheckSortedDisjoint};
+/// use range_set_blaze::{SymDiffIter, Merge, SortedDisjointMap, CheckSortedDisjoint};
 ///
 /// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
-/// let union = SymDiffIter1::new(Merge::new(a, b));
+/// let union = SymDiffIter::new(Merge::new(a, b));
 /// assert_eq!(union.to_string(), "1..=100");
 ///
 /// // Or, equivalently:
@@ -40,7 +40,7 @@ use core::{
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct SymDiffIter1<T, I>
+pub struct SymDiffIter<T, I>
 where
     T: Integer,
     I: SortedStarts<T>,
@@ -49,9 +49,10 @@ where
     start_or_min_value: T,
     end_heap: BinaryHeap<Reverse<T>>,
     next_again: Option<RangeInclusive<T>>,
+    gather: Option<RangeInclusive<T>>,
 }
 
-impl<T, I> FusedIterator for SymDiffIter1<T, I>
+impl<T, I> FusedIterator for SymDiffIter<T, I>
 where
     T: Integer,
     I: SortedStarts<T>,
@@ -59,7 +60,7 @@ where
 }
 
 // cmk0000 review this for simplifications
-impl<T, I> Iterator for SymDiffIter1<T, I>
+impl<T, I> Iterator for SymDiffIter<T, I>
 where
     T: Integer,
     I: SortedStarts<T>,
@@ -71,15 +72,15 @@ where
         loop {
             let count = self.end_heap.len();
             let Some(next_range) = self.next_again.take().or_else(|| self.iter.next()) else {
-                // The workspace is empty and next is empty, so return None.
+                // The workspace is empty and next is empty, so return everything gathered.
                 if count == 0 {
-                    return None;
+                    return self.gather.take();
                 };
 
                 // The workspace is not empty (but next is empty) is process the next chunk of the workspace.
                 let end = self.end_heap.pop().unwrap().0;
                 self.remove_same_end(end);
-                let result = Some(self.start_or_min_value..=end);
+                let result = self.start_or_min_value..=end;
                 if !self.end_heap.is_empty() {
                     self.start_or_min_value = end + T::one(); // The 'if' prevents overflow.
                 }
@@ -101,7 +102,7 @@ where
             // Next start inside the workspace's first chunk, so process up to next_start.
             let end = self.end_heap.peek().unwrap().0;
             if next_start <= end {
-                let result = Some(self.start_or_min_value..=next_start - T::one()); // cmk000 check for overflow
+                let result = self.start_or_min_value..=next_start - T::one(); // cmk000 check for overflow
                 self.start_or_min_value = next_start;
                 self.end_heap.push(Reverse(next_end));
                 if let Some(result) = self.process(count % 2 == 1, result) {
@@ -113,7 +114,7 @@ where
             // Next start is after the workspaces end, but the workspace contains only one chuck,
             // so process the workspace and set the workspace to next.
             self.remove_same_end(end);
-            let result = Some(self.start_or_min_value..=end);
+            let result = self.start_or_min_value..=end;
             if self.end_heap.is_empty() {
                 self.start_or_min_value = next_start;
                 self.end_heap.push(Reverse(next_end));
@@ -135,7 +136,7 @@ where
     }
 }
 
-impl<T, I> SymDiffIter1<T, I>
+impl<T, I> SymDiffIter<T, I>
 where
     T: Integer,
     I: SortedStarts<T>,
@@ -153,34 +154,48 @@ where
 
     #[inline]
     fn process(
-        &self,
+        &mut self,
         keep: bool,
-        result: Option<RangeInclusive<T>>,
+        next: RangeInclusive<T>,
     ) -> Option<Option<RangeInclusive<T>>> {
-        if keep {
-            Some(result)
-        } else {
-            None
+        if !keep {
+            return None;
         }
+        let Some(gather) = self.gather.take() else {
+            self.gather = Some(next);
+            return None;
+        };
+        // If there is no "next" then return gather if it exists.
+
+        // Take both next and gather apart.
+        let (next_start, next_end) = next.into_inner();
+        let (gather_start, gather_end) = gather.into_inner();
+
+        // We can assume gather_end < next_start.
+        debug_assert!(gather_end < next_start); // real assert
+
+        // If they touch, set gather to the union and loop.
+        if gather_end + T::one() == next_start {
+            self.gather = Some(gather_start..=next_end);
+            return None;
+        }
+
+        // Next is disjoint from gather, so return gather and set gather to next.
+        self.gather = Some(next_start..=next_end);
+        return Some(Some(gather_start..=gather_end));
     }
 
-    /// Creates a new [`SymDiffIter1`] from zero or more [`SortedDisjointMap`] iterators.
-    /// See [`SymDiffIter1`] for more details and examples.
+    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjointMap`] iterators.
+    /// See [`SymDiffIter`] for more details and examples.
     pub fn new(mut iter: I) -> Self {
         Self {
             iter,
             start_or_min_value: T::min_value(),
-            end_heap: BinaryHeap::new(),
+            end_heap: BinaryHeap::with_capacity(10),
             next_again: None,
+            gather: None,
         }
     }
-}
-
-impl<T, I> SortedStarts<T> for SymDiffIter1<T, I>
-where
-    T: Integer,
-    I: SortedStarts<T>,
-{
 }
 
 impl<T, L, R> SymDiffIterMerge<T, L, R>
@@ -190,7 +205,7 @@ where
     R: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIter1`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIter1`] for more details and examples.
+    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIter`] for more details and examples.
     pub fn new2(left: L, right: R) -> Self {
         let iter = Merge::new(left, right);
         Self::new(iter)
@@ -204,85 +219,13 @@ where
     J: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIter1`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIter1`] for more details and examples.
+    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIter`] for more details and examples.
     pub fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,
     {
         let iter = KMerge::new(k);
         Self::new(iter)
-    }
-}
-
-pub struct SymDiffIter<T, I>
-where
-    T: Integer,
-    I: SortedStarts<T>,
-{
-    iter: SymDiffIter1<T, I>,
-    gather: Option<RangeInclusive<T>>,
-}
-
-impl<T, I> FusedIterator for SymDiffIter<T, I>
-where
-    T: Integer,
-    I: SortedStarts<T>,
-{
-}
-
-// cmk0000 review this for simplifications
-impl<T, I> Iterator for SymDiffIter<T, I>
-where
-    T: Integer,
-    I: SortedStarts<T>,
-{
-    type Item = RangeInclusive<T>;
-    // cmk0 does this and UnionIter do the right thing on non-fused input?
-
-    #[inline]
-    fn next(&mut self) -> Option<RangeInclusive<T>> {
-        loop {
-            // If there is no "next" then return gather if it exists.
-            let Some(next) = self.iter.next() else {
-                return self.gather.take();
-            };
-
-            // If there is no gather, set it to next and loop.
-            let Some(gather) = self.gather.take() else {
-                self.gather = Some(next);
-                continue;
-            };
-
-            // Take both next and gather apart.
-            let (next_start, next_end) = next.into_inner();
-            let (gather_start, gather_end) = gather.into_inner();
-
-            // If only used with SymDiffIter, we can assume gather_end < next_start.
-            debug_assert!(gather_end < next_start); // real assert
-
-            // If they touch, set gather to the union and loop.
-            if gather_end + T::one() == next_start {
-                self.gather = Some(gather_start..=next_end);
-                continue;
-            }
-
-            // Next is disjoint from gather, so return gather and set gather to next.
-            self.gather = Some(next_start..=next_end);
-            return Some(gather_start..=gather_end);
-        }
-    }
-}
-
-impl<T, I> SymDiffIter<T, I>
-where
-    T: Integer,
-    I: SortedStarts<T>,
-{
-    /// Creates a new [`SymDiffIter1`] from zero or more [`SortedDisjointMap`] iterators.
-    /// See [`SymDiffIter1`] for more details and examples.
-    pub fn new(mut iter: I) -> Self {
-        let iter = SymDiffIter1::new(iter);
-        Self { iter, gather: None }
     }
 }
 
@@ -376,92 +319,86 @@ fn set_sym_diff_repro1() {
 fn sdi1() {
     let a = [157..=158, 158..=158].into_iter();
     let a = AssumeSortedStarts::new(a);
-    let mut iter = SymDiffIter1::new(a);
+    let mut iter = SymDiffIter::new(a);
     assert_eq!(iter.next(), Some(157..=157));
     assert_eq!(iter.next(), None);
 
     let a = [0..=0, 0..=0, 0..=1, 2..=100].into_iter();
     let a = AssumeSortedStarts::new(a);
-    let mut iter = SymDiffIter1::new(a);
-    assert_eq!(iter.next(), Some(0..=0));
-    assert_eq!(iter.next(), Some(1..=1));
-    assert_eq!(iter.next(), Some(2..=100));
+    let mut iter = SymDiffIter::new(a);
+    assert_eq!(iter.next(), Some(0..=100));
     assert_eq!(iter.next(), None);
 
     let a = [0..=0, 0..=1, 2..=100].into_iter();
     let a = AssumeSortedStarts::new(a);
-    let mut iter = SymDiffIter1::new(a);
-    assert_eq!(iter.next(), Some(1..=1));
-    assert_eq!(iter.next(), Some(2..=100));
+    let mut iter = SymDiffIter::new(a);
+    assert_eq!(iter.next(), Some(1..=100));
     assert_eq!(iter.next(), None);
 
     let a = [0..=0, 0..=0, 2..=100].into_iter();
     let a = AssumeSortedStarts::new(a);
-    let mut iter = SymDiffIter1::new(a);
+    let mut iter = SymDiffIter::new(a);
     assert_eq!(iter.next(), Some(2..=100));
     assert_eq!(iter.next(), None);
 
     let a = [0..=0, 0..=0, 0..=0, 2..=100].into_iter();
     let a = AssumeSortedStarts::new(a);
-    let mut iter = SymDiffIter1::new(a);
+    let mut iter = SymDiffIter::new(a);
     assert_eq!(iter.next(), Some(0..=0));
     assert_eq!(iter.next(), Some(2..=100));
     assert_eq!(iter.next(), None);
     {
         let a = [0..=1, 0..=0].into_iter();
         let a = AssumeSortedStarts::new(a);
-        let mut iter = SymDiffIter1::new(a);
+        let mut iter = SymDiffIter::new(a);
         assert_eq!(iter.next(), Some(1..=1));
         assert_eq!(iter.next(), None);
 
         let a = [0..=1, 0..=0, 0..=0].into_iter();
         let a = AssumeSortedStarts::new(a);
-        let mut iter = SymDiffIter1::new(a);
-        assert_eq!(iter.next(), Some(0..=0));
-        assert_eq!(iter.next(), Some(1..=1));
+        let mut iter = SymDiffIter::new(a);
+        assert_eq!(iter.next(), Some(0..=1));
         assert_eq!(iter.next(), None);
 
         let a = [0..=0, 0..=0, 0..=0].into_iter();
         let a = AssumeSortedStarts::new(a);
-        let mut iter = SymDiffIter1::new(a);
+        let mut iter = SymDiffIter::new(a);
         assert_eq!(iter.next(), Some(0..=0));
         assert_eq!(iter.next(), None);
 
         let a = [0..=0, 0..=0].into_iter();
         let a = AssumeSortedStarts::new(a);
-        let mut iter = SymDiffIter1::new(a);
+        let mut iter = SymDiffIter::new(a);
         assert_eq!(iter.next(), None);
 
         let a = [0..=0, 1..=1].into_iter();
         let a = AssumeSortedStarts::new(a);
-        let mut iter = SymDiffIter1::new(a);
-        assert_eq!(iter.next(), Some(0..=0));
-        assert_eq!(iter.next(), Some(1..=1));
+        let mut iter = SymDiffIter::new(a);
+        assert_eq!(iter.next(), Some(0..=1));
         assert_eq!(iter.next(), None);
 
         let a = [0..=0, 1..=1].into_iter();
         let a = AssumeSortedStarts::new(a);
-        let iter = SymDiffIter1::new(a);
-        let mut iter = SymDiffIter::new(iter);
+        let mut iter = SymDiffIter::new(a);
         assert_eq!(iter.next(), Some(0..=1));
         assert_eq!(iter.next(), None);
 
         let a = [0..=0, 2..=2].into_iter();
         let a = AssumeSortedStarts::new(a);
-        let mut iter = SymDiffIter1::new(a);
+        let mut iter = SymDiffIter::new(a);
         assert_eq!(iter.next(), Some(0..=0));
         assert_eq!(iter.next(), Some(2..=2));
         assert_eq!(iter.next(), None);
 
         let a = [0..=0].into_iter();
         let a = AssumeSortedStarts::new(a);
-        let mut iter = SymDiffIter1::new(a);
+        let mut iter = SymDiffIter::new(a);
         assert_eq!(iter.next(), Some(0..=0));
         assert_eq!(iter.next(), None);
 
         let a: array::IntoIter<RangeInclusive<i32>, 0> = [].into_iter();
         let a = AssumeSortedStarts::new(a);
-        let iter = SymDiffIter1::new(a);
+        let iter = SymDiffIter::new(a);
         let v = iter.collect::<Vec<_>>();
         assert_eq!(v, vec![]);
     }
