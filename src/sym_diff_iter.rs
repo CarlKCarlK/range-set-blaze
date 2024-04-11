@@ -70,51 +70,47 @@ where
             let Some(next_range) = self.iter.next() else {
                 if self.end_heap.is_empty() {
                     return None;
-                }
-                assert!(self.end_heap.len() == 1); // cmk
+                } else if self.end_heap.len() == 1 {
+                    let end = self.end_heap.pop().unwrap().0;
+                    assert!(self.end_heap.is_empty()); // cmk
+                    return Some(self.start_or_min_value..=end);
+                };
                 let end = self.end_heap.pop().unwrap().0;
-                assert!(self.end_heap.is_empty()); // cmk
-                return Some(self.start_or_min_value..=end);
+                let count = self.count_same_end(end);
+                if self.end_heap.is_empty() {
+                    if count % 2 == 0 {
+                        return None;
+                    } else {
+                        return Some(self.start_or_min_value..=end);
+                    }
+                }
+                if count % 2 == 1 {
+                    let result = Some(self.start_or_min_value..=end);
+                    self.start_or_min_value = end + T::one(); // cmk000 check for overflow
+                    return result;
+                }
+                todo!()
             };
 
             let (next_start, next_end) = next_range.into_inner();
 
-            assert!(self.end_heap.is_empty()); // cmk
-            self.start_or_min_value = next_start;
+            if self.end_heap.is_empty() {
+                self.start_or_min_value = next_start;
+                self.end_heap.push(Reverse(next_end));
+                continue;
+            }
+
+            if self.start_or_min_value != next_start {
+                assert!(self.end_heap.len() == 1); // cmk
+                assert!(self.end_heap.peek().unwrap().0 < next_start); // cmk
+                let result = self.start_or_min_value..=self.end_heap.pop().unwrap().0;
+                self.start_or_min_value = next_start;
+                self.end_heap.push(Reverse(next_end));
+                return Some(result);
+            }
+
             self.end_heap.push(Reverse(next_end));
             continue;
-
-            // // If there is a dump_to, dump some.
-            // if let Some(dump_to) = self.dump_to.take() {
-            //     return self.dump_some(dump_to);
-            // }
-
-            // // If there is no "next" then return the workspace.
-            // let Some(next_range) = self.iter.next() else {
-            //     return self.dump_all();
-            // };
-
-            // // Take apart the range and skip if it is empty.
-            // let (next_start, next_end) = next_range.into_inner();
-            // if next_end < next_start {
-            //     continue;
-            // }
-
-            // // if workspace is empty, set it to the new input and loop
-            // if self.end_heap.is_empty() {
-            //     self.start_or_min_value = next_start;
-            //     self.end_heap.push(Reverse(next_end));
-            //     continue;
-            // }
-
-            // debug_assert!(self.start_or_min_value <= next_start); // real assert
-            // if next_start > self.start_or_min_value {
-            //     self.next_range = Some(next_start..=next_end);
-            //     self.dump_to_start(next_start);
-            // }
-
-            // // add the end to the heap
-            // self.end_heap.push(Reverse(next_end));
         }
     }
 }
@@ -368,15 +364,56 @@ fn sdi2() {
 
 #[test]
 fn sdi1() {
-    let a: array::IntoIter<RangeInclusive<i32>, 0> = [].into_iter();
-    let a = AssumeSortedStarts::new(a);
-    let iter = SymDiffIter::new(a);
-    let v = iter.collect::<Vec<_>>();
-    assert_eq!(v, vec![]);
-
-    let a = [0..=0].into_iter();
+    let a = [0..=1, 0..=0].into_iter();
     let a = AssumeSortedStarts::new(a);
     let mut iter = SymDiffIter::new(a);
     assert_eq!(iter.next(), Some(0..=0));
+    assert_eq!(iter.next(), Some(1..=1));
     assert_eq!(iter.next(), None);
+
+    {
+        let a = [0..=0, 0..=0, 0..=0].into_iter();
+        let a = AssumeSortedStarts::new(a);
+        let mut iter = SymDiffIter::new(a);
+        assert_eq!(iter.next(), Some(0..=0));
+        assert_eq!(iter.next(), None);
+
+        let a = [0..=0, 0..=0].into_iter();
+        let a = AssumeSortedStarts::new(a);
+        let mut iter = SymDiffIter::new(a);
+        assert_eq!(iter.next(), None);
+
+        let a = [0..=0, 1..=1].into_iter();
+        let a = AssumeSortedStarts::new(a);
+        let mut iter = SymDiffIter::new(a);
+        assert_eq!(iter.next(), Some(0..=0));
+        assert_eq!(iter.next(), Some(1..=1));
+        assert_eq!(iter.next(), None);
+
+        let a = [0..=0, 1..=1].into_iter();
+        let a = AssumeSortedStarts::new(a);
+        let iter = SymDiffIter::new(a);
+        let mut iter = SymDiffIter2::new(iter);
+        assert_eq!(iter.next(), Some(0..=1));
+        assert_eq!(iter.next(), None);
+
+        let a = [0..=0, 2..=2].into_iter();
+        let a = AssumeSortedStarts::new(a);
+        let mut iter = SymDiffIter::new(a);
+        assert_eq!(iter.next(), Some(0..=0));
+        assert_eq!(iter.next(), Some(2..=2));
+        assert_eq!(iter.next(), None);
+
+        let a = [0..=0].into_iter();
+        let a = AssumeSortedStarts::new(a);
+        let mut iter = SymDiffIter::new(a);
+        assert_eq!(iter.next(), Some(0..=0));
+        assert_eq!(iter.next(), None);
+
+        let a: array::IntoIter<RangeInclusive<i32>, 0> = [].into_iter();
+        let a = AssumeSortedStarts::new(a);
+        let iter = SymDiffIter::new(a);
+        let v = iter.collect::<Vec<_>>();
+        assert_eq!(v, vec![]);
+    }
 }
