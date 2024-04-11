@@ -83,11 +83,10 @@ where
                 if !self.end_heap.is_empty() {
                     self.start_or_min_value = end + T::one(); // The 'if' prevents overflow.
                 }
-                if count % 2 == 1 {
+                if let Some(result) = self.process(count % 2 == 1, result) {
                     return result;
-                } else {
-                    continue;
                 }
+                continue;
             };
 
             // Next has the same start as the workspace, so add it to the workspace.
@@ -99,35 +98,39 @@ where
                 continue;
             }
 
+            // Next start inside the workspace's first chunk, so process up to next_start.
             let end = self.end_heap.peek().unwrap().0;
-            if end < next_start {
-                self.remove_same_end(end);
-                let result = Some(self.start_or_min_value..=end);
-                if self.end_heap.is_empty() {
-                    self.start_or_min_value = next_start;
-                    self.end_heap.push(Reverse(next_end));
-                    if count % 2 == 1 {
-                        return result;
-                    } else {
-                        continue;
-                    }
-                }
-                self.start_or_min_value = end + T::one(); // cmk000 check for overflow
-                self.next_again = Some(next_start..=next_end);
-                if count % 2 == 1 {
+            if next_start <= end {
+                let result = Some(self.start_or_min_value..=next_start - T::one()); // cmk000 check for overflow
+                self.start_or_min_value = next_start;
+                self.end_heap.push(Reverse(next_end));
+                if let Some(result) = self.process(count % 2 == 1, result) {
                     return result;
-                } else {
-                    continue;
                 }
-            }
-            let result = Some(self.start_or_min_value..=next_start - T::one()); // cmk000 check for overflow
-            self.start_or_min_value = next_start;
-            self.end_heap.push(Reverse(next_end));
-            if count % 2 == 1 {
-                return result;
-            } else {
                 continue;
             }
+
+            // Next start is after the workspaces end, but the workspace contains only one chuck,
+            // so process the workspace and set the workspace to next.
+            self.remove_same_end(end);
+            let result = Some(self.start_or_min_value..=end);
+            if self.end_heap.is_empty() {
+                self.start_or_min_value = next_start;
+                self.end_heap.push(Reverse(next_end));
+                if let Some(result) = self.process(count % 2 == 1, result) {
+                    return result;
+                }
+                continue;
+            }
+
+            // Next start is after the workspaces end, and the workspace contains more than one chuck,
+            // so process one chunk and then process next
+            self.start_or_min_value = end + T::one(); // cmk000 check for overflow
+            self.next_again = Some(next_start..=next_end);
+            if let Some(result) = self.process(count % 2 == 1, result) {
+                return result;
+            }
+            continue;
         }
     }
 }
@@ -145,6 +148,19 @@ where
             } else {
                 break;
             }
+        }
+    }
+
+    #[inline]
+    fn process(
+        &self,
+        keep: bool,
+        result: Option<RangeInclusive<T>>,
+    ) -> Option<Option<RangeInclusive<T>>> {
+        if keep {
+            Some(result)
+        } else {
+            None
         }
     }
 
