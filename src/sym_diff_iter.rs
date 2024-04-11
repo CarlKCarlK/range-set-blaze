@@ -46,7 +46,7 @@ where
     iter: I,
     start_or_min_value: T,
     end_heap: BinaryHeap<Reverse<T>>,
-    dump_to: Option<T>,
+    next_again: Option<RangeInclusive<T>>,
 }
 
 impl<T, I> FusedIterator for SymDiffIter<T, I>
@@ -67,7 +67,7 @@ where
 
     fn next(&mut self) -> Option<RangeInclusive<T>> {
         'read_fresh: loop {
-            let Some(next_range) = self.iter.next() else {
+            let Some(next_range) = self.next_again.take().or_else(|| self.iter.next()) else {
                 loop {
                     let count = self.end_heap.len();
                     if count == 0 {
@@ -99,19 +99,31 @@ where
             }
 
             if self.start_or_min_value != next_start {
-                let count = self.end_heap.len();
-                let end = self.end_heap.pop().unwrap().0;
-                self.remove_same_end(end);
-                assert!(self.end_heap.is_empty());
-                if count % 2 == 1 {
-                    let result = Some(self.start_or_min_value..=end);
-                    self.start_or_min_value = next_start;
-                    self.end_heap.push(Reverse(next_end));
-                    return result;
-                } else {
-                    self.start_or_min_value = next_start;
-                    self.end_heap.push(Reverse(next_end));
-                    continue 'read_fresh;
+                'process_again: loop {
+                    let count = self.end_heap.len();
+                    let end = self.end_heap.pop().unwrap().0;
+                    self.remove_same_end(end);
+                    if self.end_heap.is_empty() {
+                        if count % 2 == 1 {
+                            let result = Some(self.start_or_min_value..=end);
+                            self.start_or_min_value = next_start;
+                            self.end_heap.push(Reverse(next_end));
+                            return result;
+                        } else {
+                            self.start_or_min_value = next_start;
+                            self.end_heap.push(Reverse(next_end));
+                            continue 'read_fresh;
+                        }
+                    }
+                    if count % 2 == 1 {
+                        let result = Some(self.start_or_min_value..=end);
+                        self.start_or_min_value = end + T::one(); // cmk000 check for overflow
+                        self.next_again = Some(next_start..=next_end);
+                        return result;
+                    } else {
+                        self.start_or_min_value = end + T::one(); // cmk000 check for overflow
+                        continue 'process_again;
+                    }
                 }
             }
 
@@ -235,7 +247,7 @@ where
             iter,
             start_or_min_value: T::min_value(),
             end_heap: BinaryHeap::new(),
-            dump_to: None,
+            next_again: None,
         }
     }
 }
@@ -368,6 +380,21 @@ fn sdi2() {
 
 #[test]
 fn sdi1() {
+    let a = [0..=0, 0..=0, 0..=1, 2..=100].into_iter();
+    let a = AssumeSortedStarts::new(a);
+    let mut iter = SymDiffIter::new(a);
+    assert_eq!(iter.next(), Some(0..=0));
+    assert_eq!(iter.next(), Some(1..=1));
+    assert_eq!(iter.next(), Some(2..=100));
+    assert_eq!(iter.next(), None);
+
+    let a = [0..=0, 0..=1, 2..=100].into_iter();
+    let a = AssumeSortedStarts::new(a);
+    let mut iter = SymDiffIter::new(a);
+    assert_eq!(iter.next(), Some(1..=1));
+    assert_eq!(iter.next(), Some(2..=100));
+    assert_eq!(iter.next(), None);
+
     let a = [0..=0, 0..=0, 2..=100].into_iter();
     let a = AssumeSortedStarts::new(a);
     let mut iter = SymDiffIter::new(a);
