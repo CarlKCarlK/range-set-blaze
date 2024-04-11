@@ -68,28 +68,31 @@ where
     fn next(&mut self) -> Option<RangeInclusive<T>> {
         loop {
             let Some(next_range) = self.iter.next() else {
-                if self.end_heap.is_empty() {
-                    return None;
-                } else if self.end_heap.len() == 1 {
-                    let end = self.end_heap.pop().unwrap().0;
-                    assert!(self.end_heap.is_empty()); // cmk
-                    return Some(self.start_or_min_value..=end);
-                };
-                let end = self.end_heap.pop().unwrap().0;
-                let count = self.count_same_end(end);
-                if self.end_heap.is_empty() {
-                    if count % 2 == 0 {
+                loop {
+                    let count = self.end_heap.len();
+                    if count == 0 {
                         return None;
-                    } else {
+                    } else if self.end_heap.len() == 1 {
+                        let end = self.end_heap.pop().unwrap().0;
+                        assert!(self.end_heap.is_empty()); // cmk
                         return Some(self.start_or_min_value..=end);
+                    };
+                    let end = self.end_heap.pop().unwrap().0;
+                    self.remove_same_end(end);
+                    if self.end_heap.is_empty() {
+                        if count % 2 == 0 {
+                            return None;
+                        } else {
+                            return Some(self.start_or_min_value..=end);
+                        }
                     }
-                }
-                if count % 2 == 1 {
-                    let result = Some(self.start_or_min_value..=end);
+                    if count % 2 == 1 {
+                        let result = Some(self.start_or_min_value..=end);
+                        self.start_or_min_value = end + T::one(); // cmk000 check for overflow
+                        return result;
+                    }
                     self.start_or_min_value = end + T::one(); // cmk000 check for overflow
-                    return result;
                 }
-                todo!()
             };
 
             let (next_start, next_end) = next_range.into_inner();
@@ -101,12 +104,23 @@ where
             }
 
             if self.start_or_min_value != next_start {
-                assert!(self.end_heap.len() == 1); // cmk
-                assert!(self.end_heap.peek().unwrap().0 < next_start); // cmk
-                let result = self.start_or_min_value..=self.end_heap.pop().unwrap().0;
+                let count = self.end_heap.len();
+                if count == 1 {
+                    assert!(self.end_heap.peek().unwrap().0 < next_start); // cmk
+                    let result = self.start_or_min_value..=self.end_heap.pop().unwrap().0;
+                    self.start_or_min_value = next_start;
+                    self.end_heap.push(Reverse(next_end));
+                    return Some(result);
+                }
+
+                let end = self.end_heap.pop().unwrap().0;
+                self.remove_same_end(end);
+                assert!(self.end_heap.is_empty());
+                assert!(count % 2 == 1);
+                let result = Some(self.start_or_min_value..=end);
                 self.start_or_min_value = next_start;
                 self.end_heap.push(Reverse(next_end));
-                return Some(result);
+                return result;
             }
 
             self.end_heap.push(Reverse(next_end));
@@ -121,17 +135,14 @@ where
     I: SortedStarts<T>,
 {
     #[inline]
-    fn count_same_end(&mut self, end: T) -> usize {
-        let mut count = 1usize;
+    fn remove_same_end(&mut self, end: T) {
         while let Some(end2) = self.end_heap.peek() {
             if end2.0 == end {
                 self.end_heap.pop();
-                count += 1;
             } else {
                 break;
             }
         }
-        count
     }
 
     #[inline]
@@ -159,31 +170,32 @@ where
 
     #[inline]
     fn dump_all(&mut self) -> Option<RangeInclusive<T>> {
-        loop {
-            // If the workspace is empty, return None.
-            let Some(reverse_end) = self.end_heap.pop() else {
-                return None;
-            };
+        todo!()
+        // loop {
+        //     // If the workspace is empty, return None.
+        //     let Some(reverse_end) = self.end_heap.pop() else {
+        //         return None;
+        //     };
 
-            // Count how many items have the same value as the top item.
-            let end = reverse_end.0;
-            let mut count = self.count_same_end(end);
+        //     // Count how many items have the same value as the top item.
+        //     let end = reverse_end.0;
+        //     self.remove_same_end(end);
 
-            // Find the possible result
-            let result = self.start_or_min_value..=end;
+        //     // Find the possible result
+        //     let result = self.start_or_min_value..=end;
 
-            // move up the start (but avoid overflow)
-            if end < T::safe_max_value() {
-                self.start_or_min_value = end + T::one();
-            } else {
-                debug_assert!(self.end_heap.is_empty()); // real assert
-            }
+        //     // move up the start (but avoid overflow)
+        //     if end < T::safe_max_value() {
+        //         self.start_or_min_value = end + T::one();
+        //     } else {
+        //         debug_assert!(self.end_heap.is_empty()); // real assert
+        //     }
 
-            // If the count is odd, return the result, otherwise loop.
-            if count % 2 == 1 {
-                return Some(result);
-            }
-        }
+        //     // If the count is odd, return the result, otherwise loop.
+        //     if count % 2 == 1 {
+        //         return Some(result);
+        //     }
+        // }
     }
     // cmk could split this into two functions
     #[inline]
@@ -364,14 +376,27 @@ fn sdi2() {
 
 #[test]
 fn sdi1() {
-    let a = [0..=1, 0..=0].into_iter();
+    let a = [0..=0, 0..=0, 0..=0, 2..=100].into_iter();
     let a = AssumeSortedStarts::new(a);
     let mut iter = SymDiffIter::new(a);
     assert_eq!(iter.next(), Some(0..=0));
-    assert_eq!(iter.next(), Some(1..=1));
+    assert_eq!(iter.next(), Some(2..=100));
     assert_eq!(iter.next(), None);
 
     {
+        let a = [0..=1, 0..=0].into_iter();
+        let a = AssumeSortedStarts::new(a);
+        let mut iter = SymDiffIter::new(a);
+        assert_eq!(iter.next(), Some(1..=1));
+        assert_eq!(iter.next(), None);
+
+        let a = [0..=1, 0..=0, 0..=0].into_iter();
+        let a = AssumeSortedStarts::new(a);
+        let mut iter = SymDiffIter::new(a);
+        assert_eq!(iter.next(), Some(0..=0));
+        assert_eq!(iter.next(), Some(1..=1));
+        assert_eq!(iter.next(), None);
+
         let a = [0..=0, 0..=0, 0..=0].into_iter();
         let a = AssumeSortedStarts::new(a);
         let mut iter = SymDiffIter::new(a);
