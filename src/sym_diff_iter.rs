@@ -68,81 +68,66 @@ where
     // cmk0 does this and UnionIter do the right thing on non-fused input?
 
     fn next(&mut self) -> Option<RangeInclusive<T>> {
-        'read_fresh: loop {
+        loop {
+            let count = self.end_heap.len();
             let Some(next_range) = self.next_again.take().or_else(|| self.iter.next()) else {
-                loop {
-                    let count = self.end_heap.len();
-                    if count == 0 {
-                        return None;
-                    };
-                    let end = self.end_heap.pop().unwrap().0;
-                    self.remove_same_end(end);
-                    if self.end_heap.is_empty() {
-                        if count % 2 == 0 {
-                            return None;
-                        } else {
-                            return Some(self.start_or_min_value..=end);
-                        }
-                    }
-                    if count % 2 == 1 {
-                        let result = Some(self.start_or_min_value..=end);
-                        self.start_or_min_value = end + T::one(); // cmk000 check for overflow
-                        return result;
-                    }
-                    self.start_or_min_value = end + T::one(); // cmk000 check for overflow
+                // The workspace is empty and next is empty, so return None.
+                if count == 0 {
+                    return None;
+                };
+
+                // The workspace is not empty (but next is empty) is process the next chunk of the workspace.
+                let end = self.end_heap.pop().unwrap().0;
+                self.remove_same_end(end);
+                let result = Some(self.start_or_min_value..=end);
+                if !self.end_heap.is_empty() {
+                    self.start_or_min_value = end + T::one(); // The 'if' prevents overflow.
+                }
+                if count % 2 == 1 {
+                    return result;
+                } else {
+                    continue;
                 }
             };
 
+            // Next has the same start as the workspace, so add it to the workspace.
+            // (or the workspace is empty, so add it to the workspace.)
             let (next_start, next_end) = next_range.into_inner();
-            if self.end_heap.is_empty() {
+            if count == 0 || self.start_or_min_value == next_start {
                 self.start_or_min_value = next_start;
                 self.end_heap.push(Reverse(next_end));
-                continue 'read_fresh;
+                continue;
             }
 
-            if self.start_or_min_value != next_start {
-                'process_again: loop {
-                    let count = self.end_heap.len();
-                    let end = self.end_heap.peek().unwrap().0;
-                    if end < next_start {
-                        self.remove_same_end(end);
-                        if self.end_heap.is_empty() {
-                            if count % 2 == 1 {
-                                let result = Some(self.start_or_min_value..=end);
-                                self.start_or_min_value = next_start;
-                                self.end_heap.push(Reverse(next_end));
-                                return result;
-                            } else {
-                                self.start_or_min_value = next_start;
-                                self.end_heap.push(Reverse(next_end));
-                                continue 'read_fresh;
-                            }
-                        }
-                        if count % 2 == 1 {
-                            let result = Some(self.start_or_min_value..=end);
-                            self.start_or_min_value = end + T::one(); // cmk000 check for overflow
-                            self.next_again = Some(next_start..=next_end);
-                            return result;
-                        } else {
-                            self.start_or_min_value = end + T::one(); // cmk000 check for overflow
-                            continue 'process_again;
-                        }
-                    }
+            let end = self.end_heap.peek().unwrap().0;
+            if end < next_start {
+                self.remove_same_end(end);
+                let result = Some(self.start_or_min_value..=end);
+                if self.end_heap.is_empty() {
+                    self.start_or_min_value = next_start;
+                    self.end_heap.push(Reverse(next_end));
                     if count % 2 == 1 {
-                        let result = Some(self.start_or_min_value..=next_start - T::one()); // cmk000 check for overflow
-                        self.start_or_min_value = next_start;
-                        self.end_heap.push(Reverse(next_end));
                         return result;
                     } else {
-                        self.start_or_min_value = next_start;
-                        self.end_heap.push(Reverse(next_end));
-                        continue 'read_fresh;
+                        continue;
                     }
                 }
+                self.start_or_min_value = end + T::one(); // cmk000 check for overflow
+                self.next_again = Some(next_start..=next_end);
+                if count % 2 == 1 {
+                    return result;
+                } else {
+                    continue;
+                }
             }
-
+            let result = Some(self.start_or_min_value..=next_start - T::one()); // cmk000 check for overflow
+            self.start_or_min_value = next_start;
             self.end_heap.push(Reverse(next_end));
-            continue 'read_fresh;
+            if count % 2 == 1 {
+                return result;
+            } else {
+                continue;
+            }
         }
     }
 }
@@ -299,10 +284,10 @@ fn set_random_symmetric_difference() {
         let mut set1 = RangeSetBlaze::new();
 
         for _ in 0..500 {
-            let key = rng.gen_range(0..=255i32); // cmk0000 u8
+            let key = rng.gen_range(0..=255u8); // cmk0000 u8
             set0.insert(key);
             print!("l{key} ");
-            let key = rng.gen_range(0..=255i32);
+            let key = rng.gen_range(0..=255u8);
             set1.insert(key);
             print!("r{key} ");
 
