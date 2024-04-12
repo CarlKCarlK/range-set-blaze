@@ -11,7 +11,6 @@ use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use range_set_blaze::range_values::IntoRangeValuesToRangesIter;
 #[cfg(feature = "rog-experimental")]
 use range_set_blaze::Rog;
 use range_set_blaze::{prelude::*, Integer, NotIter, SortedStarts};
@@ -216,16 +215,15 @@ fn missing_doctest_ops() {
     let a = RangeSetBlaze::from_iter([1, 2, 3]);
     let b = RangeSetBlaze::from_iter([2, 3, 4]);
 
-    // cmk0000 restore these
-    // let result = a ^ b;
-    // assert_eq!(result, RangeSetBlaze::from_iter([1, 4]));
+    let result = a ^ b;
+    assert_eq!(result, RangeSetBlaze::from_iter([1, 4]));
 
-    // // Returns the set difference of `self` and `rhs` as a new `RangeSetBlaze<T>`.
-    // let a = RangeSetBlaze::from_iter([1, 2, 3]);
-    // let b = RangeSetBlaze::from_iter([2, 3, 4]);
+    // Returns the set difference of `self` and `rhs` as a new `RangeSetBlaze<T>`.
+    let a = RangeSetBlaze::from_iter([1, 2, 3]);
+    let b = RangeSetBlaze::from_iter([2, 3, 4]);
 
-    // let result = a - b;
-    // assert_eq!(result, RangeSetBlaze::from_iter([1]));
+    let result = a - b;
+    assert_eq!(result, RangeSetBlaze::from_iter([1]));
 }
 
 #[test]
@@ -484,6 +482,8 @@ fn bitand() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn empty_it() {
+    use range_set_blaze::RangesIter;
+
     let universe = RangeSetBlaze::from_iter([0u8..=255]);
     let universe = universe.ranges();
     let arr: [u8; 0] = [];
@@ -520,36 +520,34 @@ fn empty_it() {
 
     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
     let a = a_iter.collect::<RangeSetBlaze<i32>>();
-    let _b = RangeSetBlaze::from_iter([0; 0]);
+    let b = RangeSetBlaze::from_iter([0; 0]);
+    let c0 = a.ranges() | b.ranges();
+    let c1 = [a.ranges(), b.ranges()].union();
+    let c_list2: [RangesIter<i32>; 0] = [];
+    let c2 = c_list2.clone().union();
+    let c3 = union_dyn!(a.ranges(), b.ranges());
+    let c4 = c_list2.map(DynSortedDisjoint::new).union();
 
-    // cmk0 put some of these back
-    // let c0 = a.ranges() | b.ranges();
-    // let c1 = [a.ranges(), b.ranges()].union();
-    // let c_list2: [RangesIter<i32>; 0] = [];
-    // let c2 = c_list2.clone().union();
-    // let c3 = union_dyn!(a.ranges(), b.ranges());
-    // let c4 = c_list2.map(DynSortedDisjoint::new).union();
+    let answer = RangeSetBlaze::from_iter([0; 0]);
+    assert!(c0.equal(answer.ranges()));
+    assert!(c1.equal(answer.ranges()));
+    assert!(c2.equal(answer.ranges()));
+    assert!(c3.equal(answer.ranges()));
+    assert!(c4.equal(answer.ranges()));
 
-    // let answer = RangeSetBlaze::from_iter([0; 0]);
-    // assert!(c0.equal(answer.ranges()));
-    // assert!(c1.equal(answer.ranges()));
-    // assert!(c2.equal(answer.ranges()));
-    // assert!(c3.equal(answer.ranges()));
-    // assert!(c4.equal(answer.ranges()));
+    let c0 = !(a.ranges() & b.ranges());
+    let c1 = ![a.ranges(), b.ranges()].intersection();
+    let c_list2: [RangesIter<i32>; 0] = [];
+    let c2 = !!c_list2.clone().intersection();
+    let c3 = !intersection_dyn!(a.ranges(), b.ranges());
+    let c4 = !!c_list2.map(DynSortedDisjoint::new).intersection();
 
-    // let c0 = !(a.ranges() & b.ranges());
-    // let c1 = ![a.ranges(), b.ranges()].intersection();
-    // let c_list2: [RangesIter<i32>; 0] = [];
-    // let c2 = !!c_list2.clone().intersection();
-    // let c3 = !intersection_dyn!(a.ranges(), b.ranges());
-    // let c4 = !!c_list2.map(DynSortedDisjoint::new).intersection();
-
-    // let answer = !RangeSetBlaze::from_iter([0; 0]);
-    // assert!(c0.equal(answer.ranges()));
-    // assert!(c1.equal(answer.ranges()));
-    // assert!(c2.equal(answer.ranges()));
-    // assert!(c3.equal(answer.ranges()));
-    // assert!(c4.equal(answer.ranges()));
+    let answer = !RangeSetBlaze::from_iter([0; 0]);
+    assert!(c0.equal(answer.ranges()));
+    assert!(c1.equal(answer.ranges()));
+    assert!(c2.equal(answer.ranges()));
+    assert!(c3.equal(answer.ranges()));
+    assert!(c4.equal(answer.ranges()));
 }
 
 #[test]
@@ -1108,7 +1106,7 @@ fn multiway2() {
 fn check_sorted_disjoint() {
     use range_set_blaze::CheckSortedDisjoint;
 
-    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+    let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
     let b = CheckSortedDisjoint::from([2..=6]);
     let c = a | b;
 
@@ -1153,7 +1151,7 @@ fn len_demo() {
 // fn union_iter() {
 //     use range_set_blaze::CheckSortedDisjoint;
 
-//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     let b = CheckSortedDisjoint::from([2..=6]);
 //     let c = UnionIter::new(AssumeSortedStarts::new(
 //         a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
@@ -1161,7 +1159,7 @@ fn len_demo() {
 //     assert_eq!(c.to_string(), "1..=100");
 
 //     // Or, equivalently:
-//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     let b = CheckSortedDisjoint::from([2..=6]);
 //     let c = SortedDisjoint::union(a, b);
 //     assert_eq!(c.to_string(), "1..=100")
@@ -1365,10 +1363,9 @@ fn range_set_int_operators() {
     let result = &a - &b; // Alternatively, 'a - b'.
     assert_eq!(result.to_string(), "1..=1, 7..=100");
 
-    // cmk0000 restore these
-    // // Symmetric difference of two 'RangeSetBlaze's.
-    // let result = &a ^ &b; // Alternatively, 'a ^ b'.
-    // assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
+    // Symmetric difference of two 'RangeSetBlaze's.
+    let result = &a ^ &b; // Alternatively, 'a ^ b'.
+    assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
 
     // complement of a 'RangeSetBlaze'.
     let result = !&a; // Alternatively, '!a'.
@@ -1877,16 +1874,17 @@ fn test_rog_range_doc() {
 
 #[test]
 fn test_every_sorted_disjoint_method() {
+    use range_set_blaze::CheckSortedDisjointMap;
     use range_set_blaze::IntoRangesIter;
+
     use syntactic_for::syntactic_for;
     let c0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
 
     macro_rules! fresh_instances {
         () => {{
-            let a: CheckSortedDisjoint<_, _> = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-            let b: NotIter<_, _> = !!CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-            // cmk just repeating b
-            let c: NotIter<_, _> = !!CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+            let a: CheckSortedDisjoint<_, _> = CheckSortedDisjoint::new([1..=2, 5..=100]);
+            let b: NotIter<_, _> = !!CheckSortedDisjoint::new([1..=2, 5..=100]);
+            let c: NotIter<_, _> = !!CheckSortedDisjoint::new([1..=2, 5..=100]); // cmk000000
             let d: IntoRangesIter<_> = RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges();
             let e: DynSortedDisjoint<_> =
                 DynSortedDisjoint::new(RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges());
@@ -1906,29 +1904,28 @@ fn test_every_sorted_disjoint_method() {
 
     let (a, b, c, d, e, f) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, d, e, f] {$(
-        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+        let z = CheckSortedDisjoint::new([-1..=0, 50..=50,1000..=10_000]);
         let z = $sd | z;
         assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=100, 1000..=10000])));
     )*}}
 
     let (a, b, c, d, e, f) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, d, e, f] {$(
-        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+        let z = CheckSortedDisjoint::new([-1..=0, 50..=50,1000..=10_000]);
         let z = $sd & z;
         assert!(z.equal(CheckSortedDisjoint::from([50..=50])));
     )*}}
 
     let (a, b, c, d, e, f) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, d, e, f] {$(
-        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
-        // cmk0000 restore this
-        // let z = $sd ^ z;
-        // assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=49, 51..=100, 1000..=10000])));
+        let z = CheckSortedDisjoint::new([-1..=0, 50..=50,1000..=10_000]);
+        let z = $sd ^ z;
+        assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=49, 51..=100, 1000..=10000])));
     )*}}
 
     let (a, b, c, d, e, f) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, d, e, f] {$(
-        let z = CheckSortedDisjoint::new(vec![-1..=0, 50..=50,1000..=10_000]);
+        let z = CheckSortedDisjoint::new([-1..=0, 50..=50,1000..=10_000]);
         let z = $sd - z;
         assert!(z.equal(CheckSortedDisjoint::from([1..=2, 5..=49, 51..=100])));
     )*}}

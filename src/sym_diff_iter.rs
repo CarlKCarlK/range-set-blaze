@@ -22,13 +22,13 @@ use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
 /// use itertools::Itertools;
 /// use range_set_blaze::{SymDiffIter, Merge, SortedDisjointMap, CheckSortedDisjoint};
 ///
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = SymDiffIter::new(Merge::new(a, b));
 /// assert_eq!(union.to_string(), "1..=100");
 ///
 /// // Or, equivalently:
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100")
@@ -182,7 +182,7 @@ where
 
     /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjointMap`] iterators.
     /// See [`SymDiffIter`] for more details and examples.
-    pub fn new(mut iter: I) -> Self {
+    pub fn new(iter: I) -> Self {
         Self {
             iter,
             start_or_min_value: T::min_value(),

@@ -9,8 +9,8 @@ use crate::{
     intersection_iter_map::IntersectionIterMap,
     map::{CloneBorrow, ValueOwned},
     range_values::RangeValuesToRangesIter,
-    Integer, IntersectionMap, RangeMapBlaze, SortedDisjointMap, SymDiffIterMapKMerge, UnionIterMap,
-    UnionIterMapKMerge,
+    Integer, IntersectionMap1, RangeMapBlaze, SortedDisjointMap, SymDiffIterMapKMerge,
+    UnionIterMap, UnionIterMapKMerge,
 };
 
 // /// The trait used to provide methods on multiple [`RangeMapBlaze`] references,
@@ -251,7 +251,7 @@ where
     ///
     /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
     /// ```
-    fn intersection(self) -> IntersectionMap<T, V, VR, I> {
+    fn intersection<'a>(self) -> IntersectionMap1<'a, T, V, VR, I> {
         // We define map intersection -- in part -- in terms of set intersection.
         // Elsewhere, we define set intersection in terms of complement and (set/map) union.
         use crate::MultiwaySortedDisjoint;

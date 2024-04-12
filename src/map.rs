@@ -1,9 +1,7 @@
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::iter_map::IntoIterMap;
 use crate::iter_map::{IterMap, KeysMap};
-use crate::range_values::{
-    IntoRangeValuesIter, IntoRangeValuesToRangesIter, RangeValuesIter, RangeValuesToRangesIter,
-};
+use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter};
 use crate::sorted_disjoint_map::{DebugToString, Priority};
 use crate::sorted_disjoint_map::{PrioritySortedStartsMap, SortedDisjointMap};
 use crate::sym_diff_iter_map::SymDiffIterMap;
@@ -1514,13 +1512,13 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     }
 
     /// cmk
-    pub fn ranges(&self) -> RangeValuesToRangesIter<T, V, &V, RangeValuesIter<T, V>> {
-        RangeValuesToRangesIter::new(self.range_values())
+    pub fn ranges(&self) -> MapRangesIter<T, V> {
+        MapRangesIter::new(self.btree_map.iter())
     }
 
     /// cmk doc
-    pub fn into_ranges<'b>(self) -> IntoRangeValuesToRangesIter<T, V> {
-        IntoRangeValuesToRangesIter::new(self.into_range_values())
+    pub fn into_ranges(self) -> MapIntoRangesIter<T, V> {
+        MapIntoRangesIter::new(self.btree_map.into_iter())
     }
 
     /// cmk

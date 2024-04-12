@@ -1428,7 +1428,7 @@ fn map_missing_doctest_ops() {
 
 // #[test]
 // fn merge_coverage_0() {
-//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 //     let b = CheckSortedDisjoint::from([2..=6]);
 //     let m = Merge::new(a, b);
 //     let n = m.clone();
@@ -1438,9 +1438,9 @@ fn map_missing_doctest_ops() {
 //     assert!(union1.equal(union2));
 //     assert!(format!("{p:?}").starts_with("Merge"));
 
-//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
-//     let b = CheckSortedDisjoint::new(vec![2..=6].into_iter());
-//     let c = CheckSortedDisjoint::new(vec![-1..=-1].into_iter());
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+//     let b = CheckSortedDisjoint::new([2..=6].into_iter());
+//     let c = CheckSortedDisjoint::new([-1..=-1].into_iter());
 //     let m = KMerge::new([a, b, c]);
 //     let n = m.clone();
 //     let p = n.clone();
@@ -1452,7 +1452,7 @@ fn map_missing_doctest_ops() {
 
 // #[test]
 // fn not_iter_coverage_0() {
-//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 //     let n = NotIter::new(a);
 //     let p = n.clone();
 //     let m = p.clone();
@@ -1580,8 +1580,8 @@ fn map_missing_doctest_ops() {
 
 // #[test]
 // fn union_iter_coverage_0() {
-//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
-//     let b = CheckSortedDisjoint::new(vec![1..=2, 5..=101].into_iter());
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+//     let b = CheckSortedDisjoint::new([1..=2, 5..=101].into_iter());
 //     let c = a.union(b);
 //     assert!(format!("{c:?}").starts_with("UnionIter"));
 // }

@@ -1415,7 +1415,7 @@ fn map_split_off() {
 // // fn map_check_sorted_disjoint() {
 // //     use range_map_blaze::CheckSortedDisjoint;
 
-// //     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+// //     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 // //     let b = CheckSortedDisjoint::from([2..=6]);
 // //     let c = a | b;
 
@@ -1459,7 +1459,7 @@ fn map_split_off() {
 // // fn map_union_iter() {
 // //     use range_map_blaze::{CheckSortedDisjoint, UnionIterMap};
 
-// //     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+// //     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 // //     let b = CheckSortedDisjoint::from([2..=6]);
 // //     let c = UnionIterMap::new(AssumeSortedStarts::new(
 // //         a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
@@ -1467,7 +1467,7 @@ fn map_split_off() {
 // //     assert_eq!(c.to_string(), "1..=100");
 
 // //     // Or, equivalently:
-// //     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+// //     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 // //     let b = CheckSortedDisjoint::from([2..=6]);
 // //     let c = SortedDisjoint::union(a, b);
 // //     assert_eq!(c.to_string(), "1..=100")

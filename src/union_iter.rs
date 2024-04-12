@@ -23,13 +23,13 @@ use itertools::Itertools;
 /// use itertools::Itertools;
 /// use range_set_blaze::{UnionIter, Merge, SortedDisjoint, CheckSortedDisjoint};
 ///
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = UnionIter::new2(a, b);
 /// assert_eq!(union.to_string(), "1..=100");
 ///
 /// // Or, equivalently:
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100")

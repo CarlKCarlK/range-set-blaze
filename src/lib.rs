@@ -41,6 +41,7 @@ mod ranges;
 pub use crate::range_set_blaze::RangeSetBlaze;
 pub use crate::range_values::IntoRangeValuesIter;
 pub use crate::ranges::IntoRangesIter;
+pub use crate::ranges::RangesIter;
 mod not_iter;
 pub mod prelude;
 pub use crate::map::UniqueValue;
@@ -61,6 +62,7 @@ use merge_map::KMergeMap;
 pub use multiway::MultiwaySortedDisjoint;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
+use range_values::MapRangesIter;
 use range_values::RangeValuesToRangesIter;
 pub use sym_diff_iter::SymDiffIter;
 pub use sym_diff_iter_map::SymDiffIterMap;
@@ -243,8 +245,11 @@ pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
 pub type BitNandMerge<T, L, R> = UnionIterMerge<T, NotIter<T, L>, NotIter<T, R>>;
 #[doc(hidden)]
 pub type BitNandKMerge<T, I> = UnionIterKMerge<T, NotIter<T, I>>;
+#[doc(hidden)] // cmk00 create better name
+pub type IntersectionMap0<'a, T, V, VR, I> =
+    IntersectionIterMap<T, V, VR, I, BitAndKMerge<T, MapRangesIter<'a, T, V>>>;
 #[doc(hidden)]
-pub type IntersectionMap<T, V, VR, I> =
+pub type IntersectionMap1<'a, T, V, VR, I> =
     IntersectionIterMap<T, V, VR, I, BitAndKMerge<T, RangeValuesToRangesIter<T, V, VR, I>>>;
 #[doc(hidden)]
 pub type BitNorMerge<T, L, R> = NotIter<T, UnionIterMerge<T, L, R>>;

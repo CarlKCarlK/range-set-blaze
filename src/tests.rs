@@ -396,9 +396,8 @@ fn missing_doctest_ops() {
     let a = RangeSetBlaze::from_iter([1, 2, 3]);
     let b = RangeSetBlaze::from_iter([2, 3, 4]);
 
-    // cmk0000 restore these
-    // let result = a ^ b;
-    // assert_eq!(result, RangeSetBlaze::from_iter([1, 4]));
+    let result = a ^ b;
+    assert_eq!(result, RangeSetBlaze::from_iter([1, 4]));
 
     // Returns the set difference of `self` and `rhs` as a new `RangeSetBlaze<T>`.
     let a = RangeSetBlaze::from_iter([1, 2, 3]);
@@ -1031,7 +1030,7 @@ fn lib_coverage_6() {
 // cmk0
 // #[test]
 // fn merge_coverage_0() {
-//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     let b = CheckSortedDisjoint::from([2..=6]);
 //     let m = Merge::new(a, b);
 //     let n = m.clone();
@@ -1041,9 +1040,9 @@ fn lib_coverage_6() {
 //     assert!(union1.equal(union2));
 //     assert!(format!("{p:?}").starts_with("Merge"));
 
-//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-//     let b = CheckSortedDisjoint::new(vec![2..=6]);
-//     let c = CheckSortedDisjoint::new(vec![-1..=-1]);
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
+//     let b = CheckSortedDisjoint::new([2..=6]);
+//     let c = CheckSortedDisjoint::new([-1..=-1]);
 //     let m = KMerge::new([a, b, c]);
 //     let n = m.clone();
 //     let p = n.clone();
@@ -1055,7 +1054,7 @@ fn lib_coverage_6() {
 
 #[test]
 fn not_iter_coverage_0() {
-    let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+    let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
     let n = NotIter::new(a);
     let p = n.clone();
     let m = p.clone();
@@ -1186,8 +1185,8 @@ fn sorted_disjoint_iterator_coverage_0() {
 // cmk00
 // #[test]
 // fn union_iter_coverage_0() {
-//     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
-//     let b = CheckSortedDisjoint::new(vec![1..=2, 5..=101]);
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
+//     let b = CheckSortedDisjoint::new([1..=2, 5..=101]);
 //     let c = a.union(b);
 //     assert!(format!("{c:?}").starts_with("UnionIter"));
 // }

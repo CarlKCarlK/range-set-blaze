@@ -23,13 +23,13 @@ use crate::{map::ValueOwned, Integer};
 /// use itertools::Itertools;
 /// use range_set_blaze::{IntersectionIterMap, Merge, SortedDisjointMap, CheckSortedDisjoint};
 ///
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let intersection = IntersectionIterMap::new(Merge::new(a, b));
 /// assert_eq!(intersection.to_string(), "1..=100");
 ///
 /// // Or, equivalently:
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let intersection = a | b;
 /// assert_eq!(intersection.to_string(), "1..=100")

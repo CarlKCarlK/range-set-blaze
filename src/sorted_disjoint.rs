@@ -1,7 +1,7 @@
 use crate::map::CloneBorrow;
-use crate::range_values::RangeValuesToRangesIter;
+use crate::range_values::{MapIntoRangesIter, MapRangesIter, RangeValuesToRangesIter};
 use crate::ranges::RangesIter;
-use crate::{range_values::IntoRangeValuesToRangesIter, RangeSetBlaze};
+use crate::RangeSetBlaze;
 use crate::{IntoRangesIter, UnionIter, UnionIterMerge};
 use alloc::format;
 use alloc::string::String;
@@ -545,7 +545,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100");
@@ -555,7 +555,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 ///```should_panic
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
+/// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 /// let b = CheckSortedDisjoint::from([2..=6,-10..=-5]);
 /// let union = a | b;
 /// assert_eq!(union.to_string(), "1..=100");
@@ -737,16 +737,18 @@ macro_rules! impl_sorted_traits_and_ops {
     };
 }
 
+// cmk CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_method'
+
 impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, I: AnythingGoes<T>);
 impl_sorted_traits_and_ops!(NotIter<T, I>, I: SortedDisjoint<T>);
-impl_sorted_traits_and_ops!(IntoRangeValuesToRangesIter<T, V>, V: ValueOwned);
+impl_sorted_traits_and_ops!(MapIntoRangesIter<T, V>, V: ValueOwned);
 impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
-// impl_sorted_traits_and_ops!(UnitMapToSortedDisjoint<T, I>, I: SortedDisjointMap<T, (), &'static ()>);
 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: ValueOwned, VR: CloneBorrow<V>, I: SortedDisjointMap<T, V, VR>);
 impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(RangesIter<'a, T>, 'a);
 impl_sorted_traits_and_ops!(IntoRangesIter<T>, 'ignore);
+impl_sorted_traits_and_ops!(MapRangesIter<'a, T, V>, 'a, V: ValueOwned);
 
 // We're not allowed to define methods on outside types, so we only define the traits
 // cmk0
