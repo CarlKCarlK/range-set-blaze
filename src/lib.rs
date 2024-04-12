@@ -471,9 +471,9 @@ pub fn convert_challenge() {
 /// Test every function in the library that does a union like thing.
 #[test]
 fn test_every_union() {
-    use crate::range_set_blaze::MultiwayRangeSetBlaze;
+    use crate::prelude::*;
 
-    // cmk000000
+    // cmk000 - test every... of the other operations, too
     // bitor x 4
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);

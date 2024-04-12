@@ -5,8 +5,8 @@
 //! use range_set_blaze::prelude::*;
 //! ```
 pub use crate::{
-    intersection_dyn, intersection_map_dyn, range_set_blaze::MultiwayRangeSetBlaze, union_dyn,
-    union_map_dyn, CheckSortedDisjoint, DynSortedDisjoint, DynSortedDisjointMap,
-    MultiwayRangeMapBlaze, MultiwaySortedDisjoint, MultiwaySortedDisjointMap, RangeMapBlaze,
-    RangeSetBlaze, SortedDisjoint, SortedDisjointMap, SortedStarts,
+    intersection_dyn, intersection_map_dyn, union_dyn, union_map_dyn, CheckSortedDisjoint,
+    DynSortedDisjoint, DynSortedDisjointMap, MultiwayRangeMapBlaze, MultiwayRangeSetBlaze,
+    MultiwaySortedDisjoint, MultiwaySortedDisjointMap, RangeMapBlaze, RangeSetBlaze,
+    SortedDisjoint, SortedDisjointMap, SortedStarts,
 };

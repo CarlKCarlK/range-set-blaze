@@ -242,30 +242,29 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
     let c = RangeSetBlaze::from_iter([38..=42]);
 
-    // cmk000000 restore these
-    // let _ = [&a, &b, &c].union();
-    // let d = [a, b, c].intersection();
-    // assert_eq!(d, RangeSetBlaze::new());
+    let _ = [&a, &b, &c].union();
+    let d = [a, b, c].intersection();
+    assert_eq!(d, RangeSetBlaze::new());
 
-    // assert_eq!(
-    //     !MultiwayRangeSetBlaze::<u8>::union([]),
-    //     RangeSetBlaze::from_iter([0..=255])
-    // );
+    assert_eq!(
+        !MultiwayRangeSetBlaze::<u8>::union([]),
+        RangeSetBlaze::from_iter([0..=255])
+    );
 
-    // let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    // let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
-    // let c = RangeSetBlaze::from_iter([1..=42]);
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze::from_iter([1..=42]);
 
-    // let _ = &a & &b;
-    // let d = [&a, &b, &c].intersection();
-    // // let d = RangeSetBlaze::intersection([a, b, c]);
-    // println!("{d}");
-    // assert_eq!(d, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
+    let _ = &a & &b;
+    let d = [&a, &b, &c].intersection();
+    // let d = RangeSetBlaze::intersection([a, b, c]);
+    println!("{d}");
+    assert_eq!(d, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
 
-    // assert_eq!(
-    //     MultiwayRangeSetBlaze::<u8>::intersection([]),
-    //     RangeSetBlaze::from_iter([0..=255])
-    // );
+    assert_eq!(
+        MultiwayRangeSetBlaze::<u8>::intersection([]),
+        RangeSetBlaze::from_iter([0..=255])
+    );
     Ok(())
 }
 
@@ -441,25 +440,22 @@ fn sub() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn xor() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+    use range_set_blaze::UnionIter;
+
     let a0 = RangeSetBlaze::from_iter([1..=6]);
     let a1 = RangeSetBlaze::from_iter([8..=9]);
     let a2 = RangeSetBlaze::from_iter([11..=15]);
     let a01 = &a0 | &a1;
-    // cmk00 let (a01_tee, _) = a01.ranges().tee();
     let not_a01 = !&a01;
-    // cmk00000 restore these
-    // let a = &a01 ^ &a2;
-    // let b = a01.ranges() ^ a2.ranges();
-    // let c = !not_a01.ranges() ^ a2.ranges();
-    // let d = (a0.ranges() | a1.ranges()) ^ a2.ranges();
-    // // cmk00 let e = a01_tee.symmetric_difference(a2.ranges());
-    // // cmk00 let f = UnionIter::from_iter(a01.iter()) ^ UnionIter::from_iter(a2.iter());
-    // assert!(a.ranges().equal(b));
-    // assert!(a.ranges().equal(c));
-    // assert!(a.ranges().equal(d));
-    // // cmk00 assert!(a.ranges().equal(e));
-    // // cmk00 assert!(a.ranges().equal(f));
+    let a = &a01 ^ &a2;
+    let b = a01.ranges() ^ a2.ranges();
+    let c = !not_a01.ranges() ^ a2.ranges();
+    let d = (a0.ranges() | a1.ranges()) ^ a2.ranges();
+    let e = a01.ranges().symmetric_difference(a2.ranges());
+    assert!(a.ranges().equal(b));
+    assert!(a.ranges().equal(c));
+    assert!(a.ranges().equal(d));
+    assert!(a.ranges().equal(e));
     Ok(())
 }
 
@@ -1383,20 +1379,19 @@ fn range_set_int_operators() {
 
     // Multiway union of 'RangeSetBlaze's.
     let c = RangeSetBlaze::from_iter([2..=2, 6..=200]);
-    // cmk00000 restore these
-    // let result = [&a, &b, &c].union();
-    // assert_eq!(result.to_string(), "1..=200");
+    let result = [&a, &b, &c].union();
+    assert_eq!(result.to_string(), "1..=200");
 
-    // // Multiway intersection of 'RangeSetBlaze's.
-    // let result = [&a, &b, &c].intersection();
-    // assert_eq!(result.to_string(), "2..=2, 6..=6");
+    // Multiway intersection of 'RangeSetBlaze's.
+    let result = [&a, &b, &c].intersection();
+    assert_eq!(result.to_string(), "2..=2, 6..=6");
 
-    // // Combining multiple operations
-    // let result0 = &a - (&b | &c); // Creates a temporary 'RangeSetBlaze'.
+    // Combining multiple operations
+    let result0 = &a - (&b | &c); // Creates a temporary 'RangeSetBlaze'.
 
-    // // Alternatively, we can use the 'SortedDisjoint' API and avoid the temporary 'RangeSetBlaze'.
-    // let result1 = RangeSetBlaze::from_sorted_disjoint(a.ranges() - (b.ranges() | c.ranges()));
-    // assert!(result0 == result1 && result0.to_string() == "1..=1");
+    // Alternatively, we can use the 'SortedDisjoint' API and avoid the temporary 'RangeSetBlaze'.
+    let result1 = RangeSetBlaze::from_sorted_disjoint(a.ranges() - (b.ranges() | c.ranges()));
+    assert!(result0 == result1 && result0.to_string() == "1..=1");
 }
 
 #[test]

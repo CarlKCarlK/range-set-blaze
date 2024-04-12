@@ -19,7 +19,7 @@ use std::{
 }; // , time::Instant
    // use sorted_iter::assume::AssumeSortedByKeyExt;
    // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
-use crate::range_set_blaze::MultiwayRangeSetBlaze;
+
 use syntactic_for::syntactic_for;
 use tests_common::{How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
@@ -410,6 +410,8 @@ fn missing_doctest_ops() {
 
 #[test]
 fn multi_op() {
+    use crate::multiway::MultiwayRangeSetBlaze;
+
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
     let c = RangeSetBlaze::from_iter([38..=42]);
@@ -422,30 +424,29 @@ fn multi_op() {
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
     let c = RangeSetBlaze::from_iter([38..=42]);
 
-    // cmk00000 restore these
-    // let _ = [&a, &b, &c].union();
-    // let d = [a, b, c].iter().intersection();
-    // assert_eq!(d, RangeSetBlaze::new());
+    let _ = [&a, &b, &c].union();
+    let d = [a, b, c].iter().intersection();
+    assert_eq!(d, RangeSetBlaze::new());
 
-    // assert_eq!(
-    //     !MultiwayRangeSetBlaze::<u8>::union([]),
-    //     RangeSetBlaze::from_iter([0..=255])
-    // );
+    assert_eq!(
+        !MultiwayRangeSetBlaze::<u8>::union([]),
+        RangeSetBlaze::from_iter([0..=255])
+    );
 
-    // let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    // let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
-    // let c = RangeSetBlaze::from_iter([1..=42]);
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze::from_iter([1..=42]);
 
-    // let _ = &a & &b;
-    // let d = [&a, &b, &c].intersection();
-    // // let d = RangeSetBlaze::intersection([a, b, c]);
-    // println!("{d}");
-    // assert_eq!(d, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
+    let _ = &a & &b;
+    let d = [&a, &b, &c].intersection();
+    // let d = RangeSetBlaze::intersection([a, b, c]);
+    println!("{d}");
+    assert_eq!(d, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
 
-    // assert_eq!(
-    //     MultiwayRangeSetBlaze::<u8>::intersection([]),
-    //     RangeSetBlaze::from_iter([0..=255])
-    // );
+    assert_eq!(
+        MultiwayRangeSetBlaze::<u8>::intersection([]),
+        RangeSetBlaze::from_iter([0..=255])
+    );
 }
 
 // https://stackoverflow.com/questions/21747136/how-do-i-print-in-rust-the-type-of-a-variable/58119924#58119924
