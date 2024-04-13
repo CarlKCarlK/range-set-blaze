@@ -40,8 +40,10 @@ pub mod range_set_blaze;
 mod ranges;
 pub use crate::range_set_blaze::RangeSetBlaze;
 pub use crate::range_values::IntoRangeValuesIter;
+pub use crate::range_values::{MapIntoRangesIter, MapRangesIter};
 pub use crate::ranges::IntoRangesIter;
 pub use crate::ranges::RangesIter;
+
 mod not_iter;
 pub mod prelude;
 pub use crate::map::UniqueValue;
@@ -62,7 +64,6 @@ use merge_map::KMergeMap;
 pub use multiway::MultiwaySortedDisjoint;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwaySortedDisjointMap;
-use range_values::MapRangesIter;
 use range_values::RangeValuesToRangesIter;
 pub use sym_diff_iter::SymDiffIter;
 pub use sym_diff_iter_map::SymDiffIterMap;

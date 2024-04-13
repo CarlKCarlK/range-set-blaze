@@ -13,6 +13,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 #[cfg(feature = "rog-experimental")]
 use range_set_blaze::Rog;
+use range_set_blaze::UnionIter;
 use range_set_blaze::{prelude::*, Integer, NotIter, SortedStarts};
 use std::cmp::Ordering;
 #[cfg(feature = "rog-experimental")]
@@ -23,8 +24,8 @@ use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
-
 type I32SafeLen = <i32 as range_set_blaze::Integer>::SafeLen;
+use range_set_blaze::SymDiffIter;
 
 #[test]
 fn insert_255u8() {
@@ -1875,56 +1876,60 @@ fn test_rog_range_doc() {
 #[test]
 fn test_every_sorted_disjoint_method() {
     use range_set_blaze::CheckSortedDisjointMap;
-    use range_set_blaze::IntoRangesIter;
+    use range_set_blaze::{IntoRangesIter, RangesIter};
+    use range_set_blaze::{MapIntoRangesIter, MapRangesIter};
 
     use syntactic_for::syntactic_for;
     let c0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    let c1: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(1..=2, &"a"), (5..=100, &"b")]);
 
     macro_rules! fresh_instances {
         () => {{
             let a: CheckSortedDisjoint<_, _> = CheckSortedDisjoint::new([1..=2, 5..=100]);
             let b: NotIter<_, _> = !!CheckSortedDisjoint::new([1..=2, 5..=100]);
-            let c: NotIter<_, _> = !!CheckSortedDisjoint::new([1..=2, 5..=100]); // cmk000000
-            let d: IntoRangesIter<_> = RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges();
+            let c: MapRangesIter<_, _> = c1.ranges();
+            let d: MapIntoRangesIter<_, _> = c1.clone().into_ranges();
             let e: DynSortedDisjoint<_> =
                 DynSortedDisjoint::new(RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges());
-            // cmk0000 this is just e repeated
-            let f: DynSortedDisjoint<_> =
-                DynSortedDisjoint::new(RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges());
+            let f: SymDiffIter<_, _> = c0.ranges() ^ c0.ranges() ^ c0.ranges();
+            let g: UnionIter<_, _> = c0.ranges() | c0.ranges();
+            let h: RangesIter<_> = c0.ranges();
+            let i: IntoRangesIter<_> = c0.clone().into_ranges();
 
-            (a, b, c, d, e, f)
+            (a, b, c, d, e, f, g, h, i)
         }};
     }
 
-    let (a, b, c, d, e, f) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e, f] {$(
+    let (a, b, c, d, e, f, g, h, i) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f, g, h, i] {$(
         let z = ! $sd;
+        // println!("{:?}", z.to_string());
         assert!(z.equal(CheckSortedDisjoint::from([-2147483648..=0, 3..=4, 101..=2147483647])));
     )*}}
 
-    let (a, b, c, d, e, f) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e, f] {$(
+    let (a, b, c, d, e, f, g, h, i) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f, g, h, i] {$(
         let z = CheckSortedDisjoint::new([-1..=0, 50..=50,1000..=10_000]);
         let z = $sd | z;
         assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=100, 1000..=10000])));
     )*}}
 
-    let (a, b, c, d, e, f) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e, f] {$(
+    let (a, b, c, d, e, f, g, h, i) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f, g, h, i] {$(
         let z = CheckSortedDisjoint::new([-1..=0, 50..=50,1000..=10_000]);
         let z = $sd & z;
         assert!(z.equal(CheckSortedDisjoint::from([50..=50])));
     )*}}
 
-    let (a, b, c, d, e, f) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e, f] {$(
+    let (a, b, c, d, e, f, g, h, i) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f, g, h, i] {$(
         let z = CheckSortedDisjoint::new([-1..=0, 50..=50,1000..=10_000]);
         let z = $sd ^ z;
         assert!(z.equal(CheckSortedDisjoint::from([-1..=2, 5..=49, 51..=100, 1000..=10000])));
     )*}}
 
-    let (a, b, c, d, e, f) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e, f] {$(
+    let (a, b, c, d, e, f, g, h, i) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f, g, h, i] {$(
         let z = CheckSortedDisjoint::new([-1..=0, 50..=50,1000..=10_000]);
         let z = $sd - z;
         assert!(z.equal(CheckSortedDisjoint::from([1..=2, 5..=49, 51..=100])));
@@ -1932,8 +1937,8 @@ fn test_every_sorted_disjoint_method() {
 
     // FusedIterator
     fn is_fused<T: FusedIterator>(_iter: T) {}
-    let (a, b, c, d, e, f) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e, f] {$(
+    let (a, b, c, d, e, f, g, h, i) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f, g, h, i] {$(
         is_fused::<_>($sd);
     )*}}
 }
