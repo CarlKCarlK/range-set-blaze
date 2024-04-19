@@ -439,8 +439,6 @@ fn sub() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn xor() -> Result<(), Box<dyn std::error::Error>> {
-    use range_set_blaze::UnionIter;
-
     let a0 = RangeSetBlaze::from_iter([1..=6]);
     let a1 = RangeSetBlaze::from_iter([8..=9]);
     let a2 = RangeSetBlaze::from_iter([11..=15]);
@@ -1875,7 +1873,6 @@ fn test_rog_range_doc() {
 
 #[test]
 fn test_every_sorted_disjoint_method() {
-    use range_set_blaze::CheckSortedDisjointMap;
     use range_set_blaze::{IntoRangesIter, RangesIter};
     use range_set_blaze::{MapIntoRangesIter, MapRangesIter};
 

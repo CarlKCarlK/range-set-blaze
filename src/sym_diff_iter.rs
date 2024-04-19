@@ -54,7 +54,6 @@ where
 {
 }
 
-// cmk0000 review this for simplifications
 impl<T, I> Iterator for SymDiffIter<T, I>
 where
     T: Integer,

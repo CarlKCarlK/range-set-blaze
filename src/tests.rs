@@ -1442,7 +1442,6 @@ fn double_end_range() {
 
 #[test]
 fn set_random_symmetric_difference() {
-    use crate::range_set_blaze::MultiwayRangeSetBlaze;
     use crate::CheckSortedDisjointMap;
     use crate::RangeSetBlaze;
 
@@ -1454,7 +1453,7 @@ fn set_random_symmetric_difference() {
         let mut set1 = RangeSetBlaze::new();
 
         for _ in 0..500 {
-            let key = rng.gen_range(0..=255u8); // cmk0000 u8
+            let key = rng.gen_range(0..=255u8);
             set0.insert(key);
             print!("l{key} ");
             let key = rng.gen_range(0..=255u8);
