@@ -76,10 +76,9 @@ where
                 let result = Some(self_start..=self_end);
                 self.option_range = Some(next_start..=next_end);
                 return result;
-            } else {
-                self.option_range = Some(min(self_start, next_start)..=max(self_end, next_end));
-                continue;
             }
+            self.option_range = Some(min(self_start, next_start)..=max(self_end, next_end));
+            // continue;
         }
     }
 

@@ -30,10 +30,10 @@ impl<T: Integer> ExactSizeIterator for RangesIter<'_, T> {
     }
 }
 
-impl<'a, T: Integer> FusedIterator for RangesIter<'a, T> {}
+impl<T: Integer> FusedIterator for RangesIter<'_, T> {}
 
 // Range's iterator is just the inside BTreeMap iterator as values
-impl<'a, T: Integer> Iterator for RangesIter<'a, T> {
+impl<T: Integer> Iterator for RangesIter<'_, T> {
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {

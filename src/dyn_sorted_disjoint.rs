@@ -42,9 +42,9 @@ impl<'a, T: Integer> DynSortedDisjoint<'a, T> {
     }
 }
 
-impl<'a, T: Integer> FusedIterator for DynSortedDisjoint<'a, T> {}
+impl<T: Integer> FusedIterator for DynSortedDisjoint<'_, T> {}
 
-impl<'a, T: Integer> Iterator for DynSortedDisjoint<'a, T> {
+impl<T: Integer> Iterator for DynSortedDisjoint<'_, T> {
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {

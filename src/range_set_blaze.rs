@@ -3451,7 +3451,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    pub fn into_ranges<'a>(self) -> IntoRangesIter<T> {
+    pub fn into_ranges(self) -> IntoRangesIter<T> {
         IntoRangesIter {
             iter: self.btree_map.into_iter(),
         }

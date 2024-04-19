@@ -38,7 +38,7 @@ where
     }
 }
 
-impl<'a, T, const N: usize> FusedIterator for FromSliceIter<'a, T, N>
+impl<T, const N: usize> FusedIterator for FromSliceIter<'_, T, N>
 where
     T: Integer + SimdElement + IsConsecutive,
     Simd<T, N>: core::ops::Sub<Output = Simd<T, N>>,

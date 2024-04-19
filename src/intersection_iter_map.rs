@@ -52,7 +52,7 @@ where
     phantom: PhantomData<V>,
 }
 
-impl<'a, T, V, VR, IM, IS> IntersectionIterMap<T, V, VR, IM, IS>
+impl<T, V, VR, IM, IS> IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
     V: ValueOwned,
@@ -96,7 +96,7 @@ where
 //     }
 // }
 
-impl<'a, T, V, VR, IM, IS> FusedIterator for IntersectionIterMap<T, V, VR, IM, IS>
+impl<T, V, VR, IM, IS> FusedIterator for IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
     V: ValueOwned,
@@ -106,7 +106,7 @@ where
 {
 }
 
-impl<'a, T, V, VR, IM, IS> Iterator for IntersectionIterMap<T, V, VR, IM, IS>
+impl<T, V, VR, IM, IS> Iterator for IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
     V: ValueOwned,

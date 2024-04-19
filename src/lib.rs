@@ -1,8 +1,21 @@
 #![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
-#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![warn(clippy::use_self)]
+#![warn(
+    clippy::use_self,
+    unused_lifetimes,
+    missing_docs,
+    single_use_lifetimes,
+    clippy::pedantic,
+    unreachable_pub,
+    clippy::cargo,
+    clippy::perf,
+    clippy::style,
+    clippy::complexity,
+    clippy::correctness,
+    clippy::nursery,
+    clippy::cargo_common_metadata
+)]
 
 // cmk #![feature(step_trait)] // cmk use unstable feature???
 // cmk #![feature(const_option)]
@@ -420,46 +433,6 @@ pub fn convert_challenge() {
 //     let sorted_disjoint_map = UnionIterMap::new(iter);
 //     let sorted_disjoint = UnitMapToSortedDisjoint::new(sorted_disjoint_map);
 //     sorted_disjoint
-// }
-
-// // cmk00000 rename and move
-// pub fn sorted_starts_to_sorted_disjoint<T, I>(
-//     sorted_starts: I,
-// ) -> UnitMapToSortedDisjoint<T, UnionIterMap<T, (), &'static (), SortedStartsToUnitMap<T, I>>>
-// where
-//     T: Integer,
-//     I: SortedStarts<T>, // into_iter??? cmk00
-// {
-//     let sorted_starts_map = SortedStartsToUnitMap::new(sorted_starts);
-//     let sorted_disjoint_map = UnionIterMap::new(sorted_starts_map);
-//     let sorted_disjoint: UnitMapToSortedDisjoint<
-//         T,
-//         UnionIterMap<T, (), &(), SortedStartsToUnitMap<T, I>>,
-//     > = UnitMapToSortedDisjoint::new(sorted_disjoint_map);
-//     sorted_disjoint
-// }
-
-// fn union_test() -> Result<(), Box<dyn std::error::Error>> {
-//     // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
-//     let a0 = RangeSetBlaze::from_iter([1..=6]);
-//     let a1 = RangeSetBlaze::from_iter([8..=9]);
-//     let a2 = RangeSetBlaze::from_iter([11..=15]);
-//     let a12 = &a1 | &a2;
-//     let not_a0 = !&a0;
-//     let a = &a0 | &a1 | &a2;
-//     let b = a0.ranges() | a1.ranges() | a2.ranges();
-//     let c = !not_a0.ranges() | a12.ranges();
-//     let d = a0.ranges() | a1.ranges() | a2.ranges();
-
-//     // cmk000
-//     let f = sorted_starts_to_sorted_disjoint(a0.iter())
-//         | sorted_starts_to_sorted_disjoint(a1.iter())
-//         | sorted_starts_to_sorted_disjoint(a2.iter());
-//     assert!(a.ranges().equal(b));
-//     assert!(a.ranges().equal(c));
-//     assert!(a.ranges().equal(d));
-//     assert!(a.ranges().equal(f));
-//     Ok(())
 // }
 
 /// Test every function in the library that does a union like thing.

@@ -42,7 +42,7 @@ impl<T: Integer, V: ValueOwned> ExactSizeIterator for RangeValuesIter<'_, T, V> 
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned> FusedIterator for RangeValuesIter<'a, T, V> {}
+impl<T: Integer, V: ValueOwned> FusedIterator for RangeValuesIter<'_, T, V> {}
 
 // Range's iterator is just the inside BTreeMap iterator as values
 impl<'a, T, V> Iterator for RangeValuesIter<'a, T, V>
@@ -84,14 +84,14 @@ pub struct IntoRangeValuesIter<T: Integer, V: ValueOwned> {
     pub(crate) iter: btree_map::IntoIter<T, EndValue<T, V>>,
 }
 
-impl<'a, T: Integer, V: ValueOwned> ExactSizeIterator for IntoRangeValuesIter<T, V> {
+impl<T: Integer, V: ValueOwned> ExactSizeIterator for IntoRangeValuesIter<T, V> {
     #[must_use]
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned> FusedIterator for IntoRangeValuesIter<T, V> {}
+impl<T: Integer, V: ValueOwned> FusedIterator for IntoRangeValuesIter<T, V> {}
 
 impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<T, V> {
     type Item = (RangeInclusive<T>, V);
@@ -138,7 +138,7 @@ impl<'a, T: Integer, V: ValueOwned> AsRef<MapRangesIter<'a, T, V>> for MapRanges
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned> FusedIterator for MapRangesIter<'a, T, V> {}
+impl<T: Integer, V: ValueOwned> FusedIterator for MapRangesIter<'_, T, V> {}
 
 // Range's iterator is just the inside BTreeMap iterator as values
 impl<'a, T, V> Iterator for MapRangesIter<'a, T, V>
@@ -197,13 +197,13 @@ pub struct MapIntoRangesIter<T: Integer, V: ValueOwned> {
     gather: Option<RangeInclusive<T>>,
 }
 
-impl<'a, T: Integer, V: ValueOwned> MapIntoRangesIter<T, V> {
+impl<T: Integer, V: ValueOwned> MapIntoRangesIter<T, V> {
     pub fn new(iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
         MapIntoRangesIter { iter, gather: None }
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned> FusedIterator for MapIntoRangesIter<T, V> {}
+impl<T: Integer, V: ValueOwned> FusedIterator for MapIntoRangesIter<T, V> {}
 
 impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for MapIntoRangesIter<T, V> {
     type Item = RangeInclusive<T>;
@@ -298,7 +298,7 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> Iterator for RangeValuesToRangesIter<T, V, VR, I>
+impl<T, V, VR, I> Iterator for RangeValuesToRangesIter<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -390,7 +390,7 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> SetPriorityMap<T, V, VR, I>
+impl<T, V, VR, I> SetPriorityMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -406,7 +406,7 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for SetPriorityMap<T, V, VR, I>
+impl<T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for SetPriorityMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,

@@ -34,7 +34,7 @@ where
     phantom: PhantomData<V>,
 }
 
-impl<'a, T, V, VR, I> IterMap<T, V, VR, I>
+impl<T, V, VR, I> IterMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -51,7 +51,7 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> FusedIterator for IterMap<T, V, VR, I>
+impl<T, V, VR, I> FusedIterator for IterMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -60,7 +60,7 @@ where
 {
 }
 
-impl<'a, T, V, VR, I> Iterator for IterMap<T, V, VR, I>
+impl<T, V, VR, I> Iterator for IterMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -94,7 +94,7 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> DoubleEndedIterator for IterMap<T, V, VR, I>
+impl<T, V, VR, I> DoubleEndedIterator for IterMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -256,7 +256,7 @@ where
     iter: IterMap<T, V, VR, I>,
 }
 
-impl<'a, T, V, VR, I> KeysMap<T, V, VR, I>
+impl<T, V, VR, I> KeysMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -270,7 +270,7 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> FusedIterator for KeysMap<T, V, VR, I>
+impl<T, V, VR, I> FusedIterator for KeysMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -279,7 +279,7 @@ where
 {
 }
 
-impl<'a, T, V, VR, I> Iterator for KeysMap<T, V, VR, I>
+impl<T, V, VR, I> Iterator for KeysMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -297,7 +297,7 @@ where
     }
 }
 
-impl<'a, T, V, VR, I> DoubleEndedIterator for KeysMap<T, V, VR, I>
+impl<T, V, VR, I> DoubleEndedIterator for KeysMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,

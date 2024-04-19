@@ -60,7 +60,7 @@ where
     }
 }
 
-impl<'a, T, V, VR> FusedIterator for DynSortedDisjointMap<'a, T, V, VR>
+impl<T, V, VR> FusedIterator for DynSortedDisjointMap<'_, T, V, VR>
 where
     T: Integer,
     V: ValueOwned,
@@ -68,7 +68,7 @@ where
 {
 }
 
-impl<'a, T, V, VR> Iterator for DynSortedDisjointMap<'a, T, V, VR>
+impl<T, V, VR> Iterator for DynSortedDisjointMap<'_, T, V, VR>
 where
     T: Integer,
     V: ValueOwned,

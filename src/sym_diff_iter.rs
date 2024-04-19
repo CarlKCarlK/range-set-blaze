@@ -121,7 +121,7 @@ where
             if let Some(result) = self.process(count % 2 == 1, result) {
                 return result;
             }
-            continue;
+            // continue;
         }
     }
 }

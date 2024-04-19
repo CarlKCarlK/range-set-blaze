@@ -1212,7 +1212,7 @@ where
     }
 }
 
-impl<'a, T, V, I> FusedIterator for RangeToRangeValueIter<'a, T, V, I>
+impl<T, V, I> FusedIterator for RangeToRangeValueIter<'_, T, V, I>
 where
     T: Integer,
     V: ValueOwned,
@@ -1266,18 +1266,21 @@ where
 macro_rules! impl_sorted_map_traits_and_ops {
     ($IterType:ty, $V:ty, $VR:ty, $($more_generics:tt)*) => {
 
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T> SortedStartsMap<T, $V, $VR> for $IterType
         where
             T: Integer,
         {
         }
 
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T> SortedDisjointMap<T, $V, $VR> for $IterType
         where
             T: Integer,
         {
         }
 
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T> ops::Not for $IterType
         where
             T: Integer,
@@ -1289,6 +1292,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             }
         }
 
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T, R> ops::BitOr<R> for $IterType
         where
             T: Integer,
@@ -1301,6 +1305,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             }
         }
 
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T, R> ops::Sub<R> for $IterType
         where
             T: Integer,
@@ -1313,6 +1318,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             }
         }
 
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T, R> ops::BitXor<R> for $IterType
         where
             T: Integer,
@@ -1326,6 +1332,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             }
         }
 
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T, R> ops::BitAnd<R> for $IterType
         where
             T: Integer,

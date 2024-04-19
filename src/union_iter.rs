@@ -75,10 +75,10 @@ where
             {
                 self.option_range = Some(current_start..=max(current_end, end));
                 continue;
-            } else {
-                self.option_range = Some(start..=end);
-                return Some(current_start..=current_end);
             }
+
+            self.option_range = Some(start..=end);
+            return Some(current_start..=current_end);
         }
     }
 }

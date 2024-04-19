@@ -179,7 +179,7 @@ where
 }
 
 // cmk000 is the 'a needed?
-impl<'a, T, V, VR, I> FusedIterator for KMergeMap<T, V, VR, I>
+impl<T, V, VR, I> FusedIterator for KMergeMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,

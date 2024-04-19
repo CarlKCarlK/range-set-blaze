@@ -345,7 +345,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
     /// ```
     #[inline]
-    fn symmetric_difference<'a, R>(self, other: R) -> BitXorMerge<T, Self, R::IntoIter>
+    fn symmetric_difference<R>(self, other: R) -> BitXorMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
@@ -676,9 +676,12 @@ impl<T: Integer, I> AnythingGoes<T> for I where I: Iterator<Item = RangeInclusiv
 #[macro_export]
 macro_rules! impl_sorted_traits_and_ops {
     ($IterType:ty, $($more_generics:tt)*) => {
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T: Integer> SortedStarts<T> for $IterType {}
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T: Integer> SortedDisjoint<T> for $IterType {}
 
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T: Integer> ops::Not for $IterType
         {
             type Output = NotIter<T, Self>;
@@ -688,6 +691,7 @@ macro_rules! impl_sorted_traits_and_ops {
             }
         }
 
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T: Integer, R> ops::BitOr<R> for $IterType
         where
             R: SortedDisjoint<T>,
@@ -699,6 +703,7 @@ macro_rules! impl_sorted_traits_and_ops {
             }
         }
 
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T: Integer, R> ops::Sub<R> for $IterType
         where
             R: SortedDisjoint<T>,
@@ -712,6 +717,7 @@ macro_rules! impl_sorted_traits_and_ops {
             }
         }
 
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T: Integer, R> ops::BitXor<R> for $IterType
         where
             R: SortedDisjoint<T>,
@@ -724,6 +730,7 @@ macro_rules! impl_sorted_traits_and_ops {
             }
         }
 
+        #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T: Integer, R> ops::BitAnd<R> for $IterType
         where
             R: SortedDisjoint<T>,
