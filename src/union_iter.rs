@@ -184,7 +184,6 @@ where
     where
         I: IntoIterator<Item = RangeInclusive<T>>, // cmk000 add fused??
     {
-        // cmk0000 simplify or optimize?
         let iter = iter.into_iter();
         let iter = UnsortedDisjoint::from(iter);
         let iter = iter.sorted_by(|a, b| a.start().cmp(&b.start()));

@@ -4073,7 +4073,7 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
         I: IntoIterator<Item = RangeInclusive<T>>,
     {
         let iter = iter.into_iter();
-        // cmk0000 should we use UnsortedDisjoint to merge some ranges?
+        let iter = UnsortedDisjoint::from(iter);
         for range in iter {
             self.internal_add(range);
         }

@@ -388,30 +388,29 @@ fn complement() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// cmk0000
-// #[test]
-// fn union_test() -> Result<(), Box<dyn std::error::Error>> {
-//     // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
-//     let a0 = RangeSetBlaze::from_iter([1..=6]);
-//     let a1 = RangeSetBlaze::from_iter([8..=9]);
-//     let a2 = RangeSetBlaze::from_iter([11..=15]);
-//     let a12 = &a1 | &a2;
-//     let not_a0 = !&a0;
-//     let a = &a0 | &a1 | &a2;
-//     let b = a0.ranges() | a1.ranges() | a2.ranges();
-//     let c = !not_a0.ranges() | a12.ranges();
-//     let d = a0.ranges() | a1.ranges() | a2.ranges();
+#[test]
+fn union_test() -> Result<(), Box<dyn std::error::Error>> {
+    // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
+    let a0 = RangeSetBlaze::from_iter([1..=6]);
+    let a1 = RangeSetBlaze::from_iter([8..=9]);
+    let a2 = RangeSetBlaze::from_iter([11..=15]);
+    let a12 = &a1 | &a2;
+    let not_a0 = !&a0;
+    let a = &a0 | &a1 | &a2;
+    let b = a0.ranges() | a1.ranges() | a2.ranges();
+    let c = !not_a0.ranges() | a12.ranges();
+    let d = a0.ranges() | a1.ranges() | a2.ranges();
 
-//     // cmk000
-//     let f = sorted_disjoint_from_sorted_starts(a0.iter())
-//         | sorted_disjoint_from_sorted_starts(a1.iter())
-//         | sorted_disjoint_from_sorted_starts(a2.iter());
-//     assert!(a.ranges().equal(b));
-//     assert!(a.ranges().equal(c));
-//     assert!(a.ranges().equal(d));
-//     assert!(a.ranges().equal(f));
-//     Ok(())
-// }
+    assert!(a.ranges().equal(b));
+    assert!(a.ranges().equal(c));
+    assert!(a.ranges().equal(d));
+    // cmk00
+    // let f = sorted_disjoint_from_sorted_starts(a0.iter())
+    //     | sorted_disjoint_from_sorted_starts(a1.iter())
+    //     | sorted_disjoint_from_sorted_starts(a2.iter());
+    // assert!(a.ranges().equal(f));
+    Ok(())
+}
 
 #[test]
 fn sub() -> Result<(), Box<dyn std::error::Error>> {

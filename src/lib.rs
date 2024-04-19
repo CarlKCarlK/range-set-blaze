@@ -258,7 +258,7 @@ pub type BitSubMerge<T, L, R> = NotIter<T, BitOrMerge<T, NotIter<T, L>, R>>;
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 // cmk00 Can we/should we hide MergeMapIter and KMergeMapIter and SymDiffMapIter::new and UnionMapIter::new?
 #[test]
-// cmk0000 challenge: convert from every level to sorted disjoint* for both map and set.
+// cmk000 challenge: convert from every level to sorted disjoint* for both map and set.
 pub fn convert_challenge() {
     use itertools::Itertools;
     use unsorted_disjoint_map::UnsortedPriorityDisjointMap;
@@ -422,7 +422,7 @@ pub fn convert_challenge() {
 //     sorted_disjoint
 // }
 
-// // cmk0000 rename and move
+// // cmk00000 rename and move
 // pub fn sorted_starts_to_sorted_disjoint<T, I>(
 //     sorted_starts: I,
 // ) -> UnitMapToSortedDisjoint<T, UnionIterMap<T, (), &'static (), SortedStartsToUnitMap<T, I>>>
