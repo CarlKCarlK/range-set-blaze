@@ -157,7 +157,7 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
     }
 }
 
-use crate::{BitAndKMerge, Integer, RangeSetBlaze, SortedDisjoint, UnionIter, UnionIterKMerge};
+use crate::{BitAndKMerge, BitOrKMerge, Integer, RangeSetBlaze, SortedDisjoint, UnionIter};
 
 impl<T, II, I> MultiwaySortedDisjoint<T, I> for II
 where
@@ -200,7 +200,7 @@ where
     ///
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
-    fn union(self) -> UnionIterKMerge<T, I> {
+    fn union(self) -> BitOrKMerge<T, I> {
         UnionIter::new_k(self)
     }
 

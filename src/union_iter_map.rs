@@ -1,7 +1,7 @@
 use crate::alloc::string::ToString;
 use crate::merge_map::KMergeMap;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
-use crate::{MergeMap, SortedDisjointMap, UnionIterMapKMerge, UnionIterMapMerge};
+use crate::{BitOrMapKMerge, BitOrMapMerge, MergeMap, SortedDisjointMap};
 use alloc::format;
 use alloc::string::String;
 use alloc::{collections::BinaryHeap, vec};
@@ -254,7 +254,7 @@ where
     }
 }
 
-impl<T, V, VR, L, R> UnionIterMapMerge<T, V, VR, L, R>
+impl<T, V, VR, L, R> BitOrMapMerge<T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned,
@@ -271,7 +271,7 @@ where
 }
 
 /// cmk doc
-impl<T, V, VR, J> UnionIterMapKMerge<T, V, VR, J>
+impl<T, V, VR, J> BitOrMapKMerge<T, V, VR, J>
 where
     T: Integer,
     V: ValueOwned,

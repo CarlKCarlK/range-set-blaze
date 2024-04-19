@@ -1,11 +1,7 @@
-use alloc::collections::BinaryHeap;
-#[cfg(test)]
-use rand::{rngs::StdRng, Rng, SeedableRng};
-
 use crate::{
-    merge::KMerge, Integer, Merge, SortedDisjoint, SortedStarts, SymDiffIterKMerge,
-    SymDiffIterMerge,
+    merge::KMerge, BitXorKMerge, BitXorMerge, Integer, Merge, SortedDisjoint, SortedStarts,
 };
+use alloc::collections::BinaryHeap;
 use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
@@ -192,7 +188,7 @@ where
     }
 }
 
-impl<T, L, R> SymDiffIterMerge<T, L, R>
+impl<T, L, R> BitXorMerge<T, L, R>
 where
     T: Integer,
     L: SortedDisjoint<T>,
@@ -207,7 +203,7 @@ where
 }
 
 /// cmk doc
-impl<T, J> SymDiffIterKMerge<T, J>
+impl<T, J> BitXorKMerge<T, J>
 where
     T: Integer,
     J: SortedDisjoint<T>,

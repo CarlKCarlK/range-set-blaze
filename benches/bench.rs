@@ -710,7 +710,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
 fn every_op_blaze(c: &mut Criterion) {
     let group_name = "every_op_blaze";
     let k = 2;
-    let range_len_list = [100_000]; // cmk0000 1usize, 10, 100, 1000, 10_000,
+    let range_len_list = [100_000]; // cmk00 1usize, 10, 100, 1000, 10_000,
     let range = 0..=99_999_999;
     let coverage_goal = 0.5;
     let how = How::None;
@@ -736,7 +736,7 @@ fn every_op_blaze(c: &mut Criterion) {
     for (_range_len, setup) in &setup_vec {
         let parameter = setup[0].ranges_len();
 
-        // cmk0000
+        // cmk00
         // group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
         //     b.iter_batched(
         //         || setup,

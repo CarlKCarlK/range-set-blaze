@@ -1,8 +1,8 @@
 use crate::map::SortedStartsInVec;
 use crate::merge::KMerge;
 use crate::unsorted_disjoint::UnsortedDisjoint;
-use crate::{AssumeSortedStarts, Merge, SortedDisjoint, SortedStarts, UnionIterKMerge};
-use crate::{Integer, UnionIterMerge};
+use crate::{AssumeSortedStarts, BitOrKMerge, Merge, SortedDisjoint, SortedStarts};
+use crate::{BitOrMerge, Integer};
 use alloc::vec;
 use core::cmp::max;
 use core::iter::FusedIterator;
@@ -110,7 +110,7 @@ where
     }
 }
 
-impl<T, L, R> UnionIterMerge<T, L, R>
+impl<T, L, R> BitOrMerge<T, L, R>
 where
     T: Integer,
     L: SortedDisjoint<T>,
@@ -125,7 +125,7 @@ where
 }
 
 /// cmk doc
-impl<T, J> UnionIterKMerge<T, J>
+impl<T, J> BitOrKMerge<T, J>
 where
     T: Integer,
     J: SortedDisjoint<T>,

@@ -9,8 +9,8 @@ use crate::{
     intersection_iter_map::IntersectionIterMap,
     map::{CloneBorrow, ValueOwned},
     range_values::RangeValuesToRangesIter,
-    Integer, IntersectionMap1, RangeMapBlaze, SortedDisjointMap, SymDiffIterMapKMerge,
-    UnionIterMap, UnionIterMapKMerge,
+    BitAndMapWithRangeValues, BitOrMapKMerge, BitXorMapKMerge, Integer, RangeMapBlaze,
+    SortedDisjointMap, UnionIterMap,
 };
 
 // /// The trait used to provide methods on multiple [`RangeMapBlaze`] references,
@@ -222,7 +222,7 @@ where
     ///
     /// assert_eq!(union.to_string(), "1..=15, 18..=100");
     /// ```
-    fn union(self) -> UnionIterMapKMerge<T, V, VR, I> {
+    fn union(self) -> BitOrMapKMerge<T, V, VR, I> {
         // cmk0 why does this not have .into_iter() but intersection does?
         UnionIterMap::new_k(self)
     }
@@ -251,7 +251,7 @@ where
     ///
     /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
     /// ```
-    fn intersection<'a>(self) -> IntersectionMap1<'a, T, V, VR, I> {
+    fn intersection<'a>(self) -> BitAndMapWithRangeValues<'a, T, V, VR, I> {
         // We define map intersection -- in part -- in terms of set intersection.
         // Elsewhere, we define set intersection in terms of complement and (set/map) union.
         use crate::MultiwaySortedDisjoint;
@@ -263,8 +263,8 @@ where
         IntersectionIterMap::new(iter_map, iter_set)
     }
     /// cmk doc
-    fn symmetric_difference(self) -> SymDiffIterMapKMerge<T, V, VR, I> {
-        let result = SymDiffIterMapKMerge::new_k(self);
+    fn symmetric_difference(self) -> BitXorMapKMerge<T, V, VR, I> {
+        let result = BitXorMapKMerge::new_k(self);
         result
     }
 }

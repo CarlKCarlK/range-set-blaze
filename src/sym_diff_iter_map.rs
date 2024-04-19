@@ -10,7 +10,7 @@ use crate::{
     map::{CloneBorrow, ValueOwned},
     merge_map::KMergeMap,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
-    Integer, MergeMap, SortedDisjointMap, SymDiffIterMapKMerge, SymDiffIterMapMerge,
+    BitXorMapKMerge, BitXorMapMerge, Integer, MergeMap, SortedDisjointMap,
 };
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
@@ -236,7 +236,7 @@ where
     }
 }
 
-impl<T, V, VR, L, R> SymDiffIterMapMerge<T, V, VR, L, R>
+impl<T, V, VR, L, R> BitXorMapMerge<T, V, VR, L, R>
 where
     T: Integer,
     V: ValueOwned,
@@ -253,7 +253,7 @@ where
 }
 
 /// cmk doc
-impl<T, V, VR, J> SymDiffIterMapKMerge<T, V, VR, J>
+impl<T, V, VR, J> BitXorMapKMerge<T, V, VR, J>
 where
     T: Integer,
     V: ValueOwned,

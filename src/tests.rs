@@ -27,9 +27,6 @@ use core::array;
 use core::ops::BitAndAssign;
 use rand::Rng;
 // cmk000 maybe the 'range_set_blaze.rs' file name is too confusing
-use crate::sorted_disjoint_map::CheckSortedDisjointMap;
-use crate::unsorted_disjoint::AssumeSortedStarts;
-
 type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
 #[test]

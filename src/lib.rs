@@ -218,56 +218,43 @@ pub trait Integer:
 
 // cmk rename to Union...
 #[doc(hidden)]
-pub type UnionIterMapMerge<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
+pub type BitOrMapMerge<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
 #[doc(hidden)]
-pub type UnionIterMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
+pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
 
 #[doc(hidden)]
-pub type SymDiffIterMapMerge<T, V, VR, L, R> = SymDiffIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
+pub type BitXorMapMerge<T, V, VR, L, R> = SymDiffIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
 #[doc(hidden)]
-pub type SymDiffIterMapKMerge<T, V, VR, II> = SymDiffIterMap<T, V, VR, KMergeMap<T, V, VR, II>>;
+pub type BitXorMapKMerge<T, V, VR, II> = SymDiffIterMap<T, V, VR, KMergeMap<T, V, VR, II>>;
 
 #[doc(hidden)]
-pub type SymDiffIterMerge<T, L, R> = SymDiffIter<T, Merge<T, L, R>>;
+pub type BitXorMerge<T, L, R> = SymDiffIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
-pub type SymDiffIterKMerge<T, II> = SymDiffIter<T, KMerge<T, II>>;
+pub type BitXorKMerge<T, II> = SymDiffIter<T, KMerge<T, II>>;
 
 #[doc(hidden)]
-pub type UnionIterMapKMerge<T, V, VR, I> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I>>;
+pub type BitOrMapKMerge<T, V, VR, I> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I>>;
 #[doc(hidden)]
-pub type UnionIterKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
+pub type BitOrKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
 #[doc(hidden)]
 pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
 #[doc(hidden)]
 pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
-
-// cmk000 'UnionIterMerge' used to be called 'BitOrMerge', put it back???
 #[doc(hidden)]
-pub type BitNandMerge<T, L, R> = UnionIterMerge<T, NotIter<T, L>, NotIter<T, R>>;
+pub type BitNandMerge<T, L, R> = BitOrMerge<T, NotIter<T, L>, NotIter<T, R>>;
 #[doc(hidden)]
-pub type BitNandKMerge<T, I> = UnionIterKMerge<T, NotIter<T, I>>;
+pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
 #[doc(hidden)] // cmk00 create better name
-pub type IntersectionMap0<'a, T, V, VR, I> =
+pub type BitAndMapWithRanges<'a, T, V, VR, I> =
     IntersectionIterMap<T, V, VR, I, BitAndKMerge<T, MapRangesIter<'a, T, V>>>;
 #[doc(hidden)]
-pub type IntersectionMap1<'a, T, V, VR, I> =
+pub type BitAndMapWithRangeValues<'a, T, V, VR, I> =
     IntersectionIterMap<T, V, VR, I, BitAndKMerge<T, RangeValuesToRangesIter<T, V, VR, I>>>;
 #[doc(hidden)]
-pub type BitNorMerge<T, L, R> = NotIter<T, UnionIterMerge<T, L, R>>;
+pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
 #[doc(hidden)]
-pub type BitSubMerge<T, L, R> = NotIter<T, UnionIterMerge<T, NotIter<T, L>, R>>;
+pub type BitSubMerge<T, L, R> = NotIter<T, BitOrMerge<T, NotIter<T, L>, R>>;
 #[doc(hidden)]
-// pub type BitXOrTee<T, L, R> =
-//     BitOrMerge<T, BitSubMerge<T, Tee<L>, Tee<R>>, BitSubMerge<T, Tee<R>, Tee<L>>>;
-// #[doc(hidden)]
-// pub type BitXOr<T, L, R> = BitOrMerge<T, BitSubMerge<T, L, Tee<R>>, BitSubMerge<T, Tee<R>, L>>;
-// #[doc(hidden)]
-// pub type BitEq<T, L, R> = BitOrMerge<
-//     T,
-//     NotIter<T, BitOrMerge<T, NotIter<T, Tee<L>>, NotIter<T, Tee<R>>>>,
-//     NotIter<T, BitOrMerge<T, Tee<L>, Tee<R>>>,
-// >;
-
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 // cmk00 Can we/should we hide MergeMapIter and KMergeMapIter and SymDiffMapIter::new and UnionMapIter::new?
 #[test]
@@ -276,7 +263,8 @@ pub fn convert_challenge() {
     use itertools::Itertools;
     use unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 
-    fn is_sorted_disjoint_map<T, V, VR, S>(_iter: S)
+    // cmk000 what is the for?
+    fn _is_sorted_disjoint_map<T, V, VR, S>(_iter: S)
     where
         T: Integer,
         V: ValueOwned,

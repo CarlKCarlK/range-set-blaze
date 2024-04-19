@@ -2342,7 +2342,7 @@ fn test_every_sorted_disjoint_map_method() {
     syntactic_for! { sd in [a, b, c, d, e, f] {$(
         is_sorted_disjoint_map::<_,_,_,_>($sd);
     )*}}
-    fn is_fused<T: FusedIterator>(iter: T) {}
+    fn is_fused<T: FusedIterator>(_: T) {}
     let (a, b, c, d, e, f) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, d, e, f] {$(
         is_fused::<_>($sd);
@@ -2373,7 +2373,7 @@ fn test_every_sorted_disjoint_map_method() {
 
     // Intersection
     let (a, b, c, d, e, f) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e] {$(
+    syntactic_for! { sd in [a, b, c, d, e, f] {$(
         let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
         let z = $sd & z;
         // println!("{}", z.to_string());
