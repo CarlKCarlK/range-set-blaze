@@ -227,30 +227,28 @@ fn missing_doctest_ops() {
     assert_eq!(result, RangeSetBlaze::from_iter([1]));
 }
 
-// cmk00000 symmetrical_difference test
 #[test]
-fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
+fn multi_op() {
+    // Union
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
     let c = RangeSetBlaze::from_iter([38..=42]);
     let d = &(&a | &b) | &c;
-    println!("{d}");
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=15, 18..=29, 38..=42]));
     let d = a | b | &c;
-    println!("{d}");
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=15, 18..=29, 38..=42]));
 
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
     let c = RangeSetBlaze::from_iter([38..=42]);
 
     let _ = [&a, &b, &c].union();
-    let d = [a, b, c].intersection();
+    let d = [a, b, c].iter().intersection();
     assert_eq!(d, RangeSetBlaze::new());
 
-    assert_eq!(
-        !MultiwayRangeSetBlaze::<u8>::union([]),
-        RangeSetBlaze::from_iter([0..=255])
-    );
+    assert_eq!(MultiwayRangeSetBlaze::<u8>::union([]), RangeSetBlaze::new());
 
+    // Intersection
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
     let c = RangeSetBlaze::from_iter([1..=42]);
@@ -265,27 +263,78 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
         MultiwayRangeSetBlaze::<u8>::intersection([]),
         RangeSetBlaze::from_iter([0..=255])
     );
-    Ok(())
+
+    // Symmetrical difference
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze::from_iter([38..=42]);
+    let d = &(&a ^ &b) ^ &c;
+    assert_eq!(
+        d,
+        RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
+    );
+    let d = a ^ b ^ &c;
+    assert_eq!(
+        d,
+        RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
+    );
+
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze::from_iter([38..=42]);
+
+    let _ = [&a, &b, &c].symmetric_difference();
+
+    assert_eq!(
+        MultiwayRangeSetBlaze::<u8>::symmetric_difference([]),
+        RangeSetBlaze::new()
+    );
 }
 
-// cmk00000 symmetrical_difference test
 #[test]
-fn custom_multi() -> Result<(), Box<dyn std::error::Error>> {
+fn custom_multi() {
+    // Union
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
     let c = RangeSetBlaze::from_iter([38..=42]);
 
     let union_stream = b.ranges() | c.ranges();
-    let a_less = a.ranges().difference(union_stream);
+    let a_less = a.ranges() - union_stream;
     let d: RangeSetBlaze<_> = a_less.into_range_set_blaze();
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=4, 14..=15]));
+
+    let d: RangeSetBlaze<_> =
+        (a.ranges() - [b.ranges(), c.ranges()].union()).into_range_set_blaze();
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=4, 14..=15]));
+
+    // Intersection
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze::from_iter([1..=42]);
+
+    let intersection_stream = b.ranges() & c.ranges();
+    let a_less = a.ranges() - intersection_stream;
+    let d: RangeSetBlaze<_> = a_less.into_range_set_blaze();
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=4, 14..=15]));
     println!("{d}");
 
-    let d: RangeSetBlaze<_> = a
-        .ranges()
-        .difference([b.ranges(), c.ranges()].union())
-        .into_range_set_blaze();
-    println!("{d}");
-    Ok(())
+    let d: RangeSetBlaze<_> =
+        (a.ranges() - [b.ranges(), c.ranges()].intersection()).into_range_set_blaze();
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=4, 14..=15]));
+
+    // Symmetrical difference
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze::from_iter([38..=42]);
+
+    let sym_diff_stream = b.ranges() ^ c.ranges();
+    let a_less = a.ranges() - sym_diff_stream;
+    let d: RangeSetBlaze<_> = a_less.into_range_set_blaze();
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=4, 14..=15]));
+
+    let d: RangeSetBlaze<_> =
+        (a.ranges() - [b.ranges(), c.ranges()].symmetric_difference()).into_range_set_blaze();
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=4, 14..=15]));
 }
 
 #[test]
@@ -308,7 +357,6 @@ fn nand_repro() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// cmk00000 symmetrical_difference test
 #[test]
 fn parity() -> Result<(), Box<dyn std::error::Error>> {
     let a = &RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -316,6 +364,10 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
     let c = &RangeSetBlaze::from_iter([38..=42]);
     assert_eq!(
         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
+        RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
+    );
+    assert_eq!(
+        a ^ b ^ c,
         RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
     let _d = [a.ranges()].intersection();
@@ -391,10 +443,8 @@ fn complement() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// cmk0000
 #[test]
 fn union_test() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
     let a0 = RangeSetBlaze::from_iter([1..=6]);
     let a1 = RangeSetBlaze::from_iter([8..=9]);
     let a2 = RangeSetBlaze::from_iter([11..=15]);
@@ -408,11 +458,6 @@ fn union_test() -> Result<(), Box<dyn std::error::Error>> {
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
-    // cmk000
-    // let f = sorted_disjoint_from_sorted_starts(a0.iter())
-    //     | sorted_disjoint_from_sorted_starts(a1.iter())
-    //     | sorted_disjoint_from_sorted_starts(a2.iter());
-    // assert!(a.ranges().equal(f));
     Ok(())
 }
 

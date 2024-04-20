@@ -5,8 +5,6 @@
 // {
 // }
 
-use core::panic;
-
 use crate::{
     intersection_iter_map::IntersectionIterMap,
     map::{CloneBorrow, ValueOwned},

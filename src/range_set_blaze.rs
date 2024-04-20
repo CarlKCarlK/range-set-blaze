@@ -1327,7 +1327,7 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
     fn symmetric_difference(self) -> RangeSetBlaze<T> {
         self.into_iter()
             .map(|x| x.ranges())
-            .symmetrical_difference()
+            .symmetric_difference()
             .into_range_set_blaze()
     }
 }

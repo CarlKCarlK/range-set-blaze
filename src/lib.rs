@@ -7,7 +7,7 @@
     missing_docs,
     single_use_lifetimes,
     clippy::pedantic,
-    unreachable_pub,
+    // cmk00 unreachable_pub,
     clippy::cargo,
     clippy::perf,
     clippy::style,

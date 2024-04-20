@@ -77,11 +77,11 @@ pub trait MultiwayRangeSetBlazeRef<T: Integer>:
     }
 
     /// cmk doc
-    fn symmetrical_difference(self) -> RangeSetBlaze<T> {
+    fn symmetric_difference(self) -> RangeSetBlaze<T> {
         RangeSetBlaze::from_sorted_disjoint(
             self.into_iter()
                 .map(|x| x.into_ranges())
-                .symmetrical_difference(),
+                .symmetric_difference(),
         )
     }
 }
@@ -166,10 +166,10 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
     }
 
     /// cmk doc
-    fn symmetrical_difference(self) -> RangeSetBlaze<T> {
+    fn symmetric_difference(self) -> RangeSetBlaze<T> {
         self.into_iter()
             .map(RangeSetBlaze::ranges)
-            .symmetrical_difference()
+            .symmetric_difference()
             .into_range_set_blaze()
     }
 }
@@ -259,7 +259,8 @@ where
 
     // cmk00000 add sym diff and add to tests
 
-    fn symmetrical_difference(self) -> BitXorKMerge<T, I> {
+    /// cmk doc
+    fn symmetric_difference(self) -> BitXorKMerge<T, I> {
         SymDiffIter::new_k(self)
     }
 

@@ -354,16 +354,38 @@ fn map_missing_doctest_ops() {
     assert_eq!(result, RangeMapBlaze::from_iter([(1, "Hello")]));
 }
 
-// cmk00000 add symmetrical_difference test
 #[test]
 fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
+    // Union
     let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
     let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
     let c = RangeMapBlaze::from_iter([(38..=42, 'c')]);
     let d = &(&a | &b) | &c;
-    println!("{d}");
+    assert_eq!(
+        d,
+        RangeMapBlaze::from_iter([
+            (1..=6, 'a'),
+            (7..=7, 'b'),
+            (8..=9, 'a'),
+            (10..=10, 'b'),
+            (11..=15, 'a'),
+            (18..=29, 'b'),
+            (38..=42, 'c')
+        ])
+    );
     let d = a | b | &c;
-    println!("{d}");
+    assert_eq!(
+        d,
+        RangeMapBlaze::from_iter([
+            (1..=6, 'a'),
+            (7..=7, 'b'),
+            (8..=9, 'a'),
+            (10..=10, 'b'),
+            (11..=15, 'a'),
+            (18..=29, 'b'),
+            (38..=42, 'c')
+        ])
+    );
 
     let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
     let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
@@ -374,10 +396,11 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(d, RangeMapBlaze::new());
 
     assert_eq!(
-        !MultiwayRangeMapBlaze::<u8, char>::union([]),
-        RangeSetBlaze::from_iter([0..=255])
+        MultiwayRangeMapBlaze::<u8, char>::union([]),
+        RangeMapBlaze::new()
     );
 
+    // Intersection
     let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
     let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
     let c = RangeMapBlaze::from_iter([(1..=42, 'c')]);
@@ -396,10 +419,51 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
     //     MultiwayRangeMapBlaze::<u8, char>::intersection([]),
     //     RangeMapBlaze::from_iter([(0..=255, '?')])
     // );
+
+    // Symmetric Difference
+
+    let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
+    let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
+    let c = RangeMapBlaze::from_iter([(38..=42, 'c')]);
+    let d = &(&a ^ &b) ^ &c;
+    assert_eq!(
+        d,
+        RangeMapBlaze::from_iter([
+            (1..=4, 'a'),
+            (7..=7, 'b'),
+            (10..=10, 'b'),
+            (14..=15, 'a'),
+            (18..=29, 'b'),
+            (38..=42, 'c')
+        ])
+    );
+    let d = a ^ b ^ &c;
+    assert_eq!(
+        d,
+        RangeMapBlaze::from_iter([
+            (1..=4, 'a'),
+            (7..=7, 'b'),
+            (10..=10, 'b'),
+            (14..=15, 'a'),
+            (18..=29, 'b'),
+            (38..=42, 'c')
+        ])
+    );
+
+    let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
+    let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
+    let c = RangeMapBlaze::from_iter([(38..=42, 'c')]);
+
+    let _ = [&a, &b, &c].symmetric_difference();
+
+    assert_eq!(
+        MultiwayRangeMapBlaze::<u8, char>::symmetric_difference([]),
+        RangeMapBlaze::new()
+    );
+
     Ok(())
 }
 
-// cmk00000 add symmetrical_difference test
 #[test]
 fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
@@ -411,7 +475,7 @@ fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
         .range_values()
         .difference_with_set(union_stream.into_sorted_disjoint());
     let d: RangeMapBlaze<_, _> = a_less.into_range_map_blaze();
-    println!("{d}");
+    assert_eq!(d, RangeMapBlaze::from_iter([(1..=4, 'a'), (14..=15, 'a')]));
 
     let d: RangeMapBlaze<_, _> = a
         .range_values()
@@ -421,7 +485,7 @@ fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
                 .into_sorted_disjoint(),
         )
         .into_range_map_blaze();
-    println!("{d}");
+    assert_eq!(d, RangeMapBlaze::from_iter([(1..=4, 'a'), (14..=15, 'a')]));
     Ok(())
 }
 
@@ -451,7 +515,7 @@ fn map_nand_repro() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// cmk00000 add symmetrical_difference test
+// cmk00000 add symmetric_difference test
 #[test]
 fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     // notice these are all borrowed
@@ -459,19 +523,31 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     let b = &RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
     let c = &RangeMapBlaze::from_iter([(38..=42, 'c')]);
     assert_eq!(
-        a & b.complement_with('B') & c.complement_with('C')
-            | a.complement_with('A') & b & c.complement_with('C')
-            | a.complement_with('A') & b.complement_with('B') & c
-            | a & b & c,
+        a & b & c
+            | a.intersection_with_set(&!b).intersection_with_set(&!c)
+            | b.intersection_with_set(&!a).intersection_with_set(&!c)
+            | c.intersection_with_set(&!a).intersection_with_set(&!b),
         RangeMapBlaze::from_iter([
             (1..=4, 'a'),
-            (7..=7, 'A'),
-            (10..=10, 'A'),
+            (7..=7, 'b'),
+            (10..=10, 'b'),
             (14..=15, 'a'),
-            (18..=29, 'A'),
-            (38..=42, 'A')
+            (18..=29, 'b'),
+            (38..=42, 'c')
         ])
     );
+    assert_eq!(
+        a ^ b ^ c,
+        RangeMapBlaze::from_iter([
+            (1..=4, 'a'),
+            (7..=7, 'b'),
+            (10..=10, 'b'),
+            (14..=15, 'a'),
+            (18..=29, 'b'),
+            (38..=42, 'c')
+        ])
+    );
+
     let _d = [a.range_values()].intersection();
     let _parity: RangeMapBlaze<u8, _> = [[a.range_values()].intersection()]
         .union()

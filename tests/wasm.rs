@@ -213,7 +213,7 @@ fn missing_doctest_ops() {
     assert_eq!(result, RangeSetBlaze::from_iter([1]));
 }
 
-// cmk00000 symmetrical_difference test
+// cmk00000 symmetric_difference test
 #[wasm_bindgen_test]
 fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -232,10 +232,7 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let d = [a, b, c].intersection();
     assert_eq!(d, RangeSetBlaze::new());
 
-    assert_eq!(
-        !MultiwayRangeSetBlaze::<u8>::union([]),
-        RangeSetBlaze::from_iter([0..=255])
-    );
+    assert_eq!(MultiwayRangeSetBlaze::<u8>::union([]), RangeSetBlaze::new());
 
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
@@ -254,7 +251,7 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// cmk00000 symmetrical_difference test
+// cmk00000 symmetric_difference test
 #[wasm_bindgen_test]
 fn custom_multi() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -264,13 +261,13 @@ fn custom_multi() -> Result<(), Box<dyn std::error::Error>> {
     let union_stream = b.ranges() | c.ranges();
     let a_less = a.ranges().difference(union_stream);
     let d: RangeSetBlaze<_> = a_less.into_range_set_blaze();
-    println!("{d}");
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=4, 14..=15]));
 
     let d: RangeSetBlaze<_> = a
         .ranges()
         .difference([b.ranges(), c.ranges()].union())
         .into_range_set_blaze();
-    println!("{d}");
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=4, 14..=15]));
     Ok(())
 }
 
@@ -294,7 +291,7 @@ fn nand_repro() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// cmk00000 symmetrical_difference test
+// cmk00000 symmetric_difference test
 #[wasm_bindgen_test]
 fn parity() -> Result<(), Box<dyn std::error::Error>> {
     let a = &RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);

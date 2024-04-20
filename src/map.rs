@@ -1532,6 +1532,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
 
     // FUTURE BTreeSet some of these as 'const' but it uses unstable. When stable, add them here and elsewhere.
 
+    // cmk why is this must_use but not the others?
     /// Returns the number of sorted & disjoint ranges in the set.
     ///
     /// # Example
@@ -1572,6 +1573,15 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     // {
     //     *self = self.iter().filter(|v| f(v)).collect();
     // }
+
+    // cmk00 is this really the only place we need this?
+    // cmk00 is this tested enough?
+    /// cmk doc
+    pub fn intersection_with_set(&self, other: &RangeSetBlaze<T>) -> RangeMapBlaze<T, V> {
+        self.range_values()
+            .intersection_with_set(other.ranges())
+            .into_range_map_blaze()
+    }
 }
 
 // We create a RangeMapBlaze from an iterator of integers or integer ranges by
