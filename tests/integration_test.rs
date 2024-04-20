@@ -227,6 +227,7 @@ fn missing_doctest_ops() {
     assert_eq!(result, RangeSetBlaze::from_iter([1]));
 }
 
+// cmk00000 symmetrical_difference test
 #[test]
 fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -267,6 +268,7 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// cmk00000 symmetrical_difference test
 #[test]
 fn custom_multi() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -306,6 +308,7 @@ fn nand_repro() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// cmk00000 symmetrical_difference test
 #[test]
 fn parity() -> Result<(), Box<dyn std::error::Error>> {
     let a = &RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -388,6 +391,7 @@ fn complement() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// cmk0000
 #[test]
 fn union_test() -> Result<(), Box<dyn std::error::Error>> {
     // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
@@ -404,7 +408,7 @@ fn union_test() -> Result<(), Box<dyn std::error::Error>> {
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
-    // cmk00
+    // cmk000
     // let f = sorted_disjoint_from_sorted_starts(a0.iter())
     //     | sorted_disjoint_from_sorted_starts(a1.iter())
     //     | sorted_disjoint_from_sorted_starts(a2.iter());

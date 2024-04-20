@@ -75,6 +75,15 @@ pub trait MultiwayRangeSetBlazeRef<T: Integer>:
             .intersection()
             .into_range_set_blaze()
     }
+
+    /// cmk doc
+    fn symmetrical_difference(self) -> RangeSetBlaze<T> {
+        RangeSetBlaze::from_sorted_disjoint(
+            self.into_iter()
+                .map(|x| x.into_ranges())
+                .symmetrical_difference(),
+        )
+    }
 }
 impl<'a, T, I> MultiwayRangeSetBlaze<'a, T> for I
 where
@@ -155,9 +164,20 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
             .intersection()
             .into_range_set_blaze()
     }
+
+    /// cmk doc
+    fn symmetrical_difference(self) -> RangeSetBlaze<T> {
+        self.into_iter()
+            .map(RangeSetBlaze::ranges)
+            .symmetrical_difference()
+            .into_range_set_blaze()
+    }
 }
 
-use crate::{BitAndKMerge, BitOrKMerge, Integer, RangeSetBlaze, SortedDisjoint, UnionIter};
+use crate::{
+    BitAndKMerge, BitOrKMerge, BitXorKMerge, Integer, RangeSetBlaze, SortedDisjoint, SymDiffIter,
+    UnionIter,
+};
 
 impl<T, II, I> MultiwaySortedDisjoint<T, I> for II
 where
@@ -237,7 +257,11 @@ where
             .complement()
     }
 
-    // cmk000 add sym diff and add to tests
+    // cmk00000 add sym diff and add to tests
+
+    fn symmetrical_difference(self) -> BitXorKMerge<T, I> {
+        SymDiffIter::new_k(self)
+    }
 
     // cmk0 can we now implement xor on any number of iterators?
 }

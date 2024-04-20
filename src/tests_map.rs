@@ -1677,6 +1677,15 @@ fn map_missing_doctest_ops() {
 // }
 
 // #[quickcheck]
+// fn symmetric_difference_cmk_update(a: Reference, b: Reference) -> bool {
+//     let a_r = RangeMapBlaze::from_iter(&a);
+//     let b_r = RangeMapBlaze::from_iter(&b);
+//     let expected: Reference = a.union(&b).cloned().collect();
+//     let actual: Reference = (a_r | b_r).into_iter().collect();
+//     binary_op(a, b, expected, actual)
+// }
+
+// #[quickcheck]
 // fn multi_union(inputs: Vec<Reference>) -> bool {
 //     use crate::MultiwayRangeSetBlazeRef;
 

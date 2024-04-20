@@ -354,6 +354,7 @@ fn map_missing_doctest_ops() {
     assert_eq!(result, RangeMapBlaze::from_iter([(1, "Hello")]));
 }
 
+// cmk00000 add symmetrical_difference test
 #[test]
 fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
@@ -398,6 +399,7 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// cmk00000 add symmetrical_difference test
 #[test]
 fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
@@ -449,6 +451,7 @@ fn map_nand_repro() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// cmk00000 add symmetrical_difference test
 #[test]
 fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     // notice these are all borrowed
@@ -709,6 +712,7 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// cmk add symmetric_difference test
 #[test]
 fn map_empty_it() {
     use core::panic::AssertUnwindSafe;
@@ -1653,6 +1657,7 @@ fn map_split_off() {
 // //     assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
 // // }
 
+// cmk add symmetric_difference tests
 #[test]
 fn map_range_map_blaze_operators() {
     let a = RangeMapBlaze::from_iter([(1..=2, "one"), (5..=100, "two")]);
@@ -2301,6 +2306,7 @@ fn understand_strings_as_values() {
         CheckSortedDisjointMap::new([(0..=0, &"a".to_string())]);
 }
 
+// cmk00000 add symmetric_difference test
 #[test]
 fn test_every_sorted_disjoint_map_method() {
     use syntactic_for::syntactic_for;

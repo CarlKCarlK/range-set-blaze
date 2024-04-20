@@ -213,6 +213,7 @@ fn missing_doctest_ops() {
     assert_eq!(result, RangeSetBlaze::from_iter([1]));
 }
 
+// cmk00000 symmetrical_difference test
 #[wasm_bindgen_test]
 fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -253,6 +254,7 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// cmk00000 symmetrical_difference test
 #[wasm_bindgen_test]
 fn custom_multi() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -292,6 +294,7 @@ fn nand_repro() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// cmk00000 symmetrical_difference test
 #[wasm_bindgen_test]
 fn parity() -> Result<(), Box<dyn std::error::Error>> {
     let a = &RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);

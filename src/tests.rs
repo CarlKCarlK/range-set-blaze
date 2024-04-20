@@ -404,6 +404,7 @@ fn missing_doctest_ops() {
     assert_eq!(result, RangeSetBlaze::from_iter([1]));
 }
 
+// cmk00000 symmetrical_difference test
 #[test]
 fn multi_op() {
     use crate::multiway::MultiwayRangeSetBlaze;
@@ -450,6 +451,7 @@ fn multi_op() {
 //     println!("{}", std::any::type_name::<T>())
 // }
 
+// cmk00000 symmetrical_difference test
 #[test]
 fn custom_multi() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -484,6 +486,7 @@ fn nand_repro() {
     );
 }
 
+// cmk00000 symmetrical_difference test
 #[test]
 fn parity() {
     let a = &RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -1278,6 +1281,8 @@ fn union(a: Reference, b: Reference) -> bool {
     let actual: Reference = (a_r | b_r).into_iter().collect();
     binary_op(a, b, expected, actual)
 }
+
+// cmk00 quickcheck symmetric_difference
 
 // cmk0 get working again
 // #[quickcheck]

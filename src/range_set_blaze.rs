@@ -292,12 +292,6 @@ use crate::{IntoRangesIter, UnionIter};
 //     /// assert_eq!(set_iter.next(), Some(2));
 //     /// assert_eq!(set_iter.next_back(), None);
 //     /// ```
-//     // cmk00 remove
-//     pub fn iter(&self) -> KeysMap<T, (), &(), RangeValuesIter<'_, T, ()>> {
-//         // If the user asks for an iter, we give them a RangesIter iterator
-//         // and we iterate that one integer at a time.
-//         self.0.keys()
-//     }
 
 //     /// Returns the first element in the set, if any.
 //     /// This element is always the minimum of all integer elements in the set.
@@ -768,61 +762,6 @@ use crate::{IntoRangesIter, UnionIter};
 //         let other_range_set_map = self.0.split_off(key);
 //         Self(other_range_set_map)
 //     }
-
-//     // cmk1 delete this code
-//     //     // Find the len of the smaller btree_map and then the element len of self & b.
-//     //     fn two_element_lengths(
-//     //         &mut self,
-//     //         old_btree_len: usize,
-//     //         new_btree: &BTreeMap<T, T>,
-//     //         old_len: <T as Integer>::SafeLen,
-//     //     ) -> (<T as Integer>::SafeLen, <T as Integer>::SafeLen) {
-//     //         if old_btree_len / 2 < new_btree.len() {
-//     //             let a_len = RangeSetBlaze::btree_map_len(&mut self.btree_map);
-//     //             (a_len, old_len - a_len)
-//     //         } else {
-//     //             let b_len = Self::btree_map_len(new_btree);
-//     //             (old_len - b_len, b_len)
-//     //         }
-//     //     }
-//     //     pub fn cmk_split_off(&mut self, value: T) -> Self {
-//     //         assert!(
-//     //             value <= T::safe_max_value(),
-//     //             "value must be <= T::safe_max_value()"
-//     //         );
-//     //         let old_len = self.len;
-//     //         let mut b = self.btree_map.split_off(&value);
-//     //         if let Some(mut last_entry) = self.btree_map.last_entry() {
-//     //             // Can assume start strictly less than value
-//     //             let end_ref = last_entry.get_mut();
-//     //             if value <= *end_ref {
-//     //                 b.insert(value, *end_ref);
-//     //                 *end_ref = value - T::one();
-//     //             }
-//     //         }
-
-//     //         // Find the length of the smaller map and then length of self & b.
-//     //         let b_len = if self.btree_map.len() < b.len() {
-//     //             self.len = RangeSetBlaze::btree_map_len(&self.btree_map);
-//     //             old_len - self.len
-//     //         } else {
-//     //             let b_len = RangeSetBlaze::btree_map_len(&b);
-//     //             self.len = old_len - b_len;
-//     //             b_len
-//     //         };
-//     //         Self {
-//     //             btree_map: b,
-//     //             len: b_len,
-//     //         }
-//     //     }
-
-//     //     fn btree_map_len(btree_map: &BTreeMap<T, T>) -> T::SafeLen {
-//     //         btree_map
-//     //             .iter()
-//     //             .fold(<T as Integer>::SafeLen::zero(), |acc, (start, end)| {
-//     //                 acc + T::safe_len(&(*start..=*end))
-//     //             })
-//     //     }
 
 //     /// Removes and returns the element in the set, if any, that is equal to
 //     /// the value.
@@ -1344,6 +1283,7 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
     ///
     /// assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
     /// ```
+    // cmk0000 get coverage on this, intersection, symmetric_difference
     fn union(self) -> RangeSetBlaze<T> {
         self.into_iter()
             .map(|x| x.ranges())
@@ -1380,6 +1320,14 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
         self.into_iter()
             .map(RangeSetBlaze::ranges)
             .intersection()
+            .into_range_set_blaze()
+    }
+
+    /// cmk doc
+    fn symmetric_difference(self) -> RangeSetBlaze<T> {
+        self.into_iter()
+            .map(|x| x.ranges())
+            .symmetrical_difference()
             .into_range_set_blaze()
     }
 }
@@ -1861,42 +1809,6 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
 //     }
 // }
 
-// // cmk000 delete
-// // impl<T: Integer> Extend<(RangeInclusive<T>, ())> for RangeSetBlaze<T> {
-// //     /// Extends the [`RangeSetBlaze`] with the contents of a
-// //     /// range iterator.
-
-// //     /// Elements are added one-by-one. There is also a version
-// //     /// that takes an integer iterator.
-// //     ///
-// //     /// The [`|=`](RangeSetBlaze::bitor_assign) operator extends a [`RangeSetBlaze`]
-// //     /// from another [`RangeSetBlaze`]. It is never slower
-// //     ///  than  [`RangeSetBlaze::extend`] and often several times faster.
-// //     ///
-// //     /// # Examples
-// //     /// ```
-// //     /// use range_set_blaze::RangeSetBlaze;
-// //     /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-// //     /// a.extend([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
-// //     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
-// //     ///
-// //     /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-// //     /// let mut b = RangeSetBlaze::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
-// //     /// a |= b;
-// //     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
-// //     /// ```
-// //     fn extend<I>(&mut self, iter: I)
-// //     where
-// //         I: IntoIterator<Item = (RangeInclusive<T>, ())>,
-// //     {
-// //         let iter = iter.into_iter();
-// //         for priority in iter {
-// //             todo!("cmk0");
-// //             // self.0.internal_add(priority.into_range(), ());
-// //         }
-// //     }
-// // }
-
 // impl<T: Integer> Ord for RangeSetBlaze<T> {
 //     /// We define a total ordering on RangeSetBlaze. Following the convention of
 //     /// [`BTreeSet`], the ordering is lexicographic, *not* by subset/superset.
@@ -2011,185 +1923,6 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
 // }
 
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
-
-// cmk remove
-// /// cmk doc
-// pub struct SortedDisjointToUnitMap<T, I>
-// where
-//     T: Integer,
-//     I: SortedDisjoint<T>,
-// {
-//     iter: I,
-//     phantom: PhantomData<T>,
-// }
-
-// impl<'a, T, I> SortedDisjointToUnitMap<T, I>
-// where
-//     T: Integer,
-//     I: SortedDisjoint<T>,
-// {
-//     // Define a new method that directly accepts a SortedDisjoint iterator
-//     /// cmk doc
-//     pub fn new(iter: I) -> Self {
-//         SortedDisjointToUnitMap {
-//             iter,
-//             phantom: PhantomData,
-//         }
-//     }
-// }
-
-// impl<T, I> FusedIterator for SortedDisjointToUnitMap<T, I>
-// where
-//     T: Integer,
-//     I: SortedDisjoint<T>,
-// {
-// }
-
-// impl<T, I> Iterator for SortedDisjointToUnitMap<T, I>
-// where
-//     T: Integer,
-//     I: SortedDisjoint<T>,
-// {
-//     type Item = (RangeInclusive<T>, &'static ());
-//     fn next(&mut self) -> Option<Self::Item> {
-//         self.iter.next().map(|range| (range, &()))
-//     }
-// }
-
-// cmk000 remove
-// /// cmk doc
-// pub struct SortedStartsToUnitMap<T, I>
-// where
-//     T: Integer,
-//     I: SortedStarts<T>,
-// {
-//     iter: I,
-//     phantom: PhantomData<T>,
-// }
-
-// impl<'a, T, I> SortedStartsToUnitMap<T, I>
-// where
-//     T: Integer,
-//     I: SortedStarts<T>,
-// {
-//     // Define a new method that directly accepts a SortedDisjoint iterator
-
-//     /// cmk doc
-//     pub fn new(iter: I) -> Self {
-//         SortedStartsToUnitMap {
-//             iter,
-//             phantom: PhantomData,
-//         }
-//     }
-// }
-
-// impl<T, I> FusedIterator for SortedStartsToUnitMap<T, I>
-// where
-//     T: Integer,
-//     I: SortedStarts<T>,
-// {
-// }
-
-// impl<T, I> Iterator for SortedStartsToUnitMap<T, I>
-// where
-//     T: Integer,
-//     I: SortedStarts<T>,
-// {
-//     type Item = Priority<T, (), &'static ()>;
-
-//     fn next(&mut self) -> Option<Self::Item> {
-//         self.iter
-//             .next()
-//             .map(|range| Priority::new((range, &()), usize::MIN))
-//     }
-// }
-
-// // cmk1 move these into the macro
-// impl<T, I> PrioritySortedStartsMap<T, (), &'static ()> for SortedStartsToUnitMap<T, I>
-// where
-//     T: Integer,
-//     I: SortedStarts<T>,
-// {
-// }
-
-/// cmk000 remove
-// /// cmk doc
-// pub struct UnitMapToSortedDisjoint<T, I>
-// where
-//     T: Integer,
-//     I: SortedDisjointMap<T, (), &'static ()>,
-// {
-//     iter: I,
-//     phantom: PhantomData<T>,
-// }
-
-// impl<T, I> UnitMapToSortedDisjoint<T, I>
-// where
-//     T: Integer,
-//     I: SortedDisjointMap<T, (), &'static ()> + FusedIterator,
-// {
-//     // Define a new method that directly accepts a SortedDisjoint iterator
-//     /// cmk doc
-//     pub fn new(iter: I) -> Self {
-//         UnitMapToSortedDisjoint {
-//             iter,
-//             phantom: PhantomData,
-//         }
-//     }
-// }
-
-// impl<T, I> FusedIterator for UnitMapToSortedDisjoint<T, I>
-// where
-//     T: Integer,
-//     I: SortedDisjointMap<T, (), &'static ()> + FusedIterator,
-// {
-// }
-
-// impl<T, I> Iterator for UnitMapToSortedDisjoint<T, I>
-// where
-//     T: Integer,
-//     I: SortedDisjointMap<T, (), &'static ()> + FusedIterator,
-// {
-//     type Item = RangeInclusive<T>;
-//     fn next(&mut self) -> Option<Self::Item> {
-//         self.iter.next().map(|(range, _value)| range)
-//     }
-// }
-
-/// cmk remove?
-// pub fn set_to_map() {
-//     let a: RangeSetBlaze<i32> = RangeSetBlaze::from_iter([1..=2, 3..=4]);
-//     let b = RangeSetBlaze::from_iter([-1..=2, 3..=14]);
-//     let a_ranges: RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'static, i32, ()>> =
-//         a.ranges();
-//     let left: SortedDisjointToUnitMap<
-//         i32,
-//         RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'_, i32, ()>>,
-//     > = SortedDisjointToUnitMap::new(a_ranges);
-//     let right = SortedDisjointToUnitMap::new(b.ranges());
-//     let unit_map: crate::sym_diff_iter_map::SymDiffIterMap<
-//         i32,
-//         (),
-//         &(),
-//         crate::MergeMap<
-//             i32,
-//             (),
-//             &(),
-//             SortedDisjointToUnitMap<
-//                 i32,
-//                 RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'static, i32, ()>>,
-//             >,
-//             SortedDisjointToUnitMap<
-//                 i32,
-//                 RangeValuesToRangesIter<i32, (), &(), RangeValuesIter<'static, i32, ()>>,
-//             >,
-//         >,
-//     > = left.symmetric_difference(right);
-//     // let it: &dyn Iterator<Item = RangeValue<i32, (), &()>> = &unit_map;
-//     // let it: &dyn SortedDisjointMap<i32, (), &()> = &unit_map;
-//     // let _result = RangeSetBlaze::from_unit_map(unit_map);
-//     let _result = UnitMapToSortedDisjoint::new(unit_map);
-// }
 
 #[cfg(feature = "std")]
 #[doc(hidden)]

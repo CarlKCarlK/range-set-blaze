@@ -5,6 +5,8 @@
 // {
 // }
 
+use core::panic;
+
 use crate::{
     intersection_iter_map::IntersectionIterMap,
     map::{CloneBorrow, ValueOwned},
@@ -173,7 +175,13 @@ pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: ValueOwned + 'a>:
             .into_range_map_blaze()
     }
 
-    // cmk000 where is sym diff?
+    /// Symmetric difference on the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
+    fn symmetric_difference(self) -> RangeMapBlaze<T, V> {
+        self.into_iter()
+            .map(|x| RangeMapBlaze::range_values(x))
+            .symmetric_difference()
+            .into_range_map_blaze()
+    }
 }
 
 impl<T, V, VR, II, I> MultiwaySortedDisjointMap<T, V, VR, I> for II
@@ -262,7 +270,8 @@ where
         let iter_set = iter.map(|x| RangeValuesToRangesIter::new(x)).intersection();
         IntersectionIterMap::new(iter_map, iter_set)
     }
-    /// cmk doc
+
+    /// Symmetric difference on the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
     fn symmetric_difference(self) -> BitXorMapKMerge<T, V, VR, I> {
         let result = BitXorMapKMerge::new_k(self);
         result

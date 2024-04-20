@@ -178,7 +178,6 @@ where
     }
 }
 
-// cmk000 is the 'a needed?
 impl<T, V, VR, I> FusedIterator for KMergeMap<T, V, VR, I>
 where
     T: Integer,
