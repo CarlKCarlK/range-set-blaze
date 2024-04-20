@@ -13,8 +13,8 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 #[cfg(feature = "rog-experimental")]
 use range_set_blaze::Rog;
-use range_set_blaze::UnionIter;
 use range_set_blaze::{prelude::*, Integer, NotIter, SortedStarts};
+use range_set_blaze::{symmetric_difference_dyn, UnionIter};
 use std::cmp::Ordering;
 #[cfg(feature = "rog-experimental")]
 use std::panic::AssertUnwindSafe;
@@ -410,6 +410,12 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
         RangeSetBlaze::from_sorted_disjoint(u),
         RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
+
+    assert_eq!(
+        symmetric_difference_dyn!(a.ranges(), b.ranges(), c.ranges()).into_range_set_blaze(),
+        RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
+    );
+
     Ok(())
 }
 

@@ -131,3 +131,12 @@ macro_rules! union_dyn {
                         }
 }
 // cmk00 can/should this be defined without DynSortedDisjoint (which may could then be removed)?
+
+/// cmk doc
+// cmk00 test
+#[macro_export]
+macro_rules! symmetric_difference_dyn {
+    ($($val:expr),*) => {
+                        $crate::MultiwaySortedDisjoint::symmetric_difference([$($crate::DynSortedDisjoint::new($val)),*])
+                        }
+}

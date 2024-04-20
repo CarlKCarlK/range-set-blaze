@@ -173,6 +173,20 @@ pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: ValueOwned + 'a>:
             .into_range_map_blaze()
     }
 
+    /// cmk doc
+    fn intersection_with_set(self) -> RangeMapBlaze<T, V> {
+        use crate::multiway::MultiwaySortedDisjoint;
+
+        let mut iter = self.into_iter();
+        let Some(first) = iter.next() else {
+            panic!("The intersection of 0 maps is undefined.")
+        };
+
+        let first = first.range_values();
+        let rest = iter.map(|x| RangeMapBlaze::ranges(x)).intersection();
+        (first.intersection_with_set(rest)).into_range_map_blaze()
+    }
+
     /// Symmetric difference on the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
     fn symmetric_difference(self) -> RangeMapBlaze<T, V> {
         self.into_iter()

@@ -895,52 +895,6 @@ fn map_missing_doctest_ops() {
 // }
 
 // #[test]
-// fn parity() {
-//     let a = &RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-//     let b = &RangeMapBlaze::from_iter([5..=13, 18..=29]);
-//     let c = &RangeMapBlaze::from_iter([38..=42]);
-//     assert_eq!(
-//         a & !b & !c | !a & b & !c | !a & !b & c | a & b & c,
-//         RangeMapBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
-//     );
-//     let _d = [a.ranges()].intersection();
-//     let _parity: RangeMapBlaze<u8> = [[a.ranges()].intersection()].union().into_range_set_blaze();
-//     let _parity: RangeMapBlaze<u8> = [a.ranges()].intersection().into_range_set_blaze();
-//     let _parity: RangeMapBlaze<u8> = [a.ranges()].union().into_range_set_blaze();
-//     println!("!b {}", !b);
-//     println!("!c {}", !c);
-//     println!("!b|!c {}", !b | !c);
-//     println!(
-//         "!b|!c {}",
-//         RangeMapBlaze::from_sorted_disjoint(!b.ranges() | !c.ranges())
-//     );
-
-//     let _a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-//     let u = union_dyn!(a.ranges());
-//     assert_eq!(
-//         RangeMapBlaze::from_sorted_disjoint(u),
-//         RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15])
-//     );
-//     let u = union_dyn!(a.ranges(), b.ranges(), c.ranges());
-//     assert_eq!(
-//         RangeMapBlaze::from_sorted_disjoint(u),
-//         RangeMapBlaze::from_iter([1..=15, 18..=29, 38..=42])
-//     );
-
-//     let u = [
-//         intersection_dyn!(a.ranges(), !b.ranges(), !c.ranges()),
-//         intersection_dyn!(!a.ranges(), b.ranges(), !c.ranges()),
-//         intersection_dyn!(!a.ranges(), !b.ranges(), c.ranges()),
-//         intersection_dyn!(a.ranges(), b.ranges(), c.ranges()),
-//     ]
-//     .union();
-//     assert_eq!(
-//         RangeMapBlaze::from_sorted_disjoint(u),
-//         RangeMapBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
-//     );
-// }
-
-// #[test]
 // fn bit_or_iter() {
 //     let i = UnionIter::from([1, 3, 4, 2, 2, 43, -1, 4, 22]);
 //     let j = UnionIter::from([11, 3, 4, 42, 2, 43, 23, 2, 543]);

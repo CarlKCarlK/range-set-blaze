@@ -158,3 +158,12 @@ macro_rules! union_map_dyn {
                         $crate::MultiwaySortedDisjointMap::union([$($crate::DynSortedDisjointMap::new($val)),*])
                         }
 }
+
+/// cmk doc
+// cmk00 test
+#[macro_export]
+macro_rules! symmetric_difference_map_dyn {
+    ($($val:expr),*) => {
+                        $crate::MultiwaySortedDisjointMap::symmetric_difference([$($crate::DynSortedDisjointMap::new($val)),*])
+                        }
+}

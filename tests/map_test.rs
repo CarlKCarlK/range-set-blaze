@@ -524,9 +524,10 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     let c = &RangeMapBlaze::from_iter([(38..=42, 'c')]);
     assert_eq!(
         a & b & c
-            | a.intersection_with_set(&!b).intersection_with_set(&!c)
-            | b.intersection_with_set(&!a).intersection_with_set(&!c)
-            | c.intersection_with_set(&!a).intersection_with_set(&!b),
+            // cmk0000 every where you can do [a,b,c].intersection() you can do intersection_with_set
+            | a.intersection_with_set(&(!b & !c))
+            | b.intersection_with_set(&(!a & !c))
+            | c.intersection_with_set(&(!a & !b)),
         RangeMapBlaze::from_iter([
             (1..=4, 'a'),
             (7..=7, 'b'),
@@ -591,20 +592,21 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let u = [
+        // cmk0000 every where you can do [a,b,c].intersection() you can do intersection_with_set
         intersection_map_dyn!(
             a.range_values(),
-            b.range_values().complement(&'B'),
-            c.range_values().complement(&'C')
+            b.range_values().complement(&'a'),
+            c.range_values().complement(&'a')
         ),
         intersection_map_dyn!(
-            a.range_values().complement(&'A'),
             b.range_values(),
-            c.range_values().complement(&'C')
+            a.range_values().complement(&'b'),
+            c.range_values().complement(&'b')
         ),
         intersection_map_dyn!(
-            a.range_values().complement(&'A'),
-            b.range_values().complement(&'B'),
-            c.range_values()
+            c.range_values(),
+            a.range_values().complement(&'c'),
+            b.range_values().complement(&'c')
         ),
         intersection_map_dyn!(a.range_values(), b.range_values(), c.range_values()),
     ]
@@ -613,11 +615,24 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
         RangeMapBlaze::from_sorted_disjoint_map(u),
         RangeMapBlaze::from_iter([
             (1..=4, 'a'),
-            (7..=7, 'A'),
-            (10..=10, 'A'),
+            (7..=7, 'b'),
+            (10..=10, 'b'),
             (14..=15, 'a'),
-            (18..=29, 'A'),
-            (38..=42, 'A')
+            (18..=29, 'b'),
+            (38..=42, 'c')
+        ])
+    );
+
+    assert_eq!(
+        symmetric_difference_map_dyn!(a.range_values(), b.range_values(), c.range_values())
+            .into_range_map_blaze(),
+        RangeMapBlaze::from_iter([
+            (1..=4, 'a'),
+            (7..=7, 'b'),
+            (10..=10, 'b'),
+            (14..=15, 'a'),
+            (18..=29, 'b'),
+            (38..=42, 'c')
         ])
     );
     Ok(())
