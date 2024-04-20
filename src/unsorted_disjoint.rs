@@ -95,6 +95,10 @@ where
     }
 }
 
+// cmk00 why is SortedDisjointWithLenSoFar 'from' instead of 'new'?
+// cmk000 misleading name since creates pairs not SortedDisjoint RangeInclusive's
+
+// cmk00 does every iterator have this?
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub(crate) struct SortedDisjointWithLenSoFar<T, I>
 where

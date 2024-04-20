@@ -515,7 +515,6 @@ fn map_nand_repro() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// cmk00000 add symmetric_difference test
 #[test]
 fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     // notice these are all borrowed

@@ -1993,3 +1993,51 @@ fn test_every_sorted_disjoint_method() {
         is_fused::<_>($sd);
     )*}}
 }
+
+#[test]
+fn multiway3() {
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
+    let c = RangeSetBlaze::from_iter([-100..=100]).into_ranges();
+    assert_eq!([a, b, c].union().to_string(), "-100..=100");
+
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
+    let c = RangeSetBlaze::from_iter([-100..=100]).into_ranges();
+    assert_eq!(
+        [a, b, c].intersection().to_string(),
+        "5..=6, 8..=9, 11..=13"
+    );
+
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
+    let c = RangeSetBlaze::from_iter([-100..=100]).into_ranges();
+    assert_eq!(
+        [a, b, c].symmetric_difference().to_string(),
+        "-100..=0, 5..=6, 8..=9, 11..=13, 16..=17, 30..=100"
+    );
+}
+
+#[test]
+fn multiway4() {
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze::from_iter([-100..=100]);
+    assert_eq!([a, b, c].union(), RangeSetBlaze::from_iter([-100..=100]));
+
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze::from_iter([-100..=100]);
+    assert_eq!(
+        [a, b, c].intersection(),
+        RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13])
+    );
+
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze::from_iter([-100..=100]);
+    assert_eq!(
+        [a, b, c].symmetric_difference(),
+        RangeSetBlaze::from_iter([-100..=0, 5..=6, 8..=9, 11..=13, 16..=17, 30..=100])
+    );
+}

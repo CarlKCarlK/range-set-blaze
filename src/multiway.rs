@@ -257,8 +257,6 @@ where
             .complement()
     }
 
-    // cmk00000 add sym diff and add to tests
-
     /// cmk doc
     fn symmetric_difference(self) -> BitXorKMerge<T, I> {
         SymDiffIter::new_k(self)
