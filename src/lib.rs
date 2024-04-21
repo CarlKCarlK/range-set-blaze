@@ -48,14 +48,14 @@ mod intersection_iter_map;
 /// cmk doc
 mod iter_map;
 mod map;
-/// cmk doc
-pub mod range_set_blaze;
 mod ranges;
-pub use crate::range_set_blaze::RangeSetBlaze;
+/// cmk doc
+pub mod set;
 pub use crate::range_values::IntoRangeValuesIter;
 pub use crate::range_values::{MapIntoRangesIter, MapRangesIter};
 pub use crate::ranges::IntoRangesIter;
 pub use crate::ranges::RangesIter;
+pub use crate::set::RangeSetBlaze;
 
 mod not_iter;
 pub mod prelude;
@@ -67,6 +67,7 @@ mod sorted_disjoint;
 // use alloc::collections::btree_map;
 // use gen_ops::gen_ops_ex;
 pub use crate::multiway::MultiwayRangeSetBlaze;
+pub use crate::multiway::MultiwayRangeSetBlazeRef;
 pub use intersection_iter_map::IntersectionIterMap;
 mod sym_diff_iter;
 mod sym_diff_iter_map;
@@ -90,6 +91,7 @@ mod union_iter_map;
 mod unsorted_disjoint;
 mod unsorted_disjoint_map;
 pub use crate::map::RangeMapBlaze;
+pub use crate::sorted_disjoint_map::IntoString;
 pub use crate::sorted_disjoint_map::Priority;
 pub use crate::unsorted_disjoint::AssumeSortedStarts;
 pub use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;

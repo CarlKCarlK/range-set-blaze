@@ -644,7 +644,6 @@ where
     /// let a1: RangeMapBlaze<i32> = CheckSortedDisjointMap::new([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
-    // cmk000 does RangeSetBlaze need something like this?
     fn into_range_map_blaze(self) -> RangeMapBlaze<T, V>
     where
         Self: Sized,
@@ -654,231 +653,47 @@ where
     }
 }
 
-// /// Gives the [`SortedDisjointMap`] trait to any iterator of ranges. The iterator will panic
-// /// if/when it finds that the ranges are not actually sorted and disjoint.
-// ///
-// /// # Performance
-// ///
-// /// All checking is done at runtime, but it should still be fast.
-// ///
-// /// # Example
-// ///
-// /// ```
-// /// use range_set_blaze::prelude::*;
-// ///
-// /// let a = CheckSortedDisjointMap::new(vec![1..=2, 5..=100]);
-// /// let b = CheckSortedDisjointMap::new([2..=6]);
-// /// let union = a | b;
-// /// assert_eq!(union.to_string(), "1..=100");
-// /// ```
-// ///
-// /// Here the ranges are not sorted and disjoint, so the iterator will panic.
-// ///```should_panic
-// /// use range_set_blaze::prelude::*;
-// ///
-// /// let a = CheckSortedDisjointMap::new(vec![1..=2, 5..=100]);
-// /// let b = CheckSortedDisjointMap::new([2..=6,-10..=-5]);
-// /// let union = a | b;
-// /// assert_eq!(union.to_string(), "1..=100");
-// /// ```
-// #[derive(Debug, Clone)]
-// #[must_use = "iterators are lazy and do nothing unless consumed"]
-// pub struct CheckSortedDisjointMap<T, I>
-// where
-//     T: Integer,
-//     I: Iterator<Item = RangeInclusive<T, V>>,
-// {
-//     pub(crate) iter: I,
-//     prev_end: Option<T, V>,
-//     seen_none: bool,
-// }
-
-// impl<T: Integer, I> SortedDisjointMap<'a, T, V, VR> for CheckSortedDisjointMap<T, I> where
-//     I: Iterator<Item = RangeInclusive<T, V>>
-// {
-// }
-// impl<T: Integer, I> SortedStartsMap<T, V> for CheckSortedDisjointMap<T, I> where
-//     I: Iterator<Item = RangeInclusive<T, V>>
-// {
-// }
-
-// impl<T, I> CheckSortedDisjointMap<T, I>
-// where
-//     T: Integer,
-//     I: Iterator<Item = RangeInclusive<T, V>>,
-// {
-//     /// Creates a new [`CheckSortedDisjointMap`] from an iterator of ranges. See [`CheckSortedDisjointMap`] for details and examples.
-//     pub fn new(iter: I) -> Self {
-//         CheckSortedDisjointMap {
-//             iter,
-//             prev_end: None,
-//             seen_none: false,
-//         }
-//     }
-// }
-
-// impl<T, V> Default for CheckSortedDisjointMap<T,array::IntoIter<RangeInclusive<T, V>, 0>>
-// where
-//     T: Integer,
-// {
-//     // Default is an empty iterator.
-//     fn default() -> Self {
-//         Self::new([].into_iter())
-//     }
-// }
-
-// impl<T, I> FusedIterator for CheckSortedDisjointMap<T, I>
-// where
-//     T: Integer,
-//     I: Iterator<Item = RangeInclusive<T, V>> + FusedIterator,
-// {
-// }
-
-// impl<T, I> Iterator for CheckSortedDisjointMap<T, I>
-// where
-//     T: Integer,
-//     I: Iterator<Item = RangeInclusive<T, V>>,
-// {
-//     type Item = RangeInclusive<T, V>;
-
-//     fn next(&mut self) -> Option<Self::Item> {
-//         let next = self.iter.next();
-
-//         let Some(range) = next.as_ref() else {
-//             self.seen_none = true;
-//             return next;
-//         };
-
-//         assert!(
-//             !self.seen_none,
-//             "iterator cannot return Some after returning None"
-//         );
-//         let (start, end) = range.clone().into_inner();
-//         assert!(start <= end, "start must be less or equal to end");
-//         assert!(
-//             end <= T::safe_max_value(),
-//             "end must be less than or equal to safe_max_value"
-//         );
-//         if let Some(prev_end) = self.prev_end {
-//             assert!(
-//                 prev_end < T::safe_max_value() && prev_end + T::one() < start,
-//                 "ranges must be disjoint"
-//             );
-//         }
-//         self.prev_end = Some(end);
-
-//         next
-//     }
-
-//     fn size_hint(&self) -> (usize, Option<usize>) {
-//         self.iter.size_hint()
-//     }
-// }
-
-// impl<T: Integer, const N: usize> From<[RangeInclusive<T, V>; N]>
-//     for CheckSortedDisjointMap<T, array::IntoIter<RangeInclusive<T, V>, N>>
-// {
-//     /// You may create a [`CheckSortedDisjointMap`] from an array of integers.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use range_set_blaze::prelude::*;
-//     ///
-//     /// let a0 = CheckSortedDisjointMap::new([1..=3, 100..=100]);
-//     /// let a1: CheckSortedDisjointMap<_,_> = [1..=3, 100..=100].into();
-//     /// assert_eq!(a0.to_string(), "1..=3, 100..=100");
-//     /// assert_eq!(a1.to_string(), "1..=3, 100..=100");
-//     /// ```
-//     fn from(arr: [RangeInclusive<T, V>; N]) -> Self {
-//         let iter = arr.into_iter();
-//         Self::new(iter)
-//     }
-// }
-
-// impl<T: Integer, I> ops::Not for CheckSortedDisjointMap<T, I>
-// where
-//     I: Iterator<Item = RangeInclusive<T, V>>,
-// {
-//     type Output = NotIterMap<T, V, Self>;
-
-//     fn not(self) -> Self::Output {
-//         self.complement()
-//     }
-// }
-
-// impl<T: Integer, R, L> ops::BitOr<R> for CheckSortedDisjointMap<T, L>
-// where
-//     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<'a, T, V, VR>,
-// {
-//     type Output = BitOrMergeMap<T, V, Self, R>;
-
-//     fn bitor(self, other: R) -> Self::Output {
-//         SortedDisjointMap::union(self, other)
-//     }
-// }
-
-// impl<'a, T: Integer, V, VR, R, L> ops::BitAnd<R> for CheckSortedDisjointMap<T, V, VR, L>
-// where
-//     V: ValueOwned + 'a,
-//     VR: CloneBorrow<V> + 'a,
-//     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<'a, T, V, VR>,
-// {
-//     type Output = BitAndMergeMap<T, V, Self, R>;
-
-//     fn bitand(self, other: R) -> Self::Output {
-//         SortedDisjointMap::intersection(self, other)
-//     }
-// }
-
-// impl<T: Integer, R, L> ops::Sub<R> for CheckSortedDisjointMap<T, L>
-// where
-//     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<'a, T, V, VR>,
-// {
-//     type Output = BitSubMergeMap<T, V, Self, R>;
-
-//     fn sub(self, other: R) -> Self::Output {
-//         SortedDisjointMap::difference(self, other)
-//     }
-// }
-
-// impl<T: Integer, R, L> ops::BitXor<R> for CheckSortedDisjointMap<T, L>
-// where
-//     L: Iterator<Item = RangeInclusive<T, V>>,
-//     R: SortedDisjointMap<'a, T, V, VR>,
-// {
-//     type Output = BitXOrTeeMap<T, V, Self, R>;
-
-//     fn bitxor(self, other: R) -> Self::Output {
-//         SortedDisjointMap::symmetric_difference(self, other)
-//     }
-// }
-
+// cmk0000 rename 'to_string' to 'into_string' (and deprecated the old one)
 // cmk could this have a better name
-pub trait DebugToString<T: Integer, V: ValueOwned, VR>
-where
-    VR: CloneBorrow<V>,
-{
-    fn to_string(self) -> String;
+// pub trait DebugToString<T: Integer, V: ValueOwned, VR>
+// where
+//     VR: CloneBorrow<V>,
+// {
+//     fn to_string(self) -> String;
+// }
+
+// impl<T, V, VR, M> DebugToString<T, V, VR> for M
+// where
+//     T: Integer + Debug,
+//     V: ValueOwned + Debug,
+//     VR: CloneBorrow<V>,
+//     M: SortedDisjointMap<T, V, VR> + Sized,
+// {
+//     fn to_string(self) -> String {
+//         self.map(|range_value| {
+//             let (range, value) = range_value;
+//             format!("({:?}, {:?})", range, value.borrow())
+//         })
+//         .collect::<Vec<_>>()
+//         .join(", ")
+//     }
+// }
+/// Converts the implementing type into a String by consuming it.
+/// It is intended for types where items are Debug-able.
+pub trait IntoString {
+    /// cmk doc
+    fn into_string(self) -> String;
 }
 
-impl<T, V, VR, M> DebugToString<T, V, VR> for M
+impl<T, I> IntoString for I
 where
-    T: Integer + Debug,
-    V: ValueOwned + Debug,
-    VR: CloneBorrow<V>,
-    M: SortedDisjointMap<T, V, VR> + Sized,
+    T: Debug,
+    I: Iterator<Item = T>,
 {
-    fn to_string(self) -> String {
-        self.map(|range_value| {
-            let (range, value) = range_value;
-            format!("({:?}, {:?})", range, value.borrow())
-        })
-        .collect::<Vec<_>>()
-        .join(", ")
+    fn into_string(self) -> String {
+        self.map(|item| format!("{:?}", item))
+            .collect::<Vec<String>>()
+            .join(", ")
     }
 }
 

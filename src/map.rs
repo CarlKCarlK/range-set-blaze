@@ -2,7 +2,7 @@ use crate::intersection_iter_map::IntersectionIterMap;
 use crate::iter_map::IntoIterMap;
 use crate::iter_map::{IterMap, KeysMap};
 use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter};
-use crate::sorted_disjoint_map::{DebugToString, Priority};
+use crate::sorted_disjoint_map::{IntoString, Priority};
 use crate::sorted_disjoint_map::{PrioritySortedStartsMap, SortedDisjointMap};
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::union_iter_map::UnionIterMap;
@@ -322,13 +322,13 @@ pub struct RangeMapBlaze<T: Integer, V: ValueOwned> {
 
 impl<T: Integer, V: ValueOwned + fmt::Debug> fmt::Debug for RangeMapBlaze<T, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.range_values().to_string())
+        write!(f, "{}", self.range_values().into_string())
     }
 }
 
 impl<T: Integer, V: ValueOwned + fmt::Debug> fmt::Display for RangeMapBlaze<T, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.range_values().to_string())
+        write!(f, "{}", self.range_values().into_string())
     }
 }
 

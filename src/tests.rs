@@ -26,7 +26,6 @@ use tests_common::{How, MemorylessIter, MemorylessRange};
 use core::array;
 use core::ops::BitAndAssign;
 use rand::Rng;
-// cmk000 maybe the 'range_set_blaze.rs' file name is too confusing
 type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
 #[test]
@@ -1176,23 +1175,18 @@ fn union(a: Reference, b: Reference) -> bool {
     binary_op(a, b, expected, actual)
 }
 
-// cmk00 quickcheck symmetric_difference
+#[quickcheck]
+fn multi_union(inputs: Vec<Reference>) -> bool {
+    let expected: Reference = inputs.iter().flatten().copied().collect();
+    let actual = inputs.iter().map(RangeSetBlaze::from_iter).union();
 
-// cmk0 get working again
-// #[quickcheck]
-// fn multi_union(inputs: Vec<Reference>) -> bool {
-//     use crate::MultiwayRangeSetBlazeRef;
-
-//     let expected: Reference = inputs.iter().flatten().copied().collect();
-//     let actual = inputs.iter().map(RangeSetBlaze::from_iter).union();
-
-//     let res = actual.iter().eq(expected.iter().cloned());
-//     if !res {
-//         let actual: Reference = actual.iter().collect();
-//         println!("in:{inputs:?} expected:{expected:?} out:{actual:?}");
-//     }
-//     res
-// }
+    let res = actual.iter().eq(expected.iter().cloned());
+    if !res {
+        let actual: Reference = actual.iter().collect();
+        println!("in:{inputs:?} expected:{expected:?} out:{actual:?}");
+    }
+    res
+}
 
 #[quickcheck]
 fn difference(a: Reference, b: Reference) -> bool {
@@ -1213,6 +1207,25 @@ fn symmetric_difference(a: Reference, b: Reference) -> bool {
 }
 
 #[quickcheck]
+fn multi_symmetric_difference(inputs: Vec<Reference>) -> bool {
+    let mut expected: Reference = BTreeSet::new();
+    for input in inputs.iter() {
+        expected = expected.symmetric_difference(input).cloned().collect();
+    }
+    let actual = inputs
+        .iter()
+        .map(RangeSetBlaze::from_iter)
+        .symmetric_difference();
+
+    let res = actual.iter().eq(expected.iter().cloned());
+    if !res {
+        let actual: Reference = actual.iter().collect();
+        println!("in:{inputs:?} expected:{expected:?} out:{actual:?}");
+    }
+    res
+}
+
+#[quickcheck]
 fn intersection_size_hint(a: Reference, b: Reference) -> bool {
     let expected = a.intersection(&b).count();
     let a_r = RangeSetBlaze::from_iter(&a);
@@ -1230,18 +1243,17 @@ fn union_size_hint(a: Reference, b: Reference) -> bool {
     check_size_hint((a, b), expected, actual)
 }
 
-// cmk0 get working again
-// #[quickcheck]
-// fn multi_union_size_hint(inputs: Vec<Reference>) -> bool {
-//     let expected: Reference = inputs.iter().flatten().copied().collect();
-//     let actual = inputs
-//         .iter()
-//         .map(RangeSetBlaze::from_iter)
-//         .union()
-//         .iter()
-//         .size_hint();
-//     check_size_hint(inputs, expected.len(), actual)
-// }
+#[quickcheck]
+fn multi_union_size_hint(inputs: Vec<Reference>) -> bool {
+    let expected: Reference = inputs.iter().flatten().copied().collect();
+    let actual = inputs
+        .iter()
+        .map(RangeSetBlaze::from_iter)
+        .union()
+        .iter()
+        .size_hint();
+    check_size_hint(inputs, expected.len(), actual)
+}
 
 #[quickcheck]
 fn difference_size_hint(a: Reference, b: Reference) -> bool {

@@ -7,7 +7,7 @@
 pub use crate::{
     intersection_dyn, intersection_map_dyn, symmetric_difference_dyn, symmetric_difference_map_dyn,
     union_dyn, union_map_dyn, CheckSortedDisjoint, DynSortedDisjoint, DynSortedDisjointMap,
-    MultiwayRangeMapBlaze, MultiwayRangeSetBlaze, MultiwaySortedDisjoint,
+    MultiwayRangeMapBlaze, MultiwayRangeSetBlaze, MultiwayRangeSetBlazeRef, MultiwaySortedDisjoint,
     MultiwaySortedDisjointMap, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
     SortedStarts,
 };

@@ -3,7 +3,6 @@ use crate::merge::KMerge;
 use crate::unsorted_disjoint::UnsortedDisjoint;
 use crate::{AssumeSortedStarts, BitOrKMerge, Merge, SortedDisjoint, SortedStarts};
 use crate::{BitOrMerge, Integer};
-use alloc::vec;
 use core::cmp::max;
 use core::iter::FusedIterator;
 use core::ops::RangeInclusive;
@@ -141,39 +140,6 @@ where
     }
 }
 
-// cmk000 remove?
-// // from iter (T, &V) to UnionIter
-// impl<T> FromIterator<T> for UnionIter<T, SortedStartsInVec<T>>
-// where
-//     T: Integer,
-// {
-//     fn from_iter<I>(iter: I) -> Self
-//     where
-//         I: IntoIterator<Item = T>,
-//     {
-//         let iter = iter.into_iter();
-//         UnionIter::new(iter)
-//     }
-// }
-
-// // from iter (RangeInclusive<T>, &V) to UnionIter
-// impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
-//     for UnionIter<T, V, &'a V, SortedStartsInVec<T, V, &'a V>>
-// {
-//     fn from_iter<I>(iter: I) -> Self
-//     where
-//         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
-//     {
-//         let iter = iter.into_iter();
-//         let iter = iter.map(|(range, value)| (range, value));
-//         UnionIter::from_iter(iter)
-//     }
-// }
-
-// cmk used?
-#[allow(dead_code)]
-type SortedRangeValueVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
-
 // cmk simplify the long types
 // from iter (T, VR) to UnionIter
 impl<T> FromIterator<RangeInclusive<T>> for UnionIter<T, SortedStartsInVec<T>>
@@ -182,31 +148,15 @@ where
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = RangeInclusive<T>>, // cmk000 add fused??
+        I: IntoIterator<Item = RangeInclusive<T>>,
     {
         let iter = iter.into_iter();
-        let iter = UnsortedDisjoint::from(iter);
+        let iter = UnsortedDisjoint::new(iter);
         let iter = iter.sorted_by(|a, b| a.start().cmp(&b.start()));
         let iter = AssumeSortedStarts::new(iter);
         UnionIter::new(iter)
     }
 }
-
-// // from from UnsortedDisjoint to UnionIter
-// impl<T, I> From<I> for UnionIter<T, SortedStartsInVec<T>>
-// where
-//     T: Integer,
-//     I: Iterator<Item = RangeInclusive<T>>,
-// {
-//     #[allow(clippy::clone_on_copy)]
-//     fn from(unsorted_disjoint: I) -> Self {
-//         let iter = unsorted_disjoint.sorted_by(|a, b| a.start().cmp(&b.start()));
-//         let iter = AssumeSortedStarts::new(iter);
-//         let result: UnionIter<T, AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>> =
-//             Self::new(iter);
-//         result
-//     }
-// }
 
 // cmk0 test that every iterator (that can be) is FusedIterator
 impl<T, I> FusedIterator for UnionIter<T, I>

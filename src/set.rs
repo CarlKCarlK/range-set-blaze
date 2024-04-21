@@ -452,7 +452,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     where
         I: SortedDisjoint<T>,
     {
-        let mut iter_with_len = SortedDisjointWithLenSoFar::from(iter);
+        let mut iter_with_len = SortedDisjointWithLenSoFar::new(iter);
         let btree_map = BTreeMap::from_iter(&mut iter_with_len);
         Self {
             btree_map,
@@ -1726,7 +1726,7 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
         I: IntoIterator<Item = T>,
     {
         let iter = iter.into_iter();
-        for range in UnsortedDisjoint::from(iter.map(|x| x..=x)) {
+        for range in UnsortedDisjoint::new(iter.map(|x| x..=x)) {
             self.internal_add(range);
         }
     }
@@ -1907,7 +1907,7 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
         I: IntoIterator<Item = RangeInclusive<T>>,
     {
         let iter = iter.into_iter();
-        let iter = UnsortedDisjoint::from(iter);
+        let iter = UnsortedDisjoint::new(iter);
         for range in iter {
             self.internal_add(range);
         }

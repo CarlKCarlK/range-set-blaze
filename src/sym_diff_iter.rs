@@ -56,7 +56,6 @@ where
     I: SortedStarts<T>,
 {
     type Item = RangeInclusive<T>;
-    // cmk0 does this and UnionIter do the right thing on non-fused input?
 
     fn next(&mut self) -> Option<RangeInclusive<T>> {
         loop {

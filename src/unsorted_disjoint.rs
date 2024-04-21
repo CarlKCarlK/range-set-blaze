@@ -18,15 +18,14 @@ where
     two: T,
 }
 
-// cmk000 rename "From" to "new"
-impl<T, I> From<I> for UnsortedDisjoint<T, I::IntoIter>
+impl<T, I> UnsortedDisjoint<T, I>
 where
     T: Integer,
-    I: IntoIterator<Item = RangeInclusive<T>>, // Any iterator is fine
+    I: Iterator<Item = RangeInclusive<T>>, // Any iterator is fine
 {
-    fn from(into_iter: I) -> Self {
+    pub fn new(iter: I) -> Self {
         UnsortedDisjoint {
-            iter: into_iter.into_iter(),
+            iter,
             option_range: None,
             min_value_plus_2: T::min_value() + T::one() + T::one(),
             two: T::one() + T::one(),
@@ -95,9 +94,6 @@ where
     }
 }
 
-// cmk00 why is SortedDisjointWithLenSoFar 'from' instead of 'new'?
-// cmk000 misleading name since creates pairs not SortedDisjoint RangeInclusive's
-
 // cmk00 does every iterator have this?
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub(crate) struct SortedDisjointWithLenSoFar<T, I>
@@ -109,15 +105,15 @@ where
     len: <T as Integer>::SafeLen,
 }
 
-impl<T: Integer, I> From<I> for SortedDisjointWithLenSoFar<T, I::IntoIter>
+impl<T, I> SortedDisjointWithLenSoFar<T, I>
 where
-    I: IntoIterator<Item = RangeInclusive<T>>,
-    I::IntoIter: SortedDisjoint<T>,
+    T: Integer,
+    I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint<T>,
 {
-    fn from(into_iter: I) -> Self {
+    pub fn new(iter: I) -> Self {
         SortedDisjointWithLenSoFar {
-            iter: into_iter.into_iter(),
-            len: <T as Integer>::SafeLen::zero(),
+            iter,
+            len: T::SafeLen::zero(),
         }
     }
 }
