@@ -434,7 +434,7 @@ fn nand_repro() {
 
 //     let _not_i = !i.clone();
 //     let k = i - j;
-//     assert_eq!(k.to_string(), "-1..=-1, 1..=1, 22..=22");
+//     assert_eq!(k.into_string(), "-1..=-1, 1..=1, 22..=22");
 // }
 
 // cmk0
@@ -526,17 +526,17 @@ fn nand_repro() {
 // fn private_constructor() {
 //     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
 //     // println!("{}", unsorted_disjoint.fmt());
-//     assert_eq!(unsorted_disjoint.to_string(), "1..=6, -12..=-10, 3..=3");
+//     assert_eq!(unsorted_disjoint.into_string(), "1..=6, -12..=-10, 3..=3");
 
 //     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
 //     let union_iter = UnionIter::from(unsorted_disjoint);
 //     // println!("{}", union_iter.fmt());
-//     assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
+//     assert_eq!(union_iter.into_string(), "-12..=-10, 1..=6");
 
 //     let union_iter: UnionIter<_, _> = [5, 6, 1, 2, 3, 4, 5, -12, -11, -10, 3]
 //         .into_iter()
 //         .collect();
-//     assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
+//     assert_eq!(union_iter.into_string(), "-12..=-10, 1..=6");
 // }
 
 fn is_ddcppdheo<
@@ -1372,7 +1372,7 @@ fn set_random_symmetric_difference() {
 
             // println!(
             //     "left ^ right = {}",
-            //     SymDiffIter::new2(set0.ranges(), set1.ranges()).to_string()
+            //     SymDiffIter::new2(set0.ranges(), set1.ranges()).into_string()
             // );
 
             let map0 = CheckSortedDisjointMap::new(set0.ranges().map(|range| (range.clone(), &())))

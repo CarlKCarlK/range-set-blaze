@@ -149,7 +149,7 @@ where
     ///
     /// let union = [a, b, c].union();
     ///
-    /// assert_eq!(union.to_string(), "1..=15, 18..=100");
+    /// assert_eq!(union.into_string(), "1..=15, 18..=100");
     /// ```
     fn union(self) -> BitOrMapKMerge<T, V, VR, I> {
         // cmk0 why does this not have .into_iter() but intersection does?
@@ -178,7 +178,7 @@ where
     ///
     /// let intersection = [a, b, c].intersection();
     ///
-    /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
+    /// assert_eq!(intersection.into_string(), "5..=6, 8..=9, 11..=13");
     /// ```
     fn intersection<'a>(self) -> BitAndMapWithRangeValues<'a, T, V, VR, I> {
         // We define map intersection -- in part -- in terms of set intersection.

@@ -200,7 +200,7 @@ pub fn k_sets<T: Integer + SampleUniform>(
 //     let subfolders: Vec<_> = top.read_dir()?.map(|entry| entry.unwrap().path()).collect();
 //     let mut name_to_vec_vec: HashMap<String, Vec<Vec<u32>>> = HashMap::new();
 //     for subfolder in subfolders {
-//         let subfolder_name = subfolder.file_name().unwrap().to_string_lossy().to_string();
+//         let subfolder_name = subfolder.file_name().unwrap().to_string_lossy().into_string();
 //         let mut data: Vec<Vec<u32>> = Vec::new();
 //         for file in subfolder.read_dir()? {
 //             let file = file.unwrap().path();

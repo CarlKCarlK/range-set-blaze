@@ -184,7 +184,7 @@ where
 /// // Duplicates and out-of-order elements are fine.
 /// let a0 = RangeMapBlaze::from_iter([3, 2, 1, 100, 1]);
 /// let a1: RangeMapBlaze<i32> = [3, 2, 1, 100, 1].into_iter().collect();
-/// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+/// assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100");
 ///
 /// // 'from_iter'/'collect': From an iterator of inclusive ranges, start..=end.
 /// // Overlapping, out-of-order, and empty ranges are fine.
@@ -192,26 +192,26 @@ where
 /// let a0 = RangeMapBlaze::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
 /// #[allow(clippy::reversed_empty_ranges)]
 /// let a1: RangeMapBlaze<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
-/// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+/// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
 ///
 /// // 'from_slice': From any array-like collection of integers.
 /// // Nightly-only, but faster than 'from_iter'/'collect' on integers.
 /// #[cfg(feature = "from_slice")]
 /// let a0 = RangeMapBlaze::from_slice(vec![3, 2, 1, 100, 1]);
 /// #[cfg(feature = "from_slice")]
-/// assert!(a0.to_string() == "1..=3, 100..=100");
+/// assert!(a0.into_string() == "1..=3, 100..=100");
 ///
 /// // If we know the ranges are already sorted and disjoint,
 /// // we can avoid work and use 'from'/'into'.
 /// let a0 = RangeMapBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
 /// let a1: RangeMapBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze2();
-/// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+/// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
 ///
 /// // For compatibility with `BTreeSet`, we also support
 /// // 'from'/'into' from arrays of integers.
 /// let a0 = RangeMapBlaze::from([3, 2, 1, 100, 1]);
 /// let a1: RangeMapBlaze<i32> = [3, 2, 1, 100, 1].into();
-/// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+/// assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100");
 /// ```
 ///
 /// # `RangeMapBlaze` Set Operations
@@ -258,41 +258,41 @@ where
 /// // Union of two 'RangeMapBlaze's.
 /// let result = &a | &b;
 /// // Alternatively, we can take ownership via 'a | b'.
-/// assert_eq!(result.to_string(), "1..=100");
+/// assert_eq!(result.into_string(), "1..=100");
 ///
 /// // Intersection of two 'RangeMapBlaze's.
 /// let result = &a & &b; // Alternatively, 'a & b'.
-/// assert_eq!(result.to_string(), "2..=2, 5..=6");
+/// assert_eq!(result.into_string(), "2..=2, 5..=6");
 ///
 /// // Set difference of two 'RangeMapBlaze's.
 /// let result = &a - &b; // Alternatively, 'a - b'.
-/// assert_eq!(result.to_string(), "1..=1, 7..=100");
+/// assert_eq!(result.into_string(), "1..=1, 7..=100");
 ///
 /// // Symmetric difference of two 'RangeMapBlaze's.
 /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
-/// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
+/// assert_eq!(result.into_string(), "1..=1, 3..=4, 7..=100");
 ///
 /// // complement of a 'RangeMapBlaze'.
 /// let result = !&a; // Alternatively, '!a'.
 /// assert_eq!(
-///     result.to_string(),
+///     result.into_string(),
 ///     "-2147483648..=0, 3..=4, 101..=2147483647"
 /// );
 ///
 /// // Multiway union of 'RangeMapBlaze's.
 /// let c = RangeMapBlaze::from_iter([2..=2, 6..=200]);
 /// let result = [&a, &b, &c].union();
-/// assert_eq!(result.to_string(), "1..=200");
+/// assert_eq!(result.into_string(), "1..=200");
 ///
 /// // Multiway intersection of 'RangeMapBlaze's.
 /// let result = [&a, &b, &c].intersection();
-/// assert_eq!(result.to_string(), "2..=2, 6..=6");
+/// assert_eq!(result.into_string(), "2..=2, 6..=6");
 ///
 /// // Applying multiple operators
 /// let result0 = &a - (&b | &c); // Creates an intermediate 'RangeMapBlaze'.
 /// // Alternatively, we can use the 'SortedDisjointMap' API and avoid the intermediate 'RangeMapBlaze'.
 /// let result1 = RangeMapBlaze::from_sorted_disjoint(a.ranges() - (b.ranges() | c.ranges()));
-/// assert!(result0 == result1 && result0.to_string() == "1..=1");
+/// assert!(result0 == result1 && result0.into_string() == "1..=1");
 /// ```
 /// # `RangeMapBlaze` Comparisons
 ///
@@ -499,7 +499,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     ///
     /// let a0 = RangeMapBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
     /// let a1: RangeMapBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze2();
-    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
     /// ```
     pub fn from_sorted_disjoint_map<VR, I>(iter: I) -> Self
     where
@@ -554,7 +554,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// let a0 = RangeMapBlaze::from_slice(&[3, 2, 1, 100, 1]); // reference to a slice
     /// let a1 = RangeMapBlaze::from_slice([3, 2, 1, 100, 1]);   // array
     /// let a2 = RangeMapBlaze::from_slice(vec![3, 2, 1, 100, 1]); // vector
-    /// assert!(a0 == a1 && a1 == a2 && a0.to_string() == "1..=3, 100..=100");
+    /// assert!(a0 == a1 && a1 == a2 && a0.into_string() == "1..=3, 100..=100");
     /// ```
     /// [1]: struct.RangeMapBlaze.html#impl-FromIterator<T, V, VR>-for-RangeMapBlaze<T, V>
     // cmk
@@ -1544,7 +1544,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// let set = RangeMapBlaze::from_iter([10..=20, 15..=25, 30..=40]);
     /// // After RangeMapBlaze sorts & 'disjoint's them, we see two ranges.
     /// assert_eq!(set.ranges_len(), 2);
-    /// assert_eq!(set.to_string(), "10..=25, 30..=40");
+    /// assert_eq!(set.into_string(), "10..=25, 30..=40");
     /// ```
     #[must_use]
     pub fn range_values_len(&self) -> usize {
@@ -1603,7 +1603,7 @@ where
     ///
     /// let a0 = RangeMapBlaze::from_iter([3, 2, 1, 100, 1]);
     /// let a1: RangeMapBlaze<i32> = [3, 2, 1, 100, 1].into_iter().collect();
-    /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+    /// assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100");
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
@@ -1633,7 +1633,7 @@ where
     /// let a0 = RangeMapBlaze::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
     /// #[allow(clippy::reversed_empty_ranges)]
     /// let a1: RangeMapBlaze<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
-    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
@@ -1660,7 +1660,7 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
     /// let vec_range = vec![1..=2, 2..=2, -10..=-5, 1..=0];
     /// let a0 = RangeMapBlaze::from_iter(vec_range.iter());
     /// let a1: RangeMapBlaze<i32> = vec_range.iter().collect();
-    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
@@ -1689,7 +1689,7 @@ impl<T: Integer, V: ValueOwned> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
     /// let vec_range = vec![1..=2, 2..=2, -10..=-5, 1..=0];
     /// let a0 = RangeMapBlaze::from_iter(vec_range.iter());
     /// let a1: RangeMapBlaze<i32> = vec_range.iter().collect();
-    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
@@ -1902,7 +1902,7 @@ gen_ops_ex!(
     /// let a = RangeMapBlaze::from_iter([1..=2, 5..=100]);
     /// let b = RangeMapBlaze::from_iter([2..=6]);
     /// let result = &a & &b; // Alternatively, 'a & b'.
-    /// assert_eq!(result.to_string(), "2..=2, 5..=6");
+    /// assert_eq!(result.into_string(), "2..=2, 5..=6");
     /// ```
     for & call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
         a.range_values().intersection_with_set(b.ranges()).into_range_map_blaze()
@@ -1918,7 +1918,7 @@ gen_ops_ex!(
 /// let a = RangeMapBlaze::from_iter([1..=2, 5..=100]);
 /// let b = RangeMapBlaze::from_iter([2..=6]);
 /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
-/// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
+/// assert_eq!(result.into_string(), "1..=1, 3..=4, 7..=100");
 /// ```
 for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
     SymDiffIterMap::new2(a.range_values(), b.range_values()).into_range_map_blaze()
@@ -1934,7 +1934,7 @@ for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
 /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
 /// let b = RangeSetBlaze::from_iter([2..=6]);
 /// let result = &a - &b; // Alternatively, 'a - b'.
-/// assert_eq!(result.to_string(), "1..=1, 7..=100");
+/// assert_eq!(result.into_string(), "1..=1, 7..=100");
 /// ```
 
 for - call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
@@ -1959,7 +1959,7 @@ gen_ops_ex!(
 /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
 /// let b = RangeSetBlaze::from_iter([2..=6]);
 /// let result = &a - &b; // Alternatively, 'a - b'.
-/// assert_eq!(result.to_string(), "1..=1, 7..=100");
+/// assert_eq!(result.into_string(), "1..=1, 7..=100");
 /// ```
 /// cmk
 for - call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
@@ -2081,7 +2081,7 @@ where
     ///
     /// let a0 = RangeSetBlaze::from([3, 2, 1, 100, 1]);
     /// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
-    /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100")
+    /// assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100")
     /// ```
     fn from(arr: [(T, V); N]) -> Self {
         arr.into_iter().collect()

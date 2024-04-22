@@ -435,7 +435,7 @@ fn map_repro1() {
 //     let mut map1 = RangeMapBlaze::new();
 //     map1.insert(85, 'a');
 //     let symmetric_difference = SymDiffIterMap::new2(map0.range_values(), map1.range_values());
-//     assert_eq!(symmetric_difference.to_string(), "(84..=84, 'c')");
+//     assert_eq!(symmetric_difference.into_string(), "(84..=84, 'c')");
 // }
 
 // #[test]
@@ -448,7 +448,7 @@ fn map_repro1() {
 //     map1.insert(187, 'b');
 //     map1.insert(189, 'c');
 //     let symmetric_difference = SymDiffIterMap::new2(map0.range_values(), map1.range_values());
-//     assert_eq!(symmetric_difference.to_string(), "(188..=188, 'a')");
+//     assert_eq!(symmetric_difference.into_string(), "(188..=188, 'a')");
 // }
 
 // #[test]
@@ -477,7 +477,7 @@ fn map_repro1() {
 
 //             // println!(
 //             //     "left ^ right = {}",
-//             //     SymDiffIterMap::new2(map0.range_values(), map1.range_values()).to_string()
+//             //     SymDiffIterMap::new2(map0.range_values(), map1.range_values()).into_string()
 //             // );
 
 //             let mut expected_keys = map0
@@ -1067,7 +1067,7 @@ fn map_repro1() {
 
 // //     let _not_i = !i.clone();
 // //     let k = i - j;
-// //     assert_eq!(k.to_string(), "-1..=-1, 1..=1, 22..=22");
+// //     assert_eq!(k.into_string(), "-1..=-1, 1..=1, 22..=22");
 // // }
 
 // // #[test]
@@ -1156,17 +1156,17 @@ fn map_repro1() {
 // // fn private_constructor() {
 // //     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
 // //     // println!("{}", unsorted_disjoint.fmt());
-// //     assert_eq!(unsorted_disjoint.to_string(), "1..=6, -12..=-10, 3..=3");
+// //     assert_eq!(unsorted_disjoint.into_string(), "1..=6, -12..=-10, 3..=3");
 
 // //     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
 // //     let union_iter = UnionIter::from(unsorted_disjoint);
 // //     // println!("{}", union_iter.fmt());
-// //     assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
+// //     assert_eq!(union_iter.into_string(), "-12..=-10, 1..=6");
 
 // //     let union_iter: UnionIter<_, _> = [5, 6, 1, 2, 3, 4, 5, -12, -11, -10, 3]
 // //         .into_iter()
 // //         .collect();
-// //     assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
+// //     assert_eq!(union_iter.into_string(), "-12..=-10, 1..=6");
 // // }
 
 // // fn is_ddcppdheo<

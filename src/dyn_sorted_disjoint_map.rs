@@ -26,7 +26,7 @@ use alloc::boxed::Box;
 ///     DynSortedDisjointMap::new(c.ranges()),
 /// ]
 /// .union();
-/// assert_eq!(union.to_string(), "0..=6, 8..=9, 11..=17, 30..=255");
+/// assert_eq!(union.into_string(), "0..=6, 8..=9, 11..=17, 30..=255");
 /// ```
 
 pub struct DynSortedDisjointMap<'a, T, V, VR>
@@ -112,7 +112,7 @@ where
 ///     intersection_map_dyn!(a.ranges(), b.ranges(), c.ranges())
 /// );
 /// assert_eq!(
-///     parity.to_string(),
+///     parity.into_string(),
 ///     "1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42"
 /// );
 /// ```
@@ -148,7 +148,7 @@ macro_rules! intersection_map_dyn {
 ///     intersection_map_dyn!(a.ranges(), b.ranges(), c.ranges())
 /// );
 /// assert_eq!(
-///     parity.to_string(),
+///     parity.into_string(),
 ///     "1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42"
 /// );
 /// ```

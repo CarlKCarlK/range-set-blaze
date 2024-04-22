@@ -12,7 +12,7 @@ fn main() {
         intersection_dyn!(a.ranges(), b.ranges(), c.ranges())
     );
     assert_eq!(
-        parity.to_string(),
+        parity.into_string(),
         "1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42"
     );
 }

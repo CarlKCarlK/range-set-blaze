@@ -12,11 +12,11 @@ use crate::{Integer, SortedDisjoint};
 ///
 /// let a = CheckSortedDisjoint::from([1u8..=2, 5..=100]);
 /// let b = NotIter::new(a);
-/// assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
+/// assert_eq!(b.into_string(), "0..=0, 3..=4, 101..=255");
 ///
 /// // Or, equivalently:
 /// let b = !CheckSortedDisjoint::from([1u8..=2, 5..=100]);
-/// assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
+/// assert_eq!(b.into_string(), "0..=0, 3..=4, 101..=255");
 /// ```
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]

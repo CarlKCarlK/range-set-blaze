@@ -218,7 +218,7 @@ where
     ///
     /// let union = [a, b, c].union();
     ///
-    /// assert_eq!(union.to_string(), "1..=15, 18..=100");
+    /// assert_eq!(union.into_string(), "1..=15, 18..=100");
     /// ```
     fn union(self) -> BitOrKMerge<T, I> {
         UnionIter::new_k(self)
@@ -246,7 +246,7 @@ where
     ///
     /// let intersection = [a, b, c].intersection();
     ///
-    /// assert_eq!(intersection.to_string(), "5..=6, 8..=9, 11..=13");
+    /// assert_eq!(intersection.into_string(), "5..=6, 8..=9, 11..=13");
     /// ```
     fn intersection(self) -> BitAndKMerge<T, I> {
         // We define set intersection in terms of complement and (set/map) union.

@@ -30,13 +30,13 @@ use crate::{
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = SymDiffIterMap::new(Merge::new(a, b));
-/// assert_eq!(union.to_string(), "1..=100");
+/// assert_eq!(union.into_string(), "1..=100");
 ///
 /// // Or, equivalently:
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = a | b;
-/// assert_eq!(union.to_string(), "1..=100")
+/// assert_eq!(union.into_string(), "1..=100")
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]

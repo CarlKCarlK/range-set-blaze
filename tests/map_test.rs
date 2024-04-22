@@ -1645,10 +1645,10 @@ fn map_split_off() {
 // //     let c = RangeMapBlaze::from_iter([25..=100]);
 
 // //     let union = [a.range_values(), b.range_values(), c.range_values()].union();
-// //     assert_eq!(union.to_string(), "1..=15, 18..=100");
+// //     assert_eq!(union.into_string(), "1..=15, 18..=100");
 
 // //     let union = MultiwaySortedDisjoint::union([a.range_values(), b.range_values(), c.range_values()]);
-// //     assert_eq!(union.to_string(), "1..=15, 18..=100");
+// //     assert_eq!(union.into_string(), "1..=15, 18..=100");
 // // }
 
 // // #[test]
@@ -1659,7 +1659,7 @@ fn map_split_off() {
 // //     let b = CheckSortedDisjoint::from([2..=6]);
 // //     let c = a | b;
 
-// //     assert_eq!(c.to_string(), "1..=100");
+// //     assert_eq!(c.into_string(), "1..=100");
 // // }
 
 // // #[test]
@@ -1673,18 +1673,18 @@ fn map_split_off() {
 // //         DynSortedDisjointMap::new(c.range_values()),
 // //     ]
 // //     .union();
-// //     assert_eq!(union.to_string(), "0..=6, 8..=9, 11..=17, 30..=255");
+// //     assert_eq!(union.into_string(), "0..=6, 8..=9, 11..=17, 30..=255");
 // // }
 
 // // #[test]
 // // fn map_not_iter_example() {
 // //     let a = CheckSortedDisjoint::from([1u8..=2, 5..=100]);
 // //     let b = NotIter::new(a);
-// //     assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
+// //     assert_eq!(b.into_string(), "0..=0, 3..=4, 101..=255");
 
 // //     // Or, equivalently:
 // //     let b = !CheckSortedDisjoint::from([1u8..=2, 5..=100]);
-// //     assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
+// //     assert_eq!(b.into_string(), "0..=0, 3..=4, 101..=255");
 // // }
 
 // // #[test]
@@ -1704,13 +1704,13 @@ fn map_split_off() {
 // //     let c = UnionIterMap::new(AssumeSortedStarts::new(
 // //         a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
 // //     ));
-// //     assert_eq!(c.to_string(), "1..=100");
+// //     assert_eq!(c.into_string(), "1..=100");
 
 // //     // Or, equivalently:
 // //     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 // //     let b = CheckSortedDisjoint::from([2..=6]);
 // //     let c = SortedDisjoint::union(a, b);
-// //     assert_eq!(c.to_string(), "1..=100")
+// //     assert_eq!(c.into_string(), "1..=100")
 // // }
 
 // // #[test]
@@ -1718,22 +1718,22 @@ fn map_split_off() {
 // //     let a = CheckSortedDisjoint::from([1..=1]);
 // //     let b = RangeMapBlaze::from_iter([2..=2]).into_ranges();
 // //     let union = core::ops::BitOr::bitor(a, b);
-// //     assert_eq!(union.to_string(), "1..=2");
+// //     assert_eq!(union.into_string(), "1..=2");
 
 // //     let a = CheckSortedDisjoint::from([1..=1]);
 // //     let b = CheckSortedDisjoint::from([2..=2]);
 // //     let c = range_map_blaze::SortedDisjoint::union(a, b);
-// //     assert_eq!(c.to_string(), "1..=2");
+// //     assert_eq!(c.into_string(), "1..=2");
 
 // //     let a = CheckSortedDisjoint::from([1..=1]);
 // //     let b = CheckSortedDisjoint::from([2..=2]);
 // //     let c = core::ops::BitOr::bitor(a, b);
-// //     assert_eq!(c.to_string(), "1..=2");
+// //     assert_eq!(c.into_string(), "1..=2");
 
 // //     let a = CheckSortedDisjoint::from([1..=1]);
 // //     let b = RangeMapBlaze::from_iter([2..=2]).into_ranges();
 // //     let c = range_map_blaze::SortedDisjoint::union(a, b);
-// //     assert_eq!(c.to_string(), "1..=2");
+// //     assert_eq!(c.into_string(), "1..=2");
 // // }
 
 // // #[test]
@@ -1747,7 +1747,7 @@ fn map_split_off() {
 // //     // Duplicates and out-of-order elements are fine.
 // //     let a0 = RangeMapBlaze::from_iter([3, 2, 1, 100, 1]);
 // //     let a1: RangeMapBlaze<(i32,&str)> = [3, 2, 1, 100, 1].into_iter().collect();
-// //     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+// //     assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100");
 
 // //     // 'from_iter'/'collect': From an iterator of inclusive ranges, start..=end.
 // //     // Overlapping, out-of-order, and empty ranges are fine.
@@ -1755,19 +1755,19 @@ fn map_split_off() {
 // //     let a0 = RangeMapBlaze::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
 // //     #[allow(clippy::reversed_empty_ranges)]
 // //     let a1: RangeMapBlaze<(i32,&str)> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
-// //     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+// //     assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
 
 // //     // If we know the ranges are sorted and disjoint, we can use 'from'/'into'.
 // //     let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
 // //     let a1: RangeMapBlaze<(i32,&str)> =
 // //         CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_map_blaze();
-// //     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+// //     assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
 
 // //     // For compatibility with `BTreeSet`, we also support
 // //     // 'from'/'into' from arrays of integers.
 // //     let a0 = RangeMapBlaze::from([3, 2, 1, 100, 1]);
 // //     let a1: RangeMapBlaze<(i32,&str)> = [3, 2, 1, 100, 1].into();
-// //     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+// //     assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100");
 // // }
 
 // // #[cfg(feature = "from_slice")]
@@ -1826,7 +1826,7 @@ fn map_split_off() {
 // //             println!("ty={:#?}",size_of::<$ty>() * 8);
 // //             let v: Vec<$ty> = (0..=127).collect();
 // //             let a2 = RangeMapBlaze::from_slice(&v);
-// //             assert!(a2.to_string() == "0..=127");
+// //             assert!(a2.into_string() == "0..=127");
 // //         )*
 // //     }};
 
@@ -1835,7 +1835,7 @@ fn map_split_off() {
 // //             println!("ty={:#?}",size_of::<$ty>() * 8);
 // //             let v: Vec<$ty> = (0..=5000).collect();
 // //             let a2 = RangeMapBlaze::from_slice(&v);
-// //             assert!(a2.to_string() == "0..=5000");
+// //             assert!(a2.into_string() == "0..=5000");
 // //         )*
 // //     }};
 // // }
@@ -1877,20 +1877,20 @@ fn map_split_off() {
 
 // //     let v: Vec<i32> = (100..=150).collect();
 // //     let a2 = RangeMapBlaze::from_slice(v);
-// //     assert!(a2.to_string() == "100..=150");
+// //     assert!(a2.into_string() == "100..=150");
 
 // //     // For compatibility with `BTreeSet`, we also support
 // //     // 'from'/'into' from arrays of integers.
 // //     let a0 = RangeMapBlaze::from([3, 2, 1, 100, 1]);
 // //     let a1: RangeMapBlaze<(i32,&str)> = [3, 2, 1, 100, 1].into();
-// //     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+// //     assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100");
 
 // //     #[allow(clippy::needless_borrows_for_generic_args)]
 // //     let a2 = RangeMapBlaze::from_slice(&[3, 2, 1, 100, 1]);
-// //     assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
+// //     assert!(a0 == a2 && a2.into_string() == "1..=3, 100..=100");
 
 // //     let a2 = RangeMapBlaze::from_slice([3, 2, 1, 100, 1]);
-// //     assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
+// //     assert!(a0 == a2 && a2.into_string() == "1..=3, 100..=100");
 // // }
 
 // cmk add symmetric_difference tests
@@ -1948,7 +1948,7 @@ fn map_range_map_blaze_operators() {
 
     // // Alternatively, we can use the 'SortedDisjoint' API and avoid the temporary 'RangeMapBlaze'.
     // let result1 = RangeMapBlaze::from_sorted_disjoint_map(a.range_values() - (b.range_values() | c.range_values()));
-    // assert!(result0 == result1 && result0.to_string() == "1..=1");
+    // assert!(result0 == result1 && result0.into_string() == "1..=1");
 }
 
 // // #[test]
@@ -1957,26 +1957,26 @@ fn map_range_map_blaze_operators() {
 // //     let r = RangeMapBlaze::from_iter([3, 2, 1, 100, 1]);
 // //     let a = r.range_values();
 // //     let b = a.clone();
-// //     assert!(a.to_string() == "1..=3, 100..=100");
-// //     assert!(b.to_string() == "1..=3, 100..=100");
+// //     assert!(a.into_string() == "1..=3, 100..=100");
+// //     assert!(b.into_string() == "1..=3, 100..=100");
 // //     //    'into_ranges' takes ownership of the 'RangeMapBlaze'
 // //     let a = RangeMapBlaze::from_iter([3, 2, 1, 100, 1]).into_ranges();
-// //     assert!(a.to_string() == "1..=3, 100..=100");
+// //     assert!(a.into_string() == "1..=3, 100..=100");
 
 // //     // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
 // //     let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
-// //     assert!(a.to_string() == "1..=3, 100..=100");
+// //     assert!(a.into_string() == "1..=3, 100..=100");
 
 // //     // tee of a SortedDisjoint iterator
 // //     let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
 // //     let (a, b) = a.tee();
-// //     assert!(a.to_string() == "1..=3, 100..=100");
-// //     assert!(b.to_string() == "1..=3, 100..=100");
+// //     assert!(a.into_string() == "1..=3, 100..=100");
+// //     assert!(b.into_string() == "1..=3, 100..=100");
 
 // //     // DynamicSortedDisjoint of a SortedDisjoint iterator
 // //     let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
 // //     let b = DynSortedDisjointMap::new(a);
-// //     assert!(b.to_string() == "1..=3, 100..=100");
+// //     assert!(b.into_string() == "1..=3, 100..=100");
 // // }
 
 // // #[test]
@@ -2009,7 +2009,7 @@ fn map_range_map_blaze_operators() {
 // //     let sept = CheckSortedDisjoint::from([244..=273]);
 // //     let sept_weekdays = sept.intersection(weekends.complement());
 // //     assert_eq!(
-// //         sept_weekdays.to_string(),
+// //         sept_weekdays.into_string(),
 // //         "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
 // //     );
 // // }
@@ -2122,7 +2122,7 @@ fn map_range_map_blaze_operators() {
 // //     let vec_range = vec![1..=2, 2..=2, -10..=-5];
 // //     let a0 = RangeMapBlaze::from_iter(vec_range.iter());
 // //     let a1: RangeMapBlaze<(i32,&str)> = vec_range.iter().collect();
-// //     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+// //     assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
 // // }
 
 // // // fn map__some_fn() {
@@ -2618,7 +2618,7 @@ fn test_every_sorted_disjoint_map_method() {
     syntactic_for! { sd in [a, b, c, d, e, f] {$(
         let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
         let z = $sd & z;
-        // println!("{}", z.to_string());
+        // println!("{}", z.into_string());
         assert!(z.equal(CheckSortedDisjointMap::new([(50..=50, &"a")])));
     )*}}
 
@@ -2627,7 +2627,7 @@ fn test_every_sorted_disjoint_map_method() {
     syntactic_for! { sd in [a, b, c, d, e,f] {$(
         let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
         let z = $sd ^ z;
-        // println!("a {}", z.to_string());
+        // println!("a {}", z.into_string());
         assert!(z.equal(CheckSortedDisjointMap::new([(-1..=0, &"z"), (1..=2, &"a"), (5..=49, &"a"), (51..=100, &"a"), (1000..=10000, &"z")])));
     )*}}
 
@@ -2635,7 +2635,7 @@ fn test_every_sorted_disjoint_map_method() {
     syntactic_for! { sd in [a, b, c, d, e,f] {$(
         let z: CheckSortedDisjointMap<i32, &str, _, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
         let z = $sd - z;
-        // println!("c {}", z.to_string());
+        // println!("c {}", z.into_string());
         assert!(z.equal(CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=49, &"a"), (51..=100, &"a")])));
     )*}}
 }
@@ -2944,7 +2944,7 @@ fn map_random_symmetric_difference() {
 
             // println!(
             //     "left ^ right = {}",
-            //     SymDiffIterMap::new2(map0.range_values(), map1.range_values()).to_string()
+            //     SymDiffIterMap::new2(map0.range_values(), map1.range_values()).into_string()
             // );
 
             let mut expected_keys = map0
@@ -3236,7 +3236,7 @@ fn map_repro2() {
 
 //     let _not_i = !i.clone();
 //     let k = i - j;
-//     assert_eq!(k.to_string(), "-1..=-1, 1..=1, 22..=22");
+//     assert_eq!(k.into_string(), "-1..=-1, 1..=1, 22..=22");
 // }
 
 // #[test]
@@ -3325,17 +3325,17 @@ fn map_repro2() {
 // fn private_constructor() {
 //     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
 //     // println!("{}", unsorted_disjoint.fmt());
-//     assert_eq!(unsorted_disjoint.to_string(), "1..=6, -12..=-10, 3..=3");
+//     assert_eq!(unsorted_disjoint.into_string(), "1..=6, -12..=-10, 3..=3");
 
 //     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
 //     let union_iter = UnionIter::from(unsorted_disjoint);
 //     // println!("{}", union_iter.fmt());
-//     assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
+//     assert_eq!(union_iter.into_string(), "-12..=-10, 1..=6");
 
 //     let union_iter: UnionIter<_, _> = [5, 6, 1, 2, 3, 4, 5, -12, -11, -10, 3]
 //         .into_iter()
 //         .collect();
-//     assert_eq!(union_iter.to_string(), "-12..=-10, 1..=6");
+//     assert_eq!(union_iter.into_string(), "-12..=-10, 1..=6");
 // }
 
 // fn is_ddcppdheo<

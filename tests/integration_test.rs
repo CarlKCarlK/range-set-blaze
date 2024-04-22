@@ -1149,10 +1149,10 @@ fn multiway2() {
     let c = RangeSetBlaze::from_iter([25..=100]);
 
     let union = [a.ranges(), b.ranges(), c.ranges()].union();
-    assert_eq!(union.to_string(), "1..=15, 18..=100");
+    assert_eq!(union.into_string(), "1..=15, 18..=100");
 
     let union = MultiwaySortedDisjoint::union([a.ranges(), b.ranges(), c.ranges()]);
-    assert_eq!(union.to_string(), "1..=15, 18..=100");
+    assert_eq!(union.into_string(), "1..=15, 18..=100");
 }
 
 #[test]
@@ -1163,7 +1163,7 @@ fn check_sorted_disjoint() {
     let b = CheckSortedDisjoint::from([2..=6]);
     let c = a | b;
 
-    assert_eq!(c.to_string(), "1..=100");
+    assert_eq!(c.into_string(), "1..=100");
 }
 
 #[test]
@@ -1177,18 +1177,18 @@ fn dyn_sorted_disjoint_example() {
         DynSortedDisjoint::new(c.ranges()),
     ]
     .union();
-    assert_eq!(union.to_string(), "0..=6, 8..=9, 11..=17, 30..=255");
+    assert_eq!(union.into_string(), "0..=6, 8..=9, 11..=17, 30..=255");
 }
 
 #[test]
 fn not_iter_example() {
     let a = CheckSortedDisjoint::from([1u8..=2, 5..=100]);
     let b = NotIter::new(a);
-    assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
+    assert_eq!(b.into_string(), "0..=0, 3..=4, 101..=255");
 
     // Or, equivalently:
     let b = !CheckSortedDisjoint::from([1u8..=2, 5..=100]);
-    assert_eq!(b.to_string(), "0..=0, 3..=4, 101..=255");
+    assert_eq!(b.into_string(), "0..=0, 3..=4, 101..=255");
 }
 
 #[test]
@@ -1209,13 +1209,13 @@ fn len_demo() {
 //     let c = UnionIter::new(AssumeSortedStarts::new(
 //         a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
 //     ));
-//     assert_eq!(c.to_string(), "1..=100");
+//     assert_eq!(c.into_string(), "1..=100");
 
 //     // Or, equivalently:
 //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     let b = CheckSortedDisjoint::from([2..=6]);
 //     let c = SortedDisjoint::union(a, b);
-//     assert_eq!(c.to_string(), "1..=100")
+//     assert_eq!(c.into_string(), "1..=100")
 // }
 
 #[test]
@@ -1223,22 +1223,22 @@ fn bitor() {
     let a = CheckSortedDisjoint::from([1..=1]);
     let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
     let union = core::ops::BitOr::bitor(a, b);
-    assert_eq!(union.to_string(), "1..=2");
+    assert_eq!(union.into_string(), "1..=2");
 
     let a = CheckSortedDisjoint::from([1..=1]);
     let b = CheckSortedDisjoint::from([2..=2]);
     let c = range_set_blaze::SortedDisjoint::union(a, b);
-    assert_eq!(c.to_string(), "1..=2");
+    assert_eq!(c.into_string(), "1..=2");
 
     let a = CheckSortedDisjoint::from([1..=1]);
     let b = CheckSortedDisjoint::from([2..=2]);
     let c = core::ops::BitOr::bitor(a, b);
-    assert_eq!(c.to_string(), "1..=2");
+    assert_eq!(c.into_string(), "1..=2");
 
     let a = CheckSortedDisjoint::from([1..=1]);
     let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
     let c = range_set_blaze::SortedDisjoint::union(a, b);
-    assert_eq!(c.to_string(), "1..=2");
+    assert_eq!(c.into_string(), "1..=2");
 }
 
 #[test]
@@ -1331,7 +1331,7 @@ fn from_slice_all_types() {
             println!("ty={:#?}",size_of::<$ty>() * 8);
             let v: Vec<$ty> = (0..=127).collect();
             let a2 = RangeSetBlaze::from_slice(&v);
-            assert!(a2.to_string() == "0..=127");
+            assert!(a2.into_string() == "0..=127");
         )*
     }};
 
@@ -1340,7 +1340,7 @@ fn from_slice_all_types() {
             println!("ty={:#?}",size_of::<$ty>() * 8);
             let v: Vec<$ty> = (0..=5000).collect();
             let a2 = RangeSetBlaze::from_slice(&v);
-            assert!(a2.to_string() == "0..=5000");
+            assert!(a2.into_string() == "0..=5000");
         )*
     }};
 }
@@ -1382,20 +1382,20 @@ fn range_set_int_slice_constructor() {
 
     let v: Vec<i32> = (100..=150).collect();
     let a2 = RangeSetBlaze::from_slice(v);
-    assert!(a2.to_string() == "100..=150");
+    assert!(a2.into_string() == "100..=150");
 
     // For compatibility with `BTreeSet`, we also support
     // 'from'/'into' from arrays of integers.
     let a0 = RangeSetBlaze::from([3, 2, 1, 100, 1]);
     let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
-    assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
+    assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100");
 
     #[allow(clippy::needless_borrows_for_generic_args)]
     let a2 = RangeSetBlaze::from_slice(&[3, 2, 1, 100, 1]);
-    assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
+    assert!(a0 == a2 && a2.into_string() == "1..=3, 100..=100");
 
     let a2 = RangeSetBlaze::from_slice([3, 2, 1, 100, 1]);
-    assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
+    assert!(a0 == a2 && a2.into_string() == "1..=3, 100..=100");
 }
 
 #[test]
@@ -1450,26 +1450,26 @@ fn sorted_disjoint_constructors() {
     let r = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
     let a = r.ranges();
     let b = a.clone();
-    assert!(a.to_string() == "1..=3, 100..=100");
-    assert!(b.to_string() == "1..=3, 100..=100");
+    assert!(a.into_string() == "1..=3, 100..=100");
+    assert!(b.into_string() == "1..=3, 100..=100");
     //    'into_ranges' takes ownership of the 'RangeSetBlaze'
     let a = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]).into_ranges();
-    assert!(a.to_string() == "1..=3, 100..=100");
+    assert!(a.into_string() == "1..=3, 100..=100");
 
     // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
     let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
-    assert!(a.to_string() == "1..=3, 100..=100");
+    assert!(a.into_string() == "1..=3, 100..=100");
 
     // tee of a SortedDisjoint iterator
     let _a = CheckSortedDisjoint::from([1..=3, 100..=100]);
     // cmk00 let (a, b) = a.tee();
-    // cmk00 assert!(a.to_string() == "1..=3, 100..=100");
-    // cmk00 assert!(b.to_string() == "1..=3, 100..=100");
+    // cmk00 assert!(a.into_string() == "1..=3, 100..=100");
+    // cmk00 assert!(b.into_string() == "1..=3, 100..=100");
 
     // DynamicSortedDisjoint of a SortedDisjoint iterator
     let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
     let b = DynSortedDisjoint::new(a);
-    assert!(b.to_string() == "1..=3, 100..=100");
+    assert!(b.into_string() == "1..=3, 100..=100");
 }
 
 #[test]
@@ -1503,7 +1503,7 @@ fn iterator_example() {
     let sept = CheckSortedDisjoint::from([244..=273]);
     let sept_weekdays = sept.intersection(weekends.complement());
     assert_eq!(
-        sept_weekdays.to_string(),
+        sept_weekdays.into_string(),
         "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
     );
 }
@@ -1517,7 +1517,7 @@ fn sorted_disjoint_operators() {
     // 'union' method and 'to_string' method
     let (a, b) = (a0.ranges(), b0.ranges());
     let result = a.union(b);
-    assert_eq!(result.to_string(), "1..=100");
+    assert_eq!(result.into_string(), "1..=100");
 
     // '|' operator and 'equal' method
     let (a, b) = (a0.ranges(), b0.ranges());
@@ -1527,12 +1527,12 @@ fn sorted_disjoint_operators() {
     // multiway union of same type
     let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
     let result = [a, b, c].union();
-    assert_eq!(result.to_string(), "1..=200");
+    assert_eq!(result.into_string(), "1..=200");
 
     // multiway union of different types
     let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
     let result = union_dyn!(a, b, !c);
-    assert_eq!(result.to_string(), "-2147483648..=100, 201..=2147483647");
+    assert_eq!(result.into_string(), "-2147483648..=100, 201..=2147483647");
 }
 
 #[test]
@@ -1954,7 +1954,7 @@ fn test_every_sorted_disjoint_method() {
     let (a, b, c, d, e, f, g, h, i) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, d, e, f, g, h, i] {$(
         let z = ! $sd;
-        // println!("{:?}", z.to_string());
+        // println!("{:?}", z.into_string());
         assert!(z.equal(CheckSortedDisjoint::from([-2147483648..=0, 3..=4, 101..=2147483647])));
     )*}}
 
@@ -1999,13 +1999,13 @@ fn multiway3() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
     let c = RangeSetBlaze::from_iter([-100..=100]).into_ranges();
-    assert_eq!([a, b, c].union().to_string(), "-100..=100");
+    assert_eq!([a, b, c].union().into_string(), "-100..=100");
 
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
     let c = RangeSetBlaze::from_iter([-100..=100]).into_ranges();
     assert_eq!(
-        [a, b, c].intersection().to_string(),
+        [a, b, c].intersection().into_string(),
         "5..=6, 8..=9, 11..=13"
     );
 
@@ -2013,7 +2013,7 @@ fn multiway3() {
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
     let c = RangeSetBlaze::from_iter([-100..=100]).into_ranges();
     assert_eq!(
-        [a, b, c].symmetric_difference().to_string(),
+        [a, b, c].symmetric_difference().into_string(),
         "-100..=0, 5..=6, 8..=9, 11..=13, 16..=17, 30..=100"
     );
 }

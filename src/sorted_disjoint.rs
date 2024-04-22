@@ -67,26 +67,26 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// let r = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
 /// let a = r.ranges();
 /// let b = a.clone();
-/// assert!(a.to_string() == "1..=3, 100..=100");
-/// assert!(b.to_string() == "1..=3, 100..=100");
+/// assert!(a.into_string() == "1..=3, 100..=100");
+/// assert!(b.into_string() == "1..=3, 100..=100");
 /// //    'into_ranges' takes ownership of the 'RangeSetBlaze'
 /// let a = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]).into_ranges();
-/// assert!(a.to_string() == "1..=3, 100..=100");
+/// assert!(a.into_string() == "1..=3, 100..=100");
 ///
 /// // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
 /// let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
-/// assert!(a.to_string() == "1..=3, 100..=100");
+/// assert!(a.into_string() == "1..=3, 100..=100");
 ///
 /// // tee of a SortedDisjoint iterator
 /// let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
 /// let (a, b) = a.tee();
-/// assert!(a.to_string() == "1..=3, 100..=100");
-/// assert!(b.to_string() == "1..=3, 100..=100");
+/// assert!(a.into_string() == "1..=3, 100..=100");
+/// assert!(b.into_string() == "1..=3, 100..=100");
 ///
 /// // DynamicSortedDisjoint of a SortedDisjoint iterator
 /// let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
 /// let b = DynSortedDisjoint::new(a);
-/// assert!(b.to_string() == "1..=3, 100..=100");
+/// assert!(b.into_string() == "1..=3, 100..=100");
 /// ```
 ///
 /// # `SortedDisjoint` Set Operations
@@ -118,7 +118,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// // 'union' method and 'to_string' method
 /// let (a, b) = (a0.ranges(), b0.ranges());
 /// let result = a.union(b);
-/// assert_eq!(result.to_string(), "1..=100");
+/// assert_eq!(result.into_string(), "1..=100");
 ///
 /// // '|' operator and 'equal' method
 /// let (a, b) = (a0.ranges(), b0.ranges());
@@ -128,17 +128,17 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// // multiway union of same type
 /// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
 /// let result = [a, b, c].union();
-/// assert_eq!(result.to_string(), "1..=200");
+/// assert_eq!(result.into_string(), "1..=200");
 ///
 /// // multiway union of different types
 /// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
 /// let result = union_dyn!(a, b, !c);
-/// assert_eq!(result.to_string(), "-2147483648..=100, 201..=2147483647");
+/// assert_eq!(result.into_string(), "-2147483648..=100, 201..=2147483647");
 ///
 /// // Applying multiple operators makes only one pass through the inputs with minimal memory.
 /// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
 /// let result = a - (b | c);
-/// assert!(result.to_string() == "1..=1");
+/// assert!(result.into_string() == "1..=1");
 /// ```
 ///
 /// # How to mark your type as `SortedDisjoint`
@@ -205,7 +205,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// let september = CheckSortedDisjoint::from([244..=273]);
 /// let september_weekdays = september.intersection(weekends.complement());
 /// assert_eq!(
-///     september_weekdays.to_string(),
+///     september_weekdays.into_string(),
 ///     "244..=244, 247..=251, 254..=258, 261..=265, 268..=272"
 /// );
 /// ```
@@ -222,14 +222,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// let a = CheckSortedDisjoint::from([1..=1]);
     /// let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
     /// let union = a.union(b);
-    /// assert_eq!(union.to_string(), "1..=2");
+    /// assert_eq!(union.into_string(), "1..=2");
     ///
     /// // Alternatively, we can use "|" because CheckSortedDisjoint defines
     /// // ops::bitor as SortedDisjoint::union.
     /// let a = CheckSortedDisjoint::from([1..=1]);
     /// let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
     /// let union = a | b;
-    /// assert_eq!(union.to_string(), "1..=2");
+    /// assert_eq!(union.into_string(), "1..=2");
     /// ```
     #[inline]
     fn union<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
@@ -251,14 +251,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
     /// let intersection = a.intersection(b);
-    /// assert_eq!(intersection.to_string(), "2..=2");
+    /// assert_eq!(intersection.into_string(), "2..=2");
     ///
     /// // Alternatively, we can use "&" because CheckSortedDisjoint defines
     /// // ops::bitand as SortedDisjoint::intersection.
     /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
     /// let intersection = a & b;
-    /// assert_eq!(intersection.to_string(), "2..=2");
+    /// assert_eq!(intersection.into_string(), "2..=2");
     /// ```
     #[inline]
     fn intersection<R>(self, other: R) -> BitAndMerge<T, Self, R::IntoIter>
@@ -280,14 +280,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
     /// let difference = a.difference(b);
-    /// assert_eq!(difference.to_string(), "1..=1");
+    /// assert_eq!(difference.into_string(), "1..=1");
     ///
     /// // Alternatively, we can use "-" because CheckSortedDisjoint defines
     /// // ops::sub as SortedDisjoint::difference.
     /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
     /// let difference = a - b;
-    /// assert_eq!(difference.to_string(), "1..=1");
+    /// assert_eq!(difference.into_string(), "1..=1");
     /// ```
     #[inline]
     fn difference<R>(self, other: R) -> BitSubMerge<T, Self, R::IntoIter>
@@ -308,13 +308,13 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     ///
     /// let a = CheckSortedDisjoint::from([-10i16..=0, 1000..=2000]);
     /// let complement = a.complement();
-    /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
+    /// assert_eq!(complement.into_string(), "-32768..=-11, 1..=999, 2001..=32767");
     ///
     /// // Alternatively, we can use "!" because CheckSortedDisjoint defines
     /// // ops::not as SortedDisjoint::complement.
     /// let a = CheckSortedDisjoint::from([-10i16..=0, 1000..=2000]);
     /// let complement = !a;
-    /// assert_eq!(complement.to_string(), "-32768..=-11, 1..=999, 2001..=32767");
+    /// assert_eq!(complement.into_string(), "-32768..=-11, 1..=999, 2001..=32767");
     /// ```
     #[inline]
     fn complement(self) -> NotIter<T, Self>
@@ -335,14 +335,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
     /// let symmetric_difference = a.symmetric_difference(b);
-    /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
+    /// assert_eq!(symmetric_difference.into_string(), "1..=1, 3..=3");
     ///
     /// // Alternatively, we can use "^" because CheckSortedDisjoint defines
     /// // ops::bitxor as SortedDisjoint::symmetric_difference.
     /// let a = CheckSortedDisjoint::from([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
     /// let symmetric_difference = a ^ b;
-    /// assert_eq!(symmetric_difference.to_string(), "1..=1, 3..=3");
+    /// assert_eq!(symmetric_difference.into_string(), "1..=1, 3..=3");
     /// ```
     #[inline]
     fn symmetric_difference<R>(self, other: R) -> BitXorMerge<T, Self, R::IntoIter>
@@ -387,13 +387,22 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([1..=2]);
-    /// assert_eq!(a.to_string(), "1..=2");
+    /// assert_eq!(a.into_string(), "1..=2");
     /// ```
-    fn to_string(self) -> String
+    fn into_string(self) -> String
     where
         Self: Sized,
     {
         self.map(|range| format!("{range:?}")).join(", ")
+    }
+
+    /// Deprecated. Use [`into_string`] instead.
+    #[deprecated(since = "0.1.cmk", note = "Use `into_string` instead")]
+    fn to_string(self) -> String
+    where
+        Self: Sized,
+    {
+        self.into_string()
     }
 
     /// Returns `true` if the set contains no elements.
@@ -523,7 +532,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     ///
     /// let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
     /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
-    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
     /// ```
     fn into_range_set_blaze(self) -> RangeSetBlaze<T>
     where
@@ -548,7 +557,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 /// let b = CheckSortedDisjoint::from([2..=6]);
 /// let union = a | b;
-/// assert_eq!(union.to_string(), "1..=100");
+/// assert_eq!(union.into_string(), "1..=100");
 /// ```
 ///
 /// Here the ranges are not sorted and disjoint, so the iterator will panic.
@@ -558,7 +567,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 /// let b = CheckSortedDisjoint::from([2..=6,-10..=-5]);
 /// let union = a | b;
-/// assert_eq!(union.to_string(), "1..=100");
+/// assert_eq!(union.into_string(), "1..=100");
 /// ```
 #[derive(Debug, Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -659,8 +668,8 @@ impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]>
     ///
     /// let a0 = CheckSortedDisjoint::from([1..=3, 100..=100]);
     /// let a1: CheckSortedDisjoint<_,_> = [1..=3, 100..=100].into();
-    /// assert_eq!(a0.to_string(), "1..=3, 100..=100");
-    /// assert_eq!(a1.to_string(), "1..=3, 100..=100");
+    /// assert_eq!(a0.into_string(), "1..=3, 100..=100");
+    /// assert_eq!(a1.into_string(), "1..=3, 100..=100");
     /// ```
     fn from(arr: [RangeInclusive<T>; N]) -> Self {
         let iter = arr.into_iter();
