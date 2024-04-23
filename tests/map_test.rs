@@ -1,38 +1,13 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 extern crate alloc;
-// cmk000 use self::map::ValueOwned;
-// cmk000 use super::*;
-// use crate::intersection_iter_map::IntersectionIterMap;
-// use crate::sorted_disjoint_map::DebugToString;
-// use crate::sorted_disjoint_map::SortedDisjointMap;
-// use crate::sym_diff_iter_map::SymDiffIterMap;
-// use crate::union_iter_map::UnionIterMap;
-// use crate::unsorted_disjoint_map::{ UnsortedPriorityDisjointMap};
 use alloc::collections::BTreeMap;
 use core::fmt;
 use core::ops::RangeInclusive;
-use itertools::Itertools;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use range_set_blaze::AssumePrioritySortedStartsMap;
-// #![cfg(test)]
-// #![cfg(not(target_arch = "wasm32"))]
-
-// #[cfg(feature = "from_slice")]
-// use core::mem::size_of;
-// #[cfg(feature = "rog-experimental")]
-// use core::ops::Bound;
-// use core::ops::RangeInclusive;
-// use criterion::{BatchSize, BenchmarkId, Criterion};
-// use itertools::Itertools;
-// use rand::rngs::StdRng;
-// use rand::SeedableRng;
-// #[cfg(feature = "rog-experimental")]
-// use range_map_blaze::Rog;
-// // cmk add RangeMapBlaze to prelude
-// use std::collections::BTreeMap;
 use range_set_blaze::prelude::*;
+use range_set_blaze::AssumePrioritySortedStartsMap;
 
 // cmk0 add some to prelude?
 use range_set_blaze::range_values::RangeValuesIter;
@@ -4126,3 +4101,81 @@ fn map_repro2() {
 //     assert_eq!(range.next(), Some(12));
 //     assert_eq!(range.next(), Some(20));
 // }
+
+#[test]
+fn test_coverage_0() {
+    let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
+    let d = DynSortedDisjointMap::new(a.range_values());
+    assert_eq!(d.size_hint(), a.range_values().size_hint());
+}
+
+#[test]
+fn test_coverage_1() {
+    let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
+    let mut i = a.iter();
+    assert_eq!(i.next_back(), Some((4, &"World")));
+    assert_eq!(i.next_back(), Some((3, &"World")));
+    assert_eq!(i.next_back(), Some((2, &"Hello")));
+    assert_eq!(i.next_back(), Some((1, &"Hello")));
+    assert_eq!(i.next_back(), None);
+}
+
+#[test]
+fn test_coverage_2() {
+    let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
+    let mut i = a.into_iter();
+    assert_eq!(i.size_hint(), (2, None));
+    assert_eq!(i.next(), Some((1, "Hello")));
+    assert_eq!(i.next(), Some((2, "Hello")));
+    assert_eq!(i.next(), Some((3, "World")));
+    assert_eq!(i.next(), Some((4, "World")));
+    assert_eq!(i.next(), None);
+
+    let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
+    let mut i = a.into_iter();
+    assert_eq!(i.next_back(), Some((4, "World")));
+    assert_eq!(i.next_back(), Some((3, "World")));
+    assert_eq!(i.next_back(), Some((2, "Hello")));
+    assert_eq!(i.next_back(), Some((1, "Hello")));
+    assert_eq!(i.next_back(), None);
+
+    let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
+    let mut i = a.keys();
+    assert_eq!(i.size_hint(), (2, None));
+    assert_eq!(i.next(), Some(1));
+    assert_eq!(i.next(), Some(2));
+    assert_eq!(i.next(), Some(3));
+    assert_eq!(i.next(), Some(4));
+    assert_eq!(i.next(), None);
+
+    let mut i = a.keys();
+    assert_eq!(i.next_back(), Some(4));
+    assert_eq!(i.next_back(), Some(3));
+    assert_eq!(i.next_back(), Some(2));
+    assert_eq!(i.next_back(), Some(1));
+    assert_eq!(i.next_back(), None);
+}
+
+#[test]
+#[should_panic]
+fn test_coverage_4() {
+    let a = RangeMapBlaze::from_iter([(1u128..=4, "Hello")]);
+    // must panic
+    a.get(u128::MAX);
+}
+
+#[test]
+#[should_panic]
+fn test_coverage_5() {
+    let mut a = RangeMapBlaze::from_iter([(1u128..=4, "Hello")]);
+    // must panic
+    a.remove(u128::MAX);
+}
+
+#[test]
+#[should_panic]
+fn test_coverage_6() {
+    let mut a = RangeMapBlaze::from_iter([(1u128..=4, "Hello")]);
+    // must panic
+    a.split_off(u128::MAX);
+}

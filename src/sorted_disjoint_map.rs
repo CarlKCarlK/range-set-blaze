@@ -653,31 +653,6 @@ where
     }
 }
 
-// cmk0000 rename 'to_string' to 'into_string' (and deprecated the old one)
-// cmk could this have a better name
-// pub trait DebugToString<T: Integer, V: ValueOwned, VR>
-// where
-//     VR: CloneBorrow<V>,
-// {
-//     fn to_string(self) -> String;
-// }
-
-// impl<T, V, VR, M> DebugToString<T, V, VR> for M
-// where
-//     T: Integer + Debug,
-//     V: ValueOwned + Debug,
-//     VR: CloneBorrow<V>,
-//     M: SortedDisjointMap<T, V, VR> + Sized,
-// {
-//     fn to_string(self) -> String {
-//         self.map(|range_value| {
-//             let (range, value) = range_value;
-//             format!("({:?}, {:?})", range, value.borrow())
-//         })
-//         .collect::<Vec<_>>()
-//         .join(", ")
-//     }
-// }
 /// Converts the implementing type into a String by consuming it.
 /// It is intended for types where items are Debug-able.
 pub trait IntoString {

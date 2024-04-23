@@ -22,3 +22,4 @@ examples/simd/*/del*.*
 del*.csv
 examples/simd/is_consecutive2/delbench.sh
 examples/simd/is_consecutive2/delme.csv
+*.profraw

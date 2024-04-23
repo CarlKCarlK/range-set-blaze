@@ -6,9 +6,11 @@ use crate::AssumePrioritySortedStartsMap;
 use crate::Integer;
 use crate::RangeMapBlaze;
 use crate::UnionIterMap;
+use alloc::collections::BTreeMap;
 use core::fmt;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
+use quickcheck_macros::quickcheck;
 
 #[test]
 fn map_step_by_step() {
@@ -1731,8 +1733,13 @@ fn map_repro1() {
 // //     println!("{v:?}");
 // // }
 
-// // type Element = i64;
-// // type Reference = std::collections::BTreeSet<Element>;
+#[quickcheck]
+fn extend(mut a: BTreeMap<i8, u8>, b: Vec<(i8, u8)>) -> bool {
+    let mut a_r = RangeMapBlaze::from_iter(a.clone().into_iter());
+    a.extend(b.clone().into_iter());
+    a_r.extend(b.clone().into_iter());
+    a_r == RangeMapBlaze::from_iter(a.into_iter())
+}
 
 // // #[quickcheck]
 // // fn disjoint(a: Reference, b: Reference) -> bool {
@@ -1957,3 +1964,18 @@ fn map_repro1() {
 // //     assert_eq!(range.next(), Some(12));
 // //     assert_eq!(range.next(), Some(20));
 // // }
+
+#[test]
+#[should_panic]
+fn test_coverage_8() {
+    let mut a = RangeMapBlaze::from_iter([(1u128..=2, "Hello"), (3..=4, "World")]);
+    a.internal_add(0..=u128::MAX, "Hello");
+}
+
+#[test]
+fn test_coverage_9() {
+    let mut a = RangeMapBlaze::from_iter([(1u128..=2, "Hello"), (3..=4, "World")]);
+    let b = a.clone();
+    a.internal_add(1..=0, "Hello"); // adding empty
+    assert_eq!(a, b);
+}

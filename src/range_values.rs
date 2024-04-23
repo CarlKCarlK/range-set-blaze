@@ -63,12 +63,17 @@ where
     }
 }
 
-// cmk
-// impl<T: Integer, V: ValueOwned> DoubleEndedIterator for RangeValuesIter<'_, T, V, VR> {
-//     fn next_back(&mut self) -> Option<Self::Item> {
-//         self.iter.next_back().map(|(start, end)| *start..=*end)
-//     }
-// }
+impl<'a, T, V> DoubleEndedIterator for RangeValuesIter<'a, T, V>
+where
+    T: Integer,
+    V: ValueOwned + 'a,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter
+            .next_back()
+            .map(|(start, end_value)| (*start..=end_value.end, &end_value.value))
+    }
+}
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 /// An iterator that moves out the ranges in the [`RangeSetBlaze`],

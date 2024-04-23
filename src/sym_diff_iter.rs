@@ -91,7 +91,7 @@ where
             // Next start inside the workspace's first chunk, so process up to next_start.
             let end = self.end_heap.peek().unwrap().0;
             if next_start <= end {
-                let result = self.start_or_min_value..=next_start - T::one(); // cmk000 check for overflow
+                let result = self.start_or_min_value..=next_start - T::one();
                 self.start_or_min_value = next_start;
                 self.end_heap.push(Reverse(next_end));
                 if let Some(result) = self.process(count % 2 == 1, result) {
@@ -115,7 +115,7 @@ where
 
             // Next start is after the workspaces end, and the workspace contains more than one chuck,
             // so process one chunk and then process next
-            self.start_or_min_value = end + T::one(); // cmk000 check for overflow
+            self.start_or_min_value = end + T::one();
             self.next_again = Some(next_start..=next_end);
             if let Some(result) = self.process(count % 2 == 1, result) {
                 return result;

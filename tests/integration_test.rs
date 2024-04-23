@@ -2041,3 +2041,75 @@ fn multiway4() {
         RangeSetBlaze::from_iter([-100..=0, 5..=6, 8..=9, 11..=13, 16..=17, 30..=100])
     );
 }
+
+// cmk00 move these tests to tests.rs
+
+// pub fn values_to_sorted_disjoint<T, I>(iter: I) -> SortedDisjointToUnitMap<T, I>
+// where
+//     T: Integer,
+//     I: Iterator<Item = T>, // cmk00 into_iter??? cmk00
+// {
+//     let iter = iter.map(|x| (x..=x, &()));
+//     let iter = UnsortedDisjointMap::new(iter);
+//     let sorted_disjoint_map = UnionIterMap::new(iter);
+//     let sorted_disjoint = UnitMapToSortedDisjoint::new(sorted_disjoint_map);
+//     sorted_disjoint
+// }
+
+/// Test every function in the library that does a union like thing.
+#[test]
+fn test_every_union() {
+    // cmk000 - test every... of the other operations, too
+    // bitor x 4
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = &a | &b;
+    assert_eq!(c, RangeSetBlaze::from_iter([1..=15, 18..=29]));
+    let c = a | &b;
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    assert_eq!(c, RangeSetBlaze::from_iter([1..=15, 18..=29]));
+    let c = &a | b;
+    assert_eq!(c, RangeSetBlaze::from_iter([1..=15, 18..=29]));
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = a | b;
+    assert_eq!(c, RangeSetBlaze::from_iter([1..=15, 18..=29]));
+
+    // bitor_assign x 2
+    let mut a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    a |= &b;
+    assert_eq!(a, RangeSetBlaze::from_iter([1..=15, 18..=29]));
+    let mut a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    a |= b;
+    assert_eq!(a, RangeSetBlaze::from_iter([1..=15, 18..=29]));
+
+    // extend x 2
+    let mut a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    a.extend(b.ranges());
+    assert_eq!(a, RangeSetBlaze::from_iter([1..=15, 18..=29]));
+    let mut a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    a.extend(b.iter());
+    assert_eq!(a, RangeSetBlaze::from_iter([1..=15, 18..=29]));
+
+    // append
+    let mut a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let mut b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    a.append(&mut b);
+    assert_eq!(a, RangeSetBlaze::from_iter([1..=15, 18..=29]));
+    assert!(b.is_empty());
+
+    // // .union()
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = [&a, &b].union();
+    assert_eq!(c, RangeSetBlaze::from_iter([1..=15, 18..=29]));
+
+    // union_dyn!
+    let c = union_dyn!(a.ranges(), b.ranges());
+    assert!(c.equal(RangeSetBlaze::from_iter([1..=15, 18..=29]).ranges()));
+
+    // [sorted disjoints].union()
+    let c = [a.ranges(), b.ranges()].union();
+    assert!(c.equal(RangeSetBlaze::from_iter([1..=15, 18..=29]).ranges()));
+}

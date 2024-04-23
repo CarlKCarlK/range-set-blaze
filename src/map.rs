@@ -2,8 +2,8 @@ use crate::intersection_iter_map::IntersectionIterMap;
 use crate::iter_map::IntoIterMap;
 use crate::iter_map::{IterMap, KeysMap};
 use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter};
+use crate::sorted_disjoint_map::SortedDisjointMap;
 use crate::sorted_disjoint_map::{IntoString, Priority};
-use crate::sorted_disjoint_map::{PrioritySortedStartsMap, SortedDisjointMap};
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::union_iter_map::UnionIterMap;
 use crate::unsorted_disjoint_map::{
@@ -68,19 +68,6 @@ impl<V: ?Sized + ValueOwned> CloneBorrow<V> for Rc<V> {
 impl<V: ?Sized + ValueOwned> CloneBorrow<V> for Arc<V> {
     fn clone_borrow(&self) -> Self {
         Arc::clone(self)
-    }
-}
-
-impl<T> fmt::Debug for EndValue<T, ()>
-where
-    T: Integer,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // General case, possibly minimal info since we can't conditionally compile based on V being ()
-        f.debug_struct("EndValue")
-            .field("end", &self.end)
-            .field("value", &self.value)
-            .finish()
     }
 }
 
@@ -512,15 +499,6 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             btree_map,
             len: iter_with_len.len_so_far(),
         }
-    }
-
-    /// cmk doc
-    pub fn from_priority_sorted_starts_map<VR, I>(iter: I) -> Self
-    where
-        VR: CloneBorrow<V>,
-        I: PrioritySortedStartsMap<T, V, VR>,
-    {
-        Self::from_sorted_disjoint_map(UnionIterMap::new(iter))
     }
 
     /// Creates a [`RangeMapBlaze`] from a collection of integers. It is typically many
@@ -1992,7 +1970,7 @@ where
     V: ValueOwned,
 {
     /// Extends the [`RangeSetBlaze`] with the contents of a
-    /// range iterator.
+    /// range iterator. cmk this has right-to-left priority -- like BTreeMap, but unlike most other RangeSetBlaze methods.
 
     /// Elements are added one-by-one. There is also a version
     /// that takes an integer iterator.
@@ -2019,7 +1997,7 @@ where
     {
         let iter = iter.into_iter();
 
-        // We gather adjacent values into ranges via UnsortedDisjointMap.
+        // We gather adjacent values into ranges via UnsortedPriorityDisjointMap, but ignore the priority.
         for priority in
             UnsortedPriorityDisjointMap::new(iter.map(|(r, v)| (r..=r, UniqueValue::new(v))))
         {
@@ -2086,4 +2064,27 @@ where
     fn from(arr: [(T, V); N]) -> Self {
         arr.into_iter().collect()
     }
+}
+
+// cmk0000 move these tests
+
+#[test]
+fn test_coverage_7() {
+    let mut a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
+    assert_eq!(a.take(1), Some("Hello"));
+    assert_eq!(a.take(1), None);
+    assert_eq!(a.take(3), Some("World"));
+    assert_eq!(a.take(2), Some("Hello"));
+    assert_eq!(a.take(4), Some("World"));
+    assert!(a.is_empty());
+}
+
+#[test]
+fn test_coverage_10() {
+    let mut a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
+    assert_eq!(a.pop_last(), Some((4, "World")));
+    assert_eq!(a.pop_last(), Some((3, "World")));
+    assert_eq!(a.pop_last(), Some((2, "Hello")));
+    assert_eq!(a.pop_last(), Some((1, "Hello")));
+    assert_eq!(a.pop_last(), None);
 }
