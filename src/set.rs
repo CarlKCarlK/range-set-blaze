@@ -314,7 +314,7 @@ where
 #[derive(Clone, Hash, Default, PartialEq)]
 pub struct RangeSetBlaze<T: Integer> {
     len: <T as Integer>::SafeLen,
-    btree_map: BTreeMap<T, T>,
+    pub(crate) btree_map: BTreeMap<T, T>,
 }
 
 // FUTURE: Make all RangeSetBlaze iterators DoubleEndedIterator and ExactSizeIterator.
