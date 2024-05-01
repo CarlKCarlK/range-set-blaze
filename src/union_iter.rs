@@ -20,7 +20,7 @@ use itertools::Itertools;
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_blaze::{UnionIter, Merge, SortedDisjoint, CheckSortedDisjoint};
+/// use range_set_blaze::{prelude::*,UnionIter};
 ///
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);

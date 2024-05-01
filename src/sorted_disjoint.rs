@@ -3,8 +3,6 @@ use crate::range_values::{MapIntoRangesIter, MapRangesIter, RangeValuesToRangesI
 use crate::ranges::RangesIter;
 use crate::RangeSetBlaze;
 use crate::{BitOrMerge, IntoRangesIter, UnionIter};
-use alloc::format;
-use alloc::string::String;
 use core::array;
 use core::{
     iter::FusedIterator,
@@ -12,7 +10,6 @@ use core::{
 };
 
 use crate::{map::ValueOwned, SortedDisjointMap};
-use itertools::Itertools;
 
 use crate::{
     BitAndMerge, BitSubMerge, BitXorMerge, DynSortedDisjoint, Integer, NotIter, SymDiffIter,
@@ -169,6 +166,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// ## Example -- Find the ordinal weekdays in September 2023
 /// ```
 /// use core::ops::RangeInclusive;
+/// use core::iter::FusedIterator;
 /// pub use range_set_blaze::{SortedDisjoint, SortedStarts};
 ///
 /// // Ordinal dates count January 1 as day 1, February 1 as day 32, etc.
@@ -178,6 +176,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 ///
 /// // We promise the compiler that our iterator will provide
 /// // ranges that are sorted and disjoint.
+/// impl FusedIterator for OrdinalWeekends2023 {}
 /// impl SortedStarts<i32> for OrdinalWeekends2023 {}
 /// impl SortedDisjoint<i32> for OrdinalWeekends2023 {}
 ///
@@ -378,32 +377,34 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         itertools::equal(self, other)
     }
 
-    /// Given a [`SortedDisjoint`] iterators, produces a string version. Unlike most `to_string` and `fmt` in Rust,
-    /// this method takes ownership of the iterator and consumes it.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_blaze::prelude::*;
-    ///
-    /// let a = CheckSortedDisjoint::from([1..=2]);
-    /// assert_eq!(a.into_string(), "1..=2");
-    /// ```
-    fn into_string(self) -> String
-    where
-        Self: Sized,
-    {
-        self.map(|range| format!("{range:?}")).join(", ")
-    }
+    // cmk move this documentation to the trait
+    // /// Given a [`SortedDisjoint`] iterators, produces a string version. Unlike most `to_string` and `fmt` in Rust,
+    // /// this method takes ownership of the iterator and consumes it.
+    // ///
+    // /// # Examples
+    // ///
+    // /// ```
+    // /// use range_set_blaze::prelude::*;
+    // ///
+    // /// let a = CheckSortedDisjoint::from([1..=2]);
+    // /// assert_eq!(a.into_string(), "1..=2");
+    // /// ```
+    // fn into_string(self) -> String
+    // where
+    //     Self: Sized,
+    // {
+    //     self.map(|range| format!("{range:?}")).join(", ")
+    // }
 
-    /// Deprecated. Use [`into_string`] instead.
-    #[deprecated(since = "0.1.cmk", note = "Use `into_string` instead")]
-    fn to_string(self) -> String
-    where
-        Self: Sized,
-    {
-        self.into_string()
-    }
+    // cmk000
+    // /// Deprecated. Use [`into_string`] instead.
+    // #[deprecated(since = "0.1.cmk", note = "Use `into_string` instead")]
+    // fn to_string(self) -> String
+    // where
+    //     Self: Sized,
+    // {
+    //     self.into_string()
+    // }
 
     /// Returns `true` if the set contains no elements.
     ///
@@ -532,7 +533,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     ///
     /// let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
     /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
-    /// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
     fn into_range_set_blaze(self) -> RangeSetBlaze<T>
     where

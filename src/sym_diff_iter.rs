@@ -4,11 +4,11 @@ use crate::{
 use alloc::collections::BinaryHeap;
 use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
 
-/// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
+/// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union, // cmk
 /// i.e., all the integers in any input iterator, as sorted & disjoint ranges. Uses [`Merge`]
 /// or [`KMerge`].
 ///
-/// [`SortedDisjointMap`]: crate::SortedDisjointMap
+/// [`SortedDisjoint`]: crate::SortedDisjoint
 /// [`Merge`]: crate::Merge
 /// [`KMerge`]: crate::KMerge
 ///
@@ -16,18 +16,18 @@ use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_blaze::{SymDiffIter, Merge, SortedDisjointMap, CheckSortedDisjoint};
+/// use range_set_blaze::{prelude::*,SymDiffIter};
 ///
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
-/// let union = SymDiffIter::new(Merge::new(a, b));
-/// assert_eq!(union.into_string(), "1..=100");
+/// let sym_diff = SymDiffIter::new2(a, b);
+/// assert_eq!(sym_diff.into_string(), "1..=1, 3..=4, 7..=100");
 ///
 /// // Or, equivalently:
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
-/// let union = a | b;
-/// assert_eq!(union.into_string(), "1..=100")
+/// let sym_diff = a ^ b;
+/// assert_eq!(sym_diff.into_string(), "1..=1, 3..=4, 7..=100")
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -174,7 +174,7 @@ where
         return Some(Some(gather_start..=gather_end));
     }
 
-    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjointMap`] iterators.
+    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators.
     /// See [`SymDiffIter`] for more details and examples.
     pub fn new(iter: I) -> Self {
         Self {
@@ -194,7 +194,7 @@ where
     R: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIter`] for more details and examples.
+    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`SymDiffIter`] for more details and examples.
     pub fn new2(left: L, right: R) -> Self {
         let iter = Merge::new(left, right);
         Self::new(iter)
@@ -208,7 +208,7 @@ where
     J: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIter`] for more details and examples.
+    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`SymDiffIter`] for more details and examples.
     pub fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,

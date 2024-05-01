@@ -200,7 +200,7 @@ where
     ///
     /// let a0 = RangeSetBlaze::from_sorted_starts(AssumeSortedStarts::new([-10..=-5, -7..=2]));
     /// let a1: RangeSetBlaze<i32> = AssumeSortedStarts::new([-10..=-5, -7..=2]).into_range_set_blaze();
-    /// assert!(a0 == a1 && a0.into_string() == "-10..=2");
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=2");
     /// ```
     pub fn into_range_set_blaze(self) -> RangeSetBlaze<T>
     where

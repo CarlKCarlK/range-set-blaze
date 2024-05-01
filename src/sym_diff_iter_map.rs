@@ -28,11 +28,11 @@ use crate::{
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_blaze::{SymDiffIterMap, Merge, SortedDisjointMap, CheckSortedDisjoint};
+/// use range_set_blaze::{prelude::*,SymDiffIterMap};
 ///
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
 /// let b = CheckSortedDisjoint::from([2..=6]);
-/// let union = SymDiffIterMap::new(Merge::new(a, b));
+/// let union = SymDiffIterMap::new2(a, b);
 /// assert_eq!(union.into_string(), "1..=100");
 ///
 /// // Or, equivalently:

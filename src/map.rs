@@ -20,7 +20,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::borrow::Borrow;
 use core::fmt;
-use core::ops::{BitOr, Bound, RangeBounds};
+use core::ops::{BitOr, Bound, Index, RangeBounds};
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use gen_ops::gen_ops_ex;
 use num_traits::One;
@@ -330,12 +330,12 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let set = RangeMapBlaze::from_iter([1..=3]);
-    /// let mut set_iter = set.iter();
-    /// assert_eq!(set_iter.next(), Some(1));
-    /// assert_eq!(set_iter.next(), Some(2));
-    /// assert_eq!(set_iter.next(), Some(3));
-    /// assert_eq!(set_iter.next(), None);
+    /// let map = RangeMapBlaze::from_iter([(1..=3,"a")]);
+    /// let mut map_iter = map.iter();
+    /// assert_eq!(map_iter.next(), Some((1, &"a")));
+    /// assert_eq!(map_iter.next(), Some((2, &"a")));
+    /// assert_eq!(map_iter.next(), Some((3, &"a")));
+    /// assert_eq!(map_iter.next(), None);
     /// ```
     ///
     /// Values returned by `.next()` are in ascending order.
@@ -344,13 +344,14 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let set = RangeMapBlaze::from_iter([3, 1, 2]);
-    /// let mut set_iter = set.iter();
-    /// assert_eq!(set_iter.next(), Some(1));
-    /// assert_eq!(set_iter.next_back(), Some(3));
-    /// assert_eq!(set_iter.next(), Some(2));
-    /// assert_eq!(set_iter.next_back(), None);
+    /// let map = RangeMapBlaze::from_iter([(3,"c"), (1,"a"), (2,"b")]);
+    /// let mut map_iter = map.iter();
+    /// assert_eq!(map_iter.next(), Some((1, &"a")));
+    /// assert_eq!(map_iter.next_back(), Some((3, &"c")));
+    /// assert_eq!(map_iter.next(), Some((2, &"b")));
+    /// assert_eq!(map_iter.next_back(), None);
     /// ```
+    #[inline] // cmk should RangeSETBlazes iter be inlined? (look at BTreeSet)
     pub fn iter(&self) -> IterMap<T, V, &V, RangeValuesIter<'_, T, V>> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
@@ -367,12 +368,12 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let set = RangeMapBlaze::from_iter([1..=3]);
-    /// let mut set_iter = set.iter();
-    /// assert_eq!(set_iter.next(), Some(1));
-    /// assert_eq!(set_iter.next(), Some(2));
-    /// assert_eq!(set_iter.next(), Some(3));
-    /// assert_eq!(set_iter.next(), None);
+    /// let map = RangeMapBlaze::from_iter([(1..=3,"a")]);
+    /// let mut keys_iter = map.keys();
+    /// assert_eq!(keys_iter.next(), Some(1));
+    /// assert_eq!(keys_iter.next(), Some(2));
+    /// assert_eq!(keys_iter.next(), Some(3));
+    /// assert_eq!(keys_iter.next(), None);
     /// ```
     ///
     /// Values returned by `.next()` are in ascending order.
@@ -381,12 +382,12 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let set = RangeMapBlaze::from_iter([3, 1, 2]);
-    /// let mut set_iter = set.iter();
-    /// assert_eq!(set_iter.next(), Some(1));
-    /// assert_eq!(set_iter.next_back(), Some(3));
-    /// assert_eq!(set_iter.next(), Some(2));
-    /// assert_eq!(set_iter.next_back(), None);
+    /// let map = RangeMapBlaze::from_iter([(3,"c"), (1,"a"), (2,"b")]);
+    /// let mut keys_iter = map.keys();
+    /// assert_eq!(keys_iter.next(), Some(1));
+    /// assert_eq!(keys_iter.next_back(), Some(3));
+    /// assert_eq!(keys_iter.next(), Some(2));
+    /// assert_eq!(keys_iter.next_back(), None);
     /// ```
     pub fn keys(&self) -> KeysMap<T, V, &V, RangeValuesIter<'_, T, V>> {
         // If the user asks for an iter, we give them a RangesIter iterator
@@ -406,12 +407,12 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let mut set = RangeMapBlaze::new();
-    /// assert_eq!(set.first(), None);
-    /// set.insert(1);
-    /// assert_eq!(set.first(), Some(1));
-    /// set.insert(2);
-    /// assert_eq!(set.first(), Some(1));
+    /// let mut map = RangeMapBlaze::new();
+    /// assert_eq!(map.first_key_value(), None);
+    /// map.insert(1,"a");
+    /// assert_eq!(map.first_key_value(), Some((1, &"a")));
+    /// map.insert(2,"b");
+    /// assert_eq!(map.first_key_value(), Some((1, &"a")));
     /// ```
     #[must_use]
     pub fn first_key_value(&self) -> Option<(T, &V)> {
@@ -428,9 +429,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let set = RangeMapBlaze::from_iter([1, 2, 3]);
-    /// assert_eq!(set.get(2), Some(2));
-    /// assert_eq!(set.get(4), None);
+    /// let map = RangeMapBlaze::from_iter([(3,"c"), (1,"a"), (2,"b")]);
+    /// assert_eq!(map.get(2), Some(&"b"));
+    /// assert_eq!(map.get(4), None);
     /// ```
     pub fn get(&self, key: T) -> Option<&V> {
         assert!(
@@ -459,12 +460,12 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let mut set = RangeMapBlaze::new();
-    /// assert_eq!(set.last(), None);
-    /// set.insert(1);
-    /// assert_eq!(set.last(), Some(1));
-    /// set.insert(2);
-    /// assert_eq!(set.last(), Some(2));
+    /// let mut map = RangeMapBlaze::new();
+    /// assert_eq!(map.last_key_value(), None);
+    /// map.insert(1, "a");
+    /// assert_eq!(map.last_key_value(), Some((1, &"a")));
+    /// map.insert(2, "b");
+    /// assert_eq!(map.last_key_value(), Some((2, &"b")));
     /// ```
     #[must_use]
     pub fn last_key_value(&self) -> Option<(T, &V)> {
@@ -484,9 +485,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a0 = RangeMapBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-    /// let a1: RangeMapBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze2();
-    /// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
+    /// let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::from([(-10..=-5, &"a"), (1..=2, &"b")]));
+    /// let a1: RangeMapBlaze<i32,_> = CheckSortedDisjointMap::from([(-10..=-5, &"a"), (1..=2, &"b")]).into_range_map_blaze();
+    /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "a"), (1..=2, "b")"#);
     /// ```
     pub fn from_sorted_disjoint_map<VR, I>(iter: I) -> Self
     where
@@ -559,20 +560,19 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let mut a = RangeMapBlaze::from_iter([1..=3]);
-    /// let mut b = RangeMapBlaze::from_iter([3..=5]);
+    /// let mut a = RangeMapBlaze::from_iter([(1..=3,"a")]);
+    /// let mut b = RangeMapBlaze::from_iter([(3..=5,"b")]);
     ///
     /// a.append(&mut b);
     ///
     /// assert_eq!(a.len(), 5usize);
     /// assert_eq!(b.len(), 0usize);
     ///
-    /// assert!(a.contains(1));
-    /// assert!(a.contains(2));
-    /// assert!(a.contains(3));
-    /// assert!(a.contains(4));
-    /// assert!(a.contains(5));
-    ///
+    /// assert_eq!(a[1], "a");
+    /// assert_eq!(a[2], "a");
+    /// assert_eq!(a[3], "b");
+    /// assert_eq!(a[4], "b");
+    /// assert_eq!(a[5], "b");
     /// ```
     pub fn append(&mut self, other: &mut Self) {
         for range_values in other.range_values() {
@@ -583,39 +583,39 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         other.clear();
     }
 
-    /// Clears the set, removing all integer elements.
+    /// Clears the map, removing all elements.
     ///
     /// # Examples
     ///
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let mut v = RangeMapBlaze::new();
-    /// v.insert(1);
-    /// v.clear();
-    /// assert!(v.is_empty());
+    /// let mut a = RangeMapBlaze::new();
+    /// a.insert(1, "a");
+    /// a.clear();
+    /// assert!(a.is_empty());
     /// ```
     pub fn clear(&mut self) {
         self.btree_map.clear();
         self.len = <T as Integer>::SafeLen::zero();
     }
 
-    /// Returns `true` if the set contains no elements.
+    /// Returns `true` if the map contains no elements.
     ///
     /// # Examples
     ///
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let mut v = RangeMapBlaze::new();
-    /// assert!(v.is_empty());
-    /// v.insert(1);
-    /// assert!(!v.is_empty());
+    /// let mut a = RangeMapBlaze::new();
+    /// assert!(a.is_empty());
+    /// a.insert(1);
+    /// assert!(!a.is_empty());
     /// ```
     #[must_use]
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.range_values_len() == 0
+        self.btree_map.is_empty()
     }
 
     /// Returns `true` if the set is a subset of another,
@@ -679,7 +679,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let set = RangeMapBlaze::from_iter([1, 2, 3]);
+    /// let map = RangeMapBlaze::from_iter([(3,"c"), (1,"a"), (2,"b")]);
     /// assert_eq!(set.contains(1), true);
     /// assert_eq!(set.contains(4), false);
     /// ```
@@ -1991,6 +1991,7 @@ where
     /// a |= b;
     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
+    #[inline]
     fn extend<I>(&mut self, iter: I)
     where
         I: IntoIterator<Item = (T, V)>,
@@ -2009,6 +2010,8 @@ where
         //     self.internal_add(key..=key, value);
         // }
     }
+
+    // cmk define extend_one and make it inline
 }
 
 impl<T, V> IntoIterator for RangeMapBlaze<T, V>
@@ -2068,6 +2071,21 @@ where
 
 // cmk0000 move these tests
 
+// implement Index trait
+impl<T: Integer, V: ValueOwned> Index<T> for RangeMapBlaze<T, V> {
+    type Output = V;
+
+    /// Returns a reference to the value corresponding to the supplied key.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the key is not present in the `BTreeMap`.
+    #[inline]
+    fn index(&self, index: T) -> &Self::Output {
+        self.get(index).expect("no entry found for key")
+    }
+}
+
 #[test]
 fn test_coverage_7() {
     let mut a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
@@ -2088,3 +2106,10 @@ fn test_coverage_10() {
     assert_eq!(a.pop_last(), Some((1, "Hello")));
     assert_eq!(a.pop_last(), None);
 }
+
+// cmk missing methods
+// cmk retain -- inline
+// cmk into_keys -- inline
+// cmk into_values -- inline
+// cmk trait PartialOrd with inline partial_cmp and cmp
+// cmk look at other BTreeMap methods and traits

@@ -180,7 +180,7 @@ where
 /// // Duplicates and out-of-order elements are fine.
 /// let a0 = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
 /// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into_iter().collect();
-/// assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100");
+/// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 ///
 /// // 'from_iter'/'collect': From an iterator of inclusive ranges, start..=end.
 /// // Overlapping, out-of-order, and empty ranges are fine.
@@ -188,26 +188,26 @@ where
 /// let a0 = RangeSetBlaze::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
 /// #[allow(clippy::reversed_empty_ranges)]
 /// let a1: RangeSetBlaze<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
-/// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
+/// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 ///
 /// // 'from_slice': From any array-like collection of integers.
 /// // Nightly-only, but faster than 'from_iter'/'collect' on integers.
 /// #[cfg(feature = "from_slice")]
 /// let a0 = RangeSetBlaze::from_slice(vec![3, 2, 1, 100, 1]);
 /// #[cfg(feature = "from_slice")]
-/// assert!(a0.into_string() == "1..=3, 100..=100");
+/// assert!(a0.to_string() == "1..=3, 100..=100");
 ///
 /// // If we know the ranges are already sorted and disjoint,
 /// // we can avoid work and use 'from'/'into'.
 /// let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
 /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
-/// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
+/// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 ///
 /// // For compatibility with `BTreeSet`, we also support
 /// // 'from'/'into' from arrays of integers.
 /// let a0 = RangeSetBlaze::from([3, 2, 1, 100, 1]);
 /// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
-/// assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100");
+/// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 /// ```
 ///
 /// # `RangeSetBlaze` Set Operations
@@ -254,41 +254,41 @@ where
 /// // Union of two 'RangeSetBlaze's.
 /// let result = &a | &b;
 /// // Alternatively, we can take ownership via 'a | b'.
-/// assert_eq!(result.into_string(), "1..=100");
+/// assert_eq!(result.to_string(), "1..=100");
 ///
 /// // Intersection of two 'RangeSetBlaze's.
 /// let result = &a & &b; // Alternatively, 'a & b'.
-/// assert_eq!(result.into_string(), "2..=2, 5..=6");
+/// assert_eq!(result.to_string(), "2..=2, 5..=6");
 ///
 /// // Set difference of two 'RangeSetBlaze's.
 /// let result = &a - &b; // Alternatively, 'a - b'.
-/// assert_eq!(result.into_string(), "1..=1, 7..=100");
+/// assert_eq!(result.to_string(), "1..=1, 7..=100");
 ///
 /// // Symmetric difference of two 'RangeSetBlaze's.
 /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
-/// assert_eq!(result.into_string(), "1..=1, 3..=4, 7..=100");
+/// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
 ///
 /// // complement of a 'RangeSetBlaze'.
 /// let result = !&a; // Alternatively, '!a'.
 /// assert_eq!(
-///     result.into_string(),
+///     result.to_string(),
 ///     "-2147483648..=0, 3..=4, 101..=2147483647"
 /// );
 ///
 /// // Multiway union of 'RangeSetBlaze's.
 /// let c = RangeSetBlaze::from_iter([2..=2, 6..=200]);
 /// let result = [&a, &b, &c].union();
-/// assert_eq!(result.into_string(), "1..=200");
+/// assert_eq!(result.to_string(), "1..=200");
 ///
 /// // Multiway intersection of 'RangeSetBlaze's.
 /// let result = [&a, &b, &c].intersection();
-/// assert_eq!(result.into_string(), "2..=2, 6..=6");
+/// assert_eq!(result.to_string(), "2..=2, 6..=6");
 ///
 /// // Applying multiple operators
 /// let result0 = &a - (&b | &c); // Creates an intermediate 'RangeSetBlaze'.
 /// // Alternatively, we can use the 'SortedDisjoint' API and avoid the intermediate 'RangeSetBlaze'.
 /// let result1 = RangeSetBlaze::from_sorted_disjoint(a.ranges() - (b.ranges() | c.ranges()));
-/// assert!(result0 == result1 && result0.into_string() == "1..=1");
+/// assert!(result0 == result1 && result0.to_string() == "1..=1");
 /// ```
 /// # `RangeSetBlaze` Comparisons
 ///
@@ -448,7 +448,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
     /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
-    /// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
     pub fn from_sorted_disjoint<I>(iter: I) -> Self
     where
@@ -470,10 +470,11 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// ```
     /// use range_set_blaze::prelude::*;
+    /// use range_set_blaze::AssumeSortedStarts;
     ///
     /// let a0 = RangeSetBlaze::from_sorted_starts(AssumeSortedStarts::new([-10..=-5, -7..=2]));
     /// let a1: RangeSetBlaze<i32> = AssumeSortedStarts::new([-10..=-5, -7..=2]).into_range_set_blaze();
-    /// assert!(a0 == a1 && a0.into_string() == "-10..=2");
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=2");
     /// ```
     pub fn from_sorted_starts<I>(iter: I) -> Self
     where
@@ -513,7 +514,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// let a0 = RangeSetBlaze::from_slice(&[3, 2, 1, 100, 1]); // reference to a slice
     /// let a1 = RangeSetBlaze::from_slice([3, 2, 1, 100, 1]);   // array
     /// let a2 = RangeSetBlaze::from_slice(vec![3, 2, 1, 100, 1]); // vector
-    /// assert!(a0 == a1 && a1 == a2 && a0.into_string() == "1..=3, 100..=100");
+    /// assert!(a0 == a1 && a1 == a2 && a0.to_string() == "1..=3, 100..=100");
     /// ```
     /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
     #[cfg(feature = "from_slice")]
@@ -1306,7 +1307,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// let set = RangeSetBlaze::from_iter([10..=20, 15..=25, 30..=40]);
     /// // After RangeSetBlaze sorts & 'disjoint's them, we see two ranges.
     /// assert_eq!(set.ranges_len(), 2);
-    /// assert_eq!(set.into_string(), "10..=25, 30..=40");
+    /// assert_eq!(set.to_string(), "10..=25, 30..=40");
     /// ```
     #[must_use]
     pub fn ranges_len(&self) -> usize {
@@ -1351,7 +1352,7 @@ impl<T: Integer> FromIterator<T> for RangeSetBlaze<T> {
     ///
     /// let a0 = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
     /// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into_iter().collect();
-    /// assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100");
+    /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
@@ -1373,7 +1374,7 @@ impl<'a, T: Integer> FromIterator<&'a T> for RangeSetBlaze<T> {
     ///
     /// let a0 = RangeSetBlaze::from_iter(vec![3, 2, 1, 100, 1]);
     /// let a1: RangeSetBlaze<i32> = vec![3, 2, 1, 100, 1].into_iter().collect();
-    /// assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100");
+    /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
@@ -1398,7 +1399,7 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetBlaze<T> {
     /// let a0 = RangeSetBlaze::from_iter([1..=2, 2..=2, -10..=-5, 1..=0]);
     /// #[allow(clippy::reversed_empty_ranges)]
     /// let a1: RangeSetBlaze<i32> = [1..=2, 2..=2, -10..=-5, 1..=0].into_iter().collect();
-    /// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
@@ -1424,7 +1425,7 @@ impl<'a, T: Integer + 'a> FromIterator<&'a RangeInclusive<T>> for RangeSetBlaze<
     /// let vec_range = vec![1..=2, 2..=2, -10..=-5, 1..=0];
     /// let a0 = RangeSetBlaze::from_iter(vec_range.iter());
     /// let a1: RangeSetBlaze<i32> = vec_range.iter().collect();
-    /// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
+    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
@@ -1449,7 +1450,7 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     ///
     /// let a0 = RangeSetBlaze::from([3, 2, 1, 100, 1]);
     /// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
-    /// assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100")
+    /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100")
     /// ```
     #[cfg(not(feature = "from_slice"))]
     fn from(arr: [T; N]) -> Self {
@@ -1476,7 +1477,7 @@ gen_ops_ex!(
     /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
     /// let b = RangeSetBlaze::from_iter([2..=6]);
     /// let result = &a & &b; // Alternatively, 'a & b'.
-    /// assert_eq!(result.into_string(), "2..=2, 5..=6");
+    /// assert_eq!(result.to_string(), "2..=2, 5..=6");
     /// ```
     for & call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         (a.ranges() & b.ranges()).into_range_set_blaze()
@@ -1493,7 +1494,7 @@ gen_ops_ex!(
     /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
     /// let b = RangeSetBlaze::from_iter([2..=6]);
     /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
-    /// assert_eq!(result.into_string(), "1..=1, 3..=4, 7..=100");
+    /// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
     /// ```
     for ^ call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         a.ranges().symmetric_difference(b.ranges()).into_range_set_blaze()
@@ -1510,7 +1511,7 @@ gen_ops_ex!(
     /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
     /// let b = RangeSetBlaze::from_iter([2..=6]);
     /// let result = &a - &b; // Alternatively, 'a - b'.
-    /// assert_eq!(result.into_string(), "1..=1, 7..=100");
+    /// assert_eq!(result.to_string(), "1..=1, 7..=100");
     /// ```
     for - call |a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>| {
         (a.ranges() - b.ranges()).into_range_set_blaze()
@@ -1533,7 +1534,7 @@ gen_ops_ex!(
     /// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
     /// let result = !&a; // Alternatively, '!a'.
     /// assert_eq!(
-    ///     result.into_string(),
+    ///     result.to_string(),
     ///     "-2147483648..=0, 3..=4, 101..=2147483647"
     /// );
     /// ```
@@ -1989,3 +1990,5 @@ impl<T: Integer> PartialOrd for RangeSetBlaze<T> {
 }
 
 impl<T: Integer> Eq for RangeSetBlaze<T> {}
+
+// cmk look at BTreeSet to see what to inline

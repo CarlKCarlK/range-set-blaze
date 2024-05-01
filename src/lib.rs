@@ -73,7 +73,7 @@ mod sym_diff_iter;
 mod sym_diff_iter_map;
 pub use map::CloneBorrow;
 pub use map::ValueOwned;
-use merge::KMerge;
+use merge::{KMerge, Merge};
 use merge_map::KMergeMap;
 pub use multiway::MultiwaySortedDisjoint;
 pub use multiway_map::MultiwayRangeMapBlaze;
@@ -107,7 +107,6 @@ use core::{
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 // use itertools::Tee;
-pub use merge::Merge;
 pub use merge_map::MergeMap; // cmk KMergeMap
 mod merge;
 mod merge_map;
@@ -235,7 +234,7 @@ pub trait Integer:
 #[doc(hidden)]
 pub type BitOrMapMerge<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
 #[doc(hidden)]
-pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
+pub type BitOrMerge<T, L, R> = UnionIter<T, merge::Merge<T, L, R>>;
 
 #[doc(hidden)]
 pub type BitXorMapMerge<T, V, VR, L, R> = SymDiffIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
