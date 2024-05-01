@@ -5,6 +5,9 @@ use core::{
 };
 
 use alloc::collections::BinaryHeap;
+use alloc::format;
+use alloc::string::String;
+use alloc::string::ToString;
 
 use crate::{
     map::{CloneBorrow, ValueOwned},

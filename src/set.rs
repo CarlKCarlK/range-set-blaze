@@ -1,5 +1,5 @@
 use core::cmp::max;
-use core::str::FromStr;
+// cmk use core::str::FromStr;
 /// cmk doc
 use core::{
     cmp::Ordering,
@@ -16,6 +16,8 @@ use std::{
 };
 
 use alloc::collections::{btree_map, BTreeMap};
+use alloc::str::FromStr;
+use alloc::vec::Vec;
 use gen_ops::gen_ops_ex;
 
 use crate::ranges::RangesIter;

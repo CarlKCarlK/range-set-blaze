@@ -18,14 +18,13 @@ use core::marker::PhantomData;
 //     iter::FusedIterator,
 //     ops::{self, RangeInclusive},
 // };
-use crate::map::BitAndRangesMap;
-use crate::NotIter;
-use std::ops;
-
 use crate::intersection_iter_map::IntersectionIterMap;
+use crate::map::BitAndRangesMap;
 use crate::map::CloneBorrow;
 use crate::sorted_disjoint::SortedDisjoint;
+use crate::NotIter;
 use crate::{map::ValueOwned, union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
+use core::ops;
 use core::ops::RangeInclusive;
 
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
