@@ -69,6 +69,7 @@ mod sorted_disjoint;
 pub use crate::multiway::MultiwayRangeSetBlaze;
 pub use crate::multiway::MultiwayRangeSetBlazeRef;
 pub use intersection_iter_map::IntersectionIterMap;
+mod map_from_iter;
 mod sym_diff_iter;
 mod sym_diff_iter_map;
 pub use map::CloneBorrow;

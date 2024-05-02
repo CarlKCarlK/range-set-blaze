@@ -251,7 +251,14 @@ where
     V: ValueOwned,
     VR: CloneBorrow<V>,
 {
-    ///cmk
+    /// cmk doc
+    ///```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = CheckSortedDisjointMap::new([(1..=3, &"a"), (100..=100, &"b")]);
+    /// let b = a.into_sorted_disjoint();
+    /// assert!(b.into_string() == "1..=3, 100..=100");
+    /// ```
     #[inline]
     fn into_sorted_disjoint(self) -> RangeValuesToRangesIter<T, V, VR, Self>
     where
@@ -268,17 +275,17 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjointMap::new([1..=1]);
-    /// let b = RangeMapBlaze::from_iter([2..=2]).into_ranges();
+    /// let a = CheckSortedDisjointMap::new([(1..=2, &"a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=3, "b")]).into_range_values();
     /// let union = a.union(b);
-    /// assert_eq!(union.into_string(), "1..=2");
+    /// assert_eq!(union.into_string(), "(1..=2", "a"), (3..=3, "b")");
     ///
     /// // Alternatively, we can use "|" because CheckSortedDisjointMap defines
     /// // ops::bitor as SortedDisjointMap::union.
-    /// let a = CheckSortedDisjointMap::new([1..=1]);
-    /// let b = RangeMapBlaze::from_iter([2..=2]).into_ranges();
+    /// let a = CheckSortedDisjointMap::new([(1..=2, &"a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=3, "b")]).into_range_values();
     /// let union = a | b;
-    /// assert_eq!(union.into_string(), "1..=2");
+    /// assert_eq!(union.into_string(), "(1..=2", "a"), (3..=3, "b")");
     /// ```
     #[inline]
     fn union<R>(self, other: R) -> BitOrMapMerge<T, V, VR, Self, R::IntoIter>
@@ -640,7 +647,7 @@ where
     /// use range_set_blaze::prelude::*;
     ///
     /// let a0 = RangeMapBlaze::from_sorted_disjoint(CheckSortedDisjointMap::new([-10..=-5, 1..=2]));
-    /// let a1: RangeMapBlaze<i32> = CheckSortedDisjointMap::new([-10..=-5, 1..=2]).into_range_set_blaze();
+    /// let a1: RangeMapBlaze<i32, &str> = CheckSortedDisjointMap::new([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
     /// ```
     fn into_range_map_blaze(self) -> RangeMapBlaze<T, V>
@@ -1146,3 +1153,10 @@ impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Valu
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, V, VR>, V, VR, 'a, V: ValueOwned, VR: CloneBorrow<V>);
 // cmk remove impl_sorted_map_traits_and_ops!(SortedDisjointToUnitMap<T, I>, (), &'static (), I: SortedDisjoint<T>);
 // cmk RangeIter and IntoRangesIter
+
+#[test]
+fn test_delete_me_cmk() {
+    let a = CheckSortedDisjointMap::new([(1..=3, &"a"), (100..=100, &"b")]);
+    let b = a.into_sorted_disjoint();
+    assert!(b.into_string() == "1..=3, 100..=100");
+}

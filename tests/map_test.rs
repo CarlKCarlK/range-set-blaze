@@ -772,23 +772,23 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
     let e = a.range_values(); // with range instead of range values used 'tee' here
 
     let f = UnionIterMap::from_iter([
-        (15, &"f"),
-        (14, &"f"),
-        (15, &"f"),
-        (13, &"f"),
-        (12, &"f"),
-        (11, &"f"),
-        (9, &"f"),
-        (9, &"f"),
-        (8, &"f"),
-        (6, &"f"),
-        (4, &"f"),
-        (5, &"f"),
-        (3, &"f"),
-        (2, &"f"),
-        (1, &"f"),
-        (1, &"f"),
-        (1, &"f"),
+        (15..=15, &"f"),
+        (14..=14, &"f"),
+        (15..=15, &"f"),
+        (13..=13, &"f"),
+        (12..=12, &"f"),
+        (11..=11, &"f"),
+        (9..=9, &"f"),
+        (9..=9, &"f"),
+        (8..=8, &"f"),
+        (6..=6, &"f"),
+        (4..=4, &"f"),
+        (5..=5, &"f"),
+        (3..=3, &"f"),
+        (2..=2, &"f"),
+        (1..=1, &"f"),
+        (1..=1, &"f"),
+        (1..=1, &"f"),
     ]);
 
     let not_b = b.complement(&"A");
@@ -835,9 +835,9 @@ fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
         .union(a2.range_values());
     let e = a0_tee.union(a12.range_values());
 
-    let f = UnionIterMap::from_iter(a0.iter())
-        .union(UnionIterMap::from_iter(a1.iter()))
-        .union(UnionIterMap::from_iter(a2.iter()));
+    let f = UnionIterMap::from_iter(a0.range_values())
+        .union(UnionIterMap::from_iter(a1.range_values()))
+        .union(UnionIterMap::from_iter(a2.range_values()));
     assert!(a.range_values().equal(b));
     assert!(a.range_values().equal(c));
     assert!(a.range_values().equal(d));
@@ -3225,7 +3225,7 @@ fn map_repro2() {
 //     let _a = RangeMapBlaze::<i32>::new();
 
 //     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-//     let a = a_iter.collect::<RangeMapBlaze<i32>>();
+//     let a = a_iter.collect::<RangeMapBlaze<i32, &str>>();
 //     let arr: [i32; 0] = [];
 //     let b = RangeMapBlaze::from_iter(arr);
 //     let mut c3 = a.clone();
@@ -3251,7 +3251,7 @@ fn map_repro2() {
 //     assert_eq!(&c5, &answer);
 
 //     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-//     let a = a_iter.collect::<RangeMapBlaze<i32>>();
+//     let a = a_iter.collect::<RangeMapBlaze<i32, &str>>();
 //     let b = RangeMapBlaze::from_iter([0i32; 0]);
 
 //     let c0 = a.ranges() | b.ranges();
@@ -3381,7 +3381,7 @@ fn map_repro2() {
 // #[test]
 // fn check_traits() {
 //     // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
-//     type ARangeSetBlaze = RangeMapBlaze<i32>;
+//     type ARangeSetBlaze = RangeMapBlaze<i32, &str>;
 //     is_sssu::<ARangeSetBlaze>();
 //     is_ddcppdheo::<ARangeSetBlaze>();
 //     is_like_btreeset::<ARangeSetBlaze>();
@@ -3610,9 +3610,9 @@ fn map_repro2() {
 //     assert_eq!(a.len(), 3 as I32SafeLen);
 
 //     let a = RangeMapBlaze::from_iter([1..=3]);
-//     let b = <RangeMapBlaze<i32> as Clone>::clone(&a);
+//     let b = <RangeMapBlaze<i32, &str> as Clone>::clone(&a);
 //     assert_eq!(a, b);
-//     let c = <RangeMapBlaze<i32> as Default>::default();
+//     let c = <RangeMapBlaze<i32, &str> as Default>::default();
 //     assert_eq!(c, RangeMapBlaze::new());
 
 //     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
@@ -4033,7 +4033,7 @@ fn map_repro2() {
 // #[should_panic]
 // #[test]
 // fn demo_read() {
-//     let _a: RangeMapBlaze<i32> = demo_read_ranges_from_file("tests/no_such_file").unwrap();
+//     let _a: RangeMapBlaze<i32, &str> = demo_read_ranges_from_file("tests/no_such_file").unwrap();
 // }
 
 // #[test]

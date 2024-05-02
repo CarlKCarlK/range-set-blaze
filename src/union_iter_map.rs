@@ -289,21 +289,22 @@ where
     }
 }
 
-// from iter (T, &V) to UnionIterMap
-impl<'a, T, V> FromIterator<(T, &'a V)>
-    for UnionIterMap<T, V, &'a V, SortedStartsInVecMap<T, V, &'a V>>
-where
-    T: Integer + 'a,
-    V: ValueOwned + 'a,
-{
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = (T, &'a V)>,
-    {
-        let iter = iter.into_iter().map(|(x, value)| (x..=x, value));
-        UnionIterMap::from_iter(iter)
-    }
-}
+// cmk delete
+// // from iter (T, &V) to UnionIterMap
+// impl<'a, T, V> FromIterator<(T, &'a V)>
+//     for UnionIterMap<T, V, &'a V, SortedStartsInVecMap<T, V, &'a V>>
+// where
+//     T: Integer + 'a,
+//     V: ValueOwned + 'a,
+// {
+//     fn from_iter<I>(iter: I) -> Self
+//     where
+//         I: IntoIterator<Item = (T, &'a V)>,
+//     {
+//         let iter = iter.into_iter().map(|(x, value)| (x..=x, value));
+//         UnionIterMap::from_iter(iter)
+//     }
+// }
 
 // // from iter (RangeInclusive<T>, &V) to UnionIterMap
 // impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &'a V)>

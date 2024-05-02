@@ -1083,7 +1083,7 @@ fn map_repro1() {
 // //     let _a = RangeMapBlaze::<i32>::new();
 
 // //     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-// //     let a = a_iter.collect::<RangeMapBlaze<i32>>();
+// //     let a = a_iter.collect::<RangeMapBlaze<i32, &str>>();
 // //     let arr: [i32; 0] = [];
 // //     let b = RangeMapBlaze::from_iter(arr);
 // //     let mut c3 = a.clone();
@@ -1109,7 +1109,7 @@ fn map_repro1() {
 // //     assert_eq!(&c5, &answer);
 
 // //     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-// //     let a = a_iter.collect::<RangeMapBlaze<i32>>();
+// //     let a = a_iter.collect::<RangeMapBlaze<i32, &str>>();
 // //     let b = RangeMapBlaze::from_iter([0i32; 0]);
 
 // //     let c0 = a.ranges() | b.ranges();
@@ -1239,7 +1239,7 @@ fn map_repro1() {
 // // #[test]
 // // fn check_traits() {
 // //     // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
-// //     type ARangeSetBlaze = RangeMapBlaze<i32>;
+// //     type ARangeSetBlaze = RangeMapBlaze<i32, &str>;
 // //     is_sssu::<ARangeSetBlaze>();
 // //     is_ddcppdheo::<ARangeSetBlaze>();
 // //     is_like_btreeset::<ARangeSetBlaze>();
@@ -1468,9 +1468,9 @@ fn map_repro1() {
 // //     assert_eq!(a.len(), 3 as I32SafeLen);
 
 // //     let a = RangeMapBlaze::from_iter([1..=3]);
-// //     let b = <RangeMapBlaze<i32> as Clone>::clone(&a);
+// //     let b = <RangeMapBlaze<i32, &str> as Clone>::clone(&a);
 // //     assert_eq!(a, b);
-// //     let c = <RangeMapBlaze<i32> as Default>::default();
+// //     let c = <RangeMapBlaze<i32, &str> as Default>::default();
 // //     assert_eq!(c, RangeMapBlaze::new());
 
 // //     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
@@ -1744,7 +1744,7 @@ fn extend(mut a: BTreeMap<i8, u8>, b: Vec<(i8, u8)>) -> bool {
 // // #[should_panic]
 // // #[test]
 // // fn demo_read() {
-// //     let _a: RangeMapBlaze<i32> = demo_read_ranges_from_file("tests/no_such_file").unwrap();
+// //     let _a: RangeMapBlaze<i32, &str> = demo_read_ranges_from_file("tests/no_such_file").unwrap();
 // // }
 
 // // #[test]
