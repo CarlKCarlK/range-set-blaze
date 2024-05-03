@@ -75,6 +75,7 @@ where
     }
 }
 
+// cmk must explain that this is not a SortedDisjointMap because it gives a value rather than a reference
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 /// An iterator that moves out the ranges in the [`RangeSetBlaze`],
 /// i.e., the integers as sorted & disjoint ranges.
@@ -104,7 +105,6 @@ impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for IntoRangeValuesIter<T, V> 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(start, end_value)| {
             let range = start..=end_value.end;
-            // cmk don't use RangeValue here
             (range, end_value.value)
         })
     }

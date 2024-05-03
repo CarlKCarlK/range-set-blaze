@@ -55,30 +55,20 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// [`RangesIter`]: crate::RangesIter
 ///
 /// ## Constructor Examples
-///
 /// ```
 /// use range_set_blaze::prelude::*;
-/// use itertools::Itertools;
 ///
-/// // RangeSetBlaze's .ranges(), .range().clone() and .into_ranges()
+/// // RangeSetBlaze's .ranges() and .into_ranges()
 /// let r = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
 /// let a = r.ranges();
-/// let b = a.clone();
 /// assert!(a.into_string() == "1..=3, 100..=100");
-/// assert!(b.into_string() == "1..=3, 100..=100");
-/// //    'into_ranges' takes ownership of the 'RangeSetBlaze'
+/// // 'into_ranges' takes ownership of the 'RangeSetBlaze'
 /// let a = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]).into_ranges();
 /// assert!(a.into_string() == "1..=3, 100..=100");
 ///
 /// // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
 /// let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
 /// assert!(a.into_string() == "1..=3, 100..=100");
-///
-/// // tee of a SortedDisjoint iterator
-/// let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
-/// let (a, b) = a.tee();
-/// assert!(a.into_string() == "1..=3, 100..=100");
-/// assert!(b.into_string() == "1..=3, 100..=100");
 ///
 /// // DynamicSortedDisjoint of a SortedDisjoint iterator
 /// let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
@@ -110,7 +100,6 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 ///
 /// let a0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
 /// let b0 = RangeSetBlaze::from_iter([2..=6]);
-/// let c0 = RangeSetBlaze::from_iter([2..=2, 6..=200]);
 ///
 /// // 'union' method and 'to_string' method
 /// let (a, b) = (a0.ranges(), b0.ranges());
@@ -123,6 +112,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// assert!(result.equal(CheckSortedDisjoint::from([1..=100])));
 ///
 /// // multiway union of same type
+/// let c0 = RangeSetBlaze::from_iter([2..=2, 6..=200]);
 /// let (a, b, c) = (a0.ranges(), b0.ranges(), c0.ranges());
 /// let result = [a, b, c].union();
 /// assert_eq!(result.into_string(), "1..=200");
@@ -305,7 +295,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjoint::from([-10i16..=0, 1000..=2000]);
+    /// let a = CheckSortedDisjoint::from([-10_i16..=0, 1000..=2000]);
     /// let complement = a.complement();
     /// assert_eq!(complement.into_string(), "-32768..=-11, 1..=999, 2001..=32767");
     ///
@@ -411,12 +401,10 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::RangeSetBlaze;
+    /// use range_set_blaze::CheckSortedDisjoint;
     ///
-    /// let mut v = RangeSetBlaze::new();
-    /// assert!(v.is_empty());
-    /// v.insert(1);
-    /// assert!(!v.is_empty());
+    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// assert!(!a.is_empty());
     /// ```
     #[inline]
     #[allow(clippy::wrong_self_convention)]

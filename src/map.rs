@@ -1546,43 +1546,6 @@ pub type SortedStartsInVecMap<T, V, VR> =
 #[doc(hidden)]
 pub type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
-// pub type BitXOrTeeMap<'a, T, V, VR, L, R> = BitOrMergeMap<
-//     'a,
-//     T,
-//     V,
-//     VR,
-//     BitSubRangesMap<'a, T, V, VR, Tee<L>, Tee<R>>,
-//     BitSubRangesMap<'a, T, V, VR, Tee<R>, Tee<L>>,
-// >;
-// #[doc(hidden)]
-// pub type BitOrKMergeMap<T, V, I> = UnionIterMap<T, V, KMergeMap<T, V, I>>;
-// #[doc(hidden)]
-// pub type BitAndMergeMap<T, V, L, R> = NotIterMap<T, V, BitNandMergeMap<T, V, L, R>>;
-// #[doc(hidden)]
-// pub type BitAndKMergeMap<T, V, I> = NotIterMap<T, V, BitNandKMergeMap<T, V, I>>;
-// #[doc(hidden)]
-// pub type BitNandMergeMap<T, V, L, R> =
-//     BitOrMergeMap<T, V, NotIterMap<T, V, L>, NotIterMap<T, V, R>>;
-// #[doc(hidden)]
-// pub type BitNandKMergeMap<T, V, I> = BitOrKMergeMap<T, V, NotIterMap<T, V, I>>;
-// #[doc(hidden)]
-// pub type BitNorMergeMap<T, V, L, R> = NotIterMap<T, V, BitOrMergeMap<T, V, L, R>>;
-// #[doc(hidden)]
-// pub type BitSubMergeMap<T, V, L, R> = NotIterMap<T, V, BitOrMergeMap<T, V, NotIterMap<T, V, L>, R>>;
-// #[doc(hidden)]
-// pub type BitXOrTeeMap<T, V, L, R> =
-//     BitOrMergeMap<T, V, BitSubMergeMap<T, V, Tee<L>, Tee<R>>, BitSubMergeMap<T, V, Tee<R>, Tee<L>>>;
-// #[doc(hidden)]
-// pub type BitXOrMap<T, V, L, R> =
-//     BitOrMergeMap<T, V, BitSubMergeMap<T, V, L, Tee<R>>, BitSubMergeMap<T, V, Tee<R>, L>>;
-// #[doc(hidden)]
-// pub type BitEqMap<T, V, L, R> = BitOrMergeMap<
-//     T,
-//     V,
-//     NotIterMap<T, V, BitOrMergeMap<T, V, NotIterMap<T, V, Tee<L>>, NotIterMap<T, V, Tee<R>>>>,
-//     NotIterMap<T, V, BitOrMergeMap<T, V, Tee<L>, Tee<R>>>,
-// >;
-
 impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
@@ -1592,10 +1555,10 @@ impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze<T, 
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
-    /// let a = RangeMapBlaze::from_iter([1..=4]);
-    /// let b = RangeMapBlaze::from_iter([0..=0, 3..=5, 10..=10]);
+    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let union = a | b;
-    /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
+    /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
     type Output = RangeMapBlaze<T, V>;
     fn bitor(self, other: Self) -> RangeMapBlaze<T, V> {
@@ -1615,10 +1578,10 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for RangeMapBlaze<T,
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
-    /// let mut a = RangeMapBlaze::from_iter([1..=4]);
-    /// let mut b = RangeMapBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let union = a | &b;
-    /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
+    /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
     type Output = RangeMapBlaze<T, V>;
     fn bitor(self, other: &Self) -> RangeMapBlaze<T, V> {
@@ -1638,10 +1601,10 @@ impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
-    /// let mut a = RangeMapBlaze::from_iter([1..=4]);
-    /// let mut b = RangeMapBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let union = &a | b;
-    /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
+    /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
     fn bitor(self, other: RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
         // cmk
@@ -1661,10 +1624,10 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
-    /// let mut a = RangeMapBlaze::from_iter([1..=4]);
-    /// let mut b = RangeMapBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let union = &a | &b;
-    /// assert_eq!(union, RangeMapBlaze::from_iter([0..=5, 10..=10]));
+    /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
     fn bitor(self, other: &RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
         (self.range_values() | other.range_values()).into_range_map_blaze()
@@ -1725,10 +1688,10 @@ gen_ops_ex!(
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = RangeMapBlaze::from_iter([1..=2, 5..=100]);
-    /// let b = RangeMapBlaze::from_iter([2..=6]);
+    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let result = &a & &b; // Alternatively, 'a & b'.
-    /// assert_eq!(result.to_string(), "2..=2, 5..=6");
+    /// assert_eq!(result.to_string(), r#"(2..=2, "a"), (5..=6, "a")"#);
     /// ```
     for & call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
         a.range_values().intersection_with_set(b.ranges()).into_range_map_blaze()
@@ -1741,10 +1704,10 @@ gen_ops_ex!(
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = RangeMapBlaze::from_iter([1..=2, 5..=100]);
-/// let b = RangeMapBlaze::from_iter([2..=6]);
+/// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+/// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
 /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
-/// assert_eq!(result.to_string(), "1..=1, 3..=4, 7..=100");
+/// assert_eq!(result.to_string(), r#"(1..=1, "a"), (3..=4, "b"), (7..=100, "a")"#);
 /// ```
 for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
     SymDiffIterMap::new2(a.range_values(), b.range_values()).into_range_map_blaze()
@@ -1757,10 +1720,10 @@ for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
-/// let b = RangeSetBlaze::from_iter([2..=6]);
+/// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+/// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
 /// let result = &a - &b; // Alternatively, 'a - b'.
-/// assert_eq!(result.to_string(), "1..=1, 7..=100");
+/// assert_eq!(result.to_string(), r#"(1..=1, "a"), (7..=100, "a")"#);
 /// ```
 
 for - call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {

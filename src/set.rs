@@ -1829,8 +1829,8 @@ impl<T: Integer> BitOr<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
-    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// let mut b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let a = RangeSetBlaze::from_iter([1..=4]);
+    /// let b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
     /// let union = a | &b;
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
@@ -1851,8 +1851,8 @@ impl<T: Integer> BitOr<RangeSetBlaze<T>> for &RangeSetBlaze<T> {
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
-    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// let mut b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let a = RangeSetBlaze::from_iter([1..=4]);
+    /// let b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
     /// let union = &a | b;
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
@@ -1872,8 +1872,8 @@ impl<T: Integer> BitOr<&RangeSetBlaze<T>> for &RangeSetBlaze<T> {
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
-    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// let mut b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let a = RangeSetBlaze::from_iter([1..=4]);
+    /// let b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
     /// let union = &a | &b;
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
@@ -1901,7 +1901,7 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     ///
     /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// let mut b = RangeSetBlaze::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
+    /// let b = RangeSetBlaze::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
     /// a |= b;
     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
