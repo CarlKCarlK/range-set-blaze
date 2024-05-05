@@ -47,13 +47,13 @@ pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: ValueOwned + 'a>:
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    /// let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
-    /// let c = RangeMapBlaze::from_iter([25..=100]);
+    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
     ///
     /// let union = [a, b, c].union();
     ///
-    /// assert_eq!(union, RangeMapBlaze::from_iter([1..=15, 18..=100]));
+    /// assert_eq!(union.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
     /// ```
     fn union(self) -> RangeMapBlaze<T, V> {
         self.into_iter()
@@ -81,13 +81,13 @@ pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: ValueOwned + 'a>:
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    /// let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
-    /// let c = RangeMapBlaze::from_iter([-100..=100]);
+    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
     ///
     /// let intersection = [a, b, c].intersection();
     ///
-    /// assert_eq!(intersection, RangeMapBlaze::from_iter([5..=6, 8..=9, 11..=13]));
+    /// assert_eq!(intersection.to_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
     /// ```
     fn intersection(self) -> RangeMapBlaze<T, V> {
         self.into_iter()
@@ -97,6 +97,17 @@ pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: ValueOwned + 'a>:
     }
 
     /// Symmetric difference on the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    ///
+    /// let symmetric_difference = [a, b, c].symmetric_difference();
+    ///
+    /// assert_eq!(symmetric_difference.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
+    /// ```
     fn symmetric_difference(self) -> RangeMapBlaze<T, V> {
         self.into_iter()
             .map(|x| RangeMapBlaze::range_values(x))
@@ -143,13 +154,13 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
-    /// let b = RangeMapBlaze::from_iter([5..=13, 18..=29]).into_ranges();
-    /// let c = RangeMapBlaze::from_iter([25..=100]).into_ranges();
+    /// let a = CheckSortedDisjointMap::new(vec![(1..=2, &"a"), (5..=100, &"a")]);
+    /// let b = CheckSortedDisjointMap::new(vec![(2..=6, &"b")]);
+    /// let c = CheckSortedDisjointMap::new(vec![(2..=2, &"c"), (6..=200, &"c")]);
     ///
     /// let union = [a, b, c].union();
     ///
-    /// assert_eq!(union.into_string(), "1..=15, 18..=100");
+    /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
     /// ```
     fn union(self) -> BitOrMapKMerge<T, V, VR, I> {
         // cmk0 why does this not have .into_iter() but intersection does?
@@ -172,13 +183,13 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
-    /// let b = RangeMapBlaze::from_iter([5..=13, 18..=29]).into_ranges();
-    /// let c = RangeMapBlaze::from_iter([-100..=100]).into_ranges();
+    /// let a = CheckSortedDisjointMap::new(vec![(1..=2, &"a"), (5..=100, &"a")]);
+    /// let b = CheckSortedDisjointMap::new(vec![(2..=6, &"b")]);
+    /// let c = CheckSortedDisjointMap::new(vec![(2..=2, &"c"), (6..=200, &"c")]);
     ///
     /// let intersection = [a, b, c].intersection();
     ///
-    /// assert_eq!(intersection.into_string(), "5..=6, 8..=9, 11..=13");
+    /// assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
     /// ```
     fn intersection<'a>(self) -> BitAndMapWithRangeValues<'a, T, V, VR, I> {
         // We define map intersection -- in part -- in terms of set intersection.
@@ -193,10 +204,38 @@ where
     }
 
     /// Symmetric difference on the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = CheckSortedDisjointMap::new(vec![(1..=2, &"a"), (5..=100, &"a")]);
+    /// let b = CheckSortedDisjointMap::new(vec![(2..=6, &"b")]);
+    /// let c = CheckSortedDisjointMap::new(vec![(2..=2, &"c"), (6..=200, &"c")]);
+    ///
+    /// let symmetric_difference = [a, b, c].symmetric_difference();
+    ///
+    /// assert_eq!(symmetric_difference.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
+    /// ```
     fn symmetric_difference(self) -> BitXorMapKMerge<T, V, VR, I> {
         let result = BitXorMapKMerge::new_k(self);
         result
     }
 }
 // cmk confirm that on ranges the union of 0 sets 0 empty and the intersection of 0 sets is the universal set.
+
+// cmk why does the multiway.rs have a MultiwayRangeSetBlazeRef but not a MultiwayRangeMapBlazeRef?
 // cmk on maps, the union is still empty, but the intersection is undefined because we can't give a value to T.s
+
+fn test_cmk_delete_me2() {
+    use crate::prelude::*;
+
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+
+    let union = [a, b, c].union();
+
+    assert_eq!(
+        union.to_string(),
+        r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#
+    );
+}

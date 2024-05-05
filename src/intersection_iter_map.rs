@@ -21,18 +21,18 @@ use crate::{map::ValueOwned, Integer};
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_blaze::{IntersectionIterMap, Merge, SortedDisjointMap, CheckSortedDisjoint};
+/// use range_set_blaze::{prelude::*, IntersectionIterMap};
 ///
-/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-/// let b = CheckSortedDisjoint::from([2..=6]);
-/// let intersection = IntersectionIterMap::new(Merge::new(a, b));
-/// assert_eq!(intersection.into_string(), "1..=100");
+/// let map = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+/// let set = CheckSortedDisjoint::new([2..=6]);
+/// let intersection = IntersectionIterMap::new(map, set);
+/// assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (5..=6, "a")"#);
 ///
 /// // Or, equivalently:
-/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-/// let b = CheckSortedDisjoint::from([2..=6]);
-/// let intersection = a | b;
-/// assert_eq!(intersection.into_string(), "1..=100")
+/// let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+/// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
+/// let intersection = a & b;
+/// assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (5..=6, "a")"#);
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[allow(dead_code)]
@@ -276,3 +276,19 @@ where
 //     IS: SortedDisjoint<T>,
 // {
 // }
+
+#[test]
+fn cmk_delete_me5() {
+    use crate::prelude::*;
+
+    let map = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+    let set = CheckSortedDisjoint::new([2..=6]);
+    let intersection = IntersectionIterMap::new(map, set);
+    assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (5..=6, "a")"#);
+
+    // Or, equivalently:
+    let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+    let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
+    let intersection = a & b;
+    assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (5..=6, "a")"#);
+}

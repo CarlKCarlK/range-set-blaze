@@ -982,7 +982,7 @@ impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, V, VR>, V, VR, 'a, V
 // #[test]
 fn test_delete_me_cmk() {
     // use crate::prelude::*;
-    use crate::CheckSortedDisjointMap;
+    // use crate::CheckSortedDisjointMap;
 
     let a = CheckSortedDisjointMap::new([(1..=2, &"a")]);
     assert!(a.is_empty());

@@ -19,9 +19,8 @@ where
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let a0 = RangeMapBlaze::from_iter([(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]);
-    /// let a1: RangeMapBlaze<i32, &str> = [(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]
-    ///     .into_iter().collect();
+    /// let a0 = RangeMapBlaze::from_iter([(3, &"a"), (2, &"a"), (1, &"a"), (100, &"b"), (1, &"c")]);
+    /// let a1: RangeMapBlaze<i32, &str> = [(3, &"a"), (2, &"a"), (1, &"a"), (100, &"b"), (1, &"c")].into_iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
     /// ```
     fn from_iter<I>(iter: I) -> Self
@@ -46,13 +45,12 @@ where
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::RangeMapBlaze;
+    /// use range_set_blaze::prelude::*;
     ///
     /// #[allow(clippy::reversed_empty_ranges)]
-    /// let a0 = RangeMapBlaze::from_iter([(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")]);
+    /// let a0 = RangeMapBlaze::from_iter([(1..=2, &"a"), (2..=2, &"b"), (-10..=-5, &"c"), (1..=0, &"d")]);
     /// #[allow(clippy::reversed_empty_ranges)]
-    /// let a1: RangeMapBlaze<i32, &str> = [(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")]
-    ///     .into_iter().collect();
+    /// let a1: RangeMapBlaze<i32, &str> = [(1..=2, &"a"), (2..=2, &"b"), (-10..=-5, &"c"), (1..=0, &"d")].into_iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
     /// ```
     fn from_iter<I>(iter: I) -> Self
@@ -77,9 +75,9 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
     /// use range_set_blaze::RangeMapBlaze;
     ///
     /// #[allow(clippy::reversed_empty_ranges)]
-    /// let vec_range = vec![(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")];
-    /// let a0 = RangeMapBlaze::from_iter(vec_range.iter());
-    /// let a1: RangeMapBlaze<i32, &str> = vec_range.iter().collect();
+    /// let a0 = RangeMapBlaze::from_iter([(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")]);
+    /// #[allow(clippy::reversed_empty_ranges)]
+    /// let a1: RangeMapBlaze<i32, &str> = [(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")].into_iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
     /// ```
     fn from_iter<I>(iter: I) -> Self
@@ -103,13 +101,12 @@ impl<T: Integer, V: ValueOwned> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::RangeMapBlaze;
+    /// use range_set_blaze::prelude::*;
     ///
     /// #[allow(clippy::reversed_empty_ranges)]
-    /// let vec_range = vec![1..=2, 2..=2, -10..=-5, 1..=0];
-    /// let a0 = RangeMapBlaze::from_iter(vec_range.iter());
-    /// let a1: RangeMapBlaze<i32, &str> = vec_range.iter().collect();
-    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// let a0 = RangeMapBlaze::from_iter([(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]);
+    /// let a1: RangeMapBlaze<i32, &str> = [(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")].into_iter().collect();
+    /// assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
@@ -134,9 +131,9 @@ where
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let a0 = RangeMapBlaze::from_iter([(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]);
-    /// let a1: RangeMapBlaze<i32, &str> = [(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]
-    ///     .into_iter().collect();
+    /// let v = vec![(3, &"a"), (2, &"a"), (1, &"a"), (100, &"b"), (1, &"c")];
+    /// let a0 = RangeMapBlaze::from_iter(&v);
+    /// let a1: RangeMapBlaze<i32, &str> = (&v).into_iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
     /// ```
     fn from_iter<I>(iter: I) -> Self
@@ -161,13 +158,11 @@ where
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::RangeMapBlaze;
+    /// use range_set_blaze::prelude::*;
     ///
-    /// #[allow(clippy::reversed_empty_ranges)]
-    /// let a0 = RangeMapBlaze::from_iter([(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")]);
-    /// #[allow(clippy::reversed_empty_ranges)]
-    /// let a1: RangeMapBlaze<i32, &str> = [(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")]
-    ///     .into_iter().collect();
+    /// let v = vec![(1..=2, &"a"), (2..=2, &"b"), (-10..=-5, &"c"), (1..=0, &"d")];
+    /// let a0: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter(&v);
+    /// let a1: RangeMapBlaze<i32, &str> = (&v).into_iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
     /// ```
     fn from_iter<I>(iter: I) -> Self
@@ -191,7 +186,7 @@ impl<'a, T: Integer, V: ValueOwned> FromIterator<&'a (RangeInclusive<T>, V)>
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::RangeMapBlaze;
+    /// use range_set_blaze::prelude::*;
     ///
     /// #[allow(clippy::reversed_empty_ranges)]
     /// let vec_range = vec![(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")];
@@ -218,13 +213,12 @@ impl<'a, T: Integer, V: ValueOwned> FromIterator<&'a (T, V)> for RangeMapBlaze<T
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::RangeMapBlaze;
+    /// use range_set_blaze::prelude::*;
     ///
-    /// #[allow(clippy::reversed_empty_ranges)]
-    /// let vec_range = vec![1..=2, 2..=2, -10..=-5, 1..=0];
-    /// let a0 = RangeMapBlaze::from_iter(vec_range.iter());
-    /// let a1: RangeMapBlaze<i32, &str> = vec_range.iter().collect();
-    /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
+    /// let v = vec![(1, "a"), (2, "a"), (2, "b")];
+    /// let a0 = RangeMapBlaze::from_iter(&v);
+    /// let a1: RangeMapBlaze<i32, &str> = (&v).iter().collect();
+    /// assert!(a0 == a1 && a0.to_string() == r#"(1..=2, "a")"#);
     /// ```
     fn from_iter<I>(iter: I) -> Self
     where
@@ -236,4 +230,15 @@ impl<'a, T: Integer, V: ValueOwned> FromIterator<&'a (T, V)> for RangeMapBlaze<T
         });
         Self::from_iter(iter)
     }
+}
+
+#[test]
+fn test_cmk_delete_me3() {
+    use crate::prelude::*;
+
+    #[allow(clippy::reversed_empty_ranges)]
+    let arr = [(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")];
+    let a0 = RangeMapBlaze::from_iter(&arr);
+    let a1: RangeMapBlaze<i32, &str> = arr.iter().collect();
+    assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
 }

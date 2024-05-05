@@ -1908,15 +1908,49 @@ fn test_coverage_10() {
 }
 
 #[test]
-fn test_cmk_delete_me() {
+fn test_cmk_delete_me4() {
     use crate::prelude::*;
 
+    // Create an empty set with 'new' or 'default'.
+    let a0 = RangeMapBlaze::<i32, &str>::new();
+    let a1 = RangeMapBlaze::<i32, &str>::default();
+    assert!(a0 == a1 && a0.is_empty());
+
+    // 'from_iter'/'collect': From an iterator of integers.
+    // Duplicates and out-of-order elements are fine.
+    // Values have left-to-right precedence.
+    let a0 = RangeMapBlaze::from_iter([(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]);
+    let a1: RangeMapBlaze<i32, &str> = [(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]
+        .into_iter()
+        .collect();
+    assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
+
+    // 'from_iter'/'collect': From an iterator of inclusive ranges, start..=end.
+    // Overlapping, out-of-order, and empty ranges are fine.
+    // Values have left-to-right precedence.
     #[allow(clippy::reversed_empty_ranges)]
-    let vec_range_value = vec![(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")];
-    let i: core::slice::Iter<(RangeInclusive<i32>, &str)> = vec_range_value.iter();
-    let a0 = RangeMapBlaze::from_iter(i);
-    // let a1: RangeMapBlaze<i32, &str> = vec_range_value.iter().collect();
-    // assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
+    let a0 = RangeMapBlaze::from_iter([(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")]);
+    #[allow(clippy::reversed_empty_ranges)]
+    let a1: RangeMapBlaze<i32, &str> = [(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")]
+        .into_iter()
+        .collect();
+    assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
+
+    // If we know the ranges are already sorted and disjoint,
+    // we can avoid work and use 'from_sorted_disjoint_map'/'into'.
+    let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::from([
+        (-10..=-5, &"c"),
+        (1..=2, &"a"),
+    ]));
+    let a1: RangeMapBlaze<i32, &str> =
+        CheckSortedDisjointMap::from([(-10..=-5, &"c"), (1..=2, &"a")]).into_range_map_blaze();
+    assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
+
+    // For compatibility with `BTreeMap`, we also support
+    // 'from'/'into' from arrays of integer-value pairs.
+    let a0 = RangeMapBlaze::from([(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]);
+    let a1: RangeMapBlaze<i32, &str> = [(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")].into();
+    assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
 }
 
 // cmk missing methods
