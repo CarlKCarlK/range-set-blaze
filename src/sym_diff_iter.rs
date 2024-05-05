@@ -19,13 +19,13 @@ use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
 /// use range_set_blaze::{prelude::*,SymDiffIter};
 ///
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-/// let b = CheckSortedDisjoint::from([2..=6]);
+/// let b = CheckSortedDisjoint::new([2..=6]);
 /// let sym_diff = SymDiffIter::new2(a, b);
 /// assert_eq!(sym_diff.into_string(), "1..=1, 3..=4, 7..=100");
 ///
 /// // Or, equivalently:
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-/// let b = CheckSortedDisjoint::from([2..=6]);
+/// let b = CheckSortedDisjoint::new([2..=6]);
 /// let sym_diff = a ^ b;
 /// assert_eq!(sym_diff.into_string(), "1..=1, 3..=4, 7..=100")
 /// ```

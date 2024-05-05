@@ -68,11 +68,11 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// assert!(a.into_string() == "1..=3, 100..=100");
 ///
 /// // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
-/// let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
+/// let a = CheckSortedDisjoint::new([1..=3, 100..=100]);
 /// assert!(a.into_string() == "1..=3, 100..=100");
 ///
 /// // DynamicSortedDisjoint of a SortedDisjoint iterator
-/// let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
+/// let a = CheckSortedDisjoint::new([1..=3, 100..=100]);
 /// let b = DynSortedDisjoint::new(a);
 /// assert!(b.into_string() == "1..=3, 100..=100");
 /// ```
@@ -110,7 +110,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// // '|' operator and 'equal' method
 /// let (a, b) = (a0.ranges(), b0.ranges());
 /// let result = a | b;
-/// assert!(result.equal(CheckSortedDisjoint::from([1..=100])));
+/// assert!(result.equal(CheckSortedDisjoint::new([1..=100])));
 ///
 /// // multiway union of same type
 /// let c0 = RangeSetBlaze::from_iter([2..=2, 6..=200]);
@@ -192,7 +192,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// use range_set_blaze::prelude::*;
 ///
 /// let weekends = OrdinalWeekends2023::new();
-/// let september = CheckSortedDisjoint::from([244..=273]);
+/// let september = CheckSortedDisjoint::new([244..=273]);
 /// let september_weekdays = september.intersection(weekends.complement());
 /// assert_eq!(
 ///     september_weekdays.into_string(),
@@ -209,14 +209,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjoint::from([1..=1]);
+    /// let a = CheckSortedDisjoint::new([1..=1]);
     /// let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
     /// let union = a.union(b);
     /// assert_eq!(union.into_string(), "1..=2");
     ///
     /// // Alternatively, we can use "|" because CheckSortedDisjoint defines
     /// // ops::bitor as SortedDisjoint::union.
-    /// let a = CheckSortedDisjoint::from([1..=1]);
+    /// let a = CheckSortedDisjoint::new([1..=1]);
     /// let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
     /// let union = a | b;
     /// assert_eq!(union.into_string(), "1..=2");
@@ -238,14 +238,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let a = CheckSortedDisjoint::new([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
     /// let intersection = a.intersection(b);
     /// assert_eq!(intersection.into_string(), "2..=2");
     ///
     /// // Alternatively, we can use "&" because CheckSortedDisjoint defines
     /// // ops::bitand as SortedDisjoint::intersection.
-    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let a = CheckSortedDisjoint::new([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
     /// let intersection = a & b;
     /// assert_eq!(intersection.into_string(), "2..=2");
@@ -267,14 +267,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let a = CheckSortedDisjoint::new([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
     /// let difference = a.difference(b);
     /// assert_eq!(difference.into_string(), "1..=1");
     ///
     /// // Alternatively, we can use "-" because CheckSortedDisjoint defines
     /// // ops::sub as SortedDisjoint::difference.
-    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let a = CheckSortedDisjoint::new([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
     /// let difference = a - b;
     /// assert_eq!(difference.into_string(), "1..=1");
@@ -296,13 +296,13 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjoint::from([-10_i16..=0, 1000..=2000]);
+    /// let a = CheckSortedDisjoint::new([-10_i16..=0, 1000..=2000]);
     /// let complement = a.complement();
     /// assert_eq!(complement.into_string(), "-32768..=-11, 1..=999, 2001..=32767");
     ///
     /// // Alternatively, we can use "!" because CheckSortedDisjoint defines
     /// // ops::not as SortedDisjoint::complement.
-    /// let a = CheckSortedDisjoint::from([-10i16..=0, 1000..=2000]);
+    /// let a = CheckSortedDisjoint::new([-10i16..=0, 1000..=2000]);
     /// let complement = !a;
     /// assert_eq!(complement.into_string(), "-32768..=-11, 1..=999, 2001..=32767");
     /// ```
@@ -322,14 +322,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let a = CheckSortedDisjoint::new([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
     /// let symmetric_difference = a.symmetric_difference(b);
     /// assert_eq!(symmetric_difference.into_string(), "1..=1, 3..=3");
     ///
     /// // Alternatively, we can use "^" because CheckSortedDisjoint defines
     /// // ops::bitxor as SortedDisjoint::symmetric_difference.
-    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let a = CheckSortedDisjoint::new([1..=2]);
     /// let b = RangeSetBlaze::from_iter([2..=3]).into_ranges();
     /// let symmetric_difference = a ^ b;
     /// assert_eq!(symmetric_difference.into_string(), "1..=1, 3..=3");
@@ -355,7 +355,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let a = CheckSortedDisjoint::new([1..=2]);
     /// let b = RangeSetBlaze::from_iter([1..=2]).into_ranges();
     /// assert!(a.equal(b));
     /// ```
@@ -384,7 +384,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjoint::from([1..=2]);
+    /// let a = CheckSortedDisjoint::new([1..=2]);
     /// assert!(!a.is_empty());
     /// ```
     #[inline]
@@ -404,16 +404,16 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let sup = CheckSortedDisjoint::from([1..=3]);
+    /// let sup = CheckSortedDisjoint::new([1..=3]);
     /// let set: CheckSortedDisjoint<i32, _> = [].into();
     /// assert_eq!(set.is_subset(sup), true);
     ///
-    /// let sup = CheckSortedDisjoint::from([1..=3]);
-    /// let set = CheckSortedDisjoint::from([2..=2]);
+    /// let sup = CheckSortedDisjoint::new([1..=3]);
+    /// let set = CheckSortedDisjoint::new([2..=2]);
     /// assert_eq!(set.is_subset(sup), true);
     ///
-    /// let sup = CheckSortedDisjoint::from([1..=3]);
-    /// let set = CheckSortedDisjoint::from([2..=2, 4..=4]);
+    /// let sup = CheckSortedDisjoint::new([1..=3]);
+    /// let set = CheckSortedDisjoint::new([2..=2, 4..=4]);
     /// assert_eq!(set.is_subset(sup), false);
     /// ```
     #[must_use]
@@ -500,8 +500,8 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-    /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
+    /// let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::new([-10..=-5, 1..=2]));
+    /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::new([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
     fn into_range_set_blaze(self) -> RangeSetBlaze<T>
@@ -525,7 +525,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 /// use range_set_blaze::prelude::*;
 ///
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-/// let b = CheckSortedDisjoint::from([2..=6]);
+/// let b = CheckSortedDisjoint::new([2..=6]);
 /// let union = a | b;
 /// assert_eq!(union.into_string(), "1..=100");
 /// ```
@@ -535,7 +535,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 /// use range_set_blaze::prelude::*;
 ///
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-/// let b = CheckSortedDisjoint::from([2..=6,-10..=-5]);
+/// let b = CheckSortedDisjoint::new([2..=6,-10..=-5]);
 /// let union = a | b;
 /// assert_eq!(union.into_string(), "1..=100");
 /// ```
@@ -629,21 +629,9 @@ where
 impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]>
     for CheckSortedDisjoint<T, array::IntoIter<RangeInclusive<T>, N>>
 {
-    /// You may create a [`CheckSortedDisjoint`] from an array of integers.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_blaze::prelude::*;
-    ///
-    /// let a0 = CheckSortedDisjoint::from([1..=3, 100..=100]);
-    /// let a1: CheckSortedDisjoint<_,_> = [1..=3, 100..=100].into();
-    /// assert_eq!(a0.into_string(), "1..=3, 100..=100");
-    /// assert_eq!(a1.into_string(), "1..=3, 100..=100");
-    /// ```
+    /// Deprecated: Use `new` instead.
     fn from(arr: [RangeInclusive<T>; N]) -> Self {
-        let iter = arr.into_iter();
-        Self::new(iter)
+        Self::new(arr)
     }
 }
 

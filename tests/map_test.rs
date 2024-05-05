@@ -1631,7 +1631,7 @@ fn map_split_off() {
 // //     use range_map_blaze::CheckSortedDisjoint;
 
 // //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-// //     let b = CheckSortedDisjoint::from([2..=6]);
+// //     let b = CheckSortedDisjoint::new([2..=6]);
 // //     let c = a | b;
 
 // //     assert_eq!(c.into_string(), "1..=100");
@@ -1653,12 +1653,12 @@ fn map_split_off() {
 
 // // #[test]
 // // fn map_not_iter_example() {
-// //     let a = CheckSortedDisjoint::from([1u8..=2, 5..=100]);
+// //     let a = CheckSortedDisjoint::new([1u8..=2, 5..=100]);
 // //     let b = NotIter::new(a);
 // //     assert_eq!(b.into_string(), "0..=0, 3..=4, 101..=255");
 
 // //     // Or, equivalently:
-// //     let b = !CheckSortedDisjoint::from([1u8..=2, 5..=100]);
+// //     let b = !CheckSortedDisjoint::new([1u8..=2, 5..=100]);
 // //     assert_eq!(b.into_string(), "0..=0, 3..=4, 101..=255");
 // // }
 
@@ -1675,7 +1675,7 @@ fn map_split_off() {
 // //     use range_map_blaze::{CheckSortedDisjoint, UnionIterMap};
 
 // //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-// //     let b = CheckSortedDisjoint::from([2..=6]);
+// //     let b = CheckSortedDisjoint::new([2..=6]);
 // //     let c = UnionIterMap::new(AssumeSortedStarts::new(
 // //         a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
 // //     ));
@@ -1683,29 +1683,29 @@ fn map_split_off() {
 
 // //     // Or, equivalently:
 // //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-// //     let b = CheckSortedDisjoint::from([2..=6]);
+// //     let b = CheckSortedDisjoint::new([2..=6]);
 // //     let c = SortedDisjoint::union(a, b);
 // //     assert_eq!(c.into_string(), "1..=100")
 // // }
 
 // // #[test]
 // // fn map_bitor() {
-// //     let a = CheckSortedDisjoint::from([1..=1]);
+// //     let a = CheckSortedDisjoint::new([1..=1]);
 // //     let b = RangeMapBlaze::from_iter([2..=2]).into_ranges();
 // //     let union = core::ops::BitOr::bitor(a, b);
 // //     assert_eq!(union.into_string(), "1..=2");
 
-// //     let a = CheckSortedDisjoint::from([1..=1]);
-// //     let b = CheckSortedDisjoint::from([2..=2]);
+// //     let a = CheckSortedDisjoint::new([1..=1]);
+// //     let b = CheckSortedDisjoint::new([2..=2]);
 // //     let c = range_map_blaze::SortedDisjoint::union(a, b);
 // //     assert_eq!(c.into_string(), "1..=2");
 
-// //     let a = CheckSortedDisjoint::from([1..=1]);
-// //     let b = CheckSortedDisjoint::from([2..=2]);
+// //     let a = CheckSortedDisjoint::new([1..=1]);
+// //     let b = CheckSortedDisjoint::new([2..=2]);
 // //     let c = core::ops::BitOr::bitor(a, b);
 // //     assert_eq!(c.into_string(), "1..=2");
 
-// //     let a = CheckSortedDisjoint::from([1..=1]);
+// //     let a = CheckSortedDisjoint::new([1..=1]);
 // //     let b = RangeMapBlaze::from_iter([2..=2]).into_ranges();
 // //     let c = range_map_blaze::SortedDisjoint::union(a, b);
 // //     assert_eq!(c.into_string(), "1..=2");
@@ -1733,9 +1733,9 @@ fn map_split_off() {
 // //     assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
 
 // //     // If we know the ranges are sorted and disjoint, we can use 'from'/'into'.
-// //     let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
+// //     let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjoint::new([-10..=-5, 1..=2]));
 // //     let a1: RangeMapBlaze<(i32,&str)> =
-// //         CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_map_blaze();
+// //         CheckSortedDisjoint::new([-10..=-5, 1..=2]).into_range_map_blaze();
 // //     assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
 
 // //     // For compatibility with `BTreeSet`, we also support
@@ -1939,17 +1939,17 @@ fn map_range_map_blaze_operators() {
 // //     assert!(a.into_string() == "1..=3, 100..=100");
 
 // //     // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
-// //     let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
+// //     let a = CheckSortedDisjoint::new([1..=3, 100..=100]);
 // //     assert!(a.into_string() == "1..=3, 100..=100");
 
 // //     // tee of a SortedDisjoint iterator
-// //     let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
+// //     let a = CheckSortedDisjoint::new([1..=3, 100..=100]);
 // //     let (a, b) = a.tee();
 // //     assert!(a.into_string() == "1..=3, 100..=100");
 // //     assert!(b.into_string() == "1..=3, 100..=100");
 
 // //     // DynamicSortedDisjoint of a SortedDisjoint iterator
-// //     let a = CheckSortedDisjoint::from([1..=3, 100..=100]);
+// //     let a = CheckSortedDisjoint::new([1..=3, 100..=100]);
 // //     let b = DynSortedDisjointMap::new(a);
 // //     assert!(b.into_string() == "1..=3, 100..=100");
 // // }
@@ -1981,7 +1981,7 @@ fn map_range_map_blaze_operators() {
 // //     }
 
 // //     let weekends = OrdinalWeekends2023::new();
-// //     let sept = CheckSortedDisjoint::from([244..=273]);
+// //     let sept = CheckSortedDisjoint::new([244..=273]);
 // //     let sept_weekdays = sept.intersection(weekends.complement());
 // //     assert_eq!(
 // //         sept_weekdays.into_string(),
@@ -2003,7 +2003,7 @@ fn map_range_map_blaze_operators() {
 // //     // '|' operator and 'equal' method
 // //     let (a, b) = (a0.range_values(), b0.range_values());
 // //     let result = a | b;
-// //     assert!(result.equal(CheckSortedDisjoint::from([1..=100])));
+// //     assert!(result.equal(CheckSortedDisjoint::new([1..=100])));
 
 // //     // multiway union of same type
 // //     let (a, b, c) = (a0.range_values(), b0.range_values(), c0.range_values());
@@ -2048,16 +2048,16 @@ fn map_range_map_blaze_operators() {
 // // #[test]
 // // #[allow(clippy::bool_assert_comparison)]
 // // fn map_is_subset_check() {
-// //     let sup = CheckSortedDisjoint::from([1..=3]);
+// //     let sup = CheckSortedDisjoint::new([1..=3]);
 // //     let set: CheckSortedDisjoint<i32, _> = [].into();
 // //     assert_eq!(set.is_subset(sup), true);
 
-// //     let sup = CheckSortedDisjoint::from([1..=3]);
-// //     let set = CheckSortedDisjoint::from([2..=2]);
+// //     let sup = CheckSortedDisjoint::new([1..=3]);
+// //     let set = CheckSortedDisjoint::new([2..=2]);
 // //     assert_eq!(set.is_subset(sup), true);
 
-// //     let sup = CheckSortedDisjoint::from([1..=3]);
-// //     let set = CheckSortedDisjoint::from([2..=2, 4..=4]);
+// //     let sup = CheckSortedDisjoint::new([1..=3]);
+// //     let set = CheckSortedDisjoint::new([2..=2, 4..=4]);
 // //     assert_eq!(set.is_subset(sup), false);
 // // }
 
@@ -2114,7 +2114,7 @@ fn map_range_map_blaze_operators() {
 
 // // #[test]
 // // fn map_print_first_complement_gap() {
-// //     let a = CheckSortedDisjoint::from([-10i16..=0, 1000..=2000]);
+// //     let a = CheckSortedDisjoint::new([-10i16..=0, 1000..=2000]);
 // //     println!("{:?}", (!a).next().unwrap()); // prints -32768..=-11
 // // }
 
@@ -2508,7 +2508,7 @@ fn understand_strings_as_values() {
     let a_string = "a".to_string();
     let _: CheckSortedDisjointMap<i32, &str, &&str, _> = [(0..=0, &"a")].into();
     let mut b: CheckSortedDisjointMap<i32, String, &String, _> =
-        CheckSortedDisjointMap::from([(0..=0, &a_string)]);
+        CheckSortedDisjointMap::new([(0..=0, &a_string)]);
     let c: &String = b.next().unwrap().1;
     let _c_clone: String = c.clone();
     let _: CheckSortedDisjointMap<i32, &String, &&String, _> =
@@ -2577,7 +2577,7 @@ fn test_every_sorted_disjoint_map_method() {
     let (a, b, c, d, e, f) = fresh_instances!();
     syntactic_for! { sd in [a,b,c,d,e,f] {$(
         let z = ! $sd;
-        assert!(z.equal(CheckSortedDisjoint::from([-2147483648..=0, 3..=4, 101..=2147483647])));
+        assert!(z.equal(CheckSortedDisjoint::new([-2147483648..=0, 3..=4, 101..=2147483647])));
     )*}}
 
     // Union
@@ -3693,7 +3693,7 @@ fn map_repro2() {
 // #[test]
 // fn merge_coverage_0() {
 //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-//     let b = CheckSortedDisjoint::from([2..=6]);
+//     let b = CheckSortedDisjoint::new([2..=6]);
 //     let m = Merge::new(a, b);
 //     let n = m.clone();
 //     let p = n.clone();
@@ -3703,8 +3703,8 @@ fn map_repro2() {
 //     assert!(format!("{p:?}").starts_with("Merge"));
 
 //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-//     let b = CheckSortedDisjoint::new([2..=6].into_iter());
-//     let c = CheckSortedDisjoint::new([-1..=-1].into_iter());
+//     let b = CheckSortedDisjoint::new([2..=6]);
+//     let c = CheckSortedDisjoint::new([-1..=-1]);
 //     let m = KMerge::new([a, b, c]);
 //     let n = m.clone();
 //     let p = n.clone();
@@ -3814,7 +3814,7 @@ fn map_repro2() {
 // #[should_panic]
 // fn sorted_disjoint_coverage_2() {
 //     #[allow(clippy::reversed_empty_ranges)]
-//     let mut a = CheckSortedDisjoint::new([1..=0].into_iter());
+//     let mut a = CheckSortedDisjoint::new([1..=0]);
 //     a.next();
 // }
 
@@ -3822,7 +3822,7 @@ fn map_repro2() {
 // #[should_panic]
 // fn sorted_disjoint_coverage_3() {
 //     #[allow(clippy::reversed_empty_ranges)]
-//     let mut a = CheckSortedDisjoint::new([1..=1, 2..=2].into_iter());
+//     let mut a = CheckSortedDisjoint::new([1..=1, 2..=2]);
 //     a.next();
 //     a.next();
 // }
@@ -3831,21 +3831,21 @@ fn map_repro2() {
 // #[should_panic]
 // fn sorted_disjoint_coverage_4() {
 //     #[allow(clippy::reversed_empty_ranges)]
-//     let mut a = CheckSortedDisjoint::new([0..=i128::MAX].into_iter());
+//     let mut a = CheckSortedDisjoint::new([0..=i128::MAX]);
 //     a.next();
 // }
 
 // #[test]
 // fn sorted_disjoint_iterator_coverage_0() {
 //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-//     let b = CheckSortedDisjoint::new([1..=2, 5..=101].into_iter());
+//     let b = CheckSortedDisjoint::new([1..=2, 5..=101]);
 //     assert!(b.is_superset(a));
 // }
 
 // #[test]
 // fn union_iter_coverage_0() {
 //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-//     let b = CheckSortedDisjoint::new([1..=2, 5..=101].into_iter());
+//     let b = CheckSortedDisjoint::new([1..=2, 5..=101]);
 //     let c = a.union(b);
 //     assert!(format!("{c:?}").starts_with("UnionIter"));
 // }

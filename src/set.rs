@@ -199,8 +199,8 @@ where
 ///
 /// // If we know the ranges are already sorted and disjoint,
 /// // we can avoid work and use 'from_sorted_disjoint'/'into_range_set_blaze'.
-/// let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-/// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
+/// let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::new([-10..=-5, 1..=2]));
+/// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::new([-10..=-5, 1..=2]).into_range_set_blaze();
 /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 ///
 /// // For compatibility with `BTreeSet`, we also support
@@ -446,8 +446,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::from([-10..=-5, 1..=2]));
-    /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::from([-10..=-5, 1..=2]).into_range_set_blaze();
+    /// let a0 = RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::new([-10..=-5, 1..=2]));
+    /// let a1: RangeSetBlaze<i32> = CheckSortedDisjoint::new([-10..=-5, 1..=2]).into_range_set_blaze();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
     pub fn from_sorted_disjoint<I>(iter: I) -> Self
@@ -802,7 +802,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         };
         assert!(start <= end);
 
-        let bounds = CheckSortedDisjoint::from([start..=end]);
+        let bounds = CheckSortedDisjoint::new([start..=end]);
         Self::from_sorted_disjoint(self.ranges() & bounds).into_iter()
     }
 

@@ -924,7 +924,7 @@ fn lib_coverage_6() {
 // #[test]
 // fn merge_coverage_0() {
 //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-//     let b = CheckSortedDisjoint::from([2..=6]);
+//     let b = CheckSortedDisjoint::new([2..=6]);
 //     let m = Merge::new(a, b);
 //     let n = m.clone();
 //     let p = n.clone();

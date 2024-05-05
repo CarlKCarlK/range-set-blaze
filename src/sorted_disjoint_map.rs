@@ -160,7 +160,7 @@ where
 ///
 /// // multiway union of different types
 /// let (a, b) = (a0.range_values(), b0.range_values());
-/// let c = CheckSortedDisjointMap::from([(2..=2, &"c"), (6..=200, &"c")]);
+/// let c = CheckSortedDisjointMap::new([(2..=2, &"c"), (6..=200, &"c")]);
 /// let result = union_map_dyn!(a, b, c);
 /// assert_eq!(result.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"# );
 ///
@@ -487,8 +487,8 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::from([(-10..=-5, &"a"), (1..=2, &"b")]));
-    /// let a1: RangeMapBlaze<i32,_> = CheckSortedDisjointMap::from([(-10..=-5, &"a"), (1..=2, &"b")]).into_range_map_blaze();
+    /// let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::new([(-10..=-5, &"a"), (1..=2, &"b")]));
+    /// let a1: RangeMapBlaze<i32,_> = CheckSortedDisjointMap::new([(-10..=-5, &"a"), (1..=2, &"b")]).into_range_map_blaze();
     /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "a"), (1..=2, "b")"#);
     /// ```
     fn into_range_map_blaze(self) -> RangeMapBlaze<T, V>
@@ -576,19 +576,6 @@ where
             previous: None,
             phantom_data: PhantomData,
         }
-    }
-}
-
-impl<T, V, VR, I, J> From<J> for CheckSortedDisjointMap<T, V, VR, I>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: Iterator<Item = (RangeInclusive<T>, VR)>,
-    J: IntoIterator<Item = (RangeInclusive<T>, VR), IntoIter = I>,
-{
-    fn from(iter: J) -> Self {
-        CheckSortedDisjointMap::new(iter)
     }
 }
 

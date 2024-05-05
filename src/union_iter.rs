@@ -23,13 +23,13 @@ use itertools::Itertools;
 /// use range_set_blaze::{prelude::*,UnionIter};
 ///
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-/// let b = CheckSortedDisjoint::from([2..=6]);
+/// let b = CheckSortedDisjoint::new([2..=6]);
 /// let union = UnionIter::new2(a, b);
 /// assert_eq!(union.into_string(), "1..=100");
 ///
 /// // Or, equivalently:
 /// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-/// let b = CheckSortedDisjoint::from([2..=6]);
+/// let b = CheckSortedDisjoint::new([2..=6]);
 /// let union = a | b;
 /// assert_eq!(union.into_string(), "1..=100")
 /// ```
@@ -165,15 +165,3 @@ where
     I: SortedStarts<T> + FusedIterator,
 {
 }
-
-// cmk delete
-// impl<'a, T: Integer + 'a, V: ValueOwned + 'a, const N: usize> From<[(T, V); N]>
-//     for UnionIter<'a, T, V, &'a V, SortedStartsInVec<'a, T, V, &'a V>>
-// {
-//     fn from(arr: [(T, &'a V); N]) -> Self {
-//         // Directly create an iterator from the array and map it as needed
-//         arr.iter()
-//             .map(|&(t, v)| (t, v)) // This is a simple identity map; adjust as needed for your actual transformation
-//             .collect() // Collect into UnionIter, relying on FromIterator
-//     }
-// }

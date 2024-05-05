@@ -184,8 +184,8 @@ where
 ///
 /// // If we know the ranges are already sorted and disjoint,
 /// // we can avoid work and use 'from_sorted_disjoint_map'/'into'.
-/// let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::from([(-10..=-5, &"c"), (1..=2, &"a")]));
-/// let a1: RangeMapBlaze<i32, &str> = CheckSortedDisjointMap::from([(-10..=-5, &"c"), (1..=2, &"a")]).into_range_map_blaze();
+/// let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::new([(-10..=-5, &"c"), (1..=2, &"a")]));
+/// let a1: RangeMapBlaze<i32, &str> = CheckSortedDisjointMap::new([(-10..=-5, &"c"), (1..=2, &"a")]).into_range_map_blaze();
 /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
 ///
 /// // For compatibility with `BTreeSet`, we also support
@@ -481,8 +481,8 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::from([(-10..=-5, &"a"), (1..=2, &"b")]));
-    /// let a1: RangeMapBlaze<i32,_> = CheckSortedDisjointMap::from([(-10..=-5, &"a"), (1..=2, &"b")]).into_range_map_blaze();
+    /// let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::new([(-10..=-5, &"a"), (1..=2, &"b")]));
+    /// let a1: RangeMapBlaze<i32,_> = CheckSortedDisjointMap::new([(-10..=-5, &"a"), (1..=2, &"b")]).into_range_map_blaze();
     /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "a"), (1..=2, "b")"#);
     /// ```
     pub fn from_sorted_disjoint_map<VR, I>(iter: I) -> Self
@@ -741,7 +741,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         };
         assert!(start <= end);
 
-        let bounds = CheckSortedDisjoint::from([start..=end]);
+        let bounds = CheckSortedDisjoint::new([start..=end]);
         RangeMapBlaze::from_sorted_disjoint_map(self.range_values().intersection_with_set(bounds))
             .into_iter()
     }
@@ -1932,12 +1932,12 @@ fn test_cmk_delete_me4() {
 
     // If we know the ranges are already sorted and disjoint,
     // we can avoid work and use 'from_sorted_disjoint_map'/'into'.
-    let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::from([
+    let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::new([
         (-10..=-5, &"c"),
         (1..=2, &"a"),
     ]));
     let a1: RangeMapBlaze<i32, &str> =
-        CheckSortedDisjointMap::from([(-10..=-5, &"c"), (1..=2, &"a")]).into_range_map_blaze();
+        CheckSortedDisjointMap::new([(-10..=-5, &"c"), (1..=2, &"a")]).into_range_map_blaze();
     assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
 
     // For compatibility with `BTreeSet`, we also support

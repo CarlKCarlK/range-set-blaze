@@ -31,13 +31,13 @@ use crate::{
 /// use range_set_blaze::{prelude::*, UnionIterMap};
 ///
 /// let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-/// let b = CheckSortedDisjointMap::from([(2..=6, &"b")]);
+/// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
 /// let union = UnionIterMap::new2(a, b);
 /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"# );
 ///
 /// // Or, equivalently:
 /// let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-/// let b = CheckSortedDisjointMap::from([(2..=6, &"b")]);
+/// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
 /// let union = a | b;
 /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"# );
 /// ```
@@ -351,7 +351,7 @@ fn cmk_delete_me5() {
     use crate::prelude::*;
 
     let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-    let b = CheckSortedDisjointMap::from([(2..=6, &"b")]);
+    let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
     let union = UnionIterMap::new2(a, b);
     assert_eq!(
         union.into_string(),
@@ -360,7 +360,7 @@ fn cmk_delete_me5() {
 
     // Or, equivalently:
     let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-    let b = CheckSortedDisjointMap::from([(2..=6, &"b")]);
+    let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
     let union = a | b;
     assert_eq!(
         union.into_string(),

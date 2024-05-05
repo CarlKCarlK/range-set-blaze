@@ -1551,7 +1551,7 @@ fn map_repro1() {
 // // #[test]
 // // fn merge_coverage_0() {
 // //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-// //     let b = CheckSortedDisjoint::from([2..=6]);
+// //     let b = CheckSortedDisjoint::new([2..=6]);
 // //     let m = Merge::new(a, b);
 // //     let n = m.clone();
 // //     let p = n.clone();
@@ -1561,8 +1561,8 @@ fn map_repro1() {
 // //     assert!(format!("{p:?}").starts_with("Merge"));
 
 // //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-// //     let b = CheckSortedDisjoint::new([2..=6].into_iter());
-// //     let c = CheckSortedDisjoint::new([-1..=-1].into_iter());
+// //     let b = CheckSortedDisjoint::new([2..=6]);
+// //     let c = CheckSortedDisjoint::new([-1..=-1]);
 // //     let m = KMerge::new([a, b, c]);
 // //     let n = m.clone();
 // //     let p = n.clone();
@@ -1672,7 +1672,7 @@ fn map_repro1() {
 // // #[should_panic]
 // // fn sorted_disjoint_coverage_2() {
 // //     #[allow(clippy::reversed_empty_ranges)]
-// //     let mut a = CheckSortedDisjoint::new([1..=0].into_iter());
+// //     let mut a = CheckSortedDisjoint::new([1..=0]);
 // //     a.next();
 // // }
 
@@ -1680,7 +1680,7 @@ fn map_repro1() {
 // // #[should_panic]
 // // fn sorted_disjoint_coverage_3() {
 // //     #[allow(clippy::reversed_empty_ranges)]
-// //     let mut a = CheckSortedDisjoint::new([1..=1, 2..=2].into_iter());
+// //     let mut a = CheckSortedDisjoint::new([1..=1, 2..=2]);
 // //     a.next();
 // //     a.next();
 // // }
@@ -1689,21 +1689,21 @@ fn map_repro1() {
 // // #[should_panic]
 // // fn sorted_disjoint_coverage_4() {
 // //     #[allow(clippy::reversed_empty_ranges)]
-// //     let mut a = CheckSortedDisjoint::new([0..=i128::MAX].into_iter());
+// //     let mut a = CheckSortedDisjoint::new([0..=i128::MAX]);
 // //     a.next();
 // // }
 
 // // #[test]
 // // fn sorted_disjoint_iterator_coverage_0() {
 // //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-// //     let b = CheckSortedDisjoint::new([1..=2, 5..=101].into_iter());
+// //     let b = CheckSortedDisjoint::new([1..=2, 5..=101]);
 // //     assert!(b.is_superset(a));
 // // }
 
 // // #[test]
 // // fn union_iter_coverage_0() {
 // //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-// //     let b = CheckSortedDisjoint::new([1..=2, 5..=101].into_iter());
+// //     let b = CheckSortedDisjoint::new([1..=2, 5..=101]);
 // //     let c = a.union(b);
 // //     assert!(format!("{c:?}").starts_with("UnionIter"));
 // // }

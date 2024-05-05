@@ -269,6 +269,7 @@ where
     }
 }
 
+// cmk understand why/if this is needed
 impl<T: Integer, V: ValueOwned, VR, I> From<I>
     for SortedDisjointMapWithLenSoFar<T, V, VR, I::IntoIter>
 where

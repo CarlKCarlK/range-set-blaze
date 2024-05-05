@@ -10,12 +10,12 @@ use crate::{Integer, SortedDisjoint};
 /// ```
 /// use range_set_blaze::{prelude::*, NotIter};
 ///
-/// let a = CheckSortedDisjoint::from([1u8..=2, 5..=100]);
+/// let a = CheckSortedDisjoint::new([1u8..=2, 5..=100]);
 /// let b = NotIter::new(a);
 /// assert_eq!(b.into_string(), "0..=0, 3..=4, 101..=255");
 ///
 /// // Or, equivalently:
-/// let b = !CheckSortedDisjoint::from([1u8..=2, 5..=100]);
+/// let b = !CheckSortedDisjoint::new([1u8..=2, 5..=100]);
 /// assert_eq!(b.into_string(), "0..=0, 3..=4, 101..=255");
 /// ```
 #[derive(Clone, Debug)]
