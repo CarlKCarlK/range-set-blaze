@@ -15,24 +15,6 @@ use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap, SortedDisjoi
 ///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap
 /// [`UnionIter`]: crate::UnionIter
-///
-/// # Examples
-///
-/// ```
-/// use itertools::Itertools;
-/// use range_set_blaze::{UnionIter, MergeMap, SortedDisjointMap, CheckSortedDisjointMap};
-///
-/// let a = CheckSortedDisjointMap::new([1..=2, 5..=100].into_iter());
-/// let b = CheckSortedDisjointMap::from([2..=6]);
-/// let union = UnionIter::new2(a, b);
-/// assert_eq!(union.into_string(), "1..=100");
-///
-/// // Or, equivalently:
-/// let a = CheckSortedDisjointMap::new([1..=2, 5..=100].into_iter());
-/// let b = CheckSortedDisjointMap::from([2..=6]);
-/// let c = a | b;
-/// assert_eq!(c.into_string(), "1..=100")
-/// ```
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MergeMap<T, V, VR, L, R>
 where
@@ -116,25 +98,6 @@ where
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap
 /// [`UnionIter`]: crate::UnionIter
 ///
-/// # Examples
-///
-/// ```
-/// use itertools::Itertools;
-/// use range_set_blaze::{UnionIter, KMergeMap, MultiwaySortedDisjoint, SortedDisjointMap, CheckSortedDisjointMap};
-///
-/// let a = CheckSortedDisjointMap::new([1..=2, 5..=100].into_iter());
-/// let b = CheckSortedDisjointMap::new([2..=6].into_iter());
-/// let c = CheckSortedDisjointMap::new([-1..=-1].into_iter());
-/// let union = UnionIter::new_k([a, b, c]);
-/// assert_eq!(union.into_string(), "-1..=-1, 1..=100");
-///
-/// // Or, equivalently:
-/// let a = CheckSortedDisjointMap::new([1..=2, 5..=100].into_iter());
-/// let b = CheckSortedDisjointMap::new([2..=6].into_iter());
-/// let c = CheckSortedDisjointMap::new([-1..=-1].into_iter());
-/// let union = [a, b, c].union();
-/// assert_eq!(union.into_string(), "-1..=-1, 1..=100");
-/// ```
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct KMergeMap<T, V, VR, I>

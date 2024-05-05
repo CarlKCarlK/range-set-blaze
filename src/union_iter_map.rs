@@ -28,19 +28,18 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// use itertools::Itertools;
-/// use range_set_blaze::{UnionIterMap, Merge, SortedDisjointMap, CheckSortedDisjoint};
+/// use range_set_blaze::{prelude::*, UnionIterMap};
 ///
-/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-/// let b = CheckSortedDisjoint::from([2..=6]);
+/// let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+/// let b = CheckSortedDisjointMap::from([(2..=6, &"b")]);
 /// let union = UnionIterMap::new2(a, b);
-/// assert_eq!(union.into_string(), "1..=100");
+/// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"# );
 ///
 /// // Or, equivalently:
-/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-/// let b = CheckSortedDisjoint::from([2..=6]);
+/// let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+/// let b = CheckSortedDisjointMap::from([(2..=6, &"b")]);
 /// let union = a | b;
-/// assert_eq!(union.into_string(), "1..=100")
+/// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"# );
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -289,37 +288,6 @@ where
     }
 }
 
-// cmk delete
-// // from iter (T, &V) to UnionIterMap
-// impl<'a, T, V> FromIterator<(T, &'a V)>
-//     for UnionIterMap<T, V, &'a V, SortedStartsInVecMap<T, V, &'a V>>
-// where
-//     T: Integer + 'a,
-//     V: ValueOwned + 'a,
-// {
-//     fn from_iter<I>(iter: I) -> Self
-//     where
-//         I: IntoIterator<Item = (T, &'a V)>,
-//     {
-//         let iter = iter.into_iter().map(|(x, value)| (x..=x, value));
-//         UnionIterMap::from_iter(iter)
-//     }
-// }
-
-// // from iter (RangeInclusive<T>, &V) to UnionIterMap
-// impl<'a, T: Integer + 'a, V: ValueOwned + 'a> FromIterator<(RangeInclusive<T>, &'a V)>
-//     for UnionIterMap<T, V, &'a V, SortedStartsInVecMap<T, V, &'a V>>
-// {
-//     fn from_iter<I>(iter: I) -> Self
-//     where
-//         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
-//     {
-//         let iter = iter.into_iter();
-//         let iter = iter.map(|(range, value)| (range, value));
-//         UnionIterMap::from_iter(iter)
-//     }
-// }
-
 // cmk used?
 #[allow(dead_code)]
 type SortedRangeValueVec<T, V, VR> =
@@ -378,79 +346,24 @@ where
 {
 }
 
-// cmk
-// impl<'a, T, V, VR, I> ops::Not for UnionIterMap<'a, T, V, VR, I>
-// where
-//     I: SortedStartsMap<T, V>,
-// {
-//     type Output = NotIterMap<T, V, Self>;
+#[test]
+fn cmk_delete_me5() {
+    use crate::prelude::*;
 
-//     fn not(self) -> Self::Output {
-//         self.complement()
-//     }
-// }
+    let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+    let b = CheckSortedDisjointMap::from([(2..=6, &"b")]);
+    let union = UnionIterMap::new2(a, b);
+    assert_eq!(
+        union.into_string(),
+        r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"#
+    );
 
-// impl<'a, T, V, VR, R, L> ops::BitOr<R> for UnionIterMap<'a, T, V, VR, L>
-// where
-//     T: Integer + 'a,
-//     V: ValueOwned + 'a,
-//     VR: CloneBorrow<V> + 'a,
-//     L: SortedStartsMap<'a, T, V, VR>,
-//     R: SortedDisjointMap<'a, T, V, VR> + 'a,
-// {
-//     type Output = BitOrMergeMap<'a, T, V, VR, Self, R>;
-
-//     fn bitor(self, rhs: R) -> Self::Output {
-//         // It might be fine to optimize to self.iter, but that would require
-//         // also considering field 'range'
-//         SortedDisjointMap::union(self, rhs)
-//     }
-// }
-
-// impl<'a, T, V, VR, R, L> ops::Sub<R> for UnionIterMap<'a, T, V, VR, L>
-// where
-//     L: SortedStartsMap<T, V>,
-//     R: SortedDisjointMap<T, V>,
-// {
-//     type Output = BitSubMergeMap<T, V, Self, R>;
-
-//     fn sub(self, rhs: R) -> Self::Output {
-//         SortedDisjointMap::difference(self, rhs)
-//     }
-// }
-
-// impl<'a, T, V, VR, R, L> ops::BitXor<R> for UnionIterMap<'a, T, V, VR, L>
-// where
-//     L: SortedStartsMap<T, V>,
-//     R: SortedDisjointMap<T, V>,
-// {
-//     type Output = BitXOrTeeMap<T, V, Self, R>;
-
-//     #[allow(clippy::suspicious_arithmetic_impl)]
-//     fn bitxor(self, rhs: R) -> Self::Output {
-//         SortedDisjointMap::symmetric_difference(self, rhs)
-//     }
-// }
-
-// impl<'a, T, V, VR, R, L> ops::BitAnd<R> for UnionIterMap<'a, T, V, VR, L>
-// where
-//     L: SortedStartsMap<T, V>,
-//     R: SortedDisjointMap<T, V>,
-// {
-//     type Output = BitAndMergeMap<T, V, Self, R>;
-
-//     fn bitand(self, other: R) -> Self::Output {
-//         SortedDisjointMap::intersection(self, other)
-//     }
-// }
-
-// impl<'a, T: Integer + 'a, V: ValueOwned + 'a, const N: usize> From<[(T, V); N]>
-//     for UnionIterMap<'a, T, V, &'a V, SortedStartsInVecMap<'a, T, V, &'a V>>
-// {
-//     fn from(arr: [(T, &'a V); N]) -> Self {
-//         // Directly create an iterator from the array and map it as needed
-//         arr.iter()
-//             .map(|&(t, v)| (t, v)) // This is a simple identity map; adjust as needed for your actual transformation
-//             .collect() // Collect into UnionIterMap, relying on FromIterator
-//     }
-// }
+    // Or, equivalently:
+    let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+    let b = CheckSortedDisjointMap::from([(2..=6, &"b")]);
+    let union = a | b;
+    assert_eq!(
+        union.into_string(),
+        r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"#
+    );
+}

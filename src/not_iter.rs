@@ -8,7 +8,7 @@ use crate::{Integer, SortedDisjoint};
 /// # Example
 ///
 /// ```
-/// use range_set_blaze::{NotIter, SortedDisjoint, CheckSortedDisjoint};
+/// use range_set_blaze::{prelude::*, NotIter};
 ///
 /// let a = CheckSortedDisjoint::from([1u8..=2, 5..=100]);
 /// let b = NotIter::new(a);

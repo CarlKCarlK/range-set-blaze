@@ -1,6 +1,7 @@
 use crate::map::CloneBorrow;
 use crate::range_values::{MapIntoRangesIter, MapRangesIter, RangeValuesToRangesIter};
 use crate::ranges::RangesIter;
+use crate::sorted_disjoint_map::IntoString;
 use crate::RangeSetBlaze;
 use crate::{BitOrMerge, IntoRangesIter, UnionIter};
 use core::array;
@@ -367,41 +368,21 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         itertools::equal(self, other)
     }
 
-    // cmk move this documentation to the trait
-    // /// Given a [`SortedDisjoint`] iterators, produces a string version. Unlike most `to_string` and `fmt` in Rust,
-    // /// this method takes ownership of the iterator and consumes it.
-    // ///
-    // /// # Examples
-    // ///
-    // /// ```
-    // /// use range_set_blaze::prelude::*;
-    // ///
-    // /// let a = CheckSortedDisjoint::from([1..=2]);
-    // /// assert_eq!(a.into_string(), "1..=2");
-    // /// ```
-    // fn into_string(self) -> String
-    // where
-    //     Self: Sized,
-    // {
-    //     self.map(|range| format!("{range:?}")).join(", ")
-    // }
-
-    // cmk000
-    // /// Deprecated. Use [`into_string`] instead.
-    // #[deprecated(since = "0.1.cmk", note = "Use `into_string` instead")]
-    // fn to_string(self) -> String
-    // where
-    //     Self: Sized,
-    // {
-    //     self.into_string()
-    // }
+    /// Deprecated. Use [`into_string`] instead.
+    #[deprecated(since = "0.1.cmk", note = "Use `into_string` instead")]
+    fn to_string(self) -> String
+    where
+        Self: Sized,
+    {
+        self.into_string()
+    }
 
     /// Returns `true` if the set contains no elements.
     ///
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::CheckSortedDisjoint;
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjoint::from([1..=2]);
     /// assert!(!a.is_empty());

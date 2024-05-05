@@ -28,18 +28,18 @@ use crate::{
 ///
 /// ```
 /// use itertools::Itertools;
-/// use range_set_blaze::{prelude::*,SymDiffIterMap};
+/// use range_set_blaze::{prelude::*, SymDiffIterMap};
 ///
-/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-/// let b = CheckSortedDisjoint::from([2..=6]);
-/// let union = SymDiffIterMap::new2(a, b);
-/// assert_eq!(union.into_string(), "1..=100");
+/// let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+/// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
+/// let sym_diff = SymDiffIterMap::new2(a, b);
+/// assert_eq!(sym_diff.into_string(), r#"(1..=1, "a"), (3..=4, "b"), (7..=100, "a")"#);
 ///
 /// // Or, equivalently:
-/// let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-/// let b = CheckSortedDisjoint::from([2..=6]);
-/// let union = a | b;
-/// assert_eq!(union.into_string(), "1..=100")
+/// let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+/// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
+/// let sym_diff = a ^ b;
+/// assert_eq!(sym_diff.into_string(),r#"(1..=1, "a"), (3..=4, "b"), (7..=100, "a")"#);
 /// ```
 // cmk #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -294,4 +294,26 @@ where
             ready_to_go: None,
         }
     }
+}
+
+#[test]
+fn cmk_delete_me6() {
+    use crate::{prelude::*, SymDiffIterMap};
+
+    let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+    let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
+    let sym_diff = SymDiffIterMap::new2(a, b);
+    assert_eq!(
+        sym_diff.into_string(),
+        r#"(1..=1, "a"), (3..=4, "b"), (7..=100, "a")"#
+    );
+
+    // Or, equivalently:
+    let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+    let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
+    let sym_diff = a ^ b;
+    assert_eq!(
+        sym_diff.into_string(),
+        r#"(1..=1, "a"), (3..=4, "b"), (7..=100, "a")"#
+    );
 }
