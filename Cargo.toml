@@ -2,7 +2,7 @@
 name = "range-set-blaze"
 version = "0.2.0-alpha1"
 edition = "2021"
-description = "Integer sets as fast, sorted, integer ranges with full set operations"
+description = "Integer sets as fast, sorted integer ranges -- Maps with integer-range keys -- Full set operations"
 repository = "https://github.com/CarlKCarlK/range-set-blaze"
 readme = "README.md"
 documentation = "https://docs.rs/range-set-blaze/latest/range-set-blaze/"
@@ -59,6 +59,7 @@ range-set = "0.0.10"
 glob = "0.3.0"
 rand = "0.8.4"
 roaring = "0.10.1"
+anyhow = "1.0.40"
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3.37"

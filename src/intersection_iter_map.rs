@@ -62,6 +62,8 @@ where
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`IntersectionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`IntersectionIterMap`] for more details and examples.
+    ///
+    /// [`SortedStartsMap`]: crate::sorted_disjoint_map::SortedStartsMap
     #[allow(dead_code)]
     pub fn new(iter_map: IM, iter_set: IS) -> Self {
         Self {

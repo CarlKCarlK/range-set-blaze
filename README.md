@@ -7,33 +7,44 @@ range-set-blaze
 
 <!-- FUTURE: Add coverage badge? -->
 
-Integer sets as fast, sorted, integer ranges with full set operations
+Integer sets as fast, sorted integer ranges -- Maps with integer-range keys -- Full set operations
 
-The integers can be any size ([`u8`] to [`u128`]) and may be signed ([`i8`] to [`i128`]). The [set operations] include `union`, `intersection`, `difference`, `symmetric difference`, and `complement`.
+The integers can be any size ([`u8`] to [`u128`]) and may be signed ([`i8`] to [`i128`]). The [set operations] and [map operations]
+include `union`, `intersection`, `difference`, `symmetric difference`, and `complement`.
 
-The crate's main struct is [`RangeSetBlaze`], a set of integers. See the [documentation] for details.
+The crate's main structs are:
 
-> Unlike the standard [`BTreeSet`] and [`HashSet`], `RangeSetBlaze` does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from [other interval libraries](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) -- that we know of -- by
+* [`RangeSetBlaze`], a set of integers. See the [set documentation] for details
+* [`RangeMapBlaze`], a map from integers to values. See the [map documentation] for details
+
+> Unlike the standard [`BTreeSet/BTreeMap`] and [`HashSet/HashMap`], `RangeSetBlaze` does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from [other interval libraries](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) -- that we know of -- by
 offering full set operations and by being optimized for sets of [clumpy][1] integers.
 >
-> We can construct a `RangeSetBlaze` from unsorted & redundant integers (or ranges). When the inputs are clumpy, construction will be [linear][1] in the number of inputs and set operations will be sped up [quadratically][1].
+> We can construct a `RangeSetBlaze` or `RangeMapBlaze` from unsorted & redundant integers (or ranges). When the inputs are clumpy, construction will be [linear][1] in the number of inputs and set operations will be sped up [quadratically][1].
 
-The crate's main trait is [`SortedDisjoint`]. It is implemented by iterators of sorted & disjoint ranges of integers. See the [`SortedDisjoint` documentation] for details.
+The crate's main traits are
 
-> With any `SortedDisjoint` iterator we can perform set operations in one pass through the ranges and with minimal (constant) memory. It enforces the "sorted & disjoint" constraint at compile time. This trait is inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. `SortedDisjoint` differs from its inspiration by specializing on disjoint integer ranges.
+* [`SortedDisjoint`], implemented by iterators of sorted & disjoint ranges of integers. See documentation of details.
+* [`SortedDisjointMap`], implemented by iterators of pairs, where the first item is a sorted & disjoint ranges of integers. The second item
+is an value. See documentation of details.
+
+> With any `SortedDisjoint` or `SortedDisjointMap` iterator we can perform set operations in one pass through the ranges and with minimal (constant) memory.
+The package enforces the "sorted & disjoint" constraint at compile time. These traits are inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. `SortedDisjoint` differs from its inspiration by specializing on disjoint integer ranges.
 
 [`RangeSetBlaze`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
 [`SortedDisjoint`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html
+[`SortedDisjointMap`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjointMap.html
 [`u8`]: https://doc.rust-lang.org/std/primitive.u8.html
 [`u128`]: https://doc.rust-lang.org/std/primitive.u128.html
 [`i8`]: https://doc.rust-lang.org/std/primitive.i8.html
 [`i128`]: https://doc.rust-lang.org/std/primitive.i128.html
-[documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
-[`SortedDisjoint` documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html
-[`BTreeSet`]: https://doc.rust-lang.org/std/collections/struct.BTreeSet.html
-[`HashSet`]: https://doc.rust-lang.org/std/collections/struct.HashSet.html
+[set documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
+[map documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html
+[`BTreeSet/BTreeMap`]: https://doc.rust-lang.org/std/collections/struct.BTreeSet.html
+[`HashSet/HashMap`]: https://doc.rust-lang.org/std/collections/struct.HashSet.html
 [`BTreeMap`]: https://doc.rust-lang.org/std/collections/struct.BTreeMap.html
 [set operations]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#rangesetblaze-set-operations
+[map operations]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#rangesetblaze-map-operations
 [1]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#constructor-performance
 
 The crate supports no_std, WASM, and embedded projects. Use the command:
@@ -80,7 +91,7 @@ Here we take the union (operator “|”) of two `RangeSetBlaze`'s:
 ![Example 1](https://raw.githubusercontent.com/CarlKCarlK/range-set-blaze/main/docs/rust_example1.png "Example 1")
 
 ```rust
-use range_set_blaze::RangeSetBlaze;
+use range_set_blaze::prelude::*;
 
  // a is the set of integers from 100 to 499 (inclusive) and 501 to 1000 (inclusive)
 let a = RangeSetBlaze::from_iter([100..=499, 501..=999]);
@@ -91,24 +102,24 @@ let c = a | b;
 assert_eq!(c, RangeSetBlaze::from_iter([-20..=-20, 100..=999]));
 ```
 
-Example 2
+Example 3
 - - - - - -
 
 In biology, suppose we want to find the intron regions of a gene but we are given only the transcription region and the exon regions.
 
-![Example 2](https://raw.githubusercontent.com/CarlKCarlK/range-set-blaze/main/docs/rust_example2.png "Example 2")
+![Example 3](https://raw.githubusercontent.com/CarlKCarlK/range-set-blaze/main/docs/rust_example2.png "Example 3")
 
 We create a `RangeSetBlaze` for the transcription region and a `RangeSetBlaze` for all the exon regions.
 Then we take the difference between the transcription region and exon regions to find the intron regions.
 
 ```rust
-use range_set_blaze::RangeSetBlaze;
+use range_set_blaze::prelude::*;
 
 let line = "chr15   29370   37380   29370,32358,36715   30817,32561,37380";
 
 // split the line on white space
 let mut iter = line.split_whitespace();
-let chr = iter.next().unwrap();
+let chrom = iter.next().unwrap();
 
 // Parse the start and end of the transcription region into a RangeSetBlaze
 let trans_start: i32 = iter.next().unwrap().parse().unwrap();
@@ -123,16 +134,13 @@ let exon_ranges = exon_starts
     .zip(exon_ends)
     .map(|(s, e)| s.unwrap()..=e.unwrap());
 let exons = RangeSetBlaze::from_iter(exon_ranges);
-assert_eq!(
-    exons,
-    RangeSetBlaze::from_iter([29370..=30817, 32358..=32561, 36715..=37380])
-);
+assert_eq!(exons, RangeSetBlaze::from_iter([29370..=30817, 32358..=32561, 36715..=37380]));
 
 // Use 'set difference' to find the introns
 let intron = trans - exons;
 assert_eq!(intron, RangeSetBlaze::from_iter([30818..=32357, 32562..=36714]));
 for range in intron.ranges() {
     let (start, end) = range.into_inner();
-    println!("{chr}\t{start}\t{end}");
+    println!("{chrom}\t{start}\t{end}");
 }
 ```

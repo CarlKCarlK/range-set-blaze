@@ -22,8 +22,8 @@ use crate::{
 /// or [`KMerge`].
 ///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap
-/// [`Merge`]: crate::Merge
-/// [`KMerge`]: crate::KMerge
+/// [`Merge`]: crate::merge::Merge
+/// [`KMerge`]: crate::merge::KMerge
 ///
 /// # Examples
 ///
@@ -240,7 +240,7 @@ where
     I: PrioritySortedStartsMap<T, V, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`UnionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
+    /// Creates a new [`UnionIterMap`] from zero or more [`crate::sorted_disjoint_map::SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
     pub fn new(mut iter: I) -> Self {
         let item = iter.next();
         Self {
@@ -262,7 +262,7 @@ where
     R: SortedDisjointMap<T, V, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
+    /// Creates a new [`crate::sym_diff_iter_map::SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`crate::sym_diff_iter_map::SymDiffIterMap`] for more details and examples.
     pub fn new2(left: L, right: R) -> Self {
         let iter = MergeMap::new(left, right);
         Self::new(iter)
@@ -279,6 +279,8 @@ where
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
+    ///
+    /// [`SymDiffIterMap`]: crate::SymDiffIterMap
     pub fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,

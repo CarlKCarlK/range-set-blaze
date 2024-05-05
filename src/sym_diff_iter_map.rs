@@ -21,8 +21,8 @@ use crate::{
 /// or [`KMerge`].
 ///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap
-/// [`Merge`]: crate::Merge
-/// [`KMerge`]: crate::KMerge
+/// [`Merge`]: crate::merge::Merge
+/// [`KMerge`]: crate::merge::KMerge
 ///
 /// # Examples
 ///

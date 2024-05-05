@@ -30,7 +30,6 @@ use core::ops::RangeInclusive;
 
 /// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
 /// and may overlap.
-#[doc(hidden)] // cmk don't hide so much stuff.ks
 pub trait SortedStartsMap<T, V, VR>:
     Iterator<Item = (RangeInclusive<T>, VR)> + FusedIterator
 where

@@ -13,8 +13,8 @@ use itertools::Itertools;
 /// or [`KMerge`].
 ///
 /// [`SortedDisjoint`]: crate::SortedDisjoint
-/// [`Merge`]: crate::Merge
-/// [`KMerge`]: crate::KMerge
+/// [`Merge`]: crate::merge::Merge
+/// [`KMerge`]: crate::merge::KMerge
 ///
 /// # Examples
 ///
@@ -116,7 +116,7 @@ where
     R: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`SymDiffIter`] for more details and examples.
+    /// Creates a new [`crate::sym_diff_iter_map::SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`crate::sym_diff_iter_map::SymDiffIter`] for more details and examples.
     pub fn new2(left: L, right: R) -> Self {
         let iter: Merge<T, L, R> = Merge::new(left, right);
         Self::new(iter)
@@ -130,7 +130,7 @@ where
     J: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`SymDiffIter`] for more details and examples.
+    /// Creates a new [`crate::sym_diff_iter_map::SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`crate::sym_diff_iter_map::SymDiffIter`] for more details and examples.
     pub fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,

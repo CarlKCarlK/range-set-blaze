@@ -2506,7 +2506,6 @@ fn understand_strings_as_values() {
 
     // You can get all the same types via CheckSortedDisjointMap, but values are always (clonable) references.
     let a_string = "a".to_string();
-    let _: CheckSortedDisjointMap<i32, &str, &&str, _> = [(0..=0, &"a")].into();
     let mut b: CheckSortedDisjointMap<i32, String, &String, _> =
         CheckSortedDisjointMap::new([(0..=0, &a_string)]);
     let c: &String = b.next().unwrap().1;
