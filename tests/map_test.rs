@@ -1630,7 +1630,7 @@ fn map_split_off() {
 // // fn map_check_sorted_disjoint() {
 // //     use range_map_blaze::CheckSortedDisjoint;
 
-// //     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+// //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 // //     let b = CheckSortedDisjoint::from([2..=6]);
 // //     let c = a | b;
 
@@ -1674,7 +1674,7 @@ fn map_split_off() {
 // // fn map_union_iter() {
 // //     use range_map_blaze::{CheckSortedDisjoint, UnionIterMap};
 
-// //     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+// //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 // //     let b = CheckSortedDisjoint::from([2..=6]);
 // //     let c = UnionIterMap::new(AssumeSortedStarts::new(
 // //         a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
@@ -1682,7 +1682,7 @@ fn map_split_off() {
 // //     assert_eq!(c.into_string(), "1..=100");
 
 // //     // Or, equivalently:
-// //     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+// //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 // //     let b = CheckSortedDisjoint::from([2..=6]);
 // //     let c = SortedDisjoint::union(a, b);
 // //     assert_eq!(c.into_string(), "1..=100")
@@ -3692,7 +3692,7 @@ fn map_repro2() {
 
 // #[test]
 // fn merge_coverage_0() {
-//     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     let b = CheckSortedDisjoint::from([2..=6]);
 //     let m = Merge::new(a, b);
 //     let n = m.clone();
@@ -3702,7 +3702,7 @@ fn map_repro2() {
 //     assert!(union1.equal(union2));
 //     assert!(format!("{p:?}").starts_with("Merge"));
 
-//     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     let b = CheckSortedDisjoint::new([2..=6].into_iter());
 //     let c = CheckSortedDisjoint::new([-1..=-1].into_iter());
 //     let m = KMerge::new([a, b, c]);
@@ -3716,7 +3716,7 @@ fn map_repro2() {
 
 // #[test]
 // fn not_iter_coverage_0() {
-//     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     let n = NotIter::new(a);
 //     let p = n.clone();
 //     let m = p.clone();
@@ -3773,16 +3773,16 @@ fn map_repro2() {
 //     let a = CheckSortedDisjoint::<i32, _>::default();
 //     assert!(a.is_empty());
 
-//     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-//     let b = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-//     assert!((a & b).equal(CheckSortedDisjoint::new([1..=2, 5..=100].into_iter())));
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
+//     let b = CheckSortedDisjoint::new([1..=2, 5..=100]);
+//     assert!((a & b).equal(CheckSortedDisjoint::new([1..=2, 5..=100])));
 
-//     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-//     let b = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
+//     let b = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     assert!((a - b).is_empty());
 
-//     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
-//     let b = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
+//     let b = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     assert!((a ^ b).is_empty());
 // }
 
@@ -3837,14 +3837,14 @@ fn map_repro2() {
 
 // #[test]
 // fn sorted_disjoint_iterator_coverage_0() {
-//     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     let b = CheckSortedDisjoint::new([1..=2, 5..=101].into_iter());
 //     assert!(b.is_superset(a));
 // }
 
 // #[test]
 // fn union_iter_coverage_0() {
-//     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
+//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     let b = CheckSortedDisjoint::new([1..=2, 5..=101].into_iter());
 //     let c = a.union(b);
 //     assert!(format!("{c:?}").starts_with("UnionIter"));
