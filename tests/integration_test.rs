@@ -1095,7 +1095,7 @@ fn fraction<T: Integer>(range_int_set: &RangeSetBlaze<T>, range: &RangeInclusive
 }
 
 #[test]
-fn example_2() ->  {
+fn example_2() {
     let line = "chr15   29370   37380   29370,32358,36715   30817,32561,37380";
 
     // split the line on white space
@@ -1128,7 +1128,7 @@ fn example_2() ->  {
     );
     for range in intron.ranges() {
         let (start, end) = range.into_inner();
-        println!("{chr}\t{start}\t{end}");
+        println!("{chrom}\t{start}\t{end}");
     }
 }
 
