@@ -519,7 +519,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
     #[cfg(feature = "from_slice")]
     #[inline]
-    pub fn from_slice(slice: impl AsRef<[T]>) -> Self {
+    pub fn from_slice(_slice: impl AsRef<[T]>) -> Self {
         todo!("cmk old")
     }
 

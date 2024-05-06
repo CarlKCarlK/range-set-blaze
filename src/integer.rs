@@ -1,7 +1,7 @@
 #[cfg(feature = "from_slice")]
 use crate::{from_slice::FromSliceIter, RangeSetBlaze};
-use core::{fmt, ops::RangeInclusive, str::FromStr};
-use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd, WrappingSub};
+use core::{fmt, ops::RangeInclusive};
+use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd};
 
 #[cfg(feature = "from_slice")]
 const LANES: usize = 16;
@@ -9,19 +9,14 @@ const LANES: usize = 16;
 /// The element trait of the [`RangeSetBlaze`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
 pub trait Integer:
     num_integer::Integer
-    + FromStr
     + Copy
     + fmt::Display
     + fmt::Debug
-    + core::iter::Sum
     + num_traits::NumAssignOps
     + num_traits::Bounded
-    + num_traits::NumCast
     + Send
     + Sync
-    + OverflowingSub
     + CheckedAdd
-    + WrappingSub
 {
     #[cfg(feature = "from_slice")]
     /// A definition of [`RangeSetBlaze::from_slice()`] specific to this integer type.
@@ -41,23 +36,11 @@ pub trait Integer:
     /// let len: <u8 as Integer>::SafeLen = RangeSetBlaze::from_iter([0u8..=255]).len();
     /// assert_eq!(len, 256);
     /// ```
-    type SafeLen: core::hash::Hash
-        + num_integer::Integer
+    type SafeLen: num_integer::Integer
+        + core::hash::Hash
         + num_traits::NumAssignOps
-        + num_traits::Bounded
-        + num_traits::NumCast
-        + num_traits::One
-        + core::ops::AddAssign
-        + core::ops::SubAssign
         + Copy
-        + PartialEq
-        + Eq
-        + PartialOrd
-        + Ord
-        + Send
-        + Default
-        + fmt::Debug
-        + fmt::Display;
+        + Default;
 
     /// Returns the length of a range without any overflow.
     ///
