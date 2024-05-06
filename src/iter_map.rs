@@ -9,8 +9,9 @@ use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
 use alloc::collections::btree_map;
 
 use crate::{
+    integer::Integer,
     map::{CloneBorrow, EndValue, ValueOwned},
-    Integer, SortedDisjointMap,
+    SortedDisjointMap,
 };
 
 /// A (double-ended) iterator over the integer elements of a [`RangeMapBlaze`].

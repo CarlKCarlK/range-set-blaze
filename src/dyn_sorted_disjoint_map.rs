@@ -1,8 +1,9 @@
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use crate::{
+    integer::Integer,
     map::{CloneBorrow, ValueOwned},
-    Integer, SortedDisjointMap,
+    SortedDisjointMap,
 };
 use alloc::boxed::Box;
 

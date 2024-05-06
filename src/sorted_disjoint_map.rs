@@ -24,7 +24,7 @@ use crate::map::BitAndRangesMap;
 use crate::map::CloneBorrow;
 use crate::sorted_disjoint::SortedDisjoint;
 use crate::NotIter;
-use crate::{map::ValueOwned, union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
+use crate::{integer::Integer, map::ValueOwned, union_iter_map::UnionIterMap, RangeMapBlaze};
 use core::ops;
 use core::ops::RangeInclusive;
 

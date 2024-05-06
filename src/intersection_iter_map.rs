@@ -5,8 +5,8 @@ use core::{
     ops::RangeInclusive,
 };
 
+use crate::{integer::Integer, map::ValueOwned};
 use crate::{map::CloneBorrow, SortedDisjoint, SortedDisjointMap};
-use crate::{map::ValueOwned, Integer};
 
 /// Turns one [`SortedDisjoint`] iterator and one [`SortedDisjointMap`] iterator into
 /// the [`SortedDisjointMap`] iterator of their intersection,

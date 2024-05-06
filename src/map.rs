@@ -9,7 +9,8 @@ use crate::unsorted_disjoint_map::{
     AssumePrioritySortedStartsMap, SortedDisjointMapWithLenSoFar, UnsortedPriorityDisjointMap,
 };
 use crate::{
-    AssumeSortedStarts, CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint,
+    integer::Integer, AssumeSortedStarts, CheckSortedDisjoint, NotIter, RangeSetBlaze,
+    SortedDisjoint,
 };
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;

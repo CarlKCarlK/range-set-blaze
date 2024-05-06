@@ -1,5 +1,5 @@
 use crate::{
-    merge::KMerge, BitXorKMerge, BitXorMerge, Integer, Merge, SortedDisjoint, SortedStarts,
+    integer::Integer, merge::KMerge, BitXorKMerge, BitXorMerge, Merge, SortedDisjoint, SortedStarts,
 };
 use alloc::collections::BinaryHeap;
 use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};

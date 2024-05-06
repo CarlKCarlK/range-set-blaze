@@ -2,7 +2,7 @@ use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use itertools::{Itertools, KMergeBy, MergeBy};
 
-use crate::{Integer, SortedDisjoint, SortedStarts};
+use crate::{integer::Integer, SortedDisjoint, SortedStarts};
 
 /// Works with [`UnionIter`] to turn two [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
 /// i.e., all the integers in any input iterator, as sorted & disjoint ranges.

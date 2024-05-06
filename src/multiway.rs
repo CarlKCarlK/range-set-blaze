@@ -175,8 +175,8 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
 }
 
 use crate::{
-    BitAndKMerge, BitOrKMerge, BitXorKMerge, Integer, RangeSetBlaze, SortedDisjoint, SymDiffIter,
-    UnionIter,
+    integer::Integer, BitAndKMerge, BitOrKMerge, BitXorKMerge, RangeSetBlaze, SortedDisjoint,
+    SymDiffIter, UnionIter,
 };
 
 impl<T, II, I> MultiwaySortedDisjoint<T, I> for II

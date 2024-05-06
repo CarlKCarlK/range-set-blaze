@@ -2,7 +2,7 @@
 
 use alloc::slice;
 
-use crate::Integer;
+use crate::integer::Integer;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive, ops::Sub};
 

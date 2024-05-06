@@ -11,7 +11,7 @@ use core::ops::RangeInclusive;
 use itertools::Itertools;
 
 use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
-use crate::{map::ValueOwned, Integer};
+use crate::{integer::Integer, map::ValueOwned};
 use crate::{
     map::{CloneBorrow, SortedStartsInVecMap},
     unsorted_disjoint_map::AssumePrioritySortedStartsMap,

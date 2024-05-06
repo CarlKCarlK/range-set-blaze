@@ -22,7 +22,7 @@ use gen_ops::gen_ops_ex;
 
 use crate::ranges::RangesIter;
 use crate::unsorted_disjoint::{SortedDisjointWithLenSoFar, UnsortedDisjoint};
-use crate::{prelude::*, Integer};
+use crate::{integer::Integer, prelude::*};
 use crate::{IntoRangesIter, UnionIter};
 
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.

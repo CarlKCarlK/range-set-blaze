@@ -4,6 +4,7 @@
 use super::*;
 use core::cmp::Ordering;
 use core::ops::Bound;
+use core::ops::RangeInclusive;
 use itertools::Itertools;
 use num_traits::{One, Zero};
 use quickcheck_macros::quickcheck;

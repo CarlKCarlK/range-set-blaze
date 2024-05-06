@@ -1,6 +1,6 @@
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
-use crate::{Integer, SortedDisjoint};
+use crate::{integer::Integer, SortedDisjoint};
 
 /// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
 /// i.e., all the integers not in the original iterator, as sorted & disjoint ranges.

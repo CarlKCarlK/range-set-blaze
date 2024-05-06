@@ -1,4 +1,4 @@
-use crate::Integer;
+use crate::integer::Integer;
 use alloc::collections::btree_map;
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
