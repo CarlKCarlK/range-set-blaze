@@ -13,8 +13,7 @@ use core::{
 use crate::{map::ValueOwned, SortedDisjointMap};
 
 use crate::{
-    integer::Integer, BitAndMerge, BitSubMerge, BitXorMerge, DynSortedDisjoint, NotIter,
-    SymDiffIter,
+    BitAndMerge, BitSubMerge, BitXorMerge, DynSortedDisjoint, Integer, NotIter, SymDiffIter,
 };
 
 /// A trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,

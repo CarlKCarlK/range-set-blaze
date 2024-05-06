@@ -1,5 +1,5 @@
 use crate::union_iter_map::UnionIterMap;
-use crate::{integer::Integer, RangeMapBlaze, UniqueValue, ValueOwned};
+use crate::{Integer, RangeMapBlaze, UniqueValue, ValueOwned};
 use core::ops::RangeInclusive;
 
 // We create a RangeMapBlaze from an iterator of integers or integer ranges by

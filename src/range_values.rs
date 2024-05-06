@@ -1,8 +1,8 @@
 #![allow(missing_docs)]
 use crate::{
-    integer::Integer,
     map::CloneBorrow,
     sorted_disjoint_map::{Priority, PrioritySortedDisjointMap, PrioritySortedStartsMap},
+    Integer,
 };
 use alloc::collections::btree_map;
 use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};

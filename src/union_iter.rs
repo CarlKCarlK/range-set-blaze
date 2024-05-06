@@ -1,8 +1,8 @@
 use crate::map::SortedStartsInVec;
 use crate::merge::KMerge;
 use crate::unsorted_disjoint::UnsortedDisjoint;
-use crate::{integer::Integer, BitOrMerge};
 use crate::{AssumeSortedStarts, BitOrKMerge, Merge, SortedDisjoint, SortedStarts};
+use crate::{BitOrMerge, Integer};
 use core::cmp::max;
 use core::iter::FusedIterator;
 use core::ops::RangeInclusive;

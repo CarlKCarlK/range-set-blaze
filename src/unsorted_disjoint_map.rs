@@ -1,9 +1,9 @@
 use crate::range_values::ExpectDebugUnwrapRelease;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::{
-    integer::Integer,
     map::{CloneBorrow, EndValue, ValueOwned},
     sorted_disjoint_map::SortedDisjointMap,
+    Integer,
 };
 use core::ops::RangeInclusive;
 use core::{

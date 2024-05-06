@@ -1,4 +1,4 @@
-use crate::{integer::Integer, RangeSetBlaze, SortedDisjoint, SortedStarts};
+use crate::{Integer, RangeSetBlaze, SortedDisjoint, SortedStarts};
 use core::{
     cmp::{max, min},
     iter::FusedIterator,

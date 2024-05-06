@@ -10,11 +10,10 @@ use alloc::string::String;
 use alloc::string::ToString;
 
 use crate::{
-    integer::Integer,
     map::{CloneBorrow, ValueOwned},
     merge_map::KMergeMap,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
-    BitXorMapKMerge, BitXorMapMerge, MergeMap, SortedDisjointMap,
+    BitXorMapKMerge, BitXorMapMerge, Integer, MergeMap, SortedDisjointMap,
 };
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,

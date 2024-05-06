@@ -6,12 +6,11 @@
 // }
 
 use crate::{
-    integer::Integer,
     intersection_iter_map::IntersectionIterMap,
     map::{CloneBorrow, ValueOwned},
     range_values::RangeValuesToRangesIter,
-    BitAndMapWithRangeValues, BitOrMapKMerge, BitXorMapKMerge, RangeMapBlaze, SortedDisjointMap,
-    UnionIterMap,
+    BitAndMapWithRangeValues, BitOrMapKMerge, BitXorMapKMerge, Integer, RangeMapBlaze,
+    SortedDisjointMap, UnionIterMap,
 };
 
 impl<'a, T, V, I> MultiwayRangeMapBlaze<'a, T, V> for I

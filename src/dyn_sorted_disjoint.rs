@@ -1,6 +1,6 @@
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
-use crate::{integer::Integer, SortedDisjoint};
+use crate::{Integer, SortedDisjoint};
 use alloc::boxed::Box;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
