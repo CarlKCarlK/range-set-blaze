@@ -107,7 +107,7 @@ Example 3
 
 In biology, suppose we want to find the intron regions of a gene but we are given only the transcription region and the exon regions.
 
-![Example 3](https://raw.githubusercontent.com/CarlKCarlK/range-set-blaze/main/docs/rust_example2.png "Example 3")
+![Example 3](https://raw.githubusercontent.com/CarlKCarlK/range-set-blaze/main/docs/rust_example3.png "Example 3")
 
 We create a `RangeSetBlaze` for the transcription region and a `RangeSetBlaze` for all the exon regions.
 Then we take the difference between the transcription region and exon regions to find the intron regions.

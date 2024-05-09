@@ -1948,6 +1948,34 @@ fn test_cmk_delete_me4() {
     assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
 }
 
+#[test]
+fn example_2() {
+    use crate::prelude::*;
+
+    // frames per second
+    let fps = 24;
+    // Create a countdown from 5 to 2
+    let count_down: RangeMapBlaze<usize, String> = (2..=5)
+        .rev()
+        .enumerate()
+        .map(|(i, c)| ((i * fps)..=((i + 1) * fps) - 1, c.to_string()))
+        .collect();
+    // At 5 and 8 seconds (respectively), display "Hello" and "World"
+    let hello_world: RangeMapBlaze<usize, String> = RangeMapBlaze::from_iter([
+        ((5 * fps)..=(7 * fps - 1), "Hello".to_string()),
+        ((8 * fps)..=(10 * fps - 1), "World".to_string()),
+    ]);
+    // create 10 seconds of blank frames
+    let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, "".to_string())]);
+    // union everything together with left-to-right precedence
+    let animation = [count_down, hello_world, blank].union();
+    // for every range of frames, show what is displayed
+    println!("frames: text");
+    for (range, text) in animation.range_values() {
+        println!("{range:?}: {text}");
+    }
+}
+
 // cmk missing methods
 // cmk retain -- inline
 // cmk into_keys -- inline

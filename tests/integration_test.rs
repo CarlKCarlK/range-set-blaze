@@ -1096,6 +1096,27 @@ fn fraction<T: Integer>(range_int_set: &RangeSetBlaze<T>, range: &RangeInclusive
 
 #[test]
 fn example_2() {
+    use range_set_blaze::prelude::*;
+
+    let fps = 24; // frames per second
+                  // Create a 30 second text animation with blank frames
+    let count_down = (2..5)
+        .rev()
+        .enumerate()
+        .map(|(i, c)| ((i * fps)..=(i * fps) - 1, c.to_string()));
+    let hello_world = RangeMapBlaze::from_iter([
+        (5 * fps..7 * fps - 1, "Hello"),
+        (8 * fps..10 * fps - 1, "World"),
+    ]);
+    let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, "")]);
+    let animation = [count_down, hello_world, blank].union();
+    for (range, text) in animation.range_values() {
+        println!("{range}: {text}");
+    }
+}
+
+#[test]
+fn example_3() {
     let line = "chr15   29370   37380   29370,32358,36715   30817,32561,37380";
 
     // split the line on white space

@@ -827,7 +827,7 @@ fn sync_and_send() {
 }
 
 #[wasm_bindgen_test]
-fn example_2() {
+fn example_3() {
     let line = "chr15   29370   37380   29370,32358,36715   30817,32561,37380";
 
     // split the line on white space
