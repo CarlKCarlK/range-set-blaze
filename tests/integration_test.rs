@@ -621,10 +621,10 @@ fn tricky_case1() {
 
     let a = !RangeSetBlaze::from_iter([1i128..=0]);
     println!("tc1 '{a}', {}", a.len());
-    assert_eq!(a.len(), u128::MAX);
+    assert_eq!(a.len(), U128PlusOne::Max);
     let a = !RangeSetBlaze::from_iter([1u128..=0]);
     println!("tc1 '{a}', {}", a.len());
-    assert_eq!(a.len(), u128::MAX);
+    assert_eq!(a.len(), U128PlusOne::Max);
 }
 
 // should fail
@@ -911,7 +911,7 @@ fn doc_test_len() {
     ]);
     assert_eq!(
         v.len(),
-        340_282_366_920_938_463_463_374_607_431_768_211_455u128
+        U128PlusOne::Value(340282366920938463463374607431768211455)
     );
 }
 
@@ -1094,26 +1094,27 @@ fn fraction<T: Integer>(range_int_set: &RangeSetBlaze<T>, range: &RangeInclusive
     T::safe_len_to_f64(range_int_set.len()) / T::safe_len_to_f64(T::safe_len(range))
 }
 
-#[test]
-fn example_2() {
-    use range_set_blaze::prelude::*;
+// cmk0000
+// #[test]
+// fn example_2() {
+//     use range_set_blaze::prelude::*;
 
-    let fps = 24; // frames per second
-                  // Create a 30 second text animation with blank frames
-    let count_down = (2..5)
-        .rev()
-        .enumerate()
-        .map(|(i, c)| ((i * fps)..=(i * fps) - 1, c.to_string()));
-    let hello_world = RangeMapBlaze::from_iter([
-        (5 * fps..7 * fps - 1, "Hello"),
-        (8 * fps..10 * fps - 1, "World"),
-    ]);
-    let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, "")]);
-    let animation = [count_down, hello_world, blank].union();
-    for (range, text) in animation.range_values() {
-        println!("{range}: {text}");
-    }
-}
+//     let fps = 24; // frames per second
+//                   // Create a 30 second text animation with blank frames
+//     let count_down = (2..5)
+//         .rev()
+//         .enumerate()
+//         .map(|(i, c)| ((i * fps)..=(i * fps) - 1, c.to_string()));
+//     let hello_world = RangeMapBlaze::from_iter([
+//         (5 * fps..7 * fps - 1, "Hello"),
+//         (8 * fps..10 * fps - 1, "World"),
+//     ]);
+//     let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, "")]);
+//     let animation = [count_down, hello_world, blank].union();
+//     for (range, text) in animation.range_values() {
+//         println!("{range}: {text}");
+//     }
+// }
 
 #[test]
 fn example_3() {

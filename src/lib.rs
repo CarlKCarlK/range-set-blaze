@@ -40,6 +40,8 @@
 extern crate alloc;
 
 // FUTURE: Support serde via optional feature
+mod u128plus_one;
+pub use u128plus_one::U128PlusOne;
 mod dyn_sorted_disjoint;
 mod dyn_sorted_disjoint_map;
 mod from_slice;

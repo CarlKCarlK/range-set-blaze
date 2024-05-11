@@ -9,7 +9,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use range_set_blaze::prelude::*;
 use range_set_blaze::AssumePrioritySortedStartsMap;
 
-// cmk0 add some to prelude?
+use range_set_blaze::prelude::*;
 use range_set_blaze::range_values::RangeValuesIter;
 use range_set_blaze::CloneBorrow;
 use range_set_blaze::IntoRangeValuesIter;
@@ -1029,10 +1029,10 @@ fn map_tricky_case1() {
 
     let a = !RangeMapBlaze::from_iter([(1i128..=0, "a")]);
     println!("tc1 '{a}', {}", a.len());
-    assert_eq!(a.len(), u128::MAX);
+    assert_eq!(a.len(), U128PlusOne::Max);
     let a = !RangeMapBlaze::from_iter([(1u128..=0, "a")]);
     println!("tc1 '{a}', {}", a.len());
-    assert_eq!(a.len(), u128::MAX);
+    assert_eq!(a.len(), U128PlusOne::Max);
 }
 
 // should fail
@@ -1347,7 +1347,7 @@ fn map_doc_test_len() {
     ]);
     assert_eq!(
         v.len(),
-        340_282_366_920_938_463_463_374_607_431_768_211_455u128
+        U128PlusOne::Value(340282366920938463463374607431768211455)
     );
 }
 

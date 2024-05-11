@@ -952,14 +952,16 @@ impl<T: Integer> RangeSetBlaze<T> {
         &mut self,
         old_btree_len: usize,
         new_btree: &BTreeMap<T, T>,
-        old_len: <T as Integer>::SafeLen,
+        mut old_len: <T as Integer>::SafeLen,
     ) -> (<T as Integer>::SafeLen, <T as Integer>::SafeLen) {
         if old_btree_len / 2 < new_btree.len() {
             let a_len = RangeSetBlaze::btree_map_len(&mut self.btree_map);
-            (a_len, old_len - a_len)
+            old_len -= a_len;
+            (a_len, old_len)
         } else {
             let b_len = RangeSetBlaze::btree_map_len(new_btree);
-            (old_len - b_len, b_len)
+            old_len -= b_len;
+            (old_len, b_len)
         }
     }
 
@@ -969,7 +971,7 @@ impl<T: Integer> RangeSetBlaze<T> {
             value <= T::safe_max_value(),
             "value must be <= T::safe_max_value()"
         );
-        let old_len = self.len;
+        let mut old_len = self.len;
         let mut b = self.btree_map.split_off(&value);
         if let Some(mut last_entry) = self.btree_map.last_entry() {
             // Can assume start strictly less than value
@@ -983,10 +985,12 @@ impl<T: Integer> RangeSetBlaze<T> {
         // Find the length of the smaller map and then length of self & b.
         let b_len = if self.btree_map.len() < b.len() {
             self.len = Self::btree_map_len(&self.btree_map);
-            old_len - self.len
+            old_len -= self.len;
+            old_len
         } else {
             let b_len = Self::btree_map_len(&b);
-            self.len = old_len - b_len;
+            old_len -= b_len;
+            self.len = old_len;
             b_len
         };
         Self {

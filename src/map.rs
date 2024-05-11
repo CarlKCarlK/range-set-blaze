@@ -900,14 +900,16 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         &mut self,
         old_btree_len: usize,
         new_btree: &BTreeMap<T, EndValue<T, V>>,
-        old_len: <T as Integer>::SafeLen,
+        mut old_len: <T as Integer>::SafeLen,
     ) -> (<T as Integer>::SafeLen, <T as Integer>::SafeLen) {
         if old_btree_len / 2 < new_btree.len() {
             let a_len = Self::btree_map_len(&mut self.btree_map);
-            (a_len, old_len - a_len)
+            old_len -= a_len;
+            (a_len, old_len)
         } else {
             let b_len = Self::btree_map_len(new_btree);
-            (old_len - b_len, b_len)
+            old_len -= b_len;
+            (old_len, b_len)
         }
     }
 
@@ -1267,7 +1269,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         // We must remove the entry because the key will change
         let (start, end_value) = entry.remove_entry();
 
-        self.len = self.len - T::SafeLen::one();
+        self.len -= T::SafeLen::one();
         if start == end_value.end {
             Some((start, end_value.value))
         } else {
@@ -1300,7 +1302,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
 
         let start = *entry.key();
 
-        self.len = self.len - T::SafeLen::one();
+        self.len -= T::SafeLen::one();
         let end = entry.get().end;
         if start == end {
             let value = entry.remove_entry().1.value;
