@@ -145,7 +145,6 @@ fn map_insert_255u8() {
 }
 
 #[test]
-#[should_panic]
 fn map_insert_max_u128() {
     let _ = RangeMapBlaze::<u128, _>::from_iter([(u128::MAX, "Too Big")]);
 }
@@ -1029,21 +1028,19 @@ fn map_tricky_case1() {
 
     let a = !RangeMapBlaze::from_iter([(1i128..=0, "a")]);
     println!("tc1 '{a}', {}", a.len());
-    assert_eq!(a.len(), U128PlusOne::Max);
+    assert_eq!(a.len(), U128PlusOne::MaxPlusOne);
     let a = !RangeMapBlaze::from_iter([(1u128..=0, "a")]);
     println!("tc1 '{a}', {}", a.len());
-    assert_eq!(a.len(), U128PlusOne::Max);
+    assert_eq!(a.len(), U128PlusOne::MaxPlusOne);
 }
 
 // should fail
 #[test]
-#[should_panic]
 fn map_tricky_case2() {
     let _a = RangeMapBlaze::from_iter([(-1..=i128::MAX, "a")]);
 }
 
 #[test]
-#[should_panic]
 fn map_tricky_case3() {
     let _a = RangeMapBlaze::from_iter([(0..=u128::MAX, "a")]);
 }
@@ -1347,7 +1344,7 @@ fn map_doc_test_len() {
     ]);
     assert_eq!(
         v.len(),
-        U128PlusOne::Value(340282366920938463463374607431768211455)
+        U128PlusOne::U128(340282366920938463463374607431768211455)
     );
 }
 
@@ -3443,8 +3440,6 @@ fn map_repro2() {
 //             assert_eq!($ty::add_len_less_one(a,len), a);
 //             assert_eq!($ty::sub_len_less_one(a,len), a);
 //             assert_eq!($ty::f64_to_safe_len(1.0), len);
-//             assert!($ty::safe_max_value()<=$ty::max_value());
-//             assert!(<$ty as Integer>::safe_max_value()<=$ty::max_value());
 
 //         )*
 //     }};
@@ -3827,7 +3822,6 @@ fn map_repro2() {
 // }
 
 // #[test]
-// #[should_panic]
 // fn sorted_disjoint_coverage_4() {
 //     #[allow(clippy::reversed_empty_ranges)]
 //     let mut a = CheckSortedDisjoint::new([0..=i128::MAX]);
@@ -4156,25 +4150,19 @@ fn test_coverage_2() {
 }
 
 #[test]
-#[should_panic]
 fn test_coverage_4() {
     let a = RangeMapBlaze::from_iter([(1u128..=4, "Hello")]);
-    // must panic
     a.get(u128::MAX);
 }
 
 #[test]
-#[should_panic]
 fn test_coverage_5() {
     let mut a = RangeMapBlaze::from_iter([(1u128..=4, "Hello")]);
-    // must panic
     a.remove(u128::MAX);
 }
 
 #[test]
-#[should_panic]
 fn test_coverage_6() {
     let mut a = RangeMapBlaze::from_iter([(1u128..=4, "Hello")]);
-    // must panic
     a.split_off(u128::MAX);
 }

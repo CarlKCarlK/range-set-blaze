@@ -606,13 +606,9 @@ where
         );
         let (start, end) = range.clone().into_inner();
         assert!(start <= end, "start must be less or equal to end");
-        assert!(
-            end <= T::safe_max_value(),
-            "end must be less than or equal to safe_max_value"
-        );
         if let Some(prev_end) = self.prev_end {
             assert!(
-                prev_end < T::safe_max_value() && prev_end + T::one() < start,
+                prev_end < T::max_value() && prev_end + T::one() < start,
                 "ranges must be disjoint"
             );
         }

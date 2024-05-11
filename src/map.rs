@@ -430,10 +430,6 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(map.get(4), None);
     /// ```
     pub fn get(&self, key: T) -> Option<&V> {
-        assert!(
-            key <= T::safe_max_value(),
-            "key must be <= T::safe_max_value()"
-        );
         self.btree_map
             .range(..=key)
             .next_back()
@@ -585,10 +581,6 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(map.contains_key(4), false);
     /// ```
     pub fn contains_key(&self, key: T) -> bool {
-        assert!(
-            key <= T::safe_max_value(),
-            "value must be <= T::safe_max_value()"
-        );
         self.btree_map
             .range(..=key)
             .next_back()
@@ -737,7 +729,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         let end = match range.end_bound() {
             Bound::Included(n) => *n,
             Bound::Excluded(n) => *n - T::one(),
-            Bound::Unbounded => T::safe_max_value(),
+            Bound::Unbounded => T::max_value(),
         };
         assert!(start <= end);
 
@@ -790,11 +782,6 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(map.remove(1), None);
     /// ```
     pub fn remove(&mut self, key: T) -> Option<V> {
-        assert!(
-            key <= T::safe_max_value(),
-            "value must be <= T::safe_max_value()"
-        );
-
         // The code can have only one mutable reference to self.btree_map.
         let Some((start_ref, end_value_mut)) = self.btree_map.range_mut(..=key).next_back() else {
             return None;
@@ -855,10 +842,6 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert_eq!(b, RangeMapBlaze::from_iter([(3..=3, "c"), (17..=17, "d"), (41..=41, "e")]));
     /// ```
     pub fn split_off(&mut self, key: T) -> Self {
-        assert!(
-            key <= T::safe_max_value(),
-            "value must be <= T::safe_max_value()"
-        );
         let old_len = self.len;
         let old_btree_len = self.btree_map.len();
         let mut new_btree = self.btree_map.split_off(&key);
@@ -964,10 +947,6 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
     pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>, value: V) {
         let (start, end) = range.clone().into_inner();
-        assert!(
-            end <= T::safe_max_value(),
-            "end must be <= T::safe_max_value()"
-        );
 
         // === case: empty
         if end < start {
@@ -1199,7 +1178,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::RangeMapBlaze;
+    /// use range_set_blaze::prelude::*;
     ///
     /// let mut a = RangeMapBlaze::new();
     /// assert_eq!(a.len(), 0usize);
@@ -1211,7 +1190,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     ///     (-10..=170_141_183_460_469_231_731_687_303_715_884_105_726, "a")]);
     /// assert_eq!(
     ///     a.len(),
-    ///     340_282_366_920_938_463_463_374_607_431_768_211_455u128
+    ///     U128PlusOne::U128(340282366920938463463374607431768211455)
     /// );
     /// ```
     #[must_use]

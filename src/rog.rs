@@ -130,10 +130,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// [`RangeSetBlaze`] contains the integer, returns a [`Rog::Range`]. If the
     /// [`RangeSetBlaze`] does not contain the integer, returns a [`Rog::Gap`].
     ///
-    /// # Panics
-    ///
-    /// Panics if the `value > T::safe_max_value()`.
-    ///
     /// # Enabling
     ///
     /// This method is experimental and must be enabled with the `rog-experimental` feature.
@@ -151,10 +147,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(range_set_blaze.rogs_get(4), Rog::Gap(4..=2_147_483_647));
     /// ```
     pub fn rogs_get(&self, value: T) -> Rog<T> {
-        assert!(
-            value <= T::safe_max_value(),
-            "value must be <= T::safe_max_value()"
-        );
         let mut before = self.btree_map.range(..=value).rev();
         if let Some((start_before, end_before)) = before.next() {
             if end_before < &value {
@@ -164,7 +156,7 @@ impl<T: Integer> RangeSetBlaze<T> {
                     debug_assert!(start_before < start_next); // so -1 is safe
                     Rog::Gap(start_out..=*start_next - T::one())
                 } else {
-                    Rog::Gap(start_out..=T::safe_max_value())
+                    Rog::Gap(start_out..=T::max_value())
                 }
             } else {
                 // case 2&3: the range touches the before range
@@ -176,7 +168,7 @@ impl<T: Integer> RangeSetBlaze<T> {
                 debug_assert!(value < *start_next); // so -1 is safe
                 Rog::Gap(T::min_value()..=*start_next - T::one())
             } else {
-                Rog::Gap(T::min_value()..=T::safe_max_value())
+                Rog::Gap(T::min_value()..=T::max_value())
             }
         }
     }
@@ -193,8 +185,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// Panics if range `start > end`.
     ///
     /// Panics if range `start == end` and both bounds are `Excluded`.
-    ///
-    /// Panics if range `end > T::safe_max_value()`.
     ///
     /// # Enabling
     ///
@@ -298,10 +288,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// Used internally to test `rogs_get`.
     #[doc(hidden)]
     pub fn rogs_get_slow(&self, value: T) -> Rog<T> {
-        assert!(
-            value <= T::safe_max_value(),
-            "value must be <= T::safe_max_value()"
-        );
         let all_rogs = self._rogs_range_slow(..);
         for rog in all_rogs {
             if rog.contains(value) {
@@ -320,7 +306,7 @@ where
         Bound::Included(n) => *n,
         Bound::Excluded(n) => {
             assert!(
-                *n < T::safe_max_value(),
+                *n < T::max_value(),
                 "inclusive start must be <= T::max_safe_value()"
             );
             *n + T::one()
@@ -336,13 +322,8 @@ where
             );
             *n - T::one()
         }
-        Bound::Unbounded => T::safe_max_value(),
+        Bound::Unbounded => T::max_value(),
     };
     assert!(start <= end, "start must be <= end");
-    assert!(
-        end <= T::safe_max_value(),
-        "end must be <= T::safe_max_value()"
-    );
-
     (start, end)
 }

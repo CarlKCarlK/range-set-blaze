@@ -36,7 +36,6 @@ fn insert_255u8() {
 }
 
 #[test]
-#[should_panic]
 fn insert_max_u128() {
     let a = RangeSetBlaze::<u128>::from_iter([u128::MAX]);
     println!("a: {a}");
@@ -674,8 +673,6 @@ fn integer_coverage() {
             assert_eq!($ty::add_len_less_one(a,len), a);
             assert_eq!($ty::sub_len_less_one(a,len), a);
             assert_eq!($ty::f64_to_safe_len(1.0), len);
-            assert!($ty::safe_max_value()<=$ty::max_value());
-            assert!(<$ty as Integer>::safe_max_value()<=$ty::max_value());
 
         )*
     }};
@@ -881,28 +878,24 @@ fn lib_coverage_0() {
 }
 
 #[test]
-#[should_panic]
 fn lib_coverage_2() {
     let v = RangeSetBlaze::<u128>::new();
     v.contains(u128::MAX);
 }
 
 #[test]
-#[should_panic]
 fn lib_coverage_3() {
     let mut v = RangeSetBlaze::<u128>::new();
     v.remove(u128::MAX);
 }
 
 #[test]
-#[should_panic]
 fn lib_coverage_4() {
     let mut v = RangeSetBlaze::<u128>::new();
     v.split_off(u128::MAX);
 }
 
 #[test]
-#[should_panic]
 fn lib_coverage_5() {
     let mut v = RangeSetBlaze::<u128>::new();
     v.internal_add(0..=u128::MAX);
@@ -910,7 +903,7 @@ fn lib_coverage_5() {
 
 #[test]
 fn lib_coverage_6() {
-    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+    syntactic_for! { ty in [i8, u8, isize, usize, i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
             let mut a = RangeSetBlaze::<$ty>::from_iter([1..=3, 5..=7, 9..=120]);
             a.ranges_insert(2..=100);
@@ -1062,7 +1055,6 @@ fn sorted_disjoint_coverage_3() {
 }
 
 #[test]
-#[should_panic]
 fn sorted_disjoint_coverage_4() {
     #[allow(clippy::reversed_empty_ranges)]
     let mut a = CheckSortedDisjoint::new([0..=i128::MAX]);

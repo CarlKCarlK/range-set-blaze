@@ -58,11 +58,6 @@ where
             if next_start > next_end {
                 continue;
             }
-            assert!(
-                next_end <= T::safe_max_value(),
-                "end must be <= T::safe_max_value()"
-            );
-
             let Some(self_range) = self.option_range.clone() else {
                 self.option_range = Some(next_start..=next_end);
                 continue;
@@ -141,7 +136,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(range) = self.iter.next() {
             let (start, end) = range.clone().into_inner();
-            debug_assert!(start <= end && end <= T::safe_max_value());
+            debug_assert!(start <= end);
             self.len += T::safe_len(&range);
             Some((start, end))
         } else {

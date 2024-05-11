@@ -635,10 +635,6 @@ where
         let previous_end = *previous.0.end();
         let (start, end) = range_value.0.clone().into_inner();
         assert!(start <= end, "Start must be <= end.",);
-        assert!(
-            end <= T::safe_max_value(),
-            "End must be <= T::safe_max_value()"
-        );
         assert!(previous_end < start, "Ranges must be disjoint and sorted");
         if previous_end + T::one() == start {
             assert!(

@@ -20,7 +20,6 @@ fn insert_255u8() {
 }
 
 #[wasm_bindgen_test]
-#[should_panic]
 fn insert_max_u128() {
     let _ = RangeSetBlaze::<u128>::from_iter([u128::MAX]);
 }
@@ -564,13 +563,11 @@ fn tricky_case1() {
 
 // should fail
 #[wasm_bindgen_test]
-#[should_panic]
 fn tricky_case2() {
     let _a = RangeSetBlaze::from_iter([-1..=i128::MAX]);
 }
 
 #[wasm_bindgen_test]
-#[should_panic]
 fn tricky_case3() {
     let _a = RangeSetBlaze::from_iter([0..=u128::MAX]);
 }
@@ -646,7 +643,7 @@ fn doc_test_len() {
     ]);
     assert_eq!(
         v.len(),
-        340_282_366_920_938_463_463_374_607_431_768_211_455u128
+        U128PlusOne::U128(340282366920938463463374607431768211455)
     );
 }
 

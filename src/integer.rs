@@ -48,7 +48,7 @@ pub trait Integer:
         + SubAssign
         + AddAssign
         + PartialOrd
-        + num_traits::One; // num_integer::Integer + num_traits::NumAssignOps
+        + num_traits::One;
 
     /// Returns the length of a range without any overflow.
     ///
@@ -59,29 +59,6 @@ pub trait Integer:
     /// assert_eq!(<u8 as Integer>::safe_len(&(0..=255)), 256);
     /// ```
     fn safe_len(range: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen;
-
-    /// For a given `Integer` type, returns the largest value that can be used. For all types other than `u128` and `i128`,
-    /// this is the same as `Self::MAX`. For `u128` and `i128`, this is one less than `Self::MAX`.
-    ///
-    /// # Example
-    /// ```
-    /// use range_set_blaze::{Integer, RangeSetBlaze};
-    ///
-    /// // for i8, we can use up to 127
-    /// let a = RangeSetBlaze::from_iter([i8::MAX]);
-    /// // for i128, we can use up to 170141183460469231731687303715884105726
-    /// let a = RangeSetBlaze::from_iter([<i128 as Integer>::safe_max_value()]);
-    /// ```
-    /// # Panics
-    /// ```should_panic
-    /// use range_set_blaze::{Integer, RangeSetBlaze};
-    ///
-    /// // for i128, using 170141183460469231731687303715884105727 throws a panic.
-    /// let a = RangeSetBlaze::from_iter([i128::MAX]);
-    /// ```
-    fn safe_max_value() -> Self {
-        Self::max_value()
-    }
 
     // FUTURE define .len() SortedDisjoint
 
@@ -291,30 +268,27 @@ impl Integer for i128 {
         debug_assert!(r.start() <= r.end());
         let less1 = r.end().overflowing_sub(r.start()).0 as u128;
         if less1 == u128::MAX {
-            U128PlusOne::Max
+            U128PlusOne::MaxPlusOne
         } else {
-            U128PlusOne::Value(less1 + 1)
+            U128PlusOne::U128(less1 + 1)
         }
-    }
-    fn safe_max_value() -> Self {
-        Self::max_value()
     }
 
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         match len {
-            U128PlusOne::Value(v) => v as f64,
-            U128PlusOne::Max => TWO_POW_128,
+            U128PlusOne::U128(v) => v as f64,
+            U128PlusOne::MaxPlusOne => TWO_POW_128,
         }
     }
     fn f64_to_safe_len(f: f64) -> Self::SafeLen {
         if f >= TWO_POW_128 {
-            U128PlusOne::Max
+            U128PlusOne::MaxPlusOne
         } else {
-            U128PlusOne::Value(f as u128)
+            U128PlusOne::U128(f as u128)
         }
     }
     fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        let U128PlusOne::Value(v) = b else {
+        let U128PlusOne::U128(v) = b else {
             debug_assert!(false, "Too large to add to i128");
             return i128::MAX;
         };
@@ -322,7 +296,7 @@ impl Integer for i128 {
     }
     fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
         // a - (b - 1) as Self
-        let U128PlusOne::Value(v) = b else {
+        let U128PlusOne::U128(v) = b else {
             debug_assert!(false, "Too large to subtract from i128");
             return i128::MIN;
         };
@@ -346,48 +320,44 @@ impl Integer for u128 {
         debug_assert!(r.start() <= r.end());
         let less1 = r.end().overflowing_sub(r.start()).0 as u128;
         if less1 == u128::MAX {
-            U128PlusOne::Max
+            U128PlusOne::MaxPlusOne
         } else {
-            U128PlusOne::Value(less1 + 1)
+            U128PlusOne::U128(less1 + 1)
         }
-    }
-
-    fn safe_max_value() -> Self {
-        Self::max_value()
     }
 
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         match len {
-            U128PlusOne::Value(v) => v as f64,
-            U128PlusOne::Max => TWO_POW_128,
+            U128PlusOne::U128(v) => v as f64,
+            U128PlusOne::MaxPlusOne => TWO_POW_128,
         }
     }
     fn f64_to_safe_len(f: f64) -> Self::SafeLen {
         if f >= TWO_POW_128 {
-            U128PlusOne::Max
+            U128PlusOne::MaxPlusOne
         } else {
-            U128PlusOne::Value(f as u128)
+            U128PlusOne::U128(f as u128)
         }
     }
 
     fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
         // a + (b - 1) as Self
         match b {
-            U128PlusOne::Value(v) => {
+            U128PlusOne::U128(v) => {
                 debug_assert!(v > 0);
                 a + (v - 1)
             }
-            U128PlusOne::Max => a + Self::max_value(),
+            U128PlusOne::MaxPlusOne => a + Self::max_value(),
         }
     }
     fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
         // a - (b - 1) as Self
         match b {
-            U128PlusOne::Value(v) => {
+            U128PlusOne::U128(v) => {
                 debug_assert!(v > 0);
                 a - (v - 1)
             }
-            U128PlusOne::Max => a - Self::max_value(),
+            U128PlusOne::MaxPlusOne => a - Self::max_value(),
         }
     }
 }

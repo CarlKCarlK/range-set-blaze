@@ -661,10 +661,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(set.contains(4), false);
     /// ```
     pub fn contains(&self, value: T) -> bool {
-        assert!(
-            value <= T::safe_max_value(),
-            "value must be <= T::safe_max_value()"
-        );
         self.btree_map
             .range(..=value)
             .next_back()
@@ -798,7 +794,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         let end = match range.end_bound() {
             Bound::Included(n) => *n,
             Bound::Excluded(n) => *n - T::one(),
-            Bound::Unbounded => T::safe_max_value(),
+            Bound::Unbounded => T::max_value(),
         };
         assert!(start <= end);
 
@@ -852,11 +848,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert!(!set.remove(2));
     /// ```
     pub fn remove(&mut self, value: T) -> bool {
-        assert!(
-            value <= T::safe_max_value(),
-            "value must be <= T::safe_max_value()"
-        );
-
         // The code can have only one mutable reference to self.btree_map.
         let Some((start_ref, end_ref)) = self.btree_map.range_mut(..=value).next_back() else {
             return false;
@@ -909,10 +900,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(b, RangeSetBlaze::from_iter([3, 17, 41]));
     /// ```
     pub fn split_off(&mut self, key: T) -> Self {
-        assert!(
-            key <= T::safe_max_value(),
-            "value must be <= T::safe_max_value()"
-        );
         let old_len = self.len;
         let old_btree_len = self.btree_map.len();
         let mut new_btree = self.btree_map.split_off(&key);
@@ -967,10 +954,6 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     #[allow(dead_code)]
     fn cmk_split_off(&mut self, value: T) -> Self {
-        assert!(
-            value <= T::safe_max_value(),
-            "value must be <= T::safe_max_value()"
-        );
         let mut old_len = self.len;
         let mut b = self.btree_map.split_off(&value);
         if let Some(mut last_entry) = self.btree_map.last_entry() {
@@ -1084,10 +1067,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>) {
         let (start, end) = range.clone().into_inner();
-        assert!(
-            end <= T::safe_max_value(),
-            "end must be <= T::safe_max_value()"
-        );
         if end < start {
             return;
         }
@@ -1128,7 +1107,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::RangeSetBlaze;
+    /// use range_set_blaze::prelude::*;
     ///
     /// let mut v = RangeSetBlaze::new();
     /// assert_eq!(v.len(), 0usize);
@@ -1141,7 +1120,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ]);
     /// assert_eq!(
     ///     v.len(),
-    ///     340_282_366_920_938_463_463_374_607_431_768_211_455u128
+    ///     U128PlusOne::U128(340282366920938463463374607431768211455)
     /// );
     /// ```
     #[must_use]
@@ -1611,7 +1590,7 @@ where
             .or_else(|| self.option_range_back.take())?;
 
         let (start, end) = range.into_inner();
-        debug_assert!(start <= end && end <= T::safe_max_value());
+        debug_assert!(start <= end);
         if start < end {
             self.option_range_front = Some(start + T::one()..=end);
         }
@@ -1637,7 +1616,7 @@ where
             .or_else(|| self.iter.next_back())
             .or_else(|| self.option_range_front.take())?;
         let (start, end) = range.into_inner();
-        debug_assert!(start <= end && end <= T::safe_max_value());
+        debug_assert!(start <= end);
         if start < end {
             self.option_range_back = Some(start..=end - T::one());
         }
@@ -1673,7 +1652,7 @@ impl<T: Integer> Iterator for IntoIter<T> {
             .or_else(|| self.option_range_back.take())?;
 
         let (start, end) = range.into_inner();
-        debug_assert!(start <= end && end <= T::safe_max_value());
+        debug_assert!(start <= end);
         if start < end {
             self.option_range_front = Some(start + T::one()..=end);
         }
@@ -1697,7 +1676,7 @@ impl<T: Integer> DoubleEndedIterator for IntoIter<T> {
             .or_else(|| self.option_range_front.take())?;
 
         let (start, end) = range.into_inner();
-        debug_assert!(start <= end && end <= T::safe_max_value());
+        debug_assert!(start <= end);
         if start < end {
             self.option_range_back = Some(start..=end - T::one());
         }

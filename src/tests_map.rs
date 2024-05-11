@@ -718,14 +718,6 @@ fn map_repro1() {
 // }
 
 // #[test]
-// #[should_panic]
-// fn map_insert_max_u128() {
-//     let s1 = "Hello".to_string();
-//     let a = RangeMapBlaze::<u128, String>::from_iter([(u128::MAX, &s1)]);
-//     println!("a: {a}");
-// }
-
-// #[test]
 // fn map_repro_bit_or() {
 //     let a = RangeSetBlaze::from_iter([1u8, 2, 3]);
 //     let b = RangeSetBlaze::from_iter([2u8, 3, 4]);
@@ -1302,8 +1294,6 @@ fn map_repro1() {
 // //             assert_eq!($ty::add_len_less_one(a,len), a);
 // //             assert_eq!($ty::sub_len_less_one(a,len), a);
 // //             assert_eq!($ty::f64_to_safe_len(1.0), len);
-// //             assert!($ty::safe_max_value()<=$ty::max_value());
-// //             assert!(<$ty as Integer>::safe_max_value()<=$ty::max_value());
 
 // //         )*
 // //     }};
@@ -1686,7 +1676,6 @@ fn map_repro1() {
 // // }
 
 // // #[test]
-// // #[should_panic]
 // // fn sorted_disjoint_coverage_4() {
 // //     #[allow(clippy::reversed_empty_ranges)]
 // //     let mut a = CheckSortedDisjoint::new([0..=i128::MAX]);
@@ -1814,7 +1803,6 @@ fn extend(mut a: BTreeMap<i8, u8>, b: Vec<(i8, u8)>) -> bool {
 // // }
 
 #[test]
-#[should_panic]
 fn test_coverage_8() {
     let mut a = RangeMapBlaze::from_iter([(1u128..=2, "Hello"), (3..=4, "World")]);
     a.internal_add(0..=u128::MAX, "Hello");

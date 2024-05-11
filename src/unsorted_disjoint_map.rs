@@ -79,10 +79,6 @@ where
 
             // check the next range is valid and non-empty
             let (next_start, next_end) = next_priority.start_and_end();
-            assert!(
-                next_end <= T::safe_max_value(),
-                "end must be <= T::safe_max_value()"
-            );
             if next_start > next_end {
                 continue;
             }
@@ -190,7 +186,7 @@ where
         if let Some(range_value) = self.iter.next() {
             let (range, value) = range_value;
             let (start, end) = range.clone().into_inner();
-            debug_assert!(start <= end && end <= T::safe_max_value());
+            debug_assert!(start <= end);
             self.len += T::safe_len(&range);
             let end_value = EndValue {
                 end,

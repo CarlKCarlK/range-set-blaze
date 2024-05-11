@@ -77,7 +77,7 @@ where
             .or_else(|| self.option_range_value_back.take())?;
 
         let (start, end) = range_value.0.into_inner();
-        debug_assert!(start <= end && end <= T::safe_max_value());
+        debug_assert!(start <= end);
         let value = range_value.1.clone_borrow();
         if start < end {
             range_value.0 = start + T::one()..=end;
@@ -108,7 +108,7 @@ where
             .or_else(|| self.iter.next_back())
             .or_else(|| self.option_range_value_front.take())?;
         let (start, end) = range_value.0.into_inner();
-        debug_assert!(start <= end && end <= T::safe_max_value());
+        debug_assert!(start <= end);
         let value = range_value.1.clone_borrow();
         if start < end {
             range_value.0 = start..=end - T::one();
@@ -174,7 +174,7 @@ where
         let start = start_end_value.0;
         let end = start_end_value.1.end;
         let value = start_end_value.1.value.borrow_clone();
-        debug_assert!(start <= end && end <= T::safe_max_value());
+        debug_assert!(start <= end);
         if start < end {
             let end_value = start_end_value.1;
             let start_end_value = (start + T::one(), end_value);
@@ -206,7 +206,7 @@ where
         let start = start_end_value.0;
         let end = start_end_value.1.end;
         let value = start_end_value.1.value.borrow_clone();
-        debug_assert!(start <= end && end <= T::safe_max_value());
+        debug_assert!(start <= end);
 
         if start < end {
             let mut end_value = start_end_value.1;
