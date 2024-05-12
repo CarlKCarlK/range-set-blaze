@@ -1,3 +1,4 @@
+use core::cmp::Ordering;
 use core::fmt::Display;
 use core::mem;
 use core::ops::{Add, AddAssign, Mul, Sub, SubAssign};
@@ -186,11 +187,11 @@ impl<T> PartialOrd for UIntPlusOne<T>
 where
     T: UInt,
 {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            (UIntPlusOne::MaxPlusOne, UIntPlusOne::MaxPlusOne) => Some(std::cmp::Ordering::Equal),
-            (UIntPlusOne::MaxPlusOne, _) => Some(std::cmp::Ordering::Greater),
-            (_, UIntPlusOne::MaxPlusOne) => Some(std::cmp::Ordering::Less),
+            (UIntPlusOne::MaxPlusOne, UIntPlusOne::MaxPlusOne) => Some(Ordering::Equal),
+            (UIntPlusOne::MaxPlusOne, _) => Some(Ordering::Greater),
+            (_, UIntPlusOne::MaxPlusOne) => Some(Ordering::Less),
             (UIntPlusOne::UInt(a), UIntPlusOne::UInt(b)) => a.partial_cmp(b),
         }
     }
@@ -199,10 +200,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use quickcheck::Gen;
-    use quickcheck::{Arbitrary, QuickCheck};
-    use quickcheck_macros::quickcheck;
-    use rand::Rng;
     use std::panic;
     use std::panic::catch_unwind;
     use std::panic::AssertUnwindSafe;
@@ -212,16 +209,6 @@ mod tests {
             UIntPlusOne::MaxPlusOne
         } else {
             UIntPlusOne::UInt(v as u8)
-        }
-    }
-
-    #[derive(Clone, Copy, Debug)]
-    struct SmallU16(u16);
-
-    impl Arbitrary for SmallU16 {
-        fn arbitrary(g: &mut Gen) -> SmallU16 {
-            let value = *g.choose(&(0u16..=256).collect::<Vec<_>>()).unwrap();
-            SmallU16(value)
         }
     }
 
@@ -287,6 +274,20 @@ mod tests {
         }
     }
 
+    fn compare_em(a: u16, b: u16) -> bool {
+        let a_p1 = u16_to_p1(a);
+        let b_p1 = u16_to_p1(b);
+
+        let c = panic::catch_unwind(AssertUnwindSafe(|| a.partial_cmp(&b)));
+        let c_actual = panic::catch_unwind(AssertUnwindSafe(|| a_p1.partial_cmp(&b_p1)));
+        println!("cmk {:?}, {:?}", c, c_actual);
+
+        match (c, c_actual) {
+            (Ok(Some(c)), Ok(Some(c_p1))) => c == c_p1,
+            _ => panic!("never happens"),
+        }
+    }
+
     #[test]
     fn cmk_remove() {
         assert!(sub_em(256, 0));
@@ -319,6 +320,19 @@ mod tests {
         }
     }
 
-    // cmk00000000000 test sub_assign and add_assign
-    // cmk0000000000 remove quickcheck stuff
+    #[test]
+    fn test_compare_equivalence() {
+        for a in 0..=256 {
+            for b in 0..=256 {
+                assert!(compare_em(a, b), "a: {}, b: {}", a, b);
+            }
+        }
+    }
+
+    #[test]
+    fn test_add_assign() {
+        let mut a = UIntPlusOne::<u128>::UInt(1);
+        a += UIntPlusOne::UInt(1);
+        assert_eq!(a, UIntPlusOne::UInt(2));
+    }
 }
