@@ -28,7 +28,9 @@ pub enum UIntPlusOne<T>
 where
     T: UInt,
 {
+    /// cmk
     UInt(T),
+    /// cmk
     MaxPlusOne,
 }
 
@@ -36,6 +38,7 @@ impl<T> UIntPlusOne<T>
 where
     T: UInt,
 {
+    /// cmk
     pub fn max_plus_one_as_f64() -> f64 {
         2.0f64.powi((mem::size_of::<T>() * 8) as i32)
     }
@@ -91,7 +94,7 @@ where
             (UIntPlusOne::UInt(a), UIntPlusOne::UInt(b)) => {
                 let (wrapped_less1, overflow) = a.overflowing_add(&(b - one));
                 if overflow {
-                    debug_assert!(wrapped_less1 != zero, "overflow");
+                    debug_assert!(wrapped_less1 == zero, "overflow");
                     UIntPlusOne::MaxPlusOne
                 } else if wrapped_less1 == max {
                     UIntPlusOne::MaxPlusOne
@@ -191,5 +194,64 @@ where
             (_, UIntPlusOne::MaxPlusOne) => Some(std::cmp::Ordering::Less),
             (UIntPlusOne::UInt(a), UIntPlusOne::UInt(b)) => a.partial_cmp(b),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quickcheck::Gen;
+    use quickcheck::{Arbitrary, QuickCheck};
+    use quickcheck_macros::quickcheck;
+    use rand::Rng;
+    use std::panic;
+    use std::panic::catch_unwind;
+    use std::panic::AssertUnwindSafe;
+
+    fn u16_to_p1(v: u16) -> UIntPlusOne<u8> {
+        if v == 256 {
+            UIntPlusOne::MaxPlusOne
+        } else {
+            UIntPlusOne::UInt(v as u8)
+        }
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    struct SmallU16(u16);
+
+    impl Arbitrary for SmallU16 {
+        fn arbitrary(g: &mut Gen) -> SmallU16 {
+            let value = *g.choose(&(0u16..=256).collect::<Vec<_>>()).unwrap();
+            SmallU16(value)
+        }
+    }
+
+    fn add_em(a: u16, b: u16) -> bool {
+        let a_p1 = u16_to_p1(a);
+        let b_p1 = u16_to_p1(b);
+
+        let sum = panic::catch_unwind(AssertUnwindSafe(|| {
+            let sum = a + b;
+            assert!(sum <= 256, "overflow");
+            sum
+        }));
+        let sum_actual = panic::catch_unwind(AssertUnwindSafe(|| a_p1 + b_p1));
+        println!("{:?}, {:?}", sum, sum_actual);
+
+        match (sum, sum_actual) {
+            (Ok(sum), Ok(sum_p1)) => u16_to_p1(sum) == sum_p1,
+            (Err(_), Err(_)) => true,
+            _ => false,
+        }
+    }
+
+    #[test]
+    fn cmk_remove() {
+        assert!(add_em(110, 179));
+    }
+
+    #[quickcheck]
+    fn test_addition_equivalence(a: SmallU16, b: SmallU16) -> bool {
+        add_em(a.0, b.0)
     }
 }
