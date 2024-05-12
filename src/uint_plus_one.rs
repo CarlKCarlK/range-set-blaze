@@ -94,7 +94,7 @@ where
             (UIntPlusOne::UInt(a), UIntPlusOne::UInt(b)) => {
                 let (wrapped_less1, overflow) = a.overflowing_add(&(b - one));
                 if overflow {
-                    debug_assert!(wrapped_less1 == zero, "overflow");
+                    debug_assert!(false, "overflow");
                     UIntPlusOne::MaxPlusOne
                 } else if wrapped_less1 == max {
                     UIntPlusOne::MaxPlusOne
@@ -120,16 +120,14 @@ where
         let max: T = T::max_value();
 
         *self = match (*self, rhs) {
-            (UIntPlusOne::UInt(a), UIntPlusOne::UInt(b)) => {
-                debug_assert!(a >= b, "UIntPlusOne::UInt - UIntPlusOne::UInt");
-                UIntPlusOne::UInt(a - b)
-            }
+            (UIntPlusOne::UInt(a), UIntPlusOne::UInt(b)) => UIntPlusOne::UInt(a - b),
+            (UIntPlusOne::MaxPlusOne, UIntPlusOne::UInt(z)) if z == zero => UIntPlusOne::MaxPlusOne,
+            (UIntPlusOne::MaxPlusOne, UIntPlusOne::UInt(v)) => UIntPlusOne::UInt(max - (v - one)),
+            (UIntPlusOne::MaxPlusOne, UIntPlusOne::MaxPlusOne) => UIntPlusOne::UInt(zero),
             (UIntPlusOne::UInt(_), UIntPlusOne::MaxPlusOne) => {
                 debug_assert!(false, "UIntPlusOne::UInt - UIntPlusOne::Max");
                 UIntPlusOne::UInt(zero)
             }
-            (UIntPlusOne::MaxPlusOne, UIntPlusOne::MaxPlusOne) => UIntPlusOne::UInt(zero),
-            (UIntPlusOne::MaxPlusOne, UIntPlusOne::UInt(v)) => UIntPlusOne::UInt(max - (v - one)),
         }
     }
 }
@@ -168,11 +166,12 @@ where
                 UIntPlusOne::UInt(zero)
             }
             (UIntPlusOne::UInt(a), UIntPlusOne::UInt(b)) => {
-                if a.overflowing_mul(&(b - one)).1 {
+                let (a_times_b_less1, overflow) = a.overflowing_mul(&(b - one));
+                if overflow {
                     debug_assert!(false, "overflow");
                     UIntPlusOne::MaxPlusOne
                 } else {
-                    UIntPlusOne::UInt(a * (b - one) + a) + rhs
+                    UIntPlusOne::UInt(a_times_b_less1) + self
                 }
             }
             (UIntPlusOne::MaxPlusOne, _) | (_, UIntPlusOne::MaxPlusOne) => {
@@ -230,16 +229,59 @@ mod tests {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
 
-        let sum = panic::catch_unwind(AssertUnwindSafe(|| {
-            let sum = a + b;
-            assert!(sum <= 256, "overflow");
-            sum
+        let c = panic::catch_unwind(AssertUnwindSafe(|| {
+            let c = a + b;
+            assert!(c <= 256, "overflow");
+            c
         }));
-        let sum_actual = panic::catch_unwind(AssertUnwindSafe(|| a_p1 + b_p1));
-        println!("{:?}, {:?}", sum, sum_actual);
+        let c_actual = panic::catch_unwind(AssertUnwindSafe(|| a_p1 + b_p1));
+        println!("cmk {:?}, {:?}", c, c_actual);
 
-        match (sum, sum_actual) {
-            (Ok(sum), Ok(sum_p1)) => u16_to_p1(sum) == sum_p1,
+        match (c, c_actual) {
+            (Ok(c), Ok(c_p1)) => u16_to_p1(c) == c_p1,
+            (Err(_), Err(_)) => true,
+            _ => false,
+        }
+    }
+
+    fn mul_em(a: u16, b: u16) -> bool {
+        let a_p1 = u16_to_p1(a);
+        let b_p1 = u16_to_p1(b);
+
+        let c = panic::catch_unwind(AssertUnwindSafe(|| {
+            let c = a * b;
+            assert!(c <= 256, "overflow");
+            c
+        }));
+        let c_actual = panic::catch_unwind(AssertUnwindSafe(|| a_p1 * b_p1));
+        println!("cmk {:?}, {:?}", c, c_actual);
+
+        match (c, c_actual) {
+            (Ok(c), Ok(c_p1)) => u16_to_p1(c) == c_p1,
+            (Err(_), Err(_)) => true,
+            _ => false,
+        }
+    }
+
+    fn sub_em(a: u16, b: u16) -> bool {
+        let a_p1 = u16_to_p1(a);
+        let b_p1 = u16_to_p1(b);
+
+        let c = panic::catch_unwind(AssertUnwindSafe(|| {
+            let mut c = a;
+            c -= b;
+            assert!(c <= 256, "overflow");
+            c
+        }));
+        let c_actual = panic::catch_unwind(AssertUnwindSafe(|| {
+            let mut c_actual = a_p1;
+            c_actual -= b_p1;
+            c_actual
+        }));
+        println!("cmk {:?}, {:?}", c, c_actual);
+
+        match (c, c_actual) {
+            (Ok(c), Ok(c_p1)) => u16_to_p1(c) == c_p1,
             (Err(_), Err(_)) => true,
             _ => false,
         }
@@ -247,11 +289,36 @@ mod tests {
 
     #[test]
     fn cmk_remove() {
-        assert!(add_em(110, 179));
+        assert!(sub_em(256, 0));
     }
 
-    #[quickcheck]
-    fn test_addition_equivalence(a: SmallU16, b: SmallU16) -> bool {
-        add_em(a.0, b.0)
+    #[test]
+    fn test_add_equivalence() {
+        for a in 0..=256 {
+            for b in 0..=256 {
+                assert!(add_em(a, b), "a: {}, b: {}", a, b);
+            }
+        }
     }
+
+    #[test]
+    fn test_mul_equivalence() {
+        for a in 0..=256 {
+            for b in 0..=256 {
+                assert!(mul_em(a, b), "a: {}, b: {}", a, b);
+            }
+        }
+    }
+
+    #[test]
+    fn test_sub_equivalence() {
+        for a in 0..=256 {
+            for b in 0..=256 {
+                assert!(sub_em(a, b), "a: {}, b: {}", a, b);
+            }
+        }
+    }
+
+    // cmk00000000000 test sub_assign and add_assign
+    // cmk0000000000 remove quickcheck stuff
 }
