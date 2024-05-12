@@ -1028,10 +1028,10 @@ fn map_tricky_case1() {
 
     let a = !RangeMapBlaze::from_iter([(1i128..=0, "a")]);
     println!("tc1 '{a}', {}", a.len());
-    assert_eq!(a.len(), U128PlusOne::MaxPlusOne);
+    assert_eq!(a.len(), UIntPlusOne::MaxPlusOne);
     let a = !RangeMapBlaze::from_iter([(1u128..=0, "a")]);
     println!("tc1 '{a}', {}", a.len());
-    assert_eq!(a.len(), U128PlusOne::MaxPlusOne);
+    assert_eq!(a.len(), UIntPlusOne::MaxPlusOne);
 }
 
 // should fail
@@ -1344,7 +1344,7 @@ fn map_doc_test_len() {
     ]);
     assert_eq!(
         v.len(),
-        U128PlusOne::U128(340282366920938463463374607431768211455)
+        UIntPlusOne::UInt(340282366920938463463374607431768211455)
     );
 }
 

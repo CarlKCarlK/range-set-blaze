@@ -1120,7 +1120,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ]);
     /// assert_eq!(
     ///     v.len(),
-    ///     U128PlusOne::U128(340282366920938463463374607431768211455)
+    ///     UIntPlusOne::UInt(340282366920938463463374607431768211455)
     /// );
     /// ```
     #[must_use]

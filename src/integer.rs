@@ -1,5 +1,5 @@
-use crate::u128plus_one::TWO_POW_128;
-use crate::U128PlusOne;
+// cmk use crate::u128plus_one::TWO_POW_128;
+use crate::UIntPlusOne;
 #[cfg(feature = "from_slice")]
 use crate::{from_slice::FromSliceIter, RangeSetBlaze};
 use core::hash::Hash;
@@ -256,7 +256,7 @@ impl Integer for i128 {
     #[cfg(target_pointer_width = "32")]
     type SafeLen = u128;
     #[cfg(target_pointer_width = "64")]
-    type SafeLen = U128PlusOne;
+    type SafeLen = UIntPlusOne<u128>;
 
     #[cfg(feature = "from_slice")]
     #[inline]
@@ -268,27 +268,27 @@ impl Integer for i128 {
         debug_assert!(r.start() <= r.end());
         let less1 = r.end().overflowing_sub(r.start()).0 as u128;
         if less1 == u128::MAX {
-            U128PlusOne::MaxPlusOne
+            UIntPlusOne::MaxPlusOne
         } else {
-            U128PlusOne::U128(less1 + 1)
+            UIntPlusOne::UInt(less1 + 1)
         }
     }
 
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         match len {
-            U128PlusOne::U128(v) => v as f64,
-            U128PlusOne::MaxPlusOne => TWO_POW_128,
+            UIntPlusOne::UInt(v) => v as f64,
+            UIntPlusOne::MaxPlusOne => UIntPlusOne::<u128>::max_plus_one_as_f64(),
         }
     }
     fn f64_to_safe_len(f: f64) -> Self::SafeLen {
-        if f >= TWO_POW_128 {
-            U128PlusOne::MaxPlusOne
+        if f >= UIntPlusOne::<u128>::max_plus_one_as_f64() {
+            UIntPlusOne::MaxPlusOne
         } else {
-            U128PlusOne::U128(f as u128)
+            UIntPlusOne::UInt(f as u128)
         }
     }
     fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        let U128PlusOne::U128(v) = b else {
+        let UIntPlusOne::UInt(v) = b else {
             debug_assert!(false, "Too large to add to i128");
             return i128::MAX;
         };
@@ -296,7 +296,7 @@ impl Integer for i128 {
     }
     fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
         // a - (b - 1) as Self
-        let U128PlusOne::U128(v) = b else {
+        let UIntPlusOne::UInt(v) = b else {
             debug_assert!(false, "Too large to subtract from i128");
             return i128::MIN;
         };
@@ -308,7 +308,7 @@ impl Integer for u128 {
     #[cfg(target_pointer_width = "32")]
     type SafeLen = u128;
     #[cfg(target_pointer_width = "64")]
-    type SafeLen = U128PlusOne;
+    type SafeLen = UIntPlusOne<u128>;
 
     #[cfg(feature = "from_slice")]
     #[inline]
@@ -320,44 +320,44 @@ impl Integer for u128 {
         debug_assert!(r.start() <= r.end());
         let less1 = r.end().overflowing_sub(r.start()).0 as u128;
         if less1 == u128::MAX {
-            U128PlusOne::MaxPlusOne
+            UIntPlusOne::MaxPlusOne
         } else {
-            U128PlusOne::U128(less1 + 1)
+            UIntPlusOne::UInt(less1 + 1)
         }
     }
 
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         match len {
-            U128PlusOne::U128(v) => v as f64,
-            U128PlusOne::MaxPlusOne => TWO_POW_128,
+            UIntPlusOne::UInt(v) => v as f64,
+            UIntPlusOne::MaxPlusOne => UIntPlusOne::<u128>::max_plus_one_as_f64(),
         }
     }
     fn f64_to_safe_len(f: f64) -> Self::SafeLen {
-        if f >= TWO_POW_128 {
-            U128PlusOne::MaxPlusOne
+        if f >= UIntPlusOne::<u128>::max_plus_one_as_f64() {
+            UIntPlusOne::MaxPlusOne
         } else {
-            U128PlusOne::U128(f as u128)
+            UIntPlusOne::UInt(f as u128)
         }
     }
 
     fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
         // a + (b - 1) as Self
         match b {
-            U128PlusOne::U128(v) => {
+            UIntPlusOne::UInt(v) => {
                 debug_assert!(v > 0);
                 a + (v - 1)
             }
-            U128PlusOne::MaxPlusOne => a + Self::max_value(),
+            UIntPlusOne::MaxPlusOne => a + Self::max_value(),
         }
     }
     fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
         // a - (b - 1) as Self
         match b {
-            U128PlusOne::U128(v) => {
+            UIntPlusOne::UInt(v) => {
                 debug_assert!(v > 0);
                 a - (v - 1)
             }
-            U128PlusOne::MaxPlusOne => a - Self::max_value(),
+            UIntPlusOne::MaxPlusOne => a - Self::max_value(),
         }
     }
 }
