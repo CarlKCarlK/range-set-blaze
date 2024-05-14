@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let fields: Vec<&str> = line.split('\t').collect();
         assert_eq!(fields.len(), 5, "Expected 5 fields");
 
-        // Until Rust gets Ipv4Addr with successor and predecessor methods, we'll use u32
+        // Until Rust gets the Step trait, we'll use u32 for Ipv4Addr
         let destination: u32 = fields[0].parse::<Ipv4Addr>()?.into();
         let prefix_len: u32 = fields[1].parse()?;
         let next_hop: u32 = fields[2].parse::<Ipv4Addr>()?.into();
