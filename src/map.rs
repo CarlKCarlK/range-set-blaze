@@ -80,7 +80,7 @@ where
     pub(crate) value: V,
 }
 
-#[derive(Clone, Hash, Default, PartialEq)]
+#[derive(Clone, Hash, PartialEq)]
 /// A set of integers stored as sorted & disjoint ranges.
 ///
 /// Internally, it stores the ranges in a cache-efficient [`BTreeMap`].
@@ -301,6 +301,25 @@ where
 pub struct RangeMapBlaze<T: Integer, V: ValueOwned> {
     pub(crate) len: <T as Integer>::SafeLen,
     pub(crate) btree_map: BTreeMap<T, EndValue<T, V>>,
+}
+
+/// Creates a new, empty `RangeMapBlaze`.
+///
+/// # Examples
+///
+/// ```
+/// use range_set_blaze::RangeMapBlaze;
+///
+/// let a = RangeMapBlaze::<i32, &str>::default();
+/// assert!(a.is_empty());
+/// ```
+impl<T: Integer, V: ValueOwned> Default for RangeMapBlaze<T, V> {
+    fn default() -> Self {
+        Self {
+            len: <T as Integer>::SafeLen::zero(),
+            btree_map: BTreeMap::new(),
+        }
+    }
 }
 
 impl<T: Integer, V: ValueOwned + fmt::Debug> fmt::Debug for RangeMapBlaze<T, V> {
@@ -601,7 +620,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
                 // same values
                 if end_value_after.value == end_value_delete.value {
                     // must check this in two parts to avoid overflow
-                    if *start_delete <= end || *start_delete <= end + T::one() {
+                    if *start_delete <= end || *start_delete <= end.add_one() {
                         end_new_same_val = max(end_new_same_val, end_value_delete.end);
                         end_new = max(end_new, end_value_delete.end);
                         self.len -= T::safe_len(&(*start_delete..=end_value_delete.end));
@@ -625,7 +644,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             }
         } else if end_new_same_val > end {
             // last item is the same as the new and extends beyond the new
-            self.len += T::safe_len(&(end..=end_new - T::one()));
+            self.len += T::safe_len(&(end..=end_new.sub_one()));
             debug_assert!(*start_after <= end_new);
             end_value_after.end = end_new;
             for start in delete_list {
@@ -642,9 +661,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
                 .remove(&delete_list[delete_list.len() - 1])
                 .unwrap(); // there will always be a last
             let last_end = last.end;
-            debug_assert!(end + T::one() <= last.end); // real assert
-            self.btree_map.insert(end + T::one(), last);
-            self.len += T::safe_len(&(end + T::one()..=last_end));
+            debug_assert!(end.add_one() <= last.end); // real assert
+            self.btree_map.insert(end.add_one(), last);
+            self.len += T::safe_len(&(end.add_one()..=last_end));
         }
     }
 
@@ -723,13 +742,13 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         // cmk 'range' should be made more efficient (it currently creates a RangeMapBlaze for no good reason)
         let start = match range.start_bound() {
             Bound::Included(n) => *n,
-            Bound::Excluded(n) => *n + T::one(),
-            Bound::Unbounded => T::min_value(),
+            Bound::Excluded(n) => (*n).add_one(),
+            Bound::Unbounded => T::min_value2(),
         };
         let end = match range.end_bound() {
             Bound::Included(n) => *n,
-            Bound::Excluded(n) => *n - T::one(),
-            Bound::Unbounded => T::max_value(),
+            Bound::Excluded(n) => (*n).sub_one(),
+            Bound::Unbounded => T::max_value2(),
         };
         assert!(start <= end);
 
@@ -794,7 +813,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         let end = end_value_mut.end;
         let value = end_value_mut.value.clone();
         if start < key {
-            end_value_mut.end = key - T::one();
+            end_value_mut.end = key.sub_one();
             // special, special case if value == end
             if key == end {
                 self.len -= <T::SafeLen>::one();
@@ -814,7 +833,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
                 end,
                 value: value.clone(),
             };
-            self.btree_map.insert(key + T::one(), end_value);
+            self.btree_map.insert(key.add_one(), end_value);
         }
         Some(value)
     }
@@ -868,7 +887,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
 
         // The split is not clean, so we must move some keys from the end of self to the start of b.
         let value = end_value.value.borrow_clone();
-        last_entry.into_mut().end = key - T::one();
+        last_entry.into_mut().end = key.sub_one();
         new_btree.insert(key, EndValue { end, value });
         let (a_len, b_len) = self.two_element_lengths(old_btree_len, &new_btree, old_len);
         self.len = a_len;
@@ -918,7 +937,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     //         }
 
     //         // If this range overlaps or is adjacent, merge it
-    //         if end_value >= start - T::one() {
+    //         if end_value >= start.sub_one() {
     //             let new_end = end.max(end_value);
     //             let new_start = start.min(start_key);
 
@@ -935,7 +954,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
 
     #[inline]
     fn has_gap(end_before: T, start: T) -> bool {
-        match end_before.checked_add(&T::one()) {
+        match end_before.checked_add_one() {
             Some(end_before_succ) => end_before_succ < start,
             None => false,
         }
@@ -989,7 +1008,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             // same value, so just extend the before
             // AAA
             //  aaaa...
-            self.len += T::safe_len(&(end_before..=end - T::one()));
+            self.len += T::safe_len(&(end_before..=end.sub_one()));
             debug_assert!(start_before <= end); // real assert
             end_value_before.end = end;
             self.delete_extra(&(start_before..=end));
@@ -1005,7 +1024,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             // Thus, values are different, before contains new, and they start together
 
             let interesting_before_before = match before_iter.next() {
-                Some(bb) if bb.1.end + T::one() == start && bb.1.value == value => Some(bb),
+                Some(bb) if bb.1.end.add_one() == start && bb.1.value == value => Some(bb),
                 _ => None,
             };
 
@@ -1017,7 +1036,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
                 // AABBBB
                 //   aaaaaaa
                 // AAAAAAAAA
-                self.len += T::safe_len(&(bb.1.end + T::one()..=end));
+                self.len += T::safe_len(&(bb.1.end.add_one()..=end));
                 let bb_start = *bb.0;
                 debug_assert!(bb_start <= end); // real assert
                 bb.1.end = end;
@@ -1032,7 +1051,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             //  aaaaaaa
             // ^AAAAAAA
             debug_assert!(end_before < end); // real assert
-            self.len += T::safe_len(&(end_before + T::one()..=end));
+            self.len += T::safe_len(&(end_before.add_one()..=end));
             end_value_before.end = end;
             end_value_before.value = value;
             self.delete_extra(&range);
@@ -1044,8 +1063,8 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             //  aaaa...
             if end_before >= start {
                 self.len -= T::safe_len(&(start..=end_before));
-                debug_assert!(start_before <= start - T::one()); // real assert
-                end_value_before.end = start - T::one(); // cmk overflow danger?
+                debug_assert!(start_before <= start.sub_one()); // real assert
+                end_value_before.end = start.sub_one(); // cmk overflow danger?
             }
             self.internal_add2(&range, value);
             return;
@@ -1066,14 +1085,14 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             //   aaa
             // BBAAAB
             //  so trim the before and then insert two
-            debug_assert!(start_before <= start - T::one()); // real assert
-            end_value_before.end = start - T::one();
+            debug_assert!(start_before <= start.sub_one()); // real assert
+            end_value_before.end = start.sub_one();
             let before_value = end_value_before.value.clone();
             debug_assert!(start <= end); // real assert
             self.btree_map.insert(start, EndValue { end, value });
-            debug_assert!(end + T::one() <= end_before); // real assert
+            debug_assert!(end.add_one() <= end_before); // real assert
             self.btree_map.insert(
-                end + T::one(),
+                end.add_one(),
                 EndValue {
                     end: end_before,
                     value: before_value,
@@ -1092,8 +1111,8 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             //   aaa
             // BBAAA???
             //  so trim the before and then insert the new.
-            debug_assert!(start_before <= start - T::one()); // real assert
-            end_value_before.end = start - T::one();
+            debug_assert!(start_before <= start.sub_one()); // real assert
+            end_value_before.end = start.sub_one();
             debug_assert!(start <= end); // real assert
             self.btree_map.insert(start, EndValue { end, value });
             self.delete_extra(&(start..=end));
@@ -1103,7 +1122,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
         // Thus, values are different, before contains new, and they start together
 
         let interesting_before_before = match before_iter.next() {
-            Some(bb) if bb.1.end + T::one() == start && bb.1.value == value => Some(bb),
+            Some(bb) if bb.1.end.add_one() == start && bb.1.value == value => Some(bb),
             _ => None,
         };
 
@@ -1115,7 +1134,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             // AABBBB???
             //   aaaa
             // AAAAAA???
-            self.len += T::safe_len(&(bb.1.end + T::one()..=end));
+            self.len += T::safe_len(&(bb.1.end.add_one()..=end));
             let bb_start = *bb.0;
             debug_assert!(bb_start <= end); // real assert
             bb.1.end = end;
@@ -1150,9 +1169,9 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             let value_before = core::mem::replace(&mut end_value_before.value, value);
             debug_assert!(start_before <= end); // real assert
             end_value_before.end = end;
-            debug_assert!(end + T::one() <= end_before); // real assert
+            debug_assert!(end.add_one() <= end_before); // real assert
             self.btree_map.insert(
-                end + T::one(),
+                end.add_one(),
                 EndValue {
                     end: end_before,
                     value: value_before,
@@ -1253,7 +1272,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             Some((start, end_value.value))
         } else {
             let value = end_value.value.borrow_clone();
-            self.btree_map.insert(start + T::one(), end_value);
+            self.btree_map.insert(start.add_one(), end_value);
             Some((start, value))
         }
     }
@@ -1288,7 +1307,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             Some((end, value))
         } else {
             let value = entry.get().value.borrow_clone();
-            entry.get_mut().end -= T::one();
+            entry.get_mut().end.assign_sub_one();
             Some((end, value))
         }
     }

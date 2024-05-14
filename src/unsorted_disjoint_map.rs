@@ -24,7 +24,6 @@ where
     iter: I,
     option_priority: Option<Priority<T, V, VR>>,
     min_value_plus_2: T,
-    two: T,
     priority_number: usize,
 }
 
@@ -39,8 +38,7 @@ where
         UnsortedPriorityDisjointMap {
             iter: into_iter,
             option_priority: None,
-            min_value_plus_2: T::min_value() + T::one() + T::one(),
-            two: T::one() + T::one(),
+            min_value_plus_2: T::min_value2().add_one().add_one(),
             priority_number: 0,
         }
     }
@@ -91,8 +89,10 @@ where
 
             // if the ranges do not touch or overlap, return the current range and set the current range to the next range
             let (current_start, current_end) = current_priority.start_and_end();
-            if (next_start >= self.min_value_plus_2 && current_end <= next_start - self.two)
-                || (current_start >= self.min_value_plus_2 && next_end <= current_start - self.two)
+            if (next_start >= self.min_value_plus_2
+                && current_end <= next_start.sub_one().sub_one())
+                || (current_start >= self.min_value_plus_2
+                    && next_end <= current_start.sub_one().sub_one())
             {
                 self.option_priority = Some(next_priority);
                 return Some(current_priority);

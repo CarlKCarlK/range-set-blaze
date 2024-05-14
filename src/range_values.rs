@@ -172,7 +172,7 @@ where
             let (gather_start, gather_end) = gather.into_inner();
 
             // if next is just touching gather, extend gather.
-            if gather_end + T::one() == start_next {
+            if gather_end.add_one() == start_next {
                 self.gather = Some(gather_start..=end_next);
                 continue;
             }
@@ -232,7 +232,7 @@ impl<'a, T: Integer, V: ValueOwned + 'a> Iterator for MapIntoRangesIter<T, V> {
             let (gather_start, gather_end) = gather.into_inner();
 
             // if next is just touching gather, extend gather.
-            if gather_end + T::one() == start_next {
+            if gather_end.add_one() == start_next {
                 self.gather = Some(gather_start..=end_next);
                 continue;
             }
@@ -328,7 +328,7 @@ where
             let (gather_start, gather_end) = gather.into_inner();
 
             // If next is just touching gather, extend gather.
-            if gather_end + T::one() == next_start {
+            if gather_end.add_one() == next_start {
                 self.gather = Some(gather_start..=next_end);
                 continue;
             }

@@ -66,7 +66,7 @@ where
 
                 if let Some(inner_previous_range) = self.previous_range.as_mut() {
                     // if some and previous is some and adjacent, combine
-                    if *inner_previous_range.end() + T::one() == this_start {
+                    if (*inner_previous_range.end()).add_one() == this_start {
                         *inner_previous_range = *(inner_previous_range.start())..=this_end;
                     } else {
                         // if some and previous is some but not adjacent, flush previous, set previous to this range.

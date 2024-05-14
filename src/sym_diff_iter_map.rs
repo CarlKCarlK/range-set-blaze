@@ -149,13 +149,13 @@ where
             // unwrap() is safe because we know the workspace is not empty
             let mut next_end = self.workspace_next_end.take().unwrap();
             if let Some(next_item) = self.next_item.as_ref() {
-                next_end = min(next_item.start() - T::one(), next_end);
+                next_end = min(next_item.start().sub_one(), next_end);
             }
 
             // Add the front of best to the gather buffer.
             if let Some(mut gather) = self.gather.take() {
                 if gather.1.borrow() == best.1.borrow()
-                    && *gather.0.end() + T::one() == *best.0.start()
+                    && (*gather.0.end()).add_one() == *best.0.start()
                 {
                     if self.workspace.len() % 2 == 1 {
                         // if the gather is contiguous with the best, then merge them
@@ -215,7 +215,7 @@ where
                     // println!("cmk too short, don't keep in workspace {:?}", item.0);
                     continue; // while loop
                 }
-                item.set_range(next_end + T::one()..=item.end());
+                item.set_range(next_end.add_one()..=item.end());
                 new_next_end = min_next_end(&new_next_end, item.end());
                 new_workspace.push(item);
             }

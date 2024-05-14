@@ -608,7 +608,7 @@ where
         assert!(start <= end, "start must be less or equal to end");
         if let Some(prev_end) = self.prev_end {
             assert!(
-                prev_end < T::max_value() && prev_end + T::one() < start,
+                prev_end < T::max_value2() && prev_end.add_one() < start,
                 "ranges must be disjoint"
             );
         }

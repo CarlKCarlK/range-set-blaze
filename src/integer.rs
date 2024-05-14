@@ -3,25 +3,33 @@ use crate::UIntPlusOne;
 #[cfg(feature = "from_slice")]
 use crate::{from_slice::FromSliceIter, RangeSetBlaze};
 use core::hash::Hash;
+use core::net::Ipv4Addr;
 use core::ops::{AddAssign, SubAssign};
 use core::{fmt, ops::RangeInclusive};
-use num_traits::{ops::overflowing::OverflowingSub, CheckedAdd};
+use num_traits::ops::overflowing::OverflowingSub;
 
 #[cfg(feature = "from_slice")]
 const LANES: usize = 16;
 
 /// The element trait of the [`RangeSetBlaze`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
 pub trait Integer:
-    num_integer::Integer
-    + Copy
-    + fmt::Display
-    + fmt::Debug
-    + num_traits::NumAssignOps
-    + num_traits::Bounded
+    Copy
+    + PartialEq
+    + PartialOrd
+    + Ord
+    + fmt::Display // cmk0000 make these conditional
+    + fmt::Debug // cmk0000 make these conditional
     + Send
     + Sync
-    + CheckedAdd
 {
+    /// cmk doc
+    fn checked_add_one(self) -> Option<Self>;
+    fn add_one(self) -> Self;
+    fn sub_one(self) -> Self;
+    fn assign_sub_one(&mut self);
+    fn min_value2() -> Self;
+    fn max_value2() -> Self;
+
     #[cfg(feature = "from_slice")]
     /// A definition of [`RangeSetBlaze::from_slice()`] specific to this integer type.
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self>;
@@ -42,13 +50,12 @@ pub trait Integer:
     /// ```
     type SafeLen: Hash
         + Copy
-        + Default
         + PartialEq
-        + num_traits::Zero
-        + SubAssign
-        + AddAssign
         + PartialOrd
-        + num_traits::One;
+        + num_traits::Zero
+        + num_traits::One
+        + AddAssign
+        + SubAssign;
 
     /// Returns the length of a range without any overflow.
     ///
@@ -75,33 +82,74 @@ pub trait Integer:
     fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self;
 }
 
+/// Define the Integer trait operations for a given integer type.
+macro_rules! impl_integer_ops {
+    ($type:ty, $type2:ty) => {
+        #[inline]
+        fn checked_add_one(self) -> Option<Self> {
+            self.checked_add(1)
+        }
+
+        #[inline]
+        fn add_one(self) -> Self {
+            self + 1
+        }
+
+        #[inline]
+        fn sub_one(self) -> Self {
+            self - 1
+        }
+
+        #[inline]
+        fn assign_sub_one(&mut self) {
+            *self -= 1;
+        }
+
+        #[inline]
+        fn min_value2() -> Self {
+            Self::min_value()
+        }
+
+        #[inline]
+        fn max_value2() -> Self {
+            Self::max_value()
+        }
+
+        #[cfg(feature = "from_slice")]
+        #[inline]
+        fn from_slice(slice: impl AsRef<[$type]>) -> RangeSetBlaze<$type> {
+            FromSliceIter::<$type, LANES>::new(slice.as_ref()).collect()
+        }
+
+        fn safe_len(r: &RangeInclusive<$type>) -> <$type as Integer>::SafeLen {
+            r.end().overflowing_sub(r.start()).0 as $type2 as <$type as Integer>::SafeLen + 1
+        }
+
+        fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
+            len as f64
+        }
+
+        fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+            f as Self::SafeLen
+        }
+
+        fn add_len_less_one(a: $type, b: Self::SafeLen) -> $type {
+            a + (b - 1) as $type
+        }
+
+        fn sub_len_less_one(a: $type, b: Self::SafeLen) -> $type {
+            a - (b - 1) as $type
+        }
+    };
+}
+
 impl Integer for i8 {
     #[cfg(target_pointer_width = "32")]
     type SafeLen = usize;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    #[cfg(feature = "from_slice")]
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
-    }
-
-    fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
-        r.end().overflowing_sub(r.start()).0 as u8 as <Self as Integer>::SafeLen + 1
-    }
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
-        len as f64
-    }
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
-        f as Self::SafeLen
-    }
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a + (b - 1) as Self
-    }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a - (b - 1) as Self
-    }
+    impl_integer_ops!(i8, u8);
 }
 
 impl Integer for u8 {
@@ -110,28 +158,7 @@ impl Integer for u8 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    #[cfg(feature = "from_slice")]
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
-    }
-
-    fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
-        r.end().overflowing_sub(r.start()).0 as <Self as Integer>::SafeLen + 1
-    }
-
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
-        len as f64
-    }
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
-        f as Self::SafeLen
-    }
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a + (b - 1) as Self
-    }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a - (b - 1) as Self
-    }
+    impl_integer_ops!(u8, u8);
 }
 
 impl Integer for i32 {
@@ -140,28 +167,7 @@ impl Integer for i32 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
-        r.end().overflowing_sub(r.start()).0 as u32 as <Self as Integer>::SafeLen + 1
-    }
-
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
-        len as f64
-    }
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
-        f as Self::SafeLen
-    }
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a + (b - 1) as Self
-    }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a - (b - 1) as Self
-    }
-
-    #[cfg(feature = "from_slice")]
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
-    }
+    impl_integer_ops!(i32, u32);
 }
 
 impl Integer for u32 {
@@ -170,28 +176,7 @@ impl Integer for u32 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    #[cfg(feature = "from_slice")]
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
-    }
-
-    fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
-        r.end().overflowing_sub(r.start()).0 as <Self as Integer>::SafeLen + 1
-    }
-
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
-        len as f64
-    }
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
-        f as Self::SafeLen
-    }
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a + (b - 1) as Self
-    }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a - (b - 1) as Self
-    }
+    impl_integer_ops!(u32, u32);
 }
 
 impl Integer for i64 {
@@ -200,27 +185,7 @@ impl Integer for i64 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    #[cfg(feature = "from_slice")]
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
-    }
-
-    fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
-        r.end().overflowing_sub(r.start()).0 as u64 as <Self as Integer>::SafeLen + 1
-    }
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
-        len as f64
-    }
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
-        f as Self::SafeLen
-    }
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a + (b - 1) as Self
-    }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a - (b - 1) as Self
-    }
+    impl_integer_ops!(i64, u64);
 }
 
 impl Integer for u64 {
@@ -229,27 +194,7 @@ impl Integer for u64 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    #[cfg(feature = "from_slice")]
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
-    }
-
-    fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
-        r.end().overflowing_sub(r.start()).0 as <Self as Integer>::SafeLen + 1
-    }
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
-        len as f64
-    }
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
-        f as Self::SafeLen
-    }
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a + (b - 1) as Self
-    }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a - (b - 1) as Self
-    }
+    impl_integer_ops!(u64, u64);
 }
 
 impl Integer for i128 {
@@ -258,10 +203,40 @@ impl Integer for i128 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = UIntPlusOne<u128>;
 
+    #[inline]
+    fn checked_add_one(self) -> Option<Self> {
+        self.checked_add(1)
+    }
+
+    #[inline]
+    fn add_one(self) -> Self {
+        self + 1
+    }
+
+    #[inline]
+    fn sub_one(self) -> Self {
+        self - 1
+    }
+
+    #[inline]
+    fn assign_sub_one(&mut self) {
+        *self -= 1;
+    }
+
+    #[inline]
+    fn min_value2() -> Self {
+        Self::min_value()
+    }
+
+    #[inline]
+    fn max_value2() -> Self {
+        Self::max_value()
+    }
+
     #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> crate::RangeSetBlaze<Self> {
-        return slice.as_ref().iter().collect();
+        slice.as_ref().iter().collect()
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -310,10 +285,40 @@ impl Integer for u128 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = UIntPlusOne<u128>;
 
+    #[inline]
+    fn checked_add_one(self) -> Option<Self> {
+        self.checked_add(1)
+    }
+
+    #[inline]
+    fn add_one(self) -> Self {
+        self + 1
+    }
+
+    #[inline]
+    fn sub_one(self) -> Self {
+        self - 1
+    }
+
+    #[inline]
+    fn assign_sub_one(&mut self) {
+        *self -= 1;
+    }
+
+    #[inline]
+    fn min_value2() -> Self {
+        Self::min_value()
+    }
+
+    #[inline]
+    fn max_value2() -> Self {
+        Self::max_value()
+    }
+
     #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> crate::RangeSetBlaze<Self> {
-        return slice.as_ref().iter().collect();
+        slice.as_ref().iter().collect()
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -368,28 +373,7 @@ impl Integer for isize {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    #[cfg(feature = "from_slice")]
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
-    }
-
-    fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
-        r.end().overflowing_sub(r.start()).0 as usize as <Self as Integer>::SafeLen + 1
-    }
-
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
-        len as f64
-    }
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
-        f as Self::SafeLen
-    }
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a + (b - 1) as Self
-    }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a - (b - 1) as Self
-    }
+    impl_integer_ops!(isize, usize);
 }
 
 impl Integer for usize {
@@ -398,28 +382,7 @@ impl Integer for usize {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    #[cfg(feature = "from_slice")]
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
-    }
-
-    fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
-        r.end().overflowing_sub(r.start()).0 as <Self as Integer>::SafeLen + 1
-    }
-
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
-        len as f64
-    }
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
-        f as Self::SafeLen
-    }
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a + (b - 1) as Self
-    }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a - (b - 1) as Self
-    }
+    impl_integer_ops!(usize, usize);
 }
 
 impl Integer for i16 {
@@ -428,28 +391,7 @@ impl Integer for i16 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    #[cfg(feature = "from_slice")]
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
-    }
-
-    fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
-        r.end().overflowing_sub(r.start()).0 as u16 as <Self as Integer>::SafeLen + 1
-    }
-
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
-        len as f64
-    }
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
-        f as Self::SafeLen
-    }
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a + (b - 1) as Self
-    }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a - (b - 1) as Self
-    }
+    impl_integer_ops!(i16, u16);
 }
 
 impl Integer for u16 {
@@ -458,14 +400,61 @@ impl Integer for u16 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
+    impl_integer_ops!(u16, u16);
+}
+
+impl Integer for Ipv4Addr {
+    #[cfg(target_pointer_width = "32")]
+    type SafeLen = u64;
+    #[cfg(target_pointer_width = "64")]
+    type SafeLen = usize;
+
+    #[inline]
+    fn checked_add_one(self) -> Option<Self> {
+        let num = u32::from(self);
+        num.checked_add(1).map(Ipv4Addr::from)
+    }
+
+    #[inline]
+    fn add_one(self) -> Self {
+        let num = u32::from(self);
+        Ipv4Addr::from(num + 1)
+    }
+
+    #[inline]
+    fn sub_one(self) -> Self {
+        let num = u32::from(self);
+        Ipv4Addr::from(num - 1)
+    }
+
+    #[inline]
+    fn assign_sub_one(&mut self) {
+        let num = u32::from(*self);
+        *self = Ipv4Addr::from(num - 1);
+    }
+
+    #[inline]
+    fn min_value2() -> Self {
+        Ipv4Addr::new(0, 0, 0, 0)
+    }
+
+    #[inline]
+    fn max_value2() -> Self {
+        Ipv4Addr::new(255, 255, 255, 255)
+    }
+
     #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+        slice.as_ref().iter().collect()
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
-        r.end().overflowing_sub(r.start()).0 as <Self as Integer>::SafeLen + 1
+        let (start, end) = r.clone().into_inner(); // cmk0000 remove clone
+        let start_num = u32::from(start);
+        let end_num = u32::from(end);
+
+        end_num.overflowing_sub(start_num).0 as <Self as Integer>::SafeLen + 1
     }
 
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
@@ -475,9 +464,9 @@ impl Integer for u16 {
         f as Self::SafeLen
     }
     fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a + (b - 1) as Self
+        Ipv4Addr::from(u32::from(a) + b as u32 - 1)
     }
     fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        a - (b - 1) as Self
+        Ipv4Addr::from(u32::from(a) - b as u32 + 1)
     }
 }

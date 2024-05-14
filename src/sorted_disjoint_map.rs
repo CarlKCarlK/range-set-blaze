@@ -636,7 +636,7 @@ where
         let (start, end) = range_value.0.clone().into_inner();
         assert!(start <= end, "Start must be <= end.",);
         assert!(previous_end < start, "Ranges must be disjoint and sorted");
-        if previous_end + T::one() == start {
+        if previous_end.add_one() == start {
             assert!(
                 previous.1.borrow() != range_value.1.borrow(),
                 "Touching ranges must have different values"

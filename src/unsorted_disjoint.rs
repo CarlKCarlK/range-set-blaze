@@ -15,7 +15,6 @@ where
     iter: I,
     option_range: Option<RangeInclusive<T>>,
     min_value_plus_2: T,
-    two: T,
 }
 
 impl<T, I> UnsortedDisjoint<T, I>
@@ -27,8 +26,7 @@ where
         UnsortedDisjoint {
             iter,
             option_range: None,
-            min_value_plus_2: T::min_value() + T::one() + T::one(),
-            two: T::one() + T::one(),
+            min_value_plus_2: T::min_value2().add_one().add_one(),
         }
     }
 }
@@ -64,8 +62,9 @@ where
             };
 
             let (self_start, self_end) = self_range.into_inner();
-            if (next_start >= self.min_value_plus_2 && self_end <= next_start - self.two)
-                || (self_start >= self.min_value_plus_2 && next_end <= self_start - self.two)
+            if (next_start >= self.min_value_plus_2 && self_end <= next_start.sub_one().sub_one())
+                || (self_start >= self.min_value_plus_2
+                    && next_end <= self_start.sub_one().sub_one())
             {
                 let result = Some(self_start..=self_end);
                 self.option_range = Some(next_start..=next_end);

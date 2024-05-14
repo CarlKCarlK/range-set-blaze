@@ -311,10 +311,30 @@ where
 /// See the [module-level documentation] for additional examples.
 ///
 /// [module-level documentation]: index.html
-#[derive(Clone, Hash, Default, PartialEq)]
+#[derive(Clone, Hash, PartialEq)]
 pub struct RangeSetBlaze<T: Integer> {
     len: <T as Integer>::SafeLen,
     pub(crate) btree_map: BTreeMap<T, T>,
+}
+
+// impl default
+impl<T: Integer> Default for RangeSetBlaze<T> {
+    /// Creates an empty `RangeSetBlaze`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let set: RangeSetBlaze<i32> = RangeSetBlaze::default();
+    /// assert!(set.is_empty());
+    /// ```
+    fn default() -> Self {
+        Self {
+            len: <T as Integer>::SafeLen::zero(),
+            btree_map: BTreeMap::new(),
+        }
+    }
 }
 
 // FUTURE: Make all RangeSetBlaze iterators DoubleEndedIterator and ExactSizeIterator.
@@ -700,7 +720,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         let delete_list = after
             .map_while(|(start_delete, end_delete)| {
                 // must check this in two parts to avoid overflow
-                if *start_delete <= end || *start_delete <= end + T::one() {
+                if *start_delete <= end || *start_delete <= end.add_one() {
                     end_new = max(end_new, *end_delete);
                     self.len -= T::safe_len(&(*start_delete..=*end_delete));
                     Some(*start_delete)
@@ -710,7 +730,7 @@ impl<T: Integer> RangeSetBlaze<T> {
             })
             .collect::<Vec<_>>();
         if end_new > end {
-            self.len += T::safe_len(&(end..=end_new - T::one()));
+            self.len += T::safe_len(&(end..=end_new.sub_one()));
             *end_after = end_new;
         }
         for start in delete_list {
@@ -788,13 +808,13 @@ impl<T: Integer> RangeSetBlaze<T> {
     {
         let start = match range.start_bound() {
             Bound::Included(n) => *n,
-            Bound::Excluded(n) => *n + T::one(),
-            Bound::Unbounded => T::min_value(),
+            Bound::Excluded(n) => (*n).add_one(),
+            Bound::Unbounded => T::min_value2(),
         };
         let end = match range.end_bound() {
             Bound::Included(n) => *n,
-            Bound::Excluded(n) => *n - T::one(),
-            Bound::Unbounded => T::max_value(),
+            Bound::Excluded(n) => (*n).sub_one(),
+            Bound::Unbounded => T::max_value2(),
         };
         assert!(start <= end);
 
@@ -860,7 +880,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         let start = *start_ref;
         // special case if in range and start strictly less than value
         if start < value {
-            *end_ref = value - T::one();
+            *end_ref = value.sub_one();
             // special, special case if value == end
             if value == end {
                 self.len -= <T::SafeLen>::one();
@@ -872,7 +892,7 @@ impl<T: Integer> RangeSetBlaze<T> {
             self.btree_map.remove(&start);
         };
         if value < end {
-            self.btree_map.insert(value + T::one(), end);
+            self.btree_map.insert(value.add_one(), end);
         }
         true
     }
@@ -924,7 +944,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
 
         // The split is not clean, so we must move some keys from the end of self to the start of b.
-        *(last_entry.into_mut()) = key - T::one();
+        *(last_entry.into_mut()) = key.sub_one();
         new_btree.insert(key, end);
         let (a_len, b_len) = self.two_element_lengths(old_btree_len, &new_btree, old_len);
         self.len = a_len;
@@ -961,7 +981,7 @@ impl<T: Integer> RangeSetBlaze<T> {
             let end_ref = last_entry.get_mut();
             if value <= *end_ref {
                 b.insert(value, *end_ref);
-                *end_ref = value - T::one();
+                *end_ref = value.sub_one();
             }
         }
 
@@ -1048,7 +1068,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     //         }
 
     //         // If this range overlaps or is adjacent, merge it
-    //         if end_value >= start - T::one() {
+    //         if end_value >= start.sub_one() {
     //             let new_end = end.max(end_value);
     //             let new_start = start.min(start_key);
 
@@ -1074,13 +1094,13 @@ impl<T: Integer> RangeSetBlaze<T> {
         let mut before = self.btree_map.range_mut(..=start).rev();
         if let Some((start_before, end_before)) = before.next() {
             // Must check this in two parts to avoid overflow
-            if match (*end_before).checked_add(&T::one()) {
+            if match (*end_before).checked_add_one() {
                 Some(end_before_succ) => end_before_succ < start,
                 None => false,
             } {
                 self.internal_add2(&range);
             } else if *end_before < end {
-                self.len += T::safe_len(&(*end_before..=end - T::one()));
+                self.len += T::safe_len(&(*end_before..=end.sub_one()));
                 *end_before = end;
                 let start_before = *start_before;
                 self.delete_extra(&(start_before..=end));
@@ -1167,7 +1187,7 @@ impl<T: Integer> RangeSetBlaze<T> {
             let (start, end) = entry.remove_entry();
             self.len -= T::safe_len(&(start..=end));
             if start != end {
-                let start = start + T::one();
+                let start = start.add_one();
                 self.btree_map.insert(start, end);
                 self.len += T::safe_len(&(start..=end));
             }
@@ -1205,7 +1225,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         if start == *end {
             entry.remove_entry();
         } else {
-            *end -= T::one();
+            (*end).assign_sub_one();
             self.len += T::safe_len(&(start..=*end));
         }
         Some(result)
@@ -1592,7 +1612,7 @@ where
         let (start, end) = range.into_inner();
         debug_assert!(start <= end);
         if start < end {
-            self.option_range_front = Some(start + T::one()..=end);
+            self.option_range_front = Some(start.add_one()..=end);
         }
         Some(start)
     }
@@ -1618,7 +1638,7 @@ where
         let (start, end) = range.into_inner();
         debug_assert!(start <= end);
         if start < end {
-            self.option_range_back = Some(start..=end - T::one());
+            self.option_range_back = Some(start..=end.sub_one());
         }
 
         Some(end)
@@ -1654,7 +1674,7 @@ impl<T: Integer> Iterator for IntoIter<T> {
         let (start, end) = range.into_inner();
         debug_assert!(start <= end);
         if start < end {
-            self.option_range_front = Some(start + T::one()..=end);
+            self.option_range_front = Some(start.add_one()..=end);
         }
         Some(start)
     }
@@ -1678,7 +1698,7 @@ impl<T: Integer> DoubleEndedIterator for IntoIter<T> {
         let (start, end) = range.into_inner();
         debug_assert!(start <= end);
         if start < end {
-            self.option_range_back = Some(start..=end - T::one());
+            self.option_range_back = Some(start..=end.sub_one());
         }
 
         Some(end)
@@ -1949,10 +1969,10 @@ impl<T: Integer> Ord for RangeSetBlaze<T> {
                         }
                         Ordering::Less => {
                             a_rx = a.next();
-                            b_rx = Some(*a_r.end() + T::one()..=*b_r.end());
+                            b_rx = Some((*a_r.end()).add_one()..=*b_r.end());
                         }
                         Ordering::Greater => {
-                            a_rx = Some(*b_r.end() + T::one()..=*a_r.end());
+                            a_rx = Some((*b_r.end()).add_one()..=*a_r.end());
                             b_rx = b.next();
                         }
                     }

@@ -45,15 +45,6 @@ where
     }
 }
 
-impl<T> Default for UIntPlusOne<T>
-where
-    T: UInt,
-{
-    fn default() -> Self {
-        UIntPlusOne::UInt(T::zero())
-    }
-}
-
 impl<T> Display for UIntPlusOne<T>
 where
     T: UInt + Display,

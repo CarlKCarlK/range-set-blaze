@@ -90,8 +90,9 @@ impl<'a, T: Integer + SampleUniform> Iterator for MemorylessRange<'a, T> {
                     //could precompute
                     actual_width = <T::SafeLen>::one();
                 } else {
+                    let min_value = T::min_value2();
                     //could precompute
-                    return Some(T::one()..=T::zero()); // empty range
+                    return Some(min_value.add_one()..=min_value); // empty range
                 }
             } else if self.range_len >= 30 {
                 // pick a width between about 1 and 2*average_width
@@ -167,7 +168,7 @@ impl<'a, T: Integer + SampleUniform> Iterator for MemorylessIter<'a, T> {
             .or_else(|| self.iter.find(|range| range.start() <= range.end()))?;
         let (start, end) = range.into_inner();
         if start < end {
-            self.option_range = Some(start + T::one()..=end);
+            self.option_range = Some(start.add_one()..=end);
         }
         Some(start)
     }

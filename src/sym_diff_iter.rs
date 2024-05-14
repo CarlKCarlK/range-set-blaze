@@ -71,7 +71,7 @@ where
                 self.remove_same_end(end);
                 let result = self.start_or_min_value..=end;
                 if !self.end_heap.is_empty() {
-                    self.start_or_min_value = end + T::one(); // The 'if' prevents overflow.
+                    self.start_or_min_value = end.add_one(); // The 'if' prevents overflow.
                 }
                 if let Some(result) = self.process(count % 2 == 1, result) {
                     return result;
@@ -91,7 +91,7 @@ where
             // Next start inside the workspace's first chunk, so process up to next_start.
             let end = self.end_heap.peek().unwrap().0;
             if next_start <= end {
-                let result = self.start_or_min_value..=next_start - T::one();
+                let result = self.start_or_min_value..=next_start.sub_one();
                 self.start_or_min_value = next_start;
                 self.end_heap.push(Reverse(next_end));
                 if let Some(result) = self.process(count % 2 == 1, result) {
@@ -115,7 +115,7 @@ where
 
             // Next start is after the workspaces end, and the workspace contains more than one chuck,
             // so process one chunk and then process next
-            self.start_or_min_value = end + T::one();
+            self.start_or_min_value = end.add_one();
             self.next_again = Some(next_start..=next_end);
             if let Some(result) = self.process(count % 2 == 1, result) {
                 return result;
@@ -164,7 +164,7 @@ where
         debug_assert!(gather_end < next_start); // real assert
 
         // If they touch, set gather to the union and loop.
-        if gather_end + T::one() == next_start {
+        if gather_end.add_one() == next_start {
             self.gather = Some(gather_start..=next_end);
             return None;
         }
@@ -179,7 +179,7 @@ where
     pub fn new(iter: I) -> Self {
         Self {
             iter,
-            start_or_min_value: T::min_value(),
+            start_or_min_value: T::min_value2(),
             end_heap: BinaryHeap::with_capacity(10),
             next_again: None,
             gather: None,

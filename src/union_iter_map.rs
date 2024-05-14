@@ -142,7 +142,7 @@ where
                 //     next_item.0.start(),
                 //     best.0.end()
                 // );
-                min(next_item.start() - T::one(), best.end())
+                min(next_item.start().sub_one(), best.end())
                 // println!("cmk min {:?}", m);
             } else {
                 best.end()
@@ -151,7 +151,7 @@ where
             // Add the front of best to the gather buffer.
             if let Some(mut gather) = self.gather.take() {
                 if gather.1.borrow() == best.value().borrow()
-                    && *gather.0.end() + T::one() == best.start()
+                    && (*gather.0.end()).add_one() == best.start()
                 {
                     // if the gather is contiguous with the best, then merge them
                     gather.0 = *gather.0.start()..=next_end;
@@ -194,7 +194,7 @@ where
                     // println!("cmk too short, don't keep in workspace {:?}", item.0);
                     continue; // while loop
                 }
-                item.set_range(next_end + T::one()..=item.end());
+                item.set_range(next_end.add_one()..=item.end());
                 let Some(new_best) = new_workspace.peek() else {
                     // println!("cmk no workspace, so keep {:?}", item.0);
                     // new_workspace is empty, so keep

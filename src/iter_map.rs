@@ -80,7 +80,7 @@ where
         debug_assert!(start <= end);
         let value = range_value.1.clone_borrow();
         if start < end {
-            range_value.0 = start + T::one()..=end;
+            range_value.0 = start.add_one()..=end;
             self.option_range_value_front = Some(range_value);
         }
         Some((start, value))
@@ -111,7 +111,7 @@ where
         debug_assert!(start <= end);
         let value = range_value.1.clone_borrow();
         if start < end {
-            range_value.0 = start..=end - T::one();
+            range_value.0 = start..=end.sub_one();
             self.option_range_value_back = Some(range_value);
         }
 
@@ -177,7 +177,7 @@ where
         debug_assert!(start <= end);
         if start < end {
             let end_value = start_end_value.1;
-            let start_end_value = (start + T::one(), end_value);
+            let start_end_value = (start.add_one(), end_value);
             self.option_start_end_value_front = Some(start_end_value);
         }
         Some((start, value))
@@ -210,7 +210,7 @@ where
 
         if start < end {
             let mut end_value = start_end_value.1;
-            end_value.end -= T::one();
+            end_value.end .assign_sub_one();
             let start_end_value = (start, end_value);
             self.option_start_end_value_back = Some(start_end_value);
         }

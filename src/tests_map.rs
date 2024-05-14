@@ -553,7 +553,7 @@ fn map_repro1() {
 //         let range = range_value.0.clone();
 
 //         if let Some(previous) = previous {
-//             if (previous.1 == v && *previous.0.end() + T::one() >= *range.start())
+//             if (previous.1 == v && *previous.0.end().add_one() >= *range.start())
 //                 || previous.0.end() >= range.start()
 //             {
 //                 eprintln!(
@@ -577,7 +577,7 @@ fn map_repro1() {
 //             if k == *range.end() {
 //                 break;
 //             }
-//             k = k + T::one();
+//             k = k.add_one();
 //         }
 //         previous = Some(range_value);
 //     }
