@@ -6,20 +6,22 @@ use std::ops::RangeInclusive;
 use range_set_blaze::RangeMapBlaze;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Until Rust get's 'yield' keyword, to keep things simple, we'll use a Vec
     let mut pair_vec: Vec<(RangeInclusive<u32>, (u32, String))> = Vec::new();
+
     let mut prev_prefix_len: Option<u32> = None;
     let mut prev_metric: Option<u32> = None;
-
     for line in BufRead::lines(io::BufReader::new(File::open(
-        "./examples/routing_table1.tsv",
+        "./examples/routing_ip4.tsv",
     )?))
     .skip(1)
     {
         let line = line?;
-        // println!("{}", line);
+        println!("{}", line);
         let fields: Vec<&str> = line.split('\t').collect();
         assert_eq!(fields.len(), 5, "Expected 5 fields");
 
+        // Until Rust gets Ipv4Addr with successor and predecessor methods, we'll use u32
         let destination: u32 = fields[0].parse::<Ipv4Addr>()?.into();
         let prefix_len: u32 = fields[1].parse()?;
         let next_hop: u32 = fields[2].parse::<Ipv4Addr>()?.into();
@@ -34,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         if let Some(prev_metric) = prev_metric.replace(metric) {
-            assert!(prev_metric >= metric, "Sort by prefix len & metric (desc)");
+            assert!(prev_metric <= metric, "Sort by prefix len & metric (asc)");
         }
 
         let range_start = destination & !(u32::MAX >> prefix_len);
