@@ -3,7 +3,7 @@ use crate::UIntPlusOne;
 #[cfg(feature = "from_slice")]
 use crate::{from_slice::FromSliceIter, RangeSetBlaze};
 use core::hash::Hash;
-use core::net::Ipv4Addr;
+use core::net::{Ipv4Addr, Ipv6Addr};
 use core::ops::{AddAssign, SubAssign};
 use core::{fmt, ops::RangeInclusive};
 use num_traits::ops::overflowing::OverflowingSub;
@@ -199,7 +199,7 @@ impl Integer for u64 {
 
 impl Integer for i128 {
     #[cfg(target_pointer_width = "32")]
-    type SafeLen = u128;
+    type SafeLen = UIntPlusOne<u128>;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = UIntPlusOne<u128>;
 
@@ -242,11 +242,8 @@ impl Integer for i128 {
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         debug_assert!(r.start() <= r.end());
         let less1 = r.end().overflowing_sub(r.start()).0 as u128;
-        if less1 == u128::MAX {
-            UIntPlusOne::MaxPlusOne
-        } else {
-            UIntPlusOne::UInt(less1 + 1)
-        }
+        let less1 = UIntPlusOne::UInt(less1);
+        less1 + UIntPlusOne::UInt(1)
     }
 
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
@@ -281,7 +278,7 @@ impl Integer for i128 {
 
 impl Integer for u128 {
     #[cfg(target_pointer_width = "32")]
-    type SafeLen = u128;
+    type SafeLen = UIntPlusOne<u128>;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = UIntPlusOne<u128>;
 
@@ -324,11 +321,8 @@ impl Integer for u128 {
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         debug_assert!(r.start() <= r.end());
         let less1 = r.end().overflowing_sub(r.start()).0 as u128;
-        if less1 == u128::MAX {
-            UIntPlusOne::MaxPlusOne
-        } else {
-            UIntPlusOne::UInt(less1 + 1)
-        }
+        let less1 = UIntPlusOne::UInt(less1);
+        less1 + UIntPlusOne::UInt(1)
     }
 
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
@@ -450,10 +444,8 @@ impl Integer for Ipv4Addr {
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
-        let (start, end) = r.clone().into_inner(); // cmk0000 remove clone
-        let start_num = u32::from(start);
-        let end_num = u32::from(end);
-
+        let start_num = u32::from(*r.start());
+        let end_num = u32::from(*r.end());
         end_num.overflowing_sub(start_num).0 as <Self as Integer>::SafeLen + 1
     }
 
@@ -467,6 +459,235 @@ impl Integer for Ipv4Addr {
         Ipv4Addr::from(u32::from(a) + b as u32 - 1)
     }
     fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        Ipv4Addr::from(u32::from(a) - b as u32 + 1)
+        Ipv4Addr::from(u32::from(a) - (b as u32 + 1))
     }
 }
+
+impl Integer for Ipv6Addr {
+    #[cfg(target_pointer_width = "32")]
+    type SafeLen = UIntPlusOne<u128>;
+    #[cfg(target_pointer_width = "64")]
+    type SafeLen = UIntPlusOne<u128>;
+
+    #[inline]
+    fn checked_add_one(self) -> Option<Self> {
+        let num = u128::from(self);
+        num.checked_add(1).map(Ipv6Addr::from)
+    }
+
+    #[inline]
+    fn add_one(self) -> Self {
+        let num = u128::from(self);
+        Ipv6Addr::from(num + 1)
+    }
+
+    #[inline]
+    fn sub_one(self) -> Self {
+        let num = u128::from(self);
+        Ipv6Addr::from(num - 1)
+    }
+
+    #[inline]
+    fn assign_sub_one(&mut self) {
+        let num = u128::from(*self);
+        *self = Ipv6Addr::from(num - 1);
+    }
+
+    #[inline]
+    fn min_value2() -> Self {
+        Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)
+    }
+
+    #[inline]
+    fn max_value2() -> Self {
+        Ipv6Addr::from(u128::MAX)
+    }
+
+    #[cfg(feature = "from_slice")]
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        slice.as_ref().iter().collect()
+    }
+
+    fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
+        let start_num = u128::from(*r.start());
+        let end_num = u128::from(*r.end());
+
+        debug_assert!(start_num <= end_num);
+        let less1 = end_num.overflowing_sub(start_num).0 as u128;
+        let less1 = UIntPlusOne::UInt(less1);
+        less1 + UIntPlusOne::UInt(1)
+    }
+
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
+        match len {
+            UIntPlusOne::UInt(v) => v as f64,
+            UIntPlusOne::MaxPlusOne => UIntPlusOne::<u128>::max_plus_one_as_f64(),
+        }
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        if f >= UIntPlusOne::<u128>::max_plus_one_as_f64() {
+            UIntPlusOne::MaxPlusOne
+        } else {
+            UIntPlusOne::UInt(f as u128)
+        }
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        let UIntPlusOne::UInt(v) = b else {
+            debug_assert!(false, "Too large to add to Ipv6Addr");
+            return Ipv6Addr::from(u128::MAX);
+        };
+        debug_assert!(v > 0);
+        Ipv6Addr::from(u128::from(a) + (v - 1))
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        match b {
+            UIntPlusOne::UInt(v) => {
+                debug_assert!(v > 0);
+                Ipv6Addr::from(u128::from(a) - (v - 1))
+            }
+            UIntPlusOne::MaxPlusOne => Ipv6Addr::from(u128::from(a) - u128::MAX),
+        }
+    }
+}
+
+// all inclusive
+// cmk000000000 these are contiguous
+const HIGH_SURROGATE_START: u32 = 0xD800;
+const HIGH_SURROGATE_END: u32 = 0xDBFF;
+const LOW_SURROGATE_START: u32 = 0xDC00;
+const LOW_SURROGATE_END: u32 = 0xDFFF;
+
+impl Integer for char {
+    #[cfg(target_pointer_width = "32")]
+    // in general, the length of a 32-bit inclusive range does not fit in a u32,
+    // but unicode doesn't use the full range, so it does fit
+    type SafeLen = usize;
+    #[cfg(target_pointer_width = "64")]
+    type SafeLen = usize;
+
+    #[inline]
+    fn checked_add_one(self) -> Option<Self> {
+        // Can't overflow u64 because of the range of char
+        let num = u32::from(self) + 1;
+        // skip over the surrogate range
+        let num = match num {
+            HIGH_SURROGATE_START => HIGH_SURROGATE_END + 1,
+            LOW_SURROGATE_START => LOW_SURROGATE_END + 1,
+            _ => num,
+        };
+        // Will report char overflow as None
+        char::from_u32(num)
+    }
+
+    #[inline]
+    fn add_one(self) -> Self {
+        match self.checked_add_one() {
+            Some(c) => c,
+            None => {
+                #[cfg(debug_assertions)]
+                panic!("char overflow");
+                #[cfg(not(debug_assertions))]
+                Self::max_value2()
+            }
+        }
+    }
+
+    #[inline]
+    fn sub_one(self) -> Self {
+        let num = u32::from(self) - 1; // by design, debug will panic if underflow
+        let num = match num {
+            HIGH_SURROGATE_END => HIGH_SURROGATE_START - 1,
+            LOW_SURROGATE_END => LOW_SURROGATE_START - 1,
+            _ => num,
+        };
+        // can never underflow here because of the range of char
+        char::from_u32(num).unwrap()
+    }
+
+    #[inline]
+    fn assign_sub_one(&mut self) {
+        *self = self.sub_one()
+    }
+
+    #[inline]
+    fn min_value2() -> Self {
+        '\u{0}'
+    }
+
+    #[inline]
+    fn max_value2() -> Self {
+        '\u{10FFFF}'
+    }
+
+    #[cfg(feature = "from_slice")]
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        slice.as_ref().iter().collect()
+    }
+
+    fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
+        // assume valid, non-empty range
+        let start_num = u32::from(*r.start());
+        let end_num = u32::from(*r.end());
+        let mut len = (end_num - start_num) as <Self as Integer>::SafeLen + 1;
+        if start_num < HIGH_SURROGATE_START && HIGH_SURROGATE_END < end_num {
+            len -= (HIGH_SURROGATE_END - HIGH_SURROGATE_START + 1) as <Self as Integer>::SafeLen;
+        }
+        if start_num < LOW_SURROGATE_START && LOW_SURROGATE_END < end_num {
+            len -= (LOW_SURROGATE_END - LOW_SURROGATE_START + 1) as <Self as Integer>::SafeLen;
+        }
+        len
+    }
+
+    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
+        len as f64
+    }
+    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        let a = u32::from(a);
+        let mut num = a + b as u32 - 1;
+        // skip over the surrogate range
+        if a < HIGH_SURROGATE_START && HIGH_SURROGATE_START <= num {
+            num += HIGH_SURROGATE_END - HIGH_SURROGATE_START + 1;
+        }
+        if a < LOW_SURROGATE_START && LOW_SURROGATE_START <= num {
+            num += LOW_SURROGATE_END - LOW_SURROGATE_START + 1;
+        }
+
+        match char::from_u32(num) {
+            Some(c) => c,
+            None => {
+                #[cfg(debug_assertions)]
+                panic!("char overflow");
+                #[cfg(not(debug_assertions))]
+                Self::max_value2()
+            }
+        }
+    }
+    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+        let a = u32::from(a);
+        let mut num = a - (b as u32 - 1);
+        // skip over the surrogate range
+        if num <= HIGH_SURROGATE_END && HIGH_SURROGATE_END < a {
+            num -= HIGH_SURROGATE_END - HIGH_SURROGATE_START + 1;
+        }
+        if num <= HIGH_SURROGATE_END && HIGH_SURROGATE_END < a {
+            num -= LOW_SURROGATE_END - LOW_SURROGATE_START + 1;
+        }
+
+        match char::from_u32(num) {
+            Some(c) => c,
+            None => {
+                #[cfg(debug_assertions)]
+                panic!("char underflow");
+                #[cfg(not(debug_assertions))]
+                Self::min_value2()
+            }
+        }
+    }
+}
+
+// cmk0000 add char, and Ipv6Addr all https://doc.rust-lang.org/core/iter/trait.Step.html#implementors
