@@ -70,7 +70,7 @@ where
             let (current_start, current_end) = current_range.into_inner();
             debug_assert!(current_start <= start); // real assert
             if start <= current_end
-                || (current_end < T::max_value2() && start <= current_end.add_one())
+                || (current_end < T::max_value() && start <= current_end.add_one())
             {
                 self.option_range = Some(current_start..=max(current_end, end));
                 continue;

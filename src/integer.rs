@@ -27,8 +27,8 @@ pub trait Integer:
     fn add_one(self) -> Self;
     fn sub_one(self) -> Self;
     fn assign_sub_one(&mut self);
-    fn min_value2() -> Self;
-    fn max_value2() -> Self;
+    fn min_value() -> Self;
+    fn max_value() -> Self;
 
     #[cfg(feature = "from_slice")]
     /// A definition of [`RangeSetBlaze::from_slice()`] specific to this integer type.
@@ -106,13 +106,13 @@ macro_rules! impl_integer_ops {
         }
 
         #[inline]
-        fn min_value2() -> Self {
-            Self::min_value()
+        fn min_value() -> Self {
+            Self::MIN
         }
 
         #[inline]
-        fn max_value2() -> Self {
-            Self::max_value()
+        fn max_value() -> Self {
+            Self::MAX
         }
 
         #[cfg(feature = "from_slice")]
@@ -224,12 +224,12 @@ impl Integer for i128 {
     }
 
     #[inline]
-    fn min_value2() -> Self {
+    fn min_value() -> Self {
         Self::min_value()
     }
 
     #[inline]
-    fn max_value2() -> Self {
+    fn max_value() -> Self {
         Self::max_value()
     }
 
@@ -303,12 +303,12 @@ impl Integer for u128 {
     }
 
     #[inline]
-    fn min_value2() -> Self {
+    fn min_value() -> Self {
         Self::min_value()
     }
 
     #[inline]
-    fn max_value2() -> Self {
+    fn max_value() -> Self {
         Self::max_value()
     }
 
@@ -428,12 +428,12 @@ impl Integer for Ipv4Addr {
     }
 
     #[inline]
-    fn min_value2() -> Self {
+    fn min_value() -> Self {
         Ipv4Addr::new(0, 0, 0, 0)
     }
 
     #[inline]
-    fn max_value2() -> Self {
+    fn max_value() -> Self {
         Ipv4Addr::new(255, 255, 255, 255)
     }
 
@@ -494,12 +494,12 @@ impl Integer for Ipv6Addr {
     }
 
     #[inline]
-    fn min_value2() -> Self {
+    fn min_value() -> Self {
         Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)
     }
 
     #[inline]
-    fn max_value2() -> Self {
+    fn max_value() -> Self {
         Ipv6Addr::from(u128::MAX)
     }
 
@@ -552,11 +552,8 @@ impl Integer for Ipv6Addr {
 }
 
 // all inclusive
-// cmk000000000 these are contiguous
-const HIGH_SURROGATE_START: u32 = 0xD800;
-const HIGH_SURROGATE_END: u32 = 0xDBFF;
-const LOW_SURROGATE_START: u32 = 0xDC00;
-const LOW_SURROGATE_END: u32 = 0xDFFF;
+const SURROGATE_START: u32 = 0xD800;
+const SURROGATE_END: u32 = 0xDFFF;
 
 impl Integer for char {
     #[cfg(target_pointer_width = "32")]
@@ -569,13 +566,11 @@ impl Integer for char {
     #[inline]
     fn checked_add_one(self) -> Option<Self> {
         // Can't overflow u64 because of the range of char
-        let num = u32::from(self) + 1;
+        let mut num = u32::from(self) + 1;
         // skip over the surrogate range
-        let num = match num {
-            HIGH_SURROGATE_START => HIGH_SURROGATE_END + 1,
-            LOW_SURROGATE_START => LOW_SURROGATE_END + 1,
-            _ => num,
-        };
+        if num == SURROGATE_START {
+            num = SURROGATE_END + 1;
+        }
         // Will report char overflow as None
         char::from_u32(num)
     }
@@ -588,19 +583,18 @@ impl Integer for char {
                 #[cfg(debug_assertions)]
                 panic!("char overflow");
                 #[cfg(not(debug_assertions))]
-                Self::max_value2()
+                Self::max_value()
             }
         }
     }
 
     #[inline]
     fn sub_one(self) -> Self {
-        let num = u32::from(self) - 1; // by design, debug will panic if underflow
-        let num = match num {
-            HIGH_SURROGATE_END => HIGH_SURROGATE_START - 1,
-            LOW_SURROGATE_END => LOW_SURROGATE_START - 1,
-            _ => num,
-        };
+        let mut num = u32::from(self) - 1; // by design, debug will panic if underflow
+                                           // skip over the surrogate range
+        if num == SURROGATE_END {
+            num = SURROGATE_START - 1;
+        }
         // can never underflow here because of the range of char
         char::from_u32(num).unwrap()
     }
@@ -611,12 +605,12 @@ impl Integer for char {
     }
 
     #[inline]
-    fn min_value2() -> Self {
+    fn min_value() -> Self {
         '\u{0}'
     }
 
     #[inline]
-    fn max_value2() -> Self {
+    fn max_value() -> Self {
         '\u{10FFFF}'
     }
 
@@ -631,11 +625,8 @@ impl Integer for char {
         let start_num = u32::from(*r.start());
         let end_num = u32::from(*r.end());
         let mut len = (end_num - start_num) as <Self as Integer>::SafeLen + 1;
-        if start_num < HIGH_SURROGATE_START && HIGH_SURROGATE_END < end_num {
-            len -= (HIGH_SURROGATE_END - HIGH_SURROGATE_START + 1) as <Self as Integer>::SafeLen;
-        }
-        if start_num < LOW_SURROGATE_START && LOW_SURROGATE_END < end_num {
-            len -= (LOW_SURROGATE_END - LOW_SURROGATE_START + 1) as <Self as Integer>::SafeLen;
+        if start_num < SURROGATE_START && SURROGATE_END < end_num {
+            len -= (SURROGATE_END - SURROGATE_START + 1) as <Self as Integer>::SafeLen;
         }
         len
     }
@@ -650,11 +641,8 @@ impl Integer for char {
         let a = u32::from(a);
         let mut num = a + b as u32 - 1;
         // skip over the surrogate range
-        if a < HIGH_SURROGATE_START && HIGH_SURROGATE_START <= num {
-            num += HIGH_SURROGATE_END - HIGH_SURROGATE_START + 1;
-        }
-        if a < LOW_SURROGATE_START && LOW_SURROGATE_START <= num {
-            num += LOW_SURROGATE_END - LOW_SURROGATE_START + 1;
+        if a < SURROGATE_START && SURROGATE_START <= num {
+            num += SURROGATE_END - SURROGATE_START + 1;
         }
 
         match char::from_u32(num) {
@@ -663,7 +651,7 @@ impl Integer for char {
                 #[cfg(debug_assertions)]
                 panic!("char overflow");
                 #[cfg(not(debug_assertions))]
-                Self::max_value2()
+                Self::max_value()
             }
         }
     }
@@ -671,11 +659,8 @@ impl Integer for char {
         let a = u32::from(a);
         let mut num = a - (b as u32 - 1);
         // skip over the surrogate range
-        if num <= HIGH_SURROGATE_END && HIGH_SURROGATE_END < a {
-            num -= HIGH_SURROGATE_END - HIGH_SURROGATE_START + 1;
-        }
-        if num <= HIGH_SURROGATE_END && HIGH_SURROGATE_END < a {
-            num -= LOW_SURROGATE_END - LOW_SURROGATE_START + 1;
+        if num <= SURROGATE_END && SURROGATE_END < a {
+            num -= SURROGATE_END - SURROGATE_START + 1;
         }
 
         match char::from_u32(num) {
@@ -684,10 +669,51 @@ impl Integer for char {
                 #[cfg(debug_assertions)]
                 panic!("char underflow");
                 #[cfg(not(debug_assertions))]
-                Self::min_value2()
+                Self::min_value()
             }
         }
     }
 }
 
 // cmk0000 add char, and Ipv6Addr all https://doc.rust-lang.org/core/iter/trait.Step.html#implementors
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn test_unicode() {
+        // cmk define 'universe'
+        let universe = !RangeSetBlaze::<char>::default();
+        assert_eq!('\u{10FFFF}'.checked_add_one(), None);
+        // cmk test that add_one throws exception
+        // cmk test that sub_one throws exception
+        let mut prev = None;
+        let mut len = 0;
+        for c in '\u{0}'..='\u{10FFFF}' {
+            assert_eq!(universe.len() - len, char::safe_len(&(c..='\u{10FFFF}')));
+            len += 1;
+            assert_eq!(len, char::safe_len(&('\u{0}'..=c)));
+            if let Some(prev) = prev {
+                assert!(universe.contains(prev));
+                assert!(universe.contains(c));
+                assert!(universe.is_superset(&RangeSetBlaze::from_iter([prev..=c])));
+
+                assert_eq!(prev.checked_add_one(), Some(c));
+                assert_eq!(prev.add_one(), c);
+
+                assert_eq!(c.sub_one(), prev);
+                let mut c2 = c;
+                c2.assign_sub_one();
+                assert_eq!(c2, prev);
+            }
+
+            prev = Some(c);
+        }
+        assert_eq!(universe.len(), len);
+        // cmk need more methods for coverage
+    }
+
+    // should have similar tests for ip4 and ip6
+}

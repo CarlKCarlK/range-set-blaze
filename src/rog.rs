@@ -156,7 +156,7 @@ impl<T: Integer> RangeSetBlaze<T> {
                     debug_assert!(start_before < start_next); // so -1 is safe
                     Rog::Gap(start_out..=*start_next.sub_one())
                 } else {
-                    Rog::Gap(start_out..=T::max_value2())
+                    Rog::Gap(start_out..=T::max_value())
                 }
             } else {
                 // case 2&3: the range touches the before range
@@ -166,9 +166,9 @@ impl<T: Integer> RangeSetBlaze<T> {
             // case 4: there is no before range
             if let Some((start_next, _)) = self.btree_map.range(value..).next() {
                 debug_assert!(value < *start_next); // so -1 is safe
-                Rog::Gap(T::min_value2()..=*start_next.sub_one())
+                Rog::Gap(T::min_value()..=*start_next.sub_one())
             } else {
-                Rog::Gap(T::min_value2()..=T::max_value2())
+                Rog::Gap(T::min_value()..=T::max_value())
             }
         }
     }
@@ -306,23 +306,23 @@ where
         Bound::Included(n) => *n,
         Bound::Excluded(n) => {
             assert!(
-                *n < T::max_value2(),
+                *n < T::max_value(),
                 "inclusive start must be <= T::max_safe_value()"
             );
             *n.add_one()
         }
-        Bound::Unbounded => T::min_value2(),
+        Bound::Unbounded => T::min_value(),
     };
     let end = match range.end_bound() {
         Bound::Included(n) => *n,
         Bound::Excluded(n) => {
             assert!(
-                *n > T::min_value2(),
-                "inclusive end must be >= T::min_value2()"
+                *n > T::min_value(),
+                "inclusive end must be >= T::min_value()"
             );
             *n.sub_one()
         }
-        Bound::Unbounded => T::max_value2(),
+        Bound::Unbounded => T::max_value(),
     };
     assert!(start <= end, "start must be <= end");
     (start, end)

@@ -90,7 +90,7 @@ impl<'a, T: Integer + SampleUniform> Iterator for MemorylessRange<'a, T> {
                     //could precompute
                     actual_width = <T::SafeLen>::one();
                 } else {
-                    let min_value = T::min_value2();
+                    let min_value = T::min_value();
                     //could precompute
                     return Some(min_value.add_one()..=min_value); // empty range
                 }

@@ -38,7 +38,7 @@ where
         UnsortedPriorityDisjointMap {
             iter: into_iter,
             option_priority: None,
-            min_value_plus_2: T::min_value2().add_one().add_one(),
+            min_value_plus_2: T::min_value().add_one().add_one(),
             priority_number: 0,
         }
     }

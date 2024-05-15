@@ -42,7 +42,7 @@ where
     {
         NotIter {
             iter: iter.into_iter(),
-            start_not: T::min_value2(),
+            start_not: T::min_value(),
             next_time_return_none: false,
         }
     }
@@ -62,7 +62,7 @@ where
 {
     type Item = RangeInclusive<T>;
     fn next(&mut self) -> Option<RangeInclusive<T>> {
-        debug_assert!(T::min_value2() <= T::max_value2()); // real assert
+        debug_assert!(T::min_value() <= T::max_value()); // real assert
         if self.next_time_return_none {
             return None;
         }
@@ -74,13 +74,13 @@ where
                 // We can subtract with underflow worry because
                 // we know that start > start_not and so not min_value
                 let result = Some(self.start_not..=start.sub_one());
-                if end < T::max_value2() {
+                if end < T::max_value() {
                     self.start_not = end.add_one();
                 } else {
                     self.next_time_return_none = true;
                 }
                 result
-            } else if end < T::max_value2() {
+            } else if end < T::max_value() {
                 self.start_not = end.add_one();
                 self.next() // will recurse at most once
             } else {
@@ -89,7 +89,7 @@ where
             }
         } else {
             self.next_time_return_none = true;
-            Some(self.start_not..=T::max_value2())
+            Some(self.start_not..=T::max_value())
         }
     }
 

@@ -809,12 +809,12 @@ impl<T: Integer> RangeSetBlaze<T> {
         let start = match range.start_bound() {
             Bound::Included(n) => *n,
             Bound::Excluded(n) => (*n).add_one(),
-            Bound::Unbounded => T::min_value2(),
+            Bound::Unbounded => T::min_value(),
         };
         let end = match range.end_bound() {
             Bound::Included(n) => *n,
             Bound::Excluded(n) => (*n).sub_one(),
-            Bound::Unbounded => T::max_value2(),
+            Bound::Unbounded => T::max_value(),
         };
         assert!(start <= end);
 

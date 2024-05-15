@@ -179,7 +179,7 @@ where
     pub fn new(iter: I) -> Self {
         Self {
             iter,
-            start_or_min_value: T::min_value2(),
+            start_or_min_value: T::min_value(),
             end_heap: BinaryHeap::with_capacity(10),
             next_again: None,
             gather: None,
