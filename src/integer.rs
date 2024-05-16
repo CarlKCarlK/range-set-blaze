@@ -76,10 +76,10 @@ pub trait Integer:
     fn safe_len_to_f64(len: Self::SafeLen) -> f64;
 
     /// Computes `a + (b - 1) as Self`
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self;
+    fn add_len_less_one(self, b: Self::SafeLen) -> Self;
 
     /// Computes `a - (b - 1) as Self`
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self;
+    fn sub_len_less_one(self, b: Self::SafeLen) -> Self;
 }
 
 /// Define the Integer trait operations for a given integer type.
@@ -117,12 +117,12 @@ macro_rules! impl_integer_ops {
 
         #[cfg(feature = "from_slice")]
         #[inline]
-        fn from_slice(slice: impl AsRef<[$type]>) -> RangeSetBlaze<$type> {
-            FromSliceIter::<$type, LANES>::new(slice.as_ref()).collect()
+        fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+            FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
         }
 
-        fn safe_len(r: &RangeInclusive<$type>) -> <$type as Integer>::SafeLen {
-            r.end().overflowing_sub(r.start()).0 as $type2 as <$type as Integer>::SafeLen + 1
+        fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
+            r.end().overflowing_sub(r.start()).0 as $type2 as <Self as Integer>::SafeLen + 1
         }
 
         fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
@@ -133,12 +133,12 @@ macro_rules! impl_integer_ops {
             f as Self::SafeLen
         }
 
-        fn add_len_less_one(a: $type, b: Self::SafeLen) -> $type {
-            a + (b - 1) as $type
+        fn add_len_less_one(self, b: Self::SafeLen) -> Self {
+            self + (b - 1) as Self
         }
 
-        fn sub_len_less_one(a: $type, b: Self::SafeLen) -> $type {
-            a - (b - 1) as $type
+        fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
+            self - (b - 1) as Self
         }
     };
 }
@@ -259,20 +259,20 @@ impl Integer for i128 {
             UIntPlusOne::UInt(f as u128)
         }
     }
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+    fn add_len_less_one(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(v) = b else {
             debug_assert!(false, "Too large to add to i128");
             return i128::MAX;
         };
-        a + (v - 1) as Self
+        self + (v - 1) as Self
     }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+    fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
         // a - (b - 1) as Self
         let UIntPlusOne::UInt(v) = b else {
             debug_assert!(false, "Too large to subtract from i128");
             return i128::MIN;
         };
-        a - (v - 1) as Self
+        self - (v - 1) as Self
     }
 }
 
@@ -339,24 +339,24 @@ impl Integer for u128 {
         }
     }
 
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+    fn add_len_less_one(self, b: Self::SafeLen) -> Self {
         // a + (b - 1) as Self
         match b {
             UIntPlusOne::UInt(v) => {
                 debug_assert!(v > 0);
-                a + (v - 1)
+                self + (v - 1)
             }
-            UIntPlusOne::MaxPlusOne => a + Self::max_value(),
+            UIntPlusOne::MaxPlusOne => self + Self::max_value(),
         }
     }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+    fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
         // a - (b - 1) as Self
         match b {
             UIntPlusOne::UInt(v) => {
                 debug_assert!(v > 0);
-                a - (v - 1)
+                self - (v - 1)
             }
-            UIntPlusOne::MaxPlusOne => a - Self::max_value(),
+            UIntPlusOne::MaxPlusOne => self - Self::max_value(),
         }
     }
 }
@@ -455,11 +455,11 @@ impl Integer for Ipv4Addr {
     fn f64_to_safe_len(f: f64) -> Self::SafeLen {
         f as Self::SafeLen
     }
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        Ipv4Addr::from(u32::from(a) + b as u32 - 1)
+    fn add_len_less_one(self, b: Self::SafeLen) -> Self {
+        Ipv4Addr::from(u32::from(self) + b as u32 - 1)
     }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        Ipv4Addr::from(u32::from(a) - (b as u32 + 1))
+    fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
+        Ipv4Addr::from(u32::from(self) - (b as u32 + 1))
     }
 }
 
@@ -532,21 +532,21 @@ impl Integer for Ipv6Addr {
             UIntPlusOne::UInt(f as u128)
         }
     }
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+    fn add_len_less_one(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(v) = b else {
             debug_assert!(false, "Too large to add to Ipv6Addr");
             return Ipv6Addr::from(u128::MAX);
         };
         debug_assert!(v > 0);
-        Ipv6Addr::from(u128::from(a) + (v - 1))
+        Ipv6Addr::from(u128::from(self) + (v - 1))
     }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
+    fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
         match b {
             UIntPlusOne::UInt(v) => {
                 debug_assert!(v > 0);
-                Ipv6Addr::from(u128::from(a) - (v - 1))
+                Ipv6Addr::from(u128::from(self) - (v - 1))
             }
-            UIntPlusOne::MaxPlusOne => Ipv6Addr::from(u128::from(a) - u128::MAX),
+            UIntPlusOne::MaxPlusOne => Ipv6Addr::from(u128::from(self) - u128::MAX),
         }
     }
 }
@@ -637,8 +637,8 @@ impl Integer for char {
     fn f64_to_safe_len(f: f64) -> Self::SafeLen {
         f as Self::SafeLen
     }
-    fn add_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        let a = u32::from(a);
+    fn add_len_less_one(self, b: Self::SafeLen) -> Self {
+        let a = u32::from(self);
         let mut num = a + b as u32 - 1;
         // skip over the surrogate range
         if a < SURROGATE_START && SURROGATE_START <= num {
@@ -655,8 +655,8 @@ impl Integer for char {
             }
         }
     }
-    fn sub_len_less_one(a: Self, b: Self::SafeLen) -> Self {
-        let a = u32::from(a);
+    fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
+        let a = u32::from(self);
         let mut num = a - (b as u32 - 1);
         // skip over the surrogate range
         if num <= SURROGATE_END && SURROGATE_END < a {
@@ -692,9 +692,21 @@ mod tests {
         let mut prev = None;
         let mut len = 0;
         for c in '\u{0}'..='\u{10FFFF}' {
-            assert_eq!(universe.len() - len, char::safe_len(&(c..='\u{10FFFF}')));
+            let len2b = char::safe_len(&(c..'\u{10FFFF}'));
+            assert_eq!(len2b, universe.len() - len);
+            let c2 = '\u{10FFFF}'.sub_len_less_one(len2b);
+            assert_eq!(c2, c);
+            let c3 = c2.add_len_less_one(len2b);
+            assert_eq!(c3, '\u{10FFFF}');
             len += 1;
-            assert_eq!(len, char::safe_len(&('\u{0}'..=c)));
+            let len2 = char::safe_len(&('\u{0}'..=c));
+            assert_eq!(len, len2);
+            assert_eq!(len2, char::f64_to_safe_len(char::safe_len_to_f64(len2)));
+            let c2 = '\u{0}'.add_len_less_one(len);
+            assert_eq!(c2, c);
+            let c3 = c.sub_len_less_one(len);
+
+            assert_eq!(c3, '\u{0}');
             if let Some(prev) = prev {
                 assert!(universe.contains(prev));
                 assert!(universe.contains(c));
