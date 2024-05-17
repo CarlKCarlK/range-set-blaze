@@ -692,7 +692,7 @@ mod tests {
         let mut prev = None;
         let mut len = 0;
         for c in '\u{0}'..='\u{10FFFF}' {
-            let len2b = char::safe_len(&(c..'\u{10FFFF}'));
+            let len2b = char::safe_len(&(c..='\u{10FFFF}'));
             assert_eq!(len2b, universe.len() - len);
             let c2 = '\u{10FFFF}'.sub_len_less_one(len2b);
             assert_eq!(c2, c);

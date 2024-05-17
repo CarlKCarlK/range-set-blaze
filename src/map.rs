@@ -9,8 +9,10 @@ use crate::unsorted_disjoint_map::{
     AssumePrioritySortedStartsMap, SortedDisjointMapWithLenSoFar, UnsortedPriorityDisjointMap,
 };
 use crate::{
-    AssumeSortedStarts, CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint,
+    AssumeSortedStarts, CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SomeOrGap,
+    SortedDisjoint,
 };
+use alloc::collections::btree_map::Range;
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 #[cfg(feature = "std")]
@@ -459,6 +461,31 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
                     None
                 }
             })
+    }
+
+    /// cmk experimental-- needs testing
+    pub fn get_range_value<'a>(&'a self, key: T) -> SomeOrGap<(RangeInclusive<T>, &'a V), T> {
+        let one_back = self.btree_map.range(..=key).next_back();
+        let Some((start, end_value)) = one_back else {
+            // nothing before, find any after
+            if let Some((start, _)) = self.btree_map.range(key..).next() {
+                debug_assert!(&key < &start);
+                return SomeOrGap::Gap(T::min_value()..=start.sub_one());
+            };
+            return SomeOrGap::Gap(T::min_value()..=T::max_value());
+        };
+        if key <= end_value.end {
+            SomeOrGap::Some((start.clone()..=end_value.end, &end_value.value))
+        } else if key == T::max_value() {
+            SomeOrGap::Gap(end_value.end.add_one()..=key)
+        } else {
+            let next = self.btree_map.range(key..).next();
+            if let Some((next_start, _)) = next {
+                SomeOrGap::Gap(end_value.end.add_one()..=next_start.sub_one())
+            } else {
+                SomeOrGap::Gap(end_value.end.add_one()..=T::max_value())
+            }
+        }
     }
 
     /// Returns the last element in the set, if any.
@@ -1984,3 +2011,68 @@ fn example_2() {
 // cmk look at other BTreeMap methods and traits
 
 // cmk missing values and values per range
+
+// cmk move to test
+#[test]
+fn map_random_get_range_value() {
+    assert_eq!(
+        RangeMapBlaze::from_iter([(0..=0, 'a')]).get_range_value(1u8),
+        SomeOrGap::Gap(1..=255)
+    );
+
+    assert_eq!(
+        RangeMapBlaze::<u8, &char>::default().get_range_value(0u8),
+        SomeOrGap::Gap(0..=255)
+    );
+
+    assert_eq!(
+        RangeMapBlaze::from_iter([(0..=0, 'a')]).get_range_value(0u8),
+        SomeOrGap::Some((0..=0, &'a'))
+    );
+
+    let mut map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=2, 'b')]);
+    assert_eq!(map.get_range_value(1u8), SomeOrGap::Gap(1..=1));
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=2, 'b')]);
+    assert_eq!(map.get_range_value(3u8), SomeOrGap::Gap(3..=255));
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=2, 'b')]);
+    assert_eq!(map.get_range_value(0u8), SomeOrGap::Some((0..=0, &'a')));
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
+    assert_eq!(map.get_range_value(2u8), SomeOrGap::Some((2..=3, &'b')));
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
+    assert_eq!(map.get_range_value(4u8), SomeOrGap::Gap(4..=255));
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
+    assert_eq!(map.get_range_value(255u8), SomeOrGap::Gap(4..=255));
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
+    assert_eq!(map.get_range_value(1u8), SomeOrGap::Gap(1..=1));
+
+    // Cover edge cases with min and max values
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
+    assert_eq!(
+        map.get_range_value(u8::max_value()),
+        SomeOrGap::Gap(4..=u8::max_value())
+    );
+
+    map = RangeMapBlaze::from_iter([(u8::min_value()..=u8::min_value(), 'a')]);
+    assert_eq!(
+        map.get_range_value(u8::min_value()),
+        SomeOrGap::Some((u8::min_value()..=u8::min_value(), &'a'))
+    );
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (5..=10, 'b')]);
+    assert_eq!(map.get_range_value(3u8), SomeOrGap::Gap(1..=4));
+
+    // Case where nothing before, but something after
+    map = RangeMapBlaze::from_iter([(2..=3, 'a'), (5..=6, 'b')]);
+    assert_eq!(map.get_range_value(1), SomeOrGap::Gap(0..=1));
+
+    map = RangeMapBlaze::from_iter([(5..=6, 'a')]);
+    assert_eq!(map.get_range_value(1), SomeOrGap::Gap(0..=4));
+}
+
+// cmk add difference_with_set??? is there a complement with set? sub_assign

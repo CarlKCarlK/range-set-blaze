@@ -31,7 +31,7 @@ members = [
 [lib]
 
 [features]
-default = ["std"]
+default = ["std", "rog-experimental"] # cmk remove rog-experimental
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 alloc = ["itertools/use_alloc", "num-traits", "num-integer"]
 rog-experimental = []
@@ -44,6 +44,7 @@ num-integer = { version = "0.1.44", optional = true, default-features = false }
 num-traits = { version = "0.2.15", optional = true, default-features = false }
 gen_ops = "0.4.0"
 syntactic-for = "0.1.1" # cmk0 remove
+rand = "0.8.4" # cmk0 remove
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tests_common = { path = "tests_common" }
