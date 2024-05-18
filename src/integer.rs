@@ -24,10 +24,15 @@ pub trait Integer:
 {
     /// cmk doc
     fn checked_add_one(self) -> Option<Self>;
+    /// cmk doc
     fn add_one(self) -> Self;
+    /// cmk doc
     fn sub_one(self) -> Self;
+    /// cmk doc
     fn assign_sub_one(&mut self);
+    /// cmk doc
     fn min_value() -> Self;
+    /// cmk doc
     fn max_value() -> Self;
 
     #[cfg(feature = "from_slice")]

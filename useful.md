@@ -6,7 +6,6 @@ cargo doc --no-deps --all-features --open
 cargo doc --no-deps --features rog-experimental --open & cargo test --features rog-experimental --doc
 cargo test --all-features --doc
 
-
 ## Benchmarking
 
 ```cmd

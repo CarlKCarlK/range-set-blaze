@@ -1,7 +1,7 @@
 use range_set_blaze::prelude::*;
 use range_set_blaze::Integer;
+#[cfg(feature = "rog-experimental")]
 use range_set_blaze::SomeOrGap;
-use std::collections::BTreeSet;
 
 fn sample2() {
     let filename =
@@ -20,6 +20,8 @@ fn sample2() {
         );
     }
 }
+
+#[cfg(feature = "rog-experimental")]
 fn sample1() {
     let overlapping_font_table = [
         ('\u{3040}'..='\u{309F}', "Japanese Font"),
@@ -66,6 +68,7 @@ fn sample1() {
 }
 
 fn main() {
+    #[cfg(feature = "rog-experimental")]
     sample1();
-    // sample2();
+    sample2();
 }

@@ -7,10 +7,8 @@ use core::ops::RangeInclusive;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use range_set_blaze::prelude::*;
-use range_set_blaze::AssumePrioritySortedStartsMap;
-
-use range_set_blaze::prelude::*;
 use range_set_blaze::range_values::RangeValuesIter;
+use range_set_blaze::AssumePrioritySortedStartsMap;
 use range_set_blaze::CloneBorrow;
 use range_set_blaze::IntoRangeValuesIter;
 use range_set_blaze::UnionIterMap;
@@ -3028,23 +3026,6 @@ where
     }
 
     true
-}
-
-fn format_range_values<'a, T>(iter: impl Iterator<Item = (RangeInclusive<T>, &'a u8)>) -> String
-where
-    T: Integer + fmt::Display + 'a, // Assuming T implements Display for formatting
-                                    // V: ValueOwned + fmt::Display + 'a, // V must implement Display to be formatted with {}
-{
-    let mut vs = String::new();
-    for range_value in iter {
-        vs.push_str(&format!(
-            "{}..={}{} ",
-            range_value.0.start(),
-            range_value.0.end(),
-            *range_value.1 as char,
-        ));
-    }
-    vs
 }
 
 #[test]

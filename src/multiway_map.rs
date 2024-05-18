@@ -224,18 +224,3 @@ where
 
 // cmk why does the multiway.rs have a MultiwayRangeSetBlazeRef but not a MultiwayRangeMapBlazeRef?
 // cmk on maps, the union is still empty, but the intersection is undefined because we can't give a value to T.s
-
-fn test_cmk_delete_me2() {
-    use crate::prelude::*;
-
-    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
-    let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
-
-    let union = [a, b, c].union();
-
-    assert_eq!(
-        union.to_string(),
-        r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#
-    );
-}

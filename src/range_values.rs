@@ -1,7 +1,7 @@
 #![allow(missing_docs)]
 use crate::{
     map::CloneBorrow,
-    sorted_disjoint_map::{Priority, PrioritySortedDisjointMap, PrioritySortedStartsMap},
+    sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
     Integer,
 };
 use alloc::collections::btree_map;
@@ -412,14 +412,6 @@ where
 }
 
 impl<T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for SetPriorityMap<T, V, VR, I>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-    I: SortedDisjointMap<T, V, VR>,
-{
-}
-impl<T, V, VR, I> PrioritySortedDisjointMap<T, V, VR> for SetPriorityMap<T, V, VR, I>
 where
     T: Integer,
     V: ValueOwned,

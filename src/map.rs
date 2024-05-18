@@ -9,10 +9,8 @@ use crate::unsorted_disjoint_map::{
     AssumePrioritySortedStartsMap, SortedDisjointMapWithLenSoFar, UnsortedPriorityDisjointMap,
 };
 use crate::{
-    AssumeSortedStarts, CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SomeOrGap,
-    SortedDisjoint,
+    AssumeSortedStarts, CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint,
 };
-use alloc::collections::btree_map::Range;
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 #[cfg(feature = "std")]
@@ -463,7 +461,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             })
     }
 
-    /// cmk experimental-- needs testing
+    #[cfg(feature = "rog-experimental")]
     pub fn get_range_value<'a>(&'a self, key: T) -> SomeOrGap<(RangeInclusive<T>, &'a V), T> {
         let one_back = self.btree_map.range(..=key).next_back();
         let Some((start, end_value)) = one_back else {
@@ -2013,6 +2011,7 @@ fn example_2() {
 // cmk missing values and values per range
 
 // cmk move to test
+#[cfg(feature = "rog-experimental")]
 #[test]
 fn map_random_get_range_value() {
     assert_eq!(

@@ -192,7 +192,6 @@ where
 mod tests {
     use super::*;
     use std::panic;
-    use std::panic::catch_unwind;
     use std::panic::AssertUnwindSafe;
 
     fn u16_to_p1(v: u16) -> UIntPlusOne<u8> {

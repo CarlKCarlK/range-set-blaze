@@ -48,15 +48,6 @@ where
 {
 }
 
-/// This is sorted and disjoint and contains priority information, but it is not sorted by priority.
-pub trait PrioritySortedDisjointMap<T, V, VR>: PrioritySortedStartsMap<T, V, VR>
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V>,
-{
-}
-
 /// The trait used to mark iterators that provide ranges that are sorted by start and disjoint. Set operations on
 /// iterators that implement this trait can be performed in linear time.
 ///
@@ -853,20 +844,6 @@ where
 {
 }
 
-pub trait AnythingGoesMap<'a, T: Integer, V: ValueOwned + 'a, VR: CloneBorrow<V> + 'a>:
-    Iterator<Item = (RangeInclusive<T>, VR)>
-{
-}
-
-impl<'a, T, V, VR, I> AnythingGoesMap<'a, T, V, VR> for I
-where
-    T: Integer,
-    V: ValueOwned + 'a,
-    VR: CloneBorrow<V> + 'a,
-    I: Iterator<Item = (RangeInclusive<T>, VR)>,
-{
-}
-
 macro_rules! impl_sorted_map_traits_and_ops {
     ($IterType:ty, $V:ty, $VR:ty, $($more_generics:tt)*) => {
 
@@ -959,12 +936,3 @@ impl_sorted_map_traits_and_ops!(IntersectionIterMap< T, V, VR, I0, I1>, V, VR, V
 impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, V, VR>, V, VR, 'a, V: ValueOwned, VR: CloneBorrow<V>);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: ValueOwned);
-
-// #[test]
-fn test_delete_me_cmk() {
-    // use crate::prelude::*;
-    // use crate::CheckSortedDisjointMap;
-
-    let a = CheckSortedDisjointMap::new([(1..=2, &"a")]);
-    assert!(a.is_empty());
-}

@@ -1,3 +1,5 @@
+#![cfg(feature = "rog-experimental")]
+
 use core::ops::RangeInclusive;
 
 use crate::Integer;

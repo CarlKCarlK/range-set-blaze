@@ -42,6 +42,7 @@ extern crate alloc;
 // FUTURE: Support serde via optional feature
 mod some_or_gap;
 mod uint_plus_one;
+#[cfg(feature = "rog-experimental")]
 pub use some_or_gap::SomeOrGap;
 pub use uint_plus_one::UIntPlusOne;
 mod dyn_sorted_disjoint;
