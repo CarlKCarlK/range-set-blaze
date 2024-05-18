@@ -9,8 +9,7 @@ range-set-blaze
 
 Integer sets as fast, sorted integer ranges -- Maps with integer-range keys -- Full set operations
 
-The integers can be any size ([`u8`] to [`u128`]) and may be signed ([`i8`] to [`i128`]). Also-supported `char` (Unicode characters),
- `IpvAddr`, and `Ipv6Addr`.
+Supports all of Rust's integer-like types, [`u8`] to [`u128`], [`i8`] to [`i128`], `char` (Unicode characters), `IpvAddr`, and `Ipv6Addr`.
  The [set operations] and [map operations]
 include `union`, `intersection`, `difference`, `symmetric difference`, and `complement`.
 
@@ -26,12 +25,13 @@ offering full set operations and by being optimized for sets of [clumpy][1] inte
 
 The crate's main traits are
 
-* [`SortedDisjoint`], implemented by iterators of sorted & disjoint ranges of integers. See documentation of details.
-* [`SortedDisjointMap`], implemented by iterators of pairs, where the first item is a sorted & disjoint ranges of integers. The second item
-is an value. See documentation of details.
+* [`SortedDisjoint`], implemented by iterators of sorted & disjoint ranges of integers. See [documentation][2] for details.
+* [`SortedDisjointMap`], implemented by iterators of pairs, where the first item is a sorted & disjoint range of integers. The second item
+is a value. See [documentation][3] for details.
 
 > With any `SortedDisjoint` or `SortedDisjointMap` iterator we can perform set operations in one pass through the ranges and with minimal (constant) memory.
-The package enforces the "sorted & disjoint" constraint at compile time. These traits are inspired by the `SortedIterator` trait from the [sorted_iter](https://crates.io/crates/sorted_iter) crate. `SortedDisjoint` differs from its inspiration by specializing on disjoint integer ranges.
+The package enforces the "sorted & disjoint" constraint at compile time
+(making invalid states unrepresentable).
 
 [`RangeSetBlaze`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
 [`SortedDisjoint`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html
@@ -48,8 +48,10 @@ The package enforces the "sorted & disjoint" constraint at compile time. These t
 [set operations]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#rangesetblaze-set-operations
 [map operations]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#rangesetblaze-map-operations
 [1]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#constructor-performance
+[2]:(https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html#table-of-contents)
+[3]:(https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjointMaps.html#table-of-contents)
 
-The crate supports no_std, WASM, and embedded projects. Use the command:
+The crate supports `no_std`, WASM, and embedded projects. For `no_std`, etc., Use the command:
 
 ```bash
 cargo add range-set-blaze --features "alloc" --no-default-features
@@ -85,7 +87,7 @@ General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x]
 Examples
 -----------
 
-Example 1: Set Operations
+**Example 1**: Set Operations
 - - - - - -
 
 Here we take the union (operator “|”) of two `RangeSetBlaze`'s:
@@ -104,12 +106,10 @@ let c = a | b;
 assert_eq!(c, RangeSetBlaze::from_iter([-20..=-20, 100..=999]));
 ```
 
-Example 2: Maps and Network Addresses
+**Example 2**: Maps (and Network Addresses)
 - - - - - -
 
-In networking, suppose we want to simplify a routing table. Here, we merge identical routes if adjacent
-or overlapping. We then remove all overlaps (respecting priority) and sort.
-The result is a fast BTree from regions to the next hop.
+In networking, suppose we want to simplify a routing table. Here [`RangeMapBlaze`] merges identical routes if adjacent or overlapping. It also remove all overlaps (respecting priority) and sorts. The result is a fast BTree from regions to the next hop.
 Similar code can simplify font tables.
 
 ```rust
@@ -118,6 +118,7 @@ use std::net::Ipv4Addr;
 
 // A routing table, sorted by priority
 let routing = [
+    // destination, prefix, next hop, interface
     ("10.0.1.8", 30, "10.1.1.0", "eth2"),
     ("10.0.1.12", 30, "10.1.1.0", "eth2"),
     ("10.0.1.7", 32, "10.1.1.0", "eth2"),
@@ -138,7 +139,7 @@ let range_map = routing
     })
     .collect::<RangeMapBlaze<_, _>>();
 
-// Print the disjoint, sorted ranges and their associated values
+// Print the now disjoint, sorted ranges and their associated values
 for (range, (next_hop, interface)) in range_map.range_values() {
     println!("{range:?} -> ({next_hop}, {interface})");
 }
@@ -150,7 +151,7 @@ assert_eq!(
 );
 ```
 
-Outputs:
+Output:
 
 ```text
 0.0.0.0..=9.255.255.255 -> (152.10.0.0, eth0)
@@ -160,12 +161,12 @@ Outputs:
 11.0.0.0..=255.255.255.255 -> (152.10.0.0, eth0)
 ```
 
-Example 3: Biology
+**Example 3**: Biology
 - - - - - -
 
 In biology, suppose we want to find the intron regions of a gene but we are given only the transcription region and the exon regions.
 
-![Example 3](https://raw.githubusercontent.com/CarlKCarlK/range-set-blaze/main/docs/rust_example3.png "Example 3")
+![Example 3](https://raw.githubusercontent.com/CarlKCarlK/range-set-blaze/main/docs/rust_example2.png "Example 3")
 
 We create a `RangeSetBlaze` for the transcription region and a `RangeSetBlaze` for all the exon regions.
 Then we take the difference between the transcription region and exon regions to find the intron regions.
@@ -202,3 +203,7 @@ for range in intron.ranges() {
     println!("{chrom}\t{start}\t{end}");
 }
 ```
+
+cmk re-exports are weird
+cmk why is there a range_values and set modules?
+cmk need doc for things (see "cmk doc")

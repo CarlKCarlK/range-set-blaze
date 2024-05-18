@@ -82,18 +82,6 @@ where
     }
 }
 
-// #[allow(dead_code)]
-// fn cmk_debug_string<'a, T>(item: &Option<RangeInclusive<T>>) -> String
-// where
-//     T: Integer,
-// {
-//     if let Some(item) = item {
-//         format!("Some({:?})", item.0)
-//     } else {
-//         "None".to_string()
-//     }
-// }
-
 impl<T, I> UnionIter<T, I>
 where
     T: Integer,

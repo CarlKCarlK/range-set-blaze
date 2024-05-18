@@ -11,8 +11,6 @@ use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap, SortedDisjoi
 /// Works with [`UnionIter`] to turn any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
 /// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
 ///
-/// Also see [`KMergeMap`].
-///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap
 /// [`UnionIter`]: crate::UnionIter
 #[must_use = "iterators are lazy and do nothing unless consumed"]

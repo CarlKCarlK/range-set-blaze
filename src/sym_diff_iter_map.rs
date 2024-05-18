@@ -91,7 +91,6 @@ where
         loop {
             if let Some(value) = self.ready_to_go.take() {
                 // If ready_to_go is Some, return the value immediately.
-                // println!("cmk output1 range {:?}", value.0);
                 return Some(value);
             };
 
@@ -101,18 +100,9 @@ where
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
-                    // println!(
-                    //     "cmk pushing self.next_item {:?} into empty workspace",
-                    //     next_item.0
-                    // );
                     self.workspace_next_end = min_next_end(&self.workspace_next_end, next_end);
                     self.workspace.push(next_item);
                     self.next_item = self.iter.next();
-                    // println!(
-                    //     "cmk reading new self.next_item via .next() {:?}",
-                    //     cmk_debug_string(&self.next_item)
-                    // );
-                    // println!("cmk return to top of the main processing loop");
                     continue; // return to top of the main processing loop
                 };
                 let best = best.range_value();
@@ -125,10 +115,6 @@ where
                 }
 
                 // It does not go into the workspace, so just hold it and keep processing.
-                // println!(
-                //     "cmk new start, so hold self.next_item {:?} for later",
-                //     next_item.0
-                // );
                 self.next_item = Some(next_item);
             }
 
@@ -136,10 +122,7 @@ where
             let Some(best) = self.workspace.peek() else {
                 debug_assert!(self.next_item.is_none());
                 debug_assert!(self.ready_to_go.is_none());
-                let value = self.gather.take();
-                // println!("cmk output2 range {:?}", cmk_debug_string(&value));
-
-                return value;
+                return self.gather.take();
             };
             let best = best.range_value();
 
@@ -160,13 +143,6 @@ where
                     if self.workspace.len() % 2 == 1 {
                         // if the gather is contiguous with the best, then merge them
                         gather.0 = *gather.0.start()..=next_end;
-                        // println!(
-                        //     "cmk merge gather {:?} best {:?} as {:?} -> {:?}",
-                        //     gather.0,
-                        //     best.0,
-                        //     *best.0.start()..=next_end,
-                        //     gather.0
-                        // );
                         self.gather = Some(gather);
                     } else {
                         // if an even number of items in the workspace, then flush the gather
@@ -175,12 +151,6 @@ where
                     }
                 } else {
                     // if the gather is not contiguous with the best, then output the gather and set the gather to the best
-                    // println!(
-                    //     "cmk new ready-to-go {:?}, new gather front of best {:?} as {:?}",
-                    //     gather.0,
-                    //     best.0,
-                    //     *best.0.start()..=next_end
-                    // );
                     self.ready_to_go = Some(gather);
                     // cmk this code appear twice
                     if self.workspace.len() % 2 == 1 {
@@ -191,11 +161,6 @@ where
                 }
             } else {
                 // if there is no gather, then set the gather to the best
-                // println!(
-                //     "cmk no gather,  capture front of best {:?} as {:?}",
-                //     best.0,
-                //     *best.0.start()..=next_end
-                // );
                 if self.workspace.len() % 2 == 1 {
                     self.gather = Some((*best.0.start()..=next_end, best.1.clone_borrow()));
                 } else {
@@ -212,7 +177,6 @@ where
                 let mut item = item;
                 if item.end() <= next_end {
                     // too short, don't keep
-                    // println!("cmk too short, don't keep in workspace {:?}", item.0);
                     continue; // while loop
                 }
                 item.set_range(next_end.add_one()..=item.end());
@@ -222,20 +186,6 @@ where
             self.workspace = new_workspace;
             self.workspace_next_end = new_next_end;
         } // end of main loop
-    }
-}
-
-#[allow(dead_code)]
-fn cmk_debug_string<'a, T, V, VR>(item: &Option<(RangeInclusive<T>, VR)>) -> String
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V> + 'a,
-{
-    if let Some(item) = item {
-        format!("Some({:?})", item.0)
-    } else {
-        "None".to_string()
     }
 }
 

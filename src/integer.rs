@@ -1,4 +1,3 @@
-// cmk use crate::u128plus_one::TWO_POW_128;
 use crate::UIntPlusOne;
 #[cfg(feature = "from_slice")]
 use crate::{from_slice::FromSliceIter, RangeSetBlaze};
@@ -17,7 +16,7 @@ pub trait Integer:
     + PartialEq
     + PartialOrd
     + Ord
-    + fmt::Display // cmk0000 make these conditional
+     // + fmt::Display // cmk0000 make these conditional
     + fmt::Debug // cmk0000 make these conditional
     + Send
     + Sync

@@ -8,6 +8,8 @@ use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::unsorted_disjoint_map::{
     AssumePrioritySortedStartsMap, SortedDisjointMapWithLenSoFar, UnsortedPriorityDisjointMap,
 };
+#[cfg(feature = "rog-experimental")]
+use crate::SomeOrGap;
 use crate::{
     AssumeSortedStarts, CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint,
 };
@@ -461,6 +463,7 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
             })
     }
 
+    /// cmk doc
     #[cfg(feature = "rog-experimental")]
     pub fn get_range_value<'a>(&'a self, key: T) -> SomeOrGap<(RangeInclusive<T>, &'a V), T> {
         let one_back = self.btree_map.range(..=key).next_back();

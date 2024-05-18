@@ -18,12 +18,9 @@ use crate::{
 };
 
 /// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
-/// i.e., all the integers in any input iterator, as sorted & disjoint ranges. Uses [`Merge`]
-/// or [`KMerge`].
+/// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
 ///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap
-/// [`Merge`]: crate::merge::Merge
-/// [`KMerge`]: crate::merge::KMerge
 ///
 /// # Examples
 ///
@@ -71,7 +68,6 @@ where
         loop {
             if let Some(value) = self.ready_to_go.take() {
                 // If ready_to_go is Some, return the value immediately.
-                // println!("cmk output1 range {:?}", value.0);
                 return Some(value);
             };
 
@@ -81,45 +77,21 @@ where
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
-                    // println!(
-                    //     "cmk pushing self.next_item {:?} into empty workspace",
-                    //     next_item.0
-                    // );
                     self.workspace.push(next_item);
                     self.next_item = self.iter.next();
-                    // println!(
-                    //     "cmk reading new self.next_item via .next() {:?}",
-                    //     cmk_debug_string(&self.next_item)
-                    // );
-                    // println!("cmk return to top of the main processing loop");
                     continue; // return to top of the main processing loop
                 };
                 // LATER: Could add this special case: If next value is the same as best value and the ending is later, and the start overlaps/touches, then just extend the best value.
                 if next_start == best.start() {
                     // Only push if the priority is better or the end is greater
                     if &next_item > best || next_end > best.end() {
-                        // println!("cmk pushing next_item {:?} into workspace", next_item.0);
                         self.workspace.push(next_item);
-                    } else {
-                        // println!(
-                        //     "cmk throwing away next_item {:?} because of priority and length",
-                        //     next_item.0
-                        // );
                     }
                     self.next_item = self.iter.next();
-                    // println!(
-                    //     "cmk .next() self.next_item {:?}",
-                    //     cmk_debug_string(&self.next_item)
-                    // );
-                    // println!("cmk return to top of the main processing loop");
                     continue; // return to top of the main processing loop
                 }
 
                 // It does not go into the workspace, so just hold it and keep processing.
-                // println!(
-                //     "cmk new start, so hold self.next_item {:?} for later",
-                //     next_item.0
-                // );
                 self.next_item = Some(next_item);
             }
 
@@ -127,23 +99,14 @@ where
             let Some(best) = self.workspace.peek() else {
                 debug_assert!(self.next_item.is_none());
                 debug_assert!(self.ready_to_go.is_none());
-                let value = self.gather.take();
-                // println!("cmk output2 range {:?}", cmk_debug_string(&value));
-
-                return value;
+                return self.gather.take();
             };
 
             // We buffer for output the best item up to the start of the next item (if any).
 
             // Find the start of the next item, if any.
             let next_end = if let Some(next_item) = self.next_item.as_ref() {
-                // println!(
-                //     "cmk start-less1 {:?} {:?}",
-                //     next_item.0.start(),
-                //     best.0.end()
-                // );
                 min(next_item.start().sub_one(), best.end())
-                // println!("cmk min {:?}", m);
             } else {
                 best.end()
             };
@@ -155,32 +118,14 @@ where
                 {
                     // if the gather is contiguous with the best, then merge them
                     gather.0 = *gather.0.start()..=next_end;
-                    // println!(
-                    //     "cmk merge gather {:?} best {:?} as {:?} -> {:?}",
-                    //     gather.0,
-                    //     best.0,
-                    //     *best.0.start()..=next_end,
-                    //     gather.0
-                    // );
                     self.gather = Some(gather);
                 } else {
                     // if the gather is not contiguous with the best, then output the gather and set the gather to the best
-                    // println!(
-                    //     "cmk new ready-to-go {:?}, new gather front of best {:?} as {:?}",
-                    //     gather.0,
-                    //     best.0,
-                    //     *best.0.start()..=next_end
-                    // );
                     self.ready_to_go = Some(gather);
                     self.gather = Some((best.start()..=next_end, best.value().clone_borrow()));
                 }
             } else {
                 // if there is no gather, then set the gather to the best
-                // println!(
-                //     "cmk no gather,  capture front of best {:?} as {:?}",
-                //     best.0,
-                //     *best.0.start()..=next_end
-                // );
                 self.gather = Some((best.start()..=next_end, best.value().clone_borrow()))
             };
 
@@ -191,44 +136,26 @@ where
                 let mut item = item;
                 if item.end() <= next_end {
                     // too short, don't keep
-                    // println!("cmk too short, don't keep in workspace {:?}", item.0);
                     continue; // while loop
                 }
                 item.set_range(next_end.add_one()..=item.end());
                 let Some(new_best) = new_workspace.peek() else {
-                    // println!("cmk no workspace, so keep {:?}", item.0);
                     // new_workspace is empty, so keep
                     new_workspace.push(item);
                     continue; // while loop
                 };
                 if &item < new_best && item.end() <= new_best.end() {
-                    // println!("cmk item is lower priority {:?} and shorter {:?} than best item {:?},{:?} in new workspace, so don't keep",
                     // item.priority, item.0, new_best.priority, new_best.0);
                     // not as good as new_best, and shorter, so don't keep
                     continue; // while loop
                 }
 
                 // higher priority or longer, so keep
-                // println!("cmk item is higher priority {:?} or longer {:?} than best item {:?},{:?} in new workspace, so keep",
                 // item.priority, item.0, new_best.priority, new_best.0);
                 new_workspace.push(item);
             }
             self.workspace = new_workspace;
         } // end of main loop
-    }
-}
-
-#[allow(dead_code)]
-fn cmk_debug_string<'a, T, V, VR>(item: &Option<(RangeInclusive<T>, VR)>) -> String
-where
-    T: Integer,
-    V: ValueOwned,
-    VR: CloneBorrow<V> + 'a,
-{
-    if let Some(item) = item {
-        format!("Some({:?})", item.0)
-    } else {
-        "None".to_string()
     }
 }
 

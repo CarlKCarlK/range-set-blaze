@@ -2971,7 +2971,7 @@ fn map_repro_insert_1() {
     assert_eq!(range_map_blaze.to_string(), r#"(123..=123, "World")"#);
 }
 
-fn equal_maps<T: Integer, V: ValueOwned + fmt::Debug + std::fmt::Display>(
+fn equal_maps<T: Integer + std::fmt::Display, V: ValueOwned + fmt::Debug + std::fmt::Display>(
     range_map_blaze: &RangeMapBlaze<T, V>,
     btree_map: &BTreeMap<T, &V>,
 ) -> bool
