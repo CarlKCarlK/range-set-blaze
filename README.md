@@ -9,7 +9,9 @@ range-set-blaze
 
 Integer sets as fast, sorted integer ranges -- Maps with integer-range keys -- Full set operations
 
-The integers can be any size ([`u8`] to [`u128`]) and may be signed ([`i8`] to [`i128`]). The [set operations] and [map operations]
+The integers can be any size ([`u8`] to [`u128`]) and may be signed ([`i8`] to [`i128`]). Also-supported `char` (Unicode characters),
+ `IpvAddr`, and `Ipv6Addr`.
+ The [set operations] and [map operations]
 include `union`, `intersection`, `difference`, `symmetric difference`, and `complement`.
 
 The crate's main structs are:
@@ -83,7 +85,7 @@ General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x]
 Examples
 -----------
 
-Example 1
+Example 1: Set Operations
 - - - - - -
 
 Here we take the union (operator “|”) of two `RangeSetBlaze`'s:
@@ -102,7 +104,63 @@ let c = a | b;
 assert_eq!(c, RangeSetBlaze::from_iter([-20..=-20, 100..=999]));
 ```
 
-Example 3
+Example 2: Maps and Network Addresses
+- - - - - -
+
+In networking, suppose we want to simplify a routing table. Here, we merge identical routes if adjacent
+or overlapping. We then remove all overlaps (respecting priority) and sort.
+The result is a fast BTree from regions to the next hop.
+Similar code can simplify font tables.
+
+```rust
+use range_set_blaze::prelude::*;
+use std::net::Ipv4Addr;
+
+// A routing table, sorted by priority
+let routing = [
+    ("10.0.1.8", 30, "10.1.1.0", "eth2"),
+    ("10.0.1.12", 30, "10.1.1.0", "eth2"),
+    ("10.0.1.7", 32, "10.1.1.0", "eth2"),
+    ("10.0.0.0", 8, "10.3.4.2", "eth1"),
+    ("0.0.0.0", 0, "152.10.0.0", "eth0"),
+];
+
+// Create a RangeMapBlaze from the routing table
+let range_map = routing
+    .iter()
+    .map(|(dest, prefix_len, next_hop, interface)| {
+        let dest: Ipv4Addr = dest.parse().unwrap();
+        let next_hop: Ipv4Addr = next_hop.parse().unwrap();
+        let mask = u32::MAX.checked_shr(*prefix_len).unwrap_or(0);
+        let range_start = Ipv4Addr::from(u32::from(dest) & !mask);
+        let range_end = Ipv4Addr::from(u32::from(dest) | mask);
+        (range_start..=range_end, (next_hop, interface))
+    })
+    .collect::<RangeMapBlaze<_, _>>();
+
+// Print the disjoint, sorted ranges and their associated values
+for (range, (next_hop, interface)) in range_map.range_values() {
+    println!("{range:?} -> ({next_hop}, {interface})");
+}
+
+// Look up an address
+assert_eq!(
+    range_map.get(Ipv4Addr::new(10, 0, 1, 6)),
+    Some(&(Ipv4Addr::new(10, 3, 4, 2), &"eth1"))
+);
+```
+
+Outputs:
+
+```text
+0.0.0.0..=9.255.255.255 -> (152.10.0.0, eth0)
+10.0.0.0..=10.0.1.6 -> (10.3.4.2, eth1)
+10.0.1.7..=10.0.1.15 -> (10.1.1.0, eth2)
+10.0.1.16..=10.255.255.255 -> (10.3.4.2, eth1)
+11.0.0.0..=255.255.255.255 -> (152.10.0.0, eth0)
+```
+
+Example 3: Biology
 - - - - - -
 
 In biology, suppose we want to find the intron regions of a gene but we are given only the transcription region and the exon regions.
