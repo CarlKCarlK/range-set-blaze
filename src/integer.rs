@@ -11,16 +11,7 @@ use num_traits::ops::overflowing::OverflowingSub;
 const LANES: usize = 16;
 
 /// The element trait of the [`RangeSetBlaze`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
-pub trait Integer:
-    Copy
-    + PartialEq
-    + PartialOrd
-    + Ord
-     // + fmt::Display // cmk0000 make these conditional
-    + fmt::Debug // cmk0000 make these conditional
-    + Send
-    + Sync
-{
+pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Sync {
     /// cmk doc
     fn checked_add_one(self) -> Option<Self>;
     /// cmk doc

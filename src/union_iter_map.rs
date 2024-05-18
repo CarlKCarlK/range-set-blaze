@@ -1,9 +1,6 @@
-use crate::alloc::string::ToString;
 use crate::merge_map::KMergeMap;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::{BitOrMapKMerge, BitOrMapMerge, MergeMap, SortedDisjointMap};
-use alloc::format;
-use alloc::string::String;
 use alloc::{collections::BinaryHeap, vec};
 use core::cmp::min;
 use core::iter::FusedIterator;
