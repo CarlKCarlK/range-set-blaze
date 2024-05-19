@@ -72,6 +72,7 @@ where
 /// [`UnionIter`]: crate::UnionIter
 
 #[derive(Clone, Debug)]
+#[allow(clippy::module_name_repetitions)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct KMerge<T, I>
 where
@@ -81,6 +82,8 @@ where
     #[allow(clippy::type_complexity)]
     iter: KMergeBy<I, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>,
 }
+
+type RangeMergeIter<T, I> = KMergeBy<I, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>;
 
 impl<T, I> KMerge<T, I>
 where
@@ -94,8 +97,7 @@ where
     {
         let iter = iter.into_iter();
         // Merge RangeValues by start with ties broken by priority
-        let iter: KMergeBy<I, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool> =
-            iter.kmerge_by(|a, b| a.start() < b.start());
+        let iter: RangeMergeIter<T, I> = iter.kmerge_by(|a, b| a.start() < b.start());
         Self { iter }
     }
 }

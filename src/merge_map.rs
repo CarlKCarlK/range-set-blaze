@@ -93,6 +93,7 @@ where
 /// [`UnionIter`]: crate::UnionIter
 ///
 #[derive(Clone, Debug)]
+#[allow(clippy::module_name_repetitions)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct KMergeMap<T, V, VR, I>
 where
@@ -105,6 +106,9 @@ where
     iter:
         KMergeBy<SetPriorityMap<T, V, VR, I>, fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool>,
 }
+
+type KMergeSetPriorityMap<T, V, VR, I> =
+    KMergeBy<SetPriorityMap<T, V, VR, I>, fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool>;
 
 impl<T, V, VR, I> KMergeMap<T, V, VR, I>
 where
@@ -124,10 +128,7 @@ where
             SetPriorityMap::new(x, priority_number)
         });
         // Merge RangeValues by start with ties broken by priority
-        let iter: KMergeBy<
-            SetPriorityMap<T, V, VR, I>,
-            fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
-        > = iter.kmerge_by(|a, b| {
+        let iter: KMergeSetPriorityMap<T, V, VR, I> = iter.kmerge_by(|a, b| {
             // We sort only by start -- priority is not used until later.
             a.start() < b.start()
         });

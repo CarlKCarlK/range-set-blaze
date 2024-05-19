@@ -22,6 +22,7 @@ use crate::{
 /// [`ranges`]: crate::RangeSetBlaze::ranges
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[allow(clippy::module_name_repetitions)]
 pub struct RangeValuesIter<'a, T: Integer, V: PartialEqClone> {
     // cmk00 define a new
     pub(crate) iter: btree_map::Iter<'a, T, EndValue<T, V>>,
@@ -253,6 +254,7 @@ impl<'a, T: Integer, V: PartialEqClone + 'a> Iterator for MapIntoRangesIter<T, V
 /// cmk
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[allow(clippy::module_name_repetitions)]
 pub struct RangeValuesToRangesIter<T, V, VR, I>
 where
     T: Integer,
@@ -340,6 +342,7 @@ where
     }
 }
 
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) trait ExpectDebugUnwrapRelease<T> {
     fn expect_debug_unwrap_release(self, msg: &str) -> T;
 }

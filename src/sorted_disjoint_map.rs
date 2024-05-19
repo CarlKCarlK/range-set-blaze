@@ -1,4 +1,6 @@
+use crate::map::BitAndRangesMap2;
 use crate::map::BitSubRangesMap;
+use crate::map::BitSubRangesMap2;
 use crate::range_values::RangeValuesIter;
 use crate::range_values::RangeValuesToRangesIter;
 use crate::sym_diff_iter_map::SymDiffIterMap;
@@ -238,10 +240,7 @@ where
     /// assert_eq!(intersection.into_string(), r#"(2..=2, "a")"#);
     /// ```
     #[inline]
-    fn intersection<R>(
-        self,
-        other: R,
-    ) -> BitAndRangesMap<T, V, VR, Self, RangeValuesToRangesIter<T, V, VR, R::IntoIter>>
+    fn intersection<R>(self, other: R) -> BitAndRangesMap2<T, V, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<T, V, VR>,
@@ -302,10 +301,7 @@ where
     /// assert_eq!(difference.into_string(), r#"(1..=1, "a")"#);
     /// ```
     #[inline]
-    fn difference<R>(
-        self,
-        other: R,
-    ) -> BitSubRangesMap<T, V, VR, Self, RangeValuesToRangesIter<T, V, VR, R::IntoIter>>
+    fn difference<R>(self, other: R) -> BitSubRangesMap2<T, V, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<T, V, VR>,
@@ -343,7 +339,7 @@ where
         IntersectionIterMap::new(self, complement)
     }
 
-    /// cmk rename 'to_range'?
+    /// cmk rename '`to_range`'?
     /// returns a set, not a map also see complement
     /// # Examples
     /// ```
@@ -362,7 +358,7 @@ where
         sorted_disjoint.complement()
     }
 
-    /// cmk no "!" operator defined because we need a fill value also see complement_to_set
+    /// cmk no "!" operator defined because we need a fill value also see `complement_to_set`
     /// returns a set, not a map
     /// # Examples
     /// ```
@@ -434,7 +430,7 @@ where
     {
         use itertools::Itertools;
 
-        self.zip_longest(other.into_iter()).all(|pair| {
+        self.zip_longest(other).all(|pair| {
             match pair {
                 itertools::EitherOrBoth::Both(
                     (self_range, self_value),
@@ -532,6 +528,7 @@ where
 /// Gives any iterator of cmk implements the [`SortedDisjointMap`] trait cmk without any checking.
 // cmk0 why was this hidden? check for others#[doc(hidden)]
 /// doc
+#[allow(clippy::module_name_repetitions)]
 pub struct CheckSortedDisjointMap<T, V, VR, I>
 where
     T: Integer,

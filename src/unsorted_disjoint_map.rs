@@ -14,6 +14,7 @@ use core::{
 use num_traits::Zero;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) struct UnsortedPriorityDisjointMap<T, V, VR, I>
 where
     T: Integer,
@@ -128,6 +129,7 @@ where
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[allow(clippy::redundant_pub_crate)]
 pub(crate) struct SortedDisjointMapWithLenSoFar<T, V, VR, I>
 where
     T: Integer,

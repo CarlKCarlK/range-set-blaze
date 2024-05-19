@@ -369,7 +369,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     }
 
     /// Deprecated. Use [`into_string`] instead.
-    #[deprecated(since = "0.1.cmk", note = "Use `into_string` instead")]
+    #[deprecated(since = "0.2.0", note = "Use `into_string` instead")]
     fn to_string(self) -> String
     where
         Self: Sized,
@@ -541,6 +541,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 /// ```
 #[derive(Debug, Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[allow(clippy::module_name_repetitions)]
 pub struct CheckSortedDisjoint<T, I>
 where
     T: Integer,

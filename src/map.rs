@@ -1,7 +1,9 @@
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::iter_map::IntoIterMap;
 use crate::iter_map::{IterMap, KeysMap};
-use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter};
+use crate::range_values::{
+    IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter, RangeValuesToRangesIter,
+};
 use crate::sorted_disjoint_map::SortedDisjointMap;
 use crate::sorted_disjoint_map::{IntoString, Priority};
 use crate::sym_diff_iter_map::SymDiffIterMap;
@@ -110,22 +112,23 @@ where
 /// | Methods                                     | Input                        | Notes                    |
 /// |---------------------------------------------|------------------------------|--------------------------|
 /// | [`new`]/[`default`]                         |                              |                          |
-/// | [`from_iter`][1]/[`collect`][1]             | integer iterator             |                          |
+/// | [`from_iter`][1]/[`collect`][1]           | integer iterator             |                          |
 /// | [`from_iter`][2]/[`collect`][2]             | ranges iterator              |                          |
 /// | [`from_slice`][5]                           | slice of integers            | Fast, but nightly-only  |
 /// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze2`][3] | [`SortedDisjointMap`] iterator |               |
-///  cmk from sorted starts
 /// | [`from`][4] /[`into`][4]                    | array of integers            |                          |
+///
+///  cmk from sorted starts
 ///
 ///
 /// [`BTreeMap`]: alloc::collections::BTreeMap
 /// [`new`]: RangeMapBlaze::new
 /// [`default`]: RangeMapBlaze::default
-/// [1]: struct.RangeMapBlaze.html#impl-FromIterator<T, V, VR>-for-RangeMapBlaze<T, V>
-/// [2]: struct.RangeMapBlaze.html#impl-FromIterator<RangeInclusive<T, V, VR>>-for-RangeMapBlaze<T, V>
-/// [3]: RangeMapBlaze::from_sorted_disjoint
-/// [4]: RangeMapBlaze::from
-/// [5]: RangeMapBlaze::from_slice()
+/// [1m]: struct.RangeMapBlaze.html#impl-FromIterator<T, V, VR>-for-RangeMapBlaze<T, V>
+/// [2]: struct.RangeMapBlaze.html#impl-FromIterator<`RangeInclusive`<T, V, VR>>-for-RangeMapBlaze<T, V>
+/// [3]: `RangeMapBlaze::from_sorted_disjoint`
+/// [4]: `RangeMapBlaze::from`
+/// [5]: `RangeMapBlaze::from_slice()`
 ///
 /// # Constructor Performance
 ///
@@ -263,7 +266,7 @@ where
 /// );
 /// // use `complement_with` to create a 'RangeMapBlaze'.
 /// let result = a.complement_with("z");
-/// assert_eq!(result.to_string(), r#"(-2147483648..=0, "z"), (3..=4, "z"), (101..=2147483647, "z")"#);
+/// assert_eq!(result.to_string(), r#"(-2147483648..=0, "z"), (3..=4, "z"), (101..=2147483647, &"z")"#);
 ///
 /// // Multiway union of 'RangeMapBlaze's.
 /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
@@ -537,7 +540,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
         I: SortedDisjointMap<T, V, VR>,
     {
         let mut iter_with_len = SortedDisjointMapWithLenSoFar::from(iter);
-        let btree_map = BTreeMap::from_iter(&mut iter_with_len);
+        let btree_map = (&mut iter_with_len).collect();
         Self {
             btree_map,
             len: iter_with_len.len_so_far(),
@@ -992,6 +995,8 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     // cmk2 might be able to shorten code by combining cases
     // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
+    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::cognitive_complexity)]
     pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>, value: V) {
         let (start, end) = range.clone().into_inner();
 
@@ -1478,7 +1483,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// use range_set_blaze::RangeMapBlaze;
     ///
     /// let map = RangeMapBlaze::from_iter([(10u16..=20, "a"), (15..=25, "b"), (30..=40, "c")]);
-    /// let complement = map.complement_with("z");
+    /// let complement = map.complement_with(&"z");
     /// assert_eq!(complement.to_string(), r#"(0..=9, "z"), (26..=29, "z"), (41..=65535, "z")"#);
     /// ```
     #[must_use]
@@ -1544,6 +1549,45 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     }
 }
 
+impl<T, V> IntoIterator for RangeMapBlaze<T, V>
+where
+    T: Integer,
+    V: PartialEqClone,
+{
+    type Item = (T, V);
+    type IntoIter = IntoIterMap<T, V>;
+
+    /// Gets a (double-ended) iterator for moving out the [`RangeSetBlaze`]'s integer contents.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
+    ///
+    /// let v: Vec<_> = set.into_iter().collect();
+    /// assert_eq!(v, [1, 2, 3, 4]);
+    ///
+    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
+    /// let v: Vec<_> = set.into_iter().rev().collect();
+    /// assert_eq!(v, [4, 3, 2, 1]);
+    /// ```
+    fn into_iter(self) -> IntoIterMap<T, V> {
+        IntoIterMap::new(self.btree_map.into_iter())
+    }
+}
+
+// Implementing `IntoIterator` for `&RangeMapBlaze<T, V>`
+impl<'a, T: Integer, V: PartialEqClone> IntoIterator for &'a RangeMapBlaze<T, V> {
+    type IntoIter = IterMap<T, V, &'a V, RangeValuesIter<'a, T, V>>;
+    type Item = (T, &'a V);
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 // cmk remove
 // #[doc(hidden)]
 // pub type MergeMapAdjusted<'a, T, V, VR, L, R> =
@@ -1553,11 +1597,21 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
 //     UnionIterMap<'a, T, V, VR, MergeMapAdjusted<'a, T, V, VR, L, R>>;
 
 #[doc(hidden)]
+#[allow(clippy::module_name_repetitions)]
 pub type BitAndRangesMap<T, V, VR, L, R> = IntersectionIterMap<T, V, VR, L, R>;
 #[doc(hidden)]
-pub type BitSubRangesMap<T, V, VR, L, R> = IntersectionIterMap<T, V, VR, L, NotIter<T, R>>;
+pub type BitAndRangesMap2<T, V, VR, L, R> =
+    BitAndRangesMap<T, V, VR, L, RangeValuesToRangesIter<T, V, VR, R>>;
 
 #[doc(hidden)]
+#[allow(clippy::module_name_repetitions)]
+pub type BitSubRangesMap<T, V, VR, L, R> = IntersectionIterMap<T, V, VR, L, NotIter<T, R>>;
+#[doc(hidden)]
+pub type BitSubRangesMap2<T, V, VR, L, R> =
+    BitSubRangesMap<T, V, VR, L, RangeValuesToRangesIter<T, V, VR, R>>;
+
+#[doc(hidden)]
+#[allow(clippy::module_name_repetitions)]
 pub type SortedStartsInVecMap<T, V, VR> =
     AssumePrioritySortedStartsMap<T, V, VR, vec::IntoIter<Priority<T, V, VR>>>;
 
@@ -1652,7 +1706,7 @@ impl<T: Integer, V: PartialEqClone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBla
     }
 }
 
-pub(crate) struct UniqueValue<V>
+pub struct UniqueValue<V>
 where
     V: PartialEqClone,
 {
@@ -1798,7 +1852,7 @@ where
     V: PartialEqClone,
 {
     /// Extends the [`RangeSetBlaze`] with the contents of a
-    /// range iterator. cmk this has right-to-left priority -- like BTreeMap, but unlike most other RangeSetBlaze methods.
+    /// range iterator. cmk this has right-to-left priority -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
 
     /// Elements are added one-by-one. There is also a version
     /// that takes an integer iterator.
@@ -1840,35 +1894,6 @@ where
     }
 
     // cmk define extend_one and make it inline
-}
-
-impl<T, V> IntoIterator for RangeMapBlaze<T, V>
-where
-    T: Integer,
-    V: PartialEqClone,
-{
-    type Item = (T, V);
-    type IntoIter = IntoIterMap<T, V>;
-
-    /// Gets a (double-ended) iterator for moving out the [`RangeSetBlaze`]'s integer contents.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_blaze::RangeSetBlaze;
-    ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
-    ///
-    /// let v: Vec<_> = set.into_iter().collect();
-    /// assert_eq!(v, [1, 2, 3, 4]);
-    ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
-    /// let v: Vec<_> = set.into_iter().rev().collect();
-    /// assert_eq!(v, [4, 3, 2, 1]);
-    /// ```
-    fn into_iter(self) -> IntoIterMap<T, V> {
-        IntoIterMap::new(self.btree_map.into_iter())
-    }
 }
 
 // cmk also from (RangeInclusive<T>, V(r))???

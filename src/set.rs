@@ -383,13 +383,14 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(set_iter.next(), Some(2));
     /// assert_eq!(set_iter.next_back(), None);
     /// ```
+    #[allow(clippy::iter_without_into_iter)]
     pub fn iter(&self) -> Iter<T, RangesIter<T>> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
         Iter {
             option_range_front: None,
             option_range_back: None,
-            iter: self.ranges(),
+            btree_set_iter: self.ranges(),
         }
     }
 
@@ -1297,7 +1298,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 
     /// Deprecated. Use `RangeSetBlaze::to_string` instead.
-    #[deprecated(note = "Use `RangeSetBlaze::to_string` instead.")]
+    #[deprecated(since = "0.2.0", note = "Use `RangeSetBlaze::to_string` instead.")]
     pub fn into_string(&self) -> String {
         self.to_string()
     }
@@ -1577,7 +1578,7 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
         IntoIter {
             option_range_front: None,
             option_range_back: None,
-            into_iter: self.btree_map.into_iter(),
+            btree_map_into_iter: self.btree_map.into_iter(),
         }
     }
 }
@@ -1590,12 +1591,13 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
 /// [`iter`]: RangeSetBlaze::iter
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
+#[allow(clippy::struct_field_names)]
 pub struct Iter<T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
 {
-    iter: I,
+    btree_set_iter: I,
     option_range_front: Option<RangeInclusive<T>>,
     option_range_back: Option<RangeInclusive<T>>,
 }
@@ -1611,7 +1613,7 @@ where
         let range = self
             .option_range_front
             .take()
-            .or_else(|| self.iter.next())
+            .or_else(|| self.btree_set_iter.next())
             .or_else(|| self.option_range_back.take())?;
 
         let (start, end) = range.into_inner();
@@ -1625,7 +1627,7 @@ where
     // We'll have at least as many integers as intervals. There could be more that usize MAX
     // The option_range field could increase the number of integers, but we can ignore that.
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let (low, _high) = self.iter.size_hint();
+        let (low, _high) = self.btree_set_iter.size_hint();
         (low, None)
     }
 }
@@ -1638,7 +1640,7 @@ where
         let range = self
             .option_range_back
             .take()
-            .or_else(|| self.iter.next_back())
+            .or_else(|| self.btree_set_iter.next_back())
             .or_else(|| self.option_range_front.take())?;
         let (start, end) = range.into_inner();
         debug_assert!(start <= end);
@@ -1652,6 +1654,7 @@ where
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug)]
+#[allow(clippy::struct_field_names)]
 /// A (double-ended) iterator over the integer elements of a [`RangeSetBlaze`].
 ///
 /// This `struct` is created by the [`into_iter`] method on [`RangeSetBlaze`]. See its
@@ -1661,7 +1664,7 @@ where
 pub struct IntoIter<T: Integer> {
     option_range_front: Option<RangeInclusive<T>>,
     option_range_back: Option<RangeInclusive<T>>,
-    into_iter: btree_map::IntoIter<T, T>,
+    btree_map_into_iter: btree_map::IntoIter<T, T>,
 }
 
 impl<T: Integer> FusedIterator for IntoIter<T> {}
@@ -1673,7 +1676,11 @@ impl<T: Integer> Iterator for IntoIter<T> {
         let range = self
             .option_range_front
             .take()
-            .or_else(|| self.into_iter.next().map(|(start, end)| start..=end))
+            .or_else(|| {
+                self.btree_map_into_iter
+                    .next()
+                    .map(|(start, end)| start..=end)
+            })
             .or_else(|| self.option_range_back.take())?;
 
         let (start, end) = range.into_inner();
@@ -1687,7 +1694,7 @@ impl<T: Integer> Iterator for IntoIter<T> {
     // We'll have at least as many integers as intervals. There could be more that usize MAX
     // the option_range field could increase the number of integers, but we can ignore that.
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let (low, _high) = self.into_iter.size_hint();
+        let (low, _high) = self.btree_map_into_iter.size_hint();
         (low, None)
     }
 }
@@ -1697,7 +1704,11 @@ impl<T: Integer> DoubleEndedIterator for IntoIter<T> {
         let range = self
             .option_range_back
             .take()
-            .or_else(|| self.into_iter.next_back().map(|(start, end)| start..=end))
+            .or_else(|| {
+                self.btree_map_into_iter
+                    .next_back()
+                    .map(|(start, end)| start..=end)
+            })
             .or_else(|| self.option_range_front.take())?;
 
         let (start, end) = range.into_inner();
@@ -1926,7 +1937,7 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
 }
 
 impl<T: Integer> Ord for RangeSetBlaze<T> {
-    /// We define a total ordering on RangeSetBlaze. Following the convention of
+    /// We define a total ordering on `RangeSetBlaze`. Following the convention of
     /// [`BTreeSet`], the ordering is lexicographic, *not* by subset/superset.
     ///
     /// [`BTreeSet`]: alloc::collections::BTreeSet

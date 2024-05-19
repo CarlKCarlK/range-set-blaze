@@ -12,6 +12,7 @@ where
 ///
 /// [`union`]: MultiwayRangeSetBlazeRef::union
 /// [`intersection`]: MultiwayRangeSetBlazeRef::intersection
+#[allow(clippy::module_name_repetitions)]
 pub trait MultiwayRangeSetBlazeRef<T: Integer>:
     IntoIterator<Item = RangeSetBlaze<T>> + Sized
 {
@@ -100,6 +101,7 @@ where
 ///
 /// [`union`]: MultiwayRangeSetBlaze::union
 /// [`intersection`]: MultiwayRangeSetBlaze::intersection
+#[allow(clippy::module_name_repetitions)]
 pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
     IntoIterator<Item = &'a RangeSetBlaze<T>> + Sized
 {
@@ -194,6 +196,7 @@ where
 ///
 /// [`union`]: crate::MultiwaySortedDisjoint::union
 /// [`intersection`]: crate::MultiwaySortedDisjoint::intersection
+#[allow(clippy::module_name_repetitions)]
 pub trait MultiwaySortedDisjoint<T: Integer, I>: IntoIterator<Item = I> + Sized
 where
     I: SortedDisjoint<T>,
