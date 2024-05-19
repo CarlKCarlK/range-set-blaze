@@ -8,39 +8,19 @@ use core::ops::RangeInclusive;
 use itertools::Itertools;
 
 use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
-use crate::{map::ValueOwned, Integer};
+use crate::{map::PartialEqClone, Integer};
 use crate::{
     map::{CloneBorrow, SortedStartsInVecMap},
     unsorted_disjoint_map::AssumePrioritySortedStartsMap,
 };
 
-/// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
-/// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
-///
-/// [`SortedDisjointMap`]: crate::SortedDisjointMap
-///
-/// # Examples
-///
-/// ```
-/// use range_set_blaze::{prelude::*, UnionIterMap};
-///
-/// let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-/// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-/// let union = UnionIterMap::new2(a, b);
-/// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"# );
-///
-/// // Or, equivalently:
-/// let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-/// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-/// let union = a | b;
-/// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"# );
-/// ```
-// cmk #[derive(Clone, Debug)]
+/// The output of cmk.
+#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct UnionIterMap<T, V, VR, SS>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     SS: PrioritySortedStartsMap<T, V, VR>,
 {
@@ -54,7 +34,7 @@ where
 impl<T, V, VR, I> Iterator for UnionIterMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {
@@ -159,7 +139,7 @@ where
 impl<T, V, VR, I> UnionIterMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {
@@ -180,7 +160,7 @@ where
 impl<T, V, VR, L, R> BitOrMapMerge<T, V, VR, L, R>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
@@ -197,7 +177,7 @@ where
 impl<T, V, VR, J> BitOrMapKMerge<T, V, VR, J>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     J: SortedDisjointMap<T, V, VR>,
 {
@@ -225,7 +205,7 @@ impl<T, V, VR> FromIterator<(RangeInclusive<T>, VR)>
     for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 {
     fn from_iter<I>(iter: I) -> Self
@@ -247,7 +227,7 @@ impl<T, V, VR, I> From<UnsortedPriorityDisjointMap<T, V, VR, I>>
     for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
@@ -266,7 +246,7 @@ where
 impl<T, V, VR, I> FusedIterator for UnionIterMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: PrioritySortedStartsMap<T, V, VR> + FusedIterator,
 {

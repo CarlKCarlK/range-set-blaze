@@ -9,7 +9,7 @@ use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
 use alloc::collections::btree_map;
 
 use crate::{
-    map::{CloneBorrow, EndValue, ValueOwned},
+    map::{CloneBorrow, EndValue, PartialEqClone},
     Integer, SortedDisjointMap,
 };
 
@@ -24,7 +24,7 @@ use crate::{
 pub struct IterMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
@@ -37,12 +37,12 @@ where
 impl<T, V, VR, I> IterMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
-    pub fn new(iter: I) -> Self {
-        IterMap {
+    pub const fn new(iter: I) -> Self {
+        Self {
             iter,
             option_range_value_front: None,
             option_range_value_back: None,
@@ -54,7 +54,7 @@ where
 impl<T, V, VR, I> FusedIterator for IterMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR> + FusedIterator,
 {
@@ -63,7 +63,7 @@ where
 impl<T, V, VR, I> Iterator for IterMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
@@ -97,7 +97,7 @@ where
 impl<T, V, VR, I> DoubleEndedIterator for IterMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR> + DoubleEndedIterator,
 {
@@ -129,7 +129,7 @@ where
 pub struct IntoIterMap<T, V>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
 {
     option_start_end_value_front: Option<(T, EndValue<T, V>)>,
     option_start_end_value_back: Option<(T, EndValue<T, V>)>,
@@ -139,10 +139,10 @@ where
 impl<T, V> IntoIterMap<T, V>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
 {
     pub fn new(into_iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
-        IntoIterMap {
+        Self {
             option_start_end_value_front: None,
             option_start_end_value_back: None,
             into_iter,
@@ -153,14 +153,14 @@ where
 impl<T, V> FusedIterator for IntoIterMap<T, V>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
 {
 }
 
 impl<T, V> Iterator for IntoIterMap<T, V>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
 {
     type Item = (T, V);
 
@@ -194,7 +194,7 @@ where
 impl<T, V> DoubleEndedIterator for IntoIterMap<T, V>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let start_end_value = self
@@ -210,7 +210,7 @@ where
 
         if start < end {
             let mut end_value = start_end_value.1;
-            end_value.end .assign_sub_one();
+            end_value.end.assign_sub_one();
             let start_end_value = (start, end_value);
             self.option_start_end_value_back = Some(start_end_value);
         }
@@ -230,7 +230,7 @@ where
 pub struct KeysMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
@@ -240,12 +240,12 @@ where
 impl<T, V, VR, I> KeysMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
-    pub fn new(iter: I) -> Self {
-        KeysMap {
+    pub const fn new(iter: I) -> Self {
+        Self {
             iter: IterMap::new(iter),
         }
     }
@@ -254,7 +254,7 @@ where
 impl<T, V, VR, I> FusedIterator for KeysMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
@@ -263,7 +263,7 @@ where
 impl<T, V, VR, I> Iterator for KeysMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
@@ -281,7 +281,7 @@ where
 impl<T, V, VR, I> DoubleEndedIterator for KeysMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR> + DoubleEndedIterator,
 {

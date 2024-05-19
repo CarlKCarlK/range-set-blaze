@@ -6,41 +6,15 @@ use core::{
 };
 
 use crate::{map::CloneBorrow, SortedDisjoint, SortedDisjointMap};
-use crate::{map::ValueOwned, Integer};
+use crate::{map::PartialEqClone, Integer};
 
-/// Turns one [`SortedDisjoint`] iterator and one [`SortedDisjointMap`] iterator into
-/// the [`SortedDisjointMap`] iterator of their intersection,
-///
-/// cmk
-///
-/// [`SortedDisjointMap`]: crate::SortedDisjointMap
-/// [`Merge`]: crate::Merge
-/// [`KMerge`]: crate::KMerge
-///
-/// # Examples
-///
-/// ```
-/// use itertools::Itertools;
-/// use range_set_blaze::{prelude::*, IntersectionIterMap};
-///
-/// let map = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-/// let set = CheckSortedDisjoint::new([2..=6]);
-/// let intersection = IntersectionIterMap::new(map, set);
-/// assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (5..=6, "a")"#);
-///
-/// // Or, equivalently:
-/// let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-/// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-/// let intersection = a & b;
-/// assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (5..=6, "a")"#);
-/// ```
-// cmk #[derive(Clone, Debug)]
-#[allow(dead_code)]
+/// The output of the cmk
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Clone, Debug)]
 pub struct IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     IM: SortedDisjointMap<T, V, VR>,
     IS: SortedDisjoint<T>,
@@ -55,7 +29,7 @@ where
 impl<T, V, VR, IM, IS> IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     IM: SortedDisjointMap<T, V, VR>,
     IS: SortedDisjoint<T>,
@@ -64,8 +38,8 @@ where
     /// Creates a new [`IntersectionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`IntersectionIterMap`] for more details and examples.
     ///
     /// [`SortedStartsMap`]: crate::sorted_disjoint_map::SortedStartsMap
-    #[allow(dead_code)]
-    pub fn new(iter_map: IM, iter_set: IS) -> Self {
+    // cmk #[allow(dead_code)]
+    pub const fn new(iter_map: IM, iter_set: IS) -> Self {
         Self {
             iter_left: iter_map,
             iter_right: iter_set,
@@ -101,7 +75,7 @@ where
 impl<T, V, VR, IM, IS> FusedIterator for IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     IM: SortedDisjointMap<T, V, VR>,
     IS: SortedDisjoint<T>,
@@ -111,7 +85,7 @@ where
 impl<T, V, VR, IM, IS> Iterator for IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     IM: SortedDisjointMap<T, V, VR>,
     IS: SortedDisjoint<T>,
@@ -131,7 +105,7 @@ where
             };
             let (left_start, left_end) = left.0.clone().into_inner();
             let (right_start, right_end) = right.into_inner();
-            // println!("cmk {:?} {:?}", current_range, current_range_value.range);
+            // println!("cmk {:?} {:?}", current_range, current_range_value.0);
 
             // if current_range ends before current_range_value, clear it and loop for a new value.
             if right_end < left_start {

@@ -1,7 +1,7 @@
 use crate::range_values::ExpectDebugUnwrapRelease;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::{
-    map::{CloneBorrow, EndValue, ValueOwned},
+    map::{CloneBorrow, EndValue, PartialEqClone},
     sorted_disjoint_map::SortedDisjointMap,
     Integer,
 };
@@ -17,7 +17,7 @@ use num_traits::Zero;
 pub(crate) struct UnsortedPriorityDisjointMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
@@ -30,7 +30,7 @@ where
 impl<T, V, VR, I> UnsortedPriorityDisjointMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = (RangeInclusive<T>, VR)>, // Any iterator is fine
 {
@@ -56,7 +56,7 @@ where
 impl<T, V, VR, I> Iterator for UnsortedPriorityDisjointMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
@@ -131,7 +131,7 @@ where
 pub(crate) struct SortedDisjointMapWithLenSoFar<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
@@ -158,7 +158,7 @@ where
 impl<T, V, VR, I> SortedDisjointMapWithLenSoFar<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
@@ -177,7 +177,7 @@ impl<T, V, VR, I> Iterator for SortedDisjointMapWithLenSoFar<T, V, VR, I>
 where
     T: Integer,
     VR: CloneBorrow<V>,
-    V: ValueOwned,
+    V: PartialEqClone,
     I: SortedDisjointMap<T, V, VR>,
 {
     type Item = (T, EndValue<T, V>);
@@ -205,12 +205,11 @@ where
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 
-/// Gives any iterator of ranges the [`SortedStartsMap`] trait without any checking.
-#[doc(hidden)]
+/// Used internally by [`UnionIterMap`] and [`SymDiffIterMap`].
 pub struct AssumePrioritySortedStartsMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
 {
@@ -220,7 +219,7 @@ where
 impl<T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for AssumePrioritySortedStartsMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
 {
@@ -229,7 +228,7 @@ where
 impl<T, V, VR, I> AssumePrioritySortedStartsMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
 {
@@ -241,7 +240,7 @@ where
 impl<T, V, VR, I> FusedIterator for AssumePrioritySortedStartsMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
 {
@@ -250,7 +249,7 @@ where
 impl<T, V, VR, I> Iterator for AssumePrioritySortedStartsMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
 {
@@ -266,7 +265,7 @@ where
 }
 
 // cmk understand why/if this is needed
-impl<T: Integer, V: ValueOwned, VR, I> From<I>
+impl<T: Integer, V: PartialEqClone, VR, I> From<I>
     for SortedDisjointMapWithLenSoFar<T, V, VR, I::IntoIter>
 where
     VR: CloneBorrow<V>,

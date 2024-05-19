@@ -41,7 +41,9 @@ pub trait MultiwayRangeSetBlazeRef<T: Integer>:
     /// assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
     /// ```
     fn union(self) -> RangeSetBlaze<T> {
-        RangeSetBlaze::from_sorted_disjoint(self.into_iter().map(|x| x.into_ranges()).union())
+        RangeSetBlaze::from_sorted_disjoint(
+            self.into_iter().map(RangeSetBlaze::into_ranges).union(),
+        )
     }
 
     /// Intersects the given [`RangeSetBlaze`] references, creating a new [`RangeSetBlaze`].

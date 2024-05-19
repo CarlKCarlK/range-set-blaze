@@ -2,22 +2,7 @@ use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use crate::{Integer, SortedDisjoint};
 
-/// Turns a [`SortedDisjoint`] iterator into a [`SortedDisjoint`] iterator of its complement,
-/// i.e., all the integers not in the original iterator, as sorted & disjoint ranges.
-///
-/// # Example
-///
-/// ```
-/// use range_set_blaze::{prelude::*, NotIter};
-///
-/// let a = CheckSortedDisjoint::new([1u8..=2, 5..=100]);
-/// let b = NotIter::new(a);
-/// assert_eq!(b.into_string(), "0..=0, 3..=4, 101..=255");
-///
-/// // Or, equivalently:
-/// let b = !CheckSortedDisjoint::new([1u8..=2, 5..=100]);
-/// assert_eq!(b.into_string(), "0..=0, 3..=4, 101..=255");
-/// ```
+/// The output of cmk
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct NotIter<T, I>
@@ -40,7 +25,7 @@ where
     where
         J: IntoIterator<Item = RangeInclusive<T>, IntoIter = I>,
     {
-        NotIter {
+        Self {
             iter: iter.into_iter(),
             start_not: T::min_value(),
             next_time_return_none: false,

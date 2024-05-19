@@ -23,7 +23,7 @@ use crate::map::BitAndRangesMap;
 use crate::map::CloneBorrow;
 use crate::sorted_disjoint::SortedDisjoint;
 use crate::NotIter;
-use crate::{map::ValueOwned, union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
+use crate::{map::PartialEqClone, union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
 use core::ops;
 use core::ops::RangeInclusive;
 
@@ -33,17 +33,17 @@ pub trait SortedStartsMap<T, V, VR>:
     Iterator<Item = (RangeInclusive<T>, VR)> + FusedIterator
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 {
 }
 
-/// This is sorted by starts and contains priority information, but it is not sorted by priority.
+/// Used internally by [`UnionIterMap`] and [`SymDiffIterMap`].
 pub trait PrioritySortedStartsMap<T, V, VR>:
     Iterator<Item = Priority<T, V, VR>> + FusedIterator
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 {
 }
@@ -161,7 +161,7 @@ where
 pub trait SortedDisjointMap<T, V, VR>: SortedStartsMap<T, V, VR>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 {
     /// cmk doc
@@ -535,7 +535,7 @@ where
 pub struct CheckSortedDisjointMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
@@ -549,7 +549,7 @@ where
 impl<T, V, VR, I> CheckSortedDisjointMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
@@ -571,7 +571,7 @@ where
 impl<T, V, VR, I> Default for CheckSortedDisjointMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = (RangeInclusive<T>, VR)> + Default,
 {
@@ -584,7 +584,7 @@ where
 impl<T, V, VR, I> FusedIterator for CheckSortedDisjointMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
@@ -593,7 +593,7 @@ where
 fn range_value_clone<T, V, VR>(range_value: &(RangeInclusive<T>, VR)) -> (RangeInclusive<T>, VR)
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 {
     let (range, value) = range_value;
@@ -604,7 +604,7 @@ where
 impl<T, V, VR, I> Iterator for CheckSortedDisjointMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
@@ -645,12 +645,12 @@ where
 // // cmk00 check
 // // cmk00 make Fused but don't require it
 
-/// cmk doc
+/// Used internally by [`UnionIterMap`] and [`SymDiffIterMap`].
 #[derive(Clone, Debug)]
 pub struct Priority<T, V, VR>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 {
     range_value: (RangeInclusive<T>, VR),
@@ -662,7 +662,7 @@ where
 impl<T, V, VR> Priority<T, V, VR>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 {
     /// cmk doc
@@ -678,7 +678,7 @@ where
 impl<T, V, VR> Priority<T, V, VR>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 {
     /// Returns the priority number.
@@ -737,7 +737,7 @@ where
 impl<T, V, VR> PartialEq for Priority<T, V, VR>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -751,7 +751,7 @@ where
 impl<'a, T, V, VR> Eq for Priority<T, V, VR>
 where
     T: Integer,
-    V: ValueOwned + 'a,
+    V: PartialEqClone + 'a,
     VR: CloneBorrow<V> + 'a,
 {
 }
@@ -760,7 +760,7 @@ where
 impl<'a, T, V, VR> Ord for Priority<T, V, VR>
 where
     T: Integer,
-    V: ValueOwned + 'a,
+    V: PartialEqClone + 'a,
     VR: CloneBorrow<V> + 'a,
 {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -773,7 +773,7 @@ where
 impl<'a, T, V, VR> PartialOrd for Priority<T, V, VR>
 where
     T: Integer,
-    V: ValueOwned + 'a,
+    V: PartialEqClone + 'a,
     VR: CloneBorrow<V> + 'a,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -784,7 +784,7 @@ where
 pub struct RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     I: SortedDisjoint<T>,
 {
     inner: I,
@@ -795,7 +795,7 @@ where
 impl<'a, T, V, I> RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     I: SortedDisjoint<T>,
 {
     pub fn new(inner: I, value: &'a V) -> Self {
@@ -810,7 +810,7 @@ where
 impl<T, V, I> FusedIterator for RangeToRangeValueIter<'_, T, V, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     I: SortedDisjoint<T>,
 {
 }
@@ -818,7 +818,7 @@ where
 impl<'a, T, V, I> Iterator for RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     I: SortedDisjoint<T>,
 {
     type Item = (RangeInclusive<T>, &'a V);
@@ -832,14 +832,14 @@ where
 impl<'a, T, V, I> SortedStartsMap<T, V, &'a V> for RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     I: SortedDisjoint<T>,
 {
 }
 impl<'a, T, V, I> SortedDisjointMap<T, V, &'a V> for RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     I: SortedDisjoint<T>,
 {
 }
@@ -930,9 +930,9 @@ macro_rules! impl_sorted_map_traits_and_ops {
 }
 
 // cmk CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_method'
-impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, V, VR, I>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
-impl_sorted_map_traits_and_ops!(UnionIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
-impl_sorted_map_traits_and_ops!(IntersectionIterMap< T, V, VR, I0, I1>, V, VR, V: ValueOwned, VR: CloneBorrow<V>, I0: SortedDisjointMap<T, V, VR>, I1: SortedDisjoint<T>);
-impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: ValueOwned, I: PrioritySortedStartsMap<T, V, VR>);
-impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, V, VR>, V, VR, 'a, V: ValueOwned, VR: CloneBorrow<V>);
-impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: ValueOwned);
+impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, V, VR, I>, V, VR, V: PartialEqClone, VR: CloneBorrow<V>, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
+impl_sorted_map_traits_and_ops!(UnionIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: PartialEqClone, I: PrioritySortedStartsMap<T, V, VR>);
+impl_sorted_map_traits_and_ops!(IntersectionIterMap< T, V, VR, I0, I1>, V, VR, V: PartialEqClone, VR: CloneBorrow<V>, I0: SortedDisjointMap<T, V, VR>, I1: SortedDisjoint<T>);
+impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, V, VR, I>, V, VR, VR: CloneBorrow<V>, V: PartialEqClone, I: PrioritySortedStartsMap<T, V, VR>);
+impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, V, VR>, V, VR, 'a, V: PartialEqClone, VR: CloneBorrow<V>);
+impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: PartialEqClone);

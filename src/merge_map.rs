@@ -2,22 +2,18 @@ use core::iter::FusedIterator;
 
 use itertools::{Itertools, KMergeBy, MergeBy};
 
-use crate::map::{CloneBorrow, ValueOwned};
+use crate::map::{CloneBorrow, PartialEqClone};
 use crate::range_values::SetPriorityMap;
 use crate::Integer;
 
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap, SortedDisjointMap};
 
-/// Works with [`UnionIter`] to turn any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
-/// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
-///
-/// [`SortedDisjointMap`]: crate::SortedDisjointMap
-/// [`UnionIter`]: crate::UnionIter
+/// Internally used by cmk
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MergeMap<T, V, VR, L, R>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
@@ -33,7 +29,7 @@ where
 impl<T, V, VR, L, R> MergeMap<T, V, VR, L, R>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
@@ -52,7 +48,7 @@ where
 impl<T, V, VR, L, R> FusedIterator for MergeMap<T, V, VR, L, R>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
@@ -62,7 +58,7 @@ where
 impl<T, V, VR, L, R> Iterator for MergeMap<T, V, VR, L, R>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
@@ -81,7 +77,7 @@ where
 impl<T, V, VR, L, R> PrioritySortedStartsMap<T, V, VR> for MergeMap<T, V, VR, L, R>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
@@ -101,7 +97,7 @@ where
 pub struct KMergeMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
@@ -113,7 +109,7 @@ where
 impl<T, V, VR, I> KMergeMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
@@ -142,7 +138,7 @@ where
 impl<T, V, VR, I> FusedIterator for KMergeMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
@@ -151,7 +147,7 @@ where
 impl<T, V, VR, I> Iterator for KMergeMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 
     I: SortedDisjointMap<T, V, VR>,
@@ -170,7 +166,7 @@ where
 impl<T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for KMergeMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {

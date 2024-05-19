@@ -16,7 +16,7 @@ pub struct RangesIter<'a, T: Integer> {
     pub(crate) iter: btree_map::Iter<'a, T, T>,
 }
 
-impl<'a, T: Integer> AsRef<RangesIter<'a, T>> for RangesIter<'a, T> {
+impl<T: Integer> AsRef<Self> for RangesIter<'_, T> {
     fn as_ref(&self) -> &Self {
         // Self is RangesIter<'a>, the type for which we impl AsRef
         self

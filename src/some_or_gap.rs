@@ -1,10 +1,19 @@
 #![cfg(feature = "rog-experimental")]
+#![deprecated(
+    note = "The some_or_gap  module is experimental and may be changed or removed in future versions.
+    Changes may not be reflected in the semantic versioning."
+)]
 
 use core::ops::RangeInclusive;
 
 use crate::Integer;
 
-/// cmk doc
+/// Experimental: Represents an range or gap in a [`RangeMapBlaze`].
+///
+/// See [`RangeMapBlaze::get_range_value`] for an example.
+///
+/// [`RangeMapBlaze`]: crate::RangeMapBlaze
+/// [`RangeMapBlaze::get_range_value`]: crate::RangeMapBlaze::get_range_value
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SomeOrGap<S, T>
 where

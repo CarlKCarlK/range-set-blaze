@@ -56,17 +56,20 @@ mod iter_map;
 mod map;
 mod ranges;
 /// cmk doc
-pub mod set;
+mod set;
 pub use crate::range_values::IntoRangeValuesIter;
 pub use crate::range_values::{MapIntoRangesIter, MapRangesIter};
 pub use crate::ranges::IntoRangesIter;
 pub use crate::ranges::RangesIter;
 pub use crate::set::RangeSetBlaze;
+pub use crate::sorted_disjoint_map::Priority;
+pub use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
 
 mod not_iter;
 pub mod prelude;
-pub use crate::map::UniqueValue;
-pub mod range_values;
+pub(crate) use crate::map::UniqueValue;
+mod range_values;
+pub use crate::range_values::RangeValuesIter;
 #[cfg(feature = "rog-experimental")]
 mod rog;
 mod sorted_disjoint;
@@ -79,7 +82,7 @@ mod map_from_iter;
 mod sym_diff_iter;
 mod sym_diff_iter_map;
 pub use map::CloneBorrow;
-pub use map::ValueOwned;
+pub use map::PartialEqClone;
 use merge::{KMerge, Merge};
 use merge_map::KMergeMap;
 pub use multiway::MultiwaySortedDisjoint;
@@ -99,14 +102,11 @@ mod unsorted_disjoint;
 mod unsorted_disjoint_map;
 pub use crate::map::RangeMapBlaze;
 pub use crate::sorted_disjoint_map::IntoString;
-pub use crate::sorted_disjoint_map::Priority;
-pub use crate::unsorted_disjoint::AssumeSortedStarts;
-pub use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
-// use alloc::{collections::BTreeMap, vec::Vec};
+pub(crate) use crate::unsorted_disjoint::AssumeSortedStarts;
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 // use itertools::Tee;
-pub use merge_map::MergeMap; // cmk KMergeMap
+pub(crate) use merge_map::MergeMap; // cmk KMergeMap
 mod merge;
 mod merge_map;
 pub use not_iter::NotIter;

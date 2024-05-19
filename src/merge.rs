@@ -4,10 +4,7 @@ use itertools::{Itertools, KMergeBy, MergeBy};
 
 use crate::{Integer, SortedDisjoint, SortedStarts};
 
-/// Works with [`UnionIter`] to turn two [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
-/// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
-///
-/// Also see [`KMerge`].
+/// Internally used by cmk
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Merge<T, L, R>
 where

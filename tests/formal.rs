@@ -184,6 +184,7 @@
 // }
 // VERIFICATION:- SUCCESSFUL
 
+#[allow(unexpected_cfgs)]
 #[cfg(kani)]
 #[kani::proof]
 fn verify_less_than_i32_chatgpt_a() {

@@ -7,43 +7,19 @@ use core::{
 use alloc::collections::BinaryHeap;
 
 use crate::{
-    map::{CloneBorrow, ValueOwned},
+    map::{CloneBorrow, PartialEqClone},
     merge_map::KMergeMap,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
     BitXorMapKMerge, BitXorMapMerge, Integer, MergeMap, SortedDisjointMap,
 };
 
-/// Turns any number of [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
-/// i.e., all the integers in any input iterator, as sorted & disjoint ranges. Uses [`Merge`]
-/// or [`KMerge`].
-///
-/// [`SortedDisjointMap`]: crate::SortedDisjointMap
-/// [`Merge`]: crate::merge::Merge
-/// [`KMerge`]: crate::merge::KMerge
-///
-/// # Examples
-///
-/// ```
-/// use itertools::Itertools;
-/// use range_set_blaze::{prelude::*, SymDiffIterMap};
-///
-/// let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-/// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-/// let sym_diff = SymDiffIterMap::new2(a, b);
-/// assert_eq!(sym_diff.into_string(), r#"(1..=1, "a"), (3..=4, "b"), (7..=100, "a")"#);
-///
-/// // Or, equivalently:
-/// let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-/// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-/// let sym_diff = a ^ b;
-/// assert_eq!(sym_diff.into_string(),r#"(1..=1, "a"), (3..=4, "b"), (7..=100, "a")"#);
-/// ```
-// cmk #[derive(Clone, Debug)]
+/// The output of cmk.
+#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct SymDiffIterMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {
@@ -68,7 +44,7 @@ where
 impl<T, V, VR, I> FusedIterator for SymDiffIterMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {
@@ -77,7 +53,7 @@ where
 impl<T, V, VR, I> Iterator for SymDiffIterMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {
@@ -189,7 +165,7 @@ where
 impl<T, V, VR, L, R> BitXorMapMerge<T, V, VR, L, R>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
@@ -206,7 +182,7 @@ where
 impl<T, V, VR, J> BitXorMapKMerge<T, V, VR, J>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     J: SortedDisjointMap<T, V, VR>,
 {
@@ -224,7 +200,7 @@ where
 impl<T, V, VR, I> SymDiffIterMap<T, V, VR, I>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {

@@ -4,32 +4,8 @@ use crate::{
 use alloc::collections::BinaryHeap;
 use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
 
-/// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union, // cmk
-/// i.e., all the integers in any input iterator, as sorted & disjoint ranges. Uses [`Merge`]
-/// or [`KMerge`].
-///
-/// [`SortedDisjoint`]: crate::SortedDisjoint
-/// [`Merge`]: crate::Merge
-/// [`KMerge`]: crate::KMerge
-///
-/// # Examples
-///
-/// ```
-/// use itertools::Itertools;
-/// use range_set_blaze::{prelude::*,SymDiffIter};
-///
-/// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-/// let b = CheckSortedDisjoint::new([2..=6]);
-/// let sym_diff = SymDiffIter::new2(a, b);
-/// assert_eq!(sym_diff.into_string(), "1..=1, 3..=4, 7..=100");
-///
-/// // Or, equivalently:
-/// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-/// let b = CheckSortedDisjoint::new([2..=6]);
-/// let sym_diff = a ^ b;
-/// assert_eq!(sym_diff.into_string(), "1..=1, 3..=4, 7..=100")
-/// ```
-// cmk #[derive(Clone, Debug)]
+/// The output of cmk
+#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct SymDiffIter<T, I>
 where

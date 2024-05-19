@@ -1,8 +1,8 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
 use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
-use crate::AssumePrioritySortedStartsMap;
 use crate::Integer;
 use crate::RangeMapBlaze;
 use crate::UnionIterMap;

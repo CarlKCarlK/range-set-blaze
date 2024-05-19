@@ -11,18 +11,25 @@ use num_traits::ops::overflowing::OverflowingSub;
 const LANES: usize = 16;
 
 /// The element trait of the [`RangeSetBlaze`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
+///
+/// [`RangeSetBlaze`]: crate::RangeSetBlaze
+/// [`SortedDisjoint`]: crate::SortedDisjoint
 pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Sync {
     /// cmk doc
     fn checked_add_one(self) -> Option<Self>;
     /// cmk doc
+    #[must_use]
     fn add_one(self) -> Self;
     /// cmk doc
+    #[must_use]
     fn sub_one(self) -> Self;
     /// cmk doc
     fn assign_sub_one(&mut self);
     /// cmk doc
+    #[must_use]
     fn min_value() -> Self;
     /// cmk doc
+    #[must_use]
     fn max_value() -> Self;
 
     #[cfg(feature = "from_slice")]
@@ -71,9 +78,11 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     fn safe_len_to_f64(len: Self::SafeLen) -> f64;
 
     /// Computes `a + (b - 1) as Self`
+    #[must_use]
     fn add_len_less_one(self, b: Self::SafeLen) -> Self;
 
     /// Computes `a - (b - 1) as Self`
+    #[must_use]
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self;
 }
 
@@ -116,14 +125,18 @@ macro_rules! impl_integer_ops {
             FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
         }
 
+        #[allow(clippy::cast_sign_loss)]
         fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
             r.end().overflowing_sub(r.start()).0 as $type2 as <Self as Integer>::SafeLen + 1
         }
 
+        #[allow(clippy::cast_precision_loss)]
         fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
             len as f64
         }
 
+        #[allow(clippy::cast_sign_loss)]
+        #[allow(clippy::cast_precision_loss)]
         fn f64_to_safe_len(f: f64) -> Self::SafeLen {
             f as Self::SafeLen
         }

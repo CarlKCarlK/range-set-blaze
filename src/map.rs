@@ -29,20 +29,21 @@ use num_traits::Zero;
 
 /// cmk doc
 // cmk fix name aka 'Clone'
-pub trait ValueOwned: PartialEq + Clone {}
+pub trait PartialEqClone: PartialEq + Clone {}
 
 // pub trait ValueRef: PartialEq + ToOwned {
 //     type Owned: ValueOwned<Ref = Self>;
 // }
 
-impl<T> ValueOwned for T where T: PartialEq + Clone {}
+impl<T> PartialEqClone for T where T: PartialEq + Clone {}
 
 /// cmk doc
-pub trait CloneBorrow<V: ?Sized + ValueOwned>: Borrow<V>
+pub trait CloneBorrow<V: ?Sized + PartialEqClone>: Borrow<V>
 where
     Self: Sized,
 {
     /// cmk doc
+    #[must_use]
     fn clone_borrow(&self) -> Self;
 
     // If you intend to consume `Self`, the method signature should indeed take `self`
@@ -53,20 +54,20 @@ where
     }
 }
 
-impl<V: ?Sized + ValueOwned> CloneBorrow<V> for &V {
+impl<V: ?Sized + PartialEqClone> CloneBorrow<V> for &V {
     fn clone_borrow(&self) -> Self {
         self
     }
 }
 
-impl<V: ?Sized + ValueOwned> CloneBorrow<V> for Rc<V> {
+impl<V: ?Sized + PartialEqClone> CloneBorrow<V> for Rc<V> {
     fn clone_borrow(&self) -> Self {
         Rc::clone(self)
     }
 }
 
 #[cfg(feature = "std")]
-impl<V: ?Sized + ValueOwned> CloneBorrow<V> for Arc<V> {
+impl<V: ?Sized + PartialEqClone> CloneBorrow<V> for Arc<V> {
     fn clone_borrow(&self) -> Self {
         Arc::clone(self)
     }
@@ -76,7 +77,7 @@ impl<V: ?Sized + ValueOwned> CloneBorrow<V> for Arc<V> {
 pub struct EndValue<T, V>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
 {
     pub(crate) end: T,
     pub(crate) value: V,
@@ -300,7 +301,7 @@ where
 /// See the [module-level documentation] for additional examples.
 ///
 /// [module-level documentation]: index.html
-pub struct RangeMapBlaze<T: Integer, V: ValueOwned> {
+pub struct RangeMapBlaze<T: Integer, V: PartialEqClone> {
     pub(crate) len: <T as Integer>::SafeLen,
     pub(crate) btree_map: BTreeMap<T, EndValue<T, V>>,
 }
@@ -315,7 +316,7 @@ pub struct RangeMapBlaze<T: Integer, V: ValueOwned> {
 /// let a = RangeMapBlaze::<i32, &str>::default();
 /// assert!(a.is_empty());
 /// ```
-impl<T: Integer, V: ValueOwned> Default for RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone> Default for RangeMapBlaze<T, V> {
     fn default() -> Self {
         Self {
             len: <T as Integer>::SafeLen::zero(),
@@ -324,19 +325,19 @@ impl<T: Integer, V: ValueOwned> Default for RangeMapBlaze<T, V> {
     }
 }
 
-impl<T: Integer, V: ValueOwned + fmt::Debug> fmt::Debug for RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone + fmt::Debug> fmt::Debug for RangeMapBlaze<T, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.range_values().into_string())
     }
 }
 
-impl<T: Integer, V: ValueOwned + fmt::Debug> fmt::Display for RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone + fmt::Debug> fmt::Display for RangeMapBlaze<T, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.range_values().into_string())
     }
 }
 
-impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
     /// ascending and/or descending order.
     ///
@@ -1322,12 +1323,8 @@ impl<T: Integer, V: ValueOwned> RangeMapBlaze<T, V> {
     /// assert!(map.is_empty());
     /// ```
     pub fn pop_last(&mut self) -> Option<(T, V)> {
-        let Some(mut entry) = self.btree_map.last_entry() else {
-            return None;
-        };
-
+        let mut entry = self.btree_map.last_entry()?;
         let start = *entry.key();
-
         self.len -= T::SafeLen::one();
         let end = entry.get().end;
         if start == end {
@@ -1568,7 +1565,7 @@ pub type SortedStartsInVecMap<T, V, VR> =
 #[doc(hidden)]
 pub type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
-impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
     /// Passing ownership rather than borrow sometimes allows a many-times
@@ -1591,7 +1588,7 @@ impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze<T, 
     }
 }
 
-impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone> BitOr<&RangeMapBlaze<T, V>> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
     /// Passing ownership rather than borrow sometimes allows a many-times
@@ -1613,7 +1610,7 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for RangeMapBlaze<T,
     }
 }
 
-impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
@@ -1636,7 +1633,7 @@ impl<T: Integer, V: ValueOwned> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
     }
 }
 
-impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
@@ -1656,15 +1653,14 @@ impl<T: Integer, V: ValueOwned> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     }
 }
 
-/// doc
-pub struct UniqueValue<V>
+pub(crate) struct UniqueValue<V>
 where
-    V: ValueOwned,
+    V: PartialEqClone,
 {
     value: Option<V>,
 }
 
-impl<V: ValueOwned> UniqueValue<V> {
+impl<V: PartialEqClone> UniqueValue<V> {
     /// Creates a new `UniqueValue` with the provided value.
     pub fn new(v: V) -> Self {
         UniqueValue { value: Some(v) }
@@ -1673,7 +1669,7 @@ impl<V: ValueOwned> UniqueValue<V> {
 
 impl<V> CloneBorrow<V> for UniqueValue<V>
 where
-    V: ValueOwned,
+    V: PartialEqClone,
 {
     fn clone_borrow(&self) -> Self {
         UniqueValue {
@@ -1689,7 +1685,7 @@ where
 
 impl<V> Borrow<V> for UniqueValue<V>
 where
-    V: ValueOwned,
+    V: PartialEqClone,
 {
     fn borrow(&self) -> &V {
         // cmk will panic if None
@@ -1751,7 +1747,7 @@ for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
 for - call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
     a.range_values().difference_with_set(b.ranges()).into_range_map_blaze()
 };
-where T: Integer, V: ValueOwned
+where T: Integer, V: PartialEqClone
 );
 
 gen_ops_ex!(
@@ -1782,7 +1778,7 @@ for & call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
     a.range_values().intersection_with_set(b.ranges()).into_range_map_blaze()
 };
 
-where T: Integer, V: ValueOwned
+where T: Integer, V: PartialEqClone
 );
 
 gen_ops_ex!(
@@ -1794,13 +1790,13 @@ gen_ops_ex!(
 for ! call |a: &RangeMapBlaze<T, V>| {
     a.ranges().complement().into_range_set_blaze()
 };
-where T: Integer, V: ValueOwned
+where T: Integer, V: PartialEqClone
 );
 
 impl<T, V> Extend<(T, V)> for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
 {
     /// Extends the [`RangeSetBlaze`] with the contents of a
     /// range iterator. cmk this has right-to-left priority -- like BTreeMap, but unlike most other RangeSetBlaze methods.
@@ -1850,7 +1846,7 @@ where
 impl<T, V> IntoIterator for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
 {
     type Item = (T, V);
     type IntoIter = IntoIterMap<T, V>;
@@ -1880,7 +1876,7 @@ where
 impl<T, V, const N: usize> From<[(T, V); N]> for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
 {
     /// For compatibility with [`BTreeSet`] you may create a [`RangeSetBlaze`] from an array of integers.
     ///
@@ -1905,7 +1901,7 @@ where
 // cmk0000 move these tests
 
 // implement Index trait
-impl<T: Integer, V: ValueOwned> Index<T> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone> Index<T> for RangeMapBlaze<T, V> {
     type Output = V;
 
     /// Returns a reference to the value corresponding to the supplied key.

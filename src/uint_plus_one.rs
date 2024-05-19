@@ -19,11 +19,14 @@ pub trait UInt:
 {
 }
 
-// u128 and u8 are UInt
+// u128 and u8 are UInt.
+// We define u8 for testing purposes.
 impl UInt for u128 {}
 impl UInt for u8 {}
 
-/// cmk
+/// Used to represent values from 0 to u128::MAX + 1 (inclusive).
+///
+/// Needed to represent every possible length of a `RangeInclusive<i128>` and `RangeInclusive<u128>`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, Hash)]
 pub enum UIntPlusOne<T>
 where
@@ -82,21 +85,21 @@ where
         let max: T = T::max_value();
 
         match (self, rhs) {
-            (UIntPlusOne::UInt(z), b) | (b, UIntPlusOne::UInt(z)) if z == zero => b,
-            (UIntPlusOne::UInt(a), UIntPlusOne::UInt(b)) => {
+            (Self::UInt(z), b) | (b, Self::UInt(z)) if z == zero => b,
+            (Self::UInt(a), Self::UInt(b)) => {
                 let (wrapped_less1, overflow) = a.overflowing_add(&(b - one));
                 if overflow {
                     debug_assert!(false, "overflow");
-                    UIntPlusOne::MaxPlusOne
+                    Self::MaxPlusOne
                 } else if wrapped_less1 == max {
-                    UIntPlusOne::MaxPlusOne
+                    Self::MaxPlusOne
                 } else {
-                    UIntPlusOne::UInt(wrapped_less1 + T::one())
+                    Self::UInt(wrapped_less1 + T::one())
                 }
             }
-            (UIntPlusOne::MaxPlusOne, _) | (_, UIntPlusOne::MaxPlusOne) => {
+            (Self::MaxPlusOne, _) | (_, Self::MaxPlusOne) => {
                 debug_assert!(false, "UIntPlusOne::Max + something more than 1");
-                UIntPlusOne::MaxPlusOne
+                Self::MaxPlusOne
             }
         }
     }

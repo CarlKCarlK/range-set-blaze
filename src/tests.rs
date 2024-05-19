@@ -1,6 +1,9 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use crate::sorted_disjoint_map::Priority;
+use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
+
 use super::*;
 use core::cmp::Ordering;
 use core::ops::Bound;
@@ -1527,7 +1530,7 @@ pub fn convert_challenge() {
     fn _is_sorted_disjoint_map<T, V, VR, S>(_iter: S)
     where
         T: Integer,
-        V: ValueOwned,
+        V: PartialEqClone,
         VR: CloneBorrow<V>,
         S: SortedDisjointMap<T, V, VR>,
     {

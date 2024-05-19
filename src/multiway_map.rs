@@ -7,7 +7,7 @@
 
 use crate::{
     intersection_iter_map::IntersectionIterMap,
-    map::{CloneBorrow, ValueOwned},
+    map::{CloneBorrow, PartialEqClone},
     range_values::RangeValuesToRangesIter,
     BitAndMapWithRangeValues, BitOrMapKMerge, BitXorMapKMerge, Integer, RangeMapBlaze,
     SortedDisjointMap, UnionIterMap,
@@ -16,7 +16,7 @@ use crate::{
 impl<'a, T, V, I> MultiwayRangeMapBlaze<'a, T, V> for I
 where
     T: Integer + 'a,
-    V: ValueOwned + 'a,
+    V: PartialEqClone + 'a,
     I: IntoIterator<Item = &'a RangeMapBlaze<T, V>>,
 {
 }
@@ -27,7 +27,7 @@ where
 ///
 /// [`union`]: MultiwayRangeMapBlaze::union
 /// [`intersection`]: MultiwayRangeMapBlaze::intersection
-pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: ValueOwned + 'a>:
+pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: PartialEqClone + 'a>:
     IntoIterator<Item = &'a RangeMapBlaze<T, V>> + Sized
 {
     /// Unions the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
@@ -119,7 +119,7 @@ pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: ValueOwned + 'a>:
 impl<T, V, VR, II, I> MultiwaySortedDisjointMap<T, V, VR, I> for II
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
     II: IntoIterator<Item = I>,
@@ -134,7 +134,7 @@ where
 pub trait MultiwaySortedDisjointMap<T, V, VR, I>: IntoIterator<Item = I> + Sized
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
@@ -216,8 +216,7 @@ where
     /// assert_eq!(symmetric_difference.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
     /// ```
     fn symmetric_difference(self) -> BitXorMapKMerge<T, V, VR, I> {
-        let result = BitXorMapKMerge::new_k(self);
-        result
+        BitXorMapKMerge::new_k(self)
     }
 }
 // cmk confirm that on ranges the union of 0 sets 0 empty and the intersection of 0 sets is the universal set.

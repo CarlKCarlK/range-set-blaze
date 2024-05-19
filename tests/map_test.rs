@@ -1,19 +1,20 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 extern crate alloc;
+// use crate::sorted_disjoint_map::{IntoString, Priority};
+// use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
+// use crate::UniqueValue;
 use alloc::collections::BTreeMap;
 use core::fmt;
 use core::ops::RangeInclusive;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use range_set_blaze::prelude::*;
-use range_set_blaze::range_values::RangeValuesIter;
-use range_set_blaze::AssumePrioritySortedStartsMap;
 use range_set_blaze::CloneBorrow;
 use range_set_blaze::IntoRangeValuesIter;
+use range_set_blaze::PartialEqClone;
+use range_set_blaze::RangeValuesIter;
 use range_set_blaze::UnionIterMap;
-use range_set_blaze::UniqueValue;
-use range_set_blaze::ValueOwned;
 use range_set_blaze::{
     CheckSortedDisjoint, CheckSortedDisjointMap, IntersectionIterMap, MultiwaySortedDisjointMap,
     SymDiffIterMap,
@@ -1045,7 +1046,7 @@ fn map_tricky_case3() {
 
 #[test]
 fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
-    use range_set_blaze::Priority;
+    // use range_set_blaze::Priority;
 
     // #9: new
     let mut _range_map_blaze;
@@ -1068,30 +1069,30 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
     _range_map_blaze = _range_map_blaze.range_values().into_range_map_blaze();
     _range_map_blaze = RangeMapBlaze::from_sorted_disjoint_map(_range_map_blaze.range_values());
 
-    let sorted_starts = AssumePrioritySortedStartsMap::new(
-        [
-            Priority::new((5..=6, UniqueValue::new("a")), 0),
-            Priority::new((1..=5, UniqueValue::new("b")), 1),
-        ]
-        .into_iter(),
-    );
-    let mut _sorted_disjoint_iter;
-    _sorted_disjoint_iter = UnionIterMap::new(sorted_starts);
-    // // #10 collect / from_iter T
-    let arr0 = [
-        (1..=1, UniqueValue::new("a")),
-        (5..=5, UniqueValue::new("b")),
-        (6..=6, UniqueValue::new("b")),
-        (5..=5, UniqueValue::new("b")),
-    ];
-    let mut _sorted_disjoint_iter: UnionIterMap<_, _, _, _> = arr0.into_iter().collect();
-    let arr0 = [
-        (1..=1, UniqueValue::new("a")),
-        (5..=5, UniqueValue::new("b")),
-        (6..=6, UniqueValue::new("b")),
-        (5..=5, UniqueValue::new("b")),
-    ];
-    _sorted_disjoint_iter = UnionIterMap::from_iter(arr0);
+    // let sorted_starts = AssumePrioritySortedStartsMap::new(
+    //     [
+    //         Priority::new((5..=6, UniqueValue::new("a")), 0),
+    //         Priority::new((1..=5, UniqueValue::new("b")), 1),
+    //     ]
+    //     .into_iter(),
+    // );
+    // let mut _sorted_disjoint_iter;
+    // _sorted_disjoint_iter = UnionIterMap::new(sorted_starts);
+    // // // #10 collect / from_iter T
+    // let arr0 = [
+    //     (1..=1, UniqueValue::new("a")),
+    //     (5..=5, UniqueValue::new("b")),
+    //     (6..=6, UniqueValue::new("b")),
+    //     (5..=5, UniqueValue::new("b")),
+    // ];
+    // let mut _sorted_disjoint_iter: UnionIterMap<_, _, _, _> = arr0.into_iter().collect();
+    // let arr0 = [
+    //     (1..=1, UniqueValue::new("a")),
+    //     (5..=5, UniqueValue::new("b")),
+    //     (6..=6, UniqueValue::new("b")),
+    //     (5..=5, UniqueValue::new("b")),
+    // ];
+    // _sorted_disjoint_iter = UnionIterMap::from_iter(arr0);
     // // // #11 into / from array T
     // _sorted_disjoint_iter = arr0.into(); // decided not to implement
     // _sorted_disjoint_iter = UnionIterMap::from(arr0); // decided not to implement
@@ -2561,7 +2562,7 @@ fn test_every_sorted_disjoint_map_method() {
     fn is_sorted_disjoint_map<T, V, VR, S>(_iter: S)
     where
         T: Integer,
-        V: ValueOwned,
+        V: PartialEqClone,
         VR: CloneBorrow<V>,
         S: SortedDisjointMap<T, V, VR>,
     {
@@ -2971,7 +2972,7 @@ fn map_repro_insert_1() {
     assert_eq!(range_map_blaze.to_string(), r#"(123..=123, "World")"#);
 }
 
-fn equal_maps<T: Integer + std::fmt::Display, V: ValueOwned + fmt::Debug + std::fmt::Display>(
+fn equal_maps<T: Integer + std::fmt::Display, V: PartialEqClone + fmt::Debug + std::fmt::Display>(
     range_map_blaze: &RangeMapBlaze<T, V>,
     btree_map: &BTreeMap<T, &V>,
 ) -> bool

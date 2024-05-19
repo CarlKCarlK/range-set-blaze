@@ -1,7 +1,7 @@
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use crate::{
-    map::{CloneBorrow, ValueOwned},
+    map::{CloneBorrow, PartialEqClone},
     Integer, SortedDisjointMap,
 };
 use alloc::boxed::Box;
@@ -30,7 +30,7 @@ use alloc::boxed::Box;
 pub struct DynSortedDisjointMap<'a, T, V, VR>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 {
     iter: Box<dyn SortedDisjointMap<T, V, VR> + 'a>,
@@ -44,7 +44,7 @@ where
 impl<'a, T, V, VR> DynSortedDisjointMap<'a, T, V, VR>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 {
     /// Create a [`DynSortedDisjointMap`] from any [`SortedDisjointMap`] iterator. See [`DynSortedDisjointMap`] for an example.
@@ -61,7 +61,7 @@ where
 impl<T, V, VR> FusedIterator for DynSortedDisjointMap<'_, T, V, VR>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 {
 }
@@ -69,7 +69,7 @@ where
 impl<T, V, VR> Iterator for DynSortedDisjointMap<'_, T, V, VR>
 where
     T: Integer,
-    V: ValueOwned,
+    V: PartialEqClone,
     VR: CloneBorrow<V>,
 {
     type Item = (RangeInclusive<T>, VR);

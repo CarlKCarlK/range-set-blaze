@@ -1,5 +1,5 @@
 use crate::union_iter_map::UnionIterMap;
-use crate::{Integer, RangeMapBlaze, UniqueValue, ValueOwned};
+use crate::{Integer, PartialEqClone, RangeMapBlaze, UniqueValue};
 use core::ops::RangeInclusive;
 
 // We create a RangeMapBlaze from an iterator of integers or integer ranges by
@@ -8,7 +8,7 @@ use core::ops::RangeInclusive;
 impl<'a, T, V> FromIterator<(T, &'a V)> for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: ValueOwned + 'a,
+    V: PartialEqClone + 'a,
 {
     /// Create a [`RangeMapBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
     ///
@@ -27,15 +27,14 @@ where
     where
         I: IntoIterator<Item = (T, &'a V)>,
     {
-        let iter = iter.into_iter().map(|(x, r)| (x..=x, r));
-        Self::from_iter(iter)
+        iter.into_iter().map(|(x, r)| (x..=x, r)).collect()
     }
 }
 
 impl<'a, T, V> FromIterator<(RangeInclusive<T>, &'a V)> for RangeMapBlaze<T, V>
 where
-    T: Integer + 'a,    // cmk 'a needed? everywhere
-    V: ValueOwned + 'a, // cmk 'a needed? everywhere
+    T: Integer + 'a,        // cmk 'a needed? everywhere
+    V: PartialEqClone + 'a, // cmk 'a needed? everywhere
 {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
@@ -63,7 +62,7 @@ where
     }
 }
 
-impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone> FromIterator<(RangeInclusive<T>, V)> for RangeMapBlaze<T, V> {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
@@ -92,7 +91,7 @@ impl<T: Integer, V: ValueOwned> FromIterator<(RangeInclusive<T>, V)> for RangeMa
     }
 }
 
-impl<T: Integer, V: ValueOwned> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
@@ -120,7 +119,7 @@ impl<T: Integer, V: ValueOwned> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
 impl<'a, T, V> FromIterator<&'a (T, &'a V)> for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: ValueOwned + 'a,
+    V: PartialEqClone + 'a,
 {
     /// Create a [`RangeMapBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
     ///
@@ -147,8 +146,8 @@ where
 
 impl<'a, T, V> FromIterator<&'a (RangeInclusive<T>, &'a V)> for RangeMapBlaze<T, V>
 where
-    T: Integer + 'a,    // cmk 'a needed? everywhere
-    V: ValueOwned + 'a, // cmk 'a needed? everywhere
+    T: Integer + 'a,        // cmk 'a needed? everywhere
+    V: PartialEqClone + 'a, // cmk 'a needed? everywhere
 {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
@@ -175,7 +174,7 @@ where
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned> FromIterator<&'a (RangeInclusive<T>, V)>
+impl<'a, T: Integer, V: PartialEqClone> FromIterator<&'a (RangeInclusive<T>, V)>
     for RangeMapBlaze<T, V>
 {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
@@ -204,7 +203,7 @@ impl<'a, T: Integer, V: ValueOwned> FromIterator<&'a (RangeInclusive<T>, V)>
     }
 }
 
-impl<'a, T: Integer, V: ValueOwned> FromIterator<&'a (T, V)> for RangeMapBlaze<T, V> {
+impl<'a, T: Integer, V: PartialEqClone> FromIterator<&'a (T, V)> for RangeMapBlaze<T, V> {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///

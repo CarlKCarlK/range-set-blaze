@@ -8,32 +8,8 @@ use core::iter::FusedIterator;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
 
-/// Turns any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
-/// i.e., all the integers in any input iterator, as sorted & disjoint ranges. Uses [`Merge`]
-/// or [`KMerge`].
-///
-/// [`SortedDisjoint`]: crate::SortedDisjoint
-/// [`Merge`]: crate::merge::Merge
-/// [`KMerge`]: crate::merge::KMerge
-///
-/// # Examples
-///
-/// ```
-/// use itertools::Itertools;
-/// use range_set_blaze::{prelude::*,UnionIter};
-///
-/// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-/// let b = CheckSortedDisjoint::new([2..=6]);
-/// let union = UnionIter::new2(a, b);
-/// assert_eq!(union.into_string(), "1..=100");
-///
-/// // Or, equivalently:
-/// let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-/// let b = CheckSortedDisjoint::new([2..=6]);
-/// let union = a | b;
-/// assert_eq!(union.into_string(), "1..=100")
-/// ```
-// cmk #[derive(Clone, Debug)]
+/// The output of cmk
+#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct UnionIter<T, SS>
 where

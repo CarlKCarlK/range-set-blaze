@@ -204,6 +204,4 @@ for range in intron.ranges() {
 }
 ```
 
-cmk re-exports are weird
-cmk why is there a range_values and set modules?
 cmk need doc for things (see "cmk doc")

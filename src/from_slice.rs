@@ -3,6 +3,7 @@
 use alloc::slice;
 
 use crate::Integer;
+use core::array;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive, ops::Sub};
 
@@ -129,6 +130,7 @@ pub trait IsConsecutive {
 
 macro_rules! define_const_reference {
     ($type:ty) => {
+        #[allow(clippy::cast_precision_loss)]
         const fn comparison_value<const N: usize>() -> Simd<$type, N>
         where
             LaneCount<N>: SupportedLaneCount,
