@@ -2,6 +2,13 @@
 name = "tests_common"
 version = "0.1.0"
 edition = "2021"
+description = "Common test utilities for range-set-blaze"
+repository = "https://github.com/CarlKCarlK/range-set-blaze"
+readme = "../../README.md"
+documentation = "https://docs.rs/range-set-blaze/latest/range-set-blaze/"
+license = "MIT OR Apache-2.0"
+keywords = ["set", "range", "data-structures", "no_std", "wasm"]
+categories = ["data-structures", "no-std", "wasm"]
 
 [dependencies]
 rand = "0.8.4"

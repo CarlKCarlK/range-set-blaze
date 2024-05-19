@@ -546,7 +546,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
 
     #[allow(dead_code)]
     pub(crate) fn len_slow(&self) -> <T as Integer>::SafeLen {
-        RangeMapBlaze::btree_map_len(&self.btree_map)
+        Self::btree_map_len(&self.btree_map)
     }
 
     /// Moves all elements from `other` into `self`, leaving `other` empty.
@@ -683,7 +683,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
             }
         } else {
             // last item extends beyond the new but has a different value.
-            for &start in delete_list[0..delete_list.len() - 1].iter() {
+            for &start in &delete_list[0..delete_list.len() - 1] {
                 self.btree_map.remove(&start);
                 // take the last one
             }
@@ -725,7 +725,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// assert_eq!(map[37], "c");
     /// ```
     pub fn insert(&mut self, key: T, value: V) -> Option<V> {
-        let old = self.get(key).map(|v| v.borrow_clone());
+        let old = self.get(key).map(CloneBorrow::borrow_clone);
         self.internal_add(key..=key, value);
         old
     }
@@ -784,7 +784,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
         assert!(start <= end);
 
         let bounds = CheckSortedDisjoint::new([start..=end]);
-        RangeMapBlaze::from_sorted_disjoint_map(self.range_values().intersection_with_set(bounds))
+        Self::from_sorted_disjoint_map(self.range_values().intersection_with_set(bounds))
             .into_iter()
     }
 
@@ -833,10 +833,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// ```
     pub fn remove(&mut self, key: T) -> Option<V> {
         // The code can have only one mutable reference to self.btree_map.
-        let Some((start_ref, end_value_mut)) = self.btree_map.range_mut(..=key).next_back() else {
-            return None;
-        };
-
+        let (start_ref, end_value_mut) = self.btree_map.range_mut(..=key).next_back()?;
         if end_value_mut.end < key {
             return None;
         }
@@ -891,6 +888,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=1, "a"), (2..=2, "b")]));
     /// assert_eq!(b, RangeMapBlaze::from_iter([(3..=3, "c"), (17..=17, "d"), (41..=41, "e")]));
     /// ```
+    #[must_use]
     pub fn split_off(&mut self, key: T) -> Self {
         let old_len = self.len;
         let old_btree_len = self.btree_map.len();
@@ -910,7 +908,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
             // The split is clean
             let (a_len, b_len) = self.two_element_lengths(old_btree_len, &new_btree, old_len);
             self.len = a_len;
-            return RangeMapBlaze {
+            return Self {
                 btree_map: new_btree,
                 len: b_len,
             };
@@ -930,13 +928,13 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
 
     // Find the len of the smaller btree_map and then the element len of self & b.
     fn two_element_lengths(
-        &mut self,
+        &self,
         old_btree_len: usize,
         new_btree: &BTreeMap<T, EndValue<T, V>>,
         mut old_len: <T as Integer>::SafeLen,
     ) -> (<T as Integer>::SafeLen, <T as Integer>::SafeLen) {
         if old_btree_len / 2 < new_btree.len() {
-            let a_len = Self::btree_map_len(&mut self.btree_map);
+            let a_len = Self::btree_map_len(&self.btree_map);
             old_len -= a_len;
             (a_len, old_len)
         } else {
@@ -985,10 +983,9 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
 
     #[inline]
     fn has_gap(end_before: T, start: T) -> bool {
-        match end_before.checked_add_one() {
-            Some(end_before_succ) => end_before_succ < start,
-            None => false,
-        }
+        end_before
+            .checked_add_one()
+            .map_or(false, |end_before_succ| end_before_succ < start)
     }
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
@@ -1292,9 +1289,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     where
         V: Clone,
     {
-        let Some(entry) = self.btree_map.first_entry() else {
-            return None;
-        };
+        let entry = self.btree_map.first_entry()?;
         // We must remove the entry because the key will change
         let (start, end_value) = entry.remove_entry();
 
@@ -1370,7 +1365,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// assert_eq!(range_values.next(), Some((30..=40, &"c")));
     /// assert_eq!(range_values.next(), None);
     /// ```
-    pub fn range_values<'b>(&'b self) -> RangeValuesIter<'b, T, V> {
+    pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
         RangeValuesIter {
             iter: self.btree_map.iter(),
         }
@@ -1486,7 +1481,8 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// let complement = map.complement_with("z");
     /// assert_eq!(complement.to_string(), r#"(0..=9, "z"), (26..=29, "z"), (41..=65535, "z")"#);
     /// ```
-    pub fn complement_with(&self, value: V) -> RangeMapBlaze<T, V> {
+    #[must_use]
+    pub fn complement_with(&self, value: &V) -> Self {
         self.ranges()
             .complement()
             .map(|r| (r, value.borrow_clone()))
@@ -1540,7 +1536,8 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     // cmk00 is this really the only place we need this?
     // cmk00 is this tested enough?
     /// cmk doc
-    pub fn intersection_with_set(&self, other: &RangeSetBlaze<T>) -> RangeMapBlaze<T, V> {
+    #[must_use]
+    pub fn intersection_with_set(&self, other: &RangeSetBlaze<T>) -> Self {
         self.range_values()
             .intersection_with_set(other.ranges())
             .into_range_map_blaze()
@@ -1567,7 +1564,7 @@ pub type SortedStartsInVecMap<T, V, VR> =
 #[doc(hidden)]
 pub type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
-impl<T: Integer, V: PartialEqClone> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
     /// Passing ownership rather than borrow sometimes allows a many-times
@@ -1581,8 +1578,8 @@ impl<T: Integer, V: PartialEqClone> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze
     /// let union = a | b;
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
-    type Output = RangeMapBlaze<T, V>;
-    fn bitor(self, other: Self) -> RangeMapBlaze<T, V> {
+    type Output = Self;
+    fn bitor(self, other: Self) -> Self {
         // cmk
         // self |= other;
         // self
@@ -1590,7 +1587,7 @@ impl<T: Integer, V: PartialEqClone> BitOr<RangeMapBlaze<T, V>> for RangeMapBlaze
     }
 }
 
-impl<T: Integer, V: PartialEqClone> BitOr<&RangeMapBlaze<T, V>> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: PartialEqClone> BitOr<&Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
     /// Passing ownership rather than borrow sometimes allows a many-times
@@ -1604,8 +1601,8 @@ impl<T: Integer, V: PartialEqClone> BitOr<&RangeMapBlaze<T, V>> for RangeMapBlaz
     /// let union = a | &b;
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
-    type Output = RangeMapBlaze<T, V>;
-    fn bitor(self, other: &Self) -> RangeMapBlaze<T, V> {
+    type Output = Self;
+    fn bitor(self, other: &Self) -> Self {
         // self |= other;
         // self
         (self.range_values() | other.range_values()).into_range_map_blaze()
@@ -1664,8 +1661,8 @@ where
 
 impl<V: PartialEqClone> UniqueValue<V> {
     /// Creates a new `UniqueValue` with the provided value.
-    pub fn new(v: V) -> Self {
-        UniqueValue { value: Some(v) }
+    pub const fn new(v: V) -> Self {
+        Self { value: Some(v) }
     }
 }
 
@@ -1674,7 +1671,7 @@ where
     V: PartialEqClone,
 {
     fn clone_borrow(&self) -> Self {
-        UniqueValue {
+        Self {
             value: self.value.clone(),
         }
     }

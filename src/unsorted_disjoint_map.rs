@@ -35,7 +35,7 @@ where
     I: Iterator<Item = (RangeInclusive<T>, VR)>, // Any iterator is fine
 {
     pub fn new(into_iter: I) -> Self {
-        UnsortedPriorityDisjointMap {
+        Self {
             iter: into_iter,
             option_priority: None,
             min_value_plus_2: T::min_value().add_one().add_one(),
@@ -118,7 +118,7 @@ where
     // There could be one extra if option_range is Some.
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (lower, upper) = self.iter.size_hint();
-        let lower = if lower == 0 { 0 } else { 1 };
+        let lower = min(lower, 1);
         if self.option_priority.is_some() {
             (lower, upper.map(|x| x + 1))
         } else {
@@ -162,7 +162,7 @@ where
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
-    pub fn len_so_far(&self) -> <T as Integer>::SafeLen {
+    pub const fn len_so_far(&self) -> <T as Integer>::SafeLen {
         self.len
     }
 }
@@ -274,7 +274,7 @@ where
     I::IntoIter: SortedDisjointMap<T, V, VR>,
 {
     fn from(into_iter: I) -> Self {
-        SortedDisjointMapWithLenSoFar {
+        Self {
             iter: into_iter.into_iter(),
             len: <T as Integer>::SafeLen::zero(),
             phantom_data: PhantomData,

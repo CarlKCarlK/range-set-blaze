@@ -118,6 +118,7 @@ where
     }
 
     #[inline]
+    #[allow(clippy::option_option)]
     fn process(
         &mut self,
         keep: bool,
@@ -147,7 +148,7 @@ where
 
         // Next is disjoint from gather, so return gather and set gather to next.
         self.gather = Some(next_start..=next_end);
-        return Some(Some(gather_start..=gather_end));
+        Some(Some(gather_start..=gather_end))
     }
 
     /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators.

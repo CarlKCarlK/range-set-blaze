@@ -1,5 +1,4 @@
 use core::ops::RangeInclusive;
-
 use num_traits::identities::One;
 use rand::distributions::uniform::SampleUniform;
 use rand::rngs::StdRng;

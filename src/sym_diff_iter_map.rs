@@ -31,14 +31,14 @@ where
     ready_to_go: Option<(RangeInclusive<T>, VR)>,
 }
 
-fn min_next_end<T>(next_end: &Option<T>, next_item_end: T) -> Option<T>
+fn min_next_end<T>(next_end: &Option<T>, next_item_end: T) -> T
 where
     T: Integer,
 {
-    Some(next_end.map_or_else(
+    next_end.map_or_else(
         || next_item_end,
         |current_end| cmp::min(current_end, next_item_end),
-    ))
+    )
 }
 
 impl<T, V, VR, I> FusedIterator for SymDiffIterMap<T, V, VR, I>
@@ -73,7 +73,8 @@ where
 
                 // If workspace is empty, just push the next item
                 let Some(best) = self.workspace.peek() else {
-                    self.workspace_next_end = min_next_end(&self.workspace_next_end, next_end);
+                    self.workspace_next_end =
+                        Some(min_next_end(&self.workspace_next_end, next_end));
                     self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     continue; // return to top of the main processing loop
@@ -81,7 +82,8 @@ where
                 let best = best.range_value();
                 if next_start == *best.0.start() {
                     // Always push (this differs from UnionIterMap)
-                    self.workspace_next_end = min_next_end(&self.workspace_next_end, next_end);
+                    self.workspace_next_end =
+                        Some(min_next_end(&self.workspace_next_end, next_end));
                     self.workspace.push(next_item);
                     self.next_item = self.iter.next();
                     continue; // return to top of the main processing loop
@@ -153,7 +155,7 @@ where
                     continue; // while loop
                 }
                 item.set_range(next_end.add_one()..=item.end());
-                new_next_end = min_next_end(&new_next_end, item.end());
+                new_next_end = Some(min_next_end(&new_next_end, item.end()));
                 new_workspace.push(item);
             }
             self.workspace = new_workspace;

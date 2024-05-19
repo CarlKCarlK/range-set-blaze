@@ -1371,7 +1371,7 @@ fn from_slice_all_types() {
             println!("ty={:#?}",size_of::<$ty>() * 8);
             let v: Vec<$ty> = (0..=127).collect();
             let a2 = RangeSetBlaze::from_slice(&v);
-            assert!(a2.into_string() == "0..=127");
+            assert!(a2.to_string() == "0..=127");
         )*
     }};
 
@@ -1380,7 +1380,7 @@ fn from_slice_all_types() {
             println!("ty={:#?}",size_of::<$ty>() * 8);
             let v: Vec<$ty> = (0..=5000).collect();
             let a2 = RangeSetBlaze::from_slice(&v);
-            assert!(a2.into_string() == "0..=5000");
+            assert!(a2.to_string() == "0..=5000");
         )*
     }};
 }
@@ -1422,20 +1422,20 @@ fn range_set_int_slice_constructor() {
 
     let v: Vec<i32> = (100..=150).collect();
     let a2 = RangeSetBlaze::from_slice(v);
-    assert!(a2.into_string() == "100..=150");
+    assert!(a2.to_string() == "100..=150");
 
     // For compatibility with `BTreeSet`, we also support
     // 'from'/'into' from arrays of integers.
     let a0 = RangeSetBlaze::from([3, 2, 1, 100, 1]);
     let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
-    assert!(a0 == a1 && a0.into_string() == "1..=3, 100..=100");
+    assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 
     #[allow(clippy::needless_borrows_for_generic_args)]
     let a2 = RangeSetBlaze::from_slice(&[3, 2, 1, 100, 1]);
-    assert!(a0 == a2 && a2.into_string() == "1..=3, 100..=100");
+    assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
 
     let a2 = RangeSetBlaze::from_slice([3, 2, 1, 100, 1]);
-    assert!(a0 == a2 && a2.into_string() == "1..=3, 100..=100");
+    assert!(a0 == a2 && a2.to_string() == "1..=3, 100..=100");
 }
 
 #[test]

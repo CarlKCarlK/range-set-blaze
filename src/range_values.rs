@@ -28,9 +28,7 @@ pub struct RangeValuesIter<'a, T: Integer, V: PartialEqClone> {
 }
 
 // cmk00 what is this for?
-impl<'a, T: Integer, V: PartialEqClone> AsRef<RangeValuesIter<'a, T, V>>
-    for RangeValuesIter<'a, T, V>
-{
+impl<T: Integer, V: PartialEqClone> AsRef<Self> for RangeValuesIter<'_, T, V> {
     fn as_ref(&self) -> &Self {
         // Self is RangeValuesIter<'a>, the type for which we impl AsRef
         self
@@ -132,13 +130,13 @@ pub struct MapRangesIter<'a, T: Integer, V: PartialEqClone> {
 }
 
 impl<'a, T: Integer, V: PartialEqClone> MapRangesIter<'a, T, V> {
-    pub fn new(iter: btree_map::Iter<'a, T, EndValue<T, V>>) -> Self {
+    pub const fn new(iter: btree_map::Iter<'a, T, EndValue<T, V>>) -> Self {
         MapRangesIter { iter, gather: None }
     }
 }
 
 // cmk00 what is this for?
-impl<'a, T: Integer, V: PartialEqClone> AsRef<MapRangesIter<'a, T, V>> for MapRangesIter<'a, T, V> {
+impl<T: Integer, V: PartialEqClone> AsRef<Self> for MapRangesIter<'_, T, V> {
     fn as_ref(&self) -> &Self {
         // Self is MapRangesIter<'a>, the type for which we impl AsRef
         self
@@ -206,7 +204,7 @@ pub struct MapIntoRangesIter<T: Integer, V: PartialEqClone> {
 
 impl<T: Integer, V: PartialEqClone> MapIntoRangesIter<T, V> {
     pub fn new(iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
-        MapIntoRangesIter { iter, gather: None }
+        Self { iter, gather: None }
     }
 }
 
@@ -296,7 +294,7 @@ where
 {
     /// Creates a new `RangeValuesToRangesIter` from an existing sorted disjoint map iterator.
     /// `option_ranges` is initialized as `None` by default.
-    pub fn new(iter: I) -> Self {
+    pub const fn new(iter: I) -> Self {
         Self {
             iter,
             gather: None,         // cmk rename "gather"?
@@ -404,8 +402,8 @@ where
     VR: CloneBorrow<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
-    pub fn new(iter: I, priority: usize) -> Self {
-        SetPriorityMap {
+    pub const fn new(iter: I, priority: usize) -> Self {
+        Self {
             iter,
             priority_number: priority,
             phantom_data: PhantomData,

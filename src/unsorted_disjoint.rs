@@ -23,7 +23,7 @@ where
     I: Iterator<Item = RangeInclusive<T>>, // Any iterator is fine
 {
     pub fn new(iter: I) -> Self {
-        UnsortedDisjoint {
+        Self {
             iter,
             option_range: None,
             min_value_plus_2: T::min_value().add_one().add_one(),
@@ -47,11 +47,9 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let range = match self.iter.next() {
-                Some(r) => r,
-                None => return self.option_range.take(),
+            let Some(range) = self.iter.next() else {
+                return self.option_range.take();
             };
-
             let (next_start, next_end) = range.into_inner();
             if next_start > next_end {
                 continue;
@@ -79,7 +77,7 @@ where
     // There could be one extra if option_range is Some.
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (lower, upper) = self.iter.size_hint();
-        let lower = if lower == 0 { 0 } else { 1 };
+        let lower = min(lower, 1);
         if self.option_range.is_some() {
             (lower, upper.map(|x| x + 1))
         } else {
@@ -105,7 +103,7 @@ where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint<T>,
 {
     pub fn new(iter: I) -> Self {
-        SortedDisjointWithLenSoFar {
+        Self {
             iter,
             len: T::SafeLen::zero(),
         }
@@ -116,7 +114,7 @@ impl<T: Integer, I> SortedDisjointWithLenSoFar<T, I>
 where
     I: SortedDisjoint<T>,
 {
-    pub fn len_so_far(&self) -> <T as Integer>::SafeLen {
+    pub const fn len_so_far(&self) -> <T as Integer>::SafeLen {
         self.len
     }
 }

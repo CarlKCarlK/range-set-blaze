@@ -180,6 +180,7 @@ impl_is_consecutive!(u64);
 impl_is_consecutive!(usize);
 
 #[test]
+#[allow(clippy::cast_possible_truncation)]
 fn test_is_consecutive() {
     use core::array;
 

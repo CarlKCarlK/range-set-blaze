@@ -476,7 +476,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         I: SortedDisjoint<T>,
     {
         let mut iter_with_len = SortedDisjointWithLenSoFar::new(iter);
-        let btree_map = BTreeMap::from_iter(&mut iter_with_len);
+        let btree_map = (&mut iter_with_len).collect();
         Self {
             btree_map,
             len: iter_with_len.len_so_far(),
@@ -637,7 +637,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     #[must_use]
     #[inline]
-    pub fn is_subset(&self, other: &RangeSetBlaze<T>) -> bool {
+    pub fn is_subset(&self, other: &Self) -> bool {
         // Add a fast path
         if self.len() > other.len() {
             return false;
@@ -920,6 +920,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(a, RangeSetBlaze::from_iter([1, 2]));
     /// assert_eq!(b, RangeSetBlaze::from_iter([3, 17, 41]));
     /// ```
+    #[must_use]
     pub fn split_off(&mut self, key: T) -> Self {
         let old_len = self.len;
         let old_btree_len = self.btree_map.len();
@@ -927,7 +928,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         let Some(last_entry) = self.btree_map.last_entry() else {
             // Left is empty
             self.len = T::SafeLen::zero();
-            return RangeSetBlaze {
+            return Self {
                 btree_map: new_btree,
                 len: old_len,
             };
@@ -938,7 +939,7 @@ impl<T: Integer> RangeSetBlaze<T> {
             // The split is clean
             let (a_len, b_len) = self.two_element_lengths(old_btree_len, &new_btree, old_len);
             self.len = a_len;
-            return RangeSetBlaze {
+            return Self {
                 btree_map: new_btree,
                 len: b_len,
             };
@@ -949,7 +950,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         new_btree.insert(key, end);
         let (a_len, b_len) = self.two_element_lengths(old_btree_len, &new_btree, old_len);
         self.len = a_len;
-        RangeSetBlaze {
+        Self {
             btree_map: new_btree,
             len: b_len,
         }
@@ -957,7 +958,7 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     // Find the len of the smaller btree_map and then the element len of self & b.
     fn two_element_lengths(
-        &mut self,
+        &self,
         old_btree_len: usize,
         new_btree: &BTreeMap<T, T>,
         mut old_len: <T as Integer>::SafeLen,
@@ -1095,10 +1096,10 @@ impl<T: Integer> RangeSetBlaze<T> {
         let mut before = self.btree_map.range_mut(..=start).rev();
         if let Some((start_before, end_before)) = before.next() {
             // Must check this in two parts to avoid overflow
-            if match (*end_before).checked_add_one() {
-                Some(end_before_succ) => end_before_succ < start,
-                None => false,
-            } {
+            if (*end_before)
+                .checked_add_one()
+                .map_or(false, |end_before_succ| end_before_succ < start)
+            {
                 self.internal_add2(&range);
             } else if *end_before < end {
                 self.len += T::safe_len(&(*end_before..=end.sub_one()));
@@ -1215,10 +1216,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert!(set.is_empty());
     /// ```
     pub fn pop_last(&mut self) -> Option<T> {
-        let Some(mut entry) = self.btree_map.last_entry() else {
-            return None;
-        };
-
+        let mut entry = self.btree_map.last_entry()?;
         let start = *entry.key();
         let end = entry.get_mut();
         let result = *end;
@@ -1296,6 +1294,12 @@ impl<T: Integer> RangeSetBlaze<T> {
         IntoRangesIter {
             iter: self.btree_map.into_iter(),
         }
+    }
+
+    /// Deprecated. Use `RangeSetBlaze::to_string` instead.
+    #[deprecated(note = "Use `RangeSetBlaze::to_string` instead.")]
+    pub fn into_string(&self) -> String {
+        self.to_string()
     }
 
     // FUTURE BTreeSet some of these as 'const' but it uses unstable. When stable, add them here and elsewhere.
@@ -1739,7 +1743,7 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
     }
 }
 
-impl<T: Integer> BitOrAssign<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
+impl<T: Integer> BitOrAssign<&Self> for RangeSetBlaze<T> {
     /// Adds the contents of another [`RangeSetBlaze`] to this one.
     ///
     /// Passing the right-hand side by ownership rather than borrow
@@ -1772,7 +1776,7 @@ impl<T: Integer> BitOrAssign<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
     }
 }
 
-impl<T: Integer> BitOrAssign<RangeSetBlaze<T>> for RangeSetBlaze<T> {
+impl<T: Integer> BitOrAssign<Self> for RangeSetBlaze<T> {
     /// Adds the contents of another [`RangeSetBlaze`] to this one.
     ///
     /// Passing the right-hand side by ownership rather than borrow
@@ -1803,7 +1807,7 @@ impl<T: Integer> BitOrAssign<RangeSetBlaze<T>> for RangeSetBlaze<T> {
     }
 }
 
-impl<T: Integer> BitOr<RangeSetBlaze<T>> for RangeSetBlaze<T> {
+impl<T: Integer> BitOr<Self> for RangeSetBlaze<T> {
     /// Unions the contents of two [`RangeSetBlaze`]'s.
     ///
     /// Passing ownership rather than borrow sometimes allows a many-times
@@ -1817,14 +1821,14 @@ impl<T: Integer> BitOr<RangeSetBlaze<T>> for RangeSetBlaze<T> {
     /// let union = a | b;
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
-    type Output = RangeSetBlaze<T>;
-    fn bitor(mut self, other: Self) -> RangeSetBlaze<T> {
+    type Output = Self;
+    fn bitor(mut self, other: Self) -> Self {
         self |= other;
         self
     }
 }
 
-impl<T: Integer> BitOr<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
+impl<T: Integer> BitOr<&Self> for RangeSetBlaze<T> {
     /// Unions the contents of two [`RangeSetBlaze`]'s.
     ///
     /// Passing ownership rather than borrow sometimes allows a many-times
@@ -1838,8 +1842,8 @@ impl<T: Integer> BitOr<&RangeSetBlaze<T>> for RangeSetBlaze<T> {
     /// let union = a | &b;
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
-    type Output = RangeSetBlaze<T>;
-    fn bitor(mut self, other: &Self) -> RangeSetBlaze<T> {
+    type Output = Self;
+    fn bitor(mut self, other: &Self) -> Self {
         self |= other;
         self
     }
@@ -1947,7 +1951,7 @@ impl<T: Integer> Ord for RangeSetBlaze<T> {
     /// ```
 
     #[inline]
-    fn cmp(&self, other: &RangeSetBlaze<T>) -> Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         // slow one by one: return self.iter().cmp(other.iter());
 
         // fast by ranges:

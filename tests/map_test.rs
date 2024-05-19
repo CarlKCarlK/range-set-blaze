@@ -763,7 +763,7 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
     let a1 = RangeMapBlaze::from_iter([(8..=9, "a1"), (11..=15, "a1")]);
     let a = &a0 | &a1;
-    let not_a = &a.complement_with("A");
+    let not_a = &a.complement_with(&"A");
     let b = a.range_values();
     let c = not_a.range_values().complement(&"A");
     let d = a0.range_values().union(a1.range_values());
@@ -4146,5 +4146,5 @@ fn test_coverage_5() {
 #[test]
 fn test_coverage_6() {
     let mut a = RangeMapBlaze::from_iter([(1u128..=4, "Hello")]);
-    a.split_off(u128::MAX);
+    let _ = a.split_off(u128::MAX);
 }

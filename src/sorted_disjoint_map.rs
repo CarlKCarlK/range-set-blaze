@@ -502,7 +502,7 @@ where
     I: Iterator<Item = T>,
 {
     fn into_string(self) -> String {
-        self.map(|item| format!("{:?}", item))
+        self.map(|item| format!("{item:?}"))
             .collect::<Vec<String>>()
             .join(", ")
     }
@@ -559,7 +559,7 @@ where
     where
         J: IntoIterator<Item = (RangeInclusive<T>, VR), IntoIter = I>,
     {
-        CheckSortedDisjointMap {
+        Self {
             iter: iter.into_iter(),
             seen_none: false,
             previous: None,
@@ -666,7 +666,7 @@ where
     VR: CloneBorrow<V>,
 {
     /// cmk doc
-    pub fn new(range_value: (RangeInclusive<T>, VR), priority_number: usize) -> Self {
+    pub const fn new(range_value: (RangeInclusive<T>, VR), priority_number: usize) -> Self {
         Self {
             range_value,
             priority_number,
@@ -682,11 +682,11 @@ where
     VR: CloneBorrow<V>,
 {
     /// Returns the priority number.
-    pub fn priority_number(&self) -> usize {
+    pub const fn priority_number(&self) -> usize {
         self.priority_number
     }
     /// Returns a reference to `range_value`.
-    pub fn range_value(&self) -> &(RangeInclusive<T>, VR) {
+    pub const fn range_value(&self) -> &(RangeInclusive<T>, VR) {
         &self.range_value
     }
 
@@ -711,25 +711,22 @@ where
     }
 
     /// Returns the start of the range.
-    pub fn start(&self) -> T {
+    pub const fn start(&self) -> T {
         *self.range_value.0.start()
     }
 
     /// Returns the end of the range.
-    pub fn end(&self) -> T {
+    pub const fn end(&self) -> T {
         *self.range_value.0.end()
     }
 
     /// Returns the start and end of the range. (Assuming direct access to start and end)
-    pub fn start_and_end(&self) -> (T, T) {
-        (
-            (*self.range_value.0.start()).clone(),
-            (*self.range_value.0.end()).clone(),
-        )
+    pub const fn start_and_end(&self) -> (T, T) {
+        ((*self.range_value.0.start()), (*self.range_value.0.end()))
     }
 
     /// Returns a reference to the value part of `range_value`.
-    pub fn value(&self) -> &VR {
+    pub const fn value(&self) -> &VR {
         &self.range_value.1
     }
 }
@@ -798,7 +795,7 @@ where
     V: PartialEqClone,
     I: SortedDisjoint<T>,
 {
-    pub fn new(inner: I, value: &'a V) -> Self {
+    pub const fn new(inner: I, value: &'a V) -> Self {
         Self {
             inner,
             value,

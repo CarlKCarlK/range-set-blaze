@@ -559,7 +559,7 @@ where
 {
     /// Creates a new [`CheckSortedDisjoint`] from an iterator of ranges. See [`CheckSortedDisjoint`] for details and examples.
     pub fn new<J: IntoIterator<IntoIter = I>>(iter: J) -> Self {
-        CheckSortedDisjoint {
+        Self {
             iter: iter.into_iter(),
             prev_end: None,
             seen_none: false,

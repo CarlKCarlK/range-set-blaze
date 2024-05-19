@@ -1893,8 +1893,8 @@ fn gen_pair_i8(rng: &mut StdRng) -> (i8, i8) {
 
 fn gen_pair_u8(rng: &mut StdRng) -> (u8, u8) {
     (
-        rng.gen_range(std::u8::MIN..=std::u8::MAX),
-        rng.gen_range(std::u8::MIN..=std::u8::MAX),
+        rng.gen_range(u8::MIN..=u8::MAX),
+        rng.gen_range(u8::MIN..=u8::MAX),
     )
 }
 

@@ -895,7 +895,7 @@ fn lib_coverage_3() {
 #[test]
 fn lib_coverage_4() {
     let mut v = RangeSetBlaze::<u128>::new();
-    v.split_off(u128::MAX);
+    let _ = v.split_off(u128::MAX);
 }
 
 #[test]

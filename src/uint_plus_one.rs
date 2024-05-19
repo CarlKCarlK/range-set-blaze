@@ -24,10 +24,10 @@ pub trait UInt:
 impl UInt for u128 {}
 impl UInt for u8 {}
 
-/// Used to represent values from 0 to u128::MAX + 1 (inclusive).
+/// Used to represent values from `0` to `u128::MAX + 1` (inclusive).
 ///
 /// Needed to represent every possible length of a `RangeInclusive<i128>` and `RangeInclusive<u128>`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UIntPlusOne<T>
 where
     T: UInt,
@@ -43,6 +43,9 @@ where
     T: UInt,
 {
     /// cmk
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_wrap)]
+    #[must_use]
     pub fn max_plus_one_as_f64() -> f64 {
         2.0f64.powi((mem::size_of::<T>() * 8) as i32)
     }
@@ -54,8 +57,8 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            UIntPlusOne::UInt(v) => write!(f, "{}", v),
-            UIntPlusOne::MaxPlusOne => write!(f, "(u128::MAX + 1"),
+            Self::UInt(v) => write!(f, "{v}"),
+            Self::MaxPlusOne => write!(f, "(u128::MAX + 1"),
         }
     }
 }
@@ -65,11 +68,11 @@ where
     T: UInt,
 {
     fn zero() -> Self {
-        UIntPlusOne::UInt(T::zero())
+        Self::UInt(T::zero())
     }
 
     fn is_zero(&self) -> bool {
-        matches!(self, UIntPlusOne::UInt(v) if v.is_zero())
+        matches!(self, Self::UInt(v) if v.is_zero())
     }
 }
 
@@ -115,13 +118,13 @@ where
         let max: T = T::max_value();
 
         *self = match (*self, rhs) {
-            (UIntPlusOne::UInt(a), UIntPlusOne::UInt(b)) => UIntPlusOne::UInt(a - b),
-            (UIntPlusOne::MaxPlusOne, UIntPlusOne::UInt(z)) if z == zero => UIntPlusOne::MaxPlusOne,
-            (UIntPlusOne::MaxPlusOne, UIntPlusOne::UInt(v)) => UIntPlusOne::UInt(max - (v - one)),
-            (UIntPlusOne::MaxPlusOne, UIntPlusOne::MaxPlusOne) => UIntPlusOne::UInt(zero),
-            (UIntPlusOne::UInt(_), UIntPlusOne::MaxPlusOne) => {
+            (Self::UInt(a), Self::UInt(b)) => Self::UInt(a - b),
+            (Self::MaxPlusOne, Self::UInt(z)) if z == zero => Self::MaxPlusOne,
+            (Self::MaxPlusOne, Self::UInt(v)) => Self::UInt(max - (v - one)),
+            (Self::MaxPlusOne, Self::MaxPlusOne) => Self::UInt(zero),
+            (Self::UInt(_), Self::MaxPlusOne) => {
                 debug_assert!(false, "UIntPlusOne::UInt - UIntPlusOne::Max");
-                UIntPlusOne::UInt(zero)
+                Self::UInt(zero)
             }
         }
     }
@@ -141,7 +144,7 @@ where
     T: UInt,
 {
     fn one() -> Self {
-        UIntPlusOne::UInt(T::one())
+        Self::UInt(T::one())
     }
 }
 
@@ -156,22 +159,20 @@ where
         let one: T = T::one();
 
         match (self, rhs) {
-            (UIntPlusOne::UInt(o1), b) | (b, UIntPlusOne::UInt(o1)) if o1 == one => b,
-            (UIntPlusOne::UInt(z), _) | (_, UIntPlusOne::UInt(z)) if z == zero => {
-                UIntPlusOne::UInt(zero)
-            }
-            (UIntPlusOne::UInt(a), UIntPlusOne::UInt(b)) => {
+            (Self::UInt(o1), b) | (b, Self::UInt(o1)) if o1 == one => b,
+            (Self::UInt(z), _) | (_, Self::UInt(z)) if z == zero => Self::UInt(zero),
+            (Self::UInt(a), Self::UInt(b)) => {
                 let (a_times_b_less1, overflow) = a.overflowing_mul(&(b - one));
                 if overflow {
                     debug_assert!(false, "overflow");
-                    UIntPlusOne::MaxPlusOne
+                    Self::MaxPlusOne
                 } else {
-                    UIntPlusOne::UInt(a_times_b_less1) + self
+                    Self::UInt(a_times_b_less1) + self
                 }
             }
-            (UIntPlusOne::MaxPlusOne, _) | (_, UIntPlusOne::MaxPlusOne) => {
+            (Self::MaxPlusOne, _) | (_, Self::MaxPlusOne) => {
                 debug_assert!(false, "UIntPlusOne::Max * something more than 1");
-                UIntPlusOne::MaxPlusOne
+                Self::MaxPlusOne
             }
         }
     }
@@ -183,10 +184,10 @@ where
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            (UIntPlusOne::MaxPlusOne, UIntPlusOne::MaxPlusOne) => Some(Ordering::Equal),
-            (UIntPlusOne::MaxPlusOne, _) => Some(Ordering::Greater),
-            (_, UIntPlusOne::MaxPlusOne) => Some(Ordering::Less),
-            (UIntPlusOne::UInt(a), UIntPlusOne::UInt(b)) => a.partial_cmp(b),
+            (Self::MaxPlusOne, Self::MaxPlusOne) => Some(Ordering::Equal),
+            (Self::MaxPlusOne, _) => Some(Ordering::Greater),
+            (_, Self::MaxPlusOne) => Some(Ordering::Less),
+            (Self::UInt(a), Self::UInt(b)) => a.partial_cmp(b),
         }
     }
 }

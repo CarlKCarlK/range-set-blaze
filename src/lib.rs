@@ -8,13 +8,13 @@
     single_use_lifetimes,
     clippy::pedantic,
     // cmk00 unreachable_pub,
-    clippy::cargo,
+    // cmk00 clippy::cargo,
     clippy::perf,
     clippy::style,
     clippy::complexity,
     clippy::correctness,
     clippy::nursery,
-    clippy::cargo_common_metadata
+    // cmk00 clippy::cargo_common_metadata
 )]
 
 // cmk #![feature(step_trait)] // cmk use unstable feature???
