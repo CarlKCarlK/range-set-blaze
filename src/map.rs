@@ -9,6 +9,7 @@ use crate::unsorted_disjoint_map::{
     AssumePrioritySortedStartsMap, SortedDisjointMapWithLenSoFar, UnsortedPriorityDisjointMap,
 };
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 use crate::SomeOrGap;
 use crate::{
     AssumeSortedStarts, CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint,
@@ -466,6 +467,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
 
     /// cmk doc
     #[cfg(feature = "rog-experimental")]
+    #[allow(deprecated)]
     pub fn get_range_value<'a>(&'a self, key: T) -> SomeOrGap<(RangeInclusive<T>, &'a V), T> {
         let one_back = self.btree_map.range(..=key).next_back();
         let Some((start, end_value)) = one_back else {

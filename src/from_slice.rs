@@ -1,10 +1,10 @@
 #![cfg(feature = "from_slice")]
 
 use alloc::slice;
-
-use crate::Integer;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive, ops::Sub};
+
+use crate::Integer;
 
 // cmk0 be sure this is still needed.
 #[allow(clippy::module_name_repetitions)]
@@ -22,7 +22,7 @@ where
     slice_len: usize,
 }
 
-impl<'a, T: 'a, const N: usize> FromSliceIter<'a, T, N>
+impl<'a, T, const N: usize> FromSliceIter<'a, T, N>
 where
     T: SimdInteger,
     LaneCount<N>: SupportedLaneCount,
@@ -47,7 +47,7 @@ where
 {
 }
 
-impl<'a, T: 'a, const N: usize> Iterator for FromSliceIter<'a, T, N>
+impl<T, const N: usize> Iterator for FromSliceIter<'_, T, N>
 where
     T: SimdInteger,
     Simd<T, N>: Sub<Output = Simd<T, N>>,
@@ -130,6 +130,8 @@ pub trait SimdInteger: Integer + SimdElement {
 macro_rules! define_const_reference {
     ($type:ty) => {
         #[allow(clippy::cast_precision_loss)]
+        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_possible_wrap)]
         const fn comparison_value<const N: usize>() -> Simd<$type, N>
         where
             LaneCount<N>: SupportedLaneCount,

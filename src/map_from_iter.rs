@@ -56,8 +56,7 @@ where
     where
         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
-        let iter = iter.into_iter();
-        let union_iter_map = UnionIterMap::<T, V, &V, _>::from_iter(iter);
+        let union_iter_map = iter.into_iter().collect::<UnionIterMap<T, V, &V, _>>();
         Self::from_sorted_disjoint_map(union_iter_map)
     }
 }
@@ -83,10 +82,10 @@ impl<T: Integer, V: PartialEqClone> FromIterator<(RangeInclusive<T>, V)> for Ran
     where
         I: IntoIterator<Item = (RangeInclusive<T>, V)>,
     {
-        let iter = iter
+        let union_iter_map = iter
             .into_iter()
-            .map(|(r, v)| (r.clone(), UniqueValue::new(v)));
-        let union_iter_map = UnionIterMap::<T, V, UniqueValue<V>, _>::from_iter(iter);
+            .map(|(r, v)| (r, UniqueValue::new(v)))
+            .collect::<UnionIterMap<T, V, UniqueValue<V>, _>>();
         Self::from_sorted_disjoint_map(union_iter_map)
     }
 }
@@ -111,8 +110,7 @@ impl<T: Integer, V: PartialEqClone> FromIterator<(T, V)> for RangeMapBlaze<T, V>
     where
         I: IntoIterator<Item = (T, V)>,
     {
-        let iter = iter.into_iter().map(|(k, v)| (k..=k, v));
-        Self::from_iter(iter)
+        iter.into_iter().map(|(k, v)| (k..=k, v)).collect()
     }
 }
 
@@ -139,8 +137,7 @@ where
     where
         I: IntoIterator<Item = &'a (T, &'a V)>,
     {
-        let iter = iter.into_iter().map(|&(x, r)| (x..=x, r));
-        Self::from_iter(iter)
+        iter.into_iter().map(|&(x, r)| (x..=x, r)).collect()
     }
 }
 
@@ -168,9 +165,7 @@ where
     where
         I: IntoIterator<Item = &'a (RangeInclusive<T>, &'a V)>,
     {
-        let iter = iter.into_iter();
-        let iter = iter.map(|(r, v)| (r.clone(), *v));
-        Self::from_iter(iter)
+        iter.into_iter().map(|(r, v)| (r.clone(), *v)).collect()
     }
 }
 
@@ -197,9 +192,7 @@ impl<'a, T: Integer, V: PartialEqClone> FromIterator<&'a (RangeInclusive<T>, V)>
     where
         I: IntoIterator<Item = &'a (RangeInclusive<T>, V)>,
     {
-        let iter = iter.into_iter();
-        let iter = iter.map(|(r, v)| (r.clone(), v));
-        Self::from_iter(iter)
+        iter.into_iter().map(|(r, v)| (r.clone(), v)).collect()
     }
 }
 
@@ -223,11 +216,12 @@ impl<'a, T: Integer, V: PartialEqClone> FromIterator<&'a (T, V)> for RangeMapBla
     where
         I: IntoIterator<Item = &'a (T, V)>,
     {
-        let iter = iter.into_iter().map(|(k, v)| {
-            let k = *k;
-            (k..=k, v)
-        });
-        Self::from_iter(iter)
+        iter.into_iter()
+            .map(|(k, v)| {
+                let k = *k;
+                (k..=k, v)
+            })
+            .collect()
     }
 }
 

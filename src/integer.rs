@@ -137,14 +137,20 @@ macro_rules! impl_integer_ops {
 
         #[allow(clippy::cast_sign_loss)]
         #[allow(clippy::cast_precision_loss)]
+        #[allow(clippy::cast_possible_truncation)]
         fn f64_to_safe_len(f: f64) -> Self::SafeLen {
             f as Self::SafeLen
         }
 
+        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_possible_wrap)]
         fn add_len_less_one(self, b: Self::SafeLen) -> Self {
+            debug_assert!(b > 0);
             self + (b - 1) as Self
         }
 
+        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_possible_wrap)]
         fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
             self - (b - 1) as Self
         }
@@ -166,7 +172,7 @@ impl Integer for u8 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    impl_integer_ops!(u8, u8);
+    impl_integer_ops!(u8, Self);
 }
 
 impl Integer for i32 {
@@ -184,7 +190,7 @@ impl Integer for u32 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    impl_integer_ops!(u32, u32);
+    impl_integer_ops!(u32, Self);
 }
 
 impl Integer for i64 {
@@ -202,7 +208,7 @@ impl Integer for u64 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    impl_integer_ops!(u64, u64);
+    impl_integer_ops!(u64, Self);
 }
 
 impl Integer for i128 {
@@ -233,12 +239,12 @@ impl Integer for i128 {
 
     #[inline]
     fn min_value() -> Self {
-        Self::min_value()
+        Self::MIN
     }
 
     #[inline]
     fn max_value() -> Self {
-        Self::max_value()
+        Self::MAX
     }
 
     #[cfg(feature = "from_slice")]
@@ -247,6 +253,7 @@ impl Integer for i128 {
         slice.as_ref().iter().collect()
     }
 
+    #[allow(clippy::cast_sign_loss)]
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         debug_assert!(r.start() <= r.end());
         let less1 = r.end().overflowing_sub(r.start()).0 as u128;
@@ -254,12 +261,17 @@ impl Integer for i128 {
         less1 + UIntPlusOne::UInt(1)
     }
 
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_possible_truncation)]
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         match len {
             UIntPlusOne::UInt(v) => v as f64,
             UIntPlusOne::MaxPlusOne => UIntPlusOne::<u128>::max_plus_one_as_f64(),
         }
     }
+
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_possible_truncation)]
     fn f64_to_safe_len(f: f64) -> Self::SafeLen {
         if f >= UIntPlusOne::<u128>::max_plus_one_as_f64() {
             UIntPlusOne::MaxPlusOne
@@ -267,28 +279,34 @@ impl Integer for i128 {
             UIntPlusOne::UInt(f as u128)
         }
     }
+
+    #[allow(clippy::cast_possible_wrap)]
     fn add_len_less_one(self, b: Self::SafeLen) -> Self {
-        let UIntPlusOne::UInt(v) = b else {
+        let UIntPlusOne::UInt(b) = b else {
             debug_assert!(false, "Too large to add to i128");
-            return i128::MAX;
+            return Self::MAX;
         };
-        self + (v - 1) as Self
+        debug_assert!(b > 0);
+        self + (b - 1) as Self
     }
+
+    #[allow(clippy::cast_possible_wrap)]
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
         // a - (b - 1) as Self
-        let UIntPlusOne::UInt(v) = b else {
+        let UIntPlusOne::UInt(b) = b else {
             debug_assert!(false, "Too large to subtract from i128");
-            return i128::MIN;
+            return Self::MIN;
         };
-        self - (v - 1) as Self
+        debug_assert!(b > 0);
+        self - (b - 1) as Self
     }
 }
 
 impl Integer for u128 {
     #[cfg(target_pointer_width = "32")]
-    type SafeLen = UIntPlusOne<u128>;
+    type SafeLen = UIntPlusOne<Self>;
     #[cfg(target_pointer_width = "64")]
-    type SafeLen = UIntPlusOne<u128>;
+    type SafeLen = UIntPlusOne<Self>;
 
     #[inline]
     fn checked_add_one(self) -> Option<Self> {
@@ -312,12 +330,12 @@ impl Integer for u128 {
 
     #[inline]
     fn min_value() -> Self {
-        Self::min_value()
+        Self::MIN
     }
 
     #[inline]
     fn max_value() -> Self {
-        Self::max_value()
+        Self::MAX
     }
 
     #[cfg(feature = "from_slice")]
@@ -328,33 +346,35 @@ impl Integer for u128 {
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         debug_assert!(r.start() <= r.end());
-        let less1 = r.end().overflowing_sub(r.start()).0 as u128;
-        let less1 = UIntPlusOne::UInt(less1);
-        less1 + UIntPlusOne::UInt(1)
+        UIntPlusOne::UInt(r.end() - r.start()) + UIntPlusOne::UInt(1)
     }
 
+    #[allow(clippy::cast_precision_loss)]
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         match len {
-            UIntPlusOne::UInt(v) => v as f64,
-            UIntPlusOne::MaxPlusOne => UIntPlusOne::<u128>::max_plus_one_as_f64(),
+            UIntPlusOne::UInt(len) => len as f64,
+            UIntPlusOne::MaxPlusOne => UIntPlusOne::<Self>::max_plus_one_as_f64(),
         }
     }
+
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_possible_truncation)]
     fn f64_to_safe_len(f: f64) -> Self::SafeLen {
-        if f >= UIntPlusOne::<u128>::max_plus_one_as_f64() {
+        if f >= UIntPlusOne::<Self>::max_plus_one_as_f64() {
             UIntPlusOne::MaxPlusOne
         } else {
-            UIntPlusOne::UInt(f as u128)
+            UIntPlusOne::UInt(f as Self)
         }
     }
 
     fn add_len_less_one(self, b: Self::SafeLen) -> Self {
         // a + (b - 1) as Self
         match b {
-            UIntPlusOne::UInt(v) => {
-                debug_assert!(v > 0);
-                self + (v - 1)
+            UIntPlusOne::UInt(b) => {
+                debug_assert!(b > 0);
+                self + (b - 1)
             }
-            UIntPlusOne::MaxPlusOne => self + Self::max_value(),
+            UIntPlusOne::MaxPlusOne => self + Self::MAX,
         }
     }
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
@@ -364,7 +384,7 @@ impl Integer for u128 {
                 debug_assert!(v > 0);
                 self - (v - 1)
             }
-            UIntPlusOne::MaxPlusOne => self - Self::max_value(),
+            UIntPlusOne::MaxPlusOne => self - Self::MAX,
         }
     }
 }
@@ -384,7 +404,7 @@ impl Integer for usize {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
-    impl_integer_ops!(usize, usize);
+    impl_integer_ops!(usize, Self);
 }
 
 impl Integer for i16 {
@@ -402,7 +422,7 @@ impl Integer for u16 {
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
 
-    impl_integer_ops!(u16, u16);
+    impl_integer_ops!(u16, Self);
 }
 
 impl Integer for Ipv4Addr {
@@ -414,35 +434,35 @@ impl Integer for Ipv4Addr {
     #[inline]
     fn checked_add_one(self) -> Option<Self> {
         let num = u32::from(self);
-        num.checked_add(1).map(Ipv4Addr::from)
+        num.checked_add(1).map(Self::from)
     }
 
     #[inline]
     fn add_one(self) -> Self {
         let num = u32::from(self);
-        Ipv4Addr::from(num + 1)
+        Self::from(num + 1)
     }
 
     #[inline]
     fn sub_one(self) -> Self {
         let num = u32::from(self);
-        Ipv4Addr::from(num - 1)
+        Self::from(num - 1)
     }
 
     #[inline]
     fn assign_sub_one(&mut self) {
         let num = u32::from(*self);
-        *self = Ipv4Addr::from(num - 1);
+        *self = Self::from(num - 1);
     }
 
     #[inline]
     fn min_value() -> Self {
-        Ipv4Addr::new(0, 0, 0, 0)
+        Self::new(0, 0, 0, 0)
     }
 
     #[inline]
     fn max_value() -> Self {
-        Ipv4Addr::new(255, 255, 255, 255)
+        Self::new(255, 255, 255, 255)
     }
 
     #[cfg(feature = "from_slice")]
@@ -457,17 +477,26 @@ impl Integer for Ipv4Addr {
         end_num.overflowing_sub(start_num).0 as <Self as Integer>::SafeLen + 1
     }
 
+    #[allow(clippy::cast_precision_loss)]
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
     }
+
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
     fn f64_to_safe_len(f: f64) -> Self::SafeLen {
         f as Self::SafeLen
     }
+
+    #[allow(clippy::cast_possible_truncation)]
     fn add_len_less_one(self, b: Self::SafeLen) -> Self {
-        Ipv4Addr::from(u32::from(self) + b as u32 - 1)
+        debug_assert!(b > 0);
+        Self::from(u32::from(self) + (b - 1) as u32)
     }
+
+    #[allow(clippy::cast_possible_truncation)]
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
-        Ipv4Addr::from(u32::from(self) - (b as u32 + 1))
+        Self::from(u32::from(self) - (b + 1) as u32)
     }
 }
 
@@ -480,35 +509,35 @@ impl Integer for Ipv6Addr {
     #[inline]
     fn checked_add_one(self) -> Option<Self> {
         let num = u128::from(self);
-        num.checked_add(1).map(Ipv6Addr::from)
+        num.checked_add(1).map(Self::from)
     }
 
     #[inline]
     fn add_one(self) -> Self {
         let num = u128::from(self);
-        Ipv6Addr::from(num + 1)
+        Self::from(num + 1)
     }
 
     #[inline]
     fn sub_one(self) -> Self {
         let num = u128::from(self);
-        Ipv6Addr::from(num - 1)
+        Self::from(num - 1)
     }
 
     #[inline]
     fn assign_sub_one(&mut self) {
         let num = u128::from(*self);
-        *self = Ipv6Addr::from(num - 1);
+        *self = Self::from(num - 1);
     }
 
     #[inline]
     fn min_value() -> Self {
-        Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)
+        Self::new(0, 0, 0, 0, 0, 0, 0, 0)
     }
 
     #[inline]
     fn max_value() -> Self {
-        Ipv6Addr::from(u128::MAX)
+        Self::from(u128::MAX)
     }
 
     #[cfg(feature = "from_slice")]
@@ -522,17 +551,19 @@ impl Integer for Ipv6Addr {
         let end_num = u128::from(*r.end());
 
         debug_assert!(start_num <= end_num);
-        let less1 = end_num.overflowing_sub(start_num).0 as u128;
-        let less1 = UIntPlusOne::UInt(less1);
-        less1 + UIntPlusOne::UInt(1)
+        UIntPlusOne::UInt(end_num - start_num) + UIntPlusOne::UInt(1)
     }
 
+    #[allow(clippy::cast_precision_loss)]
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         match len {
-            UIntPlusOne::UInt(v) => v as f64,
+            UIntPlusOne::UInt(len) => len as f64,
             UIntPlusOne::MaxPlusOne => UIntPlusOne::<u128>::max_plus_one_as_f64(),
         }
     }
+
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
     fn f64_to_safe_len(f: f64) -> Self::SafeLen {
         if f >= UIntPlusOne::<u128>::max_plus_one_as_f64() {
             UIntPlusOne::MaxPlusOne
@@ -541,20 +572,20 @@ impl Integer for Ipv6Addr {
         }
     }
     fn add_len_less_one(self, b: Self::SafeLen) -> Self {
-        let UIntPlusOne::UInt(v) = b else {
+        let UIntPlusOne::UInt(b) = b else {
             debug_assert!(false, "Too large to add to Ipv6Addr");
-            return Ipv6Addr::from(u128::MAX);
+            return Self::from(u128::MAX);
         };
-        debug_assert!(v > 0);
-        Ipv6Addr::from(u128::from(self) + (v - 1))
+        debug_assert!(b > 0);
+        Self::from(u128::from(self) + (b - 1))
     }
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
         match b {
             UIntPlusOne::UInt(v) => {
                 debug_assert!(v > 0);
-                Ipv6Addr::from(u128::from(self) - (v - 1))
+                Self::from(u128::from(self) - (v - 1))
             }
-            UIntPlusOne::MaxPlusOne => Ipv6Addr::from(u128::from(self) - u128::MAX),
+            UIntPlusOne::MaxPlusOne => Self::from(u128::from(self) - u128::MAX),
         }
     }
 }
@@ -580,20 +611,20 @@ impl Integer for char {
             num = SURROGATE_END + 1;
         }
         // Will report char overflow as None
-        char::from_u32(num)
+        Self::from_u32(num)
     }
 
     #[inline]
     fn add_one(self) -> Self {
-        match self.checked_add_one() {
-            Some(c) => c,
-            None => {
+        self.checked_add_one().map_or_else(
+            || {
                 #[cfg(debug_assertions)]
                 panic!("char overflow");
                 #[cfg(not(debug_assertions))]
                 Self::max_value()
-            }
-        }
+            },
+            |c| c,
+        )
     }
 
     #[inline]
@@ -604,12 +635,12 @@ impl Integer for char {
             num = SURROGATE_START - 1;
         }
         // can never underflow here because of the range of char
-        char::from_u32(num).unwrap()
+        Self::from_u32(num).unwrap()
     }
 
     #[inline]
     fn assign_sub_one(&mut self) {
-        *self = self.sub_one()
+        *self = self.sub_one();
     }
 
     #[inline]
@@ -639,47 +670,56 @@ impl Integer for char {
         len
     }
 
+    #[allow(clippy::cast_precision_loss)]
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
     }
+
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
     fn f64_to_safe_len(f: f64) -> Self::SafeLen {
         f as Self::SafeLen
     }
+
+    #[allow(clippy::cast_possible_truncation)]
     fn add_len_less_one(self, b: Self::SafeLen) -> Self {
         let a = u32::from(self);
-        let mut num = a + b as u32 - 1;
+        debug_assert!(b > 0);
+        let mut num = a + (b - 1) as u32;
         // skip over the surrogate range
         if a < SURROGATE_START && SURROGATE_START <= num {
             num += SURROGATE_END - SURROGATE_START + 1;
         }
 
-        match char::from_u32(num) {
-            Some(c) => c,
-            None => {
+        Self::from_u32(num).map_or_else(
+            || {
                 #[cfg(debug_assertions)]
                 panic!("char overflow");
                 #[cfg(not(debug_assertions))]
                 Self::max_value()
-            }
-        }
+            },
+            |c| c,
+        )
     }
+
+    #[allow(clippy::cast_possible_truncation)]
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
         let a = u32::from(self);
-        let mut num = a - (b as u32 - 1);
+        let mut num = a - (b - 1) as u32;
         // skip over the surrogate range
         if num <= SURROGATE_END && SURROGATE_END < a {
             num -= SURROGATE_END - SURROGATE_START + 1;
         }
 
-        match char::from_u32(num) {
-            Some(c) => c,
-            None => {
+        Self::from_u32(num).map_or_else(
+            || {
                 #[cfg(debug_assertions)]
                 panic!("char underflow");
                 #[cfg(not(debug_assertions))]
                 Self::min_value()
-            }
-        }
+            },
+            |c| c,
+        )
     }
 }
 
