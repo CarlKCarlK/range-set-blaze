@@ -82,7 +82,7 @@ pub trait MultiwayRangeSetBlazeRef<T: Integer>:
     fn symmetric_difference(self) -> RangeSetBlaze<T> {
         RangeSetBlaze::from_sorted_disjoint(
             self.into_iter()
-                .map(|x| x.into_ranges())
+                .map(RangeSetBlaze::into_ranges)
                 .symmetric_difference(),
         )
     }

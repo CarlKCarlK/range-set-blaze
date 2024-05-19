@@ -82,11 +82,10 @@ where
             // We buffer for output the best item up to the start of the next item (if any).
 
             // Find the start of the next item, if any.
-            let next_end = if let Some(next_item) = self.next_item.as_ref() {
-                min(next_item.start().sub_one(), best.end())
-            } else {
-                best.end()
-            };
+            let next_end = self.next_item.as_ref().map_or_else(
+                || best.end(),
+                |next_item| min(next_item.start().sub_one(), best.end()),
+            );
 
             // Add the front of best to the gather buffer.
             if let Some(mut gather) = self.gather.take() {
@@ -103,7 +102,7 @@ where
                 }
             } else {
                 // if there is no gather, then set the gather to the best
-                self.gather = Some((best.start()..=next_end, best.value().clone_borrow()))
+                self.gather = Some((best.start()..=next_end, best.value().clone_borrow()));
             };
 
             // We also update the workspace to removing any items that are completely covered by the new_start.
@@ -218,7 +217,7 @@ where
         //     x
         // });
         let iter = UnsortedPriorityDisjointMap::new(iter);
-        UnionIterMap::from(iter)
+        Self::from(iter)
     }
 }
 

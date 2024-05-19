@@ -54,13 +54,13 @@ mod intersection_iter_map;
 /// cmk doc
 mod iter_map;
 mod map;
-mod ranges;
+mod ranges_iter;
 /// cmk doc
 mod set;
 pub use crate::range_values::IntoRangeValuesIter;
 pub use crate::range_values::{MapIntoRangesIter, MapRangesIter};
-pub use crate::ranges::IntoRangesIter;
-pub use crate::ranges::RangesIter;
+pub use crate::ranges_iter::IntoRangesIter;
+pub use crate::ranges_iter::RangesIter;
 pub use crate::set::RangeSetBlaze;
 pub use crate::sorted_disjoint_map::Priority;
 pub use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;

@@ -178,7 +178,7 @@ where
 {
     /// Construct [`AssumeSortedStarts`] from a range iterator.
     pub fn new<J: IntoIterator<IntoIter = I>>(iter: J) -> Self {
-        AssumeSortedStarts {
+        Self {
             iter: iter.into_iter(),
         }
     }

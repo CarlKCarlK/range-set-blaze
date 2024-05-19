@@ -3,16 +3,16 @@
 use alloc::slice;
 
 use crate::Integer;
-use core::array;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive, ops::Sub};
 
 // cmk0 be sure this is still needed.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub(crate) struct FromSliceIter<'a, T, const N: usize>
+pub struct FromSliceIter<'a, T, const N: usize>
 where
-    T: Integer + SimdElement + IsConsecutive,
+    T: SimdInteger,
     LaneCount<N>: SupportedLaneCount,
 {
     prefix_iter: core::slice::Iter<'a, T>,
@@ -24,7 +24,7 @@ where
 
 impl<'a, T: 'a, const N: usize> FromSliceIter<'a, T, N>
 where
-    T: Integer + SimdElement + IsConsecutive,
+    T: SimdInteger,
     LaneCount<N>: SupportedLaneCount,
 {
     pub(crate) fn new(slice: &'a [T]) -> Self {
@@ -41,7 +41,7 @@ where
 
 impl<T, const N: usize> FusedIterator for FromSliceIter<'_, T, N>
 where
-    T: Integer + SimdElement + IsConsecutive,
+    T: SimdInteger,
     Simd<T, N>: core::ops::Sub<Output = Simd<T, N>>,
     LaneCount<N>: SupportedLaneCount,
 {
@@ -49,7 +49,7 @@ where
 
 impl<'a, T: 'a, const N: usize> Iterator for FromSliceIter<'a, T, N>
 where
-    T: Integer + SimdElement + IsConsecutive,
+    T: SimdInteger,
     Simd<T, N>: Sub<Output = Simd<T, N>>,
     LaneCount<N>: SupportedLaneCount,
 {
@@ -120,10 +120,9 @@ where
     }
 }
 
-pub trait IsConsecutive {
+pub trait SimdInteger: Integer + SimdElement {
     fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
     where
-        Self: SimdElement,
         Simd<Self, N>: Sub<Simd<Self, N>, Output = Simd<Self, N>>,
         LaneCount<N>: SupportedLaneCount;
 }
@@ -150,7 +149,7 @@ macro_rules! impl_is_consecutive {
     ($type:ty) => {
         // Repeat for each integer type (i8, i16, i32, i64, isize, u8, u16, u32, u64, usize)
 
-        impl IsConsecutive for $type {
+        impl SimdInteger for $type {
             #[inline]
             fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
             where
@@ -180,6 +179,8 @@ impl_is_consecutive!(usize);
 
 #[test]
 fn test_is_consecutive() {
+    use core::array;
+
     let simd: Simd<i8, 64> = Simd::from_array(array::from_fn(|i| 10 + i as i8));
     assert!(i8::is_consecutive(simd));
 }

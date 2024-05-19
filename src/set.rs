@@ -20,7 +20,7 @@ use alloc::str::FromStr;
 use alloc::vec::Vec;
 use gen_ops::gen_ops_ex;
 
-use crate::ranges::RangesIter;
+use crate::ranges_iter::RangesIter;
 use crate::unsorted_disjoint::{SortedDisjointWithLenSoFar, UnsortedDisjoint};
 use crate::{prelude::*, Integer};
 use crate::{IntoRangesIter, UnionIter};
@@ -963,11 +963,11 @@ impl<T: Integer> RangeSetBlaze<T> {
         mut old_len: <T as Integer>::SafeLen,
     ) -> (<T as Integer>::SafeLen, <T as Integer>::SafeLen) {
         if old_btree_len / 2 < new_btree.len() {
-            let a_len = RangeSetBlaze::btree_map_len(&mut self.btree_map);
+            let a_len = Self::btree_map_len(&self.btree_map);
             old_len -= a_len;
             (a_len, old_len)
         } else {
-            let b_len = RangeSetBlaze::btree_map_len(new_btree);
+            let b_len = Self::btree_map_len(new_btree);
             old_len -= b_len;
             (old_len, b_len)
         }

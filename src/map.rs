@@ -62,18 +62,18 @@ impl<V: ?Sized + PartialEqClone> CloneBorrow<V> for &V {
 
 impl<V: ?Sized + PartialEqClone> CloneBorrow<V> for Rc<V> {
     fn clone_borrow(&self) -> Self {
-        Rc::clone(self)
+        Self::clone(self)
     }
 }
 
 #[cfg(feature = "std")]
 impl<V: ?Sized + PartialEqClone> CloneBorrow<V> for Arc<V> {
     fn clone_borrow(&self) -> Self {
-        Arc::clone(self)
+        Self::clone(self)
     }
 }
 
-#[derive(Clone, Hash, Default, PartialEq)]
+#[derive(Clone, Hash, Default, PartialEq, Eq)]
 pub struct EndValue<T, V>
 where
     T: Integer,

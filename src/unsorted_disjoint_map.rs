@@ -232,8 +232,9 @@ where
     VR: CloneBorrow<V>,
     I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
 {
-    pub fn new(iter: I) -> Self {
-        AssumePrioritySortedStartsMap { iter }
+    /// cmk doc
+    pub const fn new(iter: I) -> Self {
+        Self { iter }
     }
 }
 
