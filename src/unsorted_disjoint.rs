@@ -1,4 +1,4 @@
-use crate::{Integer, RangeSetBlaze, SortedDisjoint, SortedStarts};
+use crate::{Integer, SortedDisjoint, SortedStarts};
 use core::{
     cmp::{max, min},
     iter::FusedIterator,
@@ -151,7 +151,7 @@ where
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 
 /// Gives any iterator of ranges the [`SortedStarts`] trait without any checking.
-pub struct AssumeSortedStarts<T, I>
+pub(crate) struct AssumeSortedStarts<T, I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
@@ -183,25 +183,26 @@ where
         }
     }
 
-    /// Create a [`RangeSetBlaze`] from an [`AssumeSortedStarts`] iterator.
-    ///
-    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_blaze::prelude::*;
-    ///
-    /// let a0 = RangeSetBlaze::from_sorted_starts(AssumeSortedStarts::new([-10..=-5, -7..=2]));
-    /// let a1: RangeSetBlaze<i32> = AssumeSortedStarts::new([-10..=-5, -7..=2]).into_range_set_blaze();
-    /// assert!(a0 == a1 && a0.to_string() == "-10..=2");
-    /// ```
-    pub fn into_range_set_blaze(self) -> RangeSetBlaze<T>
-    where
-        Self: Sized,
-    {
-        RangeSetBlaze::from_sorted_starts(self)
-    }
+    // cmk000
+    // /// Create a [`RangeSetBlaze`] from an [`AssumeSortedStarts`] iterator.
+    // ///
+    // /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
+    // ///
+    // /// # Examples
+    // ///
+    // /// ```
+    // /// use range_set_blaze::prelude::*;
+    // ///
+    // /// let a0 = RangeSetBlaze::from_sorted_starts(AssumeSortedStarts::new([-10..=-5, -7..=2]));
+    // /// let a1: RangeSetBlaze<i32> = AssumeSortedStarts::new([-10..=-5, -7..=2]).into_range_set_blaze();
+    // /// assert!(a0 == a1 && a0.to_string() == "-10..=2");
+    // /// ```
+    // pub(crate) fn into_range_set_blaze(self) -> RangeSetBlaze<T>
+    // where
+    //     Self: Sized,
+    // {
+    //     RangeSetBlaze::from_sorted_disjoint(UnionIter::new(self))
+    // }
 }
 
 impl<T, I> Iterator for AssumeSortedStarts<T, I>

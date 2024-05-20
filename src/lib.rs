@@ -64,7 +64,6 @@ pub use crate::ranges_iter::IntoRangesIter;
 pub use crate::ranges_iter::RangesIter;
 pub use crate::set::RangeSetBlaze;
 pub use crate::sorted_disjoint_map::Priority;
-pub use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
 
 mod not_iter;
 pub mod prelude;

@@ -484,26 +484,13 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    /// Create a [`RangeSetBlaze`] from a [`SortedStarts`] iterator.
-    ///
-    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_blaze::prelude::*;
-    /// use range_set_blaze::AssumeSortedStarts;
-    ///
-    /// let a0 = RangeSetBlaze::from_sorted_starts(AssumeSortedStarts::new([-10..=-5, -7..=2]));
-    /// let a1: RangeSetBlaze<i32> = AssumeSortedStarts::new([-10..=-5, -7..=2]).into_range_set_blaze();
-    /// assert!(a0 == a1 && a0.to_string() == "-10..=2");
-    /// ```
-    pub fn from_sorted_starts<I>(iter: I) -> Self
-    where
-        I: SortedStarts<T>,
-    {
-        Self::from_sorted_disjoint(UnionIter::new(iter))
-    }
+    // cmk000
+    // pub(crate) fn from_sorted_starts<I>(iter: I) -> Self
+    // where
+    //     I: SortedStarts<T>,
+    // {
+    //     Self::from_sorted_disjoint(UnionIter::new(iter))
+    // }
 
     /// Creates a [`RangeSetBlaze`] from a collection of integers. It is typically many
     /// times faster than [`from_iter`][1]/[`collect`][1].

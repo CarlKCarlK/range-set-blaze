@@ -265,8 +265,8 @@ where
 /// assert_eq!(result.to_string(), "-2147483648..=0, 3..=4, 101..=2147483647"
 /// );
 /// // use `complement_with` to create a 'RangeMapBlaze'.
-/// let result = a.complement_with("z");
-/// assert_eq!(result.to_string(), r#"(-2147483648..=0, "z"), (3..=4, "z"), (101..=2147483647, &"z")"#);
+/// let result = a.complement_with(&"z");
+/// assert_eq!(result.to_string(), r#"(-2147483648..=0, "z"), (3..=4, "z"), (101..=2147483647, "z")"#);
 ///
 /// // Multiway union of 'RangeMapBlaze's.
 /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
