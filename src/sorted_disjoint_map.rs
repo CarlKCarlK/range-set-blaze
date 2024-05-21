@@ -1,6 +1,7 @@
 use crate::map::BitAndRangesMap2;
 use crate::map::BitSubRangesMap;
 use crate::map::BitSubRangesMap2;
+use crate::map::ValueRef;
 use crate::range_values::RangeValuesIter;
 use crate::range_values::RangeValuesToRangesIter;
 use crate::sym_diff_iter_map::SymDiffIterMap;
@@ -928,5 +929,5 @@ impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, V, VR, I>, V, VR, V: P
 impl_sorted_map_traits_and_ops!(UnionIterMap<T, V, VR, I>, V, VR, VR: CloneRef<V>, V: PartialEqClone, I: PrioritySortedStartsMap<T, V, VR>);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap< T, V, VR, I0, I1>, V, VR, V: PartialEqClone, VR: CloneRef<V>, I0: SortedDisjointMap<T, V, VR>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, V, VR, I>, V, VR, VR: CloneRef<V>, V: PartialEqClone, I: PrioritySortedStartsMap<T, V, VR>);
-impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, V, VR>, V, VR, 'a, V: PartialEqClone, VR: CloneRef<V>);
+impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 'a, VR: CloneRef<VR::Value> + ValueRef);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: PartialEqClone);

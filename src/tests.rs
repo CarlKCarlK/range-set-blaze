@@ -1176,7 +1176,7 @@ fn multi_union(inputs: Vec<Reference>) -> bool {
     let expected: Reference = inputs.iter().flatten().copied().collect();
     let actual = inputs.iter().map(RangeSetBlaze::from_iter).union();
 
-    let res = actual.iter().eq(expected.iter().cloned());
+    let res = actual.iter().eq(expected.iter().copied());
     if !res {
         let actual: Reference = actual.iter().collect();
         println!("in:{inputs:?} expected:{expected:?} out:{actual:?}");
@@ -1197,7 +1197,7 @@ fn difference(a: Reference, b: Reference) -> bool {
 fn symmetric_difference(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
     let b_r = RangeSetBlaze::from_iter(&b);
-    let expected: Reference = a.symmetric_difference(&b).cloned().collect();
+    let expected: Reference = a.symmetric_difference(&b).copied().collect();
     let actual: Reference = (a_r ^ b_r).into_iter().collect();
     binary_op(a, b, expected, actual)
 }
@@ -1213,7 +1213,7 @@ fn multi_symmetric_difference(inputs: Vec<Reference>) -> bool {
         .map(RangeSetBlaze::from_iter)
         .symmetric_difference();
 
-    let res = actual.iter().eq(expected.iter().cloned());
+    let res = actual.iter().eq(expected.iter().copied());
     if !res {
         let actual: Reference = actual.iter().collect();
         println!("in:{inputs:?} expected:{expected:?} out:{actual:?}");

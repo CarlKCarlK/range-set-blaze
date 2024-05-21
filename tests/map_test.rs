@@ -2539,7 +2539,7 @@ fn test_every_sorted_disjoint_map_method() {
             ])]
             .symmetric_difference();
             let e: RangeValuesIter<i32, &str> = e0.range_values();
-            let f: DynSortedDisjointMap<i32, &str, _> =
+            let f: DynSortedDisjointMap<i32, &&str> =
                 DynSortedDisjointMap::new(CheckSortedDisjointMap::new([
                     (1..=2, &"a"),
                     (5..=100, &"a"),

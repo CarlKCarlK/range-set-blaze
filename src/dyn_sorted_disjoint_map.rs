@@ -1,7 +1,7 @@
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use crate::{
-    map::{CloneRef, PartialEqClone},
+    map::{CloneRef, ValueRef},
     Integer, SortedDisjointMap,
 };
 use alloc::boxed::Box;
@@ -27,13 +27,12 @@ use alloc::boxed::Box;
 /// ].union();
 /// assert_eq!(union.into_string(), r#"(1..=6, "a"), (7..=7, "b"), (8..=9, "a"), (10..=10, "b"), (11..=15, "a"), (18..=29, "b"), (38..=42, "c")"#);
 /// ```
-pub struct DynSortedDisjointMap<'a, T, V, VR>
+pub struct DynSortedDisjointMap<'a, T, VR>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
 {
-    iter: Box<dyn SortedDisjointMap<T, V, VR> + 'a>,
+    iter: Box<dyn SortedDisjointMap<T, VR::Value, VR> + 'a>,
 }
 
 // Constructs a `DynSortedDisjointMap` encapsulating a `SortedDisjointMap` iterator.
@@ -41,16 +40,15 @@ where
 // for the duration of the `DynSortedDisjointMap`'s existence. This is crucial for
 // preventing dangling references and ensuring memory safety when the iterator
 // contains references to data outside of itself.
-impl<'a, T, V, VR> DynSortedDisjointMap<'a, T, V, VR>
+impl<'a, T, VR> DynSortedDisjointMap<'a, T, VR>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
 {
     /// Create a [`DynSortedDisjointMap`] from any [`SortedDisjointMap`] iterator. See [`DynSortedDisjointMap`] for an example.
     pub fn new<I>(iter: I) -> Self
     where
-        I: SortedDisjointMap<T, V, VR> + 'a,
+        I: SortedDisjointMap<T, VR::Value, VR> + 'a,
     {
         Self {
             iter: Box::new(iter),
@@ -58,19 +56,17 @@ where
     }
 }
 
-impl<T, V, VR> FusedIterator for DynSortedDisjointMap<'_, T, V, VR>
+impl<T, VR> FusedIterator for DynSortedDisjointMap<'_, T, VR>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
 {
 }
 
-impl<T, V, VR> Iterator for DynSortedDisjointMap<'_, T, V, VR>
+impl<T, VR> Iterator for DynSortedDisjointMap<'_, T, VR>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
 {
     type Item = (RangeInclusive<T>, VR);
 
