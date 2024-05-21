@@ -1109,7 +1109,7 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
     // _sorted_disjoint_iter = [(5..=6, "a"), (1..=5, "b")][0..=1].into();
     // _sorted_disjoint_iter = UnionIterMap::from([(5..=6, "a"), (1..=5, "b")].as_slice());
     // // // #16 into / from iter (T,T) + SortedDisjoint
-    let mut _sorted_disjoint_iter: UnionIterMap<_, _, _, _> =
+    let mut _sorted_disjoint_iter: UnionIterMap<_, _, _> =
         _range_map_blaze.range_values().collect();
     _sorted_disjoint_iter = UnionIterMap::from_iter(_range_map_blaze.range_values());
 
@@ -2523,7 +2523,7 @@ fn test_every_sorted_disjoint_map_method() {
         () => {{
             let a: CheckSortedDisjointMap<i32, &str, _, _> =
                 CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-            let b: UnionIterMap<i32, &str, _, _> = [CheckSortedDisjointMap::new([
+            let b: UnionIterMap<i32, &&str, _> = [CheckSortedDisjointMap::new([
                 (1..=2, &"a"),
                 (5..=100, &"a"),
             ])]
@@ -2564,7 +2564,7 @@ fn test_every_sorted_disjoint_map_method() {
         T: Integer,
         V: PartialEqClone,
         VR: CloneRef<V>,
-        S: SortedDisjointMap<T, V, VR>,
+        S: SortedDisjointMap<T, VR>,
     {
     }
 

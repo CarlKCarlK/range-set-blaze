@@ -1,8 +1,9 @@
 use core::iter::FusedIterator;
 
+// cmk0000000 use criterion::measurement::ValueFormatter;
 use itertools::{Itertools, KMergeBy, MergeBy};
 
-use crate::map::{CloneRef, PartialEqClone};
+use crate::map::{CloneRef, ValueRef};
 use crate::range_values::SetPriorityMap;
 use crate::Integer;
 
@@ -10,29 +11,27 @@ use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap, SortedDisjoi
 
 /// Internally used by cmk
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct MergeMap<T, V, VR, L, R>
+pub struct MergeMap<T, VR, L, R>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    L: SortedDisjointMap<T, VR>,
+    R: SortedDisjointMap<T, VR>,
 {
     #[allow(clippy::type_complexity)]
     iter: MergeBy<
-        SetPriorityMap<T, V, VR, L>,
-        SetPriorityMap<T, V, VR, R>,
-        fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool,
+        SetPriorityMap<T, VR, L>,
+        SetPriorityMap<T, VR, R>,
+        fn(&Priority<T, VR>, &Priority<T, VR>) -> bool,
     >,
 }
 
-impl<T, V, VR, L, R> MergeMap<T, V, VR, L, R>
+impl<T, VR, L, R> MergeMap<T, VR, L, R>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    L: SortedDisjointMap<T, VR>,
+    R: SortedDisjointMap<T, VR>,
 {
     /// Creates a new [`MergeMap`] iterator from two [`SortedDisjointMap`] iterators. See [`MergeMap`] for more details and examples.
     pub fn new(left: L, right: R) -> Self {
@@ -45,25 +44,23 @@ where
     }
 }
 
-impl<T, V, VR, L, R> FusedIterator for MergeMap<T, V, VR, L, R>
+impl<T, VR, L, R> FusedIterator for MergeMap<T, VR, L, R>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    L: SortedDisjointMap<T, VR>,
+    R: SortedDisjointMap<T, VR>,
 {
 }
 
-impl<T, V, VR, L, R> Iterator for MergeMap<T, V, VR, L, R>
+impl<T, VR, L, R> Iterator for MergeMap<T, VR, L, R>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    L: SortedDisjointMap<T, VR>,
+    R: SortedDisjointMap<T, VR>,
 {
-    type Item = Priority<T, V, VR>;
+    type Item = Priority<T, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
@@ -74,13 +71,12 @@ where
     }
 }
 
-impl<T, V, VR, L, R> PrioritySortedStartsMap<T, V, VR> for MergeMap<T, V, VR, L, R>
+impl<T, VR, L, R> PrioritySortedStartsMap<T, VR> for MergeMap<T, VR, L, R>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    L: SortedDisjointMap<T, VR>,
+    R: SortedDisjointMap<T, VR>,
 {
 }
 
@@ -95,27 +91,24 @@ where
 #[derive(Clone, Debug)]
 #[allow(clippy::module_name_repetitions)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct KMergeMap<T, V, VR, I>
+pub struct KMergeMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: SortedDisjointMap<T, VR>,
 {
     #[allow(clippy::type_complexity)]
-    iter:
-        KMergeBy<SetPriorityMap<T, V, VR, I>, fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool>,
+    iter: KMergeBy<SetPriorityMap<T, VR, I>, fn(&Priority<T, VR>, &Priority<T, VR>) -> bool>,
 }
 
-type KMergeSetPriorityMap<T, V, VR, I> =
-    KMergeBy<SetPriorityMap<T, V, VR, I>, fn(&Priority<T, V, VR>, &Priority<T, V, VR>) -> bool>;
+type KMergeSetPriorityMap<T, VR, I> =
+    KMergeBy<SetPriorityMap<T, VR, I>, fn(&Priority<T, VR>, &Priority<T, VR>) -> bool>;
 
-impl<T, V, VR, I> KMergeMap<T, V, VR, I>
+impl<T, VR, I> KMergeMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: SortedDisjointMap<T, VR>,
 {
     /// Creates a new [`KMergeMap`] iterator from zero or more [`SortedDisjointMap`] iterators. See [`KMergeMap`] for more details and examples.
     pub fn new<K>(iter: K) -> Self
@@ -128,7 +121,7 @@ where
             SetPriorityMap::new(x, priority_number)
         });
         // Merge RangeValues by start with ties broken by priority
-        let iter: KMergeSetPriorityMap<T, V, VR, I> = iter.kmerge_by(|a, b| {
+        let iter: KMergeSetPriorityMap<T, VR, I> = iter.kmerge_by(|a, b| {
             // We sort only by start -- priority is not used until later.
             a.start() < b.start()
         });
@@ -136,24 +129,21 @@ where
     }
 }
 
-impl<T, V, VR, I> FusedIterator for KMergeMap<T, V, VR, I>
+impl<T, VR, I> FusedIterator for KMergeMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: SortedDisjointMap<T, VR>,
 {
 }
 
-impl<T, V, VR, I> Iterator for KMergeMap<T, V, VR, I>
+impl<T, VR, I> Iterator for KMergeMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-
-    I: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: SortedDisjointMap<T, VR>,
 {
-    type Item = Priority<T, V, VR>;
+    type Item = Priority<T, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
@@ -164,11 +154,10 @@ where
     }
 }
 
-impl<T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for KMergeMap<T, V, VR, I>
+impl<T, VR, I> PrioritySortedStartsMap<T, VR> for KMergeMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: SortedDisjointMap<T, VR>,
 {
 }

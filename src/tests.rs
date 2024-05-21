@@ -1532,7 +1532,7 @@ pub fn convert_challenge() {
         T: Integer,
         V: PartialEqClone,
         VR: CloneRef<V>,
-        S: SortedDisjointMap<T, V, VR>,
+        S: SortedDisjointMap<T, VR>,
     {
     }
 

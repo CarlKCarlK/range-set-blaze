@@ -32,7 +32,7 @@ where
     T: Integer,
     VR: CloneRef<VR::Value> + ValueRef,
 {
-    iter: Box<dyn SortedDisjointMap<T, VR::Value, VR> + 'a>,
+    iter: Box<dyn SortedDisjointMap<T, VR> + 'a>,
 }
 
 // Constructs a `DynSortedDisjointMap` encapsulating a `SortedDisjointMap` iterator.
@@ -48,7 +48,7 @@ where
     /// Create a [`DynSortedDisjointMap`] from any [`SortedDisjointMap`] iterator. See [`DynSortedDisjointMap`] for an example.
     pub fn new<I>(iter: I) -> Self
     where
-        I: SortedDisjointMap<T, VR::Value, VR> + 'a,
+        I: SortedDisjointMap<T, VR> + 'a,
     {
         Self {
             iter: Box::new(iter),

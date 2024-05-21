@@ -1,3 +1,4 @@
+use crate::map::ValueRef;
 use crate::merge_map::KMergeMap;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::{BitOrMapKMerge, BitOrMapMerge, MergeMap, SortedDisjointMap};
@@ -8,7 +9,7 @@ use core::ops::RangeInclusive;
 use itertools::Itertools;
 
 use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
-use crate::{map::PartialEqClone, Integer};
+use crate::Integer;
 use crate::{
     map::{CloneRef, SortedStartsInVecMap},
     unsorted_disjoint_map::AssumePrioritySortedStartsMap,
@@ -17,26 +18,24 @@ use crate::{
 /// The output of cmk.
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct UnionIterMap<T, V, VR, SS>
+pub struct UnionIterMap<T, VR, SS>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    SS: PrioritySortedStartsMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    SS: PrioritySortedStartsMap<T, VR>,
 {
     iter: SS,
-    next_item: Option<Priority<T, V, VR>>,
-    workspace: BinaryHeap<Priority<T, V, VR>>,
+    next_item: Option<Priority<T, VR>>,
+    workspace: BinaryHeap<Priority<T, VR>>,
     gather: Option<(RangeInclusive<T>, VR)>,
     ready_to_go: Option<(RangeInclusive<T>, VR)>,
 }
 
-impl<T, V, VR, I> Iterator for UnionIterMap<T, V, VR, I>
+impl<T, VR, I> Iterator for UnionIterMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: PrioritySortedStartsMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: PrioritySortedStartsMap<T, VR>,
 {
     type Item = (RangeInclusive<T>, VR);
 
@@ -98,11 +97,13 @@ where
                 } else {
                     // if the gather is not contiguous with the best, then output the gather and set the gather to the best
                     self.ready_to_go = Some(gather);
-                    self.gather = Some((best.start()..=next_end, best.value().clone_ref()));
+                    self.gather =
+                        Some((best.start()..=next_end, ValueRef::clone_ref(&best.value())));
                 }
             } else {
                 // if there is no gather, then set the gather to the best
-                self.gather = Some((best.start()..=next_end, best.value().clone_ref()));
+                self.gather = Some((best.start()..=next_end, ValueRef::clone_ref(&best.value())));
+                // cmk use method
             };
 
             // We also update the workspace to removing any items that are completely covered by the new_start.
@@ -135,12 +136,11 @@ where
     }
 }
 
-impl<T, V, VR, I> UnionIterMap<T, V, VR, I>
+impl<T, VR, I> UnionIterMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: PrioritySortedStartsMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: PrioritySortedStartsMap<T, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIterMap`] from zero or more [`crate::sorted_disjoint_map::SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
@@ -156,13 +156,12 @@ where
     }
 }
 
-impl<T, V, VR, L, R> BitOrMapMerge<T, V, VR, L, R>
+impl<T, VR, L, R> BitOrMapMerge<T, VR, L, R>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    L: SortedDisjointMap<T, VR>,
+    R: SortedDisjointMap<T, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`crate::sym_diff_iter_map::SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`crate::sym_diff_iter_map::SymDiffIterMap`] for more details and examples.
@@ -173,12 +172,11 @@ where
 }
 
 /// cmk doc
-impl<T, V, VR, J> BitOrMapKMerge<T, V, VR, J>
+impl<T, VR, J> BitOrMapKMerge<T, VR, J>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    J: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    J: SortedDisjointMap<T, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
@@ -195,17 +193,16 @@ where
 
 // cmk used?
 #[allow(dead_code)]
-type SortedRangeValueVec<T, V, VR> =
-    AssumePrioritySortedStartsMap<T, V, VR, vec::IntoIter<(RangeInclusive<T>, VR)>>;
+type SortedRangeValueVec<T, VR> =
+    AssumePrioritySortedStartsMap<T, VR, vec::IntoIter<(RangeInclusive<T>, VR)>>;
 
 // cmk simplify the long types
 // from iter (T, VR) to UnionIterMap
-impl<T, V, VR> FromIterator<(RangeInclusive<T>, VR)>
-    for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>>
+impl<T, VR> FromIterator<(RangeInclusive<T>, VR)>
+    for UnionIterMap<T, VR, SortedStartsInVecMap<T, VR>>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -216,16 +213,15 @@ where
 }
 
 // from from UnsortedDisjointMap to UnionIterMap
-impl<T, V, VR, I> From<UnsortedPriorityDisjointMap<T, V, VR, I>>
-    for UnionIterMap<T, V, VR, SortedStartsInVecMap<T, V, VR>>
+impl<T, VR, I> From<UnsortedPriorityDisjointMap<T, VR, I>>
+    for UnionIterMap<T, VR, SortedStartsInVecMap<T, VR>>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     #[allow(clippy::clone_on_copy)]
-    fn from(unsorted_disjoint: UnsortedPriorityDisjointMap<T, V, VR, I>) -> Self {
+    fn from(unsorted_disjoint: UnsortedPriorityDisjointMap<T, VR, I>) -> Self {
         let iter = unsorted_disjoint.sorted_by(|a, b| {
             // We sort only by start -- priority is not used until later.
             a.start().cmp(&b.start())
@@ -236,12 +232,11 @@ where
 }
 
 // cmk0 test that every iterator (that can be) is FusedIterator
-impl<T, V, VR, I> FusedIterator for UnionIterMap<T, V, VR, I>
+impl<T, VR, I> FusedIterator for UnionIterMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: PrioritySortedStartsMap<T, V, VR> + FusedIterator,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: PrioritySortedStartsMap<T, VR> + FusedIterator,
 {
 }
 

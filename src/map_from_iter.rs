@@ -56,7 +56,7 @@ where
     where
         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
-        let union_iter_map = iter.into_iter().collect::<UnionIterMap<T, V, &V, _>>();
+        let union_iter_map = iter.into_iter().collect::<UnionIterMap<T, &V, _>>();
         Self::from_sorted_disjoint_map(union_iter_map)
     }
 }
@@ -85,7 +85,7 @@ impl<T: Integer, V: PartialEqClone> FromIterator<(RangeInclusive<T>, V)> for Ran
         let union_iter_map = iter
             .into_iter()
             .map(|(r, v)| (r, UniqueValue::new(v)))
-            .collect::<UnionIterMap<T, V, UniqueValue<V>, _>>();
+            .collect::<UnionIterMap<T, UniqueValue<V>, _>>();
         Self::from_sorted_disjoint_map(union_iter_map)
     }
 }

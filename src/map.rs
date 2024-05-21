@@ -623,11 +623,11 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// ```
     pub fn from_sorted_disjoint_map<VR, I>(iter: I) -> Self
     where
-        VR: CloneRef<V>,
-        I: SortedDisjointMap<T, V, VR>,
+        VR: CloneRef<V> + ValueRef<Value = V>,
+        I: SortedDisjointMap<T, VR>,
     {
         let mut iter_with_len = SortedDisjointMapWithLenSoFar::from(iter);
-        let btree_map = (&mut iter_with_len).collect();
+        let btree_map: BTreeMap<T, EndValue<T, VR::Value>> = (&mut iter_with_len).collect();
         Self {
             btree_map,
             len: iter_with_len.len_so_far(),
@@ -1684,22 +1684,22 @@ impl<'a, T: Integer, V: PartialEqClone> IntoIterator for &'a RangeMapBlaze<T, V>
 
 #[doc(hidden)]
 #[allow(clippy::module_name_repetitions)]
-pub type BitAndRangesMap<T, V, VR, L, R> = IntersectionIterMap<T, V, VR, L, R>;
+pub type BitAndRangesMap<T, VR, L, R> = IntersectionIterMap<T, VR, L, R>;
 #[doc(hidden)]
-pub type BitAndRangesMap2<T, V, VR, L, R> =
-    BitAndRangesMap<T, V, VR, L, RangeValuesToRangesIter<T, V, VR, R>>;
+pub type BitAndRangesMap2<T, VR, L, R> =
+    BitAndRangesMap<T, VR, L, RangeValuesToRangesIter<T, VR, R>>;
 
 #[doc(hidden)]
 #[allow(clippy::module_name_repetitions)]
-pub type BitSubRangesMap<T, V, VR, L, R> = IntersectionIterMap<T, V, VR, L, NotIter<T, R>>;
+pub type BitSubRangesMap<T, VR, L, R> = IntersectionIterMap<T, VR, L, NotIter<T, R>>;
 #[doc(hidden)]
-pub type BitSubRangesMap2<T, V, VR, L, R> =
-    BitSubRangesMap<T, V, VR, L, RangeValuesToRangesIter<T, V, VR, R>>;
+pub type BitSubRangesMap2<T, VR, L, R> =
+    BitSubRangesMap<T, VR, L, RangeValuesToRangesIter<T, VR, R>>;
 
 #[doc(hidden)]
 #[allow(clippy::module_name_repetitions)]
-pub type SortedStartsInVecMap<T, V, VR> =
-    AssumePrioritySortedStartsMap<T, V, VR, vec::IntoIter<Priority<T, V, VR>>>;
+pub type SortedStartsInVecMap<T, VR> =
+    AssumePrioritySortedStartsMap<T, VR, vec::IntoIter<Priority<T, VR>>>;
 
 #[doc(hidden)]
 pub type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;

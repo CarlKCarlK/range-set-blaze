@@ -32,22 +32,18 @@ use core::ops::RangeInclusive;
 
 /// Used internally. This trait marks iterators that provide ranges and values sorted by start, but
 /// that are not necessarily disjoint.
-pub trait SortedStartsMap<T, V, VR>:
-    Iterator<Item = (RangeInclusive<T>, VR)> + FusedIterator
+pub trait SortedStartsMap<T, VR>: Iterator<Item = (RangeInclusive<T>, VR)> + FusedIterator
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
 {
 }
 
 /// Used internally by [`UnionIterMap`] and [`SymDiffIterMap`].
-pub trait PrioritySortedStartsMap<T, V, VR>:
-    Iterator<Item = Priority<T, V, VR>> + FusedIterator
+pub trait PrioritySortedStartsMap<T, VR>: Iterator<Item = Priority<T, VR>> + FusedIterator
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
 {
 }
 
@@ -161,11 +157,10 @@ where
 /// let result = a - (b | c);
 /// assert_eq!(result.into_string(), r#"(1..=1, "a")"#);
 /// ```
-pub trait SortedDisjointMap<T, V, VR>: SortedStartsMap<T, V, VR>
+pub trait SortedDisjointMap<T, VR>: SortedStartsMap<T, VR>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
 {
     /// cmk doc
     ///```
@@ -176,7 +171,7 @@ where
     /// assert!(b.into_string() == "1..=3, 100..=100");
     /// ```
     #[inline]
-    fn into_sorted_disjoint(self) -> RangeValuesToRangesIter<T, V, VR, Self>
+    fn into_sorted_disjoint(self) -> RangeValuesToRangesIter<T, VR, Self>
     where
         Self: Sized,
     {
@@ -206,11 +201,11 @@ where
     /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=3, "b")"#);
     /// ```
     #[inline]
-    fn union<R>(self, other: R) -> BitOrMapMerge<T, V, VR, Self, R::IntoIter>
+    fn union<R>(self, other: R) -> BitOrMapMerge<T, VR, Self, R::IntoIter>
     where
         // cmk why must say SortedDisjointMap here by sorted_disjoint doesn't.
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, V, VR>,
+        R::IntoIter: SortedDisjointMap<T, VR>,
         Self: Sized,
     {
         // cmk why this into iter stuff that is not used?
@@ -241,10 +236,10 @@ where
     /// assert_eq!(intersection.into_string(), r#"(2..=2, "a")"#);
     /// ```
     #[inline]
-    fn intersection<R>(self, other: R) -> BitAndRangesMap2<T, V, VR, Self, R::IntoIter>
+    fn intersection<R>(self, other: R) -> BitAndRangesMap2<T, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, V, VR>,
+        R::IntoIter: SortedDisjointMap<T, VR>,
         Self: Sized,
     {
         let sorted_disjoint_map = other.into_iter();
@@ -268,7 +263,7 @@ where
     /// ```
     #[inline]
     // cmk should this be called intersection_with_ranges?
-    fn intersection_with_set<R>(self, other: R) -> BitAndRangesMap<T, V, VR, Self, R::IntoIter>
+    fn intersection_with_set<R>(self, other: R) -> BitAndRangesMap<T, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = RangeInclusive<T>>, // cmk0 is this bound needed?
         R::IntoIter: SortedDisjoint<T>,
@@ -302,10 +297,10 @@ where
     /// assert_eq!(difference.into_string(), r#"(1..=1, "a")"#);
     /// ```
     #[inline]
-    fn difference<R>(self, other: R) -> BitSubRangesMap2<T, V, VR, Self, R::IntoIter>
+    fn difference<R>(self, other: R) -> BitSubRangesMap2<T, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, V, VR>,
+        R::IntoIter: SortedDisjointMap<T, VR>,
         Self: Sized,
     {
         let sorted_disjoint_map = other.into_iter();
@@ -329,7 +324,7 @@ where
     /// ```
     #[inline]
     // cmk rename difference_with_ranges?
-    fn difference_with_set<R>(self, other: R) -> BitSubRangesMap<T, V, VR, Self, R::IntoIter>
+    fn difference_with_set<R>(self, other: R) -> BitSubRangesMap<T, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = RangeInclusive<T>>,
         R::IntoIter: SortedDisjoint<T>,
@@ -351,7 +346,7 @@ where
     /// assert_eq!(complement.into_string(), "-32768..=-11, 1..=999, 2001..=32767");
     /// ```
     #[inline]
-    fn complement_to_set(self) -> NotIter<T, RangeValuesToRangesIter<T, V, VR, Self>>
+    fn complement_to_set(self) -> NotIter<T, RangeValuesToRangesIter<T, VR, Self>>
     where
         Self: Sized,
     {
@@ -370,7 +365,10 @@ where
     /// assert_eq!(complement.into_string(), r#"(-32768..=-11, "z"), (1..=999, "z"), (2001..=32767, "z")"#);
     /// ```    
     #[inline]
-    fn complement(self, v: &V) -> RangeToRangeValueIter<T, V, NotIter<T, impl SortedDisjoint<T>>>
+    fn complement(
+        self,
+        v: &VR::Value,
+    ) -> RangeToRangeValueIter<T, VR::Value, NotIter<T, impl SortedDisjoint<T>>>
     where
         Self: Sized,
     {
@@ -400,12 +398,12 @@ where
     /// assert_eq!(symmetric_difference.into_string(), r#"(1..=1, "a"), (3..=3, "b")"#);
     /// ```
     #[inline]
-    fn symmetric_difference<R>(self, other: R) -> BitXorMapMerge<T, V, VR, Self, R::IntoIter>
+    fn symmetric_difference<R>(self, other: R) -> BitXorMapMerge<T, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, V, VR>,
+        R::IntoIter: SortedDisjointMap<T, VR>,
         Self: Sized,
-        VR: CloneRef<V>,
+        VR: CloneRef<VR::Value>,
     {
         SymDiffIterMap::new2(self, other.into_iter())
     }
@@ -426,7 +424,7 @@ where
     fn equal<R>(self, other: R) -> bool
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, V, VR>,
+        R::IntoIter: SortedDisjointMap<T, VR>,
         Self: Sized,
     {
         use itertools::Itertools;
@@ -477,10 +475,9 @@ where
     /// let a1: RangeMapBlaze<i32,_> = CheckSortedDisjointMap::new([(-10..=-5, &"a"), (1..=2, &"b")]).into_range_map_blaze();
     /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "a"), (1..=2, "b")"#);
     /// ```
-    fn into_range_map_blaze(self) -> RangeMapBlaze<T, V>
+    fn into_range_map_blaze(self) -> RangeMapBlaze<T, VR::Value>
     where
         Self: Sized,
-        V: Clone,
     {
         RangeMapBlaze::from_sorted_disjoint_map(self)
     }
@@ -530,25 +527,22 @@ where
 // cmk0 why was this hidden? check for others#[doc(hidden)]
 /// doc
 #[allow(clippy::module_name_repetitions)]
-pub struct CheckSortedDisjointMap<T, V, VR, I>
+pub struct CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     iter: I,
     seen_none: bool,
     previous: Option<(RangeInclusive<T>, VR)>,
-    phantom_data: PhantomData<V>,
 }
 
 // define new
-impl<T, V, VR, I> CheckSortedDisjointMap<T, V, VR, I>
+impl<T, VR, I> CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     // Does CheckSortedDisjointMap and CheckSortedDisjoint need both from and public 'new'?
@@ -561,16 +555,14 @@ where
             iter: iter.into_iter(),
             seen_none: false,
             previous: None,
-            phantom_data: PhantomData,
         }
     }
 }
 
-impl<T, V, VR, I> Default for CheckSortedDisjointMap<T, V, VR, I>
+impl<T, VR, I> Default for CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)> + Default,
 {
     fn default() -> Self {
@@ -579,31 +571,28 @@ where
     }
 }
 // implement fused
-impl<T, V, VR, I> FusedIterator for CheckSortedDisjointMap<T, V, VR, I>
+impl<T, VR, I> FusedIterator for CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
 }
 
-fn range_value_clone<T, V, VR>(range_value: &(RangeInclusive<T>, VR)) -> (RangeInclusive<T>, VR)
+fn range_value_clone<T, VR>(range_value: &(RangeInclusive<T>, VR)) -> (RangeInclusive<T>, VR)
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
 {
     let (range, value) = range_value;
-    (range.clone(), value.clone_ref())
+    (range.clone(), ValueRef::clone_ref(&value)) // cmk call method
 }
 
 // implement iterator
-impl<T, V, VR, I> Iterator for CheckSortedDisjointMap<T, V, VR, I>
+impl<T, VR, I> Iterator for CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     type Item = (RangeInclusive<T>, VR);
@@ -645,39 +634,33 @@ where
 
 /// Used internally by [`UnionIterMap`] and [`SymDiffIterMap`].
 #[derive(Clone, Debug)]
-pub struct Priority<T, V, VR>
+pub struct Priority<T, VR>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
 {
     range_value: (RangeInclusive<T>, VR),
     priority_number: usize,
-    phantom_data: PhantomData<V>,
 }
 
-// new
-impl<T, V, VR> Priority<T, V, VR>
+impl<T, VR> Priority<T, VR>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
 {
     /// cmk doc
     pub const fn new(range_value: (RangeInclusive<T>, VR), priority_number: usize) -> Self {
         Self {
             range_value,
             priority_number,
-            phantom_data: PhantomData,
         }
     }
 }
 
-impl<T, V, VR> Priority<T, V, VR>
+impl<T, VR> Priority<T, VR>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
 {
     /// Returns the priority number.
     pub const fn priority_number(&self) -> usize {
@@ -729,11 +712,10 @@ where
     }
 }
 // Implement `PartialEq` to allow comparison (needed for `Eq`).
-impl<T, V, VR> PartialEq for Priority<T, V, VR>
+impl<T, VR> PartialEq for Priority<T, VR>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
 {
     fn eq(&self, other: &Self) -> bool {
         let result_cmk = self.priority_number == other.priority_number;
@@ -743,20 +725,18 @@ where
 }
 
 // Implement `Eq` because `BinaryHeap` requires it.
-impl<'a, T, V, VR> Eq for Priority<T, V, VR>
+impl<'a, T, VR> Eq for Priority<T, VR>
 where
     T: Integer,
-    V: PartialEqClone + 'a,
-    VR: CloneRef<V> + 'a,
+    VR: CloneRef<VR::Value> + ValueRef + 'a, // cmk0 why 'a?
 {
 }
 
 // Implement `Ord` so the heap knows how to compare elements.
-impl<'a, T, V, VR> Ord for Priority<T, V, VR>
+impl<'a, T, VR> Ord for Priority<T, VR>
 where
     T: Integer,
-    V: PartialEqClone + 'a,
-    VR: CloneRef<V> + 'a,
+    VR: CloneRef<VR::Value> + ValueRef + 'a, // cmk0 why 'a?
 {
     fn cmp(&self, other: &Self) -> Ordering {
         // smaller is better
@@ -765,11 +745,10 @@ where
 }
 
 // Implement `PartialOrd` to allow comparison (needed for `Ord`).
-impl<'a, T, V, VR> PartialOrd for Priority<T, V, VR>
+impl<'a, T, VR> PartialOrd for Priority<T, VR>
 where
     T: Integer,
-    V: PartialEqClone + 'a,
-    VR: CloneRef<V> + 'a,
+    VR: CloneRef<VR::Value> + ValueRef + 'a, // cmk0 why 'a?
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
@@ -824,33 +803,34 @@ where
 }
 
 // implements SortedDisjointMap
-impl<'a, T, V, I> SortedStartsMap<T, V, &'a V> for RangeToRangeValueIter<'a, T, V, I>
+impl<'a, T, V, I> SortedStartsMap<T, &'a V> for RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
     V: PartialEqClone,
     I: SortedDisjoint<T>,
 {
 }
-impl<'a, T, V, I> SortedDisjointMap<T, V, &'a V> for RangeToRangeValueIter<'a, T, V, I>
-where
-    T: Integer,
-    V: PartialEqClone,
-    I: SortedDisjoint<T>,
-{
-}
+// why did I need to implement this again cmk
+// impl<'a, T, V, I> SortedDisjointMap<T, &'a V> for RangeToRangeValueIter<'a, T, V, I>
+// where
+//     T: Integer,
+//     V: PartialEqClone,
+//     I: SortedDisjoint<T>,
+// {
+// }
 
 macro_rules! impl_sorted_map_traits_and_ops {
     ($IterType:ty, $V:ty, $VR:ty, $($more_generics:tt)*) => {
 
         #[allow(single_use_lifetimes)]
-        impl<$($more_generics)*, T> SortedStartsMap<T, $V, $VR> for $IterType
+        impl<$($more_generics)*, T> SortedStartsMap<T, $VR> for $IterType
         where
             T: Integer,
         {
         }
 
         #[allow(single_use_lifetimes)]
-        impl<$($more_generics)*, T> SortedDisjointMap<T, $V, $VR> for $IterType
+        impl<$($more_generics)*, T> SortedDisjointMap<T, $VR> for $IterType
         where
             T: Integer,
         {
@@ -861,7 +841,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
         where
             T: Integer,
         {
-            type Output = NotIter<T, RangeValuesToRangesIter<T, $V, $VR, Self>>;
+            type Output = NotIter<T, RangeValuesToRangesIter<T, $VR, Self>>;
 
             fn not(self) -> Self::Output {
                 self.complement_to_set()
@@ -872,9 +852,9 @@ macro_rules! impl_sorted_map_traits_and_ops {
         impl<$($more_generics)*, T, R> ops::BitOr<R> for $IterType
         where
             T: Integer,
-            R: SortedDisjointMap<T, $V, $VR>,
+            R: SortedDisjointMap<T, $VR>,
         {
-            type Output = BitOrMapMerge<T, $V, $VR, Self, R>;
+            type Output = BitOrMapMerge<T, $VR, Self, R>;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjointMap::union(self, other)
@@ -885,9 +865,9 @@ macro_rules! impl_sorted_map_traits_and_ops {
         impl<$($more_generics)*, T, R> ops::Sub<R> for $IterType
         where
             T: Integer,
-            R: SortedDisjointMap<T, $V, $VR>,
+            R: SortedDisjointMap<T, $VR>,
         {
-            type Output = BitSubRangesMap<T, $V, $VR, Self, RangeValuesToRangesIter<T, $V, $VR, R>>;
+            type Output = BitSubRangesMap<T, $VR, Self, RangeValuesToRangesIter<T, $VR, R>>;
 
             fn sub(self, other: R) -> Self::Output {
                 SortedDisjointMap::difference(self, other)
@@ -898,9 +878,9 @@ macro_rules! impl_sorted_map_traits_and_ops {
         impl<$($more_generics)*, T, R> ops::BitXor<R> for $IterType
         where
             T: Integer,
-            R: SortedDisjointMap<T, $V, $VR>,
+            R: SortedDisjointMap<T, $VR>,
         {
-            type Output = BitXorMapMerge<T, $V, $VR, Self, R>;
+            type Output = BitXorMapMerge<T,  $VR, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
@@ -912,9 +892,9 @@ macro_rules! impl_sorted_map_traits_and_ops {
         impl<$($more_generics)*, T, R> ops::BitAnd<R> for $IterType
         where
             T: Integer,
-            R: SortedDisjointMap<T, $V, $VR>,
+            R: SortedDisjointMap<T, $VR>,
         {
-            type Output = BitAndRangesMap<T, $V, $VR, Self, RangeValuesToRangesIter<T, $V, $VR, R>>;
+            type Output = BitAndRangesMap<T, $VR, Self, RangeValuesToRangesIter<T, $VR, R>>;
 
             fn bitand(self, other: R) -> Self::Output {
                 SortedDisjointMap::intersection(self, other)
@@ -925,9 +905,41 @@ macro_rules! impl_sorted_map_traits_and_ops {
 }
 
 // cmk CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_method'
-impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, V, VR, I>, V, VR, V: PartialEqClone, VR: CloneRef<V>, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
-impl_sorted_map_traits_and_ops!(UnionIterMap<T, V, VR, I>, V, VR, VR: CloneRef<V>, V: PartialEqClone, I: PrioritySortedStartsMap<T, V, VR>);
-impl_sorted_map_traits_and_ops!(IntersectionIterMap< T, V, VR, I0, I1>, V, VR, V: PartialEqClone, VR: CloneRef<V>, I0: SortedDisjointMap<T, V, VR>, I1: SortedDisjoint<T>);
-impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, V, VR, I>, V, VR, VR: CloneRef<V>, V: PartialEqClone, I: PrioritySortedStartsMap<T, V, VR>);
+impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, VR, I>, VR::Value, VR, VR: CloneRef<VR::Value> + ValueRef, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
+impl_sorted_map_traits_and_ops!(UnionIterMap<T, VR, I>, VR::Value, VR, VR: CloneRef<VR::Value> + ValueRef, I: PrioritySortedStartsMap<T, VR>);
+impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VR, I0, I1>,  VR::Value, VR, VR: CloneRef<VR::Value> + ValueRef, I0: SortedDisjointMap<T, VR>, I1: SortedDisjoint<T>);
+impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VR, I>, VR::Value, VR, VR: CloneRef<VR::Value> + ValueRef, I: PrioritySortedStartsMap<T, VR>);
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 'a, VR: CloneRef<VR::Value> + ValueRef);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: PartialEqClone);
+
+// #[allow(single_use_lifetimes)]
+// impl<VR, I, T> SortedStartsMap<T, VR> for CheckSortedDisjointMap<T, VR, I>
+// where
+//     T: Integer,
+//     VR: CloneRef<VR::Value> + ValueRef,
+//     I: Iterator<Item = (RangeInclusive<T>, VR)>,
+// {
+// }
+
+// #[allow(single_use_lifetimes)]
+// impl<VR, I, T> SortedDisjointMap<T, VR> for CheckSortedDisjointMap<T, VR, I>
+// where
+//     T: Integer,
+//     VR: CloneRef<VR::Value> + ValueRef,
+//     I: Iterator<Item = (RangeInclusive<T>, VR)>,
+// {
+// }
+
+// #[allow(single_use_lifetimes)]
+// impl<VR, I, T> ops::Not for CheckSortedDisjointMap<T, VR, I>
+// where
+//     T: Integer,
+//     VR: CloneRef<VR::Value> + ValueRef,
+//     I: Iterator<Item = (RangeInclusive<T>, VR)>,
+// {
+//     type Output = NotIter<T, RangeValuesToRangesIter<T, VR, Self>>;
+
+//     fn not(self) -> Self::Output {
+//         self.complement_to_set()
+//     }
+// }

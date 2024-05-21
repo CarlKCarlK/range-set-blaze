@@ -25,7 +25,7 @@ pub struct IterMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef + CloneRef<VR::Value>,
-    I: SortedDisjointMap<T, VR::Value, VR>,
+    I: SortedDisjointMap<T, VR>,
 {
     iter: I,
     option_range_value_front: Option<(RangeInclusive<T>, VR)>,
@@ -36,7 +36,7 @@ impl<T, VR, I> IterMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef + CloneRef<VR::Value>,
-    I: SortedDisjointMap<T, VR::Value, VR>,
+    I: SortedDisjointMap<T, VR>,
 {
     pub const fn new(iter: I) -> Self {
         Self {
@@ -51,7 +51,7 @@ impl<T, VR, I> FusedIterator for IterMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef + CloneRef<VR::Value>,
-    I: SortedDisjointMap<T, VR::Value, VR> + FusedIterator,
+    I: SortedDisjointMap<T, VR> + FusedIterator,
 {
 }
 
@@ -59,7 +59,7 @@ impl<T, VR, I> Iterator for IterMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef + CloneRef<VR::Value>,
-    I: SortedDisjointMap<T, VR::Value, VR>,
+    I: SortedDisjointMap<T, VR>,
 {
     type Item = (T, VR);
 
@@ -92,7 +92,7 @@ impl<T, VR, I> DoubleEndedIterator for IterMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef + CloneRef<VR::Value>,
-    I: SortedDisjointMap<T, VR::Value, VR> + DoubleEndedIterator,
+    I: SortedDisjointMap<T, VR> + DoubleEndedIterator,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let mut range_value = self
@@ -220,7 +220,7 @@ pub struct KeysMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef + CloneRef<VR::Value>,
-    I: SortedDisjointMap<T, VR::Value, VR>,
+    I: SortedDisjointMap<T, VR>,
 {
     iter: IterMap<T, VR, I>,
 }
@@ -229,7 +229,7 @@ impl<T, VR, I> KeysMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef + CloneRef<VR::Value>,
-    I: SortedDisjointMap<T, VR::Value, VR>,
+    I: SortedDisjointMap<T, VR>,
 {
     pub const fn new(iter: I) -> Self {
         Self {
@@ -242,7 +242,7 @@ impl<T, VR, I> FusedIterator for KeysMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef + CloneRef<VR::Value>,
-    I: SortedDisjointMap<T, VR::Value, VR> + FusedIterator,
+    I: SortedDisjointMap<T, VR> + FusedIterator,
 {
 }
 
@@ -250,7 +250,7 @@ impl<T, VR, I> Iterator for KeysMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef + CloneRef<VR::Value>,
-    I: SortedDisjointMap<T, VR::Value, VR>,
+    I: SortedDisjointMap<T, VR>,
 {
     type Item = T;
 
@@ -267,7 +267,7 @@ impl<T, VR, I> DoubleEndedIterator for KeysMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef + CloneRef<VR::Value>,
-    I: SortedDisjointMap<T, VR::Value, VR> + DoubleEndedIterator,
+    I: SortedDisjointMap<T, VR> + DoubleEndedIterator,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter.next_back().map(|(key, _value)| key)

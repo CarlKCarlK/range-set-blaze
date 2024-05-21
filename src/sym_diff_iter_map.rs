@@ -7,7 +7,7 @@ use core::{
 use alloc::collections::BinaryHeap;
 
 use crate::{
-    map::{CloneRef, PartialEqClone},
+    map::{CloneRef, ValueRef},
     merge_map::KMergeMap,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
     BitXorMapKMerge, BitXorMapMerge, Integer, MergeMap, SortedDisjointMap,
@@ -16,16 +16,15 @@ use crate::{
 /// The output of cmk.
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct SymDiffIterMap<T, V, VR, I>
+pub struct SymDiffIterMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: PrioritySortedStartsMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: PrioritySortedStartsMap<T, VR>,
 {
     iter: I,
-    next_item: Option<Priority<T, V, VR>>,
-    workspace: BinaryHeap<Priority<T, V, VR>>,
+    next_item: Option<Priority<T, VR>>,
+    workspace: BinaryHeap<Priority<T, VR>>,
     workspace_next_end: Option<T>,
     gather: Option<(RangeInclusive<T>, VR)>,
     ready_to_go: Option<(RangeInclusive<T>, VR)>,
@@ -41,21 +40,19 @@ where
     )
 }
 
-impl<T, V, VR, I> FusedIterator for SymDiffIterMap<T, V, VR, I>
+impl<T, VR, I> FusedIterator for SymDiffIterMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: PrioritySortedStartsMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: PrioritySortedStartsMap<T, VR>,
 {
 }
 
-impl<T, V, VR, I> Iterator for SymDiffIterMap<T, V, VR, I>
+impl<T, VR, I> Iterator for SymDiffIterMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: PrioritySortedStartsMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: PrioritySortedStartsMap<T, VR>,
 {
     type Item = (RangeInclusive<T>, VR);
 
@@ -129,7 +126,9 @@ where
                     self.ready_to_go = Some(gather);
                     // cmk this code appear twice
                     if self.workspace.len() % 2 == 1 {
-                        self.gather = Some((*best.0.start()..=next_end, best.1.clone_ref()));
+                        self.gather =
+                            Some((*best.0.start()..=next_end, ValueRef::clone_ref(&best.1)));
+                    // cmk use method
                     } else {
                         debug_assert!(self.gather.is_none());
                     }
@@ -137,7 +136,8 @@ where
             } else {
                 // if there is no gather, then set the gather to the best
                 if self.workspace.len() % 2 == 1 {
-                    self.gather = Some((*best.0.start()..=next_end, best.1.clone_ref()));
+                    self.gather = Some((*best.0.start()..=next_end, ValueRef::clone_ref(&best.1)));
+                // cmk use method
                 } else {
                     debug_assert!(self.gather.is_none());
                 }
@@ -164,13 +164,12 @@ where
     }
 }
 
-impl<T, V, VR, L, R> BitXorMapMerge<T, V, VR, L, R>
+impl<T, VR, L, R> BitXorMapMerge<T, VR, L, R>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    L: SortedDisjointMap<T, V, VR>,
-    R: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    L: SortedDisjointMap<T, VR>,
+    R: SortedDisjointMap<T, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
@@ -181,12 +180,11 @@ where
 }
 
 /// cmk doc
-impl<T, V, VR, J> BitXorMapKMerge<T, V, VR, J>
+impl<T, VR, J> BitXorMapKMerge<T, VR, J>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    J: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    J: SortedDisjointMap<T, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
@@ -199,12 +197,11 @@ where
     }
 }
 
-impl<T, V, VR, I> SymDiffIterMap<T, V, VR, I>
+impl<T, VR, I> SymDiffIterMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: PrioritySortedStartsMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: PrioritySortedStartsMap<T, VR>,
 {
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators.
     /// See [`SymDiffIterMap`] for more details and examples.

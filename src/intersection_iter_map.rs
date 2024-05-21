@@ -1,37 +1,36 @@
 use core::{
     cmp::{max, min},
     iter::FusedIterator,
-    marker::PhantomData,
     ops::RangeInclusive,
 };
 
-use crate::{map::CloneRef, SortedDisjoint, SortedDisjointMap};
-use crate::{map::PartialEqClone, Integer};
+use crate::Integer;
+use crate::{
+    map::{CloneRef, ValueRef},
+    SortedDisjoint, SortedDisjointMap,
+};
 
 /// The output of the cmk
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct IntersectionIterMap<T, V, VR, IM, IS>
+pub struct IntersectionIterMap<T, VR, IM, IS>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    IM: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    IM: SortedDisjointMap<T, VR>,
     IS: SortedDisjoint<T>,
 {
     iter_left: IM,
     iter_right: IS,
     right: Option<RangeInclusive<T>>,
     left: Option<(RangeInclusive<T>, VR)>,
-    phantom: PhantomData<V>,
 }
 
-impl<T, V, VR, IM, IS> IntersectionIterMap<T, V, VR, IM, IS>
+impl<T, VR, IM, IS> IntersectionIterMap<T, VR, IM, IS>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    IM: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    IM: SortedDisjointMap<T, VR>,
     IS: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
@@ -45,7 +44,6 @@ where
             iter_right: iter_set,
             right: None,
             left: None,
-            phantom: PhantomData,
         }
     }
 }
@@ -72,22 +70,20 @@ where
 //     }
 // }
 
-impl<T, V, VR, IM, IS> FusedIterator for IntersectionIterMap<T, V, VR, IM, IS>
+impl<T, VR, IM, IS> FusedIterator for IntersectionIterMap<T, VR, IM, IS>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    IM: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    IM: SortedDisjointMap<T, VR>,
     IS: SortedDisjoint<T>,
 {
 }
 
-impl<T, V, VR, IM, IS> Iterator for IntersectionIterMap<T, V, VR, IM, IS>
+impl<T, VR, IM, IS> Iterator for IntersectionIterMap<T, VR, IM, IS>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    IM: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    IM: SortedDisjointMap<T, VR>,
     IS: SortedDisjoint<T>,
 {
     type Item = (RangeInclusive<T>, VR);
@@ -137,7 +133,7 @@ where
                 }
                 (true, false) => {
                     self.right = None;
-                    let value = left.1.clone_ref();
+                    let value = ValueRef::clone_ref(&left.1); // cmk use method
                     self.left = Some(left);
                     value
                 }

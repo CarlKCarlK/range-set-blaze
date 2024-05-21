@@ -120,7 +120,7 @@ impl<T, VR, II, I> MultiwaySortedDisjointMap<T, VR, I> for II
 where
     T: Integer,
     VR: CloneRef<VR::Value> + ValueRef,
-    I: SortedDisjointMap<T, VR::Value, VR>,
+    I: SortedDisjointMap<T, VR>,
     II: IntoIterator<Item = I>,
 {
 }
@@ -134,7 +134,7 @@ pub trait MultiwaySortedDisjointMap<T, VR, I>: IntoIterator<Item = I> + Sized
 where
     T: Integer,
     VR: CloneRef<VR::Value> + ValueRef,
-    I: SortedDisjointMap<T, VR::Value, VR>,
+    I: SortedDisjointMap<T, VR>,
 {
     /// Unions the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
     /// The input iterators must be of the same type. Any number of input iterators can be given.
@@ -160,7 +160,7 @@ where
     ///
     /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
     /// ```
-    fn union(self) -> BitOrMapKMerge<T, VR::Value, VR, I> {
+    fn union(self) -> BitOrMapKMerge<T, VR, I> {
         // cmk0 why does this not have .into_iter() but intersection does?
         UnionIterMap::new_k(self)
     }
@@ -189,7 +189,7 @@ where
     ///
     /// assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
     /// ```
-    fn intersection<'a>(self) -> BitAndMapWithRangeValues<'a, T, VR::Value, VR, I> {
+    fn intersection<'a>(self) -> BitAndMapWithRangeValues<'a, T, VR, I> {
         // We define map intersection -- in part -- in terms of set intersection.
         // Elsewhere, we define set intersection in terms of complement and (set/map) union.
         use crate::MultiwaySortedDisjoint;
@@ -213,7 +213,7 @@ where
     ///
     /// assert_eq!(symmetric_difference.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
     /// ```
-    fn symmetric_difference(self) -> BitXorMapKMerge<T, VR::Value, VR, I> {
+    fn symmetric_difference(self) -> BitXorMapKMerge<T, VR, I> {
         BitXorMapKMerge::new_k(self)
     }
 }

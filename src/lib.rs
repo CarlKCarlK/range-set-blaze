@@ -130,14 +130,14 @@ pub use union_iter_map::UnionIterMap;
 
 // cmk rename to Union...
 #[doc(hidden)]
-pub type BitOrMapMerge<T, V, VR, L, R> = UnionIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
+pub type BitOrMapMerge<T, VR, L, R> = UnionIterMap<T, VR, MergeMap<T, VR, L, R>>;
 #[doc(hidden)]
 pub type BitOrMerge<T, L, R> = UnionIter<T, merge::Merge<T, L, R>>;
 
 #[doc(hidden)]
-pub type BitXorMapMerge<T, V, VR, L, R> = SymDiffIterMap<T, V, VR, MergeMap<T, V, VR, L, R>>;
+pub type BitXorMapMerge<T, VR, L, R> = SymDiffIterMap<T, VR, MergeMap<T, VR, L, R>>;
 #[doc(hidden)]
-pub type BitXorMapKMerge<T, V, VR, II> = SymDiffIterMap<T, V, VR, KMergeMap<T, V, VR, II>>;
+pub type BitXorMapKMerge<T, VR, II> = SymDiffIterMap<T, VR, KMergeMap<T, VR, II>>;
 
 #[doc(hidden)]
 pub type BitXorMerge<T, L, R> = SymDiffIter<T, Merge<T, L, R>>;
@@ -145,7 +145,7 @@ pub type BitXorMerge<T, L, R> = SymDiffIter<T, Merge<T, L, R>>;
 pub type BitXorKMerge<T, II> = SymDiffIter<T, KMerge<T, II>>;
 
 #[doc(hidden)]
-pub type BitOrMapKMerge<T, V, VR, I> = UnionIterMap<T, V, VR, KMergeMap<T, V, VR, I>>;
+pub type BitOrMapKMerge<T, VR, I> = UnionIterMap<T, VR, KMergeMap<T, VR, I>>;
 #[doc(hidden)]
 pub type BitOrKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
 #[doc(hidden)]
@@ -158,10 +158,10 @@ pub type BitNandMerge<T, L, R> = BitOrMerge<T, NotIter<T, L>, NotIter<T, R>>;
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
 #[doc(hidden)] // cmk00 create better name
 pub type BitAndMapWithRanges<'a, T, V, VR, I> =
-    IntersectionIterMap<T, V, VR, I, BitAndKMerge<T, MapRangesIter<'a, T, V>>>;
+    IntersectionIterMap<T, VR, I, BitAndKMerge<T, MapRangesIter<'a, T, V>>>;
 #[doc(hidden)]
-pub type BitAndMapWithRangeValues<'a, T, V, VR, I> =
-    IntersectionIterMap<T, V, VR, I, BitAndKMerge<T, RangeValuesToRangesIter<T, V, VR, I>>>;
+pub type BitAndMapWithRangeValues<'a, T, VR, I> =
+    IntersectionIterMap<T, VR, I, BitAndKMerge<T, RangeValuesToRangesIter<T, VR, I>>>;
 #[doc(hidden)]
 pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
 #[doc(hidden)]

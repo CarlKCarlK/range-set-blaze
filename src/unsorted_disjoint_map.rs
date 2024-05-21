@@ -1,7 +1,8 @@
+use crate::map::ValueRef;
 use crate::range_values::ExpectDebugUnwrapRelease;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::{
-    map::{CloneRef, EndValue, PartialEqClone},
+    map::{CloneRef, EndValue},
     sorted_disjoint_map::SortedDisjointMap,
     Integer,
 };
@@ -15,24 +16,22 @@ use num_traits::Zero;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::redundant_pub_crate)]
-pub(crate) struct UnsortedPriorityDisjointMap<T, V, VR, I>
+pub(crate) struct UnsortedPriorityDisjointMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     iter: I,
-    option_priority: Option<Priority<T, V, VR>>,
+    option_priority: Option<Priority<T, VR>>,
     min_value_plus_2: T,
     priority_number: usize,
 }
 
-impl<T, V, VR, I> UnsortedPriorityDisjointMap<T, V, VR, I>
+impl<T, VR, I> UnsortedPriorityDisjointMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>, // Any iterator is fine
 {
     pub fn new(into_iter: I) -> Self {
@@ -54,14 +53,13 @@ where
 // {
 // }
 
-impl<T, V, VR, I> Iterator for UnsortedPriorityDisjointMap<T, V, VR, I>
+impl<T, VR, I> Iterator for UnsortedPriorityDisjointMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
+    VR: CloneRef<VR::Value> + ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
-    type Item = Priority<T, V, VR>;
+    type Item = Priority<T, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -130,16 +128,15 @@ where
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::redundant_pub_crate)]
-pub(crate) struct SortedDisjointMapWithLenSoFar<T, V, VR, I>
+pub(crate) struct SortedDisjointMapWithLenSoFar<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: SortedDisjointMap<T, VR>,
 {
     iter: I,
     len: <T as Integer>::SafeLen,
-    phantom_data: PhantomData<(V, VR)>,
+    phantom_data: PhantomData<VR>,
 }
 
 // cmk
@@ -157,12 +154,11 @@ where
 //     }
 // }
 
-impl<T, V, VR, I> SortedDisjointMapWithLenSoFar<T, V, VR, I>
+impl<T, VR, I> SortedDisjointMapWithLenSoFar<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: SortedDisjointMap<T, VR>,
 {
     pub const fn len_so_far(&self) -> <T as Integer>::SafeLen {
         self.len
@@ -175,14 +171,13 @@ where
 // {
 // }
 
-impl<T, V, VR, I> Iterator for SortedDisjointMapWithLenSoFar<T, V, VR, I>
+impl<T, VR, I> Iterator for SortedDisjointMapWithLenSoFar<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<V>,
-    V: PartialEqClone,
-    I: SortedDisjointMap<T, V, VR>,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: SortedDisjointMap<T, VR>,
 {
-    type Item = (T, EndValue<T, V>);
+    type Item = (T, EndValue<T, VR::Value>);
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some((range, value)) = self.iter.next() {
@@ -207,31 +202,28 @@ where
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 
 /// Used internally by [`UnionIterMap`] and [`SymDiffIterMap`].
-pub struct AssumePrioritySortedStartsMap<T, V, VR, I>
+pub struct AssumePrioritySortedStartsMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: Iterator<Item = Priority<T, VR>> + FusedIterator,
 {
     iter: I,
 }
 
-impl<T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for AssumePrioritySortedStartsMap<T, V, VR, I>
+impl<T, VR, I> PrioritySortedStartsMap<T, VR> for AssumePrioritySortedStartsMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: Iterator<Item = Priority<T, VR>> + FusedIterator,
 {
 }
 
-impl<T, V, VR, I> AssumePrioritySortedStartsMap<T, V, VR, I>
+impl<T, VR, I> AssumePrioritySortedStartsMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: Iterator<Item = Priority<T, VR>> + FusedIterator,
 {
     /// cmk doc
     pub const fn new(iter: I) -> Self {
@@ -239,23 +231,21 @@ where
     }
 }
 
-impl<T, V, VR, I> FusedIterator for AssumePrioritySortedStartsMap<T, V, VR, I>
+impl<T, VR, I> FusedIterator for AssumePrioritySortedStartsMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: Iterator<Item = Priority<T, VR>> + FusedIterator,
 {
 }
 
-impl<T, V, VR, I> Iterator for AssumePrioritySortedStartsMap<T, V, VR, I>
+impl<T, VR, I> Iterator for AssumePrioritySortedStartsMap<T, VR, I>
 where
     T: Integer,
-    V: PartialEqClone,
-    VR: CloneRef<V>,
-    I: Iterator<Item = Priority<T, V, VR>> + FusedIterator,
+    VR: CloneRef<VR::Value> + ValueRef,
+    I: Iterator<Item = Priority<T, VR>> + FusedIterator,
 {
-    type Item = Priority<T, V, VR>;
+    type Item = Priority<T, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
@@ -267,12 +257,12 @@ where
 }
 
 // cmk understand why/if this is needed
-impl<T: Integer, V: PartialEqClone, VR, I> From<I>
-    for SortedDisjointMapWithLenSoFar<T, V, VR, I::IntoIter>
+impl<T, VR, I> From<I> for SortedDisjointMapWithLenSoFar<T, VR, I::IntoIter>
 where
-    VR: CloneRef<V>,
+    T: Integer,
+    VR: CloneRef<VR::Value> + ValueRef,
     I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
-    I::IntoIter: SortedDisjointMap<T, V, VR>,
+    I::IntoIter: SortedDisjointMap<T, VR>,
 {
     fn from(into_iter: I) -> Self {
         Self {
