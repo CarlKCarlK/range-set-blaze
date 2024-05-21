@@ -461,7 +461,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// assert_eq!(map_iter.next_back(), None);
     /// ```
     #[inline] // cmk should RangeSETBlazes iter be inlined? (look at BTreeSet)
-    pub fn iter(&self) -> IterMap<T, V, &V, RangeValuesIter<'_, T, V>> {
+    pub fn iter(&self) -> IterMap<T, &V, RangeValuesIter<'_, T, V>> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
         IterMap::new(self.range_values())
@@ -498,7 +498,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// assert_eq!(keys_iter.next(), Some(2));
     /// assert_eq!(keys_iter.next_back(), None);
     /// ```
-    pub fn keys(&self) -> KeysMap<T, V, &V, RangeValuesIter<'_, T, V>> {
+    pub fn keys(&self) -> KeysMap<T, &V, RangeValuesIter<'_, T, V>> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
         KeysMap::new(self.range_values())
@@ -1666,7 +1666,7 @@ where
 
 // Implementing `IntoIterator` for `&RangeMapBlaze<T, V>`
 impl<'a, T: Integer, V: PartialEqClone> IntoIterator for &'a RangeMapBlaze<T, V> {
-    type IntoIter = IterMap<T, V, &'a V, RangeValuesIter<'a, T, V>>;
+    type IntoIter = IterMap<T, &'a V, RangeValuesIter<'a, T, V>>;
     type Item = (T, &'a V);
 
     fn into_iter(self) -> Self::IntoIter {
