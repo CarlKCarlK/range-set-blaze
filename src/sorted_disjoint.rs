@@ -1,4 +1,4 @@
-use crate::map::CloneBorrow;
+use crate::map::CloneRef;
 use crate::range_values::{MapIntoRangesIter, MapRangesIter, RangeValuesToRangesIter};
 use crate::ranges_iter::RangesIter;
 use crate::sorted_disjoint_map::IntoString;
@@ -713,7 +713,7 @@ impl_sorted_traits_and_ops!(NotIter<T, I>, I: SortedDisjoint<T>);
 impl_sorted_traits_and_ops!(MapIntoRangesIter<T, V>, V: PartialEqClone);
 impl_sorted_traits_and_ops!(MapRangesIter<'a, T, V>, 'a, V: PartialEqClone);
 impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
-impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: PartialEqClone, VR: CloneBorrow<V>, I: SortedDisjointMap<T, V, VR>);
+impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, V, VR, I>, V: PartialEqClone, VR: CloneRef<V>, I: SortedDisjointMap<T, V, VR>);
 impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(RangesIter<'a, T>, 'a);

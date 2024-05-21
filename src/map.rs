@@ -40,31 +40,29 @@ pub trait PartialEqClone: PartialEq + Clone {}
 
 impl<T> PartialEqClone for T where T: PartialEq + Clone {}
 
-/// cmk doc
-pub trait CloneBorrow<V: ?Sized + PartialEqClone>: Borrow<V>
-where
-    Self: Sized,
-{
-    /// cmk doc
+/// Trait for types that can be cloned while maintaining their reference semantics.
+/// This trait allows creating a new reference that points to the same underlying value.
+pub trait CloneRef<V>: Borrow<V> {
+    /// Clones the reference, returning a reference that still refers to the original value.  
     #[must_use]
-    fn clone_borrow(&self) -> Self;
+    fn clone_ref(&self) -> Self;
 }
 
-impl<V: ?Sized + PartialEqClone> CloneBorrow<V> for &V {
-    fn clone_borrow(&self) -> Self {
+impl<V> CloneRef<V> for &V {
+    fn clone_ref(&self) -> Self {
         self
     }
 }
 
-impl<V: ?Sized + PartialEqClone> CloneBorrow<V> for Rc<V> {
-    fn clone_borrow(&self) -> Self {
+impl<V> CloneRef<V> for Rc<V> {
+    fn clone_ref(&self) -> Self {
         Self::clone(self)
     }
 }
 
 #[cfg(feature = "std")]
-impl<V: ?Sized + PartialEqClone> CloneBorrow<V> for Arc<V> {
-    fn clone_borrow(&self) -> Self {
+impl<V> CloneRef<V> for Arc<V> {
+    fn clone_ref(&self) -> Self {
         Self::clone(self)
     }
 }
@@ -76,11 +74,11 @@ where
     value: Option<V>,
 }
 
-impl<V> CloneBorrow<V> for UniqueValue<V>
+impl<V> CloneRef<V> for UniqueValue<V>
 where
     V: PartialEqClone,
 {
-    fn clone_borrow(&self) -> Self {
+    fn clone_ref(&self) -> Self {
         Self {
             value: self.value.clone(),
         }
@@ -98,7 +96,10 @@ where
     }
 }
 
-impl<V: PartialEqClone> UniqueValue<V> {
+impl<V> UniqueValue<V>
+where
+    V: PartialEqClone,
+{
     /// Creates a new `UniqueValue` with the provided value.
     pub const fn new(v: V) -> Self {
         Self { value: Some(v) }
@@ -569,7 +570,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// ```
     pub fn from_sorted_disjoint_map<VR, I>(iter: I) -> Self
     where
-        VR: CloneBorrow<V>,
+        VR: CloneRef<V>,
         I: SortedDisjointMap<T, V, VR>,
     {
         let mut iter_with_len = SortedDisjointMapWithLenSoFar::from(iter);

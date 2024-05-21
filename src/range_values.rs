@@ -1,6 +1,6 @@
 #![allow(missing_docs)]
 use crate::{
-    map::CloneBorrow,
+    map::CloneRef,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
     Integer,
 };
@@ -259,7 +259,7 @@ pub struct RangeValuesToRangesIter<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
     iter: I,
@@ -282,7 +282,7 @@ impl<T, V, VR, I> FusedIterator for RangeValuesToRangesIter<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
 }
@@ -291,7 +291,7 @@ impl<T, V, VR, I> RangeValuesToRangesIter<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
     /// Creates a new `RangeValuesToRangesIter` from an existing sorted disjoint map iterator.
@@ -309,7 +309,7 @@ impl<T, V, VR, I> Iterator for RangeValuesToRangesIter<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
     type Item = RangeInclusive<T>;
@@ -365,7 +365,7 @@ pub struct SetPriorityMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
     iter: I,
@@ -377,7 +377,7 @@ impl<T, V, VR, I> FusedIterator for SetPriorityMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
 }
@@ -386,7 +386,7 @@ impl<T, V, VR, I> Iterator for SetPriorityMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
     type Item = Priority<T, V, VR>;
@@ -402,7 +402,7 @@ impl<T, V, VR, I> SetPriorityMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
     pub const fn new(iter: I, priority: usize) -> Self {
@@ -418,7 +418,7 @@ impl<T, V, VR, I> PrioritySortedStartsMap<T, V, VR> for SetPriorityMap<T, V, VR,
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
 }

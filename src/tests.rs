@@ -1157,7 +1157,7 @@ fn check_size_hint<E: Debug>(
 fn intersection(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
     let b_r = RangeSetBlaze::from_iter(&b);
-    let expected: Reference = a.intersection(&b).cloned().collect();
+    let expected: Reference = a.intersection(&b).copied().collect();
     let actual: Reference = (a_r & b_r).into_iter().collect();
     binary_op(a, b, expected, actual)
 }
@@ -1531,7 +1531,7 @@ pub fn convert_challenge() {
     where
         T: Integer,
         V: PartialEqClone,
-        VR: CloneBorrow<V>,
+        VR: CloneRef<V>,
         S: SortedDisjointMap<T, V, VR>,
     {
     }

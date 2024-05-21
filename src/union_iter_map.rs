@@ -10,7 +10,7 @@ use itertools::Itertools;
 use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 use crate::{map::PartialEqClone, Integer};
 use crate::{
-    map::{CloneBorrow, SortedStartsInVecMap},
+    map::{CloneRef, SortedStartsInVecMap},
     unsorted_disjoint_map::AssumePrioritySortedStartsMap,
 };
 
@@ -21,7 +21,7 @@ pub struct UnionIterMap<T, V, VR, SS>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     SS: PrioritySortedStartsMap<T, V, VR>,
 {
     iter: SS,
@@ -35,7 +35,7 @@ impl<T, V, VR, I> Iterator for UnionIterMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {
     type Item = (RangeInclusive<T>, VR);
@@ -98,11 +98,11 @@ where
                 } else {
                     // if the gather is not contiguous with the best, then output the gather and set the gather to the best
                     self.ready_to_go = Some(gather);
-                    self.gather = Some((best.start()..=next_end, best.value().clone_borrow()));
+                    self.gather = Some((best.start()..=next_end, best.value().clone_ref()));
                 }
             } else {
                 // if there is no gather, then set the gather to the best
-                self.gather = Some((best.start()..=next_end, best.value().clone_borrow()));
+                self.gather = Some((best.start()..=next_end, best.value().clone_ref()));
             };
 
             // We also update the workspace to removing any items that are completely covered by the new_start.
@@ -139,7 +139,7 @@ impl<T, V, VR, I> UnionIterMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
@@ -160,7 +160,7 @@ impl<T, V, VR, L, R> BitOrMapMerge<T, V, VR, L, R>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
 {
@@ -177,7 +177,7 @@ impl<T, V, VR, J> BitOrMapKMerge<T, V, VR, J>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     J: SortedDisjointMap<T, V, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
@@ -205,7 +205,7 @@ impl<T, V, VR> FromIterator<(RangeInclusive<T>, VR)>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -221,7 +221,7 @@ impl<T, V, VR, I> From<UnsortedPriorityDisjointMap<T, V, VR, I>>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     #[allow(clippy::clone_on_copy)]
@@ -240,7 +240,7 @@ impl<T, V, VR, I> FusedIterator for UnionIterMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: PrioritySortedStartsMap<T, V, VR> + FusedIterator,
 {
 }

@@ -9,7 +9,7 @@ use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
 use alloc::collections::btree_map;
 
 use crate::{
-    map::{CloneBorrow, EndValue, PartialEqClone},
+    map::{CloneRef, EndValue, PartialEqClone},
     Integer, SortedDisjointMap,
 };
 
@@ -25,7 +25,7 @@ pub struct IterMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
     iter: I,
@@ -38,7 +38,7 @@ impl<T, V, VR, I> IterMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
     pub const fn new(iter: I) -> Self {
@@ -55,7 +55,7 @@ impl<T, V, VR, I> FusedIterator for IterMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR> + FusedIterator,
 {
 }
@@ -64,7 +64,7 @@ impl<T, V, VR, I> Iterator for IterMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
     type Item = (T, VR);
@@ -78,7 +78,7 @@ where
 
         let (start, end) = range_value.0.into_inner();
         debug_assert!(start <= end);
-        let value = range_value.1.clone_borrow();
+        let value = range_value.1.clone_ref();
         if start < end {
             range_value.0 = start.add_one()..=end;
             self.option_range_value_front = Some(range_value);
@@ -98,7 +98,7 @@ impl<T, V, VR, I> DoubleEndedIterator for IterMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR> + DoubleEndedIterator,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -109,7 +109,7 @@ where
             .or_else(|| self.option_range_value_front.take())?;
         let (start, end) = range_value.0.into_inner();
         debug_assert!(start <= end);
-        let value = range_value.1.clone_borrow();
+        let value = range_value.1.clone_ref();
         if start < end {
             range_value.0 = start..=end.sub_one();
             self.option_range_value_back = Some(range_value);
@@ -227,7 +227,7 @@ pub struct KeysMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
     iter: IterMap<T, V, VR, I>,
@@ -237,7 +237,7 @@ impl<T, V, VR, I> KeysMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
     pub const fn new(iter: I) -> Self {
@@ -251,7 +251,7 @@ impl<T, V, VR, I> FusedIterator for KeysMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
 }
@@ -260,7 +260,7 @@ impl<T, V, VR, I> Iterator for KeysMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR>,
 {
     type Item = T;
@@ -278,7 +278,7 @@ impl<T, V, VR, I> DoubleEndedIterator for KeysMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: SortedDisjointMap<T, V, VR> + DoubleEndedIterator,
 {
     fn next_back(&mut self) -> Option<Self::Item> {

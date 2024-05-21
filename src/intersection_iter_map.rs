@@ -5,7 +5,7 @@ use core::{
     ops::RangeInclusive,
 };
 
-use crate::{map::CloneBorrow, SortedDisjoint, SortedDisjointMap};
+use crate::{map::CloneRef, SortedDisjoint, SortedDisjointMap};
 use crate::{map::PartialEqClone, Integer};
 
 /// The output of the cmk
@@ -15,7 +15,7 @@ pub struct IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     IM: SortedDisjointMap<T, V, VR>,
     IS: SortedDisjoint<T>,
 {
@@ -30,7 +30,7 @@ impl<T, V, VR, IM, IS> IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     IM: SortedDisjointMap<T, V, VR>,
     IS: SortedDisjoint<T>,
 {
@@ -76,7 +76,7 @@ impl<T, V, VR, IM, IS> FusedIterator for IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     IM: SortedDisjointMap<T, V, VR>,
     IS: SortedDisjoint<T>,
 {
@@ -86,7 +86,7 @@ impl<T, V, VR, IM, IS> Iterator for IntersectionIterMap<T, V, VR, IM, IS>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     IM: SortedDisjointMap<T, V, VR>,
     IS: SortedDisjoint<T>,
 {
@@ -137,7 +137,7 @@ where
                 }
                 (true, false) => {
                     self.right = None;
-                    let value = left.1.clone_borrow();
+                    let value = left.1.clone_ref();
                     self.left = Some(left);
                     value
                 }

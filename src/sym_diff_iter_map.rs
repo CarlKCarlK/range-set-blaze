@@ -7,7 +7,7 @@ use core::{
 use alloc::collections::BinaryHeap;
 
 use crate::{
-    map::{CloneBorrow, PartialEqClone},
+    map::{CloneRef, PartialEqClone},
     merge_map::KMergeMap,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
     BitXorMapKMerge, BitXorMapMerge, Integer, MergeMap, SortedDisjointMap,
@@ -20,7 +20,7 @@ pub struct SymDiffIterMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {
     iter: I,
@@ -45,7 +45,7 @@ impl<T, V, VR, I> FusedIterator for SymDiffIterMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {
 }
@@ -54,7 +54,7 @@ impl<T, V, VR, I> Iterator for SymDiffIterMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {
     type Item = (RangeInclusive<T>, VR);
@@ -129,7 +129,7 @@ where
                     self.ready_to_go = Some(gather);
                     // cmk this code appear twice
                     if self.workspace.len() % 2 == 1 {
-                        self.gather = Some((*best.0.start()..=next_end, best.1.clone_borrow()));
+                        self.gather = Some((*best.0.start()..=next_end, best.1.clone_ref()));
                     } else {
                         debug_assert!(self.gather.is_none());
                     }
@@ -137,7 +137,7 @@ where
             } else {
                 // if there is no gather, then set the gather to the best
                 if self.workspace.len() % 2 == 1 {
-                    self.gather = Some((*best.0.start()..=next_end, best.1.clone_borrow()));
+                    self.gather = Some((*best.0.start()..=next_end, best.1.clone_ref()));
                 } else {
                     debug_assert!(self.gather.is_none());
                 }
@@ -168,7 +168,7 @@ impl<T, V, VR, L, R> BitXorMapMerge<T, V, VR, L, R>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     L: SortedDisjointMap<T, V, VR>,
     R: SortedDisjointMap<T, V, VR>,
 {
@@ -185,7 +185,7 @@ impl<T, V, VR, J> BitXorMapKMerge<T, V, VR, J>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     J: SortedDisjointMap<T, V, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
@@ -203,7 +203,7 @@ impl<T, V, VR, I> SymDiffIterMap<T, V, VR, I>
 where
     T: Integer,
     V: PartialEqClone,
-    VR: CloneBorrow<V>,
+    VR: CloneRef<V>,
     I: PrioritySortedStartsMap<T, V, VR>,
 {
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators.
