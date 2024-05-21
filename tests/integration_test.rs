@@ -2153,3 +2153,10 @@ fn test_every_union() {
     let c = [a.ranges(), b.ranges()].union();
     assert!(c.equal(RangeSetBlaze::from_iter([1..=15, 18..=29]).ranges()));
 }
+
+// cmk0000 get this looking better 	`cargo doc --no-deps --all-features --open` esp NotIter etc
+// cmk0000 get full coverage
+// cmk0000 get 'set' dic page looking good
+// cmk0000 get 'map' dic page looking good
+// cmk00000 is CloneBorrow a good name?
+// cmk0000 write docs for PartialEqClone

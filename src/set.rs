@@ -484,7 +484,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    // cmk000
+    // cmk
     // pub(crate) fn from_sorted_starts<I>(iter: I) -> Self
     // where
     //     I: SortedStarts<T>,
@@ -528,8 +528,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
     #[cfg(feature = "from_slice")]
     #[inline]
-    pub fn from_slice(_slice: impl AsRef<[T]>) -> Self {
-        todo!("cmk old")
+    pub fn from_slice(slice: impl AsRef<[T]>) -> Self {
+        T::from_slice(slice)
     }
 
     #[allow(dead_code)]

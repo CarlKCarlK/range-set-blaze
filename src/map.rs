@@ -48,13 +48,6 @@ where
     /// cmk doc
     #[must_use]
     fn clone_borrow(&self) -> Self;
-
-    // If you intend to consume `Self`, the method signature should indeed take `self`
-    /// cmk doc
-    fn borrow_clone(self) -> V {
-        // Since `self` is consumed, you can do anything with it, including dropping
-        self.borrow().clone()
-    }
 }
 
 impl<V: ?Sized + PartialEqClone> CloneBorrow<V> for &V {
@@ -73,6 +66,46 @@ impl<V: ?Sized + PartialEqClone> CloneBorrow<V> for Rc<V> {
 impl<V: ?Sized + PartialEqClone> CloneBorrow<V> for Arc<V> {
     fn clone_borrow(&self) -> Self {
         Self::clone(self)
+    }
+}
+
+pub struct UniqueValue<V>
+where
+    V: PartialEqClone,
+{
+    value: Option<V>,
+}
+
+impl<V> CloneBorrow<V> for UniqueValue<V>
+where
+    V: PartialEqClone,
+{
+    fn clone_borrow(&self) -> Self {
+        Self {
+            value: self.value.clone(),
+        }
+    }
+}
+
+impl<V> Borrow<V> for UniqueValue<V>
+where
+    V: PartialEqClone,
+{
+    fn borrow(&self) -> &V {
+        // cmk will panic if None
+        self.value.as_ref().unwrap()
+        // &self.value
+    }
+}
+
+impl<V: PartialEqClone> UniqueValue<V> {
+    /// Creates a new `UniqueValue` with the provided value.
+    pub const fn new(v: V) -> Self {
+        Self { value: Some(v) }
+    }
+
+    pub fn into_value(mut self) -> V {
+        self.value.take().unwrap()
     }
 }
 
@@ -579,10 +612,9 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// assert_eq!(a[5], "b");
     /// ```
     pub fn append(&mut self, other: &mut Self) {
-        for range_values in other.range_values() {
-            let range = range_values.0;
-            let v = range_values.1.borrow_clone();
-            self.internal_add(range, v);
+        for (range, value) in other.range_values() {
+            let value = value.clone(); // cmk0000000
+            self.internal_add(range, value);
         }
         other.clear();
     }
@@ -728,7 +760,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// assert_eq!(map[37], "c");
     /// ```
     pub fn insert(&mut self, key: T, value: V) -> Option<V> {
-        let old = self.get(key).map(CloneBorrow::borrow_clone);
+        let old = self.get(key).cloned();
         self.internal_add(key..=key, value);
         old
     }
@@ -918,7 +950,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
         }
 
         // The split is not clean, so we must move some keys from the end of self to the start of b.
-        let value = end_value.value.borrow_clone();
+        let value = end_value.value.clone();
         last_entry.into_mut().end = key.sub_one();
         new_btree.insert(key, EndValue { end, value });
         let (a_len, b_len) = self.two_element_lengths(old_btree_len, &new_btree, old_len);
@@ -1302,7 +1334,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
         if start == end_value.end {
             Some((start, end_value.value))
         } else {
-            let value = end_value.value.borrow_clone();
+            let value = end_value.value.clone();
             self.btree_map.insert(start.add_one(), end_value);
             Some((start, value))
         }
@@ -1333,7 +1365,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
             let value = entry.remove_entry().1.value;
             Some((end, value))
         } else {
-            let value = entry.get().value.borrow_clone();
+            let value = entry.get().value.clone();
             entry.get_mut().end.assign_sub_one();
             Some((end, value))
         }
@@ -1490,7 +1522,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     pub fn complement_with(&self, value: &V) -> Self {
         self.ranges()
             .complement()
-            .map(|r| (r, value.borrow_clone()))
+            .map(|r| (r, value.clone()))
             .collect()
     }
 
@@ -1706,47 +1738,6 @@ impl<T: Integer, V: PartialEqClone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBla
     }
 }
 
-pub struct UniqueValue<V>
-where
-    V: PartialEqClone,
-{
-    value: Option<V>,
-}
-
-impl<V: PartialEqClone> UniqueValue<V> {
-    /// Creates a new `UniqueValue` with the provided value.
-    pub const fn new(v: V) -> Self {
-        Self { value: Some(v) }
-    }
-}
-
-impl<V> CloneBorrow<V> for UniqueValue<V>
-where
-    V: PartialEqClone,
-{
-    fn clone_borrow(&self) -> Self {
-        Self {
-            value: self.value.clone(),
-        }
-    }
-
-    fn borrow_clone(mut self) -> V {
-        // cmk will panic if None
-        self.value.take().unwrap()
-    }
-}
-
-impl<V> Borrow<V> for UniqueValue<V>
-where
-    V: PartialEqClone,
-{
-    fn borrow(&self) -> &V {
-        // cmk will panic if None
-        self.value.as_ref().unwrap()
-        // &self.value
-    }
-}
-
 gen_ops_ex!(
     <T, V>;
     types ref RangeMapBlaze<T,V>, ref RangeMapBlaze<T,V> => RangeMapBlaze<T,V>;
@@ -1885,12 +1876,8 @@ where
             UnsortedPriorityDisjointMap::new(iter.map(|(r, v)| (r..=r, UniqueValue::new(v))))
         {
             let (range, value) = priority.into_range_value();
-            self.internal_add(range, value.borrow_clone());
+            self.internal_add(range, value.into_value());
         }
-
-        // for (key, value) in iter {
-        //     self.internal_add(key..=key, value);
-        // }
     }
 
     // cmk define extend_one and make it inline
@@ -1922,8 +1909,6 @@ where
     }
 }
 
-// cmk0000 move these tests
-
 // implement Index trait
 impl<T: Integer, V: PartialEqClone> Index<T> for RangeMapBlaze<T, V> {
     type Output = V;
@@ -1939,91 +1924,6 @@ impl<T: Integer, V: PartialEqClone> Index<T> for RangeMapBlaze<T, V> {
     }
 }
 
-#[test]
-fn test_coverage_10() {
-    let mut a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
-    assert_eq!(a.pop_last(), Some((4, "World")));
-    assert_eq!(a.pop_last(), Some((3, "World")));
-    assert_eq!(a.pop_last(), Some((2, "Hello")));
-    assert_eq!(a.pop_last(), Some((1, "Hello")));
-    assert_eq!(a.pop_last(), None);
-}
-
-#[test]
-fn test_cmk_delete_me4() {
-    use crate::prelude::*;
-
-    // Create an empty set with 'new' or 'default'.
-    let a0 = RangeMapBlaze::<i32, &str>::new();
-    let a1 = RangeMapBlaze::<i32, &str>::default();
-    assert!(a0 == a1 && a0.is_empty());
-
-    // 'from_iter'/'collect': From an iterator of integers.
-    // Duplicates and out-of-order elements are fine.
-    // Values have left-to-right precedence.
-    let a0 = RangeMapBlaze::from_iter([(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]);
-    let a1: RangeMapBlaze<i32, &str> = [(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]
-        .into_iter()
-        .collect();
-    assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
-
-    // 'from_iter'/'collect': From an iterator of inclusive ranges, start..=end.
-    // Overlapping, out-of-order, and empty ranges are fine.
-    // Values have left-to-right precedence.
-    #[allow(clippy::reversed_empty_ranges)]
-    let a0 = RangeMapBlaze::from_iter([(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")]);
-    #[allow(clippy::reversed_empty_ranges)]
-    let a1: RangeMapBlaze<i32, &str> = [(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")]
-        .into_iter()
-        .collect();
-    assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
-
-    // If we know the ranges are already sorted and disjoint,
-    // we can avoid work and use 'from_sorted_disjoint_map'/'into'.
-    let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::new([
-        (-10..=-5, &"c"),
-        (1..=2, &"a"),
-    ]));
-    let a1: RangeMapBlaze<i32, &str> =
-        CheckSortedDisjointMap::new([(-10..=-5, &"c"), (1..=2, &"a")]).into_range_map_blaze();
-    assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
-
-    // For compatibility with `BTreeSet`, we also support
-    // 'from'/'into' from arrays of integers.
-    let a0 = RangeMapBlaze::from([(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]);
-    let a1: RangeMapBlaze<i32, &str> = [(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")].into();
-    println!("a0: {}", a0.to_string());
-    assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
-}
-
-#[test]
-fn example_2() {
-    use crate::prelude::*;
-
-    // frames per second
-    let fps = 24;
-    // Create a countdown from 5 to 2
-    let count_down: RangeMapBlaze<usize, String> = (2..=5)
-        .rev()
-        .enumerate()
-        .map(|(i, c)| ((i * fps)..=((i + 1) * fps) - 1, c.to_string()))
-        .collect();
-    // At 5 and 8 seconds (respectively), display "Hello" and "World"
-    let hello_world: RangeMapBlaze<usize, String> = RangeMapBlaze::from_iter([
-        ((5 * fps)..=(7 * fps - 1), "Hello".to_string()),
-        ((8 * fps)..=(10 * fps - 1), "World".to_string()),
-    ]);
-    // create 10 seconds of blank frames
-    let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, "".to_string())]);
-    // union everything together with left-to-right precedence
-    let animation = [count_down, hello_world, blank].union();
-    // for every range of frames, show what is displayed
-    println!("frames: text");
-    for (range, text) in animation.range_values() {
-        println!("{range:?}: {text}");
-    }
-}
-
 // cmk missing methods
 // cmk retain -- inline
 // cmk into_keys -- inline
@@ -2032,69 +1932,5 @@ fn example_2() {
 // cmk look at other BTreeMap methods and traits
 
 // cmk missing values and values per range
-
-// cmk move to test
-#[cfg(feature = "rog-experimental")]
-#[test]
-fn map_random_get_range_value() {
-    assert_eq!(
-        RangeMapBlaze::from_iter([(0..=0, 'a')]).get_range_value(1u8),
-        SomeOrGap::Gap(1..=255)
-    );
-
-    assert_eq!(
-        RangeMapBlaze::<u8, &char>::default().get_range_value(0u8),
-        SomeOrGap::Gap(0..=255)
-    );
-
-    assert_eq!(
-        RangeMapBlaze::from_iter([(0..=0, 'a')]).get_range_value(0u8),
-        SomeOrGap::Some((0..=0, &'a'))
-    );
-
-    let mut map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=2, 'b')]);
-    assert_eq!(map.get_range_value(1u8), SomeOrGap::Gap(1..=1));
-
-    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=2, 'b')]);
-    assert_eq!(map.get_range_value(3u8), SomeOrGap::Gap(3..=255));
-
-    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=2, 'b')]);
-    assert_eq!(map.get_range_value(0u8), SomeOrGap::Some((0..=0, &'a')));
-
-    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
-    assert_eq!(map.get_range_value(2u8), SomeOrGap::Some((2..=3, &'b')));
-
-    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
-    assert_eq!(map.get_range_value(4u8), SomeOrGap::Gap(4..=255));
-
-    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
-    assert_eq!(map.get_range_value(255u8), SomeOrGap::Gap(4..=255));
-
-    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
-    assert_eq!(map.get_range_value(1u8), SomeOrGap::Gap(1..=1));
-
-    // Cover edge cases with min and max values
-    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
-    assert_eq!(
-        map.get_range_value(u8::max_value()),
-        SomeOrGap::Gap(4..=u8::max_value())
-    );
-
-    map = RangeMapBlaze::from_iter([(u8::min_value()..=u8::min_value(), 'a')]);
-    assert_eq!(
-        map.get_range_value(u8::min_value()),
-        SomeOrGap::Some((u8::min_value()..=u8::min_value(), &'a'))
-    );
-
-    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (5..=10, 'b')]);
-    assert_eq!(map.get_range_value(3u8), SomeOrGap::Gap(1..=4));
-
-    // Case where nothing before, but something after
-    map = RangeMapBlaze::from_iter([(2..=3, 'a'), (5..=6, 'b')]);
-    assert_eq!(map.get_range_value(1), SomeOrGap::Gap(0..=1));
-
-    map = RangeMapBlaze::from_iter([(5..=6, 'a')]);
-    assert_eq!(map.get_range_value(1), SomeOrGap::Gap(0..=4));
-}
 
 // cmk add difference_with_set??? is there a complement with set? sub_assign

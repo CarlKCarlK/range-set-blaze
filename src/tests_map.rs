@@ -123,13 +123,8 @@ where
                                     // V: ValueOwned + fmt::Display + 'a, // V must implement Display to be formatted with {}
 {
     let mut vs = String::new();
-    for range_value in iter {
-        vs.push_str(&format!(
-            "{}..={}{} ",
-            range_value.0.start(),
-            range_value.0.end(),
-            *range_value.1 as char,
-        ));
+    for (range, value) in iter {
+        vs.push_str(&format!("{:?}{} ", range, *value as char,));
     }
     vs
 }
@@ -548,7 +543,7 @@ fn map_repro1() {
 //     // cmk range_values should return a tuple not a struct
 //     // cmk implement iter for RangeMapBlaze
 //     let mut previous: Option<(RangeInclusive<T>, &V)> = None;
-//     for range_value in range_map_blaze.range_values() {
+//     for (range, value) in range_map_blaze.range_values() {
 //         let v = range_value.1;
 //         let range = range_value.0.clone();
 

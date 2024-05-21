@@ -211,13 +211,7 @@ where
     where
         I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
     {
-        let iter = iter.into_iter();
-        // let iter = iter.map(|x| {
-        //     println!("cmk x.priority {:?}", x.priority);
-        //     x
-        // });
-        let iter = UnsortedPriorityDisjointMap::new(iter);
-        Self::from(iter)
+        UnsortedPriorityDisjointMap::new(iter.into_iter()).into()
     }
 }
 

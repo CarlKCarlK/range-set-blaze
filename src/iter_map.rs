@@ -165,20 +165,18 @@ where
     type Item = (T, V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let start_end_value = self
+        let (start, end_value) = self
             .option_start_end_value_front
             .take()
             .or_else(|| self.into_iter.next())
             .or_else(|| self.option_start_end_value_back.take())?;
 
-        let start = start_end_value.0;
-        let end = start_end_value.1.end;
-        let value = start_end_value.1.value.borrow_clone();
+        let end = end_value.end;
+        let value = end_value.value.clone();
         debug_assert!(start <= end);
         if start < end {
-            let end_value = start_end_value.1;
-            let start_end_value = (start.add_one(), end_value);
-            self.option_start_end_value_front = Some(start_end_value);
+            let start_plus1_end_value = (start.add_one(), end_value);
+            self.option_start_end_value_front = Some(start_plus1_end_value);
         }
         Some((start, value))
     }
@@ -197,22 +195,20 @@ where
     V: PartialEqClone,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let start_end_value = self
+        let (start, mut end_value) = self
             .option_start_end_value_back
             .take()
             .or_else(|| self.into_iter.next_back())
             .or_else(|| self.option_start_end_value_front.take())?;
 
-        let start = start_end_value.0;
-        let end = start_end_value.1.end;
-        let value = start_end_value.1.value.borrow_clone();
+        let end = end_value.end;
+        let value = end_value.value.clone();
         debug_assert!(start <= end);
 
         if start < end {
-            let mut end_value = start_end_value.1;
             end_value.end.assign_sub_one();
-            let start_end_value = (start, end_value);
-            self.option_start_end_value_back = Some(start_end_value);
+            let start_end_less1_value = (start, end_value);
+            self.option_start_end_value_back = Some(start_end_less1_value);
         }
 
         Some((end, value))

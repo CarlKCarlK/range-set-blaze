@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 // use core::collections::HashSet;
 
 // // File: test.rs
@@ -184,7 +186,6 @@
 // }
 // VERIFICATION:- SUCCESSFUL
 
-#[allow(unexpected_cfgs)]
 #[cfg(kani)]
 #[kani::proof]
 fn verify_less_than_i32_chatgpt_a() {

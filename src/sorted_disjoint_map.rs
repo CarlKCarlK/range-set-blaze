@@ -29,8 +29,8 @@ use crate::{map::PartialEqClone, union_iter_map::UnionIterMap, Integer, RangeMap
 use core::ops;
 use core::ops::RangeInclusive;
 
-/// Internally, a trait used to mark iterators that provide ranges sorted by start, but not necessarily by end,
-/// and may overlap.
+/// Used internally. This trait marks iterators that provide ranges and values sorted by start, but
+/// that are not necessarily disjoint.
 pub trait SortedStartsMap<T, V, VR>:
     Iterator<Item = (RangeInclusive<T>, VR)> + FusedIterator
 where
@@ -486,7 +486,7 @@ where
 }
 
 /// Converts the implementing type into a String by consuming it.
-/// It is intended for types where items are Debug-able.
+/// It is intended for types where items are Debug-able. // cmk000 implement Debug
 pub trait IntoString {
     /// cmk doc
     fn into_string(self) -> String;

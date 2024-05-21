@@ -185,14 +185,13 @@ where
     type Item = (T, EndValue<T, V>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(range_value) = self.iter.next() {
-            let (range, value) = range_value;
+        if let Some((range, value)) = self.iter.next() {
             let (start, end) = range.clone().into_inner();
             debug_assert!(start <= end);
             self.len += T::safe_len(&range);
             let end_value = EndValue {
                 end,
-                value: value.borrow_clone(),
+                value: value.borrow().clone(),
             };
             Some((start, end_value))
         } else {

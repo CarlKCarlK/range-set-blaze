@@ -2420,8 +2420,8 @@ pub fn linear(
 
     range_map_blaze
         .range_values()
-        .map(|range_value| {
-            let (start, end) = range_value.0.clone().into_inner();
+        .map(|(range, value)| {
+            let (start, end) = range.clone().into_inner();
             let mut a = (start - first) * scale.abs() + first;
             let mut b = (end + 1 - first) * scale.abs() + first - 1;
             let last = (last + 1 - first) * scale.abs() + first - 1;
@@ -2429,7 +2429,7 @@ pub fn linear(
                 (a, b) = (last - b + first, last - a + first);
             }
             let new_range = a + shift..=b + shift;
-            (new_range, range_value.1.clone())
+            (new_range, value.clone())
         })
         .collect()
 }
@@ -4147,4 +4147,105 @@ fn test_coverage_5() {
 fn test_coverage_6() {
     let mut a = RangeMapBlaze::from_iter([(1u128..=4, "Hello")]);
     let _ = a.split_off(u128::MAX);
+}
+
+#[test]
+fn test_coverage_10() {
+    let mut a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
+    assert_eq!(a.pop_last(), Some((4, "World")));
+    assert_eq!(a.pop_last(), Some((3, "World")));
+    assert_eq!(a.pop_last(), Some((2, "Hello")));
+    assert_eq!(a.pop_last(), Some((1, "Hello")));
+    assert_eq!(a.pop_last(), None);
+}
+
+#[test]
+fn example_2() {
+    use range_set_blaze::prelude::*;
+
+    // frames per second
+    let fps = 24;
+    // Create a countdown from 5 to 2
+    let count_down: RangeMapBlaze<usize, String> = (2..=5)
+        .rev()
+        .enumerate()
+        .map(|(i, c)| ((i * fps)..=((i + 1) * fps) - 1, c.to_string()))
+        .collect();
+    // At 5 and 8 seconds (respectively), display "Hello" and "World"
+    let hello_world: RangeMapBlaze<usize, String> = RangeMapBlaze::from_iter([
+        ((5 * fps)..=(7 * fps - 1), "Hello".to_string()),
+        ((8 * fps)..=(10 * fps - 1), "World".to_string()),
+    ]);
+    // create 10 seconds of blank frames
+    let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, "".to_string())]);
+    // union everything together with left-to-right precedence
+    let animation = [count_down, hello_world, blank].union();
+    // for every range of frames, show what is displayed
+    println!("frames: text");
+    for (range, text) in animation.range_values() {
+        println!("{range:?}: {text}");
+    }
+}
+
+#[cfg(feature = "rog-experimental")]
+#[test]
+fn map_random_get_range_value() {
+    assert_eq!(
+        RangeMapBlaze::from_iter([(0..=0, 'a')]).get_range_value(1u8),
+        SomeOrGap::Gap(1..=255)
+    );
+
+    assert_eq!(
+        RangeMapBlaze::<u8, &char>::default().get_range_value(0u8),
+        SomeOrGap::Gap(0..=255)
+    );
+
+    assert_eq!(
+        RangeMapBlaze::from_iter([(0..=0, 'a')]).get_range_value(0u8),
+        SomeOrGap::Some((0..=0, &'a'))
+    );
+
+    let mut map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=2, 'b')]);
+    assert_eq!(map.get_range_value(1u8), SomeOrGap::Gap(1..=1));
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=2, 'b')]);
+    assert_eq!(map.get_range_value(3u8), SomeOrGap::Gap(3..=255));
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=2, 'b')]);
+    assert_eq!(map.get_range_value(0u8), SomeOrGap::Some((0..=0, &'a')));
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
+    assert_eq!(map.get_range_value(2u8), SomeOrGap::Some((2..=3, &'b')));
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
+    assert_eq!(map.get_range_value(4u8), SomeOrGap::Gap(4..=255));
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
+    assert_eq!(map.get_range_value(255u8), SomeOrGap::Gap(4..=255));
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
+    assert_eq!(map.get_range_value(1u8), SomeOrGap::Gap(1..=1));
+
+    // Cover edge cases with min and max values
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
+    assert_eq!(
+        map.get_range_value(u8::max_value()),
+        SomeOrGap::Gap(4..=u8::max_value())
+    );
+
+    map = RangeMapBlaze::from_iter([(u8::min_value()..=u8::min_value(), 'a')]);
+    assert_eq!(
+        map.get_range_value(u8::min_value()),
+        SomeOrGap::Some((u8::min_value()..=u8::min_value(), &'a'))
+    );
+
+    map = RangeMapBlaze::from_iter([(0..=0, 'a'), (5..=10, 'b')]);
+    assert_eq!(map.get_range_value(3u8), SomeOrGap::Gap(1..=4));
+
+    // Case where nothing before, but something after
+    map = RangeMapBlaze::from_iter([(2..=3, 'a'), (5..=6, 'b')]);
+    assert_eq!(map.get_range_value(1), SomeOrGap::Gap(0..=1));
+
+    map = RangeMapBlaze::from_iter([(5..=6, 'a')]);
+    assert_eq!(map.get_range_value(1), SomeOrGap::Gap(0..=4));
 }

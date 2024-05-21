@@ -179,10 +179,10 @@ pub fn hello_world() -> RangeMapBlaze<i32, u8> {
     let message = message
         .range_values()
         .enumerate()
-        .map(|(i, range_value)| {
-            let (start, end) = range_value.0.clone().into_inner();
+        .map(|(i, (range, value))| {
+            let (start, end) = range.clone().into_inner();
             let new_range = start + i as i32 * 3..=end + i as i32 * 3;
-            (new_range, range_value.1)
+            (new_range, value)
         })
         .collect();
     message
@@ -265,8 +265,8 @@ pub fn linear(
 
     range_map_blaze
         .range_values()
-        .map(|range_value| {
-            let (start, end) = range_value.0.clone().into_inner();
+        .map(|(range, value)| {
+            let (start, end) = range.clone().into_inner();
             let mut a = (start - first) * scale.abs() + first;
             let mut b = (end + 1 - first) * scale.abs() + first - 1;
             let last = (last + 1 - first) * scale.abs() + first - 1;
@@ -274,7 +274,7 @@ pub fn linear(
                 (a, b) = (last - b + first, last - a + first);
             }
             let new_range = a + shift..=b + shift;
-            (new_range, range_value.1)
+            (new_range, value)
         })
         .collect()
 }
@@ -299,7 +299,7 @@ pub fn get_led_state_and_duration(movie_id: f64, now_milliseconds: f64) -> LedSt
     let first_region_if_any = now_to_end_of_movie.range_values().next();
 
     // If there is no region (the movie is over), display "." display "." for 2 weeks.
-    let Some(range_value) = first_region_if_any else {
+    let Some((range, value)) = first_region_if_any else {
         return LedState {
             state: Leds::DECIMAL,
             duration: i32::MAX,
@@ -307,17 +307,17 @@ pub fn get_led_state_and_duration(movie_id: f64, now_milliseconds: f64) -> LedSt
     };
 
     // Is "now" in this region? If not then we are in a gap. Display "." until a region is ready to display
-    if frame_index < *range_value.0.start() {
+    if frame_index < *range.start() {
         return LedState {
             state: Leds::DECIMAL,
-            duration: (range_value.0.start() - frame_index) * 1000 / FPS,
+            duration: (range.start() - frame_index) * 1000 / FPS,
         };
     }
 
     // If we are in a region, compute its duration in milliseconds and the frame to display
-    let duration = (range_value.0.end() + 1 - frame_index) * 1000 / FPS;
+    let duration = (range.end() + 1 - frame_index) * 1000 / FPS;
     LedState {
-        state: *range_value.1,
+        state: *value,
         duration,
     }
 }

@@ -723,8 +723,6 @@ impl Integer for char {
     }
 }
 
-// cmk0000 add char, and Ipv6Addr all https://doc.rust-lang.org/core/iter/trait.Step.html#implementors
-
 #[cfg(test)]
 mod tests {
     use super::*;
