@@ -67,11 +67,71 @@ impl<V> CloneRef<V> for Arc<V> {
     }
 }
 
-pub struct UniqueValue<V>
+/// Trait for types that can be cloned while maintaining their reference semantics,
+/// and have an associated value type.
+pub trait ValueRef: Borrow<Self::Value>
+where
+    Self: Sized,
+{
+    /// The associated value type.
+    type Value: PartialEqClone;
+
+    /// Clones the object, returning an instance that still refers to the original value.
+    #[must_use]
+    fn clone_ref(&self) -> Self;
+}
+
+// Implementations for references and smart pointers
+impl<V> ValueRef for &V
 where
     V: PartialEqClone,
 {
+    type Value = V;
+
+    fn clone_ref(&self) -> Self {
+        self
+    }
+}
+
+impl<V> ValueRef for Rc<V>
+where
+    V: PartialEqClone,
+{
+    type Value = V;
+
+    fn clone_ref(&self) -> Self {
+        Self::clone(self)
+    }
+}
+
+#[cfg(feature = "std")]
+impl<V> ValueRef for Arc<V>
+where
+    V: PartialEqClone,
+{
+    type Value = V;
+
+    fn clone_ref(&self) -> Self {
+        Self::clone(self)
+    }
+}
+
+// Example custom type implementation
+pub struct UniqueValue<V> {
     value: Option<V>,
+}
+
+impl<V> ValueRef for UniqueValue<V>
+where
+    V: PartialEqClone,
+{
+    type Value = V;
+
+    fn clone_ref(&self) -> Self {
+        Self {
+            value: self.value.clone(),
+        }
+    }
 }
 
 impl<V> CloneRef<V> for UniqueValue<V>
@@ -84,23 +144,16 @@ where
         }
     }
 }
-
 impl<V> Borrow<V> for UniqueValue<V>
 where
     V: PartialEqClone,
 {
     fn borrow(&self) -> &V {
-        // cmk will panic if None
-        self.value.as_ref().unwrap()
-        // &self.value
+        self.value.as_ref().expect("Value should be present")
     }
 }
 
-impl<V> UniqueValue<V>
-where
-    V: PartialEqClone,
-{
-    /// Creates a new `UniqueValue` with the provided value.
+impl<V> UniqueValue<V> {
     pub const fn new(v: V) -> Self {
         Self { value: Some(v) }
     }
