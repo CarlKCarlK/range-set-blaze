@@ -40,32 +40,32 @@ pub trait PartialEqClone: PartialEq + Clone {}
 
 impl<T> PartialEqClone for T where T: PartialEq + Clone {}
 
-/// Trait for types that can be cloned while maintaining their reference semantics.
-/// This trait allows creating a new reference that points to the same underlying value.
-pub trait CloneRef<V>: Borrow<V> {
-    /// Clones the reference, returning a reference that still refers to the original value.  
-    #[must_use]
-    fn clone_ref(&self) -> Self;
-}
+// /// Trait for types that can be cloned while maintaining their reference semantics.
+// /// This trait allows creating a new reference that points to the same underlying value.
+// pub trait CloneRef<V>: Borrow<V> {
+//     /// Clones the reference, returning a reference that still refers to the original value.
+//     #[must_use]
+//     fn clone_ref(&self) -> Self;
+// }
 
-impl<V> CloneRef<V> for &V {
-    fn clone_ref(&self) -> Self {
-        self
-    }
-}
+// impl<V> CloneRef<V> for &V {
+//     fn clone_ref(&self) -> Self {
+//         self
+//     }
+// }
 
-impl<V> CloneRef<V> for Rc<V> {
-    fn clone_ref(&self) -> Self {
-        Self::clone(self)
-    }
-}
+// impl<V> CloneRef<V> for Rc<V> {
+//     fn clone_ref(&self) -> Self {
+//         Self::clone(self)
+//     }
+// }
 
-#[cfg(feature = "std")]
-impl<V> CloneRef<V> for Arc<V> {
-    fn clone_ref(&self) -> Self {
-        Self::clone(self)
-    }
-}
+// #[cfg(feature = "std")]
+// impl<V> CloneRef<V> for Arc<V> {
+//     fn clone_ref(&self) -> Self {
+//         Self::clone(self)
+//     }
+// }
 
 /// Trait for types that can be cloned while maintaining their reference semantics,
 /// and have an associated value type.
@@ -134,16 +134,6 @@ where
     }
 }
 
-impl<V> CloneRef<V> for UniqueValue<V>
-where
-    V: PartialEqClone,
-{
-    fn clone_ref(&self) -> Self {
-        Self {
-            value: self.value.clone(),
-        }
-    }
-}
 impl<V> Borrow<V> for UniqueValue<V>
 where
     V: PartialEqClone,
@@ -623,7 +613,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// ```
     pub fn from_sorted_disjoint_map<VR, I>(iter: I) -> Self
     where
-        VR: CloneRef<V> + ValueRef<Value = V>,
+        VR: ValueRef<Value = V>,
         I: SortedDisjointMap<T, VR>,
     {
         let mut iter_with_len = SortedDisjointMapWithLenSoFar::from(iter);

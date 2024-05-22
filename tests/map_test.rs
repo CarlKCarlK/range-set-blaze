@@ -10,7 +10,6 @@ use core::ops::RangeInclusive;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use range_set_blaze::prelude::*;
-use range_set_blaze::CloneRef;
 use range_set_blaze::IntoRangeValuesIter;
 use range_set_blaze::PartialEqClone;
 use range_set_blaze::RangeValuesIter;
@@ -2563,7 +2562,7 @@ fn test_every_sorted_disjoint_map_method() {
     fn is_sorted_disjoint_map<T, VR, S>(_iter: S)
     where
         T: Integer,
-        VR: CloneRef<VR::Value> + ValueRef,
+        VR: ValueRef,
         S: SortedDisjointMap<T, VR>,
     {
     }

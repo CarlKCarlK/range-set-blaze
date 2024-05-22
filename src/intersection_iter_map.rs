@@ -5,10 +5,7 @@ use core::{
 };
 
 use crate::Integer;
-use crate::{
-    map::{CloneRef, ValueRef},
-    SortedDisjoint, SortedDisjointMap,
-};
+use crate::{map::ValueRef, SortedDisjoint, SortedDisjointMap};
 
 /// The output of the cmk
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -16,7 +13,7 @@ use crate::{
 pub struct IntersectionIterMap<T, VR, IM, IS>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     IM: SortedDisjointMap<T, VR>,
     IS: SortedDisjoint<T>,
 {
@@ -29,7 +26,7 @@ where
 impl<T, VR, IM, IS> IntersectionIterMap<T, VR, IM, IS>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     IM: SortedDisjointMap<T, VR>,
     IS: SortedDisjoint<T>,
 {
@@ -73,7 +70,7 @@ where
 impl<T, VR, IM, IS> FusedIterator for IntersectionIterMap<T, VR, IM, IS>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     IM: SortedDisjointMap<T, VR>,
     IS: SortedDisjoint<T>,
 {
@@ -82,7 +79,7 @@ where
 impl<T, VR, IM, IS> Iterator for IntersectionIterMap<T, VR, IM, IS>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     IM: SortedDisjointMap<T, VR>,
     IS: SortedDisjoint<T>,
 {

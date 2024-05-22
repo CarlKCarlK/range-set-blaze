@@ -3,7 +3,7 @@ use core::iter::FusedIterator;
 // cmk0000000 use criterion::measurement::ValueFormatter;
 use itertools::{Itertools, KMergeBy, MergeBy};
 
-use crate::map::{CloneRef, ValueRef};
+use crate::map::ValueRef;
 use crate::range_values::SetPriorityMap;
 use crate::Integer;
 
@@ -14,7 +14,7 @@ use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap, SortedDisjoi
 pub struct MergeMap<T, VR, L, R>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     L: SortedDisjointMap<T, VR>,
     R: SortedDisjointMap<T, VR>,
 {
@@ -29,7 +29,7 @@ where
 impl<T, VR, L, R> MergeMap<T, VR, L, R>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     L: SortedDisjointMap<T, VR>,
     R: SortedDisjointMap<T, VR>,
 {
@@ -47,7 +47,7 @@ where
 impl<T, VR, L, R> FusedIterator for MergeMap<T, VR, L, R>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     L: SortedDisjointMap<T, VR>,
     R: SortedDisjointMap<T, VR>,
 {
@@ -56,7 +56,7 @@ where
 impl<T, VR, L, R> Iterator for MergeMap<T, VR, L, R>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     L: SortedDisjointMap<T, VR>,
     R: SortedDisjointMap<T, VR>,
 {
@@ -74,7 +74,7 @@ where
 impl<T, VR, L, R> PrioritySortedStartsMap<T, VR> for MergeMap<T, VR, L, R>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     L: SortedDisjointMap<T, VR>,
     R: SortedDisjointMap<T, VR>,
 {
@@ -94,7 +94,7 @@ where
 pub struct KMergeMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
     #[allow(clippy::type_complexity)]
@@ -107,7 +107,7 @@ type KMergeSetPriorityMap<T, VR, I> =
 impl<T, VR, I> KMergeMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
     /// Creates a new [`KMergeMap`] iterator from zero or more [`SortedDisjointMap`] iterators. See [`KMergeMap`] for more details and examples.
@@ -132,7 +132,7 @@ where
 impl<T, VR, I> FusedIterator for KMergeMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
 }
@@ -140,7 +140,7 @@ where
 impl<T, VR, I> Iterator for KMergeMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
     type Item = Priority<T, VR>;
@@ -157,7 +157,7 @@ where
 impl<T, VR, I> PrioritySortedStartsMap<T, VR> for KMergeMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
 }

@@ -7,7 +7,7 @@ use core::{
 use alloc::collections::BinaryHeap;
 
 use crate::{
-    map::{CloneRef, ValueRef},
+    map::ValueRef,
     merge_map::KMergeMap,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
     BitXorMapKMerge, BitXorMapMerge, Integer, MergeMap, SortedDisjointMap,
@@ -19,7 +19,7 @@ use crate::{
 pub struct SymDiffIterMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: PrioritySortedStartsMap<T, VR>,
 {
     iter: I,
@@ -43,7 +43,7 @@ where
 impl<T, VR, I> FusedIterator for SymDiffIterMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: PrioritySortedStartsMap<T, VR>,
 {
 }
@@ -51,7 +51,7 @@ where
 impl<T, VR, I> Iterator for SymDiffIterMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: PrioritySortedStartsMap<T, VR>,
 {
     type Item = (RangeInclusive<T>, VR);
@@ -167,7 +167,7 @@ where
 impl<T, VR, L, R> BitXorMapMerge<T, VR, L, R>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     L: SortedDisjointMap<T, VR>,
     R: SortedDisjointMap<T, VR>,
 {
@@ -183,7 +183,7 @@ where
 impl<T, VR, J> BitXorMapKMerge<T, VR, J>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     J: SortedDisjointMap<T, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
@@ -200,7 +200,7 @@ where
 impl<T, VR, I> SymDiffIterMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: PrioritySortedStartsMap<T, VR>,
 {
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators.

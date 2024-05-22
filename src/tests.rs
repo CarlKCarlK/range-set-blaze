@@ -1530,7 +1530,7 @@ pub fn convert_challenge() {
     fn _is_sorted_disjoint_map<T, VR, S>(_iter: S)
     where
         T: Integer,
-        VR: CloneRef<VR::Value> + ValueRef,
+        VR: ValueRef,
         S: SortedDisjointMap<T, VR>,
     {
     }

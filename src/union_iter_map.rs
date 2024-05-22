@@ -10,10 +10,7 @@ use itertools::Itertools;
 
 use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 use crate::Integer;
-use crate::{
-    map::{CloneRef, SortedStartsInVecMap},
-    unsorted_disjoint_map::AssumePrioritySortedStartsMap,
-};
+use crate::{map::SortedStartsInVecMap, unsorted_disjoint_map::AssumePrioritySortedStartsMap};
 
 /// The output of cmk.
 #[derive(Clone, Debug)]
@@ -21,7 +18,7 @@ use crate::{
 pub struct UnionIterMap<T, VR, SS>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     SS: PrioritySortedStartsMap<T, VR>,
 {
     iter: SS,
@@ -34,7 +31,7 @@ where
 impl<T, VR, I> Iterator for UnionIterMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: PrioritySortedStartsMap<T, VR>,
 {
     type Item = (RangeInclusive<T>, VR);
@@ -140,7 +137,7 @@ where
 impl<T, VR, I> UnionIterMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: PrioritySortedStartsMap<T, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
@@ -160,7 +157,7 @@ where
 impl<T, VR, L, R> BitOrMapMerge<T, VR, L, R>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     L: SortedDisjointMap<T, VR>,
     R: SortedDisjointMap<T, VR>,
 {
@@ -176,7 +173,7 @@ where
 impl<T, VR, J> BitOrMapKMerge<T, VR, J>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     J: SortedDisjointMap<T, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
@@ -203,7 +200,7 @@ impl<T, VR> FromIterator<(RangeInclusive<T>, VR)>
     for UnionIterMap<T, VR, SortedStartsInVecMap<T, VR>>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
 {
     fn from_iter<I>(iter: I) -> Self
     where
@@ -218,7 +215,7 @@ impl<T, VR, I> From<UnsortedPriorityDisjointMap<T, VR, I>>
     for UnionIterMap<T, VR, SortedStartsInVecMap<T, VR>>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     #[allow(clippy::clone_on_copy)]
@@ -236,7 +233,7 @@ where
 impl<T, VR, I> FusedIterator for UnionIterMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: PrioritySortedStartsMap<T, VR> + FusedIterator,
 {
 }

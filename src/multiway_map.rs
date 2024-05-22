@@ -7,7 +7,7 @@
 
 use crate::{
     intersection_iter_map::IntersectionIterMap,
-    map::{CloneRef, PartialEqClone, ValueRef},
+    map::{PartialEqClone, ValueRef},
     range_values::RangeValuesToRangesIter,
     BitAndMapWithRangeValues, BitOrMapKMerge, BitXorMapKMerge, Integer, RangeMapBlaze,
     SortedDisjointMap, UnionIterMap,
@@ -119,7 +119,7 @@ pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: PartialEqClone + 'a>:
 impl<T, VR, II, I> MultiwaySortedDisjointMap<T, VR, I> for II
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
     II: IntoIterator<Item = I>,
 {
@@ -133,7 +133,7 @@ where
 pub trait MultiwaySortedDisjointMap<T, VR, I>: IntoIterator<Item = I> + Sized
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
     /// Unions the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.

@@ -1,6 +1,6 @@
 #![allow(missing_docs)]
 use crate::{
-    map::{CloneRef, ValueRef},
+    map::ValueRef,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
     Integer,
 };
@@ -258,7 +258,7 @@ impl<'a, T: Integer, V: PartialEqClone + 'a> Iterator for MapIntoRangesIter<T, V
 pub struct RangeValuesToRangesIter<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
     iter: I,
@@ -280,7 +280,7 @@ where
 impl<T, VR, I> FusedIterator for RangeValuesToRangesIter<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
 }
@@ -288,7 +288,7 @@ where
 impl<T, VR, I> RangeValuesToRangesIter<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
     /// Creates a new `RangeValuesToRangesIter` from an existing sorted disjoint map iterator.
@@ -305,7 +305,7 @@ where
 impl<T, VR, I> Iterator for RangeValuesToRangesIter<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
     type Item = RangeInclusive<T>;
@@ -360,7 +360,7 @@ impl<T> ExpectDebugUnwrapRelease<T> for Option<T> {
 pub struct SetPriorityMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
     iter: I,
@@ -371,7 +371,7 @@ where
 impl<T, VR, I> FusedIterator for SetPriorityMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
 }
@@ -379,7 +379,7 @@ where
 impl<T, VR, I> Iterator for SetPriorityMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
     type Item = Priority<T, VR>;
@@ -394,7 +394,7 @@ where
 impl<T, VR, I> SetPriorityMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
     pub const fn new(iter: I, priority: usize) -> Self {
@@ -409,7 +409,7 @@ where
 impl<T, VR, I> PrioritySortedStartsMap<T, VR> for SetPriorityMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
 }

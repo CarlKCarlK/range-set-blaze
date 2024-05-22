@@ -1,11 +1,7 @@
 use crate::map::ValueRef;
 use crate::range_values::ExpectDebugUnwrapRelease;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
-use crate::{
-    map::{CloneRef, EndValue},
-    sorted_disjoint_map::SortedDisjointMap,
-    Integer,
-};
+use crate::{map::EndValue, sorted_disjoint_map::SortedDisjointMap, Integer};
 use core::ops::RangeInclusive;
 use core::{
     cmp::{max, min},
@@ -19,7 +15,7 @@ use num_traits::Zero;
 pub(crate) struct UnsortedPriorityDisjointMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     iter: I,
@@ -31,7 +27,7 @@ where
 impl<T, VR, I> UnsortedPriorityDisjointMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>, // Any iterator is fine
 {
     pub fn new(into_iter: I) -> Self {
@@ -56,7 +52,7 @@ where
 impl<T, VR, I> Iterator for UnsortedPriorityDisjointMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     type Item = Priority<T, VR>;
@@ -131,7 +127,7 @@ where
 pub(crate) struct SortedDisjointMapWithLenSoFar<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
     iter: I,
@@ -157,7 +153,7 @@ where
 impl<T, VR, I> SortedDisjointMapWithLenSoFar<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
     pub const fn len_so_far(&self) -> <T as Integer>::SafeLen {
@@ -174,7 +170,7 @@ where
 impl<T, VR, I> Iterator for SortedDisjointMapWithLenSoFar<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
     type Item = (T, EndValue<T, VR::Value>);
@@ -205,7 +201,7 @@ where
 pub struct AssumePrioritySortedStartsMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = Priority<T, VR>> + FusedIterator,
 {
     iter: I,
@@ -214,7 +210,7 @@ where
 impl<T, VR, I> PrioritySortedStartsMap<T, VR> for AssumePrioritySortedStartsMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = Priority<T, VR>> + FusedIterator,
 {
 }
@@ -222,7 +218,7 @@ where
 impl<T, VR, I> AssumePrioritySortedStartsMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = Priority<T, VR>> + FusedIterator,
 {
     /// cmk doc
@@ -234,7 +230,7 @@ where
 impl<T, VR, I> FusedIterator for AssumePrioritySortedStartsMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = Priority<T, VR>> + FusedIterator,
 {
 }
@@ -242,7 +238,7 @@ where
 impl<T, VR, I> Iterator for AssumePrioritySortedStartsMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = Priority<T, VR>> + FusedIterator,
 {
     type Item = Priority<T, VR>;
@@ -260,7 +256,7 @@ where
 impl<T, VR, I> From<I> for SortedDisjointMapWithLenSoFar<T, VR, I::IntoIter>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
     I::IntoIter: SortedDisjointMap<T, VR>,
 {

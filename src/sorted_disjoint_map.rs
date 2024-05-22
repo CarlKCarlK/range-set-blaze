@@ -23,7 +23,6 @@ use core::marker::PhantomData;
 // };
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::map::BitAndRangesMap;
-use crate::map::CloneRef;
 use crate::sorted_disjoint::SortedDisjoint;
 use crate::NotIter;
 use crate::{map::PartialEqClone, union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
@@ -35,7 +34,7 @@ use core::ops::RangeInclusive;
 pub trait SortedStartsMap<T, VR>: Iterator<Item = (RangeInclusive<T>, VR)> + FusedIterator
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
 {
 }
 
@@ -43,7 +42,7 @@ where
 pub trait PrioritySortedStartsMap<T, VR>: Iterator<Item = Priority<T, VR>> + FusedIterator
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
 {
 }
 
@@ -160,7 +159,7 @@ where
 pub trait SortedDisjointMap<T, VR>: SortedStartsMap<T, VR>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
 {
     /// cmk doc
     ///```
@@ -403,7 +402,7 @@ where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<T, VR>,
         Self: Sized,
-        VR: CloneRef<VR::Value>,
+        VR: ValueRef,
     {
         SymDiffIterMap::new2(self, other.into_iter())
     }
@@ -530,7 +529,7 @@ where
 pub struct CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     iter: I,
@@ -542,7 +541,7 @@ where
 impl<T, VR, I> CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     // Does CheckSortedDisjointMap and CheckSortedDisjoint need both from and public 'new'?
@@ -562,7 +561,7 @@ where
 impl<T, VR, I> Default for CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)> + Default,
 {
     fn default() -> Self {
@@ -574,7 +573,7 @@ where
 impl<T, VR, I> FusedIterator for CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
 }
@@ -582,7 +581,7 @@ where
 fn range_value_clone<T, VR>(range_value: &(RangeInclusive<T>, VR)) -> (RangeInclusive<T>, VR)
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
 {
     let (range, value) = range_value;
     (range.clone(), ValueRef::clone_ref(value)) // cmk call method
@@ -592,7 +591,7 @@ where
 impl<T, VR, I> Iterator for CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     type Item = (RangeInclusive<T>, VR);
@@ -637,7 +636,7 @@ where
 pub struct Priority<T, VR>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
 {
     range_value: (RangeInclusive<T>, VR),
     priority_number: usize,
@@ -646,7 +645,7 @@ where
 impl<T, VR> Priority<T, VR>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
 {
     /// cmk doc
     pub const fn new(range_value: (RangeInclusive<T>, VR), priority_number: usize) -> Self {
@@ -660,7 +659,7 @@ where
 impl<T, VR> Priority<T, VR>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
 {
     /// Returns the priority number.
     pub const fn priority_number(&self) -> usize {
@@ -715,7 +714,7 @@ where
 impl<T, VR> PartialEq for Priority<T, VR>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef,
+    VR: ValueRef,
 {
     fn eq(&self, other: &Self) -> bool {
         let result_cmk = self.priority_number == other.priority_number;
@@ -728,7 +727,7 @@ where
 impl<'a, T, VR> Eq for Priority<T, VR>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef + 'a, // cmk0 why 'a?
+    VR: ValueRef + 'a, // cmk0 why 'a?
 {
 }
 
@@ -736,7 +735,7 @@ where
 impl<'a, T, VR> Ord for Priority<T, VR>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef + 'a, // cmk0 why 'a?
+    VR: ValueRef + 'a, // cmk0 why 'a?
 {
     fn cmp(&self, other: &Self) -> Ordering {
         // smaller is better
@@ -748,7 +747,7 @@ where
 impl<'a, T, VR> PartialOrd for Priority<T, VR>
 where
     T: Integer,
-    VR: CloneRef<VR::Value> + ValueRef + 'a, // cmk0 why 'a?
+    VR: ValueRef + 'a, // cmk0 why 'a?
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
@@ -904,18 +903,18 @@ macro_rules! impl_sorted_map_traits_and_ops {
 }
 
 // cmk CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_method'
-impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, VR, I>, VR::Value, VR, VR: CloneRef<VR::Value> + ValueRef, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
-impl_sorted_map_traits_and_ops!(UnionIterMap<T, VR, I>, VR::Value, VR, VR: CloneRef<VR::Value> + ValueRef, I: PrioritySortedStartsMap<T, VR>);
-impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VR, I0, I1>,  VR::Value, VR, VR: CloneRef<VR::Value> + ValueRef, I0: SortedDisjointMap<T, VR>, I1: SortedDisjoint<T>);
-impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VR, I>, VR::Value, VR, VR: CloneRef<VR::Value> + ValueRef, I: PrioritySortedStartsMap<T, VR>);
-impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 'a, VR: CloneRef<VR::Value> + ValueRef);
+impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
+impl_sorted_map_traits_and_ops!(UnionIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
+impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VR, I0, I1>,  VR::Value, VR, VR: ValueRef, I0: SortedDisjointMap<T, VR>, I1: SortedDisjoint<T>);
+impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
+impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 'a, VR: ValueRef);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: PartialEqClone);
 
 // #[allow(single_use_lifetimes)]
 // impl<VR, I, T> SortedStartsMap<T, VR> for CheckSortedDisjointMap<T, VR, I>
 // where
 //     T: Integer,
-//     VR: CloneRef<VR::Value> + ValueRef,
+//     VR: ValueRef,
 //     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 // {
 // }
@@ -924,7 +923,7 @@ impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Part
 // impl<VR, I, T> SortedDisjointMap<T, VR> for CheckSortedDisjointMap<T, VR, I>
 // where
 //     T: Integer,
-//     VR: CloneRef<VR::Value> + ValueRef,
+//     VR: ValueRef,
 //     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 // {
 // }
@@ -933,7 +932,7 @@ impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Part
 // impl<VR, I, T> ops::Not for CheckSortedDisjointMap<T, VR, I>
 // where
 //     T: Integer,
-//     VR: CloneRef<VR::Value> + ValueRef,
+//     VR: ValueRef,
 //     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 // {
 //     type Output = NotIter<T, RangeValuesToRangesIter<T, VR, Self>>;
