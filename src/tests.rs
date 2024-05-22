@@ -1527,11 +1527,10 @@ pub fn convert_challenge() {
     use unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 
     // cmk000 what is the for?
-    fn _is_sorted_disjoint_map<T, V, VR, S>(_iter: S)
+    fn _is_sorted_disjoint_map<T, VR, S>(_iter: S)
     where
         T: Integer,
-        V: PartialEqClone,
-        VR: CloneRef<V>,
+        VR: CloneRef<VR::Value> + ValueRef,
         S: SortedDisjointMap<T, VR>,
     {
     }

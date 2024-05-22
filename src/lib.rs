@@ -83,6 +83,7 @@ mod sym_diff_iter;
 mod sym_diff_iter_map;
 pub use map::CloneRef;
 pub use map::PartialEqClone;
+pub use map::ValueRef;
 use merge::{KMerge, Merge};
 use merge_map::KMergeMap;
 pub use multiway::MultiwaySortedDisjoint;

@@ -98,11 +98,12 @@ where
                     // if the gather is not contiguous with the best, then output the gather and set the gather to the best
                     self.ready_to_go = Some(gather);
                     self.gather =
-                        Some((best.start()..=next_end, ValueRef::clone_ref(&best.value())));
+                        Some((best.start()..=next_end, ValueRef::clone_ref(best.value())));
+                    // cmk use method
                 }
             } else {
                 // if there is no gather, then set the gather to the best
-                self.gather = Some((best.start()..=next_end, ValueRef::clone_ref(&best.value())));
+                self.gather = Some((best.start()..=next_end, ValueRef::clone_ref(best.value())));
                 // cmk use method
             };
 

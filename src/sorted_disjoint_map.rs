@@ -585,7 +585,7 @@ where
     VR: CloneRef<VR::Value> + ValueRef,
 {
     let (range, value) = range_value;
-    (range.clone(), ValueRef::clone_ref(&value)) // cmk call method
+    (range.clone(), ValueRef::clone_ref(value)) // cmk call method
 }
 
 // implement iterator
@@ -810,14 +810,13 @@ where
     I: SortedDisjoint<T>,
 {
 }
-// why did I need to implement this again cmk
-// impl<'a, T, V, I> SortedDisjointMap<T, &'a V> for RangeToRangeValueIter<'a, T, V, I>
-// where
-//     T: Integer,
-//     V: PartialEqClone,
-//     I: SortedDisjoint<T>,
-// {
-// }
+impl<'a, T, V, I> SortedDisjointMap<T, &'a V> for RangeToRangeValueIter<'a, T, V, I>
+where
+    T: Integer,
+    V: PartialEqClone,
+    I: SortedDisjoint<T>,
+{
+}
 
 macro_rules! impl_sorted_map_traits_and_ops {
     ($IterType:ty, $V:ty, $VR:ty, $($more_generics:tt)*) => {

@@ -24,7 +24,7 @@ fn map_step_by_step() {
     println!("{vs}");
     assert_eq!(
         vs,
-        r#"[Priority { range_value: (1..=2, "b"), priority_number: 0, phantom_data: PhantomData<alloc::string::String> }, Priority { range_value: (0..=0, "a"), priority_number: 2, phantom_data: PhantomData<alloc::string::String> }]"#
+        r#"[Priority { range_value: (1..=2, "b"), priority_number: 0 }, Priority { range_value: (0..=0, "a"), priority_number: 2 }]"#
     );
 
     let iter = input.into_iter();
@@ -37,7 +37,7 @@ fn map_step_by_step() {
     let iter = AssumePrioritySortedStartsMap::new(iter);
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
     println!("{vs}");
-    assert_eq!(vs, "[Priority { range_value: (0..=0, \"a\"), priority_number: 2, phantom_data: PhantomData<alloc::string::String> }, Priority { range_value: (1..=2, \"b\"), priority_number: 0, phantom_data: PhantomData<alloc::string::String> }]");
+    assert_eq!(vs, "[Priority { range_value: (0..=0, \"a\"), priority_number: 2 }, Priority { range_value: (1..=2, \"b\"), priority_number: 0 }]");
 
     let iter = input.into_iter();
     let iter = iter.map(|(x, value)| (x..=x, value));
@@ -783,7 +783,7 @@ fn map_repro1() {
 //     println!("{vs}");
 //     assert_eq!(
 //         vs,
-//         r#"[Priority { range_value: (1..=2, "b"), priority_number: 0, phantom_data: PhantomData<alloc::string::String> }, Priority { range_value: (0..=0, "a"), priority_number: 2, phantom_data: PhantomData<alloc::string::String> }]"#
+//         r#"[Priority { range_value: (1..=2, "b"), priority_number: 0 }, Priority { range_value: (0..=0, "a"), priority_number: 2 }]"#
 //     );
 
 //     let iter = input.into_iter();
@@ -797,7 +797,7 @@ fn map_repro1() {
 //     let iter = AssumePrioritySortedStartsMap::new(iter);
 //     let vs = format!("{:?}", iter.collect::<Vec<_>>());
 //     println!("{vs}");
-//     assert_eq!(vs, "[Priority { range_value: (0..=0, \"a\"), priority_number: 2, phantom_data: PhantomData<alloc::string::String> }, Priority { range_value: (1..=2, \"b\"), priority_number: 0, phantom_data: PhantomData<alloc::string::String> }]");
+//     assert_eq!(vs, "[Priority { range_value: (0..=0, \"a\"), priority_number: 2 }, Priority { range_value: (1..=2, \"b\"), priority_number: 0 }]");
 
 //     let iter = input.into_iter();
 //     let iter = iter.map(|(x, value)| (x..=x, value));
