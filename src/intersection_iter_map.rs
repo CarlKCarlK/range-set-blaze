@@ -130,7 +130,7 @@ where
                 }
                 (true, false) => {
                     self.right = None;
-                    let value = ValueRef::clone_ref(&left.1); // cmk use method
+                    let value = left.1.clone_ref();
                     self.left = Some(left);
                     value
                 }

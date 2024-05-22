@@ -72,7 +72,7 @@ where
 
         let (start, end) = range_value.0.into_inner();
         debug_assert!(start <= end);
-        let value = ValueRef::clone_ref(&range_value.1); // cmk switch back to method call
+        let value = range_value.1.clone_ref();
         if start < end {
             range_value.0 = start.add_one()..=end;
             self.option_range_value_front = Some(range_value);
@@ -102,7 +102,7 @@ where
             .or_else(|| self.option_range_value_front.take())?;
         let (start, end) = range_value.0.into_inner();
         debug_assert!(start <= end);
-        let value = ValueRef::clone_ref(&range_value.1); // cmk switch back to method call
+        let value = range_value.1.clone_ref();
         if start < end {
             range_value.0 = start..=end.sub_one();
             self.option_range_value_back = Some(range_value);

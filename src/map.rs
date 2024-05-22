@@ -68,15 +68,13 @@ impl<T> PartialEqClone for T where T: PartialEq + Clone {}
 // }
 
 /// Trait for types that can be cloned while maintaining their reference semantics,
-/// and have an associated value type.
-pub trait ValueRef: Borrow<Self::Value>
-where
-    Self: Sized,
-{
+/// and have an associated value type that we can also clone (and test for equality).
+pub trait ValueRef: Borrow<Self::Value> {
     /// The associated value type.
     type Value: PartialEqClone;
 
-    /// Clones the object, returning an instance that still refers to the original value.
+    /// Clones the reference, returning a new reference to a value that is eq with the original value.
+    /// (It may or may not be the original value.)
     #[must_use]
     fn clone_ref(&self) -> Self;
 }

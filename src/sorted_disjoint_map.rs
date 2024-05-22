@@ -584,7 +584,7 @@ where
     VR: ValueRef,
 {
     let (range, value) = range_value;
-    (range.clone(), ValueRef::clone_ref(value)) // cmk call method
+    (range.clone(), value.clone_ref())
 }
 
 // implement iterator
