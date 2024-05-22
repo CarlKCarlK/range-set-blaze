@@ -31,44 +31,12 @@ use num_traits::One;
 use num_traits::Zero;
 
 /// cmk doc
-// cmk fix name aka 'Clone'
 pub trait PartialEqClone: PartialEq + Clone {}
-
-// pub trait ValueRef: PartialEq + ToOwned {
-//     type Owned: ValueOwned<Ref = Self>;
-// }
 
 impl<T> PartialEqClone for T where T: PartialEq + Clone {}
 
-// /// Trait for types that can be cloned while maintaining their reference semantics.
-// /// This trait allows creating a new reference that points to the same underlying value.
-// pub trait CloneRef<V>: Borrow<V> {
-//     /// Clones the reference, returning a reference that still refers to the original value.
-//     #[must_use]
-//     fn clone_ref(&self) -> Self;
-// }
-
-// impl<V> CloneRef<V> for &V {
-//     fn clone_ref(&self) -> Self {
-//         self
-//     }
-// }
-
-// impl<V> CloneRef<V> for Rc<V> {
-//     fn clone_ref(&self) -> Self {
-//         Self::clone(self)
-//     }
-// }
-
-// #[cfg(feature = "std")]
-// impl<V> CloneRef<V> for Arc<V> {
-//     fn clone_ref(&self) -> Self {
-//         Self::clone(self)
-//     }
-// }
-
-/// Trait for types that can be cloned while maintaining their reference semantics,
-/// and have an associated value type that we can also clone (and test for equality).
+/// Trait for references that can be cloned to return a new reference to the same value.
+/// The associated value can also be cloned. We define "same" as `eq` but not necessarily `==`.
 pub trait ValueRef: Borrow<Self::Value> {
     /// The associated value type.
     type Value: PartialEqClone;
@@ -655,7 +623,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// ```
     pub fn append(&mut self, other: &mut Self) {
         for (range, value) in other.range_values() {
-            let value = value.clone(); // cmk0000000
+            let value = value.clone();
             self.internal_add(range, value);
         }
         other.clear();

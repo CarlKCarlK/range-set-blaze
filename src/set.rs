@@ -1406,7 +1406,7 @@ impl<T: Integer> FromIterator<RangeInclusive<T>> for RangeSetBlaze<T> {
     }
 }
 
-impl<'a, T: Integer + 'a> FromIterator<&'a RangeInclusive<T>> for RangeSetBlaze<T> {
+impl<'a, T: Integer> FromIterator<&'a RangeInclusive<T>> for RangeSetBlaze<T> {
     /// Create a [`RangeSetBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///

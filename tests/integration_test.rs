@@ -2158,5 +2158,3 @@ fn test_every_union() {
 // cmk0000 get full coverage
 // cmk0000 get 'set' dic page looking good
 // cmk0000 get 'map' dic page looking good
-// cmk00000 is CloneBorrow a good name?
-// cmk0000 write docs for PartialEqClone

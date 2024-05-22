@@ -1,6 +1,5 @@
 use core::iter::FusedIterator;
 
-// cmk0000000 use criterion::measurement::ValueFormatter;
 use itertools::{Itertools, KMergeBy, MergeBy};
 
 use crate::map::ValueRef;

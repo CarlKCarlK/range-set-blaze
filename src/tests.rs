@@ -1071,22 +1071,6 @@ fn sorted_disjoint_iterator_coverage_0() {
     assert!(b.is_superset(a));
 }
 
-// cmk00
-// #[test]
-// fn union_iter_coverage_0() {
-//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-//     let b = CheckSortedDisjoint::new([1..=2, 5..=101]);
-//     let c = a.union(b);
-//     assert!(format!("{c:?}").starts_with("UnionIter"));
-// }
-
-// cmk000
-// #[test]
-// fn unsorted_disjoint_coverage_0() {
-//     let a = AssumeSortedStarts::new([1..=2, 5..=100]);
-//     assert!(format!("{a:?}").starts_with("AssumeSortedStarts"));
-// }
-
 #[test]
 fn test_coverage_0() {
     let a = BooleanVector(vec![true, true, false, false]);

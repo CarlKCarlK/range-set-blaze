@@ -483,9 +483,8 @@ where
 }
 
 /// Converts the implementing type into a String by consuming it.
-/// It is intended for types where items are Debug-able. // cmk000 implement Debug
 pub trait IntoString {
-    /// cmk doc
+    /// Consumes the implementing type and converts it into a String.
     fn into_string(self) -> String;
 }
 

@@ -33,8 +33,8 @@ where
 
 impl<'a, T, V> FromIterator<(RangeInclusive<T>, &'a V)> for RangeMapBlaze<T, V>
 where
-    T: Integer + 'a,        // cmk 'a needed? everywhere
-    V: PartialEqClone + 'a, // cmk 'a needed? everywhere
+    T: Integer,
+    V: PartialEqClone,
 {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
@@ -143,8 +143,8 @@ where
 
 impl<'a, T, V> FromIterator<&'a (RangeInclusive<T>, &'a V)> for RangeMapBlaze<T, V>
 where
-    T: Integer + 'a,        // cmk 'a needed? everywhere
-    V: PartialEqClone + 'a, // cmk 'a needed? everywhere
+    T: Integer,
+    V: PartialEqClone,
 {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
