@@ -369,6 +369,8 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     }
 
     /// Deprecated. Use [`into_string`] instead.
+    ///
+    /// [`into_string`]: trait.IntoString.html
     #[deprecated(since = "0.2.0", note = "Use `into_string` instead")]
     fn to_string(self) -> String
     where

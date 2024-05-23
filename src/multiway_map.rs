@@ -21,12 +21,13 @@ where
 {
 }
 /// The trait used to provide methods on multiple [`RangeMapBlaze`]'s,
-/// specifically [`union`] and [`intersection`].
+/// specifically [`union`], [`intersection`] and [`symmetric_difference`].
 ///
 /// Also see [`MultiwayRangeMapBlazeRef`].
 ///
 /// [`union`]: MultiwayRangeMapBlaze::union
 /// [`intersection`]: MultiwayRangeMapBlaze::intersection
+/// [`symmetric_difference`]: MultiwayRangeMapBlaze::symmetric_difference
 pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: PartialEqClone + 'a>:
     IntoIterator<Item = &'a RangeMapBlaze<T, V>> + Sized
 {
@@ -218,6 +219,5 @@ where
     }
 }
 // cmk confirm that on ranges the union of 0 sets 0 empty and the intersection of 0 sets is the universal set.
-
 // cmk why does the multiway.rs have a MultiwayRangeSetBlazeRef but not a MultiwayRangeMapBlazeRef?
 // cmk on maps, the union is still empty, but the intersection is undefined because we can't give a value to T.s

@@ -135,13 +135,13 @@ where
 /// Internally, it stores the ranges in a cache-efficient [`BTreeMap`].
 ///
 /// # Table of Contents
-/// * [`RangeMapBlaze` Constructors](#RangeMapBlaze-constructors)
+/// * [`RangeMapBlaze` Constructors](#rangemapblaze-constructors)
 ///    * [Performance](#constructor-performance)
 ///    * [Examples](struct.RangeMapBlaze.html#constructor-examples)
-/// * [`RangeMapBlaze` Set Operations](#RangeMapBlaze-set-operations)
+/// * [`RangeMapBlaze` Set Operations](#rangemapblaze-set-operations)
 ///    * [Performance](struct.RangeMapBlaze.html#set-operation-performance)
 ///    * [Examples](struct.RangeMapBlaze.html#set-operation-examples)
-///  * [`RangeMapBlaze` Comparisons](#RangeMapBlaze-comparisons)
+///  * [`RangeMapBlaze` Comparisons](#rangemapblaze-comparisons)
 ///  * [Additional Examples](#additional-examples)
 ///
 /// # `RangeMapBlaze` Constructors
@@ -198,11 +198,6 @@ where
 /// (Indeed, as long as *n₂* ≤ *n₁*/ln(*n₁*), then construction is O(*n₁*).)
 /// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*)),
 /// a quadratic improvement an O(*n₁*) implementation that ignores the clumps.
-///
-/// The [`from_slice`][5] constructor typically provides a constant-time speed up for array-like collections of clumpy integers.
-/// On a representative benchmark, the speed up was 7×.
-/// The method works by scanning the input for blocks of consecutive integers, and then using `from_iter` on the results.
-/// Where available, it uses SIMD instructions. It is nightly only and enabled by the `from_slice` feature.
 ///
 /// ## Constructor Examples
 ///
@@ -327,13 +322,24 @@ where
 /// ```
 /// # `RangeMapBlaze` Comparisons
 ///
-/// We can compare `RangeMapBlaze`s using the following operators:
-/// `<`, `<=`, `>`, `>=`.  Following the convention of `BTreeSet`,
-/// these comparisons are lexicographic. See [`cmp`] for more examples.
+/// `RangeMapBlaze` supports comparisons for equality and lexicographic order:
 ///
-/// Use `==`, `!=` to check if two `RangeMapBlaze`s are equal or not.
+/// - **Equality**: Use `==` and `!=` to check if two `RangeMapBlaze` instances
+///   are equal. Two `RangeMapBlaze` instances are considered equal if they
+///   contain the same ranges and associated values.
+/// - **Ordering**: If the values implement `Ord`, you can use `<`, `<=`, `>`, and `>=`
+///   to compare two `RangeMapBlaze` instances. These comparisons are lexicographic,
+///   similar to `BTreeSet`, meaning they compare the ranges and their values in sequence.
+/// - **Partial Ordering**: If the values implement `PartialOrd` but not `Ord`, you can use
+///   the [`partial_cmp`] method to compare two `RangeMapBlaze` instances. This method returns
+///   an `Option<Ordering>` that indicates the relative order of the instances or `None` if the
+///   values are not comparable.
+///
+/// See [`partial_cmp`] and [`cmp`] for more examples.
+///
 ///
 /// [`BTreeSet`]: alloc::collections::BTreeSet
+/// [`partial_cmp`]: RangeMapBlaze::partial_cmp
 /// [`cmp`]: RangeMapBlaze::cmp
 ///
 /// # Additional Examples
@@ -1378,7 +1384,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// An iterator that visits the ranges in the [`RangeMapBlaze`],
     /// i.e., the integers as sorted & disjoint ranges.
     ///
-    /// Also see [`RangeMapBlaze::iter`] and [`RangeMapBlaze::into_pairs`].
+    /// Also see [`RangeMapBlaze::iter`] and [`RangeMapBlaze::into_range_values`].
     ///
     /// # Examples
     ///
@@ -1415,7 +1421,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// An iterator that visits the ranges in the [`RangeMapBlaze`],
     /// i.e., the integers as sorted & disjoint ranges.
     ///
-    /// Also see [`RangeMapBlaze::iter`] and [`RangeMapBlaze::into_pairs`].
+    /// Also see [`RangeMapBlaze::iter`] and [`RangeMapBlaze::into_range_values`].
     ///
     /// # Examples
     ///
@@ -1452,7 +1458,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// An iterator that visits the ranges in the [`RangeMapBlaze`],
     /// i.e., the integers as sorted & disjoint ranges.
     ///
-    /// Also see [`RangeMapBlaze::iter`] and [`RangeMapBlaze::into_pairs`].
+    /// Also see [`RangeMapBlaze::iter`] and [`RangeMapBlaze::into_range_values`].
     ///
     /// # Examples
     ///
@@ -1485,7 +1491,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     /// An iterator that visits the ranges in the [`RangeMapBlaze`],
     /// i.e., the integers as sorted & disjoint ranges.
     ///
-    /// Also see [`RangeMapBlaze::iter`] and [`RangeMapBlaze::into_pairs`].
+    /// Also see [`RangeMapBlaze::iter`] and [`RangeMapBlaze::into_range_values`].
     ///
     /// # Examples
     ///
@@ -1944,14 +1950,14 @@ where
     T: Integer,
     V: PartialEqClone + PartialOrd,
 {
-    /// We define a total ordering on `RangeMapBlaze`. Following the convention of
+    /// We define a partial ordering on `RangeMapBlaze`. Following the convention of
     /// [`BTreeMap`], the ordering is lexicographic, *not* by subset/superset.
     ///
     /// [`BTreeMap`]: alloc::collections::BTreeMap
     ///
     /// # Examples
     /// ```
-    /// use range_Map_blaze::RangeMapBlaze;
+    /// use range_set_blaze::prelude::*;
     ///
     /// let a = RangeMapBlaze::from_iter([(1..=3, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=2, "b")] );
@@ -1964,9 +1970,10 @@ where
     /// assert!(a == a);
     /// use core::cmp::Ordering;
     /// assert_eq!(a.cmp(&b), Ordering::Less);
-    /// assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
+    /// let a = RangeMapBlaze::from_iter([(2..=3, 1.0), (5..=100, 2.0)]);
+    /// let b = RangeMapBlaze::from_iter([(2..=2, f32::NAN)] ); // NAN is not comparable
+    /// assert_eq!(a.partial_cmp(&b), None);
     /// ```
-
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         // slow one by one: return self.iter().cmp(other.iter());
@@ -2024,6 +2031,30 @@ where
     T: Integer,
     V: PartialEqClone + Ord,
 {
+    /// We define an ordering on `RangeMapBlaze`. Following the convention of
+    /// [`BTreeMap`], the ordering is lexicographic, *not* by subset/superset.
+    ///
+    /// [`BTreeMap`]: alloc::collections::BTreeMap
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeMapBlaze::from_iter([(1..=3, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=2, "b")] );
+    /// assert!(a < b); // Lexicographic comparison
+    /// // More lexicographic comparisons
+    /// assert!(a <= b);
+    /// assert!(b > a);
+    /// assert!(b >= a);
+    /// assert!(a != b);
+    /// assert!(a == a);
+    /// use core::cmp::Ordering;
+    /// assert_eq!(a.cmp(&b), Ordering::Less);
+    /// let a = RangeMapBlaze::from_iter([(2..=3, 1.0), (5..=100, 2.0)]);
+    /// let b = RangeMapBlaze::from_iter([(2..=2, f32::NAN)] ); // NAN is not comparable
+    /// assert_eq!(a.partial_cmp(&b), None);
+    /// ```
     #[inline]
     fn cmp(&self, other: &Self) -> Ordering {
         self.partial_cmp(other).unwrap()

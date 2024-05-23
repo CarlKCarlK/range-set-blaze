@@ -6,12 +6,13 @@ where
 }
 
 /// The trait used to provide methods on multiple [`RangeSetBlaze`] references,
-/// specifically [`union`] and [`intersection`].
+/// specifically [`union`], [`intersection`] and [`symmetric_difference`].
 ///
 /// Also see [`MultiwayRangeSetBlaze`].
 ///
 /// [`union`]: MultiwayRangeSetBlazeRef::union
 /// [`intersection`]: MultiwayRangeSetBlazeRef::intersection
+/// [`symmetric_difference`]: MultiwayRangeSetBlazeRef::symmetric_difference
 #[allow(clippy::module_name_repetitions)]
 pub trait MultiwayRangeSetBlazeRef<T: Integer>:
     IntoIterator<Item = RangeSetBlaze<T>> + Sized
@@ -95,12 +96,13 @@ where
 {
 }
 /// The trait used to provide methods on multiple [`RangeSetBlaze`]'s,
-/// specifically [`union`] and [`intersection`].
+/// specifically [`union`], [`intersection`], and [`symmetric_difference`].
 ///
 /// Also see [`MultiwayRangeSetBlazeRef`].
 ///
 /// [`union`]: MultiwayRangeSetBlaze::union
 /// [`intersection`]: MultiwayRangeSetBlaze::intersection
+/// [`symmetric_difference`]: MultiwayRangeSetBlaze::symmetric_difference
 #[allow(clippy::module_name_repetitions)]
 pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
     IntoIterator<Item = &'a RangeSetBlaze<T>> + Sized
@@ -206,6 +208,8 @@ where
     ///
     /// For input iterators of different types, use the [`union_dyn`] macro.
     ///
+    /// [`union_dyn`]: macro.union_dyn.html
+    ///
     /// # Performance
     ///
     ///  All work is done on demand, in one pass through the input iterators. Minimal memory is used.
@@ -233,6 +237,8 @@ where
     /// The input iterators must be of the same type. Any number of input iterators can be given.
     ///
     /// For input iterators of different types, use the [`intersection_dyn`] macro.
+    ///
+    /// [`intersection_dyn`]: macro.intersection_dyn.html
     ///
     /// # Performance
     ///
