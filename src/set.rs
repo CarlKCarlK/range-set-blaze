@@ -120,7 +120,6 @@ where
 /// | [`from_iter`][2]/[`collect`][2]             | ranges iterator              |                          |
 /// | [`from_slice`][5]                           | slice of integers            | Fast, but nightly-only  |
 /// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze`][3] | [`SortedDisjoint`] iterator |               |
-/// | [`from_sorted_starts`][4]                   | [`SortedStarts`] iterator    |                          |
 /// | [`from`][5] /[`into`][5]                    | array of integers            |                          |
 ///
 ///
@@ -130,7 +129,6 @@ where
 /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
 /// [2]: struct.RangeSetBlaze.html#impl-FromIterator<RangeInclusive<T>>-for-RangeSetBlaze<T>
 /// [3]: RangeSetBlaze::from_sorted_disjoint
-/// [4]: RangeSetBlaze::from_sorted_starts
 /// [5]: RangeSetBlaze::from
 /// [6]: RangeSetBlaze::from_slice()
 ///
@@ -483,14 +481,6 @@ impl<T: Integer> RangeSetBlaze<T> {
             len: iter_with_len.len_so_far(),
         }
     }
-
-    // cmk
-    // pub(crate) fn from_sorted_starts<I>(iter: I) -> Self
-    // where
-    //     I: SortedStarts<T>,
-    // {
-    //     Self::from_sorted_disjoint(UnionIter::new(iter))
-    // }
 
     /// Creates a [`RangeSetBlaze`] from a collection of integers. It is typically many
     /// times faster than [`from_iter`][1]/[`collect`][1].
@@ -1958,7 +1948,7 @@ impl<T: Integer> Ord for RangeSetBlaze<T> {
         let mut a_rx = a.next();
         let mut b_rx = b.next();
         loop {
-            match (a_rx.clone(), b_rx.clone()) {
+            match (a_rx, b_rx) {
                 (Some(a_r), Some(b_r)) => {
                     let cmp_start = a_r.start().cmp(b_r.start());
                     if cmp_start != Ordering::Equal {

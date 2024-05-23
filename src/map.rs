@@ -23,6 +23,7 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::borrow::Borrow;
+use core::cmp::Ordering;
 use core::fmt;
 use core::ops::{BitOr, Bound, Index, RangeBounds};
 use core::{cmp::max, convert::From, ops::RangeInclusive};
@@ -129,7 +130,6 @@ where
     pub(crate) value: V,
 }
 
-#[derive(Clone, Hash, PartialEq)]
 /// A set of integers stored as sorted & disjoint ranges.
 ///
 /// Internally, it stores the ranges in a cache-efficient [`BTreeMap`].
@@ -152,26 +152,24 @@ where
 /// Here are the constructors, followed by a
 /// description of the performance, and then some examples.
 ///
+///
 /// | Methods                                     | Input                        | Notes                    |
 /// |---------------------------------------------|------------------------------|--------------------------|
 /// | [`new`]/[`default`]                         |                              |                          |
-/// | [`from_iter`][1]/[`collect`][1]           | integer iterator             |                          |
-/// | [`from_iter`][2]/[`collect`][2]             | ranges iterator              |                          |
-/// | [`from_slice`][5]                           | slice of integers            | Fast, but nightly-only  |
-/// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze2`][3] | [`SortedDisjointMap`] iterator |               |
-/// | [`from`][4] /[`into`][4]                    | array of integers            |                          |
-///
-///  cmk from sorted starts
+/// | [`from_iter`][1]/[`collect`][1]           | iterator of `(integer, value)` | '`&`' allowed before `value` or the pair |
+/// | [`from_iter`][2]/[`collect`][2]           | iterator of `(range, value)` | '`&`' allowed before `value` or the pair |
+/// | [`from_sorted_disjoint_map`][3]/<br>[`into_range_set_blaze`][3b] | [`SortedDisjointMap`] iterator |               |
+/// | [`from`][4] /[`into`][4]                    | array of `(integer, value)`  |                          |
 ///
 ///
 /// [`BTreeMap`]: alloc::collections::BTreeMap
 /// [`new`]: RangeMapBlaze::new
 /// [`default`]: RangeMapBlaze::default
-/// [1m]: struct.RangeMapBlaze.html#impl-FromIterator<T, V, VR>-for-RangeMapBlaze<T, V>
-/// [2]: struct.RangeMapBlaze.html#impl-FromIterator<`RangeInclusive`<T, V, VR>>-for-RangeMapBlaze<T, V>
-/// [3]: `RangeMapBlaze::from_sorted_disjoint`
+/// [1]: struct.RangeMapBlaze.html#impl-FromIterator<(T,+V)>-for-RangeMapBlaze<T,+V>
+/// [2]: struct.RangeMapBlaze.html#impl-FromIterator<(RangeInclusive<T>,+V)>-for-RangeMapBlaze<T,+V>
+/// [3]: `RangeMapBlaze::from_sorted_disjoint_map`
+/// [3b]: `SortedDisjointMap::into_range_map_blaze
 /// [4]: `RangeMapBlaze::from`
-/// [5]: `RangeMapBlaze::from_slice()`
 ///
 /// # Constructor Performance
 ///
@@ -333,14 +331,9 @@ where
 /// `<`, `<=`, `>`, `>=`.  Following the convention of `BTreeSet`,
 /// these comparisons are lexicographic. See [`cmp`] for more examples.
 ///
-/// Use the [`is_subset`] and [`is_superset`] methods to check if one `RangeMapBlaze` is a subset
-/// or superset of another.
-///
 /// Use `==`, `!=` to check if two `RangeMapBlaze`s are equal or not.
 ///
 /// [`BTreeSet`]: alloc::collections::BTreeSet
-/// [`is_subset`]: RangeMapBlaze::is_subset
-/// [`is_superset`]: RangeMapBlaze::is_superset
 /// [`cmp`]: RangeMapBlaze::cmp
 ///
 /// # Additional Examples
@@ -348,6 +341,7 @@ where
 /// See the [module-level documentation] for additional examples.
 ///
 /// [module-level documentation]: index.html
+#[derive(Clone, Hash, PartialEq)]
 pub struct RangeMapBlaze<T: Integer, V: PartialEqClone> {
     pub(crate) len: <T as Integer>::SafeLen,
     pub(crate) btree_map: BTreeMap<T, EndValue<T, V>>,
@@ -1944,3 +1938,173 @@ impl<T: Integer, V: PartialEqClone> Index<T> for RangeMapBlaze<T, V> {
 // cmk missing values and values per range
 
 // cmk add difference_with_set??? is there a complement with set? sub_assign
+
+impl<T, V> PartialOrd for RangeMapBlaze<T, V>
+where
+    T: Integer,
+    V: PartialEqClone + PartialOrd,
+{
+    /// We define a total ordering on `RangeMapBlaze`. Following the convention of
+    /// [`BTreeMap`], the ordering is lexicographic, *not* by subset/superset.
+    ///
+    /// [`BTreeMap`]: alloc::collections::BTreeMap
+    ///
+    /// # Examples
+    /// ```
+    /// use range_Map_blaze::RangeMapBlaze;
+    ///
+    /// let a = RangeMapBlaze::from_iter([(1..=3, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=2, "b")] );
+    /// assert!(a < b); // Lexicographic comparison
+    /// // More lexicographic comparisons
+    /// assert!(a <= b);
+    /// assert!(b > a);
+    /// assert!(b >= a);
+    /// assert!(a != b);
+    /// assert!(a == a);
+    /// use core::cmp::Ordering;
+    /// assert_eq!(a.cmp(&b), Ordering::Less);
+    /// assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
+    /// ```
+
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        // slow one by one: return self.iter().cmp(other.iter());
+
+        // fast by ranges:
+        let mut a = self.range_values();
+        let mut b = other.range_values();
+        let mut a_rx = a.next();
+        let mut b_rx = b.next();
+        loop {
+            // compare Some/None
+            match (a_rx, &b_rx) {
+                (Some(_), None) => return Some(Ordering::Greater),
+                (None, Some(_)) => return Some(Ordering::Less),
+                (None, None) => return Some(Ordering::Equal),
+                (Some((a_r, a_v)), Some((b_r, b_v))) => {
+                    // if tie, compare starts
+                    match a_r.start().cmp(b_r.start()) {
+                        Ordering::Greater => return Some(Ordering::Greater),
+                        Ordering::Less => return Some(Ordering::Less),
+                        Ordering::Equal => { /* keep going */ }
+                    }
+
+                    // if tie, compare values
+                    match a_v.partial_cmp(b_v) {
+                        Some(Ordering::Less) => return Some(Ordering::Less),
+                        Some(Ordering::Greater) => return Some(Ordering::Greater),
+                        None => return None,
+                        Some(Ordering::Equal) => { /* keep going */ }
+                    }
+
+                    // if tie, compare ends
+                    match a_r.end().cmp(b_r.end()) {
+                        Ordering::Less => {
+                            a_rx = a.next();
+                            b_rx = Some(((*a_r.end()).add_one()..=*b_r.end(), b_v));
+                        }
+                        Ordering::Greater => {
+                            a_rx = Some(((*b_r.end()).add_one()..=*a_r.end(), a_v));
+                            b_rx = b.next();
+                        }
+                        Ordering::Equal => {
+                            a_rx = a.next();
+                            b_rx = b.next();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl<T, V> Ord for RangeMapBlaze<T, V>
+where
+    T: Integer,
+    V: PartialEqClone + Ord,
+{
+    #[inline]
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
+    }
+}
+
+impl<T: Integer, V: PartialEqClone> Eq for RangeMapBlaze<T, V> {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_partial_cmp() {
+        let test_cases = vec![
+            (
+                vec![(2, 1.0), (11, 1.0), (12, 1.0)],
+                vec![(3, 2.0), (11, 1.0), (12, f64::NAN)],
+                Some(Ordering::Less),
+            ),
+            // Mixed case
+            (
+                vec![(0, 1.0), (1, 2.0), (2, 1.0), (3, 3.0), (4, 2.0)],
+                vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0)],
+                Some(Ordering::Greater),
+            ),
+            // Equal elements
+            (
+                vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+                vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+                Some(Ordering::Equal),
+            ),
+            // Different values
+            (
+                vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+                vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 3.0)],
+                Some(Ordering::Less),
+            ),
+            (
+                vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 3.0)],
+                vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+                Some(Ordering::Greater),
+            ),
+            // Different keys
+            (
+                vec![(0, 1.0), (1, 1.0), (2, 1.0), (4, 2.0), (5, 2.0)],
+                vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+                Some(Ordering::Greater),
+            ),
+            (
+                vec![(0, 1.0), (1, 1.0), (2, 1.0)],
+                vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+                Some(Ordering::Less),
+            ),
+            (
+                vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+                vec![(0, 1.0), (1, 1.0), (2, 1.0)],
+                Some(Ordering::Greater),
+            ),
+            // Non-comparable values
+            (
+                vec![(0, 1.0), (1, 1.0), (2, f64::NAN)],
+                vec![(0, 1.0), (1, 1.0), (2, 1.0)],
+                None,
+            ),
+            (
+                vec![(0, 1.0), (1, 1.0), (2, 1.0)],
+                vec![(0, 1.0), (1, 1.0), (2, f64::NAN)],
+                None,
+            ),
+        ];
+
+        for (a_data, b_data, expected) in test_cases {
+            println!("expected = {expected:?}");
+            let a_btree = BTreeMap::from_iter(a_data.clone());
+            let b_btree = BTreeMap::from_iter(b_data.clone());
+            assert_eq!(a_btree.partial_cmp(&b_btree), expected);
+
+            let a_range_set = RangeMapBlaze::from_iter(a_data);
+            let b_range_set = RangeMapBlaze::from_iter(b_data);
+            assert_eq!(a_range_set.partial_cmp(&b_range_set), expected);
+        }
+    }
+}

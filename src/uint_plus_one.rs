@@ -198,7 +198,7 @@ mod tests {
     use std::panic;
     use std::panic::AssertUnwindSafe;
 
-    fn u16_to_p1(v: u16) -> UIntPlusOne<u8> {
+    const fn u16_to_p1(v: u16) -> UIntPlusOne<u8> {
         if v == 256 {
             UIntPlusOne::MaxPlusOne
         } else {

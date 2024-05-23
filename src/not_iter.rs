@@ -2,7 +2,7 @@ use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use crate::{Integer, SortedDisjoint};
 
-/// The output of cmk
+/// The output of [`SortedDisjoint::complement`] and [`range_set_blaze::SortedDisjointMap::complement_to_set`].
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct NotIter<T, I>
