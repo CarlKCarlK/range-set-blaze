@@ -10,7 +10,7 @@ use core::ops::{Bound, RangeBounds, RangeInclusive};
 
 use crate::{Integer, RangeSetBlaze};
 
-/// Experimental: An iterator over [`Rog`]s (ranges or gaps) in a [`RangeSetBlaze`].
+/// Experimental: The output of cmk An iterator over [`Rog`]s (ranges or gaps) in a [`RangeSetBlaze`].
 ///
 /// See [`RangeSetBlaze::rogs_range`] for more information.
 pub struct RogsIter<'a, T: Integer> {

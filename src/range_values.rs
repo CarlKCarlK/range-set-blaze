@@ -12,7 +12,7 @@ use crate::{
     sorted_disjoint_map::SortedDisjointMap,
 };
 
-/// An iterator that visits the ranges in the [`RangeSetBlaze`],
+/// The output of cmk,
 /// i.e., the integers as sorted & disjoint ranges.
 ///
 /// This `struct` is created by the [`ranges`] method on [`RangeSetBlaze`]. See [`ranges`]'s
@@ -78,7 +78,7 @@ where
 
 // cmk must explain that this is not a SortedDisjointMap because it gives a value rather than a reference
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-/// An iterator that moves out the ranges in the [`RangeSetBlaze`],
+/// The output of cmk
 /// i.e., the integers as sorted & disjoint ranges.
 ///
 /// This `struct` is created by the [`into_ranges`] method on [`RangeSetBlaze`]. See [`into_ranges`]'s
@@ -116,7 +116,7 @@ impl<T: Integer, V: PartialEqClone> Iterator for IntoRangeValuesIter<T, V> {
     }
 }
 
-/// An iterator that visits the ranges in the [`RangeSetBlaze`],
+/// The output of cmk,
 /// i.e., the integers as sorted & disjoint ranges.
 ///
 /// This `struct` is created by the [`ranges`] method on [`RangeSetBlaze`]. See [`ranges`]'s
@@ -191,7 +191,7 @@ where
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-/// An iterator that moves out the ranges in the [`RangeSetBlaze`],
+/// The output of cmk,
 /// i.e., the integers as sorted & disjoint ranges.
 ///
 /// This `struct` is created by the [`into_ranges`] method on [`RangeSetBlaze`]. See [`into_ranges`]'s

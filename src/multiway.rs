@@ -5,7 +5,7 @@ where
 {
 }
 
-/// The trait used to provide methods on multiple [`RangeSetBlaze`] references,
+/// Provide methods on multiple [`RangeSetBlaze`]'s,
 /// specifically [`union`], [`intersection`] and [`symmetric_difference`].
 ///
 /// Also see [`MultiwayRangeSetBlazeRef`].
@@ -36,7 +36,7 @@ pub trait MultiwayRangeSetBlaze<T: Integer>: IntoIterator<Item = RangeSetBlaze<T
     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
     /// let c = RangeSetBlaze::from_iter([25..=100]);
     ///
-    /// let union = vec![a, b, c].into_iter().union();
+    /// let union = [a, b, c].union();
     ///
     /// assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
     /// ```
@@ -68,7 +68,7 @@ pub trait MultiwayRangeSetBlaze<T: Integer>: IntoIterator<Item = RangeSetBlaze<T
     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
     /// let c = RangeSetBlaze::from_iter([-100..=100]);
     ///
-    /// let intersection = vec![a, b, c].into_iter().intersection();
+    /// let intersection = [a, b, c].intersection();
     ///
     /// assert_eq!(intersection, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
     /// ```
@@ -93,7 +93,7 @@ where
     I: IntoIterator<Item = &'a RangeSetBlaze<T>>,
 {
 }
-/// The trait used to provide methods on multiple [`RangeSetBlaze`]'s,
+/// Provide methods on multiple [`RangeSetBlaze`] references,
 /// specifically [`union`], [`intersection`], and [`symmetric_difference`].
 ///
 /// Also see [`MultiwayRangeSetBlaze`].
@@ -126,7 +126,7 @@ pub trait MultiwayRangeSetBlazeRef<'a, T: Integer + 'a>:
     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
     /// let c = RangeSetBlaze::from_iter([25..=100]);
     ///
-    /// let union = [a, b, c].union();
+    /// let union = [&a, &b, &c].union();
     ///
     /// assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
     /// ```
@@ -158,7 +158,7 @@ pub trait MultiwayRangeSetBlazeRef<'a, T: Integer + 'a>:
     /// let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
     /// let c = RangeSetBlaze::from_iter([-100..=100]);
     ///
-    /// let intersection = [a, b, c].intersection();
+    /// let intersection = [&a, &b, &c].intersection();
     ///
     /// assert_eq!(intersection, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
     /// ```
@@ -191,11 +191,12 @@ where
 {
 }
 
-/// The trait used to define methods on multiple [`SortedDisjoint`] iterators,
-/// specifically [`union`] and [`intersection`].
+/// Provides methods on multiple [`SortedDisjoint`] iterators,
+/// specifically [`union`], [`intersection`], and [`symmetric_difference`].
 ///
 /// [`union`]: crate::MultiwaySortedDisjoint::union
 /// [`intersection`]: crate::MultiwaySortedDisjoint::intersection
+/// [`symmetric_difference`]: crate::MultiwaySortedDisjoint::symmetric_difference
 #[allow(clippy::module_name_repetitions)]
 pub trait MultiwaySortedDisjoint<T: Integer, I>: IntoIterator<Item = I> + Sized
 where

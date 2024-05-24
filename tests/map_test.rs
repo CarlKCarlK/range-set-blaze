@@ -9,15 +9,9 @@ use core::fmt;
 use core::ops::RangeInclusive;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use range_set_blaze::prelude::*;
-use range_set_blaze::IntoRangeValuesIter;
-use range_set_blaze::PartialEqClone;
-use range_set_blaze::RangeValuesIter;
-use range_set_blaze::UnionIterMap;
-use range_set_blaze::ValueRef;
 use range_set_blaze::{
-    CheckSortedDisjoint, CheckSortedDisjointMap, IntersectionIterMap, MultiwaySortedDisjointMap,
-    SymDiffIterMap,
+    prelude::*, IntersectionIterMap, IntoRangeValuesIter, PartialEqClone, RangeValuesIter,
+    SymDiffIterMap, UnionIterMap, UniqueValue, ValueRef,
 };
 use std::borrow::Borrow;
 use std::iter::FusedIterator;
@@ -515,7 +509,10 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let c = RangeMapBlaze::from_iter([(38..=42, 'c')]);
 
     let _ = [&a, &b, &c].union();
-    let d = [a, b, c].intersection();
+
+    // cmk0000000000
+    let d =
+        <[RangeMapBlaze<i32, char>; 3] as MultiwayRangeMapBlaze<i32, UniqueValue<char>>>::intersection([a, b, c]);
     assert_eq!(d, RangeMapBlaze::new());
 
     assert_eq!(
@@ -4177,7 +4174,8 @@ fn example_2() {
     // create 10 seconds of blank frames
     let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, "".to_string())]);
     // union everything together with left-to-right precedence
-    let animation = [count_down, hello_world, blank].union();
+    /// cmk00000000000
+    let animation = [&count_down, &hello_world, &blank].union();
     // for every range of frames, show what is displayed
     println!("frames: text");
     for (range, text) in animation.range_values() {

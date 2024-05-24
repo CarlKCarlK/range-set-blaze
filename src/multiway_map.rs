@@ -10,7 +10,7 @@ use crate::{
     map::{PartialEqClone, ValueRef},
     range_values::RangeValuesToRangesIter,
     BitAndMapWithRangeValues, BitOrMapKMerge, BitXorMapKMerge, Integer, RangeMapBlaze,
-    SortedDisjointMap, SymDiffIterMap, UnionIterMap,
+    SortedDisjointMap, SymDiffIterMap, UnionIterMap, UniqueValue,
 };
 
 impl<T, VR, I> MultiwayRangeMapBlaze<T, VR> for I
@@ -20,7 +20,7 @@ where
     I: IntoIterator<Item = RangeMapBlaze<T, VR::Value>>,
 {
 }
-/// The trait used to provide methods on multiple [`RangeMapBlaze`]'s,
+/// Provides methods on multiple [`RangeMapBlaze`]'s,
 /// specifically [`union`], [`intersection`] and [`symmetric_difference`].
 ///
 /// Also see [`MultiwayRangeMapBlazeRef`].
@@ -133,7 +133,7 @@ where
     I: IntoIterator<Item = &'a RangeMapBlaze<T, V>>,
 {
 }
-/// The trait used to provide methods on multiple [`RangeMapBlaze`] references,
+/// Provide methods on multiple [`RangeMapBlaze`] references,
 /// specifically [`union`], [`intersection`] and [`symmetric_difference`].
 ///
 /// Also see [`MultiwayRangeMapBlaze`].
@@ -239,7 +239,7 @@ where
 {
 }
 
-/// The trait used to define methods on multiple [`SortedDisjointMap`] iterators,
+/// Provides methods on multiple [`SortedDisjointMap`] iterators,
 /// specifically [`union`], [`intersection`], and [`symmetric_difference`].
 ///
 /// [`union`]: crate::MultiwaySortedDisjointMap::union
@@ -335,3 +335,46 @@ where
 // cmk confirm that on ranges the union of 0 sets 0 empty and the intersection of 0 sets is the universal set.
 // cmk why does the multiway.rs have a MultiwayRangeSetBlaze but not a MultiwayRangeMapBlazeRef?
 // cmk on maps, the union is still empty, but the intersection is undefined because we can't give a value to T.s
+
+#[test]
+fn test_ref_union() {
+    use crate::prelude::*;
+
+    let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    let b = RangeSetBlaze::from_iter([2..=6]);
+    let c = RangeSetBlaze::from_iter([2..=2, 6..=200]);
+    let d = [&a, &b, &c].union();
+    println!("{d}");
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=200]));
+
+    let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    let b = RangeSetBlaze::from_iter([2..=6]);
+    let c = RangeSetBlaze::from_iter([2..=2, 6..=200]);
+    let d = [a, b, c].union();
+    println!("{d}");
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=200]));
+
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    let d = [&a, &b, &c].union();
+    println!("{d}");
+    assert_eq!(
+        d,
+        RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")])
+    );
+
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    // let d: RangeMapBlaze<i32, &str> = [a, b, c].union();
+    let d: RangeMapBlaze<i32, &str> = <[RangeMapBlaze<i32, &str>; 3] as MultiwayRangeMapBlaze<
+        i32,
+        UniqueValue<&str>,
+    >>::union([a, b, c]);
+    println!("{d}");
+    assert_eq!(
+        d,
+        RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")])
+    );
+}

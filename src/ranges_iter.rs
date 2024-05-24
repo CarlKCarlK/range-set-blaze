@@ -2,7 +2,7 @@ use crate::Integer;
 use alloc::collections::btree_map;
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
-/// An iterator that visits the ranges in the [`RangeSetBlaze`],
+/// The output of cmk,
 /// i.e., the integers as sorted & disjoint ranges.
 ///
 /// This `struct` is created by the [`ranges`] method on [`RangeSetBlaze`]. See [`ranges`]'s
@@ -52,7 +52,7 @@ impl<T: Integer> DoubleEndedIterator for RangesIter<'_, T> {
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-/// An iterator that moves out the ranges in the [`RangeSetBlaze`],
+/// The output of cmk,
 /// i.e., the integers as sorted & disjoint ranges.
 ///
 /// This `struct` is created by the [`into_ranges`] method on [`RangeSetBlaze`]. See [`into_ranges`]'s

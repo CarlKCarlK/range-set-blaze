@@ -4,7 +4,7 @@ use crate::{map::ValueRef, Integer, SortedDisjointMap};
 use alloc::boxed::Box;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-/// Gives [`SortedDisjointMap`] iterators a uniform type. Used by the [`union_map_dyn`] and [`intersection_map_dyn`] macros to give all
+/// Gives [`SortedDisjointMap`] iterators a uniform type. Used by the [`union_map_dyn`], etc. macros to give all
 /// their input iterators the same type.
 ///
 /// [`union_map_dyn`]: crate::union_map_dyn

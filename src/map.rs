@@ -36,8 +36,8 @@ pub trait PartialEqClone: PartialEq + Clone {}
 
 impl<T> PartialEqClone for T where T: PartialEq + Clone {}
 
-/// Trait for references that can be cloned to return a new reference to the same value.
-/// The associated value can also be cloned. We define "same" as `eq` but not necessarily `==`.
+/// Trait for references that can be cloned to return a new reference to an equal value.
+/// The associated value type must implement `PartialEqClone`
 pub trait ValueRef: Borrow<Self::Value> {
     /// The associated value type.
     type Value: PartialEqClone;
@@ -83,7 +83,7 @@ where
     }
 }
 
-// Example custom type implementation
+/// cmk doc
 pub struct UniqueValue<V> {
     value: Option<V>,
 }
@@ -111,10 +111,16 @@ where
 }
 
 impl<V> UniqueValue<V> {
+    /// cmk doc
     pub const fn new(v: V) -> Self {
         Self { value: Some(v) }
     }
 
+    /// cmk doc
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value has already been taken.
     pub fn into_value(mut self) -> V {
         self.value.take().unwrap()
     }
@@ -130,7 +136,7 @@ where
     pub(crate) value: V,
 }
 
-/// A set of integers stored as sorted & disjoint ranges.
+/// A map from integers to values stored as a map of sorted & disjoint ranges to values.
 ///
 /// Internally, it stores the ranges in a cache-efficient [`BTreeMap`].
 ///

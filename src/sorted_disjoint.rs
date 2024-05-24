@@ -16,11 +16,11 @@ use crate::{
     BitAndMerge, BitSubMerge, BitXorMerge, DynSortedDisjoint, Integer, NotIter, SymDiffIter,
 };
 
-/// Used internally. This trait marks iterators that provide ranges sorted by start, but
+/// Used internally. Marks iterators that provide ranges sorted by start, but
 /// that are not necessarily disjoint.
 pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIterator {}
 
-/// The trait used to mark iterators that provide ranges that are sorted by start and disjoint. Set operations on
+/// Marks iterators that provide ranges that are sorted by start and disjoint. Set operations on
 /// iterators that implement this trait can be performed in linear time.
 ///
 /// # Table of Contents

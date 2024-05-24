@@ -31,7 +31,7 @@ use crate::{map::PartialEqClone, union_iter_map::UnionIterMap, Integer, RangeMap
 use core::ops;
 use core::ops::RangeInclusive;
 
-/// Used internally. This trait marks iterators that provide ranges and values sorted by start, but
+/// Used internally. Marks iterators that provide `(range, value)` pairs that are sorted by the range's start, but
 /// that are not necessarily disjoint.
 pub trait SortedStartsMap<T, VR>: Iterator<Item = (RangeInclusive<T>, VR)> + FusedIterator
 where
@@ -48,7 +48,7 @@ where
 {
 }
 
-/// The trait used to mark iterators that provide ranges that are sorted by start and disjoint. Set operations on
+/// Marks iterators that provide `(range, value)` pairs that are sorted and disjoint. Set operations on
 /// iterators that implement this trait can be performed in linear time.
 ///
 /// # Table of Contents

@@ -10,10 +10,11 @@ use num_traits::ops::overflowing::OverflowingSub;
 #[cfg(feature = "from_slice")]
 const LANES: usize = 16;
 
-/// The element trait of the [`RangeSetBlaze`] and [`SortedDisjoint`], specifically `u8` to `u128` (including `usize`) and `i8` to `i128` (including `isize`).
+/// Elements of [`RangeSetBlaze`] and the keys of [`RangeMapBlaze`], specifically `u8` to `u128` (including `usize`), `i8` to `i128`
+/// (including `isize`), `char`, `Ipv4Addr`, and `Ipv6Addr`.
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
-/// [`SortedDisjoint`]: crate::SortedDisjoint
+/// [`RangeMapBlaze`]: crate::RangeMapBlaze
 pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Sync {
     /// cmk doc
     fn checked_add_one(self) -> Option<Self>;
@@ -27,6 +28,7 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     fn assign_sub_one(&mut self);
 
     /// cmk doc
+    #[must_use]
     fn exhausted_range() -> RangeInclusive<Self> {
         Self::max_value()..=Self::min_value()
     }

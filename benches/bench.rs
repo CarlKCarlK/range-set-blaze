@@ -18,15 +18,14 @@ use rand::{
     seq::SliceRandom,
     Rng, SeedableRng,
 };
-use range_set_blaze::prelude::*;
+use range_set_blaze::{prelude::*, Integer};
 use roaring::RoaringBitmap;
 use std::{
     collections::{BTreeSet, HashSet},
     ops::RangeInclusive,
 };
 
-use range_set_blaze::RangeSetBlaze;
-use range_set_blaze::{prelude::*, DynSortedDisjoint, Integer, SortedDisjoint};
+use range_set_blaze::prelude::*;
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range_u32, How, MemorylessIter, MemorylessRange};
 

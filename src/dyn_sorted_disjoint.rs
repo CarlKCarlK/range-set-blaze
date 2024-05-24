@@ -4,7 +4,7 @@ use crate::{Integer, SortedDisjoint};
 use alloc::boxed::Box;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-/// Gives [`SortedDisjoint`] iterators a uniform type. Used by the [`union_dyn`] and [`intersection_dyn`] macros to give all
+/// Gives [`SortedDisjoint`] iterators a uniform type. Used by the [`union_dyn`], etc. macros to give all
 /// their input iterators the same type.
 ///
 /// [`union_dyn`]: crate::union_dyn

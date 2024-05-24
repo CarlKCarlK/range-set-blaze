@@ -24,7 +24,7 @@ pub trait UInt:
 impl UInt for u128 {}
 impl UInt for u8 {}
 
-/// Used to represent values from `0` to `u128::MAX + 1` (inclusive).
+/// Represents values from `0` to `u128::MAX + 1` (inclusive).
 ///
 /// Needed to represent every possible length of a `RangeInclusive<i128>` and `RangeInclusive<u128>`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
