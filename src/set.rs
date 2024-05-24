@@ -224,8 +224,8 @@ where
 /// `RangeSetBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
 /// these methods match those of `BTreeSet`.
 ///
-/// [`union`]: trait.MultiwayRangeSetBlaze.html#method.union
-/// [`intersection`]: trait.MultiwayRangeSetBlaze.html#method.intersection
+/// [`union`]: trait.MultiwayRangeSetBlazeRef.html#method.union
+/// [`intersection`]: trait.MultiwayRangeSetBlazeRef.html#method.intersection
 /// [`insert`]: RangeSetBlaze::insert
 /// [`pop_first`]: RangeSetBlaze::pop_first
 /// [`split_off`]: RangeSetBlaze::split_off
@@ -1575,6 +1575,8 @@ where
     I: SortedDisjoint<T>,
 {
     btree_set_iter: I,
+    // FUTURE: here and elsewhere, when core::iter:Step is available could
+    // FUTURE: use RangeInclusive as an iterator (with exhaustion) rather than needing an Option
     option_range_front: Option<RangeInclusive<T>>,
     option_range_back: Option<RangeInclusive<T>>,
 }

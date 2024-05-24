@@ -22,7 +22,7 @@ use range_set_blaze::{
 use std::iter::FusedIterator;
 
 // use range_set_blaze::{
-//     MultiwayRangeMapBlaze, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
+//     MultiwayRangeMapBlazeRef, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
 // };
 // cmk not tested use range_map_blaze::multiway_map::MultiwayRangeMapBlazeRef;
 use range_set_blaze::Integer;
@@ -518,7 +518,7 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(d, RangeMapBlaze::new());
 
     assert_eq!(
-        MultiwayRangeMapBlaze::<u8, char>::union([]),
+        MultiwayRangeMapBlazeRef::<u8, char>::union([]),
         RangeMapBlaze::new()
     );
 
@@ -538,7 +538,7 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 
     // not defined on 0 maps because the range would be the universe (fine), but we don't know what value to use.
     // assert_eq!(
-    //     MultiwayRangeMapBlaze::<u8, char>::intersection([]),
+    //     MultiwayRangeMapBlazeRef::<u8, char>::intersection([]),
     //     RangeMapBlaze::from_iter([(0..=255, '?')])
     // );
 
@@ -579,7 +579,7 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let _ = [&a, &b, &c].symmetric_difference();
 
     assert_eq!(
-        MultiwayRangeMapBlaze::<u8, char>::symmetric_difference([]),
+        MultiwayRangeMapBlazeRef::<u8, char>::symmetric_difference([]),
         RangeMapBlaze::new()
     );
 
@@ -3122,7 +3122,7 @@ fn map_repro2() {
 //     assert_eq!(d, RangeMapBlaze::new());
 
 //     assert_eq!(
-//         !MultiwayRangeSetBlaze::<u8>::union([]),
+//         !MultiwayRangeSetBlazeRef::<u8>::union([]),
 //         RangeMapBlaze::from_iter([0..=255])
 //     );
 
@@ -3137,7 +3137,7 @@ fn map_repro2() {
 //     assert_eq!(d, RangeMapBlaze::from_iter([5..=6, 8..=9, 11..=13]));
 
 //     assert_eq!(
-//         MultiwayRangeSetBlaze::<u8>::intersection([]),
+//         MultiwayRangeSetBlazeRef::<u8>::intersection([]),
 //         RangeMapBlaze::from_iter([0..=255])
 //     );
 // }
@@ -3925,7 +3925,7 @@ fn map_repro2() {
 
 // #[quickcheck]
 // fn multi_union(inputs: Vec<Reference>) -> bool {
-//     use crate::MultiwayRangeSetBlazeRef;
+//     use crate::MultiwayRangeSetBlaze;
 
 //     let expected: Reference = inputs.iter().flatten().copied().collect();
 //     let actual = inputs.iter().map(RangeMapBlaze::from_iter).union();

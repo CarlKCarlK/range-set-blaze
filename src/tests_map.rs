@@ -984,7 +984,7 @@ fn map_repro1() {
 // //     assert_eq!(d, RangeMapBlaze::new());
 
 // //     assert_eq!(
-// //         !MultiwayRangeSetBlaze::<u8>::union([]),
+// //         !MultiwayRangeSetBlazeRef::<u8>::union([]),
 // //         RangeMapBlaze::from_iter([0..=255])
 // //     );
 
@@ -999,7 +999,7 @@ fn map_repro1() {
 // //     assert_eq!(d, RangeMapBlaze::from_iter([5..=6, 8..=9, 11..=13]));
 
 // //     assert_eq!(
-// //         MultiwayRangeSetBlaze::<u8>::intersection([]),
+// //         MultiwayRangeSetBlazeRef::<u8>::intersection([]),
 // //         RangeMapBlaze::from_iter([0..=255])
 // //     );
 // // }

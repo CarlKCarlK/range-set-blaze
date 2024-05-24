@@ -13,11 +13,11 @@ use crate::{
     SortedDisjointMap, UnionIterMap,
 };
 
-impl<'a, T, V, I> MultiwayRangeMapBlaze<'a, T, V> for I
+impl<T, V, I> MultiwayRangeMapBlaze<T, V> for I
 where
-    T: Integer + 'a,
-    V: PartialEqClone + 'a,
-    I: IntoIterator<Item = &'a RangeMapBlaze<T, V>>,
+    T: Integer,
+    V: PartialEqClone,
+    I: IntoIterator<Item = RangeMapBlaze<T, V>>,
 {
 }
 /// The trait used to provide methods on multiple [`RangeMapBlaze`]'s,
@@ -28,8 +28,8 @@ where
 /// [`union`]: MultiwayRangeMapBlaze::union
 /// [`intersection`]: MultiwayRangeMapBlaze::intersection
 /// [`symmetric_difference`]: MultiwayRangeMapBlaze::symmetric_difference
-pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: PartialEqClone + 'a>:
-    IntoIterator<Item = &'a RangeMapBlaze<T, V>> + Sized
+pub trait MultiwayRangeMapBlaze<T: Integer, V: PartialEqClone>:
+    IntoIterator<Item = RangeMapBlaze<T, V>>
 {
     /// Unions the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
     /// Any number of input can be given.
@@ -52,15 +52,20 @@ pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: PartialEqClone + 'a>:
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
     ///
-    /// let union = [a, b, c].union();
+    /// let union = [a, b, c].into_iter().union();
     ///
     /// assert_eq!(union.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
     /// ```
-    fn union(self) -> RangeMapBlaze<T, V> {
-        self.into_iter()
-            .map(|x| RangeMapBlaze::range_values(x))
-            .union()
-            .into_range_map_blaze()
+    fn union(self) -> RangeMapBlaze<T, V>
+    where
+        Self: Sized,
+    {
+        todo!("cmk0000")
+        // RangeMapBlaze::from_sorted_disjoint_map(
+        //     self.into_iter()
+        //         .map(RangeMapBlaze::into_range_values)
+        //         .union(),
+        // )
     }
 
     /// Intersects the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
@@ -86,18 +91,130 @@ pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: PartialEqClone + 'a>:
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
     ///
+    /// let intersection = [a, b, c].into_iter().intersection();
+    ///
+    /// assert_eq!(intersection.to_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
+    /// ```
+    fn intersection(self) -> RangeMapBlaze<T, V>
+    where
+        Self: Sized,
+    {
+        todo!("cmk0000")
+        // self.into_iter()
+        //     .map(RangeMapBlaze::into_range_values)
+        //     .intersection()
+        //     .into_range_map_blaze()
+    }
+
+    /// Symmetric difference on the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    ///
+    /// let symmetric_difference = [a, b, c].into_iter().symmetric_difference();
+    ///
+    /// assert_eq!(symmetric_difference.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
+    /// ```
+    fn symmetric_difference(self) -> RangeMapBlaze<T, V>
+    where
+        Self: Sized,
+    {
+        todo!("cmk0000")
+        // self.into_iter()
+        //             .map(RangeMapBlaze::into_range_values)
+        //             .symmetric_difference()
+        //             .into_range_map_blaze()
+    }
+}
+
+impl<'a, T, V, I> MultiwayRangeMapBlazeRef<'a, T, V> for I
+where
+    T: Integer + 'a,
+    V: PartialEqClone + 'a,
+    I: IntoIterator<Item = &'a RangeMapBlaze<T, V>>,
+{
+}
+/// The trait used to provide methods on multiple [`RangeMapBlaze`] references,
+/// specifically [`union`], [`intersection`] and [`symmetric_difference`].
+///
+/// Also see [`MultiwayRangeMapBlaze`].
+///
+/// [`union`]: MultiwayRangeMapBlazeRef::union
+/// [`intersection`]: MultiwayRangeMapBlazeRef::intersection
+/// [`symmetric_difference`]: MultiwayRangeMapBlazeRef::symmetric_difference
+pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: PartialEqClone + 'a>:
+    IntoIterator<Item = &'a RangeMapBlaze<T, V>> + Sized
+{
+    /// Unions the given [`RangeMapBlaze`] references, creating a new [`RangeMapBlaze`].
+    /// Any number of input can be given.
+    ///
+    /// For exactly two inputs, you can also use the '|' operator.
+    /// Also see [`MultiwayRangeMapBlaze::union`].
+    ///
+    /// # Performance
+    ///
+    ///  All work is done on demand, in one pass through the inputs. Minimal memory is used.
+    ///
+    /// # Example
+    ///
+    /// Find the integers that appear in any of the [`RangeMapBlaze`] references.
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    ///
+    /// let union = [a, b, c].union();
+    ///
+    /// assert_eq!(union.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
+    /// ```
+    fn union(self) -> RangeMapBlaze<T, V> {
+        self.into_iter()
+            .map(RangeMapBlaze::range_values)
+            .union()
+            .into_range_map_blaze()
+    }
+
+    /// Intersects the given [`RangeMapBlaze`] references, creating a new [`RangeMapBlaze`].
+    /// Any number of input can be given.
+    ///
+    /// For exactly two inputs, you can also use the '&' operator.
+    /// Also see [`MultiwayRangeMapBlaze::intersection`].
+    ///
+    /// The intersection of 0 maps is undefined. (We can create a universal set of integers, but we don't know that value to use.)
+    ///
+    /// # Performance
+    ///
+    ///  All work is done on demand, in one pass through the inputs. Minimal memory is used.
+    ///
+    /// # Example
+    ///
+    /// Find the integers that appear in all the [`RangeMapBlaze`] references.
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    ///
     /// let intersection = [a, b, c].intersection();
     ///
     /// assert_eq!(intersection.to_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
     /// ```
     fn intersection(self) -> RangeMapBlaze<T, V> {
         self.into_iter()
-            .map(|x| RangeMapBlaze::range_values(x))
+            .map(RangeMapBlaze::range_values)
             .intersection()
             .into_range_map_blaze()
     }
 
-    /// Symmetric difference on the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
+    /// Symmetric difference on the given [`RangeMapBlaze`] references, creating a new [`RangeMapBlaze`].
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
@@ -111,7 +228,7 @@ pub trait MultiwayRangeMapBlaze<'a, T: Integer + 'a, V: PartialEqClone + 'a>:
     /// ```
     fn symmetric_difference(self) -> RangeMapBlaze<T, V> {
         self.into_iter()
-            .map(|x| RangeMapBlaze::range_values(x))
+            .map(RangeMapBlaze::range_values)
             .symmetric_difference()
             .into_range_map_blaze()
     }
@@ -198,7 +315,7 @@ where
         let iter_map = iter
             .next()
             .expect("The intersection of 0 maps is undefined.");
-        let iter_set = iter.map(|x| RangeValuesToRangesIter::new(x)).intersection();
+        let iter_set = iter.map(RangeValuesToRangesIter::new).intersection();
         IntersectionIterMap::new(iter_map, iter_set)
     }
 
@@ -219,5 +336,5 @@ where
     }
 }
 // cmk confirm that on ranges the union of 0 sets 0 empty and the intersection of 0 sets is the universal set.
-// cmk why does the multiway.rs have a MultiwayRangeSetBlazeRef but not a MultiwayRangeMapBlazeRef?
+// cmk why does the multiway.rs have a MultiwayRangeSetBlaze but not a MultiwayRangeMapBlazeRef?
 // cmk on maps, the union is still empty, but the intersection is undefined because we can't give a value to T.s

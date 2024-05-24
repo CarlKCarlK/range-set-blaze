@@ -18,7 +18,7 @@ use rand::{
     seq::SliceRandom,
     Rng, SeedableRng,
 };
-use range_set_blaze::MultiwayRangeSetBlaze;
+use range_set_blaze::MultiwayRangeSetBlazeRef;
 use roaring::RoaringBitmap;
 use std::{
     collections::{BTreeSet, HashSet},

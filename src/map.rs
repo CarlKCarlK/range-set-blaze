@@ -253,8 +253,8 @@ where
 /// `RangeMapBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
 /// these methods match those of `BTreeSet`.
 ///
-/// [`union`]: trait.MultiwayRangeMapBlaze.html#method.union
-/// [`intersection`]: trait.MultiwayRangeMapBlaze.html#method.intersection
+/// [`union`]: trait.MultiwayRangeMapBlazeRef.html#method.union
+/// [`intersection`]: trait.MultiwayRangeMapBlazeRef.html#method.intersection
 /// [`insert`]: RangeMapBlaze::insert
 /// [`pop_first`]: RangeMapBlaze::pop_first
 /// [`split_off`]: RangeMapBlaze::split_off

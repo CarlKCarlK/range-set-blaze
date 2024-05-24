@@ -107,8 +107,8 @@ where
 ///
 /// | Method | Operator | Multiway (same type) | Multiway (different types) |
 /// |--------|----------|----------------------|----------------------------|
-/// | `a.`[`union`]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][crate::MultiwaySortedDisjointMap::union]`()` | [`crate::MultiwayRangeSetBlaze::union`]`!(a, b, c)` |
-/// | `a.`[`intersection`]`(b)` | `a & b` | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjointMap::intersection]`()` | [`crate::MultiwayRangeSetBlaze::intersection`]`!(a, b, c)` |
+/// | `a.`[`union`]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][crate::MultiwaySortedDisjointMap::union]`()` | [`crate::MultiwayRangeSetBlazeRef::union`]`!(a, b, c)` |
+/// | `a.`[`intersection`]`(b)` | `a & b` | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjointMap::intersection]`()` | [`crate::MultiwayRangeSetBlazeRef::intersection`]`!(a, b, c)` |
 /// | `a.`[`difference`]`(b)` | `a - b` |  |  |
 /// | `a.`[`symmetric_difference`]`(b)` | `a ^ b` |  |  |
 /// | `a.`[`complement`]`()` | `!a` |  |  |

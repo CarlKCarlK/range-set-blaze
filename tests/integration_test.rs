@@ -245,7 +245,10 @@ fn multi_op() {
     let d = [a, b, c].iter().intersection();
     assert_eq!(d, RangeSetBlaze::new());
 
-    assert_eq!(MultiwayRangeSetBlaze::<u8>::union([]), RangeSetBlaze::new());
+    assert_eq!(
+        MultiwayRangeSetBlazeRef::<u8>::union([]),
+        RangeSetBlaze::new()
+    );
 
     // Intersection
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -259,7 +262,7 @@ fn multi_op() {
     assert_eq!(d, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
 
     assert_eq!(
-        MultiwayRangeSetBlaze::<u8>::intersection([]),
+        MultiwayRangeSetBlazeRef::<u8>::intersection([]),
         RangeSetBlaze::from_iter([0..=255])
     );
 
@@ -285,7 +288,7 @@ fn multi_op() {
     let _ = [&a, &b, &c].symmetric_difference();
 
     assert_eq!(
-        MultiwayRangeSetBlaze::<u8>::symmetric_difference([]),
+        MultiwayRangeSetBlazeRef::<u8>::symmetric_difference([]),
         RangeSetBlaze::new()
     );
 }

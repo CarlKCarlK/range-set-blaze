@@ -86,7 +86,7 @@ pub use map::ValueRef;
 use merge::{KMerge, Merge};
 use merge_map::KMergeMap;
 pub use multiway::MultiwaySortedDisjoint;
-pub use multiway_map::MultiwayRangeMapBlaze;
+pub use multiway_map::MultiwayRangeMapBlazeRef;
 pub use multiway_map::MultiwaySortedDisjointMap;
 use range_values::RangeValuesToRangesIter;
 pub use sym_diff_iter::SymDiffIter;
@@ -166,3 +166,27 @@ pub type BitAndMapWithRangeValues<'a, T, VR, I> =
 pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
 #[doc(hidden)]
 pub type BitSubMerge<T, L, R> = NotIter<T, BitOrMerge<T, NotIter<T, L>, R>>;
+
+#[cfg(test)]
+mod tests2 {
+
+    #[test]
+    fn test_multiway() {
+        use crate::prelude::*;
+
+        let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+        let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+        let c = RangeSetBlaze::from_iter([25..=100]);
+        // use crate::multiway::MultiwayRangeSetBlaze;
+        let iter = vec![a, b, c].into_iter();
+        let union = iter.union();
+        assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
+
+        let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+        let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+        let c = RangeSetBlaze::from_iter([25..=100]);
+        // use crate::multiway::MultiwayRangeSetBlazeRef;
+        let union = [a, b, c].union();
+        assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
+    }
+}

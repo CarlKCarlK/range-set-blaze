@@ -1,4 +1,4 @@
-impl<T, I> MultiwayRangeSetBlazeRef<T> for I
+impl<T, I> MultiwayRangeSetBlaze<T> for I
 where
     T: Integer,
     I: IntoIterator<Item = RangeSetBlaze<T>>,
@@ -8,20 +8,18 @@ where
 /// The trait used to provide methods on multiple [`RangeSetBlaze`] references,
 /// specifically [`union`], [`intersection`] and [`symmetric_difference`].
 ///
-/// Also see [`MultiwayRangeSetBlaze`].
+/// Also see [`MultiwayRangeSetBlazeRef`].
 ///
-/// [`union`]: MultiwayRangeSetBlazeRef::union
-/// [`intersection`]: MultiwayRangeSetBlazeRef::intersection
-/// [`symmetric_difference`]: MultiwayRangeSetBlazeRef::symmetric_difference
+/// [`union`]: MultiwayRangeSetBlaze::union
+/// [`intersection`]: MultiwayRangeSetBlaze::intersection
+/// [`symmetric_difference`]: MultiwayRangeSetBlaze::symmetric_difference
 #[allow(clippy::module_name_repetitions)]
-pub trait MultiwayRangeSetBlazeRef<T: Integer>:
-    IntoIterator<Item = RangeSetBlaze<T>> + Sized
-{
-    /// Unions the given [`RangeSetBlaze`] references, creating a new [`RangeSetBlaze`].
+pub trait MultiwayRangeSetBlaze<T: Integer>: IntoIterator<Item = RangeSetBlaze<T>> + Sized {
+    /// Unions the given [`RangeSetBlaze`]'s', creating a new [`RangeSetBlaze`].
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '|' operator.
-    /// Also see [`MultiwayRangeSetBlaze::union`].
+    /// Also see [`MultiwayRangeSetBlazeRef::union`].
     ///
     /// # Performance
     ///
@@ -52,7 +50,7 @@ pub trait MultiwayRangeSetBlazeRef<T: Integer>:
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '&' operator.
-    /// Also see [`MultiwayRangeSetBlaze::intersection`].
+    /// Also see [`MultiwayRangeSetBlazeRef::intersection`].
     ///
     /// # Performance
     ///
@@ -89,7 +87,7 @@ pub trait MultiwayRangeSetBlazeRef<T: Integer>:
         )
     }
 }
-impl<'a, T, I> MultiwayRangeSetBlaze<'a, T> for I
+impl<'a, T, I> MultiwayRangeSetBlazeRef<'a, T> for I
 where
     T: Integer + 'a,
     I: IntoIterator<Item = &'a RangeSetBlaze<T>>,
@@ -98,20 +96,20 @@ where
 /// The trait used to provide methods on multiple [`RangeSetBlaze`]'s,
 /// specifically [`union`], [`intersection`], and [`symmetric_difference`].
 ///
-/// Also see [`MultiwayRangeSetBlazeRef`].
+/// Also see [`MultiwayRangeSetBlaze`].
 ///
-/// [`union`]: MultiwayRangeSetBlaze::union
-/// [`intersection`]: MultiwayRangeSetBlaze::intersection
-/// [`symmetric_difference`]: MultiwayRangeSetBlaze::symmetric_difference
+/// [`union`]: MultiwayRangeSetBlazeRef::union
+/// [`intersection`]: MultiwayRangeSetBlazeRef::intersection
+/// [`symmetric_difference`]: MultiwayRangeSetBlazeRef::symmetric_difference
 #[allow(clippy::module_name_repetitions)]
-pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
+pub trait MultiwayRangeSetBlazeRef<'a, T: Integer + 'a>:
     IntoIterator<Item = &'a RangeSetBlaze<T>> + Sized
 {
-    /// Unions the given [`RangeSetBlaze`]'s, creating a new [`RangeSetBlaze`].
+    /// Unions the given [`RangeSetBlaze`] references, creating a new [`RangeSetBlaze`].
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '|' operator.
-    /// Also see [`MultiwayRangeSetBlazeRef::union`].
+    /// Also see [`MultiwayRangeSetBlaze::union`].
     ///
     /// # Performance
     ///
@@ -143,7 +141,7 @@ pub trait MultiwayRangeSetBlaze<'a, T: Integer + 'a>:
     /// Any number of input can be given.
     ///
     /// For exactly two inputs, you can also use the '&' operator.
-    /// Also see [`MultiwayRangeSetBlazeRef::intersection`].
+    /// Also see [`MultiwayRangeSetBlaze::intersection`].
     ///
     /// # Performance
     ///

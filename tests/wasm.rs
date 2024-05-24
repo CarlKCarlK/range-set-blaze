@@ -230,7 +230,10 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let d = [a, b, c].intersection();
     assert_eq!(d, RangeSetBlaze::new());
 
-    assert_eq!(MultiwayRangeSetBlaze::<u8>::union([]), RangeSetBlaze::new());
+    assert_eq!(
+        MultiwayRangeSetBlazeRef::<u8>::union([]),
+        RangeSetBlaze::new()
+    );
 
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
@@ -243,7 +246,7 @@ fn multi_op() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(d, RangeSetBlaze::from_iter([5..=6, 8..=9, 11..=13]));
 
     assert_eq!(
-        MultiwayRangeSetBlaze::<u8>::intersection([]),
+        MultiwayRangeSetBlazeRef::<u8>::intersection([]),
         RangeSetBlaze::from_iter([0..=255])
     );
     Ok(())
