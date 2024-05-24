@@ -368,10 +368,6 @@ fn test_ref_union() {
     let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
     let d: RangeMapBlaze<i32, &str> = [a, b, c].union();
-    // let d: RangeMapBlaze<i32, &str> = <[RangeMapBlaze<i32, &str>; 3] as MultiwayRangeMapBlaze<
-    //     i32,
-    //     UniqueValue<&str>,
-    // >>::union([a, b, c]);
     println!("{d}");
     assert_eq!(
         d,

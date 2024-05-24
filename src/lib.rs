@@ -67,7 +67,6 @@ pub use crate::sorted_disjoint_map::Priority;
 
 mod not_iter;
 pub mod prelude;
-pub use crate::map::UniqueValue; // cmk pub(crate)????
 mod range_values;
 pub use crate::range_values::RangeValuesIter;
 #[cfg(feature = "rog-experimental")]
@@ -193,4 +192,4 @@ mod tests2 {
 }
 
 // cmk0000000000 what happens if we store NaN in our map? Should we require values to be Eq, not just PartialEq?
-// cmk0000000000 can anything bad happen with into_range_values() using UniqueValue?
+// cmk0000000000 can anything bad happen with into_range_values() using cmkniqueValue?

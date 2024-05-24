@@ -83,50 +83,6 @@ where
     }
 }
 
-/// cmk doc
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct UniqueValue<V> {
-    value: Option<V>,
-}
-
-impl<V> ValueRef for UniqueValue<V>
-where
-    V: EqClone,
-{
-    type Value = V;
-
-    fn clone_ref(&self) -> Self {
-        Self {
-            value: self.value.clone(),
-        }
-    }
-}
-
-impl<V> Borrow<V> for UniqueValue<V>
-where
-    V: EqClone,
-{
-    fn borrow(&self) -> &V {
-        self.value.as_ref().expect("Value should be present")
-    }
-}
-
-impl<V> UniqueValue<V> {
-    /// cmk doc
-    pub const fn new(v: V) -> Self {
-        Self { value: Some(v) }
-    }
-
-    /// cmk doc
-    ///
-    /// # Panics
-    ///
-    /// Panics if the value has already been taken.
-    pub fn into_value(mut self) -> V {
-        self.value.take().unwrap()
-    }
-}
-
 #[derive(Clone, Hash, Default, PartialEq, Eq)]
 pub struct EndValue<T, V>
 where
@@ -1433,13 +1389,15 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     /// # Examples
     ///
     /// ```
+    /// extern crate alloc;
+    /// use alloc::rc::Rc;
     /// use range_set_blaze::RangeMapBlaze;
     ///
     /// let map = RangeMapBlaze::from_iter([(10..=20, "a"), (15..=25, "b"), (30..=40, "c")]);
     /// let mut range_values = map.into_range_values();
-    /// assert_eq!(range_values.next(), Some((10..=20, UniqueValue("a"))));
-    /// assert_eq!(range_values.next(), Some((21..=25, UniqueValue("b"))));
-    /// assert_eq!(range_values.next(), Some((30..=40, UniqueValue("c"))));
+    /// assert_eq!(range_values.next(), Some((10..=20, Rc::new("a"))));
+    /// assert_eq!(range_values.next(), Some((21..=25, Rc::new("b"))));
+    /// assert_eq!(range_values.next(), Some((30..=40, Rc::new("c"))));
     /// assert_eq!(range_values.next(), None);
     /// ```
     ///
@@ -1447,13 +1405,15 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     /// with left-to-right precedence.
     ///
     /// ```
+    /// extern crate alloc;
+    /// use alloc::rc::Rc;
     /// use range_set_blaze::RangeMapBlaze;
     ///
     /// let map = RangeMapBlaze::from_iter([(30..=40, "c"), (15..=25, "b"), (10..=20, "a")]);
     /// let mut range_values = map.into_range_values();
-    /// assert_eq!(range_values.next(), Some((10..=14, "a")));
-    /// assert_eq!(range_values.next(), Some((15..=25, "b")));
-    /// assert_eq!(range_values.next(), Some((30..=40, "c")));
+    /// assert_eq!(range_values.next(), Some((10..=14, Rc::new("a"))));
+    /// assert_eq!(range_values.next(), Some((15..=25, Rc::new("b"))));
+    /// assert_eq!(range_values.next(), Some((30..=40, Rc::new("c"))));
     /// assert_eq!(range_values.next(), None);
     /// ```
     pub fn into_range_values(self) -> IntoRangeValuesIter<T, V> {
@@ -1889,11 +1849,10 @@ where
         let iter = iter.into_iter();
 
         // We gather adjacent values into ranges via UnsortedPriorityDisjointMap, but ignore the priority.
-        for priority in
-            UnsortedPriorityDisjointMap::new(iter.map(|(r, v)| (r..=r, UniqueValue::new(v))))
-        {
+        for priority in UnsortedPriorityDisjointMap::new(iter.map(|(r, v)| (r..=r, Rc::new(v)))) {
             let (range, value) = priority.into_range_value();
-            self.internal_add(range, value.into_value());
+            let value = Rc::try_unwrap(value).unwrap_or_else(|_| panic!("Failed to unwrap Rc"));
+            self.internal_add(range, value);
         }
     }
 

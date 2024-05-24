@@ -9,8 +9,8 @@ use crate::BitOrMapMerge;
 use crate::BitXorMapMerge;
 use crate::DynSortedDisjointMap;
 use crate::IntoRangeValuesIter;
-use crate::UniqueValue;
 use alloc::format;
+use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
@@ -910,7 +910,7 @@ impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VR, I0, I1>,  VR::Value, 
 impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 'a, VR: ValueRef);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: EqClone);
-impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, UniqueValue<V>, V: EqClone);
+impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: EqClone);
 
 // #[allow(single_use_lifetimes)]
 // impl<VR, I, T> SortedStartsMap<T, VR> for CheckSortedDisjointMap<T, VR, I>

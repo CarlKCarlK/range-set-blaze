@@ -3,7 +3,6 @@
 extern crate alloc;
 // use crate::sorted_disjoint_map::{IntoString, Priority};
 // use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
-// use crate::UniqueValue;
 use alloc::collections::BTreeMap;
 use core::fmt;
 use core::ops::RangeInclusive;
@@ -1078,8 +1077,8 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
 
     // let sorted_starts = AssumePrioritySortedStartsMap::new(
     //     [
-    //         Priority::new((5..=6, UniqueValue::new("a")), 0),
-    //         Priority::new((1..=5, UniqueValue::new("b")), 1),
+    //         Priority::new((5..=6, Rc::new("a")), 0),
+    //         Priority::new((1..=5, Rc::new("b")), 1),
     //     ]
     //     .into_iter(),
     // );
@@ -1087,17 +1086,17 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
     // _sorted_disjoint_iter = UnionIterMap::new(sorted_starts);
     // // // #10 collect / from_iter T
     // let arr0 = [
-    //     (1..=1, UniqueValue::new("a")),
-    //     (5..=5, UniqueValue::new("b")),
-    //     (6..=6, UniqueValue::new("b")),
-    //     (5..=5, UniqueValue::new("b")),
+    //     (1..=1, Rc::new("a")),
+    //     (5..=5, Rc::new("b")),
+    //     (6..=6, Rc::new("b")),
+    //     (5..=5, Rc::new("b")),
     // ];
     // let mut _sorted_disjoint_iter: UnionIterMap<_, _, _, _> = arr0.into_iter().collect();
     // let arr0 = [
-    //     (1..=1, UniqueValue::new("a")),
-    //     (5..=5, UniqueValue::new("b")),
-    //     (6..=6, UniqueValue::new("b")),
-    //     (5..=5, UniqueValue::new("b")),
+    //     (1..=1, Rc::new("a")),
+    //     (5..=5, Rc::new("b")),
+    //     (6..=6, Rc::new("b")),
+    //     (5..=5, Rc::new("b")),
     // ];
     // _sorted_disjoint_iter = UnionIterMap::from_iter(arr0);
     // // // #11 into / from array T

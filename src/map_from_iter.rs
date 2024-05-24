@@ -1,5 +1,7 @@
+use alloc::rc::Rc;
+
 use crate::union_iter_map::UnionIterMap;
-use crate::{EqClone, Integer, RangeMapBlaze, UniqueValue};
+use crate::{EqClone, Integer, RangeMapBlaze};
 use core::ops::RangeInclusive;
 
 // We create a RangeMapBlaze from an iterator of integers or integer ranges by
@@ -84,8 +86,8 @@ impl<T: Integer, V: EqClone> FromIterator<(RangeInclusive<T>, V)> for RangeMapBl
     {
         let union_iter_map = iter
             .into_iter()
-            .map(|(r, v)| (r, UniqueValue::new(v)))
-            .collect::<UnionIterMap<T, UniqueValue<V>, _>>();
+            .map(|(r, v)| (r, Rc::new(v)))
+            .collect::<UnionIterMap<T, Rc<V>, _>>();
         Self::from_sorted_disjoint_map(union_iter_map)
     }
 }
