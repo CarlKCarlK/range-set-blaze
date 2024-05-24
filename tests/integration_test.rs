@@ -1944,6 +1944,7 @@ fn test_rog_get_doc() {
 #[test]
 fn test_rog_range_doc() {
     use core::ops::Bound::Included;
+    use range_set_blaze::SomeOrGap;
 
     let mut set = RangeSetBlaze::new();
     set.insert(3);

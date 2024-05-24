@@ -7,7 +7,7 @@
 
 use crate::{
     intersection_iter_map::IntersectionIterMap,
-    map::{PartialEqClone, ValueRef},
+    map::{EqClone, ValueRef},
     range_values::RangeValuesToRangesIter,
     BitAndMapWithRangeValues, BitOrMapKMerge, BitXorMapKMerge, Integer, RangeMapBlaze,
     SortedDisjointMap, SymDiffIterMap, UnionIterMap,
@@ -16,7 +16,7 @@ use crate::{
 impl<T, V, I> MultiwayRangeMapBlaze<T, V> for I
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
     I: IntoIterator<Item = RangeMapBlaze<T, V>>,
 {
 }
@@ -28,7 +28,7 @@ where
 /// [`union`]: MultiwayRangeMapBlaze::union
 /// [`intersection`]: MultiwayRangeMapBlaze::intersection
 /// [`symmetric_difference`]: MultiwayRangeMapBlaze::symmetric_difference
-pub trait MultiwayRangeMapBlaze<T: Integer, V: PartialEqClone>:
+pub trait MultiwayRangeMapBlaze<T: Integer, V: EqClone>:
     IntoIterator<Item = RangeMapBlaze<T, V>>
 {
     /// Unions the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
@@ -129,7 +129,7 @@ pub trait MultiwayRangeMapBlaze<T: Integer, V: PartialEqClone>:
 impl<'a, T, V, I> MultiwayRangeMapBlazeRef<'a, T, V> for I
 where
     T: Integer + 'a,
-    V: PartialEqClone + 'a,
+    V: EqClone + 'a,
     I: IntoIterator<Item = &'a RangeMapBlaze<T, V>>,
 {
 }
@@ -141,7 +141,7 @@ where
 /// [`union`]: MultiwayRangeMapBlazeRef::union
 /// [`intersection`]: MultiwayRangeMapBlazeRef::intersection
 /// [`symmetric_difference`]: MultiwayRangeMapBlazeRef::symmetric_difference
-pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: PartialEqClone + 'a>:
+pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: EqClone + 'a>:
     IntoIterator<Item = &'a RangeMapBlaze<T, V>> + Sized
 {
     /// Unions the given [`RangeMapBlaze`] references, creating a new [`RangeMapBlaze`].

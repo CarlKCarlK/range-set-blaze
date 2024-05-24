@@ -81,7 +81,7 @@ pub use intersection_iter_map::IntersectionIterMap;
 mod map_from_iter;
 mod sym_diff_iter;
 mod sym_diff_iter_map;
-pub use map::PartialEqClone;
+pub use map::EqClone;
 pub use map::ValueRef;
 use merge::{KMerge, Merge};
 use merge_map::KMergeMap;

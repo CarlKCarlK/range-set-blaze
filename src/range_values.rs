@@ -8,7 +8,7 @@ use alloc::collections::btree_map;
 use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
 
 use crate::{
-    map::{EndValue, PartialEqClone},
+    map::{EndValue, EqClone},
     sorted_disjoint_map::SortedDisjointMap,
 };
 
@@ -23,33 +23,33 @@ use crate::{
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::module_name_repetitions)]
-pub struct RangeValuesIter<'a, T: Integer, V: PartialEqClone> {
+pub struct RangeValuesIter<'a, T: Integer, V: EqClone> {
     // cmk00 define a new
     pub(crate) iter: btree_map::Iter<'a, T, EndValue<T, V>>,
 }
 
 // cmk00 what is this for?
-impl<T: Integer, V: PartialEqClone> AsRef<Self> for RangeValuesIter<'_, T, V> {
+impl<T: Integer, V: EqClone> AsRef<Self> for RangeValuesIter<'_, T, V> {
     fn as_ref(&self) -> &Self {
         // Self is RangeValuesIter<'a>, the type for which we impl AsRef
         self
     }
 }
 
-impl<T: Integer, V: PartialEqClone> ExactSizeIterator for RangeValuesIter<'_, T, V> {
+impl<T: Integer, V: EqClone> ExactSizeIterator for RangeValuesIter<'_, T, V> {
     #[must_use]
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<T: Integer, V: PartialEqClone> FusedIterator for RangeValuesIter<'_, T, V> {}
+impl<T: Integer, V: EqClone> FusedIterator for RangeValuesIter<'_, T, V> {}
 
 // Range's iterator is just the inside BTreeMap iterator as values
 impl<'a, T, V> Iterator for RangeValuesIter<'a, T, V>
 where
     T: Integer,
-    V: PartialEqClone + 'a,
+    V: EqClone + 'a,
 {
     type Item = (RangeInclusive<T>, &'a V); // Assuming VR is always &'a V for next
 
@@ -67,7 +67,7 @@ where
 impl<'a, T, V> DoubleEndedIterator for RangeValuesIter<'a, T, V>
 where
     T: Integer,
-    V: PartialEqClone + 'a,
+    V: EqClone + 'a,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter
@@ -86,21 +86,21 @@ where
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
-pub struct IntoRangeValuesIter<T: Integer, V: PartialEqClone> {
+pub struct IntoRangeValuesIter<T: Integer, V: EqClone> {
     // cmk00 define a new
     pub(crate) iter: btree_map::IntoIter<T, EndValue<T, V>>,
 }
 
-impl<T: Integer, V: PartialEqClone> ExactSizeIterator for IntoRangeValuesIter<T, V> {
+impl<T: Integer, V: EqClone> ExactSizeIterator for IntoRangeValuesIter<T, V> {
     #[must_use]
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<T: Integer, V: PartialEqClone> FusedIterator for IntoRangeValuesIter<T, V> {}
+impl<T: Integer, V: EqClone> FusedIterator for IntoRangeValuesIter<T, V> {}
 
-impl<T: Integer, V: PartialEqClone> Iterator for IntoRangeValuesIter<T, V> {
+impl<T: Integer, V: EqClone> Iterator for IntoRangeValuesIter<T, V> {
     type Item = (RangeInclusive<T>, UniqueValue<V>);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -126,32 +126,32 @@ impl<T: Integer, V: PartialEqClone> Iterator for IntoRangeValuesIter<T, V> {
 /// [`ranges`]: crate::RangeSetBlaze::ranges
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct MapRangesIter<'a, T: Integer, V: PartialEqClone> {
+pub struct MapRangesIter<'a, T: Integer, V: EqClone> {
     iter: btree_map::Iter<'a, T, EndValue<T, V>>,
     gather: Option<RangeInclusive<T>>,
 }
 
-impl<'a, T: Integer, V: PartialEqClone> MapRangesIter<'a, T, V> {
+impl<'a, T: Integer, V: EqClone> MapRangesIter<'a, T, V> {
     pub const fn new(iter: btree_map::Iter<'a, T, EndValue<T, V>>) -> Self {
         MapRangesIter { iter, gather: None }
     }
 }
 
 // cmk00 what is this for?
-impl<T: Integer, V: PartialEqClone> AsRef<Self> for MapRangesIter<'_, T, V> {
+impl<T: Integer, V: EqClone> AsRef<Self> for MapRangesIter<'_, T, V> {
     fn as_ref(&self) -> &Self {
         // Self is MapRangesIter<'a>, the type for which we impl AsRef
         self
     }
 }
 
-impl<T: Integer, V: PartialEqClone> FusedIterator for MapRangesIter<'_, T, V> {}
+impl<T: Integer, V: EqClone> FusedIterator for MapRangesIter<'_, T, V> {}
 
 // Range's iterator is just the inside BTreeMap iterator as values
 impl<'a, T, V> Iterator for MapRangesIter<'a, T, V>
 where
     T: Integer,
-    V: PartialEqClone + 'a,
+    V: EqClone + 'a,
 {
     type Item = RangeInclusive<T>;
 
@@ -199,20 +199,20 @@ where
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
-pub struct MapIntoRangesIter<T: Integer, V: PartialEqClone> {
+pub struct MapIntoRangesIter<T: Integer, V: EqClone> {
     iter: btree_map::IntoIter<T, EndValue<T, V>>,
     gather: Option<RangeInclusive<T>>,
 }
 
-impl<T: Integer, V: PartialEqClone> MapIntoRangesIter<T, V> {
+impl<T: Integer, V: EqClone> MapIntoRangesIter<T, V> {
     pub fn new(iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
         Self { iter, gather: None }
     }
 }
 
-impl<T: Integer, V: PartialEqClone> FusedIterator for MapIntoRangesIter<T, V> {}
+impl<T: Integer, V: EqClone> FusedIterator for MapIntoRangesIter<T, V> {}
 
-impl<'a, T: Integer, V: PartialEqClone + 'a> Iterator for MapIntoRangesIter<T, V> {
+impl<'a, T: Integer, V: EqClone + 'a> Iterator for MapIntoRangesIter<T, V> {
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {

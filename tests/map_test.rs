@@ -10,8 +10,8 @@ use core::ops::RangeInclusive;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use range_set_blaze::{
-    prelude::*, IntersectionIterMap, IntoRangeValuesIter, PartialEqClone, RangeValuesIter,
-    SymDiffIterMap, UnionIterMap, UniqueValue, ValueRef,
+    prelude::*, EqClone, IntersectionIterMap, IntoRangeValuesIter, RangeValuesIter, SymDiffIterMap,
+    UnionIterMap, ValueRef,
 };
 use std::borrow::Borrow;
 use std::iter::FusedIterator;
@@ -510,9 +510,19 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 
     let _ = [&a, &b, &c].union();
 
-    // cmk0000000000
     let d = [a, b, c].union();
-    assert_eq!(d, RangeMapBlaze::new());
+    assert_eq!(
+        d,
+        RangeMapBlaze::from_iter([
+            (1..=6, 'a'),
+            (7..=7, 'b'),
+            (8..=9, 'a'),
+            (10..=10, 'b'),
+            (11..=15, 'a'),
+            (18..=29, 'b'),
+            (38..=42, 'c')
+        ])
+    );
 
     assert_eq!(
         MultiwayRangeMapBlazeRef::<u8, char>::union([]),
@@ -2966,7 +2976,7 @@ fn map_repro_insert_1() {
     assert_eq!(range_map_blaze.to_string(), r#"(123..=123, "World")"#);
 }
 
-fn equal_maps<T: Integer + std::fmt::Display, V: PartialEqClone + fmt::Debug + std::fmt::Display>(
+fn equal_maps<T: Integer + std::fmt::Display, V: EqClone + fmt::Debug + std::fmt::Display>(
     range_map_blaze: &RangeMapBlaze<T, V>,
     btree_map: &BTreeMap<T, &V>,
 ) -> bool
@@ -4173,8 +4183,7 @@ fn example_2() {
     // create 10 seconds of blank frames
     let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, "".to_string())]);
     // union everything together with left-to-right precedence
-    /// cmk00000000000
-    let animation = [&count_down, &hello_world, &blank].union();
+    let animation = [count_down, hello_world, blank].union();
     // for every range of frames, show what is displayed
     println!("frames: text");
     for (range, text) in animation.range_values() {
@@ -4185,6 +4194,8 @@ fn example_2() {
 #[cfg(feature = "rog-experimental")]
 #[test]
 fn map_random_get_range_value() {
+    use range_set_blaze::SomeOrGap;
+
     assert_eq!(
         RangeMapBlaze::from_iter([(0..=0, 'a')]).get_range_value(1u8),
         SomeOrGap::Gap(1..=255)

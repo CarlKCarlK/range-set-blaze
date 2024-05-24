@@ -32,15 +32,15 @@ use num_traits::One;
 use num_traits::Zero;
 
 /// cmk doc
-pub trait PartialEqClone: PartialEq + Clone {}
+pub trait EqClone: Eq + Clone {}
 
-impl<T> PartialEqClone for T where T: PartialEq + Clone {}
+impl<T> EqClone for T where T: Eq + Clone {}
 
 /// Trait for references that can be cloned to return a new reference to an equal value.
-/// The associated value type must implement `PartialEqClone`
+/// The associated value type must implement `EqClone`
 pub trait ValueRef: Borrow<Self::Value> {
     /// The associated value type.
-    type Value: PartialEqClone;
+    type Value: EqClone;
 
     /// Clones the reference, returning a new reference to a value that is eq with the original value.
     /// (It may or may not be the original value.)
@@ -51,7 +51,7 @@ pub trait ValueRef: Borrow<Self::Value> {
 // Implementations for references and smart pointers
 impl<V> ValueRef for &V
 where
-    V: PartialEqClone,
+    V: EqClone,
 {
     type Value = V;
 
@@ -62,7 +62,7 @@ where
 
 impl<V> ValueRef for Rc<V>
 where
-    V: PartialEqClone,
+    V: EqClone,
 {
     type Value = V;
 
@@ -74,7 +74,7 @@ where
 #[cfg(feature = "std")]
 impl<V> ValueRef for Arc<V>
 where
-    V: PartialEqClone,
+    V: EqClone,
 {
     type Value = V;
 
@@ -84,13 +84,14 @@ where
 }
 
 /// cmk doc
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct UniqueValue<V> {
     value: Option<V>,
 }
 
 impl<V> ValueRef for UniqueValue<V>
 where
-    V: PartialEqClone,
+    V: EqClone,
 {
     type Value = V;
 
@@ -103,7 +104,7 @@ where
 
 impl<V> Borrow<V> for UniqueValue<V>
 where
-    V: PartialEqClone,
+    V: EqClone,
 {
     fn borrow(&self) -> &V {
         self.value.as_ref().expect("Value should be present")
@@ -130,7 +131,7 @@ impl<V> UniqueValue<V> {
 pub struct EndValue<T, V>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
 {
     pub(crate) end: T,
     pub(crate) value: V,
@@ -354,7 +355,7 @@ where
 ///
 /// [module-level documentation]: index.html
 #[derive(Clone, Hash, PartialEq)]
-pub struct RangeMapBlaze<T: Integer, V: PartialEqClone> {
+pub struct RangeMapBlaze<T: Integer, V: EqClone> {
     pub(crate) len: <T as Integer>::SafeLen,
     pub(crate) btree_map: BTreeMap<T, EndValue<T, V>>,
 }
@@ -369,7 +370,7 @@ pub struct RangeMapBlaze<T: Integer, V: PartialEqClone> {
 /// let a = RangeMapBlaze::<i32, &str>::default();
 /// assert!(a.is_empty());
 /// ```
-impl<T: Integer, V: PartialEqClone> Default for RangeMapBlaze<T, V> {
+impl<T: Integer, V: EqClone> Default for RangeMapBlaze<T, V> {
     fn default() -> Self {
         Self {
             len: <T as Integer>::SafeLen::zero(),
@@ -378,19 +379,19 @@ impl<T: Integer, V: PartialEqClone> Default for RangeMapBlaze<T, V> {
     }
 }
 
-impl<T: Integer, V: PartialEqClone + fmt::Debug> fmt::Debug for RangeMapBlaze<T, V> {
+impl<T: Integer, V: EqClone + fmt::Debug> fmt::Debug for RangeMapBlaze<T, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.range_values().into_string())
     }
 }
 
-impl<T: Integer, V: PartialEqClone + fmt::Debug> fmt::Display for RangeMapBlaze<T, V> {
+impl<T: Integer, V: EqClone + fmt::Debug> fmt::Display for RangeMapBlaze<T, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.range_values().into_string())
     }
 }
 
-impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
+impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
     /// ascending and/or descending order.
     ///
@@ -1436,9 +1437,9 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
     ///
     /// let map = RangeMapBlaze::from_iter([(10..=20, "a"), (15..=25, "b"), (30..=40, "c")]);
     /// let mut range_values = map.into_range_values();
-    /// assert_eq!(range_values.next(), Some((10..=20, "a")));
-    /// assert_eq!(range_values.next(), Some((21..=25, "b")));
-    /// assert_eq!(range_values.next(), Some((30..=40, "c")));
+    /// assert_eq!(range_values.next(), Some((10..=20, UniqueValue("a"))));
+    /// assert_eq!(range_values.next(), Some((21..=25, UniqueValue("b"))));
+    /// assert_eq!(range_values.next(), Some((30..=40, UniqueValue("c"))));
     /// assert_eq!(range_values.next(), None);
     /// ```
     ///
@@ -1600,7 +1601,7 @@ impl<T: Integer, V: PartialEqClone> RangeMapBlaze<T, V> {
 impl<T, V> IntoIterator for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
 {
     type Item = (T, V);
     type IntoIter = IntoIterMap<T, V>;
@@ -1627,7 +1628,7 @@ where
 }
 
 // Implementing `IntoIterator` for `&RangeMapBlaze<T, V>`
-impl<'a, T: Integer, V: PartialEqClone> IntoIterator for &'a RangeMapBlaze<T, V> {
+impl<'a, T: Integer, V: EqClone> IntoIterator for &'a RangeMapBlaze<T, V> {
     type IntoIter = IterMap<T, &'a V, RangeValuesIter<'a, T, V>>;
     type Item = (T, &'a V);
 
@@ -1666,7 +1667,7 @@ pub type SortedStartsInVecMap<T, VR> =
 #[doc(hidden)]
 pub type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
-impl<T: Integer, V: PartialEqClone> BitOr<Self> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: EqClone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
     /// Passing ownership rather than borrow sometimes allows a many-times
@@ -1689,7 +1690,7 @@ impl<T: Integer, V: PartialEqClone> BitOr<Self> for RangeMapBlaze<T, V> {
     }
 }
 
-impl<T: Integer, V: PartialEqClone> BitOr<&Self> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: EqClone> BitOr<&Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
     /// Passing ownership rather than borrow sometimes allows a many-times
@@ -1711,7 +1712,7 @@ impl<T: Integer, V: PartialEqClone> BitOr<&Self> for RangeMapBlaze<T, V> {
     }
 }
 
-impl<T: Integer, V: PartialEqClone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
+impl<T: Integer, V: EqClone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
@@ -1734,7 +1735,7 @@ impl<T: Integer, V: PartialEqClone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaz
     }
 }
 
-impl<T: Integer, V: PartialEqClone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
+impl<T: Integer, V: EqClone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
@@ -1807,7 +1808,7 @@ for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
 for - call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
     a.range_values().difference_with_set(b.ranges()).into_range_map_blaze()
 };
-where T: Integer, V: PartialEqClone
+where T: Integer, V: EqClone
 );
 
 gen_ops_ex!(
@@ -1838,7 +1839,7 @@ for & call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
     a.range_values().intersection_with_set(b.ranges()).into_range_map_blaze()
 };
 
-where T: Integer, V: PartialEqClone
+where T: Integer, V: EqClone
 );
 
 gen_ops_ex!(
@@ -1850,13 +1851,13 @@ gen_ops_ex!(
 for ! call |a: &RangeMapBlaze<T, V>| {
     a.ranges().complement().into_range_set_blaze()
 };
-where T: Integer, V: PartialEqClone
+where T: Integer, V: EqClone
 );
 
 impl<T, V> Extend<(T, V)> for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
 {
     /// Extends the [`RangeSetBlaze`] with the contents of a
     /// range iterator. cmk this has right-to-left priority -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
@@ -1903,7 +1904,7 @@ where
 impl<T, V, const N: usize> From<[(T, V); N]> for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
 {
     /// For compatibility with [`BTreeSet`] you may create a [`RangeSetBlaze`] from an array of integers.
     ///
@@ -1926,7 +1927,7 @@ where
 }
 
 // implement Index trait
-impl<T: Integer, V: PartialEqClone> Index<T> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: EqClone> Index<T> for RangeMapBlaze<T, V> {
     type Output = V;
 
     /// Returns a reference to the value corresponding to the supplied key.
@@ -1954,7 +1955,7 @@ impl<T: Integer, V: PartialEqClone> Index<T> for RangeMapBlaze<T, V> {
 impl<T, V> PartialOrd for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: PartialEqClone + PartialOrd,
+    V: EqClone + Ord,
 {
     /// We define a partial ordering on `RangeMapBlaze`. Following the convention of
     /// [`BTreeMap`], the ordering is lexicographic, *not* by subset/superset.
@@ -1976,14 +1977,51 @@ where
     /// assert!(a == a);
     /// use core::cmp::Ordering;
     /// assert_eq!(a.cmp(&b), Ordering::Less);
-    /// let a = RangeMapBlaze::from_iter([(2..=3, 1.0), (5..=100, 2.0)]);
-    /// let b = RangeMapBlaze::from_iter([(2..=2, f32::NAN)] ); // NAN is not comparable
-    /// assert_eq!(a.partial_cmp(&b), None);
+    ///
+    /// // Floats aren't comparable, but we can convert them to comparable bits.
+    /// let a = RangeMapBlaze::from_iter([(2..=3, 1.0f32.to_bits()), (5..=100, 2.0f32.to_bits())]);
+    /// let b = RangeMapBlaze::from_iter([(2..=2, f32::NAN.to_bits())] );
+    /// assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
     /// ```
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        // slow one by one: return self.iter().cmp(other.iter());
+        Some(self.cmp(other))
+    }
+}
 
+impl<T, V> Ord for RangeMapBlaze<T, V>
+where
+    T: Integer,
+    V: EqClone + Ord,
+{
+    /// We define an ordering on `RangeMapBlaze`. Following the convention of
+    /// [`BTreeMap`], the ordering is lexicographic, *not* by subset/superset.
+    ///
+    /// [`BTreeMap`]: alloc::collections::BTreeMap
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeMapBlaze::from_iter([(1..=3, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=2, "b")] );
+    /// assert!(a < b); // Lexicographic comparison
+    /// // More lexicographic comparisons
+    /// assert!(a <= b);
+    /// assert!(b > a);
+    /// assert!(b >= a);
+    /// assert!(a != b);
+    /// assert!(a == a);
+    /// use core::cmp::Ordering;
+    /// assert_eq!(a.cmp(&b), Ordering::Less);
+    ///
+    /// // Floats aren't comparable, but we can convert them to comparable bits.
+    /// let a = RangeMapBlaze::from_iter([(2..=3, 1.0f32.to_bits()), (5..=100, 2.0f32.to_bits())]);
+    /// let b = RangeMapBlaze::from_iter([(2..=2, f32::NAN.to_bits())] );
+    /// assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
+    /// ```
+    #[inline]
+    fn cmp(&self, other: &Self) -> Ordering {
         // fast by ranges:
         let mut a = self.range_values();
         let mut b = other.range_values();
@@ -1992,23 +2030,22 @@ where
         loop {
             // compare Some/None
             match (a_rx, &b_rx) {
-                (Some(_), None) => return Some(Ordering::Greater),
-                (None, Some(_)) => return Some(Ordering::Less),
-                (None, None) => return Some(Ordering::Equal),
+                (Some(_), None) => return Ordering::Greater,
+                (None, Some(_)) => return Ordering::Less,
+                (None, None) => return Ordering::Equal,
                 (Some((a_r, a_v)), Some((b_r, b_v))) => {
                     // if tie, compare starts
                     match a_r.start().cmp(b_r.start()) {
-                        Ordering::Greater => return Some(Ordering::Greater),
-                        Ordering::Less => return Some(Ordering::Less),
+                        Ordering::Greater => return Ordering::Greater,
+                        Ordering::Less => return Ordering::Less,
                         Ordering::Equal => { /* keep going */ }
                     }
 
                     // if tie, compare values
-                    match a_v.partial_cmp(b_v) {
-                        Some(Ordering::Less) => return Some(Ordering::Less),
-                        Some(Ordering::Greater) => return Some(Ordering::Greater),
-                        None => return None,
-                        Some(Ordering::Equal) => { /* keep going */ }
+                    match a_v.cmp(b_v) {
+                        Ordering::Less => return Ordering::Less,
+                        Ordering::Greater => return Ordering::Greater,
+                        Ordering::Equal => { /* keep going */ }
                     }
 
                     // if tie, compare ends
@@ -2032,116 +2069,88 @@ where
     }
 }
 
-impl<T, V> Ord for RangeMapBlaze<T, V>
-where
-    T: Integer,
-    V: PartialEqClone + Ord,
-{
-    /// We define an ordering on `RangeMapBlaze`. Following the convention of
-    /// [`BTreeMap`], the ordering is lexicographic, *not* by subset/superset.
-    ///
-    /// [`BTreeMap`]: alloc::collections::BTreeMap
-    ///
-    /// # Examples
-    /// ```
-    /// use range_set_blaze::prelude::*;
-    ///
-    /// let a = RangeMapBlaze::from_iter([(1..=3, "a"), (5..=100, "a")]);
-    /// let b = RangeMapBlaze::from_iter([(2..=2, "b")] );
-    /// assert!(a < b); // Lexicographic comparison
-    /// // More lexicographic comparisons
-    /// assert!(a <= b);
-    /// assert!(b > a);
-    /// assert!(b >= a);
-    /// assert!(a != b);
-    /// assert!(a == a);
-    /// use core::cmp::Ordering;
-    /// assert_eq!(a.cmp(&b), Ordering::Less);
-    /// let a = RangeMapBlaze::from_iter([(2..=3, 1.0), (5..=100, 2.0)]);
-    /// let b = RangeMapBlaze::from_iter([(2..=2, f32::NAN)] ); // NAN is not comparable
-    /// assert_eq!(a.partial_cmp(&b), None);
-    /// ```
-    #[inline]
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
-    }
-}
-
-impl<T: Integer, V: PartialEqClone> Eq for RangeMapBlaze<T, V> {}
+impl<T: Integer, V: EqClone> Eq for RangeMapBlaze<T, V> {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_partial_cmp() {
+    fn test_cmp() {
         let test_cases = vec![
             (
                 vec![(2, 1.0), (11, 1.0), (12, 1.0)],
                 vec![(3, 2.0), (11, 1.0), (12, f64::NAN)],
-                Some(Ordering::Less),
+                Ordering::Less,
             ),
             // Mixed case
             (
                 vec![(0, 1.0), (1, 2.0), (2, 1.0), (3, 3.0), (4, 2.0)],
                 vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0)],
-                Some(Ordering::Greater),
+                Ordering::Greater,
             ),
             // Equal elements
             (
                 vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
                 vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
-                Some(Ordering::Equal),
+                Ordering::Equal,
             ),
             // Different values
             (
                 vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
                 vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 3.0)],
-                Some(Ordering::Less),
+                Ordering::Less,
             ),
             (
                 vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 3.0)],
                 vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
-                Some(Ordering::Greater),
+                Ordering::Greater,
             ),
             // Different keys
             (
                 vec![(0, 1.0), (1, 1.0), (2, 1.0), (4, 2.0), (5, 2.0)],
                 vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
-                Some(Ordering::Greater),
+                Ordering::Greater,
             ),
             (
                 vec![(0, 1.0), (1, 1.0), (2, 1.0)],
                 vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
-                Some(Ordering::Less),
+                Ordering::Less,
             ),
             (
                 vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
                 vec![(0, 1.0), (1, 1.0), (2, 1.0)],
-                Some(Ordering::Greater),
+                Ordering::Greater,
             ),
-            // Non-comparable values
+            // To apply .to_bits() so that NANs are compared, too.
             (
                 vec![(0, 1.0), (1, 1.0), (2, f64::NAN)],
                 vec![(0, 1.0), (1, 1.0), (2, 1.0)],
-                None,
+                Ordering::Greater,
             ),
             (
                 vec![(0, 1.0), (1, 1.0), (2, 1.0)],
                 vec![(0, 1.0), (1, 1.0), (2, f64::NAN)],
-                None,
+                Ordering::Less,
             ),
         ];
+
+        fn to_bits(vv_pair: Vec<(u32, f64)>) -> Vec<(u32, u64)> {
+            vv_pair.into_iter().map(|(k, v)| (k, v.to_bits())).collect()
+        }
+        let test_cases = test_cases
+            .into_iter()
+            .map(|(a, b, expected)| (to_bits(a), to_bits(b), expected));
 
         for (a_data, b_data, expected) in test_cases {
             println!("expected = {expected:?}");
             let a_btree = BTreeMap::from_iter(a_data.clone());
             let b_btree = BTreeMap::from_iter(b_data.clone());
-            assert_eq!(a_btree.partial_cmp(&b_btree), expected);
+            assert_eq!(a_btree.cmp(&b_btree), expected);
 
             let a_range_set = RangeMapBlaze::from_iter(a_data);
             let b_range_set = RangeMapBlaze::from_iter(b_data);
-            assert_eq!(a_range_set.partial_cmp(&b_range_set), expected);
+            assert_eq!(a_range_set.cmp(&b_range_set), expected);
         }
     }
 }

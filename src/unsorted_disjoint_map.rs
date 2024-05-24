@@ -44,7 +44,7 @@ where
 // impl<'a, T, V, VR, I> FusedIterator for UnsortedDisjointMap<'a, T, V, VR, I>
 // where
 //     T: Integer,
-//     V: PartialEqClone + 'a,
+//     V: EqClone + 'a,
 //     I: Iterator<Item = (T,  VR)> + FusedIterator,
 // {
 // }
@@ -136,7 +136,7 @@ where
 }
 
 // cmk
-// impl<T: Integer, V: PartialEqClone, I> From<I> for SortedDisjointWithLenSoFarMap<T, V, I::IntoIterMap>
+// impl<T: Integer, V: EqClone, I> From<I> for SortedDisjointWithLenSoFarMap<T, V, I::IntoIterMap>
 // where
 //     I: IntoIterator<Item = RangeValue<T, V>>,
 //     I::IntoIter: SortedDisjointMap<T, V>,
@@ -162,7 +162,7 @@ where
 }
 
 // cmk
-// impl<T: Integer, V: PartialEqClone, I> FusedIterator for SortedDisjointWithLenSoFarMap<T, V, I> where
+// impl<T: Integer, V: EqClone, I> FusedIterator for SortedDisjointWithLenSoFarMap<T, V, I> where
 //     I: SortedDisjointMap<T, V> + FusedIterator
 // {
 // }

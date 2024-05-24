@@ -9,7 +9,7 @@ use core::{iter::FusedIterator, ops::RangeInclusive};
 use alloc::collections::btree_map;
 
 use crate::{
-    map::{EndValue, PartialEqClone, ValueRef},
+    map::{EndValue, EqClone, ValueRef},
     Integer, SortedDisjointMap,
 };
 
@@ -122,7 +122,7 @@ where
 pub struct IntoIterMap<T, V>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
 {
     option_start_end_value_front: Option<(T, EndValue<T, V>)>,
     option_start_end_value_back: Option<(T, EndValue<T, V>)>,
@@ -132,7 +132,7 @@ where
 impl<T, V> IntoIterMap<T, V>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
 {
     pub fn new(into_iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
         Self {
@@ -146,14 +146,14 @@ where
 impl<T, V> FusedIterator for IntoIterMap<T, V>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
 {
 }
 
 impl<T, V> Iterator for IntoIterMap<T, V>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
 {
     type Item = (T, V);
 
@@ -185,7 +185,7 @@ where
 impl<T, V> DoubleEndedIterator for IntoIterMap<T, V>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let (start, mut end_value) = self

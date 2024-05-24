@@ -10,7 +10,7 @@ use core::{
     ops::{self, RangeInclusive},
 };
 
-use crate::{map::PartialEqClone, SortedDisjointMap};
+use crate::{map::EqClone, SortedDisjointMap};
 
 use crate::{
     BitAndMerge, BitSubMerge, BitXorMerge, DynSortedDisjoint, Integer, NotIter, SymDiffIter,
@@ -712,8 +712,8 @@ macro_rules! impl_sorted_traits_and_ops {
 
 impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, I: AnythingGoes<T>);
 impl_sorted_traits_and_ops!(NotIter<T, I>, I: SortedDisjoint<T>);
-impl_sorted_traits_and_ops!(MapIntoRangesIter<T, V>, V: PartialEqClone);
-impl_sorted_traits_and_ops!(MapRangesIter<'a, T, V>, 'a, V: PartialEqClone);
+impl_sorted_traits_and_ops!(MapIntoRangesIter<T, V>, V: EqClone);
+impl_sorted_traits_and_ops!(MapRangesIter<'a, T, V>, 'a, V: EqClone);
 impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, VR, I>, VR: ValueRef, I: SortedDisjointMap<T, VR>);
 impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);

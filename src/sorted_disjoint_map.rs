@@ -27,7 +27,7 @@ use crate::intersection_iter_map::IntersectionIterMap;
 use crate::map::BitAndRangesMap;
 use crate::sorted_disjoint::SortedDisjoint;
 use crate::NotIter;
-use crate::{map::PartialEqClone, union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
+use crate::{map::EqClone, union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
 use core::ops;
 use core::ops::RangeInclusive;
 
@@ -758,7 +758,7 @@ where
 pub struct RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
     I: SortedDisjoint<T>,
 {
     inner: I,
@@ -769,7 +769,7 @@ where
 impl<'a, T, V, I> RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
     I: SortedDisjoint<T>,
 {
     pub const fn new(inner: I, value: &'a V) -> Self {
@@ -784,7 +784,7 @@ where
 impl<T, V, I> FusedIterator for RangeToRangeValueIter<'_, T, V, I>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
     I: SortedDisjoint<T>,
 {
 }
@@ -792,7 +792,7 @@ where
 impl<'a, T, V, I> Iterator for RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
     I: SortedDisjoint<T>,
 {
     type Item = (RangeInclusive<T>, &'a V);
@@ -806,14 +806,14 @@ where
 impl<'a, T, V, I> SortedStartsMap<T, &'a V> for RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
     I: SortedDisjoint<T>,
 {
 }
 impl<'a, T, V, I> SortedDisjointMap<T, &'a V> for RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: PartialEqClone,
+    V: EqClone,
     I: SortedDisjoint<T>,
 {
 }
@@ -909,8 +909,8 @@ impl_sorted_map_traits_and_ops!(UnionIterMap<T, VR, I>, VR::Value, VR, VR: Value
 impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VR, I0, I1>,  VR::Value, VR, VR: ValueRef, I0: SortedDisjointMap<T, VR>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 'a, VR: ValueRef);
-impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: PartialEqClone);
-impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, UniqueValue<V>, V: PartialEqClone);
+impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: EqClone);
+impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, UniqueValue<V>, V: EqClone);
 
 // #[allow(single_use_lifetimes)]
 // impl<VR, I, T> SortedStartsMap<T, VR> for CheckSortedDisjointMap<T, VR, I>
