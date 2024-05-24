@@ -13,11 +13,11 @@ use crate::{
     SortedDisjointMap, SymDiffIterMap, UnionIterMap,
 };
 
-impl<T, V, I> MultiwayRangeMapBlaze<T, V> for I
+impl<T, VR, I> MultiwayRangeMapBlaze<T, VR> for I
 where
     T: Integer,
-    V: PartialEqClone,
-    I: IntoIterator<Item = RangeMapBlaze<T, V>>,
+    VR: ValueRef,
+    I: IntoIterator<Item = RangeMapBlaze<T, VR::Value>>,
 {
 }
 /// The trait used to provide methods on multiple [`RangeMapBlaze`]'s,
@@ -28,8 +28,8 @@ where
 /// [`union`]: MultiwayRangeMapBlaze::union
 /// [`intersection`]: MultiwayRangeMapBlaze::intersection
 /// [`symmetric_difference`]: MultiwayRangeMapBlaze::symmetric_difference
-pub trait MultiwayRangeMapBlaze<T: Integer, V: PartialEqClone>:
-    IntoIterator<Item = RangeMapBlaze<T, V>>
+pub trait MultiwayRangeMapBlaze<T: Integer, VR: ValueRef>:
+    IntoIterator<Item = RangeMapBlaze<T, VR::Value>>
 {
     /// Unions the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
     /// Any number of input can be given.
@@ -56,14 +56,14 @@ pub trait MultiwayRangeMapBlaze<T: Integer, V: PartialEqClone>:
     ///
     /// assert_eq!(union.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
     /// ```
-    fn union(self) -> RangeMapBlaze<T, V>
+    fn union(self) -> RangeMapBlaze<T, VR::Value>
     where
         Self: Sized,
     {
-        let iter0 = self.into_iter().map(RangeMapBlaze::into_range_values);
-        let next_i: Option<crate::IntoRangeValuesIter<T, V>> = iter0.next();
-        let iter = iter0.union();
-        RangeMapBlaze::from_sorted_disjoint_map(iter)
+        self.into_iter()
+            .map(RangeMapBlaze::into_range_values)
+            .union()
+            .into_range_map_blaze()
     }
 
     /// Intersects the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
@@ -93,15 +93,14 @@ pub trait MultiwayRangeMapBlaze<T: Integer, V: PartialEqClone>:
     ///
     /// assert_eq!(intersection.to_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
     /// ```
-    fn intersection(self) -> RangeMapBlaze<T, V>
+    fn intersection(self) -> RangeMapBlaze<T, VR::Value>
     where
         Self: Sized,
     {
-        todo!("cmk0000")
-        // self.into_iter()
-        //     .map(RangeMapBlaze::into_range_values)
-        //     .intersection()
-        //     .into_range_map_blaze()
+        self.into_iter()
+            .map(RangeMapBlaze::into_range_values)
+            .intersection()
+            .into_range_map_blaze()
     }
 
     /// Symmetric difference on the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
@@ -116,7 +115,7 @@ pub trait MultiwayRangeMapBlaze<T: Integer, V: PartialEqClone>:
     ///
     /// assert_eq!(symmetric_difference.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
     /// ```
-    fn symmetric_difference(self) -> RangeMapBlaze<T, V>
+    fn symmetric_difference(self) -> RangeMapBlaze<T, VR::Value>
     where
         Self: Sized,
     {

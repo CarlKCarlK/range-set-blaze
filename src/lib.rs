@@ -86,6 +86,7 @@ pub use map::ValueRef;
 use merge::{KMerge, Merge};
 use merge_map::KMergeMap;
 pub use multiway::MultiwaySortedDisjoint;
+pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwayRangeMapBlazeRef;
 pub use multiway_map::MultiwaySortedDisjointMap;
 use range_values::RangeValuesToRangesIter;

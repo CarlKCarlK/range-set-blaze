@@ -19,6 +19,7 @@ use range_set_blaze::{
     CheckSortedDisjoint, CheckSortedDisjointMap, IntersectionIterMap, MultiwaySortedDisjointMap,
     SymDiffIterMap,
 };
+use std::borrow::Borrow;
 use std::iter::FusedIterator;
 
 // use range_set_blaze::{
@@ -2485,20 +2486,18 @@ fn understand_strings_as_values() {
     let _: RangeMapBlaze<i32, &&String> = RangeMapBlaze::from_iter([(0..=0, &&a_string)]);
     let _: RangeMapBlaze<i32, String> = RangeMapBlaze::from_iter([(0..=0, a_string)]);
 
-    // With .range_values() we iterate over references to the values.
-    // With .into_range_values() we iterate over the values themselves.
     // cmk00 Is there also a .into_values() and .into_ranges() and .into_keys(), etc?
     let a: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=0, "a")]);
     let mut b: RangeValuesIter<i32, &str> = a.range_values();
     let _c: &&str = b.next().unwrap().1;
     let mut b: IntoRangeValuesIter<i32, &str> = a.into_range_values();
-    let _c: &str = b.next().unwrap().1;
+    let _c: &&str = b.next().unwrap().1.borrow();
 
     let a: RangeMapBlaze<i32, String> = RangeMapBlaze::from_iter([(0..=0, "a".to_string())]);
     let mut b: RangeValuesIter<i32, String> = a.range_values();
     let _c: &String = b.next().unwrap().1;
     let mut b: IntoRangeValuesIter<i32, String> = a.into_range_values();
-    let _c: String = b.next().unwrap().1;
+    let _c: &String = b.next().unwrap().1.borrow();
 
     // You can get all the same types via CheckSortedDisjointMap, but values are always (clonable) references.
     let a_string = "a".to_string();

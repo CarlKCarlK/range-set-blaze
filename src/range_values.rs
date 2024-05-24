@@ -2,7 +2,7 @@
 use crate::{
     map::ValueRef,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
-    Integer,
+    Integer, UniqueValue,
 };
 use alloc::collections::btree_map;
 use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
@@ -100,13 +100,14 @@ impl<T: Integer, V: PartialEqClone> ExactSizeIterator for IntoRangeValuesIter<T,
 
 impl<T: Integer, V: PartialEqClone> FusedIterator for IntoRangeValuesIter<T, V> {}
 
-impl<'a, T: Integer, V: PartialEqClone + 'a> Iterator for IntoRangeValuesIter<T, V> {
-    type Item = (RangeInclusive<T>, V);
+impl<T: Integer, V: PartialEqClone> Iterator for IntoRangeValuesIter<T, V> {
+    type Item = (RangeInclusive<T>, UniqueValue<V>);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(start, end_value)| {
             let range = start..=end_value.end;
-            (range, end_value.value)
+            let unique_value = UniqueValue::new(end_value.value);
+            (range, unique_value)
         })
     }
 
