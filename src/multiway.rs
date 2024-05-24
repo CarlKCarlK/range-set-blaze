@@ -41,9 +41,10 @@ pub trait MultiwayRangeSetBlaze<T: Integer>: IntoIterator<Item = RangeSetBlaze<T
     /// assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
     /// ```
     fn union(self) -> RangeSetBlaze<T> {
-        RangeSetBlaze::from_sorted_disjoint(
-            self.into_iter().map(RangeSetBlaze::into_ranges).union(),
-        )
+        self.into_iter()
+            .map(RangeSetBlaze::into_ranges)
+            .union()
+            .into_range_set_blaze()
     }
 
     /// Intersects the given [`RangeSetBlaze`] references, creating a new [`RangeSetBlaze`].
@@ -80,11 +81,10 @@ pub trait MultiwayRangeSetBlaze<T: Integer>: IntoIterator<Item = RangeSetBlaze<T
 
     /// cmk doc
     fn symmetric_difference(self) -> RangeSetBlaze<T> {
-        RangeSetBlaze::from_sorted_disjoint(
-            self.into_iter()
-                .map(RangeSetBlaze::into_ranges)
-                .symmetric_difference(),
-        )
+        self.into_iter()
+            .map(RangeSetBlaze::into_ranges)
+            .symmetric_difference()
+            .into_range_set_blaze()
     }
 }
 impl<'a, T, I> MultiwayRangeSetBlazeRef<'a, T> for I

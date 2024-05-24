@@ -25,6 +25,18 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     fn sub_one(self) -> Self;
     /// cmk doc
     fn assign_sub_one(&mut self);
+
+    /// cmk doc
+    fn exhausted_range() -> RangeInclusive<Self> {
+        Self::max_value()..=Self::min_value()
+    }
+
+    /// cmk doc
+    fn range_next(range: &mut RangeInclusive<Self>) -> Option<Self>;
+
+    /// cmk doc
+    fn range_next_back(range: &mut RangeInclusive<Self>) -> Option<Self>;
+
     /// cmk doc
     #[must_use]
     fn min_value() -> Self;
@@ -107,6 +119,16 @@ macro_rules! impl_integer_ops {
         #[inline]
         fn assign_sub_one(&mut self) {
             *self -= 1;
+        }
+
+        #[inline]
+        fn range_next(range: &mut RangeInclusive<Self>) -> Option<Self> {
+            range.next()
+        }
+
+        #[inline]
+        fn range_next_back(range: &mut RangeInclusive<Self>) -> Option<Self> {
+            range.next_back()
         }
 
         #[inline]
@@ -238,6 +260,16 @@ impl Integer for i128 {
     }
 
     #[inline]
+    fn range_next(range: &mut RangeInclusive<Self>) -> Option<Self> {
+        range.next()
+    }
+
+    #[inline]
+    fn range_next_back(range: &mut RangeInclusive<Self>) -> Option<Self> {
+        range.next_back()
+    }
+
+    #[inline]
     fn min_value() -> Self {
         Self::MIN
     }
@@ -326,6 +358,16 @@ impl Integer for u128 {
     #[inline]
     fn assign_sub_one(&mut self) {
         *self -= 1;
+    }
+
+    #[inline]
+    fn range_next(range: &mut RangeInclusive<Self>) -> Option<Self> {
+        range.next()
+    }
+
+    #[inline]
+    fn range_next_back(range: &mut RangeInclusive<Self>) -> Option<Self> {
+        range.next_back()
     }
 
     #[inline]
@@ -456,6 +498,16 @@ impl Integer for Ipv4Addr {
     }
 
     #[inline]
+    fn range_next(range: &mut RangeInclusive<Self>) -> Option<Self> {
+        range.next()
+    }
+
+    #[inline]
+    fn range_next_back(range: &mut RangeInclusive<Self>) -> Option<Self> {
+        range.next_back()
+    }
+
+    #[inline]
     fn min_value() -> Self {
         Self::new(0, 0, 0, 0)
     }
@@ -528,6 +580,16 @@ impl Integer for Ipv6Addr {
     fn assign_sub_one(&mut self) {
         let num = u128::from(*self);
         *self = Self::from(num - 1);
+    }
+
+    #[inline]
+    fn range_next(range: &mut RangeInclusive<Self>) -> Option<Self> {
+        range.next()
+    }
+
+    #[inline]
+    fn range_next_back(range: &mut RangeInclusive<Self>) -> Option<Self> {
+        range.next_back()
     }
 
     #[inline]
@@ -641,6 +703,16 @@ impl Integer for char {
     #[inline]
     fn assign_sub_one(&mut self) {
         *self = self.sub_one();
+    }
+
+    #[inline]
+    fn range_next(range: &mut RangeInclusive<Self>) -> Option<Self> {
+        range.next()
+    }
+
+    #[inline]
+    fn range_next_back(range: &mut RangeInclusive<Self>) -> Option<Self> {
+        range.next_back()
     }
 
     #[inline]

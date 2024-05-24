@@ -10,7 +10,7 @@ use crate::{
     map::{PartialEqClone, ValueRef},
     range_values::RangeValuesToRangesIter,
     BitAndMapWithRangeValues, BitOrMapKMerge, BitXorMapKMerge, Integer, RangeMapBlaze,
-    SortedDisjointMap, UnionIterMap,
+    SortedDisjointMap, SymDiffIterMap, UnionIterMap,
 };
 
 impl<T, V, I> MultiwayRangeMapBlaze<T, V> for I
@@ -60,12 +60,10 @@ pub trait MultiwayRangeMapBlaze<T: Integer, V: PartialEqClone>:
     where
         Self: Sized,
     {
-        todo!("cmk0000")
-        // RangeMapBlaze::from_sorted_disjoint_map(
-        //     self.into_iter()
-        //         .map(RangeMapBlaze::into_range_values)
-        //         .union(),
-        // )
+        let iter0 = self.into_iter().map(RangeMapBlaze::into_range_values);
+        let next_i: Option<crate::IntoRangeValuesIter<T, V>> = iter0.next();
+        let iter = iter0.union();
+        RangeMapBlaze::from_sorted_disjoint_map(iter)
     }
 
     /// Intersects the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
@@ -122,11 +120,10 @@ pub trait MultiwayRangeMapBlaze<T: Integer, V: PartialEqClone>:
     where
         Self: Sized,
     {
-        todo!("cmk0000")
-        // self.into_iter()
-        //             .map(RangeMapBlaze::into_range_values)
-        //             .symmetric_difference()
-        //             .into_range_map_blaze()
+        self.into_iter()
+            .map(RangeMapBlaze::into_range_values)
+            .symmetric_difference()
+            .into_range_map_blaze()
     }
 }
 
@@ -244,10 +241,11 @@ where
 }
 
 /// The trait used to define methods on multiple [`SortedDisjointMap`] iterators,
-/// specifically [`union`] and [`intersection`].
+/// specifically [`union`], [`intersection`], and [`symmetric_difference`].
 ///
 /// [`union`]: crate::MultiwaySortedDisjointMap::union
 /// [`intersection`]: crate::MultiwaySortedDisjointMap::intersection
+/// [`symmetric_difference`]: crate::MultiwaySortedDisjointMap::symmetric_difference
 pub trait MultiwaySortedDisjointMap<T, VR, I>: IntoIterator<Item = I> + Sized
 where
     T: Integer,
@@ -332,7 +330,7 @@ where
     /// assert_eq!(symmetric_difference.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
     /// ```
     fn symmetric_difference(self) -> BitXorMapKMerge<T, VR, I> {
-        BitXorMapKMerge::new_k(self)
+        SymDiffIterMap::new_k(self)
     }
 }
 // cmk confirm that on ranges the union of 0 sets 0 empty and the intersection of 0 sets is the universal set.

@@ -1,4 +1,5 @@
 use core::cmp::max;
+use core::mem;
 // cmk use core::str::FromStr;
 /// cmk doc
 use core::{
@@ -386,8 +387,8 @@ impl<T: Integer> RangeSetBlaze<T> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
         Iter {
-            option_range_front: None,
-            option_range_back: None,
+            range_front: T::exhausted_range(),
+            range_back: T::exhausted_range(),
             btree_set_iter: self.ranges(),
         }
     }
@@ -1575,10 +1576,10 @@ where
     I: SortedDisjoint<T>,
 {
     btree_set_iter: I,
-    // FUTURE: here and elsewhere, when core::iter:Step is available could
-    // FUTURE: use RangeInclusive as an iterator (with exhaustion) rather than needing an Option
-    option_range_front: Option<RangeInclusive<T>>,
-    option_range_back: Option<RangeInclusive<T>>,
+    // cmk FUTURE: here and elsewhere, when core::iter:Step is available could
+    // cmk FUTURE: use RangeInclusive as an iterator (with exhaustion) rather than needing an Option
+    range_front: RangeInclusive<T>,
+    range_back: RangeInclusive<T>,
 }
 
 impl<T: Integer, I> FusedIterator for Iter<T, I> where I: SortedDisjoint<T> + FusedIterator {}
@@ -1589,18 +1590,21 @@ where
 {
     type Item = T;
     fn next(&mut self) -> Option<T> {
-        let range = self
-            .option_range_front
-            .take()
-            .or_else(|| self.btree_set_iter.next())
-            .or_else(|| self.option_range_back.take())?;
-
-        let (start, end) = range.into_inner();
-        debug_assert!(start <= end);
-        if start < end {
-            self.option_range_front = Some(start.add_one()..=end);
+        // return the next integer (if any) from range_front
+        if let Some(next_item) = T::range_next(&mut self.range_front) {
+            return Some(next_item);
         }
-        Some(start)
+
+        // if range_front is exhausted, get the next range from the btree_set_iter and its next integer
+        if let Some(next_range) = self.btree_set_iter.next() {
+            debug_assert!(next_range.start() <= next_range.end()); // real assert
+            self.range_front = next_range;
+            return T::range_next(&mut self.range_front); // will never be None
+        }
+
+        // if that doesn't work, move the back range to the front and get the next integer (if any)
+        self.range_front = mem::replace(&mut self.range_back, T::exhausted_range());
+        T::range_next(&mut self.range_front)
     }
 
     // We'll have at least as many integers as intervals. There could be more that usize MAX
@@ -1616,18 +1620,21 @@ where
     I: SortedDisjoint<T> + DoubleEndedIterator,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let range = self
-            .option_range_back
-            .take()
-            .or_else(|| self.btree_set_iter.next_back())
-            .or_else(|| self.option_range_front.take())?;
-        let (start, end) = range.into_inner();
-        debug_assert!(start <= end);
-        if start < end {
-            self.option_range_back = Some(start..=end.sub_one());
+        // return the next_back integer (if any) from range_back
+        if let Some(next_item) = T::range_next_back(&mut self.range_back) {
+            return Some(next_item);
         }
 
-        Some(end)
+        // if the range_back is exhausted, get the next_back range from the btree_set_iter and its next_back integer
+        if let Some(next_back_range) = self.btree_set_iter.next_back() {
+            debug_assert!(next_back_range.start() <= next_back_range.end()); // real assert
+            self.range_back = next_back_range;
+            return T::range_next_back(&mut self.range_back); // will never be None
+        }
+
+        // if that doesn't work, move the front range to the back and get the next back integer (if any)
+        self.range_back = mem::replace(&mut self.range_front, T::exhausted_range());
+        T::range_next_back(&mut self.range_back)
     }
 }
 
