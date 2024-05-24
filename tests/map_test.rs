@@ -511,8 +511,7 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
     let _ = [&a, &b, &c].union();
 
     // cmk0000000000
-    let d =
-        <[RangeMapBlaze<i32, char>; 3] as MultiwayRangeMapBlaze<i32, UniqueValue<char>>>::intersection([a, b, c]);
+    let d = [a, b, c].union();
     assert_eq!(d, RangeMapBlaze::new());
 
     assert_eq!(

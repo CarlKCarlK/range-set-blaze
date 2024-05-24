@@ -10,14 +10,14 @@ use crate::{
     map::{PartialEqClone, ValueRef},
     range_values::RangeValuesToRangesIter,
     BitAndMapWithRangeValues, BitOrMapKMerge, BitXorMapKMerge, Integer, RangeMapBlaze,
-    SortedDisjointMap, SymDiffIterMap, UnionIterMap, UniqueValue,
+    SortedDisjointMap, SymDiffIterMap, UnionIterMap,
 };
 
-impl<T, VR, I> MultiwayRangeMapBlaze<T, VR> for I
+impl<T, V, I> MultiwayRangeMapBlaze<T, V> for I
 where
     T: Integer,
-    VR: ValueRef,
-    I: IntoIterator<Item = RangeMapBlaze<T, VR::Value>>,
+    V: PartialEqClone,
+    I: IntoIterator<Item = RangeMapBlaze<T, V>>,
 {
 }
 /// Provides methods on multiple [`RangeMapBlaze`]'s,
@@ -28,8 +28,8 @@ where
 /// [`union`]: MultiwayRangeMapBlaze::union
 /// [`intersection`]: MultiwayRangeMapBlaze::intersection
 /// [`symmetric_difference`]: MultiwayRangeMapBlaze::symmetric_difference
-pub trait MultiwayRangeMapBlaze<T: Integer, VR: ValueRef>:
-    IntoIterator<Item = RangeMapBlaze<T, VR::Value>>
+pub trait MultiwayRangeMapBlaze<T: Integer, V: PartialEqClone>:
+    IntoIterator<Item = RangeMapBlaze<T, V>>
 {
     /// Unions the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
     /// Any number of input can be given.
@@ -56,7 +56,7 @@ pub trait MultiwayRangeMapBlaze<T: Integer, VR: ValueRef>:
     ///
     /// assert_eq!(union.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
     /// ```
-    fn union(self) -> RangeMapBlaze<T, VR::Value>
+    fn union(self) -> RangeMapBlaze<T, V>
     where
         Self: Sized,
     {
@@ -93,7 +93,7 @@ pub trait MultiwayRangeMapBlaze<T: Integer, VR: ValueRef>:
     ///
     /// assert_eq!(intersection.to_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
     /// ```
-    fn intersection(self) -> RangeMapBlaze<T, VR::Value>
+    fn intersection(self) -> RangeMapBlaze<T, V>
     where
         Self: Sized,
     {
@@ -115,7 +115,7 @@ pub trait MultiwayRangeMapBlaze<T: Integer, VR: ValueRef>:
     ///
     /// assert_eq!(symmetric_difference.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
     /// ```
-    fn symmetric_difference(self) -> RangeMapBlaze<T, VR::Value>
+    fn symmetric_difference(self) -> RangeMapBlaze<T, V>
     where
         Self: Sized,
     {
@@ -367,11 +367,11 @@ fn test_ref_union() {
     let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
-    // let d: RangeMapBlaze<i32, &str> = [a, b, c].union();
-    let d: RangeMapBlaze<i32, &str> = <[RangeMapBlaze<i32, &str>; 3] as MultiwayRangeMapBlaze<
-        i32,
-        UniqueValue<&str>,
-    >>::union([a, b, c]);
+    let d: RangeMapBlaze<i32, &str> = [a, b, c].union();
+    // let d: RangeMapBlaze<i32, &str> = <[RangeMapBlaze<i32, &str>; 3] as MultiwayRangeMapBlaze<
+    //     i32,
+    //     UniqueValue<&str>,
+    // >>::union([a, b, c]);
     println!("{d}");
     assert_eq!(
         d,
