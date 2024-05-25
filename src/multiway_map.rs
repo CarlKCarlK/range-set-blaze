@@ -254,7 +254,9 @@ where
     /// Unions the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
     /// The input iterators must be of the same type. Any number of input iterators can be given.
     ///
-    /// For input iterators of different types, use the [`union_dyn`] macro.
+    /// For input iterators of different types, use the [`union_dyn!`] macro.
+    ///
+    /// [`union_dyn!`]: crate::union_dyn
     ///
     /// # Performance
     ///
@@ -283,7 +285,9 @@ where
     /// Intersects the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
     /// The input iterators must be of the same type. Any number of input iterators can be given.
     ///
-    /// For input iterators of different types, use the [`intersection_dyn`] macro.
+    /// For input iterators of different types, use the [`intersection_dyn!`] macro.
+    ///
+    /// [`intersection_dyn!`]: crate::intersection_dyn
     ///
     /// # Performance
     ///
@@ -317,6 +321,11 @@ where
     }
 
     /// Symmetric difference on the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
+    ///
+    /// For input iterators of different types, use the [`symmetric_difference_dyn!`] macro.
+    ///
+    /// [`symmetric_difference_dyn!`]: crate::symmetric_difference_dyn
+
     /// ```
     /// use range_set_blaze::prelude::*;
     ///

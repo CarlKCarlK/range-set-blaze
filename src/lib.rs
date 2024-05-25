@@ -190,6 +190,3 @@ mod tests2 {
         assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
     }
 }
-
-// cmk0000000000 what happens if we store NaN in our map? Should we require values to be Eq, not just PartialEq?
-// cmk0000000000 can anything bad happen with into_range_values() using cmkniqueValue?

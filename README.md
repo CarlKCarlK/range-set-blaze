@@ -109,7 +109,9 @@ assert_eq!(c, RangeSetBlaze::from_iter([-20..=-20, 100..=999]));
 **Example 2**: Maps (and Network Addresses)
 - - - - - -
 
-In networking, suppose we want to simplify a routing table. Here [`RangeMapBlaze`] merges identical routes if adjacent or overlapping. It also remove all overlaps (respecting priority) and sorts. The result is a fast BTree from regions to the next hop.
+In networking, suppose we want to simplify a routing table. Here [`RangeMapBlaze`] merges identical routes
+-- if adjacent or overlapping. It also remove all overlaps (respecting priority) and sorts.
+The result is a fast BTree from regions to the next hop.
 Similar code can simplify font tables.
 
 ```rust

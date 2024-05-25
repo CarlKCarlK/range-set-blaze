@@ -205,9 +205,9 @@ where
     /// Unions the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
     /// The input iterators must be of the same type. Any number of input iterators can be given.
     ///
-    /// For input iterators of different types, use the [`union_dyn`] macro.
+    /// For input iterators of different types, use the [`union_map_dyn!`] macro.
     ///
-    /// [`union_dyn`]: macro.union_dyn.html
+    /// [`union_map_dyn!`]: crate::union_map_dyn
     ///
     /// # Performance
     ///
@@ -235,9 +235,9 @@ where
     /// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
     /// The input iterators must be of the same type. Any number of input iterators can be given.
     ///
-    /// For input iterators of different types, use the [`intersection_dyn`] macro.
+    /// For input iterators of different types, use the [`intersection_map_dyn!`] macro.
     ///
-    /// [`intersection_dyn`]: macro.intersection_dyn.html
+    /// [`intersection_map_dyn!`]: crate::intersection_map_dyn
     ///
     /// # Performance
     ///
@@ -268,6 +268,9 @@ where
     }
 
     /// cmk doc
+    /// For input iterators of different types, use the [`symmetric_difference_dyn!`] macro.
+    ///
+    /// [`symmetric_difference_dyn!`]: crate::symmetric_difference_dyn
     fn symmetric_difference(self) -> BitXorKMerge<T, I> {
         SymDiffIter::new_k(self)
     }
