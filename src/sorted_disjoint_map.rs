@@ -72,10 +72,10 @@ where
 /// | [`RangeMapBlaze`] | [`into_ranges`] |
 /// | [`RangeMapBlaze`]'s [`RangesIter`] | [`clone`] |
 /// | sorted & disjoint ranges | [`CheckSortedDisjointMap::new`] |
-/// | `SortedDisjointMap` iterator | [itertools `tee`] |
 /// | `SortedDisjointMap` iterator | [`crate::dyn_sorted_disjoint::DynSortedDisjointMap::new`] |
 /// |  *your iterator type* | *[How to mark your type as `SortedDisjointMap`][1]* |
 ///
+/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
 /// [`ranges`]: RangeMapBlaze::ranges
 /// [`into_ranges`]: RangeMapBlaze::into_ranges
 /// [`clone`]: crate::RangesIter::clone
@@ -182,6 +182,8 @@ where
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their union.
     ///
+    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    ///
     /// # Examples
     ///
     /// ```
@@ -214,6 +216,8 @@ where
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their intersection.
+    ///
+    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
     ///
     /// /// cmk Tell that right-and-side must be a set, not a map
     ///
@@ -250,6 +254,8 @@ where
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their intersection.
     ///
+    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    ///
     /// /// cmk Tell that right-and-side must be a set, not a map
     ///
     /// # Examples
@@ -275,6 +281,8 @@ where
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
+    ///
+    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
     ///
     /// cmk Tell that right-and-side must be a set, not a map
     ///
@@ -311,6 +319,7 @@ where
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
     ///
+    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
     /// cmk Tell that right-and-side must be a set, not a map
     ///
     /// # Examples

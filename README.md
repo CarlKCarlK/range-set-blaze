@@ -34,8 +34,8 @@ The package enforces the "sorted & disjoint" constraint at compile time
 (making invalid states unrepresentable).
 
 [`RangeSetBlaze`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
-[`SortedDisjoint`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html
-[`SortedDisjointMap`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjointMap.html
+[`SortedDisjoint`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html#table-of-contents
+[`SortedDisjointMap`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjointMap.html#table-of-contents
 [`u8`]: https://doc.rust-lang.org/std/primitive.u8.html
 [`u128`]: https://doc.rust-lang.org/std/primitive.u128.html
 [`i8`]: https://doc.rust-lang.org/std/primitive.i8.html

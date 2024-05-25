@@ -7,6 +7,7 @@ use alloc::boxed::Box;
 /// Gives [`SortedDisjointMap`] iterators a uniform type. Used by the [`union_map_dyn`], etc. macros to give all
 /// their input iterators the same type.
 ///
+/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
 /// [`union_map_dyn`]: crate::union_map_dyn
 /// [`intersection_map_dyn`]: crate::intersection_map_dyn
 ///
@@ -43,6 +44,8 @@ where
     VR: ValueRef,
 {
     /// Create a [`DynSortedDisjointMap`] from any [`SortedDisjointMap`] iterator. See [`DynSortedDisjointMap`] for an example.
+    ///
+    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
     pub fn new<I>(iter: I) -> Self
     where
         I: SortedDisjointMap<T, VR> + 'a,
@@ -88,6 +91,7 @@ where
 ///
 /// Find the integers that appear an odd number of times in the [`SortedDisjointMap`] iterators.
 ///
+/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
 /// [`intersection`]: crate::MultiwaySortedDisjointMap::intersection
 /// ```
 /// use range_set_blaze::prelude::*;
@@ -115,6 +119,7 @@ macro_rules! intersection_map_dyn {
 ///
 /// Find the integers that appear an odd number of times in the [`SortedDisjointMap`] iterators.
 ///
+/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
 /// [`union`]: crate::MultiwaySortedDisjointMap::union
 /// ```
 /// use range_set_blaze::prelude::*;

@@ -7,6 +7,7 @@ use alloc::boxed::Box;
 /// Gives [`SortedDisjoint`] iterators a uniform type. Used by the [`union_dyn`], etc. macros to give all
 /// their input iterators the same type.
 ///
+/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
 /// [`union_dyn`]: crate::union_dyn
 /// [`intersection_dyn`]: crate::intersection_dyn
 ///
@@ -32,6 +33,8 @@ pub struct DynSortedDisjoint<'a, T: Integer> {
 
 impl<'a, T: Integer> DynSortedDisjoint<'a, T> {
     /// Create a [`DynSortedDisjoint`] from any [`SortedDisjoint`] iterator. See [`DynSortedDisjoint`] for an example.
+    /// 
+    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
     pub fn new<I>(iter: I) -> Self
     where
         I: SortedDisjoint<T> + 'a,
@@ -68,6 +71,7 @@ impl<T: Integer> Iterator for DynSortedDisjoint<'_, T> {
 ///
 /// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
 ///
+/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
 /// [`intersection`]: crate::MultiwaySortedDisjoint::intersection
 /// ```
 /// use range_set_blaze::prelude::*;
@@ -105,6 +109,7 @@ macro_rules! intersection_dyn {
 ///
 /// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
 ///
+/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
 /// [`union`]: crate::MultiwaySortedDisjoint::union
 /// ```
 /// use range_set_blaze::prelude::*;

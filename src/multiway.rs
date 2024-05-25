@@ -194,6 +194,7 @@ where
 /// Provides methods on multiple [`SortedDisjoint`] iterators,
 /// specifically [`union`], [`intersection`], and [`symmetric_difference`].
 ///
+/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
 /// [`union`]: crate::MultiwaySortedDisjoint::union
 /// [`intersection`]: crate::MultiwaySortedDisjoint::intersection
 /// [`symmetric_difference`]: crate::MultiwaySortedDisjoint::symmetric_difference
@@ -208,6 +209,7 @@ where
     /// For input iterators of different types, use the [`union_map_dyn!`] macro.
     ///
     /// [`union_map_dyn!`]: crate::union_map_dyn
+    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
     ///
     /// # Performance
     ///
@@ -238,6 +240,7 @@ where
     /// For input iterators of different types, use the [`intersection_map_dyn!`] macro.
     ///
     /// [`intersection_map_dyn!`]: crate::intersection_map_dyn
+    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
     ///
     /// # Performance
     ///
