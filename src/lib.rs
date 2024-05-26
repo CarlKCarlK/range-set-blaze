@@ -23,7 +23,6 @@ use num_traits::ops::overflowing::OverflowingSub;
 use num_traits::CheckedAdd;
 use num_traits::One;
 use num_traits::Zero;
-use rand::distributions::uniform::SampleUniform;
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
 use std::cmp::max;
 use std::cmp::Ordering;
@@ -57,7 +56,6 @@ pub trait Integer:
     + Send
     + Sync
     + OverflowingSub
-    + SampleUniform
     + CheckedAdd
 {
     /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note
