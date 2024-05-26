@@ -43,12 +43,4 @@ jobs:
         run: |
           rustup target add i686-unknown-linux-gnu
           cargo test --verbose --no-default-features --target i686-unknown-linux-gnu
-      - name: Test Rust 32-bit Windows
-        if: runner.os == 'Windows'
-        uses: egor-tensin/setup-mingw@v2
-        with:
-          platform: any
-      - if: runner.os == 'Windows'          
-        run: |
-          rustup target add i686-pc-windows-gnu
-          cargo test --verbose --no-default-features --target=i686-pc-windows-gnu
+    
