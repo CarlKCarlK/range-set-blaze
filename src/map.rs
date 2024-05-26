@@ -531,7 +531,7 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     /// Create a [`RangeMapBlaze`] from a [`SortedDisjointMap`] iterator.
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
-    /// 
+    ///
     /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
     ///
     /// # Examples
@@ -2033,6 +2033,7 @@ where
 
 impl<T: Integer, V: EqClone> Eq for RangeMapBlaze<T, V> {}
 
+#[cfg(feature = "std")]
 #[cfg(test)]
 mod tests {
     use super::*;

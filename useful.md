@@ -1,5 +1,12 @@
 # Useful commands for this project
 
+## Wasm
+
+```cmd
+cargo install wasm-bindgen-cli --force
+wasm-pack test --firefox --headless --features alloc --no-default-features
+```
+
 ## Docs
 
 cargo doc --no-deps --all-features --open

@@ -14,10 +14,12 @@ use std::{
     fs::File,
     io::{self, BufRead, BufReader},
     path::Path,
+    str::FromStr,
 };
 
+use crate::alloc::string::ToString;
 use alloc::collections::{btree_map, BTreeMap};
-use alloc::str::FromStr;
+use alloc::string::String;
 use alloc::vec::Vec;
 use gen_ops::gen_ops_ex;
 
@@ -1999,26 +2001,3 @@ impl<T: Integer> PartialOrd for RangeSetBlaze<T> {
 impl<T: Integer> Eq for RangeSetBlaze<T> {}
 
 // cmk look at BTreeSet to see what to inline
-
-#[test]
-fn delme_cmk() {
-    let mut range = 0u8..=2;
-    println!("next and range {:?}, {:?}", range.next(), range);
-    println!("next and range {:?}, {:?}", range.next(), range);
-    println!("next and range {:?}, {:?}", range.next(), range);
-    println!("next and range {:?}, {:?}", range.next(), range);
-    println!("next and range {:?}, {:?}", range.next(), range);
-
-    // Construct an exhausted RangeInclusive
-    let mut exhausted_range = 1u8..=0;
-    println!(
-        "next and exhausted_range {:?}, {:?}",
-        exhausted_range.next(),
-        exhausted_range
-    );
-    println!(
-        "next and exhausted_range {:?}, {:?}",
-        exhausted_range.next(),
-        exhausted_range
-    );
-}

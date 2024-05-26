@@ -79,7 +79,6 @@ where
 /// [`ranges`]: RangeMapBlaze::ranges
 /// [`into_ranges`]: RangeMapBlaze::into_ranges
 /// [`clone`]: crate::RangesIter::clone
-/// [itertools `tee`]: https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.tee
 /// [1]: #how-to-mark-your-type-as-SortedDisjointMap
 /// [`RangesIter`]: crate::RangesIter
 ///
@@ -109,11 +108,11 @@ where
 ///
 /// | Method | Operator | Multiway (same type) | Multiway (different types) |
 /// |--------|----------|----------------------|----------------------------|
-/// | `a.`[`union`]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][crate::MultiwaySortedDisjointMap::union]`()` | [`crate::MultiwayRangeSetBlazeRef::union`]`!(a, b, c)` |
-/// | `a.`[`intersection`]`(b)` | `a & b` | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjointMap::intersection]`()` | [`crate::MultiwayRangeSetBlazeRef::intersection`]`!(a, b, c)` |
-/// | `a.`[`difference`]`(b)` | `a - b` |  |  |
-/// | `a.`[`symmetric_difference`]`(b)` | `a ^ b` |  |  |
 /// | `a.`[`complement`]`()` | `!a` |  |  |
+/// | `a.`[`union`]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][crate::MultiwaySortedDisjointMap::union]`()` | [`crate::MultiwayRangeMapBlazeRef::union`]`!(a, b, c)` |
+/// | `a.`[`intersection`]`(b)` | `a & b` | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjointMap::intersection]`()` | [`crate::MultiwayRangeMapBlazeRef::intersection`]`!(a, b, c)` |
+/// | `a.`[`difference`]`(b)` | `a - b` |  |  |
+/// | `a.`[`symmetric_difference`]`(b)` | `a ^ b` |  | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjointMap::intersection]`()` | [`crate::MultiwayRangeMapBlazeRef::symmetric_difference`]`!(a, b, c)` |
 ///
 ///
 /// ## Performance
@@ -921,34 +920,5 @@ impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: EqClone);
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: EqClone);
 
-// #[allow(single_use_lifetimes)]
-// impl<VR, I, T> SortedStartsMap<T, VR> for CheckSortedDisjointMap<T, VR, I>
-// where
-//     T: Integer,
-//     VR: ValueRef,
-//     I: Iterator<Item = (RangeInclusive<T>, VR)>,
-// {
-// }
-
-// #[allow(single_use_lifetimes)]
-// impl<VR, I, T> SortedDisjointMap<T, VR> for CheckSortedDisjointMap<T, VR, I>
-// where
-//     T: Integer,
-//     VR: ValueRef,
-//     I: Iterator<Item = (RangeInclusive<T>, VR)>,
-// {
-// }
-
-// #[allow(single_use_lifetimes)]
-// impl<VR, I, T> ops::Not for CheckSortedDisjointMap<T, VR, I>
-// where
-//     T: Integer,
-//     VR: ValueRef,
-//     I: Iterator<Item = (RangeInclusive<T>, VR)>,
-// {
-//     type Output = NotIter<T, RangeValuesToRangesIter<T, VR, Self>>;
-
-//     fn not(self) -> Self::Output {
-//         self.complement_to_set()
-//     }
-// }
+// cmk where is complement_with
+// cmk where is intersection_with_set

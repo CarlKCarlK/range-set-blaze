@@ -4,6 +4,7 @@ use crate::ranges_iter::RangesIter;
 use crate::sorted_disjoint_map::IntoString;
 use crate::RangeSetBlaze;
 use crate::{BitOrMerge, IntoRangesIter, UnionIter};
+use alloc::string::String;
 use core::array;
 use core::{
     iter::FusedIterator,
@@ -44,14 +45,12 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// | [`RangeSetBlaze`] | [`into_ranges`] |
 /// | [`RangeSetBlaze`]'s [`RangesIter`] | [`clone`] |
 /// | sorted & disjoint ranges | [`CheckSortedDisjoint::new`] |
-/// | `SortedDisjoint` iterator | [itertools `tee`] |
 /// | `SortedDisjoint` iterator | [`crate::dyn_sorted_disjoint::DynSortedDisjoint::new`] |
 /// |  *your iterator type* | *[How to mark your type as `SortedDisjoint`][1]* |
 ///
 /// [`ranges`]: RangeSetBlaze::ranges
 /// [`into_ranges`]: RangeSetBlaze::into_ranges
 /// [`clone`]: crate::RangesIter::clone
-/// [itertools `tee`]: https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.tee
 /// [1]: #how-to-mark-your-type-as-sorteddisjoint
 /// [`RangesIter`]: crate::RangesIter
 /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
@@ -85,7 +84,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// | `a.`[`union`]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][crate::MultiwaySortedDisjoint::union]`()` | [`crate::MultiwayRangeSetBlazeRef::union`]`!(a, b, c)` |
 /// | `a.`[`intersection`]`(b)` | `a & b` | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjoint::intersection]`()` | [`crate::MultiwayRangeSetBlazeRef::intersection`]`!(a, b, c)` |
 /// | `a.`[`difference`]`(b)` | `a - b` |  |  |
-/// | `a.`[`symmetric_difference`]`(b)` | `a ^ b` |  |  |
+/// | `a.`[`symmetric_difference`]`(b)` | `a ^ b` |  | cmk |
 /// | `a.`[`complement`]`()` | `!a` |  |  |
 ///
 ///

@@ -1,8 +1,11 @@
+use alloc::fmt;
 use core::cmp::Ordering;
 use core::fmt::Display;
 use core::mem;
 use core::ops::{Add, AddAssign, Mul, Sub, SubAssign};
-
+#[cfg(not(feature = "std"))]
+#[allow(unused_imports)] // cmk
+use num_traits::float::FloatCore;
 use num_traits::ops::overflowing::{OverflowingAdd, OverflowingMul};
 
 pub trait UInt:
@@ -55,7 +58,7 @@ impl<T> Display for UIntPlusOne<T>
 where
     T: UInt + Display,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::UInt(v) => write!(f, "{v}"),
             Self::MaxPlusOne => write!(f, "(u128::MAX + 1"),
@@ -192,6 +195,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 #[cfg(test)]
 mod tests {
     use super::*;

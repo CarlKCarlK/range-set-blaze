@@ -349,6 +349,7 @@ where
 // cmk why does the multiway.rs have a MultiwayRangeSetBlaze but not a MultiwayRangeMapBlazeRef?
 // cmk on maps, the union is still empty, but the intersection is undefined because we can't give a value to T.s
 
+#[cfg(feature = "std")]
 #[test]
 fn test_ref_union() {
     use crate::prelude::*;

@@ -167,6 +167,7 @@ pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
 #[doc(hidden)]
 pub type BitSubMerge<T, L, R> = NotIter<T, BitOrMerge<T, NotIter<T, L>, R>>;
 
+#[cfg(feature = "std")]
 #[cfg(test)]
 mod tests2 {
 
