@@ -14,7 +14,7 @@ use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
 
-type I32SafeLen =  <i32 as range_set_blaze::Integer>::SafeLen;
+type I32SafeLen = <i32 as range_set_blaze::Integer>::SafeLen;
 
 #[test]
 fn insert_255u8() {
@@ -1429,9 +1429,9 @@ fn run_rangemap_crate() {
 
 #[test]
 fn from_iter_coverage() {
-    let vec_range = vec![1..=2, 2..=2, -10..=-5];
-    let a0 = RangeSetBlaze::from_iter(vec_range.iter());
-    let a1: RangeSetBlaze<i32> = vec_range.iter().collect();
+    let array_range = [1..=2, 2..=2, -10..=-5];
+    let a0 = RangeSetBlaze::from_iter(array_range.iter());
+    let a1: RangeSetBlaze<i32> = array_range.iter().collect();
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 }
 
