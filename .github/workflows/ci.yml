@@ -64,4 +64,4 @@ jobs:
           rustup target add wasm32-wasip1
           cargo build --target wasm32-wasip1
       - name: Run WASI tests
-        run: cargo test --verbose --target wasm32-wasipi
+        run: cargo test --verbose --target wasm32-wasip1
