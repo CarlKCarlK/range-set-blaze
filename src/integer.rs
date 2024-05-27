@@ -1,4 +1,4 @@
-use std::ops::RangeInclusive;
+use core::ops::RangeInclusive;
 
 use crate::Integer;
 
@@ -251,7 +251,7 @@ impl Integer for i16 {
     type SafeLen = usize;
     #[cfg(target_pointer_width = "64")]
     type SafeLen = usize;
-    
+
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         r.end().overflowing_sub(*r.start()).0 as u16 as <Self as Integer>::SafeLen + 1
     }
