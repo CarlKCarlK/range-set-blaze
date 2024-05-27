@@ -9,6 +9,7 @@ cargo check --target wasm32-unknown-unknown
 wasm-pack test --firefox --headless 
 
 cargo test --target wasm32-unknown-unknown 
+cargo test --target wasm32-wasi
 ```
 
 cmk Weird Work Arounds
