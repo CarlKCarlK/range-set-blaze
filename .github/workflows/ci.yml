@@ -44,3 +44,28 @@ jobs:
           rustup target add i686-unknown-linux-gnu
           cargo test --verbose --no-default-features --target i686-unknown-linux-gnu
     
+  test_wasi:
+    name: Test WASI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-wasi
+      - name: Install Wasmtime
+        run: |
+          curl https://wasmtime.dev/install.sh -sSf | bash
+          echo "${HOME}/.wasmtime/bin" >> $GITHUB_PATH
+      - name: Build WASM32-WASI target
+        run: |
+          rustup target add wasm32-wasi
+          cargo build --target wasm32-wasi
+      - name: Run WASI tests
+        run: |
+          for test_bin in target/wasm32-wasi/debug/deps/*.wasm; do
+            echo "Running $test_bin..."
+            wasmtime $test_bin
+          done          
