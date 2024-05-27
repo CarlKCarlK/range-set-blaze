@@ -40,7 +40,8 @@ thiserror = "1.0"
 getrandom = { version = "0.2", features = ["js"] }
 rand =  "0.8.4"
 
-
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "0.3.37"
 
 # Declare a benchmark called ""bench" without the standard benchmarking harness. 
 [[bench]]
