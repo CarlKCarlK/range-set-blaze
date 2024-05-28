@@ -44,7 +44,7 @@ jobs:
           rustup target add i686-unknown-linux-gnu
           cargo test --verbose --no-default-features --target i686-unknown-linux-gnu
     
-  test_wasi:
+  test_wasp1:
     name: Test WASI
     runs-on: ubuntu-latest
     steps:
@@ -65,3 +65,26 @@ jobs:
           cargo build --target wasm32-wasip1
       - name: Run WASI tests
         run: cargo test --verbose --target wasm32-wasip1
+
+  test_wasm_unknown_unknown:
+      name: Test WASM
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v3
+        - name: Set up Rust
+          uses: actions-rs/toolchain@v1
+          with:
+            toolchain: stable
+            target: wasm32-unknown-unknown
+        - name: Install wasm-pack
+          run: |
+            curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        - name: Run WASM tests with Node.js
+          run: |
+            rustup target add wasm32-unknown-unknown
+            wasm-pack test --node
+        - name: Run WASM tests with Firefox
+          run: |
+            rustup target add wasm32-unknown-unknown
+            wasm-pack test --firefox --headless        

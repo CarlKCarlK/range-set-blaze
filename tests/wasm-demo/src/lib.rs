@@ -13,7 +13,7 @@ pub fn disjoint_intervals(input: Vec<i32>) -> JsValue {
 #[wasm_bindgen]
 pub fn demo_read_ranges_from_slice(data: &[u8]) -> JsValue {
     let reader = BufReader::new(Cursor::new(data));
-    match demo_read_ranges_from_reader::<_, i32>(reader) {
+    match demo_read_ranges_from_reader::<i32, _>(reader) {
         Ok(set) => JsValue::from_str(&set.to_string()),
         Err(e) => JsValue::from_str(&format!("Error: {}", e)),
     }

@@ -2127,12 +2127,11 @@ impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for NotIter<T, I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
-// cmk make T first and R second
 #[doc(hidden)]
-pub fn demo_read_ranges_from_reader<R, T>(reader: R) -> io::Result<RangeSetBlaze<T>>
+pub fn demo_read_ranges_from_reader<T, R>(reader: R) -> io::Result<RangeSetBlaze<T>>
 where
-    R: BufRead,
     T: FromStr + Integer,
+    R: BufRead,
 {
     let lines = reader.lines();
 
