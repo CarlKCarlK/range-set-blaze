@@ -10,7 +10,7 @@ use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use range_set_blaze::demo_read_ranges_from_buffer;
+use range_set_blaze::demo_read_ranges_from_reader;
 use range_set_blaze::{
     prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts, UnionIter,
 };
@@ -1549,7 +1549,7 @@ fn demo_read1() {
     use std::{fs::File, io::BufReader};
 
     let b = BufReader::new(File::open("tests/no_such_file").unwrap());
-    let _a: RangeSetBlaze<i32> = demo_read_ranges_from_buffer(b).unwrap();
+    let _a: RangeSetBlaze<i32> = demo_read_ranges_from_reader(b).unwrap();
 }
 
 // Don't test wasm-unknown-unknown on file I/O
@@ -1558,7 +1558,7 @@ fn demo_read2() {
     use std::{fs::File, io::BufReader};
 
     let b = BufReader::new(File::open("tests/data/demo_read.txt").unwrap());
-    let a: RangeSetBlaze<i32> = demo_read_ranges_from_buffer(b).unwrap();
+    let a: RangeSetBlaze<i32> = demo_read_ranges_from_reader(b).unwrap();
     assert_eq!(a.to_string(), "10..=25, 30..=40");
 }
 
@@ -1568,7 +1568,7 @@ test_normal_and_wasm!(
 
         let data = b"10  20\n15  25\n30  40\n";
         let b = BufReader::new(Cursor::new(data));
-        let a: RangeSetBlaze<i32> = demo_read_ranges_from_buffer(b).unwrap();
+        let a: RangeSetBlaze<i32> = demo_read_ranges_from_reader(b).unwrap();
         assert_eq!(a.to_string(), "10..=25, 30..=40");
     }
 );

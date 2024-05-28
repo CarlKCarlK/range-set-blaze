@@ -2129,7 +2129,7 @@ impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 // cmk make T first and R second
 #[doc(hidden)]
-pub fn demo_read_ranges_from_buffer<R, T>(reader: R) -> io::Result<RangeSetBlaze<T>>
+pub fn demo_read_ranges_from_reader<R, T>(reader: R) -> io::Result<RangeSetBlaze<T>>
 where
     R: BufRead,
     T: FromStr + Integer,
