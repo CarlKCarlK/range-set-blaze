@@ -2,4 +2,4 @@
 runner = 'wasm-bindgen-test-runner'
 
 [target.wasm32-wasip1]
-runner = "wasmtime"
+runner = "wasmtime run --dir ."

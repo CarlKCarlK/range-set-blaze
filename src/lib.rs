@@ -1,4 +1,4 @@
-#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
@@ -6,6 +6,9 @@ extern crate alloc;
 use alloc::collections::btree_map;
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
+
+#[cfg(feature = "std")]
+use std::io::{self, BufRead};
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
@@ -2128,5 +2131,58 @@ impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for NotIter<T, I> {}
 // If the iterator inside Tee is SortedDisjoint, the output will be SortedDisjoint
 impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
+
+// cmk make T first and R second
+#[cfg(feature = "std")]
+#[doc(hidden)]
+pub fn demo_read_ranges_from_buffer<R, T>(reader: R) -> io::Result<RangeSetBlaze<T>>
+where
+    R: BufRead,
+    T: FromStr + Integer,
+{
+    let lines = reader.lines();
+
+    let mut set = RangeSetBlaze::new();
+    for line in lines {
+        let line = line?;
+        let mut split = line.split_whitespace();
+        let start_str = split.next().ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Missing start of range in line: '{}'", line),
+            )
+        })?;
+        let start = start_str.parse::<T>().map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Invalid start of range '{}' in line: '{}'", start_str, line),
+            )
+        })?;
+
+        let end_str = split.next().ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Missing end of range in line: '{}'", line),
+            )
+        })?;
+        let end = end_str.parse::<T>().map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Invalid end of range '{}' in line: '{}'", end_str, line),
+            )
+        })?;
+
+        // Check for extra values
+        if split.next().is_some() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Too many values on a line: '{}'", line),
+            ));
+        }
+        set.ranges_insert(start..=end);
+    }
+
+    Ok(set)
+}
 
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.

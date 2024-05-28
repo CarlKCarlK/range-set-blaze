@@ -12,10 +12,14 @@ keywords = ["set", "range", "data-structures", "btree", "interval"]
 categories = ["data-structures"]
 homepage = "https://github.com/CarlKCarlK/range-set-blaze"
 
+[features]
+default = ["std"]
+std = []
+alloc = []
 
 [workspace]
+members = [".", "tests_common",  "tests/wasm-demo"]
 
-members = [".", "tests_common"]
 [lib]
 
 [dependencies]

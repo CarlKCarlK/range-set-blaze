@@ -10,6 +10,8 @@ use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+#[cfg(feature = "std")]
+use range_set_blaze::demo_read_ranges_from_buffer;
 use range_set_blaze::{
     prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts, UnionIter,
 };
@@ -1538,5 +1540,38 @@ test_normal_and_wasm!(
     fn complement_sample() {
         let c = !RangeSetBlaze::from([0, 3, 4, 5, 10]);
         println!("{},{},{}", c.len(), c.ranges_len(), c);
+    }
+);
+
+// Don't test wasm-unknown-unknown on panics
+#[cfg(feature = "std")]
+#[should_panic]
+#[test]
+fn demo_read1() {
+    use std::{fs::File, io::BufReader};
+
+    let b = BufReader::new(File::open("tests/no_such_file").unwrap());
+    let _a: RangeSetBlaze<i32> = demo_read_ranges_from_buffer(b).unwrap();
+}
+
+// Don't test wasm-unknown-unknown on file I/O
+#[cfg(feature = "std")]
+#[test]
+fn demo_read2() {
+    use std::{fs::File, io::BufReader};
+
+    let b = BufReader::new(File::open("tests/data/demo_read.txt").unwrap());
+    let a: RangeSetBlaze<i32> = demo_read_ranges_from_buffer(b).unwrap();
+    assert_eq!(a.to_string(), "10..=25, 30..=40");
+}
+
+test_normal_and_wasm!(
+    fn demo_read3() {
+        use std::io::{BufReader, Cursor};
+
+        let data = b"10  20\n15  25\n30  40\n";
+        let b = BufReader::new(Cursor::new(data));
+        let a: RangeSetBlaze<i32> = demo_read_ranges_from_buffer(b).unwrap();
+        assert_eq!(a.to_string(), "10..=25, 30..=40");
     }
 );

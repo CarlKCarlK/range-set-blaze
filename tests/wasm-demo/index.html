@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <h2>Rust WASM RangeSetBlaze Demo</h2>
+    <p>Enter a list of comma-separated integers or load a file:</p>
+    <input id="inputData" type="text" value="100,103,101,102,-3,-4" oninput="callWasmFunction()">
+    <br><br>
+    <input type="file" id="fileInput" onchange="loadFile()">
+    <br><br>
+    <p id="output"></p>
+    <script type="module">
+        import init, { disjoint_intervals, demo_read_ranges_from_slice } from './pkg/wasm_demo.js';
+
+        function callWasmFunction() {
+            let inputData = document.getElementById("inputData").value;
+            let data = inputData.split(',').map(x => x.trim() === "" ? NaN : Number(x)).filter(n => !isNaN(n));
+            const typedArray = Int32Array.from(data);
+            let result = disjoint_intervals(typedArray);
+            document.getElementById("output").innerHTML = result;
+        }
+
+        async function loadFile() {
+            const fileInput = document.getElementById("fileInput");
+            if (fileInput.files.length > 0) {
+                const arrayBuffer = await fileInput.files[0].arrayBuffer();
+                const result = demo_read_ranges_from_slice(new Uint8Array(arrayBuffer));
+                document.getElementById("output").innerHTML = result;
+            }
+        }
+
+        window.callWasmFunction = callWasmFunction;
+        window.loadFile = loadFile;
+
+        init().then(callWasmFunction);
+    </script>
+</body>
+
+</html>
