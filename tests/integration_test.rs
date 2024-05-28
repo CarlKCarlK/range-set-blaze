@@ -1569,6 +1569,6 @@ test_normal_and_wasm!(
         let data = b"10  20\n15  25\n30  40\n";
         let b = BufReader::new(Cursor::new(data));
         let a: RangeSetBlaze<i32> = demo_read_ranges_from_reader(b).unwrap();
-        assert_eq!(a.to_string(), "10..=25cmk, 30..=40");
+        assert_eq!(a.to_string(), "10..=25, 30..=40");
     }
 );

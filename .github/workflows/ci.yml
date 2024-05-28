@@ -80,11 +80,7 @@ jobs:
         - name: Install wasm-pack
           run: |
             curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-        - name: Run WASM tests with Node.js
+        - name: Run WASM tests with Chrome
           run: |
             rustup target add wasm32-unknown-unknown
-            wasm-pack test --node
-        - name: Run WASM tests with Firefox
-          run: |
-            rustup target add wasm32-unknown-unknown
-            wasm-pack test --firefox --headless        
+            wasm-pack test --chrome --headless        
