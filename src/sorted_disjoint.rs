@@ -1,5 +1,3 @@
-use alloc::format;
-use alloc::string::String;
 use core::{
     iter::FusedIterator,
     ops::{self, RangeInclusive},

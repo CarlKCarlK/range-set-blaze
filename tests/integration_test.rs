@@ -10,7 +10,6 @@ use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-#[cfg(feature = "std")]
 use range_set_blaze::demo_read_ranges_from_buffer;
 use range_set_blaze::{
     prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts, UnionIter,
@@ -1544,7 +1543,6 @@ test_normal_and_wasm!(
 );
 
 // Don't test wasm-unknown-unknown on panics
-#[cfg(feature = "std")]
 #[should_panic]
 #[test]
 fn demo_read1() {
@@ -1555,7 +1553,6 @@ fn demo_read1() {
 }
 
 // Don't test wasm-unknown-unknown on file I/O
-#[cfg(feature = "std")]
 #[test]
 fn demo_read2() {
     use std::{fs::File, io::BufReader};

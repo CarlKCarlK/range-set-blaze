@@ -3,8 +3,8 @@ use core::{
     iter::FusedIterator,
     ops::{self, RangeInclusive},
 };
+use std::vec;
 
-use alloc::vec;
 use itertools::Itertools;
 
 use crate::{

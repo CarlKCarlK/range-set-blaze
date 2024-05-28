@@ -1,14 +1,5 @@
-#![cfg_attr(not(feature = "std"), no_std)]
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
-
-extern crate alloc;
-use alloc::collections::btree_map;
-use alloc::collections::BTreeMap;
-use alloc::vec::Vec;
-
-#[cfg(feature = "std")]
-use std::io::{self, BufRead};
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
@@ -44,6 +35,10 @@ use num_traits::CheckedAdd;
 use num_traits::One;
 use num_traits::Zero;
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
+use std::collections::btree_map;
+use std::collections::BTreeMap;
+use std::io;
+use std::io::BufRead;
 pub use union_iter::UnionIter;
 pub use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
@@ -2133,7 +2128,6 @@ impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 // cmk make T first and R second
-#[cfg(feature = "std")]
 #[doc(hidden)]
 pub fn demo_read_ranges_from_buffer<R, T>(reader: R) -> io::Result<RangeSetBlaze<T>>
 where

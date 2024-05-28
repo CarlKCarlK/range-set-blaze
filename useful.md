@@ -8,7 +8,7 @@ rustup target add wasm32-unknown-unknown
 cargo check --target wasm32-unknown-unknown
 wasm-pack test --firefox --headless 
 
-cargo test --target wasm32-unknown-unknown 
+doesn't work: cargo test --target wasm32-unknown-unknown 
 cargo test --target wasm32-wasip1
 ```
 
