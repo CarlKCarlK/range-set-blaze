@@ -1493,5 +1493,5 @@ fn demo_read2() {
 
 #[test]
 fn test_demo_i32_len() {
-    assert_eq!(demo_i32_len(i32::MIN..=i32::MAX), u32::MAX as usize + 1);
+    assert_eq!(demo_i32_len(i32::MIN..=i32::MAX), u32::MAX as u64 + 1);
 }
