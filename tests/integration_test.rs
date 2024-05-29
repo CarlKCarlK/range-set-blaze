@@ -5,7 +5,8 @@ use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use range_set_blaze::{
-    prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts, UnionIter,
+    demo_i32_len, demo_read_ranges_from_path, prelude::*, AssumeSortedStarts, Integer, NotIter,
+    RangesIter, SortedStarts, UnionIter,
 };
 use std::cmp::Ordering;
 use std::ops::RangeInclusive;
@@ -1476,4 +1477,21 @@ fn multiway_failure_example() {
 fn complement_sample() {
     let c = !RangeSetBlaze::from([0, 3, 4, 5, 10]);
     println!("{},{},{}", c.len(), c.ranges_len(), c);
+}
+
+#[should_panic]
+#[test]
+fn demo_read1() {
+    let _a: RangeSetBlaze<i32> = demo_read_ranges_from_path("tests/no_such_file").unwrap();
+}
+
+#[test]
+fn demo_read2() {
+    let a: RangeSetBlaze<i32> = demo_read_ranges_from_path("tests/data/demo_read.txt").unwrap();
+    assert_eq!(a.to_string(), "10..=25, 30..=40");
+}
+
+#[test]
+fn test_demo_i32_len() {
+    assert_eq!(demo_i32_len(i32::MIN..=i32::MAX), u32::MAX as usize + 1);
 }
