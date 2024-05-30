@@ -1,5 +1,28 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
+#![cfg_attr(not(feature = "std"), no_std)]
+
+// #[cfg(feature = "test")]
+// const _: () = assert!(false, "using test");
+
+// #[cfg(not(feature = "test"))]
+// const _: () = assert!(false, "not using test");
+
+// #[cfg(feature = "std")]
+// const _: () = assert!(false, "using std");
+
+// #[cfg(not(feature = "std"))]
+// const _: () = assert!(false, "using not_std");
+
+// #[cfg(feature = "alloc")]
+// const _: () = assert!(false, "using alloc");
+
+// #[cfg(not(feature = "alloc"))]
+// const _: () = assert!(false, "not using alloc");
+
+extern crate alloc;
+use alloc::collections::btree_map;
+use alloc::vec::Vec;
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
@@ -13,6 +36,7 @@ mod tests;
 mod union_iter;
 mod unsorted_disjoint;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
+use alloc::collections::BTreeMap;
 use core::cmp::max;
 use core::cmp::Ordering;
 use core::convert::From;
@@ -35,10 +59,8 @@ use num_traits::CheckedAdd;
 use num_traits::One;
 use num_traits::Zero;
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
-use std::collections::btree_map;
-use std::collections::BTreeMap;
-use std::io;
-use std::io::BufRead;
+#[cfg(not(feature = "alloc"))]
+use std::{io, io::BufRead};
 pub use union_iter::UnionIter;
 pub use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
@@ -2127,12 +2149,15 @@ impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for NotIter<T, I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
+#[cfg(not(feature = "alloc"))]
 #[doc(hidden)]
 pub fn demo_read_ranges_from_reader<T, R>(reader: R) -> io::Result<RangeSetBlaze<T>>
 where
     T: FromStr + Integer,
     R: BufRead,
 {
+    use alloc::format;
+
     let lines = reader.lines();
 
     let mut set = RangeSetBlaze::new();

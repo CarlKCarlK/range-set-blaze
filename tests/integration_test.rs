@@ -1,5 +1,4 @@
-#![cfg(test)]
-// #![cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+// #![cfg_attr(feature = "alloc", no_std)]
 
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 use wasm_bindgen_test::*;

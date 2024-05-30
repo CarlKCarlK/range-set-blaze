@@ -1,9 +1,8 @@
+use alloc::collections::btree_map;
 use core::{
     iter::FusedIterator,
     ops::{self, RangeInclusive},
 };
-use std::collections::btree_map;
-
 use itertools::Itertools;
 
 use crate::{

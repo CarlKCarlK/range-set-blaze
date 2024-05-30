@@ -1,10 +1,9 @@
+use alloc::vec;
 use core::{
     cmp::max,
     iter::FusedIterator,
     ops::{self, RangeInclusive},
 };
-use std::vec;
-
 use itertools::Itertools;
 
 use crate::{
