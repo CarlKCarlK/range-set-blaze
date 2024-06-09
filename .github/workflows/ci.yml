@@ -77,7 +77,7 @@ jobs:
           wasm-pack test --chrome --headless --features alloc --no-default-features --verbose
       - name: Test WASM/wasip1
         run: |
-          cargo install --target wasm32-wasip1
+          rustup target add wasm32-wasip1
           cargo test --target wasm32-wasip1 --verbose
           cargo test --target wasm32-wasip1 --verbose --no-default-features --features "alloc rog-experimental"
       - name: Setup and check Embedded
