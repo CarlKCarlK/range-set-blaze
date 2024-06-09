@@ -43,6 +43,12 @@ jobs:
     name: Test on 32-bit Ubuntu
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rust-src
       - name: Test Rust 32-bit Ubuntu
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
