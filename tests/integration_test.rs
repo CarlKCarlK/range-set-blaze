@@ -102,8 +102,8 @@ fn doctest3() -> Result<(), Box<dyn std::error::Error>> {
 
     a.append(&mut b);
 
-    assert_eq!(a.len(), 5usize);
-    assert_eq!(b.len(), 0usize);
+    assert_eq!(a.len(), 5);
+    assert_eq!(b.len(), 0);
 
     assert!(a.contains(1));
     assert!(a.contains(2));

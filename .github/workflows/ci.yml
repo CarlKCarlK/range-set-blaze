@@ -14,9 +14,8 @@ permissions:
   contents: read
 
 jobs:
-
-  test_rust:
-    name: Test Rust
+  test_64_bit:
+    name: Test Rust on 64-bit Architectures
     strategy:
       fail-fast: false
       matrix:
@@ -29,15 +28,49 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rust-src
+      - name: Test Rust Native (stable)
+        run: |
+          cargo clippy --verbose --all-targets --features "std alloc rog-experimental" -- -D clippy::all -A deprecated
+          cargo test --verbose
+          cargo test --verbose --no-default-features --features "alloc rog-experimental"
+      - name: Test Rust Native (nightly)
+        run: |
+          rustup override set nightly
+          cargo test --verbose --features "rog-experimental from_slice"
+          cargo test --verbose --all-features
 
+  test_32_bit_linux:
+    name: Test on 32-bit Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Rust 32-bit Ubuntu
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libc6-dev-i386 linux-libc-dev libc6-i386 gcc-multilib
+          version: 1
+      - name: run tests
+        run: |
+          rustup target add i686-unknown-linux-gnu
+          cargo test --target i686-unknown-linux-gnu --verbose 
+          cargo test --target i686-unknown-linux-gnu --verbose --no-default-features --features "alloc rog-experimental"
+
+  test_wasm:
+    name: Test WASM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rust-src
       - name: Setup WASM
-        if: runner.os == 'Linux'
         uses: jetli/wasm-pack-action@v0.4.0
-
-      - name: Test WASM, setup and check Embedded
-        if: runner.os == 'Linux'
+      - name: Test WASM
         run: |
           wasm-pack test --chrome --headless --features alloc --no-default-features --verbose
+      - name: Setup and check Embedded
+        run: |
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
           rustup override set nightly
@@ -45,35 +78,9 @@ jobs:
           cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
           sudo apt-get update && sudo apt-get install qemu qemu-system-arm
       - name: Test Embedded (in nightly)
-        if: runner.os == 'Linux'
         timeout-minutes: 3
         run: |
           cd tests/embedded
           cargo run
           cd ../..
           rustup override set stable
-
-
-      - name: Test Rust Native (stable)
-        run: |
-          cargo clippy --verbose --all-targets --features "std alloc rog-experimental" -- -D clippy::all -A deprecated
-          cargo test --verbose
-          cargo test --verbose --no-default-features --features "alloc rog-experimental"
-
-      - name: Test Rust Native (nightly)
-        run: |
-          rustup override set nightly
-          cargo test --verbose --features "rog-experimental from_slice"
-          cargo test --verbose --all-features
-
-      - name: Test Rust 32-bit Ubuntu
-        if: runner.os == 'Linux'
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libc6-dev-i386 linux-libc-dev libc6-i386 gcc-multilib
-          version: 1
-      - if: runner.os == 'Linux'
-        run: |
-          rustup target add i686-unknown-linux-gnu
-          cargo test --target i686-unknown-linux-gnu --verbose 
-          cargo test --target i686-unknown-linux-gnu --verbose --no-default-features --features "alloc rog-experimental"

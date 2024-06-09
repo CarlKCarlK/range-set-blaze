@@ -578,8 +578,8 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     ///
     /// a.append(&mut b);
     ///
-    /// assert_eq!(a.len(), 5usize);
-    /// assert_eq!(b.len(), 0usize);
+    /// assert_eq!(a.len(), 5);
+    /// assert_eq!(b.len(), 0);
     ///
     /// assert_eq!(a[1], "a");
     /// assert_eq!(a[2], "a");
