@@ -736,6 +736,7 @@ fn constructors() -> Result<(), Box<dyn std::error::Error>> {
 }
 );
 
+#[cfg(target_os = "linux")]
 #[test]
 fn debug_k_play() {
     let mut c = Criterion::default();
