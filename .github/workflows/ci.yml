@@ -70,11 +70,16 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rust-src
-      - name: Setup WASM
+      - name: Setup WASM/unknown
         uses: jetli/wasm-pack-action@v0.4.0
-      - name: Test WASM
+      - name: Test WASM/unknown
         run: |
           wasm-pack test --chrome --headless --features alloc --no-default-features --verbose
+      - name: Test WASM/wasip1
+        run: |
+          cargo install --target wasm32-wasip1
+          cargo test --target wasm32-wasip1 --verbose
+          cargo test --target wasm32-wasip1 --verbose --no-default-features --features "alloc rog-experimental"
       - name: Setup and check Embedded
         run: |
           rustup target add thumbv7m-none-eabi
