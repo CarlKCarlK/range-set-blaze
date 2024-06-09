@@ -78,6 +78,7 @@ jobs:
       - name: Test WASM/wasip1
         run: |
           rustup target add wasm32-wasip1
+          cargo install wasmtime-cli
           cargo test --target wasm32-wasip1 --verbose
           cargo test --target wasm32-wasip1 --verbose --no-default-features --features "alloc rog-experimental"
       - name: Setup and check Embedded
