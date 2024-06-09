@@ -45,6 +45,7 @@ fn insert_max_u128() {
 }
 
 #[test]
+#[allow(clippy::cast_lossless,clippy::cast_possible_truncation)]
 fn sub() {
     for start in i8::MIN..i8::MAX {
         for end in start..i8::MAX {
@@ -243,7 +244,7 @@ fn optimize() {
                         range_set_blaze.internal_add(c..=d);
                         if range_set_blaze.ranges_len() == 1 {
                             let vec = range_set_blaze.into_iter().collect::<Vec<u8>>();
-                            println! {"combine\t{}\t{}", vec[0], vec[vec.len()-1]};
+                            println!("combine\t{}\t{}", vec[0], vec[vec.len()-1]);
                             assert!(!restart);
                         } else {
                             println!("restart");
@@ -259,7 +260,7 @@ fn optimize() {
 #[test]
 fn understand_into_iter() {
     let btree_set = BTreeSet::from([1, 2, 3, 4, 5]);
-    for i in btree_set.iter() {
+    for i in &btree_set {
         println!("{i}");
     }
 
@@ -285,11 +286,11 @@ fn understand_into_iter() {
     let _len2 = s.len();
 
     let arr = [1, 2, 3, 4, 5];
-    for i in arr.iter() {
+    for i in &arr {
         println!("{i}");
     }
 
-    for i in arr {
+    for i in &arr {
         println!("{i}");
     }
 
@@ -307,7 +308,7 @@ impl BitAndAssign for BooleanVector {
     // `rhs` is the "right-hand side" of the expression `a &= b`.
     fn bitand_assign(&mut self, rhs: Self) {
         assert_eq!(self.0.len(), rhs.0.len());
-        *self = BooleanVector(
+        *self = Self(
             self.0
                 .iter()
                 .zip(rhs.0.iter())
@@ -683,6 +684,7 @@ fn integer_coverage() {
 
 #[test]
 #[allow(clippy::bool_assert_comparison)]
+#[allow(clippy::many_single_char_names)]
 fn lib_coverage_0() {
     let a = RangeSetBlaze::from_iter([1..=2, 3..=4]);
     let mut hasher = DefaultHasher::new();
@@ -734,26 +736,26 @@ fn lib_coverage_0() {
     v.insert(1);
     assert!(!v.is_empty());
 
-    let sup = RangeSetBlaze::from_iter([1..=3]);
+    let superset = RangeSetBlaze::from_iter([1..=3]);
     let mut set = RangeSetBlaze::new();
 
-    assert_eq!(set.is_subset(&sup), true);
+    assert_eq!(set.is_subset(&superset), true);
     set.insert(2);
-    assert_eq!(set.is_subset(&sup), true);
+    assert_eq!(set.is_subset(&superset), true);
     set.insert(4);
-    assert_eq!(set.is_subset(&sup), false);
+    assert_eq!(set.is_subset(&superset), false);
 
-    let sub = RangeSetBlaze::from_iter([1, 2]);
+    let subset = RangeSetBlaze::from_iter([1, 2]);
     let mut set = RangeSetBlaze::new();
 
-    assert_eq!(set.is_superset(&sub), false);
+    assert_eq!(set.is_superset(&subset), false);
 
     set.insert(0);
     set.insert(1);
-    assert_eq!(set.is_superset(&sub), false);
+    assert_eq!(set.is_superset(&subset), false);
 
     set.insert(2);
-    assert_eq!(set.is_superset(&sub), true);
+    assert_eq!(set.is_superset(&subset), true);
 
     let a = RangeSetBlaze::from_iter([1..=3]);
     let mut b = RangeSetBlaze::new();
@@ -1123,7 +1125,7 @@ fn binary_op<E: Debug, R: Eq + Debug>(a: E, b: E, expected: R, actual: R) -> boo
     res
 }
 
-/// from: https://github.com/rklaehn/sorted-iter
+/// from: <https://github.com/rklaehn/sorted-iter>
 /// just a helper to get good output when a check fails
 fn check_size_hint<E: Debug>(
     input: E,
@@ -1150,7 +1152,7 @@ fn intersection(a: Reference, b: Reference) -> bool {
 fn union(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
     let b_r = RangeSetBlaze::from_iter(&b);
-    let expected: Reference = a.union(&b).cloned().collect();
+    let expected: Reference = a.union(&b).copied().collect();
     let actual: Reference = (a_r | b_r).into_iter().collect();
     binary_op(a, b, expected, actual)
 }
@@ -1172,7 +1174,7 @@ fn multi_union(inputs: Vec<Reference>) -> bool {
 fn difference(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
     let b_r = RangeSetBlaze::from_iter(&b);
-    let expected: Reference = a.difference(&b).cloned().collect();
+    let expected: Reference = a.difference(&b).copied().collect();
     let actual: Reference = (a_r - b_r).into_iter().collect();
     binary_op(a, b, expected, actual)
 }
@@ -1190,7 +1192,7 @@ fn symmetric_difference(a: Reference, b: Reference) -> bool {
 fn multi_symmetric_difference(inputs: Vec<Reference>) -> bool {
     let mut expected: Reference = BTreeSet::new();
     for input in inputs.iter() {
-        expected = expected.symmetric_difference(input).cloned().collect();
+        expected = expected.symmetric_difference(input).copied().collect();
     }
     let actual = inputs
         .iter()
@@ -1355,9 +1357,9 @@ fn set_random_symmetric_difference() {
             //     SymDiffIter::new2(set0.ranges(), set1.ranges()).into_string()
             // );
 
-            let map0 = CheckSortedDisjointMap::new(set0.ranges().map(|range| (range.clone(), &())))
+            let map0 = CheckSortedDisjointMap::new(set0.ranges().map(|range| (range, &())))
                 .into_range_map_blaze();
-            let map1 = CheckSortedDisjointMap::new(set1.ranges().map(|range| (range.clone(), &())))
+            let map1 = CheckSortedDisjointMap::new(set1.ranges().map(|range| (range, &())))
                 .into_range_map_blaze();
             let mut expected_map = &map0 ^ &map1;
 
@@ -1374,8 +1376,8 @@ fn set_random_symmetric_difference() {
                     match (get0, get1) {
                         (Some(_k0), Some(_k1)) => {
                             println!();
-                            println!("left: {}", set0);
-                            println!("right: {}", set1);
+                            println!("left: {set0}");
+                            println!("right: {set1}");
                             let s_d = SymDiffIter::new2(set0.ranges(), set1.ranges())
                                 .into_range_set_blaze();
                             panic!("left ^ right = {s_d}");
@@ -1392,8 +1394,8 @@ fn set_random_symmetric_difference() {
             }
             if !expected_map.is_empty() {
                 println!();
-                println!("left: {}", set0);
-                println!("right: {}", set1);
+                println!("left: {set0}");
+                println!("right: {set1}");
                 let s_d = SymDiffIter::new2(set0.ranges(), set1.ranges()).into_range_set_blaze();
                 println!("left ^ right = {s_d}");
                 panic!("expected_keys should be empty: {expected_map}");
@@ -1636,7 +1638,7 @@ pub fn convert_challenge() {
     let iter = [5..=100, 5..=5, 1..=4].into_iter();
     let iter = iter.into_iter().sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
-        a.start().cmp(&b.start())
+        a.start().cmp(b.start())
     });
     let iter = AssumeSortedStarts::new(iter);
     let iter = UnionIter::new(iter);
@@ -1646,7 +1648,7 @@ pub fn convert_challenge() {
     let iter = [5..=100, 5..=5, 1..=5].into_iter();
     let iter = iter.sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
-        a.start().cmp(&b.start())
+        a.start().cmp(b.start())
     });
     let iter = AssumeSortedStarts::new(iter);
     let iter = UnionIter::new(iter);

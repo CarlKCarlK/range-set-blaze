@@ -30,10 +30,12 @@ where
     T: Integer,
 {
     /// cmk doc
+    /// # Panics
+    /// Panics if the variant is Gap
     pub fn unwrap(self) -> S {
         match self {
-            SomeOrGap::Some(value) => value,
-            SomeOrGap::Gap(range) => {
+            Self::Some(value) => value,
+            Self::Gap(range) => {
                 panic!("called `SomeOrGap::unwrap()` on a `Gap` value: {:?}", range)
             }
         }

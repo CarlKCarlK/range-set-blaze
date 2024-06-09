@@ -1759,9 +1759,9 @@ fn run_rangemap_crate() {
 
 test_normal_and_wasm!(
 fn from_iter_coverage() {
-    let vec_range = vec![1..=2, 2..=2, -10..=-5];
-    let a0 = RangeSetBlaze::from_iter(vec_range.iter());
-    let a1: RangeSetBlaze<i32> = vec_range.iter().collect();
+    let arr = [1..=2, 2..=2, -10..=-5];
+    let a0 = RangeSetBlaze::from_iter(&arr);
+    let a1: RangeSetBlaze<i32> = arr.iter().collect();
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 }
 );
@@ -2048,7 +2048,6 @@ test_normal_and_wasm!(
     #[cfg(feature = "rog-experimental")]
     fn test_rog_range_doc() {
     use core::ops::Bound::Included;
-    use range_set_blaze::SomeOrGap;
 
     let mut set = RangeSetBlaze::new();
     set.insert(3);

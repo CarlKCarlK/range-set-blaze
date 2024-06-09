@@ -202,6 +202,7 @@ mod tests {
     use std::panic;
     use std::panic::AssertUnwindSafe;
 
+    #[allow(clippy::cast_possible_truncation)]
     const fn u16_to_p1(v: u16) -> UIntPlusOne<u8> {
         if v == 256 {
             UIntPlusOne::MaxPlusOne
@@ -221,7 +222,7 @@ mod tests {
             c
         }));
         let c_actual = panic::catch_unwind(AssertUnwindSafe(|| a_p1 + b_p1));
-        println!("cmk {:?}, {:?}", c, c_actual);
+        println!("cmk {c:?}, {c_actual:?}");
 
         match (c, c_actual) {
             (Ok(c), Ok(c_p1)) => u16_to_p1(c) == c_p1,
@@ -241,7 +242,7 @@ mod tests {
             c
         }));
         let c_actual = panic::catch_unwind(AssertUnwindSafe(|| a_p1 * b_p1));
-        println!("cmk {:?}, {:?}", c, c_actual);
+        println!("cmk {c:?}, {c_actual:?}");
 
         match (c, c_actual) {
             (Ok(c), Ok(c_p1)) => u16_to_p1(c) == c_p1,
@@ -266,7 +267,7 @@ mod tests {
             c_actual -= b_p1;
             c_actual
         }));
-        println!("cmk {:?}, {:?}", c, c_actual);
+        println!("cmk {c:?}, {c_actual:?}");
 
         match (c, c_actual) {
             (Ok(c), Ok(c_p1)) => u16_to_p1(c) == c_p1,
@@ -282,7 +283,7 @@ mod tests {
 
         let c = panic::catch_unwind(AssertUnwindSafe(|| a.partial_cmp(&b)));
         let c_actual = panic::catch_unwind(AssertUnwindSafe(|| a_p1.partial_cmp(&b_p1)));
-        println!("cmk {:?}, {:?}", c, c_actual);
+        println!("cmk {c:?}, {c_actual:?}");
 
         match (c, c_actual) {
             (Ok(Some(c)), Ok(Some(c_p1))) => c == c_p1,
@@ -296,7 +297,7 @@ mod tests {
     fn test_add_equivalence() {
         for a in 0..=256 {
             for b in 0..=256 {
-                assert!(add_em(a, b), "a: {}, b: {}", a, b);
+                assert!(add_em(a, b), "a: {a}, b: {b}");
             }
         }
     }
@@ -306,7 +307,7 @@ mod tests {
     fn test_mul_equivalence() {
         for a in 0..=256 {
             for b in 0..=256 {
-                assert!(mul_em(a, b), "a: {}, b: {}", a, b);
+                assert!(mul_em(a, b), "a: {a}, b: {b}");
             }
         }
     }
@@ -316,7 +317,7 @@ mod tests {
     fn test_sub_equivalence() {
         for a in 0..=256 {
             for b in 0..=256 {
-                assert!(sub_em(a, b), "a: {}, b: {}", a, b);
+                assert!(sub_em(a, b), "a: {a}, b: {b}");
             }
         }
     }
@@ -326,7 +327,7 @@ mod tests {
     fn test_compare_equivalence() {
         for a in 0..=256 {
             for b in 0..=256 {
-                assert!(compare_em(a, b), "a: {}, b: {}", a, b);
+                assert!(compare_em(a, b), "a: {a}, b: {b}");
             }
         }
     }

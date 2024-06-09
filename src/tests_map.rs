@@ -1715,8 +1715,8 @@ fn map_repro1() {
 #[quickcheck]
 fn extend(mut a: BTreeMap<i8, u8>, b: Vec<(i8, u8)>) -> bool {
     let mut a_r = RangeMapBlaze::from_iter(a.clone().into_iter());
-    a.extend(b.clone().into_iter());
-    a_r.extend(b.clone().into_iter());
+    a.extend(b.to_owned().into_iter());
+    a_r.extend(b.into_iter());
     a_r == RangeMapBlaze::from_iter(a.into_iter())
 }
 

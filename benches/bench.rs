@@ -25,7 +25,6 @@ use std::{
     ops::RangeInclusive,
 };
 
-use range_set_blaze::prelude::*;
 use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range_u32, How, MemorylessIter, MemorylessRange};
 
@@ -125,7 +124,7 @@ fn range_set_test(data: Vec<u32>, range_len: usize, len: usize) {
 
 fn btree_set_test(data: Vec<u32>, _range_len: usize, len: usize) {
     let btree_set = BTreeSet::<u32>::from_iter(data);
-    assert!(btree_set.len() == len);
+    assert_eq!(btree_set.len(), len);
 }
 
 pub fn clumps(c: &mut Criterion) {
