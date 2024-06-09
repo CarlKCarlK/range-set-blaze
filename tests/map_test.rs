@@ -235,8 +235,8 @@ fn map_doctest3() {
 
     a.append(&mut b);
 
-    assert_eq!(a.len(), 5usize);
-    assert_eq!(b.len(), 0usize);
+    assert_eq!(a.len() as u64, 5u64);
+    assert_eq!(b.len() as u64, 0u64);
 
     assert_eq!(a.get(1), Some(&"Hello"));
     assert_eq!(a.get(2), Some(&"Hello"));

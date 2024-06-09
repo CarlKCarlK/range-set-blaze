@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   test_64_bit:
-    name: Test Rust on 64-bit Architectures
+    name: Test Rust on 64-bit
     strategy:
       fail-fast: false
       matrix:

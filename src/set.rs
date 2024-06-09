@@ -549,8 +549,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// a.append(&mut b);
     ///
-    /// assert_eq!(a.len(), 5usize);
-    /// assert_eq!(b.len(), 0usize);
+    /// assert_eq!(a.len() as u64, 5u64);
+    /// assert_eq!(b.len() as u64, 0u64);
     ///
     /// assert!(a.contains(1));
     /// assert!(a.contains(2));
