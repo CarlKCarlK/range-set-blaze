@@ -2631,7 +2631,7 @@ fn map_random_from_iter_item() {
 
         let mut inputs = Vec::new();
         for _ in 0..500 {
-            let key = rng.gen_range(0..=255u32); // cmk change back to u8s
+            let key = rng.gen_range(0..=255u8); // cmk change back to u8s
             let value = ['a', 'b', 'c'].choose(&mut rng).unwrap(); // cmk allow more than references
 
             print!("{key}{value} ");

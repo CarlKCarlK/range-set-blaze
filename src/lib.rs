@@ -17,6 +17,8 @@
     // cmk00 clippy::cargo_common_metadata
 )]
 
+// cmk consider having .len() always returning the smallest type that fits the length, never usize. This would make 32-bit and 64-bit systems more consistent.
+
 // cmk #![feature(step_trait)] // cmk use unstable feature???
 // cmk #![feature(const_option)]
 
