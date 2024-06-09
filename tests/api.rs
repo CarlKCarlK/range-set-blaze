@@ -1,3 +1,5 @@
+// cmk0000000000 move to integration tests
+
 // FUTURE can (should?) you optimize a | b | c to automatically call union([a,b,c])?
 extern crate alloc;
 

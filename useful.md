@@ -3,8 +3,10 @@
 ## Wasm
 
 ```cmd
+cargo check --target wasm32-unknown-unknown --features alloc --no-default-features
 cargo install wasm-bindgen-cli --force
 wasm-pack test --firefox --headless --features alloc --no-default-features
+cargo test --target wasm32-wasip1 --all-features
 ```
 
 ## Docs

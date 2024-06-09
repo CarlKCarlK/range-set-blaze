@@ -478,7 +478,7 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     /// cmk doc
     #[cfg(feature = "rog-experimental")]
     #[allow(deprecated)]
-    pub fn get_range_value<'a>(&'a self, key: T) -> SomeOrGap<(RangeInclusive<T>, &'a V), T> {
+    pub fn get_range_value(&self, key: T) -> SomeOrGap<(RangeInclusive<T>, &V), T> {
         let one_back = self.btree_map.range(..=key).next_back();
         let Some((start, end_value)) = one_back else {
             // nothing before, find any after

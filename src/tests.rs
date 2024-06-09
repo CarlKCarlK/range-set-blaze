@@ -35,7 +35,7 @@ type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 #[test]
 fn insert_255u8() {
     let range_set_blaze = RangeSetBlaze::<u8>::from_iter([255]);
-    assert!(range_set_blaze.to_string() == "255..=255");
+    assert_eq!(range_set_blaze.to_string(), "255..=255");
 }
 
 #[test]
@@ -145,7 +145,7 @@ fn demo_f1() {
 
     let mut range_set_blaze = RangeSetBlaze::from_iter([11..=14, 22..=26]);
     range_set_blaze.internal_add(10..=10);
-    assert!(range_set_blaze.to_string() == "10..=14, 22..=26");
+    assert_eq!(range_set_blaze.to_string(), "10..=14, 22..=26");
     println!(
         "demo_1 range_set_blaze = {:?}, len_slow = {}, len = {}",
         range_set_blaze,
@@ -166,8 +166,8 @@ fn demo_d1() {
 
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=14]);
     range_set_blaze.internal_add(10..=10);
-    assert!(range_set_blaze.to_string() == "10..=14");
-    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
+    assert_eq!(range_set_blaze.to_string(), "10..=14");
+    assert_eq!(range_set_blaze.len_slow(), range_set_blaze.len());
 }
 
 #[test]
@@ -181,8 +181,8 @@ fn demo_e1() {
 
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=14, 16..=16]);
     range_set_blaze.internal_add(10..=19);
-    assert!(range_set_blaze.to_string() == "10..=19");
-    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
+    assert_eq!(range_set_blaze.to_string(), "10..=19");
+    assert_eq!(range_set_blaze.len_slow(), range_set_blaze.len());
 }
 
 #[test]
@@ -196,8 +196,8 @@ fn demo_b1() {
 
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=14]);
     range_set_blaze.internal_add(12..=17);
-    assert!(range_set_blaze.to_string() == "10..=17");
-    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
+    assert_eq!(range_set_blaze.to_string(), "10..=17");
+    assert_eq!(range_set_blaze.len_slow(), range_set_blaze.len());
 }
 
 #[test]
@@ -212,8 +212,8 @@ fn demo_b2() {
 
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=14, 16..=16]);
     range_set_blaze.internal_add(12..=17);
-    assert!(range_set_blaze.to_string() == "10..=17");
-    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
+    assert_eq!(range_set_blaze.to_string(), "10..=17");
+    assert_eq!(range_set_blaze.len_slow(), range_set_blaze.len());
 }
 
 #[test]

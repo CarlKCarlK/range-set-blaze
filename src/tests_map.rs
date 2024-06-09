@@ -1,3 +1,4 @@
+// cmk move this file to integration tests
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
@@ -583,7 +584,7 @@ fn map_repro1() {
 //     true
 // }
 
-// fn format_range_values<'a, T>(iter: impl Iterator<Item = (RangeInclusive<T>, &'a u8)>) -> String
+// fn format_range_values<T>(iter: impl Iterator<Item = (RangeInclusive<T>, &u8)>) -> String
 // where
 //     T: Integer + fmt::Display + 'a, // Assuming T implements Display for formatting
 //                                     // V: ValueOwned + fmt::Display + 'a, // V must implement Display to be formatted with {}

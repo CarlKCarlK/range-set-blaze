@@ -1,3 +1,5 @@
+// cmk00000000 move to integration tests
+
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 extern crate alloc;

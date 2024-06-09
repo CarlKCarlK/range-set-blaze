@@ -210,6 +210,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
     fn add_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
@@ -229,6 +230,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
     fn mul_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
@@ -248,6 +250,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
     fn sub_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
@@ -272,6 +275,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
     fn compare_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
@@ -286,11 +290,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn cmk_remove() {
-        assert!(sub_em(256, 0));
-    }
 
+    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
     #[test]
     fn test_add_equivalence() {
         for a in 0..=256 {
@@ -300,6 +301,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
     #[test]
     fn test_mul_equivalence() {
         for a in 0..=256 {
@@ -309,6 +311,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
     #[test]
     fn test_sub_equivalence() {
         for a in 0..=256 {
@@ -318,6 +321,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
     #[test]
     fn test_compare_equivalence() {
         for a in 0..=256 {
@@ -327,6 +331,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
     #[test]
     fn test_add_assign() {
         let mut a = UIntPlusOne::<u128>::UInt(1);
