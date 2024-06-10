@@ -9,6 +9,7 @@ on:
     
 env:
   CARGO_TERM_COLOR: always
+  CARGO_TARGET_WASM32_WASIP1_RUNNER: "wasmtime run --dir ."  
 
 permissions:
   contents: read
@@ -80,8 +81,8 @@ jobs:
       - name: Test WASM/wasip1
         run: |
           rustup target add wasm32-wasip1
-          CARGO_TARGET_WASM32_WASIP1_RUNNER="wasmtime run --dir ." cargo test --target wasm32-wasip1 --verbose
-          CARGO_TARGET_WASM32_WASIP1_RUNNER="wasmtime run --dir ." cargo test --target wasm32-wasip1 --verbose --no-default-features --features "alloc rog-experimental"
+          cargo test --target wasm32-wasip1 --verbose
+          cargo test --target wasm32-wasip1 --verbose --no-default-features --features "alloc rog-experimental"
       - name: Setup and check Embedded
         run: |
           rustup target add thumbv7m-none-eabi
