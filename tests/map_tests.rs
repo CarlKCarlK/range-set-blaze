@@ -961,7 +961,6 @@ test_normal_and_wasm!(
 
 test_normal_and_wasm!(
     fn map_empty_it() {
-        use core::panic::AssertUnwindSafe;
         use std::ops::BitOr;
         use std::panic;
 
@@ -1023,26 +1022,33 @@ test_normal_and_wasm!(
         let answer = RangeMapBlaze::from_iter([(0, &val); 0]);
         assert!(c4.equal(answer.range_values()));
 
-        let c0 = !(a.range_values() & b.range_values());
-        let c1 = ![a.range_values(), b.range_values()].intersection();
-        let c_list2: [RangeValuesIter<i32, &str>; 0] = [];
-        assert!(
-            panic::catch_unwind(AssertUnwindSafe(|| { !!c_list2.clone().intersection() })).is_err(),
-            "Expected a panic."
-        );
-        let c3 = !intersection_map_dyn!(a.range_values(), b.range_values());
-        assert!(
-            panic::catch_unwind(AssertUnwindSafe(|| {
-                !!c_list2.map(DynSortedDisjointMap::new).intersection()
-            }))
-            .is_err(),
-            "Expected a panic."
-        );
+        // don't run panic-related code on wasm
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            use core::panic::AssertUnwindSafe;
 
-        let answer = !RangeMapBlaze::from_iter([(0, "ignored"); 0]);
-        assert!(c0.equal(answer.ranges()));
-        assert!(c1.equal(answer.ranges()));
-        assert!(c3.equal(answer.ranges()));
+            let c0 = !(a.range_values() & b.range_values());
+            let c1 = ![a.range_values(), b.range_values()].intersection();
+            let c_list2: [RangeValuesIter<i32, &str>; 0] = [];
+            assert!(
+                panic::catch_unwind(AssertUnwindSafe(|| { !!c_list2.clone().intersection() }))
+                    .is_err(),
+                "Expected a panic."
+            );
+            let c3 = !intersection_map_dyn!(a.range_values(), b.range_values());
+            assert!(
+                panic::catch_unwind(AssertUnwindSafe(|| {
+                    !!c_list2.map(DynSortedDisjointMap::new).intersection()
+                }))
+                .is_err(),
+                "Expected a panic."
+            );
+
+            let answer = !RangeMapBlaze::from_iter([(0, "ignored"); 0]);
+            assert!(c0.equal(answer.ranges()));
+            assert!(c1.equal(answer.ranges()));
+            assert!(c3.equal(answer.ranges()));
+        }
     }
 );
 

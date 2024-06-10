@@ -50,7 +50,7 @@ pub fn shuffled(c: &mut Criterion) {
     group.bench_function("shuffled RangeSetBlaze", |b| {
         b.iter_batched(
             || gen_data_shuffled(seed, len),
-            |data| range_set_test(data, 1, len as usize),
+            |data| range_set_test(data, 1, len as u64),
             BatchSize::SmallInput,
         );
     });
@@ -79,7 +79,7 @@ pub fn ascending(c: &mut Criterion) {
     group.bench_function("ascending", |b| {
         b.iter_batched(
             || gen_data_ascending(seed, len),
-            |data| range_set_test(data, 1, len as usize),
+            |data| range_set_test(data, 1, len as u64),
             BatchSize::SmallInput,
         );
     });
@@ -94,7 +94,7 @@ pub fn descending(c: &mut Criterion) {
     group.bench_function("descending range_set_blaze", |b| {
         b.iter_batched(
             || gen_data_descending(seed, len),
-            |data| range_set_test(data, 1, len as usize),
+            |data| range_set_test(data, 1, len as u64),
             BatchSize::SmallInput,
         );
     });
@@ -117,7 +117,7 @@ fn gen_data_descending(_seed: u64, len: u32) -> Vec<u32> {
     data
 }
 
-fn range_set_test(data: Vec<u32>, range_len: usize, len: usize) {
+fn range_set_test(data: Vec<u32>, range_len: u64, len: u64) {
     let range_set_blaze = RangeSetBlaze::<u32>::from_iter(data);
     assert!(range_set_blaze.ranges_len() == range_len && range_set_blaze.len() == len);
 }
