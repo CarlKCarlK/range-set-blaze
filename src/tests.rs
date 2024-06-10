@@ -25,7 +25,6 @@ use std::{
    // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 
 use syntactic_for::syntactic_for;
-use tests_common::{How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
 use core::array;
 use core::ops::BitAndAssign;
@@ -45,7 +44,7 @@ fn insert_max_u128() {
 }
 
 #[test]
-#[allow(clippy::cast_lossless,clippy::cast_possible_truncation)]
+#[allow(clippy::cast_lossless, clippy::cast_possible_truncation)]
 fn sub() {
     for start in i8::MIN..i8::MAX {
         for end in start..i8::MAX {
@@ -244,7 +243,7 @@ fn optimize() {
                         range_set_blaze.internal_add(c..=d);
                         if range_set_blaze.ranges_len() == 1 {
                             let vec = range_set_blaze.into_iter().collect::<Vec<u8>>();
-                            println!("combine\t{}\t{}", vec[0], vec[vec.len()-1]);
+                            println!("combine\t{}\t{}", vec[0], vec[vec.len() - 1]);
                             assert!(!restart);
                         } else {
                             println!("restart");
@@ -299,39 +298,6 @@ fn understand_into_iter() {
     //     println!("{i}");
     // }
     // let len = rsi.len();
-}
-
-#[derive(Debug, PartialEq)]
-struct BooleanVector(Vec<bool>);
-
-impl BitAndAssign for BooleanVector {
-    // `rhs` is the "right-hand side" of the expression `a &= b`.
-    fn bitand_assign(&mut self, rhs: Self) {
-        assert_eq!(self.0.len(), rhs.0.len());
-        *self = Self(
-            self.0
-                .iter()
-                .zip(rhs.0.iter())
-                .map(|(x, y)| *x && *y)
-                .collect(),
-        );
-    }
-}
-
-#[test]
-fn understand_bitand_assign() {
-    let mut a = 3u8;
-    let b = 5u8;
-    a &= b;
-    println!("{a}");
-    println!("{b}");
-
-    let mut bv = BooleanVector(vec![true, true, false, false]);
-    let bv2 = BooleanVector(vec![true, false, true, false]);
-    bv &= bv2;
-    let expected = BooleanVector(vec![true, false, false, false]);
-    assert_eq!(bv, expected);
-    // println!("{bv2:?}");
 }
 
 #[test]
@@ -1071,25 +1037,6 @@ fn sorted_disjoint_iterator_coverage_0() {
     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
     let b = CheckSortedDisjoint::new([1..=2, 5..=101]);
     assert!(b.is_superset(a));
-}
-
-#[test]
-fn test_coverage_0() {
-    let a = BooleanVector(vec![true, true, false, false]);
-    assert!(format!("{a:?}").starts_with("BooleanVector"));
-
-    let a = How::Union;
-    #[allow(clippy::clone_on_copy)]
-    let _b = a.clone();
-
-    let mut rng = StdRng::seed_from_u64(0);
-    let a = MemorylessRange::new(&mut rng, 1000, 0..=10, 0.5, 1, How::Intersection);
-    let v: Vec<_> = a.take(100).collect();
-    println!("{v:?}");
-
-    let a = MemorylessIter::new(&mut rng, 1000, 0..=10, 0.5, 1, How::Intersection);
-    let v: Vec<_> = a.take(100).collect();
-    println!("{v:?}");
 }
 
 type Element = i64;
