@@ -936,16 +936,16 @@ test_normal_and_wasm!(
 
         assert!(set.insert(2));
         assert!(!set.insert(2));
-        assert_eq!(set.len(), 1 as I32SafeLen);
+        assert_eq!(set.len(), 1u64);
     }
 );
 
 test_normal_and_wasm!(
     fn doc_test_len() {
         let mut v = RangeSetBlaze::new();
-        assert_eq!(v.len(), 0 as I32SafeLen);
+        assert_eq!(v.len(), 0u64);
         v.insert(1);
-        assert_eq!(v.len(), 1 as I32SafeLen);
+        assert_eq!(v.len(), 1u64);
 
         let v = RangeSetBlaze::from_iter([
             -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,
@@ -963,17 +963,17 @@ test_normal_and_wasm!(
         let mut set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=11]);
         let len = set.len();
         assert_eq!(set.pop_first(), Some(1));
-        assert_eq!(set.len(), len - 1);
+        assert_eq!(set.len(), len - 1u64);
         assert_eq!(set, RangeSetBlaze::from_iter([2..=2, 4..=5, 10..=11]));
         assert_eq!(set.pop_last(), Some(11));
         println!("{set:#?}");
         assert_eq!(set, RangeSetBlaze::from_iter([2..=2, 4..=5, 10..=10]));
-        assert_eq!(set.len(), len - 2);
-        assert_eq!(set.pop_last(), Some(10 as I32SafeLen));
-        assert_eq!(set.len(), len - 3);
+        assert_eq!(set.len(), len - 2u64);
+        assert_eq!(set.pop_last(), Some(10));
+        assert_eq!(set.len(), len - 3u64);
         assert_eq!(set, RangeSetBlaze::from_iter([2..=2, 4..=5]));
         assert_eq!(set.pop_first(), Some(2));
-        assert_eq!(set.len(), len - 4);
+        assert_eq!(set.len(), len - 4u64);
         assert_eq!(set, RangeSetBlaze::from_iter([4..=5]));
     }
 );
@@ -1045,13 +1045,13 @@ test_normal_and_wasm!(
         let mut set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=11]);
         let len = set.len();
         assert!(set.remove(4));
-        assert_eq!(set.len(), len - 1 as I32SafeLen);
+        assert_eq!(set.len(), len - 1u64);
         assert_eq!(set, RangeSetBlaze::from_iter([1..=2, 5..=5, 10..=11]));
         assert!(!set.remove(4));
-        assert_eq!(set.len(), len - 1 as I32SafeLen);
+        assert_eq!(set.len(), len - 1u64);
         assert_eq!(set, RangeSetBlaze::from_iter([1..=2, 5..=5, 10..=11]));
         assert!(set.remove(5));
-        assert_eq!(set.len(), len - 2 as I32SafeLen);
+        assert_eq!(set.len(), len - 2u64);
         assert_eq!(set, RangeSetBlaze::from_iter([1..=2, 10..=11]));
 
         let mut set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=100, 1000..=1000]);
@@ -1061,13 +1061,13 @@ test_normal_and_wasm!(
         assert!(!set.remove(3));
         assert_eq!(set.len(), len);
         assert!(set.remove(2));
-        assert_eq!(set.len(), len - 1 as I32SafeLen);
+        assert_eq!(set.len(), len - 1u64);
         assert!(set.remove(1000));
-        assert_eq!(set.len(), len - 2 as I32SafeLen);
+        assert_eq!(set.len(), len - 2u64);
         assert!(set.remove(10));
-        assert_eq!(set.len(), len - 3 as I32SafeLen);
+        assert_eq!(set.len(), len - 3u64);
         assert!(set.remove(50));
-        assert_eq!(set.len(), len - 4 as I32SafeLen);
+        assert_eq!(set.len(), len - 4u64);
         assert_eq!(
             set,
             RangeSetBlaze::from_iter([1..=1, 4..=5, 11..=49, 51..=100])

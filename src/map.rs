@@ -578,8 +578,8 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     ///
     /// a.append(&mut b);
     ///
-    /// assert_eq!(a.len() as u64, 5u64);
-    /// assert_eq!(b.len() as u64, 0u64);
+    /// assert_eq!(a.len(), 5u64);
+    /// assert_eq!(b.len(), 0u64);
     ///
     /// assert_eq!(a[1], "a");
     /// assert_eq!(a[2], "a");
@@ -821,7 +821,7 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     /// assert_eq!(map.ranges_insert(2..=5, "a"), true);
     /// assert_eq!(map.ranges_insert(5..=6, "b"), true);
     /// assert_eq!(map.ranges_insert(3..=4, "c"), false);
-    /// assert_eq!(map.len(), 5usize);
+    /// assert_eq!(map.len(), 5u64);
     /// ```
     pub fn ranges_insert(&mut self, range: RangeInclusive<T>, value: V) -> bool {
         let len_before = self.len;
@@ -1241,9 +1241,9 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     /// use range_set_blaze::prelude::*;
     ///
     /// let mut a = RangeMapBlaze::new();
-    /// assert_eq!(a.len(), 0usize);
+    /// assert_eq!(a.len(), 0u64);
     /// a.insert(1, "a");
-    /// assert_eq!(a.len(), 1usize);
+    /// assert_eq!(a.len(), 1u64);
     ///
     /// let a = RangeMapBlaze::from_iter([
     ///     (-170_141_183_460_469_231_731_687_303_715_884_105_728_i128..=10, "a"),

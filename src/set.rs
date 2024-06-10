@@ -549,8 +549,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// a.append(&mut b);
     ///
-    /// assert_eq!(a.len() as u64, 5u64);
-    /// assert_eq!(b.len() as u64, 0u64);
+    /// assert_eq!(a.len(), 5u64);
+    /// assert_eq!(b.len(), 0u64);
     ///
     /// assert!(a.contains(1));
     /// assert!(a.contains(2));
@@ -744,7 +744,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// assert_eq!(set.insert(2), true);
     /// assert_eq!(set.insert(2), false);
-    /// assert_eq!(set.len(), 1usize);
+    /// assert_eq!(set.len(), 1u64);
     /// ```
     pub fn insert(&mut self, value: T) -> bool {
         let len_before = self.len;
@@ -829,7 +829,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(set.ranges_insert(2..=5), true);
     /// assert_eq!(set.ranges_insert(5..=6), true);
     /// assert_eq!(set.ranges_insert(3..=4), false);
-    /// assert_eq!(set.len(), 5usize);
+    /// assert_eq!(set.len(), 5u64);
     /// ```
     pub fn ranges_insert(&mut self, range: RangeInclusive<T>) -> bool {
         let len_before = self.len;
@@ -1115,9 +1115,9 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// use range_set_blaze::prelude::*;
     ///
     /// let mut v = RangeSetBlaze::new();
-    /// assert_eq!(v.len(), 0usize);
+    /// assert_eq!(v.len(), 0u64);
     /// v.insert(1);
-    /// assert_eq!(v.len(), 1usize);
+    /// assert_eq!(v.len(), 1u64);
     ///
     /// let v = RangeSetBlaze::from_iter([
     ///     -170_141_183_460_469_231_731_687_303_715_884_105_728i128..=10,

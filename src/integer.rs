@@ -50,6 +50,7 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     /// A definition of [`RangeSetBlaze::from_slice()`] specific to this integer type.
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self>;
 
+    // cmk0000000 update this doc
     /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note
     /// that it can't be `u8` because the length ranges from 0 to 256, which is one too large for `u8`.
     ///
@@ -182,63 +183,40 @@ macro_rules! impl_integer_ops {
 }
 
 impl Integer for i8 {
-    #[cfg(target_pointer_width = "32")]
-    type SafeLen = usize;
-    #[cfg(target_pointer_width = "64")]
-    type SafeLen = usize;
-
+    type SafeLen = u16;
     impl_integer_ops!(i8, u8);
 }
 
 impl Integer for u8 {
-    #[cfg(target_pointer_width = "32")]
-    type SafeLen = usize;
-    #[cfg(target_pointer_width = "64")]
-    type SafeLen = usize;
-
+    type SafeLen = u16;
     impl_integer_ops!(u8, Self);
 }
 
 impl Integer for i32 {
-    #[cfg(target_pointer_width = "32")]
     type SafeLen = u64;
-    #[cfg(target_pointer_width = "64")]
-    type SafeLen = usize;
 
     impl_integer_ops!(i32, u32);
 }
 
 impl Integer for u32 {
-    #[cfg(target_pointer_width = "32")]
     type SafeLen = u64;
-    #[cfg(target_pointer_width = "64")]
-    type SafeLen = usize;
 
     impl_integer_ops!(u32, Self);
 }
 
 impl Integer for i64 {
-    #[cfg(target_pointer_width = "32")]
-    type SafeLen = u128;
-    #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
     impl_integer_ops!(i64, u64);
 }
 
 impl Integer for u64 {
-    #[cfg(target_pointer_width = "32")]
-    type SafeLen = u128;
-    #[cfg(target_pointer_width = "64")]
     type SafeLen = u128;
 
     impl_integer_ops!(u64, Self);
 }
 
 impl Integer for i128 {
-    #[cfg(target_pointer_width = "32")]
-    type SafeLen = UIntPlusOne<u128>;
-    #[cfg(target_pointer_width = "64")]
     type SafeLen = UIntPlusOne<u128>;
 
     #[inline]
@@ -337,9 +315,6 @@ impl Integer for i128 {
 }
 
 impl Integer for u128 {
-    #[cfg(target_pointer_width = "32")]
-    type SafeLen = UIntPlusOne<Self>;
-    #[cfg(target_pointer_width = "64")]
     type SafeLen = UIntPlusOne<Self>;
 
     #[inline]
@@ -452,28 +427,19 @@ impl Integer for usize {
 }
 
 impl Integer for i16 {
-    #[cfg(target_pointer_width = "32")]
-    type SafeLen = usize;
-    #[cfg(target_pointer_width = "64")]
-    type SafeLen = usize;
+    type SafeLen = u32;
 
     impl_integer_ops!(i16, u16);
 }
 
 impl Integer for u16 {
-    #[cfg(target_pointer_width = "32")]
-    type SafeLen = usize;
-    #[cfg(target_pointer_width = "64")]
-    type SafeLen = usize;
+    type SafeLen = u32;
 
     impl_integer_ops!(u16, Self);
 }
 
 impl Integer for Ipv4Addr {
-    #[cfg(target_pointer_width = "32")]
     type SafeLen = u64;
-    #[cfg(target_pointer_width = "64")]
-    type SafeLen = usize;
 
     #[inline]
     fn checked_add_one(self) -> Option<Self> {
@@ -555,9 +521,6 @@ impl Integer for Ipv4Addr {
 }
 
 impl Integer for Ipv6Addr {
-    #[cfg(target_pointer_width = "32")]
-    type SafeLen = UIntPlusOne<u128>;
-    #[cfg(target_pointer_width = "64")]
     type SafeLen = UIntPlusOne<u128>;
 
     #[inline]
@@ -659,12 +622,9 @@ const SURROGATE_START: u32 = 0xD800;
 const SURROGATE_END: u32 = 0xDFFF;
 
 impl Integer for char {
-    #[cfg(target_pointer_width = "32")]
     // in general, the length of a 32-bit inclusive range does not fit in a u32,
     // but unicode doesn't use the full range, so it does fit
-    type SafeLen = usize;
-    #[cfg(target_pointer_width = "64")]
-    type SafeLen = usize;
+    type SafeLen = u32;
 
     #[inline]
     fn checked_add_one(self) -> Option<Self> {

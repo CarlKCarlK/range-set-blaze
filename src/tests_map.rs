@@ -890,8 +890,8 @@ fn map_repro1() {
 
 //     a.append(&mut b);
 
-//     assert_eq!(a.len(), 5usize);
-//     assert_eq!(b.len(), 0usize);
+//     assert_eq!(a.len(), 5);
+//     assert_eq!(b.len(), 0);
 
 //     assert_eq!(a.get(1), Some(&"Hello"));
 //     assert_eq!(a.get(2), Some(&"Hello"));
@@ -1323,8 +1323,8 @@ fn map_repro1() {
 
 // //     a.append(&mut b);
 
-// //     assert_eq!(a.len(), 5 as I32SafeLen);
-// //     assert_eq!(b.len(), 0 as I32SafeLen);
+// //     assert_eq!(a.len(), 5);
+// //     assert_eq!(b.len(), 0);
 
 // //     assert!(a.contains(1));
 // //     assert!(a.contains(2));
@@ -1390,7 +1390,7 @@ fn map_repro1() {
 // //     assert_eq!(set.ranges_insert(2..=5), true);
 // //     assert_eq!(set.ranges_insert(5..=6), true);
 // //     assert_eq!(set.ranges_insert(3..=4), false);
-// //     assert_eq!(set.len(), 5 as I32SafeLen);
+// //     assert_eq!(set.len(), 5);
 // //     let mut set = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
 // //     assert_eq!(set.take(2), Some(2));
 // //     assert_eq!(set.take(2), None);
@@ -1407,11 +1407,11 @@ fn map_repro1() {
 
 // //     let mut a = RangeMapBlaze::from_iter([1..=3]);
 // //     a.extend(std::iter::once(4));
-// //     assert_eq!(a.len(), 4 as I32SafeLen);
+// //     assert_eq!(a.len(), 4);
 
 // //     let mut a = RangeMapBlaze::from_iter([1..=3]);
 // //     a.extend(4..=5);
-// //     assert_eq!(a.len(), 5 as I32SafeLen);
+// //     assert_eq!(a.len(), 5);
 
 // //     let mut set = RangeMapBlaze::new();
 
@@ -1445,7 +1445,7 @@ fn map_repro1() {
 
 // //     let mut a = RangeMapBlaze::from_iter([1..=3]);
 // //     a.extend([1..=3]);
-// //     assert_eq!(a.len(), 3 as I32SafeLen);
+// //     assert_eq!(a.len(), 3);
 
 // //     let a = RangeMapBlaze::from_iter([1..=3]);
 // //     let b = <RangeMapBlaze<i32, &str> as Clone>::clone(&a);
@@ -1464,7 +1464,7 @@ fn map_repro1() {
 
 // //             a.append(&mut b);
 
-// //             // assert_eq!(a.len(), 5usize);
+// //             // assert_eq!(a.len(), 5);
 // //             assert_eq!(b.len(), <$ty as Integer>::SafeLen::zero());
 
 // //             assert!(a.contains(1));

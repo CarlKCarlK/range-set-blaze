@@ -29,7 +29,7 @@ use syntactic_for::syntactic_for;
 use core::array;
 use core::ops::BitAndAssign;
 use rand::Rng;
-type I32SafeLen = <i32 as crate::Integer>::SafeLen;
+//  cmk remove type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
 #[test]
 fn insert_255u8() {
@@ -110,8 +110,8 @@ fn doctest3() {
 
     a.append(&mut b);
 
-    assert_eq!(a.len(), 5 as I32SafeLen);
-    assert_eq!(b.len(), 0 as I32SafeLen);
+    assert_eq!(a.len(), 5u64);
+    assert_eq!(b.len(), 0u64);
 
     assert!(a.contains(1));
     assert!(a.contains(2));
@@ -303,7 +303,7 @@ fn understand_into_iter() {
 #[test]
 fn iters() {
     let range_set_blaze = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    assert!(range_set_blaze.len() == 13 as I32SafeLen);
+    assert!(range_set_blaze.len() == 13u64);
     for i in range_set_blaze.iter() {
         println!("{i}");
     }
@@ -683,8 +683,8 @@ fn lib_coverage_0() {
 
     a.append(&mut b);
 
-    assert_eq!(a.len(), 5 as I32SafeLen);
-    assert_eq!(b.len(), 0 as I32SafeLen);
+    assert_eq!(a.len(), 5u64);
+    assert_eq!(b.len(), 0u64);
 
     assert!(a.contains(1));
     assert!(a.contains(2));
@@ -750,7 +750,7 @@ fn lib_coverage_0() {
     assert_eq!(set.ranges_insert(2..=5), true);
     assert_eq!(set.ranges_insert(5..=6), true);
     assert_eq!(set.ranges_insert(3..=4), false);
-    assert_eq!(set.len(), 5 as I32SafeLen);
+    assert_eq!(set.len(), 5u64);
     let mut set = RangeSetBlaze::from_iter([1, 2, 3]);
     assert_eq!(set.take(2), Some(2));
     assert_eq!(set.take(2), None);
@@ -767,11 +767,11 @@ fn lib_coverage_0() {
 
     let mut a = RangeSetBlaze::from_iter([1..=3]);
     a.extend(std::iter::once(4));
-    assert_eq!(a.len(), 4 as I32SafeLen);
+    assert_eq!(a.len(), 4u64);
 
     let mut a = RangeSetBlaze::from_iter([1..=3]);
     a.extend(4..=5);
-    assert_eq!(a.len(), 5 as I32SafeLen);
+    assert_eq!(a.len(), 5u64);
 
     let mut set = RangeSetBlaze::new();
 
@@ -805,7 +805,7 @@ fn lib_coverage_0() {
 
     let mut a = RangeSetBlaze::from_iter([1..=3]);
     a.extend([1..=3]);
-    assert_eq!(a.len(), 3 as I32SafeLen);
+    assert_eq!(a.len(), 3u64);
 
     let a = RangeSetBlaze::from_iter([1..=3]);
     let b = <RangeSetBlaze<i32> as Clone>::clone(&a);
@@ -824,7 +824,7 @@ fn lib_coverage_0() {
 
             a.append(&mut b);
 
-            // assert_eq!(a.len(), 5usize);
+            // assert_eq!(a.len(), 5);
             assert_eq!(b.len(), <$ty as Integer>::SafeLen::zero());
 
             assert!(a.contains(1));

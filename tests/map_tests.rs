@@ -246,8 +246,8 @@ test_normal_and_wasm!(
 
         a.append(&mut b);
 
-        assert_eq!(a.len() as u64, 5u64);
-        assert_eq!(b.len() as u64, 0u64);
+        assert_eq!(a.len(), 5u64);
+        assert_eq!(b.len(), 0u64);
 
         assert_eq!(a.get(1), Some(&"Hello"));
         assert_eq!(a.get(2), Some(&"Hello"));
@@ -260,8 +260,8 @@ test_normal_and_wasm!(
 
         a.append(&mut b);
 
-        assert_eq!(a.len(), 5usize);
-        assert_eq!(b.len(), 0usize);
+        assert_eq!(a.len(), 5);
+        assert_eq!(b.len(), 0);
 
         assert!(a.contains_key(1));
         assert!(a.contains_key(2));
@@ -1367,16 +1367,16 @@ test_normal_and_wasm!(
 
         assert_eq!(map.insert(2, "a"), None);
         assert_eq!(map.insert(2, "b"), Some("a"));
-        assert_eq!(map.len(), 1 as I32SafeLen);
+        assert_eq!(map.len(), 1u64);
     }
 );
 
 test_normal_and_wasm!(
     fn map_doc_test_len() {
         let mut v = RangeMapBlaze::new();
-        assert_eq!(v.len(), 0 as I32SafeLen);
+        assert_eq!(v.len(), 0u64);
         v.insert(1, "Hello");
-        assert_eq!(v.len(), 1 as I32SafeLen);
+        assert_eq!(v.len(), 1u64);
 
         let v = RangeMapBlaze::from_iter([
             (
@@ -1399,11 +1399,11 @@ test_normal_and_wasm!(
     fn map_test_pops() {
         // Initialize the map with ranges as keys and chars as values
         let mut map = RangeMapBlaze::from_iter([(1..=2, 'a'), (4..=5, 'b'), (10..=11, 'c')]);
-        let len = map.len() as I32SafeLen;
+        let len = map.len();
 
         // Adjusted to expect a tuple of (single integer key, value)
         assert_eq!(map.pop_first(), Some((1, 'a')));
-        assert_eq!(map.len(), len - 1);
+        assert_eq!(map.len(), len - 1u64);
         // After popping the first, the range 1..=2 should now start from 2
         assert_eq!(
             map,
@@ -1425,16 +1425,16 @@ test_normal_and_wasm!(
                 (10..=10, 'c') // Adjusted range after popping key 11
             ])
         );
-        assert_eq!(map.len(), len - 2);
+        assert_eq!(map.len(), len - 2u64);
 
         // Continue popping and assert changes
         assert_eq!(map.pop_last(), Some((10, 'c'))); // Pop the last remaining element of the previous last range
-        assert_eq!(map.len(), len - 3);
+        assert_eq!(map.len(), len - 3u64);
         assert_eq!(map, RangeMapBlaze::from_iter([(2..=2, 'a'), (4..=5, 'b')]));
 
         // Now pop the first element after previous pops, which should be 2 from the adjusted range
         assert_eq!(map.pop_first(), Some((2, 'a')));
-        assert_eq!(map.len(), len - 4);
+        assert_eq!(map.len(), len - 4u64);
         assert_eq!(map, RangeMapBlaze::from_iter([(4..=5, 'b')]));
 
         // Finally, pop the last elements left in the map
@@ -1468,11 +1468,11 @@ test_normal_and_wasm!(
     fn map_remove() {
         // Initialize RangeMapBlaze with char values for simplicity
         let mut map = RangeMapBlaze::from_iter([(1..=2, 'a'), (4..=5, 'b'), (10..=11, 'c')]);
-        let len = map.len() as I32SafeLen;
+        let len = map.len();
 
         // Assume remove affects only a single key and returns true if the key was found and removed
         assert_eq!(map.remove(4), Some('b')); // Removing a key within a range may adjust the range
-        assert_eq!(map.len(), len - 1);
+        assert_eq!(map.len(), len - 1u64);
         // The range 4..=5 with 'b' is adjusted to 5..=5 after removing 4
         assert_eq!(
             map,
@@ -1480,7 +1480,7 @@ test_normal_and_wasm!(
         );
         assert_eq!(map.remove(5), Some('b'));
 
-        assert_eq!(map.len(), len - 2 as I32SafeLen);
+        assert_eq!(map.len(), len - 2u64);
         assert_eq!(
             map,
             RangeMapBlaze::from_iter([(1..=2, 'a'), (10..=11, 'c'),])
@@ -1492,19 +1492,19 @@ test_normal_and_wasm!(
             (10..=100, 'c'),
             (1000..=1000, 'd'),
         ]);
-        let len = map.len() as I32SafeLen;
+        let len = map.len();
         assert_eq!(map.remove(0), None);
         assert_eq!(map.len(), len);
         assert_eq!(map.remove(3), None);
         assert_eq!(map.len(), len);
         assert_eq!(map.remove(2), Some('a'));
-        assert_eq!(map.len(), len - 1 as I32SafeLen);
+        assert_eq!(map.len(), len - 1u64);
         assert_eq!(map.remove(1000), Some('d'));
-        assert_eq!(map.len(), len - 2 as I32SafeLen);
+        assert_eq!(map.len(), len - 2u64);
         assert_eq!(map.remove(10), Some('c'));
-        assert_eq!(map.len(), len - 3 as I32SafeLen);
+        assert_eq!(map.len(), len - 3u64);
         assert_eq!(map.remove(50), Some('c'));
-        assert_eq!(map.len(), len - 4 as I32SafeLen);
+        assert_eq!(map.len(), len - 4u64);
         assert_eq!(
             map,
             RangeMapBlaze::from_iter(
@@ -3622,8 +3622,8 @@ test_normal_and_wasm!(
 
 //     a.append(&mut b);
 
-//     assert_eq!(a.len(), 5 as I32SafeLen);
-//     assert_eq!(b.len(), 0 as I32SafeLen);
+//     assert_eq!(a.len(), 5);
+//     assert_eq!(b.len(), 0);
 
 //     assert!(a.contains(1));
 //     assert!(a.contains(2));
@@ -3689,7 +3689,7 @@ test_normal_and_wasm!(
 //     assert_eq!(set.ranges_insert(2..=5), true);
 //     assert_eq!(set.ranges_insert(5..=6), true);
 //     assert_eq!(set.ranges_insert(3..=4), false);
-//     assert_eq!(set.len(), 5 as I32SafeLen);
+//     assert_eq!(set.len(), 5);
 //     let mut set = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
 //     assert_eq!(set.take(2), Some(2));
 //     assert_eq!(set.take(2), None);
@@ -3706,11 +3706,11 @@ test_normal_and_wasm!(
 
 //     let mut a = RangeMapBlaze::from_iter([1..=3]);
 //     a.extend(std::iter::once(4));
-//     assert_eq!(a.len(), 4 as I32SafeLen);
+//     assert_eq!(a.len(), 4);
 
 //     let mut a = RangeMapBlaze::from_iter([1..=3]);
 //     a.extend(4..=5);
-//     assert_eq!(a.len(), 5 as I32SafeLen);
+//     assert_eq!(a.len(), 5);
 
 //     let mut set = RangeMapBlaze::new();
 
@@ -3744,7 +3744,7 @@ test_normal_and_wasm!(
 
 //     let mut a = RangeMapBlaze::from_iter([1..=3]);
 //     a.extend([1..=3]);
-//     assert_eq!(a.len(), 3 as I32SafeLen);
+//     assert_eq!(a.len(), 3);
 
 //     let a = RangeMapBlaze::from_iter([1..=3]);
 //     let b = <RangeMapBlaze<i32, &str> as Clone>::clone(&a);
@@ -3763,7 +3763,7 @@ test_normal_and_wasm!(
 
 //             a.append(&mut b);
 
-//             // assert_eq!(a.len(), 5usize);
+//             // assert_eq!(a.len(), 5u64);
 //             assert_eq!(b.len(), <$ty as Integer>::SafeLen::zero());
 
 //             assert!(a.contains(1));
