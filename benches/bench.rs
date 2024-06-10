@@ -117,7 +117,7 @@ fn gen_data_descending(_seed: u64, len: u32) -> Vec<u32> {
     data
 }
 
-fn range_set_test(data: Vec<u32>, range_len: u64, len: u64) {
+fn range_set_test(data: Vec<u32>, range_len: usize, len: u64) {
     let range_set_blaze = RangeSetBlaze::<u32>::from_iter(data);
     assert!(range_set_blaze.ranges_len() == range_len && range_set_blaze.len() == len);
 }
