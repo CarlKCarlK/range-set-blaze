@@ -2422,7 +2422,6 @@ test_normal_and_wasm!(
 // cmk0000 get 'map' dic page looking good
 
 
-// cmk00000000 try to move tests from src to here
 #[allow(clippy::cast_lossless, clippy::cast_possible_truncation, clippy::cast_possible_wrap, clippy::cast_sign_loss)]
 test_normal_and_wasm!(
 fn sub0() {
