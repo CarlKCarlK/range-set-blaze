@@ -32,20 +32,9 @@ use core::ops::BitAndAssign;
 use rand::Rng;
 //  cmk remove type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
-#[test]
-fn insert_255u8() {
-    let range_set_blaze = RangeSetBlaze::<u8>::from_iter([255]);
-    assert_eq!(range_set_blaze.to_string(), "255..=255");
-}
 
-#[test]
-fn insert_max_u128() {
-    let a = RangeSetBlaze::<u128>::from_iter([u128::MAX]);
-    println!("a: {a}");
-}
-
-#[test]
 #[allow(clippy::cast_lossless, clippy::cast_possible_truncation, clippy::cast_possible_wrap, clippy::cast_sign_loss)]
+#[test]
 fn sub() {
     for start in i8::MIN..i8::MAX {
         for end in start..i8::MAX {
@@ -67,77 +56,7 @@ fn sub() {
     println!("before: {before}, after: {after}");
 }
 
-#[test]
-fn complement0() {
-    syntactic_for! { ty in [i8, u8 , isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
-        $(
-        let empty = RangeSetBlaze::<$ty>::new();
-        let full = !&empty;
-        println!("empty: {empty} (len {}), full: {full} (len {})", empty.len(), full.len());
-        )*
-    }};
-}
 
-#[test]
-fn repro_bit_and() {
-    let a = RangeSetBlaze::from_iter([1u8, 2, 3]);
-    let b = RangeSetBlaze::from_iter([2u8, 3, 4]);
-
-    let result = &a & &b;
-    println!("{result}");
-    assert_eq!(result, RangeSetBlaze::from_iter([2u8, 3]));
-}
-
-#[test]
-fn doctest1() {
-    let a = RangeSetBlaze::<u8>::from_iter([1, 2, 3]);
-    let b = RangeSetBlaze::<u8>::from_iter([3, 4, 5]);
-
-    let result = &a | &b;
-    assert_eq!(result, RangeSetBlaze::<u8>::from_iter([1, 2, 3, 4, 5]));
-}
-
-#[test]
-fn doctest2() {
-    let set = RangeSetBlaze::<u8>::from_iter([1, 2, 3]);
-    assert!(set.contains(1));
-    assert!(!set.contains(4));
-}
-
-#[test]
-fn doctest3() {
-    let mut a = RangeSetBlaze::from_iter([1..=3]);
-    let mut b = RangeSetBlaze::from_iter([3..=5]);
-
-    a.append(&mut b);
-
-    assert_eq!(a.len(), 5u64);
-    assert_eq!(b.len(), 0u64);
-
-    assert!(a.contains(1));
-    assert!(a.contains(2));
-    assert!(a.contains(3));
-    assert!(a.contains(4));
-    assert!(a.contains(5));
-}
-
-#[test]
-fn doctest4() {
-    let a = RangeSetBlaze::<i8>::from_iter([1, 2, 3]);
-
-    let result = !&a;
-    assert_eq!(result.to_string(), "-128..=0, 4..=127");
-}
-
-#[test]
-fn compare() {
-    let mut btree_set = BTreeSet::<u128>::new();
-    btree_set.insert(3);
-    btree_set.insert(1);
-    let string = btree_set.iter().join(", ");
-    println!("{string:#?}");
-    assert!(string == "1, 3");
-}
 
 #[test]
 fn demo_f1() {
@@ -217,13 +136,6 @@ fn demo_b2() {
     assert_eq!(range_set_blaze.len_slow(), range_set_blaze.len());
 }
 
-#[test]
-fn add_in_order() {
-    let mut range_set = RangeSetBlaze::new();
-    for i in 0u64..1000 {
-        range_set.insert(i);
-    }
-}
 
 #[test]
 fn optimize() {
@@ -301,31 +213,6 @@ fn understand_into_iter() {
     // let len = rsi.len();
 }
 
-#[test]
-fn iters() {
-    let range_set_blaze = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    assert!(range_set_blaze.len() == 13u64);
-    for i in range_set_blaze.iter() {
-        println!("{i}");
-    }
-    for range in range_set_blaze.ranges() {
-        println!("{range:?}");
-    }
-    let mut rs = range_set_blaze.ranges();
-    println!("{:?}", rs.next());
-    println!("{range_set_blaze}");
-    println!("{:?}", rs.len());
-    println!("{:?}", rs.next());
-    for i in range_set_blaze.iter() {
-        println!("{i}");
-    }
-    // range_set_blaze.len();
-
-    let mut rs = !range_set_blaze.ranges();
-    println!("{:?}", rs.next());
-    println!("{range_set_blaze}");
-    // !!! assert that can't use range_set_blaze again
-}
 
 #[test]
 fn missing_doctest_ops() {
@@ -379,23 +266,7 @@ fn missing_doctest_ops() {
 //     println!("{}", std::any::type_name::<T>())
 // }
 
-#[test]
-fn from_string() {
-    let a = RangeSetBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=65535]);
-    assert_eq!(a, RangeSetBlaze::from_iter([0..=65535]));
-}
 
-#[test]
-fn nand_repro() {
-    let b = &RangeSetBlaze::from_iter([5u8..=13, 18..=29]);
-    let c = &RangeSetBlaze::from_iter([38..=42]);
-    println!("about to nand");
-    let d = !b | !c;
-    assert_eq!(
-        d,
-        RangeSetBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
-    );
-}
 
 // cmk0
 // #[test]

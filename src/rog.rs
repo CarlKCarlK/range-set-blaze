@@ -270,7 +270,7 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     /// Used internally to test `rogs_range`.
     #[doc(hidden)]
-    pub fn _rogs_range_slow<R>(&self, range: R) -> Vec<Rog<T>>
+    pub fn rogs_range_slow<R>(&self, range: R) -> Vec<Rog<T>>
     where
         R: RangeBounds<T>,
     {
@@ -288,7 +288,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// Used internally to test `rogs_get`.
     #[doc(hidden)]
     pub fn rogs_get_slow(&self, value: T) -> Rog<T> {
-        let all_rogs = self._rogs_range_slow(..);
+        let all_rogs = self.rogs_range_slow(..);
         for rog in all_rogs {
             if rog.contains(value) {
                 return rog;

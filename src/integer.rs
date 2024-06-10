@@ -50,13 +50,12 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     /// A definition of [`RangeSetBlaze::from_slice()`] specific to this integer type.
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self>;
 
-    // cmk0000000 update this doc
-    /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `usize`. Note
+    /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `u16`. Note
     /// that it can't be `u8` because the length ranges from 0 to 256, which is one too large for `u8`.
     ///
-    /// In general, `SafeLen` will be `usize` if `usize` is always large enough. If not, `SafeLen` will be the smallest unsigned integer
-    /// type that is always large enough. However, for `u128` and `i128`, nothing is always large enough so
-    ///  `SafeLen` will be `u128` and we prohibit the largest value from being used in [`Integer`].
+    /// In general, `SafeLen` will be the smallest unsigned integer
+    /// type that is always large enough. However, for `u128` and `i128`, nothing build-in is large enough so
+    ///  `SafeLen` will be `UIntPlusOne<u128>`, a custom type that can represent any value from 0 to `u128::MAX + 1`.
     ///
     /// # Examples
     /// ```

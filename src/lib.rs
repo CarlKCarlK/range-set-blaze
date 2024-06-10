@@ -96,7 +96,7 @@ pub use sym_diff_iter_map::SymDiffIterMap;
 mod multiway;
 mod multiway_map;
 mod sorted_disjoint_map;
-mod tests;
+mod tests_set;
 mod tests_map;
 mod union_iter;
 mod union_iter_map;
