@@ -10,5 +10,5 @@ pub use crate::{
     DynSortedDisjointMap, IntoString, MultiwayRangeMapBlaze, MultiwayRangeMapBlazeRef,
     MultiwayRangeSetBlaze, MultiwayRangeSetBlazeRef, MultiwaySortedDisjoint,
     MultiwaySortedDisjointMap, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
-    SortedStarts, UIntPlusOne,
+    SortedStarts, UIntPlusOne
 };
