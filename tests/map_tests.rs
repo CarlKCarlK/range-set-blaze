@@ -26,7 +26,6 @@ use tests_common::test_normal_and_wasm;
 // };
 // cmk not tested use range_map_blaze::multiway_map::MultiwayRangeMapBlazeRef;
 use range_set_blaze::Integer;
-type I32SafeLen = <i32 as Integer>::SafeLen;
 use std::{
     io::{stdout, Write},
     thread::sleep,

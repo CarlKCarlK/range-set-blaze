@@ -1714,10 +1714,10 @@ fn map_repro1() {
 
 #[quickcheck]
 fn extend(mut a: BTreeMap<i8, u8>, b: Vec<(i8, u8)>) -> bool {
-    let mut a_r = RangeMapBlaze::from_iter(a.clone().into_iter());
-    a.extend(b.to_owned().into_iter());
+    let mut a_r: RangeMapBlaze<_,_> = a.clone().into_iter().collect();
+    a.extend(b.clone().into_iter());
     a_r.extend(b.into_iter());
-    a_r == RangeMapBlaze::from_iter(a.into_iter())
+    a_r == a.into_iter().collect()
 }
 
 // // #[should_panic]
@@ -1799,6 +1799,7 @@ fn test_coverage_8() {
 }
 
 #[test]
+#[allow(clippy::reversed_empty_ranges)]
 fn test_coverage_9() {
     let mut a = RangeMapBlaze::from_iter([(1u128..=2, "Hello"), (3..=4, "World")]);
     let b = a.clone();

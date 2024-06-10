@@ -2040,6 +2040,10 @@ mod tests {
 
     #[test]
     fn test_cmp() {
+        fn to_bits(vv_pair: Vec<(u32, f64)>) -> Vec<(u32, u64)> {
+            vv_pair.into_iter().map(|(k, v)| (k, v.to_bits())).collect()
+        }
+        
         let test_cases = vec![
             (
                 vec![(2, 1.0), (11, 1.0), (12, 1.0)],
@@ -2098,9 +2102,6 @@ mod tests {
             ),
         ];
 
-        fn to_bits(vv_pair: Vec<(u32, f64)>) -> Vec<(u32, u64)> {
-            vv_pair.into_iter().map(|(k, v)| (k, v.to_bits())).collect()
-        }
         let test_cases = test_cases
             .into_iter()
             .map(|(a, b, expected)| (to_bits(a), to_bits(b), expected));

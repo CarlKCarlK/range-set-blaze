@@ -12,6 +12,7 @@ use core::ops::BitAndAssign;
 #[cfg(feature = "rog-experimental")]
 use core::ops::Bound;
 use core::ops::RangeInclusive;
+#[cfg(target_os = "linux")]
 use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
@@ -30,7 +31,6 @@ use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 use tests_common::test_normal_and_wasm;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
-type I32SafeLen = <i32 as range_set_blaze::Integer>::SafeLen;
 use range_set_blaze::SymDiffIter;
 
 test_normal_and_wasm!(
@@ -734,6 +734,7 @@ fn debug_k_play() {
     k_play(&mut c);
 }
 
+#[cfg(target_os = "linux")]
 fn k_play(c: &mut Criterion) {
     let range = 0..=9_999_999;
     let range_len = 1_000;

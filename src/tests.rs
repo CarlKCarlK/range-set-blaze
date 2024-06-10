@@ -27,6 +27,7 @@ use std::{
 use syntactic_for::syntactic_for;
 // use thousands::Separable;
 use core::array;
+#[cfg(target_os = "linux")]
 use core::ops::BitAndAssign;
 use rand::Rng;
 //  cmk remove type I32SafeLen = <i32 as crate::Integer>::SafeLen;
@@ -44,7 +45,7 @@ fn insert_max_u128() {
 }
 
 #[test]
-#[allow(clippy::cast_lossless, clippy::cast_possible_truncation)]
+#[allow(clippy::cast_lossless, clippy::cast_possible_truncation, clippy::cast_possible_wrap, clippy::cast_sign_loss)]
 fn sub() {
     for start in i8::MIN..i8::MAX {
         for end in start..i8::MAX {
@@ -509,7 +510,7 @@ fn nand_repro() {
 //     assert_eq!(union_iter.into_string(), "-12..=-10, 1..=6");
 // }
 
-fn is_ddcppdheo<
+const fn is_ddcppdheo<
     T: std::fmt::Debug
         + Display
         + Clone
@@ -524,8 +525,8 @@ fn is_ddcppdheo<
 >() {
 }
 
-fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
-fn is_like_btreeset_iter<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
+const fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
+const fn is_like_btreeset_iter<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
 // removed DoubleEndedIterator +ExactSizeIterator for now
 
 // cmk0 add others iterators and test
@@ -537,9 +538,9 @@ fn is_like_btreeset_iter<T: Clone + std::fmt::Debug + FusedIterator + Iterator>(
 //     is_like_btreeset_iter::<AIter>();
 // }
 
-fn is_like_btreeset_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {}
+const fn is_like_btreeset_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {}
 
-fn is_like_btreeset<
+const fn is_like_btreeset<
     T: Clone
         + std::fmt::Debug
         + Default
@@ -559,7 +560,7 @@ fn is_like_btreeset<
 >() {
 }
 
-fn is_like_check_sorted_disjoint<
+const fn is_like_check_sorted_disjoint<
     T: Clone
         + std::fmt::Debug
         + Default
@@ -574,7 +575,7 @@ fn is_like_check_sorted_disjoint<
 >() {
 }
 
-fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
+const fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
 
 // !!!cmk0 test traits of other iterators
 // #[test]
@@ -634,6 +635,7 @@ fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
 // }
 
 #[test]
+#[allow(clippy::cognitive_complexity, clippy::float_cmp)]
 fn integer_coverage() {
     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
@@ -649,8 +651,7 @@ fn integer_coverage() {
 }
 
 #[test]
-#[allow(clippy::bool_assert_comparison)]
-#[allow(clippy::many_single_char_names)]
+#[allow(clippy::bool_assert_comparison,clippy::many_single_char_names,clippy::cognitive_complexity,clippy::too_many_lines)]
 fn lib_coverage_0() {
     let a = RangeSetBlaze::from_iter([1..=2, 3..=4]);
     let mut hasher = DefaultHasher::new();
@@ -984,7 +985,7 @@ fn sorted_disjoint_coverage_0() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "iterator cannot return Some after returning None")]
 fn sorted_disjoint_coverage_1() {
     struct SomeAfterNone {
         a: i32,
@@ -1009,7 +1010,7 @@ fn sorted_disjoint_coverage_1() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "start must be less or equal to end")]
 fn sorted_disjoint_coverage_2() {
     #[allow(clippy::reversed_empty_ranges)]
     let mut a = CheckSortedDisjoint::new([1..=0]);
@@ -1017,7 +1018,7 @@ fn sorted_disjoint_coverage_2() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "ranges must be disjoint")]
 fn sorted_disjoint_coverage_3() {
     #[allow(clippy::reversed_empty_ranges)]
     let mut a = CheckSortedDisjoint::new([1..=1, 2..=2]);
@@ -1043,6 +1044,7 @@ type Element = i64;
 type Reference = std::collections::BTreeSet<Element>;
 
 #[quickcheck]
+#[allow(clippy::needless_pass_by_value)]
 fn disjoint(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
     let b_r = RangeSetBlaze::from_iter(&b);
@@ -1050,6 +1052,7 @@ fn disjoint(a: Reference, b: Reference) -> bool {
 }
 
 #[quickcheck]
+#[allow(clippy::needless_pass_by_value)]
 fn subset(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
     let b_r = RangeSetBlaze::from_iter(&b);
@@ -1057,6 +1060,7 @@ fn subset(a: Reference, b: Reference) -> bool {
 }
 
 #[quickcheck]
+#[allow(clippy::needless_pass_by_value)]
 fn superset(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
     let b_r = RangeSetBlaze::from_iter(&b);
@@ -1064,6 +1068,7 @@ fn superset(a: Reference, b: Reference) -> bool {
 }
 
 /// just a helper to get good output when a check fails
+#[allow(clippy::needless_pass_by_value)]
 fn binary_op<E: Debug, R: Eq + Debug>(a: E, b: E, expected: R, actual: R) -> bool {
     let res = expected == actual;
     if !res {
@@ -1105,6 +1110,7 @@ fn union(a: Reference, b: Reference) -> bool {
 }
 
 #[quickcheck]
+#[allow(clippy::needless_pass_by_value)]
 fn multi_union(inputs: Vec<Reference>) -> bool {
     let expected: Reference = inputs.iter().flatten().copied().collect();
     let actual = inputs.iter().map(RangeSetBlaze::from_iter).union();
@@ -1118,6 +1124,7 @@ fn multi_union(inputs: Vec<Reference>) -> bool {
 }
 
 #[quickcheck]
+#[allow(clippy::needless_pass_by_value)]
 fn difference(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
     let b_r = RangeSetBlaze::from_iter(&b);
@@ -1127,6 +1134,7 @@ fn difference(a: Reference, b: Reference) -> bool {
 }
 
 #[quickcheck]
+#[allow(clippy::needless_pass_by_value)]
 fn symmetric_difference(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
     let b_r = RangeSetBlaze::from_iter(&b);
@@ -1136,9 +1144,10 @@ fn symmetric_difference(a: Reference, b: Reference) -> bool {
 }
 
 #[quickcheck]
+#[allow(clippy::needless_pass_by_value)]
 fn multi_symmetric_difference(inputs: Vec<Reference>) -> bool {
     let mut expected: Reference = BTreeSet::new();
-    for input in inputs.iter() {
+    for input in &inputs {
         expected = expected.symmetric_difference(input).copied().collect();
     }
     let actual = inputs
@@ -1363,6 +1372,7 @@ fn set_sym_diff_repro1() {
 }
 
 #[test]
+#[allow(clippy::cognitive_complexity, clippy::iter_on_empty_collections)]
 fn sdi1() {
     let a = [157..=158, 158..=158].into_iter();
     let a = AssumeSortedStarts::new(a);
@@ -1437,7 +1447,7 @@ fn sdi1() {
         assert_eq!(iter.next(), Some(2..=2));
         assert_eq!(iter.next(), None);
 
-        let a = [0..=0].into_iter();
+        let a = std::iter::once(0..=0);
         let a = AssumeSortedStarts::new(a);
         let mut iter = SymDiffIter::new(a);
         assert_eq!(iter.next(), Some(0..=0));
@@ -1460,6 +1470,7 @@ pub fn convert_challenge() {
     use unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 
     // cmk000 what is the for?
+    #[allow(clippy::needless_pass_by_value)]
     fn _is_sorted_disjoint_map<T, VR, S>(_iter: S)
     where
         T: Integer,
