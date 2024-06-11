@@ -483,13 +483,13 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
         let Some((start, end_value)) = one_back else {
             // nothing before, find any after
             if let Some((start, _)) = self.btree_map.range(key..).next() {
-                debug_assert!(&key < &start);
+                debug_assert!(&key < start);
                 return SomeOrGap::Gap(T::min_value()..=start.sub_one());
             };
             return SomeOrGap::Gap(T::min_value()..=T::max_value());
         };
         if key <= end_value.end {
-            SomeOrGap::Some((start.clone()..=end_value.end, &end_value.value))
+            SomeOrGap::Some((*start..=end_value.end, &end_value.value))
         } else if key == T::max_value() {
             SomeOrGap::Gap(end_value.end.add_one()..=key)
         } else {
@@ -2043,7 +2043,7 @@ mod tests {
         fn to_bits(vv_pair: Vec<(u32, f64)>) -> Vec<(u32, u64)> {
             vv_pair.into_iter().map(|(k, v)| (k, v.to_bits())).collect()
         }
-        
+
         let test_cases = vec![
             (
                 vec![(2, 1.0), (11, 1.0), (12, 1.0)],

@@ -149,12 +149,12 @@ macro_rules! impl_integer_ops {
             FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
         }
 
-        #[allow(clippy::cast_sign_loss)]
+        #[allow(clippy::cast_sign_loss, clippy::cast_lossless)]
         fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
             r.end().overflowing_sub(r.start()).0 as $type2 as <Self as Integer>::SafeLen + 1
         }
 
-        #[allow(clippy::cast_precision_loss)]
+        #[allow(clippy::cast_precision_loss, clippy::cast_lossless)]
         fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
             len as f64
         }
@@ -490,6 +490,7 @@ impl Integer for Ipv4Addr {
         slice.as_ref().iter().collect()
     }
 
+    #[allow(clippy::cast_lossless)]
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         let start_num = u32::from(*r.start());
         let end_num = u32::from(*r.end());
@@ -703,7 +704,7 @@ impl Integer for char {
         len
     }
 
-    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_precision_loss, clippy::cast_lossless)]
     fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
         len as f64
     }
@@ -718,7 +719,7 @@ impl Integer for char {
     fn add_len_less_one(self, b: Self::SafeLen) -> Self {
         let a = u32::from(self);
         debug_assert!(b > 0);
-        let mut num = a + (b - 1) as u32;
+        let mut num = a + (b - 1);
         // skip over the surrogate range
         if a < SURROGATE_START && SURROGATE_START <= num {
             num += SURROGATE_END - SURROGATE_START + 1;
@@ -738,7 +739,7 @@ impl Integer for char {
     #[allow(clippy::cast_possible_truncation)]
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
         let a = u32::from(self);
-        let mut num = a - (b - 1) as u32;
+        let mut num = a - (b - 1);
         // skip over the surrogate range
         if num <= SURROGATE_END && SURROGATE_END < a {
             num -= SURROGATE_END - SURROGATE_START + 1;

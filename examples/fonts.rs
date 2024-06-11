@@ -22,6 +22,7 @@ fn sample2() {
     }
 }
 
+#[allow(deprecated)]
 #[cfg(feature = "rog-experimental")]
 fn sample1() {
     let overlapping_font_table = [

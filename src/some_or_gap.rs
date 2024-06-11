@@ -36,19 +36,19 @@ where
         match self {
             Self::Some(value) => value,
             Self::Gap(range) => {
-                panic!("called `SomeOrGap::unwrap()` on a `Gap` value: {:?}", range)
+                panic!("called `SomeOrGap::unwrap()` on a `Gap` value: {range:?}")
             }
         }
     }
 
     /// cmk doc Method to check if the variant is Some
-    pub fn is_some(&self) -> bool {
-        matches!(self, SomeOrGap::Some(_))
+    pub const fn is_some(&self) -> bool {
+        matches!(self, Self::Some(_))
     }
 
     /// cmk doc Method to check if the variant is Gap
-    pub fn is_gap(&self) -> bool {
-        matches!(self, SomeOrGap::Gap(_))
+    pub const fn is_gap(&self) -> bool {
+        matches!(self, Self::Gap(_))
     }
 
     /// cmk doc
@@ -57,8 +57,8 @@ where
         F: FnOnce(RangeInclusive<T>) -> S,
     {
         match self {
-            SomeOrGap::Some(value) => value,
-            SomeOrGap::Gap(range) => f(range),
+            Self::Some(value) => value,
+            Self::Gap(range) => f(range),
         }
     }
 }

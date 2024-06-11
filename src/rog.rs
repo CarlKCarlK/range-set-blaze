@@ -1,4 +1,3 @@
-#![cfg(feature = "rog-experimental")]
 #![deprecated(
     note = "The rog ('range or gap') module is experimental and may be changed or removed in future versions.
     Changes may not be reflected in the semantic versioning."
@@ -69,7 +68,7 @@ impl<T: Integer> Iterator for RogsIter<'_, T> {
 /// assert_eq!(range_set_blaze.rogs_get(4), Rog::Gap(4..=2_147_483_647));
 /// ```
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Rog<T: Integer> {
     /// A range of integers in a [`RangeSetBlaze`].
     Range(RangeInclusive<T>),
@@ -86,10 +85,9 @@ impl<T: Integer> Rog<T> {
     /// use range_set_blaze::Rog;
     /// assert_eq!(Rog::Gap(1..=3).start(), 1);
     /// ```
-    pub fn start(&self) -> T {
+    pub const fn start(&self) -> T {
         match self {
-            Rog::Range(r) => *r.start(),
-            Rog::Gap(r) => *r.start(),
+            Self::Gap(r) | Self::Range(r) => *r.start(),
         }
     }
 
@@ -101,10 +99,9 @@ impl<T: Integer> Rog<T> {
     /// use range_set_blaze::Rog;
     /// assert_eq!(Rog::Gap(1..=3).end(), 3);
     /// ```
-    pub fn end(&self) -> T {
+    pub const fn end(&self) -> T {
         match self {
-            Rog::Range(r) => *r.end(),
-            Rog::Gap(r) => *r.end(),
+            Self::Gap(r) | Self::Range(r) => *r.end(),
         }
     }
 
@@ -119,8 +116,7 @@ impl<T: Integer> Rog<T> {
     /// ```
     pub fn contains(&self, value: T) -> bool {
         match self {
-            Rog::Range(r) => r.contains(&value),
-            Rog::Gap(r) => r.contains(&value),
+            Self::Gap(r) | Self::Range(r) => r.contains(&value),
         }
     }
 }
@@ -275,13 +271,13 @@ impl<T: Integer> RangeSetBlaze<T> {
         R: RangeBounds<T>,
     {
         let (start_in, end_in) = extract_range(range);
-        let rsb_in = RangeSetBlaze::from_iter([start_in..=end_in]);
+        let rsb_in = Self::from_iter([start_in..=end_in]);
         let ranges = &rsb_in & self;
         let gaps = rsb_in - self;
         let ranges = ranges.ranges().map(|r| Rog::Range(r));
         let gaps = gaps.ranges().map(|r| Rog::Gap(r));
         let mut result = ranges.chain(gaps).collect::<Vec<Rog<T>>>();
-        result.sort_by_key(|a| a.start());
+        result.sort_by_key(Rog::start);
         result
     }
 
