@@ -12,6 +12,7 @@ panic-halt = "0.2.0"
 # reference your local project here
 range-set-blaze = { path = "../..", features = [
     "alloc",
+    "rog-experimental",
     "from_slice",
 ], default-features = false }
 

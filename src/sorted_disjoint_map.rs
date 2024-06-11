@@ -72,7 +72,7 @@ where
 /// | [`RangeMapBlaze`] | [`into_ranges`] |
 /// | [`RangeMapBlaze`]'s [`RangesIter`] | [`clone`] |
 /// | sorted & disjoint ranges | [`CheckSortedDisjointMap::new`] |
-/// | `SortedDisjointMap` iterator | [`crate::dyn_sorted_disjoint::DynSortedDisjointMap::new`] |
+/// | `SortedDisjointMap` iterator | [`crate::dyn_sorted_disjoint_map::DynSortedDisjointMap::new`] |
 /// |  *your iterator type* | *[How to mark your type as `SortedDisjointMap`][1]* |
 ///
 /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents

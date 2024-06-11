@@ -2418,8 +2418,8 @@ test_normal_and_wasm!(
 
 // cmk0000 get this looking better 	`cargo doc --no-deps --all-features --open` esp NotIter etc
 // cmk0000 get full coverage
-// cmk0000 get 'set' dic page looking good
-// cmk0000 get 'map' dic page looking good
+// cmk0000 get 'set' doc page looking good
+// cmk0000 get 'map' doc page looking good
 
 
 #[allow(clippy::cast_lossless, clippy::cast_possible_truncation, clippy::cast_possible_wrap, clippy::cast_sign_loss)]

@@ -7,9 +7,9 @@ range-set-blaze
 
 <!-- FUTURE: Add coverage badge? -->
 
-Integer sets as fast, sorted integer ranges -- Maps with integer-range keys -- Full set operations
+Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full set operations
 
-Supports all of Rust's integer-like types, [`u8`] to [`u128`], [`i8`] to [`i128`], `char` (Unicode characters), `IpvAddr`, and `Ipv6Addr`.
+Supports all of Rust's integer-like types, [`u8`] to [`u128`], [`i8`] to [`i128`], [`char`] (Unicode characters), [`Ipv4Addr`], and [`Ipv6Addr`].
  The [set operations] and [map operations]
 include `union`, `intersection`, `difference`, `symmetric difference`, and `complement`.
 
@@ -18,7 +18,7 @@ The crate's main structs are:
 * [`RangeSetBlaze`], a set of integers. See the [set documentation] for details
 * [`RangeMapBlaze`], a map from integers to values. See the [map documentation] for details
 
-> Unlike the standard [`BTreeSet/BTreeMap`] and [`HashSet/HashMap`], `RangeSetBlaze` does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from [other interval libraries](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) -- that we know of -- by
+> Unlike the standard [`BTreeSet`]/[`BTreeMap`] and [`HashSet`]/[`HashMap`], `RangeSetBlaze` does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from [other interval libraries](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) -- that we know of -- by
 offering full set operations and by being optimized for sets of [clumpy][1] integers.
 >
 > We can construct a `RangeSetBlaze` or `RangeMapBlaze` from unsorted & redundant integers (or ranges). When the inputs are clumpy, construction will be [linear][1] in the number of inputs and set operations will be sped up [quadratically][1].
@@ -36,20 +36,19 @@ The package enforces the "sorted & disjoint" constraint at compile time
 [`RangeSetBlaze`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
 [`SortedDisjoint`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html#table-of-contents
 [`SortedDisjointMap`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjointMap.html#table-of-contents
-[`u8`]: https://doc.rust-lang.org/std/primitive.u8.html
-[`u128`]: https://doc.rust-lang.org/std/primitive.u128.html
-[`i8`]: https://doc.rust-lang.org/std/primitive.i8.html
-[`i128`]: https://doc.rust-lang.org/std/primitive.i128.html
 [set documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
 [map documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html
-[`BTreeSet/BTreeMap`]: https://doc.rust-lang.org/std/collections/struct.BTreeSet.html
-[`HashSet/HashMap`]: https://doc.rust-lang.org/std/collections/struct.HashSet.html
-[`BTreeMap`]: https://doc.rust-lang.org/std/collections/struct.BTreeMap.html
+[`BTreeMap`]: alloc::collections::BTreeMap
+[`BTreeSet`]: alloc::collections::BTreeSet
+[`HashSet`]: std::collections::HashSet
+[`HashMap`]: std::collections::HashMap
 [set operations]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#rangesetblaze-set-operations
 [map operations]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#rangesetblaze-map-operations
 [1]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#constructor-performance
-[2]:(https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html#table-of-contents)
-[3]:(https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjointMaps.html#table-of-contents)
+[2]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html#table-of-contents
+[3]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjointMaps.html#table-of-contents
+[`Ipv4Addr`]: core::net::Ipv4Addr
+[`Ipv6Addr`]: core::net::Ipv6Addr
 
 The crate supports `no_std`, WASM, and embedded projects. For `no_std`, etc., Use the command:
 

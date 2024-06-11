@@ -2,7 +2,7 @@
 name = "range-set-blaze"
 version = "0.2.0-alpha1"
 edition = "2021"
-description = "Integer sets as fast, sorted integer ranges -- Maps with integer-range keys -- Full set operations"
+description = "Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full set operations"
 repository = "https://github.com/CarlKCarlK/range-set-blaze"
 readme = "README.md"
 documentation = "https://docs.rs/range-set-blaze/latest/range-set-blaze/"

@@ -31,6 +31,7 @@ cargo criterion-means > o:\Projects\Science\rangemapblaze\unitvalue\results.2.cs
 ```cmd
 cargo testnc map
 cargo testnc --test test/map_test
+```
 
 ## Embedded
 
@@ -50,7 +51,13 @@ cd O:\programs\range-set-blaze\tests\embedded
 set PATH="C:\Program Files\qemu\";%PATH%
 rustup target add thumbv7m-none-eabi
 rustup override set nightly
-cargo build
+cargo run
+```
+
+Behind the scenes it uses its own `.cargo/config.toml` to
+
+```cmd
+cargo build --target thumbv7m-none-eabi
 qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-config enable=on,target=native -kernel ..\..\target\thumbv7m-none-eabi\debug\embedded
 ```
 

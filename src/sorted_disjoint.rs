@@ -142,8 +142,8 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// > If you want others to use your marked iterator type, reexport:
 /// > `pub use range_set_blaze::{SortedDisjoint, SortedStarts};`
 ///
-/// [`BitAnd`]: https://doc.rust-lang.org/std/ops/trait.BitAnd.html
-/// [`Not`]: https://doc.rust-lang.org/std/ops/trait.Not.html
+/// [`BitAnd`]: core::ops::BitAnd
+/// [`Not`]: core::ops::Not
 /// [`intersection`]: SortedDisjoint::intersection
 /// [`complement`]: SortedDisjoint::complement
 /// [`union`]: SortedDisjoint::union
