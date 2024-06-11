@@ -7,11 +7,9 @@ use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 use crate::Integer;
 use crate::RangeMapBlaze;
 use crate::UnionIterMap;
-use alloc::collections::BTreeMap;
 use core::fmt;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
-use quickcheck_macros::quickcheck;
 
 #[test]
 fn map_step_by_step() {
@@ -174,8 +172,6 @@ fn map_repro1() {
     );
 }
 
-
-
 // #[test]
 // fn map_repro_106() {
 //     let input_string = "100e 106b 97c 98c 97e";
@@ -248,8 +244,6 @@ fn map_repro1() {
 //     // );
 // }
 
-
-
 // #[test]
 // fn map_step_by_step() {
 //     let (s1, s2) = ("a".to_string(), "b".to_string());
@@ -316,7 +310,6 @@ fn map_repro1() {
 //         r#"(20..=21, "a"), (24..=24, "b"), (25..=25, "c"), (26..=29, "b")"#
 //     );
 // }
-
 
 // // #[test]
 // // #[allow(clippy::bool_assert_comparison)]

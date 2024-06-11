@@ -5,8 +5,9 @@ use wasm_bindgen_test::*;
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 wasm_bindgen_test_configure!(run_in_browser);
 
-use rand::Rng;
-use std::hash::DefaultHasher;
+use core::any::Any;
+use core::fmt::Debug;
+use core::fmt::Display;
 use core::iter::FusedIterator;
 #[cfg(feature = "from_slice")]
 use core::mem::size_of;
@@ -14,13 +15,20 @@ use core::ops::BitAndAssign;
 #[cfg(feature = "rog-experimental")]
 use core::ops::Bound;
 use core::ops::RangeInclusive;
+use core::panic::RefUnwindSafe;
+use core::panic::UnwindSafe;
 #[cfg(target_os = "linux")]
 use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
+use num_traits::identities::One;
+use num_traits::identities::Zero;
+use quickcheck_macros::quickcheck;
 use rand::rngs::StdRng;
+use rand::Rng;
 use rand::SeedableRng;
 #[cfg(feature = "rog-experimental")]
 use range_set_blaze::Rog;
+use range_set_blaze::SymDiffIter;
 use range_set_blaze::{prelude::*, Integer, NotIter, SortedStarts};
 use range_set_blaze::{symmetric_difference_dyn, UnionIter};
 use std::cmp::Ordering;
@@ -28,22 +36,11 @@ use std::cmp::Ordering;
 use std::panic::AssertUnwindSafe;
 #[cfg(feature = "rog-experimental")]
 use std::panic::{self};
-use core::fmt::Display;
-use core::panic::RefUnwindSafe;
-use std::hash::Hash;
-use core::panic::UnwindSafe;
-use num_traits::identities::One;
-use num_traits::identities::Zero;
-use core::fmt::Debug;
-use core::array;
-use core::any::Any;
 use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 use tests_common::test_normal_and_wasm;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
-use range_set_blaze::SymDiffIter;
-use quickcheck_macros::quickcheck;
 
 test_normal_and_wasm!(
     fn insert_255u8() {
@@ -581,6 +578,7 @@ test_normal_and_wasm!(
 );
 
 test_normal_and_wasm!(
+    #[allow(clippy::zero_repeat_side_effects)]
     fn empty_it() {
         use range_set_blaze::RangesIter;
 
@@ -2421,82 +2419,84 @@ test_normal_and_wasm!(
 // cmk0000 get 'set' doc page looking good
 // cmk0000 get 'map' doc page looking good
 
-
-#[allow(clippy::cast_lossless, clippy::cast_possible_truncation, clippy::cast_possible_wrap, clippy::cast_sign_loss)]
 test_normal_and_wasm!(
-fn sub0() {
-    for start in i8::MIN..i8::MAX {
-        for end in start..i8::MAX {
-            let diff = i8::safe_len(&(start..=end));
-            let diff2 = (end as i16) - (start as i16) + 1;
-            assert_eq!(diff as i16, diff2);
+    #[allow(
+        clippy::cast_lossless,
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        clippy::cast_sign_loss
+    )]
+    fn sub0() {
+        for start in i8::MIN..i8::MAX {
+            for end in start..i8::MAX {
+                let diff = i8::safe_len(&(start..=end));
+                let diff2 = (end as i16) - (start as i16) + 1;
+                assert_eq!(diff as i16, diff2);
+            }
         }
-    }
-    for start in u8::MIN..u8::MAX {
-        for end in start..u8::MAX {
-            let diff = u8::safe_len(&(start..=end));
-            let diff2 = (end as i16) - (start as i16) + 1;
-            assert_eq!(diff as i16, diff2);
+        for start in u8::MIN..u8::MAX {
+            for end in start..u8::MAX {
+                let diff = u8::safe_len(&(start..=end));
+                let diff2 = (end as i16) - (start as i16) + 1;
+                assert_eq!(diff as i16, diff2);
+            }
         }
-    }
 
-    let before = 127i8.overflowing_sub(-128i8).0;
-    let after = before as u8;
-    println!("before: {before}, after: {after}");
-}
+        let before = 127i8.overflowing_sub(-128i8).0;
+        let after = before as u8;
+        println!("before: {before}, after: {after}");
+    }
 );
 
 test_normal_and_wasm!(
-fn understand_into_iter() {
-    let btree_set = BTreeSet::from([1, 2, 3, 4, 5]);
-    for i in &btree_set {
-        println!("{i}");
+    fn understand_into_iter() {
+        let btree_set = BTreeSet::from([1, 2, 3, 4, 5]);
+        for i in &btree_set {
+            println!("{i}");
+        }
+
+        let s = "abc".to_string();
+        for c in s.chars() {
+            println!("{c}");
+        }
+        println!("{s:?}");
+        // println!("{btree_set:?}");
+
+        // let ri = 1..=5;
+        // let rii = ri.into_iter();
+        // let val = rii.next();
+        // let len = rii.len();
+        // // for i in ri() {
+        // //     println!("{i} {}", ri.len());
+        // // }
+        // // println!("{ri:?}");
+        let s = "hello".to_string();
+        let mut si = s.bytes();
+        let _val = si.next();
+        let _len = si.len();
+        let _len2 = s.len();
+
+        let arr = [1, 2, 3, 4, 5];
+        for i in &arr {
+            println!("{i}");
+        }
+
+        for i in &arr {
+            println!("{i}");
+        }
+
+        // let rsi = RangeSetBlaze::from_iter(1..=5);
+        // for i in rsi.iter() {
+        //     println!("{i}");
+        // }
+        // let len = rsi.len();
     }
-
-    let s = "abc".to_string();
-    for c in s.chars() {
-        println!("{c}");
-    }
-    println!("{s:?}");
-    // println!("{btree_set:?}");
-
-    // let ri = 1..=5;
-    // let rii = ri.into_iter();
-    // let val = rii.next();
-    // let len = rii.len();
-    // // for i in ri() {
-    // //     println!("{i} {}", ri.len());
-    // // }
-    // // println!("{ri:?}");
-    let s = "hello".to_string();
-    let mut si = s.bytes();
-    let _val = si.next();
-    let _len = si.len();
-    let _len2 = s.len();
-
-    let arr = [1, 2, 3, 4, 5];
-    for i in &arr {
-        println!("{i}");
-    }
-
-    for i in &arr {
-        println!("{i}");
-    }
-
-    // let rsi = RangeSetBlaze::from_iter(1..=5);
-    // for i in rsi.iter() {
-    //     println!("{i}");
-    // }
-    // let len = rsi.len();
-}
 );
 
 // https://stackoverflow.com/questions/21747136/how-do-i-print-in-rust-the-type-of-a-variable/58119924#58119924
 // fn print_type_of<T>(_: &T) {
 //     println!("{}", std::any::type_name::<T>())
 // }
-
-
 
 // cmk0
 // #[test]
@@ -2736,55 +2736,55 @@ const fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
 // }
 
 test_normal_and_wasm!(
-#[allow(clippy::cognitive_complexity, clippy::float_cmp)]
-fn integer_coverage() {
-    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
-        $(
-            let len = <$ty as Integer>::SafeLen::one();
-            let a = $ty::zero();
-            assert_eq!($ty::safe_len_to_f64(len), 1.0);
-            assert_eq!($ty::add_len_less_one(a,len), a);
-            assert_eq!($ty::sub_len_less_one(a,len), a);
-            assert_eq!($ty::f64_to_safe_len(1.0), len);
+    #[allow(clippy::cognitive_complexity, clippy::float_cmp)]
+    fn integer_coverage() {
+        syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+            $(
+                let len = <$ty as Integer>::SafeLen::one();
+                let a = $ty::zero();
+                assert_eq!($ty::safe_len_to_f64(len), 1.0);
+                assert_eq!($ty::add_len_less_one(a,len), a);
+                assert_eq!($ty::sub_len_less_one(a,len), a);
+                assert_eq!($ty::f64_to_safe_len(1.0), len);
 
-        )*
-    }};
-}
+            )*
+        }};
+    }
 );
 
 test_normal_and_wasm!(
-fn lib_coverage_2() {
-    let v = RangeSetBlaze::<u128>::new();
-    v.contains(u128::MAX);
-}
+    fn lib_coverage_2() {
+        let v = RangeSetBlaze::<u128>::new();
+        v.contains(u128::MAX);
+    }
 );
 
 test_normal_and_wasm!(
-fn lib_coverage_3() {
-    let mut v = RangeSetBlaze::<u128>::new();
-    v.remove(u128::MAX);
-}
+    fn lib_coverage_3() {
+        let mut v = RangeSetBlaze::<u128>::new();
+        v.remove(u128::MAX);
+    }
 );
 
 test_normal_and_wasm!(
-fn lib_coverage_4() {
-    let mut v = RangeSetBlaze::<u128>::new();
-    let _ = v.split_off(u128::MAX);
-}
+    fn lib_coverage_4() {
+        let mut v = RangeSetBlaze::<u128>::new();
+        let _ = v.split_off(u128::MAX);
+    }
 );
 
 test_normal_and_wasm!(
-fn lib_coverage_6() {
-    syntactic_for! { ty in [i8, u8, isize, usize, i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
-        $(
-            let mut a = RangeSetBlaze::<$ty>::from_iter([1..=3, 5..=7, 9..=120]);
-            a.ranges_insert(2..=100);
-            assert_eq!(a, RangeSetBlaze::from_iter([1..=120]));
+    fn lib_coverage_6() {
+        syntactic_for! { ty in [i8, u8, isize, usize, i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+            $(
+                let mut a = RangeSetBlaze::<$ty>::from_iter([1..=3, 5..=7, 9..=120]);
+                a.ranges_insert(2..=100);
+                assert_eq!(a, RangeSetBlaze::from_iter([1..=120]));
 
 
-        )*
-    }};
-}
+            )*
+        }};
+    }
 );
 
 // cmk0
@@ -2813,14 +2813,14 @@ fn lib_coverage_6() {
 // }
 
 test_normal_and_wasm!(
-fn not_iter_coverage_0() {
-    let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-    let n = NotIter::new(a);
-    let p = n.clone();
-    let m = p.clone();
-    assert!(n.equal(m));
-    assert!(format!("{p:?}").starts_with("NotIter"));
-}
+    fn not_iter_coverage_0() {
+        let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
+        let n = NotIter::new(a);
+        let p = n.clone();
+        let m = p.clone();
+        assert!(n.equal(m));
+        assert!(format!("{p:?}").starts_with("NotIter"));
+    }
 );
 
 // cmk0 get working again
@@ -2869,85 +2869,84 @@ fn not_iter_coverage_0() {
 // }
 
 test_normal_and_wasm!(
-fn sorted_disjoint_coverage_0() {
-    let a = CheckSortedDisjoint::<i32, _>::default();
-    assert!(a.is_empty());
+    fn sorted_disjoint_coverage_0() {
+        let a = CheckSortedDisjoint::<i32, _>::default();
+        assert!(a.is_empty());
 
-    let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-    let b = CheckSortedDisjoint::new([1..=2, 5..=100]);
-    assert!((a & b).equal(CheckSortedDisjoint::new([1..=2, 5..=100])));
+        let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
+        let b = CheckSortedDisjoint::new([1..=2, 5..=100]);
+        assert!((a & b).equal(CheckSortedDisjoint::new([1..=2, 5..=100])));
 
-    let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-    let b = CheckSortedDisjoint::new([1..=2, 5..=100]);
-    assert!((a - b).is_empty());
+        let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
+        let b = CheckSortedDisjoint::new([1..=2, 5..=100]);
+        assert!((a - b).is_empty());
 
-    let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-    let b = CheckSortedDisjoint::new([1..=2, 5..=100]);
-    assert!((a ^ b).is_empty());
-}
+        let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
+        let b = CheckSortedDisjoint::new([1..=2, 5..=100]);
+        assert!((a ^ b).is_empty());
+    }
 );
 
 test_normal_and_wasm!(
-#[should_panic(expected = "iterator cannot return Some after returning None")]
-fn sorted_disjoint_coverage_1() {
-    struct SomeAfterNone {
-        a: i32,
-    }
-    impl FusedIterator for SomeAfterNone {}
-    impl Iterator for SomeAfterNone {
-        type Item = RangeInclusive<i32>;
-        fn next(&mut self) -> Option<Self::Item> {
-            self.a += 1;
-            if self.a % 2 == 0 {
-                Some(self.a..=self.a)
-            } else {
-                None
+    #[should_panic(expected = "iterator cannot return Some after returning None")]
+    fn sorted_disjoint_coverage_1() {
+        struct SomeAfterNone {
+            a: i32,
+        }
+        impl FusedIterator for SomeAfterNone {}
+        impl Iterator for SomeAfterNone {
+            type Item = RangeInclusive<i32>;
+            fn next(&mut self) -> Option<Self::Item> {
+                self.a += 1;
+                if self.a % 2 == 0 {
+                    Some(self.a..=self.a)
+                } else {
+                    None
+                }
             }
         }
+
+        let mut a = CheckSortedDisjoint::new(SomeAfterNone { a: 0 });
+        a.next();
+        a.next();
+        a.next();
     }
-
-    let mut a = CheckSortedDisjoint::new(SomeAfterNone { a: 0 });
-    a.next();
-    a.next();
-    a.next();
-}
 );
 
 test_normal_and_wasm!(
-#[should_panic(expected = "start must be less or equal to end")]
-fn sorted_disjoint_coverage_2() {
-    #[allow(clippy::reversed_empty_ranges)]
-    let mut a = CheckSortedDisjoint::new([1..=0]);
-    a.next();
-}
+    #[should_panic(expected = "start must be less or equal to end")]
+    fn sorted_disjoint_coverage_2() {
+        #[allow(clippy::reversed_empty_ranges)]
+        let mut a = CheckSortedDisjoint::new([1..=0]);
+        a.next();
+    }
 );
 
 test_normal_and_wasm!(
-#[should_panic(expected = "ranges must be disjoint")]
-fn sorted_disjoint_coverage_3() {
-    #[allow(clippy::reversed_empty_ranges)]
-    let mut a = CheckSortedDisjoint::new([1..=1, 2..=2]);
-    a.next();
-    a.next();
-}
+    #[should_panic(expected = "ranges must be disjoint")]
+    fn sorted_disjoint_coverage_3() {
+        #[allow(clippy::reversed_empty_ranges)]
+        let mut a = CheckSortedDisjoint::new([1..=1, 2..=2]);
+        a.next();
+        a.next();
+    }
 );
 
 test_normal_and_wasm!(
-fn sorted_disjoint_coverage_4() {
-    #[allow(clippy::reversed_empty_ranges)]
-    let mut a = CheckSortedDisjoint::new([0..=i128::MAX]);
-    a.next();
-}
+    fn sorted_disjoint_coverage_4() {
+        #[allow(clippy::reversed_empty_ranges)]
+        let mut a = CheckSortedDisjoint::new([0..=i128::MAX]);
+        a.next();
+    }
 );
 
 test_normal_and_wasm!(
-fn sorted_disjoint_iterator_coverage_0() {
-    let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-    let b = CheckSortedDisjoint::new([1..=2, 5..=101]);
-    assert!(b.is_superset(a));
-}
+    fn sorted_disjoint_iterator_coverage_0() {
+        let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
+        let b = CheckSortedDisjoint::new([1..=2, 5..=101]);
+        assert!(b.is_superset(a));
+    }
 );
-
 
 type Element = i64;
 type Reference = std::collections::BTreeSet<Element>;
@@ -3158,130 +3157,130 @@ fn symmetric_difference_size_hint(a: Reference, b: Reference) -> bool {
 //     }
 // }
 
-
 test_normal_and_wasm!(
-fn double_end_into_iter() {
-    let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
+    fn double_end_into_iter() {
+        let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
 
-    assert_eq!(
-        a.clone().into_iter().rev().collect::<Vec<usize>>(),
-        vec![25, 24, 23, 22, 21, 20, 12, 10, 9, 8, 7, 6, 5, 4, 3]
-    );
+        assert_eq!(
+            a.clone().into_iter().rev().collect::<Vec<usize>>(),
+            vec![25, 24, 23, 22, 21, 20, 12, 10, 9, 8, 7, 6, 5, 4, 3]
+        );
 
-    let mut iter = a.into_iter();
+        let mut iter = a.into_iter();
 
-    assert_eq!(iter.next(), Some(3));
-    assert_eq!(iter.next_back(), Some(25));
-    assert_eq!(iter.next(), Some(4));
-    assert_eq!(iter.next_back(), Some(24));
-    assert_eq!(iter.next_back(), Some(23));
-    assert_eq!(iter.next_back(), Some(22));
-    assert_eq!(iter.next_back(), Some(21));
-    assert_eq!(iter.next_back(), Some(20));
+        assert_eq!(iter.next(), Some(3));
+        assert_eq!(iter.next_back(), Some(25));
+        assert_eq!(iter.next(), Some(4));
+        assert_eq!(iter.next_back(), Some(24));
+        assert_eq!(iter.next_back(), Some(23));
+        assert_eq!(iter.next_back(), Some(22));
+        assert_eq!(iter.next_back(), Some(21));
+        assert_eq!(iter.next_back(), Some(20));
 
-    // Next interval
-    assert_eq!(iter.next_back(), Some(12));
+        // Next interval
+        assert_eq!(iter.next_back(), Some(12));
 
-    // Next interval, now same interval as front of the iterator
-    assert_eq!(iter.next_back(), Some(10));
-    assert_eq!(iter.next(), Some(5));
-}
+        // Next interval, now same interval as front of the iterator
+        assert_eq!(iter.next_back(), Some(10));
+        assert_eq!(iter.next(), Some(5));
+    }
 );
 
 test_normal_and_wasm!(
-fn double_end_range() {
-    let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
+    fn double_end_range() {
+        let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
 
-    let mut range = a.range(11..=22);
-    assert_eq!(range.next_back(), Some(22));
-    assert_eq!(range.next(), Some(12));
-    assert_eq!(range.next(), Some(20));
-}
+        let mut range = a.range(11..=22);
+        assert_eq!(range.next_back(), Some(22));
+        assert_eq!(range.next(), Some(12));
+        assert_eq!(range.next(), Some(20));
+    }
 );
 
 test_normal_and_wasm!(
-fn set_random_symmetric_difference() {
-    use crate::CheckSortedDisjointMap;
-    use crate::RangeSetBlaze;
+    fn set_random_symmetric_difference() {
+        use crate::CheckSortedDisjointMap;
+        use crate::RangeSetBlaze;
 
-    for seed in 0..20 {
-        println!("seed: {seed}");
-        let mut rng = StdRng::seed_from_u64(seed);
+        for seed in 0..20 {
+            println!("seed: {seed}");
+            let mut rng = StdRng::seed_from_u64(seed);
 
-        let mut set0 = RangeSetBlaze::new();
-        let mut set1 = RangeSetBlaze::new();
+            let mut set0 = RangeSetBlaze::new();
+            let mut set1 = RangeSetBlaze::new();
 
-        for _ in 0..500 {
-            let key = rng.gen_range(0..=255u8);
-            set0.insert(key);
-            print!("l{key} ");
-            let key = rng.gen_range(0..=255u8);
-            set1.insert(key);
-            print!("r{key} ");
+            for _ in 0..500 {
+                let key = rng.gen_range(0..=255u8);
+                set0.insert(key);
+                print!("l{key} ");
+                let key = rng.gen_range(0..=255u8);
+                set1.insert(key);
+                print!("r{key} ");
 
-            let symmetric_difference = SymDiffIter::new2(set0.ranges(), set1.ranges());
+                let symmetric_difference = SymDiffIter::new2(set0.ranges(), set1.ranges());
 
-            // println!(
-            //     "left ^ right = {}",
-            //     SymDiffIter::new2(set0.ranges(), set1.ranges()).into_string()
-            // );
+                // println!(
+                //     "left ^ right = {}",
+                //     SymDiffIter::new2(set0.ranges(), set1.ranges()).into_string()
+                // );
 
-            let map0 = CheckSortedDisjointMap::new(set0.ranges().map(|range| (range, &())))
-                .into_range_map_blaze();
-            let map1 = CheckSortedDisjointMap::new(set1.ranges().map(|range| (range, &())))
-                .into_range_map_blaze();
-            let mut expected_map = &map0 ^ &map1;
+                let map0 = CheckSortedDisjointMap::new(set0.ranges().map(|range| (range, &())))
+                    .into_range_map_blaze();
+                let map1 = CheckSortedDisjointMap::new(set1.ranges().map(|range| (range, &())))
+                    .into_range_map_blaze();
+                let mut expected_map = &map0 ^ &map1;
 
-            println!();
-            println!("set0: {set0}");
-            println!("set1: {set1}");
-
-            for range in symmetric_difference {
-                // println!();
-                // print!("removing ");
-                for k in range {
-                    let get0 = set0.get(k);
-                    let get1 = set1.get(k);
-                    match (get0, get1) {
-                        (Some(_k0), Some(_k1)) => {
-                            println!();
-                            println!("left: {set0}");
-                            println!("right: {set1}");
-                            let s_d = SymDiffIter::new2(set0.ranges(), set1.ranges())
-                                .into_range_set_blaze();
-                            panic!("left ^ right = {s_d}");
-                        }
-                        (Some(_k0), None) => {}
-                        (None, Some(_k1)) => {}
-                        (None, None) => {
-                            panic!("should not happen 1");
-                        }
-                    }
-                    assert!(expected_map.remove(k).is_some());
-                }
-                // println!();
-            }
-            if !expected_map.is_empty() {
                 println!();
-                println!("left: {set0}");
-                println!("right: {set1}");
-                let s_d = SymDiffIter::new2(set0.ranges(), set1.ranges()).into_range_set_blaze();
-                println!("left ^ right = {s_d}");
-                panic!("expected_keys should be empty: {expected_map}");
+                println!("set0: {set0}");
+                println!("set1: {set1}");
+
+                for range in symmetric_difference {
+                    // println!();
+                    // print!("removing ");
+                    for k in range {
+                        let get0 = set0.get(k);
+                        let get1 = set1.get(k);
+                        match (get0, get1) {
+                            (Some(_k0), Some(_k1)) => {
+                                println!();
+                                println!("left: {set0}");
+                                println!("right: {set1}");
+                                let s_d = SymDiffIter::new2(set0.ranges(), set1.ranges())
+                                    .into_range_set_blaze();
+                                panic!("left ^ right = {s_d}");
+                            }
+                            (Some(_k0), None) => {}
+                            (None, Some(_k1)) => {}
+                            (None, None) => {
+                                panic!("should not happen 1");
+                            }
+                        }
+                        assert!(expected_map.remove(k).is_some());
+                    }
+                    // println!();
+                }
+                if !expected_map.is_empty() {
+                    println!();
+                    println!("left: {set0}");
+                    println!("right: {set1}");
+                    let s_d =
+                        SymDiffIter::new2(set0.ranges(), set1.ranges()).into_range_set_blaze();
+                    println!("left ^ right = {s_d}");
+                    panic!("expected_keys should be empty: {expected_map}");
+                }
             }
         }
     }
-}
 );
 
 test_normal_and_wasm!(
-fn set_sym_diff_repro1() {
-    use crate::RangeSetBlaze;
+    fn set_sym_diff_repro1() {
+        use crate::RangeSetBlaze;
 
-    let l = RangeSetBlaze::from_iter([157..=158]);
-    let r = RangeSetBlaze::from_iter([158..=158]);
-    let iter = SymDiffIter::new2(l.ranges(), r.ranges());
-    let v = iter.collect::<Vec<_>>();
-    println!("{v:?}");
-}
+        let l = RangeSetBlaze::from_iter([157..=158]);
+        let r = RangeSetBlaze::from_iter([158..=158]);
+        let iter = SymDiffIter::new2(l.ranges(), r.ranges());
+        let v = iter.collect::<Vec<_>>();
+        println!("{v:?}");
+    }
 );

@@ -11,6 +11,7 @@ extern crate alloc;
 use alloc::collections::BTreeMap;
 use core::fmt;
 use core::ops::RangeInclusive;
+use quickcheck_macros::quickcheck;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use range_set_blaze::{
@@ -20,7 +21,6 @@ use range_set_blaze::{
 use std::borrow::Borrow;
 use std::iter::FusedIterator;
 use tests_common::test_normal_and_wasm;
-use quickcheck_macros::quickcheck;
 
 // use range_set_blaze::{
 //     MultiwayRangeMapBlazeRef, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
@@ -960,6 +960,7 @@ test_normal_and_wasm!(
 );
 
 test_normal_and_wasm!(
+    #[allow(clippy::zero_repeat_side_effects)]
     fn map_empty_it() {
         use std::ops::BitOr;
         use std::panic;
@@ -3594,8 +3595,6 @@ test_normal_and_wasm!(
 
 // );
 
-
-
 // test_normal_and_wasm!(
 // #[should_panic]
 // fn lib_coverage_2() {
@@ -4239,15 +4238,12 @@ test_normal_and_wasm!(
 
         // Cover edge cases with min and max values
         map = RangeMapBlaze::from_iter([(0..=0, 'a'), (2..=3, 'b')]);
-        assert_eq!(
-            map.get_range_value(u8::max_value()),
-            SomeOrGap::Gap(4..=u8::max_value())
-        );
+        assert_eq!(map.get_range_value(u8::MAX), SomeOrGap::Gap(4..=u8::MAX));
 
-        map = RangeMapBlaze::from_iter([(u8::min_value()..=u8::min_value(), 'a')]);
+        map = RangeMapBlaze::from_iter([(u8::MIN..=u8::MIN, 'a')]);
         assert_eq!(
-            map.get_range_value(u8::min_value()),
-            SomeOrGap::Some((u8::min_value()..=u8::min_value(), &'a'))
+            map.get_range_value(u8::MIN),
+            SomeOrGap::Some((u8::MIN..=u8::MIN, &'a'))
         );
 
         map = RangeMapBlaze::from_iter([(0..=0, 'a'), (5..=10, 'b')]);
@@ -4261,21 +4257,6 @@ test_normal_and_wasm!(
         assert_eq!(map.get_range_value(1), SomeOrGap::Gap(0..=4));
     }
 );
-
-fn format_range_values<'a, T>(iter: impl Iterator<Item = (RangeInclusive<T>, &'a u8)>) -> String
-where
-    T: Integer + fmt::Display + 'a, // Assuming T implements Display for formatting
-                                    // V: ValueOwned + fmt::Display + 'a, // V must implement Display to be formatted with {}
-{
-    let mut vs = String::new();
-    for (range, value) in iter {
-        vs.push_str(&format!("{:?}{} ", range, *value as char,));
-    }
-    vs
-}
-
-
-
 
 // #[test]
 // fn map_random_from_iter_item() {
@@ -4703,10 +4684,6 @@ where
 //     }
 //     vs
 // }
-
-
-
-
 // #[test]
 // fn map_repro_123() {
 //     let input = [(123, 'a'), (123, 'b')];
@@ -4803,7 +4780,6 @@ where
 //     println!("{result}");
 //     assert_eq!(result, RangeMapBlaze::from_iter([(2..=3, "World")]));
 // }
-
 
 // #[test]
 // fn map_repro2() {
@@ -5257,7 +5233,6 @@ where
 // //     }};
 // // }
 
-
 // // #[test]
 // // #[should_panic]
 // // fn lib_coverage_3() {
@@ -5470,7 +5445,7 @@ where
 
 #[quickcheck]
 fn extend(mut a: BTreeMap<i8, u8>, b: Vec<(i8, u8)>) -> bool {
-    let mut a_r: RangeMapBlaze<_,_> = a.clone().into_iter().collect();
+    let mut a_r: RangeMapBlaze<_, _> = a.clone().into_iter().collect();
     a.extend(b.clone().into_iter());
     a_r.extend(b.into_iter());
     a_r == a.into_iter().collect()
@@ -5547,4 +5522,3 @@ fn extend(mut a: BTreeMap<i8, u8>, b: Vec<(i8, u8)>) -> bool {
 // //     assert_eq!(range.next(), Some(12));
 // //     assert_eq!(range.next(), Some(20));
 // // }
-

@@ -8,31 +8,13 @@ use super::*;
 use core::cmp::Ordering;
 use core::ops::Bound;
 use core::ops::RangeInclusive;
-use itertools::Itertools;
 use num_traits::{One, Zero};
-use quickcheck_macros::quickcheck;
-use rand::{rngs::StdRng, SeedableRng};
-use std::fmt::Debug;
-use std::{
-    any::Any,
-    collections::{hash_map::DefaultHasher, BTreeSet},
-    fmt::Display,
-    hash::Hash,
-    iter::FusedIterator,
-    panic::{RefUnwindSafe, UnwindSafe},
-}; // , time::Instant
-   // use sorted_iter::assume::AssumeSortedByKeyExt;
-   // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
-
+use std::collections::hash_map::DefaultHasher;
 use syntactic_for::syntactic_for;
 // use thousands::Separable;
 use core::array;
 #[cfg(target_os = "linux")]
 use core::ops::BitAndAssign;
-use rand::Rng;
-//  cmk remove type I32SafeLen = <i32 as crate::Integer>::SafeLen;
-
-
 
 #[test]
 fn demo_f1() {
@@ -112,7 +94,6 @@ fn demo_b2() {
     assert_eq!(range_set_blaze.len_slow(), range_set_blaze.len());
 }
 
-
 #[test]
 fn optimize() {
     let end = 8u8;
@@ -145,10 +126,16 @@ fn optimize() {
     }
 }
 
-
 #[test]
-#[allow(clippy::bool_assert_comparison,clippy::many_single_char_names,clippy::cognitive_complexity,clippy::too_many_lines)]
+#[allow(
+    clippy::bool_assert_comparison,
+    clippy::many_single_char_names,
+    clippy::cognitive_complexity,
+    clippy::too_many_lines
+)]
 fn lib_coverage_0() {
+    use std::hash::Hash;
+
     let a = RangeSetBlaze::from_iter([1..=2, 3..=4]);
     let mut hasher = DefaultHasher::new();
     a.hash(&mut hasher);
@@ -345,13 +332,11 @@ fn lib_coverage_0() {
     assert!(!a.is_disjoint(&a));
 }
 
-
 #[test]
 fn lib_coverage_5() {
     let mut v = RangeSetBlaze::<u128>::new();
     v.internal_add(0..=u128::MAX);
 }
-
 
 #[test]
 #[allow(clippy::cognitive_complexity, clippy::iter_on_empty_collections)]
