@@ -2181,12 +2181,12 @@ where
 }
 
 #[doc(hidden)]
-pub fn demo_i32_len(range: RangeInclusive<i32>) -> usize {
+pub fn demo_i32_len(range: RangeInclusive<i32>) -> u64 {
     let (start, end) = range.into_inner();
     if start > end {
         return 0;
     }
-    (end as isize - start as isize) as usize + 1
+    (end as i64 - start as i64) as u64 + 1
 }
 
 // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
