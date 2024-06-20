@@ -37,9 +37,14 @@ range-set = "0.0.11"
 glob = "0.3.0"
 thiserror = "1.0"
 rand = "0.8.4"
+wasm-bindgen-test = "0.3.42"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 criterion = { version = "0.5.1", features = ["rayon"] }
+
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+web-time = "1.1.0"
 
 # Declare a benchmark called ""bench" without the standard benchmarking harness. 
 [[bench]]

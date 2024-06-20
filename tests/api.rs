@@ -1,8 +1,10 @@
 // FUTURE can (should?) you optimize a | b | c to automatically call union([a,b,c])?
 use std::{collections::BTreeSet, ops::BitOr};
+use wasm_bindgen_test::wasm_bindgen_test;
 
 use range_set_blaze::prelude::*;
 
+#[wasm_bindgen_test]
 #[test]
 fn b_tree_set() {
     let a = [1, 2, 3].into_iter().collect::<BTreeSet<i32>>();
@@ -27,6 +29,7 @@ fn b_tree_set() {
     assert_eq!(&c5, &answer);
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn range_set_blaze() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze<i32>>();
@@ -54,6 +57,7 @@ fn range_set_blaze() {
     assert_eq!(&c5, &answer);
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn sorted_disjoint() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze<i32>>();
@@ -73,6 +77,7 @@ fn sorted_disjoint() {
     assert!(c4.equal(answer.ranges()));
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn sorted_disjoint_ops() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze<i32>>();

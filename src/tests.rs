@@ -20,15 +20,18 @@ use syntactic_for::syntactic_for;
 use tests_common::{How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
 use std::ops::BitAndAssign;
+use wasm_bindgen_test::wasm_bindgen_test;
 
 type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
+#[wasm_bindgen_test]
 #[test]
 fn insert_255u8() {
     let range_set_blaze = RangeSetBlaze::<u8>::from_iter([255]);
     assert!(range_set_blaze.to_string() == "255..=255");
 }
 
+#[wasm_bindgen_test]
 #[test]
 #[should_panic]
 fn insert_max_u128() {
@@ -36,6 +39,7 @@ fn insert_max_u128() {
     println!("a: {a}");
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn sub() {
     for start in i8::MIN..i8::MAX {
@@ -58,6 +62,7 @@ fn sub() {
     println!("before: {before}, after: {after}");
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn complement0() {
     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
@@ -69,6 +74,7 @@ fn complement0() {
     }};
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn repro_bit_and() {
     let a = RangeSetBlaze::from_iter([1u8, 2, 3]);
@@ -79,6 +85,7 @@ fn repro_bit_and() {
     assert_eq!(result, RangeSetBlaze::from_iter([2u8, 3]));
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn repro1() {
     let mut range_set_blaze = RangeSetBlaze::from_iter([20..=21, 24..=24, 25..=29]);
@@ -89,6 +96,7 @@ fn repro1() {
     assert!(range_set_blaze.to_string() == "20..=21, 24..=29");
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn repro2() {
     let mut range_set_blaze = RangeSetBlaze::<i8>::from_iter([-8, 8, -2, -1, 3, 2]);
@@ -97,6 +105,7 @@ fn repro2() {
     assert!(range_set_blaze.to_string() == "-8..=-8, -2..=-1, 2..=3, 8..=8, 25..=25");
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn doctest1() {
     let a = RangeSetBlaze::<u8>::from_iter([1, 2, 3]);
@@ -106,6 +115,7 @@ fn doctest1() {
     assert_eq!(result, RangeSetBlaze::<u8>::from_iter([1, 2, 3, 4, 5]));
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn doctest2() {
     let set = RangeSetBlaze::<u8>::from_iter([1, 2, 3]);
@@ -113,6 +123,7 @@ fn doctest2() {
     assert!(!set.contains(4));
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn doctest3() {
     let mut a = RangeSetBlaze::from_iter([1..=3]);
@@ -130,6 +141,7 @@ fn doctest3() {
     assert!(a.contains(5));
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn doctest4() {
     let a = RangeSetBlaze::<i8>::from_iter([1, 2, 3]);
@@ -138,6 +150,7 @@ fn doctest4() {
     assert_eq!(result.to_string(), "-128..=0, 4..=127");
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn compare() {
     let mut btree_set = BTreeSet::<u128>::new();
@@ -148,6 +161,7 @@ fn compare() {
     assert!(string == "1, 3");
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn demo_c1() {
     // before_or_equal_exists	1
@@ -160,6 +174,7 @@ fn demo_c1() {
     assert!(range_set_blaze._len_slow() == range_set_blaze.len());
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn demo_c2() {
     // before_or_equal_exists	1
@@ -172,6 +187,7 @@ fn demo_c2() {
     assert!(range_set_blaze._len_slow() == range_set_blaze.len());
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn demo_f1() {
     // before_or_equal_exists	0
@@ -190,6 +206,7 @@ fn demo_f1() {
     assert!(range_set_blaze._len_slow() == range_set_blaze.len());
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn demo_d1() {
     // before_or_equal_exists	1
@@ -204,6 +221,7 @@ fn demo_d1() {
     assert!(range_set_blaze._len_slow() == range_set_blaze.len());
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn demo_e1() {
     // before_or_equal_exists	1
@@ -219,6 +237,7 @@ fn demo_e1() {
     assert!(range_set_blaze._len_slow() == range_set_blaze.len());
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn demo_b1() {
     // before_or_equal_exists	1
@@ -234,6 +253,7 @@ fn demo_b1() {
     assert!(range_set_blaze._len_slow() == range_set_blaze.len());
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn demo_b2() {
     // before_or_equal_exists	1
@@ -250,6 +270,7 @@ fn demo_b2() {
     assert!(range_set_blaze._len_slow() == range_set_blaze.len());
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn demo_b3() {
     // before_or_equal_exists	1
@@ -266,6 +287,7 @@ fn demo_b3() {
     assert!(range_set_blaze._len_slow() == range_set_blaze.len());
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn demo_a() {
     // before_or_equal_exists	1
@@ -285,6 +307,7 @@ fn demo_a() {
     assert!(range_set_blaze._len_slow() == range_set_blaze.len());
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn add_in_order() {
     let mut range_set = RangeSetBlaze::new();
@@ -293,6 +316,7 @@ fn add_in_order() {
     }
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn optimize() {
     let end = 8u8;
@@ -325,6 +349,7 @@ fn optimize() {
     }
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn understand_into_iter() {
     let btree_set = BTreeSet::from([1, 2, 3, 4, 5]);
@@ -386,6 +411,7 @@ impl BitAndAssign for BooleanVector {
     }
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn understand_bitand_assign() {
     let mut a = 3u8;
@@ -402,6 +428,7 @@ fn understand_bitand_assign() {
     // println!("{bv2:?}");
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn iters() {
     let range_set_blaze = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -428,6 +455,7 @@ fn iters() {
     // !!! assert that can't use range_set_blaze again
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn missing_doctest_ops() {
     // note that may be borrowed or owned in any combination.
@@ -475,6 +503,7 @@ fn missing_doctest_ops() {
     assert_eq!(result, RangeSetBlaze::from_iter([1]));
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn multi_op() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -519,6 +548,7 @@ fn multi_op() {
 //     println!("{}", std::any::type_name::<T>())
 // }
 
+#[wasm_bindgen_test]
 #[test]
 fn custom_multi() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -535,12 +565,14 @@ fn custom_multi() {
     println!("{d}");
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn from_string() {
     let a = RangeSetBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=65535]);
     assert_eq!(a, RangeSetBlaze::from_iter([0..=65535]));
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn nand_repro() {
     let b = &RangeSetBlaze::from_iter([5u8..=13, 18..=29]);
@@ -553,6 +585,7 @@ fn nand_repro() {
     );
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn parity() {
     let a = &RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -599,6 +632,7 @@ fn parity() {
     );
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn bit_or_iter() {
     let i = UnionIter::from([1, 3, 4, 2, 2, 43, -1, 4, 22]);
@@ -609,7 +643,9 @@ fn bit_or_iter() {
     assert_eq!(k.to_string(), "-1..=-1, 1..=1, 22..=22");
 }
 
+#[wasm_bindgen_test]
 #[test]
+#[allow(clippy::zero_repeat_side_effects)]
 fn empty() {
     let universe: UnionIter<u8, _> = [0..=255].into_iter().collect();
     let arr: [u8; 0] = [];
@@ -691,6 +727,7 @@ where
     }
 }
 #[allow(clippy::reversed_empty_ranges)]
+#[wasm_bindgen_test]
 #[test]
 fn private_constructor() {
     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
@@ -726,6 +763,7 @@ fn is_ddcppdheo<
 fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
 fn is_like_btreeset_iter<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
 // removed DoubleEndedIterator +ExactSizeIterator for now
+#[wasm_bindgen_test]
 #[test]
 fn iter_traits() {
     type ARangesIter<'a> = RangesIter<'a, i32>;
@@ -773,6 +811,7 @@ fn is_like_check_sorted_disjoint<
 
 fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
 
+#[wasm_bindgen_test]
 #[test]
 fn check_traits() {
     // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
@@ -829,6 +868,7 @@ fn check_traits() {
     is_like_btreeset_iter::<AAssumeSortedStarts>();
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn integer_coverage() {
     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
@@ -839,13 +879,14 @@ fn integer_coverage() {
             assert_eq!($ty::add_len_less_one(a,len), a);
             assert_eq!($ty::sub_len_less_one(a,len), a);
             assert_eq!($ty::f64_to_safe_len(1.0), len);
-            assert!($ty::safe_max_value()<=$ty::max_value());
-            assert!(<$ty as Integer>::safe_max_value()<=$ty::max_value());
+            assert!($ty::safe_max_value()<=$ty::MAX);
+            assert!(<$ty as Integer>::safe_max_value()<=$ty::MAX);
 
         )*
     }};
 }
 
+#[wasm_bindgen_test]
 #[test]
 #[allow(clippy::bool_assert_comparison)]
 fn lib_coverage_0() {
@@ -1045,6 +1086,7 @@ fn lib_coverage_0() {
     assert!(!a.is_disjoint(&a));
 }
 
+#[wasm_bindgen_test]
 #[test]
 #[should_panic]
 fn lib_coverage_2() {
@@ -1052,6 +1094,7 @@ fn lib_coverage_2() {
     v.contains(u128::MAX);
 }
 
+#[wasm_bindgen_test]
 #[test]
 #[should_panic]
 fn lib_coverage_3() {
@@ -1059,6 +1102,7 @@ fn lib_coverage_3() {
     v.remove(u128::MAX);
 }
 
+#[wasm_bindgen_test]
 #[test]
 #[should_panic]
 fn lib_coverage_4() {
@@ -1066,6 +1110,7 @@ fn lib_coverage_4() {
     v.split_off(u128::MAX);
 }
 
+#[wasm_bindgen_test]
 #[test]
 #[should_panic]
 fn lib_coverage_5() {
@@ -1073,6 +1118,7 @@ fn lib_coverage_5() {
     v.internal_add(0..=u128::MAX);
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn lib_coverage_6() {
     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
@@ -1086,6 +1132,7 @@ fn lib_coverage_6() {
     }};
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn merge_coverage_0() {
     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
@@ -1110,6 +1157,7 @@ fn merge_coverage_0() {
     assert!(format!("{p:?}").starts_with("KMerge"));
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn not_iter_coverage_0() {
     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
@@ -1120,6 +1168,7 @@ fn not_iter_coverage_0() {
     assert!(format!("{p:?}").starts_with("NotIter"));
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn ranges_coverage_0() {
     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
@@ -1164,6 +1213,7 @@ fn ranges_coverage_0() {
     .starts_with("IntoRanges"));
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn sorted_disjoint_coverage_0() {
     let a = CheckSortedDisjoint::<i32, _>::default();
@@ -1182,6 +1232,7 @@ fn sorted_disjoint_coverage_0() {
     assert!((a ^ b).is_empty());
 }
 
+#[wasm_bindgen_test]
 #[test]
 #[should_panic]
 fn sorted_disjoint_coverage_1() {
@@ -1206,6 +1257,7 @@ fn sorted_disjoint_coverage_1() {
     a.next();
 }
 
+#[wasm_bindgen_test]
 #[test]
 #[should_panic]
 fn sorted_disjoint_coverage_2() {
@@ -1214,6 +1266,7 @@ fn sorted_disjoint_coverage_2() {
     a.next();
 }
 
+#[wasm_bindgen_test]
 #[test]
 #[should_panic]
 fn sorted_disjoint_coverage_3() {
@@ -1223,6 +1276,7 @@ fn sorted_disjoint_coverage_3() {
     a.next();
 }
 
+#[wasm_bindgen_test]
 #[test]
 #[should_panic]
 fn sorted_disjoint_coverage_4() {
@@ -1231,6 +1285,7 @@ fn sorted_disjoint_coverage_4() {
     a.next();
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn sorted_disjoint_iterator_coverage_0() {
     let a = CheckSortedDisjoint::new([1..=2, 5..=100].into_iter());
@@ -1238,6 +1293,7 @@ fn sorted_disjoint_iterator_coverage_0() {
     assert!(b.is_superset(a));
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn union_iter_coverage_0() {
     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100].into_iter());
@@ -1246,12 +1302,14 @@ fn union_iter_coverage_0() {
     assert!(format!("{c:?}").starts_with("UnionIter"));
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn unsorted_disjoint_coverage_0() {
     let a = AssumeSortedStarts::new([1..=2, 5..=100].into_iter());
     assert!(format!("{a:?}").starts_with("AssumeSortedStarts"));
 }
 
+#[wasm_bindgen_test]
 #[test]
 fn test_coverage_0() {
     let a = BooleanVector(vec![true, true, false, false]);
