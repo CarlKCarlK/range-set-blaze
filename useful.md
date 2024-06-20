@@ -4,6 +4,7 @@
 
 ```bash
 cargo test
+cargo test --target wasm32-wasip1
 ```
 
 ## Benchmarking example
