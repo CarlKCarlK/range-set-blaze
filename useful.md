@@ -5,6 +5,7 @@
 ```bash
 cargo test
 cargo test --target wasm32-wasip1
+cargo test --target wasm32-unknown-unknown
 ```
 
 ## Benchmarking example
