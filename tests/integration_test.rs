@@ -477,6 +477,7 @@ fn bitand() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+#[allow(clippy::zero_repeat_side_effects)]
 fn empty_it() {
     let universe = RangeSetBlaze::from_iter([0u8..=255]);
     let universe = universe.ranges();

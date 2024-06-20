@@ -1551,22 +1551,22 @@ fn overflow(c: &mut Criterion) {
 }
 fn gen_pair(rng: &mut StdRng) -> (i32, i32) {
     (
-        rng.gen_range(std::i32::MIN..=std::i32::MAX),
-        rng.gen_range(std::i32::MIN..=std::i32::MAX),
+        rng.gen_range(i32::MIN..=i32::MAX),
+        rng.gen_range(i32::MIN..=i32::MAX),
     )
 }
 
 fn gen_pair_i8(rng: &mut StdRng) -> (i8, i8) {
     (
-        rng.gen_range(std::i8::MIN..=std::i8::MAX),
-        rng.gen_range(std::i8::MIN..=std::i8::MAX),
+        rng.gen_range(i8::MIN..=i8::MAX),
+        rng.gen_range(i8::MIN..=i8::MAX),
     )
 }
 
 fn gen_pair_u8(rng: &mut StdRng) -> (u8, u8) {
     (
-        rng.gen_range(std::u8::MIN..=std::u8::MAX),
-        rng.gen_range(std::u8::MIN..=std::u8::MAX),
+        rng.gen_range(u8::MIN..=u8::MAX),
+        rng.gen_range(u8::MIN..=u8::MAX),
     )
 }
 

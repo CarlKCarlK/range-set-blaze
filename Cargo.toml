@@ -12,10 +12,9 @@ keywords = ["set", "range", "data-structures", "btree", "interval"]
 categories = ["data-structures"]
 homepage = "https://github.com/CarlKCarlK/range-set-blaze"
 
-
 [workspace]
-
 members = [".", "tests_common"]
+
 [lib]
 
 [dependencies]
