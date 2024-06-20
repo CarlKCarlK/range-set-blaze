@@ -1,6 +1,6 @@
 # Useful commands
 
-## Test
+## Tests
 
 ```bash
 cargo test
