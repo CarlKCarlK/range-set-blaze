@@ -31,7 +31,7 @@ fn insert_255u8() {
     assert!(range_set_blaze.to_string() == "255..=255");
 }
 
-#[wasm_bindgen_test]
+// Don't test wasm-unknown-unknown on panics
 #[test]
 #[should_panic]
 fn insert_max_u128() {
@@ -1086,7 +1086,7 @@ fn lib_coverage_0() {
     assert!(!a.is_disjoint(&a));
 }
 
-#[wasm_bindgen_test]
+// Don't test wasm-unknown-unknown on panics
 #[test]
 #[should_panic]
 fn lib_coverage_2() {
@@ -1094,7 +1094,7 @@ fn lib_coverage_2() {
     v.contains(u128::MAX);
 }
 
-#[wasm_bindgen_test]
+// Don't test wasm-unknown-unknown on panics
 #[test]
 #[should_panic]
 fn lib_coverage_3() {
@@ -1102,7 +1102,7 @@ fn lib_coverage_3() {
     v.remove(u128::MAX);
 }
 
-#[wasm_bindgen_test]
+// Don't test wasm-unknown-unknown on panics
 #[test]
 #[should_panic]
 fn lib_coverage_4() {
@@ -1110,7 +1110,7 @@ fn lib_coverage_4() {
     v.split_off(u128::MAX);
 }
 
-#[wasm_bindgen_test]
+// Don't test wasm-unknown-unknown on panics
 #[test]
 #[should_panic]
 fn lib_coverage_5() {
@@ -1232,7 +1232,7 @@ fn sorted_disjoint_coverage_0() {
     assert!((a ^ b).is_empty());
 }
 
-#[wasm_bindgen_test]
+// Don't test wasm-unknown-unknown on panics
 #[test]
 #[should_panic]
 fn sorted_disjoint_coverage_1() {
@@ -1257,7 +1257,7 @@ fn sorted_disjoint_coverage_1() {
     a.next();
 }
 
-#[wasm_bindgen_test]
+// Don't test wasm-unknown-unknown on panics
 #[test]
 #[should_panic]
 fn sorted_disjoint_coverage_2() {
@@ -1266,7 +1266,7 @@ fn sorted_disjoint_coverage_2() {
     a.next();
 }
 
-#[wasm_bindgen_test]
+// Don't test wasm-unknown-unknown on panics
 #[test]
 #[should_panic]
 fn sorted_disjoint_coverage_3() {
@@ -1276,7 +1276,7 @@ fn sorted_disjoint_coverage_3() {
     a.next();
 }
 
-#[wasm_bindgen_test]
+// Don't test wasm-unknown-unknown on panics
 #[test]
 #[should_panic]
 fn sorted_disjoint_coverage_4() {

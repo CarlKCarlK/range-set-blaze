@@ -30,7 +30,7 @@ fn insert_255u8() {
     assert!(range_set_blaze.to_string() == "255..=255");
 }
 
-#[wasm_bindgen_test]
+// Don't test wasm-unknown-unknown on panics
 #[test]
 #[should_panic]
 fn insert_max_u128() {
@@ -601,15 +601,14 @@ fn tricky_case1() {
     assert_eq!(a.len(), u128::MAX);
 }
 
-// should fail
-#[wasm_bindgen_test]
+// Don't test wasm-unknown-unknown on panics
 #[test]
 #[should_panic]
 fn tricky_case2() {
     let _a = RangeSetBlaze::from_iter([-1..=i128::MAX]);
 }
 
-#[wasm_bindgen_test]
+// Don't test wasm-unknown-unknown on panics
 #[test]
 #[should_panic]
 fn tricky_case3() {
@@ -1551,9 +1550,9 @@ fn complement_sample() {
     println!("{},{},{}", c.len(), c.ranges_len(), c);
 }
 
-#[should_panic]
-#[wasm_bindgen_test]
+// skip wasm_bindgen_test on files
 #[test]
+#[should_panic]
 fn demo_read1() {
     let _a: RangeSetBlaze<i32> = demo_read_ranges_from_path("tests/no_such_file").unwrap();
 }
