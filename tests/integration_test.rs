@@ -8,8 +8,8 @@ use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use range_set_blaze::{
-    demo_i32_len, demo_read_ranges_from_reader, prelude::*, AssumeSortedStarts, Integer, NotIter,
-    RangesIter, SortedStarts, UnionIter,
+    demo_i32_len, prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts,
+    UnionIter,
 };
 use std::cmp::Ordering;
 use std::ops::RangeInclusive;
@@ -1548,26 +1548,6 @@ fn multiway_failure_example() {
 fn complement_sample() {
     let c = !RangeSetBlaze::from([0, 3, 4, 5, 10]);
     println!("{},{},{}", c.len(), c.ranges_len(), c);
-}
-
-// skip wasm_bindgen_test on files
-#[test]
-#[should_panic]
-fn demo_read1() {
-    use std::{fs::File, io::BufReader};
-
-    let b = BufReader::new(File::open("tests/no_such_file").unwrap());
-    let _a: RangeSetBlaze<i32> = demo_read_ranges_from_reader(b).unwrap();
-}
-
-// skip wasm_bindgen_test on files
-#[test]
-fn demo_read2() {
-    use std::{fs::File, io::BufReader};
-
-    let b = BufReader::new(File::open("tests/data/demo_read.txt").unwrap());
-    let a: RangeSetBlaze<i32> = demo_read_ranges_from_reader(b).unwrap();
-    assert_eq!(a.to_string(), "10..=25, 30..=40");
 }
 
 #[wasm_bindgen_test]
