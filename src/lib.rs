@@ -2125,7 +2125,7 @@ impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 #[doc(hidden)]
-pub fn demo_i32_len(range: RangeInclusive<i32>) -> usize {
+pub fn demo_i32_len(range: RangeInclusive<i32>) -> u64 {
     let (start, end) = range.into_inner();
     if start > end {
         return 0;
