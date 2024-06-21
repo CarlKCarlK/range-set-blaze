@@ -29,17 +29,14 @@ use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt;
-use std::fs::File;
 use std::io;
 use std::io::BufRead;
-use std::io::BufReader;
 use std::iter::FusedIterator;
 use std::ops::BitOr;
 use std::ops::BitOrAssign;
 use std::ops::Bound;
 use std::ops::RangeBounds;
 use std::ops::RangeInclusive;
-use std::path::Path;
 use std::str::FromStr;
 pub use union_iter::UnionIter;
 pub use unsorted_disjoint::AssumeSortedStarts;
@@ -2130,12 +2127,12 @@ impl<T: Integer, I: SortedDisjoint<T>> SortedStarts<T> for Tee<I> {}
 impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}
 
 #[doc(hidden)]
-pub fn demo_read_ranges_from_path<T, P>(path: P) -> io::Result<RangeSetBlaze<T>>
+pub fn demo_read_ranges_from_reader<T, R>(reader: R) -> io::Result<RangeSetBlaze<T>>
 where
     T: FromStr + Integer,
-    P: AsRef<Path>,
+    R: BufRead,
 {
-    let lines = BufReader::new(File::open(path)?).lines();
+    let lines = reader.lines();
 
     let mut set = RangeSetBlaze::new();
     for line in lines {

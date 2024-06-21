@@ -13,7 +13,7 @@ categories = ["data-structures"]
 homepage = "https://github.com/CarlKCarlK/range-set-blaze"
 
 [workspace]
-members = [".", "tests_common"]
+members = [".", "tests_common", "tests/wasm-demo"]
 
 [lib]
 
