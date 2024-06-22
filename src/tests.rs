@@ -1,6 +1,10 @@
 #![cfg(test)]
+extern crate std;
 
 use super::*;
+use alloc::borrow::ToOwned;
+use alloc::string::{String, ToString};
+use alloc::{format, vec};
 use itertools::Itertools;
 use quickcheck_macros::quickcheck;
 use rand::{rngs::StdRng, SeedableRng};
@@ -13,6 +17,7 @@ use std::{
     iter::FusedIterator,
     ops::BitOr,
     panic::{RefUnwindSafe, UnwindSafe},
+    print, println,
 }; // , time::Instant
    // use sorted_iter::assume::AssumeSortedByKeyExt;
    // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};

@@ -79,4 +79,5 @@ jobs:
       - name: Run WASM tests with Chrome
         run: |
           rustup target add wasm32-unknown-unknown
-          wasm-pack test --chrome --headless        
+          wasm-pack test --chrome --headless
+  

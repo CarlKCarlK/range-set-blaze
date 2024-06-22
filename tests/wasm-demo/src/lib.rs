@@ -1,20 +1,21 @@
-use std::io::{BufReader, Cursor};
+// cmk
+// use std::io::{BufReader, Cursor};
 
-use range_set_blaze::{demo_read_ranges_from_reader, RangeSetBlaze};
-use wasm_bindgen::prelude::*;
+// use range_set_blaze::{demo_read_ranges_from_reader, RangeSetBlaze};
+// use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen]
-pub fn disjoint_intervals(input: Vec<i32>) -> JsValue {
-    let set: RangeSetBlaze<_> = input.into_iter().collect();
-    let s = set.to_string();
-    JsValue::from_str(&s)
-}
+// #[wasm_bindgen]
+// pub fn disjoint_intervals(input: Vec<i32>) -> JsValue {
+//     let set: RangeSetBlaze<_> = input.into_iter().collect();
+//     let s = set.to_string();
+//     JsValue::from_str(&s)
+// }
 
-#[wasm_bindgen]
-pub fn demo_read_ranges_from_slice(data: &[u8]) -> JsValue {
-    let reader = BufReader::new(Cursor::new(data));
-    match demo_read_ranges_from_reader::<i32, _>(reader) {
-        Ok(set) => JsValue::from_str(&set.to_string()),
-        Err(e) => JsValue::from_str(&format!("Error: {}", e)),
-    }
-}
+// #[wasm_bindgen]
+// pub fn demo_read_ranges_from_slice(data: &[u8]) -> JsValue {
+//     let reader = BufReader::new(Cursor::new(data));
+//     match demo_read_ranges_from_reader::<i32, _>(reader) {
+//         Ok(set) => JsValue::from_str(&set.to_string()),
+//         Err(e) => JsValue::from_str(&format!("Error: {}", e)),
+//     }
+// }

@@ -1,8 +1,9 @@
-use std::{
+use core::{
     iter::FusedIterator,
     ops::{self, RangeInclusive},
 };
 
+use alloc::{format, string::String};
 use itertools::Itertools;
 
 use crate::{
@@ -586,7 +587,7 @@ where
     }
 }
 
-impl<T> Default for CheckSortedDisjoint<T, std::array::IntoIter<RangeInclusive<T>, 0>>
+impl<T> Default for CheckSortedDisjoint<T, core::array::IntoIter<RangeInclusive<T>, 0>>
 where
     T: Integer,
 {
@@ -642,7 +643,7 @@ where
 }
 
 impl<T: Integer, const N: usize> From<[RangeInclusive<T>; N]>
-    for CheckSortedDisjoint<T, std::array::IntoIter<RangeInclusive<T>, N>>
+    for CheckSortedDisjoint<T, core::array::IntoIter<RangeInclusive<T>, N>>
 {
     /// You may create a [`CheckSortedDisjoint`] from an array of integers.
     ///
