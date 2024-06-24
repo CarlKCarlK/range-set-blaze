@@ -24,11 +24,15 @@ fn main() -> ! {
 
     // test goes here
     let range_set_blaze = RangeSetBlaze::from_iter([100, 103, 101, 102, -3, -4]);
-    assert_eq!(range_set_blaze.to_string(), "-4..=-3, 100..=103");
     hprintln!("{:?}", range_set_blaze.to_string());
 
     // exit QEMU/ NOTE do not run this on hardware; it can corrupt OpenOCD state
-    debug::exit(debug::EXIT_SUCCESS);
+    if range_set_blaze.to_string() == "-4..=-3, 100..=103" {
+        debug::exit(debug::EXIT_SUCCESS);
+    } else {
+        debug::exit(debug::EXIT_FAILURE);
+    }
+
     loop {}
 }
 
