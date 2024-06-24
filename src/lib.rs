@@ -1,8 +1,9 @@
 #![no_std]
-// cmk #[cfg(feature = "std")]
-// extern crate std;
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
+
+#[cfg(feature = "std")]
+extern crate std;
 
 extern crate alloc;
 

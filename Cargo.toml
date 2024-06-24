@@ -13,12 +13,12 @@ categories = ["data-structures"]
 homepage = "https://github.com/CarlKCarlK/range-set-blaze"
 
 [workspace]
-members = [".", "tests_common", "tests/wasm-demo"]
+members = [".", "tests_common", "tests/wasm-demo", "tests/embedded"]
 
 [lib]
 
 [features]
-default = ["alloc"] # cmk
+default = ["std"]
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 alloc = ["itertools/use_alloc", "num-traits", "num-integer"]
 
