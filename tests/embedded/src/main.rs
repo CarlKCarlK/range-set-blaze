@@ -27,12 +27,11 @@ fn main() -> ! {
     hprintln!("{:?}", range_set_blaze.to_string());
 
     // exit QEMU/ NOTE do not run this on hardware; it can corrupt OpenOCD state
-    if range_set_blaze.to_string() == "-4..=-3, 100..=103" {
-        debug::exit(debug::EXIT_SUCCESS);
-    } else {
+    if range_set_blaze.to_string() != "-4..=-3, 100..=103" {
         debug::exit(debug::EXIT_FAILURE);
     }
 
+    debug::exit(debug::EXIT_SUCCESS);
     loop {}
 }
 
