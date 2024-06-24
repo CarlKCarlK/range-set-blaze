@@ -83,7 +83,7 @@ jobs:
   
 
   test_thumbv7m-none-eabi:
-    name: Setup and check Embedded
+    name: Setup and Check Embedded
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -97,6 +97,7 @@ jobs:
         run: |
           cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
           rustup override set nightly
+          rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
           sudo apt-get update && sudo apt-get install qemu qemu-system-arm
       - name: Test Embedded (in nightly)
