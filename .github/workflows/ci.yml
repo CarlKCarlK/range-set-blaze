@@ -101,7 +101,7 @@ jobs:
           cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
           sudo apt-get update && sudo apt-get install qemu qemu-system-arm
       - name: Test Embedded (in nightly)
-        timeout-minutes: 3
+        timeout-minutes: 1
         run: |
           cd tests/embedded
           cargo run
