@@ -1,6 +1,7 @@
 // FUTURE can (should?) you optimize a | b | c to automatically call union([a,b,c])?
 use std::{collections::BTreeSet, ops::BitOr};
 use wasm_bindgen_test::wasm_bindgen_test;
+wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
 use range_set_blaze::prelude::*;
 

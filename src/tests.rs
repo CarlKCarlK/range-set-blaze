@@ -26,6 +26,7 @@ use tests_common::{How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
 use std::ops::BitAndAssign;
 use wasm_bindgen_test::wasm_bindgen_test;
+wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
 type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
