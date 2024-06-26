@@ -1,10 +1,10 @@
 use crate::{Integer, SortedDisjoint, SortedStarts};
-use num_traits::Zero;
-use std::{
+use core::{
     cmp::{max, min},
     iter::FusedIterator,
     ops::RangeInclusive,
 };
+use num_traits::Zero;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub(crate) struct UnsortedDisjoint<T, I>

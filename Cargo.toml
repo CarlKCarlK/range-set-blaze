@@ -17,11 +17,16 @@ members = [".", "tests_common", "tests/wasm-demo"]
 
 [lib]
 
+[features]
+default = ["std"]
+std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
+alloc = ["itertools/use_alloc", "num-traits", "num-integer"]
+
 [dependencies]
-itertools = "0.13.0"
-num-integer = "0.1.44"
-num-traits = "0.2.15"
-gen_ops = "0.3.0"
+itertools = { version = "0.13.0", optional = true, default-features = false }
+num-integer = { version = "0.1.46", optional = true, default-features = false }
+num-traits = { version = "0.2.19", optional = true, default-features = false }
+gen_ops = "0.4.0"
 
 [dev-dependencies]
 tests_common = { path = "tests_common" }

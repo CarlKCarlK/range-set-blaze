@@ -1,4 +1,4 @@
-use std::{iter::FusedIterator, ops::RangeInclusive};
+use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use itertools::{Itertools, KMergeBy, MergeBy};
 
