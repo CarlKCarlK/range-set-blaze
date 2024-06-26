@@ -43,7 +43,7 @@ jobs:
         run: |
           rustup target add i686-unknown-linux-gnu
           cargo test --verbose --no-default-features --target i686-unknown-linux-gnu
-    
+
   test_wasip1:
       name: Test WASI P1
       runs-on: ubuntu-latest
