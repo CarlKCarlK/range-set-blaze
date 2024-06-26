@@ -1,11 +1,11 @@
-#![no_std]
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
+#![no_std]
+
+extern crate alloc;
 
 #[cfg(feature = "std")]
 extern crate std;
-
-extern crate alloc;
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
@@ -20,18 +20,18 @@ mod union_iter;
 mod unsorted_disjoint;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
 use alloc::collections::BTreeMap;
-use alloc::fmt;
-use alloc::str::FromStr;
 use alloc::vec::Vec;
 use core::cmp::max;
 use core::cmp::Ordering;
 use core::convert::From;
+use core::fmt;
 use core::iter::FusedIterator;
 use core::ops::BitOr;
 use core::ops::BitOrAssign;
 use core::ops::Bound;
 use core::ops::RangeBounds;
 use core::ops::RangeInclusive;
+use core::str::FromStr;
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 use gen_ops::gen_ops_ex;
 use itertools::Tee;
