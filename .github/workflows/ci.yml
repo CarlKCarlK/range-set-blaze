@@ -34,6 +34,7 @@ jobs:
           cargo clippy --verbose --all-targets --all-features -- -D warnings
           cargo test --verbose --no-default-features
 
+
   test_wasip1:
       name: Test WASI P1
       runs-on: ubuntu-latest
