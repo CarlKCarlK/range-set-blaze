@@ -26,7 +26,7 @@ gen_ops = "0.3.0"
 [dev-dependencies]
 tests_common = { path = "tests_common" }
 syntactic-for = "0.1.1"
-criterion = { version = "0.5.1", features = ["html_reports"] }
+criterion = { version = "0.5.1", features = ["html_reports"], default-features = false }
 trybuild = "1.0.53"
 thousands = "0.2.0"
 quickcheck = "1.0.3"
@@ -38,6 +38,8 @@ glob = "0.3.0"
 thiserror = "1.0"
 rand = "0.8.4"
 
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+criterion = { version = "0.5.1", features = ["rayon"] }
 
 # Declare a benchmark called ""bench" without the standard benchmarking harness. 
 [[bench]]
