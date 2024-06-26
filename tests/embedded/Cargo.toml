@@ -1,0 +1,18 @@
+[package]
+edition = "2021"
+name = "embedded"
+version = "0.1.0"
+
+[dependencies]
+alloc-cortex-m = "0.4.4"
+cortex-m = "0.7.7"
+cortex-m-rt = "0.7.3"
+cortex-m-semihosting = "0.5.0"
+panic-halt = "0.2.0"
+# reference to local project
+range-set-blaze = { path = "../..", features = ["alloc"], default-features = false }
+
+[[bin]]
+name = "embedded"
+test = false
+bench = false

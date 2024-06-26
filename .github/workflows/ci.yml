@@ -79,4 +79,29 @@ jobs:
       - name: Run WASM tests with Chrome
         run: |
           rustup target add wasm32-unknown-unknown
-          wasm-pack test --chrome --headless        
+          wasm-pack test --chrome --headless
+
+  test_thumbv7m-none-eabi:
+    name: Setup and Check Embedded
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          target: thumbv7m-none-eabi
+      - name: Install check stable and nightly
+        run: |
+          cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
+          rustup override set nightly
+          rustup target add thumbv7m-none-eabi
+          cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
+          sudo apt-get update && sudo apt-get install qemu qemu-system-arm
+      - name: Test Embedded (in nightly)
+        timeout-minutes: 1
+        run: |
+          cd tests/embedded
+          cargo run
+
