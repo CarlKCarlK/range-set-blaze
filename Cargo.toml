@@ -26,7 +26,7 @@ gen_ops = "0.3.0"
 [dev-dependencies]
 tests_common = { path = "tests_common" }
 syntactic-for = "0.1.1"
-criterion = { version = "0.5.1", features = ["html_reports"], default-features = false }
+criterion = { version = "0.5.1", features = ["html_reports", "plotters", "cargo_bench_support"], default-features = false }
 trybuild = "1.0.53"
 thousands = "0.2.0"
 quickcheck = "1.0.3"
