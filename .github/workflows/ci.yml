@@ -80,7 +80,7 @@ jobs:
         run: |
           rustup target add wasm32-unknown-unknown
           wasm-pack test --chrome --headless
-  
+
   test_thumbv7m-none-eabi:
     name: Setup and Check Embedded
     runs-on: ubuntu-latest
@@ -104,3 +104,4 @@ jobs:
         run: |
           cd tests/embedded
           cargo run
+
