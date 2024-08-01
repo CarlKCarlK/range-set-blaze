@@ -4,23 +4,23 @@
 
 | Crate | # Downloads | Ranges | Element Type | Set Operations? | Internal | Maps, too? |
 | --- | --- | --- | --- | --- | --- | --- |
-[range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) | 488* | Disjoint | Integer | Set Ops | BTreeMap | Only Sets |
-[roaring](https://crates.io/crates/roaring) | 1,588,056* | Disjoint | u32 | SetOps | Compressed Bitmaps | Only Sets |
-[rangemap](https://crates.io/crates/rangemap) | 243,612 | Disjoint | Ord | No Set Ops | BTreeMap | Sets/Maps |
-[iset](https://crates.io/crates/iset) | 128,824 | Overlapping | PartialOrd | No Set Ops | Red Black | Sets/Maps |
-[theban_interval_tree](https://crates.io/crates/theban_interval_tree) |72,000 | Overlapping(?) | ? | No Set Ops | interval tree | Sets/Maps ||
-[Range-collections](https://crates.io/crates/range-collections) | 44,974 | Disjoint | Ord | Set Ops | SmallVec | Sets/Maps |
-[range-set](https://crates.io/crates/range-set) | 19,526 | Disjoint | Ord? | No Set Ops | SmallVec | Only Sets |
-[sorted-iter](https://crates.io/crates/sorted-iter) | 19,183 | No | Ord | Set Ops | *n/a* | Sets/Maps |
-[ranges](https://crates.io/crates/ranges) | 14,964 | Disjoint | 'Domain' | Set Ops | Vec | Only Sets |
-[unbounded-interval-tree](https://crates.io/crates/unbounded-interval-tree) | 3,780 | Overlapping | Ord | No Set Ops | Red Black | Only Sets ||
-[ranged_set](https://crates.io/crates/ranged_set) | 2,116 | Disjoint | Ord | No Set Ops | ? | Only Sets |
-[btree-range-map](https://crates.io/crates/btree-range-map) |  1,897 | Yes | Measure | No Set Ops | BTreeMap | Only Sets |
-[nonoverlapping_interval_tree](https://crates.io/crates/nonoverlapping_interval_tree)|  <1000 | Yes | ? | No Set Ops | BTreeMap | Only Sets | |
-[segmap](https://crates.io/crates/segmap)|  <1000 | Yes | Ord | not tested | BTreeMap | Sets/Maps |
-[interval-map](https://crates.io/crates/interval-map)|  <1000 | Yes | Ord | No Set Ops | sorted vec | Sets/Maps |
-[range_bounds_map](https://crates.io/crates/range_bounds_map)|  <1000 | Yes | Ord | No Set Ops | ? | Sets/Maps |
-[int_range_set](https://crates.io/crates/int_range_set)|  <1000 | Yes | u64 | No Set Ops | tinyvec | Only Sets |
+| [range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) | 488* | Disjoint | Integer | Set Ops | BTreeMap | Only Sets |
+| [roaring](https://crates.io/crates/roaring) | 1,588,056* | Disjoint | u32 | SetOps | Compressed Bitmaps | Only Sets |
+| [rangemap](https://crates.io/crates/rangemap) | 243,612 | Disjoint | Ord | No Set Ops | BTreeMap | Sets/Maps |
+| [iset](https://crates.io/crates/iset) | 128,824 | Overlapping | PartialOrd | No Set Ops | Red Black | Sets/Maps |
+| [theban_interval_tree](https://crates.io/crates/theban_interval_tree) |72,000 | Overlapping(?) | ? | No Set Ops | interval tree | Sets/Maps |
+| [Range-collections](https://crates.io/crates/range-collections) | 44,974 | Disjoint | Ord | Set Ops | SmallVec | Sets/Maps |
+| [range-set](https://crates.io/crates/range-set) | 19,526 | Disjoint | Ord? | No Set Ops | SmallVec | Only Sets |
+| [sorted-iter](https://crates.io/crates/sorted-iter) | 19,183 | No | Ord | Set Ops | *n/a* | Sets/Maps |
+| [ranges](https://crates.io/crates/ranges) | 14,964 | Disjoint | 'Domain' | Set Ops | Vec | Only Sets |
+| [unbounded-interval-tree](https://crates.io/crates/unbounded-interval-tree) | 3,780 | Overlapping | Ord | No Set Ops | Red Black | Only Sets |
+| [ranged_set](https://crates.io/crates/ranged_set) | 2,116 | Disjoint | Ord | No Set Ops | ? | Only Sets |
+| [btree-range-map](https://crates.io/crates/btree-range-map) |  1,897 | Yes | Measure | No Set Ops | BTreeMap | Only Sets |
+| [nonoverlapping_interval_tree](https://crates.io/crates/nonoverlapping_interval_tree)|  <1000 | Yes | ? | No Set Ops | BTreeMap | Only Sets |
+| [segmap](https://crates.io/crates/segmap)|  <1000 | Yes | Ord | not tested | BTreeMap | Sets/Maps |
+| [interval-map](https://crates.io/crates/interval-map)|  <1000 | Yes | Ord | No Set Ops | sorted vec | Sets/Maps |
+| [range_bounds_map](https://crates.io/crates/range_bounds_map)|  <1000 | Yes | Ord | No Set Ops | ? | Sets/Maps |
+| [int_range_set](https://crates.io/crates/int_range_set)|  <1000 | Yes | u64 | No Set Ops | tinyvec | Only Sets |
 
 > *The # of downloads as of March 2023*
 >
@@ -123,7 +123,7 @@ We give each crate the clumps as ranges (instead of as individual integers).
 
 ### 'ingest_clumps_ranges' Results & Conclusion
 
-Over the clump sizes, `RangeSetBlaze` averges about 3 times faster than `rangemap` and 10 times faster than `Roaring`, However ...
+Over the clump sizes, `RangeSetBlaze` averages about 3 times faster than `rangemap` and 10 times faster than `Roaring`, However ...
 
 `RangeSetBlaze` batches range inputs by sorting them and then merging adjacent ranges. This batching is likely not implemented in `rangemap` or `Roaring` but could easily be added to it or any other range-based crate.
 
@@ -234,7 +234,7 @@ Dynamic multiway is not used by `RangeSetBlaze` but is sometimes needed by `Sort
 
 ### 'worst_op_blaze' Results and Conclusion
 
-Over almost the whole range `Roaring` is best. Roughly 10 times better than `RangeSetBlaze` when the number of intergers is less than 10,000. As the number of integers increases beyond 10,000 `RangeSetBlaze`, `BTreeSet`, and `HashSet` continue to get slower. `Roaring`, on the other hand, gets faster;
+Over almost the whole range `Roaring` is best. Roughly 10 times better than `RangeSetBlaze` when the number of integers is less than 10,000. As the number of integers increases beyond 10,000 `RangeSetBlaze`, `BTreeSet`, and `HashSet` continue to get slower. `Roaring`, on the other hand, gets faster;
 presumably as it switches to bitmaps.
 
 `Roaring` is a great choice when doing operations on u64 sets that may or may not be clumpy.
