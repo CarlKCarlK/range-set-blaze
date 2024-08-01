@@ -1277,6 +1277,8 @@ fn print_features() {
 
     )*}};
     #[cfg(target_arch = "aarch64")]
+    use std::arch::is_aarch64_feature_detected;
+    #[cfg(target_arch = "aarch64")]
     syntactic_for! { feature in [
         "fp",
         "asimd",
