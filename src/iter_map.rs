@@ -134,7 +134,7 @@ where
     T: Integer,
     V: EqClone,
 {
-    pub fn new(into_iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
+    pub const fn new(into_iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
         Self {
             option_start_end_value_front: None,
             option_start_end_value_back: None,

@@ -205,7 +205,7 @@ pub struct MapIntoRangesIter<T: Integer, V: EqClone> {
 }
 
 impl<T: Integer, V: EqClone> MapIntoRangesIter<T, V> {
-    pub fn new(iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
+    pub const fn new(iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
         Self { iter, gather: None }
     }
 }
