@@ -1224,10 +1224,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert!(set.is_empty());
     /// ```
     pub fn pop_last(&mut self) -> Option<T> {
-        let Some(mut entry) = self.btree_map.last_entry() else {
-            return None;
-        };
-
+        let mut entry = self.btree_map.last_entry()?;
         let start = *entry.key();
         let end = entry.get_mut();
         let result = *end;

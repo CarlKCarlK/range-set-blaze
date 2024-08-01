@@ -611,6 +611,7 @@ fn bit_or_iter() {
 }
 
 #[test]
+#[allow(clippy::zero_repeat_side_effects)]
 fn empty() {
     let universe: UnionIter<u8, _> = [0..=255].into_iter().collect();
     let arr: [u8; 0] = [];
@@ -840,9 +841,8 @@ fn integer_coverage() {
             assert_eq!($ty::add_len_less_one(a,len), a);
             assert_eq!($ty::sub_len_less_one(a,len), a);
             assert_eq!($ty::f64_to_safe_len(1.0), len);
-            assert!($ty::safe_max_value()<=$ty::max_value());
-            assert!(<$ty as Integer>::safe_max_value()<=$ty::max_value());
-
+            assert!($ty::safe_max_value()<=$ty::MAX);
+            assert!(<$ty as Integer>::safe_max_value()<=$ty::MAX);
         )*
     }};
 }

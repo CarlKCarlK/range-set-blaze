@@ -1,5 +1,6 @@
 #![feature(portable_simd)]
 #![feature(array_chunks)]
+#![allow(unexpected_cfgs)]
 
 use core::any::type_name;
 use core::mem;

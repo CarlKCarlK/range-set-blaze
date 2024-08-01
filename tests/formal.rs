@@ -1,3 +1,4 @@
+#![allow(unexpected_cfgs)]
 // use core::collections::HashSet;
 
 // // File: test.rs

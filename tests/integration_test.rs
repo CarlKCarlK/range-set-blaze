@@ -1,5 +1,6 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+#![allow(unexpected_cfgs)]
 
 #[cfg(feature = "from_slice")]
 use core::mem::size_of;
@@ -488,6 +489,7 @@ fn bitand() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+#[allow(clippy::zero_repeat_side_effects)]
 fn empty_it() {
     let universe = RangeSetBlaze::from_iter([0u8..=255]);
     let universe = universe.ranges();
@@ -1564,9 +1566,9 @@ fn run_rangemap_crate() {
 
 #[test]
 fn from_iter_coverage() {
-    let vec_range = vec![1..=2, 2..=2, -10..=-5];
-    let a0 = RangeSetBlaze::from_iter(vec_range.iter());
-    let a1: RangeSetBlaze<i32> = vec_range.iter().collect();
+    let range_array = [1..=2, 2..=2, -10..=-5];
+    let a0 = RangeSetBlaze::from_iter(range_array.iter());
+    let a1: RangeSetBlaze<i32> = range_array.iter().collect();
     assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 }
 
