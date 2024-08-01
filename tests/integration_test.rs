@@ -1232,6 +1232,7 @@ fn range_set_int_constructors() {
 #[cfg(feature = "from_slice")]
 fn print_features() {
     println!("feature\tcould\tare");
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     syntactic_for! { feature in [
         "aes",
         "pclmulqdq",
@@ -1274,6 +1275,43 @@ fn print_features() {
         ] {$(
             println!("{}\t{}\t{}",$feature,is_x86_feature_detected!($feature),cfg!(target_feature = $feature));
 
+    )*}};
+    #[cfg(target_arch = "aarch64")]
+    syntactic_for! { feature in [
+        "fp",
+        "asimd",
+        "evtstrm",
+        "aes",
+        "pmull",
+        "sha1",
+        "sha2",
+        "crc32",
+        "atomics",
+        "fphp",
+        "asimdhp",
+        "cpuid",
+        "asimdrdm",
+        "jscvt",
+        "fcma",
+        "lrcpc",
+        "dcpop",
+        "sha3",
+        "sm3",
+        "sm4",
+        "asimddp",
+        "sha512",
+        "sve",
+        "asimdfhm",
+        "dit",
+        "uscat",
+        "ilrcpc",
+        "flagm",
+        "ssbs",
+        "sb",
+        "paca",
+        "pacg",
+    ] {$(
+        println!("{}\t{}\t{}",$feature,is_aarch64_feature_detected!($feature),cfg!(target_feature = $feature));
     )*}};
 }
 
