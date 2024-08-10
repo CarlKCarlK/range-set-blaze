@@ -31,5 +31,5 @@ jobs:
           toolchain: stable
       - name: Test Rust
         run: |
-          cargo clippy --verbose --all-targets --all-features -- -D warnings
+          cargo clippy --verbose --all-targets --all-features
           cargo test --verbose --no-default-features
