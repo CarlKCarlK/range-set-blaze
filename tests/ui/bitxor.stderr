@@ -12,5 +12,5 @@ error[E0599]: no method named `bitxor` found for struct `IntoRangesIter` in the 
   = help: items from traits can only be used if the trait is in scope
 help: the following trait is implemented but not in scope; perhaps add a `use` for it:
     |
-1   | use std::ops::BitXor;
+1   | use core::ops::BitXor;
     |

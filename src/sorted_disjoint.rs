@@ -162,7 +162,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> {}
 ///
 /// ## Example -- Find the ordinal weekdays in September 2023
 /// ```
-/// use std::ops::RangeInclusive;
+/// use core::ops::RangeInclusive;
 /// pub use range_set_blaze::{SortedDisjoint, SortedStarts};
 ///
 /// // Ordinal dates count January 1 as day 1, February 1 as day 32, etc.

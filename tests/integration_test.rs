@@ -3,6 +3,8 @@
 use wasm_bindgen_test::wasm_bindgen_test;
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
+use core::cmp::Ordering;
+use core::ops::RangeInclusive;
 use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
@@ -11,8 +13,6 @@ use range_set_blaze::{
     demo_i32_len, prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts,
     UnionIter,
 };
-use std::cmp::Ordering;
-use std::ops::RangeInclusive;
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
@@ -1220,7 +1220,7 @@ fn union_iter() {
 fn bitor() {
     let a = CheckSortedDisjoint::from([1..=1]);
     let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
-    let union = std::ops::BitOr::bitor(a, b);
+    let union = core::ops::BitOr::bitor(a, b);
     assert_eq!(union.to_string(), "1..=2");
 
     let a = CheckSortedDisjoint::from([1..=1]);
@@ -1230,7 +1230,7 @@ fn bitor() {
 
     let a = CheckSortedDisjoint::from([1..=1]);
     let b = CheckSortedDisjoint::from([2..=2]);
-    let c = std::ops::BitOr::bitor(a, b);
+    let c = core::ops::BitOr::bitor(a, b);
     assert_eq!(c.to_string(), "1..=2");
 
     let a = CheckSortedDisjoint::from([1..=1]);
@@ -1432,8 +1432,8 @@ fn range_example() {
 #[wasm_bindgen_test]
 #[test]
 fn range_test() {
+    use core::ops::Bound::Included;
     use range_set_blaze::RangeSetBlaze;
-    use std::ops::Bound::Included;
 
     let mut set = RangeSetBlaze::new();
     set.insert(3);

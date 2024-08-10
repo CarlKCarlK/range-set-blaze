@@ -1,4 +1,5 @@
-// use std::collections::HashSet;
+#![allow(unexpected_cfgs)]
+// use alloc::collections::HashSet;
 
 // // File: test.rs
 // #[kani::proof]

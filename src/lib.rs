@@ -177,7 +177,7 @@ pub trait Integer:
 /// | [`from_sorted_disjoint`][3] /[`into_range_set_blaze`][3]         | [`SortedDisjoint`] iterator |
 /// | [`from`][4] /[`into`][4]         | array of integers       |
 ///
-/// [`BTreeMap`]: std::collections::BTreeMap
+/// [`BTreeMap`]: alloc::collections::BTreeMap
 /// [`new`]: RangeSetBlaze::new
 /// [`default`]: RangeSetBlaze::default
 /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
@@ -341,7 +341,7 @@ pub trait Integer:
 ///
 /// Use `==`, `!=` to check if two `RangeSetBlaze`s are equal or not.
 ///
-/// [`BTreeSet`]: std::collections::BTreeSet
+/// [`BTreeSet`]: alloc::collections::BTreeSet
 /// [`is_subset`]: RangeSetBlaze::is_subset
 /// [`is_superset`]: RangeSetBlaze::is_superset
 /// [`cmp`]: RangeSetBlaze::cmp
@@ -749,7 +749,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
-    /// use std::ops::Bound::Included;
+    /// use core::ops::Bound::Included;
     ///
     /// let mut set = RangeSetBlaze::new();
     /// set.insert(3);
@@ -948,7 +948,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// Note: This is very similar to `insert`. It is included for consistency with [`BTreeSet`].
     ///
-    /// [`BTreeSet`]: std::collections::BTreeSet
+    /// [`BTreeSet`]: alloc::collections::BTreeSet
     ///
     /// # Examples
     ///
@@ -1359,7 +1359,7 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     ///
     /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
-    /// [`BTreeSet`]: std::collections::BTreeSet
+    /// [`BTreeSet`]: alloc::collections::BTreeSet
     ///
     /// # Examples
     ///
@@ -2051,7 +2051,7 @@ impl<T: Integer> Ord for RangeSetBlaze<T> {
     /// We define a total ordering on RangeSetBlaze. Following the convention of
     /// [`BTreeSet`], the ordering is lexicographic, *not* by subset/superset.
     ///
-    /// [`BTreeSet`]: std::collections::BTreeSet
+    /// [`BTreeSet`]: alloc::collections::BTreeSet
     ///
     /// # Examples
     /// ```
@@ -2067,7 +2067,7 @@ impl<T: Integer> Ord for RangeSetBlaze<T> {
     /// assert!(b >= a);
     /// assert!(a != b);
     /// assert!(a == a);
-    /// use std::cmp::Ordering;
+    /// use core::cmp::Ordering;
     /// assert_eq!(a.cmp(&b), Ordering::Less);
     /// assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
     /// ```

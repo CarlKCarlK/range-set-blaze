@@ -3,7 +3,6 @@ use core::{
     iter::FusedIterator,
     ops::{self, RangeInclusive},
 };
-
 use itertools::Itertools;
 
 use crate::{
