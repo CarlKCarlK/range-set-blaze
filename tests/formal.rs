@@ -1,3 +1,4 @@
+#![allow(unexpected_cfgs)]
 // use std::collections::HashSet;
 
 // // File: test.rs
