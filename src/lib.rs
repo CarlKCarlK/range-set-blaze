@@ -1,5 +1,7 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
+#![no_std]
+extern crate alloc;
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
@@ -13,6 +15,19 @@ mod tests;
 mod union_iter;
 mod unsorted_disjoint;
 pub use crate::ranges::{IntoRangesIter, RangesIter};
+use alloc::collections::BTreeMap;
+use alloc::vec::Vec;
+use core::cmp::max;
+use core::cmp::Ordering;
+use core::convert::From;
+use core::fmt;
+use core::iter::FusedIterator;
+use core::ops::BitOr;
+use core::ops::BitOrAssign;
+use core::ops::Bound;
+use core::ops::RangeBounds;
+use core::ops::RangeInclusive;
+use core::str::FromStr;
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 use gen_ops::gen_ops_ex;
 use itertools::Tee;
@@ -24,18 +39,6 @@ use num_traits::CheckedAdd;
 use num_traits::One;
 use num_traits::Zero;
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
-use std::cmp::max;
-use std::cmp::Ordering;
-use std::collections::BTreeMap;
-use std::convert::From;
-use std::fmt;
-use std::iter::FusedIterator;
-use std::ops::BitOr;
-use std::ops::BitOrAssign;
-use std::ops::Bound;
-use std::ops::RangeBounds;
-use std::ops::RangeInclusive;
-use std::str::FromStr;
 pub use union_iter::UnionIter;
 pub use unsorted_disjoint::AssumeSortedStarts;
 use unsorted_disjoint::SortedDisjointWithLenSoFar;
@@ -47,7 +50,7 @@ pub trait Integer:
     + FromStr
     + fmt::Display
     + fmt::Debug
-    + std::iter::Sum
+    + core::iter::Sum
     + num_traits::NumAssignOps
     + FromStr
     + Copy
@@ -72,14 +75,14 @@ pub trait Integer:
     /// let len: <u8 as Integer>::SafeLen = RangeSetBlaze::from_iter([0u8..=255]).len();
     /// assert_eq!(len, 256);
     /// ```
-    type SafeLen: std::hash::Hash
+    type SafeLen: core::hash::Hash
         + num_integer::Integer
         + num_traits::NumAssignOps
         + num_traits::Bounded
         + num_traits::NumCast
         + num_traits::One
-        + std::ops::AddAssign
-        + std::ops::SubAssign
+        + core::ops::AddAssign
+        + core::ops::SubAssign
         + Copy
         + PartialEq
         + Eq
@@ -170,7 +173,7 @@ pub trait Integer:
 /// | [`from_sorted_disjoint`][3] /[`into_range_set_blaze`][3]         | [`SortedDisjoint`] iterator |
 /// | [`from`][4] /[`into`][4]         | array of integers       |
 ///
-/// [`BTreeMap`]: std::collections::BTreeMap
+/// [`BTreeMap`]: alloc::collections::BTreeMap
 /// [`new`]: RangeSetBlaze::new
 /// [`default`]: RangeSetBlaze::default
 /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
@@ -334,7 +337,7 @@ pub trait Integer:
 ///
 /// Use `==`, `!=` to check if two `RangeSetBlaze`s are equal or not.
 ///
-/// [`BTreeSet`]: std::collections::BTreeSet
+/// [`BTreeSet`]: alloc::collections::BTreeSet
 /// [`is_subset`]: RangeSetBlaze::is_subset
 /// [`is_superset`]: RangeSetBlaze::is_superset
 /// [`cmp`]: RangeSetBlaze::cmp
@@ -742,7 +745,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
-    /// use std::ops::Bound::Included;
+    /// use core::ops::Bound::Included;
     ///
     /// let mut set = RangeSetBlaze::new();
     /// set.insert(3);
@@ -941,7 +944,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// Note: This is very similar to `insert`. It is included for consistency with [`BTreeSet`].
     ///
-    /// [`BTreeSet`]: std::collections::BTreeSet
+    /// [`BTreeSet`]: alloc::collections::BTreeSet
     ///
     /// # Examples
     ///
@@ -1352,7 +1355,7 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     ///
     /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
-    /// [`BTreeSet`]: std::collections::BTreeSet
+    /// [`BTreeSet`]: alloc::collections::BTreeSet
     ///
     /// # Examples
     ///
@@ -1797,7 +1800,7 @@ where
 /// [`into_iter`]: RangeSetBlaze::into_iter
 pub struct IntoIter<T: Integer> {
     option_range: Option<RangeInclusive<T>>,
-    into_iter: std::collections::btree_map::IntoIter<T, T>,
+    into_iter: alloc::collections::btree_map::IntoIter<T, T>,
 }
 
 impl<T: Integer> FusedIterator for IntoIter<T> {}
@@ -2044,7 +2047,7 @@ impl<T: Integer> Ord for RangeSetBlaze<T> {
     /// We define a total ordering on RangeSetBlaze. Following the convention of
     /// [`BTreeSet`], the ordering is lexicographic, *not* by subset/superset.
     ///
-    /// [`BTreeSet`]: std::collections::BTreeSet
+    /// [`BTreeSet`]: alloc::collections::BTreeSet
     ///
     /// # Examples
     /// ```
@@ -2060,7 +2063,7 @@ impl<T: Integer> Ord for RangeSetBlaze<T> {
     /// assert!(b >= a);
     /// assert!(a != b);
     /// assert!(a == a);
-    /// use std::cmp::Ordering;
+    /// use core::cmp::Ordering;
     /// assert_eq!(a.cmp(&b), Ordering::Less);
     /// assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
     /// ```
