@@ -1,8 +1,6 @@
 #![cfg(test)]
-use std::format;
 use std::prelude::v1::*;
-use std::vec;
-use std::{print, println};
+use std::{format, print, println, vec};
 
 use super::*;
 use itertools::Itertools;
