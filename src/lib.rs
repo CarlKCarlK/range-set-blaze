@@ -1,7 +1,10 @@
 #![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
-#![cfg_attr(not(feature = "std"), no_std)]
+#![no_std]
+extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
 
 // Developer notes:
 //
@@ -20,7 +23,6 @@
 // compile_error!("The 'std' feature is active");
 // #[cfg(feature = "alloc")]
 // compile_error!("The 'alloc' feature is active");
-extern crate alloc;
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;

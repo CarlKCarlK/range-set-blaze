@@ -1,5 +1,7 @@
 #![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
+#![cfg(not(target_arch = "wasm32"))] // cmk0000
+use std::prelude::v1::*;
+pub use std::{format, print, println, vec};
 
 use super::*;
 use itertools::Itertools;
