@@ -35,7 +35,9 @@ jobs:
       - name: Test WASM, setup and check Embedded
         if: runner.os == 'Linux'
         run: |
-          wasm-pack test --chrome --headless --features alloc --no-default-features --verbose
+          cargo test --target wasm32.unknown.unknown --features alloc --no-default-features --verbose
+
+          # set up embedded
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
           rustup override set nightly
@@ -71,13 +73,3 @@ jobs:
           rustup target add i686-unknown-linux-gnu
           cargo test --verbose --target i686-unknown-linux-gnu --features rog-experimental
           cargo test --features alloc --no-default-features --verbose --target i686-unknown-linux-gnu --features rog-experimental
-      # - name: Test Rust 32-bit Windows
-      #   if: runner.os == 'Windows'
-      #   uses: egor-tensin/setup-mingw@v2
-      #   with:
-      #     platform: any
-      # - if: runner.os == 'Windows'          
-      #   run: |
-      #     rustup target add i686-pc-windows-gnu
-      #     cargo test --verbose --target=i686-pc-windows-gnu
-      #     cargo test --features alloc --no-default-features --verbose --target=i686-pc-windows-gnu
