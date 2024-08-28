@@ -175,6 +175,7 @@ impl_is_consecutive!(u32);
 impl_is_consecutive!(u64);
 impl_is_consecutive!(usize);
 
+#[wasm_bindgen_test]
 #[test]
 fn test_is_consecutive() {
     let simd: Simd<i8, 64> = Simd::from_array(core::array::from_fn(|i| 10 + i as i8));

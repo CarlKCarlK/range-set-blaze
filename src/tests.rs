@@ -1,11 +1,15 @@
 #![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))] // cmk0000
+extern crate std;
 use std::prelude::v1::*;
 pub use std::{format, print, println, vec};
+use wasm_bindgen_test::*;
+wasm_bindgen_test_configure!(run_in_browser);
 
 use super::*;
 use itertools::Itertools;
+#[cfg(not(target_arch = "wasm32"))]
 use quickcheck_macros::quickcheck;
+#[cfg(not(target_arch = "wasm32"))]
 use rand::{rngs::StdRng, SeedableRng};
 use std::fmt::Debug;
 use std::{
@@ -20,6 +24,7 @@ use std::{
    // use sorted_iter::assume::AssumeSortedByKeyExt;
    // use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use syntactic_for::syntactic_for;
+#[cfg(not(target_arch = "wasm32"))]
 use tests_common::{How, MemorylessIter, MemorylessRange};
 // use thousands::Separable;
 use core::ops::BitAndAssign;
@@ -27,12 +32,14 @@ use core::ops::BitAndAssign;
 type I32SafeLen = <i32 as crate::Integer>::SafeLen;
 
 #[test]
+#[wasm_bindgen_test]
 fn insert_255u8() {
     let range_set_blaze = RangeSetBlaze::<u8>::from_iter([255]);
     assert!(range_set_blaze.to_string() == "255..=255");
 }
 
 #[test]
+#[wasm_bindgen_test]
 #[should_panic]
 fn insert_max_u128() {
     let a = RangeSetBlaze::<u128>::from_iter([u128::MAX]);
@@ -40,6 +47,7 @@ fn insert_max_u128() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn sub() {
     for start in i8::MIN..i8::MAX {
         for end in start..i8::MAX {
@@ -62,6 +70,7 @@ fn sub() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn complement0() {
     syntactic_for! { ty in [i8, u8 , isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
@@ -73,6 +82,7 @@ fn complement0() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn repro_bit_and() {
     let a = RangeSetBlaze::from_iter([1u8, 2, 3]);
     let b = RangeSetBlaze::from_iter([2u8, 3, 4]);
@@ -83,6 +93,7 @@ fn repro_bit_and() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn repro1() {
     let mut range_set_blaze = RangeSetBlaze::from_iter([20..=21, 24..=24, 25..=29]);
     println!("{range_set_blaze}");
@@ -93,6 +104,7 @@ fn repro1() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn repro2() {
     let mut range_set_blaze = RangeSetBlaze::<i8>::from_iter([-8, 8, -2, -1, 3, 2]);
     range_set_blaze.internal_add(25..=25);
@@ -101,6 +113,7 @@ fn repro2() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn doctest1() {
     let a = RangeSetBlaze::<u8>::from_iter([1, 2, 3]);
     let b = RangeSetBlaze::<u8>::from_iter([3, 4, 5]);
@@ -110,6 +123,7 @@ fn doctest1() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn doctest2() {
     let set = RangeSetBlaze::<u8>::from_iter([1, 2, 3]);
     assert!(set.contains(1));
@@ -117,6 +131,7 @@ fn doctest2() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn doctest3() {
     let mut a = RangeSetBlaze::from_iter([1..=3]);
     let mut b = RangeSetBlaze::from_iter([3..=5]);
@@ -134,6 +149,7 @@ fn doctest3() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn doctest4() {
     let a = RangeSetBlaze::<i8>::from_iter([1, 2, 3]);
 
@@ -142,6 +158,7 @@ fn doctest4() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn compare() {
     let mut btree_set = BTreeSet::<u128>::new();
     btree_set.insert(3);
@@ -152,6 +169,7 @@ fn compare() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn demo_c1() {
     // before_or_equal_exists	1
     // equal?	0
@@ -164,6 +182,7 @@ fn demo_c1() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn demo_c2() {
     // before_or_equal_exists	1
     // equal?	0
@@ -176,6 +195,7 @@ fn demo_c2() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn demo_f1() {
     // before_or_equal_exists	0
     //     INSERT, etc
@@ -194,6 +214,7 @@ fn demo_f1() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn demo_d1() {
     // before_or_equal_exists	1
     // equal?	1
@@ -208,6 +229,7 @@ fn demo_d1() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn demo_e1() {
     // before_or_equal_exists	1
     // equal?	1
@@ -223,6 +245,7 @@ fn demo_e1() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn demo_b1() {
     // before_or_equal_exists	1
     // equal?	0
@@ -238,6 +261,7 @@ fn demo_b1() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn demo_b2() {
     // before_or_equal_exists	1
     // equal?	0
@@ -254,6 +278,7 @@ fn demo_b2() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn demo_b3() {
     // before_or_equal_exists	1
     // equal?	0
@@ -270,6 +295,7 @@ fn demo_b3() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn demo_a() {
     // before_or_equal_exists	1
     // equal?	0
@@ -289,6 +315,7 @@ fn demo_a() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn add_in_order() {
     let mut range_set = RangeSetBlaze::new();
     for i in 0u64..1000 {
@@ -297,6 +324,7 @@ fn add_in_order() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn optimize() {
     let end = 8u8;
     for a in 0..=end {
@@ -329,6 +357,7 @@ fn optimize() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn understand_into_iter() {
     let btree_set = BTreeSet::from([1, 2, 3, 4, 5]);
     for i in btree_set.iter() {
@@ -390,6 +419,7 @@ impl BitAndAssign for BooleanVector {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn understand_bitand_assign() {
     let mut a = 3u8;
     let b = 5u8;
@@ -406,6 +436,7 @@ fn understand_bitand_assign() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn iters() {
     let range_set_blaze = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     assert!(range_set_blaze.len() == 13 as I32SafeLen);
@@ -432,6 +463,7 @@ fn iters() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn missing_doctest_ops() {
     // note that may be borrowed or owned in any combination.
 
@@ -479,6 +511,7 @@ fn missing_doctest_ops() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn multi_op() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
@@ -523,6 +556,7 @@ fn multi_op() {
 // }
 
 #[test]
+#[wasm_bindgen_test]
 fn custom_multi() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
@@ -539,12 +573,14 @@ fn custom_multi() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn from_string() {
     let a = RangeSetBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=65535]);
     assert_eq!(a, RangeSetBlaze::from_iter([0..=65535]));
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn nand_repro() {
     let b = &RangeSetBlaze::from_iter([5u8..=13, 18..=29]);
     let c = &RangeSetBlaze::from_iter([38..=42]);
@@ -557,6 +593,7 @@ fn nand_repro() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn parity() {
     let a = &RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = &RangeSetBlaze::from_iter([5..=13, 18..=29]);
@@ -603,6 +640,7 @@ fn parity() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn bit_or_iter() {
     let i = UnionIter::from([1, 3, 4, 2, 2, 43, -1, 4, 22]);
     let j = UnionIter::from([11, 3, 4, 42, 2, 43, 23, 2, 543]);
@@ -696,6 +734,7 @@ where
 }
 #[allow(clippy::reversed_empty_ranges)]
 #[test]
+#[wasm_bindgen_test]
 fn private_constructor() {
     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
     // println!("{}", unsorted_disjoint.fmt());
@@ -731,6 +770,7 @@ fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
 fn is_like_btreeset_iter<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
 // removed DoubleEndedIterator +ExactSizeIterator for now
 #[test]
+#[wasm_bindgen_test]
 fn iter_traits() {
     type ARangesIter<'a> = RangesIter<'a, i32>;
     type AIter<'a> = Iter<i32, ARangesIter<'a>>;
@@ -778,6 +818,7 @@ fn is_like_check_sorted_disjoint<
 fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
 
 #[test]
+#[wasm_bindgen_test]
 fn check_traits() {
     // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
     type ARangeSetBlaze = RangeSetBlaze<i32>;
@@ -834,6 +875,7 @@ fn check_traits() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn integer_coverage() {
     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
@@ -1077,6 +1119,7 @@ fn lib_coverage_5() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn lib_coverage_6() {
     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
@@ -1090,6 +1133,7 @@ fn lib_coverage_6() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn merge_coverage_0() {
     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
     let b = CheckSortedDisjoint::from([2..=6]);
@@ -1114,6 +1158,7 @@ fn merge_coverage_0() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn not_iter_coverage_0() {
     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
     let n = NotIter::new(a);
@@ -1124,6 +1169,7 @@ fn not_iter_coverage_0() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn ranges_coverage_0() {
     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
     let r = a.ranges();
@@ -1168,6 +1214,7 @@ fn ranges_coverage_0() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn sorted_disjoint_coverage_0() {
     let a = CheckSortedDisjoint::<i32, _>::default();
     assert!(a.is_empty());
@@ -1235,6 +1282,7 @@ fn sorted_disjoint_coverage_4() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn sorted_disjoint_iterator_coverage_0() {
     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
     let b = CheckSortedDisjoint::new([1..=2, 5..=101]);
@@ -1242,6 +1290,7 @@ fn sorted_disjoint_iterator_coverage_0() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn union_iter_coverage_0() {
     let a = CheckSortedDisjoint::new(vec![1..=2, 5..=100]);
     let b = CheckSortedDisjoint::new(vec![1..=2, 5..=101]);
@@ -1250,12 +1299,15 @@ fn union_iter_coverage_0() {
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn unsorted_disjoint_coverage_0() {
     let a = AssumeSortedStarts::new([1..=2, 5..=100]);
     assert!(format!("{a:?}").starts_with("AssumeSortedStarts"));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
+#[wasm_bindgen_test]
 fn test_coverage_0() {
     let a = BooleanVector(vec![true, true, false, false]);
     assert!(format!("{a:?}").starts_with("BooleanVector"));
@@ -1274,9 +1326,12 @@ fn test_coverage_0() {
     println!("{v:?}");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 type Element = i64;
+#[cfg(not(target_arch = "wasm32"))]
 type Reference = std::collections::BTreeSet<Element>;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn disjoint(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
@@ -1284,6 +1339,7 @@ fn disjoint(a: Reference, b: Reference) -> bool {
     a.is_disjoint(&b) == a_r.is_disjoint(&b_r)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn subset(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
@@ -1291,6 +1347,7 @@ fn subset(a: Reference, b: Reference) -> bool {
     a.is_subset(&b) == a_r.is_subset(&b_r)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn superset(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
@@ -1298,6 +1355,7 @@ fn superset(a: Reference, b: Reference) -> bool {
     a.is_superset(&b) == a_r.is_superset(&b_r)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// just a helper to get good output when a check fails
 fn binary_op<E: Debug, R: Eq + Debug>(a: E, b: E, expected: R, actual: R) -> bool {
     let res = expected == actual;
@@ -1307,6 +1365,7 @@ fn binary_op<E: Debug, R: Eq + Debug>(a: E, b: E, expected: R, actual: R) -> boo
     res
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// from: https://github.com/rklaehn/sorted-iter
 /// just a helper to get good output when a check fails
 fn check_size_hint<E: Debug>(
@@ -1321,6 +1380,7 @@ fn check_size_hint<E: Debug>(
     res
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn intersection(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
@@ -1330,6 +1390,7 @@ fn intersection(a: Reference, b: Reference) -> bool {
     binary_op(a, b, expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn union(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
@@ -1339,6 +1400,7 @@ fn union(a: Reference, b: Reference) -> bool {
     binary_op(a, b, expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn multi_union(inputs: Vec<Reference>) -> bool {
     use crate::MultiwayRangeSetBlazeRef;
@@ -1354,6 +1416,7 @@ fn multi_union(inputs: Vec<Reference>) -> bool {
     res
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn difference(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
@@ -1363,6 +1426,7 @@ fn difference(a: Reference, b: Reference) -> bool {
     binary_op(a, b, expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn symmetric_difference(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
@@ -1372,6 +1436,7 @@ fn symmetric_difference(a: Reference, b: Reference) -> bool {
     binary_op(a, b, expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn intersection_size_hint(a: Reference, b: Reference) -> bool {
     let expected = a.intersection(&b).count();
@@ -1381,6 +1446,7 @@ fn intersection_size_hint(a: Reference, b: Reference) -> bool {
     check_size_hint((a, b), expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn union_size_hint(a: Reference, b: Reference) -> bool {
     let expected = a.union(&b).count();
@@ -1390,6 +1456,7 @@ fn union_size_hint(a: Reference, b: Reference) -> bool {
     check_size_hint((a, b), expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn multi_union_size_hint(inputs: Vec<Reference>) -> bool {
     let expected: Reference = inputs.iter().flatten().copied().collect();
@@ -1402,6 +1469,7 @@ fn multi_union_size_hint(inputs: Vec<Reference>) -> bool {
     check_size_hint(inputs, expected.len(), actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn difference_size_hint(a: Reference, b: Reference) -> bool {
     let expected = a.difference(&b).count();
@@ -1411,6 +1479,7 @@ fn difference_size_hint(a: Reference, b: Reference) -> bool {
     check_size_hint((a, b), expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn symmetric_difference_size_hint(a: Reference, b: Reference) -> bool {
     let expected = a.symmetric_difference(&b).count();
@@ -1420,13 +1489,16 @@ fn symmetric_difference_size_hint(a: Reference, b: Reference) -> bool {
     check_size_hint((a, b), expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[should_panic]
 #[test]
+#[wasm_bindgen_test]
 fn demo_read() {
     let _a: RangeSetBlaze<i32> = demo_read_ranges_from_file("tests/no_such_file").unwrap();
 }
 
 #[test]
+#[wasm_bindgen_test]
 fn double_end_iter() {
     let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
 
@@ -1456,6 +1528,7 @@ fn double_end_iter() {
     }
 }
 #[test]
+#[wasm_bindgen_test]
 fn double_end_into_iter() {
     let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
 
@@ -1483,6 +1556,7 @@ fn double_end_into_iter() {
     assert_eq!(iter.next(), Some(5));
 }
 #[test]
+#[wasm_bindgen_test]
 fn double_end_range() {
     let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
 
