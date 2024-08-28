@@ -417,9 +417,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.12.1"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -645,9 +645,9 @@ dependencies = [
 
 [[package]]
 name = "range-set"
-version = "0.0.10"
+version = "0.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f54e99276923acdcd64b81038d78d10dbfe89312de421aa908fa8d0182768812"
+checksum = "714bc4849c399f77ab82177e9b4f012e02f3a7d6191023e016334edde5b21050"
 dependencies = [
  "num-traits",
  "smallvec",
@@ -660,7 +660,7 @@ dependencies = [
  "criterion",
  "gen_ops",
  "glob",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "num-integer",
  "num-traits",
  "quickcheck",

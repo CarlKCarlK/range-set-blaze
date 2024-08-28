@@ -35,7 +35,7 @@ jobs:
       - name: Test WASM, setup and check Embedded
         if: runner.os == 'Linux'
         run: |
-          cargo test --target wasm32.unknown.unknown --features alloc --no-default-features --verbose
+          cargo test --target wasm32-unknown-unknown --features alloc --no-default-features --verbose
 
           # set up embedded
           rustup target add thumbv7m-none-eabi
