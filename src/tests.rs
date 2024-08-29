@@ -1,5 +1,4 @@
 #![cfg(test)]
-extern crate std;
 use std::prelude::v1::*;
 pub use std::{format, print, println, vec};
 use wasm_bindgen_test::*;
