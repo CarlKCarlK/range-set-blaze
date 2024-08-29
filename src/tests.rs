@@ -1,6 +1,7 @@
 #![cfg(test)]
+extern crate std;
 use std::prelude::v1::*;
-pub use std::{format, print, println, vec};
+use std::{format, print, println, vec};
 use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);
 

@@ -138,6 +138,7 @@ cargo test
 # check and test WASM
 cargo check --target wasm32-unknown-unknown --features alloc --no-default-features
 wasm-pack test --chrome --headless --features alloc --no-default-features
+cargo test --target wasm32-unknown-unknown --features alloc --no-default-features
 # check embedded
 cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
 ```
