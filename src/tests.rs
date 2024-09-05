@@ -1,4 +1,7 @@
 #![cfg(test)]
+extern crate std;
+use std::prelude::v1::*;
+use std::{format, print, println, vec};
 
 use super::*;
 use itertools::Itertools;

@@ -2,6 +2,8 @@
 #![warn(missing_docs)]
 #![no_std]
 extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
 
 // FUTURE: Support serde via optional feature
 mod dyn_sorted_disjoint;
