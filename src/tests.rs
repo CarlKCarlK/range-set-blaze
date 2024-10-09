@@ -1,5 +1,4 @@
 #![cfg(test)]
-extern crate std;
 use std::prelude::v1::*;
 use std::{format, print, println, vec};
 
@@ -27,6 +26,12 @@ use wasm_bindgen_test::wasm_bindgen_test;
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
 type I32SafeLen = <i32 as crate::Integer>::SafeLen;
+
+#[test]
+fn test_read_file_metadata() {
+    let metadata = std::fs::metadata("./").unwrap();
+    assert!(metadata.is_dir());
+}
 
 #[wasm_bindgen_test]
 #[test]
