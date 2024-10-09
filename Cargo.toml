@@ -20,12 +20,15 @@ members = [".", "tests_common", "tests/wasm-demo"]
 [features]
 default = ["std"]
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
-alloc = ["itertools/use_alloc", "num-traits", "num-integer"]
 
 [dependencies]
-itertools = { version = "0.13.0", optional = true, default-features = false }
-num-integer = { version = "0.1.46", optional = true, default-features = false }
-num-traits = { version = "0.2.19", optional = true, default-features = false }
+itertools = { version = "0.13.0", features = [
+    "use_alloc",
+], default-features = false }
+num-integer = { version = "0.1.46", default-features = false }
+num-traits = { version = "0.2.19", features = [
+    "i128",
+], default-features = false }
 gen_ops = "0.4.0"
 
 [dev-dependencies]
