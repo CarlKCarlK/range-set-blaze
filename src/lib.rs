@@ -1,9 +1,7 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![no_std]
-
 extern crate alloc;
-
 #[cfg(feature = "std")]
 extern crate std;
 

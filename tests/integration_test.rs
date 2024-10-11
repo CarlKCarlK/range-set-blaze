@@ -3,8 +3,6 @@
 use wasm_bindgen_test::wasm_bindgen_test;
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
-use core::cmp::Ordering;
-use core::ops::RangeInclusive;
 use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use rand::rngs::StdRng;
@@ -13,6 +11,8 @@ use range_set_blaze::{
     demo_i32_len, prelude::*, AssumeSortedStarts, Integer, NotIter, RangesIter, SortedStarts,
     UnionIter,
 };
+use std::cmp::Ordering;
+use std::ops::RangeInclusive;
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
