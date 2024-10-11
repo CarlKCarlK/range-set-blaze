@@ -103,4 +103,4 @@ jobs:
         timeout-minutes: 1
         run: |
           cd tests/embedded
-          cargo run --target thumbv7m-none-eabi --features alloc --no-default-features
+          cargo run --target thumbv7m-none-eabi --no-default-features
