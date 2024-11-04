@@ -30,6 +30,7 @@ where
     ready_to_go: Option<(RangeInclusive<T>, VR)>,
 }
 
+#[allow(clippy::ref_option)]
 fn min_next_end<T>(next_end: &Option<T>, next_item_end: T) -> T
 where
     T: Integer,

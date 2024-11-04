@@ -26,14 +26,13 @@ use alloc::boxed::Box;
 /// .union();
 /// assert_eq!(union.into_string(), "0..=6, 8..=9, 11..=17, 30..=255");
 /// ```
-
 pub struct DynSortedDisjoint<'a, T: Integer> {
     iter: Box<dyn SortedDisjoint<T> + 'a>,
 }
 
 impl<'a, T: Integer> DynSortedDisjoint<'a, T> {
     /// Create a [`DynSortedDisjoint`] from any [`SortedDisjoint`] iterator. See [`DynSortedDisjoint`] for an example.
-    /// 
+    ///
     /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
     pub fn new<I>(iter: I) -> Self
     where

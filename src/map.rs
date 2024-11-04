@@ -1824,7 +1824,7 @@ where
 {
     /// Extends the [`RangeSetBlaze`] with the contents of a
     /// range iterator. cmk this has right-to-left priority -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
-
+    ///
     /// Elements are added one-by-one. There is also a version
     /// that takes an integer iterator.
     ///

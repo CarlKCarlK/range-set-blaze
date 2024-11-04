@@ -81,7 +81,7 @@ impl<'a, T: Integer + SampleUniform> MemorylessRange<'a, T> {
     }
 }
 
-impl<'a, T: Integer + SampleUniform> Iterator for MemorylessRange<'a, T> {
+impl<T: Integer + SampleUniform> Iterator for MemorylessRange<'_, T> {
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -166,7 +166,7 @@ impl<'a, T: Integer + SampleUniform> MemorylessIter<'a, T> {
     }
 }
 
-impl<'a, T: Integer + SampleUniform> Iterator for MemorylessIter<'a, T> {
+impl<T: Integer + SampleUniform> Iterator for MemorylessIter<'_, T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {

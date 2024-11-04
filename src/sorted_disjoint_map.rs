@@ -733,18 +733,18 @@ where
 }
 
 // Implement `Eq` because `BinaryHeap` requires it.
-impl<'a, T, VR> Eq for Priority<T, VR>
+impl<T, VR> Eq for Priority<T, VR>
 where
     T: Integer,
-    VR: ValueRef + 'a, // cmk0 why 'a?
+    VR: ValueRef,
 {
 }
 
 // Implement `Ord` so the heap knows how to compare elements.
-impl<'a, T, VR> Ord for Priority<T, VR>
+impl<T, VR> Ord for Priority<T, VR>
 where
     T: Integer,
-    VR: ValueRef + 'a, // cmk0 why 'a?
+    VR: ValueRef,
 {
     fn cmp(&self, other: &Self) -> Ordering {
         // smaller is better
@@ -753,10 +753,10 @@ where
 }
 
 // Implement `PartialOrd` to allow comparison (needed for `Ord`).
-impl<'a, T, VR> PartialOrd for Priority<T, VR>
+impl<T, VR> PartialOrd for Priority<T, VR>
 where
     T: Integer,
-    VR: ValueRef + 'a, // cmk0 why 'a?
+    VR: ValueRef, // cmk0 why 'a?
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))

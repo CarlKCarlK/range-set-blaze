@@ -149,7 +149,6 @@ where
 
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-
 /// Gives any iterator of ranges the [`SortedStarts`] trait without any checking.
 pub struct AssumeSortedStarts<T, I>
 where

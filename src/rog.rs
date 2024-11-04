@@ -188,7 +188,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```bash
     /// cargo add range-set-blaze --features "rog-experimental"
     /// ```
-
     ///
     /// # Examples
     ///

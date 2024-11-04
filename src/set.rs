@@ -1895,7 +1895,7 @@ impl<T: Integer> BitOr<&RangeSetBlaze<T>> for &RangeSetBlaze<T> {
 impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
     /// Extends the [`RangeSetBlaze`] with the contents of a
     /// range iterator.
-
+    ///
     /// Elements are added one-by-one. There is also a version
     /// that takes an integer iterator.
     ///
@@ -1951,7 +1951,6 @@ impl<T: Integer> Ord for RangeSetBlaze<T> {
     /// assert_eq!(a.cmp(&b), Ordering::Less);
     /// assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
     /// ```
-
     #[inline]
     fn cmp(&self, other: &Self) -> Ordering {
         // slow one by one: return self.iter().cmp(other.iter());

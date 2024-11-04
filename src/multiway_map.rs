@@ -329,7 +329,7 @@ where
     ///
     /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
     /// [`symmetric_difference_dyn!`]: crate::symmetric_difference_dyn
-
+    ///
     /// ```
     /// use range_set_blaze::prelude::*;
     ///

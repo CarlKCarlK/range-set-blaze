@@ -212,7 +212,7 @@ impl<T: Integer, V: EqClone> MapIntoRangesIter<T, V> {
 
 impl<T: Integer, V: EqClone> FusedIterator for MapIntoRangesIter<T, V> {}
 
-impl<'a, T: Integer, V: EqClone + 'a> Iterator for MapIntoRangesIter<T, V> {
+impl<T: Integer, V: EqClone> Iterator for MapIntoRangesIter<T, V> {
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
