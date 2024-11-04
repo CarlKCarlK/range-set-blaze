@@ -34,6 +34,7 @@ members = [
 default = ["std"]
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 alloc = ["itertools/use_alloc", "num-traits", "num-integer"]
+# rog_experimental would have been better
 rog-experimental = []
 from_slice = []
 
@@ -44,10 +45,11 @@ num-integer = { version = "0.1.44", optional = true, default-features = false }
 num-traits = { version = "0.2.15", optional = true, default-features = false }
 gen_ops = "0.4.0"
 
-[dev-dependencies]
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tests_common = { path = "tests_common" }
-syntactic-for = "0.1.1"
-criterion = { version = "0.5.1", features = ["html_reports"], default-features = false }
+criterion = { version = "0.5.1", features = [
+    "html_reports",
+], default-features = false }
 trybuild = "1.0.53"
 thousands = "0.2.0"
 quickcheck = "1.0.3"
@@ -60,8 +62,9 @@ rand = "0.8.4"
 roaring = "0.10.1"
 anyhow = "1.0.40"
 
-[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
-getrandom = { version = "0.2", features = ["js"] }
+[dev-dependencies]
+syntactic-for = "0.1.1"
+# cmk needed? getrandom = { version = "0.2", features = ["js"] }
 wasm-bindgen-test = "0.3.42"
 
 # Declare a benchmark called ""bench" without the standard benchmarking harness. 

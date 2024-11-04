@@ -6,15 +6,6 @@ use rand::Rng;
 use range_set_blaze::Integer;
 use range_set_blaze::RangeSetBlaze;
 
-#[macro_export]
-macro_rules! test_normal_and_wasm {
-    ($($tokens:tt)*) => {
-        #[cfg_attr(not(all(target_arch = "wasm32", target_os = "unknown")), test)]
-        #[cfg_attr(all(target_arch = "wasm32", target_os = "unknown"), wasm_bindgen_test)]
-        $($tokens)*
-    };
-}
-
 pub fn width_to_range(
     iter_len: usize,
     average_width: usize,

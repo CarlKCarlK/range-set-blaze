@@ -19,7 +19,7 @@ The crate's main structs are:
 * [`RangeMapBlaze`], a map from integers to values. See the [map documentation] for details
 
 > Unlike the standard [`BTreeSet`]/[`BTreeMap`] and [`HashSet`]/[`HashMap`], `RangeSetBlaze` does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from [other interval libraries](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) -- that we know of -- by
-offering full set operations and by being optimized for sets of [clumpy][1] integers.
+> offering full set operations and by being optimized for sets of [clumpy][1] integers.
 >
 > We can construct a `RangeSetBlaze` or `RangeMapBlaze` from unsorted & redundant integers (or ranges). When the inputs are clumpy, construction will be [linear][1] in the number of inputs and set operations will be sped up [quadratically][1].
 
@@ -30,8 +30,8 @@ The crate's main traits are
 is a value. See [documentation][3] for details.
 
 > With any `SortedDisjoint` or `SortedDisjointMap` iterator we can perform set operations in one pass through the ranges and with minimal (constant) memory.
-The package enforces the "sorted & disjoint" constraint at compile time
-(making invalid states unrepresentable).
+> The package enforces the "sorted & disjoint" constraint at compile time
+> (making invalid states unrepresentable).
 
 [`RangeSetBlaze`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
 [`SortedDisjoint`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html#table-of-contents
@@ -71,7 +71,7 @@ Articles
 * [Nine Rules for Creating Fast, Safe, and Compatible Data Structures in Rust:
 Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3) in *Towards Data Science*. It provides a high-level overview of the crate and its design.
 
-* [Nine Rules for Running Rust on the Web and on Embedded: Practical Lessons from Porting range-set-blaze to no_std and WASM](https://medium.com/towards-data-science/nine-rules-for-running-rust-on-the-web-and-on-embedded-94462ef249a2) in *Towards Data Science*. It covers porting to "no_std".
+* [Nine Rules for Running Rust on the Web and on Embedded: Practical Lessons from Porting range-set-blaze to no_std and WASM](https://medium.com/towards-data-science/nine-rules-for-running-rust-on-the-web-and-on-embedded-94462ef249a2) in *Towards Data Science*. It covers porting to "`no_std`".
 
 * [Check AI-Generated Code Perfectly and Automatically
 My Experience Applying Kani’s Formal Verification to ChatGPT-Suggested Rust Code](https://medium.com/@carlmkadie/check-ai-generated-code-perfectly-and-automatically-d5b61acff741). Shows how to prove overflow safety.
@@ -110,7 +110,7 @@ assert_eq!(c, RangeSetBlaze::from_iter([-20..=-20, 100..=999]));
 
 In networking, suppose we want to simplify a routing table. Here [`RangeMapBlaze`] merges identical routes
 -- if adjacent or overlapping. It also remove all overlaps (respecting priority) and sorts.
-The result is a fast BTree from address regions to the next network hop.
+The result is a fast `BTree` from address regions to the next network hop.
 Similar code can simplify font tables.
 
 ```rust
