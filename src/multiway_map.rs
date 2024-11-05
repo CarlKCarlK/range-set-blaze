@@ -355,6 +355,7 @@ where
 #[test]
 fn test_ref_union() {
     use crate::prelude::*;
+    use std::println;
 
     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
     let b = RangeSetBlaze::from_iter([2..=6]);

@@ -201,6 +201,8 @@ mod tests {
     use super::*;
     use std::panic;
     use std::panic::AssertUnwindSafe;
+    use std::prelude::v1::*;
+    use std::println;
 
     #[allow(clippy::cast_possible_truncation)]
     const fn u16_to_p1(v: u16) -> UIntPlusOne<u8> {
@@ -290,7 +292,6 @@ mod tests {
             _ => panic!("never happens"),
         }
     }
-
 
     #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
     #[test]

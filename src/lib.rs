@@ -1,6 +1,5 @@
 #![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
-#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(
     clippy::use_self,
     unused_lifetimes,
@@ -16,6 +15,10 @@
     clippy::nursery,
     // cmk00 clippy::cargo_common_metadata
 )]
+#![no_std]
+extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
 
 // cmk consider having .len() always returning the smallest type that fits the length, never usize. This would make 32-bit and 64-bit systems more consistent.
 
@@ -32,14 +35,6 @@
 // set BUILDFEATURES=from_slice # enable the from_slice feature via build.rs
 // cargo bench ingest_clumps_iter_v_slice
 // ```
-
-// #[cfg(all(feature = "std", feature = "alloc"))]
-// compile_error!("feature \"std\" and feature \"alloc\" cannot be enabled at the same time");
-// #[cfg(feature = "std")]
-// compile_error!("The 'std' feature is active");
-// #[cfg(feature = "alloc")]
-// compile_error!("The 'alloc' feature is active");
-extern crate alloc;
 
 // FUTURE: Support serde via optional feature
 mod some_or_gap;
@@ -170,6 +165,7 @@ pub type BitSubMerge<T, L, R> = NotIter<T, BitOrMerge<T, NotIter<T, L>, R>>;
 #[cfg(feature = "std")]
 #[cfg(test)]
 mod tests2 {
+    use alloc::vec;
 
     #[test]
     fn test_multiway() {

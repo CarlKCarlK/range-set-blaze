@@ -7,9 +7,12 @@ use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 use crate::Integer;
 use crate::RangeMapBlaze;
 use crate::UnionIterMap;
+use alloc::string::ToString;
 use core::fmt;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
+use std::prelude::v1::*;
+use std::{format, println};
 
 #[test]
 fn map_step_by_step() {

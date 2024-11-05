@@ -13,8 +13,10 @@ use std::collections::hash_map::DefaultHasher;
 use syntactic_for::syntactic_for;
 // use thousands::Separable;
 use core::array;
-#[cfg(target_os = "linux")]
+#[cfg(target_os = "linux")] // cmk why is BitAndAssign tied to linux?
 use core::ops::BitAndAssign;
+use std::prelude::v1::*;
+use std::{print, println, vec};
 
 #[test]
 fn demo_f1() {

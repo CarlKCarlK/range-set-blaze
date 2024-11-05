@@ -8,4 +8,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wasm-bindgen = "0.2"
-range-set-blaze = { path = "../..", features = ["alloc"], default-features = false}
+range-set-blaze = { path = "../..", default-features = false }

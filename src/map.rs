@@ -2040,6 +2040,7 @@ impl<T: Integer, V: EqClone> Eq for RangeMapBlaze<T, V> {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::println;
 
     #[test]
     fn test_cmp() {
