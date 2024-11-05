@@ -1,19 +1,22 @@
 #![cfg(test)]
+use range_set_blaze::{AssumeSortedStarts, IntoIter, IntoRangesIter, Iter, KMerge, RangesIter};
 use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);
 
 use core::any::Any;
+use core::fmt;
+// use core::panic::RefUnwindSafe;
+// use core::panic::UnwindSafe;
+// use crate::ranges_iter::RangesIter;
 use core::fmt::Debug;
-use core::fmt::Display;
 use core::iter::FusedIterator;
 #[cfg(feature = "from_slice")]
 use core::mem::size_of;
 use core::ops::BitAndAssign;
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 use core::ops::Bound;
 use core::ops::RangeInclusive;
-use core::panic::RefUnwindSafe;
-use core::panic::UnwindSafe;
 #[cfg(target_os = "linux")]
 use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
@@ -24,14 +27,17 @@ use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 use range_set_blaze::Rog;
 use range_set_blaze::SymDiffIter;
 use range_set_blaze::{prelude::*, Integer, NotIter, SortedStarts};
 use range_set_blaze::{symmetric_difference_dyn, UnionIter};
 use std::cmp::Ordering;
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 use std::panic::AssertUnwindSafe;
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 use std::panic::{self};
 use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
@@ -1394,6 +1400,7 @@ fn range_set_int_constructors() {
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[cfg(feature = "from_slice")]
+#[allow(unexpected_cfgs)]
 fn print_features() {
     println!("feature\tcould\tare");
     syntactic_for! { feature in [
@@ -1816,6 +1823,7 @@ fn complement_sample() {
 #[test]
 #[wasm_bindgen_test]
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 fn test_rog_functionality() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     // case 1:
@@ -1857,6 +1865,7 @@ fn test_rog_functionality() {
 #[test]
 #[wasm_bindgen_test]
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 fn test_rogs_get_functionality() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     for value in 0..=16 {
@@ -1868,6 +1877,7 @@ fn test_rogs_get_functionality() {
 #[test]
 #[wasm_bindgen_test]
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 fn test_rog_repro1() {
     let a = RangeSetBlaze::from_iter([1u8..=6u8]);
     assert_eq!(
@@ -1879,6 +1889,7 @@ fn test_rog_repro1() {
 #[test]
 #[wasm_bindgen_test]
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 fn test_rog_repro2() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     assert_eq!(
@@ -1890,6 +1901,7 @@ fn test_rog_repro2() {
 #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
 #[test] // uses panics so can't be wasm
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 fn test_rog_coverage1() {
     let a = RangeSetBlaze::from_iter([1u8..=6u8]);
     assert!(panic::catch_unwind(AssertUnwindSafe(
@@ -1902,6 +1914,7 @@ fn test_rog_coverage1() {
 #[test]
 #[wasm_bindgen_test]
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 fn test_rog_extremes_u8() {
     for a in [
         RangeSetBlaze::from_iter([1u8..=6u8]),
@@ -1925,6 +1938,7 @@ fn test_rog_extremes_u8() {
 #[test]
 #[wasm_bindgen_test]
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 fn test_rog_get_extremes_u8() {
     for a in [
         RangeSetBlaze::from_iter([1u8..=6u8]),
@@ -1943,6 +1957,7 @@ fn test_rog_get_extremes_u8() {
 #[test]
 #[wasm_bindgen_test]
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 fn test_rog_extremes_i128() {
     for a in [
         RangeSetBlaze::from_iter([1i128..=6i128]),
@@ -1969,6 +1984,7 @@ fn test_rog_extremes_i128() {
 #[test]
 #[wasm_bindgen_test]
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 fn test_rog_extremes_get_i128() {
     for a in [
         RangeSetBlaze::from_iter([1i128..=6i128]),
@@ -1987,6 +2003,7 @@ fn test_rog_extremes_get_i128() {
 #[test]
 #[wasm_bindgen_test]
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 fn test_rog_should_fail_i128() {
     for a in [
         RangeSetBlaze::from_iter([1i128..=6i128]),
@@ -2016,6 +2033,7 @@ fn test_rog_should_fail_i128() {
 #[test]
 #[wasm_bindgen_test]
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 fn test_rog_get_should_fail_i128() {
     for a in [
         RangeSetBlaze::from_iter([1i128..=6i128]),
@@ -2036,6 +2054,7 @@ fn test_rog_get_should_fail_i128() {
 #[test]
 #[wasm_bindgen_test]
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 fn test_rog_get_doc() {
     use crate::RangeSetBlaze;
     let range_set_blaze = RangeSetBlaze::from([1, 2, 3]);
@@ -2046,6 +2065,7 @@ fn test_rog_get_doc() {
 #[test]
 #[wasm_bindgen_test]
 #[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
 fn test_rog_range_doc() {
     use core::ops::Bound::Included;
 
@@ -3155,3 +3175,131 @@ fn set_sym_diff_repro1() {
     let v = iter.collect::<Vec<_>>();
     println!("{v:?}");
 }
+
+// !!!cmk0 test traits of other iterators
+#[test]
+fn check_traits() {
+    // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
+    type ARangeSetBlaze = RangeSetBlaze<i32>;
+    is_sssu::<ARangeSetBlaze>();
+    is_ddcppdheo::<ARangeSetBlaze>();
+    is_like_btreeset::<ARangeSetBlaze>();
+
+    type ARangesIter<'a> = RangesIter<'a, i32>;
+    is_sssu::<ARangesIter>();
+    is_like_btreeset_iter::<ARangesIter>();
+
+    type AIter<'a> = Iter<i32, ARangesIter<'a>>;
+    is_sssu::<AIter>();
+    is_like_btreeset_iter::<AIter>();
+
+    is_sssu::<IntoIter<i32>>();
+    is_like_btreeset_into_iter::<IntoIter<i32>>();
+
+    // cmk
+    // type AMerge<'a> = Merge<i32, ARangesIter<'a>, ARangesIter<'a>>;
+    // is_sssu::<AMerge>();
+    // is_like_btreeset_iter::<AMerge>();
+
+    let _a = RangeSetBlaze::from_iter([1..=2, 3..=4]);
+    // println!("{:?}", a.ranges()); // cmk get this working again?
+
+    type AKMerge<'a> = crate::KMerge<i32, ARangesIter<'a>>;
+    is_sssu::<AKMerge>();
+    is_like_btreeset_iter::<AKMerge>();
+
+    type ANotIter<'a> = crate::NotIter<i32, ARangesIter<'a>>;
+    is_sssu::<ANotIter>();
+    is_like_btreeset_iter::<ANotIter>();
+
+    type AIntoRangesIter<'a> = IntoRangesIter<i32>;
+    is_sssu::<AIntoRangesIter>();
+    is_like_btreeset_into_iter::<AIntoRangesIter>();
+
+    type ACheckSortedDisjoint<'a> = CheckSortedDisjoint<i32, ARangesIter<'a>>;
+    is_sssu::<ACheckSortedDisjoint>();
+    type BCheckSortedDisjoint =
+        CheckSortedDisjoint<i32, std::array::IntoIter<RangeInclusive<i32>, 0>>;
+    is_like_check_sorted_disjoint::<BCheckSortedDisjoint>();
+
+    type ADynSortedDisjoint<'a> = DynSortedDisjoint<'a, i32>;
+    is_like_dyn_sorted_disjoint::<ADynSortedDisjoint>();
+
+    type AUnionIter<'a> = UnionIter<i32, ARangesIter<'a>>;
+    is_sssu::<AUnionIter>();
+    is_like_btreeset_iter::<AUnionIter>();
+
+    type AAssumeSortedStarts<'a> = AssumeSortedStarts<i32, ARangesIter<'a>>;
+    is_sssu::<AAssumeSortedStarts>();
+    is_like_btreeset_iter::<AAssumeSortedStarts>();
+}
+
+// cmk00000000000000 move to src/tests_set.rs
+const fn is_ddcppdheo<
+    T: std::fmt::Debug
+        + fmt::Display
+        + Clone
+        + PartialEq
+        + PartialOrd
+        + Default
+        + std::hash::Hash
+        + Eq
+        + Ord
+        + Send
+        + Sync,
+>() {
+}
+
+const fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
+const fn is_like_btreeset_iter<
+    T: Clone + std::fmt::Debug + FusedIterator + Iterator, // cmk DoubleEndedIterator  + ExactSizeIterator,
+>() {
+}
+
+// cmk0 add others iterators and test
+// #[test]
+// fn iter_traits() {
+//     type ARangesIter<'a> = RangesIter<'a, i32>;
+//     type AIter<'a> = Iter<i32, ARangesIter<'a>>;
+//     is_sssu::<AIter>();
+//     is_like_btreeset_iter::<AIter>();
+// }
+
+const fn is_like_btreeset_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {}
+
+const fn is_like_btreeset<
+    T: Clone
+        + std::fmt::Debug
+        + Default
+        + Eq
+        + std::hash::Hash
+        + IntoIterator
+        + Ord
+        + PartialEq
+        + PartialOrd
+        + core::panic::RefUnwindSafe
+        + Send
+        + Sync
+        + Unpin
+        + core::panic::UnwindSafe
+        + Any
+        + ToOwned,
+>() {
+}
+
+const fn is_like_check_sorted_disjoint<
+    T: Clone
+        + std::fmt::Debug
+        + Default
+        + IntoIterator
+        + core::panic::RefUnwindSafe
+        + Send
+        + Sync
+        + Unpin
+        + core::panic::UnwindSafe
+        + Any
+        + ToOwned,
+>() {
+}
+
+const fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}

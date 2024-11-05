@@ -60,11 +60,9 @@ mod map;
 mod ranges_iter;
 /// cmk doc
 mod set;
-pub use crate::range_values::IntoRangeValuesIter;
-pub use crate::range_values::{MapIntoRangesIter, MapRangesIter};
-pub use crate::ranges_iter::IntoRangesIter;
-pub use crate::ranges_iter::RangesIter;
-pub use crate::set::RangeSetBlaze;
+pub use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter};
+pub use crate::ranges_iter::{IntoRangesIter, RangesIter};
+pub use crate::set::{IntoIter, Iter, RangeSetBlaze};
 pub use crate::sorted_disjoint_map::Priority;
 
 mod not_iter;
@@ -84,8 +82,8 @@ mod sym_diff_iter;
 mod sym_diff_iter_map;
 pub use map::EqClone;
 pub use map::ValueRef;
-use merge::{KMerge, Merge};
-use merge_map::KMergeMap;
+pub use merge::{KMerge, Merge}; // cmk make public???
+pub use merge_map::KMergeMap; // cmk make public???
 pub use multiway::MultiwaySortedDisjoint;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwayRangeMapBlazeRef;
@@ -96,15 +94,15 @@ pub use sym_diff_iter_map::SymDiffIterMap;
 mod multiway;
 mod multiway_map;
 mod sorted_disjoint_map;
-mod tests_set;
 mod tests_map;
+mod tests_set;
 mod union_iter;
 mod union_iter_map;
 pub(crate) mod unsorted_disjoint;
 pub(crate) mod unsorted_disjoint_map;
 pub use crate::map::RangeMapBlaze;
 pub use crate::sorted_disjoint_map::IntoString;
-pub(crate) use crate::unsorted_disjoint::AssumeSortedStarts;
+pub use crate::unsorted_disjoint::AssumeSortedStarts; // cmk make public???
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 // use itertools::Tee;

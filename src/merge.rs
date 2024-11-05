@@ -23,7 +23,7 @@ where
     R: SortedDisjoint<T>,
 {
     /// Creates a new [`Merge`] iterator from two [`SortedDisjoint`] iterators. See [`Merge`] for more details and examples.
-    /// 
+    ///
     /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
     pub fn new(left: L, right: R) -> Self {
         Self {
@@ -65,8 +65,10 @@ where
 {
 }
 
-/// Works with [`UnionIter`] to turn any number of [`SortedDisjoint`] iterators into a [`SortedDisjoint`] iterator of their union,
-/// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
+/// Works with [`UnionIter`] to turn any number of [`SortedDisjoint`] iterators into
+/// a [`SortedDisjoint`] iterator of their union.
+///
+/// This means all the integers in any input iterator, as sorted & disjoint ranges.
 ///
 /// Also see [`Merge`].
 ///
@@ -93,7 +95,7 @@ where
     I: SortedDisjoint<T>,
 {
     /// Creates a new [`KMerge`] iterator from zero or more [`SortedDisjoint`] iterators. See [`KMerge`] for more details and examples.
-    /// 
+    ///
     /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
     pub fn new<K>(iter: K) -> Self
     where
