@@ -33,7 +33,7 @@ where
     R: SortedDisjointMap<T, VR>,
 {
     /// Creates a new [`MergeMap`] iterator from two [`SortedDisjointMap`] iterators. See [`MergeMap`] for more details and examples.
-    /// 
+    ///
     /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
     pub fn new(left: L, right: R) -> Self {
         let left = SetPriorityMap::new(left, 0);
@@ -84,8 +84,6 @@ where
 /// Works with [`UnionIter`] to turn two [`SortedDisjointMap`] iterators into a [`SortedDisjointMap`] iterator of their union,
 /// i.e., all the integers in any input iterator, as sorted & disjoint ranges.
 ///
-/// Also see [`MergeMap`].
-///
 /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
 /// [`UnionIter`]: crate::UnionIter
 ///
@@ -112,7 +110,7 @@ where
     I: SortedDisjointMap<T, VR>,
 {
     /// Creates a new [`KMergeMap`] iterator from zero or more [`SortedDisjointMap`] iterators. See [`KMergeMap`] for more details and examples.
-    /// 
+    ///
     /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
     pub fn new<K>(iter: K) -> Self
     where

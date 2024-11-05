@@ -3234,7 +3234,6 @@ fn check_traits() {
     is_like_btreeset_iter::<AAssumeSortedStarts>();
 }
 
-// cmk00000000000000 move to src/tests_set.rs
 const fn is_ddcppdheo<
     T: std::fmt::Debug
         + fmt::Display

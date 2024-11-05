@@ -79,12 +79,14 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 ///
 /// # `SortedDisjoint` Set Operations
 ///
+/// /// cmk macros don't point to macros
+///
 /// | Method | Operator | Multiway (same type) | Multiway (different types) |
 /// |--------|----------|----------------------|----------------------------|
-/// | `a.`[`union`]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][crate::MultiwaySortedDisjoint::union]`()` | [`crate::MultiwayRangeSetBlazeRef::union`]`!(a, b, c)` |
-/// | `a.`[`intersection`]`(b)` | `a & b` | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjoint::intersection]`()` | [`crate::MultiwayRangeSetBlazeRef::intersection`]`!(a, b, c)` |
+/// | `a.`[`union`]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][crate::MultiwaySortedDisjoint::union]`()` | [`union_dyn!`][macro@crate::union_dyn]`(a, b, c)` |
+/// | `a.`[`intersection`]`(b)` | `a & b` | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjoint::intersection]`()` | [`intersection_dyn!`][macro@crate::intersection_dyn]`(a, b, c)` |
 /// | `a.`[`difference`]`(b)` | `a - b` |  |  |
-/// | `a.`[`symmetric_difference`]`(b)` | `a ^ b` |  | cmk |
+/// | `a.`[`symmetric_difference`]`(b)` | `a ^ b` | `[a, b, c].`[`symmetric_difference`][crate::MultiwaySortedDisjoint::symmetric_difference]`()` | [`symmetric_difference_dyn!`][macro@crate::symmetric_difference_dyn]`(a, b, c)` |
 /// | `a.`[`complement`]`()` | `!a` |  |  |
 ///
 ///

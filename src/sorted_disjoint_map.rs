@@ -106,13 +106,15 @@ where
 ///
 /// # `SortedDisjointMap` Set Operations
 ///
+/// cmk macros don't point to macros
+///
 /// | Method | Operator | Multiway (same type) | Multiway (different types) |
 /// |--------|----------|----------------------|----------------------------|
-/// | `a.`[`complement`]`()` | `!a` |  |  |
-/// | `a.`[`union`]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][crate::MultiwaySortedDisjointMap::union]`()` | [`crate::MultiwayRangeMapBlazeRef::union`]`!(a, b, c)` |
-/// | `a.`[`intersection`]`(b)` | `a & b` | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjointMap::intersection]`()` | [`crate::MultiwayRangeMapBlazeRef::intersection`]`!(a, b, c)` |
-/// | `a.`[`difference`]`(b)` | `a - b` |  |  |
-/// | `a.`[`symmetric_difference`]`(b)` | `a ^ b` |  | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjointMap::intersection]`()` | [`crate::MultiwayRangeMapBlazeRef::symmetric_difference`]`!(a, b, c)` |
+/// | `a.`[`complement`][SortedDisjointMap::complement]`()` | `!a` |  |  |
+/// | `a.`[`union`][SortedDisjointMap::union]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][crate::MultiwaySortedDisjointMap::union]`()` | [`union_map_dyn!`][macro@crate::union_map_dyn]`(a, b, c)` |
+/// | `a.`[`intersection`][SortedDisjointMap::intersection]`(b)` | `a & b` | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjointMap::intersection]`()` | [`intersection_map_dyn!`][macro@crate::intersection_map_dyn]`(a, b, c)` |
+/// | `a.`[`difference`][SortedDisjointMap::difference]`(b)` | `a - b` |  |  |
+/// | `a.`[`symmetric_difference`][SortedDisjointMap::symmetric_difference]`(b)` | `a ^ b` |  `[a, b, c].`[`symmetric_difference`][crate::MultiwaySortedDisjointMap::symmetric_difference]`()` | [`symmetric_difference_map_dyn!`][macro@crate::symmetric_difference_map_dyn]`(a, b, c)` |
 ///
 ///
 /// ## Performance

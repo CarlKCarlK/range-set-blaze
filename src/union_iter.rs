@@ -80,8 +80,8 @@ where
     R: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`crate::sym_diff_iter_map::SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`crate::sym_diff_iter_map::SymDiffIter`] for more details and examples.
-    /// 
+    /// Creates a new [`crate::sym_diff_iter::SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`crate::sym_diff_iter::SymDiffIter`] for more details and examples.
+    ///
     /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
     pub fn new2(left: L, right: R) -> Self {
         let iter: Merge<T, L, R> = Merge::new(left, right);
@@ -96,8 +96,8 @@ where
     J: SortedDisjoint<T>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`crate::sym_diff_iter_map::SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`crate::sym_diff_iter_map::SymDiffIter`] for more details and examples.
-    /// 
+    /// Creates a new [`crate::sym_diff_iter::SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`crate::sym_diff_iter::SymDiffIter`] for more details and examples.
+    ///
     /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
     pub fn new_k<K>(k: K) -> Self
     where

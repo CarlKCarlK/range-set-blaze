@@ -191,8 +191,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// # Examples
     ///
-    /// ```rangesetblaze::new()//
-    /// use range_set_blaze::{RangeSetBlaze, Rog;};
+    /// ```
+    /// use range_set_blaze::{RangeSetBlaze, Rog};
     /// use core::ops::Bound::Included;
     ///
     /// let mut set = RangeSetBlaze::new();

@@ -1817,32 +1817,35 @@ for ! call |a: &RangeMapBlaze<T, V>| {
 where T: Integer, V: EqClone
 );
 
+// cmk should bitor_assign be defined on RangeMapBlaze?
+
 impl<T, V> Extend<(T, V)> for RangeMapBlaze<T, V>
 where
     T: Integer,
     V: EqClone,
 {
-    /// Extends the [`RangeSetBlaze`] with the contents of a
+    /// Extends the [`RangeMapBlaze`] with the contents of a
     /// range iterator. cmk this has right-to-left priority -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
     ///
     /// Elements are added one-by-one. There is also a version
     /// that takes an integer iterator.
     ///
-    /// The [`|=`](RangeSetBlaze::bitor_assign) operator extends a [`RangeSetBlaze`]
-    /// from another [`RangeSetBlaze`]. It is never slower
-    ///  than  [`RangeSetBlaze::extend`] and often several times faster.
+    /// cmk bitor_assign is not currently defined
+    /// The [`|=`](RangeMapBlaze::bitor_assign) operator extends a [`RangeMapBlaze`]
+    /// from another [`RangeMapBlaze`]. It is never slowers
+    ///  than  [`RangeMapBlaze::extend`] and often several times faster.
     ///
     /// # Examples
     /// ```
-    /// use range_set_blaze::RangeSetBlaze;
-    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
+    /// use range_map_blaze::RangeMapBlaze;
+    /// let mut a = RangeMapBlaze::from_iter([1..=4]);
     /// a.extend([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
-    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
+    /// assert_eq!(a, RangeMapBlaze::from_iter([0..=5, 10..=10]));
     ///
-    /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// let mut b = RangeSetBlaze::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
+    /// let mut a = RangeMapBlaze::from_iter([1..=4]);
+    /// let mut b = RangeMapBlaze::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
     /// a |= b;
-    /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
+    /// assert_eq!(a, RangeMapBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     #[inline]
     fn extend<I>(&mut self, iter: I)
