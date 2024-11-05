@@ -223,7 +223,7 @@ where
 /// | union       |  `a` &#124; `b`                     | `[a, b, c].`[`union`]`()` |
 /// | intersection       |  `a & b`                     | `[a, b, c].`[`intersection`]`()` |
 /// | difference       |  `a - b`                     | *n/a* |
-/// | symmetric difference       |  `a ^ b`                     | *n/a* |
+/// | symmetric difference       |  `a ^ b| `[a, b, c].`[`symmetric_difference`]`(cmk)` |
 /// | complement       |  `!a`                     | *n/a* |
 ///
 /// `RangeSetBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of

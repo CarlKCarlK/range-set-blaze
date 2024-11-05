@@ -33,7 +33,11 @@ members = [
 [features]
 default = ["std"]
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
-alloc = ["itertools/use_alloc", "num-traits", "num-integer"]
+alloc = [
+    "itertools/use_alloc",
+    "num-traits",
+    "num-integer",
+] # cmk000000 remove this cargo feature
 # rog_experimental would have been better
 rog-experimental = []
 from_slice = []
@@ -50,7 +54,7 @@ tests_common = { path = "tests_common" }
 criterion = { version = "0.5.1", features = [
     "html_reports",
 ], default-features = false }
-trybuild = "1.0.53"
+trybuild = "1.0.53" # update all versions
 thousands = "0.2.0"
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"
@@ -78,5 +82,5 @@ all-features = true
 # TODO Rule: for running profiling
 # [profile.release]
 # debug = true
-[profile.release]
+[profile.release] # cmk remove???
 opt-level = 3 # Maximum optimization

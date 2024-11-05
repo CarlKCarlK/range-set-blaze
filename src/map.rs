@@ -211,7 +211,7 @@ where
 /// | union       |  `a` &#124; `b`                     | `[a, b, c].`[`union`]`()` |
 /// | intersection       |  `a & b`                     | `[a, b, c].`[`intersection`]`()` |
 /// | difference       |  `a - b`                     | *n/a* |
-/// | symmetric difference       |  `a ^ b`                     | *n/a* |
+/// | symmetric difference       |  `a ^ b`                     | cmk symdiff |
 /// | complement       |  `!a`                     | *n/a* |
 ///
 /// `RangeMapBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
@@ -1837,7 +1837,7 @@ where
     ///
     /// # Examples
     /// ```
-    /// use range_map_blaze::RangeMapBlaze;
+    /// use range_set_blaze::RangeMapBlaze;
     /// let mut a = RangeMapBlaze::from_iter([1..=4]);
     /// a.extend([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
     /// assert_eq!(a, RangeMapBlaze::from_iter([0..=5, 10..=10]));
