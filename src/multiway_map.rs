@@ -31,7 +31,7 @@ where
 pub trait MultiwayRangeMapBlaze<T: Integer, V: EqClone>:
     IntoIterator<Item = RangeMapBlaze<T, V>>
 {
-    // cmk000 where is symm diff?
+    // cmk000 where is sym diff?
     /// Unions the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
     /// Any number of input can be given.
     ///
@@ -145,7 +145,7 @@ where
 pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: EqClone + 'a>:
     IntoIterator<Item = &'a RangeMapBlaze<T, V>> + Sized
 {
-    // cmk000 where is symm diff?
+    // cmk000 where is sym diff?
     /// Unions the given [`RangeMapBlaze`] references, creating a new [`RangeMapBlaze`].
     /// Any number of input can be given.
     ///

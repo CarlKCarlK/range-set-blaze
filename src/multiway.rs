@@ -15,7 +15,7 @@ where
 /// [`symmetric_difference`]: MultiwayRangeSetBlaze::symmetric_difference
 #[allow(clippy::module_name_repetitions)]
 pub trait MultiwayRangeSetBlaze<T: Integer>: IntoIterator<Item = RangeSetBlaze<T>> + Sized {
-    // cmk000 where is symm diff?
+    // cmk000 where is sym diff?
     /// Unions the given [`RangeSetBlaze`]'s', creating a new [`RangeSetBlaze`].
     /// Any number of input can be given.
     ///
@@ -106,7 +106,7 @@ where
 pub trait MultiwayRangeSetBlazeRef<'a, T: Integer + 'a>:
     IntoIterator<Item = &'a RangeSetBlaze<T>> + Sized
 {
-    // cmk000 where is symm diff?
+    // cmk000 where is sym diff?
     /// Unions the given [`RangeSetBlaze`] references, creating a new [`RangeSetBlaze`].
     /// Any number of input can be given.
     ///

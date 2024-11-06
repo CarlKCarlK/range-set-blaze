@@ -211,7 +211,7 @@ where
 /// | union       |  `a` &#124; `b`                     | `[a, b, c].`[`union`]`()` |
 /// | intersection       |  `a & b`                     | `[a, b, c].`[`intersection`]`()` |
 /// | difference       |  `a - b`                     | *n/a* |
-/// | symmetric difference       |  `a ^ b`                     | cmk symdiff |
+/// | symmetric difference       |  `a ^ b`                     | cmk sym diff |
 /// | complement       |  `!a`                     | *n/a* |
 ///
 /// `RangeMapBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
@@ -1817,35 +1817,34 @@ for ! call |a: &RangeMapBlaze<T, V>| {
 where T: Integer, V: EqClone
 );
 
-// cmk should bitor_assign be defined on RangeMapBlaze?
-
+// cmk00000 define two bitor_assign RangeMapBlaze -- one for borrowed b and one for owned b.
 impl<T, V> Extend<(T, V)> for RangeMapBlaze<T, V>
 where
     T: Integer,
     V: EqClone,
 {
-    /// Extends the [`RangeMapBlaze`] with the contents of a
-    /// range iterator. cmk this has right-to-left priority -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
+    /// Extends the [`RangeMapBlaze`] with the contents of an iterator of integer-value pairs. It has right-to-left precedence
+    ///  -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
     ///
-    /// Elements are added one-by-one. There is also a version
-    /// that takes an integer iterator.
+    /// Elements are added one-by-one and later items overwrite earlier ones.
+    /// There is also a version that takes an iterator of range-value pairs.
     ///
-    /// cmk bitor_assign is not currently defined
     /// The [`|=`](RangeMapBlaze::bitor_assign) operator extends a [`RangeMapBlaze`]
-    /// from another [`RangeMapBlaze`]. It is never slowers
-    ///  than  [`RangeMapBlaze::extend`] and often several times faster.
+    /// from another [`RangeMapBlaze`]. It is never slower
+    /// than  [`RangeMapBlaze::extend`] and often several times faster. It
+    /// prioritizes differently, giving precedence to values already in the [`RangeMapBlaze`] (so, left to right).
     ///
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
-    /// let mut a = RangeMapBlaze::from_iter([1..=4]);
-    /// a.extend([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
-    /// assert_eq!(a, RangeMapBlaze::from_iter([0..=5, 10..=10]));
+    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    /// a.extend([(3, "b"), (4, "e"), (5, "f"), (5, "g")]);
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=3, "b"), (4..=4, "e"), (5..=5, "g")]));
     ///
-    /// let mut a = RangeMapBlaze::from_iter([1..=4]);
-    /// let mut b = RangeMapBlaze::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
-    /// a |= b;
-    /// assert_eq!(a, RangeMapBlaze::from_iter([0..=5, 10..=10]));
+    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    /// let mut b = RangeMapBlaze::from_iter([(3, "b"), (4, "e"), (5, "f"), (5, "g")]);
+    /// a = a | b; //  cmk use =| when available
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
     /// ```
     #[inline]
     fn extend<I>(&mut self, iter: I)
@@ -1856,6 +1855,53 @@ where
 
         // We gather adjacent values into ranges via UnsortedPriorityDisjointMap, but ignore the priority.
         for priority in UnsortedPriorityDisjointMap::new(iter.map(|(r, v)| (r..=r, Rc::new(v)))) {
+            let (range, value) = priority.into_range_value();
+            let value = Rc::try_unwrap(value).unwrap_or_else(|_| panic!("Failed to unwrap Rc"));
+            self.internal_add(range, value);
+        }
+    }
+
+    // cmk define extend_one and make it inline
+}
+
+impl<T, V> Extend<(RangeInclusive<T>, V)> for RangeMapBlaze<T, V>
+where
+    T: Integer,
+    V: EqClone,
+{
+    /// Extends the [`RangeMapBlaze`] with the contents of a iterator of range-value pairs.
+    /// It has right-to-left precedence -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
+    ///
+    /// Elements are added one-by-one. There is also a version
+    /// that takes an iterator of integer-value pairs.
+    ///
+    /// The [`|=`](RangeMapBlaze::bitor_assign) operator extends a [`RangeMapBlaze`]
+    /// from another [`RangeMapBlaze`]. It is never slower
+    /// than  [`RangeMapBlaze::extend`] and often several times faster. It
+    /// prioritizes differently, giving precedence to values already in the [`RangeMapBlaze`] (so, left to right).
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    /// a.extend([(3..=5, "b"), (5..=5, "c")]);
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=5, "c")]));
+    ///
+    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    /// let mut b = RangeMapBlaze::from_iter([(3..=5, "b"), (5..=5, "c")]);
+    /// assert_eq!(b, RangeMapBlaze::from_iter([(3..=5, "b")]));
+    /// a = a | b; //  cmk use =| when available
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "b")]));
+    /// ```
+    #[inline]
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = (RangeInclusive<T>, V)>,
+    {
+        let iter = iter.into_iter();
+
+        // We gather adjacent values into ranges via UnsortedPriorityDisjointMap, but ignore the priority.
+        for priority in UnsortedPriorityDisjointMap::new(iter.map(|(r, v)| (r, Rc::new(v)))) {
             let (range, value) = priority.into_range_value();
             let value = Rc::try_unwrap(value).unwrap_or_else(|_| panic!("Failed to unwrap Rc"));
             self.internal_add(range, value);
