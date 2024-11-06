@@ -147,9 +147,9 @@ where
 ///
 ///  Internally, the `from_iter`/`collect` constructors take these steps:
 /// * collect adjacent integers/ranges into disjoint ranges, O(*n₁*)
-/// * sort the disjoint ranges by their `start`, O(*n₂* log *n₂*)
+/// * sort the disjoint ranges by their `start`, O(*n₂* ln *n₂*)
 /// * merge adjacent ranges, O(*n₂*)
-/// * create a `BTreeMap` from the now sorted & disjoint ranges, O(*n₃* log *n₃*)
+/// * create a `BTreeMap` from the now sorted & disjoint ranges, O(*n₃* ln *n₃*)
 ///
 /// where *n₁* is the number of input integers/ranges, *n₂* is the number of disjoint & unsorted ranges,
 /// and *n₃* is the final number of sorted & disjoint ranges.
@@ -1760,7 +1760,7 @@ impl<T: Integer> BitOrAssign<&Self> for RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// let mut b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let mut b = RangeSetBlaze::from_iter([0..=0, 3..=5, 10..=10]);
     /// a |= &b;
     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
@@ -1794,7 +1794,7 @@ impl<T: Integer> BitOrAssign<Self> for RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// let mut b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let mut b = RangeSetBlaze::from_iter([0..=0, 3..=5, 10..=10]);
     /// a |= b;
     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
@@ -1841,7 +1841,7 @@ impl<T: Integer> BitOr<&Self> for RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     /// let a = RangeSetBlaze::from_iter([1..=4]);
-    /// let b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let b = RangeSetBlaze::from_iter([0..=0, 3..=5, 10..=10]);
     /// let union = a | &b;
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
@@ -1863,7 +1863,7 @@ impl<T: Integer> BitOr<RangeSetBlaze<T>> for &RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     /// let a = RangeSetBlaze::from_iter([1..=4]);
-    /// let b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let b = RangeSetBlaze::from_iter([0..=0, 3..=5, 10..=10]);
     /// let union = &a | b;
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
@@ -1884,7 +1884,7 @@ impl<T: Integer> BitOr<&RangeSetBlaze<T>> for &RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     /// let a = RangeSetBlaze::from_iter([1..=4]);
-    /// let b = RangeSetBlaze::from_iter([0..=0,3..=5,10..=10]);
+    /// let b = RangeSetBlaze::from_iter([0..=0, 3..=5, 10..=10]);
     /// let union = &a | &b;
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```

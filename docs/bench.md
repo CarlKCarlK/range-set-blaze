@@ -40,7 +40,7 @@ I later added:
 
 The `range_map`, `Range-collections`, `range-set`, and `roaring` crates store disjoint ranges. I eliminated crates that store overlapping ranges, a different data structure (`iset`, `theban_interval_tree`, and `unbounded-interval-tree`).
 
-Disjoint ranges can be stored in a tree or a vector. With a tree, we expect inserts to be much faster than with a vector, O(log *n*) vs O(*n*). Benchmark `ingest_clumps_easy` below showed this to be true. Because I care about such inserts, after that benchmark, I removed vector-based crates from consideration except for `roaring`.
+Disjoint ranges can be stored in a tree or a vector. With a tree, we expect inserts to be much faster than with a vector, O(ln *n*) vs O(*n*). Benchmark `ingest_clumps_easy` below showed this to be true. Because I care about such inserts, after that benchmark, I removed vector-based crates from consideration except for `roaring`.
 
 Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). Only `roaring` of the remaining crates offered tested set operations. (The inspirational `sorted-iter` also does, but it is designed to work on sorted values, not ranges, and so is not included.)
 

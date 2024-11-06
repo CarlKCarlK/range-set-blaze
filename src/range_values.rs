@@ -116,6 +116,17 @@ impl<T: Integer, V: EqClone> Iterator for IntoRangeValuesIter<T, V> {
     }
 }
 
+// cmk does set's IntoRangesIter have a double ended iterator?
+impl<T: Integer, V: EqClone> DoubleEndedIterator for IntoRangeValuesIter<T, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back().map(|(start, end_value)| {
+            let range = start..=end_value.end;
+            let rc_value = Rc::new(end_value.value);
+            (range, rc_value) // cmk rename rc_value
+        })
+    }
+}
+
 /// The output of cmk,
 /// i.e., the integers as sorted & disjoint ranges.
 ///

@@ -24,9 +24,9 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::borrow::Borrow;
 use core::cmp::Ordering;
-use core::fmt;
-use core::ops::{BitOr, Bound, Index, RangeBounds};
+use core::ops::{BitOr, BitOrAssign, Bound, Index, RangeBounds};
 use core::{cmp::max, convert::From, ops::RangeInclusive};
+use core::{fmt, mem};
 use gen_ops::gen_ops_ex;
 use num_traits::One;
 use num_traits::Zero;
@@ -144,9 +144,9 @@ where
 ///
 ///  Internally, the `from_iter`/`collect` constructors take these steps:
 /// * collect adjacent integers/ranges into disjoint ranges, O(*n₁*)
-/// * sort the disjoint ranges by their `start`, O(*n₂* log *n₂*)
+/// * sort the disjoint ranges by their `start`, O(*n₂* ln *n₂*)
 /// * merge adjacent ranges, O(*n₂*)
-/// * create a `BTreeMap` from the now sorted & disjoint ranges, O(*n₃* log *n₃*)
+/// * create a `BTreeMap` from the now sorted & disjoint ranges, O(*n₃* ln *n₃*)
 ///
 /// where *n₁* is the number of input integers/ranges, *n₂* is the number of disjoint & unsorted ranges,
 /// and *n₃* is the final number of sorted & disjoint ranges.
@@ -1491,6 +1491,24 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
         MapIntoRangesIter::new(self.btree_map.into_iter())
     }
 
+    /// Returns the number of sorted & disjoint ranges in the set.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// // We put in three ranges, but they are not sorted & disjoint.
+    /// let map = RangeMapBlaze::from_iter([(10..=20,"a"), (15..=25,"a"), (30..=40,"b")]);
+    /// // After RangeMapBlaze sorts & 'disjoint's them, we see two ranges.
+    /// assert_eq!(map.ranges_len(), 2);
+    /// assert_eq!(map.to_string(), r#"(10..=25, "a"), (30..=40, "b")"#);
+    /// ```
+    #[must_use]
+    pub fn ranges_len(&self) -> usize {
+        self.btree_map.len()
+    }
+
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
@@ -1817,7 +1835,6 @@ for ! call |a: &RangeMapBlaze<T, V>| {
 where T: Integer, V: EqClone
 );
 
-// cmk00000 define two bitor_assign RangeMapBlaze -- one for borrowed b and one for owned b.
 impl<T, V> Extend<(T, V)> for RangeMapBlaze<T, V>
 where
     T: Integer,
@@ -1843,7 +1860,7 @@ where
     ///
     /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
     /// let mut b = RangeMapBlaze::from_iter([(3, "b"), (4, "e"), (5, "f"), (5, "g")]);
-    /// a = a | b; //  cmk use =| when available
+    /// a |= b;
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
     /// ```
     #[inline]
@@ -1889,8 +1906,7 @@ where
     ///
     /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
     /// let mut b = RangeMapBlaze::from_iter([(3..=5, "b"), (5..=5, "c")]);
-    /// assert_eq!(b, RangeMapBlaze::from_iter([(3..=5, "b")]));
-    /// a = a | b; //  cmk use =| when available
+    /// a |= b;
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "b")]));
     /// ```
     #[inline]
@@ -2082,13 +2098,86 @@ where
 
 impl<T: Integer, V: EqClone> Eq for RangeMapBlaze<T, V> {}
 
+impl<T: Integer, V: EqClone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
+    /// Adds the contents of another [`RangeMapBlaze`] to this one.
+    /// It has left precedence, so when values overlap, the left-hand side wins.
+    ///
+    /// To get right precedence, use swap the operands or use [`RangeMapBlaze::extend`].
+    ///
+    /// Passing the right-hand side by ownership rather than borrow
+    /// will allow a many-times faster speed up when the
+    /// right-hand side is much larger than the left-hand side.
+    ///
+    /// Also, this operation is never slower than [`RangeMapBlaze::extend`] and
+    /// can often be many times faster.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    /// let mut b = RangeMapBlaze::from_iter([(3, "b"), (4, "e"), (5, "f"), (5, "g")]);
+    /// a |= &b;
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
+    /// ```
+    fn bitor_assign(&mut self, other: &Self) {
+        if self.ranges_len() == 0 {
+            *self = other.clone();
+            return;
+        }
+        *self = (self.range_values() | other.range_values()).into_range_map_blaze();
+    }
+}
+
+impl<T: Integer, V: EqClone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
+    /// Adds the contents of another [`RangeMapBlaze`] to this one.
+    /// It has left precedence, so when values overlap, the left-hand side wins.
+    ///
+    /// To get right precedence, use swap the operands or use [`RangeMapBlaze::extend`].
+    ///
+    /// Passing the right-hand side by ownership rather than borrow
+    /// will allow a many-times faster speed up when the
+    /// right-hand side is much larger than the left-hand side.
+    ///
+    /// Also, this operation is never slower than [`RangeMapBlaze::extend`] and
+    /// can often be many times faster.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    /// let mut b = RangeMapBlaze::from_iter([(3, "b"), (4, "e"), (5, "f"), (5, "g")]);
+    /// a |= b;
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
+    /// ```
+    fn bitor_assign(&mut self, mut other: Self) {
+        let a_len = self.ranges_len();
+        let b_len = other.ranges_len();
+        if a_len * (b_len.ilog2() as usize + 1) < a_len + b_len {
+            // Replace `self` with an empty `RangeMapBlaze`, allowing you to move its contents.
+            let original_self = mem::take(self);
+            for (start, end_value) in original_self.btree_map {
+                other.internal_add(start..=end_value.end, end_value.value);
+            }
+            *self = other;
+        } else {
+            *self |= &other;
+        }
+    }
+}
+
 #[cfg(feature = "std")]
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::println;
 
+    use wasm_bindgen_test::*;
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    // cmk look everywhere for tests that should also be wasm_bindgen_test
+
     #[test]
+    #[wasm_bindgen_test]
     fn test_cmp() {
         fn to_bits(vv_pair: Vec<(u32, f64)>) -> Vec<(u32, u64)> {
             vv_pair.into_iter().map(|(k, v)| (k, v.to_bits())).collect()
@@ -2165,6 +2254,39 @@ mod tests {
             let a_range_set = RangeMapBlaze::from_iter(a_data);
             let b_range_set = RangeMapBlaze::from_iter(b_data);
             assert_eq!(a_range_set.cmp(&b_range_set), expected);
+        }
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    #[allow(clippy::style)]
+    fn bitor_assign_coverage() {
+        for (a0, b0, c0) in [
+            (
+                vec![(3..=3, "a"), (5..=10, "a"), (12..=15, "a")],
+                vec![(2..=3, "b"), (5..=10, "b"), (12..=15, "b")],
+                vec![(2..=2, "b"), (3..=3, "a"), (5..=10, "a"), (12..=15, "a")],
+            ),
+            (vec![(2..=3, "a")], vec![(3..=3, "b")], vec![(2..=3, "a")]),
+            (vec![], vec![(3..=3, "b")], vec![(3..=3, "b")]),
+        ] {
+            let c = RangeMapBlaze::from_iter(c0);
+
+            let mut a = RangeMapBlaze::from_iter(&a0);
+            let b = RangeMapBlaze::from_iter(&b0);
+            a = a | b;
+            assert_eq!(a, c);
+            let mut a = RangeMapBlaze::from_iter(&a0);
+            let b = RangeMapBlaze::from_iter(&b0);
+            a |= b;
+            assert_eq!(a, c);
+            let mut a = RangeMapBlaze::from_iter(&a0);
+            let b = RangeMapBlaze::from_iter(&b0);
+            a |= &b;
+            assert_eq!(a, c);
+            let mut b = RangeMapBlaze::from_iter(&b0);
+            b.extend(a0.clone());
+            assert_eq!(b, c);
         }
     }
 }
