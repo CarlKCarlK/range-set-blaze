@@ -24,7 +24,7 @@ where
 {
     /// Creates a new [`Merge`] iterator from two [`SortedDisjoint`] iterators. See [`Merge`] for more details and examples.
     ///
-    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
+    /// [SortedDisjoint]: crate::SortedDisjoint.html
     pub fn new(left: L, right: R) -> Self {
         Self {
             iter: left.merge_by(right, |a, b| a.start() < b.start()),
@@ -96,7 +96,7 @@ where
 {
     /// Creates a new [`KMerge`] iterator from zero or more [`SortedDisjoint`] iterators. See [`KMerge`] for more details and examples.
     ///
-    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
+    /// [SortedDisjoint]: crate::SortedDisjoint.html
     pub fn new<K>(iter: K) -> Self
     where
         K: IntoIterator<Item = I>,

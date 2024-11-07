@@ -63,8 +63,8 @@ where
 /// # `SortedDisjointMap` Constructors
 ///
 /// You'll usually construct a `SortedDisjointMap` iterator from a [`RangeMapBlaze`] or a [`CheckSortedDisjointMap`].
-/// Here is a summary table, followed by [examples](#constructor-examples). cmk not written You can also [define your own
-/// `SortedDisjointMap`](#how-to-mark-your-type-as-SortedDisjointMap).
+/// Here is a summary table, followed by [examples](#constructor-examples). cmk not written You can also x define your own
+/// `SortedDisjointMap`xx#how-to-mark-your-type-as-sorteddisjointmaps x.
 ///
 /// | Input type | Method |
 /// |------------|--------|
@@ -73,13 +73,12 @@ where
 /// | [`RangeMapBlaze`]'s [`RangesIter`] | [`clone`] |
 /// | sorted & disjoint ranges | [`CheckSortedDisjointMap::new`] |
 /// | `SortedDisjointMap` iterator | [`crate::dyn_sorted_disjoint_map::DynSortedDisjointMap::new`] cmk looks bad|
-/// |  *your iterator type* | *[How to mark your type as `SortedDisjointMap`][1]* |
+/// |  *your iterator type* | *xHow to mark your type as `SortedDisjointMap`xx1x* |
 ///
 /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
 /// [`ranges`]: RangeMapBlaze::ranges
 /// [`into_ranges`]: RangeMapBlaze::into_ranges
 /// [`clone`]: crate::RangesIter::clone
-/// [1]: #how-to-mark-your-type-as-SortedDisjointMap
 /// [`RangesIter`]: crate::RangesIter
 ///
 /// ## Constructor Examples
@@ -484,7 +483,7 @@ where
 
     /// Create a [`RangeMapBlaze`] from a [`SortedDisjointMap`] iterator.
     ///
-    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///
     /// # Examples
     ///

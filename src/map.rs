@@ -531,7 +531,7 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
 
     /// Create a [`RangeMapBlaze`] from a [`SortedDisjointMap`] iterator.
     ///
-    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
+    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///
     /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
     ///

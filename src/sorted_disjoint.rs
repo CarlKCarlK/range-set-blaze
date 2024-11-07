@@ -53,7 +53,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// [`clone`]: crate::RangesIter::clone
 /// [1]: #how-to-mark-your-type-as-sorteddisjoint
 /// [`RangesIter`]: crate::RangesIter
-/// [`SortedDisjoint`]:crate::SortedDisjoint.html
+/// [SortedDisjoint]: crate::SortedDisjoint.html
 ///
 /// ## Constructor Examples
 /// ```
@@ -210,7 +210,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their union.
     ///
-    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
+    /// [SortedDisjoint]: crate::SortedDisjoint.html
     ///
     /// # Examples
     ///
@@ -241,7 +241,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their intersection.
     ///
-    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
+    /// [SortedDisjoint]: crate::SortedDisjoint.html
     ///
     /// # Examples
     ///
@@ -272,7 +272,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their set difference.
     ///
-    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
+    /// [SortedDisjoint]: crate::SortedDisjoint.html
     ///
     /// # Examples
     ///
@@ -303,7 +303,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 
     /// Given a [`SortedDisjoint`] iterator, efficiently returns a [`SortedDisjoint`] iterator of its complement.
     ///
-    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
+    /// [SortedDisjoint]: crate::SortedDisjoint.html
     ///
     /// # Examples
     ///
@@ -331,7 +331,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator
     /// of their symmetric difference.
     ///
-    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
+    /// [SortedDisjoint]: crate::SortedDisjoint.html
     /// # Examples
     ///
     /// ```
@@ -365,7 +365,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// Given two [`SortedDisjoint`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
     /// this method takes ownership of the iterators and consumes them.
     ///
-    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
+    /// [SortedDisjoint]: crate::SortedDisjoint.html
     ///
     /// # Examples
     ///
@@ -512,9 +512,9 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 
     /// Create a [`RangeSetBlaze`] from a [`SortedDisjoint`] iterator.
     ///
-    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
+    /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
-    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
+    /// [SortedDisjoint]: crate::SortedDisjoint.html
     ///
     /// # Examples
     ///
@@ -536,7 +536,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 /// Gives the [`SortedDisjoint`] trait to any iterator of ranges. The iterator will panic
 /// if/when it finds that the ranges are not actually sorted and disjoint.
 ///
-/// [`SortedDisjoint`]:crate::SortedDisjoint.html
+/// [SortedDisjoint]: crate::SortedDisjoint.html
 ///
 /// # Performance
 ///
