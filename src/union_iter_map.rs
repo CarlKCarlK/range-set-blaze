@@ -138,7 +138,18 @@ where
     I: PrioritySortedStartsMap<T, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`UnionIterMap`] from zero or more [`crate::sorted_disjoint_map::SortedStartsMap`] iterators. See [`UnionIterMap`] for more details and examples.
+    /// Creates a new [`UnionIterMap`] from zero or more cmk iterators.
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::{CheckSortedDisjointMap, IntoString, KMergeMap, UnionIterMap};
+    ///
+    /// let a = CheckSortedDisjointMap::new(vec![(1..=2, &"a"), (5..=100, &"a")]);
+    /// let b = CheckSortedDisjointMap::new(vec![(2..=6, &"b")]);
+    /// let c = CheckSortedDisjointMap::new(vec![(2..=2, &"c"), (6..=200, &"c")]);
+    /// let union = UnionIterMap::new(KMergeMap::new([a, b, c]));
+    ///
+    /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
+    /// ```
     pub fn new(mut iter: I) -> Self {
         let item = iter.next();
         Self {
@@ -159,7 +170,18 @@ where
     R: SortedDisjointMap<T, VR>,
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`crate::sym_diff_iter_map::SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`crate::sym_diff_iter_map::SymDiffIterMap`] for more details and examples.
+    /// Creates a new cmk from zero or more [`SortedDisjointMap`] iterators.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::{CheckSortedDisjointMap, IntoString, KMergeMap, UnionIterMap};
+    ///
+    /// let a = CheckSortedDisjointMap::new(vec![(1..=2, &"a"), (5..=100, &"a")]);
+    /// let b = CheckSortedDisjointMap::new(vec![(2..=6, &"b")]);
+    /// let union = UnionIterMap::new2(a, b);
+    ///
+    /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"#);
+    /// ```
     pub fn new2(left: L, right: R) -> Self {
         let iter = MergeMap::new(left, right);
         Self::new(iter)
@@ -173,10 +195,18 @@ where
     VR: ValueRef,
     J: SortedDisjointMap<T, VR>,
 {
-    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
+    // cmk doc
     ///
-    /// [`SymDiffIterMap`]: crate::SymDiffIterMap
+    /// ```
+    /// use range_set_blaze::{CheckSortedDisjointMap, IntoString, UnionIterMap};
+    ///
+    /// let a = CheckSortedDisjointMap::new(vec![(1..=2, &"a"), (5..=100, &"a")]);
+    /// let b = CheckSortedDisjointMap::new(vec![(2..=6, &"b")]);
+    /// let c = CheckSortedDisjointMap::new(vec![(2..=2, &"c"), (6..=200, &"c")]);
+    /// let union = UnionIterMap::new_k([a, b, c]);
+    ///
+    /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
+    /// ```
     pub fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,

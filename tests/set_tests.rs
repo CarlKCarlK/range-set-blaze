@@ -479,15 +479,15 @@ fn complement() -> Result<(), Box<dyn std::error::Error>> {
     let c = !not_a.ranges();
     let d = a0.ranges() | a1.ranges();
 
-    // cmk000 let f = UnionIter::from([15, 14, 15, 13, 12, 11, 9, 9, 8, 6, 4, 5, 3, 2, 1, 1, 1]);
+    let f = UnionIter::new2(a0.ranges(), a1.ranges());
     let not_b = !b;
     let not_c = !c;
     let not_d = !d;
-    // cmk00 let not_f = !f;
+    let not_f = !f;
     assert!(not_a.ranges().equal(not_b));
     assert!(not_a.ranges().equal(not_c));
     assert!(not_a.ranges().equal(not_d));
-    // cmk00 assert!(not_a.ranges().equal(not_f));
+    assert!(not_a.ranges().equal(not_f));
     Ok(())
 }
 
@@ -513,24 +513,20 @@ fn union_test() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 #[wasm_bindgen_test]
 fn sub1() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
     let a0 = RangeSetBlaze::from_iter([1..=6]);
     let a1 = RangeSetBlaze::from_iter([8..=9]);
     let a2 = RangeSetBlaze::from_iter([11..=15]);
     let a01 = &a0 | &a1;
-    // cmk00 let (a01_tee, _) = a01.ranges().tee();
     let not_a01 = !&a01;
     let a = &a01 - &a2;
     let b = a01.ranges() - a2.ranges();
     let c = !not_a01.ranges() - a2.ranges();
     let d = (a0.ranges() | a1.ranges()) - a2.ranges();
-    // cmk00 let e = a01_tee.difference(a2.ranges());
-    // cmk00 let f = UnionIter::from_iter(a01.iter()) - UnionIter::from_iter(a2.iter());
+    let f = UnionIter::new(a01.ranges()) - UnionIter::new(a2.ranges());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
-    // cmk00 assert!(a.ranges().equal(e));
-    // cmk00 assert!(a.ranges().equal(f));
+    assert!(a.ranges().equal(f));
 
     Ok(())
 }
@@ -558,24 +554,20 @@ fn xor() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 #[wasm_bindgen_test]
 fn bitand() -> Result<(), Box<dyn std::error::Error>> {
-    // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
     let a0 = RangeSetBlaze::from_iter([1..=6]);
     let a1 = RangeSetBlaze::from_iter([8..=9]);
     let a2 = RangeSetBlaze::from_iter([11..=15]);
     let a01 = &a0 | &a1;
-    // cmk00 let (a01_tee, _) = a01.ranges().tee();
     let not_a01 = !&a01;
     let a = &a01 & &a2;
     let b = a01.ranges() & a2.ranges();
     let c = !not_a01.ranges() & a2.ranges();
     let d = (a0.ranges() | a1.ranges()) & a2.ranges();
-    // cmk00 let e = a01_tee.intersection(a2.ranges());
-    // cmk00 let f = UnionIter::from_iter(a01.iter()) & UnionIter::from_iter(a2.iter());
+    let f = UnionIter::new(a01.ranges()) & UnionIter::new(a2.ranges());
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
-    // cmk00 assert!(a.ranges().equal(e));
-    // cmk00 assert!(a.ranges().equal(f));
+    assert!(a.ranges().equal(f));
     Ok(())
 }
 
@@ -2231,7 +2223,7 @@ fn multiway4() {
 #[test]
 #[wasm_bindgen_test]
 fn test_every_union() {
-    // cmk000 - test every... of the other operations, too
+    // cmk00 - test every... of the other operations, too
     // bitor x 4
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);

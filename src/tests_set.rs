@@ -433,12 +433,12 @@ fn sdi1() {
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 // cmk00 Can we/should we hide MergeMapIter and KMergeMapIter and SymDiffMapIter::new and UnionMapIter::new?
 #[test]
-// cmk000 challenge: convert from every level to sorted disjoint* for both map and set.
+// cmk00 challenge: convert from every level to sorted disjoint* for both map and set.
 pub fn convert_challenge() {
     use itertools::Itertools;
     use unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 
-    // cmk000 what is the for?
+    // cmk00 what is the for?
     #[allow(clippy::needless_pass_by_value)]
     fn _is_sorted_disjoint_map<T, VR, S>(_iter: S)
     where
