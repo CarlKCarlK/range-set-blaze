@@ -50,7 +50,7 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     /// A definition of [`RangeSetBlaze::from_slice()`] specific to this integer type.
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self>;
 
-    /// The type of the length of a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `u16`. Note
+    /// The type of the length of a [`RangeSetBlaze`][crate::RangeSetBlaze]. For example, the length of a `RangeSetBlaze<u8>` is `u16`. Note
     /// that it can't be `u8` because the length ranges from 0 to 256, which is one too large for `u8`.
     ///
     /// In general, `SafeLen` will be the smallest unsigned integer

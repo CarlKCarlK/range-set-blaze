@@ -31,7 +31,7 @@ where
 pub trait MultiwayRangeMapBlaze<T: Integer, V: EqClone>:
     IntoIterator<Item = RangeMapBlaze<T, V>>
 {
-    // cmk000 where is sym diff?
+    // cmk0000 where is sym diff?
     /// Unions the given [`RangeMapBlaze`]'s, creating a new [`RangeMapBlaze`].
     /// Any number of input can be given.
     ///
@@ -145,7 +145,7 @@ where
 pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: EqClone + 'a>:
     IntoIterator<Item = &'a RangeMapBlaze<T, V>> + Sized
 {
-    // cmk000 where is sym diff?
+    // cmk0000 where is sym diff?
     /// Unions the given [`RangeMapBlaze`] references, creating a new [`RangeMapBlaze`].
     /// Any number of input can be given.
     ///
@@ -244,7 +244,7 @@ where
 /// Provides methods on multiple [`SortedDisjointMap`] iterators,
 /// specifically [`union`], [`intersection`], and [`symmetric_difference`].
 ///
-/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
 /// [`union`]: crate::MultiwaySortedDisjointMap::union
 /// [`intersection`]: crate::MultiwaySortedDisjointMap::intersection
 /// [`symmetric_difference`]: crate::MultiwaySortedDisjointMap::symmetric_difference
@@ -259,7 +259,7 @@ where
     ///
     /// For input iterators of different types, use the [`union_dyn!`] macro.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
     /// [`union_dyn!`]: crate::union_dyn
     ///
     /// # Performance
@@ -291,7 +291,7 @@ where
     ///
     /// For input iterators of different types, use the [`intersection_dyn!`] macro.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
     /// [`intersection_dyn!`]: crate::intersection_dyn
     ///
     /// # Performance
@@ -329,7 +329,7 @@ where
     ///
     /// For input iterators of different types, use the [`symmetric_difference_dyn!`] macro.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
     /// [`symmetric_difference_dyn!`]: crate::symmetric_difference_dyn
     ///
     /// ```

@@ -1,3 +1,4 @@
+# cmk delete this (merge into useful.md)
 # rust flags
 set RUSTFLAGS=
 set RUSTFLAGS=-C target-feature=+avx2

@@ -132,7 +132,7 @@ where
 /// [2]: struct.RangeMapBlaze.html#impl-FromIterator<(RangeInclusive<T>,+V)>-for-RangeMapBlaze<T,+V>
 /// [3]: `RangeMapBlaze::from_sorted_disjoint_map`
 /// [3b]: `SortedDisjointMap::into_range_map_blaze
-/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
 /// [4]: `RangeMapBlaze::from`
 ///
 /// # Constructor Performance
@@ -211,18 +211,19 @@ where
 /// | union       |  `a` &#124; `b`                     | `[a, b, c].`[`union`]`()` |
 /// | intersection       |  `a & b`                     | `[a, b, c].`[`intersection`]`()` |
 /// | difference       |  `a - b`                     | *n/a* |
-/// | symmetric difference       |  `a ^ b`                     | cmk sym diff |
+/// | symmetric difference       |  `a ^ b`                     | `[a, b, c].`[`symmetric_difference`]`()` |
 /// | complement       |  `!a`                     | *n/a* |
 ///
 /// `RangeMapBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
-/// these methods match those of `BTreeSet`.
+/// these methods match those of `BTreeSet`. cmk should say `BTreeMap` and be sure these are real methods.
 ///
 /// [`union`]: trait.MultiwayRangeMapBlazeRef.html#method.union
 /// [`intersection`]: trait.MultiwayRangeMapBlazeRef.html#method.intersection
+/// [`symmetric_difference`]: trait.MultiwayRangeMapBlazeRef.html#method.symmetric_difference
 /// [`insert`]: RangeMapBlaze::insert
 /// [`pop_first`]: RangeMapBlaze::pop_first
 /// [`split_off`]: RangeMapBlaze::split_off
-/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
 ///
 /// ## Set Operation Performance
 ///
@@ -532,7 +533,7 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#RangeMapBlaze-constructors).*
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
     ///
     /// # Examples
     ///

@@ -27,7 +27,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// # Table of Contents
 /// * [`SortedDisjoint` Constructors](#sorteddisjoint-constructors)
 ///   * [Examples](#constructor-examples)
-/// * [`SortedDisjoint` Set and Other Operations](#sorteddisjoint-set-and-other-operations)
+/// * [`SortedDisjoint` Set Operations](#sorteddisjoint-set-operations)
 ///   * [Performance](#performance)
 ///   * [Examples](#examples)
 /// * [How to mark your type as `SortedDisjoint`](#how-to-mark-your-type-as-sorteddisjoint)
@@ -45,7 +45,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// | [`RangeSetBlaze`] | [`into_ranges`] |
 /// | [`RangeSetBlaze`]'s [`RangesIter`] | [`clone`] |
 /// | sorted & disjoint ranges | [`CheckSortedDisjoint::new`] |
-/// | `SortedDisjoint` iterator | [`crate::dyn_sorted_disjoint::DynSortedDisjoint::new`] |
+/// | `SortedDisjoint` iterator | [`crate::dyn_sorted_disjoint::DynSortedDisjoint::new`] cmk looks bad|
 /// |  *your iterator type* | *[How to mark your type as `SortedDisjoint`][1]* |
 ///
 /// [`ranges`]: RangeSetBlaze::ranges
@@ -53,7 +53,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// [`clone`]: crate::RangesIter::clone
 /// [1]: #how-to-mark-your-type-as-sorteddisjoint
 /// [`RangesIter`]: crate::RangesIter
-/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+/// [`SortedDisjoint`]:crate::SortedDisjoint.html
 ///
 /// ## Constructor Examples
 /// ```
@@ -79,16 +79,20 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 ///
 /// # `SortedDisjoint` Set Operations
 ///
-/// /// cmk macros don't point to macros
+/// | Method                             | Operator    | Multiway (same type)                              | Multiway (different types)           |
+/// |------------------------------------|-------------|---------------------------------------------------|--------------------------------------|
+/// | `a.`[`union`]`(b)`                 | `a` &#124; `b` | `[a, b, c].`[`union`][multiway_union]`() `        | [`union_dyn!`]`(a, b, c)`         |                    
+/// | `a.`[`intersection`]`(b)`          | `a & b`     | `[a, b, c].`[`intersection`][multiway_intersection]`() ` | [`intersection_dyn!`]`(a, b, c)`|
+/// | `a.`[`difference`]`(b)`            | `a - b`     | *n/a*                                             | *n/a*                                |
+/// | `a.`[`symmetric_difference`]`(b)`  | `a ^ b`     | `[a, b, c].`[`symmetric_difference`][multiway_symmetric_difference]`() ` | [`symmetric_difference_dyn!`]`(a, b, c)` |
+/// | `a.`[`complement`]`() `            | `!a`        | *n/a*                                             | *n/a*                                |
 ///
-/// | Method | Operator | Multiway (same type) | Multiway (different types) |
-/// |--------|----------|----------------------|----------------------------|
-/// | `a.`[`union`]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][crate::MultiwaySortedDisjoint::union]`()` | [`union_dyn!`][macro@crate::union_dyn]`(a, b, c)` |
-/// | `a.`[`intersection`]`(b)` | `a & b` | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjoint::intersection]`()` | [`intersection_dyn!`][macro@crate::intersection_dyn]`(a, b, c)` |
-/// | `a.`[`difference`]`(b)` | `a - b` |  |  |
-/// | `a.`[`symmetric_difference`]`(b)` | `a ^ b` | `[a, b, c].`[`symmetric_difference`][crate::MultiwaySortedDisjoint::symmetric_difference]`()` | [`symmetric_difference_dyn!`][macro@crate::symmetric_difference_dyn]`(a, b, c)` |
-/// | `a.`[`complement`]`()` | `!a` |  |  |
-///
+/// [multiway_union]: trait.MultiwaySortedDisjoint.html#method.union
+/// [multiway_intersection]: trait.MultiwaySortedDisjoint.html#method.intersection
+/// [multiway_symmetric_difference]: trait.MultiwaySortedDisjoint.html#method.symmetric_difference
+/// [`union_dyn!`]: macro.union_dyn.html
+/// [`intersection_dyn!`]: macro.intersection_dyn.html
+/// [`symmetric_difference_dyn!`]: macro.symmetric_difference_dyn.html
 ///
 /// ## Performance
 ///
@@ -206,7 +210,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their union.
     ///
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
     ///
     /// # Examples
     ///
@@ -237,7 +241,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their intersection.
     ///
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
     ///
     /// # Examples
     ///
@@ -268,7 +272,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their set difference.
     ///
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
     ///
     /// # Examples
     ///
@@ -299,7 +303,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 
     /// Given a [`SortedDisjoint`] iterator, efficiently returns a [`SortedDisjoint`] iterator of its complement.
     ///
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
     ///
     /// # Examples
     ///
@@ -327,7 +331,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator
     /// of their symmetric difference.
     ///
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
     /// # Examples
     ///
     /// ```
@@ -361,7 +365,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// Given two [`SortedDisjoint`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
     /// this method takes ownership of the iterators and consumes them.
     ///
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
     ///
     /// # Examples
     ///
@@ -510,7 +514,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     ///
     /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#constructors).*
     ///
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
     ///
     /// # Examples
     ///
@@ -532,7 +536,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 /// Gives the [`SortedDisjoint`] trait to any iterator of ranges. The iterator will panic
 /// if/when it finds that the ranges are not actually sorted and disjoint.
 ///
-/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+/// [`SortedDisjoint`]:crate::SortedDisjoint.html
 ///
 /// # Performance
 ///

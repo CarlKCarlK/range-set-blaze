@@ -13,6 +13,7 @@ categories = ["data-structures", "no-std", "wasm"]
 homepage = "https://github.com/CarlKCarlK/range-set-blaze"
 resolver = "2"
 exclude = ["docs/**/*"]
+rustdoc-internal = true
 
 [workspace]
 members = [

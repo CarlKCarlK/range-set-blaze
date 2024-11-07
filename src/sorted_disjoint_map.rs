@@ -48,22 +48,22 @@ where
 {
 }
 
+// cmk should there be a section name how to mark your type as SortedDisjointMap? with an example.
+
 /// Marks iterators that provide `(range, value)` pairs that are sorted and disjoint. Set operations on
 /// iterators that implement this trait can be performed in linear time.
 ///
 /// # Table of Contents
-/// * [`SortedDisjointMap` Constructors](#SortedDisjointMap-constructors)
+/// * [`SortedDisjointMap` Constructors](#sorteddisjointmap-constructors)
 ///   * [Examples](#constructor-examples)
-/// * [`SortedDisjointMap` Set and Other Operations](#SortedDisjointMap-set-and-other-operations)
+/// * [`SortedDisjointMap` Set Operations](#sorteddisjointmap-set-operations)
 ///   * [Performance](#performance)
 ///   * [Examples](#examples)
-/// * [How to mark your type as `SortedDisjointMap`](#how-to-mark-your-type-as-SortedDisjointMap)
-///   * [Example – Find the ordinal weekdays in September 2023](#example--find-the-ordinal-weekdays-in-september-2023)
 ///
 /// # `SortedDisjointMap` Constructors
 ///
 /// You'll usually construct a `SortedDisjointMap` iterator from a [`RangeMapBlaze`] or a [`CheckSortedDisjointMap`].
-/// Here is a summary table, followed by [examples](#constructor-examples). You can also [define your own
+/// Here is a summary table, followed by [examples](#constructor-examples). cmk not written You can also [define your own
 /// `SortedDisjointMap`](#how-to-mark-your-type-as-SortedDisjointMap).
 ///
 /// | Input type | Method |
@@ -72,10 +72,10 @@ where
 /// | [`RangeMapBlaze`] | [`into_ranges`] |
 /// | [`RangeMapBlaze`]'s [`RangesIter`] | [`clone`] |
 /// | sorted & disjoint ranges | [`CheckSortedDisjointMap::new`] |
-/// | `SortedDisjointMap` iterator | [`crate::dyn_sorted_disjoint_map::DynSortedDisjointMap::new`] |
+/// | `SortedDisjointMap` iterator | [`crate::dyn_sorted_disjoint_map::DynSortedDisjointMap::new`] cmk looks bad|
 /// |  *your iterator type* | *[How to mark your type as `SortedDisjointMap`][1]* |
 ///
-/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
 /// [`ranges`]: RangeMapBlaze::ranges
 /// [`into_ranges`]: RangeMapBlaze::into_ranges
 /// [`clone`]: crate::RangesIter::clone
@@ -106,16 +106,25 @@ where
 ///
 /// # `SortedDisjointMap` Set Operations
 ///
-/// cmk macros don't point to macros
+/// | Method                                 | Operator         | Multiway (same type)                                      | Multiway (different types)                     |
+/// |----------------------------------------|------------------|-----------------------------------------------------------|-----------------------------------------------|
+/// | `a.`[`union`]`(b)`                     | `a` &#124; `b`   | `[a, b, c].`[`union`][multiway_union]`() `                | [`union_map_dyn!`](a, b, c)                    |                    
+/// | `a.`[`intersection`]`(b)`              | `a & b`          | `[a, b, c].`[`intersection`][multiway_intersection]`() `  | [`intersection_map_dyn!`](a, b, c)             |
+/// | `a.`[`difference`]`(b)`                | `a - b`          | *n/a*                                                     | *n/a*                                          |
+/// | `a.`[`symmetric_difference`]`(b)`      | `a ^ b`          | `[a, b, c].`[`symmetric_difference`][multiway_symmetric_difference]`() ` | [`symmetric_difference_map_dyn!`](a, b, c) |
+/// | `a.`[`complement`]`() `                | `!a`             | *n/a*                                                     | *n/a*                                          |
 ///
-/// | Method | Operator | Multiway (same type) | Multiway (different types) |
-/// |--------|----------|----------------------|----------------------------|
-/// | `a.`[`complement`][SortedDisjointMap::complement]`()` | `!a` |  |  |
-/// | `a.`[`union`][SortedDisjointMap::union]`(b)` | `a` &#124; `b` | `[a, b, c].`[`union`][crate::MultiwaySortedDisjointMap::union]`()` | [`union_map_dyn!`][macro@crate::union_map_dyn]`(a, b, c)` |
-/// | `a.`[`intersection`][SortedDisjointMap::intersection]`(b)` | `a & b` | `[a, b, c].`[`intersection`][crate::MultiwaySortedDisjointMap::intersection]`()` | [`intersection_map_dyn!`][macro@crate::intersection_map_dyn]`(a, b, c)` |
-/// | `a.`[`difference`][SortedDisjointMap::difference]`(b)` | `a - b` |  |  |
-/// | `a.`[`symmetric_difference`][SortedDisjointMap::symmetric_difference]`(b)` | `a ^ b` |  `[a, b, c].`[`symmetric_difference`][crate::MultiwaySortedDisjointMap::symmetric_difference]`()` | [`symmetric_difference_map_dyn!`][macro@crate::symmetric_difference_map_dyn]`(a, b, c)` |
-///
+/// [`union`]: trait.SortedDisjointMap.html#method.union
+/// [`intersection`]: trait.SortedDisjointMap.html#method.intersection
+/// [`difference`]: trait.SortedDisjointMap.html#method.difference
+/// [`symmetric_difference`]: trait.SortedDisjointMap.html#method.symmetric_difference
+/// [`complement`]: trait.SortedDisjointMap.html#method.complement
+/// [multiway_union]: trait.MultiwaySortedDisjointMap.html#method.union
+/// [multiway_intersection]: trait.MultiwaySortedDisjointMap.html#method.intersection
+/// [multiway_symmetric_difference]: trait.MultiwaySortedDisjointMap.html#method.symmetric_difference
+/// [`union_map_dyn!`]: macro.union_map_dyn.html
+/// [`intersection_map_dyn!`]: macro.intersection_map_dyn.html
+/// [`symmetric_difference_map_dyn!`]: macro.symmetric_difference_map_dyn.html
 ///
 /// ## Performance
 ///
@@ -183,7 +192,7 @@ where
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their union.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
     ///
     /// # Examples
     ///
@@ -218,7 +227,7 @@ where
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their intersection.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
     ///
     /// /// cmk Tell that right-and-side must be a set, not a map
     ///
@@ -255,7 +264,7 @@ where
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their intersection.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
     ///
     /// /// cmk Tell that right-and-side must be a set, not a map
     ///
@@ -283,7 +292,7 @@ where
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
     ///
     /// cmk Tell that right-and-side must be a set, not a map
     ///
@@ -320,7 +329,7 @@ where
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
     /// cmk Tell that right-and-side must be a set, not a map
     ///
     /// # Examples

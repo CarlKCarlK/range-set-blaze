@@ -173,7 +173,7 @@ where
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`SymDiffIter`] for more details and examples.
     ///
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
     pub fn new2(left: L, right: R) -> Self {
         let iter = Merge::new(left, right);
         Self::new(iter)

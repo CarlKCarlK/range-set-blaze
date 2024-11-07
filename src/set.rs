@@ -134,7 +134,7 @@ where
 /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
 /// [2]: struct.RangeSetBlaze.html#impl-FromIterator<RangeInclusive<T>>-for-RangeSetBlaze<T>
 /// [3]: RangeSetBlaze::from_sorted_disjoint
-/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+/// [`SortedDisjoint`]:crate::SortedDisjoint.html
 /// [5]: RangeSetBlaze::from
 /// [6]: RangeSetBlaze::from_slice()
 ///
@@ -219,23 +219,24 @@ where
 ///
 /// You can perform set operations on `RangeSetBlaze`s using operators.
 ///
-/// | Set Operation           | Operator                   |  Multiway Method |
+/// | Set Operation           | Operator          |  Multiway Method |
 /// |-------------------|-------------------------|-------------------------|
-/// | union       |  `a` &#124; `b`                     | `[a, b, c].`[`union`]`()` |
-/// | intersection       |  `a & b`                     | `[a, b, c].`[`intersection`]`()` |
-/// | difference       |  `a - b`                     | *n/a* |
-/// | symmetric difference       |  `a ^ b| `[a, b, c].`[`symmetric_difference`]`(cmk)` |
-/// | complement       |  `!a`                     | *n/a* |
+/// | union             |  `a` &#124; `b`         | `[a, b, c].`[`union`]`()` |
+/// | intersection      |  `a & b`                | `[a, b, c].`[`intersection`]`()` |
+/// | difference        |  `a - b`                | *n/a* |
+/// | symmetric difference|  `a ^ b`              | `[a, b, c].`[`symmetric_difference`]`()` |
+/// | complement        |  `!a`                   | *n/a* |
 ///
 /// `RangeSetBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
 /// these methods match those of `BTreeSet`.
 ///
 /// [`union`]: trait.MultiwayRangeSetBlazeRef.html#method.union
 /// [`intersection`]: trait.MultiwayRangeSetBlazeRef.html#method.intersection
+/// [`symmetric_difference`]: trait.MultiwayRangeSetBlazeRef.html#method.symmetric_difference
 /// [`insert`]: RangeSetBlaze::insert
 /// [`pop_first`]: RangeSetBlaze::pop_first
 /// [`split_off`]: RangeSetBlaze::split_off
-/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+/// [`SortedDisjoint`]:crate::SortedDisjoint.html
 ///
 ///
 /// ## Set Operation Performance

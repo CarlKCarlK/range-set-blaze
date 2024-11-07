@@ -2430,10 +2430,10 @@ fn sorted_disjoint_ops() {
     let _z = !(!a | !b);
 }
 
-// cmk0000 get this looking better 	`cargo doc --no-deps --all-features --open` esp NotIter etc
-// cmk0000 get full coverage
-// cmk0000 get 'set' doc page looking good
-// cmk0000 get 'map' doc page looking good
+// cmk00 get this looking better 	`cargo doc --no-deps --all-features --open` esp NotIter etc
+// cmk00 get full coverage
+// cmk00 get 'set' doc page looking good
+// cmk00 get 'map' doc page looking good
 
 #[test]
 #[wasm_bindgen_test]

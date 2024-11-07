@@ -7,7 +7,7 @@ use alloc::boxed::Box;
 /// Gives [`SortedDisjoint`] iterators a uniform type. Used by the [`union_dyn`], etc. macros to give all
 /// their input iterators the same type.
 ///
-/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+/// [`SortedDisjoint`]:crate::SortedDisjoint.html
 /// [`union_dyn`]: crate::union_dyn
 /// [`intersection_dyn`]: crate::intersection_dyn
 ///
@@ -33,7 +33,7 @@ pub struct DynSortedDisjoint<'a, T: Integer> {
 impl<'a, T: Integer> DynSortedDisjoint<'a, T> {
     /// Create a [`DynSortedDisjoint`] from any [`SortedDisjoint`] iterator. See [`DynSortedDisjoint`] for an example.
     ///
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
     pub fn new<I>(iter: I) -> Self
     where
         I: SortedDisjoint<T> + 'a,
@@ -68,9 +68,8 @@ impl<T: Integer> Iterator for DynSortedDisjoint<'_, T> {
 ///
 /// # Example: 3-Input Parity
 ///
-/// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
+/// Find the integers that appear an odd number of times in the [`SortedDisjoint`][SortedDisjoint] iterators.
 ///
-/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
 /// [`intersection`]: crate::MultiwaySortedDisjoint::intersection
 /// ```
 /// use range_set_blaze::prelude::*;
@@ -96,7 +95,7 @@ macro_rules! intersection_dyn {
 }
 // cmk00 can/should this be defined without DynSortedDisjoint (which may could then be removed)?
 
-/// Unions one or more [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
+/// Unions one or more [`SortedDisjoint`][SortedDisjoint] iterators, creating a new [`SortedDisjoint`][SortedDisjoint] iterator.
 /// The input iterators need not to be of the same type.
 ///
 /// For input iterators of the same type, [`union`] may be slightly faster.
@@ -108,7 +107,7 @@ macro_rules! intersection_dyn {
 ///
 /// Find the integers that appear an odd number of times in the [`SortedDisjoint`] iterators.
 ///
-/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+/// [`SortedDisjoint`]:crate::SortedDisjoint.html
 /// [`union`]: crate::MultiwaySortedDisjoint::union
 /// ```
 /// use range_set_blaze::prelude::*;

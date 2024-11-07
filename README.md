@@ -46,7 +46,7 @@ is a value. See [documentation][3] for details.
 [map operations]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeMapBlaze.html#rangemapblaze-set-operations
 [1]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeSetBlaze.html#constructor-performance
 [2]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/trait.SortedDisjoint.html#table-of-contents
-[3]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/trait.SortedDisjointMaps.html#table-of-contents
+[3]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/trait.SortedDisjointMap.html#table-of-contents
 [`Ipv4Addr`]: core::net::Ipv4Addr
 [`Ipv6Addr`]: core::net::Ipv6Addr
 

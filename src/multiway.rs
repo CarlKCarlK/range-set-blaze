@@ -15,7 +15,7 @@ where
 /// [`symmetric_difference`]: MultiwayRangeSetBlaze::symmetric_difference
 #[allow(clippy::module_name_repetitions)]
 pub trait MultiwayRangeSetBlaze<T: Integer>: IntoIterator<Item = RangeSetBlaze<T>> + Sized {
-    // cmk000 where is sym diff?
+    // cmk0000 where is sym diff?
     /// Unions the given [`RangeSetBlaze`]'s', creating a new [`RangeSetBlaze`].
     /// Any number of input can be given.
     ///
@@ -106,7 +106,7 @@ where
 pub trait MultiwayRangeSetBlazeRef<'a, T: Integer + 'a>:
     IntoIterator<Item = &'a RangeSetBlaze<T>> + Sized
 {
-    // cmk000 where is sym diff?
+    // cmk0000 where is sym diff?
     /// Unions the given [`RangeSetBlaze`] references, creating a new [`RangeSetBlaze`].
     /// Any number of input can be given.
     ///
@@ -196,7 +196,7 @@ where
 /// Provides methods on multiple [`SortedDisjoint`] iterators,
 /// specifically [`union`], [`intersection`], and [`symmetric_difference`].
 ///
-/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+/// [`SortedDisjoint`]:crate::SortedDisjoint.html
 /// [`union`]: crate::MultiwaySortedDisjoint::union
 /// [`intersection`]: crate::MultiwaySortedDisjoint::intersection
 /// [`symmetric_difference`]: crate::MultiwaySortedDisjoint::symmetric_difference
@@ -211,7 +211,7 @@ where
     /// For input iterators of different types, use the [`union_map_dyn!`] macro.
     ///
     /// [`union_map_dyn!`]: crate::union_map_dyn
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
     ///
     /// # Performance
     ///
@@ -242,7 +242,7 @@ where
     /// For input iterators of different types, use the [`intersection_map_dyn!`] macro.
     ///
     /// [`intersection_map_dyn!`]: crate::intersection_map_dyn
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjoint`]:crate::SortedDisjoint.html
     ///
     /// # Performance
     ///
