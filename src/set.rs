@@ -134,7 +134,7 @@ where
 /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
 /// [2]: struct.RangeSetBlaze.html#impl-FromIterator<RangeInclusive<T>>-for-RangeSetBlaze<T>
 /// [3]: RangeSetBlaze::from_sorted_disjoint
-/// [SortedDisjoint]: crate::SortedDisjoint.html
+/// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
 /// [5]: RangeSetBlaze::from
 /// [6]: RangeSetBlaze::from_slice()
 ///
@@ -236,7 +236,7 @@ where
 /// [`insert`]: RangeSetBlaze::insert
 /// [`pop_first`]: RangeSetBlaze::pop_first
 /// [`split_off`]: RangeSetBlaze::split_off
-/// [SortedDisjoint]: crate::SortedDisjoint.html
+/// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
 ///
 ///
 /// ## Set Operation Performance

@@ -110,7 +110,7 @@ macro_rules! intersection_map_dyn {
 /// creating a new [`SortedDisjointMap`] iterator.
 /// The input iterators need not to be of the same type.
 ///
-/// [`SortedDisjointMap`]:crate::SortedDisjoint.html
+/// [`SortedDisjointMap`]:crate::SortedDisjoint.html#table-of-contents
 ///
 /// For input iterators of the same type, [`union`] may be slightly faster.
 ///
