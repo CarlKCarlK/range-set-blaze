@@ -1,4 +1,3 @@
-#![allow(missing_docs)]
 use crate::{
     map::ValueRef,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
@@ -27,19 +26,11 @@ pub struct RangeValuesIter<'a, T: Integer, V: EqClone> {
     iter: btree_map::Iter<'a, T, EndValue<T, V>>,
 }
 
-// cmk small 'new's should be inline everywhere
 impl<'a, T: Integer, V: EqClone> RangeValuesIter<'a, T, V> {
+    /// cmk doc
     #[inline]
     pub fn new(map: &'a btree_map::BTreeMap<T, EndValue<T, V>>) -> Self {
         Self { iter: map.iter() }
-    }
-}
-
-// cmk00 what is this for?
-impl<T: Integer, V: EqClone> AsRef<Self> for RangeValuesIter<'_, T, V> {
-    fn as_ref(&self) -> &Self {
-        // Self is RangeValuesIter<'a>, the type for which we impl AsRef
-        self
     }
 }
 
@@ -98,6 +89,7 @@ pub struct IntoRangeValuesIter<T: Integer, V: EqClone> {
 }
 
 impl<T: Integer, V: EqClone> IntoRangeValuesIter<T, V> {
+    /// cmk doc
     #[inline]
     pub fn new(map: btree_map::BTreeMap<T, EndValue<T, V>>) -> Self {
         Self {
@@ -158,16 +150,9 @@ pub struct MapRangesIter<'a, T: Integer, V: EqClone> {
 }
 
 impl<'a, T: Integer, V: EqClone> MapRangesIter<'a, T, V> {
+    /// cmk doc
     pub const fn new(iter: btree_map::Iter<'a, T, EndValue<T, V>>) -> Self {
         MapRangesIter { iter, gather: None }
-    }
-}
-
-// cmk00 what is this for?
-impl<T: Integer, V: EqClone> AsRef<Self> for MapRangesIter<'_, T, V> {
-    fn as_ref(&self) -> &Self {
-        // Self is MapRangesIter<'a>, the type for which we impl AsRef
-        self
     }
 }
 
@@ -231,6 +216,7 @@ pub struct MapIntoRangesIter<T: Integer, V: EqClone> {
 }
 
 impl<T: Integer, V: EqClone> MapIntoRangesIter<T, V> {
+    /// cmk doc
     pub const fn new(iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
         Self { iter, gather: None }
     }

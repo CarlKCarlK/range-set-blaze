@@ -16,13 +16,6 @@ pub struct RangesIter<'a, T: Integer> {
     pub(crate) iter: btree_map::Iter<'a, T, T>,
 }
 
-impl<T: Integer> AsRef<Self> for RangesIter<'_, T> {
-    fn as_ref(&self) -> &Self {
-        // Self is RangesIter<'a>, the type for which we impl AsRef
-        self
-    }
-}
-
 impl<T: Integer> ExactSizeIterator for RangesIter<'_, T> {
     #[must_use]
     fn len(&self) -> usize {

@@ -1584,9 +1584,6 @@ fn sorted_disjoint_constructors() {
 
     // tee of a SortedDisjoint iterator
     let _a = CheckSortedDisjoint::new([1..=3, 100..=100]);
-    // cmk00 let (a, b) = a.tee();
-    // cmk00 assert!(a.into_string() == "1..=3, 100..=100");
-    // cmk00 assert!(b.into_string() == "1..=3, 100..=100");
 
     // DynamicSortedDisjoint of a SortedDisjoint iterator
     let a = CheckSortedDisjoint::new([1..=3, 100..=100]);
@@ -2206,18 +2203,6 @@ fn multiway4() {
 
 // cmk00 move these tests to tests.rs
 
-// pub fn values_to_sorted_disjoint<T, I>(iter: I) -> SortedDisjointToUnitMap<T, I>
-// where
-//     T: Integer,
-//     I: Iterator<Item = T>, // cmk00 into_iter??? cmk00
-// {
-//     let iter = iter.map(|x| (x..=x, &()));
-//     let iter = UnsortedDisjointMap::new(iter);
-//     let sorted_disjoint_map = UnionIterMap::new(iter);
-//     let sorted_disjoint = UnitMapToSortedDisjoint::new(sorted_disjoint_map);
-//     sorted_disjoint
-// }
-
 // Test every function in the library that does a union like thing.
 
 #[test]
@@ -2423,7 +2408,7 @@ fn sorted_disjoint_ops() {
 }
 
 // cmk00 get this looking better 	`cargo doc --no-deps --all-features --open` esp NotIter etc
-// cmk00 get full coverage
+// cmk000 get full coverage
 // cmk00 get 'set' doc page looking good
 // cmk00 get 'map' doc page looking good
 

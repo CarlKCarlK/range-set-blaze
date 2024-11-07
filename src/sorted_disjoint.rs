@@ -599,7 +599,6 @@ where
     // Default is an empty iterator.
     fn default() -> Self {
         Self::new([])
-        // cmk00 Self::new(I::default())
     }
 }
 

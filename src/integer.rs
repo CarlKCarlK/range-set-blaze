@@ -10,52 +10,97 @@ use num_traits::ops::overflowing::OverflowingSub;
 #[cfg(feature = "from_slice")]
 const LANES: usize = 16;
 
-/// Elements of [`RangeSetBlaze`] and the keys of [`RangeMapBlaze`], specifically `u8` to `u128` (including `usize`), `i8` to `i128`
-/// (including `isize`), `char`, `Ipv4Addr`, and `Ipv6Addr`.
+/// Represents elements that can be used within [`RangeSetBlaze`] and as keys in [`RangeMapBlaze`].
+///
+/// This includes integer types from `u8` to `u128` (including `usize`), `i8` to `i128` (including `isize`),
+/// as well as `char`, `Ipv4Addr`, and `Ipv6Addr`.
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`RangeMapBlaze`]: crate::RangeMapBlaze
 pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Sync {
-    /// cmk doc
+    /// Attempts to add one to the current value, returning `None` if the operation would overflow.
     fn checked_add_one(self) -> Option<Self>;
-    /// cmk doc
+
+    /// Adds one to the current value, panicking in debug mode if the operation overflows.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::Integer;
+    ///
+    /// assert_eq!(5u8.add_one(), 6);
+    /// ```
     #[must_use]
     fn add_one(self) -> Self;
-    /// cmk doc
+
+    /// Subtracts one from the current value, panicking in debug mode if the operation underflows.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::Integer;
+    ///
+    /// assert_eq!(5u8.sub_one(), 4);
+    /// ```
     #[must_use]
     fn sub_one(self) -> Self;
-    /// cmk doc
+
+    /// Subtracts one from the current value and assigns it back to `self`.
     fn assign_sub_one(&mut self);
 
-    /// cmk doc
+    /// Returns an exhausted range, which is a range that starts from the maximum value and ends at the minimum value.
+    /// This results in an empty range.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::Integer;
+    ///
+    /// let range = u8::exhausted_range();
+    /// assert!(range.is_empty());
+    /// ```
     #[must_use]
     fn exhausted_range() -> RangeInclusive<Self> {
         Self::max_value()..=Self::min_value()
     }
 
-    /// cmk doc
+    /// Advances the iterator for the given range by one step, returning the next value or `None` if the range is exhausted.
+    ///
+    /// This method needs to be defined on each type of interest because the `core::Step` trait is not stable yet.
     fn range_next(range: &mut RangeInclusive<Self>) -> Option<Self>;
 
-    /// cmk doc
+    /// Advances the iterator for the given range in reverse by one step, returning the previous value or `None` if the range is exhausted.
+    ///
+    /// This method needs to be defined on each type of interest because the `core::Step` trait is not stable yet.
     fn range_next_back(range: &mut RangeInclusive<Self>) -> Option<Self>;
 
-    /// cmk doc
+    /// Returns the minimum value that can be represented by the type.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::Integer;
+    ///
+    /// assert_eq!(u8::min_value(), 0);
+    /// ```
     #[must_use]
     fn min_value() -> Self;
-    /// cmk doc
+
+    /// Returns the maximum value that can be represented by the type.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::Integer;
+    ///
+    /// assert_eq!(u8::max_value(), 255);
+    /// ```
     #[must_use]
     fn max_value() -> Self;
 
     #[cfg(feature = "from_slice")]
-    /// A definition of [`RangeSetBlaze::from_slice()`] specific to this integer type.
+    /// Creates a [`RangeSetBlaze`] from a slice, specific to the integer type.
+    ///
+    /// [`RangeSetBlaze`]: crate::RangeSetBlaze
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self>;
 
-    /// The type of the length of a [`RangeSetBlaze`][crate::RangeSetBlaze]. For example, the length of a `RangeSetBlaze<u8>` is `u16`. Note
-    /// that it can't be `u8` because the length ranges from 0 to 256, which is one too large for `u8`.
-    ///
-    /// In general, `SafeLen` will be the smallest unsigned integer
-    /// type that is always large enough. However, for `u128` and `i128`, nothing build-in is large enough so
-    ///  `SafeLen` will be `UIntPlusOne<u128>`, a custom type that can represent any value from 0 to `u128::MAX + 1`.
+    /// The type representing the safe length for a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `u16` to handle ranges up to 256 elements.
+    /// For larger types like `u128`, this is represented by a custom type `UIntPlusOne<u128>`.
     ///
     /// # Examples
     /// ```
@@ -73,9 +118,9 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
         + AddAssign
         + SubAssign;
 
-    /// Returns the length of a range without any overflow.
+    /// Calculates the length of a range without overflow.
     ///
-    /// # Example
+    /// # Examples
     /// ```
     /// use range_set_blaze::Integer;
     ///
@@ -88,19 +133,19 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     /// Converts a `f64` to [`Integer::SafeLen`] using the formula `f as Self::SafeLen`. For large integer types, this will result in a loss of precision.
     fn f64_to_safe_len(f: f64) -> Self::SafeLen;
 
-    /// Converts [`Integer::SafeLen`] to `f64` using the formula `len as f64`. For large integer types, this will result in a loss of precision.
+    /// Converts [`Integer::SafeLen`] to `f64`, potentially losing precision for large values.
     fn safe_len_to_f64(len: Self::SafeLen) -> f64;
 
-    /// Computes `a + (b - 1) as Self`
+    /// Computes `self + (b - 1)` where `b` is of type [`Integer::SafeLen`].
     #[must_use]
     fn add_len_less_one(self, b: Self::SafeLen) -> Self;
 
-    /// Computes `a - (b - 1) as Self`
+    /// Computes `self - (b - 1)` where `b` is of type [`Integer::SafeLen`].
     #[must_use]
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self;
 }
 
-/// Define the Integer trait operations for a given integer type.
+/// Macro to implement the `Integer` trait for specific integer types.
 macro_rules! impl_integer_ops {
     ($type:ty, $type2:ty) => {
         #[inline]
@@ -291,22 +336,29 @@ impl Integer for i128 {
         }
     }
 
+    /// Adds `b - 1` to `self`.
+    ///
+    /// # Panics
+    /// It is an error to call this method with `b` equal to 0 or `UIntPlusOne::MaxPlusOne` or a value that is too large to add to `i128`.
+    /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
     #[allow(clippy::cast_possible_wrap)]
     fn add_len_less_one(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(b) = b else {
-            debug_assert!(false, "Too large to add to i128");
-            return Self::MAX;
+            panic!("Too large to add to i128");
         };
         debug_assert!(b > 0);
         self + (b - 1) as Self
     }
 
+    /// Subtract `b - 1` from `self`.
+    ///
+    /// # Panics
+    /// It is an error to call this method with `b` equal to 0 or `UIntPlusOne::MaxPlusOne` or a value that is too large to subtract from `i128`.
+    /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
     #[allow(clippy::cast_possible_wrap)]
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
-        // a - (b - 1) as Self
         let UIntPlusOne::UInt(b) = b else {
-            debug_assert!(false, "Too large to subtract from i128");
-            return Self::MIN;
+            panic!("Too large to subtract from i128");
         };
         debug_assert!(b > 0);
         self - (b - 1) as Self
@@ -385,25 +437,32 @@ impl Integer for u128 {
         }
     }
 
+    /// Adds `b - 1` to `self`.
+    ///
+    /// # Panics
+    /// It is an error to call this method with `b` equal to 0 or `UIntPlusOne::MaxPlusOne` or a value that is too large to add to `u128`.
+    /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
+    #[allow(clippy::cast_possible_wrap)]
     fn add_len_less_one(self, b: Self::SafeLen) -> Self {
-        // a + (b - 1) as Self
-        match b {
-            UIntPlusOne::UInt(b) => {
-                debug_assert!(b > 0);
-                self + (b - 1)
-            }
-            UIntPlusOne::MaxPlusOne => self + Self::MAX,
-        }
+        let UIntPlusOne::UInt(b) = b else {
+            panic!("Too large to add to u128");
+        };
+        debug_assert!(b > 0);
+        self + (b - 1) as Self
     }
+
+    /// Subtract `b - 1` from `self`.
+    ///
+    /// # Panics
+    /// It is an error to call this method with `b` equal to 0 or `UIntPlusOne::MaxPlusOne` or a value that is too large to subtract from `u128`.
+    /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
+    #[allow(clippy::cast_possible_wrap)]
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
-        // a - (b - 1) as Self
-        match b {
-            UIntPlusOne::UInt(v) => {
-                debug_assert!(v > 0);
-                self - (v - 1)
-            }
-            UIntPlusOne::MaxPlusOne => self - Self::MAX,
-        }
+        let UIntPlusOne::UInt(b) = b else {
+            panic!("Too large to subtract from u128");
+        };
+        debug_assert!(b > 0);
+        self - (b - 1) as Self
     }
 }
 
@@ -516,7 +575,7 @@ impl Integer for Ipv4Addr {
 
     #[allow(clippy::cast_possible_truncation)]
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
-        Self::from(u32::from(self) - (b + 1) as u32)
+        Self::from(u32::from(self) - (b - 1) as u32)
     }
 }
 
@@ -761,51 +820,173 @@ impl Integer for char {
 mod tests {
     use super::*;
     use crate::prelude::*;
+    use num_traits::{One, Zero};
+    use syntactic_for::syntactic_for;
+
+    use wasm_bindgen_test::*;
+    wasm_bindgen_test_configure!(run_in_browser);
 
     #[test]
-    fn test_unicode() {
-        // cmk define 'universe'
-        let universe = !RangeSetBlaze::<char>::default();
-        assert_eq!('\u{10FFFF}'.checked_add_one(), None);
-        // cmk test that add_one throws exception
-        // cmk test that sub_one throws exception
-        let mut prev = None;
-        let mut len = 0;
-        for c in '\u{0}'..='\u{10FFFF}' {
-            let len2b = char::safe_len(&(c..='\u{10FFFF}'));
-            assert_eq!(len2b, universe.len() - len);
-            let c2 = '\u{10FFFF}'.sub_len_less_one(len2b);
-            assert_eq!(c2, c);
-            let c3 = c2.add_len_less_one(len2b);
-            assert_eq!(c3, '\u{10FFFF}');
-            len += 1;
-            let len2 = char::safe_len(&('\u{0}'..=c));
-            assert_eq!(len, len2);
-            assert_eq!(len2, char::f64_to_safe_len(char::safe_len_to_f64(len2)));
-            let c2 = '\u{0}'.add_len_less_one(len);
-            assert_eq!(c2, c);
-            let c3 = c.sub_len_less_one(len);
+    #[wasm_bindgen_test]
+    fn coverage_integer() {
+        let mut a = 0u8..=0u8;
+        assert_eq!(u8::range_next_back(&mut a), Some(0));
+        assert_eq!(u8::range_next(&mut a), None);
 
-            assert_eq!(c3, '\u{0}');
-            if let Some(prev) = prev {
-                assert!(universe.contains(prev));
-                assert!(universe.contains(c));
-                assert!(universe.is_superset(&RangeSetBlaze::from_iter([prev..=c])));
+        let mut b = 0i128..=0i128;
+        assert_eq!(i128::range_next_back(&mut b), Some(0));
+        assert_eq!(i128::range_next(&mut b), None);
 
-                assert_eq!(prev.checked_add_one(), Some(c));
-                assert_eq!(prev.add_one(), c);
+        let mut b = 0i128;
+        i128::assign_sub_one(&mut b);
+        assert_eq!(b, -1);
 
-                assert_eq!(c.sub_one(), prev);
-                let mut c2 = c;
-                c2.assign_sub_one();
-                assert_eq!(c2, prev);
-            }
+        // convert  UIntPlusOne::MaxPlusOne to f64 and back
+        let f = i128::safe_len_to_f64(UIntPlusOne::MaxPlusOne);
+        let i = i128::f64_to_safe_len(f);
+        assert_eq!(i, UIntPlusOne::MaxPlusOne);
 
-            prev = Some(c);
-        }
-        assert_eq!(universe.len(), len);
-        // cmk need more methods for coverage
+        let mut b = 0u128..=0u128;
+        assert_eq!(u128::range_next_back(&mut b), Some(0));
+        assert_eq!(u128::range_next(&mut b), None);
+
+        let mut b = 1u128;
+        u128::assign_sub_one(&mut b);
+        assert_eq!(b, 0);
+
+        // convert  UIntPlusOne::MaxPlusOne to f64 and back
+        let f = u128::safe_len_to_f64(UIntPlusOne::MaxPlusOne);
+        let i = u128::f64_to_safe_len(f);
+        assert_eq!(i, UIntPlusOne::MaxPlusOne);
     }
 
-    // should have similar tests for ip4 and ip6
+    #[test]
+    #[wasm_bindgen_test]
+    #[should_panic(expected = "Too large to add to i128")]
+    #[cfg(debug_assertions)] // Only run this test in debug mode
+    fn test_add_len_less_one_with_max_plus_one() {
+        let value: i128 = 100;
+        let len = UIntPlusOne::MaxPlusOne;
+        let _ = value.add_len_less_one(len); // This should panic in debug mode
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    #[should_panic(expected = "Too large to subtract from i128")]
+    #[cfg(debug_assertions)] // Only run this test in debug mode
+    fn test_sub_len_less_one_with_max_plus_one() {
+        let value: i128 = 100;
+        let len = UIntPlusOne::MaxPlusOne;
+        let _ = value.sub_len_less_one(len); // This should panic in debug mode
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    #[allow(clippy::cognitive_complexity)]
+    fn test_ipv4() {
+        let a = Ipv4Addr::new(0, 0, 0, 0);
+        let b = a.checked_add_one();
+        assert_eq!(b, Some(Ipv4Addr::new(0, 0, 0, 1)));
+
+        // show it overflow
+        let a = Ipv4Addr::new(255, 255, 255, 255);
+        let b = a.checked_add_one();
+        assert_eq!(b, None);
+
+        let a = Ipv4Addr::new(0, 0, 0, 0);
+        let mut b = a.add_one();
+        assert_eq!(b, Ipv4Addr::new(0, 0, 0, 1));
+
+        let c = b.sub_one();
+        assert_eq!(c, a);
+
+        b.assign_sub_one();
+        assert_eq!(b, a);
+
+        let mut a = Ipv4Addr::new(0, 0, 0, 0)..=Ipv4Addr::new(0, 0, 0, 0);
+        let b = Ipv4Addr::range_next(&mut a);
+        assert_eq!(b, Some(Ipv4Addr::new(0, 0, 0, 0)));
+        let b = Ipv4Addr::range_next(&mut a);
+        assert_eq!(b, None);
+
+        let mut a = Ipv4Addr::new(0, 0, 0, 0)..=Ipv4Addr::new(255, 255, 255, 255);
+        let b = Ipv4Addr::range_next_back(&mut a);
+        assert_eq!(b, Some(Ipv4Addr::new(255, 255, 255, 255)));
+
+        assert_eq!(Ipv4Addr::min_value(), Ipv4Addr::new(0, 0, 0, 0));
+
+        let universe = Ipv4Addr::min_value()..=Ipv4Addr::max_value();
+        let len = Ipv4Addr::safe_len(&universe);
+        assert_eq!(len, 4_294_967_296);
+
+        let len_via_f64 = Ipv4Addr::f64_to_safe_len(Ipv4Addr::safe_len_to_f64(len));
+        assert_eq!(len, len_via_f64);
+
+        let b = Ipv4Addr::new(0, 0, 0, 0).add_len_less_one(len);
+        assert_eq!(b, Ipv4Addr::new(255, 255, 255, 255));
+
+        let c = b.sub_len_less_one(len);
+        assert_eq!(c, Ipv4Addr::new(0, 0, 0, 0));
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    #[allow(clippy::cognitive_complexity)]
+    fn test_char() {
+        // This loops over 1 million characters, so it's a bit slow cmk is that OK?
+        // Define the universe as the complement of an empty RangeSetBlaze
+        let universe = !RangeSetBlaze::<char>::default();
+
+        // Check add_one and sub_one behavior
+        let max_value = <char as Integer>::max_value();
+        assert_eq!(max_value.checked_add_one(), None);
+
+        let mut prev = None;
+        let mut len = <char as Integer>::SafeLen::zero();
+        for item in <char as Integer>::min_value()..=max_value {
+            let len2b = <char as Integer>::safe_len(&(item..=max_value));
+            let mut expected = universe.len();
+            expected -= len;
+            assert_eq!(len2b, expected);
+
+            let item2 = max_value.sub_len_less_one(len2b);
+            assert_eq!(item2, item);
+
+            let item3 = item2.add_len_less_one(len2b);
+            assert_eq!(item3, max_value);
+
+            len += <char as Integer>::SafeLen::one();
+            let len2 = <char as Integer>::safe_len(&(<char as Integer>::min_value()..=item));
+            assert_eq!(len, len2);
+            assert_eq!(
+                len2,
+                <char as Integer>::f64_to_safe_len(<char as Integer>::safe_len_to_f64(len2))
+            );
+
+            let item2 = <char as Integer>::min_value().add_len_less_one(len);
+            assert_eq!(item2, item);
+
+            let item3 = item.sub_len_less_one(len);
+            assert_eq!(item3, <char as Integer>::min_value());
+
+            if let Some(prev) = prev {
+                assert!(universe.contains(prev));
+                assert!(universe.contains(item));
+                assert!(universe.is_superset(&RangeSetBlaze::from_iter([prev..=item])));
+
+                assert_eq!(prev.checked_add_one(), Some(item));
+                assert_eq!(prev.add_one(), item);
+
+                assert_eq!(item.sub_one(), prev);
+                let mut item2 = item;
+                item2.assign_sub_one();
+                assert_eq!(item2, prev);
+            }
+
+            prev = Some(item);
+        }
+        assert_eq!(universe.len(), len);
+
+        // Additional checks can be added here if needed for coverage
+    }
 }

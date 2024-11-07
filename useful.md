@@ -1,5 +1,19 @@
 # Useful commands for this project
 
+## Testing
+
+```cmd
+cargo test --all-features
+cargo testnc map
+cargo testnc --test test/map_test
+```
+
+## Coverage
+
+```cmd
+cargo llvm-cov --open --all-features
+```
+
 ## Wasm
 
 ```cmd
@@ -25,13 +39,6 @@ bench every_op_blaze
 
 @'rem cargo install cargo-criterion-means 
 cargo criterion-means > o:\Projects\Science\rangemapblaze\unitvalue\results.2.csv
-```
-
-## Testing
-
-```cmd
-cargo testnc map
-cargo testnc --test test/map_test
 ```
 
 ## Embedded

@@ -459,11 +459,8 @@ pub fn convert_challenge() {
         (5..=100, &"a")
     ])));
 
-    // cmk00 should "to_string" be "into_string" ???
-
     // * from (priority) sorted_starts
     let a = [(1..=4, &"a"), (5..=100, &"a"), (5..=5, &"b")].into_iter();
-    // cmk00 should we reverse the sense of priority_number so lower is better?
     let a = a
         .enumerate()
         .map(|(i, range_value)| Priority::new(range_value, i));
@@ -507,11 +504,8 @@ pub fn convert_challenge() {
     let a = CheckSortedDisjointMap::new(a);
     assert!(a.equal(CheckSortedDisjointMap::new([(1..=1, &"a"), (5..=5, &"a")])));
 
-    // cmk00 should "to_string" be "into_string" ???
-
     // * from (priority) sorted_starts
     let a = [(1, &"a"), (5, &"a"), (5, &"b")].into_iter();
-    // cmk00 should we reverse the sense of priority_number so lower is better?
     let a = a
         .enumerate()
         .map(|(i, (k, v))| Priority::new((k..=k, v), i));
@@ -552,11 +546,8 @@ pub fn convert_challenge() {
     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
     assert!(a.equal(CheckSortedDisjoint::new([1..=2, 5..=100])));
 
-    // cmk00 should "to_string" be "into_string" ???
-
     // * from (priority) sorted_starts
     let a = [1..=4, 5..=100, 5..=5].into_iter();
-    // cmk00 should we reverse the sense of priority_number so lower is better?
     let a = AssumeSortedStarts::new(a);
     let a = UnionIter::new(a);
     assert!(a.equal(CheckSortedDisjoint::new([1..=100])));
