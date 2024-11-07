@@ -171,6 +171,7 @@ where
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
+    #[inline]
     pub fn new2(left: L, right: R) -> Self {
         let iter = MergeMap::new(left, right);
         Self::new(iter)
@@ -186,6 +187,7 @@ where
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
+    #[inline]
     pub fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,
@@ -203,6 +205,7 @@ where
 {
     /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators.
     /// See [`SymDiffIterMap`] for more details and examples.
+    #[inline]
     pub fn new(mut iter: I) -> Self {
         let item = iter.next();
         Self {

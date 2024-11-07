@@ -30,6 +30,7 @@ where
     VR: ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>, // Any iterator is fine
 {
+    #[inline]
     pub fn new(into_iter: I) -> Self {
         Self {
             iter: into_iter,

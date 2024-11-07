@@ -1147,6 +1147,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// let mut set: RangeSetBlaze<i32> = RangeSetBlaze::new();
     /// ```
     #[must_use]
+    #[inline]
     pub fn new() -> Self {
         Self {
             btree_map: BTreeMap::new(),

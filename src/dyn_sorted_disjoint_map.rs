@@ -46,6 +46,7 @@ where
     /// Create a [`DynSortedDisjointMap`] from any [`SortedDisjointMap`] iterator. See [`DynSortedDisjointMap`] for an example.
     ///
     /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
+    #[inline]
     pub fn new<I>(iter: I) -> Self
     where
         I: SortedDisjointMap<T, VR> + 'a,
@@ -140,7 +141,6 @@ macro_rules! union_map_dyn {
 }
 
 /// cmk doc
-// cmk00 test
 /// ```
 /// use range_set_blaze::prelude::*;
 ///

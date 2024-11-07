@@ -24,8 +24,15 @@ use crate::{
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::module_name_repetitions)]
 pub struct RangeValuesIter<'a, T: Integer, V: EqClone> {
-    // cmk00 define a new
-    pub(crate) iter: btree_map::Iter<'a, T, EndValue<T, V>>,
+    iter: btree_map::Iter<'a, T, EndValue<T, V>>,
+}
+
+// cmk small 'new's should be inline everywhere
+impl<'a, T: Integer, V: EqClone> RangeValuesIter<'a, T, V> {
+    #[inline]
+    pub fn new(map: &'a btree_map::BTreeMap<T, EndValue<T, V>>) -> Self {
+        Self { iter: map.iter() }
+    }
 }
 
 // cmk00 what is this for?
@@ -87,8 +94,16 @@ where
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
 pub struct IntoRangeValuesIter<T: Integer, V: EqClone> {
-    // cmk00 define a new
-    pub(crate) iter: btree_map::IntoIter<T, EndValue<T, V>>,
+    iter: btree_map::IntoIter<T, EndValue<T, V>>,
+}
+
+impl<T: Integer, V: EqClone> IntoRangeValuesIter<T, V> {
+    #[inline]
+    pub fn new(map: btree_map::BTreeMap<T, EndValue<T, V>>) -> Self {
+        Self {
+            iter: map.into_iter(),
+        }
+    }
 }
 
 impl<T: Integer, V: EqClone> ExactSizeIterator for IntoRangeValuesIter<T, V> {

@@ -34,6 +34,7 @@ impl<'a, T: Integer> DynSortedDisjoint<'a, T> {
     /// Create a [`DynSortedDisjoint`] from any [`SortedDisjoint`] iterator. See [`DynSortedDisjoint`] for an example.
     ///
     /// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
+    #[inline]
     pub fn new<I>(iter: I) -> Self
     where
         I: SortedDisjoint<T> + 'a,

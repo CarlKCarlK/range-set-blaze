@@ -153,6 +153,7 @@ where
 
     /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators.
     /// See [`SymDiffIter`] for more details and examples.
+    #[inline]
     pub fn new(iter: I) -> Self {
         Self {
             iter,
@@ -174,6 +175,7 @@ where
     /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`SymDiffIter`] for more details and examples.
     ///
     /// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
+    #[inline]
     pub fn new2(left: L, right: R) -> Self {
         let iter = Merge::new(left, right);
         Self::new(iter)
@@ -188,6 +190,7 @@ where
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`SymDiffIter`] for more details and examples.
+    #[inline]
     pub fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,

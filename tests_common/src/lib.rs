@@ -141,6 +141,7 @@ pub struct MemorylessIter<'a, T: Integer + SampleUniform> {
 }
 
 impl<'a, T: Integer + SampleUniform> MemorylessIter<'a, T> {
+    #[inline]
     pub fn new(
         rng: &'a mut StdRng,
         range_len: usize,

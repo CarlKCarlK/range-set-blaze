@@ -1273,6 +1273,7 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     /// map.insert(1, "a");
     /// assert_eq!(map[1], "a");
     /// ```
+    #[inline]
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -1380,9 +1381,7 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     /// assert_eq!(range_values.next(), None);
     /// ```
     pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
-        RangeValuesIter {
-            iter: self.btree_map.iter(),
-        }
+        RangeValuesIter::new(&self.btree_map)
     }
 
     /// An iterator that visits the ranges in the [`RangeMapBlaze`],
@@ -1421,9 +1420,7 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     /// assert_eq!(range_values.next(), None);
     /// ```
     pub fn into_range_values(self) -> IntoRangeValuesIter<T, V> {
-        IntoRangeValuesIter {
-            iter: self.btree_map.into_iter(),
-        }
+        IntoRangeValuesIter::new(self.btree_map)
     }
 
     /// An iterator that visits the ranges in the [`RangeMapBlaze`],

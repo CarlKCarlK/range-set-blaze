@@ -83,6 +83,7 @@ where
     /// Creates a new [`crate::sym_diff_iter::SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`crate::sym_diff_iter::SymDiffIter`] for more details and examples.
     ///
     /// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
+    #[inline]
     pub fn new2(left: L, right: R) -> Self {
         let iter: Merge<T, L, R> = Merge::new(left, right);
         Self::new(iter)
@@ -99,6 +100,7 @@ where
     /// Creates a new [`crate::sym_diff_iter::SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`crate::sym_diff_iter::SymDiffIter`] for more details and examples.
     ///
     /// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
+    #[inline]
     pub fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,

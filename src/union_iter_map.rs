@@ -150,6 +150,7 @@ where
     ///
     /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
     /// ```
+    #[inline]
     pub fn new(mut iter: I) -> Self {
         let item = iter.next();
         Self {
@@ -182,6 +183,7 @@ where
     ///
     /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"#);
     /// ```
+    #[inline]
     pub fn new2(left: L, right: R) -> Self {
         let iter = MergeMap::new(left, right);
         Self::new(iter)
@@ -207,6 +209,7 @@ where
     ///
     /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
     /// ```
+    #[inline]
     pub fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,

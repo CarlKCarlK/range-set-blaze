@@ -23,6 +23,7 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>>, // Any iterator is fine
 {
+    #[inline]
     pub fn new(iter: I) -> Self {
         Self {
             iter,
@@ -104,6 +105,7 @@ where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint<T>,
 {
+    #[inline]
     pub fn new(iter: I) -> Self {
         Self {
             iter,
@@ -176,6 +178,7 @@ where
     I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
 {
     /// Construct [`AssumeSortedStarts`] from a range iterator.
+    #[inline]
     pub fn new<J: IntoIterator<IntoIter = I>>(iter: J) -> Self {
         Self {
             iter: iter.into_iter(),

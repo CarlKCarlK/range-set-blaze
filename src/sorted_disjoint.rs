@@ -582,6 +582,7 @@ where
     I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
 {
     /// Creates a new [`CheckSortedDisjoint`] from an iterator of ranges. See [`CheckSortedDisjoint`] for details and examples.
+    #[inline]
     pub fn new<J: IntoIterator<IntoIter = I>>(iter: J) -> Self {
         Self {
             iter: iter.into_iter(),

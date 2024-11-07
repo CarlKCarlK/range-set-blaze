@@ -565,7 +565,9 @@ where
 {
     // Does CheckSortedDisjointMap and CheckSortedDisjoint need both from and public 'new'?
     /// cmk doc
-    pub fn new<J>(iter: J) -> Self
+    #[inline]
+    #[must_use]
+pub fn new<J>(iter: J) -> Self
     where
         J: IntoIterator<Item = (RangeInclusive<T>, VR), IntoIter = I>,
     {
