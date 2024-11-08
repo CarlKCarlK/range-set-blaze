@@ -4,6 +4,7 @@ use crate::{from_slice::FromSliceIter, RangeSetBlaze};
 use core::hash::Hash;
 use core::net::{Ipv4Addr, Ipv6Addr};
 use core::ops::{AddAssign, SubAssign};
+use core::panic;
 use core::{fmt, ops::RangeInclusive};
 use num_traits::ops::overflowing::OverflowingSub;
 
@@ -339,11 +340,14 @@ impl Integer for i128 {
     /// Adds `b - 1` to `self`.
     ///
     /// # Panics
-    /// It is an error to call this method with `b` equal to 0 or `UIntPlusOne::MaxPlusOne` or a value that is too large to add to `i128`.
+    /// It is an error to call this method with `b` equal to 0 or a value that is too large to add to `i128`.
     /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
     #[allow(clippy::cast_possible_wrap)]
     fn add_len_less_one(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(b) = b else {
+            if self == Self::MIN {
+                return Self::MAX;
+            }
             panic!("Too large to add to i128");
         };
         debug_assert!(b > 0);
@@ -353,11 +357,14 @@ impl Integer for i128 {
     /// Subtract `b - 1` from `self`.
     ///
     /// # Panics
-    /// It is an error to call this method with `b` equal to 0 or `UIntPlusOne::MaxPlusOne` or a value that is too large to subtract from `i128`.
+    /// It is an error to call this method with `b` equal to 0 or a value that is too large to subtract from `i128`.
     /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
     #[allow(clippy::cast_possible_wrap)]
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(b) = b else {
+            if self == Self::MAX {
+                return Self::MIN;
+            }
             panic!("Too large to subtract from i128");
         };
         debug_assert!(b > 0);
@@ -440,11 +447,14 @@ impl Integer for u128 {
     /// Adds `b - 1` to `self`.
     ///
     /// # Panics
-    /// It is an error to call this method with `b` equal to 0 or `UIntPlusOne::MaxPlusOne` or a value that is too large to add to `u128`.
+    /// It is an error to call this method with `b` equal to 0 or a value that is too large to add to `u128`.
     /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
     #[allow(clippy::cast_possible_wrap)]
     fn add_len_less_one(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(b) = b else {
+            if self == Self::MIN {
+                return Self::MAX;
+            }
             panic!("Too large to add to u128");
         };
         debug_assert!(b > 0);
@@ -454,11 +464,14 @@ impl Integer for u128 {
     /// Subtract `b - 1` from `self`.
     ///
     /// # Panics
-    /// It is an error to call this method with `b` equal to 0 or `UIntPlusOne::MaxPlusOne` or a value that is too large to subtract from `u128`.
+    /// It is an error to call this method with `b` equal to 0 or a value that is too large to subtract from `u128`.
     /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
     #[allow(clippy::cast_possible_wrap)]
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(b) = b else {
+            if self == Self::MAX {
+                return Self::MIN;
+            }
             panic!("Too large to subtract from u128");
         };
         debug_assert!(b > 0);
@@ -657,22 +670,37 @@ impl Integer for Ipv6Addr {
             UIntPlusOne::UInt(f as u128)
         }
     }
+
+    /// Adds `b - 1` to `self`.
+    ///
+    /// # Panics
+    /// It is an error to call this method with `b` equal to 0 or a value that is too large to add to `Ipv6Addr`.
+    /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
     fn add_len_less_one(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(b) = b else {
-            debug_assert!(false, "Too large to add to Ipv6Addr");
-            return Self::from(u128::MAX);
+            if self == Self::min_value() {
+                return Self::max_value();
+            }
+            panic!("Too large to add to Ipv6Addr");
         };
         debug_assert!(b > 0);
         Self::from(u128::from(self) + (b - 1))
     }
+
+    /// Subtract `b - 1` from `self`.
+    ///
+    /// # Panics
+    /// It is an error to call this method with `b` equal to 0 or a value that is too large to subtract from `Ipv6Addr`.
+    /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
-        match b {
-            UIntPlusOne::UInt(v) => {
-                debug_assert!(v > 0);
-                Self::from(u128::from(self) - (v - 1))
+        let UIntPlusOne::UInt(b) = b else {
+            if self == Self::max_value() {
+                return Self::min_value();
             }
-            UIntPlusOne::MaxPlusOne => Self::from(u128::from(self) - u128::MAX),
-        }
+            panic!("Too large to subtract from Ipv6Addr");
+        };
+        debug_assert!(b > 0);
+        Self::from(u128::from(self) - (b - 1))
     }
 }
 
@@ -701,12 +729,9 @@ impl Integer for char {
     fn add_one(self) -> Self {
         self.checked_add_one().map_or_else(
             || {
-                #[cfg(debug_assertions)]
-                panic!("char overflow");
-                #[cfg(not(debug_assertions))]
-                Self::max_value()
+                panic!("char overflow"); // Panics in both debug and release modes
             },
-            |c| c,
+            |next| next,
         )
     }
 
@@ -774,45 +799,36 @@ impl Integer for char {
         f as Self::SafeLen
     }
 
-    #[allow(clippy::cast_possible_truncation)]
     fn add_len_less_one(self, b: Self::SafeLen) -> Self {
-        let a = u32::from(self);
-        debug_assert!(b > 0);
-        let mut num = a + (b - 1);
-        // skip over the surrogate range
-        if a < SURROGATE_START && SURROGATE_START <= num {
-            num += SURROGATE_END - SURROGATE_START + 1;
+        if let Some(b_less_one) = b.checked_sub(1) {
+            let a = u32::from(self);
+            if let Some(mut num) = a.checked_add(b_less_one) {
+                // skip over the surrogate range
+                if a < SURROGATE_START && SURROGATE_START <= num {
+                    num += SURROGATE_END - SURROGATE_START + 1;
+                }
+                if let Some(c) = Self::from_u32(num) {
+                    return c;
+                }
+            }
         }
-
-        Self::from_u32(num).map_or_else(
-            || {
-                #[cfg(debug_assertions)]
-                panic!("char overflow");
-                #[cfg(not(debug_assertions))]
-                Self::max_value()
-            },
-            |c| c,
-        )
+        panic!("char overflow");
     }
 
-    #[allow(clippy::cast_possible_truncation)]
     fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
-        let a = u32::from(self);
-        let mut num = a - (b - 1);
-        // skip over the surrogate range
-        if num <= SURROGATE_END && SURROGATE_END < a {
-            num -= SURROGATE_END - SURROGATE_START + 1;
+        if let Some(b_less_one) = b.checked_sub(1) {
+            let a = u32::from(self);
+            if let Some(mut num) = a.checked_sub(b_less_one) {
+                // Skip over the surrogate range
+                if num <= SURROGATE_END && SURROGATE_END < a {
+                    num -= SURROGATE_END - SURROGATE_START + 1;
+                }
+                if let Some(c) = Self::from_u32(num) {
+                    return c;
+                }
+            }
         }
-
-        Self::from_u32(num).map_or_else(
-            || {
-                #[cfg(debug_assertions)]
-                panic!("char underflow");
-                #[cfg(not(debug_assertions))]
-                Self::min_value()
-            },
-            |c| c,
-        )
+        panic!("char underflow");
     }
 }
 
@@ -882,51 +898,159 @@ mod tests {
 
     #[test]
     #[wasm_bindgen_test]
-    #[allow(clippy::cognitive_complexity)]
-    fn test_ipv4() {
-        let a = Ipv4Addr::new(0, 0, 0, 0);
-        let b = a.checked_add_one();
-        assert_eq!(b, Some(Ipv4Addr::new(0, 0, 0, 1)));
+    #[allow(clippy::cognitive_complexity, clippy::legacy_numeric_constants)]
+    fn test_ip4_and_ip6_etc() {
+        syntactic_for! { ty in [char, Ipv6Addr, u128, i128, Ipv4Addr] {
+            $(
+            // Test the minimum value for the type
+            let a = <$ty>::min_value();
+            let b = a.checked_add_one();
+            assert_eq!(b, Some(<$ty>::min_value().add_one()));
 
-        // show it overflow
-        let a = Ipv4Addr::new(255, 255, 255, 255);
-        let b = a.checked_add_one();
-        assert_eq!(b, None);
+            // Show overflow behavior
+            let a = <$ty>::max_value();
+            let b = a.checked_add_one();
+            assert_eq!(b, None);
 
-        let a = Ipv4Addr::new(0, 0, 0, 0);
-        let mut b = a.add_one();
-        assert_eq!(b, Ipv4Addr::new(0, 0, 0, 1));
+            let a = <$ty>::min_value();
+            let mut b = a.add_one();
+            assert_eq!(b, <$ty>::min_value().add_one());
 
-        let c = b.sub_one();
-        assert_eq!(c, a);
+            let c = b.sub_one();
+            assert_eq!(c, a);
 
-        b.assign_sub_one();
-        assert_eq!(b, a);
+            b.assign_sub_one();
+            assert_eq!(b, a);
 
-        let mut a = Ipv4Addr::new(0, 0, 0, 0)..=Ipv4Addr::new(0, 0, 0, 0);
-        let b = Ipv4Addr::range_next(&mut a);
-        assert_eq!(b, Some(Ipv4Addr::new(0, 0, 0, 0)));
-        let b = Ipv4Addr::range_next(&mut a);
-        assert_eq!(b, None);
+            let mut a = <$ty>::min_value()..=<$ty>::min_value();
+            let b = <$ty>::range_next(&mut a);
+            assert_eq!(b, Some(<$ty>::min_value()));
+            let b = <$ty>::range_next(&mut a);
+            assert_eq!(b, None);
 
-        let mut a = Ipv4Addr::new(0, 0, 0, 0)..=Ipv4Addr::new(255, 255, 255, 255);
-        let b = Ipv4Addr::range_next_back(&mut a);
-        assert_eq!(b, Some(Ipv4Addr::new(255, 255, 255, 255)));
+            let mut a = <$ty>::min_value()..=<$ty>::max_value();
+            let b = <$ty>::range_next_back(&mut a);
+            assert_eq!(b, Some(<$ty>::max_value()));
 
-        assert_eq!(Ipv4Addr::min_value(), Ipv4Addr::new(0, 0, 0, 0));
+            assert_eq!(<$ty>::min_value(), <$ty>::min_value());
 
-        let universe = Ipv4Addr::min_value()..=Ipv4Addr::max_value();
-        let len = Ipv4Addr::safe_len(&universe);
-        assert_eq!(len, 4_294_967_296);
+            let universe = <$ty>::min_value()..=<$ty>::max_value();
+            let len = <$ty>::safe_len(&universe);
+            assert_eq!(len, <$ty>::safe_len(&(<$ty>::min_value()..=<$ty>::max_value())));
 
-        let len_via_f64 = Ipv4Addr::f64_to_safe_len(Ipv4Addr::safe_len_to_f64(len));
-        assert_eq!(len, len_via_f64);
+            let len_via_f64 = <$ty>::f64_to_safe_len(<$ty>::safe_len_to_f64(len));
+            assert_eq!(len, len_via_f64);
 
-        let b = Ipv4Addr::new(0, 0, 0, 0).add_len_less_one(len);
-        assert_eq!(b, Ipv4Addr::new(255, 255, 255, 255));
+            let short = <$ty>::min_value()..=<$ty>::min_value();
+            let len = <$ty>::safe_len(&short);
+            let len_via_f64 = <$ty>::f64_to_safe_len(<$ty>::safe_len_to_f64(len));
+            assert_eq!(len, len_via_f64);
 
-        let c = b.sub_len_less_one(len);
-        assert_eq!(c, Ipv4Addr::new(0, 0, 0, 0));
+            let len = <$ty>::safe_len(&universe);
+            let b = <$ty>::min_value().add_len_less_one(len);
+            assert_eq!(b, <$ty>::max_value());
+
+            let c = b.sub_len_less_one(len);
+            assert_eq!(c, <$ty>::min_value());
+
+            let range = <$ty>::min_value()..=<$ty>::min_value().add_one();
+            let len2 = <$ty>::safe_len(&range);
+            let b = <$ty>::min_value().add_len_less_one(len2);
+            assert_eq!(b, <$ty>::min_value().add_one());
+
+            let b = <$ty>::max_value().sub_len_less_one(len2);
+            assert_eq!(b, <$ty>::max_value().sub_one());
+
+            #[cfg(feature = "from_slice")]
+            {
+                let range_set_blaze = <$ty>::from_slice(&[<$ty>::min_value()]);
+                assert_eq!(range_set_blaze, RangeSetBlaze::from_iter([<$ty>::min_value()]));
+            }
+            )*
+        }}
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    #[should_panic]
+    #[allow(clippy::legacy_numeric_constants)]
+    fn test_i128_overflow() {
+        let value: i128 = i128::max_value();
+        let _ = value.add_len_less_one(UIntPlusOne::MaxPlusOne);
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    #[should_panic]
+    #[allow(clippy::legacy_numeric_constants)]
+    fn test_i128_underflow() {
+        let value: i128 = i128::min_value();
+        let _ = value.sub_len_less_one(UIntPlusOne::MaxPlusOne);
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    #[should_panic]
+    #[allow(clippy::legacy_numeric_constants)]
+    fn test_u128_overflow() {
+        let value: u128 = u128::max_value();
+        let _ = value.add_len_less_one(UIntPlusOne::MaxPlusOne);
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    #[should_panic]
+    #[allow(clippy::legacy_numeric_constants)]
+    fn test_u128_underflow() {
+        let value: u128 = u128::min_value();
+        let _ = value.sub_len_less_one(UIntPlusOne::MaxPlusOne);
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    #[should_panic]
+    #[allow(clippy::legacy_numeric_constants)]
+    fn test_ipv6_overflow() {
+        let value: Ipv6Addr = Ipv6Addr::max_value();
+        let _ = value.add_len_less_one(UIntPlusOne::MaxPlusOne);
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    #[should_panic]
+    #[allow(clippy::legacy_numeric_constants)]
+    fn test_char0_overflow() {
+        let value: char = char::max_value();
+        let _ = value.add_one();
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    #[should_panic]
+    #[allow(clippy::legacy_numeric_constants)]
+    fn test_char1_overflow() {
+        let value: char = char::max_value();
+        let len2 = char::safe_len(&(char::min_value()..=char::min_value().add_one()));
+        let _ = value.add_len_less_one(len2);
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    #[should_panic]
+    #[allow(clippy::legacy_numeric_constants)]
+    fn test_char1_underflow() {
+        let value: char = char::min_value();
+        let len2 = char::safe_len(&(char::min_value()..=char::min_value().add_one()));
+        let _ = value.sub_len_less_one(len2);
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    #[should_panic]
+    #[allow(clippy::legacy_numeric_constants)]
+    fn test_ipv6_underflow() {
+        let value: Ipv6Addr = Ipv6Addr::min_value();
+        let _ = value.sub_len_less_one(UIntPlusOne::MaxPlusOne);
     }
 
     #[test]
