@@ -843,7 +843,7 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[test]
-    #[wasm_bindgen_test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn coverage_integer() {
         let mut a = 0u8..=0u8;
         assert_eq!(u8::range_next_back(&mut a), Some(0));
@@ -877,8 +877,8 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
-    #[should_panic(expected = "Too large to add to i128")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "1")]
     #[cfg(debug_assertions)] // Only run this test in debug mode
     fn test_add_len_less_one_with_max_plus_one() {
         let value: i128 = 100;
@@ -887,8 +887,8 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
-    #[should_panic(expected = "Too large to subtract from i128")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "2")]
     #[cfg(debug_assertions)] // Only run this test in debug mode
     fn test_sub_len_less_one_with_max_plus_one() {
         let value: i128 = 100;
@@ -897,7 +897,7 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[allow(clippy::cognitive_complexity, clippy::legacy_numeric_constants)]
     fn test_ip4_and_ip6_etc() {
         syntactic_for! { ty in [char, Ipv6Addr, u128, i128, Ipv4Addr] {
@@ -971,8 +971,8 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
-    #[should_panic]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "Too large to add to i128")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_i128_overflow() {
         let value: i128 = i128::max_value();
@@ -980,8 +980,8 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
-    #[should_panic]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "Too large to subtract from i128")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_i128_underflow() {
         let value: i128 = i128::min_value();
@@ -989,8 +989,8 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
-    #[should_panic]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "Too large to add to u128")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_u128_overflow() {
         let value: u128 = u128::max_value();
@@ -998,8 +998,8 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
-    #[should_panic]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "Too large to subtract from u128")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_u128_underflow() {
         let value: u128 = u128::min_value();
@@ -1007,8 +1007,8 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
-    #[should_panic]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "Too large to add to Ipv6Addr")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_ipv6_overflow() {
         let value: Ipv6Addr = Ipv6Addr::max_value();
@@ -1016,8 +1016,8 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
-    #[should_panic]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "char overflow")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_char0_overflow() {
         let value: char = char::max_value();
@@ -1025,8 +1025,8 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
-    #[should_panic]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "char overflow")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_char1_overflow() {
         let value: char = char::max_value();
@@ -1035,8 +1035,8 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
-    #[should_panic]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "char underflow")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_char1_underflow() {
         let value: char = char::min_value();
@@ -1045,16 +1045,15 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
-    #[should_panic]
-    #[allow(clippy::legacy_numeric_constants)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "Too large to subtract from Ipv6Addr")]
     fn test_ipv6_underflow() {
         let value: Ipv6Addr = Ipv6Addr::min_value();
         let _ = value.sub_len_less_one(UIntPlusOne::MaxPlusOne);
     }
 
     #[test]
-    #[wasm_bindgen_test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[allow(clippy::cognitive_complexity)]
     fn test_char() {
         // This loops over 1 million characters, so it's a bit slow cmk is that OK?

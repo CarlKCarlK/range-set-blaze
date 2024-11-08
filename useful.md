@@ -6,6 +6,8 @@
 cargo test --all-features
 cargo testnc map
 cargo testnc --test test/map_test
+cargo test --target wasm32-wasip1 --all-features
+cargo test --target wasm32-unknown-unknown
 ```
 
 ## Coverage

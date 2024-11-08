@@ -10,6 +10,7 @@ extern crate alloc;
 use alloc::collections::BTreeMap;
 use core::fmt;
 use core::ops::RangeInclusive;
+#[cfg(not(target_arch = "wasm32"))]
 use quickcheck_macros::quickcheck;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -958,7 +959,6 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
 #[allow(clippy::zero_repeat_side_effects)]
 fn map_empty_it() {
     use std::ops::BitOr;
-    use std::panic;
 
     let universe0 = RangeMapBlaze::from_iter([(0u8..=255, "Universe")]);
     let universe = universe0.range_values();
@@ -1022,6 +1022,7 @@ fn map_empty_it() {
     #[cfg(not(target_arch = "wasm32"))]
     {
         use core::panic::AssertUnwindSafe;
+        use std::panic;
 
         let c0 = !(a.range_values() & b.range_values());
         let c1 = ![a.range_values(), b.range_values()].intersection();
@@ -5381,6 +5382,7 @@ fn map_random_get_range_value() {
 // //     println!("{v:?}");
 // // }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn extend(mut a: BTreeMap<i8, u8>, b: Vec<(i8, u8)>) -> bool {
     let mut a_r: RangeMapBlaze<_, _> = a.clone().into_iter().collect();

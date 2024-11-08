@@ -198,13 +198,18 @@ where
 #[cfg(feature = "std")]
 #[cfg(test)]
 mod tests {
+    #[cfg(not(target_arch = "wasm32"))]
     use super::*;
+    #[cfg(not(target_arch = "wasm32"))]
     use std::panic;
+    #[cfg(not(target_arch = "wasm32"))]
     use std::panic::AssertUnwindSafe;
     use std::prelude::v1::*;
+    #[cfg(not(target_arch = "wasm32"))]
     use std::println;
 
     #[allow(clippy::cast_possible_truncation)]
+    #[cfg(not(target_arch = "wasm32"))]
     const fn u16_to_p1(v: u16) -> UIntPlusOne<u8> {
         if v == 256 {
             UIntPlusOne::MaxPlusOne

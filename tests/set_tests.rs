@@ -15,6 +15,7 @@ use core::mem::size_of;
 use core::ops::BitAndAssign;
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
+#[cfg(not(target_arch = "wasm32"))]
 use core::ops::Bound;
 use core::ops::RangeInclusive;
 #[cfg(target_os = "linux")]
@@ -22,6 +23,7 @@ use criterion::{BatchSize, BenchmarkId, Criterion};
 use itertools::Itertools;
 use num_traits::identities::One;
 use num_traits::identities::Zero;
+#[cfg(not(target_arch = "wasm32"))]
 use quickcheck_macros::quickcheck;
 use rand::rngs::StdRng;
 use rand::Rng;
@@ -39,9 +41,11 @@ use std::panic::AssertUnwindSafe;
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 use std::panic::{self};
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
+#[cfg(not(target_arch = "wasm32"))]
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
 
 #[test]
@@ -771,8 +775,8 @@ fn k_play(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
-#[wasm_bindgen_test]
 fn data_gen() {
     let range = -10_000_000i32..=10_000_000;
     let range_len = 1000;
@@ -822,8 +826,8 @@ fn data_gen() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
-#[wasm_bindgen_test]
 fn vary_coverage_goal() {
     let k = 2;
     let range_len = 1_000;
@@ -868,8 +872,8 @@ fn vary_coverage_goal() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
-#[wasm_bindgen_test]
 fn ingest_clumps_base() {
     let k = 1;
     let average_width_list = [2, 1, 3, 4, 5, 10, 100, 1000, 10_000, 100_000, 1_000_000];
@@ -1146,6 +1150,7 @@ fn sync_and_send() {
     assert_sync_and_send::<RangeSetBlaze<i32>>();
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn fraction<T: Integer>(range_int_set: &RangeSetBlaze<T>, range: &RangeInclusive<T>) -> f64 {
     T::safe_len_to_f64(range_int_set.len()) / T::safe_len_to_f64(T::safe_len(range))
 }
@@ -1740,6 +1745,7 @@ fn cmp_btree_set_int() {
     assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test] // wasm skips this Criterion related test
 fn run_rangemap_crate() {
     let mut rng = StdRng::seed_from_u64(0);
@@ -2264,8 +2270,8 @@ fn test_every_union() {
 }
 
 // cmk should wasm test this too?
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
-#[wasm_bindgen_test]
 fn test_coverage_0() {
     let a = BooleanVector(vec![true, true, false, false]);
     assert!(format!("{a:?}").starts_with("BooleanVector"));
@@ -2817,9 +2823,12 @@ fn sorted_disjoint_iterator_coverage_0() {
     assert!(b.is_superset(a));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 type Element = i64;
+#[cfg(not(target_arch = "wasm32"))]
 type Reference = std::collections::BTreeSet<Element>;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 #[allow(clippy::needless_pass_by_value)]
 fn disjoint(a: Reference, b: Reference) -> bool {
@@ -2828,6 +2837,7 @@ fn disjoint(a: Reference, b: Reference) -> bool {
     a.is_disjoint(&b) == a_r.is_disjoint(&b_r)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 #[allow(clippy::needless_pass_by_value)]
 fn subset(a: Reference, b: Reference) -> bool {
@@ -2836,6 +2846,7 @@ fn subset(a: Reference, b: Reference) -> bool {
     a.is_subset(&b) == a_r.is_subset(&b_r)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 #[allow(clippy::needless_pass_by_value)]
 fn superset(a: Reference, b: Reference) -> bool {
@@ -2845,6 +2856,7 @@ fn superset(a: Reference, b: Reference) -> bool {
 }
 
 /// just a helper to get good output when a check fails
+#[cfg(not(target_arch = "wasm32"))]
 #[allow(clippy::needless_pass_by_value)]
 fn binary_op<E: Debug, R: Eq + Debug>(a: E, b: E, expected: R, actual: R) -> bool {
     let res = expected == actual;
@@ -2856,6 +2868,7 @@ fn binary_op<E: Debug, R: Eq + Debug>(a: E, b: E, expected: R, actual: R) -> boo
 
 /// from: <https://github.com/rklaehn/sorted-iter>
 /// just a helper to get good output when a check fails
+#[cfg(not(target_arch = "wasm32"))]
 fn check_size_hint<E: Debug>(
     input: E,
     expected: usize,
@@ -2868,6 +2881,7 @@ fn check_size_hint<E: Debug>(
     res
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn intersection(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
@@ -2877,6 +2891,7 @@ fn intersection(a: Reference, b: Reference) -> bool {
     binary_op(a, b, expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn union(a: Reference, b: Reference) -> bool {
     let a_r = RangeSetBlaze::from_iter(&a);
@@ -2886,6 +2901,7 @@ fn union(a: Reference, b: Reference) -> bool {
     binary_op(a, b, expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 #[allow(clippy::needless_pass_by_value)]
 fn multi_union(inputs: Vec<Reference>) -> bool {
@@ -2900,6 +2916,7 @@ fn multi_union(inputs: Vec<Reference>) -> bool {
     res
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 #[allow(clippy::needless_pass_by_value)]
 fn difference(a: Reference, b: Reference) -> bool {
@@ -2910,6 +2927,7 @@ fn difference(a: Reference, b: Reference) -> bool {
     binary_op(a, b, expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 #[allow(clippy::needless_pass_by_value)]
 fn symmetric_difference(a: Reference, b: Reference) -> bool {
@@ -2920,6 +2938,7 @@ fn symmetric_difference(a: Reference, b: Reference) -> bool {
     binary_op(a, b, expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 #[allow(clippy::needless_pass_by_value)]
 fn multi_symmetric_difference(inputs: Vec<Reference>) -> bool {
@@ -2940,6 +2959,7 @@ fn multi_symmetric_difference(inputs: Vec<Reference>) -> bool {
     res
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn intersection_size_hint(a: Reference, b: Reference) -> bool {
     let expected = a.intersection(&b).count();
@@ -2949,6 +2969,7 @@ fn intersection_size_hint(a: Reference, b: Reference) -> bool {
     check_size_hint((a, b), expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn union_size_hint(a: Reference, b: Reference) -> bool {
     let expected = a.union(&b).count();
@@ -2958,6 +2979,7 @@ fn union_size_hint(a: Reference, b: Reference) -> bool {
     check_size_hint((a, b), expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn multi_union_size_hint(inputs: Vec<Reference>) -> bool {
     let expected: Reference = inputs.iter().flatten().copied().collect();
@@ -2970,6 +2992,7 @@ fn multi_union_size_hint(inputs: Vec<Reference>) -> bool {
     check_size_hint(inputs, expected.len(), actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn difference_size_hint(a: Reference, b: Reference) -> bool {
     let expected = a.difference(&b).count();
@@ -2979,6 +3002,7 @@ fn difference_size_hint(a: Reference, b: Reference) -> bool {
     check_size_hint((a, b), expected, actual)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn symmetric_difference_size_hint(a: Reference, b: Reference) -> bool {
     let expected = a.symmetric_difference(&b).count();

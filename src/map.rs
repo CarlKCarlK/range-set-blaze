@@ -1606,7 +1606,7 @@ where
     }
 }
 
-// Implementing `IntoIterator` for `&RangeMapBlaze<T, V>`
+// Implementing `IntoIterator` for `&RangeMapBlaze<T, V>` because BTreeMap does.
 impl<'a, T: Integer, V: EqClone> IntoIterator for &'a RangeMapBlaze<T, V> {
     type IntoIter = IterMap<T, &'a V, RangeValuesIter<'a, T, V>>;
     type Item = (T, &'a V);
@@ -2167,6 +2167,8 @@ impl<T: Integer, V: EqClone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::string::ToString;
+    use core::ops::Bound::Included;
     use std::println;
 
     use wasm_bindgen_test::*;
@@ -2286,5 +2288,70 @@ mod tests {
             b.extend(a0.clone());
             assert_eq!(b, c);
         }
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    fn test_arc_clone_ref() {
+        let a = Arc::new(1);
+        let b = Arc::clone_ref(&a);
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    fn test_len_slow() {
+        let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+        assert_eq!(a.len_slow(), a.len());
+        assert_eq!(a.len_slow(), 98u64);
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    fn test_range() {
+        let mut map = RangeMapBlaze::new();
+        map.insert(3, "a");
+        map.insert(5, "b");
+        map.insert(8, "c");
+        for (key, value) in map.range((Included(4), Included(8))) {
+            println!("{key}: {value}");
+        } // prints "5: b" and "8: c"
+        assert_eq!(Some((5, "b")), map.range(4..).next());
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    fn test_pop_first() {
+        let mut map: RangeMapBlaze<i128, &str> = RangeMapBlaze::new();
+        assert_eq!(None, map.pop_first());
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    fn test_range_values_len() {
+        // We put in four ranges, but they are not sorted & disjoint.
+        let map = RangeMapBlaze::from_iter([
+            (10..=20, "a"),
+            (15..=25, "b"),
+            (30..=40, "c"),
+            (28..=35, "c"),
+        ]);
+        // After RangeMapBlaze sorts & 'disjoint's them, we see three ranges.
+        assert_eq!(map.range_values_len(), 3);
+        assert_eq!(
+            map.to_string(),
+            r#"(10..=20, "a"), (21..=25, "b"), (28..=40, "c")"#
+        );
+    }
+
+    #[test]
+    #[wasm_bindgen_test]
+    fn test_into_iterator_for_ref_rangemapblaze() {
+        let map = RangeMapBlaze::from_iter([(1..=2, "a")]);
+        let mut iter = (&map).into_iter();
+
+        assert_eq!(iter.next(), Some((1, &"a")));
+        assert_eq!(iter.next(), Some((2, &"a")));
+        assert_eq!(iter.next(), None);
     }
 }
