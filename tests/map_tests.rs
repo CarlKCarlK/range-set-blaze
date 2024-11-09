@@ -294,7 +294,7 @@ fn map_add_in_order() {
 // cmk do these benchmark related
 
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn map_memoryless_data() {
 //     let len = 100_000_000;
 //     let coverage_goal = 0.75;
@@ -307,7 +307,7 @@ fn map_add_in_order() {
 //     );
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn map_memoryless_vec() {
 //     let len = 100_000_000;
 //     let coverage_goal = 0.75;
@@ -904,7 +904,7 @@ fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
 
 // cmk streaming xor not currently implemented
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn map_xor() -> Result<(), Box<dyn std::error::Error>> {
 //     // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
 //     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
@@ -1158,7 +1158,7 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // // #[test]
-// // #[wasm_bindgen_test]
+// //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_debug_k_play() {
 // //     let mut c = Criterion::default();
 // //     k_play(&mut c);
@@ -1198,7 +1198,7 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
 
 //
 // // #[test]
-// // #[wasm_bindgen_test]
+// //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_data_gen() {
 // //     let range = -10_000_000i32..=10_000_000;
 // //     let range_len = 1000;
@@ -1250,7 +1250,7 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
 
 //
 // // #[test]
-// // #[wasm_bindgen_test]
+// //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_vary_coverage_goal() {
 // //     let k = 2;
 // //     let range_len = 1_000;
@@ -1297,7 +1297,7 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
 
 //
 // // #[test]
-// // #[wasm_bindgen_test]
+// //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_ingest_clumps_base() {
 // //     let k = 1;
 // //     let average_width_list = [2, 1, 3, 4, 5, 10, 100, 1000, 10_000, 100_000, 1_000_000];
@@ -1597,7 +1597,7 @@ fn map_split_off() {
 }
 
 // // #[test]
-// // #[wasm_bindgen_test]
+// //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_retrain() {
 // //     let mut set = RangeMapBlaze::from_iter([1..=6]);
 // //     // Keep only the even numbers.
@@ -1607,7 +1607,7 @@ fn map_split_off() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_sync_and_send() {
 // //     fn map_assert_sync_and_send<S: Sync + Send>() {}
 // //     assert_sync_and_send::<RangeMapBlaze<(i32,&str)>>();
@@ -1620,7 +1620,7 @@ fn map_split_off() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_example_2() {
 // //     let line = "chr15   29370   37380   29370,32358,36715   30817,32561,37380";
 
@@ -1660,7 +1660,7 @@ fn map_split_off() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_trick_dyn() {
 // //     let bad = [1..=2, 0..=5];
 // //     // let u = union_map_dyn!(bad.iter().cloned());
@@ -1670,7 +1670,7 @@ fn map_split_off() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_multiway2() {
 // //     use range_map_blaze::MultiwaySortedDisjoint;
 
@@ -1687,7 +1687,7 @@ fn map_split_off() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_check_sorted_disjoint() {
 // //     use range_map_blaze::CheckSortedDisjoint;
 
@@ -1700,7 +1700,7 @@ fn map_split_off() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_dyn_sorted_disjoint_example() {
 // //     let a = RangeMapBlaze::from_iter([1u8..=6, 8..=9, 11..=15]);
 // //     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
@@ -1716,7 +1716,7 @@ fn map_split_off() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_not_iter_example() {
 // //     let a = CheckSortedDisjoint::new([1u8..=2, 5..=100]);
 // //     let b = NotIter::new(a);
@@ -1729,7 +1729,7 @@ fn map_split_off() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_len_demo() {
 // //     let len: <u8 as Integer>::SafeLen = RangeMapBlaze::from_iter([0u8..=255]).len();
 // //     assert_eq!(len, 256);
@@ -1739,7 +1739,7 @@ fn map_split_off() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_union_iter() {
 // //     use range_map_blaze::{CheckSortedDisjoint, UnionIterMap};
 
@@ -1759,7 +1759,7 @@ fn map_split_off() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_bitor() {
 // //     let a = CheckSortedDisjoint::new([1..=1]);
 // //     let b = RangeMapBlaze::from_iter([2..=2]).into_ranges();
@@ -1784,7 +1784,7 @@ fn map_split_off() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_range_set_int_constructors() {
 // //     // Create an empty set with 'new' or 'default'.
 // //     let a0 = RangeMapBlaze::<i32>::new();
@@ -1869,7 +1869,7 @@ fn map_split_off() {
 // // #[cfg(feature = "from_slice")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_from_slice_all_types() {
 // //     syntactic_for! { ty in [i8, u8] {
 // //         $(
@@ -1893,7 +1893,7 @@ fn map_split_off() {
 // // #[cfg(feature = "from_slice")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_range_set_int_slice_constructor() {
 // //     print_features();
 // //     let k = 1;
@@ -2005,7 +2005,7 @@ fn map_range_map_blaze_operators() {
 }
 
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_sorted_disjoint_constructors() {
 // //     // RangeMapBlaze's .range_values(), .0().clone() and .into_ranges()
 // //     let r = RangeMapBlaze::from_iter([3, 2, 1, 100, 1]);
@@ -2035,7 +2035,7 @@ fn map_range_map_blaze_operators() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_iterator_example() {
 // //     struct OrdinalWeekends2023 {
 // //         next_range: RangeInclusive<i32>,
@@ -2072,7 +2072,7 @@ fn map_range_map_blaze_operators() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_sorted_disjoint_operators() {
 // //     let a0 = RangeMapBlaze::from_iter([1..=2, 5..=100]);
 // //     let b0 = RangeMapBlaze::from_iter([2..=6]);
@@ -2101,7 +2101,7 @@ fn map_range_map_blaze_operators() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_range_example() {
 // //     let mut set = RangeMapBlaze::new();
 // //     set.insert(3);
@@ -2117,7 +2117,7 @@ fn map_range_map_blaze_operators() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_range_test() {
 // //     use core::ops::Bound::Included;
 // //     use range_map_blaze::RangeMapBlaze;
@@ -2134,7 +2134,7 @@ fn map_range_map_blaze_operators() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // #[allow(clippy::bool_assert_comparison)]
 // // fn map_is_subset_check() {
 // //     let sup = CheckSortedDisjoint::new([1..=3]);
@@ -2152,7 +2152,7 @@ fn map_range_map_blaze_operators() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_cmp_range_set_int() {
 // //     let a = RangeMapBlaze::from_iter([1..=3, 5..=7]);
 // //     let b = RangeMapBlaze::from_iter([2..=2]);
@@ -2171,7 +2171,7 @@ fn map_range_map_blaze_operators() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_run_rangemap_crate() {
 // //     let mut rng = StdRng::seed_from_u64(0);
 // //     let range_len = 1_000_000;
@@ -2187,7 +2187,7 @@ fn map_range_map_blaze_operators() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_from_iter_coverage() {
 // //     let vec_range = vec![1..=2, 2..=2, -10..=-5];
 // //     let a0 = RangeMapBlaze::from_iter(vec_range.iter());
@@ -2209,7 +2209,7 @@ fn map_range_map_blaze_operators() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_print_first_complement_gap() {
 // //     let a = CheckSortedDisjoint::new([-10i16..=0, 1000..=2000]);
 // //     println!("{:?}", (!a).next().unwrap()); // prints -32768..=-11
@@ -2217,7 +2217,7 @@ fn map_range_map_blaze_operators() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_multiway_failure_example() {
 // //     use range_map_blaze::prelude::*;
 
@@ -2238,7 +2238,7 @@ fn map_range_map_blaze_operators() {
 
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_complement_sample() {
 // //     let c = !RangeMapBlaze::from([0, 3, 4, 5, 10]);
 // //     println!("{},{},{}", c.len(), c.ranges_len(), c);
@@ -2247,7 +2247,7 @@ fn map_range_map_blaze_operators() {
 // // #[cfg(feature = "rog-experimental")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_test_rog_functionality() {
 // //     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
 // //     // case 1:
@@ -2289,7 +2289,7 @@ fn map_range_map_blaze_operators() {
 // // #[cfg(feature = "rog-experimental")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_test_rogs_get_functionality() {
 // //     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
 // //     for value in 0..=16 {
@@ -2301,7 +2301,7 @@ fn map_range_map_blaze_operators() {
 // // #[cfg(feature = "rog-experimental")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_test_rog_repro1() {
 // //     let a = RangeMapBlaze::from_iter([1u8..=6u8]);
 // //     assert_eq!(
@@ -2313,7 +2313,7 @@ fn map_range_map_blaze_operators() {
 // // #[cfg(feature = "rog-experimental")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_test_rog_repro2() {
 // //     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
 // //     assert_eq!(
@@ -2325,7 +2325,7 @@ fn map_range_map_blaze_operators() {
 // // #[cfg(feature = "rog-experimental")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_test_rog_coverage1() {
 // //     let a = RangeMapBlaze::from_iter([1u8..=6u8]);
 // //     assert!(panic::catch_unwind(AssertUnwindSafe(
@@ -2338,7 +2338,7 @@ fn map_range_map_blaze_operators() {
 // // #[cfg(feature = "rog-experimental")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_test_rog_extremes_u8() {
 // //     for a in [
 // //         RangeMapBlaze::from_iter([1u8..=6u8]),
@@ -2362,7 +2362,7 @@ fn map_range_map_blaze_operators() {
 // // #[cfg(feature = "rog-experimental")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_test_rog_get_extremes_u8() {
 // //     for a in [
 // //         RangeMapBlaze::from_iter([1u8..=6u8]),
@@ -2381,7 +2381,7 @@ fn map_range_map_blaze_operators() {
 // // #[cfg(feature = "rog-experimental")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_test_rog_extremes_i128() {
 // //     for a in [
 // //         RangeMapBlaze::from_iter([1i128..=6i128]),
@@ -2408,7 +2408,7 @@ fn map_range_map_blaze_operators() {
 // // #[cfg(feature = "rog-experimental")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_test_rog_extremes_get_i128() {
 // //     for a in [
 // //         RangeMapBlaze::from_iter([1i128..=6i128]),
@@ -2427,7 +2427,7 @@ fn map_range_map_blaze_operators() {
 // // #[cfg(feature = "rog-experimental")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_test_rog_should_fail_i128() {
 // //     for a in [
 // //         RangeMapBlaze::from_iter([1i128..=6i128]),
@@ -2457,7 +2457,7 @@ fn map_range_map_blaze_operators() {
 // // #[cfg(feature = "rog-experimental")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_test_rog_get_should_fail_i128() {
 // //     for a in [
 // //         RangeMapBlaze::from_iter([1i128..=6i128]),
@@ -2478,7 +2478,7 @@ fn map_range_map_blaze_operators() {
 // // #[cfg(feature = "rog-experimental")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_test_rog_get_doc() {
 // //     use crate::RangeMapBlaze;
 // //     let range_map_blaze = RangeMapBlaze::from([1, 2, 3]);
@@ -2489,7 +2489,7 @@ fn map_range_map_blaze_operators() {
 // // #[cfg(feature = "rog-experimental")]
 //
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_test_rog_range_doc() {
 // //     use core::ops::Bound::Included;
 
@@ -3244,7 +3244,7 @@ fn map_repro2() {
 }
 
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn multi_op() {
 //     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
 //     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
@@ -3288,7 +3288,7 @@ fn map_repro2() {
 // //     println!("{}", std::any::type_name::<T>())
 // // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn custom_multi() {
 //     let a = RangeMapBlaze::from_iter([1..=6, 8..=9, 11..=15]);
 //     let b = RangeMapBlaze::from_iter([5..=13, 18..=29]);
@@ -3304,13 +3304,13 @@ fn map_repro2() {
 //     println!("{d}");
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn from_string() {
 //     let a = RangeMapBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=65535]);
 //     assert_eq!(a, RangeMapBlaze::from_iter([0..=65535]));
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn nand_repro() {
 //     let b = &RangeMapBlaze::from_iter([5u8..=13, 18..=29]);
 //     let c = &RangeMapBlaze::from_iter([38..=42]);
@@ -3322,7 +3322,7 @@ fn map_repro2() {
 //     );
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn bit_or_iter() {
 //     let i = UnionIter::from([1, 3, 4, 2, 2, 43, -1, 4, 22]);
 //     let j = UnionIter::from([11, 3, 4, 42, 2, 43, 23, 2, 543]);
@@ -3332,7 +3332,7 @@ fn map_repro2() {
 //     assert_eq!(k.into_string(), "-1..=-1, 1..=1, 22..=22");
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn empty() {
 //     let universe: UnionIter<u8, _> = [0..=255].into_iter().collect();
 //     let arr: [u8; 0] = [];
@@ -3415,7 +3415,7 @@ fn map_repro2() {
 // }
 // #[allow(clippy::reversed_empty_ranges)]
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn private_constructor() {
 //     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
 //     // println!("{}", unsorted_disjoint.fmt());
@@ -3451,7 +3451,7 @@ fn map_repro2() {
 // fn is_like_btreeset_iter<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
 // // cmk removed DoubleEndedIterator +ExactSizeIterator for now
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn iter_traits() {
 //     type ARangesIter<'a> = RangesIter<'a, i32>;
 //     type AIter<'a> = Iter<i32, ARangesIter<'a>>;
@@ -3498,7 +3498,7 @@ fn map_repro2() {
 
 // fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn check_traits() {
 //     // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
 //     type ARangeSetBlaze = RangeMapBlaze<i32, &str>;
@@ -3554,7 +3554,7 @@ fn map_repro2() {
 //     is_like_btreeset_iter::<AAssumeSortedStarts>();
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn integer_coverage() {
 //     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
 //         $(
@@ -3569,28 +3569,28 @@ fn map_repro2() {
 //     }};
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // #[should_panic]
 // fn lib_coverage_2() {
 //     let v = RangeMapBlaze::<u128>::new();
 //     v.contains(u128::MAX);
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // #[should_panic]
 // fn lib_coverage_3() {
 //     let mut v = RangeMapBlaze::<u128>::new();
 //     v.remove(u128::MAX);
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // #[should_panic]
 // fn lib_coverage_4() {
 //     let mut v = RangeMapBlaze::<u128>::new();
 //     v.split_off(u128::MAX);
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn lib_coverage_6() {
 //     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
 //         $(
@@ -3602,7 +3602,7 @@ fn map_repro2() {
 //     }};
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn merge_coverage_0() {
 //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     let b = CheckSortedDisjoint::new([2..=6]);
@@ -3626,7 +3626,7 @@ fn map_repro2() {
 //     assert!(format!("{p:?}").starts_with("KMerge"));
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn not_iter_coverage_0() {
 //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     let n = NotIter::new(a);
@@ -3636,7 +3636,7 @@ fn map_repro2() {
 //     assert!(format!("{p:?}").starts_with("NotIter"));
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn ranges_coverage_0() {
 //     let a = RangeMapBlaze::from_iter([1..=2, 5..=100]);
 //     let r = a.ranges();
@@ -3680,7 +3680,7 @@ fn map_repro2() {
 //     .starts_with("IntoRanges"));
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn sorted_disjoint_coverage_0() {
 //     let a = CheckSortedDisjoint::<i32, _>::default();
 //     assert!(a.is_empty());
@@ -3698,7 +3698,7 @@ fn map_repro2() {
 //     assert!((a ^ b).is_empty());
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // #[should_panic]
 // fn sorted_disjoint_coverage_1() {
 //     struct SomeAfterNone {
@@ -3722,7 +3722,7 @@ fn map_repro2() {
 //     a.next();
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // #[should_panic]
 // fn sorted_disjoint_coverage_2() {
 //     #[allow(clippy::reversed_empty_ranges)]
@@ -3730,7 +3730,7 @@ fn map_repro2() {
 //     a.next();
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // #[should_panic]
 // fn sorted_disjoint_coverage_3() {
 //     #[allow(clippy::reversed_empty_ranges)]
@@ -3739,21 +3739,21 @@ fn map_repro2() {
 //     a.next();
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn sorted_disjoint_coverage_4() {
 //     #[allow(clippy::reversed_empty_ranges)]
 //     let mut a = CheckSortedDisjoint::new([0..=i128::MAX]);
 //     a.next();
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn sorted_disjoint_iterator_coverage_0() {
 //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     let b = CheckSortedDisjoint::new([1..=2, 5..=101]);
 //     assert!(b.is_superset(a));
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn union_iter_coverage_0() {
 //     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
 //     let b = CheckSortedDisjoint::new([1..=2, 5..=101]);
@@ -3761,13 +3761,13 @@ fn map_repro2() {
 //     assert!(format!("{c:?}").starts_with("UnionIter"));
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn unsorted_disjoint_coverage_0() {
 //     let a = AssumeSortedStarts::new([1..=2, 5..=100].into_iter());
 //     assert!(format!("{a:?}").starts_with("AssumeSortedStarts"));
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn test_coverage_0() {
 //     let a = BooleanVector(vec![true, true, false, false]);
 //     assert!(format!("{a:?}").starts_with("BooleanVector"));
@@ -3943,12 +3943,12 @@ fn map_repro2() {
 
 // #[should_panic]
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn demo_read() {
 //     let _a: RangeMapBlaze<i32, &str> = demo_read_ranges_from_file("tests/no_such_file").unwrap();
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn double_end_iter() {
 //     let a = RangeMapBlaze::from_iter([3..=10, 12..=12, 20..=25]);
 
@@ -3978,7 +3978,7 @@ fn map_repro2() {
 //     }
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn double_end_into_iter() {
 //     let a = RangeMapBlaze::from_iter([3..=10, 12..=12, 20..=25]);
 
@@ -4006,7 +4006,7 @@ fn map_repro2() {
 //     assert_eq!(iter.next(), Some(5));
 // }
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn double_end_range() {
 //     let a = RangeMapBlaze::from_iter([3..=10, 12..=12, 20..=25]);
 

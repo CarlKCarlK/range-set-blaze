@@ -8,13 +8,16 @@ use crate::Integer;
 use crate::RangeMapBlaze;
 use crate::UnionIterMap;
 use alloc::string::ToString;
+use core::cmp::Ordering;
 use core::fmt;
+use core::ops::Bound;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
 use std::prelude::v1::*;
 use std::{format, println};
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_step_by_step() {
     let (s1, s2) = ("a".to_string(), "b".to_string());
     let input = [(1, &s2), (2, &s2), (0, &s1)];
@@ -76,6 +79,7 @@ fn map_step_by_step() {
 // // cmk must test coverage
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_repro_206() {
     let input_string = "127e 2d 29e 84a 17a 79d 174e 125b 123a 123b 98c 132d 99e 186b 253d 31d 121c 151a 168e 208c 47e 42e 86a 21b 7b 238d 148a 151a 227d 173d 145b 18e 219e 16c 214b 213a 155e 27e 24d 38c 59c 16c 183d 125d 210d 99e 43e 189e 147a 90d 42a 220e 35b 120d 185d 177a 102a 22b 124b 140a 199e 143c 32d 225a 223e 137e 177e 234e 97a 166a 83e 213a 147b 128a 150c 12c 199c 152c 79b 164b 204b 235e 37e 14c 19b 49a 1c 115b 31d 102b 59b 129b 104d 70c 229b 205b 101c 58d 114a 228d 173e 139d 147b 32c 198e 194c 18a 77a 100e 196a 46b 81a 63d 198a 242a 131b 153e 113b 19d 253e 195c 209e 201c 139d 47a 223d 240b 203d 84a 214d 129e 73d 55d 193e 129d 7c 193e 2c 235c 39c 88d 175c 190c 239a 219d 121a 88d 175d 117e 23a 102d 165a 58a 229a 100b 13b 113e 26a 49e 37e 126a 251b 47e 77a 206b ";
     let mut input = Vec::<(u8, &u8)>::new();
@@ -127,6 +131,7 @@ where
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_repro_106() {
     let input_string = "100e 106b 97c 98c 97e";
     let mut input = Vec::<(u8, &u8)>::new();
@@ -158,6 +163,7 @@ fn map_repro_106() {
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_repro1() {
     let (s1, s2, s3) = ("a".to_string(), "b".to_string(), "c".to_string());
     let mut range_map_blaze =
@@ -176,6 +182,7 @@ fn map_repro1() {
 }
 
 // #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn map_repro_106() {
 //     let input_string = "100e 106b 97c 98c 97e";
 //     let mut input = Vec::<(u8, &u8)>::new();
@@ -208,6 +215,7 @@ fn map_repro1() {
 // }
 
 // #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn map_repro_206() {
 //     let input_string = "127e 2d 29e 84a 17a 79d 174e 125b 123a 123b 98c 132d 99e 186b 253d 31d 121c 151a 168e 208c 47e 42e 86a 21b 7b 238d 148a 151a 227d 173d 145b 18e 219e 16c 214b 213a 155e 27e 24d 38c 59c 16c 183d 125d 210d 99e 43e 189e 147a 90d 42a 220e 35b 120d 185d 177a 102a 22b 124b 140a 199e 143c 32d 225a 223e 137e 177e 234e 97a 166a 83e 213a 147b 128a 150c 12c 199c 152c 79b 164b 204b 235e 37e 14c 19b 49a 1c 115b 31d 102b 59b 129b 104d 70c 229b 205b 101c 58d 114a 228d 173e 139d 147b 32c 198e 194c 18a 77a 100e 196a 46b 81a 63d 198a 242a 131b 153e 113b 19d 253e 195c 209e 201c 139d 47a 223d 240b 203d 84a 214d 129e 73d 55d 193e 129d 7c 193e 2c 235c 39c 88d 175c 190c 239a 219d 121a 88d 175d 117e 23a 102d 165a 58a 229a 100b 13b 113e 26a 49e 37e 126a 251b 47e 77a 206b ";
 //     let mut input = Vec::<(u8, &u8)>::new();
@@ -248,6 +256,7 @@ fn map_repro1() {
 // }
 
 // #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn map_step_by_step() {
 //     let (s1, s2) = ("a".to_string(), "b".to_string());
 //     let input = [(1, &s2), (2, &s2), (0, &s1)];
@@ -297,6 +306,7 @@ fn map_repro1() {
 // }
 
 // #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn map_repro1() {
 //     let (s1, s2, s3) = ("a".to_string(), "b".to_string(), "c".to_string());
 //     let mut range_map_blaze =
@@ -315,6 +325,7 @@ fn map_repro1() {
 // }
 
 // // #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // #[allow(clippy::bool_assert_comparison)]
 // // fn lib_coverage_0() {
 // //     let a = RangeMapBlaze::from_iter([1..=2, 3..=4]);
@@ -514,6 +525,7 @@ fn map_repro1() {
 // // }
 
 // // #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // #[should_panic]
 // // fn lib_coverage_2() {
 // //     let v = RangeMapBlaze::<u128>::new();
@@ -521,23 +533,115 @@ fn map_repro1() {
 // // }
 
 // // #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // #[should_panic]
 // // fn lib_coverage_5() {
 // //     let mut v = RangeMapBlaze::<u128>::new();
 // //     v.internal_add(0..=u128::MAX);
 // // }
-
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_coverage_8() {
     let mut a = RangeMapBlaze::from_iter([(1u128..=2, "Hello"), (3..=4, "World")]);
     a.internal_add(0..=u128::MAX, "Hello");
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::reversed_empty_ranges)]
 fn test_coverage_9() {
     let mut a = RangeMapBlaze::from_iter([(1u128..=2, "Hello"), (3..=4, "World")]);
     let b = a.clone();
     a.internal_add(1..=0, "Hello"); // adding empty
     assert_eq!(a, b);
+}
+
+#[test]
+#[allow(clippy::reversed_empty_ranges)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_range_method_on_range_map_blaze() {
+    let map = RangeMapBlaze::<i32, &str>::from_iter([(1..=3, "a"), (4..=6, "b")]);
+    let expected = RangeMapBlaze::<i32, &str>::from_iter([(3..=3, "a"), (4..=6, "b")]);
+    let a: RangeMapBlaze<i32, &str> = map.range(3..).collect();
+    assert_eq!(a, expected);
+
+    let a: RangeMapBlaze<i32, &str> = map.range(..).collect();
+    assert_eq!(
+        a,
+        RangeMapBlaze::<i32, &str>::from_iter([(1..=3, "a"), (4..=6, "b")])
+    );
+
+    let a: RangeMapBlaze<i32, &str> = map.range(3..7).collect();
+    assert_eq!(a, expected);
+
+    let a: RangeMapBlaze<i32, &str> = map
+        .range((Bound::Excluded(2), Bound::Excluded(7)))
+        .collect();
+    assert_eq!(a, expected);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::reversed_empty_ranges)]
+#[should_panic = "start (inclusive) must be less than or equal to end (inclusive)"]
+fn test_range_method_on_range_map_blaze_panic0() {
+    let map = RangeMapBlaze::<i32, &str>::from_iter([(1..=3, "a"), (4..=6, "b")]);
+    let _a: RangeMapBlaze<i32, &str> = map.range(3..2).collect();
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[should_panic = "start (inclusive) must be less than or equal to end (inclusive)"]
+fn test_range_method_on_range_map_blaze_panic1() {
+    let map = RangeMapBlaze::<u8, &str>::from_iter([(1u8..=3, "a"), (4..=6, "b")]);
+    let _a: RangeMapBlaze<u8, &str> = map
+        .range((Bound::Excluded(255), Bound::Included(255)))
+        .collect();
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[should_panic = "start (inclusive) must be less than or equal to end (inclusive)"]
+fn test_range_method_on_range_map_blaze_panic2() {
+    let map = RangeMapBlaze::<u8, &str>::from_iter([(1u8..=3, "a"), (4..=6, "b")]);
+    let _a: RangeMapBlaze<u8, &str> = map
+        .range((Bound::Included(0), Bound::Excluded(0)))
+        .collect();
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_index() {
+    let map = RangeMapBlaze::<i32, &str>::from_iter([(1..=3, "a"), (4..=6, "b")]);
+    assert_eq!(map[1], "a");
+    assert_eq!(map[4], "b");
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[should_panic = "no entry found for key"]
+fn test_index_panic() {
+    let map = RangeMapBlaze::<i32, &str>::from_iter([(1..=3, "a"), (4..=6, "b")]);
+    let _ = map[0];
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_range_map_blaze_comparisons() {
+    // Lexicographic comparison test
+    let a = RangeMapBlaze::from_iter([(1..=3, "a"), (5..=100, "a")]);
+    let b = RangeMapBlaze::from_iter([(2..=2, "b")]);
+    assert!(a < b); // Lexicographic comparison
+    assert!(a <= b);
+    assert!(b > a);
+    assert!(b >= a);
+    assert!(a != b);
+    assert!(a == a);
+
+    assert_eq!(a.cmp(&b), Ordering::Less);
+
+    // Float comparison test (using comparable bits)
+    let a = RangeMapBlaze::from_iter([(2..=3, 1.0f32.to_bits()), (5..=100, 2.0f32.to_bits())]);
+    let b = RangeMapBlaze::from_iter([(2..=2, f32::NAN.to_bits())]);
+    assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
 }

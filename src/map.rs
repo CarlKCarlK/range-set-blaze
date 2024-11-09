@@ -26,7 +26,7 @@ use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::ops::{BitOr, BitOrAssign, Bound, Index, RangeBounds};
 use core::{cmp::max, convert::From, ops::RangeInclusive};
-use core::{fmt, mem};
+use core::{fmt, mem, panic};
 use gen_ops::gen_ops_ex;
 use num_traits::One;
 use num_traits::Zero;
@@ -756,8 +756,7 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     ///
     /// # Panics
     ///
-    /// Panics if range `start > end`.
-    /// Panics if range `start == end` and both bounds are `Excluded`.
+    /// Panics if start (inclusive) is greater than end (inclusive).
     ///
     /// # Performance
     ///
@@ -778,24 +777,37 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     /// } // prints "5: b" and "8: c"
     /// assert_eq!(Some((5, "b")), map.range(4..).next());
     /// ```
+    #[allow(clippy::manual_assert)] // We use "if...panic!" for coverage auditing.
     pub fn range<R>(&self, range: R) -> IntoIterMap<T, V>
     where
         R: RangeBounds<T>,
     {
         // cmk 'range' should be made more efficient (it currently creates a RangeMapBlaze for no good reason)
-        let start = match range.start_bound() {
+        let start_inclusive = match range.start_bound() {
             Bound::Included(n) => *n,
-            Bound::Excluded(n) => (*n).add_one(),
+            Bound::Excluded(n) => {
+                if *n == T::max_value() {
+                    panic!("start (inclusive) must be less than or equal to end (inclusive)");
+                };
+                (*n).add_one()
+            }
             Bound::Unbounded => T::min_value(),
         };
-        let end = match range.end_bound() {
+        let end_inclusive = match range.end_bound() {
             Bound::Included(n) => *n,
-            Bound::Excluded(n) => (*n).sub_one(),
+            Bound::Excluded(n) => {
+                if *n == T::min_value() {
+                    panic!("start (inclusive) must be less than or equal to end (inclusive)");
+                };
+                (*n).sub_one()
+            }
             Bound::Unbounded => T::max_value(),
         };
-        assert!(start <= end);
+        if start_inclusive > end_inclusive {
+            panic!("start (inclusive) must be less than or equal to end (inclusive)")
+        };
 
-        let bounds = CheckSortedDisjoint::new([start..=end]);
+        let bounds = CheckSortedDisjoint::new([start_inclusive..=end_inclusive]);
         Self::from_sorted_disjoint_map(self.range_values().intersection_with_set(bounds))
             .into_iter()
     }
@@ -1871,7 +1883,7 @@ where
         // We gather adjacent values into ranges via UnsortedPriorityDisjointMap, but ignore the priority.
         for priority in UnsortedPriorityDisjointMap::new(iter.map(|(r, v)| (r..=r, Rc::new(v)))) {
             let (range, value) = priority.into_range_value();
-            let value = Rc::try_unwrap(value).unwrap_or_else(|_| panic!("Failed to unwrap Rc"));
+            let value: V = Rc::try_unwrap(value).unwrap_or_else(|_| unreachable!());
             self.internal_add(range, value);
         }
     }
@@ -1917,7 +1929,7 @@ where
         // We gather adjacent values into ranges via UnsortedPriorityDisjointMap, but ignore the priority.
         for priority in UnsortedPriorityDisjointMap::new(iter.map(|(r, v)| (r, Rc::new(v)))) {
             let (range, value) = priority.into_range_value();
-            let value = Rc::try_unwrap(value).unwrap_or_else(|_| panic!("Failed to unwrap Rc"));
+            let value = Rc::try_unwrap(value).unwrap_or_else(|_| unreachable!());
             self.internal_add(range, value);
         }
     }
@@ -1961,8 +1973,11 @@ impl<T: Integer, V: EqClone> Index<T> for RangeMapBlaze<T, V> {
     ///
     /// Panics if the key is not present in the `BTreeMap`.
     #[inline]
+    #[allow(clippy::manual_assert)] // We use "if...panic!" for coverage auditing.
     fn index(&self, index: T) -> &Self::Output {
-        self.get(index).expect("no entry found for key")
+        self.get(index).unwrap_or_else(|| {
+            panic!("no entry found for key");
+        })
     }
 }
 
@@ -2177,7 +2192,7 @@ mod tests {
     // cmk look everywhere for tests that should also be wasm_bindgen_test
 
     #[test]
-    #[wasm_bindgen_test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_cmp() {
         fn to_bits(vv_pair: Vec<(u32, f64)>) -> Vec<(u32, u64)> {
             vv_pair.into_iter().map(|(k, v)| (k, v.to_bits())).collect()
@@ -2258,7 +2273,7 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[allow(clippy::style)]
     fn bitor_assign_coverage() {
         for (a0, b0, c0) in [
@@ -2291,7 +2306,7 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_arc_clone_ref() {
         let a = Arc::new(1);
         let b = Arc::clone_ref(&a);
@@ -2299,7 +2314,7 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_len_slow() {
         let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
         assert_eq!(a.len_slow(), a.len());
@@ -2307,7 +2322,7 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_range() {
         let mut map = RangeMapBlaze::new();
         map.insert(3, "a");
@@ -2320,14 +2335,14 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_pop_first() {
         let mut map: RangeMapBlaze<i128, &str> = RangeMapBlaze::new();
         assert_eq!(None, map.pop_first());
     }
 
     #[test]
-    #[wasm_bindgen_test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_range_values_len() {
         // We put in four ranges, but they are not sorted & disjoint.
         let map = RangeMapBlaze::from_iter([
@@ -2345,7 +2360,7 @@ mod tests {
     }
 
     #[test]
-    #[wasm_bindgen_test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_into_iterator_for_ref_rangemapblaze() {
         let map = RangeMapBlaze::from_iter([(1..=2, "a")]);
         let mut iter = (&map).into_iter();

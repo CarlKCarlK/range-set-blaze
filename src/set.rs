@@ -1,3 +1,4 @@
+#![allow(unexpected_cfgs)]
 // cmk use core::any::Any;
 use core::cmp::max;
 use core::mem;
@@ -10,7 +11,7 @@ use core::{
     ops::{BitOr, BitOrAssign, Bound, RangeBounds, RangeInclusive},
 };
 use num_traits::{One, Zero};
-#[cfg(feature = "std")]
+#[cfg(all(not(coverage), feature = "std"))]
 use std::{
     fs::File,
     io::{self, BufRead, BufReader},
@@ -33,6 +34,7 @@ use crate::{IntoRangesIter, UnionIter};
 
 #[cfg(feature = "std")]
 #[allow(dead_code)]
+#[cfg(not(coverage))]
 #[doc(hidden)]
 pub fn demo_read_ranges_from_file<P, T>(path: P) -> io::Result<RangeSetBlaze<T>>
 where
@@ -961,6 +963,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 
     #[allow(dead_code)]
+    #[cfg(not(coverage))]
     fn cmk_split_off(&mut self, value: T) -> Self {
         let mut old_len = self.len;
         let mut b = self.btree_map.split_off(&value);

@@ -19,6 +19,7 @@ use std::prelude::v1::*;
 use std::{print, println, vec};
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn demo_f1() {
     // before_or_equal_exists	0
     //     INSERT, etc
@@ -37,6 +38,7 @@ fn demo_f1() {
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn demo_d1() {
     // before_or_equal_exists	1
     // equal?	1
@@ -51,6 +53,7 @@ fn demo_d1() {
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn demo_e1() {
     // before_or_equal_exists	1
     // equal?	1
@@ -66,6 +69,7 @@ fn demo_e1() {
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn demo_b1() {
     // before_or_equal_exists	1
     // equal?	0
@@ -81,6 +85,7 @@ fn demo_b1() {
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn demo_b2() {
     // before_or_equal_exists	1
     // equal?	0
@@ -97,6 +102,7 @@ fn demo_b2() {
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn optimize() {
     let end = 8u8;
     for a in 0..=end {
@@ -129,6 +135,7 @@ fn optimize() {
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(
     clippy::bool_assert_comparison,
     clippy::many_single_char_names,
@@ -335,12 +342,14 @@ fn lib_coverage_0() {
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn lib_coverage_5() {
     let mut v = RangeSetBlaze::<u128>::new();
     v.internal_add(0..=u128::MAX);
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::cognitive_complexity, clippy::iter_on_empty_collections)]
 fn sdi1() {
     let a = [157..=158, 158..=158].into_iter();
@@ -433,6 +442,7 @@ fn sdi1() {
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 // cmk00 Can we/should we hide MergeMapIter and KMergeMapIter and SymDiffMapIter::new and UnionMapIter::new?
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // cmk00 challenge: convert from every level to sorted disjoint* for both map and set.
 pub fn convert_challenge() {
     use itertools::Itertools;
@@ -574,4 +584,23 @@ pub fn convert_challenge() {
     // Set - points
 
     // what about multiple inputs?
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(deprecated)]
+fn test_into_string() {
+    let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    assert_eq!(a.into_string(), "1..=2, 5..=100");
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_next_back() {
+    let a = RangeSetBlaze::from_iter([5, 5, 4, 1]);
+    let mut iter = a.iter();
+    assert_eq!(iter.next_back(), Some(5));
+    assert_eq!(iter.next_back(), Some(4));
+    assert_eq!(iter.next_back(), Some(1));
+    assert_eq!(iter.next_back(), None);
 }

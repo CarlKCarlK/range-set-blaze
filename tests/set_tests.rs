@@ -151,7 +151,7 @@ fn add_in_order() {
 }
 
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn memoryless_data() {
 //     let len = 100_000_000;
 //     let coverage_goal = 0.75;
@@ -167,7 +167,7 @@ fn add_in_order() {
 // );
 
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn memoryless_vec() {
 //     let len = 100_000_000;
 //     let coverage_goal = 0.75;
@@ -1157,7 +1157,7 @@ fn fraction<T: Integer>(range_int_set: &RangeSetBlaze<T>, range: &RangeInclusive
 
 // cmk
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 
 // fn example_2a() {
 //     use range_set_blaze::prelude::*;
@@ -1182,7 +1182,7 @@ fn fraction<T: Integer>(range_int_set: &RangeSetBlaze<T>, range: &RangeInclusive
 
 // cmk
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 
 // fn example_2b() {
 //     use range_set_blaze::prelude::*;
@@ -1318,7 +1318,7 @@ fn len_demo() {
 
 // cmk00
 // #[test]
-// #[wasm_bindgen_test]
+//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 
 // fn union_iter() {
 //     use range_set_blaze::CheckSortedDisjoint;
