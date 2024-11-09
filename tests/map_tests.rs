@@ -22,6 +22,7 @@ use range_set_blaze::{
 use std::borrow::Borrow;
 use std::iter::FusedIterator;
 use std::ops::Bound;
+use std::rc::Rc;
 
 // use range_set_blaze::{
 //     MultiwayRangeMapBlazeRef, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
@@ -5643,4 +5644,33 @@ fn test_eq_priority() {
     let a = Priority::new((1..=2, &"a"), 0);
     let b = Priority::new((1..=2, &"a"), 1);
     assert!(a != b);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_into_range_values() {
+    let mut a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
+    assert_eq!(a.size_hint(), (2, Some(2)));
+    assert_eq!(a.len(), 2);
+    let _ = a.next();
+    assert_eq!(a.len(), 1);
+
+    let mut a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
+    assert_eq!(a.next_back(), Some((3..=4, Rc::new("b"))));
+    assert_eq!(a.next_back(), Some((1..=2, Rc::new("a"))));
+    assert_eq!(a.next_back(), None);
+    assert_eq!(a.len(), 0);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_into_map_into_ranges() {
+    let mut a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_ranges();
+    assert_eq!(a.size_hint(), (1, Some(2)));
+    assert_eq!(a.next(), Some(1..=4));
+
+    let r = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]);
+    let mut a = r.ranges();
+    assert_eq!(a.size_hint(), (1, Some(2)));
+    assert_eq!(a.next(), Some(1..=4));
 }

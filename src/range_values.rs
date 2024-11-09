@@ -197,7 +197,7 @@ where
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
+        (1, self.iter.size_hint().1)
     }
 }
 
@@ -258,7 +258,7 @@ impl<T: Integer, V: EqClone> Iterator for MapIntoRangesIter<T, V> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
+        (1, self.iter.size_hint().1)
     }
 }
 
@@ -277,17 +277,6 @@ where
     iter: I,
     gather: Option<RangeInclusive<T>>,
     phantom: PhantomData<VR>,
-}
-
-// implement exact size iterator for one special case
-impl<'a, T> ExactSizeIterator for RangeValuesToRangesIter<T, &'a (), RangeValuesIter<'a, T, ()>>
-where
-    T: Integer,
-{
-    #[must_use]
-    fn len(&self) -> usize {
-        self.iter.len()
-    }
 }
 
 impl<T, VR, I> FusedIterator for RangeValuesToRangesIter<T, VR, I>
