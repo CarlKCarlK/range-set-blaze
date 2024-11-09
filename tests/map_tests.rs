@@ -16,8 +16,8 @@ use quickcheck_macros::quickcheck;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use range_set_blaze::{
-    prelude::*, EqClone, IntersectionIterMap, IntoRangeValuesIter, RangeValuesIter, SymDiffIterMap,
-    UnionIterMap, ValueRef,
+    prelude::*, EqClone, IntersectionIterMap, IntoRangeValuesIter, KMergeMap, MergeMap,
+    RangeValuesIter, SymDiffIterMap, UnionIterMap, ValueRef,
 };
 use std::borrow::Borrow;
 use std::iter::FusedIterator;
@@ -5287,11 +5287,23 @@ fn test_into_range_values() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_into_map_into_ranges() {
     let mut a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_ranges();
-    assert_eq!(a.size_hint(), (1, Some(2)));
+    assert_eq!(a.size_hint(), (0, Some(2)));
     assert_eq!(a.next(), Some(1..=4));
 
     let r = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]);
     let mut a = r.ranges();
-    assert_eq!(a.size_hint(), (1, Some(2)));
+    assert_eq!(a.size_hint(), (0, Some(2)));
     assert_eq!(a.next(), Some(1..=4));
+}
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_merge_map() {
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
+    let b = RangeMapBlaze::from_iter([(1..=2, "a"), (13..=14, "b")]).into_range_values();
+    assert_eq!(MergeMap::new(a, b).size_hint(), (0, None));
+
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
+    let b = RangeMapBlaze::from_iter([(1..=2, "a"), (13..=14, "b")]).into_range_values();
+    let c = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
+    assert_eq!(KMergeMap::new([a, b, c]).size_hint(), (3, None));
 }

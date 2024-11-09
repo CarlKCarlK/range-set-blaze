@@ -3,9 +3,6 @@ use core::cmp::Ordering;
 use core::fmt::Display;
 use core::mem;
 use core::ops::{Add, AddAssign, Mul, Sub, SubAssign};
-#[cfg(not(feature = "std"))]
-#[allow(unused_imports)] // cmk
-use num_traits::float::FloatCore;
 use num_traits::ops::overflowing::{OverflowingAdd, OverflowingMul};
 
 pub trait UInt:
@@ -126,8 +123,7 @@ where
             (Self::MaxPlusOne, Self::UInt(v)) => Self::UInt(max - (v - one)),
             (Self::MaxPlusOne, Self::MaxPlusOne) => Self::UInt(zero),
             (Self::UInt(_), Self::MaxPlusOne) => {
-                debug_assert!(false, "UIntPlusOne::UInt - UIntPlusOne::Max");
-                Self::UInt(zero)
+                panic!("underflow: UIntPlusOne::UInt - UIntPlusOne::Max")
             }
         }
     }
@@ -195,21 +191,20 @@ where
     }
 }
 
-#[cfg(feature = "std")]
 #[cfg(test)]
 mod tests {
-    #[cfg(not(target_arch = "wasm32"))]
     use super::*;
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
     use std::panic;
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
     use std::panic::AssertUnwindSafe;
     use std::prelude::v1::*;
-    #[cfg(not(target_arch = "wasm32"))]
-    use std::println;
+
+    use wasm_bindgen_test::*;
+    wasm_bindgen_test_configure!(run_in_browser);
 
     #[allow(clippy::cast_possible_truncation)]
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
     const fn u16_to_p1(v: u16) -> UIntPlusOne<u8> {
         if v == 256 {
             UIntPlusOne::MaxPlusOne
@@ -218,7 +213,7 @@ mod tests {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
+    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
     fn add_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
@@ -229,7 +224,6 @@ mod tests {
             c
         }));
         let c_actual = panic::catch_unwind(AssertUnwindSafe(|| a_p1 + b_p1));
-        println!("cmk {c:?}, {c_actual:?}");
 
         match (c, c_actual) {
             (Ok(c), Ok(c_p1)) => u16_to_p1(c) == c_p1,
@@ -238,7 +232,7 @@ mod tests {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
+    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
     fn mul_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
@@ -249,7 +243,6 @@ mod tests {
             c
         }));
         let c_actual = panic::catch_unwind(AssertUnwindSafe(|| a_p1 * b_p1));
-        println!("cmk {c:?}, {c_actual:?}");
 
         match (c, c_actual) {
             (Ok(c), Ok(c_p1)) => u16_to_p1(c) == c_p1,
@@ -258,7 +251,7 @@ mod tests {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
+    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
     fn sub_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
@@ -274,7 +267,6 @@ mod tests {
             c_actual -= b_p1;
             c_actual
         }));
-        println!("cmk {c:?}, {c_actual:?}");
 
         match (c, c_actual) {
             (Ok(c), Ok(c_p1)) => u16_to_p1(c) == c_p1,
@@ -283,14 +275,13 @@ mod tests {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
+    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
     fn compare_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
 
         let c = panic::catch_unwind(AssertUnwindSafe(|| a.partial_cmp(&b)));
         let c_actual = panic::catch_unwind(AssertUnwindSafe(|| a_p1.partial_cmp(&b_p1)));
-        println!("cmk {c:?}, {c_actual:?}");
 
         match (c, c_actual) {
             (Ok(Some(c)), Ok(Some(c_p1))) => c == c_p1,
@@ -298,7 +289,7 @@ mod tests {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
+    #[cfg(not(target_arch = "wasm32"))] // can't test wasm-wasip1 because we need to catch panics
     #[test]
     fn test_add_equivalence() {
         for a in 0..=256 {
@@ -308,7 +299,7 @@ mod tests {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
+    #[cfg(not(target_arch = "wasm32"))] // can't test wasm-wasip1 because we need to catch panics
     #[test]
     fn test_mul_equivalence() {
         for a in 0..=256 {
@@ -318,7 +309,7 @@ mod tests {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
+    #[cfg(not(target_arch = "wasm32"))] // can't test wasm-wasip1 because we need to catch panics
     #[test]
     fn test_sub_equivalence() {
         for a in 0..=256 {
@@ -328,7 +319,7 @@ mod tests {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
+    #[cfg(not(target_arch = "wasm32"))] // can't test wasm-wasip1 because we need to catch panics
     #[test]
     fn test_compare_equivalence() {
         for a in 0..=256 {
@@ -338,11 +329,30 @@ mod tests {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
     #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_add_assign() {
         let mut a = UIntPlusOne::<u128>::UInt(1);
         a += UIntPlusOne::UInt(1);
         assert_eq!(a, UIntPlusOne::UInt(2));
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn test_is_zero() {
+        use num_traits::Zero;
+
+        assert!(UIntPlusOne::<u128>::zero().is_zero());
+        assert!(!UIntPlusOne::<u128>::UInt(1).is_zero());
+        assert!(!UIntPlusOne::<u128>::MaxPlusOne.is_zero());
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "underflow: UIntPlusOne::UInt - UIntPlusOne::Max")]
+    fn test_sub_assign_max_plus_one_underflow() {
+        let mut value = UIntPlusOne::UInt(1u128);
+        // This should panic because subtracting MaxPlusOne from a UInt should not be allowed
+        value -= UIntPlusOne::MaxPlusOne;
     }
 }

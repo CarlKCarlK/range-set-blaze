@@ -449,14 +449,14 @@ pub fn convert_challenge() {
     use unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 
     // cmk00 what is the for?
-    #[allow(clippy::needless_pass_by_value)]
-    fn _is_sorted_disjoint_map<T, VR, S>(_iter: S)
-    where
-        T: Integer,
-        VR: ValueRef,
-        S: SortedDisjointMap<T, VR>,
-    {
-    }
+    // #[allow(clippy::needless_pass_by_value)]
+    // fn _is_sorted_disjoint_map<T, VR, S>(_iter: S)
+    // where
+    //     T: Integer,
+    //     VR: ValueRef,
+    //     S: SortedDisjointMap<T, VR>,
+    // {
+    // }
 
     //===========================
     // Map - ranges

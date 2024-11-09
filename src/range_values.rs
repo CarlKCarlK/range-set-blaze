@@ -197,7 +197,8 @@ where
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (1, self.iter.size_hint().1)
+        // 'Low' could be 0 if empty or 1 if fully merged.
+        (0, self.iter.size_hint().1)
     }
 }
 
@@ -258,7 +259,8 @@ impl<T: Integer, V: EqClone> Iterator for MapIntoRangesIter<T, V> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (1, self.iter.size_hint().1)
+        // 'Low' could be 0 if empty or 1 if fully merged.
+        (0, self.iter.size_hint().1)
     }
 }
 

@@ -74,7 +74,7 @@ mod sym_diff_iter_map;
 pub use map::EqClone;
 pub use map::ValueRef;
 pub use merge::{KMerge, Merge}; // cmk make public???
-pub use merge_map::KMergeMap; // cmk make public???
+pub use merge_map::{KMergeMap, MergeMap}; // cmk make public???
 pub use multiway::MultiwaySortedDisjoint;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwayRangeMapBlazeRef;
@@ -96,8 +96,6 @@ pub use crate::sorted_disjoint_map::IntoString;
 pub use crate::unsorted_disjoint::AssumeSortedStarts; // cmk make public???
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
-// use itertools::Tee;
-pub(crate) use merge_map::MergeMap; // cmk KMergeMap
 mod merge;
 mod merge_map;
 pub use not_iter::NotIter;

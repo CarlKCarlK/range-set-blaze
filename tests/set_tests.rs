@@ -1,4 +1,5 @@
 #![cfg(test)]
+use range_set_blaze::Merge;
 use range_set_blaze::{AssumeSortedStarts, IntoIter, IntoRangesIter, Iter, KMerge, RangesIter};
 use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);
@@ -3328,4 +3329,75 @@ fn test_next_back() {
     assert_eq!(iter.next_back(), Some(4));
     assert_eq!(iter.next_back(), Some(1));
     assert_eq!(iter.next_back(), None);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_into_ranges_iter() {
+    let mut a = RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges();
+    assert_eq!(a.len(), 2);
+    assert_eq!(a.next_back(), Some(5..=100));
+    assert_eq!(a.len(), 1);
+    assert_eq!(a.next_back(), Some(1..=2));
+    assert_eq!(a.len(), 0);
+    assert_eq!(a.next_back(), None);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_merge() {
+    let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    let b = RangeSetBlaze::from_iter([1..=2, 5..=6]);
+    let m = Merge::new(a.ranges(), b.ranges());
+    // Just sorts by start, doesn't merge ranges.
+    assert_eq!(m.size_hint(), (4, Some(4)));
+
+    let c = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    let m = KMerge::new([a.ranges(), b.ranges(), c.ranges()]);
+    assert_eq!(m.size_hint(), (6, Some(6)));
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_range_map_intersection() {
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+
+    let intersection = [a, b, c].into_iter().intersection();
+
+    assert_eq!(intersection.to_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_range_map_symmetric_difference() {
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+
+    let symmetric_difference = [a, b, c].into_iter().symmetric_difference();
+
+    assert_eq!(
+        symmetric_difference.to_string(),
+        r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#
+    );
+}
+
+#[cfg(feature = "rog-experimental")]
+#[allow(deprecated)]
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_rog_coverage2() {
+    assert_eq!(Rog::Gap(1..=3).end(), 3);
+
+    let range_set_blaze: RangeSetBlaze<u8> = RangeSetBlaze::from([]);
+    assert_eq!(range_set_blaze.rogs_get(2), Rog::Gap(0..=255));
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_assume_sorted_starts_size_hint() {
+    let m = AssumeSortedStarts::new([0..=3, 0..=2, 1..=5]);
+    assert_eq!(m.size_hint(), (3, Some(3)));
 }
