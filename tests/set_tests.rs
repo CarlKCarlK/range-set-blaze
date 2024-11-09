@@ -3303,3 +3303,29 @@ const fn is_like_check_sorted_disjoint<
 }
 
 const fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(deprecated)]
+fn test_into_string() {
+    let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    assert_eq!(a.into_string(), "1..=2, 5..=100");
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(deprecated)]
+fn test_to_string() {
+    let a = RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges();
+    assert_eq!(a.to_string(), "1..=2, 5..=100");
+}
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_next_back() {
+    let a = RangeSetBlaze::from_iter([5, 5, 4, 1]);
+    let mut iter = a.iter();
+    assert_eq!(iter.next_back(), Some(5));
+    assert_eq!(iter.next_back(), Some(4));
+    assert_eq!(iter.next_back(), Some(1));
+    assert_eq!(iter.next_back(), None);
+}

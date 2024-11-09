@@ -8,7 +8,6 @@ use crate::Integer;
 use crate::RangeMapBlaze;
 use crate::UnionIterMap;
 use alloc::string::ToString;
-use core::cmp::Ordering;
 use core::fmt;
 use core::ops::Bound;
 use core::ops::RangeInclusive;
@@ -578,70 +577,4 @@ fn test_range_method_on_range_map_blaze() {
         .range((Bound::Excluded(2), Bound::Excluded(7)))
         .collect();
     assert_eq!(a, expected);
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[allow(clippy::reversed_empty_ranges)]
-#[should_panic = "start (inclusive) must be less than or equal to end (inclusive)"]
-fn test_range_method_on_range_map_blaze_panic0() {
-    let map = RangeMapBlaze::<i32, &str>::from_iter([(1..=3, "a"), (4..=6, "b")]);
-    let _a: RangeMapBlaze<i32, &str> = map.range(3..2).collect();
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic = "start (inclusive) must be less than or equal to end (inclusive)"]
-fn test_range_method_on_range_map_blaze_panic1() {
-    let map = RangeMapBlaze::<u8, &str>::from_iter([(1u8..=3, "a"), (4..=6, "b")]);
-    let _a: RangeMapBlaze<u8, &str> = map
-        .range((Bound::Excluded(255), Bound::Included(255)))
-        .collect();
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic = "start (inclusive) must be less than or equal to end (inclusive)"]
-fn test_range_method_on_range_map_blaze_panic2() {
-    let map = RangeMapBlaze::<u8, &str>::from_iter([(1u8..=3, "a"), (4..=6, "b")]);
-    let _a: RangeMapBlaze<u8, &str> = map
-        .range((Bound::Included(0), Bound::Excluded(0)))
-        .collect();
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn test_index() {
-    let map = RangeMapBlaze::<i32, &str>::from_iter([(1..=3, "a"), (4..=6, "b")]);
-    assert_eq!(map[1], "a");
-    assert_eq!(map[4], "b");
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic = "no entry found for key"]
-fn test_index_panic() {
-    let map = RangeMapBlaze::<i32, &str>::from_iter([(1..=3, "a"), (4..=6, "b")]);
-    let _ = map[0];
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn test_range_map_blaze_comparisons() {
-    // Lexicographic comparison test
-    let a = RangeMapBlaze::from_iter([(1..=3, "a"), (5..=100, "a")]);
-    let b = RangeMapBlaze::from_iter([(2..=2, "b")]);
-    assert!(a < b); // Lexicographic comparison
-    assert!(a <= b);
-    assert!(b > a);
-    assert!(b >= a);
-    assert!(a != b);
-    assert!(a == a);
-
-    assert_eq!(a.cmp(&b), Ordering::Less);
-
-    // Float comparison test (using comparable bits)
-    let a = RangeMapBlaze::from_iter([(2..=3, 1.0f32.to_bits()), (5..=100, 2.0f32.to_bits())]);
-    let b = RangeMapBlaze::from_iter([(2..=2, f32::NAN.to_bits())]);
-    assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
 }

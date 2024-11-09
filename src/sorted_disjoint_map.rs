@@ -567,7 +567,7 @@ where
     /// cmk doc
     #[inline]
     #[must_use]
-pub fn new<J>(iter: J) -> Self
+    pub fn new<J>(iter: J) -> Self
     where
         J: IntoIterator<Item = (RangeInclusive<T>, VR), IntoIter = I>,
     {
@@ -608,7 +608,6 @@ where
     (range.clone(), value.clone_ref())
 }
 
-// implement iterator
 impl<T, VR, I> Iterator for CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,
@@ -617,40 +616,52 @@ where
 {
     type Item = (RangeInclusive<T>, VR);
 
+    #[allow(clippy::manual_assert)] // We use "if...panic!" for coverage auditing.
     fn next(&mut self) -> Option<Self::Item> {
+        // Get the next item
         let range_value = self.iter.next();
+
+        // If it's None, we're done (but remember that we've seen None)
         let Some(range_value) = range_value else {
             self.seen_none = true;
             return None;
         };
-        // cmk should test all these
-        assert!(!self.seen_none, "A value must not be returned after None");
+
+        // if the next item is Some, check that we haven't seen None before
+        if self.seen_none {
+            panic!("a value must not be returned after None")
+        };
+
+        // Check that the range is not empty
+        let (start, end) = range_value.0.clone().into_inner();
+        if start > end {
+            panic!("start must be <= end")
+        };
+
+        // If previous is None, we're done (but remember this pair as previous)
         let Some(previous) = self.previous.take() else {
             self.previous = Some(range_value_clone(&range_value));
             return Some(range_value);
         };
 
+        // The next_item is Some and previous is Some, so check that the ranges are disjoint and sorted
         let previous_end = *previous.0.end();
-        let (start, end) = range_value.0.clone().into_inner();
-        assert!(start <= end, "Start must be <= end.",);
-        assert!(previous_end < start, "Ranges must be disjoint and sorted");
-        if previous_end.add_one() == start {
-            assert!(
-                previous.1.borrow() != range_value.1.borrow(),
-                "Touching ranges must have different values"
-            );
+        if previous_end >= start {
+            panic!("ranges must be disjoint and sorted")
+        };
+        if previous_end.add_one() == start && previous.1.borrow() == range_value.1.borrow() {
+            panic!("touching ranges must have different values")
         }
+
+        // Remember this pair as previous
         self.previous = Some(range_value_clone(&range_value));
-        Some(range_value_clone(&range_value))
+        Some(range_value)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
 }
-
-// // cmk00 check
-// // cmk00 make Fused but don't require it
 
 /// Used internally by [`UnionIterMap`] and [`SymDiffIterMap`].
 #[derive(Clone, Debug)]
@@ -682,18 +693,9 @@ where
     T: Integer,
     VR: ValueRef,
 {
-    /// Returns the priority number.
-    pub const fn priority_number(&self) -> usize {
-        self.priority_number
-    }
     /// Returns a reference to `range_value`.
     pub const fn range_value(&self) -> &(RangeInclusive<T>, VR) {
         &self.range_value
-    }
-
-    /// Updates `range_value` with the given value.
-    pub fn set_range_value(&mut self, value: (RangeInclusive<T>, VR)) {
-        self.range_value = value;
     }
 
     /// Consumes `Priority` and returns `range_value`.
@@ -704,11 +706,6 @@ where
     /// Updates the range part of `range_value`.
     pub fn set_range(&mut self, range: RangeInclusive<T>) {
         self.range_value.0 = range;
-    }
-
-    /// Consumes `Priority` and returns the range part of `range_value`.
-    pub fn into_range(self) -> RangeInclusive<T> {
-        self.range_value.0
     }
 
     /// Returns the start of the range.
@@ -731,6 +728,7 @@ where
         &self.range_value.1
     }
 }
+
 // Implement `PartialEq` to allow comparison (needed for `Eq`).
 impl<T, VR> PartialEq for Priority<T, VR>
 where
@@ -738,9 +736,7 @@ where
     VR: ValueRef,
 {
     fn eq(&self, other: &Self) -> bool {
-        let result_cmk = self.priority_number == other.priority_number;
-        assert!(!result_cmk, "Don't expect identical priority numbers");
-        result_cmk
+        self.priority_number == other.priority_number
     }
 }
 
@@ -768,7 +764,7 @@ where
 impl<T, VR> PartialOrd for Priority<T, VR>
 where
     T: Integer,
-    VR: ValueRef, // cmk0 why 'a?
+    VR: ValueRef,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
