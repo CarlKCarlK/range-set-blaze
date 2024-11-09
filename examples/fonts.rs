@@ -1,8 +1,5 @@
 use range_set_blaze::prelude::*;
 use range_set_blaze::Integer;
-// cmk needed?
-// #[cfg(feature = "rog-experimental")]
-// use range_set_blaze::SomeOrGap;
 
 fn sample2() {
     let filename =
@@ -23,7 +20,6 @@ fn sample2() {
 }
 
 #[allow(deprecated)]
-#[cfg(feature = "rog-experimental")]
 fn sample1() {
     let overlapping_font_table = [
         ('\u{3040}'..='\u{309F}', "Japanese Font"),
@@ -46,31 +42,13 @@ fn sample1() {
     println!("-----");
 
     let text = "Hello, こんにちは, ∑, 😊";
-    let iter = text.chars().map(|c| {
-        disjoint_font_table
-            .get_range_value(c)
-            .unwrap_or_else(|gap| (gap, &"**MISSING**"))
-    });
-    let fonts_used = RangeMapBlaze::<char, &str>::from_iter(iter);
-    for (range, font) in fonts_used.range_values() {
-        let (start, end) = range.into_inner();
-        println!(
-            "U+{:X}{}..=U+{:X}{} -> {}",
-            start as u32, start, end as u32, end, font
-        );
+    for c in text.chars() {
+        let font = disjoint_font_table.get(c).unwrap_or(&"**MISSING**");
+        println!("{c} -> {font}");
     }
-
-    // println!("Chars used: {:?}", chars_used);
-    // let fonts_used = disjoint_font_table
-    //     .intersection_with_set(&chars_used)
-    //     .range_values()
-    //     .map(|(_, font)| *font)
-    //     .collect::<BTreeSet<&str>>();
-    println!("Fonts used: {:?}", fonts_used);
 }
 
 fn main() {
-    #[cfg(feature = "rog-experimental")]
     sample1();
     sample2();
 }

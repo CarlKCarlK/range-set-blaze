@@ -473,33 +473,6 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
             })
     }
 
-    // /// cmk doc
-    // #[cfg(feature = "rog-experimental")]
-    // #[allow(deprecated)]
-    // pub fn get_range_value(&self, key: T) -> SomeOrGap<(RangeInclusive<T>, &V), T> {
-    //     let one_back = self.btree_map.range(..=key).next_back();
-    //     let Some((start, end_value)) = one_back else {
-    //         // nothing before, find any after
-    //         if let Some((start, _)) = self.btree_map.range(key..).next() {
-    //             debug_assert!(&key < start);
-    //             return SomeOrGap::Gap(T::min_value()..=start.sub_one());
-    //         };
-    //         return SomeOrGap::Gap(T::min_value()..=T::max_value());
-    //     };
-    //     if key <= end_value.end {
-    //         SomeOrGap::Some((*start..=end_value.end, &end_value.value))
-    //     } else if key == T::max_value() {
-    //         SomeOrGap::Gap(end_value.end.add_one()..=key)
-    //     } else {
-    //         let next = self.btree_map.range(key..).next();
-    //         if let Some((next_start, _)) = next {
-    //             SomeOrGap::Gap(end_value.end.add_one()..=next_start.sub_one())
-    //         } else {
-    //             SomeOrGap::Gap(end_value.end.add_one()..=T::max_value())
-    //         }
-    //     }
-    // }
-
     /// Returns the last element in the set, if any.
     /// This element is always the maximum of all elements in the set.
     ///
