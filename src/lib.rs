@@ -6,14 +6,17 @@
     missing_docs,
     single_use_lifetimes,
     clippy::pedantic,
-    // cmk00 unreachable_pub,
-    // cmk00 clippy::cargo,
+    // cmk0 unreachable_pub,
+    // cmk0 clippy::cargo,
     clippy::perf,
     clippy::style,
     clippy::complexity,
     clippy::correctness,
     clippy::nursery,
-    // cmk00 clippy::cargo_common_metadata
+    // cmk0 clippy::cargo_common_metadata
+    // cmk clippy::result_unwrap_used and clippy::option_unwrap_used: Warns if you're using .unwrap() or .expect(), which can be a sign of inadequate error handling.
+    // cmk	clippy::panic_in_result_fn: Ensures functions that return Result do not contain panic!, which could be inappropriate in production code.
+
 )]
 #![no_std]
 extern crate alloc;
@@ -145,7 +148,7 @@ pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
 pub type BitNandMerge<T, L, R> = BitOrMerge<T, NotIter<T, L>, NotIter<T, R>>;
 #[doc(hidden)]
 pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
-#[doc(hidden)] // cmk00 create better name
+#[doc(hidden)]
 pub type BitAndMapWithRanges<'a, T, V, VR, I> =
     IntersectionIterMap<T, VR, I, BitAndKMerge<T, MapRangesIter<'a, T, V>>>;
 #[doc(hidden)]

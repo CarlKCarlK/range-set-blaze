@@ -443,12 +443,12 @@ fn sdi1() {
 // cmk00 Can we/should we hide MergeMapIter and KMergeMapIter and SymDiffMapIter::new and UnionMapIter::new?
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-// cmk00 challenge: convert from every level to sorted disjoint* for both map and set.
+// cmk0 challenge: convert from every level to sorted disjoint* for both map and set.
 pub fn convert_challenge() {
     use itertools::Itertools;
     use unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 
-    // cmk00 what is the for?
+    // cmk what is the for?
     // #[allow(clippy::needless_pass_by_value)]
     // fn _is_sorted_disjoint_map<T, VR, S>(_iter: S)
     // where

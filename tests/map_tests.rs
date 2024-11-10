@@ -92,26 +92,24 @@ fn map_map_operators() {
     let _ = adm.union(bdm);
     let adm = arm.range_values();
     let bdm = brm.range_values();
-    let _ = adm.intersection_with_set(bdm.into_sorted_disjoint());
+    let _ = adm.map_and_set_intersection(bdm.into_sorted_disjoint());
     let adm = arm.range_values();
     let bdm = brm.range_values();
-    let _ = adm.difference_with_set(bdm.into_sorted_disjoint());
-    // symmetric_difference on streams not supported because
-    // efficient implementation would require a new iterator type.
-    // let adm = arm.range_values();
-    // let bdm = brm.range_values();
-    // let _ = adm.symmetric_difference(bdm);
+    let _ = adm.map_and_set_difference(bdm.into_sorted_disjoint());
     let adm = arm.range_values();
-    let _ = adm.complement_to_set();
+    let bdm = brm.range_values();
+    let _ = adm.symmetric_difference(bdm);
+    let adm = arm.range_values();
+    let _ = adm.complement();
 
     // SortedDisjointMap/SortedDisjointSet
     // intersection, difference
     let adm = arm.range_values();
     let bds = brm.ranges();
-    let _ = adm.intersection_with_set(bds);
+    let _ = adm.map_and_set_intersection(bds);
     let adm = arm.range_values();
     let bds = brm.ranges();
-    let _ = adm.difference_with_set(bds);
+    let _ = adm.map_and_set_difference(bds);
 }
 
 #[test]
@@ -178,7 +176,7 @@ fn map_repro_bit_and() {
 
     let result = a
         .range_values()
-        .intersection_with_set(b.ranges())
+        .map_and_set_intersection(b.ranges())
         .into_range_map_blaze();
     println!("{result}");
     assert_eq!(result, RangeMapBlaze::from_iter([(2..=3, "World")]));
@@ -338,7 +336,7 @@ fn map_iters() -> Result<(), Box<dyn std::error::Error>> {
     }
     // range_map_blaze.len();
 
-    let mut rs = range_map_blaze.range_values().complement_to_set();
+    let mut rs = range_map_blaze.range_values().complement();
     println!("{:?}", rs.next());
     println!("{range_map_blaze}");
     // !!! assert that can't use range_map_blaze again
@@ -610,13 +608,13 @@ fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
     let union_stream = b.range_values().union(c.range_values());
     let a_less = a
         .range_values()
-        .difference_with_set(union_stream.into_sorted_disjoint());
+        .map_and_set_difference(union_stream.into_sorted_disjoint());
     let d: RangeMapBlaze<_, _> = a_less.into_range_map_blaze();
     assert_eq!(d, RangeMapBlaze::from_iter([(1..=4, 'a'), (14..=15, 'a')]));
 
     let d: RangeMapBlaze<_, _> = a
         .range_values()
-        .difference_with_set(
+        .map_and_set_difference(
             [b.range_values(), c.range_values()]
                 .union()
                 .into_sorted_disjoint(),
@@ -662,10 +660,7 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     let b = &RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
     let c = &RangeMapBlaze::from_iter([(38..=42, 'c')]);
     assert_eq!(
-        a & b & c
-            | a.intersection_with_set(&(!b & !c))
-            | b.intersection_with_set(&(!a & !c))
-            | c.intersection_with_set(&(!a & !b)),
+        a & b & c | a & (&(!b & !c)) | b & (&(!a & !c)) | c & (&(!a & !b)),
         RangeMapBlaze::from_iter([
             (1..=4, 'a'),
             (7..=7, 'b'),
@@ -696,8 +691,8 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     println!("!b {}", !b);
     println!("!c {}", !c);
     println!("!b|!c {}", !b | !c);
-    let b_comp = (b).range_values().complement(&'B');
-    let c_comp = (c).range_values().complement(&'C');
+    let b_comp = (b).range_values().complement_with(&'B');
+    let c_comp = (c).range_values().complement_with(&'C');
     println!(
         "!b|!c {}",
         RangeMapBlaze::from_sorted_disjoint_map(b_comp.union(c_comp))
@@ -732,18 +727,18 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     let u = [
         intersection_map_dyn!(
             a.range_values(),
-            b.range_values().complement(&'a'),
-            c.range_values().complement(&'a')
+            b.range_values().complement_with(&'a'),
+            c.range_values().complement_with(&'a')
         ),
         intersection_map_dyn!(
             b.range_values(),
-            a.range_values().complement(&'b'),
-            c.range_values().complement(&'b')
+            a.range_values().complement_with(&'b'),
+            c.range_values().complement_with(&'b')
         ),
         intersection_map_dyn!(
             c.range_values(),
-            a.range_values().complement(&'c'),
-            b.range_values().complement(&'c')
+            a.range_values().complement_with(&'c'),
+            b.range_values().complement_with(&'c')
         ),
         intersection_map_dyn!(a.range_values(), b.range_values(), c.range_values()),
     ]
@@ -784,7 +779,7 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
     let a = &a0 | &a1;
     let not_a = &a.complement_with(&"A");
     let b = a.range_values();
-    let c = not_a.range_values().complement(&"A");
+    let c = not_a.range_values().complement_with(&"A");
     let d = a0.range_values().union(a1.range_values());
     let e = a.range_values(); // with range instead of range values used 'tee' here
 
@@ -808,11 +803,11 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
         (1..=1, &"f"),
     ]);
 
-    let not_b = b.complement(&"A");
-    let not_c = c.complement(&"A");
-    let not_d = d.complement(&"A");
-    let not_e = e.complement(&"A");
-    let not_f = f.complement(&"A");
+    let not_b = b.complement_with(&"A");
+    let not_c = c.complement_with(&"A");
+    let not_d = d.complement_with(&"A");
+    let not_e = e.complement_with(&"A");
+    let not_f = f.complement_with(&"A");
     // cmk0 make .to_string_work
     // println!("not a: {:?}", not_a.range_values().into_range_map_blaze());
     // println!("not b: {:?}", not_b.into_range_map_blaze());
@@ -845,7 +840,7 @@ fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
         .union(a2.range_values());
     let c = not_a0
         .range_values()
-        .complement(&"a0")
+        .complement_with(&"a0")
         .union(a12.range_values());
     let d = a0
         .range_values()
@@ -881,7 +876,7 @@ fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
     let b = a01.range_values() - a2.range_values();
     let c = !not_a01.range_values() - a2.ranges();
     let d = (a0.range_values() | a1.range_values()) - a2.range_values();
-    let e = a01_tee.difference_with_set(a2.ranges());
+    let e = a01_tee.map_and_set_difference(a2.ranges());
     // cmk0 let f = UnionIterMap::from_iter(a01.iter()) - UnionIter::from_iter(a2.keys());
     assert!(a.range_values().equal(b));
     assert!(a.ranges().equal(c));
@@ -934,8 +929,8 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
     let b = a01.range_values() & a2.range_values();
     let c = !not_a01.range_values() & a2.ranges();
     let d = (a0.range_values() | a1.range_values()) & a2.range_values();
-    let e = a01_tee.intersection_with_set(a2.ranges());
-    // cmk00 let f = UnionIterMap::from_iter(a01.iter()) & UnionIter::from_iter(a2.keys());
+    let e = a01_tee.map_and_set_intersection(a2.ranges()); // cmk00
+                                                           // cmk00 let f = UnionIterMap::from_iter(a01.iter()) & UnionIter::from_iter(a2.keys());
     assert!(a.range_values().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.range_values().equal(d));
@@ -4334,7 +4329,7 @@ fn example_2() {
 
 //     let result = a
 //         .range_values()
-//         .intersection_with_set(b.ranges())
+//         .map_and_set_intersection(b.ranges())
 //         .into_range_map_blaze();
 //     println!("{result}");
 //     assert_eq!(result, RangeMapBlaze::from_iter([(2..=3, "World")]));
@@ -5087,7 +5082,6 @@ fn extend(mut a: BTreeMap<i8, u8>, b: Vec<(i8, u8)>) -> bool {
 // //     assert_eq!(range.next(), Some(20));
 // // }
 
-// cmk00000
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::reversed_empty_ranges)]
@@ -5307,3 +5301,5 @@ fn test_merge_map() {
     let c = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
     assert_eq!(KMergeMap::new([a, b, c]).size_hint(), (3, None));
 }
+
+// cmk00 understand why so much is commented out and if it can be deleted.

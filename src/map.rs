@@ -201,26 +201,47 @@ where
 ///
 /// # `RangeMapBlaze` Set Operations
 ///
-/// You can perform set operations on `RangeMapBlaze`s using operators.
+/// cmk000 `complement_with`, `map_and_set_intersection`, the - and & operators on RMB . RSB
+/// cmk000 links to the methods
+/// cmk000 fix up `RangeSetBlaze`, too
+/// cmk000 fix up the two disjoint sets/maps, too.
+/// cmk000 tell that complement returns a RSB
 ///
-/// | Set Operation           | Operator                   |  Multiway Method |
-/// |-------------------|-------------------------|-------------------------|
-/// | union       |  `a` &#124; `b`                     | `[a, b, c].`[`union`]`()` |
-/// | intersection       |  `a & b`                     | `[a, b, c].`[`intersection`]`()` |
-/// | difference       |  `a - b`                     | *n/a* |
-/// | symmetric difference       |  `a ^ b`                     | `[a, b, c].`[`symmetric_difference`]`()` |
-/// | complement       |  `!a`                     | *n/a* |
+///
+/// You can perform set operations on `RangeMapBlaze`s
+/// and `RangeSetBlaze`s usings operators. In the table below, `a`, `b`, and `c` are `RangeMapBlaze`s and `s` is a `RangeSetBlaze`.
+///
+/// | Set Operation           | Operator                           | Multiway Method                        |
+/// |--------------------------|------------------------------------|----------------------------------------|
+/// | union                    | [`a` &#124; `b`]                   | `[a, b, c].`[`union`]`()`              |
+/// | intersection             | [`a & b`]                          | `[a, b, c].`[`intersection`]`()`       |
+/// | intersection             | [`a & s`]                          | *n/a*                                  |
+/// | difference               | [`a - b`]                          | *n/a*                                  |
+/// | difference               | [`a - s`]                          | *n/a*                                  |
+/// | symmetric difference     | [`a ^ b`]                          | `[a, b, c].`[`symmetric_difference`]`()`|
+/// | complement (to set)      | [`!a`]                             | *n/a*                                  |
+/// | complement (to map)      | [`a.complement_with(&value)`]      | *n/a*                                  |
+///
+/// The result of all operations is a new `RangeMapBlaze` except for `!a`, which returns a `RangeSetBlaze`.
+///
 ///
 /// `RangeMapBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
 /// these methods match those of `BTreeSet`. cmk should say `BTreeMap` and be sure these are real methods.
 ///
+/// [`a` &#124; `b`]: struct.RangeMapBlaze.html#impl-BitOr-for-RangeMapBlaze<T,+V>
+/// [`a & b`]: struct.RangeMapBlaze.html#impl-BitAnd-for-RangeMapBlaze<T,+V>
+/// [`a & s`]: struct.RangeMapBlaze.html#impl-BitAnd<%26RangeSetBlaze<T>>-for-%26RangeMapBlaze<T,+V>
+/// [`a - b`]: struct.RangeMapBlaze.html#impl-Sub-for-RangeMapBlaze<T,+V>
+/// [`a - s`]: struct.RangeMapBlaze.html#impl-Sub<%26RangeSetBlaze<T>>-for-%26RangeMapBlaze<T,+V>
+/// [`a ^ b`]: struct.RangeMapBlaze.html#impl-BitXor-for-RangeMapBlaze<T,+V>
+/// [`!a`]: struct.RangeMapBlaze.html#impl-Not-for-%26RangeMapBlaze<T,+V>
+/// [`a.complement_with(&value)`]: struct.RangeMapBlaze.html#method.complement_with
 /// [`union`]: trait.MultiwayRangeMapBlazeRef.html#method.union
 /// [`intersection`]: trait.MultiwayRangeMapBlazeRef.html#method.intersection
 /// [`symmetric_difference`]: trait.MultiwayRangeMapBlazeRef.html#method.symmetric_difference
 /// [`insert`]: RangeMapBlaze::insert
 /// [`pop_first`]: RangeMapBlaze::pop_first
 /// [`split_off`]: RangeMapBlaze::split_off
-/// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
 ///
 /// ## Set Operation Performance
 ///
@@ -231,7 +252,9 @@ where
 /// Thus, applying multiple operators creates intermediate
 /// `RangeMapBlaze`'s. If you wish, you can avoid these intermediate
 /// `RangeMapBlaze`'s by switching to the [`SortedDisjointMap`] API. The last example below
-/// demonstrates this.
+/// demonstrates this. cmk bad link
+///
+/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
 ///
 /// ## Set Operation Examples
 ///
@@ -778,7 +801,7 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
         };
 
         let bounds = CheckSortedDisjoint::new([start_inclusive..=end_inclusive]);
-        Self::from_sorted_disjoint_map(self.range_values().intersection_with_set(bounds))
+        Self::from_sorted_disjoint_map(self.range_values().map_and_set_intersection(bounds))
             .into_iter()
     }
 
@@ -1547,16 +1570,6 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     // {
     //     *self = self.iter().filter(|v| f(v)).collect();
     // }
-
-    // cmk00 is this really the only place we need this?
-    // cmk00 is this tested enough?
-    /// cmk doc
-    #[must_use]
-    pub fn intersection_with_set(&self, other: &RangeSetBlaze<T>) -> Self {
-        self.range_values()
-            .intersection_with_set(other.ranges())
-            .into_range_map_blaze()
-    }
 }
 
 impl<T, V> IntoIterator for RangeMapBlaze<T, V>
@@ -1631,7 +1644,7 @@ pub type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusi
 impl<T: Integer, V: EqClone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// Passing ownership rather than borrow sometimes allows a many-times
+    /// cmk000 true??? Passing ownership rather than borrow sometimes allows a many-times
     /// faster speed up.
     ///
     /// # Examples
@@ -1654,7 +1667,7 @@ impl<T: Integer, V: EqClone> BitOr<Self> for RangeMapBlaze<T, V> {
 impl<T: Integer, V: EqClone> BitOr<&Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// Passing ownership rather than borrow sometimes allows a many-times
+    /// /// cmk000 true??? Passing ownership rather than borrow sometimes allows a many-times
     /// faster speed up.
     ///
     /// # Examples
@@ -1677,7 +1690,7 @@ impl<T: Integer, V: EqClone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V>
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// Passing ownership rather than borrow sometimes allows a many-times
+    /// /// cmk000 true??? Passing ownership rather than borrow sometimes allows a many-times
     /// faster speed up.
     ///
     /// # Examples
@@ -1700,7 +1713,7 @@ impl<T: Integer, V: EqClone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// Passing ownership rather than borrow sometimes allows a many-times
+    /// /// cmk000 true??? ship rather than borrow sometimes allows a many-times
     /// faster speed up.
     ///
     /// # Examples
@@ -1734,7 +1747,7 @@ gen_ops_ex!(
     /// assert_eq!(result.to_string(), r#"(2..=2, "a"), (5..=6, "a")"#);
     /// ```
     for & call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
-        a.range_values().intersection_with_set(b.ranges()).into_range_map_blaze()
+        a.range_values().map_and_set_intersection(b.ranges()).into_range_map_blaze()
     };
 /// Symmetric difference the contents of two [`RangeMapBlaze`]'s.
 ///
@@ -1767,7 +1780,7 @@ for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
 /// ```
 
 for - call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
-    a.range_values().difference_with_set(b.ranges()).into_range_map_blaze()
+    a.range_values().map_and_set_difference(b.ranges()).into_range_map_blaze()
 };
 where T: Integer, V: EqClone
 );
@@ -1777,7 +1790,7 @@ gen_ops_ex!(
     types ref RangeMapBlaze<T,V>, ref RangeSetBlaze<T> => RangeMapBlaze<T,V>;
 
 
-/// Difference the contents of two [`RangeSetBlaze`]'s.
+/// Find the difference between a [`RangeMapBlaze`] and a [`RangeSetBlaze`]. The result is a new [`RangeMapBlaze`].
 ///
 /// Either, neither, or both inputs may be borrowed.
 ///
@@ -1785,19 +1798,31 @@ gen_ops_ex!(
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+/// let a = RangeMapBlaze::from_iter([(1..=100, "a")]);
 /// let b = RangeSetBlaze::from_iter([2..=6]);
 /// let result = &a - &b; // Alternatively, 'a - b'.
-/// assert_eq!(result.to_string(), "1..=1, 7..=100");
+/// assert_eq!(result.to_string(), r#"(1..=1, "a"), (7..=100, "a")"#);
 /// ```
-/// cmk
 for - call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
-    a.range_values().difference_with_set(b.ranges()).into_range_map_blaze()
+    a.range_values().map_and_set_difference(b.ranges()).into_range_map_blaze()
 };
 
-/// cmk
+// cmk000 include map_and_set_intersection in tables in the docs
+/// Find the intersection between a [`RangeMapBlaze`] and a [`RangeSetBlaze`]. The result is a new [`RangeMapBlaze`].
+///
+/// Either, neither, or both inputs may be borrowed.
+///
+/// # Examples
+/// ```
+/// use range_set_blaze::prelude::*;
+///
+/// let a = RangeMapBlaze::from_iter([(1..=100, "a")]);
+/// let b = RangeSetBlaze::from_iter([2..=6]);
+/// let result = &a & &b; // Alternatively, 'a & b'.
+/// assert_eq!(result.to_string(), r#"(2..=6, "a")"#);
+/// ```
 for & call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
-    a.range_values().intersection_with_set(b.ranges()).into_range_map_blaze()
+    a.range_values().map_and_set_intersection(b.ranges()).into_range_map_blaze()
 };
 
 where T: Integer, V: EqClone
@@ -1808,7 +1833,16 @@ gen_ops_ex!(
     types ref RangeMapBlaze<T,V> => RangeSetBlaze<T>;
 
 
-/// cmk
+/// Takes the complement of a `RangeMapBlaze`. The result is a new `RangeSetBlaze`.
+///
+/// # Examples
+/// ```
+/// use range_set_blaze::RangeMapBlaze;
+///
+/// let map = RangeMapBlaze::from_iter([(10u8..=20, "a"), (15..=25, "b"), (30..=40, "c")]);
+/// let complement = !&map; // Alternatively, '!map'.
+/// assert_eq!(complement.to_string(), "0..=9, 26..=29, 41..=255");
+/// ```
 for ! call |a: &RangeMapBlaze<T, V>| {
     a.ranges().complement().into_range_set_blaze()
 };
@@ -1960,7 +1994,7 @@ impl<T: Integer, V: EqClone> Index<T> for RangeMapBlaze<T, V> {
 
 // cmk missing values and values per range
 
-// cmk add difference_with_set??? is there a complement with set? sub_assign
+// cmk add map_and_set_difference??? is there a complement with set? sub_assign
 
 impl<T, V> PartialOrd for RangeMapBlaze<T, V>
 where

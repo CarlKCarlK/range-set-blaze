@@ -94,7 +94,6 @@ impl<T: Integer> Iterator for DynSortedDisjoint<'_, T> {
 macro_rules! intersection_dyn {
     ($($val:expr),*) => {$crate::MultiwaySortedDisjoint::intersection([$($crate::DynSortedDisjoint::new($val)),*])}
 }
-// cmk00 can/should this be defined without DynSortedDisjoint (which may could then be removed)?
 
 /// Unions one or more [`SortedDisjoint`][SortedDisjoint] iterators, creating a new [`SortedDisjoint`][SortedDisjoint] iterator.
 /// The input iterators need not to be of the same type.
@@ -134,10 +133,8 @@ macro_rules! union_dyn {
                         $crate::MultiwaySortedDisjoint::union([$($crate::DynSortedDisjoint::new($val)),*])
                         }
 }
-// cmk00 can/should this be defined without DynSortedDisjoint (which may could then be removed)?
 
 /// cmk doc
-// cmk00 test
 #[macro_export]
 macro_rules! symmetric_difference_dyn {
     ($($val:expr),*) => {

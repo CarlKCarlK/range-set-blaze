@@ -3,6 +3,7 @@ name: test
 # cmk if cargo install cargo-deadlinks is good add it here
 # cmk also  RUSTDOCFLAGS="-Dwarnings" cargo doc --no-deps --all-features
 # cmk compile every example in CI
+# cmk should coverage be added to CI?
 
 on:
   push:

@@ -223,15 +223,20 @@ where
 ///
 /// | Set Operation           | Operator          |  Multiway Method |
 /// |-------------------|-------------------------|-------------------------|
-/// | union             |  `a` &#124; `b`         | `[a, b, c].`[`union`]`()` |
-/// | intersection      |  `a & b`                | `[a, b, c].`[`intersection`]`()` |
-/// | difference        |  `a - b`                | *n/a* |
-/// | symmetric difference|  `a ^ b`              | `[a, b, c].`[`symmetric_difference`]`()` |
-/// | complement        |  `!a`                   | *n/a* |
+/// | union             |  [`a` &#124; `b`]       | `[a, b, c].`[`union`]`()` |
+/// | intersection      |  [`a & b`]              | `[a, b, c].`[`intersection`]`()` |
+/// | difference        |  [`a - b`]              | *n/a* |
+/// | symmetric difference|  [`a ^ b`]            | `[a, b, c].`[`symmetric_difference`]`()` |
+/// | complement        |  [`!a`]                 | *n/a* |
 ///
 /// `RangeSetBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
 /// these methods match those of `BTreeSet`.
 ///
+/// [`a` &#124; `b`]: struct.RangeSetBlaze.html#impl-BitOr-for-RangeSetBlaze<T>
+/// [`a & b`]: struct.RangeSetBlaze.html#impl-BitAnd-for-RangeSetBlaze<T>
+/// [`a - b`]: struct.RangeSetBlaze.html#impl-Sub-for-RangeSetBlaze<T>
+/// [`a ^ b`]: struct.RangeSetBlaze.html#impl-BitXor-for-RangeSetBlaze<T>
+/// [`!a`]: struct.RangeSetBlaze.html#method.not
 /// [`union`]: trait.MultiwayRangeSetBlazeRef.html#method.union
 /// [`intersection`]: trait.MultiwayRangeSetBlazeRef.html#method.intersection
 /// [`symmetric_difference`]: trait.MultiwayRangeSetBlazeRef.html#method.symmetric_difference

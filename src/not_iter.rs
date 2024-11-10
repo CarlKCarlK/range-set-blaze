@@ -2,9 +2,9 @@ use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use crate::{Integer, SortedDisjoint};
 
-/// The output of [`SortedDisjoint::complement`] and [`SortedDisjointMap::complement_to_set`].
+/// The output of [`SortedDisjoint::complement`] and [`SortedDisjointMap::complement_with`].
 ///
-/// [`SortedDisjointMap::complement_to_set`]: trait.SortedDisjointMap.html#method.complement_to_set
+/// [`SortedDisjointMap::complement_with`]: trait.SortedDisjointMap.html#method.complement_with
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct NotIter<T, I>
@@ -26,7 +26,7 @@ where
     ///
     /// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
     #[inline]
-pub fn new<J>(iter: J) -> Self
+    pub fn new<J>(iter: J) -> Self
     where
         J: IntoIterator<Item = RangeInclusive<T>, IntoIter = I>,
     {

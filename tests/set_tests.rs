@@ -2208,8 +2208,6 @@ fn multiway4() {
     );
 }
 
-// cmk00 move these tests to tests.rs
-
 // Test every function in the library that does a union like thing.
 
 #[test]
@@ -2415,7 +2413,6 @@ fn sorted_disjoint_ops() {
 }
 
 // cmk00 get this looking better 	`cargo doc --no-deps --all-features --open` esp NotIter etc
-// cmk000 get full coverage
 // cmk00 get 'set' doc page looking good
 // cmk00 get 'map' doc page looking good
 

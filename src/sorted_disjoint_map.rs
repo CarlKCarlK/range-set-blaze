@@ -105,19 +105,28 @@ where
 ///
 /// # `SortedDisjointMap` Set Operations
 ///
-/// | Method                                 | Operator         | Multiway (same type)                                      | Multiway (different types)                     |
-/// |----------------------------------------|------------------|-----------------------------------------------------------|-----------------------------------------------|
-/// | `a.`[`union`]`(b)`                     | `a` &#124; `b`   | `[a, b, c].`[`union`][multiway_union]`() `                | [`union_map_dyn!`](a, b, c)                    |                    
-/// | `a.`[`intersection`]`(b)`              | `a & b`          | `[a, b, c].`[`intersection`][multiway_intersection]`() `  | [`intersection_map_dyn!`](a, b, c)             |
-/// | `a.`[`difference`]`(b)`                | `a - b`          | *n/a*                                                     | *n/a*                                          |
-/// | `a.`[`symmetric_difference`]`(b)`      | `a ^ b`          | `[a, b, c].`[`symmetric_difference`][multiway_symmetric_difference]`() ` | [`symmetric_difference_map_dyn!`](a, b, c) |
-/// | `a.`[`complement`]`() `                | `!a`             | *n/a*                                                     | *n/a*                                          |
+/// You can perform set operations on `SortedDisjointMap`s and `SortedDisjoint`s using operators.
+/// In the table below, `a`, `b`, and `c` are `SortedDisjointMap` and `s` is a `SortedDisjoint`.
 ///
-/// [`union`]: trait.SortedDisjointMap.html#method.union
-/// [`intersection`]: trait.SortedDisjointMap.html#method.intersection
-/// [`difference`]: trait.SortedDisjointMap.html#method.difference
-/// [`symmetric_difference`]: trait.SortedDisjointMap.html#method.symmetric_difference
-/// [`complement`]: trait.SortedDisjointMap.html#method.complement
+/// | Set Operator               | Operator                      | Multiway (same type)                                      | Multiway (different types)                     |
+/// |----------------------------|-------------------------------|-----------------------------------------------------------|-----------------------------------------------|
+/// | `union`                    | [`a` &#124; `b`]              | `[a, b, c].`[`union`][multiway_union]`() `                | [`union_map_dyn!`](a, b, c)                    |
+/// | `intersection`             | [`a & b`]                     | `[a, b, c].`[`intersection`][multiway_intersection]`() `  | [`intersection_map_dyn!`](a, b, c)             |
+/// | `intersection`             | [`a & s`]                     | *n/a*                                                     | *n/a*                                          |
+/// | `difference`               | [`a - b`]                     | *n/a*                                                     | *n/a*                                          |
+/// | `difference`               | [`a - s`]                     | *n/a*                                                     | *n/a*                                          |
+/// | `symmetric_difference`     | [`a ^ b`]                     | `[a, b, c].`[`symmetric_difference`][multiway_symmetric_difference]`() ` | [`symmetric_difference_map_dyn!`](a, b, c) |
+/// | `complement` (to set)      | [`!a`]                        | *n/a*                                                     | *n/a*                                          |
+/// | `complement (to map)`      | [`a.complement_with(&value)`] | *n/a*                                                     | *n/a*                                          |
+///
+/// [`a` &#124; `b`]: trait.SortedDisjointMap.html#method.union
+/// [`a & b`]: trait.SortedDisjointMap.html#method.intersection
+/// [`a & s`]: trait.SortedDisjointMap.html#method.map_and_set_intersection
+/// [`a - b`]: trait.SortedDisjointMap.html#method.difference
+/// [`a - s`]: trait.SortedDisjointMap.html#method.map_and_set_difference
+/// [`a ^ b`]: trait.SortedDisjointMap.html#method.symmetric_difference
+/// [`!a`]: trait.SortedDisjointMap.html#method.complement
+/// [`a.complement_with(&value)`]: trait.SortedDisjointMap.html#method.complement_with
 /// [multiway_union]: trait.MultiwaySortedDisjointMap.html#method.union
 /// [multiway_intersection]: trait.MultiwaySortedDisjointMap.html#method.intersection
 /// [multiway_symmetric_difference]: trait.MultiwaySortedDisjointMap.html#method.symmetric_difference
@@ -261,11 +270,8 @@ where
         IntersectionIterMap::new(self, sorted_disjoint)
     }
 
-    /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their intersection.
-    ///
-    /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
-    ///
-    /// /// cmk Tell that right-and-side must be a set, not a map
+    /// Given a [`SortedDisjointMap`] iterator and a [`SortedDisjoint`] iterator,
+    /// efficiently returns a [`SortedDisjointMap`] iterator of their intersection.
     ///
     /// # Examples
     ///
@@ -273,13 +279,13 @@ where
     /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjointMap::new([(1..=2, &"a")]);
-    /// let b = RangeMapBlaze::from_iter([(2..=3, "b")]).into_ranges();
-    /// let intersection = a.intersection_with_set(b);
+    /// let b = CheckSortedDisjoint::new([2..=3]);
+    /// let intersection = a.map_and_set_intersection(b);
     /// assert_eq!(intersection.into_string(), r#"(2..=2, "a")"#);
     /// ```
+    // cmk000 get all these to use the operator rather than the method
     #[inline]
-    // cmk should this be called intersection_with_ranges?
-    fn intersection_with_set<R>(self, other: R) -> BitAndRangesMap<T, VR, Self, R::IntoIter>
+    fn map_and_set_intersection<R>(self, other: R) -> BitAndRangesMap<T, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = RangeInclusive<T>>, // cmk0 is this bound needed?
         R::IntoIter: SortedDisjoint<T>,
@@ -287,7 +293,7 @@ where
     {
         let sorted_disjoint = other.into_iter();
         IntersectionIterMap::new(self, sorted_disjoint)
-    }
+    } // cmk000 should the RangeSetMap use this operation?
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
     ///
@@ -322,7 +328,7 @@ where
         Self: Sized,
     {
         let sorted_disjoint_map = other.into_iter();
-        let complement = sorted_disjoint_map.complement_to_set();
+        let complement = sorted_disjoint_map.complement();
         IntersectionIterMap::new(self, complement)
     }
 
@@ -338,12 +344,12 @@ where
     ///
     /// let a = CheckSortedDisjointMap::new([(1..=2, &"a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=3, "b")]).into_ranges();
-    /// let difference = a.difference_with_set(b);
+    /// let difference = a.map_and_set_difference(b);
     /// assert_eq!(difference.into_string(), r#"(1..=1, "a")"#);
     /// ```
     #[inline]
     // cmk rename difference_with_ranges?
-    fn difference_with_set<R>(self, other: R) -> BitSubRangesMap<T, VR, Self, R::IntoIter>
+    fn map_and_set_difference<R>(self, other: R) -> BitSubRangesMap<T, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = RangeInclusive<T>>,
         R::IntoIter: SortedDisjoint<T>,
@@ -361,11 +367,11 @@ where
     /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjointMap::new([(-10_i16..=0, &"a"), (1000..=2000, &"a")]);
-    /// let complement = a.complement_to_set();
+    /// let complement = a.complement();
     /// assert_eq!(complement.into_string(), "-32768..=-11, 1..=999, 2001..=32767");
     /// ```
     #[inline]
-    fn complement_to_set(self) -> NotIter<T, RangeValuesToRangesIter<T, VR, Self>>
+    fn complement(self) -> NotIter<T, RangeValuesToRangesIter<T, VR, Self>>
     where
         Self: Sized,
     {
@@ -373,25 +379,25 @@ where
         sorted_disjoint.complement()
     }
 
-    /// cmk no "!" operator defined because we need a fill value also see `complement_to_set`
+    /// cmk no "!" operator defined because we need a fill value also see `complement_with`
     /// returns a set, not a map
     /// # Examples
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
     /// let a = CheckSortedDisjointMap::new([(-10_i16..=0, &"a"), (1000..=2000, &"a")]);
-    /// let complement = a.complement(&"z");
+    /// let complement = a.complement_with(&"z");
     /// assert_eq!(complement.into_string(), r#"(-32768..=-11, "z"), (1..=999, "z"), (2001..=32767, "z")"#);
     /// ```    
     #[inline]
-    fn complement(
+    fn complement_with(
         self,
         v: &VR::Value,
     ) -> RangeToRangeValueIter<T, VR::Value, NotIter<T, impl SortedDisjoint<T>>>
     where
         Self: Sized,
     {
-        let complement = self.complement_to_set();
+        let complement = self.complement();
         RangeToRangeValueIter::new(complement, v)
     }
 
@@ -859,7 +865,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             type Output = NotIter<T, RangeValuesToRangesIter<T, $VR, Self>>;
 
             fn not(self) -> Self::Output {
-                self.complement_to_set()
+                self.complement()
             }
         }
 
@@ -927,6 +933,3 @@ impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VR, I>, VR::Value, VR, VR: Val
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 'a, VR: ValueRef);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: EqClone);
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: EqClone);
-
-// cmk where is complement_with
-// cmk where is intersection_with_set
