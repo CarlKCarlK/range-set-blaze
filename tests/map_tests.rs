@@ -5302,4 +5302,22 @@ fn test_merge_map() {
     assert_eq!(KMergeMap::new([a, b, c]).size_hint(), (3, None));
 }
 
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn fast_union() {
+    let a = RangeMapBlaze::from_iter([(1..=2, "a")]);
+    let b = RangeMapBlaze::from_iter([
+        (1..=5, "x"),
+        (13..=14, "b"),
+        (15..=16, "c"),
+        (17..=18, "d"),
+        (19..=20, "e"),
+    ]);
+    let c = a | b;
+    assert_eq!(
+        c.to_string(),
+        r#"(1..=2, "a"), (3..=5, "x"), (13..=14, "b"), (15..=16, "c"), (17..=18, "d"), (19..=20, "e")"#
+    );
+}
+
 // cmk00 understand why so much is commented out and if it can be deleted.

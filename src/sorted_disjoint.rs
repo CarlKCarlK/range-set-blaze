@@ -79,14 +79,21 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 ///
 /// # `SortedDisjoint` Set Operations
 ///
-/// | Method                             | Operator    | Multiway (same type)                              | Multiway (different types)           |
-/// |------------------------------------|-------------|---------------------------------------------------|--------------------------------------|
-/// | `a.`[`union`]`(b)`                 | `a` &#124; `b` | `[a, b, c].`[`union`][multiway_union]`() `        | [`union_dyn!`]`(a, b, c)`         |                    
-/// | `a.`[`intersection`]`(b)`          | `a & b`     | `[a, b, c].`[`intersection`][multiway_intersection]`() ` | [`intersection_dyn!`]`(a, b, c)`|
-/// | `a.`[`difference`]`(b)`            | `a - b`     | *n/a*                                             | *n/a*                                |
-/// | `a.`[`symmetric_difference`]`(b)`  | `a ^ b`     | `[a, b, c].`[`symmetric_difference`][multiway_symmetric_difference]`() ` | [`symmetric_difference_dyn!`]`(a, b, c)` |
-/// | `a.`[`complement`]`() `            | `!a`        | *n/a*                                             | *n/a*                                |
+/// You can perform set operations on `SortedDisjoint`s using operators.
 ///
+/// | Set Operators                             | Operator    | Multiway (same type)                              | Multiway (different types)           |
+/// |------------------------------------|-------------|---------------------------------------------------|--------------------------------------|
+/// | [`union`]                      | [`a` &#124; `b`] | `[a, b, c].`[`union`][multiway_union]`() `        | [`union_dyn!`]`(a, b, c)`         |                    
+/// | [`intersection`]               | [`a & b`]     | `[a, b, c].`[`intersection`][multiway_intersection]`() ` | [`intersection_dyn!`]`(a, b, c)`|
+/// | [`difference`]                 | [`a - b`]     | *n/a*                                             | *n/a*                                |
+/// | [`symmetric_difference`]       | [`a ^ b`]     | `[a, b, c].`[`symmetric_difference`][multiway_symmetric_difference]`() ` | [`symmetric_difference_dyn!`]`(a, b, c)` |
+/// | [`complement`]                 | [`!a`]        | *n/a*                                             | *n/a*                                |
+///
+/// [`a` &#124; `b`]: trait.SortedDisjoint.html#method.union
+/// [`a & b`]: trait.SortedDisjoint.html#method.intersection
+/// [`a - b`]: trait.SortedDisjoint.html#method.difference
+/// [`a ^ b`]: trait.SortedDisjoint.html#method.symmetric_difference
+/// [`!a`]: trait.SortedDisjoint.html#method.complement
 /// [multiway_union]: trait.MultiwaySortedDisjoint.html#method.union
 /// [multiway_intersection]: trait.MultiwaySortedDisjoint.html#method.intersection
 /// [multiway_symmetric_difference]: trait.MultiwaySortedDisjoint.html#method.symmetric_difference
@@ -310,15 +317,15 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjoint::new([-10_i16..=0, 1000..=2000]);
+    /// let a = CheckSortedDisjoint::new([10_u8..=20, 100..=200]);
     /// let complement = a.complement();
-    /// assert_eq!(complement.into_string(), "-32768..=-11, 1..=999, 2001..=32767");
+    /// assert_eq!(complement.into_string(), "0..=9, 21..=99, 201..=255");
     ///
     /// // Alternatively, we can use "!" because CheckSortedDisjoint defines
-    /// // ops::not as SortedDisjoint::complement.
-    /// let a = CheckSortedDisjoint::new([-10i16..=0, 1000..=2000]);
+    /// // `ops::Not` as `SortedDisjoint::complement`.
+    /// let a = CheckSortedDisjoint::new([10_u8..=20, 100..=200]);
     /// let complement = !a;
-    /// assert_eq!(complement.into_string(), "-32768..=-11, 1..=999, 2001..=32767");
+    /// assert_eq!(complement.into_string(), "0..=9, 21..=99, 201..=255");
     /// ```
     #[inline]
     fn complement(self) -> NotIter<T, Self>

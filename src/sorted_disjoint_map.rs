@@ -110,15 +110,20 @@ where
 ///
 /// | Set Operator               | Operator                      | Multiway (same type)                                      | Multiway (different types)                     |
 /// |----------------------------|-------------------------------|-----------------------------------------------------------|-----------------------------------------------|
-/// | `union`                    | [`a` &#124; `b`]              | `[a, b, c].`[`union`][multiway_union]`() `                | [`union_map_dyn!`](a, b, c)                    |
-/// | `intersection`             | [`a & b`]                     | `[a, b, c].`[`intersection`][multiway_intersection]`() `  | [`intersection_map_dyn!`](a, b, c)             |
+/// | [`union`]                  | [`a` &#124; `b`]              | `[a, b, c].`[`union`][multiway_union]`() `                | [`union_map_dyn!`](a, b, c)                    |
+/// | [`intersection`]           | [`a & b`]                     | `[a, b, c].`[`intersection`][multiway_intersection]`() `  | [`intersection_map_dyn!`](a, b, c)             |
 /// | `intersection`             | [`a.map_and_set_intersection(s)`] | *n/a*                                                     | *n/a*                                          |
-/// | `difference`               | [`a - b`]                     | *n/a*                                                     | *n/a*                                          |
+/// | [`difference`]             | [`a - b`]                     | *n/a*                                                     | *n/a*                                          |
 /// | `difference`               | [`a.map_and_set_difference(s)`] | *n/a*                                                     | *n/a*                                          |
-/// | `symmetric_difference`     | [`a ^ b`]                     | `[a, b, c].`[`symmetric_difference`][multiway_symmetric_difference]`() ` | [`symmetric_difference_map_dyn!`](a, b, c) |
-/// | `complement` (to set)      | [`!a`]                        | *n/a*                                                     | *n/a*                                          |
+/// | [`symmetric_difference`]   | [`a ^ b`]                     | `[a, b, c].`[`symmetric_difference`][multiway_symmetric_difference]`() ` | [`symmetric_difference_map_dyn!`](a, b, c) |
+/// | [`complement`] (to set)    | [`!a`]                        | *n/a*                                                     | *n/a*                                          |
 /// | `complement` (to map)      | [`a.complement_with(&value)`] | *n/a*                                                     | *n/a*                                          |
 ///
+/// [`union`]: trait.SortedDisjointMap.html#method.union
+/// [`intersection`]: trait.SortedDisjointMap.html#method.intersection
+/// [`difference`]: trait.SortedDisjointMap.html#method.difference
+/// [`symmetric_difference`]: trait.SortedDisjointMap.html#method.symmetric_difference
+/// [`complement`]: trait.SortedDisjointMap.html#method.complement
 /// [`a` &#124; `b`]: trait.SortedDisjointMap.html#method.union
 /// [`a & b`]: trait.SortedDisjointMap.html#method.intersection
 /// [`a.map_and_set_intersection(s)`]: trait.SortedDisjointMap.html#method.map_and_set_intersection
@@ -289,8 +294,6 @@ where
     {
         IntersectionIterMap::new(self, other.into_iter())
     }
-
-    // cmk000 should the RangeSetMap use this operation?
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
     ///
@@ -909,7 +912,6 @@ macro_rules! impl_sorted_map_traits_and_ops {
             }
         }
 
-        // cmk000 Can/should this work with references, too?
         #[allow(single_use_lifetimes)]
         impl<$($more_generics)*, T, R> ops::BitXor<R> for $IterType
         where

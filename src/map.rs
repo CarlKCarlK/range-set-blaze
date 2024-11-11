@@ -201,13 +201,6 @@ where
 ///
 /// # `RangeMapBlaze` Set Operations
 ///
-/// cmk000 `complement_with`, `map_and_set_intersection`, the - and & operators on RMB . RSB
-/// cmk000 links to the methods
-/// cmk000 fix up `RangeSetBlaze`, too
-/// cmk000 fix up the two disjoint sets/maps, too.
-/// cmk000 tell that complement returns a RSB
-///
-///
 /// You can perform set operations on `RangeMapBlaze`s
 /// and `RangeSetBlaze`s usings operators. In the table below, `a`, `b`, and `c` are `RangeMapBlaze`s and `s` is a `RangeSetBlaze`.
 ///
@@ -1644,22 +1637,33 @@ pub type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusi
 impl<T: Integer, V: EqClone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// cmk000 true??? Passing ownership rather than borrow sometimes allows a many-times
-    /// faster speed up.
+    /// Passing by the right-and-side by ownership rather than borrow allows a
+    /// speed up when the left-hand side is small compared to the right-hand side.
     ///
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    /// let union = a | b;
+    /// let union = a | b;  // Alternatively, '&a | &b', etc.
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
     type Output = Self;
-    fn bitor(self, other: Self) -> Self {
-        // cmk
-        // self |= other;
-        // self
+    fn bitor(self, mut other: Self) -> Self {
+        let a_len = self.ranges_len();
+        if a_len == 0 {
+            return other;
+        }
+        let b_len = other.ranges_len();
+        if b_len == 0 {
+            return self;
+        }
+        if a_len * (b_len.ilog2() as usize + 1) < a_len + b_len {
+            for (start, end_value) in self.btree_map {
+                other.internal_add(start..=end_value.end, end_value.value);
+            }
+            return other;
+        }
         (self.range_values() | other.range_values()).into_range_map_blaze()
     }
 }
@@ -1667,21 +1671,27 @@ impl<T: Integer, V: EqClone> BitOr<Self> for RangeMapBlaze<T, V> {
 impl<T: Integer, V: EqClone> BitOr<&Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// /// cmk000 true??? Passing ownership rather than borrow sometimes allows a many-times
-    /// faster speed up.
+    /// Passing by the right-and-side by ownership rather than borrow allows a
+    /// speed up when the left-hand side is small compared to the right-hand side.
     ///
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    /// let union = a | &b;
+    /// let union = a | &b; // Alternatively, 'a | b', etc.
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
     type Output = Self;
     fn bitor(self, other: &Self) -> Self {
-        // self |= other;
-        // self
+        let b_len = other.ranges_len();
+        if b_len == 0 {
+            return self;
+        }
+        let a_len = self.ranges_len();
+        if a_len == 0 {
+            return other.clone();
+        }
         (self.range_values() | other.range_values()).into_range_map_blaze()
     }
 }
@@ -1690,21 +1700,32 @@ impl<T: Integer, V: EqClone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V>
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// /// cmk000 true??? Passing ownership rather than borrow sometimes allows a many-times
-    /// faster speed up.
+    /// Passing by the right-and-side by ownership rather than borrow allows a
+    /// speed up when the left-hand side is small compared to the right-hand side.
     ///
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    /// let union = &a | b;
+    /// let union = &a | b;  // Alternatively, 'a | b', etc.
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
-    fn bitor(self, other: RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
-        // cmk
-        // other |= self;
-        // other
+    fn bitor(self, mut other: RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
+        let a_len = self.ranges_len();
+        if a_len == 0 {
+            return other;
+        }
+        let b_len = other.ranges_len();
+        if b_len == 0 {
+            return self.clone();
+        }
+        if a_len * (b_len.ilog2() as usize + 1) < a_len + b_len {
+            for (start, end_value) in &self.btree_map {
+                other.internal_add(*start..=end_value.end, end_value.value.clone());
+            }
+            return other;
+        }
         (self.range_values() | other.range_values()).into_range_map_blaze()
     }
 }
@@ -1713,18 +1734,26 @@ impl<T: Integer, V: EqClone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// /// cmk000 true??? ship rather than borrow sometimes allows a many-times
-    /// faster speed up.
+    /// Passing by the right-and-side by ownership rather than borrow allows a
+    /// speed up when the left-hand side is small compared to the right-hand side.
     ///
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    /// let union = &a | &b;
+    /// let union = &a | &b; // Alternatively, 'a | b', etc.
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
     fn bitor(self, other: &RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
+        let a_len = self.ranges_len();
+        if a_len == 0 {
+            return other.clone();
+        }
+        let b_len = other.ranges_len();
+        if b_len == 0 {
+            return self.clone();
+        }
         (self.range_values() | other.range_values()).into_range_map_blaze()
     }
 }
@@ -1807,7 +1836,6 @@ for - call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
     a.range_values().map_and_set_difference(b.ranges()).into_range_map_blaze()
 };
 
-// cmk000 include map_and_set_intersection in tables in the docs
 /// Find the intersection between a [`RangeMapBlaze`] and a [`RangeSetBlaze`]. The result is a new [`RangeMapBlaze`].
 ///
 /// Either, neither, or both inputs may be borrowed.
@@ -2137,6 +2165,9 @@ impl<T: Integer, V: EqClone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
     /// ```
     fn bitor_assign(&mut self, other: &Self) {
+        if other.ranges_len() == 0 {
+            return;
+        }
         if self.ranges_len() == 0 {
             *self = other.clone();
             return;
@@ -2167,18 +2198,24 @@ impl<T: Integer, V: EqClone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
     /// ```
     fn bitor_assign(&mut self, mut other: Self) {
-        let a_len = self.ranges_len();
         let b_len = other.ranges_len();
+        if b_len == 0 {
+            return;
+        }
+        let a_len = self.ranges_len();
+        if a_len == 0 {
+            *self = other;
+            return;
+        }
         if a_len * (b_len.ilog2() as usize + 1) < a_len + b_len {
-            // Replace `self` with an empty `RangeMapBlaze`, allowing you to move its contents.
             let original_self = mem::take(self);
             for (start, end_value) in original_self.btree_map {
                 other.internal_add(start..=end_value.end, end_value.value);
             }
             *self = other;
-        } else {
-            *self |= &other;
+            return;
         }
+        *self = (self.range_values() | other.range_values()).into_range_map_blaze();
     }
 }
 
@@ -2374,3 +2411,5 @@ mod tests {
         assert_eq!(iter.next(), None);
     }
 }
+
+// cmk000 do coverage again at the line level

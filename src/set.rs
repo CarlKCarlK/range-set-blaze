@@ -1826,12 +1826,14 @@ impl<T: Integer> BitOr<Self> for RangeSetBlaze<T> {
     /// Passing ownership rather than borrow sometimes allows a many-times
     /// faster speed up.
     ///
+    /// Also see [`a |= b`](RangeSetBlaze::bitor_assign).
+    ///
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     /// let a = RangeSetBlaze::from_iter([1..=4]);
     /// let b = RangeSetBlaze::from_iter([0..=0, 3..=5, 10..=10]);
-    /// let union = a | b;
+    /// let union = a | b; // Alternatively, '&a | &b', etc.
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     type Output = Self;
@@ -1847,12 +1849,14 @@ impl<T: Integer> BitOr<&Self> for RangeSetBlaze<T> {
     /// Passing ownership rather than borrow sometimes allows a many-times
     /// faster speed up.
     ///
+    /// Also see [`a |= b`](RangeSetBlaze::bitor_assign).
+    ///
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     /// let a = RangeSetBlaze::from_iter([1..=4]);
     /// let b = RangeSetBlaze::from_iter([0..=0, 3..=5, 10..=10]);
-    /// let union = a | &b;
+    /// let union = a | &b;  // Alternatively, 'a | b', etc.
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     type Output = Self;
@@ -1869,12 +1873,14 @@ impl<T: Integer> BitOr<RangeSetBlaze<T>> for &RangeSetBlaze<T> {
     /// Passing ownership rather than borrow sometimes allows a many-times
     /// faster speed up.
     ///
+    /// Also see [`a |= b`](RangeSetBlaze::bitor_assign).
+    ///
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     /// let a = RangeSetBlaze::from_iter([1..=4]);
     /// let b = RangeSetBlaze::from_iter([0..=0, 3..=5, 10..=10]);
-    /// let union = &a | b;
+    /// let union = &a | b;  // Alternatively, 'a | b', etc.
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor(self, mut other: RangeSetBlaze<T>) -> RangeSetBlaze<T> {
@@ -1890,12 +1896,14 @@ impl<T: Integer> BitOr<&RangeSetBlaze<T>> for &RangeSetBlaze<T> {
     /// Passing ownership rather than borrow sometimes allows a many-times
     /// faster speed up.
     ///
+    /// Also see [`a |= b`](RangeSetBlaze::bitor_assign).
+    ///
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     /// let a = RangeSetBlaze::from_iter([1..=4]);
     /// let b = RangeSetBlaze::from_iter([0..=0, 3..=5, 10..=10]);
-    /// let union = &a | &b;
+    /// let union = &a | &b;  // Alternatively, 'a | b', etc.
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor(self, other: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
