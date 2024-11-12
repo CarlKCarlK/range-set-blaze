@@ -121,27 +121,25 @@ where
             let end = min(right_end, left_end);
 
             // remove any ranges that match "end" and set them None
+            let value = if right_end != end {
+                // left_end != end, right_end != end is impossible{
+                debug_assert!(left_end == end);
 
-            let value = match (right_end == end, left_end == end) {
-                (true, true) => {
-                    self.right = None;
-                    self.left = None;
-                    left.1
-                }
-                (true, false) => {
-                    self.right = None;
-                    let value = left.1.clone_ref();
-                    self.left = Some(left);
-                    value
-                }
-                (false, true) => {
-                    self.right = Some(RangeInclusive::new(right_start, right_end));
-                    self.left = None;
-                    left.1
-                }
-                (false, false) => {
-                    panic!("impossible case")
-                }
+                // left_end == end, right_end != end
+                self.left = None;
+                self.right = Some(RangeInclusive::new(right_start, right_end));
+                left.1
+            } else if left_end == end {
+                // left_end == end, right_end == end
+                self.left = None;
+                self.right = None;
+                left.1
+            } else {
+                // left_end != end, right_end == end
+                let value = left.1.clone_ref();
+                self.left = Some(left);
+                self.right = None;
+                value
             };
 
             let range_value = (start..=end, value);

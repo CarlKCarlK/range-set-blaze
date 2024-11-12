@@ -103,9 +103,10 @@ where
         self.prefix_iter.next().map(|before| *before..=*before)
     }
 
-    // We could have one less or one more than the iter.
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let low = usize::from(self.slice_len > 0); // 0 or 1
+        // Best case: if empty then 0. If aligned and all consecutive, then 1.
+        let low = self.slice_len.min(1);
+        // Worst case is all singletons, so high is the slice length.
         let high = self.slice_len;
         (low, Some(high))
     }

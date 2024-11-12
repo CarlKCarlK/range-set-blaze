@@ -823,9 +823,9 @@ impl Integer for char {
                 if num <= SURROGATE_END && SURROGATE_END < a {
                     num -= SURROGATE_END - SURROGATE_START + 1;
                 }
-                if let Some(c) = Self::from_u32(num) {
-                    return c;
-                }
+                return Self::from_u32(num).expect(
+                    "Real Assert: Impossible for this to fail because char goes down to 0",
+                );
             }
         }
         panic!("char underflow");
@@ -1111,5 +1111,55 @@ mod tests {
         assert_eq!(universe.len(), len);
 
         // Additional checks can be added here if needed for coverage
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "char overflow")]
+    fn test_add_len_less_one_panic_conditions1() {
+        // Case 1: `b.checked_sub(1)` returns `None`
+        let character = 'A';
+        let b = 0;
+        _ = character.add_len_less_one(b); // This should panic due to overflow
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "char overflow")]
+    fn test_add_len_less_one_panic_conditions2() {
+        // Case 2: `self.checked_add(b_less_one)` returns `None`
+        let character = char::MAX;
+        let b = 3;
+        _ = character.add_len_less_one(b); // This should panic due to overflow
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "char overflow")]
+    fn test_add_len_less_one_panic_conditions3() {
+        // Case 3: overflow when adding `b - 1` to `self`
+        let character = 'A';
+        let b = u32::MAX;
+        _ = character.add_len_less_one(b); // This should panic due to overflow
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "char underflow")]
+    fn test_sub_len_less_one_panic_conditions1() {
+        // Case 1: `b.checked_sub(1)` fails, causing an immediate panic.
+        let character = 'A';
+        let b = 0;
+        _ = character.sub_len_less_one(b); // This should panic due to underflow
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "char underflow")]
+    fn test_sub_len_less_one_panic_conditions2() {
+        // Case 2: `a.checked_sub(b_less_one)` fails, causing underflow.
+        let character = 'A';
+        let b = u32::MAX;
+        _ = character.sub_len_less_one(b); // This should panic due to underflow
     }
 }
