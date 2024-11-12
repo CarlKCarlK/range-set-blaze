@@ -800,17 +800,11 @@ impl<T: Integer> RangeSetBlaze<T> {
     where
         R: RangeBounds<T>,
     {
-        let start = match range.start_bound() {
-            Bound::Included(n) => *n,
-            Bound::Excluded(n) => (*n).add_one(),
-            Bound::Unbounded => T::min_value(),
-        };
-        let end = match range.end_bound() {
-            Bound::Included(n) => *n,
-            Bound::Excluded(n) => (*n).sub_one(),
-            Bound::Unbounded => T::max_value(),
-        };
-        assert!(start <= end);
+        let (start, end) = extract_range(range);
+        assert!(
+            start <= end,
+            "start (inclusive) must be less than or equal to end (inclusive)"
+        );
 
         let bounds = CheckSortedDisjoint::new([start..=end]);
         Self::from_sorted_disjoint(self.ranges() & bounds).into_iter()
@@ -2027,5 +2021,39 @@ impl<T: Integer> PartialOrd for RangeSetBlaze<T> {
 }
 
 impl<T: Integer> Eq for RangeSetBlaze<T> {}
+
+// cmk use this elsewhere, should it be public?
+
+/// Extracts the start and end of a range from a `RangeBounds`.
+///
+/// Does not check for empty ranges.
+pub fn extract_range<T: Integer, R>(range: R) -> (T, T)
+where
+    R: RangeBounds<T>,
+{
+    let start = match range.start_bound() {
+        Bound::Included(n) => *n,
+        Bound::Excluded(n) => {
+            assert!(
+                *n < T::max_value(),
+                "inclusive start must be <= T::max_safe_value()"
+            );
+            n.add_one()
+        }
+        Bound::Unbounded => T::min_value(),
+    };
+    let end = match range.end_bound() {
+        Bound::Included(n) => *n,
+        Bound::Excluded(n) => {
+            assert!(
+                *n > T::min_value(),
+                "inclusive end must be >= T::min_value()"
+            );
+            n.sub_one()
+        }
+        Bound::Unbounded => T::max_value(),
+    };
+    (start, end)
+}
 
 // cmk look at BTreeSet to see what to inline

@@ -5093,7 +5093,7 @@ fn test_range_method_on_range_map_blaze_panic0() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic = "start (inclusive) must be less than or equal to end (inclusive)"]
+#[should_panic = "inclusive start must be <= T::max_safe_value()"]
 fn test_range_method_on_range_map_blaze_panic1() {
     let map = RangeMapBlaze::<u8, &str>::from_iter([(1u8..=3, "a"), (4..=6, "b")]);
     let _a: RangeMapBlaze<u8, &str> = map
@@ -5103,7 +5103,7 @@ fn test_range_method_on_range_map_blaze_panic1() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic = "start (inclusive) must be less than or equal to end (inclusive)"]
+#[should_panic = "inclusive end must be >= T::min_value()"]
 fn test_range_method_on_range_map_blaze_panic2() {
     let map = RangeMapBlaze::<u8, &str>::from_iter([(1u8..=3, "a"), (4..=6, "b")]);
     let _a: RangeMapBlaze<u8, &str> = map

@@ -9,6 +9,7 @@ use core::cmp::Ordering;
 use core::ops::Bound;
 use core::ops::RangeInclusive;
 use num_traits::{One, Zero};
+use set::extract_range;
 use std::collections::hash_map::DefaultHasher;
 use syntactic_for::syntactic_for;
 // use thousands::Separable;
@@ -343,6 +344,15 @@ fn lib_coverage_0() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[should_panic(expected = "start (inclusive) must be less than or equal to end (inclusive)")]
+#[allow(clippy::reversed_empty_ranges)]
+fn range_expect_panic() {
+    let set = RangeSetBlaze::new();
+    let _ = set.range(4..=3).next();
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn lib_coverage_5() {
     let mut v = RangeSetBlaze::<u128>::new();
     v.internal_add(0..=u128::MAX);
@@ -614,12 +624,9 @@ fn understand_slice_iter() {
     assert_eq!(iter.count(), 1);
 }
 
-#[allow(deprecated)]
-#[cfg(feature = "rog-experimental")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_extract_range() {
-    use rog::extract_range;
     use std::ops::Bound::{Excluded, Included};
 
     assert_eq!(extract_range((Excluded(0), Included(1))), (1, 1));

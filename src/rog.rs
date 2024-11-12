@@ -5,9 +5,9 @@
 
 use alloc::collections::btree_map;
 use alloc::vec::Vec;
-use core::ops::{Bound, RangeBounds, RangeInclusive};
+use core::ops::{RangeBounds, RangeInclusive};
 
-use crate::{Integer, RangeSetBlaze};
+use crate::{set::extract_range, Integer, RangeSetBlaze};
 
 /// Experimental: The output of cmk An iterator over [`Rog`]s (ranges or gaps) in a [`RangeSetBlaze`].
 ///
@@ -217,12 +217,15 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///     vec![Rog::Gap(0..=255)]
     /// );
     /// ```
-    // cmk extract_range can now return empty range. Test that this does the right thing.
     pub fn rogs_range<R>(&self, range: R) -> RogsIter<T>
     where
         R: RangeBounds<T>,
     {
         let (start_in, end_in) = extract_range(range);
+        assert!(
+            start_in <= end_in,
+            "start must be less than or equal to end"
+        );
 
         let mut before = self.btree_map.range(..=start_in).rev();
         if let Some((_, end_before)) = before.next() {
@@ -293,34 +296,4 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
         unreachable!("value must be in something");
     }
-}
-
-// cmk use this elsewhere, should it be public?
-pub fn extract_range<T: Integer, R>(range: R) -> (T, T)
-where
-    R: RangeBounds<T>,
-{
-    let start = match range.start_bound() {
-        Bound::Included(n) => *n,
-        Bound::Excluded(n) => {
-            assert!(
-                *n < T::max_value(),
-                "inclusive start must be <= T::max_safe_value()"
-            );
-            n.add_one()
-        }
-        Bound::Unbounded => T::min_value(),
-    };
-    let end = match range.end_bound() {
-        Bound::Included(n) => *n,
-        Bound::Excluded(n) => {
-            assert!(
-                *n > T::min_value(),
-                "inclusive end must be >= T::min_value()"
-            );
-            n.sub_one()
-        }
-        Bound::Unbounded => T::max_value(),
-    };
-    (start, end)
 }

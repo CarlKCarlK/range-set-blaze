@@ -4,6 +4,7 @@ use crate::iter_map::{IterMap, KeysMap};
 use crate::range_values::{
     IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter, RangeValuesToRangesIter,
 };
+use crate::set::extract_range;
 use crate::sorted_disjoint_map::SortedDisjointMap;
 use crate::sorted_disjoint_map::{IntoString, Priority};
 use crate::sym_diff_iter_map::SymDiffIterMap;
@@ -21,7 +22,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::borrow::Borrow;
 use core::cmp::Ordering;
-use core::ops::{BitOr, BitOrAssign, Bound, Index, RangeBounds};
+use core::ops::{BitOr, BitOrAssign, Index, RangeBounds};
 use core::{cmp::max, convert::From, ops::RangeInclusive};
 use core::{fmt, mem, panic};
 use gen_ops::gen_ops_ex;
@@ -769,31 +770,13 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
         R: RangeBounds<T>,
     {
         // cmk 'range' should be made more efficient (it currently creates a RangeMapBlaze for no good reason)
-        let start_inclusive = match range.start_bound() {
-            Bound::Included(n) => *n,
-            Bound::Excluded(n) => {
-                if *n == T::max_value() {
-                    panic!("start (inclusive) must be less than or equal to end (inclusive)");
-                };
-                (*n).add_one()
-            }
-            Bound::Unbounded => T::min_value(),
-        };
-        let end_inclusive = match range.end_bound() {
-            Bound::Included(n) => *n,
-            Bound::Excluded(n) => {
-                if *n == T::min_value() {
-                    panic!("start (inclusive) must be less than or equal to end (inclusive)");
-                };
-                (*n).sub_one()
-            }
-            Bound::Unbounded => T::max_value(),
-        };
-        if start_inclusive > end_inclusive {
-            panic!("start (inclusive) must be less than or equal to end (inclusive)")
-        };
+        let (start, end) = extract_range(range);
+        assert!(
+            start <= end,
+            "start (inclusive) must be less than or equal to end (inclusive)"
+        );
 
-        let bounds = CheckSortedDisjoint::new([start_inclusive..=end_inclusive]);
+        let bounds = CheckSortedDisjoint::new([start..=end]);
         Self::from_sorted_disjoint_map(self.range_values().map_and_set_intersection(bounds))
             .into_iter()
     }
@@ -2412,4 +2395,4 @@ mod tests {
     }
 }
 
-// cmk000 do coverage again at the line level
+// cmk do coverage again at the line level
