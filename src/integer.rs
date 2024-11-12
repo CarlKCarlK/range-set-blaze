@@ -9,7 +9,7 @@ use core::{fmt, ops::RangeInclusive};
 use num_traits::ops::overflowing::OverflowingSub;
 
 #[cfg(feature = "from_slice")]
-const LANES: usize = 16;
+pub const LANES: usize = 16; // cmk000 make private?
 
 /// Represents elements that can be used within [`RangeSetBlaze`] and as keys in [`RangeMapBlaze`].
 ///

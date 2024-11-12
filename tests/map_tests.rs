@@ -5327,15 +5327,17 @@ fn fast_union() {
 fn more_coverage_of_maps() {
     // Test BitOr when the right-hand side is empty, ensuring the result is the left-hand side.
     let a = RangeMapBlaze::from_iter([(1..=10, "a")]);
+    let expected = a.clone();
     let b: RangeMapBlaze<i32, &str> = RangeMapBlaze::default();
     let union = a | b;
-    assert_eq!(union.to_string(), r#"(1..=10, "a")"#);
+    assert_eq!(union, expected);
 
     // Test BitOr<&Self> when the right-hand side is empty, ensuring the result is the left-hand side.
     let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    let expected = a.clone();
     let b: RangeMapBlaze<i32, &str> = RangeMapBlaze::default();
     let union = a | &b;
-    assert_eq!(union.to_string(), r#"(1..=2, "a"), (5..=100, "a")"#);
+    assert_eq!(union, expected);
 
     // Test BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> with empty and non-empty other to cover all branches.
 
@@ -5343,7 +5345,7 @@ fn more_coverage_of_maps() {
     let a = RangeMapBlaze::from_iter([(1..=1, "a"), (5..=5, "a")]);
     let b_empty: RangeMapBlaze<i32, &str> = RangeMapBlaze::default();
     let union1 = &a | b_empty;
-    assert_eq!(union1.to_string(), r#"(1..=1, "a"), (5..=5, "a")"#);
+    assert_eq!(union1, a);
 
     // Case 2: 'a' and 'b' are non-empty with non-overlapping ranges and different values; expect union to include both without merging.
     let b_non_empty =
@@ -5374,26 +5376,29 @@ fn more_coverage_of_maps() {
     // Scenario 2: 'a' is empty, 'b' is non-empty; expect 'b' cloned.
     let a_empty: RangeMapBlaze<i32, &str> = RangeMapBlaze::default();
     let b = RangeMapBlaze::from_iter([(3..=3, "b")]);
+    let expected = b.clone();
     let union2 = &a_empty | b;
-    assert_eq!(union2.to_string(), r#"(3..=3, "b")"#);
+    assert_eq!(union2, expected);
 
     // Test BitOrAssign<&Self> when the right-hand side is empty, ensuring 'self' remains unchanged.
     let mut a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=5, "a")]);
+    let expected = a.clone();
     let b: RangeMapBlaze<i32, &str> = RangeMapBlaze::default();
     a |= &b;
-    assert_eq!(a.to_string(), r#"(1..=2, "a"), (5..=5, "a")"#);
+    assert_eq!(a, expected);
 
     // Test BitOrAssign<Self> when the right-hand side is empty, ensuring 'self' remains unchanged.
     let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    let expected = a.clone();
     let other: RangeMapBlaze<i32, &str> = RangeMapBlaze::default();
     a |= other;
-    assert_eq!(a.to_string(), r#"(1..=4, "a")"#);
+    assert_eq!(a, expected);
 
     // Test BitOr<Self> when 'self' is empty and 'other' has values, ensuring 'other' is returned as a clone.
     let a: RangeMapBlaze<i32, &str> = RangeMapBlaze::default(); // 'self' is empty
     let b = RangeMapBlaze::from_iter([(1..=2, "b"), (5..=10, "b")]); // 'other' has ranges
     let union = a | &b;
-    assert_eq!(union.to_string(), r#"(1..=2, "b"), (5..=10, "b")"#);
+    assert_eq!(union, b);
 
     // Testing BitOr<RangeMapBlaze<T, V>> when 'self' is large and 'other' is small, hitting the efficiency loop.
     let a = RangeMapBlaze::from_iter([
@@ -5416,8 +5421,5 @@ fn more_coverage_of_maps() {
     let b = RangeMapBlaze::default(); // `other` is empty
     let union = &a | &b;
     // Assert that `union` is identical to `a`, since `other` (b) is empty.
-    assert_eq!(
-        union.to_string(),
-        r#"(1..=2, "a"), (5..=5, "a"), (10..=15, "a")"#
-    )
+    assert_eq!(union, a);
 }

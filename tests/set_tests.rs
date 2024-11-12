@@ -3398,3 +3398,59 @@ fn test_assume_sorted_starts_size_hint() {
     let m = AssumeSortedStarts::new([0..=3, 0..=2, 1..=5]);
     assert_eq!(m.size_hint(), (3, Some(3)));
 }
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn more_coverage_of_range_set_blaze() {
+    // Test `BitOrAssign<&Self>` where `self` is empty, covering the `self = other.clone()` line.
+    let mut a: RangeSetBlaze<i32> = RangeSetBlaze::default();
+    let b_non_empty = RangeSetBlaze::from_iter([1..=3, 5..=5]);
+    a |= &b_non_empty;
+    assert_eq!(a, b_non_empty);
+
+    // Test `BitOr<&RangeSetBlaze<T>>` where `self` is empty, covering the `return other.clone()` line.
+    let a_empty: RangeSetBlaze<i32> = RangeSetBlaze::default();
+    let b_non_empty = RangeSetBlaze::from_iter([0..=2, 4..=6]);
+    let union = &a_empty | &b_non_empty;
+    assert_eq!(union, b_non_empty);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[cfg(feature = "from_slice")]
+fn additional_from_slice_iter_coverage() {
+    // // Test `FromSliceIter::next` with consecutive ranges followed by a non-consecutive element.
+    // let a = RangeSetBlaze::from_slice([1, 2, 3, 10]);
+    // assert_eq!(a.to_string(), "1..=3, 10..=10");
+
+    // // Test `FromSliceIter::next` with entirely non-consecutive values.
+    // let a = RangeSetBlaze::from_slice([1, 3, 5, 7]);
+    // assert_eq!(a.to_string(), "1..=1, 3..=3, 5..=5, 7..=7");
+
+    // // Test empty slice to ensure it outputs an empty range set.
+    // let slice: &[i32] = &[];
+    // let a = RangeSetBlaze::from_slice(slice);
+    // assert!(a.is_empty());
+
+    // // Test a mix of consecutive and non-consecutive elements that require flushing `previous_range`.
+    // let a = RangeSetBlaze::from_slice([1, 2, 4, 5, 10]);
+    // assert_eq!(a.to_string(), "1..=2, 4..=5, 10..=10");
+
+    // // Test `size_hint` for cases when `slice_len` is non-zero, hitting `slice_len - 1`.
+    // let a = RangeSetBlaze::from_slice([1, 2, 3]);
+    // assert_eq!(a.to_string(), "1..=3");
+
+    // // Test `size_hint` in `FromSliceIter` for empty case, hitting zero case for `low` branch.
+    // let slice: &[i32] = &[];
+    // let a = RangeSetBlaze::from_slice(slice);
+    // assert!(a.is_empty());
+
+    // // Edge case for size_hint if slice length approaches `usize::MAX` by simulating a large collection.
+    // let large_slice: Vec<i32> = (0..1_000).collect();
+    // let a = RangeSetBlaze::from_slice(&large_slice);
+    // assert_eq!(a.to_string(), "0..=999");
+
+    // // Singletons from non-consecutive entries at the end of chunks, ensuring flushing logic works.
+    // let a = RangeSetBlaze::from_slice([1, 2, 4, 7]);
+    // assert_eq!(a.to_string(), "1..=2, 4..=4, 7..=7");
+}

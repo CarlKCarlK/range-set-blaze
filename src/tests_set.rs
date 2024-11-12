@@ -585,3 +585,31 @@ pub fn convert_challenge() {
 
     // what about multiple inputs?
 }
+
+#[cfg(feature = "from_slice")]
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn understand_slice_iter() {
+    use std::simd::Simd;
+
+    use from_slice::FromSliceIter;
+    use integer::LANES;
+
+    let slice: [u8; 0] = [];
+    let iter = FromSliceIter::<u8, LANES>::new(&slice);
+    assert_eq!(iter.size_hint(), (0, Some(0)));
+    assert_eq!(iter.count(), 0);
+
+    // 1st 500 even numbers
+    let slice: &[_] = &(0..1000).step_by(2).collect::<Vec<_>>();
+    let iter = FromSliceIter::<_, LANES>::new(slice);
+    assert_eq!(iter.size_hint(), (1, Some(500)));
+    assert_eq!(iter.count(), 500);
+
+    // 32 consecutive u8's as a slice
+    let slice: &[_] = &(0..64i64).collect::<Vec<_>>();
+    let slice = Simd::<_, 64>::from_slice(slice);
+    let iter = FromSliceIter::<_, LANES>::new(slice.as_array());
+    assert_eq!(iter.size_hint(), (1, Some(64)));
+    assert_eq!(iter.count(), 1);
+}

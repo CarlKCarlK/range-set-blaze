@@ -86,9 +86,8 @@ where
                     debug_assert!(self.previous_range.is_none());
                     return Some(previous);
                 }
-                if let Some(before) = self.prefix_iter.next() {
-                    return Some(*before..=*before);
-                }
+                let before = self.prefix_iter.next().expect(".next() is always Some() because we just created it from a non-zero length chunk.");
+                return Some(*before..=*before);
             }
         }
 
@@ -106,16 +105,8 @@ where
 
     // We could have one less or one more than the iter.
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let low = if self.slice_len > 0 {
-            self.slice_len - 1
-        } else {
-            0
-        };
-        let high = if self.slice_len < usize::MAX {
-            self.slice_len + 1
-        } else {
-            usize::MAX
-        };
+        let low = usize::from(self.slice_len > 0); // 0 or 1
+        let high = self.slice_len;
         (low, Some(high))
     }
 }
