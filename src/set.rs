@@ -1775,12 +1775,15 @@ impl<T: Integer> BitOrAssign<&Self> for RangeSetBlaze<T> {
     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor_assign(&mut self, other: &Self) {
+        let b_len = other.ranges_len();
+        if b_len == 0 {
+            return;
+        }
         let a_len = self.ranges_len();
         if a_len == 0 {
             *self = other.clone();
             return;
         }
-        let b_len = other.ranges_len();
         if b_len * (a_len.ilog2() as usize + 1) < a_len + b_len {
             self.extend(other.ranges());
         } else {
@@ -1907,6 +1910,12 @@ impl<T: Integer> BitOr<&RangeSetBlaze<T>> for &RangeSetBlaze<T> {
     /// assert_eq!(union, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
     fn bitor(self, other: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+        if other.ranges_len() == 0 {
+            return self.clone();
+        }
+        if self.ranges_len() == 0 {
+            return other.clone();
+        }
         (self.ranges() | other.ranges()).into_range_set_blaze()
     }
 }
