@@ -613,3 +613,15 @@ fn understand_slice_iter() {
     assert_eq!(iter.size_hint(), (1, Some(64)));
     assert_eq!(iter.count(), 1);
 }
+
+#[allow(deprecated)]
+#[cfg(feature = "rog-experimental")]
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_extract_range() {
+    use rog::extract_range;
+    use std::ops::Bound::{Excluded, Included};
+
+    assert_eq!(extract_range((Excluded(0), Included(1))), (1, 1));
+    assert_eq!(extract_range(0..1), (0, 0));
+}

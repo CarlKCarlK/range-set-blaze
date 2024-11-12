@@ -34,9 +34,7 @@ where
             };
 
             let (start, end) = range.into_inner();
-            if end < start {
-                continue;
-            }
+            debug_assert!(start <= end); // real assert
 
             let Some(current_range) = self.option_range.take() else {
                 self.option_range = Some(start..=end);

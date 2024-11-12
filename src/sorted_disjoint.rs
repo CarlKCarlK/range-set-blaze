@@ -18,7 +18,7 @@ use crate::{
 };
 
 /// Used internally. Marks iterators that provide ranges sorted by start, but
-/// that are not necessarily disjoint.
+/// that are not necessarily disjoint. The ranges are non-empty.
 pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIterator {}
 
 /// Marks iterators that provide ranges that are sorted by start and disjoint. Set operations on

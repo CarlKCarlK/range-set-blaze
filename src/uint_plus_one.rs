@@ -16,6 +16,8 @@ pub trait UInt:
     + Copy
     + Sized
     + OverflowingMul
+    + Display
+    + fmt::Debug
 {
 }
 
@@ -82,6 +84,7 @@ where
 {
     type Output = Self;
 
+    /// cmk docs always panics on overflow
     fn add(self, rhs: Self) -> Self {
         let zero = T::zero();
         let one: T = T::one();
@@ -91,18 +94,15 @@ where
             (Self::UInt(z), b) | (b, Self::UInt(z)) if z == zero => b,
             (Self::UInt(a), Self::UInt(b)) => {
                 let (wrapped_less1, overflow) = a.overflowing_add(&(b - one));
-                if overflow {
-                    debug_assert!(false, "overflow");
-                    Self::MaxPlusOne
-                } else if wrapped_less1 == max {
+                assert!(!overflow, "arithmetic operation overflowed: {self} + {rhs}");
+                if wrapped_less1 == max {
                     Self::MaxPlusOne
                 } else {
                     Self::UInt(wrapped_less1 + T::one())
                 }
             }
             (Self::MaxPlusOne, _) | (_, Self::MaxPlusOne) => {
-                debug_assert!(false, "UIntPlusOne::Max + something more than 1");
-                Self::MaxPlusOne
+                panic!("arithmetic operation overflowed: {self} + {rhs}");
             }
         }
     }
@@ -153,6 +153,7 @@ where
 {
     type Output = Self;
 
+    // cmk docs always panics on overflow
     fn mul(self, rhs: Self) -> Self {
         let zero = T::zero();
         let one: T = T::one();
@@ -162,16 +163,11 @@ where
             (Self::UInt(z), _) | (_, Self::UInt(z)) if z == zero => Self::UInt(zero),
             (Self::UInt(a), Self::UInt(b)) => {
                 let (a_times_b_less1, overflow) = a.overflowing_mul(&(b - one));
-                if overflow {
-                    debug_assert!(false, "overflow");
-                    Self::MaxPlusOne
-                } else {
-                    Self::UInt(a_times_b_less1) + self
-                }
+                assert!(!overflow, "arithmetic operation overflowed: {self} * {rhs}");
+                Self::UInt(a_times_b_less1) + self
             }
             (Self::MaxPlusOne, _) | (_, Self::MaxPlusOne) => {
-                debug_assert!(false, "UIntPlusOne::Max * something more than 1");
-                Self::MaxPlusOne
+                panic!("arithmetic operation overflowed: {self} * {rhs}");
             }
         }
     }
@@ -194,9 +190,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
+    #[cfg(not(target_arch = "wasm32"))] // not used by wasm-wasip1
     use std::panic;
-    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
     use std::panic::AssertUnwindSafe;
     use std::prelude::v1::*;
 
@@ -204,7 +199,7 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[allow(clippy::cast_possible_truncation)]
-    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
+    #[cfg(not(target_arch = "wasm32"))] // not used by wasm-wasip1
     const fn u16_to_p1(v: u16) -> UIntPlusOne<u8> {
         if v == 256 {
             UIntPlusOne::MaxPlusOne
@@ -213,7 +208,7 @@ mod tests {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
+    #[cfg(not(target_arch = "wasm32"))] // not used by wasm-wasip1
     fn add_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
@@ -228,11 +223,11 @@ mod tests {
         match (c, c_actual) {
             (Ok(c), Ok(c_p1)) => u16_to_p1(c) == c_p1,
             (Err(_), Err(_)) => true,
-            _ => false,
+            _ => false, // Don't need to cover this
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
+    #[cfg(not(target_arch = "wasm32"))] // not used by wasm-wasip1
     fn mul_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
@@ -247,11 +242,11 @@ mod tests {
         match (c, c_actual) {
             (Ok(c), Ok(c_p1)) => u16_to_p1(c) == c_p1,
             (Err(_), Err(_)) => true,
-            _ => false,
+            _ => false, // Don't need to cover this
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
+    #[cfg(not(target_arch = "wasm32"))] // not used by wasm-wasip1
     fn sub_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
@@ -271,11 +266,11 @@ mod tests {
         match (c, c_actual) {
             (Ok(c), Ok(c_p1)) => u16_to_p1(c) == c_p1,
             (Err(_), Err(_)) => true,
-            _ => false,
+            _ => false, // Don't need to cover this
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // no used by wasm-wasip1
+    #[cfg(not(target_arch = "wasm32"))] // not used by wasm-wasip1
     fn compare_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
@@ -285,7 +280,7 @@ mod tests {
 
         match (c, c_actual) {
             (Ok(Some(c)), Ok(Some(c_p1))) => c == c_p1,
-            _ => panic!("never happens"),
+            _ => panic!("never happens"), // Don't need to cover this
         }
     }
 

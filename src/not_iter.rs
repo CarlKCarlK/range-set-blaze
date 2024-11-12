@@ -86,14 +86,8 @@ where
     // We could have one less or one more than the iter.
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (low, high) = self.iter.size_hint();
-        let low = if low > 0 { low - 1 } else { 0 };
-        let high = high.map(|high| {
-            if high < usize::MAX {
-                high + 1
-            } else {
-                usize::MAX
-            }
-        });
+        let low = low.saturating_sub(1);
+        let high = high.map(|high| high.saturating_add(1));
         (low, high)
     }
 }

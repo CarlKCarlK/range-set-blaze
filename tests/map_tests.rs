@@ -5423,3 +5423,12 @@ fn more_coverage_of_maps() {
     // Assert that `union` is identical to `a`, since `other` (b) is empty.
     assert_eq!(union, a);
 }
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_range_values_to_ranges_iter_disjoint() {
+    let a = CheckSortedDisjointMap::new([(1..=3, &"a"), (4..=4, &"b"), (5..=10, &"a")]);
+    let mut iter = a.into_sorted_disjoint();
+    assert_eq!(iter.next(), Some(1..=10));
+    assert_eq!(iter.next(), None);
+}

@@ -217,6 +217,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///     vec![Rog::Gap(0..=255)]
     /// );
     /// ```
+    // cmk extract_range can now return empty range. Test that this does the right thing.
     pub fn rogs_range<R>(&self, range: R) -> RogsIter<T>
     where
         R: RangeBounds<T>,
@@ -264,6 +265,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 
     /// Used internally to test `rogs_range`.
+    // cmk extract_range can now return empty range. Test that this does the right thing.
     #[doc(hidden)]
     pub fn rogs_range_slow<R>(&self, range: R) -> Vec<Rog<T>>
     where
@@ -293,7 +295,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 }
 
-fn extract_range<T: Integer, R>(range: R) -> (T, T)
+// cmk use this elsewhere, should it be public?
+pub fn extract_range<T: Integer, R>(range: R) -> (T, T)
 where
     R: RangeBounds<T>,
 {
@@ -319,6 +322,5 @@ where
         }
         Bound::Unbounded => T::max_value(),
     };
-    assert!(start <= end, "start must be <= end");
     (start, end)
 }
