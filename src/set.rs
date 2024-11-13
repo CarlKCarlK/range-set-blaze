@@ -2027,7 +2027,8 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 /// Extracts the start and end of a range from a `RangeBounds`.
 ///
 /// Does not check for empty ranges.
-pub fn extract_range<T: Integer, R>(range: R) -> (T, T)
+#[allow(clippy::redundant_pub_crate)]
+pub(crate) fn extract_range<T: Integer, R>(range: R) -> (T, T)
 where
     R: RangeBounds<T>,
 {

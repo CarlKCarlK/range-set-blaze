@@ -767,6 +767,14 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
             (38..=42, 'c')
         ])
     );
+
+    // test on zero maps
+    let a: SymDiffIterMap<i32, &&str, KMergeMap<i32, &&str, DynSortedDisjointMap<'_, i32, &&str>>> =
+        symmetric_difference_map_dyn!();
+    let a = a.into_range_map_blaze();
+    let b: RangeMapBlaze<i32, &str> = RangeMapBlaze::default();
+    assert_eq!(a, b);
+
     Ok(())
 }
 

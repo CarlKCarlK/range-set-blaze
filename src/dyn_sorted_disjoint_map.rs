@@ -7,7 +7,7 @@ use alloc::boxed::Box;
 /// Gives [`SortedDisjointMap`] iterators a uniform type. Used by the [`union_map_dyn`], etc. macros to give all
 /// their input iterators the same type.
 ///
-/// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
+/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
 /// [`union_map_dyn`]: crate::union_map_dyn
 /// [`intersection_map_dyn`]: crate::intersection_map_dyn
 ///
@@ -45,7 +45,7 @@ where
 {
     /// Create a [`DynSortedDisjointMap`] from any [`SortedDisjointMap`] iterator. See [`DynSortedDisjointMap`] for an example.
     ///
-    /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
+    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
     #[inline]
     pub fn new<I>(iter: I) -> Self
     where
@@ -80,7 +80,8 @@ where
     }
 }
 
-/// Intersects one or more [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
+/// Intersects zero or more [`SortedDisjointMap`] iterators,
+/// creating a new [`SortedDisjointMap`] iterator.
 /// The input iterators need not to be of the same type.
 ///
 /// For input iterators of the same type, [`intersection`] may be slightly faster.
@@ -88,11 +89,10 @@ where
 /// # Performance
 ///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
 ///
-/// # Example: 3-Input Parity
-///
-/// Find the integers that appear an odd number of times in the [`SortedDisjointMap`][crate::SortedDisjointMap] iterators.
-///
+/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
 /// [`intersection`]: crate::MultiwaySortedDisjointMap::intersection
+/// # Examples
+///
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
@@ -107,23 +107,19 @@ macro_rules! intersection_map_dyn {
     ($($val:expr),*) => {$crate::MultiwaySortedDisjointMap::intersection([$($crate::DynSortedDisjointMap::new($val)),*])}
 }
 
-/// Unions one or more [`SortedDisjointMap`] iterators,
+/// Unions zero or more [`SortedDisjointMap`] iterators,
 /// creating a new [`SortedDisjointMap`] iterator.
 /// The input iterators need not to be of the same type.
-///
-/// [`SortedDisjointMap`]:crate::SortedDisjoint.html#table-of-contents
 ///
 /// For input iterators of the same type, [`union`] may be slightly faster.
 ///
 /// # Performance
 ///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
 ///
-/// # Example: 3-Input Parity
-///
-/// Find the integers that appear an odd number of times in the [`SortedDisjointMap`] iterators.
-///
-/// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
+/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
 /// [`union`]: crate::MultiwaySortedDisjointMap::union
+/// # Examples
+///
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
@@ -140,7 +136,19 @@ macro_rules! union_map_dyn {
                         }
 }
 
-/// cmk doc
+/// Find the symmetric difference of zero or more [`SortedDisjointMap`] iterators,
+/// creating a new [`SortedDisjointMap`] iterator.
+/// The input iterators need not to be of the same type.
+///
+/// For input iterators of the same type, [`symmetric_difference`] may be slightly faster.
+///
+/// # Performance
+///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
+///
+/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`symmetric_difference`]: crate::MultiwaySortedDisjointMap::symmetric_difference
+/// # Examples
+///
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
@@ -155,14 +163,4 @@ macro_rules! symmetric_difference_map_dyn {
     ($($val:expr),*) => {
                         $crate::MultiwaySortedDisjointMap::symmetric_difference([$($crate::DynSortedDisjointMap::new($val)),*])
                         }
-}
-
-#[test]
-fn delete_me_test_cmk() {
-    use crate::prelude::*;
-    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
-    let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-    let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
-    let intersection = intersection_map_dyn!(a.range_values(), b, c.range_values());
-    assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
 }

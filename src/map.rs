@@ -130,7 +130,7 @@ where
 /// [2]: struct.RangeMapBlaze.html#impl-FromIterator<(RangeInclusive<T>,+V)>-for-RangeMapBlaze<T,+V>
 /// [3]: `RangeMapBlaze::from_sorted_disjoint_map`
 /// [3b]: `SortedDisjointMap::into_range_map_blaze
-/// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
+/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
 /// [4]: `RangeMapBlaze::from`
 ///
 /// # Constructor Performance
@@ -520,7 +520,7 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///
-    /// [`SortedDisjointMap`]:crate::SortedDisjointMap.html
+    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
     ///
     /// # Examples
     ///

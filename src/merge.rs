@@ -73,7 +73,7 @@ where
 ///
 /// Also see [`Merge`].
 ///
-/// [`SortedDisjoint`]: crate::SortedDisjoint
+/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
 /// [`UnionIter`]: crate::UnionIter
 
 #[derive(Clone, Debug)]
