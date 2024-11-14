@@ -94,7 +94,7 @@ fn vector(c: &mut Criterion) {
 
     group.sample_size(1000);
 
-    for parameter in parameters.iter() {
+    for parameter in &parameters {
         let v = (100..parameter + 100)
             .map(|i| (i % (Integer::MAX as usize)) as Integer)
             .collect::<Vec<Integer>>();

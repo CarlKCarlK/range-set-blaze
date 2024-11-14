@@ -193,7 +193,7 @@ fn add_in_order() {
 fn iters() -> Result<(), Box<dyn std::error::Error>> {
     let range_set_blaze = RangeSetBlaze::from_iter([1u8..=6, 8..=9, 11..=15]);
     assert!(range_set_blaze.len() == 13);
-    for i in range_set_blaze.iter() {
+    for i in &range_set_blaze {
         println!("{i}");
     }
     for range in range_set_blaze.ranges() {
@@ -204,7 +204,7 @@ fn iters() -> Result<(), Box<dyn std::error::Error>> {
     println!("{range_set_blaze}");
     println!("{:?}", rs.len());
     println!("{:?}", rs.next());
-    for i in range_set_blaze.iter() {
+    for i in &range_set_blaze {
         println!("{i}");
     }
     // range_set_blaze.len();
@@ -1669,7 +1669,7 @@ fn range_example() {
     set.insert(3);
     set.insert(5);
     set.insert(8);
-    for elem in (&set & RangeSetBlaze::from_iter([4..=8])).iter() {
+    for elem in &(&set & RangeSetBlaze::from_iter([4..=8])) {
         println!("{elem}");
     }
 
@@ -2484,7 +2484,7 @@ fn understand_into_iter() {
     }
 
     // let rsi = RangeSetBlaze::from_iter(1..=5);
-    // for i in rsi.iter() {
+    // for i in &rsi {
     //     println!("{i}");
     // }
     // let len = rsi.len();

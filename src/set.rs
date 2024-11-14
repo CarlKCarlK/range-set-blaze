@@ -1542,6 +1542,15 @@ gen_ops_ex!(
     where T: Integer //Where clause for all impl's
 );
 
+// Implementing `IntoIterator` for `&RangeSetBlaze` because BTreeSet does.
+impl<'a, T: Integer> IntoIterator for &'a RangeSetBlaze<T> {
+    type Item = T;
+    type IntoIter = Iter<T, RangesIter<'a, T>>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;

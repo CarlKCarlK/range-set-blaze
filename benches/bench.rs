@@ -1038,7 +1038,7 @@ fn union_two_sets(c: &mut Criterion) {
             //         b.iter_batched(
             //             || roaring_set0.clone(),
             //             |mut set00| {
-            //                 for x in roaring_set1.iter() {
+            //                 for x in &roaring_set1 {
             //                     set00.insert(x);
             //                 }
             //             },
@@ -1518,7 +1518,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let mut answer = range_collections::RangeSet2::from(1..1);
-                    for range in vec_range.iter() {
+                    for range in &vec_range {
                         let (start, end) = range.clone().into_inner();
                         let b = range_collections::RangeSet::from(start..end + 1);
                         answer |= b;
@@ -1533,7 +1533,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let mut answer = range_set::RangeSet::<[RangeInclusive<u32>; 1]>::new();
-                    for range in vec_range.iter() {
+                    for range in &vec_range {
                         answer.insert_range(range.clone());
                     }
                 })

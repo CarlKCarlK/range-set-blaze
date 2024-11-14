@@ -320,7 +320,7 @@ fn map_iters() -> Result<(), Box<dyn std::error::Error>> {
     let range_map_blaze =
         RangeMapBlaze::from_iter([(1u8..=6, "Hello"), (8..=9, "There"), (11..=15, "World")]);
     assert!(range_map_blaze.len() == 13);
-    for (k, v) in range_map_blaze.iter() {
+    for (k, v) in &range_map_blaze {
         println!("{k}:{v}");
     }
     for range in range_map_blaze.ranges() {
@@ -331,7 +331,7 @@ fn map_iters() -> Result<(), Box<dyn std::error::Error>> {
     println!("{range_map_blaze}");
     println!("{:?}", rs.len());
     println!("{:?}", rs.next());
-    for (k, v) in range_map_blaze.iter() {
+    for (k, v) in &range_map_blaze {
         println!("{k}:{v}");
     }
     // range_map_blaze.len();
@@ -2100,7 +2100,7 @@ fn map_range_map_blaze_operators() {
 // //     set.insert(3);
 // //     set.insert(5);
 // //     set.insert(8);
-// //     for elem in (&set & RangeMapBlaze::from_iter([4..=8])).iter() {
+// //     for elem in &(&set & RangeMapBlaze::from_iter([4..=8])) {
 // //         println!("{elem}");
 // //     }
 

@@ -8,7 +8,7 @@ fn main() -> std::io::Result<()> {
     // let name_and_vec_vec_list = read_roaring_data(top)?;
 
     // println!("name, value_count, unique_count, range_count");
-    // for (name, vec_vec) in name_and_vec_vec_list.iter() {
+    // for (name, vec_vec) in &name_and_vec_vec_list {
     //     let vec = vec_vec
     //         .iter()
     //         .flat_map(|v| v.iter().cloned())
@@ -26,7 +26,7 @@ fn main() -> std::io::Result<()> {
     // }
 
     // println!("name, value_count, unique_count, range_count");
-    // for (name, vec_vec) in name_and_vec_vec_list.iter() {
+    // for (name, vec_vec) in &name_and_vec_vec_list {
     //     if name != "census1881_srt" {
     //         continue;
     //     }
