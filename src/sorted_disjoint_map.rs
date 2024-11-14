@@ -953,7 +953,7 @@ impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: EqCl
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: EqClone);
 
 #[test]
-fn temp() {
+fn cmk_delete_temp() {
     let a = CheckSortedDisjointMap::new([(1..=2, &"a")]);
     let b0 = RangeMapBlaze::from_iter([(2..=3, "b")]);
     let b = b0.range_values();
@@ -967,3 +967,27 @@ fn temp() {
     let intersection = a & b;
     assert_eq!(intersection.into_string(), r#"(2..=2, "a")"#);
 }
+
+// #[test]
+// fn cmk_delete_temp2() {
+//     use std::collections::HashSet;
+//     use std::println;
+
+//     let mut set = HashSet::new();
+//     set.insert("apple");
+//     set.insert("banana");
+//     set.insert("cherry");
+
+//     // https://rust-lang.github.io/rust-clippy/master/index.html#explicit_iter_loop
+//     // says don't use .iter(). Instead use the `into_iter` trait on a reference.
+//     // This will also iterate without consuming the HashSet.
+//     for item in &set {
+//         println!("{item}");
+//     }
+
+//     // Prove that HashSet is still usable after the loop.
+//     println!("{set:?}");
+// }
+
+// cmk0000 remove extra .iter()'s in examples.
+// cmk0000 be sure that .iter() is just define as into_iter() of the reference (and that both are always defined)

@@ -29,18 +29,80 @@ use gen_ops::gen_ops_ex;
 use num_traits::One;
 use num_traits::Zero;
 
-/// cmk doc
+/// `EqClone` is a marker trait that combines Eq (equality) and Clone. It is the trait that all values in `RangeMapBlaze` must implement.
+///
+/// When two regions are adjacent, we can check if their values are equal. If so, they will be merged into a single region.
+/// When an inserted region causes a region to be split into two,
+/// `EqClone` lets us clone the value to put in the new region.
+///
+/// A blanket implementation is provided for all types that implement `Eq` and `Clone`.
+///
+/// Examples:
+///
+/// The `String` type implements `Eq` and `Clone`, which enables it to fulfill the `EqClone` trait.
+///
+/// **Merging behavior**: When two adjacent regions have equal values, they are merged into a
+/// single region, and the redundant `String` memory is freed.
+/// ```
+/// use range_set_blaze::prelude::*;
+///
+/// let a = RangeMapBlaze::<i32, String>::from_iter([(1..=2, "a".to_string()), (3..=3, "a".to_string())]);
+/// assert_eq!(a.to_string(), r#"(1..=3, "a")"#);
+/// ```
+///
+/// **Splitting behavior**: When a region is split into two, the value is cloned, allocating a new
+/// `String` for the second region.
+/// ```
+/// # use range_set_blaze::prelude::*;
+/// let mut a = RangeMapBlaze::from_iter([(1..=10, "a".to_string())]);
+/// a.insert(5, "b".to_string());
+/// assert_eq!(a.to_string(), r#"(1..=4, "a"), (5..=5, "b"), (6..=10, "a")"#);
+/// ```
+///
+/// Note that the `&str` type also implements `Eq` and `Clone`, so it too can be used
+/// as a value in `RangeMapBlaze`.
+/// ```
 pub trait EqClone: Eq + Clone {}
 
 impl<T> EqClone for T where T: Eq + Clone {}
 
-/// Trait for references that can be cloned to return a new reference to an equal value.
-/// The associated value type must implement `EqClone`
+/// A trait for references to `EqClone` values.
+///
+/// It defines a method `clone_ref` that clones the reference,
+/// returning a new reference to a value that is eq with the original value.
+///
+/// This trait is currently implemented for `&T`, `Rc<T>` and `Arc<T>`.
+///
+///
+///
+// cmk000
+// / # Examples
+// / ```
+// / use crate::range_set_blaze::ValueRef;
+// /
+// / let value: String = "a".to_string();
+// / let value_ref: &str = &value;
+// / let value_ref_clone: &str = value_ref.clone_ref();
+// / assert_eq!(value, *value_ref_clone);
+// /
+// / // What if value is a &str?
+// / let value: &str = "a";
+// / let value_ref: &&str = &value;
+// / let value_ref_clone: &&str = value_ref.clone_ref();
+// /
+// / // What if value is a String and value_ref is an Rc?
+// / use std::rc::Rc;
+// /
+// / let value: String = "a".to_string();
+// / let value_ref: Rc<String> = Rc::new(value);
+// / let value_ref_clone: Rc<String> = value_ref.clone_ref();
+// / assert_eq!(value, *value_ref_clone);
+/// ```
 pub trait ValueRef: Borrow<Self::Value> {
-    /// The associated value type.
+    /// /// cmk000  The associated value type.
     type Value: EqClone;
 
-    /// Clones the reference, returning a new reference to a value that is eq with the original value.
+    ////// cmk000  Clones the reference, returning a new reference to a value that is eq with the original value.
     /// (It may or may not be the original value.)
     #[must_use]
     fn clone_ref(&self) -> Self;
@@ -149,6 +211,7 @@ where
 /// where *n₁* is the number of input integers/ranges, *n₂* is the number of disjoint & unsorted ranges,
 /// and *n₃* is the final number of sorted & disjoint ranges.
 ///
+/// cmk000 need to say that the value is clone and eq and the keys are integer-like
 /// For example, an input of
 ///  *  `3, 2, 1, 4, 5, 6, 7, 0, 8, 8, 8, 100, 1`, becomes
 ///  * `0..=8, 100..=100, 1..=1`, and then
@@ -1389,7 +1452,7 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     /// with left-to-right precedence.
     ///
     /// ```
-    /// extern crate alloc;
+    /// extern crate alloc; // cmk needed? could be hidden with '#'?
     /// use alloc::rc::Rc;
     /// use range_set_blaze::RangeMapBlaze;
     ///
@@ -2396,3 +2459,68 @@ mod tests {
 }
 
 // cmk do coverage again at the line level
+
+// #[allow(clippy::items_after_statements)]
+// #[allow(noop_method_call)]
+// pub fn delme_cmk() {
+//     use alloc::string::{String, ToString};
+
+//     // `value` is type `String`, which implements `Eq` and `Clone` and
+//     // so also implements `EqClone`.
+//     let value: String = "a".to_string();
+
+//     // We can see `value` is `EqClone` by using equality and cloning.
+//     // Recall that cloning a `String` requires memory allocation, so it is expensive.
+//     assert_eq!(value, value.clone());
+
+//     // Alternatively, we can use this compile-time assert to confirm that a type implements `EqClone`.
+//     const fn assert_impls_eq_clone<T: EqClone>() {}
+//     assert_impls_eq_clone::<String>(); // Compile-time check that 'String' implements `EqClone`.
+
+//     // `value_ref0`` is a reference to a `EqClone` value, so it implements `ValueRef`.
+//     let value_ref0: &String = &value;
+
+//     // We can see that `value_ref0` implements `ValueRef` via this compile-time assert.
+//     const fn assert_impls_value_ref<T: ValueRef>() {}
+//     assert_impls_value_ref::<&String>();
+
+//     // Alternatively, we can also see that `value_ref0` implements `ValueRef` by using `clone_ref`.
+//     // Cloning here is always cheap, we are cloning a reference, not the value itself.
+//     let value_ref1 = value_ref0.clone_ref();
+
+//     // The thing that value_ref0 and value_ref1 point to are 'Eq'.
+//     assert_eq!(*value_ref0, *value_ref1);
+
+//     // We can repeat the whole exercise with &str and Rc<&str>. &str stores
+//     // the bytes of a string in the program's binary, so cloning it is cheap.
+
+//     // `value` is a type `&str`, which implements `Eq` and `Clone`, so it also implements `EqClone`.
+//     let value: &str = "a";
+//     assert_eq!(value, value.clone());
+//     assert_impls_eq_clone::<&str>();
+
+//     // `value_ref0` is a reference to an `EqClone` value, so it implements `ValueRef`.
+//     let value_ref0: Rc<&str> = Rc::new(value);
+//     assert_impls_value_ref::<Rc<&str>>();
+//     let value_ref1 = value_ref0.clone_ref();
+//     assert_eq!(*value_ref0, *value_ref1);
+
+//     // create a RangeMapBlaze with String values
+//     let a = RangeMapBlaze::from_iter([(1..=2, "a".to_string()), (5..=100, "a".to_string())]);
+//     // iterate over the keys and values
+//     for (key, value_ref) in (&a).into_iter() {
+//         let key: i32 = key; // Does nothing but show the type.
+//         let value_ref: &String = value_ref; // Does nothing but show the type.
+//         if key % 25 == 0 {
+//             println!("{key}: {value_ref}");
+//         }
+//     }
+
+//     for (key, value) in a {
+//         let key: i32 = key; // Does nothing but show the type.
+//         let value: String = value; // Does nothing but show the type.
+//         if key % 25 == 0 {
+//             println!("{key}: {value}");
+//         }
+//     }
+// }
