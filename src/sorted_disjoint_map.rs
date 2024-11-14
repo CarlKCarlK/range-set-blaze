@@ -968,26 +968,25 @@ fn cmk_delete_temp() {
     assert_eq!(intersection.into_string(), r#"(2..=2, "a")"#);
 }
 
-// #[test]
-// fn cmk_delete_temp2() {
-//     use std::collections::HashSet;
-//     use std::println;
+#[test]
+fn cmk_delete_temp2() {
+    use std::collections::{BTreeSet, HashSet};
+    use std::println;
 
-//     let mut set = HashSet::new();
-//     set.insert("apple");
-//     set.insert("banana");
-//     set.insert("cherry");
+    let mut set = HashSet::new();
+    set.insert("apple");
+    set.insert("banana");
+    set.insert("cherry");
 
-//     // https://rust-lang.github.io/rust-clippy/master/index.html#explicit_iter_loop
-//     // says don't use .iter(). Instead use the `into_iter` trait on a reference.
-//     // This will also iterate without consuming the HashSet.
-//     for item in &set {
-//         println!("{item}");
-//     }
+    let _ = set.iter().for_each(|x| println!("{}", x));
 
-//     // Prove that HashSet is still usable after the loop.
-//     println!("{set:?}");
-// }
+    // let _set2 = BTreeSet::from_iter(&set); // clippy likes this
+    // let _set3 = BTreeSet::from_iter(set.iter()); // clippy NOT like this
+    // let _set4: BTreeSet<_> = set.iter().collect(); // clippy like this
+
+    // Prove that HashSet is still usable after the loop.
+    println!("{set:?}");
+}
 
 // cmk0000 remove extra .iter()'s in examples.
 // cmk0000 be sure that .iter() is just define as into_iter() of the reference (and that both are always defined)

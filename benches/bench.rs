@@ -1163,7 +1163,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec.iter());
+                    let _answer = RangeSetBlaze::from_iter(&vec);
                 })
             },
         );
@@ -1197,7 +1197,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec_range.iter());
+                    let _answer = RangeSetBlaze::from_iter(&vec_range);
                 })
             },
         );
@@ -1208,8 +1208,8 @@ fn ingest_clumps_base(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let mut answer = RoaringBitmap::new();
-                    for range in vec_range.iter().cloned() {
-                        answer.insert_range(range);
+                    for range in &vec_range {
+                        answer.insert_range(range.clone());
                     }
                 })
             },
@@ -1220,7 +1220,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = BTreeSet::from_iter(vec.iter());
+                    let _answer = BTreeSet::from_iter(&vec);
                 })
             },
         );
@@ -1270,7 +1270,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec.iter());
+                    let _answer = RangeSetBlaze::from_iter(&vec);
                 })
             },
         );
@@ -1314,7 +1314,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = BTreeSet::from_iter(vec.iter());
+                    let _answer = BTreeSet::from_iter(&vec);
                 })
             },
         );
@@ -1377,7 +1377,7 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    black_box(RangeSetBlaze::from_iter(vec.iter()));
+                    black_box(RangeSetBlaze::from_iter(&vec));
                 })
             },
         );
@@ -1429,7 +1429,7 @@ fn ingest_clumps_ranges(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec_range.iter());
+                    let _answer = RangeSetBlaze::from_iter(&vec_range);
                 })
             },
         );
@@ -1494,7 +1494,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec_range.iter());
+                    let _answer = RangeSetBlaze::from_iter(&vec_range);
                 })
             },
         );
@@ -1564,7 +1564,7 @@ fn worst(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(vec.iter());
+                    let _answer = RangeSetBlaze::from_iter(&vec);
                 })
             },
         );
@@ -1588,7 +1588,7 @@ fn worst(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = BTreeSet::from_iter(vec.iter());
+                    let _answer = BTreeSet::from_iter(&vec);
                 })
             },
         );
@@ -1918,7 +1918,7 @@ fn gen_pair_u8(rng: &mut StdRng) -> (u8, u8) {
 
 //         let pairs_blaze = &vec_vec
 //             .iter()
-//             .map(|v| RangeSetBlaze::from_iter(v.iter()))
+//             .map(|v| RangeSetBlaze::from_iter(&v)))
 //             .tuple_windows::<(_, _)>()
 //             .collect::<Vec<_>>();
 
@@ -2012,7 +2012,7 @@ fn worst_op_blaze(c: &mut Criterion) {
                     .map(|list_of_sets| {
                         list_of_sets
                             .iter()
-                            .map(|set| BTreeSet::from_iter(set.iter()))
+                            .map(BTreeSet::from_iter)
                             .collect::<Vec<_>>()
                     })
                     .collect::<Vec<_>>(),

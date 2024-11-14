@@ -1020,8 +1020,8 @@ fn eq() {
                             if use_5 {
                                 b.insert(2);
                             };
-                            let a2: BTreeSet<_> = a.iter().collect();
-                            let b2: BTreeSet<_> = b.iter().collect();
+                            let a2 = BTreeSet::from_iter(&a);
+                            let b2 = BTreeSet::from_iter(&b);
                             assert!((a == b) == (a2 == b2));
                             println!("{a:?} <= {b:?}? RSI {}", a <= b);
                             println!("{a:?} <= {b:?}? BTS {}", a2 <= b2);
@@ -1042,10 +1042,10 @@ fn insert2() {
     for insert in 0..=31 {
         println!("inserting  {insert}");
         let mut a = set.clone();
-        let mut a2: BTreeSet<_> = a.iter().collect();
+        let mut a2 = BTreeSet::from_iter(&a);
         let b2 = a2.insert(insert);
         let b = a.insert(insert);
-        assert_eq!(a, RangeSetBlaze::from_iter(a2.iter().cloned()));
+        assert_eq!(a, RangeSetBlaze::from_iter(&a2));
         assert_eq!(b, b2);
     }
 }
@@ -1092,20 +1092,20 @@ fn remove2() {
     for remove in 0..=31 {
         println!("removing  {remove}");
         let mut a = set.clone();
-        let mut a2: BTreeSet<_> = a.iter().collect();
+        let mut a2 = BTreeSet::from_iter(&a);
         let b2 = a2.remove(&remove);
         let b = a.remove(remove);
-        assert_eq!(a, RangeSetBlaze::from_iter(a2.iter().cloned()));
+        assert_eq!(a, RangeSetBlaze::from_iter(&a2));
         assert_eq!(b, b2);
     }
     let set = RangeSetBlaze::new();
     for remove in 0..=0 {
         println!("removing  {remove}");
         let mut a = set.clone();
-        let mut a2: BTreeSet<_> = a.iter().collect();
+        let mut a2 = BTreeSet::from_iter(&a);
         let b2 = a2.remove(&remove);
         let b = a.remove(remove);
-        assert_eq!(a, RangeSetBlaze::from_iter(a2.iter().cloned()));
+        assert_eq!(a, RangeSetBlaze::from_iter(&a2));
         assert_eq!(b, b2);
     }
 }
@@ -1117,21 +1117,21 @@ fn split_off() {
     for split in 0..=31 {
         println!("splitting at {split}");
         let mut a = set.clone();
-        let mut a2: BTreeSet<_> = a.iter().collect();
+        let mut a2 = BTreeSet::from_iter(&a);
         let b2 = a2.split_off(&split);
         let b = a.split_off(split);
-        assert_eq!(a, RangeSetBlaze::from_iter(a2.iter().cloned()));
-        assert_eq!(b, RangeSetBlaze::from_iter(b2.iter().cloned()));
+        assert_eq!(a, RangeSetBlaze::from_iter(&a2));
+        assert_eq!(b, RangeSetBlaze::from_iter(&b2));
     }
     let set = RangeSetBlaze::new();
     for split in 0..=0 {
         println!("splitting at {split}");
         let mut a = set.clone();
-        let mut a2: BTreeSet<_> = a.iter().collect();
+        let mut a2 = BTreeSet::from_iter(&a);
         let b2 = a2.split_off(&split);
         let b = a.split_off(split);
-        assert_eq!(a, RangeSetBlaze::from_iter(a2.iter().cloned()));
-        assert_eq!(b, RangeSetBlaze::from_iter(b2.iter().cloned()));
+        assert_eq!(a, RangeSetBlaze::from_iter(&a2));
+        assert_eq!(b, RangeSetBlaze::from_iter(&b2));
     }
 }
 

@@ -885,7 +885,7 @@ fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
     let c = !not_a01.range_values() - a2.ranges();
     let d = (a0.range_values() | a1.range_values()) - a2.range_values();
     let e = a01_tee.map_and_set_difference(a2.ranges());
-    // cmk0 let f = UnionIterMap::from_iter(a01.iter()) - UnionIter::from_iter(a2.keys());
+    // cmk0 let f = UnionIterMap::from_iter(&a01) - UnionIter::from_iter(a2.keys());
     assert!(a.range_values().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.range_values().equal(d));
@@ -912,7 +912,7 @@ fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
 //     let c = !not_a01.range_values() ^ a2.range_values();
 //     let d = (a0.range_values() | a1.range_values()) ^ a2.range_values();
 //     let e = a01_tee.symmetric_difference(a2.range_values());
-//     let f = UnionIterMap::from_iter(a01.iter()) ^ UnionIterMap::from_iter(a2.iter());
+//     let f = UnionIterMap::from_iter(&a01) ^ UnionIterMap::from_iter(&a2);
 //     assert!(a.range_values().equal(b));
 //     assert!(a.range_values().equal(c));
 //     assert!(a.range_values().equal(d));
@@ -938,7 +938,7 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
     let c = !not_a01.range_values() & a2.ranges();
     let d = (a0.range_values() | a1.range_values()) & a2.range_values();
     let e = a01_tee.map_and_set_intersection(a2.ranges()); // cmk00
-                                                           // cmk00 let f = UnionIterMap::from_iter(a01.iter()) & UnionIter::from_iter(a2.keys());
+                                                           // cmk00 let f = UnionIterMap::from_iter(&a01) & UnionIter::from_iter(a2.keys());
     assert!(a.range_values().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.range_values().equal(d));
@@ -2183,7 +2183,7 @@ fn map_range_map_blaze_operators() {
 //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_from_iter_coverage() {
 // //     let vec_range = vec![1..=2, 2..=2, -10..=-5];
-// //     let a0 = RangeMapBlaze::from_iter(vec_range.iter());
+// //     let a0 = RangeMapBlaze::from_iter(&vec_range);
 // //     let a1: RangeMapBlaze<(i32,&str)> = vec_range.iter().collect();
 // //     assert!(a0 == a1 && a0.into_string() == "-10..=-5, 1..=2");
 // // }
@@ -2548,7 +2548,7 @@ fn map_random_insert() {
 
             // if range_map_blaze and btree_map are not equal, then we have a bug, so repro it:
 
-            let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+            let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone());
             range_map_blaze.insert(key, *value);
             assert!(equal_maps(&range_map_blaze, &btree_map));
         }
@@ -2584,7 +2584,7 @@ fn map_random_insert_range() {
 
             // if range_map_blaze and btree_map are not equal, then we have a bug, so repro it:
 
-            let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+            let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone());
             println!("{range_map_blaze}");
             println!("About to insert {}..={} -> {value}", key.start(), key.end());
             range_map_blaze.ranges_insert(key.clone(), *value);
@@ -2619,7 +2619,7 @@ fn map_random_ranges() {
 
             // if range_map_blaze and btree_map are not equal, then we have a bug, so repro it:
 
-            let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+            let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone());
             range_map_blaze.insert(key, *value);
             assert!(range_set_blaze.ranges().eq(range_map_blaze.ranges()));
         }
@@ -2654,7 +2654,7 @@ fn map_random_ranges_ranges() {
 
             // if range_map_blaze and btree_map are not equal, then we have a bug, so repro it:
 
-            let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+            let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone());
             range_map_blaze.ranges_insert(key.clone(), *value);
             assert!(range_set_blaze.ranges().eq(range_map_blaze.ranges()));
         }
@@ -3909,7 +3909,7 @@ fn example_2() {
 
 //             // if range_map_blaze and btree_map are not equal, then we have a bug, so repro it:
 
-//             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+//             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone());
 //             range_map_blaze.insert(key, *value);
 //             assert!(equal_maps(&range_map_blaze, &btree_map));
 //         }
@@ -3944,7 +3944,7 @@ fn example_2() {
 
 //             // if range_map_blaze and btree_map are not equal, then we have a bug, so repro it:
 
-//             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+//             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone());
 //             println!("{range_map_blaze}");
 //             println!("About to insert {}..={} -> {value}", key.start(), key.end());
 //             range_map_blaze.ranges_insert(key.clone(), *value);
@@ -3978,7 +3978,7 @@ fn example_2() {
 
 //             // if range_map_blaze and btree_map are not equal, then we have a bug, so repro it:
 
-//             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+//             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone());
 //             range_map_blaze.insert(key, *value);
 //             assert!(range_set_blaze.ranges().eq(range_map_blaze.ranges()));
 //         }
@@ -4012,7 +4012,7 @@ fn example_2() {
 
 //             // if range_map_blaze and btree_map are not equal, then we have a bug, so repro it:
 
-//             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone().into_iter());
+//             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone());
 //             range_map_blaze.ranges_insert(key.clone(), *value);
 //             assert!(range_set_blaze.ranges().eq(range_map_blaze.ranges()));
 //         }

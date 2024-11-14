@@ -184,7 +184,7 @@ impl<'a, T: Integer, V: EqClone> FromIterator<&'a (RangeInclusive<T>, V)> for Ra
     ///
     /// #[allow(clippy::reversed_empty_ranges)]
     /// let vec_range = vec![(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")];
-    /// let a0 = RangeMapBlaze::from_iter(vec_range.iter());
+    /// let a0 = RangeMapBlaze::from_iter(&vec_range);
     /// let a1: RangeMapBlaze<i32, &str> = vec_range.iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
     /// ```
@@ -209,7 +209,7 @@ impl<'a, T: Integer, V: EqClone> FromIterator<&'a (T, V)> for RangeMapBlaze<T, V
     ///
     /// let v = vec![(1, "a"), (2, "a"), (2, "b")];
     /// let a0 = RangeMapBlaze::from_iter(&v);
-    /// let a1: RangeMapBlaze<i32, &str> = (&v).iter().collect();
+    /// let a1: RangeMapBlaze<i32, &str> = v.iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == r#"(1..=2, "a")"#);
     /// ```
     fn from_iter<I>(iter: I) -> Self

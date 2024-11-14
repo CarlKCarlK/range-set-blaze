@@ -306,8 +306,8 @@ impl Integer for i128 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> crate::RangeSetBlaze<Self> {
-        slice.as_ref().iter().collect()
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        RangeSetBlaze::from_iter(slice.as_ref())
     }
 
     #[allow(clippy::cast_sign_loss)]
@@ -417,8 +417,8 @@ impl Integer for u128 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> crate::RangeSetBlaze<Self> {
-        slice.as_ref().iter().collect()
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        RangeSetBlaze::from_iter(slice.as_ref())
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -559,7 +559,7 @@ impl Integer for Ipv4Addr {
     #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        slice.as_ref().iter().collect()
+        RangeSetBlaze::from_iter(slice.as_ref())
     }
 
     #[allow(clippy::cast_lossless)]
@@ -642,7 +642,7 @@ impl Integer for Ipv6Addr {
     #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        slice.as_ref().iter().collect()
+        RangeSetBlaze::from_iter(slice.as_ref())
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -774,7 +774,7 @@ impl Integer for char {
     #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        slice.as_ref().iter().collect()
+        RangeSetBlaze::from_iter(slice.as_ref())
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {

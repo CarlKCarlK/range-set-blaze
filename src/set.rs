@@ -1420,7 +1420,7 @@ impl<'a, T: Integer> FromIterator<&'a RangeInclusive<T>> for RangeSetBlaze<T> {
     ///
     /// #[allow(clippy::reversed_empty_ranges)]
     /// let vec_range = vec![1..=2, 2..=2, -10..=-5, 1..=0];
-    /// let a0 = RangeSetBlaze::from_iter(vec_range.iter());
+    /// let a0 = RangeSetBlaze::from_iter(&vec_range);
     /// let a1: RangeSetBlaze<i32> = vec_range.iter().collect();
     /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
     /// ```
