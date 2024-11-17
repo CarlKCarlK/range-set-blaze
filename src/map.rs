@@ -29,74 +29,81 @@ use gen_ops::gen_ops_ex;
 use num_traits::One;
 use num_traits::Zero;
 
-/// `EqClone` is a marker trait that combines Eq (equality) and Clone. It is the trait that all values in `RangeMapBlaze` must implement.
-///
-/// When two regions are adjacent, we can check if their values are equal. If so, they will be merged into a single region.
-/// When an inserted region causes a region to be split into two,
-/// `EqClone` lets us clone the value to put in the new region.
+/// `EqClone` is a marker trait that combines `Eq` (equality) and `Clone`. It is the trait that all values in `RangeMapBlaze` must implement.
 ///
 /// A blanket implementation is provided for all types that implement `Eq` and `Clone`.
 ///
-/// Examples:
 ///
-/// The `String` type implements `Eq` and `Clone`, which enables it to fulfill the `EqClone` trait.
+/// # Examples:
 ///
-/// **Merging behavior**: When two adjacent regions have equal values, they are merged into a
-/// single region, and the redundant `String` memory is freed.
+/// The `String` type implements `Eq` and `Clone`, so it also implements `EqClone`. It can, thus,
+/// be used as a value in `RangeMapBlaze`.
+///
+/// **Merging behavior**: When two values are equal and their ranges are adjacent, they will be merged into a single region. Moreover,
+/// the redundant `String` memory will freed.
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
 /// let a = RangeMapBlaze::<i32, String>::from_iter([(1..=2, "a".to_string()), (3..=3, "a".to_string())]);
-/// assert_eq!(a.to_string(), r#"(1..=3, "a")"#);
+/// assert_eq!(a.to_string(), r#"(1..=3, "a")"#); // The two regions have been merged.
 /// ```
 ///
-/// **Splitting behavior**: When a region is split into two, the value is cloned, allocating a new
-/// `String` for the second region.
+/// **Splitting behavior**: When an inserted value causes a range to be split into two,
+/// `EqClone` lets us use clone to get the value to put in the second range.
 /// ```
 /// # use range_set_blaze::prelude::*;
-/// let mut a = RangeMapBlaze::from_iter([(1..=10, "a".to_string())]);
+/// let mut a = RangeMapBlaze::from_iter([(1..=10, "a".to_string())]); // just one "a"
 /// a.insert(5, "b".to_string());
-/// assert_eq!(a.to_string(), r#"(1..=4, "a"), (5..=5, "b"), (6..=10, "a")"#);
+/// assert_eq!(a.to_string(), r#"(1..=4, "a"), (5..=5, "b"), (6..=10, "a")"#); // now two "a"'s.
 /// ```
 ///
 /// Note that the `&str` type also implements `Eq` and `Clone`, so it too can be used
 /// as a value in `RangeMapBlaze`.
-/// ```
 pub trait EqClone: Eq + Clone {}
 
 impl<T> EqClone for T where T: Eq + Clone {}
 
-/// A trait for references to `EqClone` values.
+/// A trait for references to `EqClone` values. It is used by the `SortedDisjointMap` trait.
 ///
-/// It defines a method `clone_ref` that clones the reference,
-/// returning a new reference to a value that is eq with the original value.
+/// It defines a method `clone_ref` that clones the reference (typically with great efficiency).
 ///
 /// This trait is currently implemented for `&T`, `Rc<T>` and `Arc<T>`.
 ///
+/// # Motivation
 ///
+/// We often wish to iterate over the `(range, value)` pairs, with, for example, [`RangeMapBlaze::ranges`]. Such
+/// iterations allows us to, for example, efficiently compute union, intersection, and set difference .
 ///
-// cmk000
-// / # Examples
-// / ```
-// / use crate::range_set_blaze::ValueRef;
-// /
-// / let value: String = "a".to_string();
-// / let value_ref: &str = &value;
-// / let value_ref_clone: &str = value_ref.clone_ref();
-// / assert_eq!(value, *value_ref_clone);
-// /
-// / // What if value is a &str?
-// / let value: &str = "a";
-// / let value_ref: &&str = &value;
-// / let value_ref_clone: &&str = value_ref.clone_ref();
-// /
-// / // What if value is a String and value_ref is an Rc?
-// / use std::rc::Rc;
-// /
-// / let value: String = "a".to_string();
-// / let value_ref: Rc<String> = Rc::new(value);
-// / let value_ref_clone: Rc<String> = value_ref.clone_ref();
-// / assert_eq!(value, *value_ref_clone);
+/// However, we don't want to clone the values in the [`RangeMapBlaze`] when we iterate over them. Cloning, for example,
+/// a `String` is expensive. Instead, we iterate over references to the values. Cloning a reference is typically
+/// very cheap.
+///
+/// So, why not always use `&EqClone`? Why also support `Rc<EqClone>` and `Arc<EqClone>`? Because we want work with
+/// iterators such as [`RangeMapBlaze::into_ranges`]. They require ownership of the values. By supporting, for example, `Rc<T>`, we can
+/// support both references and ownership. (The owned value's memory is freed when the reference count goes to zero.)
+///
+/// # Examples
+///
+/// Here we show the [`SortedDisjointMap::intersection`] operation working on iterators of
+/// both `(RangeInclusive<Integer>, &EqClone)` and `(RangeInclusive<Integer>, Rc<EqClone>)`.
+/// (But we can't mix the two types in the same operation.)
+///
+/// ```rust
+/// use range_set_blaze::prelude::*;
+/// use std::rc::Rc;
+///
+/// let a = RangeMapBlaze::from_iter([(2..=3, "a".to_string()), (5..=100, "a".to_string())]);
+/// let b = RangeMapBlaze::from_iter([(3..=10, "b".to_string())]);
+///
+/// let mut c = a.range_values() & b.range_values();
+/// assert_eq!(c.next(), Some((3..=3, &"a".to_string())));
+/// assert_eq!(c.next(), Some((5..=10, &"a".to_string())));
+/// assert_eq!(c.next(), None);
+///
+/// let mut c = a.into_range_values() & b.into_range_values();
+/// assert_eq!(c.next(), Some((3..=3, Rc::new("a".to_string()))));
+/// assert_eq!(c.next(), Some((5..=10, Rc::new("a".to_string()))));
+/// assert_eq!(c.next(), None);
 /// ```
 pub trait ValueRef: Borrow<Self::Value> {
     /// /// cmk000  The associated value type.

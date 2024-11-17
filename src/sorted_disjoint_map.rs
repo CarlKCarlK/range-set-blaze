@@ -954,39 +954,17 @@ impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: EqClone)
 
 #[test]
 fn cmk_delete_temp() {
-    let a = CheckSortedDisjointMap::new([(1..=2, &"a")]);
-    let b0 = RangeMapBlaze::from_iter([(2..=3, "b")]);
-    let b = b0.range_values();
-    let intersection = a.intersection(b);
-    assert_eq!(intersection.into_string(), r#"(2..=2, "a")"#);
+    use std::string::ToString;
 
-    // Alternatively, we can use "&" because CheckSortedDisjointMap defines
-    // `ops::BitAnd` as `SortedDisjointMap::intersection`.
-    let a = CheckSortedDisjointMap::new([(1..=2, &"a")]);
-    let b = b0.range_values();
-    let intersection = a & b;
-    assert_eq!(intersection.into_string(), r#"(2..=2, "a")"#);
+    let a = RangeMapBlaze::from_iter([(2..=3, "a".to_string()), (5..=100, "a".to_string())]);
+    let b = RangeMapBlaze::from_iter([(3..=10, "b".to_string())]);
+    let mut c = a.range_values() & b.range_values();
+    assert_eq!(c.next(), Some((3..=3, &"a".to_string())));
+    assert_eq!(c.next(), Some((5..=10, &"a".to_string())));
+    assert_eq!(c.next(), None);
+
+    let mut c = a.into_range_values() & b.into_range_values();
+    assert_eq!(c.next(), Some((3..=3, Rc::new("a".to_string()))));
+    assert_eq!(c.next(), Some((5..=10, Rc::new("a".to_string()))));
+    assert_eq!(c.next(), None);
 }
-
-#[test]
-fn cmk_delete_temp2() {
-    use std::collections::{BTreeSet, HashSet};
-    use std::println;
-
-    let mut set = HashSet::new();
-    set.insert("apple");
-    set.insert("banana");
-    set.insert("cherry");
-
-    let _ = set.iter().for_each(|x| println!("{}", x));
-
-    // let _set2 = BTreeSet::from_iter(&set); // clippy likes this
-    // let _set3 = BTreeSet::from_iter(set.iter()); // clippy NOT like this
-    // let _set4: BTreeSet<_> = set.iter().collect(); // clippy like this
-
-    // Prove that HashSet is still usable after the loop.
-    println!("{set:?}");
-}
-
-// cmk0000 remove extra .iter()'s in examples.
-// cmk0000 be sure that .iter() is just define as into_iter() of the reference (and that both are always defined)
