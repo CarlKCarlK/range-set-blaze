@@ -108,7 +108,7 @@ where
 
 /// A map from integers to values stored as a map of sorted & disjoint ranges to values.
 ///
-/// Values must implement `Eq + Clone`. Internally, the map stores the
+/// Internally, the map stores the
 /// ranges and values in a cache-efficient [`BTreeMap`].
 ///
 /// # Table of Contents
@@ -123,7 +123,7 @@ where
 ///
 /// # `RangeMapBlaze` Constructors
 ///
-/// You can also create `RangeMapBlaze`'s from unsorted and overlapping integers (or ranges).
+/// You can create `RangeMapBlaze`'s from unsorted and overlapping integers (or ranges), along with values.
 /// However, if you know that your input is sorted and disjoint, you can speed up construction.
 ///
 /// Here are the constructors, followed by a
@@ -133,8 +133,8 @@ where
 /// | Methods                                     | Input                        | Notes                    |
 /// |---------------------------------------------|------------------------------|--------------------------|
 /// | [`new`]/[`default`]                         |                              |                          |
-/// | [`from_iter`][1]/[`collect`][1]           | iterator of `(integer, value)` | '`&`' allowed before `value` or the pair |
-/// | [`from_iter`][2]/[`collect`][2]           | iterator of `(range, value)` | '`&`' allowed before `value` or the pair |
+/// | [`from_iter`][1]/[`collect`][1]           | iterator of `(integer, value)` | References to the pair or value is OK. |
+/// | [`from_iter`][2]/[`collect`][2]           | iterator of `(range, value)`   | References to the pair or value is OK. |
 /// | [`from_sorted_disjoint_map`][3]/<br>[`into_range_set_blaze`][3b] | [`SortedDisjointMap`] iterator |               |
 /// | [`from`][4] /[`into`][4]                    | array of `(integer, value)`  |                          |
 ///
@@ -157,24 +157,23 @@ where
 /// of the constructors:
 ///
 ///  Internally, the `from_iter`/`collect` constructors take these steps:
-/// * collect adjacent integers/ranges into disjoint ranges, O(*n₁*)
+/// * collect adjacent integers/ranges with equal values into disjoint ranges, O(*n₁*)
 /// * sort the disjoint ranges by their `start`, O(*n₂* ln *n₂*)
-/// * merge adjacent ranges, O(*n₂*)
+/// * merge ranges giving precedence to the original left-most values, O(*n₂*)
 /// * create a `BTreeMap` from the now sorted & disjoint ranges, O(*n₃* ln *n₃*)
 ///
 /// where *n₁* is the number of input integers/ranges, *n₂* is the number of disjoint & unsorted ranges,
-/// and *n₃* is the final number of sorted & disjoint ranges.
+/// and *n₃* is the final number of sorted & disjoint ranges with equal values.
 ///
-/// cmk000 need to say that the value is clone and eq and the keys are integer-like
 /// For example, an input of
-///  *  `3, 2, 1, 4, 5, 6, 7, 0, 8, 8, 8, 100, 1`, becomes
-///  * `0..=8, 100..=100, 1..=1`, and then
-///  * `0..=8, 1..=1, 100..=100`, and finally
-///  * `0..=8, 100..=100`.
+///  * `(3, "a"), (2, "a"), (1, "a"), (4, "a"), (100, "c"), (5, "b"), (4, "b"), (5, "b")`, becomes
+///  * `(1..=4, "a"), (100..=100, "c"), (4..=5, "b")`, and then
+///  * `(1..=4, "a"), (4..=5, "b"), (100..=100, "c")`, and finally
+///  * `(1..=4, "a"), (5..=5, "b"), (100..=100, "c")`.
 ///
 /// What is the effect of clumpy data?
 /// Notice that if *n₂* ≈ sqrt(*n₁*), then construction is O(*n₁*).
-/// (Indeed, as long as *n₂* ≤ *n₁*/ln(*n₁*), then construction is O(*n₁*).)
+/// Indeed, as long as *n₂* ≤ *n₁*/ln(*n₁*), then construction is O(*n₁*).
 /// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*)),
 /// a quadratic improvement an O(*n₁*) implementation that ignores the clumps.
 ///
@@ -205,7 +204,7 @@ where
 /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
 ///
 /// // If we know the ranges are already sorted and disjoint,
-/// // we can avoid work and use 'from_sorted_disjoint_map'/'into'.
+/// // we can avoid work and use 'from_sorted_disjoint_map'/'into_sorted_disjoint_map'.
 /// let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::new([(-10..=-5, &"c"), (1..=2, &"a")]));
 /// let a1: RangeMapBlaze<i32, &str> = CheckSortedDisjointMap::new([(-10..=-5, &"c"), (1..=2, &"a")]).into_range_map_blaze();
 /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
@@ -263,7 +262,7 @@ where
 /// Thus, applying multiple operators creates intermediate
 /// `RangeMapBlaze`'s. If you wish, you can avoid these intermediate
 /// `RangeMapBlaze`'s by switching to the [`SortedDisjointMap`] API. The last example below
-/// demonstrates this. cmk bad link
+/// demonstrates this.
 ///
 /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
 ///

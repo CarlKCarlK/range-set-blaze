@@ -114,7 +114,7 @@ where
 ///
 /// # `RangeSetBlaze` Constructors
 ///
-/// You can also create `RangeSetBlaze`'s from unsorted and overlapping integers (or ranges).
+/// You can create `RangeSetBlaze`'s from unsorted and overlapping integers (or ranges).
 /// However, if you know that your input is sorted and disjoint, you can speed up construction.
 ///
 /// Here are the constructors, followed by a
@@ -164,7 +164,7 @@ where
 ///
 /// What is the effect of clumpy data?
 /// Notice that if *n₂* ≈ sqrt(*n₁*), then construction is O(*n₁*).
-/// (Indeed, as long as *n₂* ≤ *n₁*/ln(*n₁*), then construction is O(*n₁*).)
+/// Indeed, as long as *n₂* ≤ *n₁*/ln(*n₁*), then construction is O(*n₁*).
 /// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*)),
 /// a quadratic improvement an O(*n₁*) implementation that ignores the clumps.
 ///
