@@ -27,7 +27,7 @@ use crate::intersection_iter_map::IntersectionIterMap;
 use crate::map::BitAndRangesMap;
 use crate::sorted_disjoint::SortedDisjoint;
 use crate::NotIter;
-use crate::{map::EqClone, union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
+use crate::{union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
 use core::ops;
 use core::ops::RangeInclusive;
 
@@ -403,8 +403,8 @@ where
     #[inline]
     fn complement_with(
         self,
-        v: &VR::Value,
-    ) -> RangeToRangeValueIter<T, VR::Value, NotIter<T, impl SortedDisjoint<T>>>
+        v: &VR::Target,
+    ) -> RangeToRangeValueIter<T, VR::Target, NotIter<T, impl SortedDisjoint<T>>>
     where
         Self: Sized,
     {
@@ -518,7 +518,7 @@ where
     /// let a1: RangeMapBlaze<i32,_> = CheckSortedDisjointMap::new([(-10..=-5, &"a"), (1..=2, &"b")]).into_range_map_blaze();
     /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "a"), (1..=2, "b")"#);
     /// ```
-    fn into_range_map_blaze(self) -> RangeMapBlaze<T, VR::Value>
+    fn into_range_map_blaze(self) -> RangeMapBlaze<T, VR::Target>
     where
         Self: Sized,
     {
@@ -798,7 +798,7 @@ where
 pub struct RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: EqClone,
+    V: Eq + Clone,
     I: SortedDisjoint<T>,
 {
     inner: I,
@@ -809,7 +809,7 @@ where
 impl<'a, T, V, I> RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: EqClone,
+    V: Eq + Clone,
     I: SortedDisjoint<T>,
 {
     pub const fn new(inner: I, value: &'a V) -> Self {
@@ -824,7 +824,7 @@ where
 impl<T, V, I> FusedIterator for RangeToRangeValueIter<'_, T, V, I>
 where
     T: Integer,
-    V: EqClone,
+    V: Eq + Clone,
     I: SortedDisjoint<T>,
 {
 }
@@ -832,7 +832,7 @@ where
 impl<'a, T, V, I> Iterator for RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: EqClone,
+    V: Eq + Clone,
     I: SortedDisjoint<T>,
 {
     type Item = (RangeInclusive<T>, &'a V);
@@ -846,14 +846,14 @@ where
 impl<'a, T, V, I> SortedStartsMap<T, &'a V> for RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: EqClone,
+    V: Eq + Clone,
     I: SortedDisjoint<T>,
 {
 }
 impl<'a, T, V, I> SortedDisjointMap<T, &'a V> for RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
-    V: EqClone,
+    V: Eq + Clone,
     I: SortedDisjoint<T>,
 {
 }
@@ -949,8 +949,8 @@ impl_sorted_map_traits_and_ops!(UnionIterMap<T, VR, I>, VR::Value, VR, VR: Value
 impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VR, I0, I1>,  VR::Value, VR, VR: ValueRef, I0: SortedDisjointMap<T, VR>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 'a, VR: ValueRef);
-impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: EqClone);
-impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: EqClone);
+impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Eq + Clone);
+impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: Eq + Clone);
 
 #[test]
 fn cmk_delete_temp() {

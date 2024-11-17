@@ -45,7 +45,7 @@ where
     }
 }
 
-// impl<T: Integer, V: EqClone, const N: usize> From<[T; N]>
+// impl<T: Integer, V: Eq + Clone, const N: usize> From<[T; N]>
 //     for IntersectionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
 // {
 //     fn from(arr: [T; N]) -> Self {
@@ -53,13 +53,13 @@ where
 //     }
 // }
 
-// impl<T: Integer, V: EqClone> From<&[T]> for IntersectionIterMap<T, V, SortedRangeInclusiveVec<T, V>> {
+// impl<T: Integer, V: Eq + Clone> From<&[T]> for IntersectionIterMap<T, V, SortedRangeInclusiveVec<T, V>> {
 //     fn from(slice: &[T]) -> Self {
 //         slice.iter().cloned().collect()
 //     }
 // }
 
-// impl<T: Integer, V: EqClone, const N: usize> From<[RangeValue<T, V>; N]>
+// impl<T: Integer, V: Eq + Clone, const N: usize> From<[RangeValue<T, V>; N]>
 //     for IntersectionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
 // {
 //     fn from(arr: [RangeValue<T, V>; N]) -> Self {
@@ -161,7 +161,7 @@ where
 }
 
 // cmk
-// impl<T: Integer, V: EqClone, I> ops::Not for IntersectionIterMap<T, V, I>
+// impl<T: Integer, V: Eq + Clone, I> ops::Not for IntersectionIterMap<T, V, I>
 // where
 //     I: SortedStartsMap<T, V>,
 // {
@@ -186,7 +186,7 @@ where
 //     }
 // }
 
-// impl<T: Integer, V: EqClone, R, L> ops::Sub<R> for IntersectionIterMap<T, V, L>
+// impl<T: Integer, V: Eq + Clone, R, L> ops::Sub<R> for IntersectionIterMap<T, V, L>
 // where
 //     L: SortedStartsMap<T, V>,
 //     R: SortedDisjointMap<T, V>,
@@ -198,7 +198,7 @@ where
 //     }
 // }
 
-// impl<T: Integer, V: EqClone, R, L> ops::BitXor<R> for IntersectionIterMap<T, V, L>
+// impl<T: Integer, V: Eq + Clone, R, L> ops::BitXor<R> for IntersectionIterMap<T, V, L>
 // where
 //     L: SortedStartsMap<T, V>,
 //     R: SortedDisjointMap<T, V>,
@@ -211,7 +211,7 @@ where
 //     }
 // }
 
-// impl<T: Integer, V: EqClone, R, L> ops::BitAnd<R> for IntersectionIterMap<T, V, L>
+// impl<T: Integer, V: Eq + Clone, R, L> ops::BitAnd<R> for IntersectionIterMap<T, V, L>
 // where
 //     L: SortedStartsMap<T, V>,
 //     R: SortedDisjointMap<T, V>,

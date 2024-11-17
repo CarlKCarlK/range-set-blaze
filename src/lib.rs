@@ -74,7 +74,6 @@ pub use intersection_iter_map::IntersectionIterMap;
 mod map_from_iter;
 mod sym_diff_iter;
 mod sym_diff_iter_map;
-pub use map::EqClone;
 pub use map::ValueRef;
 pub use merge::{KMerge, Merge}; // cmk make public???
 pub use merge_map::{KMergeMap, MergeMap}; // cmk make public???

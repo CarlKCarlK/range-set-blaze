@@ -45,7 +45,7 @@ where
 // impl<'a, T, V, VR, I> FusedIterator for UnsortedDisjointMap<'a, T, V, VR, I>
 // where
 //     T: Integer,
-//     V: EqClone + 'a,
+//     V: Eq + Clone + 'a,
 //     I: Iterator<Item = (T,  VR)> + FusedIterator,
 // {
 // }
@@ -137,7 +137,7 @@ where
 }
 
 // cmk
-// impl<T: Integer, V: EqClone, I> From<I> for SortedDisjointWithLenSoFarMap<T, V, I::IntoIterMap>
+// impl<T: Integer, V: Eq + Clone, I> From<I> for SortedDisjointWithLenSoFarMap<T, V, I::IntoIterMap>
 // where
 //     I: IntoIterator<Item = RangeValue<T, V>>,
 //     I::IntoIter: SortedDisjointMap<T, V>,
@@ -163,7 +163,7 @@ where
 }
 
 // cmk
-// impl<T: Integer, V: EqClone, I> FusedIterator for SortedDisjointWithLenSoFarMap<T, V, I> where
+// impl<T: Integer, V: Eq + Clone, I> FusedIterator for SortedDisjointWithLenSoFarMap<T, V, I> where
 //     I: SortedDisjointMap<T, V> + FusedIterator
 // {
 // }
@@ -174,7 +174,7 @@ where
     VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
-    type Item = (T, EndValue<T, VR::Value>);
+    type Item = (T, EndValue<T, VR::Target>);
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some((range, value)) = self.iter.next() {

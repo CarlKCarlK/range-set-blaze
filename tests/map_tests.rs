@@ -16,8 +16,8 @@ use quickcheck_macros::quickcheck;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use range_set_blaze::{
-    prelude::*, EqClone, IntersectionIterMap, IntoRangeValuesIter, KMergeMap, MergeMap,
-    RangeValuesIter, SymDiffIterMap, UnionIterMap, ValueRef,
+    prelude::*, IntersectionIterMap, IntoRangeValuesIter, KMergeMap, MergeMap, RangeValuesIter,
+    SymDiffIterMap, UnionIterMap, ValueRef,
 };
 use std::borrow::Borrow;
 use std::iter::FusedIterator;
@@ -2829,7 +2829,7 @@ fn map_repro_insert_1() {
     assert_eq!(range_map_blaze.to_string(), r#"(123..=123, "World")"#);
 }
 
-fn equal_maps<T: Integer + std::fmt::Display, V: EqClone + fmt::Debug + std::fmt::Display>(
+fn equal_maps<T: Integer + std::fmt::Display, V: Eq + Clone + fmt::Debug + std::fmt::Display>(
     range_map_blaze: &RangeMapBlaze<T, V>,
     btree_map: &BTreeMap<T, &V>,
 ) -> bool

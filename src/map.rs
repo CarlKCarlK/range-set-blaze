@@ -29,41 +29,42 @@ use gen_ops::gen_ops_ex;
 use num_traits::One;
 use num_traits::Zero;
 
-/// `EqClone` is a marker trait that combines `Eq` (equality) and `Clone`. It is the trait that all values in `RangeMapBlaze` must implement.
-///
-/// A blanket implementation is provided for all types that implement `Eq` and `Clone`.
-///
-///
-/// # Examples:
-///
-/// The `String` type implements `Eq` and `Clone`, so it also implements `EqClone`. It can, thus,
-/// be used as a value in `RangeMapBlaze`.
-///
-/// **Merging behavior**: When two values are equal and their ranges are adjacent, they will be merged into a single region. Moreover,
-/// the redundant `String` memory will freed.
-/// ```
-/// use range_set_blaze::prelude::*;
-///
-/// let a = RangeMapBlaze::<i32, String>::from_iter([(1..=2, "a".to_string()), (3..=3, "a".to_string())]);
-/// assert_eq!(a.to_string(), r#"(1..=3, "a")"#); // The two regions have been merged.
-/// ```
-///
-/// **Splitting behavior**: When an inserted value causes a range to be split into two,
-/// `EqClone` lets us use clone to get the value to put in the second range.
-/// ```
-/// # use range_set_blaze::prelude::*;
-/// let mut a = RangeMapBlaze::from_iter([(1..=10, "a".to_string())]); // just one "a"
-/// a.insert(5, "b".to_string());
-/// assert_eq!(a.to_string(), r#"(1..=4, "a"), (5..=5, "b"), (6..=10, "a")"#); // now two "a"'s.
-/// ```
-///
-/// Note that the `&str` type also implements `Eq` and `Clone`, so it too can be used
-/// as a value in `RangeMapBlaze`.
-pub trait EqClone: Eq + Clone {}
+// cmk000 delete
+// /// `Eq + Clone` is a marker trait that combines `Eq` (equality) and `Clone`. It is the trait that all values in `RangeMapBlaze` must implement.
+// ///
+// /// A blanket implementation is provided for all types that implement `Eq` and `Clone`.
+// ///
+// ///
+// /// # Examples:
+// ///
+// /// The `String` type implements `Eq` and `Clone`, so it also implements `Eq + Clone`. It can, thus,
+// /// be used as a value in `RangeMapBlaze`.
+// ///
+// /// **Merging behavior**: When two values are equal and their ranges are adjacent, they will be merged into a single region. Moreover,
+// /// the redundant `String` memory will freed.
+// /// ```
+// /// use range_set_blaze::prelude::*;
+// ///
+// /// let a = RangeMapBlaze::<i32, String>::from_iter([(1..=2, "a".to_string()), (3..=3, "a".to_string())]);
+// /// assert_eq!(a.to_string(), r#"(1..=3, "a")"#); // The two regions have been merged.
+// /// ```
+// ///
+// /// **Splitting behavior**: When an inserted value causes a range to be split into two,
+// /// `Eq + Clone` lets us use clone to get the value to put in the second range.
+// /// ```
+// /// # use range_set_blaze::prelude::*;
+// /// let mut a = RangeMapBlaze::from_iter([(1..=10, "a".to_string())]); // just one "a"
+// /// a.insert(5, "b".to_string());
+// /// assert_eq!(a.to_string(), r#"(1..=4, "a"), (5..=5, "b"), (6..=10, "a")"#); // now two "a"'s.
+// /// ```
+// ///
+// /// Note that the `&str` type also implements `Eq` and `Clone`, so it too can be used
+// /// as a value in `RangeMapBlaze`.
+// pub trait Eq + Clone: Eq + Clone {}
 
-impl<T> EqClone for T where T: Eq + Clone {}
+// impl<T> Eq + Clone for T where T: Eq + Clone {}
 
-/// A trait for references to `EqClone` values. It is used by the `SortedDisjointMap` trait.
+/// A trait for references to `Eq + Clone` values. It is used by the `SortedDisjointMap` trait.
 ///
 /// It requires the references themselves implement `Clone`. All standard references types implement `Clone`
 /// with great efficiency.
@@ -79,14 +80,14 @@ impl<T> EqClone for T where T: Eq + Clone {}
 /// a `String` is expensive. Instead, we iterate over references to the values. Cloning a reference is typically
 /// very cheap.
 ///
-/// So, why not always use `&EqClone`? Why also support `Rc<EqClone>` and `Arc<EqClone>`? Because we want work with
+/// So, why not always use `&Eq + Clone`? Why also support `Rc<Eq + Clone>` and `Arc<Eq + Clone>`? Because we want work with
 /// iterators such as [`RangeMapBlaze::into_ranges`]. They require ownership of the values. By supporting, for example, `Rc<T>`, we can
 /// support both references and ownership. (The owned value's memory is freed when the reference count goes to zero.)
 ///
 /// # Examples
 ///
 /// Here we show the [`SortedDisjointMap::intersection`] operation working on iterators of
-/// both `(RangeInclusive<Integer>, &EqClone)` and `(RangeInclusive<Integer>, Rc<EqClone>)`.
+/// both `(RangeInclusive<Integer>, &Eq + Clone)` and `(RangeInclusive<Integer>, Rc<Eq + Clone>)`.
 /// (But we can't mix the two types in the same operation.)
 ///
 /// ```rust
@@ -106,39 +107,39 @@ impl<T> EqClone for T where T: Eq + Clone {}
 /// assert_eq!(c.next(), Some((5..=10, Rc::new("a".to_string()))));
 /// assert_eq!(c.next(), None);
 /// ```
-pub trait ValueRef: Borrow<Self::Value> + Clone {
-    /// The `EqClone` value type to which the reference points.
-    type Value: EqClone;
+pub trait ValueRef: Borrow<Self::Target> + Clone {
+    /// The `Eq + Clone` value type to which the reference points.
+    type Target: Eq + Clone;
 }
 
 // Implementations for references and smart pointers
 impl<V> ValueRef for &V
 where
-    V: EqClone,
+    V: Eq + Clone,
 {
-    type Value = V;
+    type Target = V;
 }
 
 impl<V> ValueRef for Rc<V>
 where
-    V: EqClone,
+    V: Eq + Clone,
 {
-    type Value = V;
+    type Target = V;
 }
 
 #[cfg(feature = "std")]
 impl<V> ValueRef for Arc<V>
 where
-    V: EqClone,
+    V: Eq + Clone,
 {
-    type Value = V;
+    type Target = V;
 }
 
 #[derive(Clone, Hash, Default, PartialEq, Eq)]
 pub struct EndValue<T, V>
 where
     T: Integer,
-    V: EqClone,
+    V: Eq + Clone,
 {
     pub(crate) end: T,
     pub(crate) value: V,
@@ -381,7 +382,7 @@ where
 ///
 /// [module-level documentation]: index.html
 #[derive(Clone, Hash, PartialEq)]
-pub struct RangeMapBlaze<T: Integer, V: EqClone> {
+pub struct RangeMapBlaze<T: Integer, V: Eq + Clone> {
     pub(crate) len: <T as Integer>::SafeLen,
     pub(crate) btree_map: BTreeMap<T, EndValue<T, V>>,
 }
@@ -396,7 +397,7 @@ pub struct RangeMapBlaze<T: Integer, V: EqClone> {
 /// let a = RangeMapBlaze::<i32, &str>::default();
 /// assert!(a.is_empty());
 /// ```
-impl<T: Integer, V: EqClone> Default for RangeMapBlaze<T, V> {
+impl<T: Integer, V: Eq + Clone> Default for RangeMapBlaze<T, V> {
     fn default() -> Self {
         Self {
             len: <T as Integer>::SafeLen::zero(),
@@ -405,19 +406,19 @@ impl<T: Integer, V: EqClone> Default for RangeMapBlaze<T, V> {
     }
 }
 
-impl<T: Integer, V: EqClone + fmt::Debug> fmt::Debug for RangeMapBlaze<T, V> {
+impl<T: Integer, V: Eq + Clone + fmt::Debug> fmt::Debug for RangeMapBlaze<T, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.range_values().into_string())
     }
 }
 
-impl<T: Integer, V: EqClone + fmt::Debug> fmt::Display for RangeMapBlaze<T, V> {
+impl<T: Integer, V: Eq + Clone + fmt::Debug> fmt::Display for RangeMapBlaze<T, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.range_values().into_string())
     }
 }
 
-impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
+impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
     /// ascending and/or descending order.
     ///
@@ -587,11 +588,11 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
     /// ```
     pub fn from_sorted_disjoint_map<VR, I>(iter: I) -> Self
     where
-        VR: ValueRef<Value = V>,
+        VR: ValueRef<Target = V>,
         I: SortedDisjointMap<T, VR>,
     {
         let mut iter_with_len = SortedDisjointMapWithLenSoFar::from(iter);
-        let btree_map: BTreeMap<T, EndValue<T, VR::Value>> = (&mut iter_with_len).collect();
+        let btree_map: BTreeMap<T, EndValue<T, VR::Target>> = (&mut iter_with_len).collect();
         Self {
             btree_map,
             len: iter_with_len.len_so_far(),
@@ -1605,7 +1606,7 @@ impl<T: Integer, V: EqClone> RangeMapBlaze<T, V> {
 impl<T, V> IntoIterator for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: EqClone,
+    V: Eq + Clone,
 {
     type Item = (T, V);
     type IntoIter = IntoIterMap<T, V>;
@@ -1632,7 +1633,7 @@ where
 }
 
 // Implementing `IntoIterator` for `&RangeMapBlaze<T, V>` because BTreeMap does.
-impl<'a, T: Integer, V: EqClone> IntoIterator for &'a RangeMapBlaze<T, V> {
+impl<'a, T: Integer, V: Eq + Clone> IntoIterator for &'a RangeMapBlaze<T, V> {
     type IntoIter = IterMap<T, &'a V, RangeValuesIter<'a, T, V>>;
     type Item = (T, &'a V);
 
@@ -1671,7 +1672,7 @@ pub type SortedStartsInVecMap<T, VR> =
 #[doc(hidden)]
 pub type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
-impl<T: Integer, V: EqClone> BitOr<Self> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
     /// Passing by the right-and-side by ownership rather than borrow allows a
@@ -1705,7 +1706,7 @@ impl<T: Integer, V: EqClone> BitOr<Self> for RangeMapBlaze<T, V> {
     }
 }
 
-impl<T: Integer, V: EqClone> BitOr<&Self> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
     /// Passing by the right-and-side by ownership rather than borrow allows a
@@ -1733,7 +1734,7 @@ impl<T: Integer, V: EqClone> BitOr<&Self> for RangeMapBlaze<T, V> {
     }
 }
 
-impl<T: Integer, V: EqClone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
+impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
@@ -1767,7 +1768,7 @@ impl<T: Integer, V: EqClone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V>
     }
 }
 
-impl<T: Integer, V: EqClone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
+impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T, V> {
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
@@ -1848,7 +1849,7 @@ for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
 for - call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
     a.range_values().map_and_set_difference(b.ranges()).into_range_map_blaze()
 };
-where T: Integer, V: EqClone
+where T: Integer, V: Eq + Clone
 );
 
 gen_ops_ex!(
@@ -1890,7 +1891,7 @@ for & call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
     a.range_values().map_and_set_intersection(b.ranges()).into_range_map_blaze()
 };
 
-where T: Integer, V: EqClone
+where T: Integer, V: Eq + Clone
 );
 
 gen_ops_ex!(
@@ -1911,13 +1912,13 @@ gen_ops_ex!(
 for ! call |a: &RangeMapBlaze<T, V>| {
     a.ranges().complement().into_range_set_blaze()
 };
-where T: Integer, V: EqClone
+where T: Integer, V: Eq + Clone
 );
 
 impl<T, V> Extend<(T, V)> for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: EqClone,
+    V: Eq + Clone,
 {
     /// Extends the [`RangeMapBlaze`] with the contents of an iterator of integer-value pairs. It has right-to-left precedence
     ///  -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
@@ -1963,7 +1964,7 @@ where
 impl<T, V> Extend<(RangeInclusive<T>, V)> for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: EqClone,
+    V: Eq + Clone,
 {
     /// Extends the [`RangeMapBlaze`] with the contents of a iterator of range-value pairs.
     /// It has right-to-left precedence -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
@@ -2010,7 +2011,7 @@ where
 impl<T, V, const N: usize> From<[(T, V); N]> for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: EqClone,
+    V: Eq + Clone,
 {
     /// For compatibility with [`BTreeSet`] you may create a [`RangeSetBlaze`] from an array of integers.
     ///
@@ -2033,7 +2034,7 @@ where
 }
 
 // implement Index trait
-impl<T: Integer, V: EqClone> Index<T> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: Eq + Clone> Index<T> for RangeMapBlaze<T, V> {
     type Output = V;
 
     /// Returns a reference to the value corresponding to the supplied key.
@@ -2064,7 +2065,7 @@ impl<T: Integer, V: EqClone> Index<T> for RangeMapBlaze<T, V> {
 impl<T, V> PartialOrd for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: EqClone + Ord,
+    V: Eq + Clone + Ord,
 {
     /// We define a partial ordering on `RangeMapBlaze`. Following the convention of
     /// [`BTreeMap`], the ordering is lexicographic, *not* by subset/superset.
@@ -2101,7 +2102,7 @@ where
 impl<T, V> Ord for RangeMapBlaze<T, V>
 where
     T: Integer,
-    V: EqClone + Ord,
+    V: Eq + Clone + Ord,
 {
     /// We define an ordering on `RangeMapBlaze`. Following the convention of
     /// [`BTreeMap`], the ordering is lexicographic, *not* by subset/superset.
@@ -2178,9 +2179,9 @@ where
     }
 }
 
-impl<T: Integer, V: EqClone> Eq for RangeMapBlaze<T, V> {}
+impl<T: Integer, V: Eq + Clone> Eq for RangeMapBlaze<T, V> {}
 
-impl<T: Integer, V: EqClone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
     /// Adds the contents of another [`RangeMapBlaze`] to this one.
     /// It has left precedence, so when values overlap, the left-hand side wins.
     ///
@@ -2213,7 +2214,7 @@ impl<T: Integer, V: EqClone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
     }
 }
 
-impl<T: Integer, V: EqClone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
+impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     /// Adds the contents of another [`RangeMapBlaze`] to this one.
     /// It has left precedence, so when values overlap, the left-hand side wins.
     ///
@@ -2457,18 +2458,18 @@ mod tests {
 //     use alloc::string::{String, ToString};
 
 //     // `value` is type `String`, which implements `Eq` and `Clone` and
-//     // so also implements `EqClone`.
+//     // so also implements `Eq + Clone`.
 //     let value: String = "a".to_string();
 
-//     // We can see `value` is `EqClone` by using equality and cloning.
+//     // We can see `value` is `Eq + Clone` by using equality and cloning.
 //     // Recall that cloning a `String` requires memory allocation, so it is expensive.
 //     assert_eq!(value, value.clone());
 
-//     // Alternatively, we can use this compile-time assert to confirm that a type implements `EqClone`.
-//     const fn assert_impls_eq_clone<T: EqClone>() {}
-//     assert_impls_eq_clone::<String>(); // Compile-time check that 'String' implements `EqClone`.
+//     // Alternatively, we can use this compile-time assert to confirm that a type implements `Eq + Clone`.
+//     const fn assert_impls_eq_clone<T: Eq + Clone>() {}
+//     assert_impls_eq_clone::<String>(); // Compile-time check that 'String' implements `Eq + Clone`.
 
-//     // `value_ref0`` is a reference to a `EqClone` value, so it implements `ValueRef`.
+//     // `value_ref0`` is a reference to a `Eq + Clone` value, so it implements `ValueRef`.
 //     let value_ref0: &String = &value;
 
 //     // We can see that `value_ref0` implements `ValueRef` via this compile-time assert.
@@ -2485,12 +2486,12 @@ mod tests {
 //     // We can repeat the whole exercise with &str and Rc<&str>. &str stores
 //     // the bytes of a string in the program's binary, so cloning it is cheap.
 
-//     // `value` is a type `&str`, which implements `Eq` and `Clone`, so it also implements `EqClone`.
+//     // `value` is a type `&str`, which implements `Eq` and `Clone`, so it also implements `Eq + Clone`.
 //     let value: &str = "a";
 //     assert_eq!(value, value.clone());
 //     assert_impls_eq_clone::<&str>();
 
-//     // `value_ref0` is a reference to an `EqClone` value, so it implements `ValueRef`.
+//     // `value_ref0` is a reference to an `Eq + Clone` value, so it implements `ValueRef`.
 //     let value_ref0: Rc<&str> = Rc::new(value);
 //     assert_impls_value_ref::<Rc<&str>>();
 //     let value_ref1 = value_ref0.clone();
