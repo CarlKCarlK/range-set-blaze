@@ -629,7 +629,7 @@ where
     VR: ValueRef,
 {
     let (range, value) = range_value;
-    (range.clone(), value.clone_ref())
+    (range.clone(), value.clone())
 }
 
 impl<T, VR, I> Iterator for CheckSortedDisjointMap<T, VR, I>

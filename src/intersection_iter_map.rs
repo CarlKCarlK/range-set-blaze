@@ -136,7 +136,7 @@ where
                 left.1
             } else {
                 // left_end != end, right_end == end
-                let value = left.1.clone_ref();
+                let value = left.1.clone();
                 self.left = Some(left);
                 self.right = None;
                 value

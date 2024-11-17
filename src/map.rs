@@ -65,7 +65,8 @@ impl<T> EqClone for T where T: Eq + Clone {}
 
 /// A trait for references to `EqClone` values. It is used by the `SortedDisjointMap` trait.
 ///
-/// It defines a method `clone_ref` that clones the reference (typically with great efficiency).
+/// It requires the references themselves implement `Clone`. All standard references types implement `Clone`
+/// with great efficiency.
 ///
 /// This trait is currently implemented for `&T`, `Rc<T>` and `Arc<T>`.
 ///
@@ -105,14 +106,9 @@ impl<T> EqClone for T where T: Eq + Clone {}
 /// assert_eq!(c.next(), Some((5..=10, Rc::new("a".to_string()))));
 /// assert_eq!(c.next(), None);
 /// ```
-pub trait ValueRef: Borrow<Self::Value> {
-    /// /// cmk000  The associated value type.
+pub trait ValueRef: Borrow<Self::Value> + Clone {
+    /// The `EqClone` value type to which the reference points.
     type Value: EqClone;
-
-    ////// cmk000  Clones the reference, returning a new reference to a value that is eq with the original value.
-    /// (It may or may not be the original value.)
-    #[must_use]
-    fn clone_ref(&self) -> Self;
 }
 
 // Implementations for references and smart pointers
@@ -121,10 +117,6 @@ where
     V: EqClone,
 {
     type Value = V;
-
-    fn clone_ref(&self) -> Self {
-        self
-    }
 }
 
 impl<V> ValueRef for Rc<V>
@@ -132,10 +124,6 @@ where
     V: EqClone,
 {
     type Value = V;
-
-    fn clone_ref(&self) -> Self {
-        Self::clone(self)
-    }
 }
 
 #[cfg(feature = "std")]
@@ -144,10 +132,6 @@ where
     V: EqClone,
 {
     type Value = V;
-
-    fn clone_ref(&self) -> Self {
-        Self::clone(self)
-    }
 }
 
 #[derive(Clone, Hash, Default, PartialEq, Eq)]
@@ -2401,9 +2385,9 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn test_arc_clone_ref() {
+    fn test_arc_clone() {
         let a = Arc::new(1);
-        let b = Arc::clone_ref(&a);
+        let b = Arc::clone(&a);
         assert_eq!(a, b);
     }
 
@@ -2491,9 +2475,9 @@ mod tests {
 //     const fn assert_impls_value_ref<T: ValueRef>() {}
 //     assert_impls_value_ref::<&String>();
 
-//     // Alternatively, we can also see that `value_ref0` implements `ValueRef` by using `clone_ref`.
+//     // Alternatively, we can also see that `value_ref0` implements `ValueRef` by using `clone`.
 //     // Cloning here is always cheap, we are cloning a reference, not the value itself.
-//     let value_ref1 = value_ref0.clone_ref();
+//     let value_ref1 = value_ref0.clone();
 
 //     // The thing that value_ref0 and value_ref1 point to are 'Eq'.
 //     assert_eq!(*value_ref0, *value_ref1);
@@ -2509,7 +2493,7 @@ mod tests {
 //     // `value_ref0` is a reference to an `EqClone` value, so it implements `ValueRef`.
 //     let value_ref0: Rc<&str> = Rc::new(value);
 //     assert_impls_value_ref::<Rc<&str>>();
-//     let value_ref1 = value_ref0.clone_ref();
+//     let value_ref1 = value_ref0.clone();
 //     assert_eq!(*value_ref0, *value_ref1);
 
 //     // create a RangeMapBlaze with String values

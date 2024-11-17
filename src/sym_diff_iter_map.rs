@@ -127,7 +127,7 @@ where
                     self.ready_to_go = Some(gather);
                     // cmk this code appear twice
                     if self.workspace.len() % 2 == 1 {
-                        self.gather = Some((*best.0.start()..=next_end, best.1.clone_ref()));
+                        self.gather = Some((*best.0.start()..=next_end, best.1.clone()));
                     } else {
                         debug_assert!(self.gather.is_none());
                     }
@@ -135,7 +135,7 @@ where
             } else {
                 // if there is no gather, then set the gather to the best
                 if self.workspace.len() % 2 == 1 {
-                    self.gather = Some((*best.0.start()..=next_end, best.1.clone_ref()));
+                    self.gather = Some((*best.0.start()..=next_end, best.1.clone()));
                 } else {
                     debug_assert!(self.gather.is_none());
                 }

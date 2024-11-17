@@ -94,11 +94,11 @@ where
                 } else {
                     // if the gather is not contiguous with the best, then output the gather and set the gather to the best
                     self.ready_to_go = Some(gather);
-                    self.gather = Some((best.start()..=next_end, best.value().clone_ref()));
+                    self.gather = Some((best.start()..=next_end, best.value().clone()));
                 }
             } else {
                 // if there is no gather, then set the gather to the best
-                self.gather = Some((best.start()..=next_end, best.value().clone_ref()));
+                self.gather = Some((best.start()..=next_end, best.value().clone()));
             };
 
             // We also update the workspace to removing any items that are completely covered by the new_start.
