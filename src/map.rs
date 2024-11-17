@@ -29,66 +29,27 @@ use gen_ops::gen_ops_ex;
 use num_traits::One;
 use num_traits::Zero;
 
-// cmk000 delete
-// /// `Eq + Clone` is a marker trait that combines `Eq` (equality) and `Clone`. It is the trait that all values in `RangeMapBlaze` must implement.
-// ///
-// /// A blanket implementation is provided for all types that implement `Eq` and `Clone`.
-// ///
-// ///
-// /// # Examples:
-// ///
-// /// The `String` type implements `Eq` and `Clone`, so it also implements `Eq + Clone`. It can, thus,
-// /// be used as a value in `RangeMapBlaze`.
-// ///
-// /// **Merging behavior**: When two values are equal and their ranges are adjacent, they will be merged into a single region. Moreover,
-// /// the redundant `String` memory will freed.
-// /// ```
-// /// use range_set_blaze::prelude::*;
-// ///
-// /// let a = RangeMapBlaze::<i32, String>::from_iter([(1..=2, "a".to_string()), (3..=3, "a".to_string())]);
-// /// assert_eq!(a.to_string(), r#"(1..=3, "a")"#); // The two regions have been merged.
-// /// ```
-// ///
-// /// **Splitting behavior**: When an inserted value causes a range to be split into two,
-// /// `Eq + Clone` lets us use clone to get the value to put in the second range.
-// /// ```
-// /// # use range_set_blaze::prelude::*;
-// /// let mut a = RangeMapBlaze::from_iter([(1..=10, "a".to_string())]); // just one "a"
-// /// a.insert(5, "b".to_string());
-// /// assert_eq!(a.to_string(), r#"(1..=4, "a"), (5..=5, "b"), (6..=10, "a")"#); // now two "a"'s.
-// /// ```
-// ///
-// /// Note that the `&str` type also implements `Eq` and `Clone`, so it too can be used
-// /// as a value in `RangeMapBlaze`.
-// pub trait Eq + Clone: Eq + Clone {}
-
-// impl<T> Eq + Clone for T where T: Eq + Clone {}
-
-/// A trait for references to `Eq + Clone` values. It is used by the `SortedDisjointMap` trait.
+/// A trait for references to `Eq + Clone` values, used by the [`SortedDisjointMap`] trait.
 ///
-/// It requires the references themselves implement `Clone`. All standard references types implement `Clone`
-/// with great efficiency.
+/// `ValueRef` enables [`SortedDisjointMap`] to map sorted, disjoint ranges of integers
+/// to values of type `V: Eq + Clone`. It supports both references (`&V`) and shared ownership types
+/// (`Rc<V>` and `Arc<V>`), avoiding unnecessary cloning of the underlying values while allowing ownership when needed.
 ///
-/// This trait is currently implemented for `&T`, `Rc<T>` and `Arc<T>`.
+/// References must also implement `Clone`. Standard reference types like `&V`, `Rc<V>`, and `Arc<V>`
+/// implement `Clone` efficiently, as cloning typically involves copying a pointer.
 ///
 /// # Motivation
 ///
-/// We often wish to iterate over the `(range, value)` pairs, with, for example, [`RangeMapBlaze::ranges`]. Such
-/// iterations allows us to, for example, efficiently compute union, intersection, and set difference .
+/// Iterating over `(range, value)` pairs, such as with [`RangeMapBlaze::ranges`], benefits from
+/// references to values, which are cheap to clone. However, iterators like [`RangeMapBlaze::into_ranges`]
+/// require ownership. By supporting `Rc<Eq + Clone>` and `Arc<Eq + Clone>`, `ValueRef` allows shared ownership,
+/// freeing memory when the reference count drops to zero.
 ///
-/// However, we don't want to clone the values in the [`RangeMapBlaze`] when we iterate over them. Cloning, for example,
-/// a `String` is expensive. Instead, we iterate over references to the values. Cloning a reference is typically
-/// very cheap.
+// # Examples
 ///
-/// So, why not always use `&Eq + Clone`? Why also support `Rc<Eq + Clone>` and `Arc<Eq + Clone>`? Because we want work with
-/// iterators such as [`RangeMapBlaze::into_ranges`]. They require ownership of the values. By supporting, for example, `Rc<T>`, we can
-/// support both references and ownership. (The owned value's memory is freed when the reference count goes to zero.)
-///
-/// # Examples
-///
-/// Here we show the [`SortedDisjointMap::intersection`] operation working on iterators of
-/// both `(RangeInclusive<Integer>, &Eq + Clone)` and `(RangeInclusive<Integer>, Rc<Eq + Clone>)`.
-/// (But we can't mix the two types in the same operation.)
+/// The following demonstrates the [`SortedDisjointMap::intersection`] operation working with
+/// iterators of both `(RangeInclusive<Integer>, &Eq + Clone)` and `(RangeInclusive<Integer>, Rc<Eq + Clone>)`.
+/// (However, types cannot be mixed in the same operation due to Rust's strong type system.)
 ///
 /// ```rust
 /// use range_set_blaze::prelude::*;
@@ -147,7 +108,8 @@ where
 
 /// A map from integers to values stored as a map of sorted & disjoint ranges to values.
 ///
-/// Internally, it stores the ranges in a cache-efficient [`BTreeMap`].
+/// Values must implement `Eq + Clone`. Internally, the map stores the
+/// ranges and values in a cache-efficient [`BTreeMap`].
 ///
 /// # Table of Contents
 /// * [`RangeMapBlaze` Constructors](#rangemapblaze-constructors)
