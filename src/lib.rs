@@ -13,6 +13,7 @@
     clippy::complexity,
     clippy::correctness,
     clippy::nursery,
+    clippy::must_use_candidate,
     // cmk0 clippy::cargo_common_metadata
     // cmk clippy::result_unwrap_used and clippy::option_unwrap_used: Warns if you're using .unwrap() or .expect(), which can be a sign of inadequate error handling.
     // cmk	clippy::panic_in_result_fn: Ensures functions that return Result do not contain panic!, which could be inappropriate in production code.

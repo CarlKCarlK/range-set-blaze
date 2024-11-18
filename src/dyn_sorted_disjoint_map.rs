@@ -3,7 +3,6 @@ use core::{iter::FusedIterator, ops::RangeInclusive};
 use crate::{map::ValueRef, Integer, SortedDisjointMap};
 use alloc::boxed::Box;
 
-#[must_use = "iterators are lazy and do nothing unless consumed"]
 /// Gives [`SortedDisjointMap`] iterators a uniform type. Used by the [`union_map_dyn`], etc. macros to give all
 /// their input iterators the same type.
 ///
@@ -25,6 +24,7 @@ use alloc::boxed::Box;
 /// ].union();
 /// assert_eq!(union.into_string(), r#"(1..=6, "a"), (7..=7, "b"), (8..=9, "a"), (10..=10, "b"), (11..=15, "a"), (18..=29, "b"), (38..=42, "c")"#);
 /// ```
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct DynSortedDisjointMap<'a, T, VR>
 where
     T: Integer,

@@ -72,7 +72,6 @@ where
 }
 
 // cmk must explain that this is not a SortedDisjointMap because it gives a value rather than a reference
-#[must_use = "iterators are lazy and do nothing unless consumed"]
 /// The output of cmk
 /// i.e., the integers as sorted & disjoint ranges.
 ///
@@ -81,6 +80,7 @@ where
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct IntoRangeValuesIter<T: Integer, V: Eq + Clone> {
     iter: btree_map::IntoIter<T, EndValue<T, V>>,
 }
@@ -199,7 +199,6 @@ where
     }
 }
 
-#[must_use = "iterators are lazy and do nothing unless consumed"]
 /// The output of cmk,
 /// i.e., the integers as sorted & disjoint ranges.
 ///
@@ -208,6 +207,7 @@ where
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MapIntoRangesIter<T: Integer, V: Eq + Clone> {
     iter: btree_map::IntoIter<T, EndValue<T, V>>,
     gather: Option<RangeInclusive<T>>,
@@ -261,9 +261,6 @@ impl<T: Integer, V: Eq + Clone> Iterator for MapIntoRangesIter<T, V> {
     }
 }
 
-// cmk00 define a double ended iterator??
-
-/// cmk
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::module_name_repetitions)]
@@ -357,6 +354,7 @@ impl<T> ExpectDebugUnwrapRelease<T> for Option<T> {
         }
     }
 }
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
 pub struct SetPriorityMap<T, VR, I>
 where

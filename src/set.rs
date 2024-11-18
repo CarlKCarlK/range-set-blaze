@@ -1657,15 +1657,15 @@ where
     }
 }
 
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-#[derive(Debug)]
-#[allow(clippy::struct_field_names)]
 /// A (double-ended) iterator over the integer elements of a [`RangeSetBlaze`].
 ///
 /// This `struct` is created by the [`into_iter`] method on [`RangeSetBlaze`]. See its
 /// documentation for more.
 ///
 /// [`into_iter`]: RangeSetBlaze::into_iter
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Debug)]
+#[allow(clippy::struct_field_names)]
 pub struct IntoIter<T: Integer> {
     option_range_front: Option<RangeInclusive<T>>,
     option_range_back: Option<RangeInclusive<T>>,

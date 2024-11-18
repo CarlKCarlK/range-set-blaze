@@ -2285,7 +2285,6 @@ pub fn linear(
         })
         .collect()
 }
-// cmk make range_values a DoubleEndedIterator
 
 #[test]
 #[wasm_bindgen_test]
@@ -2836,9 +2835,7 @@ fn equal_maps<T: Integer + std::fmt::Display, V: Eq + Clone + fmt::Debug + std::
 where
     usize: std::convert::From<<T as Integer>::SafeLen>,
 {
-    // also, check that the ranges are really sorted and disjoint
-    // cmk range_values should return a tuple not a struct
-    // cmk implement iter for RangeMapBlaze
+    // cmk what's this mean?: also, check that the ranges are really sorted and disjoint
     let mut previous: Option<(RangeInclusive<T>, &V)> = None;
     for range_value in range_map_blaze.range_values() {
         let v = range_value.1;
@@ -4238,8 +4235,6 @@ fn example_2() {
 //     usize: std::convert::From<<T as Integer>::SafeLen>,
 // {
 //     // also, check that the ranges are really sorted and disjoint
-//     // cmk range_values should return a tuple not a struct
-//     // cmk implement iter for RangeMapBlaze
 //     let mut previous: Option<(RangeInclusive<T>, &V)> = None;
 //     for (range, value) in range_map_blaze.range_values() {
 //         let v = range_value.1;
@@ -5261,6 +5256,7 @@ fn sorted_disjoint_coverage0() {
     assert!(a.is_empty());
 }
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Default)]
 struct NotFusedIterator {
     state: bool,

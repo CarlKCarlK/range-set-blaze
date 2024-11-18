@@ -3,7 +3,6 @@ use core::{iter::FusedIterator, ops::RangeInclusive};
 use crate::{Integer, SortedDisjoint};
 use alloc::boxed::Box;
 
-#[must_use = "iterators are lazy and do nothing unless consumed"]
 /// Gives [`SortedDisjoint`] iterators a uniform type. Used by the [`union_dyn`], etc. macros to give all
 /// their input iterators the same type.
 ///
@@ -26,6 +25,7 @@ use alloc::boxed::Box;
 /// .union();
 /// assert_eq!(union.into_string(), "1..=15, 18..=29, 38..=42");
 /// ```
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct DynSortedDisjoint<'a, T: Integer> {
     iter: Box<dyn SortedDisjoint<T> + 'a>,
 }

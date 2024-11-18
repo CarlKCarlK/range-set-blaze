@@ -44,7 +44,6 @@ impl<T: Integer> DoubleEndedIterator for RangesIter<'_, T> {
     }
 }
 
-#[must_use = "iterators are lazy and do nothing unless consumed"]
 /// The output of cmk,
 /// i.e., the integers as sorted & disjoint ranges.
 ///
@@ -53,6 +52,7 @@ impl<T: Integer> DoubleEndedIterator for RangesIter<'_, T> {
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug)]
 pub struct IntoRangesIter<T: Integer> {
     pub(crate) iter: alloc::collections::btree_map::IntoIter<T, T>,

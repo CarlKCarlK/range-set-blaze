@@ -569,6 +569,7 @@ where
 // cmk0 why was this hidden? check for others#[doc(hidden)]
 /// doc
 #[allow(clippy::module_name_repetitions)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,
@@ -795,6 +796,7 @@ where
     }
 }
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,

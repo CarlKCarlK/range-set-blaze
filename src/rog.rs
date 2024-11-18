@@ -12,6 +12,7 @@ use crate::{set::extract_range, Integer, RangeSetBlaze};
 /// Experimental: The output of cmk An iterator over [`Rog`]s (ranges or gaps) in a [`RangeSetBlaze`].
 ///
 /// See [`RangeSetBlaze::rogs_range`] for more information.
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct RogsIter<'a, T: Integer> {
     end_in: T,
     next_rog: Option<Rog<T>>,

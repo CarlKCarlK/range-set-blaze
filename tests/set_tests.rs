@@ -1600,6 +1600,7 @@ fn sorted_disjoint_constructors() {
 #[test]
 #[wasm_bindgen_test]
 fn iterator_example() {
+    #[must_use = "iterators are lazy and do nothing unless consumed"]
     struct OrdinalWeekends2023 {
         next_range: RangeInclusive<i32>,
     }

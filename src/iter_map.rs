@@ -112,13 +112,13 @@ where
     }
 }
 
-#[must_use = "iterators are lazy and do nothing unless consumed"]
 /// A (double-ended) iterator over the integer elements of a [`RangeMapBlaze`].
 ///
 /// This `struct` is created by the [`into_iter`] method on [`RangeMapBlaze`]. See its
 /// documentation for more.
 ///
 /// [`into_iter`]: RangeMapBlaze::into_iter
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct IntoIterMap<T, V>
 where
     T: Integer,

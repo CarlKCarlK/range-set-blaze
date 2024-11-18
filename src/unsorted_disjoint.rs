@@ -88,7 +88,6 @@ where
     }
 }
 
-// cmk00 does every iterator have this?
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::redundant_pub_crate)]
 pub(crate) struct SortedDisjointWithLenSoFar<T, I>
