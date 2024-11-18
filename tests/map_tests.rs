@@ -3809,6 +3809,41 @@ fn test_coverage_2() {
     assert_eq!(i.next_back(), Some(2));
     assert_eq!(i.next_back(), Some(1));
     assert_eq!(i.next_back(), None);
+
+    // Test values
+    let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
+    let mut i = a.values();
+    assert_eq!(i.size_hint(), (2, None));
+    assert_eq!(i.next(), Some(&"Hello"));
+    assert_eq!(i.next(), Some(&"Hello"));
+    assert_eq!(i.next(), Some(&"World"));
+    assert_eq!(i.next(), Some(&"World"));
+    assert_eq!(i.next(), None);
+
+    let mut i = a.values();
+    assert_eq!(i.next_back(), Some(&"World"));
+    assert_eq!(i.next_back(), Some(&"World"));
+    assert_eq!(i.next_back(), Some(&"Hello"));
+    assert_eq!(i.next_back(), Some(&"Hello"));
+    assert_eq!(i.next_back(), None);
+
+    // Test into_values
+    let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
+    let mut i = a.into_values();
+    assert_eq!(i.size_hint(), (2, None));
+    assert_eq!(i.next(), Some("Hello"));
+    assert_eq!(i.next(), Some("Hello"));
+    assert_eq!(i.next(), Some("World"));
+    assert_eq!(i.next(), Some("World"));
+    assert_eq!(i.next(), None);
+
+    let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
+    let mut i = a.into_values();
+    assert_eq!(i.next_back(), Some("World"));
+    assert_eq!(i.next_back(), Some("World"));
+    assert_eq!(i.next_back(), Some("Hello"));
+    assert_eq!(i.next_back(), Some("Hello"));
+    assert_eq!(i.next_back(), None);
 }
 
 #[test]

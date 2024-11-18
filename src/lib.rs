@@ -55,6 +55,7 @@ mod map;
 mod ranges_iter;
 /// cmk doc
 mod set;
+mod values;
 pub use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter};
 pub use crate::ranges_iter::{IntoRangesIter, RangesIter};
 pub use crate::set::{IntoIter, Iter, RangeSetBlaze};

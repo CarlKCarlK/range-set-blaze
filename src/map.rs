@@ -13,6 +13,8 @@ use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::unsorted_disjoint_map::{
     AssumePrioritySortedStartsMap, SortedDisjointMapWithLenSoFar, UnsortedPriorityDisjointMap,
 };
+use crate::values::IntoValues;
+use crate::values::Values;
 use crate::{
     AssumeSortedStarts, CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint,
 };
@@ -442,8 +444,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// Keys returned by `.next_back()` are in descending order.
     ///
     /// ```
-    /// use range_set_blaze::RangeMapBlaze;
-    ///
+    /// # use range_set_blaze::RangeMapBlaze;
     /// let map = RangeMapBlaze::from_iter([(3,"c"), (1,"a"), (2,"b")]);
     /// let mut keys_iter = map.keys();
     /// assert_eq!(keys_iter.next(), Some(1));
@@ -495,7 +496,82 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         IntoKeys::new(self.btree_map.into_iter())
     }
 
-    // cmk need values and into_values?
+    /// Gets a (double-ended) iterator that visits the values in the [`RangeMapBlaze`] in
+    /// the order corresponding to the integer elements.
+    ///
+    /// For a consuming version, see the [`RangeMapBlaze::into_values`] method.
+    ///
+    /// # Examples
+    ///
+    /// Iterating over values:
+    ///
+    /// ```rust
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let map = RangeMapBlaze::from_iter([(3, "c"), (1, "a"), (2, "b")]);
+    /// let mut values_iter = map.values();
+    /// assert_eq!(values_iter.next(), Some(&"a"));
+    /// assert_eq!(values_iter.next(), Some(&"b"));
+    /// assert_eq!(values_iter.next(), Some(&"c"));
+    /// assert_eq!(values_iter.next(), None);
+    /// ```
+    ///
+    /// Values returned by `.next()` are in the order of corresponding integer elements.
+    /// Values returned by `.next_back()` correspond to elements in descending integer order.
+    ///
+    /// ```rust
+    /// # use range_set_blaze::RangeMapBlaze;
+    /// let map = RangeMapBlaze::from_iter([(3, "c"), (1, "a"), (2, "b")]);
+    /// let mut values_iter = map.values();
+    /// assert_eq!(values_iter.next(), Some(&"a"));
+    /// assert_eq!(values_iter.next_back(), Some(&"c"));
+    /// assert_eq!(values_iter.next(), Some(&"b"));
+    /// assert_eq!(values_iter.next_back(), None);
+    /// ```
+    pub fn values(&self) -> Values<T, &V, RangeValuesIter<'_, T, V>> {
+        Values::new(self.range_values())
+    }
+
+    /// Gets a (double-ended) iterator that visits the values in the [`RangeMapBlaze`] in
+    /// the order corresponding to the integer elements.
+    ///
+    /// The iterator consumes the [`RangeMapBlaze`], yielding one value at a time for
+    /// each integer in its ranges. For a non-consuming version, see the [`RangeMapBlaze::values`] method.
+    ///
+    /// # Examples
+    ///
+    /// Iterating over values in ascending order:
+    ///
+    /// ```rust
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let map = RangeMapBlaze::from_iter([(3, "c"), (1, "a"), (2, "b")]);
+    /// let mut into_values_iter = map.into_values();
+    /// assert_eq!(into_values_iter.next(), Some("a"));
+    /// assert_eq!(into_values_iter.next(), Some("b"));
+    /// assert_eq!(into_values_iter.next(), Some("c"));
+    /// assert_eq!(into_values_iter.next(), None);
+    /// ```
+    ///
+    /// Iterating over values in both ascending and descending order:
+    ///
+    /// ```rust
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let map = RangeMapBlaze::from_iter([(1..=3, "a"), (5..=5, "b")]);
+    /// let mut into_values_iter = map.into_values();
+    /// assert_eq!(into_values_iter.next(), Some("a"));
+    /// assert_eq!(into_values_iter.next_back(), Some("b"));
+    /// assert_eq!(into_values_iter.next(), Some("a"));
+    /// assert_eq!(into_values_iter.next_back(), Some("a"));
+    /// assert_eq!(into_values_iter.next(), None);
+    /// ```
+    ///
+    /// Values returned by `.next()` correspond to elements in ascending integer order.
+    /// Values returned by `.next_back()` correspond to elements in descending integer order.
+    pub fn into_values(self) -> IntoValues<T, V> {
+        IntoValues::new(self.btree_map.into_iter())
+    }
 
     /// Returns the first element in the set, if any.
     /// This element is always the minimum of all integer elements in the set.
