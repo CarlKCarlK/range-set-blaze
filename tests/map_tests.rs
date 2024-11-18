@@ -3791,6 +3791,24 @@ fn test_coverage_2() {
     assert_eq!(i.next_back(), Some(2));
     assert_eq!(i.next_back(), Some(1));
     assert_eq!(i.next_back(), None);
+
+    // test into_keys
+    let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
+    let mut i = a.into_keys();
+    assert_eq!(i.size_hint(), (2, None));
+    assert_eq!(i.next(), Some(1));
+    assert_eq!(i.next(), Some(2));
+    assert_eq!(i.next(), Some(3));
+    assert_eq!(i.next(), Some(4));
+    assert_eq!(i.next(), None);
+
+    let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
+    let mut i = a.into_keys();
+    assert_eq!(i.next_back(), Some(4));
+    assert_eq!(i.next_back(), Some(3));
+    assert_eq!(i.next_back(), Some(2));
+    assert_eq!(i.next_back(), Some(1));
+    assert_eq!(i.next_back(), None);
 }
 
 #[test]

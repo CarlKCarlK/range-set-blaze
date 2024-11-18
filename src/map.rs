@@ -1,6 +1,8 @@
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::iter_map::IntoIterMap;
-use crate::iter_map::{IterMap, KeysMap};
+use crate::iter_map::IterMap;
+use crate::keys::IntoKeys;
+use crate::keys::Keys;
 use crate::range_values::{
     IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter, RangeValuesToRangesIter,
 };
@@ -421,7 +423,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
     /// ascending and/or descending order.
     ///
-    /// Also see the [`RangeMapBlaze::ranges`] method.
+    /// For a consuming version, see the [`RangeMapBlaze::into_keys`] method.
     ///
     /// # Examples
     ///
@@ -436,8 +438,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(keys_iter.next(), None);
     /// ```
     ///
-    /// Values returned by `.next()` are in ascending order.
-    /// Values returned by `.next_back()` are in descending order.
+    /// Keys returned by `.next()` are in ascending order.
+    /// Keys returned by `.next_back()` are in descending order.
     ///
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
@@ -449,13 +451,51 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(keys_iter.next(), Some(2));
     /// assert_eq!(keys_iter.next_back(), None);
     /// ```
-    pub fn keys(&self) -> KeysMap<T, &V, RangeValuesIter<'_, T, V>> {
-        // If the user asks for an iter, we give them a RangesIter iterator
-        // and we iterate that one integer at a time.
-        KeysMap::new(self.range_values())
+    pub fn keys(&self) -> Keys<T, &V, RangeValuesIter<'_, T, V>> {
+        Keys::new(self.range_values())
     }
 
-    // cmk BTreeMap also has 'into_keys'
+    /// Gets a (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
+    /// ascending and/or descending order.
+    ///
+    /// The iterator consumes the [`RangeMapBlaze`], yielding one integer at a time from its ranges.
+    /// For a non-consuming version, see the [`RangeMapBlaze::keys`] method.
+    ///
+    /// # Examples
+    ///
+    /// Iterating in ascending order:
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let map = RangeMapBlaze::from_iter([(1..=3, "a")]);
+    /// let mut into_keys_iter = map.into_keys();
+    /// assert_eq!(into_keys_iter.next(), Some(1));
+    /// assert_eq!(into_keys_iter.next(), Some(2));
+    /// assert_eq!(into_keys_iter.next(), Some(3));
+    /// assert_eq!(into_keys_iter.next(), None);
+    /// ```
+    ///
+    /// Iterating in both ascending and descending order:
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeMapBlaze;
+    /// let map = RangeMapBlaze::from_iter([(1..=3, "a"), (5..=5, "b")]);
+    /// let mut into_keys_iter = map.into_keys();
+    /// assert_eq!(into_keys_iter.next(), Some(1));
+    /// assert_eq!(into_keys_iter.next_back(), Some(5));
+    /// assert_eq!(into_keys_iter.next(), Some(2));
+    /// assert_eq!(into_keys_iter.next_back(), Some(3));
+    /// assert_eq!(into_keys_iter.next(), None);
+    /// ```
+    ///
+    /// Keys returned by `.next()` are in ascending order.
+    /// Keys returned by `.next_back()` are in descending order.
+    pub fn into_keys(self) -> IntoKeys<T, V> {
+        IntoKeys::new(self.btree_map.into_iter())
+    }
+
+    // cmk need values and into_values?
 
     /// Returns the first element in the set, if any.
     /// This element is always the minimum of all integer elements in the set.

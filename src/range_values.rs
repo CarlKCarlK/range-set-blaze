@@ -11,7 +11,7 @@ use crate::{map::EndValue, sorted_disjoint_map::SortedDisjointMap};
 /// The output of cmk,
 /// i.e., the integers as sorted & disjoint ranges.
 ///
-/// This `struct` is created by the [`ranges`] method on [`RangeSetBlaze`]. See [`ranges`]'s
+/// This `struct` is created by the [`range_values`] method on [`RangeSetBlaze`]. See [`ranges`]'s /cmk out of date
 /// documentation for more.
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
@@ -76,7 +76,7 @@ where
 /// The output of cmk
 /// i.e., the integers as sorted & disjoint ranges.
 ///
-/// This `struct` is created by the [`into_ranges`] method on [`RangeSetBlaze`]. See [`into_ranges`]'s
+/// This `struct` is created by the [`into_ranges`] method on [`RangeSetBlaze`]. See [`into_ranges`]'s // cmk out of date
 /// documentation for more.
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
@@ -134,7 +134,7 @@ impl<T: Integer, V: Eq + Clone> DoubleEndedIterator for IntoRangeValuesIter<T, V
 /// The output of cmk,
 /// i.e., the integers as sorted & disjoint ranges.
 ///
-/// This `struct` is created by the [`ranges`] method on [`RangeSetBlaze`]. See [`ranges`]'s
+/// This `struct` is created by the [`ranges`] method on [`RangeSetBlaze`]. See [`ranges`]'s // cmk out of date
 /// documentation for more.
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
@@ -203,7 +203,7 @@ where
 /// The output of cmk,
 /// i.e., the integers as sorted & disjoint ranges.
 ///
-/// This `struct` is created by the [`into_ranges`] method on [`RangeSetBlaze`]. See [`into_ranges`]'s
+/// This `struct` is created by the [`into_ranges`] method on [`RangeSetBlaze`]. See [`into_ranges`]'s // cmk out of date
 /// documentation for more.
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
