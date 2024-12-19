@@ -565,7 +565,7 @@ where
 // {
 // }
 
-/// Gives any iterator of cmk implements the [`SortedDisjointMap`] trait cmk without any checking.
+/// Gives any iterator of cmk implements the [`SortedDisjointMap`] trait cmk doc without any checking.
 // cmk0 why was this hidden? check for others#[doc(hidden)]
 /// doc
 #[allow(clippy::module_name_repetitions)]
@@ -591,7 +591,7 @@ where
     // Does CheckSortedDisjointMap and CheckSortedDisjoint need both from and public 'new'?
     /// cmk doc
     #[inline]
-    #[must_use]
+    #[must_use = "iterators are lazy and do nothing unless consumed"]
     pub fn new<J>(iter: J) -> Self
     where
         J: IntoIterator<Item = (RangeInclusive<T>, VR), IntoIter = I>,
@@ -615,7 +615,7 @@ where
         Self::new(I::default())
     }
 }
-// implement fused
+
 impl<T, VR, I> FusedIterator for CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,

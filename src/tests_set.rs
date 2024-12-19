@@ -450,7 +450,6 @@ fn sdi1() {
 }
 
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
-// cmk00 Can we/should we hide MergeMapIter and KMergeMapIter and SymDiffMapIter::new and UnionMapIter::new?
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // cmk0 challenge: convert from every level to sorted disjoint* for both map and set.

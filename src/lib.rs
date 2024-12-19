@@ -49,12 +49,10 @@ mod from_slice;
 mod integer;
 pub use crate::integer::Integer;
 mod intersection_iter_map;
-/// cmk doc
 mod iter_map;
 mod keys;
 mod map;
 mod ranges_iter;
-/// cmk doc
 mod set;
 mod values;
 pub use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter};
@@ -78,8 +76,8 @@ mod map_from_iter;
 mod sym_diff_iter;
 mod sym_diff_iter_map;
 pub use map::ValueRef;
-pub use merge::{KMerge, Merge}; // cmk make public???
-pub use merge_map::{KMergeMap, MergeMap}; // cmk make public???
+pub use merge::{KMerge, Merge};
+pub use merge_map::{KMergeMap, MergeMap};
 pub use multiway::MultiwaySortedDisjoint;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwayRangeMapBlazeRef;

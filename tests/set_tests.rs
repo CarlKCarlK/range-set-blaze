@@ -689,49 +689,20 @@ fn tricky_case3() {
 #[wasm_bindgen_test]
 fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     // #9: new
-    let mut _range_set_int;
-    _range_set_int = RangeSetBlaze::<i32>::new();
+    let mut _range_set_blaze;
+    _range_set_blaze = RangeSetBlaze::<i32>::new();
     // #10 collect / from_iter T
-    _range_set_int = [1, 5, 6, 5].into_iter().collect();
-    _range_set_int = RangeSetBlaze::from_iter([1, 5, 6, 5]);
+    _range_set_blaze = [1, 5, 6, 5].into_iter().collect();
+    _range_set_blaze = RangeSetBlaze::from_iter([1, 5, 6, 5]);
     // #11 into / from array T
-    _range_set_int = [1, 5, 6, 5].into();
-    _range_set_int = RangeSetBlaze::from_iter([1, 5, 6, 5]);
-    // #12 into / from slice T
-    // _range_set_int = [1, 5, 6, 5][1..=2].into();
-    // _range_set_int = RangeSetBlaze::from_iter([1, 5, 6, 5].as_slice());
+    _range_set_blaze = [1, 5, 6, 5].into();
+    _range_set_blaze = RangeSetBlaze::from_iter([1, 5, 6, 5]);
     //#13 collect / from_iter range
-    _range_set_int = [5..=6, 1..=5].into_iter().collect();
-    _range_set_int = RangeSetBlaze::from_iter([5..=6, 1..=5]);
+    _range_set_blaze = [5..=6, 1..=5].into_iter().collect();
+    _range_set_blaze = RangeSetBlaze::from_iter([5..=6, 1..=5]);
     // #16 into / from iter (T,T) + SortedDisjoint
-    _range_set_int = _range_set_int.ranges().into_range_set_blaze();
-    _range_set_int = RangeSetBlaze::from_sorted_disjoint(_range_set_int.ranges());
-
-    // cmk00
-    // let sorted_starts = AssumeSortedStarts::new([1..=5, 6..=10]);
-    // let mut _sorted_disjoint_iter;
-    // _sorted_disjoint_iter = UnionIter::new(sorted_starts);
-    // // #10 collect / from_iter T
-    // let mut _sorted_disjoint_iter: UnionIter<_, _> = [1, 5, 6, 5].into_iter().collect();
-    // _sorted_disjoint_iter = UnionIter::from_iter([1, 5, 6, 5]);
-    // // // #11 into / from array T
-    // _sorted_disjoint_iter = [1, 5, 6, 5].into();
-    // _sorted_disjoint_iter = UnionIter::from([1, 5, 6, 5]);
-    // // // #12 into / from slice T
-    // _sorted_disjoint_iter = [1, 5, 6, 5][1..=2].into();
-    // _sorted_disjoint_iter = UnionIter::from([1, 5, 6, 5].as_slice());
-    // // //#13 collect / from_iter range
-    // _sorted_disjoint_iter = [5..=6, 1..=5].into_iter().collect();
-    // _sorted_disjoint_iter = UnionIter::from_iter([5..=6, 1..=5]);
-    // // // #14 from into array range
-    // _sorted_disjoint_iter = [5..=6, 1..=5].into();
-    // _sorted_disjoint_iter = UnionIter::from([5..=6, 1..=5]);
-    // // // #15 from into slice range
-    // _sorted_disjoint_iter = [5..=6, 1..=5][0..=1].into();
-    // _sorted_disjoint_iter = UnionIter::from([5..=6, 1..=5].as_slice());
-    // // // #16 into / from iter (T,T) + SortedDisjoint
-    // let mut _sorted_disjoint_iter: UnionIter<_, _> = _range_set_int.ranges().collect();
-    // _sorted_disjoint_iter = UnionIter::from_iter(_range_set_int.ranges());
+    _range_set_blaze = _range_set_blaze.ranges().into_range_set_blaze();
+    _range_set_blaze = RangeSetBlaze::from_sorted_disjoint(_range_set_blaze.ranges());
 
     Ok(())
 }
@@ -1317,27 +1288,6 @@ fn len_demo() {
     assert_eq!(<u8 as Integer>::safe_len(&(0..=255)), 256);
 }
 
-// cmk00
-// #[test]
-//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-
-// fn union_iter() {
-//     use range_set_blaze::CheckSortedDisjoint;
-
-//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-//     let b = CheckSortedDisjoint::new([2..=6]);
-//     let c = UnionIter::new(AssumeSortedStarts::new(
-//         a.merge_by(b, |a_range, b_range| a_range.start() <= b_range.start()),
-//     ));
-//     assert_eq!(c.into_string(), "1..=100");
-
-//     // Or, equivalently:
-//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-//     let b = CheckSortedDisjoint::new([2..=6]);
-//     let c = SortedDisjoint::union(a, b);
-//     assert_eq!(c.into_string(), "1..=100")
-// }
-//
 #[test]
 #[wasm_bindgen_test]
 fn bitor() {
@@ -1364,7 +1314,7 @@ fn bitor() {
 
 #[test]
 #[wasm_bindgen_test]
-fn range_set_int_constructors() {
+fn range_set_blaze_constructors() {
     // Create an empty set with 'new' or 'default'.
     let a0 = RangeSetBlaze::<i32>::new();
     let a1 = RangeSetBlaze::<i32>::default();
@@ -1473,7 +1423,7 @@ fn from_slice_all_types() {
 #[wasm_bindgen_test]
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[cfg(feature = "from_slice")]
-fn range_set_int_slice_constructor() {
+fn range_set_blaze_slice_constructor() {
     print_features();
     let k = 1;
     let average_width = 1000;
@@ -1526,7 +1476,7 @@ fn range_set_int_slice_constructor() {
 
 #[test]
 #[wasm_bindgen_test]
-fn range_set_int_operators() {
+fn range_set_blaze_operators() {
     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
     let b = RangeSetBlaze::from_iter([2..=6]);
 
@@ -1713,7 +1663,7 @@ fn is_subset_check() {
 
 #[test]
 #[wasm_bindgen_test]
-fn cmp_range_set_int() {
+fn cmp_range_set_blaze() {
     let a = RangeSetBlaze::from_iter([1..=3, 5..=7]);
     let b = RangeSetBlaze::from_iter([2..=2]);
     assert!(a < b); // Lexicographic comparison
@@ -1773,9 +1723,9 @@ fn from_iter_coverage() {
 
 // fn _some_fn() {
 //     let guaranteed = RangeSetBlaze::from_iter([1..=2, 3..=4, 5..=6]).into_ranges();
-//     let _range_set_int = RangeSetBlaze::from_sorted_disjoint(guaranteed);
+//     let _range_set_blaze = RangeSetBlaze::from_sorted_disjoint(guaranteed);
 //     let not_guaranteed = [1..=2, 3..=4, 5..=6].into_iter();
-//     let _range_set_int = RangeSetBlaze::from_sorted_disjoint(not_guaranteed);
+//     let _range_set_blaze = RangeSetBlaze::from_sorted_disjoint(not_guaranteed);
 // }
 
 // fn _some_fn() {
@@ -2214,7 +2164,6 @@ fn multiway4() {
 #[test]
 #[wasm_bindgen_test]
 fn test_every_union() {
-    // cmk00 - test every... of the other operations, too
     // bitor x 4
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);

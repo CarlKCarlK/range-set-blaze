@@ -8,14 +8,11 @@ use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
 
 use crate::{map::EndValue, sorted_disjoint_map::SortedDisjointMap};
 
-/// The output of cmk,
-/// i.e., the integers as sorted & disjoint ranges.
-///
-/// This `struct` is created by the [`range_values`] method on [`RangeSetBlaze`]. See [`ranges`]'s /cmk out of date
+/// This `struct` is created by the [`range_values`] method on [`RangeMapBlaze`]. See [`range_values`]'s
 /// documentation for more.
 ///
-/// [`RangeSetBlaze`]: crate::RangeSetBlaze
-/// [`ranges`]: crate::RangeSetBlaze::ranges
+/// [`RangeMapBlaze`]: crate::RangeMapBlaze
+/// [`range_values`]: crate::RangeMapBlaze::range_values
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::module_name_repetitions)]
@@ -24,9 +21,8 @@ pub struct RangeValuesIter<'a, T: Integer, V: Eq + Clone> {
 }
 
 impl<'a, T: Integer, V: Eq + Clone> RangeValuesIter<'a, T, V> {
-    /// cmk doc
     #[inline]
-    pub fn new(map: &'a btree_map::BTreeMap<T, EndValue<T, V>>) -> Self {
+    pub(crate) fn new(map: &'a btree_map::BTreeMap<T, EndValue<T, V>>) -> Self {
         Self { iter: map.iter() }
     }
 }
@@ -72,7 +68,7 @@ where
 }
 
 // cmk must explain that this is not a SortedDisjointMap because it gives a value rather than a reference
-/// The output of cmk
+/// the output of cmk doc
 /// i.e., the integers as sorted & disjoint ranges.
 ///
 /// This `struct` is created by the [`into_ranges`] method on [`RangeSetBlaze`]. See [`into_ranges`]'s // cmk out of date
@@ -131,7 +127,7 @@ impl<T: Integer, V: Eq + Clone> DoubleEndedIterator for IntoRangeValuesIter<T, V
     }
 }
 
-/// The output of cmk,
+/// the output of cmk doc,
 /// i.e., the integers as sorted & disjoint ranges.
 ///
 /// This `struct` is created by the [`ranges`] method on [`RangeSetBlaze`]. See [`ranges`]'s // cmk out of date
@@ -199,7 +195,7 @@ where
     }
 }
 
-/// The output of cmk,
+/// the output of cmk doc,
 /// i.e., the integers as sorted & disjoint ranges.
 ///
 /// This `struct` is created by the [`into_ranges`] method on [`RangeSetBlaze`]. See [`into_ranges`]'s // cmk out of date

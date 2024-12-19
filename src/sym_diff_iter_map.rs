@@ -13,7 +13,7 @@ use crate::{
     BitXorMapKMerge, BitXorMapMerge, Integer, MergeMap, SortedDisjointMap,
 };
 
-/// The output of cmk.
+/// the output of cmk doc.
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct SymDiffIterMap<T, VR, I>
@@ -30,7 +30,7 @@ where
     ready_to_go: Option<(RangeInclusive<T>, VR)>,
 }
 
-#[allow(clippy::ref_option)]
+#[expect(clippy::ref_option)]
 fn min_next_end<T>(next_end: &Option<T>, next_item_end: T) -> T
 where
     T: Integer,

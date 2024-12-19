@@ -4,7 +4,7 @@ use crate::{
 use alloc::collections::BinaryHeap;
 use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
 
-/// The output of cmk
+/// the output of cmk doc
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct SymDiffIter<T, I>

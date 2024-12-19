@@ -27,7 +27,9 @@ cargo test --target wasm32-wasip1 --all-features
 
 ## Docs
 
+rustup default nightly
 cargo doc --no-deps --all-features --open
+rustup default stable
 cargo doc --no-deps --features rog-experimental --open & cargo test --features rog-experimental --doc
 cargo test --all-features --doc
 cls & cargo doc --no-deps --all-features & cargo deadlinks --dir target/doc

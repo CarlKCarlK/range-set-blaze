@@ -12,7 +12,7 @@ use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 use crate::Integer;
 use crate::{map::SortedStartsInVecMap, unsorted_disjoint_map::AssumePrioritySortedStartsMap};
 
-/// The output of cmk.
+/// the output of cmk doc.
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct UnionIterMap<T, VR, SS>

@@ -82,7 +82,7 @@ where
 
 /// Intersects zero or more [`SortedDisjointMap`] iterators,
 /// creating a new [`SortedDisjointMap`] iterator.
-/// The input iterators need not to be of the same type.
+/// The input iterators need not be of the same type.
 ///
 /// For input iterators of the same type, [`intersection`] may be slightly faster.
 ///
@@ -109,7 +109,7 @@ macro_rules! intersection_map_dyn {
 
 /// Unions zero or more [`SortedDisjointMap`] iterators,
 /// creating a new [`SortedDisjointMap`] iterator.
-/// The input iterators need not to be of the same type.
+/// The input iterators need not be of the same type.
 ///
 /// For input iterators of the same type, [`union`] may be slightly faster.
 ///
@@ -136,9 +136,9 @@ macro_rules! union_map_dyn {
                         }
 }
 
-/// Find the symmetric difference of zero or more [`SortedDisjointMap`] iterators,
+/// Computes the symmetric difference of zero or more [`SortedDisjointMap`] iterators,
 /// creating a new [`SortedDisjointMap`] iterator.
-/// The input iterators need not to be of the same type.
+/// The input iterators need not be of the same type.
 ///
 /// For input iterators of the same type, [`symmetric_difference`] may be slightly faster.
 ///

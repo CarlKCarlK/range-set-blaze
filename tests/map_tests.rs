@@ -923,9 +923,6 @@ fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 #[wasm_bindgen_test]
 fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
-    // use range_set_blaze::UnionIter;
-
-    // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
     let a1 = RangeMapBlaze::from_iter([(8..=9, "a1")]);
     let a2 = RangeMapBlaze::from_iter([(11..=15, "a2")]);
@@ -937,13 +934,11 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
     let b = a01.range_values() & a2.range_values();
     let c = !not_a01.range_values() & a2.ranges();
     let d = (a0.range_values() | a1.range_values()) & a2.range_values();
-    let e = a01_tee.map_and_set_intersection(a2.ranges()); // cmk00
-                                                           // cmk00 let f = UnionIterMap::from_iter(&a01) & UnionIter::from_iter(a2.keys());
+    let e = a01_tee.map_and_set_intersection(a2.ranges());
     assert!(a.range_values().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.range_values().equal(d));
     assert!(a.range_values().equal(e));
-    // cmk00 assert!(a.range_values().equal(f));
     Ok(())
 }
 
@@ -1778,7 +1773,7 @@ fn map_split_off() {
 //
 // #[test]
 //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-// // fn map_range_set_int_constructors() {
+// // fn map_range_set_blaze_constructors() {
 // //     // Create an empty set with 'new' or 'default'.
 // //     let a0 = RangeMapBlaze::<i32>::new();
 // //     let a1 = RangeMapBlaze::<i32>::default();
@@ -1887,7 +1882,7 @@ fn map_split_off() {
 //
 // #[test]
 //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-// // fn map_range_set_int_slice_constructor() {
+// // fn map_range_set_blaze_slice_constructor() {
 // //     print_features();
 // //     let k = 1;
 // //     let average_width = 1000;
@@ -2146,7 +2141,7 @@ fn map_range_map_blaze_operators() {
 //
 // #[test]
 //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-// // fn map_cmp_range_set_int() {
+// // fn map_cmp_range_set_blaze() {
 // //     let a = RangeMapBlaze::from_iter([1..=3, 5..=7]);
 // //     let b = RangeMapBlaze::from_iter([2..=2]);
 // //     assert!(a < b); // Lexicographic comparison
@@ -2337,7 +2332,6 @@ fn understand_strings_as_values() {
     let _: RangeMapBlaze<i32, &&String> = RangeMapBlaze::from_iter([(0..=0, &&a_string)]);
     let _: RangeMapBlaze<i32, String> = RangeMapBlaze::from_iter([(0..=0, a_string)]);
 
-    // cmk00 Is there also a .into_values() and .into_ranges() and .into_keys(), etc?
     let a: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=0, "a")]);
     let mut b: RangeValuesIter<i32, &str> = a.range_values();
     let _c: &&str = b.next().unwrap().1;
@@ -5377,7 +5371,7 @@ fn fast_union() {
     );
 }
 
-// cmk00 understand why so much is commented out and if it can be deleted.
+// cmk-1 understand why so much is commented out and if it can be deleted.
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

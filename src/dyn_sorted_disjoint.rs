@@ -60,7 +60,7 @@ impl<T: Integer> Iterator for DynSortedDisjoint<'_, T> {
 }
 
 /// Intersects zero or more [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
-/// The input iterators need not to be of the same type.
+/// The input iterators need not be of the same type.
 ///
 /// For input iterators of the same type, [`intersection`] may be slightly faster.
 ///
@@ -87,7 +87,7 @@ macro_rules! intersection_dyn {
 }
 
 /// Unions zero or more [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
-/// The input iterators need not to be of the same type.
+/// The input iterators need not be of the same type.
 ///
 /// For input iterators of the same type, [`union`] may be slightly faster.
 ///
@@ -114,7 +114,7 @@ macro_rules! union_dyn {
 }
 
 /// Computes the symmetric difference of zero or more [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
-/// The input iterators need not to be of the same type.
+/// The input iterators need not be of the same type.
 ///
 /// For input iterators of the same type, [`symmetric_difference`] may be slightly faster.
 ///

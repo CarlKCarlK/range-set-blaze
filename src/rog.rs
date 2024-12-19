@@ -9,7 +9,7 @@ use core::ops::{RangeBounds, RangeInclusive};
 
 use crate::{set::extract_range, Integer, RangeSetBlaze};
 
-/// Experimental: The output of cmk An iterator over [`Rog`]s (ranges or gaps) in a [`RangeSetBlaze`].
+/// Experimental: the output of cmk doc An iterator over [`Rog`]s (ranges or gaps) in a [`RangeSetBlaze`].
 ///
 /// See [`RangeSetBlaze::rogs_range`] for more information.
 #[must_use = "iterators are lazy and do nothing unless consumed"]

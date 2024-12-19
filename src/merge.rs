@@ -4,7 +4,7 @@ use itertools::{Itertools, KMergeBy, MergeBy};
 
 use crate::{Integer, SortedDisjoint, SortedStarts};
 
-/// Internally used by cmk
+/// Internally used by `UnionIter` and `SymDiffIter`.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Merge<T, L, R>
 where

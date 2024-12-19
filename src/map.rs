@@ -1398,6 +1398,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// Removes the first element from the set and returns it, if any.
     /// The first element is always the minimum element in the set.
     ///
+    /// Often, internally, the value must be cloned.
+    ///
     /// # Examples
     ///
     /// ```
@@ -1412,7 +1414,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// }
     /// assert!(map.is_empty());
     /// ```
-    // cmk doc that often must clone
     pub fn pop_first(&mut self) -> Option<(T, V)>
     where
         V: Clone,
@@ -1433,6 +1434,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
 
     /// Removes the last value from the set and returns it, if any.
     /// The last value is always the maximum value in the set.
+    ///
+    /// Often, internally, the value must be cloned.
     ///
     /// # Examples
     ///

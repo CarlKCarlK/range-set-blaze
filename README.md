@@ -6,7 +6,7 @@ range-set-blaze
 [![docs.rs](https://img.shields.io/badge/docs.rs-range--set--blaze-66c2a5?flat&labelColor=555555&logoColor=white&logo=core:image/svg+xml;base64,PHN2ZyByb2xlPSJpbWciIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDUxMiA1MTIiPjxwYXRoIGZpbGw9IiNmNWY1ZjUiIGQ9Ik00ODguNiAyNTAuMkwzOTIgMjE0VjEwNS41YzAtMTUtOS4zLTI4LjQtMjMuNC0zMy43bC0xMDAtMzcuNWMtOC4xLTMuMS0xNy4xLTMuMS0yNS4zIDBsLTEwMCAzNy41Yy0xNC4xIDUuMy0yMy40IDE4LjctMjMuNCAzMy43VjIxNGwtOTYuNiAzNi4yQzkuMyAyNTUuNSAwIDI2OC45IDAgMjgzLjlWMzk0YzAgMTMuNiA3LjcgMjYuMSAxOS45IDMyLjJsMTAwIDUwYzEwLjEgNS4xIDIyLjEgNS4xIDMyLjIgMGwxMDMuOS01MiAxMDMuOSA1MmMxMC4xIDUuMSAyMi4xIDUuMSAzMi4yIDBsMTAwLTUwYzEyLjItNi4xIDE5LjktMTguNiAxOS45LTMyLjJWMjgzLjljMC0xNS05LjMtMjguNC0yMy40LTMzLjd6TTM1OCAyMTQuOGwtODUgMzEuOXYtNjguMmw4NS0zN3Y3My4zek0xNTQgMTA0LjFsMTAyLTM4LjIgMTAyIDM4LjJ2LjZsLTEwMiA0MS40LTEwMi00MS40di0uNnptODQgMjkxLjFsLTg1IDQyLjV2LTc5LjFsODUtMzguOHY3NS40em0wLTExMmwtMTAyIDQxLjQtMTAyLTQxLjR2LS42bDEwMi0zOC4yIDEwMiAzOC4ydi42em0yNDAgMTEybC04NSA0Mi41di03OS4xbDg1LTM4Ljh2NzUuNHptMC0xMTJsLTEwMiA0MS40LTEwMi00MS40di0uNmwxMDItMzguMiAxMDIgMzguMnYuNnoiPjwvcGF0aD48L3N2Zz4K)](https://docs.rs/range-set-blaze)
 
 <!-- FUTURE: Add coverage badge? -->
-<!-- cmk change file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/ back to https://docs.rs/range-set-blaze/latest/ -->
+<!-- cmk change file:///C:/Users/carlk/programs/range-set-blaze/target/doc/ back to https://docs.rs/range-set-blaze/latest/ -->
 
 Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full set operations
 
@@ -15,8 +15,8 @@ Set operations—`union`, `intersection`, `difference`, `symmetric difference`, 
 
 The crate's main structs are:
 
-* [`RangeSetBlaze`], a set of integers. See the [set documentation] for details
-* [`RangeMapBlaze`], a map from integers to values. See the [map documentation] for details
+* [`RangeSetBlaze`], a set of integers. See the [set documentation] for details.
+* [`RangeMapBlaze`], a map from integers to values. See the [map documentation] for details.
 
 > Unlike the standard [`BTreeSet`]/[`BTreeMap`] and [`HashSet`]/[`HashMap`], `RangeSetBlaze` does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from [other interval libraries](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) -- that we know of -- by
 > offering full set operations and by being optimized for sets of [clumpy][1] integers.
@@ -33,24 +33,24 @@ is a value. See [documentation][3] for details.
 > The package enforces the "sorted & disjoint" constraint at compile time
 > (making invalid states unrepresentable).
 
-[`RangeSetBlaze`]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeSetBlaze.html
-[`SortedDisjoint`]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/trait.SortedDisjoint.html#table-of-contents
-[`SortedDisjointMap`]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/trait.SortedDisjointMap.html#table-of-contents
-[set documentation]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeSetBlaze.html
-[map documentation]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeMapBlaze.html
+[`RangeSetBlaze`]: file:///C:/Users/carlk/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeSetBlaze.html
+[`SortedDisjoint`]: file:///C:/Users/carlk/programs/range-set-blaze/target/doc/range_set_blaze/trait.SortedDisjoint.html#table-of-contents
+[`SortedDisjointMap`]: file:///C:/Users/carlk/programs/range-set-blaze/target/doc/range_set_blaze/trait.SortedDisjointMap.html#table-of-contents
+[set documentation]: file:///C:/Users/carlk/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeSetBlaze.html
+[map documentation]: file:///C:/Users/carlk/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeMapBlaze.html
 [`BTreeMap`]: alloc::collections::BTreeMap
 [`BTreeSet`]: alloc::collections::BTreeSet
 [`HashSet`]: std::collections::HashSet
 [`HashMap`]: std::collections::HashMap
-[set operations]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeSetBlaze.html#rangesetblaze-set-operations
-[map operations]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeMapBlaze.html#rangemapblaze-set-operations
-[1]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeSetBlaze.html#constructor-performance
-[2]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/trait.SortedDisjoint.html#table-of-contents
-[3]: file:///C:/Users/carlk/OneDrive/programs/range-set-blaze/target/doc/range_set_blaze/trait.SortedDisjointMap.html#table-of-contents
+[set operations]: file:///C:/Users/carlk/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeSetBlaze.html#rangesetblaze-set-operations
+[map operations]: file:///C:/Users/carlk/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeMapBlaze.html#rangemapblaze-set-operations
+[1]: file:///C:/Users/carlk/programs/range-set-blaze/target/doc/range_set_blaze/struct.RangeSetBlaze.html#constructor-performance
+[2]: file:///C:/Users/carlk/programs/range-set-blaze/target/doc/range_set_blaze/trait.SortedDisjoint.html#table-of-contents
+[3]: file:///C:/Users/carlk/programs/range-set-blaze/target/doc/range_set_blaze/trait.SortedDisjointMap.html#table-of-contents
 [`Ipv4Addr`]: core::net::Ipv4Addr
 [`Ipv6Addr`]: core::net::Ipv6Addr
 
-The crate supports `no_std`, WASM, and embedded projects. For `no_std`, etc., Use the command:
+The crate supports `no_std`, WASM, and embedded (with alloc) projects. For `no_std`, etc., Use the command:
 
 ```bash
 cargo add range-set-blaze --features "alloc" --no-default-features
@@ -204,5 +204,3 @@ for range in intron.ranges() {
     println!("{chrom}\t{start}\t{end}");
 }
 ```
-
-cmk need doc for things (see "cmk doc")
