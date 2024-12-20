@@ -9,9 +9,11 @@ use core::ops::{RangeBounds, RangeInclusive};
 
 use crate::{set::extract_range, Integer, RangeSetBlaze};
 
-/// Experimental: the output of cmk doc An iterator over [`Rog`]s (ranges or gaps) in a [`RangeSetBlaze`].
+/// Experimental: This struct is created by the [`rogs_range`] method on  [`RangeSetBlaze`].
+/// See [`rogs_range`] for more information.
 ///
-/// See [`RangeSetBlaze::rogs_range`] for more information.
+/// [`RangeSetBlaze`]: crate::RangeSetBlaze
+/// [`rogs_range`]: crate::RangeSetBlaze::rogs_range
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct RogsIter<'a, T: Integer> {
     end_in: T,

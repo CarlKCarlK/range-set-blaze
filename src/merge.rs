@@ -4,7 +4,7 @@ use itertools::{Itertools, KMergeBy, MergeBy};
 
 use crate::{Integer, SortedDisjoint, SortedStarts};
 
-/// Internally used by `UnionIter` and `SymDiffIter`.
+/// Used internally by `UnionIter` and `SymDiffIter`.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Merge<T, L, R>
 where
@@ -66,16 +66,7 @@ where
 {
 }
 
-/// Works with [`UnionIter`] to turn any number of [`SortedDisjoint`] iterators into
-/// a [`SortedDisjoint`] iterator of their union.
-///
-/// This means all the integers in any input iterator, as sorted & disjoint ranges.
-///
-/// Also see [`Merge`].
-///
-/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
-/// [`UnionIter`]: crate::UnionIter
-
+/// Used internally by `UnionIter` and `SymDiffIter`.
 #[derive(Clone, Debug)]
 #[allow(clippy::module_name_repetitions)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]

@@ -739,15 +739,15 @@ macro_rules! impl_sorted_traits_and_ops {
 // cmk CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_method'
 
 impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, I: AnythingGoes<T>);
-impl_sorted_traits_and_ops!(NotIter<T, I>, I: SortedDisjoint<T>);
+impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
+impl_sorted_traits_and_ops!(IntoRangesIter<T>, 'ignore);
 impl_sorted_traits_and_ops!(MapIntoRangesIter<T, V>, V: Eq + Clone);
 impl_sorted_traits_and_ops!(MapRangesIter<'a, T, V>, 'a, V: Eq + Clone);
-impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
+impl_sorted_traits_and_ops!(NotIter<T, I>, I: SortedDisjoint<T>);
+impl_sorted_traits_and_ops!(RangesIter<'a, T>, 'a);
 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, VR, I>, VR: ValueRef, I: SortedDisjointMap<T, VR>);
 impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
-impl_sorted_traits_and_ops!(RangesIter<'a, T>, 'a);
-impl_sorted_traits_and_ops!(IntoRangesIter<T>, 'ignore);
 
 // We're not allowed to define methods on outside types, so we only define the traits
 // cmk0

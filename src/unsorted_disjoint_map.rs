@@ -221,8 +221,7 @@ where
     VR: ValueRef,
     I: Iterator<Item = Priority<T, VR>> + FusedIterator,
 {
-    /// cmk doc
-    pub const fn new(iter: I) -> Self {
+    pub(crate) const fn new(iter: I) -> Self {
         Self { iter }
     }
 }

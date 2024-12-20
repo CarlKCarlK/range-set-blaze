@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use crate::sorted_disjoint_map::Priority;
 use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
 use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 use crate::Integer;
@@ -577,4 +578,12 @@ fn test_range_method_on_range_map_blaze() {
         .range((Bound::Excluded(2), Bound::Excluded(7)))
         .collect();
     assert_eq!(a, expected);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_eq_priority() {
+    let a = Priority::new((1..=2, &"a"), 0);
+    let b = Priority::new((1..=2, &"a"), 1);
+    assert!(a != b);
 }

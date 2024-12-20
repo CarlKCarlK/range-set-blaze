@@ -13,7 +13,11 @@ use crate::{
     BitXorMapKMerge, BitXorMapMerge, Integer, MergeMap, SortedDisjointMap,
 };
 
-/// the output of cmk doc.
+/// This `struct` is created by the [`symmetric_difference`] method on [`SortedDisjointMap`]. See [`symmetric_difference`]'s
+/// documentation for more.
+///
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap
+/// [`symmetric_difference`]: crate::SortedDisjointMap::symmetric_difference
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct SymDiffIterMap<T, VR, I>
@@ -178,17 +182,14 @@ where
     }
 }
 
-/// cmk doc
 impl<T, VR, J> BitXorMapKMerge<T, VR, J>
 where
     T: Integer,
     VR: ValueRef,
     J: SortedDisjointMap<T, VR>,
 {
-    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIterMap`] from zero or more [`SortedDisjointMap`] iterators. See [`SymDiffIterMap`] for more details and examples.
     #[inline]
-    pub fn new_k<K>(k: K) -> Self
+    pub(crate) fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,
     {

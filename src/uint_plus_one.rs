@@ -84,7 +84,7 @@ where
 {
     type Output = Self;
 
-    /// cmk docs always panics on overflow
+    /// Adds two `UIntPlusOne` values. Always panics on overflow.
     fn add(self, rhs: Self) -> Self {
         let zero = T::zero();
         let one: T = T::one();
@@ -153,7 +153,7 @@ where
 {
     type Output = Self;
 
-    // cmk docs always panics on overflow
+    /// Multiplies two `UIntPlusOne` values. Always panics on overflow.
     fn mul(self, rhs: Self) -> Self {
         let zero = T::zero();
         let one: T = T::one();

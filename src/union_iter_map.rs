@@ -12,7 +12,11 @@ use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 use crate::Integer;
 use crate::{map::SortedStartsInVecMap, unsorted_disjoint_map::AssumePrioritySortedStartsMap};
 
-/// the output of cmk doc.
+/// This `struct` is created by the [`union`] method on [`SortedDisjointMap`]. See [`union`]'s
+/// documentation for more.
+///
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap
+/// [`union`]: crate::SortedDisjointMap::union
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct UnionIterMap<T, VR, SS>
@@ -190,27 +194,14 @@ where
     }
 }
 
-/// cmk doc
 impl<T, VR, J> BitOrMapKMerge<T, VR, J>
 where
     T: Integer,
     VR: ValueRef,
     J: SortedDisjointMap<T, VR>,
 {
-    // cmk doc
-    ///
-    /// ```
-    /// use range_set_blaze::{CheckSortedDisjointMap, IntoString, UnionIterMap};
-    ///
-    /// let a = CheckSortedDisjointMap::new(vec![(1..=2, &"a"), (5..=100, &"a")]);
-    /// let b = CheckSortedDisjointMap::new(vec![(2..=6, &"b")]);
-    /// let c = CheckSortedDisjointMap::new(vec![(2..=2, &"c"), (6..=200, &"c")]);
-    /// let union = UnionIterMap::new_k([a, b, c]);
-    ///
-    /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
-    /// ```
     #[inline]
-    pub fn new_k<K>(k: K) -> Self
+    pub(crate) fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,
     {

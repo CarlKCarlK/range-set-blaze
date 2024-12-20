@@ -58,7 +58,6 @@ mod values;
 pub use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter};
 pub use crate::ranges_iter::{IntoRangesIter, RangesIter};
 pub use crate::set::{IntoIter, Iter, RangeSetBlaze};
-pub use crate::sorted_disjoint_map::Priority;
 
 mod not_iter;
 pub mod prelude;

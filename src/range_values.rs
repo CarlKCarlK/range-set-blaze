@@ -67,24 +67,19 @@ where
     }
 }
 
-// cmk must explain that this is not a SortedDisjointMap because it gives a value rather than a reference
-/// the output of cmk doc
-/// i.e., the integers as sorted & disjoint ranges.
-///
-/// This `struct` is created by the [`into_ranges`] method on [`RangeSetBlaze`]. See [`into_ranges`]'s // cmk out of date
+/// This `struct` is created by the [`into_range_values`] method on [`RangeMapBlaze`]. See [`into_range_values`]'s
 /// documentation for more.
 ///
-/// [`RangeSetBlaze`]: crate::RangeSetBlaze
-/// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
+/// [`RangeMapBlaze`]: crate::RangeMapBlaze
+/// [`into_range_values`]: crate::RangeMapBlaze::into_range_values
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct IntoRangeValuesIter<T: Integer, V: Eq + Clone> {
     iter: btree_map::IntoIter<T, EndValue<T, V>>,
 }
 
 impl<T: Integer, V: Eq + Clone> IntoRangeValuesIter<T, V> {
-    /// cmk doc
     #[inline]
-    pub fn new(map: btree_map::BTreeMap<T, EndValue<T, V>>) -> Self {
+    pub(crate) fn new(map: btree_map::BTreeMap<T, EndValue<T, V>>) -> Self {
         Self {
             iter: map.into_iter(),
         }
@@ -127,14 +122,11 @@ impl<T: Integer, V: Eq + Clone> DoubleEndedIterator for IntoRangeValuesIter<T, V
     }
 }
 
-/// the output of cmk doc,
-/// i.e., the integers as sorted & disjoint ranges.
-///
-/// This `struct` is created by the [`ranges`] method on [`RangeSetBlaze`]. See [`ranges`]'s // cmk out of date
+/// This `struct` is created by the [`ranges`] method on [`RangeMapBlaze`]. See [`ranges`]'s
 /// documentation for more.
 ///
-/// [`RangeSetBlaze`]: crate::RangeSetBlaze
-/// [`ranges`]: crate::RangeSetBlaze::ranges
+/// [`RangeMapBlaze`]: crate::RangeMapBlaze
+/// [`ranges`]: crate::RangeMapBlaze::ranges
 #[derive(Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MapRangesIter<'a, T: Integer, V: Eq + Clone> {
@@ -143,8 +135,7 @@ pub struct MapRangesIter<'a, T: Integer, V: Eq + Clone> {
 }
 
 impl<'a, T: Integer, V: Eq + Clone> MapRangesIter<'a, T, V> {
-    /// cmk doc
-    pub const fn new(iter: btree_map::Iter<'a, T, EndValue<T, V>>) -> Self {
+    pub(crate) const fn new(iter: btree_map::Iter<'a, T, EndValue<T, V>>) -> Self {
         MapRangesIter { iter, gather: None }
     }
 }
@@ -195,14 +186,11 @@ where
     }
 }
 
-/// the output of cmk doc,
-/// i.e., the integers as sorted & disjoint ranges.
-///
-/// This `struct` is created by the [`into_ranges`] method on [`RangeSetBlaze`]. See [`into_ranges`]'s // cmk out of date
+/// This `struct` is created by the [`into_ranges`] method on [`RangeMapBlaze`]. See [`into_ranges`]'s
 /// documentation for more.
 ///
-/// [`RangeSetBlaze`]: crate::RangeSetBlaze
-/// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
+/// [`RangeMapBlaze`]: crate::RangeMapBlaze
+/// [`into_ranges`]: crate::RangeMapBlaze::into_ranges
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MapIntoRangesIter<T: Integer, V: Eq + Clone> {
     iter: btree_map::IntoIter<T, EndValue<T, V>>,
@@ -210,8 +198,7 @@ pub struct MapIntoRangesIter<T: Integer, V: Eq + Clone> {
 }
 
 impl<T: Integer, V: Eq + Clone> MapIntoRangesIter<T, V> {
-    /// cmk doc
-    pub const fn new(iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
+    pub(crate) const fn new(iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
         Self { iter, gather: None }
     }
 }
@@ -350,9 +337,11 @@ impl<T> ExpectDebugUnwrapRelease<T> for Option<T> {
         }
     }
 }
+
+#[expect(clippy::redundant_pub_crate)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct SetPriorityMap<T, VR, I>
+pub(crate) struct SetPriorityMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef,

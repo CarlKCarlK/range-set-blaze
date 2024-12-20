@@ -5304,16 +5304,6 @@ fn test_panic_touching_ranges_same_value() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn test_eq_priority() {
-    use range_set_blaze::Priority;
-
-    let a = Priority::new((1..=2, &"a"), 0);
-    let b = Priority::new((1..=2, &"a"), 1);
-    assert!(a != b);
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_into_range_values() {
     let mut a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
     assert_eq!(a.size_hint(), (2, Some(2)));

@@ -1,9 +1,6 @@
 #![allow(unexpected_cfgs)]
-// cmk use core::any::Any;
 use core::cmp::max;
 use core::mem;
-// cmk use core::str::FromStr;
-/// cmk doc
 use core::{
     cmp::Ordering,
     fmt,

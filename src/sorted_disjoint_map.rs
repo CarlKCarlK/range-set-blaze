@@ -1,14 +1,19 @@
+use crate::intersection_iter_map::IntersectionIterMap;
+use crate::map::BitAndRangesMap;
 use crate::map::BitAndRangesMap2;
 use crate::map::BitSubRangesMap;
 use crate::map::BitSubRangesMap2;
 use crate::map::ValueRef;
 use crate::range_values::RangeValuesIter;
 use crate::range_values::RangeValuesToRangesIter;
+use crate::sorted_disjoint::SortedDisjoint;
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::BitOrMapMerge;
 use crate::BitXorMapMerge;
 use crate::DynSortedDisjointMap;
 use crate::IntoRangeValuesIter;
+use crate::NotIter;
+use crate::{union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
 use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
@@ -17,17 +22,6 @@ use core::cmp::Ordering;
 use core::fmt::Debug;
 use core::iter::FusedIterator;
 use core::marker::PhantomData;
-// use alloc::format;
-// use alloc::string::String;
-// use core::{
-//     iter::FusedIterator,
-//     ops::{self, RangeInclusive},
-// };
-use crate::intersection_iter_map::IntersectionIterMap;
-use crate::map::BitAndRangesMap;
-use crate::sorted_disjoint::SortedDisjoint;
-use crate::NotIter;
-use crate::{union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
 use core::ops;
 use core::ops::RangeInclusive;
 
@@ -186,7 +180,7 @@ where
     T: Integer,
     VR: ValueRef,
 {
-    /// cmk doc
+    /// Converts a [`SortedDisjointMap`] iterator into a [`SortedDisjoint`] iterator.
     ///```
     /// use range_set_blaze::prelude::*;
     ///
@@ -565,9 +559,37 @@ where
 // {
 // }
 
-/// Gives any iterator of cmk implements the [`SortedDisjointMap`] trait cmk doc without any checking.
-// cmk0 why was this hidden? check for others#[doc(hidden)]
-/// doc
+/// Gives the [`SortedDisjointMap`] trait to any iterator of range-value pairs.
+///
+/// The iterator will panic
+/// if/when it finds that the ranges are not actually sorted and disjoint or if the values overlap inappropriately.
+///
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
+///
+/// # Performance
+///
+/// All checking is done at runtime, but it should still be fast.
+///
+/// # Example
+///
+/// ```
+/// use range_set_blaze::prelude::*;
+///
+/// let a = CheckSortedDisjointMap::new([(1..=3, &"a"), (5..=10, &"b")]);
+/// let b = CheckSortedDisjointMap::new([(4..=6, &"c")]);
+/// let union = a | b;
+/// assert_eq!(union.into_string(), r#"(1..=3, "a"), (4..=4, "c"), (5..=10, "b")"#);
+/// ```
+///
+/// Here the ranges are not sorted and disjoint, so the iterator will panic.
+/// ```should_panic
+/// use range_set_blaze::prelude::*;
+///
+/// let a = CheckSortedDisjointMap::new([(1..=3, &"a"), (5..=10, &"b")]);
+/// let b = CheckSortedDisjointMap::new([(4..=6, &"c"), (-10..=12, &"d")]);
+/// let union = a | b;
+/// assert_eq!(union.into_string(), "1..=3 -> a, 5..=10 -> b");
+/// ```
 #[allow(clippy::module_name_repetitions)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct CheckSortedDisjointMap<T, VR, I>
@@ -588,8 +610,7 @@ where
     VR: ValueRef,
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
-    // Does CheckSortedDisjointMap and CheckSortedDisjoint need both from and public 'new'?
-    /// cmk doc
+    /// Creates a new [`CheckSortedDisjointMap`] from an iterator of ranges and values. See [`CheckSortedDisjointMap`] for details and examples.
     #[inline]
     #[must_use = "iterators are lazy and do nothing unless consumed"]
     pub fn new<J>(iter: J) -> Self
@@ -688,7 +709,7 @@ where
     }
 }
 
-/// Used internally by [`UnionIterMap`] and [`SymDiffIterMap`].
+/// Used internally by `MergeMap`.
 #[derive(Clone, Debug)]
 pub struct Priority<T, VR>
 where
@@ -704,8 +725,7 @@ where
     T: Integer,
     VR: ValueRef,
 {
-    /// cmk doc
-    pub const fn new(range_value: (RangeInclusive<T>, VR), priority_number: usize) -> Self {
+    pub(crate) const fn new(range_value: (RangeInclusive<T>, VR), priority_number: usize) -> Self {
         Self {
             range_value,
             priority_number,
@@ -796,6 +816,7 @@ where
     }
 }
 
+/// Used internally by `complement_with`.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct RangeToRangeValueIter<'a, T, V, I>
 where
@@ -947,12 +968,12 @@ macro_rules! impl_sorted_map_traits_and_ops {
 
 // cmk CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_method'
 impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
-impl_sorted_map_traits_and_ops!(UnionIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
-impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VR, I0, I1>,  VR::Value, VR, VR: ValueRef, I0: SortedDisjointMap<T, VR>, I1: SortedDisjoint<T>);
-impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 'a, VR: ValueRef);
-impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Eq + Clone);
+impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VR, I0, I1>,  VR::Value, VR, VR: ValueRef, I0: SortedDisjointMap<T, VR>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: Eq + Clone);
+impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Eq + Clone);
+impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
+impl_sorted_map_traits_and_ops!(UnionIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
 
 #[test]
 fn cmk_delete_temp() {

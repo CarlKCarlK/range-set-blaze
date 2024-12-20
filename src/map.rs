@@ -100,8 +100,9 @@ where
     type Target = V;
 }
 
+#[expect(clippy::redundant_pub_crate)]
 #[derive(Clone, Hash, Default, PartialEq, Eq)]
-pub struct EndValue<T, V>
+pub(crate) struct EndValue<T, V>
 where
     T: Integer,
     V: Eq + Clone,
@@ -1465,8 +1466,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         }
     }
 
-    /// An iterator that visits the ranges in the [`RangeMapBlaze`],
-    /// i.e., the integers as sorted & disjoint ranges.
+    /// An iterator that visits the ranges and values in the [`RangeMapBlaze`],
     ///
     /// Also see [`RangeMapBlaze::iter`] and [`RangeMapBlaze::into_range_values`].
     ///
@@ -1500,10 +1500,9 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         RangeValuesIter::new(&self.btree_map)
     }
 
-    /// An iterator that visits the ranges in the [`RangeMapBlaze`],
-    /// i.e., the integers as sorted & disjoint ranges.
+    /// An iterator that visits the ranges and values in the [`RangeMapBlaze`],
     ///
-    /// Also see [`RangeMapBlaze::iter`] and [`RangeMapBlaze::into_range_values`].
+    /// Also see [`RangeMapBlaze::iter`] and [`RangeMapBlaze::range_values`].
     ///
     /// # Examples
     ///

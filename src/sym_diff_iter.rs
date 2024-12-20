@@ -4,7 +4,11 @@ use crate::{
 use alloc::collections::BinaryHeap;
 use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
 
-/// the output of cmk doc
+/// This `struct` is created by the [`symmetric_difference`] method on [`SortedDisjoint`]. See [`symmetric_difference`]'s
+/// documentation for more.
+///
+/// [`SortedDisjoint`]: crate::SortedDisjoint
+/// [`symmetric_difference`]: crate::SortedDisjointMap::symmetric_difference
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct SymDiffIter<T, I>
@@ -182,16 +186,13 @@ where
     }
 }
 
-/// cmk doc
 impl<T, J> BitXorKMerge<T, J>
 where
     T: Integer,
     J: SortedDisjoint<T>,
 {
-    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`SymDiffIter`] for more details and examples.
     #[inline]
-    pub fn new_k<K>(k: K) -> Self
+    pub(crate) fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,
     {

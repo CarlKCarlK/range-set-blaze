@@ -93,7 +93,7 @@ where
     T: Integer,
     V: Eq + Clone,
 {
-    pub const fn new(btree_map_into_iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
+    pub(crate) const fn new(btree_map_into_iter: btree_map::IntoIter<T, EndValue<T, V>>) -> Self {
         let into_iter = IntoIterMap::new(btree_map_into_iter);
         Self { into_iter }
     }

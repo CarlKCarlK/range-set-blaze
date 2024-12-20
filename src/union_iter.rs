@@ -8,7 +8,11 @@ use core::iter::FusedIterator;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
 
-/// the output of cmk doc
+/// This `struct` is created by the [`union`] method on [`SortedDisjoint`]. See [`union`]'s
+/// documentation for more.
+///
+/// [`SortedDisjoint`]: crate::SortedDisjoint
+/// [`union`]: crate::SortedDisjoint::union
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct UnionIter<T, SS>
@@ -88,18 +92,13 @@ where
     }
 }
 
-/// cmk doc
 impl<T, J> BitOrKMerge<T, J>
 where
     T: Integer,
     J: SortedDisjoint<T>,
 {
-    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`crate::sym_diff_iter::SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`crate::sym_diff_iter::SymDiffIter`] for more details and examples.
-    ///
-    /// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
     #[inline]
-    pub fn new_k<K>(k: K) -> Self
+    pub(crate) fn new_k<K>(k: K) -> Self
     where
         K: IntoIterator<Item = J>,
     {
