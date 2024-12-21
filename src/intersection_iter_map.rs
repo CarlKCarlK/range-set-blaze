@@ -7,7 +7,11 @@ use core::{
 use crate::Integer;
 use crate::{map::ValueRef, SortedDisjoint, SortedDisjointMap};
 
-/// The output of the cmk
+/// This `struct` is created by the [`intersection`] method on [`SortedDisjointMap`]. See [`intersection`]'s
+/// documentation for more.
+///
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap
+/// [`intersection`]: crate::SortedDisjointMap::intersection
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
 pub struct IntersectionIterMap<T, VR, IM, IS>

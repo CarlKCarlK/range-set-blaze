@@ -5,7 +5,7 @@ where
 {
 }
 
-/// Provide methods on multiple [`RangeSetBlaze`]'s,
+/// Provides methods on zero or more [`RangeSetBlaze`]'s,
 /// specifically [`union`], [`intersection`] and [`symmetric_difference`].
 ///
 /// Also see [`MultiwayRangeSetBlazeRef`].
@@ -126,7 +126,7 @@ where
     I: IntoIterator<Item = &'a RangeSetBlaze<T>>,
 {
 }
-/// Provide methods on multiple [`RangeSetBlaze`] references,
+/// Provides methods on zero or more [`RangeSetBlaze`] references,
 /// specifically [`union`], [`intersection`], and [`symmetric_difference`].
 ///
 /// Also see [`MultiwayRangeSetBlaze`].
@@ -257,7 +257,7 @@ where
 {
 }
 
-/// Provides methods on multiple [`SortedDisjoint`] iterators,
+/// Provides methods on zero or more [`SortedDisjoint`] iterators,
 /// specifically [`union`], [`intersection`], and [`symmetric_difference`].
 ///
 /// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents

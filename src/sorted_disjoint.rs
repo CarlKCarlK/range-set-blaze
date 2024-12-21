@@ -43,14 +43,11 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// |------------|--------|
 /// | [`RangeSetBlaze`] | [`ranges`] |
 /// | [`RangeSetBlaze`] | [`into_ranges`] |
-/// | [`RangeSetBlaze`]'s [`RangesIter`] | [`clone`] |
 /// | sorted & disjoint ranges | [`CheckSortedDisjoint::new`] |
-/// | `SortedDisjoint` iterator | [`crate::dyn_sorted_disjoint::DynSortedDisjoint::new`] cmk looks bad|
 /// |  *your iterator type* | *[How to mark your type as `SortedDisjoint`][1]* |
 ///
 /// [`ranges`]: RangeSetBlaze::ranges
 /// [`into_ranges`]: RangeSetBlaze::into_ranges
-/// [`clone`]: crate::RangesIter::clone
 /// [1]: #how-to-mark-your-type-as-sorteddisjoint
 /// [`RangesIter`]: crate::RangesIter
 /// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
@@ -70,11 +67,6 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
 /// let a = CheckSortedDisjoint::new([1..=3, 100..=100]);
 /// assert!(a.into_string() == "1..=3, 100..=100");
-///
-/// // DynamicSortedDisjoint of a SortedDisjoint iterator
-/// let a = CheckSortedDisjoint::new([1..=3, 100..=100]);
-/// let b = DynSortedDisjoint::new(a);
-/// assert!(b.into_string() == "1..=3, 100..=100");
 /// ```
 ///
 /// # `SortedDisjoint` Set Operations
@@ -145,7 +137,8 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// # How to mark your type as `SortedDisjoint`
 ///
 /// To mark your iterator type as `SortedDisjoint`, you implement the `SortedStarts` and `SortedDisjoint` traits.
-/// This is your promise to the compiler that your iterator will provide inclusive ranges that disjoint and sorted by start.
+/// This is your promise to the compiler that your iterator will provide inclusive ranges that are
+/// disjoint and sorted by start.
 ///
 /// When you do this, your iterator will get access to the
 /// efficient set operations methods, such as [`intersection`] and [`complement`]. The example below shows this.

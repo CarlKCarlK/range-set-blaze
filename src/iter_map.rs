@@ -13,7 +13,7 @@ use crate::{
     Integer, SortedDisjointMap,
 };
 
-/// A (double-ended) iterator over the integer elements of a [`RangeMapBlaze`].
+/// An iterator over the integer elements of a [`RangeMapBlaze`]. Double-ended.
 ///
 /// This `struct` is created by the [`iter`] method on [`RangeMapBlaze`]. See its
 /// documentation for more.
@@ -112,7 +112,8 @@ where
     }
 }
 
-/// A (double-ended) iterator over the integer elements of a [`RangeMapBlaze`].
+// cmk000 why doesn't this appear in the docs?
+/// An iterator over the integer elements of a [`RangeMapBlaze`]. Double-ended.
 ///
 /// This `struct` is created by the [`into_iter`] method on [`RangeMapBlaze`]. See its
 /// documentation for more.

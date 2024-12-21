@@ -3,7 +3,7 @@ use alloc::collections::btree_map;
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
 /// This `struct` is created by the [`ranges`] method on [`RangeSetBlaze`]. See [`ranges`]'s
-/// documentation for more.
+/// documentation for more. Double-ended.
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`ranges`]: crate::RangeSetBlaze::ranges
@@ -42,7 +42,7 @@ impl<T: Integer> DoubleEndedIterator for RangesIter<'_, T> {
 }
 
 /// This `struct` is created by the [`into_ranges`] method on [`RangeSetBlaze`]. See [`into_ranges`]'s
-/// documentation for more.
+/// documentation for more. Double-ended.
 ///
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges

@@ -18,7 +18,7 @@ where
     I: IntoIterator<Item = RangeMapBlaze<T, V>>,
 {
 }
-/// Provides methods on multiple [`RangeMapBlaze`]'s,
+/// Provides methods on zero or more [`RangeMapBlaze`]'s,
 /// specifically [`union`], [`intersection`] and [`symmetric_difference`].
 ///
 /// Also see [`MultiwayRangeMapBlazeRef`].
@@ -131,7 +131,7 @@ where
     I: IntoIterator<Item = &'a RangeMapBlaze<T, V>>,
 {
 }
-/// Provide methods on multiple [`RangeMapBlaze`] references,
+/// Provides methods on zero or more [`RangeMapBlaze`] references,
 /// specifically [`union`], [`intersection`] and [`symmetric_difference`].
 ///
 /// Also see [`MultiwayRangeMapBlaze`].
@@ -237,7 +237,7 @@ where
 {
 }
 
-/// Provides methods on multiple [`SortedDisjointMap`] iterators,
+/// Provides methods on zero or more [`SortedDisjointMap`] iterators,
 /// specifically [`union`], [`intersection`], and [`symmetric_difference`].
 ///
 /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents

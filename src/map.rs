@@ -214,7 +214,7 @@ where
 /// let a1: RangeMapBlaze<i32, &str> = CheckSortedDisjointMap::new([(-10..=-5, &"c"), (1..=2, &"a")]).into_range_map_blaze();
 /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
 ///
-/// // For compatibility with `BTreeSet`, we also support
+/// // For compatibility with `BTreeMap`, we also support
 /// // 'from'/'into' from arrays of integers.
 /// let a0 = RangeMapBlaze::from([(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]);
 /// let a1: RangeMapBlaze<i32, &str> = [(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")].into();
@@ -224,7 +224,7 @@ where
 /// # `RangeMapBlaze` Set Operations
 ///
 /// You can perform set operations on `RangeMapBlaze`s
-/// and `RangeSetBlaze`s usings operators. In the table below, `a`, `b`, and `c` are `RangeMapBlaze`s and `s` is a `RangeSetBlaze`.
+/// and `RangeSetBlaze`s using operators. In the table below, `a`, `b`, and `c` are `RangeMapBlaze`s and `s` is a `RangeSetBlaze`.
 ///
 /// | Set Operation           | Operator                           | Multiway Method                        |
 /// |--------------------------|------------------------------------|----------------------------------------|
@@ -239,9 +239,13 @@ where
 ///
 /// The result of all operations is a new `RangeMapBlaze` except for `!a`, which returns a `RangeSetBlaze`.
 ///
+/// The union of any number of maps is defined such that, for any overlapping keys,
+/// the values from the left-most input take precedence. This approach ensures
+/// that the data from the left-most inputs remains dominant when merging with
+/// later inputs. Likewise, for symmetric difference of three or more maps.
 ///
 /// `RangeMapBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
-/// these methods match those of `BTreeSet`. cmk should say `BTreeMap` and be sure these are real methods.
+/// these methods match those of `BTreeMap`.
 ///
 /// [`a` &#124; `b`]: struct.RangeMapBlaze.html#impl-BitOr-for-RangeMapBlaze<T,+V>
 /// [`a & b`]: struct.RangeMapBlaze.html#impl-BitAnd-for-RangeMapBlaze<T,+V>
@@ -329,7 +333,7 @@ where
 ///   contain the same ranges and associated values.
 /// - **Ordering**: If the values implement `Ord`, you can use `<`, `<=`, `>`, and `>=`
 ///   to compare two `RangeMapBlaze` instances. These comparisons are lexicographic,
-///   similar to `BTreeSet`, meaning they compare the ranges and their values in sequence.
+///   similar to `BTreeMap`, meaning they compare the ranges and their values in sequence.
 /// - **Partial Ordering**: If the values implement `PartialOrd` but not `Ord`, you can use
 ///   the [`partial_cmp`] method to compare two `RangeMapBlaze` instances. This method returns
 ///   an `Option<Ordering>` that indicates the relative order of the instances or `None` if the
@@ -338,7 +342,7 @@ where
 /// See [`partial_cmp`] and [`cmp`] for more examples.
 ///
 ///
-/// [`BTreeSet`]: alloc::collections::BTreeSet
+/// [`BTreeMap`]: alloc::collections::BTreeMap
 /// [`partial_cmp`]: RangeMapBlaze::partial_cmp
 /// [`cmp`]: RangeMapBlaze::cmp
 ///
@@ -385,8 +389,8 @@ impl<T: Integer, V: Eq + Clone + fmt::Debug> fmt::Display for RangeMapBlaze<T, V
 }
 
 impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
-    /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
-    /// ascending and/or descending order.
+    /// Gets an iterator that visits the integer elements in the [`RangeMapBlaze`] in
+    /// ascending and/or descending order. Double-ended.
     ///
     /// Also see the [`RangeMapBlaze::ranges`] method.
     ///
@@ -423,8 +427,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         IterMap::new(self.range_values())
     }
 
-    /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
-    /// ascending and/or descending order.
+    /// Gets an iterator that visits the integer elements in the [`RangeMapBlaze`] in
+    /// ascending and/or descending order. Double-ended.
     ///
     /// For a consuming version, see the [`RangeMapBlaze::into_keys`] method.
     ///
@@ -457,8 +461,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         Keys::new(self.range_values())
     }
 
-    /// Gets a (double-ended) iterator that visits the integer elements in the [`RangeMapBlaze`] in
-    /// ascending and/or descending order.
+    /// Gets an iterator that visits the integer elements in the [`RangeMapBlaze`] in
+    /// ascending and/or descending order. Double-ended.
     ///
     /// The iterator consumes the [`RangeMapBlaze`], yielding one integer at a time from its ranges.
     /// For a non-consuming version, see the [`RangeMapBlaze::keys`] method.
@@ -497,8 +501,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         IntoKeys::new(self.btree_map.into_iter())
     }
 
-    /// Gets a (double-ended) iterator that visits the values in the [`RangeMapBlaze`] in
-    /// the order corresponding to the integer elements.
+    /// Gets an iterator that visits the values in the [`RangeMapBlaze`] in
+    /// the order corresponding to the integer elements. Double-ended.
     ///
     /// For a consuming version, see the [`RangeMapBlaze::into_values`] method.
     ///
@@ -533,8 +537,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         Values::new(self.range_values())
     }
 
-    /// Gets a (double-ended) iterator that visits the values in the [`RangeMapBlaze`] in
-    /// the order corresponding to the integer elements.
+    /// Gets an iterator that visits the values in the [`RangeMapBlaze`] in
+    /// the order corresponding to the integer elements. Double-ended.
     ///
     /// The iterator consumes the [`RangeMapBlaze`], yielding one value at a time for
     /// each integer in its ranges. For a non-consuming version, see the [`RangeMapBlaze::values`] method.
@@ -1500,7 +1504,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         RangeValuesIter::new(&self.btree_map)
     }
 
-    /// An iterator that visits the ranges and values in the [`RangeMapBlaze`],
+    /// An iterator that visits the ranges and values in the [`RangeMapBlaze`]. Double-ended.
     ///
     /// Also see [`RangeMapBlaze::iter`] and [`RangeMapBlaze::range_values`].
     ///
@@ -1690,7 +1694,8 @@ where
     type Item = (T, V);
     type IntoIter = IntoIterMap<T, V>;
 
-    /// Gets a (double-ended) iterator for moving out the [`RangeSetBlaze`]'s integer contents.
+    /// Gets an iterator for moving out the [`RangeSetBlaze`]'s integer contents.
+    /// Double-ended.
     ///
     /// # Examples
     ///
@@ -2045,7 +2050,7 @@ where
     T: Integer,
     V: Eq + Clone,
 {
-    /// Extends the [`RangeMapBlaze`] with the contents of a iterator of range-value pairs.
+    /// Extends the [`RangeMapBlaze`] with the contents of an iterator of range-value pairs.
     /// It has right-to-left precedence -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
     ///
     /// Elements are added one-by-one. There is also a version
@@ -2092,11 +2097,11 @@ where
     T: Integer,
     V: Eq + Clone,
 {
-    /// For compatibility with [`BTreeSet`] you may create a [`RangeSetBlaze`] from an array of integers.
+    /// For compatibility with [`BTreeMap`] you may create a [`RangeSetBlaze`] from an array of integers.
     ///
     /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
-    /// [`BTreeSet`]: alloc::collections::BTreeSet
+    /// [`BTreeMap`]: alloc::collections::BTreeMap
     ///
     /// # Examples
     ///

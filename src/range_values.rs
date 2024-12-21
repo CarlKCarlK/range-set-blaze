@@ -9,7 +9,7 @@ use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
 use crate::{map::EndValue, sorted_disjoint_map::SortedDisjointMap};
 
 /// This `struct` is created by the [`range_values`] method on [`RangeMapBlaze`]. See [`range_values`]'s
-/// documentation for more.
+/// documentation for more. Double-ended.
 ///
 /// [`RangeMapBlaze`]: crate::RangeMapBlaze
 /// [`range_values`]: crate::RangeMapBlaze::range_values
@@ -68,7 +68,7 @@ where
 }
 
 /// This `struct` is created by the [`into_range_values`] method on [`RangeMapBlaze`]. See [`into_range_values`]'s
-/// documentation for more.
+/// documentation for more. Double-ended.
 ///
 /// [`RangeMapBlaze`]: crate::RangeMapBlaze
 /// [`into_range_values`]: crate::RangeMapBlaze::into_range_values
@@ -111,7 +111,6 @@ impl<T: Integer, V: Eq + Clone> Iterator for IntoRangeValuesIter<T, V> {
     }
 }
 
-// cmk does set's IntoRangesIter have a double ended iterator?
 impl<T: Integer, V: Eq + Clone> DoubleEndedIterator for IntoRangeValuesIter<T, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter.next_back().map(|(start, end_value)| {

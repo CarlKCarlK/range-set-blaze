@@ -362,8 +362,8 @@ impl<T: Integer> fmt::Display for RangeSetBlaze<T> {
 }
 
 impl<T: Integer> RangeSetBlaze<T> {
-    /// Gets an (double-ended) iterator that visits the integer elements in the [`RangeSetBlaze`] in
-    /// ascending and/or descending order.
+    /// Gets an iterator that visits the integer elements in the [`RangeSetBlaze`] in
+    /// ascending and/or descending order. Double-ended.
     ///
     /// Also see the [`RangeSetBlaze::ranges`] method.
     ///
@@ -1217,7 +1217,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 
     /// An iterator that visits the ranges in the [`RangeSetBlaze`],
-    /// i.e., the integers as sorted & disjoint ranges.
+    /// i.e., the integers as sorted & disjoint ranges. Double-ended.
     ///
     /// Also see [`RangeSetBlaze::iter`] and [`RangeSetBlaze::into_ranges`].
     ///
@@ -1552,7 +1552,8 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
 
-    /// Gets a (double-ended) iterator for moving out the [`RangeSetBlaze`]'s integer contents.
+    /// Gets an iterator for moving out the [`RangeSetBlaze`]'s integer contents.
+    /// Double-ended.
     ///
     /// # Examples
     ///
@@ -1577,7 +1578,7 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
     }
 }
 
-/// A (double-ended) iterator over the integer elements of a [`RangeSetBlaze`].
+/// An iterator over the integer elements of a [`RangeSetBlaze`]. Double-ended.
 ///
 /// This `struct` is created by the [`iter`] method on [`RangeSetBlaze`]. See its
 /// documentation for more.
@@ -1654,7 +1655,7 @@ where
     }
 }
 
-/// A (double-ended) iterator over the integer elements of a [`RangeSetBlaze`].
+/// An iterator over the integer elements of a [`RangeSetBlaze`]. Double-ended.
 ///
 /// This `struct` is created by the [`into_iter`] method on [`RangeSetBlaze`]. See its
 /// documentation for more.

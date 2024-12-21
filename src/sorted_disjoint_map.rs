@@ -42,8 +42,6 @@ where
 {
 }
 
-// cmk should there be a section name how to mark your type as SortedDisjointMap? with an example.
-
 /// Marks iterators that provide `(range, value)` pairs that are sorted and disjoint. Set operations on
 /// iterators that implement this trait can be performed in linear time.
 ///
@@ -53,27 +51,28 @@ where
 /// * [`SortedDisjointMap` Set Operations](#sorteddisjointmap-set-operations)
 ///   * [Performance](#performance)
 ///   * [Examples](#examples)
+/// * [How to mark your type as `SortedDisjointMap`](#how-to-mark-your-type-as-sorteddisjointmap)
 ///
 /// # `SortedDisjointMap` Constructors
 ///
 /// You'll usually construct a `SortedDisjointMap` iterator from a [`RangeMapBlaze`] or a [`CheckSortedDisjointMap`].
-/// Here is a summary table, followed by [examples](#constructor-examples). cmk not written You can also x define your own
-/// `SortedDisjointMap`xx#how-to-mark-your-type-as-sorteddisjointmaps x.
+/// Here is a summary table, followed by [examples](#constructor-examples).  You can also [define your own
+/// `SortedDisjointMap`](#how-to-mark-your-type-as-sorteddisjointmap).
 ///
 /// | Input type | Method |
 /// |------------|--------|
-/// | [`RangeMapBlaze`] | [`ranges`] |
-/// | [`RangeMapBlaze`] | [`into_ranges`] |
-/// | [`RangeMapBlaze`]'s [`RangesIter`] | [`clone`] |
-/// | sorted & disjoint ranges | [`CheckSortedDisjointMap::new`] |
-/// | `SortedDisjointMap` iterator | [`crate::dyn_sorted_disjoint_map::DynSortedDisjointMap::new`] cmk looks bad|
-/// |  *your iterator type* | *xHow to mark your type as `SortedDisjointMap`xx1x* |
+/// | [`RangeMapBlaze`] | [`range_values`] |
+/// | [`RangeMapBlaze`] | [`into_range_values`] |
+/// | sorted & disjoint ranges and values | [`CheckSortedDisjointMap::new`] |
+/// |  *your iterator type* | *[How to mark your type as `SortedDisjointMap`][1]* |
 ///
 /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
-/// [`ranges`]: RangeMapBlaze::ranges
-/// [`into_ranges`]: RangeMapBlaze::into_ranges
-/// [`clone`]: crate::RangesIter::clone
+/// [`range_values`]: RangeMapBlaze::range_values
+/// [`into_range_values`]: RangeMapBlaze::into_range_values
+/// [1]: #how-to-mark-your-type-as-sorteddisjointmap
 /// [`RangesIter`]: crate::RangesIter
+/// [`BitAnd`]: core::ops::BitAnd
+/// [`Not`]: core::ops::Not
 ///
 /// ## Constructor Examples
 /// ```
@@ -90,17 +89,12 @@ where
 /// // CheckSortedDisjointMap -- unsorted or overlapping input ranges will cause a panic.
 /// let a = CheckSortedDisjointMap::new([(1..=3, &"a"), (100..=100, &"b")]);
 /// assert!(a.into_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
-///
-/// // DynamicSortedDisjointMap of a SortedDisjointMap iterator
-/// let a = CheckSortedDisjointMap::new([(1..=3, &"a"), (100..=100, &"b")]);
-/// let b = DynSortedDisjointMap::new(a);
-/// assert!(b.into_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
 /// ```
 ///
 /// # `SortedDisjointMap` Set Operations
 ///
-/// You can perform set operations on `SortedDisjointMap`s and `SortedDisjoint`s using operators.
-/// In the table below, `a`, `b`, and `c` are `SortedDisjointMap` and `s` is a `SortedDisjoint`.
+/// You can perform set operations on `SortedDisjointMap`s and `SortedDisjoint` sets using operators.
+/// In the table below, `a`, `b`, and `c` are `SortedDisjointMap` and `s` is a `SortedDisjoint` set.
 ///
 /// | Set Operator               | Operator                      | Multiway (same type)                                      | Multiway (different types)                     |
 /// |----------------------------|-------------------------------|-----------------------------------------------------------|-----------------------------------------------|
@@ -132,6 +126,11 @@ where
 /// [`union_map_dyn!`]: macro.union_map_dyn.html
 /// [`intersection_map_dyn!`]: macro.intersection_map_dyn.html
 /// [`symmetric_difference_map_dyn!`]: macro.symmetric_difference_map_dyn.html
+///
+/// The union of any number of maps is defined such that, for any overlapping keys,
+/// the values from the left-most input take precedence. This approach ensures
+/// that the data from the left-most inputs remains dominant when merging with
+/// later inputs. Likewise, for symmetric difference of three or more maps.
 ///
 /// ## Performance
 ///
@@ -175,6 +174,19 @@ where
 /// let result = a - (b | c);
 /// assert_eq!(result.into_string(), r#"(1..=1, "a")"#);
 /// ```
+/// # How to mark your type as `SortedDisjointMap`
+///
+/// To mark your iterator type as `SortedDisjointMap`, you implement the `SortedStartsMap` and `SortedDisjointMap` traits.
+/// This is your promise to the compiler that your iterator will provide inclusive ranges that are
+/// disjoint and sorted by start.
+///
+/// When you do this, your iterator will get access to the
+/// efficient set operations methods, such as [`intersection`] and [`complement`].
+///
+/// > To use operators such as `&` and `!`, you must also implement the [`BitAnd`], [`Not`], etc. traits.
+/// >
+/// > If you want others to use your marked iterator type, reexport:
+/// > `pub use range_set_blaze::{SortedDisjointMap, SortedStartsMap};`
 pub trait SortedDisjointMap<T, VR>: SortedStartsMap<T, VR>
 where
     T: Integer,
@@ -559,7 +571,8 @@ where
 // {
 // }
 
-/// Gives the [`SortedDisjointMap`] trait to any iterator of range-value pairs.
+/// Gives the [`SortedDisjointMap`] trait to any iterator of range-value pairs. Will panic
+/// if the trait is not satisfied.
 ///
 /// The iterator will panic
 /// if/when it finds that the ranges are not actually sorted and disjoint or if the values overlap inappropriately.

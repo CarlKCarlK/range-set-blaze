@@ -12,5 +12,3 @@ pub use crate::{
     MultiwaySortedDisjointMap, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
     SortedStarts, UIntPlusOne,
 };
-
-// cmk00 in the docs Macros we see both prelude:: stuff

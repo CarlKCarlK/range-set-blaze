@@ -7,7 +7,7 @@ use crate::{
     Integer, SortedDisjointMap,
 };
 
-/// A (double-ended) iterator over the values of a [`RangeMapBlaze`].
+/// An iterator over the values of a [`RangeMapBlaze`]. Double-ended.
 ///
 /// This `struct` is created by the [`values`] method on [`RangeMapBlaze`]. See its
 /// documentation for more.
@@ -73,7 +73,7 @@ where
     }
 }
 
-/// A (double-ended) iterator over the values of a [`RangeMapBlaze`].
+/// An iterator over the values of a [`RangeMapBlaze`]. Double-ended.
 ///
 /// This `struct` is created by the [`into_values`] method on [`RangeMapBlaze`]. See its
 /// documentation for more.
