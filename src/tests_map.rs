@@ -86,7 +86,7 @@ fn map_repro_206() {
     for pair in input_string.split_whitespace() {
         let bytes = pair.as_bytes(); // Get the byte slice of the pair
         let c = &bytes[bytes.len() - 1]; // Last byte as char
-        let num = pair[..pair.len() - 1].parse::<u8>().unwrap();
+        let num = pair[..pair.len() - 1].parse::<u8>().expect("parse failed");
         input.push((num, c)); // Add the (u8, &str) pair to inputs
     }
 
@@ -138,7 +138,7 @@ fn map_repro_106() {
     for pair in input_string.split_whitespace() {
         let bytes = pair.as_bytes(); // Get the byte slice of the pair
         let c = &bytes[bytes.len() - 1]; // Last byte as char
-        let num = pair[..pair.len() - 1].parse::<u8>().unwrap();
+        let num = pair[..pair.len() - 1].parse::<u8>().expect("parse failed");
         input.push((num, c)); // Add the (u8, &str) pair to inputs
     }
 

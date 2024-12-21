@@ -278,7 +278,6 @@ where
     /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
     /// ```
     fn union(self) -> BitOrMapKMerge<T, VR, I> {
-        // cmk0 why does this not have .into_iter() but intersection does?
         UnionIterMap::new_k(self)
     }
 

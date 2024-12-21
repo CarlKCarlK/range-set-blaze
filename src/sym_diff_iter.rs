@@ -47,7 +47,11 @@ where
                 };
 
                 // The workspace is not empty (but next is empty) is process the next chunk of the workspace.
-                let end = self.end_heap.pop().unwrap().0;
+                let end = self
+                    .end_heap
+                    .pop()
+                    .expect("Real Assert: the workspace is not empty")
+                    .0;
                 self.remove_same_end(end);
                 let result = self.start_or_min_value..=end;
                 if !self.end_heap.is_empty() {
@@ -69,7 +73,11 @@ where
             }
 
             // Next start inside the workspace's first chunk, so process up to next_start.
-            let end = self.end_heap.peek().unwrap().0;
+            let end = self
+                .end_heap
+                .peek()
+                .expect("Real Assert: The workspace has a first chunk.")
+                .0;
             if next_start <= end {
                 let result = self.start_or_min_value..=next_start.sub_one();
                 self.start_or_min_value = next_start;

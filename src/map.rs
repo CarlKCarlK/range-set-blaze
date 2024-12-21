@@ -777,7 +777,9 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
-        let (start_after, end_value_after) = after.next().unwrap(); // there will always be a next
+        let (start_after, end_value_after) = after
+            .next()
+            .expect("Real Assert: There will always be a next");
         debug_assert!(start == *start_after && end == end_value_after.end);
 
         let mut end_new = end;
@@ -826,7 +828,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             let last = self
                 .btree_map
                 .remove(&delete_list[delete_list.len() - 1])
-                .unwrap(); // there will always be a last
+                .expect("Real Assert: There will always be a last");
             let last_end = last.end;
             debug_assert!(end.add_one() <= last.end); // real assert
             self.btree_map.insert(end.add_one(), last);

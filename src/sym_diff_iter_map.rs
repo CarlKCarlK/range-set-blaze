@@ -106,8 +106,10 @@ where
             // We buffer for output the best item up to the start of the next item (if any).
 
             // Find the start of the next item, if any.
-            // unwrap() is safe because we know the workspace is not empty
-            let mut next_end = self.workspace_next_end.take().unwrap();
+            let mut next_end = self
+                .workspace_next_end
+                .take()
+                .expect("Real Assert: safe because we know the workspace is not empty");
             if let Some(next_item) = self.next_item.as_ref() {
                 next_end = min(next_item.start().sub_one(), next_end);
             }

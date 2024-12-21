@@ -1,21 +1,23 @@
 #![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
+// cmk00 move these to Cargo.toml
 #![warn(
     clippy::use_self,
     unused_lifetimes,
     missing_docs,
     single_use_lifetimes,
     clippy::pedantic,
-    // cmk0 unreachable_pub,
-    // cmk0 clippy::cargo,
+    unreachable_pub,
+    //cmk need to add stuff to examples clippy::cargo,
+    //cmk clippy::cargo_common_metadata
     clippy::perf,
     clippy::style,
     clippy::complexity,
     clippy::correctness,
     clippy::nursery,
     clippy::must_use_candidate,
-    // cmk0 clippy::cargo_common_metadata
-    // cmk clippy::result_unwrap_used and clippy::option_unwrap_used: Warns if you're using .unwrap() or .expect(), which can be a sign of inadequate error handling.
+    clippy::unwrap_used
+    // and clippy::option_unwrap_used: Warns if you're using .unwrap() or .expect(), which can be a sign of inadequate error handling.
     // cmk	clippy::panic_in_result_fn: Ensures functions that return Result do not contain panic!, which could be inappropriate in production code.
 
 )]
@@ -55,8 +57,14 @@ mod map;
 mod ranges_iter;
 mod set;
 mod values;
+pub use crate::iter_map::{IntoIterMap, IterMap};
+pub use crate::map::{
+    BitAndRangesMap, BitAndRangesMap2, BitSubRangesMap, BitSubRangesMap2, SortedStartsInVec,
+    SortedStartsInVecMap,
+};
 pub use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter};
 pub use crate::ranges_iter::{IntoRangesIter, RangesIter};
+pub use crate::set::demo_read_ranges_from_file;
 pub use crate::set::{IntoIter, Iter, RangeSetBlaze};
 
 mod not_iter;

@@ -18,7 +18,8 @@ use crate::{
 /// This `struct` is created by the [`iter`] method on [`RangeMapBlaze`]. See its
 /// documentation for more.
 ///
-/// [`iter`]: RangeMapBlaze::iter
+/// [`RangeMapBlaze`]: crate::map::RangeMapBlaze
+/// [`iter`]: crate::RangeMapBlaze::iter
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
 pub struct IterMap<T, VR, I>
@@ -38,7 +39,7 @@ where
     VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
-    pub const fn new(iter: I) -> Self {
+    pub(crate) const fn new(iter: I) -> Self {
         Self {
             iter,
             option_range_value_front: None,
@@ -112,13 +113,13 @@ where
     }
 }
 
-// cmk000 why doesn't this appear in the docs?
 /// An iterator over the integer elements of a [`RangeMapBlaze`]. Double-ended.
 ///
 /// This `struct` is created by the [`into_iter`] method on [`RangeMapBlaze`]. See its
 /// documentation for more.
 ///
-/// [`into_iter`]: RangeMapBlaze::into_iter
+/// [`RangeMapBlaze`]: crate::map::RangeMapBlaze
+/// [`into_iter`]: crate::RangeMapBlaze::into_iter
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct IntoIterMap<T, V>
 where

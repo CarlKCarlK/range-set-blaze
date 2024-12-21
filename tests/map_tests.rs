@@ -5473,3 +5473,11 @@ fn test_range_values_to_ranges_iter_disjoint() {
     assert_eq!(iter.next(), Some(1..=10));
     assert_eq!(iter.next(), None);
 }
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_into_iter() {
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=5, "a"), (10..=15, "a")]);
+    let mut b = a.into_iter();
+    assert_eq!(b.next(), Some((1, "a")));
+}

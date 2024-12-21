@@ -35,8 +35,10 @@ impl<T: Integer> Iterator for RogsIter<'_, T> {
                 self.btree_map_iter = btree_map::Range::default();
             } else {
                 debug_assert!(self.final_gap_start.is_some()); // final_gap_start should be Some if we're in this branch
-                debug_assert!(self.final_gap_start.unwrap() < *start_el); // so -1 is safe
-                let result = Rog::Gap(self.final_gap_start.unwrap()..=start_el.sub_one());
+                debug_assert!(
+                    self.final_gap_start.expect("Real Assert: So -1 is safe") < *start_el
+                );
+                let result = Rog::Gap(self.final_gap_start.expect("Real Assert: final_gap_start should be Some if we're in this branch, so -1 is safe")..=start_el.sub_one());
                 if end_el < &self.end_in {
                     self.next_rog = Some(Rog::Range(*start_el..=*end_el));
                     debug_assert!(end_el < &self.end_in); // so +1 is safe

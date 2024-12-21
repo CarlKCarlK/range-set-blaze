@@ -6,11 +6,11 @@ use core::{iter::FusedIterator, ops::RangeInclusive, ops::Sub};
 
 use crate::Integer;
 
-// cmk0 be sure this is still needed.
+#[allow(clippy::redundant_pub_crate)]
 #[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct FromSliceIter<'a, T, const N: usize>
+pub(crate) struct FromSliceIter<'a, T, const N: usize>
 where
     T: SimdInteger,
     LaneCount<N>: SupportedLaneCount,
@@ -112,7 +112,8 @@ where
     }
 }
 
-pub trait SimdInteger: Integer + SimdElement {
+#[allow(clippy::redundant_pub_crate)]
+pub(crate) trait SimdInteger: Integer + SimdElement {
     fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
     where
         Simd<Self, N>: Sub<Simd<Self, N>, Output = Simd<Self, N>>,

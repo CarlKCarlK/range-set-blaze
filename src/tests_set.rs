@@ -453,7 +453,7 @@ fn sdi1() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // cmk0 challenge: convert from every level to sorted disjoint* for both map and set.
-pub fn convert_challenge() {
+fn convert_challenge() {
     use itertools::Itertools;
     use unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 

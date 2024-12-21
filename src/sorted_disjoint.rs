@@ -575,7 +575,6 @@ where
     seen_none: bool,
 }
 
-// cmk0 change new to accept into_iter. Update from/into to use the new new and update examples
 impl<T, I> CheckSortedDisjoint<T, I>
 where
     T: Integer,
@@ -743,6 +742,3 @@ impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
 
 // We're not allowed to define methods on outside types, so we only define the traits
-// cmk0
-// impl<T: Integer, I: SortedStarts<T>> SortedStarts<T> for Tee<I> {}
-// impl<T: Integer, I: SortedDisjoint<T>> SortedDisjoint<T> for Tee<I> {}

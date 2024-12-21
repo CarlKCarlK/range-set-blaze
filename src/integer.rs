@@ -9,7 +9,8 @@ use core::{fmt, ops::RangeInclusive};
 use num_traits::ops::overflowing::OverflowingSub;
 
 #[cfg(feature = "from_slice")]
-pub const LANES: usize = 16; // cmk make private?
+#[allow(clippy::redundant_pub_crate)]
+pub(crate) const LANES: usize = 16; // cmk make private?
 
 /// Represents elements that can be used within [`RangeSetBlaze`] and as keys in [`RangeMapBlaze`].
 ///
@@ -742,8 +743,8 @@ impl Integer for char {
         if num == SURROGATE_END {
             num = SURROGATE_START - 1;
         }
-        // can never underflow here because of the range of char
-        Self::from_u32(num).unwrap()
+        Self::from_u32(num)
+            .expect("Real Assert: Can never underflow here because of the range of char.")
     }
 
     #[inline]

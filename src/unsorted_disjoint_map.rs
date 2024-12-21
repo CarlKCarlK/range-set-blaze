@@ -31,7 +31,7 @@ where
     I: Iterator<Item = (RangeInclusive<T>, VR)>, // Any iterator is fine
 {
     #[inline]
-    pub fn new(into_iter: I) -> Self {
+    pub(crate) fn new(into_iter: I) -> Self {
         Self {
             iter: into_iter,
             option_priority: None,
@@ -157,7 +157,7 @@ where
     VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
-    pub const fn len_so_far(&self) -> <T as Integer>::SafeLen {
+    pub(crate) const fn len_so_far(&self) -> <T as Integer>::SafeLen {
         self.len
     }
 }

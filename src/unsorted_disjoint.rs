@@ -24,7 +24,7 @@ where
     I: Iterator<Item = RangeInclusive<T>>, // Any iterator is fine
 {
     #[inline]
-    pub fn new(iter: I) -> Self {
+    pub(crate) fn new(iter: I) -> Self {
         Self {
             iter,
             option_range: None,
@@ -105,7 +105,7 @@ where
     I: Iterator<Item = RangeInclusive<T>> + SortedDisjoint<T>,
 {
     #[inline]
-    pub fn new(iter: I) -> Self {
+    pub(crate) fn new(iter: I) -> Self {
         Self {
             iter,
             len: T::SafeLen::zero(),
@@ -117,7 +117,7 @@ impl<T: Integer, I> SortedDisjointWithLenSoFar<T, I>
 where
     I: SortedDisjoint<T>,
 {
-    pub const fn len_so_far(&self) -> <T as Integer>::SafeLen {
+    pub(crate) const fn len_so_far(&self) -> <T as Integer>::SafeLen {
         self.len
     }
 }

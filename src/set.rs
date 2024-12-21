@@ -704,7 +704,9 @@ impl<T: Integer> RangeSetBlaze<T> {
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
-        let (start_after, end_after) = after.next().unwrap(); // there will always be a next
+        let (start_after, end_after) = after
+            .next()
+            .expect("Real assert: there will always be a next");
         debug_assert!(start == *start_after && end == *end_after);
 
         let mut end_new = end;

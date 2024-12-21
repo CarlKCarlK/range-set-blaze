@@ -380,7 +380,7 @@ where
     VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
-    pub const fn new(iter: I, priority: usize) -> Self {
+    pub(crate) const fn new(iter: I, priority: usize) -> Self {
         Self {
             iter,
             priority_number: priority,
