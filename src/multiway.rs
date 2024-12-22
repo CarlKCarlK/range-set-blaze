@@ -245,8 +245,8 @@ pub trait MultiwayRangeSetBlazeRef<'a, T: Integer + 'a>:
 }
 
 use crate::{
-    BitAndKMerge, BitOrKMerge, BitXorKMerge, Integer, RangeSetBlaze, SortedDisjoint, SymDiffIter,
-    UnionIter,
+    Integer, IntersectionMapInternal, RangeSetBlaze, SortedDisjoint, SymDiffIter, SymDiffKMerge,
+    UnionIter, UnionKMerge,
 };
 
 impl<T, II, I> MultiwaySortedDisjoint<T, I> for II
@@ -296,7 +296,7 @@ where
     ///
     /// assert_eq!(union.into_string(), "1..=15, 18..=100");
     /// ```
-    fn union(self) -> BitOrKMerge<T, I> {
+    fn union(self) -> UnionKMerge<T, I> {
         UnionIter::new_k(self)
     }
 
@@ -327,7 +327,7 @@ where
     ///
     /// assert_eq!(intersection.into_string(), "5..=6, 8..=9, 11..=13");
     /// ```
-    fn intersection(self) -> BitAndKMerge<T, I> {
+    fn intersection(self) -> IntersectionMapInternal<T, I> {
         // We define set intersection in terms of complement and (set/map) union.
         // Elsewhere, map intersection is defined -- in part -- in terms of set intersection.
         self.into_iter()
@@ -367,7 +367,7 @@ where
     ///     "-100..=0, 5..=6, 8..=9, 11..=13, 16..=17, 30..=100"
     /// );
     /// ```
-    fn symmetric_difference(self) -> BitXorKMerge<T, I> {
+    fn symmetric_difference(self) -> SymDiffKMerge<T, I> {
         SymDiffIter::new_k(self)
     }
 }

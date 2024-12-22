@@ -2586,7 +2586,7 @@ fn check_size_hint<E: Debug>(
     expected: usize,
     (min, max): (usize, Option<usize>),
 ) -> bool {
-    let res = min <= expected && max.map_or(true, |max| expected <= max && min <= max);
+    let res = min <= expected && max.is_none_or(|max| expected <= max && min <= max);
     if !res {
         println!("input:{input:?} expected:{expected:?} min:{min:?} max:{max:?}");
     }

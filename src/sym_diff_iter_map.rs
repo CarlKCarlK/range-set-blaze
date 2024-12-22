@@ -10,7 +10,7 @@ use crate::{
     map::ValueRef,
     merge_map::KMergeMap,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
-    BitXorMapKMerge, BitXorMapMerge, Integer, MergeMap, SortedDisjointMap,
+    Integer, MergeMap, SortedDisjointMap, SymDiffKMergeMap, SymDiffMergeMap,
 };
 
 /// This `struct` is created by the [`symmetric_difference`] method on [`SortedDisjointMap`]. See [`symmetric_difference`]'s
@@ -168,7 +168,7 @@ where
     }
 }
 
-impl<T, VR, L, R> BitXorMapMerge<T, VR, L, R>
+impl<T, VR, L, R> SymDiffMergeMap<T, VR, L, R>
 where
     T: Integer,
     VR: ValueRef,
@@ -182,7 +182,7 @@ where
     }
 }
 
-impl<T, VR, J> BitXorMapKMerge<T, VR, J>
+impl<T, VR, J> SymDiffKMergeMap<T, VR, J>
 where
     T: Integer,
     VR: ValueRef,

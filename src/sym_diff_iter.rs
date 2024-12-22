@@ -1,5 +1,5 @@
 use crate::{
-    merge::KMerge, BitXorKMerge, BitXorMerge, Integer, Merge, SortedDisjoint, SortedStarts,
+    merge::KMerge, Integer, Merge, SortedDisjoint, SortedStarts, SymDiffKMerge, SymDiffMerge,
 };
 use alloc::collections::BinaryHeap;
 use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
@@ -175,7 +175,7 @@ where
     }
 }
 
-impl<T, L, R> BitXorMerge<T, L, R>
+impl<T, L, R> SymDiffMerge<T, L, R>
 where
     T: Integer,
     L: SortedDisjoint<T>,
@@ -188,7 +188,7 @@ where
     }
 }
 
-impl<T, J> BitXorKMerge<T, J>
+impl<T, J> SymDiffKMerge<T, J>
 where
     T: Integer,
     J: SortedDisjoint<T>,

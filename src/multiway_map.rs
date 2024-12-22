@@ -7,8 +7,8 @@
 
 use crate::{
     intersection_iter_map::IntersectionIterMap, map::ValueRef,
-    range_values::RangeValuesToRangesIter, BitAndMapWithRangeValues, BitOrMapKMerge,
-    BitXorMapKMerge, Integer, RangeMapBlaze, SortedDisjointMap, SymDiffIterMap, UnionIterMap,
+    range_values::RangeValuesToRangesIter, Integer, IntersectionKMap, RangeMapBlaze,
+    SortedDisjointMap, SymDiffIterMap, SymDiffKMergeMap, UnionIterMap, UnionKMergeMap,
 };
 
 impl<T, V, I> MultiwayRangeMapBlaze<T, V> for I
@@ -277,7 +277,7 @@ where
     ///
     /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
     /// ```
-    fn union(self) -> BitOrMapKMerge<T, VR, I> {
+    fn union(self) -> UnionKMergeMap<T, VR, I> {
         UnionIterMap::new_k(self)
     }
 
@@ -308,7 +308,7 @@ where
     ///
     /// assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
     /// ```
-    fn intersection<'a>(self) -> BitAndMapWithRangeValues<'a, T, VR, I> {
+    fn intersection<'a>(self) -> IntersectionKMap<'a, T, VR, I> {
         // We define map intersection -- in part -- in terms of set intersection.
         // Elsewhere, we define set intersection in terms of complement and (set/map) union.
         use crate::MultiwaySortedDisjoint;
@@ -338,7 +338,7 @@ where
     ///
     /// assert_eq!(symmetric_difference.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
     /// ```
-    fn symmetric_difference(self) -> BitXorMapKMerge<T, VR, I> {
+    fn symmetric_difference(self) -> SymDiffKMergeMap<T, VR, I> {
         SymDiffIterMap::new_k(self)
     }
 }

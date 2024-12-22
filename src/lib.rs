@@ -43,6 +43,7 @@ pub mod prelude;
 
 // General Imports
 mod dyn_sorted_disjoint;
+
 pub use dyn_sorted_disjoint::DynSortedDisjoint;
 
 mod dyn_sorted_disjoint_map;
@@ -61,10 +62,7 @@ mod keys;
 pub use crate::keys::{IntoKeys, Keys};
 
 mod map;
-pub use crate::map::{
-    BitAndRangesMap, BitAndRangesMap2, BitSubRangesMap, BitSubRangesMap2, RangeMapBlaze,
-    SortedStartsInVec, SortedStartsInVecMap, ValueRef,
-};
+pub use crate::map::{RangeMapBlaze, ValueRef};
 
 mod merge;
 pub use merge::{KMerge, Merge};
@@ -138,44 +136,48 @@ pub(crate) mod map_from_iter;
 pub(crate) mod tests_map;
 pub(crate) mod tests_set;
 
-// cmk rename to Union...
+// Helpers
+type NandMerge<T, L, R> = UnionMerge<T, NotIter<T, L>, NotIter<T, R>>;
+type NandKMerge<T, I> = UnionKMerge<T, NotIter<T, I>>;
+type DifferenceMapInternal<T, VR, L, R> = IntersectionIterMap<T, VR, L, NotIter<T, R>>;
+type IntersectionMapInternal<T, I> = NotIter<T, NandKMerge<T, I>>;
+
+// Public Types
 #[doc(hidden)]
-pub type BitOrMapMerge<T, VR, L, R> = UnionIterMap<T, VR, MergeMap<T, VR, L, R>>;
+pub type DifferenceMap<T, VR, L, R> =
+    DifferenceMapInternal<T, VR, L, RangeValuesToRangesIter<T, VR, R>>;
 #[doc(hidden)]
-pub type BitOrMerge<T, L, R> = UnionIter<T, merge::Merge<T, L, R>>;
+pub type DifferenceMerge<T, L, R> = NotIter<T, UnionMerge<T, NotIter<T, L>, R>>;
 
 #[doc(hidden)]
-pub type BitXorMapMerge<T, VR, L, R> = SymDiffIterMap<T, VR, MergeMap<T, VR, L, R>>;
+pub type IntersectionKMap<'a, T, VR, I> =
+    IntersectionIterMap<T, VR, I, IntersectionMapInternal<T, RangeValuesToRangesIter<T, VR, I>>>;
 #[doc(hidden)]
-pub type BitXorMapKMerge<T, VR, II> = SymDiffIterMap<T, VR, KMergeMap<T, VR, II>>;
+pub type IntersectionMap<T, VR, L, R> =
+    IntersectionIterMap<T, VR, L, RangeValuesToRangesIter<T, VR, R>>;
+#[doc(hidden)]
+pub type IntersectionMerge<T, L, R> = NotIter<T, NandMerge<T, L, R>>;
 
 #[doc(hidden)]
-pub type BitXorMerge<T, L, R> = SymDiffIter<T, Merge<T, L, R>>;
-#[doc(hidden)]
-pub type BitXorKMerge<T, II> = SymDiffIter<T, KMerge<T, II>>;
+pub type NotMap<T, VR, I> = NotIter<T, RangeValuesToRangesIter<T, VR, I>>;
 
 #[doc(hidden)]
-pub type BitOrMapKMerge<T, VR, I> = UnionIterMap<T, VR, KMergeMap<T, VR, I>>;
+pub type SymDiffKMerge<T, II> = SymDiffIter<T, KMerge<T, II>>;
 #[doc(hidden)]
-pub type BitOrKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
+pub type SymDiffKMergeMap<T, VR, II> = SymDiffIterMap<T, VR, KMergeMap<T, VR, II>>;
 #[doc(hidden)]
-pub type BitAndMerge<T, L, R> = NotIter<T, BitNandMerge<T, L, R>>;
+pub type SymDiffMerge<T, L, R> = SymDiffIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
-pub type BitAndKMerge<T, I> = NotIter<T, BitNandKMerge<T, I>>;
+pub type SymDiffMergeMap<T, VR, L, R> = SymDiffIterMap<T, VR, MergeMap<T, VR, L, R>>;
+
 #[doc(hidden)]
-pub type BitNandMerge<T, L, R> = BitOrMerge<T, NotIter<T, L>, NotIter<T, R>>;
+pub type UnionKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
 #[doc(hidden)]
-pub type BitNandKMerge<T, I> = BitOrKMerge<T, NotIter<T, I>>;
+pub type UnionKMergeMap<T, VR, I> = UnionIterMap<T, VR, KMergeMap<T, VR, I>>;
 #[doc(hidden)]
-pub type BitAndMapWithRanges<'a, T, V, VR, I> =
-    IntersectionIterMap<T, VR, I, BitAndKMerge<T, MapRangesIter<'a, T, V>>>;
+pub type UnionMerge<T, L, R> = UnionIter<T, merge::Merge<T, L, R>>;
 #[doc(hidden)]
-pub type BitAndMapWithRangeValues<'a, T, VR, I> =
-    IntersectionIterMap<T, VR, I, BitAndKMerge<T, RangeValuesToRangesIter<T, VR, I>>>;
-#[doc(hidden)]
-pub type BitNorMerge<T, L, R> = NotIter<T, BitOrMerge<T, L, R>>;
-#[doc(hidden)]
-pub type BitSubMerge<T, L, R> = NotIter<T, BitOrMerge<T, NotIter<T, L>, R>>;
+pub type UnionMergeMap<T, VR, L, R> = UnionIterMap<T, VR, MergeMap<T, VR, L, R>>;
 
 #[cfg(feature = "std")]
 #[cfg(test)]

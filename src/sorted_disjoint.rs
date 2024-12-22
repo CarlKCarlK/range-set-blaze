@@ -3,7 +3,7 @@ use crate::range_values::{MapIntoRangesIter, MapRangesIter, RangeValuesToRangesI
 use crate::ranges_iter::RangesIter;
 use crate::sorted_disjoint_map::IntoString;
 use crate::RangeSetBlaze;
-use crate::{BitOrMerge, IntoRangesIter, UnionIter};
+use crate::{IntoRangesIter, UnionIter, UnionMerge};
 use alloc::string::String;
 use core::array;
 use core::{
@@ -14,7 +14,8 @@ use core::{
 use crate::SortedDisjointMap;
 
 use crate::{
-    BitAndMerge, BitSubMerge, BitXorMerge, DynSortedDisjoint, Integer, NotIter, SymDiffIter,
+    DifferenceMerge, DynSortedDisjoint, Integer, IntersectionMerge, NotIter, SymDiffIter,
+    SymDiffMerge,
 };
 
 /// Used internally. Marks iterators that provide ranges sorted by start, but
@@ -230,13 +231,13 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(union.into_string(), "1..=2");
     /// ```
     #[inline]
-    fn union<R>(self, other: R) -> BitOrMerge<T, Self, R::IntoIter>
+    fn union<R>(self, other: R) -> UnionMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
         Self: Sized,
     {
-        BitOrMerge::new2(self, other.into_iter())
+        UnionMerge::new2(self, other.into_iter())
     }
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their intersection.
@@ -261,7 +262,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(intersection.into_string(), "2..=2");
     /// ```
     #[inline]
-    fn intersection<R>(self, other: R) -> BitAndMerge<T, Self, R::IntoIter>
+    fn intersection<R>(self, other: R) -> IntersectionMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
@@ -292,7 +293,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(difference.into_string(), "1..=1");
     /// ```
     #[inline]
-    fn difference<R>(self, other: R) -> BitSubMerge<T, Self, R::IntoIter>
+    fn difference<R>(self, other: R) -> DifferenceMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
@@ -350,7 +351,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(symmetric_difference.into_string(), "1..=1, 3..=3");
     /// ```
     #[inline]
-    fn symmetric_difference<R>(self, other: R) -> BitXorMerge<T, Self, R::IntoIter>
+    fn symmetric_difference<R>(self, other: R) -> SymDiffMerge<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
@@ -680,7 +681,7 @@ macro_rules! impl_sorted_traits_and_ops {
         where
             R: SortedDisjoint<T>,
         {
-            type Output = BitOrMerge<T, Self, R>;
+            type Output = UnionMerge<T, Self, R>;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjoint::union(self, other)
@@ -692,7 +693,7 @@ macro_rules! impl_sorted_traits_and_ops {
         where
             R: SortedDisjoint<T>,
         {
-            type Output = BitSubMerge<T, Self, R>;
+            type Output = DifferenceMerge<T, Self, R>;
 
             fn sub(self, other: R) -> Self::Output {
                 // It would be fun to optimize !!self.iter into self.iter
@@ -706,7 +707,7 @@ macro_rules! impl_sorted_traits_and_ops {
         where
             R: SortedDisjoint<T>,
         {
-            type Output = BitXorMerge<T, Self, R>;
+            type Output = SymDiffMerge<T, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
@@ -719,7 +720,7 @@ macro_rules! impl_sorted_traits_and_ops {
         where
             R: SortedDisjoint<T>,
         {
-            type Output = BitAndMerge<T, Self, R>;
+            type Output = IntersectionMerge<T, Self, R>;
 
             fn bitand(self, other: R) -> Self::Output {
                 SortedDisjoint::intersection(self, other)

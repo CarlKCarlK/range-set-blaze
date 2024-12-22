@@ -2846,7 +2846,7 @@ where
         debug_assert!(range.start() <= range.end());
         let mut k = *range.start();
         loop {
-            if btree_map.get(&k).map_or(true, |v2| v != *v2) {
+            if btree_map.get(&k).is_none_or(|v2| v != *v2) {
                 eprintln!(
                     "range_map_blaze contains {k} -> {v}, btree_map contains {k} -> {:?}",
                     btree_map.get(&k)

@@ -1,7 +1,7 @@
 use crate::map::ValueRef;
 use crate::merge_map::KMergeMap;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
-use crate::{BitOrMapKMerge, BitOrMapMerge, MergeMap, SortedDisjointMap};
+use crate::{MergeMap, SortedDisjointMap, UnionKMergeMap, UnionMergeMap};
 use alloc::{collections::BinaryHeap, vec};
 use core::cmp::min;
 use core::iter::FusedIterator;
@@ -154,7 +154,7 @@ where
     }
 }
 
-impl<T, VR, L, R> BitOrMapMerge<T, VR, L, R>
+impl<T, VR, L, R> UnionMergeMap<T, VR, L, R>
 where
     T: Integer,
     VR: ValueRef,
@@ -168,7 +168,7 @@ where
     }
 }
 
-impl<T, VR, J> BitOrMapKMerge<T, VR, J>
+impl<T, VR, J> UnionKMergeMap<T, VR, J>
 where
     T: Integer,
     VR: ValueRef,

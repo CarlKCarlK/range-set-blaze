@@ -1,18 +1,18 @@
 use crate::intersection_iter_map::IntersectionIterMap;
-use crate::map::BitAndRangesMap;
-use crate::map::BitAndRangesMap2;
-use crate::map::BitSubRangesMap;
-use crate::map::BitSubRangesMap2;
 use crate::map::ValueRef;
 use crate::range_values::RangeValuesIter;
 use crate::range_values::RangeValuesToRangesIter;
 use crate::sorted_disjoint::SortedDisjoint;
 use crate::sym_diff_iter_map::SymDiffIterMap;
-use crate::BitOrMapMerge;
-use crate::BitXorMapMerge;
+use crate::DifferenceMap;
+use crate::DifferenceMapInternal;
 use crate::DynSortedDisjointMap;
+use crate::IntersectionMap;
 use crate::IntoRangeValuesIter;
 use crate::NotIter;
+use crate::NotMap;
+use crate::SymDiffMergeMap;
+use crate::UnionMergeMap;
 use crate::{union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
 use alloc::format;
 use alloc::rc::Rc;
@@ -232,7 +232,7 @@ where
     /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=3, "b")"#);
     /// ```
     #[inline]
-    fn union<R>(self, other: R) -> BitOrMapMerge<T, VR, Self, R::IntoIter>
+    fn union<R>(self, other: R) -> UnionMergeMap<T, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<T, VR>,
@@ -264,7 +264,7 @@ where
     /// assert_eq!(intersection.into_string(), r#"(2..=2, "a")"#);
     /// ```
     #[inline]
-    fn intersection<R>(self, other: R) -> BitAndRangesMap2<T, VR, Self, R::IntoIter>
+    fn intersection<R>(self, other: R) -> IntersectionMap<T, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<T, VR>,
@@ -292,7 +292,7 @@ where
     /// assert_eq!(intersection.into_string(), r#"(2..=2, "a")"#);
     /// ```
     #[inline]
-    fn map_and_set_intersection<R>(self, other: R) -> BitAndRangesMap<T, VR, Self, R::IntoIter>
+    fn map_and_set_intersection<R>(self, other: R) -> IntersectionIterMap<T, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = RangeInclusive<T>>,
         R::IntoIter: SortedDisjoint<T>,
@@ -324,7 +324,7 @@ where
     /// assert_eq!(difference.into_string(), r#"(1..=1, "a")"#);
     /// ```
     #[inline]
-    fn difference<R>(self, other: R) -> BitSubRangesMap2<T, VR, Self, R::IntoIter>
+    fn difference<R>(self, other: R) -> DifferenceMap<T, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<T, VR>,
@@ -352,7 +352,7 @@ where
     /// assert_eq!(difference.into_string(), r#"(1..=1, "a")"#);
     /// ```
     #[inline]
-    fn map_and_set_difference<R>(self, other: R) -> BitSubRangesMap<T, VR, Self, R::IntoIter>
+    fn map_and_set_difference<R>(self, other: R) -> DifferenceMapInternal<T, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = RangeInclusive<T>>,
         R::IntoIter: SortedDisjoint<T>,
@@ -442,7 +442,7 @@ where
     /// assert_eq!(symmetric_difference.into_string(), r#"(1..=1, "a"), (3..=3, "b")"#);
     /// ```
     #[inline]
-    fn symmetric_difference<R>(self, other: R) -> BitXorMapMerge<T, VR, Self, R::IntoIter>
+    fn symmetric_difference<R>(self, other: R) -> SymDiffMergeMap<T, VR, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<T, VR>,
@@ -897,7 +897,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
         where
             T: Integer,
         {
-            type Output = NotIter<T, RangeValuesToRangesIter<T, $VR, Self>>;
+            type Output = NotMap<T, $VR, Self>;
 
             fn not(self) -> Self::Output {
                 self.complement()
@@ -910,7 +910,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             T: Integer,
             R: SortedDisjointMap<T, $VR>,
         {
-            type Output = BitOrMapMerge<T, $VR, Self, R>;
+            type Output = UnionMergeMap<T, $VR, Self, R>;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjointMap::union(self, other)
@@ -923,7 +923,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             T: Integer,
             R: SortedDisjointMap<T, $VR>,
         {
-            type Output = BitSubRangesMap<T, $VR, Self, RangeValuesToRangesIter<T, $VR, R>>;
+            type Output = DifferenceMap<T, $VR, Self, R>;
 
             fn sub(self, other: R) -> Self::Output {
                 SortedDisjointMap::difference(self, other)
@@ -936,7 +936,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             T: Integer,
             R: SortedDisjointMap<T, $VR>,
         {
-            type Output = BitXorMapMerge<T,  $VR, Self, R>;
+            type Output = SymDiffMergeMap<T,  $VR, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
@@ -950,7 +950,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             T: Integer,
             R: SortedDisjointMap<T, $VR>,
         {
-            type Output = BitAndRangesMap<T, $VR, Self, RangeValuesToRangesIter<T, $VR, R>>;
+            type Output = IntersectionMap<T, $VR, Self, R>;
 
             fn bitand(self, other: R) -> Self::Output {
                 SortedDisjointMap::intersection(self, other)

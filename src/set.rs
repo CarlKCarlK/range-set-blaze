@@ -675,7 +675,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         self.btree_map
             .range(..=value)
             .next_back()
-            .map_or(false, |(_, end)| value <= *end)
+            .is_some_and(|(_, end)| value <= *end)
     }
 
     /// Returns `true` if `self` has no elements in common with `other`.
@@ -1085,7 +1085,7 @@ impl<T: Integer> RangeSetBlaze<T> {
             // Must check this in two parts to avoid overflow
             if (*end_before)
                 .checked_add_one()
-                .map_or(false, |end_before_succ| end_before_succ < start)
+                .is_some_and(|end_before_succ| end_before_succ < start)
             {
                 self.internal_add2(&range);
             } else if *end_before < end {

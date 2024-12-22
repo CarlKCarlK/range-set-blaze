@@ -104,6 +104,8 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     /// The type representing the safe length for a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `u16` to handle ranges up to 256 elements.
     /// For larger types like `u128`, this is represented by a custom type `UIntPlusOne<u128>`.
     ///
+    /// [`RangeSetBlaze`]: crate::RangeSetBlaze
+    ///
     /// # Examples
     /// ```
     /// use range_set_blaze::{RangeSetBlaze, Integer};

@@ -1,9 +1,6 @@
-use crate::intersection_iter_map::IntersectionIterMap;
 use crate::iter_map::IntoIterMap;
 use crate::iter_map::IterMap;
-use crate::range_values::{
-    IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter, RangeValuesToRangesIter,
-};
+use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter};
 use crate::set::extract_range;
 use crate::sorted_disjoint_map::SortedDisjointMap;
 use crate::sorted_disjoint_map::{IntoString, Priority};
@@ -13,16 +10,14 @@ use crate::unsorted_disjoint_map::{
 };
 use crate::values::IntoValues;
 use crate::values::Values;
+use crate::AssumeSortedStarts;
 use crate::IntoKeys;
 use crate::Keys;
-use crate::{
-    AssumeSortedStarts, CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint,
-};
+use crate::{CheckSortedDisjoint, Integer, RangeSetBlaze, SortedDisjoint};
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
-use alloc::vec;
 use alloc::vec::Vec;
 use core::borrow::Borrow;
 use core::cmp::Ordering;
@@ -32,6 +27,16 @@ use core::{fmt, mem, panic};
 use gen_ops::gen_ops_ex;
 use num_traits::One;
 use num_traits::Zero;
+use std::vec;
+
+// cmk00 -- hidden/pub/ etc
+#[allow(clippy::module_name_repetitions)]
+#[allow(clippy::redundant_pub_crate)]
+pub(crate) type SortedStartsInVecMap<T, VR> =
+    AssumePrioritySortedStartsMap<T, VR, vec::IntoIter<Priority<T, VR>>>;
+
+#[allow(clippy::redundant_pub_crate)]
+pub(crate) type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
 /// A trait for references to `Eq + Clone` values, used by the [`SortedDisjointMap`] trait.
 ///
@@ -770,7 +775,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         self.btree_map
             .range(..=key)
             .next_back()
-            .map_or(false, |(_, end_value)| key <= end_value.end)
+            .is_some_and(|(_, end_value)| key <= end_value.end)
     }
 
     // cmk might be able to shorten code by combining cases
@@ -1117,7 +1122,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     fn has_gap(end_before: T, start: T) -> bool {
         end_before
             .checked_add_one()
-            .map_or(false, |end_before_succ| end_before_succ < start)
+            .is_some_and(|end_before_succ| end_before_succ < start)
     }
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
@@ -1727,36 +1732,6 @@ impl<'a, T: Integer, V: Eq + Clone> IntoIterator for &'a RangeMapBlaze<T, V> {
         self.iter()
     }
 }
-
-// cmk remove
-// #[doc(hidden)]
-// pub type MergeMapAdjusted<'a, T, V, VR, L, R> =
-//     MergeMap<'a, T, V, VR, AdjustPriorityMap<'a, T, V, VR, L>, AdjustPriorityMap<'a, T, V, VR, R>>;
-// #[doc(hidden)]
-// pub type BitOrMergeMap<'a, T, V, VR, L, R> =
-//     UnionIterMap<'a, T, V, VR, MergeMapAdjusted<'a, T, V, VR, L, R>>;
-
-#[doc(hidden)]
-#[allow(clippy::module_name_repetitions)]
-pub type BitAndRangesMap<T, VR, L, R> = IntersectionIterMap<T, VR, L, R>;
-#[doc(hidden)]
-pub type BitAndRangesMap2<T, VR, L, R> =
-    BitAndRangesMap<T, VR, L, RangeValuesToRangesIter<T, VR, R>>;
-
-#[doc(hidden)]
-#[allow(clippy::module_name_repetitions)]
-pub type BitSubRangesMap<T, VR, L, R> = IntersectionIterMap<T, VR, L, NotIter<T, R>>;
-#[doc(hidden)]
-pub type BitSubRangesMap2<T, VR, L, R> =
-    BitSubRangesMap<T, VR, L, RangeValuesToRangesIter<T, VR, R>>;
-
-#[doc(hidden)]
-#[allow(clippy::module_name_repetitions)]
-pub type SortedStartsInVecMap<T, VR> =
-    AssumePrioritySortedStartsMap<T, VR, vec::IntoIter<Priority<T, VR>>>;
-
-#[doc(hidden)]
-pub type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
 impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
