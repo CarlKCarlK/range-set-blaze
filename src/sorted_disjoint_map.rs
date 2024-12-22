@@ -584,6 +584,7 @@ where
 /// ```
 #[allow(clippy::module_name_repetitions)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Debug, Clone)]
 pub struct CheckSortedDisjointMap<T, VR, I>
 where
     T: Integer,
@@ -810,6 +811,7 @@ where
 
 /// Used internally by `complement_with`.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Clone, Debug)]
 pub struct RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,

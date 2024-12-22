@@ -623,7 +623,6 @@ fn test_extract_range() {
     assert_eq!(extract_range(0..1), (0, 0));
 }
 
-// !!!cmk0 test traits of other iterators
 #[allow(clippy::items_after_statements)]
 #[test]
 const fn check_traits() {
@@ -633,13 +632,13 @@ const fn check_traits() {
     is_ddcppdheo::<ARangeSetBlaze>();
     is_like_btreeset::<ARangeSetBlaze>();
 
-    type ARangesIter<'a> = RangesIter<'a, i32>;
-    is_sssu::<ARangesIter>();
-    is_like_btreeset_iter::<ARangesIter>();
-
     type AIter<'a> = Iter<i32, ARangesIter<'a>>;
     is_sssu::<AIter>();
     is_like_btreeset_iter::<AIter>();
+
+    type ARangesIter<'a> = RangesIter<'a, i32>;
+    is_sssu::<ARangesIter>();
+    is_like_btreeset_iter::<ARangesIter>();
 
     type AIntoRangesIter<'a> = IntoRangesIter<i32>;
     is_sssu::<AIntoRangesIter>();
@@ -649,10 +648,10 @@ const fn check_traits() {
     is_sssu::<AMapRangesIter>();
     is_like_btreeset_iter::<AMapRangesIter>();
 
-    type ARangeValuesToRangesIter =
-        RangeValuesToRangesIter<i32, std::rc::Rc<u64>, IntoRangeValuesIter<i32, u64>>;
-    is_su::<ARangeValuesToRangesIter>();
-    is_like_btreeset_iter_less_clone::<ARangeValuesToRangesIter>();
+    type ARangeValuesToRangesIter<'a> =
+        RangeValuesToRangesIter<i32, &'a u64, RangeValuesIter<'a, i32, u64>>;
+    is_sssu::<ARangeValuesToRangesIter>();
+    is_like_btreeset_iter::<ARangeValuesToRangesIter>();
 
     type AMapIntoRangesIter = MapIntoRangesIter<i32, u64>;
     is_sssu::<AMapIntoRangesIter>();
@@ -712,24 +711,10 @@ const fn is_ddcppdheo<
 }
 
 const fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
-const fn is_su<T: Sized + Unpin>() {}
 const fn is_like_btreeset_iter<
     T: Clone + std::fmt::Debug + FusedIterator + Iterator, // cmk DoubleEndedIterator  + ExactSizeIterator,
 >() {
 }
-const fn is_like_btreeset_iter_less_clone<
-    T: std::fmt::Debug + FusedIterator + Iterator, // cmk DoubleEndedIterator  + ExactSizeIterator,
->() {
-}
-
-// cmk0 add others iterators and test
-// #[test]
-// fn iter_traits() {
-//     type ARangesIter<'a> = RangesIter<'a, i32>;
-//     type AIter<'a> = Iter<i32, ARangesIter<'a>>;
-//     is_sssu::<AIter>();
-//     is_like_btreeset_iter::<AIter>();
-// }
 
 const fn is_like_btreeset_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {}
 

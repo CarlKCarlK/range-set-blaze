@@ -9,6 +9,7 @@ use crate::Integer;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap, SortedDisjointMap};
 
 /// Used internally by `UnionIterMap` and `SymDiffIterMap`.
+#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MergeMap<T, VR, L, R>
 where

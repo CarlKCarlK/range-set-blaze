@@ -13,7 +13,7 @@ use crate::{map::EndValue, sorted_disjoint_map::SortedDisjointMap};
 ///
 /// [`RangeMapBlaze`]: crate::RangeMapBlaze
 /// [`range_values`]: crate::RangeMapBlaze::range_values
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::module_name_repetitions)]
 pub struct RangeValuesIter<'a, T: Integer, V: Eq + Clone> {
@@ -248,10 +248,7 @@ impl<T: Integer, V: Eq + Clone> Iterator for MapIntoRangesIter<T, V> {
 }
 
 /// This `struct` is used internally.
-///
-/// Not clonable because `btree_map::IntoIter` is not clonable. Not send/sync
-/// because `IntoRangeValuesIter` is not send/sync.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::module_name_repetitions)]
 pub struct RangeValuesToRangesIter<T, VR, I>

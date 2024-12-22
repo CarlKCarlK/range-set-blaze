@@ -1,0 +1,71 @@
+thread 'rustc' panicked at compiler\rustc_middle\src\query\plumbing.rs:654:5:
+Box<dyn Any>
+stack backtrace:
+   0:     0x7ffc92a83043 - std::backtrace_rs::backtrace::dbghelp64::trace
+                               at /rustc/81eef2d362a6f03db6f8928f82d94298d31eb81b\library/std\src\..\..\backtrace\src\backtrace\dbghelp64.rs:91
+   1:     0x7ffc92a83043 - std::backtrace_rs::backtrace::trace_unsynchronized
+                               at /rustc/81eef2d362a6f03db6f8928f82d94298d31eb81b\library/std\src\..\..\backtrace\src\backtrace\mod.rs:66
+   2:     0x7ffc92a83043 - std::backtrace::Backtrace::create
+                               at /rustc/81eef2d362a6f03db6f8928f82d94298d31eb81b\library/std\src\backtrace.rs:331
+   3:     0x7ffc92a82f8a - std::backtrace::Backtrace::force_capture
+                               at /rustc/81eef2d362a6f03db6f8928f82d94298d31eb81b\library/std\src\backtrace.rs:312
+   4:     0x7ffc940c7712 - memchr
+   5:     0x7ffc92a9def2 - alloc::boxed::impl$30::call
+                               at /rustc/81eef2d362a6f03db6f8928f82d94298d31eb81b\library/alloc\src\boxed.rs:1982
+   6:     0x7ffc92a9def2 - std::panicking::rust_panic_with_hook
+                               at /rustc/81eef2d362a6f03db6f8928f82d94298d31eb81b\library/std\src\panicking.rs:809
+   7:     0x7ffc958c54f3 - <rustc_hir_pretty[d1f22179c9e5a704]::State>::print_variant
+   8:     0x7ffc958b74e9 - <rustc_hir_pretty[d1f22179c9e5a704]::State>::print_variant
+   9:     0x7ffc958b7208 - <rustc_hir_pretty[d1f22179c9e5a704]::State>::print_variant
+  10:     0x7ffc958d2c55 - <rustc_errors[632d3d420314a44]::diagnostic::BugAbort as rustc_errors[632d3d420314a44]::diagnostic::EmissionGuarantee>::emit_producing_guarantee
+  11:     0x7ffc957dbc32 - rustc_middle[bf5e6a77757f998d]::util::bug::bug_fmt
+  12:     0x7ffc957bb9dd - rustc_middle[bf5e6a77757f998d]::ty::consts::const_param_default
+  13:     0x7ffc957bb7f6 - rustc_middle[bf5e6a77757f998d]::ty::consts::const_param_default
+  14:     0x7ffc957dbb32 - rustc_middle[bf5e6a77757f998d]::util::bug::bug_fmt
+  15:     0x7ffc957e132b - <rustc_middle[bf5e6a77757f998d]::query::on_disk_cache::CacheEncoder as rustc_span[b317f60a506a6548]::SpanEncoder>::encode_def_index
+  16:     0x7ffc9577b6d1 - <rustc_middle[bf5e6a77757f998d]::mir::interpret::allocation::ConstAllocation as core[39f6cf7045d4965b]::fmt::Debug>::fmt
+  17:     0x7ffc9268e962 - rustc_ty_utils[685ba22c3daead6b]::ty::adt_sized_constraint
+  18:     0x7ffc926252c5 - rustc_ty_utils[685ba22c3daead6b]::ty::adt_sized_constraint
+  19:     0x7ffc926ae8f0 - rustc_query_impl[2466a0b72d257c72]::query_system
+  20:     0x7ffc95336f8f - <rustc_trait_selection[2be7c3bfb4d55cdf]::error_reporting::TypeErrCtxt>::fuzzy_match_tys
+  21:     0x7ffc953460f8 - <rustc_trait_selection[2be7c3bfb4d55cdf]::error_reporting::TypeErrCtxt>::is_recursive_obligation
+  22:     0x7ffc9532fcec - <rustc_trait_selection[2be7c3bfb4d55cdf]::error_reporting::TypeErrCtxt>::report_selection_error
+  23:     0x7ffc953c5029 - <rustc_trait_selection[2be7c3bfb4d55cdf]::error_reporting::traits::on_unimplemented::WrappedParserError as rustc_errors[632d3d420314a44]::diagnostic::LintDiagnostic<()>>::decorate_lint
+  24:     0x7ffc9538a922 - <rustc_trait_selection[2be7c3bfb4d55cdf]::error_reporting::TypeErrCtxt>::report_fulfillment_errors
+  25:     0x7ffc92c33ebc - <rustc_codegen_llvm[75b15e5b8b665e2a]::builder::Builder as rustc_codegen_ssa[6c3e4b2f21e49fd6]::traits::builder::BuilderMethods>::load_operand
+  26:     0x7ffc92c4bd39 - <<rustc_hir_typeck[23c4c274cde30a4f]::fn_ctxt::FnCtxt>::deduce_closure_signature_from_predicates::MentionsTy as rustc_type_ir[57778b6d24111651]::visit::TypeVisitor<rustc_middle[bf5e6a77757f998d]::ty::context::TyCtxt>>::visit_ty
+  27:     0x7ffc92cafee8 - <<rustc_hir_typeck[23c4c274cde30a4f]::fn_ctxt::FnCtxt>::deduce_closure_signature_from_predicates::MentionsTy as rustc_type_ir[57778b6d24111651]::visit::TypeVisitor<rustc_middle[bf5e6a77757f998d]::ty::context::TyCtxt>>::visit_ty
+  28:     0x7ffc92c4c23d - <<rustc_hir_typeck[23c4c274cde30a4f]::fn_ctxt::FnCtxt>::deduce_closure_signature_from_predicates::MentionsTy as rustc_type_ir[57778b6d24111651]::visit::TypeVisitor<rustc_middle[bf5e6a77757f998d]::ty::context::TyCtxt>>::visit_ty
+  29:     0x7ffc92d16808 - rustc_hir_typeck[23c4c274cde30a4f]::typeck
+  30:     0x7ffc92d06d8f - rustc_hir_typeck[23c4c274cde30a4f]::typeck
+  31:     0x7ffc938586bb - rustc_query_impl[2466a0b72d257c72]::plumbing::query_key_hash_verify_all
+  32:     0x7ffc937a17ba - rustc_ty_utils[685ba22c3daead6b]::ty::self_ty_of_trait_impl_enabling_order_dep_trait_object_hack
+  33:     0x7ffc93860c54 - rustc_query_impl[2466a0b72d257c72]::plumbing::query_key_hash_verify_all
+  34:     0x7ffc92d7dfd2 - <rustc_hir_typeck[23c4c274cde30a4f]::upvar::InferBorrowKind as rustc_hir_typeck[23c4c274cde30a4f]::expr_use_visitor::Delegate>::borrow
+  35:     0x7ffc92df90d9 - rustc_hir_analysis[325448f0819d8597]::check_crate
+  36:     0x7ffc92b0fd01 - rustc_interface[90c66264f4f9f3bd]::passes::resolver_for_lowering_raw
+  37:     0x7ffc8fae46ce - rustc_interface[90c66264f4f9f3bd]::passes::analysis
+  38:     0x7ffc9269333b - rustc_ty_utils[685ba22c3daead6b]::ty::adt_sized_constraint
+  39:     0x7ffc925a9df7 - rustc_ty_utils[685ba22c3daead6b]::ty::adt_sized_constraint
+  40:     0x7ffc92698c73 - rustc_query_impl[2466a0b72d257c72]::query_system
+  41:     0x7ffc8faa3347 - _rust_alloc_error_handler
+  42:     0x7ffc8fa9f01f - _rust_alloc_error_handler
+  43:     0x7ffc8faa8f27 - _rust_alloc_error_handler
+  44:     0x7ffc92aafa9d - alloc::boxed::impl$28::call_once
+                               at /rustc/81eef2d362a6f03db6f8928f82d94298d31eb81b\library/alloc\src\boxed.rs:1968
+  45:     0x7ffc92aafa9d - alloc::boxed::impl$28::call_once
+                               at /rustc/81eef2d362a6f03db6f8928f82d94298d31eb81b\library/alloc\src\boxed.rs:1968
+  46:     0x7ffc92aafa9d - std::sys::pal::windows::thread::impl$0::new::thread_start
+                               at /rustc/81eef2d362a6f03db6f8928f82d94298d31eb81b\library/std\src\sys\pal\windows\thread.rs:55
+  47:     0x7ffd911fe8d7 - BaseThreadInitThunk
+  48:     0x7ffd9223fbcc - RtlUserThreadStart
+
+
+rustc version: 1.84.0-nightly (81eef2d36 2024-11-11)
+platform: x86_64-pc-windows-msvc
+
+query stack during panic:
+#0 [extern_crate] getting crate's ExternCrateData
+#1 [typeck] type-checking `tests_map::check_traits`
+#2 [analysis] running analysis passes on this crate
+end of query stack

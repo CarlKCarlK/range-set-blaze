@@ -120,6 +120,7 @@ where
 ///
 /// [`RangeMapBlaze`]: crate::map::RangeMapBlaze
 /// [`into_iter`]: crate::RangeMapBlaze::into_iter
+#[derive(Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct IntoIterMap<T, V>
 where

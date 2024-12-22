@@ -80,6 +80,7 @@ where
 ///
 /// [`into_keys`]: RangeMapBlaze::into_keys
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Debug)]
 pub struct IntoKeys<T, V>
 where
     T: Integer,

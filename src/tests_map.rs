@@ -2,18 +2,35 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use crate::keys::IntoKeys;
+use crate::keys::Keys;
 use crate::sorted_disjoint_map::Priority;
+use crate::sorted_disjoint_map::RangeToRangeValueIter;
 use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
 use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
+use crate::values::IntoValues;
+use crate::values::Values;
+use crate::CheckSortedDisjointMap;
+use crate::DynSortedDisjointMap;
 use crate::Integer;
+use crate::IntersectionIterMap;
+use crate::IntoIterMap;
+use crate::IntoRangeValuesIter;
+use crate::IterMap;
 use crate::RangeMapBlaze;
+use crate::RangeValuesIter;
+use crate::RangesIter;
+use crate::SymDiffIterMap;
 use crate::UnionIterMap;
 use alloc::string::ToString;
+use core::any::Any;
 use core::fmt;
+use core::iter::FusedIterator;
 use core::ops::Bound;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
 use std::prelude::v1::*;
+use std::vec;
 use std::{format, println};
 
 #[test]
@@ -587,3 +604,148 @@ fn test_eq_priority() {
     let b = Priority::new((1..=2, &"a"), 1);
     assert!(a != b);
 }
+
+#[allow(clippy::items_after_statements)]
+#[test]
+const fn check_traits() {
+    // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
+    type ARangeMapBlaze = RangeMapBlaze<i32, u64>;
+    is_sssu::<ARangeMapBlaze>();
+    is_ddcppdheo::<ARangeMapBlaze>();
+    is_like_btreemap::<ARangeMapBlaze>();
+
+    type ARangeValuesIter<'a> = RangeValuesIter<'a, i32, u64>;
+    is_sssu::<ARangeValuesIter>();
+    is_like_btreemap_iter::<ARangeValuesIter>();
+
+    type AIntoRangeValuesIter = IntoRangeValuesIter<i32, u64>;
+    is_sssu::<AIntoRangeValuesIter>();
+    is_like_btreemap_into_iter::<AIntoRangeValuesIter>();
+
+    type AIterMap<'a> = IterMap<i32, &'a u64, ARangeValuesIter<'a>>;
+    is_sssu::<AIterMap>();
+    is_like_btreemap_iter::<AIterMap>();
+
+    type AIntoIterMap = IntoIterMap<i32, u64>;
+    is_sssu::<AIntoIterMap>();
+    is_like_btreemap_into_iter::<AIntoIterMap>();
+
+    type AKMergeMap<'a> = crate::KMergeMap<i32, &'a u64, ARangeValuesIter<'a>>;
+    is_sssu::<AKMergeMap>();
+    is_like_btreemap_iter::<AKMergeMap>();
+
+    type AMergeMap<'a> = crate::MergeMap<i32, &'a u64, ARangeValuesIter<'a>, ARangeValuesIter<'a>>;
+    is_sssu::<AMergeMap>();
+    is_like_btreemap_iter::<AMergeMap>();
+
+    type AAssumePrioritySortedStartsMap<'a> =
+        AssumePrioritySortedStartsMap<i32, &'a u64, vec::IntoIter<Priority<i32, &'a u64>>>;
+    is_sssu::<AAssumePrioritySortedStartsMap>();
+    is_like_btreemap_iter::<AAssumePrioritySortedStartsMap>();
+
+    type AUnionIterMap<'a> = UnionIterMap<i32, &'a u64, AAssumePrioritySortedStartsMap<'a>>;
+    is_sssu::<AUnionIterMap>();
+    is_like_btreemap_iter::<AUnionIterMap>();
+
+    type ASymDiffIterMap<'a> = SymDiffIterMap<i32, &'a u64, AAssumePrioritySortedStartsMap<'a>>;
+    is_sssu::<ASymDiffIterMap>();
+    is_like_btreemap_iter::<ASymDiffIterMap>();
+
+    type ARangesIter<'a> = RangesIter<'a, i32>;
+
+    type AIntersectionIterMap<'a> =
+        IntersectionIterMap<i32, &'a u64, ARangeValuesIter<'a>, ARangesIter<'a>>;
+    is_sssu::<AIntersectionIterMap>();
+    is_like_btreemap_iter::<AIntersectionIterMap>();
+
+    type AKeys<'a> = Keys<i32, &'a u64, ARangeValuesIter<'a>>;
+    is_sssu::<AKeys>();
+    is_like_btreemap_iter::<AKeys>();
+
+    type AIntoKeys = IntoKeys<i32, u64>;
+    is_sssu::<AIntoKeys>();
+    is_like_btreemap_into_iter::<AIntoKeys>();
+
+    type AValues<'a> = Values<i32, &'a u64, ARangeValuesIter<'a>>;
+    is_sssu::<AValues>();
+    is_like_btreemap_iter::<AValues>();
+
+    type AIntoValues = IntoValues<i32, u64>;
+    is_sssu::<AIntoValues>();
+    is_like_btreemap_into_iter::<AIntoValues>();
+
+    type ARangeToRangeValueIter<'a> = RangeToRangeValueIter<'a, i32, u64, ARangesIter<'a>>;
+    is_sssu::<ARangeToRangeValueIter>();
+    is_like_btreemap_iter::<ARangeToRangeValueIter>();
+
+    type ACheckSortedDisjointMap<'a> = CheckSortedDisjointMap<i32, &'a u64, ARangeValuesIter<'a>>;
+    is_sssu::<ACheckSortedDisjointMap>();
+    type BCheckSortedDisjointMap<'a> = CheckSortedDisjointMap<
+        i32,
+        &'a u64,
+        std::array::IntoIter<(RangeInclusive<i32>, &'a u64), 0>,
+    >;
+    is_like_check_sorted_disjoint_map::<BCheckSortedDisjointMap>();
+
+    type ADynSortedDisjointMap<'a> = DynSortedDisjointMap<'a, i32, &'a u64>;
+    is_like_dyn_sorted_disjoint_map::<ADynSortedDisjointMap>();
+}
+
+const fn is_ddcppdheo<
+    T: std::fmt::Debug
+        + fmt::Display
+        + Clone
+        + PartialEq
+        + PartialOrd
+        + Default
+        + std::hash::Hash
+        + Eq
+        + Ord
+        + Send
+        + Sync,
+>() {
+}
+
+const fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
+const fn is_like_btreemap_iter<
+    T: Clone + std::fmt::Debug + FusedIterator + Iterator, // cmk DoubleEndedIterator  + ExactSizeIterator,
+>() {
+}
+
+const fn is_like_btreemap_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {}
+
+const fn is_like_btreemap<
+    T: Clone
+        + std::fmt::Debug
+        + Default
+        + Eq
+        + std::hash::Hash
+        + IntoIterator
+        + Ord
+        + PartialEq
+        + PartialOrd
+        + core::panic::RefUnwindSafe
+        + Send
+        + Sync
+        + Unpin
+        + core::panic::UnwindSafe
+        + core::any::Any
+        + ToOwned,
+>() {
+}
+
+const fn is_like_check_sorted_disjoint_map<
+    T: Clone
+        + std::fmt::Debug
+        + IntoIterator
+        + core::panic::RefUnwindSafe
+        + Send
+        + Sync
+        + Unpin
+        + core::panic::UnwindSafe
+        + Any
+        + ToOwned,
+>() {
+}
+
+const fn is_like_dyn_sorted_disjoint_map<T: IntoIterator + Unpin + Any>() {}
