@@ -199,6 +199,9 @@ where
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 /// Used internally by [`UnionIterMap`] and [`SymDiffIterMap`].
+///
+/// [`UnionIterMap`]: crate::UnionIterMap
+/// [`SymDiffIterMap`]: crate::SymDiffIterMap
 pub struct AssumePrioritySortedStartsMap<T, VR, I>
 where
     T: Integer,

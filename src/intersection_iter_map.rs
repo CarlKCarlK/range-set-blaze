@@ -86,7 +86,7 @@ where
     type Item = (RangeInclusive<T>, VR);
 
     fn next(&mut self) -> Option<(RangeInclusive<T>, VR)> {
-        // println!("cmk begin next");
+        // println!("begin next");
         loop {
             // Be sure both currents are loaded.
             self.left = self.left.take().or_else(|| self.iter_left.next());
@@ -98,11 +98,11 @@ where
             };
             let (left_start, left_end) = left.0.clone().into_inner();
             let (right_start, right_end) = right.into_inner();
-            // println!("cmk {:?} {:?}", current_range, current_range_value.0);
+            // println!("{:?} {:?}", current_range, current_range_value.0);
 
             // if current_range ends before current_range_value, clear it and loop for a new value.
             if right_end < left_start {
-                // println!("cmk getting new range");
+                // println!("getting new range");
                 self.right = None;
                 self.left = Some(left);
                 continue;
@@ -110,7 +110,7 @@ where
 
             // if current_range_value ends before current_range, clear it and loop for a new value.
             if left_end < right_start {
-                // println!("cmk getting new range value");
+                // println!("getting new range value");
                 self.right = Some(RangeInclusive::new(right_start, right_end));
                 self.left = None;
                 continue;
@@ -147,6 +147,7 @@ where
         }
     }
 
+    // TODO: Implement size_hint -- this is similar code from the set version.
     // // There could be a few as 1 (or 0 if the iter is empty) or as many as the iter.
     // // Plus, possibly one more if we have a range is in progress.
     // fn size_hint(&self) -> (usize, Option<usize>) {
@@ -158,104 +159,4 @@ where
     //         (low, high)
     //     }
     // }
-}
-
-// cmk
-// impl<T: Integer, V: Eq + Clone, I> ops::Not for IntersectionIterMap<T, V, I>
-// where
-//     I: SortedStartsMap<T, V>,
-// {
-//     type Output = NotIterMap<T, V, Self>;
-
-//     fn not(self) -> Self::Output {
-//         self.complement()
-//     }
-// }
-
-// impl<'a, T: Integer, V: ValueOwned + 'a, R, L> ops::BitOr<R> for IntersectionIterMap<'a, T, V, L>
-// where
-//     L: SortedStartsMap<'a, T, V>,
-//     R: SortedDisjointMap<'a, T, V>,
-// {
-//     type Output = BitOrMergeMap<'a, T, V, Self, R>;
-
-//     fn bitor(self, rhs: R) -> Self::Output {
-//         // It might be fine to optimize to self.iter, but that would require
-//         // also considering field 'range'
-//         SortedDisjointMap::intersection(self, rhs)
-//     }
-// }
-
-// impl<T: Integer, V: Eq + Clone, R, L> ops::Sub<R> for IntersectionIterMap<T, V, L>
-// where
-//     L: SortedStartsMap<T, V>,
-//     R: SortedDisjointMap<T, V>,
-// {
-//     type Output = BitSubMergeMap<T, V, Self, R>;
-
-//     fn sub(self, rhs: R) -> Self::Output {
-//         SortedDisjointMap::difference(self, rhs)
-//     }
-// }
-
-// impl<T: Integer, V: Eq + Clone, R, L> ops::BitXor<R> for IntersectionIterMap<T, V, L>
-// where
-//     L: SortedStartsMap<T, V>,
-//     R: SortedDisjointMap<T, V>,
-// {
-//     type Output = BitXOrTeeMap<T, V, Self, R>;
-
-//     #[allow(clippy::suspicious_arithmetic_impl)]
-//     fn bitxor(self, rhs: R) -> Self::Output {
-//         SortedDisjointMap::symmetric_difference(self, rhs)
-//     }
-// }
-
-// impl<T: Integer, V: Eq + Clone, R, L> ops::BitAnd<R> for IntersectionIterMap<T, V, L>
-// where
-//     L: SortedStartsMap<T, V>,
-//     R: SortedDisjointMap<T, V>,
-// {
-//     type Output = BitAndMergeMap<T, V, Self, R>;
-
-//     fn bitand(self, other: R) -> Self::Output {
-//         SortedDisjointMap::intersection(self, other)
-//     }
-// }
-
-// impl<'a, T, V, VR, IM, IS> SortedStartsMap<'a, T, V, VR>
-//     for IntersectionIterMap<'a, T, V, VR, IM, IS>
-// where
-//     T: Integer,
-//     V: ValueOwned,
-//     VR: CloneBorrow<V> + 'a,
-//     IM: SortedDisjointMap<'a, T, V, VR> + 'a,
-//     IS: SortedDisjoint<T>,
-// {
-// }
-// impl<'a, T, V, VR, IM, IS> SortedDisjointMap<'a, T, V, VR>
-//     for IntersectionIterMap<'a, T, V, VR, IM, IS>
-// where
-//     T: Integer,
-//     V: ValueOwned,
-//     VR: CloneBorrow<V> + 'a,
-//     IM: SortedDisjointMap<'a, T, V, VR> + 'a,
-//     IS: SortedDisjoint<T>,
-// {
-// }
-
-#[test]
-fn cmk_delete_me5() {
-    use crate::prelude::*;
-
-    let map = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-    let set = CheckSortedDisjoint::new([2..=6]);
-    let intersection = IntersectionIterMap::new(map, set);
-    assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (5..=6, "a")"#);
-
-    // Or, equivalently:
-    let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-    let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-    let intersection = a & b;
-    assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (5..=6, "a")"#);
 }

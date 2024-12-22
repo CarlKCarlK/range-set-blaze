@@ -1,9 +1,3 @@
-// cmk check list
-// main and into_
-// iter, values, keys
-// exact size iterator, double ended iterator, fused iterator, size_hint
-// document the exact size and double ended
-
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use alloc::collections::btree_map;

@@ -1,6 +1,6 @@
 #![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
-// cmk move these to Cargo.toml
+// cmk0 move these to Cargo.toml
 #![warn(
     clippy::use_self,
     unused_lifetimes,
@@ -25,11 +25,6 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-// cmk consider having .len() always returning the smallest type that fits the length, never usize. This would make 32-bit and 64-bit systems more consistent.
-
-// cmk #![feature(step_trait)] // cmk use unstable feature???
-// cmk #![feature(const_option)]
-
 // Developer notes:
 //
 // To run tests with different settings, environment variables are recommended.
@@ -42,91 +37,106 @@ extern crate std;
 // ```
 
 // FUTURE: Support serde via optional feature
-mod uint_plus_one;
-pub use uint_plus_one::UIntPlusOne;
+
+// Prelude: Simplified imports for common use
+pub mod prelude;
+
+// General Imports
 mod dyn_sorted_disjoint;
+pub use dyn_sorted_disjoint::DynSortedDisjoint;
+
 mod dyn_sorted_disjoint_map;
-mod from_slice;
+pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
+
 mod integer;
 pub use crate::integer::Integer;
+
 mod intersection_iter_map;
+pub use intersection_iter_map::IntersectionIterMap;
+
 mod iter_map;
-mod keys;
-mod map;
-pub use crate::keys::{IntoKeys, Keys};
-mod ranges_iter;
-mod set;
-mod values;
 pub use crate::iter_map::{IntoIterMap, IterMap};
+
+mod keys;
+pub use crate::keys::{IntoKeys, Keys};
+
+mod map;
 pub use crate::map::{
-    BitAndRangesMap, BitAndRangesMap2, BitSubRangesMap, BitSubRangesMap2, SortedStartsInVec,
-    SortedStartsInVecMap,
+    BitAndRangesMap, BitAndRangesMap2, BitSubRangesMap, BitSubRangesMap2, RangeMapBlaze,
+    SortedStartsInVec, SortedStartsInVecMap, ValueRef,
 };
-pub use crate::range_values::RangeValuesToRangesIter;
-pub use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter};
-pub use crate::ranges_iter::{IntoRangesIter, RangesIter};
-pub use crate::set::demo_read_ranges_from_file;
-pub use crate::set::{IntoIter, Iter, RangeSetBlaze};
-pub use crate::values::Values;
+
+mod merge;
+pub use merge::{KMerge, Merge};
+
+mod merge_map;
+pub use merge_map::{KMergeMap, MergeMap};
+
+mod multiway;
+pub use multiway::{MultiwayRangeSetBlaze, MultiwayRangeSetBlazeRef, MultiwaySortedDisjoint};
+
+mod multiway_map;
+pub use multiway_map::{
+    MultiwayRangeMapBlaze, MultiwayRangeMapBlazeRef, MultiwaySortedDisjointMap,
+};
 
 mod not_iter;
-pub mod prelude;
+pub use not_iter::NotIter;
+
 mod range_values;
-pub use crate::range_values::RangeValuesIter;
+pub use crate::range_values::{
+    IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter, RangeValuesToRangesIter,
+};
+
+mod ranges_iter;
+pub use crate::ranges_iter::{IntoRangesIter, RangesIter};
+
+mod set;
+pub use crate::set::{demo_read_ranges_from_file, IntoIter, Iter, RangeSetBlaze};
+
+mod sorted_disjoint;
+pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
+
+mod sorted_disjoint_map;
+pub use sorted_disjoint_map::{
+    CheckSortedDisjointMap, IntoString, SortedDisjointMap, SortedStartsMap,
+};
+
+mod sym_diff_iter;
+pub use sym_diff_iter::SymDiffIter;
+
+mod sym_diff_iter_map;
+pub use sym_diff_iter_map::SymDiffIterMap;
+
+mod union_iter;
+pub use union_iter::UnionIter;
+
+mod union_iter_map;
+pub use union_iter_map::UnionIterMap;
+
+mod unsorted_disjoint;
+pub use crate::unsorted_disjoint::AssumeSortedStarts;
+
+mod unsorted_disjoint_map;
+pub use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
+
+mod values;
+pub use crate::values::Values;
+
+mod uint_plus_one;
+pub use uint_plus_one::UIntPlusOne;
+
 #[cfg(feature = "rog-experimental")]
 mod rog;
-mod sorted_disjoint;
-// use alloc::collections::btree_map;
-// use gen_ops::gen_ops_ex;
-pub use crate::multiway::MultiwayRangeSetBlaze;
-pub use crate::multiway::MultiwayRangeSetBlazeRef;
-pub use intersection_iter_map::IntersectionIterMap;
-mod map_from_iter;
-mod sym_diff_iter;
-mod sym_diff_iter_map;
-pub use map::ValueRef;
-pub use merge::{KMerge, Merge};
-pub use merge_map::{KMergeMap, MergeMap};
-pub use multiway::MultiwaySortedDisjoint;
-pub use multiway_map::MultiwayRangeMapBlaze;
-pub use multiway_map::MultiwayRangeMapBlazeRef;
-pub use multiway_map::MultiwaySortedDisjointMap;
-pub use sym_diff_iter::SymDiffIter;
-pub use sym_diff_iter_map::SymDiffIterMap;
-mod multiway;
-mod multiway_map;
-mod sorted_disjoint_map;
-mod tests_map;
-mod tests_set;
-mod union_iter;
-mod union_iter_map;
-pub(crate) mod unsorted_disjoint;
-pub(crate) mod unsorted_disjoint_map;
-pub use crate::map::RangeMapBlaze;
-pub use crate::sorted_disjoint_map::IntoString;
-pub use crate::unsorted_disjoint::AssumeSortedStarts; // cmk make public???
-pub use dyn_sorted_disjoint::DynSortedDisjoint;
-pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
-mod merge;
-mod merge_map;
-pub use not_iter::NotIter;
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 pub use rog::{Rog, RogsIter};
-pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
-// cmk use sorted_disjoint_map::SortedDisjointMapWithLenSoFar;
-pub use crate::sorted_disjoint_map::CheckSortedDisjointMap;
-pub use sorted_disjoint_map::{SortedDisjointMap, SortedStartsMap};
-// pub use union_iter::UnionIter;
-pub use union_iter::UnionIter;
-pub use union_iter_map::UnionIterMap;
-// use unsorted_disjoint::SortedDisjointWithLenSoFar;
-// use unsorted_disjoint::UnsortedDisjoint;
-// cmk pub use unsorted_disjoint_map::UnsortedDisjointMap;
-// cmk use unsorted_disjoint_map::UnsortedDisjointMap;
 
-// #[doc(hidden)]
-// pub type BitOrMerge<T, L, R> = UnionIter<T, Merge<T, L, R>>;
+// Internal modules
+pub(crate) mod from_slice;
+pub(crate) mod map_from_iter;
+pub(crate) mod tests_map;
+pub(crate) mod tests_set;
 
 // cmk rename to Union...
 #[doc(hidden)]
