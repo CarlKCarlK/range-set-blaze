@@ -1,5 +1,5 @@
-use crate::map::SortedStartsInVec;
 use crate::merge::KMerge;
+use crate::union_iter_map::SortedStartsInVec;
 use crate::unsorted_disjoint::UnsortedDisjoint;
 use crate::{AssumeSortedStarts, Merge, SortedDisjoint, SortedStarts, UnionKMerge};
 use crate::{Integer, UnionMerge};

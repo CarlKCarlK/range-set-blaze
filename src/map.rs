@@ -2,15 +2,12 @@ use crate::iter_map::IntoIterMap;
 use crate::iter_map::IterMap;
 use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter};
 use crate::set::extract_range;
+use crate::sorted_disjoint_map::IntoString;
 use crate::sorted_disjoint_map::SortedDisjointMap;
-use crate::sorted_disjoint_map::{IntoString, Priority};
 use crate::sym_diff_iter_map::SymDiffIterMap;
-use crate::unsorted_disjoint_map::{
-    AssumePrioritySortedStartsMap, SortedDisjointMapWithLenSoFar, UnsortedPriorityDisjointMap,
-};
+use crate::unsorted_disjoint_map::{SortedDisjointMapWithLenSoFar, UnsortedPriorityDisjointMap};
 use crate::values::IntoValues;
 use crate::values::Values;
-use crate::AssumeSortedStarts;
 use crate::IntoKeys;
 use crate::Keys;
 use crate::{CheckSortedDisjoint, Integer, RangeSetBlaze, SortedDisjoint};
@@ -27,16 +24,6 @@ use core::{fmt, mem, panic};
 use gen_ops::gen_ops_ex;
 use num_traits::One;
 use num_traits::Zero;
-use std::vec;
-
-// cmk00 -- hidden/pub/ etc
-#[allow(clippy::module_name_repetitions)]
-#[allow(clippy::redundant_pub_crate)]
-pub(crate) type SortedStartsInVecMap<T, VR> =
-    AssumePrioritySortedStartsMap<T, VR, vec::IntoIter<Priority<T, VR>>>;
-
-#[allow(clippy::redundant_pub_crate)]
-pub(crate) type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
 /// A trait for references to `Eq + Clone` values, used by the [`SortedDisjointMap`] trait.
 ///
@@ -425,7 +412,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(map_iter.next(), Some((2, &"b")));
     /// assert_eq!(map_iter.next_back(), None);
     /// ```
-    #[inline] // cmk should RangeSETBlazes iter be inlined? (look at BTreeSet)
     pub fn iter(&self) -> IterMap<T, &V, RangeValuesIter<'_, T, V>> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
@@ -656,8 +642,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             .map(|(_, end_value)| (end_value.end, &end_value.value))
     }
 
-    // cmk look at HashMap, etc for last related methods to see if when return the value.
-
     /// Create a [`RangeMapBlaze`] from a [`SortedDisjointMap`] iterator.
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
@@ -778,7 +762,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             .is_some_and(|(_, end_value)| key <= end_value.end)
     }
 
-    // cmk might be able to shorten code by combining cases
+    // LATER: might be able to shorten code by combining cases
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
@@ -873,7 +857,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         old
     }
 
-    // cmk also define insert_under
+    // LATER: Think about an entry API with or_insert and or_insert_with
 
     /// Constructs an iterator over a sub-range of elements in the set.
     ///
@@ -913,7 +897,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     where
         R: RangeBounds<T>,
     {
-        // cmk 'range' should be made more efficient (it currently creates a RangeMapBlaze for no good reason)
+        // LATER 'range' could be made more efficient (it currently creates a RangeMapBlaze for no good reason)
         let (start, end) = extract_range(range);
         assert!(
             start <= end,
@@ -921,8 +905,11 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         );
 
         let bounds = CheckSortedDisjoint::new([start..=end]);
-        Self::from_sorted_disjoint_map(self.range_values().map_and_set_intersection(bounds))
-            .into_iter()
+        let range_map_blaze = self
+            .range_values()
+            .map_and_set_intersection(bounds)
+            .into_range_map_blaze();
+        range_map_blaze.into_iter()
     }
 
     /// Adds a range to the set.
@@ -968,38 +955,47 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(map.remove(1), Some("a"));
     /// assert_eq!(map.remove(1), None);
     /// ```
+    #[allow(clippy::missing_panics_doc)]
     pub fn remove(&mut self, key: T) -> Option<V> {
         // The code can have only one mutable reference to self.btree_map.
+
+        // Find that range that might contain the key
         let (start_ref, end_value_mut) = self.btree_map.range_mut(..=key).next_back()?;
-        if end_value_mut.end < key {
+        let end = end_value_mut.end;
+
+        // If the key is not in the range, we're done
+        if end < key {
             return None;
         }
         let start = *start_ref;
-        let end = end_value_mut.end;
-        let value = end_value_mut.value.clone();
-        if start < key {
-            end_value_mut.end = key.sub_one();
-            // special, special case if value == end
-            if key == end {
-                self.len -= <T::SafeLen>::one();
-                return Some(value);
-            }
-        }
+        debug_assert!(start <= key, "Real Assert: start <= key");
 
+        // It's in the range.
         self.len -= <T::SafeLen>::one();
-        if start == key {
-            // unwrap is safe
-            self.btree_map.remove(&start);
-            // cmk should recycle this value
+
+        let value = if start == key {
+            self.btree_map
+                .remove(&start)
+                .expect("Real Assert: There will always be a start")
+                .value
+        } else {
+            debug_assert!(start < key, "Real Assert: start < key");
+            // This range will now end at key-1.
+            end_value_mut.end = key.sub_one();
+            end_value_mut.value.clone()
         };
 
+        // If needed, add a new range after key
         if key < end {
-            let end_value = EndValue {
-                end,
-                value: value.clone(),
-            };
-            self.btree_map.insert(key.add_one(), end_value);
+            self.btree_map.insert(
+                key.add_one(),
+                EndValue {
+                    end,
+                    value: value.clone(),
+                },
+            );
         }
+
         Some(value)
     }
 
@@ -1081,7 +1077,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         }
     }
 
-    #[allow(dead_code)] // cmk
     fn btree_map_len(btree_map: &BTreeMap<T, EndValue<T, V>>) -> T::SafeLen {
         btree_map.iter().fold(
             <T as Integer>::SafeLen::zero(),
@@ -1127,7 +1122,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-    // cmk2 might be able to shorten code by combining cases
+    // LATER might be able to shorten code by combining cases
     // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::cognitive_complexity)]
@@ -1228,10 +1223,10 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             // different value, so must trim the before and then insert the new
             // BBB
             //  aaaa...
-            if end_before >= start {
+            if start <= end_before {
                 self.len -= T::safe_len(&(start..=end_before));
                 debug_assert!(start_before <= start.sub_one()); // real assert
-                end_value_before.end = start.sub_one(); // cmk overflow danger?
+                end_value_before.end = start.sub_one(); // safe because !same_start
             }
             self.internal_add2(&range, value);
             return;
@@ -2325,6 +2320,7 @@ mod tests {
     use alloc::string::ToString;
     use core::ops::Bound::Included;
     use std::println;
+    use std::vec;
 
     use wasm_bindgen_test::*;
     wasm_bindgen_test_configure!(run_in_browser);

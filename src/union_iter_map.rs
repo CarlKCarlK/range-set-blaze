@@ -1,16 +1,21 @@
 use crate::map::ValueRef;
 use crate::merge_map::KMergeMap;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
-use crate::{MergeMap, SortedDisjointMap, UnionKMergeMap, UnionMergeMap};
+use crate::{AssumeSortedStarts, MergeMap, SortedDisjointMap, UnionKMergeMap, UnionMergeMap};
 use alloc::{collections::BinaryHeap, vec};
 use core::cmp::min;
 use core::iter::FusedIterator;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
 
+use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
 use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
 use crate::Integer;
-use crate::{map::SortedStartsInVecMap, unsorted_disjoint_map::AssumePrioritySortedStartsMap};
+
+type SortedStartsInVecMap<T, VR> =
+    AssumePrioritySortedStartsMap<T, VR, vec::IntoIter<Priority<T, VR>>>;
+#[allow(clippy::redundant_pub_crate)]
+pub(crate) type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
 /// This `struct` is created by the [`union`] method on [`SortedDisjointMap`]. See [`union`]'s
 /// documentation for more.
