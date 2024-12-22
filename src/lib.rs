@@ -53,6 +53,7 @@ mod intersection_iter_map;
 mod iter_map;
 mod keys;
 mod map;
+pub use crate::keys::{IntoKeys, Keys};
 mod ranges_iter;
 mod set;
 mod values;
@@ -66,6 +67,7 @@ pub use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesI
 pub use crate::ranges_iter::{IntoRangesIter, RangesIter};
 pub use crate::set::demo_read_ranges_from_file;
 pub use crate::set::{IntoIter, Iter, RangeSetBlaze};
+pub use crate::values::Values;
 
 mod not_iter;
 pub mod prelude;

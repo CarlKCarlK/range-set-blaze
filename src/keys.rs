@@ -12,7 +12,8 @@ use crate::{
 /// This `struct` is created by the [`keys`] method on [`RangeMapBlaze`]. See its
 /// documentation for more.
 ///
-/// [`keys`]: RangeMapBlaze::keys
+/// [`keys`]: crate::RangeMapBlaze::keys
+/// [`RangeMapBlaze`]: crate::RangeMapBlaze
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
 pub struct Keys<T, VR, I>
@@ -30,7 +31,7 @@ where
     VR: ValueRef,
     I: SortedDisjointMap<T, VR>,
 {
-    pub const fn new(iter: I) -> Self {
+    pub(crate) const fn new(iter: I) -> Self {
         Self {
             iter: IterMap::new(iter),
         }
@@ -78,7 +79,8 @@ where
 /// This `struct` is created by the [`into_keys`] method on [`RangeMapBlaze`]. See its
 /// documentation for more.
 ///
-/// [`into_keys`]: RangeMapBlaze::into_keys
+/// [`into_keys`]: crate::RangeMapBlaze::into_keys
+/// [`RangeMapBlaze`]: crate::RangeMapBlaze
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug)]
 pub struct IntoKeys<T, V>

@@ -67,7 +67,7 @@ where
 {
     // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIter`] from zero or more [`SortedStarts`] iterators. See [`UnionIter`] for more details and examples.
-    pub const fn new(iter: I) -> Self {
+    pub(crate) const fn new(iter: I) -> Self {
         Self {
             iter,
             option_range: None,
@@ -81,12 +81,8 @@ where
     L: SortedDisjoint<T>,
     R: SortedDisjoint<T>,
 {
-    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`crate::sym_diff_iter::SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`crate::sym_diff_iter::SymDiffIter`] for more details and examples.
-    ///
-    /// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
     #[inline]
-    pub fn new2(left: L, right: R) -> Self {
+    pub(crate) fn new2(left: L, right: R) -> Self {
         let iter: Merge<T, L, R> = Merge::new(left, right);
         Self::new(iter)
     }

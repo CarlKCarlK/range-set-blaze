@@ -1,8 +1,6 @@
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::iter_map::IntoIterMap;
 use crate::iter_map::IterMap;
-use crate::keys::IntoKeys;
-use crate::keys::Keys;
 use crate::range_values::{
     IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter, RangeValuesToRangesIter,
 };
@@ -15,6 +13,8 @@ use crate::unsorted_disjoint_map::{
 };
 use crate::values::IntoValues;
 use crate::values::Values;
+use crate::IntoKeys;
+use crate::Keys;
 use crate::{
     AssumeSortedStarts, CheckSortedDisjoint, Integer, NotIter, RangeSetBlaze, SortedDisjoint,
 };

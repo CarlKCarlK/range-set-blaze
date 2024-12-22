@@ -17,6 +17,8 @@ use crate::IntersectionIterMap;
 use crate::IntoIterMap;
 use crate::IntoRangeValuesIter;
 use crate::IterMap;
+use crate::KMergeMap;
+use crate::MergeMap;
 use crate::RangeMapBlaze;
 use crate::RangeValuesIter;
 use crate::RangesIter;
@@ -749,3 +751,16 @@ const fn is_like_check_sorted_disjoint_map<
 }
 
 const fn is_like_dyn_sorted_disjoint_map<T: IntoIterator + Unpin + Any>() {}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_merge_map() {
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
+    let b = RangeMapBlaze::from_iter([(1..=2, "a"), (13..=14, "b")]).into_range_values();
+    assert_eq!(MergeMap::new(a, b).size_hint(), (0, None));
+
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
+    let b = RangeMapBlaze::from_iter([(1..=2, "a"), (13..=14, "b")]).into_range_values();
+    let c = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
+    assert_eq!(KMergeMap::new([a, b, c]).size_hint(), (3, None));
+}

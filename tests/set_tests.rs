@@ -1,6 +1,5 @@
 #![cfg(test)]
-use range_set_blaze::Merge;
-use range_set_blaze::{AssumeSortedStarts, KMerge};
+use range_set_blaze::AssumeSortedStarts;
 use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -482,7 +481,7 @@ fn complement() -> Result<(), Box<dyn std::error::Error>> {
     let c = !not_a.ranges();
     let d = a0.ranges() | a1.ranges();
 
-    let f = UnionIter::new2(a0.ranges(), a1.ranges());
+    let f = a0.ranges().union(a1.ranges());
     let not_b = !b;
     let not_c = !c;
     let not_d = !d;
@@ -515,27 +514,6 @@ fn union_test() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 #[wasm_bindgen_test]
-fn sub1() -> Result<(), Box<dyn std::error::Error>> {
-    let a0 = RangeSetBlaze::from_iter([1..=6]);
-    let a1 = RangeSetBlaze::from_iter([8..=9]);
-    let a2 = RangeSetBlaze::from_iter([11..=15]);
-    let a01 = &a0 | &a1;
-    let not_a01 = !&a01;
-    let a = &a01 - &a2;
-    let b = a01.ranges() - a2.ranges();
-    let c = !not_a01.ranges() - a2.ranges();
-    let d = (a0.ranges() | a1.ranges()) - a2.ranges();
-    let f = UnionIter::new(a01.ranges()) - UnionIter::new(a2.ranges());
-    assert!(a.ranges().equal(b));
-    assert!(a.ranges().equal(c));
-    assert!(a.ranges().equal(d));
-    assert!(a.ranges().equal(f));
-
-    Ok(())
-}
-
-#[test]
-#[wasm_bindgen_test]
 fn xor() -> Result<(), Box<dyn std::error::Error>> {
     let a0 = RangeSetBlaze::from_iter([1..=6]);
     let a1 = RangeSetBlaze::from_iter([8..=9]);
@@ -551,26 +529,6 @@ fn xor() -> Result<(), Box<dyn std::error::Error>> {
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
-    Ok(())
-}
-
-#[test]
-#[wasm_bindgen_test]
-fn bitand() -> Result<(), Box<dyn std::error::Error>> {
-    let a0 = RangeSetBlaze::from_iter([1..=6]);
-    let a1 = RangeSetBlaze::from_iter([8..=9]);
-    let a2 = RangeSetBlaze::from_iter([11..=15]);
-    let a01 = &a0 | &a1;
-    let not_a01 = !&a01;
-    let a = &a01 & &a2;
-    let b = a01.ranges() & a2.ranges();
-    let c = !not_a01.ranges() & a2.ranges();
-    let d = (a0.ranges() | a1.ranges()) & a2.ranges();
-    let f = UnionIter::new(a01.ranges()) & UnionIter::new(a2.ranges());
-    assert!(a.ranges().equal(b));
-    assert!(a.ranges().equal(c));
-    assert!(a.ranges().equal(d));
-    assert!(a.ranges().equal(f));
     Ok(())
 }
 
@@ -1269,7 +1227,7 @@ fn dyn_sorted_disjoint_example() {
 #[wasm_bindgen_test]
 fn not_iter_example() {
     let a = CheckSortedDisjoint::new([1u8..=2, 5..=100]);
-    let b = NotIter::new(a);
+    let b = !a;
     assert_eq!(b.into_string(), "0..=0, 3..=4, 101..=255");
 
     // Or, equivalently:
@@ -2490,7 +2448,7 @@ fn lib_coverage_6() {
 #[wasm_bindgen_test]
 fn not_iter_coverage_0() {
     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-    let n = NotIter::new(a);
+    let n = !a;
     let p = n.clone();
     let m = p.clone();
     assert!(n.equal(m));
@@ -2827,7 +2785,7 @@ fn set_random_symmetric_difference() {
             set1.insert(key);
             print!("r{key} ");
 
-            let symmetric_difference = SymDiffIter::new2(set0.ranges(), set1.ranges());
+            let symmetric_difference = set0.ranges().symmetric_difference(set1.ranges());
 
             // println!(
             //     "left ^ right = {}",
@@ -2855,7 +2813,9 @@ fn set_random_symmetric_difference() {
                             println!();
                             println!("left: {set0}");
                             println!("right: {set1}");
-                            let s_d = SymDiffIter::new2(set0.ranges(), set1.ranges())
+                            let s_d = set0
+                                .ranges()
+                                .symmetric_difference(set1.ranges())
                                 .into_range_set_blaze();
                             panic!("left ^ right = {s_d}");
                         }
@@ -2873,7 +2833,10 @@ fn set_random_symmetric_difference() {
                 println!();
                 println!("left: {set0}");
                 println!("right: {set1}");
-                let s_d = SymDiffIter::new2(set0.ranges(), set1.ranges()).into_range_set_blaze();
+                let s_d = set0
+                    .ranges()
+                    .symmetric_difference(set1.ranges())
+                    .into_range_set_blaze();
                 println!("left ^ right = {s_d}");
                 panic!("expected_keys should be empty: {expected_map}");
             }
@@ -2888,7 +2851,7 @@ fn set_sym_diff_repro1() {
 
     let l = RangeSetBlaze::from_iter([157..=158]);
     let r = RangeSetBlaze::from_iter([158..=158]);
-    let iter = SymDiffIter::new2(l.ranges(), r.ranges());
+    let iter = l.ranges().symmetric_difference(r.ranges());
     let v = iter.collect::<Vec<_>>();
     println!("{v:?}");
 }
@@ -2929,20 +2892,6 @@ fn test_into_ranges_iter() {
     assert_eq!(a.next_back(), Some(1..=2));
     assert_eq!(a.len(), 0);
     assert_eq!(a.next_back(), None);
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn test_merge() {
-    let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
-    let b = RangeSetBlaze::from_iter([1..=2, 5..=6]);
-    let m = Merge::new(a.ranges(), b.ranges());
-    // Just sorts by start, doesn't merge ranges.
-    assert_eq!(m.size_hint(), (4, Some(4)));
-
-    let c = RangeSetBlaze::from_iter([1..=2, 5..=100]);
-    let m = KMerge::new([a.ranges(), b.ranges(), c.ranges()]);
-    assert_eq!(m.size_hint(), (6, Some(6)));
 }
 
 #[test]

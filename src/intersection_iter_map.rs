@@ -7,11 +7,12 @@ use core::{
 use crate::Integer;
 use crate::{map::ValueRef, SortedDisjoint, SortedDisjointMap};
 
-/// This `struct` is created by the [`intersection`] method on [`SortedDisjointMap`]. See [`intersection`]'s
-/// documentation for more.
+/// This `struct` is created by the [`intersection`] and [`map_and_set_intersection`] methods on [`SortedDisjointMap`].
+/// See the methods' documentation for more.
 ///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap
 /// [`intersection`]: crate::SortedDisjointMap::intersection
+/// [`map_and_set_intersection`]: crate::SortedDisjointMap::map_and_set_intersection
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
 pub struct IntersectionIterMap<T, VR, IM, IS>
@@ -34,12 +35,7 @@ where
     IM: SortedDisjointMap<T, VR>,
     IS: SortedDisjoint<T>,
 {
-    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`IntersectionIterMap`] from zero or more [`SortedStartsMap`] iterators. See [`IntersectionIterMap`] for more details and examples.
-    ///
-    /// [`SortedStartsMap`]: crate::sorted_disjoint_map::SortedStartsMap
-    // cmk #[allow(dead_code)]
-    pub const fn new(iter_map: IM, iter_set: IS) -> Self {
+    pub(crate) const fn new(iter_map: IM, iter_set: IS) -> Self {
         Self {
             iter_left: iter_map,
             iter_right: iter_set,

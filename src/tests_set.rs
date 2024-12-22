@@ -754,3 +754,57 @@ const fn is_like_check_sorted_disjoint<
 }
 
 const fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_merge() {
+    let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    let b = RangeSetBlaze::from_iter([1..=2, 5..=6]);
+    let m = Merge::new(a.ranges(), b.ranges());
+    // Just sorts by start, doesn't merge ranges.
+    assert_eq!(m.size_hint(), (4, Some(4)));
+
+    let c = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    let m = KMerge::new([a.ranges(), b.ranges(), c.ranges()]);
+    assert_eq!(m.size_hint(), (6, Some(6)));
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::many_single_char_names)]
+fn sub1() {
+    let a0 = RangeSetBlaze::from_iter([1..=6]);
+    let a1 = RangeSetBlaze::from_iter([8..=9]);
+    let a2 = RangeSetBlaze::from_iter([11..=15]);
+    let a01 = &a0 | &a1;
+    let not_a01 = !&a01;
+    let a = &a01 - &a2;
+    let b = a01.ranges() - a2.ranges();
+    let c = !not_a01.ranges() - a2.ranges();
+    let d = (a0.ranges() | a1.ranges()) - a2.ranges();
+    let f = UnionIter::new(a01.ranges()) - UnionIter::new(a2.ranges());
+    assert!(a.ranges().equal(b));
+    assert!(a.ranges().equal(c));
+    assert!(a.ranges().equal(d));
+    assert!(a.ranges().equal(f));
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::many_single_char_names)]
+fn bitand() {
+    let a0 = RangeSetBlaze::from_iter([1..=6]);
+    let a1 = RangeSetBlaze::from_iter([8..=9]);
+    let a2 = RangeSetBlaze::from_iter([11..=15]);
+    let a01 = &a0 | &a1;
+    let not_a01 = !&a01;
+    let a = &a01 & &a2;
+    let b = a01.ranges() & a2.ranges();
+    let c = !not_a01.ranges() & a2.ranges();
+    let d = (a0.ranges() | a1.ranges()) & a2.ranges();
+    let f = UnionIter::new(a01.ranges()) & UnionIter::new(a2.ranges());
+    assert!(a.ranges().equal(b));
+    assert!(a.ranges().equal(c));
+    assert!(a.ranges().equal(d));
+    assert!(a.ranges().equal(f));
+}

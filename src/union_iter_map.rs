@@ -141,21 +141,8 @@ where
     VR: ValueRef,
     I: PrioritySortedStartsMap<T, VR>,
 {
-    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`UnionIterMap`] from zero or more cmk iterators.
-    /// # Examples
-    /// ```
-    /// use range_set_blaze::{CheckSortedDisjointMap, IntoString, KMergeMap, UnionIterMap};
-    ///
-    /// let a = CheckSortedDisjointMap::new(vec![(1..=2, &"a"), (5..=100, &"a")]);
-    /// let b = CheckSortedDisjointMap::new(vec![(2..=6, &"b")]);
-    /// let c = CheckSortedDisjointMap::new(vec![(2..=2, &"c"), (6..=200, &"c")]);
-    /// let union = UnionIterMap::new(KMergeMap::new([a, b, c]));
-    ///
-    /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
-    /// ```
     #[inline]
-    pub fn new(mut iter: I) -> Self {
+    pub(crate) fn new(mut iter: I) -> Self {
         let item = iter.next();
         Self {
             iter,
@@ -174,21 +161,8 @@ where
     L: SortedDisjointMap<T, VR>,
     R: SortedDisjointMap<T, VR>,
 {
-    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new cmk from zero or more [`SortedDisjointMap`] iterators.
-    ///
-    /// # Examples
-    /// ```
-    /// use range_set_blaze::{CheckSortedDisjointMap, IntoString, KMergeMap, UnionIterMap};
-    ///
-    /// let a = CheckSortedDisjointMap::new(vec![(1..=2, &"a"), (5..=100, &"a")]);
-    /// let b = CheckSortedDisjointMap::new(vec![(2..=6, &"b")]);
-    /// let union = UnionIterMap::new2(a, b);
-    ///
-    /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"#);
-    /// ```
     #[inline]
-    pub fn new2(left: L, right: R) -> Self {
+    pub(crate) fn new2(left: L, right: R) -> Self {
         let iter = MergeMap::new(left, right);
         Self::new(iter)
     }

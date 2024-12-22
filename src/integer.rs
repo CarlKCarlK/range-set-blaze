@@ -10,7 +10,7 @@ use num_traits::ops::overflowing::OverflowingSub;
 
 #[cfg(feature = "from_slice")]
 #[allow(clippy::redundant_pub_crate)]
-pub(crate) const LANES: usize = 16; // cmk make private?
+pub(crate) const LANES: usize = 16;
 
 /// Represents elements that can be used within [`RangeSetBlaze`] and as keys in [`RangeMapBlaze`].
 ///
@@ -1057,7 +1057,7 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[allow(clippy::cognitive_complexity)]
     fn test_char() {
-        // This loops over 1 million characters, so it's a bit slow cmk is that OK?
+        // This loops over 1 million characters, but it seems fast enough.
         // Define the universe as the complement of an empty RangeSetBlaze
         let universe = !RangeSetBlaze::<char>::default();
 

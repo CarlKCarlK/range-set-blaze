@@ -163,10 +163,8 @@ where
         Some(Some(gather_start..=gather_end))
     }
 
-    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators.
-    /// See [`SymDiffIter`] for more details and examples.
     #[inline]
-    pub fn new(iter: I) -> Self {
+    pub(crate) fn new(iter: I) -> Self {
         Self {
             iter,
             start_or_min_value: T::min_value(),
@@ -183,12 +181,8 @@ where
     L: SortedDisjoint<T>,
     R: SortedDisjoint<T>,
 {
-    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
-    /// Creates a new [`SymDiffIter`] from zero or more [`SortedDisjoint`] iterators. See [`SymDiffIter`] for more details and examples.
-    ///
-    /// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
     #[inline]
-    pub fn new2(left: L, right: R) -> Self {
+    pub(crate) fn new2(left: L, right: R) -> Self {
         let iter = Merge::new(left, right);
         Self::new(iter)
     }

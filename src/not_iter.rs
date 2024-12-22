@@ -22,11 +22,8 @@ where
     T: Integer,
     I: SortedDisjoint<T>,
 {
-    /// Create a new [`NotIter`] from a [`SortedDisjoint`] iterator. See [`NotIter`] for an example.
-    ///
-    /// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
     #[inline]
-    pub fn new<J>(iter: J) -> Self
+    pub(crate) fn new<J>(iter: J) -> Self
     where
         J: IntoIterator<Item = RangeInclusive<T>, IntoIter = I>,
     {

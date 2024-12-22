@@ -16,7 +16,7 @@ use quickcheck_macros::quickcheck;
 use rand::seq::SliceRandom;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use range_set_blaze::{
-    prelude::*, IntersectionIterMap, IntoRangeValuesIter, KMergeMap, MergeMap, RangeValuesIter,
+    prelude::*, IntersectionIterMap, IntoRangeValuesIter, KMergeMap, RangeValuesIter,
     SymDiffIterMap, UnionIterMap, ValueRef,
 };
 use std::borrow::Borrow;
@@ -2663,7 +2663,7 @@ fn map_random_intersection() {
             set0.insert(element);
             map0.insert(key, *value);
 
-            let intersection = IntersectionIterMap::new(map0.range_values(), set0.ranges());
+            let intersection = map0.range_values().map_and_set_intersection(set0.ranges());
 
             let mut expected_keys = map0
                 .ranges()
@@ -2703,7 +2703,9 @@ fn map_tiny_symmetric_difference0() {
     map0.insert(85, 'c');
     let mut map1 = RangeMapBlaze::new();
     map1.insert(85, 'a');
-    let symmetric_difference = SymDiffIterMap::new2(map0.range_values(), map1.range_values());
+    let symmetric_difference = map0
+        .range_values()
+        .symmetric_difference(map1.range_values());
     assert_eq!(symmetric_difference.into_string(), "(84..=84, 'c')");
 }
 
@@ -2719,7 +2721,9 @@ fn map_tiny_symmetric_difference1() {
     let mut map1 = RangeMapBlaze::new();
     map1.insert(187, 'b');
     map1.insert(189, 'c');
-    let symmetric_difference = SymDiffIterMap::new2(map0.range_values(), map1.range_values());
+    let symmetric_difference = map0
+        .range_values()
+        .symmetric_difference(map1.range_values());
     assert_eq!(symmetric_difference.into_string(), "(188..=188, 'a')");
 }
 
@@ -2745,8 +2749,9 @@ fn map_random_symmetric_difference() {
             map1.insert(key, *value);
             print!("r{key}{value} ");
 
-            let symmetric_difference =
-                SymDiffIterMap::new2(map0.range_values(), map1.range_values());
+            let symmetric_difference = map0
+                .range_values()
+                .symmetric_difference(map1.range_values());
 
             // println!(
             //     "left ^ right = {}",
@@ -2769,9 +2774,10 @@ fn map_random_symmetric_difference() {
                             println!();
                             println!("left: {}", map0);
                             println!("right: {}", map1);
-                            let s_d =
-                                SymDiffIterMap::new2(map0.range_values(), map1.range_values())
-                                    .into_range_map_blaze();
+                            let s_d = map0
+                                .range_values()
+                                .symmetric_difference(map1.range_values())
+                                .into_range_map_blaze();
                             panic!("left ^ right = {s_d}");
                         }
                         (Some(v0), None) => {
@@ -2792,7 +2798,9 @@ fn map_random_symmetric_difference() {
                 println!();
                 println!("left: {}", map0);
                 println!("right: {}", map1);
-                let s_d = SymDiffIterMap::new2(map0.range_values(), map1.range_values())
+                let s_d = map0
+                    .range_values()
+                    .symmetric_difference(map1.range_values())
                     .into_range_map_blaze();
                 println!("left ^ right = {s_d}");
                 panic!("expected_keys should be empty: {expected_keys}");
@@ -5317,18 +5325,6 @@ fn test_into_map_into_ranges() {
     let mut a = r.ranges();
     assert_eq!(a.size_hint(), (0, Some(2)));
     assert_eq!(a.next(), Some(1..=4));
-}
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn test_merge_map() {
-    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
-    let b = RangeMapBlaze::from_iter([(1..=2, "a"), (13..=14, "b")]).into_range_values();
-    assert_eq!(MergeMap::new(a, b).size_hint(), (0, None));
-
-    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
-    let b = RangeMapBlaze::from_iter([(1..=2, "a"), (13..=14, "b")]).into_range_values();
-    let c = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
-    assert_eq!(KMergeMap::new([a, b, c]).size_hint(), (3, None));
 }
 
 #[test]
