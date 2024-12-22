@@ -1,11 +1,9 @@
 #![cfg(test)]
 use range_set_blaze::Merge;
-use range_set_blaze::{AssumeSortedStarts, IntoIter, IntoRangesIter, Iter, KMerge, RangesIter};
+use range_set_blaze::{AssumeSortedStarts, KMerge};
 use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);
 
-use core::any::Any;
-use core::fmt;
 // use core::panic::RefUnwindSafe;
 // use core::panic::UnwindSafe;
 // use crate::ranges_iter::RangesIter;
@@ -2436,124 +2434,6 @@ fn understand_into_iter() {
     // let len = rsi.len();
 }
 
-// https://stackoverflow.com/questions/21747136/how-do-i-print-in-rust-the-type-of-a-variable/58119924#58119924
-// fn print_type_of<T>(_: &T) {
-//     println!("{}", std::any::type_name::<T>())
-// }
-
-// cmk0
-// #[test]
-// fn bit_or_iter() {
-//     let i = UnionIter::from([1, 3, 4, 2, 2, 43, -1, 4, 22]);
-//     let j = UnionIter::from([11, 3, 4, 42, 2, 43, 23, 2, 543]);
-
-//     let _not_i = !i.clone();
-//     let k = i - j;
-//     assert_eq!(k.into_string(), "-1..=-1, 1..=1, 22..=22");
-// }
-
-// cmk0
-// #[test]
-// fn empty() {
-//     let universe: UnionIter<u8, _> = [0..=255].into_iter().collect();
-//     let arr: [u8; 0] = [];
-//     let a0 = RangeSetBlaze::<u8>::from_iter(arr);
-//     assert!(!(a0.ranges()).equal(universe.clone()));
-//     assert!((!a0).ranges().equal(universe));
-//     let _a0 = RangeSetBlaze::from_iter([0..=0; 0]);
-//     let _a = RangeSetBlaze::<i32>::new();
-
-//     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-//     let a = a_iter.collect::<RangeSetBlaze<i32>>();
-//     let arr: [i32; 0] = [];
-//     let b = RangeSetBlaze::from_iter(arr);
-//     let mut c3 = a.clone();
-//     let mut c5 = a.clone();
-
-//     let c0 = (&a).bitor(&b);
-//     let c1a = &a | &b;
-//     let c1b = &a | b.clone();
-//     let c1c = a.clone() | &b;
-//     let c1d = a.clone() | b.clone();
-//     let c2: RangeSetBlaze<_> = (a.ranges() | b.ranges()).into_range_set_blaze();
-//     c3.append(&mut b.clone());
-//     c5.extend(b);
-
-//     let answer = RangeSetBlaze::from_iter(arr);
-//     assert_eq!(&c0, &answer);
-//     assert_eq!(&c1a, &answer);
-//     assert_eq!(&c1b, &answer);
-//     assert_eq!(&c1c, &answer);
-//     assert_eq!(&c1d, &answer);
-//     assert_eq!(&c2, &answer);
-//     assert_eq!(&c3, &answer);
-//     assert_eq!(&c5, &answer);
-
-//     let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
-//     let a = a_iter.collect::<RangeSetBlaze<i32>>();
-//     let b = RangeSetBlaze::from_iter([0i32; 0]);
-
-//     let c0 = a.ranges() | b.ranges();
-//     let c1 = [a.ranges(), b.ranges()].union();
-//     let c_list2: [RangesIter<i32>; 0] = [];
-//     let c2 = c_list2.clone().union();
-//     let c3 = union_dyn!(a.ranges(), b.ranges());
-//     let c4 = c_list2.map(DynSortedDisjoint::new).union();
-
-//     let answer = RangeSetBlaze::from_iter(arr);
-//     assert!(c0.equal(answer.ranges()));
-//     assert!(c1.equal(answer.ranges()));
-//     assert!(c2.equal(answer.ranges()));
-//     assert!(c3.equal(answer.ranges()));
-//     assert!(c4.equal(answer.ranges()));
-
-//     let c0 = !(a.ranges() & b.ranges());
-//     let c1 = ![a.ranges(), b.ranges()].intersection();
-//     let c_list2: [RangesIter<i32>; 0] = [];
-//     let c2 = !!c_list2.clone().intersection();
-//     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
-//     let c4 = !!c_list2.map(DynSortedDisjoint::new).intersection();
-
-//     let answer = !RangeSetBlaze::from_iter([0i32; 0]);
-//     assert!(c0.equal(answer.ranges()));
-//     assert!(c1.equal(answer.ranges()));
-//     assert!(c2.equal(answer.ranges()));
-//     assert!(c3.equal(answer.ranges()));
-//     assert!(c4.equal(answer.ranges()));
-// }
-
-// // Can't implement fmt::Display fmt must take ownership
-// impl<T, I> UnsortedDisjoint<T, I>
-// where
-//     T: Integer,
-//     I: Iterator<Item = RangeInclusive<T>>,
-// {
-//     #[allow(clippy::inherent_to_string)]
-//     #[allow(clippy::wrong_self_convention)]
-//     pub(crate) fn to_string(self) -> String {
-//         self.map(|range| format!("{range:?}")).join(", ")
-//     }
-// }
-
-// !!!cmk resort this test ???
-// #[allow(clippy::reversed_empty_ranges)]
-// #[test]
-// fn private_constructor() {
-//     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
-//     // println!("{}", unsorted_disjoint.fmt());
-//     assert_eq!(unsorted_disjoint.into_string(), "1..=6, -12..=-10, 3..=3");
-
-//     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
-//     let union_iter = UnionIter::from(unsorted_disjoint);
-//     // println!("{}", union_iter.fmt());
-//     assert_eq!(union_iter.into_string(), "-12..=-10, 1..=6");
-
-//     let union_iter: UnionIter<_, _> = [5, 6, 1, 2, 3, 4, 5, -12, -11, -10, 3]
-//         .into_iter()
-//         .collect();
-//     assert_eq!(union_iter.into_string(), "-12..=-10, 1..=6");
-// }
-
 #[test]
 #[wasm_bindgen_test]
 #[allow(clippy::cognitive_complexity, clippy::float_cmp)]
@@ -2606,31 +2486,6 @@ fn lib_coverage_6() {
     }};
 }
 
-// cmk0
-// #[test]
-// fn merge_coverage_0() {
-//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-//     let b = CheckSortedDisjoint::new([2..=6]);
-//     let m = Merge::new(a, b);
-//     let n = m.clone();
-//     let p = n.clone();
-//     let union1 = UnionIter::new(m);
-//     let union2 = UnionIter::new(n);
-//     assert!(union1.equal(union2));
-//     assert!(format!("{p:?}").starts_with("Merge"));
-
-//     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
-//     let b = CheckSortedDisjoint::new([2..=6]);
-//     let c = CheckSortedDisjoint::new([-1..=-1]);
-//     let m = KMerge::new([a, b, c]);
-//     let n = m.clone();
-//     let p = n.clone();
-//     let union1 = UnionIter::new(m);
-//     let union2 = UnionIter::new(n);
-//     assert!(union1.equal(union2));
-//     assert!(format!("{p:?}").starts_with("KMerge"));
-// }
-
 #[test]
 #[wasm_bindgen_test]
 fn not_iter_coverage_0() {
@@ -2641,51 +2496,6 @@ fn not_iter_coverage_0() {
     assert!(n.equal(m));
     assert!(format!("{p:?}").starts_with("NotIter"));
 }
-
-// cmk0 get working again
-// #[test]
-// fn ranges_coverage_0() {
-//     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
-//     let r = a.ranges();
-//     // let p = r.as_ref();
-//     // assert!(format!("{p:?}").starts_with("Ranges"));
-//     assert_eq!(r.len(), 2);
-
-//     let r2 = a.into_ranges();
-//     let n2 = !!r2;
-//     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
-//     assert!(n2.equal(a.ranges()));
-//     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
-//     let b = a.into_ranges();
-//     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
-//     let c = a.into_ranges();
-//     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
-//     assert!((b | c).equal(a.ranges()));
-
-//     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges();
-//     let b = RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges();
-//     assert!((a - b).is_empty());
-
-//     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges();
-//     let b = RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges();
-//     assert!((a ^ b).is_empty());
-
-//     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges();
-//     let b = RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges();
-//     assert!((a & b).equal(RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges()));
-
-//     assert_eq!(
-//         RangeSetBlaze::from_iter([1..=2, 5..=100])
-//             .into_ranges()
-//             .len(),
-//         2
-//     );
-//     assert!(format!(
-//         "{:?}",
-//         RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges()
-//     )
-//     .starts_with("IntoRanges"));
-// }
 
 #[test]
 #[wasm_bindgen_test]
@@ -2956,44 +2766,6 @@ fn symmetric_difference_size_hint(a: Reference, b: Reference) -> bool {
     check_size_hint((a, b), expected, actual)
 }
 
-// cmk0 get working again
-// #[should_panic]
-// #[test]
-// fn demo_read() {
-//     let _a: RangeSetBlaze<i32> = demo_read_ranges_from_file("tests/no_such_file").unwrap();
-// }
-
-// cmk0 get working again
-// #[test]
-// fn double_end_iter() {
-//     let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
-
-//     assert_eq!(
-//         a.iter().rev().collect::<Vec<usize>>(),
-//         vec![25, 24, 23, 22, 21, 20, 12, 10, 9, 8, 7, 6, 5, 4, 3]
-//     );
-
-//     {
-//         let mut iter = a.iter();
-
-//         assert_eq!(iter.next(), Some(3));
-//         assert_eq!(iter.next_back(), Some(25));
-//         assert_eq!(iter.next(), Some(4));
-//         assert_eq!(iter.next_back(), Some(24));
-//         assert_eq!(iter.next_back(), Some(23));
-//         assert_eq!(iter.next_back(), Some(22));
-//         assert_eq!(iter.next_back(), Some(21));
-//         assert_eq!(iter.next_back(), Some(20));
-
-//         // Next interval
-//         assert_eq!(iter.next_back(), Some(12));
-
-//         // Next interval, now same interval as front of the iterator
-//         assert_eq!(iter.next_back(), Some(10));
-//         assert_eq!(iter.next(), Some(5));
-//     }
-// }
-
 #[test]
 #[wasm_bindgen_test]
 fn double_end_into_iter() {
@@ -3120,133 +2892,6 @@ fn set_sym_diff_repro1() {
     let v = iter.collect::<Vec<_>>();
     println!("{v:?}");
 }
-
-// !!!cmk0 test traits of other iterators
-#[test]
-fn check_traits() {
-    // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
-    type ARangeSetBlaze = RangeSetBlaze<i32>;
-    is_sssu::<ARangeSetBlaze>();
-    is_ddcppdheo::<ARangeSetBlaze>();
-    is_like_btreeset::<ARangeSetBlaze>();
-
-    type ARangesIter<'a> = RangesIter<'a, i32>;
-    is_sssu::<ARangesIter>();
-    is_like_btreeset_iter::<ARangesIter>();
-
-    type AIter<'a> = Iter<i32, ARangesIter<'a>>;
-    is_sssu::<AIter>();
-    is_like_btreeset_iter::<AIter>();
-
-    is_sssu::<IntoIter<i32>>();
-    is_like_btreeset_into_iter::<IntoIter<i32>>();
-
-    // cmk
-    // type AMerge<'a> = Merge<i32, ARangesIter<'a>, ARangesIter<'a>>;
-    // is_sssu::<AMerge>();
-    // is_like_btreeset_iter::<AMerge>();
-
-    let _a = RangeSetBlaze::from_iter([1..=2, 3..=4]);
-    // println!("{:?}", a.ranges()); // cmk get this working again?
-
-    type AKMerge<'a> = crate::KMerge<i32, ARangesIter<'a>>;
-    is_sssu::<AKMerge>();
-    is_like_btreeset_iter::<AKMerge>();
-
-    type ANotIter<'a> = crate::NotIter<i32, ARangesIter<'a>>;
-    is_sssu::<ANotIter>();
-    is_like_btreeset_iter::<ANotIter>();
-
-    type AIntoRangesIter<'a> = IntoRangesIter<i32>;
-    is_sssu::<AIntoRangesIter>();
-    is_like_btreeset_into_iter::<AIntoRangesIter>();
-
-    type ACheckSortedDisjoint<'a> = CheckSortedDisjoint<i32, ARangesIter<'a>>;
-    is_sssu::<ACheckSortedDisjoint>();
-    type BCheckSortedDisjoint =
-        CheckSortedDisjoint<i32, std::array::IntoIter<RangeInclusive<i32>, 0>>;
-    is_like_check_sorted_disjoint::<BCheckSortedDisjoint>();
-
-    type ADynSortedDisjoint<'a> = DynSortedDisjoint<'a, i32>;
-    is_like_dyn_sorted_disjoint::<ADynSortedDisjoint>();
-
-    type AUnionIter<'a> = UnionIter<i32, ARangesIter<'a>>;
-    is_sssu::<AUnionIter>();
-    is_like_btreeset_iter::<AUnionIter>();
-
-    type AAssumeSortedStarts<'a> = AssumeSortedStarts<i32, ARangesIter<'a>>;
-    is_sssu::<AAssumeSortedStarts>();
-    is_like_btreeset_iter::<AAssumeSortedStarts>();
-}
-
-const fn is_ddcppdheo<
-    T: std::fmt::Debug
-        + fmt::Display
-        + Clone
-        + PartialEq
-        + PartialOrd
-        + Default
-        + std::hash::Hash
-        + Eq
-        + Ord
-        + Send
-        + Sync,
->() {
-}
-
-const fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
-const fn is_like_btreeset_iter<
-    T: Clone + std::fmt::Debug + FusedIterator + Iterator, // cmk DoubleEndedIterator  + ExactSizeIterator,
->() {
-}
-
-// cmk0 add others iterators and test
-// #[test]
-// fn iter_traits() {
-//     type ARangesIter<'a> = RangesIter<'a, i32>;
-//     type AIter<'a> = Iter<i32, ARangesIter<'a>>;
-//     is_sssu::<AIter>();
-//     is_like_btreeset_iter::<AIter>();
-// }
-
-const fn is_like_btreeset_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {}
-
-const fn is_like_btreeset<
-    T: Clone
-        + std::fmt::Debug
-        + Default
-        + Eq
-        + std::hash::Hash
-        + IntoIterator
-        + Ord
-        + PartialEq
-        + PartialOrd
-        + core::panic::RefUnwindSafe
-        + Send
-        + Sync
-        + Unpin
-        + core::panic::UnwindSafe
-        + Any
-        + ToOwned,
->() {
-}
-
-const fn is_like_check_sorted_disjoint<
-    T: Clone
-        + std::fmt::Debug
-        + Default
-        + IntoIterator
-        + core::panic::RefUnwindSafe
-        + Send
-        + Sync
-        + Unpin
-        + core::panic::UnwindSafe
-        + Any
-        + ToOwned,
->() {
-}
-
-const fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

@@ -70,9 +70,12 @@ where
 /// This `struct` is created by the [`into_range_values`] method on [`RangeMapBlaze`]. See [`into_range_values`]'s
 /// documentation for more. Double-ended.
 ///
+/// Not clonable because `btree_map::IntoIter` is not clonable.
+///
 /// [`RangeMapBlaze`]: crate::RangeMapBlaze
 /// [`into_range_values`]: crate::RangeMapBlaze::into_range_values
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Debug)]
 pub struct IntoRangeValuesIter<T: Integer, V: Eq + Clone> {
     iter: btree_map::IntoIter<T, EndValue<T, V>>,
 }
@@ -126,7 +129,7 @@ impl<T: Integer, V: Eq + Clone> DoubleEndedIterator for IntoRangeValuesIter<T, V
 ///
 /// [`RangeMapBlaze`]: crate::RangeMapBlaze
 /// [`ranges`]: crate::RangeMapBlaze::ranges
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MapRangesIter<'a, T: Integer, V: Eq + Clone> {
     iter: btree_map::Iter<'a, T, EndValue<T, V>>,
@@ -191,6 +194,7 @@ where
 /// [`RangeMapBlaze`]: crate::RangeMapBlaze
 /// [`into_ranges`]: crate::RangeMapBlaze::into_ranges
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Debug)]
 pub struct MapIntoRangesIter<T: Integer, V: Eq + Clone> {
     iter: btree_map::IntoIter<T, EndValue<T, V>>,
     gather: Option<RangeInclusive<T>>,
@@ -243,7 +247,11 @@ impl<T: Integer, V: Eq + Clone> Iterator for MapIntoRangesIter<T, V> {
     }
 }
 
-#[derive(Clone)]
+/// This `struct` is used internally.
+///
+/// Not clonable because `btree_map::IntoIter` is not clonable. Not send/sync
+/// because `IntoRangeValuesIter` is not send/sync.
+#[derive(Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::module_name_repetitions)]
 pub struct RangeValuesToRangesIter<T, VR, I>
@@ -273,7 +281,7 @@ where
 {
     /// Creates a new `RangeValuesToRangesIter` from an existing sorted disjoint map iterator.
     /// `option_ranges` is initialized as `None` by default.
-    pub const fn new(iter: I) -> Self {
+    pub(crate) const fn new(iter: I) -> Self {
         Self {
             iter,
             gather: None,         // cmk rename "gather"?

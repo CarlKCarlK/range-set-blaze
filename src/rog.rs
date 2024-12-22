@@ -5,7 +5,10 @@
 
 use alloc::collections::btree_map;
 use alloc::vec::Vec;
-use core::ops::{RangeBounds, RangeInclusive};
+use core::{
+    iter::FusedIterator,
+    ops::{RangeBounds, RangeInclusive},
+};
 
 use crate::{set::extract_range, Integer, RangeSetBlaze};
 
@@ -58,6 +61,8 @@ impl<T: Integer> Iterator for RogsIter<'_, T> {
         None
     }
 }
+
+impl<T: Integer> FusedIterator for RogsIter<'_, T> {}
 
 /// Experimental: Represents an range or gap in a [`RangeSetBlaze`].
 ///

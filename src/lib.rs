@@ -1,6 +1,6 @@
 #![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
-// cmk00 move these to Cargo.toml
+// cmk move these to Cargo.toml
 #![warn(
     clippy::use_self,
     unused_lifetimes,
@@ -16,9 +16,8 @@
     clippy::correctness,
     clippy::nursery,
     clippy::must_use_candidate,
-    clippy::unwrap_used
-    // and clippy::option_unwrap_used: Warns if you're using .unwrap() or .expect(), which can be a sign of inadequate error handling.
-    // cmk	clippy::panic_in_result_fn: Ensures functions that return Result do not contain panic!, which could be inappropriate in production code.
+    clippy::unwrap_used,
+    clippy::panic_in_result_fn,
 
 )]
 #![no_std]
@@ -62,6 +61,7 @@ pub use crate::map::{
     BitAndRangesMap, BitAndRangesMap2, BitSubRangesMap, BitSubRangesMap2, SortedStartsInVec,
     SortedStartsInVecMap,
 };
+pub use crate::range_values::RangeValuesToRangesIter;
 pub use crate::range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter};
 pub use crate::ranges_iter::{IntoRangesIter, RangesIter};
 pub use crate::set::demo_read_ranges_from_file;
@@ -89,7 +89,6 @@ pub use multiway::MultiwaySortedDisjoint;
 pub use multiway_map::MultiwayRangeMapBlaze;
 pub use multiway_map::MultiwayRangeMapBlazeRef;
 pub use multiway_map::MultiwaySortedDisjointMap;
-use range_values::RangeValuesToRangesIter;
 pub use sym_diff_iter::SymDiffIter;
 pub use sym_diff_iter_map::SymDiffIterMap;
 mod multiway;

@@ -816,13 +816,6 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
     let not_d = d.complement_with(&"A");
     let not_e = e.complement_with(&"A");
     let not_f = f.complement_with(&"A");
-    // cmk0 make .to_string_work
-    // println!("not a: {:?}", not_a.range_values().into_range_map_blaze());
-    // println!("not b: {:?}", not_b.into_range_map_blaze());
-    // println!("not c: {:?}", not_c.into_range_map_blaze());
-    // println!("not d: {:?}", not_d.into_range_map_blaze());
-    // println!("not e: {:?}", not_e.into_range_map_blaze());
-    // println!("not f: {:?}", not_f.into_range_map_blaze());
     assert!(not_a.range_values().equal(not_b));
     assert!(not_a.range_values().equal(not_c));
     assert!(not_a.range_values().equal(not_d));
@@ -870,9 +863,6 @@ fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 #[wasm_bindgen_test]
 fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
-    // use range_set_blaze::UnionIter;
-
-    // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
     let a1 = RangeMapBlaze::from_iter([(8..=9, "a1")]);
     let a2 = RangeMapBlaze::from_iter([(11..=15, "a2")]);
@@ -885,12 +875,10 @@ fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
     let c = !not_a01.range_values() - a2.ranges();
     let d = (a0.range_values() | a1.range_values()) - a2.range_values();
     let e = a01_tee.map_and_set_difference(a2.ranges());
-    // cmk0 let f = UnionIterMap::from_iter(&a01) - UnionIter::from_iter(a2.keys());
     assert!(a.range_values().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.range_values().equal(d));
     assert!(a.range_values().equal(e));
-    // cmk0 assert!(a.range_values().equal(f));
 
     Ok(())
 }

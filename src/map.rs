@@ -101,7 +101,7 @@ where
 }
 
 #[expect(clippy::redundant_pub_crate)]
-#[derive(Clone, Hash, Default, PartialEq, Eq)]
+#[derive(Clone, Hash, Default, PartialEq, Eq, Debug)]
 pub(crate) struct EndValue<T, V>
 where
     T: Integer,

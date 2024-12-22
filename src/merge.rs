@@ -6,6 +6,7 @@ use crate::{Integer, SortedDisjoint, SortedStarts};
 
 /// Used internally by `UnionIter` and `SymDiffIter`.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Clone, Debug)]
 pub struct Merge<T, L, R>
 where
     T: Integer,

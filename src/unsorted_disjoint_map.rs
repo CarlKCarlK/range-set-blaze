@@ -41,14 +41,13 @@ where
     }
 }
 
-// cmk
-// impl<'a, T, V, VR, I> FusedIterator for UnsortedDisjointMap<'a, T, V, VR, I>
-// where
-//     T: Integer,
-//     V: Eq + Clone + 'a,
-//     I: Iterator<Item = (T,  VR)> + FusedIterator,
-// {
-// }
+impl<T, VR, I> FusedIterator for UnsortedPriorityDisjointMap<T, VR, I>
+where
+    T: Integer,
+    VR: ValueRef,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
+{
+}
 
 impl<T, VR, I> Iterator for UnsortedPriorityDisjointMap<T, VR, I>
 where
@@ -162,11 +161,13 @@ where
     }
 }
 
-// cmk
-// impl<T: Integer, V: Eq + Clone, I> FusedIterator for SortedDisjointWithLenSoFarMap<T, V, I> where
-//     I: SortedDisjointMap<T, V> + FusedIterator
-// {
-// }
+impl<T, VR, I> FusedIterator for SortedDisjointMapWithLenSoFar<T, VR, I>
+where
+    T: Integer,
+    VR: ValueRef,
+    I: SortedDisjointMap<T, VR>,
+{
+}
 
 impl<T, VR, I> Iterator for SortedDisjointMapWithLenSoFar<T, VR, I>
 where

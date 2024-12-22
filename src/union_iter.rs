@@ -125,7 +125,6 @@ where
     }
 }
 
-// cmk0 test that every iterator (that can be) is FusedIterator
 impl<T, I> FusedIterator for UnionIter<T, I>
 where
     T: Integer,

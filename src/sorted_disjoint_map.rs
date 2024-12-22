@@ -550,27 +550,6 @@ where
     }
 }
 
-// cmk0
-// impl<'a, T, V, VR> PartialEq for RangeValue<T, V, VR>
-// where
-//     T: Integer,
-//     V: ValueOwned + 'a,
-//     VR: CloneBorrow<V> + 'a,
-// {
-//     fn eq(&self, other: &Self) -> bool {
-//         self.range == other.range && self.1.borrow() == other.1.borrow()
-//     }
-// }
-
-// // Implement `Eq` because `BinaryHeap` requires it.
-// impl<'a, T, V, VR> Eq for RangeValue<T, V, VR>
-// where
-//     T: Integer,
-//     V: ValueOwned + 'a,
-//     VR: CloneBorrow<V> + 'a,
-// {
-// }
-
 /// Gives the [`SortedDisjointMap`] trait to any iterator of range-value pairs. Will panic
 /// if the trait is not satisfied.
 ///
@@ -848,7 +827,7 @@ where
     V: Eq + Clone,
     I: SortedDisjoint<T>,
 {
-    pub const fn new(inner: I, value: &'a V) -> Self {
+    pub(crate) const fn new(inner: I, value: &'a V) -> Self {
         Self {
             inner,
             value,

@@ -5,7 +5,10 @@ use crate::sorted_disjoint_map::Priority;
 use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
 
 use super::*;
+use core::any::Any;
 use core::cmp::Ordering;
+use core::fmt;
+use core::iter::FusedIterator;
 use core::ops::Bound;
 use core::ops::RangeInclusive;
 use num_traits::{One, Zero};
@@ -289,13 +292,12 @@ fn lib_coverage_0() {
     assert_eq!(i.size_hint(), j.size_hint());
 
     let a = RangeSetBlaze::from_iter([1..=3]);
-    let _i = a.into_iter();
-    // cmk0 get this assert working again
-    // assert_eq!(i.size_hint(), j.size_hint());
-    // assert_eq!(
-    //     format!("{:?}", &i),
-    //     "IntoIter { option_range_front: None, option_range_back: None, into_iter: [(1, 3)] }"
-    // );
+    let i = a.into_iter();
+    assert_eq!(i.size_hint(), j.size_hint());
+    assert_eq!(
+        alloc::format!("{:?}", &i),
+        "IntoIter { option_range_front: None, option_range_back: None, btree_map_into_iter: [(1, 3)] }"
+    );
 
     let mut a = RangeSetBlaze::from_iter([1..=3]);
     a.extend([1..=3]);
@@ -452,20 +454,9 @@ fn sdi1() {
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-// cmk0 challenge: convert from every level to sorted disjoint* for both map and set.
 fn convert_challenge() {
     use itertools::Itertools;
     use unsorted_disjoint_map::UnsortedPriorityDisjointMap;
-
-    // cmk what is the for?
-    // #[allow(clippy::needless_pass_by_value)]
-    // fn _is_sorted_disjoint_map<T, VR, S>(_iter: S)
-    // where
-    //     T: Integer,
-    //     VR: ValueRef,
-    //     S: SortedDisjointMap<T, VR>,
-    // {
-    // }
 
     //===========================
     // Map - ranges
@@ -631,3 +622,150 @@ fn test_extract_range() {
     assert_eq!(extract_range((Excluded(0), Included(1))), (1, 1));
     assert_eq!(extract_range(0..1), (0, 0));
 }
+
+// !!!cmk0 test traits of other iterators
+#[allow(clippy::items_after_statements)]
+#[test]
+const fn check_traits() {
+    // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
+    type ARangeSetBlaze = RangeSetBlaze<i32>;
+    is_sssu::<ARangeSetBlaze>();
+    is_ddcppdheo::<ARangeSetBlaze>();
+    is_like_btreeset::<ARangeSetBlaze>();
+
+    type ARangesIter<'a> = RangesIter<'a, i32>;
+    is_sssu::<ARangesIter>();
+    is_like_btreeset_iter::<ARangesIter>();
+
+    type AIter<'a> = Iter<i32, ARangesIter<'a>>;
+    is_sssu::<AIter>();
+    is_like_btreeset_iter::<AIter>();
+
+    type AIntoRangesIter<'a> = IntoRangesIter<i32>;
+    is_sssu::<AIntoRangesIter>();
+    is_like_btreeset_into_iter::<AIntoRangesIter>();
+
+    type AMapRangesIter<'a> = MapRangesIter<'a, i32, u64>;
+    is_sssu::<AMapRangesIter>();
+    is_like_btreeset_iter::<AMapRangesIter>();
+
+    type ARangeValuesToRangesIter =
+        RangeValuesToRangesIter<i32, std::rc::Rc<u64>, IntoRangeValuesIter<i32, u64>>;
+    is_su::<ARangeValuesToRangesIter>();
+    is_like_btreeset_iter_less_clone::<ARangeValuesToRangesIter>();
+
+    type AMapIntoRangesIter = MapIntoRangesIter<i32, u64>;
+    is_sssu::<AMapIntoRangesIter>();
+    is_like_btreeset_into_iter::<AMapIntoRangesIter>();
+
+    type AIntoIter = IntoIter<i32>;
+    is_sssu::<AIntoIter>();
+    is_like_btreeset_into_iter::<AIntoIter>();
+
+    type AKMerge<'a> = crate::KMerge<i32, ARangesIter<'a>>;
+    is_sssu::<AKMerge>();
+    is_like_btreeset_iter::<AKMerge>();
+
+    type AMerge<'a> = crate::Merge<i32, ARangesIter<'a>, ARangesIter<'a>>;
+    is_sssu::<AMerge>();
+    is_like_btreeset_iter::<AMerge>();
+
+    type ANotIter<'a> = crate::NotIter<i32, ARangesIter<'a>>;
+    is_sssu::<ANotIter>();
+    is_like_btreeset_iter::<ANotIter>();
+
+    type AUnionIter<'a> = UnionIter<i32, ARangesIter<'a>>;
+    is_sssu::<AUnionIter>();
+    is_like_btreeset_iter::<AUnionIter>();
+
+    type ASymDiffIter<'a> = SymDiffIter<i32, ARangesIter<'a>>;
+    is_sssu::<ASymDiffIter>();
+    is_like_btreeset_iter::<ASymDiffIter>();
+
+    type AAssumeSortedStarts<'a> = AssumeSortedStarts<i32, ARangesIter<'a>>;
+    is_sssu::<AAssumeSortedStarts>();
+    is_like_btreeset_iter::<AAssumeSortedStarts>();
+
+    type ACheckSortedDisjoint<'a> = CheckSortedDisjoint<i32, ARangesIter<'a>>;
+    is_sssu::<ACheckSortedDisjoint>();
+    type BCheckSortedDisjoint =
+        CheckSortedDisjoint<i32, std::array::IntoIter<RangeInclusive<i32>, 0>>;
+    is_like_check_sorted_disjoint::<BCheckSortedDisjoint>();
+
+    type ADynSortedDisjoint<'a> = DynSortedDisjoint<'a, i32>;
+    is_like_dyn_sorted_disjoint::<ADynSortedDisjoint>();
+}
+
+const fn is_ddcppdheo<
+    T: std::fmt::Debug
+        + fmt::Display
+        + Clone
+        + PartialEq
+        + PartialOrd
+        + Default
+        + std::hash::Hash
+        + Eq
+        + Ord
+        + Send
+        + Sync,
+>() {
+}
+
+const fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
+const fn is_su<T: Sized + Unpin>() {}
+const fn is_like_btreeset_iter<
+    T: Clone + std::fmt::Debug + FusedIterator + Iterator, // cmk DoubleEndedIterator  + ExactSizeIterator,
+>() {
+}
+const fn is_like_btreeset_iter_less_clone<
+    T: std::fmt::Debug + FusedIterator + Iterator, // cmk DoubleEndedIterator  + ExactSizeIterator,
+>() {
+}
+
+// cmk0 add others iterators and test
+// #[test]
+// fn iter_traits() {
+//     type ARangesIter<'a> = RangesIter<'a, i32>;
+//     type AIter<'a> = Iter<i32, ARangesIter<'a>>;
+//     is_sssu::<AIter>();
+//     is_like_btreeset_iter::<AIter>();
+// }
+
+const fn is_like_btreeset_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {}
+
+const fn is_like_btreeset<
+    T: Clone
+        + std::fmt::Debug
+        + Default
+        + Eq
+        + std::hash::Hash
+        + IntoIterator
+        + Ord
+        + PartialEq
+        + PartialOrd
+        + core::panic::RefUnwindSafe
+        + Send
+        + Sync
+        + Unpin
+        + core::panic::UnwindSafe
+        + Any
+        + ToOwned,
+>() {
+}
+
+const fn is_like_check_sorted_disjoint<
+    T: Clone
+        + std::fmt::Debug
+        + Default
+        + IntoIterator
+        + core::panic::RefUnwindSafe
+        + Send
+        + Sync
+        + Unpin
+        + core::panic::UnwindSafe
+        + Any
+        + ToOwned,
+>() {
+}
+
+const fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
