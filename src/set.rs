@@ -535,6 +535,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 
     #[allow(dead_code)]
+    #[must_use]
     pub(crate) fn len_slow(&self) -> <T as Integer>::SafeLen {
         Self::btree_map_len(&self.btree_map)
     }
@@ -1043,6 +1044,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
+    // cmk
     // fn internal_add_chatgpt(&mut self, range: RangeInclusive<T>) {
     //     let (start, end) = range.into_inner();
 
@@ -1312,8 +1314,11 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     /// Retains only the elements specified by the predicate.
     ///
-    /// In other words, remove all integers `e` for which `f(&e)` returns `false`.
+    /// In other words, remove all integers `t` for which `f(&t)` returns `false`.
     /// The integer elements are visited in ascending order.
+    ///
+    /// Because if visits every element in every range, it is expensive compared to
+    /// [`RangeSetBlaze::ranges_retain`].
     ///
     /// # Examples
     ///
@@ -1329,7 +1334,37 @@ impl<T: Integer> RangeSetBlaze<T> {
     where
         F: FnMut(&T) -> bool,
     {
-        *self = self.iter().filter(|v| f(v)).collect();
+        *self = self.iter().filter(|t| f(t)).collect();
+    }
+
+    /// Retains only the ranges specified by the predicate.
+    ///
+    /// In other words, remove all ranges `r` for which `f(&r)` returns `false`.
+    /// The ranges are visited in ascending order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let mut set = RangeSetBlaze::from_iter([1..=6, 10..=15]);
+    /// // Keep only the ranges starting before 10.
+    /// set.ranges_retain(|range| range.start() < &10);
+    /// assert_eq!(set, RangeSetBlaze::from_iter([1..=6]));
+    /// ```
+    pub fn ranges_retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&RangeInclusive<T>) -> bool,
+    {
+        self.btree_map.retain(|start, end| {
+            let range = *start..=*end;
+            if f(&range) {
+                true
+            } else {
+                self.len -= T::safe_len(&range);
+                false
+            }
+        });
     }
 }
 

@@ -5465,3 +5465,12 @@ fn test_into_iter() {
     let mut b = a.into_iter();
     assert_eq!(b.next(), Some((1, "a")));
 }
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_retain() {
+    let mut map: RangeMapBlaze<i32, i32> = (0..8).map(|x| (x, x * 10)).collect();
+    // Keep only the elements with even-numbered keys.
+    map.retain(|&k, _| k % 2 == 0);
+    assert!(map.into_iter().eq(vec![(0, 0), (2, 20), (4, 40), (6, 60)]));
+}

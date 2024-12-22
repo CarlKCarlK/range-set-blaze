@@ -671,6 +671,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     #[allow(dead_code)]
+    #[must_use]
     pub(crate) fn len_slow(&self) -> <T as Integer>::SafeLen {
         Self::btree_map_len(&self.btree_map)
     }
@@ -1529,7 +1530,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// with left-to-right precedence.
     ///
     /// ```
-    /// extern crate alloc; // cmk needed? could be hidden with '#'?
+    /// # extern crate alloc;
     /// use alloc::rc::Rc;
     /// use range_set_blaze::RangeMapBlaze;
     ///
@@ -1645,7 +1646,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
 
     // FUTURE BTreeSet some of these as 'const' but it uses unstable. When stable, add them here and elsewhere.
 
-    // cmk why is this must_use but not the others?
     /// Returns the number of sorted & disjoint ranges in the set.
     ///
     /// # Example
@@ -1664,28 +1664,60 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         self.btree_map.len()
     }
 
-    // / Retains only the elements specified by the predicate.
-    // /
-    // / In other words, remove all integers `e` for which `f(&e)` returns `false`.
-    // / The integer elements are visited in ascending order.
-    // /
-    // / # Examples
-    // /
-    // / ```
-    // / use range_set_blaze::RangeMapBlaze;
-    // /
-    // / let mut set = RangeMapBlaze::from_iter([1..=6]);
-    // / // Keep only the even numbers.
-    // / set.retain(|k| k % 2 == 0);
-    // / assert_eq!(set, RangeMapBlaze::from_iter([2, 4, 6]));
-    // / ```
-    // cmk
-    // pub fn retain<F>(&mut self, mut f: F)
-    // where
-    //     F: FnMut(&T) -> bool,
-    // {
-    //     *self = self.iter().filter(|v| f(v)).collect();
-    // }
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// In other words, remove all pairs `(k, v)` for which `f(&k, &mut v)` returns `false`.
+    /// The elements are visited in ascending key order.
+    ///
+    /// Because if visits every element in every range, it is expensive compared to
+    /// [`RangeMapBlaze::ranges_retain`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let mut map: RangeMapBlaze<i32, i32> = (0..8).map(|x| (x, x*10)).collect();
+    /// // Keep only the elements with even-numbered keys.
+    /// map.retain(|&k, _| k % 2 == 0);
+    /// assert!(map.into_iter().eq(vec![(0, 0), (2, 20), (4, 40), (6, 60)]));
+    /// ```
+    pub fn retain<F>(&mut self, f: F)
+    where
+        F: Fn(&T, &V) -> bool,
+    {
+        *self = self.iter().filter(|(k, v)| f(k, v)).collect();
+    }
+
+    /// Retains only the `(range, value)` pairs specified by the predicate.
+    ///
+    /// In other words, removes all `(range, value)` pairs for which `f(&range, &value)`
+    /// returns `false`. The `(range, value)` pairs are visited in ascending range order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let mut map: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=3, "low"), (4..=7, "high")]);
+    /// // Keep only the ranges with a specific value.
+    /// map.ranges_retain(|range, &value| value == "low");
+    /// assert_eq!(map, RangeMapBlaze::from_iter([(0..=3, "low")]));
+    /// ```
+    pub fn ranges_retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&RangeInclusive<T>, &V) -> bool,
+    {
+        self.btree_map.retain(|start, end_value| {
+            let range = *start..=end_value.end;
+            if f(&range, &end_value.value) {
+                true
+            } else {
+                self.len -= T::safe_len(&range);
+                false
+            }
+        });
+    }
 }
 
 impl<T, V> IntoIterator for RangeMapBlaze<T, V>
