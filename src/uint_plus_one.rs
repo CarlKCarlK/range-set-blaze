@@ -192,6 +192,7 @@ mod tests {
     use super::*;
     #[cfg(not(target_arch = "wasm32"))] // not used by wasm-wasip1
     use std::panic;
+    #[cfg(not(target_arch = "wasm32"))] // not used by wasm-wasip1
     use std::panic::AssertUnwindSafe;
     use std::prelude::v1::*;
 

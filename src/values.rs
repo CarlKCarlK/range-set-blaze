@@ -79,7 +79,8 @@ where
 /// This `struct` is created by the [`into_values`] method on [`RangeMapBlaze`]. See its
 /// documentation for more.
 ///
-/// [`into_values`]: RangeMapBlaze::into_values
+/// [`into_values`]: crate::RangeMapBlaze::into_values
+/// [`RangeMapBlaze`]: crate::RangeMapBlaze
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug)]
 pub struct IntoValues<T, V>

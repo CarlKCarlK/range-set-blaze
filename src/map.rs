@@ -606,12 +606,28 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(map.get(4), None);
     /// ```
     pub fn get(&self, key: T) -> Option<&V> {
+        self.get_key_value(key).map(|(_, value)| value)
+    }
+
+    /// Returns the key and value in the map, if any, that contains the given key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let map = RangeMapBlaze::from_iter([(3..=5, "c"), (1..=2, "a")]);
+    /// assert_eq!(map.get_key_value(2), Some((2, &"a")));
+    /// assert_eq!(map.get_key_value(4), Some((4, &"c")));
+    /// assert_eq!(map.get_key_value(6), None);
+    /// ```
+    pub fn get_key_value(&self, key: T) -> Option<(T, &V)> {
         self.btree_map
             .range(..=key)
             .next_back()
-            .and_then(|(_, end_value)| {
+            .and_then(|(_start, end_value)| {
                 if key <= end_value.end {
-                    Some(&end_value.value)
+                    Some((key, &end_value.value))
                 } else {
                     None
                 }
@@ -2045,8 +2061,6 @@ where
             self.internal_add(range, value);
         }
     }
-
-    // cmk define extend_one and make it inline
 }
 
 impl<T, V> Extend<(RangeInclusive<T>, V)> for RangeMapBlaze<T, V>
@@ -2091,11 +2105,8 @@ where
             self.internal_add(range, value);
         }
     }
-
-    // cmk define extend_one and make it inline
 }
 
-// cmk also from (RangeInclusive<T>, V(r))???
 impl<T, V, const N: usize> From<[(T, V); N]> for RangeMapBlaze<T, V>
 where
     T: Integer,
@@ -2139,16 +2150,7 @@ impl<T: Integer, V: Eq + Clone> Index<T> for RangeMapBlaze<T, V> {
     }
 }
 
-// cmk missing methods
-// cmk retain -- inline
-// cmk into_keys -- inline
-// cmk into_values -- inline
-// cmk trait PartialOrd with inline partial_cmp and cmp
-// cmk look at other BTreeMap methods and traits
-
-// cmk missing values and values per range
-
-// cmk add map_and_set_difference??? is there a complement with set? sub_assign
+// LATER define value_per_range and into_value_per_range
 
 impl<T, V> PartialOrd for RangeMapBlaze<T, V>
 where
@@ -2539,69 +2541,6 @@ mod tests {
     }
 }
 
+// get_key_value
+
 // cmk do coverage again at the line level
-
-// #[allow(clippy::items_after_statements)]
-// #[allow(noop_method_call)]
-// pub fn delme_cmk() {
-//     use alloc::string::{String, ToString};
-
-//     // `value` is type `String`, which implements `Eq` and `Clone` and
-//     // so also implements `Eq + Clone`.
-//     let value: String = "a".to_string();
-
-//     // We can see `value` is `Eq + Clone` by using equality and cloning.
-//     // Recall that cloning a `String` requires memory allocation, so it is expensive.
-//     assert_eq!(value, value.clone());
-
-//     // Alternatively, we can use this compile-time assert to confirm that a type implements `Eq + Clone`.
-//     const fn assert_impls_eq_clone<T: Eq + Clone>() {}
-//     assert_impls_eq_clone::<String>(); // Compile-time check that 'String' implements `Eq + Clone`.
-
-//     // `value_ref0`` is a reference to a `Eq + Clone` value, so it implements `ValueRef`.
-//     let value_ref0: &String = &value;
-
-//     // We can see that `value_ref0` implements `ValueRef` via this compile-time assert.
-//     const fn assert_impls_value_ref<T: ValueRef>() {}
-//     assert_impls_value_ref::<&String>();
-
-//     // Alternatively, we can also see that `value_ref0` implements `ValueRef` by using `clone`.
-//     // Cloning here is always cheap, we are cloning a reference, not the value itself.
-//     let value_ref1 = value_ref0.clone();
-
-//     // The thing that value_ref0 and value_ref1 point to are 'Eq'.
-//     assert_eq!(*value_ref0, *value_ref1);
-
-//     // We can repeat the whole exercise with &str and Rc<&str>. &str stores
-//     // the bytes of a string in the program's binary, so cloning it is cheap.
-
-//     // `value` is a type `&str`, which implements `Eq` and `Clone`, so it also implements `Eq + Clone`.
-//     let value: &str = "a";
-//     assert_eq!(value, value.clone());
-//     assert_impls_eq_clone::<&str>();
-
-//     // `value_ref0` is a reference to an `Eq + Clone` value, so it implements `ValueRef`.
-//     let value_ref0: Rc<&str> = Rc::new(value);
-//     assert_impls_value_ref::<Rc<&str>>();
-//     let value_ref1 = value_ref0.clone();
-//     assert_eq!(*value_ref0, *value_ref1);
-
-//     // create a RangeMapBlaze with String values
-//     let a = RangeMapBlaze::from_iter([(1..=2, "a".to_string()), (5..=100, "a".to_string())]);
-//     // iterate over the keys and values
-//     for (key, value_ref) in (&a).into_iter() {
-//         let key: i32 = key; // Does nothing but show the type.
-//         let value_ref: &String = value_ref; // Does nothing but show the type.
-//         if key % 25 == 0 {
-//             println!("{key}: {value_ref}");
-//         }
-//     }
-
-//     for (key, value) in a {
-//         let key: i32 = key; // Does nothing but show the type.
-//         let value: String = value; // Does nothing but show the type.
-//         if key % 25 == 0 {
-//             println!("{key}: {value}");
-//         }
-//     }
-// }

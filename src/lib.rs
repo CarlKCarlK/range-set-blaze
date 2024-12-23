@@ -119,7 +119,7 @@ mod unsorted_disjoint_map;
 pub use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
 
 mod values;
-pub use crate::values::Values;
+pub use crate::values::{IntoValues, Values};
 
 mod uint_plus_one;
 pub use uint_plus_one::UIntPlusOne;

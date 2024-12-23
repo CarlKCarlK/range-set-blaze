@@ -75,6 +75,14 @@ qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-conf
 
 ## WASM
 
+Testing
+
+```cmd
+wasm-pack test --chrome --headless
+```
+
+Example
+
 ```cmd
 cd O:\programs\range-set-blaze\tests\wasm-led
 wasm-pack build --target web
