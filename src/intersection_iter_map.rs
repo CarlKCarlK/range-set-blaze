@@ -45,6 +45,7 @@ where
     }
 }
 
+// cmk0 remove?
 // impl<T: Integer, V: Eq + Clone, const N: usize> From<[T; N]>
 //     for IntersectionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
 // {

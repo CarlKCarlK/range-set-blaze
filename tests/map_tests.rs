@@ -5474,3 +5474,71 @@ fn test_retain() {
     map.retain(|&k, _| k % 2 == 0);
     assert!(map.into_iter().eq(vec![(0, 0), (2, 20), (4, 40), (6, 60)]));
 }
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::type_complexity)]
+fn test_empty_inputs_union_symmetric_difference() {
+    let inputs: [RangeMapBlaze<i32, &str>; 0] = [];
+    let union = inputs.union();
+    assert_eq!(union.to_string(), r#""#);
+
+    let inputs: [RangeMapBlaze<i32, &str>; 0] = [];
+    let symmetric_difference = inputs.symmetric_difference();
+    assert_eq!(symmetric_difference.to_string(), r#""#);
+
+    let inputs: [&RangeMapBlaze<i32, &str>; 0] = [];
+    let union = inputs.union();
+    assert_eq!(union.to_string(), r#""#);
+
+    let inputs: [&RangeMapBlaze<i32, &str>; 0] = [];
+    let symmetric_difference = inputs.symmetric_difference();
+    assert_eq!(symmetric_difference.to_string(), r#""#);
+
+    fn make_inputs<'a>() -> [CheckSortedDisjointMap<
+        i32,
+        &'a &'a str,
+        std::vec::IntoIter<(RangeInclusive<i32>, &'a &'a str)>,
+    >; 0] {
+        []
+    }
+    let inputs = make_inputs();
+    let union = inputs.union();
+    assert_eq!(union.into_string(), r#""#);
+
+    let inputs = make_inputs();
+    let symmetric_difference = inputs.symmetric_difference();
+    assert_eq!(symmetric_difference.into_string(), r#""#);
+}
+
+#[test]
+#[should_panic]
+fn test_empty_inputs_intersection0() {
+    let inputs: [RangeMapBlaze<i32, &str>; 0] = [];
+    let intersection = inputs.intersection();
+    assert_eq!(intersection.to_string(), r#"should panic"#);
+}
+
+#[test]
+#[should_panic]
+fn test_empty_inputs_intersection1() {
+    let inputs: [&RangeMapBlaze<i32, &str>; 0] = [];
+    let intersection = inputs.intersection();
+    assert_eq!(intersection.to_string(), r#"should panic"#);
+}
+
+#[test]
+#[should_panic]
+#[allow(clippy::type_complexity)]
+fn test_empty_inputs_intersection2() {
+    fn make_inputs<'a>() -> [CheckSortedDisjointMap<
+        i32,
+        &'a &'a str,
+        std::vec::IntoIter<(RangeInclusive<i32>, &'a &'a str)>,
+    >; 0] {
+        []
+    }
+    let inputs = make_inputs();
+    let intersection = inputs.intersection();
+    assert_eq!(intersection.into_string(), r#"should panic"#);
+}

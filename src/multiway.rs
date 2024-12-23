@@ -53,6 +53,8 @@ pub trait MultiwayRangeSetBlaze<T: Integer>: IntoIterator<Item = RangeSetBlaze<T
     /// For exactly two inputs, you can also use the '&' operator.
     /// Also see [`MultiwayRangeSetBlazeRef::intersection`].
     ///
+    /// When given zero inputs, it returns the universal set.
+    ///
     /// # Performance
     ///
     ///  All work is done on demand, in one pass through the inputs. Minimal memory is used.
@@ -175,6 +177,8 @@ pub trait MultiwayRangeSetBlazeRef<'a, T: Integer + 'a>:
     ///
     /// For exactly two inputs, you can also use the '&' operator.
     /// Also see [`MultiwayRangeSetBlaze::intersection`].
+    ///
+    /// When given zero inputs, it returns the universal set.
     ///
     /// # Performance
     ///
@@ -307,6 +311,9 @@ where
     ///
     /// [`intersection_map_dyn!`]: crate::intersection_map_dyn
     /// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
+    ///
+    /// For exactly two inputs, you can also use the `&` operator.
+    /// When given zero inputs, it returns the universal set.
     ///
     /// # Performance
     ///

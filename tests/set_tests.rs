@@ -2901,7 +2901,7 @@ fn test_range_map_intersection() {
     let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
 
-    let intersection = [a, b, c].into_iter().intersection();
+    let intersection = [a, b, c].intersection();
 
     assert_eq!(intersection.to_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
 }
@@ -2913,7 +2913,7 @@ fn test_range_map_symmetric_difference() {
     let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
 
-    let symmetric_difference = [a, b, c].into_iter().symmetric_difference();
+    let symmetric_difference = [a, b, c].symmetric_difference();
 
     assert_eq!(
         symmetric_difference.to_string(),
@@ -2993,4 +2993,45 @@ fn additional_from_slice_iter_coverage() {
     // // Singletons from non-consecutive entries at the end of chunks, ensuring flushing logic works.
     // let a = RangeSetBlaze::from_slice([1, 2, 4, 7]);
     // assert_eq!(a.to_string(), "1..=2, 4..=4, 7..=7");
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::type_complexity)]
+fn test_empty_inputs() {
+    let inputs: [RangeSetBlaze<i32>; 0] = [];
+    let intersection = inputs.intersection();
+    assert_eq!(intersection.to_string(), r#"-2147483648..=2147483647"#);
+
+    let inputs: [RangeSetBlaze<i32>; 0] = [];
+    let union = inputs.union();
+    assert_eq!(union.to_string(), r#""#);
+
+    let inputs: [RangeSetBlaze<i32>; 0] = [];
+    let symmetric_difference = inputs.symmetric_difference();
+    assert_eq!(symmetric_difference.to_string(), r#""#);
+
+    let inputs: [&RangeSetBlaze<i32>; 0] = [];
+    let intersection = inputs.intersection();
+    assert_eq!(intersection.to_string(), r#"-2147483648..=2147483647"#);
+
+    let inputs: [&RangeSetBlaze<i32>; 0] = [];
+    let union = inputs.union();
+    assert_eq!(union.to_string(), r#""#);
+
+    let inputs: [&RangeSetBlaze<i32>; 0] = [];
+    let symmetric_difference = inputs.symmetric_difference();
+    assert_eq!(symmetric_difference.to_string(), r#""#);
+
+    let inputs: [range_set_blaze::IntoRangesIter<i32>; 0] = [];
+    let intersection = inputs.intersection();
+    assert_eq!(intersection.into_string(), r#"-2147483648..=2147483647"#);
+
+    let inputs: [range_set_blaze::IntoRangesIter<i32>; 0] = [];
+    let union = inputs.union();
+    assert_eq!(union.into_string(), r#""#);
+
+    let inputs: [range_set_blaze::IntoRangesIter<i32>; 0] = [];
+    let symmetric_difference = inputs.symmetric_difference();
+    assert_eq!(symmetric_difference.into_string(), r#""#);
 }

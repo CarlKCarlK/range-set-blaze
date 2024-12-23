@@ -2359,8 +2359,6 @@ mod tests {
     use wasm_bindgen_test::*;
     wasm_bindgen_test_configure!(run_in_browser);
 
-    // cmk look everywhere for tests that should also be wasm_bindgen_test
-
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_cmp() {
@@ -2540,7 +2538,5 @@ mod tests {
         assert_eq!(iter.next(), None);
     }
 }
-
-// get_key_value
 
 // cmk do coverage again at the line level

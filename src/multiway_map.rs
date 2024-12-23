@@ -50,7 +50,7 @@ pub trait MultiwayRangeMapBlaze<T: Integer, V: Eq + Clone>:
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
     ///
-    /// let union = [a, b, c].into_iter().union();
+    /// let union = [a, b, c].union();
     ///
     /// assert_eq!(union.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
     /// ```
@@ -70,7 +70,11 @@ pub trait MultiwayRangeMapBlaze<T: Integer, V: Eq + Clone>:
     /// For exactly two inputs, you can also use the '&' operator.
     /// Also see [`MultiwayRangeMapBlazeRef::intersection`].
     ///
-    /// The intersection of 0 maps is undefined. (We can create a universal set of integers, but we don't know that value to use.)
+    ///
+    /// # Panics
+    ///
+    /// The intersection of zero maps causes a panic. Mathematically, it could be
+    /// a mapping from all integers to some fill-in value but we don't implement that.
     ///
     /// # Performance
     ///
@@ -87,7 +91,7 @@ pub trait MultiwayRangeMapBlaze<T: Integer, V: Eq + Clone>:
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
     ///
-    /// let intersection = [a, b, c].into_iter().intersection();
+    /// let intersection = [a, b, c].intersection();
     ///
     /// assert_eq!(intersection.to_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
     /// ```
@@ -109,7 +113,7 @@ pub trait MultiwayRangeMapBlaze<T: Integer, V: Eq + Clone>:
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
     ///
-    /// let symmetric_difference = [a, b, c].into_iter().symmetric_difference();
+    /// let symmetric_difference = [a, b, c].symmetric_difference();
     ///
     /// assert_eq!(symmetric_difference.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
     /// ```
@@ -180,7 +184,10 @@ pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: Eq + Clone + 'a>:
     /// For exactly two inputs, you can also use the '&' operator.
     /// Also see [`MultiwayRangeMapBlaze::intersection`].
     ///
-    /// The intersection of 0 maps is undefined. (We can create a universal set of integers, but we don't know that value to use.)
+    /// # Panics
+    ///
+    /// The intersection of zero maps causes a panic. Mathematically, it could be
+    /// a mapping from all integers to some fill-in value but we don't implement that.
     ///
     /// # Performance
     ///
@@ -258,6 +265,9 @@ where
     /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
     /// [`union_dyn!`]: crate::union_dyn
     ///
+    /// For exactly two inputs, you can also use the `|` operator.
+    ///
+    ///
     /// # Performance
     ///
     ///  All work is done on demand, in one pass through the input iterators. Minimal memory is used.
@@ -288,6 +298,13 @@ where
     ///
     /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
     /// [`intersection_dyn!`]: crate::intersection_dyn
+    ///
+    /// For exactly two inputs, you can also use the `&` operator.
+    ///
+    /// # Panics
+    ///
+    /// The intersection of zero maps causes a panic. Mathematically, it could be
+    /// a mapping from all integers to some fill-in value but we don't implement that.
     ///
     /// # Performance
     ///
@@ -326,6 +343,9 @@ where
     ///
     /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
     /// [`symmetric_difference_dyn!`]: crate::symmetric_difference_dyn
+    ///
+    /// For exactly two inputs, you can also use the `^` operator.
+    ///
     ///
     /// ```
     /// use range_set_blaze::prelude::*;
