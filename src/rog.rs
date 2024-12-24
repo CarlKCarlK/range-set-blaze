@@ -278,7 +278,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 
     /// Used internally to test `rogs_range`.
-    // cmk extract_range can now return empty range. Test that this does the right thing.
+    // cmk00 extract_range can now return empty range. Test this on an empty range and see that this does the right thing.
     #[doc(hidden)]
     pub fn rogs_range_slow<R>(&self, range: R) -> Vec<Rog<T>>
     where

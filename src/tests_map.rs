@@ -1,6 +1,5 @@
-// cmk move this file to integration tests
+// cmk00 move this file to integration tests
 #![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
 
 use crate::keys::IntoKeys;
 use crate::keys::Keys;
@@ -34,6 +33,9 @@ use itertools::Itertools;
 use std::prelude::v1::*;
 use std::vec;
 use std::{format, println};
+
+use wasm_bindgen_test::*;
+wasm_bindgen_test_configure!(run_in_browser);
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

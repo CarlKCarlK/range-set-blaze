@@ -204,5 +204,3 @@ mod tests2 {
         assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
     }
 }
-
-// cmk update 9 rules on data structures to mention implementing into_iter() on reference.

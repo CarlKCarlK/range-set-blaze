@@ -1,11 +1,11 @@
 #![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
 
 use crate::sorted_disjoint_map::Priority;
 use crate::unsorted_priority_map::AssumePrioritySortedStartsMap;
 
 use super::*;
 use core::any::Any;
+use core::array;
 use core::cmp::Ordering;
 use core::fmt;
 use core::iter::FusedIterator;
@@ -14,13 +14,12 @@ use core::ops::RangeInclusive;
 use num_traits::{One, Zero};
 use set::extract_range;
 use std::collections::hash_map::DefaultHasher;
-use syntactic_for::syntactic_for;
-// use thousands::Separable;
-use core::array;
-#[cfg(target_os = "linux")] // cmk why is BitAndAssign tied to linux?
-use core::ops::BitAndAssign;
 use std::prelude::v1::*;
 use std::{print, println, vec};
+use syntactic_for::syntactic_for;
+
+use wasm_bindgen_test::*;
+wasm_bindgen_test_configure!(run_in_browser);
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

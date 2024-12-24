@@ -1,5 +1,6 @@
 #![cfg(test)]
 #![allow(unexpected_cfgs)]
+// cmk00 move this file to integration tests
 
 use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);
@@ -27,7 +28,7 @@ use std::rc::Rc;
 // use range_set_blaze::{
 //     MultiwayRangeMapBlazeRef, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
 // };
-// cmk not tested use range_map_blaze::multiway_map::MultiwayRangeMapBlazeRef;
+// 00 not tested use range_map_blaze::multiway_map::MultiwayRangeMapBlazeRef;
 use range_set_blaze::Integer;
 use std::{
     io::{stdout, Write},
@@ -883,7 +884,7 @@ fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// cmk streaming xor not currently implemented
+// cmk00 streaming xor not currently implemented
 // #[test]
 //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn map_xor() -> Result<(), Box<dyn std::error::Error>> {
@@ -1921,7 +1922,7 @@ fn map_split_off() {
 // //     assert!(a0 == a2 && a2.into_string() == "1..=3, 100..=100");
 // // }
 
-// cmk add symmetric_difference tests
+// cmk00 add symmetric_difference tests
 #[test]
 #[wasm_bindgen_test]
 fn map_range_map_blaze_operators() {
