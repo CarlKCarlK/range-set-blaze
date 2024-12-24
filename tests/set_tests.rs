@@ -1,8 +1,18 @@
 #![cfg(test)]
 use range_set_blaze::AssumeSortedStarts;
+use range_set_blaze::IntoIter;
+use range_set_blaze::IntoRangesIter;
+use range_set_blaze::Iter;
+use range_set_blaze::MapIntoRangesIter;
+use range_set_blaze::MapRangesIter;
+use range_set_blaze::RangeValuesIter;
+use range_set_blaze::RangeValuesToRangesIter;
+use range_set_blaze::RangesIter;
+use range_set_blaze::{KMerge, Merge};
 use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);
 
+use core::fmt;
 // use core::panic::RefUnwindSafe;
 // use core::panic::UnwindSafe;
 // use crate::ranges_iter::RangesIter;
@@ -32,6 +42,7 @@ use range_set_blaze::Rog;
 use range_set_blaze::SymDiffIter;
 use range_set_blaze::{prelude::*, Integer, NotIter, SortedStarts};
 use range_set_blaze::{symmetric_difference_dyn, UnionIter};
+use std::any::Any;
 use std::cmp::Ordering;
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
@@ -3035,3 +3046,144 @@ fn test_empty_inputs() {
     let symmetric_difference = inputs.symmetric_difference();
     assert_eq!(symmetric_difference.into_string(), r#""#);
 }
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[should_panic(expected = "start (inclusive) must be less than or equal to end (inclusive)")]
+#[allow(clippy::reversed_empty_ranges)]
+fn range_expect_panic() {
+    let set = RangeSetBlaze::new();
+    let _ = set.range(4..=3).next();
+}
+
+#[allow(clippy::items_after_statements)]
+#[test]
+const fn check_traits() {
+    // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
+    type ARangeSetBlaze = RangeSetBlaze<i32>;
+    is_sssu::<ARangeSetBlaze>();
+    is_ddcppdheo::<ARangeSetBlaze>();
+    is_like_btreeset::<ARangeSetBlaze>();
+
+    type AIter<'a> = Iter<i32, ARangesIter<'a>>;
+    is_sssu::<AIter>();
+    is_like_btreeset_iter::<AIter>();
+
+    type ARangesIter<'a> = RangesIter<'a, i32>;
+    is_sssu::<ARangesIter>();
+    is_like_btreeset_iter::<ARangesIter>();
+
+    type AIntoRangesIter<'a> = IntoRangesIter<i32>;
+    is_sssu::<AIntoRangesIter>();
+    is_like_btreeset_into_iter::<AIntoRangesIter>();
+
+    type AMapRangesIter<'a> = MapRangesIter<'a, i32, u64>;
+    is_sssu::<AMapRangesIter>();
+    is_like_btreeset_iter::<AMapRangesIter>();
+
+    type ARangeValuesToRangesIter<'a> =
+        RangeValuesToRangesIter<i32, &'a u64, RangeValuesIter<'a, i32, u64>>;
+    is_sssu::<ARangeValuesToRangesIter>();
+    is_like_btreeset_iter::<ARangeValuesToRangesIter>();
+
+    type AMapIntoRangesIter = MapIntoRangesIter<i32, u64>;
+    is_sssu::<AMapIntoRangesIter>();
+    is_like_btreeset_into_iter::<AMapIntoRangesIter>();
+
+    type AIntoIter = IntoIter<i32>;
+    is_sssu::<AIntoIter>();
+    is_like_btreeset_into_iter::<AIntoIter>();
+
+    type AKMerge<'a> = crate::KMerge<i32, ARangesIter<'a>>;
+    is_sssu::<AKMerge>();
+    is_like_btreeset_iter::<AKMerge>();
+
+    type AMerge<'a> = crate::Merge<i32, ARangesIter<'a>, ARangesIter<'a>>;
+    is_sssu::<AMerge>();
+    is_like_btreeset_iter::<AMerge>();
+
+    type ANotIter<'a> = crate::NotIter<i32, ARangesIter<'a>>;
+    is_sssu::<ANotIter>();
+    is_like_btreeset_iter::<ANotIter>();
+
+    type AUnionIter<'a> = UnionIter<i32, ARangesIter<'a>>;
+    is_sssu::<AUnionIter>();
+    is_like_btreeset_iter::<AUnionIter>();
+
+    type ASymDiffIter<'a> = SymDiffIter<i32, ARangesIter<'a>>;
+    is_sssu::<ASymDiffIter>();
+    is_like_btreeset_iter::<ASymDiffIter>();
+
+    type AAssumeSortedStarts<'a> = AssumeSortedStarts<i32, ARangesIter<'a>>;
+    is_sssu::<AAssumeSortedStarts>();
+    is_like_btreeset_iter::<AAssumeSortedStarts>();
+
+    type ACheckSortedDisjoint<'a> = CheckSortedDisjoint<i32, ARangesIter<'a>>;
+    is_sssu::<ACheckSortedDisjoint>();
+    type BCheckSortedDisjoint =
+        CheckSortedDisjoint<i32, std::array::IntoIter<RangeInclusive<i32>, 0>>;
+    is_like_check_sorted_disjoint::<BCheckSortedDisjoint>();
+
+    type ADynSortedDisjoint<'a> = DynSortedDisjoint<'a, i32>;
+    is_like_dyn_sorted_disjoint::<ADynSortedDisjoint>();
+}
+
+const fn is_ddcppdheo<
+    T: std::fmt::Debug
+        + fmt::Display
+        + Clone
+        + PartialEq
+        + PartialOrd
+        + Default
+        + std::hash::Hash
+        + Eq
+        + Ord
+        + Send
+        + Sync,
+>() {
+}
+
+const fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
+const fn is_like_btreeset_iter<
+    T: Clone + std::fmt::Debug + FusedIterator + Iterator, // cmk DoubleEndedIterator  + ExactSizeIterator,
+>() {
+}
+
+const fn is_like_btreeset_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {}
+
+const fn is_like_btreeset<
+    T: Clone
+        + std::fmt::Debug
+        + Default
+        + Eq
+        + std::hash::Hash
+        + IntoIterator
+        + Ord
+        + PartialEq
+        + PartialOrd
+        + core::panic::RefUnwindSafe
+        + Send
+        + Sync
+        + Unpin
+        + core::panic::UnwindSafe
+        + Any
+        + ToOwned,
+>() {
+}
+
+const fn is_like_check_sorted_disjoint<
+    T: Clone
+        + std::fmt::Debug
+        + Default
+        + IntoIterator
+        + core::panic::RefUnwindSafe
+        + Send
+        + Sync
+        + Unpin
+        + core::panic::UnwindSafe
+        + Any
+        + ToOwned,
+>() {
+}
+
+const fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
