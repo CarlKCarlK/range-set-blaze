@@ -1,3 +1,4 @@
+use crate::sym_diff_iter_map::UsizeExtensions;
 use crate::{
     merge::KMerge, Integer, Merge, SortedDisjoint, SortedStarts, SymDiffKMerge, SymDiffMerge,
 };
@@ -57,7 +58,7 @@ where
                 if !self.end_heap.is_empty() {
                     self.start_or_min_value = end.add_one(); // The 'if' prevents overflow.
                 }
-                if let Some(result) = self.process(count % 2 == 1, result) {
+                if let Some(result) = self.process(count.is_odd(), result) {
                     return result;
                 }
                 continue;
@@ -82,7 +83,7 @@ where
                 let result = self.start_or_min_value..=next_start.sub_one();
                 self.start_or_min_value = next_start;
                 self.end_heap.push(Reverse(next_end));
-                if let Some(result) = self.process(count % 2 == 1, result) {
+                if let Some(result) = self.process(count.is_odd(), result) {
                     return result;
                 }
                 continue;
@@ -95,7 +96,7 @@ where
             if self.end_heap.is_empty() {
                 self.start_or_min_value = next_start;
                 self.end_heap.push(Reverse(next_end));
-                if let Some(result) = self.process(count % 2 == 1, result) {
+                if let Some(result) = self.process(count.is_odd(), result) {
                     return result;
                 }
                 continue;
@@ -105,7 +106,7 @@ where
             // so process one chunk and then process next
             self.start_or_min_value = end.add_one();
             self.next_again = Some(next_start..=next_end);
-            if let Some(result) = self.process(count % 2 == 1, result) {
+            if let Some(result) = self.process(count.is_odd(), result) {
                 return result;
             }
             // continue;

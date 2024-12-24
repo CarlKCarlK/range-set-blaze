@@ -958,7 +958,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
     }
 }
 
-// cmk CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_map_method'
+// CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_map_method'
 impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 'a, VR: ValueRef);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VR, I0, I1>,  VR::Value, VR, VR: ValueRef, I0: SortedDisjointMap<T, VR>, I1: SortedDisjoint<T>);

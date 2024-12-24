@@ -119,7 +119,7 @@ where
                 if gather.1.borrow() == best.1.borrow()
                     && (*gather.0.end()).add_one() == *best.0.start()
                 {
-                    if self.workspace.len() % 2 == 1 {
+                    if self.workspace.len().is_odd() {
                         // if the gather is contiguous with the best, then merge them
                         gather.0 = *gather.0.start()..=next_end;
                         self.gather = Some(gather);
@@ -131,8 +131,8 @@ where
                 } else {
                     // if the gather is not contiguous with the best, then output the gather and set the gather to the best
                     self.ready_to_go = Some(gather);
-                    // cmk this code appear twice
-                    if self.workspace.len() % 2 == 1 {
+                    // FYI: this code appear twice # 1 of 2
+                    if self.workspace.len().is_odd() {
                         self.gather = Some((*best.0.start()..=next_end, best.1.clone()));
                     } else {
                         debug_assert!(self.gather.is_none());
@@ -140,7 +140,8 @@ where
                 }
             } else {
                 // if there is no gather, then set the gather to the best
-                if self.workspace.len() % 2 == 1 {
+                // FYI: this code appear twice # 2 of 2
+                if self.workspace.len().is_odd() {
                     self.gather = Some((*best.0.start()..=next_end, best.1.clone()));
                 } else {
                     debug_assert!(self.gather.is_none());
@@ -149,21 +150,18 @@ where
 
             // We also update the workspace to removing any items that are completely covered by the new_start.
             // (Unlike UnionIterMap, we must keep any items that have a lower priority and are shorter than the new best.)
-            // cmk use .filter() ?
-            let mut new_workspace = BinaryHeap::new();
-            let mut new_next_end = None;
-            while let Some(item) = self.workspace.pop() {
-                let mut item = item;
-                if item.end() <= next_end {
-                    // too short, don't keep
-                    continue; // while loop
-                }
-                item.set_range(next_end.add_one()..=item.end());
-                new_next_end = Some(min_next_end(&new_next_end, item.end()));
-                new_workspace.push(item);
-            }
-            self.workspace = new_workspace;
-            self.workspace_next_end = new_next_end;
+            self.workspace_next_end = None;
+            self.workspace = self
+                .workspace
+                .drain()
+                .filter(|item| item.end() > next_end)
+                .map(|mut item| {
+                    item.set_range(next_end.add_one()..=item.end());
+                    self.workspace_next_end =
+                        Some(min_next_end(&self.workspace_next_end, item.end()));
+                    item
+                })
+                .collect();
         } // end of main loop
     }
 }
@@ -218,24 +216,15 @@ where
     }
 }
 
-#[test]
-fn cmk_delete_me6() {
-    use crate::{prelude::*, SymDiffIterMap};
+#[allow(clippy::wrong_self_convention)]
+#[allow(clippy::redundant_pub_crate)]
+pub(crate) trait UsizeExtensions {
+    fn is_odd(self) -> bool;
+}
 
-    let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-    let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-    let sym_diff = SymDiffIterMap::new2(a, b);
-    assert_eq!(
-        sym_diff.into_string(),
-        r#"(1..=1, "a"), (3..=4, "b"), (7..=100, "a")"#
-    );
-
-    // Or, equivalently:
-    let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-    let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-    let sym_diff = a ^ b;
-    assert_eq!(
-        sym_diff.into_string(),
-        r#"(1..=1, "a"), (3..=4, "b"), (7..=100, "a")"#
-    );
+impl UsizeExtensions for usize {
+    #[inline]
+    fn is_odd(self) -> bool {
+        self & 1 != 0
+    }
 }

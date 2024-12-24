@@ -445,10 +445,9 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         R::IntoIter: SortedDisjoint<T>,
         Self: Sized,
     {
+        // LATER: Could be made a little more efficient by coding the logic directly into the iterators.
         self.difference(other).is_empty()
     }
-
-    // cmk define a comp that returns an Ordering and use that to define is_subset, is_superset, and equal
 
     /// Returns `true` if the set is a superset of another,
     /// i.e., `self` contains at least all the elements in `other`.
@@ -729,8 +728,7 @@ macro_rules! impl_sorted_traits_and_ops {
     };
 }
 
-// cmk CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_method'
-
+//CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_method'
 impl_sorted_traits_and_ops!(CheckSortedDisjoint<T, I>, I: AnythingGoes<T>);
 impl_sorted_traits_and_ops!(DynSortedDisjoint<'a, T>, 'a);
 impl_sorted_traits_and_ops!(IntoRangesIter<T>, 'ignore);
