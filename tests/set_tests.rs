@@ -1581,7 +1581,7 @@ fn range_example() {
     }
 
     let intersection = &set & RangeSetBlaze::from_iter([4..=i32::MAX]);
-    assert_eq!(Some(5), intersection.iter().next());
+    assert_eq!(Some(5), intersection.first());
 }
 
 #[test]
@@ -2008,15 +2008,15 @@ fn test_every_sorted_disjoint_method() {
     macro_rules! fresh_instances {
         () => {{
             let a: CheckSortedDisjoint<_, _> = CheckSortedDisjoint::new([1..=2, 5..=100]);
-            let b: NotIter<_, _> = !!CheckSortedDisjoint::new([1..=2, 5..=100]);
-            let c: MapRangesIter<_, _> = c1.ranges();
-            let d: MapIntoRangesIter<_, _> = c1.clone().into_ranges();
-            let e: DynSortedDisjoint<_> =
+            let b: DynSortedDisjoint<_> =
                 DynSortedDisjoint::new(RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges());
-            let f: SymDiffIter<_, _> = c0.ranges() ^ c0.ranges() ^ c0.ranges();
-            let g: UnionIter<_, _> = c0.ranges() | c0.ranges();
-            let h: RangesIter<_> = c0.ranges();
-            let i: IntoRangesIter<_> = c0.clone().into_ranges();
+            let c: IntoRangesIter<_> = c0.clone().into_ranges();
+            let d: MapIntoRangesIter<_, _> = c1.clone().into_ranges();
+            let e: MapRangesIter<_, _> = c1.ranges();
+            let f: NotIter<_, _> = !!CheckSortedDisjoint::new([1..=2, 5..=100]);
+            let g: RangesIter<_> = c0.ranges();
+            let h: SymDiffIter<_, _> = c0.ranges() ^ c0.ranges() ^ c0.ranges();
+            let i: UnionIter<_, _> = c0.ranges() | c0.ranges();
 
             (a, b, c, d, e, f, g, h, i)
         }};

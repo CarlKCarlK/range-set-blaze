@@ -362,9 +362,6 @@ where
         SymDiffIterMap::new_k(self)
     }
 }
-// cmk confirm that on ranges the union of 0 sets 0 empty and the intersection of 0 sets is the universal set.
-// cmk why does the multiway.rs have a MultiwayRangeSetBlaze but not a MultiwayRangeMapBlazeRef?
-// cmk on maps, the union is still empty, but the intersection is undefined because we can't give a value to T.s
 
 #[cfg(feature = "std")]
 #[test]

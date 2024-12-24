@@ -60,41 +60,6 @@ where
     Ok(set)
 }
 
-// cmk why is the commented out? Do we need it? If so, do we need it in map.rs?
-// impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
-//     /// Extends the [`RangeSetBlaze`] with the contents of a
-//     /// range iterator.
-
-//     /// Elements are added one-by-one. There is also a version
-//     /// that takes an integer iterator.
-//     ///
-//     /// The [`|=`](RangeSetBlaze::bitor_assign) operator extends a [`RangeSetBlaze`]
-//     /// from another [`RangeSetBlaze`]. It is never slower
-//     ///  than  [`RangeSetBlaze::extend`] and often several times faster.
-//     ///
-//     /// # Examples
-//     /// ```
-//     /// use range_set_blaze::RangeSetBlaze;
-//     /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-//     /// a.extend([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
-//     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
-//     ///
-//     /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-//     /// let mut b = RangeSetBlaze::from_iter([5..=5, 0..=0, 0..=0, 3..=4, 10..=10]);
-//     /// a |= b;
-//     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
-//     /// ```
-//     fn extend<I>(&mut self, iter: I)
-//     where
-//         I: IntoIterator<Item = RangeInclusive<T>>,
-//     {
-//         let iter = iter.into_iter();
-//         for range in iter {
-//             self.0.internal_add(range, ());
-//         }
-//     }
-// }
-
 /// A set of integers stored as sorted & disjoint ranges.
 ///
 /// Internally, it stores the ranges in a cache-efficient [`BTreeMap`].
@@ -425,7 +390,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     pub fn first(&self) -> Option<T> {
         self.btree_map.iter().next().map(|(x, _)| *x)
     }
-    // cmk use first and last, not iter.next().
 
     /// Returns the element in the set, if any, that is equal to
     /// the value.
@@ -961,37 +925,6 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    #[allow(dead_code)]
-    #[cfg(not(coverage))]
-    fn cmk_split_off(&mut self, value: T) -> Self {
-        let mut old_len = self.len;
-        let mut b = self.btree_map.split_off(&value);
-        if let Some(mut last_entry) = self.btree_map.last_entry() {
-            // Can assume start strictly less than value
-            let end_ref = last_entry.get_mut();
-            if value <= *end_ref {
-                b.insert(value, *end_ref);
-                *end_ref = value.sub_one();
-            }
-        }
-
-        // Find the length of the smaller map and then length of self & b.
-        let b_len = if self.btree_map.len() < b.len() {
-            self.len = Self::btree_map_len(&self.btree_map);
-            old_len -= self.len;
-            old_len
-        } else {
-            let b_len = Self::btree_map_len(&b);
-            old_len -= b_len;
-            self.len = old_len;
-            b_len
-        };
-        Self {
-            btree_map: b,
-            len: b_len,
-        }
-    }
-
     fn btree_map_len(btree_map: &BTreeMap<T, T>) -> T::SafeLen {
         btree_map
             .iter()
@@ -1043,36 +976,6 @@ impl<T: Integer> RangeSetBlaze<T> {
             Some(value)
         }
     }
-
-    // cmk
-    // fn internal_add_chatgpt(&mut self, range: RangeInclusive<T>) {
-    //     let (start, end) = range.into_inner();
-
-    //     // Find the first overlapping range or the nearest one before it
-    //     let mut next = self.btree_map.range(..=start).next_back();
-
-    //     // Find all overlapping ranges
-    //     while let Some((&start_key, &end_value)) = next {
-    //         // If this range doesn't overlap, we're done
-    //         if end_value < start {
-    //             break;
-    //         }
-
-    //         // If this range overlaps or is adjacent, merge it
-    //         if end_value >= start.sub_one() {
-    //             let new_end = end.max(end_value);
-    //             let new_start = start.min(start_key);
-
-    //             self.btree_map.remove(&start_key);
-    //             self.btree_map.insert(new_start, new_end);
-
-    //             // Restart from the beginning
-    //             next = self.btree_map.range(..=new_start).next_back();
-    //         } else {
-    //             next = self.btree_map.range(..start_key).next_back();
-    //         }
-    //     }
-    // }
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
@@ -1630,8 +1533,8 @@ where
     I: SortedDisjoint<T>,
 {
     btree_set_iter: I,
-    // cmk FUTURE: here and elsewhere, when core::iter:Step is available could
-    // cmk FUTURE: use RangeInclusive as an iterator (with exhaustion) rather than needing an Option
+    // FUTURE: here and elsewhere, when core::iter:Step is available could
+    // FUTURE: use RangeInclusive as an iterator (with exhaustion) rather than needing an Option
     range_front: RangeInclusive<T>,
     range_back: RangeInclusive<T>,
 }
@@ -1783,6 +1686,7 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
     /// a |= b;
     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
+    #[inline]
     fn extend<I>(&mut self, iter: I)
     where
         I: IntoIterator<Item = T>,
@@ -1981,6 +1885,7 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
     /// a |= b;
     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```
+    #[inline]
     fn extend<I>(&mut self, iter: I)
     where
         I: IntoIterator<Item = RangeInclusive<T>>,
@@ -2066,11 +1971,9 @@ impl<T: Integer> PartialOrd for RangeSetBlaze<T> {
 
 impl<T: Integer> Eq for RangeSetBlaze<T> {}
 
-// cmk use this elsewhere, should it be public?
-
 /// Extracts the start and end of a range from a `RangeBounds`.
 ///
-/// Does not check for empty ranges.
+/// Empty ranges are allowed.
 #[allow(clippy::redundant_pub_crate)]
 pub(crate) fn extract_range<T: Integer, R>(range: R) -> (T, T)
 where
@@ -2100,5 +2003,3 @@ where
     };
     (start, end)
 }
-
-// cmk look at BTreeSet to see what to inline

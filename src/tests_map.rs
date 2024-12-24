@@ -512,7 +512,7 @@ fn map_repro1() {
 // //         $(
 // //             let a = RangeMapBlaze::<$ty>::new();
 // //             println!("{a:#?}");
-// //             assert_eq!(a.iter().next(), None);
+// //             assert_eq!(a.first(), None);
 
 // //             let mut a = RangeMapBlaze::from_iter([$ty::one()..=3]);
 // //             let mut b = RangeMapBlaze::from_iter([3..=5]);

@@ -45,29 +45,6 @@ where
     }
 }
 
-// cmk0 remove?
-// impl<T: Integer, V: Eq + Clone, const N: usize> From<[T; N]>
-//     for IntersectionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
-// {
-//     fn from(arr: [T; N]) -> Self {
-//         arr.as_slice().into()
-//     }
-// }
-
-// impl<T: Integer, V: Eq + Clone> From<&[T]> for IntersectionIterMap<T, V, SortedRangeInclusiveVec<T, V>> {
-//     fn from(slice: &[T]) -> Self {
-//         slice.iter().cloned().collect()
-//     }
-// }
-
-// impl<T: Integer, V: Eq + Clone, const N: usize> From<[RangeValue<T, V>; N]>
-//     for IntersectionIterMap<T, V, SortedRangeInclusiveVec<T, V>>
-// {
-//     fn from(arr: [RangeValue<T, V>; N]) -> Self {
-//         arr.as_slice().into()
-//     }
-// }
-
 impl<T, VR, IM, IS> FusedIterator for IntersectionIterMap<T, VR, IM, IS>
 where
     T: Integer,

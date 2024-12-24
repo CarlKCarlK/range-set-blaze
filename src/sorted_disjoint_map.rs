@@ -207,8 +207,6 @@ where
     {
         RangeValuesToRangesIter::new(self)
     }
-    // cmk I think this is 'Sized' because will sometimes want to create a struct (e.g. BitOrIter) that contains a field of this type
-
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their union.
     ///
     /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
@@ -960,7 +958,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
     }
 }
 
-// cmk CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_method'
+// cmk CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_map_method'
 impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 'a, VR: ValueRef);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VR, I0, I1>,  VR::Value, VR, VR: ValueRef, I0: SortedDisjointMap<T, VR>, I1: SortedDisjoint<T>);
@@ -968,20 +966,3 @@ impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: Eq + Clo
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Eq + Clone);
 impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
 impl_sorted_map_traits_and_ops!(UnionIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
-
-#[test]
-fn cmk_delete_temp() {
-    use std::string::ToString;
-
-    let a = RangeMapBlaze::from_iter([(2..=3, "a".to_string()), (5..=100, "a".to_string())]);
-    let b = RangeMapBlaze::from_iter([(3..=10, "b".to_string())]);
-    let mut c = a.range_values() & b.range_values();
-    assert_eq!(c.next(), Some((3..=3, &"a".to_string())));
-    assert_eq!(c.next(), Some((5..=10, &"a".to_string())));
-    assert_eq!(c.next(), None);
-
-    let mut c = a.into_range_values() & b.into_range_values();
-    assert_eq!(c.next(), Some((3..=3, Rc::new("a".to_string()))));
-    assert_eq!(c.next(), Some((5..=10, Rc::new("a".to_string()))));
-    assert_eq!(c.next(), None);
-}

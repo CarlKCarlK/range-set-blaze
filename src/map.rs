@@ -488,6 +488,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     ///
     /// Keys returned by `.next()` are in ascending order.
     /// Keys returned by `.next_back()` are in descending order.
+    #[inline]
     pub fn into_keys(self) -> IntoKeys<T, V> {
         IntoKeys::new(self.btree_map.into_iter())
     }
@@ -565,6 +566,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     ///
     /// Values returned by `.next()` correspond to elements in ascending integer order.
     /// Values returned by `.next_back()` correspond to elements in descending integer order.
+    #[inline]
     pub fn into_values(self) -> IntoValues<T, V> {
         IntoValues::new(self.btree_map.into_iter())
     }

@@ -104,8 +104,8 @@ impl<T: Integer, V: Eq + Clone> Iterator for IntoRangeValuesIter<T, V> {
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(start, end_value)| {
             let range = start..=end_value.end;
-            let rc_value = Rc::new(end_value.value);
-            (range, rc_value) // cmk rename rc_value
+            let value = Rc::new(end_value.value);
+            (range, value)
         })
     }
 
@@ -118,8 +118,8 @@ impl<T: Integer, V: Eq + Clone> DoubleEndedIterator for IntoRangeValuesIter<T, V
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter.next_back().map(|(start, end_value)| {
             let range = start..=end_value.end;
-            let rc_value = Rc::new(end_value.value);
-            (range, rc_value) // cmk rename rc_value
+            let value = Rc::new(end_value.value);
+            (range, value)
         })
     }
 }
@@ -281,8 +281,8 @@ where
     pub(crate) const fn new(iter: I) -> Self {
         Self {
             iter,
-            gather: None,         // cmk rename "gather"?
-            phantom: PhantomData, // cmk needed?
+            gather: None,
+            phantom: PhantomData,
         }
     }
 }
@@ -353,7 +353,7 @@ where
 {
     iter: I,
     priority_number: usize,
-    phantom_data: PhantomData<(T, VR)>,
+    phantom: PhantomData<(T, VR)>,
 }
 
 impl<T, VR, I> FusedIterator for SetPriorityMap<T, VR, I>
@@ -389,7 +389,7 @@ where
         Self {
             iter,
             priority_number: priority,
-            phantom_data: PhantomData,
+            phantom: PhantomData,
         }
     }
 }

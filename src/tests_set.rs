@@ -313,7 +313,7 @@ fn lib_coverage_0() {
         $(
             let a = RangeSetBlaze::<$ty>::new();
             println!("{a:#?}");
-            assert_eq!(a.iter().next(), None);
+            assert_eq!(a.first(), None);
 
             let mut a = RangeSetBlaze::from_iter([$ty::one()..=3]);
             let mut b = RangeSetBlaze::from_iter([3..=5]);
