@@ -189,7 +189,7 @@ where
     }
 }
 
-// from iter (T, VR) to UnionIterMap
+// UnionIterMap from iter (T, VR)
 impl<T, VR> FromIterator<(RangeInclusive<T>, VR)>
     for UnionIterMap<T, VR, SortedStartsInVecMap<T, VR>>
 where
@@ -201,27 +201,13 @@ where
         I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
     {
         let iter = iter.into_iter();
-        let unsorted_priority = UnsortedPriorityMap::new(iter);
-        Self::from(unsorted_priority)
-    }
-}
-
-// from UnsortedDisjointMap to UnionIterMap
-impl<T, VR, I> From<UnsortedPriorityMap<T, VR, I>>
-    for UnionIterMap<T, VR, SortedStartsInVecMap<T, VR>>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = (RangeInclusive<T>, VR)>,
-{
-    #[allow(clippy::clone_on_copy)]
-    fn from(unsorted_priority_map: UnsortedPriorityMap<T, VR, I>) -> Self {
-        let iter = unsorted_priority_map.sorted_by(|a, b| {
+        let unsorted_priority_map = UnsortedPriorityMap::new(iter);
+        let sorted_priority_map = unsorted_priority_map.sorted_by(|a, b| {
             // We sort only by start -- priority is not used until later.
             a.start().cmp(&b.start())
         });
-        let iter = AssumePrioritySortedStartsMap::new(iter);
-        Self::new(iter)
+        let assume_sorted_priority_map = AssumePrioritySortedStartsMap::new(sorted_priority_map);
+        Self::new(assume_sorted_priority_map)
     }
 }
 
