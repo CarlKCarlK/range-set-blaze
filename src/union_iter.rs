@@ -8,10 +8,10 @@ use core::iter::FusedIterator;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
 
-/// This `struct` is created by the [`union`] method on [`SortedDisjoint`]. See [`union`]'s
+/// This `struct` is created by the [`union`] method on [`SortedStarts`]. See [`union`]'s
 /// documentation for more.
 ///
-/// [`SortedDisjoint`]: crate::SortedDisjoint
+/// [`SortedStarts`]: crate::SortedStarts
 /// [`union`]: crate::SortedDisjoint::union
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -65,7 +65,6 @@ where
     T: Integer,
     I: SortedStarts<T>,
 {
-    // cmk fix the comment on the set size. It should say inputs are SortedStarts not SortedDisjoint.
     /// Creates a new [`UnionIter`] from zero or more [`SortedStarts`] iterators. See [`UnionIter`] for more details and examples.
     pub(crate) const fn new(iter: I) -> Self {
         Self {
@@ -103,7 +102,6 @@ where
     }
 }
 
-// cmk simplify the long types
 // from iter (T, VR) to UnionIter
 impl<T> FromIterator<RangeInclusive<T>> for UnionIter<T, SortedStartsInVec<T>>
 where

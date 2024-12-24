@@ -17,10 +17,10 @@ type SortedStartsInVecMap<T, VR> =
 #[allow(clippy::redundant_pub_crate)]
 pub(crate) type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
-/// This `struct` is created by the [`union`] method on [`SortedDisjointMap`]. See [`union`]'s
+/// This `struct` is created by the [`union`] method on [`PrioritySortedStartsMap`]. See [`union`]'s
 /// documentation for more.
 ///
-/// [`SortedDisjointMap`]: crate::SortedDisjointMap
+/// [`PrioritySortedStartsMap`]: crate::PrioritySortedStartsMap
 /// [`union`]: crate::SortedDisjointMap::union
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -201,13 +201,11 @@ where
         I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
     {
         let iter = iter.into_iter();
-        let unsorted_priority_map = UnsortedPriorityMap::new(iter);
-        let sorted_priority_map = unsorted_priority_map.sorted_by(|a, b| {
-            // We sort only by start -- priority is not used until later.
-            a.start().cmp(&b.start())
-        });
-        let assume_sorted_priority_map = AssumePrioritySortedStartsMap::new(sorted_priority_map);
-        Self::new(assume_sorted_priority_map)
+        let iter = UnsortedPriorityMap::new(iter);
+        // We sort only by start -- priority is not used until later.
+        let iter = iter.sorted_by(|a, b| a.start().cmp(&b.start()));
+        let iter = AssumePrioritySortedStartsMap::new(iter);
+        Self::new(iter)
     }
 }
 
