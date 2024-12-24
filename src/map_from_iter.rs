@@ -58,7 +58,8 @@ where
     where
         I: IntoIterator<Item = (RangeInclusive<T>, &'a V)>,
     {
-        let union_iter_map = iter.into_iter().collect::<UnionIterMap<T, &V, _>>();
+        let iter = iter.into_iter();
+        let union_iter_map: UnionIterMap<T, &V, _> = iter.collect();
         Self::from_sorted_disjoint_map(union_iter_map)
     }
 }
@@ -171,7 +172,9 @@ where
     }
 }
 
-impl<'a, T: Integer, V: Eq + Clone> FromIterator<&'a (RangeInclusive<T>, V)> for RangeMapBlaze<T, V> {
+impl<'a, T: Integer, V: Eq + Clone> FromIterator<&'a (RangeInclusive<T>, V)>
+    for RangeMapBlaze<T, V>
+{
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///

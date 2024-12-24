@@ -8,8 +8,8 @@ use core::iter::FusedIterator;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
 
-use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
-use crate::unsorted_disjoint_map::UnsortedPriorityDisjointMap;
+use crate::unsorted_priority_map::AssumePrioritySortedStartsMap;
+use crate::unsorted_priority_map::UnsortedPriorityMap;
 use crate::Integer;
 
 type SortedStartsInVecMap<T, VR> =
@@ -189,12 +189,6 @@ where
     }
 }
 
-// cmk used?
-#[allow(dead_code)]
-type SortedRangeValueVec<T, VR> =
-    AssumePrioritySortedStartsMap<T, VR, vec::IntoIter<(RangeInclusive<T>, VR)>>;
-
-// cmk simplify the long types
 // from iter (T, VR) to UnionIterMap
 impl<T, VR> FromIterator<(RangeInclusive<T>, VR)>
     for UnionIterMap<T, VR, SortedStartsInVecMap<T, VR>>
@@ -206,12 +200,14 @@ where
     where
         I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
     {
-        UnsortedPriorityDisjointMap::new(iter.into_iter()).into()
+        let iter = iter.into_iter();
+        let unsorted_priority = UnsortedPriorityMap::new(iter);
+        Self::from(unsorted_priority)
     }
 }
 
-// from from UnsortedDisjointMap to UnionIterMap
-impl<T, VR, I> From<UnsortedPriorityDisjointMap<T, VR, I>>
+// from UnsortedDisjointMap to UnionIterMap
+impl<T, VR, I> From<UnsortedPriorityMap<T, VR, I>>
     for UnionIterMap<T, VR, SortedStartsInVecMap<T, VR>>
 where
     T: Integer,
@@ -219,8 +215,8 @@ where
     I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     #[allow(clippy::clone_on_copy)]
-    fn from(unsorted_disjoint: UnsortedPriorityDisjointMap<T, VR, I>) -> Self {
-        let iter = unsorted_disjoint.sorted_by(|a, b| {
+    fn from(unsorted_priority_map: UnsortedPriorityMap<T, VR, I>) -> Self {
+        let iter = unsorted_priority_map.sorted_by(|a, b| {
             // We sort only by start -- priority is not used until later.
             a.start().cmp(&b.start())
         });
@@ -235,26 +231,4 @@ where
     VR: ValueRef,
     I: PrioritySortedStartsMap<T, VR> + FusedIterator,
 {
-}
-
-#[test]
-fn cmk_delete_me5() {
-    use crate::prelude::*;
-
-    let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-    let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-    let union = UnionIterMap::new2(a, b);
-    assert_eq!(
-        union.into_string(),
-        r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"#
-    );
-
-    // Or, equivalently:
-    let a = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-    let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-    let union = a | b;
-    assert_eq!(
-        union.into_string(),
-        r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"#
-    );
 }

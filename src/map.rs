@@ -5,7 +5,7 @@ use crate::set::extract_range;
 use crate::sorted_disjoint_map::IntoString;
 use crate::sorted_disjoint_map::SortedDisjointMap;
 use crate::sym_diff_iter_map::SymDiffIterMap;
-use crate::unsorted_disjoint_map::{SortedDisjointMapWithLenSoFar, UnsortedPriorityDisjointMap};
+use crate::unsorted_priority_map::{SortedDisjointMapWithLenSoFar, UnsortedPriorityMap};
 use crate::values::IntoValues;
 use crate::values::Values;
 use crate::IntoKeys;
@@ -2056,8 +2056,8 @@ where
     {
         let iter = iter.into_iter();
 
-        // We gather adjacent values into ranges via UnsortedPriorityDisjointMap, but ignore the priority.
-        for priority in UnsortedPriorityDisjointMap::new(iter.map(|(r, v)| (r..=r, Rc::new(v)))) {
+        // We gather adjacent values into ranges via UnsortedPriorityMap, but ignore the priority.
+        for priority in UnsortedPriorityMap::new(iter.map(|(r, v)| (r..=r, Rc::new(v)))) {
             let (range, value) = priority.into_range_value();
             let value: V = Rc::try_unwrap(value).unwrap_or_else(|_| unreachable!());
             self.internal_add(range, value);
@@ -2100,8 +2100,8 @@ where
     {
         let iter = iter.into_iter();
 
-        // We gather adjacent values into ranges via UnsortedPriorityDisjointMap, but ignore the priority.
-        for priority in UnsortedPriorityDisjointMap::new(iter.map(|(r, v)| (r, Rc::new(v)))) {
+        // We gather adjacent values into ranges via UnsortedPriorityMap, but ignore the priority.
+        for priority in UnsortedPriorityMap::new(iter.map(|(r, v)| (r, Rc::new(v)))) {
             let (range, value) = priority.into_range_value();
             let value = Rc::try_unwrap(value).unwrap_or_else(|_| unreachable!());
             self.internal_add(range, value);

@@ -6,7 +6,7 @@ wasm_bindgen_test_configure!(run_in_browser);
 
 extern crate alloc;
 // use crate::sorted_disjoint_map::{IntoString, Priority};
-// use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
+// use crate::unsorted_priority_map_map::AssumePrioritySortedStartsMap;
 use alloc::collections::BTreeMap;
 use core::cmp::Ordering;
 use core::fmt;
@@ -3170,12 +3170,12 @@ fn map_repro2() {
 // #[test]
 //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn private_constructor() {
-//     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
-//     // println!("{}", unsorted_disjoint.fmt());
-//     assert_eq!(unsorted_disjoint.into_string(), "1..=6, -12..=-10, 3..=3");
+//     let unsorted_priority_map = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
+//     // println!("{}", unsorted_priority_map.fmt());
+//     assert_eq!(unsorted_priority_map.into_string(), "1..=6, -12..=-10, 3..=3");
 
-//     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
-//     let union_iter = UnionIter::from(unsorted_disjoint);
+//     let unsorted_priority_map = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
+//     let union_iter = UnionIter::from(unsorted_priority_map);
 //     // println!("{}", union_iter.fmt());
 //     assert_eq!(union_iter.into_string(), "-12..=-10, 1..=6");
 
@@ -3515,7 +3515,7 @@ fn map_repro2() {
 // }
 // #[test]
 //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-// fn unsorted_disjoint_coverage_0() {
+// fn unsorted_priority_map_coverage_0() {
 //     let a = AssumeSortedStarts::new([1..=2, 5..=100].into_iter());
 //     assert!(format!("{a:?}").starts_with("AssumeSortedStarts"));
 // }
@@ -4731,12 +4731,12 @@ fn example_2() {
 // // #[allow(clippy::reversed_empty_ranges)]
 // // #[test]
 // // fn private_constructor() {
-// //     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
-// //     // println!("{}", unsorted_disjoint.fmt());
-// //     assert_eq!(unsorted_disjoint.into_string(), "1..=6, -12..=-10, 3..=3");
+// //     let unsorted_priority_map = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
+// //     // println!("{}", unsorted_priority_map.fmt());
+// //     assert_eq!(unsorted_priority_map.into_string(), "1..=6, -12..=-10, 3..=3");
 
-// //     let unsorted_disjoint = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
-// //     let union_iter = UnionIter::from(unsorted_disjoint);
+// //     let unsorted_priority_map = UnsortedDisjoint::from([5..=6, 1..=5, 1..=0, -12..=-10, 3..=3]);
+// //     let union_iter = UnionIter::from(unsorted_priority_map);
 // //     // println!("{}", union_iter.fmt());
 // //     assert_eq!(union_iter.into_string(), "-12..=-10, 1..=6");
 
@@ -5068,7 +5068,7 @@ fn example_2() {
 // // }
 
 // // #[test]
-// // fn unsorted_disjoint_coverage_0() {
+// // fn unsorted_priority_map_coverage_0() {
 // //     let a = AssumeSortedStarts::new([1..=2, 5..=100].into_iter());
 // //     assert!(format!("{a:?}").starts_with("AssumeSortedStarts"));
 // // }

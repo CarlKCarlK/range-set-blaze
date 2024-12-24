@@ -34,9 +34,9 @@ pub enum UIntPlusOne<T>
 where
     T: UInt,
 {
-    /// cmk
+    /// A variant representing an unsigned integer of type `T`.
     UInt(T),
-    /// cmk
+    /// A variant representing the value `u128::MAX + 1`.
     MaxPlusOne,
 }
 
@@ -44,7 +44,7 @@ impl<T> UIntPlusOne<T>
 where
     T: UInt,
 {
-    /// cmk
+    /// Returns the maximum value of an unsigned integer type `T` plus one, as an `f64`.
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_possible_wrap)]
     #[must_use]

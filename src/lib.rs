@@ -115,8 +115,8 @@ pub use union_iter_map::UnionIterMap;
 mod unsorted_disjoint;
 pub use crate::unsorted_disjoint::AssumeSortedStarts;
 
-mod unsorted_disjoint_map;
-pub use crate::unsorted_disjoint_map::AssumePrioritySortedStartsMap;
+mod unsorted_priority_map;
+pub use crate::unsorted_priority_map::AssumePrioritySortedStartsMap;
 
 mod values;
 pub use crate::values::{IntoValues, Values};

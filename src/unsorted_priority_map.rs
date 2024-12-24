@@ -12,7 +12,7 @@ use num_traits::Zero;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::redundant_pub_crate)]
-pub(crate) struct UnsortedPriorityDisjointMap<T, VR, I>
+pub(crate) struct UnsortedPriorityMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef,
@@ -24,7 +24,7 @@ where
     priority_number: usize,
 }
 
-impl<T, VR, I> UnsortedPriorityDisjointMap<T, VR, I>
+impl<T, VR, I> UnsortedPriorityMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef,
@@ -41,7 +41,7 @@ where
     }
 }
 
-impl<T, VR, I> FusedIterator for UnsortedPriorityDisjointMap<T, VR, I>
+impl<T, VR, I> FusedIterator for UnsortedPriorityMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef,
@@ -49,7 +49,7 @@ where
 {
 }
 
-impl<T, VR, I> Iterator for UnsortedPriorityDisjointMap<T, VR, I>
+impl<T, VR, I> Iterator for UnsortedPriorityMap<T, VR, I>
 where
     T: Integer,
     VR: ValueRef,
@@ -134,21 +134,6 @@ where
     len: <T as Integer>::SafeLen,
     phantom: PhantomData<VR>,
 }
-
-// cmk
-// impl<T: Integer, V: Eq + Clone, I> From<I> for SortedDisjointWithLenSoFarMap<T, V, I::IntoIterMap>
-// where
-//     I: IntoIterator<Item = RangeValue<T, V>>,
-//     I::IntoIter: SortedDisjointMap<T, V>,
-// {
-//     fn from(into_iter: I) -> Self {
-//         SortedDisjointWithLenSoFarMap {
-//             iter: into_iter.into_iter(),
-//             len: <T as Integer>::SafeLen::zero(),
-//             _phantom: PhantomData,
-//         }
-//     }
-// }
 
 impl<T, VR, I> SortedDisjointMapWithLenSoFar<T, VR, I>
 where
