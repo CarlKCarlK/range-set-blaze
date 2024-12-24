@@ -137,6 +137,14 @@ where
     pub(crate) const fn len_so_far(&self) -> <T as Integer>::SafeLen {
         self.len
     }
+
+    pub(crate) fn new(iter: I) -> Self {
+        Self {
+            iter,
+            len: <T as Integer>::SafeLen::zero(),
+            phantom: PhantomData,
+        }
+    }
 }
 
 impl<T, VR, I> FusedIterator for SortedDisjointMapWithLenSoFar<T, VR, I>
@@ -230,22 +238,5 @@ where
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
-    }
-}
-
-// cmk understand why/if this is needed
-impl<T, VR, I> From<I> for SortedDisjointMapWithLenSoFar<T, VR, I::IntoIter>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
-    I::IntoIter: SortedDisjointMap<T, VR>,
-{
-    fn from(into_iter: I) -> Self {
-        Self {
-            iter: into_iter.into_iter(),
-            len: <T as Integer>::SafeLen::zero(),
-            phantom: PhantomData,
-        }
     }
 }

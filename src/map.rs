@@ -680,7 +680,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         VR: ValueRef<Target = V>,
         I: SortedDisjointMap<T, VR>,
     {
-        let mut iter_with_len = SortedDisjointMapWithLenSoFar::from(iter);
+        let mut iter_with_len = SortedDisjointMapWithLenSoFar::new(iter);
         let btree_map: BTreeMap<T, EndValue<T, VR::Target>> = (&mut iter_with_len).collect();
         Self {
             btree_map,
