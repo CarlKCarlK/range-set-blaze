@@ -278,13 +278,18 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 
     /// Used internally to test `rogs_range`.
-    // cmk00 extract_range can now return empty range. Test this on an empty range and see that this does the right thing.
     #[doc(hidden)]
     pub fn rogs_range_slow<R>(&self, range: R) -> Vec<Rog<T>>
     where
         R: RangeBounds<T>,
     {
         let (start_in, end_in) = extract_range(range);
+
+        assert!(
+            start_in <= end_in,
+            "start must be less than or equal to end"
+        );
+
         let rsb_in = Self::from_iter([start_in..=end_in]);
         let ranges = &rsb_in & self;
         let gaps = rsb_in - self;

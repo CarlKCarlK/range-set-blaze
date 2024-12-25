@@ -1094,55 +1094,6 @@ fn fraction<T: Integer>(range_int_set: &RangeSetBlaze<T>, range: &RangeInclusive
     T::safe_len_to_f64(range_int_set.len()) / T::safe_len_to_f64(T::safe_len(range))
 }
 
-// cmk
-// #[test]
-//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-
-// fn example_2a() {
-//     use range_set_blaze::prelude::*;
-
-//     let fps = 24; // frames per second
-//                   // Create a 30 second text animation with blank frames
-//     let count_down = (2..5)
-//         .rev()
-//         .enumerate()
-//         .map(|(i, c)| ((i * fps)..=(i * fps) - 1, c.to_string()));
-//     let hello_world = RangeMapBlaze::from_iter([
-//         (5 * fps..7 * fps - 1, "Hello"),
-//         (8 * fps..10 * fps - 1, "World"),
-//     ]);
-//     let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, "")]);
-//     let animation = [count_down, hello_world, blank].union();
-//     for (range, text) in animation.range_values() {
-//         println!("{range}: {text}");
-//     }
-// }
-// );
-
-// cmk
-// #[test]
-//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-
-// fn example_2b() {
-//     use range_set_blaze::prelude::*;
-
-//     let fps = 24; // frames per second
-//                   // Create a 30 second text animation with blank frames
-//     let count_down = (2..5)
-//         .rev()
-//         .enumerate()
-//         .map(|(i, c)| ((i * fps)..=(i * fps) - 1, c.to_string()));
-//     let hello_world = RangeMapBlaze::from_iter([
-//         (5 * fps..7 * fps - 1, "Hello"),
-//         (8 * fps..10 * fps - 1, "World"),
-//     ]);
-//     let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, "")]);
-//     let animation = [count_down, hello_world, blank].union();
-//     for (range, text) in animation.range_values() {
-//         println!("{range}: {text}");
-//     }
-// }
-//
 #[test]
 #[wasm_bindgen_test]
 fn example_3() {
@@ -1774,6 +1725,18 @@ fn test_rog_functionality() {
             a.rogs_range(-1..=end).collect::<Vec<_>>()
         );
     }
+}
+
+#[test]
+#[wasm_bindgen_test]
+#[cfg(feature = "rog-experimental")]
+#[allow(clippy::reversed_empty_ranges)]
+#[allow(deprecated)]
+#[should_panic]
+fn test_rog_functionality_empty() {
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+
+    let _ = a.rogs_range(1..=0).collect::<Vec<_>>();
 }
 
 #[test]
