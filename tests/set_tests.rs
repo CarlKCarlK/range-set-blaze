@@ -1,21 +1,13 @@
 #![cfg(test)]
-use range_set_blaze::AssumeSortedStarts;
-use range_set_blaze::IntoIter;
-use range_set_blaze::IntoRangesIter;
-use range_set_blaze::Iter;
-use range_set_blaze::MapIntoRangesIter;
-use range_set_blaze::MapRangesIter;
-use range_set_blaze::RangeValuesIter;
-use range_set_blaze::RangeValuesToRangesIter;
-use range_set_blaze::RangesIter;
-use range_set_blaze::{KMerge, Merge};
+use range_set_blaze::{
+    AssumeSortedStarts, IntoIter, IntoRangesIter, Iter, KMerge, MapIntoRangesIter, MapRangesIter,
+    Merge, RangeValuesIter, RangeValuesToRangesIter, RangesIter,
+};
+
 use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);
 
 use core::fmt;
-// use core::panic::RefUnwindSafe;
-// use core::panic::UnwindSafe;
-// use crate::ranges_iter::RangesIter;
 use core::fmt::Debug;
 use core::iter::FusedIterator;
 #[cfg(feature = "from_slice")]
@@ -58,20 +50,20 @@ use syntactic_for::syntactic_for;
 use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn insert_255u8() {
     let range_set_blaze = RangeSetBlaze::from_iter([255u8]);
     assert_eq!(range_set_blaze.to_string(), "255..=255");
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn insert_max_u128() {
     let _ = RangeSetBlaze::<u128>::from_iter([u128::MAX]);
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn complement0() {
     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
@@ -83,7 +75,7 @@ fn complement0() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn repro_bit_and() {
     let a = RangeSetBlaze::from_iter([1u8, 2, 3]);
     let b = RangeSetBlaze::from_iter([2u8, 3, 4]);
@@ -94,7 +86,7 @@ fn repro_bit_and() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn doctest1() {
     let a = RangeSetBlaze::<u8>::from_iter([1, 2, 3]);
     let b = RangeSetBlaze::<u8>::from_iter([3, 4, 5]);
@@ -104,7 +96,7 @@ fn doctest1() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn doctest2() {
     let set = RangeSetBlaze::<u8>::from_iter([1, 2, 3]);
     assert!(set.contains(1));
@@ -112,7 +104,7 @@ fn doctest2() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn doctest3() -> Result<(), Box<dyn std::error::Error>> {
     let mut a = RangeSetBlaze::from_iter([1u8..=3]);
     let mut b = RangeSetBlaze::from_iter([3u8..=5]);
@@ -131,7 +123,7 @@ fn doctest3() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn doctest4() {
     let a = RangeSetBlaze::<i8>::from_iter([1, 2, 3]);
 
@@ -140,7 +132,7 @@ fn doctest4() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn compare() {
     let mut btree_set = BTreeSet::<u128>::new();
     btree_set.insert(3);
@@ -151,7 +143,7 @@ fn compare() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn add_in_order() {
     let mut range_set = RangeSetBlaze::new();
     for i in 0u64..1000 {
@@ -159,6 +151,7 @@ fn add_in_order() {
     }
 }
 
+// cmk delete?
 // #[test]
 //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn memoryless_data() {
@@ -197,7 +190,7 @@ fn add_in_order() {
 // }
 //
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn iters() -> Result<(), Box<dyn std::error::Error>> {
     let range_set_blaze = RangeSetBlaze::from_iter([1u8..=6, 8..=9, 11..=15]);
     assert!(range_set_blaze.len() == 13);
@@ -225,7 +218,7 @@ fn iters() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn missing_doctest_ops() {
     // note that may be borrowed or owned in any combination.
 
@@ -273,7 +266,7 @@ fn missing_doctest_ops() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn multi_op() {
     // Union
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -341,7 +334,7 @@ fn multi_op() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn custom_multi() {
     // Union
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -388,7 +381,7 @@ fn custom_multi() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn from_string() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeSetBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=65535]);
     assert_eq!(a, RangeSetBlaze::from_iter([0..=65535]));
@@ -396,7 +389,7 @@ fn from_string() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn nand_repro() -> Result<(), Box<dyn std::error::Error>> {
     let b = &RangeSetBlaze::from_iter([5u8..=13, 18..=29]);
     let c = &RangeSetBlaze::from_iter([38..=42]);
@@ -410,7 +403,7 @@ fn nand_repro() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn parity() -> Result<(), Box<dyn std::error::Error>> {
     let a = &RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = &RangeSetBlaze::from_iter([5..=13, 18..=29]);
@@ -481,7 +474,7 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
 // }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn complement() -> Result<(), Box<dyn std::error::Error>> {
     // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
     let a0 = RangeSetBlaze::from_iter([1..=6]);
@@ -505,7 +498,7 @@ fn complement() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn union_test() -> Result<(), Box<dyn std::error::Error>> {
     let a0 = RangeSetBlaze::from_iter([1..=6]);
     let a1 = RangeSetBlaze::from_iter([8..=9]);
@@ -524,7 +517,7 @@ fn union_test() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn xor() -> Result<(), Box<dyn std::error::Error>> {
     let a0 = RangeSetBlaze::from_iter([1..=6]);
     let a1 = RangeSetBlaze::from_iter([8..=9]);
@@ -544,7 +537,7 @@ fn xor() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::zero_repeat_side_effects)]
 fn empty_it() {
     use range_set_blaze::RangesIter;
@@ -616,7 +609,7 @@ fn empty_it() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::reversed_empty_ranges)]
 fn tricky_case1() {
     let a = RangeSetBlaze::from_iter([1..=0]);
@@ -641,19 +634,19 @@ fn tricky_case1() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn tricky_case2() {
     let _a = RangeSetBlaze::from_iter([-1..=i128::MAX]);
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn tricky_case3() {
     let _a = RangeSetBlaze::from_iter([0..=u128::MAX]);
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn constructors() -> Result<(), Box<dyn std::error::Error>> {
     // #9: new
     let mut _range_set_blaze;
@@ -879,7 +872,7 @@ fn ingest_clumps_base() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn doc_test_insert1() {
     let mut set = RangeSetBlaze::new();
 
@@ -889,7 +882,7 @@ fn doc_test_insert1() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn doc_test_len() {
     let mut v = RangeSetBlaze::new();
     assert_eq!(v.len(), 0u64);
@@ -907,7 +900,7 @@ fn doc_test_len() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_pops() {
     let mut set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=11]);
     let len = set.len();
@@ -927,7 +920,7 @@ fn test_pops() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn eq() {
     assert!(RangeSetBlaze::from_iter([0, 2]) > RangeSetBlaze::from_iter([0, 1]));
     assert!(RangeSetBlaze::from_iter([0, 2]) > RangeSetBlaze::from_iter([0..=100]));
@@ -974,7 +967,7 @@ fn eq() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn insert2() {
     let set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=20, 30..=30]);
     for insert in 0..=31 {
@@ -989,7 +982,7 @@ fn insert2() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn remove() {
     let mut set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=11]);
     let len = set.len();
@@ -1024,7 +1017,7 @@ fn remove() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn remove2() {
     let set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=20, 30..=30]);
     for remove in 0..=31 {
@@ -1049,7 +1042,7 @@ fn remove2() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn split_off() {
     let set = RangeSetBlaze::from_iter([1..=2, 4..=5, 10..=20, 30..=30]);
     for split in 0..=31 {
@@ -1074,7 +1067,7 @@ fn split_off() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn retrain() {
     let mut set = RangeSetBlaze::from_iter([1..=6]);
     // Keep only the even numbers.
@@ -1083,7 +1076,7 @@ fn retrain() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn sync_and_send() {
     fn assert_sync_and_send<S: Sync + Send>() {}
     assert_sync_and_send::<RangeSetBlaze<i32>>();
@@ -1095,7 +1088,7 @@ fn fraction<T: Integer>(range_int_set: &RangeSetBlaze<T>, range: &RangeInclusive
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn example_3() {
     let line = "chr15   29370   37380   29370,32358,36715   30817,32561,37380";
 
@@ -1134,7 +1127,7 @@ fn example_3() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn trick_dyn() {
     let bad = [1..=2, 0..=5];
     // let u = union_dyn!(bad.iter().cloned());
@@ -1143,7 +1136,7 @@ fn trick_dyn() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn multiway2() {
     use range_set_blaze::MultiwaySortedDisjoint;
 
@@ -1159,7 +1152,7 @@ fn multiway2() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn check_sorted_disjoint() {
     use range_set_blaze::CheckSortedDisjoint;
 
@@ -1171,7 +1164,7 @@ fn check_sorted_disjoint() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn dyn_sorted_disjoint_example() {
     let a = RangeSetBlaze::from_iter([1u8..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
@@ -1186,7 +1179,7 @@ fn dyn_sorted_disjoint_example() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn not_iter_example() {
     let a = CheckSortedDisjoint::new([1u8..=2, 5..=100]);
     let b = !a;
@@ -1198,7 +1191,7 @@ fn not_iter_example() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn len_demo() {
     let len: <u8 as Integer>::SafeLen = RangeSetBlaze::from_iter([0u8..=255]).len();
     assert_eq!(len, 256);
@@ -1207,7 +1200,7 @@ fn len_demo() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn bitor() {
     let a = CheckSortedDisjoint::new([1..=1]);
     let b = RangeSetBlaze::from_iter([2..=2]).into_ranges();
@@ -1231,7 +1224,7 @@ fn bitor() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn range_set_blaze_constructors() {
     // Create an empty set with 'new' or 'default'.
     let a0 = RangeSetBlaze::<i32>::new();
@@ -1315,7 +1308,7 @@ fn print_features() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "from_slice")]
 fn from_slice_all_types() {
     syntactic_for! { ty in [i8, u8] {
@@ -1338,7 +1331,7 @@ fn from_slice_all_types() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[cfg(feature = "from_slice")]
 fn range_set_blaze_slice_constructor() {
@@ -1393,7 +1386,7 @@ fn range_set_blaze_slice_constructor() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn range_set_blaze_operators() {
     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
     let b = RangeSetBlaze::from_iter([2..=6]);
@@ -1440,7 +1433,7 @@ fn range_set_blaze_operators() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn sorted_disjoint_constructors() {
     // RangeSetBlaze's .ranges(), .range().clone() and .into_ranges()
     let r = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
@@ -1466,7 +1459,7 @@ fn sorted_disjoint_constructors() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn iterator_example() {
     #[must_use = "iterators are lazy and do nothing unless consumed"]
     struct OrdinalWeekends2023 {
@@ -1504,7 +1497,7 @@ fn iterator_example() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn sorted_disjoint_operators() {
     let a0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
     let b0 = RangeSetBlaze::from_iter([2..=6]);
@@ -1532,7 +1525,7 @@ fn sorted_disjoint_operators() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn range_example() {
     let mut set = RangeSetBlaze::new();
     set.insert(3);
@@ -1547,7 +1540,7 @@ fn range_example() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn range_test() {
     use core::ops::Bound::Included;
     use range_set_blaze::RangeSetBlaze;
@@ -1563,7 +1556,7 @@ fn range_test() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::bool_assert_comparison)]
 fn is_subset_check() {
     let sup = CheckSortedDisjoint::new([1..=3]);
@@ -1580,7 +1573,7 @@ fn is_subset_check() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn cmp_range_set_blaze() {
     let a = RangeSetBlaze::from_iter([1..=3, 5..=7]);
     let b = RangeSetBlaze::from_iter([2..=2]);
@@ -1598,7 +1591,7 @@ fn cmp_range_set_blaze() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn cmp_btree_set_int() {
     let a = BTreeSet::from([1, 2, 3, 5, 6, 7]);
     let b = BTreeSet::from([2]);
@@ -1631,7 +1624,7 @@ fn run_rangemap_crate() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn from_iter_coverage() {
     let arr = [1..=2, 2..=2, -10..=-5];
     let a0 = RangeSetBlaze::from_iter(&arr);
@@ -1652,14 +1645,14 @@ fn from_iter_coverage() {
 // }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn print_first_complement_gap() {
     let a = CheckSortedDisjoint::new([-10i16..=0, 1000..=2000]);
     println!("{:?}", (!a).next().unwrap()); // prints -32768..=-11
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn multiway_failure_example() {
     use range_set_blaze::prelude::*;
 
@@ -1679,14 +1672,14 @@ fn multiway_failure_example() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn complement_sample() {
     let c = !RangeSetBlaze::from([0, 3, 4, 5, 10]);
     println!("{},{},{}", c.len(), c.ranges_len(), c);
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 fn test_rog_functionality() {
@@ -1728,7 +1721,7 @@ fn test_rog_functionality() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
 #[allow(clippy::reversed_empty_ranges)]
 #[allow(deprecated)]
@@ -1740,7 +1733,7 @@ fn test_rog_functionality_empty() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 fn test_rogs_get_functionality() {
@@ -1752,7 +1745,7 @@ fn test_rogs_get_functionality() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 fn test_rog_repro1() {
@@ -1764,7 +1757,7 @@ fn test_rog_repro1() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 fn test_rog_repro2() {
@@ -1789,7 +1782,7 @@ fn test_rog_coverage1() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 fn test_rog_extremes_u8() {
@@ -1813,7 +1806,7 @@ fn test_rog_extremes_u8() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 fn test_rog_get_extremes_u8() {
@@ -1832,7 +1825,7 @@ fn test_rog_get_extremes_u8() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 fn test_rog_extremes_i128() {
@@ -1859,7 +1852,7 @@ fn test_rog_extremes_i128() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 fn test_rog_extremes_get_i128() {
@@ -1878,7 +1871,7 @@ fn test_rog_extremes_get_i128() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 fn test_rog_should_fail_i128() {
@@ -1908,7 +1901,7 @@ fn test_rog_should_fail_i128() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 fn test_rog_get_should_fail_i128() {
@@ -1929,7 +1922,7 @@ fn test_rog_get_should_fail_i128() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 fn test_rog_get_doc() {
@@ -1940,7 +1933,7 @@ fn test_rog_get_doc() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 fn test_rog_range_doc() {
@@ -1970,7 +1963,7 @@ fn test_rog_range_doc() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_every_sorted_disjoint_method() {
     use range_set_blaze::{IntoRangesIter, RangesIter};
     use range_set_blaze::{MapIntoRangesIter, MapRangesIter};
@@ -2040,7 +2033,7 @@ fn test_every_sorted_disjoint_method() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn multiway3() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]).into_ranges();
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]).into_ranges();
@@ -2065,7 +2058,7 @@ fn multiway3() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn multiway4() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
@@ -2092,7 +2085,7 @@ fn multiway4() {
 // Test every function in the library that does a union like thing.
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_every_union() {
     // bitor x 4
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -2188,7 +2181,7 @@ impl BitAndAssign for BooleanVector {
 
 // cmk should wasm test this too?
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn understand_bitand_assign() {
     let mut a = 3u8;
     let b = 5u8;
@@ -2205,7 +2198,7 @@ fn understand_bitand_assign() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn b_tree_set() {
     let a = [1, 2, 3].into_iter().collect::<BTreeSet<i32>>();
     let b = BTreeSet::from([2, 3, 4]);
@@ -2230,7 +2223,7 @@ fn b_tree_set() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn range_set_blaze() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze<i32>>();
     let b = RangeSetBlaze::from_iter([2, 3, 4]);
@@ -2258,7 +2251,7 @@ fn range_set_blaze() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn sorted_disjoint() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze<i32>>();
     let b = RangeSetBlaze::from_iter([2, 3, 4]);
@@ -2278,7 +2271,7 @@ fn sorted_disjoint() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn sorted_disjoint_ops() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze<i32>>();
     let a = a.ranges();
@@ -2293,7 +2286,7 @@ fn sorted_disjoint_ops() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(
     clippy::cast_lossless,
     clippy::cast_possible_truncation,
@@ -2322,7 +2315,7 @@ fn sub0() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn understand_into_iter() {
     let btree_set = BTreeSet::from([1, 2, 3, 4, 5]);
     for i in &btree_set {
@@ -2367,7 +2360,7 @@ fn understand_into_iter() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::cognitive_complexity, clippy::float_cmp)]
 fn integer_coverage() {
     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
@@ -2384,28 +2377,28 @@ fn integer_coverage() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn lib_coverage_2() {
     let v = RangeSetBlaze::<u128>::new();
     v.contains(u128::MAX);
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn lib_coverage_3() {
     let mut v = RangeSetBlaze::<u128>::new();
     v.remove(u128::MAX);
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn lib_coverage_4() {
     let mut v = RangeSetBlaze::<u128>::new();
     let _ = v.split_off(u128::MAX);
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn lib_coverage_6() {
     syntactic_for! { ty in [i8, u8, isize, usize, i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
@@ -2419,7 +2412,7 @@ fn lib_coverage_6() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn not_iter_coverage_0() {
     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
     let n = !a;
@@ -2430,7 +2423,7 @@ fn not_iter_coverage_0() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn sorted_disjoint_coverage_0() {
     let a = CheckSortedDisjoint::<i32, _>::default();
     assert!(a.is_empty());
@@ -2449,7 +2442,7 @@ fn sorted_disjoint_coverage_0() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[should_panic(expected = "iterator cannot return Some after returning None")]
 fn sorted_disjoint_coverage_1() {
     struct SomeAfterNone {
@@ -2475,7 +2468,7 @@ fn sorted_disjoint_coverage_1() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[should_panic(expected = "start must be less or equal to end")]
 fn sorted_disjoint_coverage_2() {
     #[allow(clippy::reversed_empty_ranges)]
@@ -2484,7 +2477,7 @@ fn sorted_disjoint_coverage_2() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[should_panic(expected = "ranges must be disjoint")]
 fn sorted_disjoint_coverage_3() {
     #[allow(clippy::reversed_empty_ranges)]
@@ -2494,7 +2487,7 @@ fn sorted_disjoint_coverage_3() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn sorted_disjoint_coverage_4() {
     #[allow(clippy::reversed_empty_ranges)]
     let mut a = CheckSortedDisjoint::new([0..=i128::MAX]);
@@ -2502,7 +2495,7 @@ fn sorted_disjoint_coverage_4() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn sorted_disjoint_iterator_coverage_0() {
     let a = CheckSortedDisjoint::new([1..=2, 5..=100]);
     let b = CheckSortedDisjoint::new([1..=2, 5..=101]);
@@ -2699,7 +2692,7 @@ fn symmetric_difference_size_hint(a: Reference, b: Reference) -> bool {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn double_end_into_iter() {
     let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
 
@@ -2728,7 +2721,7 @@ fn double_end_into_iter() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn double_end_range() {
     let a = RangeSetBlaze::from_iter([3..=10, 12..=12, 20..=25]);
 
@@ -2739,7 +2732,7 @@ fn double_end_range() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn set_random_symmetric_difference() {
     use crate::CheckSortedDisjointMap;
     use crate::RangeSetBlaze;
@@ -2819,7 +2812,7 @@ fn set_random_symmetric_difference() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn set_sym_diff_repro1() {
     use crate::RangeSetBlaze;
 
@@ -3021,6 +3014,7 @@ fn range_expect_panic() {
 
 #[allow(clippy::items_after_statements)]
 #[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 const fn check_traits() {
     // Debug/Display/Clone/PartialEq/PartialOrd/Default/Hash/Eq/Ord/Send/Sync
     type ARangeSetBlaze = RangeSetBlaze<i32>;
@@ -3150,3 +3144,22 @@ const fn is_like_check_sorted_disjoint<
 }
 
 const fn is_like_dyn_sorted_disjoint<T: IntoIterator + Unpin + Any>() {}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_multiway() {
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze::from_iter([25..=100]);
+    // use crate::multiway::MultiwayRangeSetBlaze;
+    let iter = vec![a, b, c].into_iter();
+    let union = iter.union();
+    assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
+
+    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+    let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
+    let c = RangeSetBlaze::from_iter([25..=100]);
+    // use crate::multiway::MultiwayRangeSetBlazeRef;
+    let union = [a, b, c].union();
+    assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
+}

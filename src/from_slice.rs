@@ -1,10 +1,9 @@
 #![cfg(feature = "from_slice")]
 
+use crate::Integer;
 use alloc::slice;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive, ops::Sub};
-
-use crate::Integer;
 
 #[allow(clippy::redundant_pub_crate)]
 #[allow(clippy::module_name_repetitions)]
@@ -171,12 +170,3 @@ impl_is_consecutive!(u16);
 impl_is_consecutive!(u32);
 impl_is_consecutive!(u64);
 impl_is_consecutive!(usize);
-
-#[test]
-#[allow(clippy::cast_possible_truncation)]
-fn test_is_consecutive() {
-    use core::array;
-
-    let simd: Simd<i8, 64> = Simd::from_array(array::from_fn(|i| 10 + i as i8));
-    assert!(i8::is_consecutive(simd));
-}

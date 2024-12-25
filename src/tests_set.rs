@@ -9,6 +9,7 @@ use core::cmp::Ordering;
 use core::ops::Bound;
 use core::ops::RangeInclusive;
 use num_traits::{One, Zero};
+use set::extract_range;
 use std::collections::hash_map::DefaultHasher;
 use std::prelude::v1::*;
 use std::{print, println, vec};
@@ -651,4 +652,26 @@ fn bitand() {
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(f));
+}
+
+#[cfg(feature = "from_slice")]
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::cast_possible_truncation)]
+fn test_is_consecutive() {
+    use crate::from_slice::SimdInteger;
+    use core::array;
+    use std::simd::Simd;
+
+    let simd: Simd<i8, 64> = Simd::from_array(array::from_fn(|i| 10 + i as i8));
+    assert!(i8::is_consecutive(simd));
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_extract_range() {
+    use std::ops::Bound::{Excluded, Included};
+
+    assert_eq!(extract_range((Excluded(0), Included(1))), (1, 1));
+    assert_eq!(extract_range(0..1), (0, 0));
 }

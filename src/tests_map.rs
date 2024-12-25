@@ -366,3 +366,11 @@ fn test_merge_map() {
     let c = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
     assert_eq!(KMergeMap::new([a, b, c]).size_hint(), (3, None));
 }
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_len_slow() {
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    assert_eq!(a.len_slow(), a.len());
+    assert_eq!(a.len_slow(), 98u64);
+}

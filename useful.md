@@ -80,7 +80,7 @@ Testing
 ```cmd
 # cargo install -f wasm-bindgen-cli --version 0.2.99
 set WASM_BINDGEN_TEST_TIMEOUT=60
-cargo test --target wasm32-unknown-unknown 
+cargo test --target wasm32-unknown-unknown --all-features
 ```
 
 Example

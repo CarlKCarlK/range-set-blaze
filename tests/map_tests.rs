@@ -1,9 +1,7 @@
 #![cfg(test)]
 #![allow(unexpected_cfgs)]
 
-use wasm_bindgen_test::*;
-wasm_bindgen_test_configure!(run_in_browser);
-
+use core::ops::Bound::Included;
 extern crate alloc;
 use alloc::collections::BTreeMap;
 use core::cmp::Ordering;
@@ -22,6 +20,7 @@ use std::borrow::Borrow;
 use std::iter::FusedIterator;
 use std::ops::Bound;
 use std::rc::Rc;
+use std::sync::Arc;
 use std::{
     io::{stdout, Write},
     thread::sleep,
@@ -30,8 +29,11 @@ use std::{
 
 use syntactic_for::syntactic_for;
 
+use wasm_bindgen_test::*;
+wasm_bindgen_test_configure!(run_in_browser);
+
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_map_operators() {
     let arm = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
     let brm = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
@@ -106,7 +108,7 @@ fn map_map_operators() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_insert_255u8() {
     let btree_map = BTreeMap::from_iter([(255u8, "First")]);
     assert_eq!(btree_map.get(&255u8), Some(&"First"));
@@ -126,13 +128,13 @@ fn map_insert_255u8() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_insert_max_u128() {
     let _ = RangeMapBlaze::<u128, _>::from_iter([(u128::MAX, "Too Big")]);
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_complement0() {
     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
@@ -144,7 +146,7 @@ fn map_complement0() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_repro_bit_and() {
     let a = RangeMapBlaze::from_iter([(1u8, "Hello"), (2, "Hello"), (3, "Hello")]);
     let b = RangeMapBlaze::from_iter([(2u8, "World"), (3, "World"), (4, "World")]);
@@ -180,7 +182,7 @@ fn map_repro_bit_and() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_doctest1() {
     let a = RangeMapBlaze::from_iter([(1u8, "Hello"), (2, "Hello"), (3, "Hello")]);
     let b = RangeMapBlaze::from_iter([(3u8, "World"), (4, "World"), (5, "World")]);
@@ -208,7 +210,7 @@ fn map_doctest1() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_doctest2() {
     let set = RangeMapBlaze::from_iter([(1u8, "Hello"), (2, "Hello"), (3, "Hello")]);
     assert!(set.contains_key(1));
@@ -220,7 +222,7 @@ fn map_doctest2() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_doctest3() {
     let mut a = RangeMapBlaze::from_iter([(1..=3, "Hello")]);
     let mut b = RangeMapBlaze::from_iter([(3..=5, "World")]);
@@ -252,7 +254,7 @@ fn map_doctest3() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_doctest4() {
     let a = RangeMapBlaze::from_iter([(1i8, "Hello"), (2, "Hello"), (3, "Hello")]);
 
@@ -261,7 +263,7 @@ fn map_doctest4() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_add_in_order() {
     let mut range_map = RangeMapBlaze::new();
     for i in 0u64..1000 {
@@ -308,7 +310,7 @@ fn map_add_in_order() {
 //     );
 // }
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_iters() -> Result<(), Box<dyn std::error::Error>> {
     let range_map_blaze =
         RangeMapBlaze::from_iter([(1u8..=6, "Hello"), (8..=9, "There"), (11..=15, "World")]);
@@ -337,7 +339,7 @@ fn map_iters() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_missing_doctest_ops() {
     // note that may be borrowed or owned in any combination.
 
@@ -469,7 +471,7 @@ fn map_missing_doctest_ops() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
     // Union
     let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
@@ -592,7 +594,7 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
     let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
@@ -618,7 +620,7 @@ fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_from_string() -> Result<(), Box<dyn std::error::Error>> {
     let a = RangeMapBlaze::from_iter([
         (0..=4, 'a'),
@@ -632,7 +634,7 @@ fn map_from_string() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_nand_repro() -> Result<(), Box<dyn std::error::Error>> {
     let b = &RangeMapBlaze::from_iter([(5u8..=13, 'a'), (18..=29, 'a')]);
     let c = &RangeMapBlaze::from_iter([(38..=42, 'b')]);
@@ -646,7 +648,7 @@ fn map_nand_repro() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     // notice these are all borrowed
     let a = &RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
@@ -772,7 +774,7 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
     // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
@@ -818,7 +820,7 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
     // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
@@ -854,7 +856,7 @@ fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
     let a1 = RangeMapBlaze::from_iter([(8..=9, "a1")]);
@@ -907,7 +909,7 @@ fn map_xor() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
     let a1 = RangeMapBlaze::from_iter([(8..=9, "a1")]);
@@ -929,7 +931,7 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::zero_repeat_side_effects)]
 fn map_empty_it() {
     use std::ops::BitOr;
@@ -1022,7 +1024,7 @@ fn map_empty_it() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::reversed_empty_ranges)]
 fn map_tricky_case1() {
     let a = RangeMapBlaze::from_iter([(1..=0, "a")]);
@@ -1047,19 +1049,19 @@ fn map_tricky_case1() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_tricky_case2() {
     let _a = RangeMapBlaze::from_iter([(-1..=i128::MAX, "a")]);
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_tricky_case3() {
     let _a = RangeMapBlaze::from_iter([(0..=u128::MAX, "a")]);
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
     // use range_set_blaze::Priority;
 
@@ -1084,6 +1086,7 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
     _range_map_blaze = _range_map_blaze.range_values().into_range_map_blaze();
     _range_map_blaze = RangeMapBlaze::from_sorted_disjoint_map(_range_map_blaze.range_values());
 
+    // cmk delete?
     // let sorted_starts = AssumePrioritySortedStartsMap::new(
     //     [
     //         Priority::new((5..=6, Rc::new("a")), 0),
@@ -1131,6 +1134,7 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// cmk delete?
 // // #[test]
 // //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_debug_k_play() {
@@ -1241,8 +1245,8 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
 // //                     &range,
 // //                     *coverage_goal,
 // //                     How::None,
-// //                     &mut StdRng::seed_from_u64(0),
 // //                 ),
+// //                     &mut StdRng::seed_from_u64(0),
 // //             )
 // //         })
 // //         .collect::<Vec<_>>();
@@ -1337,7 +1341,7 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
 // //     }
 // // }
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_doc_test_insert1() {
     let mut map = RangeMapBlaze::new();
 
@@ -1347,7 +1351,7 @@ fn map_doc_test_insert1() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_doc_test_len() {
     let mut v = RangeMapBlaze::new();
     assert_eq!(v.len(), 0u64);
@@ -1371,7 +1375,7 @@ fn map_doc_test_len() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_test_pops() {
     // Initialize the map with ranges as keys and chars as values
     let mut map = RangeMapBlaze::from_iter([(1..=2, 'a'), (4..=5, 'b'), (10..=11, 'c')]);
@@ -1420,7 +1424,7 @@ fn map_test_pops() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_insert2() {
     let map =
         RangeMapBlaze::from_iter([(1..=2, 'a'), (4..=5, 'a'), (10..=20, 'a'), (30..=30, 'b')]);
@@ -1440,7 +1444,7 @@ fn map_insert2() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_remove() {
     // Initialize RangeMapBlaze with char values for simplicity
     let mut map = RangeMapBlaze::from_iter([(1..=2, 'a'), (4..=5, 'b'), (10..=11, 'c')]);
@@ -1488,7 +1492,7 @@ fn map_remove() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_remove2() {
     // Initialize RangeMapBlaze with char values
     let map =
@@ -1525,7 +1529,7 @@ fn map_remove2() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_split_off() {
     // Initialize RangeMapBlaze with ranges and associated char values
     let map =
@@ -1570,6 +1574,7 @@ fn map_split_off() {
     }
 }
 
+// cmk delete?
 // // #[test]
 // //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // // fn map_retrain() {
@@ -1920,7 +1925,7 @@ fn map_split_off() {
 // // }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_range_map_blaze_operators() {
     let a = RangeMapBlaze::from_iter([(1..=2, "one"), (5..=100, "two")]);
     let b = RangeMapBlaze::from_iter([(2..=6, "three")]);
@@ -2038,7 +2043,7 @@ pub fn linear(
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_string_animation() {
     let fps: i32 = 24;
     let length_seconds = 15;
@@ -2075,7 +2080,7 @@ fn map_string_animation() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn understand_strings_as_values() {
     // RangeMapBlaze string-like values can be &str, String, &String (or even &&str and &&String).
     let _: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=0, "a")]);
@@ -2113,7 +2118,7 @@ fn understand_strings_as_values() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_every_sorted_disjoint_map_method() {
     use syntactic_for::syntactic_for;
 
@@ -2255,7 +2260,7 @@ fn test_every_sorted_disjoint_map_method() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_random_from_iter_item() {
     // cmk all these tests should test on size zero, too.
     for seed in 0..20 {
@@ -2286,7 +2291,7 @@ fn map_random_from_iter_item() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_random_from_iter_range() {
     for seed in 0..20 {
         println!("seed: {seed}");
@@ -2318,7 +2323,7 @@ fn map_random_from_iter_range() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_random_insert() {
     for seed in 0..20 {
         println!("seed: {seed}");
@@ -2350,7 +2355,7 @@ fn map_random_insert() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_random_insert_range() {
     for seed in 0..20 {
         println!("seed: {seed}");
@@ -2388,7 +2393,7 @@ fn map_random_insert_range() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_random_ranges() {
     let values = ['a', 'b', 'c'];
     for seed in 0..20 {
@@ -2421,7 +2426,7 @@ fn map_random_ranges() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_random_ranges_ranges() {
     let values = ['a', 'b', 'c'];
     for seed in 0..20 {
@@ -2456,7 +2461,7 @@ fn map_random_ranges_ranges() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_random_intersection() {
     let values = ['a', 'b', 'c'];
     for seed in 0..20 {
@@ -2507,7 +2512,7 @@ fn map_random_intersection() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_tiny_symmetric_difference0() {
     use range_set_blaze::IntoString;
 
@@ -2523,7 +2528,7 @@ fn map_tiny_symmetric_difference0() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_tiny_symmetric_difference1() {
     use range_set_blaze::IntoString;
 
@@ -2541,7 +2546,7 @@ fn map_tiny_symmetric_difference1() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_random_symmetric_difference() {
     let values = ['a', 'b', 'c'];
     for seed in 0..20 {
@@ -2623,7 +2628,7 @@ fn map_random_symmetric_difference() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_repro_insert_1() {
     let mut range_map_blaze = RangeMapBlaze::new();
     range_map_blaze.insert(123, "Hello");
@@ -2687,7 +2692,7 @@ where
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_repro_123() {
     let input = [(123, 'a'), (123, 'b')];
 
@@ -2696,7 +2701,7 @@ fn map_repro_123() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_insert_str() {
     let s1 = "Hello".to_string();
     let s2 = "There".to_string();
@@ -2708,7 +2713,7 @@ fn map_insert_str() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_repro_bit_or() {
     let a = RangeSetBlaze::from_iter([1u8, 2, 3]);
     let b = RangeSetBlaze::from_iter([2u8, 3, 4]);
@@ -2743,7 +2748,7 @@ fn map_repro_bit_or() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_repro2() {
     let a = "a".to_string();
     let b = "b".to_string();
@@ -2764,6 +2769,7 @@ fn map_repro2() {
     );
 }
 
+// cmk delete?
 // #[test]
 //#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 // fn multi_op() {
@@ -3537,7 +3543,7 @@ fn map_repro2() {
 //     assert_eq!(range.next(), Some(20));
 // }
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_coverage_0() {
     let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
     let d = DynSortedDisjointMap::new(a.range_values());
@@ -3545,7 +3551,7 @@ fn test_coverage_0() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_coverage_1() {
     let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
     let mut i = a.iter();
@@ -3557,7 +3563,7 @@ fn test_coverage_1() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_coverage_2() {
     let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
     let mut i = a.into_iter();
@@ -3647,28 +3653,28 @@ fn test_coverage_2() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_coverage_4() {
     let a = RangeMapBlaze::from_iter([(1u128..=4, "Hello")]);
     a.get(u128::MAX);
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_coverage_5() {
     let mut a = RangeMapBlaze::from_iter([(1u128..=4, "Hello")]);
     a.remove(u128::MAX);
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_coverage_6() {
     let mut a = RangeMapBlaze::from_iter([(1u128..=4, "Hello")]);
     let _ = a.split_off(u128::MAX);
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_coverage_10() {
     let mut a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
     assert_eq!(a.pop_last(), Some((4, "World")));
@@ -3679,7 +3685,7 @@ fn test_coverage_10() {
 }
 
 #[test]
-#[wasm_bindgen_test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn example_2() {
     use range_set_blaze::prelude::*;
 
@@ -4153,4 +4159,215 @@ fn test_range_method_on_range_map_blaze() {
         .range((Bound::Excluded(2), Bound::Excluded(7)))
         .collect();
     assert_eq!(a, expected);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_cmp() {
+    fn to_bits(vv_pair: Vec<(u32, f64)>) -> Vec<(u32, u64)> {
+        vv_pair.into_iter().map(|(k, v)| (k, v.to_bits())).collect()
+    }
+
+    let test_cases = vec![
+        (
+            vec![(2, 1.0), (11, 1.0), (12, 1.0)],
+            vec![(3, 2.0), (11, 1.0), (12, f64::NAN)],
+            Ordering::Less,
+        ),
+        // Mixed case
+        (
+            vec![(0, 1.0), (1, 2.0), (2, 1.0), (3, 3.0), (4, 2.0)],
+            vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0)],
+            Ordering::Greater,
+        ),
+        // Equal elements
+        (
+            vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+            vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+            Ordering::Equal,
+        ),
+        // Different values
+        (
+            vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+            vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 3.0)],
+            Ordering::Less,
+        ),
+        (
+            vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 3.0)],
+            vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+            Ordering::Greater,
+        ),
+        // Different keys
+        (
+            vec![(0, 1.0), (1, 1.0), (2, 1.0), (4, 2.0), (5, 2.0)],
+            vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+            Ordering::Greater,
+        ),
+        (
+            vec![(0, 1.0), (1, 1.0), (2, 1.0)],
+            vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+            Ordering::Less,
+        ),
+        (
+            vec![(0, 1.0), (1, 1.0), (2, 1.0), (3, 2.0), (4, 2.0), (5, 2.0)],
+            vec![(0, 1.0), (1, 1.0), (2, 1.0)],
+            Ordering::Greater,
+        ),
+        // To apply .to_bits() so that NANs are compared, too.
+        (
+            vec![(0, 1.0), (1, 1.0), (2, f64::NAN)],
+            vec![(0, 1.0), (1, 1.0), (2, 1.0)],
+            Ordering::Greater,
+        ),
+        (
+            vec![(0, 1.0), (1, 1.0), (2, 1.0)],
+            vec![(0, 1.0), (1, 1.0), (2, f64::NAN)],
+            Ordering::Less,
+        ),
+    ];
+
+    let test_cases = test_cases
+        .into_iter()
+        .map(|(a, b, expected)| (to_bits(a), to_bits(b), expected));
+
+    for (a_data, b_data, expected) in test_cases {
+        println!("expected = {expected:?}");
+        let a_btree = BTreeMap::from_iter(a_data.clone());
+        let b_btree = BTreeMap::from_iter(b_data.clone());
+        assert_eq!(a_btree.cmp(&b_btree), expected);
+
+        let a_range_set = RangeMapBlaze::from_iter(a_data);
+        let b_range_set = RangeMapBlaze::from_iter(b_data);
+        assert_eq!(a_range_set.cmp(&b_range_set), expected);
+    }
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::style)]
+fn bitor_assign_coverage() {
+    for (a0, b0, c0) in [
+        (
+            vec![(3..=3, "a"), (5..=10, "a"), (12..=15, "a")],
+            vec![(2..=3, "b"), (5..=10, "b"), (12..=15, "b")],
+            vec![(2..=2, "b"), (3..=3, "a"), (5..=10, "a"), (12..=15, "a")],
+        ),
+        (vec![(2..=3, "a")], vec![(3..=3, "b")], vec![(2..=3, "a")]),
+        (vec![], vec![(3..=3, "b")], vec![(3..=3, "b")]),
+    ] {
+        let c = RangeMapBlaze::from_iter(c0);
+
+        let mut a = RangeMapBlaze::from_iter(&a0);
+        let b = RangeMapBlaze::from_iter(&b0);
+        a = a | b;
+        assert_eq!(a, c);
+        let mut a = RangeMapBlaze::from_iter(&a0);
+        let b = RangeMapBlaze::from_iter(&b0);
+        a |= b;
+        assert_eq!(a, c);
+        let mut a = RangeMapBlaze::from_iter(&a0);
+        let b = RangeMapBlaze::from_iter(&b0);
+        a |= &b;
+        assert_eq!(a, c);
+        let mut b = RangeMapBlaze::from_iter(&b0);
+        b.extend(a0.clone());
+        assert_eq!(b, c);
+    }
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_arc_clone() {
+    let a = Arc::new(1);
+    let b = Arc::clone(&a);
+    assert_eq!(a, b);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_range() {
+    let mut map = RangeMapBlaze::new();
+    map.insert(3, "a");
+    map.insert(5, "b");
+    map.insert(8, "c");
+    for (key, value) in map.range((Included(4), Included(8))) {
+        println!("{key}: {value}");
+    } // prints "5: b" and "8: c"
+    assert_eq!(Some((5, "b")), map.range(4..).next());
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_pop_first() {
+    let mut map: RangeMapBlaze<i128, &str> = RangeMapBlaze::new();
+    assert_eq!(None, map.pop_first());
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_range_values_len() {
+    // We put in four ranges, but they are not sorted & disjoint.
+    let map = RangeMapBlaze::from_iter([
+        (10..=20, "a"),
+        (15..=25, "b"),
+        (30..=40, "c"),
+        (28..=35, "c"),
+    ]);
+    // After RangeMapBlaze sorts & 'disjoint's them, we see three ranges.
+    assert_eq!(map.range_values_len(), 3);
+    assert_eq!(
+        map.to_string(),
+        r#"(10..=20, "a"), (21..=25, "b"), (28..=40, "c")"#
+    );
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_into_iterator_for_ref_rangemapblaze() {
+    let map = RangeMapBlaze::from_iter([(1..=2, "a")]);
+    let mut iter = (&map).into_iter();
+
+    assert_eq!(iter.next(), Some((1, &"a")));
+    assert_eq!(iter.next(), Some((2, &"a")));
+    assert_eq!(iter.next(), None);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_ref_union() {
+    use std::println;
+
+    let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    let b = RangeSetBlaze::from_iter([2..=6]);
+    let c = RangeSetBlaze::from_iter([2..=2, 6..=200]);
+    let d = [&a, &b, &c].union();
+    println!("{d}");
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=200]));
+
+    let a = RangeSetBlaze::from_iter([1..=2, 5..=100]);
+    let b = RangeSetBlaze::from_iter([2..=6]);
+    let c = RangeSetBlaze::from_iter([2..=2, 6..=200]);
+    let d = [a, b, c].union();
+    println!("{d}");
+    assert_eq!(d, RangeSetBlaze::from_iter([1..=200]));
+
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    let d = [&a, &b, &c].union();
+    println!("{d}");
+    assert_eq!(
+        d,
+        RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")])
+    );
+
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    let d: RangeMapBlaze<i32, &str> = [a, b, c].union();
+    println!("{d}");
+    assert_eq!(
+        d,
+        RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")])
+    );
 }

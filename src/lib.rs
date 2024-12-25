@@ -178,29 +178,3 @@ pub type UnionKMergeMap<T, VR, I> = UnionIterMap<T, VR, KMergeMap<T, VR, I>>;
 pub type UnionMerge<T, L, R> = UnionIter<T, merge::Merge<T, L, R>>;
 #[doc(hidden)]
 pub type UnionMergeMap<T, VR, L, R> = UnionIterMap<T, VR, MergeMap<T, VR, L, R>>;
-
-#[cfg(feature = "std")]
-#[cfg(test)]
-mod tests2 {
-    use alloc::vec;
-
-    #[test]
-    fn test_multiway() {
-        use crate::prelude::*;
-
-        let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-        let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
-        let c = RangeSetBlaze::from_iter([25..=100]);
-        // use crate::multiway::MultiwayRangeSetBlaze;
-        let iter = vec![a, b, c].into_iter();
-        let union = iter.union();
-        assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
-
-        let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-        let b = RangeSetBlaze::from_iter([5..=13, 18..=29]);
-        let c = RangeSetBlaze::from_iter([25..=100]);
-        // use crate::multiway::MultiwayRangeSetBlazeRef;
-        let union = [a, b, c].union();
-        assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
-    }
-}
