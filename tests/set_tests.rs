@@ -151,44 +151,6 @@ fn add_in_order() {
     }
 }
 
-// cmk delete?
-// #[test]
-//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-// fn memoryless_data() {
-//     let len = 100_000_000;
-//     let coverage_goal = 0.75;
-//     let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
-//     let range_set_blaze = RangeSetBlaze::from_iter(memoryless_data);
-//     let coverage = range_set_blaze.len() as f64 / len as f64;
-//     println!(
-//         "coverage {coverage:?} range_len {:?}",
-//         range_set_blaze.range_len().separate_with_commas()
-//     );
-// }
-
-// );
-
-// #[test]
-//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-// fn memoryless_vec() {
-//     let len = 100_000_000;
-//     let coverage_goal = 0.75;
-//     let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
-//     let data_as_vec: Vec<u64> = memoryless_data.collect();
-//     let start = Instant::now();
-//     // let range_set_blaze = RangeSetBlaze::from_mut_slice(data_as_vec.as_mut_slice());
-//     let range_set_blaze = RangeSetBlaze::from_iter(data_as_vec);
-//     let coverage = range_set_blaze.len() as f64 / len as f64;
-//     println!(
-//         "coverage {coverage:?} range_len {:?}",
-//         range_set_blaze.ranges_len().separate_with_commas()
-//     );
-//     println!(
-//         "xTime elapsed in expensive_function() is: {} ms",
-//         start.elapsed().as_millis()
-//     );
-// }
-//
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn iters() -> Result<(), Box<dyn std::error::Error>> {
@@ -2141,7 +2103,6 @@ fn test_every_union() {
     assert!(c.equal(RangeSetBlaze::from_iter([1..=15, 18..=29]).ranges()));
 }
 
-// cmk should wasm test this too?
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn test_coverage_0() {
@@ -2179,7 +2140,6 @@ impl BitAndAssign for BooleanVector {
     }
 }
 
-// cmk should wasm test this too?
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn understand_bitand_assign() {
