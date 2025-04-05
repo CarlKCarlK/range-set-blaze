@@ -238,35 +238,35 @@ const fn check_traits() {
 
     type AIntoIterMap = IntoIterMap<i32, u64>;
     is_sssu::<AIntoIterMap>();
-    is_like_btreemap_into_iter::<AIntoIterMap>();
+    is_like_btreemap_into_iter_less_exact_size::<AIntoIterMap>();
 
     type AKMergeMap<'a> = crate::KMergeMap<i32, &'a u64, ARangeValuesIter<'a>>;
     is_sssu::<AKMergeMap>();
-    is_like_btreemap_iter::<AKMergeMap>();
+    is_like_btreemap_iter_less_both::<AKMergeMap>();
 
     type AMergeMap<'a> = crate::MergeMap<i32, &'a u64, ARangeValuesIter<'a>, ARangeValuesIter<'a>>;
     is_sssu::<AMergeMap>();
-    is_like_btreemap_iter::<AMergeMap>();
+    is_like_btreemap_iter_less_both::<AMergeMap>();
 
     type AAssumePrioritySortedStartsMap<'a> =
         AssumePrioritySortedStartsMap<i32, &'a u64, vec::IntoIter<Priority<i32, &'a u64>>>;
     is_sssu::<AAssumePrioritySortedStartsMap>();
-    is_like_btreemap_iter::<AAssumePrioritySortedStartsMap>();
+    is_like_btreemap_iter_less_exact_size::<AAssumePrioritySortedStartsMap>();
 
     type AUnionIterMap<'a> = UnionIterMap<i32, &'a u64, AAssumePrioritySortedStartsMap<'a>>;
     is_sssu::<AUnionIterMap>();
-    is_like_btreemap_iter::<AUnionIterMap>();
+    is_like_btreemap_iter_less_both::<AUnionIterMap>();
 
     type ASymDiffIterMap<'a> = SymDiffIterMap<i32, &'a u64, AAssumePrioritySortedStartsMap<'a>>;
     is_sssu::<ASymDiffIterMap>();
-    is_like_btreemap_iter::<ASymDiffIterMap>();
+    is_like_btreemap_iter_less_both::<ASymDiffIterMap>();
 
     type ARangesIter<'a> = RangesIter<'a, i32>;
 
     type AIntersectionIterMap<'a> =
         IntersectionIterMap<i32, &'a u64, ARangeValuesIter<'a>, ARangesIter<'a>>;
     is_sssu::<AIntersectionIterMap>();
-    is_like_btreemap_iter::<AIntersectionIterMap>();
+    is_like_btreemap_iter_less_both::<AIntersectionIterMap>();
 
     type AKeys<'a> = Keys<i32, &'a u64, ARangeValuesIter<'a>>;
     is_sssu::<AKeys>();
@@ -274,15 +274,15 @@ const fn check_traits() {
 
     type AIntoKeys = IntoKeys<i32, u64>;
     is_sssu::<AIntoKeys>();
-    is_like_btreemap_into_iter::<AIntoKeys>();
+    is_like_btreemap_into_iter_less_exact_size::<AIntoKeys>();
 
     type AValues<'a> = Values<i32, &'a u64, ARangeValuesIter<'a>>;
     is_sssu::<AValues>();
-    is_like_btreemap_iter::<AValues>();
+    is_like_btreemap_iter_less_exact_size::<AValues>();
 
     type AIntoValues = IntoValues<i32, u64>;
     is_sssu::<AIntoValues>();
-    is_like_btreemap_into_iter::<AIntoValues>();
+    is_like_btreemap_into_iter_less_exact_size::<AIntoValues>();
 
     type ARangeToRangeValueIter<'a> = RangeToRangeValueIter<'a, i32, u64, ARangesIter<'a>>;
     is_sssu::<ARangeToRangeValueIter>();
@@ -318,12 +318,24 @@ const fn is_ddcppdheo<
 
 const fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
 const fn is_like_btreemap_iter<
-    T: Clone + std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator, // cmk*/
-                                                                                 // + ExactSizeIterator,
+    T: Clone + std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator + ExactSizeIterator,
 >() {
 }
 
-const fn is_like_btreemap_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {} // cmk + DoubleEndedIterator, // cmk + ExactSizeIterator,   
+const fn is_like_btreemap_iter_less_exact_size<
+    T: Clone + std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator,
+>() {
+}
+
+const fn is_like_btreemap_iter_less_both<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
+const fn is_like_btreemap_into_iter<
+    T: std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator + ExactSizeIterator,
+>() {
+}
+const fn is_like_btreemap_into_iter_less_exact_size<
+    T: std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator,
+>() {
+}
 
 const fn is_like_btreemap<
     T: Clone
