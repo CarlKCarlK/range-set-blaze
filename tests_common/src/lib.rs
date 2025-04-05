@@ -1,8 +1,8 @@
 use core::ops::RangeInclusive;
 use num_traits::identities::One;
-use rand::distributions::uniform::SampleUniform;
-use rand::rngs::StdRng;
 use rand::Rng;
+use rand::distr::uniform::SampleUniform;
+use rand::rngs::StdRng;
 use range_set_blaze::Integer;
 use range_set_blaze::RangeSetBlaze;
 
@@ -85,7 +85,7 @@ impl<T: Integer + SampleUniform> Iterator for MemorylessRange<'_, T> {
             // We never wrap around the end of the range, so the ends can be over represented.
             let actual_width: T::SafeLen;
             if self.average_width < 1.0 {
-                if self.rng.gen::<f64>() < self.average_width {
+                if self.rng.random::<f64>() < self.average_width {
                     //could precompute
                     actual_width = <T::SafeLen>::one();
                 } else {
@@ -95,9 +95,10 @@ impl<T: Integer + SampleUniform> Iterator for MemorylessRange<'_, T> {
                 }
             } else if self.range_len >= 30 {
                 // pick a width between about 1 and 2*average_width
-                let mut actual_width_f64 =
-                    self.rng.gen::<f64>() * (2.0 * self.average_width.floor() - 1.0).floor() + 1.0;
-                if self.rng.gen::<f64>() < self.average_width.fract() {
+                let mut actual_width_f64 = self.rng.random::<f64>()
+                    * (2.0 * self.average_width.floor() - 1.0).floor()
+                    + 1.0;
+                if self.rng.random::<f64>() < self.average_width.fract() {
                     actual_width_f64 += 1.0;
                 }
                 // If actual_width is very, very large, then to f64_to_safe_len will be imprecise.
@@ -105,7 +106,7 @@ impl<T: Integer + SampleUniform> Iterator for MemorylessRange<'_, T> {
             } else {
                 // pick a width of exactly average_width
                 let mut actual_width_f64 = self.average_width.floor();
-                if self.rng.gen::<f64>() < self.average_width.fract() {
+                if self.rng.random::<f64>() < self.average_width.fract() {
                     actual_width_f64 += 1.0;
                 }
                 // If actual_width is very, very large, then to f64_to_safe_len will be imprecise.
@@ -113,9 +114,9 @@ impl<T: Integer + SampleUniform> Iterator for MemorylessRange<'_, T> {
             }
 
             // choose random one point in the range
-            let one_point: T = self.rng.gen_range(self.range.clone());
+            let one_point: T = self.rng.random_range(self.range.clone());
             // go up or down from this point, but not past the ends of the range
-            if self.rng.gen::<f64>() > 0.5 {
+            if self.rng.random::<f64>() > 0.5 {
                 let rest = one_point..=*self.range.end();
                 if actual_width <= T::safe_len(&rest) {
                     Some(one_point..=T::add_len_less_one(one_point, actual_width))

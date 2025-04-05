@@ -8,8 +8,8 @@
     single_use_lifetimes,
     clippy::pedantic,
     unreachable_pub,
-    //cmk need to add stuff to examples clippy::cargo,
-    //cmk clippy::cargo_common_metadata
+    clippy::cargo,
+    clippy::cargo_common_metadata,
     clippy::perf,
     clippy::style,
     clippy::complexity,
@@ -17,8 +17,7 @@
     clippy::nursery,
     clippy::must_use_candidate,
     clippy::unwrap_used,
-    clippy::panic_in_result_fn,
-
+    clippy::panic_in_result_fn
 )]
 #![no_std]
 extern crate alloc;
@@ -90,7 +89,7 @@ mod ranges_iter;
 pub use crate::ranges_iter::{IntoRangesIter, RangesIter};
 
 mod set;
-pub use crate::set::{demo_read_ranges_from_file, IntoIter, Iter, RangeSetBlaze};
+pub use crate::set::{IntoIter, Iter, RangeSetBlaze, demo_read_ranges_from_file};
 
 mod sorted_disjoint;
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};

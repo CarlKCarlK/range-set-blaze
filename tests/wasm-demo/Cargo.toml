@@ -1,7 +1,16 @@
 [package]
 name = "wasm-demo"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+description = "Demo project for range-set-blaze WASM features"
+repository = "https://github.com/CarlKCarlK/range-set-blaze"
+readme = "../../README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["set", "range", "data-structures", "no_std", "wasm"]
+categories = ["data-structures", "no-std", "wasm"]
+
+# optional: prevent accidental publishing
+publish = false
 
 [lib]
 crate-type = ["cdylib"]

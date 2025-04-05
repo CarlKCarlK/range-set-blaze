@@ -63,11 +63,11 @@ anyhow = "1.0.40"
 
 [dev-dependencies]
 syntactic-for = "0.1.1"
-wasm-bindgen-test = "0.3.49"
-rand = "0.8.4"
+wasm-bindgen-test = "0.3.50"
+rand = "0.9.0"
 
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
-getrandom = { version = "0.2", features = ["js"] }
+getrandom = { version = "0.3.2", features = ["wasm_js"] }
 web-time = "1.1.0"
 
 

@@ -9,12 +9,12 @@ use core::fmt;
 use core::ops::RangeInclusive;
 #[cfg(not(target_arch = "wasm32"))]
 use quickcheck_macros::quickcheck;
-use rand::seq::SliceRandom;
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::seq::IndexedRandom;
+use rand::{Rng, SeedableRng, rngs::StdRng};
 use range_set_blaze::Integer;
 use range_set_blaze::{
-    prelude::*, IntersectionIterMap, IntoRangeValuesIter, KMergeMap, RangeValuesIter,
-    SymDiffIterMap, UnionIterMap, ValueRef,
+    IntersectionIterMap, IntoRangeValuesIter, KMergeMap, RangeValuesIter, SymDiffIterMap,
+    UnionIterMap, ValueRef, prelude::*,
 };
 use std::borrow::Borrow;
 use std::iter::FusedIterator;
@@ -22,7 +22,7 @@ use std::ops::Bound;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::{
-    io::{stdout, Write},
+    io::{Write, stdout},
     thread::sleep,
     time::Duration,
 };
@@ -941,9 +941,11 @@ fn map_empty_it() {
     let arr: [(u8, &str); 0] = [];
     let a0 = RangeMapBlaze::<u8, &str>::from_iter(arr);
     assert!(!(a0.ranges()).equal(universe0.ranges()));
-    assert!((a0.complement_with(&"Universe"))
-        .range_values()
-        .equal(universe));
+    assert!(
+        (a0.complement_with(&"Universe"))
+            .range_values()
+            .equal(universe)
+    );
     let _a0 = RangeMapBlaze::from_iter([(0..=0, "One"); 0]);
     let _a = RangeMapBlaze::<i32, &str>::new();
 
@@ -1671,8 +1673,8 @@ fn map_random_from_iter_item() {
 
         let mut inputs = Vec::new();
         for _ in 0..500 {
-            let key = rng.gen_range(0..=255u8); // cmk change back to u8s
-            let value = ['a', 'b', 'c'].choose(&mut rng).unwrap(); // cmk allow more than references
+            let key = rng.random_range(0..=255u8); // cmk change back to u8s
+            let value = ['a', 'b', 'c'].as_slice().choose(&mut rng).unwrap(); // cmk allow more than references
 
             print!("{key}{value} ");
             inputs.push((key, value));
@@ -1700,10 +1702,10 @@ fn map_random_from_iter_range() {
 
         let mut inputs = Vec::new();
         for _ in 0..500 {
-            let start = rng.gen_range(0..=255u8);
-            let end = rng.gen_range(start..=255u8);
+            let start = rng.random_range(0..=255u8);
+            let end = rng.random_range(start..=255u8);
             let key = start..=end;
-            let value = ['a', 'b', 'c'].choose(&mut rng).unwrap(); // cmk allow more than references
+            let value = ['a', 'b', 'c'].as_slice().choose(&mut rng).unwrap(); // cmk allow more than references
 
             // print!("{key}{value} ");
             inputs.push((key.clone(), value));
@@ -1732,8 +1734,8 @@ fn map_random_insert() {
         let mut inputs = Vec::new();
 
         for _ in 0..500 {
-            let key = rng.gen_range(0..=255u8);
-            let value = ["aaa", "bbb", "ccc"].choose(&mut rng).unwrap();
+            let key = rng.random_range(0..=255u8);
+            let value = ["aaa", "bbb", "ccc"].as_slice().choose(&mut rng).unwrap();
             // print!("{key}{value} ");
 
             btree_map.insert(key, value);
@@ -1764,10 +1766,10 @@ fn map_random_insert_range() {
         let mut inputs = Vec::new();
 
         for _ in 0..500 {
-            let start = rng.gen_range(0..=255u8);
-            let end = rng.gen_range(start..=255u8);
+            let start = rng.random_range(0..=255u8);
+            let end = rng.random_range(start..=255u8);
             let key = start..=end;
-            let value = ["aaa", "bbb", "ccc"].choose(&mut rng).unwrap();
+            let value = ["aaa", "bbb", "ccc"].as_slice().choose(&mut rng).unwrap();
             // print!("{key}{value} ");
 
             for k in key.clone() {
@@ -1793,7 +1795,7 @@ fn map_random_insert_range() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_random_ranges() {
-    let values = ['a', 'b', 'c'];
+    let values = ['a', 'b', 'c'].as_slice();
     for seed in 0..20 {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
@@ -1803,7 +1805,7 @@ fn map_random_ranges() {
         let mut inputs = Vec::<(u8, &char)>::new();
 
         for _ in 0..500 {
-            let key = rng.gen_range(0..=255u8);
+            let key = rng.random_range(0..=255u8);
             let value = values.choose(&mut rng).unwrap();
             // print!("{key}{value} ");
 
@@ -1836,8 +1838,8 @@ fn map_random_ranges_ranges() {
         let mut inputs = Vec::new();
 
         for _ in 0..500 {
-            let start = rng.gen_range(0..=255u8);
-            let end = rng.gen_range(start..=255u8);
+            let start = rng.random_range(0..=255u8);
+            let end = rng.random_range(start..=255u8);
             let key = start..=end;
             let value = values.choose(&mut rng).unwrap();
             // print!("{key}{value} ");
@@ -1861,7 +1863,7 @@ fn map_random_ranges_ranges() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_random_intersection() {
-    let values = ['a', 'b', 'c'];
+    let values = ['a', 'b', 'c'].as_slice();
     for seed in 0..20 {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
@@ -1871,8 +1873,8 @@ fn map_random_intersection() {
         // let mut inputs = Vec::<(u8, &char)>::new();
 
         for _ in 0..500 {
-            let element = rng.gen_range(0..=255u8);
-            let key = rng.gen_range(0..=255u8);
+            let element = rng.random_range(0..=255u8);
+            let key = rng.random_range(0..=255u8);
             let value = values.choose(&mut rng).unwrap();
             // print!("{element},{key}{value} ");
 
@@ -1946,7 +1948,7 @@ fn map_tiny_symmetric_difference1() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_random_symmetric_difference() {
-    let values = ['a', 'b', 'c'];
+    let values = ['a', 'b', 'c'].as_slice();
     for seed in 0..20 {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
@@ -1956,11 +1958,11 @@ fn map_random_symmetric_difference() {
         // let mut inputs = Vec::<(u8, &char)>::new();
 
         for _ in 0..500 {
-            let key = rng.gen_range(0..=255u8);
+            let key = rng.random_range(0..=255u8);
             let value = values.choose(&mut rng).unwrap();
             map0.insert(key, *value);
             print!("l{key}{value} ");
-            let key = rng.gen_range(0..=255u8);
+            let key = rng.random_range(0..=255u8);
             let value = values.choose(&mut rng).unwrap();
             map1.insert(key, *value);
             print!("r{key}{value} ");

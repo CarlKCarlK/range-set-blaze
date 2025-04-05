@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(clippy::cargo_common_metadata)]
 
 extern crate alloc;
 use alloc::{string::ToString, vec::Vec};

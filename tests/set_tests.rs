@@ -25,15 +25,15 @@ use num_traits::identities::One;
 use num_traits::identities::Zero;
 #[cfg(not(target_arch = "wasm32"))]
 use quickcheck_macros::quickcheck;
-use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
+use rand::rngs::StdRng;
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 use range_set_blaze::Rog;
 use range_set_blaze::SymDiffIter;
-use range_set_blaze::{prelude::*, Integer, NotIter, SortedStarts};
-use range_set_blaze::{symmetric_difference_dyn, UnionIter};
+use range_set_blaze::{Integer, NotIter, SortedStarts, prelude::*};
+use range_set_blaze::{UnionIter, symmetric_difference_dyn};
 use std::any::Any;
 use std::cmp::Ordering;
 #[cfg(feature = "rog-experimental")]
@@ -47,7 +47,7 @@ use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
 #[cfg(not(target_arch = "wasm32"))]
-use tests_common::{k_sets, width_to_range, How, MemorylessIter, MemorylessRange};
+use tests_common::{How, MemorylessIter, MemorylessRange, k_sets, width_to_range};
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -1736,10 +1736,12 @@ fn test_rog_repro2() {
 #[allow(deprecated)]
 fn test_rog_coverage1() {
     let a = RangeSetBlaze::from_iter([1u8..=6u8]);
-    assert!(panic::catch_unwind(AssertUnwindSafe(
-        || a.rogs_range((Bound::Excluded(&255), Bound::Included(&255)))
-    ))
-    .is_err());
+    assert!(
+        panic::catch_unwind(AssertUnwindSafe(
+            || a.rogs_range((Bound::Excluded(&255), Bound::Included(&255)))
+        ))
+        .is_err()
+    );
     assert!(panic::catch_unwind(AssertUnwindSafe(|| a.rogs_range(0..0))).is_err());
 }
 
@@ -2705,10 +2707,10 @@ fn set_random_symmetric_difference() {
         let mut set1 = RangeSetBlaze::new();
 
         for _ in 0..500 {
-            let key = rng.gen_range(0..=255u8);
+            let key = rng.random_range(0..=255u8);
             set0.insert(key);
             print!("l{key} ");
-            let key = rng.gen_range(0..=255u8);
+            let key = rng.random_range(0..=255u8);
             set1.insert(key);
             print!("r{key} ");
 

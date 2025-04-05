@@ -1,7 +1,7 @@
 [package]
 name = "tests_common"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "Common test utilities for range-set-blaze"
 repository = "https://github.com/CarlKCarlK/range-set-blaze"
 readme = "../../README.md"
@@ -11,7 +11,7 @@ keywords = ["set", "range", "data-structures", "no_std", "wasm"]
 categories = ["data-structures", "no-std", "wasm"]
 
 [dependencies]
-rand = "0.8.4"
+rand = "0.9.0"
 range-set-blaze = { path = ".." }
 num-integer = "0.1.44"
 num-traits = "0.2.14"

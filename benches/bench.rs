@@ -7,18 +7,18 @@
 // compare with hi_sparse_bitset
 
 use criterion::{
-    black_box, criterion_group, criterion_main, AxisScale, BatchSize, BenchmarkId, Criterion,
-    PlotConfiguration,
+    AxisScale, BatchSize, BenchmarkId, Criterion, PlotConfiguration, black_box, criterion_group,
+    criterion_main,
 };
 use itertools::iproduct;
 use rand::{
-    distributions::{uniform::SampleUniform, Uniform},
+    Rng, SeedableRng,
+    distr::{Uniform, uniform::SampleUniform},
     prelude::Distribution,
     rngs::StdRng,
     seq::SliceRandom,
-    Rng, SeedableRng,
 };
-use range_set_blaze::{prelude::*, Integer};
+use range_set_blaze::{Integer, prelude::*};
 use roaring::RoaringBitmap;
 use std::{
     collections::{BTreeSet, HashSet},
@@ -26,7 +26,7 @@ use std::{
 };
 
 use syntactic_for::syntactic_for;
-use tests_common::{k_sets, width_to_range_u32, How, MemorylessIter, MemorylessRange};
+use tests_common::{How, MemorylessIter, MemorylessRange, k_sets, width_to_range_u32};
 
 #[cfg(feature = "from_slice")]
 const LANES: usize = 16;
@@ -1545,7 +1545,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
 
 fn worst(c: &mut Criterion) {
     let group_name = "worst";
-    let range = 0..=999u32;
+    let uniform = Uniform::new_inclusive(0, 1000).unwrap();
     let iter_len_list = [1u32, 10, 100, 1_000, 10_000];
     let seed = 0;
 
@@ -1556,7 +1556,6 @@ fn worst(c: &mut Criterion) {
         let parameter = iter_len;
 
         let mut rng = StdRng::seed_from_u64(seed);
-        let uniform = Uniform::from(range.clone());
         let vec: Vec<u32> = (0..iter_len).map(|_| uniform.sample(&mut rng)).collect();
 
         group.bench_with_input(
@@ -1877,22 +1876,22 @@ fn overflow(c: &mut Criterion) {
 
 fn gen_pair(rng: &mut StdRng) -> (i32, i32) {
     (
-        rng.gen_range(i32::MIN..=i32::MAX),
-        rng.gen_range(i32::MIN..=i32::MAX),
+        rng.random_range(i32::MIN..=i32::MAX),
+        rng.random_range(i32::MIN..=i32::MAX),
     )
 }
 
 fn gen_pair_i8(rng: &mut StdRng) -> (i8, i8) {
     (
-        rng.gen_range(i8::MIN..=i8::MAX),
-        rng.gen_range(i8::MIN..=i8::MAX),
+        rng.random_range(i8::MIN..=i8::MAX),
+        rng.random_range(i8::MIN..=i8::MAX),
     )
 }
 
 fn gen_pair_u8(rng: &mut StdRng) -> (u8, u8) {
     (
-        rng.gen_range(u8::MIN..=u8::MAX),
-        rng.gen_range(u8::MIN..=u8::MAX),
+        rng.random_range(u8::MIN..=u8::MAX),
+        rng.random_range(u8::MIN..=u8::MAX),
     )
 }
 
@@ -1955,13 +1954,12 @@ fn worst_op_blaze(c: &mut Criterion) {
         1usize, 3, 10, 30, 100, 300, 1000, 3_000, 10_000, 30_000, 100_000, 300_000, 1_000_000,
     ];
     let pair_count = 20;
-    let range = 0..=100_000;
+    let uniform = Uniform::new(0, 100_000).unwrap();
     let mut group = c.benchmark_group(group_name);
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     let seed = 0;
     let mut rng = StdRng::seed_from_u64(seed);
-    let uniform = Uniform::from(range);
 
     // a list of number a vec of sets
     let setup_vec_blaze = iter_len_list

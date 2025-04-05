@@ -25,9 +25,8 @@ The crate's main structs are:
 
 The crate's main traits are
 
-* [`SortedDisjoint`], implemented by iterators of sorted & disjoint ranges of integers. See [documentation][2] for details.
-* [`SortedDisjointMap`], implemented by iterators of pairs, where the first item is a sorted & disjoint range of integers. The second item
-is a value. See [documentation][3] for details.
+* [`SortedDisjoint`], implemented by iterators of sorted & disjoint ranges of integers. See [documentation][2]   for details.
+* [`SortedDisjointMap`], implemented by iterators of pairs, where the first item is a sorted & disjoint range of integers. The second item is a value. See [documentation][3] for details.
 
 > With any `SortedDisjoint` or `SortedDisjointMap` iterator we can perform set operations in one pass through the ranges and with minimal (constant) memory.
 > The package enforces the "sorted & disjoint" constraint at compile time
@@ -69,17 +68,17 @@ Articles
 -----------
 
 * [Nine Rules for Creating Fast, Safe, and Compatible Data Structures in Rust:
-Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3) in *Towards Data Science*. It provides a high-level overview of the crate and its design.
+  Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3) in *Towards Data Science*. It provides a high-level overview of the crate and its design.
 
 * [Nine Rules for Running Rust on the Web and on Embedded: Practical Lessons from Porting range-set-blaze to no_std and WASM](https://medium.com/towards-data-science/nine-rules-for-running-rust-on-the-web-and-on-embedded-94462ef249a2) in *Towards Data Science*. It covers porting to "`no_std`".
 
 * [Check AI-Generated Code Perfectly and Automatically
-My Experience Applying Kani’s Formal Verification to ChatGPT-Suggested Rust Code](https://medium.com/@carlmkadie/check-ai-generated-code-perfectly-and-automatically-d5b61acff741). Shows how to prove overflow safety.
+  My Experience Applying Kani’s Formal Verification to ChatGPT-Suggested Rust Code](https://medium.com/@carlmkadie/check-ai-generated-code-perfectly-and-automatically-d5b61acff741). Shows how to prove overflow safety.
 
 * [Nine Rules to Formally Validate Rust Algorithms with Dafny](https://medium.com/towards-data-science/nine-rules-to-formally-validate-rust-algorithms-with-dafny-part-1-5cb8c8a0bb92) in *Towards Data Science*. It shows how to formally validate one of the crate's algorithms.
 
 * [Nine Rules for SIMD Acceleration of your Rust Code:
-General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x](https://medium.com/towards-data-science/nine-rules-for-simd-acceleration-of-your-rust-code-part-1-c16fe639ce21) in *Towards Data Science*
+  General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x](https://medium.com/towards-data-science/nine-rules-for-simd-acceleration-of-your-rust-code-part-1-c16fe639ce21) in *Towards Data Science*
 
 * *Also see:* [CHANGELOG](https://github.com/CarlKCarlK/range-set-blaze/blob/main/CHANGELOG.md)
 

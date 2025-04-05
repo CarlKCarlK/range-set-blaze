@@ -1,7 +1,14 @@
 [package]
-edition = "2021"
+edition = "2024"
 name = "embedded"
 version = "0.1.0"
+description = "Example for embedded target"
+repository = "https://github.com/CarlKCarlK/range-set-blaze"
+readme = "../../README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["set", "range", "data-structures", "no_std", "embedded"]
+categories = ["data-structures", "no-std", "embedded"]
+publish = false
 
 [dependencies]
 alloc-cortex-m = "0.4.4"
