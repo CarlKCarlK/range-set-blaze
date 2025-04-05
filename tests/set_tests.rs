@@ -2986,7 +2986,7 @@ const fn check_traits() {
 
     type AIter<'a> = Iter<i32, ARangesIter<'a>>;
     is_sssu::<AIter>();
-    is_like_btreeset_iter::<AIter>();
+    is_like_btreeset_iter_less_exact_size::<AIter>();
 
     type ARangesIter<'a> = RangesIter<'a, i32>;
     is_sssu::<ARangesIter>();
@@ -2998,44 +2998,44 @@ const fn check_traits() {
 
     type AMapRangesIter<'a> = MapRangesIter<'a, i32, u64>;
     is_sssu::<AMapRangesIter>();
-    is_like_btreeset_iter::<AMapRangesIter>();
+    is_like_btreeset_iter_less_both::<AMapRangesIter>();
 
     type ARangeValuesToRangesIter<'a> =
         RangeValuesToRangesIter<i32, &'a u64, RangeValuesIter<'a, i32, u64>>;
     is_sssu::<ARangeValuesToRangesIter>();
-    is_like_btreeset_iter::<ARangeValuesToRangesIter>();
+    is_like_btreeset_iter_less_both::<ARangeValuesToRangesIter>();
 
     type AMapIntoRangesIter = MapIntoRangesIter<i32, u64>;
     is_sssu::<AMapIntoRangesIter>();
-    is_like_btreeset_into_iter::<AMapIntoRangesIter>();
+    is_like_btreeset_into_iter_less_both::<AMapIntoRangesIter>();
 
     type AIntoIter = IntoIter<i32>;
     is_sssu::<AIntoIter>();
-    is_like_btreeset_into_iter::<AIntoIter>();
+    is_like_btreeset_into_iter_less_exact_size::<AIntoIter>();
 
     type AKMerge<'a> = crate::KMerge<i32, ARangesIter<'a>>;
     is_sssu::<AKMerge>();
-    is_like_btreeset_iter::<AKMerge>();
+    is_like_btreeset_iter_less_both::<AKMerge>();
 
     type AMerge<'a> = crate::Merge<i32, ARangesIter<'a>, ARangesIter<'a>>;
     is_sssu::<AMerge>();
-    is_like_btreeset_iter::<AMerge>();
+    is_like_btreeset_iter_less_both::<AMerge>();
 
     type ANotIter<'a> = crate::NotIter<i32, ARangesIter<'a>>;
     is_sssu::<ANotIter>();
-    is_like_btreeset_iter::<ANotIter>();
+    is_like_btreeset_iter_less_both::<ANotIter>();
 
     type AUnionIter<'a> = UnionIter<i32, ARangesIter<'a>>;
     is_sssu::<AUnionIter>();
-    is_like_btreeset_iter::<AUnionIter>();
+    is_like_btreeset_iter_less_both::<AUnionIter>();
 
     type ASymDiffIter<'a> = SymDiffIter<i32, ARangesIter<'a>>;
     is_sssu::<ASymDiffIter>();
-    is_like_btreeset_iter::<ASymDiffIter>();
+    is_like_btreeset_iter_less_both::<ASymDiffIter>();
 
     type AAssumeSortedStarts<'a> = AssumeSortedStarts<i32, ARangesIter<'a>>;
     is_sssu::<AAssumeSortedStarts>();
-    is_like_btreeset_iter::<AAssumeSortedStarts>();
+    is_like_btreeset_iter_less_both::<AAssumeSortedStarts>();
 
     type ACheckSortedDisjoint<'a> = CheckSortedDisjoint<i32, ARangesIter<'a>>;
     is_sssu::<ACheckSortedDisjoint>();
@@ -3064,11 +3064,24 @@ const fn is_ddcppdheo<
 
 const fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
 const fn is_like_btreeset_iter<
-    T: Clone + std::fmt::Debug + FusedIterator + Iterator, // cmk DoubleEndedIterator  + ExactSizeIterator,
+    T: Clone + std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator + ExactSizeIterator,
+>() {
+}
+const fn is_like_btreeset_iter_less_both<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
+const fn is_like_btreeset_iter_less_exact_size<
+    T: Clone + std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator,
 >() {
 }
 
-const fn is_like_btreeset_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {} // cmk DoubleEndedIterator  + ExactSizeIterator,
+const fn is_like_btreeset_into_iter<
+    T: std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator + ExactSizeIterator,
+>() {
+}
+const fn is_like_btreeset_into_iter_less_exact_size<
+    T: std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator,
+>() {
+}
+const fn is_like_btreeset_into_iter_less_both<T: std::fmt::Debug + FusedIterator + Iterator>() {}
 
 const fn is_like_btreeset<
     T: Clone
