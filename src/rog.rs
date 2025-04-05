@@ -10,7 +10,7 @@ use core::{
     ops::{RangeBounds, RangeInclusive},
 };
 
-use crate::{set::extract_range, Integer, RangeSetBlaze};
+use crate::{Integer, RangeSetBlaze, set::extract_range};
 
 /// Experimental: This struct is created by the [`rogs_range`] method on  [`RangeSetBlaze`].
 /// See [`rogs_range`] for more information.
@@ -63,6 +63,15 @@ impl<T: Integer> Iterator for RogsIter<'_, T> {
 }
 
 impl<T: Integer> FusedIterator for RogsIter<'_, T> {}
+
+// We can't implement ExactSizeIterator for RogsIter because it doesn't track
+// the number of items that will be returned
+//
+// impl<T: Integer> ExactSizeIterator for RogsIter<'_, T> {
+//     fn len(&self) -> usize {
+//         // This would need to calculate the number of ranges and gaps
+//     }
+// }
 
 /// Experimental: Represents an range or gap in a [`RangeSetBlaze`].
 ///

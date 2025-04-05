@@ -42,6 +42,10 @@ where
 {
 }
 
+// Note: DoubleEndedIterator is not easily implementable for NotIter because
+// it would require complex tracking of the "flipped" nature of the NotIter
+// in reverse order.
+
 impl<T, I> Iterator for NotIter<T, I>
 where
     T: Integer,

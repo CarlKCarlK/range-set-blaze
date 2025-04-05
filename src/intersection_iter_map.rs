@@ -5,7 +5,7 @@ use core::{
 };
 
 use crate::Integer;
-use crate::{map::ValueRef, SortedDisjoint, SortedDisjointMap};
+use crate::{SortedDisjoint, SortedDisjointMap, map::ValueRef};
 
 /// This `struct` is created by the [`intersection`] and [`map_and_set_intersection`] methods on [`SortedDisjointMap`].
 /// See the methods' documentation for more.
@@ -49,10 +49,15 @@ impl<T, VR, IM, IS> FusedIterator for IntersectionIterMap<T, VR, IM, IS>
 where
     T: Integer,
     VR: ValueRef,
-    IM: SortedDisjointMap<T, VR>,
-    IS: SortedDisjoint<T>,
+    IM: SortedDisjointMap<T, VR> + FusedIterator,
+    IS: SortedDisjoint<T> + FusedIterator,
 {
 }
+
+// Note: ExactSizeIterator cannot be safely implemented for IntersectionIterMap
+// because we can't determine the exact number of items that will be produced
+// by the intersection without fully processing both iterators.
+// An upper bound would be min(left.len(), right.len()), but that's not exact.
 
 impl<T, VR, IM, IS> Iterator for IntersectionIterMap<T, VR, IM, IS>
 where

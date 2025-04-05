@@ -318,8 +318,8 @@ const fn is_ddcppdheo<
 
 const fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
 const fn is_like_btreemap_iter<
-    T: Clone + std::fmt::Debug + FusedIterator, // + Iterator /* cmk  + DoubleEndedIterator, // cmk*/
-                                                // + ExactSizeIterator,
+    T: Clone + std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator, // cmk*/
+                                                                                 // + ExactSizeIterator,
 >() {
 }
 
