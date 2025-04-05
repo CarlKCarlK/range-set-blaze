@@ -2,9 +2,9 @@ use core::iter::FusedIterator;
 
 use itertools::{Itertools, KMergeBy, MergeBy};
 
+use crate::Integer;
 use crate::map::ValueRef;
 use crate::range_values::SetPriorityMap;
-use crate::Integer;
 
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap, SortedDisjointMap};
 

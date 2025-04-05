@@ -3068,7 +3068,7 @@ const fn is_like_btreeset_iter<
 >() {
 }
 
-const fn is_like_btreeset_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {}
+const fn is_like_btreeset_into_iter<T: std::fmt::Debug + FusedIterator + Iterator>() {} // cmk DoubleEndedIterator  + ExactSizeIterator,
 
 const fn is_like_btreeset<
     T: Clone

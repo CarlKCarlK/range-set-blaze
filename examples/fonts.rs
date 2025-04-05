@@ -1,10 +1,8 @@
-use range_set_blaze::prelude::*;
 use range_set_blaze::Integer;
+use range_set_blaze::prelude::*;
 
 fn sample2() {
-    let filename =
-        r"C:\Users\carlk\OneDrive\Projects\Science\rangemapblaze\char\linear_algebra.jp.txt"; // cmk
-    let text = std::fs::read_to_string(filename).unwrap();
+    let text = include_str!("linear_algebra.jp.txt");
     let chars_used = text.chars().collect::<RangeSetBlaze<char>>();
     for range in chars_used.ranges() {
         let (start, end) = range.clone().into_inner();

@@ -1,9 +1,3 @@
-use crate::intersection_iter_map::IntersectionIterMap;
-use crate::map::ValueRef;
-use crate::range_values::RangeValuesIter;
-use crate::range_values::RangeValuesToRangesIter;
-use crate::sorted_disjoint::SortedDisjoint;
-use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::DifferenceMap;
 use crate::DifferenceMapInternal;
 use crate::DynSortedDisjointMap;
@@ -13,7 +7,13 @@ use crate::NotIter;
 use crate::NotMap;
 use crate::SymDiffMergeMap;
 use crate::UnionMergeMap;
-use crate::{union_iter_map::UnionIterMap, Integer, RangeMapBlaze};
+use crate::intersection_iter_map::IntersectionIterMap;
+use crate::map::ValueRef;
+use crate::range_values::RangeValuesIter;
+use crate::range_values::RangeValuesToRangesIter;
+use crate::sorted_disjoint::SortedDisjoint;
+use crate::sym_diff_iter_map::SymDiffIterMap;
+use crate::{Integer, RangeMapBlaze, union_iter_map::UnionIterMap};
 use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
@@ -844,6 +844,17 @@ where
 {
 }
 
+impl<T, V, I> ExactSizeIterator for RangeToRangeValueIter<'_, T, V, I>
+where
+    T: Integer,
+    V: Eq + Clone,
+    I: SortedDisjoint<T> + ExactSizeIterator,
+{
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+}
+
 impl<'a, T, V, I> Iterator for RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
@@ -871,6 +882,17 @@ where
     V: Eq + Clone,
     I: SortedDisjoint<T>,
 {
+}
+
+impl<T, V, I> DoubleEndedIterator for RangeToRangeValueIter<'_, T, V, I>
+where
+    T: Integer,
+    V: Eq + Clone,
+    I: SortedDisjoint<T> + DoubleEndedIterator,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner.next_back().map(|range| (range, self.value))
+    }
 }
 
 macro_rules! impl_sorted_map_traits_and_ops {

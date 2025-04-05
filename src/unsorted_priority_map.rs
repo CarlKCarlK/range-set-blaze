@@ -1,7 +1,7 @@
 use crate::map::ValueRef;
 use crate::range_values::ExpectDebugUnwrapRelease;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
-use crate::{map::EndValue, sorted_disjoint_map::SortedDisjointMap, Integer};
+use crate::{Integer, map::EndValue, sorted_disjoint_map::SortedDisjointMap};
 use core::ops::RangeInclusive;
 use core::{
     cmp::{max, min},
@@ -238,5 +238,16 @@ where
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
+    }
+}
+
+impl<T, VR, I> DoubleEndedIterator for AssumePrioritySortedStartsMap<T, VR, I>
+where
+    T: Integer,
+    VR: ValueRef,
+    I: Iterator<Item = Priority<T, VR>> + DoubleEndedIterator + FusedIterator,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.iter.next_back()
     }
 }

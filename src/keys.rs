@@ -2,9 +2,9 @@ use core::iter::FusedIterator;
 use std::collections::btree_map;
 
 use crate::{
+    Integer, SortedDisjointMap,
     iter_map::{IntoIterMap, IterMap},
     map::{EndValue, ValueRef},
-    Integer, SortedDisjointMap,
 };
 
 /// An iterator over the integer elements of a [`RangeMapBlaze`]. Double-ended.
@@ -44,6 +44,17 @@ where
     VR: ValueRef,
     I: SortedDisjointMap<T, VR> + FusedIterator,
 {
+}
+
+impl<T, VR, I> ExactSizeIterator for Keys<T, VR, I>
+where
+    T: Integer,
+    VR: ValueRef,
+    I: SortedDisjointMap<T, VR> + ExactSizeIterator,
+{
+    fn len(&self) -> usize {
+        self.iter.len()
+    }
 }
 
 impl<T, VR, I> Iterator for Keys<T, VR, I>

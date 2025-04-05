@@ -3,8 +3,8 @@ use core::{iter::FusedIterator, ops::RangeInclusive};
 use alloc::collections::btree_map;
 
 use crate::{
-    map::{EndValue, ValueRef},
     Integer, SortedDisjointMap,
+    map::{EndValue, ValueRef},
 };
 
 /// An iterator over the integer elements of a [`RangeMapBlaze`]. Double-ended.
@@ -48,6 +48,17 @@ where
     VR: ValueRef,
     I: SortedDisjointMap<T, VR> + FusedIterator,
 {
+}
+
+impl<T, VR, I> ExactSizeIterator for IterMap<T, VR, I>
+where
+    T: Integer,
+    VR: ValueRef,
+    I: SortedDisjointMap<T, VR> + ExactSizeIterator,
+{
+    fn len(&self) -> usize {
+        self.iter.len()
+    }
 }
 
 impl<T, VR, I> Iterator for IterMap<T, VR, I>
