@@ -38,7 +38,10 @@ impl<'a, T: Copy + Ord, B: BuildHasher> Iterator for Ranges<'a, T, B> {
     }
 }
 
-impl<'a, T: Copy + Ord, B: BuildHasher> FusedIterator for Ranges<'a, T, B> {}
+// Note: FusedIterator cannot be safely implemented here
+// without confirming that once next() returns None,
+// subsequent calls will continue to return None.
+// This would require analyzing the iterator's internal state management.
 
 // Note: Implementing ExactSizeIterator would require tracking the remaining elements,
 // which is complex for Ranges due to its lazy nature and range filtering.

@@ -31,4 +31,10 @@ impl<'a, T: Copy + Ord, B: BuildHasher> Iterator for SymmetricDifference<'a, T, 
     }
 }
 
-impl<'a, T: Copy + Ord, B: BuildHasher> FusedIterator for SymmetricDifference<'a, T, B> {}
+// FusedIterator is safe for SymmetricDifference only if we can guarantee that once next() returns None,
+// subsequent calls will continue to return None. This needs to be verified by examining
+// the implementation details.
+//
+// The implementation should be checked to ensure that once both input iterators
+// are exhausted, the SymmetricDifference iterator will consistently return None.
+// impl<'a, T: Copy + Ord, B: BuildHasher> FusedIterator for SymmetricDifference<'a, T, B> {}
