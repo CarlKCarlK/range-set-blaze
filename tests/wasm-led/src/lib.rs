@@ -248,8 +248,8 @@ pub fn double_count_down() -> RangeMapBlaze<i32, u8> {
     main
 }
 
-// cmk try to make generic?
-// cmk linear could be a method on RangeMapBlaze
+// Later: try to make generic?
+// Later: linear could be a method on RangeMapBlaze
 pub fn linear(
     range_map_blaze: &RangeMapBlaze<i32, u8>,
     scale: i32,
@@ -291,7 +291,7 @@ pub fn get_led_state_and_duration(movie_id: f64, now_milliseconds: f64) -> LedSt
     let now_to_2_weeks = RangeSetBlaze::from_iter([frame_index..=i32::MAX]);
 
     // Create trim the movie to the time interval
-    // cmk Support rog-experimental or get_range_value -> (RangeInclusive<i32>, Optional<&V>)
+    // LATER Support rog-experimental or get_range_value -> (RangeInclusive<i32>, Optional<&V>)
     let now_to_end_of_movie = movie & &now_to_2_weeks;
 
     // Find the first region in the time interval (if any)
