@@ -116,7 +116,7 @@ fn map_insert_255u8() {
     assert_eq!(range_map_blaze.to_string(), r#"(255..=255, "First")"#);
 
     let iter = [
-        (255u8..=255, "Hello".to_string()), // cmk to u8
+        (255u8..=255, "Hello".to_string()),
         (25..=25, "There".to_string()),
     ]
     .into_iter();
@@ -1399,7 +1399,7 @@ fn map_range_map_blaze_operators() {
 
 pub fn play_movie(frames: RangeMapBlaze<i32, String>, fps: i32, skip_sleep: bool) {
     assert!(fps > 0, "fps must be positive");
-    // cmk could look for missing frames
+    // Later: could look for missing frames
     let sleep_duration = Duration::from_secs(1) / fps as u32;
     // For every frame index (index) from 0 to the largest index in the frames ...
     for index in 0..=frames.ranges().into_range_set_blaze().last().unwrap() {
@@ -1663,8 +1663,45 @@ fn test_every_sorted_disjoint_map_method() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn map_empty_construction() {
+    use range_set_blaze::RangeMapBlaze;
+    use std::collections::BTreeMap;
+
+    // Collect from an empty iterator of (key, value) pairs
+    let collected: RangeMapBlaze<u8, char> = [].iter().cloned::<(u8, char)>().collect();
+    assert!(collected.is_empty());
+
+    // Collect from an empty iterator of (range, value) pairs
+    let collected_ranges: RangeMapBlaze<u8, char> =
+        Vec::<(std::ops::RangeInclusive<u8>, char)>::new()
+            .into_iter()
+            .collect();
+    assert!(collected_ranges.is_empty());
+
+    // Construct via .new()
+    let via_new = RangeMapBlaze::<u8, char>::new();
+    assert!(via_new.is_empty());
+
+    // Construct via from_iter with no elements
+    let from_iter = RangeMapBlaze::<u8, char>::from_iter(std::iter::empty::<(u8, char)>());
+    assert!(from_iter.is_empty());
+
+    // Empty vs BTreeMap comparison
+    let empty_btree: BTreeMap<u8, &char> = BTreeMap::new();
+    assert!(equal_maps(&collected, &empty_btree));
+    assert!(equal_maps(&collected_ranges, &empty_btree));
+    assert!(equal_maps(&via_new, &empty_btree));
+    assert!(equal_maps(&from_iter, &empty_btree));
+
+    // .ranges() should also be empty
+    assert_eq!(via_new.ranges().next(), None);
+    assert_eq!(collected.ranges().next(), None);
+    assert_eq!(from_iter.ranges().next(), None);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_random_from_iter_item() {
-    // cmk all these tests should test on size zero, too.
     for seed in 0..20 {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
@@ -1673,8 +1710,8 @@ fn map_random_from_iter_item() {
 
         let mut inputs = Vec::new();
         for _ in 0..500 {
-            let key = rng.random_range(0..=255u8); // cmk change back to u8s
-            let value = ['a', 'b', 'c'].as_slice().choose(&mut rng).unwrap(); // cmk allow more than references
+            let key = rng.random_range(0..=255u8);
+            let value = ['a', 'b', 'c'].as_slice().choose(&mut rng).unwrap();
 
             print!("{key}{value} ");
             inputs.push((key, value));
@@ -1694,6 +1731,9 @@ fn map_random_from_iter_item() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_random_from_iter_range() {
+    let empty: RangeMapBlaze<u8, char> = [].iter().cloned::<(u8, char)>().collect();
+    assert!(empty.is_empty());
+
     for seed in 0..20 {
         println!("seed: {seed}");
         let mut rng = StdRng::seed_from_u64(seed);
@@ -1705,7 +1745,7 @@ fn map_random_from_iter_range() {
             let start = rng.random_range(0..=255u8);
             let end = rng.random_range(start..=255u8);
             let key = start..=end;
-            let value = ['a', 'b', 'c'].as_slice().choose(&mut rng).unwrap(); // cmk allow more than references
+            let value = ['a', 'b', 'c'].as_slice().choose(&mut rng).unwrap();
 
             // print!("{key}{value} ");
             inputs.push((key.clone(), value));
@@ -2043,7 +2083,7 @@ fn equal_maps<T: Integer + std::fmt::Display, V: Eq + Clone + fmt::Debug + std::
 where
     usize: std::convert::From<<T as Integer>::SafeLen>,
 {
-    // cmk what's this mean?: also, check that the ranges are really sorted and disjoint
+    // Also checks that the ranges are really sorted and disjoint
     let mut previous: Option<(RangeInclusive<T>, &V)> = None;
     for range_value in range_map_blaze.range_values() {
         let v = range_value.1;
