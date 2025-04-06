@@ -1198,6 +1198,9 @@ fn map_insert2() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_remove() {
+    let mut map: RangeMapBlaze<i32, char> = RangeMapBlaze::new();
+    assert_eq!(map.remove(4), None);
+
     // Initialize RangeMapBlaze with char values for simplicity
     let mut map = RangeMapBlaze::from_iter([(1..=2, 'a'), (4..=5, 'b'), (10..=11, 'c')]);
     let len = map.len();
@@ -2732,6 +2735,15 @@ fn test_retain() {
     let mut map: RangeMapBlaze<i32, i32> = (0..8).map(|x| (x, x * 10)).collect();
     // Keep only the elements with even-numbered keys.
     map.retain(|&k, _| k % 2 == 0);
+    assert!(map.into_iter().eq(vec![(0, 0), (2, 20), (4, 40), (6, 60)]));
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_ranges_retain() {
+    let mut map: RangeMapBlaze<i32, i32> = (0..8).map(|x| (x, x * 10)).collect();
+    // Keep only the elements with even-numbered keys.
+    map.ranges_retain(|k, _| k.start() % 2 == 0);
     assert!(map.into_iter().eq(vec![(0, 0), (2, 20), (4, 40), (6, 60)]));
 }
 

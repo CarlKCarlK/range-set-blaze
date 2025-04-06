@@ -1159,7 +1159,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
         .collect();
 
         group.bench_with_input(
-            BenchmarkId::new("RangeSetBlaze (integers, iter)", parameter),
+            BenchmarkId::new("RangeSetBlaze (integers-iter)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1171,7 +1171,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
         #[cfg(feature = "from_slice")]
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (integers, slice_{})", SIMD_SUFFIX),
+                format!("RangeSetBlaze (integers-slice_{})", SIMD_SUFFIX),
                 parameter,
             ),
             &parameter,

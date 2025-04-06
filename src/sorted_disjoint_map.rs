@@ -845,17 +845,6 @@ where
 {
 }
 
-impl<T, V, I> ExactSizeIterator for RangeToRangeValueIter<'_, T, V, I>
-where
-    T: Integer,
-    V: Eq + Clone,
-    I: SortedDisjoint<T> + ExactSizeIterator,
-{
-    fn len(&self) -> usize {
-        self.inner.len()
-    }
-}
-
 impl<'a, T, V, I> Iterator for RangeToRangeValueIter<'a, T, V, I>
 where
     T: Integer,
@@ -883,17 +872,6 @@ where
     V: Eq + Clone,
     I: SortedDisjoint<T>,
 {
-}
-
-impl<T, V, I> DoubleEndedIterator for RangeToRangeValueIter<'_, T, V, I>
-where
-    T: Integer,
-    V: Eq + Clone,
-    I: SortedDisjoint<T> + DoubleEndedIterator,
-{
-    fn next_back(&mut self) -> Option<Self::Item> {
-        self.inner.next_back().map(|range| (range, self.value))
-    }
 }
 
 macro_rules! impl_sorted_map_traits_and_ops {

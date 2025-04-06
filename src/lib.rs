@@ -89,7 +89,9 @@ mod ranges_iter;
 pub use crate::ranges_iter::{IntoRangesIter, RangesIter};
 
 mod set;
-pub use crate::set::{IntoIter, Iter, RangeSetBlaze, demo_read_ranges_from_file};
+#[cfg(not(coverage))]
+pub use crate::set::demo_read_ranges_from_file;
+pub use crate::set::{IntoIter, Iter, RangeSetBlaze};
 
 mod sorted_disjoint;
 pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};

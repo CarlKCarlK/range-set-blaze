@@ -3,7 +3,7 @@
 use crate::Integer;
 use alloc::slice;
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
-use core::{iter::ExactSizeIterator, iter::FusedIterator, ops::RangeInclusive, ops::Sub};
+use core::{iter::FusedIterator, ops::RangeInclusive, ops::Sub};
 
 #[allow(clippy::redundant_pub_crate)]
 #[allow(clippy::module_name_repetitions)]
@@ -45,17 +45,6 @@ where
     Simd<T, N>: Sub<Output = Simd<T, N>>,
     LaneCount<N>: SupportedLaneCount,
 {
-}
-
-impl<T, const N: usize> ExactSizeIterator for FromSliceIter<'_, T, N>
-where
-    T: SimdInteger,
-    Simd<T, N>: Sub<Output = Simd<T, N>>,
-    LaneCount<N>: SupportedLaneCount,
-{
-    fn len(&self) -> usize {
-        self.slice_len
-    }
 }
 
 impl<T, const N: usize> Iterator for FromSliceIter<'_, T, N>

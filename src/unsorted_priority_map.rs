@@ -240,14 +240,3 @@ where
         self.iter.size_hint()
     }
 }
-
-impl<T, VR, I> DoubleEndedIterator for AssumePrioritySortedStartsMap<T, VR, I>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = Priority<T, VR>> + DoubleEndedIterator + FusedIterator,
-{
-    fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter.next_back()
-    }
-}

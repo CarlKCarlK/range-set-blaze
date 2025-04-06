@@ -46,17 +46,6 @@ where
 {
 }
 
-impl<T, VR, I> ExactSizeIterator for Keys<T, VR, I>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR> + ExactSizeIterator,
-{
-    fn len(&self) -> usize {
-        self.iter.len()
-    }
-}
-
 impl<T, VR, I> Iterator for Keys<T, VR, I>
 where
     T: Integer,

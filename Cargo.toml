@@ -78,3 +78,7 @@ harness = false
 
 [package.metadata.docs.rs]
 all-features = true
+
+# Cargo.toml
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(coverage)"] }

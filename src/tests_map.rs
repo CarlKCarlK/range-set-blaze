@@ -235,7 +235,7 @@ const fn check_traits() {
 
     type AIterMap<'a> = IterMap<i32, &'a u64, ARangeValuesIter<'a>>;
     is_sssu::<AIterMap>();
-    is_like_btreemap_iter::<AIterMap>();
+    is_like_btreemap_iter_less_exact_size::<AIterMap>();
 
     type AIntoIterMap = IntoIterMap<i32, u64>;
     is_sssu::<AIntoIterMap>();
@@ -252,7 +252,7 @@ const fn check_traits() {
     type AAssumePrioritySortedStartsMap<'a> =
         AssumePrioritySortedStartsMap<i32, &'a u64, vec::IntoIter<Priority<i32, &'a u64>>>;
     is_sssu::<AAssumePrioritySortedStartsMap>();
-    is_like_btreemap_iter_less_exact_size::<AAssumePrioritySortedStartsMap>();
+    is_like_btreemap_iter_less_both::<AAssumePrioritySortedStartsMap>();
 
     type AUnionIterMap<'a> = UnionIterMap<i32, &'a u64, AAssumePrioritySortedStartsMap<'a>>;
     is_sssu::<AUnionIterMap>();
@@ -271,7 +271,7 @@ const fn check_traits() {
 
     type AKeys<'a> = Keys<i32, &'a u64, ARangeValuesIter<'a>>;
     is_sssu::<AKeys>();
-    is_like_btreemap_iter::<AKeys>();
+    is_like_btreemap_iter_less_exact_size::<AKeys>();
 
     type AIntoKeys = IntoKeys<i32, u64>;
     is_sssu::<AIntoKeys>();
@@ -287,7 +287,7 @@ const fn check_traits() {
 
     type ARangeToRangeValueIter<'a> = RangeToRangeValueIter<'a, i32, u64, ARangesIter<'a>>;
     is_sssu::<ARangeToRangeValueIter>();
-    is_like_btreemap_iter::<ARangeToRangeValueIter>();
+    is_like_btreemap_iter_less_both::<ARangeToRangeValueIter>();
 
     type ACheckSortedDisjointMap<'a> = CheckSortedDisjointMap<i32, &'a u64, ARangeValuesIter<'a>>;
     is_sssu::<ACheckSortedDisjointMap>();

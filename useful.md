@@ -1,5 +1,15 @@
 # Useful commands for this project
 
+## coverage
+
+```cmd
+rustup override set nightly
+cargo llvm-cov --tests --all-features --workspace --open
+target\llvm-cov\html\index.html
+```
+
+---------
+
 ## Benchmark Related
 
 ### Benchmarking (but not SIMD)
@@ -10,48 +20,14 @@
 cargo install criterion-means
 set RUSTFLAGS=-C target-cpu=native
 set BUILDFEATURES=from_slice
-
 rustup override set nightly
-
 ```
 
 ### bench
 
 ```cmd
-bench.bat worst
-cargo install criterion-means
-
-bench.bat ingest_clumps_iter_v_slice
-bench.bat ingest_clumps_base
-cargo bench worst & target\criterion\report\index.html
-cargo bench overflow & target\criterion\overflow\report\index.html 
-python benches\summary.py > benches\summary_r.tsv
-cargo bench ingest_roaring_data & target\criterion\ingest_roaring_data\report\index.html 
-```
-
-------------
-
-## Benchmarking (with SIMD)
-
-```cmd
-cargo bench
-
-bench every_op_blaze
-
-@'rem cargo install cargo-criterion-means 
-cargo criterion-means > o:\Projects\Science\rangemapblaze\unitvalue\results.2.csv
-```
-
-### Bench in-context from_slice
-
-```cmd
-set RUSTFLAGS=
-set RUSTFLAGS=-C target-feature=+avx2
-set RUSTFLAGS=-C target-feature=+avx512f
-set RUSTFLAGS=-C target-cpu=native
-set BUILDFEATURES=from_slice
-
-rustup override set nightly
+bench.bat
+cargo criterion-means > delme3.csv
 ```
 
 ### Run criterion-means
@@ -81,9 +57,7 @@ set RUSTFLAGS=-C target-feature=+avx512f
 bench.bat worst
 ```
 
-------------
-
-```cmd
+---------
 
 ## rust flags
 
@@ -113,13 +87,6 @@ cargo test --features rog-experimental
 cargo run --example targets
 cargo run --example parity
 cargo run --example missing
-```
-
-## coverage
-
-```cmd
-cargo llvm-cov --open
-target\llvm-cov\html\index.html
 ```
 
 ## publish

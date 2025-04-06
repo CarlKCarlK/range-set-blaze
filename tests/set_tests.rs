@@ -1039,6 +1039,15 @@ fn retrain() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn ranges_retain() {
+    let mut set = RangeSetBlaze::from_iter([1..=6, 12..=20]);
+    // Keep only the even numbers.
+    set.ranges_retain(|k| k.start() % 2 == 0);
+    assert_eq!(set, RangeSetBlaze::from_iter([12..=20]));
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn sync_and_send() {
     fn assert_sync_and_send<S: Sync + Send>() {}
     assert_sync_and_send::<RangeSetBlaze<i32>>();
