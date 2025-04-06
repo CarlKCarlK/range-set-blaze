@@ -175,7 +175,7 @@ pub fn hello_world() -> RangeMapBlaze<i32, u8> {
         .collect();
     let message = linear(&message, FPS, 0);
     // add gaps of 3 frames between each character
-    let message = message
+    message
         .range_values()
         .enumerate()
         .map(|(i, (range, value))| {
@@ -183,8 +183,7 @@ pub fn hello_world() -> RangeMapBlaze<i32, u8> {
             let new_range = start + i as i32 * 3..=end + i as i32 * 3;
             (new_range, value)
         })
-        .collect();
-    message
+        .collect()
 }
 pub fn circles() -> RangeMapBlaze<i32, u8> {
     // Light up segments A to F

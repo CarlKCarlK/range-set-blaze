@@ -28,6 +28,7 @@ use core::fmt;
 use core::iter::FusedIterator;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
+use std::fmt::Write;
 use std::prelude::v1::*;
 use std::vec;
 use std::{format, println};
@@ -91,7 +92,7 @@ where
 {
     let mut vs = String::new();
     for (range, value) in iter {
-        vs.push_str(&format!("{:?}{} ", range, *value as char,));
+        write!(vs, "{:?}{} ", range, *value as char).unwrap();
     }
     vs
 }

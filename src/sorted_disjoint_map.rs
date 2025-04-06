@@ -667,13 +667,13 @@ where
         // if the next item is Some, check that we haven't seen None before
         if self.seen_none {
             panic!("a value must not be returned after None")
-        };
+        }
 
         // Check that the range is not empty
         let (start, end) = range_value.0.clone().into_inner();
         if start > end {
             panic!("start must be <= end")
-        };
+        }
 
         // If previous is None, we're done (but remember this pair as previous)
         let Some(previous) = self.previous.take() else {
@@ -685,7 +685,8 @@ where
         let previous_end = *previous.0.end();
         if previous_end >= start {
             panic!("ranges must be disjoint and sorted")
-        };
+        }
+
         if previous_end.add_one() == start && previous.1.borrow() == range_value.1.borrow() {
             panic!("touching ranges must have different values")
         }
@@ -740,7 +741,7 @@ where
     }
 
     /// Updates the range part of `range_value`.
-    pub fn set_range(&mut self, range: RangeInclusive<T>) {
+    pub const fn set_range(&mut self, range: RangeInclusive<T>) {
         self.range_value.0 = range;
     }
 

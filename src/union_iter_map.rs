@@ -8,9 +8,9 @@ use core::iter::FusedIterator;
 use core::ops::RangeInclusive;
 use itertools::Itertools;
 
+use crate::Integer;
 use crate::unsorted_priority_map::AssumePrioritySortedStartsMap;
 use crate::unsorted_priority_map::UnsortedPriorityMap;
-use crate::Integer;
 
 type SortedStartsInVecMap<T, VR> =
     AssumePrioritySortedStartsMap<T, VR, vec::IntoIter<Priority<T, VR>>>;
@@ -51,7 +51,7 @@ where
             if let Some(value) = self.ready_to_go.take() {
                 // If ready_to_go is Some, return the value immediately.
                 return Some(value);
-            };
+            }
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
@@ -108,7 +108,7 @@ where
             } else {
                 // if there is no gather, then set the gather to the best
                 self.gather = Some((best.start()..=next_end, best.value().clone()));
-            };
+            }
 
             // We also update the workspace to removing any items that are completely covered by the new_start.
             // We also don't need to keep any items that have a lower priority and are shorter than the new best.

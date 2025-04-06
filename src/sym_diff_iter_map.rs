@@ -7,10 +7,10 @@ use core::{
 use alloc::collections::BinaryHeap;
 
 use crate::{
+    Integer, MergeMap, SortedDisjointMap, SymDiffKMergeMap, SymDiffMergeMap,
     map::ValueRef,
     merge_map::KMergeMap,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
-    Integer, MergeMap, SortedDisjointMap, SymDiffKMergeMap, SymDiffMergeMap,
 };
 
 /// This `struct` is created by the [`symmetric_difference`] method on [`SortedDisjointMap`]. See [`symmetric_difference`]'s
@@ -67,7 +67,7 @@ where
             if let Some(value) = self.ready_to_go.take() {
                 // If ready_to_go is Some, return the value immediately.
                 return Some(value);
-            };
+            }
 
             // if self.next_item should go into the workspace, then put it there, get the next, next_item, and loop
             if let Some(next_item) = self.next_item.take() {
@@ -146,7 +146,7 @@ where
                 } else {
                     debug_assert!(self.gather.is_none());
                 }
-            };
+            }
 
             // We also update the workspace to removing any items that are completely covered by the new_start.
             // (Unlike UnionIterMap, we must keep any items that have a lower priority and are shorter than the new best.)

@@ -1182,7 +1182,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             // AAAAA
             //  aaa
             return;
-        };
+        }
 
         // === case: same value and new extends beyond before
         if !before_contains_new && same_value {

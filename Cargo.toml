@@ -1,6 +1,6 @@
 [package]
 name = "range-set-blaze"
-version = "0.2.0-alpha1"
+version = "0.2.0-alpha2"
 edition = "2024"
 description = "Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full set operations"
 repository = "https://github.com/CarlKCarlK/range-set-blaze"
@@ -50,7 +50,7 @@ tests_common = { path = "tests_common" }
 criterion = { version = "0.5.1", features = [
     "html_reports",
 ], default-features = false }
-trybuild = "1.0.104" # cmk update all versions
+trybuild = "1.0.104"
 thousands = "0.2.0"
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"

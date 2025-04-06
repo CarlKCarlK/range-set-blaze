@@ -17,14 +17,14 @@ use std::{
 };
 
 use crate::alloc::string::ToString;
-use alloc::collections::{btree_map, BTreeMap};
+use alloc::collections::{BTreeMap, btree_map};
 use alloc::string::String;
 use alloc::vec::Vec;
 use gen_ops::gen_ops_ex;
 
 use crate::ranges_iter::RangesIter;
 use crate::unsorted_disjoint::{SortedDisjointWithLenSoFar, UnsortedDisjoint};
-use crate::{prelude::*, Integer};
+use crate::{Integer, prelude::*};
 use crate::{IntoRangesIter, UnionIter};
 
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
@@ -185,10 +185,10 @@ where
 ///
 /// | Set Operation           | Operator          |  Multiway Method |
 /// |-------------------|-------------------------|-------------------------|
-/// | union             |  [`a` &#124; `b`]       | `[a, b, c].`[`union`]`()` |
-/// | intersection      |  [`a & b`]              | `[a, b, c].`[`intersection`]`()` |
+/// | union             |  [`a` &#124; `b`]       | `[a, b, c]` [`union`] `()` |
+/// | intersection      |  [`a & b`]              | `[a, b, c]` [`intersection`] `()` |
 /// | difference        |  [`a - b`]              | *n/a* |
-/// | symmetric difference|  [`a ^ b`]            | `[a, b, c].`[`symmetric_difference`]`()` |
+/// | symmetric difference|  [`a ^ b`]            | `[a, b, c]` [`symmetric_difference`] `()` |
 /// | complement        |  [`!a`]                 | *n/a* |
 ///
 /// `RangeSetBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
@@ -842,7 +842,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         self.len -= <T::SafeLen>::one();
         if start == value {
             self.btree_map.remove(&start);
-        };
+        }
         if value < end {
             self.btree_map.insert(value.add_one(), end);
         }

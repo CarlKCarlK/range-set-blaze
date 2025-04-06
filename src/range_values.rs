@@ -1,7 +1,7 @@
 use crate::{
+    Integer,
     map::ValueRef,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
-    Integer,
 };
 use alloc::{collections::btree_map, rc::Rc};
 use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
@@ -28,7 +28,6 @@ impl<'a, T: Integer, V: Eq + Clone> RangeValuesIter<'a, T, V> {
 }
 
 impl<T: Integer, V: Eq + Clone> ExactSizeIterator for RangeValuesIter<'_, T, V> {
-    #[must_use]
     fn len(&self) -> usize {
         self.iter.len()
     }
@@ -90,7 +89,6 @@ impl<T: Integer, V: Eq + Clone> IntoRangeValuesIter<T, V> {
 }
 
 impl<T: Integer, V: Eq + Clone> ExactSizeIterator for IntoRangeValuesIter<T, V> {
-    #[must_use]
     fn len(&self) -> usize {
         self.iter.len()
     }

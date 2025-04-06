@@ -14,7 +14,6 @@ pub struct RangesIter<'a, T: Integer> {
 }
 
 impl<T: Integer> ExactSizeIterator for RangesIter<'_, T> {
-    #[must_use]
     fn len(&self) -> usize {
         self.iter.len()
     }
@@ -53,7 +52,6 @@ pub struct IntoRangesIter<T: Integer> {
 }
 
 impl<T: Integer> ExactSizeIterator for IntoRangesIter<T> {
-    #[must_use]
     fn len(&self) -> usize {
         self.iter.len()
     }

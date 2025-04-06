@@ -1,5 +1,157 @@
 # Useful commands for this project
 
+## Benchmark Related
+
+### Benchmarking (but not SIMD)
+
+### Set up means
+
+```cmd
+cargo install criterion-means
+set RUSTFLAGS=-C target-cpu=native
+set BUILDFEATURES=from_slice
+
+rustup override set nightly
+
+```
+
+### bench
+
+```cmd
+bench.bat worst
+cargo install criterion-means
+
+bench.bat ingest_clumps_iter_v_slice
+bench.bat ingest_clumps_base
+cargo bench worst & target\criterion\report\index.html
+cargo bench overflow & target\criterion\overflow\report\index.html 
+python benches\summary.py > benches\summary_r.tsv
+cargo bench ingest_roaring_data & target\criterion\ingest_roaring_data\report\index.html 
+```
+
+------------
+
+## Benchmarking (with SIMD)
+
+```cmd
+cargo bench
+
+bench every_op_blaze
+
+@'rem cargo install cargo-criterion-means 
+cargo criterion-means > o:\Projects\Science\rangemapblaze\unitvalue\results.2.csv
+```
+
+### Bench in-context from_slice
+
+```cmd
+set RUSTFLAGS=
+set RUSTFLAGS=-C target-feature=+avx2
+set RUSTFLAGS=-C target-feature=+avx512f
+set RUSTFLAGS=-C target-cpu=native
+set BUILDFEATURES=from_slice
+
+rustup override set nightly
+```
+
+### Run criterion-means
+
+```cmd
+cargo install cargo-criterion-means --version 0.1.0-beta.3
+set SIMD_LANES=64
+set SIMD_INTEGER=i16
+set RUSTFLAGS=-C target-feature=+avx512f
+cargo criterion-means ..\..\.. > delme.csv
+```
+
+### run packages
+
+```cmd
+cargo run --package criterion-means ..\..\..
+```
+
+### check that still around 90 µs
+
+```cmd
+bench.bat ingest_clumps_iter_v_slice
+
+bench.bat ingest_clumps_integers
+
+set RUSTFLAGS=-C target-feature=+avx512f
+bench.bat worst
+```
+
+------------
+
+```cmd
+
+## rust flags
+
+```cmd
+set RUSTFLAGS=
+set RUSTFLAGS=-C target-feature=+avx2
+set RUSTFLAGS=-C target-feature=+avx512f
+set RUSTFLAGS=-C target-cpu=native
+set BUILDFEATURES=from_slice
+
+rustup override set nightly
+```
+
+## tests
+
+```cmd
+cargo test range_set_int_slice_constructor -- --nocapture
+cargo test --doc intersection_dyn
+cargo test coverage -- --nocapture
+cargo test test_rog_functionality -- --nocapture
+cargo test --features rog-experimental
+```
+
+## examples
+
+```cmd
+cargo run --example targets
+cargo run --example parity
+cargo run --example missing
+```
+
+## coverage
+
+```cmd
+cargo llvm-cov --open
+target\llvm-cov\html\index.html
+```
+
+## publish
+
+```cmd
+cargo publish --all-features --dry-run
+# set version  = "1.0.0-beta.2"
+
+
+cargo check --no-default-features
+```
+
+## test `alloc`
+
+```cmd
+cargo test --features alloc --no-default-features
+```
+
+## test wasm
+
+```cmd
+wasm-pack test --chrome --headless
+```
+
+## running on embedded -- see useful.md
+
+```cmd
+cargo run --example read_roaring_data
+
+set TRYBUILD=overwrite
+```
+
 ## Testing
 
 ```cmd
@@ -25,24 +177,23 @@ wasm-pack test --firefox --headless --features alloc --no-default-features
 cargo test --target wasm32-wasip1 --all-features
 ```
 
-## Docs
+## Docs (1)
 
+```cmd
 rustup default nightly
 cargo doc --no-deps --all-features --open
 rustup default stable
 cargo doc --no-deps --features rog-experimental --open & cargo test --features rog-experimental --doc
 cargo test --all-features --doc
 cls & cargo doc --no-deps --all-features & cargo deadlinks --dir target/doc
+```
 
-## Benchmarking
+## Docs (2)
 
 ```cmd
-cargo bench
-
-bench every_op_blaze
-
-@'rem cargo install cargo-criterion-means 
-cargo criterion-means > o:\Projects\Science\rangemapblaze\unitvalue\results.2.csv
+cargo doc --no-deps --all-features --open
+cargo doc --no-deps --features rog-experimental --open & cargo test --features rog-experimental --doc
+cargo test --all-features --doc
 ```
 
 ## Embedded
@@ -54,7 +205,7 @@ cargo test --features alloc --no-default-features
 cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
 ```
 
-Running
+## Running
 
 See: <https://docs.rust-embedded.org/book/start/qemu.html>
 
@@ -95,10 +246,25 @@ Start the Microsoft Live Preview with cntl-shift-P Live Preview ...
 
 ## Publish
 
-Set version, e.g., 0.1.16-alpha1
+Set version, e.g., 0.1.16-alpha2
 
 In main directory
 
 ```cmd
 cargo publish --dry-run
+```
+
+## Linux
+
+```bash
+cargo bench overflow
+target\criterion\overflow\report\index.html
+
+# test native
+cargo test
+# check and test WASM
+cargo check --target wasm32-unknown-unknown --features alloc --no-default-features
+wasm-pack test --chrome --headless --features alloc --no-default-features
+# check embedded
+cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
 ```

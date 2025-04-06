@@ -1,6 +1,6 @@
 use crate::sym_diff_iter_map::UsizeExtensions;
 use crate::{
-    merge::KMerge, Integer, Merge, SortedDisjoint, SortedStarts, SymDiffKMerge, SymDiffMerge,
+    Integer, Merge, SortedDisjoint, SortedStarts, SymDiffKMerge, SymDiffMerge, merge::KMerge,
 };
 use alloc::collections::BinaryHeap;
 use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
@@ -45,7 +45,7 @@ where
                 // The workspace is empty and next is empty, so return everything gathered.
                 if count == 0 {
                     return self.gather.take();
-                };
+                }
 
                 // The workspace is not empty (but next is empty) is process the next chunk of the workspace.
                 let end = self

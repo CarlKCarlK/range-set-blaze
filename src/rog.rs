@@ -31,7 +31,7 @@ impl<T: Integer> Iterator for RogsIter<'_, T> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(rog) = self.next_rog.take() {
             return Some(rog);
-        };
+        }
 
         if let Some((start_el, end_el)) = self.btree_map_iter.next() {
             if self.end_in < *start_el {
@@ -52,11 +52,11 @@ impl<T: Integer> Iterator for RogsIter<'_, T> {
                 }
                 return Some(result);
             }
-        };
+        }
 
         if let Some(gap_start) = self.final_gap_start.take() {
             return Some(Rog::Gap(gap_start..=self.end_in));
-        };
+        }
 
         None
     }
