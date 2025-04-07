@@ -220,12 +220,12 @@ where
 ///
 /// | Set Operation           | Operator                           | Multiway Method                        |
 /// |--------------------------|------------------------------------|----------------------------------------|
-/// | union                    | [`a` &#124; `b`]                   | `[a, b, c].`[`union`]`()`              |
-/// | intersection             | [`a & b`]                          | `[a, b, c].`[`intersection`]`()`       |
+/// | union                    | [`a` &#124; `b`]                   | <code>[a, b, c].[union]</code>`()`   |
+/// | intersection             | [`a & b`]                          | <code>[a, b, c].[intersection]</code>`()` |
 /// | intersection             | [`a & s`]                          | *n/a*                                  |
 /// | difference               | [`a - b`]                          | *n/a*                                  |
 /// | difference               | [`a - s`]                          | *n/a*                                  |
-/// | symmetric difference     | [`a ^ b`]                          | `[a, b, c].`[`symmetric_difference`]`()`|
+/// | symmetric difference     | [`a ^ b`]                          | <code>[a, b, c].[symmetric_difference]</code>`()`|
 /// | complement (to set)      | [`!a`]                             | *n/a*                                  |
 /// | complement (to map)      | [`a.complement_with(&value)`]      | *n/a*                                  |
 ///

@@ -708,7 +708,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
 fn every_op_blaze(c: &mut Criterion) {
     let group_name = "every_op_blaze";
     let k = 2;
-    let range_len_list = [100_000]; // cmk 1usize, 10, 100, 1000, 10_000,
+    let range_len_list = [1usize, 10, 100, 1000, 10_000, 100_000];
     let range = 0..=99_999_999;
     let coverage_goal = 0.5;
     let how = How::None;
@@ -733,43 +733,41 @@ fn every_op_blaze(c: &mut Criterion) {
 
     for (_range_len, setup) in &setup_vec {
         let parameter = setup[0].ranges_len();
-
-        // cmk
-        // group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
-        //     b.iter_batched(
-        //         || setup,
-        //         |sets| {
-        //             let _answer = &sets[0] | &sets[1];
-        //         },
-        //         BatchSize::SmallInput,
-        //     );
-        // });
-        // group.bench_with_input(
-        //     BenchmarkId::new("intersection", parameter),
-        //     &parameter,
-        //     |b, _k| {
-        //         b.iter_batched(
-        //             || setup,
-        //             |sets| {
-        //                 let _answer = &sets[0] & &sets[1];
-        //             },
-        //             BatchSize::SmallInput,
-        //         );
-        //     },
-        // );
-        // group.bench_with_input(
-        //     BenchmarkId::new("difference", parameter),
-        //     &parameter,
-        //     |b, _k| {
-        //         b.iter_batched(
-        //             || setup,
-        //             |sets| {
-        //                 let _answer = &sets[0] - &sets[1];
-        //             },
-        //             BatchSize::SmallInput,
-        //         );
-        //     },
-        // );
+        group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
+            b.iter_batched(
+                || setup,
+                |sets| {
+                    let _answer = &sets[0] | &sets[1];
+                },
+                BatchSize::SmallInput,
+            );
+        });
+        group.bench_with_input(
+            BenchmarkId::new("intersection", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup,
+                    |sets| {
+                        let _answer = &sets[0] & &sets[1];
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("difference", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup,
+                    |sets| {
+                        let _answer = &sets[0] - &sets[1];
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
         group.bench_with_input(
             BenchmarkId::new("symmetric difference", parameter),
             &parameter,
@@ -1121,6 +1119,7 @@ fn str_vs_ad_by_cover(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "from_slice")]
 fn ingest_clumps_base(c: &mut Criterion) {
     let group_name = "ingest_clumps_base";
     let k = 1;
@@ -1237,6 +1236,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "from_slice")]
 fn ingest_clumps_integers(c: &mut Criterion) {
     let group_name = "ingest_clumps_integers";
     let k = 1;
@@ -1479,7 +1479,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
         .collect();
 
         group.bench_with_input(
-            BenchmarkId::new("rangemap (ranges, BTreeSet)", parameter),
+            BenchmarkId::new("rangemap (ranges-BTreeSet)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1490,7 +1490,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
         );
 
         group.bench_with_input(
-            BenchmarkId::new("RangeSetBlaze (ranges, BTreeSet)", parameter),
+            BenchmarkId::new("RangeSetBlaze (ranges-BTreeSet)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1513,7 +1513,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
         );
 
         group.bench_with_input(
-            BenchmarkId::new("range_collections (ranges, SmallVec)", parameter),
+            BenchmarkId::new("range_collections (ranges-SmallVec)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1528,7 +1528,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
         );
 
         group.bench_with_input(
-            BenchmarkId::new("range_set (ranges, SmallVec)", parameter),
+            BenchmarkId::new("range_set (ranges-SmallVec)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1543,6 +1543,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "from_slice")]
 fn worst(c: &mut Criterion) {
     let group_name = "worst";
     let uniform = Uniform::new_inclusive(0, 1000).unwrap();
@@ -2130,9 +2131,6 @@ criterion_group!(
     every_op_blaze,
     every_op_roaring,
     union_two_sets,
-    ingest_clumps_base,
-    worst,
-    ingest_clumps_integers,
     ingest_clumps_ranges,
     ingest_clumps_easy,
     overflow,

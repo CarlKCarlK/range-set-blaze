@@ -26,8 +26,17 @@ rustup override set nightly
 ### bench
 
 ```cmd
+rustup override set nightly
+set BUILDFEATURES=from_slice
 bench.bat
 cargo criterion-means > delme3.csv
+```
+
+```cmd
+rustup override set stable
+set BUILDFEATURES=
+bench.bat
+cargo criterion-means > delme4.csv
 ```
 
 ### Run criterion-means
@@ -144,23 +153,23 @@ wasm-pack test --firefox --headless --features alloc --no-default-features
 cargo test --target wasm32-wasip1 --all-features
 ```
 
-## Docs (1)
+## Docs
 
 ```cmd
-rustup default nightly
+# 1. Generate nightly-only docs and open
+rustup override set nightly
 cargo doc --no-deps --all-features --open
-rustup default stable
-cargo doc --no-deps --features rog-experimental --open & cargo test --features rog-experimental --doc
+
+# 2. Switch back to stable, run with experimental feature
+rustup override set stable
+cargo doc --no-deps --features rog-experimental --open &
+cargo test --features rog-experimental --doc
+
+# 3. Run doc tests on all features
 cargo test --all-features --doc
+
+# 4. Clear screen, regenerate docs, and check for broken links
 cls & cargo doc --no-deps --all-features & cargo deadlinks --dir target/doc
-```
-
-## Docs (2)
-
-```cmd
-cargo doc --no-deps --all-features --open
-cargo doc --no-deps --features rog-experimental --open & cargo test --features rog-experimental --doc
-cargo test --all-features --doc
 ```
 
 ## Embedded

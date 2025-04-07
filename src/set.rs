@@ -185,10 +185,10 @@ where
 ///
 /// | Set Operation           | Operator          |  Multiway Method |
 /// |-------------------|-------------------------|-------------------------|
-/// | union             |  [`a` &#124; `b`]       | `[a, b, c]` [`union`] `()` |
-/// | intersection      |  [`a & b`]              | `[a, b, c]` [`intersection`] `()` |
+/// | union             |  [`a` &#124; `b`]       | <code>[a, b, c].[union]()</code>`()` |
+/// | intersection      |  [`a & b`]              | <code>[a, b, c].[intersection]()</code>`()` |
 /// | difference        |  [`a - b`]              | *n/a* |
-/// | symmetric difference|  [`a ^ b`]            | `[a, b, c]` [`symmetric_difference`] `()` |
+/// | symmetric difference|  [`a ^ b`]            | <code>[a, b, c].[symmetric_difference]()</code>`()` |
 /// | complement        |  [`!a`]                 | *n/a* |
 ///
 /// `RangeSetBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of

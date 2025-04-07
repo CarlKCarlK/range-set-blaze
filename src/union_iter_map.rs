@@ -17,10 +17,9 @@ type SortedStartsInVecMap<T, VR> =
 #[allow(clippy::redundant_pub_crate)]
 pub(crate) type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
-/// This `struct` is created by the [`union`] method on [`PrioritySortedStartsMap`]. See [`union`]'s
+/// This `struct` is created by the [`union`] method. See [`union`]'s
 /// documentation for more.
 ///
-/// [`PrioritySortedStartsMap`]: crate::PrioritySortedStartsMap
 /// [`union`]: crate::SortedDisjointMap::union
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]

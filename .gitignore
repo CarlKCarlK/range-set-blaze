@@ -20,6 +20,8 @@ tests/formal/*.json
 **/target/*
 examples/simd/*/del*.*
 del*.csv
+*del*.xlsx
 examples/simd/is_consecutive2/delbench.sh
 examples/simd/is_consecutive2/delme.csv
 *.profraw
+delme3.xlsx

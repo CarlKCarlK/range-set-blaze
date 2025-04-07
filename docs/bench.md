@@ -2,7 +2,7 @@
 
 ## Range-Related Rust Crates
 
-*updated: April 2025*
+Updated: *April 2025*
 
 | Crate | # Downloads | Ranges | Element Type | Set Operations? | Internal | Maps, too? |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -54,7 +54,8 @@ These benchmarks allow us to understand the `range-set-blaze::RangeSetBlaze` dat
 
 ### 'worst' Conclusion
 
-`BTreeSet` or `HashSet`, not `RangeSetBlaze`, is a good choice for ingesting sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just on average 2.3 times worse.
+`BTreeSet` or `HashSet`, not `RangeSetBlaze`, is a good choice for ingesting sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just on average 2.3 times worse. The
+SIMD version of `RangeSetBlaze` is about 25% times slower than the non-SIMD version on this benchmark.
 
 > See benchmark ['worst_op_blaze'](#benchmark-9-worst_op_blaze-compare-roaring-and-rangesetblaze-operators-on-uniform-data), near the end, for a similar comparison of set operations on uniform data.
 
@@ -71,10 +72,9 @@ Each clump has size chosen uniformly random from roughly 1 to double *average cl
 
 ### 'ingest_clumps_base' Results
 
-With no clumps, `RangeSetBlaze` is 2 times slower than `HashSet`. Somewhere around clump size 3, `RangeSetBlaze` becomes the best performer. As the average clump size goes past 100, `RangeSetBlaze` averages about 30 times faster than `HashSet` and `BTreeSet`, and roughly 16 times faster than `Roaring`.
+With no clumps, `RangeSetBlaze` is 2.2 times slower than `HashSet`. Somewhere around clump size 3, `RangeSetBlaze` becomes the best performer. As the average clump size goes past 100, `RangeSetBlaze` averages about 25 times faster than `HashSet` and `BTreeSet`, and roughly 15 times faster than `Roaring`.
 
-The nightly-only `RangeSetBlaze::from_slice` is even faster, as the clump size rises
-it is more than 100 times faster than the alternatives.
+The nightly-only `RangeSetBlaze::from_slice` is even faster, as the clump size rises it is more than 100 times faster than the alternatives.
 
 If we are allowed to input the clumps as ranges (instead of as individual integers), then when the average clump size is 1000 `RangeSetBlaze` is 1000
 times faster than `HashSet` and `BTreeSet` and more than 30 times faster than `Roaring`.
@@ -96,13 +96,13 @@ We give each crate the clumps as individual integers.
 
 ### 'ingest_clumps_integers' Results & Conclusion
 
-`rangemap` is typically three times slower than `HashSet` and 75 times slower than `RangeSetBlaze`. The nightly `RangeSetBlaze::from_slice` is even faster by an order of magnitude. However ...
+`rangemap` is typically three times slower than `HashSet` and 50 times slower than `RangeSetBlaze`. The nightly `RangeSetBlaze::from_slice` is even faster by an order of magnitude. However ...
 
 `RangeSetBlaze` batches its integer input by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate.
 
-`Roaring` is 10 to 30 times slower than `RangeSetBlaze`. I don't know if `Roaring` exploits consecutive integers. If not, it could.
+`Roaring` is 5 to 25 times slower than `RangeSetBlaze`. I don't know if `Roaring` exploits consecutive integers. If not, it could.
 
-![ingest_clumps_integers](https://carlkcarlk.github.io/range-set-blaze/criterion/v3/ingest_clumps_integers/report/lines.svg "ingest_clumps_integers")
+![ingest_clumps_integers](criterion/v4//ingest_clumps_integers/report/lines.svg "ingest_clumps_integers")
 
 ## Benchmark #4: 'ingest_clumps_ranges': Measure rangemap on ranges of clumpy integers
 
@@ -119,7 +119,7 @@ Over the clump sizes, `RangeSetBlaze` averges about 3 times faster than `rangema
 
 `RangeSetBlaze` batches range inputs by sorting them and then merging adjacent ranges. This batching is likely not implemented in `rangemap` or `Roaring` but could easily be added to it or any other range-based crate.
 
-![ingest_clumps_ranges](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/ingest_clumps_ranges/report/lines.svg "ingest_clumps_ranges")
+![ingest_clumps_ranges](criterion/v4/ingest_clumps_ranges/report/lines.svg "ingest_clumps_ranges")
 
 ## Benchmark #5: 'ingest_clumps_easy': Measure various crates on (easier) ranges of clumpy integers
 
@@ -132,11 +132,11 @@ We give each crate the clumps as ranges (instead of as individual integers).
 
 ### 'ingest_clumps_easy' Results & Conclusion
 
-The fastest vector-based method is 14 times slower than the slowest tree-based method. It is 50 times slower than `RangeSetBlaze`. This is expected because vector-based methods are not designed for a large numbers of inserts.
+The fastest vector-based method is 15 times slower than the slowest tree-based method. It is 75 times slower than `RangeSetBlaze`. This is expected because vector-based methods are not designed for a large numbers of inserts.
 
 The hybrid method, `Roaring`, does better than any method except `RangeSetBlaze`.
 
-![ingest_clumps_easy](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/ingest_clumps_easy/report/lines.svg "ingest_clumps_easy")
+![ingest_clumps_easy](criterion/v4/ingest_clumps_easy/report/lines.svg "ingest_clumps_easy")
 
 ## Benchmark #6: 'union_two_sets': Union two sets of clumpy integers
 
@@ -151,7 +151,7 @@ merges the two sets of ranges by iterating over them in sorted order and merging
 
 ### 'union_two_sets' Results
 
-When adding one clump to the first set, `RangeSetBlaze` is about 30% faster than `rangemap` and 38 times faster than `Roaring`.
+When adding one clump to the first set, `RangeSetBlaze` is about 40% faster than `rangemap` and 50 times faster than `Roaring`.
 
 As the number-of-clumps-to-add grows, `RangeSetBlaze` automatically switches algorithms. This allows it to be 6 times faster than the `rangemap`. `Roaring` and `RangeSetBlaze` use very similar `union` algorithms when the number of clumps is large and get similar results.
 
@@ -159,7 +159,7 @@ As the number-of-clumps-to-add grows, `RangeSetBlaze` automatically switches alg
 
 Over the whole range of clumpiness, `RangeSetBlaze` is faster because it uses a hybrid algorithm.
 
-![union_two_sets](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/union_two_sets/report/lines.svg "union_two_sets")
+![union_two_sets](criterion/v4/union_two_sets/report/lines.svg "union_two_sets")
 
 ## Benchmark #7a: 'every_op_blaze': Compare `RangeSetBlaze`'s set operations to each other on clumpy data
 
@@ -170,11 +170,9 @@ Over the whole range of clumpiness, `RangeSetBlaze` is faster because it uses a 
 
 ### 'every_op_blaze' `RangeSetBlaze` Results and Conclusion
 
-Complement (which works on just once set) is twice as fast as union, intersection, and difference. Symmetric difference is 2.9 times slower.
+Complement (which works on just once set) is twice as fast as union, intersection, and difference. Symmetric difference is 1.7 times slower.
 
-Under the covers, all the operations are implemented in terms of complement and union. The speed of each operation is a reflection of its complexity in terms of complement and union.
-
-![every_op_blaze](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/every_op_blaze/report/lines.svg "every_op_blaze")
+![every_op_blaze](criterion/v4/every_op_blaze/report/lines.svg "every_op_blaze")
 
 ## Benchmark #7b: 'every_op_roaring': Compare `Roaring`'s set operations to each other on clumpy data
 
@@ -184,7 +182,7 @@ Under the covers, all the operations are implemented in terms of complement and 
 
 Intersection is much faster than union. Complement is slowest because it is not defined by `Roaring` but can be defined by the user as `Universe - a_set`.
 
-![every_op_roaring](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/every_op_roaring/report/lines.svg "every_op_roaring")
+![every_op_roaring](criterion/v4/every_op_roaring/report/lines.svg "every_op_roaring")
 
 ## Benchmark #7c: 'every_op': Compare `RangeSetBlaze and`Roaring`'s set operations on clumpy data
 
@@ -192,12 +190,11 @@ Intersection is much faster than union. Complement is slowest because it is not 
 
 ### 'every_op' `RangeSetBlaze` and `Roaring` Results and Conclusion
 
-When the number of ranges (or clumps) is very small, `RangeSetBlaze` operates on the data 1000's of
-times faster than `Roaring`. As the number of clumps goes into the 100's and 1000's, it is still 15 to 200 times faster. When the number of ranges get even larger, it is slightly faster.
+When the number of ranges (or clumps) is very small, `RangeSetBlaze` operates on the data 1000's of times faster than `Roaring`. As the number of clumps goes into the 100's and 1000's, it is still 10 to 30 times faster. When the number of ranges get even larger, it is slightly faster.
 
 The plot shows the results for intersection, `Roaring`'s fastest operator on this data.
 
-![every_op](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/every_op_roaring/report/compare.png "every_op")
+![every_op](criterion/v4/every_op_roaring/report/compare.png "every_op")
 
 > See benchmark ['worst_op_blaze'](#benchmark-9-worst_op_blaze-compare-roaring-and-rangesetblaze-operators-on-uniform-data), near the end, for a similar comparison of set operations on uniform data.
 
@@ -210,12 +207,12 @@ The plot shows the results for intersection, `Roaring`'s fastest operator on thi
 
 ### 'intersect_k_sets' Results and Conclusion
 
-On two sets, all methods are similar but beyond that two-at-a-time gets slower and slower. For 100 sets, it must create about 100 intermediate sets and is about 14 times slower than multiway.
+On two sets, all methods are similar but beyond that two-at-a-time gets slower and slower. For 100 sets, it must create about 100 intermediate sets and is about 10 times slower than multiway.
 
 Dynamic multiway is not used by `RangeSetBlaze` but is sometimes needed by `SortedDisjoint` iterators
-(also available from the `range-set-blaze` crate). It is 5% to 10% slower than static multiway.
+(also available from the `range-set-blaze` crate). It is 40% slower than static multiway.
 
-![intersect_k_sets](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/intersect_k_sets/report/lines.svg "intersect_k_sets")
+![intersect_k_sets](criterion/v4/intersect_k_sets/report/lines.svg "intersect_k_sets")
 
 ## Benchmark #9: 'worst_op_blaze': Compare `Roaring` and `RangeSetBlaze` operators on uniform data
 
@@ -226,11 +223,10 @@ Dynamic multiway is not used by `RangeSetBlaze` but is sometimes needed by `Sort
 
 ### 'worst_op_blaze' Results and Conclusion
 
-Over almost the whole range `Roaring` is best. Roughly 10 times better than `RangeSetBlaze` when the number of intergers is less than 10,000. As the number of integers increases beyond 10,000 `RangeSetBlaze`, `BTreeSet`, and `HashSet` continue to get slower. `Roaring`, on the other hand, gets faster;
-presumably as it switches to bitmaps.
+Over almost the whole range `Roaring` is best. Roughly 10 times better than `RangeSetBlaze` when the number of intergers is less than 10,000. As the number of integers increases beyond 10,000 `RangeSetBlaze`, `BTreeSet`, and `HashSet` continue to get slower. `Roaring`, on the other hand, gets faster; presumably as it switches to bitmaps.
 
 `Roaring` is a great choice when doing operations on u64 sets that may or may not be clumpy.
 
 All four candidates offer similar interfaces. If you're not sure which is best for your application, you can easily swap between them and see.
 
-![worst_op_blaze  ](https://carlkcarlk.github.io/range-set-blaze/criterion/v2/worst_op_blaze/report/lines.png "worst_op_blaze")
+![worst_op_blaze  ](criterion/v4/worst_op_blaze/report/lines.png "worst_op_blaze")
