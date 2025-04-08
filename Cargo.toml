@@ -71,9 +71,16 @@ getrandom = { version = "0.3.2", features = ["wasm_js"] }
 web-time = "1.1.0"
 
 
-# Declare a benchmark called ""bench" without the standard benchmarking harness. 
+# Declare a benchmark called "bench" for bench.rs
 [[bench]]
 name = "bench"
+path = "benches/bench.rs"
+harness = false
+
+# Declare a benchmark called "bench_map" for bench_map.rs
+[[bench]]
+name = "bench_map"
+path = "benches/bench_map.rs"
 harness = false
 
 [package.metadata.docs.rs]

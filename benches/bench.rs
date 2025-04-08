@@ -1528,7 +1528,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
         );
 
         group.bench_with_input(
-            BenchmarkId::new("range_set (ranges-SmallVec)", parameter),
+            BenchmarkId::new("range_set (ranges, SmallVec)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {

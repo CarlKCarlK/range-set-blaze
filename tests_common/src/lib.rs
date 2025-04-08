@@ -4,6 +4,7 @@ use rand::Rng;
 use rand::distr::uniform::SampleUniform;
 use rand::rngs::StdRng;
 use range_set_blaze::Integer;
+use range_set_blaze::RangeMapBlaze;
 use range_set_blaze::RangeSetBlaze;
 
 pub fn width_to_range(
@@ -175,6 +176,84 @@ impl<T: Integer + SampleUniform> Iterator for MemorylessIter<'_, T> {
     }
 }
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+pub struct MemorylessMapIter<'a, T: Integer + SampleUniform> {
+    iter: MemorylessMapRange<'a, T>,
+    option_range_value: Option<(RangeInclusive<T>, u32)>,
+}
+
+impl<'a, T: Integer + SampleUniform> MemorylessMapIter<'a, T> {
+    #[inline]
+    pub fn new(
+        rng: &'a mut StdRng,
+        range_len: usize,
+        range: RangeInclusive<T>,
+        coverage_goal: f64,
+        k: usize,
+        how: How,
+        n: u32,
+    ) -> Self {
+        let iter = MemorylessMapRange::new(rng, range_len, range, coverage_goal, k, how, n);
+        Self {
+            iter,
+            option_range_value: None,
+        }
+    }
+}
+
+impl<T: Integer + SampleUniform> Iterator for MemorylessMapIter<'_, T> {
+    type Item = (T, u32);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let (range, value) = self.option_range_value.take().or_else(|| {
+            let range_and_value = self
+                .iter
+                .find(|(range, _value)| range.start() <= range.end())?;
+            Some(range_and_value)
+        })?;
+
+        let (start, end) = range.into_inner();
+        if start < end {
+            self.option_range_value = Some((start.add_one()..=end, value));
+        }
+        Some((start, value))
+    }
+}
+
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+pub struct MemorylessMapRange<'a, T: Integer + SampleUniform> {
+    rng_clone: StdRng,
+    iter: MemorylessRange<'a, T>,
+    n: u32,
+}
+
+impl<'a, T: Integer + SampleUniform> MemorylessMapRange<'a, T> {
+    #[inline]
+    pub fn new(
+        rng: &'a mut StdRng,
+        range_len: usize,
+        range: RangeInclusive<T>,
+        coverage_goal: f64,
+        k: usize,
+        how: How,
+        n: u32,
+    ) -> Self {
+        let rng_clone = rng.clone();
+        let iter = MemorylessRange::new(rng, range_len, range, coverage_goal, k, how);
+        Self { rng_clone, iter, n }
+    }
+}
+
+impl<T: Integer + SampleUniform> Iterator for MemorylessMapRange<'_, T> {
+    type Item = (RangeInclusive<T>, u32);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let range = self.iter.next()?;
+        let value = self.rng_clone.random_range(0..self.n);
+        Some((range, value))
+    }
+}
+
 pub fn k_sets<T: Integer + SampleUniform>(
     k: usize,
     range_len: usize,
@@ -192,6 +271,30 @@ pub fn k_sets<T: Integer + SampleUniform>(
                 coverage_goal,
                 k,
                 how,
+            ))
+        })
+        .collect()
+}
+
+pub fn k_maps<T: Integer + SampleUniform>(
+    k: usize,
+    range_len: usize,
+    range: &RangeInclusive<T>,
+    coverage_goal: f64,
+    how: How,
+    rng: &mut StdRng,
+    n: u32,
+) -> Vec<RangeMapBlaze<T, u32>> {
+    (0..k)
+        .map(|_i| {
+            RangeMapBlaze::<T, u32>::from_iter(MemorylessMapRange::new(
+                rng,
+                range_len,
+                range.clone(),
+                coverage_goal,
+                k,
+                how,
+                n,
             ))
         })
         .collect()
