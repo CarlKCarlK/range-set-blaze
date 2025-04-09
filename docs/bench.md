@@ -10,7 +10,7 @@ Updated: *April 2025*
 [roaring](https://crates.io/crates/roaring) | 12,520,488 | Disjoint | u32 | SetOps | Compressed Bitmaps | Only Sets |
 [range-set](https://crates.io/crates/range-set) | 5,446,431 | Disjoint | PrimInt | No Set Ops | SmallVec | Only Sets |
 [rangemap](https://crates.io/crates/rangemap) | 5,285,903 | Disjoint | Ord | No Set Ops | BTreeMap | Sets/Maps |
-[range-collections](https://crates.io/crates/range-collections) | 565,520 | Disjoint | Ord | Set Ops | SmallVec | Sets/Maps |
+[range-collections](https://crates.io/crates/range-collections) | 565,520 | Disjoint | Ord | Set Ops | SmallVec | Sets |
 [sorted-iter](https://crates.io/crates/sorted-iter) | 326,742 | No | Ord | Set Ops | *n/a* | Sets/Maps |
 [iset](https://crates.io/crates/iset) | 333,454 | Overlapping | PartialOrd | No Set Ops | Red Black | Sets/Maps |
 [ranges](https://crates.io/crates/ranges) | 89,538 | Disjoint | 'Domain' | Set Ops | Vec | Only Sets |
