@@ -1230,7 +1230,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn test_use_of_as() {
+    fn test_use_of_as_00() {
         syntactic_for! { ty in [char, i8, i16, i32, i64, i128, isize, Ipv4Addr, Ipv6Addr, u8, u16, u32, u64, u128, usize] {
             $(
         let a = <$ty>::min_value();
@@ -1245,14 +1245,15 @@ mod tests {
     #[cfg(debug_assertions)]
     #[test]
     #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = 1)")]
-    fn test_use_of_as_1() {
+    fn test_use_of_as_01() {
         let _ = 127i8.inclusive_end_from_start(0);
     }
 
     // cmk00000 should we run all (some) tests again in release mode?
     #[cfg(not(debug_assertions))]
     #[test]
-    fn test_use_of_as_2() {
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn test_use_of_as_02() {
         assert_eq!(127i8.inclusive_end_from_start(0), 126);
         assert_eq!(127i8.start_from_inclusive_end(0), -128);
         assert_eq!(127i8.inclusive_end_from_start(2), -128);
@@ -1262,27 +1263,27 @@ mod tests {
     #[cfg(debug_assertions)]
     #[test]
     #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = 256)")]
-    fn test_use_of_as_3() {
+    fn test_use_of_as_03() {
         let _ = 127i8.start_from_inclusive_end(0);
     }
 
     #[cfg(debug_assertions)]
     #[test]
     #[should_panic(expected = "b must be in range 1..=max_len (b = 2, max_len = 1)")]
-    fn test_use_of_as_4() {
+    fn test_use_of_as_04() {
         let _ = 127i8.inclusive_end_from_start(2);
     }
 
     #[cfg(debug_assertions)]
     #[test]
     #[should_panic(expected = "b must be in range 1..=max_len (b = 4, max_len = 3)")]
-    fn test_use_of_as_5() {
+    fn test_use_of_as_05() {
         let _ = (-126i8).start_from_inclusive_end(4);
     }
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    fn test_use_of_as_6() {
+    fn test_use_of_as_06() {
         for a in (-128i8)..=127i8 {
             let b = i8::safe_len(&(a..=127i8));
             assert_eq!(a.inclusive_end_from_start(b), 127i8);
@@ -1291,5 +1292,84 @@ mod tests {
         }
     }
 
-    // cmk00000 make full tests for i128
+    // make full tests for i128
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = 1)")]
+    fn test_use_of_as_11() {
+        let _ = i128::MAX.inclusive_end_from_start(UIntPlusOne::zero());
+    }
+
+    // cmk00000 should we run all (some) tests again in release mode?
+    #[cfg(not(debug_assertions))]
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn test_use_of_as_12() {
+        assert_eq!(
+            i128::MAX.inclusive_end_from_start(UIntPlusOne::zero()),
+            170141183460469231731687303715884105726
+        );
+        assert_eq!(
+            i128::MAX.start_from_inclusive_end(UIntPlusOne::zero()),
+            -170141183460469231731687303715884105728
+        );
+        assert_eq!(
+            i128::MAX.inclusive_end_from_start(UIntPlusOne::UInt(2)),
+            -170141183460469231731687303715884105728
+        );
+        assert_eq!(
+            (i128::MIN).start_from_inclusive_end(UIntPlusOne::UInt(2)),
+            170141183460469231731687303715884105727
+        );
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = (u128::MAX + 1)")]
+    fn test_use_of_as_13() {
+        let _ = i128::MAX.start_from_inclusive_end(UIntPlusOne::zero());
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 2, max_len = 1)")]
+    fn test_use_of_as_14() {
+        let _ = i128::MAX.inclusive_end_from_start(UIntPlusOne::UInt(2));
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 2, max_len = 1)")]
+    fn test_use_of_as_15() {
+        let _ = (i128::MIN).start_from_inclusive_end(UIntPlusOne::UInt(2));
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn test_use_of_as_16() {
+        assert_eq!(
+            (i128::MIN).inclusive_end_from_start(UIntPlusOne::MaxPlusOne),
+            i128::MAX
+        );
+        assert_eq!(
+            (i128::MAX).start_from_inclusive_end(UIntPlusOne::MaxPlusOne),
+            i128::MIN
+        );
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 170141183460469231731687303715884105728)"
+    )]
+    fn test_use_of_as_17() {
+        let _ = (0i128).inclusive_end_from_start(UIntPlusOne::MaxPlusOne);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 170141183460469231731687303715884105729)"
+    )]
+    fn test_use_of_as_18() {
+        let _ = (0i128).start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
+    }
 }
