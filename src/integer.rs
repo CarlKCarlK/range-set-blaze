@@ -664,15 +664,33 @@ impl Integer for Ipv4Addr {
     }
 
     #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_wrap)]
     fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
-        debug_assert!(b > 0);
-        // cmk00000 need to check for overflow here when in debug mode
-        Self::from(u32::from(self) + (b - 1) as u32)
+        #[cfg(debug_assertions)]
+        {
+            let max_len = Self::safe_len(&(self..=Self::max_value()));
+            assert!(
+                b > 0 && b <= max_len,
+                "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
+            );
+        }
+        // If b is in range, two’s-complement wrap-around yields the correct inclusive end even if the add overflows
+        u32::from(self).wrapping_add((b - 1) as u32).into()
     }
 
     #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_wrap)]
     fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
-        Self::from(u32::from(self) - (b - 1) as u32)
+        #[cfg(debug_assertions)]
+        {
+            let max_len = Self::safe_len(&(Self::min_value()..=self));
+            assert!(
+                0 < b && b <= max_len,
+                "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
+            );
+        }
+        // If b is in range, two’s-complement wrap-around yields the correct start even if the sub overflows
+        u32::from(self).wrapping_sub((b - 1) as u32).into()
     }
 }
 
@@ -1467,5 +1485,67 @@ mod tests {
     #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
     fn test_use_of_as_28() {
         let _ = (0u128).start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
+    }
+
+    // make full tests for Ipv4Addr
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = 1)")]
+    fn test_use_of_as_31() {
+        let _ = Ipv4Addr::max_value().inclusive_end_from_start(0);
+    }
+
+    // cmk00000 should we run all (some) tests again in release mode?
+    #[cfg(not(debug_assertions))]
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn test_use_of_as_32() {
+        assert_eq!(
+            Ipv4Addr::max_value().inclusive_end_from_start(0),
+            340282366920938463463374607431768211454
+        );
+        assert_eq!(Ipv4Addr::max_value().start_from_inclusive_end(0), 0);
+        assert_eq!(Ipv4Addr::max_value().inclusive_end_from_start(2), 0);
+        assert_eq!(
+            (Ipv4Addr::min_value()).start_from_inclusive_end(2),
+            340282366920938463463374607431768211455
+        );
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = 4294967296)")]
+    fn test_use_of_as_33() {
+        let _ = Ipv4Addr::max_value().start_from_inclusive_end(0);
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 2, max_len = 1)")]
+    fn test_use_of_as_34() {
+        let _ = Ipv4Addr::max_value().inclusive_end_from_start(2);
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 2, max_len = 1)")]
+    fn test_use_of_as_35() {
+        let _ = (Ipv4Addr::min_value()).start_from_inclusive_end(2);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "b must be in range 1..=max_len (b = 18446744073709551615, max_len = 4294967294)"
+    )]
+    fn test_use_of_as_37() {
+        let _ = Ipv4Addr::new(0, 0, 0, 2).inclusive_end_from_start(u64::MAX);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "b must be in range 1..=max_len (b = 18446744073709551615, max_len = 1)"
+    )]
+    fn test_use_of_as_38() {
+        let _ = Ipv4Addr::new(0, 0, 0, 0).start_from_inclusive_end(u64::MAX);
     }
 }
