@@ -501,39 +501,62 @@ impl Integer for u128 {
         }
     }
 
-    /// Adds `b - 1` to `self`.
+    /// Computes the inclusive end of a range starting at `self` with length `b`,
+    /// by returning `self + (b - 1)`.
     ///
     /// # Panics
-    /// It is an error to call this method with `b` equal to 0 or a value that is too large to add to `u128`.
-    /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
-    #[allow(clippy::cast_possible_wrap)]
+    /// In debug builds, panics if `b` is zero or too large to compute a valid result.  
+    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,  
+    /// but it is always defined and safe (never causes undefined behavior)
     fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
+        #[cfg(debug_assertions)]
+        {
+            let max_len = Self::safe_len(&(self..=Self::max_value()));
+            assert!(
+                UIntPlusOne::zero() < b && b <= max_len,
+                "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
+            );
+        }
+
         let UIntPlusOne::UInt(b) = b else {
             if self == Self::MIN {
                 return Self::MAX;
             }
-            panic!("Too large to add to u128");
+            let max_len = Self::safe_len(&(self..=Self::max_value()));
+            panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };
-        debug_assert!(b > 0);
-        // cmk00000 need to check for overflow here when in debug mode
-        self + (b - 1) as Self
+        // If b is in range, two’s-complement wrap-around yields the correct inclusive end even if the add overflows
+        self.wrapping_add((b - 1) as Self)
     }
 
-    /// Subtract `b - 1` from `self`.
+    /// Computes the inclusive start of a range ending at `self` with length `b`,
+    /// by returning `self - (b - 1)`.
     ///
     /// # Panics
-    /// It is an error to call this method with `b` equal to 0 or a value that is too large to subtract from `u128`.
-    /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
+    /// In debug builds, panics if `b` is zero or too large to compute a valid result.  
+    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,  
+    /// but it is always defined and safe (never causes undefined behavior).
     #[allow(clippy::cast_possible_wrap)]
     fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
+        #[cfg(debug_assertions)]
+        {
+            let max_len = Self::safe_len(&(Self::min_value()..=self));
+            assert!(
+                UIntPlusOne::zero() < b && b <= max_len,
+                "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
+            );
+        }
+
         let UIntPlusOne::UInt(b) = b else {
             if self == Self::MAX {
                 return Self::MIN;
             }
-            panic!("Too large to subtract from u128");
+            let max_len = Self::safe_len(&(Self::min_value()..=self));
+            panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };
-        debug_assert!(b > 0);
-        self - (b - 1) as Self
+
+        // If b is in range, two’s-complement wrap-around yields the correct inclusive start even if the subtraction overflows
+        self.wrapping_sub((b - 1) as Self)
     }
 }
 
@@ -1371,5 +1394,78 @@ mod tests {
     )]
     fn test_use_of_as_18() {
         let _ = (0i128).start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
+    }
+
+    // make full tests for u128
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = 1)")]
+    fn test_use_of_as_21() {
+        let _ = u128::MAX.inclusive_end_from_start(UIntPlusOne::zero());
+    }
+
+    // cmk00000 should we run all (some) tests again in release mode?
+    #[cfg(not(debug_assertions))]
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn test_use_of_as_22() {
+        assert_eq!(
+            u128::MAX.inclusive_end_from_start(UIntPlusOne::zero()),
+            340282366920938463463374607431768211454
+        );
+        assert_eq!(u128::MAX.start_from_inclusive_end(UIntPlusOne::zero()), 0);
+        assert_eq!(u128::MAX.inclusive_end_from_start(UIntPlusOne::UInt(2)), 0);
+        assert_eq!(
+            (u128::MIN).start_from_inclusive_end(UIntPlusOne::UInt(2)),
+            340282366920938463463374607431768211455
+        );
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = (u128::MAX + 1)")]
+    fn test_use_of_as_23() {
+        let _ = u128::MAX.start_from_inclusive_end(UIntPlusOne::zero());
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 2, max_len = 1)")]
+    fn test_use_of_as_24() {
+        let _ = u128::MAX.inclusive_end_from_start(UIntPlusOne::UInt(2));
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 2, max_len = 1)")]
+    fn test_use_of_as_25() {
+        let _ = (u128::MIN).start_from_inclusive_end(UIntPlusOne::UInt(2));
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn test_use_of_as_26() {
+        assert_eq!(
+            (u128::MIN).inclusive_end_from_start(UIntPlusOne::MaxPlusOne),
+            u128::MAX
+        );
+        assert_eq!(
+            (u128::MAX).start_from_inclusive_end(UIntPlusOne::MaxPlusOne),
+            u128::MIN
+        );
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 340282366920938463463374607431768211454)"
+    )]
+    fn test_use_of_as_27() {
+        let _ = (2u128).inclusive_end_from_start(UIntPlusOne::MaxPlusOne);
+    }
+
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
+    fn test_use_of_as_28() {
+        let _ = (0u128).start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
     }
 }
