@@ -1,6 +1,6 @@
 use crate::UIntPlusOne;
 #[cfg(feature = "from_slice")]
-use crate::{from_slice::FromSliceIter, RangeSetBlaze};
+use crate::{RangeSetBlaze, from_slice::FromSliceIter};
 use core::hash::Hash;
 use core::net::{Ipv4Addr, Ipv6Addr};
 use core::ops::{AddAssign, SubAssign};
@@ -135,18 +135,18 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     // FUTURE define .len() SortedDisjoint
 
     /// Converts a `f64` to [`Integer::SafeLen`] using the formula `f as Self::SafeLen`. For large integer types, this will result in a loss of precision.
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen;
+    fn f64_to_safe_len_lossy(f: f64) -> Self::SafeLen;
 
     /// Converts [`Integer::SafeLen`] to `f64`, potentially losing precision for large values.
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64;
+    fn safe_len_to_f64_lossy(len: Self::SafeLen) -> f64;
 
     /// Computes `self + (b - 1)` where `b` is of type [`Integer::SafeLen`].
     #[must_use]
-    fn add_len_less_one(self, b: Self::SafeLen) -> Self;
+    fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self;
 
     /// Computes `self - (b - 1)` where `b` is of type [`Integer::SafeLen`].
     #[must_use]
-    fn sub_len_less_one(self, b: Self::SafeLen) -> Self;
+    fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self;
 }
 
 /// Macro to implement the `Integer` trait for specific integer types.
@@ -198,34 +198,62 @@ macro_rules! impl_integer_ops {
             FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
         }
 
-        #[allow(clippy::cast_sign_loss, clippy::cast_lossless)]
+        #[allow(clippy::cast_sign_loss)]
         fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
-            r.end().overflowing_sub(r.start()).0 as $type2 as <Self as Integer>::SafeLen + 1
+            // 1️⃣ Contract: caller promises start ≤ end  (checked only in debug builds)
+            debug_assert!(r.start() <= r.end(), "start ≤ end required");
+
+            // 2️⃣ Compute distance in `Self` then reinterpret‑cast to the first
+            //     widening type `$type2` (loss‑free under the invariant above).
+            let delta_wide: $type2 = r.end().overflowing_sub(r.start()).0 as $type2;
+
+            // 3️⃣ Final widening to `SafeLen`.
+            //    `try_from` is infallible here, so LLVM removes the check in release.
+            <<Self as Integer>::SafeLen>::try_from(delta_wide)
+                .expect("$type2 ⊆ SafeLen; optimizer drops this in release")
+                + 1 // 4️⃣ Inclusive length = distance + 1
         }
 
         #[allow(clippy::cast_precision_loss, clippy::cast_lossless)]
-        fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
+        fn safe_len_to_f64_lossy(len: Self::SafeLen) -> f64 {
             len as f64
         }
 
         #[allow(clippy::cast_sign_loss)]
         #[allow(clippy::cast_precision_loss)]
         #[allow(clippy::cast_possible_truncation)]
-        fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+        fn f64_to_safe_len_lossy(f: f64) -> Self::SafeLen {
             f as Self::SafeLen
         }
 
         #[allow(clippy::cast_possible_truncation)]
         #[allow(clippy::cast_possible_wrap)]
-        fn add_len_less_one(self, b: Self::SafeLen) -> Self {
-            debug_assert!(b > 0);
-            self + (b - 1) as Self
+        fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
+            #[cfg(debug_assertions)]
+            {
+                let max_len = Self::safe_len(&(self..=Self::max_value()));
+                assert!(
+                    b > 0 && b <= max_len,
+                    "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
+                );
+            }
+            // If b is in range, two’s-complement wrap-around yields the correct inclusive end even if the add overflows
+            self.wrapping_add((b - 1) as Self)
         }
 
         #[allow(clippy::cast_possible_truncation)]
         #[allow(clippy::cast_possible_wrap)]
-        fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
-            self - (b - 1) as Self
+        fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
+            #[cfg(debug_assertions)]
+            {
+                let max_len = Self::safe_len(&(Self::min_value()..=self));
+                assert!(
+                    b > 0 && b <= max_len,
+                    "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
+                );
+            }
+            // If b is in range, two’s-complement wrap-around yields the correct start even if the sub overflows
+            self.wrapping_sub((b - 1) as Self)
         }
     };
 }
@@ -316,6 +344,7 @@ impl Integer for i128 {
     #[allow(clippy::cast_sign_loss)]
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         debug_assert!(r.start() <= r.end());
+        // Signed sub may overflow, but casting preserves correct unsigned distance
         let less1 = r.end().overflowing_sub(r.start()).0 as u128;
         let less1 = UIntPlusOne::UInt(less1);
         less1 + UIntPlusOne::UInt(1)
@@ -323,7 +352,7 @@ impl Integer for i128 {
 
     #[allow(clippy::cast_precision_loss)]
     #[allow(clippy::cast_possible_truncation)]
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64_lossy(len: Self::SafeLen) -> f64 {
         match len {
             UIntPlusOne::UInt(v) => v as f64,
             UIntPlusOne::MaxPlusOne => UIntPlusOne::<u128>::max_plus_one_as_f64(),
@@ -332,7 +361,7 @@ impl Integer for i128 {
 
     #[allow(clippy::cast_sign_loss)]
     #[allow(clippy::cast_possible_truncation)]
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+    fn f64_to_safe_len_lossy(f: f64) -> Self::SafeLen {
         if f >= UIntPlusOne::<u128>::max_plus_one_as_f64() {
             UIntPlusOne::MaxPlusOne
         } else {
@@ -345,8 +374,7 @@ impl Integer for i128 {
     /// # Panics
     /// It is an error to call this method with `b` equal to 0 or a value that is too large to add to `i128`.
     /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
-    #[allow(clippy::cast_possible_wrap)]
-    fn add_len_less_one(self, b: Self::SafeLen) -> Self {
+    fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(b) = b else {
             if self == Self::MIN {
                 return Self::MAX;
@@ -354,6 +382,7 @@ impl Integer for i128 {
             panic!("Too large to add to i128");
         };
         debug_assert!(b > 0);
+        // cmk00000 need to check for overflow here when in debug mode
         self + (b - 1) as Self
     }
 
@@ -363,7 +392,7 @@ impl Integer for i128 {
     /// It is an error to call this method with `b` equal to 0 or a value that is too large to subtract from `i128`.
     /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
     #[allow(clippy::cast_possible_wrap)]
-    fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
+    fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(b) = b else {
             if self == Self::MAX {
                 return Self::MIN;
@@ -430,7 +459,7 @@ impl Integer for u128 {
     }
 
     #[allow(clippy::cast_precision_loss)]
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64_lossy(len: Self::SafeLen) -> f64 {
         match len {
             UIntPlusOne::UInt(len) => len as f64,
             UIntPlusOne::MaxPlusOne => UIntPlusOne::<Self>::max_plus_one_as_f64(),
@@ -439,7 +468,7 @@ impl Integer for u128 {
 
     #[allow(clippy::cast_sign_loss)]
     #[allow(clippy::cast_possible_truncation)]
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+    fn f64_to_safe_len_lossy(f: f64) -> Self::SafeLen {
         if f >= UIntPlusOne::<Self>::max_plus_one_as_f64() {
             UIntPlusOne::MaxPlusOne
         } else {
@@ -453,7 +482,7 @@ impl Integer for u128 {
     /// It is an error to call this method with `b` equal to 0 or a value that is too large to add to `u128`.
     /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
     #[allow(clippy::cast_possible_wrap)]
-    fn add_len_less_one(self, b: Self::SafeLen) -> Self {
+    fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(b) = b else {
             if self == Self::MIN {
                 return Self::MAX;
@@ -461,6 +490,7 @@ impl Integer for u128 {
             panic!("Too large to add to u128");
         };
         debug_assert!(b > 0);
+        // cmk00000 need to check for overflow here when in debug mode
         self + (b - 1) as Self
     }
 
@@ -470,7 +500,7 @@ impl Integer for u128 {
     /// It is an error to call this method with `b` equal to 0 or a value that is too large to subtract from `u128`.
     /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
     #[allow(clippy::cast_possible_wrap)]
-    fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
+    fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(b) = b else {
             if self == Self::MAX {
                 return Self::MIN;
@@ -569,28 +599,31 @@ impl Integer for Ipv4Addr {
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         let start_num = u32::from(*r.start());
         let end_num = u32::from(*r.end());
+        debug_assert!(start_num <= end_num);
+        // Signed sub may overflow, but casting preserves correct unsigned distance
         end_num.overflowing_sub(start_num).0 as <Self as Integer>::SafeLen + 1
     }
 
     #[allow(clippy::cast_precision_loss)]
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64_lossy(len: Self::SafeLen) -> f64 {
         len as f64
     }
 
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+    fn f64_to_safe_len_lossy(f: f64) -> Self::SafeLen {
         f as Self::SafeLen
     }
 
     #[allow(clippy::cast_possible_truncation)]
-    fn add_len_less_one(self, b: Self::SafeLen) -> Self {
+    fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
         debug_assert!(b > 0);
+        // cmk00000 need to check for overflow here when in debug mode
         Self::from(u32::from(self) + (b - 1) as u32)
     }
 
     #[allow(clippy::cast_possible_truncation)]
-    fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
+    fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
         Self::from(u32::from(self) - (b - 1) as u32)
     }
 }
@@ -657,7 +690,7 @@ impl Integer for Ipv6Addr {
     }
 
     #[allow(clippy::cast_precision_loss)]
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64_lossy(len: Self::SafeLen) -> f64 {
         match len {
             UIntPlusOne::UInt(len) => len as f64,
             UIntPlusOne::MaxPlusOne => UIntPlusOne::<u128>::max_plus_one_as_f64(),
@@ -666,7 +699,7 @@ impl Integer for Ipv6Addr {
 
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+    fn f64_to_safe_len_lossy(f: f64) -> Self::SafeLen {
         if f >= UIntPlusOne::<u128>::max_plus_one_as_f64() {
             UIntPlusOne::MaxPlusOne
         } else {
@@ -679,13 +712,14 @@ impl Integer for Ipv6Addr {
     /// # Panics
     /// It is an error to call this method with `b` equal to 0 or a value that is too large to add to `Ipv6Addr`.
     /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
-    fn add_len_less_one(self, b: Self::SafeLen) -> Self {
+    fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(b) = b else {
             if self == Self::min_value() {
                 return Self::max_value();
             }
             panic!("Too large to add to Ipv6Addr");
         };
+        // cmk00000 need to check for overflow here when in debug mode
         debug_assert!(b > 0);
         Self::from(u128::from(self) + (b - 1))
     }
@@ -695,7 +729,7 @@ impl Integer for Ipv6Addr {
     /// # Panics
     /// It is an error to call this method with `b` equal to 0 or a value that is too large to subtract from `Ipv6Addr`.
     /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
-    fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
+    fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
         let UIntPlusOne::UInt(b) = b else {
             if self == Self::max_value() {
                 return Self::min_value();
@@ -741,7 +775,7 @@ impl Integer for char {
     #[inline]
     fn sub_one(self) -> Self {
         let mut num = u32::from(self) - 1; // by design, debug will panic if underflow
-                                           // skip over the surrogate range
+        // skip over the surrogate range
         if num == SURROGATE_END {
             num = SURROGATE_START - 1;
         }
@@ -792,17 +826,17 @@ impl Integer for char {
     }
 
     #[allow(clippy::cast_precision_loss, clippy::cast_lossless)]
-    fn safe_len_to_f64(len: Self::SafeLen) -> f64 {
+    fn safe_len_to_f64_lossy(len: Self::SafeLen) -> f64 {
         len as f64
     }
 
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
-    fn f64_to_safe_len(f: f64) -> Self::SafeLen {
+    fn f64_to_safe_len_lossy(f: f64) -> Self::SafeLen {
         f as Self::SafeLen
     }
 
-    fn add_len_less_one(self, b: Self::SafeLen) -> Self {
+    fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
         if let Some(b_less_one) = b.checked_sub(1) {
             let a = u32::from(self);
             if let Some(mut num) = a.checked_add(b_less_one) {
@@ -815,10 +849,11 @@ impl Integer for char {
                 }
             }
         }
+        // cmk00000 need to check for overflow here when in debug mode
         panic!("char overflow");
     }
 
-    fn sub_len_less_one(self, b: Self::SafeLen) -> Self {
+    fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
         if let Some(b_less_one) = b.checked_sub(1) {
             let a = u32::from(self);
             if let Some(mut num) = a.checked_sub(b_less_one) {
@@ -861,8 +896,8 @@ mod tests {
         assert_eq!(b, -1);
 
         // convert  UIntPlusOne::MaxPlusOne to f64 and back
-        let f = i128::safe_len_to_f64(UIntPlusOne::MaxPlusOne);
-        let i = i128::f64_to_safe_len(f);
+        let f = i128::safe_len_to_f64_lossy(UIntPlusOne::MaxPlusOne);
+        let i = i128::f64_to_safe_len_lossy(f);
         assert_eq!(i, UIntPlusOne::MaxPlusOne);
 
         let mut b = 0u128..=0u128;
@@ -874,8 +909,8 @@ mod tests {
         assert_eq!(b, 0);
 
         // convert  UIntPlusOne::MaxPlusOne to f64 and back
-        let f = u128::safe_len_to_f64(UIntPlusOne::MaxPlusOne);
-        let i = u128::f64_to_safe_len(f);
+        let f = u128::safe_len_to_f64_lossy(UIntPlusOne::MaxPlusOne);
+        let i = u128::f64_to_safe_len_lossy(f);
         assert_eq!(i, UIntPlusOne::MaxPlusOne);
     }
 
@@ -886,7 +921,7 @@ mod tests {
     fn test_add_len_less_one_with_max_plus_one() {
         let value: i128 = 100;
         let len = UIntPlusOne::MaxPlusOne;
-        let _ = value.add_len_less_one(len); // This should panic in debug mode
+        let _ = value.inclusive_end_from_start(len); // This should panic in debug mode
     }
 
     #[test]
@@ -896,7 +931,7 @@ mod tests {
     fn test_sub_len_less_one_with_max_plus_one() {
         let value: i128 = 100;
         let len = UIntPlusOne::MaxPlusOne;
-        let _ = value.sub_len_less_one(len); // This should panic in debug mode
+        let _ = value.start_from_inclusive_end(len); // This should panic in debug mode
     }
 
     #[test]
@@ -941,27 +976,27 @@ mod tests {
             let len = <$ty>::safe_len(&universe);
             assert_eq!(len, <$ty>::safe_len(&(<$ty>::min_value()..=<$ty>::max_value())));
 
-            let len_via_f64 = <$ty>::f64_to_safe_len(<$ty>::safe_len_to_f64(len));
+            let len_via_f64 = <$ty>::f64_to_safe_len_lossy(<$ty>::safe_len_to_f64_lossy(len));
             assert_eq!(len, len_via_f64);
 
             let short = <$ty>::min_value()..=<$ty>::min_value();
             let len = <$ty>::safe_len(&short);
-            let len_via_f64 = <$ty>::f64_to_safe_len(<$ty>::safe_len_to_f64(len));
+            let len_via_f64 = <$ty>::f64_to_safe_len_lossy(<$ty>::safe_len_to_f64_lossy(len));
             assert_eq!(len, len_via_f64);
 
             let len = <$ty>::safe_len(&universe);
-            let b = <$ty>::min_value().add_len_less_one(len);
+            let b = <$ty>::min_value().inclusive_end_from_start(len);
             assert_eq!(b, <$ty>::max_value());
 
-            let c = b.sub_len_less_one(len);
+            let c = b.start_from_inclusive_end(len);
             assert_eq!(c, <$ty>::min_value());
 
             let range = <$ty>::min_value()..=<$ty>::min_value().add_one();
             let len2 = <$ty>::safe_len(&range);
-            let b = <$ty>::min_value().add_len_less_one(len2);
+            let b = <$ty>::min_value().inclusive_end_from_start(len2);
             assert_eq!(b, <$ty>::min_value().add_one());
 
-            let b = <$ty>::max_value().sub_len_less_one(len2);
+            let b = <$ty>::max_value().start_from_inclusive_end(len2);
             assert_eq!(b, <$ty>::max_value().sub_one());
 
             #[cfg(feature = "from_slice")]
@@ -979,7 +1014,7 @@ mod tests {
     #[allow(clippy::legacy_numeric_constants)]
     fn test_i128_overflow() {
         let value: i128 = i128::max_value();
-        let _ = value.add_len_less_one(UIntPlusOne::MaxPlusOne);
+        let _ = value.inclusive_end_from_start(UIntPlusOne::MaxPlusOne);
     }
 
     #[test]
@@ -988,7 +1023,7 @@ mod tests {
     #[allow(clippy::legacy_numeric_constants)]
     fn test_i128_underflow() {
         let value: i128 = i128::min_value();
-        let _ = value.sub_len_less_one(UIntPlusOne::MaxPlusOne);
+        let _ = value.start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
     }
 
     #[test]
@@ -997,7 +1032,7 @@ mod tests {
     #[allow(clippy::legacy_numeric_constants)]
     fn test_u128_overflow() {
         let value: u128 = u128::max_value();
-        let _ = value.add_len_less_one(UIntPlusOne::MaxPlusOne);
+        let _ = value.inclusive_end_from_start(UIntPlusOne::MaxPlusOne);
     }
 
     #[test]
@@ -1006,7 +1041,7 @@ mod tests {
     #[allow(clippy::legacy_numeric_constants)]
     fn test_u128_underflow() {
         let value: u128 = u128::min_value();
-        let _ = value.sub_len_less_one(UIntPlusOne::MaxPlusOne);
+        let _ = value.start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
     }
 
     #[test]
@@ -1015,7 +1050,7 @@ mod tests {
     #[allow(clippy::legacy_numeric_constants)]
     fn test_ipv6_overflow() {
         let value: Ipv6Addr = Ipv6Addr::max_value();
-        let _ = value.add_len_less_one(UIntPlusOne::MaxPlusOne);
+        let _ = value.inclusive_end_from_start(UIntPlusOne::MaxPlusOne);
     }
 
     #[test]
@@ -1034,7 +1069,7 @@ mod tests {
     fn test_char1_overflow() {
         let value: char = char::max_value();
         let len2 = char::safe_len(&(char::min_value()..=char::min_value().add_one()));
-        let _ = value.add_len_less_one(len2);
+        let _ = value.inclusive_end_from_start(len2);
     }
 
     #[test]
@@ -1044,7 +1079,7 @@ mod tests {
     fn test_char1_underflow() {
         let value: char = char::min_value();
         let len2 = char::safe_len(&(char::min_value()..=char::min_value().add_one()));
-        let _ = value.sub_len_less_one(len2);
+        let _ = value.start_from_inclusive_end(len2);
     }
 
     #[test]
@@ -1052,7 +1087,7 @@ mod tests {
     #[should_panic(expected = "Too large to subtract from Ipv6Addr")]
     fn test_ipv6_underflow() {
         let value: Ipv6Addr = Ipv6Addr::min_value();
-        let _ = value.sub_len_less_one(UIntPlusOne::MaxPlusOne);
+        let _ = value.start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
     }
 
     #[test]
@@ -1075,10 +1110,10 @@ mod tests {
             expected -= len;
             assert_eq!(len2b, expected);
 
-            let item2 = max_value.sub_len_less_one(len2b);
+            let item2 = max_value.start_from_inclusive_end(len2b);
             assert_eq!(item2, item);
 
-            let item3 = item2.add_len_less_one(len2b);
+            let item3 = item2.inclusive_end_from_start(len2b);
             assert_eq!(item3, max_value);
 
             len += <char as Integer>::SafeLen::one();
@@ -1086,13 +1121,15 @@ mod tests {
             assert_eq!(len, len2);
             assert_eq!(
                 len2,
-                <char as Integer>::f64_to_safe_len(<char as Integer>::safe_len_to_f64(len2))
+                <char as Integer>::f64_to_safe_len_lossy(<char as Integer>::safe_len_to_f64_lossy(
+                    len2
+                ))
             );
 
-            let item2 = <char as Integer>::min_value().add_len_less_one(len);
+            let item2 = <char as Integer>::min_value().inclusive_end_from_start(len);
             assert_eq!(item2, item);
 
-            let item3 = item.sub_len_less_one(len);
+            let item3 = item.start_from_inclusive_end(len);
             assert_eq!(item3, <char as Integer>::min_value());
 
             if let Some(prev) = prev {
@@ -1123,7 +1160,7 @@ mod tests {
         // Case 1: `b.checked_sub(1)` returns `None`
         let character = 'A';
         let b = 0;
-        _ = character.add_len_less_one(b); // This should panic due to overflow
+        _ = character.inclusive_end_from_start(b); // This should panic due to overflow
     }
 
     #[test]
@@ -1133,7 +1170,7 @@ mod tests {
         // Case 2: `self.checked_add(b_less_one)` returns `None`
         let character = char::MAX;
         let b = 3;
-        _ = character.add_len_less_one(b); // This should panic due to overflow
+        _ = character.inclusive_end_from_start(b); // This should panic due to overflow
     }
 
     #[test]
@@ -1143,7 +1180,7 @@ mod tests {
         // Case 3: overflow when adding `b - 1` to `self`
         let character = 'A';
         let b = u32::MAX;
-        _ = character.add_len_less_one(b); // This should panic due to overflow
+        _ = character.inclusive_end_from_start(b); // This should panic due to overflow
     }
 
     #[test]
@@ -1153,7 +1190,7 @@ mod tests {
         // Case 1: `b.checked_sub(1)` fails, causing an immediate panic.
         let character = 'A';
         let b = 0;
-        _ = character.sub_len_less_one(b); // This should panic due to underflow
+        _ = character.start_from_inclusive_end(b); // This should panic due to underflow
     }
 
     #[test]
@@ -1163,6 +1200,69 @@ mod tests {
         // Case 2: `a.checked_sub(b_less_one)` fails, causing underflow.
         let character = 'A';
         let b = u32::MAX;
-        _ = character.sub_len_less_one(b); // This should panic due to underflow
+        _ = character.start_from_inclusive_end(b); // This should panic due to underflow
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn test_use_of_as() {
+        syntactic_for! { ty in [char, i8, i16, i32, i64, i128, isize, Ipv4Addr, Ipv6Addr, u8, u16, u32, u64, u128, usize] {
+            $(
+        let a = <$ty>::min_value();
+        let b = <$ty>::max_value();
+        let len = <$ty>::safe_len(&(a..=b));
+        assert_eq!(<$ty>::inclusive_end_from_start(a, len), b);
+        assert_eq!(<$ty>::start_from_inclusive_end(b, len), a);
+            )*
+        }}
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = 1)")]
+    fn test_use_of_as_1() {
+        let _ = 127i8.inclusive_end_from_start(0);
+    }
+
+    // cmk00000 should we run all (some) tests again in release mode?
+    #[cfg(not(debug_assertions))]
+    #[test]
+    fn test_use_of_as_2() {
+        assert_eq!(127i8.inclusive_end_from_start(0), 126);
+        assert_eq!(127i8.start_from_inclusive_end(0), -128);
+        assert_eq!(127i8.inclusive_end_from_start(2), -128);
+        assert_eq!((-126i8).start_from_inclusive_end(4), 127);
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = 256)")]
+    fn test_use_of_as_3() {
+        let _ = 127i8.start_from_inclusive_end(0);
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 2, max_len = 1)")]
+    fn test_use_of_as_4() {
+        let _ = 127i8.inclusive_end_from_start(2);
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 4, max_len = 3)")]
+    fn test_use_of_as_5() {
+        let _ = (-126i8).start_from_inclusive_end(4);
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn test_use_of_as_6() {
+        for a in (-128i8)..=127i8 {
+            let b = i8::safe_len(&(a..=127i8));
+            assert_eq!(a.inclusive_end_from_start(b), 127i8);
+            let b = i8::safe_len(&(i8::MIN..=a));
+            assert_eq!(a.start_from_inclusive_end(b), -128i8);
+        }
     }
 }

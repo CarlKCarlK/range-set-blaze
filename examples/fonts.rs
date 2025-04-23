@@ -8,9 +8,9 @@ fn sample2() {
         let (start, end) = range.clone().into_inner();
         println!(
             "U+{:X}[{}]..=U+{:X}[{}], len {}",
-            start as u32,
+            u32::from(start),
             start,
-            end as u32,
+            u32::from(end),
             end,
             char::safe_len(&range)
         );
@@ -33,8 +33,12 @@ fn sample1() {
     for (range, font) in disjoint_font_table.range_values() {
         let (start, end) = range.into_inner();
         println!(
-            "U+{:X}{}..=U+{:X}{} -> {}",
-            start as u32, start, end as u32, end, font
+            "U+{:X}[{}]..=U+{:X}[{}] -> {}",
+            u32::from(start),
+            start,
+            u32::from(end),
+            end,
+            font
         );
     }
     println!("-----");

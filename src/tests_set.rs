@@ -657,13 +657,14 @@ fn bitand() {
 #[cfg(feature = "from_slice")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[allow(clippy::cast_possible_truncation)]
 fn test_is_consecutive() {
     use crate::from_slice::SimdInteger;
     use core::array;
     use std::simd::Simd;
 
-    let simd: Simd<i8, 64> = Simd::from_array(array::from_fn(|i| 10 + i as i8));
+    let simd: Simd<i8, 64> = Simd::from_array(array::from_fn(|i| {
+        i8::try_from(10 + i).expect("i in 0..64 so 10+i fits in i8")
+    }));
     assert!(i8::is_consecutive(simd));
 }
 

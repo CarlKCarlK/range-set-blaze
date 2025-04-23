@@ -55,7 +55,7 @@ impl<'a, T: Integer + SampleUniform> MemorylessRange<'a, T> {
         k: usize,
         how: How,
     ) -> Self {
-        let len: f64 = T::safe_len_to_f64(T::safe_len(&range));
+        let len: f64 = T::safe_len_to_f64_lossy(T::safe_len(&range));
         let average_coverage_per_clump = match how {
             How::Intersection => {
                 let goal2 = coverage_goal.powf(1.0 / (k as f64));
@@ -102,16 +102,16 @@ impl<T: Integer + SampleUniform> Iterator for MemorylessRange<'_, T> {
                 if self.rng.random::<f64>() < self.average_width.fract() {
                     actual_width_f64 += 1.0;
                 }
-                // If actual_width is very, very large, then to f64_to_safe_len will be imprecise.
-                actual_width = T::f64_to_safe_len(actual_width_f64);
+                // If actual_width is very, very large, then to f64_to_safe_len_lossy will be imprecise.
+                actual_width = T::f64_to_safe_len_lossy(actual_width_f64);
             } else {
                 // pick a width of exactly average_width
                 let mut actual_width_f64 = self.average_width.floor();
                 if self.rng.random::<f64>() < self.average_width.fract() {
                     actual_width_f64 += 1.0;
                 }
-                // If actual_width is very, very large, then to f64_to_safe_len will be imprecise.
-                actual_width = T::f64_to_safe_len(actual_width_f64);
+                // If actual_width is very, very large, then to f64_to_safe_len_lossy will be imprecise.
+                actual_width = T::f64_to_safe_len_lossy(actual_width_f64);
             }
 
             // choose random one point in the range
@@ -120,14 +120,14 @@ impl<T: Integer + SampleUniform> Iterator for MemorylessRange<'_, T> {
             if self.rng.random::<f64>() > 0.5 {
                 let rest = one_point..=*self.range.end();
                 if actual_width <= T::safe_len(&rest) {
-                    Some(one_point..=T::add_len_less_one(one_point, actual_width))
+                    Some(one_point..=T::inclusive_end_from_start(one_point, actual_width))
                 } else {
                     Some(rest)
                 }
             } else {
                 let rest = *self.range.start()..=one_point;
                 if actual_width <= T::safe_len(&rest) {
-                    Some(T::sub_len_less_one(one_point, actual_width)..=one_point)
+                    Some(T::start_from_inclusive_end(one_point, actual_width)..=one_point)
                 } else {
                     Some(rest)
                 }

@@ -113,6 +113,7 @@
 //     let start: u8 = kani::any();
 //     let end: u8 = kani::any(); // end is inclusive
 //     kani::assume(start <= end);
+// Signed sub may overflow, but casting preserves correct unsigned distance
 //     let len = end.overflowing_sub(start).0 as u8 as usize + 1;
 //     assert!((len as i128) == ((end as i128) - (start as i128) + 1));
 // }

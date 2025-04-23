@@ -132,7 +132,7 @@ macro_rules! define_const_reference {
             let mut arr: [$type; N] = [0; N];
             let mut i = 0;
             while i < N {
-                arr[i] = i as $type;
+                arr[i] = i as $type; // For now, must use "as" because we are in a const context.
                 i += 1;
             }
             Simd::from_array(arr)

@@ -1055,7 +1055,7 @@ fn sync_and_send() {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn fraction<T: Integer>(range_int_set: &RangeSetBlaze<T>, range: &RangeInclusive<T>) -> f64 {
-    T::safe_len_to_f64(range_int_set.len()) / T::safe_len_to_f64(T::safe_len(range))
+    T::safe_len_to_f64_lossy(range_int_set.len()) / T::safe_len_to_f64_lossy(T::safe_len(range))
 }
 
 #[test]
@@ -2280,6 +2280,7 @@ fn sub0() {
         }
     }
 
+    // Signed sub may overflow, but casting preserves correct unsigned distance
     let before = 127i8.overflowing_sub(-128i8).0;
     let after = before as u8;
     println!("before: {before}, after: {after}");
@@ -2338,10 +2339,10 @@ fn integer_coverage() {
         $(
             let len = <$ty as Integer>::SafeLen::one();
             let a = $ty::zero();
-            assert_eq!($ty::safe_len_to_f64(len), 1.0);
-            assert_eq!($ty::add_len_less_one(a,len), a);
-            assert_eq!($ty::sub_len_less_one(a,len), a);
-            assert_eq!($ty::f64_to_safe_len(1.0), len);
+            assert_eq!($ty::safe_len_to_f64_lossy(len), 1.0);
+            assert_eq!($ty::inclusive_end_from_start(a,len), a);
+            assert_eq!($ty::start_from_inclusive_end(a,len), a);
+            assert_eq!($ty::f64_to_safe_len_lossy(1.0), len);
 
         )*
     }};

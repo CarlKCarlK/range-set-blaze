@@ -45,11 +45,11 @@ where
     T: UInt,
 {
     /// Returns the maximum value of an unsigned integer type `T` plus one, as an `f64`.
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_possible_wrap)]
     #[must_use]
     pub fn max_plus_one_as_f64() -> f64 {
-        2.0f64.powi((mem::size_of::<T>() * 8) as i32)
+        let bits = i32::try_from(mem::size_of::<T>() * 8)
+            .expect("bit width of T fits in i32 (u8 to u128) and gets optimized away");
+        2.0f64.powi(bits)
     }
 }
 
@@ -199,13 +199,12 @@ mod tests {
     use wasm_bindgen_test::*;
     wasm_bindgen_test_configure!(run_in_browser);
 
-    #[allow(clippy::cast_possible_truncation)]
     #[cfg(not(target_arch = "wasm32"))] // not used by wasm-wasip1
-    const fn u16_to_p1(v: u16) -> UIntPlusOne<u8> {
+    fn u16_to_p1(v: u16) -> UIntPlusOne<u8> {
         if v == 256 {
             UIntPlusOne::MaxPlusOne
         } else {
-            UIntPlusOne::UInt(v as u8)
+            UIntPlusOne::UInt(u8::try_from(v).expect("value must be <= 255 or == 256"))
         }
     }
 

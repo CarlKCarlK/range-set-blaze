@@ -1802,7 +1802,13 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
         if b_len == 0 {
             return self;
         }
-        if a_len * (b_len.ilog2() as usize + 1) < a_len + b_len {
+        let b_len_log2: usize = b_len
+            .ilog2()
+            .try_into() // u32 → usize
+            .expect(
+                "ilog2 result always fits in usize on our targets so this will be optimized away",
+            );
+        if a_len * (b_len_log2 + 1) < a_len + b_len {
             for (start, end_value) in self.btree_map {
                 other.internal_add(start..=end_value.end, end_value.value);
             }
@@ -1864,7 +1870,13 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
         if b_len == 0 {
             return self.clone();
         }
-        if a_len * (b_len.ilog2() as usize + 1) < a_len + b_len {
+        let b_len_log2: usize = b_len
+            .ilog2()
+            .try_into() // u32 → usize
+            .expect(
+                "ilog2 result always fits in usize on our targets so this will be optimized away",
+            );
+        if a_len * (b_len_log2 + 1) < a_len + b_len {
             for (start, end_value) in &self.btree_map {
                 other.internal_add(*start..=end_value.end, end_value.value.clone());
             }
@@ -2337,7 +2349,13 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
             *self = other;
             return;
         }
-        if a_len * (b_len.ilog2() as usize + 1) < a_len + b_len {
+        let b_len_log2: usize = b_len
+            .ilog2()
+            .try_into() // u32 → usize
+            .expect(
+                "ilog2 result always fits in usize on our targets so this will be optimized away",
+            );
+        if a_len * (b_len_log2 + 1) < a_len + b_len {
             let original_self = mem::take(self);
             for (start, end_value) in original_self.btree_map {
                 other.internal_add(start..=end_value.end, end_value.value);
