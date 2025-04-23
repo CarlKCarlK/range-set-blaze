@@ -6,6 +6,7 @@ use core::net::{Ipv4Addr, Ipv6Addr};
 use core::ops::{AddAssign, SubAssign};
 use core::panic;
 use core::{fmt, ops::RangeInclusive};
+use num_traits::Zero;
 use num_traits::ops::overflowing::OverflowingSub;
 
 #[cfg(feature = "from_slice")]
@@ -248,7 +249,7 @@ macro_rules! impl_integer_ops {
             {
                 let max_len = Self::safe_len(&(Self::min_value()..=self));
                 assert!(
-                    b > 0 && b <= max_len,
+                    0 < b && b <= max_len,
                     "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
                 );
             }
@@ -369,38 +370,62 @@ impl Integer for i128 {
         }
     }
 
-    /// Adds `b - 1` to `self`.
+    /// Computes the inclusive end of a range starting at `self` with length `b`,
+    /// by returning `self + (b - 1)`.
     ///
     /// # Panics
-    /// It is an error to call this method with `b` equal to 0 or a value that is too large to add to `i128`.
-    /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
+    /// In debug builds, panics if `b` is zero or too large to compute a valid result.  
+    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,  
+    /// but it is always defined and safe (never causes undefined behavior)
     fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
+        #[cfg(debug_assertions)]
+        {
+            let max_len = Self::safe_len(&(self..=Self::max_value()));
+            assert!(
+                UIntPlusOne::zero() < b && b <= max_len,
+                "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
+            );
+        }
+
         let UIntPlusOne::UInt(b) = b else {
             if self == Self::MIN {
                 return Self::MAX;
             }
-            panic!("Too large to add to i128");
+            let max_len = Self::safe_len(&(self..=Self::max_value()));
+            panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };
-        debug_assert!(b > 0);
-        // cmk00000 need to check for overflow here when in debug mode
-        self + (b - 1) as Self
+        // If b is in range, two’s-complement wrap-around yields the correct inclusive end even if the add overflows
+        self.wrapping_add((b - 1) as Self)
     }
 
-    /// Subtract `b - 1` from `self`.
+    /// Computes the inclusive start of a range ending at `self` with length `b`,
+    /// by returning `self - (b - 1)`.
     ///
     /// # Panics
-    /// It is an error to call this method with `b` equal to 0 or a value that is too large to subtract from `i128`.
-    /// This will always trigger a panic in debug mode; in release mode, the behavior is undefined.
+    /// In debug builds, panics if `b` is zero or too large to compute a valid result.  
+    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,  
+    /// but it is always defined and safe (never causes undefined behavior).
     #[allow(clippy::cast_possible_wrap)]
     fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
+        #[cfg(debug_assertions)]
+        {
+            let max_len = Self::safe_len(&(Self::min_value()..=self));
+            assert!(
+                UIntPlusOne::zero() < b && b <= max_len,
+                "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
+            );
+        }
+
         let UIntPlusOne::UInt(b) = b else {
             if self == Self::MAX {
                 return Self::MIN;
             }
-            panic!("Too large to subtract from i128");
+            let max_len = Self::safe_len(&(Self::min_value()..=self));
+            panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };
-        debug_assert!(b > 0);
-        self - (b - 1) as Self
+
+        // If b is in range, two’s-complement wrap-around yields the correct inclusive start even if the subtraction overflows
+        self.wrapping_sub((b - 1) as Self)
     }
 }
 
@@ -1010,7 +1035,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "Too large to add to i128")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_i128_overflow() {
         let value: i128 = i128::max_value();
@@ -1265,4 +1290,6 @@ mod tests {
             assert_eq!(a.start_from_inclusive_end(b), -128i8);
         }
     }
+
+    // cmk00000 make full tests for i128
 }
