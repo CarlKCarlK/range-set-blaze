@@ -62,11 +62,12 @@ range-set = "0.0.11"
 glob = "0.3.2"
 roaring = "0.10.12"
 anyhow = "1.0.97"
+rand = { version = "0.9.1" }
 
 [dev-dependencies]
 syntactic-for = "0.1.1"
 wasm-bindgen-test = "0.3.50"
-rand = "0.9.0"
+rand = "0.9.1"
 
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
 getrandom = { version = "0.3.2", features = ["wasm_js"] }
