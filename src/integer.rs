@@ -928,37 +928,87 @@ impl Integer for char {
     }
 
     fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
-        if let Some(b_less_one) = b.checked_sub(1) {
-            let a = u32::from(self);
-            if let Some(mut num) = a.checked_add(b_less_one) {
-                // skip over the surrogate range
-                if a < SURROGATE_START && SURROGATE_START <= num {
-                    num += SURROGATE_END - SURROGATE_START + 1;
-                }
-                if let Some(c) = Self::from_u32(num) {
-                    return c;
-                }
-            }
+        fn private_panic(a: char, b: u32) -> ! {
+            let max_len = char::safe_len(&(char::MIN..=a));
+            panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         }
-        // cmk00000 need to check for overflow here when in debug mode
-        panic!("char overflow");
+
+        let Some(b_minus_one) = b.checked_sub(1) else {
+            private_panic(self, b);
+        };
+
+        let a = u32::from(self);
+        let Some(mut num) = a.checked_add(b_minus_one) else {
+            private_panic(self, b);
+        };
+        if a < SURROGATE_START && SURROGATE_START <= num {
+            let Some(num2) = num.checked_add(SURROGATE_END - SURROGATE_START + 1) else {
+                private_panic(self, b);
+            };
+            num = num2;
+        }
+
+        let Some(result) = Self::from_u32(num) else {
+            private_panic(self, b);
+        };
+        result
     }
+    // fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
+    //     if let Some(b_less_one) = b.checked_sub(1) {
+    //         let a = u32::from(self);
+    //         if let Some(mut num) = a.checked_add(b_less_one) {
+    //             // skip over the surrogate range
+    //             if a < SURROGATE_START && SURROGATE_START <= num {
+    //                 num += SURROGATE_END - SURROGATE_START + 1;
+    //             }
+    //             if let Some(c) = Self::from_u32(num) {
+    //                 return c;
+    //             }
+    //         }
+    //     }
+    //     // cmk00000 need to check for overflow here when in debug mode
+    //     panic!("char overflow");
+    // }
 
     fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
-        if let Some(b_less_one) = b.checked_sub(1) {
-            let a = u32::from(self);
-            if let Some(mut num) = a.checked_sub(b_less_one) {
-                // Skip over the surrogate range
-                if num <= SURROGATE_END && SURROGATE_END < a {
-                    num -= SURROGATE_END - SURROGATE_START + 1;
-                }
-                return Self::from_u32(num).expect(
-                    "Real Assert: Impossible for this to fail because char goes down to 0",
-                );
-            }
+        fn private_panic(a: char, b: u32) -> ! {
+            let max_len = char::safe_len(&(char::MIN..=a));
+            panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         }
-        panic!("char underflow");
+
+        let Some(b_minus_one) = b.checked_sub(1) else {
+            private_panic(self, b);
+        };
+
+        let a = u32::from(self);
+        let Some(mut num) = a.checked_sub(b_minus_one) else {
+            private_panic(self, b);
+        };
+        if num <= SURROGATE_END && SURROGATE_END < a {
+            let Some(num2) = num.checked_sub(SURROGATE_END - SURROGATE_START + 1) else {
+                private_panic(self, b);
+            };
+            num = num2;
+        }
+
+        Self::from_u32(num).expect("Real Assert: Impossible for this to fail")
     }
+
+    // fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
+    //     if let Some(b_less_one) = b.checked_sub(1) {
+    //         let a = u32::from(self);
+    //         if let Some(mut num) = a.checked_sub(b_less_one) {
+    //             // Skip over the surrogate range
+    //             if num <= SURROGATE_END && SURROGATE_END < a {
+    //                 num -= SURROGATE_END - SURROGATE_START + 1;
+    //             }
+    //             return Self::from_u32(num).expect(
+    //                 "Real Assert: Impossible for this to fail because char goes down to 0",
+    //             );
+    //         }
+    //     }
+    //     panic!("char underflow");
+    // }
 }
 
 #[cfg(test)]
@@ -1110,7 +1160,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "Too large to subtract from i128")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_i128_underflow() {
         let value: i128 = i128::min_value();
@@ -1119,7 +1169,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "Too large to add to u128")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_u128_overflow() {
         let value: u128 = u128::max_value();
@@ -1128,7 +1178,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "Too large to subtract from u128")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_u128_underflow() {
         let value: u128 = u128::min_value();
@@ -1137,7 +1187,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "Too large to add to Ipv6Addr")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_ipv6_overflow() {
         let value: Ipv6Addr = Ipv6Addr::max_value();
@@ -1155,7 +1205,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "char overflow")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 2, max_len = 1112064)")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_char1_overflow() {
         let value: char = char::max_value();
@@ -1165,7 +1215,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "char underflow")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 2, max_len = 1)")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_char1_underflow() {
         let value: char = char::min_value();
@@ -1175,7 +1225,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "Too large to subtract from Ipv6Addr")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
     fn test_ipv6_underflow() {
         let value: Ipv6Addr = Ipv6Addr::min_value();
         let _ = value.start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
@@ -1246,7 +1296,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "char overflow")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = 66)")]
     fn test_add_len_less_one_panic_conditions1() {
         // Case 1: `b.checked_sub(1)` returns `None`
         let character = 'A';
@@ -1256,7 +1306,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "char overflow")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 3, max_len = 1112064)")]
     fn test_add_len_less_one_panic_conditions2() {
         // Case 2: `self.checked_add(b_less_one)` returns `None`
         let character = char::MAX;
@@ -1266,7 +1316,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "char overflow")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 4294967295, max_len = 66)")]
     fn test_add_len_less_one_panic_conditions3() {
         // Case 3: overflow when adding `b - 1` to `self`
         let character = 'A';
@@ -1276,7 +1326,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "char underflow")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = 66)")]
     fn test_sub_len_less_one_panic_conditions1() {
         // Case 1: `b.checked_sub(1)` fails, causing an immediate panic.
         let character = 'A';
@@ -1286,7 +1336,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "char underflow")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 4294967295, max_len = 66)")]
     fn test_sub_len_less_one_panic_conditions2() {
         // Case 2: `a.checked_sub(b_less_one)` fails, causing underflow.
         let character = 'A';
@@ -1575,7 +1625,6 @@ mod tests {
 
     // ipv6
 
-    // make full tests for Ipv6Addr
     #[cfg(debug_assertions)]
     #[test]
     #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = 1)")]
@@ -1652,5 +1701,56 @@ mod tests {
     #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
     fn test_use_of_as_48() {
         let _ = Ipv6Addr::from(0u128).start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
+    }
+
+    // char
+
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = 1112064)")]
+    fn test_use_of_as_51() {
+        let _ = char::max_value().inclusive_end_from_start(0);
+    }
+
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 0, max_len = 1112064)")]
+    fn test_use_of_as_53() {
+        let _ = char::max_value().start_from_inclusive_end(0);
+    }
+
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 2, max_len = 1112064)")]
+    fn test_use_of_as_54() {
+        let _ = char::max_value().inclusive_end_from_start(2);
+    }
+
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 2, max_len = 1)")]
+    fn test_use_of_as_55() {
+        let _ = (char::min_value()).start_from_inclusive_end(2);
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn test_use_of_as_56() {
+        assert_eq!(
+            (char::min_value()).inclusive_end_from_start(1_112_064),
+            char::max_value()
+        );
+        assert_eq!(
+            (char::max_value()).start_from_inclusive_end(1_112_064),
+            char::min_value()
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 1112064, max_len = 3)")]
+    fn test_use_of_as_57() {
+        let _ = '\x02'.inclusive_end_from_start(1_112_064);
+    }
+
+    #[test]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 1112064, max_len = 1)")]
+    fn test_use_of_as_58() {
+        let _ = '\x00'.start_from_inclusive_end(1_112_064);
     }
 }
