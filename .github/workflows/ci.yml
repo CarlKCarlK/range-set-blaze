@@ -36,9 +36,10 @@ jobs:
           components: rust-src
       - name: Test Rust Native (stable)
         run: |
-          cargo clippy --verbose --all-targets --features "std alloc rog-experimental" -- -D clippy::all -A deprecated
+          cargo clippy --verbose --all-targets --features "std rog-experimental" -- -D clippy::all -A deprecated
           cargo test --verbose
-          cargo test --verbose --no-default-features --features "alloc rog-experimental"
+          cargo test --verbose --release
+          cargo test --verbose --no-default-features --features "rog-experimental"
       - name: Test Rust Native (nightly)
         run: |
           rustup override set nightly
@@ -64,7 +65,7 @@ jobs:
         run: |
           rustup target add i686-unknown-linux-gnu
           cargo test --target i686-unknown-linux-gnu --verbose 
-          cargo test --target i686-unknown-linux-gnu --verbose --no-default-features --features "alloc rog-experimental"
+          cargo test --target i686-unknown-linux-gnu --verbose --no-default-features --features "rog-experimental"
 
   test_wasm:
     name: Test WASM
@@ -80,21 +81,21 @@ jobs:
         uses: jetli/wasm-pack-action@v0.4.0
       - name: Test WASM/unknown
         run: |
-          wasm-pack test --chrome --headless --features alloc --no-default-features --verbose
+          wasm-pack test --chrome --headless --no-default-features --verbose
       - name: Install wasmtime
         uses: jcbhmr/setup-wasmtime@v2
       - name: Test WASM/wasip1
         run: |
           rustup target add wasm32-wasip1
           cargo test --target wasm32-wasip1 --verbose
-          cargo test --target wasm32-wasip1 --verbose --no-default-features --features "alloc rog-experimental"
+          cargo test --target wasm32-wasip1 --verbose --no-default-features --features "rog-experimental"
       - name: Setup and check Embedded
         run: |
           rustup target add thumbv7m-none-eabi
-          cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
+          cargo check --target thumbv7m-none-eabi --no-default-features
           rustup override set nightly
           rustup target add thumbv7m-none-eabi
-          cargo check --target thumbv7m-none-eabi --features alloc --no-default-features
+          cargo check --target thumbv7m-none-eabi --no-default-features
           sudo apt-get update && sudo apt-get install qemu qemu-system-arm
       - name: Test Embedded (in nightly)
         timeout-minutes: 3

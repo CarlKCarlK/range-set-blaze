@@ -294,6 +294,7 @@ mod tests {
         }
     }
 
+    #[cfg(debug_assertions)]
     #[cfg(not(target_arch = "wasm32"))] // can't test wasm-wasip1 because we need to catch panics
     #[test]
     fn test_mul_equivalence() {
@@ -304,6 +305,7 @@ mod tests {
         }
     }
 
+    #[cfg(debug_assertions)]
     #[cfg(not(target_arch = "wasm32"))] // can't test wasm-wasip1 because we need to catch panics
     #[test]
     fn test_sub_equivalence() {

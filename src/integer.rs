@@ -953,22 +953,6 @@ impl Integer for char {
         };
         result
     }
-    // fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
-    //     if let Some(b_less_one) = b.checked_sub(1) {
-    //         let a = u32::from(self);
-    //         if let Some(mut num) = a.checked_add(b_less_one) {
-    //             // skip over the surrogate range
-    //             if a < SURROGATE_START && SURROGATE_START <= num {
-    //                 num += SURROGATE_END - SURROGATE_START + 1;
-    //             }
-    //             if let Some(c) = Self::from_u32(num) {
-    //                 return c;
-    //             }
-    //         }
-    //     }
-    //     // cmk00000 need to check for overflow here when in debug mode
-    //     panic!("char overflow");
-    // }
 
     fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
         fn private_panic(a: char, b: u32) -> ! {
@@ -1365,7 +1349,6 @@ mod tests {
         let _ = 127i8.inclusive_end_from_start(0);
     }
 
-    // cmk00000 should we run all (some) tests again in release mode?
     #[cfg(not(debug_assertions))]
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -1416,7 +1399,6 @@ mod tests {
         let _ = i128::MAX.inclusive_end_from_start(UIntPlusOne::zero());
     }
 
-    // cmk00000 should we run all (some) tests again in release mode?
     #[cfg(not(debug_assertions))]
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -1497,7 +1479,6 @@ mod tests {
         let _ = u128::MAX.inclusive_end_from_start(UIntPlusOne::zero());
     }
 
-    // cmk00000 should we run all (some) tests again in release mode?
     #[cfg(not(debug_assertions))]
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -1570,7 +1551,6 @@ mod tests {
         let _ = Ipv4Addr::max_value().inclusive_end_from_start(0);
     }
 
-    // cmk00000 should we run all (some) tests again in release mode?
     #[cfg(not(debug_assertions))]
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -1632,7 +1612,6 @@ mod tests {
         let _ = Ipv6Addr::max_value().inclusive_end_from_start(UIntPlusOne::zero());
     }
 
-    // cmk00000 should we run all (some) tests again in release mode?
     #[cfg(not(debug_assertions))]
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
