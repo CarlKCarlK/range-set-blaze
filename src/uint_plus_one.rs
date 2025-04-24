@@ -1,8 +1,13 @@
 use alloc::fmt;
-use core::cmp::Ordering;
-use core::fmt::Display;
-use core::mem;
-use core::ops::{Add, AddAssign, Mul, Sub, SubAssign};
+use core::{
+    cmp::Ordering,
+    fmt::Display,
+    mem,
+    ops::{Add, AddAssign, Mul, Sub, SubAssign},
+};
+
+#[cfg(not(feature = "std"))]
+use num_traits::float::FloatCore;
 use num_traits::ops::overflowing::{OverflowingAdd, OverflowingMul};
 
 pub trait UInt:

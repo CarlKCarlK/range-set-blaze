@@ -89,7 +89,7 @@ mod ranges_iter;
 pub use crate::ranges_iter::{IntoRangesIter, RangesIter};
 
 mod set;
-#[cfg(not(coverage))]
+#[cfg(all(not(coverage), feature = "std"))]
 pub use crate::set::demo_read_ranges_from_file;
 pub use crate::set::{IntoIter, Iter, RangeSetBlaze};
 

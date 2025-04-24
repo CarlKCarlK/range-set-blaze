@@ -39,7 +39,9 @@ from_slice = []
 
 
 [dependencies]
-itertools = { version = "0.14.0", default-features = false }
+itertools = { version = "0.14.0", default-features = false, features = [
+    "use_alloc",
+] }
 num-integer = { version = "0.1.46", default-features = false }
 num-traits = { version = "0.2.19", default-features = false }
 gen_ops = "0.4.0"

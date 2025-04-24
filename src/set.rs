@@ -29,9 +29,8 @@ use crate::{IntoRangesIter, UnionIter};
 
 // // FUTURE: use fn range to implement one-at-a-time intersection, difference, etc. and then add more inplace ops.
 
-#[cfg(feature = "std")]
+#[cfg(all(not(coverage), feature = "std"))]
 #[allow(dead_code)]
-#[cfg(not(coverage))]
 #[doc(hidden)]
 pub fn demo_read_ranges_from_file<P, T>(path: P) -> io::Result<RangeSetBlaze<T>>
 where
