@@ -1,10 +1,10 @@
+use alloc::collections::btree_map;
 use core::iter::FusedIterator;
-use std::collections::btree_map;
 
 use crate::{
+    Integer, SortedDisjointMap,
     iter_map::{IntoIterMap, IterMap},
     map::{EndValue, ValueRef},
-    Integer, SortedDisjointMap,
 };
 
 /// An iterator over the values of a [`RangeMapBlaze`]. Double-ended.

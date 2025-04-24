@@ -1,5 +1,5 @@
+use alloc::collections::btree_map;
 use core::iter::FusedIterator;
-use std::collections::btree_map;
 
 use crate::{
     Integer, SortedDisjointMap,

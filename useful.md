@@ -111,7 +111,7 @@ cargo check --no-default-features
 ## test `alloc`
 
 ```cmd
-cargo test --features alloc --no-default-features
+cargo test --features --no-default-features
 ```
 
 ## test wasm
