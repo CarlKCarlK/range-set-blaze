@@ -195,11 +195,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use core::prelude::v1::*;
     #[cfg(not(target_arch = "wasm32"))] // not used by wasm-wasip1
     use std::panic;
     #[cfg(not(target_arch = "wasm32"))] // not used by wasm-wasip1
     use std::panic::AssertUnwindSafe;
-    use std::prelude::v1::*;
 
     use wasm_bindgen_test::*;
     wasm_bindgen_test_configure!(run_in_browser);

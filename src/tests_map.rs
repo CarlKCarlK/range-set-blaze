@@ -1,37 +1,33 @@
 #![cfg(test)]
 
-use crate::CheckSortedDisjointMap;
-use crate::DynSortedDisjointMap;
-use crate::Integer;
-use crate::IntersectionIterMap;
-use crate::IntoIterMap;
-use crate::IntoRangeValuesIter;
-use crate::IterMap;
-use crate::KMergeMap;
-use crate::MergeMap;
-use crate::RangeMapBlaze;
-use crate::RangeValuesIter;
-use crate::RangesIter;
-use crate::SymDiffIterMap;
-use crate::UnionIterMap;
-use crate::keys::IntoKeys;
-use crate::keys::Keys;
-use crate::sorted_disjoint_map::Priority;
-use crate::sorted_disjoint_map::RangeToRangeValueIter;
-use crate::unsorted_priority_map::AssumePrioritySortedStartsMap;
-use crate::unsorted_priority_map::UnsortedPriorityMap;
-use crate::values::IntoValues;
-use crate::values::Values;
-use alloc::string::ToString;
-use core::any::Any;
-use core::fmt;
-use core::iter::FusedIterator;
-use core::ops::RangeInclusive;
+use crate::{
+    CheckSortedDisjointMap, DynSortedDisjointMap, Integer, IntersectionIterMap, IntoIterMap,
+    IntoRangeValuesIter, IterMap, KMergeMap, MergeMap, RangeMapBlaze, RangeValuesIter, RangesIter,
+    SymDiffIterMap, UnionIterMap,
+    keys::{IntoKeys, Keys},
+    sorted_disjoint_map::{Priority, RangeToRangeValueIter},
+    unsorted_priority_map::{AssumePrioritySortedStartsMap, UnsortedPriorityMap},
+    values::{IntoValues, Values},
+};
+use alloc::{
+    borrow::ToOwned,
+    string::{String, ToString},
+    vec::{self, Vec},
+};
+use core::{
+    any::Any,
+    fmt::{self, Write as FmtWrite}, // Renamed to avoid conflict with std::fmt::Write
+    iter::FusedIterator,
+    ops::RangeInclusive,
+    prelude::v1::*,
+};
 use itertools::Itertools;
-use std::fmt::Write;
-use std::prelude::v1::*;
-use std::vec;
-use std::{format, println};
+#[cfg(not(target_arch = "wasm32"))]
+use std::{
+    fmt::Write as StdWrite, // Renamed to avoid conflict with core::fmt::Write
+    format,
+    println,
+};
 
 use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);
@@ -39,6 +35,8 @@ wasm_bindgen_test_configure!(run_in_browser);
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_step_by_step() {
+    use alloc::format;
+
     let (s1, s2) = ("a".to_string(), "b".to_string());
     let input = [(1, &s2), (2, &s2), (0, &s1)];
 
@@ -46,7 +44,7 @@ fn map_step_by_step() {
     let iter = iter.map(|(x, value)| (x..=x, value));
     let iter = UnsortedPriorityMap::new(iter);
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
-    println!("{vs}");
+    // println!("{vs}");
     assert_eq!(
         vs,
         r#"[Priority { range_value: (1..=2, "b"), priority_number: 0 }, Priority { range_value: (0..=0, "a"), priority_number: 2 }]"#
@@ -61,7 +59,7 @@ fn map_step_by_step() {
     });
     let iter = AssumePrioritySortedStartsMap::new(iter);
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
-    println!("{vs}");
+    // println!("{vs}");
     assert_eq!(
         vs,
         "[Priority { range_value: (0..=0, \"a\"), priority_number: 2 }, Priority { range_value: (1..=2, \"b\"), priority_number: 0 }]"
@@ -77,11 +75,11 @@ fn map_step_by_step() {
     let iter = AssumePrioritySortedStartsMap::new(iter);
     let iter = UnionIterMap::new(iter);
     let vs = format!("{:?}", iter.collect::<Vec<_>>());
-    println!("{vs}");
+    // println!("{vs}");
     assert_eq!(vs, "[(0..=0, \"a\"), (1..=2, \"b\")]");
 
     let range_map_blaze = RangeMapBlaze::<u8, String>::from_iter(input);
-    println!("{range_map_blaze}");
+    // println!("{range_map_blaze}");
     assert_eq!(range_map_blaze.to_string(), r#"(0..=0, "a"), (1..=2, "b")"#);
 }
 
@@ -90,6 +88,8 @@ where
     T: Integer + fmt::Display + 'a, // Assuming T implements Display for formatting
                                     // V: ValueOwned + fmt::Display + 'a, // V must implement Display to be formatted with {}
 {
+    use alloc::string::String;
+
     let mut vs = String::new();
     for (range, value) in iter {
         write!(vs, "{:?}{} ", range, *value as char).unwrap();
@@ -127,7 +127,7 @@ fn map_repro_206() {
 
     let iter = UnionIterMap::new(iter);
     let vs = format_range_values(iter);
-    println!("{vs}");
+    // println!("{vs}");
     assert_eq!(
         vs,
         "1..=1c 2..=2d 7..=7b 12..=12c 13..=13b 14..=14c 16..=16c 17..=17a 18..=18e 19..=19b 21..=22b 23..=23a 24..=24d 26..=26a 27..=27e 29..=29e 31..=32d 35..=35b 37..=37e 38..=39c 42..=43e 46..=46b 47..=47e 49..=49a 55..=55d 58..=58d 59..=59c 63..=63d 70..=70c 73..=73d 77..=77a 79..=79d 81..=81a 83..=83e 84..=84a 86..=86a 88..=88d 90..=90d 97..=97a 98..=98c 99..=100e 101..=101c 102..=102a 104..=104d 113..=113b 114..=114a 115..=115b 117..=117e 120..=120d 121..=121c 123..=123a 124..=125b 126..=126a 127..=127e 128..=128a 129..=129b 131..=131b 132..=132d 137..=137e 139..=139d 140..=140a 143..=143c 145..=145b 147..=148a 150..=150c 151..=151a 152..=152c 153..=153e 155..=155e 164..=164b 165..=166a 168..=168e 173..=173d 174..=174e 175..=175c 177..=177a 183..=183d 185..=185d 186..=186b 189..=189e 190..=190c 193..=193e 194..=195c 196..=196a 198..=199e 201..=201c 203..=203d 204..=206b 208..=208c 209..=209e 210..=210d 213..=213a 214..=214b 219..=220e 223..=223e 225..=225a 227..=228d 229..=229b 234..=235e 238..=238d 239..=239a 240..=240b 242..=242a 251..=251b 253..=253d "
@@ -162,7 +162,7 @@ fn map_repro_106() {
     let iter = AssumePrioritySortedStartsMap::new(iter);
     let iter = UnionIterMap::new(iter);
     let vs = format_range_values(iter);
-    println!("{vs}");
+    // println!("{vs}");
     assert_eq!(vs, "97..=98c 100..=100e 106..=106b ");
 
     let range_map_blaze = RangeMapBlaze::<u8, u8>::from_iter(input.clone());
@@ -178,13 +178,13 @@ fn map_repro1() {
     let (s1, s2, s3) = ("a".to_string(), "b".to_string(), "c".to_string());
     let mut range_map_blaze =
         RangeMapBlaze::from_iter([(20..=21, &s1), (24..=24, &s2), (25..=29, &s2)]);
-    println!("{range_map_blaze}");
+    // println!("{range_map_blaze}");
     assert_eq!(
         range_map_blaze.to_string(),
         r#"(20..=21, "a"), (24..=29, "b")"#
     );
     range_map_blaze.internal_add(25..=25, &s3);
-    println!("{range_map_blaze}");
+    // println!("{range_map_blaze}");
     assert_eq!(
         range_map_blaze.to_string(),
         r#"(20..=21, "a"), (24..=24, "b"), (25..=25, "c"), (26..=29, "b")"#
@@ -294,7 +294,7 @@ const fn check_traits() {
     type BCheckSortedDisjointMap<'a> = CheckSortedDisjointMap<
         i32,
         &'a u64,
-        std::array::IntoIter<(RangeInclusive<i32>, &'a u64), 0>,
+        core::array::IntoIter<(RangeInclusive<i32>, &'a u64), 0>,
     >;
     is_like_check_sorted_disjoint_map::<BCheckSortedDisjointMap>();
 
@@ -303,13 +303,13 @@ const fn check_traits() {
 }
 
 const fn is_ddcppdheo<
-    T: std::fmt::Debug
+    T: fmt::Debug
         + fmt::Display
         + Clone
         + PartialEq
         + PartialOrd
         + Default
-        + std::hash::Hash
+        + core::hash::Hash
         + Eq
         + Ord
         + Send
@@ -319,31 +319,31 @@ const fn is_ddcppdheo<
 
 const fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
 const fn is_like_btreemap_iter<
-    T: Clone + std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator + ExactSizeIterator,
+    T: Clone + fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator + ExactSizeIterator,
 >() {
 }
 
 const fn is_like_btreemap_iter_less_exact_size<
-    T: Clone + std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator,
+    T: Clone + fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator,
 >() {
 }
 
-const fn is_like_btreemap_iter_less_both<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
+const fn is_like_btreemap_iter_less_both<T: Clone + fmt::Debug + FusedIterator + Iterator>() {}
 const fn is_like_btreemap_into_iter<
-    T: std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator + ExactSizeIterator,
+    T: fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator + ExactSizeIterator,
 >() {
 }
 const fn is_like_btreemap_into_iter_less_exact_size<
-    T: std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator,
+    T: fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator,
 >() {
 }
 
 const fn is_like_btreemap<
     T: Clone
-        + std::fmt::Debug
+        + fmt::Debug
         + Default
         + Eq
-        + std::hash::Hash
+        + core::hash::Hash
         + IntoIterator
         + Ord
         + PartialEq
@@ -360,7 +360,7 @@ const fn is_like_btreemap<
 
 const fn is_like_check_sorted_disjoint_map<
     T: Clone
-        + std::fmt::Debug
+        + fmt::Debug
         + IntoIterator
         + core::panic::RefUnwindSafe
         + Send

@@ -3058,13 +3058,13 @@ const fn check_traits() {
 }
 
 const fn is_ddcppdheo<
-    T: std::fmt::Debug
+    T: fmt::Debug
         + fmt::Display
         + Clone
         + PartialEq
         + PartialOrd
         + Default
-        + std::hash::Hash
+        + core::hash::Hash
         + Eq
         + Ord
         + Send
@@ -3074,31 +3074,31 @@ const fn is_ddcppdheo<
 
 const fn is_sssu<T: Sized + Send + Sync + Unpin>() {}
 const fn is_like_btreeset_iter<
-    T: Clone + std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator + ExactSizeIterator,
+    T: Clone + fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator + ExactSizeIterator,
 >() {
 }
-const fn is_like_btreeset_iter_less_both<T: Clone + std::fmt::Debug + FusedIterator + Iterator>() {}
+const fn is_like_btreeset_iter_less_both<T: Clone + fmt::Debug + FusedIterator + Iterator>() {}
 const fn is_like_btreeset_iter_less_exact_size<
-    T: Clone + std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator,
+    T: Clone + fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator,
 >() {
 }
 
 const fn is_like_btreeset_into_iter<
-    T: std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator + ExactSizeIterator,
+    T: fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator + ExactSizeIterator,
 >() {
 }
 const fn is_like_btreeset_into_iter_less_exact_size<
-    T: std::fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator,
+    T: fmt::Debug + FusedIterator + Iterator + DoubleEndedIterator,
 >() {
 }
-const fn is_like_btreeset_into_iter_less_both<T: std::fmt::Debug + FusedIterator + Iterator>() {}
+const fn is_like_btreeset_into_iter_less_both<T: fmt::Debug + FusedIterator + Iterator>() {}
 
 const fn is_like_btreeset<
     T: Clone
-        + std::fmt::Debug
+        + fmt::Debug
         + Default
         + Eq
-        + std::hash::Hash
+        + core::hash::Hash
         + IntoIterator
         + Ord
         + PartialEq
@@ -3115,7 +3115,7 @@ const fn is_like_btreeset<
 
 const fn is_like_check_sorted_disjoint<
     T: Clone
-        + std::fmt::Debug
+        + fmt::Debug
         + Default
         + IntoIterator
         + core::panic::RefUnwindSafe

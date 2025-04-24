@@ -1,18 +1,22 @@
 #![cfg(test)]
 
-use crate::sorted_disjoint_map::Priority;
-use crate::unsorted_priority_map::AssumePrioritySortedStartsMap;
-
 use super::*;
-use core::array;
-use core::cmp::Ordering;
-use core::ops::Bound;
-use core::ops::RangeInclusive;
+use crate::{
+    set::extract_range, sorted_disjoint_map::Priority,
+    unsorted_priority_map::AssumePrioritySortedStartsMap,
+};
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
+use core::{
+    array,
+    cmp::Ordering,
+    ops::{Bound, RangeInclusive},
+};
 use num_traits::{One, Zero};
-use set::extract_range;
-use std::collections::hash_map::DefaultHasher;
-use std::prelude::v1::*;
-use std::{print, println, vec};
+#[cfg(not(target_arch = "wasm32"))]
+use std::{collections::hash_map::DefaultHasher, prelude::v1::*, print, println};
 use syntactic_for::syntactic_for;
 
 use wasm_bindgen_test::*;
@@ -26,12 +30,12 @@ fn demo_f1() {
     let mut range_set_blaze = RangeSetBlaze::from_iter([11..=14, 22..=26]);
     range_set_blaze.internal_add(10..=10);
     assert_eq!(range_set_blaze.to_string(), "10..=14, 22..=26");
-    println!(
-        "demo_1 range_set_blaze = {:?}, len_slow = {}, len = {}",
-        range_set_blaze,
-        range_set_blaze.len_slow(),
-        range_set_blaze.len()
-    );
+    // println!(
+    //     "demo_1 range_set_blaze = {:?}, len_slow = {}, len = {}",
+    //     range_set_blaze,
+    //     range_set_blaze.len_slow(),
+    //     range_set_blaze.len()
+    // );
 
     assert!(range_set_blaze.len_slow() == range_set_blaze.len());
 }
@@ -109,21 +113,21 @@ fn optimize() {
             for c in 0..=end {
                 for d in 0..=end {
                     let restart = (a >= 2 && a - 2 >= d) || (c >= 2 && c - 2 >= b);
-                    print!("{a}\t{b}\t{c}\t{d}\t");
+                    // print!("{a}\t{b}\t{c}\t{d}\t");
                     if a > b {
-                        println!("impossible");
+                        // println!("impossible");
                     } else if c > d {
-                        println!("error");
+                        // println!("error");
                     } else {
                         let mut range_set_blaze = RangeSetBlaze::new();
                         range_set_blaze.internal_add(a..=b);
                         range_set_blaze.internal_add(c..=d);
                         if range_set_blaze.ranges_len() == 1 {
-                            let vec = range_set_blaze.into_iter().collect::<Vec<u8>>();
-                            println!("combine\t{}\t{}", vec[0], vec[vec.len() - 1]);
+                            // let vec = range_set_blaze.into_iter().collect::<Vec<u8>>();
+                            // println!("combine\t{}\t{}", vec[0], vec[vec.len() - 1]);
                             assert!(!restart);
                         } else {
-                            println!("restart");
+                            // println!("restart");
                             assert!(restart);
                         }
                     }
@@ -133,8 +137,8 @@ fn optimize() {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(
     clippy::bool_assert_comparison,
     clippy::many_single_char_names,
@@ -142,7 +146,7 @@ fn optimize() {
     clippy::too_many_lines
 )]
 fn lib_coverage_0() {
-    use std::hash::Hash;
+    use core::hash::Hash;
 
     let a = RangeSetBlaze::from_iter([1..=2, 3..=4]);
     let mut hasher = DefaultHasher::new();
@@ -258,7 +262,7 @@ fn lib_coverage_0() {
     assert_eq!(a.partial_cmp(&a), Some(Ordering::Equal));
 
     let mut a = RangeSetBlaze::from_iter([1..=3]);
-    a.extend(std::iter::once(4));
+    a.extend(core::iter::once(4));
     assert_eq!(a.len(), 4u64);
 
     let mut a = RangeSetBlaze::from_iter([1..=3]);
@@ -307,7 +311,7 @@ fn lib_coverage_0() {
     syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
             let a = RangeSetBlaze::<$ty>::new();
-            println!("{a:#?}");
+            // println!("{a:#?}");
             assert_eq!(a.first(), None);
 
             let mut a = RangeSetBlaze::from_iter([$ty::one()..=3]);
@@ -423,7 +427,7 @@ fn sdi1() {
         assert_eq!(iter.next(), Some(2..=2));
         assert_eq!(iter.next(), None);
 
-        let a = std::iter::once(0..=0);
+        let a = core::iter::once(0..=0);
         let a = AssumeSortedStarts::new(a);
         let mut iter = SymDiffIter::new(a);
         assert_eq!(iter.next(), Some(0..=0));
@@ -433,7 +437,8 @@ fn sdi1() {
         let a = AssumeSortedStarts::new(a);
         let iter = SymDiffIter::new(a);
         let v = iter.collect::<Vec<_>>();
-        assert_eq!(v, vec![]);
+
+        assert_eq!(v, alloc::vec![]);
     }
 }
 
@@ -668,8 +673,8 @@ fn test_is_consecutive() {
     assert!(i8::is_consecutive(simd));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_extract_range() {
     use std::ops::Bound::{Excluded, Included};
 
