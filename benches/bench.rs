@@ -1546,7 +1546,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
 #[cfg(feature = "from_slice")]
 fn worst(c: &mut Criterion) {
     let group_name = "worst";
-    let uniform = Uniform::new_inclusive(0, 1000).unwrap();
+    let uniform = Uniform::new(0, 1000).unwrap();
     let iter_len_list = [1u32, 10, 100, 1_000, 10_000];
     let seed = 0;
 

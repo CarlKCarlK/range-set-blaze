@@ -25,6 +25,10 @@ rustup override set nightly
 
 ### bench
 
+Look at `benchmarksApril2025.xlsx'
+
+Slice
+
 ```cmd
 rustup override set nightly
 set BUILDFEATURES=from_slice
@@ -32,11 +36,24 @@ bench.bat
 cargo criterion-means > delme3.csv
 ```
 
+Non-Slice
+
 ```cmd
 rustup override set stable
+set RUSTFLAGS=-C target-cpu=native
 set BUILDFEATURES=
 bench.bat
 cargo criterion-means > delme4.csv
+```
+
+Map
+
+```cmd
+rustup override set stable
+set RUSTFLAGS=-C target-cpu=native
+set BUILDFEATURES=
+bench.bat map_
+cargo criterion-means > delme5.csv
 ```
 
 ### Run criterion-means

@@ -2,6 +2,7 @@
 #![allow(unexpected_cfgs)]
 
 use core::ops::Bound::Included;
+use std::collections::HashMap;
 extern crate alloc;
 use alloc::collections::BTreeMap;
 use core::cmp::Ordering;
@@ -3048,4 +3049,33 @@ fn test_ref_union() {
         d,
         RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")])
     );
+}
+
+#[test]
+fn test_worst() {
+    use rand::{SeedableRng, distr::Uniform, prelude::Distribution, rngs::StdRng};
+
+    let iter_len = 20;
+    let uniform_key = Uniform::new(0, 5).unwrap();
+    let seed = 0;
+    let n = 1;
+    let uniform_value = Uniform::new(0, n).unwrap();
+
+    let mut rng = StdRng::seed_from_u64(seed);
+    let vec: Vec<(u32, u32)> = (0..iter_len)
+        .map(|_| (uniform_key.sample(&mut rng), uniform_value.sample(&mut rng)))
+        .collect();
+    println!("{vec:?}");
+
+    let a0a = RangeMapBlaze::from_iter(vec.iter().rev());
+    let mut a0b = RangeMapBlaze::<u32, u32>::new();
+    a0b.extend(vec.iter().cloned());
+    let a1 = BTreeMap::from_iter(vec.iter().cloned());
+    let a2: HashMap<u32, u32> = HashMap::from_iter(vec.iter().cloned());
+    let a3 = rangemap::RangeInclusiveMap::from_iter(vec.iter().map(|(k, v)| (*k..=*k, *v)));
+    println!("{a0a}");
+    println!("{a0b}");
+    println!("{a1:?}");
+    println!("{a2:?}");
+    println!("{a3:?}");
 }

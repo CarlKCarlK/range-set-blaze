@@ -2,13 +2,92 @@ use criterion::BatchSize;
 use criterion::{
     AxisScale, BenchmarkId, Criterion, PlotConfiguration, criterion_group, criterion_main,
 };
-use rand::{SeedableRng, rngs::StdRng};
+use rand::{
+    Rng, SeedableRng,
+    distr::{Uniform, uniform::SampleUniform},
+    prelude::Distribution,
+    rngs::StdRng,
+    seq::SliceRandom,
+};
 use range_set_blaze::prelude::*;
 use std::{
     collections::{BTreeMap, HashMap},
     ops::RangeInclusive,
 };
 use tests_common::{How, MemorylessMapIter, MemorylessMapRange, k_maps, width_to_range_u32};
+
+fn map_worst(c: &mut Criterion) {
+    let group_name = "map_worst";
+    let uniform_key = Uniform::new(0, 1000).unwrap();
+    let iter_len_list = [1u32, 10, 100, 1_000, 10_000, 100_000];
+    let seed = 0;
+    let n = 5u32;
+    let uniform_value = Uniform::new(0, n).unwrap();
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    for iter_len in iter_len_list {
+        let parameter = iter_len;
+
+        let mut rng = StdRng::seed_from_u64(seed);
+        let vec: Vec<(u32, u32)> = (0..iter_len)
+            .map(|_| (uniform_key.sample(&mut rng), uniform_value.sample(&mut rng)))
+            .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeMapBlaze::from_iter(rev)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeMapBlaze::from_iter(vec.iter().rev());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("RangeMapBlaze::extend", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let mut answer: RangeMapBlaze<u32, u32> = RangeMapBlaze::new();
+                    answer.extend(vec.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("BTreeMap", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = BTreeMap::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("HashMap", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: HashMap<u32, u32> = HashMap::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("rangemap", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: rangemap::RangeInclusiveMap<u32, u32> =
+                        rangemap::RangeInclusiveMap::from_iter(
+                            vec.iter().map(|(k, v)| (*k..=*k, *v)),
+                        );
+                })
+            },
+        );
+    }
+    group.finish();
+}
 
 fn map_ingest_clumps_base(c: &mut Criterion) {
     println!("Running map_ingest_clumps_base...");
@@ -52,7 +131,17 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
         .collect();
 
         group.bench_with_input(
-            BenchmarkId::new("RangeMapBlaze (integers-iter)", parameter),
+            BenchmarkId::new("RangeMapBlaze::from_iter(rev)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeMapBlaze::from_iter(vec.iter().rev());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeMapBlaze::from_iter(forward)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -62,7 +151,17 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
         );
 
         group.bench_with_input(
-            BenchmarkId::new("RangeMapBlaze (ranges)", parameter),
+            BenchmarkId::new("RangeMapBlaze rev (ranges)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeMapBlaze::from_iter(vec_range.iter().rev());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeMapBlaze forward (ranges)", parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -70,7 +169,6 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
                 })
             },
         );
-
         group.bench_with_input(
             BenchmarkId::new("BTreeMap", parameter),
             &parameter,
@@ -86,6 +184,17 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let _answer: HashMap<u32, u32> = HashMap::from_iter(vec.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("rangemap", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: rangemap::RangeInclusiveMap<u32, u32> =
+                        rangemap::RangeInclusiveMap::from_iter(vec_range.iter().cloned());
                 })
             },
         );
@@ -191,7 +300,7 @@ fn map_every_op_blaze(c: &mut Criterion) {
 fn map_ingest_clumps_ranges(c: &mut Criterion) {
     let group_name = "map_ingest_clumps_ranges";
     let k = 1;
-    let average_width_list = [1, 10, 100, 1000, 10_00, 100_000];
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000];
     let coverage_goal = 0.10;
     let how = How::None;
     let seed = 0;
@@ -245,6 +354,7 @@ criterion_group!(
     name = benches_map;
     config = Criterion::default();
     targets =
+    map_worst,
     map_ingest_clumps_base,
     map_every_op_blaze,
     map_ingest_clumps_ranges,
