@@ -6,14 +6,14 @@ Updated: *April 2025*
 
 | Crate | # Downloads | Ranges | Element Type | Set Operations? | Internal | Maps, too? |
 | --- | --- | --- | --- | --- | --- | --- |
-[range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) |  603,680 | Disjoint | Integer, char, IPv4, IPv6 | Set Ops | BTreeMap | Sets/Maps |
-[roaring](https://crates.io/crates/roaring) | 12,520,488 | Disjoint | u32 | SetOps | Compressed Bitmaps | Only Sets |
-[range-set](https://crates.io/crates/range-set) | 5,446,431 | Disjoint | PrimInt | No Set Ops | SmallVec | Only Sets |
-[rangemap](https://crates.io/crates/rangemap) | 5,285,903 | Disjoint | Ord | No Set Ops | BTreeMap | Sets/Maps |
-[range-collections](https://crates.io/crates/range-collections) | 565,520 | Disjoint | Ord | Set Ops | SmallVec | Sets |
-[sorted-iter](https://crates.io/crates/sorted-iter) | 326,742 | No | Ord | Set Ops | *n/a* | Sets/Maps |
-[iset](https://crates.io/crates/iset) | 333,454 | Overlapping | PartialOrd | No Set Ops | Red Black | Sets/Maps |
-[ranges](https://crates.io/crates/ranges) | 89,538 | Disjoint | 'Domain' | Set Ops | Vec | Only Sets |
+|[range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) |  603,680 | Disjoint | Integer, char, IPv4, IPv6 | Set Ops | BTreeMap | Sets/Maps |
+|[roaring](https://crates.io/crates/roaring) | 12,520,488 | Disjoint | u32 | SetOps | Compressed Bitmaps | Only Sets |
+|[range-set](https://crates.io/crates/range-set) | 5,446,431 | Disjoint | PrimInt | No Set Ops | SmallVec | Only Sets |
+|[rangemap](https://crates.io/crates/rangemap) | 5,285,903 | Disjoint | Ord | No Set Ops | BTreeMap | Sets/Maps |
+|[range-collections](https://crates.io/crates/range-collections) | 565,520 | Disjoint | Ord | Set Ops | SmallVec | Sets |
+|[sorted-iter](https://crates.io/crates/sorted-iter) | 326,742 | No | Ord | Set Ops | *n/a* | Sets/Maps |
+|[iset](https://crates.io/crates/iset) | 333,454 | Overlapping | PartialOrd | No Set Ops | Red Black | Sets/Maps |
+|[ranges](https://crates.io/crates/ranges) | 89,538 | Disjoint | 'Domain' | Set Ops | Vec | Only Sets |
 
 > *The # of downloads as of April 2025*
 
@@ -115,7 +115,7 @@ We give each crate the clumps as ranges (instead of as individual integers).
 
 ### 'ingest_clumps_ranges' Results & Conclusion
 
-Over the clump sizes, `RangeSetBlaze` averges about 3 times faster than `rangemap` and 10 times faster than `Roaring`, However ...
+Over the clump sizes, `RangeSetBlaze` averages about 3 times faster than `rangemap` and 10 times faster than `Roaring`, However ...
 
 `RangeSetBlaze` batches range inputs by sorting them and then merging adjacent ranges. This batching is likely not implemented in `rangemap` or `Roaring` but could easily be added to it or any other range-based crate.
 
@@ -223,7 +223,7 @@ Dynamic multiway is not used by `RangeSetBlaze` but is sometimes needed by `Sort
 
 ### 'worst_op_blaze' Results and Conclusion
 
-Over almost the whole range `Roaring` is best. Roughly 10 times better than `RangeSetBlaze` when the number of intergers is less than 10,000. As the number of integers increases beyond 10,000 `RangeSetBlaze`, `BTreeSet`, and `HashSet` continue to get slower. `Roaring`, on the other hand, gets faster; presumably as it switches to bitmaps.
+Over almost the whole range `Roaring` is best. Roughly 10 times better than `RangeSetBlaze` when the number of integers is less than 10,000. As the number of integers increases beyond 10,000 `RangeSetBlaze`, `BTreeSet`, and `HashSet` continue to get slower. `Roaring`, on the other hand, gets faster; presumably as it switches to bitmaps.
 
 `Roaring` is a great choice when doing operations on u64 sets that may or may not be clumpy.
 

@@ -232,7 +232,7 @@ macro_rules! impl_integer_ops {
         fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
             #[cfg(debug_assertions)]
             {
-                let max_len = Self::safe_len(&(self..=Self::max_value()));
+                let max_len = Self::safe_len(&(self..=Self::MAX));
                 assert!(
                     b > 0 && b <= max_len,
                     "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
@@ -247,7 +247,7 @@ macro_rules! impl_integer_ops {
         fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
             #[cfg(debug_assertions)]
             {
-                let max_len = Self::safe_len(&(Self::min_value()..=self));
+                let max_len = Self::safe_len(&(Self::MIN..=self));
                 assert!(
                     0 < b && b <= max_len,
                     "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"

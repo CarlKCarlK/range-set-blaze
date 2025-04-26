@@ -5,10 +5,7 @@ use crate::{
     set::extract_range, sorted_disjoint_map::Priority,
     unsorted_priority_map::AssumePrioritySortedStartsMap,
 };
-use alloc::{
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::{string::ToString, vec::Vec};
 use core::{
     array,
     cmp::Ordering,
@@ -16,7 +13,7 @@ use core::{
 };
 use num_traits::{One, Zero};
 #[cfg(not(target_arch = "wasm32"))]
-use std::{collections::hash_map::DefaultHasher, prelude::v1::*, print, println};
+use std::{collections::hash_map::DefaultHasher, prelude::v1::*};
 use syntactic_for::syntactic_for;
 
 use wasm_bindgen_test::*;

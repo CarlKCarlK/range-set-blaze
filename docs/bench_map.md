@@ -6,10 +6,10 @@ Updated: *April 2025*
 
 | Crate | # Downloads | Ranges | Element Type | Set Operations? | Internal | Maps, too? |
 | --- | --- | --- | --- | --- | --- | --- |
-[range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) |  603,680 | Disjoint | Integer, char, IPv4, IPv6 | Set Ops | BTreeMap | Sets/Maps |
-[rangemap](https://crates.io/crates/rangemap) | 5,285,903 | Disjoint | Ord | No Set Ops | BTreeMap | Sets/Maps |
-[sorted-iter](https://crates.io/crates/sorted-iter) | 326,742 | No | Ord | Set Ops | *n/a* | Sets/Maps |
-[iset](https://crates.io/crates/iset) | 333,454 | Overlapping | PartialOrd | No Set Ops | Red Black | Sets/Maps |
+|[range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) |  603,680 | Disjoint | Integer, char, IPv4, IPv6 | Set Ops | BTreeMap | Sets/Maps |
+|[rangemap](https://crates.io/crates/rangemap) | 5,285,903 | Disjoint | Ord | No Set Ops | BTreeMap | Sets/Maps |
+|[sorted-iter](https://crates.io/crates/sorted-iter) | 326,742 | No | Ord | Set Ops | *n/a* | Sets/Maps |
+|[iset](https://crates.io/crates/iset) | 333,454 | Overlapping | PartialOrd | No Set Ops | Red Black | Sets/Maps |
 
 > *The # of downloads as of April 2025*
 
@@ -105,7 +105,7 @@ We give each crate the clumps as ranges (instead of as individual integers).
 
 ### 'ingest_clumps_ranges' Results & Conclusion
 
-Over the clump sizes, `RangeMapBlaze` averges about 3 times faster than `rangemap` and 10 times faster than `Roaring`, However ...
+Over the clump sizes, `RangeMapBlaze` averages about 3 times faster than `rangemap` and 10 times faster than `Roaring`, However ...
 
 `RangeMapBlaze` batches range inputs by sorting them and then merging adjacent ranges. This batching is likely not implemented in `rangemap` or `Roaring` but could easily be added to it or any other range-based crate.
 
@@ -213,7 +213,7 @@ Dynamic multiway is not used by `RangeMapBlaze` but is sometimes needed by `Sort
 
 ### 'worst_op_blaze' Results and Conclusion
 
-Over almost the whole range `Roaring` is best. Roughly 10 times better than `RangeMapBlaze` when the number of intergers is less than 10,000. As the number of integers increases beyond 10,000 `RangeMapBlaze`, `BTreeSet`, and `HashSet` continue to get slower. `Roaring`, on the other hand, gets faster; presumably as it switches to bitmaps.
+Over almost the whole range `Roaring` is best. Roughly 10 times better than `RangeMapBlaze` when the number of integers is less than 10,000. As the number of integers increases beyond 10,000 `RangeMapBlaze`, `BTreeSet`, and `HashSet` continue to get slower. `Roaring`, on the other hand, gets faster; presumably as it switches to bitmaps.
 
 `Roaring` is a great choice when doing operations on u64 sets that may or may not be clumpy.
 
@@ -231,4 +231,4 @@ time_range_map Disjoint DateTime ❌ ✅ Focused on time intervals, similar to r
 range_dict Disjoint Ord ❌ ✅ Thin wrapper over BTreeMap<RangeInclusive<T>, V>. No set ops.
 interval_map Disjoint or overlapping Ord ❌ ✅ Claims to support both with linear search; experimental.
 interval-collections Disjoint Ord ✅ ✅ Aims for high performance and correctness.
-crunchy-interval-map Overlapp
+crunchy-interval-map Overlap

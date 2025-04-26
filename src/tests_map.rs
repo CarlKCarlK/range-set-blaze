@@ -23,11 +23,7 @@ use core::{
 };
 use itertools::Itertools;
 #[cfg(not(target_arch = "wasm32"))]
-use std::{
-    fmt::Write as StdWrite, // Renamed to avoid conflict with core::fmt::Write
-    format,
-    println,
-};
+use std::format;
 
 use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);

@@ -27,6 +27,7 @@ use std::{
     thread::sleep,
     time::Duration,
 };
+use tests_common::{How, k_maps};
 
 use syntactic_for::syntactic_for;
 
@@ -3078,4 +3079,41 @@ fn test_worst() {
     println!("{a1:?}");
     println!("{a2:?}");
     println!("{a3:?}");
+}
+
+#[test]
+fn test_union() {
+    let range = 0..=99_999_999u32;
+    let range_len0 = 5;
+    let range_len = 2;
+    let coverage_goal = 0.5;
+    let how = How::None;
+    let seed = 1;
+    let n = 5u32;
+
+    let mut rng = StdRng::seed_from_u64(seed);
+    let temp: Vec<RangeMapBlaze<u32, u32>> =
+        k_maps(1, range_len0, &range, coverage_goal, how, &mut rng, n);
+    let map0 = &temp[0];
+    let rangemap_map0 = &rangemap::RangeInclusiveMap::from_iter(map0.range_values());
+
+    let map1 = &k_maps(1, range_len, &range, coverage_goal, how, &mut rng, n)[0];
+    let rangemap_map1 = rangemap::RangeInclusiveMap::from_iter(map1.range_values());
+
+    let mut a0a = map0.clone();
+    a0a |= map1;
+
+    let mut a0b = map1.clone();
+    a0b |= map0;
+
+    let mut a1 = map0.clone();
+    a1.extend(map1.range_values().map(|(r, v)| (r.clone(), *v)));
+
+    let mut a2 = rangemap_map0.clone();
+    a2.extend(rangemap_map1.iter().map(|(r, v)| (r.clone(), *v)));
+
+    println!("{a0a}");
+    println!("{a0b}");
+    println!("{a1}");
+    println!("{a2:?}");
 }
