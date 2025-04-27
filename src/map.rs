@@ -961,6 +961,11 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         self.len != len_before
     }
 
+    #[inline]
+    pub fn ranges_insert_cmk(&mut self, range: RangeInclusive<T>, value: V) {
+        self.internal_add(range, value);
+    }
+
     /// If the set contains an element equal to the value, removes it from the
     /// set and drops it. Returns whether such an element was present.
     ///
@@ -1418,6 +1423,17 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         Self {
             btree_map: BTreeMap::new(),
             len: <T as Integer>::SafeLen::zero(),
+        }
+    }
+
+    pub fn extend_cmk<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = (RangeInclusive<T>, V)>,
+    {
+        let iter = iter.into_iter();
+
+        for (range, value) in iter {
+            self.internal_add(range, value);
         }
     }
 

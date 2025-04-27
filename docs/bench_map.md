@@ -43,11 +43,11 @@ These benchmarks allow us to understand the `range-set-blaze::RangeMapBlaze` dat
 
 ### 'map_worst' Results
 
-`RangeMapBlaze` is consistently around 7 to 10 times slower than `BTreeSet` and `HashSet`. On small sets, `rangemap` is in the middle.
+`RangeMapBlaze` is consistently around 7 to 10 times slower than `BTreeSet` and `HashSet`. `rangemap` varies from fastest to slowest depending on the number of pairs.
 
 ### 'map_worst' Conclusion
 
-`BTreeSet` or `HashSet`, not `RangeMapBlaze` (nor `rangemap`), is a good choice for ingesting sets of non-clumpy integers. However, `RangeMapBlaze` is consistently average 10 times worse.
+`BTreeSet` or `HashSet`, not `RangeMapBlaze` (nor `rangemap`), is a good choice for ingesting sets of non-clumpy integers. However, `RangeMapBlaze` is consistently an average 10 times worse.
 
 > See benchmark ['map_worst_op_blaze'](#benchmark-9-worst_op_blaze-compare-roaring-and-rangesetblaze-operators-on-uniform-data), near the end, for a similar comparison of set operations on uniform data.
 
@@ -56,77 +56,26 @@ These benchmarks allow us to understand the `range-set-blaze::RangeMapBlaze` dat
 
 ## Benchmark #2: 'map_ingest_clumps_base': Measure `RangeMapBlaze` on increasingly clumpy integer keys
 
-* **Measure**: integer pair intake speed
+* **Measure**: integer-integer pair intake speed
 * **Candidates**: `HashSet`, `BTreeSet`, `rangemap`, `RangeMapBlaze`
 * **Vary**: *average clump size* from 1 (no clumps) to 100K (ten big clumps)
 * **Details**: We generate 1M integer keys with clumps. We ingest the integer pairs one at a time.
 Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. (The integer clumps are positioned random uniform, with-replacement, in a span from 0 to roughly 10M. The exact span is sized so that the union of the 1M integers will cover about 10% of the span. In other words, a given integer key in the span will have a 10% chance of being in one of the 1M integers generated.)
 
+Where applicable, we also test ingesting range-integer pairs.
+
 ### 'map_ingest_clumps_base' Results
 
-With no clumps, `RangeMapBlaze` is 2.2 times slower than `HashSet`. Somewhere around clump size 3, `RangeMapBlaze` becomes the best performer. As the average clump size goes past 100, `RangeMapBlaze` averages about 25 times faster than `HashSet` and `BTreeSet`, and roughly 15 times faster than `Roaring`.
+With no clumps, `RangeMapBlaze` is 7 times slower than `BTreeMap`. Somewhere around clump size 5, `RangeMapBlaze` becomes the best performer. As the average clump size goes past 100, `RangeMapBlaze` averages about 10 times faster than `HashSet` and `BTreeSet`, and roughly 30 times faster than `rangemap (integers)`.
 
-If we are allowed to input the clumps as ranges (instead of as individual integers), then when the average clump size is 1000 `RangeMapBlaze` is 1000
-times faster than `HashSet` and `BTreeSet` and more than 30 times faster than `Roaring`.
+If we are allowed to input the clumps as range-integer pairs (instead of integer-integer pairs), then when the average clump size is 1000 `RangeMapBlaze` roughly 300
+times faster than `HashSet` and `BTreeSet`. However, note that `rangemap (range)` is faster still
 
 ### ingest_clumps_base' Conclusion
 
-Range-based methods such as `RangeMapBlaze` and `Roaring` are a great choice for clumpy integers. When the input is given as ranges, they are the only sensible choice.
+Range-based methods such as `RangeMapBlaze` and `rangemap` are a great choice for clumpy integers. When the input is given as ranges, they are the only sensible choice. `RangeMapBlaze` is the better choice when the keys are integers. `rangemap` may be faster when the keys come in as ranges.
 
-![ingest_clumps_base](criterion/v4/ingest_clumps_base/report/lines.svg "ingest_clumps_base")
-
-## Benchmark #3: 'ingest_clumps_integers': Measure the `rangemap` crate on clumpy integers
-
-* **Measure**: integer intake speed
-* **Candidates**: `base` + rangemap,
-* **Vary**: *average clump size* from 1 (no clumps) to 100K (ten big clumps)
-* **Details**: As with `base`.
-
-We give each crate the clumps as individual integers.
-
-### 'ingest_clumps_integers' Results & Conclusion
-
-`rangemap` is typically three times slower than `HashSet` and 50 times slower than `RangeMapBlaze`. The nightly `RangeSetBlaze::from_slice` is even faster by an order of magnitude. However ...
-
-`RangeMapBlaze` batches its integer input by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate.
-
-`Roaring` is 5 to 25 times slower than `RangeMapBlaze`. I don't know if `Roaring` exploits consecutive integers. If not, it could.
-
-![ingest_clumps_integers](criterion/v4//ingest_clumps_integers/report/lines.svg "ingest_clumps_integers")
-
-## Benchmark #4: 'ingest_clumps_ranges': Measure rangemap on ranges of clumpy integers
-
-* **Measure**: range intake speed
-* **Candidates**: RangeSetBlaze + rangemap + Roaring
-* **Vary**: *average clump size* from 1 (no clumps) to 100K (ten big clumps)
-* **Details**: As with `base`.
-
-We give each crate the clumps as ranges (instead of as individual integers).
-
-### 'ingest_clumps_ranges' Results & Conclusion
-
-Over the clump sizes, `RangeMapBlaze` averages about 3 times faster than `rangemap` and 10 times faster than `Roaring`, However ...
-
-`RangeMapBlaze` batches range inputs by sorting them and then merging adjacent ranges. This batching is likely not implemented in `rangemap` or `Roaring` but could easily be added to it or any other range-based crate.
-
-![ingest_clumps_ranges](criterion/v4/ingest_clumps_ranges/report/lines.svg "ingest_clumps_ranges")
-
-## Benchmark #5: 'ingest_clumps_easy': Measure various crates on (easier) ranges of clumpy integers
-
-* **Measure**: range intake speed
-* **Candidates**: Tree based (RangeSetBlaze rangemap), Vector based (`range_collections`, `range_set`), Compressed Bitsets (`Roaring`)
-* **Vary**: *average clump size* from 1 (100K ranges) to 10 (10K ranges)
-* **Details**: We generate 100K integers with clumps (down from 1M)
-
-We give each crate the clumps as ranges (instead of as individual integers).
-
-### 'ingest_clumps_easy' Results & Conclusion
-
-The fastest vector-based method is 15 times slower than the slowest tree-based method. It is 75 times slower than `RangeMapBlaze`. This is expected because vector-based methods are not designed for a large numbers of inserts.
-
-The hybrid method, `Roaring`, does better than any method except `RangeMapBlaze`.
-
-![ingest_clumps_easy](criterion/v4/ingest_clumps_easy/report/lines.svg "ingest_clumps_easy")
+![ingest_clumps_base](criterion/v4/map_ingest_clumps_base/report/lines.svg "ingest_clumps_base")
 
 ## Benchmark #6: 'union_two_sets': Union two sets of clumpy integers
 
@@ -220,15 +169,3 @@ Over almost the whole range `Roaring` is best. Roughly 10 times better than `Ran
 All four candidates offer similar interfaces. If you're not sure which is best for your application, you can easily swap between them and see.
 
 ![worst_op_blaze  ](criterion/v4/worst_op_blaze/report/lines.png "worst_op_blaze")
-
-Possible new candidates:
-
-Crate Ranges Element Type Set Operations? Map Support? Notes
-intervaltree Possibly overlapping Ord ❌ ✅ Maps values to overlapping intervals. Query for intervals that overlap a point or range.
-intervaltree-rs Possibly overlapping Ord ❌ ✅ Faster, immutable implementation.
-range_map Disjoint Ord ❌ ✅ Duplicate of rangemap; older/inactive.
-time_range_map Disjoint DateTime ❌ ✅ Focused on time intervals, similar to rangemap.
-range_dict Disjoint Ord ❌ ✅ Thin wrapper over BTreeMap<RangeInclusive<T>, V>. No set ops.
-interval_map Disjoint or overlapping Ord ❌ ✅ Claims to support both with linear search; experimental.
-interval-collections Disjoint Ord ✅ ✅ Aims for high performance and correctness.
-crunchy-interval-map Overlap

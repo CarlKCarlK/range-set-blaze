@@ -190,6 +190,93 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
     group.finish();
 }
 
+fn map_ingest_clumps_ranges(c: &mut Criterion) {
+    let group_name = "map_ingest_clumps_ranges";
+    let k = 1;
+    let average_width = 1000;
+    let coverage_goal_list = [0.10, 0.25, 0.50, 0.75, 0.90];
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+    let n = 5u32;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    // group.sample_size(40);
+
+    for coverage_goal in coverage_goal_list {
+        let parameter = coverage_goal;
+
+        let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+
+        let vec: Vec<(u32, u32)> = MemorylessMapIter::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+            n,
+        )
+        .collect();
+        let vec_range: Vec<(RangeInclusive<u32>, u32)> = MemorylessMapRange::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+            n,
+        )
+        .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeMapBlaze (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeMapBlaze::from_iter(vec.iter().rev());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeMapBlaze (ranges)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeMapBlaze::from_iter(vec_range.iter().rev());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (range)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: rangemap::RangeInclusiveMap<u32, u32> =
+                        rangemap::RangeInclusiveMap::from_iter(vec_range.iter().cloned());
+                })
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (integers)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer: rangemap::RangeInclusiveMap<u32, u32> =
+                        rangemap::RangeInclusiveMap::from_iter(
+                            vec.iter().map(|(k, v)| (*k..=*k, *v)),
+                        );
+                })
+            },
+        );
+    }
+    group.finish();
+}
+
 fn map_union_two_sets(c: &mut Criterion) {
     let group_name = "map_union_two_sets";
     let range = 0..=99_999_999u32;
@@ -380,14 +467,129 @@ fn map_every_op_blaze(c: &mut Criterion) {
     group.finish();
 }
 
+fn map_insert_speed(c: &mut Criterion) {
+    let group_name = "map_insert_speed";
+    let k = 1;
+    let average_width = 1000;
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+    let n = 5u32;
+    let parameter = 0;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    // group.sample_size(40);
+
+    let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+    let vec_range: Vec<(RangeInclusive<u32>, u32)> = MemorylessMapRange::new(
+        &mut StdRng::seed_from_u64(seed),
+        range_len,
+        range.clone(),
+        coverage_goal,
+        k,
+        how,
+        n,
+    )
+    .collect();
+
+    group.bench_with_input(
+        BenchmarkId::new("RangeMapBlaze (extend)", parameter),
+        &parameter,
+        |b, _| {
+            b.iter(|| {
+                let mut answer: RangeMapBlaze<u32, u32> = RangeMapBlaze::new();
+                answer.extend(vec_range.iter().cloned());
+            })
+        },
+    );
+
+    group.bench_with_input(
+        BenchmarkId::new("RangeMapBlaze (extend_cmk)", parameter),
+        &parameter,
+        |b, _| {
+            b.iter(|| {
+                let mut answer: RangeMapBlaze<u32, u32> = RangeMapBlaze::new();
+                answer.extend_cmk(vec_range.iter().cloned());
+            })
+        },
+    );
+    group.bench_with_input(
+        BenchmarkId::new("RangeMapBlaze (ranges_insert)", parameter),
+        &parameter,
+        |b, _| {
+            b.iter(|| {
+                let mut answer: RangeMapBlaze<u32, u32> = RangeMapBlaze::new();
+                for (r, v) in vec_range.iter() {
+                    answer.ranges_insert(r.clone(), *v);
+                }
+            })
+        },
+    );
+
+    group.bench_with_input(
+        BenchmarkId::new("RangeMapBlaze (ranges_insert_cmk)", parameter),
+        &parameter,
+        |b, _| {
+            b.iter(|| {
+                let mut answer: RangeMapBlaze<u32, u32> = RangeMapBlaze::new();
+                for (r, v) in vec_range.iter() {
+                    answer.ranges_insert_cmk(r.clone(), *v);
+                }
+            })
+        },
+    );
+    group.bench_with_input(
+        BenchmarkId::new("rangemap (from_iter)", parameter),
+        &parameter,
+        |b, _| {
+            b.iter(|| {
+                let _answer: rangemap::RangeInclusiveMap<u32, u32> =
+                    rangemap::RangeInclusiveMap::from_iter(vec_range.iter().cloned());
+            })
+        },
+    );
+
+    group.bench_with_input(
+        BenchmarkId::new("rangemap (insert)", parameter),
+        &parameter,
+        |b, _| {
+            b.iter(|| {
+                let mut answer: rangemap::RangeInclusiveMap<u32, u32> =
+                    rangemap::RangeInclusiveMap::new();
+                for (r, v) in vec_range.iter() {
+                    answer.insert(r.clone(), *v);
+                }
+            })
+        },
+    );
+
+    group.bench_with_input(
+        BenchmarkId::new("rangemap (extend)", parameter),
+        &parameter,
+        |b, _| {
+            b.iter(|| {
+                let mut answer: rangemap::RangeInclusiveMap<u32, u32> =
+                    rangemap::RangeInclusiveMap::new();
+                answer.extend(vec_range.iter().cloned());
+            })
+        },
+    );
+
+    group.finish();
+}
+
 criterion_group!(
     name = benches_map;
     config = Criterion::default();
     targets =
     map_worst,
     map_ingest_clumps_base,
+    map_ingest_clumps_ranges,
     map_every_op_blaze,
     map_union_two_sets,
+    map_insert_speed,
 );
 
 criterion_main!(benches_map);

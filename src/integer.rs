@@ -377,10 +377,11 @@ impl Integer for i128 {
     /// In debug builds, panics if `b` is zero or too large to compute a valid result.  
     /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,  
     /// but it is always defined and safe (never causes undefined behavior)
+    #[allow(clippy::cast_possible_wrap)]
     fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
         #[cfg(debug_assertions)]
         {
-            let max_len = Self::safe_len(&(self..=Self::max_value()));
+            let max_len = Self::safe_len(&(self..=Self::MAX));
             assert!(
                 UIntPlusOne::zero() < b && b <= max_len,
                 "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
@@ -391,7 +392,7 @@ impl Integer for i128 {
             if self == Self::MIN {
                 return Self::MAX;
             }
-            let max_len = Self::safe_len(&(self..=Self::max_value()));
+            let max_len = Self::safe_len(&(self..=Self::MAX));
             panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };
         // If b is in range, two’s-complement wrap-around yields the correct inclusive end even if the add overflows
@@ -409,7 +410,7 @@ impl Integer for i128 {
     fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
         #[cfg(debug_assertions)]
         {
-            let max_len = Self::safe_len(&(Self::min_value()..=self));
+            let max_len = Self::safe_len(&(Self::MIN..=self));
             assert!(
                 UIntPlusOne::zero() < b && b <= max_len,
                 "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
@@ -420,7 +421,7 @@ impl Integer for i128 {
             if self == Self::MAX {
                 return Self::MIN;
             }
-            let max_len = Self::safe_len(&(Self::min_value()..=self));
+            let max_len = Self::safe_len(&(Self::MIN..=self));
             panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };
 

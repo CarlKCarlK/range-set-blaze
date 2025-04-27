@@ -232,7 +232,7 @@ mod tests {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // not used by wasm-wasip1
+    #[cfg(all(test, not(target_arch = "wasm32")))] // not used by wasm-wasip1
     fn mul_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
@@ -251,7 +251,7 @@ mod tests {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))] // not used by wasm-wasip1
+    #[cfg(all(test, not(target_arch = "wasm32")))] // not used by wasm-wasip1
     fn sub_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
