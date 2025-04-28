@@ -25,6 +25,10 @@ rustup override set nightly
 
 ### bench
 
+```cmd
+cls & bench map_insert_speed & cargo criterion-means | findstr map_insert_speed
+```
+
 Look at `benchmarksApril2025.xlsx'
 
 Slice

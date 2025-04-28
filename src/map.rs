@@ -1128,7 +1128,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             let new_end = max(*range.end(), stored_end);
             *range = new_start..=new_end;
 
-            self.len -= T::safe_len(&(stored_start..=stored_end));
+            // self.len -= T::safe_len(&(stored_start..=stored_end));
             self.btree_map.remove(&stored_start);
             return;
         }
@@ -1138,13 +1138,13 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
 
         if overlaps {
             // Remove the overlapping range first.
-            self.len -= T::safe_len(&(stored_start..=stored_end));
+            // self.len -= T::safe_len(&(stored_start..=stored_end));
             self.btree_map.remove(&stored_start);
 
             // Left residual slice
             if stored_start < *range.start() {
                 let left_end = range.start().sub_one(); // cmk are we sure this won't underflow?
-                self.len += T::safe_len(&(stored_start..=left_end));
+                // self.len += T::safe_len(&(stored_start..=left_end));
                 self.btree_map.insert(
                     stored_start,
                     EndValue {
@@ -1157,7 +1157,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             // Right residual slice
             if stored_end > *range.end() {
                 let right_start = range.end().add_one();
-                self.len += T::safe_len(&(right_start..=stored_end));
+                // self.len += T::safe_len(&(right_start..=stored_end));
                 self.btree_map.insert(
                     right_start,
                     EndValue {
@@ -1211,20 +1211,20 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             );
         }
 
-        let new_range = &mut range; // &mut RangeInclusive<T>
+        // let range = &mut range; // &mut RangeInclusive<T>
 
         loop {
             // first range whose start ≥ new_range.start()
             let next_entry = self
                 .btree_map
-                .range::<T, _>((Included(new_range.start()), Unbounded))
+                .range::<T, _>((Included(range.start()), Unbounded))
                 .next();
 
             let Some((&stored_start, stored_end_value)) = next_entry else {
                 break; // nothing more
             };
 
-            let second_last_possible_start = *new_range.end();
+            let second_last_possible_start = *range.end();
             let maybe_latest_start = if second_last_possible_start == T::max_value() {
                 None
             } else {
@@ -1243,14 +1243,14 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             // clone so we can mutate the map in the helper
             let end_value_clone = stored_end_value.clone();
 
-            self.adjust_touching_for_insert(stored_start, end_value_clone, new_range, &value);
+            self.adjust_touching_for_insert(stored_start, end_value_clone, &mut range, &value);
 
             // loop again; `new_range` might have grown on the right
         }
 
-        let start_key = *new_range.start();
-        let end_key = *new_range.end();
-        self.len += T::safe_len(&(start_key..=end_key));
+        let start_key = *range.start();
+        let end_key = *range.end();
+        // self.len += T::safe_len(&(start_key..=end_key));
         self.btree_map.insert(
             start_key,
             EndValue {
