@@ -16,11 +16,12 @@ use core::{
     cmp::{Ordering, max, min},
     convert::From,
     fmt, mem,
-    ops::{BitOr, BitOrAssign, Index, RangeBounds, RangeInclusive},
+    ops::{BitOr, BitOrAssign, Bound, Index, RangeBounds, RangeInclusive},
     panic,
 };
 use gen_ops::gen_ops_ex;
 use num_traits::{One, Zero};
+use std::collections::btree_map::CursorMut;
 
 /// A trait for references to `Eq + Clone` values, used by the [`SortedDisjointMap`] trait.
 ///
@@ -1128,7 +1129,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             let new_end = max(*range.end(), stored_end);
             *range = new_start..=new_end;
 
-            // self.len -= T::safe_len(&(stored_start..=stored_end));
+            self.len -= T::safe_len(&(stored_start..=stored_end));
             self.btree_map.remove(&stored_start);
             return;
         }
@@ -1138,13 +1139,13 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
 
         if overlaps {
             // Remove the overlapping range first.
-            // self.len -= T::safe_len(&(stored_start..=stored_end));
+            self.len -= T::safe_len(&(stored_start..=stored_end));
             self.btree_map.remove(&stored_start);
 
             // Left residual slice
             if stored_start < *range.start() {
                 let left_end = range.start().sub_one(); // cmk are we sure this won't underflow?
-                // self.len += T::safe_len(&(stored_start..=left_end));
+                self.len += T::safe_len(&(stored_start..=left_end));
                 self.btree_map.insert(
                     stored_start,
                     EndValue {
@@ -1157,7 +1158,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             // Right residual slice
             if stored_end > *range.end() {
                 let right_start = range.end().add_one();
-                // self.len += T::safe_len(&(right_start..=stored_end));
+                self.len += T::safe_len(&(right_start..=stored_end));
                 self.btree_map.insert(
                     right_start,
                     EndValue {
@@ -1210,57 +1211,53 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
                 &value,
             );
         }
-
-        // let range = &mut range; // &mut RangeInclusive<T>
-
+        // keep looping until we hit the stop window
         loop {
-            // first range whose start ≥ new_range.start()
-            let next_entry = self
+            // create a fresh cursor _for this iteration only_
+            let mut cur: CursorMut<'_, T, EndValue<T, V>> = self
                 .btree_map
-                .range::<T, _>((Included(range.start()), Unbounded))
-                .next();
+                .lower_bound_mut(Bound::Included(range.start()));
 
-            let Some((&stored_start, stored_end_value)) = next_entry else {
-                break; // nothing more
+            // look at the next element; if there is none, we’re done
+            let Some((&stored_start, _)) = cur.peek_next() else {
+                break;
             };
 
-            let second_last_possible_start = *range.end();
-            let maybe_latest_start = if second_last_possible_start == T::max_value() {
-                None
+            // stop-window test ---------------------------------------------------
+            let last_ok = *range.end();
+            if last_ok == T::max_value() {
+                if stored_start > last_ok {
+                    break;
+                }
             } else {
-                Some(second_last_possible_start.add_one())
-            };
-
-            if maybe_latest_start.map_or(false, |latest| stored_start > latest) {
-                break; // beyond end + 1
-            }
-            if let Some(latest) = maybe_latest_start {
-                if stored_start == latest && stored_end_value.value != value {
-                    break; // touches but diff value
+                let latest = last_ok.add_one();
+                if stored_start > latest {
+                    break;
+                }
+                if stored_start == latest && cur.peek_next().unwrap().1.value != value {
+                    break;
                 }
             }
 
-            // clone so we can mutate the map in the helper
-            let end_value_clone = stored_end_value.clone();
+            // clone the element, delete it, cursor borrow ends when `cur` is dropped
+            let cloned = cur.peek_next().unwrap().1.clone();
+            cur.remove_next(); // deletes current entry
 
-            self.adjust_touching_for_insert(stored_start, end_value_clone, &mut range, &value);
-
-            // loop again; `new_range` might have grown on the right
+            // now we can call any &mut-self helper safely
+            self.adjust_touching_for_insert(stored_start, cloned, &mut range, &value);
         }
 
         let start_key = *range.start();
         let end_key = *range.end();
-        // self.len += T::safe_len(&(start_key..=end_key));
+
         self.btree_map.insert(
             start_key,
             EndValue {
                 end: end_key,
-                value,
+                value, // moves `value`
             },
         );
-
-        // cmk000
-        debug_assert!(self.len == self.len_slow());
+        self.len += T::safe_len(&(start_key..=end_key));
     }
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
