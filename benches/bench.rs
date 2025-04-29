@@ -1170,7 +1170,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
         #[cfg(feature = "from_slice")]
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (integers-slice_{})", SIMD_SUFFIX),
+                format!("RangeSetBlaze (integers-slice_{SIMD_SUFFIX})"),
                 parameter,
             ),
             &parameter,
@@ -1278,7 +1278,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
         #[cfg(feature = "from_slice")]
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (from_slice_{})", SIMD_SUFFIX),
+                format!("RangeSetBlaze (from_slice_{SIMD_SUFFIX})"),
                 parameter,
             ),
             &parameter,
@@ -1363,7 +1363,7 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
         group.bench_with_input(
             // format!("RangeSetBlaze (from_slice_{})", LANES)
             // "RangeSetBlaze (from_slice)"
-            BenchmarkId::new(format!("RangeSetBlaze (from_slice_{})", LANES), parameter),
+            BenchmarkId::new(format!("RangeSetBlaze (from_slice_{LANES})"), parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1572,7 +1572,7 @@ fn worst(c: &mut Criterion) {
         #[cfg(feature = "from_slice")]
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (from_slice_{})", SIMD_SUFFIX),
+                format!("RangeSetBlaze (from_slice_{SIMD_SUFFIX})"),
                 parameter,
             ),
             &parameter,

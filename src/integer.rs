@@ -374,8 +374,8 @@ impl Integer for i128 {
     /// by returning `self + (b - 1)`.
     ///
     /// # Panics
-    /// In debug builds, panics if `b` is zero or too large to compute a valid result.  
-    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,  
+    /// In debug builds, panics if `b` is zero or too large to compute a valid result.
+    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,
     /// but it is always defined and safe (never causes undefined behavior)
     #[allow(clippy::cast_possible_wrap)]
     fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
@@ -403,8 +403,8 @@ impl Integer for i128 {
     /// by returning `self - (b - 1)`.
     ///
     /// # Panics
-    /// In debug builds, panics if `b` is zero or too large to compute a valid result.  
-    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,  
+    /// In debug builds, panics if `b` is zero or too large to compute a valid result.
+    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,
     /// but it is always defined and safe (never causes undefined behavior).
     #[allow(clippy::cast_possible_wrap)]
     fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
@@ -506,13 +506,13 @@ impl Integer for u128 {
     /// by returning `self + (b - 1)`.
     ///
     /// # Panics
-    /// In debug builds, panics if `b` is zero or too large to compute a valid result.  
-    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,  
+    /// In debug builds, panics if `b` is zero or too large to compute a valid result.
+    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,
     /// but it is always defined and safe (never causes undefined behavior)
     fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
         #[cfg(debug_assertions)]
         {
-            let max_len = Self::safe_len(&(self..=Self::max_value()));
+            let max_len = Self::safe_len(&(self..=Self::MAX));
             assert!(
                 UIntPlusOne::zero() < b && b <= max_len,
                 "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
@@ -523,7 +523,7 @@ impl Integer for u128 {
             if self == Self::MIN {
                 return Self::MAX;
             }
-            let max_len = Self::safe_len(&(self..=Self::max_value()));
+            let max_len = Self::safe_len(&(self..=Self::MAX));
             panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };
         // If b is in range, two’s-complement wrap-around yields the correct inclusive end even if the add overflows
@@ -534,14 +534,14 @@ impl Integer for u128 {
     /// by returning `self - (b - 1)`.
     ///
     /// # Panics
-    /// In debug builds, panics if `b` is zero or too large to compute a valid result.  
-    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,  
+    /// In debug builds, panics if `b` is zero or too large to compute a valid result.
+    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,
     /// but it is always defined and safe (never causes undefined behavior).
     #[allow(clippy::cast_possible_wrap)]
     fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
         #[cfg(debug_assertions)]
         {
-            let max_len = Self::safe_len(&(Self::min_value()..=self));
+            let max_len = Self::safe_len(&(Self::MIN..=self));
             assert!(
                 UIntPlusOne::zero() < b && b <= max_len,
                 "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
@@ -552,7 +552,7 @@ impl Integer for u128 {
             if self == Self::MAX {
                 return Self::MIN;
             }
-            let max_len = Self::safe_len(&(Self::min_value()..=self));
+            let max_len = Self::safe_len(&(Self::MIN..=self));
             panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };
 
@@ -778,8 +778,8 @@ impl Integer for Ipv6Addr {
     /// by returning `self + (b - 1)`.
     ///
     /// # Panics
-    /// In debug builds, panics if `b` is zero or too large to compute a valid result.  
-    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,  
+    /// In debug builds, panics if `b` is zero or too large to compute a valid result.
+    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,
     /// but it is always defined and safe (never causes undefined behavior)
     fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
         #[cfg(debug_assertions)]
@@ -799,15 +799,15 @@ impl Integer for Ipv6Addr {
             panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };
         // If b is in range, two’s-complement wrap-around yields the correct inclusive end even if the add overflows
-        u128::from(self).wrapping_add((b - 1) as u128).into()
+        u128::from(self).wrapping_add(b - 1).into()
     }
 
     /// Computes the inclusive start of a range ending at `self` with length `b`,
     /// by returning `self - (b - 1)`.
     ///
     /// # Panics
-    /// In debug builds, panics if `b` is zero or too large to compute a valid result.  
-    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,  
+    /// In debug builds, panics if `b` is zero or too large to compute a valid result.
+    /// In release builds, this will either panic or wrap on overflow; the result may be meaningless,
     /// but it is always defined and safe (never causes undefined behavior).
     #[allow(clippy::cast_possible_wrap)]
     fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
@@ -829,7 +829,7 @@ impl Integer for Ipv6Addr {
         };
 
         // If b is in range, two’s-complement wrap-around yields the correct inclusive start even if the subtraction overflows
-        u128::from(self).wrapping_sub((b - 1) as u128).into()
+        u128::from(self).wrapping_sub(b - 1).into()
     }
 }
 
@@ -866,13 +866,11 @@ impl Integer for char {
 
     #[inline]
     fn sub_one(self) -> Self {
-        let mut num = u32::from(self) - 1; // by design, debug will panic if underflow
-        // skip over the surrogate range
+        let mut num = u32::from(self).wrapping_sub(1);
         if num == SURROGATE_END {
             num = SURROGATE_START - 1;
         }
-        Self::from_u32(num)
-            .expect("Real Assert: Can never underflow here because of the range of char.")
+        Self::from_u32(num).expect("sub_one: underflow or invalid char (e.g., called on '\\u{0}')")
     }
 
     #[inline]
@@ -1329,6 +1327,7 @@ mod tests {
         _ = character.start_from_inclusive_end(b); // This should panic due to underflow
     }
 
+    #[allow(clippy::legacy_numeric_constants, clippy::cognitive_complexity)]
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_use_of_as_00() {

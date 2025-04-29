@@ -1410,10 +1410,10 @@ pub fn play_movie(frames: RangeMapBlaze<i32, String>, fps: i32, skip_sleep: bool
     for index in 0..=frames.ranges().into_range_set_blaze().last().unwrap() {
         // Look up the frame at that index (panic if none exists)
         let frame = frames.get(index).unwrap_or_else(|| {
-            panic!("frame {} not found", index);
+            panic!("frame {index} not found");
         });
         // Clear the line and return the cursor to the beginning of the line
-        print!("\x1B[2K\r{}", frame);
+        print!("\x1B[2K\r{frame}");
         stdout().flush().unwrap(); // Flush stdout to ensure the output is displayed
         if !skip_sleep {
             sleep(sleep_duration);
@@ -2035,8 +2035,8 @@ fn map_random_symmetric_difference() {
                     match (get0, get1) {
                         (Some(_v0), Some(_v1)) => {
                             println!();
-                            println!("left: {}", map0);
-                            println!("right: {}", map1);
+                            println!("left: {map0}");
+                            println!("right: {map1}");
                             let s_d = map0
                                 .range_values()
                                 .symmetric_difference(map1.range_values())
@@ -2059,8 +2059,8 @@ fn map_random_symmetric_difference() {
             }
             if !expected_keys.is_empty() {
                 println!();
-                println!("left: {}", map0);
-                println!("right: {}", map1);
+                println!("left: {map0}");
+                println!("right: {map1}");
                 let s_d = map0
                     .range_values()
                     .symmetric_difference(map1.range_values())

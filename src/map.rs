@@ -1113,6 +1113,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             .is_some_and(|end_before_succ| end_before_succ < start)
     }
 
+    #[inline]
     fn adjust_touching_for_insert(
         &mut self,
         stored_start: T,
@@ -1218,12 +1219,11 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
                 .btree_map
                 .lower_bound_mut(Bound::Included(range.start()));
 
-            // look at the next element; if there is none, we’re done
-            let Some((&stored_start, _)) = cur.peek_next() else {
+            let Some(peeked) = cur.peek_next() else {
                 break;
             };
+            let (&stored_start, maybe_end_value) = peeked;
 
-            // stop-window test ---------------------------------------------------
             let last_ok = *range.end();
             if last_ok == T::max_value() {
                 if stored_start > last_ok {
@@ -1234,14 +1234,14 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
                 if stored_start > latest {
                     break;
                 }
-                if stored_start == latest && cur.peek_next().unwrap().1.value != value {
+                if stored_start == latest && maybe_end_value.value != value {
                     break;
                 }
             }
 
-            // clone the element, delete it, cursor borrow ends when `cur` is dropped
-            let cloned = cur.peek_next().unwrap().1.clone();
-            cur.remove_next(); // deletes current entry
+            // now clone and remove
+            let cloned = maybe_end_value.clone();
+            cur.remove_next();
 
             // now we can call any &mut-self helper safely
             self.adjust_touching_for_insert(stored_start, cloned, &mut range, &value);
@@ -1266,7 +1266,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::cognitive_complexity)]
-    pub(crate) fn internal_add_cmk(&mut self, range: RangeInclusive<T>, value: V) {
+    pub(crate) fn internal_add_old(&mut self, range: RangeInclusive<T>, value: V) {
         let (start, end) = range.clone().into_inner();
 
         // === case: empty
