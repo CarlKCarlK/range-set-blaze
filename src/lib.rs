@@ -1,5 +1,5 @@
 #![cfg_attr(feature = "from_slice", feature(portable_simd))]
-#![feature(btree_cursors)]
+// cmk #![feature(btree_cursors)]
 #![doc = include_str!("../README.md")]
 // cmk move these to Cargo.toml
 #![warn(

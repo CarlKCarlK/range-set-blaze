@@ -21,6 +21,7 @@ use core::{
 };
 use gen_ops::gen_ops_ex;
 use num_traits::{One, Zero};
+#[cfg(never)]
 use std::collections::btree_map::CursorMut;
 
 /// A trait for references to `Eq + Clone` values, used by the [`SortedDisjointMap`] trait.
@@ -1212,6 +1213,137 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
                 &value,
             );
         }
+
+        // let range = &mut range; // &mut RangeInclusive<T>
+
+        loop {
+            // first range whose start ≥ new_range.start()
+            let next_entry = self
+                .btree_map
+                .range::<T, _>((Included(range.start()), Unbounded))
+                .next();
+
+            let Some((&stored_start, stored_end_value)) = next_entry else {
+                break; // nothing more
+            };
+
+            let second_last_possible_start = *range.end();
+            let maybe_latest_start = if second_last_possible_start == T::max_value() {
+                None
+            } else {
+                Some(second_last_possible_start.add_one())
+            };
+
+            if maybe_latest_start.map_or(false, |latest| stored_start > latest) {
+                break; // beyond end + 1
+            }
+            if let Some(latest) = maybe_latest_start {
+                if stored_start == latest && stored_end_value.value != value {
+                    break; // touches but diff value
+                }
+            }
+
+            // clone so we can mutate the map in the helper
+            let end_value_clone = stored_end_value.clone();
+
+            self.adjust_touching_for_insert(stored_start, end_value_clone, &mut range, &value);
+
+            // loop again; `new_range` might have grown on the right
+        }
+
+        let start_key = *range.start();
+        let end_key = *range.end();
+        // self.len += T::safe_len(&(start_key..=end_key));
+        self.btree_map.insert(
+            start_key,
+            EndValue {
+                end: end_key,
+                value,
+            },
+        );
+
+        // cmk000
+        debug_assert!(self.len == self.len_slow());
+    }
+
+    #[cfg(never)]
+    // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
+    // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
+    // LATER might be able to shorten code by combining cases
+    // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
+    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::cognitive_complexity)]
+    pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>, value: V) {
+        let (start, end) = range.clone().into_inner();
+
+        // === case: empty
+        if end < start {
+            return;
+        }
+        let mut before_iter = self.btree_map.range_mut(..=start).rev();
+
+        // === case: no before
+        let Some((start_before, end_value_before)) = before_iter.next() else {
+            // no before, so must be first
+            self.internal_add2(&range, value);
+            // You must return or break out of the current block after handling the failure case
+            return;
+        };
+
+        let start_before = *start_before;
+        let end_before = end_value_before.end;
+
+        // === case: gap between before and new
+        if Self::has_gap(end_before, start) {
+            // there is a gap between the before and the new
+            // ??? aa...
+            self.internal_add2(&range, value);
+            return;
+        }
+
+        let before_contains_new = end_before >= end;
+        let same_value = value == end_value_before.value;
+
+        // === case: same    pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
+        use core::ops::Bound::{Included, Unbounded}; // cmk
+        // Based on https://github.com/jeffparsons/rangemap's `insert` method.
+
+        let start = *range.start();
+        let end = *range.end();
+
+        // === case: empty
+        if end < start {
+            return;
+        }
+
+        // Walk *backwards* from the first stored range whose start ≤ `start`.
+        //      Take the nearest two so we can look at “before” and “before-before”.
+        let mut candidates = self
+            .btree_map
+            .range::<T, _>((Unbounded, Included(&start))) // ..= start
+            .rev()
+            .take(2)
+            .filter(|(_stored_start, stored_end_value)| {
+                // cmk use saturation arithmetic to avoid underflow
+                let end = stored_end_value.end;
+                end >= start || (start != T::min_value() && end >= start.sub_one())
+            });
+
+        if let Some(mut candidate) = candidates.next() {
+            // Or the one before it if both cases described above exist.
+            if let Some(another_candidate) = candidates.next() {
+                candidate = another_candidate;
+            }
+
+            let stored_start: T = *candidate.0;
+            let stored_end_value: EndValue<T, V> = candidate.1.clone();
+            self.adjust_touching_for_insert(
+                stored_start,
+                stored_end_value,
+                &mut range, // `end` is the current (possibly growing) tail
+                &value,
+            );
+        }
         // keep looping until we hit the stop window
         loop {
             // create a fresh cursor _for this iteration only_
@@ -1260,13 +1392,14 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         self.len += T::safe_len(&(start_key..=end_key));
     }
 
+    #[cfg(never)]
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     // LATER might be able to shorten code by combining cases
     // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::cognitive_complexity)]
-    pub(crate) fn internal_add_old(&mut self, range: RangeInclusive<T>, value: V) {
+    pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>, value: V) {
         let (start, end) = range.clone().into_inner();
 
         // === case: empty

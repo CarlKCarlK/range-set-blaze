@@ -1006,6 +1006,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
+    // cmk000 what is this???
     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let was_there = self.btree_map.insert(start, end);
