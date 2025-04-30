@@ -50,10 +50,11 @@ where
     T: UInt,
 {
     /// Returns the maximum value of an unsigned integer type `T` plus one, as an `f64`.
+    #[allow(clippy::missing_panics_doc)]
     #[must_use]
     pub fn max_plus_one_as_f64() -> f64 {
         let bits = i32::try_from(mem::size_of::<T>() * 8)
-            .expect("bit width of T fits in i32 (u8 to u128) and gets optimized away");
+            .expect("Real assert: bit width of T fits in i32 (u8 to u128) and gets optimized away");
         2.0f64.powi(bits)
     }
 }

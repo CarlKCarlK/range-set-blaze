@@ -217,12 +217,12 @@ where
 ///
 /// | Set Operation           | Operator                           | Multiway Method                        |
 /// |--------------------------|------------------------------------|----------------------------------------|
-/// | union                    | [`a` &#124; `b`]                   | <code>[a, b, c].[union]</code>`()`   |
-/// | intersection             | [`a & b`]                          | <code>[a, b, c].[intersection]</code>`()` |
+/// | union                    | [`a` &#124; `b`]                   | `[a, b, c]`.[`union`]\(\)              |
+/// | intersection             | [`a & b`]                          | `[a, b, c]`.[`intersection`]\(\)              |
 /// | intersection             | [`a & s`]                          | *n/a*                                  |
 /// | difference               | [`a - b`]                          | *n/a*                                  |
 /// | difference               | [`a - s`]                          | *n/a*                                  |
-/// | symmetric difference     | [`a ^ b`]                          | <code>[a, b, c].[symmetric_difference]</code>`()`|
+/// | symmetric difference     | [`a ^ b`]                          | `[a, b, c]`.[`symmetric_difference`]\(\) |
 /// | complement (to set)      | [`!a`]                             | *n/a*                                  |
 /// | complement (to map)      | [`a.complement_with(&value)`]      | *n/a*                                  |
 ///
@@ -1652,7 +1652,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// a.extend_simple([(3..=5, "b"), (5..=5, "c")]);
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=5, "c")]));
     ///
-    /// use range_set_blaze::RangeMapBlaze;
     /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
     /// a.extend([(3..=5, "b"), (5..=5, "c")]);
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=5, "c")]));

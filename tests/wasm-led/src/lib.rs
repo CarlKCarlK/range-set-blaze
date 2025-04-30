@@ -283,8 +283,8 @@ pub fn get_led_state_and_duration(movie_id: f64, now_milliseconds: f64) -> LedSt
 
     // Find what frame for 'now'
     let frame_index = (now_milliseconds * FPS as f64 / 1000.0) as i32;
-    console::log_1(&format!("rust: now_milliseconds: {}", now_milliseconds).into());
-    console::log_1(&format!("rust: frame_index: {}", frame_index).into());
+    console::log_1(&format!("rust: now_milliseconds: {now_milliseconds}").into());
+    console::log_1(&format!("rust: frame_index: {frame_index}").into());
 
     // Create a time interval from now to 2 weeks from now
     let now_to_2_weeks = RangeSetBlaze::from_iter([frame_index..=i32::MAX]);
