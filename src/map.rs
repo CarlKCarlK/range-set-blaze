@@ -11,6 +11,7 @@ use crate::{
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
 use alloc::{collections::BTreeMap, rc::Rc, vec::Vec};
+use core::ops::Bound::{Included, Unbounded}; // cmk
 use core::{
     borrow::Borrow,
     cmp::{Ordering, max, min},
@@ -21,7 +22,7 @@ use core::{
 };
 use gen_ops::gen_ops_ex;
 use num_traits::{One, Zero};
-#[cfg(never)]
+// #[cfg(never)]
 use std::collections::btree_map::CursorMut;
 
 /// A trait for references to `Eq + Clone` values, used by the [`SortedDisjointMap`] trait.
@@ -1173,6 +1174,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         // Otherwise: no overlap → keep ranges as they are.
     }
 
+    #[cfg(never)]
+    // new
     pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
         use core::ops::Bound::{Included, Unbounded}; // cmk
         // Based on https://github.com/jeffparsons/rangemap's `insert` method.
@@ -1266,14 +1269,14 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         debug_assert!(self.len == self.len_slow());
     }
 
-    #[cfg(never)]
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     // LATER might be able to shorten code by combining cases
     // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::cognitive_complexity)]
-    pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>, value: V) {
+    // cursor
+    pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
         let (start, end) = range.clone().into_inner();
 
         // === case: empty
@@ -1290,7 +1293,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             return;
         };
 
-        let start_before = *start_before;
         let end_before = end_value_before.end;
 
         // === case: gap between before and new
@@ -1399,6 +1401,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::cognitive_complexity)]
+    // old
     pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>, value: V) {
         let (start, end) = range.clone().into_inner();
 
@@ -1615,7 +1618,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         }
     }
 
-    // cmk    #[inline]
+    #[inline]
     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>, value: V) {
         let (start, end) = internal_range.clone().into_inner();
         let end_value = EndValue { end, value };

@@ -14,12 +14,24 @@ target\llvm-cov\html\index.html
 
 ### Benchmarking (but not SIMD)
 
+### Turn off stuff
+
+- Backblaze, etc
+
+```cmd
+sudo sc config "WSearch" start= disabled
+sudo net stop "WSearch"
+# later
+sudo sc config "WSearch" start= delayed-auto
+sudo net start "WSearch"
+```
+
 ### Set up means
 
 ```cmd
 cargo install criterion-means
-set RUSTFLAGS=-C target-cpu=native
 set BUILDFEATURES=from_slice
+set RUSTFLAGS=-C target-cpu=native
 rustup override set nightly
 ```
 
