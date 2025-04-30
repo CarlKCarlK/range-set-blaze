@@ -36,6 +36,7 @@ std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 # rog_experimental would have been better
 rog-experimental = []
 from_slice = []
+cursor = []
 
 
 [dependencies]
@@ -91,4 +92,7 @@ all-features = true
 
 # Cargo.toml
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ["cfg(coverage)"] }
+unexpected_cfgs = { level = "warn", check-cfg = [
+    "cfg(coverage)",
+    "cfg(never)",
+] }

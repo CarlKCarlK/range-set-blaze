@@ -511,7 +511,7 @@ fn map_insert_speed(c: &mut Criterion) {
         |b, _| {
             b.iter(|| {
                 let mut answer: RangeMapBlaze<u32, u32> = RangeMapBlaze::new();
-                answer.extend_cmk(vec_range.iter().cloned());
+                answer.extend_simple(vec_range.iter().cloned());
             })
         },
     );

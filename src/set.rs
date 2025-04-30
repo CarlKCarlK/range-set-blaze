@@ -976,7 +976,6 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    // cmk000 can we be faster using something like the map's internal_add method?
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>) {
@@ -1006,7 +1005,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    // cmk000 what is this???
+    #[inline]
     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let was_there = self.btree_map.insert(start, end);

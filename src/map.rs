@@ -11,19 +11,16 @@ use crate::{
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
 use alloc::{collections::BTreeMap, rc::Rc, vec::Vec};
-use core::ops::Bound::{Included, Unbounded}; // cmk
 use core::{
     borrow::Borrow,
-    cmp::{Ordering, max, min},
+    cmp::{Ordering, max},
     convert::From,
     fmt, mem,
-    ops::{BitOr, BitOrAssign, Bound, Index, RangeBounds, RangeInclusive},
+    ops::{BitOr, BitOrAssign, Index, RangeBounds, RangeInclusive},
     panic,
 };
 use gen_ops::gen_ops_ex;
 use num_traits::{One, Zero};
-// #[cfg(never)]
-use std::collections::btree_map::CursorMut;
 
 /// A trait for references to `Eq + Clone` values, used by the [`SortedDisjointMap`] trait.
 ///
@@ -782,6 +779,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     // LATER: might be able to shorten code by combining cases
+    #[cfg(not(feature = "cursor"))]
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
@@ -961,11 +959,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         self.len != len_before
     }
 
-    #[inline]
-    pub fn ranges_insert_cmk(&mut self, range: RangeInclusive<T>, value: V) {
-        self.internal_add(range, value);
-    }
-
     /// If the set contains an element equal to the value, removes it from the
     /// set and drops it. Returns whether such an element was present.
     ///
@@ -1115,6 +1108,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             .is_some_and(|end_before_succ| end_before_succ < start)
     }
 
+    #[cfg(feature = "cursor")]
     #[inline]
     fn adjust_touching_for_insert(
         &mut self,
@@ -1175,10 +1169,10 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     #[cfg(never)]
-    // new
+    // For benchmarking, based on https://github.com/jeffparsons/rangemap's `insert` method.
     pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
         use core::ops::Bound::{Included, Unbounded}; // cmk
-        // Based on https://github.com/jeffparsons/rangemap's `insert` method.
+        // B
 
         let start = *range.start();
         let end = *range.end();
@@ -1265,50 +1259,14 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             },
         );
 
-        // cmk000
         debug_assert!(self.len == self.len_slow());
     }
 
-    // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
-    // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-    // LATER might be able to shorten code by combining cases
-    // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
-    #[allow(clippy::too_many_lines)]
-    #[allow(clippy::cognitive_complexity)]
-    // cursor
+    #[cfg(feature = "cursor")]
     pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
-        let (start, end) = range.clone().into_inner();
-
-        // === case: empty
-        if end < start {
-            return;
-        }
-        let mut before_iter = self.btree_map.range_mut(..=start).rev();
-
-        // === case: no before
-        let Some((start_before, end_value_before)) = before_iter.next() else {
-            // no before, so must be first
-            self.internal_add2(&range, value);
-            // You must return or break out of the current block after handling the failure case
-            return;
-        };
-
-        let end_before = end_value_before.end;
-
-        // === case: gap between before and new
-        if Self::has_gap(end_before, start) {
-            // there is a gap between the before and the new
-            // ??? aa...
-            self.internal_add2(&range, value);
-            return;
-        }
-
-        let before_contains_new = end_before >= end;
-        let same_value = value == end_value_before.value;
-
-        // === case: same    pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
-        use core::ops::Bound::{Included, Unbounded}; // cmk
-        // Based on https://github.com/jeffparsons/rangemap's `insert` method.
+        // Based on https://github.com/jeffparsons/rangemap's `insert` method but with cursor's added
+        use core::ops::Bound::{Included, Unbounded};
+        use std::collections::btree_map::CursorMut;
 
         let start = *range.start();
         let end = *range.end();
@@ -1326,7 +1284,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             .rev()
             .take(2)
             .filter(|(_stored_start, stored_end_value)| {
-                // cmk use saturation arithmetic to avoid underflow
                 let end = stored_end_value.end;
                 end >= start || (start != T::min_value() && end >= start.sub_one())
             });
@@ -1392,16 +1349,17 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             },
         );
         self.len += T::safe_len(&(start_key..=end_key));
+
+        debug_assert!(self.len == self.len_slow());
     }
 
-    #[cfg(never)]
+    #[cfg(not(feature = "cursor"))]
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     // LATER might be able to shorten code by combining cases
     // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::cognitive_complexity)]
-    // old
     pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>, value: V) {
         let (start, end) = range.clone().into_inner();
 
@@ -1618,6 +1576,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         }
     }
 
+    #[cfg(not(feature = "cursor"))]
     #[inline]
     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>, value: V) {
         let (start, end) = internal_range.clone().into_inner();
@@ -1679,7 +1638,31 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         }
     }
 
-    pub fn extend_cmk<I>(&mut self, iter: I)
+    /// Extends the [`RangeMapBlaze`] with the contents of an iterator of range-value pairs.
+    /// It has right-to-left precedence -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
+    ///
+    /// Elements are added one-by-one without pre-merging. See [`extend (range)`] for a table of similar methods.
+    ///
+    /// [`extend (range)`]: struct.RangeMapBlaze.html#impl-Extend%3C(RangeInclusive%3CT%3E,+V)%3E-for-RangeMapBlaze%3CT,+V%3E
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    /// a.extend_simple([(3..=5, "b"), (5..=5, "c")]);
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=5, "c")]));
+    ///
+    /// use range_set_blaze::RangeMapBlaze;
+    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    /// a.extend([(3..=5, "b"), (5..=5, "c")]);
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=5, "c")]));
+    ///
+    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    /// let mut b = RangeMapBlaze::from_iter([(3..=5, "b"), (5..=5, "c")]);
+    /// a |= b;
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "b")]));
+    /// ```
+    pub fn extend_simple<I>(&mut self, iter: I)
     where
         I: IntoIterator<Item = (RangeInclusive<T>, V)>,
     {
@@ -2312,6 +2295,10 @@ where
     ///
     /// Elements are added one-by-one and later items overwrite earlier ones.
     /// There is also a version that takes an iterator of range-value pairs.
+    /// See [`extend (range)`] for a table of similar methods.
+    ///
+    /// [`extend (range)`]: struct.RangeMapBlaze.html#impl-Extend%3C(RangeInclusive%3CT%3E,+V)%3E-for-RangeMapBlaze%3CT,+V%3E
+    ///
     ///
     /// The [`|=`](RangeMapBlaze::bitor_assign) operator extends a [`RangeMapBlaze`]
     /// from another [`RangeMapBlaze`]. It is never slower
@@ -2357,16 +2344,33 @@ where
     /// Elements are added one-by-one. There is also a version
     /// that takes an iterator of integer-value pairs.
     ///
-    /// The [`|=`](RangeMapBlaze::bitor_assign) operator extends a [`RangeMapBlaze`]
-    /// from another [`RangeMapBlaze`]. It is never slower
-    /// than  [`RangeMapBlaze::extend`] and often several times faster. It
-    /// prioritizes differently, giving precedence to values already in the [`RangeMapBlaze`] (so, left to right).
+    /// | Operation              | [`extend (range)`]         | [`extend (integer)`]       | [`extend_simple`]           | <code>\|=</code> ([`BitOrAssign`])     |
+    /// |------------------------|----------------------------|-----------------------------|------------------------------|----------------------------------------|
+    /// | Input Types            | `(range, value)`           | `(integer, value)`          | `(range, value)`             | `RangeMapBlaze`                        |
+    /// | Precedence             | Right-to-left, keep last   | Right-to-left, keep last    | Right-to-left, keep last     | Right-to-left, keep last              |
+    /// | Pre-merge Touching     | Yes                        | Yes                         | No                           | Yes                                    |
+    /// | Streaming Optimization | No                         | Yes                         | No                           | Yes                                    |
+    ///
+    /// Notes:
+    ///
+    /// - **Pre-merge Touching** means adjacent or overlapping ranges with the same value are combined into a single range before insertions.
+    /// - **Streaming Optimization** refers to `|=` sometimes using a streaming-style union algorithm rather than insertion-based merging when it is more efficient.
+    ///
+    /// [`extend (range)`]: struct.RangeMapBlaze.html#impl-Extend%3C(RangeInclusive%3CT%3E,+V)%3E-for-RangeMapBlaze%3CT,+V%3E
+    /// [`extend (integer)`]: RangeMapBlaze::extend
+    /// [`extend_simple`]: RangeMapBlaze::extend_simple
+    /// [`BitOrAssign`]: struct.RangeMapBlaze.html#method.bitor_assign
     ///
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
     /// a.extend([(3..=5, "b"), (5..=5, "c")]);
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=5, "c")]));
+    ///
+    /// // `extend_simple` is a more efficient for the case where the ranges a likely disjoint.
+    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    /// a.extend_simple([(3..=5, "b"), (5..=5, "c")]);
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=5, "c")]));
     ///
     /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
@@ -2558,7 +2562,10 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
     /// Adds the contents of another [`RangeMapBlaze`] to this one.
     /// It has left precedence, so when values overlap, the left-hand side wins.
     ///
-    /// To get right precedence, use swap the operands or use [`RangeMapBlaze::extend`].
+    /// To get right precedence, swap the operands or use [`extend (range)`].
+    /// See [`extend (range)`] for a table of similar methods.
+    ///
+    /// [`extend (range)`]: struct.RangeMapBlaze.html#impl-Extend%3C(RangeInclusive%3CT%3E,+V)%3E-for-RangeMapBlaze%3CT,+V%3E
     ///
     /// Passing the right-hand side by ownership rather than borrow
     /// will allow a many-times faster speed up when the
@@ -2591,7 +2598,11 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     /// Adds the contents of another [`RangeMapBlaze`] to this one.
     /// It has left precedence, so when values overlap, the left-hand side wins.
     ///
-    /// To get right precedence, use swap the operands or use [`RangeMapBlaze::extend`].
+    /// To get right precedence, swap the operands or use [`extend (range)`].
+    /// See [`extend (range)`] for a table of similar methods.
+    ///
+    /// [`extend (range)`]: struct.RangeMapBlaze.html#impl-Extend%3C(RangeInclusive%3CT%3E,+V)%3E-for-RangeMapBlaze%3CT,+V%3E
+    ///
     ///
     /// Passing the right-hand side by ownership rather than borrow
     /// will allow a many-times faster speed up when the
