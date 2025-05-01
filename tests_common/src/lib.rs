@@ -182,6 +182,7 @@ pub struct ClumpyMapIter<'a, T: Integer + SampleUniform> {
     option_range_value: Option<(RangeInclusive<T>, u32)>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl<'a, T: Integer + SampleUniform> ClumpyMapIter<'a, T> {
     #[inline]
     pub fn new(
