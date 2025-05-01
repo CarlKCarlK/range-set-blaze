@@ -12,7 +12,7 @@ use num_traits::ops::overflowing::OverflowingSub;
 #[allow(clippy::redundant_pub_crate)]
 pub(crate) const LANES: usize = 16;
 
-// cmk00 #[cfg(not(feature = "cursor"))]
+#[allow(unused_imports)]
 use num_traits::Zero;
 
 /// Represents elements that can be used within [`RangeSetBlaze`] and as keys in [`RangeMapBlaze`].

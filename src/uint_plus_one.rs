@@ -233,7 +233,7 @@ mod tests {
         }
     }
 
-    // cmk000 #[cfg(all(test, not(target_arch = "wasm32"), not(feature = "cursor")))] // not used by wasm-wasip1
+    #[allow(dead_code)]
     fn mul_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);
@@ -252,7 +252,7 @@ mod tests {
         }
     }
 
-    // cmk000 #[cfg(all(test, not(target_arch = "wasm32"), not(feature = "cursor")))] // not used by wasm-wasip1
+    #[allow(dead_code)]
     fn sub_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
         let b_p1 = u16_to_p1(b);

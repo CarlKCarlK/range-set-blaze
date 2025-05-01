@@ -50,6 +50,16 @@ fn map_worst(c: &mut Criterion) {
         );
 
         group.bench_with_input(
+            BenchmarkId::new("RangeMapBlaze::extend_simple", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let mut answer: RangeMapBlaze<u32, u32> = RangeMapBlaze::new();
+                    answer.extend(vec.iter().map(|(k, v)| (*k..=*k, *v)));
+                })
+            },
+        );
+        group.bench_with_input(
             BenchmarkId::new("BTreeMap", parameter),
             &parameter,
             |b, _| {

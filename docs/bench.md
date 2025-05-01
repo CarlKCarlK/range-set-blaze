@@ -33,7 +33,7 @@ The `rangemap`, `range-collections`, `range-set`, and `roaring` crates store dis
 
 Disjoint ranges can be stored in a tree or a vector. With a tree, we expect inserts to be much faster than with a vector, O(ln *n*) vs O(*n*). Benchmark `ingest_clumps_easy` below showed this to be true. Because I care about such inserts, after that benchmark, I removed vector-based crates from consideration except for `roaring`.
 
-Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). Only `roaring` of the remaining crates offered tested set operations. (The inspirational `sorted-iter` also does, but it is designed to work on sorted values, not ranges, and so is not included.)
+Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). Only `roaring` of the remaining crates offered set operations. (The inspirational `sorted-iter` also does, but it is designed to work on sorted values, not ranges, and so is not included.)
 
 If I misunderstood any of the crates, please let me know. If you'd like to benchmark a crate, the benchmarking code is in the `benches` directory of this repository.
 

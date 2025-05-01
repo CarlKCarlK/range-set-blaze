@@ -15,16 +15,15 @@ Updated: *April 2025*
 
 ## Benchmark Selection Criteria
 
-I started by evaluating:
+I evaluated:
 
-* `BTreeMap` and `HashMap` from the standard library
-* `rangemap`, the most popular crate that works with ranges in a tree
-
-I later added:
+* `BTreeMap` and
+* `HashMap` from the standard library, and
+* `rangemap`, the most popular crate that works with ranges in a tree.
 
 The `rangemap` crate stores disjoint ranges. I eliminated crates that store overlapping ranges, a different data structure (for example, `iset`).
 
-Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). None of the remaining crates offered tested set operations. (The inspirational `sorted-iter` also does, but it is designed to work on sorted values, not ranges, and so is not included.)
+Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). None of the remaining crates offered set operations. (The inspirational `sorted-iter` also does, but it is designed to work on sorted values, not ranges, and so is not included.)
 
 If I misunderstood any of the crates, please let me know. If you'd like to benchmark a crate, the benchmarking code is in the `benches` directory of this repository.
 
