@@ -6,12 +6,14 @@ use core::net::{Ipv4Addr, Ipv6Addr};
 use core::ops::{AddAssign, SubAssign};
 use core::panic;
 use core::{fmt, ops::RangeInclusive};
-use num_traits::Zero;
 use num_traits::ops::overflowing::OverflowingSub;
 
 #[cfg(feature = "from_slice")]
 #[allow(clippy::redundant_pub_crate)]
 pub(crate) const LANES: usize = 16;
+
+// cmk00 #[cfg(not(feature = "cursor"))]
+use num_traits::Zero;
 
 /// Represents elements that can be used within [`RangeSetBlaze`] and as keys in [`RangeMapBlaze`].
 ///

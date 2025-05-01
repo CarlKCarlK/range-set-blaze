@@ -8,7 +8,7 @@ use std::{
     collections::{BTreeMap, HashMap},
     ops::RangeInclusive,
 };
-use tests_common::{How, MemorylessMapIter, MemorylessMapRange, k_maps, width_to_range_u32};
+use tests_common::{ClumpyMapIter, ClumpyMapRange, How, k_maps, width_to_range_u32};
 
 fn map_worst(c: &mut Criterion) {
     let group_name = "map_worst";
@@ -92,7 +92,8 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
     let how = How::None;
     let seed = 0;
     let iter_len = 1_000_000;
-    let n = 5u32;
+    let value_count = 5u32;
+    let range_per_clump = 1;
 
     let mut group = c.benchmark_group(group_name);
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
@@ -101,26 +102,28 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
     for average_width in average_width_list {
         let parameter = average_width;
 
-        let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+        let (clump_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
 
-        let vec: Vec<(u32, u32)> = MemorylessMapIter::new(
+        let vec: Vec<(u32, u32)> = ClumpyMapIter::new(
             &mut StdRng::seed_from_u64(seed),
-            range_len,
+            clump_len,
             range.clone(),
             coverage_goal,
             k,
             how,
-            n,
+            value_count,
+            range_per_clump,
         )
         .collect();
-        let vec_range: Vec<(RangeInclusive<u32>, u32)> = MemorylessMapRange::new(
+        let vec_range: Vec<(RangeInclusive<u32>, u32)> = ClumpyMapRange::new(
             &mut StdRng::seed_from_u64(seed),
-            range_len,
+            clump_len,
             range.clone(),
             coverage_goal,
             k,
             how,
-            n,
+            value_count,
+            range_per_clump,
         )
         .collect();
 
@@ -198,7 +201,8 @@ fn map_ingest_clumps_ranges(c: &mut Criterion) {
     let how = How::None;
     let seed = 0;
     let iter_len = 1_000_000;
-    let n = 5u32;
+    let value_count = 5u32;
+    let range_per_clump = 1;
 
     let mut group = c.benchmark_group(group_name);
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
@@ -207,26 +211,28 @@ fn map_ingest_clumps_ranges(c: &mut Criterion) {
     for coverage_goal in coverage_goal_list {
         let parameter = coverage_goal;
 
-        let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+        let (clump_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
 
-        let vec: Vec<(u32, u32)> = MemorylessMapIter::new(
+        let vec: Vec<(u32, u32)> = ClumpyMapIter::new(
             &mut StdRng::seed_from_u64(seed),
-            range_len,
+            clump_len,
             range.clone(),
             coverage_goal,
             k,
             how,
-            n,
+            value_count,
+            range_per_clump,
         )
         .collect();
-        let vec_range: Vec<(RangeInclusive<u32>, u32)> = MemorylessMapRange::new(
+        let vec_range: Vec<(RangeInclusive<u32>, u32)> = ClumpyMapRange::new(
             &mut StdRng::seed_from_u64(seed),
-            range_len,
+            clump_len,
             range.clone(),
             coverage_goal,
             k,
             how,
-            n,
+            value_count,
+            range_per_clump,
         )
         .collect();
 
@@ -280,25 +286,43 @@ fn map_ingest_clumps_ranges(c: &mut Criterion) {
 fn map_union_two_sets(c: &mut Criterion) {
     let group_name = "map_union_two_sets";
     let range = 0..=99_999_999u32;
-    let range_len0 = 1_000;
+    let clump_len0 = 1_000;
     let range_len_list1 = [1, 10, 100, 1000, 10_000, 100_000];
     let coverage_goal_list = [0.1];
     let how = How::None;
     let seed = 0;
-    let n = 5u32;
+    let value_count = 5u32;
+    let range_per_clump = 1;
 
     let mut group = c.benchmark_group(group_name);
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
     let mut rng = StdRng::seed_from_u64(seed);
 
     for coverage_goal in coverage_goal_list {
-        let temp: Vec<RangeMapBlaze<u32, u32>> =
-            k_maps(1, range_len0, &range, coverage_goal, how, &mut rng, n);
+        let temp: Vec<RangeMapBlaze<u32, u32>> = k_maps(
+            1,
+            clump_len0,
+            &range,
+            coverage_goal,
+            how,
+            &mut rng,
+            value_count,
+            range_per_clump,
+        );
         let map0 = &temp[0];
         let rangemap_map0 = &rangemap::RangeInclusiveMap::from_iter(map0.range_values());
 
         for range_len1 in &range_len_list1 {
-            let map1 = &k_maps(1, *range_len1, &range, coverage_goal, how, &mut rng, n)[0];
+            let map1 = &k_maps(
+                1,
+                *range_len1,
+                &range,
+                coverage_goal,
+                how,
+                &mut rng,
+                value_count,
+                range_per_clump,
+            )[0];
             let rangemap_map1 = rangemap::RangeInclusiveMap::from_iter(map1.range_values());
 
             let parameter = map1.ranges_len();
@@ -379,22 +403,25 @@ fn map_every_op_blaze(c: &mut Criterion) {
     let range = 0..=99_999_999;
     let coverage_goal = 0.5;
     let how = How::None;
-    let n = 5u32;
+    let value_count = 5u32;
+    let range_per_clump = 1;
+
     let mut group = c.benchmark_group(group_name);
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
     let setup_vec = range_len_list
         .iter()
-        .map(|range_len| {
+        .map(|clump_len| {
             (
-                range_len,
+                clump_len,
                 k_maps(
                     k,
-                    *range_len,
+                    *clump_len,
                     &range,
                     coverage_goal,
                     how,
                     &mut StdRng::seed_from_u64(0),
-                    n,
+                    value_count,
+                    range_per_clump,
                 ),
             )
         })
@@ -475,22 +502,24 @@ fn map_insert_speed(c: &mut Criterion) {
     let how = How::None;
     let seed = 0;
     let iter_len = 1_000_000;
-    let n = 5u32;
+    let value_count = 5u32;
+    let range_per_clump = 1;
     let parameter = 0;
 
     let mut group = c.benchmark_group(group_name);
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
     // group.sample_size(40);
 
-    let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
-    let vec_range: Vec<(RangeInclusive<u32>, u32)> = MemorylessMapRange::new(
+    let (clump_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+    let vec_range: Vec<(RangeInclusive<u32>, u32)> = ClumpyMapRange::new(
         &mut StdRng::seed_from_u64(seed),
-        range_len,
+        clump_len,
         range.clone(),
         coverage_goal,
         k,
         how,
-        n,
+        value_count,
+        range_per_clump,
     )
     .collect();
 
@@ -506,7 +535,7 @@ fn map_insert_speed(c: &mut Criterion) {
     // );
 
     group.bench_with_input(
-        BenchmarkId::new("RangeMapBlaze (extend_cmk)", parameter),
+        BenchmarkId::new("RangeMapBlaze (extend_simple)", parameter),
         &parameter,
         |b, _| {
             b.iter(|| {

@@ -10,7 +10,9 @@ use crate::{
 };
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
-use alloc::{collections::BTreeMap, rc::Rc, vec::Vec};
+#[cfg(not(feature = "cursor"))]
+use alloc::vec::Vec;
+use alloc::{collections::BTreeMap, rc::Rc};
 use core::{
     borrow::Borrow,
     cmp::{Ordering, max},
@@ -19,6 +21,8 @@ use core::{
     ops::{BitOr, BitOrAssign, Index, RangeBounds, RangeInclusive},
     panic,
 };
+#[cfg(feature = "cursor")]
+use core::{cmp::min, range::Bound};
 use gen_ops::gen_ops_ex;
 use num_traits::{One, Zero};
 
@@ -1101,6 +1105,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         )
     }
 
+    #[cfg(not(feature = "cursor"))]
     #[inline]
     fn has_gap(end_before: T, start: T) -> bool {
         end_before

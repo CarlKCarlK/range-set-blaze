@@ -3084,20 +3084,38 @@ fn test_worst() {
 #[test]
 fn test_union() {
     let range = 0..=99_999_999u32;
-    let range_len0 = 5;
-    let range_len = 2;
+    let clump_len0 = 5;
+    let clump_len = 2;
     let coverage_goal = 0.5;
     let how = How::None;
     let seed = 1;
-    let n = 5u32;
+    let value_count = 5u32;
+    let range_per_clump = 3;
 
     let mut rng = StdRng::seed_from_u64(seed);
-    let temp: Vec<RangeMapBlaze<u32, u32>> =
-        k_maps(1, range_len0, &range, coverage_goal, how, &mut rng, n);
+    let temp: Vec<RangeMapBlaze<u32, u32>> = k_maps(
+        1,
+        clump_len0,
+        &range,
+        coverage_goal,
+        how,
+        &mut rng,
+        value_count,
+        range_per_clump,
+    );
     let map0 = &temp[0];
     let rangemap_map0 = &rangemap::RangeInclusiveMap::from_iter(map0.range_values());
 
-    let map1 = &k_maps(1, range_len, &range, coverage_goal, how, &mut rng, n)[0];
+    let map1 = &k_maps(
+        1,
+        clump_len,
+        &range,
+        coverage_goal,
+        how,
+        &mut rng,
+        value_count,
+        range_per_clump,
+    )[0];
     let rangemap_map1 = rangemap::RangeInclusiveMap::from_iter(map1.range_values());
 
     let mut a0a = map0.clone();

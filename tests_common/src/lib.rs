@@ -177,23 +177,33 @@ impl<T: Integer + SampleUniform> Iterator for MemorylessIter<'_, T> {
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct MemorylessMapIter<'a, T: Integer + SampleUniform> {
-    iter: MemorylessMapRange<'a, T>,
+pub struct ClumpyMapIter<'a, T: Integer + SampleUniform> {
+    iter: ClumpyMapRange<'a, T>,
     option_range_value: Option<(RangeInclusive<T>, u32)>,
 }
 
-impl<'a, T: Integer + SampleUniform> MemorylessMapIter<'a, T> {
+impl<'a, T: Integer + SampleUniform> ClumpyMapIter<'a, T> {
     #[inline]
     pub fn new(
         rng: &'a mut StdRng,
-        range_len: usize,
+        clump_len: usize,
         range: RangeInclusive<T>,
         coverage_goal: f64,
         k: usize,
         how: How,
-        n: u32,
+        value_count: u32,
+        range_per_clump: usize,
     ) -> Self {
-        let iter = MemorylessMapRange::new(rng, range_len, range, coverage_goal, k, how, n);
+        let iter = ClumpyMapRange::new(
+            rng,
+            clump_len,
+            range,
+            coverage_goal,
+            k,
+            how,
+            value_count,
+            range_per_clump,
+        );
         Self {
             iter,
             option_range_value: None,
@@ -201,7 +211,7 @@ impl<'a, T: Integer + SampleUniform> MemorylessMapIter<'a, T> {
     }
 }
 
-impl<T: Integer + SampleUniform> Iterator for MemorylessMapIter<'_, T> {
+impl<T: Integer + SampleUniform> Iterator for ClumpyMapIter<'_, T> {
     type Item = (T, u32);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -221,36 +231,61 @@ impl<T: Integer + SampleUniform> Iterator for MemorylessMapIter<'_, T> {
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct MemorylessMapRange<'a, T: Integer + SampleUniform> {
+pub struct ClumpyMapRange<'a, T: Integer + SampleUniform> {
     rng_clone: StdRng,
-    iter: MemorylessRange<'a, T>,
-    n: u32,
+    clump_iter: MemorylessRange<'a, T>,
+    value_count: u32,
+    range_per_clump: usize,
+    outputs_iter: std::vec::IntoIter<(RangeInclusive<T>, u32)>,
 }
 
-impl<'a, T: Integer + SampleUniform> MemorylessMapRange<'a, T> {
+#[allow(clippy::too_many_arguments)]
+impl<'a, T: Integer + SampleUniform> ClumpyMapRange<'a, T> {
     #[inline]
     pub fn new(
-        rng: &'a mut StdRng,
-        range_len: usize,
+        value_rng: &'a mut StdRng,
+        clump_len: usize,
         range: RangeInclusive<T>,
         coverage_goal: f64,
         k: usize,
         how: How,
-        n: u32,
+        value_count: u32,
+        range_per_clump: usize,
     ) -> Self {
-        let rng_clone = rng.clone();
-        let iter = MemorylessRange::new(rng, range_len, range, coverage_goal, k, how);
-        Self { rng_clone, iter, n }
+        assert!(range_per_clump > 0, "range_per_clump must be > 0");
+        let rng_clone = value_rng.clone();
+        let clump_iter = MemorylessRange::new(value_rng, clump_len, range, coverage_goal, k, how);
+        let outputs: Vec<(RangeInclusive<T>, u32)> = vec![];
+        Self {
+            rng_clone,
+            clump_iter,
+            value_count,
+            range_per_clump,
+            outputs_iter: outputs.into_iter(),
+        }
     }
 }
 
-impl<T: Integer + SampleUniform> Iterator for MemorylessMapRange<'_, T> {
+impl<T: Integer + SampleUniform> Iterator for ClumpyMapRange<'_, T> {
     type Item = (RangeInclusive<T>, u32);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let range = self.iter.next()?;
-        let value = self.rng_clone.random_range(0..self.n);
-        Some((range, value))
+        if let Some(item) = self.outputs_iter.next() {
+            return Some(item);
+        }
+        let clump = self.clump_iter.next()?;
+        let value = self.rng_clone.random_range(0..self.value_count);
+        let mut points: Vec<T> = vec![*clump.start(), *clump.end()];
+        for _ in 0..self.range_per_clump {
+            points.push(self.rng_clone.random_range(clump.clone()));
+        }
+        points.sort_unstable();
+        let outputs: Vec<(RangeInclusive<T>, u32)> = points
+            .windows(3)
+            .map(|triple| (triple[0]..=triple[2], value))
+            .collect();
+        self.outputs_iter = outputs.into_iter();
+        self.outputs_iter.next()
     }
 }
 
@@ -276,55 +311,29 @@ pub fn k_sets<T: Integer + SampleUniform>(
         .collect()
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn k_maps<T: Integer + SampleUniform>(
     k: usize,
-    range_len: usize,
+    clump_len: usize,
     range: &RangeInclusive<T>,
     coverage_goal: f64,
     how: How,
     rng: &mut StdRng,
-    n: u32,
+    value_count: u32,
+    range_per_clump: usize,
 ) -> Vec<RangeMapBlaze<T, u32>> {
     (0..k)
         .map(|_i| {
-            RangeMapBlaze::<T, u32>::from_iter(MemorylessMapRange::new(
+            RangeMapBlaze::<T, u32>::from_iter(ClumpyMapRange::new(
                 rng,
-                range_len,
+                clump_len,
                 range.clone(),
                 coverage_goal,
                 k,
                 how,
-                n,
+                value_count,
+                range_per_clump,
             ))
         })
         .collect()
 }
-
-// #[allow(clippy::type_complexity)]
-// pub fn read_roaring_data(top: &Path) -> Result<Vec<(String, Vec<Vec<u32>>)>, std::io::Error> {
-//     let subfolders: Vec<_> = top.read_dir()?.map(|entry| entry.unwrap().path()).collect();
-//     let mut name_to_vec_vec: HashMap<String, Vec<Vec<u32>>> = HashMap::new();
-//     for subfolder in subfolders {
-//         let subfolder_name = subfolder.file_name().unwrap().to_string_lossy().into_string();
-//         let mut data: Vec<Vec<u32>> = Vec::new();
-//         for file in subfolder.read_dir()? {
-//             let file = file.unwrap().path();
-//             let contents = fs::read_to_string(&file)?;
-//             let contents = contents.trim_end_matches('\n');
-//             let nums: Vec<u32> = contents.split(',').map(|s| s.parse().unwrap()).collect();
-//             data.push(nums);
-//         }
-//         name_to_vec_vec.insert(subfolder_name, data);
-//     }
-
-//     // sort the keys
-//     let mut keys: Vec<String> = name_to_vec_vec.keys().cloned().collect();
-//     keys.sort();
-//     let mut name_and_vec_vec_list: Vec<(String, Vec<Vec<u32>>)> = Vec::new();
-//     for key in keys {
-//         let vec_vec = name_to_vec_vec.remove(&key).unwrap();
-//         name_and_vec_vec_list.push((key, vec_vec));
-//     }
-
-//     Ok(name_and_vec_vec_list)
-// }

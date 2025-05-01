@@ -3,6 +3,7 @@
 ## coverage
 
 ```cmd
+set BUILDFEATURES=from_slice
 rustup override set nightly
 cargo llvm-cov --tests --all-features --workspace --open
 target\llvm-cov\html\index.html
@@ -30,7 +31,7 @@ sudo net start "WSearch"
 
 ```cmd
 cargo install criterion-means
-set BUILDFEATURES=from_slice
+set BUILDFEATURES=from_slice,cursor
 set RUSTFLAGS=-C target-cpu=native
 rustup override set nightly
 ```
