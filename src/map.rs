@@ -2603,7 +2603,7 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
                 "ilog2 result always fits in usize on our targets so this will be optimized away",
             );
         if b_len * (a_len_log2 + 1) < a_len + b_len {
-            for (start, end_value) in other.btree_map.iter() {
+            for (start, end_value) in &other.btree_map {
                 self.internal_add(*start..=end_value.end, end_value.value.clone());
             }
             return;

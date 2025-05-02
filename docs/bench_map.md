@@ -47,9 +47,7 @@ These benchmarks allow us to understand the `range-set-blaze::RangeMapBlaze` dat
 
 ### 'map_worst' Conclusion
 
-`BTreeSet` or `HashSet`, not `RangeMapBlaze` (nor `rangemap`), is a good choice for ingesting sets of non-clumpy integers. However, `RangeMapBlaze` is consistently an average 10 times worse.
-
-> See benchmark ['map_worst_op_blaze'](#benchmark-9-worst_op_blaze-compare-roaring-and-rangesetblaze-operators-on-uniform-data), near the end, for a similar comparison of set operations on uniform data.
+`BTreeSet` or `HashSet`, not `RangeMapBlaze` (nor `rangemap`), is a good choice for ingesting sets of non-clumpy integers. However, `RangeMapBlaze` is consistently on average 10 times worse.
 
 *Lower is better*
 ![map_worst lines](criterion/v4/map_worst/report/lines.svg "map_worst lines")
@@ -131,72 +129,32 @@ Over the whole range of clumpiness, `RangeMapBlaze` in-place is fast because it 
 
 ![union_two_sets](criterion/v4/union_two_sets.png "union_two_sets")
 
-## Benchmark #7a: 'every_op_blaze': Compare `RangeMapBlaze`'s set operations to each other on clumpy data
+## Benchmark #5: 'map_every_op_blaze': Compare `RangeMapBlaze`'s set operations to each other on clumpy data
 
 * **Measure**: set operation speed
 * **Candidates**: union, intersection, difference, symmetric_difference, complement
-* **Vary**: number of ranges in the set, from 1 to about 50K.
-* **Details**: We create two clump iterators, each with the desired number of clumps and a coverage of 0.5. Their span is 0..=99_999_999. We, next, turn these two iterators into two sets. Finally, we measure the time it takes to operate on the two sets.
+* **Vary**: number of ranges in the set, from 1 to about 100K.
+* **Details**: We create two clump iterators, each with the desired number of clumps and a coverage of 0.5. Their span is 0..=99_999_999. We, next, turn these two iterators into two maps. Finally, we measure the time it takes to operate on the two sets.
 
-### 'every_op_blaze' `RangeMapBlaze` Results and Conclusion
+### 'map_every_op_blaze' `RangeMapBlaze` Results and Conclusion
 
-Complement (which works on just once set) is twice as fast as union, intersection, and difference. Symmetric difference is 1.7 times slower.
+Complement (which works on just once map) is twice as fast as intersection and difference. Union and Symmetric difference are about 7
+times slower than intersection and difference.
 
-![every_op_blaze](criterion/v4/every_op_blaze/report/lines.svg "every_op_blaze")
+![every_op_blaze](criterion/v4/map_every_op_blaze/report/lines.svg "every_op_blaze")
 
-## Benchmark #7b: 'every_op_roaring': Compare `Roaring`'s set operations to each other on clumpy data
-
-* *Set up same as in #7a*
-
-### 'every_op_roaring' `Roaring` Results and Conclusion
-
-Intersection is much faster than union. Complement is slowest because it is not defined by `Roaring` but can be defined by the user as `Universe - a_set`.
-
-![every_op_roaring](criterion/v4/every_op_roaring/report/lines.svg "every_op_roaring")
-
-## Benchmark #7c: 'every_op': Compare `RangeSetBlaze and`Roaring`'s set operations on clumpy data
-
-* *Set up same as in #7a*
-
-### 'every_op' `RangeMapBlaze` and `Roaring` Results and Conclusion
-
-When the number of ranges (or clumps) is very small, `RangeMapBlaze` operates on the data 1000's of times faster than `Roaring`. As the number of clumps goes into the 100's and 1000's, it is still 10 to 30 times faster. When the number of ranges get even larger, it is slightly faster.
-
-The plot shows the results for intersection, `Roaring`'s fastest operator on this data.
-
-![every_op](criterion/v4/every_op_roaring/report/compare.png "every_op")
-
-> See benchmark ['worst_op_blaze'](#benchmark-9-worst_op_blaze-compare-roaring-and-rangesetblaze-operators-on-uniform-data), near the end, for a similar comparison of set operations on uniform data.
-
-## Benchmark #8: 'intersect_k_sets': `RangeMapBlaze` ` Multiway vs 2-at-time intersection
+## Benchmark #6: 'map_intersect_k': `RangeMapBlaze` ` Multiway vs 2-at-time intersection
 
 * **Measure**: intersection speed
 * **Candidates**: 2-at-a-time intersection, multiway intersection (static and dynamic)
-* **Vary**: number of sets, from 2 to 100.
-* **Details**: We create *n* iterators. Each iterator generates 1,000 clumps. The iterators are designed such that the coverage of the final intersection is about 25%. The span of integers in the clumps is 0..=99_999_999. We turn the *n* iterators into *n* sets. Finally, we measure the time it takes to operate on the *n* sets.
+* **Vary**: number of maps, from 2 to 100.
+* **Details**: We create *n* iterators. Each iterator generates 1,000 clumps. The iterators are designed such that the coverage of the final intersection is about 25%. The span of integers in the clumps is 0..=99_999_999. We turn the *n* iterators into *n* maps. Finally, we measure the time it takes to operate on the *n* maps.
 
-### 'intersect_k_sets' Results and Conclusion
+### 'map_intersect_k' Results and Conclusion
 
-On two sets, all methods are similar but beyond that two-at-a-time gets slower and slower. For 100 sets, it must create about 100 intermediate sets and is about 10 times slower than multiway.
+On two map, two-at-a-time ias better but beyond that two-at-a-time gets slower and slower. For 100 sets, it must create about 100 intermediate sets and is about 5 times slower than multiway.
 
 Dynamic multiway is not used by `RangeMapBlaze` but is sometimes needed by `SortedDisjoint` iterators
-(also available from the `range-set-blaze` crate). It is 40% slower than static multiway.
+(also available from the `range-set-blaze` crate). It is 20% slower than static multiway.
 
-![intersect_k_sets](criterion/v4/intersect_k_sets/report/lines.svg "intersect_k_sets")
-
-## Benchmark #9: 'worst_op_blaze': Compare `Roaring` and `RangeMapBlaze` operators on uniform data
-
-* **Measure**: set intersection speed
-* **Candidates**: `BTreeSet`, `HashSet`, `Roaring`, `RangeMapBlaze`
-* **Vary**: *n* from 1 to 1M, number of random integers
-* **Details**: Select *n* integers randomly and uniformly from the range 0..100,000 (with replacement). Create 20 pairs of set at each length.
-
-### 'worst_op_blaze' Results and Conclusion
-
-Over almost the whole range `Roaring` is best. Roughly 10 times better than `RangeMapBlaze` when the number of integers is less than 10,000. As the number of integers increases beyond 10,000 `RangeMapBlaze`, `BTreeSet`, and `HashSet` continue to get slower. `Roaring`, on the other hand, gets faster; presumably as it switches to bitmaps.
-
-`Roaring` is a great choice when doing operations on u64 sets that may or may not be clumpy.
-
-All four candidates offer similar interfaces. If you're not sure which is best for your application, you can easily swap between them and see.
-
-![worst_op_blaze  ](criterion/v4/worst_op_blaze/report/lines.png "worst_op_blaze")
+![intersect_k_sets](criterion/v4/map_intersect_k/report/lines.svg "intersect_k_sets")

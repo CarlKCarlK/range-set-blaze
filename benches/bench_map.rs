@@ -2,6 +2,7 @@ use criterion::BatchSize;
 use criterion::{
     AxisScale, BenchmarkId, Criterion, PlotConfiguration, criterion_group, criterion_main,
 };
+use itertools::iproduct;
 use rand::{SeedableRng, distr::Uniform, prelude::Distribution, rngs::StdRng};
 use range_set_blaze::prelude::*;
 use std::{
@@ -640,6 +641,141 @@ fn map_insert_speed(c: &mut Criterion) {
     group.finish();
 }
 
+fn access_k(&x: &(usize, usize)) -> usize {
+    x.0
+}
+#[allow(dead_code)]
+fn access_r(&x: &(usize, usize)) -> usize {
+    x.1
+}
+fn map_intersect_k(c: &mut Criterion) {
+    let k_list = [2usize, 5, 10, 25, 50, 100];
+    let clump_len_list = [1000usize];
+    let value_count = 5u32;
+    let range_per_clump = 1;
+
+    parameter_vary_internal(
+        c,
+        "map_intersect_k",
+        true,
+        How::Intersection,
+        &k_list,
+        &clump_len_list,
+        access_k,
+        value_count,
+        range_per_clump,
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
+    c: &mut Criterion,
+    group_name: &str,
+    include_two_at_a_time: bool,
+    how: How,
+    k_list: &[usize],
+    clump_len_list: &[usize],
+    access: F,
+    value_count: u32,
+    range_per_clump: usize,
+) {
+    let range = 0..=99_999_999;
+    let coverage_goal = 0.25;
+    let setup_vec = iproduct!(k_list, clump_len_list)
+        .map(|(k, clump_len)| {
+            let k = *k;
+            let clump = *clump_len;
+            (
+                (k, clump),
+                k_maps(
+                    k,
+                    clump,
+                    &range,
+                    coverage_goal,
+                    how,
+                    &mut StdRng::seed_from_u64(0),
+                    value_count,
+                    range_per_clump,
+                ),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    for (k_and_range_len, setup) in &setup_vec {
+        let parameter = access(k_and_range_len);
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeMapBlaze (multiway dyn)", parameter),
+            &parameter,
+            |b, _k_and_range_len| {
+                b.iter_batched(
+                    || setup,
+                    |maps| {
+                        let maps = maps
+                            .iter()
+                            .map(|x| DynSortedDisjointMap::new(x.range_values()));
+                        let _answer: RangeMapBlaze<_, _> = match how {
+                            How::Intersection => maps.intersection().into_range_map_blaze(),
+                            How::Union => maps.union().into_range_map_blaze(),
+                            How::None => panic!("should not happen"),
+                        };
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("RangeMapBlaze (multiway static)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup,
+                    |sets| {
+                        let _answer = match how {
+                            How::Intersection => sets.intersection(),
+                            How::Union => sets.union(),
+                            How::None => panic!("should not happen"),
+                        };
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        if include_two_at_a_time {
+            group.bench_with_input(
+                BenchmarkId::new("RangeMapBlaze (2-at-a-time)", parameter),
+                &parameter,
+                |b, _k| {
+                    b.iter_batched(
+                        || setup,
+                        |sets| {
+                            // FUTURE need code for size zero
+                            let mut answer = sets[0].clone();
+                            match how {
+                                How::Intersection => {
+                                    for set in sets.iter().skip(1) {
+                                        answer = answer & set;
+                                    }
+                                }
+                                How::Union => {
+                                    for set in sets.iter().skip(1) {
+                                        answer |= set;
+                                    }
+                                }
+                                How::None => panic!("should not happen"),
+                            }
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+        }
+    }
+    group.finish();
+}
+
 criterion_group!(
     name = benches_map;
     config = Criterion::default();
@@ -650,6 +786,7 @@ criterion_group!(
     map_every_op_blaze,
     map_union_two_sets,
     map_insert_speed,
+    map_intersect_k,
 );
 
 criterion_main!(benches_map);
