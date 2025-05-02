@@ -108,28 +108,28 @@ Range-based methods such as `RangeMapBlaze` are a great choice for clumpy range 
 *Lower is better*
 ![ingest_clumps_ranges](criterion/v4/map_ingest_clumps_ranges/report/lines.svg "ingest_clumps_ranges")
 
-## Benchmark #6: 'union_two_sets': Union two sets of clumpy integers
+## Benchmark #4: 'union_two_sets': Union two sets of clumpy integers
 
-* **Measure**: adding ranges to an existing set
-* **Candidates**: RangeSetBlaze, rangemap, Roaring
-* **Vary**: Number of clumps in the second set, from 1 to about 90K.
+* **Measure**: adding a map to an existing map
+* **Candidates**: RangeSetBlaze and rangemap
+* **Vary**: Number of clumps in the second map, from 1 to about 100K.
 * **Details**: We first create two clump iterators, each with the desired number of clumps. Their integer span is 0..=99_999_999.
-Each clump iterator is designed to cover about 10% of this span. We, next, turn these two iterators into two sets. The first set is made from 1000 clumps. Finally, we measure the time it takes to add the second set to the first set.
+Each clump iterator is designed to cover about 10% of this span. We, next, turn these two iterators into two maps. The first map is made from 1000 clumps.
+Finally, we measure the time it takes to add the second map to the first map.
 
-`RangeMapBlaze` uses a hybrid algorithm for "union". When adding a few ranges, it adds them one at a time. When adding many ranges, it
-merges the two sets of ranges by iterating over them in sorted order and merging.
+When the number of clumps to add is small, all methods to about the same.
+
+`RangeMapBlaze` uses a hybrid algorithm for in-place "union" (`bitor_assign`). When adding a few ranges, it adds them one at a time. When adding roughly equal numbers of ranges, it merges the two maps of ranges by iterating over them in sorted order and merging. In the case in which it owns the second map and that map is very large, it adds ranges from the first map into the second map, again one at a time.
 
 ### 'union_two_sets' Results
 
-When adding one clump to the first set, `RangeMapBlaze` is about 40% faster than `rangemap` and 50 times faster than `Roaring`.
-
-As the number-of-clumps-to-add grows, `RangeMapBlaze` automatically switches algorithms. This allows it to be 6 times faster than the `rangemap`. `Roaring` and `RangeMapBlaze` use very similar `union` algorithms when the number of clumps is large and get similar results.
+When adding a few clumps to the first set, all methods are similar. As the number of clumps to add grows, `RangeMapBlaze::bitor_assign` is 1.7 times faster than `rangemap` and `RangeMapBlaze::extend_simple`. When the second map is large and owned, `RangeMapBlaze::bitor_assign` is 15 times faster than `rangemap` and `RangeMapBlaze::extend_simple`.
 
 ### union_two_sets' Conclusion
 
-Over the whole range of clumpiness, `RangeMapBlaze` is faster because it uses a hybrid algorithm.
+Over the whole range of clumpiness, `RangeMapBlaze` in-place is fast because it uses a hybrid algorithm.
 
-![union_two_sets](criterion/v4/union_two_sets/report/lines.svg "union_two_sets")
+![union_two_sets](criterion/v4/union_two_sets.png "union_two_sets")
 
 ## Benchmark #7a: 'every_op_blaze': Compare `RangeMapBlaze`'s set operations to each other on clumpy data
 

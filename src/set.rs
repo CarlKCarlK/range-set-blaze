@@ -1726,8 +1726,17 @@ impl<T: Integer> BitOrAssign<&Self> for RangeSetBlaze<T> {
             *self = other.clone();
             return;
         }
-        if b_len * (a_len.ilog2() as usize + 1) < a_len + b_len {
-            self.extend(other.ranges());
+        let a_len_log2: usize = a_len
+            .ilog2()
+            .try_into() // u32 → usize
+            .expect(
+                "ilog2 result always fits in usize on our targets so this will be optimized away",
+            );
+
+        if b_len * (a_len_log2 + 1) < a_len + b_len {
+            for (start, end) in other.btree_map.iter() {
+                self.internal_add(*start..=*end);
+            }
         } else {
             *self = (self.ranges() | other.ranges()).into_range_set_blaze();
         }

@@ -307,12 +307,12 @@ fn map_union_two_sets(c: &mut Criterion) {
     let group_name = "map_union_two_sets";
     let range = 0..=99_999_999u32;
     let clump_len0 = 1_000;
-    let range_len_list1 = [1, 10, 100, 1000, 10_000, 100_000];
+    let range_len_list1 = [1, 10, 100, 1000, 10_000, 100_000, 1_000_000];
     let coverage_goal_list = [0.1];
     let how = How::None;
     let seed = 0;
     let value_count = 5u32;
-    let range_per_clump = 2;
+    let range_per_clump = 1; // making this 1 or 100 changes nothing.
 
     let mut group = c.benchmark_group(group_name);
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
@@ -349,7 +349,7 @@ fn map_union_two_sets(c: &mut Criterion) {
 
             group.bench_with_input(
                 BenchmarkId::new(
-                    format!("1. RangeMapBlaze (bit_or_assign owned) {coverage_goal}"),
+                    "2. RangeMapBlaze (bitor_assign owned)".to_string(),
                     parameter,
                 ),
                 &parameter,
@@ -366,7 +366,7 @@ fn map_union_two_sets(c: &mut Criterion) {
 
             group.bench_with_input(
                 BenchmarkId::new(
-                    format!("2. RangeMapBlaze (bit_or_assign borrowed) {coverage_goal}"),
+                    "1. RangeMapBlaze (bitor_assign borrowed)".to_string(),
                     parameter,
                 ),
                 &parameter,
@@ -382,24 +382,35 @@ fn map_union_two_sets(c: &mut Criterion) {
             );
 
             group.bench_with_input(
-                BenchmarkId::new(
-                    format!("3. RangeMapBlaze (extend) {coverage_goal}"),
-                    parameter,
-                ),
+                BenchmarkId::new("3. RangeMapBlaze (extend_simple)".to_string(), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
                         || map0.clone(),
                         |mut map00| {
-                            map00.extend(map1.range_values().map(|(r, v)| (r.clone(), *v)));
+                            map00.extend_simple(map1.range_values().map(|(r, v)| (r.clone(), *v)));
                         },
                         BatchSize::SmallInput,
                     );
                 },
             );
 
+            // group.bench_with_input(
+            //     BenchmarkId::new("3. RangeMapBlaze (extend_simple)".to_string(), parameter),
+            //     &parameter,
+            //     |b, _| {
+            //         b.iter_batched(
+            //             || map0.clone(),
+            //             |mut map00| {
+            //                 map00.extend_simple(map1.range_values().map(|(r, v)| (r.clone(), *v)));
+            //             },
+            //             BatchSize::SmallInput,
+            //         );
+            //     },
+            // );
+
             group.bench_with_input(
-                BenchmarkId::new(format!("4. rangemap {coverage_goal}"), parameter),
+                BenchmarkId::new("4. rangemap ".to_string(), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
