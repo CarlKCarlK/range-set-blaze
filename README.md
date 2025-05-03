@@ -58,7 +58,7 @@ cargo add range-set-blaze --features "alloc" --no-default-features
 Benchmarks
 -----------
 
-See the [benchmarks](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) for performance comparisons with other range-related crates.
+See the [set benchmarks](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) and [map benchmarks](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench_map.md) for performance comparisons with other range-related crates.
 
 Generally, for many tasks involving clumpy integers and ranges, `RangeSetBlaze` is much faster than alternatives.
 

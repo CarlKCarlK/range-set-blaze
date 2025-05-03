@@ -1,4 +1,6 @@
-# Benchmarks for (some) Range-Related Rust Crates
+# Benchmarks for (some) Range-Related Rust Crates (Sets only)
+
+*For map-related benchmarks, see the [Benchmarks for Range-Related Rust Crates (Maps only)](bench_map.md) page.*
 
 ## Range-Related Rust Crates
 
@@ -54,12 +56,11 @@ These benchmarks allow us to understand the `range-set-blaze::RangeSetBlaze` dat
 
 ### 'worst' Conclusion
 
-`BTreeSet` or `HashSet`, not `RangeSetBlaze`, is a good choice for ingesting sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just on average 2.3 times worse. The
-SIMD version of `RangeSetBlaze` is about 25% times slower than the non-SIMD version on this benchmark.
+`BTreeSet` or `HashSet`, not `RangeSetBlaze`, is a good choice for ingesting sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just on average 2.3 times worse. The SIMD version of `RangeSetBlaze` is about 25% times slower than the non-SIMD version on this benchmark.
 
 > See benchmark ['worst_op_blaze'](#benchmark-9-worst_op_blaze-compare-roaring-and-rangesetblaze-operators-on-uniform-data), near the end, for a similar comparison of set operations on uniform data.
 
-*Lower is better*
+*Lower is better in all plots*
 ![worst lines](criterion/v4/worst/report/lines.svg "worst lines")
 
 ## Benchmark #2: 'ingest_clumps_base': Measure `RangeSetBlaze` on increasingly clumpy integers
@@ -76,8 +77,7 @@ With no clumps, `RangeSetBlaze` is 2.2 times slower than `HashSet`. Somewhere ar
 
 The nightly-only `RangeSetBlaze::from_slice` is even faster, as the clump size rises it is more than 100 times faster than the alternatives.
 
-If we are allowed to input the clumps as ranges (instead of as individual integers), then when the average clump size is 1000 `RangeSetBlaze` is 1000
-times faster than `HashSet` and `BTreeSet` and more than 30 times faster than `Roaring`.
+If we are allowed to input the clumps as ranges (instead of as individual integers), then when the average clump size is 1000 `RangeSetBlaze` is 1000 times faster than `HashSet` and `BTreeSet` and more than 30 times faster than `Roaring`.
 
 ### ingest_clumps_base' Conclusion
 
@@ -98,7 +98,9 @@ We give each crate the clumps as individual integers.
 
 `rangemap` is typically three times slower than `HashSet` and 50 times slower than `RangeSetBlaze`. The nightly `RangeSetBlaze::from_slice` is even faster by an order of magnitude. However ...
 
-`RangeSetBlaze` batches its integer input by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate.
+`RangeSetBlaze` batches its integer input by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate. However, however, ...
+
+We'll see in the next benchmark that this is not the whole story.
 
 `Roaring` is 5 to 25 times slower than `RangeSetBlaze`. I don't know if `Roaring` exploits consecutive integers. If not, it could.
 
@@ -115,16 +117,20 @@ We give each crate the clumps as ranges (instead of as individual integers).
 
 ### 'ingest_clumps_ranges' Results & Conclusion
 
-Over the clump sizes, `RangeSetBlaze` averages about 3 times faster than `rangemap` and 10 times faster than `Roaring`, However ...
+Although `RangeSetBlaze`, `rangemap`, and `RoaringBitmap` all represent sets of integers, their internal designs lead to clear performance differences:
 
-`RangeSetBlaze` batches range inputs by sorting them and then merging adjacent ranges. This batching is likely not implemented in `rangemap` or `Roaring` but could easily be added to it or any other range-based crate.
+* **`RangeSetBlaze`** is roughly 3× faster than `rangemap` and 10× faster than `roaring` in these benchmarks. Even when the ranges are uncorrelated—so batching doesn't help—it still leads. That’s because it uses a `BTreeMap` with **set-specific logic**, avoiding all value-handling overhead.
+
+* **`rangemap`** represents sets as `RangeMap<K, ()>`. While functional, this introduces unnecessary comparisons and merging of unit values. The upside is **simpler, shared code** between maps and sets.
+
+* **`RoaringBitmap`** uses **run-length encoding (RLE)** internally—effectively a form of range representation. However, it stores these runs in **vectors**, which have slower insertion performance than the `BTreeMap` structures used by the other two. This makes `roaring` slower in workloads with frequent inserts or non-clumpy data.
 
 ![ingest_clumps_ranges](criterion/v4/ingest_clumps_ranges/report/lines.svg "ingest_clumps_ranges")
 
 ## Benchmark #5: 'ingest_clumps_easy': Measure various crates on (easier) ranges of clumpy integers
 
 * **Measure**: range intake speed
-* **Candidates**: Tree based (RangeSetBlaze rangemap), Vector based (`range_collections`, `range_set`), Compressed Bitsets (`Roaring`)
+* **Candidates**: Tree based (RangeSetBlaze, rangemap), Vector based (`range_collections`, `range_set`), Compressed Bitsets (`Roaring`)
 * **Vary**: *average clump size* from 1 (100K ranges) to 10 (10K ranges)
 * **Details**: We generate 100K integers with clumps (down from 1M)
 
@@ -132,7 +138,7 @@ We give each crate the clumps as ranges (instead of as individual integers).
 
 ### 'ingest_clumps_easy' Results & Conclusion
 
-The fastest vector-based method is 15 times slower than the slowest tree-based method. It is 75 times slower than `RangeSetBlaze`. This is expected because vector-based methods are not designed for a large numbers of inserts.
+The fastest vector-based method is 15 times slower than the slowest tree-based method. It is 75 times slower than `RangeSetBlaze`. This is expected because vector-based methods are not designed for large numbers of inserts.
 
 The hybrid method, `Roaring`, does better than any method except `RangeSetBlaze`.
 
@@ -143,11 +149,9 @@ The hybrid method, `Roaring`, does better than any method except `RangeSetBlaze`
 * **Measure**: adding ranges to an existing set
 * **Candidates**: RangeSetBlaze, rangemap, Roaring
 * **Vary**: Number of clumps in the second set, from 1 to about 90K.
-* **Details**: We first create two clump iterators, each with the desired number of clumps. Their integer span is 0..=99_999_999.
-Each clump iterator is designed to cover about 10% of this span. We, next, turn these two iterators into two sets. The first set is made from 1000 clumps. Finally, we measure the time it takes to add the second set to the first set.
+* **Details**: We first create two clump iterators, each with the desired number of clumps. Their integer span is 0..=99_999_999. Each clump iterator is designed to cover about 10% of this span. We, next, turn these two iterators into two sets. The first set is made from 1000 clumps. Finally, we measure the time it takes to add the second set to the first set.
 
-`RangeSetBlaze` uses a hybrid algorithm for "union". When adding a few ranges, it adds them one at a time. When adding many ranges, it
-merges the two sets of ranges by iterating over them in sorted order and merging.
+`RangeSetBlaze` uses a hybrid algorithm for "union". When adding a few ranges, it adds them one at a time. When adding many ranges, it merges the two sets of ranges by iterating over them in sorted order and merging. When the second set is relatively large and owned, it adds ranges from the first set--one at a time--to the second set and then moves the result into the first set.
 
 ### 'union_two_sets' Results
 
@@ -219,7 +223,7 @@ Dynamic multiway is not used by `RangeSetBlaze` but is sometimes needed by `Sort
 * **Measure**: set intersection speed
 * **Candidates**: `BTreeSet`, `HashSet`, `Roaring`, `RangeSetBlaze`
 * **Vary**: *n* from 1 to 1M, number of random integers
-* **Details**: Select *n* integers randomly and uniformly from the range 0..100,000 (with replacement). Create 20 pairs of set at each length.
+* **Details**: Select *n* integers randomly and uniformly from the range 0..100,000 (with replacement). Create 20 pairs of sets at each length.
 
 ### 'worst_op_blaze' Results and Conclusion
 
