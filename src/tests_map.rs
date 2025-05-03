@@ -390,3 +390,56 @@ fn test_len_slow() {
     assert_eq!(a.len_slow(), a.len());
     assert_eq!(a.len_slow(), 98u64);
 }
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_union_2() {
+    use rand::{SeedableRng, distr::Uniform, prelude::Distribution, rngs::StdRng};
+    // use std::println;
+
+    fn create(len: usize, v0: char, v1: char) -> RangeMapBlaze<u32, char> {
+        let high = 99999;
+        let mut rng = StdRng::seed_from_u64(0);
+        let uniform_key =
+            Uniform::new(0u32, high + 1).expect("Failed to create uniform distribution");
+        if len == 0 {
+            return RangeMapBlaze::new();
+        }
+        let mut result = RangeMapBlaze::from_iter([(0..=high, v0)]);
+        for _ in 0..=high * 2 {
+            // to avoid endless loop bug
+            if result.ranges_len() >= len {
+                return result;
+            }
+            let index = uniform_key.sample(&mut rng);
+            result.insert(index, v1);
+            // println!(
+            //     "len={} of {len}", // inserted {index} for {result:?}",
+            //     result.ranges_len()
+            // );
+        }
+        panic!("Endless loop in test_union_2");
+    }
+    let len_list = [0, 1, 100, 10_000];
+    for a_len in &len_list {
+        let a = create(*a_len, 'A', 'a');
+        for b_len in &len_list {
+            let b = create(*b_len, 'B', 'b');
+            let c0: RangeMapBlaze<u32, char> = a.range_values().chain(b.range_values()).collect();
+            let c1 = a.clone() | b.clone();
+            assert_eq!(c0, c1);
+            let mut c2 = a.clone();
+            c2 |= &b;
+            assert_eq!(c0, c2);
+            let mut c3 = a.clone();
+            c3 |= b.clone();
+            assert_eq!(c0, c3);
+            let mut c4 = b.clone();
+            c4.extend_simple(a.range_values().map(|(r, v)| (r, v.clone())));
+            assert_eq!(c0, c4);
+            let mut c5 = b.clone();
+            c5.extend(a.range_values().map(|(r, v)| (r, v.clone())));
+            assert_eq!(c0, c5);
+        }
+    }
+}

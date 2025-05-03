@@ -36,7 +36,7 @@ std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 # rog_experimental would have been better
 rog-experimental = []
 from_slice = []
-cursor = []
+# cmk000 cursor = []
 
 
 [dependencies]

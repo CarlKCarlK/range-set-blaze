@@ -10,7 +10,7 @@ use crate::{
 };
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
-#[cfg(not(feature = "cursor"))]
+// cmk000#[cfg(not(feature = "cursor"))]
 use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, rc::Rc};
 use core::{
@@ -21,8 +21,8 @@ use core::{
     ops::{BitOr, BitOrAssign, Index, RangeBounds, RangeInclusive},
     panic,
 };
-#[cfg(feature = "cursor")]
-use core::{cmp::min, range::Bound};
+// // cmk000#[cfg(feature = "cursor")]
+// use core::{cmp::min, range::Bound};
 use gen_ops::gen_ops_ex;
 use num_traits::{One, Zero};
 
@@ -783,7 +783,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     // LATER: might be able to shorten code by combining cases
-    #[cfg(not(feature = "cursor"))]
+    // cmk000 #[cfg(not(feature = "cursor"))]
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
@@ -1105,7 +1105,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         )
     }
 
-    #[cfg(not(feature = "cursor"))]
+    // cmk000#[cfg(not(feature = "cursor"))]
     #[inline]
     fn has_gap(end_before: T, start: T) -> bool {
         end_before
@@ -1113,7 +1113,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             .is_some_and(|end_before_succ| end_before_succ < start)
     }
 
-    #[cfg(feature = "cursor")]
+    #[cfg(never)]
+    // cmk000#[cfg(feature = "cursor")]
     #[inline]
     fn adjust_touching_for_insert(
         &mut self,
@@ -1267,7 +1268,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         debug_assert!(self.len == self.len_slow());
     }
 
-    #[cfg(feature = "cursor")]
+    #[cfg(never)]
+    // cmk000#[cfg(feature = "cursor")]
     pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
         // Based on https://github.com/jeffparsons/rangemap's `insert` method but with cursor's added
         use core::ops::Bound::{Included, Unbounded};
@@ -1358,7 +1360,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         debug_assert!(self.len == self.len_slow());
     }
 
-    #[cfg(not(feature = "cursor"))]
+    //cmk000 #[cfg(not(feature = "cursor"))]
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     // LATER might be able to shorten code by combining cases
@@ -1581,7 +1583,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         }
     }
 
-    #[cfg(not(feature = "cursor"))]
+    //cmk #[cfg(not(feature = "cursor"))]
     #[inline]
     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>, value: V) {
         let (start, end) = internal_range.clone().into_inner();
@@ -2596,18 +2598,19 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
             *self = other.clone();
             return;
         }
-        let a_len_log2: usize = a_len
-            .ilog2()
-            .try_into() // u32 → usize
-            .expect(
-                "ilog2 result always fits in usize on our targets so this will be optimized away",
-            );
-        if b_len * (a_len_log2 + 1) < a_len + b_len {
-            for (start, end_value) in &other.btree_map {
-                self.internal_add(*start..=end_value.end, end_value.value.clone());
-            }
-            return;
-        }
+        // cmk0000000
+        // let a_len_log2: usize = a_len
+        //     .ilog2()
+        //     .try_into() // u32 → usize
+        //     .expect(
+        //         "ilog2 result always fits in usize on our targets so this will be optimized away",
+        //     );
+        // if b_len * (a_len_log2 + 1) < a_len + b_len {
+        //     for (start, end_value) in &other.btree_map {
+        //         self.internal_add(*start..=end_value.end, end_value.value.clone());
+        //     }
+        //     return;
+        // }
         *self = (self.range_values() | other.range_values()).into_range_map_blaze();
     }
 }
@@ -2637,15 +2640,17 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     /// a |= b;
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
     /// ```
-    fn bitor_assign(&mut self, mut other: Self) {
-        let a_len = self.ranges_len();
-        let b_len = other.ranges_len();
-        if b_len <= a_len {
-            *self |= &other;
-        } else {
-            other |= &*self;
-            *self = other;
-        }
+    fn bitor_assign(&mut self, /*mut*/ other: Self) {
+        *self |= &other;
+        // cmk0000
+        // let a_len = self.ranges_len();
+        // let b_len = other.ranges_len();
+        // if b_len <= a_len {
+        //     *self |= &other;
+        // } else {
+        //     other |= &*self;
+        //     *self = other;
+        // }
     }
 }
 
