@@ -17,7 +17,7 @@ use core::{
     borrow::Borrow,
     cmp::{Ordering, max},
     convert::From,
-    fmt,
+    fmt, mem,
     ops::{BitOr, BitOrAssign, Index, RangeBounds, RangeInclusive},
     panic,
 };
@@ -2598,19 +2598,41 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
             *self = other.clone();
             return;
         }
-        // cmk0000000
-        // let a_len_log2: usize = a_len
-        //     .ilog2()
-        //     .try_into() // u32 → usize
-        //     .expect(
-        //         "ilog2 result always fits in usize on our targets so this will be optimized away",
-        //     );
-        // if b_len * (a_len_log2 + 1) < a_len + b_len {
-        //     for (start, end_value) in &other.btree_map {
-        //         self.internal_add(*start..=end_value.end, end_value.value.clone());
-        //     }
-        //     return;
-        // }
+        let a_len_log2: usize = a_len
+            .ilog2()
+            .try_into() // u32 → usize
+            .expect(
+                "ilog2 result always fits in usize on our targets so this will be optimized away",
+            );
+        // b is small compared to a
+        if b_len * (a_len_log2 + 1) < a_len + b_len {
+            let difference = other - &*self;
+            self.extend_simple(
+                difference
+                    .btree_map
+                    .into_iter()
+                    .map(|(start, v)| (start..=v.end, v.value)),
+            );
+            return;
+        }
+        // a is small compared to b
+        let b_len_log2: usize = b_len
+            .ilog2()
+            .try_into() // u32 → usize
+            .expect(
+                "ilog2 result always fits in usize on our targets so this will be optimized away",
+            );
+        if a_len * (b_len_log2 + 1) < a_len + b_len {
+            let mut other = other.clone();
+            other.extend_simple(
+                mem::take(&mut self.btree_map)
+                    .into_iter()
+                    .map(|(start, v)| (start..=v.end, v.value)),
+            );
+            *self = other;
+            return;
+        }
+
         *self = (self.range_values() | other.range_values()).into_range_map_blaze();
     }
 }
@@ -2640,17 +2662,51 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     /// a |= b;
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
     /// ```
-    fn bitor_assign(&mut self, /*mut*/ other: Self) {
-        *self |= &other;
-        // cmk0000
-        // let a_len = self.ranges_len();
-        // let b_len = other.ranges_len();
-        // if b_len <= a_len {
-        //     *self |= &other;
-        // } else {
-        //     other |= &*self;
-        //     *self = other;
-        // }
+    fn bitor_assign(&mut self, mut other: Self) {
+        let b_len = other.ranges_len();
+        if b_len == 0 {
+            return;
+        }
+        let a_len = self.ranges_len();
+        if a_len == 0 {
+            *self = other;
+            return;
+        }
+        let a_len_log2: usize = a_len
+            .ilog2()
+            .try_into() // u32 → usize
+            .expect(
+                "ilog2 result always fits in usize on our targets so this will be optimized away",
+            );
+        // b is small compared to a
+        if b_len * (a_len_log2 + 1) < a_len + b_len {
+            let difference = other - &*self;
+            self.extend_simple(
+                difference
+                    .btree_map
+                    .into_iter()
+                    .map(|(start, v)| (start..=v.end, v.value)),
+            );
+            return;
+        }
+        // a is small compared to b
+        let b_len_log2: usize = b_len
+            .ilog2()
+            .try_into() // u32 → usize
+            .expect(
+                "ilog2 result always fits in usize on our targets so this will be optimized away",
+            );
+        if a_len * (b_len_log2 + 1) < a_len + b_len {
+            other.extend_simple(
+                mem::take(&mut self.btree_map)
+                    .into_iter()
+                    .map(|(start, v)| (start..=v.end, v.value)),
+            );
+            *self = other;
+            return;
+        }
+
+        *self = (self.range_values() | other.range_values()).into_range_map_blaze();
     }
 }
 

@@ -358,7 +358,7 @@ fn map_union_two_sets(c: &mut Criterion) {
                     b.iter_batched(
                         || (map0.clone(), map1.clone()),
                         |(map00, mut map10)| {
-                            map10 |= map00;
+                            map10 |= &map00;
                         },
                         BatchSize::SmallInput,
                     );
@@ -776,6 +776,154 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
     group.finish();
 }
 
+fn map_union_label(c: &mut Criterion) {
+    let group_name = "map_union_label";
+    let range = 0..=99_999_999u32;
+    let k = 1;
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let value_count = 5u32;
+    let range_per_clump = 1;
+
+    let a_len = 1000;
+    let b_len_list = [10, 1000, 100_000];
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    // group.sample_size(40);
+
+    let map0: RangeMapBlaze<u32, u32> = ClumpyMapRange::new(
+        &mut StdRng::seed_from_u64(seed),
+        a_len,
+        range.clone(),
+        coverage_goal,
+        k,
+        how,
+        value_count,
+        range_per_clump,
+    )
+    .collect();
+
+    for b_len in &b_len_list {
+        let map1: RangeMapBlaze<u32, u32> = ClumpyMapRange::new(
+            &mut StdRng::seed_from_u64(seed + 1),
+            *b_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+            value_count,
+            range_per_clump,
+        )
+        .collect();
+
+        let parameter = map1.ranges_len();
+
+        group.bench_with_input(
+            BenchmarkId::new("merge".to_string(), parameter),
+            &parameter,
+            |b, _| {
+                b.iter_batched(
+                    || (map0.clone(), map1.clone()),
+                    |(map0, map1)| {
+                        (map0.range_values() | map1.range_values()).into_range_map_blaze()
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("wrong_simple".to_string(), parameter),
+            &parameter,
+            |b, _| {
+                b.iter_batched(
+                    || (map0.clone(), map1.clone()),
+                    |(mut map0, map1)| {
+                        map0.extend_simple(map1.range_values().map(|(r, v)| (r.clone(), *v)));
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("clone_b_extend".to_string(), parameter),
+            &parameter,
+            |b, _| {
+                b.iter_batched(
+                    || (map0.clone(), map1.clone()),
+                    |(map0, map1)| {
+                        map1.clone()
+                            .extend_simple(map0.range_values().map(|(r, v)| (r.clone(), *v)));
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("b_extend".to_string(), parameter),
+            &parameter,
+            |b, _| {
+                b.iter_batched(
+                    || (map0.clone(), map1.clone()),
+                    |(map0, mut map1)| {
+                        map1.extend_simple(map0.range_values().map(|(r, v)| (r.clone(), *v)));
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("union via difference".to_string(), parameter),
+            &parameter,
+            |b, _| {
+                b.iter_batched(
+                    || (map0.clone(), map1.clone()),
+                    |(mut map0, map1)| {
+                        let difference = map1 - &map0;
+                        map0.extend_simple(difference.range_values().map(|(r, v)| (r.clone(), *v)));
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("|= borrowed".to_string(), parameter),
+            &parameter,
+            |b, _| {
+                b.iter_batched(
+                    || (map0.clone(), map1.clone()),
+                    |(mut map0, map1)| {
+                        map0 |= &map1;
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("|= owned".to_string(), parameter),
+            &parameter,
+            |b, _| {
+                b.iter_batched(
+                    || (map0.clone(), map1.clone()),
+                    |(mut map0, map1)| {
+                        map0 |= map1;
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+    }
+
+    group.finish();
+}
+
 criterion_group!(
     name = benches_map;
     config = Criterion::default();
@@ -787,6 +935,7 @@ criterion_group!(
     map_union_two_sets,
     map_insert_speed,
     map_intersect_k,
+    map_union_label
 );
 
 criterion_main!(benches_map);

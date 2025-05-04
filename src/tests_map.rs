@@ -435,10 +435,10 @@ fn test_union_2() {
             c3 |= b.clone();
             assert_eq!(c0, c3);
             let mut c4 = b.clone();
-            c4.extend_simple(a.range_values().map(|(r, v)| (r, v.clone())));
+            c4.extend_simple(a.range_values().map(|(r, v)| (r, *v)));
             assert_eq!(c0, c4);
             let mut c5 = b.clone();
-            c5.extend(a.range_values().map(|(r, v)| (r, v.clone())));
+            c5.extend(a.range_values().map(|(r, v)| (r, *v)));
             assert_eq!(c0, c5);
         }
     }

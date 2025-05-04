@@ -1734,7 +1734,7 @@ impl<T: Integer> BitOrAssign<&Self> for RangeSetBlaze<T> {
             );
 
         if b_len * (a_len_log2 + 1) < a_len + b_len {
-            for (start, end) in other.btree_map.iter() {
+            for (start, end) in &other.btree_map {
                 self.internal_add(*start..=*end);
             }
         } else {
