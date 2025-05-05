@@ -10,7 +10,6 @@ use crate::{
 };
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
-// cmk000#[cfg(not(feature = "cursor"))]
 use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, rc::Rc};
 use core::{
@@ -21,8 +20,6 @@ use core::{
     ops::{BitOr, BitOrAssign, Index, RangeBounds, RangeInclusive},
     panic,
 };
-// // cmk000#[cfg(feature = "cursor")]
-// use core::{cmp::min, range::Bound};
 use gen_ops::gen_ops_ex;
 use num_traits::{One, Zero};
 
@@ -267,7 +264,14 @@ where
 /// `RangeMapBlaze`'s by switching to the [`SortedDisjointMap`] API. The last example below
 /// demonstrates this.
 ///
+/// Several union-related operators — such as [`|`] (union) and [`|=`] (union append) — include performance
+/// optimizations for common cases, including when one operand is much smaller than the other.
+/// These optimizations reduce allocations and merging overhead.
+/// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
+///
 /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`|`]: struct.RangeMapBlaze.html#impl-BitOr-for-RangeMapBlaze%3CT,+V%3E
+/// [`|=`]: struct.RangeMapBlaze.html#impl-BitOrAssign-for-RangeMapBlaze%3CT,+V%3E
 ///
 /// ## Set Operation Examples
 ///
@@ -736,10 +740,18 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
 
     /// Moves all elements from `other` into `self`, leaving `other` empty.
     ///
+    /// This method has *right-to-left precedence*: if any ranges overlap, values in `other`
+    /// will overwrite those in `self`.
+    ///
     /// # Performance
-    /// It adds the integers in `other` to `self` in O(n log m) time, where n is the number of ranges in `other`
-    /// and m is the number of ranges in `self`.
-    /// When n is large, consider using `|` which is O(n+m) time.
+    ///
+    /// This method inserts each range from `other` into `self` one-by-one, with overall time
+    /// complexity `O(n log m)`, where `n` is the number of ranges in `other` and `m` is the number
+    /// of ranges in `self`.
+    ///
+    /// For large `n`, consider using the `|` operator, which performs a sorted merge and runs in `O(n + m)` time.
+    ///
+    /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
     /// # Examples
     ///
@@ -761,12 +773,12 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(a[5], "b");
     /// ```
     pub fn append(&mut self, other: &mut Self) {
-        // cmk0000 use take and avoid clone
-        for (range, value) in other.range_values() {
-            let value = value.clone();
-            self.internal_add(range, value);
+        let original_other_btree_map = core::mem::take(&mut other.btree_map);
+        other.len = <T as Integer>::SafeLen::zero();
+
+        for (start, end_value) in original_other_btree_map {
+            self.internal_add(start..=end_value.end, end_value.value);
         }
-        other.clear();
     }
 
     /// Clears the map, removing all elements.
@@ -823,7 +835,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     // LATER: might be able to shorten code by combining cases
-    // cmk000 #[cfg(not(feature = "cursor"))]
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
@@ -1145,7 +1156,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         )
     }
 
-    // cmk000#[cfg(not(feature = "cursor"))]
     #[inline]
     fn has_gap(end_before: T, start: T) -> bool {
         end_before
@@ -1154,7 +1164,9 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     #[cfg(never)]
-    // cmk000#[cfg(feature = "cursor")]
+    // #![cfg_attr(feature = "cursor", feature(btree_cursors, new_range_api))]
+    // #[cfg(feature = "cursor")]
+    //  use core::{cmp::min, range::Bound};
     #[inline]
     fn adjust_touching_for_insert(
         &mut self,
@@ -1309,7 +1321,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     #[cfg(never)]
-    // cmk000#[cfg(feature = "cursor")]
+    // #[cfg(feature = "cursor")]
     pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
         // Based on https://github.com/jeffparsons/rangemap's `insert` method but with cursor's added
         use core::ops::Bound::{Included, Unbounded};
@@ -1400,7 +1412,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         debug_assert!(self.len == self.len_slow());
     }
 
-    //cmk000 #[cfg(not(feature = "cursor"))]
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     // LATER might be able to shorten code by combining cases
@@ -1685,12 +1696,15 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         }
     }
 
-    /// Extends the [`RangeMapBlaze`] with the contents of an iterator of range-value pairs.
-    /// It has right-to-left precedence -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
+    /// Extends the [`RangeMapBlaze`] with an iterator of `(range, value)` pairs without pre-merging.
     ///
-    /// Elements are added one-by-one without pre-merging. See [`extend (range)`] for a table of similar methods.
+    /// Unlike [`RangeMapBlaze::extend`], this method does **not** merge adjacent or overlapping ranges
+    /// before inserting. Each `(range, value)` pair is added as-is, making it faster when the input
+    /// is already well-structured or disjoint.
     ///
-    /// [`extend (range)`]: struct.RangeMapBlaze.html#impl-Extend%3C(RangeInclusive%3CT%3E,+V)%3E-for-RangeMapBlaze%3CT,+V%3E
+    /// This method has *right-to-left precedence*: later ranges in the iterator overwrite earlier ones.
+    ///
+    /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
     /// # Examples
     /// ```
@@ -1720,9 +1734,15 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     /// Extends the [`RangeMapBlaze`] with the contents of an owned [`RangeMapBlaze`].
-    /// It has right-to-left precedence -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
     ///
-    /// Elements are added one-by-one.
+    /// This method has *right-to-left precedence* — like `BTreeMap`, but unlike most
+    /// other `RangeMapBlaze` methods. If the maps contain overlapping ranges,
+    /// values from `other` will overwrite those in `self`.
+    ///
+    /// Compared to [`RangeMapBlaze::extend_with`], this method can be more efficient because it can
+    /// consume the internal data structures of `other` directly, avoiding some cloning.
+    ///
+    /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
     /// # Examples
     ///
@@ -1742,9 +1762,16 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     /// Extends the [`RangeMapBlaze`] with the contents of a borrowed [`RangeMapBlaze`].
-    /// It has right-to-left precedence -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
     ///
-    /// Elements are added one-by-one.
+    /// This method has *right-to-left precedence* — like `BTreeMap`, but unlike most
+    /// other `RangeMapBlaze` methods. If the maps contain overlapping ranges,
+    /// values from `other` will overwrite those in `self`.
+    ///
+    /// This method is simple and predictable but not the most efficient option when
+    /// the right-hand side is larger. For better performance when ownership is available,
+    /// consider using [`RangeMapBlaze::extend_from`] or the `|=` operator.
+    ///
+    /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
     /// # Examples
     ///
@@ -1982,7 +2009,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// let map = RangeMapBlaze::from_iter([(10..=20,"a"), (15..=25,"a"), (30..=40,"b")]);
     /// // After RangeMapBlaze sorts & 'disjoint's them, we see two ranges.
     /// assert_eq!(map.ranges_len(), 2);
-    /// assert_eq!(map.to_string(), r#"(10..=25, "a"), (30..=40, "b")"#);
+    /// assert_eq!(map.to_string(), r#"(10..=20, "a"), (30..=40, "b")"#);
     /// ```
     #[must_use]
     pub fn ranges_len(&self) -> usize {
@@ -2123,8 +2150,14 @@ impl<'a, T: Integer, V: Eq + Clone> IntoIterator for &'a RangeMapBlaze<T, V> {
 impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// Passing by the right-and-side by ownership rather than borrow allows a
-    /// speed up when the left-hand side is small compared to the right-hand side.
+    /// This operator has *left precedence*: when overlapping ranges are present,
+    /// values in `self` take priority over those in the right-hand side.
+    ///
+    /// This method is optimized for three usage scenarios:
+    /// when the left-hand side is much smaller, when the right-hand side is much smaller,
+    /// and when both sides are of similar size.
+    ///
+    /// **Also See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
     /// # Examples
     /// ```
@@ -2136,27 +2169,44 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// ```
     type Output = Self;
     fn bitor(self, mut other: Self) -> Self {
-        let a_len = self.ranges_len();
-        if a_len == 0 {
-            return other;
-        }
         let b_len = other.ranges_len();
         if b_len == 0 {
             return self;
         }
+        let a_len = self.ranges_len();
+        if a_len == 0 {
+            return other;
+        }
+        // Check if 'a' is small compared to 'b'
         let b_len_log2: usize = b_len
-            .ilog2()
-            .try_into() // u32 → usize
-            .expect(
-                "ilog2 result always fits in usize on our targets so this will be optimized away",
-            );
-        if a_len * (b_len_log2 + 1) < a_len + b_len {
-            // cmk00000
+            .checked_ilog2()
+            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
+            + 1;
+        if a_len * b_len_log2 < a_len + b_len {
+            // 'a' is small, insert its elements into 'other'
             for (start, end_value) in self.btree_map {
                 other.internal_add(start..=end_value.end, end_value.value);
             }
             return other;
         }
+        // Check if 'b' is small compared to 'a'
+        let a_len_log2: usize = a_len
+            .checked_ilog2()
+            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
+            + 1;
+        if b_len * a_len_log2 < a_len + b_len {
+            // 'b' is small, calculate elements in 'other' not in 'self' and add them to 'self'.
+            let mut result = self; // Take ownership of self
+            let difference = other - &result; // Calculate elements in 'other' not in 'result'
+            result.extend_simple(
+                difference
+                    .btree_map
+                    .into_iter()
+                    .map(|(start, v)| (start..=v.end, v.value)),
+            );
+            return result;
+        }
+        // Sizes are comparable, use the iterator union
         (self.range_values() | other.range_values()).into_range_map_blaze()
     }
 }
@@ -2164,8 +2214,14 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
 impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// Passing by the right-and-side by ownership rather than borrow allows a
-    /// speed up when the left-hand side is small compared to the right-hand side.
+    /// This operator has *left precedence*: when overlapping ranges are present,
+    /// values in `self` take priority over those in the right-hand side.
+    ///
+    /// This method is optimized for three usage scenarios:
+    /// when the left-hand side is much smaller, when the right-hand side is much smaller,
+    /// and when both sides are of similar size.
+    ///
+    /// **Also See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
     /// # Examples
     /// ```
@@ -2176,7 +2232,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
     type Output = Self;
-    fn bitor(self, other: &Self) -> Self {
+    fn bitor(mut self, other: &Self) -> Self {
         let b_len = other.ranges_len();
         if b_len == 0 {
             return self;
@@ -2185,6 +2241,36 @@ impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
         if a_len == 0 {
             return other.clone();
         }
+        // Check if 'a' is small compared to 'b'
+        let b_len_log2: usize = b_len
+            .checked_ilog2()
+            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
+            + 1;
+        if a_len * b_len_log2 < a_len + b_len {
+            // 'a' is small, clone 'other' and insert 'a' into it
+            let mut result = other.clone();
+            for (start, end_value) in self.btree_map {
+                result.internal_add(start..=end_value.end, end_value.value);
+            }
+            return result;
+        }
+        // Check if 'b' is small compared to 'a'
+        let a_len_log2: usize = a_len
+            .checked_ilog2()
+            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
+            + 1;
+        if b_len * a_len_log2 < a_len + b_len {
+            // 'b' is small, calculate elements in 'other' not in 'self' and add them to 'self'.
+            let difference = other - &self; // Calculate elements in 'other' not in 'self'
+            self.extend_simple(
+                difference
+                    .btree_map
+                    .into_iter()
+                    .map(|(start, v)| (start..=v.end, v.value)),
+            );
+            return self;
+        }
+        // Sizes are comparable, use the iterator union
         (self.range_values() | other.range_values()).into_range_map_blaze()
     }
 }
@@ -2193,8 +2279,14 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// Passing by the right-and-side by ownership rather than borrow allows a
-    /// speed up when the left-hand side is small compared to the right-hand side.
+    /// This operator has *left precedence*: when overlapping ranges are present,
+    /// values in `self` take priority over those in the right-hand side.
+    ///
+    /// This method is optimized for three usage scenarios:
+    /// when the left-hand side is much smaller, when the right-hand side is much smaller,
+    /// and when both sides are of similar size.
+    ///
+    /// **Also See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
     /// # Examples
     /// ```
@@ -2213,19 +2305,36 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
         if b_len == 0 {
             return self.clone();
         }
+        // Check if 'a' is small compared to 'b'
         let b_len_log2: usize = b_len
-            .ilog2()
-            .try_into() // u32 → usize
-            .expect(
-                "ilog2 result always fits in usize on our targets so this will be optimized away",
-            );
-        if a_len * (b_len_log2 + 1) < a_len + b_len {
-            // cmk0000
+            .checked_ilog2()
+            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
+            + 1;
+        if a_len * b_len_log2 < a_len + b_len {
+            // 'a' is small, insert its elements into 'other'
             for (start, end_value) in &self.btree_map {
                 other.internal_add(*start..=end_value.end, end_value.value.clone());
             }
             return other;
         }
+        // Check if 'b' is small compared to 'a'
+        let a_len_log2: usize = a_len
+            .checked_ilog2()
+            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
+            + 1;
+        if b_len * a_len_log2 < a_len + b_len {
+            // 'b' is small, clone 'self', calculate elements in 'other' not in 'self', and add them.
+            let mut result = self.clone();
+            let difference = other - self; // Calculate elements in 'other' not in 'self'
+            result.extend_simple(
+                difference
+                    .btree_map
+                    .into_iter()
+                    .map(|(start, v)| (start..=v.end, v.value)),
+            );
+            return result;
+        }
+        // Sizes are comparable, use the iterator union
         (self.range_values() | other.range_values()).into_range_map_blaze()
     }
 }
@@ -2234,8 +2343,14 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// Passing by the right-and-side by ownership rather than borrow allows a
-    /// speed up when the left-hand side is small compared to the right-hand side.
+    /// This operator has *left precedence*: when overlapping ranges are present,
+    /// values in `self` take priority over those in the right-hand side.
+    ///
+    /// This method is optimized for three usage scenarios:
+    /// when the left-hand side is much smaller, when the right-hand side is much smaller,
+    /// and when both sides are of similar size.
+    ///
+    /// **Also See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
     /// # Examples
     /// ```
@@ -2254,6 +2369,37 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
         if b_len == 0 {
             return self.clone();
         }
+        // Check if 'a' is small compared to 'b'
+        let b_len_log2: usize = b_len
+            .checked_ilog2()
+            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
+            + 1;
+        if a_len * b_len_log2 < a_len + b_len {
+            // 'a' is small, clone 'other' and insert 'a' into it
+            let mut result = other.clone();
+            for (start, end_value) in &self.btree_map {
+                result.internal_add(*start..=end_value.end, end_value.value.clone());
+            }
+            return result;
+        }
+        // Check if 'b' is small compared to 'a'
+        let a_len_log2: usize = a_len
+            .checked_ilog2()
+            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
+            + 1;
+        if b_len * a_len_log2 < a_len + b_len {
+            // 'b' is small, clone 'self', calculate elements in 'other' not in 'self', and add them.
+            let mut result = self.clone();
+            let difference = other - self; // Calculate elements in 'other' not in 'self'
+            result.extend_simple(
+                difference
+                    .btree_map
+                    .into_iter()
+                    .map(|(start, v)| (start..=v.end, v.value)),
+            );
+            return result;
+        }
+        // Sizes are comparable, use the iterator union
         (self.range_values() | other.range_values()).into_range_map_blaze()
     }
 }
@@ -2382,22 +2528,18 @@ where
     T: Integer,
     V: Eq + Clone,
 {
-    /// Extends the [`RangeMapBlaze`] with the contents of an iterator of integer-value pairs. It has right-to-left precedence
-    ///  -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
+    /// Extends the [`RangeMapBlaze`] with the contents of an iterator of integer-value pairs.
     ///
-    /// Elements are added one-by-one and later items overwrite earlier ones.
-    /// There is also a version that takes an iterator of range-value pairs.
-    /// See [`extend (range)`] for a table of similar methods.
+    /// This method has *right-to-left precedence*: later values in the iterator take priority
+    /// over earlier ones, matching the behavior of standard `BTreeMap::extend`.
     ///
-    /// [`extend (range)`]: struct.RangeMapBlaze.html#impl-Extend%3C(RangeInclusive%3CT%3E,+V)%3E-for-RangeMapBlaze%3CT,+V%3E
+    /// Each integer is treated as a singleton range. Adjacent integers with the same value
+    /// are merged before insertion. For alternatives that skip merging or accept full ranges,
+    /// see [`RangeMapBlaze::extend_simple`] and [`RangeMapBlaze::extend`].
     ///
+    /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
-    /// The [`|=`](RangeMapBlaze::bitor_assign) operator extends a [`RangeMapBlaze`]
-    /// from another [`RangeMapBlaze`]. It is never slower
-    /// than  [`RangeMapBlaze::extend`] and often several times faster. It
-    /// prioritizes differently, giving precedence to values already in the [`RangeMapBlaze`] (so, left to right).
-    ///
-    /// # Examples
+    ///     /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
@@ -2431,29 +2573,17 @@ where
     V: Eq + Clone,
 {
     /// Extends the [`RangeMapBlaze`] with the contents of an iterator of range-value pairs.
-    /// It has right-to-left precedence -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
     ///
-    /// Elements are added one-by-one. There is also a version
-    /// that takes an iterator of integer-value pairs.
+    /// This method has *right-to-left precedence* — like `BTreeMap`, but unlike most other
+    /// `RangeMapBlaze` methods.
     ///
-    /// cmk0000 update
-    /// | Operation              | [`extend (range)`]         | [`extend (integer)`]       | [`extend_simple`]           | <code>\|=</code> ([`BitOrAssign`])     |
-    /// |------------------------|----------------------------|-----------------------------|------------------------------|----------------------------------------|
-    /// | Input Types            | `(range, value)`           | `(integer, value)`          | `(range, value)`             | `RangeMapBlaze`                        |
-    /// | Precedence             | Right-to-left, keep last   | Right-to-left, keep last    | Right-to-left, keep last     | Right-to-left, keep last              |
-    /// | Pre-merge Touching     | Yes                        | Yes                         | No                           | Yes                                    |
-    /// | Streaming Optimization | No                         | Yes                         | No                           | Yes                                    |
+    /// It first merges any adjacent or overlapping ranges with the same value, then adds them one by one.
+    /// For alternatives that skip merging or that accept integer-value pairs, see
+    /// [`RangeMapBlaze::extend_simple`] and the `(integer, value)` overload.
     ///
-    /// Notes:
+    /// For *left-to-right* precedence, use the union-related methods.
     ///
-    /// - **Pre-merge Touching** means adjacent or overlapping ranges with the same value are combined into a single range before insertions.
-    /// - **Streaming Optimization** refers to `|=` sometimes using a streaming-style union algorithm rather than insertion-based merging when it is more efficient.
-    ///
-    /// [`extend (range)`]: struct.RangeMapBlaze.html#impl-Extend%3C(RangeInclusive%3CT%3E,+V)%3E-for-RangeMapBlaze%3CT,+V%3E
-    /// [`extend (integer)`]: RangeMapBlaze::extend
-    /// [`extend_simple`]: RangeMapBlaze::extend_simple
-    /// [`BitOrAssign`]: struct.RangeMapBlaze.html#method.bitor_assign
-    ///
+    /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
@@ -2695,12 +2825,9 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
         // b is small compared to a
         if b_len * (a_len_log2 + 1) < a_len + b_len {
             let difference = other - &*self;
-            self.extend_simple(
-                difference
-                    .btree_map
-                    .into_iter()
-                    .map(|(start, v)| (start..=v.end, v.value)),
-            );
+            for (start, end_value) in difference.btree_map {
+                self.internal_add(start..=end_value.end, end_value.value);
+            }
             return;
         }
         // a is small compared to b
@@ -2767,30 +2894,23 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
             return;
         }
         let a_len_log2: usize = a_len
-            .ilog2()
-            .try_into() // u32 → usize
-            .expect(
-                "ilog2 result always fits in usize on our targets so this will be optimized away",
-            );
+            .checked_ilog2()
+            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
+            + 1;
         // b is small compared to a
-        if b_len * (a_len_log2 + 1) < a_len + b_len {
-            let difference = other - &*self;
-            self.extend_simple(
-                difference
-                    .btree_map
-                    .into_iter()
-                    .map(|(start, v)| (start..=v.end, v.value)),
-            );
+        if b_len * a_len_log2 < a_len + b_len {
+            let difference = other - &*self; // Calculate elements in 'other' not in 'self'
+            for (start, end_value) in difference.btree_map {
+                self.internal_add(start..=end_value.end, end_value.value);
+            }
             return;
         }
         // a is small compared to b
         let b_len_log2: usize = b_len
-            .ilog2()
-            .try_into() // u32 → usize
-            .expect(
-                "ilog2 result always fits in usize on our targets so this will be optimized away",
-            );
-        if a_len * (b_len_log2 + 1) < a_len + b_len {
+            .checked_ilog2()
+            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
+            + 1;
+        if a_len * b_len_log2 < a_len + b_len {
             other.extend_simple(
                 mem::take(&mut self.btree_map)
                     .into_iter()

@@ -36,8 +36,6 @@ std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 # rog_experimental would have been better
 rog-experimental = []
 from_slice = []
-# cmk000 cursor = []
-
 
 [dependencies]
 itertools = { version = "0.14.0", default-features = false, features = [
