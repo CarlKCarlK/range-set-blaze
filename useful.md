@@ -31,7 +31,7 @@ sudo net start "WSearch"
 
 ```cmd
 cargo install criterion-means
-set BUILDFEATURES=from_slice,cursor
+set BUILDFEATURES=from_slice
 set RUSTFLAGS=-C target-cpu=native
 rustup override set nightly
 ```

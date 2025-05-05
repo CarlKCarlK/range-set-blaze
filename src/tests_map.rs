@@ -440,6 +440,26 @@ fn test_union_2() {
             let mut c5 = b.clone();
             c5.extend(a.range_values().map(|(r, v)| (r, *v)));
             assert_eq!(c0, c5);
+            // extend_with and extend_from
+            let mut c6 = b.clone();
+            c6.extend_with(&a);
+            assert_eq!(c0, c6);
+            let mut c7 = b.clone();
+            c7.extend_from(a.clone());
+            assert_eq!(c0, c7);
+            let mut c8 = b.clone();
+            let mut a_clone = a.clone();
+            c8.append(&mut a_clone);
+            assert_eq!(c0, c8);
+            assert!(a_clone.is_empty());
+            let c9 = a.clone() | b.clone();
+            assert_eq!(c0, c9);
+            let c10 = a.clone() | &b;
+            assert_eq!(c0, c10);
+            let c11 = &a | b.clone();
+            assert_eq!(c0, c11);
+            let c12 = &a | &b;
+            assert_eq!(c0, c12);
         }
     }
 }

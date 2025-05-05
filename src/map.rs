@@ -116,8 +116,9 @@ where
 /// * [`RangeMapBlaze` Set Operations](#rangemapblaze-set-operations)
 ///    * [Performance](struct.RangeMapBlaze.html#set-operation-performance)
 ///    * [Examples](struct.RangeMapBlaze.html#set-operation-examples)
-///  * [`RangeMapBlaze` Comparisons](#rangemapblaze-comparisons)
-///  * [Additional Examples](#additional-examples)
+/// * [`RangeMapBlaze` Union- and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods)
+/// * [`RangeMapBlaze` Comparisons](#rangemapblaze-comparisons)
+/// * [Additional Examples](#additional-examples)
 ///
 /// # `RangeMapBlaze` Constructors
 ///
@@ -317,6 +318,44 @@ where
 ///          a.range_values() - (b.range_values() | c.range_values()));
 /// assert!(result0 == result1 && result0.to_string() == r#"(1..=1, "a")"#);
 /// ```
+///
+/// # `RangeMapBlaze` Union- and Extend-like Methods
+///
+/// | Operation & Syntax                  | Input Type           | Precedence     | Pre-merge Touching | Cases Optimized |
+/// |-------------------------------------|----------------------|----------------|---------------------|------------------|
+/// | [`a` &#124;= `b`]                   | `RangeMapBlaze`      | Left-to-right  | -                   | 3                |
+/// | [`a` &#124;= `&b`]                  | `&RangeMapBlaze`     | Left-to-right  | -                   | 3                |
+/// | [`a` &#124; `b`]                    | `RangeMapBlaze`      | Left-to-right  | -                   | 3                |
+/// | [`a` &#124; `&b`]                   | `&RangeMapBlaze`     | Left-to-right  | -                   | 3                |
+/// | [`&a` &#124; `b`]                   | `RangeMapBlaze`      | Left-to-right  | -                   | 3                |
+/// | [`&a` &#124; `&b`]                  | `&RangeMapBlaze`     | Left-to-right  | -                   | 3                |
+/// | [`a.extend([(r, v)])`][extend_rv]   | iter `(range, value)`     | Right-to-left  | Yes                 | 1                |
+/// | [`a.extend([(i, v)])`][extend_iv]   | iter `(integer, value)`   | Right-to-left  | Yes                 | 1                |
+/// | [`a.extend_simple(...)`][extend_simple] | iter `(range, value)` | Right-to-left  | No                  | 1                |
+/// | [`a.extend_with(&b)`][extend_with]  | `&RangeMapBlaze`     | Right-to-left  | -                   | 1                |
+/// | [`a.extend_from(b)`][extend_from]   | `RangeMapBlaze`      | Right-to-left  | -                   | 1                |
+/// | [`b.append(&mut a)`][append]        | `&mut RangeMapBlaze` | Right-to-left  | -                   | 1                |
+///
+/// Notes:
+///
+/// - **Pre-merge Touching** means adjacent or overlapping ranges with the same value are combined into a single range before insertions.
+/// - **Cases Optimized** indicates how many usage scenarios have dedicated performance paths:
+///     - `3` = optimized for small-left, small-right, and similar-sized inputs
+///     - `1` = optimized for small-right inputs only
+///
+/// [`a` &#124;= `b`]: struct.RangeMapBlaze.html#impl-BitOrAssign-for-RangeMapBlaze%3CT,+V%3E
+/// [`a` &#124;= `&b`]: struct.RangeMapBlaze.html#impl-BitOrAssign%3C%26RangeMapBlaze%3CT,+V%3E%3E-for-RangeMapBlaze%3CT,+V%3E
+/// [`a` &#124; `b`]: struct.RangeMapBlaze.html#impl-BitOr-for-RangeMapBlaze%3CT,+V%3E
+/// [`a` &#124; `&b`]: struct.RangeMapBlaze.html#impl-BitOr%3C%26RangeMapBlaze%3CT,+V%3E%3E-for-RangeMapBlaze%3CT,+V%3E
+/// [`&a` &#124; `b`]: struct.RangeMapBlaze.html#impl-BitOr%3CRangeMapBlaze%3CT,+V%3E%3E-for-%26RangeMapBlaze%3CT,+V%3E
+/// [`&a` &#124; `&b`]: struct.RangeMapBlaze.html#impl-BitOr%3C%26RangeMapBlaze%3CT,+V%3E%3E-for-%26RangeMapBlaze%3CT,+V%3E
+/// [extend_rv]: struct.RangeMapBlaze.html#impl-Extend%3C(RangeInclusive%3CT%3E,+V)%3E-for-RangeMapBlaze%3CT,+V%3E
+/// [extend_iv]: struct.RangeMapBlaze.html#impl-Extend%3C(T,+V)%3E-for-RangeMapBlaze%3CT,+V%3E
+/// [extend_simple]: struct.RangeMapBlaze.html#method.extend_simple
+/// [extend_with]: struct.RangeMapBlaze.html#method.extend_with
+/// [extend_from]: struct.RangeMapBlaze.html#method.extend_from
+/// [append]: struct.RangeMapBlaze.html#method.append
+///
 /// # `RangeMapBlaze` Comparisons
 ///
 /// `RangeMapBlaze` supports comparisons for equality and lexicographic order:
@@ -722,6 +761,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(a[5], "b");
     /// ```
     pub fn append(&mut self, other: &mut Self) {
+        // cmk0000 use take and avoid clone
         for (range, value) in other.range_values() {
             let value = value.clone();
             self.internal_add(range, value);
@@ -1679,6 +1719,50 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         }
     }
 
+    /// Extends the [`RangeMapBlaze`] with the contents of an owned [`RangeMapBlaze`].
+    /// It has right-to-left precedence -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
+    ///
+    /// Elements are added one-by-one.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    /// let mut b = RangeMapBlaze::from_iter([(3..=4, "b"), (5..=5, "c")]);
+    /// a.extend_from(b);
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=5, "c")]));
+    /// ```
+    #[inline]
+    pub fn extend_from(&mut self, other: Self) {
+        for (start, end_value) in other.btree_map {
+            let range = start..=end_value.end;
+            self.internal_add(range, end_value.value);
+        }
+    }
+
+    /// Extends the [`RangeMapBlaze`] with the contents of a borrowed [`RangeMapBlaze`].
+    /// It has right-to-left precedence -- like `BTreeMap`, but unlike most other `RangeSetBlaze` methods.
+    ///
+    /// Elements are added one-by-one.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    /// let mut b = RangeMapBlaze::from_iter([(3..=4, "b"), (5..=5, "c")]);
+    /// a.extend_from(b);
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=5, "c")]));
+    /// ```
+    #[inline]
+    pub fn extend_with(&mut self, other: &Self) {
+        for (start, end_value) in &other.btree_map {
+            let range = *start..=end_value.end;
+            self.internal_add(range, end_value.value.clone());
+        }
+    }
+
     /// Removes the first element from the set and returns it, if any.
     /// The first element is always the minimum element in the set.
     ///
@@ -2067,6 +2151,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
                 "ilog2 result always fits in usize on our targets so this will be optimized away",
             );
         if a_len * (b_len_log2 + 1) < a_len + b_len {
+            // cmk00000
             for (start, end_value) in self.btree_map {
                 other.internal_add(start..=end_value.end, end_value.value);
             }
@@ -2135,6 +2220,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
                 "ilog2 result always fits in usize on our targets so this will be optimized away",
             );
         if a_len * (b_len_log2 + 1) < a_len + b_len {
+            // cmk0000
             for (start, end_value) in &self.btree_map {
                 other.internal_add(*start..=end_value.end, end_value.value.clone());
             }
@@ -2350,6 +2436,7 @@ where
     /// Elements are added one-by-one. There is also a version
     /// that takes an iterator of integer-value pairs.
     ///
+    /// cmk0000 update
     /// | Operation              | [`extend (range)`]         | [`extend (integer)`]       | [`extend_simple`]           | <code>\|=</code> ([`BitOrAssign`])     |
     /// |------------------------|----------------------------|-----------------------------|------------------------------|----------------------------------------|
     /// | Input Types            | `(range, value)`           | `(integer, value)`          | `(range, value)`             | `RangeMapBlaze`                        |
@@ -2566,19 +2653,20 @@ impl<T: Integer, V: Eq + Clone> Eq for RangeMapBlaze<T, V> {}
 
 impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
     /// Adds the contents of another [`RangeMapBlaze`] to this one.
-    /// It has left precedence, so when values overlap, the left-hand side wins.
     ///
-    /// To get right precedence, swap the operands or use [`extend (range)`].
-    /// See [`extend (range)`] for a table of similar methods.
+    /// This operator has *left precedence*: when overlapping ranges are present,
+    /// values in `self` take priority over those in the right-hand side.
+    /// To get *right precedence*, swap the operands or use
+    /// [`RangeMapBlaze::extend_with`].
     ///
-    /// [`extend (range)`]: struct.RangeMapBlaze.html#impl-Extend%3C(RangeInclusive%3CT%3E,+V)%3E-for-RangeMapBlaze%3CT,+V%3E
+    /// This method is optimized for three usage scenarios:
+    /// when the left-hand side is much smaller, when the right-hand side is much smaller,
+    /// and when both sides are of similar size
     ///
-    /// Passing the right-hand side by ownership rather than borrow
-    /// will allow a many-times faster speed up when the
-    /// right-hand side is much larger than the left-hand side.
+    /// Even greater efficiency is possible when the right-hand side is passed by value,
+    /// allowing its internal data structures to be reused.
     ///
-    /// Also, this operation is never slower than [`RangeMapBlaze::extend`] and
-    /// can often be many times faster.
+    /// **Also See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
     /// # Examples
     /// ```
@@ -2639,20 +2727,26 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
 
 impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     /// Adds the contents of another [`RangeMapBlaze`] to this one.
-    /// It has left precedence, so when values overlap, the left-hand side wins.
     ///
-    /// To get right precedence, swap the operands or use [`extend (range)`].
-    /// See [`extend (range)`] for a table of similar methods.
+    /// This operator has *left precedence*: when overlapping ranges are present,
+    /// values in `self` take priority over those in the right-hand side.
+    /// To get *right precedence*, swap the operands or use
+    /// [`RangeMapBlaze::extend_with`].
     ///
-    /// [`extend (range)`]: struct.RangeMapBlaze.html#impl-Extend%3C(RangeInclusive%3CT%3E,+V)%3E-for-RangeMapBlaze%3CT,+V%3E
+    /// This method is optimized for three usage scenarios:
+    /// when the left-hand side is much smaller, when the right-hand side is much smaller,
+    /// and when both sides are of similar size
     ///
+    /// **Also See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
-    /// Passing the right-hand side by ownership rather than borrow
-    /// will allow a many-times faster speed up when the
-    /// right-hand side is much larger than the left-hand side.
-    ///
-    /// Also, this operation is never slower than [`RangeMapBlaze::extend`] and
-    /// can often be many times faster.
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
+    /// let mut b = RangeMapBlaze::from_iter([(3, "b"), (4, "e"), (5, "f"), (5, "g")]);
+    /// a |= &b;
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
+    /// ```
     ///
     /// # Examples
     /// ```
