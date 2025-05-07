@@ -2811,7 +2811,6 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     /// ```
     fn bitor_assign(&mut self, other: Self) {
         *self = mem::take(self) | other;
-        // cmk000 benchmark this
     }
 }
 

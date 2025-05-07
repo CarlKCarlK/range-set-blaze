@@ -978,22 +978,6 @@ impl Integer for char {
 
         Self::from_u32(num).expect("Real Assert: Impossible for this to fail")
     }
-
-    // fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
-    //     if let Some(b_less_one) = b.checked_sub(1) {
-    //         let a = u32::from(self);
-    //         if let Some(mut num) = a.checked_sub(b_less_one) {
-    //             // Skip over the surrogate range
-    //             if num <= SURROGATE_END && SURROGATE_END < a {
-    //                 num -= SURROGATE_END - SURROGATE_START + 1;
-    //             }
-    //             return Self::from_u32(num).expect(
-    //                 "Real Assert: Impossible for this to fail because char goes down to 0",
-    //             );
-    //         }
-    //     }
-    //     panic!("char underflow");
-    // }
 }
 
 #[cfg(test)]
@@ -1733,5 +1717,57 @@ mod tests {
     #[should_panic(expected = "b must be in range 1..=max_len (b = 1112064, max_len = 1)")]
     fn test_use_of_as_58() {
         let _ = '\x00'.start_from_inclusive_end(1_112_064);
+    }
+
+    #[test]
+    #[cfg(debug_assertions)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "assertion failed: r.start() <= r.end()")]
+    #[allow(clippy::reversed_empty_ranges)]
+    fn test_safe_len() {
+        let i = 0u128..=0u128;
+        assert_eq!(u128::safe_len(&i), UIntPlusOne::UInt(1));
+
+        let i = 0u128..=1u128;
+        assert_eq!(u128::safe_len(&i), UIntPlusOne::UInt(2));
+
+        let i = 1u128..=0u128;
+        // This call is expected to panic due to the debug_assert in safe_len
+        let _ = u128::safe_len(&i);
+    }
+
+    #[test]
+    #[cfg(debug_assertions)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "assertion failed: r.start() <= r.end()")]
+    #[allow(clippy::reversed_empty_ranges)]
+    fn safe_len2() {
+        let i = 0u128..=0u128;
+        assert_eq!(u128::safe_len(&i), UIntPlusOne::UInt(1));
+
+        let i = 0u128..=1u128;
+        assert_eq!(u128::safe_len(&i), UIntPlusOne::UInt(2));
+
+        let i = 1u128..=0u128;
+        // This call is expected to panic due to the debug_assert in safe_len
+        let _ = u128::safe_len(&i);
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 4294911999, max_len = 55295)")]
+    fn safe_len_char1() {
+        let a = '\u{D7FE}';
+        let len = 4_294_911_999u32;
+        let _ = a.inclusive_end_from_start(len);
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = 57343, max_len = 55297)")]
+    fn safe_len_char2() {
+        let a = '\u{E000}';
+        let len = 0xDFFFu32;
+        let _ = a.start_from_inclusive_end(len);
     }
 }

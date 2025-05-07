@@ -3135,3 +3135,13 @@ fn test_union() {
     println!("{a1}");
     println!("{a2:?}");
 }
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_clear() {
+    let mut map = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]);
+    assert!(!map.is_empty());
+    map.clear();
+    assert!(map.is_empty());
+    assert_eq!(map.len(), 0u64);
+}
