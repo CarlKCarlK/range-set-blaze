@@ -308,7 +308,7 @@ fn map_union_two_sets(c: &mut Criterion) {
     let group_name = "map_union_two_sets";
     let range = 0..=99_999_999u32;
     let clump_len0 = 1_000;
-    let range_len_list1 = [1, 10, 100, 1000, 10_000, 100_000, 1_000_000];
+    let range_len_list1 = [1, 10, 100, 1000, 10_000, 100_000];
     let coverage_goal_list = [0.1];
     let how = How::None;
     let seed = 0;
@@ -349,47 +349,13 @@ fn map_union_two_sets(c: &mut Criterion) {
             let parameter = map1.ranges_len();
 
             group.bench_with_input(
-                BenchmarkId::new(
-                    "2. RangeMapBlaze (bitor_assign owned)".to_string(),
-                    parameter,
-                ),
+                BenchmarkId::new("1. RangeMapBlaze (b | a)".to_string(), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
                         || (map0.clone(), map1.clone()),
-                        |(map00, mut map10)| {
-                            map10 |= &map00;
-                        },
-                        BatchSize::SmallInput,
-                    );
-                },
-            );
-
-            group.bench_with_input(
-                BenchmarkId::new(
-                    "1. RangeMapBlaze (bitor_assign borrowed)".to_string(),
-                    parameter,
-                ),
-                &parameter,
-                |b, _| {
-                    b.iter_batched(
-                        || map0.clone(),
-                        |mut map00| {
-                            map00 |= map1;
-                        },
-                        BatchSize::SmallInput,
-                    );
-                },
-            );
-
-            group.bench_with_input(
-                BenchmarkId::new("3. RangeMapBlaze (extend_simple)".to_string(), parameter),
-                &parameter,
-                |b, _| {
-                    b.iter_batched(
-                        || map0.clone(),
-                        |mut map00| {
-                            map00.extend_simple(map1.range_values().map(|(r, v)| (r.clone(), *v)));
+                        |(map00, map10)| {
+                            let _ = map10 | map00;
                         },
                         BatchSize::SmallInput,
                     );
@@ -397,27 +363,195 @@ fn map_union_two_sets(c: &mut Criterion) {
             );
 
             // group.bench_with_input(
-            //     BenchmarkId::new("3. RangeMapBlaze (extend_simple)".to_string(), parameter),
+            //     BenchmarkId::new("2. RangeMapBlaze (b |= a)".to_string(), parameter),
             //     &parameter,
             //     |b, _| {
             //         b.iter_batched(
-            //             || map0.clone(),
-            //             |mut map00| {
-            //                 map00.extend_simple(map1.range_values().map(|(r, v)| (r.clone(), *v)));
+            //             || (map0.clone(), map1.clone()),
+            //             |(map00, mut map10)| {
+            //                 map10 |= map00;
             //             },
             //             BatchSize::SmallInput,
             //         );
             //     },
             // );
-
             group.bench_with_input(
-                BenchmarkId::new("4. rangemap ".to_string(), parameter),
+                BenchmarkId::new("4. RangeMapBlaze (b | borrow a)".to_string(), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
-                        || rangemap_map0.clone(),
-                        |mut map00| {
-                            map00.extend(rangemap_map1.iter().map(|(r, v)| (r.clone(), *v)));
+                        || (map0.clone(), map1.clone()),
+                        |(map00, map10)| {
+                            let _ = map10 | &map00;
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+
+            // group.bench_with_input(
+            //     BenchmarkId::new("1. RangeMapBlaze (b |= &a)".to_string(), parameter),
+            //     &parameter,
+            //     |b, _| {
+            //         b.iter_batched(
+            //             || (map0.clone(), map1.clone()),
+            //             |(map00, mut map10)| {
+            //                 map10 |= &map00;
+            //             },
+            //             BatchSize::SmallInput,
+            //         );
+            //     },
+            // );
+            group.bench_with_input(
+                BenchmarkId::new("2. RangeMapBlaze (extend_simple)".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (map0.clone(), map1.clone()),
+                        |(mut map00, map10)| {
+                            map00.extend_simple(map10.range_values().map(|(r, v)| (r.clone(), *v)));
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+            group.bench_with_input(
+                BenchmarkId::new("3. rangemap ".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (rangemap_map0.clone(), rangemap_map1.clone()),
+                        |(mut map00, map10)| {
+                            map00.extend(map10.iter().map(|(r, v)| (r.clone(), *v)));
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+        }
+    }
+    group.finish();
+}
+
+fn map_union_left_to_right(c: &mut Criterion) {
+    let group_name = "map_union_left_to_right";
+    let range = 0..=99_999_999u32;
+    let clump_len0 = 1_000;
+    let range_len_list1 = [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal_list = [0.1];
+    let how = How::None;
+    let seed = 0;
+    let value_count = 5u32;
+    let range_per_clump = 1; // making this 1 or 100 changes nothing.
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    let mut rng = StdRng::seed_from_u64(seed);
+
+    for coverage_goal in coverage_goal_list {
+        let temp: Vec<RangeMapBlaze<u32, u32>> = k_maps(
+            1,
+            clump_len0,
+            &range,
+            coverage_goal,
+            how,
+            &mut rng,
+            value_count,
+            range_per_clump,
+        );
+        let map0 = &temp[0];
+        let rangemap_map0 = &rangemap::RangeInclusiveMap::from_iter(map0.range_values());
+
+        for range_len1 in &range_len_list1 {
+            let map1 = &k_maps(
+                1,
+                *range_len1,
+                &range,
+                coverage_goal,
+                how,
+                &mut rng,
+                value_count,
+                range_per_clump,
+            )[0];
+            let rangemap_map1 = rangemap::RangeInclusiveMap::from_iter(map1.range_values());
+
+            let parameter = map1.ranges_len();
+
+            group.bench_with_input(
+                BenchmarkId::new("1. RangeMapBlaze (a | b)".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (map0.clone(), map1.clone()),
+                        |(map00, map10)| {
+                            let _ = map00 | map10;
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+
+            // group.bench_with_input(
+            //     BenchmarkId::new("2. RangeMapBlaze (a |= b)".to_string(), parameter),
+            //     &parameter,
+            //     |b, _| {
+            //         b.iter_batched(
+            //             || (map0.clone(), map1.clone()),
+            //             |(mut map00, map10)| {
+            //                 map00 |= map10;
+            //             },
+            //             BatchSize::SmallInput,
+            //         );
+            //     },
+            // );
+            group.bench_with_input(
+                BenchmarkId::new("4. RangeMapBlaze (a | borrow b)".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (map0.clone(), map1.clone()),
+                        |(map00, map10)| {
+                            let _ = map00 | &map10;
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+
+            // group.bench_with_input(
+            //     BenchmarkId::new("1. RangeMapBlaze (a |= &b)".to_string(), parameter),
+            //     &parameter,
+            //     |b, _| {
+            //         b.iter_batched(
+            //             || (map0.clone(), map1.clone()),
+            //             |(mut map00, map10)| {
+            //                 map00 |= &map10;
+            //             },
+            //             BatchSize::SmallInput,
+            //         );
+            //     },
+            // );
+            group.bench_with_input(
+                BenchmarkId::new("2. RangeMapBlaze (extend_simple)".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (map0.clone(), map1.clone()),
+                        |(map00, mut map10)| {
+                            map10.extend_simple(map00.range_values().map(|(r, v)| (r.clone(), *v)));
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+            group.bench_with_input(
+                BenchmarkId::new("3. rangemap ".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (rangemap_map0.clone(), rangemap_map1.clone()),
+                        |(map00, mut map10)| {
+                            map10.extend(map00.iter().map(|(r, v)| (r.clone(), *v)));
                         },
                         BatchSize::SmallInput,
                     );
@@ -935,7 +1069,8 @@ criterion_group!(
     map_union_two_sets,
     map_insert_speed,
     map_intersect_k,
-    map_union_label
+    map_union_label,
+    map_union_left_to_right,
 );
 
 criterion_main!(benches_map);

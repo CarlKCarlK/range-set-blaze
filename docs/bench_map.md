@@ -113,17 +113,35 @@ Finally, we measure the time it takes to add the second map to the first map.
 
 The value for each clump is a random integer from 0 to 4.
 
-`RangeMapBlaze` uses a hybrid algorithm for in-place "union" (`bitor_assign`). When adding a few ranges, it adds them one at a time. When adding roughly equal numbers of ranges, it merges the two maps of ranges by iterating over them in sorted order and merging. In the case in which it owns the second map and that map is very large, it adds ranges from the first map into the second map, again one at a time.
+### `map_union_two_sets` Results
 
-### 'map_union_two_sets' Results
+#### When the second map’s values should take precedence
 
-When adding a few clumps to the first set, all methods are similar. As the number of clumps to add grows, `RangeMapBlaze::bitor_assign` is 1.7 times faster than `rangemap` and `RangeMapBlaze::extend_simple`. When the second map is large and owned, `RangeMapBlaze::bitor_assign` is 15 times faster than `rangemap` and `RangeMapBlaze::extend_simple`.
+`rangemap` and `RangeMapBlaze::extend_simple` perform well when the second map is small, but their performance degrades as the second map grows — up to 4× worse at size 100,000.
 
-### map_union_two_sets' Conclusion
+The `RangeMapBlaze` union operator with a borrowed second operand is about 2× slower when the second map is small but becomes faster as the second map grows.
 
-Over the whole range of clumpiness, `RangeMapBlaze` in-place is fast because it uses a hybrid algorithm.
+The `RangeMapBlaze` union operator with two owned operands is fast across all input sizes. It uses a hybrid algorithm: inserting when one map is relatively small, and streaming when both are similar in size.
 
-![map_union_two_sets](criterion/v4/map_union_two_sets.png "map_union_two_sets")
+#### When the first map’s values should take precedence
+
+`rangemap` and `RangeMapBlaze::extend_simple` can be up to 3× slower for small inputs.
+
+The `RangeMapBlaze` union operator with a borrowed second operand can be up to 60% slower on larger inputs.
+
+The `RangeMapBlaze` union operator with two owned operands is again fast across all input sizes.
+
+### `map_union_two_sets` Conclusion
+
+If you own both maps, the `RangeMapBlaze` union operator is the best choice. If you must borrow one (or both), union is still effective, but may be 60% to 2× slower.
+
+If `extend_simple` or `rangemap` fits your use case — a small second map whose values should take precedence — they are excellent alternatives.
+
+**Right Precedence:**  
+![map_union_two_sets](criterion/v4/map_union_two_sets/report/lines.svg "map_union_two_sets")
+
+**Left Precedence:**  
+![map_union_left_to_right](criterion/v4/map_union_left_to_right/report/lines.svg "map_union_left_to_right")
 
 ## Benchmark #5: 'map_every_op_blaze': Compare `RangeMapBlaze`'s set operations to each other on clumpy data
 

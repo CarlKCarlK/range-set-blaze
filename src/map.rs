@@ -23,6 +23,8 @@ use core::{
 use gen_ops::gen_ops_ex;
 use num_traits::{One, Zero};
 
+const STREAM_OVERHEAD: usize = 10;
+
 /// A trait for references to `Eq + Clone` values, used by the [`SortedDisjointMap`] trait.
 ///
 /// `ValueRef` enables [`SortedDisjointMap`] to map sorted, disjoint ranges of integers
@@ -2177,24 +2179,14 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
         if a_len == 0 {
             return other;
         }
-        // Check if 'a' is small compared to 'b'
-        let b_len_log2: usize = b_len
-            .checked_ilog2()
-            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
-            + 1;
-        if a_len * b_len_log2 < a_len + b_len {
+        if choose_insert(b_len, a_len) {
             // 'a' is small, insert its elements into 'other'
             for (start, end_value) in self.btree_map {
                 other.internal_add(start..=end_value.end, end_value.value);
             }
             return other;
         }
-        // Check if 'b' is small compared to 'a'
-        let a_len_log2: usize = a_len
-            .checked_ilog2()
-            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
-            + 1;
-        if b_len * a_len_log2 < a_len + b_len {
+        if choose_insert(a_len, b_len) {
             // 'b' is small, calculate elements in 'other' not in 'self' and add them to 'self'.
             let mut result = self; // Take ownership of self
             let difference = other - &result; // Calculate elements in 'other' not in 'result'
@@ -2242,11 +2234,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
             return other.clone();
         }
         // Check if 'a' is small compared to 'b'
-        let b_len_log2: usize = b_len
-            .checked_ilog2()
-            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
-            + 1;
-        if a_len * b_len_log2 < a_len + b_len {
+        if choose_insert(b_len, a_len) {
             // 'a' is small, clone 'other' and insert 'a' into it
             let mut result = other.clone();
             for (start, end_value) in self.btree_map {
@@ -2254,12 +2242,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
             }
             return result;
         }
-        // Check if 'b' is small compared to 'a'
-        let a_len_log2: usize = a_len
-            .checked_ilog2()
-            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
-            + 1;
-        if b_len * a_len_log2 < a_len + b_len {
+        if choose_insert(a_len, b_len) {
             // 'b' is small, calculate elements in 'other' not in 'self' and add them to 'self'.
             let difference = other - &self; // Calculate elements in 'other' not in 'self'
             self.extend_simple(
@@ -2306,11 +2289,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
             return self.clone();
         }
         // Check if 'a' is small compared to 'b'
-        let b_len_log2: usize = b_len
-            .checked_ilog2()
-            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
-            + 1;
-        if a_len * b_len_log2 < a_len + b_len {
+        if choose_insert(b_len, a_len) {
             // 'a' is small, insert its elements into 'other'
             for (start, end_value) in &self.btree_map {
                 other.internal_add(*start..=end_value.end, end_value.value.clone());
@@ -2318,11 +2297,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
             return other;
         }
         // Check if 'b' is small compared to 'a'
-        let a_len_log2: usize = a_len
-            .checked_ilog2()
-            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
-            + 1;
-        if b_len * a_len_log2 < a_len + b_len {
+        if choose_insert(a_len, b_len) {
             // 'b' is small, clone 'self', calculate elements in 'other' not in 'self', and add them.
             let mut result = self.clone();
             let difference = other - self; // Calculate elements in 'other' not in 'self'
@@ -2369,12 +2344,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
         if b_len == 0 {
             return self.clone();
         }
-        // Check if 'a' is small compared to 'b'
-        let b_len_log2: usize = b_len
-            .checked_ilog2()
-            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
-            + 1;
-        if a_len * b_len_log2 < a_len + b_len {
+        if choose_insert(b_len, a_len) {
             // 'a' is small, clone 'other' and insert 'a' into it
             let mut result = other.clone();
             for (start, end_value) in &self.btree_map {
@@ -2383,11 +2353,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
             return result;
         }
         // Check if 'b' is small compared to 'a'
-        let a_len_log2: usize = a_len
-            .checked_ilog2()
-            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
-            + 1;
-        if b_len * a_len_log2 < a_len + b_len {
+        if choose_insert(a_len, b_len) {
             // 'b' is small, clone 'self', calculate elements in 'other' not in 'self', and add them.
             let mut result = self.clone();
             let difference = other - self; // Calculate elements in 'other' not in 'self'
@@ -2807,48 +2773,8 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
     /// ```
     fn bitor_assign(&mut self, other: &Self) {
-        let b_len = other.ranges_len();
-        if b_len == 0 {
-            return;
-        }
-        let a_len = self.ranges_len();
-        if a_len == 0 {
-            *self = other.clone();
-            return;
-        }
-        let a_len_log2: usize = a_len
-            .ilog2()
-            .try_into() // u32 → usize
-            .expect(
-                "ilog2 result always fits in usize on our targets so this will be optimized away",
-            );
-        // b is small compared to a
-        if b_len * (a_len_log2 + 1) < a_len + b_len {
-            let difference = other - &*self;
-            for (start, end_value) in difference.btree_map {
-                self.internal_add(start..=end_value.end, end_value.value);
-            }
-            return;
-        }
-        // a is small compared to b
-        let b_len_log2: usize = b_len
-            .ilog2()
-            .try_into() // u32 → usize
-            .expect(
-                "ilog2 result always fits in usize on our targets so this will be optimized away",
-            );
-        if a_len * (b_len_log2 + 1) < a_len + b_len {
-            let mut other = other.clone();
-            other.extend_simple(
-                mem::take(&mut self.btree_map)
-                    .into_iter()
-                    .map(|(start, v)| (start..=v.end, v.value)),
-            );
-            *self = other;
-            return;
-        }
-
-        *self = (self.range_values() | other.range_values()).into_range_map_blaze();
+        let original_self = mem::take(self); // Take ownership of self
+        *self = original_self | other; // Use the union operator to combine
     }
 }
 
@@ -2883,45 +2809,19 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     /// a |= b;
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
     /// ```
-    fn bitor_assign(&mut self, mut other: Self) {
-        let b_len = other.ranges_len();
-        if b_len == 0 {
-            return;
-        }
-        let a_len = self.ranges_len();
-        if a_len == 0 {
-            *self = other;
-            return;
-        }
-        let a_len_log2: usize = a_len
-            .checked_ilog2()
-            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
-            + 1;
-        // b is small compared to a
-        if b_len * a_len_log2 < a_len + b_len {
-            let difference = other - &*self; // Calculate elements in 'other' not in 'self'
-            for (start, end_value) in difference.btree_map {
-                self.internal_add(start..=end_value.end, end_value.value);
-            }
-            return;
-        }
-        // a is small compared to b
-        let b_len_log2: usize = b_len
-            .checked_ilog2()
-            .map_or(0, |log| log.try_into().expect("log2 fits usize"))
-            + 1;
-        if a_len * b_len_log2 < a_len + b_len {
-            other.extend_simple(
-                mem::take(&mut self.btree_map)
-                    .into_iter()
-                    .map(|(start, v)| (start..=v.end, v.value)),
-            );
-            *self = other;
-            return;
-        }
-
-        *self = (self.range_values() | other.range_values()).into_range_map_blaze();
+    fn bitor_assign(&mut self, other: Self) {
+        *self = mem::take(self) | other;
+        // cmk000 benchmark this
     }
+}
+
+#[inline]
+fn choose_insert(a_len: usize, b_len: usize) -> bool {
+    let a_len_log2_plus_one: usize = a_len
+        .checked_ilog2()
+        .map_or(0, |log| log.try_into().expect("log2 fits usize"))
+        + 1;
+    b_len * a_len_log2_plus_one < STREAM_OVERHEAD * a_len + b_len
 }
 
 // cmk do coverage again at the line level
