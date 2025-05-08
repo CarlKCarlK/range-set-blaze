@@ -1,6 +1,6 @@
 #![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
-// cmk move these to Cargo.toml
+// cmk000 move these to Cargo.toml
 #![warn(
     clippy::use_self,
     unused_lifetimes,

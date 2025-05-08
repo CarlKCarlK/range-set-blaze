@@ -724,13 +724,13 @@ fn map_insert_speed(c: &mut Criterion) {
     // );
 
     // group.bench_with_input(
-    //     BenchmarkId::new("RangeMapBlaze (ranges_insert_cmk)", parameter),
+    //     BenchmarkId::new("RangeMapBlaze (ranges_insert_x3)", parameter),
     //     &parameter,
     //     |b, _| {
     //         b.iter(|| {
     //             let mut answer: RangeMapBlaze<u32, u32> = RangeMapBlaze::new();
     //             for (r, v) in vec_range.iter() {
-    //                 answer.ranges_insert_cmk(r.clone(), *v);
+    //                 answer.ranges_insert_x3(r.clone(), *v);
     //             }
     //         })
     //     },

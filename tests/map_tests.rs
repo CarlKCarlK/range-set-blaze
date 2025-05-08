@@ -276,41 +276,7 @@ fn map_add_in_order() {
         RangeMapBlaze::from_iter((0..1000).map(|i| (i, i)))
     );
 }
-// cmk do these benchmark related
 
-// #[test]
-//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-// fn map_memoryless_data() {
-//     let len = 100_000_000;
-//     let coverage_goal = 0.75;
-//     let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
-//     let range_map_blaze = RangeMapBlaze::from_iter(memoryless_data);
-//     let coverage = range_map_blaze.len() as f64 / len as f64;
-//     println!(
-//         "coverage {coverage:?} range_len {:?}",
-//         range_map_blaze.range_len().separate_with_commas()
-//     );
-// }
-// #[test]
-//#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-// fn map_memoryless_vec() {
-//     let len = 100_000_000;
-//     let coverage_goal = 0.75;
-//     let memoryless_data = MemorylessData::new(0, 10_000_000, len, coverage_goal);
-//     let data_as_vec: Vec<u64> = memoryless_data.collect();
-//     let start = Instant::now();
-//     // let range_map_blaze = RangeMapBlaze::from_mut_slice(data_as_vec.as_mut_slice());
-//     let range_map_blaze = RangeMapBlaze::from_iter(data_as_vec);
-//     let coverage = range_map_blaze.len() as f64 / len as f64;
-//     println!(
-//         "coverage {coverage:?} range_len {:?}",
-//         range_map_blaze.ranges_len().separate_with_commas()
-//     );
-//     println!(
-//         "xTime elapsed in expensive_function() is: {} ms",
-//         start.elapsed().as_millis()
-//     );
-// }
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_iters() -> Result<(), Box<dyn std::error::Error>> {
@@ -2609,8 +2575,6 @@ fn fast_union() {
         r#"(1..=2, "a"), (3..=5, "x"), (13..=14, "b"), (15..=16, "c"), (17..=18, "d"), (19..=20, "e")"#
     );
 }
-
-// cmk-1 understand why so much is commented out and if it can be deleted.
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

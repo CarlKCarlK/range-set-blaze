@@ -1166,6 +1166,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     #[cfg(never)]
+    // TODO: Look at other TODOs before enabling this.
     // #![cfg_attr(feature = "cursor", feature(btree_cursors, new_range_api))]
     // #[cfg(feature = "cursor")]
     //  use core::{cmp::min, range::Bound};
@@ -1201,7 +1202,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
 
             // Left residual slice
             if stored_start < *range.start() {
-                let left_end = range.start().sub_one(); // cmk are we sure this won't underflow?
+                let left_end = range.start().sub_one(); // TODO are we sure this won't underflow?
                 self.len += T::safe_len(&(stored_start..=left_end));
                 self.btree_map.insert(
                     stored_start,
@@ -1231,8 +1232,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     #[cfg(never)]
     // For benchmarking, based on https://github.com/jeffparsons/rangemap's `insert` method.
     pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
-        use core::ops::Bound::{Included, Unbounded}; // cmk
-        // B
+        use core::ops::Bound::{Included, Unbounded}; // TOODO: Move to the top
 
         let start = *range.start();
         let end = *range.end();
@@ -1250,7 +1250,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             .rev()
             .take(2)
             .filter(|(_stored_start, stored_end_value)| {
-                // cmk use saturation arithmetic to avoid underflow
+                // TODO use saturation arithmetic to avoid underflow
                 let end = stored_end_value.end;
                 end >= start || (start != T::min_value() && end >= start.sub_one())
             });
@@ -1636,7 +1636,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         }
     }
 
-    //cmk #[cfg(not(feature = "cursor"))]
     #[inline]
     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>, value: V) {
         let (start, end) = internal_range.clone().into_inner();
@@ -2505,7 +2504,7 @@ where
     ///
     /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
-    ///     /// # Examples
+    /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
@@ -2822,5 +2821,3 @@ fn choose_insert(a_len: usize, b_len: usize) -> bool {
         + 1;
     b_len * a_len_log2_plus_one < STREAM_OVERHEAD * a_len + b_len
 }
-
-// cmk do coverage again at the line level
