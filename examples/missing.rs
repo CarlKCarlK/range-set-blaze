@@ -1,3 +1,5 @@
+//! cmk000
+
 #[cfg(not(target_arch = "wasm32"))]
 mod native {
     use glob::glob;

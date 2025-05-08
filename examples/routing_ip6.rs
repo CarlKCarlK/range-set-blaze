@@ -1,3 +1,5 @@
+//! cmk000
+
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::net::Ipv6Addr;

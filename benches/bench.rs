@@ -1,3 +1,5 @@
+//! cmk000
+
 // https://bheisler.github.io/criterion.rs/book/getting_started.html
 // https://www.notamonadtutorial.com/benchmarking-and-analyzing-rust-performance-with-criterion-and-iai/#:~:text=It%20was%20written%20by%20the%20master%20of%20all,process%2C%20including%20calls%20from%20the%20Rust%20standard%20library.
 // https://www.jibbow.com/posts/criterion-flamegraphs/
@@ -41,7 +43,8 @@ const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {
     "error"
 };
 
-pub fn shuffled(c: &mut Criterion) {
+#[allow(dead_code)]
+fn shuffled(c: &mut Criterion) {
     let seed = 0;
     let len = 2u32.pow(23); // was 25
     let mut group = c.benchmark_group("shuffled");
@@ -50,7 +53,7 @@ pub fn shuffled(c: &mut Criterion) {
     group.bench_function("shuffled RangeSetBlaze", |b| {
         b.iter_batched(
             || gen_data_shuffled(seed, len),
-            |data| range_set_test(data, 1, len as u64),
+            |data| range_set_test(data, 1, u64::from(len)),
             BatchSize::SmallInput,
         );
     });
@@ -70,7 +73,8 @@ fn gen_data_shuffled(seed: u64, len: u32) -> Vec<u32> {
     data
 }
 
-pub fn ascending(c: &mut Criterion) {
+#[allow(dead_code)]
+fn ascending(c: &mut Criterion) {
     let seed = 0;
     let len = 2u32.pow(20); // was 25
     let mut group = c.benchmark_group("ascending");
@@ -79,13 +83,14 @@ pub fn ascending(c: &mut Criterion) {
     group.bench_function("ascending", |b| {
         b.iter_batched(
             || gen_data_ascending(seed, len),
-            |data| range_set_test(data, 1, len as u64),
+            |data| range_set_test(data, 1, u64::from(len)),
             BatchSize::SmallInput,
         );
     });
 }
 
-pub fn descending(c: &mut Criterion) {
+#[allow(dead_code)]
+fn descending(c: &mut Criterion) {
     let seed = 0;
     let len = 2u32.pow(20); // was 25
     let mut group = c.benchmark_group("descending");
@@ -94,7 +99,7 @@ pub fn descending(c: &mut Criterion) {
     group.bench_function("descending range_set_blaze", |b| {
         b.iter_batched(
             || gen_data_descending(seed, len),
-            |data| range_set_test(data, 1, len as u64),
+            |data| range_set_test(data, 1, u64::from(len)),
             BatchSize::SmallInput,
         );
     });
@@ -107,11 +112,13 @@ pub fn descending(c: &mut Criterion) {
     });
 }
 
+#[allow(dead_code)]
 fn gen_data_ascending(_seed: u64, len: u32) -> Vec<u32> {
     let data: Vec<u32> = (0..len).collect();
     data
 }
 
+#[allow(dead_code)]
 fn gen_data_descending(_seed: u64, len: u32) -> Vec<u32> {
     let data: Vec<u32> = (0..len).rev().collect();
     data
@@ -127,7 +134,8 @@ fn btree_set_test(data: Vec<u32>, _range_len: usize, len: usize) {
     assert_eq!(btree_set.len(), len);
 }
 
-pub fn clumps(c: &mut Criterion) {
+#[allow(dead_code)]
+fn clumps(c: &mut Criterion) {
     let range = 0..=9_999_999;
     let coverage_goal = 0.95;
     let mut group = c.benchmark_group("clumps");
@@ -180,18 +188,14 @@ fn bitxor(c: &mut Criterion) {
     group.bench_function("RangeSetBlaze bitxor", |b| {
         b.iter_batched(
             || two_sets(range_len, range.clone(), coverage_goal),
-            |(set0, set1)| {
-                let _answer = &set0 ^ &set1;
-            },
+            |(set0, set1)| &set0 ^ &set1,
             BatchSize::SmallInput,
         );
     });
     group.bench_function("BTreeSet bitxor", |b| {
         b.iter_batched(
             || btree_two_sets(range_len, range.clone(), coverage_goal),
-            |(set0, set1)| {
-                let _answer = &set0 ^ &set1;
-            },
+            |(set0, set1)| &set0 ^ &set1,
             BatchSize::SmallInput,
         );
     });
@@ -208,18 +212,14 @@ fn bitor(c: &mut Criterion) {
     group.bench_function("RangeSetBlaze bitor", |b| {
         b.iter_batched(
             || two_sets(range_len, range.clone(), coverage_goal),
-            |(set0, set1)| {
-                let _answer = &set0 | &set1;
-            },
+            |(set0, set1)| &set0 | &set1,
             BatchSize::SmallInput,
         );
     });
     group.bench_function("BTreeSet bitor", |b| {
         b.iter_batched(
             || btree_two_sets(range_len, range.clone(), coverage_goal),
-            |(set0, set1)| {
-                let _answer = &set0 | &set1;
-            },
+            |(set0, set1)| &set0 | &set1,
             BatchSize::SmallInput,
         );
     });
@@ -236,18 +236,14 @@ fn bitor1(c: &mut Criterion) {
     group.bench_function("RangeSetBlaze bitor1", |b| {
         b.iter_batched(
             || two_sets1(range_len, range.clone(), coverage_goal),
-            |(set0, set1)| {
-                let _answer = &set0 | &set1;
-            },
+            |(set0, set1)| &set0 | &set1,
             BatchSize::SmallInput,
         );
     });
     group.bench_function("BTreeSet bitor1", |b| {
         b.iter_batched(
             || btree_two_sets1(range_len, range.clone(), coverage_goal),
-            |(set0, set1)| {
-                let _answer = &set0 | &set1;
-            },
+            |(set0, set1)| &set0 | &set1,
             BatchSize::SmallInput,
         );
     });
@@ -295,7 +291,7 @@ fn two_sets1<T: Integer + SampleUniform>(
             How::Intersection,
         )
         .collect(),
-        [*range.start()].into_iter().collect(),
+        std::iter::once(*range.start()).collect(),
     )
 }
 fn btree_two_sets<T: Integer + SampleUniform>(
@@ -372,9 +368,7 @@ fn k_intersect(c: &mut Criterion) {
                     &mut StdRng::seed_from_u64(0),
                 )
             },
-            |sets| {
-                let _answer = sets.intersection();
-            },
+            range_set_blaze::MultiwayRangeSetBlaze::intersection,
             BatchSize::SmallInput,
         );
     });
@@ -472,9 +466,7 @@ fn coverage_goal(c: &mut Criterion) {
                             &mut StdRng::seed_from_u64(0),
                         )
                     },
-                    |sets| {
-                        let _answer = sets.intersection();
-                    },
+                    range_set_blaze::MultiwayRangeSetBlaze::intersection,
                     BatchSize::SmallInput,
                 );
             },
@@ -581,11 +573,11 @@ fn union_vary_range_len(c: &mut Criterion) {
     );
 }
 
-fn access_k(&x: &(usize, usize)) -> usize {
+const fn access_k(&x: &(usize, usize)) -> usize {
     x.0
 }
 #[allow(dead_code)]
-fn access_r(&x: &(usize, usize)) -> usize {
+const fn access_r(&x: &(usize, usize)) -> usize {
     x.1
 }
 #[allow(dead_code)]
@@ -661,12 +653,10 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
             |b, _k| {
                 b.iter_batched(
                     || setup,
-                    |sets| {
-                        let _answer = match how {
-                            How::Intersection => sets.intersection(),
-                            How::Union => sets.union(),
-                            How::None => panic!("should not happen"),
-                        };
+                    |sets| match how {
+                        How::Intersection => sets.intersection(),
+                        How::Union => sets.union(),
+                        How::None => panic!("should not happen"),
                     },
                     BatchSize::SmallInput,
                 );
@@ -734,64 +724,34 @@ fn every_op_blaze(c: &mut Criterion) {
     for (_range_len, setup) in &setup_vec {
         let parameter = setup[0].ranges_len();
         group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
-            b.iter_batched(
-                || setup,
-                |sets| {
-                    let _answer = &sets[0] | &sets[1];
-                },
-                BatchSize::SmallInput,
-            );
+            b.iter_batched(|| setup, |sets| &sets[0] | &sets[1], BatchSize::SmallInput);
         });
         group.bench_with_input(
             BenchmarkId::new("intersection", parameter),
             &parameter,
             |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |sets| {
-                        let _answer = &sets[0] & &sets[1];
-                    },
-                    BatchSize::SmallInput,
-                );
+                b.iter_batched(|| setup, |sets| &sets[0] & &sets[1], BatchSize::SmallInput);
             },
         );
         group.bench_with_input(
             BenchmarkId::new("difference", parameter),
             &parameter,
             |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |sets| {
-                        let _answer = &sets[0] - &sets[1];
-                    },
-                    BatchSize::SmallInput,
-                );
+                b.iter_batched(|| setup, |sets| &sets[0] - &sets[1], BatchSize::SmallInput);
             },
         );
         group.bench_with_input(
             BenchmarkId::new("symmetric difference", parameter),
             &parameter,
             |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |sets| {
-                        let _answer = &sets[0] ^ &sets[1];
-                    },
-                    BatchSize::SmallInput,
-                );
+                b.iter_batched(|| setup, |sets| &sets[0] ^ &sets[1], BatchSize::SmallInput);
             },
         );
         group.bench_with_input(
             BenchmarkId::new("complement", parameter),
             &parameter,
             |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |sets| {
-                        let _answer = !&sets[0];
-                    },
-                    BatchSize::SmallInput,
-                );
+                b.iter_batched(|| setup, |sets| !&sets[0], BatchSize::SmallInput);
             },
         );
     }
@@ -840,64 +800,34 @@ fn every_op_roaring(c: &mut Criterion) {
         let (_ignore, setup_0) = &setup_vec_0[i];
         let parameter = setup_0[0].ranges_len();
         group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
-            b.iter_batched(
-                || setup,
-                |sets| {
-                    let _answer = &sets[0] | &sets[1];
-                },
-                BatchSize::SmallInput,
-            );
+            b.iter_batched(|| setup, |sets| &sets[0] | &sets[1], BatchSize::SmallInput);
         });
         group.bench_with_input(
             BenchmarkId::new("intersection", parameter),
             &parameter,
             |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |sets| {
-                        let _answer = &sets[0] & &sets[1];
-                    },
-                    BatchSize::SmallInput,
-                );
+                b.iter_batched(|| setup, |sets| &sets[0] & &sets[1], BatchSize::SmallInput);
             },
         );
         group.bench_with_input(
             BenchmarkId::new("difference", parameter),
             &parameter,
             |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |sets| {
-                        let _answer = &sets[0] - &sets[1];
-                    },
-                    BatchSize::SmallInput,
-                );
+                b.iter_batched(|| setup, |sets| &sets[0] - &sets[1], BatchSize::SmallInput);
             },
         );
         group.bench_with_input(
             BenchmarkId::new("symmetric difference", parameter),
             &parameter,
             |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |sets| {
-                        let _answer = &sets[0] ^ &sets[1];
-                    },
-                    BatchSize::SmallInput,
-                );
+                b.iter_batched(|| setup, |sets| &sets[0] ^ &sets[1], BatchSize::SmallInput);
             },
         );
         group.bench_with_input(
             BenchmarkId::new("complement", parameter),
             &parameter,
             |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |sets| {
-                        let _answer = &universe - &sets[0];
-                    },
-                    BatchSize::SmallInput,
-                );
+                b.iter_batched(|| setup, |sets| &universe - &sets[0], BatchSize::SmallInput);
             },
         );
     }
@@ -935,25 +865,13 @@ fn vary_coverage_goal(c: &mut Criterion) {
     for (range_len, setup) in &setup_vec {
         let parameter = *range_len;
         group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
-            b.iter_batched(
-                || setup,
-                |sets| {
-                    let _answer = &sets[0] | &sets[1];
-                },
-                BatchSize::SmallInput,
-            );
+            b.iter_batched(|| setup, |sets| &sets[0] | &sets[1], BatchSize::SmallInput);
         });
         group.bench_with_input(
             BenchmarkId::new("intersection", parameter),
             &parameter,
             |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |sets| {
-                        let _answer = &sets[0] & &sets[1];
-                    },
-                    BatchSize::SmallInput,
-                );
+                b.iter_batched(|| setup, |sets| &sets[0] & &sets[1], BatchSize::SmallInput);
             },
         );
     }
@@ -978,7 +896,7 @@ fn vary_type(c: &mut Criterion) {
             b.iter_batched(
                 || k_sets(k, range_len, &range, coverage_goal, how, &mut StdRng::seed_from_u64(seed)),
                 |sets| {
-                    let _answer = &sets[0] | &sets[1];
+                     &sets[0] | &sets[1]
                 },
                 BatchSize::SmallInput,
             );
@@ -1006,13 +924,13 @@ fn union_two_sets(c: &mut Criterion) {
         let temp: Vec<RangeSetBlaze<u32>> =
             k_sets(1, range_len0, &range, coverage_goal, how, &mut rng);
         let set0 = &temp[0];
-        let rangemap_set0 = &rangemap::RangeInclusiveSet::from_iter(set0.ranges());
-        let roaring_set0 = RoaringBitmap::from_iter(set0.iter());
+        let rangemap_set0 = &set0.ranges().collect::<rangemap::RangeInclusiveSet<_>>();
+        let roaring_set0 = set0.iter().collect::<RoaringBitmap>();
 
         for range_len1 in &range_len_list1 {
             let set1 = &k_sets(1, *range_len1, &range, coverage_goal, how, &mut rng)[0];
-            let rangemap_set1 = rangemap::RangeInclusiveSet::from_iter(set1.ranges());
-            let roaring_set1 = RoaringBitmap::from_iter(set1.iter());
+            let rangemap_set1 = set1.ranges().collect::<rangemap::RangeInclusiveSet<_>>();
+            let roaring_set1 = set1.iter().collect::<RoaringBitmap>();
 
             let parameter = set1.ranges_len();
 
@@ -1098,13 +1016,7 @@ fn str_vs_ad_by_cover(c: &mut Criterion) {
         let parameter = coverage_goal;
 
         group.bench_with_input(BenchmarkId::new("stream", parameter), &parameter, |b, _| {
-            b.iter_batched(
-                || set0,
-                |set00| {
-                    let _answer = set00 | set1;
-                },
-                BatchSize::SmallInput,
-            );
+            b.iter_batched(|| set0, |set00| set00 | set1, BatchSize::SmallInput);
         });
         group.bench_with_input(BenchmarkId::new("ad_hoc", parameter), &parameter, |b, _| {
             b.iter_batched(
@@ -1160,11 +1072,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("RangeSetBlaze (integers-iter)", parameter),
             &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(&vec);
-                })
-            },
+            |b, _| b.iter(|| RangeSetBlaze::from_iter(&vec)),
         );
 
         #[cfg(feature = "from_slice")]
@@ -1174,31 +1082,19 @@ fn ingest_clumps_base(c: &mut Criterion) {
                 parameter,
             ),
             &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer = RangeSetBlaze::from_slice(&vec);
-                })
-            },
+            |b, _| b.iter(|| RangeSetBlaze::from_slice(&vec)),
         );
 
         group.bench_with_input(
             BenchmarkId::new("Roaring (integers)", parameter),
             &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer = RoaringBitmap::from_iter(vec.iter());
-                })
-            },
+            |b, _| b.iter(|| RoaringBitmap::from_iter(vec.iter())),
         );
 
         group.bench_with_input(
             BenchmarkId::new("RangeSetBlaze (ranges)", parameter),
             &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(&vec_range);
-                })
-            },
+            |b, _| b.iter(|| RangeSetBlaze::from_iter(&vec_range)),
         );
 
         group.bench_with_input(
@@ -1217,11 +1113,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("BTreeSet", parameter),
             &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer = BTreeSet::from_iter(&vec);
-                })
-            },
+            |b, _| b.iter(|| BTreeSet::from_iter(&vec)),
         );
         group.bench_with_input(
             BenchmarkId::new("HashSet", parameter),
@@ -1268,11 +1160,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("RangeSetBlaze (integers)", parameter),
             &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer = RangeSetBlaze::from_iter(&vec);
-                })
-            },
+            |b, _| b.iter(|| RangeSetBlaze::from_iter(&vec)),
         );
 
         #[cfg(feature = "from_slice")]
@@ -1282,11 +1170,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
                 parameter,
             ),
             &parameter,
-            |b, _| {
-                b.iter(|| {
-                    let _answer = RangeSetBlaze::from_slice(&vec);
-                })
-            },
+            |b, _| b.iter(|| RangeSetBlaze::from_slice(&vec)),
         );
 
         group.bench_with_input(
@@ -1418,9 +1302,12 @@ fn ingest_clumps_ranges(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer: rangemap::RangeInclusiveSet<u32> =
-                        rangemap::RangeInclusiveSet::from_iter(vec_range.iter().cloned());
-                })
+                    let _answer: rangemap::RangeInclusiveSet<u32> = vec_range
+                        .iter()
+                        .cloned()
+                        .collect::<rangemap::RangeInclusiveSet<_>>(
+                    );
+                });
             },
         );
 
@@ -1430,7 +1317,7 @@ fn ingest_clumps_ranges(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let _answer = RangeSetBlaze::from_iter(&vec_range);
-                })
+                });
             },
         );
 
@@ -1443,13 +1330,14 @@ fn ingest_clumps_ranges(c: &mut Criterion) {
                     for range in vec_range.iter().cloned() {
                         answer.insert_range(range);
                     }
-                })
+                });
             },
         );
     }
     group.finish();
 }
 
+#[allow(clippy::range_plus_one)]
 fn ingest_clumps_easy(c: &mut Criterion) {
     let group_name = "ingest_clumps_easy";
     let k = 1;
@@ -1483,9 +1371,12 @@ fn ingest_clumps_easy(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer: rangemap::RangeInclusiveSet<u32> =
-                        rangemap::RangeInclusiveSet::from_iter(vec_range.iter().cloned());
-                })
+                    let _answer: rangemap::RangeInclusiveSet<u32> = vec_range
+                        .iter()
+                        .cloned()
+                        .collect::<rangemap::RangeInclusiveSet<_>>(
+                    );
+                });
             },
         );
 
@@ -1495,7 +1386,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let _answer = RangeSetBlaze::from_iter(&vec_range);
-                })
+                });
             },
         );
 
@@ -1508,7 +1399,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
                     for range in vec_range.iter().cloned() {
                         answer.insert_range(range);
                     }
-                })
+                });
             },
         );
 
@@ -1523,7 +1414,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
                         let b = range_collections::RangeSet::from(start..end + 1);
                         answer |= b;
                     }
-                })
+                });
             },
         );
 
@@ -1536,7 +1427,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
                     for range in &vec_range {
                         answer.insert_range(range.clone());
                     }
-                })
+                });
             },
         );
     }
@@ -1614,6 +1505,7 @@ fn worst(c: &mut Criterion) {
     group.finish();
 }
 
+#[allow(clippy::too_many_lines)]
 fn overflow(c: &mut Criterion) {
     let group_name = "overflow";
     let mut group = c.benchmark_group(group_name);
@@ -1629,7 +1521,7 @@ fn overflow(c: &mut Criterion) {
             bencher.iter_batched(
                 || gen_pair(&mut rng),
                 |(a, b)| {
-                    let result = (a as i128) + 1 < (b as i128);
+                    let result = i128::from(a) + 1 < i128::from(b);
                     criterion::black_box(result);
                 },
                 BatchSize::NumIterations(num_iterations),
@@ -1677,10 +1569,7 @@ fn overflow(c: &mut Criterion) {
             bencher.iter_batched(
                 || gen_pair(&mut rng),
                 |(a, b)| {
-                    let result = match a.checked_add(1) {
-                        Some(sum) => sum < b,
-                        None => false,
-                    };
+                    let result = a.checked_add(1).is_some_and(|sum| sum < b);
                     criterion::black_box(result);
                 },
                 BatchSize::NumIterations(num_iterations),
@@ -1732,7 +1621,7 @@ fn overflow(c: &mut Criterion) {
             bencher.iter_batched(
                 || gen_pair(&mut rng),
                 |(a, b)| {
-                    let result = (a as i64) + 1 < (b as i64);
+                    let result = i64::from(a) + 1 < i64::from(b);
                     criterion::black_box(result);
                 },
                 BatchSize::NumIterations(num_iterations),
@@ -1796,7 +1685,7 @@ fn overflow(c: &mut Criterion) {
             bencher.iter_batched(
                 || gen_pair_i8(&mut rng),
                 |(a, b)| {
-                    let result = a as i16 + 1 < b as i16;
+                    let result = i16::from(a) + 1 < i16::from(b);
                     criterion::black_box(result);
                 },
                 BatchSize::NumIterations(num_iterations),
@@ -1949,13 +1838,14 @@ fn gen_pair_u8(rng: &mut StdRng) -> (u8, u8) {
 //     group.finish();
 // }
 
+#[allow(clippy::too_many_lines)]
 fn worst_op_blaze(c: &mut Criterion) {
     let group_name = "worst_op_blaze";
     let iter_len_list = [
         1usize, 3, 10, 30, 100, 300, 1000, 3_000, 10_000, 30_000, 100_000, 300_000, 1_000_000,
     ];
     let pair_count = 20;
-    let uniform = Uniform::new(0, 100_000).unwrap();
+    let uniform = Uniform::new(0, 100_000).expect("Uniform::new failed");
     let mut group = c.benchmark_group(group_name);
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
@@ -1993,7 +1883,7 @@ fn worst_op_blaze(c: &mut Criterion) {
                     .map(|list_of_sets| {
                         list_of_sets
                             .iter()
-                            .map(|set| RoaringBitmap::from_iter(set.iter()))
+                            .map(|set| set.iter().collect::<RoaringBitmap>())
                             .collect::<Vec<_>>()
                     })
                     .collect::<Vec<_>>(),
@@ -2029,7 +1919,7 @@ fn worst_op_blaze(c: &mut Criterion) {
                     .map(|list_of_sets| {
                         list_of_sets
                             .iter()
-                            .map(|set| HashSet::from_iter(set.iter()))
+                            .map(|set| set.iter().collect::<HashSet<_>>())
                             .collect::<Vec<HashSet<_>>>()
                     })
                     .collect::<Vec<_>>(),

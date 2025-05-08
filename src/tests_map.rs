@@ -222,80 +222,80 @@ const fn check_traits() {
     is_like_btreemap::<ARangeMapBlaze>();
 
     type ARangeValuesIter<'a> = RangeValuesIter<'a, i32, u64>;
-    is_sssu::<ARangeValuesIter>();
-    is_like_btreemap_iter::<ARangeValuesIter>();
+    is_sssu::<ARangeValuesIter<'_>>();
+    is_like_btreemap_iter::<ARangeValuesIter<'_>>();
 
     type AIntoRangeValuesIter = IntoRangeValuesIter<i32, u64>;
     is_sssu::<AIntoRangeValuesIter>();
     is_like_btreemap_into_iter::<AIntoRangeValuesIter>();
 
     type AIterMap<'a> = IterMap<i32, &'a u64, ARangeValuesIter<'a>>;
-    is_sssu::<AIterMap>();
-    is_like_btreemap_iter_less_exact_size::<AIterMap>();
+    is_sssu::<AIterMap<'_>>();
+    is_like_btreemap_iter_less_exact_size::<AIterMap<'_>>();
 
     type AIntoIterMap = IntoIterMap<i32, u64>;
     is_sssu::<AIntoIterMap>();
     is_like_btreemap_into_iter_less_exact_size::<AIntoIterMap>();
 
     type AKMergeMap<'a> = crate::KMergeMap<i32, &'a u64, ARangeValuesIter<'a>>;
-    is_sssu::<AKMergeMap>();
-    is_like_btreemap_iter_less_both::<AKMergeMap>();
+    is_sssu::<AKMergeMap<'_>>();
+    is_like_btreemap_iter_less_both::<AKMergeMap<'_>>();
 
     type AMergeMap<'a> = crate::MergeMap<i32, &'a u64, ARangeValuesIter<'a>, ARangeValuesIter<'a>>;
-    is_sssu::<AMergeMap>();
-    is_like_btreemap_iter_less_both::<AMergeMap>();
+    is_sssu::<AMergeMap<'_>>();
+    is_like_btreemap_iter_less_both::<AMergeMap<'_>>();
 
     type AAssumePrioritySortedStartsMap<'a> =
         AssumePrioritySortedStartsMap<i32, &'a u64, vec::IntoIter<Priority<i32, &'a u64>>>;
-    is_sssu::<AAssumePrioritySortedStartsMap>();
-    is_like_btreemap_iter_less_both::<AAssumePrioritySortedStartsMap>();
+    is_sssu::<AAssumePrioritySortedStartsMap<'_>>();
+    is_like_btreemap_iter_less_both::<AAssumePrioritySortedStartsMap<'_>>();
 
     type AUnionIterMap<'a> = UnionIterMap<i32, &'a u64, AAssumePrioritySortedStartsMap<'a>>;
-    is_sssu::<AUnionIterMap>();
-    is_like_btreemap_iter_less_both::<AUnionIterMap>();
+    is_sssu::<AUnionIterMap<'_>>();
+    is_like_btreemap_iter_less_both::<AUnionIterMap<'_>>();
 
     type ASymDiffIterMap<'a> = SymDiffIterMap<i32, &'a u64, AAssumePrioritySortedStartsMap<'a>>;
-    is_sssu::<ASymDiffIterMap>();
-    is_like_btreemap_iter_less_both::<ASymDiffIterMap>();
+    is_sssu::<ASymDiffIterMap<'_>>();
+    is_like_btreemap_iter_less_both::<ASymDiffIterMap<'_>>();
 
     type ARangesIter<'a> = RangesIter<'a, i32>;
 
     type AIntersectionIterMap<'a> =
         IntersectionIterMap<i32, &'a u64, ARangeValuesIter<'a>, ARangesIter<'a>>;
-    is_sssu::<AIntersectionIterMap>();
-    is_like_btreemap_iter_less_both::<AIntersectionIterMap>();
+    is_sssu::<AIntersectionIterMap<'_>>();
+    is_like_btreemap_iter_less_both::<AIntersectionIterMap<'_>>();
 
     type AKeys<'a> = Keys<i32, &'a u64, ARangeValuesIter<'a>>;
-    is_sssu::<AKeys>();
-    is_like_btreemap_iter_less_exact_size::<AKeys>();
+    is_sssu::<AKeys<'_>>();
+    is_like_btreemap_iter_less_exact_size::<AKeys<'_>>();
 
     type AIntoKeys = IntoKeys<i32, u64>;
     is_sssu::<AIntoKeys>();
     is_like_btreemap_into_iter_less_exact_size::<AIntoKeys>();
 
     type AValues<'a> = Values<i32, &'a u64, ARangeValuesIter<'a>>;
-    is_sssu::<AValues>();
-    is_like_btreemap_iter_less_exact_size::<AValues>();
+    is_sssu::<AValues<'_>>();
+    is_like_btreemap_iter_less_exact_size::<AValues<'_>>();
 
     type AIntoValues = IntoValues<i32, u64>;
     is_sssu::<AIntoValues>();
     is_like_btreemap_into_iter_less_exact_size::<AIntoValues>();
 
     type ARangeToRangeValueIter<'a> = RangeToRangeValueIter<'a, i32, u64, ARangesIter<'a>>;
-    is_sssu::<ARangeToRangeValueIter>();
-    is_like_btreemap_iter_less_both::<ARangeToRangeValueIter>();
+    is_sssu::<ARangeToRangeValueIter<'_>>();
+    is_like_btreemap_iter_less_both::<ARangeToRangeValueIter<'_>>();
 
     type ACheckSortedDisjointMap<'a> = CheckSortedDisjointMap<i32, &'a u64, ARangeValuesIter<'a>>;
-    is_sssu::<ACheckSortedDisjointMap>();
+    is_sssu::<ACheckSortedDisjointMap<'_>>();
     type BCheckSortedDisjointMap<'a> = CheckSortedDisjointMap<
         i32,
         &'a u64,
         core::array::IntoIter<(RangeInclusive<i32>, &'a u64), 0>,
     >;
-    is_like_check_sorted_disjoint_map::<BCheckSortedDisjointMap>();
+    is_like_check_sorted_disjoint_map::<BCheckSortedDisjointMap<'_>>();
 
     type ADynSortedDisjointMap<'a> = DynSortedDisjointMap<'a, i32, &'a u64>;
-    is_like_dyn_sorted_disjoint_map::<ADynSortedDisjointMap>();
+    is_like_dyn_sorted_disjoint_map::<ADynSortedDisjointMap<'_>>();
 }
 
 const fn is_ddcppdheo<

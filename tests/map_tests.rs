@@ -1,3 +1,5 @@
+//! cmk000
+
 #![cfg(test)]
 #![allow(unexpected_cfgs)]
 
@@ -123,7 +125,7 @@ fn map_insert_255u8() {
         (25..=25, "There".to_string()),
     ]
     .into_iter();
-    let range_map_blaze = RangeMapBlaze::<_, String>::from_iter(iter);
+    let range_map_blaze = iter.collect::<RangeMapBlaze<_, String>>();
     assert_eq!(
         range_map_blaze.to_string(),
         r#"(25..=25, "There"), (255..=255, "Hello")"#
@@ -274,7 +276,7 @@ fn map_add_in_order() {
     }
     assert_eq!(
         range_map,
-        RangeMapBlaze::from_iter((0..1000).map(|i| (i, i)))
+        (0..1000).map(|i| (i, i)).collect::<RangeMapBlaze<_, _>>()
     );
 }
 
@@ -618,7 +620,8 @@ fn map_nand_repro() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
+#[allow(clippy::many_single_char_names, clippy::too_many_lines)]
+fn map_parity() {
     // notice these are all borrowed
     let a = &RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
     let b = &RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
@@ -738,12 +741,11 @@ fn map_parity() -> Result<(), Box<dyn std::error::Error>> {
     let a = a.into_range_map_blaze();
     let b: RangeMapBlaze<i32, &str> = RangeMapBlaze::default();
     assert_eq!(a, b);
-
-    Ok(())
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::many_single_char_names)]
 fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
     // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
@@ -790,6 +792,7 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::many_single_char_names)]
 fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
     // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
@@ -813,9 +816,11 @@ fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
         .union(a2.range_values());
     let e = a0_tee.union(a12.range_values());
 
-    let f = UnionIterMap::from_iter(a0.range_values())
-        .union(UnionIterMap::from_iter(a1.range_values()))
-        .union(UnionIterMap::from_iter(a2.range_values()));
+    let f = a0
+        .range_values()
+        .collect::<UnionIterMap<_, _, _>>()
+        .union(a1.range_values().collect::<UnionIterMap<_, _, _>>())
+        .union(a2.range_values().collect::<UnionIterMap<_, _, _>>());
     assert!(a.range_values().equal(b));
     assert!(a.range_values().equal(c));
     assert!(a.range_values().equal(d));
@@ -826,6 +831,7 @@ fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::many_single_char_names)]
 fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
     let a1 = RangeMapBlaze::from_iter([(8..=9, "a1")]);
@@ -849,6 +855,7 @@ fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::many_single_char_names)]
 fn map_xor() -> Result<(), Box<dyn std::error::Error>> {
     // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
@@ -864,8 +871,8 @@ fn map_xor() -> Result<(), Box<dyn std::error::Error>> {
     let c = not_a01_complement.range_values() ^ a2.range_values();
     let d = (a0.range_values() | a1.range_values()) ^ a2.range_values();
     let e = a01_tee.symmetric_difference(a2.range_values());
-    let f =
-        UnionIterMap::from_iter(a01.range_values()) ^ UnionIterMap::from_iter(a2.range_values());
+    let f = a01.range_values().collect::<UnionIterMap<_, _, _>>()
+        ^ a2.range_values().collect::<UnionIterMap<_, _, _>>();
     assert!(a.range_values().equal(b));
     assert_eq!(
         c.into_string(),
@@ -879,6 +886,7 @@ fn map_xor() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::many_single_char_names)]
 fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
     let a1 = RangeMapBlaze::from_iter([(8..=9, "a1")]);
@@ -1056,7 +1064,9 @@ fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut _sorted_disjoint_iter: UnionIterMap<_, _, _> =
         _range_map_blaze.range_values().collect();
-    _sorted_disjoint_iter = UnionIterMap::from_iter(_range_map_blaze.range_values());
+    _sorted_disjoint_iter = _range_map_blaze
+        .range_values()
+        .collect::<UnionIterMap<_, _, _>>();
 
     Ok(())
 }
@@ -1158,7 +1168,9 @@ fn map_insert2() {
         let b = a.insert(insert, 'x');
         assert_eq!(
             a,
-            RangeMapBlaze::from_iter(a2.iter().map(|(k, v)| (*k, *v)))
+            a2.iter()
+                .map(|(k, v)| (*k, *v))
+                .collect::<RangeMapBlaze<_, _>>()
         );
         assert_eq!(b, b2);
     }
@@ -1231,7 +1243,9 @@ fn map_remove2() {
         let b = a.remove(remove);
         assert_eq!(
             a,
-            RangeMapBlaze::from_iter(a2.iter().map(|(&k, &v)| (k, v)))
+            a2.iter()
+                .map(|(&k, &v)| (k, v))
+                .collect::<RangeMapBlaze<_, _>>()
         );
         assert_eq!(b, b2);
     }
@@ -1246,7 +1260,9 @@ fn map_remove2() {
         let b = a.remove(remove);
         assert_eq!(
             a,
-            RangeMapBlaze::from_iter(a2.iter().map(|(&k, &v)| (k, v)))
+            a2.iter()
+                .map(|(&k, &v)| (k, v))
+                .collect::<RangeMapBlaze<_, _>>()
         );
         assert_eq!(b, b2);
     }
@@ -1269,12 +1285,12 @@ fn map_split_off() {
         let b = a.split_off(split);
 
         let a_iter = a2.iter().map(|(&k, &v)| (k, v)).filter(|&(k, _)| k < split);
-        let aa = RangeMapBlaze::from_iter(a_iter);
+        let aa = a_iter.collect::<RangeMapBlaze<_, _>>();
         assert_eq!(a.len(), aa.len());
         assert_eq!(a, aa);
 
         let b2_iter = b2.iter().map(|(&k, &v)| (k, v));
-        let b2b = RangeMapBlaze::from_iter(b2_iter);
+        let b2b = b2_iter.collect::<RangeMapBlaze<_, _>>();
         assert_eq!(b, b2b);
     }
 
@@ -1289,11 +1305,16 @@ fn map_split_off() {
         let b = a.split_off(split);
         assert_eq!(
             a,
-            RangeMapBlaze::from_iter(a2.iter().map(|(&k, &v)| (k, v)).filter(|&(k, _)| k < split))
+            a2.iter()
+                .map(|(&k, &v)| (k, v))
+                .filter(|&(k, _)| k < split)
+                .collect::<RangeMapBlaze<_, _>>()
         );
         assert_eq!(
             b,
-            RangeMapBlaze::from_iter(b2.iter().map(|(&k, &v)| (k, v)))
+            b2.iter()
+                .map(|(&k, &v)| (k, v))
+                .collect::<RangeMapBlaze<_, _>>()
         );
     }
 }
@@ -1428,7 +1449,9 @@ fn map_string_animation() {
     println!("main {main:?}");
 
     // Create a 10 frame `digits` track with "0" to "9"".
-    let mut digits = RangeMapBlaze::from_iter((0..=9).map(|i| (i..=i, i.to_string())));
+    let mut digits = (0..=9)
+        .map(|i| (i..=i, i.to_string()))
+        .collect::<RangeMapBlaze<_, _>>();
 
     // Make frame 0 be "start"
     digits.insert(0, "start".to_string());
@@ -1493,6 +1516,11 @@ fn understand_strings_as_values() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(
+    clippy::too_many_lines,
+    clippy::many_single_char_names,
+    clippy::cognitive_complexity
+)]
 fn test_every_sorted_disjoint_map_method() {
     use syntactic_for::syntactic_for;
 
@@ -1655,7 +1683,7 @@ fn map_empty_construction() {
     assert!(via_new.is_empty());
 
     // Construct via from_iter with no elements
-    let from_iter = RangeMapBlaze::<u8, char>::from_iter(std::iter::empty::<(u8, char)>());
+    let from_iter = std::iter::empty::<(u8, char)>().collect::<RangeMapBlaze<u8, char>>();
     assert!(from_iter.is_empty());
 
     // Empty vs BTreeMap comparison
@@ -2720,7 +2748,7 @@ fn test_ranges_retain() {
 fn test_empty_inputs_union_symmetric_difference() {
     let inputs: [RangeMapBlaze<i32, &str>; 0] = [];
     let union = inputs.union();
-    assert_eq!(union.to_string(), r#""#);
+    assert_eq!(union.to_string(), r"");
 
     let inputs: [RangeMapBlaze<i32, &str>; 0] = [];
     let symmetric_difference = inputs.symmetric_difference();
@@ -3034,12 +3062,15 @@ fn test_worst() {
         .collect();
     println!("{vec:?}");
 
-    let a0a = RangeMapBlaze::from_iter(vec.iter().rev());
+    let a0a = vec.iter().rev().collect::<RangeMapBlaze<_, _>>();
     let mut a0b = RangeMapBlaze::<u32, u32>::new();
     a0b.extend(vec.iter().cloned());
-    let a1 = BTreeMap::from_iter(vec.iter().cloned());
-    let a2: HashMap<u32, u32> = HashMap::from_iter(vec.iter().cloned());
-    let a3 = rangemap::RangeInclusiveMap::from_iter(vec.iter().map(|(k, v)| (*k..=*k, *v)));
+    let a1 = vec.iter().cloned().collect::<BTreeMap<_, _>>();
+    let a2: HashMap<u32, u32> = vec.iter().cloned().collect::<HashMap<_, _>>();
+    let a3 = vec
+        .iter()
+        .map(|(k, v)| (*k..=*k, *v))
+        .collect::<rangemap::RangeInclusiveMap<_, _>>();
     println!("{a0a}");
     println!("{a0b}");
     println!("{a1:?}");
@@ -3071,7 +3102,9 @@ fn test_union() {
         range_per_clump,
     );
     let map0 = &temp[0];
-    let rangemap_map0 = &rangemap::RangeInclusiveMap::from_iter(map0.range_values());
+    let rangemap_map0 = &map0
+        .range_values()
+        .collect::<rangemap::RangeInclusiveMap<_, _>>();
 
     let map1 = &k_maps(
         1,
@@ -3083,7 +3116,9 @@ fn test_union() {
         value_count,
         range_per_clump,
     )[0];
-    let rangemap_map1 = rangemap::RangeInclusiveMap::from_iter(map1.range_values());
+    let rangemap_map1 = map1
+        .range_values()
+        .collect::<rangemap::RangeInclusiveMap<_, _>>();
 
     let mut a0a = map0.clone();
     a0a |= map1;

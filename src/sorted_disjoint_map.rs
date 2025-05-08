@@ -408,7 +408,7 @@ where
     fn complement_with(
         self,
         v: &VR::Target,
-    ) -> RangeToRangeValueIter<T, VR::Target, NotIter<T, impl SortedDisjoint<T>>>
+    ) -> RangeToRangeValueIter<'_, T, VR::Target, NotIter<T, impl SortedDisjoint<T>>>
     where
         Self: Sized,
     {

@@ -1,3 +1,5 @@
+//! cmk000 crate docs
+
 use criterion::BatchSize;
 use criterion::{
     AxisScale, BenchmarkId, Criterion, PlotConfiguration, criterion_group, criterion_main,
@@ -13,11 +15,11 @@ use tests_common::{ClumpyMapIter, ClumpyMapRange, How, k_maps, width_to_range_u3
 
 fn map_worst(c: &mut Criterion) {
     let group_name = "map_worst";
-    let uniform_key = Uniform::new(0, 1000).unwrap();
+    let uniform_key = Uniform::new(0, 1000).expect("Uniform::new failed");
     let iter_len_list = [1u32, 10, 100, 1_000, 10_000, 100_000];
     let seed = 0;
     let n = 5u32;
-    let uniform_value = Uniform::new(0, n).unwrap();
+    let uniform_value = Uniform::new(0, n).expect("Uniform::new failed");
 
     let mut group = c.benchmark_group(group_name);
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
@@ -35,8 +37,8 @@ fn map_worst(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeMapBlaze::from_iter(vec.iter().rev());
-                })
+                    let _answer = vec.iter().rev().collect::<RangeMapBlaze<_, _>>();
+                });
             },
         );
         group.bench_with_input(
@@ -45,8 +47,8 @@ fn map_worst(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let mut answer: RangeMapBlaze<u32, u32> = RangeMapBlaze::new();
-                    answer.extend(vec.iter().cloned());
-                })
+                    answer.extend(vec.iter().copied());
+                });
             },
         );
 
@@ -57,7 +59,7 @@ fn map_worst(c: &mut Criterion) {
                 b.iter(|| {
                     let mut answer: RangeMapBlaze<u32, u32> = RangeMapBlaze::new();
                     answer.extend_simple(vec.iter().map(|(k, v)| (*k..=*k, *v)));
-                })
+                });
             },
         );
         group.bench_with_input(
@@ -65,8 +67,8 @@ fn map_worst(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = BTreeMap::from_iter(vec.iter().cloned());
-                })
+                    let _answer = vec.iter().copied().collect::<BTreeMap<_, _>>();
+                });
             },
         );
         group.bench_with_input(
@@ -74,8 +76,8 @@ fn map_worst(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer: HashMap<u32, u32> = HashMap::from_iter(vec.iter().cloned());
-                })
+                    let _answer: HashMap<u32, u32> = vec.iter().copied().collect::<HashMap<_, _>>();
+                });
             },
         );
         group.bench_with_input(
@@ -83,11 +85,11 @@ fn map_worst(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer: rangemap::RangeInclusiveMap<u32, u32> =
-                        rangemap::RangeInclusiveMap::from_iter(
-                            vec.iter().map(|(k, v)| (*k..=*k, *v)),
-                        );
-                })
+                    let _answer: rangemap::RangeInclusiveMap<u32, u32> = vec
+                        .iter()
+                        .map(|(k, v)| (*k..=*k, *v))
+                        .collect::<rangemap::RangeInclusiveMap<_, _>>();
+                });
             },
         );
     }
@@ -143,8 +145,8 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeMapBlaze::from_iter(vec.iter().rev());
-                })
+                    let _answer = vec.iter().rev().collect::<RangeMapBlaze<_, _>>();
+                });
             },
         );
 
@@ -163,8 +165,8 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = BTreeMap::from_iter(vec.iter().cloned());
-                })
+                    let _answer = vec.iter().copied().collect::<BTreeMap<_, _>>();
+                });
             },
         );
         group.bench_with_input(
@@ -172,8 +174,8 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer: HashMap<u32, u32> = HashMap::from_iter(vec.iter().cloned());
-                })
+                    let _answer: HashMap<u32, u32> = vec.iter().copied().collect();
+                });
             },
         );
 
@@ -193,11 +195,11 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer: rangemap::RangeInclusiveMap<u32, u32> =
-                        rangemap::RangeInclusiveMap::from_iter(
-                            vec.iter().map(|(k, v)| (*k..=*k, *v)),
-                        );
-                })
+                    let _answer: rangemap::RangeInclusiveMap<u32, u32> = vec
+                        .iter()
+                        .map(|(k, v)| (*k..=*k, *v))
+                        .collect::<rangemap::RangeInclusiveMap<_, _>>();
+                });
             },
         );
     }
@@ -251,8 +253,8 @@ fn map_ingest_clumps_ranges(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeMapBlaze::from_iter(vec.iter().rev());
-                })
+                    let _answer = vec.iter().rev().collect::<RangeMapBlaze<_, _>>();
+                });
             },
         );
 
@@ -261,8 +263,8 @@ fn map_ingest_clumps_ranges(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeMapBlaze::from_iter(vec_range.iter().rev());
-                })
+                    let _answer = vec_range.iter().rev().collect::<RangeMapBlaze<_, _>>();
+                });
             },
         );
 
@@ -273,7 +275,7 @@ fn map_ingest_clumps_ranges(c: &mut Criterion) {
                 b.iter(|| {
                     let mut answer: RangeMapBlaze<u32, u32> = RangeMapBlaze::new();
                     answer.extend_simple(vec_range.iter().cloned());
-                })
+                });
             },
         );
 
@@ -283,8 +285,11 @@ fn map_ingest_clumps_ranges(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let _answer: rangemap::RangeInclusiveMap<u32, u32> =
-                        rangemap::RangeInclusiveMap::from_iter(vec_range.iter().cloned());
-                })
+                        vec_range
+                            .iter()
+                            .cloned()
+                            .collect::<rangemap::RangeInclusiveMap<_, _>>();
+                });
             },
         );
 
@@ -293,11 +298,11 @@ fn map_ingest_clumps_ranges(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer: rangemap::RangeInclusiveMap<u32, u32> =
-                        rangemap::RangeInclusiveMap::from_iter(
-                            vec.iter().map(|(k, v)| (*k..=*k, *v)),
-                        );
-                })
+                    let _answer: rangemap::RangeInclusiveMap<u32, u32> = vec
+                        .iter()
+                        .map(|(k, v)| (*k..=*k, *v))
+                        .collect::<rangemap::RangeInclusiveMap<_, _>>();
+                });
             },
         );
     }
@@ -331,7 +336,9 @@ fn map_union_two_sets(c: &mut Criterion) {
             range_per_clump,
         );
         let map0 = &temp[0];
-        let rangemap_map0 = &rangemap::RangeInclusiveMap::from_iter(map0.range_values());
+        let rangemap_map0 = &map0
+            .range_values()
+            .collect::<rangemap::RangeInclusiveMap<_, _>>();
 
         for range_len1 in &range_len_list1 {
             let map1 = &k_maps(
@@ -344,7 +351,9 @@ fn map_union_two_sets(c: &mut Criterion) {
                 value_count,
                 range_per_clump,
             )[0];
-            let rangemap_map1 = rangemap::RangeInclusiveMap::from_iter(map1.range_values());
+            let rangemap_map1 = map1
+                .range_values()
+                .collect::<rangemap::RangeInclusiveMap<_, _>>();
 
             let parameter = map1.ranges_len();
 
@@ -409,7 +418,7 @@ fn map_union_two_sets(c: &mut Criterion) {
                     b.iter_batched(
                         || (map0.clone(), map1.clone()),
                         |(mut map00, map10)| {
-                            map00.extend_simple(map10.range_values().map(|(r, v)| (r.clone(), *v)));
+                            map00.extend_simple(map10.range_values().map(|(r, v)| (r, *v)));
                         },
                         BatchSize::SmallInput,
                     );
@@ -460,7 +469,9 @@ fn map_union_left_to_right(c: &mut Criterion) {
             range_per_clump,
         );
         let map0 = &temp[0];
-        let rangemap_map0 = &rangemap::RangeInclusiveMap::from_iter(map0.range_values());
+        let rangemap_map0 = &map0
+            .range_values()
+            .collect::<rangemap::RangeInclusiveMap<_, _>>();
 
         for range_len1 in &range_len_list1 {
             let map1 = &k_maps(
@@ -473,7 +484,9 @@ fn map_union_left_to_right(c: &mut Criterion) {
                 value_count,
                 range_per_clump,
             )[0];
-            let rangemap_map1 = rangemap::RangeInclusiveMap::from_iter(map1.range_values());
+            let rangemap_map1 = map1
+                .range_values()
+                .collect::<rangemap::RangeInclusiveMap<_, _>>();
 
             let parameter = map1.ranges_len();
 
@@ -538,7 +551,7 @@ fn map_union_left_to_right(c: &mut Criterion) {
                     b.iter_batched(
                         || (map0.clone(), map1.clone()),
                         |(map00, mut map10)| {
-                            map10.extend_simple(map00.range_values().map(|(r, v)| (r.clone(), *v)));
+                            map10.extend_simple(map00.range_values().map(|(r, v)| (r, *v)));
                         },
                         BatchSize::SmallInput,
                     );
@@ -596,64 +609,34 @@ fn map_every_op_blaze(c: &mut Criterion) {
     for (_range_len, setup) in &setup_vec {
         let parameter = setup[0].ranges_len();
         group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
-            b.iter_batched(
-                || setup,
-                |maps| {
-                    let _answer = &maps[0] | &maps[1];
-                },
-                BatchSize::SmallInput,
-            );
+            b.iter_batched(|| setup, |maps| &maps[0] | &maps[1], BatchSize::SmallInput);
         });
         group.bench_with_input(
             BenchmarkId::new("intersection", parameter),
             &parameter,
             |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |maps| {
-                        let _answer = &maps[0] & &maps[1];
-                    },
-                    BatchSize::SmallInput,
-                );
+                b.iter_batched(|| setup, |maps| &maps[0] & &maps[1], BatchSize::SmallInput);
             },
         );
         group.bench_with_input(
             BenchmarkId::new("difference", parameter),
             &parameter,
             |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |maps| {
-                        let _answer = &maps[0] - &maps[1];
-                    },
-                    BatchSize::SmallInput,
-                );
+                b.iter_batched(|| setup, |maps| &maps[0] - &maps[1], BatchSize::SmallInput);
             },
         );
         group.bench_with_input(
             BenchmarkId::new("symmetric difference", parameter),
             &parameter,
             |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |maps| {
-                        let _answer = &maps[0] ^ &maps[1];
-                    },
-                    BatchSize::SmallInput,
-                );
+                b.iter_batched(|| setup, |maps| &maps[0] ^ &maps[1], BatchSize::SmallInput);
             },
         );
         group.bench_with_input(
             BenchmarkId::new("complement", parameter),
             &parameter,
             |b, _k| {
-                b.iter_batched(
-                    || setup,
-                    |maps| {
-                        let _answer = !&maps[0];
-                    },
-                    BatchSize::SmallInput,
-                );
+                b.iter_batched(|| setup, |maps| !&maps[0], BatchSize::SmallInput);
             },
         );
     }
@@ -680,7 +663,7 @@ fn map_insert_speed(c: &mut Criterion) {
     let vec_range: Vec<(RangeInclusive<u32>, u32)> = ClumpyMapRange::new(
         &mut StdRng::seed_from_u64(seed),
         clump_len,
-        range.clone(),
+        range,
         coverage_goal,
         k,
         how,
@@ -707,7 +690,7 @@ fn map_insert_speed(c: &mut Criterion) {
             b.iter(|| {
                 let mut answer: RangeMapBlaze<u32, u32> = RangeMapBlaze::new();
                 answer.extend_simple(vec_range.iter().cloned());
-            })
+            });
         },
     );
     // group.bench_with_input(
@@ -768,18 +751,18 @@ fn map_insert_speed(c: &mut Criterion) {
                 let mut answer: rangemap::RangeInclusiveMap<u32, u32> =
                     rangemap::RangeInclusiveMap::new();
                 answer.extend(vec_range.iter().cloned());
-            })
+            });
         },
     );
 
     group.finish();
 }
 
-fn access_k(&x: &(usize, usize)) -> usize {
+const fn access_k(&x: &(usize, usize)) -> usize {
     x.0
 }
 #[allow(dead_code)]
-fn access_r(&x: &(usize, usize)) -> usize {
+const fn access_r(&x: &(usize, usize)) -> usize {
     x.1
 }
 fn map_intersect_k(c: &mut Criterion) {
@@ -910,6 +893,7 @@ fn parameter_vary_internal<F: Fn(&(usize, usize)) -> usize>(
     group.finish();
 }
 
+#[allow(clippy::too_many_lines)]
 fn map_union_label(c: &mut Criterion) {
     let group_name = "map_union_label";
     let range = 0..=99_999_999u32;
@@ -975,7 +959,7 @@ fn map_union_label(c: &mut Criterion) {
                 b.iter_batched(
                     || (map0.clone(), map1.clone()),
                     |(mut map0, map1)| {
-                        map0.extend_simple(map1.range_values().map(|(r, v)| (r.clone(), *v)));
+                        map0.extend_simple(map1.range_values().map(|(r, v)| (r, *v)));
                     },
                     BatchSize::SmallInput,
                 );
@@ -990,7 +974,7 @@ fn map_union_label(c: &mut Criterion) {
                     || (map0.clone(), map1.clone()),
                     |(map0, map1)| {
                         map1.clone()
-                            .extend_simple(map0.range_values().map(|(r, v)| (r.clone(), *v)));
+                            .extend_simple(map0.range_values().map(|(r, v)| (r, *v)));
                     },
                     BatchSize::SmallInput,
                 );
@@ -1004,7 +988,7 @@ fn map_union_label(c: &mut Criterion) {
                 b.iter_batched(
                     || (map0.clone(), map1.clone()),
                     |(map0, mut map1)| {
-                        map1.extend_simple(map0.range_values().map(|(r, v)| (r.clone(), *v)));
+                        map1.extend_simple(map0.range_values().map(|(r, v)| (r, *v)));
                     },
                     BatchSize::SmallInput,
                 );
@@ -1019,7 +1003,7 @@ fn map_union_label(c: &mut Criterion) {
                     || (map0.clone(), map1.clone()),
                     |(mut map0, map1)| {
                         let difference = map1 - &map0;
-                        map0.extend_simple(difference.range_values().map(|(r, v)| (r.clone(), *v)));
+                        map0.extend_simple(difference.range_values().map(|(r, v)| (r, *v)));
                     },
                     BatchSize::SmallInput,
                 );

@@ -1,3 +1,4 @@
+//! This build script reads the `BUILDFEATURES` environment variable and sets
 use std::env;
 
 fn main() {

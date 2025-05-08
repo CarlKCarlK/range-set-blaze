@@ -88,9 +88,38 @@ harness = false
 [package.metadata.docs.rs]
 all-features = true
 
-# Cargo.toml
+###############################################################################
+# Global lint levels (stable since Rust 1.77; on older nightly use
+#   cargo-features = ["lints"]
+###############################################################################
+
 [lints.rust]
+# rustc (builtin) lints
+unused_lifetimes = "warn"
+missing_docs = "warn"
+single_use_lifetimes = "warn"
+unreachable_pub = "warn"
+rust_2018_idioms = { level = "warn", priority = -2 }
 unexpected_cfgs = { level = "warn", check-cfg = [
     "cfg(coverage)",
     "cfg(never)",
 ] }
+
+[lints.clippy]
+# individual Clippy lints
+use_self = "warn"
+must_use_candidate = "warn"
+unwrap_used = "warn"
+panic_in_result_fn = "warn"
+
+# Clippy lint groups
+pedantic = { level = "warn", priority = -2 }
+perf = "warn"
+style = "warn"
+complexity = "warn"
+correctness = "warn"
+nursery = "warn"
+
+# cargo-specific groups
+cargo = "warn"
+cargo_common_metadata = "warn"

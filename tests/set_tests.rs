@@ -437,6 +437,7 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::many_single_char_names)]
 fn complement() -> Result<(), Box<dyn std::error::Error>> {
     // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
     let a0 = RangeSetBlaze::from_iter([1..=6]);
@@ -480,7 +481,8 @@ fn union_test() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn xor() -> Result<(), Box<dyn std::error::Error>> {
+#[allow(clippy::many_single_char_names)]
+fn xor() {
     let a0 = RangeSetBlaze::from_iter([1..=6]);
     let a1 = RangeSetBlaze::from_iter([8..=9]);
     let a2 = RangeSetBlaze::from_iter([11..=15]);
@@ -495,12 +497,11 @@ fn xor() -> Result<(), Box<dyn std::error::Error>> {
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
     assert!(a.ranges().equal(e));
-    Ok(())
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[allow(clippy::zero_repeat_side_effects)]
+#[allow(clippy::zero_repeat_side_effects, clippy::too_many_lines)]
 fn empty_it() {
     use range_set_blaze::RangesIter;
 
@@ -1079,7 +1080,7 @@ fn example_3() {
     let exon_ranges = exon_starts
         .zip(exon_ends)
         .map(|(s, e)| s.unwrap()..=e.unwrap());
-    let exons = RangeSetBlaze::from_iter(exon_ranges);
+    let exons = exon_ranges.collect::<RangeSetBlaze<_>>();
     assert_eq!(
         exons,
         RangeSetBlaze::from_iter([29370..=30817, 32358..=32561, 36715..=37380])
@@ -1590,8 +1591,14 @@ fn run_rangemap_crate() {
 
     let _start = Instant::now();
 
-    let rangemap_set0 = &rangemap::RangeInclusiveSet::from_iter(vec_range.iter().cloned());
-    let _rangemap_set1 = &rangemap::RangeInclusiveSet::from_iter(rangemap_set0.iter().cloned());
+    let rangemap_set0 = &vec_range
+        .iter()
+        .cloned()
+        .collect::<rangemap::RangeInclusiveSet<_>>();
+    let _rangemap_set1 = &rangemap_set0
+        .iter()
+        .cloned()
+        .collect::<rangemap::RangeInclusiveSet<_>>();
 }
 
 #[test]
@@ -1937,6 +1944,7 @@ fn test_rog_range_doc() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::many_single_char_names)]
 fn test_every_sorted_disjoint_method() {
     use range_set_blaze::{IntoRangesIter, RangesIter};
     use range_set_blaze::{MapIntoRangesIter, MapRangesIter};
@@ -2179,7 +2187,7 @@ fn b_tree_set() {
 
     let c0 = a.bitor(&b);
     let c1 = &a | &b;
-    let c2 = BTreeSet::from_iter(a.union(&b).copied());
+    let c2 = a.union(&b).copied().collect::<BTreeSet<_>>();
     c3.append(&mut b.clone());
     c4.extend(&b);
     c5.extend(b);

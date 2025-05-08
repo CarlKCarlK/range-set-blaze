@@ -358,7 +358,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(set_iter.next_back(), None);
     /// ```
     #[allow(clippy::iter_without_into_iter)]
-    pub fn iter(&self) -> Iter<T, RangesIter<T>> {
+    pub fn iter(&self) -> Iter<T, RangesIter<'_, T>> {
         // If the user asks for an iter, we give them a RangesIter iterator
         // and we iterate that one integer at a time.
         Iter {

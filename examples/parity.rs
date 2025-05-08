@@ -1,3 +1,5 @@
+//! cmk000
+
 use range_set_blaze::prelude::*;
 
 fn main() {

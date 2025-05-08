@@ -1962,7 +1962,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(ranges.next(), Some(30..=40));
     /// assert_eq!(ranges.next(), None);
     /// ```
-    pub fn ranges(&self) -> MapRangesIter<T, V> {
+    pub fn ranges(&self) -> MapRangesIter<'_, T, V> {
         MapRangesIter::new(self.btree_map.iter())
     }
 

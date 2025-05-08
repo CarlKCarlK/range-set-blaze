@@ -236,7 +236,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///     vec![Rog::Gap(0..=255)]
     /// );
     /// ```
-    pub fn rogs_range<R>(&self, range: R) -> RogsIter<T>
+    pub fn rogs_range<R>(&self, range: R) -> RogsIter<'_, T>
     where
         R: RangeBounds<T>,
     {

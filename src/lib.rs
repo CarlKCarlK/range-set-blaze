@@ -1,24 +1,5 @@
 #![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
-// cmk000 move these to Cargo.toml
-#![warn(
-    clippy::use_self,
-    unused_lifetimes,
-    missing_docs,
-    single_use_lifetimes,
-    clippy::pedantic,
-    unreachable_pub,
-    clippy::cargo,
-    clippy::cargo_common_metadata,
-    clippy::perf,
-    clippy::style,
-    clippy::complexity,
-    clippy::correctness,
-    clippy::nursery,
-    clippy::must_use_candidate,
-    clippy::unwrap_used,
-    clippy::panic_in_result_fn
-)]
 #![no_std]
 extern crate alloc;
 #[cfg(feature = "std")]
