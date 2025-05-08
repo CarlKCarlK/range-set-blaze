@@ -2011,7 +2011,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// let map = RangeMapBlaze::from_iter([(10..=20,"a"), (15..=25,"a"), (30..=40,"b")]);
     /// // After RangeMapBlaze sorts & 'disjoint's them, we see two ranges.
     /// assert_eq!(map.ranges_len(), 2);
-    /// assert_eq!(map.to_string(), r#"(10..=20, "a"), (30..=40, "b")"#);
+    /// assert_eq!(map.to_string(), r#"(10..=25, "a"), (30..=40, "b")"#);
     /// ```
     #[must_use]
     pub fn ranges_len(&self) -> usize {
