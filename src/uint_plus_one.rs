@@ -233,6 +233,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[allow(dead_code)]
     fn mul_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);
@@ -252,6 +253,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[allow(dead_code)]
     fn sub_em(a: u16, b: u16) -> bool {
         let a_p1 = u16_to_p1(a);

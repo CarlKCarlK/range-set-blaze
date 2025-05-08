@@ -27,6 +27,7 @@ use std::{
     thread::sleep,
     time::Duration,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use tests_common::{How, k_maps};
 
 use syntactic_for::syntactic_for;
@@ -3017,6 +3018,7 @@ fn test_ref_union() {
 }
 
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn test_worst() {
     use rand::{SeedableRng, distr::Uniform, prelude::Distribution, rngs::StdRng};
 
@@ -3046,6 +3048,7 @@ fn test_worst() {
 }
 
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn test_union() {
     let range = 0..=99_999_999u32;
     let clump_len0 = 5;

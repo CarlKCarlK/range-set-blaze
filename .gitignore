@@ -21,8 +21,7 @@ tests/formal/*.json
 examples/simd/*/del*.*
 del*.csv
 *del*.xlsx
-examples/simd/is_consecutive2/delbench.sh
-examples/simd/is_consecutive2/delme.csv
+examples/simd/is_consecutive2/del*.*
 *.profraw
 delme3.xlsx
 coverage.lcov

@@ -1232,7 +1232,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     #[cfg(never)]
     // For benchmarking, based on https://github.com/jeffparsons/rangemap's `insert` method.
     pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
-        use core::ops::Bound::{Included, Unbounded}; // TOODO: Move to the top
+        use core::ops::Bound::{Included, Unbounded}; // TODO: Move to the top
 
         let start = *range.start();
         let end = *range.end();
