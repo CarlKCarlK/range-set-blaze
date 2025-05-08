@@ -25,3 +25,4 @@ examples/simd/is_consecutive2/delbench.sh
 examples/simd/is_consecutive2/delme.csv
 *.profraw
 delme3.xlsx
+coverage.lcov

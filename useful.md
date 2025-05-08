@@ -5,9 +5,9 @@
 ```cmd
 set BUILDFEATURES=from_slice
 rustup override set nightly
-cargo llvm-cov --tests --all-features --workspace --open
-cargo llvm-cov --tests --all-features --workspace --open --release
-target\llvm-cov\html\index.html
+cargo llvm-cov --tests --all-features --open
+cargo llvm-cov --tests --all-features --open --release
+
 ```
 
 ---------
