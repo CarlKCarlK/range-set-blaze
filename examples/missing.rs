@@ -10,7 +10,8 @@ mod native {
         io::{BufRead, BufReader},
     };
 
-    pub(crate) fn inner() -> Result<(), Box<dyn Error>> {
+    #[allow(unreachable_pub)]
+    pub fn inner() -> Result<(), Box<dyn Error>> {
         let mut all_exps = RangeSetBlaze::from_iter([0..=99_999_999]);
 
         for path in glob("examples/cluster_file.*.tsv")? {
@@ -33,7 +34,7 @@ mod wasm {
 
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]
-    native::inner().unwrap();
+    native::inner().expect("Failed to run native code");
     #[cfg(target_arch = "wasm32")]
     wasm::inner();
 }

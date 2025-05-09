@@ -1,3 +1,5 @@
+//! cmk000
+
 #![cfg(test)]
 use range_set_blaze::{
     AssumeSortedStarts, IntoIter, IntoRangesIter, Iter, KMerge, MapIntoRangesIter, MapRangesIter,
@@ -105,7 +107,7 @@ fn doctest2() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn doctest3() -> Result<(), Box<dyn std::error::Error>> {
+fn doctest3() {
     let mut a = RangeSetBlaze::from_iter([1u8..=3]);
     let mut b = RangeSetBlaze::from_iter([3u8..=5]);
 
@@ -119,7 +121,6 @@ fn doctest3() -> Result<(), Box<dyn std::error::Error>> {
     assert!(a.contains(3));
     assert!(a.contains(4));
     assert!(a.contains(5));
-    Ok(())
 }
 
 #[test]
@@ -153,7 +154,7 @@ fn add_in_order() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn iters() -> Result<(), Box<dyn std::error::Error>> {
+fn iters() {
     let range_set_blaze = RangeSetBlaze::from_iter([1u8..=6, 8..=9, 11..=15]);
     assert!(range_set_blaze.len() == 13);
     for i in &range_set_blaze {
@@ -176,7 +177,6 @@ fn iters() -> Result<(), Box<dyn std::error::Error>> {
     println!("{:?}", rs.next());
     println!("{range_set_blaze}");
     // !!! assert that can't use range_set_blaze again
-    Ok(())
 }
 
 #[test]
@@ -344,15 +344,14 @@ fn custom_multi() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn from_string() -> Result<(), Box<dyn std::error::Error>> {
+fn from_string() {
     let a = RangeSetBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=65535]);
     assert_eq!(a, RangeSetBlaze::from_iter([0..=65535]));
-    Ok(())
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn nand_repro() -> Result<(), Box<dyn std::error::Error>> {
+fn nand_repro() {
     let b = &RangeSetBlaze::from_iter([5u8..=13, 18..=29]);
     let c = &RangeSetBlaze::from_iter([38..=42]);
     println!("about to nand");
@@ -361,12 +360,11 @@ fn nand_repro() -> Result<(), Box<dyn std::error::Error>> {
         d,
         RangeSetBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
     );
-    Ok(())
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn parity() -> Result<(), Box<dyn std::error::Error>> {
+fn parity() {
     let a = &RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
     let b = &RangeSetBlaze::from_iter([5..=13, 18..=29]);
     let c = &RangeSetBlaze::from_iter([38..=42]);
@@ -423,8 +421,6 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
         symmetric_difference_dyn!(a.ranges(), b.ranges(), c.ranges()).into_range_set_blaze(),
         RangeSetBlaze::from_iter([1..=4, 7..=7, 10..=10, 14..=15, 18..=29, 38..=42])
     );
-
-    Ok(())
 }
 
 // skip this test because the expected error message is not stable
@@ -438,7 +434,7 @@ fn parity() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::many_single_char_names)]
-fn complement() -> Result<(), Box<dyn std::error::Error>> {
+fn complement() {
     // RangeSetBlaze, RangesIter, NotIter, UnionIter, Tee, UnionIter(g)
     let a0 = RangeSetBlaze::from_iter([1..=6]);
     let a1 = RangeSetBlaze::from_iter([8..=9, 11..=15]);
@@ -457,12 +453,11 @@ fn complement() -> Result<(), Box<dyn std::error::Error>> {
     assert!(not_a.ranges().equal(not_c));
     assert!(not_a.ranges().equal(not_d));
     assert!(not_a.ranges().equal(not_f));
-    Ok(())
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn union_test() -> Result<(), Box<dyn std::error::Error>> {
+fn union_test() {
     let a0 = RangeSetBlaze::from_iter([1..=6]);
     let a1 = RangeSetBlaze::from_iter([8..=9]);
     let a2 = RangeSetBlaze::from_iter([11..=15]);
@@ -476,7 +471,6 @@ fn union_test() -> Result<(), Box<dyn std::error::Error>> {
     assert!(a.ranges().equal(b));
     assert!(a.ranges().equal(c));
     assert!(a.ranges().equal(d));
-    Ok(())
 }
 
 #[test]
@@ -501,7 +495,11 @@ fn xor() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[allow(clippy::zero_repeat_side_effects, clippy::too_many_lines)]
+#[allow(
+    clippy::zero_repeat_side_effects,
+    clippy::too_many_lines,
+    clippy::similar_names
+)]
 fn empty_it() {
     use range_set_blaze::RangesIter;
 
@@ -514,7 +512,7 @@ fn empty_it() {
     let _a0 = RangeSetBlaze::from_iter([0..=0; 0]);
     let _a = RangeSetBlaze::<i32>::new();
 
-    let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
+    let a_iter = std::iter::empty::<i32>();
     let a = a_iter.collect::<RangeSetBlaze<i32>>();
     let b = RangeSetBlaze::from_iter([0i32; 0]);
     let mut c3 = a.clone();
@@ -539,12 +537,12 @@ fn empty_it() {
     assert_eq!(&c3, &answer);
     assert_eq!(&c5, &answer);
 
-    let a_iter: std::array::IntoIter<i32, 0> = [].into_iter();
+    let a_iter = std::iter::empty::<i32>();
     let a = a_iter.collect::<RangeSetBlaze<i32>>();
     let b = RangeSetBlaze::from_iter([0; 0]);
     let c0 = a.ranges() | b.ranges();
     let c1 = [a.ranges(), b.ranges()].union();
-    let c_list2: [RangesIter<i32>; 0] = [];
+    let c_list2: [RangesIter<'_, i32>; 0] = [];
     let c2 = c_list2.clone().union();
     let c3 = union_dyn!(a.ranges(), b.ranges());
     let c4 = c_list2.map(DynSortedDisjoint::new).union();
@@ -558,7 +556,7 @@ fn empty_it() {
 
     let c0 = !(a.ranges() & b.ranges());
     let c1 = ![a.ranges(), b.ranges()].intersection();
-    let c_list2: [RangesIter<i32>; 0] = [];
+    let c_list2: [RangesIter<'_, i32>; 0] = [];
     let c2 = !!c_list2.clone().intersection();
     let c3 = !intersection_dyn!(a.ranges(), b.ranges());
     let c4 = !!c_list2.map(DynSortedDisjoint::new).intersection();
@@ -583,10 +581,16 @@ fn tricky_case1() {
     assert_eq!(a.ranges().len(), b.ranges().len());
     let a = RangeSetBlaze::from_iter([i32::MIN..=i32::MAX]);
     println!("tc1 '{a}'");
-    assert_eq!(a.len() as i128, (i32::MAX as i128) - (i32::MIN as i128) + 1);
+    assert_eq!(
+        i128::from(a.len()),
+        i128::from(i32::MAX) - i128::from(i32::MIN) + 1
+    );
     let a = !RangeSetBlaze::from_iter([1..=0]);
     println!("tc1 '{a}'");
-    assert_eq!(a.len() as i128, (i32::MAX as i128) - (i32::MIN as i128) + 1);
+    assert_eq!(
+        i128::from(a.len()),
+        i128::from(i32::MAX) - i128::from(i32::MIN) + 1
+    );
 
     let a = !RangeSetBlaze::from_iter([1i128..=0]);
     println!("tc1 '{a}', {}", a.len());
@@ -610,24 +614,23 @@ fn tricky_case3() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn constructors() -> Result<(), Box<dyn std::error::Error>> {
+#[allow(unused_assignments)]
+fn constructors() {
     // #9: new
-    let mut _range_set_blaze;
-    _range_set_blaze = RangeSetBlaze::<i32>::new();
+    let mut range_set_blaze;
+    range_set_blaze = RangeSetBlaze::<i32>::new();
     // #10 collect / from_iter T
-    _range_set_blaze = [1, 5, 6, 5].into_iter().collect();
-    _range_set_blaze = RangeSetBlaze::from_iter([1, 5, 6, 5]);
+    range_set_blaze = [1, 5, 6, 5].into_iter().collect();
+    range_set_blaze = RangeSetBlaze::from_iter([1, 5, 6, 5]);
     // #11 into / from array T
-    _range_set_blaze = [1, 5, 6, 5].into();
-    _range_set_blaze = RangeSetBlaze::from_iter([1, 5, 6, 5]);
+    range_set_blaze = [1, 5, 6, 5].into();
+    range_set_blaze = RangeSetBlaze::from_iter([1, 5, 6, 5]);
     //#13 collect / from_iter range
-    _range_set_blaze = [5..=6, 1..=5].into_iter().collect();
-    _range_set_blaze = RangeSetBlaze::from_iter([5..=6, 1..=5]);
+    range_set_blaze = [5..=6, 1..=5].into_iter().collect();
+    range_set_blaze = RangeSetBlaze::from_iter([5..=6, 1..=5]);
     // #16 into / from iter (T,T) + SortedDisjoint
-    _range_set_blaze = _range_set_blaze.ranges().into_range_set_blaze();
-    _range_set_blaze = RangeSetBlaze::from_sorted_disjoint(_range_set_blaze.ranges());
-
-    Ok(())
+    range_set_blaze = range_set_blaze.ranges().into_range_set_blaze();
+    range_set_blaze = RangeSetBlaze::from_sorted_disjoint(range_set_blaze.ranges());
 }
 
 #[cfg(target_os = "linux")]
@@ -672,6 +675,7 @@ fn k_play(c: &mut Criterion) {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+#[allow(clippy::unwrap_used)]
 fn data_gen() {
     let range = -10_000_000i32..=10_000_000;
     let range_len = 1000;
@@ -858,7 +862,7 @@ fn doc_test_len() {
     ]);
     assert_eq!(
         v.len(),
-        UIntPlusOne::UInt(340282366920938463463374607431768211455)
+        UIntPlusOne::UInt(340_282_366_920_938_463_463_374_607_431_768_211_455)
     );
 }
 
@@ -898,22 +902,22 @@ fn eq() {
                             let mut b = RangeSetBlaze::new();
                             if use_0 {
                                 a.insert(0);
-                            };
+                            }
                             if use_1 {
                                 a.insert(1);
-                            };
+                            }
                             if use_2 {
                                 a.insert(2);
-                            };
+                            }
                             if use_3 {
                                 b.insert(0);
-                            };
+                            }
                             if use_4 {
                                 b.insert(1);
-                            };
+                            }
                             if use_5 {
                                 b.insert(2);
-                            };
+                            }
                             let a2 = BTreeSet::from_iter(&a);
                             let b2 = BTreeSet::from_iter(&b);
                             assert!((a == b) == (a2 == b2));
@@ -1061,6 +1065,7 @@ fn fraction<T: Integer>(range_int_set: &RangeSetBlaze<T>, range: &RangeInclusive
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::unwrap_used)]
 fn example_3() {
     let line = "chr15   29370   37380   29370,32358,36715   30817,32561,37380";
 
@@ -1075,8 +1080,8 @@ fn example_3() {
     assert_eq!(trans, RangeSetBlaze::from_iter([29370..=37380]));
 
     // Parse the start and end of the exons into a RangeSetBlaze
-    let exon_starts = iter.next().unwrap().split(',').map(|s| s.parse::<i32>());
-    let exon_ends = iter.next().unwrap().split(',').map(|s| s.parse::<i32>());
+    let exon_starts = iter.next().unwrap().split(',').map(str::parse::<i32>);
+    let exon_ends = iter.next().unwrap().split(',').map(str::parse::<i32>);
     let exon_ranges = exon_starts
         .zip(exon_ends)
         .map(|(s, e)| s.unwrap()..=e.unwrap());
@@ -1470,6 +1475,7 @@ fn iterator_example() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::tuple_array_conversions)]
 fn sorted_disjoint_operators() {
     let a0 = RangeSetBlaze::from_iter([1..=2, 5..=100]);
     let b0 = RangeSetBlaze::from_iter([2..=6]);
@@ -1624,6 +1630,7 @@ fn from_iter_coverage() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::unwrap_used)]
 fn print_first_complement_gap() {
     let a = CheckSortedDisjoint::new([-10i16..=0, 1000..=2000]);
     println!("{:?}", (!a).next().unwrap()); // prints -32768..=-11
@@ -1944,7 +1951,11 @@ fn test_rog_range_doc() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[allow(clippy::many_single_char_names)]
+#[allow(
+    clippy::many_single_char_names,
+    clippy::items_after_statements,
+    clippy::cognitive_complexity
+)]
 fn test_every_sorted_disjoint_method() {
     use range_set_blaze::{IntoRangesIter, RangesIter};
     use range_set_blaze::{MapIntoRangesIter, MapRangesIter};
@@ -1956,13 +1967,13 @@ fn test_every_sorted_disjoint_method() {
     macro_rules! fresh_instances {
         () => {{
             let a: CheckSortedDisjoint<_, _> = CheckSortedDisjoint::new([1..=2, 5..=100]);
-            let b: DynSortedDisjoint<_> =
+            let b: DynSortedDisjoint<'_, _> =
                 DynSortedDisjoint::new(RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges());
             let c: IntoRangesIter<_> = c0.clone().into_ranges();
             let d: MapIntoRangesIter<_, _> = c1.clone().into_ranges();
-            let e: MapRangesIter<_, _> = c1.ranges();
+            let e: MapRangesIter<'_, _, _> = c1.ranges();
             let f: NotIter<_, _> = !!CheckSortedDisjoint::new([1..=2, 5..=100]);
-            let g: RangesIter<_> = c0.ranges();
+            let g: RangesIter<'_, _> = c0.ranges();
             let h: SymDiffIter<_, _> = c0.ranges() ^ c0.ranges() ^ c0.ranges();
             let i: UnionIter<_, _> = c0.ranges() | c0.ranges();
 
@@ -1974,7 +1985,7 @@ fn test_every_sorted_disjoint_method() {
     syntactic_for! { sd in [a, b, c, d, e, f, g, h, i] {$(
         let z = ! $sd;
         // println!("{:?}", z.into_string());
-        assert!(z.equal(CheckSortedDisjoint::new([-2147483648..=0, 3..=4, 101..=2147483647])));
+        assert!(z.equal(CheckSortedDisjoint::new([-2_147_483_648..=0, 3..=4, 101..=2_147_483_647])));
     )*}}
 
     let (a, b, c, d, e, f, g, h, i) = fresh_instances!();
@@ -2203,6 +2214,7 @@ fn b_tree_set() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::similar_names)]
 fn range_set_blaze() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze<i32>>();
     let b = RangeSetBlaze::from_iter([2, 3, 4]);
@@ -2251,6 +2263,7 @@ fn sorted_disjoint() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::no_effect_underscore_binding)]
 fn sorted_disjoint_ops() {
     let a = [1, 2, 3].into_iter().collect::<RangeSetBlaze<i32>>();
     let a = a.ranges();
@@ -2948,39 +2961,39 @@ fn additional_from_slice_iter_coverage() {
 fn test_empty_inputs() {
     let inputs: [RangeSetBlaze<i32>; 0] = [];
     let intersection = inputs.intersection();
-    assert_eq!(intersection.to_string(), r#"-2147483648..=2147483647"#);
+    assert_eq!(intersection.to_string(), r"-2147483648..=2147483647");
 
     let inputs: [RangeSetBlaze<i32>; 0] = [];
     let union = inputs.union();
-    assert_eq!(union.to_string(), r#""#);
+    assert_eq!(union.to_string(), r"");
 
     let inputs: [RangeSetBlaze<i32>; 0] = [];
     let symmetric_difference = inputs.symmetric_difference();
-    assert_eq!(symmetric_difference.to_string(), r#""#);
+    assert_eq!(symmetric_difference.to_string(), r"");
 
     let inputs: [&RangeSetBlaze<i32>; 0] = [];
     let intersection = inputs.intersection();
-    assert_eq!(intersection.to_string(), r#"-2147483648..=2147483647"#);
+    assert_eq!(intersection.to_string(), r"-2147483648..=2147483647");
 
     let inputs: [&RangeSetBlaze<i32>; 0] = [];
     let union = inputs.union();
-    assert_eq!(union.to_string(), r#""#);
+    assert_eq!(union.to_string(), r"");
 
     let inputs: [&RangeSetBlaze<i32>; 0] = [];
     let symmetric_difference = inputs.symmetric_difference();
-    assert_eq!(symmetric_difference.to_string(), r#""#);
+    assert_eq!(symmetric_difference.to_string(), r"");
 
     let inputs: [range_set_blaze::IntoRangesIter<i32>; 0] = [];
     let intersection = inputs.intersection();
-    assert_eq!(intersection.into_string(), r#"-2147483648..=2147483647"#);
+    assert_eq!(intersection.into_string(), r"-2147483648..=2147483647");
 
     let inputs: [range_set_blaze::IntoRangesIter<i32>; 0] = [];
     let union = inputs.union();
-    assert_eq!(union.into_string(), r#""#);
+    assert_eq!(union.into_string(), r"");
 
     let inputs: [range_set_blaze::IntoRangesIter<i32>; 0] = [];
     let symmetric_difference = inputs.symmetric_difference();
-    assert_eq!(symmetric_difference.into_string(), r#""#);
+    assert_eq!(symmetric_difference.into_string(), r"");
 }
 
 #[test]
@@ -3003,25 +3016,25 @@ const fn check_traits() {
     is_like_btreeset::<ARangeSetBlaze>();
 
     type AIter<'a> = Iter<i32, ARangesIter<'a>>;
-    is_sssu::<AIter>();
-    is_like_btreeset_iter_less_exact_size::<AIter>();
+    is_sssu::<AIter<'_>>();
+    is_like_btreeset_iter_less_exact_size::<AIter<'_>>();
 
     type ARangesIter<'a> = RangesIter<'a, i32>;
-    is_sssu::<ARangesIter>();
-    is_like_btreeset_iter::<ARangesIter>();
+    is_sssu::<ARangesIter<'_>>();
+    is_like_btreeset_iter::<ARangesIter<'_>>();
 
     type AIntoRangesIter<'a> = IntoRangesIter<i32>;
-    is_sssu::<AIntoRangesIter>();
-    is_like_btreeset_into_iter::<AIntoRangesIter>();
+    is_sssu::<AIntoRangesIter<'_>>();
+    is_like_btreeset_into_iter::<AIntoRangesIter<'_>>();
 
     type AMapRangesIter<'a> = MapRangesIter<'a, i32, u64>;
-    is_sssu::<AMapRangesIter>();
-    is_like_btreeset_iter_less_both::<AMapRangesIter>();
+    is_sssu::<AMapRangesIter<'_>>();
+    is_like_btreeset_iter_less_both::<AMapRangesIter<'_>>();
 
     type ARangeValuesToRangesIter<'a> =
         RangeValuesToRangesIter<i32, &'a u64, RangeValuesIter<'a, i32, u64>>;
-    is_sssu::<ARangeValuesToRangesIter>();
-    is_like_btreeset_iter_less_both::<ARangeValuesToRangesIter>();
+    is_sssu::<ARangeValuesToRangesIter<'_>>();
+    is_like_btreeset_iter_less_both::<ARangeValuesToRangesIter<'_>>();
 
     type AMapIntoRangesIter = MapIntoRangesIter<i32, u64>;
     is_sssu::<AMapIntoRangesIter>();
@@ -3032,37 +3045,37 @@ const fn check_traits() {
     is_like_btreeset_into_iter_less_exact_size::<AIntoIter>();
 
     type AKMerge<'a> = crate::KMerge<i32, ARangesIter<'a>>;
-    is_sssu::<AKMerge>();
-    is_like_btreeset_iter_less_both::<AKMerge>();
+    is_sssu::<AKMerge<'_>>();
+    is_like_btreeset_iter_less_both::<AKMerge<'_>>();
 
     type AMerge<'a> = crate::Merge<i32, ARangesIter<'a>, ARangesIter<'a>>;
-    is_sssu::<AMerge>();
-    is_like_btreeset_iter_less_both::<AMerge>();
+    is_sssu::<AMerge<'_>>();
+    is_like_btreeset_iter_less_both::<AMerge<'_>>();
 
     type ANotIter<'a> = crate::NotIter<i32, ARangesIter<'a>>;
-    is_sssu::<ANotIter>();
-    is_like_btreeset_iter_less_both::<ANotIter>();
+    is_sssu::<ANotIter<'_>>();
+    is_like_btreeset_iter_less_both::<ANotIter<'_>>();
 
     type AUnionIter<'a> = UnionIter<i32, ARangesIter<'a>>;
-    is_sssu::<AUnionIter>();
-    is_like_btreeset_iter_less_both::<AUnionIter>();
+    is_sssu::<AUnionIter<'_>>();
+    is_like_btreeset_iter_less_both::<AUnionIter<'_>>();
 
     type ASymDiffIter<'a> = SymDiffIter<i32, ARangesIter<'a>>;
-    is_sssu::<ASymDiffIter>();
-    is_like_btreeset_iter_less_both::<ASymDiffIter>();
+    is_sssu::<ASymDiffIter<'_>>();
+    is_like_btreeset_iter_less_both::<ASymDiffIter<'_>>();
 
     type AAssumeSortedStarts<'a> = AssumeSortedStarts<i32, ARangesIter<'a>>;
-    is_sssu::<AAssumeSortedStarts>();
-    is_like_btreeset_iter_less_both::<AAssumeSortedStarts>();
+    is_sssu::<AAssumeSortedStarts<'_>>();
+    is_like_btreeset_iter_less_both::<AAssumeSortedStarts<'_>>();
 
     type ACheckSortedDisjoint<'a> = CheckSortedDisjoint<i32, ARangesIter<'a>>;
-    is_sssu::<ACheckSortedDisjoint>();
+    is_sssu::<ACheckSortedDisjoint<'_>>();
     type BCheckSortedDisjoint =
         CheckSortedDisjoint<i32, std::array::IntoIter<RangeInclusive<i32>, 0>>;
     is_like_check_sorted_disjoint::<BCheckSortedDisjoint>();
 
     type ADynSortedDisjoint<'a> = DynSortedDisjoint<'a, i32>;
-    is_like_dyn_sorted_disjoint::<ADynSortedDisjoint>();
+    is_like_dyn_sorted_disjoint::<ADynSortedDisjoint<'_>>();
 }
 
 const fn is_ddcppdheo<

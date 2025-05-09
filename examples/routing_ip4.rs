@@ -1,3 +1,5 @@
+//! cmk000
+
 // use range_set_blaze::prelude::*;
 // use std::net::Ipv4Addr;
 
@@ -53,6 +55,7 @@
 //     Ok(())
 // }
 
+#[allow(clippy::unwrap_used)]
 fn sample2() {
     use range_set_blaze::prelude::*;
     use std::net::Ipv4Addr;

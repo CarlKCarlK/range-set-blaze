@@ -39,6 +39,7 @@ wasm_bindgen_test_configure!(run_in_browser);
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::similar_names)]
 fn map_map_operators() {
     let arm = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
     let brm = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
@@ -282,7 +283,7 @@ fn map_add_in_order() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn map_iters() -> Result<(), Box<dyn std::error::Error>> {
+fn map_iters() {
     let range_map_blaze =
         RangeMapBlaze::from_iter([(1u8..=6, "Hello"), (8..=9, "There"), (11..=15, "World")]);
     assert!(range_map_blaze.len() == 13);
@@ -306,7 +307,6 @@ fn map_iters() -> Result<(), Box<dyn std::error::Error>> {
     println!("{:?}", rs.next());
     println!("{range_map_blaze}");
     // !!! assert that can't use range_map_blaze again
-    Ok(())
 }
 
 #[test]
@@ -443,7 +443,7 @@ fn map_missing_doctest_ops() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
+fn map_multi_op() {
     // Union
     let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
     let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
@@ -560,13 +560,11 @@ fn map_multi_op() -> Result<(), Box<dyn std::error::Error>> {
         MultiwayRangeMapBlazeRef::<u8, char>::symmetric_difference([]),
         RangeMapBlaze::new()
     );
-
-    Ok(())
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
+fn map_custom_multi() {
     let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
     let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
     let c = RangeMapBlaze::from_iter([(38..=42, 'c')]);
@@ -587,12 +585,11 @@ fn map_custom_multi() -> Result<(), Box<dyn std::error::Error>> {
         )
         .into_range_map_blaze();
     assert_eq!(d, RangeMapBlaze::from_iter([(1..=4, 'a'), (14..=15, 'a')]));
-    Ok(())
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn map_from_string() -> Result<(), Box<dyn std::error::Error>> {
+fn map_from_string() {
     let a = RangeMapBlaze::from_iter([
         (0..=4, 'a'),
         (14..=17, 'a'),
@@ -601,12 +598,11 @@ fn map_from_string() -> Result<(), Box<dyn std::error::Error>> {
         (43..=65535, 'a'),
     ]);
     assert_eq!(a, RangeMapBlaze::from_iter([(0..=65535, 'a')]));
-    Ok(())
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn map_nand_repro() -> Result<(), Box<dyn std::error::Error>> {
+fn map_nand_repro() {
     let b = &RangeMapBlaze::from_iter([(5u8..=13, 'a'), (18..=29, 'a')]);
     let c = &RangeMapBlaze::from_iter([(38..=42, 'b')]);
     println!("about to nand");
@@ -615,7 +611,6 @@ fn map_nand_repro() -> Result<(), Box<dyn std::error::Error>> {
         d,
         RangeSetBlaze::from_iter([0..=4, 14..=17, 30..=255, 0..=37, 43..=255])
     );
-    Ok(())
 }
 
 #[test]
@@ -746,7 +741,7 @@ fn map_parity() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::many_single_char_names)]
-fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
+fn map_complement() {
     // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
     let a1 = RangeMapBlaze::from_iter([(8..=9, "a1"), (11..=15, "a1")]);
@@ -787,13 +782,12 @@ fn map_complement() -> Result<(), Box<dyn std::error::Error>> {
     assert!(not_a.range_values().equal(not_d));
     assert!(not_a.range_values().equal(not_e));
     assert!(not_a.range_values().equal(not_f));
-    Ok(())
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::many_single_char_names)]
-fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
+fn map_union_test() {
     // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
     let a0_tee = a0.range_values(); // with range instead of range values used 'tee' here
@@ -819,20 +813,19 @@ fn map_union_test() -> Result<(), Box<dyn std::error::Error>> {
     let f = a0
         .range_values()
         .collect::<UnionIterMap<_, _, _>>()
-        .union(a1.range_values().collect::<UnionIterMap<_, _, _>>())
-        .union(a2.range_values().collect::<UnionIterMap<_, _, _>>());
+        .union(a1.range_values())
+        .union(a2.range_values());
     assert!(a.range_values().equal(b));
     assert!(a.range_values().equal(c));
     assert!(a.range_values().equal(d));
     assert!(a.range_values().equal(e));
     assert!(a.range_values().equal(f));
-    Ok(())
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::many_single_char_names)]
-fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
+fn map_sub() {
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
     let a1 = RangeMapBlaze::from_iter([(8..=9, "a1")]);
     let a2 = RangeMapBlaze::from_iter([(11..=15, "a2")]);
@@ -849,14 +842,12 @@ fn map_sub() -> Result<(), Box<dyn std::error::Error>> {
     assert!(a.ranges().equal(c));
     assert!(a.range_values().equal(d));
     assert!(a.range_values().equal(e));
-
-    Ok(())
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::many_single_char_names)]
-fn map_xor() -> Result<(), Box<dyn std::error::Error>> {
+fn map_xor() {
     // RangeMapBlaze, RangesIter, NotIter, UnionIterMap, Tee, UnionIterMap(g)
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
     let a1 = RangeMapBlaze::from_iter([(8..=9, "a1")]);
@@ -881,13 +872,12 @@ fn map_xor() -> Result<(), Box<dyn std::error::Error>> {
     assert!(a.range_values().equal(d));
     assert!(a.range_values().equal(e));
     assert!(a.range_values().equal(f));
-    Ok(())
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::many_single_char_names)]
-fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
+fn map_bitand() {
     let a0 = RangeMapBlaze::from_iter([(1..=6, "a0")]);
     let a1 = RangeMapBlaze::from_iter([(8..=9, "a1")]);
     let a2 = RangeMapBlaze::from_iter([(11..=15, "a2")]);
@@ -904,12 +894,11 @@ fn map_bitand() -> Result<(), Box<dyn std::error::Error>> {
     assert!(a.ranges().equal(c));
     assert!(a.range_values().equal(d));
     assert!(a.range_values().equal(e));
-    Ok(())
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[allow(clippy::zero_repeat_side_effects)]
+#[allow(clippy::zero_repeat_side_effects, clippy::similar_names)]
 fn map_empty_it() {
     use std::ops::BitOr;
 
@@ -926,7 +915,7 @@ fn map_empty_it() {
     let _a0 = RangeMapBlaze::from_iter([(0..=0, "One"); 0]);
     let _a = RangeMapBlaze::<i32, &str>::new();
 
-    let a_iter: std::array::IntoIter<(i32, &str), 0> = [].into_iter();
+    let a_iter: std::iter::Empty<(i32, &str)> = std::iter::empty();
     let a = a_iter.collect::<RangeMapBlaze<i32, &str>>();
     let b = RangeMapBlaze::from_iter([(0i32, &"ignored"); 0]);
     let mut c3 = a.clone();
@@ -950,13 +939,13 @@ fn map_empty_it() {
     assert_eq!(&c2, &answer);
     assert_eq!(&c3, &answer);
     assert_eq!(&c5, &answer);
-    let a_iter: std::array::IntoIter<(i32, &str), 0> = [].into_iter();
+    let a_iter: std::iter::Empty<(i32, &str)> = std::iter::empty();
     let a = a_iter.collect::<RangeMapBlaze<i32, &str>>();
     let b = RangeMapBlaze::from_iter([(0, &"ignore"); 0]);
 
     let c0 = a.range_values() | b.range_values();
     let c1 = [a.range_values(), b.range_values()].union();
-    let c_list2: [RangeValuesIter<i32, &str>; 0] = [];
+    let c_list2: [RangeValuesIter<'_, i32, &str>; 0] = [];
     let c2 = c_list2.clone().union();
     let c3 = union_map_dyn!(a.range_values(), b.range_values());
     let c4 = c_list2.map(DynSortedDisjointMap::new).union();
@@ -981,7 +970,7 @@ fn map_empty_it() {
 
         let c0 = !(a.range_values() & b.range_values());
         let c1 = ![a.range_values(), b.range_values()].intersection();
-        let c_list2: [RangeValuesIter<i32, &str>; 0] = [];
+        let c_list2: [RangeValuesIter<'_, i32, &str>; 0] = [];
         assert!(
             panic::catch_unwind(AssertUnwindSafe(|| { !!c_list2.clone().intersection() })).is_err(),
             "Expected a panic."
@@ -1014,10 +1003,16 @@ fn map_tricky_case1() {
     assert_eq!(a.range_values().len(), b.range_values().len());
     let a = RangeMapBlaze::from_iter([(i32::MIN..=i32::MAX, "a")]);
     println!("tc1 '{a}'");
-    assert_eq!(a.len() as i128, (i32::MAX as i128) - (i32::MIN as i128) + 1);
+    assert_eq!(
+        i128::from(a.len()),
+        i128::from(i32::MAX) - i128::from(i32::MIN) + 1
+    );
     let a = !RangeMapBlaze::from_iter([(1..=0, "a")]);
     println!("tc1 '{a}'");
-    assert_eq!(a.len() as i128, (i32::MAX as i128) - (i32::MIN as i128) + 1);
+    assert_eq!(
+        i128::from(a.len()),
+        i128::from(i32::MAX) - i128::from(i32::MIN) + 1
+    );
 
     let a = !RangeMapBlaze::from_iter([(1i128..=0, "a")]);
     println!("tc1 '{a}', {}", a.len());
@@ -1041,34 +1036,32 @@ fn map_tricky_case3() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn map_constructors() -> Result<(), Box<dyn std::error::Error>> {
+#[allow(unused_assignments)]
+fn map_constructors() {
     // use range_set_blaze::Priority;
 
     // #9: new
-    let mut _range_map_blaze;
-    _range_map_blaze = RangeMapBlaze::<i32, &str>::new();
+    let mut range_map_blaze;
+    range_map_blaze = RangeMapBlaze::<i32, &str>::new();
     // #10 collect / from_iter T
-    _range_map_blaze = [(1, "a"), (5, "b"), (6, "b"), (5, "b")]
+    range_map_blaze = [(1, "a"), (5, "b"), (6, "b"), (5, "b")]
         .into_iter()
         .collect();
-    _range_map_blaze = RangeMapBlaze::from_iter([(1, "a"), (5, "b"), (6, "b"), (5, "b")]);
+    range_map_blaze = RangeMapBlaze::from_iter([(1, "a"), (5, "b"), (6, "b"), (5, "b")]);
     // #11 into / from array T
-    _range_map_blaze = [(1, "a"), (5, "b"), (6, "b"), (5, "b")].into();
-    _range_map_blaze = RangeMapBlaze::from_iter([(1, "a"), (5, "b"), (6, "b"), (5, "b")]);
+    range_map_blaze = [(1, "a"), (5, "b"), (6, "b"), (5, "b")].into();
+    range_map_blaze = RangeMapBlaze::from_iter([(1, "a"), (5, "b"), (6, "b"), (5, "b")]);
     //#13 collect / from_iter range
-    _range_map_blaze = [(5..=6, "a"), (1..=5, "b")].into_iter().collect();
-    _range_map_blaze = RangeMapBlaze::from_iter([(5..=6, "a"), (1..=5, "b")]);
+    range_map_blaze = [(5..=6, "a"), (1..=5, "b")].into_iter().collect();
+    range_map_blaze = RangeMapBlaze::from_iter([(5..=6, "a"), (1..=5, "b")]);
     // #16 into / from iter (T,T) + SortedDisjoint
-    _range_map_blaze = _range_map_blaze.range_values().into_range_map_blaze();
-    _range_map_blaze = RangeMapBlaze::from_sorted_disjoint_map(_range_map_blaze.range_values());
+    range_map_blaze = range_map_blaze.range_values().into_range_map_blaze();
+    range_map_blaze = RangeMapBlaze::from_sorted_disjoint_map(range_map_blaze.range_values());
 
-    let mut _sorted_disjoint_iter: UnionIterMap<_, _, _> =
-        _range_map_blaze.range_values().collect();
-    _sorted_disjoint_iter = _range_map_blaze
+    let mut _sorted_disjoint_iter: UnionIterMap<_, _, _> = range_map_blaze.range_values().collect();
+    _sorted_disjoint_iter = range_map_blaze
         .range_values()
         .collect::<UnionIterMap<_, _, _>>();
-
-    Ok(())
 }
 
 #[test]
@@ -1101,7 +1094,7 @@ fn map_doc_test_len() {
     ]);
     assert_eq!(
         v.len(),
-        UIntPlusOne::UInt(340282366920938463463374607431768211455)
+        UIntPlusOne::UInt(340_282_366_920_938_463_463_374_607_431_768_211_455)
     );
 }
 
@@ -1390,10 +1383,11 @@ fn map_range_map_blaze_operators() {
     );
 }
 
-pub fn play_movie(frames: RangeMapBlaze<i32, String>, fps: i32, skip_sleep: bool) {
+#[allow(clippy::unwrap_used)]
+pub fn play_movie(frames: &RangeMapBlaze<i32, String>, fps: i32, skip_sleep: bool) {
     assert!(fps > 0, "fps must be positive");
     // Later: could look for missing frames
-    let sleep_duration = Duration::from_secs(1) / fps as u32;
+    let sleep_duration = Duration::from_secs(1) / u32::try_from(fps).expect("fps too large");
     // For every frame index (index) from 0 to the largest index in the frames ...
     for index in 0..=frames.ranges().into_range_set_blaze().last().unwrap() {
         // Look up the frame at that index (panic if none exists)
@@ -1409,6 +1403,8 @@ pub fn play_movie(frames: RangeMapBlaze<i32, String>, fps: i32, skip_sleep: bool
     }
 }
 
+#[allow(clippy::unwrap_used)]
+#[must_use]
 pub fn linear(
     range_map_blaze: &RangeMapBlaze<i32, String>,
     scale: i32,
@@ -1424,7 +1420,7 @@ pub fn linear(
     range_map_blaze
         .range_values()
         .map(|(range, value)| {
-            let (start, end) = range.clone().into_inner();
+            let (start, end) = range.into_inner();
             let mut a = (start - first) * scale.abs() + first;
             let mut b = (end + 1 - first) * scale.abs() + first - 1;
             let last = (last + 1 - first) * scale.abs() + first - 1;
@@ -1439,6 +1435,7 @@ pub fn linear(
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::range_minus_one)]
 fn map_string_animation() {
     let fps: i32 = 24;
     let length_seconds = 15;
@@ -1473,11 +1470,12 @@ fn map_string_animation() {
     main = &digits | &linear(&digits, 1, 10 * fps) | &main;
     println!("main dd {main:?}");
 
-    play_movie(main, fps, true);
+    play_movie(&main, fps, true);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::unwrap_used)]
 fn understand_strings_as_values() {
     // RangeMapBlaze string-like values can be &str, String, &String (or even &&str and &&String).
     let _: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=0, "a")]);
@@ -1491,13 +1489,13 @@ fn understand_strings_as_values() {
     let _: RangeMapBlaze<i32, String> = RangeMapBlaze::from_iter([(0..=0, a_string)]);
 
     let a: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter([(0..=0, "a")]);
-    let mut b: RangeValuesIter<i32, &str> = a.range_values();
+    let mut b: RangeValuesIter<'_, i32, &str> = a.range_values();
     let _c: &&str = b.next().unwrap().1;
     let mut b: IntoRangeValuesIter<i32, &str> = a.into_range_values();
     let _c: &&str = b.next().unwrap().1.borrow();
 
     let a: RangeMapBlaze<i32, String> = RangeMapBlaze::from_iter([(0..=0, "a".to_string())]);
-    let mut b: RangeValuesIter<i32, String> = a.range_values();
+    let mut b: RangeValuesIter<'_, i32, String> = a.range_values();
     let _c: &String = b.next().unwrap().1;
     let mut b: IntoRangeValuesIter<i32, String> = a.into_range_values();
     let _c: &String = b.next().unwrap().1.borrow();
@@ -1519,7 +1517,8 @@ fn understand_strings_as_values() {
 #[allow(
     clippy::too_many_lines,
     clippy::many_single_char_names,
-    clippy::cognitive_complexity
+    clippy::cognitive_complexity,
+    clippy::items_after_statements
 )]
 fn test_every_sorted_disjoint_map_method() {
     use syntactic_for::syntactic_for;
@@ -1530,7 +1529,7 @@ fn test_every_sorted_disjoint_map_method() {
         () => {{
             let a: CheckSortedDisjointMap<i32, &&str, _> =
                 CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-            let b: DynSortedDisjointMap<i32, &&str> =
+            let b: DynSortedDisjointMap<'_, i32, &&str> =
                 DynSortedDisjointMap::new(CheckSortedDisjointMap::new([
                     (1..=2, &"a"),
                     (5..=100, &"a"),
@@ -1541,7 +1540,7 @@ fn test_every_sorted_disjoint_map_method() {
             ])]
             .intersection();
             let d: IntoRangeValuesIter<i32, &str> = e0.clone().into_range_values();
-            let e: RangeValuesIter<i32, &str> = e0.range_values();
+            let e: RangeValuesIter<'_, i32, &str> = e0.range_values();
             let f: SymDiffIterMap<i32, &&str, _> = [CheckSortedDisjointMap::new([
                 (1..=2, &"a"),
                 (5..=100, &"a"),
@@ -1579,7 +1578,7 @@ fn test_every_sorted_disjoint_map_method() {
     let (a, b, c, d, e, f, g) = fresh_instances!();
     syntactic_for! { sd in [a,b,c,d,e,f,g] {$(
         let z = ! $sd;
-        assert!(z.equal(CheckSortedDisjoint::new([-2147483648..=0, 3..=4, 101..=2147483647])));
+        assert!(z.equal(CheckSortedDisjoint::new([-2_147_483_648..=0, 3..=4, 101..=2_147_483_647])));
     )*}}
 
     // Union
@@ -1668,7 +1667,7 @@ fn map_empty_construction() {
     use std::collections::BTreeMap;
 
     // Collect from an empty iterator of (key, value) pairs
-    let collected: RangeMapBlaze<u8, char> = [].iter().cloned::<(u8, char)>().collect();
+    let collected: RangeMapBlaze<u8, char> = std::iter::empty().copied::<(u8, char)>().collect();
     assert!(collected.is_empty());
 
     // Collect from an empty iterator of (range, value) pairs
@@ -1701,6 +1700,7 @@ fn map_empty_construction() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::unwrap_used)]
 fn map_random_from_iter_item() {
     for seed in 0..20 {
         println!("seed: {seed}");
@@ -1730,8 +1730,9 @@ fn map_random_from_iter_item() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::unwrap_used)]
 fn map_random_from_iter_range() {
-    let empty: RangeMapBlaze<u8, char> = [].iter().cloned::<(u8, char)>().collect();
+    let empty: RangeMapBlaze<u8, char> = std::iter::empty().copied::<(u8, char)>().collect();
     assert!(empty.is_empty());
 
     for seed in 0..20 {
@@ -1764,6 +1765,7 @@ fn map_random_from_iter_range() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::unwrap_used)]
 fn map_random_insert() {
     for seed in 0..20 {
         println!("seed: {seed}");
@@ -1796,6 +1798,7 @@ fn map_random_insert() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::unwrap_used)]
 fn map_random_insert_range() {
     for seed in 0..20 {
         println!("seed: {seed}");
@@ -1834,6 +1837,7 @@ fn map_random_insert_range() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::unwrap_used)]
 fn map_random_ranges() {
     let values = ['a', 'b', 'c'].as_slice();
     for seed in 0..20 {
@@ -1867,6 +1871,7 @@ fn map_random_ranges() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::unwrap_used)]
 fn map_random_ranges_ranges() {
     let values = ['a', 'b', 'c'];
     for seed in 0..20 {
@@ -1902,6 +1907,7 @@ fn map_random_ranges_ranges() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::unwrap_used)]
 fn map_random_intersection() {
     let values = ['a', 'b', 'c'].as_slice();
     for seed in 0..20 {
@@ -1987,6 +1993,7 @@ fn map_tiny_symmetric_difference1() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::unwrap_used)]
 fn map_random_symmetric_difference() {
     let values = ['a', 'b', 'c'].as_slice();
     for seed in 0..20 {
@@ -2230,6 +2237,7 @@ fn test_coverage_1() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::cognitive_complexity)]
 fn test_coverage_2() {
     let a = RangeMapBlaze::from_iter([(1..=2, "Hello"), (3..=4, "World")]);
     let mut i = a.into_iter();
@@ -2352,6 +2360,7 @@ fn test_coverage_10() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::range_minus_one)]
 fn example_2() {
     use range_set_blaze::prelude::*;
 
@@ -2369,7 +2378,7 @@ fn example_2() {
         ((8 * fps)..=(10 * fps - 1), "World".to_string()),
     ]);
     // create 10 seconds of blank frames
-    let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, "".to_string())]);
+    let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, String::new())]);
     // union everything together with left-to-right precedence
     let animation = [count_down, hello_world, blank].union();
     // for every range of frames, show what is displayed
@@ -2744,7 +2753,7 @@ fn test_ranges_retain() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::items_after_statements)]
 fn test_empty_inputs_union_symmetric_difference() {
     let inputs: [RangeMapBlaze<i32, &str>; 0] = [];
     let union = inputs.union();
@@ -2752,15 +2761,15 @@ fn test_empty_inputs_union_symmetric_difference() {
 
     let inputs: [RangeMapBlaze<i32, &str>; 0] = [];
     let symmetric_difference = inputs.symmetric_difference();
-    assert_eq!(symmetric_difference.to_string(), r#""#);
+    assert_eq!(symmetric_difference.to_string(), r"");
 
     let inputs: [&RangeMapBlaze<i32, &str>; 0] = [];
     let union = inputs.union();
-    assert_eq!(union.to_string(), r#""#);
+    assert_eq!(union.to_string(), r"");
 
     let inputs: [&RangeMapBlaze<i32, &str>; 0] = [];
     let symmetric_difference = inputs.symmetric_difference();
-    assert_eq!(symmetric_difference.to_string(), r#""#);
+    assert_eq!(symmetric_difference.to_string(), r"");
 
     fn make_inputs<'a>() -> [CheckSortedDisjointMap<
         i32,
@@ -2771,31 +2780,31 @@ fn test_empty_inputs_union_symmetric_difference() {
     }
     let inputs = make_inputs();
     let union = inputs.union();
-    assert_eq!(union.into_string(), r#""#);
+    assert_eq!(union.into_string(), r"");
 
     let inputs = make_inputs();
     let symmetric_difference = inputs.symmetric_difference();
-    assert_eq!(symmetric_difference.into_string(), r#""#);
+    assert_eq!(symmetric_difference.into_string(), r"");
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "The intersection of 0 maps is undefined.")]
 fn test_empty_inputs_intersection0() {
     let inputs: [RangeMapBlaze<i32, &str>; 0] = [];
     let intersection = inputs.intersection();
-    assert_eq!(intersection.to_string(), r#"should panic"#);
+    assert_eq!(intersection.to_string(), r"should panic");
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "The intersection of 0 maps is undefined.")]
 fn test_empty_inputs_intersection1() {
     let inputs: [&RangeMapBlaze<i32, &str>; 0] = [];
     let intersection = inputs.intersection();
-    assert_eq!(intersection.to_string(), r#"should panic"#);
+    assert_eq!(intersection.to_string(), r"should panic");
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "The intersection of 0 maps is undefined.")]
 #[allow(clippy::type_complexity)]
 fn test_empty_inputs_intersection2() {
     fn make_inputs<'a>() -> [CheckSortedDisjointMap<
@@ -2807,7 +2816,7 @@ fn test_empty_inputs_intersection2() {
     }
     let inputs = make_inputs();
     let intersection = inputs.intersection();
-    assert_eq!(intersection.into_string(), r#"should panic"#);
+    assert_eq!(intersection.into_string(), r"should panic");
 }
 
 #[test]
@@ -3047,6 +3056,7 @@ fn test_ref_union() {
 
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
+#[allow(clippy::unwrap_used, clippy::similar_names)]
 fn test_worst() {
     use rand::{SeedableRng, distr::Uniform, prelude::Distribution, rngs::StdRng};
 
@@ -3064,9 +3074,9 @@ fn test_worst() {
 
     let a0a = vec.iter().rev().collect::<RangeMapBlaze<_, _>>();
     let mut a0b = RangeMapBlaze::<u32, u32>::new();
-    a0b.extend(vec.iter().cloned());
-    let a1 = vec.iter().cloned().collect::<BTreeMap<_, _>>();
-    let a2: HashMap<u32, u32> = vec.iter().cloned().collect::<HashMap<_, _>>();
+    a0b.extend(vec.iter().copied());
+    let a1 = vec.iter().copied().collect::<BTreeMap<_, _>>();
+    let a2: HashMap<u32, u32> = vec.iter().copied().collect::<HashMap<_, _>>();
     let a3 = vec
         .iter()
         .map(|(k, v)| (*k..=*k, *v))
@@ -3080,6 +3090,7 @@ fn test_worst() {
 
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
+#[allow(clippy::similar_names)]
 fn test_union() {
     let range = 0..=99_999_999u32;
     let clump_len0 = 5;
@@ -3127,7 +3138,7 @@ fn test_union() {
     a0b |= map0;
 
     let mut a1 = map0.clone();
-    a1.extend(map1.range_values().map(|(r, v)| (r.clone(), *v)));
+    a1.extend(map1.range_values().map(|(r, v)| (r, *v)));
 
     let mut a2 = rangemap_map0.clone();
     a2.extend(rangemap_map1.iter().map(|(r, v)| (r.clone(), *v)));
