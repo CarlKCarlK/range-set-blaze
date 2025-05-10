@@ -1710,7 +1710,7 @@ fn test_rog_functionality() {
 #[cfg(feature = "rog-experimental")]
 #[allow(clippy::reversed_empty_ranges)]
 #[allow(deprecated)]
-#[should_panic]
+#[should_panic(expected = "start must be less than or equal to end")]
 fn test_rog_functionality_empty() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
 
@@ -1814,7 +1814,7 @@ fn test_rog_get_extremes_u8() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
-#[allow(deprecated)]
+#[allow(deprecated, clippy::range_minus_one)]
 fn test_rog_extremes_i128() {
     for a in [
         RangeSetBlaze::from_iter([1i128..=6i128]),
@@ -1841,7 +1841,7 @@ fn test_rog_extremes_i128() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
-#[allow(deprecated)]
+#[allow(deprecated, clippy::range_minus_one)]
 fn test_rog_extremes_get_i128() {
     for a in [
         RangeSetBlaze::from_iter([1i128..=6i128]),
@@ -1860,7 +1860,7 @@ fn test_rog_extremes_get_i128() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
-#[allow(deprecated)]
+#[allow(deprecated, clippy::range_minus_one)]
 fn test_rog_should_fail_i128() {
     for a in [
         RangeSetBlaze::from_iter([1i128..=6i128]),
@@ -1890,7 +1890,7 @@ fn test_rog_should_fail_i128() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "rog-experimental")]
-#[allow(deprecated)]
+#[allow(deprecated, clippy::range_minus_one)]
 fn test_rog_get_should_fail_i128() {
     for a in [
         RangeSetBlaze::from_iter([1i128..=6i128]),

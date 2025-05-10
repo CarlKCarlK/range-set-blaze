@@ -179,6 +179,12 @@ cargo test --target wasm32-unknown-unknown
 cargo llvm-cov --open --all-features
 ```
 
+## Clippy
+
+```cmd
+cargo clippy --all-targets --all-features
+```
+
 ## Wasm
 
 ```cmd

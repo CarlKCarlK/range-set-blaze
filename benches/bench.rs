@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! cmk000
 
 // https://bheisler.github.io/criterion.rs/book/getting_started.html
@@ -1088,7 +1089,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("Roaring (integers)", parameter),
             &parameter,
-            |b, _| b.iter(|| RoaringBitmap::from_iter(vec.iter())),
+            |b, _| b.iter(|| vec.iter().collect::<RoaringBitmap>()),
         );
 
         group.bench_with_input(
@@ -1106,7 +1107,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
                     for range in &vec_range {
                         answer.insert_range(range.clone());
                     }
-                })
+                });
             },
         );
 
@@ -1120,8 +1121,8 @@ fn ingest_clumps_base(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer: HashSet<u32> = HashSet::from_iter(vec.iter().cloned());
-                })
+                    let _answer: HashSet<u32> = vec.iter().copied().collect::<HashSet<_>>();
+                });
             },
         );
     }
@@ -1178,8 +1179,8 @@ fn ingest_clumps_integers(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RoaringBitmap::from_iter(vec.iter());
-                })
+                    let _answer = vec.iter().collect::<RoaringBitmap>();
+                });
             },
         );
 
@@ -1189,8 +1190,10 @@ fn ingest_clumps_integers(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let _answer: rangemap::RangeInclusiveSet<u32> =
-                        rangemap::RangeInclusiveSet::from_iter(vec.iter().map(|x| *x..=*x));
-                })
+                        vec.iter()
+                            .map(|x| *x..=*x)
+                            .collect::<rangemap::RangeInclusiveSet<_>>();
+                });
             },
         );
         group.bench_with_input(
@@ -1199,7 +1202,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let _answer = BTreeSet::from_iter(&vec);
-                })
+                });
             },
         );
         group.bench_with_input(
@@ -1207,8 +1210,8 @@ fn ingest_clumps_integers(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer: HashSet<u32> = HashSet::from_iter(vec.iter().cloned());
-                })
+                    let _answer = vec.iter().copied().collect::<HashSet<_>>();
+                });
             },
         );
     }
@@ -1252,7 +1255,7 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     black_box(RangeSetBlaze::from_slice(vec.as_slice()));
-                })
+                });
             },
         );
 
@@ -1262,7 +1265,7 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     black_box(RangeSetBlaze::from_iter(&vec));
-                })
+                });
             },
         );
     }
@@ -1456,7 +1459,7 @@ fn worst(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let _answer = RangeSetBlaze::from_iter(&vec);
-                })
+                });
             },
         );
 
@@ -1470,7 +1473,7 @@ fn worst(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let _answer = RangeSetBlaze::from_slice(&vec);
-                })
+                });
             },
         );
 
@@ -1480,7 +1483,7 @@ fn worst(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let _answer = BTreeSet::from_iter(&vec);
-                })
+                });
             },
         );
         group.bench_with_input(
@@ -1488,8 +1491,8 @@ fn worst(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer: HashSet<u32> = HashSet::from_iter(vec.iter().cloned());
-                })
+                    let _answer = vec.iter().copied().collect::<HashSet<_>>();
+                });
             },
         );
         group.bench_with_input(
@@ -1497,8 +1500,8 @@ fn worst(c: &mut Criterion) {
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer: RoaringBitmap = RoaringBitmap::from_iter(vec.iter());
-                })
+                    let _answer = vec.iter().collect::<RoaringBitmap>();
+                });
             },
         );
     }

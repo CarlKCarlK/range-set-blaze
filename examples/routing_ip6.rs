@@ -20,7 +20,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         let line = line?;
         let fields: Vec<&str> = line.split('\t').collect();
-        assert_eq!(fields.len(), 5, "Expected 5 fields");
+        if fields.len() != 5 {
+            return Err("Expected 5 fields".into());
+        }
 
         let destination: Ipv6Addr = fields[0].parse()?;
         let prefix_len: u32 = fields[1].parse()?;
@@ -31,13 +33,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Ensure the entries are sorted by prefix length (descending) and metric (ascending)
         if let Some(prev_prefix_len) = prev_prefix_len.replace(prefix_len) {
             if prev_prefix_len != prefix_len {
-                assert!(prev_prefix_len > prefix_len, "Sort by prefix length (desc)");
+                if prev_prefix_len <= prefix_len {
+                    return Err("Sort by prefix length (desc)".into());
+                }
                 prev_metric = None;
             }
         }
 
         if let Some(prev_metric) = prev_metric.replace(metric) {
-            assert!(prev_metric <= metric, "Sort by prefix len & metric (asc)");
+            if prev_metric > metric {
+                return Err("Sort by prefix len & metric (asc)".into());
+            }
         }
 
         // Calculate the range start and end for the given destination and prefix length

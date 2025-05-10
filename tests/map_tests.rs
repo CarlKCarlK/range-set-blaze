@@ -1384,7 +1384,7 @@ fn map_range_map_blaze_operators() {
 }
 
 #[allow(clippy::unwrap_used)]
-pub fn play_movie(frames: &RangeMapBlaze<i32, String>, fps: i32, skip_sleep: bool) {
+fn play_movie(frames: &RangeMapBlaze<i32, String>, fps: i32, skip_sleep: bool) {
     assert!(fps > 0, "fps must be positive");
     // Later: could look for missing frames
     let sleep_duration = Duration::from_secs(1) / u32::try_from(fps).expect("fps too large");
@@ -1405,7 +1405,7 @@ pub fn play_movie(frames: &RangeMapBlaze<i32, String>, fps: i32, skip_sleep: boo
 
 #[allow(clippy::unwrap_used)]
 #[must_use]
-pub fn linear(
+fn linear(
     range_map_blaze: &RangeMapBlaze<i32, String>,
     scale: i32,
     shift: i32,
@@ -1948,11 +1948,10 @@ fn map_random_intersection() {
                 }
                 // println!();
             }
-            if !expected_keys.is_empty() {
-                // eprintln!("{set0}");
-                // eprintln!("{map0}");
-                panic!("expected_keys should be empty: {expected_keys}");
-            }
+            assert!(
+                expected_keys.is_empty(),
+                "expected_keys should be empty: {expected_keys}"
+            );
         }
     }
 }

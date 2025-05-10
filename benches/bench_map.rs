@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 //! cmk000 crate docs
 
 use criterion::BatchSize;

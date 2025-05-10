@@ -107,6 +107,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 [lints.clippy]
 # individual Clippy lints
+doc_link_code = "allow"
 use_self = "warn"
 must_use_candidate = "warn"
 unwrap_used = "warn"
@@ -114,12 +115,12 @@ panic_in_result_fn = "warn"
 
 # Clippy lint groups
 pedantic = { level = "warn", priority = -2 }
-perf = "warn"
-style = "warn"
-complexity = "warn"
-correctness = "warn"
-nursery = "warn"
+perf = { level = "warn", priority = -6 }
+style = { level = "warn", priority = -4 }
+complexity = { level = "warn", priority = -5 }
+correctness = { level = "warn", priority = -3 }
+nursery = { level = "warn", priority = -7 }
 
 # cargo-specific groups
-cargo = "warn"
-cargo_common_metadata = "warn"
+cargo = { level = "warn", priority = -8 }
+cargo_common_metadata = { level = "warn", priority = -9 }
