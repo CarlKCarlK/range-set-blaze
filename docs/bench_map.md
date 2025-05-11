@@ -152,7 +152,7 @@ If `extend_simple` or `rangemap` fits your use case — a small second map whose
 
 ### 'map_every_op_blaze' `RangeMapBlaze` Results and Conclusion
 
-Complement (which works on just one map) is twice as fast as intersection and difference. Union and Symmetric difference are about 7 times slower than intersection and difference.
+Complement (which works on just one map) is twice as fast as intersection and difference. Symmetric difference is about 7 times slower than intersection and difference. For small inputs, Union is similar to intersection and difference, but as the input size grows, also becomes about 7 times slower than intersection.
 
 ![every_op_blaze](criterion/v4/map_every_op_blaze/report/lines.svg "every_op_blaze")
 

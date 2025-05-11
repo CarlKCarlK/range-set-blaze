@@ -973,9 +973,8 @@ fn map_union_label(c: &mut Criterion) {
             |b, _| {
                 b.iter_batched(
                     || (map0.clone(), map1.clone()),
-                    |(map0, map1)| {
-                        map1.clone()
-                            .extend_simple(map0.range_values().map(|(r, v)| (r, *v)));
+                    |(map0, mut map1)| {
+                        map1.extend_simple(map0.range_values().map(|(r, v)| (r, *v)));
                     },
                     BatchSize::SmallInput,
                 );
