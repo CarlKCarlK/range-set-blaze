@@ -1,0 +1,23 @@
+[licenses]
+# A list of explicitly allowed licenses.
+# Any license not in this list will be denied by cargo-deny.
+allow = ["MIT", "Apache-2.0", "Unicode-3.0"]
+
+# The confidence threshold for detecting a license from license text.
+# The higher the value, the more closely the license text must be to the
+# canonical license text of a valid SPDX license file.
+confidence-threshold = 0.8
+
+[advisories]
+# A list of advisory IDs to ignore. Default is empty, so all advisories are checked.
+# db-path and db-urls will use defaults.
+# severity-threshold defaults to "low".
+# yanked defaults to "warn".
+ignore = []
+
+[bans]
+# Lint level for when multiple versions of the same crate are detected.
+multiple-versions = "warn"
+
+# Lint level for when a crate version requirement is a wildcard (eg. `*`).
+wildcards = "deny"
