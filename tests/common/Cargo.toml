@@ -9,6 +9,7 @@ documentation = "https://docs.rs/range-set-blaze/latest/range-set-blaze/"
 license = "MIT OR Apache-2.0"
 keywords = ["set", "range", "data-structures", "no_std", "wasm"]
 categories = ["data-structures", "no-std", "wasm"]
+publish = false
 
 [dependencies]
 rand = "0.9.0"
