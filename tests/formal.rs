@@ -1,4 +1,4 @@
-//! cmk000
+//! See <https://medium.com/@carlmkadie/check-ai-generated-code-perfectly-and-automatically-d5b61acff741>
 
 #![allow(unexpected_cfgs)]
 

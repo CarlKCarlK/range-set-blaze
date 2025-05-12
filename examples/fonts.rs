@@ -1,4 +1,4 @@
-//! cmk000
+//! Example of working with `char` and `RangeMapBlaze` in the context of fonts
 
 use range_set_blaze::Integer;
 use range_set_blaze::prelude::*;

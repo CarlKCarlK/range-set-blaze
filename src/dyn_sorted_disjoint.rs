@@ -67,7 +67,7 @@ impl<T: Integer> Iterator for DynSortedDisjoint<'_, T> {
 /// # Performance
 ///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
 ///
-/// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+/// [`SortedDisjoint`]: crate::SortedDisjoint.html#table-of-contents
 /// [`intersection`]: crate::MultiwaySortedDisjoint::intersection
 /// # Examples
 /// ```

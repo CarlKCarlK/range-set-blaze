@@ -277,10 +277,9 @@ pub fn linear(
         .collect()
 }
 
-// cmk000 think about which examples to include.
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 pub fn get_led_state_and_duration(movie_id: f64, now_milliseconds: f64) -> LedState {
-    let movie = &COMPILED_MOVIES[movie_id as usize]; // cmk check bounds
+    let movie = &COMPILED_MOVIES[movie_id as usize]; // TODO check bounds
 
     // Find what frame for 'now'
     let frame_index = (now_milliseconds * FPS as f64 / 1000.0) as i32;

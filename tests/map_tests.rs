@@ -1,4 +1,4 @@
-//! cmk000
+//! Integration tests for the `RangeMapBlaze`.
 
 #![cfg(test)]
 #![allow(unexpected_cfgs)]

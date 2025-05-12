@@ -1,4 +1,4 @@
-//! cmk000
+//! Examples with `Ipv6Addr` and `RangeMapBlaze` in the context of routing.
 
 use std::fs::File;
 use std::io::{self, BufRead};

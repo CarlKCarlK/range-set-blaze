@@ -1,4 +1,4 @@
-//! cmk000
+//! Integration tests for the `RangeSetBlaze`.
 
 #![cfg(test)]
 use range_set_blaze::{

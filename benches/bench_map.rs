@@ -1,5 +1,5 @@
 #![allow(missing_docs)]
-//! cmk000 crate docs
+//! Benchmarking for the `RangeMapBlaze` struct.
 
 use criterion::BatchSize;
 use criterion::{

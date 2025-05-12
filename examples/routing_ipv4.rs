@@ -1,4 +1,4 @@
-//! cmk000
+//! Examples with `Ipv4Addr` and `RangeMapBlaze` in the context of routing.
 
 use range_set_blaze::prelude::*;
 use std::net::Ipv4Addr;

@@ -1,6 +1,6 @@
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
-use crate::{map::ValueRef, Integer, SortedDisjointMap};
+use crate::{Integer, SortedDisjointMap, map::ValueRef};
 use alloc::boxed::Box;
 
 /// Gives [`SortedDisjointMap`] iterators a uniform type. Used by the [`union_map_dyn`], etc. macros to give all
@@ -89,7 +89,7 @@ where
 /// # Performance
 ///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
 ///
-/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
 /// [`intersection`]: crate::MultiwaySortedDisjointMap::intersection
 /// # Examples
 ///
@@ -116,7 +116,7 @@ macro_rules! intersection_map_dyn {
 /// # Performance
 ///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
 ///
-/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
 /// [`union`]: crate::MultiwaySortedDisjointMap::union
 /// # Examples
 ///
@@ -145,7 +145,7 @@ macro_rules! union_map_dyn {
 /// # Performance
 ///   All work is done on demand, in one pass through the input iterators. Minimal memory is used.
 ///
-/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
 /// [`symmetric_difference`]: crate::MultiwaySortedDisjointMap::symmetric_difference
 /// # Examples
 ///

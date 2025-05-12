@@ -1,5 +1,5 @@
 #![allow(missing_docs)]
-//! cmk000
+//! Benchmarking for the `RangeSetBlaze` struct.
 
 // https://bheisler.github.io/criterion.rs/book/getting_started.html
 // https://www.notamonadtutorial.com/benchmarking-and-analyzing-rust-performance-with-criterion-and-iai/#:~:text=It%20was%20written%20by%20the%20master%20of%20all,process%2C%20including%20calls%20from%20the%20Rust%20standard%20library.

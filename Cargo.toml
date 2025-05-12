@@ -21,7 +21,7 @@ members = [
     "tests/wasm-demo",
     "tests/wasm-led",
     "tests/embedded",
-    # "examples/simd/simd_hello", # cmk????
+    # "examples/simd/simd_hello"
     # "examples/simd/is_consecutive0",
     # "examples/simd/is_consecutive1",
     # "examples/simd/is_consecutive2",
