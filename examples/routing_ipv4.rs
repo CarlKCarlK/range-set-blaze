@@ -12,7 +12,7 @@ fn sample1() -> Result<(), Box<dyn std::error::Error>> {
     let mut prev_prefix_len: Option<u32> = None;
     let mut prev_metric: Option<u32> = None;
     for line in std::io::BufRead::lines(std::io::BufReader::new(File::open(
-        "./examples/routing_ip4.tsv",
+        "./examples/routing_ipv4.tsv",
     )?))
     .skip(1)
     {

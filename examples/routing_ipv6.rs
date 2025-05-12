@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut prev_prefix_len: Option<u32> = None;
     let mut prev_metric: Option<u32> = None;
     for line in BufRead::lines(io::BufReader::new(File::open(
-        "./examples/routing_ip6.tsv",
+        "./examples/routing_ipv6.tsv",
     )?))
     .skip(1)
     {

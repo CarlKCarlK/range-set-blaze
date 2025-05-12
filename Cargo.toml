@@ -51,7 +51,7 @@ tests_common = { path = "tests_common", version = "0.1.0" }
 criterion = { version = "0.5.1", features = [
     "html_reports",
 ], default-features = false }
-trybuild = "1.0.104"
+trybuild = "1.0.105"
 thousands = "0.2.0"
 quickcheck = "1.0.3"
 quickcheck_macros = "1.1.0"

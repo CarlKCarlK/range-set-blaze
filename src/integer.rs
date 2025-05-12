@@ -1047,7 +1047,7 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[allow(clippy::cognitive_complexity, clippy::legacy_numeric_constants)]
-    fn test_ip4_and_ip6_etc() {
+    fn test_ipv4_and_ipv6_etc() {
         syntactic_for! { ty in [char, Ipv6Addr, u128, i128, Ipv4Addr] {
             $(
             // Test the minimum value for the type
