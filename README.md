@@ -80,7 +80,7 @@ Articles
 * [Nine Rules for SIMD Acceleration of your Rust Code:
   General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x](https://medium.com/towards-data-science/nine-rules-for-simd-acceleration-of-your-rust-code-part-1-c16fe639ce21) in *Towards Data Science*
 
-* *Also see:* [CHANGELOG](https://github.com/CarlKCarlK/range-set-blaze/blob/main/CHANGELOG.md)
+* *Also see:* [CHANGELOG](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/CHANGELOG.md)
 
 Examples
 -----------

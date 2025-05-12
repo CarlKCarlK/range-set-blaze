@@ -12,6 +12,6 @@ categories = ["data-structures", "no-std", "wasm"]
 
 [dependencies]
 rand = "0.9.0"
-range-set-blaze = { path = "..", version = "0.2.0-alpha2" }
+range-set-blaze = { path = "../..", version = "0.2.0-alpha3" }
 num-integer = "0.1.46"
 num-traits = "0.2.19"

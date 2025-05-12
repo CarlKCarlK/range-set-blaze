@@ -1,6 +1,6 @@
 [package]
 name = "range-set-blaze"
-version = "0.2.0-alpha2"
+version = "0.2.0-alpha3"
 edition = "2024"
 description = "Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full set operations"
 repository = "https://github.com/CarlKCarlK/range-set-blaze"
@@ -17,7 +17,7 @@ exclude = ["docs/**/*"]
 [workspace]
 members = [
     ".",
-    "tests_common",
+    "tests/common",
     "tests/wasm-demo",
     "tests/wasm-led",
     "tests/embedded",
@@ -47,7 +47,7 @@ gen_ops = "0.4.0"
 
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-tests_common = { path = "tests_common", version = "0.1.0" }
+tests_common = { path = "tests/common", version = "0.1.0" }
 criterion = { version = "0.5.1", features = [
     "html_reports",
 ], default-features = false }
