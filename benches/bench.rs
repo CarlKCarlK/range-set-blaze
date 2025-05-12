@@ -28,8 +28,10 @@ use std::{
     ops::RangeInclusive,
 };
 
+use range_set_blaze::test_util::{
+    How, MemorylessIter, MemorylessRange, k_sets, width_to_range_u32,
+};
 use syntactic_for::syntactic_for;
-use tests_common::{How, MemorylessIter, MemorylessRange, k_sets, width_to_range_u32};
 
 #[cfg(feature = "from_slice")]
 const LANES: usize = 16;

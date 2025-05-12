@@ -34,6 +34,8 @@ use rand::rngs::StdRng;
 #[allow(deprecated)]
 use range_set_blaze::Rog;
 use range_set_blaze::SymDiffIter;
+#[cfg(not(target_arch = "wasm32"))]
+use range_set_blaze::test_util::{How, MemorylessIter, MemorylessRange, k_sets, width_to_range};
 use range_set_blaze::{Integer, NotIter, SortedStarts, prelude::*};
 use range_set_blaze::{UnionIter, symmetric_difference_dyn};
 use std::any::Any;
@@ -48,8 +50,6 @@ use std::panic::{self};
 use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
 use syntactic_for::syntactic_for;
-#[cfg(not(target_arch = "wasm32"))]
-use tests_common::{How, MemorylessIter, MemorylessRange, k_sets, width_to_range};
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -1322,7 +1322,7 @@ fn range_set_blaze_slice_constructor() {
     #[allow(clippy::single_element_loop)]
     for iter_len in [1000, 1500, 1750, 2000, 10_000, 1_000_000] {
         let (range_len, range) =
-            tests_common::width_to_range_u32(iter_len, average_width, coverage_goal);
+            range_set_blaze::test_util::width_to_range_u32(iter_len, average_width, coverage_goal);
 
         let vec: Vec<u32> = MemorylessIter::new(
             &mut StdRng::seed_from_u64(seed),

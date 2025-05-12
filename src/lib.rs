@@ -111,6 +111,9 @@ mod rog;
 #[cfg(feature = "rog-experimental")]
 #[allow(deprecated)]
 pub use rog::{Rog, RogsIter};
+#[cfg(any(test, feature = "test-util"))]
+#[doc(hidden)]
+pub mod test_util;
 
 // Internal modules
 pub(crate) mod from_slice;

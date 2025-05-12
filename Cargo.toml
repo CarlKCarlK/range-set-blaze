@@ -17,7 +17,6 @@ exclude = ["docs/**/*"]
 [workspace]
 members = [
     ".",
-    "tests/common",
     "tests/wasm-demo",
     "tests/wasm-led",
     "tests/embedded",
@@ -35,7 +34,8 @@ default = ["std"]
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 # rog_experimental would have been better
 rog-experimental = []
-from_slice = []
+from_slice = []       #cmk000 rename from-slice
+test-util = ["rand"]
 
 [dependencies]
 itertools = { version = "0.14.0", default-features = false, features = [
@@ -44,10 +44,15 @@ itertools = { version = "0.14.0", default-features = false, features = [
 num-integer = { version = "0.1.46", default-features = false }
 num-traits = { version = "0.2.19", default-features = false }
 gen_ops = "0.4.0"
+rand = { version = "0.9.1", optional = true }
 
+[dev-dependencies]
+syntactic-for = "0.1.1"
+wasm-bindgen-test = "0.3.50"
+rand = "0.9.1"
+range-set-blaze = { path = ".", features = ["test-util"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-tests_common = { path = "tests/common", version = "0.1.0", package = "tests_common" }
 criterion = { version = "0.5.1", features = [
     "html_reports",
 ], default-features = false }
@@ -63,10 +68,6 @@ roaring = "0.10.12"
 anyhow = "1.0.98"
 rand = { version = "0.9.1" }
 
-[dev-dependencies]
-syntactic-for = "0.1.1"
-wasm-bindgen-test = "0.3.50"
-rand = "0.9.1"
 
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
 getrandom = { version = "0.3.3", features = ["wasm_js"] }

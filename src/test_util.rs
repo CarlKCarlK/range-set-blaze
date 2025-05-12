@@ -1,12 +1,16 @@
+use crate::Integer;
+use crate::RangeMapBlaze;
+use crate::RangeSetBlaze;
+use alloc::vec;
+use alloc::vec::Vec;
 use core::ops::RangeInclusive;
 use num_traits::identities::One;
 use rand::Rng;
 use rand::distr::uniform::SampleUniform;
 use rand::rngs::StdRng;
-use range_set_blaze::Integer;
-use range_set_blaze::RangeMapBlaze;
-use range_set_blaze::RangeSetBlaze;
 
+#[must_use]
+#[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
 pub fn width_to_range(
     iter_len: usize,
     average_width: usize,
@@ -18,6 +22,12 @@ pub fn width_to_range(
     (range_len, range)
 }
 
+#[must_use]
+#[allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss
+)]
 pub fn width_to_range_u32(
     iter_len: usize,
     average_width: usize,
@@ -47,6 +57,7 @@ pub enum How {
 }
 
 impl<'a, T: Integer + SampleUniform> MemorylessRange<'a, T> {
+    #[allow(clippy::cast_precision_loss)]
     pub fn new(
         rng: &'a mut StdRng,
         range_len: usize,
@@ -300,14 +311,8 @@ pub fn k_sets<T: Integer + SampleUniform>(
 ) -> Vec<RangeSetBlaze<T>> {
     (0..k)
         .map(|_i| {
-            RangeSetBlaze::<T>::from_iter(MemorylessRange::new(
-                rng,
-                range_len,
-                range.clone(),
-                coverage_goal,
-                k,
-                how,
-            ))
+            MemorylessRange::new(rng, range_len, range.clone(), coverage_goal, k, how)
+                .collect::<RangeSetBlaze<T>>()
         })
         .collect()
 }
@@ -325,7 +330,7 @@ pub fn k_maps<T: Integer + SampleUniform>(
 ) -> Vec<RangeMapBlaze<T, u32>> {
     (0..k)
         .map(|_i| {
-            RangeMapBlaze::<T, u32>::from_iter(ClumpyMapRange::new(
+            ClumpyMapRange::new(
                 rng,
                 clump_len,
                 range.clone(),
@@ -334,7 +339,8 @@ pub fn k_maps<T: Integer + SampleUniform>(
                 how,
                 value_count,
                 range_per_clump,
-            ))
+            )
+            .collect::<RangeMapBlaze<T, u32>>()
         })
         .collect()
 }

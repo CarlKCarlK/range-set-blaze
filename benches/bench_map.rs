@@ -8,11 +8,11 @@ use criterion::{
 use itertools::iproduct;
 use rand::{SeedableRng, distr::Uniform, prelude::Distribution, rngs::StdRng};
 use range_set_blaze::prelude::*;
+use range_set_blaze::test_util::{ClumpyMapIter, ClumpyMapRange, How, k_maps, width_to_range_u32};
 use std::{
     collections::{BTreeMap, HashMap},
     ops::RangeInclusive,
 };
-use tests_common::{ClumpyMapIter, ClumpyMapRange, How, k_maps, width_to_range_u32};
 
 fn map_worst(c: &mut Criterion) {
     let group_name = "map_worst";

@@ -15,6 +15,8 @@ use quickcheck_macros::quickcheck;
 use rand::seq::IndexedRandom;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 use range_set_blaze::Integer;
+#[cfg(not(target_arch = "wasm32"))]
+use range_set_blaze::test_util::{How, k_maps};
 use range_set_blaze::{
     IntersectionIterMap, IntoRangeValuesIter, KMergeMap, RangeValuesIter, SymDiffIterMap,
     UnionIterMap, ValueRef, prelude::*,
@@ -29,8 +31,6 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-#[cfg(not(target_arch = "wasm32"))]
-use tests_common::{How, k_maps};
 
 use syntactic_for::syntactic_for;
 
