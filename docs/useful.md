@@ -246,7 +246,7 @@ qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-conf
 Testing
 
 ```cmd
-# cargo install -f wasm-bindgen-cli --version 0.2.99
+# cargo install -f wasm-bindgen-cli --version 0.2.100
 set WASM_BINDGEN_TEST_TIMEOUT=60
 cargo test --target wasm32-unknown-unknown --all-features
 ```
@@ -254,7 +254,7 @@ cargo test --target wasm32-unknown-unknown --all-features
 Example
 
 ```cmd
-cd O:\programs\range-set-blaze\tests\wasm-led
+cd tests\wasm-led
 wasm-pack build --target web
 ```
 

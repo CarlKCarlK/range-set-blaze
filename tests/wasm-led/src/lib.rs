@@ -2,12 +2,13 @@
 extern crate alloc;
 use alloc::format;
 use range_set_blaze::prelude::*;
+use wasm_bindgen::prelude::*;
 use web_sys::console;
 
 #[macro_use]
 extern crate lazy_static;
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[wasm_bindgen]
 pub struct LedState {
     pub state: u8,
     pub duration: i32,
@@ -18,7 +19,7 @@ lazy_static! {
         [hello_world(), circles(), double_count_down()];
 }
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[wasm_bindgen]
 pub fn on_module_load() {
     let _ = COMPILED_MOVIES;
 }
@@ -277,7 +278,7 @@ pub fn linear(
         .collect()
 }
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[wasm_bindgen]
 pub fn get_led_state_and_duration(movie_id: f64, now_milliseconds: f64) -> LedState {
     let movie = &COMPILED_MOVIES[movie_id as usize]; // TODO check bounds
 

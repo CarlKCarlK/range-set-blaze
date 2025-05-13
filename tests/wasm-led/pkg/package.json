@@ -1,14 +1,28 @@
 {
   "name": "wasm-led",
+  "type": "module",
+  "description": "LED example for WASM target",
   "version": "0.1.0",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CarlKCarlK/range-set-blaze"
+  },
   "files": [
     "wasm_led_bg.wasm",
     "wasm_led.js",
     "wasm_led.d.ts"
   ],
-  "module": "wasm_led.js",
+  "main": "wasm_led.js",
   "types": "wasm_led.d.ts",
   "sideEffects": [
     "./snippets/*"
+  ],
+  "keywords": [
+    "set",
+    "range",
+    "data-structures",
+    "no_std",
+    "wasm"
   ]
 }
