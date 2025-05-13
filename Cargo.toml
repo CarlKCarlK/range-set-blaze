@@ -32,10 +32,9 @@ members = [
 [features]
 default = ["std"]
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
-# rog_experimental would have been better
-rog-experimental = []
-from-slice = []       #cmk000 rename from-slice
-test-util = ["rand"]
+rog_experimental = []
+from_slice = []
+test_util = ["rand"]
 
 [dependencies]
 itertools = { version = "0.14.0", default-features = false, features = [
@@ -50,7 +49,7 @@ rand = { version = "0.9.1", optional = true }
 syntactic-for = "0.1.1"
 wasm-bindgen-test = "0.3.50"
 rand = "0.9.1"
-range-set-blaze = { path = ".", features = ["test-util"] }
+range-set-blaze = { path = ".", features = ["test_util"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 criterion = { version = "0.5.1", features = [

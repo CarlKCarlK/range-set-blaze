@@ -1,5 +1,5 @@
 use crate::UIntPlusOne;
-#[cfg(feature = "from-slice")]
+#[cfg(feature = "from_slice")]
 use crate::{RangeSetBlaze, from_slice::FromSliceIter};
 use core::hash::Hash;
 use core::net::{Ipv4Addr, Ipv6Addr};
@@ -8,7 +8,7 @@ use core::panic;
 use core::{fmt, ops::RangeInclusive};
 use num_traits::ops::overflowing::OverflowingSub;
 
-#[cfg(feature = "from-slice")]
+#[cfg(feature = "from_slice")]
 #[allow(clippy::redundant_pub_crate)]
 pub(crate) const LANES: usize = 16;
 
@@ -98,7 +98,7 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     #[must_use]
     fn max_value() -> Self;
 
-    #[cfg(feature = "from-slice")]
+    #[cfg(feature = "from_slice")]
     /// Creates a [`RangeSetBlaze`] from a slice, specific to the integer type.
     ///
     /// [`RangeSetBlaze`]: crate::RangeSetBlaze
@@ -195,7 +195,7 @@ macro_rules! impl_integer_ops {
             Self::MAX
         }
 
-        #[cfg(feature = "from-slice")]
+        #[cfg(feature = "from_slice")]
         #[inline]
         fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
             FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
@@ -338,7 +338,7 @@ impl Integer for i128 {
         Self::MAX
     }
 
-    #[cfg(feature = "from-slice")]
+    #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         RangeSetBlaze::from_iter(slice.as_ref())
@@ -475,7 +475,7 @@ impl Integer for u128 {
         Self::MAX
     }
 
-    #[cfg(feature = "from-slice")]
+    #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         RangeSetBlaze::from_iter(slice.as_ref())
@@ -640,7 +640,7 @@ impl Integer for Ipv4Addr {
         Self::new(255, 255, 255, 255)
     }
 
-    #[cfg(feature = "from-slice")]
+    #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         RangeSetBlaze::from_iter(slice.as_ref())
@@ -744,7 +744,7 @@ impl Integer for Ipv6Addr {
         Self::from(u128::MAX)
     }
 
-    #[cfg(feature = "from-slice")]
+    #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         RangeSetBlaze::from_iter(slice.as_ref())
@@ -900,7 +900,7 @@ impl Integer for char {
         '\u{10FFFF}'
     }
 
-    #[cfg(feature = "from-slice")]
+    #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         RangeSetBlaze::from_iter(slice.as_ref())
@@ -1109,7 +1109,7 @@ mod tests {
             let b = <$ty>::max_value().start_from_inclusive_end(len2);
             assert_eq!(b, <$ty>::max_value().sub_one());
 
-            #[cfg(feature = "from-slice")]
+            #[cfg(feature = "from_slice")]
             {
                 let range_set_blaze = <$ty>::from_slice(&[<$ty>::min_value()]);
                 assert_eq!(range_set_blaze, RangeSetBlaze::from_iter([<$ty>::min_value()]));

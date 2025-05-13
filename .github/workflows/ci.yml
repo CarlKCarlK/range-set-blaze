@@ -31,14 +31,14 @@ jobs:
           components: rust-src
       - name: Test Rust Native (stable)
         run: |
-          cargo clippy --verbose --all-targets --features "std rog-experimental" -- -D clippy::all -A deprecated
+          cargo clippy --verbose --all-targets --features "std rog_experimental" -- -D clippy::all -A deprecated
           cargo test --verbose
           cargo test --verbose --release
-          cargo test --verbose --no-default-features --features "rog-experimental"
+          cargo test --verbose --no-default-features --features "rog_experimental"
       - name: Test Rust Native (nightly)
         run: |
           rustup override set nightly
-          cargo test --verbose --features "rog-experimental from-slice"
+          cargo test --verbose --features "rog_experimental from_slice"
           cargo test --verbose --all-features
 
   test_32_bit_linux:
@@ -60,7 +60,7 @@ jobs:
         run: |
           rustup target add i686-unknown-linux-gnu
           cargo test --target i686-unknown-linux-gnu --verbose 
-          cargo test --target i686-unknown-linux-gnu --verbose --no-default-features --features "rog-experimental"
+          cargo test --target i686-unknown-linux-gnu --verbose --no-default-features --features "rog_experimental"
 
   test_wasm:
     name: Test WASM
@@ -83,7 +83,7 @@ jobs:
         run: |
           rustup target add wasm32-wasip1
           cargo test --target wasm32-wasip1 --verbose
-          cargo test --target wasm32-wasip1 --verbose --no-default-features --features "rog-experimental"
+          cargo test --target wasm32-wasip1 --verbose --no-default-features --features "rog_experimental"
       - name: Setup and check Embedded
         run: |
           rustup target add thumbv7m-none-eabi

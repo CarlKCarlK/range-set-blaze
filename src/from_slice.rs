@@ -1,4 +1,4 @@
-#![cfg(feature = "from-slice")]
+#![cfg(feature = "from_slice")]
 
 use crate::Integer;
 use alloc::slice;

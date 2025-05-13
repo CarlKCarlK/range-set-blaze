@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "from-slice", feature(portable_simd))]
+#![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
 #![no_std]
 extern crate alloc;
@@ -106,12 +106,12 @@ pub use crate::values::{IntoValues, Values};
 mod uint_plus_one;
 pub use uint_plus_one::UIntPlusOne;
 
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 mod rog;
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 pub use rog::{Rog, RogsIter};
-#[cfg(any(test, feature = "test-util"))]
+#[cfg(any(test, feature = "test_util"))]
 #[doc(hidden)]
 pub mod test_util;
 

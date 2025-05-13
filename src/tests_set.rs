@@ -574,7 +574,7 @@ fn convert_challenge() {
     // what about multiple inputs?
 }
 
-#[cfg(feature = "from-slice")]
+#[cfg(feature = "from_slice")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn understand_slice_iter() {
@@ -656,7 +656,7 @@ fn bitand() {
     assert!(a.ranges().equal(f));
 }
 
-#[cfg(feature = "from-slice")]
+#[cfg(feature = "from_slice")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_is_consecutive() {

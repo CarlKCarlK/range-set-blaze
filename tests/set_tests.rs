@@ -12,10 +12,10 @@ wasm_bindgen_test_configure!(run_in_browser);
 use core::fmt;
 use core::fmt::Debug;
 use core::iter::FusedIterator;
-#[cfg(feature = "from-slice")]
+#[cfg(feature = "from_slice")]
 use core::mem::size_of;
 use core::ops::BitAndAssign;
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 #[cfg(not(target_arch = "wasm32"))]
 use core::ops::Bound;
@@ -30,7 +30,7 @@ use quickcheck_macros::quickcheck;
 use rand::Rng;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 use range_set_blaze::Rog;
 use range_set_blaze::SymDiffIter;
@@ -40,10 +40,10 @@ use range_set_blaze::{Integer, NotIter, SortedStarts, prelude::*};
 use range_set_blaze::{UnionIter, symmetric_difference_dyn};
 use std::any::Any;
 use std::cmp::Ordering;
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 use std::panic::AssertUnwindSafe;
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 use std::panic::{self};
 #[cfg(not(target_arch = "wasm32"))]
@@ -1235,7 +1235,7 @@ fn range_set_blaze_constructors() {
 }
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[cfg(feature = "from-slice")]
+#[cfg(feature = "from_slice")]
 #[allow(unexpected_cfgs)]
 fn print_features() {
     println!("feature\tcould\tare");
@@ -1286,7 +1286,7 @@ fn print_features() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "from-slice")]
+#[cfg(feature = "from_slice")]
 fn from_slice_all_types() {
     syntactic_for! { ty in [i8, u8] {
         $(
@@ -1310,7 +1310,7 @@ fn from_slice_all_types() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[cfg(feature = "from-slice")]
+#[cfg(feature = "from_slice")]
 fn range_set_blaze_slice_constructor() {
     print_features();
     let k = 1;
@@ -1665,7 +1665,7 @@ fn complement_sample() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 fn test_rog_functionality() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -1707,7 +1707,7 @@ fn test_rog_functionality() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(clippy::reversed_empty_ranges)]
 #[allow(deprecated)]
 #[should_panic(expected = "start must be less than or equal to end")]
@@ -1719,7 +1719,7 @@ fn test_rog_functionality_empty() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 fn test_rogs_get_functionality() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -1731,7 +1731,7 @@ fn test_rogs_get_functionality() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 fn test_rog_repro1() {
     let a = RangeSetBlaze::from_iter([1u8..=6u8]);
@@ -1743,7 +1743,7 @@ fn test_rog_repro1() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 fn test_rog_repro2() {
     let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
@@ -1755,7 +1755,7 @@ fn test_rog_repro2() {
 
 #[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
 #[test] // uses panics so can't be wasm
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 fn test_rog_coverage1() {
     let a = RangeSetBlaze::from_iter([1u8..=6u8]);
@@ -1770,7 +1770,7 @@ fn test_rog_coverage1() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 fn test_rog_extremes_u8() {
     for a in [
@@ -1794,7 +1794,7 @@ fn test_rog_extremes_u8() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 fn test_rog_get_extremes_u8() {
     for a in [
@@ -1813,7 +1813,7 @@ fn test_rog_get_extremes_u8() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated, clippy::range_minus_one)]
 fn test_rog_extremes_i128() {
     for a in [
@@ -1840,7 +1840,7 @@ fn test_rog_extremes_i128() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated, clippy::range_minus_one)]
 fn test_rog_extremes_get_i128() {
     for a in [
@@ -1859,7 +1859,7 @@ fn test_rog_extremes_get_i128() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated, clippy::range_minus_one)]
 fn test_rog_should_fail_i128() {
     for a in [
@@ -1889,7 +1889,7 @@ fn test_rog_should_fail_i128() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated, clippy::range_minus_one)]
 fn test_rog_get_should_fail_i128() {
     for a in [
@@ -1910,7 +1910,7 @@ fn test_rog_get_should_fail_i128() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 fn test_rog_get_doc() {
     use crate::RangeSetBlaze;
@@ -1921,7 +1921,7 @@ fn test_rog_get_doc() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 fn test_rog_range_doc() {
     use core::ops::Bound::Included;
@@ -2881,7 +2881,7 @@ fn test_range_map_symmetric_difference() {
     );
 }
 
-#[cfg(feature = "rog-experimental")]
+#[cfg(feature = "rog_experimental")]
 #[allow(deprecated)]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -2917,7 +2917,7 @@ fn more_coverage_of_range_set_blaze() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "from-slice")]
+#[cfg(feature = "from_slice")]
 fn additional_from_slice_iter_coverage() {
     // // Test `FromSliceIter::next` with consecutive ranges followed by a non-consecutive element.
     // let a = RangeSetBlaze::from_slice([1, 2, 3, 10]);

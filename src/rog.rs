@@ -147,9 +147,9 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// # Enabling
     ///
-    /// This method is experimental and must be enabled with the `rog-experimental` feature.
+    /// This method is experimental and must be enabled with the `rog_experimental` feature.
     /// ```bash
-    /// cargo add range-set-blaze --features "rog-experimental"
+    /// cargo add range-set-blaze --features "rog_experimental"
     /// ```
     ///
     /// # Examples
@@ -203,9 +203,9 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// # Enabling
     ///
-    /// This method is experimental and must be enabled with the `rog-experimental` feature.
+    /// This method is experimental and must be enabled with the `rog_experimental` feature.
     /// ```bash
-    /// cargo add range-set-blaze --features "rog-experimental"
+    /// cargo add range-set-blaze --features "rog_experimental"
     /// ```
     ///
     /// # Examples

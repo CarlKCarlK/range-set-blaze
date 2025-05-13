@@ -122,7 +122,7 @@ cargo test range_set_int_slice_constructor -- --nocapture
 cargo test --doc intersection_dyn
 cargo test coverage -- --nocapture
 cargo test test_rog_functionality -- --nocapture
-cargo test --features rog-experimental
+cargo test --features rog_experimental
 ```
 
 ## examples
@@ -203,8 +203,8 @@ cargo doc --no-deps --all-features --open
 
 # 2. Switch back to stable, run with experimental feature
 rustup override set stable
-cargo doc --no-deps --features rog-experimental --open &
-cargo test --features rog-experimental --doc
+cargo doc --no-deps --features rog_experimental --open &
+cargo test --features rog_experimental --doc
 
 # 3. Run doc tests on all features
 cargo test --all-features --doc
