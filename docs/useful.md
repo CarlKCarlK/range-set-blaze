@@ -210,7 +210,19 @@ cargo test --features rog_experimental --doc
 cargo test --all-features --doc
 
 # 4. Clear screen, regenerate docs, and check for broken links
+# cargo install cargo-deadlinks
 cls & cargo doc --no-deps --all-features & cargo deadlinks --dir target/doc
+# ignore: Found invalid urls in help.html:
+# ignore: Found invalid urls in settings.html:
+```
+
+## Check and Audit
+
+```cmd
+# cargo install cargo-audit
+# cargo install cargo-deny
+cargo audit
+cargo deny check
 ```
 
 ## Embedded
@@ -263,7 +275,7 @@ Start the Microsoft Live Preview with cntl-shift-P Live Preview ...
 
 ## Publish
 
-Set version, e.g., 0.2.0-alpha3
+Set version, e.g., 0.2.0-alpha4
 
 In main directory
 

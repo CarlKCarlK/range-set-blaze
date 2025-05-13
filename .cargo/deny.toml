@@ -21,3 +21,4 @@ multiple-versions = "warn"
 
 # Lint level for when a crate version requirement is a wildcard (eg. `*`).
 wildcards = "deny"
+allow-wildcard-paths = true
