@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "from_slice", feature(portable_simd))]
+#![cfg_attr(feature = "from-slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
 #![no_std]
 extern crate alloc;

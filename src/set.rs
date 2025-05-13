@@ -160,9 +160,9 @@ where
 ///
 /// // 'from_slice': From any array-like collection of integers.
 /// // Nightly-only, but faster than 'from_iter'/'collect' on integers.
-/// #[cfg(feature = "from_slice")]
+/// #[cfg(feature = "from-slice")]
 /// let a0 = RangeSetBlaze::from_slice(vec![3, 2, 1, 100, 1]);
-/// #[cfg(feature = "from_slice")]
+/// #[cfg(feature = "from-slice")]
 /// assert!(a0.to_string() == "1..=3, 100..=100");
 ///
 /// // If we know the ranges are already sorted and disjoint,
@@ -464,7 +464,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// **Warning: Requires the nightly compiler. Also, you must enable the `from_slice`
     /// feature in your `Cargo.toml`. For example, with the command:**
     /// ```bash
-    ///  cargo add range-set-blaze --features "from_slice"
+    ///  cargo add range-set-blaze --features "from-slice"
     /// ```
     /// The function accepts any type that can be referenced as a slice of integers,
     /// including slices, arrays, and vectors. Duplicates and out-of-order elements are fine.
@@ -491,7 +491,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert!(a0 == a1 && a1 == a2 && a0.to_string() == "1..=3, 100..=100");
     /// ```
     /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
-    #[cfg(feature = "from_slice")]
+    #[cfg(feature = "from-slice")]
     #[inline]
     pub fn from_slice(slice: impl AsRef<[T]>) -> Self {
         T::from_slice(slice)
@@ -1386,11 +1386,11 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     /// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
     /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100")
     /// ```
-    #[cfg(not(feature = "from_slice"))]
+    #[cfg(not(feature = "from-slice"))]
     fn from(arr: [T; N]) -> Self {
         arr.into_iter().collect()
     }
-    #[cfg(feature = "from_slice")]
+    #[cfg(feature = "from-slice")]
     fn from(arr: [T; N]) -> Self {
         Self::from_slice(arr)
     }

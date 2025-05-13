@@ -38,7 +38,7 @@ jobs:
       - name: Test Rust Native (nightly)
         run: |
           rustup override set nightly
-          cargo test --verbose --features "rog-experimental from_slice"
+          cargo test --verbose --features "rog-experimental from-slice"
           cargo test --verbose --all-features
 
   test_32_bit_linux:

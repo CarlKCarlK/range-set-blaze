@@ -33,9 +33,9 @@ use range_set_blaze::test_util::{
 };
 use syntactic_for::syntactic_for;
 
-#[cfg(feature = "from_slice")]
+#[cfg(feature = "from-slice")]
 const LANES: usize = 16;
-#[cfg(feature = "from_slice")]
+#[cfg(feature = "from-slice")]
 const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {
     "avx512f"
 } else if cfg!(target_feature = "avx2") {
@@ -1034,7 +1034,7 @@ fn str_vs_ad_by_cover(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "from_slice")]
+#[cfg(feature = "from-slice")]
 fn ingest_clumps_base(c: &mut Criterion) {
     let group_name = "ingest_clumps_base";
     let k = 1;
@@ -1078,14 +1078,14 @@ fn ingest_clumps_base(c: &mut Criterion) {
             |b, _| b.iter(|| RangeSetBlaze::from_iter(&vec)),
         );
 
-        #[cfg(feature = "from_slice")]
+        #[cfg(feature = "from-slice")]
         group.bench_with_input(
             BenchmarkId::new(
                 format!("RangeSetBlaze (integers-slice_{SIMD_SUFFIX})"),
                 parameter,
             ),
             &parameter,
-            |b, _| b.iter(|| RangeSetBlaze::from_slice(&vec)),
+            |b, _| b.iter(|| RangeSetBlaze::from-slice(&vec)),
         );
 
         group.bench_with_input(
@@ -1131,7 +1131,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "from_slice")]
+#[cfg(feature = "from-slice")]
 fn ingest_clumps_integers(c: &mut Criterion) {
     let group_name = "ingest_clumps_integers";
     let k = 1;
@@ -1166,14 +1166,14 @@ fn ingest_clumps_integers(c: &mut Criterion) {
             |b, _| b.iter(|| RangeSetBlaze::from_iter(&vec)),
         );
 
-        #[cfg(feature = "from_slice")]
+        #[cfg(feature = "from-slice")]
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (from_slice_{SIMD_SUFFIX})"),
+                format!("RangeSetBlaze (from-slice_{SIMD_SUFFIX})"),
                 parameter,
             ),
             &parameter,
-            |b, _| b.iter(|| RangeSetBlaze::from_slice(&vec)),
+            |b, _| b.iter(|| RangeSetBlaze::from-slice(&vec)),
         );
 
         group.bench_with_input(
@@ -1220,7 +1220,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "from_slice")]
+#[cfg(feature = "from-slice")]
 fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
     let group_name = "ingest_clumps_iter_v_slice";
     let k = 1;
@@ -1250,13 +1250,13 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
         .collect();
 
         group.bench_with_input(
-            // format!("RangeSetBlaze (from_slice_{})", LANES)
-            // "RangeSetBlaze (from_slice)"
-            BenchmarkId::new(format!("RangeSetBlaze (from_slice_{LANES})"), parameter),
+            // format!("RangeSetBlaze (from-slice_{})", LANES)
+            // "RangeSetBlaze (from-slice)"
+            BenchmarkId::new(format!("RangeSetBlaze (from-slice_{LANES})"), parameter),
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    black_box(RangeSetBlaze::from_slice(vec.as_slice()));
+                    black_box(RangeSetBlaze::from-slice(vec.as_slice()));
                 });
             },
         );
@@ -1439,7 +1439,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "from_slice")]
+#[cfg(feature = "from-slice")]
 fn worst(c: &mut Criterion) {
     let group_name = "worst";
     let uniform = Uniform::new(0, 1000).expect("Uniform::new");
@@ -1465,16 +1465,16 @@ fn worst(c: &mut Criterion) {
             },
         );
 
-        #[cfg(feature = "from_slice")]
+        #[cfg(feature = "from-slice")]
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (from_slice_{SIMD_SUFFIX})"),
+                format!("RangeSetBlaze (from-slice_{SIMD_SUFFIX})"),
                 parameter,
             ),
             &parameter,
             |b, _| {
                 b.iter(|| {
-                    let _answer = RangeSetBlaze::from_slice(&vec);
+                    let _answer = RangeSetBlaze::from-slice(&vec);
                 });
             },
         );
@@ -2007,9 +2007,9 @@ fn worst_op_blaze(c: &mut Criterion) {
 }
 
 // Define two separate criterion groups for different features
-#[cfg(feature = "from_slice")]
+#[cfg(feature = "from-slice")]
 criterion_group!(
-    name = benches_with_from_slice;
+    name = benches_with_from-slice;
     config = Criterion::default();
     targets =
     ingest_clumps_iter_v_slice,
@@ -2019,7 +2019,7 @@ criterion_group!(
 );
 
 criterion_group!(
-    name = benches_without_from_slice;
+    name = benches_without_from-slice;
     config = Criterion::default();
     targets =
     intersect_k_sets,
@@ -2033,7 +2033,7 @@ criterion_group!(
 );
 
 // Conditionally select and execute the appropriate group based on the feature
-#[cfg(feature = "from_slice")]
-criterion_main!(benches_with_from_slice);
-#[cfg(not(feature = "from_slice"))]
-criterion_main!(benches_without_from_slice);
+#[cfg(feature = "from-slice")]
+criterion_main!(benches_with_from-slice);
+#[cfg(not(feature = "from-slice"))]
+criterion_main!(benches_without_from-slice);
