@@ -1,13 +1,15 @@
 [package]
-name = "wasm-led"
+name = "wasm-demo"
 version = "0.1.0"
 edition = "2024"
-description = "LED example for WASM target"
+description = "Demo project for range-set-blaze WASM features"
 repository = "https://github.com/CarlKCarlK/range-set-blaze"
 readme = "../../README.md"
 license = "MIT OR Apache-2.0"
 keywords = ["set", "range", "data-structures", "no_std", "wasm"]
 categories = ["data-structures", "no-std", "wasm"]
+
+# optional: prevent accidental publishing
 publish = false
 
 [lib]
@@ -16,5 +18,3 @@ crate-type = ["cdylib"]
 [dependencies]
 wasm-bindgen = "0.2"
 range-set-blaze = { path = "../..", default-features = false }
-lazy_static = "1.5.0"
-web-sys = { version = "0.3.77", features = ["console"] }

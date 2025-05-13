@@ -1,14 +1,19 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust WASM RangeSetBlaze Demo</title>
+</head>
 <body>
     <h2>Rust WASM RangeSetBlaze Demo</h2>
     <p>Enter a list of comma-separated integers:</p>
-    <input id="inputData" type="text" value="100,103,101,102,-3,-4" oninput="callWasmFunction()">
+    <input id="inputData" type="text" value="100,103,101,102,-3,-4" oninput="callWasmFunction()" placeholder="e.g., 1,2,3,5,8">
     <br><br>
     <p id="output"></p>
     <script type="module">
         import init, { disjoint_intervals } from './pkg/wasm_demo.js';
+
         function callWasmFunction() {
             let inputData = document.getElementById("inputData").value;
             let data = inputData.split(',').map(x => x.trim() === "" ? NaN : Number(x)).filter(n => !isNaN(n));
@@ -20,5 +25,4 @@
         init().then(callWasmFunction);
     </script>
 </body>
-
 </html>

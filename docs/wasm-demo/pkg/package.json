@@ -1,14 +1,28 @@
 {
   "name": "wasm-demo",
+  "type": "module",
+  "description": "Demo project for range-set-blaze WASM features",
   "version": "0.1.0",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CarlKCarlK/range-set-blaze"
+  },
   "files": [
     "wasm_demo_bg.wasm",
     "wasm_demo.js",
     "wasm_demo.d.ts"
   ],
-  "module": "wasm_demo.js",
+  "main": "wasm_demo.js",
   "types": "wasm_demo.d.ts",
   "sideEffects": [
     "./snippets/*"
+  ],
+  "keywords": [
+    "set",
+    "range",
+    "data-structures",
+    "no_std",
+    "wasm"
   ]
 }
