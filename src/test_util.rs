@@ -281,6 +281,7 @@ impl<'a, T: Integer + SampleUniform> ClumpyMapRange<'a, T> {
 impl<T: Integer + SampleUniform> Iterator for ClumpyMapRange<'_, T> {
     type Item = (RangeInclusive<T>, u32);
 
+    #[allow(clippy::needless_collect)]
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(item) = self.outputs_iter.next() {
             return Some(item);

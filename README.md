@@ -9,7 +9,7 @@ range-set-blaze
 
 Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full set operations
 
-Supports all of Rust's integer-like types, [`u8`] to [`u128`], [`i8`] to [`i128`], [`char`] (Unicode characters), [`Ipv4Addr`], and [`Ipv6Addr`].
+Supports all of Rust's integer-like types, `u8` to `u128`, `i8` to `i128`, `char` (Unicode characters), `Ipv4Addr`, and `Ipv6Addr`.
 Set operations—`union`, `intersection`, `difference`, `symmetric difference`, and `complement`— are available on both [sets][set operations] and [maps][map operations].
 
 The crate's main structs are:
@@ -32,6 +32,7 @@ The crate's main traits are
 > (making invalid states unrepresentable).
 
 [`RangeSetBlaze`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
+[`RangeMapBlaze`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html
 [`SortedDisjoint`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html#table-of-contents
 [`SortedDisjointMap`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjointMap.html#table-of-contents
 [set documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
@@ -45,8 +46,6 @@ The crate's main traits are
 [1]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#constructor-performance
 [2]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html#table-of-contents
 [3]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjointMap.html#table-of-contents
-[`Ipv4Addr`]: core::net::Ipv4Addr
-[`Ipv6Addr`]: core::net::Ipv6Addr
 
 The crate supports `no_std`, WASM, and embedded (with alloc) projects. For `no_std`, etc., Use the command:
 
@@ -165,7 +164,7 @@ Output:
 
 In biology, suppose we want to find the intron regions of a gene but we are given only the transcription region and the exon regions.
 
-![Example 3](https://raw.githubusercontent.com/CarlKCarlK/range-set-blaze/main/docs/rust_example2.png "Example 3")
+![Example 3](https://raw.githubusercontent.com/CarlKCarlK/range-set-blaze/main/docs/rust_example3.png "Example 3")
 
 We create a `RangeSetBlaze` for the transcription region and a `RangeSetBlaze` for all the exon regions.
 Then we take the difference between the transcription region and exon regions to find the intron regions.
