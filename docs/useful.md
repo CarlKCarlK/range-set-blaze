@@ -275,7 +275,7 @@ Start the Microsoft Live Preview with cntl-shift-P Live Preview ...
 
 ## Publish
 
-Set version, e.g., 0.2.0-alpha4
+Set version, e.g., 0.2.0
 
 In main directory
 
