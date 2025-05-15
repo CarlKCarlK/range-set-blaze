@@ -29,7 +29,8 @@ const STREAM_OVERHEAD: usize = 10;
 ///
 /// `ValueRef` enables [`SortedDisjointMap`] to map sorted, disjoint ranges of integers
 /// to values of type `V: Eq + Clone`. It supports both references (`&V`) and shared ownership types
-/// (`Rc<V>` and `Arc<V>`), avoiding unnecessary cloning of the underlying values while allowing ownership when needed.
+/// (`Rc<V>` and `Arc<V>`), avoiding unnecessary cloning of the underlying values while allowing
+/// ownership when needed.
 ///
 /// References must also implement `Clone`. Standard reference types like `&V`, `Rc<V>`, and `Arc<V>`
 /// implement `Clone` efficiently, as cloning typically involves copying a pointer.
@@ -2034,7 +2035,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
 
     // FUTURE BTreeSet some of these as 'const' but it uses unstable. When stable, add them here and elsewhere.
 
-    /// Returns the number of sorted & disjoint ranges in the set.
+    /// Returns the number of sorted & disjoint ranges i
+    /// n the set.
     ///
     /// # Example
     ///
