@@ -68,6 +68,28 @@ const STREAM_OVERHEAD: usize = 10;
 pub trait ValueRef: Borrow<Self::Target> + Clone {
     /// The `Eq + Clone` value type to which the reference points.
     type Target: Eq + Clone;
+
+    /// Converts a reference or shared pointer to an owned value of type `Self::Target`.
+    ///
+    /// This method allows values of type `Self` (e.g., `&V`, `Rc<V>`, or `Arc<V>`) to be turned
+    /// into a fully owned `V`, which is required when consuming or storing values independently.
+    ///
+    /// - For plain references (`&V`), this clones the referenced value.
+    /// - For `Rc<V>` and `Arc<V>`, this attempts to unwrap the value if uniquely owned;
+    ///   otherwise, it clones the inner value.
+    ///
+    /// This method is typically used when converting a stream of `(range, value)` pairs
+    /// into owned data, such as when building a new `RangeMapBlaze` from an iterator.
+    ///
+    /// # Example
+    /// ```
+    /// use std::rc::Rc;
+    /// use range_set_blaze::ValueRef;
+    ///
+    /// let rc = Rc::new("hello".to_string());
+    /// let owned: String = rc.to_owned(); // avoids cloning if ref count is 1
+    /// ```
+    fn to_owned(self) -> Self::Target;
 }
 
 // Implementations for references and smart pointers
@@ -76,6 +98,11 @@ where
     V: Eq + Clone,
 {
     type Target = V;
+
+    #[inline]
+    fn to_owned(self) -> Self::Target {
+        self.clone()
+    }
 }
 
 impl<V> ValueRef for Rc<V>
@@ -83,6 +110,11 @@ where
     V: Eq + Clone,
 {
     type Target = V;
+
+    #[inline]
+    fn to_owned(self) -> Self::Target {
+        Rc::try_unwrap(self).unwrap_or_else(|rc| (*rc).clone())
+    }
 }
 
 #[cfg(feature = "std")]
@@ -91,6 +123,11 @@ where
     V: Eq + Clone,
 {
     type Target = V;
+
+    #[inline]
+    fn to_owned(self) -> Self::Target {
+        Arc::try_unwrap(self).unwrap_or_else(|arc| (*arc).clone())
+    }
 }
 
 #[expect(clippy::redundant_pub_crate)]
