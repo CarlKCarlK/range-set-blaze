@@ -94,7 +94,7 @@ impl<T: Integer, V: Eq + Clone> FromIterator<(RangeInclusive<T>, V)> for RangeMa
 }
 
 impl<T: Integer, V: Eq + Clone> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
-    /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
+    /// Create a [`RangeMapBlaze`] from an iterator of pairs (integer, value).
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*

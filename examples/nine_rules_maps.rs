@@ -9,7 +9,7 @@ mod tests {
     use std::collections::BTreeMap;
     use std::net::{Ipv4Addr, Ipv6Addr};
 
-    use range_set_blaze::{RangeMapBlaze, RangeSetBlaze, UIntPlusOne};
+    use range_set_blaze::{RangeMapBlaze, RangeSetBlaze};
     #[test]
     fn example_test_1() {
         let set = RangeSetBlaze::from_iter([4, 0, 3, 5, 4]);
@@ -78,5 +78,49 @@ mod tests {
         let full = !RangeSetBlaze::<Ipv6Addr>::default();
         println!("IPv6 address count: {:?}", full.len());
         // Prints: IPv6 address count: MaxPlusOne (which is u128::MAX + 1)
+    }
+
+    #[derive(Debug, Eq, PartialEq)]
+    struct Big(&'static str);
+    impl Clone for Big {
+        fn clone(&self) -> Self {
+            let Big(name) = self;
+            println!("Cloned: {:?}", name);
+            Big(name)
+        }
+    }
+
+    #[test]
+    fn example_test_6() {
+        let a = RangeMapBlaze::from_iter([(0..=10, Big("green"))]);
+        let b = RangeMapBlaze::from_iter([(11..=15, Big("green")), (99..=99, Big("yellow"))]);
+        // Inputs not owned, so must clone Big's
+        let c = &a | &b;
+        println!("{c:?}");
+        // Prints: (0..=15, Big("green")), (99..=99, Big("yellow"))
+        // Inputs owned, so values are moved, not cloned.
+        let d = a | b;
+        println!("{d:?}");
+        // Prints: (0..=15, Big("green")), (99..=99, Big("yellow"))
+        assert_eq!(
+            format!("{c:?}"),
+            r#"(0..=15, Big("green")), (99..=99, Big("yellow"))"#
+        );
+        assert_eq!(
+            format!("{d:?}"),
+            r#"(0..=15, Big("green")), (99..=99, Big("yellow"))"#
+        );
+    }
+
+    #[test]
+    fn example_test_7() {
+        // Requires only one clone. (Recall left-to-right precedence)
+        let a = RangeMapBlaze::from_iter([(5..=5, Big("white")), (0..=10, Big("green"))]);
+        println!("{a:?}");
+        // Prints: (0..=4, Big("green")), (5..=5, Big("white")), (6..=10, Big("green"))
+        assert_eq!(
+            format!("{a:?}"),
+            r#"(0..=4, Big("green")), (5..=5, Big("white")), (6..=10, Big("green"))"#
+        );
     }
 }
