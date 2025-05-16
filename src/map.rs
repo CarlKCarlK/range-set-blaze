@@ -1,6 +1,7 @@
 use crate::{
     CheckSortedDisjoint, Integer, IntoKeys, Keys, RangeSetBlaze, SortedDisjoint,
     iter_map::{IntoIterMap, IterMap},
+    map_op, map_unary_op,
     range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter},
     set::extract_range,
     sorted_disjoint_map::{IntoString, SortedDisjointMap},
@@ -20,7 +21,6 @@ use core::{
     ops::{BitOr, BitOrAssign, Index, RangeBounds, RangeInclusive},
     panic,
 };
-use gen_ops::gen_ops_ex;
 use num_traits::{One, Zero};
 
 const STREAM_OVERHEAD: usize = 10;
@@ -2237,7 +2237,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
             return result;
         }
         // Sizes are comparable, use the iterator union
-        (self.range_values() | other.range_values()).into_range_map_blaze()
+        (self.into_range_values() | other.into_range_values()).into_range_map_blaze()
     }
 }
 
@@ -2408,9 +2408,9 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     }
 }
 
-gen_ops_ex!(
-    <T, V>;
-    types ref RangeMapBlaze<T,V>, ref RangeMapBlaze<T,V> => RangeMapBlaze<T,V>;
+map_op!(
+     BitAnd bitand,
+    RangeMapBlaze<T, V>,          // RHS concrete type
 
     /// Intersects the contents of two [`RangeMapBlaze`]'s.
     ///
@@ -2425,66 +2425,40 @@ gen_ops_ex!(
     /// let result = &a & &b; // Alternatively, 'a & b'.
     /// assert_eq!(result.to_string(), r#"(2..=2, "a"), (5..=6, "a")"#);
     /// ```
-    for & call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
-        a.range_values().map_and_set_intersection(b.ranges()).into_range_map_blaze()
-    };
-/// Symmetric difference the contents of two [`RangeMapBlaze`]'s.
-///
-/// Either, neither, or both inputs may be borrowed.
-///
-/// # Examples
-/// ```
-/// use range_set_blaze::prelude::*;
-///
-/// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
-/// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-/// let result = &a ^ &b; // Alternatively, 'a ^ b'.
-/// assert_eq!(result.to_string(), r#"(1..=1, "a"), (3..=4, "b"), (7..=100, "a")"#);
-/// ```
-for ^ call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
-    SymDiffIterMap::new2(a.range_values(), b.range_values()).into_range_map_blaze()
-};
-/// Difference the contents of two [`RangeSetBlaze`]'s.
-///
-/// Either, neither, or both inputs may be borrowed.
-///
-/// # Examples
-/// ```
-/// use range_set_blaze::prelude::*;
-///
-/// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
-/// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-/// let result = &a - &b; // Alternatively, 'a - b'.
-/// assert_eq!(result.to_string(), r#"(1..=1, "a"), (7..=100, "a")"#);
-/// ```
+    "placeholder",
 
-for - call |a: &RangeMapBlaze<T, V>, b: &RangeMapBlaze<T, V>| {
-    a.range_values().map_and_set_difference(b.ranges()).into_range_map_blaze()
-};
-where T: Integer, V: Eq + Clone
+    // owned ∩ owned
+    |a, b| {
+        a.into_range_values()
+         .map_and_set_intersection(b.ranges())
+         .into_range_map_blaze()
+    },
+
+    // owned ∩ &borrowed
+    |a, &b| {
+        a.into_range_values()
+         .map_and_set_intersection(b.ranges())
+         .into_range_map_blaze()
+    },
+
+    // &borrowed ∩ owned
+    |&a, b| {
+        a.range_values()
+         .map_and_set_intersection(b.into_ranges())
+         .into_range_map_blaze()
+    },
+
+    // &borrowed ∩ &borrowed
+    |&a, &b| {
+        a.range_values()
+         .map_and_set_intersection(b.ranges())
+         .into_range_map_blaze()
+    },
 );
 
-gen_ops_ex!(
-    <T, V>;
-    types ref RangeMapBlaze<T,V>, ref RangeSetBlaze<T> => RangeMapBlaze<T,V>;
-
-
-/// Find the difference between a [`RangeMapBlaze`] and a [`RangeSetBlaze`]. The result is a new [`RangeMapBlaze`].
-///
-/// Either, neither, or both inputs may be borrowed.
-///
-/// # Examples
-/// ```
-/// use range_set_blaze::prelude::*;
-///
-/// let a = RangeMapBlaze::from_iter([(1..=100, "a")]);
-/// let b = RangeSetBlaze::from_iter([2..=6]);
-/// let result = &a - &b; // Alternatively, 'a - b'.
-/// assert_eq!(result.to_string(), r#"(1..=1, "a"), (7..=100, "a")"#);
-/// ```
-for - call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
-    a.range_values().map_and_set_difference(b.ranges()).into_range_map_blaze()
-};
+map_op!(
+     BitAnd bitand,
+    RangeSetBlaze<T>,          // RHS concrete type
 
 /// Find the intersection between a [`RangeMapBlaze`] and a [`RangeSetBlaze`]. The result is a new [`RangeMapBlaze`].
 ///
@@ -2499,32 +2473,216 @@ for - call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
 /// let result = &a & &b; // Alternatively, 'a & b'.
 /// assert_eq!(result.to_string(), r#"(2..=6, "a")"#);
 /// ```
-for & call |a: &RangeMapBlaze<T, V>, b: &RangeSetBlaze<T>| {
-    a.range_values().map_and_set_intersection(b.ranges()).into_range_map_blaze()
-};
+    "placeholder",
 
-where T: Integer, V: Eq + Clone
+    // owned ∩ owned
+    |a, b| {
+        a.into_range_values()
+         .map_and_set_intersection(b.ranges())
+         .into_range_map_blaze()
+    },
+
+    // owned ∩ &borrowed
+    |a, &b| {
+        a.into_range_values()
+         .map_and_set_intersection(b.ranges())
+         .into_range_map_blaze()
+    },
+
+    // &borrowed ∩ owned
+    |&a, b| {
+        a.range_values()
+         .map_and_set_intersection(b.into_ranges())
+         .into_range_map_blaze()
+    },
+
+    // &borrowed ∩ &borrowed
+    |&a, &b| {
+        a.range_values()
+         .map_and_set_intersection(b.ranges())
+         .into_range_map_blaze()
+    },
 );
 
-gen_ops_ex!(
-    <T, V>;
-    types ref RangeMapBlaze<T,V> => RangeSetBlaze<T>;
+map_op!(
+    BitXor bitxor,                           // trait + method name
+    RangeMapBlaze<T, V>,                     // RHS concrete type
 
-
-/// Takes the complement of a `RangeMapBlaze`. The result is a new `RangeSetBlaze`.
+/// Symmetric difference the contents of two [`RangeMapBlaze`]'s.
+///
+/// Either, neither, or both inputs may be borrowed.
 ///
 /// # Examples
 /// ```
-/// use range_set_blaze::RangeMapBlaze;
+/// use range_set_blaze::prelude::*;
 ///
-/// let map = RangeMapBlaze::from_iter([(10u8..=20, "a"), (15..=25, "b"), (30..=40, "c")]);
-/// let complement = !&map; // Alternatively, '!map'.
-/// assert_eq!(complement.to_string(), "0..=9, 26..=29, 41..=255");
+/// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+/// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+/// let result = &a ^ &b; // Alternatively, 'a ^ b'.
+/// assert_eq!(result.to_string(), r#"(1..=1, "a"), (3..=4, "b"), (7..=100, "a")"#);
 /// ```
-for ! call |a: &RangeMapBlaze<T, V>| {
-    a.ranges().complement().into_range_set_blaze()
-};
-where T: Integer, V: Eq + Clone
+    "placeholder",
+
+    // ── owned ^ owned ────────────────────────────────────────────
+    |a, b| {
+        SymDiffIterMap::new2(
+            a.into_range_values(),
+            b.into_range_values(),
+        )
+        .into_range_map_blaze()
+    },
+
+    // ── owned ^ &borrowed ────────────────────────────────────────
+    |a, &b| {
+        SymDiffIterMap::new2(
+            a.range_values(),
+            b.range_values(),
+        )
+        .into_range_map_blaze()
+    },
+
+    // ── &borrowed ^ owned ────────────────────────────────────────
+    |&a, b| {
+        SymDiffIterMap::new2(
+            a.range_values(),
+            b.range_values(),
+        )
+        .into_range_map_blaze()
+    },
+
+    // ── &borrowed ^ &borrowed ────────────────────────────────────
+    |&a, &b| {
+        SymDiffIterMap::new2(
+            a.range_values(),
+            b.range_values(),
+        )
+        .into_range_map_blaze()
+    },
+);
+
+map_op!(
+    Sub sub,                                 // trait + method name
+    RangeMapBlaze<T, V>,         // RHS concrete type
+
+    /// **Difference** of two [`RangeMapBlaze`] values (`a - b`).
+    ///
+    /// Either, neither, or both inputs may be borrowed.
+    ///
+    /// # Example
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    /// let result = &a - &b;                // or `a - b`
+    /// assert_eq!(result.to_string(),
+    ///            r#"(1..=1, "a"), (7..=100, "a")"#);
+    /// ```
+    "placeholder",
+
+    // ── owned − owned ────────────────────────────────────────────
+    |a, b| {
+        a.into_range_values()
+         .map_and_set_difference(b.ranges())
+         .into_range_map_blaze()
+    },
+
+    // ── owned − &borrowed ────────────────────────────────────────
+    |a, &b| {
+        a.into_range_values()
+         .map_and_set_difference(b.ranges())
+         .into_range_map_blaze()
+    },
+
+    // ── &borrowed − owned ────────────────────────────────────────
+    |&a, b| {
+        a.range_values()
+         .map_and_set_difference(b.into_ranges())
+         .into_range_map_blaze()
+    },
+
+    // ── &borrowed − &borrowed ────────────────────────────────────
+    |&a, &b| {
+        a.range_values()
+         .map_and_set_difference(b.ranges())
+         .into_range_map_blaze()
+    },
+);
+
+map_op!(
+    Sub sub,                                 // trait + method name
+    RangeSetBlaze<T>,         // RHS concrete type
+
+/// Find the difference between a [`RangeMapBlaze`] and a [`RangeSetBlaze`]. The result is a new [`RangeMapBlaze`].
+///
+/// Either, neither, or both inputs may be borrowed.
+///
+/// # Examples
+/// ```
+/// use range_set_blaze::prelude::*;
+///
+/// let a = RangeMapBlaze::from_iter([(1..=100, "a")]);
+/// let b = RangeSetBlaze::from_iter([2..=6]);
+/// let result = &a - &b; // Alternatively, 'a - b'.
+/// assert_eq!(result.to_string(), r#"(1..=1, "a"), (7..=100, "a")"#);
+/// ```
+    "placeholder",
+
+    // ── owned − owned ────────────────────────────────────────────
+    |a, b| {
+        a.into_range_values()
+         .map_and_set_difference(b.ranges())
+         .into_range_map_blaze()
+    },
+
+    // ── owned − &borrowed ────────────────────────────────────────
+    |a, &b| {
+        a.into_range_values()
+         .map_and_set_difference(b.ranges())
+         .into_range_map_blaze()
+    },
+
+    // ── &borrowed − owned ────────────────────────────────────────
+    |&a, b| {
+        a.range_values()
+         .map_and_set_difference(b.into_ranges())
+         .into_range_map_blaze()
+    },
+
+    // ── &borrowed − &borrowed ────────────────────────────────────
+    |&a, &b| {
+        a.range_values()
+         .map_and_set_difference(b.ranges())
+         .into_range_map_blaze()
+    },
+);
+
+map_unary_op!(
+    Not not,                                   // trait + method
+    crate::set::RangeSetBlaze<T>,              // output type
+
+    /// Takes the complement of a [`RangeMapBlaze`].
+    ///
+    /// Produces a [`RangeSetBlaze`] containing all integers *not* present
+    /// in the map’s key ranges.
+    ///
+    /// # Example
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    /// let map =
+    ///     RangeMapBlaze::from_iter([(10u8..=20, "a"), (15..=25, "b"),
+    ///                               (30..=40, "c")]);
+    /// let complement = !&map;                // or `!map`
+    /// assert_eq!(complement.to_string(), "0..=9, 26..=29, 41..=255");
+    /// ```
+    "placeholder",
+
+    // body for &map
+    |&m| {
+        m.ranges()
+         .complement()
+         .into_range_set_blaze()
+    }
 );
 
 impl<T, V> Extend<(T, V)> for RangeMapBlaze<T, V>

@@ -44,6 +44,8 @@ pub use crate::keys::{IntoKeys, Keys};
 mod map;
 pub use crate::map::{RangeMapBlaze, ValueRef};
 
+mod map_op;
+
 mod merge;
 pub use merge::{KMerge, Merge};
 
