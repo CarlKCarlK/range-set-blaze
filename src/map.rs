@@ -113,7 +113,7 @@ where
 
     #[inline]
     fn to_owned(self) -> Self::Target {
-        Rc::try_unwrap(self).unwrap_or_else(|rc| (*rc).clone())
+        Self::try_unwrap(self).unwrap_or_else(|rc| (*rc).clone())
     }
 }
 
@@ -126,7 +126,7 @@ where
 
     #[inline]
     fn to_owned(self) -> Self::Target {
-        Arc::try_unwrap(self).unwrap_or_else(|arc| (*arc).clone())
+        Self::try_unwrap(self).unwrap_or_else(|arc| (*arc).clone())
     }
 }
 

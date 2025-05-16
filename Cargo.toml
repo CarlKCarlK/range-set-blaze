@@ -108,7 +108,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 [lints.clippy]
 # individual Clippy lints
 uninlined_format_args = "warn"
-doc_link_code = "allow"
+## nightly only: doc_link_code = "allow"
 use_self = "warn"
 must_use_candidate = "warn"
 unwrap_used = "warn"

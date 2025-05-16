@@ -1,10 +1,10 @@
-//! Helper macro for RangeMapBlaze binary-operator impls.
+//! Helper macro for `RangeMapBlaze` binary-operator impls.
 //!
 //! Usage pattern:
 //
 //  map_op!(
 //      bitand &,                            // Rust trait + symbol
-//      $crate::map::RangeMapBlaze<T, V>,    // RHS concrete type
+//      RangeMapBlaze<T, V>,                 // RHS concrete type
 //      /// One doc-comment that shows up on every impl.,
 //
 //      |a,  b|  { /* owned vs owned   */ },
@@ -13,6 +13,7 @@
 //      |&a,&b|  { /* &borrow vs &bor  */ },
 //  );
 //
+#[doc(hidden)]
 #[macro_export]
 macro_rules! map_op {
     (
@@ -93,6 +94,7 @@ macro_rules! map_op {
     };
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! map_unary_op {
     (
