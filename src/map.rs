@@ -2190,8 +2190,8 @@ impl<'a, T: Integer, V: Eq + Clone> IntoIterator for &'a RangeMapBlaze<T, V> {
 impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// This operator has *left precedence*: when overlapping ranges are present,
-    /// values in `self` take priority over those in the right-hand side.
+    /// This operator has *right precedence*: when overlapping ranges are present,
+    /// values on the right-hand side take priority over those self.
     ///
     /// This method is optimized for three usage scenarios:
     /// when the left-hand side is much smaller, when the right-hand side is much smaller,
@@ -2205,6 +2205,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let union = a | b;  // Alternatively, '&a | &b', etc.
+    /// // cmk000
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
     type Output = Self;
@@ -2217,6 +2218,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
         if a_len == 0 {
             return other;
         }
+        // cmk000
         if choose_insert(b_len, a_len) {
             // 'a' is small, insert its elements into 'other'
             for (start, end_value) in self.btree_map {
@@ -2244,8 +2246,8 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
 impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// This operator has *left precedence*: when overlapping ranges are present,
-    /// values in `self` take priority over those in the right-hand side.
+    /// This operator has *right precedence*: when overlapping ranges are present,
+    /// values on the right-hand side take priority over those self.
     ///
     /// This method is optimized for three usage scenarios:
     /// when the left-hand side is much smaller, when the right-hand side is much smaller,
@@ -2259,6 +2261,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let union = a | &b; // Alternatively, 'a | b', etc.
+    /// // cmk000
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
     type Output = Self;
@@ -2271,6 +2274,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
         if a_len == 0 {
             return other.clone();
         }
+        // cmk000
         // Check if 'a' is small compared to 'b'
         if choose_insert(b_len, a_len) {
             // 'a' is small, clone 'other' and insert 'a' into it
@@ -2300,8 +2304,8 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// This operator has *left precedence*: when overlapping ranges are present,
-    /// values in `self` take priority over those in the right-hand side.
+    /// This operator has *right precedence*: when overlapping ranges are present,
+    /// values on the right-hand side take priority over those self.
     ///
     /// This method is optimized for three usage scenarios:
     /// when the left-hand side is much smaller, when the right-hand side is much smaller,
@@ -2315,6 +2319,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let union = &a | b;  // Alternatively, 'a | b', etc.
+    /// // cmk000
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
     fn bitor(self, mut other: RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
@@ -2326,6 +2331,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
         if b_len == 0 {
             return self.clone();
         }
+        // cmk000
         // Check if 'a' is small compared to 'b'
         if choose_insert(b_len, a_len) {
             // 'a' is small, insert its elements into 'other'
@@ -2356,8 +2362,8 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     type Output = RangeMapBlaze<T, V>;
     /// Unions the contents of two [`RangeMapBlaze`]'s.
     ///
-    /// This operator has *left precedence*: when overlapping ranges are present,
-    /// values in `self` take priority over those in the right-hand side.
+    /// This operator has *right precedence*: when overlapping ranges are present,
+    /// values on the right-hand side take priority over those self.
     ///
     /// This method is optimized for three usage scenarios:
     /// when the left-hand side is much smaller, when the right-hand side is much smaller,
@@ -2371,6 +2377,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let union = &a | &b; // Alternatively, 'a | b', etc.
+    /// // cmk000
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
     /// ```
     fn bitor(self, other: &RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
@@ -2382,6 +2389,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
         if b_len == 0 {
             return self.clone();
         }
+        // cmk000
         if choose_insert(b_len, a_len) {
             // 'a' is small, clone 'other' and insert 'a' into it
             let mut result = other.clone();
@@ -2699,6 +2707,7 @@ where
     /// are merged before insertion. For alternatives that skip merging or accept full ranges,
     /// see [`RangeMapBlaze::extend_simple`] and [`RangeMapBlaze::extend`].
     ///
+    /// // cmk000
     /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
     /// # Examples
@@ -2711,6 +2720,7 @@ where
     /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
     /// let mut b = RangeMapBlaze::from_iter([(3, "b"), (4, "e"), (5, "f"), (5, "g")]);
     /// a |= b;
+    /// // cmk000
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
     /// ```
     #[inline]
@@ -2743,6 +2753,7 @@ where
     /// For alternatives that skip merging or that accept integer-value pairs, see
     /// [`RangeMapBlaze::extend_simple`] and the `(integer, value)` overload.
     ///
+    /// // cmk000
     /// For *left-to-right* precedence, use the union-related methods.
     ///
     /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
@@ -2761,6 +2772,7 @@ where
     /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
     /// let mut b = RangeMapBlaze::from_iter([(3..=5, "b"), (5..=5, "c")]);
     /// a |= b;
+    /// // cmk000
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "b")]));
     /// ```
     #[inline]
@@ -2946,8 +2958,9 @@ impl<T: Integer, V: Eq + Clone> Eq for RangeMapBlaze<T, V> {}
 impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
     /// Adds the contents of another [`RangeMapBlaze`] to this one.
     ///
-    /// This operator has *left precedence*: when overlapping ranges are present,
-    /// values in `self` take priority over those in the right-hand side.
+    /// This operator has *right precedence*: when overlapping ranges are present,
+    /// values on the right-hand side take priority over those self.
+    /// //cmk000
     /// To get *right precedence*, swap the operands or use
     /// [`RangeMapBlaze::extend_with`].
     ///
@@ -2955,6 +2968,7 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
     /// when the left-hand side is much smaller, when the right-hand side is much smaller,
     /// and when both sides are of similar size
     ///
+    /// // cmk000
     /// Even greater efficiency is possible when the right-hand side is passed by value,
     /// allowing its internal data structures to be reused.
     ///
@@ -2965,6 +2979,7 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
     /// use range_set_blaze::RangeMapBlaze;
     /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
     /// let mut b = RangeMapBlaze::from_iter([(3, "b"), (4, "e"), (5, "f"), (5, "g")]);
+    /// // cmk000
     /// a |= &b;
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
     /// ```
@@ -2977,8 +2992,9 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
 impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     /// Adds the contents of another [`RangeMapBlaze`] to this one.
     ///
-    /// This operator has *left precedence*: when overlapping ranges are present,
-    /// values in `self` take priority over those in the right-hand side.
+    /// This operator has *right precedence*: when overlapping ranges are present,
+    /// values on the right-hand side take priority over those self.
+    /// // cmk000
     /// To get *right precedence*, swap the operands or use
     /// [`RangeMapBlaze::extend_with`].
     ///
@@ -2994,6 +3010,7 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
     /// let mut b = RangeMapBlaze::from_iter([(3, "b"), (4, "e"), (5, "f"), (5, "g")]);
     /// a |= &b;
+    /// // cmk000
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
     /// ```
     ///
@@ -3002,6 +3019,7 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     /// use range_set_blaze::RangeMapBlaze;
     /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
     /// let mut b = RangeMapBlaze::from_iter([(3, "b"), (4, "e"), (5, "f"), (5, "g")]);
+    /// // cmk000
     /// a |= b;
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
     /// ```

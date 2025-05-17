@@ -67,7 +67,7 @@ where
             self.priority_number = self
                 .priority_number
                 .checked_add(1)
-                .expect_debug_unwrap_release("overflow");
+                .expect_debug_unwrap_release("underflow");
 
             // check the next range is valid and non-empty
             let (next_start, next_end) = next_priority.start_and_end();

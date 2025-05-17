@@ -792,8 +792,12 @@ where
     VR: ValueRef,
 {
     fn cmp(&self, other: &Self) -> Ordering {
-        // smaller is better
-        other.priority_number.cmp(&self.priority_number)
+        debug_assert_ne!(
+            self.priority_number, other.priority_number,
+            "Priority numbers are expected to be distinct for comparison."
+        );
+        // bigger is better
+        self.priority_number.cmp(&other.priority_number)
     }
 }
 

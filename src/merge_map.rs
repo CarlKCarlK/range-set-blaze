@@ -109,9 +109,9 @@ where
     where
         K: IntoIterator<Item = I>,
     {
-        // Prioritize from left to right
+        // Prioritize from right to left
         let iter = iter.into_iter().enumerate().map(|(i, x)| {
-            let priority_number = i;
+            let priority_number =  i;
             SetPriorityMap::new(x, priority_number)
         });
         // Merge RangeValues by start with ties broken by priority

@@ -461,7 +461,7 @@ fn convert_challenge() {
     let a = [(1..=4, &"a"), (5..=100, &"a"), (5..=5, &"b")].into_iter();
     let a = a
         .enumerate()
-        .map(|(i, range_value)| Priority::new(range_value, i));
+        .map(|(i, range_value)| Priority::new(range_value,  i));
     let a = AssumePrioritySortedStartsMap::new(a);
     let a = UnionIterMap::new(a);
     // is_sorted_disjoint_map::<_, _, _, _>(a);
@@ -471,7 +471,7 @@ fn convert_challenge() {
     let iter = [(5..=100, &"a"), (5..=5, &"b"), (1..=4, &"a")].into_iter();
     let iter = iter
         .enumerate()
-        .map(|(i, range_value)| Priority::new(range_value, i));
+        .map(|(i, range_value)| Priority::new(range_value,  i));
     let iter = iter.into_iter().sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
         a.start().cmp(&b.start())
@@ -516,7 +516,7 @@ fn convert_challenge() {
     let iter = [(5, &"a"), (5, &"b"), (1, &"a")].into_iter();
     let iter = iter
         .enumerate()
-        .map(|(i, (k, v))| Priority::new((k..=k, v), i));
+        .map(|(i, (k, v))| Priority::new((k..=k, v),  i));
     let iter = iter.into_iter().sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
         a.start().cmp(&b.start())
