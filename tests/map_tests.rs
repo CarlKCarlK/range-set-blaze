@@ -1316,8 +1316,8 @@ fn map_split_off() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_range_map_blaze_operators() {
-    let a = RangeMapBlaze::from_iter([(1..=2, "one"), (5..=100, "two")]);
-    let b = RangeMapBlaze::from_iter([(2..=6, "three")]);
+    let a = RangeMapBlaze::from_iter([(2..=6, "three")]);
+    let b = RangeMapBlaze::from_iter([(1..=2, "one"), (5..=100, "two")]);
 
     // Union of two 'RangeMapBlaze's. Early values in from_iter and union have higher priority.
     let result = &a | &b;
@@ -1333,7 +1333,7 @@ fn map_range_map_blaze_operators() {
     assert_eq!(result.to_string(), r#"(2..=2, "one"), (5..=6, "two")"#);
 
     // Set difference of two 'RangeMapBlaze's.
-    let result = &a - &b; // Alternatively, 'a - b'.
+    let result = &b - &a; // Alternatively, 'b - a'.
     assert_eq!(result.to_string(), r#"(1..=1, "one"), (7..=100, "two")"#);
 
     // Symmetric difference of two 'RangeMapBlaze's.
@@ -1344,7 +1344,7 @@ fn map_range_map_blaze_operators() {
     );
 
     // complement of a 'RangeMapBlaze'.
-    let result = !(&a.range_values().into_range_map_blaze());
+    let result = !(&b.range_values().into_range_map_blaze());
     assert_eq!(
         result.to_string(),
         "-2147483648..=0, 3..=4, 101..=2147483647"
@@ -1352,7 +1352,7 @@ fn map_range_map_blaze_operators() {
 
     // Multiway union of 'RangeMapBlaze's.
     let c = RangeMapBlaze::from_iter([(2..=2, "six"), (6..=200, "seven")]);
-    let result = [&a, &b, &c].union();
+    let result = [&c, &a, &b].union();
     assert_eq!(
         result.to_string(),
         r#"(1..=2, "one"), (3..=4, "three"), (5..=100, "two"), (101..=200, "seven")"#
@@ -1360,10 +1360,12 @@ fn map_range_map_blaze_operators() {
 
     // // Multiway intersection of 'RangeMapBlaze's.
     let c = RangeMapBlaze::from_iter([(2..=2, "six"), (6..=200, "seven")]);
-    let result = [&a, &b, &c].intersection();
+    let result = [&c, &a, &b].intersection();
     assert_eq!(result.to_string(), r#"(2..=2, "one"), (6..=6, "two")"#);
 
     // Applying multiple operators
+    let a = RangeMapBlaze::from_iter([(1..=2, "one"), (5..=100, "two")]);
+    let b = RangeMapBlaze::from_iter([(2..=6, "three")]);
     let result0 = &a - (&b | &c); // Creates an intermediate 'RangeMapBlaze'.
 
     // Alternatively, we can use the 'SortedDisjointMap' API and avoid the intermediate 'RangeMapBlaze'.
@@ -1719,7 +1721,7 @@ fn map_random_from_iter_item() {
 
             let range_map_blaze = inputs.iter().collect();
             // Only insert if the key does not already exist
-            btree_map.entry(key).or_insert(value);
+            btree_map.insert(key, value);
             if !equal_maps(&range_map_blaze, &btree_map) {
                 println!();
                 let _range_map_blaze: RangeMapBlaze<_, char> = inputs.iter().collect();
@@ -1754,7 +1756,7 @@ fn map_random_from_iter_range() {
 
             let range_map_blaze = inputs.iter().collect();
             for k in key.clone() {
-                btree_map.entry(k).or_insert(value);
+                btree_map.insert(k, value);
             }
             if !equal_maps(&range_map_blaze, &btree_map) {
                 let _range_map_blaze: RangeMapBlaze<u8, char> = inputs.iter().collect();
@@ -2599,14 +2601,14 @@ fn test_into_map_into_ranges() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn fast_union() {
-    let a = RangeMapBlaze::from_iter([(1..=2, "a")]);
-    let b = RangeMapBlaze::from_iter([
+    let a = RangeMapBlaze::from_iter([
         (1..=5, "x"),
         (13..=14, "b"),
         (15..=16, "c"),
         (17..=18, "d"),
         (19..=20, "e"),
     ]);
+    let b = RangeMapBlaze::from_iter([(1..=2, "a")]);
     let c = a | b;
     assert_eq!(
         c.to_string(),
@@ -2928,7 +2930,7 @@ fn test_cmp() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::style)]
 fn bitor_assign_coverage() {
-    for (a0, b0, c0) in [
+    for (b0, a0, c0) in [
         (
             vec![(3..=3, "a"), (5..=10, "a"), (12..=15, "a")],
             vec![(2..=3, "b"), (5..=10, "b"), (12..=15, "b")],
@@ -2951,9 +2953,9 @@ fn bitor_assign_coverage() {
         let b = RangeMapBlaze::from_iter(&b0);
         a |= &b;
         assert_eq!(a, c);
-        let mut b = RangeMapBlaze::from_iter(&b0);
-        b.extend(a0.clone());
-        assert_eq!(b, c);
+        let mut a = RangeMapBlaze::from_iter(&a0);
+        a.extend(b0.clone());
+        assert_eq!(a, c);
     }
 }
 
