@@ -190,8 +190,8 @@ fn map_repro_bit_and() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_doctest1() {
-    let a = RangeMapBlaze::from_iter([(1u8, "Hello"), (2, "Hello"), (3, "Hello")]);
-    let b = RangeMapBlaze::from_iter([(3u8, "World"), (4, "World"), (5, "World")]);
+    let a = RangeMapBlaze::from_iter([(3u8, "World"), (4, "World"), (5, "World")]);
+    let b = RangeMapBlaze::from_iter([(1u8, "Hello"), (2, "Hello"), (3, "Hello")]);
 
     let result = &a | &b;
     assert_eq!(
@@ -199,8 +199,8 @@ fn map_doctest1() {
         RangeMapBlaze::<u8, &str>::from_iter([(1..=3, "Hello"), (4..=5, "World")])
     );
 
-    let a = RangeMapBlaze::<u8, _>::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
-    let b = RangeMapBlaze::<u8, _>::from_iter([(3, "Go"), (4, "Go"), (5, "Go")]);
+    let a = RangeMapBlaze::<u8, _>::from_iter([(3, "Go"), (4, "Go"), (5, "Go")]);
+    let b = RangeMapBlaze::<u8, _>::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
 
     let result = &a | &b;
     assert_eq!(
@@ -315,8 +315,8 @@ fn map_missing_doctest_ops() {
     // note that may be borrowed or owned in any combination.
 
     // Returns the union of `self` and `rhs` as a new [`RangeMapBlaze`].
-    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
-    let b = RangeMapBlaze::from_iter([(3, "World"), (4, "World"), (5, "World")]);
+    let a = RangeMapBlaze::from_iter([(3, "World"), (4, "World"), (5, "World")]);
+    let b = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
 
     let result = &a | &b;
     assert_eq!(
@@ -351,18 +351,19 @@ fn map_missing_doctest_ops() {
 
     // Returns the intersection of `self` and `rhs` as a new `RangeMapBlaze<T>`.
 
-    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
-    let b = RangeMapBlaze::from_iter([(3, "World"), (4, "World"), (5, "World")]);
+    let a = RangeMapBlaze::from_iter([(3, "World"), (4, "World"), (5, "World")]);
+    let b = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
 
     let result = a & &b;
+    println!("{result}");
     assert_eq!(result, RangeMapBlaze::from_iter([(3, "Hello")]));
-    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
+    let a = RangeMapBlaze::from_iter([(3, "World"), (4, "World"), (5, "World")]);
     let result = a & b;
     assert_eq!(result, RangeMapBlaze::from_iter([(3, "Hello")]));
 
     // Returns the symmetric difference of `self` and `rhs` as a new `RangeMapBlaze<T>`.
-    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
-    let b = RangeMapBlaze::from_iter([(2, "World"), (3, "World"), (4, "World")]);
+    let a = RangeMapBlaze::from_iter([(2, "World"), (3, "World"), (4, "World")]);
+    let b = RangeMapBlaze::from_iter([(1, "Hello"), (2, "Hello"), (3, "Hello")]);
 
     let result = a ^ b;
     assert_eq!(
@@ -380,8 +381,8 @@ fn map_missing_doctest_ops() {
     // note that may be borrowed or owned in any combination.
 
     // Returns the union of `self` and `rhs` as a new [`RangeMapBlaze`].
-    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
-    let b = RangeMapBlaze::from_iter([(3, "Go"), (4, "Go"), (5, "Go")]);
+    let a = RangeMapBlaze::from_iter([(3, "Go"), (4, "Go"), (5, "Go")]);
+    let b = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
 
     let result = &a | &b;
     assert_eq!(
@@ -408,15 +409,15 @@ fn map_missing_doctest_ops() {
 
     // Returns the intersection of `self` and `rhs` as a new `RangeMapBlaze<T>`.
 
-    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
-    let b = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
+    let a = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
+    let b = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
 
     let result = a & &b;
     assert_eq!(
         result,
         RangeMapBlaze::from_iter([(2, "World"), (3, "World")])
     );
-    let a = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
+    let a = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
     let result = a & b;
     assert_eq!(
         result,
@@ -445,9 +446,9 @@ fn map_missing_doctest_ops() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_multi_op() {
     // Union
-    let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
+    let a = RangeMapBlaze::from_iter([(38..=42, 'c')]);
     let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
-    let c = RangeMapBlaze::from_iter([(38..=42, 'c')]);
+    let c = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
     let d = &(&a | &b) | &c;
     assert_eq!(
         d,
@@ -475,9 +476,9 @@ fn map_multi_op() {
         ])
     );
 
-    let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
+    let a = RangeMapBlaze::from_iter([(38..=42, 'c')]);
     let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
-    let c = RangeMapBlaze::from_iter([(38..=42, 'c')]);
+    let c = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
 
     let _ = [&a, &b, &c].union();
 
@@ -501,9 +502,9 @@ fn map_multi_op() {
     );
 
     // Intersection
-    let a = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
+    let a = RangeMapBlaze::from_iter([(1..=42, 'c')]);
     let b = RangeMapBlaze::from_iter([(5..=13, 'b'), (18..=29, 'b')]);
-    let c = RangeMapBlaze::from_iter([(1..=42, 'c')]);
+    let c = RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')]);
 
     let _ = &a & &b;
     let d = [&a, &b, &c].intersection();
@@ -672,7 +673,7 @@ fn map_parity() {
         RangeMapBlaze::from_sorted_disjoint_map(u),
         RangeMapBlaze::from_iter([(1..=6, 'a'), (8..=9, 'a'), (11..=15, 'a')])
     );
-    let u = union_map_dyn!(a.range_values(), b.range_values(), c.range_values());
+    let u = union_map_dyn!(c.range_values(), b.range_values(), a.range_values());
     assert_eq!(
         RangeMapBlaze::from_sorted_disjoint_map(u),
         RangeMapBlaze::from_iter([

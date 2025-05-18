@@ -79,7 +79,8 @@ where
             let (Some(left), Some(right)) = (self.left.take(), self.right.take()) else {
                 return None;
             };
-            let (left_start, left_end) = left.0.clone().into_inner();
+            let (left_range, left_value) = left;
+            let (left_start, left_end) = left_range.clone().into_inner();
             let (right_start, right_end) = right.into_inner();
             // println!("{:?} {:?}", current_range, current_range_value.0);
 
@@ -87,7 +88,7 @@ where
             if right_end < left_start {
                 // println!("getting new range");
                 self.right = None;
-                self.left = Some(left);
+                self.left = Some((left_range, left_value));
                 continue;
             }
 
@@ -103,26 +104,26 @@ where
             let start = max(right_start, left_start);
             let end = min(right_end, left_end);
 
-            // remove any ranges that match "end" and set them None
-            let value = if right_end != end {
-                // left_end != end, right_end != end is impossible{
-                debug_assert!(left_end == end);
+            // Modified logic: Now prioritize right range boundaries instead of left
+            let value = if left_end != end {
+                // right_end != end, left_end != end is impossible
+                debug_assert!(right_end == end);
 
-                // left_end == end, right_end != end
-                self.left = None;
-                self.right = Some(RangeInclusive::new(right_start, right_end));
-                left.1
-            } else if left_end == end {
-                // left_end == end, right_end == end
-                self.left = None;
+                // right_end == end, left_end != end
+                let value = left_value.clone();
                 self.right = None;
-                left.1
-            } else {
-                // left_end != end, right_end == end
-                let value = left.1.clone();
-                self.left = Some(left);
-                self.right = None;
+                self.left = Some((left_range, left_value));
                 value
+            } else if right_end == end {
+                // right_end == end, left_end == end
+                self.left = None;
+                self.right = None;
+                left_value
+            } else {
+                // right_end != end, left_end == end
+                self.right = Some(RangeInclusive::new(right_start, right_end));
+                self.left = None;
+                left_value
             };
 
             let range_value = (start..=end, value);

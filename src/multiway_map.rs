@@ -6,10 +6,11 @@
 // }
 
 use crate::{
-    intersection_iter_map::IntersectionIterMap, map::ValueRef,
-    range_values::RangeValuesToRangesIter, Integer, IntersectionKMap, RangeMapBlaze,
-    SortedDisjointMap, SymDiffIterMap, SymDiffKMergeMap, UnionIterMap, UnionKMergeMap,
+    Integer, IntersectionKMap, RangeMapBlaze, SortedDisjointMap, SymDiffIterMap, SymDiffKMergeMap,
+    UnionIterMap, UnionKMergeMap, intersection_iter_map::IntersectionIterMap, map::ValueRef,
+    range_values::RangeValuesToRangesIter,
 };
+use alloc::vec::Vec;
 
 impl<T, V, I> MultiwayRangeMapBlaze<T, V> for I
 where
@@ -329,7 +330,7 @@ where
         // We define map intersection -- in part -- in terms of set intersection.
         // Elsewhere, we define set intersection in terms of complement and (set/map) union.
         use crate::MultiwaySortedDisjoint;
-        let mut iter = self.into_iter();
+        let mut iter = self.into_iter().collect::<Vec<_>>().into_iter().rev();
         let iter_map = iter
             .next()
             .expect("The intersection of 0 maps is undefined.");
