@@ -154,8 +154,8 @@ fn map_complement0() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_repro_bit_and() {
-    let a = RangeMapBlaze::from_iter([(1u8, "Hello"), (2, "Hello"), (3, "Hello")]);
-    let b = RangeMapBlaze::from_iter([(2u8, "World"), (3, "World"), (4, "World")]);
+    let a = RangeMapBlaze::from_iter([(2u8, "World"), (3, "World"), (4, "World")]);
+    let b = RangeMapBlaze::from_iter([(1u8, "Hello"), (2, "Hello"), (3, "Hello")]);
 
     let result = &a & &b;
     assert_eq!(result, RangeMapBlaze::from_iter([(2u8..=3, "Hello")]));
@@ -182,6 +182,8 @@ fn map_repro_bit_and() {
     println!("{result}");
     assert_eq!(result, RangeMapBlaze::from_iter([(2..=3, "World")]));
 
+    let a = RangeMapBlaze::from_iter([(2, "Go"), (3, "Go"), (4, "Go")]);
+    let b = RangeMapBlaze::from_iter([(1, "Hello"), (2, "World"), (3, "World")]);
     let result = a & b;
     println!("{result}");
     assert_eq!(result, RangeMapBlaze::from_iter([(2..=3, "World")]));
@@ -2146,7 +2148,7 @@ fn map_repro_123() {
     let input = [(123, 'a'), (123, 'b')];
 
     let range_map_blaze = RangeMapBlaze::<u8, char>::from_iter(input);
-    assert_eq!(range_map_blaze.to_string(), "(123..=123, 'a')");
+    assert_eq!(range_map_blaze.to_string(), "(123..=123, 'b')");
 }
 
 #[test]
@@ -2176,8 +2178,8 @@ fn map_repro_bit_or() {
     println!("{result}");
     assert_eq!(result, RangeSetBlaze::from_iter([1u8, 2, 3, 4]));
 
-    let a = RangeMapBlaze::from_iter([(1u8, "Hello"), (2, "Hello"), (3, "Hello")]);
-    let b = RangeMapBlaze::from_iter([(2u8, "World"), (3, "World"), (4, "World")]);
+    let a = RangeMapBlaze::from_iter([(2u8, "World"), (3, "World"), (4, "World")]);
+    let b = RangeMapBlaze::from_iter([(1u8, "Hello"), (2, "Hello"), (3, "Hello")]);
     let result = a
         .range_values()
         .union(b.range_values())
