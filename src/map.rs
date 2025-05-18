@@ -2189,8 +2189,7 @@ impl<'a, T: Integer, V: Eq + Clone> IntoIterator for &'a RangeMapBlaze<T, V> {
 
 impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
-    ///
-    /// This operator has *right precedence*: when overlapping ranges are present,
+    ///    /// This operator has *right precedence*: when overlapping ranges are present,
     /// values on the right-hand side take priority over those self.
     ///
     /// This method is optimized for three usage scenarios:
@@ -2206,10 +2205,10 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let union = a | b;  // Alternatively, '&a | &b', etc.
     /// // cmk000
-    /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
+    /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=1, "a"), (2..=6, "b"), (7..=100, "a")]));
     /// ```
     type Output = Self;
-    fn bitor(self, mut other: Self) -> Self {
+    fn bitor(self, other: Self) -> Self {
         let b_len = other.ranges_len();
         if b_len == 0 {
             return self;
@@ -2217,25 +2216,27 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
         let a_len = self.ranges_len();
         if a_len == 0 {
             return other;
-        }
-        // cmk000
+        } // cmk000
         if choose_insert(a_len, b_len) {
-            // 'a' is small, insert its elements into 'other'
-            for (start, end_value) in self.btree_map {
-                other.internal_add(start..=end_value.end, end_value.value);
-            }
-            return other;
-        }
-        if choose_insert(b_len, a_len) {
-            // 'b' is small, calculate elements in 'other' not in 'self' and add them to 'self'.
-            let mut result = self; // Take ownership of self
-            let difference = other - &result; // Calculate elements in 'other' not in 'result'
+            // 'a' is small, insert its elements into 'other' for non-overlapping ranges,
+            // preserving 'other' values for overlapping ranges
+            let mut result = other;
+            let difference = self - &result; // Calculate elements in 'self' not in 'result'
             result.extend_simple(
                 difference
                     .btree_map
                     .into_iter()
                     .map(|(start, v)| (start..=v.end, v.value)),
             );
+            return result;
+        }
+        if choose_insert(b_len, a_len) {
+            // 'b' is small, add all of 'other' into 'self',
+            // with 'other' values taking precedence in overlapping ranges
+            let mut result = self; // Take ownership of self
+            for (start, end_value) in other.btree_map {
+                result.internal_add(start..=end_value.end, end_value.value);
+            }
             return result;
         }
         // Sizes are comparable, use the iterator union
@@ -2259,10 +2260,9 @@ impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
-    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    /// let union = a | &b; // Alternatively, 'a | b', etc.
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);    /// let union = a | &b; // Alternatively, 'a | b', etc.
     /// // cmk000
-    /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
+    /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=1, "a"), (2..=6, "b"), (7..=100, "a")]));
     /// ```
     type Output = Self;
     fn bitor(mut self, other: &Self) -> Self {
@@ -2277,22 +2277,22 @@ impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
         // cmk000
         // Check if 'b' is small compared to 'a'
         if choose_insert(a_len, b_len) {
-            // 'a' is small, clone 'other' and insert 'a' into it
+            // 'a' is small, clone 'other' and insert elements from 'self' not in 'other'
             let mut result = other.clone();
-            for (start, end_value) in self.btree_map {
-                result.internal_add(start..=end_value.end, end_value.value);
-            }
-            return result;
-        }
-        if choose_insert(b_len, a_len) {
-            // 'b' is small, calculate elements in 'other' not in 'self' and add them to 'self'.
-            let difference = other - &self; // Calculate elements in 'other' not in 'self'
-            self.extend_simple(
+            let difference = self - other; // Calculate elements in 'self' not in 'other'
+            result.extend_simple(
                 difference
                     .btree_map
                     .into_iter()
                     .map(|(start, v)| (start..=v.end, v.value)),
             );
+            return result;
+        }
+        if choose_insert(b_len, a_len) {
+            // 'b' is small, add all of 'other' into 'self' giving precedence to 'other'
+            for (start, end_value) in &other.btree_map {
+                self.internal_add(*start..=end_value.end, end_value.value.clone());
+            }
             return self;
         }
         // Sizes are comparable, use the iterator union
@@ -2317,10 +2317,9 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
-    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    /// let union = &a | b;  // Alternatively, 'a | b', etc.
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);    /// let union = &a | b;  // Alternatively, 'a | b', etc.
     /// // cmk000
-    /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
+    /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=1, "a"), (2..=6, "b"), (7..=100, "a")]));
     /// ```
     fn bitor(self, mut other: RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
         let a_len = self.ranges_len();
@@ -2330,27 +2329,23 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
         let b_len = other.ranges_len();
         if b_len == 0 {
             return self.clone();
-        }
-        // cmk000
+        } // cmk000
         // Check if 'b' is small compared to 'a'
         if choose_insert(a_len, b_len) {
-            // 'a' is small, insert its elements into 'other'
-            for (start, end_value) in &self.btree_map {
-                other.internal_add(*start..=end_value.end, end_value.value.clone());
+            // 'a' is small, clone elements from 'self' not in 'other' and add to 'other'
+            let difference = self - &other; // Calculate elements in 'self' not in 'other'
+            for (start, end_value) in difference.btree_map {
+                other.internal_add(start..=end_value.end, end_value.value);
             }
             return other;
         }
         // Check if 'a' is small compared to 'b'
         if choose_insert(b_len, a_len) {
-            // 'b' is small, clone 'self', calculate elements in 'other' not in 'self', and add them.
+            // 'b' is small, clone 'self', then add all 'other' values giving them precedence
             let mut result = self.clone();
-            let difference = other - self; // Calculate elements in 'other' not in 'self'
-            result.extend_simple(
-                difference
-                    .btree_map
-                    .into_iter()
-                    .map(|(start, v)| (start..=v.end, v.value)),
-            );
+            for (start, end_value) in &other.btree_map {
+                result.internal_add(*start..=end_value.end, end_value.value.clone());
+            }
             return result;
         }
         // Sizes are comparable, use the iterator union
@@ -2375,10 +2370,9 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
-    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    /// let union = &a | &b; // Alternatively, 'a | b', etc.
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);    /// let union = &a | &b; // Alternatively, 'a | b', etc.
     /// // cmk000
-    /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a")]));
+    /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=1, "a"), (2..=6, "b"), (7..=100, "a")]));
     /// ```
     fn bitor(self, other: &RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
         let a_len = self.ranges_len();
@@ -2388,27 +2382,26 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
         let b_len = other.ranges_len();
         if b_len == 0 {
             return self.clone();
-        }
-        // cmk000
+        } // cmk000
         if choose_insert(a_len, b_len) {
-            // 'a' is small, clone 'other' and insert 'a' into it
+            // 'a' is small, clone 'other' and add elements from 'self' not in 'other'
             let mut result = other.clone();
-            for (start, end_value) in &self.btree_map {
-                result.internal_add(*start..=end_value.end, end_value.value.clone());
-            }
-            return result;
-        }
-        // Check if 'a' is small compared to 'b'
-        if choose_insert(b_len, a_len) {
-            // 'b' is small, clone 'self', calculate elements in 'other' not in 'self', and add them.
-            let mut result = self.clone();
-            let difference = other - self; // Calculate elements in 'other' not in 'self'
+            let difference = self - other; // Calculate elements in 'self' not in 'other'
             result.extend_simple(
                 difference
                     .btree_map
                     .into_iter()
                     .map(|(start, v)| (start..=v.end, v.value)),
             );
+            return result;
+        }
+        // Check if 'a' is small compared to 'b'
+        if choose_insert(b_len, a_len) {
+            // 'b' is small, clone 'self', then add all elements from 'other' giving them precedence
+            let mut result = self.clone();
+            for (start, end_value) in &other.btree_map {
+                result.internal_add(*start..=end_value.end, end_value.value.clone());
+            }
             return result;
         }
         // Sizes are comparable, use the iterator union

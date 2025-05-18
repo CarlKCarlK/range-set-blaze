@@ -458,20 +458,19 @@ fn convert_challenge() {
     ])));
 
     // * from (priority) sorted_starts
-    let a = [(1..=4, &"a"), (5..=100, &"a"), (5..=5, &"b")].into_iter();
+    let a = [(1..=4, &"a"), (5..=5, &"b"), (5..=100, &"a")].into_iter();
     let a = a
         .enumerate()
-        .map(|(i, range_value)| Priority::new(range_value,  i));
+        .map(|(i, range_value)| Priority::new(range_value, i));
     let a = AssumePrioritySortedStartsMap::new(a);
     let a = UnionIterMap::new(a);
-    // is_sorted_disjoint_map::<_, _, _, _>(a);
-    assert!(a.equal(CheckSortedDisjointMap::new([(1..=100, &"a"),])));
+    assert!(a.equal(CheckSortedDisjointMap::new([(1..=100, &"a")])));
 
     // * from unsorted_priority_map
-    let iter = [(5..=100, &"a"), (5..=5, &"b"), (1..=4, &"a")].into_iter();
+    let iter = [(5..=5, &"b"), (5..=100, &"a"), (1..=4, &"a")].into_iter();
     let iter = iter
         .enumerate()
-        .map(|(i, range_value)| Priority::new(range_value,  i));
+        .map(|(i, range_value)| Priority::new(range_value, i));
     let iter = iter.into_iter().sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
         a.start().cmp(&b.start())
@@ -481,7 +480,7 @@ fn convert_challenge() {
     assert!(iter.equal(CheckSortedDisjointMap::new([(1..=100, &"a"),])));
 
     // * anything
-    let iter = [(5, &"a"), (5, &"b"), (1, &"a")]
+    let iter = [(5, &"b"), (5, &"a"), (1, &"a")]
         .into_iter()
         .map(|(x, y)| (x..=x, y));
     let iter = UnsortedPriorityMap::new(iter);
@@ -503,7 +502,7 @@ fn convert_challenge() {
     assert!(a.equal(CheckSortedDisjointMap::new([(1..=1, &"a"), (5..=5, &"a")])));
 
     // * from (priority) sorted_starts
-    let a = [(1, &"a"), (5, &"a"), (5, &"b")].into_iter();
+    let a = [(1, &"a"), (5, &"b"), (5, &"a")].into_iter();
     let a = a
         .enumerate()
         .map(|(i, (k, v))| Priority::new((k..=k, v), i));
@@ -513,10 +512,10 @@ fn convert_challenge() {
     assert!(a.equal(CheckSortedDisjointMap::new([(1..=1, &"a"), (5..=5, &"a")])));
 
     // * from unsorted_priority_map
-    let iter = [(5, &"a"), (5, &"b"), (1, &"a")].into_iter();
+    let iter = [(5, &"b"), (5, &"a"), (1, &"a")].into_iter();
     let iter = iter
         .enumerate()
-        .map(|(i, (k, v))| Priority::new((k..=k, v),  i));
+        .map(|(i, (k, v))| Priority::new((k..=k, v), i));
     let iter = iter.into_iter().sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
         a.start().cmp(&b.start())
@@ -526,7 +525,7 @@ fn convert_challenge() {
     assert!(iter.equal(CheckSortedDisjointMap::new([(1..=1, &"a"), (5..=5, &"a")])));
 
     // * anything
-    let iter = [(5..=100, &"a"), (5..=5, &"b"), (1..=4, &"a")].into_iter();
+    let iter = [(5..=5, &"b"), (5..=100, &"a"), (1..=4, &"a")].into_iter();
     let iter = UnsortedPriorityMap::new(iter);
     let iter = iter.sorted_by(|a, b| {
         // We sort only by start -- priority is not used until later.
