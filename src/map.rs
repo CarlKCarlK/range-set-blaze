@@ -2219,14 +2219,14 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
             return other;
         }
         // cmk000
-        if choose_insert(b_len, a_len) {
+        if choose_insert(a_len, b_len) {
             // 'a' is small, insert its elements into 'other'
             for (start, end_value) in self.btree_map {
                 other.internal_add(start..=end_value.end, end_value.value);
             }
             return other;
         }
-        if choose_insert(a_len, b_len) {
+        if choose_insert(b_len, a_len) {
             // 'b' is small, calculate elements in 'other' not in 'self' and add them to 'self'.
             let mut result = self; // Take ownership of self
             let difference = other - &result; // Calculate elements in 'other' not in 'result'
@@ -2275,8 +2275,8 @@ impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
             return other.clone();
         }
         // cmk000
-        // Check if 'a' is small compared to 'b'
-        if choose_insert(b_len, a_len) {
+        // Check if 'b' is small compared to 'a'
+        if choose_insert(a_len, b_len) {
             // 'a' is small, clone 'other' and insert 'a' into it
             let mut result = other.clone();
             for (start, end_value) in self.btree_map {
@@ -2284,7 +2284,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
             }
             return result;
         }
-        if choose_insert(a_len, b_len) {
+        if choose_insert(b_len, a_len) {
             // 'b' is small, calculate elements in 'other' not in 'self' and add them to 'self'.
             let difference = other - &self; // Calculate elements in 'other' not in 'self'
             self.extend_simple(
@@ -2332,16 +2332,16 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
             return self.clone();
         }
         // cmk000
-        // Check if 'a' is small compared to 'b'
-        if choose_insert(b_len, a_len) {
+        // Check if 'b' is small compared to 'a'
+        if choose_insert(a_len, b_len) {
             // 'a' is small, insert its elements into 'other'
             for (start, end_value) in &self.btree_map {
                 other.internal_add(*start..=end_value.end, end_value.value.clone());
             }
             return other;
         }
-        // Check if 'b' is small compared to 'a'
-        if choose_insert(a_len, b_len) {
+        // Check if 'a' is small compared to 'b'
+        if choose_insert(b_len, a_len) {
             // 'b' is small, clone 'self', calculate elements in 'other' not in 'self', and add them.
             let mut result = self.clone();
             let difference = other - self; // Calculate elements in 'other' not in 'self'
@@ -2390,7 +2390,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
             return self.clone();
         }
         // cmk000
-        if choose_insert(b_len, a_len) {
+        if choose_insert(a_len, b_len) {
             // 'a' is small, clone 'other' and insert 'a' into it
             let mut result = other.clone();
             for (start, end_value) in &self.btree_map {
@@ -2398,8 +2398,8 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
             }
             return result;
         }
-        // Check if 'b' is small compared to 'a'
-        if choose_insert(a_len, b_len) {
+        // Check if 'a' is small compared to 'b'
+        if choose_insert(b_len, a_len) {
             // 'b' is small, clone 'self', calculate elements in 'other' not in 'self', and add them.
             let mut result = self.clone();
             let difference = other - self; // Calculate elements in 'other' not in 'self'
