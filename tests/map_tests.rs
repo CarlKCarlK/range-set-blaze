@@ -2471,7 +2471,7 @@ fn test_range_map_blaze_comparisons() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::into_iter_on_ref)]
 fn test_from_iter_dedup() {
-    let v = vec![(3, &"a"), (2, &"a"), (1, &"a"), (100, &"b"), (1, &"c")];
+    let v = vec![(1, &"c"), (3, &"a"), (2, &"a"), (1, &"a"), (100, &"b")];
     let a0 = RangeMapBlaze::from_iter(&v);
     let a1: RangeMapBlaze<i32, &str> = (&v).into_iter().collect();
     assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
@@ -2483,10 +2483,10 @@ fn test_from_iter_dedup() {
 #[allow(clippy::into_iter_on_ref)]
 fn test_range_map_blaze_from_iter() {
     let v = vec![
-        (1..=2, &"a"),
         (2..=2, &"b"),
-        (-10..=-5, &"c"),
         (1..=0, &"d"),
+        (-10..=-5, &"c"),
+        (1..=2, &"a"),
     ];
     let a0: RangeMapBlaze<i32, &str> = RangeMapBlaze::from_iter(&v);
     let a1: RangeMapBlaze<i32, &str> = (&v).into_iter().collect();
@@ -2497,7 +2497,7 @@ fn test_range_map_blaze_from_iter() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::into_iter_on_ref, clippy::needless_borrow)]
 fn test_range_map_blaze_from_iter_string() {
-    let v = vec![(1, "a"), (2, "a"), (2, "b")];
+    let v = vec![(2, "b"), (1, "a"), (2, "a")];
     let a0 = RangeMapBlaze::from_iter(&v);
     let a1: RangeMapBlaze<i32, &str> = (&v).iter().collect();
     assert!(a0 == a1 && a0.to_string() == r#"(1..=2, "a")"#);
