@@ -14,9 +14,9 @@ use alloc::boxed::Box;
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = RangeMapBlaze::from_iter([(1..=6, "a"), (8..=9, "a"), (11..=15, "a")]);
+/// let a = RangeMapBlaze::from_iter([(38..=42, "a")]);
 /// let b = CheckSortedDisjointMap::new([(5..=13, &"b"), (18..=29, &"b")]);
-/// let c = RangeMapBlaze::from_iter([(38..=42, "c")]);
+/// let c = RangeMapBlaze::from_iter([(1..=6, "c"), (8..=9, "c"), (11..=15, "c")]);
 /// let union = [
 ///     DynSortedDisjointMap::new(a.range_values()),
 ///     DynSortedDisjointMap::new(b),
@@ -96,11 +96,11 @@ where
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+/// let a = RangeMapBlaze::from_iter([(2..=2, "a"), (6..=200, "a")]);
 /// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-/// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+/// let c = RangeMapBlaze::from_iter([(1..=2, "c"), (5..=100, "c")]);
 /// let intersection = intersection_map_dyn!(a.range_values(), b, c.range_values());
-/// assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
+/// assert_eq!(intersection.into_string(), r#"(2..=2, "c"), (6..=6, "c")"#);
 /// ```
 #[macro_export]
 macro_rules! intersection_map_dyn {
@@ -123,9 +123,9 @@ macro_rules! intersection_map_dyn {
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+/// let c = RangeMapBlaze::from_iter([(2..=2, "a"), (6..=200, "a")]);
 /// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-/// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+/// let a = RangeMapBlaze::from_iter([(1..=2, "c"), (5..=100, "c")]);
 /// let union = union_map_dyn!(a.range_values(), b, c.range_values());
 /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
 /// ```
