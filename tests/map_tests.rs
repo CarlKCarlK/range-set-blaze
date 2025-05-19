@@ -1590,7 +1590,7 @@ fn test_every_sorted_disjoint_map_method() {
     let (a, b, c, d, e, f, g) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, e, f, g] {$(
         let z: CheckSortedDisjointMap<i32, &&str, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
-        let z = $sd | z;
+        let z = z | $sd;
         assert!(z.equal(CheckSortedDisjointMap::new([(-1..=0, &"z"), (1..=2, &"a"), (5..=100, &"a"), (1000..=10000, &"z")])));
     )*}}
     let z: CheckSortedDisjointMap<i32, Rc<&str>, _> = CheckSortedDisjointMap::new([
@@ -1598,7 +1598,7 @@ fn test_every_sorted_disjoint_map_method() {
         (50..=50, Rc::new("z")),
         (1000..=10_000, Rc::new("z")),
     ]);
-    let z = d | z;
+    let z = z | d;
     assert!(z.equal(CheckSortedDisjointMap::new([
         (-1..=0, Rc::new("z")),
         (1..=2, Rc::new("a")),
@@ -1610,7 +1610,7 @@ fn test_every_sorted_disjoint_map_method() {
     let (a, b, c, d, e, f, g) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, e, f, g] {$(
         let z: CheckSortedDisjointMap<i32, &&str, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
-        let z = $sd & z;
+        let z = z & $sd;
         // println!("{}", z.into_string());
         assert!(z.equal(CheckSortedDisjointMap::new([(50..=50, &"a")])));
     )*}}
@@ -1619,14 +1619,14 @@ fn test_every_sorted_disjoint_map_method() {
         (50..=50, Rc::new("z")),
         (1000..=10_000, Rc::new("z")),
     ]);
-    let z = d & z;
+    let z = z & d;
     assert!(z.equal(CheckSortedDisjointMap::new([(50..=50, Rc::new("a"))])));
 
     // Symmetric Difference
     let (a, b, c, d, e, f, g) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, e,f,g] {$(
         let z: CheckSortedDisjointMap<i32, &&str, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
-        let z = $sd ^ z;
+        let z = z ^ $sd;
         // println!("a {}", z.into_string());
         assert!(z.equal(CheckSortedDisjointMap::new([(-1..=0, &"z"), (1..=2, &"a"), (5..=49, &"a"), (51..=100, &"a"), (1000..=10000, &"z")])));
     )*}}
@@ -1635,7 +1635,7 @@ fn test_every_sorted_disjoint_map_method() {
         (50..=50, Rc::new("z")),
         (1000..=10_000, Rc::new("z")),
     ]);
-    let z = d ^ z;
+    let z = z ^ d;
     assert!(z.equal(CheckSortedDisjointMap::new([
         (-1..=0, Rc::new("z")),
         (1..=2, Rc::new("a")),
@@ -2994,10 +2994,10 @@ fn test_pop_first() {
 fn test_range_values_len() {
     // We put in four ranges, but they are not sorted & disjoint.
     let map = RangeMapBlaze::from_iter([
-        (10..=20, "a"),
-        (15..=25, "b"),
-        (30..=40, "c"),
         (28..=35, "c"),
+        (30..=40, "c"),
+        (15..=25, "b"),
+        (10..=20, "a"),
     ]);
     // After RangeMapBlaze sorts & 'disjoint's them, we see three ranges.
     assert_eq!(map.range_values_len(), 3);
@@ -3037,9 +3037,9 @@ fn test_ref_union() {
     println!("{d}");
     assert_eq!(d, RangeSetBlaze::from_iter([1..=200]));
 
-    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    let a = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
     let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    let c = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     let d = [&a, &b, &c].union();
     println!("{d}");
     assert_eq!(
@@ -3047,9 +3047,9 @@ fn test_ref_union() {
         RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")])
     );
 
-    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    let a = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
     let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    let c = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     let d: RangeMapBlaze<i32, &str> = [a, b, c].union();
     println!("{d}");
     assert_eq!(
@@ -3161,4 +3161,14 @@ fn test_clear() {
     map.clear();
     assert!(map.is_empty());
     assert_eq!(map.len(), 0u64);
+}
+
+// cmk000 remove
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_intersection_iterator() {
+    let z = CheckSortedDisjointMap::new([(-1..=0, &"z"), (50..=50, &"z"), (1000..=10_000, &"z")]);
+    let d = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
+    let z = z & d;
+    println!("{}", z.into_string());
 }

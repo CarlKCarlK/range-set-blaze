@@ -268,9 +268,9 @@ where
         R::IntoIter: SortedDisjointMap<T, VR>,
         Self: Sized,
     {
-        let sorted_disjoint_map = other.into_iter();
-        let sorted_disjoint = sorted_disjoint_map.into_sorted_disjoint();
-        IntersectionIterMap::new(self, sorted_disjoint)
+        let other = other.into_iter();
+        let sorted_disjoint = self.into_sorted_disjoint();
+        IntersectionIterMap::new(other, sorted_disjoint)
     }
 
     /// Given a [`SortedDisjointMap`] iterator and a [`SortedDisjoint`] iterator,
@@ -955,6 +955,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
         {
             type Output = IntersectionMap<T, $VR, Self, R>;
 
+            #[inline] // cmk000 add more in-lines?
             fn bitand(self, other: R) -> Self::Output {
                 SortedDisjointMap::intersection(self, other)
             }

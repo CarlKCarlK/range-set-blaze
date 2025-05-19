@@ -2857,11 +2857,11 @@ fn test_into_ranges_iter() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_range_map_intersection() {
-    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
-    let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
 
-    let intersection = [a, b, c].intersection();
+    let intersection = [c, b, a].intersection();
 
     assert_eq!(intersection.to_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
 }
@@ -2869,11 +2869,11 @@ fn test_range_map_intersection() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_range_map_symmetric_difference() {
-    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
-    let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
 
-    let symmetric_difference = [a, b, c].symmetric_difference();
+    let symmetric_difference = [c, b, a].symmetric_difference();
 
     assert_eq!(
         symmetric_difference.to_string(),

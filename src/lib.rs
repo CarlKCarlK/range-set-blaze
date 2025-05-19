@@ -141,7 +141,7 @@ pub type IntersectionKMap<'a, T, VR, I> =
     IntersectionIterMap<T, VR, I, IntersectionMapInternal<T, RangeValuesToRangesIter<T, VR, I>>>;
 #[doc(hidden)]
 pub type IntersectionMap<T, VR, L, R> =
-    IntersectionIterMap<T, VR, L, RangeValuesToRangesIter<T, VR, R>>;
+    IntersectionIterMap<T, VR, R, RangeValuesToRangesIter<T, VR, L>>;
 #[doc(hidden)]
 pub type IntersectionMerge<T, L, R> = NotIter<T, NandMerge<T, L, R>>;
 
