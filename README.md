@@ -105,23 +105,23 @@ assert_eq!(c, RangeSetBlaze::from_iter([-20..=-20, 100..=999]));
 **Example 2**: Maps (and Network Addresses)
 - - - - - -
 
-In networking, suppose we want to simplify a routing table. Here [`RangeMapBlaze`] merges identical routes
--- if adjacent or overlapping. It also remove all overlaps (respecting priority) and sorts.
-The result is a fast `BTree` from address regions to the next network hop.
-Similar code can simplify font tables.
+In networking, we can use [`RangeMapBlaze`] to visualize routing tables.
+It efficiently merges adjacent or overlapping routes with identical next-hops, removes overlaps
+(respecting priority), and provides fast lookups. While specialized prefix trees (tries) are typically
+used in production routers for maximum efficiency, this example shows how [`RangeMapBlaze`] makes the information more understandable. Similar concepts apply when working with other range-mappings like font tables.
 
 ```rust
 use range_set_blaze::prelude::*;
 use std::net::Ipv4Addr;
 
-// A routing table, sorted by priority
+// A routing table, sorted by prefix length (so, highest priority last)
 let routing = [
     // destination, prefix, next hop, interface
-    ("10.0.1.8", 30, "10.1.1.0", "eth2"),
-    ("10.0.1.12", 30, "10.1.1.0", "eth2"),
-    ("10.0.1.7", 32, "10.1.1.0", "eth2"),
-    ("10.0.0.0", 8, "10.3.4.2", "eth1"),
     ("0.0.0.0", 0, "152.10.0.0", "eth0"),
+    ("10.0.0.0", 8, "10.3.4.2", "eth1"),
+    ("10.0.1.12", 30, "10.1.1.0", "eth2"),
+    ("10.0.1.8", 30, "10.1.1.0", "eth2"),
+    ("10.0.1.7", 32, "10.1.1.0", "eth2"),
 ];
 
 // Create a RangeMapBlaze from the routing table
@@ -139,7 +139,7 @@ let range_map = routing
 
 // Print the now disjoint, sorted ranges and their associated values
 for (range, (next_hop, interface)) in range_map.range_values() {
-    println!("{range:?} -> ({next_hop}, {interface})");
+    println!("{range:?} → ({next_hop}, {interface})");
 }
 
 // Look up an address
@@ -152,11 +152,11 @@ assert_eq!(
 Output:
 
 ```text
-0.0.0.0..=9.255.255.255 -> (152.10.0.0, eth0)
-10.0.0.0..=10.0.1.6 -> (10.3.4.2, eth1)
-10.0.1.7..=10.0.1.15 -> (10.1.1.0, eth2)
-10.0.1.16..=10.255.255.255 -> (10.3.4.2, eth1)
-11.0.0.0..=255.255.255.255 -> (152.10.0.0, eth0)
+0.0.0.0..=9.255.255.255 → (152.10.0.0, eth0)
+10.0.0.0..=10.0.1.6 → (10.3.4.2, eth1)
+10.0.1.7..=10.0.1.15 → (10.1.1.0, eth2)
+10.0.1.16..=10.255.255.255 → (10.3.4.2, eth1)
+11.0.0.0..=255.255.255.255 → (152.10.0.0, eth0)
 ```
 
 **Example 3**: Biology
