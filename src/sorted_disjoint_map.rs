@@ -79,16 +79,16 @@ where
 /// use range_set_blaze::prelude::*;
 ///
 /// // RangeMapBlaze's .range_values(), and .into_range_values()
-/// let r = RangeMapBlaze::from_iter([(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]);
+/// let r = RangeMapBlaze::from_iter([ (100, "b"), (1, "c"), (3, "a"), (2, "a"), (1, "a")]);
 /// let a = r.range_values();
-/// assert!(a.into_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
+/// assert_eq!(a.into_string(), r#"(1..=3, "a"), (100..=100, "b")"#);
 /// // 'into_range_values' takes ownership of the 'RangeMapBlaze'
 /// let a = r.into_range_values();
-/// assert!(a.into_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
+/// assert_eq!(a.into_string(), r#"(1..=3, "a"), (100..=100, "b")"#);
 ///
 /// // CheckSortedDisjointMap -- unsorted or overlapping input ranges will cause a panic.
 /// let a = CheckSortedDisjointMap::new([(1..=3, &"a"), (100..=100, &"b")]);
-/// assert!(a.into_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
+/// assert_eq!(a.into_string(), r#"(1..=3, "a"), (100..=100, "b")"#);
 /// ```
 ///
 /// # `SortedDisjointMap` Set Operations
@@ -143,36 +143,36 @@ where
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a0 = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
-/// let b0 = RangeMapBlaze::from_iter([(2..=6, "b")]);
+/// let a0 = RangeMapBlaze::from_iter([(2..=6, "a")]);
+/// let b0 = RangeMapBlaze::from_iter([(1..=2, "b"), (5..=100, "b")]);
 ///
 /// // 'union' method and 'into_string' method
 /// let (a, b) = (a0.range_values(), b0.range_values());
 /// let result = a.union(b);
-/// assert_eq!(result.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"#);
+/// assert_eq!(result.into_string(), r#"(1..=2, "b"), (3..=4, "a"), (5..=100, "b")"#);
 ///
 /// // '|' operator and 'equal' method
 /// let (a, b) = (a0.range_values(), b0.range_values());
 /// let result = a | b;
-/// assert!(result.equal(CheckSortedDisjointMap::new([(1..=2, &"a"),  (3..=4, &"b"), (5..=100, &"a")])));
+/// assert!(result.equal(CheckSortedDisjointMap::new([(1..=2, &"b"),  (3..=4, &"a"), (5..=100, &"b")])));
 ///
 /// // multiway union of same type
-/// let c0 = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
-/// let (a, b, c) = (a0.range_values(), b0.range_values(), c0.range_values());
-/// let result = [a, b, c].union();
-/// assert_eq!(result.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#
+/// let z0 = RangeMapBlaze::from_iter([(2..=2, "z"), (6..=200, "z")]);
+/// let (z, a, b) = (z0.range_values(), a0.range_values(), b0.range_values());
+/// let result = [z, a, b].union();
+/// assert_eq!(result.into_string(), r#"(1..=2, "b"), (3..=4, "a"), (5..=100, "b"), (101..=200, "z")"#
 /// );
 ///
 /// // multiway union of different types
 /// let (a, b) = (a0.range_values(), b0.range_values());
-/// let c = CheckSortedDisjointMap::new([(2..=2, &"c"), (6..=200, &"c")]);
-/// let result = union_map_dyn!(a, b, c);
-/// assert_eq!(result.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"# );
+/// let z = CheckSortedDisjointMap::new([(2..=2, &"z"), (6..=200, &"z")]);
+/// let result = union_map_dyn!(z, a, b);
+/// assert_eq!(result.into_string(), r#"(1..=2, "b"), (3..=4, "a"), (5..=100, "b"), (101..=200, "z")"# );
 ///
 /// // Applying multiple operators makes only one pass through the inputs with minimal memory.
-/// let (a, b, c) = (a0.range_values(), b0.range_values(), c0.range_values());
-/// let result = a - (b | c);
-/// assert_eq!(result.into_string(), r#"(1..=1, "a")"#);
+/// let (z, a, b) = (z0.range_values(), a0.range_values(), b0.range_values());
+/// let result = b - (z | a);
+/// assert_eq!(result.into_string(), r#"(1..=1, "b")"#);
 /// ```
 /// # How to mark your type as `SortedDisjointMap`
 ///
@@ -216,18 +216,18 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjointMap::new([(1..=2, &"a")]);
-    /// let b0 = RangeMapBlaze::from_iter([(2..=3, "b")]);
-    /// let b = b0.range_values();
+    /// let a0 = RangeMapBlaze::from_iter([(2..=3, "a")]);
+    /// let a = a0.range_values();
+    /// let b = CheckSortedDisjointMap::new([(1..=2, &"b")]);
     /// let union = a.union(b);
-    /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=3, "b")"#);
+    /// assert_eq!(union.into_string(), r#"(1..=2, "b"), (3..=3, "a")"#);
     ///
     /// // Alternatively, we can use "|" because CheckSortedDisjointMap defines
     /// // ops::bitor as SortedDisjointMap::union.
-    /// let a = CheckSortedDisjointMap::new([(1..=2, &"a")]);
-    /// let b = b0.range_values();
+    /// let a = a0.range_values();
+    /// let b = CheckSortedDisjointMap::new([(1..=2, &"b")]);
     /// let union = a | b;
-    /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=3, "b")"#);
+    /// assert_eq!(union.into_string(), r#"(1..=2, "b"), (3..=3, "a")"#);
     /// ```
     #[inline]
     fn union<R>(self, other: R) -> UnionMergeMap<T, VR, Self, R::IntoIter>
@@ -248,18 +248,19 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjointMap::new([(1..=2, &"a")]);
-    /// let b0 = RangeMapBlaze::from_iter([(2..=3, "b")]);
-    /// let b = b0.range_values();
+    /// let a0 = RangeMapBlaze::from_iter([(2..=3, "a")]);
+    /// let a = a0.range_values();
+    /// let b = CheckSortedDisjointMap::new([(1..=2, &"b")]);
     /// let intersection = a.intersection(b);
-    /// assert_eq!(intersection.into_string(), r#"(2..=2, "a")"#);
+    /// assert_eq!(intersection.into_string(), r#"(2..=2, "b")"#);
     ///
     /// // Alternatively, we can use "&" because CheckSortedDisjointMap defines
     /// // `ops::BitAnd` as `SortedDisjointMap::intersection`.
-    /// let a = CheckSortedDisjointMap::new([(1..=2, &"a")]);
-    /// let b = b0.range_values();
+    /// let a0 = RangeMapBlaze::from_iter([(2..=3, "a")]);
+    /// let a = a0.range_values();
+    /// let b = CheckSortedDisjointMap::new([(1..=2, &"b")]);
     /// let intersection = a & b;
-    /// assert_eq!(intersection.into_string(), r#"(2..=2, "a")"#);
+    /// assert_eq!(intersection.into_string(), r#"(2..=2, "b")"#);
     /// ```
     #[inline]
     fn intersection<R>(self, other: R) -> IntersectionMap<T, VR, Self, R::IntoIter>
@@ -565,10 +566,10 @@ where
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = CheckSortedDisjointMap::new([(1..=3, &"a"), (5..=10, &"b")]);
-/// let b = CheckSortedDisjointMap::new([(4..=6, &"c")]);
+/// let a = CheckSortedDisjointMap::new([(4..=6, &"a")]);
+/// let b = CheckSortedDisjointMap::new([(1..=3, &"z"), (5..=10, &"b")]);
 /// let union = a | b;
-/// assert_eq!(union.into_string(), r#"(1..=3, "a"), (4..=4, "c"), (5..=10, "b")"#);
+/// assert_eq!(union.into_string(), r#"(1..=3, "z"), (4..=4, "a"), (5..=10, "b")"#);
 /// ```
 ///
 /// Here the ranges are not sorted and disjoint, so the iterator will panic.

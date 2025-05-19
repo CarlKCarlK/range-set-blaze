@@ -22,7 +22,7 @@ use alloc::boxed::Box;
 ///     DynSortedDisjointMap::new(b),
 ///     DynSortedDisjointMap::new(c.range_values()),
 /// ].union();
-/// assert_eq!(union.into_string(), r#"(1..=6, "a"), (7..=7, "b"), (8..=9, "a"), (10..=10, "b"), (11..=15, "a"), (18..=29, "b"), (38..=42, "c")"#);
+/// assert_eq!(union.into_string(), r#"(1..=6, "c"), (7..=7, "b"), (8..=9, "c"), (10..=10, "b"), (11..=15, "c"), (18..=29, "b"), (38..=42, "a")"#);
 /// ```
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct DynSortedDisjointMap<'a, T, VR>
@@ -123,11 +123,11 @@ macro_rules! intersection_map_dyn {
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let c = RangeMapBlaze::from_iter([(2..=2, "a"), (6..=200, "a")]);
+/// let a = RangeMapBlaze::from_iter([(2..=2, "a"), (6..=200, "a")]);
 /// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-/// let a = RangeMapBlaze::from_iter([(1..=2, "c"), (5..=100, "c")]);
+/// let c = RangeMapBlaze::from_iter([(1..=2, "c"), (5..=100, "c")]);
 /// let union = union_map_dyn!(a.range_values(), b, c.range_values());
-/// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
+/// assert_eq!(union.into_string(), r#"(1..=2, "c"), (3..=4, "b"), (5..=100, "c"), (101..=200, "a")"#);
 /// ```
 #[macro_export]
 macro_rules! union_map_dyn {
@@ -152,11 +152,11 @@ macro_rules! union_map_dyn {
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+/// let a = RangeMapBlaze::from_iter([(2..=2, "a"), (6..=200, "a")]);
 /// let b = CheckSortedDisjointMap::new([(2..=6, &"b")]);
-/// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+/// let c = RangeMapBlaze::from_iter([(1..=2, "c"), (5..=100, "c")]);
 /// let sym_diff = symmetric_difference_map_dyn!(a.range_values(), b, c.range_values());
-/// assert_eq!(sym_diff.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
+/// assert_eq!(sym_diff.into_string(), r#"(1..=2, "c"), (3..=4, "b"), (6..=6, "c"), (101..=200, "a")"#);
 /// ```
 #[macro_export]
 macro_rules! symmetric_difference_map_dyn {

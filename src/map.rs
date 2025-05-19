@@ -243,7 +243,8 @@ where
 /// // we can avoid work and use 'from_sorted_disjoint_map'/'into_sorted_disjoint_map'.
 /// let a0 = RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::new([(-10..=-5, &"c"), (1..=2, &"a")]));
 /// let a1: RangeMapBlaze<i32, &str> = CheckSortedDisjointMap::new([(-10..=-5, &"c"), (1..=2, &"a")]).into_range_map_blaze();
-/// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
+/// assert_eq!(a0, a1);
+/// assert_eq!(a0.to_string(),r#"(-10..=-5, "c"), (1..=2, "a")"#);
 ///
 /// // For compatibility with `BTreeMap`, we also support
 /// // 'from'/'into' from arrays of integers.
@@ -318,54 +319,55 @@ where
 /// ```
 /// use range_set_blaze::prelude::*;
 ///
-/// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
-/// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+/// let a = RangeMapBlaze::from_iter([(2..=6, "a")]);
+/// let b = RangeMapBlaze::from_iter([(1..=2, "b"), (5..=100, "b")]);
 ///
 /// // Union of two 'RangeMapBlaze's. Alternatively, we can take ownership via 'a | b'.
 /// // Values have left-to-right precedence.
 /// let result = &a | &b;
-/// assert_eq!(result.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a")"#);
+/// assert_eq!(result.to_string(), r#"(1..=2, "b"), (3..=4, "a"), (5..=100, "b")"#);
 ///
 /// // Intersection of two 'RangeMapBlaze's.
 /// let result = &a & &b; // Alternatively, 'a & b'.
-/// assert_eq!(result.to_string(), r#"(2..=2, "a"), (5..=6, "a")"#);
+/// assert_eq!(result.to_string(), r#"(2..=2, "b"), (5..=6, "b")"#);
 ///
 /// // Set difference of two 'RangeMapBlaze's.
 /// let result = &a - &b; // Alternatively, 'a - b'.
-/// assert_eq!(result.to_string(), r#"(1..=1, "a"), (7..=100, "a")"#);
+/// assert_eq!(result.to_string(), r#"(3..=4, "a")"#);
 ///
 /// // Symmetric difference of two 'RangeMapBlaze's.
 /// let result = &a ^ &b; // Alternatively, 'a ^ b'.
-/// assert_eq!(result.to_string(), r#"(1..=1, "a"), (3..=4, "b"), (7..=100, "a")"#);
+/// assert_eq!(result.to_string(), r#"(1..=1, "b"), (3..=4, "a"), (7..=100, "b")"#);
 ///
 /// // complement of a 'RangeMapBlaze' is a `RangeSetBlaze`.
-/// let result = !&a; // Alternatively, '!a'.
+/// let result = !&b; // Alternatively, '!b'.
 /// assert_eq!(result.to_string(), "-2147483648..=0, 3..=4, 101..=2147483647"
 /// );
 /// // use `complement_with` to create a 'RangeMapBlaze'.
-/// let result = a.complement_with(&"z");
+/// let result = b.complement_with(&"z");
 /// assert_eq!(result.to_string(), r#"(-2147483648..=0, "z"), (3..=4, "z"), (101..=2147483647, "z")"#);
 ///
 /// // Multiway union of 'RangeMapBlaze's.
-/// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
-/// let result = [&a, &b, &c].union();
-/// assert_eq!(result.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"# );
+/// let z = RangeMapBlaze::from_iter([(2..=2, "z"), (6..=200, "z")]);
+/// let result = [&z, &a, &b].union();
+/// assert_eq!(result.to_string(), r#"(1..=2, "b"), (3..=4, "a"), (5..=100, "b"), (101..=200, "z")"# );
 ///
 /// // Multiway intersection of 'RangeMapBlaze's.
-/// let result = [&a, &b, &c].intersection();
-/// assert_eq!(result.to_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
+/// let result = [&z, &a, &b].intersection();
+/// assert_eq!(result.to_string(), r#"(2..=2, "b"), (6..=6, "b")"#);
 ///
 /// // Applying multiple operators
-/// let result0 = &a - (&b | &c); // Creates an intermediate 'RangeMapBlaze'.
+/// let result0 = &b - (&z | &a); // Creates an intermediate 'RangeMapBlaze'.
 /// // Alternatively, we can use the 'SortedDisjointMap' API and avoid the intermediate 'RangeMapBlaze'.
 /// let result1 = RangeMapBlaze::from_sorted_disjoint_map(
-///          a.range_values() - (b.range_values() | c.range_values()));
-/// assert!(result0 == result1 && result0.to_string() == r#"(1..=1, "a")"#);
+///          a.range_values() - (b.range_values() | z.range_values()));
+/// assert_eq!(result0, result1);
+/// assert_eq!(result0.to_string(), r#"(1..=1, "b")"#);
 /// ```
 ///
 /// # `RangeMapBlaze` Union- and Extend-like Methods
 ///
-/// | Operation & Syntax                  | Input Type           | Precedence     | Pre-merge Touching | Cases Optimized |
+/// | Operation & Syntax                  | Input Type           | cmk000         | Pre-merge Touching | Cases Optimized |
 /// |-------------------------------------|----------------------|----------------|---------------------|------------------|
 /// | [`a` &#124;= `b`]                   | `RangeMapBlaze`      | Left-to-right  | -                   | 3                |
 /// | [`a` &#124;= `&b`]                  | `&RangeMapBlaze`     | Left-to-right  | -                   | 3                |
@@ -2244,7 +2246,8 @@ impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
-    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);    /// let union = a | &b; // Alternatively, 'a | b', etc.
+    /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
+    /// let union = a | &b; // Alternatively, 'a | b', etc.
     /// // cmk000
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=1, "a"), (2..=6, "b"), (7..=100, "a")]));
     /// ```
