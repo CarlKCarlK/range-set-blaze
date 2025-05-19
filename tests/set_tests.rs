@@ -2829,7 +2829,7 @@ fn test_into_string() {
 #[allow(deprecated)]
 fn test_to_string() {
     let a = RangeSetBlaze::from_iter([1..=2, 5..=100]).into_ranges();
-    assert_eq!(a.to_string(), "1..=2, 5..=100");
+    assert_eq!(a.into_string(), "1..=2, 5..=100");
 }
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

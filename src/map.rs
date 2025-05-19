@@ -52,17 +52,17 @@ const STREAM_OVERHEAD: usize = 10;
 /// use range_set_blaze::prelude::*;
 /// use std::rc::Rc;
 ///
-/// let a = RangeMapBlaze::from_iter([(2..=3, "a".to_string()), (5..=100, "a".to_string())]);
-/// let b = RangeMapBlaze::from_iter([(3..=10, "b".to_string())]);
+/// let a = RangeMapBlaze::from_iter([(3..=10, "a".to_string())]);
+/// let b = RangeMapBlaze::from_iter([(2..=3, "b".to_string()), (5..=100, "b".to_string())]);
 ///
 /// let mut c = a.range_values() & b.range_values();
-/// assert_eq!(c.next(), Some((3..=3, &"a".to_string())));
-/// assert_eq!(c.next(), Some((5..=10, &"a".to_string())));
+/// assert_eq!(c.next(), Some((3..=3, &"b".to_string())));
+/// assert_eq!(c.next(), Some((5..=10, &"b".to_string())));
 /// assert_eq!(c.next(), None);
 ///
 /// let mut c = a.into_range_values() & b.into_range_values();
-/// assert_eq!(c.next(), Some((3..=3, Rc::new("a".to_string()))));
-/// assert_eq!(c.next(), Some((5..=10, Rc::new("a".to_string()))));
+/// assert_eq!(c.next(), Some((3..=3, Rc::new("b".to_string()))));
+/// assert_eq!(c.next(), Some((5..=10, Rc::new("b".to_string()))));
 /// assert_eq!(c.next(), None);
 /// ```
 pub trait ValueRef: Borrow<Self::Target> + Clone {
@@ -226,7 +226,7 @@ where
 /// // 'from_iter'/'collect': From an iterator of integers.
 /// // Duplicates and out-of-order elements are fine.
 /// // Values have left-to-right precedence.
-/// let a0 = RangeMapBlaze::from_iter([ (100, "b"), (1, "c"),(3, "a"), (2, "a"), (1, "a")]);
+/// let a0 = RangeMapBlaze::from_iter([(100, "b"), (1, "c"),(3, "a"), (2, "a"), (1, "a")]);
 /// let a1: RangeMapBlaze<i32, &str> = [(100, "b"), (1, "c"), (3, "a"), (2, "a"), (1, "a")].into_iter().collect();
 /// assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
 ///
@@ -234,9 +234,9 @@ where
 /// // Overlapping, out-of-order, and empty ranges are fine.
 /// // Values have left-to-right precedence.
 /// #[allow(clippy::reversed_empty_ranges)]
-/// let a0 = RangeMapBlaze::from_iter([(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")]);
+/// let a0 = RangeMapBlaze::from_iter([(2..=2, "b"), (1..=2, "a"), (-10..=-5, "c"), (1..=0, "d")]);
 /// #[allow(clippy::reversed_empty_ranges)]
-/// let a1: RangeMapBlaze<i32, &str> = [(1..=2, "a"), (2..=2, "b"), (-10..=-5, "c"), (1..=0, "d")].into_iter().collect();
+/// let a1: RangeMapBlaze<i32, &str> = [(2..=2, "b"), (1..=2, "a"), (-10..=-5, "c"), (1..=0, "d")].into_iter().collect();
 /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "c"), (1..=2, "a")"#);
 ///
 /// // If we know the ranges are already sorted and disjoint,
@@ -248,9 +248,10 @@ where
 ///
 /// // For compatibility with `BTreeMap`, we also support
 /// // 'from'/'into' from arrays of integers.
-/// let a0 = RangeMapBlaze::from([(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")]);
-/// let a1: RangeMapBlaze<i32, &str> = [(3, "a"), (2, "a"), (1, "a"), (100, "b"), (1, "c")].into();
-/// assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
+/// let a0 = RangeMapBlaze::from([(100, "b"), (1, "c"),(3, "a"), (2, "a"), (1, "a")]);
+/// let a1: RangeMapBlaze<i32, &str> = [(100, "b"), (1, "c"),(3, "a"), (2, "a"), (1, "a")].into();
+/// assert_eq!(a0, a1);
+/// assert_eq!(a0.to_string(), r#"(1..=3, "a"), (100..=100, "b")"#);
 /// ```
 ///
 /// # `RangeMapBlaze` Set Operations
@@ -360,7 +361,7 @@ where
 /// let result0 = &b - (&z | &a); // Creates an intermediate 'RangeMapBlaze'.
 /// // Alternatively, we can use the 'SortedDisjointMap' API and avoid the intermediate 'RangeMapBlaze'.
 /// let result1 = RangeMapBlaze::from_sorted_disjoint_map(
-///          a.range_values() - (b.range_values() | z.range_values()));
+///          b.range_values() - (a.range_values() | z.range_values()));
 /// assert_eq!(result0, result1);
 /// assert_eq!(result0.to_string(), r#"(1..=1, "b")"#);
 /// ```
@@ -1758,10 +1759,10 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// a.extend([(3..=5, "b"), (5..=5, "c")]);
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=5, "c")]));
     ///
-    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
-    /// let mut b = RangeMapBlaze::from_iter([(3..=5, "b"), (5..=5, "c")]);
+    /// let mut a = RangeMapBlaze::from_iter([(3..=5, "b"), (5..=5, "c")]);
+    /// let mut b = RangeMapBlaze::from_iter([(1..=4, "a")]);
     /// a |= b;
-    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "b")]));
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "c")]));
     /// ```
     pub fn extend_simple<I>(&mut self, iter: I)
     where
@@ -1910,7 +1911,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let map = RangeMapBlaze::from_iter([(10..=20, "a"), (15..=25, "b"), (30..=40, "c")]);
+    /// let map = RangeMapBlaze::from_iter([(30..=40, "c"), (15..=25, "b"), (10..=20, "a")]);
     /// let mut range_values = map.range_values();
     /// assert_eq!(range_values.next(), Some((10..=20, &"a")));
     /// assert_eq!(range_values.next(), Some((21..=25, &"b")));
@@ -1924,7 +1925,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let map = RangeMapBlaze::from_iter([(30..=40, "c"), (15..=25, "b"), (10..=20, "a")]);
+    /// let map = RangeMapBlaze::from_iter([(10..=20, "a"), (15..=25, "b"), (30..=40, "c")]);
     /// let mut range_values = map.range_values();
     /// assert_eq!(range_values.next(), Some((10..=14, &"a")));
     /// assert_eq!(range_values.next(), Some((15..=25, &"b")));
@@ -1946,7 +1947,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// use alloc::rc::Rc;
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let map = RangeMapBlaze::from_iter([(10..=20, "a"), (15..=25, "b"), (30..=40, "c")]);
+    /// let map = RangeMapBlaze::from_iter([(30..=40, "c"), (15..=25, "b"), (10..=20, "a")]);
     /// let mut range_values = map.into_range_values();
     /// assert_eq!(range_values.next(), Some((10..=20, Rc::new("a"))));
     /// assert_eq!(range_values.next(), Some((21..=25, Rc::new("b"))));
@@ -1962,7 +1963,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// use alloc::rc::Rc;
     /// use range_set_blaze::RangeMapBlaze;
     ///
-    /// let map = RangeMapBlaze::from_iter([(30..=40, "c"), (15..=25, "b"), (10..=20, "a")]);
+    /// let map = RangeMapBlaze::from_iter([(10..=20, "a"), (15..=25, "b"), (30..=40, "c")]);
     /// let mut range_values = map.into_range_values();
     /// assert_eq!(range_values.next(), Some((10..=14, Rc::new("a"))));
     /// assert_eq!(range_values.next(), Some((15..=25, Rc::new("b"))));
@@ -2083,7 +2084,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// use range_set_blaze::RangeMapBlaze;
     ///
     /// // We put in four ranges, but they are not sorted & disjoint.
-    /// let map = RangeMapBlaze::from_iter([(10..=20, "a"), (15..=25, "b"), (30..=40, "c"), (28..=35, "c")]);
+    /// let map = RangeMapBlaze::from_iter([(28..=35, "c"), (30..=40, "c"), (15..=25, "b"), (10..=20, "a")]);
     /// // After RangeMapBlaze sorts & 'disjoint's them, we see three ranges.
     /// assert_eq!(map.range_values_len(), 3);
     /// assert_eq!(map.to_string(), r#"(10..=20, "a"), (21..=25, "b"), (28..=40, "c")"#);
@@ -2373,7 +2374,7 @@ map_op!(
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let result = &a & &b; // Alternatively, 'a & b'.
-    /// assert_eq!(result.to_string(), r#"(2..=2, "a"), (5..=6, "a")"#);
+    /// assert_eq!(result.to_string(), r#"(2..=2, "b"), (5..=6, "b")"#);
     /// ```
     "placeholder",
 
@@ -2657,13 +2658,13 @@ where
     /// use range_set_blaze::RangeMapBlaze;
     /// let mut a = RangeMapBlaze::from_iter([(3, "a"), (4, "e"), (5, "f"), (5, "g")]);
     /// a.extend([(1..=4, "b")]);
-    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "b"), (5..=5, "f")]));
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "b"), (5..=5, "g")]));
     ///
     /// let mut a = RangeMapBlaze::from_iter([(3, "a"), (4, "e"), (5, "f"), (5, "g")]);
     /// let mut b = RangeMapBlaze::from_iter([(1..=4, "b")]);
     /// a |= b;
     /// // cmk000
-    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "b"), (5..=5, "f")]));
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "b"), (5..=5, "g")]));
     /// ```
     #[inline]
     fn extend<I>(&mut self, iter: I)
@@ -2715,7 +2716,7 @@ where
     /// let mut b = RangeMapBlaze::from_iter([(3..=5, "b"), (5..=5, "c")]);
     /// a |= b;
     /// // cmk000
-    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "b")]));
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=5, "c")]));
     /// ```
     #[inline]
     fn extend<I>(&mut self, iter: I)
@@ -2923,7 +2924,7 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
     /// let mut b = RangeMapBlaze::from_iter([(1..=4, "b")]);
     /// // cmk000
     /// a |= &b;
-    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "b"), (5..=5, "f")]));
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "b"), (5..=5, "g")]));
     /// ```
     fn bitor_assign(&mut self, other: &Self) {
         let original_self = mem::take(self); // Take ownership of self
@@ -2949,21 +2950,11 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     /// # Examples
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
-    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
-    /// let mut b = RangeMapBlaze::from_iter([(3, "b"), (4, "e"), (5, "f"), (5, "g")]);
+    /// let mut a = RangeMapBlaze::from_iter([(3, "a"), (4, "e"), (5, "f"), (5, "g")]);
+    /// let mut b = RangeMapBlaze::from_iter([(1..=4, "b")]);
     /// a |= &b;
     /// // cmk000
-    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
-    /// ```
-    ///
-    /// # Examples
-    /// ```
-    /// use range_set_blaze::RangeMapBlaze;
-    /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
-    /// let mut b = RangeMapBlaze::from_iter([(3, "b"), (4, "e"), (5, "f"), (5, "g")]);
-    /// // cmk000
-    /// a |= b;
-    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "a"), (5..=5, "f")]));
+    /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "b"), (5..=5, "g")]));
     /// ```
     fn bitor_assign(&mut self, other: Self) {
         *self = mem::take(self) | other;
