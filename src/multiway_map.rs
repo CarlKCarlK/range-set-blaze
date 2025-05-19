@@ -47,13 +47,13 @@ pub trait MultiwayRangeMapBlaze<T: Integer, V: Eq + Clone>:
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let a = RangeMapBlaze::from_iter([(2..=2, "a"), (6..=200, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    /// let c = RangeMapBlaze::from_iter([(1..=2, "c"), (5..=100, "c")]);
     ///
     /// let union = [a, b, c].union();
     ///
-    /// assert_eq!(union.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
+    /// assert_eq!(union.to_string(), r#"(1..=2, "c"), (3..=4, "b"), (5..=100, "c"), (101..=200, "a")"#);
     /// ```
     fn union(self) -> RangeMapBlaze<T, V>
     where
@@ -88,13 +88,13 @@ pub trait MultiwayRangeMapBlaze<T: Integer, V: Eq + Clone>:
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let a = RangeMapBlaze::from_iter([(2..=2, "a"), (6..=200, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    /// let c = RangeMapBlaze::from_iter([(1..=2, "c"), (5..=100, "c")]);
     ///
     /// let intersection = [a, b, c].intersection();
     ///
-    /// assert_eq!(intersection.to_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
+    /// assert_eq!(intersection.to_string(), r#"(2..=2, "c"), (6..=6, "c")"#);
     /// ```
     fn intersection(self) -> RangeMapBlaze<T, V>
     where
@@ -110,13 +110,13 @@ pub trait MultiwayRangeMapBlaze<T: Integer, V: Eq + Clone>:
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let a = RangeMapBlaze::from_iter([(2..=2, "a"), (6..=200, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    /// let c = RangeMapBlaze::from_iter([(1..=2, "c"), (5..=100, "c")]);
     ///
     /// let symmetric_difference = [a, b, c].symmetric_difference();
     ///
-    /// assert_eq!(symmetric_difference.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
+    /// assert_eq!(symmetric_difference.to_string(), r#"(1..=2, "c"), (3..=4, "b"), (6..=6, "c"), (101..=200, "a")"#);
     /// ```
     fn symmetric_difference(self) -> RangeMapBlaze<T, V>
     where
@@ -164,13 +164,13 @@ pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: Eq + Clone + 'a>:
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let a = RangeMapBlaze::from_iter([(2..=2, "a"), (6..=200, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    /// let c = RangeMapBlaze::from_iter([(1..=2, "c"), (5..=100, "c")]);
     ///
     /// let union = [a, b, c].union();
     ///
-    /// assert_eq!(union.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
+    /// assert_eq!(union.to_string(), r#"(1..=2, "c"), (3..=4, "b"), (5..=100, "c"), (101..=200, "a")"#);
     /// ```
     fn union(self) -> RangeMapBlaze<T, V> {
         self.into_iter()
@@ -201,13 +201,13 @@ pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: Eq + Clone + 'a>:
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
+    /// let a = RangeMapBlaze::from_iter([(2..=2, "a"), (6..=200, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
-    /// let c = RangeMapBlaze::from_iter([(2..=2, "c"), (6..=200, "c")]);
+    /// let c = RangeMapBlaze::from_iter([(1..=2, "c"), (5..=100, "c")]);
     ///
     /// let intersection = [a, b, c].intersection();
     ///
-    /// assert_eq!(intersection.to_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
+    /// assert_eq!(intersection.to_string(), r#"(2..=2, "c"), (6..=6, "c")"#);
     /// ```
     fn intersection(self) -> RangeMapBlaze<T, V> {
         self.into_iter()
@@ -226,7 +226,7 @@ pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: Eq + Clone + 'a>:
     ///
     /// let symmetric_difference = [a, b, c].symmetric_difference();
     ///
-    /// assert_eq!(symmetric_difference.to_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
+    /// assert_eq!(symmetric_difference.to_string(), r#"(1..=1, "a"), (2..=2, "c"), (3..=4, "b"), (6..=6, "c"), (101..=200, "c")"#);
     /// ```
     fn symmetric_difference(self) -> RangeMapBlaze<T, V> {
         self.into_iter()
@@ -280,13 +280,13 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjointMap::new(vec![(1..=2, &"a"), (5..=100, &"a")]);
+    /// let a = CheckSortedDisjointMap::new(vec![(2..=2, &"a"), (6..=200, &"a")]);
     /// let b = CheckSortedDisjointMap::new(vec![(2..=6, &"b")]);
-    /// let c = CheckSortedDisjointMap::new(vec![(2..=2, &"c"), (6..=200, &"c")]);
+    /// let c = CheckSortedDisjointMap::new(vec![(1..=2, &"c"), (5..=100, &"c")]);
     ///
     /// let union = [a, b, c].union();
     ///
-    /// assert_eq!(union.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (5..=100, "a"), (101..=200, "c")"#);
+    /// assert_eq!(union.into_string(), r#"(1..=2, "c"), (3..=4, "b"), (5..=100, "c"), (101..=200, "a")"#);
     /// ```
     fn union(self) -> UnionKMergeMap<T, VR, I> {
         UnionIterMap::new_k(self)
@@ -318,13 +318,13 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjointMap::new(vec![(1..=2, &"a"), (5..=100, &"a")]);
+    /// let a = CheckSortedDisjointMap::new(vec![(2..=2, &"a"), (6..=200, &"a")]);
     /// let b = CheckSortedDisjointMap::new(vec![(2..=6, &"b")]);
-    /// let c = CheckSortedDisjointMap::new(vec![(2..=2, &"c"), (6..=200, &"c")]);
+    /// let c = CheckSortedDisjointMap::new(vec![(1..=2, &"c"), (5..=100, &"c")]);
     ///
     /// let intersection = [a, b, c].intersection();
     ///
-    /// assert_eq!(intersection.into_string(), r#"(2..=2, "a"), (6..=6, "a")"#);
+    /// assert_eq!(intersection.into_string(), r#"(2..=2, "c"), (6..=6, "c")"#);
     /// ```
     fn intersection<'a>(self) -> IntersectionKMap<'a, T, VR, I> {
         // We define map intersection -- in part -- in terms of set intersection.
@@ -351,13 +351,13 @@ where
     /// ```
     /// use range_set_blaze::prelude::*;
     ///
-    /// let a = CheckSortedDisjointMap::new(vec![(1..=2, &"a"), (5..=100, &"a")]);
+    /// let a = CheckSortedDisjointMap::new(vec![(2..=2, &"a"), (6..=200, &"a")]);
     /// let b = CheckSortedDisjointMap::new(vec![(2..=6, &"b")]);
-    /// let c = CheckSortedDisjointMap::new(vec![(2..=2, &"c"), (6..=200, &"c")]);
+    /// let c = CheckSortedDisjointMap::new(vec![(1..=2, &"c"), (5..=100, &"c")]);
     ///
     /// let symmetric_difference = [a, b, c].symmetric_difference();
     ///
-    /// assert_eq!(symmetric_difference.into_string(), r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#);
+    /// assert_eq!(symmetric_difference.into_string(), r#"(1..=2, "c"), (3..=4, "b"), (6..=6, "c"), (101..=200, "a")"#);
     /// ```
     fn symmetric_difference(self) -> SymDiffKMergeMap<T, VR, I> {
         SymDiffIterMap::new_k(self)
