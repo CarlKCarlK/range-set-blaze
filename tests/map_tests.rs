@@ -2383,7 +2383,7 @@ fn example_2() {
     ]);
     // create 10 seconds of blank frames
     let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, String::new())]);
-    // union everything together with left-to-right precedence
+    // union everything together with left-to-right precedence  cmk000
     let animation = [count_down, hello_world, blank].union();
     // for every range of frames, show what is displayed
     println!("frames: text");
@@ -3161,14 +3161,4 @@ fn test_clear() {
     map.clear();
     assert!(map.is_empty());
     assert_eq!(map.len(), 0u64);
-}
-
-// cmk000 remove
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn test_intersection_iterator() {
-    let z = CheckSortedDisjointMap::new([(-1..=0, &"z"), (50..=50, &"z"), (1000..=10_000, &"z")]);
-    let d = CheckSortedDisjointMap::new([(1..=2, &"a"), (5..=100, &"a")]);
-    let z = z & d;
-    println!("{}", z.into_string());
 }

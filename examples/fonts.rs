@@ -1,5 +1,4 @@
 //! Example of working with `char` and `RangeMapBlaze` in the context of fonts
-// cmk000
 
 use range_set_blaze::Integer;
 use range_set_blaze::prelude::*;

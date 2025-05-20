@@ -195,6 +195,7 @@ where
 ///  Internally, the `from_iter`/`collect` constructors take these steps:
 /// * collect adjacent integers/ranges with equal values into disjoint ranges, O(*n₁*)
 /// * sort the disjoint ranges by their `start`, O(*n₂* ln *n₂*)
+/// cmk000
 /// * merge ranges giving precedence to the original left-most values, O(*n₂*)
 /// * create a `BTreeMap` from the now sorted & disjoint ranges, O(*n₃* ln *n₃*)
 ///
@@ -232,7 +233,7 @@ where
 ///
 /// // 'from_iter'/'collect': From an iterator of inclusive ranges, start..=end.
 /// // Overlapping, out-of-order, and empty ranges are fine.
-/// // Values have left-to-right precedence.
+/// // Values have left-to-right precedence. cmk000
 /// #[allow(clippy::reversed_empty_ranges)]
 /// let a0 = RangeMapBlaze::from_iter([(2..=2, "b"), (1..=2, "a"), (-10..=-5, "c"), (1..=0, "d")]);
 /// #[allow(clippy::reversed_empty_ranges)]
@@ -273,7 +274,7 @@ where
 /// The result of all operations is a new `RangeMapBlaze` except for `!a`, which returns a `RangeSetBlaze`.
 ///
 /// The union of any number of maps is defined such that, for any overlapping keys,
-/// the values from the left-most input take precedence. This approach ensures
+/// the values from the left-most input take precedence. cmk000 This approach ensures
 /// that the data from the left-most inputs remains dominant when merging with
 /// later inputs. Likewise, for symmetric difference of three or more maps.
 ///
@@ -324,7 +325,7 @@ where
 /// let b = RangeMapBlaze::from_iter([(1..=2, "b"), (5..=100, "b")]);
 ///
 /// // Union of two 'RangeMapBlaze's. Alternatively, we can take ownership via 'a | b'.
-/// // Values have left-to-right precedence.
+/// // Values have left-to-right precedence. cmk000
 /// let result = &a | &b;
 /// assert_eq!(result.to_string(), r#"(1..=2, "b"), (3..=4, "a"), (5..=100, "b")"#);
 ///
@@ -368,20 +369,20 @@ where
 ///
 /// # `RangeMapBlaze` Union- and Extend-like Methods
 ///
-/// | Operation & Syntax                  | Input Type           | cmk000         | Pre-merge Touching | Cases Optimized |
-/// |-------------------------------------|----------------------|----------------|---------------------|------------------|
-/// | [`a` &#124;= `b`]                   | `RangeMapBlaze`      | Left-to-right  | -                   | 3                |
-/// | [`a` &#124;= `&b`]                  | `&RangeMapBlaze`     | Left-to-right  | -                   | 3                |
-/// | [`a` &#124; `b`]                    | `RangeMapBlaze`      | Left-to-right  | -                   | 3                |
-/// | [`a` &#124; `&b`]                   | `&RangeMapBlaze`     | Left-to-right  | -                   | 3                |
-/// | [`&a` &#124; `b`]                   | `RangeMapBlaze`      | Left-to-right  | -                   | 3                |
-/// | [`&a` &#124; `&b`]                  | `&RangeMapBlaze`     | Left-to-right  | -                   | 3                |
-/// | [`a.extend([(r, v)])`][extend_rv]   | iter `(range, value)`     | Right-to-left  | Yes                 | 1                |
-/// | [`a.extend([(i, v)])`][extend_iv]   | iter `(integer, value)`   | Right-to-left  | Yes                 | 1                |
-/// | [`a.extend_simple(...)`][extend_simple] | iter `(range, value)` | Right-to-left  | No                  | 1                |
-/// | [`a.extend_with(&b)`][extend_with]  | `&RangeMapBlaze`     | Right-to-left  | -                   | 1                |
-/// | [`a.extend_from(b)`][extend_from]   | `RangeMapBlaze`      | Right-to-left  | -                   | 1                |
-/// | [`b.append(&mut a)`][append]        | `&mut RangeMapBlaze` | Right-to-left  | -                   | 1                |
+/// | Operation & Syntax                  | Input Type           | Pre-merge Touching | Cases Optimized |
+/// |-------------------------------------|----------------------|---------------------|------------------|
+/// | [`a` &#124;= `b`]                   | `RangeMapBlaze`      | -                   | 3                |
+/// | [`a` &#124;= `&b`]                  | `&RangeMapBlaze`     | -                   | 3                |
+/// | [`a` &#124; `b`]                    | `RangeMapBlaze`      | -                   | 3                |
+/// | [`a` &#124; `&b`]                   | `&RangeMapBlaze`     | -                   | 3                |
+/// | [`&a` &#124; `b`]                   | `RangeMapBlaze`      | -                   | 3                |
+/// | [`&a` &#124; `&b`]                  | `&RangeMapBlaze`     | -                   | 3                |
+/// | [`a.extend([(r, v)])`][extend_rv]   | iter `(range, value)`     | Yes                 | 1                |
+/// | [`a.extend([(i, v)])`][extend_iv]   | iter `(integer, value)`   | Yes                 | 1                |
+/// | [`a.extend_simple(...)`][extend_simple] | iter `(range, value)` | No                  | 1                |
+/// | [`a.extend_with(&b)`][extend_with]  | `&RangeMapBlaze`     | -                   | 1                |
+/// | [`a.extend_from(b)`][extend_from]   | `RangeMapBlaze`      | -                   | 1                |
+/// | [`b.append(&mut a)`][append]        | `&mut RangeMapBlaze` | -                   | 1                |
 ///
 /// Notes:
 ///
@@ -783,7 +784,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
 
     /// Moves all elements from `other` into `self`, leaving `other` empty.
     ///
-    /// This method has *right-to-left precedence*: if any ranges overlap, values in `other`
+    /// This method has *right-to-left precedence*:  cmk000 if any ranges overlap, values in `other`
     /// will overwrite those in `self`.
     ///
     /// # Performance
@@ -1744,7 +1745,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// before inserting. Each `(range, value)` pair is added as-is, making it faster when the input
     /// is already well-structured or disjoint.
     ///
-    /// This method has *right-to-left precedence*: later ranges in the iterator overwrite earlier ones.
+    /// This method has *right-to-left precedence*:  cmk000 later ranges in the iterator overwrite earlier ones.
     ///
     /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
@@ -1776,7 +1777,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     /// Extends the [`RangeMapBlaze`] with the contents of an owned [`RangeMapBlaze`].
-    ///
+    ///cmk000
     /// This method has *right-to-left precedence* — like `BTreeMap`, but unlike most
     /// other `RangeMapBlaze` methods. If the maps contain overlapping ranges,
     /// values from `other` will overwrite those in `self`.
@@ -1804,7 +1805,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     /// Extends the [`RangeMapBlaze`] with the contents of a borrowed [`RangeMapBlaze`].
-    ///
+    /// ///cmk000
     /// This method has *right-to-left precedence* — like `BTreeMap`, but unlike most
     /// other `RangeMapBlaze` methods. If the maps contain overlapping ranges,
     /// values from `other` will overwrite those in `self`.
@@ -1920,7 +1921,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     ///
     /// Values returned by the iterator are returned in ascending order
-    /// with left-to-right precedence.
+    /// with left-to-right precedence.  cmk000
     ///
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
@@ -1956,7 +1957,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     ///
     /// Values returned by the iterator are returned in ascending order
-    /// with left-to-right precedence.
+    /// with left-to-right precedence. cmk000
     ///
     /// ```
     /// # extern crate alloc;
@@ -1992,7 +1993,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     ///
     /// Values returned by the iterator are returned in ascending order
-    /// with left-to-right precedence.
+    /// with left-to-right precedence. cmk000
     ///
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
@@ -2025,7 +2026,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     ///
     /// Values returned by the iterator are returned in ascending order
-    /// with left-to-right precedence.
+    /// with left-to-right precedence. cmk000
     ///
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
@@ -2192,7 +2193,8 @@ impl<'a, T: Integer, V: Eq + Clone> IntoIterator for &'a RangeMapBlaze<T, V> {
 
 impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
-    ///    /// This operator has *right precedence*: when overlapping ranges are present,
+    ///  
+    /// This operator has *right precedence*: when overlapping ranges are present,
     /// values on the right-hand side take priority over those self.
     ///
     /// This method is optimized for three usage scenarios:
@@ -2207,7 +2209,6 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let union = a | b;  // Alternatively, '&a | &b', etc.
-    /// // cmk000
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=1, "a"), (2..=6, "b"), (7..=100, "a")]));
     /// ```
     type Output = Self;
@@ -2219,7 +2220,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
         let a_len = self.ranges_len();
         if a_len == 0 {
             return other;
-        } // cmk000
+        }
         if much_greater_than(a_len, b_len) {
             return small_b_over_a(self, other);
         }
@@ -2249,7 +2250,6 @@ impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let union = a | &b; // Alternatively, 'a | b', etc.
-    /// // cmk000
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=1, "a"), (2..=6, "b"), (7..=100, "a")]));
     /// ```
     type Output = Self;
@@ -2262,7 +2262,6 @@ impl<T: Integer, V: Eq + Clone> BitOr<&Self> for RangeMapBlaze<T, V> {
         if a_len == 0 {
             return other.clone();
         }
-        // cmk000
         if much_greater_than(a_len, b_len) {
             return small_b_over_a(self, other.clone());
         }
@@ -2294,7 +2293,6 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let union = &a | b;  // Alternatively, 'a | b', etc.
-    /// // cmk000
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=1, "a"), (2..=6, "b"), (7..=100, "a")]));
     /// ```
     fn bitor(self, other: RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
@@ -2305,7 +2303,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<RangeMapBlaze<T, V>> for &RangeMapBlaze<T,
         let b_len = other.ranges_len();
         if b_len == 0 {
             return self.clone();
-        } // cmk000
+        }
         if much_greater_than(b_len, a_len) {
             return small_a_under_b(self.clone(), other);
         }
@@ -2336,7 +2334,6 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
     /// let a = RangeMapBlaze::from_iter([(1..=2, "a"), (5..=100, "a")]);
     /// let b = RangeMapBlaze::from_iter([(2..=6, "b")]);
     /// let union = &a | &b; // Alternatively, 'a | b', etc.
-    /// // cmk000
     /// assert_eq!(union, RangeMapBlaze::from_iter([(1..=1, "a"), (2..=6, "b"), (7..=100, "a")]));
     /// ```
     fn bitor(self, other: &RangeMapBlaze<T, V>) -> RangeMapBlaze<T, V> {
@@ -2347,7 +2344,7 @@ impl<T: Integer, V: Eq + Clone> BitOr<&RangeMapBlaze<T, V>> for &RangeMapBlaze<T
         let b_len = other.ranges_len();
         if b_len == 0 {
             return self.clone();
-        } // cmk000
+        }
         if much_greater_than(a_len, b_len) {
             return small_b_over_a(self.clone(), other.clone());
         }
@@ -2650,7 +2647,6 @@ where
     /// are merged before insertion. For alternatives that skip merging or accept full ranges,
     /// see [`RangeMapBlaze::extend_simple`] and [`RangeMapBlaze::extend`].
     ///
-    /// // cmk000
     /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
     /// # Examples
@@ -2663,7 +2659,6 @@ where
     /// let mut a = RangeMapBlaze::from_iter([(3, "a"), (4, "e"), (5, "f"), (5, "g")]);
     /// let mut b = RangeMapBlaze::from_iter([(1..=4, "b")]);
     /// a |= b;
-    /// // cmk000
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "b"), (5..=5, "g")]));
     /// ```
     #[inline]
@@ -2689,15 +2684,12 @@ where
 {
     /// Extends the [`RangeMapBlaze`] with the contents of an iterator of range-value pairs.
     ///
-    /// This method has *right-to-left precedence* — like `BTreeMap`, but unlike most other
+    /// This method has *right-to-left precedence* — like `BTreeMap` and all other
     /// `RangeMapBlaze` methods.
     ///
     /// It first merges any adjacent or overlapping ranges with the same value, then adds them one by one.
     /// For alternatives that skip merging or that accept integer-value pairs, see
     /// [`RangeMapBlaze::extend_simple`] and the `(integer, value)` overload.
-    ///
-    /// // cmk000
-    /// For *left-to-right* precedence, use the union-related methods.
     ///
     /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     /// # Examples
@@ -2715,7 +2707,6 @@ where
     /// let mut a = RangeMapBlaze::from_iter([(1..=4, "a")]);
     /// let mut b = RangeMapBlaze::from_iter([(3..=5, "b"), (5..=5, "c")]);
     /// a |= b;
-    /// // cmk000
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b"), (5..=5, "c")]));
     /// ```
     #[inline]
@@ -2903,17 +2894,12 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
     ///
     /// This operator has *right precedence*: when overlapping ranges are present,
     /// values on the right-hand side take priority over those self.
-    /// //cmk000
-    /// To get *right precedence*, swap the operands or use
-    /// [`RangeMapBlaze::extend_with`].
+    ///
+    /// To get *left precedence*, swap the operands.
     ///
     /// This method is optimized for three usage scenarios:
     /// when the left-hand side is much smaller, when the right-hand side is much smaller,
     /// and when both sides are of similar size
-    ///
-    /// // cmk000
-    /// Even greater efficiency is possible when the right-hand side is passed by value,
-    /// allowing its internal data structures to be reused.
     ///
     /// **Also See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
@@ -2922,7 +2908,6 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<&Self> for RangeMapBlaze<T, V> {
     /// use range_set_blaze::RangeMapBlaze;
     /// let mut a = RangeMapBlaze::from_iter([(3, "a"), (4, "e"), (5, "f"), (5, "g")]);
     /// let mut b = RangeMapBlaze::from_iter([(1..=4, "b")]);
-    /// // cmk000
     /// a |= &b;
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "b"), (5..=5, "g")]));
     /// ```
@@ -2937,9 +2922,7 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     ///
     /// This operator has *right precedence*: when overlapping ranges are present,
     /// values on the right-hand side take priority over those self.
-    /// // cmk000
-    /// To get *right precedence*, swap the operands or use
-    /// [`RangeMapBlaze::extend_with`].
+    /// To get *left precedence*, swap the operands.
     ///
     /// This method is optimized for three usage scenarios:
     /// when the left-hand side is much smaller, when the right-hand side is much smaller,
@@ -2953,7 +2936,6 @@ impl<T: Integer, V: Eq + Clone> BitOrAssign<Self> for RangeMapBlaze<T, V> {
     /// let mut a = RangeMapBlaze::from_iter([(3, "a"), (4, "e"), (5, "f"), (5, "g")]);
     /// let mut b = RangeMapBlaze::from_iter([(1..=4, "b")]);
     /// a |= &b;
-    /// // cmk000
     /// assert_eq!(a, RangeMapBlaze::from_iter([(1..=4, "b"), (5..=5, "g")]));
     /// ```
     fn bitor_assign(&mut self, other: Self) {

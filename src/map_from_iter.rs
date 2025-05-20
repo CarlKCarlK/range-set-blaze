@@ -12,6 +12,7 @@ where
     T: Integer,
     V: Eq + Clone + 'a,
 {
+    /// cmk000 in all of these talk about precedence.
     /// Create a [`RangeMapBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*

@@ -140,7 +140,7 @@ If `extend_simple` or `rangemap` fits your use case — a small second map whose
 **Right Precedence:**  
 ![map_union_two_sets](criterion/v4/map_union_two_sets/report/lines.svg "map_union_two_sets")
 
-**Left Precedence:**  
+**Left Precedence:**  cmk000
 ![map_union_left_to_right](criterion/v4/map_union_left_to_right/report/lines.svg "map_union_left_to_right")
 
 ## Benchmark #5: 'map_every_op_blaze': Compare `RangeMapBlaze`'s set operations to each other on clumpy data
