@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="windows-1252"  standalone="no"?>
+<svg 
+ viewBox="0 0 1280 720"
+ xmlns="http://www.w3.org/2000/svg"
+ xmlns:xlink="http://www.w3.org/1999/xlink"
+>
+
+<title>Gnuplot</title>
+<desc>Produced by GNUPLOT 5.4 patchlevel 6 </desc>
+
+<g id="gnuplot_canvas">
+
+<rect x="0" y="0" width="1280" height="720" fill="none"/>
+<defs>
+
+	<circle id='gpDot' r='0.5' stroke-width='0.5' stroke='currentColor'/>
+	<path id='gpPt0' stroke-width='0.222' stroke='currentColor' d='M-1,0 h2 M0,-1 v2'/>
+	<path id='gpPt1' stroke-width='0.222' stroke='currentColor' d='M-1,-1 L1,1 M1,-1 L-1,1'/>
+	<path id='gpPt2' stroke-width='0.222' stroke='currentColor' d='M-1,0 L1,0 M0,-1 L0,1 M-1,-1 L1,1 M-1,1 L1,-1'/>
+	<rect id='gpPt3' stroke-width='0.222' stroke='currentColor' x='-1' y='-1' width='2' height='2'/>
+	<rect id='gpPt4' stroke-width='0.222' stroke='currentColor' fill='currentColor' x='-1' y='-1' width='2' height='2'/>
+	<circle id='gpPt5' stroke-width='0.222' stroke='currentColor' cx='0' cy='0' r='1'/>
+	<use xlink:href='#gpPt5' id='gpPt6' fill='currentColor' stroke='none'/>
+	<path id='gpPt7' stroke-width='0.222' stroke='currentColor' d='M0,-1.33 L-1.33,0.67 L1.33,0.67 z'/>
+	<use xlink:href='#gpPt7' id='gpPt8' fill='currentColor' stroke='none'/>
+	<use xlink:href='#gpPt7' id='gpPt9' stroke='currentColor' transform='rotate(180)'/>
+	<use xlink:href='#gpPt9' id='gpPt10' fill='currentColor' stroke='none'/>
+	<use xlink:href='#gpPt3' id='gpPt11' stroke='currentColor' transform='rotate(45)'/>
+	<use xlink:href='#gpPt11' id='gpPt12' fill='currentColor' stroke='none'/>
+	<path id='gpPt13' stroke-width='0.222' stroke='currentColor' d='M0,1.330 L1.265,0.411 L0.782,-1.067 L-0.782,-1.076 L-1.265,0.411 z'/>
+	<use xlink:href='#gpPt13' id='gpPt14' fill='currentColor' stroke='none'/>
+	<filter id='textbox' filterUnits='objectBoundingBox' x='0' y='0' height='1' width='1'>
+	  <feFlood flood-color='white' flood-opacity='1' result='bgnd'/>
+	  <feComposite in='SourceGraphic' in2='bgnd' operator='atop'/>
+	</filter>
+	<filter id='greybox' filterUnits='objectBoundingBox' x='0' y='0' height='1' width='1'>
+	  <feFlood flood-color='lightgrey' flood-opacity='1' result='grey'/>
+	  <feComposite in='SourceGraphic' in2='grey' operator='atop'/>
+	</filter>
+</defs>
+<g fill="none" color="white" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M80.92,662.40 L89.92,662.40  '/>	<g transform="translate(72.53,666.30)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="end">
+		<text><tspan font-family="Helvetica" > 0</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M80.92,586.35 L89.92,586.35  '/>	<g transform="translate(72.53,590.25)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="end">
+		<text><tspan font-family="Helvetica" > 0.05</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M80.92,510.30 L89.92,510.30  '/>	<g transform="translate(72.53,514.20)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="end">
+		<text><tspan font-family="Helvetica" > 0.1</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M80.92,434.25 L89.92,434.25  '/>	<g transform="translate(72.53,438.15)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="end">
+		<text><tspan font-family="Helvetica" > 0.15</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M80.92,358.20 L89.92,358.20  '/>	<g transform="translate(72.53,362.10)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="end">
+		<text><tspan font-family="Helvetica" > 0.2</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M80.92,282.16 L89.92,282.16  '/>	<g transform="translate(72.53,286.06)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="end">
+		<text><tspan font-family="Helvetica" > 0.25</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M80.92,206.11 L89.92,206.11  '/>	<g transform="translate(72.53,210.01)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="end">
+		<text><tspan font-family="Helvetica" > 0.3</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M80.92,130.06 L89.92,130.06  '/>	<g transform="translate(72.53,133.96)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="end">
+		<text><tspan font-family="Helvetica" > 0.35</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M80.92,54.01 L89.92,54.01  '/>	<g transform="translate(72.53,57.91)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="end">
+		<text><tspan font-family="Helvetica" > 0.4</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M80.92,662.40 L80.92,653.40  '/>	<g transform="translate(80.92,684.30)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" >-5</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M180.63,662.40 L180.63,653.40  '/>	<g transform="translate(180.63,684.30)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" >-4</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M280.34,662.40 L280.34,653.40  '/>	<g transform="translate(280.34,684.30)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" >-3</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M380.05,662.40 L380.05,653.40  '/>	<g transform="translate(380.05,684.30)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" >-2</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M479.76,662.40 L479.76,653.40  '/>	<g transform="translate(479.76,684.30)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" >-1</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M579.47,662.40 L579.47,653.40  '/>	<g transform="translate(579.47,684.30)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" > 0</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M679.18,662.40 L679.18,653.40  '/>	<g transform="translate(679.18,684.30)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" > 1</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M778.89,662.40 L778.89,653.40  '/>	<g transform="translate(778.89,684.30)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" > 2</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M878.60,662.40 L878.60,653.40  '/>	<g transform="translate(878.60,684.30)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" > 3</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M978.31,662.40 L978.31,653.40  '/>	<g transform="translate(978.31,684.30)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" > 4</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M1078.02,662.40 L1078.02,653.40  '/>	<g transform="translate(1078.02,684.30)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" > 5</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M80.92,54.01 L80.92,662.40 L1078.02,662.40 L1078.02,54.01 L80.92,54.01 Z  '/></g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<g transform="translate(19.18,358.21) rotate(270)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" >Density</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<g transform="translate(579.47,711.30)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" >t score</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+</g>
+	<g id="gnuplot_plot_1" ><title>t distribution</title>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<g transform="translate(1154.14,66.91)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="start">
+		<text><tspan font-family="Helvetica" >t distribution</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<g stroke='none' shape-rendering='crispEdges'>
+		<polygon fill = 'rgb( 31, 120, 180)' fill-opacity = '0.250000' points = '1103.19,67.51 1145.75,67.51 1145.75,58.51 1103.19,58.51 '/>
+		<polygon fill = 'rgb( 31, 120, 180)' fill-opacity = '0.250000' points = '164.42,662.40 166.12,662.40 167.83,662.40 169.53,662.40 171.23,662.40 172.94,662.39 174.64,662.39 176.34,662.39 178.05,662.38 179.75,662.38 181.45,662.37 183.15,662.36 184.86,662.35 186.56,662.33 188.26,662.31 189.97,662.29
+191.67,662.27 193.37,662.25 195.08,662.22 196.78,662.19 198.48,662.17 200.18,662.13 201.89,662.10 203.59,662.07 205.29,662.04 207.00,662.02 208.70,661.99 210.40,661.96 212.11,661.94 213.81,661.91 215.51,661.89 217.21,661.86
+218.92,661.84 220.62,661.80 222.32,661.77 224.03,661.73 225.73,661.69 227.43,661.64 229.14,661.59 230.84,661.53 232.54,661.47 234.24,661.42 235.95,661.36 237.65,661.30 239.35,661.24 241.06,661.18 242.76,661.12 244.46,661.07
+246.16,661.02 247.87,660.96 249.57,660.90 251.27,660.84 252.98,660.77 254.68,660.69 256.38,660.60 258.09,660.50 259.79,660.39 261.49,660.26 263.19,660.12 264.90,659.96 266.60,659.78 268.30,659.59 270.01,659.39 271.71,659.17
+273.41,658.94 275.12,658.69 276.82,658.43 278.52,658.16 280.22,657.87 281.93,657.57 283.63,657.26 285.33,656.94 287.04,656.60 288.74,656.24 290.44,655.87 292.15,655.47 293.85,655.06 295.55,654.62 297.25,654.15 298.96,653.64
+300.66,653.11 302.36,652.54 304.07,651.93 305.77,651.28 307.47,650.59 309.18,649.87 310.88,649.10 312.58,648.30 314.28,647.45 315.99,646.57 317.69,645.64 319.39,644.67 321.10,643.66 322.80,642.60 324.50,641.50 326.21,640.36
+327.91,639.16 329.61,637.92 331.31,636.63 333.02,635.29 334.72,633.88 336.42,632.42 338.13,630.89 339.83,629.29 341.53,627.62 343.23,625.87 344.94,624.05 346.64,622.16 348.34,620.19 350.05,618.16 351.75,616.06 353.45,613.91
+355.16,611.70 356.86,609.44 358.56,607.13 360.26,604.77 361.97,602.38 363.67,599.94 365.37,597.45 367.08,594.91 368.78,592.32 370.48,589.67 372.19,586.95 373.89,584.15 375.59,581.28 377.29,578.34 379.00,575.30 380.70,572.20
+382.40,569.01 384.11,565.75 385.81,562.41 387.51,559.01 389.22,555.54 390.92,551.99 392.62,548.36 394.32,544.65 396.03,540.85 397.73,536.96 399.43,532.99 401.14,528.93 402.84,524.81 404.54,520.63 406.25,516.41 407.95,512.18
+409.65,507.93 411.35,503.68 413.06,499.44 414.76,495.18 416.46,490.90 418.17,486.57 419.87,482.17 421.57,477.66 423.28,473.02 424.98,468.24 426.68,463.29 428.38,458.19 430.09,452.93 431.79,447.54 433.49,442.05 435.20,436.48
+436.90,430.86 438.60,425.21 440.30,419.54 442.01,413.86 443.71,408.17 445.41,402.44 447.12,396.67 448.82,390.83 450.52,384.92 452.23,378.94 453.93,372.89 455.63,366.80 457.33,360.71 459.04,354.65 460.74,348.66 462.44,342.78
+464.15,337.03 465.85,331.45 467.55,326.01 469.26,320.72 470.96,315.55 472.66,310.46 474.36,305.40 476.07,300.33 477.77,295.21 479.47,290.00 481.18,284.65 482.88,279.15 484.58,273.48 486.29,267.64 487.99,261.65 489.69,255.51
+491.39,249.26 493.10,242.94 494.80,236.60 496.50,230.28 498.21,224.02 499.91,217.88 501.61,211.88 503.32,206.05 505.02,200.41 506.72,194.97 508.42,189.73 510.13,184.68 511.83,179.81 513.53,175.13 515.24,170.63 516.94,166.32
+518.64,162.19 520.35,158.27 522.05,154.55 523.75,151.06 525.45,147.78 527.16,144.70 528.86,141.80 530.56,139.05 532.27,136.39 533.97,133.80 535.67,131.21 537.37,128.60 539.08,125.93 540.78,123.21 542.48,120.43 544.19,117.63
+545.89,114.85 547.59,112.14 549.30,109.54 551.00,107.12 552.70,104.89 554.40,102.89 556.11,101.13 557.81,99.60 559.51,98.26 561.22,97.08 562.92,96.01 564.62,95.00 566.33,93.98 568.03,92.93 569.73,91.80 571.43,90.58
+573.14,89.28 574.84,87.90 576.54,86.49 578.25,85.10 579.95,83.79 581.65,82.60 583.36,81.60 585.06,80.84 586.76,80.33 588.46,80.11 590.17,80.18 591.87,80.54 593.57,81.19 595.28,82.11 596.98,83.31 598.68,84.77
+600.39,86.51 602.09,88.51 603.79,90.77 605.49,93.27 607.20,95.98 608.90,98.86 610.60,101.87 612.31,104.95 614.01,108.06 615.71,111.16 617.42,114.21 619.12,117.22 620.82,120.16 622.52,123.07 624.23,125.96 625.93,128.88
+627.63,131.84 629.34,134.90 631.04,138.09 632.74,141.43 634.44,144.95 636.15,148.68 637.85,152.62 639.55,156.79 641.26,161.20 642.96,165.84 644.66,170.71 646.37,175.80 648.07,181.07 649.77,186.51 651.47,192.09 653.18,197.77
+654.88,203.52 656.58,209.32 658.29,215.12 659.99,220.92 661.69,226.69 663.40,232.42 665.10,238.12 666.80,243.77 668.50,249.38 670.21,254.97 671.91,260.54 673.61,266.12 675.32,271.71 677.02,277.33 678.72,283.01 680.43,288.74
+682.13,294.55 683.83,300.42 685.53,306.37 687.24,312.36 688.94,318.40 690.64,324.45 692.35,330.49 694.05,336.51 695.75,342.47 697.46,348.37 699.16,354.20 700.86,359.96 702.56,365.65 704.27,371.29 705.97,376.88 707.67,382.44
+709.38,387.98 711.08,393.49 712.78,398.98 714.49,404.43 716.19,409.83 717.89,415.17 719.59,420.43 721.30,425.59 723.00,430.67 724.70,435.66 726.41,440.59 728.11,445.47 729.81,450.33 731.51,455.21 733.22,460.11 734.92,465.06
+736.62,470.08 738.33,475.16 740.03,480.28 741.73,485.45 743.44,490.62 745.14,495.78 746.84,500.91 748.54,505.96 750.25,510.92 751.95,515.77 753.65,520.49 755.36,525.06 757.06,529.48 758.76,533.75 760.47,537.87 762.17,541.84
+763.87,545.69 765.57,549.42 767.28,553.05 768.98,556.61 770.68,560.09 772.39,563.53 774.09,566.91 775.79,570.24 777.50,573.52 779.20,576.75 780.90,579.90 782.60,582.98 784.31,585.96 786.01,588.85 787.71,591.64 789.42,594.32
+791.12,596.91 792.82,599.39 794.53,601.78 796.23,604.08 797.93,606.31 799.63,608.47 801.34,610.56 803.04,612.60 804.74,614.59 806.45,616.54 808.15,618.45 809.85,620.31 811.56,622.12 813.26,623.88 814.96,625.59 816.66,627.24
+818.37,628.83 820.07,630.37 821.77,631.83 823.48,633.24 825.18,634.60 826.88,635.90 828.58,637.15 830.29,638.35 831.99,639.51 833.69,640.62 835.40,641.69 837.10,642.72 838.80,643.70 840.51,644.65 842.21,645.55 843.91,646.41
+845.61,647.24 847.32,648.02 849.02,648.76 850.72,649.47 852.43,650.15 854.13,650.79 855.83,651.40 857.54,651.99 859.24,652.55 860.94,653.10 862.64,653.62 864.35,654.12 866.05,654.61 867.75,655.08 869.46,655.53 871.16,655.97
+872.86,656.38 874.57,656.78 876.27,657.15 877.97,657.50 879.67,657.83 881.38,658.13 883.08,658.42 884.78,658.69 886.49,658.94 888.19,659.17 889.89,659.40 891.60,659.60 893.30,659.80 895.00,659.99 896.70,660.18 898.41,660.35
+900.11,660.52 901.81,660.69 903.52,660.84 905.22,660.99 906.92,661.12 908.63,661.24 910.33,661.35 912.03,661.45 913.73,661.53 915.44,661.59 917.14,661.64 918.84,661.69 920.55,661.72 922.25,661.75 923.95,661.78 925.65,661.81
+927.36,661.84 929.06,661.86 930.76,661.90 932.47,661.93 934.17,661.97 935.87,662.00 937.58,662.04 939.28,662.08 940.98,662.11 942.68,662.15 944.39,662.18 946.09,662.21 947.79,662.23 949.50,662.25 951.20,662.26 952.90,662.28
+954.61,662.29 956.31,662.29 958.01,662.30 959.71,662.30 961.42,662.31 963.12,662.31 964.82,662.30 966.53,662.30 968.23,662.30 969.93,662.30 971.64,662.29 973.34,662.29 975.04,662.29 976.74,662.29 978.45,662.29 980.15,662.29
+981.85,662.30 983.56,662.30 985.26,662.31 986.96,662.32 988.67,662.33 990.37,662.34 992.07,662.35 993.77,662.36 995.48,662.37 997.18,662.37 998.88,662.38 1000.59,662.38 1002.29,662.39 1003.99,662.39 1005.70,662.39 1007.40,662.40
+1009.10,662.40 1010.80,662.40 1012.51,662.40 1014.21,662.40 1014.21,662.40 1012.51,662.40 1010.80,662.40 1009.10,662.40 1007.40,662.40 1005.70,662.40 1003.99,662.40 1002.29,662.40 1000.59,662.40 998.88,662.40 997.18,662.40 995.48,662.40
+993.77,662.40 992.07,662.40 990.37,662.40 988.67,662.40 986.96,662.40 985.26,662.40 983.56,662.40 981.85,662.40 980.15,662.40 978.45,662.40 976.74,662.40 975.04,662.40 973.34,662.40 971.64,662.40 969.93,662.40 968.23,662.40
+966.53,662.40 964.82,662.40 963.12,662.40 961.42,662.40 959.71,662.40 958.01,662.40 956.31,662.40 954.61,662.40 952.90,662.40 951.20,662.40 949.50,662.40 947.79,662.40 946.09,662.40 944.39,662.40 942.68,662.40 940.98,662.40
+939.28,662.40 937.58,662.40 935.87,662.40 934.17,662.40 932.47,662.40 930.76,662.40 929.06,662.40 927.36,662.40 925.65,662.40 923.95,662.40 922.25,662.40 920.55,662.40 918.84,662.40 917.14,662.40 915.44,662.40 913.73,662.40
+912.03,662.40 910.33,662.40 908.63,662.40 906.92,662.40 905.22,662.40 903.52,662.40 901.81,662.40 900.11,662.40 898.41,662.40 896.70,662.40 895.00,662.40 893.30,662.40 891.60,662.40 889.89,662.40 888.19,662.40 886.49,662.40
+884.78,662.40 883.08,662.40 881.38,662.40 879.67,662.40 877.97,662.40 876.27,662.40 874.57,662.40 872.86,662.40 871.16,662.40 869.46,662.40 867.75,662.40 866.05,662.40 864.35,662.40 862.64,662.40 860.94,662.40 859.24,662.40
+857.54,662.40 855.83,662.40 854.13,662.40 852.43,662.40 850.72,662.40 849.02,662.40 847.32,662.40 845.61,662.40 843.91,662.40 842.21,662.40 840.51,662.40 838.80,662.40 837.10,662.40 835.40,662.40 833.69,662.40 831.99,662.40
+830.29,662.40 828.58,662.40 826.88,662.40 825.18,662.40 823.48,662.40 821.77,662.40 820.07,662.40 818.37,662.40 816.66,662.40 814.96,662.40 813.26,662.40 811.56,662.40 809.85,662.40 808.15,662.40 806.45,662.40 804.74,662.40
+803.04,662.40 801.34,662.40 799.63,662.40 797.93,662.40 796.23,662.40 794.53,662.40 792.82,662.40 791.12,662.40 789.42,662.40 787.71,662.40 786.01,662.40 784.31,662.40 782.60,662.40 780.90,662.40 779.20,662.40 777.50,662.40
+775.79,662.40 774.09,662.40 772.39,662.40 770.68,662.40 768.98,662.40 767.28,662.40 765.57,662.40 763.87,662.40 762.17,662.40 760.47,662.40 758.76,662.40 757.06,662.40 755.36,662.40 753.65,662.40 751.95,662.40 750.25,662.40
+748.54,662.40 746.84,662.40 745.14,662.40 743.44,662.40 741.73,662.40 740.03,662.40 738.33,662.40 736.62,662.40 734.92,662.40 733.22,662.40 731.51,662.40 729.81,662.40 728.11,662.40 726.41,662.40 724.70,662.40 723.00,662.40
+721.30,662.40 719.59,662.40 717.89,662.40 716.19,662.40 714.49,662.40 712.78,662.40 711.08,662.40 709.38,662.40 707.67,662.40 705.97,662.40 704.27,662.40 702.56,662.40 700.86,662.40 699.16,662.40 697.46,662.40 695.75,662.40
+694.05,662.40 692.35,662.40 690.64,662.40 688.94,662.40 687.24,662.40 685.53,662.40 683.83,662.40 682.13,662.40 680.43,662.40 678.72,662.40 677.02,662.40 675.32,662.40 673.61,662.40 671.91,662.40 670.21,662.40 668.50,662.40
+666.80,662.40 665.10,662.40 663.40,662.40 661.69,662.40 659.99,662.40 658.29,662.40 656.58,662.40 654.88,662.40 653.18,662.40 651.47,662.40 649.77,662.40 648.07,662.40 646.37,662.40 644.66,662.40 642.96,662.40 641.26,662.40
+639.55,662.40 637.85,662.40 636.15,662.40 634.44,662.40 632.74,662.40 631.04,662.40 629.34,662.40 627.63,662.40 625.93,662.40 624.23,662.40 622.52,662.40 620.82,662.40 619.12,662.40 617.42,662.40 615.71,662.40 614.01,662.40
+612.31,662.40 610.60,662.40 608.90,662.40 607.20,662.40 605.49,662.40 603.79,662.40 602.09,662.40 600.39,662.40 598.68,662.40 596.98,662.40 595.28,662.40 593.57,662.40 591.87,662.40 590.17,662.40 588.46,662.40 586.76,662.40
+585.06,662.40 583.36,662.40 581.65,662.40 579.95,662.40 578.25,662.40 576.54,662.40 574.84,662.40 573.14,662.40 571.43,662.40 569.73,662.40 568.03,662.40 566.33,662.40 564.62,662.40 562.92,662.40 561.22,662.40 559.51,662.40
+557.81,662.40 556.11,662.40 554.40,662.40 552.70,662.40 551.00,662.40 549.30,662.40 547.59,662.40 545.89,662.40 544.19,662.40 542.48,662.40 540.78,662.40 539.08,662.40 537.37,662.40 535.67,662.40 533.97,662.40 532.27,662.40
+530.56,662.40 528.86,662.40 527.16,662.40 525.45,662.40 523.75,662.40 522.05,662.40 520.35,662.40 518.64,662.40 516.94,662.40 515.24,662.40 513.53,662.40 511.83,662.40 510.13,662.40 508.42,662.40 506.72,662.40 505.02,662.40
+503.32,662.40 501.61,662.40 499.91,662.40 498.21,662.40 496.50,662.40 494.80,662.40 493.10,662.40 491.39,662.40 489.69,662.40 487.99,662.40 486.29,662.40 484.58,662.40 482.88,662.40 481.18,662.40 479.47,662.40 477.77,662.40
+476.07,662.40 474.36,662.40 472.66,662.40 470.96,662.40 469.26,662.40 467.55,662.40 465.85,662.40 464.15,662.40 462.44,662.40 460.74,662.40 459.04,662.40 457.33,662.40 455.63,662.40 453.93,662.40 452.23,662.40 450.52,662.40
+448.82,662.40 447.12,662.40 445.41,662.40 443.71,662.40 442.01,662.40 440.30,662.40 438.60,662.40 436.90,662.40 435.20,662.40 433.49,662.40 431.79,662.40 430.09,662.40 428.38,662.40 426.68,662.40 424.98,662.40 423.28,662.40
+421.57,662.40 419.87,662.40 418.17,662.40 416.46,662.40 414.76,662.40 413.06,662.40 411.35,662.40 409.65,662.40 407.95,662.40 406.25,662.40 404.54,662.40 402.84,662.40 401.14,662.40 399.43,662.40 397.73,662.40 396.03,662.40
+394.32,662.40 392.62,662.40 390.92,662.40 389.22,662.40 387.51,662.40 385.81,662.40 384.11,662.40 382.40,662.40 380.70,662.40 379.00,662.40 377.29,662.40 375.59,662.40 373.89,662.40 372.19,662.40 370.48,662.40 368.78,662.40
+367.08,662.40 365.37,662.40 363.67,662.40 361.97,662.40 360.26,662.40 358.56,662.40 356.86,662.40 355.16,662.40 353.45,662.40 351.75,662.40 350.05,662.40 348.34,662.40 346.64,662.40 344.94,662.40 343.23,662.40 341.53,662.40
+339.83,662.40 338.13,662.40 336.42,662.40 334.72,662.40 333.02,662.40 331.31,662.40 329.61,662.40 327.91,662.40 326.21,662.40 324.50,662.40 322.80,662.40 321.10,662.40 319.39,662.40 317.69,662.40 315.99,662.40 314.28,662.40
+312.58,662.40 310.88,662.40 309.18,662.40 307.47,662.40 305.77,662.40 304.07,662.40 302.36,662.40 300.66,662.40 298.96,662.40 297.25,662.40 295.55,662.40 293.85,662.40 292.15,662.40 290.44,662.40 288.74,662.40 287.04,662.40
+285.33,662.40 283.63,662.40 281.93,662.40 280.22,662.40 278.52,662.40 276.82,662.40 275.12,662.40 273.41,662.40 271.71,662.40 270.01,662.40 268.30,662.40 266.60,662.40 264.90,662.40 263.19,662.40 261.49,662.40 259.79,662.40
+258.09,662.40 256.38,662.40 254.68,662.40 252.98,662.40 251.27,662.40 249.57,662.40 247.87,662.40 246.16,662.40 244.46,662.40 242.76,662.40 241.06,662.40 239.35,662.40 237.65,662.40 235.95,662.40 234.24,662.40 232.54,662.40
+230.84,662.40 229.14,662.40 227.43,662.40 225.73,662.40 224.03,662.40 222.32,662.40 220.62,662.40 218.92,662.40 217.21,662.40 215.51,662.40 213.81,662.40 212.11,662.40 210.40,662.40 208.70,662.40 207.00,662.40 205.29,662.40
+203.59,662.40 201.89,662.40 200.18,662.40 198.48,662.40 196.78,662.40 195.08,662.40 193.37,662.40 191.67,662.40 189.97,662.40 188.26,662.40 186.56,662.40 184.86,662.40 183.15,662.40 181.45,662.40 179.75,662.40 178.05,662.40
+176.34,662.40 174.64,662.40 172.94,662.40 171.23,662.40 169.53,662.40 167.83,662.40 166.12,662.40 164.42,662.40 '/>
+	</g>
+</g>
+	</g>
+	<g id="gnuplot_plot_2" ><title>t statistic</title>
+<g fill="none" color="white" stroke="rgb( 31, 120, 180)" stroke-width="2.00" stroke-linecap="butt" stroke-linejoin="miter">
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="2.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<g transform="translate(1154.14,84.91)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="start">
+		<text><tspan font-family="Helvetica" >t statistic</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="2.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='rgb( 31, 120, 180)'  d='M1103.19,81.01 L1145.75,81.01 M536.60,662.40 L536.60,54.01  '/></g>
+	</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="2.00" stroke-linecap="butt" stroke-linejoin="miter">
+</g>
+<g fill="none" color="black" stroke="black" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<path stroke='black'  d='M80.92,54.01 L80.92,662.40 L1078.02,662.40 L1078.02,54.01 L80.92,54.01 Z  '/></g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+	<g transform="translate(579.47,30.91)" stroke="none" fill="black" font-family="Helvetica" font-size="12.00"  text-anchor="middle">
+		<text><tspan font-family="Helvetica" >map_union_left_to_right/3. rangemap /980: Welch t test</tspan></text>
+	</g>
+</g>
+<g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
+</g>
+</g>
+</svg>
+

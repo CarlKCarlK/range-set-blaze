@@ -53,7 +53,7 @@ These benchmarks allow us to understand the `range-set-blaze::RangeMapBlaze` dat
 `BTreeSet` or `HashSet`, not `RangeMapBlaze` (nor `rangemap`), is a good choice for ingesting sets of non-clumpy integers.
 
 *Lower is better in all plots*
-![map_worst lines](criterion/v4/map_worst/report/lines.svg "map_worst lines")
+![map_worst lines](criterion/v5/map_worst/report/lines.svg "map_worst lines")
 
 ## Benchmark #2: 'map_ingest_clumps_base': Measure `RangeMapBlaze` on increasingly clumpy integer keys
 
@@ -67,7 +67,7 @@ The value for each clump is a random integer from 0 to 4.
 
 ### 'map_ingest_clumps_base' Results
 
-With no clumps, `RangeMapBlaze (integers)` is 6.6 times slower than `BTreeMap`. Somewhere around clump size 8, `RangeMapBlaze` becomes the best integer performer. As the average clump size goes past 100, `RangeMapBlaze` averages about 89 times faster than `HashSet` and `BTreeSet`, and roughly 35 times faster than `rangemap (integers)`.
+With no clumps, `RangeMapBlaze (integers)` is 6 times slower than `BTreeMap`. Somewhere around clump size 8, `RangeMapBlaze` becomes the best integer performer. As the average clump size goes past 100, `RangeMapBlaze` averages about 30 times faster than `HashSet` and `BTreeSet`, and roughly 40 times faster than `rangemap (integers)`.
 
 `RangeSetBlaze` batches integer keys with the same value by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate.
 
@@ -75,7 +75,7 @@ With no clumps, `RangeMapBlaze (integers)` is 6.6 times slower than `BTreeMap`. 
 
 Range-based methods such as `RangeMapBlaze` are a great choice for clumpy integer keys.
 
-![ingest_clumps_base](criterion/v4/map_ingest_clumps_base/report/lines.svg "ingest_clumps_base")
+![ingest_clumps_base](criterion/v5/map_ingest_clumps_base/report/lines.svg "ingest_clumps_base")
 
 ## Benchmark #3: 'map_ingest_clumps_ranges': Measure crates on increasingly clumpy ranges keys
 
@@ -90,9 +90,9 @@ The value for each clump is a random integer from 0 to 4.
 
 ### 'map_ingest_clumps_ranges' Results
 
-When ranges are not clumpy (`ranges_per_clump` = 1), `rangemap` and `RangeMapBlaze::extend_simple` are the fastest, but as soon as two consecutive ranges come from the same clump `RangeMapBlaze (ranges)` is the fastest. With extremely clumpy ranges  (`ranges_per_clump` = 50), `RangeMapBlaze (ranges)` is 10 times faster than the next best method, `RangeMapBlaze::extend_simple`.
+When ranges are not clumpy (`ranges_per_clump` = 1), `rangemap` and `RangeMapBlaze::extend_simple` are the fastest, but as soon as two consecutive ranges come from the same clump `RangeMapBlaze (ranges)` is the fastest. With extremely clumpy ranges  (`ranges_per_clump` = 50), `RangeMapBlaze (ranges)` is 5.6 times faster than the next best method, `RangeMapBlaze::extend_simple`.
 
-We can also compare ingesting ranges as ranges vs as a sequence of integers. Ingesting as ranges seems consistently 20 times faster.
+We can also compare ingesting ranges as ranges vs as a sequence of integers. Ingesting as ranges seems consistently 8.5 times faster.
 
 As before, `RangeSetBlaze` does well because it batches range keys with the same value by noticing when consecutive ranges fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate.
 
@@ -100,7 +100,7 @@ As before, `RangeSetBlaze` does well because it batches range keys with the same
 
 `RangeMapBlaze` is a great choice for ingesting ranges when consecutive ranges (with the same value) are likely to touch or overlap.
 
-![map_ingest_clumps_ranges](criterion/v4/map_ingest_clumps_ranges/report/lines.svg "map_ingest_clumps_ranges")
+![map_ingest_clumps_ranges](criterion/v5/map_ingest_clumps_ranges/report/lines.svg "map_ingest_clumps_ranges")
 
 ## Benchmark #4: 'map_union_two_sets': Union two maps with clumpy integer keys
 
@@ -117,31 +117,31 @@ The value for each clump is a random integer from 0 to 4.
 
 #### When the second map’s values should take precedence
 
-`rangemap` and `RangeMapBlaze::extend_simple` perform well when the second map is small, but their performance degrades as the second map grows — up to 4× worse at size 100,000.
+`rangemap` and `RangeMapBlaze::extend_simple` perform well when the second map is small, but their performance degrades as the second map grows — up to 3× worse at size 100,000.
 
-The `RangeMapBlaze` union operator with a borrowed second operand is about 2× slower when the second map is small but becomes faster as the second map grows.
+The `RangeMapBlaze` union operator with a borrowed second operand is about 20% slower when the second map is small but becomes faster as the second map grows.
 
 The `RangeMapBlaze` union operator with two owned operands is fast across all input sizes. It uses a hybrid algorithm: inserting when one map is relatively small, and streaming when both are similar in size.
 
 #### When the first map’s values should take precedence
 
-`rangemap` and `RangeMapBlaze::extend_simple` can be up to 3× slower for small inputs.
+`rangemap` and `RangeMapBlaze::extend_simple` can be up to 2.5× slower for small inputs.
 
-The `RangeMapBlaze` union operator with a borrowed second operand can be up to 60% slower on larger inputs.
+The `RangeMapBlaze` union operator with a borrowed second operand can be up to 20% slower on larger inputs.
 
 The `RangeMapBlaze` union operator with two owned operands is again fast across all input sizes.
 
 ### `map_union_two_sets` Conclusion
 
-If you own both maps, the `RangeMapBlaze` union operator is the best choice. If you must borrow one (or both), union is still effective, but may be 60% to 2× slower.
+If you own both maps, the `RangeMapBlaze` union operator is the best choice. If you must borrow one (or both), union is still effective, but may be 20% slower.
 
 If `extend_simple` or `rangemap` fits your use case — a small second map whose values should take precedence — they are excellent alternatives.
 
 **Right Precedence:**  
-![map_union_two_sets](criterion/v4/map_union_two_sets/report/lines.svg "map_union_two_sets")
+![map_union_two_sets](criterion/v5/map_union_two_sets/report/lines.svg "map_union_two_sets")
 
-**Left Precedence:**  cmk000
-![map_union_left_to_right](criterion/v4/map_union_left_to_right/report/lines.svg "map_union_left_to_right")
+**Left Precedence:**
+![map_union_left_to_right](criterion/v5/map_union_left_to_right/report/lines.svg "map_union_left_to_right")
 
 ## Benchmark #5: 'map_every_op_blaze': Compare `RangeMapBlaze`'s set operations to each other on clumpy data
 
@@ -152,9 +152,9 @@ If `extend_simple` or `rangemap` fits your use case — a small second map whose
 
 ### 'map_every_op_blaze' `RangeMapBlaze` Results and Conclusion
 
-Complement (which works on just one map) is twice as fast as intersection and difference. Symmetric difference is about 7 times slower than intersection and difference. For small inputs, Union is similar to intersection and difference, but as the input size grows, also becomes about 7 times slower than intersection.
+Complement (which works on just one map) is twice as fast as intersection and difference. Symmetric difference is about 8 times slower than intersection and difference. For small inputs, Union is similar to intersection and difference, but as the input size grows, also becomes about 7 times slower than intersection.
 
-![every_op_blaze](criterion/v4/map_every_op_blaze/report/lines.svg "every_op_blaze")
+![every_op_blaze](criterion/v5/map_every_op_blaze/report/lines.svg "every_op_blaze")
 
 ## Benchmark #6: 'map_intersect_k': `RangeMapBlaze` ` Multiway vs 2-at-time intersection
 
@@ -168,6 +168,6 @@ Complement (which works on just one map) is twice as fast as intersection and di
 On two maps, two-at-a-time ias better but beyond that two-at-a-time gets slower and slower. For 100 sets, it must create about 100 intermediate sets and is about 5 times slower than multiway.
 
 Dynamic multiway is not used by `RangeMapBlaze` but is sometimes needed by `SortedDisjoint` iterators
-(also available from the `range-set-blaze` crate). It is 20% slower than static multiway.
+(also available from the `range-set-blaze` crate). It is 16% slower than static multiway.
 
-![intersect_k_sets](criterion/v4/map_intersect_k/report/lines.svg "intersect_k_sets")
+![intersect_k_sets](criterion/v5/map_intersect_k/report/lines.svg "intersect_k_sets")
