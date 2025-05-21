@@ -195,8 +195,7 @@ where
 ///  Internally, the `from_iter`/`collect` constructors take these steps:
 /// * collect adjacent integers/ranges with equal values into disjoint ranges, O(*n₁*)
 /// * sort the disjoint ranges by their `start`, O(*n₂* ln *n₂*)
-/// cmk000
-/// * merge ranges giving precedence to the original left-most values, O(*n₂*)
+/// * merge ranges giving precedence to the originally right-most values, O(*n₂*)
 /// * create a `BTreeMap` from the now sorted & disjoint ranges, O(*n₃* ln *n₃*)
 ///
 /// where *n₁* is the number of input integers/ranges, *n₂* is the number of disjoint & unsorted ranges,
@@ -233,7 +232,7 @@ where
 ///
 /// // 'from_iter'/'collect': From an iterator of inclusive ranges, start..=end.
 /// // Overlapping, out-of-order, and empty ranges are fine.
-/// // Values have left-to-right precedence. cmk000
+/// // Values have right-to-left precedence.
 /// #[allow(clippy::reversed_empty_ranges)]
 /// let a0 = RangeMapBlaze::from_iter([(2..=2, "b"), (1..=2, "a"), (-10..=-5, "c"), (1..=0, "d")]);
 /// #[allow(clippy::reversed_empty_ranges)]
@@ -274,8 +273,8 @@ where
 /// The result of all operations is a new `RangeMapBlaze` except for `!a`, which returns a `RangeSetBlaze`.
 ///
 /// The union of any number of maps is defined such that, for any overlapping keys,
-/// the values from the left-most input take precedence. cmk000 This approach ensures
-/// that the data from the left-most inputs remains dominant when merging with
+/// the values from the right-most input take precedence. This approach ensures
+/// that the data from the right-most inputs remains dominant when merging with
 /// later inputs. Likewise, for symmetric difference of three or more maps.
 ///
 /// `RangeMapBlaze` also implements many other methods, such as [`insert`], [`pop_first`] and [`split_off`]. Many of
@@ -325,7 +324,7 @@ where
 /// let b = RangeMapBlaze::from_iter([(1..=2, "b"), (5..=100, "b")]);
 ///
 /// // Union of two 'RangeMapBlaze's. Alternatively, we can take ownership via 'a | b'.
-/// // Values have left-to-right precedence. cmk000
+/// // Values have right-to-left precedence.
 /// let result = &a | &b;
 /// assert_eq!(result.to_string(), r#"(1..=2, "b"), (3..=4, "a"), (5..=100, "b")"#);
 ///
@@ -784,7 +783,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
 
     /// Moves all elements from `other` into `self`, leaving `other` empty.
     ///
-    /// This method has *right-to-left precedence*:  cmk000 if any ranges overlap, values in `other`
+    /// This method has *right-to-left precedence*:  if any ranges overlap, values in `other`
     /// will overwrite those in `self`.
     ///
     /// # Performance
@@ -1745,7 +1744,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// before inserting. Each `(range, value)` pair is added as-is, making it faster when the input
     /// is already well-structured or disjoint.
     ///
-    /// This method has *right-to-left precedence*:  cmk000 later ranges in the iterator overwrite earlier ones.
+    /// This method has *right-to-left precedence*: later ranges in the iterator overwrite earlier ones.
     ///
     /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
     ///
@@ -1777,9 +1776,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     /// Extends the [`RangeMapBlaze`] with the contents of an owned [`RangeMapBlaze`].
-    ///cmk000
-    /// This method has *right-to-left precedence* — like `BTreeMap`, but unlike most
-    /// other `RangeMapBlaze` methods. If the maps contain overlapping ranges,
+    ///
+    /// This method follows standard *right-to-left precedence*: If the maps contain overlapping ranges,
     /// values from `other` will overwrite those in `self`.
     ///
     /// Compared to [`RangeMapBlaze::extend_with`], this method can be more efficient because it can
@@ -1805,9 +1803,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     /// Extends the [`RangeMapBlaze`] with the contents of a borrowed [`RangeMapBlaze`].
-    /// ///cmk000
-    /// This method has *right-to-left precedence* — like `BTreeMap`, but unlike most
-    /// other `RangeMapBlaze` methods. If the maps contain overlapping ranges,
+    ///
+    /// This method follows standard *right-to-left precedence*: If the maps contain overlapping ranges,
     /// values from `other` will overwrite those in `self`.
     ///
     /// This method is simple and predictable but not the most efficient option when
@@ -1921,7 +1918,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     ///
     /// Values returned by the iterator are returned in ascending order
-    /// with left-to-right precedence.  cmk000
+    /// with right-to-left precedence.
     ///
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
@@ -1957,7 +1954,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     ///
     /// Values returned by the iterator are returned in ascending order
-    /// with left-to-right precedence. cmk000
+    /// with right-to-left precedence.
     ///
     /// ```
     /// # extern crate alloc;
@@ -1993,7 +1990,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     ///
     /// Values returned by the iterator are returned in ascending order
-    /// with left-to-right precedence. cmk000
+    /// with right-to-left precedence.
     ///
     /// ```
     /// use range_set_blaze::RangeMapBlaze;
@@ -2026,7 +2023,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     ///
     /// Values returned by the iterator are returned in ascending order
-    /// with left-to-right precedence. cmk000
+    /// with right-to-left precedence.
     ///
     /// ```
     /// use range_set_blaze::RangeMapBlaze;

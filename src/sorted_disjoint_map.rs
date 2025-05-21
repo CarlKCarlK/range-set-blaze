@@ -128,9 +128,8 @@ where
 /// [`symmetric_difference_map_dyn!`]: macro.symmetric_difference_map_dyn.html
 ///
 /// The union of any number of maps is defined such that, for any overlapping keys,
-///  cmk000
-/// the values from the left-most input take precedence. This approach ensures
-/// that the data from the left-most inputs remains dominant when merging with
+/// the values from the right-most input take precedence. This approach ensures
+/// that the data from the right-most inputs remains dominant when merging with
 /// later inputs. Likewise, for symmetric difference of three or more maps.
 ///
 /// ## Performance
@@ -904,6 +903,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
         {
             type Output = NotMap<T, $VR, Self>;
 
+            #[inline]
             fn not(self) -> Self::Output {
                 self.complement()
             }
@@ -917,6 +917,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
         {
             type Output = UnionMergeMap<T, $VR, Self, R>;
 
+            #[inline]
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjointMap::union(self, other)
             }
@@ -930,6 +931,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
         {
             type Output = DifferenceMap<T, $VR, Self, R>;
 
+            #[inline]
             fn sub(self, other: R) -> Self::Output {
                 SortedDisjointMap::difference(self, other)
             }
@@ -944,6 +946,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             type Output = SymDiffMergeMap<T,  $VR, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
+            #[inline]
             fn bitxor(self, other: R) -> Self::Output {
                 SortedDisjointMap::symmetric_difference(self, other)
             }
@@ -957,7 +960,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
         {
             type Output = IntersectionMap<T, $VR, Self, R>;
 
-            #[inline] // cmk000 add more in-lines?
+            #[inline]
             fn bitand(self, other: R) -> Self::Output {
                 SortedDisjointMap::intersection(self, other)
             }

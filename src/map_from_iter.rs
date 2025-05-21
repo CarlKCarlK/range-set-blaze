@@ -12,8 +12,9 @@ where
     T: Integer,
     V: Eq + Clone + 'a,
 {
-    /// cmk000 in all of these talk about precedence.
     /// Create a [`RangeMapBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
+    ///
+    /// In case of overlapping keys, the last (right-most) value overrides the previous ones.
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///
@@ -42,6 +43,8 @@ where
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
+    /// In case of overlapping keys, the last (right-most) value overrides the previous ones.
+    ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///
     /// # Examples
@@ -68,6 +71,8 @@ where
 impl<T: Integer, V: Eq + Clone> FromIterator<(RangeInclusive<T>, V)> for RangeMapBlaze<T, V> {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
+    ///
+    /// In case of overlapping ranges, the last (right-most) value overrides the previous ones.
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///
@@ -98,6 +103,8 @@ impl<T: Integer, V: Eq + Clone> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
     /// Create a [`RangeMapBlaze`] from an iterator of pairs (integer, value).
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
+    /// In case of overlapping keys, the last (right-most) value overrides the previous ones.
+    ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///
     /// # Examples
@@ -124,6 +131,8 @@ where
     V: Eq + Clone + 'a,
 {
     /// Create a [`RangeMapBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
+    ///
+    /// In case of overlapping keys, the last (right-most) value overrides the previous ones.
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///
@@ -153,7 +162,9 @@ where
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
-    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
+    /// In case of overlapping ranges, the last (right-most) value overrides the previous ones.
+    ///
+    /// /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///
     /// # Examples
     ///
@@ -179,7 +190,9 @@ impl<'a, T: Integer, V: Eq + Clone> FromIterator<&'a (RangeInclusive<T>, V)>
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
     ///
-    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
+    /// In case of overlapping ranges, the last (right-most) value overrides the previous ones.
+    ///
+    /// /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///
     /// # Examples
     ///
@@ -203,6 +216,8 @@ impl<'a, T: Integer, V: Eq + Clone> FromIterator<&'a (RangeInclusive<T>, V)>
 impl<'a, T: Integer, V: Eq + Clone> FromIterator<&'a (T, V)> for RangeMapBlaze<T, V> {
     /// Create a [`RangeMapBlaze`] from an iterator of inclusive ranges, `start..=end`.
     /// Overlapping, out-of-order, and empty ranges are fine.
+    ///
+    /// In case of overlapping keys, the last (right-most) value overrides the previous ones.
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///

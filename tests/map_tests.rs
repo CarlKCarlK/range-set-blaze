@@ -2383,7 +2383,7 @@ fn example_2() {
     ]);
     // create 10 seconds of blank frames
     let blank = RangeMapBlaze::from_iter([(0..=10 * fps - 1, String::new())]);
-    // union everything together with left-to-right precedence  cmk000
+    // union everything together with right-to-left precedence.
     let animation = [count_down, hello_world, blank].union();
     // for every range of frames, show what is displayed
     println!("frames: text");
