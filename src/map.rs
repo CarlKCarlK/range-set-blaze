@@ -225,7 +225,7 @@ where
 ///
 /// // 'from_iter'/'collect': From an iterator of integers.
 /// // Duplicates and out-of-order elements are fine.
-/// // Values have left-to-right precedence.
+/// // Values have right-to-left precedence.
 /// let a0 = RangeMapBlaze::from_iter([(100, "b"), (1, "c"),(3, "a"), (2, "a"), (1, "a")]);
 /// let a1: RangeMapBlaze<i32, &str> = [(100, "b"), (1, "c"), (3, "a"), (2, "a"), (1, "a")].into_iter().collect();
 /// assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);

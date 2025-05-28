@@ -21,6 +21,9 @@ The crate's main structs are:
 > offering full set operations and by being optimized for sets of [clumpy][1] integers.
 >
 > We can construct a `RangeSetBlaze` or `RangeMapBlaze` from unsorted & redundant integers (or ranges). When the inputs are clumpy, construction will be [linear][1] in the number of inputs and set operations will be sped up [quadratically][1].
+>
+> ⚠️ **Warning:**
+> All RangeMapBlaze operations (`into_iter`, union, difference, symmetric difference, etc.) now give precedence to the **right-hand map** when ranges overlap. This change (from version 0.2.0) aligns with the behavior of `BTreeMap` and `HashMap`.
 
 The crate's main traits are
 

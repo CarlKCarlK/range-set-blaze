@@ -3166,6 +3166,7 @@ fn test_clear() {
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct SomeValue(&'static str);
 
+#[allow(clippy::redundant_clone)]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_arc_value_ref_to_owned() {
