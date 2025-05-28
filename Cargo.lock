@@ -628,7 +628,7 @@ dependencies = [
 
 [[package]]
 name = "range-set-blaze"
-version = "0.3.0-alpha.1"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "criterion",
