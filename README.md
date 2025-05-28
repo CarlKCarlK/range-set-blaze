@@ -50,7 +50,7 @@ The crate's main traits are
 The crate supports `no_std`, WASM, and embedded (with alloc) projects. For `no_std`, etc., Use the command:
 
 ```bash
-cargo add range-set-blaze --features "alloc" --no-default-features
+cargo add range-set-blaze --no-default-features
 ```
 
 Benchmarks

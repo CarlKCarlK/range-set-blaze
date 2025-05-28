@@ -43,7 +43,7 @@ mod tests {
         let mut map = RangeMapBlaze::from_iter([(b' '..=b'~', "printable")]);
         println!("complement set: {:?}", !&map);
         // Prints: complement set: 0..=31, 127..=255
-        map |= map.complement_with(&"non-printable");
+        map |= map.complement_with(&"non-printable"); // in-place union
         println!("map: {:?}", map);
         // Prints: map: (0..=31, "non-printable"), (32..=126, "printable"), (127..=255, "non-printable")
         println!("'tab' is: {:?}", map[b'\t']);
@@ -122,5 +122,42 @@ mod tests {
             format!("{a:?}"),
             r#"(0..=4, Big("green")), (5..=5, Big("white")), (6..=10, Big("green"))"#
         );
+    }
+
+    #[test]
+    fn example_test_8() {
+        let a = RangeSetBlaze::from_iter([32u8..=127]);
+        let complement = !a;
+        assert_eq!(complement.to_string(), "0..=31, 128..=255");
+
+        let a = RangeMapBlaze::from_iter([(32u8..=127, "green")]);
+        let complement = !a;
+        assert_eq!(complement.to_string(), "0..=31, 128..=255");
+    }
+
+    #[test]
+    fn example_test_9() {
+        let a = RangeMapBlaze::from_iter([(0..=10, "green")]);
+        let map = RangeMapBlaze::from_iter([(3..=3, "green"), (9..=100, "yellow")]);
+        let set = RangeSetBlaze::from_iter([3..=3, 9..=100]);
+        assert_eq!(
+            &a - &map,
+            RangeMapBlaze::from_iter([(0..=2, "green"), (4..=8, "green")])
+        );
+        assert_eq!(
+            &a - &set,
+            RangeMapBlaze::from_iter([(0..=2, "green"), (4..=8, "green")])
+        );
+    }
+
+    // Map A: 0..=3 → "green"
+    // Map B: 2..=5 → "white"
+    // Map C: A ∩ B : 2..=3 → ????
+
+    #[test]
+    fn example_test_10() {
+        let a = RangeMapBlaze::from_iter([(0..=3, "green")]);
+        let b = RangeMapBlaze::from_iter([(2..=5, "white")]);
+        println!("{:?}", a & b); // intersection
     }
 }

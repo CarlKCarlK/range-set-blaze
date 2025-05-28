@@ -394,6 +394,7 @@ impl Integer for i128 {
             if self == Self::MIN {
                 return Self::MAX;
             }
+            // This is only reached in release builds.
             let max_len = Self::safe_len(&(self..=Self::MAX));
             panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };

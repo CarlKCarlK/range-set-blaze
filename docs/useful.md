@@ -7,7 +7,6 @@ set BUILDFEATURES=from_slice
 rustup override set nightly
 cargo llvm-cov --tests --all-features --open
 cargo llvm-cov --tests --all-features --open --release
-
 ```
 
 ---------
