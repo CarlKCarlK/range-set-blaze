@@ -19,14 +19,13 @@ Updated: *April 2025*
 
 I evaluated:
 
-* `BTreeMap` and
-* `HashMap` from the standard library, and
+* `BTreeMap` and `HashMap` from the standard library, and
 * `rangemap`, the most popular crate that works with ranges in a tree.
 
 The `rangemap` crate, like this `range-set-blaze` crate, stores disjoint ranges in a `BTreeMap`.
 I eliminated crates that store overlapping ranges, a different data structure (for example, `iset`).
 
-Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). None of the remaining crates offered set operations. (The inspirational `sorted-iter` also does, but it is designed to work on sorted values, not ranges, and so is not included.)
+Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). None of the remaining crates offered set operations. (The inspirational `sorted-iter` does, but it is designed to work on sorted values, not ranges, and so is not included.)
 
 If I misunderstood any of the crates, please let me know. If you'd like to benchmark a crate, the benchmarking code is in the `benches` directory of this repository.
 
@@ -50,7 +49,7 @@ These benchmarks allow us to understand the `range-set-blaze::RangeMapBlaze` dat
 
 ### 'map_worst' Conclusion
 
-`BTreeSet` or `HashSet`, not `RangeMapBlaze` (nor `rangemap`), is a good choice for ingesting sets of non-clumpy integers.
+`BTreeSet` and `HashSet`, not `RangeMapBlaze` (nor `rangemap`), is a good choices for ingesting sets of non-clumpy integers.
 
 *Lower is better in all plots*
 ![map_worst lines](criterion/v5/map_worst/report/lines.svg "map_worst lines")
@@ -115,15 +114,15 @@ The value for each clump is a random integer from 0 to 4.
 
 ### `map_union_two_sets` Results
 
-#### When the second map’s values should take precedence
+#### When the second map’s values takes precedence
 
-`rangemap` and `RangeMapBlaze::extend_simple` perform well when the second map is small, but their performance degrades as the second map grows — up to 3× worse at size 100,000.
+`rangemap` and `RangeMapBlaze::extend_simple` perform well when the second map is small, but their performance degrades as the second map grows larger — up to 3× worse at size 100,000.
 
 The `RangeMapBlaze` union operator with a borrowed second operand is about 20% slower when the second map is small but becomes faster as the second map grows.
 
 The `RangeMapBlaze` union operator with two owned operands is fast across all input sizes. It uses a hybrid algorithm: inserting when one map is relatively small, and streaming when both are similar in size.
 
-#### When the first map’s values should take precedence
+#### When the first map’s values takes precedence
 
 `rangemap` and `RangeMapBlaze::extend_simple` can be up to 2.5× slower for small inputs.
 
@@ -165,7 +164,7 @@ Complement (which works on just one map) is twice as fast as intersection and di
 
 ### 'map_intersect_k' Results and Conclusion
 
-On two maps, two-at-a-time ias better but beyond that two-at-a-time gets slower and slower. For 100 sets, it must create about 100 intermediate sets and is about 5 times slower than multiway.
+On two maps, two-at-a-time is better but beyond that two-at-a-time gets slower and slower. For 100 sets, it must create about 100 intermediate sets and is about 5 times slower than multiway.
 
 Dynamic multiway is not used by `RangeMapBlaze` but is sometimes needed by `SortedDisjoint` iterators
 (also available from the `range-set-blaze` crate). It is 16% slower than static multiway.

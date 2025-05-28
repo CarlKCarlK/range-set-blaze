@@ -424,6 +424,7 @@ impl Integer for i128 {
             if self == Self::MAX {
                 return Self::MIN;
             }
+            // This is only reached in release builds.
             let max_len = Self::safe_len(&(Self::MIN..=self));
             panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };
@@ -526,6 +527,7 @@ impl Integer for u128 {
             if self == Self::MIN {
                 return Self::MAX;
             }
+            // This is only reached in release builds.
             let max_len = Self::safe_len(&(self..=Self::MAX));
             panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };
@@ -555,6 +557,7 @@ impl Integer for u128 {
             if self == Self::MAX {
                 return Self::MIN;
             }
+            // This is only reached in release builds.
             let max_len = Self::safe_len(&(Self::MIN..=self));
             panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };
@@ -798,6 +801,7 @@ impl Integer for Ipv6Addr {
             if self == Self::min_value() {
                 return Self::max_value();
             }
+            // This is only reached in release builds.
             let max_len = Self::safe_len(&(self..=Self::max_value()));
             panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };
@@ -827,6 +831,7 @@ impl Integer for Ipv6Addr {
             if self == Self::max_value() {
                 return Self::min_value();
             }
+            // This is only reached in release builds.
             let max_len = Self::safe_len(&(Self::min_value()..=self));
             panic!("b must be in range 1..=max_len (b = {b}, max_len = {max_len})");
         };

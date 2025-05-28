@@ -3162,3 +3162,57 @@ fn test_clear() {
     assert!(map.is_empty());
     assert_eq!(map.len(), 0u64);
 }
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+struct SomeValue(&'static str);
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_arc_value_ref_to_owned() {
+    // Strong count = 1, so try_unwrap will succeed
+    let arc = Arc::new(SomeValue("only"));
+    assert_eq!(std::sync::Arc::<SomeValue>::strong_count(&arc.clone()), 2); // clone to increase ref count
+    let owned = Arc::clone(&arc).to_owned();
+    assert_eq!(owned, SomeValue("only"));
+
+    // Strong count = 1, so try_unwrap will succeed
+    let arc = Arc::new(SomeValue("unique"));
+    assert_eq!(Arc::strong_count(&arc), 1);
+    let owned = arc.to_owned();
+    assert_eq!(owned, SomeValue("unique"));
+}
+
+#[allow(clippy::needless_collect)]
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_clumpy_map_iter() {
+    use range_set_blaze::test_util::{ClumpyMapIter, How, width_to_range_u32};
+
+    println!("Running map_ingest_clumps_base...");
+    let k = 1;
+    let average_width_list = [100];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+    let value_count = 5u32;
+    let range_per_clump = 1;
+
+    for average_width in average_width_list {
+        let (clump_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+
+        let vec: Vec<(u32, u32)> = ClumpyMapIter::new(
+            &mut StdRng::seed_from_u64(seed),
+            clump_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+            value_count,
+            range_per_clump,
+        )
+        .collect();
+
+        assert_eq!(vec.len(), 998_526);
+    }
+}

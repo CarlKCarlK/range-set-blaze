@@ -3169,3 +3169,11 @@ fn test_multiway() {
     let union = [a, b, c].union();
     assert_eq!(union, RangeSetBlaze::from_iter([1..=15, 18..=100]));
 }
+
+#[allow(deprecated)]
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_deprecated_to_string() {
+    let a = CheckSortedDisjoint::new([1..=6, 8..=9, 11..=15]);
+    assert_eq!(a.to_string(), "1..=6, 8..=9, 11..=15");
+}
