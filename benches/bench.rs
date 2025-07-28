@@ -909,8 +909,8 @@ fn vary_type(c: &mut Criterion) {
     group.finish();
 }
 
-fn union_two_sets(c: &mut Criterion) {
-    let group_name = "union_two_sets";
+fn set_union_two_sets(c: &mut Criterion) {
+    let group_name = "set_union_two_sets";
     // let k = 2;
     let range = 0..=99_999_999u32;
     let range_len0 = 1_000;
@@ -951,6 +951,19 @@ fn union_two_sets(c: &mut Criterion) {
                 },
             );
             // group.bench_with_input(
+            //     BenchmarkId::new(format!("RangeMapBlaze {coverage_goal}"), parameter),
+            //     &parameter,
+            //     |b, _| {
+            //         b.iter_batched(
+            //             || map0.clone(),
+            //             |mut map00| {
+            //                 map00 |= map1;
+            //             },
+            //             BatchSize::SmallInput,
+            //         );
+            //     },
+            // );
+            // group.bench_with_input(
             //     BenchmarkId::new(format!("Roaring insert {coverage_goal}"), parameter),
             //     &parameter,
             //     |b, _| {
@@ -987,6 +1000,69 @@ fn union_two_sets(c: &mut Criterion) {
                         || rangemap_set0.clone(),
                         |mut set00| {
                             set00.extend(rangemap_set1.iter().cloned());
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+        }
+    }
+    group.finish();
+}
+
+fn union_two_maps_or_sets(c: &mut Criterion) {
+    let group_name = "union_two_maps_or_sets";
+    // let k = 2;
+    let range = 0..=99_999_999u32;
+    let range_len0 = 1_000;
+    let range_len_list1 = [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal_list = [0.1];
+    let how = How::None;
+    let seed = 0;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    let mut rng = StdRng::seed_from_u64(seed);
+
+    for coverage_goal in coverage_goal_list {
+        let temp: Vec<RangeSetBlaze<u32>> =
+            k_sets(1, range_len0, &range, coverage_goal, how, &mut rng);
+        let set0 = &temp[0];
+        let map0 = &set0
+            .ranges()
+            .map(|r| (r, ()))
+            .collect::<RangeMapBlaze<u32, ()>>();
+
+        for range_len1 in &range_len_list1 {
+            let set1 = &k_sets(1, *range_len1, &range, coverage_goal, how, &mut rng)[0];
+            let map1 = &set1
+                .ranges()
+                .map(|r| (r, ()))
+                .collect::<RangeMapBlaze<u32, ()>>();
+
+            let parameter = set1.ranges_len();
+
+            group.bench_with_input(
+                BenchmarkId::new(format!("RangeSetBlaze {coverage_goal}"), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || set0.clone(),
+                        |mut set00| {
+                            set00 |= set1;
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+            group.bench_with_input(
+                BenchmarkId::new(format!("RangeMapBlaze<()> {coverage_goal}"), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || map0.clone(),
+                        |mut map00| {
+                            map00 |= map1;
                         },
                         BatchSize::SmallInput,
                     );
@@ -2025,7 +2101,8 @@ criterion_group!(
     intersect_k_sets,
     every_op_blaze,
     every_op_roaring,
-    union_two_sets,
+    set_union_two_sets,
+    union_two_maps_or_sets,
     ingest_clumps_ranges,
     ingest_clumps_easy,
     overflow,

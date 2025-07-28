@@ -34,6 +34,7 @@ cargo install criterion-means
 set BUILDFEATURES=from_slice
 set RUSTFLAGS=-C target-cpu=native
 rustup override set nightly
+cd benches
 ```
 
 ### bench
@@ -60,6 +61,7 @@ rustup override set stable
 set RUSTFLAGS=-C target-cpu=native
 set BUILDFEATURES=
 bench.bat
+# OR cls & bench union_two_maps_or_sets & cargo criterion-means .. | findstr union_two_maps_or_sets
 cargo criterion-means > delme4.csv
 ```
 

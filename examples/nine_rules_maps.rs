@@ -41,8 +41,6 @@ mod tests {
     #[test]
     fn example_test_4() {
         let mut map = RangeMapBlaze::from_iter([(b' '..=b'~', "printable")]);
-        println!("complement set: {:?}", !&map);
-        // Prints: complement set: 0..=31, 127..=255
         map |= map.complement_with(&"non-printable"); // in-place union
         println!("map: {:?}", map);
         // Prints: map: (0..=31, "non-printable"), (32..=126, "printable"), (127..=255, "non-printable")
@@ -61,7 +59,7 @@ mod tests {
             "# of characters in inclusive range: {char_range:?} is {:?}",
             char_range.len()
         );
-        // Prints: # of characters in inclusive range: 55295..=57344 is 2
+        // Prints: # of characters in inclusive range: '\u{d7ff}'..='\u{e000}' is 2
 
         // // --- IPv4: subtract one range from a next-hop map ---
         let next_hop_map = RangeMapBlaze::from_iter([(
@@ -114,8 +112,9 @@ mod tests {
 
     #[test]
     fn example_test_7() {
+        // Imagine Big is expensive to clone, like a large String or struct
         // Requires only one clone.
-        let a = RangeMapBlaze::from_iter([(5..=5, Big("white")), (0..=10, Big("green"))]);
+        let a = RangeMapBlaze::from_iter([(0..=10, Big("green")), (5..=5, Big("white"))]);
         println!("{a:?}");
         // Prints: (0..=4, Big("green")), (5..=5, Big("white")), (6..=10, Big("green"))
         assert_eq!(
@@ -126,24 +125,24 @@ mod tests {
 
     #[test]
     fn example_test_8() {
-        let a = RangeSetBlaze::from_iter([32u8..=127]);
-        let complement = !a;
-        assert_eq!(complement.to_string(), "0..=31, 128..=255");
+        let printable = RangeSetBlaze::from_iter([b' '..=b'~']);
+        let unprintable = !printable;
+        assert_eq!(unprintable.to_string(), "0..=31, 127..=255");
 
-        let a = RangeMapBlaze::from_iter([(32u8..=127, "green")]);
-        let complement = !a;
-        assert_eq!(complement.to_string(), "0..=31, 128..=255");
+        let printable_map = RangeMapBlaze::from_iter([(b' '..=b'~', "printable")]);
+        let unprintable_set = !printable_map;
+        assert_eq!(unprintable_set.to_string(), "0..=31, 127..=255");
     }
 
     #[test]
     fn example_test_9() {
         let a = RangeMapBlaze::from_iter([(0..=10, "green")]);
         let map = RangeMapBlaze::from_iter([(3..=3, "green"), (9..=100, "yellow")]);
-        let set = RangeSetBlaze::from_iter([3..=3, 9..=100]);
         assert_eq!(
             &a - &map,
             RangeMapBlaze::from_iter([(0..=2, "green"), (4..=8, "green")])
         );
+        let set = RangeSetBlaze::from_iter([3..=3, 9..=100]);
         assert_eq!(
             &a - &set,
             RangeMapBlaze::from_iter([(0..=2, "green"), (4..=8, "green")])
