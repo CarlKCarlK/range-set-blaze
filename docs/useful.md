@@ -62,6 +62,8 @@ set RUSTFLAGS=-C target-cpu=native
 set BUILDFEATURES=
 bench.bat
 # OR cls & bench union_two_maps_or_sets & cargo criterion-means .. | findstr union_two_maps_or_sets
+# OR cls & bench every_op_slow_and_blaze & cargo criterion-means .. | findstr every_op_slow_and_blaze
+
 cargo criterion-means > delme4.csv
 ```
 

@@ -761,6 +761,101 @@ fn every_op_blaze(c: &mut Criterion) {
     group.finish();
 }
 
+// #[inline]
+// fn old_intersection<T: Integer>(a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+//     (!((!a.ranges()) | !b.ranges())).into_range_set_blaze()
+// }
+
+#[inline]
+fn old_sym_diff<T: Integer>(a: &RangeSetBlaze<T>, b: &RangeSetBlaze<T>) -> RangeSetBlaze<T> {
+    let lhs0 = a.ranges();
+    let lhs1 = a.ranges();
+    let rhs0 = b.ranges();
+    let rhs1 = b.ranges();
+    ((lhs0 - rhs0) | (rhs1 - lhs1)).into_range_set_blaze()
+}
+
+fn every_op_slow_and_blaze(c: &mut Criterion) {
+    let group_name = "every_op_slow_and_blaze";
+    let k = 2;
+    let range_len_list = [1usize, 10, 100, 1000, 10_000, 100_000];
+    let range = 0..=99_999_999;
+    let coverage_goal = 0.5;
+    let how = How::None;
+    let mut group = c.benchmark_group(group_name);
+
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    let setup_vec = range_len_list
+        .iter()
+        .map(|range_len| {
+            (
+                range_len,
+                k_sets(
+                    k,
+                    *range_len,
+                    &range,
+                    coverage_goal,
+                    how,
+                    &mut StdRng::seed_from_u64(0),
+                ),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    for (_range_len, setup) in &setup_vec {
+        let parameter = setup[0].ranges_len();
+        group.bench_with_input(BenchmarkId::new("union", parameter), &parameter, |b, _k| {
+            b.iter_batched(|| setup, |sets| &sets[0] | &sets[1], BatchSize::SmallInput);
+        });
+        // group.bench_with_input(
+        //     BenchmarkId::new("intersection (new)", parameter),
+        //     &parameter,
+        //     |b, _k| {
+        //         b.iter_batched(|| setup, |sets| &sets[0] & &sets[1], BatchSize::SmallInput);
+        //     },
+        // );
+        // group.bench_with_input(
+        //     BenchmarkId::new("intersection (original)", parameter),
+        //     &parameter,
+        //     |b, _k| {
+        //         b.iter_batched(
+        //             || setup,
+        //             |sets| old_intersection(&sets[0], &sets[1]),
+        //             BatchSize::SmallInput,
+        //         );
+        //     },
+        // );
+
+        group.bench_with_input(
+            BenchmarkId::new("symmetric difference (new)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(|| setup, |sets| &sets[0] ^ &sets[1], BatchSize::SmallInput);
+            },
+        );
+
+        group.bench_with_input(
+            BenchmarkId::new("symmetric difference (original)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || setup,
+                    |sets| old_sym_diff(&sets[0], &sets[1]),
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("complement", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(|| setup, |sets| !&sets[0], BatchSize::SmallInput);
+            },
+        );
+    }
+    group.finish();
+}
+
 fn every_op_roaring(c: &mut Criterion) {
     let group_name = "every_op_roaring";
     let k = 2;
@@ -2100,6 +2195,7 @@ criterion_group!(
     targets =
     intersect_k_sets,
     every_op_blaze,
+    every_op_slow_and_blaze,
     every_op_roaring,
     set_union_two_sets,
     union_two_maps_or_sets,

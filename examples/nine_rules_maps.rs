@@ -159,4 +159,34 @@ mod tests {
         let b = RangeMapBlaze::from_iter([(2..=5, "white")]);
         println!("{:?}", a & b); // intersection
     }
+
+    #[test]
+    fn example_test_11() {
+        use range_set_blaze::IntoString;
+        use range_set_blaze::SortedDisjoint;
+
+        let a = RangeSetBlaze::from_iter([0u8..=2]);
+        let b = RangeSetBlaze::from_iter([1u8..=3]);
+        println!("a        : {}", a);
+        println!("b        : {}", b);
+        println!("!a       : {}", (!(a.ranges())).into_string());
+        println!("!b       : {}", (!(b.ranges())).into_string());
+        println!(
+            "!a|!b    : {}",
+            (!(a.ranges()) | !(b.ranges())).into_string()
+        );
+        println!(
+            "!(!a|!b) : {}",
+            (!(!(a.ranges()) | !(b.ranges()))).into_range_set_blaze()
+        );
+    }
+
+    #[test]
+    fn example_test_12() {
+        let a = RangeMapBlaze::from_iter([(0u8..=1, "white"), (2..=2, "green")]);
+        let b = RangeMapBlaze::from_iter([(1u8..=1, "blue"), (2..=3, "yellow")]);
+        println!("a   : {}", a);
+        println!("b   : {}", b);
+        println!("a&b : {}", a & b);
+    }
 }
