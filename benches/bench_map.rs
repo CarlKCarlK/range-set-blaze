@@ -385,6 +385,221 @@ fn map_union_two_sets(c: &mut Criterion) {
     group.finish();
 }
 
+fn map_union_primitive_right_to_left(c: &mut Criterion) {
+    let group_name = "map_union_primitive_right_to_left";
+    let range = 0..=99_999_999u32;
+    let clump_len0 = 1_000;
+    let range_len_list1 = [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal_list = [0.1];
+    let how = How::None;
+    let seed = 0;
+    let value_count = 5u32;
+    let range_per_clump = 1; // making this 1 or 100 changes nothing.
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    let mut rng = StdRng::seed_from_u64(seed);
+
+    for coverage_goal in coverage_goal_list {
+        let temp: Vec<RangeMapBlaze<u32, u32>> = k_maps(
+            1,
+            clump_len0,
+            &range,
+            coverage_goal,
+            how,
+            &mut rng,
+            value_count,
+            range_per_clump,
+        );
+        let map0 = &temp[0];
+
+        for range_len1 in &range_len_list1 {
+            let map1 = &k_maps(
+                1,
+                *range_len1,
+                &range,
+                coverage_goal,
+                how,
+                &mut rng,
+                value_count,
+                range_per_clump,
+            )[0];
+
+            let parameter = map1.ranges_len();
+
+            group.bench_with_input(
+                BenchmarkId::new("1. a.extend_from(b)".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (map0.clone(), map1.clone()),
+                        |(mut map00, map10)| {
+                            map00.extend_from(map10);
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+
+            group.bench_with_input(
+                BenchmarkId::new("2. streaming merge".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (map0.clone(), map1.clone()),
+                        |(map00, map10)| {
+                            let _ = (map00.range_values() | map10.range_values())
+                                .into_range_map_blaze();
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+
+            group.bench_with_input(
+                BenchmarkId::new("3. b | (a - b)".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (map0.clone(), map1.clone()),
+                        |(map00, mut map10)| {
+                            let difference = map00 - &map10;
+                            map10.extend_simple(
+                                difference
+                                    .btree_map
+                                    .into_iter()
+                                    .map(|(start, v)| (start..=v.end, v.value)),
+                            );
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+            group.bench_with_input(
+                BenchmarkId::new("4. a | b".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (map0.clone(), map1.clone()),
+                        |(map00, map10)| {
+                            let _ = map00 | map10;
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+        }
+    }
+    group.finish();
+}
+
+fn map_union_primitive_left_to_right(c: &mut Criterion) {
+    let group_name = "map_union_primitive_left_to_right";
+    let range = 0..=99_999_999u32;
+    let clump_len0 = 1_000;
+    let range_len_list1 = [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal_list = [0.1];
+    let how = How::None;
+    let seed = 0;
+    let value_count = 5u32;
+    let range_per_clump = 1; // making this 1 or 100 changes nothing.
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    let mut rng = StdRng::seed_from_u64(seed);
+
+    for coverage_goal in coverage_goal_list {
+        let temp: Vec<RangeMapBlaze<u32, u32>> = k_maps(
+            1,
+            clump_len0,
+            &range,
+            coverage_goal,
+            how,
+            &mut rng,
+            value_count,
+            range_per_clump,
+        );
+        let map0 = &temp[0];
+
+        for range_len1 in &range_len_list1 {
+            let map1 = &k_maps(
+                1,
+                *range_len1,
+                &range,
+                coverage_goal,
+                how,
+                &mut rng,
+                value_count,
+                range_per_clump,
+            )[0];
+
+            let parameter = map1.ranges_len();
+
+            group.bench_with_input(
+                BenchmarkId::new("1. b.extend_from(a)".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (map0.clone(), map1.clone()),
+                        |(map00, mut map10)| {
+                            map10.extend_from(map00);
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+
+            group.bench_with_input(
+                BenchmarkId::new("2. streaming merge".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (map0.clone(), map1.clone()),
+                        |(map00, map10)| {
+                            let _ = (map00.range_values() | map10.range_values())
+                                .into_range_map_blaze();
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+
+            group.bench_with_input(
+                BenchmarkId::new("3. a | (b - a)".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (map0.clone(), map1.clone()),
+                        |(mut map00, map10)| {
+                            let difference = map10 - &map00;
+                            map00.extend_simple(
+                                difference
+                                    .btree_map
+                                    .into_iter()
+                                    .map(|(start, v)| (start..=v.end, v.value)),
+                            );
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+            group.bench_with_input(
+                BenchmarkId::new("4. b | a".to_string(), parameter),
+                &parameter,
+                |b, _| {
+                    b.iter_batched(
+                        || (map0.clone(), map1.clone()),
+                        |(map00, map10)| {
+                            let _ = map10 | map00;
+                        },
+                        BatchSize::SmallInput,
+                    );
+                },
+            );
+        }
+    }
+    group.finish();
+}
 fn map_union_left_to_right(c: &mut Criterion) {
     let group_name = "map_union_left_to_right";
     let range = 0..=99_999_999u32;
@@ -1059,6 +1274,8 @@ criterion_group!(
     map_union_label,
     map_union_left_to_right,
     map_union_borrow,
+    map_union_primitive_left_to_right,
+    map_union_primitive_right_to_left
 );
 
 criterion_main!(benches_map);

@@ -132,13 +132,14 @@ where
 
 #[expect(clippy::redundant_pub_crate)]
 #[derive(Clone, Hash, Default, PartialEq, Eq, Debug)]
-pub(crate) struct EndValue<T, V>
+pub struct EndValue<T, V>
+// cmk000 make (crate)
 where
     T: Integer,
     V: Eq + Clone,
 {
-    pub(crate) end: T,
-    pub(crate) value: V,
+    pub end: T,   // cmk000 make (crate)
+    pub value: V, // cmk000 make (crate)
 }
 
 /// A map from integers to values stored as a map of sorted & disjoint ranges to values.
@@ -433,7 +434,7 @@ where
 #[derive(Clone, Hash, PartialEq)]
 pub struct RangeMapBlaze<T: Integer, V: Eq + Clone> {
     pub(crate) len: <T as Integer>::SafeLen,
-    pub(crate) btree_map: BTreeMap<T, EndValue<T, V>>,
+    pub btree_map: BTreeMap<T, EndValue<T, V>>, // cmk0000 make this (crate) again!!!
 }
 
 /// Creates a new, empty `RangeMapBlaze`.
