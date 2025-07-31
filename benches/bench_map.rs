@@ -428,13 +428,13 @@ fn map_union_primitive_right_to_left(c: &mut Criterion) {
             let parameter = map1.ranges_len();
 
             group.bench_with_input(
-                BenchmarkId::new("1. a.extend_from(b)".to_string(), parameter),
+                BenchmarkId::new("2. a.extend_with(borrow b)".to_string(), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
                         || (map0.clone(), map1.clone()),
                         |(mut map00, map10)| {
-                            map00.extend_from(map10);
+                            map00.extend_with(&map10);
                         },
                         BatchSize::SmallInput,
                     );
@@ -442,13 +442,13 @@ fn map_union_primitive_right_to_left(c: &mut Criterion) {
             );
 
             group.bench_with_input(
-                BenchmarkId::new("2. streaming merge".to_string(), parameter),
+                BenchmarkId::new("3. streaming merge".to_string(), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
                         || (map0.clone(), map1.clone()),
                         |(map00, map10)| {
-                            let _ = (map00.range_values() | map10.range_values())
+                            let _ = (map00.into_range_values() | map10.into_range_values())
                                 .into_range_map_blaze();
                         },
                         BatchSize::SmallInput,
@@ -457,14 +457,14 @@ fn map_union_primitive_right_to_left(c: &mut Criterion) {
             );
 
             group.bench_with_input(
-                BenchmarkId::new("3. b | (a - b)".to_string(), parameter),
+                BenchmarkId::new("4. borrow b | (a - borrow b)".to_string(), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
                         || (map0.clone(), map1.clone()),
                         |(map00, mut map10)| {
                             let difference = map00 - &map10;
-                            map10.extend_simple(
+                            let _ = &map10.extend_simple(
                                 difference
                                     .btree_map
                                     .into_iter()
@@ -476,13 +476,13 @@ fn map_union_primitive_right_to_left(c: &mut Criterion) {
                 },
             );
             group.bench_with_input(
-                BenchmarkId::new("4. a | b".to_string(), parameter),
+                BenchmarkId::new("1. a | borrow b".to_string(), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
                         || (map0.clone(), map1.clone()),
                         |(map00, map10)| {
-                            let _ = map00 | map10;
+                            let _ = map00 | &map10;
                         },
                         BatchSize::SmallInput,
                     );
@@ -536,13 +536,13 @@ fn map_union_primitive_left_to_right(c: &mut Criterion) {
             let parameter = map1.ranges_len();
 
             group.bench_with_input(
-                BenchmarkId::new("1. b.extend_from(a)".to_string(), parameter),
+                BenchmarkId::new("2. b.extend_from(borrow a)".to_string(), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
                         || (map0.clone(), map1.clone()),
                         |(map00, mut map10)| {
-                            map10.extend_from(map00);
+                            let _ = &map10.extend_from(map00);
                         },
                         BatchSize::SmallInput,
                     );
@@ -550,13 +550,13 @@ fn map_union_primitive_left_to_right(c: &mut Criterion) {
             );
 
             group.bench_with_input(
-                BenchmarkId::new("2. streaming merge".to_string(), parameter),
+                BenchmarkId::new("3. streaming merge".to_string(), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
                         || (map0.clone(), map1.clone()),
                         |(map00, map10)| {
-                            let _ = (map00.range_values() | map10.range_values())
+                            let _ = (map00.into_range_values() | map10.into_range_values())
                                 .into_range_map_blaze();
                         },
                         BatchSize::SmallInput,
@@ -565,14 +565,14 @@ fn map_union_primitive_left_to_right(c: &mut Criterion) {
             );
 
             group.bench_with_input(
-                BenchmarkId::new("3. a | (b - a)".to_string(), parameter),
+                BenchmarkId::new("4. borrow a | (b - borrow a)".to_string(), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
                         || (map0.clone(), map1.clone()),
                         |(mut map00, map10)| {
                             let difference = map10 - &map00;
-                            map00.extend_simple(
+                            let _ = &map00.extend_simple(
                                 difference
                                     .btree_map
                                     .into_iter()
@@ -584,13 +584,13 @@ fn map_union_primitive_left_to_right(c: &mut Criterion) {
                 },
             );
             group.bench_with_input(
-                BenchmarkId::new("4. b | a".to_string(), parameter),
+                BenchmarkId::new("1. b | borrow a".to_string(), parameter),
                 &parameter,
                 |b, _| {
                     b.iter_batched(
                         || (map0.clone(), map1.clone()),
                         |(map00, map10)| {
-                            let _ = map10 | map00;
+                            let _ = map10 | &map00;
                         },
                         BatchSize::SmallInput,
                     );

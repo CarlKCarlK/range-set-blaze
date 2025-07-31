@@ -60,9 +60,10 @@ Non-Slice
 rustup override set stable
 set RUSTFLAGS=-C target-cpu=native
 set BUILDFEATURES=
+cd benches
 bench.bat
 # OR cls & bench union_two_maps_or_sets & cargo criterion-means .. | findstr union_two_maps_or_sets
-# OR cls & bench map_union_primitive_left_to_right & cargo criterion-means .. | findstr map_union_primitive_left_to_right
+# OR cls & bench map_union_primitive & cargo criterion-means .. | findstr map_union_primitive
 
 cargo criterion-means > delme4.csv
 ```
