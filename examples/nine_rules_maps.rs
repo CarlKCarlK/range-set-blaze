@@ -189,4 +189,43 @@ mod tests {
         println!("b   : {}", b);
         println!("a&b : {}", a & b);
     }
+
+    #[test]
+    fn understand_bench_1() {
+        use rand::SeedableRng;
+        use rand::rngs::StdRng;
+        use range_set_blaze::test_util::{How, k_maps};
+
+        let range = 0..=99_999_999u32;
+        let range_len_list = [1, 10, 100, 1000, 10_000, 100_000, 1_000_000];
+        let coverage_goal_list = [0.1];
+        let how = How::None;
+        let seed = 0;
+        let value_count = 5u32;
+        let range_per_clump = 1; // making this 1 or 100 changes nothing.
+
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        for coverage_goal in coverage_goal_list {
+            for range_len in &range_len_list {
+                let map0 = k_maps(
+                    2,
+                    *range_len,
+                    &range,
+                    coverage_goal,
+                    how,
+                    &mut rng,
+                    value_count,
+                    range_per_clump,
+                )
+                .pop()
+                .expect("real assert");
+
+                let fraction = map0.len() as f64 / (range.end() + 1) as f64;
+                println!(
+                    "coverage_goal {coverage_goal}, range_len {range_len}, fraction {fraction}"
+                );
+            }
+        }
+    }
 }
