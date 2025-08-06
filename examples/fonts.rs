@@ -22,21 +22,18 @@ fn unicode_analysis() {
 
 fn sample1() {
     // Font Selection System Using RangeMapBlaze
-    // Defining overlapping font ranges with priority order:");
-
+    // Defining overlapping font ranges with higher priority last.
     let overlapping_font_table = [
-        ('\u{3040}'..='\u{309F}', "Japanese Font"),
-        ('\u{30A0}'..='\u{30FF}', "Japanese Font"), // adjacent with prev
-        ('\u{4E00}'..='\u{4FFF}', "Japanese Font"), // overlaps with Chinese
-        ('\u{4E00}'..='\u{9FFF}', "Chinese Font"),
-        ('\u{1F600}'..='\u{1F64F}', "Emoji Font"),
-        ('\u{0000}'..='\u{007F}', "Basic Latin"),
         ('\u{0000}'..='\u{10FFFF}', "Default Font"), // covers all
-    ]; // Reverse the order so that higher-priority ranges come last,
-    // allowing them to override lower-priority ones in case of overlap.
+        ('\u{0000}'..='\u{007F}', "Basic Latin"),
+        ('\u{1F600}'..='\u{1F64F}', "Emoji Font"),
+        ('\u{4E00}'..='\u{9FFF}', "Chinese Font"),
+        ('\u{4E00}'..='\u{4FFF}', "Japanese Font"), // overwrites some Chinese
+        ('\u{30A0}'..='\u{30FF}', "Japanese Font"),
+        ('\u{3040}'..='\u{309F}', "Japanese Font"), // overwrites some previous
+    ];
     let disjoint_font_table = overlapping_font_table
         .into_iter()
-        .rev() // Put higher priority ranges LAST
         .collect::<RangeMapBlaze<_, _>>();
 
     println!("\n=== Optimized Font Table (after merging and prioritizing) ===");
