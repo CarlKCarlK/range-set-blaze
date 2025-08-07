@@ -195,6 +195,17 @@ fn lib_coverage_0() {
     v.insert(1);
     assert!(!v.is_empty());
 
+    let v = RangeSetBlaze::<u32>::new();
+    assert!(!v.is_universal());
+
+    let mut v = RangeSetBlaze::<u32>::new();
+    v.ranges_insert(u32::MIN..=u32::MAX);
+    assert!(v.is_universal());
+
+    let mut v = RangeSetBlaze::new();
+    v.remove(2);
+    assert!(!v.is_universal());
+
     let superset = RangeSetBlaze::from_iter([1..=3]);
     let mut set = RangeSetBlaze::new();
 

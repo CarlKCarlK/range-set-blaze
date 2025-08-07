@@ -1,8 +1,8 @@
+use crate::RangeSetBlaze;
 use crate::map::ValueRef;
 use crate::range_values::{MapIntoRangesIter, MapRangesIter, RangeValuesToRangesIter};
 use crate::ranges_iter::RangesIter;
 use crate::sorted_disjoint_map::IntoString;
-use crate::RangeSetBlaze;
 use crate::{IntoRangesIter, UnionIter, UnionMerge};
 use alloc::string::String;
 use core::array;
@@ -414,6 +414,31 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         Self: Sized,
     {
         self.next().is_none()
+    }
+
+    /// Returns `true` if the set contains all possible integers (i.e., is the universal set).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = CheckSortedDisjoint::new([1_u8..=2]);
+    /// assert!(!a.is_universal());
+    ///
+    /// let universal = CheckSortedDisjoint::new([0_u8..=255]);
+    /// assert!(universal.is_universal());
+    /// ```
+    #[inline]
+    #[allow(clippy::wrong_self_convention)]
+    fn is_universal(mut self) -> bool
+    where
+        Self: Sized,
+    {
+        self.next().is_some_and(|range| {
+            let (start, end) = range.into_inner();
+            start == T::min_value() && end == T::max_value()
+        })
     }
 
     /// Returns `true` if the set is a subset of another,

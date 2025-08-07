@@ -572,6 +572,25 @@ impl<T: Integer> RangeSetBlaze<T> {
         self.ranges_len() == 0
     }
 
+    /// Returns `true` if the set contains all possible elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let mut v = RangeSetBlaze::<u8>::new();
+    /// assert!(!v.is_universal());
+    ///
+    /// let universal = !RangeSetBlaze::<u8>::new();
+    /// assert!(universal.is_universal());
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn is_universal(&self) -> bool {
+        self.ranges().is_universal()
+    }
+
     /// Returns `true` if the set is a subset of another,
     /// i.e., `other` contains at least all the elements in `self`.
     ///

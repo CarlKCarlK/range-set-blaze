@@ -1,5 +1,6 @@
 //! Example of working with `char` and `RangeMapBlaze` in the context of fonts
 
+use anyhow::Error;
 use range_set_blaze::Integer;
 use range_set_blaze::prelude::*;
 
@@ -20,7 +21,7 @@ fn unicode_analysis() {
     }
 }
 
-fn sample1() {
+fn sample1() -> Result<(), anyhow::Error> {
     // Font Selection System Using RangeMapBlaze
     // Defining overlapping font ranges with higher priority last.
     let overlapping_font_table = [
@@ -32,9 +33,12 @@ fn sample1() {
         ('\u{30A0}'..='\u{30FF}', "Japanese Font"),
         ('\u{3040}'..='\u{309F}', "Japanese Font"), // overwrites some previous
     ];
-    let disjoint_font_table = overlapping_font_table
-        .into_iter()
-        .collect::<RangeMapBlaze<_, _>>();
+    let disjoint_font_table = RangeMapBlaze::from_iter(overlapping_font_table);
+
+    // Check for any gaps.
+    if !&disjoint_font_table.is_universal() {
+        return Err(Error::msg("Font table contains gaps."));
+    }
 
     println!("\n=== Optimized Font Table (after merging and prioritizing) ===");
     for (range, font) in disjoint_font_table.range_values() {
@@ -53,11 +57,12 @@ fn sample1() {
     let text = "Hello, こんにちは, ∑, 😊";
     println!("Text: {text}");
     for c in text.chars() {
-        let font = disjoint_font_table.get(c).unwrap_or(&"**MISSING**");
+        let font = disjoint_font_table[c];
         println!("{c} → {font}");
     }
+    Ok(())
 }
 
 fn main() {
-    sample1();
+    sample1().expect("Failed to run font example");
 }

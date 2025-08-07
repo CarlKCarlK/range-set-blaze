@@ -3177,3 +3177,24 @@ fn test_deprecated_to_string() {
     let a = CheckSortedDisjoint::new([1..=6, 8..=9, 11..=15]);
     assert_eq!(a.to_string(), "1..=6, 8..=9, 11..=15");
 }
+
+// cmk0000
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn cover_is_universal() {
+    // Multiple ranges covering all values is universal
+    let multi_universal =
+        RangeMapBlaze::from_iter([(0_u8..=100, "first"), (101_u8..=255, "second")]);
+    assert!(multi_universal.is_universal());
+    assert!(multi_universal.ranges().is_universal());
+
+    // Incomplete coverage is not universal
+    let incomplete = RangeMapBlaze::from_iter([(1_u8..=255, "missing_zero")]);
+    assert!(!incomplete.is_universal());
+    assert!(!incomplete.ranges().is_universal());
+
+    // test on empty
+    let empty = RangeMapBlaze::<u8, &'static str>::new();
+    assert!(!empty.is_universal());
+    assert!(!empty.ranges().is_universal());
+}

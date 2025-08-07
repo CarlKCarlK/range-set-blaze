@@ -3163,6 +3163,45 @@ fn test_clear() {
     assert_eq!(map.len(), 0u64);
 }
 
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_full() {
+    let mut map = RangeMapBlaze::new();
+    assert!(!map.is_universal());
+    map.ranges_insert(0u8..=254u8, "a");
+    assert!(!map.is_universal());
+    map.insert(255u8, "b");
+    assert!(map.is_universal());
+    assert_eq!(map.len(), 256);
+}
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_full_sorted_disjoint_map() {
+    // Test with CheckSortedDisjointMap
+    let empty_iter: Vec<(RangeInclusive<u8>, &&str)> = vec![];
+    let empty_map = CheckSortedDisjointMap::new(empty_iter);
+    assert!(!empty_map.is_universal());
+
+    let partial_map = CheckSortedDisjointMap::new([(0u8..=254u8, &"a")]);
+    assert!(!partial_map.is_universal());
+
+    let full_map = CheckSortedDisjointMap::new([(0u8..=255u8, &"a")]);
+    assert!(full_map.is_universal());
+
+    // Test with multiple ranges that cover the full space
+    let multi_range_map = CheckSortedDisjointMap::new([
+        (0u8..=100u8, &"first"),
+        (101u8..=200u8, &"second"),
+        (201u8..=255u8, &"third"),
+    ]);
+    assert!(multi_range_map.is_universal());
+
+    // Test with DynSortedDisjointMap
+    let dyn_full_map =
+        DynSortedDisjointMap::new(CheckSortedDisjointMap::new([(0u8..=255u8, &"a")]));
+    assert!(dyn_full_map.is_universal());
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct SomeValue(&'static str);
 
@@ -3216,4 +3255,25 @@ fn test_clumpy_map_iter() {
 
         assert_eq!(vec.len(), 998_526);
     }
+}
+
+// cmk0000
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn cover_is_universal() {
+    // Multiple ranges covering all values is universal
+    let multi_universal =
+        RangeMapBlaze::from_iter([(0_u8..=100, "first"), (101_u8..=255, "second")]);
+    assert!(multi_universal.is_universal());
+    assert!(multi_universal.range_values().is_universal());
+
+    // Incomplete coverage is not universal
+    let incomplete = RangeMapBlaze::from_iter([(1_u8..=255, "missing_zero")]);
+    assert!(!incomplete.is_universal());
+    assert!(!incomplete.range_values().is_universal());
+
+    // test on empty
+    let empty = RangeMapBlaze::<u8, &'static str>::new();
+    assert!(!empty.is_universal());
+    assert!(!empty.range_values().is_universal());
 }

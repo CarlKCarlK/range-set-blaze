@@ -509,6 +509,50 @@ where
         self.next().is_none()
     }
 
+    /// Returns `true` if the [`SortedDisjointMap`] includes all possible integers.
+    ///
+    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let b = CheckSortedDisjointMap::new([(0_u8..=100, &"x"), (101..=255, &"y")]);
+    /// assert!(b.is_universal());
+    ///
+    /// let c = CheckSortedDisjointMap::new([(1_u8..=255, &"z")]);
+    /// assert!(!c.is_universal());
+    /// ```
+    #[inline]
+    #[allow(clippy::wrong_self_convention)]
+    fn is_universal(mut self) -> bool
+    where
+        Self: Sized,
+    {
+        let mut expected_start = T::min_value();
+
+        while let Some((range, _)) = self.next() {
+            let (start, end) = range.into_inner();
+
+            // Check if this range starts where we expect
+            if start != expected_start {
+                return false;
+            }
+
+            // If this range reaches the maximum value, we're done
+            if end == T::max_value() {
+                return true;
+            }
+
+            // Set up for the next range
+            expected_start = end.add_one();
+        }
+
+        // If we get here, we didn't reach the maximum value
+        false
+    }
+
     /// Create a [`RangeMapBlaze`] from a [`SortedDisjointMap`] iterator.
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*

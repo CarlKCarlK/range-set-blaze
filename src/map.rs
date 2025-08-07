@@ -859,7 +859,30 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     pub fn is_empty(&self) -> bool {
         self.btree_map.is_empty()
     }
-
+    /// Returns `true` if the map is universal (contains all possible integers).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// // Multiple ranges covering all values is universal
+    /// let multi_universal = RangeMapBlaze::from_iter([
+    ///     (0_u8..=100, "first"),
+    ///     (101_u8..=255, "second")
+    /// ]);
+    /// assert!(multi_universal.is_universal());
+    ///
+    /// // Incomplete coverage is not universal
+    /// let incomplete = RangeMapBlaze::from_iter([(1_u8..=255, "missing_zero")]);
+    /// assert!(!incomplete.is_universal());
+    /// ```
+    #[must_use]
+    #[inline]
+    // cmk0000
+    pub fn is_universal(&self) -> bool {
+        self.len() == T::safe_len(&(T::min_value()..=T::max_value()))
+    }
     /// Returns `true` if the set contains an element equal to the value.
     ///
     /// # Examples
