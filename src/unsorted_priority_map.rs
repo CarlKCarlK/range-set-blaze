@@ -170,7 +170,7 @@ where
             self.len += T::safe_len(&range);
             let end_value = EndValue {
                 end,
-                value: value.to_owned(),
+                value: value.into_value(),
             };
             Some((start, end_value))
         } else {

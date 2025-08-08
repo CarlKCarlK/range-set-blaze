@@ -319,7 +319,7 @@ pub fn k_sets<T: Integer + SampleUniform>(
 }
 
 #[allow(clippy::too_many_arguments)]
-/// k is how many maps to generate. If How is union they will meet coverage_goal when unioned, but if None
+/// k is how many maps to generate. If How is union they will meet `coverage_goal` when unioned, but if None
 /// then they will each meet the coverage goal individually.
 pub fn k_maps<T: Integer + SampleUniform>(
     k: usize,

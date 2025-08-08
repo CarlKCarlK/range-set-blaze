@@ -112,11 +112,9 @@ mod tests {
 
     #[test]
     fn example_test_7() {
-        // Imagine Big is expensive to clone, like a large String or struct
+        // Imagine Big is expensive to clone, like a struct.
         // Requires only one clone.
         let a = RangeMapBlaze::from_iter([(0..=10, Big("green")), (5..=5, Big("white"))]);
-        println!("{a:?}");
-        // Prints: (0..=4, Big("green")), (5..=5, Big("white")), (6..=10, Big("green"))
         assert_eq!(
             format!("{a:?}"),
             r#"(0..=4, Big("green")), (5..=5, Big("white")), (6..=10, Big("green"))"#

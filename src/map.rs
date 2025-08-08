@@ -25,24 +25,26 @@ use num_traits::{One, Zero};
 
 const STREAM_OVERHEAD: usize = 10;
 
-/// A trait for references to `Eq + Clone` values, used by the [`SortedDisjointMap`] trait.
+/// A trait for cloneable references to `Eq + Clone` values, used by the [`SortedDisjointMap`] trait.
 ///
 /// `ValueRef` enables [`SortedDisjointMap`] to map sorted, disjoint ranges of integers
-/// to values of type `V: Eq + Clone`. It supports both references (`&V`) and shared ownership types
-/// (`Rc<V>` and `Arc<V>`), avoiding unnecessary cloning of the underlying values while allowing
-/// ownership when needed.
+/// to values of type `V: Eq + Clone`. It supports both plain references (`&V`) and shared ownership types
+/// (`Rc<V>` and `Arc<V>`), avoiding unnecessary cloning of values while enabling ownership when needed.
 ///
-/// References must also implement `Clone`. Standard reference types like `&V`, `Rc<V>`, and `Arc<V>`
-/// implement `Clone` efficiently, as cloning typically involves copying a pointer.
+/// All types implementing `ValueRef` must also implement `Clone`. For standard reference types like
+/// `&V`, `Rc<V>`, and `Arc<V>`, this is efficient—cloning typically just copies a pointer.
 ///
 /// # Motivation
 ///
-/// Iterating over `(range, value)` pairs, such as with [`RangeMapBlaze::ranges`], benefits from
-/// references to values, which are cheap to clone. However, iterators like [`RangeMapBlaze::into_ranges`]
-/// require ownership. By supporting `Rc<Eq + Clone>` and `Arc<Eq + Clone>`, `ValueRef` allows shared ownership,
-/// freeing memory when the reference count drops to zero.
+/// Iterating over `(range, value)` pairs—such as with [`RangeMapBlaze::ranges`]—benefits from
+/// using references, which are cheap to clone. But other APIs, like [`RangeMapBlaze::into_ranges`],
+/// require owned values. `ValueRef` bridges this gap by abstracting over value references that can
+/// later be materialized into values you can store or return independently of the original container.
 ///
-// # Examples
+/// This also enables shared ownership via `Rc` and `Arc`, reducing allocation and allowing values to be
+/// freed when the reference count drops to zero.
+///
+/// # Examples
 ///
 /// The following demonstrates the [`SortedDisjointMap::intersection`] operation working with
 /// iterators of both `(RangeInclusive<Integer>, &Eq + Clone)` and `(RangeInclusive<Integer>, Rc<Eq + Clone>)`.
@@ -91,18 +93,18 @@ pub trait ValueRef: Borrow<Self::Target> + Clone {
     ///
     /// // Owning target: cloning duplicates the data
     /// let s = String::from("hi");
-    /// let owned_s: String = (&s).to_owned(); // clones the String
+    /// let owned_s: String = (&s).into_value(); // clones the String
     ///
     /// // Reference target: no allocation; still a reference
     /// let static_s: &'static str = "hi";
     /// let r: &&'static str = &static_s;
-    /// let still_ref: &'static str = r.to_owned(); // copies the reference
+    /// let still_ref: &'static str = r.into_value(); // copies the reference
     ///
     /// // Rc: move out if unique, else clone
     /// let rc = Rc::new(String::from("hello"));
-    /// let moved_or_cloned: String = rc.to_owned();
+    /// let moved_or_cloned: String = rc.into_value();
     /// ```
-    fn to_owned(self) -> Self::Target;
+    fn into_value(self) -> Self::Target;
 }
 
 // Implementations for references and smart pointers
@@ -113,7 +115,7 @@ where
     type Target = V;
 
     #[inline]
-    fn to_owned(self) -> Self::Target {
+    fn into_value(self) -> Self::Target {
         self.clone()
     }
 }
@@ -125,7 +127,7 @@ where
     type Target = V;
 
     #[inline]
-    fn to_owned(self) -> Self::Target {
+    fn into_value(self) -> Self::Target {
         Self::try_unwrap(self).unwrap_or_else(|rc| (*rc).clone())
     }
 }
@@ -138,7 +140,7 @@ where
     type Target = V;
 
     #[inline]
-    fn to_owned(self) -> Self::Target {
+    fn into_value(self) -> Self::Target {
         Self::try_unwrap(self).unwrap_or_else(|arc| (*arc).clone())
     }
 }
@@ -871,7 +873,10 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     pub fn is_empty(&self) -> bool {
         self.btree_map.is_empty()
     }
-    /// Returns `true` if the map is universal (contains all possible integers).
+    /// Returns `true` if the map contains all possible integers.
+    ///
+    /// For type `T`, this means the union of ranges covers `T::min_value()` through `T::max_value()`.
+    /// Complexity: O(1) using a precomputed length.
     ///
     /// # Examples
     ///

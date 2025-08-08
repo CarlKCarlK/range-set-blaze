@@ -416,7 +416,10 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         self.next().is_none()
     }
 
-    /// Returns `true` if the set contains all possible integers (i.e., is the universal set).
+    /// Returns `true` if the set contains all possible integers.
+    ///
+    /// For type `T`, this means exactly one range spanning `T::min_value()`..=`T::max_value()`.
+    /// Complexity: O(1) on the first item.
     ///
     /// # Examples
     ///

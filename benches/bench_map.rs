@@ -560,6 +560,7 @@ fn map_union_three_methods(c: &mut Criterion) {
     group.finish();
 }
 
+#[allow(clippy::redundant_clone)]
 fn map_union_three_borrow_methods(c: &mut Criterion) {
     let group_name = "map_union_three_borrow_methods";
     let range = 0..=99_999_999u32;
@@ -659,13 +660,6 @@ fn map_union_three_borrow_methods(c: &mut Criterion) {
         }
     }
     group.finish();
-}
-
-fn to_string_values(input: &RangeMapBlaze<u32, u32>) -> RangeMapBlaze<u32, String> {
-    input
-        .range_values()
-        .map(|(range, value)| (range, value.to_string()))
-        .collect()
 }
 
 fn map_union_left_to_right(c: &mut Criterion) {

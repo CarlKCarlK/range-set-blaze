@@ -2100,16 +2100,15 @@ where
         let v = range_value.1;
         let range = range_value.0.clone();
 
-        if let Some(previous) = previous {
-            if (previous.1 == v && (*previous.0.end()).add_one() >= *range.start())
-                || previous.0.end() >= range.start()
-            {
-                eprintln!(
-                    "two ranges are not disjoint: {:?}->{} and {range:?}->{v}",
-                    previous.0, previous.1
-                );
-                return false;
-            }
+        if let Some(previous) = previous
+            && ((previous.1 == v && (*previous.0.end()).add_one() >= *range.start())
+                || previous.0.end() >= range.start())
+        {
+            eprintln!(
+                "two ranges are not disjoint: {:?}->{} and {range:?}->{v}",
+                previous.0, previous.1
+            );
+            return false;
         }
 
         debug_assert!(range.start() <= range.end());
@@ -3212,13 +3211,13 @@ fn test_arc_value_ref_to_owned() {
     // Strong count = 1, so try_unwrap will succeed
     let arc = Arc::new(SomeValue("only"));
     assert_eq!(std::sync::Arc::<SomeValue>::strong_count(&arc.clone()), 2); // clone to increase ref count
-    let owned = Arc::clone(&arc).to_owned();
+    let owned = Arc::clone(&arc).into_value();
     assert_eq!(owned, SomeValue("only"));
 
     // Strong count = 1, so try_unwrap will succeed
     let arc = Arc::new(SomeValue("unique"));
     assert_eq!(Arc::strong_count(&arc), 1);
-    let owned = arc.to_owned();
+    let owned = arc.into_value();
     assert_eq!(owned, SomeValue("unique"));
 }
 

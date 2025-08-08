@@ -509,9 +509,10 @@ where
         self.next().is_none()
     }
 
-    /// Returns `true` if the [`SortedDisjointMap`] includes all possible integers.
+    /// Returns `true` if the map contains all possible integers.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// For type `T`, this means the ranges start at `T::min_value()` and continue contiguously up to `T::max_value()`.
+    /// Complexity: O(n) to verify contiguity across ranges.
     ///
     /// # Examples
     ///
@@ -526,13 +527,13 @@ where
     /// ```
     #[inline]
     #[allow(clippy::wrong_self_convention)]
-    fn is_universal(mut self) -> bool
+    fn is_universal(self) -> bool
     where
         Self: Sized,
     {
         let mut expected_start = T::min_value();
 
-        while let Some((range, _)) = self.next() {
+        for (range, _) in self {
             let (start, end) = range.into_inner();
 
             // Check if this range starts where we expect

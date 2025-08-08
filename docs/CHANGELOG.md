@@ -5,11 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0] - 2024-5-29
+## [0.4.0] - 2025-8-9
+
+- Added `.is_universal()` method.
+- Breaking change: Renamed the `ValueRef` trait method from `to_owned()` to `into_value()`  to avoid conflict with the standard library’s `ToOwned` trait.
+
+## [0.3.0] - 2025-5-29
 
 - Changed precedence of `RangeMapBlaze` to always be right-to-left.
 
-## [0.2.0] - 2024-5-13
+## [0.2.0] - 2025-5-13
 
 - Added support for maps, `RangeMapBlaze`.
 - Add support for `char`, `IpAddV4`, and `IpAddV6` integer-like types.

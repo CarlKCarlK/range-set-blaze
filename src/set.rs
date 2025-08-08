@@ -572,7 +572,10 @@ impl<T: Integer> RangeSetBlaze<T> {
         self.ranges_len() == 0
     }
 
-    /// Returns `true` if the set contains all possible elements.
+    /// Returns `true` if the set contains all possible integers.
+    ///
+    /// For type `T`, this means covering the full domain from `T::min_value()` to `T::max_value()`.
+    /// Complexity: O(1).
     ///
     /// # Examples
     ///

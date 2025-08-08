@@ -88,7 +88,7 @@ where
 
     let mut vs = String::new();
     for (range, value) in iter {
-        write!(vs, "{:?}{} ", range, *value as char).unwrap();
+        write!(vs, "{:?}{} ", range, *value as char).expect("Failed to write to string");
     }
     vs
 }
