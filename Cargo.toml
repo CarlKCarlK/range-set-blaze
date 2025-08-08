@@ -50,6 +50,7 @@ syntactic-for = "0.1.1"
 wasm-bindgen-test = "0.3.50"
 rand = "0.9.1"
 range-set-blaze = { path = ".", features = ["test_util"] }
+anyhow = "1.0.98"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 criterion = { version = "0.5.1", features = [
@@ -64,7 +65,6 @@ range-collections = "0.4.6"
 range-set = "0.0.11"
 glob = "0.3.2"
 roaring = "0.10.12"
-anyhow = "1.0.98"
 rand = { version = "0.9.1" }
 
 
