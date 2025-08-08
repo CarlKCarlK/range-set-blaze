@@ -3257,7 +3257,6 @@ fn test_clumpy_map_iter() {
     }
 }
 
-// cmk0000
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn cover_is_universal() {

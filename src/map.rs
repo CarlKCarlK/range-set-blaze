@@ -69,25 +69,38 @@ pub trait ValueRef: Borrow<Self::Target> + Clone {
     /// The `Eq + Clone` value type to which the reference points.
     type Target: Eq + Clone;
 
-    /// Converts a reference or shared pointer to an owned value of type `Self::Target`.
+    /// Materializes a `Self::Target` (`V`) value from this reference-like container.
     ///
-    /// This method allows values of type `Self` (e.g., `&V`, `Rc<V>`, or `Arc<V>`) to be turned
-    /// into a fully owned `V`, which is required when consuming or storing values independently.
+    /// The returned `V` may or may not be a uniquely owned allocation. If `V` itself is a
+    /// reference type (e.g., `&'static str`), the result is still a reference; in that case
+    /// this operation is just a cheap pointer copy. In other words, “owned” here means
+    /// “a standalone `V` value you can keep,” not necessarily a unique heap allocation.
     ///
-    /// - For plain references (`&V`), this clones the referenced value.
-    /// - For `Rc<V>` and `Arc<V>`, this attempts to unwrap the value if uniquely owned;
-    ///   otherwise, it clones the inner value.
+    /// Behavior:
+    /// - `&V` → calls `Clone::clone` on `V`. If `V` is a reference (e.g., `&'static str`),
+    ///   this simply copies the reference without allocation.
+    /// - `Rc<V>` / `Arc<V>` → tries to unwrap if uniquely owned; otherwise clones `V`.
     ///
-    /// This method is typically used when converting a stream of `(range, value)` pairs
-    /// into owned data, such as when building a new `RangeMapBlaze` from an iterator.
+    /// This is typically used when converting a stream of `(range, value)` pairs into values
+    /// that can be stored or returned independently of the original container.
     ///
-    /// # Example
+    /// # Examples
     /// ```
     /// use std::rc::Rc;
     /// use range_set_blaze::ValueRef;
     ///
-    /// let rc = Rc::new("hello".to_string());
-    /// let owned: String = rc.to_owned(); // avoids cloning if ref count is 1
+    /// // Owning target: cloning duplicates the data
+    /// let s = String::from("hi");
+    /// let owned_s: String = (&s).to_owned(); // clones the String
+    ///
+    /// // Reference target: no allocation; still a reference
+    /// let static_s: &'static str = "hi";
+    /// let r: &&'static str = &static_s;
+    /// let still_ref: &'static str = r.to_owned(); // copies the reference
+    ///
+    /// // Rc: move out if unique, else clone
+    /// let rc = Rc::new(String::from("hello"));
+    /// let moved_or_cloned: String = rc.to_owned();
     /// ```
     fn to_owned(self) -> Self::Target;
 }
@@ -132,14 +145,13 @@ where
 
 #[expect(clippy::redundant_pub_crate)]
 #[derive(Clone, Hash, Default, PartialEq, Eq, Debug)]
-pub struct EndValue<T, V>
-// cmk000 make (crate)
+pub(crate) struct EndValue<T, V>
 where
     T: Integer,
     V: Eq + Clone,
 {
-    pub end: T,   // cmk000 make (crate)
-    pub value: V, // cmk000 make (crate)
+    pub(crate) end: T,
+    pub(crate) value: V,
 }
 
 /// A map from integers to values stored as a map of sorted & disjoint ranges to values.
@@ -434,7 +446,7 @@ where
 #[derive(Clone, Hash, PartialEq)]
 pub struct RangeMapBlaze<T: Integer, V: Eq + Clone> {
     pub(crate) len: <T as Integer>::SafeLen,
-    pub btree_map: BTreeMap<T, EndValue<T, V>>, // cmk0000 make this (crate) again!!!
+    pub(crate) btree_map: BTreeMap<T, EndValue<T, V>>,
 }
 
 /// Creates a new, empty `RangeMapBlaze`.
@@ -879,7 +891,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     #[must_use]
     #[inline]
-    // cmk0000
     pub fn is_universal(&self) -> bool {
         self.len() == T::safe_len(&(T::min_value()..=T::max_value()))
     }

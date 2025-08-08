@@ -3178,7 +3178,6 @@ fn test_deprecated_to_string() {
     assert_eq!(a.to_string(), "1..=6, 8..=9, 11..=15");
 }
 
-// cmk0000
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn cover_is_universal() {
