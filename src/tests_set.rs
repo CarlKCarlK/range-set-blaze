@@ -25,7 +25,7 @@ fn demo_f1() {
     //     INSERT, etc
 
     let mut range_set_blaze = RangeSetBlaze::from_iter([11..=14, 22..=26]);
-    range_set_blaze.internal_add(10..=10);
+    range_set_blaze.internal_add(10, 10);
     assert_eq!(range_set_blaze.to_string(), "10..=14, 22..=26");
     // println!(
     //     "demo_1 range_set_blaze = {:?}, len_slow = {}, len = {}",
@@ -47,7 +47,7 @@ fn demo_d1() {
     //     DONE
 
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=14]);
-    range_set_blaze.internal_add(10..=10);
+    range_set_blaze.internal_add(10, 10);
     assert_eq!(range_set_blaze.to_string(), "10..=14");
     assert_eq!(range_set_blaze.len_slow(), range_set_blaze.len());
 }
@@ -63,7 +63,7 @@ fn demo_e1() {
     //     DONE
 
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=14, 16..=16]);
-    range_set_blaze.internal_add(10..=19);
+    range_set_blaze.internal_add(10, 19);
     assert_eq!(range_set_blaze.to_string(), "10..=19");
     assert_eq!(range_set_blaze.len_slow(), range_set_blaze.len());
 }
@@ -79,7 +79,7 @@ fn demo_b1() {
     //     DONE
 
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=14]);
-    range_set_blaze.internal_add(12..=17);
+    range_set_blaze.internal_add(12, 17);
     assert_eq!(range_set_blaze.to_string(), "10..=17");
     assert_eq!(range_set_blaze.len_slow(), range_set_blaze.len());
 }
@@ -96,7 +96,7 @@ fn demo_b2() {
     //     DONE
 
     let mut range_set_blaze = RangeSetBlaze::from_iter([10..=14, 16..=16]);
-    range_set_blaze.internal_add(12..=17);
+    range_set_blaze.internal_add(12, 17);
     assert_eq!(range_set_blaze.to_string(), "10..=17");
     assert_eq!(range_set_blaze.len_slow(), range_set_blaze.len());
 }
@@ -117,8 +117,8 @@ fn optimize() {
                         // println!("error");
                     } else {
                         let mut range_set_blaze = RangeSetBlaze::new();
-                        range_set_blaze.internal_add(a..=b);
-                        range_set_blaze.internal_add(c..=d);
+                        range_set_blaze.internal_add(a, b);
+                        range_set_blaze.internal_add(c, d);
                         if range_set_blaze.ranges_len() == 1 {
                             // let vec = range_set_blaze.into_iter().collect::<Vec<u8>>();
                             // println!("combine\t{}\t{}", vec[0], vec[vec.len() - 1]);
@@ -265,7 +265,7 @@ fn lib_coverage_0() {
 
     let mut a = RangeSetBlaze::from_iter([1..=3]);
     #[allow(clippy::reversed_empty_ranges)]
-    a.internal_add(2..=1);
+    a.internal_add(2, 1);
 
     assert_eq!(a.partial_cmp(&a), Some(Ordering::Equal));
 
@@ -355,7 +355,7 @@ fn lib_coverage_0() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn lib_coverage_5() {
     let mut v = RangeSetBlaze::<u128>::new();
-    v.internal_add(0..=u128::MAX);
+    v.internal_add(0, u128::MAX);
 }
 
 #[test]

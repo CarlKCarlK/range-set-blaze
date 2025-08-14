@@ -835,7 +835,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         other.len = <T as Integer>::SafeLen::zero();
 
         for (start, end_value) in original_other_btree_map {
-            self.internal_add(start..=end_value.end, end_value.value);
+            self.internal_add(start, end_value.end, end_value.value);
         }
     }
 
@@ -918,8 +918,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     // LATER: might be able to shorten code by combining cases
-    fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
-        let (start, end) = internal_range.clone().into_inner();
+    #[inline]
+    fn delete_extra(&mut self, start: T, end: T) {
         let mut after = self.btree_map.range_mut(start..);
         let (start_after, end_value_after) = after
             .next()
@@ -952,21 +952,21 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             })
             .collect::<Vec<_>>();
         if end >= end_new {
-            for start in delete_list {
-                self.btree_map.remove(&start);
+            for start_del in delete_list {
+                self.btree_map.remove(&start_del);
             }
         } else if end_new_same_val > end {
             // last item is the same as the new and extends beyond the new
             self.len += T::safe_len(&(end..=end_new.sub_one()));
             debug_assert!(*start_after <= end_new);
             end_value_after.end = end_new;
-            for start in delete_list {
-                self.btree_map.remove(&start);
+            for start_del in delete_list {
+                self.btree_map.remove(&start_del);
             }
         } else {
             // last item extends beyond the new but has a different value.
-            for &start in &delete_list[0..delete_list.len() - 1] {
-                self.btree_map.remove(&start);
+            for &start_del in &delete_list[0..delete_list.len() - 1] {
+                self.btree_map.remove(&start_del);
                 // take the last one
             }
             let last = self
@@ -1008,7 +1008,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     pub fn insert(&mut self, key: T, value: V) -> Option<V> {
         let old = self.get(key).cloned();
-        self.internal_add(key..=key, value);
+        self.internal_add(key, key, value);
         old
     }
 
@@ -1093,7 +1093,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     pub fn ranges_insert(&mut self, range: RangeInclusive<T>, value: V) -> bool {
         let len_before = self.len;
-        self.internal_add(range, value);
+        let (start, end) = range.into_inner();
+        self.internal_add(start, end, value);
         self.len != len_before
     }
 
@@ -1246,264 +1247,13 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             .is_some_and(|end_before_succ| end_before_succ < start)
     }
 
-    #[cfg(never)]
-    // TODO: Look at other TODOs before enabling this.
-    // #![cfg_attr(feature = "cursor", feature(btree_cursors, new_range_api))]
-    // #[cfg(feature = "cursor")]
-    //  use core::{cmp::min, range::Bound};
-    #[inline]
-    fn adjust_touching_for_insert(
-        &mut self,
-        stored_start: T,
-        stored_end_value: EndValue<T, V>,
-        range: &mut RangeInclusive<T>,
-        value: &V,
-    ) {
-        let stored_value = &stored_end_value.value;
-        let stored_end = stored_end_value.end;
-
-        // ── 1. Same value → coalesce completely ──────────────────────────────
-        if stored_value == value {
-            let new_start = min(*range.start(), stored_start);
-            let new_end = max(*range.end(), stored_end);
-            *range = new_start..=new_end;
-
-            self.len -= T::safe_len(&(stored_start..=stored_end));
-            self.btree_map.remove(&stored_start);
-            return;
-        }
-
-        // ── 2. Different value → may need to split ───────────────────────────
-        let overlaps = stored_start <= *range.end() && stored_end >= *range.start();
-
-        if overlaps {
-            // Remove the overlapping range first.
-            self.len -= T::safe_len(&(stored_start..=stored_end));
-            self.btree_map.remove(&stored_start);
-
-            // Left residual slice
-            if stored_start < *range.start() {
-                let left_end = range.start().sub_one(); // TODO are we sure this won't underflow?
-                self.len += T::safe_len(&(stored_start..=left_end));
-                self.btree_map.insert(
-                    stored_start,
-                    EndValue {
-                        end: left_end,
-                        value: stored_value.clone(),
-                    },
-                );
-            }
-
-            // Right residual slice
-            if stored_end > *range.end() {
-                let right_start = range.end().add_one();
-                self.len += T::safe_len(&(right_start..=stored_end));
-                self.btree_map.insert(
-                    right_start,
-                    EndValue {
-                        end: stored_end,
-                        value: stored_end_value.value, // already owned
-                    },
-                );
-            }
-        }
-        // Otherwise: no overlap → keep ranges as they are.
-    }
-
-    #[cfg(never)]
-    // For benchmarking, based on https://github.com/jeffparsons/rangemap's `insert` method.
-    pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
-        use core::ops::Bound::{Included, Unbounded}; // TODO: Move to the top
-
-        let start = *range.start();
-        let end = *range.end();
-
-        // === case: empty
-        if end < start {
-            return;
-        }
-
-        // Walk *backwards* from the first stored range whose start ≤ `start`.
-        //      Take the nearest two so we can look at “before” and “before-before”.
-        let mut candidates = self
-            .btree_map
-            .range::<T, _>((Unbounded, Included(&start))) // ..= start
-            .rev()
-            .take(2)
-            .filter(|(_stored_start, stored_end_value)| {
-                // TODO use saturation arithmetic to avoid underflow
-                let end = stored_end_value.end;
-                end >= start || (start != T::min_value() && end >= start.sub_one())
-            });
-
-        if let Some(mut candidate) = candidates.next() {
-            // Or the one before it if both cases described above exist.
-            if let Some(another_candidate) = candidates.next() {
-                candidate = another_candidate;
-            }
-
-            let stored_start: T = *candidate.0;
-            let stored_end_value: EndValue<T, V> = candidate.1.clone();
-            self.adjust_touching_for_insert(
-                stored_start,
-                stored_end_value,
-                &mut range, // `end` is the current (possibly growing) tail
-                &value,
-            );
-        }
-
-        // let range = &mut range; // &mut RangeInclusive<T>
-
-        loop {
-            // first range whose start ≥ new_range.start()
-            let next_entry = self
-                .btree_map
-                .range::<T, _>((Included(range.start()), Unbounded))
-                .next();
-
-            let Some((&stored_start, stored_end_value)) = next_entry else {
-                break; // nothing more
-            };
-
-            let second_last_possible_start = *range.end();
-            let maybe_latest_start = if second_last_possible_start == T::max_value() {
-                None
-            } else {
-                Some(second_last_possible_start.add_one())
-            };
-
-            if maybe_latest_start.map_or(false, |latest| stored_start > latest) {
-                break; // beyond end + 1
-            }
-            if let Some(latest) = maybe_latest_start {
-                if stored_start == latest && stored_end_value.value != value {
-                    break; // touches but diff value
-                }
-            }
-
-            // clone so we can mutate the map in the helper
-            let end_value_clone = stored_end_value.clone();
-
-            self.adjust_touching_for_insert(stored_start, end_value_clone, &mut range, &value);
-
-            // loop again; `new_range` might have grown on the right
-        }
-
-        let start_key = *range.start();
-        let end_key = *range.end();
-        // self.len += T::safe_len(&(start_key..=end_key));
-        self.btree_map.insert(
-            start_key,
-            EndValue {
-                end: end_key,
-                value,
-            },
-        );
-
-        debug_assert!(self.len == self.len_slow());
-    }
-
-    #[cfg(never)]
-    // #[cfg(feature = "cursor")]
-    pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
-        // Based on https://github.com/jeffparsons/rangemap's `insert` method but with cursor's added
-        use core::ops::Bound::{Included, Unbounded};
-        use std::collections::btree_map::CursorMut;
-
-        let start = *range.start();
-        let end = *range.end();
-
-        // === case: empty
-        if end < start {
-            return;
-        }
-
-        // Walk *backwards* from the first stored range whose start ≤ `start`.
-        //      Take the nearest two so we can look at “before” and “before-before”.
-        let mut candidates = self
-            .btree_map
-            .range::<T, _>((Unbounded, Included(&start))) // ..= start
-            .rev()
-            .take(2)
-            .filter(|(_stored_start, stored_end_value)| {
-                let end = stored_end_value.end;
-                end >= start || (start != T::min_value() && end >= start.sub_one())
-            });
-
-        if let Some(mut candidate) = candidates.next() {
-            // Or the one before it if both cases described above exist.
-            if let Some(another_candidate) = candidates.next() {
-                candidate = another_candidate;
-            }
-
-            let stored_start: T = *candidate.0;
-            let stored_end_value: EndValue<T, V> = candidate.1.clone();
-            self.adjust_touching_for_insert(
-                stored_start,
-                stored_end_value,
-                &mut range, // `end` is the current (possibly growing) tail
-                &value,
-            );
-        }
-        // keep looping until we hit the stop window
-        loop {
-            // create a fresh cursor _for this iteration only_
-            let mut cur: CursorMut<'_, T, EndValue<T, V>> = self
-                .btree_map
-                .lower_bound_mut(Bound::Included(range.start()));
-
-            let Some(peeked) = cur.peek_next() else {
-                break;
-            };
-            let (&stored_start, maybe_end_value) = peeked;
-
-            let last_ok = *range.end();
-            if last_ok == T::max_value() {
-                if stored_start > last_ok {
-                    break;
-                }
-            } else {
-                let latest = last_ok.add_one();
-                if stored_start > latest {
-                    break;
-                }
-                if stored_start == latest && maybe_end_value.value != value {
-                    break;
-                }
-            }
-
-            // now clone and remove
-            let cloned = maybe_end_value.clone();
-            cur.remove_next();
-
-            // now we can call any &mut-self helper safely
-            self.adjust_touching_for_insert(stored_start, cloned, &mut range, &value);
-        }
-
-        let start_key = *range.start();
-        let end_key = *range.end();
-
-        self.btree_map.insert(
-            start_key,
-            EndValue {
-                end: end_key,
-                value, // moves `value`
-            },
-        );
-        self.len += T::safe_len(&(start_key..=end_key));
-
-        debug_assert!(self.len == self.len_slow());
-    }
-
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
     // LATER might be able to shorten code by combining cases
     // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::cognitive_complexity)]
-    pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>, value: V) {
-        let (start, end) = range.clone().into_inner();
-
+    pub(crate) fn internal_add(&mut self, start: T, end: T, value: V) {
         // === case: empty
         if end < start {
             return;
@@ -1513,7 +1263,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         // === case: no before
         let Some((start_before, end_value_before)) = before_iter.next() else {
             // no before, so must be first
-            self.internal_add2(&range, value);
+            self.internal_add2(start, end, value);
             // You must return or break out of the current block after handling the failure case
             return;
         };
@@ -1525,7 +1275,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         if Self::has_gap(end_before, start) {
             // there is a gap between the before and the new
             // ??? aa...
-            self.internal_add2(&range, value);
+            self.internal_add2(start, end, value);
             return;
         }
 
@@ -1548,7 +1298,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             self.len += T::safe_len(&(end_before..=end.sub_one()));
             debug_assert!(start_before <= end); // real assert
             end_value_before.end = end;
-            self.delete_extra(&(start_before..=end));
+            self.delete_extra(start_before, end);
             return;
         }
 
@@ -1577,7 +1327,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
                 let bb_start = *bb.0;
                 debug_assert!(bb_start <= end); // real assert
                 bb.1.end = end;
-                self.delete_extra(&(bb_start..=end));
+                self.delete_extra(bb_start, end);
                 return;
             }
 
@@ -1591,7 +1341,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             self.len += T::safe_len(&(end_before.add_one()..=end));
             end_value_before.end = end;
             end_value_before.value = value;
-            self.delete_extra(&range);
+            self.delete_extra(start, end);
             return;
         }
         if !before_contains_new && !same_value && !same_start {
@@ -1603,7 +1353,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
                 debug_assert!(start_before <= start.sub_one()); // real assert
                 end_value_before.end = start.sub_one(); // safe because !same_start
             }
-            self.internal_add2(&range, value);
+            self.internal_add2(start, end, value);
             return;
         }
 
@@ -1652,7 +1402,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             end_value_before.end = start.sub_one();
             debug_assert!(start <= end); // real assert
             self.btree_map.insert(start, EndValue { end, value });
-            self.delete_extra(&(start..=end));
+            self.delete_extra(start, end);
             return;
         }
 
@@ -1675,7 +1425,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             let bb_start = *bb.0;
             debug_assert!(bb_start <= end); // real assert
             bb.1.end = end;
-            self.delete_extra(&(bb_start..=end));
+            self.delete_extra(bb_start, end);
             return;
         }
 
@@ -1687,7 +1437,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             //  aaaa
             // ^AAAA???
             end_value_before.value = value;
-            self.delete_extra(&(start_before..=end));
+            self.delete_extra(start_before, end);
             return;
         }
 
@@ -1718,14 +1468,13 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     #[inline]
-    fn internal_add2(&mut self, internal_range: &RangeInclusive<T>, value: V) {
-        let (start, end) = internal_range.clone().into_inner();
+    fn internal_add2(&mut self, start: T, end: T, value: V) {
         let end_value = EndValue { end, value };
         debug_assert!(start <= end_value.end); // real assert
         let was_there = self.btree_map.insert(start, end_value);
         debug_assert!(was_there.is_none()); // no range with the same start should be there
-        self.delete_extra(internal_range);
-        self.len += T::safe_len(internal_range);
+        self.delete_extra(start, end);
+        self.len += T::safe_len(&(start..=end));
     }
 
     /// Returns the number of elements in the set.
@@ -1811,7 +1560,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         let iter = iter.into_iter();
 
         for (range, value) in iter {
-            self.internal_add(range, value);
+            let (start, end) = range.into_inner();
+            self.internal_add(start, end, value);
         }
     }
 
@@ -1837,8 +1587,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     #[inline]
     pub fn extend_from(&mut self, other: Self) {
         for (start, end_value) in other.btree_map {
-            let range = start..=end_value.end;
-            self.internal_add(range, end_value.value);
+            self.internal_add(start, end_value.end, end_value.value);
         }
     }
 
@@ -1865,8 +1614,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     #[inline]
     pub fn extend_with(&mut self, other: &Self) {
         for (start, end_value) in &other.btree_map {
-            let range = *start..=end_value.end;
-            self.internal_add(range, end_value.value.clone());
+            self.internal_add(*start, end_value.end, end_value.value.clone());
         }
     }
 
@@ -2709,7 +2457,8 @@ where
         for priority in UnsortedPriorityMap::new(iter.map(|(r, v)| (r..=r, Rc::new(v)))) {
             let (range, value) = priority.into_range_value();
             let value: V = Rc::try_unwrap(value).unwrap_or_else(|_| unreachable!());
-            self.internal_add(range, value);
+            let (start, end) = range.into_inner();
+            self.internal_add(start, end, value);
         }
     }
 }
@@ -2757,7 +2506,8 @@ where
         for priority in UnsortedPriorityMap::new(iter.map(|(r, v)| (r, Rc::new(v)))) {
             let (range, value) = priority.into_range_value();
             let value = Rc::try_unwrap(value).unwrap_or_else(|_| unreachable!());
-            self.internal_add(range, value);
+            let (start, end) = range.into_inner();
+            self.internal_add(start, end, value);
         }
     }
 }
@@ -2996,7 +2746,7 @@ fn small_b_over_a<T: Integer, V: Eq + Clone>(
 ) -> RangeMapBlaze<T, V> {
     debug_assert!(much_greater_than(a.ranges_len(), b.ranges_len()));
     for (start, end_value) in b.btree_map {
-        a.internal_add(start..=(end_value.end), end_value.value);
+        a.internal_add(start, end_value.end, end_value.value);
     }
     a
 }

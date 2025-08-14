@@ -173,7 +173,7 @@ fn map_repro1() {
         range_map_blaze.to_string(),
         r#"(20..=21, "a"), (24..=29, "b")"#
     );
-    range_map_blaze.internal_add(25..=25, &s3);
+    range_map_blaze.internal_add(25, 25, &s3);
     // println!("{range_map_blaze}");
     assert_eq!(
         range_map_blaze.to_string(),
@@ -185,7 +185,7 @@ fn map_repro1() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_coverage_8() {
     let mut a = RangeMapBlaze::from_iter([(1u128..=2, "Hello"), (3..=4, "World")]);
-    a.internal_add(0..=u128::MAX, "Hello");
+    a.internal_add(0, u128::MAX, "Hello");
 }
 
 #[test]
@@ -194,7 +194,7 @@ fn test_coverage_8() {
 fn test_coverage_9() {
     let mut a = RangeMapBlaze::from_iter([(1u128..=2, "Hello"), (3..=4, "World")]);
     let b = a.clone();
-    a.internal_add(1..=0, "Hello"); // adding empty
+    a.internal_add(1, 0, "Hello"); // adding empty
     assert_eq!(a, b);
 }
 

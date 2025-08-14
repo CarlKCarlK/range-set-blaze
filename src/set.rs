@@ -532,7 +532,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     pub fn append(&mut self, other: &mut Self) {
         for range in other.ranges() {
-            self.internal_add(range);
+            let (start, end) = range.into_inner();
+            self.internal_add(start, end);
         }
         other.clear();
     }
@@ -687,8 +688,8 @@ impl<T: Integer> RangeSetBlaze<T> {
         self.ranges().is_disjoint(other.ranges())
     }
 
-    fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
-        let (start, end) = internal_range.clone().into_inner();
+    #[inline]
+    fn delete_extra(&mut self, start: T, end: T) {
         let mut after = self.btree_map.range_mut(start..);
         let (start_after, end_after) = after
             .next()
@@ -712,8 +713,8 @@ impl<T: Integer> RangeSetBlaze<T> {
             self.len += T::safe_len(&(end..=end_new.sub_one()));
             *end_after = end_new;
         }
-        for start in delete_list {
-            self.btree_map.remove(&start);
+        for start_del in delete_list {
+            self.btree_map.remove(&start_del);
         }
     }
 
@@ -743,7 +744,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     pub fn insert(&mut self, value: T) -> bool {
         let len_before = self.len;
-        self.internal_add(value..=value);
+        self.internal_add(value, value);
         self.len != len_before
     }
 
@@ -822,7 +823,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     pub fn ranges_insert(&mut self, range: RangeInclusive<T>) -> bool {
         let len_before = self.len;
-        self.internal_add(range);
+        let (start, end) = range.into_inner();
+        self.internal_add(start, end);
         self.len != len_before
     }
 
@@ -1000,8 +1002,7 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-    pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>) {
-        let (start, end) = range.clone().into_inner();
+    pub(crate) fn internal_add(&mut self, start: T, end: T) {
         if end < start {
             return;
         }
@@ -1013,27 +1014,26 @@ impl<T: Integer> RangeSetBlaze<T> {
                 .checked_add_one()
                 .is_some_and(|end_before_succ| end_before_succ < start)
             {
-                self.internal_add2(&range);
+                self.internal_add2(start, end);
             } else if *end_before < end {
                 self.len += T::safe_len(&(*end_before..=end.sub_one()));
                 *end_before = end;
                 let start_before = *start_before;
-                self.delete_extra(&(start_before..=end));
+                self.delete_extra(start_before, end);
             } else {
                 // completely contained, so do nothing
             }
         } else {
-            self.internal_add2(&range);
+            self.internal_add2(start, end);
         }
     }
 
     #[inline]
-    fn internal_add2(&mut self, internal_range: &RangeInclusive<T>) {
-        let (start, end) = internal_range.clone().into_inner();
+    fn internal_add2(&mut self, start: T, end: T) {
         let was_there = self.btree_map.insert(start, end);
         debug_assert!(was_there.is_none()); // real assert
-        self.delete_extra(internal_range);
-        self.len += T::safe_len(internal_range);
+        self.delete_extra(start, end);
+        self.len += T::safe_len(&(start..=end));
     }
 
     /// Returns the number of elements in the set.
@@ -1715,7 +1715,8 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
     {
         let iter = iter.into_iter();
         for range in UnsortedDisjoint::new(iter.map(|x| x..=x)) {
-            self.internal_add(range);
+            let (start, end) = range.into_inner();
+            self.internal_add(start, end);
         }
     }
 }
@@ -1757,7 +1758,7 @@ impl<T: Integer> BitOrAssign<&Self> for RangeSetBlaze<T> {
 
         if b_len * (a_len_log2 + 1) < a_len + b_len {
             for (start, end) in &other.btree_map {
-                self.internal_add(*start..=*end);
+                self.internal_add(*start, *end);
             }
         } else {
             *self = (self.ranges() | other.ranges()).into_range_set_blaze();
@@ -1924,7 +1925,8 @@ impl<T: Integer> Extend<RangeInclusive<T>> for RangeSetBlaze<T> {
         let iter = iter.into_iter();
         let iter = UnsortedDisjoint::new(iter);
         for range in iter {
-            self.internal_add(range);
+            let (start, end) = range.into_inner();
+            self.internal_add(start, end);
         }
     }
 }
