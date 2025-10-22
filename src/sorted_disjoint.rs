@@ -76,7 +76,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 ///
 /// | Set Operators                             | Operator    | Multiway (same type)                              | Multiway (different types)           |
 /// |------------------------------------|-------------|---------------------------------------------------|--------------------------------------|
-/// | [`union`]                      | [`a` &#124; `b`] | `[a, b, c].`[`union`][multiway_union]`() `        | [`union_dyn!`]`(a, b, c)`         |                    
+/// | [`union`]                      | [`a` &#124; `b`] | `[a, b, c].`[`union`][multiway_union]`() `        | [`union_dyn!`]`(a, b, c)`         |
 /// | [`intersection`]               | [`a & b`]     | `[a, b, c].`[`intersection`][multiway_intersection]`() ` | [`intersection_dyn!`]`(a, b, c)`|
 /// | [`difference`]                 | [`a - b`]     | *n/a*                                             | *n/a*                                |
 /// | [`symmetric_difference`]       | [`a ^ b`]     | `[a, b, c].`[`symmetric_difference`][multiway_symmetric_difference]`() ` | [`symmetric_difference_dyn!`]`(a, b, c)` |
@@ -769,3 +769,5 @@ impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
 
 // We're not allowed to define methods on outside types, so we only define the traits
+impl<T: Integer> SortedStarts<T> for core::option::IntoIter<RangeInclusive<T>> {}
+impl<T: Integer> SortedDisjoint<T> for core::option::IntoIter<RangeInclusive<T>> {}

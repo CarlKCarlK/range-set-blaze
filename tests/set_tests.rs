@@ -631,6 +631,8 @@ fn constructors() {
     // #16 into / from iter (T,T) + SortedDisjoint
     range_set_blaze = range_set_blaze.ranges().into_range_set_blaze();
     range_set_blaze = RangeSetBlaze::from_sorted_disjoint(range_set_blaze.ranges());
+    // from RangeInclusive<T>
+    range_set_blaze = RangeSetBlaze::from(10..=20)
 }
 
 #[cfg(target_os = "linux")]
@@ -2022,6 +2024,46 @@ fn test_every_sorted_disjoint_method() {
     syntactic_for! { sd in [a, b, c, d, e, f, g, h, i] {$(
         is_fused::<_>($sd);
     )*}}
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_option_sorted_disjoint() {
+    macro_rules! testopt {
+        () => {
+            Some(10..=20).into_iter()
+        };
+    }
+
+    assert!(!testopt!().is_universal());
+    assert!(!testopt!().is_empty());
+    assert!(testopt!().complement().equal(CheckSortedDisjoint::new([
+        -2_147_483_648..=9,
+        21..=2_147_483_647
+    ])));
+    assert!(
+        testopt!()
+            .union(Some(15..=25).into_iter())
+            .equal(Some(10..=25).into_iter())
+    );
+    assert!(
+        testopt!()
+            .intersection(Some(15..=25).into_iter())
+            .equal(Some(15..=20).into_iter())
+    );
+    assert!(
+        testopt!()
+            .symmetric_difference(Some(15..=25).into_iter())
+            .equal(CheckSortedDisjoint::new([10..=14, 21..=25]))
+    );
+    assert!(
+        testopt!()
+            .difference(Some(15..=25).into_iter())
+            .equal(CheckSortedDisjoint::new([10..=14]))
+    );
+
+    fn is_fused<T: FusedIterator>(_iter: T) {}
+    is_fused::<_>(testopt!());
 }
 
 #[test]

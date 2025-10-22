@@ -89,6 +89,7 @@ where
 /// | [`from_slice`][5]                           | slice of integers            | Fast, but nightly-only  |
 /// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze`][3] | [`SortedDisjoint`] iterator |               |
 /// | [`from`][5] /[`into`][5]                    | array of integers            |                          |
+/// | [`from`][7]                                 | `RangeInclusive<T>`          |                          |
 ///
 ///
 /// [`BTreeMap`]: alloc::collections::BTreeMap
@@ -100,6 +101,7 @@ where
 /// [SortedDisjoint]: crate::SortedDisjoint.html#table-of-contents
 /// [5]: RangeSetBlaze::from
 /// [6]: RangeSetBlaze::from_slice()
+/// [7]: #method.from-1
 ///
 /// # Constructor Performance
 ///
@@ -1415,6 +1417,13 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     #[cfg(feature = "from_slice")]
     fn from(arr: [T; N]) -> Self {
         Self::from_slice(arr)
+    }
+}
+
+impl<T: Integer> From<RangeInclusive<T>> for RangeSetBlaze<T> {
+    /// Construct a [`RangeSetBlaze<T>`] directly from a [`RangeInclusive<T>`].
+    fn from(value: RangeInclusive<T>) -> Self {
+        Self::from_sorted_disjoint(Some(value).into_iter())
     }
 }
 
