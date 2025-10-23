@@ -632,7 +632,8 @@ fn constructors() {
     range_set_blaze = range_set_blaze.ranges().into_range_set_blaze();
     range_set_blaze = RangeSetBlaze::from_sorted_disjoint(range_set_blaze.ranges());
     // from RangeInclusive<T>
-    range_set_blaze = RangeSetBlaze::from(10..=20)
+    range_set_blaze = RangeSetBlaze::from(10..=20);
+    range_set_blaze = RangeSetBlaze::from(6..=5);
 }
 
 #[cfg(target_os = "linux")]
@@ -2024,6 +2025,33 @@ fn test_every_sorted_disjoint_method() {
     syntactic_for! { sd in [a, b, c, d, e, f, g, h, i] {$(
         is_fused::<_>($sd);
     )*}}
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_from_empty_range() {
+    let a = RangeSetBlaze::from(0..=10);
+    let e = RangeSetBlaze::from(6..=5); // empty range
+
+    assert!(e.is_empty());
+    assert!((&a & &e).is_empty());
+    assert_eq!(&a | &e, a);
+    assert_eq!(&a - &e, a);
+    assert_eq!(&a ^ &e, a);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[should_panic(expected = "start must be less or equal to end")]
+fn test_from_sorted_disjoint_empty_array() {
+    RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::new([6..=5]));
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[should_panic(expected = "start <= end")]
+fn test_from_sorted_disjoint_empty_option() {
+    RangeSetBlaze::from_sorted_disjoint(Some(6..=5).into_iter());
 }
 
 #[test]
