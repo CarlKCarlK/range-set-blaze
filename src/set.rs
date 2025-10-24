@@ -17,6 +17,7 @@ use std::{
 };
 
 use crate::alloc::string::ToString;
+use crate::sorted_disjoint::RangeOnce;
 use alloc::collections::{BTreeMap, btree_map};
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -1423,11 +1424,7 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
 impl<T: Integer> From<RangeInclusive<T>> for RangeSetBlaze<T> {
     /// Construct a [`RangeSetBlaze<T>`] directly from a [`RangeInclusive<T>`].
     fn from(value: RangeInclusive<T>) -> Self {
-        if value.is_empty() {
-            Self::new()
-        } else {
-            Self::from_sorted_disjoint(Some(value).into_iter())
-        }
+        Self::from_sorted_disjoint(RangeOnce::new(value))
     }
 }
 

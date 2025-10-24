@@ -3,7 +3,7 @@
 #![cfg(test)]
 use range_set_blaze::{
     AssumeSortedStarts, IntoIter, IntoRangesIter, Iter, KMerge, MapIntoRangesIter, MapRangesIter,
-    Merge, RangeValuesIter, RangeValuesToRangesIter, RangesIter,
+    Merge, RangeOnce, RangeValuesIter, RangeValuesToRangesIter, RangesIter,
 };
 
 use wasm_bindgen_test::*;
@@ -2049,49 +2049,41 @@ fn test_from_sorted_disjoint_empty_array() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic(expected = "start <= end")]
-fn test_from_sorted_disjoint_empty_option() {
-    RangeSetBlaze::from_sorted_disjoint(Some(6..=5).into_iter());
+fn test_range_once_from() {
+    let mut r: RangeOnce<_> = (0..=15).into();
+    assert_eq!(r.next(), Some(0..=15))
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn test_option_sorted_disjoint() {
-    macro_rules! testopt {
+fn test_range_once_empty() {
+    assert_eq!(RangeOnce::new(6..=5).next(), None)
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_range_once_sorted_disjoint() {
+    macro_rules! testiter {
         () => {
-            Some(10..=20).into_iter()
+            RangeOnce::new(10..=20)
         };
     }
 
-    assert!(!testopt!().is_universal());
-    assert!(!testopt!().is_empty());
-    assert!(testopt!().complement().equal(CheckSortedDisjoint::new([
+    assert!(!testiter!().is_universal());
+    assert!(!testiter!().is_empty());
+    assert!((!testiter!()).equal(CheckSortedDisjoint::new([
         -2_147_483_648..=9,
         21..=2_147_483_647
     ])));
+    assert!((testiter!() | RangeOnce::new(15..=25)).equal(RangeOnce::new(10..=25)));
+    assert!((testiter!() & RangeOnce::new(15..=25)).equal(RangeOnce::new(15..=20)));
     assert!(
-        testopt!()
-            .union(Some(15..=25).into_iter())
-            .equal(Some(10..=25).into_iter())
+        (testiter!() ^ RangeOnce::new(15..=25)).equal(CheckSortedDisjoint::new([10..=14, 21..=25]))
     );
-    assert!(
-        testopt!()
-            .intersection(Some(15..=25).into_iter())
-            .equal(Some(15..=20).into_iter())
-    );
-    assert!(
-        testopt!()
-            .symmetric_difference(Some(15..=25).into_iter())
-            .equal(CheckSortedDisjoint::new([10..=14, 21..=25]))
-    );
-    assert!(
-        testopt!()
-            .difference(Some(15..=25).into_iter())
-            .equal(CheckSortedDisjoint::new([10..=14]))
-    );
+    assert!((testiter!() - RangeOnce::new(15..=25)).equal(CheckSortedDisjoint::new([10..=14])));
 
     fn is_fused<T: FusedIterator>(_iter: T) {}
-    is_fused::<_>(testopt!());
+    is_fused::<_>(testiter!());
 }
 
 #[test]

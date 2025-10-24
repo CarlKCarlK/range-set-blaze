@@ -77,7 +77,7 @@ pub use crate::set::demo_read_ranges_from_file;
 pub use crate::set::{IntoIter, Iter, RangeSetBlaze};
 
 mod sorted_disjoint;
-pub use sorted_disjoint::{CheckSortedDisjoint, SortedDisjoint, SortedStarts};
+pub use sorted_disjoint::{CheckSortedDisjoint, RangeOnce, SortedDisjoint, SortedStarts};
 
 mod sorted_disjoint_map;
 pub use sorted_disjoint_map::{

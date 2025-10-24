@@ -45,6 +45,7 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 /// | [`RangeSetBlaze`] | [`ranges`] |
 /// | [`RangeSetBlaze`] | [`into_ranges`] |
 /// | sorted & disjoint ranges | [`CheckSortedDisjoint::new`] |
+/// | [`RangeInclusive`] | [`RangeOnce::new`] |
 /// |  *your iterator type* | *[How to mark your type as `SortedDisjoint`][1]* |
 ///
 /// [`ranges`]: RangeSetBlaze::ranges
@@ -686,6 +687,64 @@ pub trait AnythingGoes<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 impl<T: Integer, I> AnythingGoes<T> for I where I: Iterator<Item = RangeInclusive<T>> + FusedIterator
 {}
 
+/// `RangeOnce` is analogous to [`core::iter::Once`], but modified to treat an
+/// empty [`RangeInclusive`] as an empty [`Iterator`]. This allows `RangeOnce`
+/// to be safely used as a [`SortedDisjoint`] Iterator.
+///
+/// # Example
+///
+/// ```
+/// use range_set_blaze::{ RangeSetBlaze, RangeOnce };
+///
+/// let a = RangeOnce::new(0..=10);
+/// let b = RangeOnce::new(3..=2); // empty range
+/// let c = RangeOnce::new(5..=15);
+///
+/// let combined = RangeSetBlaze::from_sorted_disjoint(a | b | c);
+/// assert_eq!(combined.into_string(), "0..=15");
+/// ```
+pub struct RangeOnce<T>(std::option::IntoIter<RangeInclusive<T>>);
+
+impl<T: Integer> RangeOnce<T> {
+    /// Creates a new [`RangeOnce`] from a single range. See [`RangeOnce`] for details and examples.
+    pub fn new(range: RangeInclusive<T>) -> Self {
+        Self((!range.is_empty()).then_some(range).into_iter())
+    }
+}
+
+impl<T: Integer> From<RangeInclusive<T>> for RangeOnce<T> {
+    #[inline]
+    fn from(value: RangeInclusive<T>) -> Self {
+        Self::new(value)
+    }
+}
+
+impl<T: Integer> Iterator for RangeOnce<T> {
+    type Item = RangeInclusive<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+}
+
+impl<T: Integer> DoubleEndedIterator for RangeOnce<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back()
+    }
+}
+
+impl<T: Integer> ExactSizeIterator for RangeOnce<T> {
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl<T: Integer> FusedIterator for RangeOnce<T> {}
+
 macro_rules! impl_sorted_traits_and_ops {
     ($IterType:ty, $($more_generics:tt)*) => {
         #[allow(single_use_lifetimes)]
@@ -767,7 +826,4 @@ impl_sorted_traits_and_ops!(RangesIter<'a, T>, 'a);
 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, VR, I>, VR: ValueRef, I: SortedDisjointMap<T, VR>);
 impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
-
-// We're not allowed to define methods on outside types, so we only define the traits
-impl<T: Integer> SortedStarts<T> for core::option::IntoIter<RangeInclusive<T>> {}
-impl<T: Integer> SortedDisjoint<T> for core::option::IntoIter<RangeInclusive<T>> {}
+impl_sorted_traits_and_ops!(RangeOnce<T>, 'ignore);
