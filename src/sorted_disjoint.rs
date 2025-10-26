@@ -687,6 +687,9 @@ pub trait AnythingGoes<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 impl<T: Integer, I> AnythingGoes<T> for I where I: Iterator<Item = RangeInclusive<T>> + FusedIterator
 {}
 
+/// `RangeOnce` is an iterator which emits a single `RangeInclusive` value before
+/// fusing.
+///
 /// `RangeOnce` is analogous to [`core::iter::Once`], but modified to treat an
 /// empty [`RangeInclusive`] as an empty [`Iterator`]. This allows `RangeOnce`
 /// to be safely used as a [`SortedDisjoint`] Iterator.
@@ -703,7 +706,7 @@ impl<T: Integer, I> AnythingGoes<T> for I where I: Iterator<Item = RangeInclusiv
 /// let combined = RangeSetBlaze::from_sorted_disjoint(a | b | c);
 /// assert_eq!(combined.into_string(), "0..=15");
 /// ```
-pub struct RangeOnce<T>(std::option::IntoIter<RangeInclusive<T>>);
+pub struct RangeOnce<T>(core::option::IntoIter<RangeInclusive<T>>);
 
 impl<T: Integer> RangeOnce<T> {
     /// Creates a new [`RangeOnce`] from a single range. See [`RangeOnce`] for details and examples.

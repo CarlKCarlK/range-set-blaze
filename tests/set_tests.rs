@@ -615,6 +615,7 @@ fn tricky_case3() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(unused_assignments)]
+#[allow(clippy::reversed_empty_ranges)]
 fn constructors() {
     // #9: new
     let mut range_set_blaze;
@@ -2029,6 +2030,7 @@ fn test_every_sorted_disjoint_method() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::reversed_empty_ranges)]
 fn test_from_empty_range() {
     let a = RangeSetBlaze::from(0..=10);
     let e = RangeSetBlaze::from(6..=5); // empty range
@@ -2043,6 +2045,7 @@ fn test_from_empty_range() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[should_panic(expected = "start must be less or equal to end")]
+#[allow(clippy::reversed_empty_ranges)]
 fn test_from_sorted_disjoint_empty_array() {
     RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::new([6..=5]));
 }
@@ -2051,17 +2054,19 @@ fn test_from_sorted_disjoint_empty_array() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_range_once_from() {
     let mut r: RangeOnce<_> = (0..=15).into();
-    assert_eq!(r.next(), Some(0..=15))
+    assert_eq!(r.next(), Some(0..=15));
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::reversed_empty_ranges)]
 fn test_range_once_empty() {
-    assert_eq!(RangeOnce::new(6..=5).next(), None)
+    assert_eq!(RangeOnce::new(6..=5).next(), None);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(clippy::items_after_statements)]
 fn test_range_once_sorted_disjoint() {
     macro_rules! testiter {
         () => {
