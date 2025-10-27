@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2025-10-26
+
+- Implemented `RangeOnce<T>`, a zero-allocation adapter that yields **0 or 1**
+  non-empty inclusive ranges.
+  - `RangeOnce` implements `SortedStarts<T>` and `SortedDisjoint<T>`,
+    providing a sound and ergonomic way to work with single ranges.
+  - Example:
+
+    ```rust
+    &a & RangeOnce::new(15, 35);
+    &a | RangeOnce::new(22, 25);  
+    ```
+
+  - Empty ranges (`start > end`) now produce an empty iterator,
+    preserving all invariants.
+- Added `From<RangeInclusive<T>>` for `RangeSetBlaze`, allowing direct
+  conversion of single ranges:
+
+  ```rust
+  RangeSetBlaze::from(5..=10);
+  RangeSetBlaze::from(5..=4); // yields empty set
+  ```
+
 ## [0.4.0] - 2025-8-9
 
 - Added `.is_universal()` method.
