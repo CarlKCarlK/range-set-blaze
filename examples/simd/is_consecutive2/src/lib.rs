@@ -3,7 +3,7 @@
 use std::{
     ops::Add,
     ops::Sub,
-    simd::{prelude::*, LaneCount, SimdElement, SupportedLaneCount},
+    simd::{prelude::*, SimdElement},
 };
 
 #[macro_export]
@@ -12,7 +12,6 @@ macro_rules! define_is_consecutive_regular {
         #[inline]
         pub fn $function<const N: usize>(chunk: &[$type; N]) -> bool
         where
-            LaneCount<N>: SupportedLaneCount,
         {
             for i in 1..N {
                 if chunk[i - 1].checked_add(1) != Some(chunk[i]) {
@@ -32,7 +31,6 @@ macro_rules! define_is_consecutive_splat0 {
         where
             $type: SimdElement,
             Simd<$type, N>: Add<Simd<$type, N>, Output = Simd<$type, N>>,
-            LaneCount<N>: SupportedLaneCount,
         {
             define_comparison_value_splat0!(comparison_value_splat0, $type);
 
@@ -48,8 +46,6 @@ macro_rules! define_is_consecutive_splat0 {
 macro_rules! define_comparison_value_splat0 {
     ($function:ident, $type:ty) => {
         pub const fn $function<const N: usize>() -> Simd<$type, N>
-        where
-            LaneCount<N>: SupportedLaneCount,
         {
             let mut arr: [$type; N] = [0; N];
             let mut i = 0;
@@ -67,8 +63,6 @@ macro_rules! define_is_consecutive_splat1 {
     ($function:ident, $type:ty) => {
         #[inline]
         pub fn $function<const N: usize>(chunk: Simd<$type, N>) -> bool
-        where
-            LaneCount<N>: SupportedLaneCount,
         {
             define_comparison_value_splat!(comparison_value_splat, $type);
 
@@ -82,8 +76,6 @@ macro_rules! define_is_consecutive_splat1 {
 macro_rules! define_comparison_value_splat {
     ($function:ident, $type:ty) => {
         pub const fn $function<const N: usize>() -> Simd<$type, N>
-        where
-            LaneCount<N>: SupportedLaneCount,
         {
             let mut arr: [$type; N] = [0; N];
             let mut i = 0;
@@ -101,8 +93,6 @@ macro_rules! define_is_consecutive_splat2 {
     ($function:ident, $type:ty) => {
         #[inline]
         pub fn $function<const N: usize>(chunk: Simd<$type, N>) -> bool
-        where
-            LaneCount<N>: SupportedLaneCount,
         {
             define_comparison_value_splat!(comparison_value_splat, $type);
 
@@ -133,7 +123,6 @@ macro_rules! define_is_consecutive_rotate {
         pub fn $function<const N: usize>(chunk: Simd<$type, N>) -> bool
         where
             $type: SimdElement,
-            LaneCount<N>: SupportedLaneCount,
         {
             define_comparison_value_rotate!(comparison_value, $type);
 
@@ -150,7 +139,6 @@ macro_rules! define_comparison_value_rotate {
         pub const fn $function<const N: usize>() -> Simd<$type, N>
         where
             $type: SimdElement,
-            LaneCount<N>: SupportedLaneCount,
         {
             let mut arr: [$type; N] = [1; N];
             arr[0] = (1 as $type).wrapping_sub(N as $type);
@@ -192,28 +180,23 @@ fn test_is_consecutive() {
 pub trait IsConsecutive {
     fn is_consecutive_regular<const N: usize>(chunk: &[Self; N]) -> bool
     where
-        Self: Sized,
-        LaneCount<N>: SupportedLaneCount;
+        Self: Sized;
 
     fn is_consecutive_splat0<const N: usize>(chunk: Simd<Self, N>) -> bool
     where
-        Self: SimdElement,
-        LaneCount<N>: SupportedLaneCount;
+        Self: SimdElement;
 
     fn is_consecutive_splat1<const N: usize>(chunk: Simd<Self, N>) -> bool
     where
-        Self: SimdElement,
-        LaneCount<N>: SupportedLaneCount;
+        Self: SimdElement;
 
     fn is_consecutive_splat2<const N: usize>(chunk: Simd<Self, N>) -> bool
     where
-        Self: SimdElement,
-        LaneCount<N>: SupportedLaneCount;
+        Self: SimdElement;
 
     fn is_consecutive_rotate<const N: usize>(chunk: Simd<Self, N>) -> bool
     where
-        Self: SimdElement,
-        LaneCount<N>: SupportedLaneCount;
+        Self: SimdElement;
 }
 
 macro_rules! impl_is_consecutive {
@@ -221,8 +204,6 @@ macro_rules! impl_is_consecutive {
         impl IsConsecutive for $type {
             #[inline]
             fn is_consecutive_regular<const N: usize>(chunk: &[$type; N]) -> bool
-            where
-                LaneCount<N>: SupportedLaneCount,
             {
                 define_is_consecutive_regular!(is_consecutive_regular, $type);
                 is_consecutive_regular(chunk)
@@ -233,7 +214,6 @@ macro_rules! impl_is_consecutive {
             where
                 Self: SimdElement,
                 Simd<Self, N>: Sub<Simd<Self, N>, Output = Simd<Self, N>>,
-                LaneCount<N>: SupportedLaneCount,
             {
                 define_is_consecutive_splat0!(is_consecutive_splat0, $type);
                 is_consecutive_splat0(chunk)
@@ -244,7 +224,6 @@ macro_rules! impl_is_consecutive {
             where
                 Self: SimdElement,
                 Simd<Self, N>: Sub<Simd<Self, N>, Output = Simd<Self, N>>,
-                LaneCount<N>: SupportedLaneCount,
             {
                 define_is_consecutive_splat1!(is_consecutive_splat1, $type);
                 is_consecutive_splat1(chunk)
@@ -255,7 +234,6 @@ macro_rules! impl_is_consecutive {
             where
                 Self: SimdElement,
                 Simd<Self, N>: Add<Simd<Self, N>, Output = Simd<Self, N>>,
-                LaneCount<N>: SupportedLaneCount,
             {
                 define_is_consecutive_splat2!(is_consecutive_splat2, $type);
                 is_consecutive_splat2(chunk)
@@ -266,7 +244,6 @@ macro_rules! impl_is_consecutive {
             where
                 Self: SimdElement,
                 Simd<Self, N>: Add<Simd<Self, N>, Output = Simd<Self, N>>,
-                LaneCount<N>: SupportedLaneCount,
             {
                 define_is_consecutive_rotate!(is_consecutive_rotate, $type);
                 is_consecutive_rotate(chunk)

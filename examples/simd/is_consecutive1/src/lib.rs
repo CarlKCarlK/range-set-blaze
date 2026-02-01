@@ -2,7 +2,7 @@
 
 use std::{
     ops::Sub,
-    simd::{prelude::*, LaneCount, SimdElement, SupportedLaneCount},
+    simd::{prelude::*, SimdElement},
 };
 
 // We can make our main function generic both for type and # of lanes:
@@ -14,7 +14,6 @@ pub fn is_consecutive_splat1_gen<T, const N: usize>(
 where
     T: SimdElement + PartialEq,
     Simd<T, N>: Sub<Simd<T, N>, Output = Simd<T, N>>,
-    LaneCount<N>: SupportedLaneCount,
 {
     let subtracted = chunk - comparison_value;
     Simd::splat(chunk[0]) == subtracted
@@ -46,7 +45,6 @@ macro_rules! define_is_consecutive_splat1 {
         #[inline]
         pub fn $function<const N: usize>(chunk: Simd<$type, N>) -> bool
         where
-            LaneCount<N>: SupportedLaneCount,
         {
             define_comparison_value_splat!(comparison_value_splat, $type);
 
@@ -59,8 +57,6 @@ macro_rules! define_is_consecutive_splat1 {
 macro_rules! define_comparison_value_splat {
     ($function:ident, $type:ty) => {
         pub const fn $function<const N: usize>() -> Simd<$type, N>
-        where
-            LaneCount<N>: SupportedLaneCount,
         {
             let mut arr: [$type; N] = [0; N];
             let mut i = 0;
@@ -101,8 +97,7 @@ pub trait IsConsecutive {
     fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
     where
         Self: SimdElement,
-        Simd<Self, N>: Sub<Simd<Self, N>, Output = Simd<Self, N>>,
-        LaneCount<N>: SupportedLaneCount;
+        Simd<Self, N>: Sub<Simd<Self, N>, Output = Simd<Self, N>>;
 }
 
 macro_rules! impl_is_consecutive {
@@ -113,7 +108,6 @@ macro_rules! impl_is_consecutive {
             where
                 Self: SimdElement,
                 Simd<Self, N>: Sub<Simd<Self, N>, Output = Simd<Self, N>>,
-                LaneCount<N>: SupportedLaneCount,
             {
                 define_is_consecutive_splat1!(is_consecutive_splat1, $type);
                 is_consecutive_splat1(chunk)

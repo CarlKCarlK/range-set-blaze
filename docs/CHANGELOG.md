@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2026-02-01
+
+### Changed
+
+- Updated `from_slice` feature for compatibility with Rust nightly (post-2026-01-28)
+  - Removed obsolete `LaneCount` and `SupportedLaneCount` trait bounds from SIMD code
+  - Lane count constraints now compiler-enforced (max 64 lanes, power-of-two only)
+  - Requires recent Rust nightly for `from_slice` feature
+  - No functional changes; purely a compatibility update
+
 ## [0.4.1] - 2025-10-26
 
 - Implemented `RangeOnce<T>`, a zero-allocation adapter that yields **0 or 1**

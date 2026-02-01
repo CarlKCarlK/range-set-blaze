@@ -46,7 +46,7 @@ which elements of the first are greater than those of the second. Also, supporte
 ## All about lanes
 
 - [`Simd::LANES`](https://doc.rust-lang.org/nightly/core/simd/struct.Simd.html#associatedconstant.LANES) - a constant indicating the number of elements (lanes) in a `Simd` struct.
-- [`SupportedLaneCount`](https://doc.rust-lang.org/nightly/core/simd/trait.SupportedLaneCount.html) - tells the allowed values of LANES. Use by generics.
+- Lane counts are now compiler-enforced with a maximum of 64 lanes. Previously constrained by `SupportedLaneCount` trait (removed in nightly as of Jan 2026).
 - [`simd.lanes`](https://doc.rust-lang.org/core/simd/struct.Simd.html#method.lanes) - const method that tells a Simd struct's number of lanes.
 
 ## Low-Level Alignment, Offsets etc
