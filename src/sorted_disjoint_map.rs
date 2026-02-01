@@ -98,12 +98,12 @@ where
 ///
 /// | Set Operator               | Operator                      | Multiway (same type)                                      | Multiway (different types)                     |
 /// |----------------------------|-------------------------------|-----------------------------------------------------------|-----------------------------------------------|
-/// | [`union`]                  | [`a` &#124; `b`]              | `[a, b, c].`[`union`][multiway_union]`() `                | [`union_map_dyn!`](a, b, c)                    |
-/// | [`intersection`]           | [`a & b`]                     | `[a, b, c].`[`intersection`][multiway_intersection]`() `  | [`intersection_map_dyn!`](a, b, c)             |
+/// | [`union`]                  | [`a` &#124; `b`]              | <code>[a, b, c].[union][multiway_union]() </code>                | [`union_map_dyn!`](a, b, c)                    |
+/// | [`intersection`]           | [`a & b`]                     | <code>[a, b, c].[intersection][multiway_intersection]() </code>  | [`intersection_map_dyn!`](a, b, c)             |
 /// | `intersection`             | [`a.map_and_set_intersection(s)`] | *n/a*                                                     | *n/a*                                          |
 /// | [`difference`]             | [`a - b`]                     | *n/a*                                                     | *n/a*                                          |
 /// | `difference`               | [`a.map_and_set_difference(s)`] | *n/a*                                                     | *n/a*                                          |
-/// | [`symmetric_difference`]   | [`a ^ b`]                     | `[a, b, c].`[`symmetric_difference`][multiway_symmetric_difference]`() ` | [`symmetric_difference_map_dyn!`](a, b, c) |
+/// | [`symmetric_difference`]   | [`a ^ b`]                     | <code>[a, b, c].[symmetric_difference][multiway_symmetric_difference]() </code> | [`symmetric_difference_map_dyn!`](a, b, c) |
 /// | [`complement`] (to set)    | [`!a`]                        | *n/a*                                                     | *n/a*                                          |
 /// | `complement` (to map)      | [`a.complement_with(&value)`] | *n/a*                                                     | *n/a*                                          |
 ///

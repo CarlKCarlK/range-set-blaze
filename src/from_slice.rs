@@ -120,8 +120,7 @@ macro_rules! define_const_reference {
         #[allow(clippy::cast_precision_loss)]
         #[allow(clippy::cast_possible_truncation)]
         #[allow(clippy::cast_possible_wrap)]
-        const fn comparison_value<const N: usize>() -> Simd<$type, N>
-        {
+        const fn comparison_value<const N: usize>() -> Simd<$type, N> {
             let mut arr: [$type; N] = [0; N];
             let mut i = 0;
             while i < N {

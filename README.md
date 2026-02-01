@@ -204,3 +204,19 @@ for range in intron.ranges() {
     println!("{chrom}\t{start}\t{end}");
 }
 ```
+
+## Contributing
+
+Contributions are welcome! For development workflow, local testing, and CI information, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+**Quick start for developers:**
+```bash
+# Install just task runner
+cargo install just
+
+# Run all checks before pushing
+just check-all
+```
+
+See [`just --list`](justfile) for all available development commands.
+

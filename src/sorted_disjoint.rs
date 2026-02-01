@@ -77,10 +77,10 @@ pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIt
 ///
 /// | Set Operators                             | Operator    | Multiway (same type)                              | Multiway (different types)           |
 /// |------------------------------------|-------------|---------------------------------------------------|--------------------------------------|
-/// | [`union`]                      | [`a` &#124; `b`] | `[a, b, c].`[`union`][multiway_union]`() `        | [`union_dyn!`]`(a, b, c)`         |
-/// | [`intersection`]               | [`a & b`]     | `[a, b, c].`[`intersection`][multiway_intersection]`() ` | [`intersection_dyn!`]`(a, b, c)`|
+/// | [`union`]                      | [`a` &#124; `b`] | <code>[a, b, c].[union][multiway_union]() </code>        | <code>[union_dyn!](a, b, c)</code>         |
+/// | [`intersection`]               | [`a & b`]     | <code>[a, b, c].[intersection][multiway_intersection]() </code> | <code>[intersection_dyn!](a, b, c)</code>|
 /// | [`difference`]                 | [`a - b`]     | *n/a*                                             | *n/a*                                |
-/// | [`symmetric_difference`]       | [`a ^ b`]     | `[a, b, c].`[`symmetric_difference`][multiway_symmetric_difference]`() ` | [`symmetric_difference_dyn!`]`(a, b, c)` |
+/// | [`symmetric_difference`]       | [`a ^ b`]     | <code>[a, b, c].[symmetric_difference][multiway_symmetric_difference]() </code> | <code>[symmetric_difference_dyn!](a, b, c)</code> |
 /// | [`complement`]                 | [`!a`]        | *n/a*                                             | *n/a*                                |
 ///
 /// [`a` &#124; `b`]: trait.SortedDisjoint.html#method.union

@@ -22,8 +22,6 @@ use core::{
     prelude::v1::*,
 };
 use itertools::Itertools;
-#[cfg(not(target_arch = "wasm32"))]
-use std::format;
 
 use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);

@@ -864,12 +864,9 @@ impl Integer for char {
 
     #[inline]
     fn add_one(self) -> Self {
-        self.checked_add_one().map_or_else(
-            || {
-                panic!("char overflow"); // Panics in both debug and release modes
-            },
-            |next| next,
-        )
+        self.checked_add_one().unwrap_or_else(|| {
+            panic!("char overflow"); // Panics in both debug and release modes
+        })
     }
 
     #[inline]
