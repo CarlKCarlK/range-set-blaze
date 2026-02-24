@@ -823,9 +823,13 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(set.ranges_insert(3..=4), false);
     /// assert_eq!(set.len(), 5u64);
     /// ```
-    pub fn ranges_insert(&mut self, range: RangeInclusive<T>) -> bool {
+    pub fn ranges_insert<R>(&mut self, range: R) -> bool
+    where
+        R: RangeBounds<T>,
+    {
         let len_before = self.len;
-        self.internal_add(range);
+        let (start, end) = extract_range(range);
+        self.internal_add(start..=end);
         self.len != len_before
     }
 

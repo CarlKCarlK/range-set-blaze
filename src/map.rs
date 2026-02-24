@@ -1091,9 +1091,13 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(map.ranges_insert(3..=4, "c"), false);
     /// assert_eq!(map.len(), 5u64);
     /// ```
-    pub fn ranges_insert(&mut self, range: RangeInclusive<T>, value: V) -> bool {
+    pub fn ranges_insert<R>(&mut self, range: R, value: V) -> bool
+    where
+        R: RangeBounds<T>,
+    {
         let len_before = self.len;
-        self.internal_add(range, value);
+        let (start, end) = extract_range(range);
+        self.internal_add(start..=end, value);
         self.len != len_before
     }
 
