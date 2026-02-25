@@ -2,7 +2,7 @@
 
 use crate::Integer;
 use alloc::slice;
-use core::simd::{Simd, SimdElement};
+use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 use core::{iter::FusedIterator, ops::RangeInclusive, ops::Sub};
 
 #[allow(clippy::redundant_pub_crate)]
@@ -12,6 +12,7 @@ use core::{iter::FusedIterator, ops::RangeInclusive, ops::Sub};
 pub(crate) struct FromSliceIter<'a, T, const N: usize>
 where
     T: SimdInteger,
+    LaneCount<N>: SupportedLaneCount,
 {
     prefix_iter: core::slice::Iter<'a, T>,
     previous_range: Option<RangeInclusive<T>>,
@@ -23,6 +24,7 @@ where
 impl<'a, T, const N: usize> FromSliceIter<'a, T, N>
 where
     T: SimdInteger,
+    LaneCount<N>: SupportedLaneCount,
 {
     pub(crate) fn new(slice: &'a [T]) -> Self {
         let (prefix, middle, suffix) = slice.as_simd();
@@ -40,6 +42,7 @@ where
 impl<T, const N: usize> FusedIterator for FromSliceIter<'_, T, N>
 where
     T: SimdInteger,
+    LaneCount<N>: SupportedLaneCount,
     Simd<T, N>: Sub<Output = Simd<T, N>>,
 {
 }
@@ -47,6 +50,7 @@ where
 impl<T, const N: usize> Iterator for FromSliceIter<'_, T, N>
 where
     T: SimdInteger,
+    LaneCount<N>: SupportedLaneCount,
     Simd<T, N>: Sub<Output = Simd<T, N>>,
 {
     type Item = RangeInclusive<T>;
@@ -112,6 +116,7 @@ where
 pub(crate) trait SimdInteger: Integer + SimdElement {
     fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
     where
+        LaneCount<N>: SupportedLaneCount,
         Simd<Self, N>: Sub<Simd<Self, N>, Output = Simd<Self, N>>;
 }
 
@@ -120,7 +125,10 @@ macro_rules! define_const_reference {
         #[allow(clippy::cast_precision_loss)]
         #[allow(clippy::cast_possible_truncation)]
         #[allow(clippy::cast_possible_wrap)]
-        const fn comparison_value<const N: usize>() -> Simd<$type, N> {
+        const fn comparison_value<const N: usize>() -> Simd<$type, N>
+        where
+            LaneCount<N>: SupportedLaneCount,
+        {
             let mut arr: [$type; N] = [0; N];
             let mut i = 0;
             while i < N {
@@ -141,6 +149,7 @@ macro_rules! impl_is_consecutive {
             fn is_consecutive<const N: usize>(chunk: Simd<Self, N>) -> bool
             where
                 Self: SimdElement,
+                LaneCount<N>: SupportedLaneCount,
                 Simd<Self, N>: Sub<Simd<Self, N>, Output = Simd<Self, N>>,
             {
                 define_const_reference!($type);

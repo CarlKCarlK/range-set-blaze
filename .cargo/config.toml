@@ -1,3 +1,7 @@
 [target.wasm32-unknown-unknown]
 runner = "wasm-bindgen-test-runner"
 rustflags = ["--cfg=getrandom_backend=\"wasm_js\""]
+
+[alias]
+xtest = "nextest run -p range-set-blaze --all-targets"
+check-all = "run -p xtask -- check-all"
