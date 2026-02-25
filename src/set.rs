@@ -2020,6 +2020,7 @@ impl<T: Integer> Eq for RangeSetBlaze<T> {}
 ///
 /// Empty ranges are allowed.
 #[allow(clippy::redundant_pub_crate)]
+#[inline]
 pub(crate) fn extract_range<T: Integer, R>(range: R) -> (T, T)
 where
     R: RangeBounds<T>,

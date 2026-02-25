@@ -17,6 +17,7 @@ exclude = ["docs/**/*"]
 [workspace]
 members = [
     ".",
+    "xtask",
     "tests/wasm-demo",
     "tests/wasm-led",
     "tests/embedded",
