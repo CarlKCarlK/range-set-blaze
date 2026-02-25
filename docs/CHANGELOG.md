@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] - 2026-02-25
+
+### Changed
+
+- `RangeSetBlaze::ranges_insert` and `RangeMapBlaze::ranges_insert` now accept any `RangeBounds<T>`, not just `RangeInclusive<T>` (issue #24).
+- Improved local CI ergonomics and speed:
+  - `cargo check-all` now runs independent checks in parallel
+  - local `check-all` test target now uses `--lib --tests --examples` to skip slow benches
+- Updated `from_slice` SIMD imports/bounds for compatibility with current Rust nightly APIs.
+- Updated `examples/nine_rules_maps` assertions to match right-to-left precedence semantics.
+
 ## [0.4.2] - 2026-02-01
 
 ### Changed
