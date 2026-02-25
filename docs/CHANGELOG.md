@@ -7,23 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.4] - 2026-02-25
 
-### Changed
-
 - `RangeSetBlaze::ranges_insert` and `RangeMapBlaze::ranges_insert` now accept any `RangeBounds<T>`, not just `RangeInclusive<T>` (issue #24).
-
-## [0.4.3] - 2026-02-25
-
-### Changed
-
-- Improved local CI ergonomics and speed:
-  - `cargo check-all` now runs independent checks in parallel
-  - local `check-all` test target now uses `--lib --tests --examples` to skip slow benches
-- Updated `from_slice` SIMD imports/bounds for compatibility with current Rust nightly APIs.
-- Updated `examples/nine_rules_maps` assertions to match right-to-left precedence semantics.
+- Added local CI/task runner support:
+  - new `xtask` crate with `cargo check-all`
+  - `.cargo/config.toml` aliases for `xtest` and `check-all`
+  - parallelized `check-all` execution and local test target narrowed to `--lib --tests --examples` (skips benches)
+- Fixed `examples/nine_rules_maps` test expectations to match right-precedence map semantics.
 
 ## [0.4.2] - 2026-02-01
-
-### Changed
 
 - Updated `from_slice` feature for compatibility with Rust nightly (post-2026-01-28)
   - Removed obsolete `LaneCount` and `SupportedLaneCount` trait bounds from SIMD code
@@ -82,8 +73,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added DoubleEndedIterator when iterating integer elements. Thanks to enh.
 
 ## [0.1.14] - 2023-12-5
-
-### Changed
 
 - Added optional `from_slice` cargo feature and support
   for a new `RangeSetBlaze::from_slice` constructor.
