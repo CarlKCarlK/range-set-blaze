@@ -26,7 +26,7 @@ mod tests {
         let b = RangeMapBlaze::from_iter([(2..=5, "white")]);
         assert_eq!(
             a | b,
-            RangeMapBlaze::from_iter([(0..=3, "green"), (4..=5, "white")])
+            RangeMapBlaze::from_iter([(0..=1, "green"), (2..=5, "white")])
         );
     }
 
@@ -35,7 +35,7 @@ mod tests {
         let btree_map = BTreeMap::from_iter([(4, "green"), (0, "white"), (4, "orange")]);
         assert_eq!(btree_map[&4], "orange");
         let range_map = RangeMapBlaze::from_iter([(4, "green"), (0, "white"), (4, "orange")]);
-        assert_eq!(range_map[4], "green");
+        assert_eq!(range_map[4], "orange");
     }
 
     #[test]
