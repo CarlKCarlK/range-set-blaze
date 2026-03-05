@@ -12,11 +12,7 @@ use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
 /// [`symmetric_difference`]: crate::SortedDisjointMap::symmetric_difference
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct SymDiffIter<T, I>
-where
-    T: Integer,
-    I: SortedStarts<T>,
-{
+pub struct SymDiffIter<T, I> {
     iter: I,
     start_or_min_value: T,
     end_heap: BinaryHeap<Reverse<T>>,

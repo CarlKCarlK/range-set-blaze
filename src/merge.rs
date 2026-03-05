@@ -1,4 +1,4 @@
-use core::{iter::FusedIterator, ops::RangeInclusive};
+use core::{fmt::Debug, iter::FusedIterator, ops::RangeInclusive};
 
 use itertools::{Itertools, KMergeBy, MergeBy};
 
@@ -9,9 +9,8 @@ use crate::{Integer, SortedDisjoint, SortedStarts};
 #[derive(Clone, Debug)]
 pub struct Merge<T, L, R>
 where
-    T: Integer,
-    L: SortedDisjoint<T>,
-    R: SortedDisjoint<T>,
+    L: Iterator<Item: Debug + Clone>,
+    R: Iterator<Item: Debug + Clone>,
 {
     #[allow(clippy::type_complexity)]
     iter: MergeBy<L, R, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>,
@@ -73,8 +72,7 @@ where
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct KMerge<T, I>
 where
-    T: Integer,
-    I: SortedDisjoint<T>,
+    I: Iterator<Item: Debug + Clone>,
 {
     #[allow(clippy::type_complexity)]
     iter: KMergeBy<I, fn(&RangeInclusive<T>, &RangeInclusive<T>) -> bool>,

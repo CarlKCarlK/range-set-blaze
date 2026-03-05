@@ -147,11 +147,7 @@ where
 
 #[expect(clippy::redundant_pub_crate)]
 #[derive(Clone, Hash, Default, PartialEq, Eq, Debug)]
-pub(crate) struct EndValue<T, V>
-where
-    T: Integer,
-    V: Eq + Clone,
-{
+pub(crate) struct EndValue<T, V> {
     pub(crate) end: T,
     pub(crate) value: V,
 }
@@ -446,7 +442,7 @@ where
 ///
 /// [module-level documentation]: index.html
 #[derive(Clone, Hash, PartialEq)]
-pub struct RangeMapBlaze<T: Integer, V: Eq + Clone> {
+pub struct RangeMapBlaze<T: Integer, V> {
     pub(crate) len: <T as Integer>::SafeLen,
     pub(crate) btree_map: BTreeMap<T, EndValue<T, V>>,
 }
@@ -2234,7 +2230,7 @@ impl<'a, T: Integer, V: Eq + Clone> IntoIterator for &'a RangeMapBlaze<T, V> {
 
 impl<T: Integer, V: Eq + Clone> BitOr<Self> for RangeMapBlaze<T, V> {
     /// Unions the contents of two [`RangeMapBlaze`]'s.
-    ///  
+    ///
     /// This operator has *right precedence*: when overlapping ranges are present,
     /// values on the right-hand side take priority over those self.
     ///

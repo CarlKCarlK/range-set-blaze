@@ -9,7 +9,7 @@ use core::{iter::FusedIterator, ops::RangeInclusive};
 /// [`ranges`]: crate::RangeSetBlaze::ranges
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct RangesIter<'a, T: Integer> {
+pub struct RangesIter<'a, T> {
     pub(crate) iter: btree_map::Iter<'a, T, T>,
 }
 
@@ -47,7 +47,7 @@ impl<T: Integer> DoubleEndedIterator for RangesIter<'_, T> {
 /// [`into_ranges`]: crate::RangeSetBlaze::into_ranges
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug)]
-pub struct IntoRangesIter<T: Integer> {
+pub struct IntoRangesIter<T> {
     pub(crate) iter: alloc::collections::btree_map::IntoIter<T, T>,
 }
 

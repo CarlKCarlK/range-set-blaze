@@ -1,4 +1,5 @@
 use core::iter::FusedIterator;
+use core::ops::RangeInclusive;
 
 use itertools::{Itertools, KMergeBy, MergeBy};
 
@@ -11,13 +12,12 @@ use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap, SortedDisjoi
 /// Used internally by `UnionIterMap` and `SymDiffIterMap`.
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct MergeMap<T, VR, L, R>
-where
-    T: Integer,
-    VR: ValueRef,
-    L: SortedDisjointMap<T, VR>,
-    R: SortedDisjointMap<T, VR>,
-{
+pub struct MergeMap<
+    T,
+    VR,
+    L: Iterator<Item = (RangeInclusive<T>, VR)>,
+    R: Iterator<Item = (RangeInclusive<T>, VR)>,
+> {
     #[allow(clippy::type_complexity)]
     iter: MergeBy<
         SetPriorityMap<T, VR, L>,
@@ -85,9 +85,7 @@ where
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct KMergeMap<T, VR, I>
 where
-    T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    I: Iterator<Item = (RangeInclusive<T>, VR)>,
 {
     #[allow(clippy::type_complexity)]
     iter: KMergeBy<SetPriorityMap<T, VR, I>, fn(&Priority<T, VR>, &Priority<T, VR>) -> bool>,

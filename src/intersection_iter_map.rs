@@ -15,13 +15,7 @@ use crate::{SortedDisjoint, SortedDisjointMap, map::ValueRef};
 /// [`map_and_set_intersection`]: crate::SortedDisjointMap::map_and_set_intersection
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct IntersectionIterMap<T, VR, IM, IS>
-where
-    T: Integer,
-    VR: ValueRef,
-    IM: SortedDisjointMap<T, VR>,
-    IS: SortedDisjoint<T>,
-{
+pub struct IntersectionIterMap<T, VR, IM, IS> {
     iter_left: IM,
     iter_right: IS,
     right: Option<RangeInclusive<T>>,

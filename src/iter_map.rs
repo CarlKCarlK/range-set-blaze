@@ -16,12 +16,7 @@ use crate::{
 /// [`iter`]: crate::RangeMapBlaze::iter
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct IterMap<T, VR, I>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
-{
+pub struct IterMap<T, VR, I> {
     iter: I,
     option_range_value_front: Option<(RangeInclusive<T>, VR)>,
     option_range_value_back: Option<(RangeInclusive<T>, VR)>,
@@ -116,11 +111,7 @@ where
 /// [`into_iter`]: crate::RangeMapBlaze::into_iter
 #[derive(Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct IntoIterMap<T, V>
-where
-    T: Integer,
-    V: Eq + Clone,
-{
+pub struct IntoIterMap<T, V> {
     option_start_end_value_front: Option<(T, EndValue<T, V>)>,
     option_start_end_value_back: Option<(T, EndValue<T, V>)>,
     into_iter: btree_map::IntoIter<T, EndValue<T, V>>,

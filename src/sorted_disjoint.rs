@@ -594,11 +594,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
 #[derive(Debug, Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::module_name_repetitions)]
-pub struct CheckSortedDisjoint<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
-{
+pub struct CheckSortedDisjoint<T, I> {
     pub(crate) iter: I,
     prev_end: Option<T>,
     seen_none: bool,
@@ -620,10 +616,7 @@ where
     }
 }
 
-impl<T> Default for CheckSortedDisjoint<T, array::IntoIter<RangeInclusive<T>, 0>>
-where
-    T: Integer,
-{
+impl<T: Integer> Default for CheckSortedDisjoint<T, array::IntoIter<RangeInclusive<T>, 0>> {
     // Default is an empty iterator.
     fn default() -> Self {
         Self::new([])

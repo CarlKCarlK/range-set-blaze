@@ -7,11 +7,7 @@ use crate::{Integer, SortedDisjoint};
 /// [`SortedDisjointMap::complement_with`]: trait.SortedDisjointMap.html#method.complement_with
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct NotIter<T, I>
-where
-    T: Integer,
-    I: SortedDisjoint<T>,
-{
+pub struct NotIter<T, I> {
     iter: I,
     start_not: T,
     next_time_return_none: bool,

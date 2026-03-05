@@ -18,7 +18,7 @@ use crate::{Integer, RangeSetBlaze, set::extract_range};
 /// [`RangeSetBlaze`]: crate::RangeSetBlaze
 /// [`rogs_range`]: crate::RangeSetBlaze::rogs_range
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct RogsIter<'a, T: Integer> {
+pub struct RogsIter<'a, T> {
     end_in: T,
     next_rog: Option<Rog<T>>,
     final_gap_start: Option<T>,
@@ -88,7 +88,7 @@ impl<T: Integer> FusedIterator for RogsIter<'_, T> {}
 /// ```
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum Rog<T: Integer> {
+pub enum Rog<T> {
     /// A range of integers in a [`RangeSetBlaze`].
     Range(RangeInclusive<T>),
     /// A gap between integers in a [`RangeSetBlaze`].
