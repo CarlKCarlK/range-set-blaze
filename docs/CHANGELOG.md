@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-03-06
+
+### Changed
+
+- Removed redundant struct-level trait bounds across iterator/map/set wrapper structs and kept
+  constraints on impls/usage sites where needed.
+
+### Breaking
+
+- `AssumeSortedStarts` and `AssumePrioritySortedStartsMap` now take fewer generic parameters.
+  - `AssumeSortedStarts<T, I>` -> `AssumeSortedStarts<I>`
+  - `AssumePrioritySortedStartsMap<T, VR, I>` -> `AssumePrioritySortedStartsMap<I>`
+- Migration note: calls like `AssumeSortedStarts::new(iter)` and
+  `AssumePrioritySortedStartsMap::new(iter)` are typically unchanged due to inference; explicit
+  type aliases/annotations may need updates.
+
 ## [0.4.4] - 2026-02-25
 
 ### Changed
