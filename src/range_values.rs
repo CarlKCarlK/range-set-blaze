@@ -16,7 +16,7 @@ use crate::{map::EndValue, sorted_disjoint_map::SortedDisjointMap};
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::module_name_repetitions)]
-pub struct RangeValuesIter<'a, T: Integer, V: Eq + Clone> {
+pub struct RangeValuesIter<'a, T, V> {
     iter: btree_map::Iter<'a, T, EndValue<T, V>>,
 }
 
@@ -75,7 +75,7 @@ where
 /// [`into_range_values`]: crate::RangeMapBlaze::into_range_values
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug)]
-pub struct IntoRangeValuesIter<T: Integer, V: Eq + Clone> {
+pub struct IntoRangeValuesIter<T, V> {
     iter: btree_map::IntoIter<T, EndValue<T, V>>,
 }
 
@@ -129,7 +129,7 @@ impl<T: Integer, V: Eq + Clone> DoubleEndedIterator for IntoRangeValuesIter<T, V
 /// [`ranges`]: crate::RangeMapBlaze::ranges
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct MapRangesIter<'a, T: Integer, V: Eq + Clone> {
+pub struct MapRangesIter<'a, T, V> {
     iter: btree_map::Iter<'a, T, EndValue<T, V>>,
     gather: Option<RangeInclusive<T>>,
 }
@@ -193,7 +193,7 @@ where
 /// [`into_ranges`]: crate::RangeMapBlaze::into_ranges
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug)]
-pub struct MapIntoRangesIter<T: Integer, V: Eq + Clone> {
+pub struct MapIntoRangesIter<T, V> {
     iter: btree_map::IntoIter<T, EndValue<T, V>>,
     gather: Option<RangeInclusive<T>>,
 }
@@ -249,12 +249,7 @@ impl<T: Integer, V: Eq + Clone> Iterator for MapIntoRangesIter<T, V> {
 #[derive(Debug, Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::module_name_repetitions)]
-pub struct RangeValuesToRangesIter<T, VR, I>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
-{
+pub struct RangeValuesToRangesIter<T, VR, I> {
     iter: I,
     gather: Option<RangeInclusive<T>>,
     phantom: PhantomData<VR>,
@@ -343,12 +338,7 @@ impl<T> ExpectDebugUnwrapRelease<T> for Option<T> {
 #[expect(clippy::redundant_pub_crate)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub(crate) struct SetPriorityMap<T, VR, I>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
-{
+pub(crate) struct SetPriorityMap<T, VR, I> {
     iter: I,
     priority_number: usize,
     phantom: PhantomData<(T, VR)>,
@@ -362,12 +352,7 @@ where
 {
 }
 
-impl<T, VR, I> Iterator for SetPriorityMap<T, VR, I>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
-{
+impl<T, VR, I: Iterator<Item = (RangeInclusive<T>, VR)>> Iterator for SetPriorityMap<T, VR, I> {
     type Item = Priority<T, VR>;
 
     fn next(&mut self) -> Option<Self::Item> {

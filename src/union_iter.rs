@@ -15,11 +15,7 @@ use itertools::Itertools;
 /// [`union`]: crate::SortedDisjoint::union
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct UnionIter<T, SS>
-where
-    T: Integer,
-    SS: SortedStarts<T>,
-{
+pub struct UnionIter<T, SS> {
     iter: SS,
     option_range: Option<RangeInclusive<T>>,
 }
@@ -103,10 +99,7 @@ where
 }
 
 // from iter (T, VR) to UnionIter
-impl<T> FromIterator<RangeInclusive<T>> for UnionIter<T, SortedStartsInVec<T>>
-where
-    T: Integer,
-{
+impl<T: Integer> FromIterator<RangeInclusive<T>> for UnionIter<T, SortedStartsInVec<T>> {
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = RangeInclusive<T>>,

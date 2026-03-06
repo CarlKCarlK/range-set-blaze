@@ -12,10 +12,9 @@ use crate::Integer;
 use crate::unsorted_priority_map::AssumePrioritySortedStartsMap;
 use crate::unsorted_priority_map::UnsortedPriorityMap;
 
-type SortedStartsInVecMap<T, VR> =
-    AssumePrioritySortedStartsMap<T, VR, vec::IntoIter<Priority<T, VR>>>;
+type SortedStartsInVecMap<T, VR> = AssumePrioritySortedStartsMap<vec::IntoIter<Priority<T, VR>>>;
 #[allow(clippy::redundant_pub_crate)]
-pub(crate) type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
+pub(crate) type SortedStartsInVec<T> = AssumeSortedStarts<vec::IntoIter<RangeInclusive<T>>>;
 
 /// This `struct` is created by the [`union`] method. See [`union`]'s
 /// documentation for more.
@@ -23,12 +22,7 @@ pub(crate) type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<Range
 /// [`union`]: crate::SortedDisjointMap::union
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct UnionIterMap<T, VR, SS>
-where
-    T: Integer,
-    VR: ValueRef,
-    SS: PrioritySortedStartsMap<T, VR>,
-{
+pub struct UnionIterMap<T, VR, SS> {
     iter: SS,
     next_item: Option<Priority<T, VR>>,
     workspace: BinaryHeap<Priority<T, VR>>,

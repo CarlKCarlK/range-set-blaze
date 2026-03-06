@@ -16,12 +16,7 @@ use crate::{
 /// [`RangeMapBlaze`]: crate::RangeMapBlaze
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct Values<T, VR, I>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
-{
+pub struct Values<T, VR, I> {
     iter: IterMap<T, VR, I>,
 }
 
@@ -83,11 +78,7 @@ where
 /// [`RangeMapBlaze`]: crate::RangeMapBlaze
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug)]
-pub struct IntoValues<T, V>
-where
-    T: Integer,
-    V: Eq + Clone,
-{
+pub struct IntoValues<T, V> {
     into_iter: IntoIterMap<T, V>,
 }
 

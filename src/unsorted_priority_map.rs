@@ -12,12 +12,7 @@ use num_traits::Zero;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::redundant_pub_crate)]
-pub(crate) struct UnsortedPriorityMap<T, VR, I>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = (RangeInclusive<T>, VR)>,
-{
+pub(crate) struct UnsortedPriorityMap<T, VR, I> {
     iter: I,
     option_priority: Option<Priority<T, VR>>,
     min_value_plus_2: T,
@@ -117,12 +112,7 @@ where
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::redundant_pub_crate)]
-pub(crate) struct SortedDisjointMapWithLenSoFar<T, VR, I>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
-{
+pub(crate) struct SortedDisjointMapWithLenSoFar<T: Integer, VR, I> {
     iter: I,
     len: <T as Integer>::SafeLen,
     phantom: PhantomData<VR>,
@@ -188,16 +178,11 @@ where
 ///
 /// [`UnionIterMap`]: crate::UnionIterMap
 /// [`SymDiffIterMap`]: crate::SymDiffIterMap
-pub struct AssumePrioritySortedStartsMap<T, VR, I>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = Priority<T, VR>> + FusedIterator,
-{
+pub struct AssumePrioritySortedStartsMap<I> {
     iter: I,
 }
 
-impl<T, VR, I> PrioritySortedStartsMap<T, VR> for AssumePrioritySortedStartsMap<T, VR, I>
+impl<T, VR, I> PrioritySortedStartsMap<T, VR> for AssumePrioritySortedStartsMap<I>
 where
     T: Integer,
     VR: ValueRef,
@@ -205,7 +190,7 @@ where
 {
 }
 
-impl<T, VR, I> AssumePrioritySortedStartsMap<T, VR, I>
+impl<T, VR, I> AssumePrioritySortedStartsMap<I>
 where
     T: Integer,
     VR: ValueRef,
@@ -216,7 +201,7 @@ where
     }
 }
 
-impl<T, VR, I> FusedIterator for AssumePrioritySortedStartsMap<T, VR, I>
+impl<T, VR, I> FusedIterator for AssumePrioritySortedStartsMap<I>
 where
     T: Integer,
     VR: ValueRef,
@@ -224,7 +209,7 @@ where
 {
 }
 
-impl<T, VR, I> Iterator for AssumePrioritySortedStartsMap<T, VR, I>
+impl<T, VR, I> Iterator for AssumePrioritySortedStartsMap<I>
 where
     T: Integer,
     VR: ValueRef,

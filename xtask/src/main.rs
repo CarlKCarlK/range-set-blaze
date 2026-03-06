@@ -107,7 +107,9 @@ fn check_all() -> ExitCode {
             ),
         );
     } else {
-        eprintln!("note: cargo-nextest not found; using cargo test -p range-set-blaze --lib --tests --examples");
+        eprintln!(
+            "note: cargo-nextest not found; using cargo test -p range-set-blaze --lib --tests --examples"
+        );
         steps.insert(
             1,
             (
@@ -132,9 +134,11 @@ fn check_all() -> ExitCode {
         .map(|(idx, (name, args))| {
             let failures = Arc::clone(&failures);
             thread::spawn(move || {
-                let target_dir = PathBuf::from("target")
-                    .join("check-all")
-                    .join(format!("{:02}-{}", idx + 1, slugify(&name)));
+                let target_dir = PathBuf::from("target").join("check-all").join(format!(
+                    "{:02}-{}",
+                    idx + 1,
+                    slugify(&name)
+                ));
                 if !run_step(&name, &args, &target_dir) {
                     failures.lock().expect("poisoned mutex").push(name);
                 }

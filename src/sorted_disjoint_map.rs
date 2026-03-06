@@ -629,12 +629,7 @@ where
 #[allow(clippy::module_name_repetitions)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug, Clone)]
-pub struct CheckSortedDisjointMap<T, VR, I>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = (RangeInclusive<T>, VR)>,
-{
+pub struct CheckSortedDisjointMap<T, VR, I> {
     iter: I,
     seen_none: bool,
     previous: Option<(RangeInclusive<T>, VR)>,
@@ -749,20 +744,12 @@ where
 
 /// Used internally by `MergeMap`.
 #[derive(Clone, Debug)]
-pub struct Priority<T, VR>
-where
-    T: Integer,
-    VR: ValueRef,
-{
+pub struct Priority<T, VR> {
     range_value: (RangeInclusive<T>, VR),
     priority_number: usize,
 }
 
-impl<T, VR> Priority<T, VR>
-where
-    T: Integer,
-    VR: ValueRef,
-{
+impl<T, VR> Priority<T, VR> {
     pub(crate) const fn new(range_value: (RangeInclusive<T>, VR), priority_number: usize) -> Self {
         Self {
             range_value,
@@ -861,12 +848,7 @@ where
 /// Used internally by `complement_with`.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct RangeToRangeValueIter<'a, T, V, I>
-where
-    T: Integer,
-    V: Eq + Clone,
-    I: SortedDisjoint<T>,
-{
+pub struct RangeToRangeValueIter<'a, T, V, I> {
     inner: I,
     value: &'a V,
     phantom: PhantomData<T>,

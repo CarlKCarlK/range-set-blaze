@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
-pub struct Ranges<'a, T: 'a + Copy + Ord, B: BuildHasher> {
+pub struct Ranges<'a, T, B> {
     map: &'a HashMap<T, BTreeSet<T>, B>,
     iter: Option<btree_set::Iter<'a, T>>,
     range: Option<(&'a T, &'a T)>,

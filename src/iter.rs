@@ -4,12 +4,12 @@ use core::hash::BuildHasher;
 use core::ops::RangeBounds;
 use std::collections::BTreeSet;
 
-pub struct RangeSet<T, B: BuildHasher> {
+pub struct RangeSet<T, B> {
     set: BTreeSet<T>,
     hasher: B,
 }
 
-pub struct RangeSetIter<'a, T: Copy + Ord, B: BuildHasher> {
+pub struct RangeSetIter<'a, T, B> {
     inner: std::collections::btree_set::Iter<'a, T>,
     hasher: &'a B,
 }

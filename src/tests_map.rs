@@ -238,7 +238,7 @@ const fn check_traits() {
     is_like_btreemap_iter_less_both::<AMergeMap<'_>>();
 
     type AAssumePrioritySortedStartsMap<'a> =
-        AssumePrioritySortedStartsMap<i32, &'a u64, vec::IntoIter<Priority<i32, &'a u64>>>;
+        AssumePrioritySortedStartsMap<vec::IntoIter<Priority<i32, &'a u64>>>;
     is_sssu::<AAssumePrioritySortedStartsMap<'_>>();
     is_like_btreemap_iter_less_both::<AAssumePrioritySortedStartsMap<'_>>();
 

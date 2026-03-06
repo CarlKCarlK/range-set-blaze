@@ -3131,7 +3131,7 @@ const fn check_traits() {
     is_sssu::<ASymDiffIter<'_>>();
     is_like_btreeset_iter_less_both::<ASymDiffIter<'_>>();
 
-    type AAssumeSortedStarts<'a> = AssumeSortedStarts<i32, ARangesIter<'a>>;
+    type AAssumeSortedStarts<'a> = AssumeSortedStarts<ARangesIter<'a>>;
     is_sssu::<AAssumeSortedStarts<'_>>();
     is_like_btreeset_iter_less_both::<AAssumeSortedStarts<'_>>();
 

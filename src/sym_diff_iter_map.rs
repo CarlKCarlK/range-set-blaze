@@ -20,12 +20,7 @@ use crate::{
 /// [`symmetric_difference`]: crate::SortedDisjointMap::symmetric_difference
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct SymDiffIterMap<T, VR, I>
-where
-    T: Integer,
-    VR: ValueRef,
-    I: PrioritySortedStartsMap<T, VR>,
-{
+pub struct SymDiffIterMap<T, VR, I> {
     iter: I,
     next_item: Option<Priority<T, VR>>,
     workspace: BinaryHeap<Priority<T, VR>>,
@@ -35,10 +30,7 @@ where
 }
 
 #[expect(clippy::ref_option)]
-fn min_next_end<T>(next_end: &Option<T>, next_item_end: T) -> T
-where
-    T: Integer,
-{
+fn min_next_end<T: Integer>(next_end: &Option<T>, next_item_end: T) -> T {
     next_end.map_or_else(
         || next_item_end,
         |current_end| cmp::min(current_end, next_item_end),

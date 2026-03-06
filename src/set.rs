@@ -1563,11 +1563,7 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
 #[allow(clippy::struct_field_names)]
-pub struct Iter<T, I>
-where
-    T: Integer,
-    I: SortedDisjoint<T>,
-{
+pub struct Iter<T, I> {
     btree_set_iter: I,
     // FUTURE: here and elsewhere, when core::iter:Step is available could
     // FUTURE: use RangeInclusive as an iterator (with exhaustion) rather than needing an Option
@@ -1640,7 +1636,7 @@ where
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug)]
 #[allow(clippy::struct_field_names)]
-pub struct IntoIter<T: Integer> {
+pub struct IntoIter<T> {
     option_range_front: Option<RangeInclusive<T>>,
     option_range_back: Option<RangeInclusive<T>>,
     btree_map_into_iter: btree_map::IntoIter<T, T>,

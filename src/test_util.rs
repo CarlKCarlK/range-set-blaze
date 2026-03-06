@@ -42,7 +42,7 @@ pub fn width_to_range_u32(
 // Not reliable if the range is too small, especially if the range_len
 // is small. Might have some off-by-one errors that aren't material in practice.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct MemorylessRange<'a, T: Integer + SampleUniform> {
+pub struct MemorylessRange<'a, T> {
     rng: &'a mut StdRng,
     range_len: usize,
     range: RangeInclusive<T>,
@@ -148,7 +148,7 @@ impl<T: Integer + SampleUniform> Iterator for MemorylessRange<'_, T> {
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct MemorylessIter<'a, T: Integer + SampleUniform> {
+pub struct MemorylessIter<'a, T> {
     option_range: Option<RangeInclusive<T>>,
     iter: MemorylessRange<'a, T>,
 }
@@ -188,7 +188,7 @@ impl<T: Integer + SampleUniform> Iterator for MemorylessIter<'_, T> {
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct ClumpyMapIter<'a, T: Integer + SampleUniform> {
+pub struct ClumpyMapIter<'a, T> {
     iter: ClumpyMapRange<'a, T>,
     option_range_value: Option<(RangeInclusive<T>, u32)>,
 }
@@ -243,7 +243,7 @@ impl<T: Integer + SampleUniform> Iterator for ClumpyMapIter<'_, T> {
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct ClumpyMapRange<'a, T: Integer + SampleUniform> {
+pub struct ClumpyMapRange<'a, T> {
     rng_clone: StdRng,
     clump_iter: MemorylessRange<'a, T>,
     value_count: u32,

@@ -8,11 +8,7 @@ use num_traits::Zero;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::redundant_pub_crate)]
-pub(crate) struct UnsortedDisjoint<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = RangeInclusive<T>>,
-{
+pub(crate) struct UnsortedDisjoint<T, I> {
     iter: I,
     option_range: Option<RangeInclusive<T>>,
     min_value_plus_2: T,
@@ -90,11 +86,7 @@ where
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::redundant_pub_crate)]
-pub(crate) struct SortedDisjointWithLenSoFar<T, I>
-where
-    T: Integer,
-    I: SortedDisjoint<T>,
-{
+pub(crate) struct SortedDisjointWithLenSoFar<T: Integer, I> {
     iter: I,
     len: <T as Integer>::SafeLen,
 }
@@ -151,27 +143,23 @@ where
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 /// Gives any iterator of ranges the [`SortedStarts`] trait without any checking.
-pub struct AssumeSortedStarts<T, I>
-where
-    T: Integer,
-    I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
-{
+pub struct AssumeSortedStarts<I> {
     pub(crate) iter: I,
 }
 
-impl<T, I> FusedIterator for AssumeSortedStarts<T, I>
+impl<T, I> FusedIterator for AssumeSortedStarts<I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
 {
 }
 
-impl<T: Integer, I> SortedStarts<T> for AssumeSortedStarts<T, I> where
+impl<T: Integer, I> SortedStarts<T> for AssumeSortedStarts<I> where
     I: Iterator<Item = RangeInclusive<T>> + FusedIterator
 {
 }
 
-impl<T, I> AssumeSortedStarts<T, I>
+impl<T, I> AssumeSortedStarts<I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
@@ -185,7 +173,7 @@ where
     }
 }
 
-impl<T, I> Iterator for AssumeSortedStarts<T, I>
+impl<T, I> Iterator for AssumeSortedStarts<I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
