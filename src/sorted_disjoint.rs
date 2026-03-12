@@ -66,18 +66,17 @@ where
 
 // Check if core::iter::StepBy implements FusedIterator if it's inner is. Seems like it could be upstreamed
 // https://internals.rust-lang.org/t/implement-fusediterator-for-core-stepby/24074
-impl<T: Integer, I> SortedStarts<T> for core::iter::Fuse<core::iter::StepBy<I>> where
-    I: SortedStarts<T>
-{
-}
-impl<T: Integer, I> SortedDisjoint<T> for core::iter::Fuse<core::iter::StepBy<I>> where
-    I: SortedDisjoint<T>
-{
-}
+// impl<T: Integer, I> SortedStarts<T> for core::iter::Fuse<core::iter::StepBy<I>> where
+//     I: SortedStarts<T>
+// {
+// }
+// impl<T: Integer, I> SortedDisjoint<T> for core::iter::Fuse<core::iter::StepBy<I>> where
+//     I: SortedDisjoint<T>
+// {
+// }
 
-// Currently causes conflicts with StepBy and Skip... It doesn't make much sense tough, since SortedStarts are already fused
-// impl<T: Integer, I> SortedStarts<T> for core::iter::Fuse<I> where I: SortedStarts<T> {}
-// impl<T: Integer, I> SortedDisjoint<T> for core::iter::Fuse<I> where I: SortedDisjoint<T> {}
+impl<T: Integer, I> SortedStarts<T> for core::iter::Fuse<I> where I: SortedStarts<T> {}
+impl<T: Integer, I> SortedDisjoint<T> for core::iter::Fuse<I> where I: SortedDisjoint<T> {}
 
 impl<T: Integer, I> SortedStarts<T> for core::iter::Skip<I> where I: SortedStarts<T> {}
 impl<T: Integer, I> SortedDisjoint<T> for core::iter::Skip<I> where I: SortedDisjoint<T> {}
@@ -908,7 +907,7 @@ mod tests {
             .filter(|_| true)
             .skip_while(|_| false)
             .take_while(|_| true)
-            .step_by(1)
+            //.step_by(1)
             .fuse()
             .skip(0)
             .peekable();
