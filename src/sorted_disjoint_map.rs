@@ -2,6 +2,7 @@ use crate::DifferenceMap;
 use crate::DifferenceMapInternal;
 use crate::DynSortedDisjointMap;
 use crate::IntersectionMap;
+use crate::IntersectionZipIterMap;
 use crate::IntoRangeValuesIter;
 use crate::NotIter;
 use crate::NotMap;
@@ -65,7 +66,7 @@ impl<T, VR, I, P> SortedDisjointMap<T, VR> for core::iter::TakeWhile<I, P>
 where
     T: Integer,
     VR: ValueRef,
-    I: SortedStartsMap<T, VR>,
+    I: SortedDisjointMap<T, VR>,
     P: FnMut(&I::Item) -> bool,
 {
 }
@@ -83,7 +84,7 @@ impl<T, VR, I, P> SortedDisjointMap<T, VR> for core::iter::SkipWhile<I, P>
 where
     T: Integer,
     VR: ValueRef,
-    I: SortedStartsMap<T, VR>,
+    I: SortedDisjointMap<T, VR>,
     P: FnMut(&I::Item) -> bool,
 {
 }
@@ -333,6 +334,27 @@ where
 /// >
 /// > If you want others to use your marked iterator type, reexport:
 /// > `pub use range_set_blaze::{SortedDisjointMap, SortedStartsMap};`
+///
+/// ```compile_fail
+/// use core::iter::FusedIterator;
+/// use core::ops::RangeInclusive;
+/// use range_set_blaze::{SortedDisjointMap, SortedStartsMap};
+///
+/// struct StartsOnlyMap(core::iter::Once<(RangeInclusive<i32>, &'static str)>);
+/// impl Iterator for StartsOnlyMap {
+///     type Item = (RangeInclusive<i32>, &'static str);
+///     fn next(&mut self) -> Option<Self::Item> {
+///         self.0.next()
+///     }
+/// }
+/// impl FusedIterator for StartsOnlyMap {}
+/// impl SortedStartsMap<i32, &'static str> for StartsOnlyMap {}
+///
+/// fn needs_disjoint_map<I: SortedDisjointMap<i32, &'static str>>(_i: I) {}
+///
+/// let it = StartsOnlyMap(core::iter::once((1..=2, "a"))).take_while(|_| true);
+/// needs_disjoint_map(it);
+/// ```
 pub trait SortedDisjointMap<T, VR>: SortedStartsMap<T, VR>
 where
     T: Integer,
@@ -418,6 +440,35 @@ where
         let other = other.into_iter();
         let sorted_disjoint = self.into_sorted_disjoint();
         IntersectionIterMap::new(other, sorted_disjoint)
+    }
+
+    // TODO0(api-change): New public pair-valued overlap iterator.
+    /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`]-like
+    /// iterator over their common disjoint overlap, carrying both values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let left = RangeMapBlaze::from_iter([(2..=3, "L")]);
+    /// let right = RangeMapBlaze::from_iter([(1..=2, "R")]);
+    /// let mut it = left.range_values().zip_intersection(right.range_values());
+    /// assert_eq!(it.next(), Some((2..=2, (&"L", &"R"))));
+    /// assert_eq!(it.next(), None);
+    /// ```
+    #[inline]
+    fn zip_intersection<R, VRR>(
+        self,
+        other: R,
+    ) -> IntersectionZipIterMap<T, VR, VRR, Self, R::IntoIter>
+    where
+        VRR: ValueRef,
+        R: IntoIterator<Item = (RangeInclusive<T>, VRR)>,
+        R::IntoIter: SortedDisjointMap<T, VRR>,
+        Self: Sized,
+    {
+        IntersectionZipIterMap::new(self, other.into_iter())
     }
 
     /// Given a [`SortedDisjointMap`] iterator and a [`SortedDisjoint`] iterator,

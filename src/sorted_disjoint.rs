@@ -45,7 +45,7 @@ where
 
 impl<T: Integer, I, P> SortedDisjoint<T> for core::iter::TakeWhile<I, P>
 where
-    I: SortedStarts<T>,
+    I: SortedDisjoint<T>,
     P: FnMut(&I::Item) -> bool,
 {
 }
@@ -59,7 +59,7 @@ where
 
 impl<T: Integer, I, P> SortedDisjoint<T> for core::iter::SkipWhile<I, P>
 where
-    I: SortedStarts<T>,
+    I: SortedDisjoint<T>,
     P: FnMut(&I::Item) -> bool,
 {
 }
@@ -232,6 +232,28 @@ impl<T: Integer> SortedDisjoint<T> for core::iter::Once<core::ops::RangeInclusiv
 /// [`equal`]: SortedDisjoint::equal
 /// [multiway_union]: crate::MultiwaySortedDisjoint::union
 /// [multiway_intersection]: crate::MultiwaySortedDisjoint::intersection
+///
+/// ## Compile-fail Regression: `TakeWhile` Must Not Upgrade `SortedStarts` To `SortedDisjoint`
+/// ```compile_fail
+/// use core::iter::FusedIterator;
+/// use core::ops::RangeInclusive;
+/// use range_set_blaze::{SortedDisjoint, SortedStarts};
+///
+/// struct StartsOnly(core::iter::Once<RangeInclusive<i32>>);
+/// impl Iterator for StartsOnly {
+///     type Item = RangeInclusive<i32>;
+///     fn next(&mut self) -> Option<Self::Item> {
+///         self.0.next()
+///     }
+/// }
+/// impl FusedIterator for StartsOnly {}
+/// impl SortedStarts<i32> for StartsOnly {}
+///
+/// fn needs_disjoint<I: SortedDisjoint<i32>>(_i: I) {}
+///
+/// let it = StartsOnly(core::iter::once(1..=2)).take_while(|_| true);
+/// needs_disjoint(it);
+/// ```
 ///
 /// ## Example -- Find the ordinal weekdays in September 2023
 /// ```

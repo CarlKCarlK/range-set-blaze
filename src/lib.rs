@@ -34,6 +34,8 @@ pub use crate::integer::Integer;
 
 mod intersection_iter_map;
 pub use intersection_iter_map::IntersectionIterMap;
+mod intersection_zip_iter_map;
+pub use intersection_zip_iter_map::IntersectionZipIterMap;
 
 mod iter_map;
 pub use crate::iter_map::{IntoIterMap, IterMap};
