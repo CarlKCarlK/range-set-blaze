@@ -14,7 +14,7 @@ use crate::unsorted_priority_map::UnsortedPriorityMap;
 
 type SortedStartsInVecMap<T, VR> = AssumePrioritySortedStartsMap<vec::IntoIter<Priority<T, VR>>>;
 #[allow(clippy::redundant_pub_crate)]
-pub(crate) type SortedStartsInVec<T> = AssumeSortedStarts<vec::IntoIter<RangeInclusive<T>>>;
+pub(crate) type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
 /// This `struct` is created by the [`union`] method. See [`union`]'s
 /// documentation for more.

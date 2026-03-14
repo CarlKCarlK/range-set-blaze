@@ -143,23 +143,27 @@ where
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 /// Gives any iterator of ranges the [`SortedStarts`] trait without any checking.
-pub struct AssumeSortedStarts<I> {
+pub struct AssumeSortedStarts<T, I> {
     pub(crate) iter: I,
+    #[cfg(debug_assertions)]
+    last_start: Option<T>,
+    #[cfg(not(debug_assertions))]
+    last_start: core::marker::PhantomData<T>,
 }
 
-impl<T, I> FusedIterator for AssumeSortedStarts<I>
+impl<T, I> FusedIterator for AssumeSortedStarts<T, I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
 {
 }
 
-impl<T: Integer, I> SortedStarts<T> for AssumeSortedStarts<I> where
+impl<T: Integer, I> SortedStarts<T> for AssumeSortedStarts<T, I> where
     I: Iterator<Item = RangeInclusive<T>> + FusedIterator
 {
 }
 
-impl<T, I> AssumeSortedStarts<I>
+impl<T, I> AssumeSortedStarts<T, I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
@@ -169,11 +173,15 @@ where
     pub fn new<J: IntoIterator<IntoIter = I>>(iter: J) -> Self {
         Self {
             iter: iter.into_iter(),
+            #[cfg(debug_assertions)]
+            last_start: Option::default(),
+            #[cfg(not(debug_assertions))]
+            last_start: core::marker::PhantomData::default(),
         }
     }
 }
 
-impl<T, I> Iterator for AssumeSortedStarts<I>
+impl<T, I> Iterator for AssumeSortedStarts<T, I>
 where
     T: Integer,
     I: Iterator<Item = RangeInclusive<T>> + FusedIterator,
@@ -181,10 +189,38 @@ where
     type Item = RangeInclusive<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        let r = self.iter.next();
+        #[cfg(debug_assertions)]
+        {
+            if let Some(next) = &r {
+                let next_start = *next.start();
+                if let Some(last) = self.last_start {
+                    assert!(
+                        last <= next_start,
+                        "AssumeSortedStarts contained items with starts which are not sorted: {last:?}<={next_start:?} is wrong"
+                    );
+                }
+                self.last_start = Some(next_start);
+            }
+        }
+        r
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[cfg(debug_assertions)]
+    #[should_panic(
+        expected = "AssumeSortedStarts contained items with starts which are not sorted: 1<=0 is wrong"
+    )]
+    fn panic_if_iteration_inside_assume_sorted_isng() {
+        AssumeSortedStarts::new([1..=10, 0..=20]).count();
     }
 }
