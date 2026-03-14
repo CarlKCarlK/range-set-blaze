@@ -65,7 +65,7 @@ impl<T, VR, I, P> SortedDisjointMap<T, VR> for core::iter::TakeWhile<I, P>
 where
     T: Integer,
     VR: ValueRef,
-    I: SortedStartsMap<T, VR>,
+    I: SortedDisjointMap<T, VR>,
     P: FnMut(&I::Item) -> bool,
 {
 }
@@ -83,7 +83,7 @@ impl<T, VR, I, P> SortedDisjointMap<T, VR> for core::iter::SkipWhile<I, P>
 where
     T: Integer,
     VR: ValueRef,
-    I: SortedStartsMap<T, VR>,
+    I: SortedDisjointMap<T, VR>,
     P: FnMut(&I::Item) -> bool,
 {
 }
@@ -180,6 +180,47 @@ where
 {
 }
 
+impl<T, VR, I, IInner, TMap> SortedStartsMap<T, VR>
+    for core::iter::FlatMap<core::option::IntoIter<I>, IInner, TMap>
+where
+    T: Integer,
+    VR: ValueRef,
+    IInner: SortedStartsMap<T, VR>,
+    Self: FusedIterator + Iterator<Item = (RangeInclusive<T>, VR)>,
+    I: SortedStartsMap<T, VR>,
+    TMap: FnMut(I) -> IInner,
+{
+}
+
+impl<T, VR, I> SortedStartsMap<T, VR> for core::iter::Flatten<core::option::IntoIter<I>>
+where
+    T: Integer,
+    VR: ValueRef,
+    Self: FusedIterator + Iterator<Item = (RangeInclusive<T>, VR)>,
+    I: SortedStartsMap<T, VR>,
+{
+}
+
+impl<T, VR, I> SortedDisjointMap<T, VR> for core::iter::Flatten<core::option::IntoIter<I>>
+where
+    T: Integer,
+    VR: ValueRef,
+    Self: FusedIterator + Iterator<Item = (RangeInclusive<T>, VR)>,
+    I: SortedDisjointMap<T, VR>,
+{
+}
+
+impl<T, VR, I, IInner, TMap> SortedDisjointMap<T, VR>
+    for core::iter::FlatMap<core::option::IntoIter<I>, IInner, TMap>
+where
+    T: Integer,
+    VR: ValueRef,
+    IInner: SortedDisjointMap<T, VR>,
+    Self: FusedIterator + Iterator<Item = (RangeInclusive<T>, VR)>,
+    I: SortedStartsMap<T, VR>,
+    TMap: FnMut(I) -> IInner,
+{
+}
 /// Used internally by [`UnionIterMap`] and [`SymDiffIterMap`].
 pub trait PrioritySortedStartsMap<T, VR>: Iterator<Item = Priority<T, VR>> + FusedIterator
 where
@@ -1160,12 +1201,15 @@ mod tests {
         let a = core::iter::empty::<(RangeInclusive<u64>, &&str)>();
         #[allow(clippy::iter_skip_zero)]
         let b = core::iter::once((10u64..=20, &"a"))
-            .filter(|_| true)
             .skip_while(|_| false)
             .take_while(|_| true)
             .fuse()
             .skip(0)
             .peekable();
+        #[allow(clippy::iter_on_single_items)]
+        let b = Some(b).into_iter().flat_map(|x| x.filter(|_| true));
+        #[allow(clippy::iter_on_single_items)]
+        let b = Some(b).into_iter().flatten();
         assert_eq!(Some((10u64..=20, &"a")), a.union(b).next());
     }
 }

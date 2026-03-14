@@ -45,7 +45,7 @@ where
 
 impl<T: Integer, I, P> SortedDisjoint<T> for core::iter::TakeWhile<I, P>
 where
-    I: SortedStarts<T>,
+    I: SortedDisjoint<T>,
     P: FnMut(&I::Item) -> bool,
 {
 }
@@ -59,8 +59,45 @@ where
 
 impl<T: Integer, I, P> SortedDisjoint<T> for core::iter::SkipWhile<I, P>
 where
-    I: SortedStarts<T>,
+    I: SortedDisjoint<T>,
     P: FnMut(&I::Item) -> bool,
+{
+}
+
+impl<T, I> SortedStarts<T> for core::iter::Flatten<core::option::IntoIter<I>>
+where
+    T: Integer,
+    Self: FusedIterator + Iterator<Item = RangeInclusive<T>>,
+    I: SortedStarts<T>,
+{
+}
+
+impl<T, I> SortedDisjoint<T> for core::iter::Flatten<core::option::IntoIter<I>>
+where
+    T: Integer,
+    Self: FusedIterator + Iterator<Item = RangeInclusive<T>>,
+    I: SortedDisjoint<T>,
+{
+}
+impl<T, I, IInner, TMap> SortedStarts<T>
+    for core::iter::FlatMap<core::option::IntoIter<I>, IInner, TMap>
+where
+    T: Integer,
+    IInner: SortedStarts<T>,
+    Self: FusedIterator + Iterator<Item = RangeInclusive<T>>,
+    I: SortedStarts<T>,
+    TMap: FnMut(I) -> IInner,
+{
+}
+
+impl<T, I, IInner, TMap> SortedDisjoint<T>
+    for core::iter::FlatMap<core::option::IntoIter<I>, IInner, TMap>
+where
+    T: Integer,
+    IInner: SortedDisjoint<T>,
+    Self: FusedIterator + Iterator<Item = RangeInclusive<T>>,
+    I: SortedStarts<T>,
+    TMap: FnMut(I) -> IInner,
 {
 }
 
@@ -904,13 +941,14 @@ mod tests {
         let a = core::iter::empty::<RangeInclusive<u64>>();
         #[allow(clippy::iter_skip_zero)]
         let b = core::iter::once(10u64..=20)
-            .filter(|_| true)
             .skip_while(|_| false)
             .take_while(|_| true)
             //.step_by(1)
             .fuse()
             .skip(0)
             .peekable();
+        #[allow(clippy::iter_on_single_items)]
+        let b = Some(b).into_iter().flat_map(|x| x.filter(|_| true));
         assert_eq!(Some(10u64..=20), a.union(b).next());
     }
 }
