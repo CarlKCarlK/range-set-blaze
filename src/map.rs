@@ -895,6 +895,25 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     pub fn is_universal(&self) -> bool {
         self.len() == T::safe_len(&(T::min_value()..=T::max_value()))
     }
+
+    /// Returns a universal map that covers all values of `T` with `value`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let universal = RangeMapBlaze::<u8, &str>::universe_with(&"all");
+    /// assert!(universal.is_universal());
+    /// assert_eq!(universal.get(0), Some(&"all"));
+    /// assert_eq!(universal.get(255), Some(&"all"));
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn universe_with(value: &V) -> Self {
+        // TODO00 Revisit whether `universe_with` is the best public name and constructor shape.
+        Self::new().complement_with(value)
+    }
     /// Returns `true` if the set contains an element equal to the value.
     ///
     /// # Examples

@@ -1,4 +1,5 @@
 #![allow(unexpected_cfgs)]
+// todo0000 be sure to check the agents.md
 use core::cmp::max;
 use core::mem;
 use core::{
@@ -595,6 +596,23 @@ impl<T: Integer> RangeSetBlaze<T> {
     #[inline]
     pub fn is_universal(&self) -> bool {
         self.ranges().is_universal()
+    }
+
+    /// Returns the universal set containing all values of `T`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let universal = RangeSetBlaze::<u8>::universe();
+    /// assert!(universal.is_universal());
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn universe() -> Self {
+        // TODO00 Revisit whether `universe` is the best public name and constructor shape.
+        !Self::new()
     }
 
     /// Returns `true` if the set is a subset of another,
