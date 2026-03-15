@@ -7,21 +7,24 @@ use core::{
 use crate::Integer;
 use crate::{SortedDisjointMap, map::ValueRef};
 
-/// This `struct` is created by the [`zip_intersection`] method on [`SortedDisjointMap`].
+/// This `struct` is created by the [`inner_join`] method on [`SortedDisjointMap`].
 /// It yields the common disjoint overlap and both values for each overlapping range.
 ///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap
-/// [`zip_intersection`]: crate::SortedDisjointMap::zip_intersection
+/// [`inner_join`]: crate::SortedDisjointMap::inner_join
+// todo000 need more tests
+// todo000 need docs updated
+// todo000 consider adding to RMS
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct IntersectionZipIterMap<T, VRL, VRR, IL, IR> {
+pub struct InnerJoinIterMap<T, VRL, VRR, IL, IR> {
     iter_left: IL,
     iter_right: IR,
     right: Option<(RangeInclusive<T>, VRR)>,
     left: Option<(RangeInclusive<T>, VRL)>,
 }
 
-impl<T, VRL, VRR, IL, IR> IntersectionZipIterMap<T, VRL, VRR, IL, IR>
+impl<T, VRL, VRR, IL, IR> InnerJoinIterMap<T, VRL, VRR, IL, IR>
 where
     T: Integer,
     VRL: ValueRef,
@@ -39,7 +42,7 @@ where
     }
 }
 
-impl<T, VRL, VRR, IL, IR> FusedIterator for IntersectionZipIterMap<T, VRL, VRR, IL, IR>
+impl<T, VRL, VRR, IL, IR> FusedIterator for InnerJoinIterMap<T, VRL, VRR, IL, IR>
 where
     T: Integer,
     VRL: ValueRef,
@@ -49,7 +52,7 @@ where
 {
 }
 
-impl<T, VRL, VRR, IL, IR> Iterator for IntersectionZipIterMap<T, VRL, VRR, IL, IR>
+impl<T, VRL, VRR, IL, IR> Iterator for InnerJoinIterMap<T, VRL, VRR, IL, IR>
 where
     T: Integer,
     VRL: ValueRef,

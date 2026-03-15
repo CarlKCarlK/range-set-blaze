@@ -1,8 +1,8 @@
 use crate::DifferenceMap;
 use crate::DifferenceMapInternal;
 use crate::DynSortedDisjointMap;
+use crate::InnerJoinIterMap;
 use crate::IntersectionMap;
-use crate::IntersectionZipIterMap;
 use crate::IntoRangeValuesIter;
 use crate::NotIter;
 use crate::NotMap;
@@ -307,22 +307,22 @@ where
     ///
     /// let left = RangeMapBlaze::from_iter([(2..=3, "L")]);
     /// let right = RangeMapBlaze::from_iter([(1..=2, "R")]);
-    /// let mut it = left.range_values().zip_intersection(right.range_values());
+    /// let mut it = left.range_values().inner_join(right.range_values());
     /// assert_eq!(it.next(), Some((2..=2, (&"L", &"R"))));
     /// assert_eq!(it.next(), None);
     /// ```
     #[inline]
-    fn zip_intersection<R, VRR>(
+    fn inner_join<R, VRR>(
         self,
         other: R,
-    ) -> IntersectionZipIterMap<T, VR, VRR, Self, R::IntoIter>
+    ) -> InnerJoinIterMap<T, VR, VRR, Self, R::IntoIter>
     where
         VRR: ValueRef,
         R: IntoIterator<Item = (RangeInclusive<T>, VRR)>,
         R::IntoIter: SortedDisjointMap<T, VRR>,
         Self: Sized,
     {
-        IntersectionZipIterMap::new(self, other.into_iter())
+        InnerJoinIterMap::new(self, other.into_iter())
     }
 
     /// Given a [`SortedDisjointMap`] iterator and a [`SortedDisjoint`] iterator,
@@ -1050,8 +1050,29 @@ macro_rules! impl_sorted_map_traits_and_ops {
 // CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_map_method'
 impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 'a, VR: ValueRef);
+impl_sorted_map_traits_and_ops!(InnerJoinIterMap<T, VRL, VRR, I0, I1>, (VRL, VRR), (VRL, VRR), VRL: ValueRef + Eq, VRR: ValueRef + Eq, I0: SortedDisjointMap<T, VRL>, I1: SortedDisjointMap<T, VRR>);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VR, I0, I1>,  VR::Value, VR, VR: ValueRef, I0: SortedDisjointMap<T, VR>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: Eq + Clone);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Eq + Clone);
 impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
 impl_sorted_map_traits_and_ops!(UnionIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_inner_join_is_sorted_disjoint_map() {
+        let left = CheckSortedDisjointMap::new([(1u64..=3, &"L"), (6..=8, &"L2")]);
+        let right = CheckSortedDisjointMap::new([(2u64..=7, &"R")]);
+        let mut joined = left
+            .inner_join(right)
+            .difference(CheckSortedDisjointMap::new([(
+                2u64..=2,
+                (&"L", &"R"),
+            )]));
+        assert_eq!(joined.next(), Some((3u64..=3, (&"L", &"R"))));
+        assert_eq!(joined.next(), Some((6u64..=7, (&"L2", &"R"))));
+        assert_eq!(joined.next(), None);
+    }
+}

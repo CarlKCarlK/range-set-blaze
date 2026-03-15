@@ -120,6 +120,19 @@ where
     }
 }
 
+impl<VRL, VRR> ValueRef for (VRL, VRR)
+where
+    VRL: ValueRef + Eq,
+    VRR: ValueRef + Eq,
+{
+    type Target = Self;
+
+    #[inline]
+    fn into_value(self) -> Self::Target {
+        self
+    }
+}
+
 impl<V> ValueRef for Rc<V>
 where
     V: Eq + Clone,
