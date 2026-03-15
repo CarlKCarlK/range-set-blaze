@@ -186,7 +186,6 @@ where
     T: Integer,
     VR: ValueRef,
     IInner: SortedStartsMap<T, VR>,
-    Self: FusedIterator + Iterator<Item = (RangeInclusive<T>, VR)>,
     I: SortedStartsMap<T, VR>,
     TMap: FnMut(I) -> IInner,
 {
@@ -196,7 +195,6 @@ impl<T, VR, I> SortedStartsMap<T, VR> for core::iter::Flatten<core::option::Into
 where
     T: Integer,
     VR: ValueRef,
-    Self: FusedIterator + Iterator<Item = (RangeInclusive<T>, VR)>,
     I: SortedStartsMap<T, VR>,
 {
 }
@@ -205,7 +203,6 @@ impl<T, VR, I> SortedDisjointMap<T, VR> for core::iter::Flatten<core::option::In
 where
     T: Integer,
     VR: ValueRef,
-    Self: FusedIterator + Iterator<Item = (RangeInclusive<T>, VR)>,
     I: SortedDisjointMap<T, VR>,
 {
 }
@@ -216,8 +213,7 @@ where
     T: Integer,
     VR: ValueRef,
     IInner: SortedDisjointMap<T, VR>,
-    Self: FusedIterator + Iterator<Item = (RangeInclusive<T>, VR)>,
-    I: SortedStartsMap<T, VR>,
+    I: SortedDisjointMap<T, VR>,
     TMap: FnMut(I) -> IInner,
 {
 }

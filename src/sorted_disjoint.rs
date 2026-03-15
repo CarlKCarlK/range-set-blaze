@@ -67,7 +67,6 @@ where
 impl<T, I> SortedStarts<T> for core::iter::Flatten<core::option::IntoIter<I>>
 where
     T: Integer,
-    Self: FusedIterator + Iterator<Item = RangeInclusive<T>>,
     I: SortedStarts<T>,
 {
 }
@@ -75,7 +74,6 @@ where
 impl<T, I> SortedDisjoint<T> for core::iter::Flatten<core::option::IntoIter<I>>
 where
     T: Integer,
-    Self: FusedIterator + Iterator<Item = RangeInclusive<T>>,
     I: SortedDisjoint<T>,
 {
 }
@@ -84,7 +82,6 @@ impl<T, I, IInner, TMap> SortedStarts<T>
 where
     T: Integer,
     IInner: SortedStarts<T>,
-    Self: FusedIterator + Iterator<Item = RangeInclusive<T>>,
     I: SortedStarts<T>,
     TMap: FnMut(I) -> IInner,
 {
@@ -95,12 +92,14 @@ impl<T, I, IInner, TMap> SortedDisjoint<T>
 where
     T: Integer,
     IInner: SortedDisjoint<T>,
-    Self: FusedIterator + Iterator<Item = RangeInclusive<T>>,
-    I: SortedStarts<T>,
+    I: SortedDisjoint<T>,
     TMap: FnMut(I) -> IInner,
 {
 }
 
+// Potential future support for core::iter::StepBy once it implements FusedIterator:
+// https://internals.rust-lang.org/t/implement-fusediterator-for-core-stepby/24074
+//
 // Check if core::iter::StepBy implements FusedIterator if it's inner is. Seems like it could be upstreamed
 // https://internals.rust-lang.org/t/implement-fusediterator-for-core-stepby/24074
 // impl<T: Integer, I> SortedStarts<T> for core::iter::Fuse<core::iter::StepBy<I>> where
