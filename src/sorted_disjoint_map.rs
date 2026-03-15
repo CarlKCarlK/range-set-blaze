@@ -321,6 +321,13 @@ where
 ///
 /// This is true even when applying multiple operations. The last example below demonstrates this.
 ///
+/// ## Standard Iterators
+///
+/// Many `core::iter` adapters preserve this marker trait when the inner iterator already
+/// implements it, including `filter`, `take_while`, `skip_while`, `fuse`, `skip`, `take`,
+/// and `peekable`. `empty`/`once` iterators and `Option`-based `flatten`/`flat_map` are also
+/// supported.
+///
 /// ## Examples
 ///
 /// ```

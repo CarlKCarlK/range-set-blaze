@@ -218,5 +218,4 @@ cargo install just
 just check-all
 ```
 
-See [`just --list`](justfile) for all available development commands.
-
+See `just --list` for all available development commands (defined in `justfile`).
