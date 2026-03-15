@@ -184,10 +184,10 @@ impl<T: Integer> SortedDisjoint<T> for core::iter::Once<core::ops::RangeInclusiv
 ///
 /// | Set Operators                             | Operator    | Multiway (same type)                              | Multiway (different types)           |
 /// |------------------------------------|-------------|---------------------------------------------------|--------------------------------------|
-/// | [`union`]                      | [`a` &#124; `b`] | <code>[a, b, c].[union][multiway_union]() </code>        | <code>[union_dyn!](a, b, c)</code>         |
-/// | [`intersection`]               | [`a & b`]     | <code>[a, b, c].[intersection][multiway_intersection]() </code> | <code>[intersection_dyn!](a, b, c)</code>|
+/// | [`union`]                      | [`a` &#124; `b`] | <code>[a, b, c].[union][multiway_union]() </code>        | <code>[union_dyn!][union_dyn_macro](a, b, c)</code>         |
+/// | [`intersection`]               | [`a & b`]     | <code>[a, b, c].[intersection][multiway_intersection]() </code> | <code>[intersection_dyn!][intersection_dyn_macro](a, b, c)</code>|
 /// | [`difference`]                 | [`a - b`]     | *n/a*                                             | *n/a*                                |
-/// | [`symmetric_difference`]       | [`a ^ b`]     | <code>[a, b, c].[symmetric_difference][multiway_symmetric_difference]() </code> | <code>[symmetric_difference_dyn!](a, b, c)</code> |
+/// | [`symmetric_difference`]       | [`a ^ b`]     | <code>[a, b, c].[symmetric_difference][multiway_symmetric_difference]() </code> | <code>[symmetric_difference_dyn!][symmetric_difference_dyn_macro](a, b, c)</code> |
 /// | [`complement`]                 | [`!a`]        | *n/a*                                             | *n/a*                                |
 ///
 /// [`a` &#124; `b`]: trait.SortedDisjoint.html#method.union
@@ -198,15 +198,21 @@ impl<T: Integer> SortedDisjoint<T> for core::iter::Once<core::ops::RangeInclusiv
 /// [multiway_union]: trait.MultiwaySortedDisjoint.html#method.union
 /// [multiway_intersection]: trait.MultiwaySortedDisjoint.html#method.intersection
 /// [multiway_symmetric_difference]: trait.MultiwaySortedDisjoint.html#method.symmetric_difference
-/// [`union_dyn!`]: macro.union_dyn.html
-/// [`intersection_dyn!`]: macro.intersection_dyn.html
-/// [`symmetric_difference_dyn!`]: macro.symmetric_difference_dyn.html
-///
+/// [union_dyn_macro]: macro@crate::union_dyn
+/// [intersection_dyn_macro]: macro@crate::intersection_dyn
+/// [symmetric_difference_dyn_macro]: macro@crate::symmetric_difference_dyn
 /// ## Performance
 ///
 /// Every operation is implemented as a single pass over the sorted & disjoint ranges, with minimal memory.
 ///
 /// This is true even when applying multiple operations. The last example below demonstrates this.
+///
+/// ## Standard Iterators
+///
+/// Many `core::iter` adapters preserve this marker trait when the inner iterator already
+/// implements it, including `filter`, `take_while`, `skip_while`, `fuse`, `skip`, `take`,
+/// and `peekable`. `empty`/`once` iterators and `Option`-based `flatten`/`flat_map` are also
+/// supported.
 ///
 /// ## Examples
 ///
