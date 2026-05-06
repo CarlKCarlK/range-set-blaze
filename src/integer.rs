@@ -132,7 +132,7 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     /// ```
     /// use range_set_blaze::Integer;
     ///
-    /// assert_eq!(<u8 as Integer>::safe_len(&(0..=255)), 256);
+    /// assert_eq!(u8::safe_len(&(0..=255)), 256);
     /// ```
     fn safe_len(range: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen;
 
@@ -1213,13 +1213,13 @@ mod tests {
         let universe = !RangeSetBlaze::<char>::default();
 
         // Check add_one and sub_one behavior
-        let max_value = <char as Integer>::max_value();
+        let max_value = char::max_value();
         assert_eq!(max_value.checked_add_one(), None);
 
         let mut prev = None;
         let mut len = <char as Integer>::SafeLen::zero();
-        for item in <char as Integer>::min_value()..=max_value {
-            let len2b = <char as Integer>::safe_len(&(item..=max_value));
+        for item in char::min_value()..=max_value {
+            let len2b = char::safe_len(&(item..=max_value));
             let mut expected = universe.len();
             expected -= len;
             assert_eq!(len2b, expected);
@@ -1231,20 +1231,20 @@ mod tests {
             assert_eq!(item3, max_value);
 
             len += <char as Integer>::SafeLen::one();
-            let len2 = <char as Integer>::safe_len(&(<char as Integer>::min_value()..=item));
+            let len2 = char::safe_len(&(char::min_value()..=item));
             assert_eq!(len, len2);
             assert_eq!(
                 len2,
-                <char as Integer>::f64_to_safe_len_lossy(<char as Integer>::safe_len_to_f64_lossy(
+                char::f64_to_safe_len_lossy(char::safe_len_to_f64_lossy(
                     len2
                 ))
             );
 
-            let item2 = <char as Integer>::min_value().inclusive_end_from_start(len);
+            let item2 = char::min_value().inclusive_end_from_start(len);
             assert_eq!(item2, item);
 
             let item3 = item.start_from_inclusive_end(len);
-            assert_eq!(item3, <char as Integer>::min_value());
+            assert_eq!(item3, char::min_value());
 
             if let Some(prev) = prev {
                 assert!(universe.contains(prev));

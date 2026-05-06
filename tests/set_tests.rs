@@ -1177,7 +1177,7 @@ fn len_demo() {
     let len: <u8 as Integer>::SafeLen = RangeSetBlaze::from_iter([0u8..=255]).len();
     assert_eq!(len, 256);
 
-    assert_eq!(<u8 as Integer>::safe_len(&(0..=255)), 256);
+    assert_eq!(u8::safe_len(&(0..=255)), 256);
 }
 
 #[test]
