@@ -63,6 +63,7 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     /// ```
     #[must_use]
     fn exhausted_range() -> RangeInclusive<Self> {
+                debug_assert!(Self::min_value() < Self::max_value(), "Precondition violated: min_value must be less than max_value");
         Self::max_value()..=Self::min_value()
     }
 
