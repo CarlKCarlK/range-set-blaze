@@ -189,7 +189,7 @@ impl One for F32 {
 
 impl PartialEq for F32 {
     fn eq(&self, other: &Self) -> bool {
-        self.cmp(other).is_eq()
+        self.0.to_bits() == other.0.to_bits()
     }
 }
 

@@ -190,7 +190,7 @@ impl One for F64 {
 
 impl PartialEq for F64 {
     fn eq(&self, other: &Self) -> bool {
-        self.cmp(other).is_eq()
+        self.0.to_bits() == other.0.to_bits()
     }
 }
 

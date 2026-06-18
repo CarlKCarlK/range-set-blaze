@@ -63,8 +63,9 @@ impl crate::Integer for F64 {
 
     #[cfg(feature = "from_slice")]
     #[inline]
-    fn from_slice(_slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        unimplemented!("Can't do from_slice with floating point.");
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        // no way to do the fancy thing
+        RangeSetBlaze::from_iter(slice.as_ref())
     }
 
     #[allow(clippy::cast_sign_loss)]
