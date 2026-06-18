@@ -29,6 +29,13 @@ pub use dyn_sorted_disjoint::DynSortedDisjoint;
 mod dyn_sorted_disjoint_map;
 pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 
+pub mod f32;
+pub use f32::F32;
+pub mod f32_int;
+pub mod f64;
+pub use f64::F64;
+pub mod f64_int;
+
 mod integer;
 pub use crate::integer::Integer;
 

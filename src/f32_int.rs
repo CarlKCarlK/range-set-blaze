@@ -1,0 +1,120 @@
+//! impl Integer for F32
+
+use crate::f32::F32;
+#[cfg(feature = "from_slice")]
+use crate::{RangeSetBlaze};
+use std::ops::RangeInclusive;
+
+impl crate::Integer for F32 {
+    type SafeLen = i64;
+
+    #[inline]
+    fn checked_add_one(self) -> Option<Self> {
+        self.checked_next()
+    }
+
+    #[inline]
+    fn add_one(self) -> Self {
+        self.next()
+    }
+
+    #[inline]
+    fn sub_one(self) -> Self {
+        self.prev()
+    }
+
+    #[inline]
+    fn assign_sub_one(&mut self) {
+        *self = self.prev();
+    }
+
+    #[inline]
+    fn range_next(range: &mut RangeInclusive<Self>) -> Option<Self> {
+        if range.is_empty() {
+            None
+        } else {
+            let next = *range.start();
+            *range = (next.next())..=*range.end();
+            Some(next)
+        }
+    }
+
+    #[inline]
+    fn range_next_back(range: &mut RangeInclusive<Self>) -> Option<Self> {
+        if range.is_empty() {
+            None
+        } else {
+            let last = *range.end();
+            *range = *range.start()..=last.prev();
+            Some(last)
+        }
+    }
+
+    #[inline]
+    fn min_value() -> Self {
+        Self::MIN
+    }
+
+    #[inline]
+    fn max_value() -> Self {
+        Self::MAX
+    }
+
+    #[cfg(feature = "from_slice")]
+    fn from_slice(_slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        unimplemented!("Can't do from_slice with floating point.");
+    }
+
+    #[allow(clippy::cast_sign_loss)]
+    fn safe_len(r: &RangeInclusive<Self>) -> Self::SafeLen {
+        // 1️⃣ Contract: caller promises start ≤ end  (checked only in debug builds)
+        debug_assert!(r.start() <= r.end(), "start ≤ end required");
+
+        // 2️⃣ Compute distance in `Self` then reinterpret‑cast to the first
+        Self::SafeLen::from(r.end().to_ordered_i32())
+            - Self::SafeLen::from(r.start().to_ordered_i32())
+            + 1
+    }
+
+    #[allow(clippy::cast_precision_loss, clippy::cast_lossless)]
+    fn safe_len_to_f64_lossy(len: Self::SafeLen) -> f64 {
+        len as f64
+    }
+
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_possible_truncation)]
+    fn f64_to_safe_len_lossy(f: f64) -> Self::SafeLen {
+        f as Self::SafeLen
+    }
+
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_wrap)]
+    fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self {
+        #[cfg(debug_assertions)]
+        {
+            let max_len = Self::safe_len(&(self..=Self::MAX));
+            assert!(
+                b > 0 && b <= max_len,
+                "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
+            );
+        }
+        // If b is in range, two’s-complement wrap-around yields the correct inclusive end even if the add overflows
+        Self::from_ordered_i32(self.to_ordered_i32().wrapping_add((b - 1) as i32))
+    }
+
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_wrap)]
+    fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self {
+        #[cfg(debug_assertions)]
+        {
+            let max_len = Self::safe_len(&(Self::MIN..=self));
+            assert!(
+                0 < b && b <= max_len,
+                "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
+            );
+        }
+        // If b is in range, two’s-complement wrap-around yields the correct start even if the sub overflows
+        Self::from_ordered_i32(self.to_ordered_i32().wrapping_sub((b - 1) as i32))
+    }
+}

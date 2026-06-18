@@ -2,7 +2,7 @@
 
 #![cfg(test)]
 use range_set_blaze::{
-    AssumeSortedStarts, IntoIter, IntoRangesIter, Iter, KMerge, MapIntoRangesIter, MapRangesIter,
+    AssumeSortedStarts, F32, F64, IntoIter, IntoRangesIter, Iter, KMerge, MapIntoRangesIter, MapRangesIter,
     Merge, RangeOnce, RangeValuesIter, RangeValuesToRangesIter, RangesIter,
 };
 
@@ -67,7 +67,7 @@ fn insert_max_u128() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn complement0() {
-    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128, F32, F64] {
         $(
         let empty = RangeSetBlaze::<$ty>::new();
         let full = !&empty;
@@ -2423,7 +2423,7 @@ fn understand_into_iter() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::cognitive_complexity, clippy::float_cmp)]
 fn integer_coverage() {
-    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
+    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128, F32, F64] {
         $(
             let len = <$ty as Integer>::SafeLen::one();
             let a = $ty::zero();
