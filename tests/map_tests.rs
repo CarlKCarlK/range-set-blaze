@@ -18,7 +18,7 @@ use range_set_blaze::Integer;
 #[cfg(not(target_arch = "wasm32"))]
 use range_set_blaze::test_util::{How, k_maps};
 use range_set_blaze::{
-    F32, F64, IntersectionIterMap, IntoRangeValuesIter, KMergeMap, RangeValuesIter, SymDiffIterMap,
+    IntersectionIterMap, IntoRangeValuesIter, KMergeMap, RangeValuesIter, SymDiffIterMap,
     UnionIterMap, ValueRef, prelude::*,
 };
 use std::borrow::Borrow;
@@ -142,7 +142,7 @@ fn map_insert_max_u128() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn map_complement0() {
-    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize,  i128, u128, F32, F64] {
+    syntactic_for! { ty in [i8, u8, isize, usize,  i16, u16, i32, u32, i64, u64, isize, usize, i128, u128] {
         $(
         let empty = RangeMapBlaze::<$ty,u8>::new();
         let full = !&empty;

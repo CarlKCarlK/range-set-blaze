@@ -1,11 +1,18 @@
-//! impl Integer for F32
+//! impl Integer for TotalF32
 
-use crate::f32::F32;
 #[cfg(feature = "from_slice")]
-use crate::{RangeSetBlaze};
+use crate::RangeSetBlaze;
+use crate::total_f32::TotalF32;
 use std::ops::RangeInclusive;
 
-impl crate::Integer for F32 {
+///```
+/// use range_set_blaze::{RangeSetBlaze, TotalF32};
+/// let set = RangeSetBlaze::from_iter([TotalF32(3.0)..=TotalF32(5.0)]);
+/// assert!(set.contains(TotalF32(3.1)));
+/// assert!(!set.contains(TotalF32(2.9)));
+///```
+
+impl crate::Integer for TotalF32 {
     type SafeLen = i64;
 
     #[inline]
@@ -13,12 +20,14 @@ impl crate::Integer for F32 {
         self.checked_next()
     }
 
+    // This moves to the next representable float in total_cmp order, not a numeric + 1.0.
     #[inline]
     fn add_one(self) -> Self {
         self.next()
     }
 
     #[inline]
+    // This moves to the previous representable float in total_cmp order, not a numeric - 1.0.
     fn sub_one(self) -> Self {
         self.prev()
     }

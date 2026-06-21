@@ -1,12 +1,19 @@
-//! impl Integer for F64
+//! impl Integer for TotalF64
 
-use crate::f64::F64;
 #[cfg(feature = "from_slice")]
 use crate::RangeSetBlaze;
+use crate::total_f64::TotalF64;
 
 use std::ops::RangeInclusive;
 
-impl crate::Integer for F64 {
+///```
+/// use range_set_blaze::{RangeSetBlaze, TotalF64};
+/// let set = RangeSetBlaze::from_iter([TotalF64(3.0)..=TotalF64(5.0)]);
+/// assert!(set.contains(TotalF64(3.1)));
+/// assert!(!set.contains(TotalF64(2.9)));
+///```
+
+impl crate::Integer for TotalF64 {
     type SafeLen = i128;
 
     #[inline]
@@ -14,12 +21,14 @@ impl crate::Integer for F64 {
         self.checked_next()
     }
 
+    // This moves to the next representable float in total_cmp order, not a numeric + 1.0.
     #[inline]
     fn add_one(self) -> Self {
         self.next()
     }
 
     #[inline]
+    // This moves to the previous representable float in total_cmp order, not a numeric - 1.0.
     fn sub_one(self) -> Self {
         self.prev()
     }

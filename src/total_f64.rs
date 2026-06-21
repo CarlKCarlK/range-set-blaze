@@ -11,9 +11,9 @@ use num_traits::{One, Zero};
 /// Comparison, equality, and hashing all agree with [`f64::total_cmp`].
 #[repr(transparent)]
 #[derive(Copy, Clone, Default, Debug)]
-pub struct F64(pub f64);
+pub struct TotalF64(pub f64);
 
-impl F64 {
+impl TotalF64 {
     /// The minimum value in [`f64::total_cmp`] order.
     pub const MIN: Self = Self(f64::from_bits(u64::MAX));
 
@@ -98,14 +98,14 @@ impl F64 {
         }
     }
 
-    /// Converts an inclusive primitive [`f64`] range into an inclusive [`F64`] range.
+    /// Converts an inclusive primitive [`f64`] range into an inclusive [`TotalF64`] range.
     #[must_use]
     pub fn range(range: RangeInclusive<f64>) -> RangeInclusive<Self> {
         let (start, end) = range.into_inner();
         Self(start)..=Self(end)
     }
 
-    /// Converts inclusive primitive [`f64`] ranges into inclusive [`F64`] ranges.
+    /// Converts inclusive primitive [`f64`] ranges into inclusive [`TotalF64`] ranges.
     pub fn ranges<I>(ranges: I) -> impl Iterator<Item = RangeInclusive<Self>>
     where
         I: IntoIterator<Item = RangeInclusive<f64>>,
@@ -113,38 +113,48 @@ impl F64 {
         ranges.into_iter().map(Self::range)
     }
 
-    /// Converts primitive [`f64`] values into ordered [`F64`] values.
+    /// Converts primitive [`f64`] values into ordered [`TotalF64`] values.
     pub fn values<I>(values: I) -> impl Iterator<Item = Self>
     where
         I: IntoIterator<Item = f64>,
     {
-        values.into_iter().map(F64)
+        values.into_iter().map(TotalF64)
     }
 
-    /// Views primitive [`f64`] values as ordered [`F64`] values.
+    /// Views primitive [`f64`] values as ordered [`Total64`] values.
     ///
     /// This runs in `O(1)` and does not allocate.
     #[must_use]
     pub const fn slice(values: &[f64]) -> &[Self] {
-        // SAFETY: F64 is #[repr(transparent)] over f64, making `&[f64]`
-        // and `&[F64]` entirely interchangeable in layout and lifetimes.
+        // SAFETY: TotalF64 is #[repr(transparent)] over f64, making `&[f64]`
+        // and `&[TotalF64]` entirely interchangeable in layout and lifetimes.
         unsafe { core::mem::transmute::<&[f64], &[Self]>(values) }
     }
 }
 
-impl From<f64> for F64 {
+/// Views  [`TotalF64`] values as primitive [`f64`] values.
+///
+/// This runs in `O(1)` and does not allocate.
+#[must_use]
+pub const fn primitive_slice(values: &[TotalF64]) -> &[f64] {
+    // SAFETY: TotalF64 is #[repr(transparent)] over f64, making `&[f64]`
+    // and `&[TotalF64]` entirely interchangeable in layout and lifetimes.
+    unsafe { core::mem::transmute::<&[TotalF64], &[f64]>(values) }
+}
+
+impl From<f64> for TotalF64 {
     fn from(value: f64) -> Self {
         Self(value)
     }
 }
 
-impl From<F64> for f64 {
-    fn from(value: F64) -> Self {
+impl From<TotalF64> for f64 {
+    fn from(value: TotalF64) -> Self {
         value.0
     }
 }
 
-impl Add for F64 {
+impl Add for TotalF64 {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -152,13 +162,13 @@ impl Add for F64 {
     }
 }
 
-impl AddAssign for F64 {
+impl AddAssign for TotalF64 {
     fn add_assign(&mut self, rhs: Self) {
         self.0 += rhs.0;
     }
 }
 
-impl Mul for F64 {
+impl Mul for TotalF64 {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
@@ -166,13 +176,13 @@ impl Mul for F64 {
     }
 }
 
-impl SubAssign for F64 {
+impl SubAssign for TotalF64 {
     fn sub_assign(&mut self, rhs: Self) {
         self.0 -= rhs.0;
     }
 }
 
-impl Zero for F64 {
+impl Zero for TotalF64 {
     fn zero() -> Self {
         Self(0.0)
     }
@@ -182,33 +192,33 @@ impl Zero for F64 {
     }
 }
 
-impl One for F64 {
+impl One for TotalF64 {
     fn one() -> Self {
         Self(1.0)
     }
 }
 
-impl PartialEq for F64 {
+impl PartialEq for TotalF64 {
     fn eq(&self, other: &Self) -> bool {
         self.0.to_bits() == other.0.to_bits()
     }
 }
 
-impl Eq for F64 {}
+impl Eq for TotalF64 {}
 
-impl PartialOrd for F64 {
+impl PartialOrd for TotalF64 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for F64 {
+impl Ord for TotalF64 {
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.total_cmp(&other.0)
     }
 }
 
-impl Hash for F64 {
+impl Hash for TotalF64 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.to_bits().hash(state);
     }
@@ -239,132 +249,150 @@ mod tests {
 
         for left in values {
             for right in values {
-                assert_eq!(F64(left).cmp(&F64(right)), left.total_cmp(&right));
+                assert_eq!(TotalF64(left).cmp(&TotalF64(right)), left.total_cmp(&right));
             }
         }
     }
 
     #[test]
     fn equality_agrees_with_total_cmp() {
-        assert_ne!(F64(-0.0), F64(0.0));
-        assert_eq!(F64(f64::NAN), F64(f64::NAN));
+        assert_ne!(TotalF64(-0.0), TotalF64(0.0));
+        assert_eq!(TotalF64(f64::NAN), TotalF64(f64::NAN));
     }
 
     #[test]
     fn equal_values_hash_equally() {
-        let left = hash(F64(f64::NAN));
-        let right = hash(F64(f64::NAN));
+        let left = hash(TotalF64(f64::NAN));
+        let right = hash(TotalF64(f64::NAN));
 
         assert_eq!(left, right);
     }
 
     #[test]
     fn converts_ranges() {
-        assert_eq!(F64::range(10.0..=20.0), F64(10.0)..=F64(20.0));
         assert_eq!(
-            F64::ranges([10.0..=20.0, 30.0..=40.0]).collect::<Vec<_>>(),
-            vec![F64(10.0)..=F64(20.0), F64(30.0)..=F64(40.0)]
+            TotalF64::range(10.0..=20.0),
+            TotalF64(10.0)..=TotalF64(20.0)
+        );
+        assert_eq!(
+            TotalF64::ranges([10.0..=20.0, 30.0..=40.0]).collect::<Vec<_>>(),
+            vec![
+                TotalF64(10.0)..=TotalF64(20.0),
+                TotalF64(30.0)..=TotalF64(40.0)
+            ]
         );
     }
 
     #[test]
     fn add_assign_adds_inner_values() {
-        let mut value = F64(1.5);
+        let mut value = TotalF64(1.5);
 
-        value += F64(2.25);
+        value += TotalF64(2.25);
 
-        assert_eq!(value, F64(3.75));
+        assert_eq!(value, TotalF64(3.75));
     }
 
     #[test]
     fn sub_assign_subtracts_inner_values() {
-        let mut value = F64(1.5);
+        let mut value = TotalF64(1.5);
 
-        value -= F64(2.25);
+        value -= TotalF64(2.25);
 
-        assert_eq!(value, F64(-0.75));
+        assert_eq!(value, TotalF64(-0.75));
     }
 
     #[test]
     fn zero_is_additive_identity() {
-        let value = F64(3.5);
+        let value = TotalF64(3.5);
 
-        assert_eq!(F64::zero(), F64(0.0));
-        assert!(F64::zero().is_zero());
-        assert!(!F64(-0.0).is_zero());
-        assert_eq!(value + F64::zero(), value);
-        assert_eq!(F64::zero() + value, value);
+        assert_eq!(TotalF64::zero(), TotalF64(0.0));
+        assert!(TotalF64::zero().is_zero());
+        assert!(!TotalF64(-0.0).is_zero());
+        assert_eq!(value + TotalF64::zero(), value);
+        assert_eq!(TotalF64::zero() + value, value);
     }
 
     #[test]
     fn one_is_multiplicative_identity() {
-        let value = F64(3.5);
+        let value = TotalF64(3.5);
 
-        assert_eq!(F64::one(), F64(1.0));
-        assert_eq!(value * F64::one(), value);
-        assert_eq!(F64::one() * value, value);
+        assert_eq!(TotalF64::one(), TotalF64(1.0));
+        assert_eq!(value * TotalF64::one(), value);
+        assert_eq!(TotalF64::one() * value, value);
     }
 
     #[test]
     fn next_and_prev_step_through_zero_in_total_order() {
-        assert_eq!(F64(-0.0).next(), F64(0.0));
-        assert_eq!(F64(0.0).prev(), F64(-0.0));
-        assert_eq!(F64(0.0).next(), F64(f64::from_bits(1)));
-        assert_eq!(F64(-0.0).prev(), F64(f64::from_bits(0x8000_0000_0000_0001)));
+        assert_eq!(TotalF64(-0.0).next(), TotalF64(0.0));
+        assert_eq!(TotalF64(0.0).prev(), TotalF64(-0.0));
+        assert_eq!(TotalF64(0.0).next(), TotalF64(f64::from_bits(1)));
+        assert_eq!(
+            TotalF64(-0.0).prev(),
+            TotalF64(f64::from_bits(0x8000_0000_0000_0001))
+        );
+    }
+
+    #[test]
+    fn next_and_prev_wrap() {
+        // These should be true in release mode, but panic in debug as expected
+        // assert_eq!(TotalF64::MAX.next(), TotalF64::MIN);
+        // assert_eq!(TotalF64::MIN.prev(), TotalF64::MAX);
+        assert_eq!(TotalF64::MAX.checked_next(), None);
+        assert_eq!(TotalF64::MIN.checked_prev(), None);
     }
 
     #[test]
     fn next_and_prev_step_around_infinities() {
-        assert_eq!(F64(f64::MAX).next(), F64(f64::INFINITY));
-        assert_eq!(F64(f64::INFINITY).prev(), F64(f64::MAX));
-        assert_eq!(F64(f64::NEG_INFINITY).next(), F64(-f64::MAX));
-        assert_eq!(F64(-f64::MAX).prev(), F64(f64::NEG_INFINITY));
+        assert_eq!(TotalF64(f64::MAX).next(), TotalF64(f64::INFINITY));
+        assert_eq!(TotalF64(f64::INFINITY).prev(), TotalF64(f64::MAX));
+        assert_eq!(TotalF64(f64::NEG_INFINITY).next(), TotalF64(-f64::MAX));
+        assert_eq!(TotalF64(-f64::MAX).prev(), TotalF64(f64::NEG_INFINITY));
     }
 
     #[test]
     fn checked_next_and_prev_stop_at_total_order_boundaries() {
-        assert_eq!(F64::MIN.checked_prev(), None);
-        assert_eq!(F64::MAX.checked_next(), None);
-        assert_eq!(F64::MIN.checked_next(), Some(F64::MIN.next()));
-        assert_eq!(F64::MAX.checked_prev(), Some(F64::MAX.prev()));
+        assert_eq!(TotalF64::MIN.checked_prev(), None);
+        assert_eq!(TotalF64::MAX.checked_next(), None);
+        assert_eq!(TotalF64::MIN.checked_next(), Some(TotalF64::MIN.next()));
+        assert_eq!(TotalF64::MAX.checked_prev(), Some(TotalF64::MAX.prev()));
     }
 
     #[test]
     fn min_and_max_are_total_order_boundaries() {
         let values = [
-            F64(f64::NEG_INFINITY),
-            F64(-f64::MAX),
-            F64(-1.0),
-            F64(-0.0),
-            F64(0.0),
-            F64(1.0),
-            F64(f64::MAX),
-            F64(f64::INFINITY),
-            F64(f64::NAN),
-            F64(f64::from_bits(0x7ff8_0000_0000_0001)),
-            F64(f64::from_bits(0xfff8_0000_0000_0001)),
+            TotalF64(f64::NEG_INFINITY),
+            TotalF64(-f64::MAX),
+            TotalF64(-1.0),
+            TotalF64(-0.0),
+            TotalF64(0.0),
+            TotalF64(1.0),
+            TotalF64(f64::MAX),
+            TotalF64(f64::INFINITY),
+            TotalF64(f64::NAN),
+            TotalF64(f64::from_bits(0x7ff8_0000_0000_0001)),
+            TotalF64(f64::from_bits(0xfff8_0000_0000_0001)),
         ];
 
         for value in values {
-            assert!(F64::MIN <= value);
-            assert!(value <= F64::MAX);
+            assert!(TotalF64::MIN <= value);
+            assert!(value <= TotalF64::MAX);
         }
     }
 
     #[test]
     fn next_and_prev_are_neighbors_in_total_order() {
         let values = [
-            F64(f64::NEG_INFINITY),
-            F64(-f64::MAX),
-            F64(-1.0),
-            F64(-0.0),
-            F64(0.0),
-            F64(1.0),
-            F64(f64::MAX),
-            F64(f64::INFINITY),
-            F64(f64::NAN),
-            F64(f64::from_bits(0x7ff8_0000_0000_0001)),
-            F64(f64::from_bits(0xfff8_0000_0000_0001)),
+            TotalF64(f64::NEG_INFINITY),
+            TotalF64(-f64::MAX),
+            TotalF64(-1.0),
+            TotalF64(-0.0),
+            TotalF64(0.0),
+            TotalF64(1.0),
+            TotalF64(f64::MAX),
+            TotalF64(f64::INFINITY),
+            TotalF64(f64::NAN),
+            TotalF64(f64::from_bits(0x7ff8_0000_0000_0001)),
+            TotalF64(f64::from_bits(0xfff8_0000_0000_0001)),
         ];
 
         for value in values {
@@ -373,7 +401,7 @@ mod tests {
         }
     }
 
-    fn hash(value: F64) -> u64 {
+    fn hash(value: TotalF64) -> u64 {
         let mut hasher = DefaultHasher::new();
         value.hash(&mut hasher);
         hasher.finish()
