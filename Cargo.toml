@@ -35,6 +35,7 @@ default = ["std"]
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 rog_experimental = []
 total_float_experimental = []
+total_float_nightly_experimental = ["total_float_experimental"]
 from_slice = []
 test_util = ["rand"]
 

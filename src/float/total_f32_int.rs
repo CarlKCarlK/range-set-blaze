@@ -1,4 +1,4 @@
-//! impl Integer for TotalF32
+//! impl Integer for `TotalF32`
 
 #[cfg(feature = "from_slice")]
 use crate::RangeSetBlaze;
@@ -10,8 +10,15 @@ use std::ops::RangeInclusive;
 /// let set = RangeSetBlaze::from_iter([TotalF32(3.0)..=TotalF32(5.0)]);
 /// assert!(set.contains(TotalF32(3.1)));
 /// assert!(!set.contains(TotalF32(2.9)));
+/// 
+/// let set = RangeSetBlaze::from(TotalF32::range(3.0..=5.0));
+/// assert!(set.contains(TotalF32(4.9)));
+/// assert!(!set.contains(TotalF32(5.1)));
+/// 
+/// let set = RangeSetBlaze::from_iter(TotalF32::ranges([3.0..=5.0, 7.0..=9.0]));
+/// assert!(set.contains(TotalF32(4.0)));
+/// assert!(!set.contains(TotalF32(6.0)));
 ///```
-
 impl crate::Integer for TotalF32 {
     type SafeLen = i64;
 

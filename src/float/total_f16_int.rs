@@ -1,20 +1,26 @@
-//! impl Integer for TotalF64
+//! impl Integer for `TotalF16`
 
 #[cfg(feature = "from_slice")]
 use crate::RangeSetBlaze;
-use crate::total_f64::TotalF64;
-
+use crate::total_f16::TotalF16;
 use std::ops::RangeInclusive;
 
 ///```
-/// use range_set_blaze::{RangeSetBlaze, TotalF64};
-/// let set = RangeSetBlaze::from_iter([TotalF64(3.0)..=TotalF64(5.0)]);
-/// assert!(set.contains(TotalF64(3.1)));
-/// assert!(!set.contains(TotalF64(2.9)));
+/// use range_set_blaze::{RangeSetBlaze, TotalF16};
+/// let set = RangeSetBlaze::from_iter([TotalF16(3.0)..=TotalF16(5.0)]);
+/// assert!(set.contains(TotalF16(3.1)));
+/// assert!(!set.contains(TotalF16(2.9)));
+/// 
+/// let set = RangeSetBlaze::from(TotalF16::range(3.0..=5.0));
+/// assert!(set.contains(TotalF16(4.9)));
+/// assert!(!set.contains(TotalF16(5.1)));
+/// 
+/// let set = RangeSetBlaze::from_iter(TotalF16::ranges([3.0..=5.0, 7.0..=9.0]));
+/// assert!(set.contains(TotalF16(4.0)));
+/// assert!(!set.contains(TotalF16(6.0)));
 ///```
-
-impl crate::Integer for TotalF64 {
-    type SafeLen = i128;
+impl crate::Integer for TotalF16 {
+    type SafeLen = i32;
 
     #[inline]
     fn checked_add_one(self) -> Option<Self> {
@@ -71,7 +77,6 @@ impl crate::Integer for TotalF64 {
     }
 
     #[cfg(feature = "from_slice")]
-    #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         // no way to do the fancy thing
         RangeSetBlaze::from_iter(slice.as_ref())
@@ -83,8 +88,8 @@ impl crate::Integer for TotalF64 {
         debug_assert!(r.start() <= r.end(), "start ≤ end required");
 
         // 2️⃣ Compute distance in `Self` then reinterpret‑cast to the first
-        Self::SafeLen::from(r.end().to_ordered_i64())
-            - Self::SafeLen::from(r.start().to_ordered_i64())
+        Self::SafeLen::from(r.end().to_ordered_i16())
+            - Self::SafeLen::from(r.start().to_ordered_i16())
             + 1
     }
 
@@ -112,7 +117,7 @@ impl crate::Integer for TotalF64 {
             );
         }
         // If b is in range, two’s-complement wrap-around yields the correct inclusive end even if the add overflows
-        Self::from_ordered_i64(self.to_ordered_i64().wrapping_add((b - 1) as i64))
+        Self::from_ordered_i16(self.to_ordered_i16().wrapping_add((b - 1) as i16))
     }
 
     #[allow(clippy::cast_possible_truncation)]
@@ -127,6 +132,6 @@ impl crate::Integer for TotalF64 {
             );
         }
         // If b is in range, two’s-complement wrap-around yields the correct start even if the sub overflows
-        Self::from_ordered_i64(self.to_ordered_i64().wrapping_sub((b - 1) as i64))
+        Self::from_ordered_i16(self.to_ordered_i16().wrapping_sub((b - 1) as i16))
     }
 }
