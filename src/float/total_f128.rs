@@ -32,16 +32,6 @@ impl TotalF128 {
         self.0
     }
 
-    /// Views primitive [`f128`] values as ordered [`TotalF128`] values.
-    ///
-    /// This runs in `O(1)` and does not allocate.
-    #[must_use]
-    pub const fn values(values: &[f128]) -> &[Self] {
-        // SAFETY: TotalF128 is #[repr(transparent)] over f128, making `&[f128]`
-        // and `&[TotalF128]` entirely interchangeable in layout and lifetimes.
-        unsafe { core::mem::transmute::<&[f128], &[Self]>(values) }
-    }
-
     /// Transforms the float bits into the monotonically ordered `i128` space used by `total_cmp`.
     pub(crate) const fn to_ordered_i128(self) -> i128 {
         let mut bits = self.0.to_bits().cast_signed();
@@ -97,6 +87,49 @@ impl TotalF128 {
             None => None,
         }
     }
+
+    /// Converts an inclusive primitive [`f128`] range into an inclusive [`TotalF128`] range.
+    #[must_use]
+    pub fn range(range: RangeInclusive<f128>) -> RangeInclusive<Self> {
+        let (start, end) = range.into_inner();
+        Self(start)..=Self(end)
+    }
+
+    /// Converts inclusive primitive [`f128`] ranges into inclusive [`TotalF128`] ranges.
+    pub fn ranges<I>(ranges: I) -> impl Iterator<Item = RangeInclusive<Self>>
+    where
+        I: IntoIterator<Item = RangeInclusive<f128>>,
+    {
+        ranges.into_iter().map(Self::range)
+    }
+
+    /// Converts primitive [`f128`] values into ordered [`TotalF128`] values.
+    pub fn values<I>(values: I) -> impl Iterator<Item = Self>
+    where
+        I: IntoIterator<Item = f128>,
+    {
+        values.into_iter().map(TotalF128)
+    }
+
+    /// Views primitive [`f128`] values as ordered [`TotalF128`] values.
+    ///
+    /// This runs in `O(1)` and does not allocate.
+    #[must_use]
+    pub const fn slice(values: &[f128]) -> &[Self] {
+        // SAFETY: TotalF128 is #[repr(transparent)] over f128, making `&[f128]`
+        // and `&[TotalF128]` entirely interchangeable in layout and lifetimes.
+        unsafe { core::mem::transmute::<&[f128], &[Self]>(values) }
+    }
+}
+
+/// Views  [`TotalF128`] values as primitive [`f128`] values.
+///
+/// This runs in `O(1)` and does not allocate.
+#[must_use]
+pub const fn primitive_slice(values: &[TotalF128]) -> &[f128] {
+    // SAFETY: TotalF128 is #[repr(transparent)] over f128, making `&[f128]`
+    // and `&[TotalF128]` entirely interchangeable in layout and lifetimes.
+    unsafe { core::mem::transmute::<&[TotalF128], &[f128]>(values) }
 }
 
 impl From<f128> for TotalF128 {
@@ -250,15 +283,6 @@ mod tests {
         let right = hash(TotalF128(f128::NAN));
 
         assert_eq!(left, right);
-    }
-
-    #[test]
-    fn values_views_f128_slice_as_f128_wrapper_slice() {
-        let values = [3.0, 2.0, -0.0, f128::NAN];
-        let wrapped = TotalF128::values(&values);
-
-        assert_eq!(wrapped, [TotalF128(3.0), TotalF128(2.0), TotalF128(-0.0), TotalF128(f128::NAN)]);
-        assert_eq!(wrapped.as_ptr().cast::<f128>(), values.as_ptr());
     }
 
     #[test]

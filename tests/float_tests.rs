@@ -134,3 +134,16 @@ fn float_test() {
     assert!(foo.contains(TotalF64(7.0).next()));
     assert!(foo.contains(TotalF64(9.0).prev()));
 }
+
+#[test]
+fn test_use_of_as_00() {
+    syntactic_for! { ty in [TotalF32, TotalF64] {
+        $(
+    let a = <$ty>::min_value();
+    let b = <$ty>::max_value();
+    let len = <$ty>::safe_len(&(a..=b));
+    assert_eq!(<$ty>::inclusive_end_from_start(a, len), b);
+    assert_eq!(<$ty>::start_from_inclusive_end(b, len), a);
+        )*
+    }}
+}
