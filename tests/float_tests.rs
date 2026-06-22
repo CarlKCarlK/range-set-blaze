@@ -6,6 +6,8 @@
 use num_traits::identities::One;
 use num_traits::identities::Zero;
 use range_set_blaze::{Integer, RangeMapBlaze, RangeSetBlaze, TotalF32, TotalF64};
+#[cfg(feature = "total_float_nightly_experimental")]
+use range_set_blaze::{TotalF16, TotalF128, UIntPlusOne};
 use syntactic_for::syntactic_for;
 
 // fn test_singleton_iter<T, I>(iter: I, value: T)
@@ -136,7 +138,7 @@ fn float_test() {
 }
 
 #[test]
-fn test_use_of_as_00() {
+fn test_inclusive() {
     syntactic_for! { ty in [TotalF32, TotalF64] {
         $(
     let a = <$ty>::min_value();
@@ -146,4 +148,62 @@ fn test_use_of_as_00() {
     assert_eq!(<$ty>::start_from_inclusive_end(b, len), a);
         )*
     }}
+}
+
+#[test]
+fn test_floats() {
+    let mut a = TotalF32::range(0.0..=0.0);
+    assert_eq!(TotalF32::range_next_back(&mut a), Some(TotalF32(0.0)));
+    assert_eq!(TotalF32::range_next(&mut a), None);
+
+    let mut a = TotalF64::range(0.0..=0.0);
+    assert_eq!(TotalF64::range_next_back(&mut a), Some(TotalF64(0.0)));
+    assert_eq!(TotalF64::range_next(&mut a), None);
+
+    let mut b = TotalF64(0.0);
+    TotalF64::assign_sub_one(&mut b);
+    assert_eq!(b, TotalF64(0.0).prev());
+
+    let mut b = TotalF32(0.0);
+    TotalF32::assign_sub_one(&mut b);
+    assert_eq!(b, TotalF32(0.0).prev());
+}
+
+#[test]
+#[cfg(feature = "total_float_nightly_experimental")]
+fn test_inclusive_nightly() {
+    syntactic_for! { ty in [TotalF16, TotalF128] {
+        $(
+    let a = <$ty>::min_value();
+    let b = <$ty>::max_value();
+    let len = <$ty>::safe_len(&(a..=b));
+    assert_eq!(<$ty>::inclusive_end_from_start(a, len), b);
+    assert_eq!(<$ty>::start_from_inclusive_end(b, len), a);
+        )*
+    }}
+}
+
+#[test]
+#[cfg(feature = "total_float_nightly_experimental")]
+fn test_floats_nightly() {
+    let mut a = TotalF16::range(0.0..=0.0);
+    assert_eq!(TotalF16::range_next_back(&mut a), Some(TotalF16(0.0)));
+    assert_eq!(TotalF16::range_next(&mut a), None);
+
+    let mut a = TotalF128::range(0.0..=0.0);
+    assert_eq!(TotalF128::range_next_back(&mut a), Some(TotalF128(0.0)));
+    assert_eq!(TotalF128::range_next(&mut a), None);
+
+    let mut b = TotalF16(0.0);
+    TotalF16::assign_sub_one(&mut b);
+    assert_eq!(b, TotalF16(0.0).prev());
+
+    let mut b = TotalF128(0.0);
+    TotalF128::assign_sub_one(&mut b);
+    assert_eq!(b, TotalF128(0.0).prev());
+
+    // convert  UIntPlusOne::MaxPlusOne to f128 and back
+    let f = TotalF128::safe_len_to_f64_lossy(UIntPlusOne::MaxPlusOne);
+    let i = TotalF128::f64_to_safe_len_lossy(f);
+    assert_eq!(i, UIntPlusOne::MaxPlusOne);
 }
