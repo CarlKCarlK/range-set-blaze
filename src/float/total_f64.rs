@@ -62,7 +62,7 @@ impl TotalF64 {
     #[must_use]
     pub const fn next(self) -> Self {
         let ordered = self.to_ordered_i64();
-        Self::from_ordered_i64(ordered + 1)
+        Self::from_ordered_i64(ordered.wrapping_add(1))
     }
 
     /// Returns the previous float in total order.
@@ -71,7 +71,7 @@ impl TotalF64 {
     #[must_use]
     pub const fn prev(self) -> Self {
         let ordered = self.to_ordered_i64();
-        Self::from_ordered_i64(ordered - 1)
+        Self::from_ordered_i64(ordered.wrapping_sub(1))
     }
 
     /// Returns the next float in total order.

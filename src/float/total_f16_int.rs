@@ -10,11 +10,11 @@ use std::ops::RangeInclusive;
 /// let set = RangeSetBlaze::from_iter([TotalF16(3.0)..=TotalF16(5.0)]);
 /// assert!(set.contains(TotalF16(3.1)));
 /// assert!(!set.contains(TotalF16(2.9)));
-/// 
+///
 /// let set = RangeSetBlaze::from(TotalF16::range(3.0..=5.0));
 /// assert!(set.contains(TotalF16(4.9)));
 /// assert!(!set.contains(TotalF16(5.1)));
-/// 
+///
 /// let set = RangeSetBlaze::from_iter(TotalF16::ranges([3.0..=5.0, 7.0..=9.0]));
 /// assert!(set.contains(TotalF16(4.0)));
 /// assert!(!set.contains(TotalF16(6.0)));
@@ -44,10 +44,16 @@ impl crate::Integer for TotalF16 {
         *self = self.prev();
     }
 
+    // Ideally, we would `std::iter::Step for TotalF16` and just call Range::next(), but that's still experimental.
     #[inline]
     fn range_next(range: &mut RangeInclusive<Self>) -> Option<Self> {
         if range.is_empty() {
             None
+        } else if range.start() == range.end() && *range.start() == Self::MAX {
+            // This is cheating, but I think it still fulfills the contract
+            let next = *range.start();
+            *range = next..=range.end().prev();
+            Some(next)
         } else {
             let next = *range.start();
             *range = (next.next())..=*range.end();
@@ -59,6 +65,11 @@ impl crate::Integer for TotalF16 {
     fn range_next_back(range: &mut RangeInclusive<Self>) -> Option<Self> {
         if range.is_empty() {
             None
+        } else if range.start() == range.end() && *range.start() == Self::MIN {
+            // This is cheating, but I think it still fulfills the contract
+            let last = *range.end();
+            *range = last.next()..=last;
+            Some(last)
         } else {
             let last = *range.end();
             *range = *range.start()..=last.prev();

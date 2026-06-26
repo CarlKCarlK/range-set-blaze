@@ -11,11 +11,11 @@ use std::ops::RangeInclusive;
 /// let set = RangeSetBlaze::from_iter([TotalF64(3.0)..=TotalF64(5.0)]);
 /// assert!(set.contains(TotalF64(3.1)));
 /// assert!(!set.contains(TotalF64(2.9)));
-/// 
+///
 /// let set = RangeSetBlaze::from(TotalF64::range(3.0..=5.0));
 /// assert!(set.contains(TotalF64(4.9)));
 /// assert!(!set.contains(TotalF64(5.1)));
-/// 
+///
 /// let set = RangeSetBlaze::from_iter(TotalF64::ranges([3.0..=5.0, 7.0..=9.0]));
 /// assert!(set.contains(TotalF64(4.0)));
 /// assert!(!set.contains(TotalF64(6.0)));
@@ -45,10 +45,16 @@ impl crate::Integer for TotalF64 {
         *self = self.prev();
     }
 
+    // Ideally, we would `std::iter::Step for TotalF64` and just call Range::next(), but that's still experimental.
     #[inline]
     fn range_next(range: &mut RangeInclusive<Self>) -> Option<Self> {
         if range.is_empty() {
             None
+        } else if range.start() == range.end() && *range.start() == Self::MAX {
+            // This is cheating, but I think it still fulfills the contract
+            let next = *range.start();
+            *range = next..=range.end().prev();
+            Some(next)
         } else {
             let next = *range.start();
             *range = (next.next())..=*range.end();
@@ -60,6 +66,11 @@ impl crate::Integer for TotalF64 {
     fn range_next_back(range: &mut RangeInclusive<Self>) -> Option<Self> {
         if range.is_empty() {
             None
+        } else if range.start() == range.end() && *range.start() == Self::MIN {
+            // This is cheating, but I think it still fulfills the contract
+            let last = *range.end();
+            *range = last.next()..=last;
+            Some(last)
         } else {
             let last = *range.end();
             *range = *range.start()..=last.prev();

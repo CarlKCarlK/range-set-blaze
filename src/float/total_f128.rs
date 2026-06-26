@@ -266,7 +266,10 @@ mod tests {
 
         for left in values {
             for right in values {
-                assert_eq!(TotalF128(left).cmp(&TotalF128(right)), left.total_cmp(&right));
+                assert_eq!(
+                    TotalF128(left).cmp(&TotalF128(right)),
+                    left.total_cmp(&right)
+                );
             }
         }
     }

@@ -1,12 +1,12 @@
 //! impl Integer for `TotalF128`
 
+use crate::Integer;
 #[cfg(feature = "from_slice")]
 use crate::RangeSetBlaze;
-use crate::total_f128::TotalF128;
 use crate::UIntPlusOne;
-use crate::Integer;
-use std::ops::RangeInclusive;
+use crate::total_f128::TotalF128;
 use num_traits::Zero;
+use std::ops::RangeInclusive;
 
 ///```
 /// use range_set_blaze::{RangeSetBlaze, TotalF128};
@@ -47,10 +47,16 @@ impl Integer for TotalF128 {
         *self = self.prev();
     }
 
+    // Ideally, we would `std::iter::Step for TotalF128` and just call Range::next(), but that's still experimental.
     #[inline]
     fn range_next(range: &mut RangeInclusive<Self>) -> Option<Self> {
         if range.is_empty() {
             None
+        } else if range.start() == range.end() && *range.start() == Self::MAX {
+            // This is cheating, but I think it still fulfills the contract
+            let next = *range.start();
+            *range = next..=range.end().prev();
+            Some(next)
         } else {
             let next = *range.start();
             *range = (next.next())..=*range.end();
@@ -62,6 +68,11 @@ impl Integer for TotalF128 {
     fn range_next_back(range: &mut RangeInclusive<Self>) -> Option<Self> {
         if range.is_empty() {
             None
+        } else if range.start() == range.end() && *range.start() == Self::MIN {
+            // This is cheating, but I think it still fulfills the contract
+            let last = *range.end();
+            *range = last.next()..=last;
+            Some(last)
         } else {
             let last = *range.end();
             *range = *range.start()..=last.prev();
