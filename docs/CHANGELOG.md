@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-06-26
+
+### Added
+
+- Implemented `SortedStarts`/`SortedDisjoint` (and the `*Map` equivalents) for applicable
+  `core::iter`/`std::iter` adapter types whose iterators cannot break the sorted-disjoint
+  invariants, so these standard iterators can be used directly with the library's operators
+  (PR #27).
+- Added a combinator to turn an `Option<SortedDisjoint>` into a `SortedDisjoint` via
+  `FlatMap`/`Flatten`.
+
+### Notes
+
+- `core::iter::StepBy` is not yet supported because it does not implement `FusedIterator`
+  upstream; see the TODO in `src/sorted_disjoint.rs` and
+  <https://internals.rust-lang.org/t/implement-fusediterator-for-core-stepby/24074>
+
 ## [0.5.0] - 2026-03-06
 
 ### Changed
