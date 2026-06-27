@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-06-26
+
+### Added
+
+- `AssumeSortedStarts` now verifies, in debug builds only, that the ranges it is given
+  actually have sorted starts, panicking with a clear message otherwise. Release builds are
+  unaffected (zero runtime cost). (PR #29)
+
+### Breaking
+
+- `AssumeSortedStarts` regains a leading type parameter: `AssumeSortedStarts<I>` ->
+  `AssumeSortedStarts<T, I>`. Most `AssumeSortedStarts::new(iter)` calls are unchanged due to
+  inference; explicit type aliases/annotations may need updating.
+
 ## [0.5.1] - 2026-06-26
 
 ### Added
