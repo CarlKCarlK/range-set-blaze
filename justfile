@@ -45,6 +45,13 @@ pre-commit: clippy
 # Quality & Publishing Checks
 # ============================================================================
 
+# Build and open the docs exactly as docs.rs publishes them
+# (excludes the nightly-only `total_float_nightly_experimental` feature, so
+# `f16`/`f128` wrappers do not appear). Keep this feature list in sync with
+# `[package.metadata.docs.rs]` in Cargo.toml.
+doc:
+    cargo doc --no-deps --open --features "std,rog_experimental,total_float_experimental,from_slice,test_util"
+
 # Check documentation for dead links (requires cargo-deadlinks)
 doc-links:
     cargo install cargo-deadlinks

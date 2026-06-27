@@ -1,5 +1,6 @@
 //! Experimental support for floating point ranges
-//! Enable with `total_float_experimental` and `total_float_nightly_experimental`
+//! Enable with `total_float_experimental` (stable, `f32`/`f64`) and
+//! `total_float_nightly_experimental` (nightly, adds `f16`/`f128`).
 
 pub mod total_f32;
 pub use total_f32::TotalF32;

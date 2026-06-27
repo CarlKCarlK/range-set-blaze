@@ -6,7 +6,7 @@ use crate::RangeSetBlaze;
 use crate::UIntPlusOne;
 use crate::total_f128::TotalF128;
 use num_traits::Zero;
-use std::ops::RangeInclusive;
+use core::ops::RangeInclusive;
 
 ///```
 /// use range_set_blaze::{RangeSetBlaze, TotalF128};

@@ -3,7 +3,7 @@
 #[cfg(feature = "from_slice")]
 use crate::RangeSetBlaze;
 use crate::total_f16::TotalF16;
-use std::ops::RangeInclusive;
+use core::ops::RangeInclusive;
 
 ///```
 /// use range_set_blaze::{RangeSetBlaze, TotalF16};

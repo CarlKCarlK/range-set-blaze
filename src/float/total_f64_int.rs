@@ -4,7 +4,7 @@
 use crate::RangeSetBlaze;
 use crate::total_f64::TotalF64;
 
-use std::ops::RangeInclusive;
+use core::ops::RangeInclusive;
 
 ///```
 /// use range_set_blaze::{RangeSetBlaze, TotalF64};

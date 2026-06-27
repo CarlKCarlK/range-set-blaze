@@ -6,9 +6,16 @@ use core::ops::{Add, AddAssign, Mul, RangeInclusive, SubAssign};
 
 use num_traits::{One, Zero};
 
-/// A transparent wrapper around [`f64`] with total ordering.
+/// Experimental: A transparent wrapper around [`f64`] with total ordering.
 ///
 /// Comparison, equality, and hashing all agree with [`f64::total_cmp`].
+///
+/// # Enabling
+///
+/// This type is experimental and must be enabled with the `total_float_experimental` feature.
+/// ```bash
+/// cargo add range-set-blaze --features "total_float_experimental"
+/// ```
 #[repr(transparent)]
 #[derive(Copy, Clone, Default, Debug)]
 pub struct TotalF64(pub f64);

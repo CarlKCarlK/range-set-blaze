@@ -35,6 +35,7 @@ jobs:
           cargo test --verbose
           cargo test --verbose --release
           cargo test --verbose --no-default-features --features "rog_experimental"
+          cargo test --verbose --features "std total_float_experimental"
       - name: Test Rust Native (nightly)
         run: |
           rustup override set nightly
@@ -101,9 +102,11 @@ jobs:
         run: |
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
+          cargo check --target thumbv7m-none-eabi --no-default-features --features total_float_experimental
           rustup override set nightly
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
+          cargo check --target thumbv7m-none-eabi --no-default-features --features total_float_nightly_experimental
           sudo apt-get update && sudo apt-get install qemu-system-arm
       - name: Test Embedded (in nightly)
         timeout-minutes: 3
