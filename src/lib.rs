@@ -2,7 +2,6 @@
 #![doc = include_str!("../README.md")]
 #![no_std]
 #![cfg_attr(feature = "total_float_nightly_experimental", feature(f16))]
-#![cfg_attr(feature = "total_float_nightly_experimental", feature(f128))]
 
 extern crate alloc;
 #[cfg(feature = "std")]
