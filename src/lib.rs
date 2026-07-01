@@ -1,6 +1,8 @@
 #![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
 #![no_std]
+#![cfg_attr(feature = "total_float_nightly_experimental", feature(f16))]
+
 extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
@@ -28,6 +30,11 @@ pub use dyn_sorted_disjoint::DynSortedDisjoint;
 
 mod dyn_sorted_disjoint_map;
 pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
+
+#[cfg(feature = "total_float_experimental")]
+pub mod float;
+#[cfg(feature = "total_float_experimental")]
+pub use float::*;
 
 mod integer;
 pub use crate::integer::Integer;
