@@ -101,7 +101,7 @@ where
             // Modified logic: Now prioritize right range boundaries instead of left
             let value = if left_end != end {
                 // right_end != end, left_end != end is impossible
-                debug_assert!(right_end == end);
+                debug_assert_eq!(right_end, end);
 
                 // right_end == end, left_end != end
                 let value = left_value.clone();

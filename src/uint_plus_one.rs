@@ -66,7 +66,7 @@ where
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::UInt(v) => write!(f, "{v}"),
-            Self::MaxPlusOne => write!(f, "(u128::MAX + 1"),
+            Self::MaxPlusOne => write!(f, "(u128::MAX + 1)"),
         }
     }
 }

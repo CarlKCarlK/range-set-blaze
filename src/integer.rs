@@ -63,7 +63,10 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     /// ```
     #[must_use]
     fn exhausted_range() -> RangeInclusive<Self> {
-                debug_assert!(Self::min_value() < Self::max_value(), "Precondition violated: min_value must be less than max_value");
+        debug_assert!(
+            Self::min_value() < Self::max_value(),
+            "Precondition violated: min_value must be less than max_value"
+        );
         Self::max_value()..=Self::min_value()
     }
 
@@ -134,6 +137,12 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     ///
     /// assert_eq!(u8::safe_len(&(0..=255)), 256);
     /// ```
+    ///
+    /// # Precondition
+    /// `range.start() <= range.end()`. This is checked with `debug_assert!` and is *not*
+    /// checked in release builds, where violating it produces an unspecified (nonsense,
+    /// but not unsafe) result rather than a panic. Callers are expected to only ever pass
+    /// already-valid ranges.
     fn safe_len(range: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen;
 
     // FUTURE define .len() SortedDisjoint
@@ -145,10 +154,22 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     fn safe_len_to_f64_lossy(len: Self::SafeLen) -> f64;
 
     /// Computes `self + (b - 1)` where `b` is of type [`Integer::SafeLen`].
+    ///
+    /// # Precondition
+    /// `b` must be small enough that `self + (b - 1)` does not overflow `Self`. This is
+    /// checked with `debug_assert!` and is *not* checked in release builds, where violating
+    /// it produces an unspecified (nonsense, but not unsafe) result rather than a panic.
+    /// Callers are expected to only ever pass a `b` that satisfies this.
     #[must_use]
     fn inclusive_end_from_start(self, b: Self::SafeLen) -> Self;
 
     /// Computes `self - (b - 1)` where `b` is of type [`Integer::SafeLen`].
+    ///
+    /// # Precondition
+    /// `b` must be small enough that `self - (b - 1)` does not underflow `Self`. This is
+    /// checked with `debug_assert!` and is *not* checked in release builds, where violating
+    /// it produces an unspecified (nonsense, but not unsafe) result rather than a panic.
+    /// Callers are expected to only ever pass a `b` that satisfies this.
     #[must_use]
     fn start_from_inclusive_end(self, b: Self::SafeLen) -> Self;
 }
@@ -1124,7 +1145,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 1)")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_i128_overflow() {
         let value: i128 = i128::max_value();
@@ -1133,7 +1154,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 1)")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_i128_underflow() {
         let value: i128 = i128::min_value();
@@ -1142,7 +1163,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 1)")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_u128_overflow() {
         let value: u128 = u128::max_value();
@@ -1151,7 +1172,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 1)")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_u128_underflow() {
         let value: u128 = u128::min_value();
@@ -1160,7 +1181,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 1)")]
     #[allow(clippy::legacy_numeric_constants)]
     fn test_ipv6_overflow() {
         let value: Ipv6Addr = Ipv6Addr::max_value();
@@ -1198,7 +1219,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 1)")]
     fn test_ipv6_underflow() {
         let value: Ipv6Addr = Ipv6Addr::min_value();
         let _ = value.start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
@@ -1235,9 +1256,7 @@ mod tests {
             assert_eq!(len, len2);
             assert_eq!(
                 len2,
-                char::f64_to_safe_len_lossy(char::safe_len_to_f64_lossy(
-                    len2
-                ))
+                char::f64_to_safe_len_lossy(char::safe_len_to_f64_lossy(len2))
             );
 
             let item2 = char::min_value().inclusive_end_from_start(len);
@@ -1447,7 +1466,7 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 170141183460469231731687303715884105728)"
+        expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 170141183460469231731687303715884105728)"
     )]
     fn test_use_of_as_17() {
         let _ = (0i128).inclusive_end_from_start(UIntPlusOne::MaxPlusOne);
@@ -1455,7 +1474,7 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 170141183460469231731687303715884105729)"
+        expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 170141183460469231731687303715884105729)"
     )]
     fn test_use_of_as_18() {
         let _ = (0i128).start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
@@ -1521,14 +1540,14 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 340282366920938463463374607431768211454)"
+        expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 340282366920938463463374607431768211454)"
     )]
     fn test_use_of_as_27() {
         let _ = (2u128).inclusive_end_from_start(UIntPlusOne::MaxPlusOne);
     }
 
     #[test]
-    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 1)")]
     fn test_use_of_as_28() {
         let _ = (0u128).start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
     }
@@ -1660,14 +1679,14 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 340282366920938463463374607431768211454)"
+        expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 340282366920938463463374607431768211454)"
     )]
     fn test_use_of_as_47() {
         let _ = Ipv6Addr::from(2u128).inclusive_end_from_start(UIntPlusOne::MaxPlusOne);
     }
 
     #[test]
-    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1, max_len = 1)")]
+    #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 1)")]
     fn test_use_of_as_48() {
         let _ = Ipv6Addr::from(0u128).start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
     }

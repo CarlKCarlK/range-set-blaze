@@ -1,0 +1,6 @@
+[toolchain]
+# Keep the normal local/CI toolchain pinned so scheduled CI does not start failing
+# because a newer Rust release adds or changes a Clippy lint. Update this deliberately.
+# Use `just clippy-latest` when you want to preview newer stable lints locally.
+channel = "1.97.0"
+components = ["clippy", "rustfmt"]

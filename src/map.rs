@@ -827,7 +827,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(a[5], "b");
     /// ```
     pub fn append(&mut self, other: &mut Self) {
-        let original_other_btree_map = core::mem::take(&mut other.btree_map);
+        let original_other_btree_map = mem::take(&mut other.btree_map);
         other.len = <T as Integer>::SafeLen::zero();
 
         for (start, end_value) in original_other_btree_map {
@@ -1703,7 +1703,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             // ^BBBB
             //  aaa
             // ^AAAB
-            let value_before = core::mem::replace(&mut end_value_before.value, value);
+            let value_before = mem::replace(&mut end_value_before.value, value);
             debug_assert!(start_before <= end); // real assert
             end_value_before.end = end;
             debug_assert!(end.add_one() <= end_before); // real assert
@@ -2644,7 +2644,7 @@ map_op!(
 
 map_unary_op!(
     Not not,                                   // trait + method
-    crate::set::RangeSetBlaze<T>,              // output type
+    RangeSetBlaze<T>,                          // output type
 
     /// Takes the complement of a [`RangeMapBlaze`].
     ///

@@ -1,7 +1,8 @@
 [package]
 name = "range-set-blaze"
-version = "0.6.0"
+version = "0.6.1"
 edition = "2024"
+rust-version = "1.87"
 description = "Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full set operations"
 repository = "https://github.com/CarlKCarlK/range-set-blaze"
 readme = "README.md"
@@ -30,10 +31,16 @@ members = [
 
 [lib]
 
+[[example]]
+name = "float_maps"
+required-features = ["float_experimental"]
+
 [features]
 default = ["std"]
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 rog_experimental = []
+float_experimental = []
+float_nightly_experimental = ["float_experimental"]
 from_slice = []
 test_util = ["rand"]
 
@@ -44,33 +51,33 @@ itertools = { version = "0.14.0", default-features = false, features = [
 num-integer = { version = "0.1.46", default-features = false }
 num-traits = { version = "0.2.19", default-features = false }
 gen_ops = "0.4.0"
-rand = { version = "0.9.1", optional = true }
+rand = { version = "0.9.4", optional = true }
 
 [dev-dependencies]
 syntactic-for = "0.1.1"
-wasm-bindgen-test = "0.3.50"
-rand = "0.9.1"
+wasm-bindgen-test = "0.3.76"
+rand = "0.9.4"
 range-set-blaze = { path = ".", features = ["test_util"] }
-anyhow = "1.0.98"
+anyhow = "1.0.103"
+rayon = "1.10"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 criterion = { version = "0.5.1", features = [
     "html_reports",
 ], default-features = false }
-trybuild = "1.0.105"
-thousands = "0.2.0"
-quickcheck = "1.0.3"
-quickcheck_macros = "1.1.0"
-rangemap = "1.5.1"
+trybuild = "1.0.117"
+quickcheck = "1.1.0"
+quickcheck_macros = "1.2.0"
+rangemap = "1.7.1"
 range-collections = "0.4.6"
 range-set = "0.0.11"
-glob = "0.3.2"
+glob = "0.3.3"
 roaring = "0.10.12"
-rand = { version = "0.9.1" }
+rand = { version = "0.9.4" }
 
 
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
-getrandom = { version = "0.3.3", features = ["wasm_js"] }
+getrandom = { version = "0.3.4", features = ["wasm_js"] }
 web-time = "1.1.0"
 
 
@@ -87,7 +94,9 @@ path = "benches/bench_map.rs"
 harness = false
 
 [package.metadata.docs.rs]
-all-features = true
+# Document every feature except `float_nightly_experimental`, so the
+# nightly-only `f16`/`f128` wrappers do not appear in the published docs.
+features = ["std", "rog_experimental", "float_experimental", "from_slice", "test_util"]
 
 ###############################################################################
 # Global lint levels (stable since Rust 1.77; on older nightly use

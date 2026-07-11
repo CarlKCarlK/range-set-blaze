@@ -16,9 +16,12 @@ use alloc::{
 };
 use core::{
     any::Any,
+    array,
     fmt::{self, Write as FmtWrite}, // Renamed to avoid conflict with std::fmt::Write
+    hash::Hash,
     iter::FusedIterator,
     ops::RangeInclusive,
+    panic::{RefUnwindSafe, UnwindSafe},
     prelude::v1::*,
 };
 use itertools::Itertools;
@@ -201,7 +204,7 @@ fn test_coverage_9() {
 fn test_eq_priority() {
     let a = Priority::new((1..=2, &"a"), 1);
     let b = Priority::new((1..=2, &"a"), 0);
-    assert!(a != b);
+    assert_ne!(a, b);
 }
 
 #[allow(clippy::items_after_statements)]
@@ -229,11 +232,11 @@ const fn check_traits() {
     is_sssu::<AIntoIterMap>();
     is_like_btreemap_into_iter_less_exact_size::<AIntoIterMap>();
 
-    type AKMergeMap<'a> = crate::KMergeMap<i32, &'a u64, ARangeValuesIter<'a>>;
+    type AKMergeMap<'a> = KMergeMap<i32, &'a u64, ARangeValuesIter<'a>>;
     is_sssu::<AKMergeMap<'_>>();
     is_like_btreemap_iter_less_both::<AKMergeMap<'_>>();
 
-    type AMergeMap<'a> = crate::MergeMap<i32, &'a u64, ARangeValuesIter<'a>, ARangeValuesIter<'a>>;
+    type AMergeMap<'a> = MergeMap<i32, &'a u64, ARangeValuesIter<'a>, ARangeValuesIter<'a>>;
     is_sssu::<AMergeMap<'_>>();
     is_like_btreemap_iter_less_both::<AMergeMap<'_>>();
 
@@ -279,11 +282,8 @@ const fn check_traits() {
 
     type ACheckSortedDisjointMap<'a> = CheckSortedDisjointMap<i32, &'a u64, ARangeValuesIter<'a>>;
     is_sssu::<ACheckSortedDisjointMap<'_>>();
-    type BCheckSortedDisjointMap<'a> = CheckSortedDisjointMap<
-        i32,
-        &'a u64,
-        core::array::IntoIter<(RangeInclusive<i32>, &'a u64), 0>,
-    >;
+    type BCheckSortedDisjointMap<'a> =
+        CheckSortedDisjointMap<i32, &'a u64, array::IntoIter<(RangeInclusive<i32>, &'a u64), 0>>;
     is_like_check_sorted_disjoint_map::<BCheckSortedDisjointMap<'_>>();
 
     type ADynSortedDisjointMap<'a> = DynSortedDisjointMap<'a, i32, &'a u64>;
@@ -297,7 +297,7 @@ const fn is_ddcppdheo<
         + PartialEq
         + PartialOrd
         + Default
-        + core::hash::Hash
+        + Hash
         + Eq
         + Ord
         + Send
@@ -331,17 +331,17 @@ const fn is_like_btreemap<
         + fmt::Debug
         + Default
         + Eq
-        + core::hash::Hash
+        + Hash
         + IntoIterator
         + Ord
         + PartialEq
         + PartialOrd
-        + core::panic::RefUnwindSafe
+        + RefUnwindSafe
         + Send
         + Sync
         + Unpin
-        + core::panic::UnwindSafe
-        + core::any::Any
+        + UnwindSafe
+        + Any
         + ToOwned,
 >() {
 }
@@ -350,11 +350,11 @@ const fn is_like_check_sorted_disjoint_map<
     T: Clone
         + fmt::Debug
         + IntoIterator
-        + core::panic::RefUnwindSafe
+        + RefUnwindSafe
         + Send
         + Sync
         + Unpin
-        + core::panic::UnwindSafe
+        + UnwindSafe
         + Any
         + ToOwned,
 >() {

@@ -1,13 +1,9 @@
-use crate::Integer;
-use crate::RangeMapBlaze;
-use crate::RangeSetBlaze;
+use crate::{Integer, RangeMapBlaze, RangeSetBlaze};
 use alloc::vec;
-use alloc::vec::Vec;
+use alloc::vec::{IntoIter, Vec};
 use core::ops::RangeInclusive;
 use num_traits::identities::One;
-use rand::Rng;
-use rand::distr::uniform::SampleUniform;
-use rand::rngs::StdRng;
+use rand::{Rng, distr::uniform::SampleUniform, rngs::StdRng};
 
 #[must_use]
 #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
@@ -15,7 +11,7 @@ pub fn width_to_range(
     iter_len: usize,
     average_width: usize,
     coverage_goal: f64,
-) -> (usize, core::ops::RangeInclusive<i32>) {
+) -> (usize, RangeInclusive<i32>) {
     let range_len = iter_len / average_width;
     let one_fraction: f64 = 1.0 - (1.0 - coverage_goal).powf(1.0 / range_len as f64);
     let range = 0..=(((average_width as f64 / one_fraction) - 0.5) as i32);
@@ -32,7 +28,7 @@ pub fn width_to_range_u32(
     iter_len: usize,
     average_width: usize,
     coverage_goal: f64,
-) -> (usize, core::ops::RangeInclusive<u32>) {
+) -> (usize, RangeInclusive<u32>) {
     let range_len = iter_len / average_width;
     let one_fraction: f64 = 1.0 - (1.0 - coverage_goal).powf(1.0 / range_len as f64);
     let range = 0..=((average_width as f64 / one_fraction) as u32);
@@ -248,7 +244,7 @@ pub struct ClumpyMapRange<'a, T> {
     clump_iter: MemorylessRange<'a, T>,
     value_count: u32,
     range_per_clump: usize,
-    outputs_iter: std::vec::IntoIter<(RangeInclusive<T>, u32)>,
+    outputs_iter: IntoIter<(RangeInclusive<T>, u32)>,
 }
 
 #[allow(clippy::too_many_arguments)]

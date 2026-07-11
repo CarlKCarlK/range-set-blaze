@@ -1,4 +1,6 @@
 use crate::{Integer, SortedDisjoint, SortedStarts};
+#[cfg(not(debug_assertions))]
+use core::marker::PhantomData;
 use core::{
     cmp::{max, min},
     iter::FusedIterator,
@@ -148,7 +150,7 @@ pub struct AssumeSortedStarts<T, I> {
     #[cfg(debug_assertions)]
     last_start: Option<T>,
     #[cfg(not(debug_assertions))]
-    last_start: core::marker::PhantomData<T>,
+    last_start: PhantomData<T>,
 }
 
 impl<T, I> FusedIterator for AssumeSortedStarts<T, I>
@@ -176,7 +178,7 @@ where
             #[cfg(debug_assertions)]
             last_start: None,
             #[cfg(not(debug_assertions))]
-            last_start: core::marker::PhantomData,
+            last_start: PhantomData,
         }
     }
 }

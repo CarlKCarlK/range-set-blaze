@@ -127,7 +127,8 @@ Our CI (`.github/workflows/ci.yml`) tests:
 5. **Both toolchains**: Stable and Nightly
 6. **Security**: Dependency audits with cargo-audit and cargo-deny
 
-You can't replicate everything locally (WASM, embedded, multiple OSes), but `just check-all` covers the main issues.
+You can't replicate everything locally (browser WASM, embedded, and multiple OSes), but
+`just check-all` and `just test-wasm` cover the main local test lanes.
 
 ## Pull Request Process
 
@@ -153,6 +154,8 @@ The project has several optional features:
 
 - `std` (default): Standard library support
 - `from_slice`: SIMD-accelerated slice ingestion (nightly only)
+- `float_experimental`: Experimental floating-point support for `f32` and `f64`
+- `float_nightly_experimental`: Nightly-only floating-point support for `f16` and `f128`; also enables `float_experimental`
 - `rog_experimental`: Experimental ROG (Range-of-Gaps) feature
 - `test_util`: Testing utilities (dev only)
 
@@ -164,12 +167,14 @@ See the internal release notes, but in brief:
 
 1. Update version in `Cargo.toml`
 2. Update `CHANGELOG.md`
-3. Run `just ci-full` locally
-4. Run `just publish-dry-all`
-5. Create and merge PR
-6. Tag release: `git tag v0.x.y`
-7. Push tag: `git push origin v0.x.y`
-8. Publish: `cargo publish`
+3. Run `just check-all` locally
+4. Run `just clippy-latest` locally to preview lints from the newest stable Rust; this is an opt-in release check and does not change the pinned CI baseline
+5. Run `just test-wasm` locally
+6. Run `just ci-full` locally; this covers `just audit` and `just publish-dry-all`
+7. Create and merge PR
+8. Tag release: `git tag v0.x.y`
+9. Push tag: `git push origin v0.x.y`
+10. Publish: `cargo publish`
 
 ## Getting Help
 

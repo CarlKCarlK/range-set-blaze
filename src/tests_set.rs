@@ -5,10 +5,11 @@ use crate::{
     set::extract_range, sorted_disjoint_map::Priority,
     unsorted_priority_map::AssumePrioritySortedStartsMap,
 };
-use alloc::{string::ToString, vec::Vec};
+use alloc::{format, string::ToString, vec, vec::Vec};
 use core::{
     array,
     cmp::Ordering,
+    iter::once,
     ops::{Bound, RangeInclusive},
 };
 use num_traits::{One, Zero};
@@ -34,7 +35,7 @@ fn demo_f1() {
     //     range_set_blaze.len()
     // );
 
-    assert!(range_set_blaze.len_slow() == range_set_blaze.len());
+    assert_eq!(range_set_blaze.len_slow(), range_set_blaze.len());
 }
 
 #[test]
@@ -270,7 +271,7 @@ fn lib_coverage_0() {
     assert_eq!(a.partial_cmp(&a), Some(Ordering::Equal));
 
     let mut a = RangeSetBlaze::from_iter([1..=3]);
-    a.extend(core::iter::once(4));
+    a.extend(once(4));
     assert_eq!(a.len(), 4u64);
 
     let mut a = RangeSetBlaze::from_iter([1..=3]);
@@ -302,7 +303,7 @@ fn lib_coverage_0() {
     let i = a.into_iter();
     assert_eq!(i.size_hint(), j.size_hint());
     assert_eq!(
-        alloc::format!("{:?}", &i),
+        format!("{i:?}"),
         "IntoIter { option_range_front: None, option_range_back: None, btree_map_into_iter: [(1, 3)] }"
     );
 
@@ -435,7 +436,7 @@ fn sdi1() {
         assert_eq!(iter.next(), Some(2..=2));
         assert_eq!(iter.next(), None);
 
-        let a = core::iter::once(0..=0);
+        let a = once(0..=0);
         let a = AssumeSortedStarts::new(a);
         let mut iter = SymDiffIter::new(a);
         assert_eq!(iter.next(), Some(0..=0));
@@ -446,7 +447,7 @@ fn sdi1() {
         let iter = SymDiffIter::new(a);
         let v = iter.collect::<Vec<_>>();
 
-        assert_eq!(v, alloc::vec![]);
+        assert_eq!(v, vec![]);
     }
 }
 

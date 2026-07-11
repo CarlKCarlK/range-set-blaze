@@ -3,6 +3,7 @@ use core::iter::FusedIterator;
 use core::hash::BuildHasher;
 use core::ops::RangeBounds;
 use std::collections::BTreeSet;
+use std::collections::btree_set;
 
 pub struct RangeSet<T, B> {
     set: BTreeSet<T>,
@@ -10,7 +11,7 @@ pub struct RangeSet<T, B> {
 }
 
 pub struct RangeSetIter<'a, T, B> {
-    inner: std::collections::btree_set::Iter<'a, T>,
+    inner: btree_set::Iter<'a, T>,
     hasher: &'a B,
 }
 

@@ -140,7 +140,7 @@ fn compare() {
     btree_set.insert(1);
     let string = btree_set.iter().join(", ");
     println!("{string:#?}");
-    assert!(string == "1, 3");
+    assert_eq!(string, "1, 3");
 }
 
 #[test]
@@ -156,7 +156,7 @@ fn add_in_order() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn iters() {
     let range_set_blaze = RangeSetBlaze::from_iter([1u8..=6, 8..=9, 11..=15]);
-    assert!(range_set_blaze.len() == 13);
+    assert_eq!(range_set_blaze.len(), 13);
     for i in &range_set_blaze {
         println!("{i}");
     }
@@ -711,7 +711,7 @@ fn data_gen() {
             println!(
                 "range_int_set.len={}, ri={:#?}, how={how:#?} {seed} range_len={}, fraction={}",
                 range_int_set.len(),
-                &range,
+                range,
                 range_int_set.ranges_len(),
                 fraction(range_int_set, &range)
             );
@@ -924,11 +924,11 @@ fn eq() {
                             }
                             let a2 = BTreeSet::from_iter(&a);
                             let b2 = BTreeSet::from_iter(&b);
-                            assert!((a == b) == (a2 == b2));
+                            assert_eq!((a == b), (a2 == b2));
                             println!("{a:?} <= {b:?}? RSI {}", a <= b);
                             println!("{a:?} <= {b:?}? BTS {}", a2 <= b2);
-                            assert!((a <= b) == (a2 <= b2));
-                            assert!((a < b) == (a2 < b2));
+                            assert_eq!((a <= b), (a2 <= b2));
+                            assert_eq!((a < b), (a2 < b2));
                         }
                     }
                 }
@@ -1420,15 +1420,15 @@ fn sorted_disjoint_constructors() {
     let r = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
     let a = r.ranges();
     let b = a.clone();
-    assert!(a.into_string() == "1..=3, 100..=100");
-    assert!(b.into_string() == "1..=3, 100..=100");
+    assert_eq!(a.into_string(), "1..=3, 100..=100");
+    assert_eq!(b.into_string(), "1..=3, 100..=100");
     //    'into_ranges' takes ownership of the 'RangeSetBlaze'
     let a = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]).into_ranges();
-    assert!(a.into_string() == "1..=3, 100..=100");
+    assert_eq!(a.into_string(), "1..=3, 100..=100");
 
     // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
     let a = CheckSortedDisjoint::new([1..=3, 100..=100]);
-    assert!(a.into_string() == "1..=3, 100..=100");
+    assert_eq!(a.into_string(), "1..=3, 100..=100");
 
     // tee of a SortedDisjoint iterator
     let _a = CheckSortedDisjoint::new([1..=3, 100..=100]);
@@ -1436,7 +1436,7 @@ fn sorted_disjoint_constructors() {
     // DynamicSortedDisjoint of a SortedDisjoint iterator
     let a = CheckSortedDisjoint::new([1..=3, 100..=100]);
     let b = DynSortedDisjoint::new(a);
-    assert!(b.into_string() == "1..=3, 100..=100");
+    assert_eq!(b.into_string(), "1..=3, 100..=100");
 }
 
 #[test]
@@ -1566,8 +1566,8 @@ fn cmp_range_set_blaze() {
     assert!(a <= b);
     assert!(b > a);
     assert!(b >= a);
-    assert!(a != b);
-    assert!(a == a);
+    assert_ne!(a, b);
+    assert_eq!(a, a);
     assert_eq!(a.cmp(&b), Ordering::Less);
     assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
 }
@@ -1584,8 +1584,8 @@ fn cmp_btree_set_int() {
     assert!(a <= b);
     assert!(b > a);
     assert!(b >= a);
-    assert!(a != b);
-    assert!(a == a);
+    assert_ne!(a, b);
+    assert_eq!(a, a);
     assert_eq!(a.cmp(&b), Ordering::Less);
     assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
 }

@@ -6,16 +6,16 @@
 
 extern crate alloc;
 use alloc::string::ToString;
-use alloc_cortex_m::CortexMHeap;
 use core::{alloc::Layout, iter::FromIterator};
 use cortex_m::asm;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::{debug, hprintln};
+use embedded_alloc::LlffHeap;
 use panic_halt as _;
 use range_set_blaze::RangeSetBlaze;
 
 #[global_allocator]
-static ALLOCATOR: CortexMHeap = CortexMHeap::empty();
+static ALLOCATOR: LlffHeap = LlffHeap::empty();
 const HEAP_SIZE: usize = 1024; // in bytes
 
 #[entry]

@@ -2,8 +2,11 @@
 
 use crate::Integer;
 use alloc::slice;
-use core::simd::{Simd, SimdElement};
-use core::{iter::FusedIterator, ops::RangeInclusive, ops::Sub};
+use core::{
+    iter::FusedIterator,
+    ops::{RangeInclusive, Sub},
+    simd::{Simd, SimdElement},
+};
 
 #[allow(clippy::redundant_pub_crate)]
 #[allow(clippy::module_name_repetitions)]
@@ -13,7 +16,7 @@ pub(crate) struct FromSliceIter<'a, T, const N: usize>
 where
     T: SimdInteger,
 {
-    prefix_iter: core::slice::Iter<'a, T>,
+    prefix_iter: slice::Iter<'a, T>,
     previous_range: Option<RangeInclusive<T>>,
     chunks: slice::Iter<'a, Simd<T, N>>,
     suffix: &'a [T],

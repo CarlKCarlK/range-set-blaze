@@ -288,7 +288,7 @@ fn map_add_in_order() {
 fn map_iters() {
     let range_map_blaze =
         RangeMapBlaze::from_iter([(1u8..=6, "Hello"), (8..=9, "There"), (11..=15, "World")]);
-    assert!(range_map_blaze.len() == 13);
+    assert_eq!(range_map_blaze.len(), 13);
     for (k, v) in &range_map_blaze {
         println!("{k}:{v}");
     }
@@ -2213,9 +2213,9 @@ fn map_repro2() {
     ]);
     range_map_blaze.ranges_insert(25..=25, c);
     println!("{range_map_blaze}");
-    assert!(
-        range_map_blaze.to_string()
-            == r#"(-8..=-8, "a"), (-2..=-1, "a"), (2..=2, "b"), (3..=3, "a"), (8..=8, "a"), (25..=25, "c")"#
+    assert_eq!(
+        range_map_blaze.to_string(),
+        r#"(-8..=-8, "a"), (-2..=-1, "a"), (2..=2, "b"), (3..=3, "a"), (8..=8, "a"), (25..=25, "c")"#
     );
 }
 #[test]
@@ -2455,8 +2455,8 @@ fn test_range_map_blaze_comparisons() {
     assert!(a <= b);
     assert!(b > a);
     assert!(b >= a);
-    assert!(a != b);
-    assert!(a == a);
+    assert_ne!(a, b);
+    assert_eq!(a, a);
 
     assert_eq!(a.cmp(&b), Ordering::Less);
 

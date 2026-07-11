@@ -19,9 +19,9 @@ fn slugify(name: &str) -> String {
     slug.trim_matches('-').to_string()
 }
 
-fn run_step(name: &str, args: &[String], target_dir: &PathBuf) -> bool {
+fn run_step(name: &str, program: &str, args: &[String], target_dir: &PathBuf) -> bool {
     println!("\n==> {name} [target-dir: {}]", target_dir.display());
-    let status = Command::new("cargo")
+    let status = Command::new(program)
         .args(args)
         .env("CARGO_TARGET_DIR", target_dir)
         .stdin(Stdio::inherit())
@@ -51,50 +51,25 @@ fn check_all() -> ExitCode {
         .status()
         .is_ok_and(|s| s.success());
 
-    let mut steps: Vec<(String, Vec<String>)> = vec![
+    // `just clippy` / `just test-stable` / `just test-nightly` are the single source of
+    // truth for which feature-flag combinations get tested — see `justfile`. Delegating
+    // to them here (instead of re-listing `cargo` invocations) keeps `cargo check-all`
+    // and `just check-all` from drifting apart the way they did before.
+    let mut steps: Vec<(String, String, Vec<String>)> = vec![
         (
-            "clippy (std + rog_experimental)".to_string(),
-            vec![
-                "clippy".to_string(),
-                "--all-targets".to_string(),
-                "--features".to_string(),
-                "std rog_experimental".to_string(),
-                "--".to_string(),
-                "-D".to_string(),
-                "clippy::all".to_string(),
-                "-A".to_string(),
-                "deprecated".to_string(),
-            ],
+            "just clippy".to_string(),
+            "just".to_string(),
+            vec!["clippy".to_string()],
         ),
         (
-            "test --release".to_string(),
-            vec!["test".to_string(), "--release".to_string()],
+            "just test-stable".to_string(),
+            "just".to_string(),
+            vec!["test-stable".to_string()],
         ),
         (
-            "test --no-default-features --features rog_experimental".to_string(),
-            vec![
-                "test".to_string(),
-                "--no-default-features".to_string(),
-                "--features".to_string(),
-                "rog_experimental".to_string(),
-            ],
-        ),
-        (
-            "nightly test --features rog_experimental from_slice".to_string(),
-            vec![
-                "+nightly".to_string(),
-                "test".to_string(),
-                "--features".to_string(),
-                "rog_experimental from_slice".to_string(),
-            ],
-        ),
-        (
-            "nightly test --all-features".to_string(),
-            vec![
-                "+nightly".to_string(),
-                "test".to_string(),
-                "--all-features".to_string(),
-            ],
+            "just test-nightly".to_string(),
+            "just".to_string(),
+            vec!["test-nightly".to_string()],
         ),
     ];
 
@@ -103,6 +78,7 @@ fn check_all() -> ExitCode {
             1,
             (
                 "nextest -p range-set-blaze --lib --tests --examples".to_string(),
+                "cargo".to_string(),
                 vec!["xtest".to_string()],
             ),
         );
@@ -114,6 +90,7 @@ fn check_all() -> ExitCode {
             1,
             (
                 "test -p range-set-blaze --lib --tests --examples".to_string(),
+                "cargo".to_string(),
                 vec![
                     "test".to_string(),
                     "-p".to_string(),
@@ -131,7 +108,7 @@ fn check_all() -> ExitCode {
     let handles: Vec<_> = steps
         .into_iter()
         .enumerate()
-        .map(|(idx, (name, args))| {
+        .map(|(idx, (name, program, args))| {
             let failures = Arc::clone(&failures);
             thread::spawn(move || {
                 let target_dir = PathBuf::from("target").join("check-all").join(format!(
@@ -139,7 +116,7 @@ fn check_all() -> ExitCode {
                     idx + 1,
                     slugify(&name)
                 ));
-                if !run_step(&name, &args, &target_dir) {
+                if !run_step(&name, &program, &args, &target_dir) {
                     failures.lock().expect("poisoned mutex").push(name);
                 }
             })

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+## [0.6.1] - 2026-07-10
+
+### Added
+
+- Added experimental floating-point range support through the `float_experimental` feature
+  for `f32`/`f64`, and the `float_nightly_experimental` feature for `f16`/`f128`.
+  `Finite` supports finite values with zero canonicalized to `+0.0`, while `Total` supports
+  all floating-point values in total order, including NaNs, infinities, and signed zero.
+  Both provide constructors, range operations, and `after`/`before` navigation APIs.
+
 ## [0.6.0] - 2026-06-26
 
 ### Added

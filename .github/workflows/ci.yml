@@ -26,18 +26,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        # Keep scheduled CI on the pinned baseline. Bump deliberately after checking
+        # newer lints locally with `just clippy-latest`.
+        uses: dtolnay/rust-toolchain@1.97.0
         with:
           components: rust-src
       - name: Test Rust Native (stable)
         run: |
-          cargo clippy --verbose --all-targets --features "std rog_experimental" -- -D clippy::all -A deprecated
+          cargo clippy --verbose --all-targets --features "std rog_experimental float_experimental" -- -D clippy::all -A deprecated
           cargo test --verbose
           cargo test --verbose --release
+          cargo test --verbose --release --features "std float_experimental"
           cargo test --verbose --no-default-features --features "rog_experimental"
+          cargo test --verbose --features "std float_experimental"
+          cargo test --verbose --features "std rog_experimental float_experimental"
+          cargo test --verbose --no-default-features --features "float_experimental"
       - name: Test Rust Native (nightly)
         run: |
           rustup override set nightly
+          cargo check --tests --features "float_nightly_experimental"
           cargo test --verbose --features "rog_experimental from_slice"
           cargo test --verbose --all-features
       - name: Check dead links in documentation
@@ -61,7 +68,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.97.0
         with:
           components: rust-src
       - name: Test Rust 32-bit Ubuntu
@@ -72,8 +79,9 @@ jobs:
       - name: run tests
         run: |
           rustup target add i686-unknown-linux-gnu
-          cargo test --target i686-unknown-linux-gnu --verbose 
+          cargo test --target i686-unknown-linux-gnu --verbose
           cargo test --target i686-unknown-linux-gnu --verbose --no-default-features --features "rog_experimental"
+          cargo test --target i686-unknown-linux-gnu --verbose --features "std float_experimental"
 
   test_wasm:
     name: Test WASM
@@ -82,7 +90,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.97.0
         with:
           components: rust-src
       - name: Setup WASM/unknown
@@ -90,6 +98,7 @@ jobs:
       - name: Test WASM/unknown
         run: |
           wasm-pack test --chrome --headless -- --no-default-features --verbose
+          wasm-pack test --chrome --headless -- --features "std float_experimental" --verbose
       - name: Install wasmtime
         uses: jcbhmr/setup-wasmtime@v2
       - name: Test WASM/wasip1
@@ -97,13 +106,16 @@ jobs:
           rustup target add wasm32-wasip1
           cargo test --target wasm32-wasip1 --verbose
           cargo test --target wasm32-wasip1 --verbose --no-default-features --features "rog_experimental"
+          cargo test --target wasm32-wasip1 --verbose --features "std float_experimental"
       - name: Setup and check Embedded
         run: |
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
+          cargo check --target thumbv7m-none-eabi --no-default-features --features float_experimental
           rustup override set nightly
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
+          cargo check --target thumbv7m-none-eabi --no-default-features --features float_nightly_experimental
           sudo apt-get update && sudo apt-get install qemu-system-arm
       - name: Test Embedded (in nightly)
         timeout-minutes: 3
@@ -112,3 +124,19 @@ jobs:
           cargo run
           cd ../..
           rustup override set stable
+
+  test_msrv:
+    name: Test MSRV (1.87)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Rust 1.87
+        uses: dtolnay/rust-toolchain@1.87
+      - name: Check MSRV compiles
+        run: |
+          # Explicitly bypass rust-toolchain.toml; otherwise this job could run 1.97.
+          cargo +1.87 check --verbose
+          cargo +1.87 check --verbose --no-default-features --features "rog_experimental"
+          cargo +1.87 check --verbose --features "std float_experimental"
+          cargo +1.87 check --verbose --no-default-features --features "float_experimental"

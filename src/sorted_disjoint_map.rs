@@ -18,12 +18,18 @@ use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::vec::Vec;
-use core::cmp::Ordering;
-use core::fmt::Debug;
-use core::iter::FusedIterator;
-use core::marker::PhantomData;
-use core::ops;
-use core::ops::RangeInclusive;
+use core::{
+    cmp::Ordering,
+    fmt::Debug,
+    iter::{
+        Empty, Filter, FlatMap, Flatten, Fuse, FusedIterator, Once, Peekable, Skip, SkipWhile,
+        Take, TakeWhile,
+    },
+    marker::PhantomData,
+    ops,
+    ops::RangeInclusive,
+    option,
+};
 
 /// Used internally. Marks iterators that provide `(range, value)` pairs that are sorted by the range's start, but
 /// that are not necessarily disjoint.
@@ -34,7 +40,7 @@ where
 {
 }
 
-impl<T, VR, I, P> SortedStartsMap<T, VR> for core::iter::Filter<I, P>
+impl<T, VR, I, P> SortedStartsMap<T, VR> for Filter<I, P>
 where
     T: Integer,
     VR: ValueRef,
@@ -43,7 +49,7 @@ where
 {
 }
 
-impl<T, VR, I, P> SortedDisjointMap<T, VR> for core::iter::Filter<I, P>
+impl<T, VR, I, P> SortedDisjointMap<T, VR> for Filter<I, P>
 where
     T: Integer,
     VR: ValueRef,
@@ -52,7 +58,7 @@ where
 {
 }
 
-impl<T, VR, I, P> SortedStartsMap<T, VR> for core::iter::TakeWhile<I, P>
+impl<T, VR, I, P> SortedStartsMap<T, VR> for TakeWhile<I, P>
 where
     T: Integer,
     VR: ValueRef,
@@ -61,7 +67,7 @@ where
 {
 }
 
-impl<T, VR, I, P> SortedDisjointMap<T, VR> for core::iter::TakeWhile<I, P>
+impl<T, VR, I, P> SortedDisjointMap<T, VR> for TakeWhile<I, P>
 where
     T: Integer,
     VR: ValueRef,
@@ -70,7 +76,7 @@ where
 {
 }
 
-impl<T, VR, I, P> SortedStartsMap<T, VR> for core::iter::SkipWhile<I, P>
+impl<T, VR, I, P> SortedStartsMap<T, VR> for SkipWhile<I, P>
 where
     T: Integer,
     VR: ValueRef,
@@ -79,7 +85,7 @@ where
 {
 }
 
-impl<T, VR, I, P> SortedDisjointMap<T, VR> for core::iter::SkipWhile<I, P>
+impl<T, VR, I, P> SortedDisjointMap<T, VR> for SkipWhile<I, P>
 where
     T: Integer,
     VR: ValueRef,
@@ -88,7 +94,7 @@ where
 {
 }
 
-impl<T, VR, I> SortedStartsMap<T, VR> for core::iter::Fuse<I>
+impl<T, VR, I> SortedStartsMap<T, VR> for Fuse<I>
 where
     T: Integer,
     VR: ValueRef,
@@ -96,7 +102,7 @@ where
 {
 }
 
-impl<T, VR, I> SortedDisjointMap<T, VR> for core::iter::Fuse<I>
+impl<T, VR, I> SortedDisjointMap<T, VR> for Fuse<I>
 where
     T: Integer,
     VR: ValueRef,
@@ -104,7 +110,7 @@ where
 {
 }
 
-impl<T, VR, I> SortedStartsMap<T, VR> for core::iter::Skip<I>
+impl<T, VR, I> SortedStartsMap<T, VR> for Skip<I>
 where
     T: Integer,
     VR: ValueRef,
@@ -112,7 +118,7 @@ where
 {
 }
 
-impl<T, VR, I> SortedDisjointMap<T, VR> for core::iter::Skip<I>
+impl<T, VR, I> SortedDisjointMap<T, VR> for Skip<I>
 where
     T: Integer,
     VR: ValueRef,
@@ -120,7 +126,7 @@ where
 {
 }
 
-impl<T, VR, I> SortedStartsMap<T, VR> for core::iter::Take<I>
+impl<T, VR, I> SortedStartsMap<T, VR> for Take<I>
 where
     T: Integer,
     VR: ValueRef,
@@ -128,7 +134,7 @@ where
 {
 }
 
-impl<T, VR, I> SortedDisjointMap<T, VR> for core::iter::Take<I>
+impl<T, VR, I> SortedDisjointMap<T, VR> for Take<I>
 where
     T: Integer,
     VR: ValueRef,
@@ -136,7 +142,7 @@ where
 {
 }
 
-impl<T, VR, I> SortedStartsMap<T, VR> for core::iter::Peekable<I>
+impl<T, VR, I> SortedStartsMap<T, VR> for Peekable<I>
 where
     T: Integer,
     VR: ValueRef,
@@ -144,7 +150,7 @@ where
 {
 }
 
-impl<T, VR, I> SortedDisjointMap<T, VR> for core::iter::Peekable<I>
+impl<T, VR, I> SortedDisjointMap<T, VR> for Peekable<I>
 where
     T: Integer,
     VR: ValueRef,
@@ -152,36 +158,35 @@ where
 {
 }
 
-impl<T, VR> SortedStartsMap<T, VR> for core::iter::Empty<(core::ops::RangeInclusive<T>, VR)>
+impl<T, VR> SortedStartsMap<T, VR> for Empty<(RangeInclusive<T>, VR)>
 where
     T: Integer,
     VR: ValueRef,
 {
 }
 
-impl<T, VR> SortedDisjointMap<T, VR> for core::iter::Empty<(core::ops::RangeInclusive<T>, VR)>
+impl<T, VR> SortedDisjointMap<T, VR> for Empty<(RangeInclusive<T>, VR)>
 where
     T: Integer,
     VR: ValueRef,
 {
 }
 
-impl<T, VR> SortedStartsMap<T, VR> for core::iter::Once<(core::ops::RangeInclusive<T>, VR)>
+impl<T, VR> SortedStartsMap<T, VR> for Once<(RangeInclusive<T>, VR)>
 where
     T: Integer,
     VR: ValueRef,
 {
 }
 
-impl<T, VR> SortedDisjointMap<T, VR> for core::iter::Once<(core::ops::RangeInclusive<T>, VR)>
+impl<T, VR> SortedDisjointMap<T, VR> for Once<(RangeInclusive<T>, VR)>
 where
     T: Integer,
     VR: ValueRef,
 {
 }
 
-impl<T, VR, I, IInner, TMap> SortedStartsMap<T, VR>
-    for core::iter::FlatMap<core::option::IntoIter<I>, IInner, TMap>
+impl<T, VR, I, IInner, TMap> SortedStartsMap<T, VR> for FlatMap<option::IntoIter<I>, IInner, TMap>
 where
     T: Integer,
     VR: ValueRef,
@@ -191,7 +196,7 @@ where
 {
 }
 
-impl<T, VR, I> SortedStartsMap<T, VR> for core::iter::Flatten<core::option::IntoIter<I>>
+impl<T, VR, I> SortedStartsMap<T, VR> for Flatten<option::IntoIter<I>>
 where
     T: Integer,
     VR: ValueRef,
@@ -199,7 +204,7 @@ where
 {
 }
 
-impl<T, VR, I> SortedDisjointMap<T, VR> for core::iter::Flatten<core::option::IntoIter<I>>
+impl<T, VR, I> SortedDisjointMap<T, VR> for Flatten<option::IntoIter<I>>
 where
     T: Integer,
     VR: ValueRef,
@@ -207,8 +212,7 @@ where
 {
 }
 
-impl<T, VR, I, IInner, TMap> SortedDisjointMap<T, VR>
-    for core::iter::FlatMap<core::option::IntoIter<I>, IInner, TMap>
+impl<T, VR, I, IInner, TMap> SortedDisjointMap<T, VR> for FlatMap<option::IntoIter<I>, IInner, TMap>
 where
     T: Integer,
     VR: ValueRef,
@@ -1198,12 +1202,13 @@ impl_sorted_map_traits_and_ops!(UnionIterMap<T, VR, I>, VR::Value, VR, VR: Value
 #[cfg(test)]
 mod tests {
     use super::*;
+    use core::iter::{empty, once};
 
     #[test]
     fn test_union_std_iters_map() {
-        let a = core::iter::empty::<(RangeInclusive<u64>, &&str)>();
+        let a = empty::<(RangeInclusive<u64>, &&str)>();
         #[allow(clippy::iter_skip_zero)]
-        let b = core::iter::once((10u64..=20, &"a"))
+        let b = once((10u64..=20, &"a"))
             .skip_while(|_| false)
             .take_while(|_| true)
             .fuse()

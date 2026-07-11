@@ -5,16 +5,20 @@ use crate::ranges_iter::RangesIter;
 use crate::sorted_disjoint_map::IntoString;
 use crate::{IntoRangesIter, UnionIter, UnionMerge};
 use alloc::string::String;
-use core::array;
 use core::{
-    iter::FusedIterator,
+    array,
+    iter::{
+        Empty, Filter, FlatMap, Flatten, Fuse, FusedIterator, Once, Peekable, Skip, SkipWhile,
+        Take, TakeWhile,
+    },
     ops::{self, RangeInclusive},
+    option,
 };
 
 use crate::SortedDisjointMap;
 
 use crate::{
-    DifferenceMerge, DynSortedDisjoint, Integer, IntersectionMerge, NotIter, SymDiffIter,
+    DifferenceMerge, DynSortedDisjoint, Integer, IntersectionMerge, Merge, NotIter, SymDiffIter,
     SymDiffMerge,
 };
 
@@ -22,63 +26,62 @@ use crate::{
 /// that are not necessarily disjoint. The ranges are non-empty.
 pub trait SortedStarts<T: Integer>: Iterator<Item = RangeInclusive<T>> + FusedIterator {}
 
-impl<T: Integer, I, P> SortedStarts<T> for core::iter::Filter<I, P>
+impl<T: Integer, I, P> SortedStarts<T> for Filter<I, P>
 where
     I: SortedStarts<T>,
     P: FnMut(&I::Item) -> bool,
 {
 }
 
-impl<T: Integer, I, P> SortedDisjoint<T> for core::iter::Filter<I, P>
+impl<T: Integer, I, P> SortedDisjoint<T> for Filter<I, P>
 where
     I: SortedDisjoint<T>,
     P: FnMut(&I::Item) -> bool,
 {
 }
 
-impl<T: Integer, I, P> SortedStarts<T> for core::iter::TakeWhile<I, P>
+impl<T: Integer, I, P> SortedStarts<T> for TakeWhile<I, P>
 where
     I: SortedStarts<T>,
     P: FnMut(&I::Item) -> bool,
 {
 }
 
-impl<T: Integer, I, P> SortedDisjoint<T> for core::iter::TakeWhile<I, P>
+impl<T: Integer, I, P> SortedDisjoint<T> for TakeWhile<I, P>
 where
     I: SortedDisjoint<T>,
     P: FnMut(&I::Item) -> bool,
 {
 }
 
-impl<T: Integer, I, P> SortedStarts<T> for core::iter::SkipWhile<I, P>
+impl<T: Integer, I, P> SortedStarts<T> for SkipWhile<I, P>
 where
     I: SortedStarts<T>,
     P: FnMut(&I::Item) -> bool,
 {
 }
 
-impl<T: Integer, I, P> SortedDisjoint<T> for core::iter::SkipWhile<I, P>
+impl<T: Integer, I, P> SortedDisjoint<T> for SkipWhile<I, P>
 where
     I: SortedDisjoint<T>,
     P: FnMut(&I::Item) -> bool,
 {
 }
 
-impl<T, I> SortedStarts<T> for core::iter::Flatten<core::option::IntoIter<I>>
+impl<T, I> SortedStarts<T> for Flatten<option::IntoIter<I>>
 where
     T: Integer,
     I: SortedStarts<T>,
 {
 }
 
-impl<T, I> SortedDisjoint<T> for core::iter::Flatten<core::option::IntoIter<I>>
+impl<T, I> SortedDisjoint<T> for Flatten<option::IntoIter<I>>
 where
     T: Integer,
     I: SortedDisjoint<T>,
 {
 }
-impl<T, I, IInner, TMap> SortedStarts<T>
-    for core::iter::FlatMap<core::option::IntoIter<I>, IInner, TMap>
+impl<T, I, IInner, TMap> SortedStarts<T> for FlatMap<option::IntoIter<I>, IInner, TMap>
 where
     T: Integer,
     IInner: SortedStarts<T>,
@@ -87,8 +90,7 @@ where
 {
 }
 
-impl<T, I, IInner, TMap> SortedDisjoint<T>
-    for core::iter::FlatMap<core::option::IntoIter<I>, IInner, TMap>
+impl<T, I, IInner, TMap> SortedDisjoint<T> for FlatMap<option::IntoIter<I>, IInner, TMap>
 where
     T: Integer,
     IInner: SortedDisjoint<T>,
@@ -111,23 +113,23 @@ where
 // {
 // }
 
-impl<T: Integer, I> SortedStarts<T> for core::iter::Fuse<I> where I: SortedStarts<T> {}
-impl<T: Integer, I> SortedDisjoint<T> for core::iter::Fuse<I> where I: SortedDisjoint<T> {}
+impl<T: Integer, I> SortedStarts<T> for Fuse<I> where I: SortedStarts<T> {}
+impl<T: Integer, I> SortedDisjoint<T> for Fuse<I> where I: SortedDisjoint<T> {}
 
-impl<T: Integer, I> SortedStarts<T> for core::iter::Skip<I> where I: SortedStarts<T> {}
-impl<T: Integer, I> SortedDisjoint<T> for core::iter::Skip<I> where I: SortedDisjoint<T> {}
+impl<T: Integer, I> SortedStarts<T> for Skip<I> where I: SortedStarts<T> {}
+impl<T: Integer, I> SortedDisjoint<T> for Skip<I> where I: SortedDisjoint<T> {}
 
-impl<T: Integer, I> SortedStarts<T> for core::iter::Take<I> where I: SortedStarts<T> {}
-impl<T: Integer, I> SortedDisjoint<T> for core::iter::Take<I> where I: SortedDisjoint<T> {}
+impl<T: Integer, I> SortedStarts<T> for Take<I> where I: SortedStarts<T> {}
+impl<T: Integer, I> SortedDisjoint<T> for Take<I> where I: SortedDisjoint<T> {}
 
-impl<T: Integer, I> SortedStarts<T> for core::iter::Peekable<I> where I: SortedStarts<T> {}
-impl<T: Integer, I> SortedDisjoint<T> for core::iter::Peekable<I> where I: SortedDisjoint<T> {}
+impl<T: Integer, I> SortedStarts<T> for Peekable<I> where I: SortedStarts<T> {}
+impl<T: Integer, I> SortedDisjoint<T> for Peekable<I> where I: SortedDisjoint<T> {}
 
-impl<T: Integer> SortedStarts<T> for core::iter::Empty<core::ops::RangeInclusive<T>> {}
-impl<T: Integer> SortedDisjoint<T> for core::iter::Empty<core::ops::RangeInclusive<T>> {}
+impl<T: Integer> SortedStarts<T> for Empty<RangeInclusive<T>> {}
+impl<T: Integer> SortedDisjoint<T> for Empty<RangeInclusive<T>> {}
 
-impl<T: Integer> SortedStarts<T> for core::iter::Once<core::ops::RangeInclusive<T>> {}
-impl<T: Integer> SortedDisjoint<T> for core::iter::Once<core::ops::RangeInclusive<T>> {}
+impl<T: Integer> SortedStarts<T> for Once<RangeInclusive<T>> {}
+impl<T: Integer> SortedDisjoint<T> for Once<RangeInclusive<T>> {}
 
 /// Marks iterators that provide ranges that are sorted by start and disjoint. Set operations on
 /// iterators that implement this trait can be performed in linear time.
@@ -472,7 +474,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         <R as IntoIterator>::IntoIter:,
         Self: Sized,
     {
-        let result: SymDiffIter<T, crate::Merge<T, Self, <R as IntoIterator>::IntoIter>> =
+        let result: SymDiffIter<T, Merge<T, Self, <R as IntoIterator>::IntoIter>> =
             SymDiffIter::new2(self, other.into_iter());
         result
     }
@@ -812,7 +814,7 @@ impl<T: Integer, I> AnythingGoes<T> for I where I: Iterator<Item = RangeInclusiv
 /// let combined = RangeSetBlaze::from_sorted_disjoint(a | b | c);
 /// assert_eq!(combined.into_string(), "0..=15");
 /// ```
-pub struct RangeOnce<T>(core::option::IntoIter<RangeInclusive<T>>);
+pub struct RangeOnce<T>(option::IntoIter<RangeInclusive<T>>);
 
 impl<T: Integer> RangeOnce<T> {
     /// Creates a new [`RangeOnce`] from a single range. See [`RangeOnce`] for details and examples.
@@ -940,12 +942,13 @@ impl_sorted_traits_and_ops!(RangeOnce<T>, 'ignore);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use core::iter::{empty, once};
 
     #[test]
     fn test_union_std_iters() {
-        let a = core::iter::empty::<RangeInclusive<u64>>();
+        let a = empty::<RangeInclusive<u64>>();
         #[allow(clippy::iter_skip_zero)]
-        let b = core::iter::once(10u64..=20)
+        let b = once(10u64..=20)
             .skip_while(|_| false)
             .take_while(|_| true)
             //.step_by(1)
