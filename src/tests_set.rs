@@ -7,6 +7,8 @@ use crate::{sorted_disjoint_map::Priority, unsorted_priority_map::AssumePriority
 #[cfg(not(target_arch = "wasm32"))]
 use alloc::format;
 use alloc::{string::ToString, vec, vec::Vec};
+#[cfg(feature = "insert_nightly_experimental")]
+use core::fmt;
 use core::{array, iter::once, ops::RangeInclusive};
 #[cfg(not(target_arch = "wasm32"))]
 use core::{cmp::Ordering, ops::Bound};
@@ -133,6 +135,413 @@ fn optimize() {
             }
         }
     }
+}
+
+#[cfg(feature = "insert_nightly_experimental")]
+fn assert_set_cursor_insert_matches<T>(
+    initial: impl IntoIterator<Item = RangeInclusive<T>>,
+    insertion: RangeInclusive<T>,
+) where
+    T: Integer + fmt::Debug,
+{
+    let mut baseline = RangeSetBlaze::new();
+    for range in initial {
+        baseline.internal_add_baseline(range);
+    }
+    let mut cursor = baseline.clone();
+
+    baseline.internal_add_baseline(insertion.clone());
+    cursor.internal_add_cursor(insertion);
+
+    assert_eq!(cursor, baseline);
+    assert!(cursor.len() == baseline.len());
+    assert_eq!(cursor.ranges_len(), baseline.ranges_len());
+    assert_eq!(
+        cursor.ranges().collect::<Vec<_>>(),
+        baseline.ranges().collect::<Vec<_>>()
+    );
+    assert!(cursor.len() == cursor.len_slow());
+    assert!(baseline.len() == baseline.len_slow());
+}
+
+#[cfg(feature = "insert_nightly_experimental")]
+#[test]
+fn set_cursor_insert_targeted_differential() {
+    let empty_start = 3;
+    let empty_end = 2;
+    let cases = [
+        ("empty range", vec![1..=3], empty_start..=empty_end),
+        ("empty map", vec![], 2..=4),
+        ("clean gap", vec![1..=2, 7..=8], 4..=5),
+        ("single point gap", vec![1..=2, 4..=5], 7..=7),
+        ("contained", vec![2..=8], 4..=6),
+        ("exact range", vec![2..=8], 2..=8),
+        ("touch predecessor", vec![1..=3, 8..=9], 4..=6),
+        ("touch successor", vec![1..=2, 7..=9], 4..=6),
+        ("touch both", vec![1..=3, 7..=9], 4..=6),
+        ("overlap predecessor", vec![1..=4, 9..=10], 3..=7),
+        ("overlap successor", vec![1..=2, 6..=9], 4..=7),
+        ("bridge", vec![1..=4, 7..=10], 3..=8),
+        (
+            "absorb many",
+            vec![1..=2, 5..=6, 9..=10, 13..=14, 17..=18],
+            2..=17,
+        ),
+        ("minimum", vec![1..=254], u8::MIN..=1),
+        ("maximum", vec![1..=2, 252..=254], 254..=u8::MAX),
+        (
+            "full domain",
+            vec![1..=3, 7..=9, 250..=254],
+            u8::MIN..=u8::MAX,
+        ),
+    ];
+
+    for (name, initial, insertion) in cases {
+        std::println!("set cursor insertion case: {name}");
+        assert_set_cursor_insert_matches(initial, insertion);
+    }
+
+    assert_set_cursor_insert_matches(
+        ['\u{D7FE}'..='\u{D7FE}', '\u{E001}'..='\u{E001}'],
+        '\u{D7FF}'..='\u{E000}',
+    );
+    assert_set_cursor_insert_matches(
+        [char::MIN..='\u{0001}', '\u{10FFFE}'..=char::MAX],
+        char::MIN..=char::MAX,
+    );
+}
+
+#[cfg(feature = "insert_nightly_experimental")]
+#[test]
+fn set_cursor_insert_exhaustive_small_domain() {
+    const DOMAIN_END: u8 = 6;
+
+    for bits in 0..(1_u16 << (DOMAIN_END + 1)) {
+        let mut initial = RangeSetBlaze::new();
+        for key in 0..=DOMAIN_END {
+            if bits & (1 << key) != 0 {
+                initial.internal_add_baseline(key..=key);
+            }
+        }
+
+        for start in 0..=DOMAIN_END {
+            for end in 0..=DOMAIN_END {
+                let mut baseline = initial.clone();
+                let mut cursor = initial.clone();
+                baseline.internal_add_baseline(start..=end);
+                cursor.internal_add_cursor(start..=end);
+
+                assert_eq!(cursor, baseline);
+                assert_eq!(cursor.len(), cursor.len_slow());
+                assert_eq!(cursor.ranges_len(), baseline.ranges_len());
+                assert_eq!(
+                    cursor.ranges().collect::<Vec<_>>(),
+                    baseline.ranges().collect::<Vec<_>>()
+                );
+                for key in 0..=DOMAIN_END {
+                    let expected = bits & (1 << key) != 0 || start <= key && key <= end;
+                    assert_eq!(cursor.contains(key), expected);
+                }
+            }
+        }
+    }
+}
+
+#[cfg(feature = "insert_nightly_experimental")]
+#[test]
+fn set_cursor_insert_randomized_differential() {
+    use rand::{SeedableRng, distr::Uniform, prelude::Distribution, rngs::StdRng};
+
+    let mut rng = StdRng::seed_from_u64(0x5e7_c0de);
+    let keys = Uniform::new_inclusive(0u16, 10_000).expect("valid key distribution");
+    let mut baseline = RangeSetBlaze::new();
+    let mut cursor = RangeSetBlaze::new();
+
+    for _ in 0..20_000 {
+        let start = keys.sample(&mut rng);
+        let end = keys.sample(&mut rng);
+        baseline.internal_add_baseline(start..=end);
+        cursor.internal_add_cursor(start..=end);
+        assert_eq!(cursor, baseline);
+        assert_eq!(cursor.len(), cursor.len_slow());
+        assert_eq!(
+            cursor.ranges().collect::<Vec<_>>(),
+            baseline.ranges().collect::<Vec<_>>()
+        );
+    }
+}
+
+#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+fn direct_benchmark_set(
+    ranges: impl IntoIterator<Item = RangeInclusive<u32>>,
+) -> RangeSetBlaze<u32> {
+    let mut set = RangeSetBlaze::new();
+    for range in ranges {
+        set.internal_add_baseline(range);
+    }
+    set
+}
+
+#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+fn time_direct_set_insert<T: Integer>(
+    initial: &RangeSetBlaze<T>,
+    insertion: &RangeInclusive<T>,
+    insert: fn(&mut RangeSetBlaze<T>, RangeInclusive<T>),
+    repetitions: u32,
+) -> f64 {
+    use std::{hint::black_box, time::Instant};
+
+    let mut samples = Vec::with_capacity(7);
+    for _ in 0..7 {
+        let mut sets =
+            vec![initial.clone(); usize::try_from(repetitions).expect("repetitions fit usize")];
+        let start = Instant::now();
+        for set in &mut sets {
+            insert(set, black_box(insertion.clone()));
+        }
+        let elapsed = start.elapsed();
+        black_box(&sets);
+        samples.push(elapsed.as_secs_f64() * 1e9 / f64::from(repetitions));
+    }
+    samples.sort_by(f64::total_cmp);
+    samples[samples.len() / 2]
+}
+
+#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+fn time_direct_set_ingestion(
+    ingestion: &[RangeInclusive<u32>],
+    insert: fn(&mut RangeSetBlaze<u32>, RangeInclusive<u32>),
+) -> f64 {
+    use std::{hint::black_box, time::Instant};
+
+    let mut samples = Vec::with_capacity(7);
+    for _ in 0..7 {
+        let mut sets = vec![RangeSetBlaze::new(); 200];
+        let start = Instant::now();
+        for set in &mut sets {
+            for range in ingestion {
+                insert(set, black_box(range.clone()));
+            }
+        }
+        let elapsed = start.elapsed();
+        black_box(&sets);
+        samples.push(elapsed.as_secs_f64() * 1e9 / 200.0);
+    }
+    samples.sort_by(f64::total_cmp);
+    samples[samples.len() / 2]
+}
+
+#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+struct SetInsertBenchmarkCase {
+    name: &'static str,
+    initial: RangeSetBlaze<u32>,
+    insertion: RangeInclusive<u32>,
+    repetitions: u32,
+}
+
+#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+fn set_insert_benchmark_cases_first() -> [SetInsertBenchmarkCase; 9] {
+    let sparse = |count| direct_benchmark_set((0..count).map(|i| (i * 10)..=(i * 10 + 2)));
+    let separated_points = |count| direct_benchmark_set((0..count).map(|i| (i * 4)..=(i * 4)));
+    let local = direct_benchmark_set([0..=9, 20..=29, 40..=49, 60..=69]);
+    [
+        SetInsertBenchmarkCase {
+            name: "empty_r0_k0",
+            initial: RangeSetBlaze::new(),
+            insertion: 10..=12,
+            repetitions: 50_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "single_point_r2_k0",
+            initial: direct_benchmark_set([0..=2, 10..=12]),
+            insertion: 6..=6,
+            repetitions: 30_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "sparse_gap_r32_k0",
+            initial: sparse(32),
+            insertion: 165..=167,
+            repetitions: 20_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "sparse_gap_r1000_k0",
+            initial: sparse(1_000),
+            insertion: 5_005..=5_007,
+            repetitions: 3_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "sparse_gap_r8192_k0",
+            initial: sparse(8_192),
+            insertion: 40_965..=40_967,
+            repetitions: 500,
+        },
+        SetInsertBenchmarkCase {
+            name: "dense_local_r1000_k2",
+            initial: separated_points(1_000),
+            insertion: 1_998..=2_002,
+            repetitions: 3_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "contained_r1_k1",
+            initial: direct_benchmark_set([0..=100_000]),
+            insertion: 40_000..=60_000,
+            repetitions: 50_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "exact_r1_k1",
+            initial: direct_benchmark_set([0..=100_000]),
+            insertion: 0..=100_000,
+            repetitions: 50_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "coalesce_left_r4_k1",
+            initial: local,
+            insertion: 10..=15,
+            repetitions: 20_000,
+        },
+    ]
+}
+
+#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+fn set_insert_benchmark_cases_second() -> [SetInsertBenchmarkCase; 9] {
+    let separated_points = |count| direct_benchmark_set((0..count).map(|i| (i * 4)..=(i * 4)));
+    let local = direct_benchmark_set([0..=9, 20..=29, 40..=49, 60..=69]);
+    [
+        SetInsertBenchmarkCase {
+            name: "coalesce_right_r4_k1",
+            initial: local.clone(),
+            insertion: 34..=39,
+            repetitions: 20_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "coalesce_both_r2_k2",
+            initial: direct_benchmark_set([0..=9, 20..=29]),
+            insertion: 10..=19,
+            repetitions: 20_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "small_overlap_r4_k2",
+            initial: local,
+            insertion: 25..=44,
+            repetitions: 20_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "minimum_boundary_r1_k1",
+            initial: direct_benchmark_set([1..=10]),
+            insertion: u32::MIN..=1,
+            repetitions: 30_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "maximum_boundary_r1_k1",
+            initial: direct_benchmark_set([(u32::MAX - 10)..=(u32::MAX - 1)]),
+            insertion: (u32::MAX - 1)..=u32::MAX,
+            repetitions: 30_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "full_domain_r3_k3",
+            initial: direct_benchmark_set([1..=3, 100..=200, (u32::MAX - 3)..=(u32::MAX - 1)]),
+            insertion: u32::MIN..=u32::MAX,
+            repetitions: 20_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "absorb_r4096_k17",
+            initial: separated_points(4_096),
+            insertion: 8_160..=8_224,
+            repetitions: 1_000,
+        },
+        SetInsertBenchmarkCase {
+            name: "absorb_r4096_k257",
+            initial: separated_points(4_096),
+            insertion: 7_680..=8_704,
+            repetitions: 500,
+        },
+        SetInsertBenchmarkCase {
+            name: "absorb_r4096_k3073",
+            initial: separated_points(4_096),
+            insertion: 2_048..=14_336,
+            repetitions: 100,
+        },
+    ]
+}
+
+#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+#[test]
+#[ignore = "run in release mode to compare private baseline and cursor insertion directly"]
+fn benchmark_set_cursor_insert_direct() {
+    std::println!("case\tbaseline ns\tcursor ns\tspeedup");
+    let mut speedups = Vec::new();
+    for case in set_insert_benchmark_cases_first()
+        .into_iter()
+        .chain(set_insert_benchmark_cases_second())
+    {
+        let baseline = time_direct_set_insert(
+            &case.initial,
+            &case.insertion,
+            RangeSetBlaze::internal_add_baseline,
+            case.repetitions,
+        );
+        let cursor = time_direct_set_insert(
+            &case.initial,
+            &case.insertion,
+            RangeSetBlaze::internal_add_cursor,
+            case.repetitions,
+        );
+        let speedup = baseline / cursor;
+        speedups.push((case.name, speedup));
+        std::println!("{}\t{baseline:.2}\t{cursor:.2}\t{speedup:.3}x", case.name);
+    }
+
+    let mut char_initial = RangeSetBlaze::new();
+    char_initial.internal_add_baseline('\u{D7FE}'..='\u{D7FE}');
+    char_initial.internal_add_baseline('\u{E001}'..='\u{E001}');
+    let char_insertion = '\u{D7FF}'..='\u{E000}';
+    let baseline = time_direct_set_insert(
+        &char_initial,
+        &char_insertion,
+        RangeSetBlaze::internal_add_baseline,
+        30_000,
+    );
+    let cursor = time_direct_set_insert(
+        &char_initial,
+        &char_insertion,
+        RangeSetBlaze::internal_add_cursor,
+        30_000,
+    );
+    let speedup = baseline / cursor;
+    speedups.push(("char_surrogate_bridge_r2_k2", speedup));
+    std::println!("char_surrogate_bridge_r2_k2\t{baseline:.2}\t{cursor:.2}\t{speedup:.3}x");
+
+    let ingestion = (0..1_000)
+        .map(|i| (i * 7)..=(i * 7 + i % 5))
+        .collect::<Vec<_>>();
+    let baseline = time_direct_set_ingestion(&ingestion, RangeSetBlaze::internal_add_baseline);
+    let cursor = time_direct_set_ingestion(&ingestion, RangeSetBlaze::internal_add_cursor);
+    let speedup = baseline / cursor;
+    speedups.push(("repeated_ingestion_n1000", speedup));
+    std::println!("repeated_ingestion_n1000\t{baseline:.2}\t{cursor:.2}\t{speedup:.3}x");
+
+    let case_count = u32::try_from(speedups.len()).expect("benchmark case count fits u32");
+    let geometric_mean = (speedups
+        .iter()
+        .map(|(_, speedup)| speedup.ln())
+        .sum::<f64>()
+        / f64::from(case_count))
+    .exp();
+    let biggest_win = speedups
+        .iter()
+        .max_by(|a, b| a.1.total_cmp(&b.1))
+        .expect("at least one benchmark case");
+    let biggest_regression = speedups
+        .iter()
+        .min_by(|a, b| a.1.total_cmp(&b.1))
+        .expect("at least one benchmark case");
+    std::println!("geometric mean\t{geometric_mean:.3}x");
+    std::println!("biggest win\t{}\t{:.3}x", biggest_win.0, biggest_win.1);
+    std::println!(
+        "biggest regression\t{}\t{:.3}x",
+        biggest_regression.0,
+        biggest_regression.1
+    );
 }
 
 #[cfg(not(target_arch = "wasm32"))]

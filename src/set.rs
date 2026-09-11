@@ -1,4 +1,5 @@
 #![allow(unexpected_cfgs)]
+#[cfg(any(test, not(feature = "insert_nightly_experimental")))]
 use core::cmp::max;
 use core::mem;
 use core::{
@@ -18,8 +19,11 @@ use std::{
 
 use crate::alloc::string::ToString;
 use crate::sorted_disjoint::RangeOnce;
+#[cfg(feature = "insert_nightly_experimental")]
+use alloc::collections::btree_map::CursorMut;
 use alloc::collections::{BTreeMap, btree_map};
 use alloc::string::String;
+#[cfg(any(test, not(feature = "insert_nightly_experimental")))]
 use alloc::vec::Vec;
 use gen_ops::gen_ops_ex;
 
@@ -750,6 +754,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         self.ranges().is_disjoint(other.ranges())
     }
 
+    #[cfg(any(test, not(feature = "insert_nightly_experimental")))]
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
@@ -1067,7 +1072,8 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-    pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>) {
+    #[cfg(any(test, not(feature = "insert_nightly_experimental")))]
+    pub(crate) fn internal_add_baseline(&mut self, range: RangeInclusive<T>) {
         let (start, end) = range.clone().into_inner();
         if end < start {
             return;
@@ -1094,6 +1100,107 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
+    #[cfg(feature = "insert_nightly_experimental")]
+    fn cursor_absorb_successors(
+        cursor: &mut CursorMut<'_, T, T>,
+        len: &mut T::SafeLen,
+        mut pending_end: T,
+        pending_is_stored: bool,
+    ) -> T {
+        let initial_pending_end = pending_end;
+        while let Some((stored_start, stored_end)) = cursor
+            .peek_next()
+            .map(|(stored_start, stored_end)| (*stored_start, *stored_end))
+        {
+            let interacts =
+                stored_start <= pending_end || pending_end.checked_add_one() == Some(stored_start);
+            if !interacts {
+                break;
+            }
+
+            cursor
+                .remove_next()
+                .expect("Real Assert: the peeked successor still exists");
+            *len -= T::safe_len(&(stored_start..=stored_end));
+
+            if stored_end > pending_end {
+                pending_end = stored_end;
+            }
+        }
+
+        if pending_is_stored && pending_end > initial_pending_end {
+            *cursor
+                .peek_prev()
+                .map(|(_, stored_end)| stored_end)
+                .expect("Real Assert: the stored pending range is the predecessor") = pending_end;
+            *len += T::safe_len(&(initial_pending_end.add_one()..=pending_end));
+        }
+        pending_end
+    }
+
+    #[cfg(feature = "insert_nightly_experimental")]
+    pub(crate) fn internal_add_cursor(&mut self, range: RangeInclusive<T>) {
+        let (start, mut pending_end) = range.into_inner();
+        if pending_end < start {
+            return;
+        }
+
+        let mut cursor = self.btree_map.lower_bound_mut(Bound::Included(&start));
+
+        // `peek_prev` is the only range to the left that can overlap or touch the insertion.
+        if let Some((_, stored_end)) = cursor.peek_prev() {
+            let stored_end = *stored_end;
+            let interacts = stored_end >= start || stored_end.checked_add_one() == Some(start);
+            if interacts {
+                if stored_end >= pending_end {
+                    return;
+                }
+
+                *cursor
+                    .peek_prev()
+                    .map(|(_, stored_end)| stored_end)
+                    .expect("Real Assert: the peeked predecessor still exists") = pending_end;
+                self.len += T::safe_len(&(stored_end.add_one()..=pending_end));
+                Self::cursor_absorb_successors(&mut cursor, &mut self.len, pending_end, true);
+                debug_assert!(self.len == self.len_slow());
+                return;
+            }
+        }
+
+        // An equal-start successor can contain the insertion exactly as stored.
+        if cursor
+            .peek_next()
+            .is_some_and(|(stored_start, stored_end)| {
+                *stored_start == start && *stored_end >= pending_end
+            })
+        {
+            return;
+        }
+
+        pending_end =
+            Self::cursor_absorb_successors(&mut cursor, &mut self.len, pending_end, false);
+        assert!(
+            cursor.insert_before(start, pending_end).is_ok(),
+            "Real Assert: the range belongs at the cursor"
+        );
+        self.len += T::safe_len(&(start..=pending_end));
+        debug_assert!(self.len == self.len_slow());
+    }
+
+    #[inline]
+    pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>) {
+        #[cfg(feature = "insert_nightly_experimental")]
+        {
+            self.internal_add_cursor(range);
+        }
+
+        #[cfg(not(feature = "insert_nightly_experimental"))]
+        {
+            self.internal_add_baseline(range);
+        }
+    }
+
+    #[cfg(any(test, not(feature = "insert_nightly_experimental")))]
     #[inline]
     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();

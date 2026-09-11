@@ -200,7 +200,7 @@ fn test_coverage_9() {
     assert_eq!(a, b);
 }
 
-#[cfg(feature = "map_insert_cursor_experimental")]
+#[cfg(feature = "insert_nightly_experimental")]
 fn assert_cursor_insert_matches<T, V>(
     initial: impl IntoIterator<Item = (RangeInclusive<T>, V)>,
     insertion: RangeInclusive<T>,
@@ -235,7 +235,7 @@ fn assert_cursor_insert_matches<T, V>(
     assert!(baseline.len() == baseline.len_slow());
 }
 
-#[cfg(feature = "map_insert_cursor_experimental")]
+#[cfg(feature = "insert_nightly_experimental")]
 #[test]
 fn map_cursor_insert_targeted_differential() {
     let empty_start = 3;
@@ -307,7 +307,7 @@ fn map_cursor_insert_targeted_differential() {
     );
 }
 
-#[cfg(feature = "map_insert_cursor_experimental")]
+#[cfg(feature = "insert_nightly_experimental")]
 #[test]
 fn map_cursor_insert_exhaustive_small_domain() {
     const DOMAIN_END: u8 = 4;
@@ -361,7 +361,7 @@ fn map_cursor_insert_exhaustive_small_domain() {
     }
 }
 
-#[cfg(feature = "map_insert_cursor_experimental")]
+#[cfg(feature = "insert_nightly_experimental")]
 #[test]
 fn map_cursor_insert_randomized_differential() {
     use rand::{SeedableRng, distr::Uniform, prelude::Distribution, rngs::StdRng};
@@ -383,7 +383,7 @@ fn map_cursor_insert_randomized_differential() {
     }
 }
 
-#[cfg(feature = "map_insert_cursor_experimental")]
+#[cfg(feature = "insert_nightly_experimental")]
 #[test]
 fn map_cursor_insert_clones_only_for_two_residuals() {
     use alloc::rc::Rc;
@@ -438,10 +438,7 @@ fn map_cursor_insert_clones_only_for_two_residuals() {
     assert_eq!(clone_count_for(40..=60, 0..=100), 0);
 }
 
-#[cfg(all(
-    feature = "map_insert_cursor_experimental",
-    not(target_arch = "wasm32")
-))]
+#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
 fn direct_benchmark_map(
     ranges: impl IntoIterator<Item = (RangeInclusive<u32>, u32)>,
 ) -> RangeMapBlaze<u32, u32> {
@@ -452,10 +449,7 @@ fn direct_benchmark_map(
     map
 }
 
-#[cfg(all(
-    feature = "map_insert_cursor_experimental",
-    not(target_arch = "wasm32")
-))]
+#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
 fn benchmark_direct_insert_case(
     group: &mut criterion::BenchmarkGroup<'_, criterion::measurement::WallTime>,
     name: &str,
@@ -487,10 +481,7 @@ fn benchmark_direct_insert_case(
     });
 }
 
-#[cfg(all(
-    feature = "map_insert_cursor_experimental",
-    not(target_arch = "wasm32")
-))]
+#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
 fn benchmark_direct_ingestion_case(
     group: &mut criterion::BenchmarkGroup<'_, criterion::measurement::WallTime>,
 ) {
@@ -525,10 +516,7 @@ fn benchmark_direct_ingestion_case(
     }
 }
 
-#[cfg(all(
-    feature = "map_insert_cursor_experimental",
-    not(target_arch = "wasm32")
-))]
+#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
 #[test]
 #[ignore = "run explicitly to compare private baseline and cursor insertion with Criterion"]
 fn benchmark_map_cursor_insert_direct() {
