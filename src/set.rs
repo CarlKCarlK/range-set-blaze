@@ -1252,8 +1252,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// The result covers [`Integer::min_value`] through [`Integer::max_value`].
     /// The `false` values are ordinary map values, so the resulting map's key
     /// domain is universal. Because map operators act on those key ranges, `!`
-    /// on the filled map yields an empty map rather than performing Boolean
-    /// negation.
+    /// on the filled map yields an empty set rather than negating the Boolean
+    /// values.
     ///
     /// To fill gaps lazily without materializing a map, use
     /// [`SortedDisjoint::fill_gaps`] on a set stream such as

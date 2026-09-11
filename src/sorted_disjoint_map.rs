@@ -402,10 +402,10 @@ where
     /// [`SortedDisjointMap::complement`] is empty.
     ///
     /// This is the lazy streaming form of the operation. To obtain a
-    /// materialized [`RangeMapBlaze<T, Option<V>>`] instead, use
+    /// materialized [`RangeMapBlaze<T, Option<VC::Value>>`] instead, use
     /// [`RangeMapBlaze::fill_gaps`].
     ///
-    /// [`RangeMapBlaze<T, Option<V>>`]: crate::RangeMapBlaze
+    /// [`RangeMapBlaze<T, Option<VC::Value>>`]: crate::RangeMapBlaze
     /// [`RangeMapBlaze::fill_gaps`]: crate::RangeMapBlaze::fill_gaps
     ///
     /// # Examples

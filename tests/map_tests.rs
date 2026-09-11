@@ -257,8 +257,8 @@ fn custom_value_carrier_needs_neither_borrow_nor_representation_equality() {
 
 #[test]
 fn fill_gaps_map_collection() {
-    // The collection-level method returns a materialized RangeMapBlaze whose
-    // values are Option<V>, owned rather than borrowed.
+    // The collection-level method returns a materialized RangeMapBlaze
+    // whose logical values are Option<V>.
     let map = RangeMapBlaze::from_iter([(1_u8..=3, "red"), (7..=10, "blue")]);
     let filled: RangeMapBlaze<u8, Option<&str>> = map.fill_gaps();
     assert_eq!(

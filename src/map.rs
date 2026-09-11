@@ -2100,8 +2100,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// The result covers [`Integer::min_value`] through [`Integer::max_value`].
     /// The `None` values are ordinary map values, so the resulting map's key
     /// domain is universal. Because map operators act on those key ranges, `!`
-    /// on the filled map yields an empty map rather than performing Boolean
-    /// negation.
+    /// on the filled map yields an empty set rather than negating the `Option`
+    /// values.
     ///
     /// Materializing the result clones each value out of this map. To avoid both
     /// the intermediate collection and those clones, use
