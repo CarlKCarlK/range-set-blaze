@@ -23,7 +23,6 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use gen_ops::gen_ops_ex;
 
-use crate::FillGapsIter;
 use crate::ranges_iter::RangesIter;
 use crate::unsorted_disjoint::{SortedDisjointWithLenSoFar, UnsortedDisjoint};
 use crate::{Integer, prelude::*};
@@ -1247,25 +1246,34 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    /// Fills the gaps in this set with `false` values.
+    /// Returns a [`RangeMapBlaze`] over the complete integer domain, mapping
+    /// present ranges to `true` and gaps to `false`.
     ///
-    /// The returned iterator covers the full integer domain. Present ranges
-    /// contain `true`, and gaps contain `false`.
+    /// The result covers [`Integer::min_value`] through [`Integer::max_value`].
+    /// The `false` values are ordinary map values, so the resulting map's key
+    /// domain is universal. Because map operators act on those key ranges, `!`
+    /// on the filled map yields an empty map rather than performing Boolean
+    /// negation.
     ///
-    /// # Example
+    /// To fill gaps lazily without materializing a map, use
+    /// [`SortedDisjoint::fill_gaps`] on a set stream such as
+    /// [`RangeSetBlaze::ranges`].
+    ///
+    /// # Examples
     ///
     /// ```
     /// # use range_set_blaze::RangeSetBlaze;
     /// let set = RangeSetBlaze::from_iter([1..=3, 7..=10]);
-    /// let filled = set.fill_gaps().collect::<Vec<_>>();
-    /// assert_eq!(filled[0], (i32::MIN..=0, false));
-    /// assert_eq!(filled[1], (1..=3, true));
-    /// assert_eq!(filled[2], (4..=6, false));
-    /// assert_eq!(filled[3], (7..=10, true));
-    /// assert_eq!(filled[4], (11..=i32::MAX, false));
+    /// let filled = set.fill_gaps();
+    /// assert_eq!(filled.get(i32::MIN), Some(&false));
+    /// assert_eq!(filled.get(2), Some(&true));
+    /// assert_eq!(filled.get(5), Some(&false));
+    /// assert_eq!(filled.get(8), Some(&true));
+    /// assert_eq!(filled.get(i32::MAX), Some(&false));
     /// ```
-    pub fn fill_gaps(&self) -> FillGapsIter<T, RangesIter<'_, T>> {
-        self.ranges().fill_gaps()
+    #[must_use]
+    pub fn fill_gaps(&self) -> RangeMapBlaze<T, bool> {
+        self.ranges().fill_gaps().into_range_map_blaze()
     }
 
     /// An iterator that moves out the ranges in the [`RangeSetBlaze`],

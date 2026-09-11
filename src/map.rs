@@ -1,4 +1,3 @@
-use crate::FillGapsIterMap;
 use crate::{
     CheckSortedDisjoint, Integer, IntoKeys, Keys, RangeSetBlaze, SortedDisjoint,
     iter_map::{IntoIterMap, IterMap},
@@ -2095,26 +2094,35 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         RangeValuesIter::new(&self.btree_map)
     }
 
-    /// Returns a lazy stream of mapped ranges and gaps over the full integer domain.
+    /// Returns a [`RangeMapBlaze`] over the complete integer domain, mapping
+    /// present ranges to `Some(value)` and gaps to `None`.
     ///
-    /// Mapped ranges contain `Some(&V)` and gaps contain `None`.
+    /// The result covers [`Integer::min_value`] through [`Integer::max_value`].
+    /// The `None` values are ordinary map values, so the resulting map's key
+    /// domain is universal. Because map operators act on those key ranges, `!`
+    /// on the filled map yields an empty map rather than performing Boolean
+    /// negation.
     ///
-    /// The returned iterator borrows the map and visits each mapped range once.
+    /// Materializing the result clones each value out of this map. To avoid both
+    /// the intermediate collection and those clones, use
+    /// [`SortedDisjointMap::fill_gaps`] on a map stream such as
+    /// [`RangeMapBlaze::range_values`], which borrows the values instead.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```
     /// # use range_set_blaze::RangeMapBlaze;
     /// let map = RangeMapBlaze::from_iter([(1..=3, "red"), (7..=10, "blue")]);
-    /// let filled = map.fill_gaps().collect::<Vec<_>>();
-    /// assert_eq!(filled[0], (i32::MIN..=0, None));
-    /// assert_eq!(filled[1], (1..=3, Some(&"red")));
-    /// assert_eq!(filled[2], (4..=6, None));
-    /// assert_eq!(filled[3], (7..=10, Some(&"blue")));
-    /// assert_eq!(filled[4], (11..=i32::MAX, None));
+    /// let filled = map.fill_gaps();
+    /// assert_eq!(filled.get(i32::MIN), Some(&None));
+    /// assert_eq!(filled.get(2), Some(&Some("red")));
+    /// assert_eq!(filled.get(5), Some(&None));
+    /// assert_eq!(filled.get(8), Some(&Some("blue")));
+    /// assert_eq!(filled.get(i32::MAX), Some(&None));
     /// ```
-    pub fn fill_gaps(&self) -> FillGapsIterMap<T, &V, RangeValuesIter<'_, T, V>> {
-        self.range_values().fill_gaps()
+    #[must_use]
+    pub fn fill_gaps(&self) -> RangeMapBlaze<T, Option<V>> {
+        self.range_values().fill_gaps().into_range_map_blaze()
     }
 
     /// An iterator that visits the ranges and values in the [`RangeMapBlaze`]. Double-ended.

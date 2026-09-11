@@ -1732,9 +1732,53 @@ fn range_or_gap_at_set_exhaustive_u8() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn fill_gaps_set() {
+fn fill_gaps_set_collection() {
+    // The collection-level method returns a materialized RangeMapBlaze.
+    let set = RangeSetBlaze::from_iter([1_u8..=3, 7..=10]);
+    let filled: RangeMapBlaze<u8, bool> = set.fill_gaps();
+    assert_eq!(
+        filled,
+        RangeMapBlaze::from_iter([
+            (u8::MIN..=0, false),
+            (1..=3, true),
+            (4..=6, false),
+            (7..=10, true),
+            (11..=u8::MAX, false),
+        ])
+    );
+
+    // The gathered result covers the complete domain, so every key is present.
+    assert_eq!(filled.range_values_len(), 5);
+    for value in u8::MIN..=u8::MAX {
+        let expected = matches!(value, 1..=3 | 7..=10);
+        assert_eq!(filled.get(value), Some(&expected));
+    }
+
+    // An empty set fills to a single `false` range; a full set to one `true`.
+    let empty: RangeMapBlaze<u8, bool> = RangeSetBlaze::<u8>::new().fill_gaps();
+    assert_eq!(
+        empty,
+        RangeMapBlaze::from_iter([(u8::MIN..=u8::MAX, false)])
+    );
+    let full: RangeMapBlaze<u8, bool> = RangeSetBlaze::from_iter([u8::MIN..=u8::MAX]).fill_gaps();
+    assert_eq!(full, RangeMapBlaze::from_iter([(u8::MIN..=u8::MAX, true)]));
+
+    // Widening to the full i32 domain produces the boundary gap ranges too.
     let set = RangeSetBlaze::from_iter([1..=3, 7..=10]);
-    let mut filled = set.fill_gaps();
+    let filled: RangeMapBlaze<i32, bool> = set.fill_gaps();
+    assert_eq!(filled.get(i32::MIN), Some(&false));
+    assert_eq!(filled.get(2), Some(&true));
+    assert_eq!(filled.get(5), Some(&false));
+    assert_eq!(filled.get(8), Some(&true));
+    assert_eq!(filled.get(i32::MAX), Some(&false));
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn fill_gaps_set_stream() {
+    // The streaming method stays lazy: exact output, step by step.
+    let set = RangeSetBlaze::from_iter([1..=3, 7..=10]);
+    let mut filled = set.ranges().fill_gaps();
     assert_eq!(filled.size_hint(), (2, Some(5)));
     assert_eq!(filled.next(), Some((i32::MIN..=0, false)));
     assert_eq!(filled.next(), Some((1..=3, true)));
@@ -1742,21 +1786,24 @@ fn fill_gaps_set() {
     assert_eq!(filled.next(), Some((7..=10, true)));
     assert_eq!(filled.next(), Some((11..=i32::MAX, false)));
     assert_eq!(filled.next(), None);
+    // FusedIterator: continues to return None after exhaustion.
     assert_eq!(filled.next(), None);
 
     let empty = RangeSetBlaze::<u8>::new();
     assert_eq!(
-        empty.fill_gaps().collect::<Vec<_>>(),
+        empty.ranges().fill_gaps().collect::<Vec<_>>(),
         vec![(0..=u8::MAX, false)]
     );
 
     let full = RangeSetBlaze::from_iter([u8::MIN..=u8::MAX]);
     assert_eq!(
-        full.fill_gaps().collect::<Vec<_>>(),
+        full.ranges().fill_gaps().collect::<Vec<_>>(),
         vec![(0..=u8::MAX, true)]
     );
 
+    // The stream can still be gathered explicitly at the streaming layer.
     let map: RangeMapBlaze<u8, bool> = RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+        .ranges()
         .fill_gaps()
         .into_range_map_blaze();
     assert_eq!(
@@ -1770,7 +1817,18 @@ fn fill_gaps_set() {
         ])
     );
 
-    assert!((!RangeSetBlaze::from_iter([1_u8..=3, 7..=10]).fill_gaps()).is_empty());
+    // Gathering at the collection layer and streaming to the stream layer agree.
+    assert_eq!(
+        map,
+        RangeSetBlaze::from_iter([1_u8..=3, 7..=10]).fill_gaps()
+    );
+
+    assert!(
+        (!RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .ranges()
+            .fill_gaps())
+        .is_empty()
+    );
 }
 
 #[test]
@@ -1788,14 +1846,20 @@ fn fill_gaps_iter_bool_map_operators() {
         (11..=u8::MAX, false),
     ]);
     assert!(
-        (RangeSetBlaze::from_iter([1_u8..=3, 7..=10]).fill_gaps() | other_factory())
-            .equal(expected_union)
+        (RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .ranges()
+            .fill_gaps()
+            | other_factory())
+        .equal(expected_union)
     );
 
     let expected_intersection = CheckSortedDisjointMap::new([(2..=4, true)]);
     assert!(
-        (RangeSetBlaze::from_iter([1_u8..=3, 7..=10]).fill_gaps() & other_factory())
-            .equal(expected_intersection)
+        (RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .ranges()
+            .fill_gaps()
+            & other_factory())
+        .equal(expected_intersection)
     );
 
     let expected_difference = CheckSortedDisjointMap::new([
@@ -1806,8 +1870,11 @@ fn fill_gaps_iter_bool_map_operators() {
         (11..=u8::MAX, false),
     ]);
     assert!(
-        (RangeSetBlaze::from_iter([1_u8..=3, 7..=10]).fill_gaps() - other_factory())
-            .equal(expected_difference)
+        (RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .ranges()
+            .fill_gaps()
+            - other_factory())
+        .equal(expected_difference)
     );
 
     let expected_symmetric_difference = CheckSortedDisjointMap::new([
@@ -1818,8 +1885,11 @@ fn fill_gaps_iter_bool_map_operators() {
         (11..=u8::MAX, false),
     ]);
     assert!(
-        (RangeSetBlaze::from_iter([1_u8..=3, 7..=10]).fill_gaps() ^ other_factory())
-            .equal(expected_symmetric_difference)
+        (RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .ranges()
+            .fill_gaps()
+            ^ other_factory())
+        .equal(expected_symmetric_difference)
     );
 }
 
@@ -1833,6 +1903,7 @@ fn fill_gaps_iter_bool_map_methods() {
 
     assert_eq!(
         RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .ranges()
             .fill_gaps()
             .union(other_factory())
             .collect::<Vec<_>>(),
@@ -1846,6 +1917,7 @@ fn fill_gaps_iter_bool_map_methods() {
     );
     assert_eq!(
         RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .ranges()
             .fill_gaps()
             .intersection(other_factory())
             .collect::<Vec<_>>(),
@@ -1853,6 +1925,7 @@ fn fill_gaps_iter_bool_map_methods() {
     );
     assert_eq!(
         RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .ranges()
             .fill_gaps()
             .difference(other_factory())
             .collect::<Vec<_>>(),
@@ -1866,6 +1939,7 @@ fn fill_gaps_iter_bool_map_methods() {
     );
     assert_eq!(
         RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .ranges()
             .fill_gaps()
             .symmetric_difference(other_factory())
             .collect::<Vec<_>>(),
@@ -1878,14 +1952,21 @@ fn fill_gaps_iter_bool_map_methods() {
         ]
     );
 
-    assert!(!(RangeSetBlaze::from_iter([1_u8..=3, 7..=10]).fill_gaps()).is_empty());
+    assert!(
+        !(RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .ranges()
+            .fill_gaps())
+        .is_empty()
+    );
     assert!(
         RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .ranges()
             .fill_gaps()
             .is_universal()
     );
     assert_eq!(
         RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .ranges()
             .fill_gaps()
             .into_sorted_disjoint()
             .collect::<Vec<_>>(),
@@ -1893,11 +1974,13 @@ fn fill_gaps_iter_bool_map_methods() {
     );
     assert!(
         RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .ranges()
             .fill_gaps()
             .complement()
             .is_empty()
     );
     let map: RangeMapBlaze<u8, bool> = RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+        .ranges()
         .fill_gaps()
         .into_range_map_blaze();
     assert_eq!(map.get(5), Some(&false));
@@ -1917,7 +2000,7 @@ fn fill_gaps_set_exhaustive_u8_single_ranges() {
             if end < u8::MAX {
                 expected.push((end + 1..=u8::MAX, false));
             }
-            assert_eq!(set.fill_gaps().collect::<Vec<_>>(), expected);
+            assert_eq!(set.ranges().fill_gaps().collect::<Vec<_>>(), expected);
         }
     }
 }
@@ -1927,7 +2010,7 @@ fn fill_gaps_set_exhaustive_u8_single_ranges() {
 fn fill_gaps_set_char_surrogate_boundary() {
     let set = RangeSetBlaze::from_iter(['\u{D7FF}'..='\u{E000}']);
     assert_eq!(
-        set.fill_gaps().collect::<Vec<_>>(),
+        set.ranges().fill_gaps().collect::<Vec<_>>(),
         vec![
             ('\0'..='\u{D7FE}', false),
             ('\u{D7FF}'..='\u{E000}', true),
@@ -1962,7 +2045,7 @@ fn fill_gaps_set_size_hint_overflow() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn fill_gaps_iter_size_hint_pending() {
     let set = RangeSetBlaze::from_iter([10_u8..=12, 20..=22]);
-    let mut iter = set.fill_gaps();
+    let mut iter = set.ranges().fill_gaps();
     assert_eq!(iter.size_hint(), (2, Some(5)));
     assert_eq!(iter.next(), Some((u8::MIN..=9, false)));
     assert_eq!(iter.size_hint(), (2, Some(4)));

@@ -452,6 +452,13 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// through `T::max_value()`. Existing ranges are returned with `true` and
     /// gaps with `false`.
     ///
+    /// This is the lazy streaming form of the operation. To obtain a
+    /// materialized [`RangeMapBlaze<T, bool>`] instead, use
+    /// [`RangeSetBlaze::fill_gaps`].
+    ///
+    /// [`RangeMapBlaze<T, bool>`]: crate::RangeMapBlaze
+    /// [`RangeSetBlaze::fill_gaps`]: crate::RangeSetBlaze::fill_gaps
+    ///
     /// # Examples
     ///
     /// ```

@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Floating-point range support for `f32` and `f64`, plus `range_at`,
   `range_or_gap_at`, and `fill_gaps`, are now unconditional public APIs.
+- `RangeSetBlaze::fill_gaps` returns a `RangeMapBlaze<T, bool>` and
+  `RangeMapBlaze::fill_gaps` returns a `RangeMapBlaze<T, Option<V>>`, following
+  the crate's usual two-layer design: collection methods return gathered
+  collections, while `SortedDisjoint::fill_gaps` and
+  `SortedDisjointMap::fill_gaps` return the lazy streams
+  (`FillGapsIter` and `FillGapsIterMap`) for advanced composition. Both cover
+  the complete integer domain from `T::min_value()` through `T::max_value()`.
 - `FillGapsIterMap` and `FillGapsIter` now implement `SortedDisjointMap` and can be
   collected directly into `RangeMapBlaze<T, Option<V>>` and
   `RangeMapBlaze<T, bool>`, respectively. `bool` now implements `ValueCarrier` as

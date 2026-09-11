@@ -401,6 +401,13 @@ where
     /// [`SortedDisjointMap::into_sorted_disjoint`] covers the full domain and
     /// [`SortedDisjointMap::complement`] is empty.
     ///
+    /// This is the lazy streaming form of the operation. To obtain a
+    /// materialized [`RangeMapBlaze<T, Option<V>>`] instead, use
+    /// [`RangeMapBlaze::fill_gaps`].
+    ///
+    /// [`RangeMapBlaze<T, Option<V>>`]: crate::RangeMapBlaze
+    /// [`RangeMapBlaze::fill_gaps`]: crate::RangeMapBlaze::fill_gaps
+    ///
     /// # Examples
     ///
     /// ```

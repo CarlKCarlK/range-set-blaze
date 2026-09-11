@@ -256,6 +256,64 @@ fn custom_value_carrier_needs_neither_borrow_nor_representation_equality() {
 }
 
 #[test]
+fn fill_gaps_map_collection() {
+    // The collection-level method returns a materialized RangeMapBlaze whose
+    // values are Option<V>, owned rather than borrowed.
+    let map = RangeMapBlaze::from_iter([(1_u8..=3, "red"), (7..=10, "blue")]);
+    let filled: RangeMapBlaze<u8, Option<&str>> = map.fill_gaps();
+    assert_eq!(
+        filled,
+        RangeMapBlaze::from_iter([
+            (u8::MIN..=0, None),
+            (1..=3, Some("red")),
+            (4..=6, None),
+            (7..=10, Some("blue")),
+            (11..=u8::MAX, None),
+        ])
+    );
+
+    // The gathered result covers the complete domain, so every key is present.
+    assert_eq!(filled.range_values_len(), 5);
+    assert_eq!(filled.get(0), Some(&None));
+    assert_eq!(filled.get(2), Some(&Some("red")));
+    assert_eq!(filled.get(5), Some(&None));
+    assert_eq!(filled.get(8), Some(&Some("blue")));
+    assert_eq!(filled.get(u8::MAX), Some(&None));
+
+    // An empty map fills to a single `None` range; a full map to one `Some`.
+    let empty: RangeMapBlaze<u8, Option<&str>> = RangeMapBlaze::<u8, &str>::new().fill_gaps();
+    assert_eq!(empty, RangeMapBlaze::from_iter([(u8::MIN..=u8::MAX, None)]));
+    let full: RangeMapBlaze<u8, Option<&str>> =
+        RangeMapBlaze::from_iter([(u8::MIN..=u8::MAX, "all")]).fill_gaps();
+    assert_eq!(
+        full,
+        RangeMapBlaze::from_iter([(u8::MIN..=u8::MAX, Some("all"))])
+    );
+
+    // Materializing clones the values out of the source map, so the result is
+    // independent of it and works for non-Copy values too.
+    let owned = RangeMapBlaze::from_iter([(1_u8..=2, String::from("red"))]);
+    let filled: RangeMapBlaze<u8, Option<String>> = owned.fill_gaps();
+    drop(owned);
+    assert_eq!(
+        filled.get(1),
+        Some(&Some(String::from("red"))),
+        "gathered values must not borrow the source map"
+    );
+
+    // Adjacent mapped ranges with different values stay distinct.
+    let adjacent = RangeMapBlaze::from_iter([(0_u8..=2, "a"), (3..=5, "b")]);
+    assert_eq!(
+        adjacent.fill_gaps().range_values().collect::<Vec<_>>(),
+        vec![
+            (0..=2, &Some("a")),
+            (3..=5, &Some("b")),
+            (6..=u8::MAX, &None),
+        ]
+    );
+}
+
+#[test]
 fn range_or_gap_and_fill_gaps_map() {
     let map = RangeMapBlaze::from_iter([(1..=3, "red"), (7..=10, "blue")]);
     assert_eq!(map.range_or_gap_at(2), (1..=3, Some(&"red")));
@@ -264,31 +322,33 @@ fn range_or_gap_and_fill_gaps_map() {
     assert_eq!(map.range_or_gap_at(i32::MIN), (i32::MIN..=0, None));
     assert_eq!(map.range_or_gap_at(i32::MAX), (11..=i32::MAX, None));
 
-    let mut filled = map.fill_gaps();
+    // Streaming layer: yields borrowed values, so it does not clone.
+    let mut filled = map.range_values().fill_gaps();
     assert_eq!(filled.next(), Some((i32::MIN..=0, None)));
     assert_eq!(filled.next(), Some((1..=3, Some(&"red"))));
     assert_eq!(filled.next(), Some((4..=6, None)));
     assert_eq!(filled.next(), Some((7..=10, Some(&"blue"))));
     assert_eq!(filled.next(), Some((11..=i32::MAX, None)));
     assert_eq!(filled.next(), None);
+    // FusedIterator: continues to return None after exhaustion.
     assert_eq!(filled.next(), None);
 
     let empty = RangeMapBlaze::<u8, &str>::new();
     assert_eq!(empty.range_or_gap_at(0), (0..=u8::MAX, None));
     assert_eq!(empty.range_or_gap_at(u8::MAX), (0..=u8::MAX, None));
     assert_eq!(
-        empty.fill_gaps().collect::<Vec<_>>(),
+        empty.range_values().fill_gaps().collect::<Vec<_>>(),
         vec![(0..=u8::MAX, None)]
     );
     let full = RangeMapBlaze::from_iter([(u8::MIN..=u8::MAX, "all")]);
     assert_eq!(
-        full.fill_gaps().collect::<Vec<_>>(),
+        full.range_values().fill_gaps().collect::<Vec<_>>(),
         vec![(u8::MIN..=u8::MAX, Some(&"all"))]
     );
 
     let adjacent = RangeMapBlaze::from_iter([(0_u8..=2, "a"), (3..=5, "b")]);
     assert_eq!(
-        adjacent.fill_gaps().collect::<Vec<_>>(),
+        adjacent.range_values().fill_gaps().collect::<Vec<_>>(),
         vec![
             (0..=2, Some(&"a")),
             (3..=5, Some(&"b")),
@@ -297,7 +357,7 @@ fn range_or_gap_and_fill_gaps_map() {
     );
 
     let multi_range = RangeMapBlaze::from_iter([(10_u8..=12, "a"), (13..=15, "b"), (20..=22, "c")]);
-    for (range, value) in multi_range.fill_gaps() {
+    for (range, value) in multi_range.range_values().fill_gaps() {
         for key in range.clone() {
             assert_eq!(multi_range.range_or_gap_at(key), (range.clone(), value));
         }
@@ -341,7 +401,10 @@ fn fill_gaps_is_a_sorted_disjoint_map() {
     // sorted stream, so FillGapsIterMap preserves one canonical mapped range too.
     let equal_adjacent = RangeMapBlaze::from_iter([(1_u8..=2, "same"), (3..=4, "same")]);
     assert_eq!(
-        equal_adjacent.fill_gaps().collect::<Vec<_>>(),
+        equal_adjacent
+            .range_values()
+            .fill_gaps()
+            .collect::<Vec<_>>(),
         vec![(0..=0, None), (1..=4, Some(&"same")), (5..=u8::MAX, None),]
     );
 }
@@ -360,7 +423,10 @@ fn range_or_gap_and_fill_gaps_map_exhaustive_u8() {
             if end < u8::MAX {
                 expected_filled.push((end + 1..=u8::MAX, None));
             }
-            assert_eq!(map.fill_gaps().collect::<Vec<_>>(), expected_filled);
+            assert_eq!(
+                map.range_values().fill_gaps().collect::<Vec<_>>(),
+                expected_filled
+            );
 
             for key in u8::MIN..=u8::MAX {
                 if key < start {
@@ -453,7 +519,7 @@ fn fill_gaps_char_steps_over_surrogates() {
         ('\u{E001}'..='\u{10FFFF}', None)
     );
     assert_eq!(
-        map.fill_gaps().collect::<Vec<_>>(),
+        map.range_values().fill_gaps().collect::<Vec<_>>(),
         vec![
             ('\u{0}'..='\u{D7FE}', None),
             ('\u{D7FF}'..='\u{E000}', Some(&"letter")),

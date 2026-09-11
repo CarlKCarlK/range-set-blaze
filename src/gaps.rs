@@ -11,8 +11,9 @@ use crate::{Integer, SortedDisjoint, SortedDisjointMap, map::ValueCarrier};
 /// membership in the input set and `false` means a gap. The `false` values
 /// are ordinary map values, so the resulting map's key domain is universal.
 ///
-/// This iterator is created by [`RangeSetBlaze::fill_gaps`] and
-/// [`SortedDisjoint::fill_gaps`].
+/// This iterator is created by [`SortedDisjoint::fill_gaps`], typically from a
+/// set stream such as [`RangeSetBlaze::ranges`]. To materialize the result
+/// instead of streaming it, use [`RangeSetBlaze::fill_gaps`].
 ///
 /// The iterator implements [`SortedDisjointMap<T, bool>`], so it supports the
 /// sorted-disjoint map operations and can be collected into a
@@ -22,16 +23,19 @@ use crate::{Integer, SortedDisjoint, SortedDisjointMap, map::ValueCarrier};
 /// stream's key ranges; for example, `!filled` is empty rather than Boolean
 /// negation.
 ///
-/// [`RangeSetBlaze::fill_gaps`]: crate::RangeSetBlaze::fill_gaps
+/// [`SortedDisjointMap<T, bool>`]: crate::SortedDisjointMap
 /// [`RangeMapBlaze<T, bool>`]: crate::RangeMapBlaze
+/// [`RangeSetBlaze::ranges`]: crate::RangeSetBlaze::ranges
+/// [`RangeSetBlaze::fill_gaps`]: crate::RangeSetBlaze::fill_gaps
 ///
 /// # Example
 ///
 /// ```
 /// use range_set_blaze::{
-///     CheckSortedDisjoint, RangeMapBlaze, SortedDisjoint, SortedDisjointMap,
+///     CheckSortedDisjoint, RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap,
 /// };
 ///
+/// // From the streaming layer directly.
 /// let input = CheckSortedDisjoint::new([1..=3, 7..=10]);
 /// let output = input.fill_gaps().collect::<Vec<_>>();
 /// assert_eq!(output[0], (i32::MIN..=0, false));
@@ -40,8 +44,9 @@ use crate::{Integer, SortedDisjoint, SortedDisjointMap, map::ValueCarrier};
 /// assert_eq!(output[3], (7..=10, true));
 /// assert_eq!(output[4], (11..=i32::MAX, false));
 ///
-/// let input = CheckSortedDisjoint::new([1_u8..=3, 7..=10]);
-/// let map: RangeMapBlaze<u8, bool> = input.fill_gaps().into_range_map_blaze();
+/// // Or explicitly materialize the streaming result into a map.
+/// let set = RangeSetBlaze::from_iter([1_u8..=3, 7..=10]);
+/// let map: RangeMapBlaze<u8, bool> = set.ranges().fill_gaps().into_range_map_blaze();
 /// assert_eq!(map.get(2), Some(&true));
 /// assert_eq!(map.get(5), Some(&false));
 /// ```
@@ -136,16 +141,21 @@ where
 /// values are ordinary map values, so the resulting map's key domain is
 /// universal.
 ///
-/// This iterator is created by [`RangeMapBlaze::fill_gaps`] and
-/// [`SortedDisjointMap::fill_gaps`].
+/// This iterator is created by [`SortedDisjointMap::fill_gaps`], typically from
+/// a map stream such as [`RangeMapBlaze::range_values`]. To materialize the
+/// result instead of streaming it, use [`RangeMapBlaze::fill_gaps`].
 ///
+/// [`RangeMapBlaze::range_values`]: crate::RangeMapBlaze::range_values
 /// [`RangeMapBlaze::fill_gaps`]: crate::RangeMapBlaze::fill_gaps
 ///
 /// # Example
 ///
 /// ```
-/// use range_set_blaze::{CheckSortedDisjointMap, SortedDisjointMap};
+/// use range_set_blaze::{
+///     CheckSortedDisjointMap, RangeMapBlaze, SortedDisjointMap,
+/// };
 ///
+/// // From the streaming layer directly.
 /// let input = CheckSortedDisjointMap::new([(1..=3, &"red"), (7..=10, &"blue")]);
 /// let output = input.fill_gaps().collect::<Vec<_>>();
 /// assert_eq!(output[0], (0..=0, None));
@@ -153,6 +163,13 @@ where
 /// assert_eq!(output[2], (4..=6, None));
 /// assert_eq!(output[3], (7..=10, Some(&"blue")));
 /// assert_eq!(output[4], (11..=u8::MAX, None));
+///
+/// // Or explicitly materialize the streaming result into a map.
+/// let map = RangeMapBlaze::from_iter([(1_u8..=3, "red"), (7..=10, "blue")]);
+/// let filled: RangeMapBlaze<u8, Option<&str>> = map.range_values().fill_gaps()
+///     .into_range_map_blaze();
+/// assert_eq!(filled.get(5), Some(&None));
+/// assert_eq!(filled.get(2), Some(&Some("red")));
 /// ```
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
