@@ -1,6 +1,6 @@
-//! Experimental support for floating point ranges.\
-//! Enable with `float_experimental` (stable, `f32`/`f64`) and
-//! `float_nightly_experimental` (nightly, adds `f16`/`f128`).
+//! Floating-point range support.\
+//! The `f32`/`f64` wrappers are available by default. Enable
+//! `float_nightly_experimental` on nightly to add the `f16`/`f128` wrappers.
 //!
 //! Exports two types of floating point range types.\
 //! Total: Every bit pattern is valid and distinct.\

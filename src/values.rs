@@ -4,7 +4,7 @@ use core::iter::FusedIterator;
 use crate::{
     Integer, SortedDisjointMap,
     iter_map::{IntoIterMap, IterMap},
-    map::{EndValue, ValueRef},
+    map::{EndValue, ValueCarrier},
 };
 
 /// An iterator over the values of a [`RangeMapBlaze`]. Double-ended.
@@ -16,15 +16,15 @@ use crate::{
 /// [`RangeMapBlaze`]: crate::RangeMapBlaze
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct Values<T, VR, I> {
-    iter: IterMap<T, VR, I>,
+pub struct Values<T, VC, I> {
+    iter: IterMap<T, VC, I>,
 }
 
-impl<T, VR, I> Values<T, VR, I>
+impl<T, VC, I> Values<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
     pub(crate) const fn new(iter: I) -> Self {
         Self {
@@ -33,21 +33,21 @@ where
     }
 }
 
-impl<T, VR, I> FusedIterator for Values<T, VR, I>
+impl<T, VC, I> FusedIterator for Values<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR> + FusedIterator,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC> + FusedIterator,
 {
 }
 
-impl<T, VR, I> Iterator for Values<T, VR, I>
+impl<T, VC, I> Iterator for Values<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
-    type Item = VR;
+    type Item = VC;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(_key, value)| value)
@@ -58,11 +58,11 @@ where
     }
 }
 
-impl<T, VR, I> DoubleEndedIterator for Values<T, VR, I>
+impl<T, VC, I> DoubleEndedIterator for Values<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR> + DoubleEndedIterator,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC> + DoubleEndedIterator,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter.next_back().map(|(_key, value)| value)

@@ -287,31 +287,23 @@ pub fn get_led_state_and_duration(movie_id: f64, now_milliseconds: f64) -> LedSt
     console::log_1(&format!("rust: now_milliseconds: {now_milliseconds}").into());
     console::log_1(&format!("rust: frame_index: {frame_index}").into());
 
-    // Create a time interval from now to 2 weeks from now
-    let now_to_2_weeks = RangeSetBlaze::from_iter([frame_index..=i32::MAX]);
+    // Find the range or gap containing now. A gap after the last movie range
+    // extends to i32::MAX, which means the movie is over.
+    // LATER: Consider extracting this lookup into a reusable movie helper.
+    let (range, value) = movie.range_or_gap_at(frame_index);
+    let Some(value) = value else {
+        if *range.end() == i32::MAX {
+            return LedState {
+                state: Leds::DECIMAL,
+                duration: i32::MAX,
+            };
+        }
 
-    // Create trim the movie to the time interval
-    // LATER Support rog-experimental or get_range_value -> (RangeInclusive<i32>, Optional<&V>)
-    let now_to_end_of_movie = movie & &now_to_2_weeks;
-
-    // Find the first region in the time interval (if any)
-    let first_region_if_any = now_to_end_of_movie.range_values().next();
-
-    // If there is no region (the movie is over), display "." display "." for 2 weeks.
-    let Some((range, value)) = first_region_if_any else {
         return LedState {
             state: Leds::DECIMAL,
-            duration: i32::MAX,
+            duration: (range.end() + 1 - frame_index) * 1000 / FPS,
         };
     };
-
-    // Is "now" in this region? If not then we are in a gap. Display "." until a region is ready to display
-    if frame_index < *range.start() {
-        return LedState {
-            state: Leds::DECIMAL,
-            duration: (range.start() - frame_index) * 1000 / FPS,
-        };
-    }
 
     // If we are in a region, compute its duration in milliseconds and the frame to display
     let duration = (range.end() + 1 - frame_index) * 1000 / FPS;

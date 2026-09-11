@@ -1,5 +1,6 @@
+use crate::FillGapsIter;
 use crate::RangeSetBlaze;
-use crate::map::ValueRef;
+use crate::map::ValueCarrier;
 use crate::range_values::{MapIntoRangesIter, MapRangesIter, RangeValuesToRangesIter};
 use crate::ranges_iter::RangesIter;
 use crate::sorted_disjoint_map::IntoString;
@@ -443,6 +444,37 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
         Self: Sized,
     {
         NotIter::new(self)
+    }
+
+    /// Fills the gaps in this sorted, disjoint set stream with `false` values.
+    ///
+    /// The returned stream covers the full integer domain from `T::min_value()`
+    /// through `T::max_value()`. Existing ranges are returned with `true` and
+    /// gaps with `false`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::{CheckSortedDisjoint, SortedDisjoint};
+    ///
+    /// let stream = CheckSortedDisjoint::new([1_u8..=3, 7..=10]);
+    /// assert_eq!(
+    ///     stream.fill_gaps().collect::<Vec<_>>(),
+    ///     vec![
+    ///         (0..=0, false),
+    ///         (1..=3, true),
+    ///         (4..=6, false),
+    ///         (7..=10, true),
+    ///         (11..=u8::MAX, false),
+    ///     ]
+    /// );
+    /// ```
+    #[inline]
+    fn fill_gaps(self) -> FillGapsIter<T, Self>
+    where
+        Self: Sized,
+    {
+        FillGapsIter::new(self)
     }
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator
@@ -934,7 +966,7 @@ impl_sorted_traits_and_ops!(MapIntoRangesIter<T, V>, V: Eq + Clone);
 impl_sorted_traits_and_ops!(MapRangesIter<'a, T, V>, 'a, V: Eq + Clone);
 impl_sorted_traits_and_ops!(NotIter<T, I>, I: SortedDisjoint<T>);
 impl_sorted_traits_and_ops!(RangesIter<'a, T>, 'a);
-impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, VR, I>, VR: ValueRef, I: SortedDisjointMap<T, VR>);
+impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, VC, I>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
 impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(RangeOnce<T>, 'ignore);

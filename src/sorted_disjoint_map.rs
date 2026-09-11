@@ -1,6 +1,8 @@
 use crate::DifferenceMap;
 use crate::DifferenceMapInternal;
 use crate::DynSortedDisjointMap;
+use crate::FillGapsIter;
+use crate::FillGapsIterMap;
 use crate::IntersectionMap;
 use crate::IntoRangeValuesIter;
 use crate::NotIter;
@@ -8,7 +10,7 @@ use crate::NotMap;
 use crate::SymDiffMergeMap;
 use crate::UnionMergeMap;
 use crate::intersection_iter_map::IntersectionIterMap;
-use crate::map::ValueRef;
+use crate::map::ValueCarrier;
 use crate::range_values::RangeValuesIter;
 use crate::range_values::RangeValuesToRangesIter;
 use crate::sorted_disjoint::SortedDisjoint;
@@ -33,199 +35,199 @@ use core::{
 
 /// Used internally. Marks iterators that provide `(range, value)` pairs that are sorted by the range's start, but
 /// that are not necessarily disjoint.
-pub trait SortedStartsMap<T, VR>: Iterator<Item = (RangeInclusive<T>, VR)> + FusedIterator
+pub trait SortedStartsMap<T, VC>: Iterator<Item = (RangeInclusive<T>, VC)> + FusedIterator
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
 }
 
-impl<T, VR, I, P> SortedStartsMap<T, VR> for Filter<I, P>
+impl<T, VC, I, P> SortedStartsMap<T, VC> for Filter<I, P>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedStartsMap<T, VC>,
     P: FnMut(&I::Item) -> bool,
 {
 }
 
-impl<T, VR, I, P> SortedDisjointMap<T, VR> for Filter<I, P>
+impl<T, VC, I, P> SortedDisjointMap<T, VC> for Filter<I, P>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
     P: FnMut(&I::Item) -> bool,
 {
 }
 
-impl<T, VR, I, P> SortedStartsMap<T, VR> for TakeWhile<I, P>
+impl<T, VC, I, P> SortedStartsMap<T, VC> for TakeWhile<I, P>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedStartsMap<T, VC>,
     P: FnMut(&I::Item) -> bool,
 {
 }
 
-impl<T, VR, I, P> SortedDisjointMap<T, VR> for TakeWhile<I, P>
+impl<T, VC, I, P> SortedDisjointMap<T, VC> for TakeWhile<I, P>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
     P: FnMut(&I::Item) -> bool,
 {
 }
 
-impl<T, VR, I, P> SortedStartsMap<T, VR> for SkipWhile<I, P>
+impl<T, VC, I, P> SortedStartsMap<T, VC> for SkipWhile<I, P>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedStartsMap<T, VC>,
     P: FnMut(&I::Item) -> bool,
 {
 }
 
-impl<T, VR, I, P> SortedDisjointMap<T, VR> for SkipWhile<I, P>
+impl<T, VC, I, P> SortedDisjointMap<T, VC> for SkipWhile<I, P>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
     P: FnMut(&I::Item) -> bool,
 {
 }
 
-impl<T, VR, I> SortedStartsMap<T, VR> for Fuse<I>
+impl<T, VC, I> SortedStartsMap<T, VC> for Fuse<I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedStartsMap<T, VC>,
 {
 }
 
-impl<T, VR, I> SortedDisjointMap<T, VR> for Fuse<I>
+impl<T, VC, I> SortedDisjointMap<T, VC> for Fuse<I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
 }
 
-impl<T, VR, I> SortedStartsMap<T, VR> for Skip<I>
+impl<T, VC, I> SortedStartsMap<T, VC> for Skip<I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedStartsMap<T, VC>,
 {
 }
 
-impl<T, VR, I> SortedDisjointMap<T, VR> for Skip<I>
+impl<T, VC, I> SortedDisjointMap<T, VC> for Skip<I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
 }
 
-impl<T, VR, I> SortedStartsMap<T, VR> for Take<I>
+impl<T, VC, I> SortedStartsMap<T, VC> for Take<I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedStartsMap<T, VC>,
 {
 }
 
-impl<T, VR, I> SortedDisjointMap<T, VR> for Take<I>
+impl<T, VC, I> SortedDisjointMap<T, VC> for Take<I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
 }
 
-impl<T, VR, I> SortedStartsMap<T, VR> for Peekable<I>
+impl<T, VC, I> SortedStartsMap<T, VC> for Peekable<I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedStartsMap<T, VC>,
 {
 }
 
-impl<T, VR, I> SortedDisjointMap<T, VR> for Peekable<I>
+impl<T, VC, I> SortedDisjointMap<T, VC> for Peekable<I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
 }
 
-impl<T, VR> SortedStartsMap<T, VR> for Empty<(RangeInclusive<T>, VR)>
+impl<T, VC> SortedStartsMap<T, VC> for Empty<(RangeInclusive<T>, VC)>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
 }
 
-impl<T, VR> SortedDisjointMap<T, VR> for Empty<(RangeInclusive<T>, VR)>
+impl<T, VC> SortedDisjointMap<T, VC> for Empty<(RangeInclusive<T>, VC)>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
 }
 
-impl<T, VR> SortedStartsMap<T, VR> for Once<(RangeInclusive<T>, VR)>
+impl<T, VC> SortedStartsMap<T, VC> for Once<(RangeInclusive<T>, VC)>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
 }
 
-impl<T, VR> SortedDisjointMap<T, VR> for Once<(RangeInclusive<T>, VR)>
+impl<T, VC> SortedDisjointMap<T, VC> for Once<(RangeInclusive<T>, VC)>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
 }
 
-impl<T, VR, I, IInner, TMap> SortedStartsMap<T, VR> for FlatMap<option::IntoIter<I>, IInner, TMap>
+impl<T, VC, I, IInner, TMap> SortedStartsMap<T, VC> for FlatMap<option::IntoIter<I>, IInner, TMap>
 where
     T: Integer,
-    VR: ValueRef,
-    IInner: SortedStartsMap<T, VR>,
-    I: SortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    IInner: SortedStartsMap<T, VC>,
+    I: SortedStartsMap<T, VC>,
     TMap: FnMut(I) -> IInner,
 {
 }
 
-impl<T, VR, I> SortedStartsMap<T, VR> for Flatten<option::IntoIter<I>>
+impl<T, VC, I> SortedStartsMap<T, VC> for Flatten<option::IntoIter<I>>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedStartsMap<T, VC>,
 {
 }
 
-impl<T, VR, I> SortedDisjointMap<T, VR> for Flatten<option::IntoIter<I>>
+impl<T, VC, I> SortedDisjointMap<T, VC> for Flatten<option::IntoIter<I>>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
 }
 
-impl<T, VR, I, IInner, TMap> SortedDisjointMap<T, VR> for FlatMap<option::IntoIter<I>, IInner, TMap>
+impl<T, VC, I, IInner, TMap> SortedDisjointMap<T, VC> for FlatMap<option::IntoIter<I>, IInner, TMap>
 where
     T: Integer,
-    VR: ValueRef,
-    IInner: SortedDisjointMap<T, VR>,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    IInner: SortedDisjointMap<T, VC>,
+    I: SortedDisjointMap<T, VC>,
     TMap: FnMut(I) -> IInner,
 {
 }
 /// Used internally by [`UnionIterMap`] and [`SymDiffIterMap`].
-pub trait PrioritySortedStartsMap<T, VR>: Iterator<Item = Priority<T, VR>> + FusedIterator
+pub trait PrioritySortedStartsMap<T, VC>: Iterator<Item = Priority<T, VC>> + FusedIterator
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
 }
 
@@ -371,8 +373,10 @@ where
 /// # How to mark your type as `SortedDisjointMap`
 ///
 /// To mark your iterator type as `SortedDisjointMap`, you implement the `SortedStartsMap` and `SortedDisjointMap` traits.
-/// This is your promise to the compiler that your iterator will provide inclusive ranges that are
-/// disjoint and sorted by start.
+/// This is your promise to the compiler that your iterator will provide nonempty inclusive ranges
+/// that are sorted by start and do not overlap. Touching ranges with logically equal values, as
+/// determined by [`ValueCarrier::value_eq`], must be coalesced; touching ranges with different values
+/// may remain separate.
 ///
 /// When you do this, your iterator will get access to the
 /// efficient set operations methods, such as [`intersection`] and [`complement`].
@@ -381,11 +385,43 @@ where
 /// >
 /// > If you want others to use your marked iterator type, reexport:
 /// > `pub use range_set_blaze::{SortedDisjointMap, SortedStartsMap};`
-pub trait SortedDisjointMap<T, VR>: SortedStartsMap<T, VR>
+pub trait SortedDisjointMap<T, VC>: SortedStartsMap<T, VC>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
+    /// Fills the gaps in this sorted, disjoint map stream with `None` values.
+    ///
+    /// The returned stream covers the full integer domain from `T::min_value()`
+    /// through `T::max_value()`. Existing ranges retain their values as
+    /// `Some(value)`.
+    ///
+    /// The result implements `SortedDisjointMap<T, Option<VC>>`. Here, `None`
+    /// is an ordinary logical map value, so the result's key domain is universal:
+    /// [`SortedDisjointMap::into_sorted_disjoint`] covers the full domain and
+    /// [`SortedDisjointMap::complement`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::{CheckSortedDisjointMap, SortedDisjointMap};
+    ///
+    /// let stream = CheckSortedDisjointMap::new([(1..=3, &"red"), (7..=10, &"blue")]);
+    /// let filled = stream.fill_gaps().collect::<Vec<_>>();
+    /// assert_eq!(filled[0], (0..=0, None));
+    /// assert_eq!(filled[1], (1..=3, Some(&"red")));
+    /// assert_eq!(filled[2], (4..=6, None));
+    /// assert_eq!(filled[3], (7..=10, Some(&"blue")));
+    /// assert_eq!(filled[4], (11..=u8::MAX, None));
+    /// ```
+    #[inline]
+    fn fill_gaps(self) -> FillGapsIterMap<T, VC, Self>
+    where
+        Self: Sized,
+    {
+        FillGapsIterMap::new(self)
+    }
+
     /// Converts a [`SortedDisjointMap`] iterator into a [`SortedDisjoint`] iterator.
     ///```
     /// use range_set_blaze::prelude::*;
@@ -395,7 +431,7 @@ where
     /// assert!(b.into_string() == "1..=3, 100..=100");
     /// ```
     #[inline]
-    fn into_sorted_disjoint(self) -> RangeValuesToRangesIter<T, VR, Self>
+    fn into_sorted_disjoint(self) -> RangeValuesToRangesIter<T, VC, Self>
     where
         Self: Sized,
     {
@@ -424,10 +460,10 @@ where
     /// assert_eq!(union.into_string(), r#"(1..=2, "b"), (3..=3, "a")"#);
     /// ```
     #[inline]
-    fn union<R>(self, other: R) -> UnionMergeMap<T, VR, Self, R::IntoIter>
+    fn union<R>(self, other: R) -> UnionMergeMap<T, VC, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, VR>,
+        R::IntoIter: SortedDisjointMap<T, VC>,
         Self: Sized,
     {
         UnionIterMap::new2(self, other.into_iter())
@@ -457,10 +493,10 @@ where
     /// assert_eq!(intersection.into_string(), r#"(2..=2, "b")"#);
     /// ```
     #[inline]
-    fn intersection<R>(self, other: R) -> IntersectionMap<T, VR, Self, R::IntoIter>
+    fn intersection<R>(self, other: R) -> IntersectionMap<T, VC, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, VR>,
+        R::IntoIter: SortedDisjointMap<T, VC>,
         Self: Sized,
     {
         let other = other.into_iter();
@@ -485,7 +521,7 @@ where
     /// assert_eq!(intersection.into_string(), r#"(2..=2, "a")"#);
     /// ```
     #[inline]
-    fn map_and_set_intersection<R>(self, other: R) -> IntersectionIterMap<T, VR, Self, R::IntoIter>
+    fn map_and_set_intersection<R>(self, other: R) -> IntersectionIterMap<T, VC, Self, R::IntoIter>
     where
         R: IntoIterator<Item = RangeInclusive<T>>,
         R::IntoIter: SortedDisjoint<T>,
@@ -517,10 +553,10 @@ where
     /// assert_eq!(difference.into_string(), r#"(1..=1, "a")"#);
     /// ```
     #[inline]
-    fn difference<R>(self, other: R) -> DifferenceMap<T, VR, Self, R::IntoIter>
+    fn difference<R>(self, other: R) -> DifferenceMap<T, VC, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, VR>,
+        R::IntoIter: SortedDisjointMap<T, VC>,
         Self: Sized,
     {
         let sorted_disjoint_map = other.into_iter();
@@ -545,7 +581,7 @@ where
     /// assert_eq!(difference.into_string(), r#"(1..=1, "a")"#);
     /// ```
     #[inline]
-    fn map_and_set_difference<R>(self, other: R) -> DifferenceMapInternal<T, VR, Self, R::IntoIter>
+    fn map_and_set_difference<R>(self, other: R) -> DifferenceMapInternal<T, VC, Self, R::IntoIter>
     where
         R: IntoIterator<Item = RangeInclusive<T>>,
         R::IntoIter: SortedDisjoint<T>,
@@ -577,7 +613,7 @@ where
     /// assert_eq!(complement_using_not.into_string(), "0..=9, 21..=99, 201..=255");
     /// ```
     #[inline]
-    fn complement(self) -> NotIter<T, RangeValuesToRangesIter<T, VR, Self>>
+    fn complement(self) -> NotIter<T, RangeValuesToRangesIter<T, VC, Self>>
     where
         Self: Sized,
     {
@@ -602,8 +638,8 @@ where
     #[inline]
     fn complement_with(
         self,
-        v: &VR::Target,
-    ) -> RangeToRangeValueIter<'_, T, VR::Target, NotIter<T, impl SortedDisjoint<T>>>
+        v: &VC::Value,
+    ) -> RangeToRangeValueIter<'_, T, VC::Value, NotIter<T, impl SortedDisjoint<T>>>
     where
         Self: Sized,
     {
@@ -635,12 +671,12 @@ where
     /// assert_eq!(symmetric_difference.into_string(), r#"(1..=1, "a"), (3..=3, "b")"#);
     /// ```
     #[inline]
-    fn symmetric_difference<R>(self, other: R) -> SymDiffMergeMap<T, VR, Self, R::IntoIter>
+    fn symmetric_difference<R>(self, other: R) -> SymDiffMergeMap<T, VC, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, VR>,
+        R::IntoIter: SortedDisjointMap<T, VC>,
         Self: Sized,
-        VR: ValueRef,
+        VC: ValueCarrier,
     {
         SymDiffIterMap::new2(self, other.into_iter())
     }
@@ -663,7 +699,7 @@ where
     fn equal<R>(self, other: R) -> bool
     where
         R: IntoIterator<Item = Self::Item>,
-        R::IntoIter: SortedDisjointMap<T, VR>,
+        R::IntoIter: SortedDisjointMap<T, VC>,
         Self: Sized,
     {
         use itertools::Itertools;
@@ -675,7 +711,7 @@ where
                     (other_range, other_value),
                 ) => {
                     // Place your custom equality logic here for matching elements
-                    self_range == other_range && self_value.borrow() == other_value.borrow()
+                    self_range == other_range && self_value.value_eq(&other_value)
                 }
                 _ => false, // Handles the case where iterators are of different lengths
             }
@@ -762,7 +798,7 @@ where
     /// let a1: RangeMapBlaze<i32,_> = CheckSortedDisjointMap::new([(-10..=-5, &"a"), (1..=2, &"b")]).into_range_map_blaze();
     /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "a"), (1..=2, "b")"#);
     /// ```
-    fn into_range_map_blaze(self) -> RangeMapBlaze<T, VR::Target>
+    fn into_range_map_blaze(self) -> RangeMapBlaze<T, VC::Value>
     where
         Self: Sized,
     {
@@ -823,25 +859,25 @@ where
 #[allow(clippy::module_name_repetitions)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Debug, Clone)]
-pub struct CheckSortedDisjointMap<T, VR, I> {
+pub struct CheckSortedDisjointMap<T, VC, I> {
     iter: I,
     seen_none: bool,
-    previous: Option<(RangeInclusive<T>, VR)>,
+    previous: Option<(RangeInclusive<T>, VC)>,
 }
 
 // define new
-impl<T, VR, I> CheckSortedDisjointMap<T, VR, I>
+impl<T, VC, I> CheckSortedDisjointMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = (RangeInclusive<T>, VR)>,
+    VC: ValueCarrier,
+    I: Iterator<Item = (RangeInclusive<T>, VC)>,
 {
     /// Creates a new [`CheckSortedDisjointMap`] from an iterator of ranges and values. See [`CheckSortedDisjointMap`] for details and examples.
     #[inline]
     #[must_use = "iterators are lazy and do nothing unless consumed"]
     pub fn new<J>(iter: J) -> Self
     where
-        J: IntoIterator<Item = (RangeInclusive<T>, VR), IntoIter = I>,
+        J: IntoIterator<Item = (RangeInclusive<T>, VC), IntoIter = I>,
     {
         Self {
             iter: iter.into_iter(),
@@ -851,11 +887,11 @@ where
     }
 }
 
-impl<T, VR, I> Default for CheckSortedDisjointMap<T, VR, I>
+impl<T, VC, I> Default for CheckSortedDisjointMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = (RangeInclusive<T>, VR)> + Default,
+    VC: ValueCarrier,
+    I: Iterator<Item = (RangeInclusive<T>, VC)> + Default,
 {
     fn default() -> Self {
         // Utilize I::default() to satisfy the iterator requirement.
@@ -863,30 +899,30 @@ where
     }
 }
 
-impl<T, VR, I> FusedIterator for CheckSortedDisjointMap<T, VR, I>
+impl<T, VC, I> FusedIterator for CheckSortedDisjointMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = (RangeInclusive<T>, VR)>,
+    VC: ValueCarrier,
+    I: Iterator<Item = (RangeInclusive<T>, VC)>,
 {
 }
 
-fn range_value_clone<T, VR>(range_value: &(RangeInclusive<T>, VR)) -> (RangeInclusive<T>, VR)
+fn range_value_clone<T, VC>(range_value: &(RangeInclusive<T>, VC)) -> (RangeInclusive<T>, VC)
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
     let (range, value) = range_value;
     (range.clone(), value.clone())
 }
 
-impl<T, VR, I> Iterator for CheckSortedDisjointMap<T, VR, I>
+impl<T, VC, I> Iterator for CheckSortedDisjointMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = (RangeInclusive<T>, VR)>,
+    VC: ValueCarrier,
+    I: Iterator<Item = (RangeInclusive<T>, VC)>,
 {
-    type Item = (RangeInclusive<T>, VR);
+    type Item = (RangeInclusive<T>, VC);
 
     #[allow(clippy::manual_assert)] // We use "if...panic!" for coverage auditing.
     fn next(&mut self) -> Option<Self::Item> {
@@ -905,7 +941,8 @@ where
         }
 
         // Check that the range is not empty
-        let (start, end) = range_value.0.clone().into_inner();
+        let (range, _) = &range_value;
+        let (start, end) = range.clone().into_inner();
         if start > end {
             panic!("start must be <= end")
         }
@@ -917,12 +954,14 @@ where
         };
 
         // The next_item is Some and previous is Some, so check that the ranges are disjoint and sorted
-        let previous_end = *previous.0.end();
+        let (previous_range, previous_value) = previous;
+        let previous_end = *previous_range.end();
         if previous_end >= start {
             panic!("ranges must be disjoint and sorted")
         }
 
-        if previous_end.add_one() == start && previous.1.borrow() == range_value.1.borrow() {
+        let (_, range_value_value) = &range_value;
+        if previous_end.add_one() == start && previous_value.value_eq(range_value_value) {
             panic!("touching ranges must have different values")
         }
 
@@ -938,13 +977,13 @@ where
 
 /// Used internally by `MergeMap`.
 #[derive(Clone, Debug)]
-pub struct Priority<T, VR> {
-    range_value: (RangeInclusive<T>, VR),
+pub struct Priority<T, VC> {
+    range_value: (RangeInclusive<T>, VC),
     priority_number: usize,
 }
 
-impl<T, VR> Priority<T, VR> {
-    pub(crate) const fn new(range_value: (RangeInclusive<T>, VR), priority_number: usize) -> Self {
+impl<T, VC> Priority<T, VC> {
+    pub(crate) const fn new(range_value: (RangeInclusive<T>, VC), priority_number: usize) -> Self {
         Self {
             range_value,
             priority_number,
@@ -952,52 +991,57 @@ impl<T, VR> Priority<T, VR> {
     }
 }
 
-impl<T, VR> Priority<T, VR>
+impl<T, VC> Priority<T, VC>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
     /// Returns a reference to `range_value`.
-    pub const fn range_value(&self) -> &(RangeInclusive<T>, VR) {
+    pub const fn range_value(&self) -> &(RangeInclusive<T>, VC) {
         &self.range_value
     }
 
     /// Consumes `Priority` and returns `range_value`.
-    pub fn into_range_value(self) -> (RangeInclusive<T>, VR) {
+    pub fn into_range_value(self) -> (RangeInclusive<T>, VC) {
         self.range_value
     }
 
     /// Updates the range part of `range_value`.
     pub const fn set_range(&mut self, range: RangeInclusive<T>) {
-        self.range_value.0 = range;
+        let (stored_range, _) = &mut self.range_value;
+        *stored_range = range;
     }
 
     /// Returns the start of the range.
     pub const fn start(&self) -> T {
-        *self.range_value.0.start()
+        let (range, _) = &self.range_value;
+        *range.start()
     }
 
     /// Returns the end of the range.
     pub const fn end(&self) -> T {
-        *self.range_value.0.end()
+        let (range, _) = &self.range_value;
+        *range.end()
     }
 
     /// Returns the start and end of the range. (Assuming direct access to start and end)
     pub const fn start_and_end(&self) -> (T, T) {
-        ((*self.range_value.0.start()), (*self.range_value.0.end()))
+        let (range, _) = &self.range_value;
+        (*range.start(), *range.end())
     }
 
     /// Returns a reference to the value part of `range_value`.
-    pub const fn value(&self) -> &VR {
-        &self.range_value.1
+    pub const fn value(&self) -> &VC {
+        let (_, value) = &self.range_value;
+        value
     }
 }
 
 // Implement `PartialEq` to allow comparison (needed for `Eq`).
-impl<T, VR> PartialEq for Priority<T, VR>
+impl<T, VC> PartialEq for Priority<T, VC>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
     fn eq(&self, other: &Self) -> bool {
         self.priority_number == other.priority_number
@@ -1005,18 +1049,18 @@ where
 }
 
 // Implement `Eq` because `BinaryHeap` requires it.
-impl<T, VR> Eq for Priority<T, VR>
+impl<T, VC> Eq for Priority<T, VC>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
 }
 
 // Implement `Ord` so the heap knows how to compare elements.
-impl<T, VR> Ord for Priority<T, VR>
+impl<T, VC> Ord for Priority<T, VC>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
     fn cmp(&self, other: &Self) -> Ordering {
         debug_assert_ne!(
@@ -1029,10 +1073,10 @@ where
 }
 
 // Implement `PartialOrd` to allow comparison (needed for `Ord`).
-impl<T, VR> PartialOrd for Priority<T, VR>
+impl<T, VC> PartialOrd for Priority<T, VC>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
@@ -1101,17 +1145,17 @@ where
 }
 
 macro_rules! impl_sorted_map_traits_and_ops {
-    ($IterType:ty, $V:ty, $VR:ty, $($more_generics:tt)*) => {
+    ($IterType:ty, $V:ty, $VC:ty, $($more_generics:tt)*) => {
 
         #[allow(single_use_lifetimes)]
-        impl<$($more_generics)*, T> SortedStartsMap<T, $VR> for $IterType
+        impl<$($more_generics)*, T> SortedStartsMap<T, $VC> for $IterType
         where
             T: Integer,
         {
         }
 
         #[allow(single_use_lifetimes)]
-        impl<$($more_generics)*, T> SortedDisjointMap<T, $VR> for $IterType
+        impl<$($more_generics)*, T> SortedDisjointMap<T, $VC> for $IterType
         where
             T: Integer,
         {
@@ -1122,7 +1166,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
         where
             T: Integer,
         {
-            type Output = NotMap<T, $VR, Self>;
+            type Output = NotMap<T, $VC, Self>;
 
             #[inline]
             fn not(self) -> Self::Output {
@@ -1134,9 +1178,9 @@ macro_rules! impl_sorted_map_traits_and_ops {
         impl<$($more_generics)*, T, R> ops::BitOr<R> for $IterType
         where
             T: Integer,
-            R: SortedDisjointMap<T, $VR>,
+            R: SortedDisjointMap<T, $VC>,
         {
-            type Output = UnionMergeMap<T, $VR, Self, R>;
+            type Output = UnionMergeMap<T, $VC, Self, R>;
 
             #[inline]
             fn bitor(self, other: R) -> Self::Output {
@@ -1148,9 +1192,9 @@ macro_rules! impl_sorted_map_traits_and_ops {
         impl<$($more_generics)*, T, R> ops::Sub<R> for $IterType
         where
             T: Integer,
-            R: SortedDisjointMap<T, $VR>,
+            R: SortedDisjointMap<T, $VC>,
         {
-            type Output = DifferenceMap<T, $VR, Self, R>;
+            type Output = DifferenceMap<T, $VC, Self, R>;
 
             #[inline]
             fn sub(self, other: R) -> Self::Output {
@@ -1162,9 +1206,9 @@ macro_rules! impl_sorted_map_traits_and_ops {
         impl<$($more_generics)*, T, R> ops::BitXor<R> for $IterType
         where
             T: Integer,
-            R: SortedDisjointMap<T, $VR>,
+            R: SortedDisjointMap<T, $VC>,
         {
-            type Output = SymDiffMergeMap<T,  $VR, Self, R>;
+            type Output = SymDiffMergeMap<T,  $VC, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             #[inline]
@@ -1177,9 +1221,9 @@ macro_rules! impl_sorted_map_traits_and_ops {
         impl<$($more_generics)*, T, R> ops::BitAnd<R> for $IterType
         where
             T: Integer,
-            R: SortedDisjointMap<T, $VR>,
+            R: SortedDisjointMap<T, $VC>,
         {
-            type Output = IntersectionMap<T, $VR, Self, R>;
+            type Output = IntersectionMap<T, $VC, Self, R>;
 
             #[inline]
             fn bitand(self, other: R) -> Self::Output {
@@ -1191,13 +1235,15 @@ macro_rules! impl_sorted_map_traits_and_ops {
 }
 
 // CheckList: Be sure that these are all tested in 'test_every_sorted_disjoint_map_method'
-impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: Iterator<Item = (RangeInclusive<T>,  VR)>);
-impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VR>, VR::Value, VR, 'a, VR: ValueRef);
-impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VR, I0, I1>,  VR::Value, VR, VR: ValueRef, I0: SortedDisjointMap<T, VR>, I1: SortedDisjoint<T>);
+impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, VC, I>, VC::Value, VC, VC: ValueCarrier, I: Iterator<Item = (RangeInclusive<T>,  VC)>);
+impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VC>, VC::Value, VC, 'a, VC: ValueCarrier);
+impl_sorted_map_traits_and_ops!(FillGapsIterMap<T, VC, I>, Option<VC::Value>, Option<VC>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
+impl_sorted_map_traits_and_ops!(FillGapsIter<T, I>, bool, bool, I: SortedDisjoint<T>);
+impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VC, I0, I1>,  VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: Eq + Clone);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Eq + Clone);
-impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
-impl_sorted_map_traits_and_ops!(UnionIterMap<T, VR, I>, VR::Value, VR, VR: ValueRef, I: PrioritySortedStartsMap<T, VR>);
+impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VC, I>, VC::Value, VC, VC: ValueCarrier, I: PrioritySortedStartsMap<T, VC>);
+impl_sorted_map_traits_and_ops!(UnionIterMap<T, VC, I>, VC::Value, VC, VC: ValueCarrier, I: PrioritySortedStartsMap<T, VC>);
 
 #[cfg(test)]
 mod tests {

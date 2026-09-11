@@ -33,19 +33,16 @@ jobs:
           components: rust-src
       - name: Test Rust Native (stable)
         run: |
-          cargo clippy --verbose --all-targets --features "std rog_experimental float_experimental" -- -D clippy::all -A deprecated
+          cargo clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated
           cargo test --verbose
           cargo test --verbose --release
-          cargo test --verbose --release --features "std float_experimental"
-          cargo test --verbose --no-default-features --features "rog_experimental"
-          cargo test --verbose --features "std float_experimental"
-          cargo test --verbose --features "std rog_experimental float_experimental"
-          cargo test --verbose --no-default-features --features "float_experimental"
+          cargo test --verbose --no-default-features
+          cargo test --verbose --release --no-default-features
       - name: Test Rust Native (nightly)
         run: |
           rustup override set nightly
           cargo check --tests --features "float_nightly_experimental"
-          cargo test --verbose --features "rog_experimental from_slice"
+          cargo test --verbose --features from_slice
           cargo test --verbose --all-features
       - name: Check dead links in documentation
         if: matrix.os == 'ubuntu-latest'
@@ -80,8 +77,7 @@ jobs:
         run: |
           rustup target add i686-unknown-linux-gnu
           cargo test --target i686-unknown-linux-gnu --verbose
-          cargo test --target i686-unknown-linux-gnu --verbose --no-default-features --features "rog_experimental"
-          cargo test --target i686-unknown-linux-gnu --verbose --features "std float_experimental"
+          cargo test --target i686-unknown-linux-gnu --verbose --no-default-features
 
   test_wasm:
     name: Test WASM
@@ -98,20 +94,18 @@ jobs:
       - name: Test WASM/unknown
         run: |
           wasm-pack test --chrome --headless -- --no-default-features --verbose
-          wasm-pack test --chrome --headless -- --features "std float_experimental" --verbose
+          wasm-pack test --chrome --headless -- --features std --verbose
       - name: Install wasmtime
         uses: jcbhmr/setup-wasmtime@v2
       - name: Test WASM/wasip1
         run: |
           rustup target add wasm32-wasip1
           cargo test --target wasm32-wasip1 --verbose
-          cargo test --target wasm32-wasip1 --verbose --no-default-features --features "rog_experimental"
-          cargo test --target wasm32-wasip1 --verbose --features "std float_experimental"
+          cargo test --target wasm32-wasip1 --verbose --no-default-features
       - name: Setup and check Embedded
         run: |
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
-          cargo check --target thumbv7m-none-eabi --no-default-features --features float_experimental
           rustup override set nightly
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
@@ -137,6 +131,5 @@ jobs:
         run: |
           # Explicitly bypass rust-toolchain.toml; otherwise this job could run 1.97.
           cargo +1.87 check --verbose
-          cargo +1.87 check --verbose --no-default-features --features "rog_experimental"
-          cargo +1.87 check --verbose --features "std float_experimental"
-          cargo +1.87 check --verbose --no-default-features --features "float_experimental"
+          cargo +1.87 check --verbose --no-default-features
+          cargo +1.87 check --verbose --features std

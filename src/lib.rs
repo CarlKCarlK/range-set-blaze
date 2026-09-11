@@ -32,9 +32,10 @@ pub use dyn_sorted_disjoint::DynSortedDisjoint;
 mod dyn_sorted_disjoint_map;
 pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 
-#[cfg(feature = "float_experimental")]
+mod gaps;
+pub use gaps::{FillGapsIter, FillGapsIterMap};
+
 pub mod float;
-#[cfg(feature = "float_experimental")]
 pub use float::*;
 
 mod integer;
@@ -50,7 +51,7 @@ mod keys;
 pub use crate::keys::{IntoKeys, Keys};
 
 mod map;
-pub use crate::map::{RangeMapBlaze, ValueRef};
+pub use crate::map::{RangeMapBlaze, ValueCarrier};
 
 mod map_op;
 
@@ -116,11 +117,6 @@ pub use crate::values::{IntoValues, Values};
 mod uint_plus_one;
 pub use uint_plus_one::UIntPlusOne;
 
-#[cfg(feature = "rog_experimental")]
-mod rog;
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-pub use rog::{Rog, RogsIter};
 #[cfg(any(test, feature = "test_util"))]
 #[doc(hidden)]
 pub mod test_util;
@@ -134,42 +130,42 @@ pub(crate) mod tests_set;
 // Helpers
 type NandMerge<T, L, R> = UnionMerge<T, NotIter<T, L>, NotIter<T, R>>;
 type NandKMerge<T, I> = UnionKMerge<T, NotIter<T, I>>;
-type DifferenceMapInternal<T, VR, L, R> = IntersectionIterMap<T, VR, L, NotIter<T, R>>;
+type DifferenceMapInternal<T, VC, L, R> = IntersectionIterMap<T, VC, L, NotIter<T, R>>;
 type IntersectionMapInternal<T, I> = NotIter<T, NandKMerge<T, I>>;
 
 // Public Types
 #[doc(hidden)]
-pub type DifferenceMap<T, VR, L, R> =
-    DifferenceMapInternal<T, VR, L, RangeValuesToRangesIter<T, VR, R>>;
+pub type DifferenceMap<T, VC, L, R> =
+    DifferenceMapInternal<T, VC, L, RangeValuesToRangesIter<T, VC, R>>;
 #[doc(hidden)]
 pub type DifferenceMerge<T, L, R> = NotIter<T, UnionMerge<T, NotIter<T, L>, R>>;
 
 #[doc(hidden)]
-pub type IntersectionKMap<'a, T, VR, I> =
-    IntersectionIterMap<T, VR, I, IntersectionMapInternal<T, RangeValuesToRangesIter<T, VR, I>>>;
+pub type IntersectionKMap<'a, T, VC, I> =
+    IntersectionIterMap<T, VC, I, IntersectionMapInternal<T, RangeValuesToRangesIter<T, VC, I>>>;
 #[doc(hidden)]
-pub type IntersectionMap<T, VR, L, R> =
-    IntersectionIterMap<T, VR, R, RangeValuesToRangesIter<T, VR, L>>;
+pub type IntersectionMap<T, VC, L, R> =
+    IntersectionIterMap<T, VC, R, RangeValuesToRangesIter<T, VC, L>>;
 #[doc(hidden)]
 pub type IntersectionMerge<T, L, R> = NotIter<T, NandMerge<T, L, R>>;
 
 #[doc(hidden)]
-pub type NotMap<T, VR, I> = NotIter<T, RangeValuesToRangesIter<T, VR, I>>;
+pub type NotMap<T, VC, I> = NotIter<T, RangeValuesToRangesIter<T, VC, I>>;
 
 #[doc(hidden)]
 pub type SymDiffKMerge<T, II> = SymDiffIter<T, KMerge<T, II>>;
 #[doc(hidden)]
-pub type SymDiffKMergeMap<T, VR, II> = SymDiffIterMap<T, VR, KMergeMap<T, VR, II>>;
+pub type SymDiffKMergeMap<T, VC, II> = SymDiffIterMap<T, VC, KMergeMap<T, VC, II>>;
 #[doc(hidden)]
 pub type SymDiffMerge<T, L, R> = SymDiffIter<T, Merge<T, L, R>>;
 #[doc(hidden)]
-pub type SymDiffMergeMap<T, VR, L, R> = SymDiffIterMap<T, VR, MergeMap<T, VR, L, R>>;
+pub type SymDiffMergeMap<T, VC, L, R> = SymDiffIterMap<T, VC, MergeMap<T, VC, L, R>>;
 
 #[doc(hidden)]
 pub type UnionKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
 #[doc(hidden)]
-pub type UnionKMergeMap<T, VR, I> = UnionIterMap<T, VR, KMergeMap<T, VR, I>>;
+pub type UnionKMergeMap<T, VC, I> = UnionIterMap<T, VC, KMergeMap<T, VC, I>>;
 #[doc(hidden)]
 pub type UnionMerge<T, L, R> = UnionIter<T, merge::Merge<T, L, R>>;
 #[doc(hidden)]
-pub type UnionMergeMap<T, VR, L, R> = UnionIterMap<T, VR, MergeMap<T, VR, L, R>>;
+pub type UnionMergeMap<T, VC, L, R> = UnionIterMap<T, VC, MergeMap<T, VC, L, R>>;

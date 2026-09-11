@@ -1,3 +1,4 @@
+use crate::FillGapsIterMap;
 use crate::{
     CheckSortedDisjoint, Integer, IntoKeys, Keys, RangeSetBlaze, SortedDisjoint,
     iter_map::{IntoIterMap, IterMap},
@@ -14,7 +15,6 @@ use alloc::sync::Arc;
 use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, rc::Rc};
 use core::{
-    borrow::Borrow,
     cmp::{Ordering, max},
     convert::From,
     fmt, mem,
@@ -25,21 +25,25 @@ use num_traits::{One, Zero};
 
 const STREAM_OVERHEAD: usize = 10;
 
-/// A trait for cloneable references to `Eq + Clone` values, used by the [`SortedDisjointMap`] trait.
+/// A cheap-to-clone representation that carries a logical `Eq + Clone` value for use by
+/// [`SortedDisjointMap`].
 ///
-/// `ValueRef` enables [`SortedDisjointMap`] to map sorted, disjoint ranges of integers
-/// to values of type `V: Eq + Clone`. It supports both plain references (`&V`) and shared ownership types
-/// (`Rc<V>` and `Arc<V>`), avoiding unnecessary cloning of values while enabling ownership when needed.
+/// `ValueCarrier` enables [`SortedDisjointMap`] to map sorted, disjoint ranges of integers
+/// to values of type `V: Eq + Clone`. It supports plain references (`&V`), shared ownership types
+/// (`Rc<V>` and `Arc<V>`), compound carriers such as `Option<&V>`, and the by-value `bool`
+/// carrier, avoiding unnecessary cloning of values while enabling ownership when needed.
 ///
-/// All types implementing `ValueRef` must also implement `Clone`. For standard reference types like
-/// `&V`, `Rc<V>`, and `Arc<V>`, this is efficient—cloning typically just copies a pointer.
+/// All types implementing `ValueCarrier` must also implement `Clone`. For standard carriers like
+/// `&V`, `Rc<V>`, `Arc<V>`, their `Option` forms, and `bool`, this is efficient—cloning
+/// typically just copies a pointer and a discriminant or a small value.
 ///
 /// # Motivation
 ///
-/// Iterating over `(range, value)` pairs—such as with [`RangeMapBlaze::ranges`]—benefits from
-/// using references, which are cheap to clone. But other APIs, like [`RangeMapBlaze::into_ranges`],
-/// require owned values. `ValueRef` bridges this gap by abstracting over value references that can
-/// later be materialized into values you can store or return independently of the original container.
+/// Iterating over `(range, value)` pairs—such as with [`RangeMapBlaze::range_values`]—benefits
+/// from using cheap-to-clone representations. Other APIs, like
+/// [`RangeMapBlaze::into_range_values`], require owned values. `ValueCarrier` bridges this gap by
+/// abstracting over carriers that can later be materialized into values you can store or return
+/// independently of the original container.
 ///
 /// This also enables shared ownership via `Rc` and `Arc`, reducing allocation and allowing values to be
 /// freed when the reference count drops to zero.
@@ -67,11 +71,20 @@ const STREAM_OVERHEAD: usize = 10;
 /// assert_eq!(c.next(), Some((5..=10, Rc::new("b".to_string()))));
 /// assert_eq!(c.next(), None);
 /// ```
-pub trait ValueRef: Borrow<Self::Target> + Clone {
-    /// The `Eq + Clone` value type to which the reference points.
-    type Target: Eq + Clone;
+pub trait ValueCarrier: Clone {
+    /// The logical `Eq + Clone` value represented by this carrier.
+    type Value: Eq + Clone;
 
-    /// Materializes a `Self::Target` (`V`) value from this reference-like container.
+    /// Compares the logical values represented by two value carriers.
+    ///
+    /// This deliberately avoids requiring `Borrow<Self::Value>`: compound
+    /// representations such as `Option<&V>` cannot borrow an `Option<V>`
+    /// without first materializing one, but can still compare their logical
+    /// values cheaply. Implementations must define an equivalence relation and
+    /// agree with comparing the results of [`ValueCarrier::into_value`].
+    fn value_eq(&self, other: &Self) -> bool;
+
+    /// Materializes a `Self::Value` (`V`) value from this carrier.
     ///
     /// The returned `V` may or may not be a uniquely owned allocation. If `V` itself is a
     /// reference type (e.g., `&'static str`), the result is still a reference; in that case
@@ -79,6 +92,7 @@ pub trait ValueRef: Borrow<Self::Target> + Clone {
     /// “a standalone `V` value you can keep,” not necessarily a unique heap allocation.
     ///
     /// Behavior:
+    /// - `bool` → returns itself.
     /// - `&V` → calls `Clone::clone` on `V`. If `V` is a reference (e.g., `&'static str`),
     ///   this simply copies the reference without allocation.
     /// - `Rc<V>` / `Arc<V>` → tries to unwrap if uniquely owned; otherwise clones `V`.
@@ -89,7 +103,7 @@ pub trait ValueRef: Borrow<Self::Target> + Clone {
     /// # Examples
     /// ```
     /// use std::rc::Rc;
-    /// use range_set_blaze::ValueRef;
+    /// use range_set_blaze::ValueCarrier;
     ///
     /// // Owning target: cloning duplicates the data
     /// let s = String::from("hi");
@@ -104,44 +118,94 @@ pub trait ValueRef: Borrow<Self::Target> + Clone {
     /// let rc = Rc::new(String::from("hello"));
     /// let moved_or_cloned: String = rc.into_value();
     /// ```
-    fn into_value(self) -> Self::Target;
+    fn into_value(self) -> Self::Value;
 }
 
-// Implementations for references and smart pointers
-impl<V> ValueRef for &V
+// Implementations for built-in value carriers
+impl ValueCarrier for bool {
+    type Value = Self;
+
+    #[inline]
+    fn value_eq(&self, other: &Self) -> bool {
+        self == other
+    }
+
+    #[inline]
+    fn into_value(self) -> Self::Value {
+        self
+    }
+}
+
+impl<V> ValueCarrier for &V
 where
     V: Eq + Clone,
 {
-    type Target = V;
+    type Value = V;
 
     #[inline]
-    fn into_value(self) -> Self::Target {
+    fn value_eq(&self, other: &Self) -> bool {
+        **self == **other
+    }
+
+    #[inline]
+    fn into_value(self) -> Self::Value {
         self.clone()
     }
 }
 
-impl<V> ValueRef for Rc<V>
+impl<V> ValueCarrier for Rc<V>
 where
     V: Eq + Clone,
 {
-    type Target = V;
+    type Value = V;
 
     #[inline]
-    fn into_value(self) -> Self::Target {
+    fn value_eq(&self, other: &Self) -> bool {
+        self.as_ref() == other.as_ref()
+    }
+
+    #[inline]
+    fn into_value(self) -> Self::Value {
         Self::try_unwrap(self).unwrap_or_else(|rc| (*rc).clone())
     }
 }
 
 #[cfg(feature = "std")]
-impl<V> ValueRef for Arc<V>
+impl<V> ValueCarrier for Arc<V>
 where
     V: Eq + Clone,
 {
-    type Target = V;
+    type Value = V;
 
     #[inline]
-    fn into_value(self) -> Self::Target {
+    fn value_eq(&self, other: &Self) -> bool {
+        self.as_ref() == other.as_ref()
+    }
+
+    #[inline]
+    fn into_value(self) -> Self::Value {
         Self::try_unwrap(self).unwrap_or_else(|arc| (*arc).clone())
+    }
+}
+
+impl<VC> ValueCarrier for Option<VC>
+where
+    VC: ValueCarrier,
+{
+    type Value = Option<VC::Value>;
+
+    #[inline]
+    fn value_eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Some(a), Some(b)) => a.value_eq(b),
+            (None, None) => true,
+            _ => false,
+        }
+    }
+
+    #[inline]
+    fn into_value(self) -> Self::Value {
+        self.map(ValueCarrier::into_value)
     }
 }
 
@@ -722,16 +786,62 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(map.get_key_value(6), None);
     /// ```
     pub fn get_key_value(&self, key: T) -> Option<(T, &V)> {
-        self.btree_map
-            .range(..=key)
-            .next_back()
-            .and_then(|(_start, end_value)| {
-                if key <= end_value.end {
-                    Some((key, &end_value.value))
-                } else {
-                    None
-                }
-            })
+        self.containing_entry(key)
+            .map(|(_start, end_value)| (key, &end_value.value))
+    }
+
+    /// Returns the stored range and value containing `key`, if any.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let map = RangeMapBlaze::from_iter([(1..=3, "red"), (7..=10, "blue")]);
+    /// assert_eq!(map.range_at(2), Some((1..=3, &"red")));
+    /// assert_eq!(map.range_at(5), None);
+    /// ```
+    #[must_use]
+    pub fn range_at(&self, key: T) -> Option<(RangeInclusive<T>, &V)> {
+        self.containing_entry(key)
+            .map(|(start, end_value)| (*start..=end_value.end, &end_value.value))
+    }
+
+    /// Returns the stored mapped range or maximal gap containing `key`.
+    ///
+    /// The returned value is `Some(&V)` when the range is mapped and `None`
+    /// when it is a gap.
+    ///
+    /// # Performance
+    ///
+    /// Performs one tree lookup for a mapped key and two tree lookups for a
+    /// gap, taking `O(log r)` time, where `r` is the number of mapped ranges.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeMapBlaze;
+    /// let map = RangeMapBlaze::from_iter([(1..=3, "red"), (7..=10, "blue")]);
+    /// assert_eq!(map.range_or_gap_at(2), (1..=3, Some(&"red")));
+    /// assert_eq!(map.range_or_gap_at(5), (4..=6, None));
+    /// assert_eq!(map.range_or_gap_at(8), (7..=10, Some(&"blue")));
+    /// ```
+    #[must_use]
+    pub fn range_or_gap_at(&self, key: T) -> (RangeInclusive<T>, Option<&V>) {
+        if let Some((start_before, end_value)) = self.predecessor_entry(key) {
+            if key <= end_value.end {
+                return (*start_before..=end_value.end, Some(&end_value.value));
+            }
+            if let Some((start_next, _)) = self.btree_map.range(key..).next() {
+                return (end_value.end.add_one()..=start_next.sub_one(), None);
+            }
+            return (end_value.end.add_one()..=T::max_value(), None);
+        }
+
+        if let Some((start_next, _)) = self.btree_map.range(key..).next() {
+            return (T::min_value()..=start_next.sub_one(), None);
+        }
+        (T::min_value()..=T::max_value(), None)
     }
 
     /// Returns the last element in the set, if any.
@@ -773,13 +883,13 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// let a1: RangeMapBlaze<i32,_> = CheckSortedDisjointMap::new([(-10..=-5, &"a"), (1..=2, &"b")]).into_range_map_blaze();
     /// assert!(a0 == a1 && a0.to_string() == r#"(-10..=-5, "a"), (1..=2, "b")"#);
     /// ```
-    pub fn from_sorted_disjoint_map<VR, I>(iter: I) -> Self
+    pub fn from_sorted_disjoint_map<VC, I>(iter: I) -> Self
     where
-        VR: ValueRef<Target = V>,
-        I: SortedDisjointMap<T, VR>,
+        VC: ValueCarrier<Value = V>,
+        I: SortedDisjointMap<T, VC>,
     {
         let mut iter_with_len = SortedDisjointMapWithLenSoFar::new(iter);
-        let btree_map: BTreeMap<T, EndValue<T, VR::Target>> = (&mut iter_with_len).collect();
+        let btree_map: BTreeMap<T, EndValue<T, VC::Value>> = (&mut iter_with_len).collect();
         Self {
             btree_map,
             len: iter_with_len.len_so_far(),
@@ -907,10 +1017,16 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(map.contains_key(4), false);
     /// ```
     pub fn contains_key(&self, key: T) -> bool {
-        self.btree_map
-            .range(..=key)
-            .next_back()
-            .is_some_and(|(_, end_value)| key <= end_value.end)
+        self.containing_entry(key).is_some()
+    }
+
+    fn predecessor_entry(&self, key: T) -> Option<(&T, &EndValue<T, V>)> {
+        self.btree_map.range(..=key).next_back()
+    }
+
+    fn containing_entry(&self, key: T) -> Option<(&T, &EndValue<T, V>)> {
+        self.predecessor_entry(key)
+            .and_then(|(start, end_value)| (key <= end_value.end).then_some((start, end_value)))
     }
 
     // LATER: might be able to shorten code by combining cases
@@ -1016,7 +1132,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     ///
     /// The simplest way is to use the range syntax `min..max`, thus `range(min..max)` will
     /// yield elements from min (inclusive) to max (exclusive).
-    /// The range may also be entered as `(Bound<T, V, VR>, Bound<T, V, VR>)`, so for example
+    /// The range may also be entered as `(Bound<T, V, VC>, Bound<T, V, VC>)`, so for example
     /// `range((Excluded(4), Included(10)))` will yield a left-exclusive, right-inclusive
     /// range from 4 to 10.
     ///
@@ -1342,8 +1458,9 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
                 candidate = another_candidate;
             }
 
-            let stored_start: T = *candidate.0;
-            let stored_end_value: EndValue<T, V> = candidate.1.clone();
+            let (stored_start, stored_end_value) = candidate;
+            let stored_start = *stored_start;
+            let stored_end_value = stored_end_value.clone();
             self.adjust_touching_for_insert(
                 stored_start,
                 stored_end_value,
@@ -1436,8 +1553,9 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
                 candidate = another_candidate;
             }
 
-            let stored_start: T = *candidate.0;
-            let stored_end_value: EndValue<T, V> = candidate.1.clone();
+            let (stored_start, stored_end_value) = candidate;
+            let stored_start = *stored_start;
+            let stored_end_value = stored_end_value.clone();
             self.adjust_touching_for_insert(
                 stored_start,
                 stored_end_value,
@@ -1560,10 +1678,10 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         if !before_contains_new && !same_value && same_start {
             // Thus, values are different, before contains new, and they start together
 
-            let interesting_before_before = match before_iter.next() {
-                Some(bb) if bb.1.end.add_one() == start && bb.1.value == value => Some(bb),
-                _ => None,
-            };
+            let interesting_before_before = before_iter.next().and_then(|bb| {
+                let (_, bb_value) = &bb;
+                (bb_value.end.add_one() == start && bb_value.value == value).then_some(bb)
+            });
 
             // === case: values are different, new extends beyond before, and they start together and an interesting before-before
             // an interesting before-before: something before before, touching and with the same value as new
@@ -1573,10 +1691,11 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
                 // AABBBB
                 //   aaaaaaa
                 // AAAAAAAAA
-                self.len += T::safe_len(&(bb.1.end.add_one()..=end));
-                let bb_start = *bb.0;
+                let (bb_start, bb_value) = bb;
+                self.len += T::safe_len(&(bb_value.end.add_one()..=end));
+                let bb_start = *bb_start;
                 debug_assert!(bb_start <= end); // real assert
-                bb.1.end = end;
+                bb_value.end = end;
                 self.delete_extra(&(bb_start..=end));
                 return;
             }
@@ -1658,10 +1777,10 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
 
         // Thus, values are different, before contains new, and they start together
 
-        let interesting_before_before = match before_iter.next() {
-            Some(bb) if bb.1.end.add_one() == start && bb.1.value == value => Some(bb),
-            _ => None,
-        };
+        let interesting_before_before = before_iter.next().and_then(|bb| {
+            let (_, bb_value) = &bb;
+            (bb_value.end.add_one() == start && bb_value.value == value).then_some(bb)
+        });
 
         // === case: values are different, before contains new, and they start together and an interesting before-before
         // an interesting before-before: something before before, touching and with the same value as new
@@ -1671,10 +1790,11 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
             // AABBBB???
             //   aaaa
             // AAAAAA???
-            self.len += T::safe_len(&(bb.1.end.add_one()..=end));
-            let bb_start = *bb.0;
+            let (bb_start, bb_value) = bb;
+            self.len += T::safe_len(&(bb_value.end.add_one()..=end));
+            let bb_start = *bb_start;
             debug_assert!(bb_start <= end); // real assert
-            bb.1.end = end;
+            bb_value.end = end;
             self.delete_extra(&(bb_start..=end));
             return;
         }
@@ -1931,7 +2051,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         self.len -= T::SafeLen::one();
         let end = entry.get().end;
         if start == end {
-            let value = entry.remove_entry().1.value;
+            let (_, end_value) = entry.remove_entry();
+            let value = end_value.value;
             Some((end, value))
         } else {
             let value = entry.get().value.clone();
@@ -1972,6 +2093,28 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     pub fn range_values(&self) -> RangeValuesIter<'_, T, V> {
         RangeValuesIter::new(&self.btree_map)
+    }
+
+    /// Returns a lazy stream of mapped ranges and gaps over the full integer domain.
+    ///
+    /// Mapped ranges contain `Some(&V)` and gaps contain `None`.
+    ///
+    /// The returned iterator borrows the map and visits each mapped range once.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeMapBlaze;
+    /// let map = RangeMapBlaze::from_iter([(1..=3, "red"), (7..=10, "blue")]);
+    /// let filled = map.fill_gaps().collect::<Vec<_>>();
+    /// assert_eq!(filled[0], (i32::MIN..=0, None));
+    /// assert_eq!(filled[1], (1..=3, Some(&"red")));
+    /// assert_eq!(filled[2], (4..=6, None));
+    /// assert_eq!(filled[3], (7..=10, Some(&"blue")));
+    /// assert_eq!(filled[4], (11..=i32::MAX, None));
+    /// ```
+    pub fn fill_gaps(&self) -> FillGapsIterMap<T, &V, RangeValuesIter<'_, T, V>> {
+        self.range_values().fill_gaps()
     }
 
     /// An iterator that visits the ranges and values in the [`RangeMapBlaze`]. Double-ended.

@@ -1,6 +1,6 @@
 use crate::{
     Integer,
-    map::ValueRef,
+    map::ValueCarrier,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
 };
 use alloc::{collections::btree_map, rc::Rc};
@@ -41,7 +41,7 @@ where
     T: Integer,
     V: Eq + Clone + 'a,
 {
-    type Item = (RangeInclusive<T>, &'a V); // Assuming VR is always &'a V for next
+    type Item = (RangeInclusive<T>, &'a V); // Assuming VC is always &'a V for next
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
@@ -182,7 +182,8 @@ where
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         // 'Low' could be 0 if empty or 1 if fully merged.
-        (0, self.iter.size_hint().1)
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
     }
 }
 
@@ -241,7 +242,8 @@ impl<T: Integer, V: Eq + Clone> Iterator for MapIntoRangesIter<T, V> {
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         // 'Low' could be 0 if empty or 1 if fully merged.
-        (0, self.iter.size_hint().1)
+        let (_, upper) = self.iter.size_hint();
+        (0, upper)
     }
 }
 
@@ -249,25 +251,25 @@ impl<T: Integer, V: Eq + Clone> Iterator for MapIntoRangesIter<T, V> {
 #[derive(Debug, Clone)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::module_name_repetitions)]
-pub struct RangeValuesToRangesIter<T, VR, I> {
+pub struct RangeValuesToRangesIter<T, VC, I> {
     iter: I,
     gather: Option<RangeInclusive<T>>,
-    phantom: PhantomData<VR>,
+    phantom: PhantomData<VC>,
 }
 
-impl<T, VR, I> FusedIterator for RangeValuesToRangesIter<T, VR, I>
+impl<T, VC, I> FusedIterator for RangeValuesToRangesIter<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
 }
 
-impl<T, VR, I> RangeValuesToRangesIter<T, VR, I>
+impl<T, VC, I> RangeValuesToRangesIter<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
     /// Creates a new `RangeValuesToRangesIter` from an existing sorted disjoint map iterator.
     /// `option_ranges` is initialized as `None` by default.
@@ -280,11 +282,11 @@ where
     }
 }
 
-impl<T, VR, I> Iterator for RangeValuesToRangesIter<T, VR, I>
+impl<T, VC, I> Iterator for RangeValuesToRangesIter<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
     type Item = RangeInclusive<T>;
 
@@ -294,7 +296,8 @@ where
             let Some(next_range_value) = self.iter.next() else {
                 return self.gather.take();
             };
-            let (next_start, next_end) = next_range_value.0.into_inner();
+            let (next_range, _) = next_range_value;
+            let (next_start, next_end) = next_range.into_inner();
 
             // If there is no gather, start a new gather.
             let Some(gather) = self.gather.take() else {
@@ -338,22 +341,22 @@ impl<T> ExpectDebugUnwrapRelease<T> for Option<T> {
 #[expect(clippy::redundant_pub_crate)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub(crate) struct SetPriorityMap<T, VR, I> {
+pub(crate) struct SetPriorityMap<T, VC, I> {
     iter: I,
     priority_number: usize,
-    phantom: PhantomData<(T, VR)>,
+    phantom: PhantomData<(T, VC)>,
 }
 
-impl<T, VR, I> FusedIterator for SetPriorityMap<T, VR, I>
+impl<T, VC, I> FusedIterator for SetPriorityMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
 }
 
-impl<T, VR, I: Iterator<Item = (RangeInclusive<T>, VR)>> Iterator for SetPriorityMap<T, VR, I> {
-    type Item = Priority<T, VR>;
+impl<T, VC, I: Iterator<Item = (RangeInclusive<T>, VC)>> Iterator for SetPriorityMap<T, VC, I> {
+    type Item = Priority<T, VC>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
@@ -362,11 +365,11 @@ impl<T, VR, I: Iterator<Item = (RangeInclusive<T>, VR)>> Iterator for SetPriorit
     }
 }
 
-impl<T, VR, I> SetPriorityMap<T, VR, I>
+impl<T, VC, I> SetPriorityMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
     pub(crate) const fn new(iter: I, priority: usize) -> Self {
         Self {
@@ -377,10 +380,10 @@ where
     }
 }
 
-impl<T, VR, I> PrioritySortedStartsMap<T, VR> for SetPriorityMap<T, VR, I>
+impl<T, VC, I> PrioritySortedStartsMap<T, VC> for SetPriorityMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
 }

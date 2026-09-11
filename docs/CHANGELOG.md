@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Floating-point range support for `f32` and `f64`, plus `range_at`,
+  `range_or_gap_at`, and `fill_gaps`, are now unconditional public APIs.
+- `FillGapsIterMap` and `FillGapsIter` now implement `SortedDisjointMap` and can be
+  collected directly into `RangeMapBlaze<T, Option<V>>` and
+  `RangeMapBlaze<T, bool>`, respectively. `bool` now implements `ValueCarrier` as
+  the canonical by-value carrier for totalized sets.
+
+### Breaking
+
+- Removed the `rog_experimental` and `float_experimental` Cargo features. Remove
+  them from dependency feature lists. `float_nightly_experimental` remains for
+  nightly-only `f16` and `f128` support.
+- Removed `Rog`, `RogsIter`, and the old `rogs_*` methods. Use `range_at`,
+  `range_or_gap_at`, or `fill_gaps` instead.
+- Renamed `ValueRef` to `ValueCarrier` and redesigned it with a `Value`
+  associated type and `value_eq` method; generic code now uses explicit
+  borrowing only where borrowed access to the logical value is required.
+
 ## [0.6.1] - 2026-07-10
 
 ### Added
@@ -59,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `AssumeSortedStarts` and `AssumePrioritySortedStartsMap` now take fewer generic parameters.
   - `AssumeSortedStarts<T, I>` -> `AssumeSortedStarts<I>`
-  - `AssumePrioritySortedStartsMap<T, VR, I>` -> `AssumePrioritySortedStartsMap<I>`
+  - `AssumePrioritySortedStartsMap<T, VC, I>` -> `AssumePrioritySortedStartsMap<I>`
 - Migration note: calls like `AssumeSortedStarts::new(iter)` and
   `AssumePrioritySortedStartsMap::new(iter)` are typically unchanged due to inference; explicit
   type aliases/annotations may need updates.

@@ -15,10 +15,6 @@ use core::iter::FusedIterator;
 #[cfg(feature = "from_slice")]
 use core::mem::size_of;
 use core::ops::BitAndAssign;
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-#[cfg(not(target_arch = "wasm32"))]
-use core::ops::Bound;
 use core::ops::RangeInclusive;
 #[cfg(target_os = "linux")]
 use criterion::{BatchSize, BenchmarkId, Criterion};
@@ -30,9 +26,6 @@ use quickcheck_macros::quickcheck;
 use rand::Rng;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-use range_set_blaze::Rog;
 use range_set_blaze::SymDiffIter;
 #[cfg(not(target_arch = "wasm32"))]
 use range_set_blaze::test_util::{How, MemorylessIter, MemorylessRange, k_sets, width_to_range};
@@ -40,12 +33,6 @@ use range_set_blaze::{Integer, NotIter, SortedStarts, prelude::*};
 use range_set_blaze::{UnionIter, symmetric_difference_dyn};
 use std::any::Any;
 use std::cmp::Ordering;
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-use std::panic::AssertUnwindSafe;
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-use std::panic::{self};
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 use std::{collections::BTreeSet, ops::BitOr};
@@ -1669,288 +1656,328 @@ fn complement_sample() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-fn test_rog_functionality() {
-    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    // case 1:
-    for end in 7..=16 {
-        println!("case 1: {:?}", a.rogs_range_slow(7..=end));
-        assert_eq!(
-            a.rogs_range_slow(7..=end),
-            a.rogs_range(7..=end).collect::<Vec<_>>()
-        );
-    }
-    // case 2:
-    for end in 7..=16 {
-        println!("case 2: {:?}", a.rogs_range_slow(4..=end));
-        assert_eq!(
-            a.rogs_range_slow(4..=end),
-            a.rogs_range(4..=end).collect::<Vec<_>>()
-        );
-    }
-    // case 3:
-    for start in 11..=15 {
-        for end in start..=15 {
-            println!("case 3: {:?}", a.rogs_range_slow(start..=end));
-            assert_eq!(
-                a.rogs_range_slow(start..=end),
-                a.rogs_range(start..=end).collect::<Vec<_>>()
-            );
-        }
-    }
-    // case 4:
-    for end in -1..=16 {
-        println!("case 4: {:?}", a.rogs_range_slow(-1..=end));
-        assert_eq!(
-            a.rogs_range_slow(-1..=end),
-            a.rogs_range(-1..=end).collect::<Vec<_>>()
-        );
-    }
+fn range_at_set() {
+    let set = RangeSetBlaze::from_iter([1..=3, 7..=10]);
+    assert_eq!(set.range_at(1), Some(1..=3));
+    assert_eq!(set.range_at(2), Some(1..=3));
+    assert_eq!(set.range_at(5), None);
+    assert_eq!(set.range_at(10), Some(7..=10));
+
+    let boundary = RangeSetBlaze::from_iter([i32::MIN..=i32::MIN, i32::MAX..=i32::MAX]);
+    assert_eq!(boundary.range_at(i32::MIN), Some(i32::MIN..=i32::MIN));
+    assert_eq!(boundary.range_at(i32::MAX), Some(i32::MAX..=i32::MAX));
+
+    let empty = RangeSetBlaze::<u8>::new();
+    assert_eq!(empty.range_at(0), None);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog_experimental")]
-#[allow(clippy::reversed_empty_ranges)]
-#[allow(deprecated)]
-#[should_panic(expected = "start must be less than or equal to end")]
-fn test_rog_functionality_empty() {
-    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
+fn range_or_gap_at_set() {
+    let set = RangeSetBlaze::from_iter([1..=3, 7..=10]);
+    assert_eq!(set.range_or_gap_at(0), (i32::MIN..=0, false));
+    assert_eq!(set.range_or_gap_at(1), (1..=3, true));
+    assert_eq!(set.range_or_gap_at(2), (1..=3, true));
+    assert_eq!(set.range_or_gap_at(3), (1..=3, true));
+    assert_eq!(set.range_or_gap_at(5), (4..=6, false));
+    assert_eq!(set.range_or_gap_at(7), (7..=10, true));
+    assert_eq!(set.range_or_gap_at(8), (7..=10, true));
+    assert_eq!(set.range_or_gap_at(11), (11..=i32::MAX, false));
 
-    let _ = a.rogs_range(1..=0).collect::<Vec<_>>();
+    let empty = RangeSetBlaze::<u8>::new();
+    assert_eq!(empty.range_or_gap_at(0), (0..=u8::MAX, false));
+    assert_eq!(empty.range_or_gap_at(u8::MAX), (0..=u8::MAX, false));
+
+    let full = RangeSetBlaze::from_iter([u8::MIN..=u8::MAX]);
+    assert_eq!(full.range_or_gap_at(u8::MIN), (u8::MIN..=u8::MAX, true));
+    assert_eq!(full.range_or_gap_at(u8::MAX), (u8::MIN..=u8::MAX, true));
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-fn test_rogs_get_functionality() {
-    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    for value in 0..=16 {
-        println!("{:?}", a.rogs_get_slow(value));
-        assert_eq!(a.rogs_get_slow(value), a.rogs_get(value));
-    }
-}
+fn range_or_gap_at_set_exhaustive_u8() {
+    let cases = [
+        vec![1..=6],
+        vec![0..=6],
+        vec![200..=u8::MAX],
+        vec![0..=u8::MAX],
+        vec![0..=5, 20..=u8::MAX],
+    ];
 
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-fn test_rog_repro1() {
-    let a = RangeSetBlaze::from_iter([1u8..=6u8]);
-    assert_eq!(
-        a.rogs_range_slow(1..=7),
-        a.rogs_range(1..=7).collect::<Vec<_>>()
-    );
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-fn test_rog_repro2() {
-    let a = RangeSetBlaze::from_iter([1..=6, 8..=9, 11..=15]);
-    assert_eq!(
-        a.rogs_range_slow(4..=8),
-        a.rogs_range(4..=8).collect::<Vec<_>>()
-    );
-}
-
-#[cfg(not(target_arch = "wasm32"))] // This tests panics, so it's not suitable for wasm32.
-#[test] // uses panics so can't be wasm
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-fn test_rog_coverage1() {
-    let a = RangeSetBlaze::from_iter([1u8..=6u8]);
-    assert!(
-        panic::catch_unwind(AssertUnwindSafe(
-            || a.rogs_range((Bound::Excluded(&255), Bound::Included(&255)))
-        ))
-        .is_err()
-    );
-    assert!(panic::catch_unwind(AssertUnwindSafe(|| a.rogs_range(0..0))).is_err());
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-fn test_rog_extremes_u8() {
-    for a in [
-        RangeSetBlaze::from_iter([1u8..=6u8]),
-        RangeSetBlaze::from_iter([0u8..=6u8]),
-        RangeSetBlaze::from_iter([200u8..=255u8]),
-        RangeSetBlaze::from_iter([0u8..=255u8]),
-        RangeSetBlaze::from_iter([0u8..=5u8, 20u8..=255]),
-    ] {
-        for start in 0u8..=255 {
-            for end in start..=255 {
-                println!("{start}..={end}");
-                assert_eq!(
-                    a.rogs_range_slow(start..=end),
-                    a.rogs_range(start..=end).collect::<Vec<_>>()
-                );
+    for ranges in cases {
+        let set = RangeSetBlaze::from_iter(ranges.clone());
+        let mut present = [false; 256];
+        for range in ranges {
+            for value in range {
+                present[usize::from(value)] = true;
             }
         }
-    }
-}
 
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-fn test_rog_get_extremes_u8() {
-    for a in [
-        RangeSetBlaze::from_iter([1u8..=6u8]),
-        RangeSetBlaze::from_iter([0u8..=6u8]),
-        RangeSetBlaze::from_iter([200u8..=255u8]),
-        RangeSetBlaze::from_iter([0u8..=255u8]),
-        RangeSetBlaze::from_iter([0u8..=5u8, 20u8..=255]),
-    ] {
-        for value in 0u8..=255 {
-            println!("{value}");
-            assert_eq!(a.rogs_get_slow(value), a.rogs_get(value));
-        }
-    }
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated, clippy::range_minus_one)]
-fn test_rog_extremes_i128() {
-    for a in [
-        RangeSetBlaze::from_iter([1i128..=6i128]),
-        RangeSetBlaze::from_iter([i128::MIN..=6]),
-        RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
-    ] {
-        for start in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 2, i128::MAX - 1] {
-            for end in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 2, i128::MAX - 1] {
-                if end < start {
-                    continue;
-                }
-                println!("{start}..={end}");
-                assert_eq!(
-                    a.rogs_range_slow(start..=end),
-                    a.rogs_range(start..=end).collect::<Vec<_>>()
-                );
+        for value in u8::MIN..=u8::MAX {
+            let is_present = present[usize::from(value)];
+            let mut start = value;
+            while start > u8::MIN && present[usize::from(start - 1)] == is_present {
+                start -= 1;
             }
-        }
-    }
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated, clippy::range_minus_one)]
-fn test_rog_extremes_get_i128() {
-    for a in [
-        RangeSetBlaze::from_iter([1i128..=6i128]),
-        RangeSetBlaze::from_iter([i128::MIN..=6]),
-        RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
-    ] {
-        for value in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 2, i128::MAX - 1] {
-            println!("{value}");
-            assert_eq!(a.rogs_get_slow(value), a.rogs_get(value));
-        }
-    }
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated, clippy::range_minus_one)]
-fn test_rog_should_fail_i128() {
-    for a in [
-        RangeSetBlaze::from_iter([1i128..=6i128]),
-        RangeSetBlaze::from_iter([i128::MIN..=6]),
-        RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
-    ] {
-        for start in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 1, i128::MAX] {
-            for end in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 1, i128::MAX] {
-                if end < start {
-                    continue;
-                }
-                println!("{start}..={end}");
-                let slow =
-                    panic::catch_unwind(AssertUnwindSafe(|| a.rogs_range_slow(start..=end))).ok();
-                let fast = panic::catch_unwind(AssertUnwindSafe(|| {
-                    a.rogs_range(start..=end).collect::<Vec<_>>()
-                }))
-                .ok();
-                assert_eq!(slow, fast,);
+            let mut end = value;
+            while end < u8::MAX && present[usize::from(end + 1)] == is_present {
+                end += 1;
             }
+
+            assert_eq!(set.range_or_gap_at(value), (start..=end, is_present));
+            assert_eq!(set.range_at(value), is_present.then_some(start..=end));
         }
     }
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated, clippy::range_minus_one)]
-fn test_rog_get_should_fail_i128() {
-    for a in [
-        RangeSetBlaze::from_iter([1i128..=6i128]),
-        RangeSetBlaze::from_iter([i128::MIN..=6]),
-        RangeSetBlaze::from_iter([200..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=i128::MAX - 1]),
-        RangeSetBlaze::from_iter([i128::MIN..=5, 20..=i128::MAX - 1]),
-    ] {
-        for value in [i128::MIN, i128::MIN + 1, 0, i128::MAX - 1, i128::MAX] {
-            println!("{value}");
-            let slow = panic::catch_unwind(AssertUnwindSafe(|| a.rogs_get_slow(value))).ok();
-            let fast = panic::catch_unwind(AssertUnwindSafe(|| a.rogs_get(value))).ok();
-            assert_eq!(slow, fast,);
-        }
-    }
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-fn test_rog_get_doc() {
-    use crate::RangeSetBlaze;
-    let range_set_blaze = RangeSetBlaze::from([1, 2, 3]);
-    assert_eq!(range_set_blaze.rogs_get(2), Rog::Range(1..=3));
-    assert_eq!(range_set_blaze.rogs_get(4), Rog::Gap(4..=2_147_483_647));
-}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-fn test_rog_range_doc() {
-    use core::ops::Bound::Included;
-
-    let mut set = RangeSetBlaze::new();
-    set.insert(3);
-    set.insert(5);
-    set.insert(6);
-    for rog in set.rogs_range((Included(4), Included(8))) {
-        println!("{rog:?}");
-    } // prints: Gap(4..=4)\nRange(5..=6)\nGap(7..=8)
-
-    assert_eq!(Some(Rog::Gap(4..=4)), set.rogs_range(4..).next());
-
-    let a = RangeSetBlaze::from_iter([1..=6, 11..=15]);
-    assert_eq!(
-        a.rogs_range(-5..=8).collect::<Vec<_>>(),
-        vec![Rog::Gap(-5..=0), Rog::Range(1..=6), Rog::Gap(7..=8)]
-    );
+fn fill_gaps_set() {
+    let set = RangeSetBlaze::from_iter([1..=3, 7..=10]);
+    let mut filled = set.fill_gaps();
+    assert_eq!(filled.size_hint(), (2, Some(5)));
+    assert_eq!(filled.next(), Some((i32::MIN..=0, false)));
+    assert_eq!(filled.next(), Some((1..=3, true)));
+    assert_eq!(filled.next(), Some((4..=6, false)));
+    assert_eq!(filled.next(), Some((7..=10, true)));
+    assert_eq!(filled.next(), Some((11..=i32::MAX, false)));
+    assert_eq!(filled.next(), None);
+    assert_eq!(filled.next(), None);
 
     let empty = RangeSetBlaze::<u8>::new();
     assert_eq!(
-        empty.rogs_range(..).collect::<Vec<_>>(),
-        vec![Rog::Gap(0..=255)]
+        empty.fill_gaps().collect::<Vec<_>>(),
+        vec![(0..=u8::MAX, false)]
     );
+
+    let full = RangeSetBlaze::from_iter([u8::MIN..=u8::MAX]);
+    assert_eq!(
+        full.fill_gaps().collect::<Vec<_>>(),
+        vec![(0..=u8::MAX, true)]
+    );
+
+    let map: RangeMapBlaze<u8, bool> = RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+        .fill_gaps()
+        .into_range_map_blaze();
+    assert_eq!(
+        map,
+        RangeMapBlaze::from_iter([
+            (u8::MIN..=0, false),
+            (1..=3, true),
+            (4..=6, false),
+            (7..=10, true),
+            (11..=u8::MAX, false),
+        ])
+    );
+
+    assert!((!RangeSetBlaze::from_iter([1_u8..=3, 7..=10]).fill_gaps()).is_empty());
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn fill_gaps_iter_bool_map_operators() {
+    type BoolMap =
+        CheckSortedDisjointMap<u8, bool, core::array::IntoIter<(RangeInclusive<u8>, bool), 1>>;
+
+    let other_factory = || BoolMap::new([(2..=4, true)]);
+    let expected_union = CheckSortedDisjointMap::new([
+        (u8::MIN..=0, false),
+        (1..=4, true),
+        (5..=6, false),
+        (7..=10, true),
+        (11..=u8::MAX, false),
+    ]);
+    assert!(
+        (RangeSetBlaze::from_iter([1_u8..=3, 7..=10]).fill_gaps() | other_factory())
+            .equal(expected_union)
+    );
+
+    let expected_intersection = CheckSortedDisjointMap::new([(2..=4, true)]);
+    assert!(
+        (RangeSetBlaze::from_iter([1_u8..=3, 7..=10]).fill_gaps() & other_factory())
+            .equal(expected_intersection)
+    );
+
+    let expected_difference = CheckSortedDisjointMap::new([
+        (u8::MIN..=0, false),
+        (1..=1, true),
+        (5..=6, false),
+        (7..=10, true),
+        (11..=u8::MAX, false),
+    ]);
+    assert!(
+        (RangeSetBlaze::from_iter([1_u8..=3, 7..=10]).fill_gaps() - other_factory())
+            .equal(expected_difference)
+    );
+
+    let expected_symmetric_difference = CheckSortedDisjointMap::new([
+        (u8::MIN..=0, false),
+        (1..=1, true),
+        (5..=6, false),
+        (7..=10, true),
+        (11..=u8::MAX, false),
+    ]);
+    assert!(
+        (RangeSetBlaze::from_iter([1_u8..=3, 7..=10]).fill_gaps() ^ other_factory())
+            .equal(expected_symmetric_difference)
+    );
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn fill_gaps_iter_bool_map_methods() {
+    type BoolMap =
+        CheckSortedDisjointMap<u8, bool, core::array::IntoIter<(RangeInclusive<u8>, bool), 1>>;
+
+    let other_factory = || BoolMap::new([(2..=4, true)]);
+
+    assert_eq!(
+        RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .fill_gaps()
+            .union(other_factory())
+            .collect::<Vec<_>>(),
+        vec![
+            (u8::MIN..=0, false),
+            (1..=4, true),
+            (5..=6, false),
+            (7..=10, true),
+            (11..=u8::MAX, false),
+        ]
+    );
+    assert_eq!(
+        RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .fill_gaps()
+            .intersection(other_factory())
+            .collect::<Vec<_>>(),
+        vec![(2..=4, true)]
+    );
+    assert_eq!(
+        RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .fill_gaps()
+            .difference(other_factory())
+            .collect::<Vec<_>>(),
+        vec![
+            (u8::MIN..=0, false),
+            (1..=1, true),
+            (5..=6, false),
+            (7..=10, true),
+            (11..=u8::MAX, false),
+        ]
+    );
+    assert_eq!(
+        RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .fill_gaps()
+            .symmetric_difference(other_factory())
+            .collect::<Vec<_>>(),
+        vec![
+            (u8::MIN..=0, false),
+            (1..=1, true),
+            (5..=6, false),
+            (7..=10, true),
+            (11..=u8::MAX, false),
+        ]
+    );
+
+    assert!(!(RangeSetBlaze::from_iter([1_u8..=3, 7..=10]).fill_gaps()).is_empty());
+    assert!(
+        RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .fill_gaps()
+            .is_universal()
+    );
+    assert_eq!(
+        RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .fill_gaps()
+            .into_sorted_disjoint()
+            .collect::<Vec<_>>(),
+        vec![u8::MIN..=u8::MAX]
+    );
+    assert!(
+        RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+            .fill_gaps()
+            .complement()
+            .is_empty()
+    );
+    let map: RangeMapBlaze<u8, bool> = RangeSetBlaze::from_iter([1_u8..=3, 7..=10])
+        .fill_gaps()
+        .into_range_map_blaze();
+    assert_eq!(map.get(5), Some(&false));
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn fill_gaps_set_exhaustive_u8_single_ranges() {
+    for start in u8::MIN..=u8::MAX {
+        for end in start..=u8::MAX {
+            let set = RangeSetBlaze::from_iter([start..=end]);
+            let mut expected = Vec::with_capacity(3);
+            if start > u8::MIN {
+                expected.push((u8::MIN..=start - 1, false));
+            }
+            expected.push((start..=end, true));
+            if end < u8::MAX {
+                expected.push((end + 1..=u8::MAX, false));
+            }
+            assert_eq!(set.fill_gaps().collect::<Vec<_>>(), expected);
+        }
+    }
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn fill_gaps_set_char_surrogate_boundary() {
+    let set = RangeSetBlaze::from_iter(['\u{D7FF}'..='\u{E000}']);
+    assert_eq!(
+        set.fill_gaps().collect::<Vec<_>>(),
+        vec![
+            ('\0'..='\u{D7FE}', false),
+            ('\u{D7FF}'..='\u{E000}', true),
+            ('\u{E001}'..=char::MAX, false),
+        ]
+    );
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn fill_gaps_set_size_hint_overflow() {
+    struct HugeHint;
+    impl Iterator for HugeHint {
+        type Item = RangeInclusive<u8>;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            None
+        }
+
+        fn size_hint(&self) -> (usize, Option<usize>) {
+            (usize::MAX, Some(usize::MAX))
+        }
+    }
+    impl FusedIterator for HugeHint {}
+    impl SortedStarts<u8> for HugeHint {}
+    impl SortedDisjoint<u8> for HugeHint {}
+
+    assert_eq!(HugeHint.fill_gaps().size_hint(), (usize::MAX, None));
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn fill_gaps_iter_size_hint_pending() {
+    let set = RangeSetBlaze::from_iter([10_u8..=12, 20..=22]);
+    let mut iter = set.fill_gaps();
+    assert_eq!(iter.size_hint(), (2, Some(5)));
+    assert_eq!(iter.next(), Some((u8::MIN..=9, false)));
+    assert_eq!(iter.size_hint(), (2, Some(4)));
+
+    let mut remaining = 4;
+    while iter.next().is_some() {
+        remaining -= 1;
+        let (lower, upper) = iter.size_hint();
+        assert!(lower <= remaining);
+        if let Some(upper) = upper {
+            assert!(remaining <= upper);
+        }
+    }
+    assert_eq!(remaining, 0);
+    assert_eq!(iter.size_hint(), (0, Some(0)));
 }
 
 #[test]
@@ -2946,17 +2973,6 @@ fn test_range_map_symmetric_difference() {
         symmetric_difference.to_string(),
         r#"(1..=2, "a"), (3..=4, "b"), (6..=6, "a"), (101..=200, "c")"#
     );
-}
-
-#[cfg(feature = "rog_experimental")]
-#[allow(deprecated)]
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn test_rog_coverage2() {
-    assert_eq!(Rog::Gap(1..=3).end(), 3);
-
-    let range_set_blaze: RangeSetBlaze<u8> = RangeSetBlaze::from([]);
-    assert_eq!(range_set_blaze.rogs_get(2), Rog::Gap(0..=255));
 }
 
 #[test]

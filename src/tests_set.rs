@@ -1,20 +1,20 @@
 #![cfg(test)]
 
 use super::*;
-use crate::{
-    set::extract_range, sorted_disjoint_map::Priority,
-    unsorted_priority_map::AssumePrioritySortedStartsMap,
-};
-use alloc::{format, string::ToString, vec, vec::Vec};
-use core::{
-    array,
-    cmp::Ordering,
-    iter::once,
-    ops::{Bound, RangeInclusive},
-};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::set::extract_range;
+use crate::{sorted_disjoint_map::Priority, unsorted_priority_map::AssumePrioritySortedStartsMap};
+#[cfg(not(target_arch = "wasm32"))]
+use alloc::format;
+use alloc::{string::ToString, vec, vec::Vec};
+use core::{array, iter::once, ops::RangeInclusive};
+#[cfg(not(target_arch = "wasm32"))]
+use core::{cmp::Ordering, ops::Bound};
+#[cfg(not(target_arch = "wasm32"))]
 use num_traits::{One, Zero};
 #[cfg(not(target_arch = "wasm32"))]
 use std::{collections::hash_map::DefaultHasher, prelude::v1::*};
+#[cfg(not(target_arch = "wasm32"))]
 use syntactic_for::syntactic_for;
 
 use wasm_bindgen_test::*;

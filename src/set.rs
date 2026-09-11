@@ -23,6 +23,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use gen_ops::gen_ops_ex;
 
+use crate::FillGapsIter;
 use crate::ranges_iter::RangesIter;
 use crate::unsorted_disjoint::{SortedDisjointWithLenSoFar, UnsortedDisjoint};
 use crate::{Integer, prelude::*};
@@ -413,6 +414,60 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
+    /// Returns the stored range containing `value`, if any.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let set = RangeSetBlaze::from_iter([1..=3, 7..=10]);
+    /// assert_eq!(set.range_at(2), Some(1..=3));
+    /// assert_eq!(set.range_at(5), None);
+    /// ```
+    #[must_use]
+    pub fn range_at(&self, value: T) -> Option<RangeInclusive<T>> {
+        self.containing_range(value)
+            .map(|(start, end)| *start..=*end)
+    }
+
+    /// Returns the maximal contiguous present range or gap containing `value`.
+    ///
+    /// The Boolean is `true` when the returned range is present and `false`
+    /// when it is a gap.
+    ///
+    /// # Performance
+    ///
+    /// Performs one tree lookup for a present value and two tree lookups for a
+    /// gap, taking `O(log r)` time, where `r` is the number of stored ranges.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeSetBlaze;
+    /// let set = RangeSetBlaze::from_iter([1..=3, 7..=10]);
+    /// assert_eq!(set.range_or_gap_at(2), (1..=3, true));
+    /// assert_eq!(set.range_or_gap_at(5), (4..=6, false));
+    /// assert_eq!(set.range_or_gap_at(8), (7..=10, true));
+    /// ```
+    #[must_use]
+    pub fn range_or_gap_at(&self, value: T) -> (RangeInclusive<T>, bool) {
+        if let Some((start_before, end_before)) = self.predecessor_range(value) {
+            if value <= *end_before {
+                return (*start_before..=*end_before, true);
+            }
+            if let Some((start_next, _)) = self.btree_map.range(value..).next() {
+                return (end_before.add_one()..=start_next.sub_one(), false);
+            }
+            return (end_before.add_one()..=T::max_value(), false);
+        }
+
+        if let Some((start_next, _)) = self.btree_map.range(value..).next() {
+            return (T::min_value()..=start_next.sub_one(), false);
+        }
+        (T::min_value()..=T::max_value(), false)
+    }
+
     /// Returns the last element in the set, if any.
     /// This element is always the maximum of all elements in the set.
     ///
@@ -661,10 +716,16 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(set.contains(4), false);
     /// ```
     pub fn contains(&self, value: T) -> bool {
-        self.btree_map
-            .range(..=value)
-            .next_back()
-            .is_some_and(|(_, end)| value <= *end)
+        self.containing_range(value).is_some()
+    }
+
+    fn predecessor_range(&self, value: T) -> Option<(&T, &T)> {
+        self.btree_map.range(..=value).next_back()
+    }
+
+    fn containing_range(&self, value: T) -> Option<(&T, &T)> {
+        self.predecessor_range(value)
+            .and_then(|(start, end)| (value <= *end).then_some((start, end)))
     }
 
     /// Returns `true` if `self` has no elements in common with `other`.
@@ -1184,6 +1245,27 @@ impl<T: Integer> RangeSetBlaze<T> {
         RangesIter {
             iter: self.btree_map.iter(),
         }
+    }
+
+    /// Fills the gaps in this set with `false` values.
+    ///
+    /// The returned iterator covers the full integer domain. Present ranges
+    /// contain `true`, and gaps contain `false`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeSetBlaze;
+    /// let set = RangeSetBlaze::from_iter([1..=3, 7..=10]);
+    /// let filled = set.fill_gaps().collect::<Vec<_>>();
+    /// assert_eq!(filled[0], (i32::MIN..=0, false));
+    /// assert_eq!(filled[1], (1..=3, true));
+    /// assert_eq!(filled[2], (4..=6, false));
+    /// assert_eq!(filled[3], (7..=10, true));
+    /// assert_eq!(filled[4], (11..=i32::MAX, false));
+    /// ```
+    pub fn fill_gaps(&self) -> FillGapsIter<T, RangesIter<'_, T>> {
+        self.ranges().fill_gaps()
     }
 
     /// An iterator that moves out the ranges in the [`RangeSetBlaze`],

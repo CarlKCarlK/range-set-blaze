@@ -1,9 +1,9 @@
 #![cfg(test)]
 
 use crate::{
-    CheckSortedDisjointMap, DynSortedDisjointMap, Integer, IntersectionIterMap, IntoIterMap,
-    IntoRangeValuesIter, IterMap, KMergeMap, MergeMap, RangeMapBlaze, RangeValuesIter, RangesIter,
-    SymDiffIterMap, UnionIterMap,
+    CheckSortedDisjointMap, DynSortedDisjointMap, FillGapsIter, FillGapsIterMap, Integer,
+    IntersectionIterMap, IntoIterMap, IntoRangeValuesIter, IterMap, KMergeMap, MergeMap,
+    RangeMapBlaze, RangeValuesIter, RangesIter, SymDiffIterMap, UnionIterMap,
     keys::{IntoKeys, Keys},
     sorted_disjoint_map::{Priority, RangeToRangeValueIter},
     unsorted_priority_map::{AssumePrioritySortedStartsMap, UnsortedPriorityMap},
@@ -259,6 +259,14 @@ const fn check_traits() {
         IntersectionIterMap<i32, &'a u64, ARangeValuesIter<'a>, ARangesIter<'a>>;
     is_sssu::<AIntersectionIterMap<'_>>();
     is_like_btreemap_iter_less_both::<AIntersectionIterMap<'_>>();
+
+    type AFillGapsIterMap<'a> = FillGapsIterMap<i32, &'a u64, ARangeValuesIter<'a>>;
+    is_sssu::<AFillGapsIterMap<'_>>();
+    is_like_btreemap_iter_less_both::<AFillGapsIterMap<'_>>();
+
+    type AFillGapsIter<'a> = FillGapsIter<i32, ARangesIter<'a>>;
+    is_sssu::<AFillGapsIter<'_>>();
+    is_like_btreemap_iter_less_both::<AFillGapsIter<'_>>();
 
     type AKeys<'a> = Keys<i32, &'a u64, ARangeValuesIter<'a>>;
     is_sssu::<AKeys<'_>>();

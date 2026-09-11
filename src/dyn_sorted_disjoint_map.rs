@@ -1,6 +1,6 @@
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
-use crate::{Integer, SortedDisjointMap, map::ValueRef};
+use crate::{Integer, SortedDisjointMap, map::ValueCarrier};
 use alloc::boxed::Box;
 
 /// Gives [`SortedDisjointMap`] iterators a uniform type. Used by the [`union_map_dyn`], etc. macros to give all
@@ -25,12 +25,12 @@ use alloc::boxed::Box;
 /// assert_eq!(union.into_string(), r#"(1..=6, "c"), (7..=7, "b"), (8..=9, "c"), (10..=10, "b"), (11..=15, "c"), (18..=29, "b"), (38..=42, "a")"#);
 /// ```
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct DynSortedDisjointMap<'a, T, VR>
+pub struct DynSortedDisjointMap<'a, T, VC>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
-    iter: Box<dyn SortedDisjointMap<T, VR> + 'a>,
+    iter: Box<dyn SortedDisjointMap<T, VC> + 'a>,
 }
 
 // Constructs a `DynSortedDisjointMap` encapsulating a `SortedDisjointMap` iterator.
@@ -38,10 +38,10 @@ where
 // for the duration of the `DynSortedDisjointMap`'s existence. This is crucial for
 // preventing dangling references and ensuring memory safety when the iterator
 // contains references to data outside of itself.
-impl<'a, T, VR> DynSortedDisjointMap<'a, T, VR>
+impl<'a, T, VC> DynSortedDisjointMap<'a, T, VC>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
     /// Create a [`DynSortedDisjointMap`] from any [`SortedDisjointMap`] iterator. See [`DynSortedDisjointMap`] for an example.
     ///
@@ -49,7 +49,7 @@ where
     #[inline]
     pub fn new<I>(iter: I) -> Self
     where
-        I: SortedDisjointMap<T, VR> + 'a,
+        I: SortedDisjointMap<T, VC> + 'a,
     {
         Self {
             iter: Box::new(iter),
@@ -57,19 +57,19 @@ where
     }
 }
 
-impl<T, VR> FusedIterator for DynSortedDisjointMap<'_, T, VR>
+impl<T, VC> FusedIterator for DynSortedDisjointMap<'_, T, VC>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
 }
 
-impl<T, VR> Iterator for DynSortedDisjointMap<'_, T, VR>
+impl<T, VC> Iterator for DynSortedDisjointMap<'_, T, VC>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
-    type Item = (RangeInclusive<T>, VR);
+    type Item = (RangeInclusive<T>, VC);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()

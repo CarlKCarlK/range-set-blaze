@@ -4,8 +4,8 @@
 //! Every distinct bit pattern is a separate valid value, even though quite a few of them are NaN.\
 //! For example, in a `TotalF32` all 16 million different NaN values are distinct from each other.
 //!
-//! Enable with `float_experimental` (stable, `TotalF32`/`TotalF64`) and
-//! `float_nightly_experimental` (nightly, adds `TotalF16`/`TotalF128`).
+//! The `TotalF32`/`TotalF64` wrappers are available by default. Enable
+//! `float_nightly_experimental` on nightly to add `TotalF16`/`TotalF128`.
 //! ```
 //! use range_set_blaze::{RangeSetBlaze, TotalF64, TotalF32};
 //! let set = RangeSetBlaze::from_iter([TotalF64::new(3.0)..=TotalF64::new(5.0)]);
@@ -70,23 +70,13 @@ pub const fn tf128(x: f128) -> TotalF128 {
     TotalF128::new(x)
 }
 
-/// Experimental: A transparent wrapper around floating point values with total ordering.
+/// A transparent wrapper around floating point values with total ordering.
 ///
 /// Comparison, equality, and hashing all agree with `total_cmp`.
 ///
-/// # Enabling
-///
-/// This type is experimental and must be enabled with the `float_experimental` feature.
-/// ```bash
-/// cargo add range-set-blaze --features "float_experimental"
-/// ```
-/// That provides the `TotalF32` and `TotalF64` types.
-///
-/// If you're building with nightly, you can instead use the `float_nightly_experimental` feature.
-/// ```bash
-/// cargo add range-set-blaze --features "float_nightly_experimental"
-/// ```
-/// To also use the `TotalF16` and `TotalF128` types.
+/// The stable `TotalF32` and `TotalF64` types are available by default.
+/// On nightly, enable `float_nightly_experimental` to also use the
+/// `TotalF16` and `TotalF128` types.
 #[repr(transparent)]
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Total<T: TotalFloat>(T);

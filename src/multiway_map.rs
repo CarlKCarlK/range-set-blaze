@@ -7,7 +7,7 @@
 
 use crate::{
     Integer, IntersectionKMap, RangeMapBlaze, SortedDisjointMap, SymDiffIterMap, SymDiffKMergeMap,
-    UnionIterMap, UnionKMergeMap, intersection_iter_map::IntersectionIterMap, map::ValueRef,
+    UnionIterMap, UnionKMergeMap, intersection_iter_map::IntersectionIterMap, map::ValueCarrier,
     range_values::RangeValuesToRangesIter,
 };
 use alloc::vec::Vec;
@@ -236,11 +236,11 @@ pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: Eq + Clone + 'a>:
     }
 }
 
-impl<T, VR, II, I> MultiwaySortedDisjointMap<T, VR, I> for II
+impl<T, VC, II, I> MultiwaySortedDisjointMap<T, VC, I> for II
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
     II: IntoIterator<Item = I>,
 {
 }
@@ -252,11 +252,11 @@ where
 /// [`union`]: crate::MultiwaySortedDisjointMap::union
 /// [`intersection`]: crate::MultiwaySortedDisjointMap::intersection
 /// [`symmetric_difference`]: crate::MultiwaySortedDisjointMap::symmetric_difference
-pub trait MultiwaySortedDisjointMap<T, VR, I>: IntoIterator<Item = I> + Sized
+pub trait MultiwaySortedDisjointMap<T, VC, I>: IntoIterator<Item = I> + Sized
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
     /// Unions the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
     /// The input iterators must be of the same type. Any number of input iterators can be given.
@@ -288,7 +288,7 @@ where
     ///
     /// assert_eq!(union.into_string(), r#"(1..=2, "c"), (3..=4, "b"), (5..=100, "c"), (101..=200, "a")"#);
     /// ```
-    fn union(self) -> UnionKMergeMap<T, VR, I> {
+    fn union(self) -> UnionKMergeMap<T, VC, I> {
         UnionIterMap::new_k(self)
     }
 
@@ -326,7 +326,7 @@ where
     ///
     /// assert_eq!(intersection.into_string(), r#"(2..=2, "c"), (6..=6, "c")"#);
     /// ```
-    fn intersection<'a>(self) -> IntersectionKMap<'a, T, VR, I> {
+    fn intersection<'a>(self) -> IntersectionKMap<'a, T, VC, I> {
         // We define map intersection -- in part -- in terms of set intersection.
         // Elsewhere, we define set intersection in terms of complement and (set/map) union.
         use crate::MultiwaySortedDisjoint;
@@ -359,7 +359,7 @@ where
     ///
     /// assert_eq!(symmetric_difference.into_string(), r#"(1..=2, "c"), (3..=4, "b"), (6..=6, "c"), (101..=200, "a")"#);
     /// ```
-    fn symmetric_difference(self) -> SymDiffKMergeMap<T, VR, I> {
+    fn symmetric_difference(self) -> SymDiffKMergeMap<T, VC, I> {
         SymDiffIterMap::new_k(self)
     }
 }

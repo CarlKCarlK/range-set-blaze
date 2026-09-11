@@ -4,7 +4,7 @@ use alloc::collections::btree_map;
 
 use crate::{
     Integer, SortedDisjointMap,
-    map::{EndValue, ValueRef},
+    map::{EndValue, ValueCarrier},
 };
 
 /// An iterator over the integer elements of a [`RangeMapBlaze`]. Double-ended.
@@ -16,17 +16,17 @@ use crate::{
 /// [`iter`]: crate::RangeMapBlaze::iter
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct IterMap<T, VR, I> {
+pub struct IterMap<T, VC, I> {
     iter: I,
-    option_range_value_front: Option<(RangeInclusive<T>, VR)>,
-    option_range_value_back: Option<(RangeInclusive<T>, VR)>,
+    option_range_value_front: Option<(RangeInclusive<T>, VC)>,
+    option_range_value_back: Option<(RangeInclusive<T>, VC)>,
 }
 
-impl<T, VR, I> IterMap<T, VR, I>
+impl<T, VC, I> IterMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
     pub(crate) const fn new(iter: I) -> Self {
         Self {
@@ -37,35 +37,35 @@ where
     }
 }
 
-impl<T, VR, I> FusedIterator for IterMap<T, VR, I>
+impl<T, VC, I> FusedIterator for IterMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR> + FusedIterator,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC> + FusedIterator,
 {
 }
 
-impl<T, VR, I> Iterator for IterMap<T, VR, I>
+impl<T, VC, I> Iterator for IterMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
-    type Item = (T, VR);
+    type Item = (T, VC);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut range_value = self
+        let range_value = self
             .option_range_value_front
             .take()
             .or_else(|| self.iter.next())
             .or_else(|| self.option_range_value_back.take())?;
 
-        let (start, end) = range_value.0.into_inner();
+        let (mut range, value) = range_value;
+        let (start, end) = range.into_inner();
         debug_assert!(start <= end);
-        let value = range_value.1.clone();
         if start < end {
-            range_value.0 = start.add_one()..=end;
-            self.option_range_value_front = Some(range_value);
+            range = start.add_one()..=end;
+            self.option_range_value_front = Some((range, value.clone()));
         }
         Some((start, value))
     }
@@ -78,24 +78,24 @@ where
     }
 }
 
-impl<T, VR, I> DoubleEndedIterator for IterMap<T, VR, I>
+impl<T, VC, I> DoubleEndedIterator for IterMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR> + DoubleEndedIterator,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC> + DoubleEndedIterator,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let mut range_value = self
+        let range_value = self
             .option_range_value_back
             .take()
             .or_else(|| self.iter.next_back())
             .or_else(|| self.option_range_value_front.take())?;
-        let (start, end) = range_value.0.into_inner();
+        let (mut range, value) = range_value;
+        let (start, end) = range.into_inner();
         debug_assert!(start <= end);
-        let value = range_value.1.clone();
         if start < end {
-            range_value.0 = start..=end.sub_one();
-            self.option_range_value_back = Some(range_value);
+            range = start..=end.sub_one();
+            self.option_range_value_back = Some((range, value.clone()));
         }
 
         Some((end, value))

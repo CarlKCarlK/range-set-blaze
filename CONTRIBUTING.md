@@ -152,11 +152,11 @@ You can't replicate everything locally (browser WASM, embedded, and multiple OSe
 
 The project has several optional features:
 
+Floating-point support for `f32` and `f64`, plus range-or-gap lookup and gap-filling APIs, are unconditional.
+
 - `std` (default): Standard library support
 - `from_slice`: SIMD-accelerated slice ingestion (nightly only)
-- `float_experimental`: Experimental floating-point support for `f32` and `f64`
-- `float_nightly_experimental`: Nightly-only floating-point support for `f16` and `f128`; also enables `float_experimental`
-- `rog_experimental`: Experimental ROG (Range-of-Gaps) feature
+- `float_nightly_experimental`: Nightly-only floating-point support for `f16` and `f128`
 - `test_util`: Testing utilities (dev only)
 
 ## Release Process

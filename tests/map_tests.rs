@@ -4,6 +4,7 @@
 #![allow(unexpected_cfgs)]
 
 use core::ops::Bound::Included;
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::HashMap;
 extern crate alloc;
 use alloc::collections::BTreeMap;
@@ -19,7 +20,7 @@ use range_set_blaze::Integer;
 use range_set_blaze::test_util::{How, k_maps};
 use range_set_blaze::{
     IntersectionIterMap, IntoRangeValuesIter, KMergeMap, RangeValuesIter, SymDiffIterMap,
-    UnionIterMap, ValueRef, prelude::*,
+    UnionIterMap, ValueCarrier, prelude::*,
 };
 use std::borrow::Borrow;
 use std::iter::FusedIterator;
@@ -33,6 +34,21 @@ use std::{
 };
 
 use syntactic_for::syntactic_for;
+
+#[derive(Clone)]
+struct CustomValueCarrier(Rc<String>);
+
+impl ValueCarrier for CustomValueCarrier {
+    type Value = String;
+
+    fn value_eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+
+    fn into_value(self) -> Self::Value {
+        Rc::try_unwrap(self.0).unwrap_or_else(|value| (*value).clone())
+    }
+}
 
 use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);
@@ -149,6 +165,301 @@ fn map_complement0() {
         println!("empty: {empty} (len {}), full: {full} (len {})", empty.len(), full.len());
         )*
     }};
+}
+
+#[test]
+fn range_at_map() {
+    let map = RangeMapBlaze::from_iter([(1..=3, "red"), (7..=10, "blue")]);
+    assert_eq!(map.range_at(1), Some((1..=3, &"red")));
+    assert_eq!(map.range_at(2), Some((1..=3, &"red")));
+    assert_eq!(map.range_at(5), None);
+    assert_eq!(map.range_at(10), Some((7..=10, &"blue")));
+
+    let boundary =
+        RangeMapBlaze::from_iter([(i32::MIN..=i32::MIN, "min"), (i32::MAX..=i32::MAX, "max")]);
+    assert_eq!(
+        boundary.range_at(i32::MIN),
+        Some((i32::MIN..=i32::MIN, &"min"))
+    );
+    assert_eq!(
+        boundary.range_at(i32::MAX),
+        Some((i32::MAX..=i32::MAX, &"max"))
+    );
+
+    let empty = RangeMapBlaze::<u8, &str>::new();
+    assert_eq!(empty.range_at(0), None);
+}
+
+#[test]
+fn value_carrier_logical_equality_and_materialization() {
+    let value = String::from("value");
+    let same_value = String::from("value");
+    let value_carrier: &String = &value;
+    let same_value_carrier: &String = &same_value;
+    assert!(value_carrier.value_eq(&same_value_carrier));
+    assert_eq!(value_carrier.into_value(), value);
+
+    let value = Rc::new(String::from("value"));
+    let same_value = Rc::new(String::from("value"));
+    assert!(value.value_eq(&same_value));
+    assert_eq!(value.into_value(), "value");
+
+    let value = Arc::new(String::from("value"));
+    let same_value = Arc::new(String::from("value"));
+    assert!(value.value_eq(&same_value));
+    assert_eq!(value.into_value(), "value");
+
+    let value = String::from("value");
+    let same_value = String::from("value");
+    let value_carrier: Option<&String> = Some(&value);
+    let same_value_carrier: Option<&String> = Some(&same_value);
+    assert!(value_carrier.value_eq(&same_value_carrier));
+    assert_eq!(value_carrier.into_value(), Some(value));
+    let no_ref: Option<&String> = None;
+    assert!(no_ref.value_eq(&None));
+    assert!(!no_ref.value_eq(&Some(&same_value)));
+    assert_eq!(no_ref.into_value(), None);
+
+    let value = Some(Rc::new(String::from("value")));
+    let same_value = Some(Rc::new(String::from("value")));
+    assert!(value.value_eq(&same_value));
+    assert_eq!(value.into_value(), Some(String::from("value")));
+    let no_value: Option<Rc<String>> = None;
+    assert!(no_value.value_eq(&None));
+    assert_eq!(no_value.into_value(), None);
+
+    let value = Some(Arc::new(String::from("value")));
+    let same_value = Some(Arc::new(String::from("value")));
+    assert!(value.value_eq(&same_value));
+    assert_eq!(value.into_value(), Some(String::from("value")));
+    let no_value: Option<Arc<String>> = None;
+    assert!(no_value.value_eq(&None));
+    assert_eq!(no_value.into_value(), None);
+}
+
+#[test]
+fn custom_value_carrier_needs_neither_borrow_nor_representation_equality() {
+    let left = CheckSortedDisjointMap::new([(
+        1_u8..=2,
+        CustomValueCarrier(Rc::new(String::from("value"))),
+    )]);
+    let right = CheckSortedDisjointMap::new([(
+        3_u8..=4,
+        CustomValueCarrier(Rc::new(String::from("value"))),
+    )]);
+
+    let map: RangeMapBlaze<u8, String> = left.union(right).into_range_map_blaze();
+    assert_eq!(
+        map,
+        RangeMapBlaze::from_iter([(1_u8..=4, String::from("value"))])
+    );
+}
+
+#[test]
+fn range_or_gap_and_fill_gaps_map() {
+    let map = RangeMapBlaze::from_iter([(1..=3, "red"), (7..=10, "blue")]);
+    assert_eq!(map.range_or_gap_at(2), (1..=3, Some(&"red")));
+    assert_eq!(map.range_or_gap_at(5), (4..=6, None));
+    assert_eq!(map.range_or_gap_at(8), (7..=10, Some(&"blue")));
+    assert_eq!(map.range_or_gap_at(i32::MIN), (i32::MIN..=0, None));
+    assert_eq!(map.range_or_gap_at(i32::MAX), (11..=i32::MAX, None));
+
+    let mut filled = map.fill_gaps();
+    assert_eq!(filled.next(), Some((i32::MIN..=0, None)));
+    assert_eq!(filled.next(), Some((1..=3, Some(&"red"))));
+    assert_eq!(filled.next(), Some((4..=6, None)));
+    assert_eq!(filled.next(), Some((7..=10, Some(&"blue"))));
+    assert_eq!(filled.next(), Some((11..=i32::MAX, None)));
+    assert_eq!(filled.next(), None);
+    assert_eq!(filled.next(), None);
+
+    let empty = RangeMapBlaze::<u8, &str>::new();
+    assert_eq!(empty.range_or_gap_at(0), (0..=u8::MAX, None));
+    assert_eq!(empty.range_or_gap_at(u8::MAX), (0..=u8::MAX, None));
+    assert_eq!(
+        empty.fill_gaps().collect::<Vec<_>>(),
+        vec![(0..=u8::MAX, None)]
+    );
+    let full = RangeMapBlaze::from_iter([(u8::MIN..=u8::MAX, "all")]);
+    assert_eq!(
+        full.fill_gaps().collect::<Vec<_>>(),
+        vec![(u8::MIN..=u8::MAX, Some(&"all"))]
+    );
+
+    let adjacent = RangeMapBlaze::from_iter([(0_u8..=2, "a"), (3..=5, "b")]);
+    assert_eq!(
+        adjacent.fill_gaps().collect::<Vec<_>>(),
+        vec![
+            (0..=2, Some(&"a")),
+            (3..=5, Some(&"b")),
+            (6..=u8::MAX, None)
+        ]
+    );
+
+    let multi_range = RangeMapBlaze::from_iter([(10_u8..=12, "a"), (13..=15, "b"), (20..=22, "c")]);
+    for (range, value) in multi_range.fill_gaps() {
+        for key in range.clone() {
+            assert_eq!(multi_range.range_or_gap_at(key), (range.clone(), value));
+        }
+    }
+}
+
+fn collect_filled_map<T, VC, I>(input: I) -> RangeMapBlaze<T, Option<VC::Value>>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
+{
+    input.fill_gaps().into_range_map_blaze()
+}
+
+#[test]
+fn fill_gaps_is_a_sorted_disjoint_map() {
+    let input = CheckSortedDisjointMap::new([(1_u8..=2, &"red"), (5..=6, &"blue")]);
+    let filled = collect_filled_map(input);
+    assert_eq!(
+        filled,
+        RangeMapBlaze::from_iter([
+            (0_u8..=0, None),
+            (1..=2, Some("red")),
+            (3..=4, None),
+            (5..=6, Some("blue")),
+            (7..=u8::MAX, None),
+        ])
+    );
+
+    let input = CheckSortedDisjointMap::new([(1_u8..=2, &"red"), (5..=6, &"blue")]);
+    assert_eq!(
+        input.fill_gaps().into_sorted_disjoint().collect::<Vec<_>>(),
+        vec![u8::MIN..=u8::MAX]
+    );
+
+    let input = CheckSortedDisjointMap::new([(1_u8..=2, &"red"), (5..=6, &"blue")]);
+    assert!(input.fill_gaps().complement().is_empty());
+
+    // RangeMapBlaze canonicalizes touching equal values before exposing its
+    // sorted stream, so FillGapsIterMap preserves one canonical mapped range too.
+    let equal_adjacent = RangeMapBlaze::from_iter([(1_u8..=2, "same"), (3..=4, "same")]);
+    assert_eq!(
+        equal_adjacent.fill_gaps().collect::<Vec<_>>(),
+        vec![(0..=0, None), (1..=4, Some(&"same")), (5..=u8::MAX, None),]
+    );
+}
+
+#[test]
+fn range_or_gap_and_fill_gaps_map_exhaustive_u8() {
+    for start in u8::MIN..=u8::MAX {
+        for end in start..=u8::MAX {
+            let map = RangeMapBlaze::from_iter([(start..=end, 1_u8)]);
+
+            let mut expected_filled = Vec::with_capacity(3);
+            if start > u8::MIN {
+                expected_filled.push((u8::MIN..=start - 1, None));
+            }
+            expected_filled.push((start..=end, Some(&1_u8)));
+            if end < u8::MAX {
+                expected_filled.push((end + 1..=u8::MAX, None));
+            }
+            assert_eq!(map.fill_gaps().collect::<Vec<_>>(), expected_filled);
+
+            for key in u8::MIN..=u8::MAX {
+                if key < start {
+                    assert_eq!(map.range_at(key), None);
+                    assert_eq!(map.range_or_gap_at(key), (u8::MIN..=start - 1, None));
+                } else if key <= end {
+                    assert_eq!(map.range_at(key), Some((start..=end, &1_u8)));
+                    assert_eq!(map.range_or_gap_at(key), (start..=end, Some(&1_u8)));
+                } else {
+                    assert_eq!(map.range_at(key), None);
+                    assert_eq!(map.range_or_gap_at(key), (end + 1..=u8::MAX, None));
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn fill_gaps_size_hint_overflow_has_no_upper_bound() {
+    use core::iter::{FusedIterator, once};
+    use range_set_blaze::{SortedDisjointMap, SortedStartsMap};
+
+    struct HugeUpperBound<I>(I);
+
+    impl<I: Iterator> Iterator for HugeUpperBound<I> {
+        type Item = I::Item;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            self.0.next()
+        }
+
+        fn size_hint(&self) -> (usize, Option<usize>) {
+            (0, Some(usize::MAX))
+        }
+    }
+
+    impl<I: FusedIterator> FusedIterator for HugeUpperBound<I> {}
+
+    impl<I> SortedStartsMap<u8, &'static u8> for HugeUpperBound<I> where
+        I: FusedIterator<Item = (RangeInclusive<u8>, &'static u8)>
+    {
+    }
+
+    impl<I> SortedDisjointMap<u8, &'static u8> for HugeUpperBound<I> where
+        I: FusedIterator<Item = (RangeInclusive<u8>, &'static u8)>
+    {
+    }
+
+    let input = HugeUpperBound(once((1..=1, &1_u8)));
+    assert_eq!(input.fill_gaps().size_hint(), (0, None));
+}
+
+#[test]
+fn fill_gaps_iter_map_size_hint_pending() {
+    let mut iter = CheckSortedDisjointMap::new([(10_u8..=12, &"a"), (20..=22, &"b")]).fill_gaps();
+    assert_eq!(iter.size_hint(), (2, Some(5)));
+    assert_eq!(iter.next(), Some((u8::MIN..=9, None)));
+    assert_eq!(iter.size_hint(), (2, Some(4)));
+
+    let mut remaining = 4;
+    while iter.next().is_some() {
+        remaining -= 1;
+        let (lower, upper) = iter.size_hint();
+        assert!(lower <= remaining);
+        if let Some(upper) = upper {
+            assert!(remaining <= upper);
+        }
+    }
+    assert_eq!(remaining, 0);
+    assert_eq!(iter.size_hint(), (0, Some(0)));
+}
+
+#[test]
+fn fill_gaps_char_steps_over_surrogates() {
+    let map = RangeMapBlaze::from_iter([('\u{D7FF}'..='\u{E000}', "letter")]);
+    assert_eq!(
+        map.range_or_gap_at('\u{D7FE}'),
+        ('\u{0}'..='\u{D7FE}', None)
+    );
+    assert_eq!(
+        map.range_or_gap_at('\u{D7FF}'),
+        ('\u{D7FF}'..='\u{E000}', Some(&"letter"))
+    );
+    assert_eq!(
+        map.range_or_gap_at('\u{E000}'),
+        ('\u{D7FF}'..='\u{E000}', Some(&"letter"))
+    );
+    assert_eq!(
+        map.range_or_gap_at('\u{E001}'),
+        ('\u{E001}'..='\u{10FFFF}', None)
+    );
+    assert_eq!(
+        map.fill_gaps().collect::<Vec<_>>(),
+        vec![
+            ('\u{0}'..='\u{D7FE}', None),
+            ('\u{D7FF}'..='\u{E000}', Some(&"letter")),
+            ('\u{E001}'..='\u{10FFFF}', None)
+        ]
+    );
 }
 
 #[test]
@@ -1556,38 +1867,40 @@ fn test_every_sorted_disjoint_map_method() {
                 (5..=100, &"a"),
             ])]
             .union();
+            let h = e0.range_values().fill_gaps();
 
-            (a, b, c, d, e, f, g)
+            (a, b, c, d, e, f, g, h)
         }};
     }
 
     // check for SortedDisjointMap and FuseIterator traits
-    let (a, b, c, d, e, f, g) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e, f, g] {$(
+    let (a, b, c, d, e, f, g, h) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f, g, h] {$(
         is_sorted_disjoint_map::<_,_,_>($sd);
     )*}}
     fn is_fused<T: FusedIterator>(_: T) {}
-    let (a, b, c, d, e, f, g) = fresh_instances!();
-    syntactic_for! { sd in [a, b, c, d, e, f, g] {$(
+    let (a, b, c, d, e, f, g, h) = fresh_instances!();
+    syntactic_for! { sd in [a, b, c, d, e, f, g, h] {$(
         is_fused::<_>($sd);
     )*}}
-    fn is_sorted_disjoint_map<T, VR, S>(_iter: S)
+    fn is_sorted_disjoint_map<T, VC, S>(_iter: S)
     where
         T: Integer,
-        VR: ValueRef,
-        S: SortedDisjointMap<T, VR>,
+        VC: ValueCarrier,
+        S: SortedDisjointMap<T, VC>,
     {
     }
 
     // Complement
-    let (a, b, c, d, e, f, g) = fresh_instances!();
+    let (a, b, c, d, e, f, g, h) = fresh_instances!();
     syntactic_for! { sd in [a,b,c,d,e,f,g] {$(
         let z = ! $sd;
         assert!(z.equal(CheckSortedDisjoint::new([-2_147_483_648..=0, 3..=4, 101..=2_147_483_647])));
     )*}}
+    assert!((!h).is_empty());
 
     // Union
-    let (a, b, c, d, e, f, g) = fresh_instances!();
+    let (a, b, c, d, e, f, g, h) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, e, f, g] {$(
         let z: CheckSortedDisjointMap<i32, &&str, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
         let z = z | $sd;
@@ -1605,9 +1918,26 @@ fn test_every_sorted_disjoint_map_method() {
         (5..=100, Rc::new("a")),
         (1000..=10000, Rc::new("z"))
     ])));
+    let z = CheckSortedDisjointMap::new([
+        (-1..=0, Some(&"z")),
+        (50..=50, Some(&"z")),
+        (1000..=10_000, Some(&"z")),
+    ]);
+    assert!((h | z).equal(CheckSortedDisjointMap::new([
+        (i32::MIN..=-2, None),
+        (-1..=0, Some(&"z")),
+        (1..=2, Some(&"a")),
+        (3..=4, None),
+        (5..=49, Some(&"a")),
+        (50..=50, Some(&"z")),
+        (51..=100, Some(&"a")),
+        (101..=999, None),
+        (1000..=10_000, Some(&"z")),
+        (10_001..=i32::MAX, None),
+    ])));
 
     // Intersection
-    let (a, b, c, d, e, f, g) = fresh_instances!();
+    let (a, b, c, d, e, f, g, h) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, e, f, g] {$(
         let z: CheckSortedDisjointMap<i32, &&str, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
         let z = z & $sd;
@@ -1621,9 +1951,19 @@ fn test_every_sorted_disjoint_map_method() {
     ]);
     let z = z & d;
     assert!(z.equal(CheckSortedDisjointMap::new([(50..=50, Rc::new("a"))])));
+    let z = CheckSortedDisjointMap::new([
+        (-1..=0, Some(&"z")),
+        (50..=50, Some(&"z")),
+        (1000..=10_000, Some(&"z")),
+    ]);
+    assert!((h & z).equal(CheckSortedDisjointMap::new([
+        (-1..=0, Some(&"z")),
+        (50..=50, Some(&"z")),
+        (1000..=10_000, Some(&"z")),
+    ])));
 
     // Symmetric Difference
-    let (a, b, c, d, e, f, g) = fresh_instances!();
+    let (a, b, c, d, e, f, g, h) = fresh_instances!();
     syntactic_for! { sd in [a, b, c, e,f,g] {$(
         let z: CheckSortedDisjointMap<i32, &&str, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
         let z = z ^ $sd;
@@ -1643,9 +1983,23 @@ fn test_every_sorted_disjoint_map_method() {
         (51..=100, Rc::new("a")),
         (1000..=10_000, Rc::new("z"))
     ])));
+    let z = CheckSortedDisjointMap::new([
+        (-1..=0, Some(&"z")),
+        (50..=50, Some(&"z")),
+        (1000..=10_000, Some(&"z")),
+    ]);
+    assert!((h ^ z).equal(CheckSortedDisjointMap::new([
+        (i32::MIN..=-2, None),
+        (1..=2, Some(&"a")),
+        (3..=4, None),
+        (5..=49, Some(&"a")),
+        (51..=100, Some(&"a")),
+        (101..=999, None),
+        (10_001..=i32::MAX, None),
+    ])));
 
     // set difference
-    let (a, b, c, d, e, f, g) = fresh_instances!();
+    let (a, b, c, d, e, f, g, h) = fresh_instances!();
     syntactic_for! { sd in [a, b, c,  e,f,g] {$(
         let z: CheckSortedDisjointMap<i32, &&str, _> = CheckSortedDisjointMap::new([(-1..=0,&"z"), (50..=50, &"z"),(1000..=10_000,&"z")]);
         let z = $sd - z;
@@ -1662,6 +2016,20 @@ fn test_every_sorted_disjoint_map_method() {
         (1..=2, Rc::new("a")),
         (5..=49, Rc::new("a")),
         (51..=100, Rc::new("a")),
+    ])));
+    let z = CheckSortedDisjointMap::new([
+        (-1..=0, Some(&"z")),
+        (50..=50, Some(&"z")),
+        (1000..=10_000, Some(&"z")),
+    ]);
+    assert!((h - z).equal(CheckSortedDisjointMap::new([
+        (i32::MIN..=-2, None),
+        (1..=2, Some(&"a")),
+        (3..=4, None),
+        (5..=49, Some(&"a")),
+        (51..=100, Some(&"a")),
+        (101..=999, None),
+        (10_001..=i32::MAX, None),
     ])));
 }
 
@@ -2097,16 +2465,16 @@ where
     // Also checks that the ranges are really sorted and disjoint
     let mut previous: Option<(RangeInclusive<T>, &V)> = None;
     for range_value in range_map_blaze.range_values() {
-        let v = range_value.1;
-        let range = range_value.0.clone();
+        let (range, v) = &range_value;
+        let range = range.clone();
+        let v = *v;
 
-        if let Some(previous) = previous
-            && ((previous.1 == v && (*previous.0.end()).add_one() >= *range.start())
-                || previous.0.end() >= range.start())
+        if let Some((previous_range, previous_value)) = previous
+            && ((previous_value == v && (*previous_range.end()).add_one() >= *range.start())
+                || previous_range.end() >= range.start())
         {
             eprintln!(
-                "two ranges are not disjoint: {:?}->{} and {range:?}->{v}",
-                previous.0, previous.1
+                "two ranges are not disjoint: {previous_range:?}->{previous_value} and {range:?}->{v}"
             );
             return false;
         }
@@ -3207,7 +3575,7 @@ struct SomeValue(&'static str);
 #[allow(clippy::redundant_clone)]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn test_arc_value_ref_to_owned() {
+fn test_arc_value_carrier_into_value() {
     // Strong count = 1, so try_unwrap will succeed
     let arc = Arc::new(SomeValue("only"));
     assert_eq!(std::sync::Arc::<SomeValue>::strong_count(&arc.clone()), 2); // clone to increase ref count

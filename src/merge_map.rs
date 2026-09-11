@@ -4,7 +4,7 @@ use core::ops::RangeInclusive;
 use itertools::{Itertools, KMergeBy, MergeBy};
 
 use crate::Integer;
-use crate::map::ValueRef;
+use crate::map::ValueCarrier;
 use crate::range_values::SetPriorityMap;
 
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap, SortedDisjointMap};
@@ -14,24 +14,24 @@ use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap, SortedDisjoi
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct MergeMap<
     T,
-    VR,
-    L: Iterator<Item = (RangeInclusive<T>, VR)>,
-    R: Iterator<Item = (RangeInclusive<T>, VR)>,
+    VC,
+    L: Iterator<Item = (RangeInclusive<T>, VC)>,
+    R: Iterator<Item = (RangeInclusive<T>, VC)>,
 > {
     #[allow(clippy::type_complexity)]
     iter: MergeBy<
-        SetPriorityMap<T, VR, L>,
-        SetPriorityMap<T, VR, R>,
-        fn(&Priority<T, VR>, &Priority<T, VR>) -> bool,
+        SetPriorityMap<T, VC, L>,
+        SetPriorityMap<T, VC, R>,
+        fn(&Priority<T, VC>, &Priority<T, VC>) -> bool,
     >,
 }
 
-impl<T, VR, L, R> MergeMap<T, VR, L, R>
+impl<T, VC, L, R> MergeMap<T, VC, L, R>
 where
     T: Integer,
-    VR: ValueRef,
-    L: SortedDisjointMap<T, VR>,
-    R: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
 {
     pub(crate) fn new(left: L, right: R) -> Self {
         let left = SetPriorityMap::new(left, 0);
@@ -43,23 +43,23 @@ where
     }
 }
 
-impl<T, VR, L, R> FusedIterator for MergeMap<T, VR, L, R>
+impl<T, VC, L, R> FusedIterator for MergeMap<T, VC, L, R>
 where
     T: Integer,
-    VR: ValueRef,
-    L: SortedDisjointMap<T, VR>,
-    R: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
 {
 }
 
-impl<T, VR, L, R> Iterator for MergeMap<T, VR, L, R>
+impl<T, VC, L, R> Iterator for MergeMap<T, VC, L, R>
 where
     T: Integer,
-    VR: ValueRef,
-    L: SortedDisjointMap<T, VR>,
-    R: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
 {
-    type Item = Priority<T, VR>;
+    type Item = Priority<T, VC>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
@@ -70,12 +70,12 @@ where
     }
 }
 
-impl<T, VR, L, R> PrioritySortedStartsMap<T, VR> for MergeMap<T, VR, L, R>
+impl<T, VC, L, R> PrioritySortedStartsMap<T, VC> for MergeMap<T, VC, L, R>
 where
     T: Integer,
-    VR: ValueRef,
-    L: SortedDisjointMap<T, VR>,
-    R: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
 {
 }
 
@@ -83,22 +83,22 @@ where
 #[derive(Clone, Debug)]
 #[allow(clippy::module_name_repetitions)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct KMergeMap<T, VR, I>
+pub struct KMergeMap<T, VC, I>
 where
-    I: Iterator<Item = (RangeInclusive<T>, VR)>,
+    I: Iterator<Item = (RangeInclusive<T>, VC)>,
 {
     #[allow(clippy::type_complexity)]
-    iter: KMergeBy<SetPriorityMap<T, VR, I>, fn(&Priority<T, VR>, &Priority<T, VR>) -> bool>,
+    iter: KMergeBy<SetPriorityMap<T, VC, I>, fn(&Priority<T, VC>, &Priority<T, VC>) -> bool>,
 }
 
-type KMergeSetPriorityMap<T, VR, I> =
-    KMergeBy<SetPriorityMap<T, VR, I>, fn(&Priority<T, VR>, &Priority<T, VR>) -> bool>;
+type KMergeSetPriorityMap<T, VC, I> =
+    KMergeBy<SetPriorityMap<T, VC, I>, fn(&Priority<T, VC>, &Priority<T, VC>) -> bool>;
 
-impl<T, VR, I> KMergeMap<T, VR, I>
+impl<T, VC, I> KMergeMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
     /// Creates a new [`KMergeMap`] iterator from zero or more [`SortedDisjointMap`] iterators. See [`KMergeMap`] for more details and examples.
     ///
@@ -113,7 +113,7 @@ where
             SetPriorityMap::new(x, priority_number)
         });
         // Merge RangeValues by start with ties broken by priority
-        let iter: KMergeSetPriorityMap<T, VR, I> = iter.kmerge_by(|a, b| {
+        let iter: KMergeSetPriorityMap<T, VC, I> = iter.kmerge_by(|a, b| {
             // We sort only by start -- priority is not used until later.
             a.start() < b.start()
         });
@@ -121,21 +121,21 @@ where
     }
 }
 
-impl<T, VR, I> FusedIterator for KMergeMap<T, VR, I>
+impl<T, VC, I> FusedIterator for KMergeMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
 }
 
-impl<T, VR, I> Iterator for KMergeMap<T, VR, I>
+impl<T, VC, I> Iterator for KMergeMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
-    type Item = Priority<T, VR>;
+    type Item = Priority<T, VC>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
@@ -146,10 +146,10 @@ where
     }
 }
 
-impl<T, VR, I> PrioritySortedStartsMap<T, VR> for KMergeMap<T, VR, I>
+impl<T, VC, I> PrioritySortedStartsMap<T, VC> for KMergeMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
 }

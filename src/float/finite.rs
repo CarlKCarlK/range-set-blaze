@@ -2,8 +2,8 @@
 //!
 //! Ordering and other semantics are as per normal floating point comparisons.
 //!
-//! Enable with `float_experimental` (stable, `FiniteF32`/`FiniteF64`) and
-//! `float_nightly_experimental` (nightly, adds `FiniteF16`/`FiniteF128`).
+//! The `FiniteF32`/`FiniteF64` wrappers are available by default. Enable
+//! `float_nightly_experimental` on nightly to add `FiniteF16`/`FiniteF128`.
 
 use core::{
     cmp::Ordering,
@@ -102,19 +102,9 @@ finite_const_constructor!(finite_f128, f128, FiniteF128);
 /// assert!(!set.contains(FiniteF32::new(6.0)));
 /// ```
 ///
-/// # Enabling
-///
-/// This type is experimental and must be enabled with the `float_experimental` feature.
-/// ```bash
-/// cargo add range-set-blaze --features "float_experimental"
-/// ```
-/// That provides the `FiniteF32` and `FiniteF64` types.
-///
-/// If you're building with nightly, you can instead use the `float_nightly_experimental` feature.
-/// ```bash
-/// cargo add range-set-blaze --features "float_nightly_experimental"
-/// ```
-/// To also use the `FiniteF16` and `FiniteF128` types.
+/// The stable `FiniteF32` and `FiniteF64` types are available by default.
+/// On nightly, enable `float_nightly_experimental` to also use the
+/// `FiniteF16` and `FiniteF128` types.
 #[repr(transparent)]
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Finite<T: FiniteFloat>(T);

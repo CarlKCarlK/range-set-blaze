@@ -1,4 +1,4 @@
-use crate::map::ValueRef;
+use crate::map::ValueCarrier;
 use crate::range_values::ExpectDebugUnwrapRelease;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::{Integer, map::EndValue, sorted_disjoint_map::SortedDisjointMap};
@@ -12,18 +12,18 @@ use num_traits::Zero;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::redundant_pub_crate)]
-pub(crate) struct UnsortedPriorityMap<T, VR, I> {
+pub(crate) struct UnsortedPriorityMap<T, VC, I> {
     iter: I,
-    option_priority: Option<Priority<T, VR>>,
+    option_priority: Option<Priority<T, VC>>,
     min_value_plus_2: T,
     priority_number: usize,
 }
 
-impl<T, VR, I> UnsortedPriorityMap<T, VR, I>
+impl<T, VC, I> UnsortedPriorityMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = (RangeInclusive<T>, VR)>, // Any iterator is fine
+    VC: ValueCarrier,
+    I: Iterator<Item = (RangeInclusive<T>, VC)>, // Any iterator is fine
 {
     #[inline]
     pub(crate) fn new(into_iter: I) -> Self {
@@ -36,21 +36,21 @@ where
     }
 }
 
-impl<T, VR, I> FusedIterator for UnsortedPriorityMap<T, VR, I>
+impl<T, VC, I> FusedIterator for UnsortedPriorityMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = (RangeInclusive<T>, VR)>,
+    VC: ValueCarrier,
+    I: Iterator<Item = (RangeInclusive<T>, VC)>,
 {
 }
 
-impl<T, VR, I> Iterator for UnsortedPriorityMap<T, VR, I>
+impl<T, VC, I> Iterator for UnsortedPriorityMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = (RangeInclusive<T>, VR)>,
+    VC: ValueCarrier,
+    I: Iterator<Item = (RangeInclusive<T>, VC)>,
 {
-    type Item = Priority<T, VR>;
+    type Item = Priority<T, VC>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -79,7 +79,7 @@ where
             // If the values are different or the ranges do not touch or overlap,
             // return the current range and set the current range to the next range
             let (current_start, current_end) = current_priority.start_and_end();
-            if current_priority.value().borrow() != next_priority.value().borrow()
+            if !current_priority.value().value_eq(next_priority.value())
                 || (next_start >= self.min_value_plus_2
                     && current_end <= next_start.sub_one().sub_one())
                 || (current_start >= self.min_value_plus_2
@@ -112,17 +112,17 @@ where
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[allow(clippy::redundant_pub_crate)]
-pub(crate) struct SortedDisjointMapWithLenSoFar<T: Integer, VR, I> {
+pub(crate) struct SortedDisjointMapWithLenSoFar<T: Integer, VC, I> {
     iter: I,
     len: <T as Integer>::SafeLen,
-    phantom: PhantomData<VR>,
+    phantom: PhantomData<VC>,
 }
 
-impl<T, VR, I> SortedDisjointMapWithLenSoFar<T, VR, I>
+impl<T, VC, I> SortedDisjointMapWithLenSoFar<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
     pub(crate) const fn len_so_far(&self) -> <T as Integer>::SafeLen {
         self.len
@@ -137,21 +137,21 @@ where
     }
 }
 
-impl<T, VR, I> FusedIterator for SortedDisjointMapWithLenSoFar<T, VR, I>
+impl<T, VC, I> FusedIterator for SortedDisjointMapWithLenSoFar<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
 }
 
-impl<T, VR, I> Iterator for SortedDisjointMapWithLenSoFar<T, VR, I>
+impl<T, VC, I> Iterator for SortedDisjointMapWithLenSoFar<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
 {
-    type Item = (T, EndValue<T, VR::Target>);
+    type Item = (T, EndValue<T, VC::Value>);
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some((range, value)) = self.iter.next() {
@@ -182,40 +182,40 @@ pub struct AssumePrioritySortedStartsMap<I> {
     iter: I,
 }
 
-impl<T, VR, I> PrioritySortedStartsMap<T, VR> for AssumePrioritySortedStartsMap<I>
+impl<T, VC, I> PrioritySortedStartsMap<T, VC> for AssumePrioritySortedStartsMap<I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = Priority<T, VR>> + FusedIterator,
+    VC: ValueCarrier,
+    I: Iterator<Item = Priority<T, VC>> + FusedIterator,
 {
 }
 
-impl<T, VR, I> AssumePrioritySortedStartsMap<I>
+impl<T, VC, I> AssumePrioritySortedStartsMap<I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = Priority<T, VR>> + FusedIterator,
+    VC: ValueCarrier,
+    I: Iterator<Item = Priority<T, VC>> + FusedIterator,
 {
     pub(crate) const fn new(iter: I) -> Self {
         Self { iter }
     }
 }
 
-impl<T, VR, I> FusedIterator for AssumePrioritySortedStartsMap<I>
+impl<T, VC, I> FusedIterator for AssumePrioritySortedStartsMap<I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = Priority<T, VR>> + FusedIterator,
+    VC: ValueCarrier,
+    I: Iterator<Item = Priority<T, VC>> + FusedIterator,
 {
 }
 
-impl<T, VR, I> Iterator for AssumePrioritySortedStartsMap<I>
+impl<T, VC, I> Iterator for AssumePrioritySortedStartsMap<I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: Iterator<Item = Priority<T, VR>> + FusedIterator,
+    VC: ValueCarrier,
+    I: Iterator<Item = Priority<T, VC>> + FusedIterator,
 {
-    type Item = Priority<T, VR>;
+    type Item = Priority<T, VC>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()

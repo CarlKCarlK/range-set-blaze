@@ -1,7 +1,6 @@
 //! Tests
 
 #![cfg(test)]
-#![cfg(feature = "float_experimental")]
 #![cfg_attr(feature = "float_nightly_experimental", feature(f16))]
 #![cfg_attr(feature = "float_nightly_experimental", feature(f128))]
 

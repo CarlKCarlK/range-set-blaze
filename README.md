@@ -211,16 +211,29 @@ for range in intron.ranges() {
 Features
 --------
 
-The available Cargo features are:
+### Built-in functionality
+
+Most functionality is available without opting into any Cargo feature, including
+with `--no-default-features`:
+
+* All primitive integer types, `char`, `Ipv4Addr`, and `Ipv6Addr`.
+* Floating-point ranges for `f32` and `f64` through the `FiniteF32`,
+  `FiniteF64`, `TotalF32`, and `TotalF64` wrappers.
+* The `range_at`, `range_or_gap_at`, and `fill_gaps` APIs for sets, maps, and
+  sorted-disjoint streams.
+
+These are regular crate APIs, not Cargo features.
+
+### Cargo features
+
+Only `std` is enabled by default. The available Cargo features are:
 
 * `default` — Enables the `std` feature. Use `--no-default-features` for a `no_std` build.
 * `std` — Enables `std`-specific conveniences and trait implementations. The crate's core functionality remains available with `no_std` and `alloc`; see [the `no_std` usage above](#no_std-wasm-and-embedded).
 * `from_slice` — Enables the nightly-only [`RangeSetBlaze::from_slice`][from-slice] constructor, which can speed up construction from array-like collections using SIMD where available.
-* `float_experimental` — Enables experimental floating-point range support for `f32` and `f64`; see the [floating-point module documentation][floating-point documentation].
-* `float_nightly_experimental` — Enables the nightly-only `f16` and `f128` floating-point wrappers in addition to `float_experimental`; see the [floating-point module documentation][floating-point documentation]. This requires a nightly Rust compiler.
-* `rog_experimental` — Enables the experimental [`Rog` (range-or-gap) type][rog]. Its API may change or be removed in a future release.
+* `float_nightly_experimental` — Enables the nightly-only `f16` and `f128` floating-point wrappers; see the [floating-point module documentation][floating-point documentation]. This requires a nightly Rust compiler.
+* `test_util` — Enables randomized test utilities intended primarily for crate development.
 
-[rog]: https://docs.rs/range-set-blaze/latest/range_set_blaze/enum.Rog.html
 [floating-point documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/index.html
 [from-slice]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_slice
 

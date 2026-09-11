@@ -966,11 +966,13 @@ fn map_insert_speed(c: &mut Criterion) {
 }
 
 const fn access_k(&x: &(usize, usize)) -> usize {
-    x.0
+    let (key, _) = x;
+    key
 }
 #[allow(dead_code)]
 const fn access_r(&x: &(usize, usize)) -> usize {
-    x.1
+    let (_, range) = x;
+    range
 }
 fn map_intersect_k(c: &mut Criterion) {
     let k_list = [2usize, 5, 10, 25, 50, 100];

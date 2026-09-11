@@ -577,11 +577,13 @@ fn union_vary_range_len(c: &mut Criterion) {
 }
 
 const fn access_k(&x: &(usize, usize)) -> usize {
-    x.0
+    let (key, _) = x;
+    key
 }
 #[allow(dead_code)]
 const fn access_r(&x: &(usize, usize)) -> usize {
-    x.1
+    let (_, range) = x;
+    range
 }
 #[allow(dead_code)]
 fn intersection_vary_range_len(c: &mut Criterion) {
