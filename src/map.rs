@@ -9,10 +9,15 @@ use crate::{
     unsorted_priority_map::{SortedDisjointMapWithLenSoFar, UnsortedPriorityMap},
     values::{IntoValues, Values},
 };
+#[cfg(feature = "map_insert_cursor_experimental")]
+use alloc::collections::btree_map::CursorMut;
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
+#[cfg(any(test, not(feature = "map_insert_cursor_experimental")))]
 use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, rc::Rc};
+#[cfg(feature = "map_insert_cursor_experimental")]
+use core::ops::Bound;
 use core::{
     cmp::{Ordering, max},
     convert::From,
@@ -213,6 +218,79 @@ where
 pub(crate) struct EndValue<T, V> {
     pub(crate) end: T,
     pub(crate) value: V,
+}
+
+#[cfg(feature = "map_insert_cursor_experimental")]
+enum PredecessorInsertAction<T> {
+    Unaffected,
+    MergeSameValue,
+    KeepLeftResidual { left_end: T, right_start: Option<T> },
+}
+
+#[cfg(feature = "map_insert_cursor_experimental")]
+enum ForwardInsertAction<T> {
+    MergeSameValue,
+    DeleteOverwritten,
+    KeepRightResidual { right_start: T },
+}
+
+#[cfg(feature = "map_insert_cursor_experimental")]
+struct CursorScanResult<T, V> {
+    pending_end: T,
+    right_residual: Option<(T, EndValue<T, V>)>,
+    unchanged: bool,
+}
+
+// These classifiers are the proof-relevant algorithm. On a sorted canonical list of
+// `(start, end, value)` triples, classify the predecessor once, then repeatedly classify the
+// first unprocessed triple. The cursor code below only realizes the resulting remove, retain,
+// merge, and residual operations in a B-tree.
+#[cfg(feature = "map_insert_cursor_experimental")]
+fn classify_predecessor<T: Integer>(
+    stored_end: T,
+    pending_start: T,
+    pending_end: T,
+    same_value: bool,
+) -> PredecessorInsertAction<T> {
+    let overlaps = stored_end >= pending_start;
+    let touches = stored_end.checked_add_one() == Some(pending_start);
+    if !(overlaps || touches && same_value) {
+        PredecessorInsertAction::Unaffected
+    } else if same_value {
+        PredecessorInsertAction::MergeSameValue
+    } else {
+        let right_start = if stored_end > pending_end {
+            Some(pending_end.add_one())
+        } else {
+            None
+        };
+        PredecessorInsertAction::KeepLeftResidual {
+            left_end: pending_start.sub_one(),
+            right_start,
+        }
+    }
+}
+
+#[cfg(feature = "map_insert_cursor_experimental")]
+fn classify_forward<T: Integer>(
+    stored_start: T,
+    stored_end: T,
+    pending_end: T,
+    same_value: bool,
+) -> Option<ForwardInsertAction<T>> {
+    let overlaps = stored_start <= pending_end;
+    let touches = pending_end.checked_add_one() == Some(stored_start);
+    if !(overlaps || touches && same_value) {
+        None
+    } else if same_value {
+        Some(ForwardInsertAction::MergeSameValue)
+    } else if stored_end > pending_end {
+        Some(ForwardInsertAction::KeepRightResidual {
+            right_start: pending_end.add_one(),
+        })
+    } else {
+        Some(ForwardInsertAction::DeleteOverwritten)
+    }
 }
 
 /// A map from integers to values stored as a map of sorted & disjoint ranges to values.
@@ -1029,6 +1107,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     // LATER: might be able to shorten code by combining cases
+    #[cfg(any(test, not(feature = "map_insert_cursor_experimental")))]
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
@@ -1354,262 +1433,12 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         )
     }
 
+    #[cfg(any(test, not(feature = "map_insert_cursor_experimental")))]
     #[inline]
     fn has_gap(end_before: T, start: T) -> bool {
         end_before
             .checked_add_one()
             .is_some_and(|end_before_succ| end_before_succ < start)
-    }
-
-    #[cfg(never)]
-    // TODO: Look at other TODOs before enabling this.
-    // #![cfg_attr(feature = "cursor", feature(btree_cursors, new_range_api))]
-    // #[cfg(feature = "cursor")]
-    //  use core::{cmp::min, range::Bound};
-    #[inline]
-    fn adjust_touching_for_insert(
-        &mut self,
-        stored_start: T,
-        stored_end_value: EndValue<T, V>,
-        range: &mut RangeInclusive<T>,
-        value: &V,
-    ) {
-        let stored_value = &stored_end_value.value;
-        let stored_end = stored_end_value.end;
-
-        // ── 1. Same value → coalesce completely ──────────────────────────────
-        if stored_value == value {
-            let new_start = min(*range.start(), stored_start);
-            let new_end = max(*range.end(), stored_end);
-            *range = new_start..=new_end;
-
-            self.len -= T::safe_len(&(stored_start..=stored_end));
-            self.btree_map.remove(&stored_start);
-            return;
-        }
-
-        // ── 2. Different value → may need to split ───────────────────────────
-        let overlaps = stored_start <= *range.end() && stored_end >= *range.start();
-
-        if overlaps {
-            // Remove the overlapping range first.
-            self.len -= T::safe_len(&(stored_start..=stored_end));
-            self.btree_map.remove(&stored_start);
-
-            // Left residual slice
-            if stored_start < *range.start() {
-                let left_end = range.start().sub_one(); // TODO are we sure this won't underflow?
-                self.len += T::safe_len(&(stored_start..=left_end));
-                self.btree_map.insert(
-                    stored_start,
-                    EndValue {
-                        end: left_end,
-                        value: stored_value.clone(),
-                    },
-                );
-            }
-
-            // Right residual slice
-            if stored_end > *range.end() {
-                let right_start = range.end().add_one();
-                self.len += T::safe_len(&(right_start..=stored_end));
-                self.btree_map.insert(
-                    right_start,
-                    EndValue {
-                        end: stored_end,
-                        value: stored_end_value.value, // already owned
-                    },
-                );
-            }
-        }
-        // Otherwise: no overlap → keep ranges as they are.
-    }
-
-    #[cfg(never)]
-    // For benchmarking, based on https://github.com/jeffparsons/rangemap's `insert` method.
-    pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
-        use core::ops::Bound::{Included, Unbounded}; // TODO: Move to the top
-
-        let start = *range.start();
-        let end = *range.end();
-
-        // === case: empty
-        if end < start {
-            return;
-        }
-
-        // Walk *backwards* from the first stored range whose start ≤ `start`.
-        //      Take the nearest two so we can look at “before” and “before-before”.
-        let mut candidates = self
-            .btree_map
-            .range::<T, _>((Unbounded, Included(&start))) // ..= start
-            .rev()
-            .take(2)
-            .filter(|(_stored_start, stored_end_value)| {
-                // TODO use saturation arithmetic to avoid underflow
-                let end = stored_end_value.end;
-                end >= start || (start != T::min_value() && end >= start.sub_one())
-            });
-
-        if let Some(mut candidate) = candidates.next() {
-            // Or the one before it if both cases described above exist.
-            if let Some(another_candidate) = candidates.next() {
-                candidate = another_candidate;
-            }
-
-            let (stored_start, stored_end_value) = candidate;
-            let stored_start = *stored_start;
-            let stored_end_value = stored_end_value.clone();
-            self.adjust_touching_for_insert(
-                stored_start,
-                stored_end_value,
-                &mut range, // `end` is the current (possibly growing) tail
-                &value,
-            );
-        }
-
-        // let range = &mut range; // &mut RangeInclusive<T>
-
-        loop {
-            // first range whose start ≥ new_range.start()
-            let next_entry = self
-                .btree_map
-                .range::<T, _>((Included(range.start()), Unbounded))
-                .next();
-
-            let Some((&stored_start, stored_end_value)) = next_entry else {
-                break; // nothing more
-            };
-
-            let second_last_possible_start = *range.end();
-            let maybe_latest_start = if second_last_possible_start == T::max_value() {
-                None
-            } else {
-                Some(second_last_possible_start.add_one())
-            };
-
-            if maybe_latest_start.map_or(false, |latest| stored_start > latest) {
-                break; // beyond end + 1
-            }
-            if let Some(latest) = maybe_latest_start {
-                if stored_start == latest && stored_end_value.value != value {
-                    break; // touches but diff value
-                }
-            }
-
-            // clone so we can mutate the map in the helper
-            let end_value_clone = stored_end_value.clone();
-
-            self.adjust_touching_for_insert(stored_start, end_value_clone, &mut range, &value);
-
-            // loop again; `new_range` might have grown on the right
-        }
-
-        let start_key = *range.start();
-        let end_key = *range.end();
-        // self.len += T::safe_len(&(start_key..=end_key));
-        self.btree_map.insert(
-            start_key,
-            EndValue {
-                end: end_key,
-                value,
-            },
-        );
-
-        debug_assert!(self.len == self.len_slow());
-    }
-
-    #[cfg(never)]
-    // #[cfg(feature = "cursor")]
-    pub(crate) fn internal_add(&mut self, mut range: RangeInclusive<T>, value: V) {
-        // Based on https://github.com/jeffparsons/rangemap's `insert` method but with cursor's added
-        use core::ops::Bound::{Included, Unbounded};
-        use std::collections::btree_map::CursorMut;
-
-        let start = *range.start();
-        let end = *range.end();
-
-        // === case: empty
-        if end < start {
-            return;
-        }
-
-        // Walk *backwards* from the first stored range whose start ≤ `start`.
-        //      Take the nearest two so we can look at “before” and “before-before”.
-        let mut candidates = self
-            .btree_map
-            .range::<T, _>((Unbounded, Included(&start))) // ..= start
-            .rev()
-            .take(2)
-            .filter(|(_stored_start, stored_end_value)| {
-                let end = stored_end_value.end;
-                end >= start || (start != T::min_value() && end >= start.sub_one())
-            });
-
-        if let Some(mut candidate) = candidates.next() {
-            // Or the one before it if both cases described above exist.
-            if let Some(another_candidate) = candidates.next() {
-                candidate = another_candidate;
-            }
-
-            let (stored_start, stored_end_value) = candidate;
-            let stored_start = *stored_start;
-            let stored_end_value = stored_end_value.clone();
-            self.adjust_touching_for_insert(
-                stored_start,
-                stored_end_value,
-                &mut range, // `end` is the current (possibly growing) tail
-                &value,
-            );
-        }
-        // keep looping until we hit the stop window
-        loop {
-            // create a fresh cursor _for this iteration only_
-            let mut cur: CursorMut<'_, T, EndValue<T, V>> = self
-                .btree_map
-                .lower_bound_mut(Bound::Included(range.start()));
-
-            let Some(peeked) = cur.peek_next() else {
-                break;
-            };
-            let (&stored_start, maybe_end_value) = peeked;
-
-            let last_ok = *range.end();
-            if last_ok == T::max_value() {
-                if stored_start > last_ok {
-                    break;
-                }
-            } else {
-                let latest = last_ok.add_one();
-                if stored_start > latest {
-                    break;
-                }
-                if stored_start == latest && maybe_end_value.value != value {
-                    break;
-                }
-            }
-
-            // now clone and remove
-            let cloned = maybe_end_value.clone();
-            cur.remove_next();
-
-            // now we can call any &mut-self helper safely
-            self.adjust_touching_for_insert(stored_start, cloned, &mut range, &value);
-        }
-
-        let start_key = *range.start();
-        let end_key = *range.end();
-
-        self.btree_map.insert(
-            start_key,
-            EndValue {
-                end: end_key,
-                value, // moves `value`
-            },
-        );
-        self.len += T::safe_len(&(start_key..=end_key));
-
-        debug_assert!(self.len == self.len_slow());
     }
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
@@ -1618,7 +1447,8 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::cognitive_complexity)]
-    pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>, value: V) {
+    #[cfg(any(test, not(feature = "map_insert_cursor_experimental")))]
+    pub(crate) fn internal_add_baseline(&mut self, range: RangeInclusive<T>, value: V) {
         let (start, end) = range.clone().into_inner();
 
         // === case: empty
@@ -1836,6 +1666,236 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         }
     }
 
+    #[cfg(feature = "map_insert_cursor_experimental")]
+    fn cursor_insert_range(
+        cursor: &mut CursorMut<'_, T, EndValue<T, V>>,
+        len: &mut T::SafeLen,
+        start: T,
+        end: T,
+        value: V,
+    ) {
+        assert!(
+            cursor.insert_before(start, EndValue { end, value }).is_ok(),
+            "Real Assert: the range belongs at the cursor"
+        );
+        // `insert_before` moves the gap after the new entry: `peek_prev` is the inserted range,
+        // while `peek_next` is the entry that followed the old gap.
+        *len += T::safe_len(&(start..=end));
+    }
+
+    #[cfg(feature = "map_insert_cursor_experimental")]
+    fn cursor_scan_forward(
+        cursor: &mut CursorMut<'_, T, EndValue<T, V>>,
+        len: &mut T::SafeLen,
+        pending_start: T,
+        mut pending_end: T,
+        pending_is_stored: bool,
+        value: &V,
+    ) -> CursorScanResult<T, V> {
+        loop {
+            let candidate = cursor
+                .peek_next()
+                .map(|(start, end_value)| (*start, end_value.end, end_value.value == *value));
+            let Some((stored_start, stored_end, same_value)) = candidate else {
+                return CursorScanResult {
+                    pending_end,
+                    right_residual: None,
+                    unchanged: false,
+                };
+            };
+            if !pending_is_stored
+                && stored_start == pending_start
+                && same_value
+                && stored_end >= pending_end
+            {
+                return CursorScanResult {
+                    pending_end,
+                    right_residual: None,
+                    unchanged: true,
+                };
+            }
+            let Some(action) = classify_forward(stored_start, stored_end, pending_end, same_value)
+            else {
+                return CursorScanResult {
+                    pending_end,
+                    right_residual: None,
+                    unchanged: false,
+                };
+            };
+
+            let (_, removed) = cursor
+                .remove_next()
+                .expect("Real Assert: the peeked successor still exists");
+            // The gap is preserved: `peek_prev` is unchanged and `peek_next` is the next suffix.
+            *len -= T::safe_len(&(stored_start..=removed.end));
+
+            match action {
+                ForwardInsertAction::MergeSameValue => {
+                    let extended_end = max(pending_end, removed.end);
+                    if pending_is_stored && extended_end > pending_end {
+                        cursor
+                            .peek_prev()
+                            .map(|(_, end_value)| end_value)
+                            .expect("Real Assert: the stored pending range is the predecessor")
+                            .end = extended_end;
+                        *len += T::safe_len(&(pending_end.add_one()..=extended_end));
+                    }
+                    pending_end = extended_end;
+                }
+                ForwardInsertAction::DeleteOverwritten => {}
+                ForwardInsertAction::KeepRightResidual { right_start } => {
+                    return CursorScanResult {
+                        pending_end,
+                        right_residual: Some((right_start, removed)),
+                        unchanged: false,
+                    };
+                }
+            }
+        }
+    }
+
+    #[cfg(feature = "map_insert_cursor_experimental")]
+    // Proof targets for nonempty `a..=b`:
+    // `lookup(result, x) == if a <= x && x <= b { Some(value) } else { lookup(old, x) }`,
+    // `result` is canonical, and `result.len` is the cardinality of its represented key domain.
+    //
+    // Forward-scan invariant, stated independently of the B-tree cursor representation:
+    //
+    // 1. The stored prefix before the cursor is canonical internally. All but a possible last
+    //    pending range are final; later steps only extend that pending range's end.
+    // 2. `pending_start..=pending_end` is nonempty, contains the original insertion and every
+    //    examined equal-valued range, and has the inserted value.
+    // 3. `pending_is_stored` says exactly whether pending is the last prefix entry and included in
+    //    `self.len`. Otherwise pending is neither stored nor counted.
+    // 4. No other prefix range overlaps pending. A touching final prefix range has another value.
+    // 5. The suffix at `peek_next` is unprocessed, unchanged, internally canonical, and ordered
+    //    after the prefix. It may overlap or touch pending; the next iteration decides that case.
+    // 6. If pending is not stored, prefix and suffix together are canonical and `self.len` is
+    //    their cardinality. If stored, only its temporary relation to the suffix may be
+    //    noncanonical, and `self.len` counts both until the overlap is consumed.
+    // 7. Prefix + pending + suffix has the pointwise meaning of applying the insertion to examined
+    //    input and leaving the suffix unprocessed, ignoring the temporary duplicate count in 6.
+    pub(crate) fn internal_add_cursor(&mut self, range: RangeInclusive<T>, value: V) {
+        let (mut pending_start, mut pending_end) = range.into_inner();
+        if pending_end < pending_start {
+            return;
+        }
+
+        let mut right_residual = None;
+        let mut pending_is_stored = false;
+        let mut cursor = self
+            .btree_map
+            .lower_bound_mut(Bound::Included(&pending_start));
+
+        // Cursor position: `peek_prev` is the greatest stored start below `pending_start`, and
+        // `peek_next` is the least stored start at or above it.
+        // The predecessor starts strictly before `pending_start`. It is the only stored range
+        // on the left that can overlap or touch the insertion. Removing it first also makes the
+        // exact-start normalization case explicit: a following range that starts at the insertion
+        // boundary can be removed without hiding an equal-valued predecessor.
+        let predecessor = cursor
+            .peek_prev()
+            .map(|(start, end_value)| (*start, end_value.end, end_value.value == value));
+        if let Some((stored_start, stored_end, same_value)) = predecessor {
+            match classify_predecessor(stored_end, pending_start, pending_end, same_value) {
+                PredecessorInsertAction::Unaffected => {}
+                PredecessorInsertAction::MergeSameValue => {
+                    if stored_end >= pending_end {
+                        return;
+                    }
+                    let end_value = cursor
+                        .peek_prev()
+                        .map(|(_, end_value)| end_value)
+                        .expect("Real Assert: the peeked predecessor still exists");
+                    self.len += T::safe_len(&(stored_end.add_one()..=pending_end));
+                    end_value.end = pending_end;
+                    pending_start = stored_start;
+                    pending_is_stored = true;
+                    // Mutating the predecessor's end does not move the cursor. The predecessor
+                    // is now the pending range, `peek_prev` refers to it, and `peek_next` is
+                    // unchanged.
+                }
+                PredecessorInsertAction::KeepLeftResidual {
+                    left_end,
+                    right_start,
+                } => {
+                    let end_value = cursor
+                        .peek_prev()
+                        .map(|(_, end_value)| end_value)
+                        .expect("Real Assert: the peeked predecessor still exists");
+                    right_residual = right_start.map(|right_start| {
+                        (
+                            right_start,
+                            EndValue {
+                                end: stored_end,
+                                value: end_value.value.clone(),
+                            },
+                        )
+                    });
+                    end_value.end = left_end;
+                    self.len -= T::safe_len(&(pending_start..=stored_end));
+                    // Mutating the predecessor's end does not move the cursor: `peek_prev` is the
+                    // trimmed left residual and `peek_next` is unchanged. A value clone occurs
+                    // only when the old range also leaves a right residual.
+                }
+            }
+        }
+
+        if right_residual.is_none() {
+            // The forward scan maintains the invariant documented above.
+            let scan_result = Self::cursor_scan_forward(
+                &mut cursor,
+                &mut self.len,
+                pending_start,
+                pending_end,
+                pending_is_stored,
+                &value,
+            );
+            if scan_result.unchanged {
+                return;
+            }
+            pending_end = scan_result.pending_end;
+            right_residual = scan_result.right_residual;
+        }
+
+        if !pending_is_stored {
+            Self::cursor_insert_range(
+                &mut cursor,
+                &mut self.len,
+                pending_start,
+                pending_end,
+                value,
+            );
+        }
+
+        if let Some((residual_start, residual_end_value)) = right_residual {
+            let residual_end = residual_end_value.end;
+            Self::cursor_insert_range(
+                &mut cursor,
+                &mut self.len,
+                residual_start,
+                residual_end,
+                residual_end_value.value,
+            );
+        }
+
+        debug_assert!(self.len == self.len_slow());
+    }
+
+    #[inline]
+    pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>, value: V) {
+        #[cfg(feature = "map_insert_cursor_experimental")]
+        {
+            self.internal_add_cursor(range, value);
+        }
+
+        #[cfg(not(feature = "map_insert_cursor_experimental"))]
+        {
+            self.internal_add_baseline(range, value);
+        }
+    }
+
+    #[cfg(any(test, not(feature = "map_insert_cursor_experimental")))]
     #[inline]
     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>, value: V) {
         let (start, end) = internal_range.clone().into_inner();

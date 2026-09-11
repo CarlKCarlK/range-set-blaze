@@ -3,6 +3,7 @@
 #![no_std]
 #![cfg_attr(feature = "float_nightly_experimental", feature(f16))]
 #![cfg_attr(feature = "float_nightly_experimental", feature(f128))]
+#![cfg_attr(feature = "map_insert_cursor_experimental", feature(btree_cursors))]
 
 extern crate alloc;
 #[cfg(feature = "std")]

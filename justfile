@@ -47,6 +47,9 @@ test-stable:
 test-nightly:
     cargo +nightly check --tests --features "float_nightly_experimental"
     cargo +nightly test --verbose --features from_slice
+    cargo +nightly test --verbose --features map_insert_cursor_experimental
+    cargo +nightly test --verbose --no-default-features --features map_insert_cursor_experimental
+    cargo +nightly clippy --verbose --all-targets --features map_insert_cursor_experimental -- -D clippy::all -A deprecated
     cargo +nightly test --verbose --all-features
 
 # Quick check before commit (clippy + basic tests)

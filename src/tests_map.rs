@@ -12,7 +12,8 @@ use crate::{
 use alloc::{
     borrow::ToOwned,
     string::{String, ToString},
-    vec::{self, Vec},
+    vec,
+    vec::Vec,
 };
 use core::{
     any::Any,
@@ -197,6 +198,441 @@ fn test_coverage_9() {
     let b = a.clone();
     a.internal_add(1..=0, "Hello"); // adding empty
     assert_eq!(a, b);
+}
+
+#[cfg(feature = "map_insert_cursor_experimental")]
+fn assert_cursor_insert_matches<T, V>(
+    initial: impl IntoIterator<Item = (RangeInclusive<T>, V)>,
+    insertion: RangeInclusive<T>,
+    value: V,
+) where
+    T: Integer + fmt::Debug,
+    V: Eq + Clone + fmt::Debug,
+{
+    let mut baseline = RangeMapBlaze::new();
+    for (range, value) in initial {
+        baseline.internal_add_baseline(range, value);
+    }
+    let mut cursor = baseline.clone();
+
+    baseline.internal_add_baseline(insertion.clone(), value.clone());
+    cursor.internal_add_cursor(insertion, value);
+
+    assert_eq!(cursor, baseline);
+    assert!(cursor.len() == baseline.len());
+    assert_eq!(cursor.ranges_len(), baseline.ranges_len());
+    assert_eq!(
+        cursor
+            .range_values()
+            .map(|(range, value)| (range, value.clone()))
+            .collect::<Vec<_>>(),
+        baseline
+            .range_values()
+            .map(|(range, value)| (range, value.clone()))
+            .collect::<Vec<_>>()
+    );
+    assert!(cursor.len() == cursor.len_slow());
+    assert!(baseline.len() == baseline.len_slow());
+}
+
+#[cfg(feature = "map_insert_cursor_experimental")]
+#[test]
+fn map_cursor_insert_targeted_differential() {
+    let empty_start = 3;
+    let empty_end = 2;
+    let cases = [
+        ("empty range", vec![(1..=3, 0)], empty_start..=empty_end, 1),
+        ("empty map", vec![], 2..=4, 1),
+        ("gap", vec![(1..=2, 0), (7..=8, 1)], 4..=5, 2),
+        ("equal range", vec![(2..=6, 0)], 2..=6, 1),
+        ("inside same", vec![(2..=8, 1)], 4..=6, 1),
+        ("inside different", vec![(2..=8, 0)], 4..=6, 1),
+        ("left edge", vec![(4..=8, 0)], 2..=5, 1),
+        ("right edge", vec![(2..=5, 0)], 4..=8, 1),
+        (
+            "multiple ranges",
+            vec![(1..=2, 0), (4..=5, 1), (7..=8, 2)],
+            2..=7,
+            1,
+        ),
+        ("whole map", vec![(2..=3, 0), (5..=7, 1)], 0..=9, 2),
+        ("same predecessor", vec![(1..=3, 1)], 4..=6, 1),
+        ("same successor", vec![(7..=9, 1)], 4..=6, 1),
+        ("same on both sides", vec![(1..=3, 1), (7..=9, 1)], 4..=6, 1),
+        ("different predecessor", vec![(1..=3, 0)], 4..=6, 1),
+        ("different successor", vec![(7..=9, 0)], 4..=6, 1),
+        (
+            "exact start exposes predecessor",
+            vec![(1..=3, 0), (4..=6, 1)],
+            4..=5,
+            0,
+        ),
+        (
+            "exact end exposes successor",
+            vec![(1..=3, 0), (4..=6, 1), (7..=9, 2)],
+            4..=7,
+            2,
+        ),
+        ("one point", vec![(4..=4, 0)], 4..=4, 1),
+        ("minimum", vec![(1..=3, 0)], u8::MIN..=1, 1),
+        ("maximum", vec![(252..=254, 0)], 254..=u8::MAX, 1),
+        (
+            "full domain",
+            vec![(1..=3, 0), (250..=254, 1)],
+            u8::MIN..=u8::MAX,
+            2,
+        ),
+        (
+            "alternating chain",
+            vec![(0..=0, 1), (1..=1, 0), (2..=2, 1), (3..=3, 2), (4..=4, 1)],
+            1..=3,
+            1,
+        ),
+    ];
+
+    for (name, initial, insertion, value) in cases {
+        std::println!("cursor insertion case: {name}");
+        assert_cursor_insert_matches(initial, insertion, value);
+    }
+
+    assert_cursor_insert_matches(
+        [('\u{D7FE}'..='\u{D7FF}', 0), ('\u{E000}'..='\u{E001}', 0)],
+        '\u{D7FF}'..='\u{E000}',
+        0,
+    );
+    assert_cursor_insert_matches(
+        [(char::MIN..='\u{0001}', 0), ('\u{10FFFE}'..=char::MAX, 1)],
+        char::MIN..=char::MAX,
+        2,
+    );
+}
+
+#[cfg(feature = "map_insert_cursor_experimental")]
+#[test]
+fn map_cursor_insert_exhaustive_small_domain() {
+    const DOMAIN_END: u8 = 4;
+    const DOMAIN_LEN: usize = 5;
+    const MAP_COUNT: usize = 1_024;
+    const STATE_COUNT: usize = 4; // absent, or one of three values
+
+    for mut encoded_map in 0..MAP_COUNT {
+        let mut states = [None; DOMAIN_LEN];
+        for state in &mut states {
+            let digit = encoded_map % STATE_COUNT;
+            *state = match digit {
+                0 => None,
+                1 => Some(0),
+                2 => Some(1),
+                3 => Some(2),
+                _ => unreachable!("a base-four digit is in 0..=3"),
+            };
+            encoded_map /= STATE_COUNT;
+        }
+
+        let mut initial = RangeMapBlaze::new();
+        for key in 0..=DOMAIN_END {
+            if let Some(value) = states[usize::from(key)] {
+                initial.internal_add_baseline(key..=key, value);
+            }
+        }
+
+        for start in 0..=DOMAIN_END {
+            for end in 0..=DOMAIN_END {
+                for value in 0..3 {
+                    let mut baseline = initial.clone();
+                    let mut cursor = initial.clone();
+                    baseline.internal_add_baseline(start..=end, value);
+                    cursor.internal_add_cursor(start..=end, value);
+
+                    assert_eq!(cursor, baseline);
+                    assert_eq!(cursor.len(), cursor.len_slow());
+                    assert_eq!(cursor.ranges_len(), baseline.ranges_len());
+                    for key in 0..=DOMAIN_END {
+                        let expected = if start <= end && start <= key && key <= end {
+                            Some(value)
+                        } else {
+                            states[key as usize]
+                        };
+                        assert_eq!(cursor.get(key).copied(), expected);
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[cfg(feature = "map_insert_cursor_experimental")]
+#[test]
+fn map_cursor_insert_randomized_differential() {
+    use rand::{SeedableRng, distr::Uniform, prelude::Distribution, rngs::StdRng};
+
+    let mut rng = StdRng::seed_from_u64(0x5eed_c0de);
+    let keys = Uniform::new_inclusive(0u16, 2_000).expect("valid key distribution");
+    let values = Uniform::new(0u8, 7).expect("valid value distribution");
+    let mut baseline = RangeMapBlaze::new();
+    let mut cursor = RangeMapBlaze::new();
+
+    for _ in 0..10_000 {
+        let start = keys.sample(&mut rng);
+        let end = keys.sample(&mut rng);
+        let value = values.sample(&mut rng);
+        baseline.internal_add_baseline(start..=end, value);
+        cursor.internal_add_cursor(start..=end, value);
+        assert_eq!(cursor, baseline);
+        assert_eq!(cursor.len(), cursor.len_slow());
+    }
+}
+
+#[cfg(feature = "map_insert_cursor_experimental")]
+#[test]
+fn map_cursor_insert_clones_only_for_two_residuals() {
+    use alloc::rc::Rc;
+    use core::cell::Cell;
+
+    #[derive(Debug)]
+    struct CloneCounted {
+        id: u8,
+        clone_count: Rc<Cell<usize>>,
+    }
+
+    impl Clone for CloneCounted {
+        fn clone(&self) -> Self {
+            self.clone_count.set(self.clone_count.get() + 1);
+            Self {
+                id: self.id,
+                clone_count: Rc::clone(&self.clone_count),
+            }
+        }
+    }
+
+    impl PartialEq for CloneCounted {
+        fn eq(&self, other: &Self) -> bool {
+            self.id == other.id
+        }
+    }
+
+    impl Eq for CloneCounted {}
+
+    fn clone_count_for(initial: RangeInclusive<u8>, insertion: RangeInclusive<u8>) -> usize {
+        let clone_count = Rc::new(Cell::new(0));
+        let old_value = CloneCounted {
+            id: 0,
+            clone_count: Rc::clone(&clone_count),
+        };
+        let mut map = RangeMapBlaze::new();
+        map.internal_add_baseline(initial, old_value);
+        clone_count.set(0);
+        map.internal_add_cursor(
+            insertion,
+            CloneCounted {
+                id: 1,
+                clone_count: Rc::new(Cell::new(0)),
+            },
+        );
+        clone_count.get()
+    }
+
+    assert_eq!(clone_count_for(0..=100, 40..=60), 1);
+    assert_eq!(clone_count_for(0..=60, 40..=100), 0);
+    assert_eq!(clone_count_for(40..=100, 0..=60), 0);
+    assert_eq!(clone_count_for(40..=60, 0..=100), 0);
+}
+
+#[cfg(all(
+    feature = "map_insert_cursor_experimental",
+    not(target_arch = "wasm32")
+))]
+fn direct_benchmark_map(
+    ranges: impl IntoIterator<Item = (RangeInclusive<u32>, u32)>,
+) -> RangeMapBlaze<u32, u32> {
+    let mut map = RangeMapBlaze::new();
+    for (range, value) in ranges {
+        map.internal_add_baseline(range, value);
+    }
+    map
+}
+
+#[cfg(all(
+    feature = "map_insert_cursor_experimental",
+    not(target_arch = "wasm32")
+))]
+fn benchmark_direct_insert_case(
+    group: &mut criterion::BenchmarkGroup<'_, criterion::measurement::WallTime>,
+    name: &str,
+    initial: &RangeMapBlaze<u32, u32>,
+    insertion: RangeInclusive<u32>,
+    value: u32,
+) {
+    use criterion::{BatchSize, BenchmarkId, black_box};
+
+    group.bench_function(BenchmarkId::new("baseline", name), |bencher| {
+        bencher.iter_batched_ref(
+            || initial.clone(),
+            |map| {
+                map.internal_add_baseline(insertion.clone(), value);
+                black_box(map);
+            },
+            BatchSize::SmallInput,
+        );
+    });
+    group.bench_function(BenchmarkId::new("cursor", name), |bencher| {
+        bencher.iter_batched_ref(
+            || initial.clone(),
+            |map| {
+                map.internal_add_cursor(insertion.clone(), value);
+                black_box(map);
+            },
+            BatchSize::SmallInput,
+        );
+    });
+}
+
+#[cfg(all(
+    feature = "map_insert_cursor_experimental",
+    not(target_arch = "wasm32")
+))]
+fn benchmark_direct_ingestion_case(
+    group: &mut criterion::BenchmarkGroup<'_, criterion::measurement::WallTime>,
+) {
+    use criterion::{BatchSize, BenchmarkId, black_box};
+
+    let ingestion: Vec<_> = (0..1_000)
+        .map(|i| ((i * 7)..=(i * 7 + i % 5), i % 3))
+        .collect();
+    for (implementation, insert) in [
+        (
+            "baseline",
+            RangeMapBlaze::internal_add_baseline
+                as fn(&mut RangeMapBlaze<u32, u32>, RangeInclusive<u32>, u32),
+        ),
+        ("cursor", RangeMapBlaze::internal_add_cursor),
+    ] {
+        group.bench_function(
+            BenchmarkId::new(implementation, "repeated_ingestion_1000"),
+            |bencher| {
+                bencher.iter_batched_ref(
+                    RangeMapBlaze::new,
+                    |map| {
+                        for &(ref range, value) in &ingestion {
+                            insert(map, range.clone(), value);
+                        }
+                        black_box(map);
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+    }
+}
+
+#[cfg(all(
+    feature = "map_insert_cursor_experimental",
+    not(target_arch = "wasm32")
+))]
+#[test]
+#[ignore = "run explicitly to compare private baseline and cursor insertion with Criterion"]
+fn benchmark_map_cursor_insert_direct() {
+    use criterion::Criterion;
+    use std::time::Duration;
+
+    let sparse_small = direct_benchmark_map((0..32).map(|i| ((i * 10)..=(i * 10 + 2), i % 2)));
+    let sparse = direct_benchmark_map((0..1_000).map(|i| ((i * 10)..=(i * 10 + 2), i % 2)));
+    let sparse_large = direct_benchmark_map((0..8_192).map(|i| ((i * 10)..=(i * 10 + 2), i % 2)));
+    let dense = direct_benchmark_map((0..1_000).map(|i| (i..=i, i % 2)));
+    let containing = direct_benchmark_map([(0..=100_000, 1)]);
+    let small_overlap =
+        direct_benchmark_map([(0..=9, 0), (20..=29, 1), (40..=49, 0), (60..=69, 1)]);
+    let coalescing = direct_benchmark_map([(0..=9, 1), (20..=29, 0), (40..=49, 1)]);
+    let large_overwrite = direct_benchmark_map((0..4_096).map(|i| (i..=i, i % 2)));
+
+    let mut criterion = Criterion::default()
+        .sample_size(30)
+        .warm_up_time(Duration::from_secs(1))
+        .measurement_time(Duration::from_secs(2))
+        .without_plots();
+    {
+        let mut group = criterion.benchmark_group("map_insert_direct");
+
+        benchmark_direct_insert_case(
+            &mut group,
+            "single_sparse_r32_k0",
+            &sparse_small,
+            165..=165,
+            3,
+        );
+        benchmark_direct_insert_case(
+            &mut group,
+            "single_sparse_r1000_k0",
+            &sparse,
+            5_005..=5_005,
+            3,
+        );
+        benchmark_direct_insert_case(
+            &mut group,
+            "single_sparse_r8192_k0",
+            &sparse_large,
+            40_965..=40_965,
+            3,
+        );
+        benchmark_direct_insert_case(&mut group, "single_dense_r1000_k1", &dense, 500..=500, 3);
+        benchmark_direct_insert_case(&mut group, "gap_r1000_k0", &sparse, 5_005..=5_007, 3);
+        benchmark_direct_insert_case(
+            &mut group,
+            "contained_same_r1_k1",
+            &containing,
+            40_000..=60_000,
+            1,
+        );
+        benchmark_direct_insert_case(
+            &mut group,
+            "exact_start_same_r1_k1",
+            &containing,
+            0..=60_000,
+            1,
+        );
+        benchmark_direct_insert_case(
+            &mut group,
+            "contained_different_r1_k1",
+            &containing,
+            40_000..=60_000,
+            2,
+        );
+        benchmark_direct_insert_case(
+            &mut group,
+            "small_overlap_r4_k2",
+            &small_overlap,
+            25..=44,
+            2,
+        );
+        benchmark_direct_insert_case(
+            &mut group,
+            "large_overwrite_r4096_k17",
+            &large_overwrite,
+            2_040..=2_056,
+            3,
+        );
+        benchmark_direct_insert_case(
+            &mut group,
+            "large_overwrite_r4096_k257",
+            &large_overwrite,
+            1_920..=2_176,
+            3,
+        );
+        benchmark_direct_insert_case(
+            &mut group,
+            "large_overwrite_r4096_k3073",
+            &large_overwrite,
+            512..=3_584,
+            3,
+        );
+        benchmark_direct_insert_case(&mut group, "coalesce_left_r3", &coalescing, 10..=15, 1);
+        benchmark_direct_insert_case(&mut group, "coalesce_right_r3", &coalescing, 35..=39, 1);
+        benchmark_direct_insert_case(&mut group, "coalesce_both_r3_k1", &coalescing, 10..=39, 1);
+
+        benchmark_direct_ingestion_case(&mut group);
+        group.finish();
+    }
+    criterion.final_summary();
 }
 
 #[test]

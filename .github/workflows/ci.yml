@@ -43,6 +43,9 @@ jobs:
           rustup override set nightly
           cargo check --tests --features "float_nightly_experimental"
           cargo test --verbose --features from_slice
+          cargo test --verbose --features map_insert_cursor_experimental
+          cargo test --verbose --no-default-features --features map_insert_cursor_experimental
+          cargo clippy --verbose --all-targets --features map_insert_cursor_experimental -- -D clippy::all -A deprecated
           cargo test --verbose --all-features
       - name: Check dead links in documentation
         if: matrix.os == 'ubuntu-latest'
