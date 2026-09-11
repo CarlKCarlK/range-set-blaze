@@ -1107,6 +1107,9 @@ impl<T: Integer> RangeSetBlaze<T> {
         mut pending_end: T,
         pending_is_stored: bool,
     ) -> T {
+        // When `pending_is_stored` is true, `peek_prev()` is the already-extended
+        // pending range. Successors are removed in place, and that predecessor is
+        // extended again if a successor reaches farther to the right.
         let initial_pending_end = pending_end;
         while let Some((stored_start, stored_end)) = cursor
             .peek_next()
@@ -1129,10 +1132,12 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
 
         if pending_is_stored && pending_end > initial_pending_end {
-            *cursor
+            let (_, stored_end) = cursor
                 .peek_prev()
-                .map(|(_, stored_end)| stored_end)
-                .expect("Real Assert: the stored pending range is the predecessor") = pending_end;
+                .expect("Real Assert: the stored pending range is the predecessor");
+            // `pending_end > initial_pending_end` proves that `initial_pending_end`
+            // is not the maximum value before computing the newly covered tail.
+            *stored_end = pending_end;
             *len += T::safe_len(&(initial_pending_end.add_one()..=pending_end));
         }
         pending_end
@@ -1156,11 +1161,13 @@ impl<T: Integer> RangeSetBlaze<T> {
                     return;
                 }
 
-                *cursor
+                let (_, stored_end_mut) = cursor
                     .peek_prev()
-                    .map(|(_, stored_end)| stored_end)
-                    .expect("Real Assert: the peeked predecessor still exists") = pending_end;
+                    .expect("Real Assert: the peeked predecessor still exists");
+                // `stored_end < pending_end` was established above, so this
+                // increment cannot overflow at the maximum element.
                 self.len += T::safe_len(&(stored_end.add_one()..=pending_end));
+                *stored_end_mut = pending_end;
                 Self::cursor_absorb_successors(&mut cursor, &mut self.len, pending_end, true);
                 debug_assert!(self.len == self.len_slow());
                 return;
@@ -1179,10 +1186,9 @@ impl<T: Integer> RangeSetBlaze<T> {
 
         pending_end =
             Self::cursor_absorb_successors(&mut cursor, &mut self.len, pending_end, false);
-        assert!(
-            cursor.insert_before(start, pending_end).is_ok(),
-            "Real Assert: the range belongs at the cursor"
-        );
+        cursor
+            .insert_before(start, pending_end)
+            .expect("Real Assert: the range belongs at the cursor");
         self.len += T::safe_len(&(start..=pending_end));
         debug_assert!(self.len == self.len_slow());
     }
