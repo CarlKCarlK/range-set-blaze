@@ -232,7 +232,7 @@ Only `std` is enabled by default. The available Cargo features are:
 * `std` — Enables `std`-specific conveniences and trait implementations. The crate's core functionality remains available with `no_std` and `alloc`; see [the `no_std` usage above](#no_std-wasm-and-embedded).
 * `from_slice` — Enables the nightly-only [`RangeSetBlaze::from_slice`][from-slice] constructor, which can speed up construction from array-like collections using SIMD where available.
 * `float_nightly_experimental` — Enables the nightly-only `f16` and `f128` floating-point wrappers; see the [floating-point module documentation][floating-point documentation]. This requires a nightly Rust compiler.
-* `insert_nightly_experimental` — Enables experimental nightly-only, B-tree cursor-backed implementations of range insertion. This changes the implementation, not the public insertion API.
+* `cursor_nightly_experimental` — Enables experimental nightly-only, B-tree cursor-backed implementations of range insertion. This changes the implementation, not the public insertion API.
 * `test_util` — Enables randomized test utilities intended primarily for crate development.
 
 The published API documentation includes all optional features. Feature-gated items are marked

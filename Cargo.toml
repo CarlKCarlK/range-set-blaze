@@ -36,10 +36,8 @@ default = ["std"]
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 # Enables nightly-only `f16` and `f128` floating-point wrappers.
 float_nightly_experimental = []
-# Enables nightly-only B-tree cursor implementations.
+# Enables nightly-only B-tree cursor implementations for lookup and insertion.
 cursor_nightly_experimental = []
-# Enables the nightly-only cursor implementations of range insertion.
-insert_nightly_experimental = ["cursor_nightly_experimental"]
 from_slice = []
 test_util = ["rand"]
 

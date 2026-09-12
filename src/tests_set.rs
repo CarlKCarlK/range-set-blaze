@@ -7,7 +7,7 @@ use crate::{sorted_disjoint_map::Priority, unsorted_priority_map::AssumePriority
 #[cfg(not(target_arch = "wasm32"))]
 use alloc::format;
 use alloc::{string::ToString, vec, vec::Vec};
-#[cfg(feature = "insert_nightly_experimental")]
+#[cfg(feature = "cursor_nightly_experimental")]
 use core::fmt;
 use core::{array, iter::once, ops::RangeInclusive};
 #[cfg(not(target_arch = "wasm32"))]
@@ -137,7 +137,7 @@ fn optimize() {
     }
 }
 
-#[cfg(feature = "insert_nightly_experimental")]
+#[cfg(feature = "cursor_nightly_experimental")]
 fn assert_set_cursor_insert_matches<T>(
     initial: impl IntoIterator<Item = RangeInclusive<T>>,
     insertion: RangeInclusive<T>,
@@ -164,7 +164,7 @@ fn assert_set_cursor_insert_matches<T>(
     assert!(baseline.len() == baseline.len_slow());
 }
 
-#[cfg(feature = "insert_nightly_experimental")]
+#[cfg(feature = "cursor_nightly_experimental")]
 #[test]
 fn set_cursor_insert_targeted_differential() {
     let empty_start = 3;
@@ -211,7 +211,7 @@ fn set_cursor_insert_targeted_differential() {
     );
 }
 
-#[cfg(feature = "insert_nightly_experimental")]
+#[cfg(feature = "cursor_nightly_experimental")]
 #[test]
 fn set_cursor_insert_exhaustive_small_domain() {
     const DOMAIN_END: u8 = 6;
@@ -247,7 +247,7 @@ fn set_cursor_insert_exhaustive_small_domain() {
     }
 }
 
-#[cfg(feature = "insert_nightly_experimental")]
+#[cfg(feature = "cursor_nightly_experimental")]
 #[test]
 fn set_cursor_insert_randomized_differential() {
     use rand::{SeedableRng, distr::Uniform, prelude::Distribution, rngs::StdRng};
@@ -271,7 +271,7 @@ fn set_cursor_insert_randomized_differential() {
     }
 }
 
-#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+#[cfg(all(feature = "cursor_nightly_experimental", not(target_arch = "wasm32")))]
 fn direct_benchmark_set(
     ranges: impl IntoIterator<Item = RangeInclusive<u32>>,
 ) -> RangeSetBlaze<u32> {
@@ -282,7 +282,7 @@ fn direct_benchmark_set(
     set
 }
 
-#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+#[cfg(all(feature = "cursor_nightly_experimental", not(target_arch = "wasm32")))]
 fn time_direct_set_insert<T: Integer>(
     initial: &RangeSetBlaze<T>,
     insertion: &RangeInclusive<T>,
@@ -307,7 +307,7 @@ fn time_direct_set_insert<T: Integer>(
     samples[samples.len() / 2]
 }
 
-#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+#[cfg(all(feature = "cursor_nightly_experimental", not(target_arch = "wasm32")))]
 fn time_direct_set_ingestion(
     ingestion: &[RangeInclusive<u32>],
     insert: fn(&mut RangeSetBlaze<u32>, RangeInclusive<u32>),
@@ -331,7 +331,7 @@ fn time_direct_set_ingestion(
     samples[samples.len() / 2]
 }
 
-#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+#[cfg(all(feature = "cursor_nightly_experimental", not(target_arch = "wasm32")))]
 struct SetInsertBenchmarkCase {
     name: &'static str,
     initial: RangeSetBlaze<u32>,
@@ -339,7 +339,7 @@ struct SetInsertBenchmarkCase {
     repetitions: u32,
 }
 
-#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+#[cfg(all(feature = "cursor_nightly_experimental", not(target_arch = "wasm32")))]
 fn set_insert_benchmark_cases_first() -> [SetInsertBenchmarkCase; 9] {
     let sparse = |count| direct_benchmark_set((0..count).map(|i| (i * 10)..=(i * 10 + 2)));
     let separated_points = |count| direct_benchmark_set((0..count).map(|i| (i * 4)..=(i * 4)));
@@ -402,7 +402,7 @@ fn set_insert_benchmark_cases_first() -> [SetInsertBenchmarkCase; 9] {
     ]
 }
 
-#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+#[cfg(all(feature = "cursor_nightly_experimental", not(target_arch = "wasm32")))]
 fn set_insert_benchmark_cases_second() -> [SetInsertBenchmarkCase; 9] {
     let separated_points = |count| direct_benchmark_set((0..count).map(|i| (i * 4)..=(i * 4)));
     let local = direct_benchmark_set([0..=9, 20..=29, 40..=49, 60..=69]);
@@ -464,7 +464,7 @@ fn set_insert_benchmark_cases_second() -> [SetInsertBenchmarkCase; 9] {
     ]
 }
 
-#[cfg(all(feature = "insert_nightly_experimental", not(target_arch = "wasm32")))]
+#[cfg(all(feature = "cursor_nightly_experimental", not(target_arch = "wasm32")))]
 #[test]
 #[ignore = "run in release mode to compare private baseline and cursor insertion directly"]
 fn benchmark_set_cursor_insert_direct() {

@@ -13,7 +13,7 @@ experimental range-or-gap API with the public gap APIs (`range_at`, `range_or_ga
 `fill_gaps` across sets, maps, and sorted-disjoint streams); the transition of `f32`/`f64`
 support from experimental feature-gated documentation to built-in support; and the new
 nightly experimental cursor-based insertion feature. The NEW build enables
-`insert_nightly_experimental`, but the feature currently selects only private implementation
+`cursor_nightly_experimental`, but the feature currently selects only private implementation
 code and has no corresponding rendered public Rustdoc prose or public item. Private-item
 documentation was intentionally excluded.
 

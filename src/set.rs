@@ -1,5 +1,5 @@
 #![allow(unexpected_cfgs)]
-#[cfg(any(test, not(feature = "insert_nightly_experimental")))]
+#[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
 use core::cmp::max;
 use core::mem;
 use core::{
@@ -19,11 +19,11 @@ use std::{
 
 use crate::alloc::string::ToString;
 use crate::sorted_disjoint::RangeOnce;
-#[cfg(feature = "insert_nightly_experimental")]
+#[cfg(feature = "cursor_nightly_experimental")]
 use alloc::collections::btree_map::CursorMut;
 use alloc::collections::{BTreeMap, btree_map};
 use alloc::string::String;
-#[cfg(any(test, not(feature = "insert_nightly_experimental")))]
+#[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
 use alloc::vec::Vec;
 use gen_ops::gen_ops_ex;
 
@@ -454,6 +454,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(set.range_or_gap_at(8), (7..=10, true));
     /// ```
     #[must_use]
+    #[inline]
     pub fn range_or_gap_at(&self, value: T) -> (RangeInclusive<T>, bool) {
         #[cfg(feature = "cursor_nightly_experimental")]
         return self.range_or_gap_at_cursor(value);
@@ -463,6 +464,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 
     #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+    #[inline]
     pub(crate) fn range_or_gap_at_baseline(&self, value: T) -> (RangeInclusive<T>, bool) {
         if let Some((start_before, end_before)) = self.predecessor_range(value) {
             if value <= *end_before {
@@ -481,6 +483,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     }
 
     #[cfg(feature = "cursor_nightly_experimental")]
+    #[inline]
     pub(crate) fn range_or_gap_at_cursor(&self, value: T) -> (RangeInclusive<T>, bool) {
         // A single position exposes both ranges adjacent to `value`; unlike the baseline,
         // a gap does not require a second logarithmic search for its right boundary.
@@ -791,7 +794,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         self.ranges().is_disjoint(other.ranges())
     }
 
-    #[cfg(any(test, not(feature = "insert_nightly_experimental")))]
+    #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
@@ -1109,7 +1112,7 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-    #[cfg(any(test, not(feature = "insert_nightly_experimental")))]
+    #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
     pub(crate) fn internal_add_baseline(&mut self, range: RangeInclusive<T>) {
         let (start, end) = range.clone().into_inner();
         if end < start {
@@ -1137,7 +1140,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    #[cfg(feature = "insert_nightly_experimental")]
+    #[cfg(feature = "cursor_nightly_experimental")]
     fn cursor_absorb_successors(
         cursor: &mut CursorMut<'_, T, T>,
         len: &mut T::SafeLen,
@@ -1180,7 +1183,7 @@ impl<T: Integer> RangeSetBlaze<T> {
         pending_end
     }
 
-    #[cfg(feature = "insert_nightly_experimental")]
+    #[cfg(feature = "cursor_nightly_experimental")]
     pub(crate) fn internal_add_cursor(&mut self, range: RangeInclusive<T>) {
         let (start, mut pending_end) = range.into_inner();
         if pending_end < start {
@@ -1232,18 +1235,18 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     #[inline]
     pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>) {
-        #[cfg(feature = "insert_nightly_experimental")]
+        #[cfg(feature = "cursor_nightly_experimental")]
         {
             self.internal_add_cursor(range);
         }
 
-        #[cfg(not(feature = "insert_nightly_experimental"))]
+        #[cfg(not(feature = "cursor_nightly_experimental"))]
         {
             self.internal_add_baseline(range);
         }
     }
 
-    #[cfg(any(test, not(feature = "insert_nightly_experimental")))]
+    #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
     #[inline]
     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();

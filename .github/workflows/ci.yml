@@ -45,9 +45,7 @@ jobs:
           cargo test --verbose --features from_slice
           cargo test --verbose --features cursor_nightly_experimental
           cargo test --verbose --no-default-features --features cursor_nightly_experimental
-          cargo test --verbose --features insert_nightly_experimental
-          cargo test --verbose --no-default-features --features insert_nightly_experimental
-          cargo clippy --verbose --all-targets --features insert_nightly_experimental -- -D clippy::all -A deprecated
+          cargo clippy --verbose --all-targets --features cursor_nightly_experimental -- -D clippy::all -A deprecated
           cargo test --verbose --all-features
       - name: Check dead links in documentation
         if: matrix.os == 'ubuntu-latest'

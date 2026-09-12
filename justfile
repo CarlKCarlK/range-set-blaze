@@ -49,9 +49,7 @@ test-nightly:
     cargo +nightly test --verbose --features from_slice
     cargo +nightly test --verbose --features cursor_nightly_experimental
     cargo +nightly test --verbose --no-default-features --features cursor_nightly_experimental
-    cargo +nightly test --verbose --features insert_nightly_experimental
-    cargo +nightly test --verbose --no-default-features --features insert_nightly_experimental
-    cargo +nightly clippy --verbose --all-targets --features insert_nightly_experimental -- -D clippy::all -A deprecated
+    cargo +nightly clippy --verbose --all-targets --features cursor_nightly_experimental -- -D clippy::all -A deprecated
     cargo +nightly test --verbose --all-features
 
 # Quick check before commit (clippy + basic tests)
