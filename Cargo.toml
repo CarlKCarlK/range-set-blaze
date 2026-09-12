@@ -36,8 +36,10 @@ default = ["std"]
 std = ["itertools/use_std", "num-traits/std", "num-integer/std"]
 # Enables nightly-only `f16` and `f128` floating-point wrappers.
 float_nightly_experimental = []
+# Enables nightly-only B-tree cursor implementations.
+cursor_nightly_experimental = []
 # Enables the nightly-only cursor implementations of range insertion.
-insert_nightly_experimental = []
+insert_nightly_experimental = ["cursor_nightly_experimental"]
 from_slice = []
 test_util = ["rand"]
 
@@ -91,9 +93,9 @@ path = "benches/bench_map.rs"
 harness = false
 
 [package.metadata.docs.rs]
-# Document every feature except `float_nightly_experimental`, so the
-# nightly-only `f16`/`f128` wrappers do not appear in the published docs.
-features = ["std", "from_slice", "test_util"]
+# Publish all optional APIs. Rustdoc's `doc_cfg` annotations identify the
+# feature required by each gated item.
+all-features = true
 
 ###############################################################################
 # Global lint levels (stable since Rust 1.77; on older nightly use
@@ -109,6 +111,7 @@ unreachable_pub = "warn"
 rust_2018_idioms = { level = "warn", priority = -2 }
 unexpected_cfgs = { level = "warn", check-cfg = [
     "cfg(coverage)",
+    "cfg(docsrs)",
     "cfg(never)",
 ] }
 

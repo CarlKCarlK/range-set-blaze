@@ -1,9 +1,10 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
 #![no_std]
 #![cfg_attr(feature = "float_nightly_experimental", feature(f16))]
 #![cfg_attr(feature = "float_nightly_experimental", feature(f128))]
-#![cfg_attr(feature = "insert_nightly_experimental", feature(btree_cursors))]
+#![cfg_attr(feature = "cursor_nightly_experimental", feature(btree_cursors))]
 
 extern crate alloc;
 #[cfg(feature = "std")]
@@ -125,6 +126,8 @@ pub mod test_util;
 // Internal modules
 pub(crate) mod from_slice;
 pub(crate) mod map_from_iter;
+#[cfg(all(test, feature = "cursor_nightly_experimental"))]
+mod tests_cursor_lookup;
 pub(crate) mod tests_map;
 pub(crate) mod tests_set;
 

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+todo000 read this and mention the cursor api
+
 - Floating-point range support for `f32` and `f64`, plus `range_at`,
   `range_or_gap_at`, and `fill_gaps`, are now unconditional public APIs.
 - `RangeSetBlaze::fill_gaps` returns a `RangeMapBlaze<T, bool>` and

@@ -1,3 +1,4 @@
+//todo000 Need to review all insert_nightly_experimental gated code.
 use crate::{
     CheckSortedDisjoint, Integer, IntoKeys, Keys, RangeSetBlaze, SortedDisjoint,
     iter_map::{IntoIterMap, IterMap},
@@ -16,7 +17,7 @@ use alloc::sync::Arc;
 #[cfg(any(test, not(feature = "insert_nightly_experimental")))]
 use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, rc::Rc};
-#[cfg(feature = "insert_nightly_experimental")]
+#[cfg(feature = "cursor_nightly_experimental")]
 use core::ops::Bound;
 use core::{
     cmp::{Ordering, max},
@@ -883,6 +884,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         self.containing_entry(key)
             .map(|(start, end_value)| (*start..=end_value.end, &end_value.value))
     }
+    //todo000 the docs for the cursor speeds up should mention every thing that it speeds up
 
     /// Returns the stored mapped range or maximal gap containing `key`.
     ///
@@ -905,6 +907,15 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     #[must_use]
     pub fn range_or_gap_at(&self, key: T) -> (RangeInclusive<T>, Option<&V>) {
+        #[cfg(feature = "cursor_nightly_experimental")]
+        return self.range_or_gap_at_cursor(key);
+
+        #[cfg(not(feature = "cursor_nightly_experimental"))]
+        self.range_or_gap_at_baseline(key)
+    }
+
+    #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+    pub(crate) fn range_or_gap_at_baseline(&self, key: T) -> (RangeInclusive<T>, Option<&V>) {
         if let Some((start_before, end_value)) = self.predecessor_entry(key) {
             if key <= end_value.end {
                 return (*start_before..=end_value.end, Some(&end_value.value));
@@ -916,6 +927,37 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         }
 
         if let Some((start_next, _)) = self.btree_map.range(key..).next() {
+            return (T::min_value()..=start_next.sub_one(), None);
+        }
+        (T::min_value()..=T::max_value(), None)
+    }
+
+    #[cfg(feature = "cursor_nightly_experimental")]
+    pub(crate) fn range_or_gap_at_cursor(&self, key: T) -> (RangeInclusive<T>, Option<&V>) {
+        // A single position exposes both ranges adjacent to `key`; unlike the baseline,
+        // a gap does not require a second logarithmic search for its right boundary.
+        let cursor = self.btree_map.lower_bound(Bound::Included(&key));
+
+        if let Some((start_before, end_value)) = cursor.peek_prev() {
+            if key <= end_value.end {
+                return (*start_before..=end_value.end, Some(&end_value.value));
+            }
+            if let Some((start_next, end_value_next)) = cursor.peek_next() {
+                if key == *start_next {
+                    return (
+                        *start_next..=end_value_next.end,
+                        Some(&end_value_next.value),
+                    );
+                }
+                return (end_value.end.add_one()..=start_next.sub_one(), None);
+            }
+            return (end_value.end.add_one()..=T::max_value(), None);
+        }
+
+        if let Some((start_next, end_value)) = cursor.peek_next() {
+            if key == *start_next {
+                return (*start_next..=end_value.end, Some(&end_value.value));
+            }
             return (T::min_value()..=start_next.sub_one(), None);
         }
         (T::min_value()..=T::max_value(), None)

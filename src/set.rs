@@ -455,6 +455,15 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     #[must_use]
     pub fn range_or_gap_at(&self, value: T) -> (RangeInclusive<T>, bool) {
+        #[cfg(feature = "cursor_nightly_experimental")]
+        return self.range_or_gap_at_cursor(value);
+
+        #[cfg(not(feature = "cursor_nightly_experimental"))]
+        self.range_or_gap_at_baseline(value)
+    }
+
+    #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+    pub(crate) fn range_or_gap_at_baseline(&self, value: T) -> (RangeInclusive<T>, bool) {
         if let Some((start_before, end_before)) = self.predecessor_range(value) {
             if value <= *end_before {
                 return (*start_before..=*end_before, true);
@@ -466,6 +475,34 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
 
         if let Some((start_next, _)) = self.btree_map.range(value..).next() {
+            return (T::min_value()..=start_next.sub_one(), false);
+        }
+        (T::min_value()..=T::max_value(), false)
+    }
+
+    #[cfg(feature = "cursor_nightly_experimental")]
+    pub(crate) fn range_or_gap_at_cursor(&self, value: T) -> (RangeInclusive<T>, bool) {
+        // A single position exposes both ranges adjacent to `value`; unlike the baseline,
+        // a gap does not require a second logarithmic search for its right boundary.
+        let cursor = self.btree_map.lower_bound(Bound::Included(&value));
+
+        if let Some((start_before, end_before)) = cursor.peek_prev() {
+            if value <= *end_before {
+                return (*start_before..=*end_before, true);
+            }
+            if let Some((start_next, end_next)) = cursor.peek_next() {
+                if value == *start_next {
+                    return (*start_next..=*end_next, true);
+                }
+                return (end_before.add_one()..=start_next.sub_one(), false);
+            }
+            return (end_before.add_one()..=T::max_value(), false);
+        }
+
+        if let Some((start_next, end_next)) = cursor.peek_next() {
+            if value == *start_next {
+                return (*start_next..=*end_next, true);
+            }
             return (T::min_value()..=start_next.sub_one(), false);
         }
         (T::min_value()..=T::max_value(), false)

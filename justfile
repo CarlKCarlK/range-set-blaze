@@ -47,6 +47,8 @@ test-stable:
 test-nightly:
     cargo +nightly check --tests --features "float_nightly_experimental"
     cargo +nightly test --verbose --features from_slice
+    cargo +nightly test --verbose --features cursor_nightly_experimental
+    cargo +nightly test --verbose --no-default-features --features cursor_nightly_experimental
     cargo +nightly test --verbose --features insert_nightly_experimental
     cargo +nightly test --verbose --no-default-features --features insert_nightly_experimental
     cargo +nightly clippy --verbose --all-targets --features insert_nightly_experimental -- -D clippy::all -A deprecated
@@ -60,24 +62,21 @@ pre-commit: clippy
 # Quality & Publishing Checks
 # ============================================================================
 
-# Build and open the docs exactly as docs.rs publishes them
-# (excludes the nightly-only `float_nightly_experimental` feature, so
-# `f16`/`f128` wrappers do not appear). Keep this feature list in sync with
-# `[package.metadata.docs.rs]` in Cargo.toml.
-# Uses `cargo +nightly` because docs.rs itself always builds with nightly --
-# `from_slice`'s `feature(portable_simd)` won't compile on stable otherwise.
+# Build and open the docs as docs.rs publishes them: all optional APIs are
+# included, and rustdoc labels feature-gated items with their required feature.
+# Nightly is required by the optional SIMD, float, cursor, and `doc_cfg` features.
 show-docs:
-    cargo +nightly doc --no-deps --open --features "std,from_slice,test_util"
+    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --no-deps --open --all-features
 
 # Rebuild the docs (same features as `show-docs`) without opening a browser
 update-docs:
-    cargo +nightly doc --no-deps --features "std,from_slice,test_util"
+    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --no-deps --all-features
 
 # Check documentation for dead links (requires cargo-deadlinks)
 doc-links:
     cargo install cargo-deadlinks
-    cargo +nightly doc --no-deps --all-features
-    cargo deadlinks --dir target/doc | grep -vE '(help\.html|settings\.html)'
+    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --no-deps --all-features
+    RUST_LOG=error cargo deadlinks --dir target/doc/range_set_blaze
 
 # Audit dependencies for security and license issues (requires cargo-audit and cargo-deny)
 audit:

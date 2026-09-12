@@ -2,7 +2,7 @@ use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use crate::{Integer, SortedDisjoint, SortedDisjointMap, map::ValueCarrier};
 
-/// A lazy iterator that fills the gaps in a sorted, disjoint set stream.
+/// TODO0000 A lazy iterator that fills the gaps in a sorted, disjoint set stream.
 ///
 /// Present ranges are returned with `true`, and missing portions of the
 /// integer domain are returned with `false`. The output covers the complete
@@ -130,7 +130,7 @@ where
 {
 }
 
-/// A lazy iterator that fills the gaps in a sorted, disjoint map stream.
+/// todo000 A lazy iterator that fills the gaps in a sorted, disjoint map stream.
 ///
 /// Mapped ranges are returned with `Some(value)`, and missing portions of the
 /// integer domain are returned with `None`. The output covers the complete
