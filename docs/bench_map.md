@@ -8,7 +8,7 @@ Updated: *September 2026*
 
 | Crate | # Downloads (all-time) | Ranges | Element Type | Set Operations? | Internal | Maps, too? |
 | --- | --- | --- | --- | --- | --- | --- |
-|[range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) | 5,379,999 | Disjoint | Integer, char, IPv4, IPv6 | Full set ops | BTreeMap | Sets/Maps |
+|[range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) | 5,379,999 | Disjoint | Integer, char, IPv4, IPv6² | Full set ops | BTreeMap | Sets/Maps |
 |[rangemap](https://crates.io/crates/rangemap) | 35,175,172 | Disjoint | Ord | No set ops on `RangeMap`¹ | BTreeMap | Sets/Maps |
 |[sorted-iter](https://crates.io/crates/sorted-iter) | 773,706 | No | Ord | Full set ops | *n/a* | Sets/Maps |
 |[iset](https://crates.io/crates/iset) | 554,439 | Overlapping | PartialOrd | No set algebra | Red Black | Sets/Maps |
@@ -16,6 +16,8 @@ Updated: *September 2026*
 > *Download counts are all-time totals from the crates.io API, as of September 2026.*
 >
 > ¹ Since v1.5.0, `rangemap`'s `RangeSet` type has gained `union`/`intersection` methods (see the [set benchmarks](bench.md) for that comparison), but its `RangeMap` type — the one relevant to this page — still has no set-operation methods.
+>
+> ² `range-set-blaze` also has experimental floating-point support (`float_experimental` / `float_nightly_experimental` features), not listed above because it is feature-gated and not part of the crate's normal advertised element types.
 
 ## Benchmark Selection Criteria
 
