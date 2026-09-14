@@ -1,5 +1,9 @@
 # RangeSetBlaze documentation comparison
 
+<!-- TODO0 review this rendered-docs diff before release: fill_gaps/gap-API rewording,
+     f32/f64 becoming built-in, and confirm the cursor feature really has no public
+     rustdoc surface yet (as claimed below). -->
+
 - **Original (OLD):** `rangesetblaze-docs-old-aec75cd6.docx`
   - Commit: `aec75cd6d58ba8898c7393f456027123b85adbf5`
 - **Revised (NEW):** `rangesetblaze-docs-new-1623c9cd.docx`

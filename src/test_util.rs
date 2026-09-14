@@ -5,6 +5,21 @@ use core::ops::RangeInclusive;
 use num_traits::identities::One;
 use rand::{Rng, distr::uniform::SampleUniform, rngs::StdRng};
 
+/// Inserts using `RangeSetBlaze`'s normal (non-cursor) insert algorithm,
+/// regardless of which algorithm the `ranges_insert`/`insert` public API
+/// currently dispatches to. Exposed so benchmarks can compare it directly
+/// against [`ranges_insert_cursor`] in the same process.
+pub fn ranges_insert_baseline<T: Integer>(set: &mut RangeSetBlaze<T>, range: RangeInclusive<T>) {
+    set.internal_add_baseline(range);
+}
+
+/// Inserts using the experimental B-tree cursor insert algorithm. See
+/// [`ranges_insert_baseline`].
+#[cfg(feature = "cursor_nightly_experimental")]
+pub fn ranges_insert_cursor<T: Integer>(set: &mut RangeSetBlaze<T>, range: RangeInclusive<T>) {
+    set.internal_add_cursor(range);
+}
+
 #[must_use]
 #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
 pub fn width_to_range(

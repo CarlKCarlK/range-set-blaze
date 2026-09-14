@@ -1820,6 +1820,9 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     //    noncanonical, and `self.len` counts both until the overlap is consumed.
     // 7. Prefix + pending + suffix has the pointwise meaning of applying the insertion to examined
     //    input and leaving the suffix unprocessed, ignoring the temporary duplicate count in 6.
+    // TODO0 review this cursor-based insert algorithm (and range_or_gap_at_cursor,
+    // cursor_insert_range, cursor_scan_forward) before release: correctness against
+    // the baseline fallback, and whether it's ready to leave `cursor_nightly_experimental`.
     pub(crate) fn internal_add_cursor(&mut self, range: RangeInclusive<T>, value: V) {
         let (mut pending_start, mut pending_end) = range.into_inner();
         if pending_end < pending_start {

@@ -1,5 +1,9 @@
 #![allow(unexpected_cfgs)]
-#[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+#[cfg(any(
+    test,
+    feature = "test_util",
+    not(feature = "cursor_nightly_experimental")
+))]
 use core::cmp::max;
 use core::mem;
 use core::{
@@ -23,7 +27,11 @@ use crate::sorted_disjoint::RangeOnce;
 use alloc::collections::btree_map::CursorMut;
 use alloc::collections::{BTreeMap, btree_map};
 use alloc::string::String;
-#[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+#[cfg(any(
+    test,
+    feature = "test_util",
+    not(feature = "cursor_nightly_experimental")
+))]
 use alloc::vec::Vec;
 use gen_ops::gen_ops_ex;
 
@@ -794,7 +802,11 @@ impl<T: Integer> RangeSetBlaze<T> {
         self.ranges().is_disjoint(other.ranges())
     }
 
-    #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+    #[cfg(any(
+        test,
+        feature = "test_util",
+        not(feature = "cursor_nightly_experimental")
+    ))]
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
@@ -1112,7 +1124,11 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-    #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+    #[cfg(any(
+        test,
+        feature = "test_util",
+        not(feature = "cursor_nightly_experimental")
+    ))]
     pub(crate) fn internal_add_baseline(&mut self, range: RangeInclusive<T>) {
         let (start, end) = range.clone().into_inner();
         if end < start {
@@ -1183,6 +1199,9 @@ impl<T: Integer> RangeSetBlaze<T> {
         pending_end
     }
 
+    // TODO0 review this cursor-based insert algorithm (and range_or_gap_at_cursor,
+    // cursor_absorb_successors above) before release: correctness against the
+    // baseline fallback, and whether it's ready to leave `cursor_nightly_experimental`.
     #[cfg(feature = "cursor_nightly_experimental")]
     pub(crate) fn internal_add_cursor(&mut self, range: RangeInclusive<T>) {
         let (start, mut pending_end) = range.into_inner();
@@ -1246,7 +1265,11 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+    #[cfg(any(
+        test,
+        feature = "test_util",
+        not(feature = "cursor_nightly_experimental")
+    ))]
     #[inline]
     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();

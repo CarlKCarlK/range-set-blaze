@@ -85,6 +85,40 @@ Range-based methods such as `RangeSetBlaze` and `Roaring` are a great choice for
 
 ![ingest_clumps_base](criterion/v5/ingest_clumps_base/report/lines.svg "ingest_clumps_base")
 
+## Benchmark #2b: 'ingest_clumps_cursor': Experimental B-tree cursor insertion vs. the baseline algorithm
+
+* **Measure**: integer intake speed, inserting one range at a time
+* **Candidates**: `RangeSetBlaze` with its normal (baseline) insert algorithm vs. an experimental nightly-only insert algorithm built on Rust's unstable B-tree cursor API (`cursor_nightly_experimental` feature)
+* **Vary**: *average clump size* from 1 (no clumps) to 100K (ten big clumps)
+* **Details**: Same clump generation as `ingest_clumps_base`. We build a `RangeSetBlaze` by calling `ranges_insert` once per generated range. The baseline algorithm looks up the insertion point and then, separately, mutates the tree. The cursor algorithm does both in a single B-tree traversal using `BTreeMap`'s unstable cursor API (tracked in [rust-lang/rust#107540](https://github.com/rust-lang/rust/issues/107540)).
+
+The cursor algorithm requires a nightly compiler. Both candidates run in the same process, via `range_set_blaze::test_util::{ranges_insert_baseline, ranges_insert_cursor}`, so they land in one plot from a single invocation:
+
+```sh
+cargo +nightly bench --bench bench --features cursor_nightly_experimental -- ingest_clumps_cursor
+```
+
+### 'ingest_clumps_cursor' Results
+
+The cursor algorithm is faster than the baseline at every clump size tested, by roughly 1.8× to 2.2× (geometric mean about 2.0×):
+
+| average clump size | baseline | cursor | speedup |
+| ---: | ---: | ---: | ---: |
+| 1 | 247 ms | 133 ms | 1.9× |
+| 10 | 17.3 ms | 8.14 ms | 2.1× |
+| 100 | 1.35 ms | 599 µs | 2.2× |
+| 1,000 | 52.2 µs | 26.8 µs | 1.9× |
+| 10,000 | 4.04 µs | 2.29 µs | 1.8× |
+| 100,000 | 339 ns | 174 ns | 1.9× |
+
+Unlike `ingest_clumps_base`, the speedup here is roughly constant across clump sizes rather than growing with clumpiness — the cursor algorithm saves a redundant tree traversal on every insert, a fixed-fraction win regardless of how many elements each clump merges.
+
+### 'ingest_clumps_cursor' Conclusion
+
+The B-tree cursor insertion algorithm is a consistent, unconditional win over the baseline for single-range inserts. It is still experimental and nightly-only pending stabilization of the cursor API, but the results support moving toward making it the default once that API stabilizes.
+
+![ingest_clumps_cursor](criterion/v5/ingest_clumps_cursor/report/lines.svg "ingest_clumps_cursor")
+
 ## Benchmark #3: 'ingest_clumps_integers': Measure the `rangemap` crate on clumpy integers
 
 * **Measure**: integer intake speed
