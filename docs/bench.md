@@ -294,4 +294,4 @@ Over almost the whole range `Roaring` is best — roughly 2 to 9 times faster th
 
 All four candidates offer similar interfaces. If you're not sure which is best for your application, you can easily swap between them and see.
 
-![worst_op_blaze  ](criterion/v5/worst_op_blaze/report/lines.png "worst_op_blaze")
+![worst_op_blaze](criterion/v5/worst_op_blaze/report/lines.svg "worst_op_blaze")
