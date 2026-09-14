@@ -139,7 +139,7 @@ pub(super) trait TotalFloatImpl:
 }
 
 // The to/from functions are pulled out as free functions for two reasons
-// 1) Share code with FiniteFloat
+// 1) Share code with NotNanFloat
 // 2) Allow use from in a const context, which is not possible with trait methods.
 
 macro_rules! impl_ordered_transform {

@@ -29,7 +29,7 @@ public-API quality matter more here than in an experimental project.
 ## Unsafe Code
 
 - Avoid introducing new `unsafe` blocks. The crate has a small number of existing `unsafe`
-  transmutes (`src/float/total.rs`, `src/float/finite.rs`) for zero-cost layout reinterpretation
+  transmutes (`src/float/total.rs`, `src/float/not_nan.rs`) for zero-cost layout reinterpretation
   between newtype wrappers and their primitive representation — each is narrowly scoped and
   documented at the call site. Follow that bar: if a change truly requires `unsafe`, call it out
   explicitly, keep it as narrow as possible, and explain the safety invariant in a `// SAFETY:`
@@ -42,7 +42,7 @@ public-API quality matter more here than in an experimental project.
 ## Type Invariants
 
 - Some types document a public invariant narrower than their raw representation allows — e.g.
-  `Finite<T>` (`src/float/finite.rs`) claims "only finite values, with zero canonicalized to
+  `NotNan<T>` (`src/float/not_nan.rs`) claims "only non-NaN values, with zero canonicalized to
   `+0.0`, are legal" even though its representation is a full `f64`/`f32`. For these types, any
   **safe** method that could otherwise construct or return a value violating that invariant must
   guard the precondition with an unconditional `assert!` (checked in release builds too), or must
@@ -56,9 +56,9 @@ public-API quality matter more here than in an experimental project.
   those, wrapping arithmetic that overflows always produces some other legal value of the same
   type; there's nothing to break. `debug_assert!`-only preconditions are fine there and match
   Rust's own `+`/`-` operators (panic in debug, wrap in release) — see `Integer::add_one`,
-  `Integer::inclusive_end_from_start` in `src/integer.rs`, and `FiniteFloat::inclusive_end_from_start`
-  in `src/float/finite_float.rs` (which operates on the raw primitive float, not the narrower
-  `Finite<T>` wrapper).
+  `Integer::inclusive_end_from_start` in `src/integer.rs`, and `NotNanFloat::inclusive_end_from_start`
+  in `src/float/not_nan_float.rs` (which operates on the raw primitive float, not the narrower
+  `NotNan<T>` wrapper).
 - When adding or reviewing a method on an invariant-bearing type, ask: "if the caller passes an
   out-of-precondition argument, can the *type-level* invariant (not just the numeric answer) end
   up wrong?" If yes, it needs a hard `assert!` or `unsafe fn`, not `debug_assert!`.
@@ -103,7 +103,7 @@ public-API quality matter more here than in an experimental project.
 ## Module Structure Convention
 
 Do not create `mod.rs` files. This repo already follows the `src/foo.rs` + `src/foo/bar.rs`
-pattern throughout (e.g. `src/float.rs` + `src/float/finite.rs`); keep new modules consistent
+pattern throughout (e.g. `src/float.rs` + `src/float/not_nan.rs`); keep new modules consistent
 with it.
 
 ## Code Organization

@@ -35,6 +35,13 @@ todo000 read this and mention the cursor api
 - Renamed `ValueRef` to `ValueCarrier` and redesigned it with a `Value`
   associated type and `value_eq` method; generic code now uses explicit
   borrowing only where borrowed access to the logical value is required.
+- Renamed `Finite`/`FiniteF32`/`FiniteF64`/`FiniteF16`/`FiniteF128` to
+  `NotNan`/`NotNanF32`/`NotNanF64`/`NotNanF16`/`NotNanF128` (module `finite` ->
+  `not_nan`, shorthand constructors `ff64`/... -> `nnf64`/...,
+  `FiniteSliceExt`/`FiniteRangeExt` -> `NotNanSliceExt`/`NotNanRangeExt`). The
+  type's legal domain grew to match: it now excludes only NaN, so `+infinity`
+  and `-infinity` are legal values and `MIN`/`MAX` are the two infinities
+  (previously `f64::MIN`/`f64::MAX`); `MAX_SIZE` grew by 2 to account for them.
 
 ## [0.6.1] - 2026-07-10
 

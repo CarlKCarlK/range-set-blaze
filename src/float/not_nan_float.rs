@@ -1,7 +1,7 @@
 //! Internal type to abstract a floating point value,
-//! providing the necessary functionality for the `Finite` types to `impl Integer`.
+//! providing the necessary functionality for the `NotNan` types to `impl Integer`.
 //!
-//! The public capability trait is doc-hidden and sealed; use `Finite` instead.
+//! The public capability trait is doc-hidden and sealed; use `NotNan` instead.
 
 use core::{
     cmp::Ordering,
@@ -20,22 +20,22 @@ mod private {
     pub trait Sealed {}
 }
 
-/// Public capability required by the generic [`Finite`](super::finite::Finite) APIs.
+/// Public capability required by the generic [`NotNan`](super::not_nan::NotNan) APIs.
 ///
 /// This trait is sealed because it is an implementation detail of the supported primitive
-/// floating-point wrappers. Use [`Finite`](super::finite::Finite) rather than implementing it.
+/// floating-point wrappers. Use [`NotNan`](super::not_nan::NotNan) rather than implementing it.
 #[doc(hidden)]
-pub trait FiniteFloat:
+pub trait NotNanFloat:
     private::Sealed + Default + Copy + Clone + Debug + Send + Sync + 'static
 {
-    /// The minimum finite value.
+    /// The minimum value: negative infinity.
     const MIN: Self;
-    /// The maximum finite value.
+    /// The maximum value: positive infinity.
     const MAX: Self;
-    /// The maximum number of values in a finite range.
+    /// The maximum number of values in a non-NaN range.
     const MAX_SIZE: Self::SafeLen;
 
-    /// Integral type for holding the size of any finite floating-point range.
+    /// Integral type for holding the size of any non-NaN floating-point range.
     type SafeLen: Send
         + Sync
         + Debug
@@ -51,7 +51,7 @@ pub trait FiniteFloat:
 
     fn hash<H: Hasher>(x: Self, state: &mut H);
     fn total_cmp(x: Self, y: Self) -> Ordering;
-    fn is_finite(x: Self) -> bool;
+    fn is_nan(x: Self) -> bool;
     fn normalize(x: Self) -> Self;
     fn after(x: Self) -> Self;
     fn before(x: Self) -> Self;
@@ -63,9 +63,9 @@ pub trait FiniteFloat:
     fn start_from_inclusive_end(a: Self, b: Self::SafeLen) -> Self;
 }
 
-/// Crate-private encoding and arithmetic machinery for finite floats.
-pub(super) trait FiniteFloatImpl:
-    FiniteFloat + Default + Copy + Clone + Debug + Send + Sync + 'static
+/// Crate-private encoding and arithmetic machinery for not-NaN floats.
+pub(super) trait NotNanFloatImpl:
+    NotNanFloat + Default + Copy + Clone + Debug + Send + Sync + 'static
 {
     /// The result of `to_bits()` on the wrapped type, e.g. u64
     type Bits: Copy + Eq + Hash + Send + Sync + Debug;
@@ -80,9 +80,9 @@ pub(super) trait FiniteFloatImpl:
         + Debug
         + Display
         + PartialOrd;
-    /// The minimum value available, in the usual floating point sense
+    /// The minimum value available: negative infinity.
     const MIN: Self;
-    /// The maximum value available, in the usual floating point sense
+    /// The maximum value available: positive infinity.
     const MAX: Self;
 
     /// `MIN` converted to the Ordered type
@@ -108,14 +108,14 @@ pub(super) trait FiniteFloatImpl:
     /// Return the size of an inclusive ordered range from `start` to `end`.
     ///
     /// # Precondition
-    /// `start <= end`, and both endpoints are within the finite ordered domain. The range must
+    /// `start <= end`, and both endpoints are within the not-NaN ordered domain. The range must
     /// therefore be non-empty and already validated by the caller. This is checked with
     /// `debug_assert!` and is not checked in release builds. Public set/map APIs accept inverted
     /// ranges as empty; they must not pass such ranges to this internal helper.
     fn safe_len(start: Self::Ordered, end: Self::Ordered) -> Self::SafeLen;
-    /// Converts [`FiniteFloat::SafeLen`] to `f64`, potentially losing precision for large values.
+    /// Converts [`NotNanFloat::SafeLen`] to `f64`, potentially losing precision for large values.
     fn safe_len_to_f64_lossy(len: Self::SafeLen) -> f64;
-    /// Converts a `f64` to [`FiniteFloat::SafeLen`] using the formula `f as Self::SafeLen`. For large integer types, this will result in a loss of precision.
+    /// Converts a `f64` to [`NotNanFloat::SafeLen`] using the formula `f as Self::SafeLen`. For large integer types, this will result in a loss of precision.
     fn f64_to_safe_len_lossy(f: f64) -> Self::SafeLen;
     /// Returns `(x - 1)` as `Self::Ordered`.
     ///
@@ -127,19 +127,19 @@ pub(super) trait FiniteFloatImpl:
     /// Returns the ordering between `x` and `y`, as per the standard library's `f64::total_cmp`.
     fn total_cmp(x: Self, y: Self) -> Ordering;
 
-    /// Computes `self + (b - 1)` where `b` is of type [`FiniteFloat::SafeLen`].
+    /// Computes `self + (b - 1)` where `b` is of type [`NotNanFloat::SafeLen`].
     fn inclusive_end_from_start(a: Self, b: Self::SafeLen) -> Self {
         #[cfg(debug_assertions)]
         {
             let max_len =
-                <Self as FiniteFloatImpl>::prim_safe_len(a, <Self as FiniteFloatImpl>::MAX);
+                <Self as NotNanFloatImpl>::prim_safe_len(a, <Self as NotNanFloatImpl>::MAX);
             assert!(
                 Self::SafeLen::zero() < b && b <= max_len,
                 "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
             );
         }
         // `Ordered` is a signed integer whose wrapping distance matches the total float order.
-        // Because the debug precondition bounds `b` by the remaining finite domain, modular
+        // Because the debug precondition bounds `b` by the remaining domain, modular
         // addition lands on the correct endpoint even when the signed representation overflows.
         // The following correction removes the excluded `-0.0` slot from that distance.
         let start = Self::to_ordered(a);
@@ -149,12 +149,12 @@ pub(super) trait FiniteFloatImpl:
         }
         Self::from_ordered(end)
     }
-    /// Computes `self - (b - 1)` where `b` is of type [`FiniteFloat::SafeLen`].
+    /// Computes `self - (b - 1)` where `b` is of type [`NotNanFloat::SafeLen`].
     fn start_from_inclusive_end(a: Self, b: Self::SafeLen) -> Self {
         #[cfg(debug_assertions)]
         {
             let max_len =
-                <Self as FiniteFloatImpl>::prim_safe_len(<Self as FiniteFloatImpl>::MIN, a);
+                <Self as NotNanFloatImpl>::prim_safe_len(<Self as NotNanFloatImpl>::MIN, a);
             assert!(
                 Self::SafeLen::zero() < b && b <= max_len,
                 "b must be in range 1..=max_len (b = {b}, max_len = {max_len})"
@@ -175,8 +175,8 @@ pub(super) trait FiniteFloatImpl:
     fn prim_safe_len(start: Self, end: Self) -> Self::SafeLen {
         Self::safe_len(Self::to_ordered(start), Self::to_ordered(end))
     }
-    /// Return true if the float is finite.
-    fn is_finite(x: Self) -> bool;
+    /// Return true if the float is NaN.
+    fn is_nan(x: Self) -> bool;
     /// Turn negative zero into positive zero, leave other numbers unchanged.
     fn normalize(x: Self) -> Self;
     /// Returns the least float strictly greater than `x` (`x.next_up()`).
@@ -193,12 +193,12 @@ pub(super) trait FiniteFloatImpl:
     }
 }
 
-macro_rules! impl_finite_ops {
+macro_rules! impl_not_nan_ops {
     ($to_ordered:ident) => {
-        const MIN: Self = Self::MIN;
-        const MAX: Self = Self::MAX;
-        const MIN_ORDERED: Self::Ordered = $to_ordered(Self::MIN);
-        const MAX_ORDERED: Self::Ordered = $to_ordered(Self::MAX);
+        const MIN: Self = Self::NEG_INFINITY;
+        const MAX: Self = Self::INFINITY;
+        const MIN_ORDERED: Self::Ordered = $to_ordered(Self::NEG_INFINITY);
+        const MAX_ORDERED: Self::Ordered = $to_ordered(Self::INFINITY);
         const NEG_ZERO_BITS: Self::Bits = Self::to_bits(-0.0);
         const NEG_ZERO_ORDERED: Self::Ordered = $to_ordered(-0.0);
 
@@ -211,7 +211,7 @@ macro_rules! impl_finite_ops {
         }
         #[expect(clippy::cast_sign_loss)]
         fn safe_len(start: Self::Ordered, end: Self::Ordered) -> Self::SafeLen {
-            // 1️⃣ Contract: caller promises start ≤ end  (checked only in debug builds)
+            // 1️⃣ Contract: caller promises start ≤ end  (checked only in debug builds)
             debug_assert!(start <= end, "start ≤ end required");
             debug_assert!(start >= Self::MIN_ORDERED, "start >= MIN required");
             debug_assert!(end <= Self::MAX_ORDERED, "end <= MAX required");
@@ -246,8 +246,8 @@ macro_rules! impl_finite_ops {
             x.total_cmp(&y)
         }
 
-        fn is_finite(x: Self) -> bool {
-            x.is_finite()
+        fn is_nan(x: Self) -> bool {
+            x.is_nan()
         }
 
         fn normalize(x: Self) -> Self {
@@ -279,95 +279,97 @@ impl private::Sealed for f16 {}
 #[cfg(feature = "float_nightly_experimental")]
 impl private::Sealed for f128 {}
 
-macro_rules! impl_finite_capability {
+macro_rules! impl_not_nan_capability {
     ($primitive:ty, $safe_len:ty) => {
-        impl FiniteFloat for $primitive {
+        impl NotNanFloat for $primitive {
             type SafeLen = $safe_len;
 
-            const MIN: Self = <Self as FiniteFloatImpl>::MIN;
-            const MAX: Self = <Self as FiniteFloatImpl>::MAX;
-            const MAX_SIZE: Self::SafeLen = <Self as FiniteFloatImpl>::MAX_SIZE;
+            const MIN: Self = <Self as NotNanFloatImpl>::MIN;
+            const MAX: Self = <Self as NotNanFloatImpl>::MAX;
+            const MAX_SIZE: Self::SafeLen = <Self as NotNanFloatImpl>::MAX_SIZE;
 
             fn hash<H: Hasher>(x: Self, state: &mut H) {
-                <Self as FiniteFloatImpl>::to_bits(x).hash(state);
+                <Self as NotNanFloatImpl>::to_bits(x).hash(state);
             }
 
             fn total_cmp(x: Self, y: Self) -> Ordering {
-                <Self as FiniteFloatImpl>::total_cmp(x, y)
+                <Self as NotNanFloatImpl>::total_cmp(x, y)
             }
 
-            fn is_finite(x: Self) -> bool {
-                <Self as FiniteFloatImpl>::is_finite(x)
+            fn is_nan(x: Self) -> bool {
+                <Self as NotNanFloatImpl>::is_nan(x)
             }
 
             fn normalize(x: Self) -> Self {
-                <Self as FiniteFloatImpl>::normalize(x)
+                <Self as NotNanFloatImpl>::normalize(x)
             }
 
             fn after(x: Self) -> Self {
-                <Self as FiniteFloatImpl>::after(x)
+                <Self as NotNanFloatImpl>::after(x)
             }
 
             fn before(x: Self) -> Self {
-                <Self as FiniteFloatImpl>::before(x)
+                <Self as NotNanFloatImpl>::before(x)
             }
 
             fn is_neg_zero(x: Self) -> bool {
-                <Self as FiniteFloatImpl>::is_neg_zero(x)
+                <Self as NotNanFloatImpl>::is_neg_zero(x)
             }
 
             fn prim_safe_len(start: Self, end: Self) -> Self::SafeLen {
-                <Self as FiniteFloatImpl>::prim_safe_len(start, end)
+                <Self as NotNanFloatImpl>::prim_safe_len(start, end)
             }
 
             fn safe_len_to_f64_lossy(len: Self::SafeLen) -> f64 {
-                <Self as FiniteFloatImpl>::safe_len_to_f64_lossy(len)
+                <Self as NotNanFloatImpl>::safe_len_to_f64_lossy(len)
             }
 
             fn f64_to_safe_len_lossy(f: f64) -> Self::SafeLen {
-                <Self as FiniteFloatImpl>::f64_to_safe_len_lossy(f)
+                <Self as NotNanFloatImpl>::f64_to_safe_len_lossy(f)
             }
 
             fn inclusive_end_from_start(a: Self, b: Self::SafeLen) -> Self {
-                <Self as FiniteFloatImpl>::inclusive_end_from_start(a, b)
+                <Self as NotNanFloatImpl>::inclusive_end_from_start(a, b)
             }
 
             fn start_from_inclusive_end(a: Self, b: Self::SafeLen) -> Self {
-                <Self as FiniteFloatImpl>::start_from_inclusive_end(a, b)
+                <Self as NotNanFloatImpl>::start_from_inclusive_end(a, b)
             }
         }
     };
 }
 
-impl_finite_capability!(f64, u64);
-impl_finite_capability!(f32, u32);
+impl_not_nan_capability!(f64, u64);
+impl_not_nan_capability!(f32, u32);
 #[cfg(feature = "float_nightly_experimental")]
-impl_finite_capability!(f16, u16);
+impl_not_nan_capability!(f16, u16);
 #[cfg(feature = "float_nightly_experimental")]
-impl_finite_capability!(f128, u128);
+impl_not_nan_capability!(f128, u128);
 
-impl FiniteFloatImpl for f64 {
+impl NotNanFloatImpl for f64 {
     type Bits = u64;
     type Ordered = i64;
 
-    // Finite bit patterns, with the -0.0 slot collapsed into +0.0.
-    const MAX_SIZE: Self::SafeLen = 0xFFE0_0000_0000_0000_u64 - 1;
+    // Non-NaN bit patterns (finite values plus the two infinities), with the -0.0 slot
+    // collapsed into +0.0.
+    const MAX_SIZE: Self::SafeLen = 0xFFE0_0000_0000_0000_u64 + 1;
 
     fn from_ordered(bits: Self::Ordered) -> Self {
         from_ordered_64(bits)
     }
 
-    impl_finite_ops!(to_ordered_64);
+    impl_not_nan_ops!(to_ordered_64);
 }
 
-impl FiniteFloatImpl for f32 {
+impl NotNanFloatImpl for f32 {
     type Bits = u32;
     type Ordered = i32;
 
-    // Finite bit patterns, with the -0.0 slot collapsed into +0.0.
-    const MAX_SIZE: Self::SafeLen = 0xFF00_0000_u32 - 1;
+    // Non-NaN bit patterns (finite values plus the two infinities), with the -0.0 slot
+    // collapsed into +0.0.
+    const MAX_SIZE: Self::SafeLen = 0xFF00_0000_u32 + 1;
 
-    impl_finite_ops!(to_ordered_32);
+    impl_not_nan_ops!(to_ordered_32);
 
     fn from_ordered(bits: Self::Ordered) -> Self {
         from_ordered_32(bits)
@@ -375,14 +377,15 @@ impl FiniteFloatImpl for f32 {
 }
 
 #[cfg(feature = "float_nightly_experimental")]
-impl FiniteFloatImpl for f16 {
+impl NotNanFloatImpl for f16 {
     type Bits = u16;
     type Ordered = i16;
 
-    // Finite bit patterns, with the -0.0 slot collapsed into +0.0.
-    const MAX_SIZE: Self::SafeLen = 0xF800u16 - 1;
+    // Non-NaN bit patterns (finite values plus the two infinities), with the -0.0 slot
+    // collapsed into +0.0.
+    const MAX_SIZE: Self::SafeLen = 0xF800u16 + 1;
 
-    impl_finite_ops!(to_ordered_16);
+    impl_not_nan_ops!(to_ordered_16);
 
     fn from_ordered(bits: Self::Ordered) -> Self {
         from_ordered_16(bits)
@@ -390,14 +393,15 @@ impl FiniteFloatImpl for f16 {
 }
 
 #[cfg(feature = "float_nightly_experimental")]
-impl FiniteFloatImpl for f128 {
+impl NotNanFloatImpl for f128 {
     type Bits = u128;
     type Ordered = i128;
 
-    // Finite bit patterns, with the -0.0 slot collapsed into +0.0.
-    const MAX_SIZE: Self::SafeLen = 0xFFFE_0000_0000_0000_0000_0000_0000_0000_u128 - 1;
+    // Non-NaN bit patterns (finite values plus the two infinities), with the -0.0 slot
+    // collapsed into +0.0.
+    const MAX_SIZE: Self::SafeLen = 0xFFFE_0000_0000_0000_0000_0000_0000_0000_u128 + 1;
 
-    impl_finite_ops!(to_ordered_128);
+    impl_not_nan_ops!(to_ordered_128);
 
     fn from_ordered(bits: Self::Ordered) -> Self {
         from_ordered_128(bits)

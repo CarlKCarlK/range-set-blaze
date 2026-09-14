@@ -217,8 +217,8 @@ Most functionality is available without opting into any Cargo feature, including
 with `--no-default-features`:
 
 * All primitive integer types, `char`, `Ipv4Addr`, and `Ipv6Addr`.
-* Floating-point ranges for `f32` and `f64` through the `FiniteF32`,
-  `FiniteF64`, `TotalF32`, and `TotalF64` wrappers.
+* Floating-point ranges for `f32` and `f64` through the `NotNanF32`,
+  `NotNanF64`, `TotalF32`, and `TotalF64` wrappers.
 * The `range_at`, `range_or_gap_at`, and `fill_gaps` APIs for sets, maps, and
   sorted-disjoint streams.
 
