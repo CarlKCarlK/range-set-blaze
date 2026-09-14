@@ -14,7 +14,11 @@ use crate::{
 use alloc::collections::btree_map::CursorMut;
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
-#[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+#[cfg(any(
+    test,
+    feature = "test_util",
+    not(feature = "cursor_nightly_experimental")
+))]
 use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, rc::Rc};
 #[cfg(feature = "cursor_nightly_experimental")]
@@ -1152,7 +1156,11 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     // LATER: might be able to shorten code by combining cases
-    #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+    #[cfg(any(
+        test,
+        feature = "test_util",
+        not(feature = "cursor_nightly_experimental")
+    ))]
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
@@ -1478,7 +1486,11 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         )
     }
 
-    #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+    #[cfg(any(
+        test,
+        feature = "test_util",
+        not(feature = "cursor_nightly_experimental")
+    ))]
     #[inline]
     fn has_gap(end_before: T, start: T) -> bool {
         end_before
@@ -1492,7 +1504,11 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     // FUTURE: would be nice of BTreeMap to have a partition_point function that returns two iterators
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::cognitive_complexity)]
-    #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+    #[cfg(any(
+        test,
+        feature = "test_util",
+        not(feature = "cursor_nightly_experimental")
+    ))]
     pub(crate) fn internal_add_baseline(&mut self, range: RangeInclusive<T>, value: V) {
         let (start, end) = range.clone().into_inner();
 
@@ -1943,7 +1959,11 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         }
     }
 
-    #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+    #[cfg(any(
+        test,
+        feature = "test_util",
+        not(feature = "cursor_nightly_experimental")
+    ))]
     #[inline]
     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>, value: V) {
         let (start, end) = internal_range.clone().into_inner();

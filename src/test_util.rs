@@ -20,6 +20,29 @@ pub fn ranges_insert_cursor<T: Integer>(set: &mut RangeSetBlaze<T>, range: Range
     set.internal_add_cursor(range);
 }
 
+/// Inserts using `RangeMapBlaze`'s normal (non-cursor) insert algorithm,
+/// regardless of which algorithm the `insert`/`ranges_insert` public API
+/// currently dispatches to. Exposed so benchmarks can compare it directly
+/// against [`map_insert_cursor`] in the same process.
+pub fn map_insert_baseline<T: Integer, V: Eq + Clone>(
+    map: &mut RangeMapBlaze<T, V>,
+    range: RangeInclusive<T>,
+    value: V,
+) {
+    map.internal_add_baseline(range, value);
+}
+
+/// Inserts using the experimental B-tree cursor insert algorithm. See
+/// [`map_insert_baseline`].
+#[cfg(feature = "cursor_nightly_experimental")]
+pub fn map_insert_cursor<T: Integer, V: Eq + Clone>(
+    map: &mut RangeMapBlaze<T, V>,
+    range: RangeInclusive<T>,
+    value: V,
+) {
+    map.internal_add_cursor(range, value);
+}
+
 #[must_use]
 #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
 pub fn width_to_range(
