@@ -65,11 +65,11 @@ criterion = { version = "0.5.1", features = [
 trybuild = "1.0.117"
 quickcheck = "1.1.0"
 quickcheck_macros = "1.2.0"
-rangemap = "1.7.1"
+rangemap = "1.8.0"
 range-collections = "0.4.6"
-range-set = "0.0.11"
+range-set = "0.1.1"
 glob = "0.3.3"
-roaring = "0.10.12"
+roaring = "0.11.5"
 rand = { version = "0.9.4" }
 
 

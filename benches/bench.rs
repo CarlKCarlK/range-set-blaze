@@ -738,6 +738,35 @@ fn every_op_blaze(c: &mut Criterion) {
                 b.iter_batched(|| setup, |sets| &sets[0] & &sets[1], BatchSize::SmallInput);
             },
         );
+        // `rangemap` only offers `union` and `intersection` (no `difference`,
+        // `symmetric_difference`, or `complement`), so it's compared here
+        // alongside RangeSetBlaze for just those two operations.
+        let rangemap_sets: Vec<rangemap::RangeInclusiveSet<_>> = setup
+            .iter()
+            .map(|set| set.ranges().collect())
+            .collect();
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (union)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || &rangemap_sets,
+                    |sets| &sets[0] | &sets[1],
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (intersection)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || &rangemap_sets,
+                    |sets| &sets[0] & &sets[1],
+                    BatchSize::SmallInput,
+                );
+            },
+        );
         group.bench_with_input(
             BenchmarkId::new("difference", parameter),
             &parameter,
@@ -907,6 +936,33 @@ fn every_op_roaring(c: &mut Criterion) {
             &parameter,
             |b, _k| {
                 b.iter_batched(|| setup, |sets| &sets[0] & &sets[1], BatchSize::SmallInput);
+            },
+        );
+        // `rangemap` only offers `union` and `intersection`, compared here against `Roaring`.
+        let rangemap_sets: Vec<rangemap::RangeInclusiveSet<_>> = setup_0
+            .iter()
+            .map(|set| set.ranges().collect())
+            .collect();
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (union)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || &rangemap_sets,
+                    |sets| &sets[0] | &sets[1],
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (intersection)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || &rangemap_sets,
+                    |sets| &sets[0] & &sets[1],
+                    BatchSize::SmallInput,
+                );
             },
         );
         group.bench_with_input(
