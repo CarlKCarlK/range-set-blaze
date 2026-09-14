@@ -41,7 +41,7 @@ Disjoint ranges can be stored in a tree or a vector. With a tree, we expect inse
 
 Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). Of the remaining crates, `roaring` offered the full set-operation algebra, so it became the operator benchmark's comparison point. (The inspirational `sorted-iter` also has full set ops, but it is designed to work on sorted values, not ranges, and so is not included.)
 
-As of September 2026, `rangemap` has gained `union` and `intersection` methods (since v1.5.0), so it is now included in benchmark #7a (`every_op_blaze`) below for those two operations, even though it still lacks `difference`/`symmetric_difference`/`complement`.
+As of September 2026, `rangemap` has gained `union` and `intersection` methods (since v1.5.0), so it is now included in benchmarks #7a (`every_op_blaze`) and #7b (`every_op_roaring`) below for those two operations, even though it still lacks `difference`/`symmetric_difference`/`complement`.
 
 If I misunderstood any of the crates, please let me know. If you'd like to benchmark a crate, the benchmarking code is in the `benches` directory of this repository.
 
