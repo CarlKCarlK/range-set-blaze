@@ -124,10 +124,14 @@ jobs:
           cargo test --target wasm32-wasip1 --verbose
           cargo test --target wasm32-wasip1 --verbose --no-default-features
       - name: Setup and check Embedded
+        # Keep this nightly pinned, like the native nightly job. A floating
+        # `nightly` here can break CI just as easily, since this also builds
+        # with the nightly-only float_nightly_experimental feature.
         run: |
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
-          rustup override set nightly
+          rustup toolchain install nightly-2026-09-15 --allow-downgrade
+          rustup override set nightly-2026-09-15
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
           cargo check --target thumbv7m-none-eabi --no-default-features --features float_nightly_experimental
