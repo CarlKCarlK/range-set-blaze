@@ -17,6 +17,9 @@ The crate's main structs are:
 * [`RangeSetBlaze`], a set of integers. See the [set documentation] for details.
 * [`RangeMapBlaze`], a map from integers to values. See the [map documentation] for details.
 
+For a side-by-side introduction to range lookups and gap filling for both
+containers, see the [Ranges and gaps guide][ranges and gaps].
+
 > Unlike the standard [`BTreeSet`]/[`BTreeMap`] and [`HashSet`]/[`HashMap`], `RangeSetBlaze` does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from [other interval libraries](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) -- that we know of -- by
 > offering full set operations and by being optimized for sets of [clumpy][1] integers.
 >
@@ -40,6 +43,7 @@ The crate's main traits are
 [`SortedDisjointMap`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjointMap.html#table-of-contents
 [set documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
 [map documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html
+[ranges and gaps]: https://docs.rs/range-set-blaze/latest/range_set_blaze/gaps/index.html
 [`BTreeMap`]: alloc::collections::BTreeMap
 [`BTreeSet`]: alloc::collections::BTreeSet
 [`HashSet`]: std::collections::HashSet
@@ -219,8 +223,9 @@ with `--no-default-features`:
 * All primitive integer types, `char`, `Ipv4Addr`, and `Ipv6Addr`.
 * Floating-point ranges for `f32` and `f64` through the `NotNanF32`,
   `NotNanF64`, `TotalF32`, and `TotalF64` wrappers.
-* The `range_at`, `range_or_gap_at`, and `fill_gaps` APIs for sets, maps, and
-  sorted-disjoint streams.
+* **Ranges and gaps:** The `range_at`, `range_or_gap_at`, and `fill_gaps` APIs
+  for sets, maps, and sorted-disjoint streams. See the
+  [Ranges and gaps guide][ranges and gaps].
 
 These are regular crate APIs, not Cargo features.
 

@@ -303,6 +303,9 @@ fn classify_forward<T: Integer>(
 /// Internally, the map stores the
 /// ranges and values in a cache-efficient [`BTreeMap`].
 ///
+/// For a side-by-side introduction to range lookups and gap filling, see the
+/// [Ranges and gaps guide][crate::gaps].
+///
 /// # Table of Contents
 /// * [`RangeMapBlaze` Constructors](#rangemapblaze-constructors)
 ///    * [Performance](#constructor-performance)
@@ -874,6 +877,9 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
 
     /// Returns the stored range and value containing `key`, if any.
     ///
+    /// See the [Ranges and gaps guide][crate::gaps] for the corresponding set
+    /// API and for the difference between `range_at` and `range_or_gap_at`.
+    ///
     /// # Examples
     ///
     /// ```
@@ -894,6 +900,9 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     ///
     /// The returned value is `Some(&V)` when the range is mapped and `None`
     /// when it is a gap.
+    ///
+    /// See the [Ranges and gaps guide][crate::gaps] for the corresponding set
+    /// API and for examples of querying both kinds of container.
     ///
     /// # Performance
     ///
@@ -2235,6 +2244,9 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// the intermediate collection and those clones, use
     /// [`SortedDisjointMap::fill_gaps`] on a map stream such as
     /// [`RangeMapBlaze::range_values`], which borrows the values instead.
+    ///
+    /// The [Ranges and gaps guide][crate::gaps] compares this materialized form
+    /// with the lazy streaming form and its set counterpart.
     ///
     /// # Examples
     ///

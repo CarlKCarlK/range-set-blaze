@@ -405,6 +405,9 @@ where
     /// materialized [`RangeMapBlaze<T, Option<VC::Value>>`] instead, use
     /// [`RangeMapBlaze::fill_gaps`].
     ///
+    /// See the [Ranges and gaps guide][crate::gaps] for set and map examples,
+    /// including the leading and trailing gaps at the integer-domain bounds.
+    ///
     /// [`RangeMapBlaze<T, Option<VC::Value>>`]: crate::RangeMapBlaze
     /// [`RangeMapBlaze::fill_gaps`]: crate::RangeMapBlaze::fill_gaps
     ///

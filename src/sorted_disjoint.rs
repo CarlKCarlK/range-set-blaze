@@ -456,6 +456,9 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// materialized [`RangeMapBlaze<T, bool>`] instead, use
     /// [`RangeSetBlaze::fill_gaps`].
     ///
+    /// See the [Ranges and gaps guide][crate::gaps] for set and map examples,
+    /// including the leading and trailing gaps at the integer-domain bounds.
+    ///
     /// [`RangeMapBlaze<T, bool>`]: crate::RangeMapBlaze
     /// [`RangeSetBlaze::fill_gaps`]: crate::RangeSetBlaze::fill_gaps
     ///

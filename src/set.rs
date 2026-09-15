@@ -76,6 +76,9 @@ where
 ///
 /// Internally, it stores the ranges in a cache-efficient [`BTreeMap`].
 ///
+/// For a side-by-side introduction to range lookups and gap filling, see the
+/// [Ranges and gaps guide][crate::gaps].
+///
 /// # Table of Contents
 /// * [`RangeSetBlaze` Constructors](#rangesetblaze-constructors)
 ///    * [Performance](#constructor-performance)
@@ -427,6 +430,9 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     /// Returns the stored range containing `value`, if any.
     ///
+    /// See the [Ranges and gaps guide][crate::gaps] for the corresponding map
+    /// APIs and for the difference between `range_at` and `range_or_gap_at`.
+    ///
     /// # Examples
     ///
     /// ```
@@ -446,6 +452,9 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// The Boolean is `true` when the returned range is present and `false`
     /// when it is a gap.
+    ///
+    /// See the [Ranges and gaps guide][crate::gaps] for the corresponding map
+    /// API and for examples of querying both kinds of container.
     ///
     /// # Performance
     ///
@@ -1434,6 +1443,9 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// To fill gaps lazily without materializing a map, use
     /// [`SortedDisjoint::fill_gaps`] on a set stream such as
     /// [`RangeSetBlaze::ranges`].
+    ///
+    /// The [Ranges and gaps guide][crate::gaps] compares this materialized form
+    /// with the lazy streaming form and its map counterpart.
     ///
     /// # Examples
     ///

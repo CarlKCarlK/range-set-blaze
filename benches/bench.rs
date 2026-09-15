@@ -741,10 +741,8 @@ fn every_op_blaze(c: &mut Criterion) {
         // `rangemap` only offers `union` and `intersection` (no `difference`,
         // `symmetric_difference`, or `complement`), so it's compared here
         // alongside RangeSetBlaze for just those two operations.
-        let rangemap_sets: Vec<rangemap::RangeInclusiveSet<_>> = setup
-            .iter()
-            .map(|set| set.ranges().collect())
-            .collect();
+        let rangemap_sets: Vec<rangemap::RangeInclusiveSet<_>> =
+            setup.iter().map(|set| set.ranges().collect()).collect();
         group.bench_with_input(
             BenchmarkId::new("rangemap (union)", parameter),
             &parameter,
@@ -939,10 +937,8 @@ fn every_op_roaring(c: &mut Criterion) {
             },
         );
         // `rangemap` only offers `union` and `intersection`, compared here against `Roaring`.
-        let rangemap_sets: Vec<rangemap::RangeInclusiveSet<_>> = setup_0
-            .iter()
-            .map(|set| set.ranges().collect())
-            .collect();
+        let rangemap_sets: Vec<rangemap::RangeInclusiveSet<_>> =
+            setup_0.iter().map(|set| set.ranges().collect()).collect();
         group.bench_with_input(
             BenchmarkId::new("rangemap (union)", parameter),
             &parameter,
@@ -1402,10 +1398,7 @@ fn ingest_clumps_cursor(c: &mut Criterion) {
                 b.iter(|| {
                     let mut set = RangeSetBlaze::new();
                     for range in &vec_range {
-                        range_set_blaze::test_util::ranges_insert_baseline(
-                            &mut set,
-                            range.clone(),
-                        );
+                        range_set_blaze::test_util::ranges_insert_baseline(&mut set, range.clone());
                     }
                     black_box(&set);
                 });

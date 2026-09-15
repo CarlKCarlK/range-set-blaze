@@ -34,7 +34,7 @@ pub use dyn_sorted_disjoint::DynSortedDisjoint;
 mod dyn_sorted_disjoint_map;
 pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 
-mod gaps;
+pub mod gaps;
 pub use gaps::{FillGapsIter, FillGapsIterMap};
 
 pub mod float;
