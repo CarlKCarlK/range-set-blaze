@@ -858,6 +858,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// # Performance
     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
     /// When n is large, consider using `|` which is O(n+m) time.
+    /// The nightly-only `cursor_nightly_experimental` feature speeds up this method by roughly 2x; see the
+    /// [Cargo Features section of the README](crate#cargo-features).
     ///
     /// # Examples
     ///
@@ -936,6 +938,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// # Performance
     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
     /// When n is large, consider using `|` which is O(n+m) time.
+    /// The nightly-only `cursor_nightly_experimental` feature speeds up this method by roughly 2x; see the
+    /// [Cargo Features section of the README](crate#cargo-features).
     ///
     /// # Examples
     ///
