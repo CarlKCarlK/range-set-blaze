@@ -1071,23 +1071,23 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-    #[allow(clippy::cognitive_complexity, clippy::legacy_numeric_constants)]
+    #[allow(clippy::cognitive_complexity)]
     fn test_ipv4_and_ipv6_etc() {
         syntactic_for! { ty in [char, Ipv6Addr, u128, i128, Ipv4Addr] {
             $(
             // Test the minimum value for the type
-            let a = <$ty>::min_value();
+            let a = <$ty as Integer>::min_value();
             let b = a.checked_add_one();
-            assert_eq!(b, Some(<$ty>::min_value().add_one()));
+            assert_eq!(b, Some(<$ty as Integer>::min_value().add_one()));
 
             // Show overflow behavior
-            let a = <$ty>::max_value();
+            let a = <$ty as Integer>::max_value();
             let b = a.checked_add_one();
             assert_eq!(b, None);
 
-            let a = <$ty>::min_value();
+            let a = <$ty as Integer>::min_value();
             let mut b = a.add_one();
-            assert_eq!(b, <$ty>::min_value().add_one());
+            assert_eq!(b, <$ty as Integer>::min_value().add_one());
 
             let c = b.sub_one();
             assert_eq!(c, a);
@@ -1095,49 +1095,49 @@ mod tests {
             b.assign_sub_one();
             assert_eq!(b, a);
 
-            let mut a = <$ty>::min_value()..=<$ty>::min_value();
+            let mut a = <$ty as Integer>::min_value()..=<$ty as Integer>::min_value();
             let b = <$ty>::range_next(&mut a);
-            assert_eq!(b, Some(<$ty>::min_value()));
+            assert_eq!(b, Some(<$ty as Integer>::min_value()));
             let b = <$ty>::range_next(&mut a);
             assert_eq!(b, None);
 
-            let mut a = <$ty>::min_value()..=<$ty>::max_value();
+            let mut a = <$ty as Integer>::min_value()..=<$ty as Integer>::max_value();
             let b = <$ty>::range_next_back(&mut a);
-            assert_eq!(b, Some(<$ty>::max_value()));
+            assert_eq!(b, Some(<$ty as Integer>::max_value()));
 
-            assert_eq!(<$ty>::min_value(), <$ty>::min_value());
+            assert_eq!(<$ty as Integer>::min_value(), <$ty as Integer>::min_value());
 
-            let universe = <$ty>::min_value()..=<$ty>::max_value();
+            let universe = <$ty as Integer>::min_value()..=<$ty as Integer>::max_value();
             let len = <$ty>::safe_len(&universe);
-            assert_eq!(len, <$ty>::safe_len(&(<$ty>::min_value()..=<$ty>::max_value())));
+            assert_eq!(len, <$ty>::safe_len(&(<$ty as Integer>::min_value()..=<$ty as Integer>::max_value())));
 
             let len_via_f64 = <$ty>::f64_to_safe_len_lossy(<$ty>::safe_len_to_f64_lossy(len));
             assert_eq!(len, len_via_f64);
 
-            let short = <$ty>::min_value()..=<$ty>::min_value();
+            let short = <$ty as Integer>::min_value()..=<$ty as Integer>::min_value();
             let len = <$ty>::safe_len(&short);
             let len_via_f64 = <$ty>::f64_to_safe_len_lossy(<$ty>::safe_len_to_f64_lossy(len));
             assert_eq!(len, len_via_f64);
 
             let len = <$ty>::safe_len(&universe);
-            let b = <$ty>::min_value().inclusive_end_from_start(len);
-            assert_eq!(b, <$ty>::max_value());
+            let b = <$ty as Integer>::min_value().inclusive_end_from_start(len);
+            assert_eq!(b, <$ty as Integer>::max_value());
 
             let c = b.start_from_inclusive_end(len);
-            assert_eq!(c, <$ty>::min_value());
+            assert_eq!(c, <$ty as Integer>::min_value());
 
-            let range = <$ty>::min_value()..=<$ty>::min_value().add_one();
+            let range = <$ty as Integer>::min_value()..=<$ty as Integer>::min_value().add_one();
             let len2 = <$ty>::safe_len(&range);
-            let b = <$ty>::min_value().inclusive_end_from_start(len2);
-            assert_eq!(b, <$ty>::min_value().add_one());
+            let b = <$ty as Integer>::min_value().inclusive_end_from_start(len2);
+            assert_eq!(b, <$ty as Integer>::min_value().add_one());
 
-            let b = <$ty>::max_value().start_from_inclusive_end(len2);
-            assert_eq!(b, <$ty>::max_value().sub_one());
+            let b = <$ty as Integer>::max_value().start_from_inclusive_end(len2);
+            assert_eq!(b, <$ty as Integer>::max_value().sub_one());
 
             #[cfg(feature = "from_slice")]
             {
-                let range_set_blaze = <$ty>::from_slice(&[<$ty>::min_value()]);
-                assert_eq!(range_set_blaze, RangeSetBlaze::from_iter([<$ty>::min_value()]));
+                let range_set_blaze = <$ty>::from_slice(&[<$ty as Integer>::min_value()]);
+                assert_eq!(range_set_blaze, RangeSetBlaze::from_iter([<$ty as Integer>::min_value()]));
             }
             )*
         }}
@@ -1146,36 +1146,32 @@ mod tests {
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 1)")]
-    #[allow(clippy::legacy_numeric_constants)]
     fn test_i128_overflow() {
-        let value: i128 = i128::max_value();
+        let value: i128 = <i128 as Integer>::max_value();
         let _ = value.inclusive_end_from_start(UIntPlusOne::MaxPlusOne);
     }
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 1)")]
-    #[allow(clippy::legacy_numeric_constants)]
     fn test_i128_underflow() {
-        let value: i128 = i128::min_value();
+        let value: i128 = <i128 as Integer>::min_value();
         let _ = value.start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
     }
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 1)")]
-    #[allow(clippy::legacy_numeric_constants)]
     fn test_u128_overflow() {
-        let value: u128 = u128::max_value();
+        let value: u128 = <u128 as Integer>::max_value();
         let _ = value.inclusive_end_from_start(UIntPlusOne::MaxPlusOne);
     }
 
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     #[should_panic(expected = "b must be in range 1..=max_len (b = (u128::MAX + 1), max_len = 1)")]
-    #[allow(clippy::legacy_numeric_constants)]
     fn test_u128_underflow() {
-        let value: u128 = u128::min_value();
+        let value: u128 = <u128 as Integer>::min_value();
         let _ = value.start_from_inclusive_end(UIntPlusOne::MaxPlusOne);
     }
 
