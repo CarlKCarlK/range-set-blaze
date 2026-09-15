@@ -102,7 +102,7 @@ where
 {
     /// Creates a new [`KMergeMap`] iterator from zero or more [`SortedDisjointMap`] iterators. See [`KMergeMap`] for more details and examples.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     pub(crate) fn new<K>(iter: K) -> Self
     where
         K: IntoIterator<Item = I>,

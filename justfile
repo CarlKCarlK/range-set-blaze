@@ -3,6 +3,10 @@
 # Run: just --list (to see all commands)
 # Run: just check-all (recommended before pushing)
 
+# Pinned nightly, mirroring ci.yml. Keeps a new upstream Clippy lint (or other
+# nightly change) from silently breaking local/CI checks. Bump deliberately.
+nightly := "nightly-2026-09-15"
+
 # ============================================================================
 # Main Commands (use these most often)
 # ============================================================================
@@ -42,15 +46,15 @@ test-stable:
     cargo test --verbose --release --no-default-features
 
 # Run nightly tests with from_slice feature
-# Uses `cargo +nightly` (not `rustup override set`) so this is safe to run
+# Uses `cargo +{{nightly}}` (not `rustup override set`) so this is safe to run
 # concurrently with stable steps in the same directory (see `cargo check-all`).
 test-nightly:
-    cargo +nightly check --tests --features "float_nightly_experimental"
-    cargo +nightly test --verbose --features from_slice
-    cargo +nightly test --verbose --features cursor_nightly_experimental
-    cargo +nightly test --verbose --no-default-features --features cursor_nightly_experimental
-    cargo +nightly clippy --verbose --all-targets --features cursor_nightly_experimental -- -D clippy::all -A deprecated
-    cargo +nightly test --verbose --all-features
+    cargo +{{nightly}} check --tests --features "float_nightly_experimental"
+    cargo +{{nightly}} test --verbose --features from_slice
+    cargo +{{nightly}} test --verbose --features cursor_nightly_experimental
+    cargo +{{nightly}} test --verbose --no-default-features --features cursor_nightly_experimental
+    cargo +{{nightly}} clippy --verbose --all-targets --features cursor_nightly_experimental -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
+    cargo +{{nightly}} test --verbose --all-features
 
 # Quick check before commit (clippy + basic tests)
 pre-commit: clippy
@@ -64,16 +68,16 @@ pre-commit: clippy
 # included, and rustdoc labels feature-gated items with their required feature.
 # Nightly is required by the optional SIMD, float, cursor, and `doc_cfg` features.
 show-docs:
-    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --no-deps --open --all-features
+    RUSTDOCFLAGS="--cfg docsrs" cargo +{{nightly}} doc --no-deps --open --all-features
 
 # Rebuild the docs (same features as `show-docs`) without opening a browser
 update-docs:
-    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --no-deps --all-features
+    RUSTDOCFLAGS="--cfg docsrs" cargo +{{nightly}} doc --no-deps --all-features
 
 # Check documentation for dead links (requires cargo-deadlinks)
 doc-links:
     cargo install cargo-deadlinks
-    RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --no-deps --all-features
+    RUSTDOCFLAGS="--cfg docsrs" cargo +{{nightly}} doc --no-deps --all-features
     RUST_LOG=error cargo deadlinks --dir target/doc/range_set_blaze
 
 # Audit dependencies for security and license issues (requires cargo-audit and cargo-deny)
@@ -88,7 +92,7 @@ publish-dry:
 
 # Test publishing with all features
 publish-dry-all:
-    cargo +nightly publish --all-features --dry-run
+    cargo +{{nightly}} publish --all-features --dry-run
 
 # Full local CI simulation (no WASM/embedded)
 ci-full: clippy test-stable doc-links audit publish-dry-all

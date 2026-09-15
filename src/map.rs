@@ -341,7 +341,7 @@ fn classify_forward<T: Integer>(
 /// [2]: struct.RangeMapBlaze.html#impl-FromIterator<(RangeInclusive<T>,+V)>-for-RangeMapBlaze<T,+V>
 /// [3]: `RangeMapBlaze::from_sorted_disjoint_map`
 /// [3b]: `SortedDisjointMap::into_range_map_blaze
-/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
 /// [4]: `RangeMapBlaze::from`
 ///
 /// # Constructor Performance
@@ -470,7 +470,7 @@ fn classify_forward<T: Integer>(
 /// These optimizations reduce allocations and merging overhead.
 /// **See:** [Summary of Union and Extend-like Methods](#rangemapblaze-union--and-extend-like-methods).
 ///
-/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
 /// [`|`]: struct.RangeMapBlaze.html#impl-BitOr-for-RangeMapBlaze%3CT,+V%3E
 /// [`|=`]: struct.RangeMapBlaze.html#impl-BitOrAssign-for-RangeMapBlaze%3CT,+V%3E
 ///
@@ -1004,7 +1004,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     ///
     /// # Examples
     ///

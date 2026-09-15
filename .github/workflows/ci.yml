@@ -39,20 +39,23 @@ jobs:
           cargo test --verbose --no-default-features
           cargo test --verbose --release --no-default-features
       - name: Test Rust Native (nightly)
+        # Keep this nightly pinned, like the stable toolchain above. A floating
+        # `nightly` breaks CI whenever upstream adds a new Clippy lint (as
+        # `clippy::single_range_in_vec_init` did). Bump the date deliberately.
         run: |
-          rustup toolchain install nightly --component clippy --allow-downgrade
-          rustup override set nightly
+          rustup toolchain install nightly-2026-09-15 --component clippy --allow-downgrade
+          rustup override set nightly-2026-09-15
           cargo check --tests --features "float_nightly_experimental"
           cargo test --verbose --features from_slice
           cargo test --verbose --features cursor_nightly_experimental
           cargo test --verbose --no-default-features --features cursor_nightly_experimental
-          cargo clippy --verbose --all-targets --features cursor_nightly_experimental -- -D clippy::all -A deprecated
+          cargo clippy --verbose --all-targets --features cursor_nightly_experimental -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
           cargo test --verbose --all-features
       - name: Check dead links in documentation
         if: matrix.os == 'ubuntu-latest'
         run: |
           cargo install cargo-deadlinks
-          RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --no-deps --all-features
+          RUSTDOCFLAGS="--cfg docsrs" cargo +nightly-2026-09-15 doc --no-deps --all-features
           RUST_LOG=error cargo deadlinks --dir target/doc/range_set_blaze
       - name: Audit dependencies (security & license)
         if: matrix.os == 'ubuntu-latest'

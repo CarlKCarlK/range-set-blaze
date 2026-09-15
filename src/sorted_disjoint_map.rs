@@ -255,7 +255,7 @@ where
 /// | sorted & disjoint ranges and values | [`CheckSortedDisjointMap::new`] |
 /// |  *your iterator type* | *[How to mark your type as `SortedDisjointMap`][1]* |
 ///
-/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
 /// [`range_values`]: RangeMapBlaze::range_values
 /// [`into_range_values`]: RangeMapBlaze::into_range_values
 /// [1]: #how-to-mark-your-type-as-sorteddisjointmap
@@ -449,7 +449,7 @@ where
     }
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their union.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     ///
     /// # Examples
     ///
@@ -481,7 +481,7 @@ where
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their intersection.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     ///
     /// # Examples
     ///
@@ -517,8 +517,8 @@ where
     /// Given a [`SortedDisjointMap`] iterator and a [`SortedDisjoint`] iterator,
     /// efficiently returns a [`SortedDisjointMap`] iterator of their intersection.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjoint`]: crate::SortedDisjoint.html#table-of-contents
     ///
     /// # Examples
     ///
@@ -542,7 +542,7 @@ where
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     ///
     /// # Examples
     ///
@@ -577,8 +577,8 @@ where
     /// Given a [`SortedDisjointMap`] iterator and a [`SortedDisjoint`] iterator,
     /// efficiently returns a [`SortedDisjointMap`] iterator of their set difference.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjoint`]: crate::SortedDisjoint.html#table-of-contents
     ///
     /// # Examples
     ///
@@ -604,8 +604,8 @@ where
 
     /// Returns the complement of a [`SortedDisjointMap`]'s keys as a [`SortedDisjoint`] iterator.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
-    /// [`SortedDisjoint`]: trait.SortedDisjoint.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjoint`]: crate::SortedDisjoint.html#table-of-contents
     ///
     /// # Examples
     ///
@@ -634,7 +634,7 @@ where
     /// Returns the complement of a [`SortedDisjointMap`]'s keys, associating each range with the provided value `v`.
     /// The result is a [`SortedDisjointMap`] iterator.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     ///
     /// # Examples
     ///
@@ -660,7 +660,7 @@ where
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator
     /// of their symmetric difference.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     ///
     /// # Examples
     ///
@@ -694,7 +694,7 @@ where
     /// Given two [`SortedDisjointMap`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
     /// this method takes ownership of the iterators and consumes them.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     ///
     /// # Examples
     ///
@@ -730,7 +730,7 @@ where
 
     /// Returns `true` if the [`SortedDisjointMap`] contains no elements.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     ///
     /// # Examples
     ///
@@ -798,7 +798,7 @@ where
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     /// # Examples
     ///
     /// ```

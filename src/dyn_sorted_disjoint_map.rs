@@ -6,7 +6,7 @@ use alloc::boxed::Box;
 /// Gives [`SortedDisjointMap`] iterators a uniform type. Used by the [`union_map_dyn`], etc. macros to give all
 /// their input iterators the same type.
 ///
-/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
 /// [`union_map_dyn`]: crate::union_map_dyn
 /// [`intersection_map_dyn`]: crate::intersection_map_dyn
 ///
@@ -45,7 +45,7 @@ where
 {
     /// Create a [`DynSortedDisjointMap`] from any [`SortedDisjointMap`] iterator. See [`DynSortedDisjointMap`] for an example.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     #[inline]
     pub fn new<I>(iter: I) -> Self
     where

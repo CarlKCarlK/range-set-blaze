@@ -248,7 +248,7 @@ where
 /// Provides methods on zero or more [`SortedDisjointMap`] iterators,
 /// specifically [`union`], [`intersection`], and [`symmetric_difference`].
 ///
-/// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
 /// [`union`]: crate::MultiwaySortedDisjointMap::union
 /// [`intersection`]: crate::MultiwaySortedDisjointMap::intersection
 /// [`symmetric_difference`]: crate::MultiwaySortedDisjointMap::symmetric_difference
@@ -263,7 +263,7 @@ where
     ///
     /// For input iterators of different types, use the [`union_dyn!`] macro.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     /// [`union_dyn!`]: crate::union_dyn
     ///
     /// For exactly two inputs, you can also use the `|` operator.
@@ -297,7 +297,7 @@ where
     ///
     /// For input iterators of different types, use the [`intersection_dyn!`] macro.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     /// [`intersection_dyn!`]: crate::intersection_dyn
     ///
     /// For exactly two inputs, you can also use the `&` operator.
@@ -342,7 +342,7 @@ where
     ///
     /// For input iterators of different types, use the [`symmetric_difference_dyn!`] macro.
     ///
-    /// [`SortedDisjointMap`]: trait.SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     /// [`symmetric_difference_dyn!`]: crate::symmetric_difference_dyn
     ///
     /// For exactly two inputs, you can also use the `^` operator.

@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.7.0] - 2026-09-15
 
 ### Added
 
@@ -25,6 +25,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   collected directly into `RangeMapBlaze<T, Option<V>>` and
   `RangeMapBlaze<T, bool>`, respectively. `bool` now implements `ValueCarrier` as
   the canonical by-value carrier for totalized sets.
+- Added `docs/release_checklist.md`, the canonical release procedure, and a
+  "Policy on AI-assisted development and contributions" section in the README.
+
+### Fixed
+
+- Fixed doc links on `FillGapsIter`/`FillGapsIterMap` that resolved to the wrong
+  path because the linked-to trait docs used a bare relative `.html` path instead
+  of an intra-doc `crate::` path; this broke once a type implementing
+  `SortedDisjoint`/`SortedDisjointMap` first existed in a nested module (`gaps`).
+
+### Changed
+
+- CI's nightly toolchain (used for the `cursor_nightly_experimental`/
+  `float_nightly_experimental` checks, Clippy, and docs) is now pinned to a fixed
+  dated nightly instead of floating `nightly`, mirroring the already-pinned
+  stable toolchain in `rust-toolchain.toml`. A floating nightly previously broke
+  CI when upstream Clippy added the `single_range_in_vec_init` lint against this
+  crate's idiomatic `from_iter([a..=b])` single-range construction; that lint is
+  now explicitly allowed for the nightly Clippy run. Bump the pinned nightly
+  deliberately, the same way the stable toolchain is bumped.
 
 ### Breaking
 

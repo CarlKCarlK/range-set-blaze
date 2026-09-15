@@ -93,7 +93,7 @@ Articles
 * [Nine Rules for SIMD Acceleration of your Rust Code:
   General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x](https://medium.com/towards-data-science/nine-rules-for-simd-acceleration-of-your-rust-code-part-1-c16fe639ce21) in *Towards Data Science*
 
-* *Also see:* [CHANGELOG](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/CHANGELOG.md)
+* *Also see:* [CHANGELOG](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/CHANGELOG.md) and the [release checklist](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/release_checklist.md)
 
 Examples
 -----------
@@ -253,3 +253,12 @@ just check-all
 ```
 
 See `just --list` for all available development commands (defined in `justfile`).
+
+Policy on AI-assisted development and contributions
+-----------------------------------------------------
+
+The use of AI tools is permitted for development and contributions to this repository. AI may be used as a productivity aid for drafting, exploration, and refactoring.
+
+All code and documentation contributed to this repository must be reviewed, edited, and validated by a human contributor. AI tools are not a substitute for design judgment, testing, or responsibility for correctness.
+
+[AGENTS.md](https://github.com/CarlKCarlK/range-set-blaze/blob/main/AGENTS.md) contains the general instructions and constraints given to AI tools used during development of this repository.
