@@ -125,8 +125,7 @@ rustup override set nightly
 cargo test range_set_int_slice_constructor -- --nocapture
 cargo test --doc intersection_dyn
 cargo test coverage -- --nocapture
-cargo test test_rog_functionality -- --nocapture
-cargo test --features rog_experimental
+cargo test
 ```
 
 ## examples
@@ -201,23 +200,19 @@ cargo test --target wasm32-wasip1 --all-features
 ## Docs
 
 ```cmd
-# 1. Generate nightly-only docs and open
-rustup override set nightly
-cargo doc --no-deps --all-features --open
+# 1. Generate the all-features docs.rs view, including feature badges, and open it
+just show-docs
 
-# 2. Switch back to stable, run with experimental feature
-rustup override set stable
-cargo doc --no-deps --features rog_experimental --open &
-cargo test --features rog_experimental --doc
+# 2. Build the stable default-feature API
+cargo doc --no-deps --open &
+cargo test --doc
 
 # 3. Run doc tests on all features
-cargo test --all-features --doc
+cargo +nightly test --all-features --doc
 
-# 4. Clear screen, regenerate docs, and check for broken links
+# 4. Regenerate the docs.rs view and check for broken links
 # cargo install cargo-deadlinks
-cls & cargo doc --no-deps --all-features & cargo deadlinks --dir target/doc
-# ignore: Found invalid urls in help.html:
-# ignore: Found invalid urls in settings.html:
+just doc-links
 ```
 
 ## Check and Audit

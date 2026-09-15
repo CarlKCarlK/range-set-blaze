@@ -5,7 +5,7 @@ use core::{
 };
 
 use crate::Integer;
-use crate::{SortedDisjoint, SortedDisjointMap, map::ValueRef};
+use crate::{SortedDisjoint, SortedDisjointMap, map::ValueCarrier};
 
 /// This `struct` is created by the [`intersection`] and [`map_and_set_intersection`] methods on [`SortedDisjointMap`].
 /// See the methods' documentation for more.
@@ -15,18 +15,18 @@ use crate::{SortedDisjoint, SortedDisjointMap, map::ValueRef};
 /// [`map_and_set_intersection`]: crate::SortedDisjointMap::map_and_set_intersection
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct IntersectionIterMap<T, VR, IM, IS> {
+pub struct IntersectionIterMap<T, VC, IM, IS> {
     iter_left: IM,
     iter_right: IS,
     right: Option<RangeInclusive<T>>,
-    left: Option<(RangeInclusive<T>, VR)>,
+    left: Option<(RangeInclusive<T>, VC)>,
 }
 
-impl<T, VR, IM, IS> IntersectionIterMap<T, VR, IM, IS>
+impl<T, VC, IM, IS> IntersectionIterMap<T, VC, IM, IS>
 where
     T: Integer,
-    VR: ValueRef,
-    IM: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    IM: SortedDisjointMap<T, VC>,
     IS: SortedDisjoint<T>,
 {
     pub(crate) const fn new(iter_map: IM, iter_set: IS) -> Self {
@@ -39,11 +39,11 @@ where
     }
 }
 
-impl<T, VR, IM, IS> FusedIterator for IntersectionIterMap<T, VR, IM, IS>
+impl<T, VC, IM, IS> FusedIterator for IntersectionIterMap<T, VC, IM, IS>
 where
     T: Integer,
-    VR: ValueRef,
-    IM: SortedDisjointMap<T, VR> + FusedIterator,
+    VC: ValueCarrier,
+    IM: SortedDisjointMap<T, VC> + FusedIterator,
     IS: SortedDisjoint<T> + FusedIterator,
 {
 }
@@ -53,16 +53,16 @@ where
 // by the intersection without fully processing both iterators.
 // An upper bound would be min(left.len(), right.len()), but that's not exact.
 
-impl<T, VR, IM, IS> Iterator for IntersectionIterMap<T, VR, IM, IS>
+impl<T, VC, IM, IS> Iterator for IntersectionIterMap<T, VC, IM, IS>
 where
     T: Integer,
-    VR: ValueRef,
-    IM: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    IM: SortedDisjointMap<T, VC>,
     IS: SortedDisjoint<T>,
 {
-    type Item = (RangeInclusive<T>, VR);
+    type Item = (RangeInclusive<T>, VC);
 
-    fn next(&mut self) -> Option<(RangeInclusive<T>, VR)> {
+    fn next(&mut self) -> Option<(RangeInclusive<T>, VC)> {
         // println!("begin next");
         loop {
             // Be sure both currents are loaded.

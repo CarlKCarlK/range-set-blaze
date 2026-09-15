@@ -98,7 +98,7 @@ where
     }
 }
 
-// from iter (T, VR) to UnionIter
+// from iter (T, VC) to UnionIter
 impl<T: Integer> FromIterator<RangeInclusive<T>> for UnionIter<T, SortedStartsInVec<T>> {
     fn from_iter<I>(iter: I) -> Self
     where

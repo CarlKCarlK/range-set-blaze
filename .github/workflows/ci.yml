@@ -33,26 +33,30 @@ jobs:
           components: rust-src
       - name: Test Rust Native (stable)
         run: |
-          cargo clippy --verbose --all-targets --features "std rog_experimental float_experimental" -- -D clippy::all -A deprecated
+          cargo clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated
           cargo test --verbose
           cargo test --verbose --release
-          cargo test --verbose --release --features "std float_experimental"
-          cargo test --verbose --no-default-features --features "rog_experimental"
-          cargo test --verbose --features "std float_experimental"
-          cargo test --verbose --features "std rog_experimental float_experimental"
-          cargo test --verbose --no-default-features --features "float_experimental"
+          cargo test --verbose --no-default-features
+          cargo test --verbose --release --no-default-features
       - name: Test Rust Native (nightly)
+        # Keep this nightly pinned, like the stable toolchain above. A floating
+        # `nightly` breaks CI whenever upstream adds a new Clippy lint (as
+        # `clippy::single_range_in_vec_init` did). Bump the date deliberately.
         run: |
-          rustup override set nightly
+          rustup toolchain install nightly-2026-09-15 --component clippy --allow-downgrade
+          rustup override set nightly-2026-09-15
           cargo check --tests --features "float_nightly_experimental"
-          cargo test --verbose --features "rog_experimental from_slice"
+          cargo test --verbose --features from_slice
+          cargo test --verbose --features cursor_nightly_experimental
+          cargo test --verbose --no-default-features --features cursor_nightly_experimental
+          cargo clippy --verbose --all-targets --features cursor_nightly_experimental -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
           cargo test --verbose --all-features
       - name: Check dead links in documentation
         if: matrix.os == 'ubuntu-latest'
         run: |
           cargo install cargo-deadlinks
-          cargo doc --no-deps --all-features
-          cargo deadlinks --dir target/doc | grep -vE '(help\.html|settings\.html)'
+          RUSTDOCFLAGS="--cfg docsrs" cargo +nightly-2026-09-15 doc --no-deps --all-features
+          RUST_LOG=error cargo deadlinks --dir target/doc/range_set_blaze
       - name: Audit dependencies (security & license)
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -76,12 +80,25 @@ jobs:
         with:
           packages: libc6-dev-i386 linux-libc-dev libc6-i386 gcc-multilib
           version: 1
+      - name: Ensure 32-bit toolchain installed
+        # awalsh128/cache-apt-pkgs-action reports success even when its
+        # internal apt-get install fails (e.g. a transient mirror 404), which
+        # otherwise surfaces later as a confusing linker error. Retry a plain
+        # apt-get install with a fresh package list as a safety net.
+        run: |
+          for i in 1 2 3; do
+            sudo apt-get update && \
+              sudo apt-get install -y --fix-missing libc6-dev-i386 linux-libc-dev libc6-i386 gcc-multilib && \
+              break
+            echo "apt-get install attempt $i failed, retrying..."
+            sleep 10
+          done
+          dpkg -s libc6-dev-i386 gcc-multilib > /dev/null
       - name: run tests
         run: |
           rustup target add i686-unknown-linux-gnu
           cargo test --target i686-unknown-linux-gnu --verbose
-          cargo test --target i686-unknown-linux-gnu --verbose --no-default-features --features "rog_experimental"
-          cargo test --target i686-unknown-linux-gnu --verbose --features "std float_experimental"
+          cargo test --target i686-unknown-linux-gnu --verbose --no-default-features
 
   test_wasm:
     name: Test WASM
@@ -98,20 +115,18 @@ jobs:
       - name: Test WASM/unknown
         run: |
           wasm-pack test --chrome --headless -- --no-default-features --verbose
-          wasm-pack test --chrome --headless -- --features "std float_experimental" --verbose
+          wasm-pack test --chrome --headless -- --features std --verbose
       - name: Install wasmtime
         uses: jcbhmr/setup-wasmtime@v2
       - name: Test WASM/wasip1
         run: |
           rustup target add wasm32-wasip1
           cargo test --target wasm32-wasip1 --verbose
-          cargo test --target wasm32-wasip1 --verbose --no-default-features --features "rog_experimental"
-          cargo test --target wasm32-wasip1 --verbose --features "std float_experimental"
+          cargo test --target wasm32-wasip1 --verbose --no-default-features
       - name: Setup and check Embedded
         run: |
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
-          cargo check --target thumbv7m-none-eabi --no-default-features --features float_experimental
           rustup override set nightly
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
@@ -137,6 +152,5 @@ jobs:
         run: |
           # Explicitly bypass rust-toolchain.toml; otherwise this job could run 1.97.
           cargo +1.87 check --verbose
-          cargo +1.87 check --verbose --no-default-features --features "rog_experimental"
-          cargo +1.87 check --verbose --features "std float_experimental"
-          cargo +1.87 check --verbose --no-default-features --features "float_experimental"
+          cargo +1.87 check --verbose --no-default-features
+          cargo +1.87 check --verbose --features std

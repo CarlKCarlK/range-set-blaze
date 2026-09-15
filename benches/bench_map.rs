@@ -3,7 +3,8 @@
 
 use criterion::BatchSize;
 use criterion::{
-    AxisScale, BenchmarkId, Criterion, PlotConfiguration, criterion_group, criterion_main,
+    AxisScale, BenchmarkId, Criterion, PlotConfiguration, black_box, criterion_group,
+    criterion_main,
 };
 use itertools::iproduct;
 use rand::{SeedableRng, distr::Uniform, prelude::Distribution, rngs::StdRng};
@@ -271,6 +272,83 @@ fn map_ingest_clumps_ranges(c: &mut Criterion) {
                         .iter()
                         .map(|(k, v)| (*k..=*k, *v))
                         .collect::<rangemap::RangeInclusiveMap<_, _>>();
+                });
+            },
+        );
+    }
+    group.finish();
+}
+
+// Cursor-vs-baseline insertion for RangeMapBlaze. Both candidates run in the
+// same process, so both lines land in one Criterion plot. The cursor
+// candidate only exists under the nightly-only `cursor_nightly_experimental`
+// feature:
+//   cargo +nightly bench --features cursor_nightly_experimental,test_util -- map_ingest_clumps_cursor
+// Without that feature, only the baseline candidate runs (stable-safe).
+fn map_ingest_clumps_cursor(c: &mut Criterion) {
+    let group_name = "map_ingest_clumps_cursor";
+    let k = 1;
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+    let value_count = 5u32;
+    let range_per_clump = 1;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    for average_width in average_width_list {
+        let parameter = average_width;
+
+        let (clump_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+
+        let vec_range: Vec<(RangeInclusive<u32>, u32)> = ClumpyMapRange::new(
+            &mut StdRng::seed_from_u64(seed),
+            clump_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+            value_count,
+            range_per_clump,
+        )
+        .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeMapBlaze (baseline)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let mut map = RangeMapBlaze::new();
+                    for (range, value) in &vec_range {
+                        range_set_blaze::test_util::map_insert_baseline(
+                            &mut map,
+                            range.clone(),
+                            *value,
+                        );
+                    }
+                    black_box(&map);
+                });
+            },
+        );
+
+        #[cfg(feature = "cursor_nightly_experimental")]
+        group.bench_with_input(
+            BenchmarkId::new("RangeMapBlaze (cursor)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let mut map = RangeMapBlaze::new();
+                    for (range, value) in &vec_range {
+                        range_set_blaze::test_util::map_insert_cursor(
+                            &mut map,
+                            range.clone(),
+                            *value,
+                        );
+                    }
+                    black_box(&map);
                 });
             },
         );
@@ -966,11 +1044,13 @@ fn map_insert_speed(c: &mut Criterion) {
 }
 
 const fn access_k(&x: &(usize, usize)) -> usize {
-    x.0
+    let (key, _) = x;
+    key
 }
 #[allow(dead_code)]
 const fn access_r(&x: &(usize, usize)) -> usize {
-    x.1
+    let (_, range) = x;
+    range
 }
 fn map_intersect_k(c: &mut Criterion) {
     let k_list = [2usize, 5, 10, 25, 50, 100];
@@ -1329,6 +1409,7 @@ criterion_group!(
     map_worst,
     map_ingest_clumps_base,
     map_ingest_clumps_ranges,
+    map_ingest_clumps_cursor,
     map_every_op_blaze,
     map_union_two_sets,
     map_insert_speed,

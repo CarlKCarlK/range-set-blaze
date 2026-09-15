@@ -1,10 +1,10 @@
-//! Experimental support for floating point ranges.\
-//! Enable with `float_experimental` (stable, `f32`/`f64`) and
-//! `float_nightly_experimental` (nightly, adds `f16`/`f128`).
+//! Floating-point range support.\
+//! The `f32`/`f64` wrappers are available by default. Enable
+//! `float_nightly_experimental` on nightly to add the `f16`/`f128` wrappers.
 //!
 //! Exports two types of floating point range types.\
-//! Total: Every bit pattern is valid and distinct.\
-//! Finite: Only finite floating point values are valid, e.g. `f64::MIN..=f64::MAX`. Also, -0.0 is treated as 0.0
+//! Total: Every bit pattern is valid and distinct, including NaNs, infinities, and signed zero.\
+//! `NotNan`: Every value except NaN is valid, e.g. `f64::NEG_INFINITY..=f64::INFINITY`. Also, -0.0 is treated as 0.0
 //!
 //! Each of those is available in four sizes: 16, 32, 64 and 128.
 //!
@@ -13,7 +13,7 @@
 //! Turn a list of unsorted, overlapping f64 intervals (inclusive) into
 //! a sorted list of disjoint intervals (still inclusive).
 //! ```
-//! use range_set_blaze::{RangeSetBlaze, FiniteF64, finite::FiniteRangeExt};
+//! use range_set_blaze::{RangeSetBlaze, NotNanF64, not_nan::NotNanRangeExt};
 //!
 //! let overlapping_intervals = vec![
 //!     (11.0, 13.0),
@@ -30,10 +30,10 @@
 //!
 //! let disjoint_intervals: Vec<_> = overlapping_intervals
 //!     .into_iter()
-//!     .map(|(s, e)| FiniteF64::from_primitive_range(s..=e)) // Wrap each range
+//!     .map(|(s, e)| NotNanF64::from_primitive_range(s..=e)) // Wrap each range
 //!     .collect::<RangeSetBlaze<_>>() // Coalesce into disjoint ranges
 //!     .ranges() // Convert back
-//!     .map(FiniteRangeExt::into_primitive_inner)
+//!     .map(NotNanRangeExt::into_primitive_inner)
 //!     .collect();
 //!
 //! assert_eq!(
@@ -51,16 +51,16 @@
 //! ## Example: Wrapping Primitive (e.g. f32, f64) Ranges
 //!
 //! ```
-//! use range_set_blaze::{finite::ff64, total::{tf32, tf64}, RangeSetBlaze};
+//! use range_set_blaze::{not_nan::nnf64, total::{tf32, tf64}, RangeSetBlaze};
 //!
-//! // Alternatively, use `TotalF64::new`, `TotalF32::new`, and `FiniteF64::new`.
+//! // Alternatively, use `TotalF64::new`, `TotalF32::new`, and `NotNanF64::new`.
 //! let set = RangeSetBlaze::from_iter([tf64(3.0)..=tf64(5.0)]);
 //! assert!(set.contains(tf64(3.1)));
 //! assert!(!set.contains(tf64(2.9)));
 //!
-//! let set = RangeSetBlaze::from(ff64(3.0)..=ff64(5.0));
-//! assert!(set.contains(ff64(4.9)));
-//! assert!(!set.contains(ff64(5.1)));
+//! let set = RangeSetBlaze::from(nnf64(3.0)..=nnf64(5.0));
+//! assert!(set.contains(nnf64(4.9)));
+//! assert!(!set.contains(nnf64(5.1)));
 //!
 //! let set = RangeSetBlaze::from_iter([tf32(3.0)..=tf32(5.0), tf32(7.0)..=tf32(9.0)]);
 //! assert!(set.contains(tf32(4.0)));
@@ -75,8 +75,8 @@
 )]
 //! ## Example: Total Floats
 //!
-//! Unlike `Finite`, `Total` uses `total_cmp` order, so it can also represent
-//! NaN, the infinities, and -0.0 as distinct, orderable values. This example
+//! Unlike `NotNan`, `Total` also admits NaN and keeps -0.0 as a value distinct
+//! from +0.0, all ordered via `total_cmp`. This example
 //! builds a category map over all of `f64` from nothing but
 //! `TotalF64::MIN`/`MAX`, the two infinities, and `-0.0`: start with NaN
 //! everywhere, carve out the finite range between the infinities as Normal,
@@ -127,7 +127,7 @@
 //! // NaN (0x7ff0000000000001) ..= NaN (0x7fffffffffffffff) -> NaN
 //! ```
 
-mod finite_float;
+mod not_nan_float;
 mod total_float;
 
 pub mod total;
@@ -135,7 +135,7 @@ pub use total::{Total, TotalF32, TotalF64};
 #[cfg(feature = "float_nightly_experimental")]
 pub use total::{TotalF16, TotalF128};
 
-pub mod finite;
-pub use finite::{Finite, FiniteF32, FiniteF64};
+pub mod not_nan;
+pub use not_nan::{NotNan, NotNanF32, NotNanF64};
 #[cfg(feature = "float_nightly_experimental")]
-pub use finite::{FiniteF16, FiniteF128};
+pub use not_nan::{NotNanF16, NotNanF128};

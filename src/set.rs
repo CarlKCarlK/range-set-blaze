@@ -1,4 +1,9 @@
 #![allow(unexpected_cfgs)]
+#[cfg(any(
+    test,
+    feature = "test_util",
+    not(feature = "cursor_nightly_experimental")
+))]
 use core::cmp::max;
 use core::mem;
 use core::{
@@ -18,8 +23,15 @@ use std::{
 
 use crate::alloc::string::ToString;
 use crate::sorted_disjoint::RangeOnce;
+#[cfg(feature = "cursor_nightly_experimental")]
+use alloc::collections::btree_map::CursorMut;
 use alloc::collections::{BTreeMap, btree_map};
 use alloc::string::String;
+#[cfg(any(
+    test,
+    feature = "test_util",
+    not(feature = "cursor_nightly_experimental")
+))]
 use alloc::vec::Vec;
 use gen_ops::gen_ops_ex;
 
@@ -63,6 +75,9 @@ where
 /// A set of integers stored as sorted & disjoint ranges.
 ///
 /// Internally, it stores the ranges in a cache-efficient [`BTreeMap`].
+///
+/// For a side-by-side introduction to range lookups and gap filling, see the
+/// [Ranges and gaps guide][crate::gaps].
 ///
 /// # Table of Contents
 /// * [`RangeSetBlaze` Constructors](#rangesetblaze-constructors)
@@ -413,6 +428,106 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
+    /// Returns the stored range containing `value`, if any.
+    ///
+    /// See the [Ranges and gaps guide][crate::gaps] for the corresponding map
+    /// APIs and for the difference between `range_at` and `range_or_gap_at`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let set = RangeSetBlaze::from_iter([1..=3, 7..=10]);
+    /// assert_eq!(set.range_at(2), Some(1..=3));
+    /// assert_eq!(set.range_at(5), None);
+    /// ```
+    #[must_use]
+    pub fn range_at(&self, value: T) -> Option<RangeInclusive<T>> {
+        self.containing_range(value)
+            .map(|(start, end)| *start..=*end)
+    }
+
+    /// Returns the maximal contiguous present range or gap containing `value`.
+    ///
+    /// The Boolean is `true` when the returned range is present and `false`
+    /// when it is a gap.
+    ///
+    /// See the [Ranges and gaps guide][crate::gaps] for the corresponding map
+    /// API and for examples of querying both kinds of container.
+    ///
+    /// # Performance
+    ///
+    /// Performs one tree lookup for a present value and two tree lookups for a
+    /// gap, taking `O(log r)` time, where `r` is the number of stored ranges.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeSetBlaze;
+    /// let set = RangeSetBlaze::from_iter([1..=3, 7..=10]);
+    /// assert_eq!(set.range_or_gap_at(2), (1..=3, true));
+    /// assert_eq!(set.range_or_gap_at(5), (4..=6, false));
+    /// assert_eq!(set.range_or_gap_at(8), (7..=10, true));
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn range_or_gap_at(&self, value: T) -> (RangeInclusive<T>, bool) {
+        #[cfg(feature = "cursor_nightly_experimental")]
+        return self.range_or_gap_at_cursor(value);
+
+        #[cfg(not(feature = "cursor_nightly_experimental"))]
+        self.range_or_gap_at_baseline(value)
+    }
+
+    #[cfg(any(test, not(feature = "cursor_nightly_experimental")))]
+    #[inline]
+    pub(crate) fn range_or_gap_at_baseline(&self, value: T) -> (RangeInclusive<T>, bool) {
+        if let Some((start_before, end_before)) = self.predecessor_range(value) {
+            if value <= *end_before {
+                return (*start_before..=*end_before, true);
+            }
+            if let Some((start_next, _)) = self.btree_map.range(value..).next() {
+                return (end_before.add_one()..=start_next.sub_one(), false);
+            }
+            return (end_before.add_one()..=T::max_value(), false);
+        }
+
+        if let Some((start_next, _)) = self.btree_map.range(value..).next() {
+            return (T::min_value()..=start_next.sub_one(), false);
+        }
+        (T::min_value()..=T::max_value(), false)
+    }
+
+    #[cfg(feature = "cursor_nightly_experimental")]
+    #[inline]
+    pub(crate) fn range_or_gap_at_cursor(&self, value: T) -> (RangeInclusive<T>, bool) {
+        // A single position exposes both ranges adjacent to `value`; unlike the baseline,
+        // a gap does not require a second logarithmic search for its right boundary.
+        let cursor = self.btree_map.lower_bound(Bound::Included(&value));
+
+        if let Some((start_before, end_before)) = cursor.peek_prev() {
+            if value <= *end_before {
+                return (*start_before..=*end_before, true);
+            }
+            if let Some((start_next, end_next)) = cursor.peek_next() {
+                if value == *start_next {
+                    return (*start_next..=*end_next, true);
+                }
+                return (end_before.add_one()..=start_next.sub_one(), false);
+            }
+            return (end_before.add_one()..=T::max_value(), false);
+        }
+
+        if let Some((start_next, end_next)) = cursor.peek_next() {
+            if value == *start_next {
+                return (*start_next..=*end_next, true);
+            }
+            return (T::min_value()..=start_next.sub_one(), false);
+        }
+        (T::min_value()..=T::max_value(), false)
+    }
+
     /// Returns the last element in the set, if any.
     /// This element is always the maximum of all elements in the set.
     ///
@@ -661,10 +776,16 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert_eq!(set.contains(4), false);
     /// ```
     pub fn contains(&self, value: T) -> bool {
-        self.btree_map
-            .range(..=value)
-            .next_back()
-            .is_some_and(|(_, end)| value <= *end)
+        self.containing_range(value).is_some()
+    }
+
+    fn predecessor_range(&self, value: T) -> Option<(&T, &T)> {
+        self.btree_map.range(..=value).next_back()
+    }
+
+    fn containing_range(&self, value: T) -> Option<(&T, &T)> {
+        self.predecessor_range(value)
+            .and_then(|(start, end)| (value <= *end).then_some((start, end)))
     }
 
     /// Returns `true` if `self` has no elements in common with `other`.
@@ -690,6 +811,11 @@ impl<T: Integer> RangeSetBlaze<T> {
         self.ranges().is_disjoint(other.ranges())
     }
 
+    #[cfg(any(
+        test,
+        feature = "test_util",
+        not(feature = "cursor_nightly_experimental")
+    ))]
     fn delete_extra(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
         let mut after = self.btree_map.range_mut(start..);
@@ -732,6 +858,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// # Performance
     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
     /// When n is large, consider using `|` which is O(n+m) time.
+    /// The nightly-only `cursor_nightly_experimental` feature speeds up this method by roughly 2x; see the
+    /// [Cargo Features section of the README](crate#cargo-features).
     ///
     /// # Examples
     ///
@@ -810,6 +938,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// # Performance
     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
     /// When n is large, consider using `|` which is O(n+m) time.
+    /// The nightly-only `cursor_nightly_experimental` feature speeds up this method by roughly 2x; see the
+    /// [Cargo Features section of the README](crate#cargo-features).
     ///
     /// # Examples
     ///
@@ -1007,7 +1137,12 @@ impl<T: Integer> RangeSetBlaze<T> {
 
     // https://stackoverflow.com/questions/49599833/how-to-find-next-smaller-key-in-btreemap-btreeset
     // https://stackoverflow.com/questions/35663342/how-to-modify-partially-remove-a-range-from-a-btreemap
-    pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>) {
+    #[cfg(any(
+        test,
+        feature = "test_util",
+        not(feature = "cursor_nightly_experimental")
+    ))]
+    pub(crate) fn internal_add_baseline(&mut self, range: RangeInclusive<T>) {
         let (start, end) = range.clone().into_inner();
         if end < start {
             return;
@@ -1034,6 +1169,117 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
+    #[cfg(feature = "cursor_nightly_experimental")]
+    fn cursor_absorb_successors(
+        cursor: &mut CursorMut<'_, T, T>,
+        len: &mut T::SafeLen,
+        mut pending_end: T,
+        pending_is_stored: bool,
+    ) -> T {
+        // When `pending_is_stored` is true, `peek_prev()` is the already-extended
+        // pending range. Successors are removed in place, and that predecessor is
+        // extended again if a successor reaches farther to the right.
+        let initial_pending_end = pending_end;
+        while let Some((stored_start, stored_end)) = cursor
+            .peek_next()
+            .map(|(stored_start, stored_end)| (*stored_start, *stored_end))
+        {
+            let interacts =
+                stored_start <= pending_end || pending_end.checked_add_one() == Some(stored_start);
+            if !interacts {
+                break;
+            }
+
+            cursor
+                .remove_next()
+                .expect("Real Assert: the peeked successor still exists");
+            *len -= T::safe_len(&(stored_start..=stored_end));
+
+            if stored_end > pending_end {
+                pending_end = stored_end;
+            }
+        }
+
+        if pending_is_stored && pending_end > initial_pending_end {
+            let (_, stored_end) = cursor
+                .peek_prev()
+                .expect("Real Assert: the stored pending range is the predecessor");
+            // `pending_end > initial_pending_end` proves that `initial_pending_end`
+            // is not the maximum value before computing the newly covered tail.
+            *stored_end = pending_end;
+            *len += T::safe_len(&(initial_pending_end.add_one()..=pending_end));
+        }
+        pending_end
+    }
+
+    #[cfg(feature = "cursor_nightly_experimental")]
+    pub(crate) fn internal_add_cursor(&mut self, range: RangeInclusive<T>) {
+        let (start, mut pending_end) = range.into_inner();
+        if pending_end < start {
+            return;
+        }
+
+        let mut cursor = self.btree_map.lower_bound_mut(Bound::Included(&start));
+
+        // `peek_prev` is the only range to the left that can overlap or touch the insertion.
+        if let Some((_, stored_end)) = cursor.peek_prev() {
+            let stored_end = *stored_end;
+            let interacts = stored_end >= start || stored_end.checked_add_one() == Some(start);
+            if interacts {
+                if stored_end >= pending_end {
+                    return;
+                }
+
+                let (_, stored_end_mut) = cursor
+                    .peek_prev()
+                    .expect("Real Assert: the peeked predecessor still exists");
+                // `stored_end < pending_end` was established above, so this
+                // increment cannot overflow at the maximum element.
+                self.len += T::safe_len(&(stored_end.add_one()..=pending_end));
+                *stored_end_mut = pending_end;
+                Self::cursor_absorb_successors(&mut cursor, &mut self.len, pending_end, true);
+                debug_assert!(self.len == self.len_slow());
+                return;
+            }
+        }
+
+        // An equal-start successor can contain the insertion exactly as stored.
+        if cursor
+            .peek_next()
+            .is_some_and(|(stored_start, stored_end)| {
+                *stored_start == start && *stored_end >= pending_end
+            })
+        {
+            return;
+        }
+
+        pending_end =
+            Self::cursor_absorb_successors(&mut cursor, &mut self.len, pending_end, false);
+        cursor
+            .insert_before(start, pending_end)
+            .expect("Real Assert: the range belongs at the cursor");
+        self.len += T::safe_len(&(start..=pending_end));
+        debug_assert!(self.len == self.len_slow());
+    }
+
+    #[inline]
+    pub(crate) fn internal_add(&mut self, range: RangeInclusive<T>) {
+        #[cfg(feature = "cursor_nightly_experimental")]
+        {
+            self.internal_add_cursor(range);
+        }
+
+        #[cfg(not(feature = "cursor_nightly_experimental"))]
+        {
+            self.internal_add_baseline(range);
+        }
+    }
+
+    #[cfg(any(
+        test,
+        feature = "test_util",
+        not(feature = "cursor_nightly_experimental")
+    ))]
     #[inline]
     fn internal_add2(&mut self, internal_range: &RangeInclusive<T>) {
         let (start, end) = internal_range.clone().into_inner();
@@ -1184,6 +1430,39 @@ impl<T: Integer> RangeSetBlaze<T> {
         RangesIter {
             iter: self.btree_map.iter(),
         }
+    }
+
+    /// Returns a [`RangeMapBlaze`] over the complete integer domain, mapping
+    /// present ranges to `true` and gaps to `false`.
+    ///
+    /// The result covers [`Integer::min_value`] through [`Integer::max_value`].
+    /// The `false` values are ordinary map values, so the resulting map's key
+    /// domain is universal. Because map operators act on those key ranges, `!`
+    /// on the filled map yields an empty set rather than negating the Boolean
+    /// values.
+    ///
+    /// To fill gaps lazily without materializing a map, use
+    /// [`SortedDisjoint::fill_gaps`] on a set stream such as
+    /// [`RangeSetBlaze::ranges`].
+    ///
+    /// The [Ranges and gaps guide][crate::gaps] compares this materialized form
+    /// with the lazy streaming form and its map counterpart.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeSetBlaze;
+    /// let set = RangeSetBlaze::from_iter([1..=3, 7..=10]);
+    /// let filled = set.fill_gaps();
+    /// assert_eq!(filled.get(i32::MIN), Some(&false));
+    /// assert_eq!(filled.get(2), Some(&true));
+    /// assert_eq!(filled.get(5), Some(&false));
+    /// assert_eq!(filled.get(8), Some(&true));
+    /// assert_eq!(filled.get(i32::MAX), Some(&false));
+    /// ```
+    #[must_use]
+    pub fn fill_gaps(&self) -> RangeMapBlaze<T, bool> {
+        self.ranges().fill_gaps().into_range_map_blaze()
     }
 
     /// An iterator that moves out the ranges in the [`RangeSetBlaze`],

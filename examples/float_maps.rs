@@ -5,7 +5,7 @@
 //! `f32` value in `[-pi, pi]` (~2.16 billion values), computes the smallest
 //! number of Taylor terms needed to reach
 //! `TARGET_ERROR` (1e-7), and tabulates the results in a
-//! `RangeMapBlaze<FiniteF32, u8>`.
+//! `RangeMapBlaze<NotNanF32, u8>`.
 //!
 //! Surprisingly, most representable `f32` values in this interval need only
 //! one term (`1`) or two terms (`1 - x*x/2`). The resulting `RangeMapBlaze`
@@ -22,8 +22,8 @@
 
 use core::f32::consts::PI;
 use range_set_blaze::{
-    FiniteF32, Integer, RangeMapBlaze, RangeSetBlaze,
-    finite::{FiniteRangeExt, ff32},
+    Integer, NotNanF32, RangeMapBlaze, RangeSetBlaze,
+    not_nan::{NotNanRangeExt, nnf32},
 };
 use rayon::prelude::*;
 use std::{num::NonZero, ops::BitOr, thread::available_parallelism};
@@ -60,13 +60,13 @@ const TARGET_ERROR: f64 = 1e-7;
 /// Mean terms per in-scope f32 value (each value weighted equally): 1.23
 /// ```
 fn main() {
-    let scope = RangeSetBlaze::from_iter([ff32(-PI)..=ff32(PI)]);
+    let scope = RangeSetBlaze::from_iter([nnf32(-PI)..=nnf32(PI)]);
 
     // Split scope across all available cores; each thread sweeps its own
     // chunk into a local RangeMapBlaze, then union (also known as `|` and `bitor`)
     // merges them --this is cheap because the # of ranges in each chunk turns out to be small.
     let num_chunks = available_parallelism().map_or(1, NonZero::get);
-    let term_map: RangeMapBlaze<FiniteF32, u8> = chunks(&scope, num_chunks)
+    let term_map: RangeMapBlaze<NotNanF32, u8> = chunks(&scope, num_chunks)
         .into_par_iter()
         .map(|chunk| chunk.iter().map(|x| (x, terms_needed(x))).collect())
         .reduce(RangeMapBlaze::new, BitOr::bitor); // `bitor` is a very efficient union that exploits ownership.
@@ -108,7 +108,7 @@ fn separate_with_underscores(value: &impl ToString) -> String {
 /// Smallest `N` (1..=`u8::MAX`) for which the remainder bound
 /// `|x|^(2N) / (2N)!` guarantees error under `TARGET_ERROR`. Assumes `x`
 /// is already in scope.
-fn terms_needed(x: FiniteF32) -> u8 {
+fn terms_needed(x: NotNanF32) -> u8 {
     let x = f64::from(x.into_inner());
     let xx = x * x;
     let mut term_magnitude = 1.0_f64; // |x|^0 / 0!
@@ -122,7 +122,7 @@ fn terms_needed(x: FiniteF32) -> u8 {
 }
 
 /// Splits `scope` into `n` nearly equal contiguous chunks.
-fn chunks(scope: &RangeSetBlaze<FiniteF32>, n: usize) -> Vec<RangeSetBlaze<FiniteF32>> {
+fn chunks(scope: &RangeSetBlaze<NotNanF32>, n: usize) -> Vec<RangeSetBlaze<NotNanF32>> {
     let Some(mut start) = scope.first() else {
         return Vec::new();
     };
@@ -159,11 +159,11 @@ fn taylor_cos(x: f32, terms: u8) -> f32 {
 /// Mean term count across in-scope `f32` values, each counted once (not an
 /// average over the reals, which would over-weight sparse magnitudes).
 /// Exact: weights each range's term count by its `Integer::safe_len`.
-fn mean_terms(term_map: &RangeMapBlaze<FiniteF32, u8>) -> f64 {
+fn mean_terms(term_map: &RangeMapBlaze<NotNanF32, u8>) -> f64 {
     let mut weighted_sum = 0.0;
     let mut total_count = 0.0;
     for (range, n) in term_map.range_values() {
-        let len = FiniteF32::safe_len_to_f64_lossy(FiniteF32::safe_len(&range));
+        let len = NotNanF32::safe_len_to_f64_lossy(NotNanF32::safe_len(&range));
         weighted_sum = len.mul_add(f64::from(*n), weighted_sum);
         total_count += len;
     }

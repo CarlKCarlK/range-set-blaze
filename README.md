@@ -9,13 +9,17 @@ range-set-blaze
 
 Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full set operations
 
-Supports all of Rust's integer-like types, `u8` to `u128`, `i8` to `i128`, `char` (Unicode characters), `Ipv4Addr`, and `Ipv6Addr`.
-Set operations—`union`, `intersection`, `difference`, `symmetric difference`, and `complement`— are available on both [sets][set operations] and [maps][map operations].
+* Supports all of Rust's integer-like types, `u8` to `u128`, `i8` to `i128`, `char` (Unicode characters), `Ipv4Addr`, and `Ipv6Addr`. Also supports [floating-point ranges][floating-point documentation] for `f32` and `f64` through the [`NotNanF32`], [`NotNanF64`], [`TotalF32`], and [`TotalF64`] wrappers.
+* `union`, `intersection`, `difference`, `symmetric difference`, and `complement`—available on both [sets][set operations] and [maps][map operations].
+* Can also work directly with [ranges and gaps][ranges and gaps], not just individual integer-like values.
 
 The crate's main structs are:
 
 * [`RangeSetBlaze`], a set of integers. See the [set documentation] for details.
 * [`RangeMapBlaze`], a map from integers to values. See the [map documentation] for details.
+
+For a side-by-side introduction to range lookups and gap filling for both
+containers, see the [Ranges and gaps guide][ranges and gaps].
 
 > Unlike the standard [`BTreeSet`]/[`BTreeMap`] and [`HashSet`]/[`HashMap`], `RangeSetBlaze` does not store every integer in the set. Rather, it stores sorted & disjoint ranges of integers in a cache-efficient [`BTreeMap`]. It differs from [other interval libraries](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md) -- that we know of -- by
 > offering full set operations and by being optimized for sets of [clumpy][1] integers.
@@ -34,12 +38,17 @@ The crate's main traits are
 > The package enforces the "sorted & disjoint" constraint at compile time
 > (making invalid states unrepresentable).
 
+[`NotNanF32`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/type.NotNanF32.html
+[`NotNanF64`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/type.NotNanF64.html
+[`TotalF32`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/type.TotalF32.html
+[`TotalF64`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/type.TotalF64.html
 [`RangeSetBlaze`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
 [`RangeMapBlaze`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html
 [`SortedDisjoint`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html#table-of-contents
 [`SortedDisjointMap`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjointMap.html#table-of-contents
 [set documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
 [map documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html
+[ranges and gaps]: https://docs.rs/range-set-blaze/latest/range_set_blaze/gaps/index.html
 [`BTreeMap`]: alloc::collections::BTreeMap
 [`BTreeSet`]: alloc::collections::BTreeSet
 [`HashSet`]: std::collections::HashSet
@@ -84,7 +93,7 @@ Articles
 * [Nine Rules for SIMD Acceleration of your Rust Code:
   General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x](https://medium.com/towards-data-science/nine-rules-for-simd-acceleration-of-your-rust-code-part-1-c16fe639ce21) in *Towards Data Science*
 
-* *Also see:* [CHANGELOG](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/CHANGELOG.md)
+* *Also see:* [CHANGELOG](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/CHANGELOG.md) and the [release checklist](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/release_checklist.md)
 
 Examples
 -----------
@@ -208,27 +217,33 @@ for range in intron.ranges() {
 }
 ```
 
-Features
---------
+Cargo Features
+--------------
 
 The available Cargo features are:
 
 * `default` — Enables the `std` feature. Use `--no-default-features` for a `no_std` build.
 * `std` — Enables `std`-specific conveniences and trait implementations. The crate's core functionality remains available with `no_std` and `alloc`; see [the `no_std` usage above](#no_std-wasm-and-embedded).
+* `cursor_nightly_experimental` — Uses Rust's (nightly-only) B-tree cursor API to speed up `insert`/`ranges_insert` on both `RangeSetBlaze` (roughly [1.8x–2.2x, geometric mean ~2.0x](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md#benchmark-2b-ingest_clumps_cursor-experimental-b-tree-cursor-insertion-vs-the-baseline-algorithm)) and `RangeMapBlaze` (roughly [1.5x–2.1x, geometric mean ~1.7x](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench_map.md#benchmark-3b-map_ingest_clumps_cursor-experimental-b-tree-cursor-insertion-vs-the-baseline-algorithm)). Same public API.
 * `from_slice` — Enables the nightly-only [`RangeSetBlaze::from_slice`][from-slice] constructor, which can speed up construction from array-like collections using SIMD where available.
-* `float_experimental` — Enables experimental floating-point range support for `f32` and `f64`; see the [floating-point module documentation][floating-point documentation].
-* `float_nightly_experimental` — Enables the nightly-only `f16` and `f128` floating-point wrappers in addition to `float_experimental`; see the [floating-point module documentation][floating-point documentation]. This requires a nightly Rust compiler.
-* `rog_experimental` — Enables the experimental [`Rog` (range-or-gap) type][rog]. Its API may change or be removed in a future release.
+* `float_nightly_experimental` — Enables the nightly-only `f16` and `f128` floating-point wrappers; see the [floating-point module documentation][floating-point documentation]. This requires a nightly Rust compiler.
+* `test_util` — Test/benchmark helpers used internally by the crate; not needed by downstream users.
 
-[rog]: https://docs.rs/range-set-blaze/latest/range_set_blaze/enum.Rog.html
+The published API documentation includes all optional features. Feature-gated items are marked
+with the feature required to use them; optional features are not enabled by default for users of
+the crate.
+
 [floating-point documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/index.html
 [from-slice]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_slice
 
-## Contributing
+Contributing
+------------
 
-Contributions are welcome! For development workflow, local testing, and CI information, see [CONTRIBUTING.md](CONTRIBUTING.md).
+Contributions are welcome! For development workflow, local testing, and CI information, see the
+[contribution guide](https://github.com/CarlKCarlK/range-set-blaze/blob/main/CONTRIBUTING.md).
 
 **Quick start for developers:**
+
 ```bash
 # Install just task runner
 cargo install just
@@ -238,3 +253,12 @@ just check-all
 ```
 
 See `just --list` for all available development commands (defined in `justfile`).
+
+Policy on AI-assisted development and contributions
+-----------------------------------------------------
+
+The use of AI tools is permitted for development and contributions to this repository. AI may be used as a productivity aid for drafting, exploration, and refactoring.
+
+All code and documentation contributed to this repository must be reviewed, edited, and validated by a human contributor. AI tools are not a substitute for design judgment, testing, or responsibility for correctness.
+
+[AGENTS.md](https://github.com/CarlKCarlK/range-set-blaze/blob/main/AGENTS.md) contains the general instructions and constraints given to AI tools used during development of this repository.

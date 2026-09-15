@@ -1,7 +1,6 @@
 //! Tests
 
 #![cfg(test)]
-#![cfg(feature = "float_experimental")]
 #![cfg_attr(feature = "float_nightly_experimental", feature(f16))]
 #![cfg_attr(feature = "float_nightly_experimental", feature(f128))]
 
@@ -9,26 +8,26 @@ use num_traits::identities::{One, Zero};
 #[cfg(feature = "float_nightly_experimental")]
 use range_set_blaze::UIntPlusOne;
 #[cfg(feature = "float_nightly_experimental")]
-use range_set_blaze::finite::{ff16, ff128};
-use range_set_blaze::finite::{ff32, ff64};
+use range_set_blaze::not_nan::{nnf16, nnf128};
+use range_set_blaze::not_nan::{nnf32, nnf64};
 use range_set_blaze::total::{TotalRangeExt, tf32, tf64};
 #[cfg(feature = "float_nightly_experimental")]
 use range_set_blaze::total::{tf16, tf128};
-#[cfg(feature = "float_nightly_experimental")]
-use range_set_blaze::{FiniteF16, FiniteF128, TotalF16, TotalF128};
 use range_set_blaze::{
-    FiniteF32, FiniteF64, Integer, RangeMapBlaze, RangeSetBlaze, TotalF32, TotalF64,
+    Integer, NotNanF32, NotNanF64, RangeMapBlaze, RangeSetBlaze, TotalF32, TotalF64,
 };
+#[cfg(feature = "float_nightly_experimental")]
+use range_set_blaze::{NotNanF16, NotNanF128, TotalF16, TotalF128};
 use syntactic_for::syntactic_for;
 use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);
 
-const CONST_FINITE_F32: FiniteF32 = ff32(-0.0);
-const CONST_FINITE_F64: FiniteF64 = ff64(-0.0);
+const CONST_NOT_NAN_F32: NotNanF32 = nnf32(-0.0);
+const CONST_NOT_NAN_F64: NotNanF64 = nnf64(-0.0);
 #[cfg(feature = "float_nightly_experimental")]
-const CONST_FINITE_F16: FiniteF16 = ff16(1.0);
+const CONST_NOT_NAN_F16: NotNanF16 = nnf16(1.0);
 #[cfg(feature = "float_nightly_experimental")]
-const CONST_FINITE_F128: FiniteF128 = ff128(-0.0);
+const CONST_NOT_NAN_F128: NotNanF128 = nnf128(-0.0);
 macro_rules! assert_empty_complement {
     (map, $ty:ty) => {
         let empty = RangeMapBlaze::<$ty, u8>::new();
@@ -50,19 +49,22 @@ macro_rules! assert_empty_complement {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn finite_shorthands_are_const() {
-    assert_eq!(CONST_FINITE_F32, ff32(0.0));
-    assert_eq!(CONST_FINITE_F64.into_inner().to_bits(), 0.0_f64.to_bits());
-    assert_eq!(ff32(-0.0).into_inner().to_bits(), 0.0_f32.to_bits());
-    assert_eq!(ff64(-0.0).into_inner().to_bits(), 0.0_f64.to_bits());
+fn not_nan_shorthands_are_const() {
+    assert_eq!(CONST_NOT_NAN_F32, nnf32(0.0));
+    assert_eq!(CONST_NOT_NAN_F64.into_inner().to_bits(), 0.0_f64.to_bits());
+    assert_eq!(nnf32(-0.0).into_inner().to_bits(), 0.0_f32.to_bits());
+    assert_eq!(nnf64(-0.0).into_inner().to_bits(), 0.0_f64.to_bits());
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "float_nightly_experimental")]
-fn finite_nightly_shorthands_are_const() {
-    assert_eq!(CONST_FINITE_F16, ff16(1.0));
-    assert_eq!(CONST_FINITE_F128.into_inner().to_bits(), 0.0_f128.to_bits());
+fn not_nan_nightly_shorthands_are_const() {
+    assert_eq!(CONST_NOT_NAN_F16, nnf16(1.0));
+    assert_eq!(
+        CONST_NOT_NAN_F128.into_inner().to_bits(),
+        0.0_f128.to_bits()
+    );
 }
 
 #[test]
@@ -70,11 +72,11 @@ fn finite_nightly_shorthands_are_const() {
 fn map_complement0() {
     assert!(<f64 as PartialEq>::eq(&0.0, &-0.0));
     assert_ne!(tf64(0.0), tf64(-0.0));
-    assert_eq!(ff64(0.0), ff64(-0.0));
+    assert_eq!(nnf64(0.0), nnf64(-0.0));
     assert_ne!(tf32(0.0), tf32(-0.0));
-    assert_eq!(ff32(0.0), ff32(-0.0));
+    assert_eq!(nnf32(0.0), nnf32(-0.0));
 
-    syntactic_for! { ty in [TotalF32, TotalF64, FiniteF32, FiniteF64] {
+    syntactic_for! { ty in [TotalF32, TotalF64, NotNanF32, NotNanF64] {
         $(assert_empty_complement!(map, $ty);)*
     }}
 }
@@ -84,11 +86,11 @@ fn map_complement0() {
 #[cfg(feature = "float_nightly_experimental")]
 fn map_complement0_nightly() {
     assert_ne!(tf16(0.0), tf16(-0.0));
-    assert_eq!(ff16(0.0), ff16(-0.0));
+    assert_eq!(nnf16(0.0), nnf16(-0.0));
     assert_ne!(tf128(0.0), tf128(-0.0));
-    assert_eq!(ff128(0.0), ff128(-0.0));
+    assert_eq!(nnf128(0.0), nnf128(-0.0));
 
-    syntactic_for! { ty in [TotalF16, TotalF128, FiniteF16, FiniteF128] {
+    syntactic_for! { ty in [TotalF16, TotalF128, NotNanF16, NotNanF128] {
         $(assert_empty_complement!(map, $ty);)*
     }}
 }
@@ -96,7 +98,7 @@ fn map_complement0_nightly() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn set_complement0() {
-    syntactic_for! { ty in [TotalF32, TotalF64, FiniteF32, FiniteF64] {
+    syntactic_for! { ty in [TotalF32, TotalF64, NotNanF32, NotNanF64] {
         $(assert_empty_complement!(set, $ty);)*
     }}
 }
@@ -105,7 +107,7 @@ fn set_complement0() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "float_nightly_experimental")]
 fn set_complement_nightly() {
-    syntactic_for! { ty in [TotalF16, TotalF128, FiniteF16, FiniteF128] {
+    syntactic_for! { ty in [TotalF16, TotalF128, NotNanF16, NotNanF128] {
         $(assert_empty_complement!(set, $ty);)*
     }}
 }
@@ -114,7 +116,7 @@ fn set_complement_nightly() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[allow(clippy::cognitive_complexity, clippy::float_cmp)]
 fn integer_coverage() {
-    syntactic_for! { ty in [TotalF32, TotalF64, FiniteF32, FiniteF64] {
+    syntactic_for! { ty in [TotalF32, TotalF64, NotNanF32, NotNanF64] {
         $(
             let len = <$ty as Integer>::SafeLen::one();
             let a = $ty::new(42.0);
@@ -132,7 +134,7 @@ fn integer_coverage() {
 #[cfg(feature = "float_nightly_experimental")]
 #[allow(clippy::cognitive_complexity, clippy::float_cmp)]
 fn integer_coverage_nightly() {
-    syntactic_for! { ty in [TotalF16, TotalF128, FiniteF16, FiniteF128] {
+    syntactic_for! { ty in [TotalF16, TotalF128, NotNanF16, NotNanF128] {
         $(
             let len = <$ty as Integer>::SafeLen::one();
             let a = $ty::new(42.0);
@@ -202,7 +204,7 @@ fn float_test() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_inclusive() {
-    syntactic_for! { ty in [TotalF32, TotalF64, FiniteF32, FiniteF64] {
+    syntactic_for! { ty in [TotalF32, TotalF64, NotNanF32, NotNanF64] {
         $(
     let a = <$ty>::min_value();
     let b = <$ty>::max_value();
@@ -217,7 +219,7 @@ fn test_inclusive() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "float_nightly_experimental")]
 fn test_inclusive_nightly() {
-    syntactic_for! { ty in [TotalF16, TotalF128, FiniteF16, FiniteF128] {
+    syntactic_for! { ty in [TotalF16, TotalF128, NotNanF16, NotNanF128] {
         $(
             let a = <$ty>::min_value();
             let b = <$ty>::max_value();
@@ -231,7 +233,7 @@ fn test_inclusive_nightly() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn inclusive_endpoints_cross_zero() {
-    syntactic_for! { ty in [TotalF32, TotalF64, FiniteF32, FiniteF64] {
+    syntactic_for! { ty in [TotalF32, TotalF64, NotNanF32, NotNanF64] {
         $(
             let start = <$ty>::new(-1.0);
             let end = <$ty>::new(1.0);
@@ -246,7 +248,7 @@ fn inclusive_endpoints_cross_zero() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "float_nightly_experimental")]
 fn inclusive_endpoints_cross_zero_nightly() {
-    syntactic_for! { ty in [TotalF16, TotalF128, FiniteF16, FiniteF128] {
+    syntactic_for! { ty in [TotalF16, TotalF128, NotNanF16, NotNanF128] {
         $(
             let start = <$ty>::new(-1.0);
             let end = <$ty>::new(1.0);
@@ -260,7 +262,7 @@ fn inclusive_endpoints_cross_zero_nightly() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_floats2() {
-    syntactic_for! { ty in [TotalF32, TotalF64, FiniteF32, FiniteF64] {
+    syntactic_for! { ty in [TotalF32, TotalF64, NotNanF32, NotNanF64] {
         $(
             let mut a = $ty::from_primitive_range(0.0..=0.0);
             assert_eq!($ty::range_next_back(&mut a), Some($ty::new(0.0)));
@@ -277,7 +279,7 @@ fn test_floats2() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "float_nightly_experimental")]
 fn test_floats2_nightly() {
-    syntactic_for! { ty in [TotalF16, TotalF128, FiniteF16, FiniteF128] {
+    syntactic_for! { ty in [TotalF16, TotalF128, NotNanF16, NotNanF128] {
         $(
             let mut a = $ty::from_primitive_range(0.0..=0.0);
             assert_eq!($ty::range_next_back(&mut a), Some($ty::new(0.0)));
@@ -293,7 +295,7 @@ fn test_floats2_nightly() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn total_iterators() {
-    syntactic_for! { ty in [TotalF32, TotalF64, FiniteF32, FiniteF64] {
+    syntactic_for! { ty in [TotalF32, TotalF64, NotNanF32, NotNanF64] {
         $(
             // MAX forward
             let set = RangeSetBlaze::from_iter([$ty::MAX..=$ty::MAX]);
@@ -326,7 +328,7 @@ fn total_iterators() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "float_nightly_experimental")]
 fn total_iterators_nightly() {
-    syntactic_for! { ty in [TotalF16, TotalF128, FiniteF16, FiniteF128] {
+    syntactic_for! { ty in [TotalF16, TotalF128, NotNanF16, NotNanF128] {
         $(
             // MAX forward
             let set = RangeSetBlaze::from_iter([$ty::MAX..=$ty::MAX]);
@@ -358,7 +360,7 @@ fn total_iterators_nightly() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn total_complement() {
-    syntactic_for! { ty in [TotalF32, TotalF64, FiniteF32, FiniteF64] {
+    syntactic_for! { ty in [TotalF32, TotalF64, NotNanF32, NotNanF64] {
         $(
             let set = RangeSetBlaze::from_iter([$ty::MAX..=$ty::MAX]);
             assert!(set.contains($ty::MAX));
@@ -397,7 +399,7 @@ fn total_complement() {
 #[cfg(feature = "float_nightly_experimental")]
 fn total_complement_nightly() {
     // Total128::SafeLen is UIntPlusOne, which doesn't work smoothly here, so it's a separate test below
-    syntactic_for! { ty in [TotalF16, /*TotalF128,*/ FiniteF16, FiniteF128] {
+    syntactic_for! { ty in [TotalF16, /*TotalF128,*/ NotNanF16, NotNanF128] {
         $(
             let set = RangeSetBlaze::from_iter([$ty::MAX..=$ty::MAX]);
             assert!(set.contains($ty::MAX));
@@ -466,166 +468,174 @@ fn total_complement_total128() {
 }
 
 // ============================================================================
-// Construction validation (see specs/finite-construction-validation.md).
-// `FiniteF64`'s doc comment (see `FiniteF64` / `Finite<T>`) promises values
-// "excluding NaN, -0.0, and infinities." `new()`/`try_new()` enforce that via
-// `T::is_finite` + `T::normalize`; `range()`, `ranges()`, and `values()` now
-// route through `new()` so they enforce the same contract. `from_primitive_slice()` validates
-// (panicking on bad input) and delegates to the `unsafe` `from_primitive_slice_unchecked()`
-// for the actual zero-copy view, which — like `new_unchecked()` — requires the
+// Construction validation.
+// `NotNanF64`'s doc comment (see `NotNanF64` / `NotNan<T>`) promises values
+// "excluding NaN" -- infinities and every other non-NaN value are legal.
+// `new()`/`try_new()` enforce that via `!T::is_nan` + `T::normalize`;
+// `range()`, `ranges()`, and `values()` route through `new()` so they enforce
+// the same contract. `from_primitive_slice()` validates (panicking on bad
+// input) and delegates to the `unsafe` `from_primitive_slice_unchecked()` for
+// the actual zero-copy view, which — like `new_unchecked()` — requires the
 // caller to already guarantee the invariant.
 // ============================================================================
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic(expected = "Finite type requires a finite value")]
-fn finite_range_rejects_nan_start() {
-    let _ = FiniteF64::from_primitive_range(f64::NAN..=1.0);
+#[should_panic(expected = "NotNan type requires a non-NaN value")]
+fn not_nan_range_rejects_nan_start() {
+    let _ = NotNanF64::from_primitive_range(f64::NAN..=1.0);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic(expected = "Finite type requires a finite value")]
-fn finite_range_rejects_infinite_end() {
-    let _ = FiniteF64::from_primitive_range(1.0..=f64::INFINITY);
+fn not_nan_range_accepts_infinite_end() {
+    let range = NotNanF64::from_primitive_range(1.0..=f64::INFINITY);
+    assert_eq!(*range.end(), NotNanF64::MAX);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic(expected = "Finite type requires a finite value")]
-fn finite_values_rejects_nan() {
+#[should_panic(expected = "NotNan type requires a non-NaN value")]
+fn not_nan_values_rejects_nan() {
     // Important: values() is lazy, so force iteration.
-    let _ = FiniteF64::values([1.0, f64::NAN]).collect::<Vec<_>>();
+    let _ = NotNanF64::values([1.0, f64::NAN]).collect::<Vec<_>>();
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn finite_values_normalizes_negative_zero() {
-    let value = FiniteF64::values([-0.0])
+fn not_nan_values_normalizes_negative_zero() {
+    let value = NotNanF64::values([-0.0])
         .next()
         .expect("one input produces one value");
 
-    assert_eq!(value, FiniteF64::new(0.0));
+    assert_eq!(value, NotNanF64::new(0.0));
     assert_eq!(value.into_inner().to_bits(), 0.0f64.to_bits());
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic(expected = "Finite type requires finite, non-negative-zero values")]
-fn finite_slice_rejects_nan() {
-    let _ = FiniteF64::from_primitive_slice(&[f64::NAN]);
+fn not_nan_values_accepts_infinities() {
+    let values = NotNanF64::values([f64::NEG_INFINITY, f64::INFINITY]).collect::<Vec<_>>();
+    assert_eq!(values, vec![NotNanF64::MIN, NotNanF64::MAX]);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic(expected = "Finite type requires finite, non-negative-zero values")]
-fn finite_slice_rejects_negative_zero() {
-    let _ = FiniteF64::from_primitive_slice(&[-0.0]);
+#[should_panic(expected = "NotNan type requires non-NaN, non-negative-zero values")]
+fn not_nan_slice_rejects_nan() {
+    let _ = NotNanF64::from_primitive_slice(&[f64::NAN]);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic(expected = "Finite type requires finite, non-negative-zero values")]
-fn finite_slice_rejects_infinity() {
-    let _ = FiniteF64::from_primitive_slice(&[f64::INFINITY]);
+#[should_panic(expected = "NotNan type requires non-NaN, non-negative-zero values")]
+fn not_nan_slice_rejects_negative_zero() {
+    let _ = NotNanF64::from_primitive_slice(&[-0.0]);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn finite_slice_unchecked_bypasses_validation() {
-    // SAFETY: deliberately violates Finite's invariant to document exactly what
+fn not_nan_slice_accepts_infinity() {
+    let slice = NotNanF64::from_primitive_slice(&[f64::INFINITY]);
+    assert_eq!(slice, [NotNanF64::MAX]);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn not_nan_slice_unchecked_bypasses_validation() {
+    // SAFETY: deliberately violates NotNan's invariant to document exactly what
     // `from_primitive_slice_unchecked` allows through when its safety precondition is broken —
-    // this is the documented "logic error, not UB" escape hatch from the spec.
-    let values = unsafe { FiniteF64::from_primitive_slice_unchecked(&[f64::NAN]) };
+    // this is the documented "logic error, not UB" escape hatch.
+    let values = unsafe { NotNanF64::from_primitive_slice_unchecked(&[f64::NAN]) };
     assert!(values[0].into_inner().is_nan());
 }
 
 // The validation logic in `range`/`values`/`slice` is shared generic code (one
-// impl block in `finite.rs`, monomorphized per type) — the tests above
+// impl block in `not_nan.rs`, monomorphized per type) — the tests above
 // already prove it works once. These f32/f128 variants aren't re-testing that
-// shared logic; they sanity-check that each type's own `FiniteFloat::
-// is_finite`/`normalize` leaf impl (which live separately per type in
-// `finite_float.rs`) behaves the same way through it.
+// shared logic; they sanity-check that each type's own `NotNanFloat::
+// is_nan`/`normalize` leaf impl (which live separately per type in
+// `not_nan_float.rs`) behaves the same way through it.
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic(expected = "Finite type requires a finite value")]
-fn finite_range_rejects_nan_start_f32() {
-    let _ = FiniteF32::from_primitive_range(f32::NAN..=1.0);
+#[should_panic(expected = "NotNan type requires a non-NaN value")]
+fn not_nan_range_rejects_nan_start_f32() {
+    let _ = NotNanF32::from_primitive_range(f32::NAN..=1.0);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn finite_values_normalizes_negative_zero_f32() {
-    let value = FiniteF32::values([-0.0])
+fn not_nan_values_normalizes_negative_zero_f32() {
+    let value = NotNanF32::values([-0.0])
         .next()
         .expect("one input produces one value");
 
-    assert_eq!(value, FiniteF32::new(0.0));
+    assert_eq!(value, NotNanF32::new(0.0));
     assert_eq!(value.into_inner().to_bits(), 0.0f32.to_bits());
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic(expected = "Finite type requires finite, non-negative-zero values")]
-fn finite_slice_rejects_nan_f32() {
-    let _ = FiniteF32::from_primitive_slice(&[f32::NAN]);
+#[should_panic(expected = "NotNan type requires non-NaN, non-negative-zero values")]
+fn not_nan_slice_rejects_nan_f32() {
+    let _ = NotNanF32::from_primitive_slice(&[f32::NAN]);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic(expected = "Finite type requires finite, non-negative-zero values")]
-fn finite_slice_rejects_infinity_f32() {
-    let _ = FiniteF32::from_primitive_slice(&[f32::INFINITY]);
+fn not_nan_slice_accepts_infinity_f32() {
+    let slice = NotNanF32::from_primitive_slice(&[f32::INFINITY]);
+    assert_eq!(slice, [NotNanF32::MAX]);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[should_panic(expected = "Finite type requires finite, non-negative-zero values")]
-fn finite_slice_rejects_negative_zero_f32() {
-    let _ = FiniteF32::from_primitive_slice(&[-0.0]);
+#[should_panic(expected = "NotNan type requires non-NaN, non-negative-zero values")]
+fn not_nan_slice_rejects_negative_zero_f32() {
+    let _ = NotNanF32::from_primitive_slice(&[-0.0]);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn finite_slice_unchecked_bypasses_validation_f32() {
-    // SAFETY: deliberately violates Finite's invariant, see the f64 variant above.
-    let values = unsafe { FiniteF32::from_primitive_slice_unchecked(&[f32::NAN]) };
+fn not_nan_slice_unchecked_bypasses_validation_f32() {
+    // SAFETY: deliberately violates NotNan's invariant, see the f64 variant above.
+    let values = unsafe { NotNanF32::from_primitive_slice_unchecked(&[f32::NAN]) };
     assert!(values[0].into_inner().is_nan());
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "float_nightly_experimental")]
-#[should_panic(expected = "Finite type requires a finite value")]
-fn finite_range_rejects_nan_start_f128() {
-    let _ = FiniteF128::from_primitive_range(f128::NAN..=1.0);
+#[should_panic(expected = "NotNan type requires a non-NaN value")]
+fn not_nan_range_rejects_nan_start_f128() {
+    let _ = NotNanF128::from_primitive_range(f128::NAN..=1.0);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "float_nightly_experimental")]
-fn finite_values_normalizes_negative_zero_f128() {
-    let value = FiniteF128::values([-0.0]).next().unwrap();
+fn not_nan_values_normalizes_negative_zero_f128() {
+    let value = NotNanF128::values([-0.0]).next().unwrap();
 
-    assert_eq!(value, FiniteF128::new(0.0));
+    assert_eq!(value, NotNanF128::new(0.0));
     assert_eq!(value.into_inner().to_bits(), 0.0f128.to_bits());
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "float_nightly_experimental")]
-#[should_panic(expected = "Finite type requires finite, non-negative-zero values")]
-fn finite_slice_rejects_nan_f128() {
-    let _ = FiniteF128::from_primitive_slice(&[f128::NAN]);
+#[should_panic(expected = "NotNan type requires non-NaN, non-negative-zero values")]
+fn not_nan_slice_rejects_nan_f128() {
+    let _ = NotNanF128::from_primitive_slice(&[f128::NAN]);
 }
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "float_nightly_experimental")]
-fn finite_slice_unchecked_bypasses_validation_f128() {
-    // SAFETY: deliberately violates Finite's invariant, see the f64 variant above.
-    let values = unsafe { FiniteF128::from_primitive_slice_unchecked(&[f128::NAN]) };
+fn not_nan_slice_unchecked_bypasses_validation_f128() {
+    // SAFETY: deliberately violates NotNan's invariant, see the f64 variant above.
+    let values = unsafe { NotNanF128::from_primitive_slice_unchecked(&[f128::NAN]) };
     assert!(values[0].into_inner().is_nan());
 }
 
@@ -633,22 +643,23 @@ fn finite_slice_unchecked_bypasses_validation_f128() {
 // Why didn't the exhaustive `full_16` test above already catch this?
 //
 // `full_16` walks the *already-valid* total-order domain: it starts at
-// `$ty::MIN` (a finite extreme) and steps forward only via `.after()`, whose
+// `$ty::MIN` (negative infinity) and steps forward only via `.after()`, whose
 // own logic already knows to skip the -0.0 ordered slot and never produces
 // NaN. It exhaustively checks internal self-consistency of that walk
 // (safe_len, inclusive_end_from_start, after/before symmetry) — it never routes
-// arbitrary/adversarial *input* bit patterns (NaN, -0.0, +/-infinity) through
+// arbitrary/adversarial *input* bit patterns (NaN, -0.0) through
 // the other public entry points (`values`, `range`, `slice`). Below is the
 // same exhaustive-over-all-bits idea as `full_16`, but aimed at the
-// constructors: every valid bit pattern must round-trip cleanly through all
-// three, -0.0 must normalize (or, for `slice`, panic, since it can't
-// normalize a borrowed view), and every other invalid bit pattern must panic.
+// constructors: every valid bit pattern (including the infinities) must
+// round-trip cleanly through all three, -0.0 must normalize (or, for `slice`,
+// panic, since it can't normalize a borrowed view), and every NaN bit pattern
+// must panic.
 // ============================================================================
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "float_nightly_experimental")]
-fn finite_f16_exhaustive_bit_patterns_via_constructors() {
+fn not_nan_f16_exhaustive_bit_patterns_via_constructors() {
     let mut failures = Vec::new();
 
     // Silence panic output for the (many) bit patterns we expect to panic below;
@@ -660,8 +671,8 @@ fn finite_f16_exhaustive_bit_patterns_via_constructors() {
         let x = f16::from_bits(bits);
         let is_neg_zero = x == 0.0 && x.is_sign_negative();
 
-        if x.is_finite() && !is_neg_zero {
-            let via_values = FiniteF16::values([x]).next().unwrap();
+        if !x.is_nan() && !is_neg_zero {
+            let via_values = NotNanF16::values([x]).next().unwrap();
             if via_values.into_inner() != x {
                 failures.push(format!(
                     "values(): bits {bits:#06x} ({x}) did not round-trip, got {:?}",
@@ -669,7 +680,7 @@ fn finite_f16_exhaustive_bit_patterns_via_constructors() {
                 ));
             }
 
-            let via_range = *FiniteF16::from_primitive_range(x..=x).start();
+            let via_range = *NotNanF16::from_primitive_range(x..=x).start();
             if via_range.into_inner() != x {
                 failures.push(format!(
                     "range(): bits {bits:#06x} ({x}) did not round-trip, got {:?}",
@@ -677,7 +688,7 @@ fn finite_f16_exhaustive_bit_patterns_via_constructors() {
                 ));
             }
 
-            let via_slice = FiniteF16::from_primitive_slice(core::slice::from_ref(&x))[0];
+            let via_slice = NotNanF16::from_primitive_slice(core::slice::from_ref(&x))[0];
             if via_slice.into_inner() != x {
                 failures.push(format!(
                     "slice(): bits {bits:#06x} ({x}) did not round-trip, got {:?}",
@@ -685,18 +696,18 @@ fn finite_f16_exhaustive_bit_patterns_via_constructors() {
                 ));
             }
         } else if is_neg_zero {
-            let via_values = FiniteF16::values([x]).next().unwrap();
+            let via_values = NotNanF16::values([x]).next().unwrap();
             if via_values.into_inner().is_sign_negative() {
                 failures.push(format!("values(): bits {bits:#06x} did not normalize -0.0"));
             }
 
-            let via_range = *FiniteF16::from_primitive_range(x..=x).start();
+            let via_range = *NotNanF16::from_primitive_range(x..=x).start();
             if via_range.into_inner().is_sign_negative() {
                 failures.push(format!("range(): bits {bits:#06x} did not normalize -0.0"));
             }
 
             if std::panic::catch_unwind(|| {
-                FiniteF16::from_primitive_slice(core::slice::from_ref(&x))
+                NotNanF16::from_primitive_slice(core::slice::from_ref(&x))
             })
             .is_ok()
             {
@@ -705,19 +716,19 @@ fn finite_f16_exhaustive_bit_patterns_via_constructors() {
                 ));
             }
         } else {
-            // NaN or +/-infinity: all three constructors must panic.
-            if std::panic::catch_unwind(|| FiniteF16::values([x]).next()).is_ok() {
+            // NaN: all three constructors must panic.
+            if std::panic::catch_unwind(|| NotNanF16::values([x]).next()).is_ok() {
                 failures.push(format!(
                     "values(): bits {bits:#06x} ({x}) should have panicked"
                 ));
             }
-            if std::panic::catch_unwind(|| FiniteF16::from_primitive_range(x..=x)).is_ok() {
+            if std::panic::catch_unwind(|| NotNanF16::from_primitive_range(x..=x)).is_ok() {
                 failures.push(format!(
                     "range(): bits {bits:#06x} ({x}) should have panicked"
                 ));
             }
             if std::panic::catch_unwind(|| {
-                FiniteF16::from_primitive_slice(core::slice::from_ref(&x))
+                NotNanF16::from_primitive_slice(core::slice::from_ref(&x))
             })
             .is_ok()
             {
@@ -742,7 +753,7 @@ fn finite_f16_exhaustive_bit_patterns_via_constructors() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "float_nightly_experimental")]
 fn full_16() {
-    syntactic_for! { ty in [TotalF16,  FiniteF16] {
+    syntactic_for! { ty in [TotalF16,  NotNanF16] {
         $(
             let mut x = $ty::MIN;
             let mut count : <$ty as Integer>::SafeLen = 0;

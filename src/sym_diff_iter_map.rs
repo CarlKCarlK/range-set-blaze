@@ -8,7 +8,7 @@ use alloc::collections::BinaryHeap;
 
 use crate::{
     Integer, MergeMap, SortedDisjointMap, SymDiffKMergeMap, SymDiffMergeMap,
-    map::ValueRef,
+    map::ValueCarrier,
     merge_map::KMergeMap,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
 };
@@ -20,13 +20,13 @@ use crate::{
 /// [`symmetric_difference`]: crate::SortedDisjointMap::symmetric_difference
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct SymDiffIterMap<T, VR, I> {
+pub struct SymDiffIterMap<T, VC, I> {
     iter: I,
-    next_item: Option<Priority<T, VR>>,
-    workspace: BinaryHeap<Priority<T, VR>>,
+    next_item: Option<Priority<T, VC>>,
+    workspace: BinaryHeap<Priority<T, VC>>,
     workspace_next_end: Option<T>,
-    gather: Option<(RangeInclusive<T>, VR)>,
-    ready_to_go: Option<(RangeInclusive<T>, VR)>,
+    gather: Option<(RangeInclusive<T>, VC)>,
+    ready_to_go: Option<(RangeInclusive<T>, VC)>,
 }
 
 #[expect(clippy::ref_option)]
@@ -37,23 +37,23 @@ fn min_next_end<T: Integer>(next_end: &Option<T>, next_item_end: T) -> T {
     )
 }
 
-impl<T, VR, I> FusedIterator for SymDiffIterMap<T, VR, I>
+impl<T, VC, I> FusedIterator for SymDiffIterMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: PrioritySortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    I: PrioritySortedStartsMap<T, VC>,
 {
 }
 
-impl<T, VR, I> Iterator for SymDiffIterMap<T, VR, I>
+impl<T, VC, I> Iterator for SymDiffIterMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: PrioritySortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    I: PrioritySortedStartsMap<T, VC>,
 {
-    type Item = (RangeInclusive<T>, VR);
+    type Item = (RangeInclusive<T>, VC);
 
-    fn next(&mut self) -> Option<(RangeInclusive<T>, VR)> {
+    fn next(&mut self) -> Option<(RangeInclusive<T>, VC)> {
         // Keep doing this until we have something to return.
         loop {
             if let Some(value) = self.ready_to_go.take() {
@@ -73,8 +73,8 @@ where
                     self.next_item = self.iter.next();
                     continue; // return to top of the main processing loop
                 };
-                let best = best.range_value();
-                if next_start == *best.0.start() {
+                let (best_range, _) = best.range_value();
+                if next_start == *best_range.start() {
                     // Always push (this differs from UnionIterMap)
                     self.workspace_next_end =
                         Some(min_next_end(&self.workspace_next_end, next_end));
@@ -93,7 +93,7 @@ where
                 debug_assert!(self.ready_to_go.is_none());
                 return self.gather.take();
             };
-            let best = best.range_value();
+            let (best_range, best_value) = best.range_value();
 
             // We buffer for output the best item up to the start of the next item (if any).
 
@@ -107,25 +107,25 @@ where
             }
 
             // Add the front of best to the gather buffer.
-            if let Some(mut gather) = self.gather.take() {
-                if gather.1.borrow() == best.1.borrow()
-                    && (*gather.0.end()).add_one() == *best.0.start()
+            if let Some((mut gather_range, gather_value)) = self.gather.take() {
+                if gather_value.value_eq(best_value)
+                    && (*gather_range.end()).add_one() == *best_range.start()
                 {
                     if self.workspace.len().is_odd() {
                         // if the gather is contiguous with the best, then merge them
-                        gather.0 = *gather.0.start()..=next_end;
-                        self.gather = Some(gather);
+                        gather_range = *gather_range.start()..=next_end;
+                        self.gather = Some((gather_range, gather_value));
                     } else {
                         // if an even number of items in the workspace, then flush the gather
-                        self.ready_to_go = Some(gather);
+                        self.ready_to_go = Some((gather_range, gather_value));
                         debug_assert!(self.gather.is_none());
                     }
                 } else {
                     // if the gather is not contiguous with the best, then output the gather and set the gather to the best
-                    self.ready_to_go = Some(gather);
+                    self.ready_to_go = Some((gather_range, gather_value));
                     // FYI: this code appear twice # 1 of 2
                     if self.workspace.len().is_odd() {
-                        self.gather = Some((*best.0.start()..=next_end, best.1.clone()));
+                        self.gather = Some((*best_range.start()..=next_end, best_value.clone()));
                     } else {
                         debug_assert!(self.gather.is_none());
                     }
@@ -134,7 +134,7 @@ where
                 // if there is no gather, then set the gather to the best
                 // FYI: this code appear twice # 2 of 2
                 if self.workspace.len().is_odd() {
-                    self.gather = Some((*best.0.start()..=next_end, best.1.clone()));
+                    self.gather = Some((*best_range.start()..=next_end, best_value.clone()));
                 } else {
                     debug_assert!(self.gather.is_none());
                 }
@@ -158,12 +158,12 @@ where
     }
 }
 
-impl<T, VR, L, R> SymDiffMergeMap<T, VR, L, R>
+impl<T, VC, L, R> SymDiffMergeMap<T, VC, L, R>
 where
     T: Integer,
-    VR: ValueRef,
-    L: SortedDisjointMap<T, VR>,
-    R: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
 {
     #[inline]
     pub(crate) fn new2(left: L, right: R) -> Self {
@@ -172,11 +172,11 @@ where
     }
 }
 
-impl<T, VR, J> SymDiffKMergeMap<T, VR, J>
+impl<T, VC, J> SymDiffKMergeMap<T, VC, J>
 where
     T: Integer,
-    VR: ValueRef,
-    J: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    J: SortedDisjointMap<T, VC>,
 {
     #[inline]
     pub(crate) fn new_k<K>(k: K) -> Self
@@ -188,11 +188,11 @@ where
     }
 }
 
-impl<T, VR, I> SymDiffIterMap<T, VR, I>
+impl<T, VC, I> SymDiffIterMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: PrioritySortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    I: PrioritySortedStartsMap<T, VC>,
 {
     #[inline]
     pub(crate) fn new(mut iter: I) -> Self {

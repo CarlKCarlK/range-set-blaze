@@ -5,7 +5,73 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.7.0] - 2026-09-15
+
+### Added
+
+- Added the experimental `cursor_nightly_experimental` feature, which uses Rust's
+  nightly-only B-tree cursor API to speed up `insert`/`ranges_insert` on both
+  `RangeSetBlaze` (~2x) and `RangeMapBlaze` (~1.7x), with the same public API.
+- Floating-point range support for `f32` and `f64`, plus `range_at`,
+  `range_or_gap_at`, and `fill_gaps`, are now unconditional public APIs.
+- `RangeSetBlaze::fill_gaps` returns a `RangeMapBlaze<T, bool>` and
+  `RangeMapBlaze::fill_gaps` returns a `RangeMapBlaze<T, Option<V>>`, following
+  the crate's usual two-layer design: collection methods return gathered
+  collections, while `SortedDisjoint::fill_gaps` and
+  `SortedDisjointMap::fill_gaps` return the lazy streams
+  (`FillGapsIter` and `FillGapsIterMap`) for advanced composition. Both cover
+  the complete integer domain from `T::min_value()` through `T::max_value()`.
+- `FillGapsIterMap` and `FillGapsIter` now implement `SortedDisjointMap` and can be
+  collected directly into `RangeMapBlaze<T, Option<V>>` and
+  `RangeMapBlaze<T, bool>`, respectively. `bool` now implements `ValueCarrier` as
+  the canonical by-value carrier for totalized sets.
+- Added `docs/release_checklist.md`, the canonical release procedure, and a
+  "Policy on AI-assisted development and contributions" section in the README.
+
+### Fixed
+
+- Fixed doc links on `FillGapsIter`/`FillGapsIterMap` that resolved to the wrong
+  path because the linked-to trait docs used a bare relative `.html` path instead
+  of an intra-doc `crate::` path; this broke once a type implementing
+  `SortedDisjoint`/`SortedDisjointMap` first existed in a nested module (`gaps`).
+
+### Changed
+
+- CI's nightly toolchain (used for the `cursor_nightly_experimental`/
+  `float_nightly_experimental` checks, Clippy, and docs) is now pinned to a fixed
+  dated nightly instead of floating `nightly`, mirroring the already-pinned
+  stable toolchain in `rust-toolchain.toml`. A floating nightly previously broke
+  CI when upstream Clippy added the `single_range_in_vec_init` lint against this
+  crate's idiomatic `from_iter([a..=b])` single-range construction; that lint is
+  now explicitly allowed for the nightly Clippy run. Bump the pinned nightly
+  deliberately, the same way the stable toolchain is bumped.
+- The 32-bit Ubuntu CI job now retries its 32-bit `apt-get` package install
+  with a fresh package list, since `awalsh128/cache-apt-pkgs-action` reports
+  success even when its internal install fails (e.g. a transient mirror 404),
+  which previously surfaced later as a confusing linker error instead of a
+  clear package-install failure.
+- Qualified test-only `min_value()`/`max_value()` calls on concrete primitive
+  integer types to the crate's `Integer` trait, removing `deprecated` warnings
+  that arose because Rust resolves those names to std's deprecated inherent
+  methods before the trait method.
+
+### Breaking
+
+- Removed the `rog_experimental` and `float_experimental` Cargo features. Remove
+  them from dependency feature lists. `float_nightly_experimental` remains for
+  nightly-only `f16` and `f128` support.
+- Removed `Rog`, `RogsIter`, and the old `rogs_*` methods. Use `range_at`,
+  `range_or_gap_at`, or `fill_gaps` instead.
+- Renamed `ValueRef` to `ValueCarrier` and redesigned it with a `Value`
+  associated type and `value_eq` method; generic code now uses explicit
+  borrowing only where borrowed access to the logical value is required.
+- Renamed `Finite`/`FiniteF32`/`FiniteF64`/`FiniteF16`/`FiniteF128` to
+  `NotNan`/`NotNanF32`/`NotNanF64`/`NotNanF16`/`NotNanF128` (module `finite` ->
+  `not_nan`, shorthand constructors `ff64`/... -> `nnf64`/...,
+  `FiniteSliceExt`/`FiniteRangeExt` -> `NotNanSliceExt`/`NotNanRangeExt`). The
+  type's legal domain grew to match: it now excludes only NaN, so `+infinity`
+  and `-infinity` are legal values and `MIN`/`MAX` are the two infinities
+  (previously `f64::MIN`/`f64::MAX`); `MAX_SIZE` grew by 2 to account for them.
 
 ## [0.6.1] - 2026-07-10
 
@@ -59,7 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `AssumeSortedStarts` and `AssumePrioritySortedStartsMap` now take fewer generic parameters.
   - `AssumeSortedStarts<T, I>` -> `AssumeSortedStarts<I>`
-  - `AssumePrioritySortedStartsMap<T, VR, I>` -> `AssumePrioritySortedStartsMap<I>`
+  - `AssumePrioritySortedStartsMap<T, VC, I>` -> `AssumePrioritySortedStartsMap<I>`
 - Migration note: calls like `AssumeSortedStarts::new(iter)` and
   `AssumePrioritySortedStartsMap::new(iter)` are typically unchanged due to inference; explicit
   type aliases/annotations may need updates.

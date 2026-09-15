@@ -577,11 +577,13 @@ fn union_vary_range_len(c: &mut Criterion) {
 }
 
 const fn access_k(&x: &(usize, usize)) -> usize {
-    x.0
+    let (key, _) = x;
+    key
 }
 #[allow(dead_code)]
 const fn access_r(&x: &(usize, usize)) -> usize {
-    x.1
+    let (_, range) = x;
+    range
 }
 #[allow(dead_code)]
 fn intersection_vary_range_len(c: &mut Criterion) {
@@ -734,6 +736,33 @@ fn every_op_blaze(c: &mut Criterion) {
             &parameter,
             |b, _k| {
                 b.iter_batched(|| setup, |sets| &sets[0] & &sets[1], BatchSize::SmallInput);
+            },
+        );
+        // `rangemap` only offers `union` and `intersection` (no `difference`,
+        // `symmetric_difference`, or `complement`), so it's compared here
+        // alongside RangeSetBlaze for just those two operations.
+        let rangemap_sets: Vec<rangemap::RangeInclusiveSet<_>> =
+            setup.iter().map(|set| set.ranges().collect()).collect();
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (union)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || &rangemap_sets,
+                    |sets| &sets[0] | &sets[1],
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (intersection)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || &rangemap_sets,
+                    |sets| &sets[0] & &sets[1],
+                    BatchSize::SmallInput,
+                );
             },
         );
         group.bench_with_input(
@@ -905,6 +934,31 @@ fn every_op_roaring(c: &mut Criterion) {
             &parameter,
             |b, _k| {
                 b.iter_batched(|| setup, |sets| &sets[0] & &sets[1], BatchSize::SmallInput);
+            },
+        );
+        // `rangemap` only offers `union` and `intersection`, compared here against `Roaring`.
+        let rangemap_sets: Vec<rangemap::RangeInclusiveSet<_>> =
+            setup_0.iter().map(|set| set.ranges().collect()).collect();
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (union)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || &rangemap_sets,
+                    |sets| &sets[0] | &sets[1],
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("rangemap (intersection)", parameter),
+            &parameter,
+            |b, _k| {
+                b.iter_batched(
+                    || &rangemap_sets,
+                    |sets| &sets[0] & &sets[1],
+                    BatchSize::SmallInput,
+                );
             },
         );
         group.bench_with_input(
@@ -1295,6 +1349,70 @@ fn ingest_clumps_base(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let _answer: HashSet<u32> = vec.iter().copied().collect::<HashSet<_>>();
+                });
+            },
+        );
+    }
+    group.finish();
+}
+
+// Cursor-vs-baseline insertion. Both candidates run in the same process,
+// so both lines land in one Criterion plot. The cursor candidate only
+// exists under the nightly-only `cursor_nightly_experimental` feature:
+//   cargo +nightly bench --features cursor_nightly_experimental -- ingest_clumps_cursor
+// Without that feature, only the baseline candidate runs (stable-safe).
+fn ingest_clumps_cursor(c: &mut Criterion) {
+    let group_name = "ingest_clumps_cursor";
+    let k = 1;
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    for average_width in average_width_list {
+        let parameter = average_width;
+
+        let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+
+        let vec_range: Vec<RangeInclusive<u32>> = MemorylessRange::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range.clone(),
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze (baseline)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let mut set = RangeSetBlaze::new();
+                    for range in &vec_range {
+                        range_set_blaze::test_util::ranges_insert_baseline(&mut set, range.clone());
+                    }
+                    black_box(&set);
+                });
+            },
+        );
+
+        #[cfg(feature = "cursor_nightly_experimental")]
+        group.bench_with_input(
+            BenchmarkId::new("RangeSetBlaze (cursor)", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let mut set = RangeSetBlaze::new();
+                    for range in &vec_range {
+                        range_set_blaze::test_util::ranges_insert_cursor(&mut set, range.clone());
+                    }
+                    black_box(&set);
                 });
             },
         );
@@ -2186,6 +2304,7 @@ criterion_group!(
     ingest_clumps_iter_v_slice,
     ingest_clumps_integers,
     ingest_clumps_base,
+    ingest_clumps_cursor,
     worst
 );
 
@@ -2201,6 +2320,7 @@ criterion_group!(
     union_two_maps_or_sets,
     ingest_clumps_ranges,
     ingest_clumps_easy,
+    ingest_clumps_cursor,
     overflow,
     worst_op_blaze
 );

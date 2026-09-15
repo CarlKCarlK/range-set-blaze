@@ -1,4 +1,4 @@
-use crate::map::ValueRef;
+use crate::map::ValueCarrier;
 use crate::merge_map::KMergeMap;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
 use crate::{AssumeSortedStarts, MergeMap, SortedDisjointMap, UnionKMergeMap, UnionMergeMap};
@@ -12,7 +12,7 @@ use crate::Integer;
 use crate::unsorted_priority_map::AssumePrioritySortedStartsMap;
 use crate::unsorted_priority_map::UnsortedPriorityMap;
 
-type SortedStartsInVecMap<T, VR> = AssumePrioritySortedStartsMap<vec::IntoIter<Priority<T, VR>>>;
+type SortedStartsInVecMap<T, VC> = AssumePrioritySortedStartsMap<vec::IntoIter<Priority<T, VC>>>;
 #[allow(clippy::redundant_pub_crate)]
 pub(crate) type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<RangeInclusive<T>>>;
 
@@ -22,23 +22,23 @@ pub(crate) type SortedStartsInVec<T> = AssumeSortedStarts<T, vec::IntoIter<Range
 /// [`union`]: crate::SortedDisjointMap::union
 #[derive(Clone, Debug)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct UnionIterMap<T, VR, SS> {
+pub struct UnionIterMap<T, VC, SS> {
     iter: SS,
-    next_item: Option<Priority<T, VR>>,
-    workspace: BinaryHeap<Priority<T, VR>>,
-    gather: Option<(RangeInclusive<T>, VR)>,
-    ready_to_go: Option<(RangeInclusive<T>, VR)>,
+    next_item: Option<Priority<T, VC>>,
+    workspace: BinaryHeap<Priority<T, VC>>,
+    gather: Option<(RangeInclusive<T>, VC)>,
+    ready_to_go: Option<(RangeInclusive<T>, VC)>,
 }
 
-impl<T, VR, I> Iterator for UnionIterMap<T, VR, I>
+impl<T, VC, I> Iterator for UnionIterMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: PrioritySortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    I: PrioritySortedStartsMap<T, VC>,
 {
-    type Item = (RangeInclusive<T>, VR);
+    type Item = (RangeInclusive<T>, VC);
 
-    fn next(&mut self) -> Option<(RangeInclusive<T>, VR)> {
+    fn next(&mut self) -> Option<(RangeInclusive<T>, VC)> {
         // Keep doing this until we have something to return.
         loop {
             if let Some(value) = self.ready_to_go.take() {
@@ -86,16 +86,16 @@ where
             );
 
             // Add the front of best to the gather buffer.
-            if let Some(mut gather) = self.gather.take() {
-                if gather.1.borrow() == best.value().borrow()
-                    && (*gather.0.end()).add_one() == best.start()
+            if let Some((mut gather_range, gather_value)) = self.gather.take() {
+                if gather_value.value_eq(best.value())
+                    && (*gather_range.end()).add_one() == best.start()
                 {
                     // if the gather is contiguous with the best, then merge them
-                    gather.0 = *gather.0.start()..=next_end;
-                    self.gather = Some(gather);
+                    gather_range = *gather_range.start()..=next_end;
+                    self.gather = Some((gather_range, gather_value));
                 } else {
                     // if the gather is not contiguous with the best, then output the gather and set the gather to the best
-                    self.ready_to_go = Some(gather);
+                    self.ready_to_go = Some((gather_range, gather_value));
                     self.gather = Some((best.start()..=next_end, best.value().clone()));
                 }
             } else {
@@ -133,11 +133,11 @@ where
     }
 }
 
-impl<T, VR, I> UnionIterMap<T, VR, I>
+impl<T, VC, I> UnionIterMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: PrioritySortedStartsMap<T, VR>,
+    VC: ValueCarrier,
+    I: PrioritySortedStartsMap<T, VC>,
 {
     #[inline]
     pub(crate) fn new(mut iter: I) -> Self {
@@ -152,12 +152,12 @@ where
     }
 }
 
-impl<T, VR, L, R> UnionMergeMap<T, VR, L, R>
+impl<T, VC, L, R> UnionMergeMap<T, VC, L, R>
 where
     T: Integer,
-    VR: ValueRef,
-    L: SortedDisjointMap<T, VR>,
-    R: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
 {
     #[inline]
     pub(crate) fn new2(left: L, right: R) -> Self {
@@ -166,11 +166,11 @@ where
     }
 }
 
-impl<T, VR, J> UnionKMergeMap<T, VR, J>
+impl<T, VC, J> UnionKMergeMap<T, VC, J>
 where
     T: Integer,
-    VR: ValueRef,
-    J: SortedDisjointMap<T, VR>,
+    VC: ValueCarrier,
+    J: SortedDisjointMap<T, VC>,
 {
     #[inline]
     pub(crate) fn new_k<K>(k: K) -> Self
@@ -182,16 +182,16 @@ where
     }
 }
 
-// UnionIterMap from iter (T, VR)
-impl<T, VR> FromIterator<(RangeInclusive<T>, VR)>
-    for UnionIterMap<T, VR, SortedStartsInVecMap<T, VR>>
+// UnionIterMap from iter (T, VC)
+impl<T, VC> FromIterator<(RangeInclusive<T>, VC)>
+    for UnionIterMap<T, VC, SortedStartsInVecMap<T, VC>>
 where
     T: Integer,
-    VR: ValueRef,
+    VC: ValueCarrier,
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (RangeInclusive<T>, VR)>,
+        I: IntoIterator<Item = (RangeInclusive<T>, VC)>,
     {
         let iter = iter.into_iter();
         let iter = UnsortedPriorityMap::new(iter);
@@ -202,10 +202,10 @@ where
     }
 }
 
-impl<T, VR, I> FusedIterator for UnionIterMap<T, VR, I>
+impl<T, VC, I> FusedIterator for UnionIterMap<T, VC, I>
 where
     T: Integer,
-    VR: ValueRef,
-    I: PrioritySortedStartsMap<T, VR> + FusedIterator,
+    VC: ValueCarrier,
+    I: PrioritySortedStartsMap<T, VC> + FusedIterator,
 {
 }
