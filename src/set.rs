@@ -1212,9 +1212,6 @@ impl<T: Integer> RangeSetBlaze<T> {
         pending_end
     }
 
-    // TODO0 review this cursor-based insert algorithm (and range_or_gap_at_cursor,
-    // cursor_absorb_successors above) before release: correctness against the
-    // baseline fallback, and whether it's ready to leave `cursor_nightly_experimental`.
     #[cfg(feature = "cursor_nightly_experimental")]
     pub(crate) fn internal_add_cursor(&mut self, range: RangeInclusive<T>) {
         let (start, mut pending_end) = range.into_inner();

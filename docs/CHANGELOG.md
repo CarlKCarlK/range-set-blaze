@@ -9,8 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-todo000 read this and mention the cursor api
-
+- Added the experimental `cursor_nightly_experimental` feature, which uses Rust's
+  nightly-only B-tree cursor API to speed up `insert`/`ranges_insert` on both
+  `RangeSetBlaze` (~2x) and `RangeMapBlaze` (~1.7x), with the same public API.
 - Floating-point range support for `f32` and `f64`, plus `range_at`,
   `range_or_gap_at`, and `fill_gaps`, are now unconditional public APIs.
 - `RangeSetBlaze::fill_gaps` returns a `RangeMapBlaze<T, bool>` and

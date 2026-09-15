@@ -1,4 +1,3 @@
-//todo000 Need to review all cursor_nightly_experimental gated code.
 use crate::{
     CheckSortedDisjoint, Integer, IntoKeys, Keys, RangeSetBlaze, SortedDisjoint,
     iter_map::{IntoIterMap, IterMap},
@@ -894,8 +893,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         self.containing_entry(key)
             .map(|(start, end_value)| (*start..=end_value.end, &end_value.value))
     }
-    //todo000 the docs for the cursor speeds up should mention every thing that it speeds up
-
     /// Returns the stored mapped range or maximal gap containing `key`.
     ///
     /// The returned value is `Some(&V)` when the range is mapped and `None`
@@ -1829,29 +1826,6 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     }
 
     #[cfg(feature = "cursor_nightly_experimental")]
-    // Proof targets for nonempty `a..=b`:
-    // `lookup(result, x) == if a <= x && x <= b { Some(value) } else { lookup(old, x) }`,
-    // `result` is canonical, and `result.len` is the cardinality of its represented key domain.
-    //
-    // Forward-scan invariant, stated independently of the B-tree cursor representation:
-    //
-    // 1. The stored prefix before the cursor is canonical internally. All but a possible last
-    //    pending range are final; later steps only extend that pending range's end.
-    // 2. `pending_start..=pending_end` is nonempty, contains the original insertion and every
-    //    examined equal-valued range, and has the inserted value.
-    // 3. `pending_is_stored` says exactly whether pending is the last prefix entry and included in
-    //    `self.len`. Otherwise pending is neither stored nor counted.
-    // 4. No other prefix range overlaps pending. A touching final prefix range has another value.
-    // 5. The suffix at `peek_next` is unprocessed, unchanged, internally canonical, and ordered
-    //    after the prefix. It may overlap or touch pending; the next iteration decides that case.
-    // 6. If pending is not stored, prefix and suffix together are canonical and `self.len` is
-    //    their cardinality. If stored, only its temporary relation to the suffix may be
-    //    noncanonical, and `self.len` counts both until the overlap is consumed.
-    // 7. Prefix + pending + suffix has the pointwise meaning of applying the insertion to examined
-    //    input and leaving the suffix unprocessed, ignoring the temporary duplicate count in 6.
-    // TODO0 review this cursor-based insert algorithm (and range_or_gap_at_cursor,
-    // cursor_insert_range, cursor_scan_forward) before release: correctness against
-    // the baseline fallback, and whether it's ready to leave `cursor_nightly_experimental`.
     pub(crate) fn internal_add_cursor(&mut self, range: RangeInclusive<T>, value: V) {
         let (mut pending_start, mut pending_end) = range.into_inner();
         if pending_end < pending_start {
