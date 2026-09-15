@@ -1336,14 +1336,14 @@ mod tests {
         _ = character.start_from_inclusive_end(b); // This should panic due to underflow
     }
 
-    #[allow(clippy::legacy_numeric_constants, clippy::cognitive_complexity)]
+    #[allow(clippy::cognitive_complexity)]
     #[test]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_use_of_as_00() {
         syntactic_for! { ty in [char, i8, i16, i32, i64, i128, isize, Ipv4Addr, Ipv6Addr, u8, u16, u32, u64, u128, usize] {
             $(
-        let a = <$ty>::min_value();
-        let b = <$ty>::max_value();
+        let a = <$ty as Integer>::min_value();
+        let b = <$ty as Integer>::max_value();
         let len = <$ty>::safe_len(&(a..=b));
         assert_eq!(<$ty>::inclusive_end_from_start(a, len), b);
         assert_eq!(<$ty>::start_from_inclusive_end(b, len), a);
