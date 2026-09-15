@@ -9,8 +9,9 @@ range-set-blaze
 
 Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full set operations
 
-Supports all of Rust's integer-like types, `u8` to `u128`, `i8` to `i128`, `char` (Unicode characters), `Ipv4Addr`, and `Ipv6Addr`.
-Set operations—`union`, `intersection`, `difference`, `symmetric difference`, and `complement`— are available on both [sets][set operations] and [maps][map operations].
+* Supports all of Rust's integer-like types, `u8` to `u128`, `i8` to `i128`, `char` (Unicode characters), `Ipv4Addr`, and `Ipv6Addr`. Also supports [floating-point ranges][floating-point documentation] for `f32` and `f64` through the [`NotNanF32`], [`NotNanF64`], [`TotalF32`], and [`TotalF64`] wrappers.
+* `union`, `intersection`, `difference`, `symmetric difference`, and `complement`—available on both [sets][set operations] and [maps][map operations].
+* Can also work directly with [ranges and gaps][ranges and gaps], not just individual integer-like values.
 
 The crate's main structs are:
 
@@ -37,6 +38,10 @@ The crate's main traits are
 > The package enforces the "sorted & disjoint" constraint at compile time
 > (making invalid states unrepresentable).
 
+[`NotNanF32`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/type.NotNanF32.html
+[`NotNanF64`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/type.NotNanF64.html
+[`TotalF32`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/type.TotalF32.html
+[`TotalF64`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/type.TotalF64.html
 [`RangeSetBlaze`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
 [`RangeMapBlaze`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html
 [`SortedDisjoint`]: https://docs.rs/range-set-blaze/latest/range_set_blaze/trait.SortedDisjoint.html#table-of-contents
@@ -212,33 +217,17 @@ for range in intron.ranges() {
 }
 ```
 
-Features
---------
-todo000 fix up this section
-### Built-in functionality
+Cargo Features
+--------------
 
-Most functionality is available without opting into any Cargo feature, including
-with `--no-default-features`:
-
-* All primitive integer types, `char`, `Ipv4Addr`, and `Ipv6Addr`.
-* Floating-point ranges for `f32` and `f64` through the `NotNanF32`,
-  `NotNanF64`, `TotalF32`, and `TotalF64` wrappers.
-* **Ranges and gaps:** The `range_at`, `range_or_gap_at`, and `fill_gaps` APIs
-  for sets, maps, and sorted-disjoint streams. See the
-  [Ranges and gaps guide][ranges and gaps].
-
-These are regular crate APIs, not Cargo features.
-
-### Cargo features
-
-Only `std` is enabled by default. The available Cargo features are:
+The available Cargo features are:
 
 * `default` — Enables the `std` feature. Use `--no-default-features` for a `no_std` build.
 * `std` — Enables `std`-specific conveniences and trait implementations. The crate's core functionality remains available with `no_std` and `alloc`; see [the `no_std` usage above](#no_std-wasm-and-embedded).
+* `cursor_nightly_experimental` — Uses Rust's (nightly-only) B-tree cursor API to [speed up inserts by roughly 2x](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md#benchmark-2b-ingest_clumps_cursor-experimental-b-tree-cursor-insertion-vs-the-baseline-algorithm). Same public API.
 * `from_slice` — Enables the nightly-only [`RangeSetBlaze::from_slice`][from-slice] constructor, which can speed up construction from array-like collections using SIMD where available.
 * `float_nightly_experimental` — Enables the nightly-only `f16` and `f128` floating-point wrappers; see the [floating-point module documentation][floating-point documentation]. This requires a nightly Rust compiler.
-* `cursor_nightly_experimental` — Enables experimental nightly-only, B-tree cursor-backed implementations of range insertion. This changes the implementation, not the public insertion API.
-* `test_util` — Enables randomized test utilities intended primarily for crate development.
+* `test_util` — Test/benchmark helpers used internally by the crate; not needed by downstream users.
 
 The published API documentation includes all optional features. Feature-gated items are marked
 with the feature required to use them; optional features are not enabled by default for users of
@@ -247,12 +236,14 @@ the crate.
 [floating-point documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/index.html
 [from-slice]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_slice
 
-## Contributing
+Contributing
+------------
 
 Contributions are welcome! For development workflow, local testing, and CI information, see the
 [contribution guide](https://github.com/CarlKCarlK/range-set-blaze/blob/main/CONTRIBUTING.md).
 
 **Quick start for developers:**
+
 ```bash
 # Install just task runner
 cargo install just

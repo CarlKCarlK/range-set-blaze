@@ -148,7 +148,7 @@ The stable-compiled baseline is close to the nightly-compiled baseline at every 
 
 ### 'map_ingest_clumps_cursor' Conclusion
 
-Like the set version, the B-tree cursor insertion algorithm is a consistent, unconditional win over the baseline for single-range inserts into `RangeMapBlaze`. It is still experimental and nightly-only pending stabilization of the cursor API (and, per a `TODO0` note at the call site in `src/map.rs`, pending a correctness review against the baseline before it could ever become the default), but the results support the direction.
+Like the set version, the B-tree cursor insertion algorithm is a consistent, unconditional win over the baseline for single-range inserts into `RangeMapBlaze`. It is still experimental and nightly-only pending stabilization of the cursor API, but the results support the direction.
 
 ![map_ingest_clumps_cursor](criterion/v5/map_ingest_clumps_cursor/report/lines.svg "map_ingest_clumps_cursor")
 

@@ -1356,9 +1356,6 @@ fn ingest_clumps_base(c: &mut Criterion) {
     group.finish();
 }
 
-// TODO0 review these cursor-vs-baseline benchmark results before release
-// (docs/bench.md Benchmark #2b has the numbers from the last run).
-//
 // Cursor-vs-baseline insertion. Both candidates run in the same process,
 // so both lines land in one Criterion plot. The cursor candidate only
 // exists under the nightly-only `cursor_nightly_experimental` feature:

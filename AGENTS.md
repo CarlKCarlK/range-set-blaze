@@ -115,7 +115,7 @@ with it.
 ## Comment and TODO Conventions
 
 - Plain `TODO` means non-blocking/future work.
-- Never delete `TODO`/`TODO0`/`TODO000` (or similarly numbered `todo`) comments from the
+- Never delete `TODO`/`TODO​0`/`TODO​000` (or similarly numbered `todo`) comments from the
   codebase, even when refactoring the surrounding code or implementing the work the comment
   describes. These are intentional reminders the user placed deliberately. Only remove one when
   the user explicitly asks you to close it out. If code moves, move the comment with it; if you
@@ -138,11 +138,11 @@ with it.
 ## Specs
 
 Put implementation specs (`*_SPEC.md` and similar planning documents) in the `specs/` directory,
-not the repo root. Every spec must include a `todo0` comment near the top reminding readers to
+not the repo root. Every spec must include a `todo​0` comment near the top reminding readers to
 consider deleting the spec once the work it describes is complete, for example:
 
 ```markdown
-<!-- todo0 consider deleting this spec once the work below is implemented and released. -->
+<!-- todo​0 consider deleting this spec once the work below is implemented and released. -->
 ```
 
 ## Release Discipline

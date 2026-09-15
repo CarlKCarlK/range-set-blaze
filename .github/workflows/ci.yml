@@ -40,6 +40,7 @@ jobs:
           cargo test --verbose --release --no-default-features
       - name: Test Rust Native (nightly)
         run: |
+          rustup toolchain install nightly --component clippy --allow-downgrade
           rustup override set nightly
           cargo check --tests --features "float_nightly_experimental"
           cargo test --verbose --features from_slice
