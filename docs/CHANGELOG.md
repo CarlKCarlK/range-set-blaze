@@ -45,6 +45,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   crate's idiomatic `from_iter([a..=b])` single-range construction; that lint is
   now explicitly allowed for the nightly Clippy run. Bump the pinned nightly
   deliberately, the same way the stable toolchain is bumped.
+- The 32-bit Ubuntu CI job now retries its 32-bit `apt-get` package install
+  with a fresh package list, since `awalsh128/cache-apt-pkgs-action` reports
+  success even when its internal install fails (e.g. a transient mirror 404),
+  which previously surfaced later as a confusing linker error instead of a
+  clear package-install failure.
+- Qualified test-only `min_value()`/`max_value()` calls on concrete primitive
+  integer types to the crate's `Integer` trait, removing `deprecated` warnings
+  that arose because Rust resolves those names to std's deprecated inherent
+  methods before the trait method.
 
 ### Breaking
 

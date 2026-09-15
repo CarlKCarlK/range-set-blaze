@@ -80,6 +80,20 @@ jobs:
         with:
           packages: libc6-dev-i386 linux-libc-dev libc6-i386 gcc-multilib
           version: 1
+      - name: Ensure 32-bit toolchain installed
+        # awalsh128/cache-apt-pkgs-action reports success even when its
+        # internal apt-get install fails (e.g. a transient mirror 404), which
+        # otherwise surfaces later as a confusing linker error. Retry a plain
+        # apt-get install with a fresh package list as a safety net.
+        run: |
+          for i in 1 2 3; do
+            sudo apt-get update && \
+              sudo apt-get install -y --fix-missing libc6-dev-i386 linux-libc-dev libc6-i386 gcc-multilib && \
+              break
+            echo "apt-get install attempt $i failed, retrying..."
+            sleep 10
+          done
+          dpkg -s libc6-dev-i386 gcc-multilib > /dev/null
       - name: run tests
         run: |
           rustup target add i686-unknown-linux-gnu
