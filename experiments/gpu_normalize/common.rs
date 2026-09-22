@@ -1,50 +1,19 @@
-use std::hint::black_box;
-use std::iter::FusedIterator;
-use std::ops::RangeInclusive;
-use std::time::{Duration, Instant};
-
-use range_set_blaze::{RangeSetBlaze, SortedDisjoint, SortedStarts};
-
 #[derive(Clone, Copy, Debug)]
-pub(crate) enum Distribution {
+enum Distribution {
     RandomGaps,
     DuplicateHeavy,
-    #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-    Clumps4,
     Clumps16,
-    #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-    Clumps64,
     Clumps256,
-    #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-    Clumps1024,
     Clumps4096,
 }
 
 impl Distribution {
-    #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-    pub(crate) const ALL: [Self; 8] = [
-        Self::RandomGaps,
-        Self::DuplicateHeavy,
-        Self::Clumps4,
-        Self::Clumps16,
-        Self::Clumps64,
-        Self::Clumps256,
-        Self::Clumps1024,
-        Self::Clumps4096,
-    ];
-
-    pub(crate) const fn name(self) -> &'static str {
+    const fn name(self) -> &'static str {
         match self {
             Self::RandomGaps => "random-gaps",
             Self::DuplicateHeavy => "duplicate-heavy",
-            #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-            Self::Clumps4 => "clumps-4",
             Self::Clumps16 => "clumps-16",
-            #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-            Self::Clumps64 => "clumps-64",
             Self::Clumps256 => "clumps-256",
-            #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-            Self::Clumps1024 => "clumps-1024",
             Self::Clumps4096 => "clumps-4096",
         }
     }
@@ -52,21 +21,14 @@ impl Distribution {
     const fn clump_len(self) -> Option<usize> {
         match self {
             Self::RandomGaps | Self::DuplicateHeavy => None,
-            #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-            Self::Clumps4 => Some(4),
             Self::Clumps16 => Some(16),
-            #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-            Self::Clumps64 => Some(64),
             Self::Clumps256 => Some(256),
-            #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-            Self::Clumps1024 => Some(1024),
             Self::Clumps4096 => Some(4096),
         }
     }
 }
 
-#[cfg(any(feature = "gpu-cub", feature = "gpu-wgpu"))]
-pub(crate) const UNSORTED_DISTRIBUTIONS: [Distribution; 5] = [
+const UNSORTED_DISTRIBUTIONS: [Distribution; 5] = [
     Distribution::RandomGaps,
     Distribution::DuplicateHeavy,
     Distribution::Clumps16,
@@ -74,7 +36,7 @@ pub(crate) const UNSORTED_DISTRIBUTIONS: [Distribution; 5] = [
     Distribution::Clumps4096,
 ];
 
-pub(crate) fn generate_sorted(len: usize, distribution: Distribution) -> Vec<u32> {
+fn generate_sorted(len: usize, distribution: Distribution) -> Vec<u32> {
     let mut values = Vec::with_capacity(len);
     let mut value = 0u32;
     let mut state = 0x9e37_79b9u32;
@@ -83,14 +45,14 @@ pub(crate) fn generate_sorted(len: usize, distribution: Distribution) -> Vec<u32
         state ^= state << 13;
         state ^= state >> 17;
         state ^= state << 5;
-        let increment = match distribution.clump_len() {
-            Some(clump_len) => 1 + u32::from(index != 0 && index % clump_len == 0),
-            None => match distribution {
+        let increment = distribution.clump_len().map_or_else(
+            || match distribution {
                 Distribution::RandomGaps => 1 + state % 31,
                 Distribution::DuplicateHeavy => u32::from(index % 8 == 0) * (1 + state % 7),
                 _ => unreachable!(),
             },
-        };
+            |clump_len| 1 + u32::from(index != 0 && index % clump_len == 0),
+        );
         value = value
             .checked_add(increment)
             .expect("benchmark generator exceeded the u32 domain");
@@ -99,45 +61,18 @@ pub(crate) fn generate_sorted(len: usize, distribution: Distribution) -> Vec<u32
     values
 }
 
-#[cfg(any(feature = "gpu-cub", feature = "gpu-wgpu"))]
-pub(crate) fn generate_shuffled(len: usize, distribution: Distribution) -> Vec<u32> {
+fn generate_shuffled(len: usize, distribution: Distribution) -> Vec<u32> {
     let mut values = generate_sorted(len, distribution);
     let mut state = 0xd1b5_4a32_d192_ed03u64;
     for index in (1..values.len()).rev() {
         state ^= state << 13;
         state ^= state >> 7;
         state ^= state << 17;
-        values.swap(index, state as usize % (index + 1));
+        let modulus = u64::try_from(index + 1).expect("index exceeded u64");
+        let swap_index = usize::try_from(state % modulus).expect("swap index exceeded usize");
+        values.swap(index, swap_index);
     }
     values
-}
-
-#[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-pub(crate) fn cpu_sorted_ranges(values: &[u32]) -> Vec<RangeInclusive<u32>> {
-    let Some((&first, rest)) = values.split_first() else {
-        return Vec::new();
-    };
-    let mut ranges = Vec::new();
-    let mut start = first;
-    let mut end = first;
-    for &value in rest {
-        assert!(
-            value >= end,
-            "the post-sort benchmark requires sorted input"
-        );
-        if value == end {
-            continue;
-        }
-        if end != u32::MAX && value == end + 1 {
-            end = value;
-            continue;
-        }
-        ranges.push(start..=end);
-        start = value;
-        end = value;
-    }
-    ranges.push(start..=end);
-    ranges
 }
 
 struct TrustedGpuRanges<I> {
@@ -145,7 +80,7 @@ struct TrustedGpuRanges<I> {
 }
 
 impl<I> TrustedGpuRanges<I> {
-    fn new(inner: I) -> Self {
+    const fn new(inner: I) -> Self {
         Self { inner }
     }
 }
@@ -182,22 +117,11 @@ impl<I> SortedDisjoint<u32> for TrustedGpuRanges<I> where
 {
 }
 
-pub(crate) fn set_from_gpu_ranges(ranges: Vec<RangeInclusive<u32>>) -> RangeSetBlaze<u32> {
+fn set_from_gpu_ranges(ranges: Vec<RangeInclusive<u32>>) -> RangeSetBlaze<u32> {
     RangeSetBlaze::from_sorted_disjoint(TrustedGpuRanges::new(ranges.into_iter()))
 }
 
-#[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-fn copy_range(range: &RangeInclusive<u32>) -> RangeInclusive<u32> {
-    *range.start()..=*range.end()
-}
-
-#[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-pub(crate) fn set_from_trusted_range_slice(ranges: &[RangeInclusive<u32>]) -> RangeSetBlaze<u32> {
-    let copied = ranges.iter().map(copy_range);
-    RangeSetBlaze::from_sorted_disjoint(TrustedGpuRanges::new(copied))
-}
-
-pub(crate) fn durations(iterations: usize, mut operation: impl FnMut()) -> Vec<Duration> {
+fn durations(iterations: usize, mut operation: impl FnMut()) -> Vec<Duration> {
     let mut samples = Vec::with_capacity(iterations);
     for _ in 0..iterations {
         let start = Instant::now();
@@ -208,11 +132,11 @@ pub(crate) fn durations(iterations: usize, mut operation: impl FnMut()) -> Vec<D
     samples
 }
 
-pub(crate) fn median(samples: &[Duration]) -> Duration {
+fn median(samples: &[Duration]) -> Duration {
     samples[samples.len() / 2]
 }
 
-pub(crate) fn iterations(len: usize) -> usize {
+const fn iterations(len: usize) -> usize {
     match len {
         0..=100_000 => 9,
         100_001..=1_000_000 => 7,
@@ -221,56 +145,20 @@ pub(crate) fn iterations(len: usize) -> usize {
     }
 }
 
-#[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-pub(crate) struct CpuTimings {
-    pub(crate) from_slice_total: Duration,
-    pub(crate) normalize_ranges: Duration,
-    pub(crate) build_from_ranges: Duration,
+struct UnsortedCpuTimings {
+    from_iter_total: Duration,
 }
 
-#[cfg(any(feature = "gpu-cub", feature = "gpu-wgpu"))]
-pub(crate) struct UnsortedCpuTimings {
-    pub(crate) from_slice_total: Duration,
-    pub(crate) from_iter_total: Duration,
-}
-
-#[cfg(any(feature = "gpu-cub", feature = "gpu-wgpu"))]
-pub(crate) fn benchmark_unsorted_cpu(values: &[u32], iterations: usize) -> UnsortedCpuTimings {
-    let from_slice = durations(iterations, || {
-        black_box(RangeSetBlaze::from_slice(black_box(values)));
-    });
+fn benchmark_unsorted_cpu(values: &[u32], iterations: usize) -> UnsortedCpuTimings {
     let from_iter = durations(iterations, || {
-        black_box(RangeSetBlaze::from_iter(black_box(values.iter().copied())));
+        drop(black_box(values.iter().copied()).collect::<RangeSetBlaze<_>>());
     });
     UnsortedCpuTimings {
-        from_slice_total: median(&from_slice),
         from_iter_total: median(&from_iter),
     }
 }
 
-#[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
-pub(crate) fn benchmark_cpu(
-    values: &[u32],
-    perfect_ranges: &[RangeInclusive<u32>],
-    iterations: usize,
-) -> CpuTimings {
-    let normalize_ranges = durations(iterations, || {
-        black_box(cpu_sorted_ranges(black_box(values)));
-    });
-    let from_slice = durations(iterations, || {
-        black_box(RangeSetBlaze::from_slice(black_box(values)));
-    });
-    let build_from_ranges = durations(iterations, || {
-        black_box(set_from_trusted_range_slice(black_box(perfect_ranges)));
-    });
-    CpuTimings {
-        from_slice_total: median(&from_slice),
-        normalize_ranges: median(&normalize_ranges),
-        build_from_ranges: median(&build_from_ranges),
-    }
-}
-
-pub(crate) fn requested_sizes() -> Vec<usize> {
+fn requested_sizes() -> Vec<usize> {
     let sizes: Vec<_> = std::env::args()
         .skip(1)
         .filter(|value| !value.starts_with("--"))
@@ -287,6 +175,6 @@ pub(crate) fn requested_sizes() -> Vec<usize> {
     }
 }
 
-pub(crate) fn milliseconds(duration: Duration) -> f64 {
+fn milliseconds(duration: Duration) -> f64 {
     duration.as_secs_f64() * 1_000.0
 }

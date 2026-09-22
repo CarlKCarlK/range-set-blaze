@@ -1,17 +1,17 @@
 //! Portable wgpu/WGSL experiment for unsorted `u32` normalization.
 
-#[path = "gpu_normalize/common.rs"]
-mod common;
+include!("gpu_normalize/common.rs");
 
 use std::hint::black_box;
+use std::iter::FusedIterator;
 use std::mem::size_of;
 use std::ops::RangeInclusive;
 use std::sync::mpsc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
-use common::{Distribution, iterations, median, milliseconds};
 use lampshade::{Compactor, Context, Sorter};
-use range_set_blaze::RangeSetBlaze;
+use num_traits::ToPrimitive;
+use range_set_blaze::{RangeSetBlaze, SortedDisjoint, SortedStarts};
 
 const WORKGROUP_SIZE: u32 = 256;
 
@@ -191,7 +191,9 @@ struct WgpuPipeline {
 
 impl WgpuPipeline {
     fn new(values: &[u32]) -> Result<Self, String> {
-        assert!(!values.is_empty());
+        if values.is_empty() {
+            return Err("input must not be empty".to_owned());
+        }
         let len = u32::try_from(values.len()).map_err(|_| "input exceeds u32::MAX items")?;
         let context = pollster::block_on(Context::init()).map_err(|error| error.to_string())?;
         let byte_len = u64::from(len) * size_of::<u32>() as u64;
@@ -399,13 +401,7 @@ impl WgpuPipeline {
 
     fn read_range_count(&self) -> Result<usize, String> {
         let counts = map_u32(&self.context.device, &self.count_readback, 2)?;
-        assert_eq!(
-            counts[0], counts[1],
-            "GPU emitted unpaired range boundaries"
-        );
-        let count = counts[0] as usize;
-        assert!(count <= self.len as usize);
-        Ok(count)
+        Ok(validate_range_count(&counts, self.len))
     }
 
     fn readback_endpoints(&mut self, count: usize) -> Result<Vec<RangeInclusive<u32>>, String> {
@@ -471,10 +467,10 @@ impl WgpuPipeline {
 
 fn main() -> Result<(), String> {
     println!(
-        "backend,distribution,input_values,output_ranges,compression_ratio,cpu_from_slice_ms,cpu_from_iter_ms,gpu_upload_ms,gpu_radix_sort_ms,gpu_normalization_ms,gpu_range_readback_ms,gpu_build_from_ranges_ms,gpu_end_to_end_ms,gpu_fused_end_to_end_ms"
+        "backend,distribution,input_values,output_ranges,compression_ratio,cpu_from_iter_ms,gpu_upload_ms,gpu_radix_sort_ms,gpu_normalization_ms,gpu_range_readback_ms,gpu_build_from_ranges_ms,gpu_end_to_end_ms,gpu_fused_end_to_end_ms"
     );
-    for len in common::requested_sizes() {
-        for distribution in common::UNSORTED_DISTRIBUTIONS {
+    for len in requested_sizes() {
+        for distribution in UNSORTED_DISTRIBUTIONS {
             benchmark_case(len, distribution)?;
         }
     }
@@ -482,16 +478,15 @@ fn main() -> Result<(), String> {
 }
 
 fn benchmark_case(len: usize, distribution: Distribution) -> Result<(), String> {
-    let values = common::generate_shuffled(len, distribution);
+    let values = generate_shuffled(len, distribution);
     let iteration_count = iterations(len);
-    // Warm both CPU paths, then release their results before measurement. This
+    // Warm the CPU path, then release its result before measurement. This
     // avoids first-distribution allocator/frequency bias without leaving large
     // reference structures live during either benchmark.
-    drop(RangeSetBlaze::from_slice(black_box(&values)));
-    drop(RangeSetBlaze::from_iter(black_box(values.iter().copied())));
+    drop(black_box(values.iter().copied()).collect::<RangeSetBlaze<_>>());
     // Measure CPU construction before allocating validation structures or GPU
     // state, so the input is the only large live allocation.
-    let cpu = common::benchmark_unsorted_cpu(&values, iteration_count);
+    let cpu = benchmark_unsorted_cpu(&values, iteration_count);
 
     let mut gpu = WgpuPipeline::new(&values)?;
     eprintln!(
@@ -530,7 +525,7 @@ fn benchmark_case(len: usize, distribution: Distribution) -> Result<(), String> 
         readback.push(stage_start.elapsed());
 
         let stage_start = Instant::now();
-        black_box(common::set_from_gpu_ranges(ranges));
+        black_box(set_from_gpu_ranges(ranges));
         build.push(stage_start.elapsed());
 
         end_to_end.push(total_start.elapsed());
@@ -538,7 +533,7 @@ fn benchmark_case(len: usize, distribution: Distribution) -> Result<(), String> 
     for _ in 0..iteration_count {
         let total_start = Instant::now();
         let ranges = gpu.fused_ranges(black_box(&values))?;
-        black_box(common::set_from_gpu_ranges(ranges));
+        black_box(set_from_gpu_ranges(ranges));
         fused_end_to_end.push(total_start.elapsed());
     }
     for samples in [
@@ -556,9 +551,7 @@ fn benchmark_case(len: usize, distribution: Distribution) -> Result<(), String> 
     // Keep the large validation structures out of both the CPU and GPU timing
     // windows. The timed paths above are warmed but otherwise use only the
     // original input and the state required by the implementation under test.
-    let expected = RangeSetBlaze::from_slice(&values);
-    let expected_from_iter = RangeSetBlaze::from_iter(values.iter().copied());
-    assert_eq!(expected_from_iter, expected);
+    let expected = values.iter().copied().collect::<RangeSetBlaze<_>>();
     let expected_ranges: Vec<_> = expected.ranges().collect();
     let range_count = expected_ranges.len();
 
@@ -566,19 +559,17 @@ fn benchmark_case(len: usize, distribution: Distribution) -> Result<(), String> 
     gpu.radix_sort()?;
     gpu.normalize()?;
     let actual_ranges = gpu.readback_ranges()?;
-    assert_eq!(actual_ranges, expected_ranges);
-    assert_eq!(common::set_from_gpu_ranges(actual_ranges), expected);
     let fused_ranges = gpu.fused_ranges(&values)?;
-    assert_eq!(fused_ranges, expected_ranges);
+    validate_results(actual_ranges, &fused_ranges, &expected_ranges, &expected);
 
     println!(
-        "{},shuffled-{},{},{},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6}",
+        "{},shuffled-{},{},{},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6}",
         gpu.adapter_label(),
         distribution.name(),
         len,
         range_count,
-        len as f64 / range_count as f64,
-        milliseconds(cpu.from_slice_total),
+        len.to_f64().expect("input length should fit f64")
+            / range_count.to_f64().expect("range count should fit f64"),
         milliseconds(cpu.from_iter_total),
         milliseconds(median(&upload)),
         milliseconds(median(&radix_sort)),
@@ -591,7 +582,28 @@ fn benchmark_case(len: usize, distribution: Distribution) -> Result<(), String> 
     Ok(())
 }
 
-fn storage_layout_entry(binding: u32, read_only: bool) -> wgpu::BindGroupLayoutEntry {
+fn validate_range_count(counts: &[u32], len: u32) -> usize {
+    assert_eq!(
+        counts[0], counts[1],
+        "GPU emitted unpaired range boundaries"
+    );
+    let count = counts[0] as usize;
+    assert!(count <= len as usize);
+    count
+}
+
+fn validate_results(
+    actual_ranges: Vec<RangeInclusive<u32>>,
+    fused_ranges: &[RangeInclusive<u32>],
+    expected_ranges: &[RangeInclusive<u32>],
+    expected: &RangeSetBlaze<u32>,
+) {
+    assert_eq!(actual_ranges, expected_ranges);
+    assert_eq!(set_from_gpu_ranges(actual_ranges), *expected);
+    assert_eq!(fused_ranges, expected_ranges);
+}
+
+const fn storage_layout_entry(binding: u32, read_only: bool) -> wgpu::BindGroupLayoutEntry {
     wgpu::BindGroupLayoutEntry {
         binding,
         visibility: wgpu::ShaderStages::COMPUTE,

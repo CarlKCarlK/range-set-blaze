@@ -30,6 +30,7 @@ ci-nightly: test-nightly
 # Run clippy with CI settings (matches CI exactly, using the pinned toolchain in rust-toolchain.toml)
 clippy:
     cargo clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated
+    cargo clippy --verbose --all-targets --features gpu -- -D clippy::all -A deprecated
 
 # Preview lints on the newest stable toolchain, ignoring the pinned CI toolchain.
 # Run this deliberately when evaluating a Rust-toolchain update; it is not part of
@@ -44,6 +45,7 @@ test-stable:
     cargo test --verbose --release
     cargo test --verbose --no-default-features
     cargo test --verbose --release --no-default-features
+    cargo test --verbose --features gpu
 
 # Run nightly tests with from_slice feature
 # Uses `cargo +{{nightly}}` (not `rustup override set`) so this is safe to run

@@ -40,23 +40,9 @@ float_nightly_experimental = []
 cursor_nightly_experimental = []
 from_slice = []
 test_util = ["rand"]
-# Experimental, benchmark-only GPU backends. These do not expose any public
-# RangeSetBlaze API and are never enabled by default.
-gpu-cutile = ["std", "from_slice", "dep:cutile"]
-gpu-oxide = [
+# Enables portable GPU-assisted construction from large unsorted slices.
+gpu = [
     "std",
-    "from_slice",
-    "dep:cuda-core",
-    "dep:cuda-device",
-    "dep:cuda-host",
-]
-# Adds a minimal native CUB wrapper for device-resident `u32` radix sorting.
-# All post-sort normalization remains in Rust under `gpu-oxide`.
-gpu-cub = ["gpu-oxide"]
-# Portable unsorted-`u32` experiment using wgpu/WGSL and Lampshade primitives.
-gpu-wgpu = [
-    "std",
-    "from_slice",
     "dep:bytemuck",
     "dep:lampshade",
     "dep:pollster",
@@ -71,10 +57,6 @@ num-integer = { version = "0.1.46", default-features = false }
 num-traits = { version = "0.2.19", default-features = false }
 gen_ops = "0.4.0"
 rand = { version = "0.9.4", optional = true }
-cutile = { git = "https://github.com/NVlabs/cutile-rs.git", rev = "e04245bdcf1f5bfc602a2078168eff90ee40bebb", optional = true }
-cuda-core = { version = "0.3.1", optional = true }
-cuda-device = { git = "https://github.com/NVlabs/cuda-oxide.git", rev = "b0f961df3af0ff140b3b006fa2b6750b71f43f62", optional = true }
-cuda-host = { git = "https://github.com/NVlabs/cuda-oxide.git", rev = "b0f961df3af0ff140b3b006fa2b6750b71f43f62", optional = true }
 bytemuck = { version = "1.24", optional = true }
 lampshade = { version = "0.13.0", optional = true }
 pollster = { version = "0.4", optional = true }
@@ -87,9 +69,6 @@ rand = "0.9.4"
 range-set-blaze = { path = ".", features = ["test_util"] }
 anyhow = "1.0.103"
 rayon = "1.10"
-
-[build-dependencies]
-cc = "1.2.59"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 criterion = { version = "0.5.1", features = [
@@ -124,19 +103,14 @@ path = "benches/bench_map.rs"
 harness = false
 
 [[bin]]
-name = "gpu_normalize_oxide"
-path = "experiments/gpu_normalize_oxide.rs"
-required-features = ["gpu-oxide"]
-
-[[bin]]
-name = "gpu_normalize_cutile"
-path = "experiments/gpu_normalize_cutile.rs"
-required-features = ["gpu-cutile"]
-
-[[bin]]
 name = "gpu_normalize_wgpu"
 path = "experiments/gpu_normalize_wgpu.rs"
-required-features = ["gpu-wgpu"]
+required-features = ["gpu"]
+
+[[bin]]
+name = "gpu_ingest"
+path = "experiments/gpu_ingest.rs"
+required-features = ["gpu"]
 
 [package.metadata.docs.rs]
 # Publish all optional APIs. Rustdoc's `doc_cfg` annotations identify the
