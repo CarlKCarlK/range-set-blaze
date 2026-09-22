@@ -1,0 +1,662 @@
+//! Portable wgpu/WGSL experiment for unsorted `u32` normalization.
+
+#[path = "gpu_normalize/common.rs"]
+mod common;
+
+use std::hint::black_box;
+use std::mem::size_of;
+use std::ops::RangeInclusive;
+use std::sync::mpsc;
+use std::time::Instant;
+
+use common::{Distribution, iterations, median, milliseconds};
+use lampshade::{Compactor, Context, Sorter};
+use range_set_blaze::RangeSetBlaze;
+
+const WORKGROUP_SIZE: u32 = 256;
+
+const BOUNDARY_SHADER_TEMPLATE: &str = r"
+struct Parameters {
+    len: u32,
+    groups_x: u32,
+    _padding0: u32,
+    _padding1: u32,
+}
+
+@group(0) @binding(0) var<storage, read> values: array<u32>;
+@group(0) @binding(1) var<storage, read_write> start_mask: array<u32>;
+@group(0) @binding(2) var<storage, read_write> end_mask: array<u32>;
+@group(0) @binding(3) var<uniform> parameters: Parameters;
+
+@compute @workgroup_size({{WORKGROUP_SIZE}})
+fn main(
+    @builtin(workgroup_id) workgroup: vec3<u32>,
+    @builtin(local_invocation_id) local: vec3<u32>,
+) {
+    let group = workgroup.y * parameters.groups_x + workgroup.x;
+    let index = group * {{WORKGROUP_SIZE}}u + local.x;
+    if index >= parameters.len {
+        return;
+    }
+
+    let value = values[index];
+    var is_start = index == 0u;
+    if !is_start {
+        let previous = values[index - 1u];
+        is_start = value != previous &&
+            (previous == 0xffffffffu || value != previous + 1u);
+    }
+
+    var is_end = index + 1u == parameters.len;
+    if !is_end {
+        let next = values[index + 1u];
+        is_end = next != value &&
+            (value == 0xffffffffu || next != value + 1u);
+    }
+
+    start_mask[index] = select(0u, 1u, is_start);
+    end_mask[index] = select(0u, 1u, is_end);
+}
+";
+
+struct BoundaryKernel {
+    pipeline: wgpu::ComputePipeline,
+    bind_group: wgpu::BindGroup,
+    groups_x: u32,
+    groups_y: u32,
+}
+
+impl BoundaryKernel {
+    fn new(
+        context: &Context,
+        values: &wgpu::Buffer,
+        start_mask: &wgpu::Buffer,
+        end_mask: &wgpu::Buffer,
+        len: u32,
+    ) -> Self {
+        let total_groups = len.div_ceil(WORKGROUP_SIZE);
+        let maximum_groups = context.device.limits().max_compute_workgroups_per_dimension;
+        let groups_x = total_groups.min(maximum_groups);
+        let groups_y = total_groups.div_ceil(maximum_groups);
+        assert!(
+            groups_y <= maximum_groups,
+            "input needs more two-dimensional workgroups than this adapter supports"
+        );
+
+        let parameters = [len, groups_x, 0, 0];
+        let parameter_buffer = context.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Range boundary parameters"),
+            size: size_of::<[u32; 4]>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        context
+            .queue
+            .write_buffer(&parameter_buffer, 0, bytemuck::cast_slice(&parameters));
+
+        let layout = context
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Range boundary layout"),
+                entries: &[
+                    storage_layout_entry(0, true),
+                    storage_layout_entry(1, false),
+                    storage_layout_entry(2, false),
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ],
+            });
+        let shader_source =
+            BOUNDARY_SHADER_TEMPLATE.replace("{{WORKGROUP_SIZE}}", &WORKGROUP_SIZE.to_string());
+        let shader = context
+            .device
+            .create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("Range boundary shader"),
+                source: wgpu::ShaderSource::Wgsl(shader_source.into()),
+            });
+        let pipeline_layout =
+            context
+                .device
+                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("Range boundary pipeline layout"),
+                    bind_group_layouts: &[Some(&layout)],
+                    immediate_size: 0,
+                });
+        let pipeline = context
+            .device
+            .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("Range boundary pipeline"),
+                layout: Some(&pipeline_layout),
+                module: &shader,
+                entry_point: Some("main"),
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+                cache: None,
+            });
+        let bind_group = context
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Range boundary bind group"),
+                layout: &layout,
+                entries: &[
+                    entire_buffer_entry(0, values),
+                    entire_buffer_entry(1, start_mask),
+                    entire_buffer_entry(2, end_mask),
+                    entire_buffer_entry(3, &parameter_buffer),
+                ],
+            });
+        Self {
+            pipeline,
+            bind_group,
+            groups_x,
+            groups_y,
+        }
+    }
+
+    fn record(&self, encoder: &mut wgpu::CommandEncoder) {
+        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+            label: Some("Mark range boundaries"),
+            timestamp_writes: None,
+        });
+        pass.set_pipeline(&self.pipeline);
+        pass.set_bind_group(0, &self.bind_group, &[]);
+        pass.dispatch_workgroups(self.groups_x, self.groups_y, 1);
+    }
+}
+
+struct WgpuPipeline {
+    context: Context,
+    sorter: Sorter,
+    compactor: Compactor,
+    boundaries: BoundaryKernel,
+    input: wgpu::Buffer,
+    sorted: wgpu::Buffer,
+    start_mask: wgpu::Buffer,
+    end_mask: wgpu::Buffer,
+    starts: wgpu::Buffer,
+    ends: wgpu::Buffer,
+    start_count: wgpu::Buffer,
+    end_count: wgpu::Buffer,
+    count_readback: wgpu::Buffer,
+    range_readback: Option<wgpu::Buffer>,
+    len: u32,
+}
+
+impl WgpuPipeline {
+    fn new(values: &[u32]) -> Result<Self, String> {
+        assert!(!values.is_empty());
+        let len = u32::try_from(values.len()).map_err(|_| "input exceeds u32::MAX items")?;
+        let context = pollster::block_on(Context::init()).map_err(|error| error.to_string())?;
+        let byte_len = u64::from(len) * size_of::<u32>() as u64;
+        let limits = context.device.limits();
+        if byte_len > limits.max_storage_buffer_binding_size as u64
+            || byte_len > limits.max_buffer_size
+        {
+            return Err(format!(
+                "{} items need a {byte_len}-byte storage buffer, but adapter '{}' allows a {}-byte binding and a {}-byte buffer",
+                len,
+                context.adapter_info.name,
+                limits.max_storage_buffer_binding_size,
+                limits.max_buffer_size,
+            ));
+        }
+
+        let input = storage_buffer(
+            &context.device,
+            "Unsorted input",
+            byte_len,
+            wgpu::BufferUsages::COPY_DST,
+        );
+        let sorted = storage_buffer(
+            &context.device,
+            "Sorted values",
+            byte_len,
+            wgpu::BufferUsages::empty(),
+        );
+        let start_mask = storage_buffer(
+            &context.device,
+            "Range start mask",
+            byte_len,
+            wgpu::BufferUsages::COPY_SRC,
+        );
+        let end_mask = storage_buffer(
+            &context.device,
+            "Range end mask",
+            byte_len,
+            wgpu::BufferUsages::COPY_SRC,
+        );
+        let starts = storage_buffer(
+            &context.device,
+            "Compacted range starts",
+            byte_len,
+            wgpu::BufferUsages::COPY_SRC,
+        );
+        let ends = storage_buffer(
+            &context.device,
+            "Compacted range ends",
+            byte_len,
+            wgpu::BufferUsages::COPY_SRC,
+        );
+        let count_usage = wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC;
+        let start_count = storage_buffer(
+            &context.device,
+            "Range start count",
+            size_of::<u32>() as u64,
+            count_usage,
+        );
+        let end_count = storage_buffer(
+            &context.device,
+            "Range end count",
+            size_of::<u32>() as u64,
+            count_usage,
+        );
+        let count_readback = readback_buffer(
+            &context.device,
+            "Range count readback",
+            2 * size_of::<u32>() as u64,
+        );
+        let boundaries = BoundaryKernel::new(&context, &sorted, &start_mask, &end_mask, len);
+        let radix_sorter = Sorter::from_context(&context);
+        let compactor = Compactor::from_context(&context);
+        let pipeline = Self {
+            context,
+            sorter: radix_sorter,
+            compactor,
+            boundaries,
+            input,
+            sorted,
+            start_mask,
+            end_mask,
+            starts,
+            ends,
+            start_count,
+            end_count,
+            count_readback,
+            range_readback: None,
+            len,
+        };
+        pipeline.upload(values)?;
+        Ok(pipeline)
+    }
+
+    fn adapter_label(&self) -> String {
+        let adapter = self
+            .context
+            .adapter_info
+            .name
+            .chars()
+            .map(|character| {
+                if character.is_ascii_alphanumeric() {
+                    character.to_ascii_lowercase()
+                } else {
+                    '-'
+                }
+            })
+            .collect::<String>();
+        format!(
+            "wgpu-lampshade-{:?}-{adapter}",
+            self.context.adapter_info.backend
+        )
+        .to_ascii_lowercase()
+    }
+
+    fn upload(&self, values: &[u32]) -> Result<(), String> {
+        self.enqueue_upload(values);
+        self.submit_and_wait(None)
+    }
+
+    fn enqueue_upload(&self, values: &[u32]) {
+        assert_eq!(values.len(), self.len as usize);
+        self.context
+            .queue
+            .write_buffer(&self.input, 0, bytemuck::cast_slice(values));
+    }
+
+    fn radix_sort(&mut self) -> Result<(), String> {
+        let mut encoder = self.encoder("Lampshade radix sort");
+        self.record_radix_sort(&mut encoder)?;
+        self.submit_and_wait(Some(encoder.finish()))
+    }
+
+    fn record_radix_sort(&mut self, encoder: &mut wgpu::CommandEncoder) -> Result<(), String> {
+        self.sorter
+            .record_sort(encoder, &self.input, &self.sorted, self.len)
+            .map_err(|error| error.to_string())
+    }
+
+    fn normalize(&mut self) -> Result<(), String> {
+        let mut encoder = self.encoder("Portable range normalization");
+        self.record_normalization(&mut encoder)?;
+        self.submit_and_wait(Some(encoder.finish()))
+    }
+
+    fn record_normalization(&mut self, encoder: &mut wgpu::CommandEncoder) -> Result<(), String> {
+        self.boundaries.record(encoder);
+        self.compactor
+            .record_compact(
+                encoder,
+                &self.sorted,
+                &self.start_mask,
+                &self.starts,
+                &self.start_count,
+                self.len,
+            )
+            .map_err(|error| error.to_string())?;
+        self.compactor
+            .record_compact(
+                encoder,
+                &self.sorted,
+                &self.end_mask,
+                &self.ends,
+                &self.end_count,
+                self.len,
+            )
+            .map_err(|error| error.to_string())
+    }
+
+    fn readback_ranges(&mut self) -> Result<Vec<RangeInclusive<u32>>, String> {
+        let mut encoder = self.encoder("Range count readback copy");
+        self.record_count_copy(&mut encoder);
+        self.submit_and_wait(Some(encoder.finish()))?;
+        let count = self.read_range_count()?;
+        self.readback_endpoints(count)
+    }
+
+    fn fused_ranges(&mut self, values: &[u32]) -> Result<Vec<RangeInclusive<u32>>, String> {
+        self.enqueue_upload(values);
+        let mut encoder = self.encoder("Fused portable normalization");
+        self.record_radix_sort(&mut encoder)?;
+        self.record_normalization(&mut encoder)?;
+        self.record_count_copy(&mut encoder);
+        self.submit_and_wait(Some(encoder.finish()))?;
+        let count = self.read_range_count()?;
+        self.readback_endpoints(count)
+    }
+
+    fn record_count_copy(&self, encoder: &mut wgpu::CommandEncoder) {
+        encoder.copy_buffer_to_buffer(
+            &self.start_count,
+            0,
+            &self.count_readback,
+            0,
+            size_of::<u32>() as u64,
+        );
+        encoder.copy_buffer_to_buffer(
+            &self.end_count,
+            0,
+            &self.count_readback,
+            size_of::<u32>() as u64,
+            size_of::<u32>() as u64,
+        );
+    }
+
+    fn read_range_count(&self) -> Result<usize, String> {
+        let counts = map_u32(&self.context.device, &self.count_readback, 2)?;
+        assert_eq!(
+            counts[0], counts[1],
+            "GPU emitted unpaired range boundaries"
+        );
+        let count = counts[0] as usize;
+        assert!(count <= self.len as usize);
+        Ok(count)
+    }
+
+    fn readback_endpoints(&mut self, count: usize) -> Result<Vec<RangeInclusive<u32>>, String> {
+        if count == 0 {
+            return Ok(Vec::new());
+        }
+
+        let endpoint_bytes = count as u64 * size_of::<u32>() as u64;
+        let required_bytes = endpoint_bytes * 2;
+        if required_bytes > self.context.device.limits().max_buffer_size {
+            return Err(format!(
+                "{count} ranges need a {required_bytes}-byte readback buffer, exceeding adapter '{}' limit of {} bytes",
+                self.context.adapter_info.name,
+                self.context.device.limits().max_buffer_size,
+            ));
+        }
+        let recreate = self
+            .range_readback
+            .as_ref()
+            .is_none_or(|buffer| buffer.size() < required_bytes);
+        if recreate {
+            self.range_readback = Some(readback_buffer(
+                &self.context.device,
+                "Compacted range readback",
+                required_bytes,
+            ));
+        }
+        let readback = self
+            .range_readback
+            .as_ref()
+            .expect("readback buffer initialized");
+        let mut encoder = self.encoder("Compacted range readback copy");
+        encoder.copy_buffer_to_buffer(&self.starts, 0, readback, 0, endpoint_bytes);
+        encoder.copy_buffer_to_buffer(&self.ends, 0, readback, endpoint_bytes, endpoint_bytes);
+        self.submit_and_wait(Some(encoder.finish()))?;
+        let endpoints = map_u32(&self.context.device, readback, count * 2)?;
+        Ok(endpoints[..count]
+            .iter()
+            .copied()
+            .zip(endpoints[count..].iter().copied())
+            .map(|(start, end)| start..=end)
+            .collect())
+    }
+
+    fn encoder(&self, label: &'static str) -> wgpu::CommandEncoder {
+        self.context
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some(label) })
+    }
+
+    fn submit_and_wait(&self, command: Option<wgpu::CommandBuffer>) -> Result<(), String> {
+        let submission = self.context.queue.submit(command);
+        self.context
+            .device
+            .poll(wgpu::PollType::Wait {
+                submission_index: Some(submission),
+                timeout: None,
+            })
+            .map_err(|error| error.to_string())?;
+        Ok(())
+    }
+}
+
+fn main() -> Result<(), String> {
+    println!(
+        "backend,distribution,input_values,output_ranges,compression_ratio,cpu_from_slice_ms,cpu_from_iter_ms,gpu_upload_ms,gpu_radix_sort_ms,gpu_normalization_ms,gpu_range_readback_ms,gpu_build_from_ranges_ms,gpu_end_to_end_ms,gpu_fused_end_to_end_ms"
+    );
+    for len in common::requested_sizes() {
+        for distribution in common::UNSORTED_DISTRIBUTIONS {
+            benchmark_case(len, distribution)?;
+        }
+    }
+    Ok(())
+}
+
+fn benchmark_case(len: usize, distribution: Distribution) -> Result<(), String> {
+    let values = common::generate_shuffled(len, distribution);
+    let iteration_count = iterations(len);
+    // Warm both CPU paths, then release their results before measurement. This
+    // avoids first-distribution allocator/frequency bias without leaving large
+    // reference structures live during either benchmark.
+    drop(RangeSetBlaze::from_slice(black_box(&values)));
+    drop(RangeSetBlaze::from_iter(black_box(values.iter().copied())));
+    // Measure CPU construction before allocating validation structures or GPU
+    // state, so the input is the only large live allocation.
+    let cpu = common::benchmark_unsorted_cpu(&values, iteration_count);
+
+    let mut gpu = WgpuPipeline::new(&values)?;
+    eprintln!(
+        "adapter={:?} backend={:?}",
+        gpu.context.adapter_info.name, gpu.context.adapter_info.backend
+    );
+    gpu.radix_sort()?;
+    gpu.normalize()?;
+    drop(gpu.readback_ranges()?);
+    drop(gpu.fused_ranges(&values)?);
+
+    let mut upload = Vec::with_capacity(iteration_count);
+    let mut radix_sort = Vec::with_capacity(iteration_count);
+    let mut normalization = Vec::with_capacity(iteration_count);
+    let mut readback = Vec::with_capacity(iteration_count);
+    let mut build = Vec::with_capacity(iteration_count);
+    let mut end_to_end = Vec::with_capacity(iteration_count);
+    let mut fused_end_to_end = Vec::with_capacity(iteration_count);
+    for _ in 0..iteration_count {
+        let total_start = Instant::now();
+
+        let stage_start = Instant::now();
+        gpu.upload(black_box(&values))?;
+        upload.push(stage_start.elapsed());
+
+        let stage_start = Instant::now();
+        gpu.radix_sort()?;
+        radix_sort.push(stage_start.elapsed());
+
+        let stage_start = Instant::now();
+        gpu.normalize()?;
+        normalization.push(stage_start.elapsed());
+
+        let stage_start = Instant::now();
+        let ranges = gpu.readback_ranges()?;
+        readback.push(stage_start.elapsed());
+
+        let stage_start = Instant::now();
+        black_box(common::set_from_gpu_ranges(ranges));
+        build.push(stage_start.elapsed());
+
+        end_to_end.push(total_start.elapsed());
+    }
+    for _ in 0..iteration_count {
+        let total_start = Instant::now();
+        let ranges = gpu.fused_ranges(black_box(&values))?;
+        black_box(common::set_from_gpu_ranges(ranges));
+        fused_end_to_end.push(total_start.elapsed());
+    }
+    for samples in [
+        &mut upload,
+        &mut radix_sort,
+        &mut normalization,
+        &mut readback,
+        &mut build,
+        &mut end_to_end,
+        &mut fused_end_to_end,
+    ] {
+        samples.sort_unstable();
+    }
+
+    // Keep the large validation structures out of both the CPU and GPU timing
+    // windows. The timed paths above are warmed but otherwise use only the
+    // original input and the state required by the implementation under test.
+    let expected = RangeSetBlaze::from_slice(&values);
+    let expected_from_iter = RangeSetBlaze::from_iter(values.iter().copied());
+    assert_eq!(expected_from_iter, expected);
+    let expected_ranges: Vec<_> = expected.ranges().collect();
+    let range_count = expected_ranges.len();
+
+    gpu.upload(&values)?;
+    gpu.radix_sort()?;
+    gpu.normalize()?;
+    let actual_ranges = gpu.readback_ranges()?;
+    assert_eq!(actual_ranges, expected_ranges);
+    assert_eq!(common::set_from_gpu_ranges(actual_ranges), expected);
+    let fused_ranges = gpu.fused_ranges(&values)?;
+    assert_eq!(fused_ranges, expected_ranges);
+
+    println!(
+        "{},shuffled-{},{},{},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6}",
+        gpu.adapter_label(),
+        distribution.name(),
+        len,
+        range_count,
+        len as f64 / range_count as f64,
+        milliseconds(cpu.from_slice_total),
+        milliseconds(cpu.from_iter_total),
+        milliseconds(median(&upload)),
+        milliseconds(median(&radix_sort)),
+        milliseconds(median(&normalization)),
+        milliseconds(median(&readback)),
+        milliseconds(median(&build)),
+        milliseconds(median(&end_to_end)),
+        milliseconds(median(&fused_end_to_end)),
+    );
+    Ok(())
+}
+
+fn storage_layout_entry(binding: u32, read_only: bool) -> wgpu::BindGroupLayoutEntry {
+    wgpu::BindGroupLayoutEntry {
+        binding,
+        visibility: wgpu::ShaderStages::COMPUTE,
+        ty: wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Storage { read_only },
+            has_dynamic_offset: false,
+            min_binding_size: None,
+        },
+        count: None,
+    }
+}
+
+fn entire_buffer_entry(binding: u32, buffer: &wgpu::Buffer) -> wgpu::BindGroupEntry<'_> {
+    wgpu::BindGroupEntry {
+        binding,
+        resource: buffer.as_entire_binding(),
+    }
+}
+
+fn storage_buffer(
+    device: &wgpu::Device,
+    label: &'static str,
+    size: u64,
+    extra_usage: wgpu::BufferUsages,
+) -> wgpu::Buffer {
+    device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some(label),
+        size,
+        usage: wgpu::BufferUsages::STORAGE | extra_usage,
+        mapped_at_creation: false,
+    })
+}
+
+fn readback_buffer(device: &wgpu::Device, label: &'static str, size: u64) -> wgpu::Buffer {
+    device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some(label),
+        size,
+        usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    })
+}
+
+fn map_u32(device: &wgpu::Device, buffer: &wgpu::Buffer, count: usize) -> Result<Vec<u32>, String> {
+    let byte_len = count as u64 * size_of::<u32>() as u64;
+    let slice = buffer.slice(..byte_len);
+    let (sender, receiver) = mpsc::channel();
+    slice.map_async(wgpu::MapMode::Read, move |result| {
+        drop(sender.send(result));
+    });
+    device
+        .poll(wgpu::PollType::Wait {
+            submission_index: None,
+            timeout: None,
+        })
+        .map_err(|error| error.to_string())?;
+    receiver
+        .recv()
+        .map_err(|error| error.to_string())?
+        .map_err(|error| error.to_string())?;
+    let result = {
+        let mapped = slice
+            .get_mapped_range()
+            .map_err(|error| error.to_string())?;
+        bytemuck::cast_slice::<u8, u32>(&mapped).to_vec()
+    };
+    buffer.unmap();
+    Ok(result)
+}

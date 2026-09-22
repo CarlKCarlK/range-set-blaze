@@ -9,15 +9,19 @@ use range_set_blaze::{RangeSetBlaze, SortedDisjoint, SortedStarts};
 pub(crate) enum Distribution {
     RandomGaps,
     DuplicateHeavy,
+    #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
     Clumps4,
     Clumps16,
+    #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
     Clumps64,
     Clumps256,
+    #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
     Clumps1024,
     Clumps4096,
 }
 
 impl Distribution {
+    #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
     pub(crate) const ALL: [Self; 8] = [
         Self::RandomGaps,
         Self::DuplicateHeavy,
@@ -33,10 +37,13 @@ impl Distribution {
         match self {
             Self::RandomGaps => "random-gaps",
             Self::DuplicateHeavy => "duplicate-heavy",
+            #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
             Self::Clumps4 => "clumps-4",
             Self::Clumps16 => "clumps-16",
+            #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
             Self::Clumps64 => "clumps-64",
             Self::Clumps256 => "clumps-256",
+            #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
             Self::Clumps1024 => "clumps-1024",
             Self::Clumps4096 => "clumps-4096",
         }
@@ -45,17 +52,20 @@ impl Distribution {
     const fn clump_len(self) -> Option<usize> {
         match self {
             Self::RandomGaps | Self::DuplicateHeavy => None,
+            #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
             Self::Clumps4 => Some(4),
             Self::Clumps16 => Some(16),
+            #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
             Self::Clumps64 => Some(64),
             Self::Clumps256 => Some(256),
+            #[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
             Self::Clumps1024 => Some(1024),
             Self::Clumps4096 => Some(4096),
         }
     }
 }
 
-#[cfg(feature = "gpu-cub")]
+#[cfg(any(feature = "gpu-cub", feature = "gpu-wgpu"))]
 pub(crate) const UNSORTED_DISTRIBUTIONS: [Distribution; 5] = [
     Distribution::RandomGaps,
     Distribution::DuplicateHeavy,
@@ -89,7 +99,7 @@ pub(crate) fn generate_sorted(len: usize, distribution: Distribution) -> Vec<u32
     values
 }
 
-#[cfg(feature = "gpu-cub")]
+#[cfg(any(feature = "gpu-cub", feature = "gpu-wgpu"))]
 pub(crate) fn generate_shuffled(len: usize, distribution: Distribution) -> Vec<u32> {
     let mut values = generate_sorted(len, distribution);
     let mut state = 0xd1b5_4a32_d192_ed03u64;
@@ -102,6 +112,7 @@ pub(crate) fn generate_shuffled(len: usize, distribution: Distribution) -> Vec<u
     values
 }
 
+#[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
 pub(crate) fn cpu_sorted_ranges(values: &[u32]) -> Vec<RangeInclusive<u32>> {
     let Some((&first, rest)) = values.split_first() else {
         return Vec::new();
@@ -175,10 +186,12 @@ pub(crate) fn set_from_gpu_ranges(ranges: Vec<RangeInclusive<u32>>) -> RangeSetB
     RangeSetBlaze::from_sorted_disjoint(TrustedGpuRanges::new(ranges.into_iter()))
 }
 
+#[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
 fn copy_range(range: &RangeInclusive<u32>) -> RangeInclusive<u32> {
     *range.start()..=*range.end()
 }
 
+#[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
 pub(crate) fn set_from_trusted_range_slice(ranges: &[RangeInclusive<u32>]) -> RangeSetBlaze<u32> {
     let copied = ranges.iter().map(copy_range);
     RangeSetBlaze::from_sorted_disjoint(TrustedGpuRanges::new(copied))
@@ -208,19 +221,20 @@ pub(crate) fn iterations(len: usize) -> usize {
     }
 }
 
+#[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
 pub(crate) struct CpuTimings {
     pub(crate) from_slice_total: Duration,
     pub(crate) normalize_ranges: Duration,
     pub(crate) build_from_ranges: Duration,
 }
 
-#[cfg(feature = "gpu-cub")]
+#[cfg(any(feature = "gpu-cub", feature = "gpu-wgpu"))]
 pub(crate) struct UnsortedCpuTimings {
     pub(crate) from_slice_total: Duration,
     pub(crate) from_iter_total: Duration,
 }
 
-#[cfg(feature = "gpu-cub")]
+#[cfg(any(feature = "gpu-cub", feature = "gpu-wgpu"))]
 pub(crate) fn benchmark_unsorted_cpu(values: &[u32], iterations: usize) -> UnsortedCpuTimings {
     let from_slice = durations(iterations, || {
         black_box(RangeSetBlaze::from_slice(black_box(values)));
@@ -234,6 +248,7 @@ pub(crate) fn benchmark_unsorted_cpu(values: &[u32], iterations: usize) -> Unsor
     }
 }
 
+#[cfg(any(feature = "gpu-cutile", feature = "gpu-oxide"))]
 pub(crate) fn benchmark_cpu(
     values: &[u32],
     perfect_ranges: &[RangeInclusive<u32>],

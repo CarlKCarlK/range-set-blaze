@@ -40,8 +40,8 @@ float_nightly_experimental = []
 cursor_nightly_experimental = []
 from_slice = []
 test_util = ["rand"]
-# Experimental, benchmark-only NVIDIA GPU backends. These do not expose any
-# public RangeSetBlaze API and are never enabled by default.
+# Experimental, benchmark-only GPU backends. These do not expose any public
+# RangeSetBlaze API and are never enabled by default.
 gpu-cutile = ["std", "from_slice", "dep:cutile"]
 gpu-oxide = [
     "std",
@@ -53,6 +53,15 @@ gpu-oxide = [
 # Adds a minimal native CUB wrapper for device-resident `u32` radix sorting.
 # All post-sort normalization remains in Rust under `gpu-oxide`.
 gpu-cub = ["gpu-oxide"]
+# Portable unsorted-`u32` experiment using wgpu/WGSL and Lampshade primitives.
+gpu-wgpu = [
+    "std",
+    "from_slice",
+    "dep:bytemuck",
+    "dep:lampshade",
+    "dep:pollster",
+    "dep:wgpu",
+]
 
 [dependencies]
 itertools = { version = "0.14.0", default-features = false, features = [
@@ -66,6 +75,10 @@ cutile = { git = "https://github.com/NVlabs/cutile-rs.git", rev = "e04245bdcf1f5
 cuda-core = { version = "0.3.1", optional = true }
 cuda-device = { git = "https://github.com/NVlabs/cuda-oxide.git", rev = "b0f961df3af0ff140b3b006fa2b6750b71f43f62", optional = true }
 cuda-host = { git = "https://github.com/NVlabs/cuda-oxide.git", rev = "b0f961df3af0ff140b3b006fa2b6750b71f43f62", optional = true }
+bytemuck = { version = "1.24", optional = true }
+lampshade = { version = "0.13.0", optional = true }
+pollster = { version = "0.4", optional = true }
+wgpu = { version = "30.0.1", optional = true }
 
 [dev-dependencies]
 syntactic-for = "0.1.1"
@@ -119,6 +132,11 @@ required-features = ["gpu-oxide"]
 name = "gpu_normalize_cutile"
 path = "experiments/gpu_normalize_cutile.rs"
 required-features = ["gpu-cutile"]
+
+[[bin]]
+name = "gpu_normalize_wgpu"
+path = "experiments/gpu_normalize_wgpu.rs"
+required-features = ["gpu-wgpu"]
 
 [package.metadata.docs.rs]
 # Publish all optional APIs. Rustdoc's `doc_cfg` annotations identify the
