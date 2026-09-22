@@ -80,18 +80,32 @@ The benchmarks are in the `benches` directory. To run them, use `cargo bench`.
 Articles
 -----------
 
+## Articles
+
 * [Nine Rules for Creating Fast, Safe, and Compatible Data Structures in Rust:
-  Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3) in *Towards Data Science*. It provides a high-level overview of the crate and its design.
+  Lessons from RangeSetBlaze](https://medium.com/towards-data-science/nine-rules-for-creating-fast-safe-and-compatible-data-structures-in-rust-part-1-c0973092e0a3)
+  **(2023)** in *Towards Data Science*. It provides a high-level overview of the crate and its design.
 
-* [Nine Rules for Running Rust on the Web and on Embedded: Practical Lessons from Porting range-set-blaze to no_std and WASM](https://medium.com/towards-data-science/nine-rules-for-running-rust-on-the-web-and-on-embedded-94462ef249a2) in *Towards Data Science*. It covers porting to "`no_std`".
-
-* [Check AI-Generated Code Perfectly and Automatically
-  My Experience Applying Kani’s Formal Verification to ChatGPT-Suggested Rust Code](https://medium.com/@carlmkadie/check-ai-generated-code-perfectly-and-automatically-d5b61acff741). Shows how to prove overflow safety.
-
-* [Nine Rules to Formally Validate Rust Algorithms with Dafny](https://medium.com/towards-data-science/nine-rules-to-formally-validate-rust-algorithms-with-dafny-part-1-5cb8c8a0bb92) in *Towards Data Science*. It shows how to formally validate one of the crate's algorithms.
+* [Nine Rules for Running Rust on the Web and on Embedded:
+  Practical Lessons from Porting range-set-blaze to no_std and WASM](https://medium.com/towards-data-science/nine-rules-for-running-rust-on-the-web-and-on-embedded-94462ef249a2)
+  **(2023)** in *Towards Data Science*. It covers porting to `no_std`.
 
 * [Nine Rules for SIMD Acceleration of your Rust Code:
-  General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x](https://medium.com/towards-data-science/nine-rules-for-simd-acceleration-of-your-rust-code-part-1-c16fe639ce21) in *Towards Data Science*
+  General Lessons from Boosting Data Ingestion in the range-set-blaze Crate by 7x](https://medium.com/towards-data-science/nine-rules-for-simd-acceleration-of-your-rust-code-part-1-c16fe639ce21)
+  **(2023)** in *Towards Data Science*.
+
+* [Check AI-Generated Code Perfectly and Automatically:
+  My Experience Applying Kani’s Formal Verification to ChatGPT-Suggested Rust Code](https://medium.com/@carlmkadie/check-ai-generated-code-perfectly-and-automatically-d5b61acff741)
+  **(2023)**. Shows how to prove overflow safety.
+
+* [Nine Rules for Vibe Validation of Vibe-Coded Algorithms](https://levelup.gitconnected.com/nine-rules-for-vibe-validation-of-vibe-coded-algorithms-20db019f5583)
+  **(2026)** in *Level Up Coding*. Revisits the approach with newer AI models, including AI-written algorithms, much faster proof development, and refactoring of proof slop.
+
+* [Vibe Validation with Lean, ChatGPT-5, and Claude 4.5](https://medium.com/@carlmkadie/vibe-validation-with-lean-chatgpt-5-claude-4-5-part-1-c57b430b3d7a)
+  **(2025)**. Describes using AI-written Lean to prove a RangeSetBlaze algorithm correct, with almost all of the proof work done by AI.
+
+* [Nine Rules to Formally Validate Rust Algorithms with Dafny](https://medium.com/towards-data-science/nine-rules-to-formally-validate-rust-algorithms-with-dafny-part-1-5cb8c8a0bb92)
+  **(2023)** in *Towards Data Science*. It shows how to formally validate one of the crate's algorithms.
 
 * *Also see:* [CHANGELOG](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/CHANGELOG.md) and the [release checklist](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/release_checklist.md)
 
