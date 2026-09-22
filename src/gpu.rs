@@ -239,7 +239,7 @@ fn normalize_32<T: GpuElement>(
     resource_or_panic(radix_sorter.record_sort(&mut encoder, &input, &sorted, len))?;
     boundary.record(&mut encoder);
     record_compactions_32(&mut compactor, &mut encoder, &sorted, &buffers, len)?;
-    submit(context, encoder.finish())?;
+    submit(context, encoder.finish());
     read_endpoints_32(context, &buffers, len)
 }
 
@@ -328,7 +328,7 @@ fn normalize_64<T: GpuElement>(
         &buffers.end_count,
         len,
     ))?;
-    submit(context, encoder.finish())?;
+    submit(context, encoder.finish());
     read_endpoints_64(context, &buffers, len)
 }
 
@@ -566,8 +566,8 @@ fn read_counts(context: &Context, buffers: &BoundaryBuffers) -> Option<usize> {
     let mut encoder = encoder(context, "GPU range count copy");
     encoder.copy_buffer_to_buffer(&buffers.start_count, 0, &buffers.count_readback, 0, 4);
     encoder.copy_buffer_to_buffer(&buffers.end_count, 0, &buffers.count_readback, 4, 4);
-    submit(context, encoder.finish())?;
-    let counts = map_u32(context, &buffers.count_readback, 2)?;
+    submit(context, encoder.finish());
+    let counts = map_u32(context, &buffers.count_readback, 2);
     assert_eq!(
         counts[0], counts[1],
         "GPU emitted unpaired range boundaries"
@@ -590,8 +590,8 @@ fn read_endpoints_32(
     let mut encoder = encoder(context, "GPU range endpoint copy");
     encoder.copy_buffer_to_buffer(&buffers.starts, 0, &readback, 0, endpoint_bytes);
     encoder.copy_buffer_to_buffer(&buffers.ends, 0, &readback, endpoint_bytes, endpoint_bytes);
-    submit(context, encoder.finish())?;
-    let words = map_u32(context, &readback, count * 2)?;
+    submit(context, encoder.finish());
+    let words = map_u32(context, &readback, count * 2);
     Some(
         words[..count]
             .iter()
@@ -616,8 +616,8 @@ fn read_endpoints_64(
     let mut encoder = encoder(context, "GPU range endpoint copy");
     encoder.copy_buffer_to_buffer(&buffers.starts, 0, &readback, 0, endpoint_bytes);
     encoder.copy_buffer_to_buffer(&buffers.ends, 0, &readback, endpoint_bytes, endpoint_bytes);
-    submit(context, encoder.finish())?;
-    let words = map_u32(context, &readback, count * 4)?;
+    submit(context, encoder.finish());
+    let words = map_u32(context, &readback, count * 4);
     let (starts, ends) = words.split_at(count * 2);
     Some(
         starts
@@ -660,7 +660,7 @@ fn resource_or_panic(result: Result<(), lampshade::Error>) -> Option<()> {
     }
 }
 
-fn submit(context: &Context, command: wgpu::CommandBuffer) -> Option<()> {
+fn submit(context: &Context, command: wgpu::CommandBuffer) {
     let submission = context.queue.submit(Some(command));
     context
         .device
@@ -668,11 +668,10 @@ fn submit(context: &Context, command: wgpu::CommandBuffer) -> Option<()> {
             submission_index: Some(submission),
             timeout: None,
         })
-        .ok()?;
-    Some(())
+        .unwrap_or_else(|error| panic!("GPU range execution failed while waiting: {error}"));
 }
 
-fn map_u32(context: &Context, buffer: &wgpu::Buffer, count: usize) -> Option<Vec<u32>> {
+fn map_u32(context: &Context, buffer: &wgpu::Buffer, count: usize) -> Vec<u32> {
     let slice = buffer.slice(..count as u64 * 4);
     let (sender, receiver) = mpsc::channel();
     slice.map_async(wgpu::MapMode::Read, move |result| {
@@ -684,14 +683,19 @@ fn map_u32(context: &Context, buffer: &wgpu::Buffer, count: usize) -> Option<Vec
             submission_index: None,
             timeout: None,
         })
-        .ok()?;
-    receiver.recv().ok()?.ok()?;
+        .unwrap_or_else(|error| panic!("GPU range execution failed while mapping: {error}"));
+    receiver
+        .recv()
+        .unwrap_or_else(|error| panic!("GPU range readback channel failed: {error}"))
+        .unwrap_or_else(|error| panic!("GPU range readback mapping failed: {error}"));
     let result = {
-        let mapped = slice.get_mapped_range().ok()?;
+        let mapped = slice
+            .get_mapped_range()
+            .unwrap_or_else(|error| panic!("GPU range readback access failed: {error}"));
         bytemuck::cast_slice::<u8, u32>(&mapped).to_vec()
     };
     buffer.unmap();
-    Some(result)
+    result
 }
 
 fn storage_buffer(
@@ -763,11 +767,23 @@ macro_rules! gpu_api {
 macro_rules! gpu_api_one {
     ($type:ty) => {
         impl RangeSetBlaze<$type> {
-            /// Creates a set from an unsorted slice, using a portable GPU when worthwhile.
+            /// Constructs from the slice using portable GPU acceleration when supported and
+            /// worthwhile, otherwise using the normal CPU implementation.
             ///
-            /// Small inputs and unavailable or resource-constrained adapters use the CPU
-            /// implementation. GPU implementation failures are not silently converted into
-            /// CPU fallback. Existing constructors are never affected by this policy.
+            /// This experimental, opt-in policy is available only with the `gpu` feature. It
+            /// falls back to the CPU for inputs below its crossover threshold, types without a
+            /// GPU key representation, systems without a suitable hardware adapter, and inputs
+            /// that exceed adapter buffer or dispatch limits. Other expected environmental or
+            /// resource constraints can also make GPU execution unavailable.
+            ///
+            /// The GPU-capable 32-bit family is `u8`, `u16`, `u32`, `i8`, `i16`, `i32`, `char`,
+            /// [`Ipv4Addr`], [`NotNanF32`], and, with `float_nightly_experimental`, `NotNanF16`.
+            /// The 64-bit family is `u64`, `i64`, [`NotNanF64`], and `usize`/`isize` according to
+            /// the target width. `u128`, `i128`, [`Ipv6Addr`], `NotNanF128`, and the `TotalF*`
+            /// types always use the CPU.
+            ///
+            /// Unexpected GPU execution or implementation failures are not treated as ordinary
+            /// policy fallback. Existing CPU constructors are unaffected by this method.
             #[cfg_attr(docsrs, doc(cfg(feature = "gpu")))]
             #[must_use]
             pub fn from_slice_gpu(slice: &[$type]) -> Self {
