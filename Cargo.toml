@@ -112,6 +112,11 @@ name = "gpu_ingest"
 path = "experiments/gpu_ingest.rs"
 required-features = ["gpu"]
 
+[[bin]]
+name = "gpu_sort_benchmark"
+path = "experiments/gpu_sort_benchmark.rs"
+required-features = ["gpu"]
+
 [package.metadata.docs.rs]
 # Publish all optional APIs. Rustdoc's `doc_cfg` annotations identify the
 # feature required by each gated item.
