@@ -173,6 +173,8 @@ impl BoundaryKernel {
 
 struct WgpuPipeline {
     context: Context,
+    mappable_primary_available: bool,
+    mapped_primary: bool,
     sorter: Sorter,
     compactor: Compactor,
     boundaries: BoundaryKernel,
@@ -184,7 +186,7 @@ struct WgpuPipeline {
     ends: wgpu::Buffer,
     start_count: wgpu::Buffer,
     end_count: wgpu::Buffer,
-    count_readback: wgpu::Buffer,
+    count_readback: Option<wgpu::Buffer>,
     range_readback: Option<wgpu::Buffer>,
     len: u32,
 }
@@ -195,27 +197,18 @@ impl WgpuPipeline {
             return Err("input must not be empty".to_owned());
         }
         let len = u32::try_from(values.len()).map_err(|_| "input exceeds u32::MAX items")?;
-        let context = pollster::block_on(Context::init()).map_err(|error| error.to_string())?;
+        let force_staged = std::env::args().any(|argument| argument == "--staged");
+        let (context, mappable_primary_available, mapped_primary) =
+            pollster::block_on(init_context(!force_staged))?;
         let byte_len = u64::from(len) * size_of::<u32>() as u64;
-        let limits = context.device.limits();
-        if byte_len > limits.max_storage_buffer_binding_size as u64
-            || byte_len > limits.max_buffer_size
-        {
-            return Err(format!(
-                "{} items need a {byte_len}-byte storage buffer, but adapter '{}' allows a {}-byte binding and a {}-byte buffer",
-                len,
-                context.adapter_info.name,
-                limits.max_storage_buffer_binding_size,
-                limits.max_buffer_size,
-            ));
-        }
+        validate_buffer_size(&context, len, byte_len)?;
 
-        let input = storage_buffer(
-            &context.device,
-            "Unsorted input",
-            byte_len,
-            wgpu::BufferUsages::COPY_DST,
-        );
+        let input_usage = if mapped_primary {
+            wgpu::BufferUsages::MAP_WRITE
+        } else {
+            wgpu::BufferUsages::COPY_DST
+        };
+        let input = storage_buffer(&context.device, "Unsorted input", byte_len, input_usage);
         let sorted = storage_buffer(
             &context.device,
             "Sorted values",
@@ -234,19 +227,24 @@ impl WgpuPipeline {
             byte_len,
             wgpu::BufferUsages::COPY_SRC,
         );
+        let readback_usage = if mapped_primary {
+            wgpu::BufferUsages::MAP_READ
+        } else {
+            wgpu::BufferUsages::COPY_SRC
+        };
         let starts = storage_buffer(
             &context.device,
             "Compacted range starts",
             byte_len,
-            wgpu::BufferUsages::COPY_SRC,
+            readback_usage,
         );
         let ends = storage_buffer(
             &context.device,
             "Compacted range ends",
             byte_len,
-            wgpu::BufferUsages::COPY_SRC,
+            readback_usage,
         );
-        let count_usage = wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC;
+        let count_usage = wgpu::BufferUsages::COPY_DST | readback_usage;
         let start_count = storage_buffer(
             &context.device,
             "Range start count",
@@ -259,16 +257,20 @@ impl WgpuPipeline {
             size_of::<u32>() as u64,
             count_usage,
         );
-        let count_readback = readback_buffer(
-            &context.device,
-            "Range count readback",
-            2 * size_of::<u32>() as u64,
-        );
+        let count_readback = (!mapped_primary).then(|| {
+            readback_buffer(
+                &context.device,
+                "Range count readback",
+                2 * size_of::<u32>() as u64,
+            )
+        });
         let boundaries = BoundaryKernel::new(&context, &sorted, &start_mask, &end_mask, len);
         let radix_sorter = Sorter::from_context(&context);
         let compactor = Compactor::from_context(&context);
         let pipeline = Self {
             context,
+            mappable_primary_available,
+            mapped_primary,
             sorter: radix_sorter,
             compactor,
             boundaries,
@@ -303,15 +305,24 @@ impl WgpuPipeline {
             })
             .collect::<String>();
         format!(
-            "wgpu-lampshade-{:?}-{adapter}",
-            self.context.adapter_info.backend
+            "wgpu-lampshade-{}-{:?}-{adapter}",
+            if self.mapped_primary {
+                "mapped-primary"
+            } else {
+                "staged"
+            },
+            self.context.adapter_info.backend,
         )
         .to_ascii_lowercase()
     }
 
     fn upload(&self, values: &[u32]) -> Result<(), String> {
-        self.enqueue_upload(values);
-        self.submit_and_wait(None)
+        if self.mapped_primary {
+            map_write_u32(&self.context.device, &self.input, values)
+        } else {
+            self.enqueue_upload(values);
+            self.submit_and_wait(None)
+        }
     }
 
     fn enqueue_upload(&self, values: &[u32]) {
@@ -364,15 +375,21 @@ impl WgpuPipeline {
     }
 
     fn readback_ranges(&mut self) -> Result<Vec<RangeInclusive<u32>>, String> {
-        let mut encoder = self.encoder("Range count readback copy");
-        self.record_count_copy(&mut encoder);
-        self.submit_and_wait(Some(encoder.finish()))?;
+        if !self.mapped_primary {
+            let mut encoder = self.encoder("Range count readback copy");
+            self.record_count_copy(&mut encoder);
+            self.submit_and_wait(Some(encoder.finish()))?;
+        }
         let count = self.read_range_count()?;
         self.readback_endpoints(count)
     }
 
     fn fused_ranges(&mut self, values: &[u32]) -> Result<Vec<RangeInclusive<u32>>, String> {
-        self.enqueue_upload(values);
+        if self.mapped_primary {
+            self.upload(values)?;
+        } else {
+            self.enqueue_upload(values);
+        }
         let mut encoder = self.encoder("Fused portable normalization");
         self.record_radix_sort(&mut encoder)?;
         self.record_normalization(&mut encoder)?;
@@ -383,24 +400,32 @@ impl WgpuPipeline {
     }
 
     fn record_count_copy(&self, encoder: &mut wgpu::CommandEncoder) {
-        encoder.copy_buffer_to_buffer(
-            &self.start_count,
-            0,
-            &self.count_readback,
-            0,
-            size_of::<u32>() as u64,
-        );
+        let Some(readback) = &self.count_readback else {
+            return;
+        };
+        encoder.copy_buffer_to_buffer(&self.start_count, 0, readback, 0, size_of::<u32>() as u64);
         encoder.copy_buffer_to_buffer(
             &self.end_count,
             0,
-            &self.count_readback,
+            readback,
             size_of::<u32>() as u64,
             size_of::<u32>() as u64,
         );
     }
 
     fn read_range_count(&self) -> Result<usize, String> {
-        let counts = map_u32(&self.context.device, &self.count_readback, 2)?;
+        let counts = if let Some(readback) = &self.count_readback {
+            map_u32(&self.context.device, readback, 2)?
+        } else {
+            let (starts, ends) = map_two_u32(
+                &self.context.device,
+                &self.start_count,
+                1,
+                &self.end_count,
+                1,
+            )?;
+            [starts[0], ends[0]].to_vec()
+        };
         Ok(validate_range_count(&counts, self.len))
     }
 
@@ -411,37 +436,47 @@ impl WgpuPipeline {
 
         let endpoint_bytes = count as u64 * size_of::<u32>() as u64;
         let required_bytes = endpoint_bytes * 2;
-        if required_bytes > self.context.device.limits().max_buffer_size {
+        let largest_buffer = if self.mapped_primary {
+            endpoint_bytes
+        } else {
+            required_bytes
+        };
+        if largest_buffer > self.context.device.limits().max_buffer_size {
             return Err(format!(
-                "{count} ranges need a {required_bytes}-byte readback buffer, exceeding adapter '{}' limit of {} bytes",
+                "{count} ranges need a {largest_buffer}-byte readback buffer, exceeding adapter '{}' limit of {} bytes",
                 self.context.adapter_info.name,
                 self.context.device.limits().max_buffer_size,
             ));
         }
-        let recreate = self
-            .range_readback
-            .as_ref()
-            .is_none_or(|buffer| buffer.size() < required_bytes);
-        if recreate {
-            self.range_readback = Some(readback_buffer(
-                &self.context.device,
-                "Compacted range readback",
-                required_bytes,
-            ));
-        }
-        let readback = self
-            .range_readback
-            .as_ref()
-            .expect("readback buffer initialized");
-        let mut encoder = self.encoder("Compacted range readback copy");
-        encoder.copy_buffer_to_buffer(&self.starts, 0, readback, 0, endpoint_bytes);
-        encoder.copy_buffer_to_buffer(&self.ends, 0, readback, endpoint_bytes, endpoint_bytes);
-        self.submit_and_wait(Some(encoder.finish()))?;
-        let endpoints = map_u32(&self.context.device, readback, count * 2)?;
-        Ok(endpoints[..count]
+        let (starts, ends) = if self.mapped_primary {
+            map_two_u32(&self.context.device, &self.starts, count, &self.ends, count)?
+        } else {
+            let recreate = self
+                .range_readback
+                .as_ref()
+                .is_none_or(|buffer| buffer.size() < required_bytes);
+            if recreate {
+                self.range_readback = Some(readback_buffer(
+                    &self.context.device,
+                    "Compacted range readback",
+                    required_bytes,
+                ));
+            }
+            let readback = self
+                .range_readback
+                .as_ref()
+                .expect("readback buffer initialized");
+            let mut encoder = self.encoder("Compacted range readback copy");
+            encoder.copy_buffer_to_buffer(&self.starts, 0, readback, 0, endpoint_bytes);
+            encoder.copy_buffer_to_buffer(&self.ends, 0, readback, endpoint_bytes, endpoint_bytes);
+            self.submit_and_wait(Some(encoder.finish()))?;
+            let endpoints = map_u32(&self.context.device, readback, count * 2)?;
+            (endpoints[..count].to_vec(), endpoints[count..].to_vec())
+        };
+        Ok(starts
             .iter()
             .copied()
-            .zip(endpoints[count..].iter().copied())
+            .zip(ends.iter().copied())
             .map(|(start, end)| start..=end)
             .collect())
     }
@@ -490,8 +525,15 @@ fn benchmark_case(len: usize, distribution: Distribution) -> Result<(), String> 
 
     let mut gpu = WgpuPipeline::new(&values)?;
     eprintln!(
-        "adapter={:?} backend={:?}",
-        gpu.context.adapter_info.name, gpu.context.adapter_info.backend
+        "adapter={:?} backend={:?} mappable_primary_available={} memory_path={}",
+        gpu.context.adapter_info.name,
+        gpu.context.adapter_info.backend,
+        gpu.mappable_primary_available,
+        if gpu.mapped_primary {
+            "mapped-primary"
+        } else {
+            "staged"
+        },
     );
     gpu.radix_sort()?;
     gpu.normalize()?;
@@ -603,6 +645,85 @@ fn validate_results(
     assert_eq!(fused_ranges, expected_ranges);
 }
 
+fn validate_buffer_size(context: &Context, len: u32, byte_len: u64) -> Result<(), String> {
+    let limits = context.device.limits();
+    if byte_len <= limits.max_storage_buffer_binding_size && byte_len <= limits.max_buffer_size {
+        return Ok(());
+    }
+    Err(format!(
+        "{len} items need a {byte_len}-byte storage buffer, but adapter '{}' allows a {}-byte binding and a {}-byte buffer",
+        context.adapter_info.name, limits.max_storage_buffer_binding_size, limits.max_buffer_size,
+    ))
+}
+
+async fn init_context(enable_mappable_primary: bool) -> Result<(Context, bool, bool), String> {
+    let descriptor = wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::PRIMARY,
+        ..wgpu::InstanceDescriptor::new_without_display_handle()
+    }
+    .with_env();
+    let instance = wgpu::Instance::new(descriptor);
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: false,
+            apply_limit_buckets: false,
+        })
+        .await
+        .map_err(|error| format!("failed to request a GPU adapter: {error}"))?;
+    let adapter_info = adapter.get_info();
+    let supported_features = adapter.features();
+    let mappable_primary_available =
+        supported_features.contains(wgpu::Features::MAPPABLE_PRIMARY_BUFFERS);
+    let mapped_primary = enable_mappable_primary
+        && adapter_info.device_type == wgpu::DeviceType::IntegratedGpu
+        && mappable_primary_available;
+    let required_features = context_features(&adapter_info, supported_features, mapped_primary);
+    let (device, queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor {
+            label: Some("wgpu normalization experiment"),
+            required_features,
+            required_limits: adapter.limits(),
+            memory_hints: wgpu::MemoryHints::Performance,
+            ..Default::default()
+        })
+        .await
+        .map_err(|error| format!("failed to request a GPU device: {error}"))?;
+    Ok((
+        Context {
+            adapter_info,
+            device,
+            queue,
+        },
+        mappable_primary_available,
+        mapped_primary,
+    ))
+}
+
+fn context_features(
+    adapter_info: &wgpu::AdapterInfo,
+    supported_features: wgpu::Features,
+    mapped_primary: bool,
+) -> wgpu::Features {
+    let unreliable_optional_compute = adapter_info.backend == wgpu::Backend::Vulkan
+        && adapter_info.vendor == 0x10de
+        && adapter_info.device_type == wgpu::DeviceType::IntegratedGpu;
+    let apple_metal = adapter_info.backend == wgpu::Backend::Metal
+        && (adapter_info.vendor == 0x106b || adapter_info.name.starts_with("Apple "));
+    let mut requested = wgpu::Features::empty();
+    if !unreliable_optional_compute {
+        requested |= wgpu::Features::SUBGROUP;
+        if !apple_metal {
+            requested |= wgpu::Features::TIMESTAMP_QUERY;
+        }
+    }
+    if mapped_primary {
+        requested |= wgpu::Features::MAPPABLE_PRIMARY_BUFFERS;
+    }
+    supported_features & requested
+}
+
 const fn storage_layout_entry(binding: u32, read_only: bool) -> wgpu::BindGroupLayoutEntry {
     wgpu::BindGroupLayoutEntry {
         binding,
@@ -671,4 +792,82 @@ fn map_u32(device: &wgpu::Device, buffer: &wgpu::Buffer, count: usize) -> Result
     };
     buffer.unmap();
     Ok(result)
+}
+
+fn map_two_u32(
+    device: &wgpu::Device,
+    first: &wgpu::Buffer,
+    first_count: usize,
+    second: &wgpu::Buffer,
+    second_count: usize,
+) -> Result<(Vec<u32>, Vec<u32>), String> {
+    let first_slice = first.slice(..first_count as u64 * size_of::<u32>() as u64);
+    let second_slice = second.slice(..second_count as u64 * size_of::<u32>() as u64);
+    let (first_sender, first_receiver) = mpsc::channel();
+    let (second_sender, second_receiver) = mpsc::channel();
+    first_slice.map_async(wgpu::MapMode::Read, move |result| {
+        drop(first_sender.send(result));
+    });
+    second_slice.map_async(wgpu::MapMode::Read, move |result| {
+        drop(second_sender.send(result));
+    });
+    device
+        .poll(wgpu::PollType::Wait {
+            submission_index: None,
+            timeout: None,
+        })
+        .map_err(|error| error.to_string())?;
+    first_receiver
+        .recv()
+        .map_err(|error| error.to_string())?
+        .map_err(|error| error.to_string())?;
+    second_receiver
+        .recv()
+        .map_err(|error| error.to_string())?
+        .map_err(|error| error.to_string())?;
+    let first_words = {
+        let mapped = first_slice
+            .get_mapped_range()
+            .map_err(|error| error.to_string())?;
+        bytemuck::cast_slice::<u8, u32>(&mapped).to_vec()
+    };
+    let second_words = {
+        let mapped = second_slice
+            .get_mapped_range()
+            .map_err(|error| error.to_string())?;
+        bytemuck::cast_slice::<u8, u32>(&mapped).to_vec()
+    };
+    first.unmap();
+    second.unmap();
+    Ok((first_words, second_words))
+}
+
+fn map_write_u32(
+    device: &wgpu::Device,
+    buffer: &wgpu::Buffer,
+    values: &[u32],
+) -> Result<(), String> {
+    let slice = buffer.slice(..values.len() as u64 * size_of::<u32>() as u64);
+    let (sender, receiver) = mpsc::channel();
+    slice.map_async(wgpu::MapMode::Write, move |result| {
+        drop(sender.send(result));
+    });
+    device
+        .poll(wgpu::PollType::Wait {
+            submission_index: None,
+            timeout: None,
+        })
+        .map_err(|error| error.to_string())?;
+    receiver
+        .recv()
+        .map_err(|error| error.to_string())?
+        .map_err(|error| error.to_string())?;
+    {
+        let mut mapped = slice
+            .get_mapped_range_mut()
+            .map_err(|error| error.to_string())?;
+        mapped.copy_from_slice(bytemuck::cast_slice(values));
+    }
+    buffer.unmap();
+    Ok(())
 }

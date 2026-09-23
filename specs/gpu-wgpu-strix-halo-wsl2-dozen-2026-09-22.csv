@@ -1,0 +1,16 @@
+backend,distribution,input_values,output_ranges,compression_ratio,cpu_from_iter_ms,gpu_upload_ms,gpu_radix_sort_ms,gpu_normalization_ms,gpu_range_readback_ms,gpu_build_from_ranges_ms,gpu_end_to_end_ms,gpu_fused_end_to_end_ms
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-random-gaps,100000,96825,1.032791,3.640976,0.331070,7.685663,1.529706,1.582097,0.470850,11.387306,10.928649
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-duplicate-heavy,100000,10687,9.357163,2.003221,1.028968,6.598904,1.327531,0.792852,0.071098,9.779738,7.315419
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-clumps-16,100000,6250,16.000000,2.292902,0.786956,6.015662,1.327043,0.675139,0.071629,8.650259,7.115437
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-clumps-256,100000,391,255.754476,2.241405,0.674057,3.752005,0.804991,0.602498,0.004529,5.860331,5.012648
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-clumps-4096,100000,25,4000.000000,2.253030,0.639998,2.893690,0.982701,0.618397,0.001673,5.253284,5.123324
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-random-gaps,1000000,967577,1.033509,39.093529,1.396573,7.883206,1.094208,2.526039,4.810229,17.864723,17.979094
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-duplicate-heavy,1000000,107071,9.339597,27.422964,0.560204,10.630595,1.418281,1.399449,0.553370,15.019300,10.173320
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-clumps-16,1000000,62500,16.000000,28.986740,0.475828,8.797720,1.516545,1.315739,0.317743,12.295457,12.250072
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-clumps-256,1000000,3907,255.950857,26.897515,1.028955,7.855715,1.459315,0.733165,0.055336,11.131645,10.796619
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-clumps-4096,1000000,245,4081.632653,26.784276,0.987265,8.497485,1.136162,0.767672,0.004519,11.386324,9.986353
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-random-gaps,10000000,9676284,1.033455,493.429621,14.339069,26.131572,3.727753,49.877641,87.755024,178.317906,202.931661
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-duplicate-heavy,10000000,1071355,9.333974,368.991895,4.668947,25.916040,4.373099,3.160203,6.461367,47.381893,38.137808
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-clumps-16,10000000,625000,16.000000,367.834450,4.009791,23.113676,3.563997,2.547877,3.538298,36.746197,34.962030
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-clumps-256,10000000,39063,255.996723,364.511602,3.190573,22.107684,3.476070,2.026679,0.305079,30.615013,30.564576
+wgpu-lampshade-vulkan-microsoft-direct3d12--amd-radeon-tm--8060s-graphics-,shuffled-clumps-4096,10000000,2442,4095.004095,362.772486,4.192772,20.486751,3.056521,1.141782,0.045307,28.816098,29.190593

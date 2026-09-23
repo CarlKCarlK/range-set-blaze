@@ -1,0 +1,11 @@
+backend,distribution,input_values,output_ranges,compression_ratio,cpu_from_iter_ms,gpu_upload_ms,gpu_radix_sort_ms,gpu_normalization_ms,gpu_range_readback_ms,gpu_build_from_ranges_ms,gpu_end_to_end_ms,gpu_fused_end_to_end_ms
+wgpu-lampshade-vulkan-amd-radeon-tm--8060s-graphics,shuffled-random-gaps,1000000,967577,1.033509,51.092400,0.762400,3.439200,0.528600,3.423800,15.751700,23.709100,23.955700
+wgpu-lampshade-vulkan-amd-radeon-tm--8060s-graphics,shuffled-duplicate-heavy,1000000,107071,9.339597,33.619500,0.306100,3.123600,0.454100,0.499800,0.839800,5.240100,5.594400
+wgpu-lampshade-vulkan-amd-radeon-tm--8060s-graphics,shuffled-clumps-16,1000000,62500,16.000000,32.896300,0.355600,2.961800,0.452400,0.262500,0.681700,4.743600,4.603600
+wgpu-lampshade-vulkan-amd-radeon-tm--8060s-graphics,shuffled-clumps-256,1000000,3907,255.950857,31.607600,0.266200,3.140100,0.418600,0.194700,0.055500,4.163300,3.923300
+wgpu-lampshade-vulkan-amd-radeon-tm--8060s-graphics,shuffled-clumps-4096,1000000,245,4081.632653,31.496600,0.282700,2.955200,0.454600,0.161700,0.002700,3.961400,3.580700
+wgpu-lampshade-vulkan-amd-radeon-tm--8060s-graphics,shuffled-random-gaps,10000000,9676284,1.033455,610.169100,5.826100,18.555000,3.300500,33.437100,185.752700,248.884000,247.516300
+wgpu-lampshade-vulkan-amd-radeon-tm--8060s-graphics,shuffled-duplicate-heavy,10000000,1071355,9.333974,395.950800,3.566500,18.669500,3.156400,4.529300,13.121900,43.265100,43.097900
+wgpu-lampshade-vulkan-amd-radeon-tm--8060s-graphics,shuffled-clumps-16,10000000,625000,16.000000,389.043600,3.456300,18.852600,2.900600,2.758900,6.900700,34.472000,32.784000
+wgpu-lampshade-vulkan-amd-radeon-tm--8060s-graphics,shuffled-clumps-256,10000000,39063,255.996723,383.870900,2.348100,18.813900,3.008700,0.367600,0.474500,25.994800,24.108400
+wgpu-lampshade-vulkan-amd-radeon-tm--8060s-graphics,shuffled-clumps-4096,10000000,2442,4095.004095,381.668600,2.152600,17.878600,2.679800,0.258400,0.036200,22.779800,22.162800

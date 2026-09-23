@@ -188,8 +188,80 @@ fn from_slice_gpu_with_context<T: GpuElement>(
 fn gpu_context() -> Option<&'static Context> {
     static CONTEXT: OnceLock<Option<Context>> = OnceLock::new();
     CONTEXT
-        .get_or_init(|| pollster::block_on(Context::init()).ok())
+        .get_or_init(|| pollster::block_on(init_gpu_context()))
         .as_ref()
+}
+
+async fn init_gpu_context() -> Option<Context> {
+    let descriptor = wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::PRIMARY,
+        ..wgpu::InstanceDescriptor::new_without_display_handle()
+    }
+    .with_env();
+    let instance = wgpu::Instance::new(descriptor);
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: None,
+            force_fallback_adapter: false,
+            apply_limit_buckets: false,
+        })
+        .await
+        .ok()?;
+    let adapter_info = adapter.get_info();
+    let supported_features = adapter.features();
+    let required_features = gpu_context_features(&adapter_info, supported_features);
+    let (device, queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor {
+            label: Some("RangeSetBlaze GPU context"),
+            required_features,
+            required_limits: adapter.limits(),
+            memory_hints: wgpu::MemoryHints::Performance,
+            ..Default::default()
+        })
+        .await
+        .ok()?;
+    Some(Context {
+        adapter_info,
+        device,
+        queue,
+    })
+}
+
+fn gpu_context_features(
+    adapter_info: &wgpu::AdapterInfo,
+    supported_features: wgpu::Features,
+) -> wgpu::Features {
+    // Keep Lampshade's optional compute-feature policy while additionally
+    // enabling mapped primary buffers only for a shared-memory adapter.
+    let unreliable_optional_compute = adapter_info.backend == wgpu::Backend::Vulkan
+        && adapter_info.vendor == 0x10de
+        && adapter_info.device_type == wgpu::DeviceType::IntegratedGpu;
+    let apple_metal = adapter_info.backend == wgpu::Backend::Metal
+        && (adapter_info.vendor == 0x106b || adapter_info.name.starts_with("Apple "));
+    let mut requested = wgpu::Features::empty();
+    if !unreliable_optional_compute {
+        requested |= wgpu::Features::SUBGROUP;
+        if !apple_metal {
+            requested |= wgpu::Features::TIMESTAMP_QUERY;
+        }
+    }
+    if should_use_mappable_primary_buffers(adapter_info.device_type, supported_features) {
+        requested |= wgpu::Features::MAPPABLE_PRIMARY_BUFFERS;
+    }
+    supported_features & requested
+}
+
+fn should_use_mappable_primary_buffers(
+    device_type: wgpu::DeviceType,
+    features: wgpu::Features,
+) -> bool {
+    device_type == wgpu::DeviceType::IntegratedGpu
+        && features.contains(wgpu::Features::MAPPABLE_PRIMARY_BUFFERS)
+}
+
+fn uses_mappable_primary_buffers(context: &Context) -> bool {
+    should_use_mappable_primary_buffers(context.adapter_info.device_type, context.device.features())
 }
 
 fn normalize_32<T: GpuElement>(
@@ -202,16 +274,14 @@ fn normalize_32<T: GpuElement>(
     if !buffers_fit(context, byte_len, byte_len * 2) {
         return None;
     }
-    let input_values: Vec<u32> = values
-        .iter()
-        .copied()
-        .map(|value| u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32"))
-        .collect();
-    let input = storage_buffer(
+    let input = input_storage_buffer(
         context,
         "GPU range input",
         byte_len,
-        wgpu::BufferUsages::COPY_DST,
+        values
+            .iter()
+            .copied()
+            .map(|value| u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32")),
     );
     let sorted = storage_buffer(
         context,
@@ -219,9 +289,6 @@ fn normalize_32<T: GpuElement>(
         byte_len,
         wgpu::BufferUsages::empty(),
     );
-    context
-        .queue
-        .write_buffer(&input, 0, bytemuck::cast_slice(&input_values));
     let buffers = BoundaryBuffers::new(context, byte_len);
     let parameters = match gap {
         Some((left, right)) => [
@@ -254,34 +321,21 @@ fn normalize_64<T: GpuElement>(
     if !buffers_fit(context, pair_bytes, pair_bytes * 2) {
         return None;
     }
-    let low_values: Vec<u32> = values
-        .iter()
-        .copied()
-        .map(|value| low_word(value.encode()))
-        .collect();
-    let high_values: Vec<u32> = values
-        .iter()
-        .copied()
-        .map(|value| high_word(value.encode()))
-        .collect();
-    let lo = storage_buffer(
+    let lo = input_storage_buffer(
         context,
         "GPU range low words",
         word_bytes,
-        wgpu::BufferUsages::COPY_DST,
+        values.iter().copied().map(|value| low_word(value.encode())),
     );
-    let hi = storage_buffer(
+    let hi = input_storage_buffer(
         context,
         "GPU range high words",
         word_bytes,
-        wgpu::BufferUsages::COPY_DST,
+        values
+            .iter()
+            .copied()
+            .map(|value| high_word(value.encode())),
     );
-    context
-        .queue
-        .write_buffer(&lo, 0, bytemuck::cast_slice(&low_values));
-    context
-        .queue
-        .write_buffer(&hi, 0, bytemuck::cast_slice(&high_values));
     let pairs = storage_buffer(
         context,
         "GPU range sorted pairs",
@@ -364,7 +418,7 @@ struct BoundaryBuffers {
     ends: wgpu::Buffer,
     start_count: wgpu::Buffer,
     end_count: wgpu::Buffer,
-    count_readback: wgpu::Buffer,
+    count_readback: Option<wgpu::Buffer>,
 }
 
 impl BoundaryBuffers {
@@ -385,22 +439,18 @@ impl BoundaryBuffers {
             mask_bytes,
             wgpu::BufferUsages::COPY_SRC,
         );
-        let starts = storage_buffer(
-            context,
-            "GPU range starts",
-            endpoint_bytes,
-            wgpu::BufferUsages::COPY_SRC,
-        );
-        let ends = storage_buffer(
-            context,
-            "GPU range ends",
-            endpoint_bytes,
-            wgpu::BufferUsages::COPY_SRC,
-        );
-        let count_usage = wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST;
+        let readback_usage = if uses_mappable_primary_buffers(context) {
+            wgpu::BufferUsages::MAP_READ
+        } else {
+            wgpu::BufferUsages::COPY_SRC
+        };
+        let starts = storage_buffer(context, "GPU range starts", endpoint_bytes, readback_usage);
+        let ends = storage_buffer(context, "GPU range ends", endpoint_bytes, readback_usage);
+        let count_usage = readback_usage | wgpu::BufferUsages::COPY_DST;
         let start_count = storage_buffer(context, "GPU range start count", 4, count_usage);
         let end_count = storage_buffer(context, "GPU range end count", 4, count_usage);
-        let count_readback = readback_buffer(context, "GPU range count readback", 8);
+        let count_readback = (!uses_mappable_primary_buffers(context))
+            .then(|| readback_buffer(context, "GPU range count readback", 8));
         Self {
             start_mask,
             end_mask,
@@ -563,11 +613,16 @@ fn groups_x(context: &Context, len: u32) -> Option<u32> {
 }
 
 fn read_counts(context: &Context, buffers: &BoundaryBuffers) -> Option<usize> {
-    let mut encoder = encoder(context, "GPU range count copy");
-    encoder.copy_buffer_to_buffer(&buffers.start_count, 0, &buffers.count_readback, 0, 4);
-    encoder.copy_buffer_to_buffer(&buffers.end_count, 0, &buffers.count_readback, 4, 4);
-    submit(context, encoder.finish());
-    let counts = map_u32(context, &buffers.count_readback, 2);
+    let counts = if let Some(readback) = &buffers.count_readback {
+        let mut encoder = encoder(context, "GPU range count copy");
+        encoder.copy_buffer_to_buffer(&buffers.start_count, 0, readback, 0, 4);
+        encoder.copy_buffer_to_buffer(&buffers.end_count, 0, readback, 4, 4);
+        submit(context, encoder.finish());
+        map_u32(context, readback, 2)
+    } else {
+        let (starts, ends) = map_two_u32(context, &buffers.start_count, 1, &buffers.end_count, 1);
+        [starts[0], ends[0]].to_vec()
+    };
     assert_eq!(
         counts[0], counts[1],
         "GPU emitted unpaired range boundaries"
@@ -586,16 +641,21 @@ fn read_endpoints_32(
         return Some(Vec::new());
     }
     let endpoint_bytes = count as u64 * 4;
-    let readback = readback_buffer(context, "GPU range endpoint readback", endpoint_bytes * 2);
-    let mut encoder = encoder(context, "GPU range endpoint copy");
-    encoder.copy_buffer_to_buffer(&buffers.starts, 0, &readback, 0, endpoint_bytes);
-    encoder.copy_buffer_to_buffer(&buffers.ends, 0, &readback, endpoint_bytes, endpoint_bytes);
-    submit(context, encoder.finish());
-    let words = map_u32(context, &readback, count * 2);
+    let (starts, ends) = if buffers.count_readback.is_none() {
+        map_two_u32(context, &buffers.starts, count, &buffers.ends, count)
+    } else {
+        let readback = readback_buffer(context, "GPU range endpoint readback", endpoint_bytes * 2);
+        let mut encoder = encoder(context, "GPU range endpoint copy");
+        encoder.copy_buffer_to_buffer(&buffers.starts, 0, &readback, 0, endpoint_bytes);
+        encoder.copy_buffer_to_buffer(&buffers.ends, 0, &readback, endpoint_bytes, endpoint_bytes);
+        submit(context, encoder.finish());
+        let words = map_u32(context, &readback, count * 2);
+        (words[..count].to_vec(), words[count..].to_vec())
+    };
     Some(
-        words[..count]
+        starts
             .iter()
-            .zip(&words[count..])
+            .zip(&ends)
             .map(|(&start, &end)| (u64::from(start), u64::from(end)))
             .collect(),
     )
@@ -612,13 +672,23 @@ fn read_endpoints_64(
         return Some(Vec::new());
     }
     let endpoint_bytes = count as u64 * 8;
-    let readback = readback_buffer(context, "GPU range endpoint readback", endpoint_bytes * 2);
-    let mut encoder = encoder(context, "GPU range endpoint copy");
-    encoder.copy_buffer_to_buffer(&buffers.starts, 0, &readback, 0, endpoint_bytes);
-    encoder.copy_buffer_to_buffer(&buffers.ends, 0, &readback, endpoint_bytes, endpoint_bytes);
-    submit(context, encoder.finish());
-    let words = map_u32(context, &readback, count * 4);
-    let (starts, ends) = words.split_at(count * 2);
+    let (starts, ends) = if buffers.count_readback.is_none() {
+        map_two_u32(
+            context,
+            &buffers.starts,
+            count * 2,
+            &buffers.ends,
+            count * 2,
+        )
+    } else {
+        let readback = readback_buffer(context, "GPU range endpoint readback", endpoint_bytes * 2);
+        let mut encoder = encoder(context, "GPU range endpoint copy");
+        encoder.copy_buffer_to_buffer(&buffers.starts, 0, &readback, 0, endpoint_bytes);
+        encoder.copy_buffer_to_buffer(&buffers.ends, 0, &readback, endpoint_bytes, endpoint_bytes);
+        submit(context, encoder.finish());
+        let words = map_u32(context, &readback, count * 4);
+        (words[..count * 2].to_vec(), words[count * 2..].to_vec())
+    };
     Some(
         starts
             .chunks_exact(2)
@@ -642,9 +712,14 @@ fn low_word(value: u64) -> u32 {
 
 fn buffers_fit(context: &Context, largest_storage: u64, largest_readback: u64) -> bool {
     let limits = context.device.limits();
+    let largest_buffer = if uses_mappable_primary_buffers(context) {
+        largest_storage
+    } else {
+        largest_readback
+    };
     largest_storage <= limits.max_storage_buffer_binding_size
         && largest_storage <= limits.max_buffer_size
-        && largest_readback <= limits.max_buffer_size
+        && largest_buffer <= limits.max_buffer_size
 }
 
 fn resource_or_panic(result: Result<(), lampshade::Error>) -> Option<()> {
@@ -696,6 +771,89 @@ fn map_u32(context: &Context, buffer: &wgpu::Buffer, count: usize) -> Vec<u32> {
     };
     buffer.unmap();
     result
+}
+
+fn map_two_u32(
+    context: &Context,
+    first: &wgpu::Buffer,
+    first_count: usize,
+    second: &wgpu::Buffer,
+    second_count: usize,
+) -> (Vec<u32>, Vec<u32>) {
+    let first_slice = first.slice(..first_count as u64 * 4);
+    let second_slice = second.slice(..second_count as u64 * 4);
+    let (first_sender, first_receiver) = mpsc::channel();
+    let (second_sender, second_receiver) = mpsc::channel();
+    first_slice.map_async(wgpu::MapMode::Read, move |result| {
+        drop(first_sender.send(result));
+    });
+    second_slice.map_async(wgpu::MapMode::Read, move |result| {
+        drop(second_sender.send(result));
+    });
+    context
+        .device
+        .poll(wgpu::PollType::Wait {
+            submission_index: None,
+            timeout: None,
+        })
+        .unwrap_or_else(|error| panic!("GPU range execution failed while mapping: {error}"));
+    first_receiver
+        .recv()
+        .unwrap_or_else(|error| panic!("GPU range readback channel failed: {error}"))
+        .unwrap_or_else(|error| panic!("GPU range readback mapping failed: {error}"));
+    second_receiver
+        .recv()
+        .unwrap_or_else(|error| panic!("GPU range readback channel failed: {error}"))
+        .unwrap_or_else(|error| panic!("GPU range readback mapping failed: {error}"));
+    let first_words = {
+        let mapped = first_slice
+            .get_mapped_range()
+            .unwrap_or_else(|error| panic!("GPU range readback access failed: {error}"));
+        bytemuck::cast_slice::<u8, u32>(&mapped).to_vec()
+    };
+    let second_words = {
+        let mapped = second_slice
+            .get_mapped_range()
+            .unwrap_or_else(|error| panic!("GPU range readback access failed: {error}"));
+        bytemuck::cast_slice::<u8, u32>(&mapped).to_vec()
+    };
+    first.unmap();
+    second.unmap();
+    (first_words, second_words)
+}
+
+fn input_storage_buffer(
+    context: &Context,
+    label: &'static str,
+    size: u64,
+    words: impl ExactSizeIterator<Item = u32>,
+) -> wgpu::Buffer {
+    if uses_mappable_primary_buffers(context) {
+        assert_eq!(words.len() as u64 * 4, size, "GPU input size mismatch");
+        let buffer = context.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some(label),
+            size,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::MAP_WRITE,
+            mapped_at_creation: true,
+        });
+        {
+            let mut mapped = buffer
+                .get_mapped_range_mut(..)
+                .unwrap_or_else(|error| panic!("GPU input mapping failed: {error}"));
+            let (destinations, remainder) = mapped.slice(..).into_chunks::<4>();
+            assert!(remainder.is_empty(), "GPU input was not word aligned");
+            destinations.write_iter(words.map(u32::to_ne_bytes));
+        }
+        buffer.unmap();
+        buffer
+    } else {
+        let words: Vec<_> = words.collect();
+        let buffer = storage_buffer(context, label, size, wgpu::BufferUsages::COPY_DST);
+        context
+            .queue
+            .write_buffer(&buffer, 0, bytemuck::cast_slice(&words));
+        buffer
+    }
 }
 
 fn storage_buffer(
@@ -931,6 +1089,23 @@ mod tests {
     #[cfg(feature = "float_nightly_experimental")]
     use crate::not_nan::nnf16;
     use crate::not_nan::{nnf32, nnf64};
+
+    #[test]
+    fn mapped_primary_policy_requires_shared_memory_and_feature_support() {
+        let feature = wgpu::Features::MAPPABLE_PRIMARY_BUFFERS;
+        assert!(should_use_mappable_primary_buffers(
+            wgpu::DeviceType::IntegratedGpu,
+            feature,
+        ));
+        assert!(!should_use_mappable_primary_buffers(
+            wgpu::DeviceType::DiscreteGpu,
+            feature,
+        ));
+        assert!(!should_use_mappable_primary_buffers(
+            wgpu::DeviceType::IntegratedGpu,
+            wgpu::Features::empty(),
+        ));
+    }
 
     fn check<T: GpuElement>(values: &[T]) {
         let expected: RangeSetBlaze<T> = values.iter().copied().collect();
