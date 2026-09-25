@@ -998,26 +998,30 @@ fn convert_challenge() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn understand_slice_iter() {
-    use std::simd::Simd;
+    use fearless_simd::{Level, dispatch};
 
+    let level = Level::try_detect().unwrap_or(Level::baseline());
+    dispatch!(level, simd => understand_slice_iter_simd(simd));
+}
+
+#[cfg(feature = "from_slice")]
+fn understand_slice_iter_simd<S: fearless_simd::Simd>(simd: S) {
     use from_slice::FromSliceIter;
-    use integer::LANES;
 
     let slice: [u8; 0] = [];
-    let iter = FromSliceIter::<u8, LANES>::new(&slice);
+    let iter = FromSliceIter::new(simd, &slice);
     assert_eq!(iter.size_hint(), (0, Some(0)));
     assert_eq!(iter.count(), 0);
 
     // 1st 500 even numbers
     let slice: &[_] = &(0..1000).step_by(2).collect::<Vec<_>>();
-    let iter = FromSliceIter::<_, LANES>::new(slice);
+    let iter = FromSliceIter::new(simd, slice);
     assert_eq!(iter.size_hint(), (1, Some(500)));
     assert_eq!(iter.count(), 500);
 
-    // 32 consecutive u8's as a slice
+    // 64 consecutive integers as a slice
     let slice: &[_] = &(0..64i64).collect::<Vec<_>>();
-    let slice = Simd::<_, 64>::from_slice(slice);
-    let iter = FromSliceIter::<_, LANES>::new(slice.as_array());
+    let iter = FromSliceIter::new(simd, slice);
     assert_eq!(iter.size_hint(), (1, Some(64)));
     assert_eq!(iter.count(), 1);
 }
@@ -1080,14 +1084,18 @@ fn bitand() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_is_consecutive() {
-    use crate::from_slice::SimdInteger;
-    use core::array;
-    use std::simd::Simd;
+    use fearless_simd::{Level, dispatch};
 
-    let simd: Simd<i8, 64> = Simd::from_array(array::from_fn(|i| {
-        i8::try_from(10 + i).expect("i in 0..64 so 10+i fits in i8")
-    }));
-    assert!(i8::is_consecutive(simd));
+    let level = Level::try_detect().unwrap_or(Level::baseline());
+    dispatch!(level, simd => assert_is_consecutive(simd));
+}
+
+#[cfg(feature = "from_slice")]
+fn assert_is_consecutive<S: fearless_simd::Simd>(simd: S) {
+    let values = (0..16)
+        .map(|index| i8::try_from(10 + index).expect("the maximum SIMD lane count fits in i8"))
+        .collect::<Vec<_>>();
+    assert!(crate::from_slice::is_consecutive(simd, &values));
 }
 
 #[cfg(not(target_arch = "wasm32"))]

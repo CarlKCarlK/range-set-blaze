@@ -1,16 +1,12 @@
 use crate::UIntPlusOne;
 #[cfg(feature = "from_slice")]
-use crate::{RangeSetBlaze, from_slice::FromSliceIter};
+use crate::{RangeSetBlaze, from_slice::FromSliceInteger};
 use core::hash::Hash;
 use core::net::{Ipv4Addr, Ipv6Addr};
 use core::ops::{AddAssign, SubAssign};
 use core::panic;
 use core::{fmt, ops::RangeInclusive};
 use num_traits::ops::overflowing::OverflowingSub;
-
-#[cfg(feature = "from_slice")]
-#[allow(clippy::redundant_pub_crate)]
-pub(crate) const LANES: usize = 16;
 
 #[allow(unused_imports)]
 use num_traits::Zero;
@@ -220,7 +216,7 @@ macro_rules! impl_integer_ops {
         #[cfg(feature = "from_slice")]
         #[inline]
         fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-            FromSliceIter::<Self, LANES>::new(slice.as_ref()).collect()
+            FromSliceInteger::from_slice(slice.as_ref())
         }
 
         #[allow(clippy::cast_sign_loss)]
