@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-09-25
+
+### Fixed
+
+- **Correctness fix for the opt-in, nightly-only `from_slice` feature.** With
+  that feature enabled, `RangeSetBlaze::from_slice` (and `RangeSetBlaze::from`
+  on an array, which uses `from_slice` when the feature is on) could silently
+  drop elements, or return an empty set, when the input contained a run of
+  consecutive values that wrapped from the type's maximum to its minimum, such as
+  `[.., 254u8, 255, 0, 1, ..]` or `[.., i64::MAX, i64::MIN, ..]`. The SIMD check
+  for "this chunk is consecutive" used wrapping lane arithmetic, so a wrapped
+  chunk passed; a similar wrap at chunk boundaries could merge a run ending at
+  `MAX` with one starting at `MIN`. Both cases now fall back to treating the
+  values individually, and regression tests compare `from_slice` against
+  `from_iter` on wrapping runs for every supported integer type and alignment.
+- Builds without the `from_slice` feature, including the default feature set
+  and all stable-Rust builds, were not affected: they never use this code path.
+
 ## [0.7.0] - 2026-09-15
 
 ### Added

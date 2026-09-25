@@ -1,6 +1,6 @@
 [package]
 name = "range-set-blaze"
-version = "0.7.0"
+version = "0.7.1"
 edition = "2024"
 rust-version = "1.89"
 description = "Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full set operations"
@@ -13,7 +13,13 @@ keywords = ["set", "range", "data-structures", "no_std", "wasm"]
 categories = ["data-structures", "no-std", "wasm"]
 homepage = "https://github.com/CarlKCarlK/range-set-blaze"
 resolver = "2"
-exclude = ["docs/**/*"]
+exclude = [
+    "docs/**/*",
+    "artifacts/**/*",
+    ".codex",
+    ".env",
+    "Cargo.toml.orig",
+]
 
 [workspace]
 members = [
