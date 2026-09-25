@@ -213,14 +213,14 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     #[cfg(debug_assertions)]
     #[should_panic(
         expected = "AssumeSortedStarts contained items with starts which are not sorted: 1<=0 is wrong"
     )]
     fn panic_if_unsorted_starts_in_assume_sorted_starts() {
+        use super::AssumeSortedStarts;
+
         AssumeSortedStarts::new([1..=10, 0..=20]).count();
     }
 }
