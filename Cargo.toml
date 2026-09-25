@@ -59,6 +59,11 @@ fearless_simd = { version = "1.0.0", optional = true, default-features = false, 
 ] }
 
 [dev-dependencies]
+# Lets tests exercise fearless_simd's scalar fallback backend via `Level::fallback()`.
+fearless_simd = { version = "1.0.0", default-features = false, features = [
+    "libm",
+    "force_support_fallback",
+] }
 syntactic-for = "0.1.1"
 wasm-bindgen-test = "0.3.76"
 rand = "0.9.4"
