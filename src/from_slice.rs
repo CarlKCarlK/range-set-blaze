@@ -65,8 +65,12 @@ where
                 let this_end = chunk[N - 1];
 
                 if let Some(inner_previous_range) = self.previous_range.as_mut() {
-                    // if some and previous is some and adjacent, combine
-                    if (*inner_previous_range.end()).add_one() == this_start {
+                    // if some and previous is some and adjacent, combine.
+                    // `add_one` would wrap at `max_value()`, so check that first; otherwise a run
+                    // ending at MAX would merge with a chunk starting at MIN.
+                    if *inner_previous_range.end() < T::max_value()
+                        && (*inner_previous_range.end()).add_one() == this_start
+                    {
                         *inner_previous_range = *(inner_previous_range.start())..=this_end;
                     } else {
                         // if some and previous is some but not adjacent, flush previous, set previous to this range.
@@ -148,7 +152,10 @@ macro_rules! impl_is_consecutive {
             {
                 define_const_reference!($type);
                 let subtracted = chunk - comparison_value();
-                Simd::splat(chunk[0]) == subtracted
+                // Lane subtraction wraps, so a chunk such as `[254u8, 255, 0, 1, ...]` also
+                // passes the SIMD test. Genuinely consecutive values never wrap, so their last
+                // value is at least their first; checking that rejects the wrapped chunks.
+                Simd::splat(chunk[0]) == subtracted && chunk[0] <= chunk[N - 1]
             }
         }
     };

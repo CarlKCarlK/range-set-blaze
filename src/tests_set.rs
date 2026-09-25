@@ -1088,6 +1088,56 @@ fn test_is_consecutive() {
         i8::try_from(10 + i).expect("i in 0..64 so 10+i fits in i8")
     }));
     assert!(i8::is_consecutive(simd));
+
+    // Wrapping lane arithmetic must not make these look consecutive.
+    let simd: Simd<u8, 16> = Simd::from_array(array::from_fn(|i| {
+        250u8.wrapping_add(u8::try_from(i).expect("i in 0..16 fits in u8"))
+    }));
+    assert!(!u8::is_consecutive(simd));
+    let simd: Simd<i64, 8> = Simd::from_array(array::from_fn(|i| {
+        (i64::MAX - 3).wrapping_add(i64::try_from(i).expect("i in 0..8 fits in i64"))
+    }));
+    assert!(!i64::is_consecutive(simd));
+}
+
+/// Checks `from_slice` against `from_iter`.
+#[cfg(feature = "from_slice")]
+fn assert_from_slice_matches_from_iter<T: Integer>(values: &[T]) {
+    assert_eq!(
+        RangeSetBlaze::from_slice(values),
+        RangeSetBlaze::from_iter(values),
+        "from_slice disagrees with from_iter on {values:?}"
+    );
+}
+
+#[cfg(feature = "from_slice")]
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slice_wraparound_matches_from_iter() {
+    macro_rules! check_types {
+        ($($type:ty),+) => {$(
+            // Consecutive runs that wrap from MAX to MIN, at every offset and alignment.
+            for before_wrap in 0..40 {
+                for prefix_len in 0..17 {
+                    let values: Vec<$type> = (0..prefix_len)
+                        .map(|index: u8| <$type>::try_from(index * 7).expect("at most 112"))
+                        .chain((0..64).map(|index| {
+                            <$type>::MAX.wrapping_sub(before_wrap).wrapping_add(index)
+                        }))
+                        .collect();
+                    assert_from_slice_matches_from_iter(&values);
+                }
+            }
+            // Runs that touch MIN or MAX without wrapping.
+            assert_from_slice_matches_from_iter(
+                &(0..40).map(|index| <$type>::MIN.wrapping_add(index)).collect::<Vec<_>>(),
+            );
+            assert_from_slice_matches_from_iter(
+                &(0..40).rev().map(|index| <$type>::MAX.wrapping_sub(index)).collect::<Vec<_>>(),
+            );
+        )+};
+    }
+    check_types!(i8, i16, i32, i64, isize, u8, u16, u32, u64, usize);
 }
 
 #[cfg(not(target_arch = "wasm32"))]
