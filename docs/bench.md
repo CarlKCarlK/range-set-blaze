@@ -83,7 +83,7 @@ Each clump has size chosen uniformly random from roughly 1 to double *average cl
 
 With no clumps, `RangeSetBlaze` is about 2.5 times slower than `HashSet`. By clump size 10, `RangeSetBlaze` is already the best performer. As the average clump size goes past 1000, `RangeSetBlaze` is roughly 18 to 34 times faster than `HashSet` and `BTreeSet`, and roughly 5 to 21 times faster than `Roaring` (the exact ratio varies by clump size; see benchmark #3 for `Roaring`'s trend across the full range).
 
-The nightly-only `RangeSetBlaze::from_slice` is even faster: at the largest clump sizes tested it is more than 200 times faster than `HashSet`.
+`RangeSetBlaze::from_slice` (SIMD-accelerated, stable Rust) is even faster: at the largest clump sizes tested it is more than 200 times faster than `HashSet`.
 
 If we are allowed to input the clumps as ranges (instead of as individual integers, see benchmark #4), `RangeSetBlaze` is faster still — around 700 to 1300 times faster than `HashSet`/`BTreeSet` (ingesting integers one at a time) at clump size 1000. Compared directly against `Roaring` also given ranges, though, the two are much closer: `RangeSetBlaze` is only about 1.1 to 2.6 times faster (see benchmark #4).
 

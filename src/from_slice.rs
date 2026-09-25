@@ -1,4 +1,3 @@
-#![cfg(feature = "from_slice")]
 //! SIMD-accelerated [`RangeSetBlaze::from_slice`], on stable Rust via [`fearless_simd`].
 //!
 //! # How the SIMD code is structured
@@ -97,10 +96,12 @@ impl_simd_integer!(
 );
 
 // `isize`/`usize` borrow the vector type of the fixed-width integer with the same size. The
-// `as` casts are same-width reinterpretations (guaranteed by the `cfg`), and loading through
-// `from_fn` compiles to the same single vector load as `from_slice`, with no `unsafe` needed.
+// `as` casts in `to_lane` are same-width reinterpretations (guaranteed by the `cfg`); `load`
+// reinterprets the whole chunk at once via `bytemuck::cast_slice`, avoiding an element-by-element
+// copy, with no `unsafe` needed in this crate (`bytemuck::cast_slice` is itself implemented with
+// `unsafe`, upstream).
 macro_rules! impl_simd_integer_pointer_sized {
-    ($($width:literal, $lanes:literal: $isize_lane:ty => $isize_vector:ident, $usize_lane:ty => $usize_vector:ident);+ $(;)?) => {
+    ($($width:literal: $isize_lane:ty => $isize_vector:ident, $usize_lane:ty => $usize_vector:ident);+ $(;)?) => {
         $(
             #[cfg(target_pointer_width = $width)]
             const _: () = assert!(
@@ -120,10 +121,7 @@ macro_rules! impl_simd_integer_pointer_sized {
 
                 #[inline(always)]
                 fn load<S: Simd>(simd: S, chunk: &[Self]) -> Self::Vector<S> {
-                    let chunk: &[Self; $lanes] = chunk
-                        .try_into()
-                        .unwrap_or_else(|_| unreachable!("chunks have exactly one vector of lanes"));
-                    Self::Vector::<S>::from_slice(simd, &chunk.map(Self::to_lane))
+                    Self::Vector::<S>::from_slice(simd, bytemuck::cast_slice(chunk))
                 }
             }
 
@@ -139,10 +137,7 @@ macro_rules! impl_simd_integer_pointer_sized {
 
                 #[inline(always)]
                 fn load<S: Simd>(simd: S, chunk: &[Self]) -> Self::Vector<S> {
-                    let chunk: &[Self; $lanes] = chunk
-                        .try_into()
-                        .unwrap_or_else(|_| unreachable!("chunks have exactly one vector of lanes"));
-                    Self::Vector::<S>::from_slice(simd, &chunk.map(Self::to_lane))
+                    Self::Vector::<S>::from_slice(simd, bytemuck::cast_slice(chunk))
                 }
             }
         )+
@@ -150,12 +145,16 @@ macro_rules! impl_simd_integer_pointer_sized {
 }
 
 impl_simd_integer_pointer_sized!(
-    "16", 16: i16 => i16x16, u16 => u16x16;
-    "32", 16: i32 => i32x16, u32 => u32x16;
-    "64", 8: i64 => i64x8, u64 => u64x8;
+    "16": i16 => i16x16, u16 => u16x16;
+    "32": i32 => i32x16, u32 => u32x16;
+    "64": i64 => i64x8, u64 => u64x8;
 );
 
 /// The SIMD kernel. Must stay `#[inline(always)]` and eager; see the module docs.
+#[expect(
+    clippy::inline_always,
+    reason = "must inline into the fearless_simd dispatch target-feature closure"
+)]
 #[inline(always)]
 fn collect_ranges<T, S>(simd: S, slice: &[T]) -> Vec<RangeInclusive<T>>
 where
@@ -208,6 +207,10 @@ struct RangeCollector<T: Integer> {
 }
 
 impl<T: Integer> RangeCollector<T> {
+    #[expect(
+        clippy::inline_always,
+        reason = "must inline into the fearless_simd dispatch target-feature closure"
+    )]
     #[inline(always)]
     const fn new() -> Self {
         Self {
@@ -216,6 +219,10 @@ impl<T: Integer> RangeCollector<T> {
         }
     }
 
+    #[expect(
+        clippy::inline_always,
+        reason = "must inline into the fearless_simd dispatch target-feature closure"
+    )]
     #[inline(always)]
     fn push(&mut self, start: T, end: T) {
         debug_assert!(start <= end, "ranges from a slice are never empty");
@@ -233,6 +240,10 @@ impl<T: Integer> RangeCollector<T> {
         self.current = Some((start, end));
     }
 
+    #[expect(
+        clippy::inline_always,
+        reason = "must inline into the fearless_simd dispatch target-feature closure"
+    )]
     #[inline(always)]
     fn finish(mut self) -> Vec<RangeInclusive<T>> {
         if let Some((start, end)) = self.current {
@@ -243,6 +254,10 @@ impl<T: Integer> RangeCollector<T> {
 }
 
 /// Returns `true` if `chunk` holds strictly consecutive, increasing integers.
+#[expect(
+    clippy::inline_always,
+    reason = "must inline into the fearless_simd dispatch target-feature closure"
+)]
 #[inline(always)]
 fn is_consecutive_with_offsets<T, S>(simd: S, offsets: T::Vector<S>, chunk: &[T]) -> bool
 where
@@ -261,6 +276,10 @@ where
 }
 
 /// Returns the vector `[0, 1, 2, ..., LEN - 1]`.
+#[expect(
+    clippy::inline_always,
+    reason = "must inline into the fearless_simd dispatch target-feature closure"
+)]
 #[inline(always)]
 fn lane_offsets<T, S>(simd: S) -> T::Vector<S>
 where
@@ -275,6 +294,10 @@ where
 
 #[cfg(test)]
 #[allow(clippy::redundant_pub_crate)]
+#[expect(
+    clippy::inline_always,
+    reason = "must inline into the fearless_simd dispatch target-feature closure"
+)]
 #[inline(always)]
 pub(crate) fn is_consecutive<T, S>(simd: S, chunk: &[T]) -> bool
 where

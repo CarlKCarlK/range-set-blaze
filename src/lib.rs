@@ -12,11 +12,9 @@ extern crate std;
 // Developer notes:
 //
 // To run tests with different settings, environment variables are recommended.
-// For example, the Windows steps to run one of the SIMD-related benchmark is:
+// For example, the Windows steps to run one of the SIMD-related benchmarks is:
 // ```bash
-// rustup override set nightly # use nightly compiler
-// set RUSTFLAGS=-C target-cpu=native # use current CPUs full instruction set
-// set BUILDFEATURES=from_slice # enable the from_slice feature via build.rs
+// set RUSTFLAGS=-C target-cpu=native # use current CPU's full instruction set
 // cargo bench ingest_clumps_iter_v_slice
 // ```
 

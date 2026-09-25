@@ -102,7 +102,7 @@ where
 /// | [`new`]/[`default`]                         |                              |                          |
 /// | [`from_iter`][1]/[`collect`][1]             | integer iterator             |                          |
 /// | [`from_iter`][2]/[`collect`][2]             | ranges iterator              |                          |
-/// | [`from_slice`][5]                           | slice of integers            | Fast, but nightly-only  |
+/// | [`from_slice`][5]                           | slice of integers            | Fast |
 /// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze`][3] | [`SortedDisjoint`] iterator |               |
 /// | [`from`][5] /[`into`][5]                    | array of integers            |                          |
 /// | [`from`][7]                                 | `RangeInclusive<T>`          |                          |
@@ -150,7 +150,7 @@ where
 /// The [`from_slice`][5] constructor typically provides a constant-time speed up for array-like collections of clumpy integers.
 /// On a representative benchmark, the speed up was 7×.
 /// The method works by scanning the input for blocks of consecutive integers, and then using `from_iter` on the results.
-/// Where available, it uses SIMD instructions. It is nightly only and enabled by the `from_slice` feature.
+/// Where available, it uses SIMD instructions on stable Rust.
 ///
 /// ## Constructor Examples
 ///
@@ -177,10 +177,8 @@ where
 /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 ///
 /// // 'from_slice': From any array-like collection of integers.
-/// // Nightly-only, but faster than 'from_iter'/'collect' on integers.
-/// #[cfg(feature = "from_slice")]
+/// // Faster than 'from_iter'/'collect' on integers.
 /// let a0 = RangeSetBlaze::from_slice(vec![3, 2, 1, 100, 1]);
-/// #[cfg(feature = "from_slice")]
 /// assert!(a0.to_string() == "1..=3, 100..=100");
 ///
 /// // If we know the ranges are already sorted and disjoint,
@@ -579,18 +577,20 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// times faster than [`from_iter`][1]/[`collect`][1].
     /// On a representative benchmark, the speed up was 7×.
     ///
-    /// **Warning: Requires the nightly compiler. Also, you must enable the `from_slice`
-    /// feature in your `Cargo.toml`. For example, with the command:**
-    /// ```bash
-    ///  cargo add range-set-blaze --features "from_slice"
-    /// ```
     /// The function accepts any type that can be referenced as a slice of integers,
     /// including slices, arrays, and vectors. Duplicates and out-of-order elements are fine.
     ///
     /// Where available, this function leverages SIMD (Single Instruction, Multiple Data) instructions
-    /// for performance optimization. To enable SIMD optimizations, compile with the Rust compiler
-    /// (rustc) flag `-C target-cpu=native`. This instructs rustc to use the native instruction set
-    /// of the CPU on the machine compiling the code, potentially enabling more SIMD optimizations.
+    /// for performance optimization, on stable Rust. How the best available SIMD instructions are
+    /// chosen depends on whether the `std` feature is enabled:
+    ///
+    /// - With `std` (the default), SIMD capability is detected at runtime, and the best
+    ///   instructions supported by the CPU running the program are used automatically.
+    /// - Without `std` (`no_std`), there is no runtime detection; instead, the SIMD instructions
+    ///   selected at compile time for the target (for example, via `-C target-feature` or
+    ///   `-C target-cpu`) are used. A `no_std` build never falls back to scalar code just because
+    ///   `std` is unavailable — it uses whatever SIMD features the target and compiler flags
+    ///   provide.
     ///
     /// **Caution**: Compiling with `-C target-cpu=native` optimizes the binary for your current CPU architecture,
     /// which may lead to compatibility issues on other machines with different architectures.
@@ -609,7 +609,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert!(a0 == a1 && a1 == a2 && a0.to_string() == "1..=3, 100..=100");
     /// ```
     /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
-    #[cfg(feature = "from_slice")]
     #[inline]
     pub fn from_slice(slice: impl AsRef<[T]>) -> Self {
         T::from_slice(slice)
@@ -1694,11 +1693,6 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     /// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
     /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100")
     /// ```
-    #[cfg(not(feature = "from_slice"))]
-    fn from(arr: [T; N]) -> Self {
-        arr.into_iter().collect()
-    }
-    #[cfg(feature = "from_slice")]
     fn from(arr: [T; N]) -> Self {
         Self::from_slice(arr)
     }

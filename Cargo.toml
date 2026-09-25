@@ -1,6 +1,6 @@
 [package]
 name = "range-set-blaze"
-version = "0.7.1"
+version = "0.8.0"
 edition = "2024"
 rust-version = "1.89"
 description = "Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full set operations"
@@ -43,13 +43,12 @@ std = [
     "itertools/use_std",
     "num-traits/std",
     "num-integer/std",
-    "fearless_simd?/std",
+    "fearless_simd/std",
 ]
 # Enables nightly-only `f16` and `f128` floating-point wrappers.
 float_nightly_experimental = []
 # Enables nightly-only B-tree cursor implementations for lookup and insertion.
 cursor_nightly_experimental = []
-from_slice = ["dep:fearless_simd"]
 test_util = ["rand"]
 
 [dependencies]
@@ -60,9 +59,10 @@ num-integer = { version = "0.1.46", default-features = false }
 num-traits = { version = "0.2.19", default-features = false }
 gen_ops = "0.4.0"
 rand = { version = "0.9.4", optional = true }
-fearless_simd = { version = "1.0.0", optional = true, default-features = false, features = [
+fearless_simd = { version = "1.0.0", default-features = false, features = [
     "libm",
 ] }
+bytemuck = { version = "1.24.0", default-features = false }
 
 [dev-dependencies]
 # Lets tests exercise fearless_simd's scalar fallback backend via `Level::fallback()`.

@@ -744,9 +744,10 @@ dependencies = [
 
 [[package]]
 name = "range-set-blaze"
-version = "0.7.1"
+version = "0.8.0"
 dependencies = [
  "anyhow",
+ "bytemuck",
  "criterion",
  "fearless_simd",
  "gen_ops",

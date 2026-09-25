@@ -994,7 +994,6 @@ fn convert_challenge() {
     // what about multiple inputs?
 }
 
-#[cfg(feature = "from_slice")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn understand_slice_iter() {
@@ -1015,7 +1014,6 @@ fn understand_slice_iter() {
 }
 
 /// Checks `from_slice` against `from_iter` on every testable SIMD level.
-#[cfg(feature = "from_slice")]
 fn assert_from_slice_matches_from_iter<T: from_slice::SimdInteger>(values: &[T]) {
     let expected = RangeSetBlaze::from_iter(values);
     for level in from_slice::testable_levels() {
@@ -1033,7 +1031,6 @@ fn assert_from_slice_matches_from_iter<T: from_slice::SimdInteger>(values: &[T])
     assert_eq!(RangeSetBlaze::from_slice(values), expected);
 }
 
-#[cfg(feature = "from_slice")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn from_slice_matches_from_iter() {
@@ -1138,7 +1135,6 @@ fn bitand() {
     assert!(a.ranges().equal(f));
 }
 
-#[cfg(feature = "from_slice")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_is_consecutive() {
@@ -1149,7 +1145,6 @@ fn test_is_consecutive() {
     }
 }
 
-#[cfg(feature = "from_slice")]
 fn assert_is_consecutive<S: fearless_simd::Simd>(simd: S) {
     use from_slice::is_consecutive;
 

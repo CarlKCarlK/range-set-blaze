@@ -12,7 +12,6 @@ wasm_bindgen_test_configure!(run_in_browser);
 use core::fmt;
 use core::fmt::Debug;
 use core::iter::FusedIterator;
-#[cfg(feature = "from_slice")]
 use core::mem::size_of;
 use core::ops::BitAndAssign;
 use core::ops::RangeInclusive;
@@ -1226,7 +1225,6 @@ fn range_set_blaze_constructors() {
 }
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[cfg(feature = "from_slice")]
 #[allow(unexpected_cfgs)]
 fn print_features() {
     println!("feature\tcould\tare");
@@ -1277,7 +1275,6 @@ fn print_features() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "from_slice")]
 fn from_slice_all_types() {
     syntactic_for! { ty in [i8, u8] {
         $(
@@ -1301,7 +1298,6 @@ fn from_slice_all_types() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[cfg(feature = "from_slice")]
 fn range_set_blaze_slice_constructor() {
     print_features();
     let k = 1;
@@ -3083,7 +3079,6 @@ fn more_coverage_of_range_set_blaze() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "from_slice")]
 fn additional_from_slice_iter_coverage() {
     // // Test `FromSliceIter::next` with consecutive ranges followed by a non-consecutive element.
     // let a = RangeSetBlaze::from_slice([1, 2, 3, 10]);

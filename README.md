@@ -225,9 +225,14 @@ The available Cargo features are:
 * `default` — Enables the `std` feature. Use `--no-default-features` for a `no_std` build.
 * `std` — Enables `std`-specific conveniences and trait implementations. The crate's core functionality remains available with `no_std` and `alloc`; see [the `no_std` usage above](#no_std-wasm-and-embedded).
 * `cursor_nightly_experimental` — Uses Rust's (nightly-only) B-tree cursor API to speed up `insert`/`ranges_insert` on both `RangeSetBlaze` (roughly [1.8x–2.2x, geometric mean ~2.0x](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md#benchmark-2b-ingest_clumps_cursor-experimental-b-tree-cursor-insertion-vs-the-baseline-algorithm)) and `RangeMapBlaze` (roughly [1.5x–2.1x, geometric mean ~1.7x](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench_map.md#benchmark-3b-map_ingest_clumps_cursor-experimental-b-tree-cursor-insertion-vs-the-baseline-algorithm)). Same public API.
-* `from_slice` — Enables the nightly-only [`RangeSetBlaze::from_slice`][from-slice] constructor, which can speed up construction from array-like collections using SIMD where available.
 * `float_nightly_experimental` — Enables the nightly-only `f16` and `f128` floating-point wrappers; see the [floating-point module documentation][floating-point documentation]. This requires a nightly Rust compiler.
 * `test_util` — Test/benchmark helpers used internally by the crate; not needed by downstream users.
+
+The [`RangeSetBlaze::from_slice`][from-slice] constructor is always available (no feature flag
+needed) and can speed up construction from array-like collections using SIMD where available, on
+stable Rust, via `fearless_simd`. With `std` (the default), the best SIMD instructions for the
+running CPU are detected at runtime; in `no_std`, the SIMD features selected at compile time for
+the target are used.
 
 The published API documentation includes all optional features. Feature-gated items are marked
 with the feature required to use them; optional features are not enabled by default for users of

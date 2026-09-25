@@ -23,7 +23,7 @@ public-API quality matter more here than in an experimental project.
 - Keep the crate `no_std` (see `#![no_std]` in `src/lib.rs`) and `alloc`-based (not
   allocation-free) unless the user explicitly changes that goal. The `std` feature only adds
   `std`-specific trait impls/conveniences on top, it is not required for core functionality.
-- Respect the documented MSRV (`rust-version` in `Cargo.toml`, currently 1.87) and `edition`.
+- Respect the documented MSRV (`rust-version` in `Cargo.toml`, currently 1.89) and `edition`.
   Don't use newer syntax/stdlib features than the MSRV allows.
 
 ## Unsafe Code
