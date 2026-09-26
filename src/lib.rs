@@ -1,4 +1,5 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![recursion_limit = "256"]
 #![cfg_attr(feature = "from_slice", feature(portable_simd))]
 #![doc = include_str!("../README.md")]
 #![no_std]
@@ -36,6 +37,9 @@ pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 
 pub mod gaps;
 pub use gaps::{FillGapsIter, FillGapsIterMap};
+
+#[cfg(feature = "gpu")]
+mod gpu;
 
 pub mod float;
 pub use float::*;

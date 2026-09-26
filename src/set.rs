@@ -103,6 +103,7 @@ where
 /// | [`from_iter`][1]/[`collect`][1]             | integer iterator             |                          |
 /// | [`from_iter`][2]/[`collect`][2]             | ranges iterator              |                          |
 /// | [`from_slice`][5]                           | slice of integers            | Fast, but nightly-only  |
+/// | `from_slice_gpu`                            | slice of integers            | Optional `gpu` feature |
 /// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze`][3] | [`SortedDisjoint`] iterator |               |
 /// | [`from`][5] /[`into`][5]                    | array of integers            |                          |
 /// | [`from`][7]                                 | `RangeInclusive<T>`          |                          |
