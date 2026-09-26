@@ -102,7 +102,7 @@ where
 /// | [`new`]/[`default`]                         |                              |                          |
 /// | [`from_iter`][1]/[`collect`][1]             | integer iterator             |                          |
 /// | [`from_iter`][2]/[`collect`][2]             | ranges iterator              |                          |
-/// | [`from_slice`][5]                           | slice of integers            | Fast |
+/// | [`from_slice`][6]                           | slice of integers            | Fast |
 /// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze`][3] | [`SortedDisjoint`] iterator |               |
 /// | [`from`][5] /[`into`][5]                    | array of integers            |                          |
 /// | [`from`][7]                                 | `RangeInclusive<T>`          |                          |
@@ -147,7 +147,7 @@ where
 /// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*)),
 /// a quadratic improvement an O(*n₁*) implementation that ignores the clumps.
 ///
-/// The [`from_slice`][5] constructor typically provides a constant-time speed up for array-like collections of clumpy integers.
+/// The [`from_slice`][6] constructor typically provides a constant-time speed up for array-like collections of clumpy integers.
 /// On a representative benchmark, the speed up was 7×.
 /// The method works by scanning the input for blocks of consecutive integers, and then using `from_iter` on the results.
 /// Where available, it uses SIMD instructions on stable Rust.

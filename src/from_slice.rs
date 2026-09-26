@@ -45,20 +45,31 @@ pub(crate) fn from_slice_ranges<T: SimdInteger>(
 }
 
 /// An integer type whose slices can be scanned with SIMD.
+///
+/// Every implementor maps to a same-width lane type `fearless_simd` supports natively (`Self`
+/// itself for the fixed-width integers; a fixed-width integer of the same size for `isize`/
+/// `usize`, which aren't SIMD lane types). Loading a chunk is then just reinterpreting its bytes
+/// as that lane type via [`bytemuck::cast_slice`], which is a no-op cast when `Lane == Self`.
 #[allow(clippy::redundant_pub_crate)]
-pub(crate) trait SimdInteger: Integer {
-    /// The fixed-width integer with the same size and signedness as `Self`: `Self` itself,
-    /// except for `isize`/`usize`, which `fearless_simd` doesn't support as lane types.
-    type Lane: SimdIntElement + TryFrom<usize>;
+pub(crate) trait SimdInteger: Integer + bytemuck::NoUninit {
+    /// The SIMD lane type backing `Self`.
+    type Lane: SimdIntElement + TryFrom<usize> + bytemuck::AnyBitPattern;
 
     /// The SIMD vector used to scan a chunk of the slice. Its lane count sets the chunk size.
     type Vector<S: Simd>: SimdInt<S, Element = Self::Lane>;
 
-    /// Converts `self` to its same-width lane value (a no-op).
+    /// Converts `self` to its same-width lane value.
     fn to_lane(self) -> Self::Lane;
 
     /// Loads `chunk`, which must have exactly `Self::Vector::<S>::LEN` elements, into a vector.
-    fn load<S: Simd>(simd: S, chunk: &[Self]) -> Self::Vector<S>;
+    #[expect(
+        clippy::inline_always,
+        reason = "must inline into the fearless_simd dispatch target-feature closure"
+    )]
+    #[inline(always)]
+    fn load<S: Simd>(simd: S, chunk: &[Self]) -> Self::Vector<S> {
+        Self::Vector::<S>::from_slice(simd, bytemuck::cast_slice(chunk))
+    }
 }
 
 // Lane counts: 16 lanes, except 8 for 64-bit types (fearless_simd's widest vector is 512 bits).
@@ -73,11 +84,6 @@ macro_rules! impl_simd_integer {
                 #[inline(always)]
                 fn to_lane(self) -> Self::Lane {
                     self
-                }
-
-                #[inline(always)]
-                fn load<S: Simd>(simd: S, chunk: &[Self]) -> Self::Vector<S> {
-                    Self::Vector::<S>::from_slice(simd, chunk)
                 }
             }
         )+
@@ -95,11 +101,9 @@ impl_simd_integer!(
     u64 => u64x8,
 );
 
-// `isize`/`usize` borrow the vector type of the fixed-width integer with the same size. The
-// `as` casts in `to_lane` are same-width reinterpretations (guaranteed by the `cfg`); `load`
-// reinterprets the whole chunk at once via `bytemuck::cast_slice`, avoiding an element-by-element
-// copy, with no `unsafe` needed in this crate (`bytemuck::cast_slice` is itself implemented with
-// `unsafe`, upstream).
+// `isize`/`usize` are just pointer-width integers: each one maps to the fixed-width lane type of
+// the same size for the current `target_pointer_width`, and `load`'s default `bytemuck::cast_slice`
+// reinterprets the chunk as that type with no copy and no `unsafe` in this crate.
 macro_rules! impl_simd_integer_pointer_sized {
     ($($width:literal: $isize_lane:ty => $isize_vector:ident, $usize_lane:ty => $usize_vector:ident);+ $(;)?) => {
         $(
@@ -118,11 +122,6 @@ macro_rules! impl_simd_integer_pointer_sized {
                 fn to_lane(self) -> Self::Lane {
                     self as $isize_lane
                 }
-
-                #[inline(always)]
-                fn load<S: Simd>(simd: S, chunk: &[Self]) -> Self::Vector<S> {
-                    Self::Vector::<S>::from_slice(simd, bytemuck::cast_slice(chunk))
-                }
             }
 
             #[cfg(target_pointer_width = $width)]
@@ -133,11 +132,6 @@ macro_rules! impl_simd_integer_pointer_sized {
                 #[inline(always)]
                 fn to_lane(self) -> Self::Lane {
                     self as $usize_lane
-                }
-
-                #[inline(always)]
-                fn load<S: Simd>(simd: S, chunk: &[Self]) -> Self::Vector<S> {
-                    Self::Vector::<S>::from_slice(simd, bytemuck::cast_slice(chunk))
                 }
             }
         )+

@@ -33,16 +33,33 @@ use range_set_blaze::test_util::{
 };
 use syntactic_for::syntactic_for;
 
-const LANES: usize = 16;
-const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {
-    "avx512f"
-} else if cfg!(target_feature = "avx2") {
-    "avx2"
-} else if cfg!(target_feature = "sse2") {
-    "sse2"
-} else {
-    "error"
-};
+/// A short label for the `fearless_simd` level actually selected for `from_slice` at runtime.
+///
+/// This is deliberately not based on `cfg!(target_feature = ...)`: with `std`, a generic binary
+/// (no `-C target-cpu=native`) still detects and dispatches to the CPU's best supported level
+/// (for example AVX-512) at runtime, so the compile-time target features can under-report what's
+/// actually running.
+fn simd_level_label() -> &'static str {
+    use fearless_simd::Level;
+    let level = Level::try_detect().unwrap_or(Level::baseline());
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    match level {
+        Level::Avx512(_) => return "avx512",
+        Level::Avx2(_) => return "avx2",
+        Level::Sse4_2(_) => return "sse4.2",
+        Level::Sse2(_) => return "sse2",
+        _ => {}
+    }
+    #[cfg(target_arch = "aarch64")]
+    if let Level::Neon(_) = level {
+        return "neon";
+    }
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+    if let Level::WasmSimd128(_) = level {
+        return "wasm-simd128";
+    }
+    "fallback"
+}
 
 #[allow(dead_code)]
 fn shuffled(c: &mut Criterion) {
@@ -1302,7 +1319,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
 
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (integers-slice_{SIMD_SUFFIX})"),
+                format!("RangeSetBlaze (integers-slice_{})", simd_level_label()),
                 parameter,
             ),
             &parameter,
@@ -1452,7 +1469,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
 
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (from_slice_{SIMD_SUFFIX})"),
+                format!("RangeSetBlaze (from_slice_{})", simd_level_label()),
                 parameter,
             ),
             &parameter,
@@ -1532,9 +1549,10 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
         .collect();
 
         group.bench_with_input(
-            // format!("RangeSetBlaze (from_slice_{})", LANES)
-            // "RangeSetBlaze (from_slice)"
-            BenchmarkId::new(format!("RangeSetBlaze (from_slice_{LANES})"), parameter),
+            BenchmarkId::new(
+                format!("RangeSetBlaze (from_slice_{})", simd_level_label()),
+                parameter,
+            ),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1748,7 +1766,7 @@ fn worst(c: &mut Criterion) {
 
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (from_slice_{SIMD_SUFFIX})"),
+                format!("RangeSetBlaze (from_slice_{})", simd_level_label()),
                 parameter,
             ),
             &parameter,

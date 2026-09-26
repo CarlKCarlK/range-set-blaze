@@ -996,7 +996,7 @@ fn convert_challenge() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn understand_slice_iter() {
+fn from_slice_ranges_basic_cases() {
     use from_slice::{from_slice_ranges, testable_levels};
 
     for level in testable_levels() {
