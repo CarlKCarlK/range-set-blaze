@@ -12,7 +12,6 @@ wasm_bindgen_test_configure!(run_in_browser);
 use core::fmt;
 use core::fmt::Debug;
 use core::iter::FusedIterator;
-#[cfg(feature = "from_slice")]
 use core::mem::size_of;
 use core::ops::BitAndAssign;
 use core::ops::RangeInclusive;
@@ -1225,59 +1224,8 @@ fn range_set_blaze_constructors() {
     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 }
 
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[cfg(feature = "from_slice")]
-#[allow(unexpected_cfgs)]
-fn print_features() {
-    println!("feature\tcould\tare");
-    syntactic_for! { feature in [
-        "aes",
-        "pclmulqdq",
-        "rdrand",
-        "rdseed",
-        "tsc",
-        "mmx",
-        "sse",
-        "sse2",
-        "sse3",
-        "ssse3",
-        "sse4.1",
-        "sse2",
-        "sse4a",
-        "sha",
-        "avx",
-        "avx2",
-        "avx512f",
-        "avx512cd",
-        "avx512er",
-        "avx512pf",
-        "avx512bw",
-        "avx512dq",
-        "avx512vl",
-        "avx512ifma",
-        "avx512vbmi",
-        "avx512vpopcntdq",
-        "fma",
-        "bmi1",
-        "bmi2",
-        "abm",
-        "lzcnt",
-        "tbm",
-        "popcnt",
-        "fxsr",
-        "xsave",
-        "xsaveopt",
-        "xsaves",
-        "xsavec",
-        ] {$(
-            println!("{}\t{}\t{}",$feature,is_x86_feature_detected!($feature),cfg!(target_feature = $feature));
-
-    )*}};
-}
-
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "from_slice")]
 fn from_slice_all_types() {
     syntactic_for! { ty in [i8, u8] {
         $(
@@ -1300,10 +1248,7 @@ fn from_slice_all_types() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[cfg(feature = "from_slice")]
 fn range_set_blaze_slice_constructor() {
-    print_features();
     let k = 1;
     let average_width = 1000;
     let coverage_goal = 0.10;
@@ -3083,7 +3028,6 @@ fn more_coverage_of_range_set_blaze() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "from_slice")]
 fn additional_from_slice_iter_coverage() {
     // // Test `FromSliceIter::next` with consecutive ranges followed by a non-consecutive element.
     // let a = RangeSetBlaze::from_slice([1, 2, 3, 10]);

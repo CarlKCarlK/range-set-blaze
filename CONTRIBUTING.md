@@ -5,7 +5,7 @@ Thank you for your interest in contributing! This document provides information 
 ## Development Prerequisites
 
 - **Rust Stable**: For main development
-- **Rust Nightly**: For `from_slice` SIMD feature
+- **Rust Nightly**: For the nightly-only `float_nightly_experimental` and `cursor_nightly_experimental` features
 - **Just**: Task runner for local CI checks - Install: `cargo install just`
 - **Optional Tools** (installed automatically by relevant commands):
   - `cargo-deadlinks`: For documentation link checking
@@ -51,20 +51,8 @@ just clippy
 # Run all stable tests
 just test-stable
 
-# Run nightly tests (includes from_slice feature)
+# Run nightly-only tests (float_nightly_experimental, cursor_nightly_experimental)
 just test-nightly
-```
-
-### SIMD Feature Commands
-
-The `from_slice` feature requires nightly Rust and uses SIMD:
-
-```bash
-# Build with SIMD feature
-just build-simd
-
-# Test with SIMD feature
-just test-simd
 ```
 
 ### Quality Checks
@@ -153,9 +141,10 @@ You can't replicate everything locally (browser WASM, embedded, and multiple OSe
 The project has several optional features:
 
 Floating-point support for `f32` and `f64`, plus range-or-gap lookup and gap-filling APIs, are unconditional.
+SIMD-accelerated slice ingestion (`RangeSetBlaze::from_slice`) is also unconditional; it works on
+stable Rust for both `std` and `no_std` builds, so it is not behind a feature flag.
 
 - `std` (default): Standard library support
-- `from_slice`: SIMD-accelerated slice ingestion (nightly only)
 - `float_nightly_experimental`: Nightly-only floating-point support for `f16` and `f128`
 - `test_util`: Testing utilities (dev only)
 

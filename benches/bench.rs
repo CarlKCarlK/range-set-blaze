@@ -33,18 +33,33 @@ use range_set_blaze::test_util::{
 };
 use syntactic_for::syntactic_for;
 
-#[cfg(feature = "from_slice")]
-const LANES: usize = 16;
-#[cfg(feature = "from_slice")]
-const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {
-    "avx512f"
-} else if cfg!(target_feature = "avx2") {
-    "avx2"
-} else if cfg!(target_feature = "sse2") {
-    "sse2"
-} else {
-    "error"
-};
+/// A short label for the `fearless_simd` level actually selected for `from_slice` at runtime.
+///
+/// This is deliberately not based on `cfg!(target_feature = ...)`: with `std`, a generic binary
+/// (no `-C target-cpu=native`) still detects and dispatches to the CPU's best supported level
+/// (for example AVX-512) at runtime, so the compile-time target features can under-report what's
+/// actually running.
+fn simd_level_label() -> &'static str {
+    use fearless_simd::Level;
+    let level = Level::try_detect().unwrap_or(Level::baseline());
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    match level {
+        Level::Avx512(_) => return "avx512",
+        Level::Avx2(_) => return "avx2",
+        Level::Sse4_2(_) => return "sse4.2",
+        Level::Sse2(_) => return "sse2",
+        _ => {}
+    }
+    #[cfg(target_arch = "aarch64")]
+    if let Level::Neon(_) = level {
+        return "neon";
+    }
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+    if let Level::WasmSimd128(_) = level {
+        return "wasm-simd128";
+    }
+    "fallback"
+}
 
 #[allow(dead_code)]
 fn shuffled(c: &mut Criterion) {
@@ -1259,7 +1274,6 @@ fn str_vs_ad_by_cover(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "from_slice")]
 fn ingest_clumps_base(c: &mut Criterion) {
     let group_name = "ingest_clumps_base";
     let k = 1;
@@ -1303,10 +1317,9 @@ fn ingest_clumps_base(c: &mut Criterion) {
             |b, _| b.iter(|| RangeSetBlaze::from_iter(&vec)),
         );
 
-        #[cfg(feature = "from_slice")]
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (integers-slice_{SIMD_SUFFIX})"),
+                format!("RangeSetBlaze (integers-slice_{})", simd_level_label()),
                 parameter,
             ),
             &parameter,
@@ -1420,7 +1433,6 @@ fn ingest_clumps_cursor(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "from_slice")]
 fn ingest_clumps_integers(c: &mut Criterion) {
     let group_name = "ingest_clumps_integers";
     let k = 1;
@@ -1455,10 +1467,9 @@ fn ingest_clumps_integers(c: &mut Criterion) {
             |b, _| b.iter(|| RangeSetBlaze::from_iter(&vec)),
         );
 
-        #[cfg(feature = "from_slice")]
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (from_slice_{SIMD_SUFFIX})"),
+                format!("RangeSetBlaze (from_slice_{})", simd_level_label()),
                 parameter,
             ),
             &parameter,
@@ -1509,7 +1520,6 @@ fn ingest_clumps_integers(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "from_slice")]
 fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
     let group_name = "ingest_clumps_iter_v_slice";
     let k = 1;
@@ -1539,9 +1549,10 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
         .collect();
 
         group.bench_with_input(
-            // format!("RangeSetBlaze (from_slice_{})", LANES)
-            // "RangeSetBlaze (from_slice)"
-            BenchmarkId::new(format!("RangeSetBlaze (from_slice_{LANES})"), parameter),
+            BenchmarkId::new(
+                format!("RangeSetBlaze (from_slice_{})", simd_level_label()),
+                parameter,
+            ),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1728,7 +1739,6 @@ fn ingest_clumps_easy(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "from_slice")]
 fn worst(c: &mut Criterion) {
     let group_name = "worst";
     let uniform = Uniform::new(0, 1000).expect("Uniform::new");
@@ -1754,10 +1764,9 @@ fn worst(c: &mut Criterion) {
             },
         );
 
-        #[cfg(feature = "from_slice")]
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (from_slice_{SIMD_SUFFIX})"),
+                format!("RangeSetBlaze (from_slice_{})", simd_level_label()),
                 parameter,
             ),
             &parameter,
@@ -2295,23 +2304,15 @@ fn worst_op_blaze(c: &mut Criterion) {
     group.finish();
 }
 
-// Define two separate criterion groups for different features
-#[cfg(feature = "from_slice")]
 criterion_group!(
-    name = benches_with_from_slice;
+    name = benches;
     config = Criterion::default();
     targets =
     ingest_clumps_iter_v_slice,
     ingest_clumps_integers,
     ingest_clumps_base,
     ingest_clumps_cursor,
-    worst
-);
-
-criterion_group!(
-    name = benches_without_from_slice;
-    config = Criterion::default();
-    targets =
+    worst,
     intersect_k_sets,
     every_op_blaze,
     every_op_slow_and_blaze,
@@ -2320,13 +2321,8 @@ criterion_group!(
     union_two_maps_or_sets,
     ingest_clumps_ranges,
     ingest_clumps_easy,
-    ingest_clumps_cursor,
     overflow,
     worst_op_blaze
 );
 
-// Conditionally select and execute the appropriate group based on the feature
-#[cfg(feature = "from_slice")]
-criterion_main!(benches_with_from_slice);
-#[cfg(not(feature = "from_slice"))]
-criterion_main!(benches_without_from_slice);
+criterion_main!(benches);
