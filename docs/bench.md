@@ -140,6 +140,31 @@ The B-tree cursor insertion algorithm is a consistent, unconditional win over th
 
 ![ingest_clumps_cursor](criterion/v5/ingest_clumps_cursor/report/lines.svg "ingest_clumps_cursor")
 
+## Benchmark #2c: `future-btreemap` sorted bulk construction
+
+The experimental `future-btreemap` branch replaces the standard library's
+`BTreeMap` backend with `arena-btreemap` and builds already-sorted,
+disjoint ranges with its unchecked sorted-unique constructor. The constructor
+feeds those ranges directly into the B-tree bulk builder instead of collecting
+and sorting them again.
+
+We compared `ingest_clumps_ranges/RangeSetBlaze (ranges)` on `main` against
+the branch in the same Criterion target directory. Each row used 40 samples,
+a one-second warm-up, and a two-second requested measurement window.
+
+| average clump size | `main` | `future-btreemap` | improvement |
+| ---: | ---: | ---: | ---: |
+| 1 | 41.0 ms | 36.1 ms | 12.1% |
+| 10 | 3.36 ms | 2.91 ms | 13.5% |
+| 100 | 259 µs | 211 µs | 19.3% |
+| 1,000 | 21.3 µs | 16.3 µs | 23.7% |
+| 10,000 | 2.07 µs | 1.38 µs | 33.6% |
+| 100,000 | 322 ns | 139 ns | 56.7% |
+
+Criterion classified every change as an improvement with `p < 0.05`. The
+benefit grows as fewer ranges remain because redundant collection and sorting
+become a larger fraction of the total work.
+
 ## Benchmark #3: 'ingest_clumps_integers': Measure the `rangemap` crate on clumpy integers
 
 * **Measure**: integer intake speed

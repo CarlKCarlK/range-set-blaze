@@ -152,6 +152,28 @@ Like the set version, the B-tree cursor insertion algorithm is a consistent, unc
 
 ![map_ingest_clumps_cursor](criterion/v5/map_ingest_clumps_cursor/report/lines.svg "map_ingest_clumps_cursor")
 
+## Benchmark #3c: `future-btreemap` sorted bulk construction
+
+The experimental `future-btreemap` branch replaces the standard library's
+`BTreeMap` backend with `arena-btreemap` and sends already-sorted,
+disjoint map ranges directly to its sorted-unique bulk constructor.
+
+We compared `map_ingest_clumps_ranges/5. RangeMapBlaze (ranges)` on `main`
+against the branch in the same Criterion target directory. Each row used 100
+samples, a one-second warm-up, and a two-second requested measurement window.
+
+| ranges per clump | `main` | `future-btreemap` | improvement |
+| ---: | ---: | ---: | ---: |
+| 1 | 61.1 µs | 54.7 µs | 10.5% |
+| 2 | 63.0 µs | 57.8 µs | 8.1% |
+| 5 | 67.0 µs | 60.4 µs | 8.8% |
+| 10 | 75.7 µs | 70.1 µs | 6.1% |
+| 50 | 155 µs | 144 µs | 7.4% |
+
+Criterion classified every change as an improvement with `p < 0.05`. The
+map results are smaller but consistent because map-value processing remains a
+larger share of the measured construction work.
+
 ## Benchmark #4: 'map_union_two_sets': Union two maps with clumpy integer keys
 
 * **Measure**: adding a map to an existing map

@@ -1,4 +1,4 @@
-use alloc::collections::btree_map;
+use arena_btreemap::btree::map as btree_map;
 use core::iter::FusedIterator;
 
 use crate::{

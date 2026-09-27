@@ -23,9 +23,6 @@ use std::{
 
 use crate::alloc::string::ToString;
 use crate::sorted_disjoint::RangeOnce;
-#[cfg(feature = "cursor_nightly_experimental")]
-use alloc::collections::btree_map::CursorMut;
-use alloc::collections::{BTreeMap, btree_map};
 use alloc::string::String;
 #[cfg(any(
     test,
@@ -33,6 +30,10 @@ use alloc::string::String;
     not(feature = "cursor_nightly_experimental")
 ))]
 use alloc::vec::Vec;
+use arena_btreemap::BTreeMap;
+use arena_btreemap::btree::map as btree_map;
+#[cfg(feature = "cursor_nightly_experimental")]
+use arena_btreemap::btree::map::CursorMut;
 use gen_ops::gen_ops_ex;
 
 use crate::ranges_iter::RangesIter;
@@ -568,7 +569,9 @@ impl<T: Integer> RangeSetBlaze<T> {
         I: SortedDisjoint<T>,
     {
         let mut iter_with_len = SortedDisjointWithLenSoFar::new(iter);
-        let btree_map = (&mut iter_with_len).collect();
+        // SAFETY: `SortedDisjoint` guarantees ascending, disjoint ranges, so
+        // their start keys are strictly increasing and unique.
+        let btree_map = unsafe { BTreeMap::from_sorted_unique_iter_unchecked(&mut iter_with_len) };
         Self {
             btree_map,
             len: iter_with_len.len_so_far(),
@@ -858,7 +861,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// # Performance
     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
     /// When n is large, consider using `|` which is O(n+m) time.
-    /// The nightly-only `cursor_nightly_experimental` feature speeds up this method by roughly 2x; see the
+    /// The experimental `cursor_nightly_experimental` feature speeds up this method by roughly 2x; see the
     /// [Cargo Features section of the README](crate#cargo-features).
     ///
     /// # Examples
@@ -938,7 +941,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// # Performance
     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
     /// When n is large, consider using `|` which is O(n+m) time.
-    /// The nightly-only `cursor_nightly_experimental` feature speeds up this method by roughly 2x; see the
+    /// The experimental `cursor_nightly_experimental` feature speeds up this method by roughly 2x; see the
     /// [Cargo Features section of the README](crate#cargo-features).
     ///
     /// # Examples

@@ -9,8 +9,7 @@ use crate::{
     unsorted_priority_map::{SortedDisjointMapWithLenSoFar, UnsortedPriorityMap},
     values::{IntoValues, Values},
 };
-#[cfg(feature = "cursor_nightly_experimental")]
-use alloc::collections::btree_map::CursorMut;
+use alloc::rc::Rc;
 #[cfg(feature = "std")]
 use alloc::sync::Arc;
 #[cfg(any(
@@ -19,7 +18,9 @@ use alloc::sync::Arc;
     not(feature = "cursor_nightly_experimental")
 ))]
 use alloc::vec::Vec;
-use alloc::{collections::BTreeMap, rc::Rc};
+use arena_btreemap::BTreeMap;
+#[cfg(feature = "cursor_nightly_experimental")]
+use arena_btreemap::btree::map::CursorMut;
 #[cfg(feature = "cursor_nightly_experimental")]
 use core::ops::Bound;
 use core::{
@@ -1021,7 +1022,10 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         I: SortedDisjointMap<T, VC>,
     {
         let mut iter_with_len = SortedDisjointMapWithLenSoFar::new(iter);
-        let btree_map: BTreeMap<T, EndValue<T, VC::Value>> = (&mut iter_with_len).collect();
+        // SAFETY: `SortedDisjointMap` guarantees ascending, disjoint ranges, so
+        // their start keys are strictly increasing and unique.
+        let btree_map: BTreeMap<T, EndValue<T, VC::Value>> =
+            unsafe { BTreeMap::from_sorted_unique_iter_unchecked(&mut iter_with_len) };
         Self {
             btree_map,
             len: iter_with_len.len_so_far(),
@@ -1241,7 +1245,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// # Performance
     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
     /// When n is large, consider using `|` which is O(n+m) time.
-    /// The nightly-only `cursor_nightly_experimental` feature speeds up this method by roughly 1.7x; see the
+    /// The experimental `cursor_nightly_experimental` feature speeds up this method by roughly 1.7x; see the
     /// [Cargo Features section of the README](crate#cargo-features).
     ///
     /// # Examples
@@ -1330,7 +1334,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// # Performance
     /// Inserting n items will take in O(n log m) time, where n is the number of inserted items and m is the number of ranges in `self`.
     /// When n is large, consider using `|` which is O(n+m) time.
-    /// The nightly-only `cursor_nightly_experimental` feature speeds up this method by roughly 1.7x; see the
+    /// The experimental `cursor_nightly_experimental` feature speeds up this method by roughly 1.7x; see the
     /// [Cargo Features section of the README](crate#cargo-features).
     ///
     /// # Examples

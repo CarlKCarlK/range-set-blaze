@@ -3,7 +3,8 @@ use crate::{
     map::ValueCarrier,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
 };
-use alloc::{collections::btree_map, rc::Rc};
+use alloc::rc::Rc;
+use arena_btreemap::btree::map as btree_map;
 use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
 
 use crate::{map::EndValue, sorted_disjoint_map::SortedDisjointMap};
