@@ -165,6 +165,8 @@ Criterion classified every change as an improvement with `p < 0.05`. The
 benefit grows as fewer ranges remain because redundant collection and sorting
 become a larger fraction of the total work.
 
+![future-btreemap RangeSetBlaze range ingestion](criterion/v5/ingest_clumps_ranges_future_btreemap/report/lines.svg "future-btreemap RangeSetBlaze range ingestion")
+
 ## Benchmark #3: 'ingest_clumps_integers': Measure the `rangemap` crate on clumpy integers
 
 * **Measure**: integer intake speed

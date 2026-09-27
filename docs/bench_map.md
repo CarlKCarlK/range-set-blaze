@@ -174,6 +174,16 @@ Criterion classified every change as an improvement with `p < 0.05`. The
 map results are smaller but consistent because map-value processing remains a
 larger share of the measured construction work.
 
+![future-btreemap RangeMapBlaze range ingestion](criterion/v5/map_ingest_clumps_ranges_future_btreemap/report/lines.svg "future-btreemap RangeMapBlaze range ingestion")
+
+Criterion's detailed mean-change plots are available for
+[1](criterion/v5/map_ingest_clumps_ranges_future_btreemap/report/change/1-mean.svg),
+[2](criterion/v5/map_ingest_clumps_ranges_future_btreemap/report/change/2-mean.svg),
+[5](criterion/v5/map_ingest_clumps_ranges_future_btreemap/report/change/5-mean.svg),
+[10](criterion/v5/map_ingest_clumps_ranges_future_btreemap/report/change/10-mean.svg), and
+[50](criterion/v5/map_ingest_clumps_ranges_future_btreemap/report/change/50-mean.svg)
+ranges per clump.
+
 ## Benchmark #4: 'map_union_two_sets': Union two maps with clumpy integer keys
 
 * **Measure**: adding a map to an existing map
