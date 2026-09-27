@@ -38,7 +38,7 @@ checksum = "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
 [[package]]
 name = "arena-btreemap"
 version = "0.1.2"
-source = "git+https://github.com/CarlKCarlK/arena-btreemap?rev=98efe477025d9cdeb0c44867b240286305b5c2c9#98efe477025d9cdeb0c44867b240286305b5c2c9"
+source = "git+https://github.com/CarlKCarlK/arena-btreemap?rev=0d87a0ddd0d279af9c08aa8d903b0be9727ca94a#0d87a0ddd0d279af9c08aa8d903b0be9727ca94a"
 dependencies = [
  "allocator-api2",
 ]
