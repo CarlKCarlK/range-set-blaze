@@ -130,6 +130,36 @@
 mod not_nan_float;
 mod total_float;
 
+#[cfg(feature = "gpu")]
+pub(crate) fn gpu_not_nan_f32_to_ordered(value: f32) -> i32 {
+    <f32 as not_nan_float::NotNanFloatImpl>::to_ordered(value)
+}
+
+#[cfg(feature = "gpu")]
+pub(crate) fn gpu_not_nan_f32_from_ordered(value: i32) -> f32 {
+    <f32 as not_nan_float::NotNanFloatImpl>::from_ordered(value)
+}
+
+#[cfg(feature = "gpu")]
+pub(crate) fn gpu_not_nan_f64_to_ordered(value: f64) -> i64 {
+    <f64 as not_nan_float::NotNanFloatImpl>::to_ordered(value)
+}
+
+#[cfg(feature = "gpu")]
+pub(crate) fn gpu_not_nan_f64_from_ordered(value: i64) -> f64 {
+    <f64 as not_nan_float::NotNanFloatImpl>::from_ordered(value)
+}
+
+#[cfg(all(feature = "gpu", feature = "float_nightly_experimental"))]
+pub(crate) fn gpu_not_nan_f16_to_ordered(value: f16) -> i16 {
+    <f16 as not_nan_float::NotNanFloatImpl>::to_ordered(value)
+}
+
+#[cfg(all(feature = "gpu", feature = "float_nightly_experimental"))]
+pub(crate) fn gpu_not_nan_f16_from_ordered(value: i16) -> f16 {
+    <f16 as not_nan_float::NotNanFloatImpl>::from_ordered(value)
+}
+
 pub mod total;
 pub use total::{Total, TotalF32, TotalF64};
 #[cfg(feature = "float_nightly_experimental")]
