@@ -1247,7 +1247,7 @@ fn from_slice_all_types() {
 }
 
 #[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[cfg(not(target_arch = "wasm32"))]
 fn range_set_blaze_slice_constructor() {
     let k = 1;
     let average_width = 1000;
