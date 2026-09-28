@@ -1,6 +1,6 @@
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
-use alloc::collections::btree_map;
+use arena_btreemap::btree::map as btree_map;
 
 use crate::{
     Integer, SortedDisjointMap,

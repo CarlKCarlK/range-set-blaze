@@ -12,6 +12,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "allocator-api2"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c880a97d28a3681c0267bd29cff89621202715b065127cd445fa0f0fe0aa2880"
+
+[[package]]
 name = "anes"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -28,6 +34,14 @@ name = "anyhow"
 version = "1.0.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
+
+[[package]]
+name = "arena-btreemap"
+version = "0.1.2"
+source = "git+https://github.com/CarlKCarlK/arena-btreemap?rev=0d87a0ddd0d279af9c08aa8d903b0be9727ca94a#0d87a0ddd0d279af9c08aa8d903b0be9727ca94a"
+dependencies = [
+ "allocator-api2",
+]
 
 [[package]]
 name = "async-trait"
@@ -738,6 +752,7 @@ name = "range-set-blaze"
 version = "0.7.1"
 dependencies = [
  "anyhow",
+ "arena-btreemap",
  "criterion",
  "gen_ops",
  "getrandom 0.3.4",

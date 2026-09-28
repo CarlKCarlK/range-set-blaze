@@ -1,5 +1,5 @@
 use crate::Integer;
-use alloc::collections::btree_map;
+use arena_btreemap::btree::map as btree_map;
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
 /// This `struct` is created by the [`ranges`] method on [`RangeSetBlaze`]. See [`ranges`]'s
