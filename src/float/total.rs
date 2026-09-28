@@ -23,7 +23,6 @@
 
 use super::total_float::TotalFloat;
 use crate::Integer;
-#[cfg(feature = "from_slice")]
 use crate::RangeSetBlaze;
 use core::{
     cmp::Ordering,
@@ -495,7 +494,6 @@ impl<T: TotalFloat> Integer for Total<T> {
         Self::MAX
     }
 
-    #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         // TODO Investigate applying the ordered float transform in SIMD chunks here.

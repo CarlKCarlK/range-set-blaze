@@ -18,7 +18,6 @@ use core::{
 use super::not_nan_float::NotNanFloat;
 
 use crate::Integer;
-#[cfg(feature = "from_slice")]
 use crate::RangeSetBlaze;
 use num_traits::Zero;
 
@@ -658,7 +657,6 @@ impl<T: NotNanFloat> Integer for NotNan<T> {
         Self::MAX
     }
 
-    #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         // TODO Investigate applying the ordered float transform in SIMD chunks here.

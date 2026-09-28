@@ -46,7 +46,6 @@ jobs:
           rustup toolchain install nightly-2026-09-15 --component clippy --allow-downgrade
           rustup override set nightly-2026-09-15
           cargo check --tests --features "float_nightly_experimental"
-          cargo test --verbose --features from_slice
           cargo test --verbose --features cursor_nightly_experimental
           cargo test --verbose --no-default-features --features cursor_nightly_experimental
           cargo clippy --verbose --all-targets --features cursor_nightly_experimental -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
@@ -145,16 +144,16 @@ jobs:
           rustup override set stable
 
   test_msrv:
-    name: Test MSRV (1.87)
+    name: Test MSRV (1.89)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Rust 1.87
-        uses: dtolnay/rust-toolchain@1.87
+      - name: Setup Rust 1.89
+        uses: dtolnay/rust-toolchain@1.89
       - name: Check MSRV compiles
         run: |
           # Explicitly bypass rust-toolchain.toml; otherwise this job could run 1.97.
-          cargo +1.87 check --verbose
-          cargo +1.87 check --verbose --no-default-features
-          cargo +1.87 check --verbose --features std
+          cargo +1.89 check --verbose
+          cargo +1.89 check --verbose --no-default-features
+          cargo +1.89 check --verbose --features std

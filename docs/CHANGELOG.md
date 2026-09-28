@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-25
+
+### Changed
+
+- **MSRV raised from Rust 1.87 to Rust 1.89.**
+- **`RangeSetBlaze::from_slice` now works on stable Rust and is no longer behind a Cargo
+  feature.** The `from_slice` feature has been removed; the constructor, and its `fearless_simd`
+  and `bytemuck` dependencies, are now unconditional parts of the crate, available in every build
+  (including `no_std`). Downstream `Cargo.toml`s that list `features = ["from_slice"]` must drop
+  that feature name — the crate will otherwise fail to resolve.
+- The SIMD implementation moved off nightly-only `portable_simd` onto [`fearless_simd`], which
+  runs on stable Rust:
+  - With the `std` feature (the default), the best SIMD instructions supported by the CPU running
+    the program are detected and dispatched to at runtime.
+  - Without `std` (`no_std`), there is no runtime detection; the SIMD features selected at compile
+    time for the target (for example, via `-C target-feature` or `-C target-cpu`) are used
+    instead. A `no_std` build does not fall back to scalar code merely because `std` is
+    unavailable.
+- `isize` and `usize` slices are now SIMD-accelerated as well, mapped to the fixed-width integer
+  lanes matching `target_pointer_width` (`i16`/`u16`, `i32`/`u32`, or `i64`/`u64`). Their SIMD load
+  path uses [`bytemuck`] to reinterpret the input slice in place, rather than copying it
+  element-by-element, closing most of the previous performance gap between `isize`/`usize` and
+  the corresponding fixed-width integer types.
+
+[`fearless_simd`]: https://crates.io/crates/fearless_simd
+[`bytemuck`]: https://crates.io/crates/bytemuck
+
+Note: 0.7.1 already fixed the two `from_slice` wraparound correctness bugs described below; this
+release does not change that fix, only the feature's stability, platform support, and `isize`/
+`usize` performance.
+
 ## [0.7.1] - 2026-09-25
 
 ### Fixed

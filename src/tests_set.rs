@@ -994,34 +994,93 @@ fn convert_challenge() {
     // what about multiple inputs?
 }
 
-#[cfg(feature = "from_slice")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn understand_slice_iter() {
-    use std::simd::Simd;
+fn from_slice_ranges_basic_cases() {
+    use from_slice::{from_slice_ranges, testable_levels};
 
-    use from_slice::FromSliceIter;
-    use integer::LANES;
+    for level in testable_levels() {
+        let slice: [u8; 0] = [];
+        assert!(from_slice_ranges(level, &slice).is_empty());
 
-    let slice: [u8; 0] = [];
-    let iter = FromSliceIter::<u8, LANES>::new(&slice);
-    assert_eq!(iter.size_hint(), (0, Some(0)));
-    assert_eq!(iter.count(), 0);
+        // 1st 500 even numbers
+        let slice: &[_] = &(0..1000).step_by(2).collect::<Vec<_>>();
+        assert_eq!(from_slice_ranges(level, slice).len(), 500);
 
-    // 1st 500 even numbers
-    let slice: &[_] = &(0..1000).step_by(2).collect::<Vec<_>>();
-    let iter = FromSliceIter::<_, LANES>::new(slice);
-    assert_eq!(iter.size_hint(), (1, Some(500)));
-    assert_eq!(iter.count(), 500);
-
-    // 32 consecutive u8's as a slice
-    let slice: &[_] = &(0..64i64).collect::<Vec<_>>();
-    let slice = Simd::<_, 64>::from_slice(slice);
-    let iter = FromSliceIter::<_, LANES>::new(slice.as_array());
-    assert_eq!(iter.size_hint(), (1, Some(64)));
-    assert_eq!(iter.count(), 1);
+        // 64 consecutive integers as a slice
+        let slice: &[_] = &(0..64i64).collect::<Vec<_>>();
+        assert_eq!(from_slice_ranges(level, slice), [0..=63]);
+    }
 }
 
+/// Checks `from_slice` against `from_iter` on every testable SIMD level.
+fn assert_from_slice_matches_from_iter<T: from_slice::SimdInteger>(values: &[T]) {
+    let expected = RangeSetBlaze::from_iter(values);
+    for level in from_slice::testable_levels() {
+        let ranges = from_slice::from_slice_ranges(level, values);
+        assert!(
+            ranges.iter().all(|range| range.start() <= range.end()),
+            "{level:?} produced an empty range from {values:?}: {ranges:?}"
+        );
+        assert_eq!(
+            RangeSetBlaze::from_iter(ranges),
+            expected,
+            "{level:?} disagrees with from_iter on {values:?}"
+        );
+    }
+    assert_eq!(RangeSetBlaze::from_slice(values), expected);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slice_matches_from_iter() {
+    use rand::{Rng, SeedableRng, rngs::StdRng};
+
+    let mut rng = StdRng::seed_from_u64(0);
+    macro_rules! check_types {
+        ($($type:ty),+) => {$(
+            // Consecutive runs that wrap from MAX to MIN, at every offset and alignment.
+            for before_wrap in 0..40 {
+                for prefix_len in 0..17 {
+                    let values: Vec<$type> = (0..prefix_len)
+                        .map(|index: u8| <$type>::try_from(index * 7).expect("at most 112"))
+                        .chain((0..64).map(|index| {
+                            <$type>::MAX.wrapping_sub(before_wrap).wrapping_add(index)
+                        }))
+                        .collect();
+                    assert_from_slice_matches_from_iter(&values);
+                }
+            }
+            // Runs that touch MIN or MAX without wrapping, plus small edge cases.
+            assert_from_slice_matches_from_iter::<$type>(&[]);
+            assert_from_slice_matches_from_iter(&[<$type>::MIN; 40]);
+            assert_from_slice_matches_from_iter(
+                &(0..40).map(|index| <$type>::MIN.wrapping_add(index)).collect::<Vec<_>>(),
+            );
+            assert_from_slice_matches_from_iter(
+                &(0..40).rev().map(|index| <$type>::MAX.wrapping_sub(index)).collect::<Vec<_>>(),
+            );
+            // Random clumps of consecutive values, with duplicates and reversals.
+            for _ in 0..200 {
+                let mut values: Vec<$type> = Vec::new();
+                while values.len() < 300 {
+                    let start = <$type>::from_ne_bytes(rng.random());
+                    let run_len = rng.random_range(1..40_usize);
+                    let run = (0..run_len).map(|index| {
+                        start.wrapping_add(<$type>::try_from(index).expect("at most 39"))
+                    });
+                    if rng.random_bool(0.2) {
+                        values.extend(run.rev());
+                    } else {
+                        values.extend(run);
+                    }
+                }
+                assert_from_slice_matches_from_iter(&values);
+            }
+        )+};
+    }
+    check_types!(i8, i16, i32, i64, isize, u8, u16, u32, u64, usize);
+}
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_merge() {
@@ -1076,68 +1135,38 @@ fn bitand() {
     assert!(a.ranges().equal(f));
 }
 
-#[cfg(feature = "from_slice")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_is_consecutive() {
-    use crate::from_slice::SimdInteger;
-    use core::array;
-    use std::simd::Simd;
+    use fearless_simd::dispatch;
 
-    let simd: Simd<i8, 64> = Simd::from_array(array::from_fn(|i| {
-        i8::try_from(10 + i).expect("i in 0..64 so 10+i fits in i8")
-    }));
-    assert!(i8::is_consecutive(simd));
+    for level in from_slice::testable_levels() {
+        dispatch!(level, simd => assert_is_consecutive(simd));
+    }
+}
+
+fn assert_is_consecutive<S: fearless_simd::Simd>(simd: S) {
+    use from_slice::is_consecutive;
+
+    let values = (10..26).collect::<Vec<i8>>();
+    assert!(is_consecutive(simd, &values));
 
     // Wrapping lane arithmetic must not make these look consecutive.
-    let simd: Simd<u8, 16> = Simd::from_array(array::from_fn(|i| {
-        250u8.wrapping_add(u8::try_from(i).expect("i in 0..16 fits in u8"))
-    }));
-    assert!(!u8::is_consecutive(simd));
-    let simd: Simd<i64, 8> = Simd::from_array(array::from_fn(|i| {
-        (i64::MAX - 3).wrapping_add(i64::try_from(i).expect("i in 0..8 fits in i64"))
-    }));
-    assert!(!i64::is_consecutive(simd));
-}
-
-/// Checks `from_slice` against `from_iter`.
-#[cfg(feature = "from_slice")]
-fn assert_from_slice_matches_from_iter<T: Integer>(values: &[T]) {
-    assert_eq!(
-        RangeSetBlaze::from_slice(values),
-        RangeSetBlaze::from_iter(values),
-        "from_slice disagrees with from_iter on {values:?}"
-    );
-}
-
-#[cfg(feature = "from_slice")]
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn from_slice_wraparound_matches_from_iter() {
-    macro_rules! check_types {
-        ($($type:ty),+) => {$(
-            // Consecutive runs that wrap from MAX to MIN, at every offset and alignment.
-            for before_wrap in 0..40 {
-                for prefix_len in 0..17 {
-                    let values: Vec<$type> = (0..prefix_len)
-                        .map(|index: u8| <$type>::try_from(index * 7).expect("at most 112"))
-                        .chain((0..64).map(|index| {
-                            <$type>::MAX.wrapping_sub(before_wrap).wrapping_add(index)
-                        }))
-                        .collect();
-                    assert_from_slice_matches_from_iter(&values);
-                }
-            }
-            // Runs that touch MIN or MAX without wrapping.
-            assert_from_slice_matches_from_iter(
-                &(0..40).map(|index| <$type>::MIN.wrapping_add(index)).collect::<Vec<_>>(),
-            );
-            assert_from_slice_matches_from_iter(
-                &(0..40).rev().map(|index| <$type>::MAX.wrapping_sub(index)).collect::<Vec<_>>(),
-            );
-        )+};
-    }
-    check_types!(i8, i16, i32, i64, isize, u8, u16, u32, u64, usize);
+    let values = (250..=255).chain(0..10).collect::<Vec<u8>>();
+    assert!(!is_consecutive(simd, &values));
+    let values = (i64::MAX - 3..=i64::MAX)
+        .chain(i64::MIN..=i64::MIN + 3)
+        .collect::<Vec<_>>();
+    assert!(!is_consecutive(simd, &values));
+    let lanes = if cfg!(target_pointer_width = "64") {
+        8
+    } else {
+        16
+    };
+    let values = (0..lanes)
+        .map(|index| usize::MAX.wrapping_sub(3).wrapping_add(index))
+        .collect::<Vec<_>>();
+    assert!(!is_consecutive(simd, &values));
 }
 
 #[cfg(not(target_arch = "wasm32"))]
