@@ -159,9 +159,7 @@ fn from_slice<T: GpuElement>(values: &[T]) -> RangeSetBlaze<T> {
 }
 
 fn from_slice_gpu<T: GpuElement>(values: &[T]) -> Option<RangeSetBlaze<T>> {
-    let context = gpu_context()?;
-    (context.adapter_info.device_type != wgpu::DeviceType::Cpu)
-        .then(|| from_slice_gpu_with_context(values, context))?
+    from_slice_gpu_with_context(values, gpu_context()?)
 }
 
 fn from_slice_gpu_with_context<T: GpuElement>(
@@ -209,6 +207,9 @@ async fn init_gpu_context() -> Option<Context> {
         .await
         .ok()?;
     let adapter_info = adapter.get_info();
+    if adapter_info.device_type == wgpu::DeviceType::Cpu {
+        return None;
+    }
     let supported_features = adapter.features();
     let required_features = gpu_context_features(&adapter_info, supported_features);
     let (device, queue) = adapter
