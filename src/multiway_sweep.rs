@@ -1,9 +1,10 @@
-use alloc::{collections::BinaryHeap, vec::Vec};
+use alloc::{
+    collections::{BinaryHeap, binary_heap::PeekMut},
+    vec::Vec,
+};
 use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
 
-use crate::{
-    Integer, KMergeMap, SortedDisjointMap, map::ValueCarrier, sorted_disjoint_map::Priority,
-};
+use crate::{Integer, SortedDisjointMap, map::ValueCarrier};
 
 /// An event from a [`MultiwaySweep`]: one input's range starting or ending.
 ///
@@ -46,13 +47,14 @@ where
     VC: ValueCarrier,
     I: SortedDisjointMap<T, VC>,
 {
-    // Starts: a heap over the inputs, ordered by start, tagged with input position.
-    merged: KMergeMap<T, VC, I>,
-    // The next start from `merged`, already pulled so it can be compared with the next end.
-    upcoming: Option<Priority<T, VC>>,
+    inputs: Vec<I>,
+    // Each input's next range (not yet started), pulled ahead so its start can be in the heap.
+    heads: Vec<Option<(RangeInclusive<T>, VC)>>,
+    // Starts of the inputs' next ranges, with input positions; smallest (start, input) on top. The
+    // heap holds only small keys; the iterators and ranges stay in place in `inputs` and `heads`.
+    starts: BinaryHeap<Reverse<(T, usize)>>,
     // Ends of the started-but-not-ended ranges, with input positions; smallest end on top.
     active_ends: BinaryHeap<Reverse<(T, usize)>>,
-    input_count: usize,
 }
 
 impl<T, VC, I> MultiwaySweep<T, VC, I>
@@ -65,20 +67,32 @@ where
     where
         K: IntoIterator<Item = I>,
     {
-        let inputs: Vec<I> = inputs.into_iter().collect();
+        let mut inputs: Vec<I> = inputs.into_iter().collect();
         let input_count = inputs.len();
+        let mut starts = BinaryHeap::with_capacity(input_count);
+        let heads = inputs
+            .iter_mut()
+            .enumerate()
+            .map(|(input, iter)| {
+                let head = iter.next();
+                if let Some((range, _)) = &head {
+                    starts.push(Reverse((*range.start(), input)));
+                }
+                head
+            })
+            .collect();
         Self {
-            merged: KMergeMap::new(inputs),
-            upcoming: None,
+            inputs,
+            heads,
+            starts,
             active_ends: BinaryHeap::with_capacity(input_count),
-            input_count,
         }
     }
 
     /// The number of inputs being swept.
     #[must_use]
-    pub const fn input_count(&self) -> usize {
-        self.input_count
+    pub fn input_count(&self) -> usize {
+        self.inputs.len()
     }
 }
 
@@ -99,10 +113,7 @@ where
     type Item = SweepEvent<T, VC>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.upcoming.is_none() {
-            self.upcoming = self.merged.next();
-        }
-        let next_start = self.upcoming.as_ref().map(Priority::start);
+        let next_start = self.starts.peek().map(|&Reverse((start, _))| start);
         let earliest_end = self.active_ends.peek().map(|&Reverse((end, _))| end);
         // A range ending at `end` closes before a range starting at `start` exactly when
         // `end < start`; otherwise the start comes first (they overlap or touch at `start`).
@@ -115,9 +126,18 @@ where
             let Reverse((at, input)) = self.active_ends.pop()?;
             return Some(SweepEvent::End { at, input });
         }
-        let item = self.upcoming.take()?;
-        let input = item.priority_number();
-        let (range, value) = item.into_range_value();
+        let mut top = self.starts.peek_mut()?;
+        let Reverse((_, input)) = *top;
+        let (range, value) = self.heads[input].take()?;
+        // Pull this input's next range. Its start replaces this one at the top of the heap in
+        // place (one sift instead of a pop and a push).
+        let next = self.inputs[input].next();
+        if let Some((next_range, _)) = &next {
+            *top = Reverse((*next_range.start(), input));
+        } else {
+            PeekMut::pop(top);
+        }
+        self.heads[input] = next;
         self.active_ends.push(Reverse((*range.end(), input)));
         Some(SweepEvent::Start {
             range,

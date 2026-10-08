@@ -1158,13 +1158,6 @@ where
         let (_, value) = &self.range_value;
         value
     }
-
-    /// Returns the priority number, which for [`KMergeMap`] is the input's position.
-    ///
-    /// [`KMergeMap`]: crate::KMergeMap
-    pub(crate) const fn priority_number(&self) -> usize {
-        self.priority_number
-    }
 }
 
 // Implement `PartialEq` to allow comparison (needed for `Eq`).
