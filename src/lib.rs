@@ -52,6 +52,9 @@ pub use intersection_iter_map::IntersectionIterMap;
 mod outer_join_iter_map;
 pub use outer_join_iter_map::OuterJoinIterMap;
 
+mod transform_values_iter_map;
+pub use transform_values_iter_map::TransformValuesIterMap;
+
 mod iter_map;
 pub use crate::iter_map::{IntoIterMap, IterMap};
 
@@ -59,7 +62,7 @@ mod keys;
 pub use crate::keys::{IntoKeys, Keys};
 
 mod map;
-pub use crate::map::{RangeMapBlaze, ValueCarrier};
+pub use crate::map::{Owned, RangeMapBlaze, ValueCarrier};
 
 mod map_op;
 

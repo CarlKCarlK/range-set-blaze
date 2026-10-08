@@ -105,6 +105,7 @@ pub trait ValueCarrier: Clone {
     /// - `&V` → calls `Clone::clone` on `V`. If `V` is a reference (e.g., `&'static str`),
     ///   this simply copies the reference without allocation.
     /// - `Rc<V>` / `Arc<V>` → tries to unwrap if uniquely owned; otherwise clones `V`.
+    /// - [`Owned<V>`] → returns the value it holds.
     ///
     /// This is typically used when converting a stream of `(range, value)` pairs into values
     /// that can be stored or returned independently of the original container.
@@ -233,6 +234,49 @@ where
     #[inline]
     fn into_value(self) -> Self::Value {
         (self.0.into_value(), self.1.into_value())
+    }
+}
+
+// TODO0(api-change): New public value carrier.
+/// A [`ValueCarrier`] that holds its value directly, by value.
+///
+/// Stream operations that create new values, such as [`SortedDisjointMap::transform_values`],
+/// need a carrier for those values. A reference (`&V`) needs an owner that outlives the stream,
+/// and [`Rc`] allocates per range. `Owned<V>` carries the value inline with no allocation;
+/// cloning it (which happens when an operation splits a range) clones the `V`. For large values
+/// that will be split often, a closure can return an `Rc<V>` instead.
+///
+/// Collecting into a [`RangeMapBlaze`] removes the wrapper: a stream of `Owned<V>` builds a
+/// `RangeMapBlaze<T, V>`.
+///
+/// # Examples
+///
+/// ```
+/// use range_set_blaze::{Owned, prelude::*};
+///
+/// let map = RangeMapBlaze::from_iter([(1..=3, "a"), (5..=6, "bb")]);
+/// let mut lengths = map.range_values().transform_values(|value| value.len());
+/// assert_eq!(lengths.next(), Some((1..=3, Owned(1))));
+/// assert_eq!(lengths.next(), Some((5..=6, Owned(2))));
+/// assert_eq!(lengths.next(), None);
+/// ```
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct Owned<V>(pub V);
+
+impl<V> ValueCarrier for Owned<V>
+where
+    V: Eq + Clone,
+{
+    type Value = V;
+
+    #[inline]
+    fn value_eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+
+    #[inline]
+    fn into_value(self) -> Self::Value {
+        self.0
     }
 }
 

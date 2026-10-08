@@ -3760,3 +3760,17 @@ fn transform_values_calls_once_per_range_in_order() {
     assert_eq!(seen, vec!['a', 'b', 'c']);
     assert_eq!(mapped.to_string(), "(0..=9, 1), (10..=19, 2), (30..=39, 3)");
 }
+
+#[quickcheck]
+fn streaming_transform_values_matches_struct(entries: Vec<(u8, u8, u8)>, divisor: u8) -> bool {
+    let map: RangeMapBlaze<u8, u8> = entries
+        .into_iter()
+        .map(|(a, b, value)| (a.min(b)..=a.max(b), value))
+        .collect();
+    let divisor = divisor.max(1);
+    let streamed: RangeMapBlaze<u8, u8> = map
+        .range_values()
+        .transform_values(|value| value / divisor)
+        .into_range_map_blaze();
+    streamed == map.transform_values(|value| value / divisor)
+}

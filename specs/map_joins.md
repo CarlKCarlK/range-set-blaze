@@ -145,10 +145,22 @@ enough.
 
 ### Iterator form of `transform_values`
 
-Decision: deferred (2026-10-08). Neither real caller needed it. A plain `.map()` on a map stream
-works but yields an ordinary iterator (not merged, not a `SortedDisjointMap`), so callers collect
-into a `RangeMapBlaze`. Adding it later is additive; the open question is the owned-value carrier
-(see above).
+Decision: first deferred, then accepted and implemented (2026-10-08), so that later value-producing
+stream operations (multiway joins) can be iterator-first with trivial struct wrappers.
+
+`SortedDisjointMap::transform_values(f: FnMut(VC) -> W)` returns `TransformValuesIterMap`, a
+`SortedDisjointMap<T, Owned<W>>` that merges touching ranges whose new values are equal and calls
+`f` once per input range in key order.
+
+New carrier `Owned<V>(pub V)`: a `ValueCarrier` that holds its value inline (`Value = V`). It
+solves the owned-value carrier problem: closures create values that have no owner for `&W` to
+borrow from, `Rc<W>` allocates per range, and a blanket `impl ValueCarrier for V` would conflict
+with the existing carrier impls. Cloning an `Owned<V>` (when a downstream operation splits a range)
+clones the `V`; for large values a closure can return an `Rc<V>` instead. Collecting a stream of
+`Owned<V>` into a `RangeMapBlaze` yields `RangeMapBlaze<T, V>`. `Owned` is exported at the crate
+root, not in the prelude.
+
+Open: name (`Owned` versus `ByValue`, `Inline`), and whether `Owned` belongs in the prelude.
 
 ## Feature 3: multiway joins (inner and outer)
 
@@ -232,6 +244,7 @@ Moved up and implemented as feature 1b.
 
 1. Done: feature 1 (outer join), feature 1b (materialized joins), feature 2 struct form
    (`transform_values`), and the `range-map-regex` port.
-2. Done: deferred candidate 2b (filtering transform) and the iterator form of `transform_values`.
+2. Done: deferred candidate 2b (filtering transform); added the iterator form of
+   `transform_values` with the `Owned` carrier.
 3. Design feature 3, fold form first. Both real callers fold k maps: `subset_transition_map`
    (k − 1 pairwise joins, each materializing a map) and glrmask's `union_all_multiway*`.

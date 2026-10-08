@@ -9,7 +9,9 @@ use crate::IntoRangeValuesIter;
 use crate::NotIter;
 use crate::NotMap;
 use crate::OuterJoinIterMap;
+use crate::Owned;
 use crate::SymDiffMergeMap;
+use crate::TransformValuesIterMap;
 use crate::UnionMergeMap;
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::map::ValueCarrier;
@@ -577,6 +579,49 @@ where
         Self: Sized,
     {
         OuterJoinIterMap::new(self, other.into_iter())
+    }
+
+    // TODO0(api-change): New public value-transforming stream adapter.
+    /// Given a [`SortedDisjointMap`] iterator, returns a [`SortedDisjointMap`] iterator over the
+    /// same ranges, with each value replaced by `f` applied to it. Touching ranges whose new values
+    /// are equal are merged.
+    ///
+    /// `f` receives each value's carrier (for [`RangeMapBlaze::range_values`], a `&V`) and is called
+    /// once per input range, in ascending key order, so it may be `FnMut` and keep state. Results are
+    /// carried by [`Owned`], which holds them inline; collecting into a [`RangeMapBlaze`] removes the
+    /// wrapper. Also see [`RangeMapBlaze::transform_values`], which builds a new map directly.
+    ///
+    /// [`Owned`]: crate::Owned
+    /// [`RangeMapBlaze`]: crate::RangeMapBlaze
+    /// [`RangeMapBlaze::range_values`]: crate::RangeMapBlaze::range_values
+    /// [`RangeMapBlaze::transform_values`]: crate::RangeMapBlaze::transform_values
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::{Owned, prelude::*};
+    ///
+    /// let map = RangeMapBlaze::from_iter([(1..=3, 10), (4..=6, 11), (8..=9, 20)]);
+    /// let mut tens = map.range_values().transform_values(|value| value / 10);
+    /// assert_eq!(tens.next(), Some((1..=6, Owned(1))));
+    /// assert_eq!(tens.next(), Some((8..=9, Owned(2))));
+    /// assert_eq!(tens.next(), None);
+    ///
+    /// // The result is a `SortedDisjointMap`; collecting removes the `Owned` wrapper.
+    /// let tens: RangeMapBlaze<i32, i32> = map
+    ///     .range_values()
+    ///     .transform_values(|value| value / 10)
+    ///     .into_range_map_blaze();
+    /// assert_eq!(tens.to_string(), "(1..=6, 1), (8..=9, 2)");
+    /// ```
+    #[inline]
+    fn transform_values<W, F>(self, f: F) -> TransformValuesIterMap<T, VC, Self, F, W>
+    where
+        W: Eq + Clone,
+        F: FnMut(VC) -> W,
+        Self: Sized,
+    {
+        TransformValuesIterMap::new(self, f)
     }
 
     /// Given a [`SortedDisjointMap`] iterator and a [`SortedDisjoint`] iterator,
@@ -1316,6 +1361,7 @@ impl_sorted_map_traits_and_ops!(FillGapsIterMap<T, VC, I>, Option<VC::Value>, Op
 impl_sorted_map_traits_and_ops!(FillGapsIter<T, I>, bool, bool, I: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(InnerJoinIterMap<T, VCL, VCR, I0, I1>, (VCL::Value, VCR::Value), (VCL, VCR), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
 impl_sorted_map_traits_and_ops!(OuterJoinIterMap<T, VCL, VCR, I0, I1>, (Option<VCL::Value>, Option<VCR::Value>), (Option<VCL>, Option<VCR>), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
+impl_sorted_map_traits_and_ops!(TransformValuesIterMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(VC) -> W, W: Eq + Clone);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VC, I0, I1>,  VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: Eq + Clone);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Eq + Clone);
