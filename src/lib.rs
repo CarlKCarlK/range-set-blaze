@@ -51,9 +51,7 @@ pub use intersection_iter_map::IntersectionIterMap;
 
 mod multiway_join_iter_map;
 mod multiway_sweep;
-pub use multiway_join_iter_map::{
-    MultiwayInnerJoinIterMap, MultiwayOuterJoinIncrementalIterMap, MultiwayOuterJoinIterMap,
-};
+pub use multiway_join_iter_map::{MultiwayInnerJoinIterMap, MultiwayOuterJoinIterMap};
 pub use multiway_sweep::{MultiwaySweep, SweepEvent};
 
 mod outer_join_iter_map;

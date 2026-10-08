@@ -217,37 +217,45 @@ Decision: accepted and implemented (2026-10-08) in `src/multiway_join_iter_map.r
   empty-set case. All tests pass and example output is byte-identical.
 
 
-### `outer_join_incremental`
+### `sweep` (replaces `outer_join_incremental`)
 
-Decision: accepted and implemented (2026-10-08).
+Decision: accepted and implemented (2026-10-08). `outer_join_incremental` was implemented, then
+removed before release in favor of `sweep`.
 
-Why: benchmarking glrmask's k-way union rewritten on `outer_join` showed the sweep itself is 2-4x
-faster than RSB's existing multiway `union`, but a closure that aggregates over all present values
-pays O(present) per range. glrmask's hand-written sweep instead tracks active distinct token sets
-incrementally, O(changes) per range, so the `outer_join` version was 1.6x slower at 32 weights and
-3.5x at 128.
+History: benchmarking glrmask's k-way union rewritten on `outer_join` showed that a closure
+aggregating over all present values pays O(present) per range, while glrmask's hand-written sweep
+tracks active distinct token sets in O(changes). `outer_join_incremental` (closure gets `values`
+plus `changed_from`, the inputs that changed with their previous values) closed that gap. Then the
+lower-level primitive under all the joins was exposed instead, and a glrmask union written directly
+on it beat `outer_join_incremental` at every size, with a simpler contract.
 
-API: `[maps...].outer_join_incremental(|values, changed_from| ...)`. `values` is the same slot
-slice as `outer_join`. `changed_from: &[(usize, Option<VC>)]` lists each input whose slot differs
-from the previous call, with its previous value (moved, not cloned); each input appears at most
-once; the first call lists every present input as changed from `None`; an input that leaves and
-re-enters with an equal value across a gap is not listed. A bool slice was considered and rejected:
-finding changes in it is O(k), and it cannot carry previous values. Two closure arguments rather
-than a step struct: simpler, at the cost of needing a new method to add arguments later.
+API: `MultiwaySortedDisjointMap::sweep()` returns `MultiwaySweep`, an iterator of
+`SweepEvent::Start { range, input, value }` and `SweepEvent::End { at, input }` in key order; a
+range ending at `p - 1` ends before one starting at `p` starts; values are moved, not cloned or
+stored. `outer_join` and `inner_join` are built on it. Tested by a quickcheck of ordering and that
+every input range starts and ends exactly once (20,000 cases).
 
-Result: glrmask's union rewritten on it maintains a pointer-to-count table of active token sets and
-recomputes only when the distinct set changes. Timed against the original sweep: 1.06x at 8
-weights, 1.03x at 32, 0.98x at 128 (glrmask fork commit `dfe083ee4`). Contract tested by a
-quickcheck that rebuilds the slots from `changed_from` alone (20,000 cases).
+Engine: a binary heap of small `(start, input)` keys (iterators and pending ranges stay in place
+in vectors; the top is replaced in place when an input's next range arrives) plus a heap of
+`(end, input)` for active ranges. This replaced `KMergeMap` (`itertools::kmerge_by`, whose heap
+entries hold whole iterators), making the bare sweep 20-30% faster at 128-512 inputs. Ties at the
+same start come out in input order.
 
-Follow-up (glrmask fork commit `95c6d002b`): glrmask's reconstruction union, which first pools
-all weights' ranges and merges same-token-set ranges across weights, now joins those token-set
-groups (each a sorted, disjoint single-value stream) with the same `outer_join_incremental`
-closure. Timed against the original sweep: 1.01-1.04x on 4k-65k ranges. The original event sweep
-is now test-only, and glrmask-weight's production code is 203 lines smaller than at the fork point
-(excluding tests, comments, and blank lines).
+glrmask union timings (multiples of glrmask's original sweep; glrmask fork):
 
-Open: an incremental `inner_join` was not added; prove a need first.
+| k | `outer_join_incremental` | `sweep` directly |
+|---|---|---|
+| 8 | 0.97 | 0.87 |
+| 32 | 0.95 | 0.85 |
+| 128 | 0.79 | 0.65 |
+| 512 | 1.23 | 1.04 |
+
+Open (measured option, not decided): a collect-and-sort engine. Producing events by reading all
+ranges into one array and sorting once was about 6x faster than the streaming heap at 512 inputs
+(309 us versus 1,825 us), but uses O(total ranges) memory and is not lazy. A possible split: keep
+iterator forms streaming, and let struct forms (which build a whole map anyway) use collect and
+sort. Decide after moving the existing multiway union, intersection, and symmetric difference onto
+the sweep (next step), per the rule: special-case code only where it measurably pays.
 
 The design notes below record how this was reached.
 

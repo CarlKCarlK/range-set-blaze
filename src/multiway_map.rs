@@ -6,10 +6,10 @@
 // }
 
 use crate::{
-    Integer, IntersectionKMap, MultiwayInnerJoinIterMap, MultiwayOuterJoinIncrementalIterMap,
-    MultiwayOuterJoinIterMap, MultiwaySweep, RangeMapBlaze, SortedDisjointMap, SymDiffIterMap,
-    SymDiffKMergeMap, UnionIterMap, UnionKMergeMap, intersection_iter_map::IntersectionIterMap,
-    map::ValueCarrier, range_values::RangeValuesToRangesIter,
+    Integer, IntersectionKMap, MultiwayInnerJoinIterMap, MultiwayOuterJoinIterMap, MultiwaySweep,
+    RangeMapBlaze, SortedDisjointMap, SymDiffIterMap, SymDiffKMergeMap, UnionIterMap,
+    UnionKMergeMap, intersection_iter_map::IntersectionIterMap, map::ValueCarrier,
+    range_values::RangeValuesToRangesIter,
 };
 use alloc::vec::Vec;
 
@@ -302,43 +302,6 @@ pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: Eq + Clone + 'a>:
             .outer_join(f)
             .into_range_map_blaze()
     }
-
-    // TODO0(api-change): New public multiway join.
-    /// Like [`outer_join`](MultiwayRangeMapBlazeRef::outer_join), but `f` also receives
-    /// `changed_from`: the inputs that changed since its previous call, with their previous
-    /// values. This is a thin wrapper over
-    /// [`MultiwaySortedDisjointMap::outer_join_incremental`]; see it for details.
-    ///
-    /// [`MultiwaySortedDisjointMap::outer_join_incremental`]: crate::MultiwaySortedDisjointMap::outer_join_incremental
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_blaze::prelude::*;
-    ///
-    /// let a = RangeMapBlaze::from_iter([(0..=9, 1)]);
-    /// let b = RangeMapBlaze::from_iter([(5..=14, 10)]);
-    ///
-    /// let mut sum = 0;
-    /// let sums = [&a, &b].outer_join_incremental(|values, changed_from| {
-    ///     for (index, previous) in changed_from {
-    ///         sum -= previous.copied().unwrap_or(0);
-    ///         sum += values[*index].copied().unwrap_or(0);
-    ///     }
-    ///     sum
-    /// });
-    /// assert_eq!(sums.to_string(), "(0..=4, 1), (5..=9, 11), (10..=14, 10)");
-    /// ```
-    fn outer_join_incremental<F, W>(self, f: F) -> RangeMapBlaze<T, W>
-    where
-        F: FnMut(&[Option<&'a V>], &[(usize, Option<&'a V>)]) -> W,
-        W: Eq + Clone,
-    {
-        self.into_iter()
-            .map(RangeMapBlaze::range_values)
-            .outer_join_incremental(f)
-            .into_range_map_blaze()
-    }
 }
 
 impl<T, VC, II, I> MultiwaySortedDisjointMap<T, VC, I> for II
@@ -560,58 +523,6 @@ where
         W: Eq + Clone,
     {
         MultiwayOuterJoinIterMap::new(self, f)
-    }
-
-    // TODO0(api-change): New public multiway join.
-    /// Like [`outer_join`], but `f` is also told which inputs changed since its previous call, so
-    /// it can maintain a running result in time proportional to the changes rather than to the
-    /// number of inputs present.
-    ///
-    /// `f` receives `(values, changed_from)`:
-    ///
-    /// - `values`: one slot per input, in input order, exactly as for [`outer_join`].
-    /// - `changed_from`: for each input whose slot differs from `f`'s previous call, its position
-    ///   and its value at that previous call (`None` if it was absent). Its current value is
-    ///   `values[position]`. Each input appears at most once. On the first call, every present
-    ///   input is listed as changed from `None`. Gaps (no input present) are skipped, as for
-    ///   [`outer_join`], so a call after a gap lists everything that left and entered across it.
-    ///
-    /// Use this when `f` aggregates over many inputs (a sum, a union, a count of distinct values)
-    /// and only a few change from one range to the next. Otherwise, [`outer_join`] is simpler.
-    /// Previous values are moved into `changed_from`, not cloned.
-    ///
-    /// [`outer_join`]: crate::MultiwaySortedDisjointMap::outer_join
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use range_set_blaze::prelude::*;
-    ///
-    /// let a = RangeMapBlaze::from_iter([(0..=9, 1), (10..=19, 2)]);
-    /// let b = RangeMapBlaze::from_iter([(5..=14, 10)]);
-    ///
-    /// // Keep a running sum, adjusting it only for inputs that changed.
-    /// let mut sum = 0;
-    /// let sums = [a.range_values(), b.range_values()].outer_join_incremental(
-    ///     |values, changed_from| {
-    ///         for (index, previous) in changed_from {
-    ///             sum -= previous.copied().unwrap_or(0);
-    ///             sum += values[*index].copied().unwrap_or(0);
-    ///         }
-    ///         sum
-    ///     },
-    /// );
-    /// assert_eq!(sums.into_string(), "(0..=4, 1), (5..=9, 11), (10..=14, 12), (15..=19, 2)");
-    /// ```
-    fn outer_join_incremental<F, W>(
-        self,
-        f: F,
-    ) -> MultiwayOuterJoinIncrementalIterMap<T, VC, I, F, W>
-    where
-        F: FnMut(&[Option<VC>], &[(usize, Option<VC>)]) -> W,
-        W: Eq + Clone,
-    {
-        MultiwayOuterJoinIncrementalIterMap::new(self, f)
     }
 
     // TODO0(api-change): New public multiway primitive.
