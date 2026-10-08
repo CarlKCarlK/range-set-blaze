@@ -3912,3 +3912,28 @@ fn multiway_joins_zero_one_and_maximum_key() {
         "(0..=199, 1), (200..=255, 3)"
     );
 }
+
+#[quickcheck]
+fn outer_join_incremental_reports_every_change(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
+    let maps: Vec<RangeMapBlaze<u8, u8>> =
+        inputs.into_iter().take(6).map(small_value_map).collect();
+
+    // Rebuild the slots from `changed_from` alone; they must match `values` on every call.
+    let mut mirror: Vec<Option<u8>> = vec![None; maps.len()];
+    let mut ok = true;
+    let incremental = maps.iter().outer_join_incremental(|values, changed_from| {
+        let mut seen = vec![false; values.len()];
+        for (index, previous) in changed_from {
+            ok &= !seen[*index];
+            seen[*index] = true;
+            ok &= mirror[*index] == previous.copied();
+            ok &= values[*index].copied() != previous.copied();
+            mirror[*index] = values[*index].copied();
+        }
+        ok &= mirror.iter().zip(values).all(|(m, v)| *m == v.copied());
+        values.iter().map(|slot| slot.copied()).collect::<Vec<_>>()
+    });
+
+    let expected = brute_force_outer_join(&maps);
+    ok && incremental == expected
+}

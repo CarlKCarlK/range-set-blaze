@@ -50,7 +50,9 @@ mod intersection_iter_map;
 pub use intersection_iter_map::IntersectionIterMap;
 
 mod multiway_join_iter_map;
-pub use multiway_join_iter_map::{MultiwayInnerJoinIterMap, MultiwayOuterJoinIterMap};
+pub use multiway_join_iter_map::{
+    MultiwayInnerJoinIterMap, MultiwayOuterJoinIncrementalIterMap, MultiwayOuterJoinIterMap,
+};
 
 mod outer_join_iter_map;
 pub use outer_join_iter_map::OuterJoinIterMap;

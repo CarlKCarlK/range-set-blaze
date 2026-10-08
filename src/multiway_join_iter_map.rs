@@ -31,12 +31,29 @@ where
     // The end of the stretch most recently returned. Its ranges are deactivated at the start of the
     // next call, after the caller has read `slots`.
     last_end: Option<T>,
-    // Positions of inputs activated since the consumer last drained this. Used by the inner join
-    // to keep its dense buffer current; past `slots.len()` entries, `changed_overflow` is set
-    // instead, and the consumer rebuilds (amortized O(1) per change either way).
-    track_changes: bool,
+    tracking: Tracking,
+    // `Tracking::Activated`: positions of inputs activated since the consumer last drained this.
+    // Used by the inner join to keep its dense buffer current; past `slots.len()` entries,
+    // `changed_overflow` is set instead, and the consumer rebuilds (amortized O(1) per change
+    // either way).
     changed: Vec<usize>,
     changed_overflow: bool,
+    // `Tracking::ChangedFrom`: for each input whose slot changed since the previous stretch, its
+    // position and its value over the previous stretch (moved out of the slot, not cloned).
+    // `changed_round` marks inputs already listed this round, so each appears at most once, and
+    // `changed_position` is where in `changed_from` an input's entry is.
+    changed_from: Vec<(usize, Option<VC>)>,
+    changed_round: Vec<usize>,
+    changed_position: Vec<usize>,
+    round: usize,
+}
+
+/// What the sweep records about slot changes, for the consumer.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Tracking {
+    None,
+    Activated,
+    ChangedFrom,
 }
 
 impl<T, VC, I> JoinSweep<T, VC, I>
@@ -45,7 +62,7 @@ where
     VC: ValueCarrier,
     I: SortedDisjointMap<T, VC>,
 {
-    fn new<K>(inputs: K, track_changes: bool) -> Self
+    fn new<K>(inputs: K, tracking: Tracking) -> Self
     where
         K: IntoIterator<Item = I>,
     {
@@ -58,9 +75,47 @@ where
             slots: (0..input_count).map(|_| None).collect(),
             active_count: 0,
             last_end: None,
-            track_changes,
+            tracking,
             changed: Vec::new(),
             changed_overflow: false,
+            changed_from: Vec::new(),
+            changed_round: if tracking == Tracking::ChangedFrom {
+                (0..input_count).map(|_| 0).collect()
+            } else {
+                Vec::new()
+            },
+            changed_position: if tracking == Tracking::ChangedFrom {
+                (0..input_count).map(|_| 0).collect()
+            } else {
+                Vec::new()
+            },
+            round: 0,
+        }
+    }
+
+    // Records that input `index` changed this round, with its value over the previous stretch.
+    // An input changes at most twice in a round: its range ends, then its next range starts. The
+    // entry keeps the first (previous-stretch) value; if the new value equals it (for example,
+    // across a gap), the input did not change after all and its entry is removed.
+    fn record_changed_from(&mut self, index: usize, previous: Option<VC>) {
+        if self.changed_round[index] != self.round {
+            self.changed_round[index] = self.round;
+            self.changed_position[index] = self.changed_from.len();
+            self.changed_from.push((index, previous));
+            return;
+        }
+        let position = self.changed_position[index];
+        let unchanged = match (&self.changed_from[position].1, &self.slots[index]) {
+            (Some(before), Some(after)) => before.value_eq(after),
+            (None, None) => true,
+            _ => false,
+        };
+        if unchanged {
+            self.changed_from.swap_remove(position);
+            if let Some(&(moved, _)) = self.changed_from.get(position) {
+                self.changed_position[moved] = position;
+            }
+            // The input stays marked for this round; it cannot change again before the next one.
         }
     }
 
@@ -81,17 +136,26 @@ where
         self.slots[index] = Some(value);
         self.active_ends.push(Reverse((*range.end(), index)));
         self.active_count += 1;
-        if self.track_changes {
-            if self.changed.len() < self.slots.len() {
-                self.changed.push(index);
-            } else {
-                self.changed_overflow = true;
+        match self.tracking {
+            Tracking::None => {}
+            Tracking::Activated => {
+                if self.changed.len() < self.slots.len() {
+                    self.changed.push(index);
+                } else {
+                    self.changed_overflow = true;
+                }
             }
+            Tracking::ChangedFrom => self.record_changed_from(index, None),
         }
     }
 
     /// Advances to the next stretch and returns its range; `slots` then describes it.
     fn next_stretch(&mut self) -> Option<RangeInclusive<T>> {
+        if self.tracking == Tracking::ChangedFrom {
+            self.changed_from.clear();
+            self.round += 1;
+        }
+
         // Close out the previous stretch: deactivate every range that ended with it.
         let mut start = None;
         if let Some(last_end) = self.last_end.take() {
@@ -100,8 +164,11 @@ where
                     break;
                 }
                 self.active_ends.pop();
-                self.slots[index] = None;
+                let previous = self.slots[index].take();
                 self.active_count -= 1;
+                if self.tracking == Tracking::ChangedFrom {
+                    self.record_changed_from(index, previous);
+                }
             }
             // Every range ends at or before the maximum key, so nothing can follow it.
             start = Some(last_end.checked_add_one()?);
@@ -190,7 +257,7 @@ where
         K: IntoIterator<Item = I>,
     {
         Self {
-            sweep: JoinSweep::new(inputs, false),
+            sweep: JoinSweep::new(inputs, Tracking::None),
             f,
             pending: None,
         }
@@ -268,7 +335,7 @@ where
         K: IntoIterator<Item = I>,
     {
         Self {
-            sweep: JoinSweep::new(inputs, true),
+            sweep: JoinSweep::new(inputs, Tracking::Activated),
             f,
             pending: None,
             dense: Vec::new(),
@@ -329,6 +396,80 @@ where
             }
             self.sync_dense();
             let value = (self.f)(&self.dense);
+            if let Some(done) = push_merged(&mut self.pending, range, value) {
+                return Some(done);
+            }
+        }
+        self.pending
+            .take()
+            .map(|(range, value)| (range, Owned(value)))
+    }
+}
+
+/// This `struct` is created by the [`outer_join_incremental`] method on
+/// [`MultiwaySortedDisjointMap`].
+///
+/// Like [`MultiwayOuterJoinIterMap`], but the closure is also told which inputs changed since its
+/// previous call, and what they changed from. See [`outer_join_incremental`] for details.
+///
+/// [`MultiwaySortedDisjointMap`]: crate::MultiwaySortedDisjointMap
+/// [`outer_join_incremental`]: crate::MultiwaySortedDisjointMap::outer_join_incremental
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Clone, Debug)]
+pub struct MultiwayOuterJoinIncrementalIterMap<T, VC, I, F, W>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
+{
+    sweep: JoinSweep<T, VC, I>,
+    f: F,
+    pending: Option<(RangeInclusive<T>, W)>,
+}
+
+impl<T, VC, I, F, W> MultiwayOuterJoinIncrementalIterMap<T, VC, I, F, W>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
+    F: FnMut(&[Option<VC>], &[(usize, Option<VC>)]) -> W,
+    W: Eq + Clone,
+{
+    pub(crate) fn new<K>(inputs: K, f: F) -> Self
+    where
+        K: IntoIterator<Item = I>,
+    {
+        Self {
+            sweep: JoinSweep::new(inputs, Tracking::ChangedFrom),
+            f,
+            pending: None,
+        }
+    }
+}
+
+impl<T, VC, I, F, W> FusedIterator for MultiwayOuterJoinIncrementalIterMap<T, VC, I, F, W>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC> + FusedIterator,
+    F: FnMut(&[Option<VC>], &[(usize, Option<VC>)]) -> W,
+    W: Eq + Clone,
+{
+}
+
+impl<T, VC, I, F, W> Iterator for MultiwayOuterJoinIncrementalIterMap<T, VC, I, F, W>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    I: SortedDisjointMap<T, VC>,
+    F: FnMut(&[Option<VC>], &[(usize, Option<VC>)]) -> W,
+    W: Eq + Clone,
+{
+    type Item = (RangeInclusive<T>, Owned<W>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(range) = self.sweep.next_stretch() {
+            let value = (self.f)(&self.sweep.slots, &self.sweep.changed_from);
             if let Some(done) = push_merged(&mut self.pending, range, value) {
                 return Some(done);
             }
