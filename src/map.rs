@@ -20,7 +20,6 @@ use alloc::sync::Arc;
 ))]
 use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, rc::Rc};
-use core::iter::from_fn;
 #[cfg(feature = "cursor_nightly_experimental")]
 use core::ops::Bound;
 use core::{
@@ -2402,8 +2401,9 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// state (for example, assigning new IDs as values are first seen). Touching ranges whose new
     /// values are equal are merged, so the result is in canonical form.
     ///
-    /// The result has the same [`RangeMapBlaze::len`] as `self`. It is built in one pass over the
-    /// ranges, without re-inserting them.
+    /// The result has the same [`RangeMapBlaze::len`] as `self`. This is a thin wrapper over the
+    /// stream form, [`SortedDisjointMap::transform_values`], on [`RangeMapBlaze::range_values`];
+    /// the result is built in one pass, without re-inserting ranges.
     ///
     /// # Examples
     ///
@@ -2432,32 +2432,14 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(labels.to_string(), r#"(5..=9, "ax"), (10..=14, "bx")"#);
     /// ```
     #[must_use]
-    pub fn transform_values<W, F>(&self, mut f: F) -> RangeMapBlaze<T, W>
+    pub fn transform_values<W, F>(&self, f: F) -> RangeMapBlaze<T, W>
     where
         W: Eq + Clone,
         F: FnMut(&V) -> W,
     {
-        let mut mapped = self
-            .btree_map
-            .iter()
-            .map(|(start, end_value)| (*start, end_value.end, f(&end_value.value)))
-            .peekable();
-        let btree_map = from_fn(|| {
-            let (start, mut end, value) = mapped.next()?;
-            // `end < next_start` always holds for disjoint ranges; checking it first keeps
-            // `add_one` from overflowing when `end` is the maximum key.
-            while let Some((_, next_end, _)) = mapped.next_if(|(next_start, _, next_value)| {
-                end < *next_start && end.add_one() == *next_start && *next_value == value
-            }) {
-                end = next_end;
-            }
-            Some((start, EndValue { end, value }))
-        })
-        .collect();
-        RangeMapBlaze {
-            len: self.len,
-            btree_map,
-        }
+        self.range_values()
+            .transform_values(f)
+            .into_range_map_blaze()
     }
 
     /// An iterator that visits the ranges and values in the [`RangeMapBlaze`]. Double-ended.

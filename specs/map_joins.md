@@ -160,7 +160,25 @@ clones the `V`; for large values a closure can return an `Rc<V>` instead. Collec
 `Owned<V>` into a `RangeMapBlaze` yields `RangeMapBlaze<T, V>`. `Owned` is exported at the crate
 root, not in the prelude.
 
-Open: name (`Owned` versus `ByValue`, `Inline`), and whether `Owned` belongs in the prelude.
+Name decided (2026-10-08): `Owned`, matching std's `Cow::Borrowed`/`Cow::Owned` vocabulary for the
+contrast with `&V`. Considered: `ByValue` (precise but clunky), `Inline` (wrong contrast for `&V`),
+`Value` (collides with `ValueCarrier::Value`). Users cannot make their own value types carriers for
+std types (orphan rule), and a blanket `impl ValueCarrier for V` would overlap the existing impls,
+which is why a wrapper is needed. A `ValueCarrier` impl for `Cow<'a, V>` (mixed borrowed/owned
+values) is possible and additive; deferred until a real use appears.
+
+Values should be cheap to clone (they are cloned whenever a range splits); this is now stated in
+the `RangeMapBlaze` docs. `Owned<V>` is cheap exactly when `V` is; large values use
+`Owned<Rc<X>>`.
+
+Open: whether `Owned` belongs in the prelude.
+
+### Layering principle
+
+Decided (2026-10-08): every operation is iterator-first, with the `RangeMapBlaze` form as a thin
+wrapper (`self.range_values().op(...).into_range_map_blaze()`). `inner_join`, `outer_join`, and
+`transform_values` all follow this; the struct `transform_values` was converted from its own
+B-tree build to the wrapper. Multiway joins should follow the same pattern.
 
 ## Feature 3: multiway joins (inner and outer)
 
