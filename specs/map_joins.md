@@ -240,6 +240,13 @@ recomputes only when the distinct set changes. Timed against the original sweep:
 weights, 1.03x at 32, 0.98x at 128 (glrmask fork commit `dfe083ee4`). Contract tested by a
 quickcheck that rebuilds the slots from `changed_from` alone (20,000 cases).
 
+Follow-up (glrmask fork commit `95c6d002b`): glrmask's reconstruction union, which first pools
+all weights' ranges and merges same-token-set ranges across weights, now joins those token-set
+groups (each a sorted, disjoint single-value stream) with the same `outer_join_incremental`
+closure. Timed against the original sweep: 1.01-1.04x on 4k-65k ranges. The original event sweep
+is now test-only, and glrmask-weight's production code is 203 lines smaller than at the fork point
+(excluding tests, comments, and blank lines).
+
 Open: an incremental `inner_join` was not added; prove a need first.
 
 The design notes below record how this was reached.
