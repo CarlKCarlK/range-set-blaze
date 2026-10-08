@@ -86,6 +86,11 @@ are kept as test-only references, and new exhaustive tests over all 4,096 pairs 
 show identical results for union, intersection, and difference. All 487 RSB-related glrmask tests
 pass (commit `7891b1f85` on `local-rsb`). The closure shape needed no adaptation.
 
+Second check: glrmask's hand-written `Weight::is_disjoint` (an inner-join loop) and
+`Weight::is_subset` (an outer-join loop) became `inner_join(...).all(...)` and
+`outer_join(...).all(...)`, with the originals kept as test-only references and an exhaustive
+differential test (commit `d00731cee`). All RSB-related glrmask tests pass.
+
 ## Feature 1b: materialized joins on `RangeMapBlaze`
 
 Decision: accepted and implemented (2026-10-08). `RangeMapBlaze::inner_join(&self, &other)` and
@@ -96,22 +101,37 @@ Decision: accepted and implemented (2026-10-08). `RangeMapBlaze::inner_join(&sel
 
 ## Feature 2: `map_values`
 
-Decision: pending.
+Decision: struct form accepted and implemented (2026-10-08); iterator form pending.
 
-Apply a function to each value, merging adjacent ranges whose new values are equal, so the result
-is still a valid `SortedDisjointMap`. Both motivating callers hand-write it.
+`RangeMapBlaze::map_values(&self, f: FnMut(&V) -> W) -> RangeMapBlaze<T, W>` returns a map with
+the same keys and mapped values, merging touching ranges whose new values are equal. `f` is
+called once per range in ascending key order, so stateful closures (such as assigning new state
+IDs) are deterministic. It is built in one pass over the B-tree and keeps `len` without recounting.
+Tests: doctests, edge cases (empty, gaps, merging up to the maximum key), call order, and a
+quickcheck comparison against rebuilding with `from_iter`.
 
-- Iterator adapter on `SortedDisjointMap`, plus a `RangeMapBlaze` method returning a
-  `RangeMapBlaze`.
-- Without merging, `join(...).map(...)` leaves the `SortedDisjointMap` world, which is why every
-  call site in `range-map-regex` goes through `RangeMapBlaze::from_iter`.
+Real-world check (2026-10-08): `range-map-regex` commit `9890513` replaces every
+`RangeMapBlaze::from_iter(a.range_values().inner_join(b.range_values()).map(...))` and its local
+`map_values` helper with `a.inner_join(&b).map_values(...)` (union, intersection, concat, star,
+minimize, `subset_transition_map`). All 30 tests pass, and every example prints byte-identical
+output (including state counts), so state numbering is unchanged. One cost: the materialized
+`inner_join` clones values; in `concat` that is one extra `StateIdSet` clone per range.
 
-Open questions:
+Open questions for the iterator form:
 
-- Closure input: `&V` (logical value) or the carrier `VC`.
-- Output carrier type: owned `W` values need a carrier; check what `ValueCarrier` impls exist for
-  owned values, or whether the adapter yields `Rc<W>` or similar.
-- Name: `map_values` versus something matching existing naming.
+- Output carrier: owned `W` has no `ValueCarrier`, and a blanket impl would conflict with the
+  existing ones. Options: the closure returns a carrier (`W: ValueCarrier`), or the adapter wraps
+  results in `Rc<W>` like `into_range_values`.
+- Whether it is needed at all: both real callers so far only needed the struct form.
+
+### Candidate 2b: `filter_map_values`
+
+Decision: not yet discussed.
+
+Like `map_values`, but `f` returns `Option<W>` and ranges mapping to `None` are removed. Evidence:
+glrmask's `Weight::clip_tokens` maps each token set to its intersection with `0..=max_token` and
+drops ranges whose result is empty, building the result with one `extend_simple` per range.
+`map_values` cannot express removal. The result's `len` would need recounting.
 
 ## Feature 3: multiway joins (inner and outer)
 
@@ -144,7 +164,8 @@ Moved up and implemented as feature 1b.
 
 ## Suggested order
 
-1. Feature 1 (outer join) and feature 2 (`map_values`): small, immediately usable.
-2. Port `range-map-regex`'s `union`, `intersection`, and `subset_transition_map` to them as a
-   real-world check.
-3. Design feature 3, fold form first, informed by that port.
+1. Done: feature 1 (outer join), feature 1b (materialized joins), feature 2 struct form
+   (`map_values`), and the `range-map-regex` port.
+2. Decide on candidate 2b (`filter_map_values`) and the iterator form of `map_values`.
+3. Design feature 3, fold form first. Both real callers fold k maps: `subset_transition_map`
+   (k − 1 pairwise joins, each materializing a map) and glrmask's `union_all_multiway*`.
