@@ -3709,3 +3709,54 @@ fn cover_is_universal() {
     assert!(!empty.is_universal());
     assert!(!empty.range_values().is_universal());
 }
+
+#[quickcheck]
+fn map_values_matches_rebuild(entries: Vec<(u8, u8, u8)>, divisor: u8) -> bool {
+    // Arbitrary map over the full u8 key range; maps values through a lossy function so many
+    // touching ranges become equal and must merge.
+    let map: RangeMapBlaze<u8, u8> = entries
+        .into_iter()
+        .map(|(a, b, value)| (a.min(b)..=a.max(b), value))
+        .collect();
+    let divisor = divisor.max(1);
+    let mapped = map.map_values(|value| value / divisor);
+    let rebuilt: RangeMapBlaze<u8, u8> = map
+        .range_values()
+        .map(|(range, value)| (range, value / divisor))
+        .collect();
+    mapped == rebuilt && mapped.len() == map.len()
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn map_values_edge_cases() {
+    // Empty map.
+    let empty = RangeMapBlaze::<u8, u8>::new();
+    assert!(empty.map_values(|value| value + 1).is_empty());
+
+    // Equal new values separated by a gap are not merged.
+    let gapped = RangeMapBlaze::from_iter([(1..=2u8, 1), (4..=5, 2)]);
+    assert_eq!(
+        gapped.map_values(|_| 0).to_string(),
+        "(1..=2, 0), (4..=5, 0)"
+    );
+
+    // Merging up to the maximum key does not overflow.
+    let full = RangeMapBlaze::from_iter([(0..=127u8, 'a'), (128..=254, 'b'), (255..=255, 'c')]);
+    let merged = full.map_values(|_| ());
+    assert_eq!(merged.to_string(), "(0..=255, ())");
+    assert!(merged.is_universal());
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn map_values_calls_once_per_range_in_order() {
+    let map = RangeMapBlaze::from_iter([(10..=19u8, 'b'), (0..=9, 'a'), (30..=39, 'c')]);
+    let mut seen = Vec::new();
+    let mapped = map.map_values(|value| {
+        seen.push(*value);
+        seen.len()
+    });
+    assert_eq!(seen, vec!['a', 'b', 'c']);
+    assert_eq!(mapped.to_string(), "(0..=9, 1), (10..=19, 2), (30..=39, 3)");
+}

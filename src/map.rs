@@ -20,6 +20,7 @@ use alloc::sync::Arc;
 ))]
 use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, rc::Rc};
+use core::iter::from_fn;
 #[cfg(feature = "cursor_nightly_experimental")]
 use core::ops::Bound;
 use core::{
@@ -2343,6 +2344,71 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         self.range_values()
             .outer_join(other.range_values())
             .into_range_map_blaze()
+    }
+
+    // TODO0(api-change): New public value-mapping method.
+    /// Returns a map with the same keys, where each value is replaced by `f` applied to it.
+    ///
+    /// `f` is called once per range, in ascending key order, so it may be `FnMut` and keep
+    /// state (for example, assigning new IDs as values are first seen). Touching ranges whose new
+    /// values are equal are merged, so the result is in canonical form.
+    ///
+    /// The result has the same [`RangeMapBlaze::len`] as `self`. It is built in one pass over the
+    /// ranges, without re-inserting them.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeMapBlaze;
+    /// let map = RangeMapBlaze::from_iter([(1..=3, 10), (4..=6, 11), (8..=9, 20)]);
+    ///
+    /// let parity = map.map_values(|value| value % 2);
+    /// assert_eq!(parity.to_string(), "(1..=3, 0), (4..=6, 1), (8..=9, 0)");
+    ///
+    /// // Touching ranges whose new values are equal are merged.
+    /// let tens = map.map_values(|value| value / 10);
+    /// assert_eq!(tens.to_string(), "(1..=6, 1), (8..=9, 2)");
+    /// assert_eq!(tens.len(), map.len());
+    /// ```
+    ///
+    /// Composing with a join, as in a product construction:
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeMapBlaze;
+    /// let left = RangeMapBlaze::from_iter([(0..=9, 'a'), (10..=19, 'b')]);
+    /// let right = RangeMapBlaze::from_iter([(5..=14, 'x')]);
+    /// let labels = left
+    ///     .inner_join(&right)
+    ///     .map_values(|(l, r)| format!("{l}{r}"));
+    /// assert_eq!(labels.to_string(), r#"(5..=9, "ax"), (10..=14, "bx")"#);
+    /// ```
+    #[must_use]
+    pub fn map_values<W, F>(&self, mut f: F) -> RangeMapBlaze<T, W>
+    where
+        W: Eq + Clone,
+        F: FnMut(&V) -> W,
+    {
+        let mut mapped = self
+            .btree_map
+            .iter()
+            .map(|(start, end_value)| (*start, end_value.end, f(&end_value.value)))
+            .peekable();
+        let btree_map = from_fn(|| {
+            let (start, mut end, value) = mapped.next()?;
+            // `end < next_start` always holds for disjoint ranges; checking it first keeps
+            // `add_one` from overflowing when `end` is the maximum key.
+            while let Some((_, next_end, _)) = mapped.next_if(|(next_start, _, next_value)| {
+                end < *next_start && end.add_one() == *next_start && *next_value == value
+            }) {
+                end = next_end;
+            }
+            Some((start, EndValue { end, value }))
+        })
+        .collect();
+        RangeMapBlaze {
+            len: self.len,
+            btree_map,
+        }
     }
 
     /// An iterator that visits the ranges and values in the [`RangeMapBlaze`]. Double-ended.
