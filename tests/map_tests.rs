@@ -19,8 +19,8 @@ use range_set_blaze::Integer;
 #[cfg(not(target_arch = "wasm32"))]
 use range_set_blaze::test_util::{How, k_maps};
 use range_set_blaze::{
-    IntersectionIterMap, IntoRangeValuesIter, KMergeMap, RangeValuesIter, SymDiffIterMap,
-    UnionIterMap, ValueCarrier, prelude::*,
+    IntersectionIterMap, IntoRangeValuesIter, KMergeMap, RangeValuesIter, SweepEvent,
+    SymDiffIterMap, UnionIterMap, ValueCarrier, prelude::*,
 };
 use std::borrow::Borrow;
 use std::iter::FusedIterator;
@@ -3936,4 +3936,51 @@ fn outer_join_incremental_reports_every_change(inputs: Vec<Vec<(u8, u8, u8)>>) -
 
     let expected = brute_force_outer_join(&maps);
     ok && incremental == expected
+}
+
+#[quickcheck]
+fn sweep_events_match_inputs(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
+    let maps: Vec<RangeMapBlaze<u8, u8>> =
+        inputs.into_iter().take(6).map(small_value_map).collect();
+    let mut ok = true;
+    // Event position: a start at s happens at s; an end at e happens just after e (at e + 1).
+    let mut last_position = 0u16;
+    let mut active: Vec<Option<(RangeInclusive<u8>, u8)>> = vec![None; maps.len()];
+    let mut seen: Vec<Vec<(RangeInclusive<u8>, u8)>> = vec![Vec::new(); maps.len()];
+    for event in maps.iter().map(RangeMapBlaze::range_values).sweep() {
+        match event {
+            SweepEvent::Start {
+                range,
+                input,
+                value,
+            } => {
+                let position = u16::from(*range.start());
+                ok &= position >= last_position;
+                last_position = position;
+                ok &= active[input].is_none();
+                active[input] = Some((range, *value));
+            }
+            SweepEvent::End { at, input } => {
+                let position = u16::from(at) + 1;
+                ok &= position >= last_position;
+                last_position = position;
+                match active[input].take() {
+                    Some((range, value)) => {
+                        ok &= *range.end() == at;
+                        seen[input].push((range, value));
+                    }
+                    None => ok = false,
+                }
+            }
+        }
+    }
+    ok &= active.iter().all(Option::is_none);
+    // Every input's ranges come out exactly once, in order.
+    ok && maps.iter().zip(&seen).all(|(map, ranges)| {
+        let expected: Vec<_> = map
+            .range_values()
+            .map(|(range, value)| (range, *value))
+            .collect();
+        *ranges == expected
+    })
 }

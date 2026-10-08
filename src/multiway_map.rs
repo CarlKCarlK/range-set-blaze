@@ -7,9 +7,9 @@
 
 use crate::{
     Integer, IntersectionKMap, MultiwayInnerJoinIterMap, MultiwayOuterJoinIncrementalIterMap,
-    MultiwayOuterJoinIterMap, RangeMapBlaze, SortedDisjointMap, SymDiffIterMap, SymDiffKMergeMap,
-    UnionIterMap, UnionKMergeMap, intersection_iter_map::IntersectionIterMap, map::ValueCarrier,
-    range_values::RangeValuesToRangesIter,
+    MultiwayOuterJoinIterMap, MultiwaySweep, RangeMapBlaze, SortedDisjointMap, SymDiffIterMap,
+    SymDiffKMergeMap, UnionIterMap, UnionKMergeMap, intersection_iter_map::IntersectionIterMap,
+    map::ValueCarrier, range_values::RangeValuesToRangesIter,
 };
 use alloc::vec::Vec;
 
@@ -612,5 +612,54 @@ where
         W: Eq + Clone,
     {
         MultiwayOuterJoinIncrementalIterMap::new(self, f)
+    }
+
+    // TODO0(api-change): New public multiway primitive.
+    /// Sweeps the given [`SortedDisjointMap`] iterators, yielding each input range's start and
+    /// end, in key order, as [`SweepEvent`]s.
+    ///
+    /// This is the low-level operation behind the multiway joins, for computations they do not
+    /// cover (overlap depth, running aggregates, custom precedence). Every input range yields one
+    /// [`SweepEvent::Start`] (with its range, input position, and value, moved rather than cloned)
+    /// and later one [`SweepEvent::End`] (with its last key and input position). Events are in key
+    /// order: a range ending at `p - 1` ends before a range starting at `p` starts, so between
+    /// consecutive events the set of started-but-not-ended ranges is constant. The order of
+    /// events of the same kind at the same key is unspecified.
+    ///
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
+    /// [`SweepEvent`]: crate::SweepEvent
+    /// [`SweepEvent::Start`]: crate::SweepEvent::Start
+    /// [`SweepEvent::End`]: crate::SweepEvent::End
+    ///
+    /// # Performance
+    ///
+    /// One pass through the inputs, O(log k) per input range for k inputs. No values are cloned or
+    /// stored.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::{SweepEvent, prelude::*};
+    ///
+    /// let a = RangeMapBlaze::from_iter([(0..=9, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(5..=14, "b")]);
+    /// let c = RangeMapBlaze::from_iter([(7..=8, "c")]);
+    ///
+    /// // The most inputs that overlap any key.
+    /// let mut depth = 0;
+    /// let mut max_depth = 0;
+    /// for event in [a.range_values(), b.range_values(), c.range_values()].sweep() {
+    ///     match event {
+    ///         SweepEvent::Start { .. } => {
+    ///             depth += 1;
+    ///             max_depth = max_depth.max(depth);
+    ///         }
+    ///         SweepEvent::End { .. } => depth -= 1,
+    ///     }
+    /// }
+    /// assert_eq!(max_depth, 3);
+    /// ```
+    fn sweep(self) -> MultiwaySweep<T, VC, I> {
+        MultiwaySweep::new(self)
     }
 }

@@ -1,18 +1,14 @@
-use alloc::{collections::BinaryHeap, vec::Vec};
-use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
+use alloc::vec::Vec;
+use core::{iter::FusedIterator, ops::RangeInclusive};
 
-use crate::{
-    Integer, KMergeMap, Owned, SortedDisjointMap, map::ValueCarrier, sorted_disjoint_map::Priority,
-};
+use crate::{Integer, MultiwaySweep, Owned, SortedDisjointMap, SweepEvent, map::ValueCarrier};
 
-/// The sweep shared by the multiway joins.
+/// The stretch walker shared by the multiway joins.
 ///
-/// It walks the key line once, splitting it into maximal "stretches" over which the set of active
-/// inputs (and their values) is constant. Starts come from a [`KMergeMap`] (a heap over the k
-/// inputs, ordered by start, tagged with input position); ends come from a min-heap of the active
-/// ranges. Each input range costs O(log k) to activate and O(log k) to deactivate, and the
-/// per-input `slots` are updated in place, so a stretch never rebuilds an O(k) slice. This matches
-/// the cost of the existing multiway union.
+/// It consumes a [`MultiwaySweep`] (each input range's start and end, in key order, O(log k) per
+/// range) and splits the key line into maximal "stretches" over which the set of active inputs
+/// (and their values) is constant. The per-input `slots` are updated in place as events arrive,
+/// so a stretch never rebuilds an O(k) slice.
 #[derive(Clone, Debug)]
 struct JoinSweep<T, VC, I>
 where
@@ -20,11 +16,9 @@ where
     VC: ValueCarrier,
     I: SortedDisjointMap<T, VC>,
 {
-    merged: KMergeMap<T, VC, I>,
-    // The next range from `merged`, already pulled so its start can be inspected.
-    upcoming: Option<Priority<T, VC>>,
-    // Ends of the active ranges, with their input positions; smallest end on top.
-    active_ends: BinaryHeap<Reverse<(T, usize)>>,
+    events: MultiwaySweep<T, VC, I>,
+    // The next event, already pulled so it can be inspected.
+    upcoming: Option<SweepEvent<T, VC>>,
     // One slot per input: its value over the current stretch, or `None` if it is inactive there.
     slots: Vec<Option<VC>>,
     active_count: usize,
@@ -66,12 +60,11 @@ where
     where
         K: IntoIterator<Item = I>,
     {
-        let inputs: Vec<I> = inputs.into_iter().collect();
-        let input_count = inputs.len();
+        let events = MultiwaySweep::new(inputs);
+        let input_count = events.input_count();
         Self {
-            merged: KMergeMap::new(inputs),
+            events,
             upcoming: None,
-            active_ends: BinaryHeap::with_capacity(input_count),
             slots: (0..input_count).map(|_| None).collect(),
             active_count: 0,
             last_end: None,
@@ -119,22 +112,27 @@ where
         }
     }
 
-    fn upcoming_start(&mut self) -> Option<T> {
+    fn peek(&mut self) -> Option<&SweepEvent<T, VC>> {
         if self.upcoming.is_none() {
-            self.upcoming = self.merged.next();
+            self.upcoming = self.events.next();
         }
-        self.upcoming.as_ref().map(Priority::start)
+        self.upcoming.as_ref()
     }
 
-    fn activate(&mut self, item: Priority<T, VC>) {
-        let index = item.priority_number();
-        let (range, value) = item.into_range_value();
+    fn deactivate(&mut self, index: usize) {
+        let previous = self.slots[index].take();
+        self.active_count -= 1;
+        if self.tracking == Tracking::ChangedFrom {
+            self.record_changed_from(index, previous);
+        }
+    }
+
+    fn activate(&mut self, index: usize, value: VC) {
         debug_assert!(
             self.slots[index].is_none(),
             "an input's ranges are disjoint"
         );
         self.slots[index] = Some(value);
-        self.active_ends.push(Reverse((*range.end(), index)));
         self.active_count += 1;
         match self.tracking {
             Tracking::None => {}
@@ -156,18 +154,15 @@ where
             self.round += 1;
         }
 
-        // Close out the previous stretch: deactivate every range that ended with it.
+        // Close out the previous stretch: deactivate every range that ended with it. Those ends are
+        // the next events, since the stretch ended at the earliest end or just before a start.
         let mut start = None;
         if let Some(last_end) = self.last_end.take() {
-            while let Some(&Reverse((end, index))) = self.active_ends.peek() {
-                if end != last_end {
-                    break;
-                }
-                self.active_ends.pop();
-                let previous = self.slots[index].take();
-                self.active_count -= 1;
-                if self.tracking == Tracking::ChangedFrom {
-                    self.record_changed_from(index, previous);
+            while let Some(SweepEvent::End { at, .. }) = self.peek()
+                && *at == last_end
+            {
+                if let Some(SweepEvent::End { input, .. }) = self.upcoming.take() {
+                    self.deactivate(input);
                 }
             }
             // Every range ends at or before the maximum key, so nothing can follow it.
@@ -176,7 +171,10 @@ where
 
         // With nothing active, jump to the next range's start.
         let start = if self.active_count == 0 {
-            self.upcoming_start()?
+            match self.peek()? {
+                SweepEvent::Start { range, .. } => *range.start(),
+                SweepEvent::End { .. } => unreachable!("an end event with no active range"),
+            }
         } else {
             let Some(start) = start else {
                 unreachable!("inputs are only active after a stretch has been returned")
@@ -184,21 +182,20 @@ where
             start
         };
 
-        // Activate every range that starts here. Ranges never start before `start`: each stretch
-        // ends just before the next upcoming start.
-        while self.upcoming_start() == Some(start) {
-            if let Some(item) = self.upcoming.take() {
-                self.activate(item);
+        // Activate every range that starts here.
+        while let Some(SweepEvent::Start { range, .. }) = self.peek()
+            && *range.start() == start
+        {
+            if let Some(SweepEvent::Start { input, value, .. }) = self.upcoming.take() {
+                self.activate(input, value);
             }
         }
 
-        // The stretch runs to the earliest active end, or to just before the next start.
-        let Some(&Reverse((earliest_end, _))) = self.active_ends.peek() else {
-            unreachable!("at least one range starts at `start`")
-        };
-        let end = match self.upcoming_start() {
-            Some(next_start) if next_start <= earliest_end => next_start.sub_one(),
-            _ => earliest_end,
+        // The stretch runs to the next event: an end (inclusive), or just before a start.
+        let end = match self.peek() {
+            Some(SweepEvent::End { at, .. }) => *at,
+            Some(SweepEvent::Start { range, .. }) => range.start().sub_one(),
+            None => unreachable!("an active range has not ended"),
         };
         self.last_end = Some(end);
         Some(start..=end)
