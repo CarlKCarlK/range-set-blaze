@@ -91,7 +91,7 @@ where
 
     /// The number of inputs being swept.
     #[must_use]
-    pub fn input_count(&self) -> usize {
+    pub const fn input_count(&self) -> usize {
         self.inputs.len()
     }
 }
