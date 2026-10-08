@@ -15,12 +15,19 @@ Baseline: branch `inner-join-universe` (PR #36), which adds `SortedDisjointMap::
   constructions (`union`, `intersection`, `concat`) inner-join two states' transition maps.
   `subset_transition_map` folds k transition maps into a map of state sets with k − 1 pairwise
   inner joins, rebuilding a `RangeMapBlaze` each time. It hand-writes a `map_values` helper.
-- [glrmask](https://github.com/IsaacBreen/glrmask) (`src/ds/weight.rs`), grammar-constrained LLM
-  decoding. Its `Weight` is `RangeMapBlaze<u32, Arc<RangeSetBlaze<u32>>>`, mapping state ranges to
-  token sets. It hand-writes a two-way outer join with a combining closure
-  (`combine_compact_entries`), a coalescing builder (`CompactRangeBuilder`), and a k-way union
-  that unions overlapping token sets (`union_all_multiway`). It is version 0.1.1 on
-  range-set-blaze 0.3.0, so treat it as a design signal, not demand.
+- [glrmask](https://github.com/IsaacBreen/glrmask), grammar-constrained LLM decoding. Its `Weight`
+  is `RangeMapBlaze<u32, Arc<RangeSetBlaze<u32>>>`, mapping state ranges to token sets. Current
+  code (2026-10-03, commit `f927a1406`) keeps it in `crates/glrmask-weight/src/implementation.rs`
+  (the published 0.1.1 had it in `src/ds/weight.rs`). It hand-writes a two-way union and a two-way
+  combine with a `(Option<&Set>, Option<&Set>)` closure (`union_compact_entries`,
+  `combine_compact_entries`), a coalescing builder (`CompactRangeBuilder`), and a k-way union that
+  unions overlapping token sets (`union_all_multiway*`). It depends on range-set-blaze 0.3.0 and is
+  early-stage, so treat it as a design signal, not demand.
+
+  Local test copy: fork [CarlKCarlK/glrmask](https://github.com/CarlKCarlK/glrmask), branch
+  `local-rsb`, which builds against a local `range-set-blaze` checkout. Its RSB-related tests are
+  in `glrmask-weight` (needs `--features internal-api`), `glrmask-weighted-automata`,
+  `glrmask-dwa-merge`, `glrmask-parser-dwa`, and `glrmask-terminal-dwa`.
 
 ## Background: why range-map-regex only needs inner join
 
@@ -31,8 +38,9 @@ yield a missing side there. Outer joins matter for partial maps such as glrmask'
 
 ## Feature 1: two-way full outer join
 
-Decision: accepted and implemented (2026-10-08) in `src/outer_join_iter_map.rs`. Name: `outer_join`. Item shape: `(Option<VCL>, Option<VCR>)`, no
-new enum. No separate left/right methods for now.
+Decision: accepted and implemented (2026-10-08) in `src/outer_join_iter_map.rs`. Name:
+`outer_join`. Item shape: `(Option<VCL>, Option<VCR>)`, no new enum. No separate left/right
+methods for now.
 
 Naming note: `inner_join` is the standard term. The standard name for this operation is "full
 (outer) join"; "outer join" alone names the family (left, right, full). `outer_join` is
@@ -70,6 +78,13 @@ expected answer (checked 2026-10-08: `(1..=3, (Some, None))`, `(4..=5, (Some, So
 
 Documentation should state that inner and outer agree when both inputs are universal, and that
 `(None, None)` never occurs.
+
+Real-world check (2026-10-08): on the glrmask fork, `union_compact_entries` (about 95 lines of
+hand-written merge) and `combine_compact_entries` (a sort-and-sweep over all boundaries) were
+rewritten as one `outer_join` pass feeding glrmask's existing builder. The hand-written versions
+are kept as test-only references, and new exhaustive tests over all 4,096 pairs of small weights
+show identical results for union, intersection, and difference. All 487 RSB-related glrmask tests
+pass (commit `7891b1f85` on `local-rsb`). The closure shape needed no adaptation.
 
 ## Feature 1b: materialized joins on `RangeMapBlaze`
 
