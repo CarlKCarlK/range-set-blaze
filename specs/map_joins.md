@@ -99,11 +99,15 @@ Decision: accepted and implemented (2026-10-08). `RangeMapBlaze::inner_join(&sel
 (lazy on iterators, materialized on the struct). No `RangeSetBlaze` forms and no owned
 `into_*` forms for now.
 
-## Feature 2: `map_values`
+## Feature 2: `transform_values`
+
+Naming (2026-10-08): renamed from `map_values` before release, because in a crate whose main
+type is a map, "map" reads as the noun (the data structure) rather than the verb (transform each
+value).
 
 Decision: struct form accepted and implemented (2026-10-08); iterator form pending.
 
-`RangeMapBlaze::map_values(&self, f: FnMut(&V) -> W) -> RangeMapBlaze<T, W>` returns a map with
+`RangeMapBlaze::transform_values(&self, f: FnMut(&V) -> W) -> RangeMapBlaze<T, W>` returns a map with
 the same keys and mapped values, merging touching ranges whose new values are equal. `f` is
 called once per range in ascending key order, so stateful closures (such as assigning new state
 IDs) are deterministic. It is built in one pass over the B-tree and keeps `len` without recounting.
@@ -112,7 +116,7 @@ quickcheck comparison against rebuilding with `from_iter`.
 
 Real-world check (2026-10-08): `range-map-regex` commit `9890513` replaces every
 `RangeMapBlaze::from_iter(a.range_values().inner_join(b.range_values()).map(...))` and its local
-`map_values` helper with `a.inner_join(&b).map_values(...)` (union, intersection, concat, star,
+`map_values` helper with `a.inner_join(&b).transform_values(...)` (union, intersection, concat, star,
 minimize, `subset_transition_map`). All 30 tests pass, and every example prints byte-identical
 output (including state counts), so state numbering is unchanged. One cost: the materialized
 `inner_join` clones values; in `concat` that is one extra `StateIdSet` clone per range.
@@ -124,14 +128,14 @@ Open questions for the iterator form:
   results in `Rc<W>` like `into_range_values`.
 - Whether it is needed at all: both real callers so far only needed the struct form.
 
-### Candidate 2b: `filter_map_values`
+### Candidate 2b: filtering transform
 
 Decision: not yet discussed.
 
-Like `map_values`, but `f` returns `Option<W>` and ranges mapping to `None` are removed. Evidence:
+Like `transform_values`, but `f` returns `Option<W>` and ranges mapping to `None` are removed. Evidence:
 glrmask's `Weight::clip_tokens` maps each token set to its intersection with `0..=max_token` and
 drops ranges whose result is empty, building the result with one `extend_simple` per range.
-`map_values` cannot express removal. The result's `len` would need recounting.
+`transform_values` cannot express removal. The result's `len` would need recounting.
 
 ## Feature 3: multiway joins (inner and outer)
 
@@ -190,7 +194,7 @@ Questions for the human:
    positions.
 2. **Names.** For example `outer_join_with` / `inner_join_with`, or `union_with` /
    `intersection_with` to sit beside the existing priority `union` / `intersection`.
-3. **Struct form only first?** As with `map_values`, both callers would be served by the struct
+3. **Struct form only first?** As with `transform_values`, both callers would be served by the struct
    form; the iterator form inherits feature 2's owned-carrier question.
 
 Implementation outline: a k-way sweep. Each input is sorted and disjoint, so at most one range per
@@ -198,8 +202,8 @@ input covers any key. Keep each input's current range; the next boundary is the 
 active ranges' ends + 1 and the upcoming starts. At each stretch, fill the buffer with the active
 values and call the closure. That is O(k) per output stretch; a heap keyed on boundaries makes it
 O(log k) for large k. The existing `KMergeMap` (merge by start, ties by input index) may be
-reusable for the start ordering. Merge touching outputs with equal values, as `map_values` does.
-Test oracle: fold pairwise with `outer_join` + `map_values`.
+reusable for the start ordering. Merge touching outputs with equal values, as `transform_values` does.
+Test oracle: fold pairwise with `outer_join` + `transform_values`.
 
 ## Feature 4: materialized joins on `RangeMapBlaze`
 
@@ -214,7 +218,7 @@ Moved up and implemented as feature 1b.
 ## Suggested order
 
 1. Done: feature 1 (outer join), feature 1b (materialized joins), feature 2 struct form
-   (`map_values`), and the `range-map-regex` port.
-2. Decide on candidate 2b (`filter_map_values`) and the iterator form of `map_values`.
+   (`transform_values`), and the `range-map-regex` port.
+2. Decide on candidate 2b (a filtering transform) and the iterator form of `transform_values`.
 3. Design feature 3, fold form first. Both real callers fold k maps: `subset_transition_map`
    (k − 1 pairwise joins, each materializing a map) and glrmask's `union_all_multiway*`.

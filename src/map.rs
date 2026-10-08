@@ -2362,11 +2362,11 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// # use range_set_blaze::RangeMapBlaze;
     /// let map = RangeMapBlaze::from_iter([(1..=3, 10), (4..=6, 11), (8..=9, 20)]);
     ///
-    /// let parity = map.map_values(|value| value % 2);
+    /// let parity = map.transform_values(|value| value % 2);
     /// assert_eq!(parity.to_string(), "(1..=3, 0), (4..=6, 1), (8..=9, 0)");
     ///
     /// // Touching ranges whose new values are equal are merged.
-    /// let tens = map.map_values(|value| value / 10);
+    /// let tens = map.transform_values(|value| value / 10);
     /// assert_eq!(tens.to_string(), "(1..=6, 1), (8..=9, 2)");
     /// assert_eq!(tens.len(), map.len());
     /// ```
@@ -2379,11 +2379,11 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// let right = RangeMapBlaze::from_iter([(5..=14, 'x')]);
     /// let labels = left
     ///     .inner_join(&right)
-    ///     .map_values(|(l, r)| format!("{l}{r}"));
+    ///     .transform_values(|(l, r)| format!("{l}{r}"));
     /// assert_eq!(labels.to_string(), r#"(5..=9, "ax"), (10..=14, "bx")"#);
     /// ```
     #[must_use]
-    pub fn map_values<W, F>(&self, mut f: F) -> RangeMapBlaze<T, W>
+    pub fn transform_values<W, F>(&self, mut f: F) -> RangeMapBlaze<T, W>
     where
         W: Eq + Clone,
         F: FnMut(&V) -> W,
