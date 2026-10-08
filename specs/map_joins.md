@@ -138,10 +138,23 @@ feature, two call sites), which intersects each token set with `0..=max_token` a
 whose result is empty. Deferred because the evidence is thin, it adds public API, and it can be
 added later without breaking anything. Revisit if a second real caller appears.
 
-Workaround today (three passes): `transform_values` to `Option<W>`, then
-`ranges_retain(|_, value| value.is_some())`, then `transform_values` to unwrap. If the keep/drop
-decision depends only on the original value, `ranges_retain` followed by `transform_values` is
-enough.
+Workaround: with the streaming `transform_values` and the existing `SortedDisjointMap` impl for
+`core::iter::Filter`, this is one lazy pass with no intermediate maps (checked 2026-10-08):
+
+```rust,no_run
+# use range_set_blaze::prelude::*;
+# let map = RangeMapBlaze::from_iter([(1..=3u8, 10u8), (4..=6, 3), (7..=9, 12), (10..=12, 14)]);
+let kept: RangeMapBlaze<u8, u8> = map
+    .range_values()
+    .transform_values(|value| (*value >= 10).then_some(value / 10))
+    .filter(|(_, Owned(value))| value.is_some())
+    .transform_values(|Owned(value)| value.expect("filtered to Some"))
+    .into_range_map_blaze();
+// (1..=3, 1), (7..=12, 1)
+```
+
+Filtering removes whole ranges, which leaves gaps, so the stream stays sorted, disjoint, and
+merged. This leaves even less reason for a dedicated method; the remaining cost is the `expect`.
 
 ### Iterator form of `transform_values`
 
@@ -171,7 +184,7 @@ Values should be cheap to clone (they are cloned whenever a range splits); this 
 the `RangeMapBlaze` docs. `Owned<V>` is cheap exactly when `V` is; large values use
 `Owned<Rc<X>>`.
 
-Open: whether `Owned` belongs in the prelude.
+`Owned` is in the prelude (decided 2026-10-08).
 
 ### Layering principle
 

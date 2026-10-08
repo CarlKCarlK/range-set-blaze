@@ -599,7 +599,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use range_set_blaze::{Owned, prelude::*};
+    /// use range_set_blaze::prelude::*;
     ///
     /// let map = RangeMapBlaze::from_iter([(1..=3, 10), (4..=6, 11), (8..=9, 20)]);
     /// let mut tens = map.range_values().transform_values(|value| value / 10);

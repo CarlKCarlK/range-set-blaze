@@ -251,7 +251,7 @@ where
 /// # Examples
 ///
 /// ```
-/// use range_set_blaze::{Owned, prelude::*};
+/// use range_set_blaze::prelude::*;
 ///
 /// let map = RangeMapBlaze::from_iter([(1..=3, "a"), (5..=6, "bb")]);
 /// let mut lengths = map.range_values().transform_values(|value| value.len());
