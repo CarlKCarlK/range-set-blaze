@@ -109,15 +109,16 @@ where
 #[cfg(test)]
 mod tests {
     use alloc::{vec, vec::Vec};
+    use core::ops::RangeInclusive;
 
     use crate::prelude::*;
 
     fn join(
-        left: &[(core::ops::RangeInclusive<u8>, &'static str)],
-        right: &[(core::ops::RangeInclusive<u8>, &'static str)],
-    ) -> Vec<(core::ops::RangeInclusive<u8>, (&'static str, &'static str))> {
-        let left = RangeMapBlaze::from_iter(left.iter().cloned());
-        let right = RangeMapBlaze::from_iter(right.iter().cloned());
+        left: &[(RangeInclusive<u8>, &'static str)],
+        right: &[(RangeInclusive<u8>, &'static str)],
+    ) -> Vec<(RangeInclusive<u8>, (&'static str, &'static str))> {
+        let left: RangeMapBlaze<_, _> = left.iter().cloned().collect();
+        let right: RangeMapBlaze<_, _> = right.iter().cloned().collect();
         left.range_values()
             .inner_join(right.range_values())
             .map(|(range, (l, r))| (range, (*l, *r)))
