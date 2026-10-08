@@ -71,6 +71,14 @@ expected answer (checked 2026-10-08: `(1..=3, (Some, None))`, `(4..=5, (Some, So
 Documentation should state that inner and outer agree when both inputs are universal, and that
 `(None, None)` never occurs.
 
+## Feature 1b: materialized joins on `RangeMapBlaze`
+
+Decision: accepted and implemented (2026-10-08). `RangeMapBlaze::inner_join(&self, &other)` and
+`RangeMapBlaze::outer_join(&self, &other)` return `RangeMapBlaze<T, (V, V2)>` and
+`RangeMapBlaze<T, (Option<V>, Option<V2>)>`, cloning values, following the `fill_gaps` pattern
+(lazy on iterators, materialized on the struct). No `RangeSetBlaze` forms and no owned
+`into_*` forms for now.
+
 ## Feature 2: `map_values`
 
 Decision: pending.
@@ -111,11 +119,7 @@ Design decisions:
 
 ## Feature 4: materialized joins on `RangeMapBlaze`
 
-Decision: pending; low priority.
-
-`RangeMapBlaze::inner_join(&other) -> RangeMapBlaze<T, (V, V2)>`, and an outer form. Decide after
-seeing how `range-map-regex` reads with features 1 and 2; `collect` may be enough.
-`src/inner_join_iter_map.rs` carries a related `todo000 consider adding to RMS`.
+Moved up and implemented as feature 1b.
 
 ## Not planned
 
@@ -129,4 +133,3 @@ seeing how `range-map-regex` reads with features 1 and 2; `collect` may be enoug
 2. Port `range-map-regex`'s `union`, `intersection`, and `subset_transition_map` to them as a
    real-world check.
 3. Design feature 3, fold form first, informed by that port.
-4. Revisit feature 4.
