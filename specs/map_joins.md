@@ -130,12 +130,25 @@ Open questions for the iterator form:
 
 ### Candidate 2b: filtering transform
 
-Decision: not yet discussed.
+Decision: considered and deferred (2026-10-08).
 
-Like `transform_values`, but `f` returns `Option<W>` and ranges mapping to `None` are removed. Evidence:
-glrmask's `Weight::clip_tokens` maps each token set to its intersection with `0..=max_token` and
-drops ranges whose result is empty, building the result with one `extend_simple` per range.
-`transform_values` cannot express removal. The result's `len` would need recounting.
+Like `transform_values`, but `f` returns `Option<W>` and ranges mapping to `None` are removed.
+The only evidence is glrmask's `Weight::clip_tokens` (`#[doc(hidden)]`, behind its `internal-api`
+feature, two call sites), which intersects each token set with `0..=max_token` and drops ranges
+whose result is empty. Deferred because the evidence is thin, it adds public API, and it can be
+added later without breaking anything. Revisit if a second real caller appears.
+
+Workaround today (three passes): `transform_values` to `Option<W>`, then
+`ranges_retain(|_, value| value.is_some())`, then `transform_values` to unwrap. If the keep/drop
+decision depends only on the original value, `ranges_retain` followed by `transform_values` is
+enough.
+
+### Iterator form of `transform_values`
+
+Decision: deferred (2026-10-08). Neither real caller needed it. A plain `.map()` on a map stream
+works but yields an ordinary iterator (not merged, not a `SortedDisjointMap`), so callers collect
+into a `RangeMapBlaze`. Adding it later is additive; the open question is the owned-value carrier
+(see above).
 
 ## Feature 3: multiway joins (inner and outer)
 
@@ -219,6 +232,6 @@ Moved up and implemented as feature 1b.
 
 1. Done: feature 1 (outer join), feature 1b (materialized joins), feature 2 struct form
    (`transform_values`), and the `range-map-regex` port.
-2. Decide on candidate 2b (a filtering transform) and the iterator form of `transform_values`.
+2. Done: deferred candidate 2b (filtering transform) and the iterator form of `transform_values`.
 3. Design feature 3, fold form first. Both real callers fold k maps: `subset_transition_map`
    (k − 1 pairwise joins, each materializing a map) and glrmask's `union_all_multiway*`.
