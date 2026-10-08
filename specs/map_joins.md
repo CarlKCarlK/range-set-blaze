@@ -152,6 +152,55 @@ Design decisions:
   present values. A product construction may need positions; a fold usually doesn't.
 - **Value types.** All inputs share one value type, unlike the two-way join's mixed pair.
 
+### Draft for discussion (not decided)
+
+Evidence from the callers:
+
+- glrmask's `union_all_multiway_impl_with_token_cache` (`crates/glrmask-weight`) does not fold
+  pairwise. At each stretch it passes the whole slice of active token sets to
+  `union_active_token_sets(&[SharedTokenSet])`, because unioning many sets at once is cheaper
+  (`shared_token_union_many`) and it caches results keyed on the slice's pointers. It also
+  special-cases fully disjoint inputs (no overlaps: emit entries directly).
+- `range-map-regex`'s `subset_transition_map` folds k universal maps into a set of next states, one
+  materialized `inner_join` per extra input.
+
+Proposed shape: one combining call per stretch that receives every value present there as a
+slice, and returns the output value or `None` (drop the stretch). The iterator calls the closure
+inside `next()` with a slice borrowed from a reused internal buffer, so it yields one owned value
+per stretch: no lending iterator and no per-item allocation. Inner-join semantics are the special
+case "return `None` unless all k inputs are present".
+
+Sketch (names are placeholders):
+
+```rust,ignore
+// Struct form, on collections of maps (alongside MultiwayRangeMapBlaze / ...Ref):
+let merged: RangeMapBlaze<T, W> =
+    [&a, &b, &c].outer_join_with(|values: &[&V]| -> Option<W> { ... });
+
+// Iterator form, on collections of SortedDisjointMap iterators:
+// same closure, yields (RangeInclusive<T>, W) -- needs an answer to the owned-carrier question
+// from feature 2.
+```
+
+Questions for the human:
+
+1. **Present values only, or positions?** `&[&V]` (only inputs present at the stretch) fits both
+   callers. `&[Option<&V>]` (length k, one slot per input) also tells which input contributed
+   what, at the cost of filtering when unneeded. A product construction over k inputs would want
+   positions.
+2. **Names.** For example `outer_join_with` / `inner_join_with`, or `union_with` /
+   `intersection_with` to sit beside the existing priority `union` / `intersection`.
+3. **Struct form only first?** As with `map_values`, both callers would be served by the struct
+   form; the iterator form inherits feature 2's owned-carrier question.
+
+Implementation outline: a k-way sweep. Each input is sorted and disjoint, so at most one range per
+input covers any key. Keep each input's current range; the next boundary is the smallest of the
+active ranges' ends + 1 and the upcoming starts. At each stretch, fill the buffer with the active
+values and call the closure. That is O(k) per output stretch; a heap keyed on boundaries makes it
+O(log k) for large k. The existing `KMergeMap` (merge by start, ties by input index) may be
+reusable for the start ordering. Merge touching outputs with equal values, as `map_values` does.
+Test oracle: fold pairwise with `outer_join` + `map_values`.
+
 ## Feature 4: materialized joins on `RangeMapBlaze`
 
 Moved up and implemented as feature 1b.
