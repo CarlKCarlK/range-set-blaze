@@ -3774,3 +3774,141 @@ fn streaming_transform_values_matches_struct(entries: Vec<(u8, u8, u8)>, divisor
         .into_range_map_blaze();
     streamed == map.transform_values(|value| value / divisor)
 }
+
+fn small_value_map(entries: Vec<(u8, u8, u8)>) -> RangeMapBlaze<u8, u8> {
+    // Few distinct values, so touching ranges often share values and results often merge.
+    entries
+        .into_iter()
+        .map(|(a, b, value)| (a.min(b)..=a.max(b), value % 3))
+        .collect()
+}
+
+fn brute_force_outer_join(maps: &[RangeMapBlaze<u8, u8>]) -> RangeMapBlaze<u8, Vec<Option<u8>>> {
+    (0..=u8::MAX)
+        .filter_map(|key| {
+            let slots: Vec<Option<u8>> = maps.iter().map(|map| map.get(key).copied()).collect();
+            slots.iter().any(Option::is_some).then_some((key, slots))
+        })
+        .collect()
+}
+
+fn brute_force_inner_join(maps: &[RangeMapBlaze<u8, u8>]) -> RangeMapBlaze<u8, Vec<u8>> {
+    (0..=u8::MAX)
+        .filter_map(|key| {
+            maps.iter()
+                .map(|map| map.get(key).copied())
+                .collect::<Option<Vec<u8>>>()
+                .map(|values| (key, values))
+        })
+        .collect()
+}
+
+#[quickcheck]
+fn multiway_joins_match_brute_force(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
+    let maps: Vec<RangeMapBlaze<u8, u8>> =
+        inputs.into_iter().take(6).map(small_value_map).collect();
+
+    // The closures return every input's value, so equality checks positions, values, coverage,
+    // and merging at once. Comparing range_values (not just maps) checks the stream is canonical.
+    let expected_outer = brute_force_outer_join(&maps);
+    let outer_stream: Vec<_> = maps
+        .iter()
+        .map(RangeMapBlaze::range_values)
+        .outer_join(|slots| slots.iter().map(|slot| slot.copied()).collect::<Vec<_>>())
+        .map(|(range, Owned(value))| (range, value))
+        .collect();
+    let expected_outer_stream: Vec<_> = expected_outer
+        .range_values()
+        .map(|(range, value)| (range, value.clone()))
+        .collect();
+    let outer_struct = maps
+        .iter()
+        .outer_join(|slots| slots.iter().map(|slot| slot.copied()).collect::<Vec<_>>());
+
+    let expected_inner = brute_force_inner_join(&maps);
+    let inner_stream: Vec<_> = maps
+        .iter()
+        .map(RangeMapBlaze::range_values)
+        .inner_join(|values| values.iter().map(|value| **value).collect::<Vec<_>>())
+        .map(|(range, Owned(value))| (range, value))
+        .collect();
+    let expected_inner_stream: Vec<_> = expected_inner
+        .range_values()
+        .map(|(range, value)| (range, value.clone()))
+        .collect();
+    let inner_struct = maps
+        .iter()
+        .inner_join(|values| values.iter().map(|value| **value).collect::<Vec<_>>());
+
+    outer_stream == expected_outer_stream
+        && outer_struct == expected_outer
+        && inner_stream == expected_inner_stream
+        && inner_struct == expected_inner
+}
+
+#[quickcheck]
+fn multiway_joins_merge_equal_results(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
+    // A lossy closure: many different slot combinations give the same result and must merge.
+    let maps: Vec<RangeMapBlaze<u8, u8>> =
+        inputs.into_iter().take(5).map(small_value_map).collect();
+    let count_present = |slots: &[Option<&u8>]| slots.iter().flatten().count();
+    let expected: RangeMapBlaze<u8, usize> = brute_force_outer_join(&maps)
+        .range_values()
+        .map(|(range, slots)| (range, slots.iter().flatten().count()))
+        .collect();
+    maps.iter().outer_join(count_present) == expected
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn multiway_joins_call_once_per_constant_range_in_order() {
+    let a = RangeMapBlaze::from_iter([(0..=9u8, 'a'), (10..=19, 'b')]);
+    let b = RangeMapBlaze::from_iter([(5..=14u8, 'x')]);
+    let mut calls = Vec::new();
+    let joined = [&a, &b].outer_join(|slots| {
+        calls.push(slots.iter().map(|slot| slot.copied()).collect::<Vec<_>>());
+        calls.len()
+    });
+    assert_eq!(
+        calls,
+        vec![
+            vec![Some('a'), None],
+            vec![Some('a'), Some('x')],
+            vec![Some('b'), Some('x')],
+            vec![Some('b'), None],
+        ]
+    );
+    assert_eq!(
+        joined.to_string(),
+        "(0..=4, 1), (5..=9, 2), (10..=14, 3), (15..=19, 4)"
+    );
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn multiway_joins_zero_one_and_maximum_key() {
+    let none: [&RangeMapBlaze<u8, u8>; 0] = [];
+    assert!(none.outer_join(|_| 0).is_empty());
+    let universal = none.inner_join(<[&u8]>::len);
+    assert!(universal.is_universal());
+    assert_eq!(universal.to_string(), "(0..=255, 0)");
+
+    let only = RangeMapBlaze::from_iter([(3..=4u8, 7u8), (250..=255, 9)]);
+    assert_eq!(
+        [&only].inner_join(|values| *values[0]).to_string(),
+        only.to_string()
+    );
+    assert_eq!(
+        [&only].outer_join(|slots| slots[0].copied()).to_string(),
+        "(3..=4, Some(7)), (250..=255, Some(9))"
+    );
+
+    let full = RangeMapBlaze::from_iter([(0..=255u8, 1u8)]);
+    let tail = RangeMapBlaze::from_iter([(200..=255u8, 2u8)]);
+    assert_eq!(
+        [&full, &tail]
+            .outer_join(|slots| slots.iter().flatten().copied().sum::<u8>())
+            .to_string(),
+        "(0..=199, 1), (200..=255, 3)"
+    );
+}

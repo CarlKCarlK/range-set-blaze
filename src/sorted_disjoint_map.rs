@@ -20,6 +20,7 @@ use crate::range_values::RangeValuesToRangesIter;
 use crate::sorted_disjoint::SortedDisjoint;
 use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::{Integer, RangeMapBlaze, union_iter_map::UnionIterMap};
+use crate::{MultiwayInnerJoinIterMap, MultiwayOuterJoinIterMap};
 use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
@@ -1155,6 +1156,13 @@ where
         let (_, value) = &self.range_value;
         value
     }
+
+    /// Returns the priority number, which for [`KMergeMap`] is the input's position.
+    ///
+    /// [`KMergeMap`]: crate::KMergeMap
+    pub(crate) const fn priority_number(&self) -> usize {
+        self.priority_number
+    }
 }
 
 // Implement `PartialEq` to allow comparison (needed for `Eq`).
@@ -1362,6 +1370,8 @@ impl_sorted_map_traits_and_ops!(FillGapsIter<T, I>, bool, bool, I: SortedDisjoin
 impl_sorted_map_traits_and_ops!(InnerJoinIterMap<T, VCL, VCR, I0, I1>, (VCL::Value, VCR::Value), (VCL, VCR), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
 impl_sorted_map_traits_and_ops!(OuterJoinIterMap<T, VCL, VCR, I0, I1>, (Option<VCL::Value>, Option<VCR::Value>), (Option<VCL>, Option<VCR>), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
 impl_sorted_map_traits_and_ops!(TransformValuesIterMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(VC) -> W, W: Eq + Clone);
+impl_sorted_map_traits_and_ops!(MultiwayInnerJoinIterMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(&[VC]) -> W, W: Eq + Clone);
+impl_sorted_map_traits_and_ops!(MultiwayOuterJoinIterMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(&[Option<VC>]) -> W, W: Eq + Clone);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VC, I0, I1>,  VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: Eq + Clone);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Eq + Clone);

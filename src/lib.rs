@@ -49,6 +49,9 @@ pub use inner_join_iter_map::InnerJoinIterMap;
 mod intersection_iter_map;
 pub use intersection_iter_map::IntersectionIterMap;
 
+mod multiway_join_iter_map;
+pub use multiway_join_iter_map::{MultiwayInnerJoinIterMap, MultiwayOuterJoinIterMap};
+
 mod outer_join_iter_map;
 pub use outer_join_iter_map::OuterJoinIterMap;
 

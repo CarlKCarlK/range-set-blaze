@@ -259,8 +259,16 @@ where
 /// assert_eq!(lengths.next(), Some((5..=6, Owned(2))));
 /// assert_eq!(lengths.next(), None);
 /// ```
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub struct Owned<V>(pub V);
+
+// Debug output is transparent, like `&V` and `Rc<V>`, so a stream of `Owned` values prints the
+// same as a stream of borrowed ones (for example, in `IntoString::into_string`).
+impl<V: fmt::Debug> fmt::Debug for Owned<V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl<V> ValueCarrier for Owned<V>
 where
