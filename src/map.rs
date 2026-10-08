@@ -242,9 +242,9 @@ where
 ///
 /// Stream operations that create new values, such as [`SortedDisjointMap::transform_values`],
 /// need a carrier for those values. A reference (`&V`) needs an owner that outlives the stream,
-/// and [`Rc`] allocates per range. `Owned<V>` carries the value inline with no allocation;
-/// cloning it (which happens when an operation splits a range) clones the `V`. For large values
-/// that will be split often, a closure can return an `Rc<V>` instead.
+/// so `Owned<V>` carries the value itself. Cloning an `Owned<V>` clones the `V`, so, as with
+/// every [`RangeMapBlaze`] value, `V` should be cheap to clone; for a large value, use an
+/// [`Rc`] or `Arc` as `V` (for example, a closure returning `Rc<X>` yields `Owned<Rc<X>>`).
 ///
 /// Collecting into a [`RangeMapBlaze`] removes the wrapper: a stream of `Owned<V>` builds a
 /// `RangeMapBlaze<T, V>`.
@@ -364,6 +364,11 @@ fn classify_forward<T: Integer>(
 ///
 /// Internally, the map stores the
 /// ranges and values in a cache-efficient [`BTreeMap`].
+///
+/// Values should be cheap to clone. Operations clone a value whenever they split its range (for
+/// example, inserting into the middle of a range, or joining with another map), and the
+/// [`SortedDisjointMap`] stream operations rely on the same assumption. Wrap large values in
+/// [`Rc`] or `Arc` so that each clone only bumps a reference count.
 ///
 /// For a side-by-side introduction to range lookups and gap filling, see the
 /// [Ranges and gaps guide][crate::gaps].
