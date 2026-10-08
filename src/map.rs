@@ -217,6 +217,24 @@ where
     }
 }
 
+impl<VCL, VCR> ValueCarrier for (VCL, VCR)
+where
+    VCL: ValueCarrier,
+    VCR: ValueCarrier,
+{
+    type Value = (VCL::Value, VCR::Value);
+
+    #[inline]
+    fn value_eq(&self, other: &Self) -> bool {
+        self.0.value_eq(&other.0) && self.1.value_eq(&other.1)
+    }
+
+    #[inline]
+    fn into_value(self) -> Self::Value {
+        (self.0.into_value(), self.1.into_value())
+    }
+}
+
 #[expect(clippy::redundant_pub_crate)]
 #[derive(Clone, Hash, Default, PartialEq, Eq, Debug)]
 pub(crate) struct EndValue<T, V> {
@@ -1137,6 +1155,26 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     pub fn is_universal(&self) -> bool {
         self.len() == T::safe_len(&(T::min_value()..=T::max_value()))
     }
+
+    /// Returns a universal map that covers all values of `T` with `value`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let universal = RangeMapBlaze::<u8, &str>::universe_with(&"all");
+    /// assert!(universal.is_universal());
+    /// assert_eq!(universal.get(0), Some(&"all"));
+    /// assert_eq!(universal.get(255), Some(&"all"));
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn universe_with(value: &V) -> Self {
+        // TODO00 Revisit whether `universe_with` is the best public name and constructor shape.
+        Self::new().complement_with(value)
+    }
+
     /// Returns `true` if the set contains an element equal to the value.
     ///
     /// # Examples

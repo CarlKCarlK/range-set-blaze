@@ -151,5 +151,7 @@ consider deleting the spec once the work it describes is complete, for example:
   release notes, version bumps, and the publish command, but the actual publish step is run by
   the human.
 - Always suggest a concise 1-2 line commit message when completing work, in a fenced code block.
+- Never add `Co-Authored-By:` trailers or other AI attribution lines (e.g. "Generated with Claude Code")
+  to commit messages or PR descriptions.
 - Treat `Cargo.lock` and dependency version bumps as deliberate, reviewable changes, not
   incidental side effects of an unrelated task.

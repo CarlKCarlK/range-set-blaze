@@ -43,6 +43,9 @@ pub use float::*;
 mod integer;
 pub use crate::integer::Integer;
 
+mod inner_join_iter_map;
+pub use inner_join_iter_map::InnerJoinIterMap;
+
 mod intersection_iter_map;
 pub use intersection_iter_map::IntersectionIterMap;
 

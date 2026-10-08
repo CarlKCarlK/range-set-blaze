@@ -3,6 +3,7 @@ use crate::DifferenceMapInternal;
 use crate::DynSortedDisjointMap;
 use crate::FillGapsIter;
 use crate::FillGapsIterMap;
+use crate::InnerJoinIterMap;
 use crate::IntersectionMap;
 use crate::IntoRangeValuesIter;
 use crate::NotIter;
@@ -512,6 +513,34 @@ where
         let other = other.into_iter();
         let sorted_disjoint = self.into_sorted_disjoint();
         IntersectionIterMap::new(other, sorted_disjoint)
+    }
+
+    // TODO0(api-change): New public pair-valued overlap iterator.
+    /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`]
+    /// iterator over their common disjoint overlap, carrying both values.
+    ///
+    /// This is an inner join: ranges covered by only one input are omitted.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let left = RangeMapBlaze::from_iter([(2..=3, "L")]);
+    /// let right = RangeMapBlaze::from_iter([(1..=2, "R")]);
+    /// let mut it = left.range_values().inner_join(right.range_values());
+    /// assert_eq!(it.next(), Some((2..=2, (&"L", &"R"))));
+    /// assert_eq!(it.next(), None);
+    /// ```
+    #[inline]
+    fn inner_join<R, VCR>(self, other: R) -> InnerJoinIterMap<T, VC, VCR, Self, R::IntoIter>
+    where
+        VCR: ValueCarrier,
+        R: IntoIterator<Item = (RangeInclusive<T>, VCR)>,
+        R::IntoIter: SortedDisjointMap<T, VCR>,
+        Self: Sized,
+    {
+        InnerJoinIterMap::new(self, other.into_iter())
     }
 
     /// Given a [`SortedDisjointMap`] iterator and a [`SortedDisjoint`] iterator,
@@ -1249,6 +1278,7 @@ impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, VC, I>, VC::Value, VC,
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VC>, VC::Value, VC, 'a, VC: ValueCarrier);
 impl_sorted_map_traits_and_ops!(FillGapsIterMap<T, VC, I>, Option<VC::Value>, Option<VC>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
 impl_sorted_map_traits_and_ops!(FillGapsIter<T, I>, bool, bool, I: SortedDisjoint<T>);
+impl_sorted_map_traits_and_ops!(InnerJoinIterMap<T, VCL, VCR, I0, I1>, (VCL::Value, VCR::Value), (VCL, VCR), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VC, I0, I1>,  VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: Eq + Clone);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Eq + Clone);
