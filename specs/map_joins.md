@@ -216,6 +216,32 @@ Decision: accepted and implemented (2026-10-08) in `src/multiway_join_iter_map.r
   pairwise joins with one multiway `inner_join`; the zero-input rule replaces its explicit
   empty-set case. All tests pass and example output is byte-identical.
 
+
+### `outer_join_incremental`
+
+Decision: accepted and implemented (2026-10-08).
+
+Why: benchmarking glrmask's k-way union rewritten on `outer_join` showed the sweep itself is 2-4x
+faster than RSB's existing multiway `union`, but a closure that aggregates over all present values
+pays O(present) per range. glrmask's hand-written sweep instead tracks active distinct token sets
+incrementally, O(changes) per range, so the `outer_join` version was 1.6x slower at 32 weights and
+3.5x at 128.
+
+API: `[maps...].outer_join_incremental(|values, changed_from| ...)`. `values` is the same slot
+slice as `outer_join`. `changed_from: &[(usize, Option<VC>)]` lists each input whose slot differs
+from the previous call, with its previous value (moved, not cloned); each input appears at most
+once; the first call lists every present input as changed from `None`; an input that leaves and
+re-enters with an equal value across a gap is not listed. A bool slice was considered and rejected:
+finding changes in it is O(k), and it cannot carry previous values. Two closure arguments rather
+than a step struct: simpler, at the cost of needing a new method to add arguments later.
+
+Result: glrmask's union rewritten on it maintains a pointer-to-count table of active token sets and
+recomputes only when the distinct set changes. Timed against the original sweep: 1.06x at 8
+weights, 1.03x at 32, 0.98x at 128 (glrmask fork commit `dfe083ee4`). Contract tested by a
+quickcheck that rebuilds the slots from `changed_from` alone (20,000 cases).
+
+Open: an incremental `inner_join` was not added; prove a need first.
+
 The design notes below record how this was reached.
 
 k-way versions of features 1 and the existing inner join, alongside the existing
