@@ -31,7 +31,13 @@ yield a missing side there. Outer joins matter for partial maps such as glrmask'
 
 ## Feature 1: two-way full outer join
 
-Decision: pending.
+Decision: accepted (2026-10-08). Name: `outer_join`. Item shape: `(Option<VCL>, Option<VCR>)`, no
+new enum. No separate left/right methods for now.
+
+Naming note: `inner_join` is the standard term. The standard name for this operation is "full
+(outer) join"; "outer join" alone names the family (left, right, full). `outer_join` is
+unambiguous while it is the only outer variant. If `left_join`/`right_join` are ever added, add
+`full_join` and deprecate `outer_join` (renaming a released item is breaking).
 
 Yields every stretch covered by at least one input:
 `(RangeInclusive<T>, (Option<VCL>, Option<VCR>))`, never `(None, None)`.
@@ -62,10 +68,8 @@ of `SortedDisjointMap`. A native join avoids both. The composed form compiles an
 expected answer (checked 2026-10-08: `(1..=3, (Some, None))`, `(4..=5, (Some, Some))`,
 `(6..=8, (None, Some))`), so it makes a good test oracle for the native join.
 
-Open questions:
-
-- Name: `outer_join` versus `full_join`.
-- Documentation should state that inner and outer agree when both inputs are universal.
+Documentation should state that inner and outer agree when both inputs are universal, and that
+`(None, None)` never occurs.
 
 ## Feature 2: `map_values`
 
