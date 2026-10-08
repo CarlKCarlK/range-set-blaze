@@ -49,6 +49,9 @@ pub use inner_join_iter_map::InnerJoinIterMap;
 mod intersection_iter_map;
 pub use intersection_iter_map::IntersectionIterMap;
 
+mod outer_join_iter_map;
+pub use outer_join_iter_map::OuterJoinIterMap;
+
 mod iter_map;
 pub use crate::iter_map::{IntoIterMap, IterMap};
 

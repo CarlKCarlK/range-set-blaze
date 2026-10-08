@@ -31,7 +31,7 @@ yield a missing side there. Outer joins matter for partial maps such as glrmask'
 
 ## Feature 1: two-way full outer join
 
-Decision: accepted (2026-10-08). Name: `outer_join`. Item shape: `(Option<VCL>, Option<VCR>)`, no
+Decision: accepted and implemented (2026-10-08) in `src/outer_join_iter_map.rs`. Name: `outer_join`. Item shape: `(Option<VCL>, Option<VCR>)`, no
 new enum. No separate left/right methods for now.
 
 Naming note: `inner_join` is the standard term. The standard name for this operation is "full
