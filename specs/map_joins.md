@@ -195,7 +195,28 @@ B-tree build to the wrapper. Multiway joins should follow the same pattern.
 
 ## Feature 3: multiway joins (inner and outer)
 
-Decision: pending. Needs the most design.
+Decision: accepted and implemented (2026-10-08) in `src/multiway_join_iter_map.rs`.
+
+- Names: `inner_join` / `outer_join`, the same as the two-way joins (receivers differ).
+- Iterator-first on `MultiwaySortedDisjointMap`; thin wrappers on `MultiwayRangeMapBlazeRef`
+  (`[&a, &b, &c].inner_join(f)`). No owned-maps (`MultiwayRangeMapBlaze`) form for now.
+- Closure: inner `FnMut(&[VC]) -> W`, outer `FnMut(&[Option<VC>]) -> W` (one slot per input, in
+  input order; never all `None`). Through the struct wrappers, `VC = &V`. Results are carried by
+  `Owned<W>`; touching ranges with equal results merge. No `V` is cloned: outer slots are moved in
+  from the streams and borrowed in place; the inner join's dense buffer copies carriers (pointers,
+  for `&V`) only for inputs that changed.
+- Zero inputs: outer is empty; inner is the universal range with `f(&[])`, matching
+  `RangeSetBlaze`'s zero-input intersection.
+- Performance, from the start, matching the existing multiway union: one sweep using
+  `KMergeMap` (heap over starts, tagged with input position) plus a min-heap of active ends.
+  O(log k) per input range; the slot slice is updated in place, never rebuilt.
+- Tests: brute-force per-key oracle under quickcheck (checked with 20,000 cases), merging,
+  call order, zero/one inputs, maximum key.
+- Real-world check: `range-map-regex` commit `8cd9a97` replaces `subset_transition_map`'s k − 1
+  pairwise joins with one multiway `inner_join`; the zero-input rule replaces its explicit
+  empty-set case. All tests pass and example output is byte-identical.
+
+The design notes below record how this was reached.
 
 k-way versions of features 1 and the existing inner join, alongside the existing
 `MultiwayRangeMapBlaze` / `MultiwaySortedDisjointMap` traits. The existing multiway map `union` is
@@ -277,5 +298,5 @@ Moved up and implemented as feature 1b.
    (`transform_values`), and the `range-map-regex` port.
 2. Done: deferred candidate 2b (filtering transform); added the iterator form of
    `transform_values` with the `Owned` carrier.
-3. Design feature 3, fold form first. Both real callers fold k maps: `subset_transition_map`
-   (k − 1 pairwise joins, each materializing a map) and glrmask's `union_all_multiway*`.
+3. Done: feature 3 (multiway joins). Possible check: rewrite glrmask's `union_all_multiway*`
+   on multiway `outer_join` in the fork.
