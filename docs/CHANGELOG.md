@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+This is a breaking release (see **Changed** and **Removed**). Code that only uses
+`RangeSetBlaze`, `RangeMapBlaze`, and their operators and methods is unaffected
+apart from the new minimum Rust version.
+
+### Added
+
+- **Map joins.** `SortedDisjointMap::inner_join`, `left_join`, and `full_join`
+  pair up two map streams by key, yielding `(range, (left, right))` with
+  `Option` for a side that may be absent. `RangeMapBlaze::inner_join`,
+  `left_join`, and `full_join` return the joined map. `left_join` stops as
+  soon as the left input ends, without reading the rest of the right input.
+- **Multiway joins.** `MultiwaySortedDisjointMap::inner_join` and `full_join`
+  (and the same on collections of `&RangeMapBlaze`) call a closure once per
+  stretch of keys with every input's value there (`&[V]`, or
+  `&[Option<V>]` for the full join) and collect its results.
+- **`transform_values`** on map streams and on `RangeMapBlaze`: same keys,
+  new values, merging touching ranges whose new values are equal.
+- **`MultiwaySortedDisjointMap::sweep`**, a low-level stream of every input
+  range's start and end in key order (`SweepEvent`), for computations the
+  joins do not cover. The multiway joins are built on it.
+- **`Owned<V>`**, a `ValueCarrier` that holds its value directly, so stream
+  operations can produce new values without allocating. In the prelude.
+- `RangeMapBlaze::universe_with(&value)` and `RangeSetBlaze::universe()`.
+- `ValueCarrier` for pairs of carriers, so joined streams compose with other
+  map operations.
+- New iterator types: `InnerJoinIterMap`, `LeftJoinIterMap`,
+  `FullJoinIterMap`, `TransformValuesIterMap`, `MultiwayInnerJoinIterMap`,
+  `MultiwayFullJoinIterMap`, `MultiwaySweep`, and `SweepEvent`.
+
+### Changed
+
+- **Minimum supported Rust version is now 1.89** (was 1.87).
+- **Faster map unions and symmetric differences.** The two-way map `|` and
+  `^` operators are about 1.6-2.9x faster; multiway map `union` and
+  `symmetric_difference` are about 1.4-4x faster. Multiway set
+  `symmetric_difference` is also faster in most cases (up to about 1.23x
+  slower with 2-4 sparse inputs). Results are unchanged.
+- **Breaking:** `UnionMergeMap`, `SymDiffMergeMap`, `UnionKMergeMap`,
+  `SymDiffKMergeMap`, and `SymDiffKMerge` (the types returned by the map `|`
+  and `^` operators and the multiway map `union`/`symmetric_difference` and
+  set `symmetric_difference`) are now opaque structs with private fields,
+  keeping their names and generic parameters. They were hidden aliases of
+  internal types. Code that only iterates, chains, or names these types is
+  unaffected; code that spelled out their old internal structure
+  (for example, `SymDiffIterMap<..., KMergeMap<...>>`) must use the new names.
+- The `RangeMapBlaze` docs now state that values should be cheap to clone,
+  because operations clone a value whenever they split its range; wrap large
+  values in `Rc` or `Arc`.
+- `just check-all` now also runs the MSRV check, matching CI.
+
+### Removed
+
+- **Breaking:** `KMergeMap`, `MergeMap`, and `SymDiffIterMap`. They had no
+  public constructors and are no longer used by the crate.
+
 ## [0.7.1] - 2026-09-25
 
 ### Fixed
