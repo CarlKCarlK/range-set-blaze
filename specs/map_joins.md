@@ -51,7 +51,8 @@ Yields every stretch covered by at least one input:
 `(RangeInclusive<T>, (Option<VCL>, Option<VCR>))`, never `(None, None)`.
 
 - Left and right outer joins are filters (`left.is_some()`), so they probably don't need their
-  own methods.
+  own methods. (Revisited 2026-10-08, see "Evidence for `left_join`" below: a filter still walks
+  the whole right input, while a native left join could stop when the left input ends.)
 - No new `ValueCarrier` impl is needed: `(Option<VCL>, Option<VCR>)` is a pair of `Option`
   carriers, both of which already exist.
 - Implementation: extend `InnerJoinIterMap`'s merge loop to emit the one-sided prefix and
@@ -90,6 +91,19 @@ Second check: glrmask's hand-written `Weight::is_disjoint` (an inner-join loop) 
 `Weight::is_subset` (an outer-join loop) became `inner_join(...).all(...)` and
 `outer_join(...).all(...)`, with the originals kept as test-only references and an exhaustive
 differential test (commit `d00731cee`). All RSB-related glrmask tests pass.
+
+### Evidence for `left_join` (open)
+
+A review of the glrmask fork found that `Weight::is_subset` written as
+`outer_join(...).all(...)` keeps walking every remaining range of `other` after `self` ends (those
+stretches are one-sided and always pass), where the original loop stopped. glrmask fork commit
+`5d18bb0b1` fixes it with `.take_while(|(range, _)| *range.start() <= self_last)`, using
+`RangeMapBlaze::last_key_value` (O(log n)), plus a test that fails without the bound.
+
+So a left (outer) join is not just a filter on `outer_join`: a native one can stop as soon as the
+left input is exhausted, which matters for "is A contained in B" and "look up A's ranges in B".
+If `left_join` is added, also add `full_join` and deprecate `outer_join` (see the naming note
+above). Not decided; one caller so far, and `take_while` works.
 
 ## Feature 1b: materialized joins on `RangeMapBlaze`
 
@@ -240,6 +254,11 @@ in vectors; the top is replaced in place when an input's next range arrives) plu
 `(end, input)` for active ranges. This replaced `KMergeMap` (`itertools::kmerge_by`, whose heap
 entries hold whole iterators), making the bare sweep 20-30% faster at 128-512 inputs. Ties at the
 same start come out in input order.
+
+Reverted in glrmask (2026-10-08): the fork's multiway union rewrites (`outer_join_incremental`,
+then `sweep`) were backed out (revert commits through `99172bb47`) as not worth it there; glrmask
+keeps its own multiway sweep, and its two-way rewrites (union, combine, `is_disjoint`, `is_subset`)
+remain. These timings are kept as the record of what was measured.
 
 glrmask union timings (multiples of glrmask's original sweep; glrmask fork):
 
@@ -392,5 +411,5 @@ Moved up and implemented as feature 1b.
    (`transform_values`), and the `range-map-regex` port.
 2. Done: deferred candidate 2b (filtering transform); added the iterator form of
    `transform_values` with the `Owned` carrier.
-3. Done: feature 3 (multiway joins). Possible check: rewrite glrmask's `union_all_multiway*`
-   on multiway `outer_join` in the fork.
+3. Done: feature 3 (multiway joins). The glrmask multiway rewrite was tried and reverted (see
+   `sweep` above).
