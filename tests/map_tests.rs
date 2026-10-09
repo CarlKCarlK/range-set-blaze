@@ -17,10 +17,12 @@ use rand::seq::IndexedRandom;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 use range_set_blaze::Integer;
 #[cfg(not(target_arch = "wasm32"))]
+use range_set_blaze::SweepEvent;
+#[cfg(not(target_arch = "wasm32"))]
 use range_set_blaze::test_util::{How, k_maps};
 use range_set_blaze::{
     IntoRangeValuesIter, MultiwayIntersectionMap, MultiwaySymmetricDifferenceMap, MultiwayUnionMap,
-    RangeValuesIter, SweepEvent, UnionIterMap, ValueCarrier, prelude::*,
+    RangeValuesIter, UnionIterMap, ValueCarrier, prelude::*,
 };
 use std::borrow::Borrow;
 use std::iter::FusedIterator;
@@ -3710,6 +3712,7 @@ fn cover_is_universal() {
     assert!(!empty.range_values().is_universal());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn transform_values_matches_rebuild(entries: Vec<(u8, u8, u8)>, divisor: u8) -> bool {
     // Arbitrary map over the full u8 key range; maps values through a lossy function so many
@@ -3761,6 +3764,7 @@ fn transform_values_calls_once_per_range_in_order() {
     assert_eq!(mapped.to_string(), "(0..=9, 1), (10..=19, 2), (30..=39, 3)");
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn streaming_transform_values_matches_struct(entries: Vec<(u8, u8, u8)>, divisor: u8) -> bool {
     let map: RangeMapBlaze<u8, u8> = entries
@@ -3775,6 +3779,7 @@ fn streaming_transform_values_matches_struct(entries: Vec<(u8, u8, u8)>, divisor
     streamed == map.transform_values(|value| value / divisor)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn small_value_map(entries: Vec<(u8, u8, u8)>) -> RangeMapBlaze<u8, u8> {
     // Few distinct values, so touching ranges often share values and results often merge.
     entries
@@ -3783,6 +3788,7 @@ fn small_value_map(entries: Vec<(u8, u8, u8)>) -> RangeMapBlaze<u8, u8> {
         .collect()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn brute_force_full_join(maps: &[RangeMapBlaze<u8, u8>]) -> RangeMapBlaze<u8, Vec<Option<u8>>> {
     (0..=u8::MAX)
         .filter_map(|key| {
@@ -3792,6 +3798,7 @@ fn brute_force_full_join(maps: &[RangeMapBlaze<u8, u8>]) -> RangeMapBlaze<u8, Ve
         .collect()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn brute_force_inner_join(maps: &[RangeMapBlaze<u8, u8>]) -> RangeMapBlaze<u8, Vec<u8>> {
     (0..=u8::MAX)
         .filter_map(|key| {
@@ -3803,6 +3810,7 @@ fn brute_force_inner_join(maps: &[RangeMapBlaze<u8, u8>]) -> RangeMapBlaze<u8, V
         .collect()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn multiway_joins_match_brute_force(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
     let maps: Vec<RangeMapBlaze<u8, u8>> =
@@ -3854,6 +3862,7 @@ fn multiway_joins_match_brute_force(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
         && inner_struct == expected_inner
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn multiway_joins_merge_equal_results(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
     // A lossy closure: many different value combinations give the same result and must merge.
@@ -3867,6 +3876,7 @@ fn multiway_joins_merge_equal_results(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
     maps.iter().full_join(count_present) == expected
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn two_way_struct_joins_match_brute_force(
     left: Vec<(u8, u8, u8)>,
@@ -3994,6 +4004,7 @@ fn multiway_joins_zero_one_and_maximum_key() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn sweep_events_match_inputs(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
     let maps: Vec<RangeMapBlaze<u8, u8>> =
@@ -4041,6 +4052,7 @@ fn sweep_events_match_inputs(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn multiway_map_set_operations_match_brute_force(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
     // Union, intersection, and symmetric difference keep a key when at least one, all, or an odd

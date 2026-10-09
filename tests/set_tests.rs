@@ -3364,6 +3364,7 @@ fn cover_is_universal() {
     assert!(!empty.ranges().is_universal());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[quickcheck]
 fn multiway_set_operations_match_brute_force(inputs: Vec<Vec<(u8, u8)>>) -> bool {
     // Union, intersection, and symmetric difference keep a key when at least one, all, or an odd
