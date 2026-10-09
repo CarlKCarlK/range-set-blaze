@@ -1,7 +1,6 @@
 use crate::map::ValueCarrier;
-use crate::merge_map::KMergeMap;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
-use crate::{AssumeSortedStarts, MergeMap, SortedDisjointMap, UnionKMergeMap, UnionMergeMap};
+use crate::{AssumeSortedStarts, MergeMap, SortedDisjointMap, UnionMergeMap};
 use alloc::{collections::BinaryHeap, vec};
 use core::cmp::min;
 use core::iter::FusedIterator;
@@ -162,22 +161,6 @@ where
     #[inline]
     pub(crate) fn new2(left: L, right: R) -> Self {
         let iter = MergeMap::new(left, right);
-        Self::new(iter)
-    }
-}
-
-impl<T, VC, J> UnionKMergeMap<T, VC, J>
-where
-    T: Integer,
-    VC: ValueCarrier,
-    J: SortedDisjointMap<T, VC>,
-{
-    #[inline]
-    pub(crate) fn new_k<K>(k: K) -> Self
-    where
-        K: IntoIterator<Item = J>,
-    {
-        let iter = KMergeMap::new(k);
         Self::new(iter)
     }
 }

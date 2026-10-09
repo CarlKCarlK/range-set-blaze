@@ -19,8 +19,8 @@ use range_set_blaze::Integer;
 #[cfg(not(target_arch = "wasm32"))]
 use range_set_blaze::test_util::{How, k_maps};
 use range_set_blaze::{
-    IntersectionIterMap, IntoRangeValuesIter, KMergeMap, RangeValuesIter, SweepEvent,
-    SymDiffIterMap, UnionIterMap, ValueCarrier, prelude::*,
+    IntersectionIterMap, IntoRangeValuesIter, RangeValuesIter, SweepEvent, SymDiffKMergeMap,
+    UnionIterMap, UnionKMergeMap, ValueCarrier, prelude::*,
 };
 use std::borrow::Borrow;
 use std::iter::FusedIterator;
@@ -1111,7 +1111,7 @@ fn map_parity() {
     );
 
     // test on zero maps
-    let a: SymDiffIterMap<i32, &&str, KMergeMap<i32, &&str, DynSortedDisjointMap<'_, i32, &&str>>> =
+    let a: SymDiffKMergeMap<i32, &&str, DynSortedDisjointMap<'_, i32, &&str>> =
         symmetric_difference_map_dyn!();
     let a = a.into_range_map_blaze();
     let b: RangeMapBlaze<i32, &str> = RangeMapBlaze::default();
@@ -1923,12 +1923,12 @@ fn test_every_sorted_disjoint_map_method() {
             .intersection();
             let d: IntoRangeValuesIter<i32, &str> = e0.clone().into_range_values();
             let e: RangeValuesIter<'_, i32, &str> = e0.range_values();
-            let f: SymDiffIterMap<i32, &&str, _> = [CheckSortedDisjointMap::new([
+            let f: SymDiffKMergeMap<i32, &&str, _> = [CheckSortedDisjointMap::new([
                 (1..=2, &"a"),
                 (5..=100, &"a"),
             ])]
             .symmetric_difference();
-            let g: UnionIterMap<i32, &&str, _> = [CheckSortedDisjointMap::new([
+            let g: UnionKMergeMap<i32, &&str, _> = [CheckSortedDisjointMap::new([
                 (1..=2, &"a"),
                 (5..=100, &"a"),
             ])]
@@ -3958,4 +3958,38 @@ fn sweep_events_match_inputs(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
             .collect();
         *ranges == expected
     })
+}
+
+#[quickcheck]
+fn multiway_map_set_operations_match_brute_force(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
+    // Union, intersection, and symmetric difference keep a key when at least one, all, or an odd
+    // number of inputs have it; the value is from the highest-numbered input that has it.
+    let maps: Vec<RangeMapBlaze<u8, u8>> =
+        inputs.into_iter().take(6).map(small_value_map).collect();
+    let brute = |keep: &dyn Fn(usize) -> bool| -> RangeMapBlaze<u8, u8> {
+        (0..=u8::MAX)
+            .filter_map(|key| {
+                let present: Vec<u8> = maps
+                    .iter()
+                    .filter_map(|map| map.get(key).copied())
+                    .collect();
+                let &highest = present.last()?;
+                keep(present.len()).then_some((key, highest))
+            })
+            .collect()
+    };
+    let streams = || {
+        maps.iter()
+            .map(RangeMapBlaze::range_values)
+            .collect::<Vec<_>>()
+    };
+    let union_ok = streams().union().into_range_map_blaze() == brute(&|count| count > 0)
+        && maps.iter().union() == brute(&|count| count > 0);
+    let symmetric_difference_ok = streams().symmetric_difference().into_range_map_blaze()
+        == brute(&|count| count % 2 == 1)
+        && maps.iter().symmetric_difference() == brute(&|count| count % 2 == 1);
+    let intersection_ok = maps.is_empty()
+        || (streams().intersection().into_range_map_blaze() == brute(&|count| count == maps.len())
+            && maps.iter().intersection() == brute(&|count| count == maps.len()));
+    union_ok && symmetric_difference_ok && intersection_ok
 }

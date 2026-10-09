@@ -7,9 +7,8 @@ use core::{
 use alloc::collections::BinaryHeap;
 
 use crate::{
-    Integer, MergeMap, SortedDisjointMap, SymDiffKMergeMap, SymDiffMergeMap,
+    Integer, MergeMap, SortedDisjointMap, SymDiffMergeMap,
     map::ValueCarrier,
-    merge_map::KMergeMap,
     sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
 };
 
@@ -168,22 +167,6 @@ where
     #[inline]
     pub(crate) fn new2(left: L, right: R) -> Self {
         let iter = MergeMap::new(left, right);
-        Self::new(iter)
-    }
-}
-
-impl<T, VC, J> SymDiffKMergeMap<T, VC, J>
-where
-    T: Integer,
-    VC: ValueCarrier,
-    J: SortedDisjointMap<T, VC>,
-{
-    #[inline]
-    pub(crate) fn new_k<K>(k: K) -> Self
-    where
-        K: IntoIterator<Item = J>,
-    {
-        let iter = KMergeMap::new(k);
         Self::new(iter)
     }
 }

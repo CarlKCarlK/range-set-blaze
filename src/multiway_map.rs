@@ -7,8 +7,8 @@
 
 use crate::{
     Integer, IntersectionKMap, MultiwayInnerJoinIterMap, MultiwayOuterJoinIterMap, MultiwaySweep,
-    RangeMapBlaze, SortedDisjointMap, SymDiffIterMap, SymDiffKMergeMap, UnionIterMap,
-    UnionKMergeMap, intersection_iter_map::IntersectionIterMap, map::ValueCarrier,
+    RangeMapBlaze, SortedDisjointMap, SymDiffKMergeMap, UnionKMergeMap,
+    intersection_iter_map::IntersectionIterMap, map::ValueCarrier,
     range_values::RangeValuesToRangesIter,
 };
 use alloc::vec::Vec;
@@ -357,7 +357,7 @@ where
     /// assert_eq!(union.into_string(), r#"(1..=2, "c"), (3..=4, "b"), (5..=100, "c"), (101..=200, "a")"#);
     /// ```
     fn union(self) -> UnionKMergeMap<T, VC, I> {
-        UnionIterMap::new_k(self)
+        UnionKMergeMap::new_k(self)
     }
 
     /// Intersects the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
@@ -428,7 +428,7 @@ where
     /// assert_eq!(symmetric_difference.into_string(), r#"(1..=2, "c"), (3..=4, "b"), (6..=6, "c"), (101..=200, "a")"#);
     /// ```
     fn symmetric_difference(self) -> SymDiffKMergeMap<T, VC, I> {
-        SymDiffIterMap::new_k(self)
+        SymDiffKMergeMap::new_k(self)
     }
 
     // TODO0(api-change): New public multiway join.

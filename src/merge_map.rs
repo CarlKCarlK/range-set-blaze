@@ -79,7 +79,12 @@ where
 {
 }
 
-/// Used internally by `UnionIterMap` and `SymDiffIterMap`.
+/// Formerly used internally by the multiway map union and symmetric difference, which now use
+/// [`MultiwaySortedDisjointMap::sweep`]. It has no public constructor.
+///
+/// [`MultiwaySortedDisjointMap::sweep`]: crate::MultiwaySortedDisjointMap::sweep
+// TODO0 KMergeMap is unused and has no public constructor: deprecate or remove it in the next
+// breaking release (deprecating it now warns at this crate's own impls).
 #[derive(Clone, Debug)]
 #[allow(clippy::module_name_repetitions)]
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -91,6 +96,8 @@ where
     iter: KMergeBy<SetPriorityMap<T, VC, I>, fn(&Priority<T, VC>, &Priority<T, VC>) -> bool>,
 }
 
+// Only the unit test in `tests_map` still constructs a `KMergeMap`.
+#[cfg(test)]
 type KMergeSetPriorityMap<T, VC, I> =
     KMergeBy<SetPriorityMap<T, VC, I>, fn(&Priority<T, VC>, &Priority<T, VC>) -> bool>;
 
@@ -103,6 +110,7 @@ where
     /// Creates a new [`KMergeMap`] iterator from zero or more [`SortedDisjointMap`] iterators. See [`KMergeMap`] for more details and examples.
     ///
     /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
+    #[cfg(test)]
     pub(crate) fn new<K>(iter: K) -> Self
     where
         K: IntoIterator<Item = I>,
