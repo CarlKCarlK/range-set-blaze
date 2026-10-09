@@ -14,7 +14,6 @@ use crate::{SortedDisjointMap, map::ValueCarrier};
 /// [`inner_join`]: crate::SortedDisjointMap::inner_join
 // todo000 need more tests
 // todo000 need docs updated
-// todo000 consider adding to RMS (may no longer apply: see RangeMapBlaze::inner_join)
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
 pub struct InnerJoinMap<T, VCL, VCR, IL, IR> {

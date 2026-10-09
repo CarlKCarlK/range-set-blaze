@@ -38,12 +38,14 @@ const STREAM_OVERHEAD: usize = 10;
 ///
 /// `ValueCarrier` enables [`SortedDisjointMap`] to map sorted, disjoint ranges of integers
 /// to values of type `V: Eq + Clone`. It supports plain references (`&V`), shared ownership types
-/// (`Rc<V>` and `Arc<V>`), compound carriers such as `Option<&V>`, and the by-value `bool`
-/// carrier, avoiding unnecessary cloning of values while enabling ownership when needed.
+/// (`Rc<V>` and `Arc<V>`), the by-value carriers `bool` and [`Owned<V>`], and compound carriers
+/// built from other carriers: `Option<VC>` (such as `Option<&V>`) and pairs `(VCL, VCR)` (such as
+/// `(&V1, Rc<V2>)`), avoiding unnecessary cloning of values while enabling ownership when needed.
 ///
 /// All types implementing `ValueCarrier` must also implement `Clone`. For standard carriers like
-/// `&V`, `Rc<V>`, `Arc<V>`, their `Option` forms, and `bool`, this is efficient—cloning
-/// typically just copies a pointer and a discriminant or a small value.
+/// `&V`, `Rc<V>`, `Arc<V>`, their `Option` and pair forms, and `bool`, this is efficient—cloning
+/// typically just copies a pointer and a discriminant or a small value. Cloning an [`Owned<V>`]
+/// clones its `V`.
 ///
 /// # Motivation
 ///
@@ -105,6 +107,8 @@ pub trait ValueCarrier: Clone {
     ///   this simply copies the reference without allocation.
     /// - `Rc<V>` / `Arc<V>` → tries to unwrap if uniquely owned; otherwise clones `V`.
     /// - [`Owned<V>`] → returns the value it holds.
+    /// - `Option<VC>` → materializes the inner carrier, if any.
+    /// - `(VCL, VCR)` → materializes both carriers, returning a pair of values.
     ///
     /// This is typically used when converting a stream of `(range, value)` pairs into values
     /// that can be stored or returned independently of the original container.
@@ -236,7 +240,6 @@ where
     }
 }
 
-// TODO0(api-change): New public value carrier.
 /// A [`ValueCarrier`] that holds its value directly, by value.
 ///
 /// Stream operations that create new values, such as [`SortedDisjointMap::transform_values`],

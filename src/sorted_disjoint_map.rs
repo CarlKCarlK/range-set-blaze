@@ -549,7 +549,7 @@ where
         InnerJoinMap::new(self, other.into_iter())
     }
 
-    // TODO0(api-change): New public outer-join iterator.
+    // TODO0(api-change): New public full-join iterator.
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`]
     /// iterator over every range covered by at least one input, carrying each input's value or
     /// `None`. The item `(range, (None, None))` never occurs.
