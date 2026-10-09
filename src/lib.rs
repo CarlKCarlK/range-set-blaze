@@ -77,7 +77,7 @@ mod merge;
 pub use merge::{KMerge, Merge};
 
 mod merge_map;
-pub use merge_map::{KMergeMap, MergeMap};
+pub use merge_map::MergeMap;
 
 mod multiway;
 pub use multiway::{MultiwayRangeSetBlaze, MultiwayRangeSetBlazeRef, MultiwaySortedDisjoint};

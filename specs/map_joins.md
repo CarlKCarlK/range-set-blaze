@@ -282,8 +282,9 @@ Maps (decided and implemented, commit `07ee3c38`):
   code that named the old structure must name the new types (three such annotations in
   `tests/map_tests.rs` were updated). Policy: result types of public operations are opaque named
   structs, as in std, so future implementation changes do not change types.
-- `KMergeMap` is no longer used by the crate and never had a public constructor; a `TODO0` marks
-  deprecating or removing it (deprecating it now warns at the crate's own impls).
+- `KMergeMap` was no longer used and never had a public constructor; removed (breaking, approved
+  2026-10-08). Its trait-check test now covers `UnionKMergeMap`, `SymDiffKMergeMap`, and
+  `MultiwaySweep` (Send, Sync, Unpin, Clone, Debug, FusedIterator).
 - Benchmarking note: comparing two builds can mislead through code layout. One cross-build run
   showed the unchanged map intersection 20-70% "faster"; timing unchanged operations in both builds
   showed no real difference.

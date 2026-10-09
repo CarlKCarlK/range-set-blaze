@@ -2,8 +2,9 @@
 
 use crate::{
     CheckSortedDisjointMap, DynSortedDisjointMap, FillGapsIter, FillGapsIterMap, Integer,
-    IntersectionIterMap, IntoIterMap, IntoRangeValuesIter, IterMap, KMergeMap, MergeMap,
-    RangeMapBlaze, RangeValuesIter, RangesIter, SymDiffIterMap, UnionIterMap,
+    IntersectionIterMap, IntoIterMap, IntoRangeValuesIter, IterMap, MergeMap, MultiwaySweep,
+    RangeMapBlaze, RangeValuesIter, RangesIter, SymDiffIterMap, SymDiffKMergeMap, UnionIterMap,
+    UnionKMergeMap,
     keys::{IntoKeys, Keys},
     sorted_disjoint_map::{Priority, RangeToRangeValueIter},
     unsorted_priority_map::{AssumePrioritySortedStartsMap, UnsortedPriorityMap},
@@ -656,9 +657,17 @@ const fn check_traits() {
     is_sssu::<AIntoIterMap>();
     is_like_btreemap_into_iter_less_exact_size::<AIntoIterMap>();
 
-    type AKMergeMap<'a> = KMergeMap<i32, &'a u64, ARangeValuesIter<'a>>;
-    is_sssu::<AKMergeMap<'_>>();
-    is_like_btreemap_iter_less_both::<AKMergeMap<'_>>();
+    type AUnionKMergeMap<'a> = UnionKMergeMap<i32, &'a u64, ARangeValuesIter<'a>>;
+    is_sssu::<AUnionKMergeMap<'_>>();
+    is_like_btreemap_iter_less_both::<AUnionKMergeMap<'_>>();
+
+    type ASymDiffKMergeMap<'a> = SymDiffKMergeMap<i32, &'a u64, ARangeValuesIter<'a>>;
+    is_sssu::<ASymDiffKMergeMap<'_>>();
+    is_like_btreemap_iter_less_both::<ASymDiffKMergeMap<'_>>();
+
+    type AMultiwaySweep<'a> = MultiwaySweep<i32, &'a u64, ARangeValuesIter<'a>>;
+    is_sssu::<AMultiwaySweep<'_>>();
+    is_like_btreemap_iter_less_both::<AMultiwaySweep<'_>>();
 
     type AMergeMap<'a> = MergeMap<i32, &'a u64, ARangeValuesIter<'a>, ARangeValuesIter<'a>>;
     is_sssu::<AMergeMap<'_>>();
@@ -800,11 +809,6 @@ fn test_merge_map() {
     let a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
     let b = RangeMapBlaze::from_iter([(1..=2, "a"), (13..=14, "b")]).into_range_values();
     assert_eq!(MergeMap::new(a, b).size_hint(), (0, None));
-
-    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
-    let b = RangeMapBlaze::from_iter([(1..=2, "a"), (13..=14, "b")]).into_range_values();
-    let c = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
-    assert_eq!(KMergeMap::new([a, b, c]).size_hint(), (3, None));
 }
 
 #[test]
