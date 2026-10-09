@@ -54,9 +54,9 @@ mod multiway_select_map;
 pub use multiway_select_map::{SymDiffKMergeMap, SymDiffMergeMap, UnionKMergeMap, UnionMergeMap};
 mod multiway_sweep;
 mod multiway_sym_diff_set;
-pub use multiway_sym_diff_set::SymDiffKMerge;
 pub use multiway_join_iter_map::{MultiwayInnerJoinIterMap, MultiwayOuterJoinIterMap};
 pub use multiway_sweep::{MultiwaySweep, SweepEvent};
+pub use multiway_sym_diff_set::SymDiffKMerge;
 
 mod outer_join_iter_map;
 pub use outer_join_iter_map::OuterJoinIterMap;

@@ -1,6 +1,6 @@
 use alloc::{
+    boxed::Box,
     collections::{BinaryHeap, binary_heap::PeekMut},
-    vec::Vec,
 };
 use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
 
@@ -32,6 +32,9 @@ pub enum SweepEvent<T, VC> {
     },
 }
 
+// An input's next range and value, not yet started; `None` once the input is exhausted.
+type NextRange<T, VC> = Option<(RangeInclusive<T>, VC)>;
+
 /// This `struct` is created by the [`sweep`] method on [`MultiwaySortedDisjointMap`].
 ///
 /// It yields the start and end of every input range, in key order, as [`SweepEvent`]s. See
@@ -47,9 +50,9 @@ where
     VC: ValueCarrier,
     I: SortedDisjointMap<T, VC>,
 {
-    inputs: Vec<I>,
+    inputs: Box<[I]>,
     // Each input's next range (not yet started), pulled ahead so its start can be in the heap.
-    heads: Vec<Option<(RangeInclusive<T>, VC)>>,
+    heads: Box<[NextRange<T, VC>]>,
     // Starts of the inputs' next ranges, with input positions; smallest (start, input) on top. The
     // heap holds only small keys; the iterators and ranges stay in place in `inputs` and `heads`.
     starts: BinaryHeap<Reverse<(T, usize)>>,
@@ -67,7 +70,7 @@ where
     where
         K: IntoIterator<Item = I>,
     {
-        let mut inputs: Vec<I> = inputs.into_iter().collect();
+        let mut inputs: Box<[I]> = inputs.into_iter().collect();
         let input_count = inputs.len();
         let mut starts = BinaryHeap::with_capacity(input_count);
         let heads = inputs

@@ -1,4 +1,4 @@
-use alloc::vec::Vec;
+use alloc::{boxed::Box, vec::Vec};
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use crate::{Integer, MultiwaySweep, Owned, SortedDisjointMap, SweepEvent, map::ValueCarrier};
@@ -20,7 +20,7 @@ where
     // The next event, already pulled so it can be inspected.
     upcoming: Option<SweepEvent<T, VC>>,
     // One slot per input: its value over the current stretch, or `None` if it is inactive there.
-    slots: Vec<Option<VC>>,
+    slots: Box<[Option<VC>]>,
     active_count: usize,
     // The end of the stretch most recently returned. Its ranges are deactivated at the start of the
     // next call, after the caller has read `slots`.
@@ -102,9 +102,7 @@ where
         // the next events, since the stretch ended at the earliest end or just before a start.
         let mut start = None;
         if let Some(last_end) = self.last_end.take() {
-            while let Some(SweepEvent::End { at, .. }) = self.peek()
-                && *at == last_end
-            {
+            while matches!(self.peek(), Some(SweepEvent::End { at, .. }) if *at == last_end) {
                 if let Some(SweepEvent::End { input, .. }) = self.upcoming.take() {
                     self.deactivate(input);
                 }
@@ -127,8 +125,7 @@ where
         };
 
         // Activate every range that starts here.
-        while let Some(SweepEvent::Start { range, .. }) = self.peek()
-            && *range.start() == start
+        while matches!(self.peek(), Some(SweepEvent::Start { range, .. }) if *range.start() == start)
         {
             if let Some(SweepEvent::Start { input, value, .. }) = self.upcoming.take() {
                 self.activate(input, value);

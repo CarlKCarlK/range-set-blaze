@@ -1,4 +1,4 @@
-use alloc::{collections::BinaryHeap, vec::Vec};
+use alloc::{boxed::Box, collections::BinaryHeap};
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
 use crate::{
@@ -39,11 +39,11 @@ where
     sweep: MultiwaySweep<T, VC, I>,
     mode: Mode,
     // Each input's value while its range is active.
-    slots: Vec<Option<VC>>,
+    slots: Box<[Option<VC>]>,
     // Max-heap of active input positions, deleted lazily (an entry whose slot is `None` is stale).
     // `in_heap` keeps each position in the heap at most once, so it holds at most k entries.
     highest: BinaryHeap<usize>,
-    in_heap: Vec<bool>,
+    in_heap: Box<[bool]>,
     active_count: usize,
     // Start of the current stretch, while at least one input is active.
     stretch_start: Option<T>,
