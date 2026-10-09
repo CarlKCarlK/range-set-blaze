@@ -23,7 +23,7 @@ public-API quality matter more here than in an experimental project.
 - Keep the crate `no_std` (see `#![no_std]` in `src/lib.rs`) and `alloc`-based (not
   allocation-free) unless the user explicitly changes that goal. The `std` feature only adds
   `std`-specific trait impls/conveniences on top, it is not required for core functionality.
-- Respect the documented MSRV (`rust-version` in `Cargo.toml`, currently 1.87) and `edition`.
+- Respect the documented MSRV (`rust-version` in `Cargo.toml`, currently 1.89) and `edition`.
   Don't use newer syntax/stdlib features than the MSRV allows.
 
 ## Unsafe Code
@@ -151,5 +151,7 @@ consider deleting the spec once the work it describes is complete, for example:
   release notes, version bumps, and the publish command, but the actual publish step is run by
   the human.
 - Always suggest a concise 1-2 line commit message when completing work, in a fenced code block.
+- Never add `Co-Authored-By:` trailers or other AI attribution lines (e.g. "Generated with Claude Code")
+  to commit messages or PR descriptions.
 - Treat `Cargo.lock` and dependency version bumps as deliberate, reviewable changes, not
   incidental side effects of an unrelated task.

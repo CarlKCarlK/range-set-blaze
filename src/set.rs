@@ -712,6 +712,23 @@ impl<T: Integer> RangeSetBlaze<T> {
         self.ranges().is_universal()
     }
 
+    /// Returns the universal set containing all values of `T`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeSetBlaze;
+    ///
+    /// let universal = RangeSetBlaze::<u8>::universe();
+    /// assert!(universal.is_universal());
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn universe() -> Self {
+        // TODO00 Revisit whether `universe` is the best public name and constructor shape.
+        !Self::new()
+    }
+
     /// Returns `true` if the set is a subset of another,
     /// i.e., `other` contains at least all the elements in `self`.
     ///

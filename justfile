@@ -7,6 +7,9 @@
 # nightly change) from silently breaking local/CI checks. Bump deliberately.
 nightly := "nightly-2026-09-15"
 
+# MSRV: keep in sync with `rust-version` in Cargo.toml and the `test_msrv` job in ci.yml.
+msrv := "1.89"
+
 # ============================================================================
 # Main Commands (use these most often)
 # ============================================================================
@@ -29,14 +32,14 @@ ci-nightly: test-nightly
 
 # Run clippy with CI settings (matches CI exactly, using the pinned toolchain in rust-toolchain.toml)
 clippy:
-    cargo clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated
+    cargo clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
 
 # Preview lints on the newest stable toolchain, ignoring the pinned CI toolchain.
 # Run this deliberately when evaluating a Rust-toolchain update; it is not part of
 # the normal pinned CI path.
 clippy-latest:
     rustup update stable
-    cargo +stable clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated
+    cargo +stable clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
 
 # Run all stable tests (matches CI)
 test-stable:
@@ -118,14 +121,14 @@ fmt-check:
     cargo fmt --all -- --check
 
 # ============================================================================
-# MSRV (matches `rust-version` in Cargo.toml — run `rustup toolchain install 1.87` once)
+# MSRV (matches `rust-version` in Cargo.toml — install the `msrv` toolchain above once)
 # ============================================================================
 
-# Check the crate still compiles on the declared MSRV (1.87)
+# Check the crate still compiles on the declared MSRV
 msrv-check:
-    cargo +1.87 check --verbose
-    cargo +1.87 check --verbose --no-default-features
-    cargo +1.87 check --verbose --features std
+    cargo +{{msrv}} check --verbose
+    cargo +{{msrv}} check --verbose --no-default-features
+    cargo +{{msrv}} check --verbose --features std
 
 # ============================================================================
 # WASM (wasip1 via wasmtime — the browser/Chrome lane is CI-only)
@@ -136,6 +139,19 @@ test-wasm:
     rustup target add wasm32-wasip1
     CARGO_TARGET_WASM32_WASIP1_RUNNER='wasmtime run --dir .' cargo test --target wasm32-wasip1 --verbose
     CARGO_TARGET_WASM32_WASIP1_RUNNER='wasmtime run --dir .' cargo test --target wasm32-wasip1 --verbose --no-default-features
+
+# Compile-check (no run) the cross-target CI lanes: WASM/unknown, WASM/wasip1, and embedded.
+# Catches target-specific cfg and dependency mistakes (e.g. a non-wasm-only dev-dependency used
+# in an ungated test) without needing Chrome, wasm-pack, wasmtime, or QEMU. Running these tests is CI-only.
+cross-check:
+    rustup target add wasm32-unknown-unknown wasm32-wasip1 thumbv7m-none-eabi
+    cargo check --tests --target wasm32-unknown-unknown --no-default-features
+    cargo check --tests --target wasm32-unknown-unknown --features std
+    cargo check --tests --target wasm32-wasip1
+    cargo check --tests --target wasm32-wasip1 --no-default-features
+    cargo check --target thumbv7m-none-eabi --no-default-features
+    rustup target add --toolchain {{nightly}} thumbv7m-none-eabi
+    cargo +{{nightly}} check --target thumbv7m-none-eabi --no-default-features --features float_nightly_experimental
 
 # Portable stable float tests for local WSL runs.
 test-floats-portable:

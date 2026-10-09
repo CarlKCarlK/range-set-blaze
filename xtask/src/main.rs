@@ -51,10 +51,11 @@ fn check_all() -> ExitCode {
         .status()
         .is_ok_and(|s| s.success());
 
-    // `just clippy` / `just test-stable` / `just test-nightly` are the single source of
-    // truth for which feature-flag combinations get tested — see `justfile`. Delegating
-    // to them here (instead of re-listing `cargo` invocations) keeps `cargo check-all`
-    // and `just check-all` from drifting apart the way they did before.
+    // `just clippy` / `just test-stable` / `just test-nightly` / `just msrv-check` /
+    // `just cross-check` are the single source of truth for which feature-flag combinations
+    // and targets get tested — see `justfile`. Delegating to them here (instead of
+    // re-listing `cargo` invocations) keeps `cargo check-all` and `just check-all` from
+    // drifting apart the way they did before.
     let mut steps: Vec<(String, String, Vec<String>)> = vec![
         (
             "just clippy".to_string(),
@@ -70,6 +71,16 @@ fn check_all() -> ExitCode {
             "just test-nightly".to_string(),
             "just".to_string(),
             vec!["test-nightly".to_string()],
+        ),
+        (
+            "just msrv-check".to_string(),
+            "just".to_string(),
+            vec!["msrv-check".to_string()],
+        ),
+        (
+            "just cross-check".to_string(),
+            "just".to_string(),
+            vec!["cross-check".to_string()],
         ),
     ];
 

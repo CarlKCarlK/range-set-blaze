@@ -5,7 +5,85 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-10-09
+
+This is a breaking release (see **Changed** and **Removed**). Code that only uses
+`RangeSetBlaze`, `RangeMapBlaze`, and their operators and methods is unaffected
+apart from the new minimum Rust version. It also includes the `from_slice`
+fix described under 0.7.1, which was never published to crates.io.
+
+### Added
+
+- **Map joins.** `SortedDisjointMap::inner_join`, `left_join`, and `full_join`
+  pair up two map streams by key, yielding `(range, (left, right))` with
+  `Option` for a side that may be absent. `RangeMapBlaze::inner_join`,
+  `left_join`, and `full_join` take a function of the two values (for
+  example, `a.inner_join(&b, |l, r| ...)`) and return a map of its results.
+  `left_join` stops as soon as the left input ends, without reading the rest
+  of the right input.
+- **A joins guide** (`range_set_blaze::joins`) explains the joins,
+  `transform_values`, and `sweep`, and when to use each.
+- **Multiway joins.** `MultiwaySortedDisjointMap::inner_join` and `full_join`
+  (and the same on collections of `&RangeMapBlaze`) call a closure once per
+  stretch of keys with every input's value there (`&[V]`, or
+  `&[Option<V>]` for the full join) and collect its results.
+- **`transform_values`** on map streams and on `RangeMapBlaze`: same keys,
+  new values, merging touching ranges whose new values are equal.
+- **`MultiwaySortedDisjointMap::sweep`**, a low-level stream of every input
+  range's start and end in key order (`SweepEvent`), for computations the
+  joins do not cover. The multiway joins are built on it.
+- **`Owned<V>`**, a `ValueCarrier` that holds its value directly, so stream
+  operations can produce new values without allocating. In the prelude.
+- `RangeMapBlaze::universe_with(&value)` and `RangeSetBlaze::universe()`.
+- `ValueCarrier` for pairs of carriers, so joined streams compose with other
+  map operations.
+- New iterator types: `InnerJoinMap`, `LeftJoinMap`, `FullJoinMap`,
+  `TransformValuesMap`, `MultiwayInnerJoinMap`, `MultiwayFullJoinMap`,
+  `MultiwaySweep`, and `SweepEvent`.
+
+### Changed
+
+- **Minimum supported Rust version is now 1.89** (was 1.87).
+- **Faster map unions and symmetric differences.** The two-way map `|` and
+  `^` operators are about 1.6-2.9x faster; multiway map `union` and
+  `symmetric_difference` are about 1.4-4x faster. Multiway set
+  `symmetric_difference` is also faster in most cases (up to about 1.23x
+  slower with 2-4 sparse inputs). Results are unchanged.
+- **Breaking: set and map operation result types are now opaque structs named
+  after their operation** (as std names `btree_set::Union`): `Union`,
+  `Intersection`, `Difference`, `SymmetricDifference`, `MultiwayUnion`,
+  `MultiwayIntersection`, `MultiwaySymmetricDifference`, `UnionMap`,
+  `IntersectionMap`, `DifferenceMap`, `SymmetricDifferenceMap`, `NotMap`,
+  `MultiwayUnionMap`, `MultiwayIntersectionMap`, and
+  `MultiwaySymmetricDifferenceMap`. They were hidden type aliases exposing
+  internal types, so any change of implementation changed them; now their
+  fields are private. Code that only iterates or chains these results is
+  unaffected. The old names (`UnionMerge`, `IntersectionMerge`,
+  `DifferenceMerge`, `SymDiffMerge`, `UnionKMerge`, `SymDiffKMerge`,
+  `UnionMergeMap`, `SymDiffMergeMap`, `UnionKMergeMap`, `SymDiffKMergeMap`,
+  `IntersectionKMap`) remain as deprecated aliases. Code that named the old
+  internal types directly (for example `UnionIter<...>` for `a | b`) must use
+  the new names.
+- **Breaking:** `SortedDisjointMap::complement` now returns `NotMap` (was the
+  equivalent `NotIter<..., RangeValuesToRangesIter<...>>`), `complement_with`
+  returns `RangeToRangeValueIter<..., NotMap<...>>`, and
+  `MultiwaySortedDisjointMap::intersection` no longer has an unused lifetime
+  parameter.
+- The `RangeMapBlaze` docs now state that values should be cheap to clone,
+  because operations clone a value whenever they split its range; wrap large
+  values in `Rc` or `Arc`.
+- `just check-all` now also runs the MSRV check, matching CI.
+- The pinned development toolchain is now Rust 1.99.0 (was 1.97.0). This
+  affects only local builds and CI, not the minimum supported Rust version.
+
+### Removed
+
+- **Breaking:** `KMergeMap`, `MergeMap`, and `SymDiffIterMap`. They had no
+  public constructors and are no longer used by the crate.
+
 ## [0.7.1] - 2026-09-25
+
+This version was never published to crates.io. Its fix first ships in 0.8.0.
 
 ### Fixed
 

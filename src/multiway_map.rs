@@ -6,8 +6,9 @@
 // }
 
 use crate::{
-    Integer, IntersectionKMap, RangeMapBlaze, SortedDisjointMap, SymDiffIterMap, SymDiffKMergeMap,
-    UnionIterMap, UnionKMergeMap, intersection_iter_map::IntersectionIterMap, map::ValueCarrier,
+    Integer, MultiwayFullJoinMap, MultiwayInnerJoinMap, MultiwayIntersectionMap, MultiwaySweep,
+    MultiwaySymmetricDifferenceMap, MultiwayUnionMap, RangeMapBlaze, SortedDisjointMap,
+    intersection_iter_map::IntersectionIterMap, map::ValueCarrier,
     range_values::RangeValuesToRangesIter,
 };
 use alloc::vec::Vec;
@@ -139,6 +140,8 @@ where
 /// Provides methods on zero or more [`RangeMapBlaze`] references,
 /// specifically [`union`], [`intersection`] and [`symmetric_difference`].
 ///
+/// For the multiway joins, see the [joins guide][crate::joins].
+///
 /// Also see [`MultiwayRangeMapBlaze`].
 ///
 /// [`union`]: MultiwayRangeMapBlazeRef::union
@@ -234,6 +237,75 @@ pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: Eq + Clone + 'a>:
             .symmetric_difference()
             .into_range_map_blaze()
     }
+
+    /// Joins the given [`RangeMapBlaze`] references on the keys covered by **all** of them,
+    /// creating a new [`RangeMapBlaze`] whose values are `f` applied to every input's value there.
+    ///
+    /// `f` receives one `&V` per input, in input order. This is a thin wrapper over
+    /// [`MultiwaySortedDisjointMap::inner_join`]; see it for details (call order, merging, zero
+    /// inputs, and performance).
+    ///
+    /// [`MultiwaySortedDisjointMap::inner_join`]: crate::MultiwaySortedDisjointMap::inner_join
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeMapBlaze::from_iter([(0..=9, 'x'), (10..=19, 'y')]);
+    /// let b = RangeMapBlaze::from_iter([(5..=14, 'p')]);
+    /// let c = RangeMapBlaze::from_iter([(0..=99, 'q')]);
+    ///
+    /// let labels = [&a, &b, &c].inner_join(|values| values.iter().copied().collect::<String>());
+    /// assert_eq!(labels.to_string(), r#"(5..=9, "xpq"), (10..=14, "ypq")"#);
+    /// ```
+    fn inner_join<F, W>(self, f: F) -> RangeMapBlaze<T, W>
+    where
+        F: FnMut(&[&'a V]) -> W,
+        W: Eq + Clone,
+    {
+        self.into_iter()
+            .map(RangeMapBlaze::range_values)
+            .inner_join(f)
+            .into_range_map_blaze()
+    }
+
+    /// Joins the given [`RangeMapBlaze`] references on the keys covered by **at least one** of
+    /// them, creating a new [`RangeMapBlaze`] whose values are `f` applied to each input's value
+    /// there (or `None`).
+    ///
+    /// `f` receives one value per input, in input order, and is never called with every value
+    /// `None`. This is a thin wrapper over [`MultiwaySortedDisjointMap::full_join`]; see it for
+    /// details (call order, merging, zero inputs, and performance).
+    ///
+    /// [`MultiwaySortedDisjointMap::full_join`]: crate::MultiwaySortedDisjointMap::full_join
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeMapBlaze::from_iter([(0..=9, 1)]);
+    /// let b = RangeMapBlaze::from_iter([(5..=14, 10)]);
+    ///
+    /// // Sum the values present, counting a missing input as 0.
+    /// let sums = [&a, &b].full_join(|values| values.iter().flatten().copied().sum::<i32>());
+    /// assert_eq!(sums.to_string(), "(0..=4, 1), (5..=9, 11), (10..=14, 10)");
+    /// ```
+    fn full_join<F, W>(self, f: F) -> RangeMapBlaze<T, W>
+    where
+        F: FnMut(&[Option<&'a V>]) -> W,
+        W: Eq + Clone,
+    {
+        self.into_iter()
+            .map(RangeMapBlaze::range_values)
+            .full_join(f)
+            .into_range_map_blaze()
+    }
 }
 
 impl<T, VC, II, I> MultiwaySortedDisjointMap<T, VC, I> for II
@@ -247,6 +319,8 @@ where
 
 /// Provides methods on zero or more [`SortedDisjointMap`] iterators,
 /// specifically [`union`], [`intersection`], and [`symmetric_difference`].
+///
+/// For the multiway joins and `sweep`, see the [joins guide][crate::joins].
 ///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
 /// [`union`]: crate::MultiwaySortedDisjointMap::union
@@ -288,8 +362,8 @@ where
     ///
     /// assert_eq!(union.into_string(), r#"(1..=2, "c"), (3..=4, "b"), (5..=100, "c"), (101..=200, "a")"#);
     /// ```
-    fn union(self) -> UnionKMergeMap<T, VC, I> {
-        UnionIterMap::new_k(self)
+    fn union(self) -> MultiwayUnionMap<T, VC, I> {
+        MultiwayUnionMap::new_k(self)
     }
 
     /// Intersects the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
@@ -326,7 +400,7 @@ where
     ///
     /// assert_eq!(intersection.into_string(), r#"(2..=2, "c"), (6..=6, "c")"#);
     /// ```
-    fn intersection<'a>(self) -> IntersectionKMap<'a, T, VC, I> {
+    fn intersection(self) -> MultiwayIntersectionMap<T, VC, I> {
         // We define map intersection -- in part -- in terms of set intersection.
         // Elsewhere, we define set intersection in terms of complement and (set/map) union.
         use crate::MultiwaySortedDisjoint;
@@ -335,7 +409,7 @@ where
             .next()
             .expect("The intersection of 0 maps is undefined.");
         let iter_set = iter.map(RangeValuesToRangesIter::new).intersection();
-        IntersectionIterMap::new(iter_map, iter_set)
+        MultiwayIntersectionMap::new(IntersectionIterMap::new(iter_map, iter_set))
     }
 
     /// Symmetric difference on the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
@@ -359,7 +433,153 @@ where
     ///
     /// assert_eq!(symmetric_difference.into_string(), r#"(1..=2, "c"), (3..=4, "b"), (6..=6, "c"), (101..=200, "a")"#);
     /// ```
-    fn symmetric_difference(self) -> SymDiffKMergeMap<T, VC, I> {
-        SymDiffIterMap::new_k(self)
+    fn symmetric_difference(self) -> MultiwaySymmetricDifferenceMap<T, VC, I> {
+        MultiwaySymmetricDifferenceMap::new_k(self)
+    }
+
+    /// Joins the given [`SortedDisjointMap`] iterators on the ranges covered by **all** of them,
+    /// calling `f` with every input's value there and yielding its result.
+    ///
+    /// `f` receives one value carrier per input, in input order (for
+    /// [`RangeMapBlaze::range_values`], a `&V`). It is called once per maximal range over which
+    /// the inputs' values are constant, in ascending key order, so it may be `FnMut` and keep
+    /// state. Results are carried by [`Owned`]; touching ranges with equal results are merged.
+    /// Any number of inputs can be given; with zero inputs, "all inputs present" holds
+    /// everywhere, so the result is the universal range with the value `f(&[])`.
+    ///
+    /// Unlike [`intersection`], which keeps one input's value, this combines all of them. For
+    /// exactly two inputs, also see [`SortedDisjointMap::inner_join`], which yields pairs.
+    ///
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap::inner_join`]: crate::SortedDisjointMap::inner_join
+    /// [`RangeMapBlaze::range_values`]: crate::RangeMapBlaze::range_values
+    /// [`Owned`]: crate::Owned
+    /// [`intersection`]: crate::MultiwaySortedDisjointMap::intersection
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
+    ///
+    /// # Performance
+    ///
+    /// One pass through the inputs. Each input range costs O(log k) for k inputs, as with
+    /// [`union`](crate::MultiwaySortedDisjointMap::union); the slice passed to `f` is updated in
+    /// place, not rebuilt.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeMapBlaze::from_iter([(0..=9, 1), (10..=19, 2)]);
+    /// let b = RangeMapBlaze::from_iter([(5..=14, 10)]);
+    /// let c = RangeMapBlaze::from_iter([(0..=99, 100)]);
+    ///
+    /// let sums = [a.range_values(), b.range_values(), c.range_values()]
+    ///     .inner_join(|values| values.iter().copied().sum::<i32>());
+    /// assert_eq!(sums.into_string(), "(5..=9, 111), (10..=14, 112)");
+    /// ```
+    fn inner_join<F, W>(self, f: F) -> MultiwayInnerJoinMap<T, VC, I, F, W>
+    where
+        F: FnMut(&[VC]) -> W,
+        W: Eq + Clone,
+    {
+        MultiwayInnerJoinMap::new(self, f)
+    }
+
+    /// Joins the given [`SortedDisjointMap`] iterators on the ranges covered by **at least one**
+    /// of them, calling `f` with each input's value there (or `None`) and yielding its result.
+    ///
+    /// `f` receives one value per input, in input order: `Some(value)` if that input covers the
+    /// range, `None` if not. It is never called with every value `None`. It is called once per
+    /// maximal range over which the values are constant, in ascending key order, so it may be
+    /// `FnMut` and keep state. Results are carried by [`Owned`]; touching ranges with equal
+    /// results are merged. With zero inputs, the result is empty.
+    ///
+    /// For exactly two inputs, also see [`SortedDisjointMap::full_join`], which yields pairs.
+    ///
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
+    /// [`SortedDisjointMap::full_join`]: crate::SortedDisjointMap::full_join
+    /// [`Owned`]: crate::Owned
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
+    ///
+    /// # Performance
+    ///
+    /// One pass through the inputs. Each input range costs O(log k) for k inputs, as with
+    /// [`union`](crate::MultiwaySortedDisjointMap::union); the slice passed to `f` is updated in
+    /// place, not rebuilt.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let a = RangeMapBlaze::from_iter([(0..=9, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(5..=14, "b")]);
+    ///
+    /// // Which inputs cover each range?
+    /// let coverage = [a.range_values(), b.range_values()].full_join(|values| {
+    ///     values.iter().flatten().copied().copied().collect::<Vec<_>>().join("+")
+    /// });
+    /// assert_eq!(
+    ///     coverage.into_string(),
+    ///     r#"(0..=4, "a"), (5..=9, "a+b"), (10..=14, "b")"#
+    /// );
+    /// ```
+    fn full_join<F, W>(self, f: F) -> MultiwayFullJoinMap<T, VC, I, F, W>
+    where
+        F: FnMut(&[Option<VC>]) -> W,
+        W: Eq + Clone,
+    {
+        MultiwayFullJoinMap::new(self, f)
+    }
+
+    /// Sweeps the given [`SortedDisjointMap`] iterators, yielding each input range's start and
+    /// end, in key order, as [`SweepEvent`]s.
+    ///
+    /// This is the low-level operation behind the multiway joins, for computations they do not
+    /// cover (overlap depth, running aggregates, custom precedence). Every input range yields one
+    /// [`SweepEvent::Start`] (with its range, input position, and value, moved rather than cloned)
+    /// and later one [`SweepEvent::End`] (with its last key and input position). Events are in key
+    /// order: a range ending at `p - 1` ends before a range starting at `p` starts, so between
+    /// consecutive events the set of started-but-not-ended ranges is constant. The order of
+    /// events of the same kind at the same key is unspecified.
+    ///
+    /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
+    /// [`SweepEvent`]: crate::SweepEvent
+    /// [`SweepEvent::Start`]: crate::SweepEvent::Start
+    /// [`SweepEvent::End`]: crate::SweepEvent::End
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
+    ///
+    /// # Performance
+    ///
+    /// One pass through the inputs, O(log k) per input range for k inputs. No values are cloned or
+    /// stored.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::{SweepEvent, prelude::*};
+    ///
+    /// let a = RangeMapBlaze::from_iter([(0..=9, "a")]);
+    /// let b = RangeMapBlaze::from_iter([(5..=14, "b")]);
+    /// let c = RangeMapBlaze::from_iter([(7..=8, "c")]);
+    ///
+    /// // The most inputs that overlap any key.
+    /// let mut depth = 0;
+    /// let mut max_depth = 0;
+    /// for event in [a.range_values(), b.range_values(), c.range_values()].sweep() {
+    ///     match event {
+    ///         SweepEvent::Start { .. } => {
+    ///             depth += 1;
+    ///             max_depth = max_depth.max(depth);
+    ///         }
+    ///         SweepEvent::End { .. } => depth -= 1,
+    ///     }
+    /// }
+    /// assert_eq!(max_depth, 3);
+    /// ```
+    fn sweep(self) -> MultiwaySweep<T, VC, I> {
+        MultiwaySweep::new(self)
     }
 }

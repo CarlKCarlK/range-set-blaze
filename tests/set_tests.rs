@@ -26,10 +26,10 @@ use quickcheck_macros::quickcheck;
 use rand::Rng;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
-use range_set_blaze::SymDiffIter;
 #[cfg(not(target_arch = "wasm32"))]
 use range_set_blaze::test_util::{How, MemorylessIter, MemorylessRange, k_sets, width_to_range};
 use range_set_blaze::{Integer, NotIter, SortedStarts, prelude::*};
+use range_set_blaze::{SymDiffIter, SymmetricDifference, Union};
 use range_set_blaze::{UnionIter, symmetric_difference_dyn};
 use std::any::Any;
 use std::cmp::Ordering;
@@ -2088,8 +2088,8 @@ fn test_every_sorted_disjoint_method() {
             let e: MapRangesIter<'_, _, _> = c1.ranges();
             let f: NotIter<_, _> = !!CheckSortedDisjoint::new([1..=2, 5..=100]);
             let g: RangesIter<'_, _> = c0.ranges();
-            let h: SymDiffIter<_, _> = c0.ranges() ^ c0.ranges() ^ c0.ranges();
-            let i: UnionIter<_, _> = c0.ranges() | c0.ranges();
+            let h: SymmetricDifference<_, _, _> = c0.ranges() ^ c0.ranges() ^ c0.ranges();
+            let i: Union<_, _, _> = c0.ranges() | c0.ranges();
 
             (a, b, c, d, e, f, g, h, i)
         }};
@@ -3362,4 +3362,37 @@ fn cover_is_universal() {
     let empty = RangeMapBlaze::<u8, &'static str>::new();
     assert!(!empty.is_universal());
     assert!(!empty.ranges().is_universal());
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[quickcheck]
+fn multiway_set_operations_match_brute_force(inputs: Vec<Vec<(u8, u8)>>) -> bool {
+    // Union, intersection, and symmetric difference keep a key when at least one, all, or an odd
+    // number of inputs contain it.
+    let sets: Vec<RangeSetBlaze<u8>> = inputs
+        .into_iter()
+        .take(6)
+        .map(|ranges| {
+            ranges
+                .into_iter()
+                .map(|(a, b)| a.min(b)..=a.max(b))
+                .collect()
+        })
+        .collect();
+    let brute = |keep: &dyn Fn(usize) -> bool| -> RangeSetBlaze<u8> {
+        (0..=u8::MAX)
+            .filter(|key| keep(sets.iter().filter(|set| set.contains(*key)).count()))
+            .collect()
+    };
+    let streams = || sets.iter().map(RangeSetBlaze::ranges).collect::<Vec<_>>();
+    let union_ok = streams().union().into_range_set_blaze() == brute(&|count| count > 0)
+        && sets.iter().union() == brute(&|count| count > 0);
+    let symmetric_difference_ok = streams().symmetric_difference().into_range_set_blaze()
+        == brute(&|count| count % 2 == 1)
+        && sets.iter().symmetric_difference() == brute(&|count| count % 2 == 1);
+    // With zero inputs, intersection is the universal set.
+    let intersection_ok = streams().intersection().into_range_set_blaze()
+        == brute(&|count| count == sets.len())
+        && sets.iter().intersection() == brute(&|count| count == sets.len());
+    union_ok && symmetric_difference_ok && intersection_ok
 }

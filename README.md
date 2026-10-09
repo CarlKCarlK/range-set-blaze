@@ -12,6 +12,7 @@ Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full 
 * Supports all of Rust's integer-like types, `u8` to `u128`, `i8` to `i128`, `char` (Unicode characters), `Ipv4Addr`, and `Ipv6Addr`. Also supports [floating-point ranges][floating-point documentation] for `f32` and `f64` through the [`NotNanF32`], [`NotNanF64`], [`TotalF32`], and [`TotalF64`] wrappers.
 * `union`, `intersection`, `difference`, `symmetric difference`, and `complement`—available on both [sets][set operations] and [maps][map operations].
 * Can also work directly with [ranges and gaps][ranges and gaps], not just individual integer-like values.
+* [Joins][joins] (inner, left, and full, two-way and multiway) combine the values of range maps by key.
 
 The crate's main structs are:
 
@@ -49,6 +50,7 @@ The crate's main traits are
 [set documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html
 [map documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html
 [ranges and gaps]: https://docs.rs/range-set-blaze/latest/range_set_blaze/gaps/index.html
+[joins]: https://docs.rs/range-set-blaze/latest/range_set_blaze/joins/index.html
 [`BTreeMap`]: alloc::collections::BTreeMap
 [`BTreeSet`]: alloc::collections::BTreeSet
 [`HashSet`]: std::collections::HashSet
