@@ -1,5 +1,8 @@
 use alloc::{boxed::Box, vec::Vec};
-use core::{iter::FusedIterator, ops::RangeInclusive};
+use core::{
+    iter::{FusedIterator, Peekable},
+    ops::RangeInclusive,
+};
 
 use crate::{Integer, MultiwaySweep, Owned, SortedDisjointMap, SweepEvent, map::ValueCarrier};
 
@@ -16,9 +19,7 @@ where
     VC: ValueCarrier,
     I: SortedDisjointMap<T, VC>,
 {
-    events: MultiwaySweep<T, VC, I>,
-    // The next event, already pulled so it can be inspected.
-    upcoming: Option<SweepEvent<T, VC>>,
+    events: Peekable<MultiwaySweep<T, VC, I>>,
     // One slot per input: its value over the current stretch, or `None` if it is inactive there.
     slots: Box<[Option<VC>]>,
     active_count: usize,
@@ -54,8 +55,7 @@ where
         let events = MultiwaySweep::new(inputs);
         let input_count = events.input_count();
         Self {
-            events,
-            upcoming: None,
+            events: events.peekable(),
             slots: (0..input_count).map(|_| None).collect(),
             active_count: 0,
             last_end: None,
@@ -63,13 +63,6 @@ where
             changed: Vec::new(),
             changed_overflow: false,
         }
-    }
-
-    fn peek(&mut self) -> Option<&SweepEvent<T, VC>> {
-        if self.upcoming.is_none() {
-            self.upcoming = self.events.next();
-        }
-        self.upcoming.as_ref()
     }
 
     fn deactivate(&mut self, index: usize) {
@@ -102,10 +95,11 @@ where
         // the next events, since the stretch ended at the earliest end or just before a start.
         let mut start = None;
         if let Some(last_end) = self.last_end.take() {
-            while matches!(self.peek(), Some(SweepEvent::End { at, .. }) if *at == last_end) {
-                if let Some(SweepEvent::End { input, .. }) = self.upcoming.take() {
-                    self.deactivate(input);
-                }
+            while let Some(SweepEvent::End { input, .. }) = self
+                .events
+                .next_if(|event| matches!(event, SweepEvent::End { at, .. } if *at == last_end))
+            {
+                self.deactivate(input);
             }
             // Every range ends at or before the maximum key, so nothing can follow it.
             start = Some(last_end.checked_add_one()?);
@@ -113,7 +107,7 @@ where
 
         // With nothing active, jump to the next range's start.
         let start = if self.active_count == 0 {
-            match self.peek()? {
+            match self.events.peek()? {
                 SweepEvent::Start { range, .. } => *range.start(),
                 SweepEvent::End { .. } => unreachable!("an end event with no active range"),
             }
@@ -125,15 +119,14 @@ where
         };
 
         // Activate every range that starts here.
-        while matches!(self.peek(), Some(SweepEvent::Start { range, .. }) if *range.start() == start)
-        {
-            if let Some(SweepEvent::Start { input, value, .. }) = self.upcoming.take() {
-                self.activate(input, value);
-            }
+        while let Some(SweepEvent::Start { input, value, .. }) = self.events.next_if(
+            |event| matches!(event, SweepEvent::Start { range, .. } if *range.start() == start),
+        ) {
+            self.activate(input, value);
         }
 
         // The stretch runs to the next event: an end (inclusive), or just before a start.
-        let end = match self.peek() {
+        let end = match self.events.peek() {
             Some(SweepEvent::End { at, .. }) => *at,
             Some(SweepEvent::Start { range, .. }) => range.start().sub_one(),
             None => unreachable!("an active range has not ended"),
