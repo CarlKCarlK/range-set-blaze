@@ -7,6 +7,9 @@
 # nightly change) from silently breaking local/CI checks. Bump deliberately.
 nightly := "nightly-2026-09-15"
 
+# MSRV: keep in sync with `rust-version` in Cargo.toml and the `test_msrv` job in ci.yml.
+msrv := "1.89"
+
 # ============================================================================
 # Main Commands (use these most often)
 # ============================================================================
@@ -118,14 +121,14 @@ fmt-check:
     cargo fmt --all -- --check
 
 # ============================================================================
-# MSRV (matches `rust-version` in Cargo.toml — run `rustup toolchain install 1.87` once)
+# MSRV (matches `rust-version` in Cargo.toml — install the `msrv` toolchain above once)
 # ============================================================================
 
-# Check the crate still compiles on the declared MSRV (1.87)
+# Check the crate still compiles on the declared MSRV
 msrv-check:
-    cargo +1.87 check --verbose
-    cargo +1.87 check --verbose --no-default-features
-    cargo +1.87 check --verbose --features std
+    cargo +{{msrv}} check --verbose
+    cargo +{{msrv}} check --verbose --no-default-features
+    cargo +{{msrv}} check --verbose --features std
 
 # ============================================================================
 # WASM (wasip1 via wasmtime — the browser/Chrome lane is CI-only)
