@@ -140,6 +140,19 @@ test-wasm:
     CARGO_TARGET_WASM32_WASIP1_RUNNER='wasmtime run --dir .' cargo test --target wasm32-wasip1 --verbose
     CARGO_TARGET_WASM32_WASIP1_RUNNER='wasmtime run --dir .' cargo test --target wasm32-wasip1 --verbose --no-default-features
 
+# Compile-check (no run) the cross-target CI lanes: WASM/unknown, WASM/wasip1, and embedded.
+# Catches target-specific cfg and dependency mistakes (e.g. a non-wasm-only dev-dependency used
+# in an ungated test) without needing Chrome, wasm-pack, wasmtime, or QEMU. Running these tests is CI-only.
+cross-check:
+    rustup target add wasm32-unknown-unknown wasm32-wasip1 thumbv7m-none-eabi
+    cargo check --tests --target wasm32-unknown-unknown --no-default-features
+    cargo check --tests --target wasm32-unknown-unknown --features std
+    cargo check --tests --target wasm32-wasip1
+    cargo check --tests --target wasm32-wasip1 --no-default-features
+    cargo check --target thumbv7m-none-eabi --no-default-features
+    rustup target add --toolchain {{nightly}} thumbv7m-none-eabi
+    cargo +{{nightly}} check --target thumbv7m-none-eabi --no-default-features --features float_nightly_experimental
+
 # Portable stable float tests for local WSL runs.
 test-floats-portable:
     cargo test --verbose --features std
