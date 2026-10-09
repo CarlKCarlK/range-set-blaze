@@ -140,6 +140,8 @@ where
 /// Provides methods on zero or more [`RangeMapBlaze`] references,
 /// specifically [`union`], [`intersection`] and [`symmetric_difference`].
 ///
+/// For the multiway joins, see the [joins guide][crate::joins].
+///
 /// Also see [`MultiwayRangeMapBlaze`].
 ///
 /// [`union`]: MultiwayRangeMapBlazeRef::union
@@ -236,7 +238,6 @@ pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: Eq + Clone + 'a>:
             .into_range_map_blaze()
     }
 
-    // TODO0(api-change): New public multiway join.
     /// Joins the given [`RangeMapBlaze`] references on the keys covered by **all** of them,
     /// creating a new [`RangeMapBlaze`] whose values are `f` applied to every input's value there.
     ///
@@ -245,6 +246,8 @@ pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: Eq + Clone + 'a>:
     /// inputs, and performance).
     ///
     /// [`MultiwaySortedDisjointMap::inner_join`]: crate::MultiwaySortedDisjointMap::inner_join
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
     ///
     /// # Examples
     ///
@@ -269,7 +272,6 @@ pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: Eq + Clone + 'a>:
             .into_range_map_blaze()
     }
 
-    // TODO0(api-change): New public multiway join.
     /// Joins the given [`RangeMapBlaze`] references on the keys covered by **at least one** of
     /// them, creating a new [`RangeMapBlaze`] whose values are `f` applied to each input's value
     /// there (or `None`).
@@ -279,6 +281,8 @@ pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: Eq + Clone + 'a>:
     /// details (call order, merging, zero inputs, and performance).
     ///
     /// [`MultiwaySortedDisjointMap::full_join`]: crate::MultiwaySortedDisjointMap::full_join
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
     ///
     /// # Examples
     ///
@@ -315,6 +319,8 @@ where
 
 /// Provides methods on zero or more [`SortedDisjointMap`] iterators,
 /// specifically [`union`], [`intersection`], and [`symmetric_difference`].
+///
+/// For the multiway joins and `sweep`, see the [joins guide][crate::joins].
 ///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
 /// [`union`]: crate::MultiwaySortedDisjointMap::union
@@ -431,7 +437,6 @@ where
         MultiwaySymmetricDifferenceMap::new_k(self)
     }
 
-    // TODO0(api-change): New public multiway join.
     /// Joins the given [`SortedDisjointMap`] iterators on the ranges covered by **all** of them,
     /// calling `f` with every input's value there and yielding its result.
     ///
@@ -450,6 +455,8 @@ where
     /// [`RangeMapBlaze::range_values`]: crate::RangeMapBlaze::range_values
     /// [`Owned`]: crate::Owned
     /// [`intersection`]: crate::MultiwaySortedDisjointMap::intersection
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
     ///
     /// # Performance
     ///
@@ -478,7 +485,6 @@ where
         MultiwayInnerJoinMap::new(self, f)
     }
 
-    // TODO0(api-change): New public multiway join.
     /// Joins the given [`SortedDisjointMap`] iterators on the ranges covered by **at least one**
     /// of them, calling `f` with each input's value there (or `None`) and yielding its result.
     ///
@@ -493,6 +499,8 @@ where
     /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
     /// [`SortedDisjointMap::full_join`]: crate::SortedDisjointMap::full_join
     /// [`Owned`]: crate::Owned
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
     ///
     /// # Performance
     ///
@@ -525,7 +533,6 @@ where
         MultiwayFullJoinMap::new(self, f)
     }
 
-    // TODO0(api-change): New public multiway primitive.
     /// Sweeps the given [`SortedDisjointMap`] iterators, yielding each input range's start and
     /// end, in key order, as [`SweepEvent`]s.
     ///
@@ -541,6 +548,8 @@ where
     /// [`SweepEvent`]: crate::SweepEvent
     /// [`SweepEvent::Start`]: crate::SweepEvent::Start
     /// [`SweepEvent::End`]: crate::SweepEvent::End
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
     ///
     /// # Performance
     ///

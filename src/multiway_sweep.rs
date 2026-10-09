@@ -10,6 +10,8 @@ use crate::{Integer, SortedDisjointMap, map::ValueCarrier};
 ///
 /// See [`MultiwaySortedDisjointMap::sweep`] for details.
 ///
+/// See the [joins guide][crate::joins] for how the joins fit together.
+///
 /// [`MultiwaySortedDisjointMap::sweep`]: crate::MultiwaySortedDisjointMap::sweep
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SweepEvent<T, VC> {
@@ -39,6 +41,8 @@ type NextRange<T, VC> = Option<(RangeInclusive<T>, VC)>;
 ///
 /// It yields the start and end of every input range, in key order, as [`SweepEvent`]s. See
 /// [`sweep`] for details.
+///
+/// See the [joins guide][crate::joins] for how the joins fit together.
 ///
 /// [`MultiwaySortedDisjointMap`]: crate::MultiwaySortedDisjointMap
 /// [`sweep`]: crate::MultiwaySortedDisjointMap::sweep

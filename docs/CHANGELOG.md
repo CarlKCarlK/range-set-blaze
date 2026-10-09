@@ -16,8 +16,12 @@ apart from the new minimum Rust version.
 - **Map joins.** `SortedDisjointMap::inner_join`, `left_join`, and `full_join`
   pair up two map streams by key, yielding `(range, (left, right))` with
   `Option` for a side that may be absent. `RangeMapBlaze::inner_join`,
-  `left_join`, and `full_join` return the joined map. `left_join` stops as
-  soon as the left input ends, without reading the rest of the right input.
+  `left_join`, and `full_join` take a function of the two values (for
+  example, `a.inner_join(&b, |l, r| ...)`) and return a map of its results.
+  `left_join` stops as soon as the left input ends, without reading the rest
+  of the right input.
+- **A joins guide** (`range_set_blaze::joins`) explains the joins,
+  `transform_values`, and `sweep`, and when to use each.
 - **Multiway joins.** `MultiwaySortedDisjointMap::inner_join` and `full_join`
   (and the same on collections of `&RangeMapBlaze`) call a closure once per
   stretch of keys with every input's value there (`&[V]`, or

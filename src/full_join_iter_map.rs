@@ -6,6 +6,8 @@ use crate::{SortedDisjointMap, map::ValueCarrier};
 /// This `struct` is created by the [`full_join`] method on [`SortedDisjointMap`].
 /// It yields every disjoint range covered by at least one input, with each input's value or `None`.
 ///
+/// See the [joins guide][crate::joins] for how the joins fit together.
+///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap
 /// [`full_join`]: crate::SortedDisjointMap::full_join
 #[must_use = "iterators are lazy and do nothing unless consumed"]

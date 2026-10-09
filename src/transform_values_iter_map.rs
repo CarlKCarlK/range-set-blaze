@@ -8,6 +8,8 @@ use crate::{Owned, SortedDisjointMap, map::ValueCarrier};
 /// It yields the same ranges with each value replaced by the closure's result, merging touching
 /// ranges whose new values are equal.
 ///
+/// See the [joins guide][crate::joins] for how the joins fit together.
+///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap
 /// [`transform_values`]: crate::SortedDisjointMap::transform_values
 #[must_use = "iterators are lazy and do nothing unless consumed"]

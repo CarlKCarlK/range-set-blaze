@@ -3867,6 +3867,74 @@ fn multiway_joins_merge_equal_results(inputs: Vec<Vec<(u8, u8, u8)>>) -> bool {
     maps.iter().full_join(count_present) == expected
 }
 
+#[quickcheck]
+fn two_way_struct_joins_match_brute_force(
+    left: Vec<(u8, u8, u8)>,
+    right: Vec<(u8, u8, u8)>,
+) -> bool {
+    let left = small_value_map(left);
+    let right = small_value_map(right);
+    let get_pair = |key| (left.get(key).copied(), right.get(key).copied());
+
+    // Pair-valued closures check values and coverage; the lossy `sum` closures check that results
+    // merge on `W`, not on the input pairs.
+    let expected_inner: RangeMapBlaze<u8, (u8, u8)> = (0..=u8::MAX)
+        .filter_map(|key| match get_pair(key) {
+            (Some(l), Some(r)) => Some((key, (l, r))),
+            _ => None,
+        })
+        .collect();
+    let expected_left: RangeMapBlaze<u8, (u8, Option<u8>)> = (0..=u8::MAX)
+        .filter_map(|key| match get_pair(key) {
+            (Some(l), r) => Some((key, (l, r))),
+            (None, _) => None,
+        })
+        .collect();
+    let expected_full: RangeMapBlaze<u8, (Option<u8>, Option<u8>)> = (0..=u8::MAX)
+        .filter_map(|key| match get_pair(key) {
+            (None, None) => None,
+            pair => Some((key, pair)),
+        })
+        .collect();
+    let sum = |l: Option<&u8>, r: Option<&u8>| l.copied().unwrap_or(0) + r.copied().unwrap_or(0);
+
+    left.inner_join(&right, |l, r| (*l, *r)) == expected_inner
+        && left.left_join(&right, |l, r| (*l, r.copied())) == expected_left
+        && left.full_join(&right, |l, r| (l.copied(), r.copied())) == expected_full
+        && left.inner_join(&right, |l, r| sum(Some(l), Some(r)))
+            == expected_inner.transform_values(|(l, r)| l + r)
+        && left.left_join(&right, |l, r| sum(Some(l), r))
+            == expected_left.transform_values(|(l, r)| sum(Some(l), r.as_ref()))
+        && left.full_join(&right, sum)
+            == expected_full.transform_values(|(l, r)| sum(l.as_ref(), r.as_ref()))
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn two_way_struct_joins_call_once_per_constant_range_in_order() {
+    let a = RangeMapBlaze::from_iter([(0..=9u8, 'a'), (10..=19, 'b')]);
+    let b = RangeMapBlaze::from_iter([(5..=14u8, 1u8), (30..=39, 2)]);
+    let mut calls = Vec::new();
+    let joined = a.full_join(&b, |l, r| {
+        calls.push((l.copied(), r.copied()));
+        calls.len()
+    });
+    assert_eq!(
+        calls,
+        vec![
+            (Some('a'), None),
+            (Some('a'), Some(1)),
+            (Some('b'), Some(1)),
+            (Some('b'), None),
+            (None, Some(2)),
+        ]
+    );
+    assert_eq!(
+        joined.to_string(),
+        "(0..=4, 1), (5..=9, 2), (10..=14, 3), (15..=19, 4), (30..=39, 5)"
+    );
+}
+
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn multiway_joins_call_once_per_constant_range_in_order() {

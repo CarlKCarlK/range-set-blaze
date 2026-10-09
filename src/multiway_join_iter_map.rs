@@ -160,6 +160,8 @@ fn push_merged<T: Integer, W: Eq>(
 /// It yields every range covered by at least one input, with the closure's result for that
 /// range's per-input values. See [`full_join`] for details.
 ///
+/// See the [joins guide][crate::joins] for how the joins fit together.
+///
 /// [`MultiwaySortedDisjointMap`]: crate::MultiwaySortedDisjointMap
 /// [`full_join`]: crate::MultiwaySortedDisjointMap::full_join
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -232,6 +234,8 @@ where
 ///
 /// It yields every range covered by all inputs, with the closure's result for that range's
 /// values. See [`inner_join`] for details.
+///
+/// See the [joins guide][crate::joins] for how the joins fit together.
 ///
 /// [`MultiwaySortedDisjointMap`]: crate::MultiwaySortedDisjointMap
 /// [`inner_join`]: crate::MultiwaySortedDisjointMap::inner_join

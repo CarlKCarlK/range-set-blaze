@@ -8,6 +8,8 @@ use crate::{SortedDisjointMap, map::ValueCarrier};
 /// It yields every disjoint range covered by the left input, with the left value and the right
 /// input's value there, or `None`.
 ///
+/// See the [joins guide][crate::joins] for how the joins fit together.
+///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap
 /// [`left_join`]: crate::SortedDisjointMap::left_join
 #[must_use = "iterators are lazy and do nothing unless consumed"]

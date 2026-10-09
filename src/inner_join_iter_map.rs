@@ -10,6 +10,8 @@ use crate::{SortedDisjointMap, map::ValueCarrier};
 /// This `struct` is created by the [`inner_join`] method on [`SortedDisjointMap`].
 /// It yields the common disjoint overlap and both values for each overlapping range.
 ///
+/// See the [joins guide][crate::joins] for how the joins fit together.
+///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap
 /// [`inner_join`]: crate::SortedDisjointMap::inner_join
 // todo000 need more tests

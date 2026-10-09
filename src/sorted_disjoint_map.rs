@@ -241,6 +241,9 @@ where
 /// Marks iterators that provide `(range, value)` pairs that are sorted and disjoint. Set operations on
 /// iterators that implement this trait can be performed in linear time.
 ///
+/// For joins, which combine the values of two or more streams, see the
+/// [joins guide][crate::joins].
+///
 /// # Table of Contents
 /// * [`SortedDisjointMap` Constructors](#sorteddisjointmap-constructors)
 ///   * [Examples](#constructor-examples)
@@ -521,11 +524,12 @@ where
         IntersectionMap::new(IntersectionIterMap::new(other, sorted_disjoint))
     }
 
-    // TODO0(api-change): New public pair-valued overlap iterator.
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`]
     /// iterator over their common disjoint overlap, carrying both values.
     ///
     /// This is an inner join: ranges covered by only one input are omitted.
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
     ///
     /// # Examples
     ///
@@ -549,7 +553,6 @@ where
         InnerJoinMap::new(self, other.into_iter())
     }
 
-    // TODO0(api-change): New public full-join iterator.
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`]
     /// iterator over every range covered by at least one input, carrying each input's value or
     /// `None`. The item `(range, (None, None))` never occurs.
@@ -561,6 +564,8 @@ where
     /// `Some`.
     ///
     /// [`inner_join`]: SortedDisjointMap::inner_join
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
     ///
     /// # Examples
     ///
@@ -586,7 +591,6 @@ where
         FullJoinMap::new(self, other.into_iter())
     }
 
-    // TODO0(api-change): New public left-join iterator.
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`]
     /// iterator over every range covered by the left input (`self`), carrying the left value and
     /// the right input's value there, or `None`.
@@ -598,6 +602,8 @@ where
     ///
     /// [`full_join`]: SortedDisjointMap::full_join
     /// [`inner_join`]: SortedDisjointMap::inner_join
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
     ///
     /// # Examples
     ///
@@ -622,7 +628,6 @@ where
         LeftJoinMap::new(self, other.into_iter())
     }
 
-    // TODO0(api-change): New public value-transforming stream adapter.
     /// Given a [`SortedDisjointMap`] iterator, returns a [`SortedDisjointMap`] iterator over the
     /// same ranges, with each value replaced by `f` applied to it. Touching ranges whose new values
     /// are equal are merged.
@@ -636,6 +641,8 @@ where
     /// [`RangeMapBlaze`]: crate::RangeMapBlaze
     /// [`RangeMapBlaze::range_values`]: crate::RangeMapBlaze::range_values
     /// [`RangeMapBlaze::transform_values`]: crate::RangeMapBlaze::transform_values
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
     ///
     /// # Examples
     ///

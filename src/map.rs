@@ -383,6 +383,9 @@ fn classify_forward<T: Integer>(
 /// For a side-by-side introduction to range lookups and gap filling, see the
 /// [Ranges and gaps guide][crate::gaps].
 ///
+/// To combine the values of two or more maps by key (inner, left, and full joins), see the
+/// [joins guide][crate::joins].
+///
 /// # Table of Contents
 /// * [`RangeMapBlaze` Constructors](#rangemapblaze-constructors)
 ///    * [Performance](#constructor-performance)
@@ -2341,78 +2344,95 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         self.range_values().fill_gaps().into_range_map_blaze()
     }
 
-    // TODO0(api-change): New public materialized join.
-    /// Returns a map over the ranges covered by both maps, with each value paired with the
-    /// other map's value there.
+    /// Joins this map with `other` on the keys covered by both, creating a new map whose values
+    /// are `f` applied to both maps' values there.
     ///
-    /// Materializing the result clones each value out of both maps. To avoid the intermediate
-    /// collection and those clones, use [`SortedDisjointMap::inner_join`] on map streams such as
-    /// [`RangeMapBlaze::range_values`], which borrows the values instead. Also see
-    /// [`RangeMapBlaze::full_join`].
+    /// `f` is called once per maximal range over which both values are constant, in ascending key
+    /// order, so it may be `FnMut` and keep state. Touching ranges with equal results are merged.
+    /// Only the results are cloned into the new map, not the input values. To keep the pair, use
+    /// `|left, right| (left.clone(), right.clone())`. For the lazy, borrowing form, which yields
+    /// pairs, see [`SortedDisjointMap::inner_join`]. For three or more maps with one value type,
+    /// see [`MultiwayRangeMapBlazeRef::inner_join`].
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
+    ///
+    /// [`MultiwayRangeMapBlazeRef::inner_join`]: crate::MultiwayRangeMapBlazeRef::inner_join
     ///
     /// # Examples
     ///
     /// ```
     /// # use range_set_blaze::RangeMapBlaze;
     /// let left = RangeMapBlaze::from_iter([(1..=5, "a")]);
-    /// let right = RangeMapBlaze::from_iter([(4..=8, "b")]);
-    /// let joined = left.inner_join(&right);
-    /// assert_eq!(joined.to_string(), r#"(4..=5, ("a", "b"))"#);
+    /// let right = RangeMapBlaze::from_iter([(4..=8, 10)]);
+    /// let joined = left.inner_join(&right, |l, r| format!("{l}{r}"));
+    /// assert_eq!(joined.to_string(), r#"(4..=5, "a10")"#);
     /// ```
     #[must_use]
-    pub fn inner_join<V2>(&self, other: &RangeMapBlaze<T, V2>) -> RangeMapBlaze<T, (V, V2)>
+    pub fn inner_join<V2, W, F>(
+        &self,
+        other: &RangeMapBlaze<T, V2>,
+        mut f: F,
+    ) -> RangeMapBlaze<T, W>
     where
         V2: Eq + Clone,
+        W: Eq + Clone,
+        F: FnMut(&V, &V2) -> W,
     {
         self.range_values()
             .inner_join(other.range_values())
+            .transform_values(|(left, right)| f(left, right))
             .into_range_map_blaze()
     }
 
-    // TODO0(api-change): New public materialized join.
-    /// Returns a map over the ranges covered by at least one map, with each map's value there,
-    /// or `None`. The value `(None, None)` never occurs.
+    /// Joins this map with `other` on the keys covered by at least one of them, creating a new map
+    /// whose values are `f` applied to each map's value there, or `None`.
     ///
-    /// This is a full outer join. When both maps are universal (cover every key), it gives the
-    /// same ranges as [`RangeMapBlaze::inner_join`], with every value `Some`.
+    /// This is a full outer join. `f` is never called with `(None, None)`. It is called once per
+    /// maximal range over which the values are constant, in ascending key order, so it may be
+    /// `FnMut` and keep state. Touching ranges with equal results are merged. When both maps are
+    /// universal (cover every key), it gives the same ranges as [`RangeMapBlaze::inner_join`], with
+    /// every value `Some`. For the lazy, borrowing form, which yields pairs, see
+    /// [`SortedDisjointMap::full_join`]. For three or more maps with one value type, see
+    /// [`MultiwayRangeMapBlazeRef::full_join`].
     ///
-    /// Materializing the result clones each value out of both maps. To avoid the intermediate
-    /// collection and those clones, use [`SortedDisjointMap::full_join`] on map streams such as
-    /// [`RangeMapBlaze::range_values`], which borrows the values instead.
+    /// See the [joins guide][crate::joins] for how the joins fit together.
+    ///
+    /// [`MultiwayRangeMapBlazeRef::full_join`]: crate::MultiwayRangeMapBlazeRef::full_join
     ///
     /// # Examples
     ///
     /// ```
     /// # use range_set_blaze::RangeMapBlaze;
-    /// let left = RangeMapBlaze::from_iter([(1..=5, "a")]);
-    /// let right = RangeMapBlaze::from_iter([(4..=8, "b")]);
-    /// let joined = left.full_join(&right);
-    /// assert_eq!(joined.get(2), Some(&(Some("a"), None)));
-    /// assert_eq!(joined.get(4), Some(&(Some("a"), Some("b"))));
-    /// assert_eq!(joined.get(7), Some(&(None, Some("b"))));
-    /// assert_eq!(joined.get(9), None);
+    /// let left = RangeMapBlaze::from_iter([(1..=5, 1)]);
+    /// let right = RangeMapBlaze::from_iter([(4..=8, 10)]);
+    ///
+    /// // Sum the values present, counting a missing value as 0.
+    /// let sums = left.full_join(&right, |l, r| l.unwrap_or(&0) + r.unwrap_or(&0));
+    /// assert_eq!(sums.to_string(), "(1..=3, 1), (4..=5, 11), (6..=8, 10)");
     /// ```
     #[must_use]
-    pub fn full_join<V2>(
-        &self,
-        other: &RangeMapBlaze<T, V2>,
-    ) -> RangeMapBlaze<T, (Option<V>, Option<V2>)>
+    pub fn full_join<V2, W, F>(&self, other: &RangeMapBlaze<T, V2>, mut f: F) -> RangeMapBlaze<T, W>
     where
         V2: Eq + Clone,
+        W: Eq + Clone,
+        F: FnMut(Option<&V>, Option<&V2>) -> W,
     {
         self.range_values()
             .full_join(other.range_values())
+            .transform_values(|(left, right)| f(left, right))
             .into_range_map_blaze()
     }
 
-    // TODO0(api-change): New public materialized join.
-    /// Returns a map over the ranges covered by this map, with each value paired with the other
-    /// map's value there, or `None`.
+    /// Joins this map with `other` on the keys covered by this map, creating a new map whose
+    /// values are `f` applied to this map's value and `other`'s value there, or `None`.
     ///
     /// This is a left outer join; for a right join, swap the maps. It stops reading `other` once
-    /// this map's ranges are done. Materializing the result clones each value out of both maps; to
-    /// avoid that, use [`SortedDisjointMap::left_join`] on map streams such as
-    /// [`RangeMapBlaze::range_values`], which borrows the values instead.
+    /// this map's ranges are done. `f` is called once per maximal range over which the values are
+    /// constant, in ascending key order, so it may be `FnMut` and keep state. Touching ranges with
+    /// equal results are merged. For the lazy, borrowing form, which yields pairs, see
+    /// [`SortedDisjointMap::left_join`].
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
     ///
     /// # Examples
     ///
@@ -2420,22 +2440,24 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// # use range_set_blaze::RangeMapBlaze;
     /// let left = RangeMapBlaze::from_iter([(1..=5, "a")]);
     /// let right = RangeMapBlaze::from_iter([(4..=8, "b")]);
-    /// let joined = left.left_join(&right);
-    /// assert_eq!(joined.get(2), Some(&("a", None)));
-    /// assert_eq!(joined.get(4), Some(&("a", Some("b"))));
-    /// assert_eq!(joined.get(7), None);
+    ///
+    /// // Is each left range also covered by the right?
+    /// let covered = left.left_join(&right, |_, r| r.is_some());
+    /// assert_eq!(covered.to_string(), "(1..=3, false), (4..=5, true)");
     /// ```
     #[must_use]
-    pub fn left_join<V2>(&self, other: &RangeMapBlaze<T, V2>) -> RangeMapBlaze<T, (V, Option<V2>)>
+    pub fn left_join<V2, W, F>(&self, other: &RangeMapBlaze<T, V2>, mut f: F) -> RangeMapBlaze<T, W>
     where
         V2: Eq + Clone,
+        W: Eq + Clone,
+        F: FnMut(&V, Option<&V2>) -> W,
     {
         self.range_values()
             .left_join(other.range_values())
+            .transform_values(|(left, right)| f(left, right))
             .into_range_map_blaze()
     }
 
-    // TODO0(api-change): New public value-mapping method.
     /// Returns a map with the same keys, where each value is replaced by `f` applied to it.
     ///
     /// `f` is called once per range, in ascending key order, so it may be `FnMut` and keep
@@ -2461,17 +2483,22 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// assert_eq!(tens.len(), map.len());
     /// ```
     ///
-    /// Composing with a join, as in a product construction:
+    /// Keeping state, here numbering values in the order they are first seen:
     ///
     /// ```
     /// # use range_set_blaze::RangeMapBlaze;
-    /// let left = RangeMapBlaze::from_iter([(0..=9, 'a'), (10..=19, 'b')]);
-    /// let right = RangeMapBlaze::from_iter([(5..=14, 'x')]);
-    /// let labels = left
-    ///     .inner_join(&right)
-    ///     .transform_values(|(l, r)| format!("{l}{r}"));
-    /// assert_eq!(labels.to_string(), r#"(5..=9, "ax"), (10..=14, "bx")"#);
+    /// let map = RangeMapBlaze::from_iter([(0..=9, "red"), (10..=19, "blue"), (20..=29, "red")]);
+    /// let mut seen = Vec::new();
+    /// let ids = map.transform_values(|value| {
+    ///     seen.iter().position(|v| v == value).unwrap_or_else(|| {
+    ///         seen.push(*value);
+    ///         seen.len() - 1
+    ///     })
+    /// });
+    /// assert_eq!(ids.to_string(), "(0..=9, 0), (10..=19, 1), (20..=29, 0)");
     /// ```
+    ///
+    /// See the [joins guide][crate::joins] for composing with joins.
     #[must_use]
     pub fn transform_values<W, F>(&self, f: F) -> RangeMapBlaze<T, W>
     where
