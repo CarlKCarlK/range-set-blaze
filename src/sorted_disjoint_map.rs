@@ -3,12 +3,13 @@ use crate::DifferenceMapInternal;
 use crate::DynSortedDisjointMap;
 use crate::FillGapsIter;
 use crate::FillGapsIterMap;
+use crate::FullJoinIterMap;
 use crate::InnerJoinIterMap;
 use crate::IntersectionMap;
 use crate::IntoRangeValuesIter;
+use crate::LeftJoinIterMap;
 use crate::NotIter;
 use crate::NotMap;
-use crate::OuterJoinIterMap;
 use crate::Owned;
 use crate::SymDiffMergeMap;
 use crate::TransformValuesIterMap;
@@ -19,7 +20,7 @@ use crate::range_values::RangeValuesIter;
 use crate::range_values::RangeValuesToRangesIter;
 use crate::sorted_disjoint::SortedDisjoint;
 use crate::{Integer, RangeMapBlaze, union_iter_map::UnionIterMap};
-use crate::{MultiwayInnerJoinIterMap, MultiwayOuterJoinIterMap, SymDiffKMergeMap, UnionKMergeMap};
+use crate::{MultiwayFullJoinIterMap, MultiwayInnerJoinIterMap, SymDiffKMergeMap, UnionKMergeMap};
 use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
@@ -551,7 +552,9 @@ where
     /// iterator over every range covered by at least one input, carrying each input's value or
     /// `None`. The item `(range, (None, None))` never occurs.
     ///
-    /// This is a full outer join. Filter it for a left or right outer join. When both inputs are
+    /// This is a full outer join. For only the ranges covered by the left input, use
+    /// [`left_join`](SortedDisjointMap::left_join), which can stop as soon as the left input ends
+    /// (filtering this iterator would read the whole right input). When both inputs are
     /// universal (cover every key), it gives the same ranges as [`inner_join`], with every value
     /// `Some`.
     ///
@@ -564,21 +567,57 @@ where
     ///
     /// let left = RangeMapBlaze::from_iter([(1..=5, "a")]);
     /// let right = RangeMapBlaze::from_iter([(4..=8, "b")]);
-    /// let mut it = left.range_values().outer_join(right.range_values());
+    /// let mut it = left.range_values().full_join(right.range_values());
     /// assert_eq!(it.next(), Some((1..=3, (Some(&"a"), None))));
     /// assert_eq!(it.next(), Some((4..=5, (Some(&"a"), Some(&"b")))));
     /// assert_eq!(it.next(), Some((6..=8, (None, Some(&"b")))));
     /// assert_eq!(it.next(), None);
     /// ```
     #[inline]
-    fn outer_join<R, VCR>(self, other: R) -> OuterJoinIterMap<T, VC, VCR, Self, R::IntoIter>
+    fn full_join<R, VCR>(self, other: R) -> FullJoinIterMap<T, VC, VCR, Self, R::IntoIter>
     where
         VCR: ValueCarrier,
         R: IntoIterator<Item = (RangeInclusive<T>, VCR)>,
         R::IntoIter: SortedDisjointMap<T, VCR>,
         Self: Sized,
     {
-        OuterJoinIterMap::new(self, other.into_iter())
+        FullJoinIterMap::new(self, other.into_iter())
+    }
+
+    // TODO0(api-change): New public left-join iterator.
+    /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`]
+    /// iterator over every range covered by the left input (`self`), carrying the left value and
+    /// the right input's value there, or `None`.
+    ///
+    /// This is a left outer join. It stops as soon as the left input is exhausted, without reading
+    /// the rest of the right input, so it suits questions about the left input, such as "is every
+    /// left range covered by the right?". For a right join, swap the inputs. For ranges covered by
+    /// either input, see [`full_join`]; by both, see [`inner_join`].
+    ///
+    /// [`full_join`]: SortedDisjointMap::full_join
+    /// [`inner_join`]: SortedDisjointMap::inner_join
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::prelude::*;
+    ///
+    /// let left = RangeMapBlaze::from_iter([(1..=5, "a")]);
+    /// let right = RangeMapBlaze::from_iter([(4..=8, "b")]);
+    /// let mut it = left.range_values().left_join(right.range_values());
+    /// assert_eq!(it.next(), Some((1..=3, (&"a", None))));
+    /// assert_eq!(it.next(), Some((4..=5, (&"a", Some(&"b")))));
+    /// assert_eq!(it.next(), None);
+    /// ```
+    #[inline]
+    fn left_join<R, VCR>(self, other: R) -> LeftJoinIterMap<T, VC, VCR, Self, R::IntoIter>
+    where
+        VCR: ValueCarrier,
+        R: IntoIterator<Item = (RangeInclusive<T>, VCR)>,
+        R::IntoIter: SortedDisjointMap<T, VCR>,
+        Self: Sized,
+    {
+        LeftJoinIterMap::new(self, other.into_iter())
     }
 
     // TODO0(api-change): New public value-transforming stream adapter.
@@ -1360,14 +1399,15 @@ impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VC>, VC::Value, VC, 
 impl_sorted_map_traits_and_ops!(FillGapsIterMap<T, VC, I>, Option<VC::Value>, Option<VC>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
 impl_sorted_map_traits_and_ops!(FillGapsIter<T, I>, bool, bool, I: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(InnerJoinIterMap<T, VCL, VCR, I0, I1>, (VCL::Value, VCR::Value), (VCL, VCR), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
-impl_sorted_map_traits_and_ops!(OuterJoinIterMap<T, VCL, VCR, I0, I1>, (Option<VCL::Value>, Option<VCR::Value>), (Option<VCL>, Option<VCR>), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
+impl_sorted_map_traits_and_ops!(FullJoinIterMap<T, VCL, VCR, I0, I1>, (Option<VCL::Value>, Option<VCR::Value>), (Option<VCL>, Option<VCR>), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
 impl_sorted_map_traits_and_ops!(TransformValuesIterMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(VC) -> W, W: Eq + Clone);
 impl_sorted_map_traits_and_ops!(MultiwayInnerJoinIterMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(&[VC]) -> W, W: Eq + Clone);
-impl_sorted_map_traits_and_ops!(MultiwayOuterJoinIterMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(&[Option<VC>]) -> W, W: Eq + Clone);
+impl_sorted_map_traits_and_ops!(MultiwayFullJoinIterMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(&[Option<VC>]) -> W, W: Eq + Clone);
 impl_sorted_map_traits_and_ops!(UnionKMergeMap<T, VC, I>, VC::Value, VC, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
 impl_sorted_map_traits_and_ops!(SymDiffKMergeMap<T, VC, I>, VC::Value, VC, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
 impl_sorted_map_traits_and_ops!(UnionMergeMap<T, VC, I0, I1>, VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjointMap<T, VC>);
 impl_sorted_map_traits_and_ops!(SymDiffMergeMap<T, VC, I0, I1>, VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjointMap<T, VC>);
+impl_sorted_map_traits_and_ops!(LeftJoinIterMap<T, VCL, VCR, I0, I1>, (VCL::Value, Option<VCR::Value>), (VCL, Option<VCR>), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VC, I0, I1>,  VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: Eq + Clone);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Eq + Clone);

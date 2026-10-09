@@ -134,7 +134,7 @@ mod tests {
         let joined: Vec<_> = left
             .range_values()
             .transform_values(|value| value.len())
-            .outer_join(right.range_values())
+            .full_join(right.range_values())
             .map(|(range, (len, ch))| (range, (len.map(|Owned(n)| n), ch.copied())))
             .collect();
         assert_eq!(

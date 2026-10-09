@@ -3,21 +3,21 @@ use core::{cmp::min, iter::FusedIterator, ops::RangeInclusive};
 use crate::Integer;
 use crate::{SortedDisjointMap, map::ValueCarrier};
 
-/// This `struct` is created by the [`outer_join`] method on [`SortedDisjointMap`].
+/// This `struct` is created by the [`full_join`] method on [`SortedDisjointMap`].
 /// It yields every disjoint range covered by at least one input, with each input's value or `None`.
 ///
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap
-/// [`outer_join`]: crate::SortedDisjointMap::outer_join
+/// [`full_join`]: crate::SortedDisjointMap::full_join
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct OuterJoinIterMap<T, VCL, VCR, IL, IR> {
+pub struct FullJoinIterMap<T, VCL, VCR, IL, IR> {
     iter_left: IL,
     iter_right: IR,
     left: Option<(RangeInclusive<T>, VCL)>,
     right: Option<(RangeInclusive<T>, VCR)>,
 }
 
-impl<T, VCL, VCR, IL, IR> OuterJoinIterMap<T, VCL, VCR, IL, IR>
+impl<T, VCL, VCR, IL, IR> FullJoinIterMap<T, VCL, VCR, IL, IR>
 where
     T: Integer,
     VCL: ValueCarrier,
@@ -35,7 +35,7 @@ where
     }
 }
 
-impl<T, VCL, VCR, IL, IR> FusedIterator for OuterJoinIterMap<T, VCL, VCR, IL, IR>
+impl<T, VCL, VCR, IL, IR> FusedIterator for FullJoinIterMap<T, VCL, VCR, IL, IR>
 where
     T: Integer,
     VCL: ValueCarrier,
@@ -49,7 +49,7 @@ where
 // boundary of one input, and that input's value changes there: either it appears or disappears, or
 // it moves to a touching range, which the `SortedDisjointMap` invariant requires to hold a
 // different value. So touching outputs always differ in at least one component.
-impl<T, VCL, VCR, IL, IR> Iterator for OuterJoinIterMap<T, VCL, VCR, IL, IR>
+impl<T, VCL, VCR, IL, IR> Iterator for FullJoinIterMap<T, VCL, VCR, IL, IR>
 where
     T: Integer,
     VCL: ValueCarrier,
@@ -127,7 +127,7 @@ mod tests {
         let right: RangeMapBlaze<_, _> = right.iter().cloned().collect();
         let actual: Vec<Joined> = left
             .range_values()
-            .outer_join(right.range_values())
+            .full_join(right.range_values())
             .map(|(range, (l, r))| (range, (l.copied(), r.copied())))
             .collect();
 
@@ -263,7 +263,7 @@ mod tests {
             .collect();
         let outer: Vec<_> = left
             .range_values()
-            .outer_join(right.range_values())
+            .full_join(right.range_values())
             .collect();
         assert_eq!(inner, outer);
     }
@@ -274,7 +274,7 @@ mod tests {
         let right = RangeMapBlaze::from_iter([(4..=8u8, "b")]);
         let joined: RangeMapBlaze<u8, (Option<&str>, Option<&str>)> = left
             .range_values()
-            .outer_join(right.range_values())
+            .full_join(right.range_values())
             .into_range_map_blaze();
         assert_eq!(joined.ranges().into_string(), "1..=8");
     }

@@ -39,8 +39,8 @@ where
     sweep: MultiwaySweep<T, VC, I>,
     mode: Mode,
     // Each input's value while its range is active.
-    slots: Box<[Option<VC>]>,
-    // Max-heap of active input positions, deleted lazily (an entry whose slot is `None` is stale).
+    values: Box<[Option<VC>]>,
+    // Max-heap of active input positions, deleted lazily (an entry whose value is `None` is stale).
     // `in_heap` keeps each position in the heap at most once, so it holds at most k entries.
     highest: BinaryHeap<usize>,
     in_heap: Box<[bool]>,
@@ -66,7 +66,7 @@ where
         Self {
             sweep,
             mode,
-            slots: (0..input_count).map(|_| None).collect(),
+            values: (0..input_count).map(|_| None).collect(),
             highest: BinaryHeap::with_capacity(input_count),
             in_heap: (0..input_count).map(|_| false).collect(),
             active_count: 0,
@@ -78,7 +78,7 @@ where
     // The value of the highest-numbered active input; at least one input must be active.
     fn highest_value(&mut self) -> Option<VC> {
         while let Some(&top) = self.highest.peek() {
-            if let Some(value) = &self.slots[top] {
+            if let Some(value) = &self.values[top] {
                 return Some(value.clone());
             }
             self.highest.pop();
@@ -127,7 +127,7 @@ where
                         Some(stretch) if stretch < start => self.emit(stretch, start.sub_one()),
                         _ => None,
                     };
-                    self.slots[input] = Some(value);
+                    self.values[input] = Some(value);
                     if !self.in_heap[input] {
                         self.in_heap[input] = true;
                         self.highest.push(input);
@@ -141,7 +141,7 @@ where
                         Some(stretch) if stretch <= at => self.emit(stretch, at),
                         _ => None,
                     };
-                    self.slots[input] = None;
+                    self.values[input] = None;
                     self.active_count -= 1;
                     self.stretch_start = if self.active_count == 0 {
                         None

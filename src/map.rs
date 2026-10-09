@@ -2344,7 +2344,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// Materializing the result clones each value out of both maps. To avoid the intermediate
     /// collection and those clones, use [`SortedDisjointMap::inner_join`] on map streams such as
     /// [`RangeMapBlaze::range_values`], which borrows the values instead. Also see
-    /// [`RangeMapBlaze::outer_join`].
+    /// [`RangeMapBlaze::full_join`].
     ///
     /// # Examples
     ///
@@ -2373,7 +2373,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// same ranges as [`RangeMapBlaze::inner_join`], with every value `Some`.
     ///
     /// Materializing the result clones each value out of both maps. To avoid the intermediate
-    /// collection and those clones, use [`SortedDisjointMap::outer_join`] on map streams such as
+    /// collection and those clones, use [`SortedDisjointMap::full_join`] on map streams such as
     /// [`RangeMapBlaze::range_values`], which borrows the values instead.
     ///
     /// # Examples
@@ -2382,14 +2382,14 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// # use range_set_blaze::RangeMapBlaze;
     /// let left = RangeMapBlaze::from_iter([(1..=5, "a")]);
     /// let right = RangeMapBlaze::from_iter([(4..=8, "b")]);
-    /// let joined = left.outer_join(&right);
+    /// let joined = left.full_join(&right);
     /// assert_eq!(joined.get(2), Some(&(Some("a"), None)));
     /// assert_eq!(joined.get(4), Some(&(Some("a"), Some("b"))));
     /// assert_eq!(joined.get(7), Some(&(None, Some("b"))));
     /// assert_eq!(joined.get(9), None);
     /// ```
     #[must_use]
-    pub fn outer_join<V2>(
+    pub fn full_join<V2>(
         &self,
         other: &RangeMapBlaze<T, V2>,
     ) -> RangeMapBlaze<T, (Option<V>, Option<V2>)>
@@ -2397,7 +2397,37 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         V2: Eq + Clone,
     {
         self.range_values()
-            .outer_join(other.range_values())
+            .full_join(other.range_values())
+            .into_range_map_blaze()
+    }
+
+    // TODO0(api-change): New public materialized join.
+    /// Returns a map over the ranges covered by this map, with each value paired with the other
+    /// map's value there, or `None`.
+    ///
+    /// This is a left outer join; for a right join, swap the maps. It stops reading `other` once
+    /// this map's ranges are done. Materializing the result clones each value out of both maps; to
+    /// avoid that, use [`SortedDisjointMap::left_join`] on map streams such as
+    /// [`RangeMapBlaze::range_values`], which borrows the values instead.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeMapBlaze;
+    /// let left = RangeMapBlaze::from_iter([(1..=5, "a")]);
+    /// let right = RangeMapBlaze::from_iter([(4..=8, "b")]);
+    /// let joined = left.left_join(&right);
+    /// assert_eq!(joined.get(2), Some(&("a", None)));
+    /// assert_eq!(joined.get(4), Some(&("a", Some("b"))));
+    /// assert_eq!(joined.get(7), None);
+    /// ```
+    #[must_use]
+    pub fn left_join<V2>(&self, other: &RangeMapBlaze<T, V2>) -> RangeMapBlaze<T, (V, Option<V2>)>
+    where
+        V2: Eq + Clone,
+    {
+        self.range_values()
+            .left_join(other.range_values())
             .into_range_map_blaze()
     }
 

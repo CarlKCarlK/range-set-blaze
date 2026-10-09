@@ -38,21 +38,15 @@ yield a missing side there. Outer joins matter for partial maps such as glrmask'
 
 ## Feature 1: two-way full outer join
 
-Decision: accepted and implemented (2026-10-08) in `src/outer_join_iter_map.rs`. Name:
-`outer_join`. Item shape: `(Option<VCL>, Option<VCR>)`, no new enum. No separate left/right
-methods for now.
-
-Naming note: `inner_join` is the standard term. The standard name for this operation is "full
-(outer) join"; "outer join" alone names the family (left, right, full). `outer_join` is
-unambiguous while it is the only outer variant. If `left_join`/`right_join` are ever added, add
-`full_join` and deprecate `outer_join` (renaming a released item is breaking).
+Decision: accepted and implemented (2026-10-08) in `src/full_join_iter_map.rs`. Name: `full_join`
+(renamed from `outer_join` before release, when `left_join` was added; "outer join" alone names
+the family). Item shape: `(Option<VCL>, Option<VCR>)`, no new enum.
 
 Yields every stretch covered by at least one input:
 `(RangeInclusive<T>, (Option<VCL>, Option<VCR>))`, never `(None, None)`.
 
-- Left and right outer joins are filters (`left.is_some()`), so they probably don't need their
-  own methods. (Revisited 2026-10-08, see "Evidence for `left_join`" below: a filter still walks
-  the whole right input, while a native left join could stop when the left input ends.)
+- Left and right outer joins: see `left_join` below (a native left join can stop when the left
+  input ends; a filter cannot). No `right_join`: swap the inputs.
 - No new `ValueCarrier` impl is needed: `(Option<VCL>, Option<VCR>)` is a pair of `Option`
   carriers, both of which already exist.
 - Implementation: extend `InnerJoinIterMap`'s merge loop to emit the one-sided prefix and
@@ -82,33 +76,35 @@ Documentation should state that inner and outer agree when both inputs are unive
 
 Real-world check (2026-10-08): on the glrmask fork, `union_compact_entries` (about 95 lines of
 hand-written merge) and `combine_compact_entries` (a sort-and-sweep over all boundaries) were
-rewritten as one `outer_join` pass feeding glrmask's existing builder. The hand-written versions
+rewritten as one `full_join` pass feeding glrmask's existing builder. The hand-written versions
 are kept as test-only references, and new exhaustive tests over all 4,096 pairs of small weights
 show identical results for union, intersection, and difference. All 487 RSB-related glrmask tests
 pass (commit `7891b1f85` on `local-rsb`). The closure shape needed no adaptation.
 
 Second check: glrmask's hand-written `Weight::is_disjoint` (an inner-join loop) and
 `Weight::is_subset` (an outer-join loop) became `inner_join(...).all(...)` and
-`outer_join(...).all(...)`, with the originals kept as test-only references and an exhaustive
+`full_join(...).all(...)`, with the originals kept as test-only references and an exhaustive
 differential test (commit `d00731cee`). All RSB-related glrmask tests pass.
 
-### Evidence for `left_join` (open)
+### `left_join`
 
-A review of the glrmask fork found that `Weight::is_subset` written as
-`outer_join(...).all(...)` keeps walking every remaining range of `other` after `self` ends (those
-stretches are one-sided and always pass), where the original loop stopped. glrmask fork commit
-`5d18bb0b1` fixes it with `.take_while(|(range, _)| *range.start() <= self_last)`, using
-`RangeMapBlaze::last_key_value` (O(log n)), plus a test that fails without the bound.
+Decision: accepted and implemented (2026-10-08) in `src/left_join_iter_map.rs`, on streams
+(`SortedDisjointMap::left_join`) and on `RangeMapBlaze`. Yields every range covered by the left
+input as `(range, (VCL, Option<VCR>))`, and stops as soon as the left input is exhausted, without
+reading the rest of the right input. That early stop is why it is not just a filter on
+`full_join` (a filter still reads the whole right input). No `right_join`: swap the inputs. No
+multiway left join for now (expressible as a multiway `full_join` with a check on `values[0]`).
 
-So a left (outer) join is not just a filter on `outer_join`: a native one can stop as soon as the
-left input is exhausted, which matters for "is A contained in B" and "look up A's ranges in B".
-If `left_join` is added, also add `full_join` and deprecate `outer_join` (see the naming note
-above). Not decided; one caller so far, and `take_while` works.
+Evidence: a review of the glrmask fork found `Weight::is_subset`, written as
+`outer_join(...).all(...)`, kept walking every remaining range of `other` after `self` ended; the
+fork first fixed it with a `take_while` bound (`5d18bb0b1`), and `left_join` makes the bound
+unnecessary. Tests: an oracle (full join filtered to left-present ranges), exhaustive small inputs,
+and a test that a small left input against 10,000 right ranges reads at most 3 of them.
 
 ## Feature 1b: materialized joins on `RangeMapBlaze`
 
 Decision: accepted and implemented (2026-10-08). `RangeMapBlaze::inner_join(&self, &other)` and
-`RangeMapBlaze::outer_join(&self, &other)` return `RangeMapBlaze<T, (V, V2)>` and
+`RangeMapBlaze::full_join(&self, &other)` return `RangeMapBlaze<T, (V, V2)>` and
 `RangeMapBlaze<T, (Option<V>, Option<V2>)>`, cloning values, following the `fill_gaps` pattern
 (lazy on iterators, materialized on the struct). No `RangeSetBlaze` forms and no owned
 `into_*` forms for now.
@@ -203,7 +199,7 @@ the `RangeMapBlaze` docs. `Owned<V>` is cheap exactly when `V` is; large values 
 ### Layering principle
 
 Decided (2026-10-08): every operation is iterator-first, with the `RangeMapBlaze` form as a thin
-wrapper (`self.range_values().op(...).into_range_map_blaze()`). `inner_join`, `outer_join`, and
+wrapper (`self.range_values().op(...).into_range_map_blaze()`). `inner_join`, `full_join`, and
 `transform_values` all follow this; the struct `transform_values` was converted from its own
 B-tree build to the wrapper. Multiway joins should follow the same pattern.
 
@@ -211,19 +207,19 @@ B-tree build to the wrapper. Multiway joins should follow the same pattern.
 
 Decision: accepted and implemented (2026-10-08) in `src/multiway_join_iter_map.rs`.
 
-- Names: `inner_join` / `outer_join`, the same as the two-way joins (receivers differ).
+- Names: `inner_join` / `full_join`, the same as the two-way joins (receivers differ).
 - Iterator-first on `MultiwaySortedDisjointMap`; thin wrappers on `MultiwayRangeMapBlazeRef`
   (`[&a, &b, &c].inner_join(f)`). No owned-maps (`MultiwayRangeMapBlaze`) form for now.
-- Closure: inner `FnMut(&[VC]) -> W`, outer `FnMut(&[Option<VC>]) -> W` (one slot per input, in
+- Closure: inner `FnMut(&[VC]) -> W`, outer `FnMut(&[Option<VC>]) -> W` (one value per input, in
   input order; never all `None`). Through the struct wrappers, `VC = &V`. Results are carried by
-  `Owned<W>`; touching ranges with equal results merge. No `V` is cloned: outer slots are moved in
+  `Owned<W>`; touching ranges with equal results merge. No `V` is cloned: outer values are moved in
   from the streams and borrowed in place; the inner join's dense buffer copies carriers (pointers,
   for `&V`) only for inputs that changed.
 - Zero inputs: outer is empty; inner is the universal range with `f(&[])`, matching
   `RangeSetBlaze`'s zero-input intersection.
 - Performance, from the start, matching the existing multiway union: one sweep using
   `KMergeMap` (heap over starts, tagged with input position) plus a min-heap of active ends.
-  O(log k) per input range; the slot slice is updated in place, never rebuilt.
+  O(log k) per input range; the value slice is updated in place, never rebuilt.
 - Tests: brute-force per-key oracle under quickcheck (checked with 20,000 cases), merging,
   call order, zero/one inputs, maximum key.
 - Real-world check: `range-map-regex` commit `8cd9a97` replaces `subset_transition_map`'s k − 1
@@ -236,7 +232,7 @@ Decision: accepted and implemented (2026-10-08) in `src/multiway_join_iter_map.r
 Decision: accepted and implemented (2026-10-08). `outer_join_incremental` was implemented, then
 removed before release in favor of `sweep`.
 
-History: benchmarking glrmask's k-way union rewritten on `outer_join` showed that a closure
+History: benchmarking glrmask's k-way union rewritten on `full_join` showed that a closure
 aggregating over all present values pays O(present) per range, while glrmask's hand-written sweep
 tracks active distinct token sets in O(changes). `outer_join_incremental` (closure gets `values`
 plus `changed_from`, the inputs that changed with their previous values) closed that gap. Then the
@@ -246,7 +242,7 @@ on it beat `outer_join_incremental` at every size, with a simpler contract.
 API: `MultiwaySortedDisjointMap::sweep()` returns `MultiwaySweep`, an iterator of
 `SweepEvent::Start { range, input, value }` and `SweepEvent::End { at, input }` in key order; a
 range ending at `p - 1` ends before one starting at `p` starts; values are moved, not cloned or
-stored. `outer_join` and `inner_join` are built on it. Tested by a quickcheck of ordering and that
+stored. `full_join` and `inner_join` are built on it. Tested by a quickcheck of ordering and that
 every input range starts and ends exactly once (20,000 cases).
 
 Engine: a binary heap of small `(start, input)` keys (iterators and pending ranges stay in place
@@ -369,7 +365,7 @@ Sketch (names are placeholders):
 ```rust,ignore
 // Struct form, on collections of maps (alongside MultiwayRangeMapBlaze / ...Ref):
 let merged: RangeMapBlaze<T, W> =
-    [&a, &b, &c].outer_join_with(|values: &[&V]| -> Option<W> { ... });
+    [&a, &b, &c].full_join_with(|values: &[&V]| -> Option<W> { ... });
 
 // Iterator form, on collections of SortedDisjointMap iterators:
 // same closure, yields (RangeInclusive<T>, W) -- needs an answer to the owned-carrier question
@@ -379,10 +375,10 @@ let merged: RangeMapBlaze<T, W> =
 Questions for the human:
 
 1. **Present values only, or positions?** `&[&V]` (only inputs present at the stretch) fits both
-   callers. `&[Option<&V>]` (length k, one slot per input) also tells which input contributed
+   callers. `&[Option<&V>]` (length k, one value per input) also tells which input contributed
    what, at the cost of filtering when unneeded. A product construction over k inputs would want
    positions.
-2. **Names.** For example `outer_join_with` / `inner_join_with`, or `union_with` /
+2. **Names.** For example `full_join_with` / `inner_join_with`, or `union_with` /
    `intersection_with` to sit beside the existing priority `union` / `intersection`.
 3. **Struct form only first?** As with `transform_values`, both callers would be served by the struct
    form; the iterator form inherits feature 2's owned-carrier question.
@@ -393,7 +389,7 @@ active ranges' ends + 1 and the upcoming starts. At each stretch, fill the buffe
 values and call the closure. That is O(k) per output stretch; a heap keyed on boundaries makes it
 O(log k) for large k. The existing `KMergeMap` (merge by start, ties by input index) may be
 reusable for the start ordering. Merge touching outputs with equal values, as `transform_values` does.
-Test oracle: fold pairwise with `outer_join` + `transform_values`.
+Test oracle: fold pairwise with `full_join` + `transform_values`.
 
 ## Feature 4: materialized joins on `RangeMapBlaze`
 

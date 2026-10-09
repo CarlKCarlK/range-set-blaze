@@ -6,7 +6,7 @@
 // }
 
 use crate::{
-    Integer, IntersectionKMap, MultiwayInnerJoinIterMap, MultiwayOuterJoinIterMap, MultiwaySweep,
+    Integer, IntersectionKMap, MultiwayFullJoinIterMap, MultiwayInnerJoinIterMap, MultiwaySweep,
     RangeMapBlaze, SortedDisjointMap, SymDiffKMergeMap, UnionKMergeMap,
     intersection_iter_map::IntersectionIterMap, map::ValueCarrier,
     range_values::RangeValuesToRangesIter,
@@ -274,11 +274,11 @@ pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: Eq + Clone + 'a>:
     /// them, creating a new [`RangeMapBlaze`] whose values are `f` applied to each input's value
     /// there (or `None`).
     ///
-    /// `f` receives one slot per input, in input order, and is never called with every slot
-    /// `None`. This is a thin wrapper over [`MultiwaySortedDisjointMap::outer_join`]; see it for
+    /// `f` receives one value per input, in input order, and is never called with every value
+    /// `None`. This is a thin wrapper over [`MultiwaySortedDisjointMap::full_join`]; see it for
     /// details (call order, merging, zero inputs, and performance).
     ///
-    /// [`MultiwaySortedDisjointMap::outer_join`]: crate::MultiwaySortedDisjointMap::outer_join
+    /// [`MultiwaySortedDisjointMap::full_join`]: crate::MultiwaySortedDisjointMap::full_join
     ///
     /// # Examples
     ///
@@ -289,17 +289,17 @@ pub trait MultiwayRangeMapBlazeRef<'a, T: Integer + 'a, V: Eq + Clone + 'a>:
     /// let b = RangeMapBlaze::from_iter([(5..=14, 10)]);
     ///
     /// // Sum the values present, counting a missing input as 0.
-    /// let sums = [&a, &b].outer_join(|slots| slots.iter().flatten().copied().sum::<i32>());
+    /// let sums = [&a, &b].full_join(|values| values.iter().flatten().copied().sum::<i32>());
     /// assert_eq!(sums.to_string(), "(0..=4, 1), (5..=9, 11), (10..=14, 10)");
     /// ```
-    fn outer_join<F, W>(self, f: F) -> RangeMapBlaze<T, W>
+    fn full_join<F, W>(self, f: F) -> RangeMapBlaze<T, W>
     where
         F: FnMut(&[Option<&'a V>]) -> W,
         W: Eq + Clone,
     {
         self.into_iter()
             .map(RangeMapBlaze::range_values)
-            .outer_join(f)
+            .full_join(f)
             .into_range_map_blaze()
     }
 }
@@ -482,16 +482,16 @@ where
     /// Joins the given [`SortedDisjointMap`] iterators on the ranges covered by **at least one**
     /// of them, calling `f` with each input's value there (or `None`) and yielding its result.
     ///
-    /// `f` receives one slot per input, in input order: `Some(value)` if that input covers the
-    /// range, `None` if not. It is never called with every slot `None`. It is called once per
-    /// maximal range over which the slots are constant, in ascending key order, so it may be
+    /// `f` receives one value per input, in input order: `Some(value)` if that input covers the
+    /// range, `None` if not. It is never called with every value `None`. It is called once per
+    /// maximal range over which the values are constant, in ascending key order, so it may be
     /// `FnMut` and keep state. Results are carried by [`Owned`]; touching ranges with equal
     /// results are merged. With zero inputs, the result is empty.
     ///
-    /// For exactly two inputs, also see [`SortedDisjointMap::outer_join`], which yields pairs.
+    /// For exactly two inputs, also see [`SortedDisjointMap::full_join`], which yields pairs.
     ///
     /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
-    /// [`SortedDisjointMap::outer_join`]: crate::SortedDisjointMap::outer_join
+    /// [`SortedDisjointMap::full_join`]: crate::SortedDisjointMap::full_join
     /// [`Owned`]: crate::Owned
     ///
     /// # Performance
@@ -509,20 +509,20 @@ where
     /// let b = RangeMapBlaze::from_iter([(5..=14, "b")]);
     ///
     /// // Which inputs cover each range?
-    /// let coverage = [a.range_values(), b.range_values()].outer_join(|slots| {
-    ///     slots.iter().flatten().copied().copied().collect::<Vec<_>>().join("+")
+    /// let coverage = [a.range_values(), b.range_values()].full_join(|values| {
+    ///     values.iter().flatten().copied().copied().collect::<Vec<_>>().join("+")
     /// });
     /// assert_eq!(
     ///     coverage.into_string(),
     ///     r#"(0..=4, "a"), (5..=9, "a+b"), (10..=14, "b")"#
     /// );
     /// ```
-    fn outer_join<F, W>(self, f: F) -> MultiwayOuterJoinIterMap<T, VC, I, F, W>
+    fn full_join<F, W>(self, f: F) -> MultiwayFullJoinIterMap<T, VC, I, F, W>
     where
         F: FnMut(&[Option<VC>]) -> W,
         W: Eq + Clone,
     {
-        MultiwayOuterJoinIterMap::new(self, f)
+        MultiwayFullJoinIterMap::new(self, f)
     }
 
     // TODO0(api-change): New public multiway primitive.

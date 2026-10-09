@@ -10,7 +10,7 @@ use crate::{Integer, MultiwaySweep, Owned, SortedDisjointMap, SweepEvent, map::V
 ///
 /// It consumes a [`MultiwaySweep`] (each input range's start and end, in key order, O(log k) per
 /// range) and splits the key line into maximal "stretches" over which the set of active inputs
-/// (and their values) is constant. The per-input `slots` are updated in place as events arrive,
+/// (and their values) is constant. The per-input `values` are updated in place as events arrive,
 /// so a stretch never rebuilds an O(k) slice.
 #[derive(Clone, Debug)]
 struct JoinSweep<T, VC, I>
@@ -20,22 +20,22 @@ where
     I: SortedDisjointMap<T, VC>,
 {
     events: Peekable<MultiwaySweep<T, VC, I>>,
-    // One slot per input: its value over the current stretch, or `None` if it is inactive there.
-    slots: Box<[Option<VC>]>,
+    // One value per input: its value over the current stretch, or `None` if it is inactive there.
+    values: Box<[Option<VC>]>,
     active_count: usize,
     // The end of the stretch most recently returned. Its ranges are deactivated at the start of the
-    // next call, after the caller has read `slots`.
+    // next call, after the caller has read `values`.
     last_end: Option<T>,
     tracking: Tracking,
     // `Tracking::Activated`: positions of inputs activated since the consumer last drained this.
-    // Used by the inner join to keep its dense buffer current; past `slots.len()` entries,
+    // Used by the inner join to keep its dense buffer current; past `values.len()` entries,
     // `changed_overflow` is set instead, and the consumer rebuilds (amortized O(1) per change
     // either way).
     changed: Vec<usize>,
     changed_overflow: bool,
 }
 
-/// What the sweep records about slot changes, for the consumer.
+/// What the sweep records about value changes, for the consumer.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Tracking {
     None,
@@ -56,7 +56,7 @@ where
         let input_count = events.input_count();
         Self {
             events: events.peekable(),
-            slots: (0..input_count).map(|_| None).collect(),
+            values: (0..input_count).map(|_| None).collect(),
             active_count: 0,
             last_end: None,
             tracking,
@@ -66,21 +66,21 @@ where
     }
 
     fn deactivate(&mut self, index: usize) {
-        self.slots[index] = None;
+        self.values[index] = None;
         self.active_count -= 1;
     }
 
     fn activate(&mut self, index: usize, value: VC) {
         debug_assert!(
-            self.slots[index].is_none(),
+            self.values[index].is_none(),
             "an input's ranges are disjoint"
         );
-        self.slots[index] = Some(value);
+        self.values[index] = Some(value);
         self.active_count += 1;
         match self.tracking {
             Tracking::None => {}
             Tracking::Activated => {
-                if self.changed.len() < self.slots.len() {
+                if self.changed.len() < self.values.len() {
                     self.changed.push(index);
                 } else {
                     self.changed_overflow = true;
@@ -89,7 +89,7 @@ where
         }
     }
 
-    /// Advances to the next stretch and returns its range; `slots` then describes it.
+    /// Advances to the next stretch and returns its range; `values` then describes it.
     fn next_stretch(&mut self) -> Option<RangeInclusive<T>> {
         // Close out the previous stretch: deactivate every range that ended with it. Those ends are
         // the next events, since the stretch ended at the earliest end or just before a start.
@@ -155,16 +155,16 @@ fn push_merged<T: Integer, W: Eq>(
         .map(|(range, value)| (range, Owned(value)))
 }
 
-/// This `struct` is created by the [`outer_join`] method on [`MultiwaySortedDisjointMap`].
+/// This `struct` is created by the [`full_join`] method on [`MultiwaySortedDisjointMap`].
 ///
 /// It yields every range covered by at least one input, with the closure's result for that
-/// range's per-input values. See [`outer_join`] for details.
+/// range's per-input values. See [`full_join`] for details.
 ///
 /// [`MultiwaySortedDisjointMap`]: crate::MultiwaySortedDisjointMap
-/// [`outer_join`]: crate::MultiwaySortedDisjointMap::outer_join
+/// [`full_join`]: crate::MultiwaySortedDisjointMap::full_join
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct MultiwayOuterJoinIterMap<T, VC, I, F, W>
+pub struct MultiwayFullJoinIterMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -175,7 +175,7 @@ where
     pending: Option<(RangeInclusive<T>, W)>,
 }
 
-impl<T, VC, I, F, W> MultiwayOuterJoinIterMap<T, VC, I, F, W>
+impl<T, VC, I, F, W> MultiwayFullJoinIterMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -195,7 +195,7 @@ where
     }
 }
 
-impl<T, VC, I, F, W> FusedIterator for MultiwayOuterJoinIterMap<T, VC, I, F, W>
+impl<T, VC, I, F, W> FusedIterator for MultiwayFullJoinIterMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -205,7 +205,7 @@ where
 {
 }
 
-impl<T, VC, I, F, W> Iterator for MultiwayOuterJoinIterMap<T, VC, I, F, W>
+impl<T, VC, I, F, W> Iterator for MultiwayFullJoinIterMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -217,7 +217,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(range) = self.sweep.next_stretch() {
-            let value = (self.f)(&self.sweep.slots);
+            let value = (self.f)(&self.sweep.values);
             if let Some(done) = push_merged(&mut self.pending, range, value) {
                 return Some(done);
             }
@@ -247,7 +247,7 @@ where
     f: F,
     pending: Option<(RangeInclusive<T>, W)>,
     // Every input's value, valid whenever all inputs are active. Kept current by copying only the
-    // slots that changed (see `JoinSweep::changed`).
+    // values that changed (see `JoinSweep::changed`).
     dense: Vec<VC>,
     // With zero inputs, "all inputs present" holds everywhere: the result is the universal range.
     zero_inputs_done: bool,
@@ -274,15 +274,15 @@ where
         }
     }
 
-    // Brings `dense` up to date with `sweep.slots`; called only when every input is active.
+    // Brings `dense` up to date with `sweep.values`; called only when every input is active.
     fn sync_dense(&mut self) {
-        let slots = &self.sweep.slots;
-        if self.dense.len() != slots.len() || self.sweep.changed_overflow {
-            self.dense = slots.iter().flatten().cloned().collect();
-            debug_assert_eq!(self.dense.len(), slots.len(), "every input is active");
+        let values = &self.sweep.values;
+        if self.dense.len() != values.len() || self.sweep.changed_overflow {
+            self.dense = values.iter().flatten().cloned().collect();
+            debug_assert_eq!(self.dense.len(), values.len(), "every input is active");
         } else {
             for &index in &self.sweep.changed {
-                if let Some(value) = &slots[index] {
+                if let Some(value) = &values[index] {
                     self.dense[index] = value.clone();
                 }
             }
@@ -313,7 +313,7 @@ where
     type Item = (RangeInclusive<T>, Owned<W>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let input_count = self.sweep.slots.len();
+        let input_count = self.sweep.values.len();
         if input_count == 0 {
             if self.zero_inputs_done {
                 return None;
