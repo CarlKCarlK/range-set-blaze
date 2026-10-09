@@ -289,8 +289,26 @@ Maps (decided and implemented, commit `07ee3c38`):
   showed the unchanged map intersection 20-70% "faster"; timing unchanged operations in both builds
   showed no real difference.
 
-Sets (pending): multiway set union, intersection, and symmetric difference (`MultiwaySortedDisjoint`)
-and the two-way operators have not been measured yet.
+Sets and two-way operators (decided and implemented, 2026-10-08). Prototypes were timed in the same
+test binary as the released code (sets enter the sweep through a crate-private adapter that gives
+every range the value `true`):
+
+| Operation | new/old | Decision |
+|---|---|---|
+| multiway set `union` | 0.89-1.99 (mostly slower) | keep released |
+| multiway set `intersection` | 0.84-1.68 (mostly slower) | keep released |
+| multiway set `symmetric_difference` | 0.65-0.96, but 1.05-1.23 at k = 2-4 sparse | moved to the sweep (human's call: share code; small loss at small k on sparse sets) |
+| two-way set `\|`, `^`, `&` | 0.99-4.06 (slower) | keep released |
+| two-way map `\|`, `^` | 0.35-0.63 (with a wrapper for different input types) | moved to the sweep |
+
+Set code carries no values, so its released merges are already lean; the sweep pays for events and
+heaps. Map two-way `|` and `^` use a crate-private `EitherMap` so the sweep can take two input types.
+
+Types (breaking, approved): `SymDiffKMerge`, `UnionMergeMap`, and `SymDiffMergeMap` are now opaque
+structs with the same names and generic parameters (operator signatures unchanged).
+`RangeMapBlaze`'s `^` uses the new path. `MergeMap` and `SymDiffIterMap` (public, never publicly
+constructible, no longer used) and the crate-private `SetPriorityMap` were removed. A brute-force
+quickcheck covers multiway set union, intersection, and symmetric difference.
 
 The design notes below record how this was reached.
 

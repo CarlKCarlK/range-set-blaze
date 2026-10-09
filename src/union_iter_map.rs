@@ -1,6 +1,6 @@
+use crate::AssumeSortedStarts;
 use crate::map::ValueCarrier;
 use crate::sorted_disjoint_map::{Priority, PrioritySortedStartsMap};
-use crate::{AssumeSortedStarts, MergeMap, SortedDisjointMap, UnionMergeMap};
 use alloc::{collections::BinaryHeap, vec};
 use core::cmp::min;
 use core::iter::FusedIterator;
@@ -148,20 +148,6 @@ where
             gather: None,
             ready_to_go: None,
         }
-    }
-}
-
-impl<T, VC, L, R> UnionMergeMap<T, VC, L, R>
-where
-    T: Integer,
-    VC: ValueCarrier,
-    L: SortedDisjointMap<T, VC>,
-    R: SortedDisjointMap<T, VC>,
-{
-    #[inline]
-    pub(crate) fn new2(left: L, right: R) -> Self {
-        let iter = MergeMap::new(left, right);
-        Self::new(iter)
     }
 }
 

@@ -1,7 +1,9 @@
 use alloc::{collections::BinaryHeap, vec::Vec};
 use core::{iter::FusedIterator, ops::RangeInclusive};
 
-use crate::{Integer, MultiwaySweep, SortedDisjointMap, SweepEvent, map::ValueCarrier};
+use crate::{
+    Integer, MultiwaySweep, SortedDisjointMap, SortedStartsMap, SweepEvent, map::ValueCarrier,
+};
 
 /// Which ranges a [`SweepSelectMap`] keeps, by how many inputs are present there.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -266,5 +268,167 @@ where
     T: Integer,
     VC: ValueCarrier,
     I: SortedDisjointMap<T, VC> + FusedIterator,
+{
+}
+
+/// Two map-stream types as one, so a two-input operation can use the k-way code, which takes
+/// inputs of a single type.
+#[derive(Clone, Debug)]
+enum EitherMap<L, R> {
+    Left(L),
+    Right(R),
+}
+
+impl<T, VC, L, R> Iterator for EitherMap<L, R>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    L: Iterator<Item = (RangeInclusive<T>, VC)>,
+    R: Iterator<Item = (RangeInclusive<T>, VC)>,
+{
+    type Item = (RangeInclusive<T>, VC);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Self::Left(left) => left.next(),
+            Self::Right(right) => right.next(),
+        }
+    }
+}
+
+impl<L: FusedIterator, R: FusedIterator> FusedIterator for EitherMap<L, R> where Self: Iterator {}
+
+impl<T, VC, L, R> SortedStartsMap<T, VC> for EitherMap<L, R>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
+{
+}
+
+impl<T, VC, L, R> SortedDisjointMap<T, VC> for EitherMap<L, R>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
+{
+}
+
+/// This `struct` is created by the [`union`] method on [`SortedDisjointMap`] (and the `|`
+/// operator). See [`union`] for details.
+///
+/// Its fields are private, so its implementation can change without changing its type.
+///
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap
+/// [`union`]: crate::SortedDisjointMap::union
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Clone, Debug)]
+pub struct UnionMergeMap<T, VC, L, R>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
+{
+    // The k-way union over the two inputs; the right input has priority.
+    inner: UnionKMergeMap<T, VC, EitherMap<L, R>>,
+}
+
+impl<T, VC, L, R> UnionMergeMap<T, VC, L, R>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
+{
+    pub(crate) fn new2(left: L, right: R) -> Self {
+        Self {
+            inner: UnionKMergeMap::new_k([EitherMap::Left(left), EitherMap::Right(right)]),
+        }
+    }
+}
+
+impl<T, VC, L, R> Iterator for UnionMergeMap<T, VC, L, R>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
+{
+    type Item = (RangeInclusive<T>, VC);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next()
+    }
+}
+
+impl<T, VC, L, R> FusedIterator for UnionMergeMap<T, VC, L, R>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
+{
+}
+
+/// This `struct` is created by the [`symmetric_difference`] method on [`SortedDisjointMap`] (and
+/// the `^` operator). See [`symmetric_difference`] for details.
+///
+/// Its fields are private, so its implementation can change without changing its type.
+///
+/// [`SortedDisjointMap`]: crate::SortedDisjointMap
+/// [`symmetric_difference`]: crate::SortedDisjointMap::symmetric_difference
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Clone, Debug)]
+pub struct SymDiffMergeMap<T, VC, L, R>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
+{
+    // The k-way symmetric difference over the two inputs; the right input has priority.
+    inner: SymDiffKMergeMap<T, VC, EitherMap<L, R>>,
+}
+
+impl<T, VC, L, R> SymDiffMergeMap<T, VC, L, R>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
+{
+    pub(crate) fn new2(left: L, right: R) -> Self {
+        Self {
+            inner: SymDiffKMergeMap::new_k([EitherMap::Left(left), EitherMap::Right(right)]),
+        }
+    }
+}
+
+impl<T, VC, L, R> Iterator for SymDiffMergeMap<T, VC, L, R>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
+{
+    type Item = (RangeInclusive<T>, VC);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next()
+    }
+}
+
+impl<T, VC, L, R> FusedIterator for SymDiffMergeMap<T, VC, L, R>
+where
+    T: Integer,
+    VC: ValueCarrier,
+    L: SortedDisjointMap<T, VC>,
+    R: SortedDisjointMap<T, VC>,
 {
 }

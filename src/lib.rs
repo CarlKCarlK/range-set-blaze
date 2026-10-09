@@ -51,8 +51,10 @@ pub use intersection_iter_map::IntersectionIterMap;
 
 mod multiway_join_iter_map;
 mod multiway_select_map;
-pub use multiway_select_map::{SymDiffKMergeMap, UnionKMergeMap};
+pub use multiway_select_map::{SymDiffKMergeMap, SymDiffMergeMap, UnionKMergeMap, UnionMergeMap};
 mod multiway_sweep;
+mod multiway_sym_diff_set;
+pub use multiway_sym_diff_set::SymDiffKMerge;
 pub use multiway_join_iter_map::{MultiwayInnerJoinIterMap, MultiwayOuterJoinIterMap};
 pub use multiway_sweep::{MultiwaySweep, SweepEvent};
 
@@ -75,9 +77,6 @@ mod map_op;
 
 mod merge;
 pub use merge::{KMerge, Merge};
-
-mod merge_map;
-pub use merge_map::MergeMap;
 
 mod multiway;
 pub use multiway::{MultiwayRangeSetBlaze, MultiwayRangeSetBlazeRef, MultiwaySortedDisjoint};
@@ -113,9 +112,6 @@ pub use sorted_disjoint_map::{
 
 mod sym_diff_iter;
 pub use sym_diff_iter::SymDiffIter;
-
-mod sym_diff_iter_map;
-pub use sym_diff_iter_map::SymDiffIterMap;
 
 mod union_iter;
 pub use union_iter::UnionIter;
@@ -173,15 +169,9 @@ pub type IntersectionMerge<T, L, R> = NotIter<T, NandMerge<T, L, R>>;
 pub type NotMap<T, VC, I> = NotIter<T, RangeValuesToRangesIter<T, VC, I>>;
 
 #[doc(hidden)]
-pub type SymDiffKMerge<T, II> = SymDiffIter<T, KMerge<T, II>>;
-#[doc(hidden)]
 pub type SymDiffMerge<T, L, R> = SymDiffIter<T, Merge<T, L, R>>;
-#[doc(hidden)]
-pub type SymDiffMergeMap<T, VC, L, R> = SymDiffIterMap<T, VC, MergeMap<T, VC, L, R>>;
 
 #[doc(hidden)]
 pub type UnionKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
 #[doc(hidden)]
 pub type UnionMerge<T, L, R> = UnionIter<T, merge::Merge<T, L, R>>;
-#[doc(hidden)]
-pub type UnionMergeMap<T, VC, L, R> = UnionIterMap<T, VC, MergeMap<T, VC, L, R>>;

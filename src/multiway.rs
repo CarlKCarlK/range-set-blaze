@@ -249,8 +249,8 @@ pub trait MultiwayRangeSetBlazeRef<'a, T: Integer + 'a>:
 }
 
 use crate::{
-    Integer, IntersectionMapInternal, RangeSetBlaze, SortedDisjoint, SymDiffIter, SymDiffKMerge,
-    UnionIter, UnionKMerge,
+    Integer, IntersectionMapInternal, RangeSetBlaze, SortedDisjoint, SymDiffKMerge, UnionIter,
+    UnionKMerge,
 };
 
 impl<T, II, I> MultiwaySortedDisjoint<T, I> for II
@@ -375,6 +375,6 @@ where
     /// );
     /// ```
     fn symmetric_difference(self) -> SymDiffKMerge<T, I> {
-        SymDiffIter::new_k(self)
+        SymDiffKMerge::new_k(self)
     }
 }

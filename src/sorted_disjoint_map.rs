@@ -18,7 +18,6 @@ use crate::map::ValueCarrier;
 use crate::range_values::RangeValuesIter;
 use crate::range_values::RangeValuesToRangesIter;
 use crate::sorted_disjoint::SortedDisjoint;
-use crate::sym_diff_iter_map::SymDiffIterMap;
 use crate::{Integer, RangeMapBlaze, union_iter_map::UnionIterMap};
 use crate::{MultiwayInnerJoinIterMap, MultiwayOuterJoinIterMap, SymDiffKMergeMap, UnionKMergeMap};
 use alloc::format;
@@ -228,7 +227,7 @@ where
     TMap: FnMut(I) -> IInner,
 {
 }
-/// Used internally by [`UnionIterMap`] and [`SymDiffIterMap`].
+/// Used internally by [`UnionIterMap`].
 pub trait PrioritySortedStartsMap<T, VC>: Iterator<Item = Priority<T, VC>> + FusedIterator
 where
     T: Integer,
@@ -481,7 +480,7 @@ where
         R::IntoIter: SortedDisjointMap<T, VC>,
         Self: Sized,
     {
-        UnionIterMap::new2(self, other.into_iter())
+        UnionMergeMap::new2(self, other.into_iter())
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their intersection.
@@ -799,7 +798,7 @@ where
         Self: Sized,
         VC: ValueCarrier,
     {
-        SymDiffIterMap::new2(self, other.into_iter())
+        SymDiffMergeMap::new2(self, other.into_iter())
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
@@ -1096,7 +1095,7 @@ where
     }
 }
 
-/// Used internally by `MergeMap`.
+/// Used internally by [`UnionIterMap`].
 #[derive(Clone, Debug)]
 pub struct Priority<T, VC> {
     range_value: (RangeInclusive<T>, VC),
@@ -1367,10 +1366,11 @@ impl_sorted_map_traits_and_ops!(MultiwayInnerJoinIterMap<T, VC, I, F, W>, W, Own
 impl_sorted_map_traits_and_ops!(MultiwayOuterJoinIterMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(&[Option<VC>]) -> W, W: Eq + Clone);
 impl_sorted_map_traits_and_ops!(UnionKMergeMap<T, VC, I>, VC::Value, VC, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
 impl_sorted_map_traits_and_ops!(SymDiffKMergeMap<T, VC, I>, VC::Value, VC, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
+impl_sorted_map_traits_and_ops!(UnionMergeMap<T, VC, I0, I1>, VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjointMap<T, VC>);
+impl_sorted_map_traits_and_ops!(SymDiffMergeMap<T, VC, I0, I1>, VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjointMap<T, VC>);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VC, I0, I1>,  VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: Eq + Clone);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Eq + Clone);
-impl_sorted_map_traits_and_ops!(SymDiffIterMap<T, VC, I>, VC::Value, VC, VC: ValueCarrier, I: PrioritySortedStartsMap<T, VC>);
 impl_sorted_map_traits_and_ops!(UnionIterMap<T, VC, I>, VC::Value, VC, VC: ValueCarrier, I: PrioritySortedStartsMap<T, VC>);
 
 #[cfg(test)]

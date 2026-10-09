@@ -1,8 +1,4 @@
-use crate::{
-    Integer,
-    map::ValueCarrier,
-    sorted_disjoint_map::{Priority, PrioritySortedStartsMap},
-};
+use crate::{Integer, map::ValueCarrier};
 use alloc::{collections::btree_map, rc::Rc};
 use core::{iter::FusedIterator, marker::PhantomData, ops::RangeInclusive};
 
@@ -336,54 +332,4 @@ impl<T> ExpectDebugUnwrapRelease<T> for Option<T> {
             self.unwrap()
         }
     }
-}
-
-#[expect(clippy::redundant_pub_crate)]
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-#[derive(Clone, Debug)]
-pub(crate) struct SetPriorityMap<T, VC, I> {
-    iter: I,
-    priority_number: usize,
-    phantom: PhantomData<(T, VC)>,
-}
-
-impl<T, VC, I> FusedIterator for SetPriorityMap<T, VC, I>
-where
-    T: Integer,
-    VC: ValueCarrier,
-    I: SortedDisjointMap<T, VC>,
-{
-}
-
-impl<T, VC, I: Iterator<Item = (RangeInclusive<T>, VC)>> Iterator for SetPriorityMap<T, VC, I> {
-    type Item = Priority<T, VC>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter
-            .next()
-            .map(|range_value| Priority::new(range_value, self.priority_number))
-    }
-}
-
-impl<T, VC, I> SetPriorityMap<T, VC, I>
-where
-    T: Integer,
-    VC: ValueCarrier,
-    I: SortedDisjointMap<T, VC>,
-{
-    pub(crate) const fn new(iter: I, priority: usize) -> Self {
-        Self {
-            iter,
-            priority_number: priority,
-            phantom: PhantomData,
-        }
-    }
-}
-
-impl<T, VC, I> PrioritySortedStartsMap<T, VC> for SetPriorityMap<T, VC, I>
-where
-    T: Integer,
-    VC: ValueCarrier,
-    I: SortedDisjointMap<T, VC>,
-{
 }

@@ -2,9 +2,8 @@
 
 use crate::{
     CheckSortedDisjointMap, DynSortedDisjointMap, FillGapsIter, FillGapsIterMap, Integer,
-    IntersectionIterMap, IntoIterMap, IntoRangeValuesIter, IterMap, MergeMap, MultiwaySweep,
-    RangeMapBlaze, RangeValuesIter, RangesIter, SymDiffIterMap, SymDiffKMergeMap, UnionIterMap,
-    UnionKMergeMap,
+    IntersectionIterMap, IntoIterMap, IntoRangeValuesIter, IterMap, MultiwaySweep, RangeMapBlaze,
+    RangeValuesIter, RangesIter, SymDiffKMergeMap, UnionIterMap, UnionKMergeMap,
     keys::{IntoKeys, Keys},
     sorted_disjoint_map::{Priority, RangeToRangeValueIter},
     unsorted_priority_map::{AssumePrioritySortedStartsMap, UnsortedPriorityMap},
@@ -669,10 +668,6 @@ const fn check_traits() {
     is_sssu::<AMultiwaySweep<'_>>();
     is_like_btreemap_iter_less_both::<AMultiwaySweep<'_>>();
 
-    type AMergeMap<'a> = MergeMap<i32, &'a u64, ARangeValuesIter<'a>, ARangeValuesIter<'a>>;
-    is_sssu::<AMergeMap<'_>>();
-    is_like_btreemap_iter_less_both::<AMergeMap<'_>>();
-
     type AAssumePrioritySortedStartsMap<'a> =
         AssumePrioritySortedStartsMap<vec::IntoIter<Priority<i32, &'a u64>>>;
     is_sssu::<AAssumePrioritySortedStartsMap<'_>>();
@@ -681,10 +676,6 @@ const fn check_traits() {
     type AUnionIterMap<'a> = UnionIterMap<i32, &'a u64, AAssumePrioritySortedStartsMap<'a>>;
     is_sssu::<AUnionIterMap<'_>>();
     is_like_btreemap_iter_less_both::<AUnionIterMap<'_>>();
-
-    type ASymDiffIterMap<'a> = SymDiffIterMap<i32, &'a u64, AAssumePrioritySortedStartsMap<'a>>;
-    is_sssu::<ASymDiffIterMap<'_>>();
-    is_like_btreemap_iter_less_both::<ASymDiffIterMap<'_>>();
 
     type ARangesIter<'a> = RangesIter<'a, i32>;
 
@@ -802,14 +793,6 @@ const fn is_like_check_sorted_disjoint_map<
 }
 
 const fn is_like_dyn_sorted_disjoint_map<T: IntoIterator + Unpin + Any>() {}
-
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn test_merge_map() {
-    let a = RangeMapBlaze::from_iter([(1..=2, "a"), (3..=4, "b")]).into_range_values();
-    let b = RangeMapBlaze::from_iter([(1..=2, "a"), (13..=14, "b")]).into_range_values();
-    assert_eq!(MergeMap::new(a, b).size_hint(), (0, None));
-}
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

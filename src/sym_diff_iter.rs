@@ -1,7 +1,4 @@
-use crate::sym_diff_iter_map::UsizeExtensions;
-use crate::{
-    Integer, Merge, SortedDisjoint, SortedStarts, SymDiffKMerge, SymDiffMerge, merge::KMerge,
-};
+use crate::{Integer, Merge, SortedDisjoint, SortedStarts, SymDiffMerge};
 use alloc::collections::BinaryHeap;
 use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
 
@@ -185,17 +182,15 @@ where
     }
 }
 
-impl<T, J> SymDiffKMerge<T, J>
-where
-    T: Integer,
-    J: SortedDisjoint<T>,
-{
+#[allow(clippy::wrong_self_convention)]
+#[allow(clippy::redundant_pub_crate)]
+pub(crate) trait UsizeExtensions {
+    fn is_odd(self) -> bool;
+}
+
+impl UsizeExtensions for usize {
     #[inline]
-    pub(crate) fn new_k<K>(k: K) -> Self
-    where
-        K: IntoIterator<Item = J>,
-    {
-        let iter = KMerge::new(k);
-        Self::new(iter)
+    fn is_odd(self) -> bool {
+        self & 1 != 0
     }
 }

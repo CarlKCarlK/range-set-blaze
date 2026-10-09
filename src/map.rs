@@ -1,11 +1,10 @@
 use crate::{
-    CheckSortedDisjoint, Integer, IntoKeys, Keys, RangeSetBlaze, SortedDisjoint,
+    CheckSortedDisjoint, Integer, IntoKeys, Keys, RangeSetBlaze, SortedDisjoint, SymDiffMergeMap,
     iter_map::{IntoIterMap, IterMap},
     map_op, map_unary_op,
     range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter},
     set::extract_range,
     sorted_disjoint_map::{IntoString, SortedDisjointMap},
-    sym_diff_iter_map::SymDiffIterMap,
     unsorted_priority_map::{SortedDisjointMapWithLenSoFar, UnsortedPriorityMap},
     values::{IntoValues, Values},
 };
@@ -2986,7 +2985,7 @@ map_op!(
 
     // ── owned ^ owned ────────────────────────────────────────────
     |a, b| {
-        SymDiffIterMap::new2(
+        SymDiffMergeMap::new2(
             a.into_range_values(),
             b.into_range_values(),
         )
@@ -2995,7 +2994,7 @@ map_op!(
 
     // ── owned ^ &borrowed ────────────────────────────────────────
     |a, &b| {
-        SymDiffIterMap::new2(
+        SymDiffMergeMap::new2(
             a.range_values(),
             b.range_values(),
         )
@@ -3004,7 +3003,7 @@ map_op!(
 
     // ── &borrowed ^ owned ────────────────────────────────────────
     |&a, b| {
-        SymDiffIterMap::new2(
+        SymDiffMergeMap::new2(
             a.range_values(),
             b.range_values(),
         )
@@ -3013,7 +3012,7 @@ map_op!(
 
     // ── &borrowed ^ &borrowed ────────────────────────────────────
     |&a, &b| {
-        SymDiffIterMap::new2(
+        SymDiffMergeMap::new2(
             a.range_values(),
             b.range_values(),
         )

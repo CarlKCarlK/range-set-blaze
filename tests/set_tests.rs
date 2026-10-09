@@ -3363,3 +3363,35 @@ fn cover_is_universal() {
     assert!(!empty.is_universal());
     assert!(!empty.ranges().is_universal());
 }
+
+#[quickcheck]
+fn multiway_set_operations_match_brute_force(inputs: Vec<Vec<(u8, u8)>>) -> bool {
+    // Union, intersection, and symmetric difference keep a key when at least one, all, or an odd
+    // number of inputs contain it.
+    let sets: Vec<RangeSetBlaze<u8>> = inputs
+        .into_iter()
+        .take(6)
+        .map(|ranges| {
+            ranges
+                .into_iter()
+                .map(|(a, b)| a.min(b)..=a.max(b))
+                .collect()
+        })
+        .collect();
+    let brute = |keep: &dyn Fn(usize) -> bool| -> RangeSetBlaze<u8> {
+        (0..=u8::MAX)
+            .filter(|key| keep(sets.iter().filter(|set| set.contains(*key)).count()))
+            .collect()
+    };
+    let streams = || sets.iter().map(RangeSetBlaze::ranges).collect::<Vec<_>>();
+    let union_ok = streams().union().into_range_set_blaze() == brute(&|count| count > 0)
+        && sets.iter().union() == brute(&|count| count > 0);
+    let symmetric_difference_ok = streams().symmetric_difference().into_range_set_blaze()
+        == brute(&|count| count % 2 == 1)
+        && sets.iter().symmetric_difference() == brute(&|count| count % 2 == 1);
+    // With zero inputs, intersection is the universal set.
+    let intersection_ok = streams().intersection().into_range_set_blaze()
+        == brute(&|count| count == sets.len())
+        && sets.iter().intersection() == brute(&|count| count == sets.len());
+    union_ok && symmetric_difference_ok && intersection_ok
+}

@@ -4,7 +4,7 @@ use crate::map::ValueCarrier;
 use crate::range_values::{MapIntoRangesIter, MapRangesIter, RangeValuesToRangesIter};
 use crate::ranges_iter::RangesIter;
 use crate::sorted_disjoint_map::IntoString;
-use crate::{IntoRangesIter, UnionIter, UnionMerge};
+use crate::{IntoRangesIter, SymDiffKMerge, UnionIter, UnionMerge};
 use alloc::string::String;
 use core::{
     array,
@@ -978,6 +978,7 @@ impl_sorted_traits_and_ops!(NotIter<T, I>, I: SortedDisjoint<T>);
 impl_sorted_traits_and_ops!(RangesIter<'a, T>, 'a);
 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, VC, I>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
 impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);
+impl_sorted_traits_and_ops!(SymDiffKMerge<T, I>, I: SortedDisjoint<T>);
 impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(RangeOnce<T>, 'ignore);
 
