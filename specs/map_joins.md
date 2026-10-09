@@ -154,10 +154,11 @@ public types; and the `left_join` early-stop test.
 
 ## Open questions
 
-- **Collect-and-sort engine.** Reading all ranges into one array and sorting once was about 6x
-  faster than the streaming heap at 512 inputs (309 us versus 1,825 us), but uses O(total ranges)
-  memory and is not lazy. Possible split: streams stay streaming; struct forms (which build a whole
-  map anyway) use collect and sort. Not decided.
+- **Collect-and-sort engine: deferred (2026-10-09), not in 0.8.** Reading all ranges into one
+  array and sorting once was about 6x faster than the streaming heap at 512 inputs (309 us versus
+  1,825 us; about 4x at 128, close at 8 or fewer), but uses O(total ranges) memory and is not
+  lazy, so it could only serve struct forms, which materialize anyway. Purely internal, so it can
+  be added later without a break. Revisit if a workload with hundreds of inputs appears.
 - **Deferred until a caller appears:** a filtering transform (workaround:
   `transform_values` to `Option`, `filter`, `transform_values` to unwrap, all lazy), a `Cow`
   carrier, a multiway left join, and owned-maps forms of the multiway joins
