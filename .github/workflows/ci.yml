@@ -1,7 +1,10 @@
 name: test
 
 on:
+  # Branch pushes are covered by their pull_request run; also running on `push` for every
+  # branch doubled every PR's jobs. Use workflow_dispatch to test a branch without a PR.
   push:
+    branches: [main]
   schedule:
     - cron: '0 0 1 * *'
   pull_request:
@@ -14,13 +17,20 @@ env:
 permissions:
   contents: read
 
+# A newer push to the same PR cancels the older, now-superseded run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test_64_bit:
-    name: Test Rust on 64-bit
+    # Stable and nightly run as separate jobs so they proceed in parallel.
+    name: Test Rust on 64-bit (${{ matrix.os }}, ${{ matrix.toolchain }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        toolchain: [stable, nightly]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -31,7 +41,20 @@ jobs:
         uses: dtolnay/rust-toolchain@1.99.0
         with:
           components: rust-src
+      - name: Setup Rust nightly
+        if: matrix.toolchain == 'nightly'
+        # Keep this nightly pinned, like the stable toolchain above. A floating
+        # `nightly` breaks CI whenever upstream adds a new Clippy lint (as
+        # `clippy::single_range_in_vec_init` did). Bump the date deliberately.
+        run: |
+          rustup toolchain install nightly-2026-09-15 --component clippy --allow-downgrade
+          rustup override set nightly-2026-09-15
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.toolchain }}
       - name: Test Rust Native (stable)
+        if: matrix.toolchain == 'stable'
         run: |
           cargo clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
           cargo test --verbose
@@ -39,29 +62,38 @@ jobs:
           cargo test --verbose --no-default-features
           cargo test --verbose --release --no-default-features
       - name: Test Rust Native (nightly)
-        # Keep this nightly pinned, like the stable toolchain above. A floating
-        # `nightly` breaks CI whenever upstream adds a new Clippy lint (as
-        # `clippy::single_range_in_vec_init` did). Bump the date deliberately.
+        if: matrix.toolchain == 'nightly'
         run: |
-          rustup toolchain install nightly-2026-09-15 --component clippy --allow-downgrade
-          rustup override set nightly-2026-09-15
           cargo check --tests --features "float_nightly_experimental"
           cargo test --verbose --features from_slice
           cargo test --verbose --features cursor_nightly_experimental
           cargo test --verbose --no-default-features --features cursor_nightly_experimental
           cargo clippy --verbose --all-targets --features cursor_nightly_experimental -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
           cargo test --verbose --all-features
+
+  docs_and_audit:
+    name: Check docs and audit dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@1.99.0
+      - name: Setup Rust nightly
+        run: rustup toolchain install nightly-2026-09-15 --allow-downgrade
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+      - name: Install tools
+        # Prebuilt binaries; `cargo install` compiled these from source on every run (~4 min).
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deadlinks,cargo-audit,cargo-deny
       - name: Check dead links in documentation
-        if: matrix.os == 'ubuntu-latest'
         run: |
-          cargo install cargo-deadlinks
           RUSTDOCFLAGS="--cfg docsrs" cargo +nightly-2026-09-15 doc --no-deps --all-features
           RUST_LOG=error cargo deadlinks --dir target/doc/range_set_blaze
       - name: Audit dependencies (security & license)
-        if: matrix.os == 'ubuntu-latest'
         run: |
-          cargo install cargo-audit
-          cargo install cargo-deny
           cargo audit
           cargo deny check
 
@@ -75,6 +107,8 @@ jobs:
         uses: dtolnay/rust-toolchain@1.99.0
         with:
           components: rust-src
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
       - name: Test Rust 32-bit Ubuntu
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -110,6 +144,8 @@ jobs:
         uses: dtolnay/rust-toolchain@1.99.0
         with:
           components: rust-src
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
       - name: Setup WASM/unknown
         uses: jetli/wasm-pack-action@v0.4.0
       - name: Test WASM/unknown
@@ -152,6 +188,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Rust 1.89
         uses: dtolnay/rust-toolchain@1.89
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
       - name: Check MSRV compiles
         run: |
           # Explicitly bypass rust-toolchain.toml; otherwise this job could run 1.99.
