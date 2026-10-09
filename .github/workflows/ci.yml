@@ -28,12 +28,12 @@ jobs:
       - name: Setup Rust
         # Keep scheduled CI on the pinned baseline. Bump deliberately after checking
         # newer lints locally with `just clippy-latest`.
-        uses: dtolnay/rust-toolchain@1.97.0
+        uses: dtolnay/rust-toolchain@1.99.0
         with:
           components: rust-src
       - name: Test Rust Native (stable)
         run: |
-          cargo clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated
+          cargo clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
           cargo test --verbose
           cargo test --verbose --release
           cargo test --verbose --no-default-features
@@ -72,7 +72,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@1.97.0
+        uses: dtolnay/rust-toolchain@1.99.0
         with:
           components: rust-src
       - name: Test Rust 32-bit Ubuntu
@@ -107,7 +107,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@1.97.0
+        uses: dtolnay/rust-toolchain@1.99.0
         with:
           components: rust-src
       - name: Setup WASM/unknown
@@ -154,7 +154,7 @@ jobs:
         uses: dtolnay/rust-toolchain@1.89
       - name: Check MSRV compiles
         run: |
-          # Explicitly bypass rust-toolchain.toml; otherwise this job could run 1.97.
+          # Explicitly bypass rust-toolchain.toml; otherwise this job could run 1.99.
           cargo +1.89 check --verbose
           cargo +1.89 check --verbose --no-default-features
           cargo +1.89 check --verbose --features std

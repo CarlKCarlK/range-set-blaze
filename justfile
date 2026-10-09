@@ -32,14 +32,14 @@ ci-nightly: test-nightly
 
 # Run clippy with CI settings (matches CI exactly, using the pinned toolchain in rust-toolchain.toml)
 clippy:
-    cargo clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated
+    cargo clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
 
 # Preview lints on the newest stable toolchain, ignoring the pinned CI toolchain.
 # Run this deliberately when evaluating a Rust-toolchain update; it is not part of
 # the normal pinned CI path.
 clippy-latest:
     rustup update stable
-    cargo +stable clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated
+    cargo +stable clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
 
 # Run all stable tests (matches CI)
 test-stable:

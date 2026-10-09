@@ -138,8 +138,8 @@ mod tests {
 
     #[test]
     fn empty_and_one_sided() {
-        assert!(left(&[], &[]).is_empty());
-        assert!(left(&[], &[(1..=2, "R")]).is_empty());
+        assert_eq!(left(&[], &[]), vec![]);
+        assert_eq!(left(&[], &[(1..=2, "R")]), vec![]);
         assert_eq!(left(&[(1..=2, "L")], &[]), vec![(1..=2, ("L", None))]);
     }
 

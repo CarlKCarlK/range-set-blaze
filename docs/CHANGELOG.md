@@ -5,11 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.8.0] - 2026-10-09
 
 This is a breaking release (see **Changed** and **Removed**). Code that only uses
 `RangeSetBlaze`, `RangeMapBlaze`, and their operators and methods is unaffected
-apart from the new minimum Rust version.
+apart from the new minimum Rust version. It also includes the `from_slice`
+fix described under 0.7.1, which was never published to crates.io.
 
 ### Added
 
@@ -72,6 +73,8 @@ apart from the new minimum Rust version.
   because operations clone a value whenever they split its range; wrap large
   values in `Rc` or `Arc`.
 - `just check-all` now also runs the MSRV check, matching CI.
+- The pinned development toolchain is now Rust 1.99.0 (was 1.97.0). This
+  affects only local builds and CI, not the minimum supported Rust version.
 
 ### Removed
 
@@ -79,6 +82,8 @@ apart from the new minimum Rust version.
   public constructors and are no longer used by the crate.
 
 ## [0.7.1] - 2026-09-25
+
+This version was never published to crates.io. Its fix first ships in 0.8.0.
 
 ### Fixed
 

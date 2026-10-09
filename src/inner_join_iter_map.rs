@@ -128,16 +128,16 @@ mod tests {
 
     #[test]
     fn empty_inputs() {
-        assert!(join(&[], &[]).is_empty());
-        assert!(join(&[(1..=2, "L")], &[]).is_empty());
-        assert!(join(&[], &[(1..=2, "R")]).is_empty());
+        assert_eq!(join(&[], &[]), vec![]);
+        assert_eq!(join(&[(1..=2, "L")], &[]), vec![]);
+        assert_eq!(join(&[], &[(1..=2, "R")]), vec![]);
     }
 
     #[test]
     fn disjoint_and_touching_do_not_overlap() {
-        assert!(join(&[(1..=2, "L")], &[(5..=6, "R")]).is_empty());
-        assert!(join(&[(5..=6, "L")], &[(1..=2, "R")]).is_empty());
-        assert!(join(&[(1..=2, "L")], &[(3..=4, "R")]).is_empty());
+        assert_eq!(join(&[(1..=2, "L")], &[(5..=6, "R")]), vec![]);
+        assert_eq!(join(&[(5..=6, "L")], &[(1..=2, "R")]), vec![]);
+        assert_eq!(join(&[(1..=2, "L")], &[(3..=4, "R")]), vec![]);
     }
 
     #[test]

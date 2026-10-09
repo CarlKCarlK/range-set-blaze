@@ -149,8 +149,6 @@ fn integer_coverage_nightly() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-// I don't quite understand why clippy complains here
-#[expect(clippy::from_iter_instead_of_collect)]
 fn float_test() {
     let _ = RangeSetBlaze::<TotalF64>::new();
     let _ = RangeSetBlaze::<TotalF32>::new();
