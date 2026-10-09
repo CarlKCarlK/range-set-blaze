@@ -257,6 +257,40 @@ iterator forms streaming, and let struct forms (which build a whole map anyway) 
 sort. Decide after moving the existing multiway union, intersection, and symmetric difference onto
 the sweep (next step), per the rule: special-case code only where it measurably pays.
 
+### Existing multiway operations on the sweep (step 4)
+
+Rule (2026-10-08): keep special-case code only where it measurably pays; otherwise share the sweep,
+so it gets more testing through use.
+
+Engine check: ordering inputs by start with the new small-key heap versus `itertools::kmerge_by`
+(what `KMergeMap` did) was 0.60-0.90x at 4-512 inputs, about even at 3, and 1.15x at 2 inputs
+with borrowed values (0.85x for sets). The k = 2 loss is in this step alone; the whole sweep-based
+union and symmetric difference are still about 2x faster at k = 2, so no special case.
+
+Maps (decided and implemented, commit `07ee3c38`):
+
+- `union` and `symmetric_difference` moved to the sweep: 0.24-0.71x and 0.23-0.67x of the
+  `KMergeMap` versions across 2-512 inputs and sparse to dense inputs (prototype timed in the same
+  binary as the released code), confirmed on the real implementation (0.28-0.78x and 0.30-0.70x).
+  Semantics unchanged: kept when at least one / an odd number of inputs are present, value from the
+  highest-numbered input present.
+- `intersection` stays as is: its implementation (built from set operations that discard
+  non-overlapping stretches early) is 1.2-3.3x faster than the sweep on dense inputs.
+- Breaking change: `UnionKMergeMap` and `SymDiffKMergeMap` are now opaque structs (private fields,
+  same names and generic parameters) instead of `#[doc(hidden)]` aliases of
+  `UnionIterMap`/`SymDiffIterMap` over `KMergeMap`. Code that only iterates or chains is unaffected;
+  code that named the old structure must name the new types (three such annotations in
+  `tests/map_tests.rs` were updated). Policy: result types of public operations are opaque named
+  structs, as in std, so future implementation changes do not change types.
+- `KMergeMap` is no longer used by the crate and never had a public constructor; a `TODO0` marks
+  deprecating or removing it (deprecating it now warns at the crate's own impls).
+- Benchmarking note: comparing two builds can mislead through code layout. One cross-build run
+  showed the unchanged map intersection 20-70% "faster"; timing unchanged operations in both builds
+  showed no real difference.
+
+Sets (pending): multiway set union, intersection, and symmetric difference (`MultiwaySortedDisjoint`)
+and the two-way operators have not been measured yet.
+
 The design notes below record how this was reached.
 
 k-way versions of features 1 and the existing inner join, alongside the existing
