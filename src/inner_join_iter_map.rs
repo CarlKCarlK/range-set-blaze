@@ -17,14 +17,14 @@ use crate::{SortedDisjointMap, map::ValueCarrier};
 // todo000 consider adding to RMS (may no longer apply: see RangeMapBlaze::inner_join)
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct InnerJoinIterMap<T, VCL, VCR, IL, IR> {
+pub struct InnerJoinMap<T, VCL, VCR, IL, IR> {
     iter_left: IL,
     iter_right: IR,
     right: Option<(RangeInclusive<T>, VCR)>,
     left: Option<(RangeInclusive<T>, VCL)>,
 }
 
-impl<T, VCL, VCR, IL, IR> InnerJoinIterMap<T, VCL, VCR, IL, IR>
+impl<T, VCL, VCR, IL, IR> InnerJoinMap<T, VCL, VCR, IL, IR>
 where
     T: Integer,
     VCL: ValueCarrier,
@@ -42,7 +42,7 @@ where
     }
 }
 
-impl<T, VCL, VCR, IL, IR> FusedIterator for InnerJoinIterMap<T, VCL, VCR, IL, IR>
+impl<T, VCL, VCR, IL, IR> FusedIterator for InnerJoinMap<T, VCL, VCR, IL, IR>
 where
     T: Integer,
     VCL: ValueCarrier,
@@ -52,7 +52,7 @@ where
 {
 }
 
-impl<T, VCL, VCR, IL, IR> Iterator for InnerJoinIterMap<T, VCL, VCR, IL, IR>
+impl<T, VCL, VCR, IL, IR> Iterator for InnerJoinMap<T, VCL, VCR, IL, IR>
 where
     T: Integer,
     VCL: ValueCarrier,

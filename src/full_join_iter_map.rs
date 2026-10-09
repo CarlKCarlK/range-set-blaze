@@ -10,14 +10,14 @@ use crate::{SortedDisjointMap, map::ValueCarrier};
 /// [`full_join`]: crate::SortedDisjointMap::full_join
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct FullJoinIterMap<T, VCL, VCR, IL, IR> {
+pub struct FullJoinMap<T, VCL, VCR, IL, IR> {
     iter_left: IL,
     iter_right: IR,
     left: Option<(RangeInclusive<T>, VCL)>,
     right: Option<(RangeInclusive<T>, VCR)>,
 }
 
-impl<T, VCL, VCR, IL, IR> FullJoinIterMap<T, VCL, VCR, IL, IR>
+impl<T, VCL, VCR, IL, IR> FullJoinMap<T, VCL, VCR, IL, IR>
 where
     T: Integer,
     VCL: ValueCarrier,
@@ -35,7 +35,7 @@ where
     }
 }
 
-impl<T, VCL, VCR, IL, IR> FusedIterator for FullJoinIterMap<T, VCL, VCR, IL, IR>
+impl<T, VCL, VCR, IL, IR> FusedIterator for FullJoinMap<T, VCL, VCR, IL, IR>
 where
     T: Integer,
     VCL: ValueCarrier,
@@ -49,7 +49,7 @@ where
 // boundary of one input, and that input's value changes there: either it appears or disappears, or
 // it moves to a touching range, which the `SortedDisjointMap` invariant requires to hold a
 // different value. So touching outputs always differ in at least one component.
-impl<T, VCL, VCR, IL, IR> Iterator for FullJoinIterMap<T, VCL, VCR, IL, IR>
+impl<T, VCL, VCR, IL, IR> Iterator for FullJoinMap<T, VCL, VCR, IL, IR>
 where
     T: Integer,
     VCL: ValueCarrier,

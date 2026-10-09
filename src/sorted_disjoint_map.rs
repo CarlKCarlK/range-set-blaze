@@ -3,24 +3,26 @@ use crate::DifferenceMapInternal;
 use crate::DynSortedDisjointMap;
 use crate::FillGapsIter;
 use crate::FillGapsIterMap;
-use crate::FullJoinIterMap;
-use crate::InnerJoinIterMap;
+use crate::FullJoinMap;
+use crate::InnerJoinMap;
 use crate::IntersectionMap;
 use crate::IntoRangeValuesIter;
-use crate::LeftJoinIterMap;
-use crate::NotIter;
+use crate::LeftJoinMap;
+use crate::MultiwayIntersectionMap;
 use crate::NotMap;
 use crate::Owned;
-use crate::SymDiffMergeMap;
-use crate::TransformValuesIterMap;
-use crate::UnionMergeMap;
+use crate::SymmetricDifferenceMap;
+use crate::TransformValuesMap;
+use crate::UnionMap;
 use crate::intersection_iter_map::IntersectionIterMap;
 use crate::map::ValueCarrier;
 use crate::range_values::RangeValuesIter;
 use crate::range_values::RangeValuesToRangesIter;
 use crate::sorted_disjoint::SortedDisjoint;
 use crate::{Integer, RangeMapBlaze, union_iter_map::UnionIterMap};
-use crate::{MultiwayFullJoinIterMap, MultiwayInnerJoinIterMap, SymDiffKMergeMap, UnionKMergeMap};
+use crate::{
+    MultiwayFullJoinMap, MultiwayInnerJoinMap, MultiwaySymmetricDifferenceMap, MultiwayUnionMap,
+};
 use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
@@ -475,13 +477,13 @@ where
     /// assert_eq!(union.into_string(), r#"(1..=2, "b"), (3..=3, "a")"#);
     /// ```
     #[inline]
-    fn union<R>(self, other: R) -> UnionMergeMap<T, VC, Self, R::IntoIter>
+    fn union<R>(self, other: R) -> UnionMap<T, VC, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<T, VC>,
         Self: Sized,
     {
-        UnionMergeMap::new2(self, other.into_iter())
+        UnionMap::new2(self, other.into_iter())
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently returns a [`SortedDisjointMap`] iterator of their intersection.
@@ -516,7 +518,7 @@ where
     {
         let other = other.into_iter();
         let sorted_disjoint = self.into_sorted_disjoint();
-        IntersectionIterMap::new(other, sorted_disjoint)
+        IntersectionMap::new(IntersectionIterMap::new(other, sorted_disjoint))
     }
 
     // TODO0(api-change): New public pair-valued overlap iterator.
@@ -537,14 +539,14 @@ where
     /// assert_eq!(it.next(), None);
     /// ```
     #[inline]
-    fn inner_join<R, VCR>(self, other: R) -> InnerJoinIterMap<T, VC, VCR, Self, R::IntoIter>
+    fn inner_join<R, VCR>(self, other: R) -> InnerJoinMap<T, VC, VCR, Self, R::IntoIter>
     where
         VCR: ValueCarrier,
         R: IntoIterator<Item = (RangeInclusive<T>, VCR)>,
         R::IntoIter: SortedDisjointMap<T, VCR>,
         Self: Sized,
     {
-        InnerJoinIterMap::new(self, other.into_iter())
+        InnerJoinMap::new(self, other.into_iter())
     }
 
     // TODO0(api-change): New public outer-join iterator.
@@ -574,14 +576,14 @@ where
     /// assert_eq!(it.next(), None);
     /// ```
     #[inline]
-    fn full_join<R, VCR>(self, other: R) -> FullJoinIterMap<T, VC, VCR, Self, R::IntoIter>
+    fn full_join<R, VCR>(self, other: R) -> FullJoinMap<T, VC, VCR, Self, R::IntoIter>
     where
         VCR: ValueCarrier,
         R: IntoIterator<Item = (RangeInclusive<T>, VCR)>,
         R::IntoIter: SortedDisjointMap<T, VCR>,
         Self: Sized,
     {
-        FullJoinIterMap::new(self, other.into_iter())
+        FullJoinMap::new(self, other.into_iter())
     }
 
     // TODO0(api-change): New public left-join iterator.
@@ -610,14 +612,14 @@ where
     /// assert_eq!(it.next(), None);
     /// ```
     #[inline]
-    fn left_join<R, VCR>(self, other: R) -> LeftJoinIterMap<T, VC, VCR, Self, R::IntoIter>
+    fn left_join<R, VCR>(self, other: R) -> LeftJoinMap<T, VC, VCR, Self, R::IntoIter>
     where
         VCR: ValueCarrier,
         R: IntoIterator<Item = (RangeInclusive<T>, VCR)>,
         R::IntoIter: SortedDisjointMap<T, VCR>,
         Self: Sized,
     {
-        LeftJoinIterMap::new(self, other.into_iter())
+        LeftJoinMap::new(self, other.into_iter())
     }
 
     // TODO0(api-change): New public value-transforming stream adapter.
@@ -654,13 +656,13 @@ where
     /// assert_eq!(tens.to_string(), "(1..=6, 1), (8..=9, 2)");
     /// ```
     #[inline]
-    fn transform_values<W, F>(self, f: F) -> TransformValuesIterMap<T, VC, Self, F, W>
+    fn transform_values<W, F>(self, f: F) -> TransformValuesMap<T, VC, Self, F, W>
     where
         W: Eq + Clone,
         F: FnMut(VC) -> W,
         Self: Sized,
     {
-        TransformValuesIterMap::new(self, f)
+        TransformValuesMap::new(self, f)
     }
 
     /// Given a [`SortedDisjointMap`] iterator and a [`SortedDisjoint`] iterator,
@@ -720,7 +722,7 @@ where
     {
         let sorted_disjoint_map = other.into_iter();
         let complement = sorted_disjoint_map.complement();
-        IntersectionIterMap::new(self, complement)
+        DifferenceMap::new(IntersectionIterMap::new(self, complement))
     }
 
     /// Given a [`SortedDisjointMap`] iterator and a [`SortedDisjoint`] iterator,
@@ -772,12 +774,12 @@ where
     /// assert_eq!(complement_using_not.into_string(), "0..=9, 21..=99, 201..=255");
     /// ```
     #[inline]
-    fn complement(self) -> NotIter<T, RangeValuesToRangesIter<T, VC, Self>>
+    fn complement(self) -> NotMap<T, VC, Self>
     where
         Self: Sized,
     {
         let sorted_disjoint = self.into_sorted_disjoint();
-        sorted_disjoint.complement()
+        NotMap::new(sorted_disjoint.complement())
     }
 
     /// Returns the complement of a [`SortedDisjointMap`]'s keys, associating each range with the provided value `v`.
@@ -798,7 +800,7 @@ where
     fn complement_with(
         self,
         v: &VC::Value,
-    ) -> RangeToRangeValueIter<'_, T, VC::Value, NotIter<T, impl SortedDisjoint<T>>>
+    ) -> RangeToRangeValueIter<'_, T, VC::Value, NotMap<T, VC, Self>>
     where
         Self: Sized,
     {
@@ -830,14 +832,14 @@ where
     /// assert_eq!(symmetric_difference.into_string(), r#"(1..=1, "a"), (3..=3, "b")"#);
     /// ```
     #[inline]
-    fn symmetric_difference<R>(self, other: R) -> SymDiffMergeMap<T, VC, Self, R::IntoIter>
+    fn symmetric_difference<R>(self, other: R) -> SymmetricDifferenceMap<T, VC, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjointMap<T, VC>,
         Self: Sized,
         VC: ValueCarrier,
     {
-        SymDiffMergeMap::new2(self, other.into_iter())
+        SymmetricDifferenceMap::new2(self, other.into_iter())
     }
 
     /// Given two [`SortedDisjointMap`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
@@ -1339,7 +1341,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             T: Integer,
             R: SortedDisjointMap<T, $VC>,
         {
-            type Output = UnionMergeMap<T, $VC, Self, R>;
+            type Output = UnionMap<T, $VC, Self, R>;
 
             #[inline]
             fn bitor(self, other: R) -> Self::Output {
@@ -1367,7 +1369,7 @@ macro_rules! impl_sorted_map_traits_and_ops {
             T: Integer,
             R: SortedDisjointMap<T, $VC>,
         {
-            type Output = SymDiffMergeMap<T,  $VC, Self, R>;
+            type Output = SymmetricDifferenceMap<T,  $VC, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             #[inline]
@@ -1398,16 +1400,19 @@ impl_sorted_map_traits_and_ops!(CheckSortedDisjointMap<T, VC, I>, VC::Value, VC,
 impl_sorted_map_traits_and_ops!(DynSortedDisjointMap<'a, T, VC>, VC::Value, VC, 'a, VC: ValueCarrier);
 impl_sorted_map_traits_and_ops!(FillGapsIterMap<T, VC, I>, Option<VC::Value>, Option<VC>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
 impl_sorted_map_traits_and_ops!(FillGapsIter<T, I>, bool, bool, I: SortedDisjoint<T>);
-impl_sorted_map_traits_and_ops!(InnerJoinIterMap<T, VCL, VCR, I0, I1>, (VCL::Value, VCR::Value), (VCL, VCR), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
-impl_sorted_map_traits_and_ops!(FullJoinIterMap<T, VCL, VCR, I0, I1>, (Option<VCL::Value>, Option<VCR::Value>), (Option<VCL>, Option<VCR>), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
-impl_sorted_map_traits_and_ops!(TransformValuesIterMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(VC) -> W, W: Eq + Clone);
-impl_sorted_map_traits_and_ops!(MultiwayInnerJoinIterMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(&[VC]) -> W, W: Eq + Clone);
-impl_sorted_map_traits_and_ops!(MultiwayFullJoinIterMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(&[Option<VC>]) -> W, W: Eq + Clone);
-impl_sorted_map_traits_and_ops!(UnionKMergeMap<T, VC, I>, VC::Value, VC, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
-impl_sorted_map_traits_and_ops!(SymDiffKMergeMap<T, VC, I>, VC::Value, VC, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
-impl_sorted_map_traits_and_ops!(UnionMergeMap<T, VC, I0, I1>, VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjointMap<T, VC>);
-impl_sorted_map_traits_and_ops!(SymDiffMergeMap<T, VC, I0, I1>, VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjointMap<T, VC>);
-impl_sorted_map_traits_and_ops!(LeftJoinIterMap<T, VCL, VCR, I0, I1>, (VCL::Value, Option<VCR::Value>), (VCL, Option<VCR>), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
+impl_sorted_map_traits_and_ops!(InnerJoinMap<T, VCL, VCR, I0, I1>, (VCL::Value, VCR::Value), (VCL, VCR), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
+impl_sorted_map_traits_and_ops!(FullJoinMap<T, VCL, VCR, I0, I1>, (Option<VCL::Value>, Option<VCR::Value>), (Option<VCL>, Option<VCR>), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
+impl_sorted_map_traits_and_ops!(TransformValuesMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(VC) -> W, W: Eq + Clone);
+impl_sorted_map_traits_and_ops!(MultiwayInnerJoinMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(&[VC]) -> W, W: Eq + Clone);
+impl_sorted_map_traits_and_ops!(MultiwayFullJoinMap<T, VC, I, F, W>, W, Owned<W>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>, F: FnMut(&[Option<VC>]) -> W, W: Eq + Clone);
+impl_sorted_map_traits_and_ops!(MultiwayUnionMap<T, VC, I>, VC::Value, VC, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
+impl_sorted_map_traits_and_ops!(MultiwaySymmetricDifferenceMap<T, VC, I>, VC::Value, VC, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
+impl_sorted_map_traits_and_ops!(UnionMap<T, VC, I0, I1>, VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjointMap<T, VC>);
+impl_sorted_map_traits_and_ops!(SymmetricDifferenceMap<T, VC, I0, I1>, VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjointMap<T, VC>);
+impl_sorted_map_traits_and_ops!(LeftJoinMap<T, VCL, VCR, I0, I1>, (VCL::Value, Option<VCR::Value>), (VCL, Option<VCR>), VCL: ValueCarrier, VCR: ValueCarrier, I0: SortedDisjointMap<T, VCL>, I1: SortedDisjointMap<T, VCR>);
+impl_sorted_map_traits_and_ops!(IntersectionMap<T, VC, I0, I1>, VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjointMap<T, VC>);
+impl_sorted_map_traits_and_ops!(DifferenceMap<T, VC, I0, I1>, VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjointMap<T, VC>);
+impl_sorted_map_traits_and_ops!(MultiwayIntersectionMap<T, VC, I0>, VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>);
 impl_sorted_map_traits_and_ops!(IntersectionIterMap<T, VC, I0, I1>,  VC::Value, VC, VC: ValueCarrier, I0: SortedDisjointMap<T, VC>, I1: SortedDisjoint<T>);
 impl_sorted_map_traits_and_ops!(IntoRangeValuesIter<T, V>, V, Rc<V>, V: Eq + Clone);
 impl_sorted_map_traits_and_ops!(RangeValuesIter<'a, T, V>, V, &'a V, 'a, V: Eq + Clone);

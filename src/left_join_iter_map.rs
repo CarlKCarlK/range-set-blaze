@@ -12,14 +12,14 @@ use crate::{SortedDisjointMap, map::ValueCarrier};
 /// [`left_join`]: crate::SortedDisjointMap::left_join
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct LeftJoinIterMap<T, VCL, VCR, IL, IR> {
+pub struct LeftJoinMap<T, VCL, VCR, IL, IR> {
     iter_left: IL,
     iter_right: IR,
     left: Option<(RangeInclusive<T>, VCL)>,
     right: Option<(RangeInclusive<T>, VCR)>,
 }
 
-impl<T, VCL, VCR, IL, IR> LeftJoinIterMap<T, VCL, VCR, IL, IR>
+impl<T, VCL, VCR, IL, IR> LeftJoinMap<T, VCL, VCR, IL, IR>
 where
     T: Integer,
     VCL: ValueCarrier,
@@ -37,7 +37,7 @@ where
     }
 }
 
-impl<T, VCL, VCR, IL, IR> FusedIterator for LeftJoinIterMap<T, VCL, VCR, IL, IR>
+impl<T, VCL, VCR, IL, IR> FusedIterator for LeftJoinMap<T, VCL, VCR, IL, IR>
 where
     T: Integer,
     VCL: ValueCarrier,
@@ -52,7 +52,7 @@ where
 //
 // Once the left input is exhausted, the iterator stops without reading the rest of the right
 // input; this is what makes a left join cheaper than filtering a full join.
-impl<T, VCL, VCR, IL, IR> Iterator for LeftJoinIterMap<T, VCL, VCR, IL, IR>
+impl<T, VCL, VCR, IL, IR> Iterator for LeftJoinMap<T, VCL, VCR, IL, IR>
 where
     T: Integer,
     VCL: ValueCarrier,

@@ -1,4 +1,5 @@
-use crate::{Integer, Merge, SortedDisjoint, SortedStarts, SymDiffMerge};
+use crate::SymmetricDifferenceInner;
+use crate::{Integer, Merge, SortedDisjoint, SortedStarts};
 use alloc::collections::BinaryHeap;
 use core::{cmp::Reverse, iter::FusedIterator, ops::RangeInclusive};
 
@@ -169,7 +170,7 @@ where
     }
 }
 
-impl<T, L, R> SymDiffMerge<T, L, R>
+impl<T, L, R> SymmetricDifferenceInner<T, L, R>
 where
     T: Integer,
     L: SortedDisjoint<T>,

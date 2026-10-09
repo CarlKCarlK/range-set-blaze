@@ -2,8 +2,9 @@
 
 use crate::{
     CheckSortedDisjointMap, DynSortedDisjointMap, FillGapsIter, FillGapsIterMap, Integer,
-    IntersectionIterMap, IntoIterMap, IntoRangeValuesIter, IterMap, MultiwaySweep, RangeMapBlaze,
-    RangeValuesIter, RangesIter, SymDiffKMergeMap, UnionIterMap, UnionKMergeMap,
+    IntersectionIterMap, IntoIterMap, IntoRangeValuesIter, IterMap, MultiwaySweep,
+    MultiwaySymmetricDifferenceMap, MultiwayUnionMap, RangeMapBlaze, RangeValuesIter, RangesIter,
+    UnionIterMap,
     keys::{IntoKeys, Keys},
     sorted_disjoint_map::{Priority, RangeToRangeValueIter},
     unsorted_priority_map::{AssumePrioritySortedStartsMap, UnsortedPriorityMap},
@@ -656,11 +657,11 @@ const fn check_traits() {
     is_sssu::<AIntoIterMap>();
     is_like_btreemap_into_iter_less_exact_size::<AIntoIterMap>();
 
-    type AUnionKMergeMap<'a> = UnionKMergeMap<i32, &'a u64, ARangeValuesIter<'a>>;
+    type AUnionKMergeMap<'a> = MultiwayUnionMap<i32, &'a u64, ARangeValuesIter<'a>>;
     is_sssu::<AUnionKMergeMap<'_>>();
     is_like_btreemap_iter_less_both::<AUnionKMergeMap<'_>>();
 
-    type ASymDiffKMergeMap<'a> = SymDiffKMergeMap<i32, &'a u64, ARangeValuesIter<'a>>;
+    type ASymDiffKMergeMap<'a> = MultiwaySymmetricDifferenceMap<i32, &'a u64, ARangeValuesIter<'a>>;
     is_sssu::<ASymDiffKMergeMap<'_>>();
     is_like_btreemap_iter_less_both::<ASymDiffKMergeMap<'_>>();
 

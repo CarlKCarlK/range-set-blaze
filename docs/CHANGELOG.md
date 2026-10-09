@@ -32,9 +32,9 @@ apart from the new minimum Rust version.
 - `RangeMapBlaze::universe_with(&value)` and `RangeSetBlaze::universe()`.
 - `ValueCarrier` for pairs of carriers, so joined streams compose with other
   map operations.
-- New iterator types: `InnerJoinIterMap`, `LeftJoinIterMap`,
-  `FullJoinIterMap`, `TransformValuesIterMap`, `MultiwayInnerJoinIterMap`,
-  `MultiwayFullJoinIterMap`, `MultiwaySweep`, and `SweepEvent`.
+- New iterator types: `InnerJoinMap`, `LeftJoinMap`, `FullJoinMap`,
+  `TransformValuesMap`, `MultiwayInnerJoinMap`, `MultiwayFullJoinMap`,
+  `MultiwaySweep`, and `SweepEvent`.
 
 ### Changed
 
@@ -44,14 +44,26 @@ apart from the new minimum Rust version.
   `symmetric_difference` are about 1.4-4x faster. Multiway set
   `symmetric_difference` is also faster in most cases (up to about 1.23x
   slower with 2-4 sparse inputs). Results are unchanged.
-- **Breaking:** `UnionMergeMap`, `SymDiffMergeMap`, `UnionKMergeMap`,
-  `SymDiffKMergeMap`, and `SymDiffKMerge` (the types returned by the map `|`
-  and `^` operators and the multiway map `union`/`symmetric_difference` and
-  set `symmetric_difference`) are now opaque structs with private fields,
-  keeping their names and generic parameters. They were hidden aliases of
-  internal types. Code that only iterates, chains, or names these types is
-  unaffected; code that spelled out their old internal structure
-  (for example, `SymDiffIterMap<..., KMergeMap<...>>`) must use the new names.
+- **Breaking: set and map operation result types are now opaque structs named
+  after their operation** (as std names `btree_set::Union`): `Union`,
+  `Intersection`, `Difference`, `SymmetricDifference`, `MultiwayUnion`,
+  `MultiwayIntersection`, `MultiwaySymmetricDifference`, `UnionMap`,
+  `IntersectionMap`, `DifferenceMap`, `SymmetricDifferenceMap`, `NotMap`,
+  `MultiwayUnionMap`, `MultiwayIntersectionMap`, and
+  `MultiwaySymmetricDifferenceMap`. They were hidden type aliases exposing
+  internal types, so any change of implementation changed them; now their
+  fields are private. Code that only iterates or chains these results is
+  unaffected. The old names (`UnionMerge`, `IntersectionMerge`,
+  `DifferenceMerge`, `SymDiffMerge`, `UnionKMerge`, `SymDiffKMerge`,
+  `UnionMergeMap`, `SymDiffMergeMap`, `UnionKMergeMap`, `SymDiffKMergeMap`,
+  `IntersectionKMap`) remain as deprecated aliases. Code that named the old
+  internal types directly (for example `UnionIter<...>` for `a | b`) must use
+  the new names.
+- **Breaking:** `SortedDisjointMap::complement` now returns `NotMap` (was the
+  equivalent `NotIter<..., RangeValuesToRangesIter<...>>`), `complement_with`
+  returns `RangeToRangeValueIter<..., NotMap<...>>`, and
+  `MultiwaySortedDisjointMap::intersection` no longer has an unused lifetime
+  parameter.
 - The `RangeMapBlaze` docs now state that values should be cheap to clone,
   because operations clone a value whenever they split its range; wrap large
   values in `Rc` or `Arc`.

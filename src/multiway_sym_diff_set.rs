@@ -40,7 +40,7 @@ impl<T: Integer, I: SortedDisjoint<T>> SortedDisjointMap<T, bool> for SetAsMap<I
 /// [`symmetric_difference`]: crate::MultiwaySortedDisjoint::symmetric_difference
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct SymDiffKMerge<T, I>
+pub struct MultiwaySymmetricDifference<T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
@@ -54,7 +54,7 @@ where
     pending: Option<RangeInclusive<T>>,
 }
 
-impl<T, I> SymDiffKMerge<T, I>
+impl<T, I> MultiwaySymmetricDifference<T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
@@ -89,7 +89,7 @@ where
     }
 }
 
-impl<T, I> Iterator for SymDiffKMerge<T, I>
+impl<T, I> Iterator for MultiwaySymmetricDifference<T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,
@@ -131,7 +131,7 @@ where
     }
 }
 
-impl<T, I> FusedIterator for SymDiffKMerge<T, I>
+impl<T, I> FusedIterator for MultiwaySymmetricDifference<T, I>
 where
     T: Integer,
     I: SortedDisjoint<T>,

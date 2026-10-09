@@ -1,5 +1,6 @@
 use crate::{
-    CheckSortedDisjoint, Integer, IntoKeys, Keys, RangeSetBlaze, SortedDisjoint, SymDiffMergeMap,
+    CheckSortedDisjoint, Integer, IntoKeys, Keys, RangeSetBlaze, SortedDisjoint,
+    SymmetricDifferenceMap,
     iter_map::{IntoIterMap, IterMap},
     map_op, map_unary_op,
     range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter},
@@ -3015,7 +3016,7 @@ map_op!(
 
     // ── owned ^ owned ────────────────────────────────────────────
     |a, b| {
-        SymDiffMergeMap::new2(
+        SymmetricDifferenceMap::new2(
             a.into_range_values(),
             b.into_range_values(),
         )
@@ -3024,7 +3025,7 @@ map_op!(
 
     // ── owned ^ &borrowed ────────────────────────────────────────
     |a, &b| {
-        SymDiffMergeMap::new2(
+        SymmetricDifferenceMap::new2(
             a.range_values(),
             b.range_values(),
         )
@@ -3033,7 +3034,7 @@ map_op!(
 
     // ── &borrowed ^ owned ────────────────────────────────────────
     |&a, b| {
-        SymDiffMergeMap::new2(
+        SymmetricDifferenceMap::new2(
             a.range_values(),
             b.range_values(),
         )
@@ -3042,7 +3043,7 @@ map_op!(
 
     // ── &borrowed ^ &borrowed ────────────────────────────────────
     |&a, &b| {
-        SymDiffMergeMap::new2(
+        SymmetricDifferenceMap::new2(
             a.range_values(),
             b.range_values(),
         )

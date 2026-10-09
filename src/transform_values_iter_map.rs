@@ -12,7 +12,7 @@ use crate::{Owned, SortedDisjointMap, map::ValueCarrier};
 /// [`transform_values`]: crate::SortedDisjointMap::transform_values
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct TransformValuesIterMap<T, VC, I, F, W> {
+pub struct TransformValuesMap<T, VC, I, F, W> {
     iter: I,
     f: F,
     pending: Option<(RangeInclusive<T>, W)>,
@@ -21,7 +21,7 @@ pub struct TransformValuesIterMap<T, VC, I, F, W> {
     phantom: PhantomData<fn(VC) -> W>,
 }
 
-impl<T, VC, I, F, W> TransformValuesIterMap<T, VC, I, F, W>
+impl<T, VC, I, F, W> TransformValuesMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -39,7 +39,7 @@ where
     }
 }
 
-impl<T, VC, I, F, W> FusedIterator for TransformValuesIterMap<T, VC, I, F, W>
+impl<T, VC, I, F, W> FusedIterator for TransformValuesMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -49,7 +49,7 @@ where
 {
 }
 
-impl<T, VC, I, F, W> Iterator for TransformValuesIterMap<T, VC, I, F, W>
+impl<T, VC, I, F, W> Iterator for TransformValuesMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,

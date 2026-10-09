@@ -4,7 +4,11 @@ use crate::map::ValueCarrier;
 use crate::range_values::{MapIntoRangesIter, MapRangesIter, RangeValuesToRangesIter};
 use crate::ranges_iter::RangesIter;
 use crate::sorted_disjoint_map::IntoString;
-use crate::{IntoRangesIter, SymDiffKMerge, UnionIter, UnionMerge};
+use crate::{
+    Difference, Intersection, IntoRangesIter, MultiwayIntersection, MultiwaySymmetricDifference,
+    MultiwayUnion, NotMap, SymmetricDifference, Union, UnionIter,
+};
+use crate::{SymmetricDifferenceInner, UnionInner};
 use alloc::string::String;
 use core::{
     array,
@@ -18,10 +22,7 @@ use core::{
 
 use crate::SortedDisjointMap;
 
-use crate::{
-    DifferenceMerge, DynSortedDisjoint, Integer, IntersectionMerge, Merge, NotIter, SymDiffIter,
-    SymDiffMerge,
-};
+use crate::{DynSortedDisjoint, Integer, NotIter, SymDiffIter};
 
 /// Used internally. Marks iterators that provide ranges sorted by start, but
 /// that are not necessarily disjoint. The ranges are non-empty.
@@ -348,13 +349,13 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(union.into_string(), "1..=2");
     /// ```
     #[inline]
-    fn union<R>(self, other: R) -> UnionMerge<T, Self, R::IntoIter>
+    fn union<R>(self, other: R) -> Union<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
         Self: Sized,
     {
-        UnionMerge::new2(self, other.into_iter())
+        Union::new(UnionInner::new2(self, other.into_iter()))
     }
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their intersection.
@@ -379,13 +380,13 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(intersection.into_string(), "2..=2");
     /// ```
     #[inline]
-    fn intersection<R>(self, other: R) -> IntersectionMerge<T, Self, R::IntoIter>
+    fn intersection<R>(self, other: R) -> Intersection<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
         Self: Sized,
     {
-        !(self.complement() | other.into_iter().complement())
+        Intersection::new(!(self.complement() | other.into_iter().complement()))
     }
 
     /// Given two [`SortedDisjoint`] iterators, efficiently returns a [`SortedDisjoint`] iterator of their set difference.
@@ -410,13 +411,13 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(difference.into_string(), "1..=1");
     /// ```
     #[inline]
-    fn difference<R>(self, other: R) -> DifferenceMerge<T, Self, R::IntoIter>
+    fn difference<R>(self, other: R) -> Difference<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
         Self: Sized,
     {
-        !(self.complement() | other.into_iter())
+        Difference::new(!(self.complement() | other.into_iter()))
     }
 
     /// Given a [`SortedDisjoint`] iterator, efficiently returns a [`SortedDisjoint`] iterator of its complement.
@@ -509,16 +510,14 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// assert_eq!(symmetric_difference.into_string(), "1..=1, 3..=3");
     /// ```
     #[inline]
-    fn symmetric_difference<R>(self, other: R) -> SymDiffMerge<T, Self, R::IntoIter>
+    fn symmetric_difference<R>(self, other: R) -> SymmetricDifference<T, Self, R::IntoIter>
     where
         R: IntoIterator<Item = Self::Item>,
         R::IntoIter: SortedDisjoint<T>,
         <R as IntoIterator>::IntoIter:,
         Self: Sized,
     {
-        let result: SymDiffIter<T, Merge<T, Self, <R as IntoIterator>::IntoIter>> =
-            SymDiffIter::new2(self, other.into_iter());
-        result
+        SymmetricDifference::new(SymmetricDifferenceInner::new2(self, other.into_iter()))
     }
 
     /// Given two [`SortedDisjoint`] iterators, efficiently tells if they are equal. Unlike most equality testing in Rust,
@@ -920,7 +919,7 @@ macro_rules! impl_sorted_traits_and_ops {
         where
             R: SortedDisjoint<T>,
         {
-            type Output = UnionMerge<T, Self, R>;
+            type Output = Union<T, Self, R>;
 
             fn bitor(self, other: R) -> Self::Output {
                 SortedDisjoint::union(self, other)
@@ -932,7 +931,7 @@ macro_rules! impl_sorted_traits_and_ops {
         where
             R: SortedDisjoint<T>,
         {
-            type Output = DifferenceMerge<T, Self, R>;
+            type Output = Difference<T, Self, R>;
 
             fn sub(self, other: R) -> Self::Output {
                 // It would be fun to optimize !!self.iter into self.iter
@@ -946,7 +945,7 @@ macro_rules! impl_sorted_traits_and_ops {
         where
             R: SortedDisjoint<T>,
         {
-            type Output = SymDiffMerge<T, Self, R>;
+            type Output = SymmetricDifference<T, Self, R>;
 
             #[allow(clippy::suspicious_arithmetic_impl)]
             fn bitxor(self, other: R) -> Self::Output {
@@ -959,7 +958,7 @@ macro_rules! impl_sorted_traits_and_ops {
         where
             R: SortedDisjoint<T>,
         {
-            type Output = IntersectionMerge<T, Self, R>;
+            type Output = Intersection<T, Self, R>;
 
             fn bitand(self, other: R) -> Self::Output {
                 SortedDisjoint::intersection(self, other)
@@ -978,7 +977,14 @@ impl_sorted_traits_and_ops!(NotIter<T, I>, I: SortedDisjoint<T>);
 impl_sorted_traits_and_ops!(RangesIter<'a, T>, 'a);
 impl_sorted_traits_and_ops!(RangeValuesToRangesIter<T, VC, I>, VC: ValueCarrier, I: SortedDisjointMap<T, VC>);
 impl_sorted_traits_and_ops!(SymDiffIter<T, I>, I: SortedStarts<T>);
-impl_sorted_traits_and_ops!(SymDiffKMerge<T, I>, I: SortedDisjoint<T>);
+impl_sorted_traits_and_ops!(Union<T, I0, I1>, I0: SortedDisjoint<T>, I1: SortedDisjoint<T>);
+impl_sorted_traits_and_ops!(Intersection<T, I0, I1>, I0: SortedDisjoint<T>, I1: SortedDisjoint<T>);
+impl_sorted_traits_and_ops!(Difference<T, I0, I1>, I0: SortedDisjoint<T>, I1: SortedDisjoint<T>);
+impl_sorted_traits_and_ops!(SymmetricDifference<T, I0, I1>, I0: SortedDisjoint<T>, I1: SortedDisjoint<T>);
+impl_sorted_traits_and_ops!(MultiwayUnion<T, I0>, I0: SortedDisjoint<T>);
+impl_sorted_traits_and_ops!(MultiwayIntersection<T, I0>, I0: SortedDisjoint<T>);
+impl_sorted_traits_and_ops!(NotMap<T, VC, I0>, VC: crate::map::ValueCarrier, I0: crate::SortedDisjointMap<T, VC>);
+impl_sorted_traits_and_ops!(MultiwaySymmetricDifference<T, I>, I: SortedDisjoint<T>);
 impl_sorted_traits_and_ops!(UnionIter<T, I>, I: SortedStarts<T>);
 impl_sorted_traits_and_ops!(RangeOnce<T>, 'ignore);
 

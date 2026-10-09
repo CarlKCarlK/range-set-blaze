@@ -19,8 +19,8 @@ use range_set_blaze::Integer;
 #[cfg(not(target_arch = "wasm32"))]
 use range_set_blaze::test_util::{How, k_maps};
 use range_set_blaze::{
-    IntersectionIterMap, IntoRangeValuesIter, RangeValuesIter, SweepEvent, SymDiffKMergeMap,
-    UnionIterMap, UnionKMergeMap, ValueCarrier, prelude::*,
+    IntoRangeValuesIter, MultiwayIntersectionMap, MultiwaySymmetricDifferenceMap, MultiwayUnionMap,
+    RangeValuesIter, SweepEvent, UnionIterMap, ValueCarrier, prelude::*,
 };
 use std::borrow::Borrow;
 use std::iter::FusedIterator;
@@ -1111,7 +1111,7 @@ fn map_parity() {
     );
 
     // test on zero maps
-    let a: SymDiffKMergeMap<i32, &&str, DynSortedDisjointMap<'_, i32, &&str>> =
+    let a: MultiwaySymmetricDifferenceMap<i32, &&str, DynSortedDisjointMap<'_, i32, &&str>> =
         symmetric_difference_map_dyn!();
     let a = a.into_range_map_blaze();
     let b: RangeMapBlaze<i32, &str> = RangeMapBlaze::default();
@@ -1916,19 +1916,19 @@ fn test_every_sorted_disjoint_map_method() {
                     (1..=2, &"a"),
                     (5..=100, &"a"),
                 ]));
-            let c: IntersectionIterMap<i32, &&str, _, _> = [CheckSortedDisjointMap::new([
+            let c: MultiwayIntersectionMap<i32, &&str, _> = [CheckSortedDisjointMap::new([
                 (1..=2, &"a"),
                 (5..=100, &"a"),
             ])]
             .intersection();
             let d: IntoRangeValuesIter<i32, &str> = e0.clone().into_range_values();
             let e: RangeValuesIter<'_, i32, &str> = e0.range_values();
-            let f: SymDiffKMergeMap<i32, &&str, _> = [CheckSortedDisjointMap::new([
+            let f: MultiwaySymmetricDifferenceMap<i32, &&str, _> = [CheckSortedDisjointMap::new([
                 (1..=2, &"a"),
                 (5..=100, &"a"),
             ])]
             .symmetric_difference();
-            let g: UnionKMergeMap<i32, &&str, _> = [CheckSortedDisjointMap::new([
+            let g: MultiwayUnionMap<i32, &&str, _> = [CheckSortedDisjointMap::new([
                 (1..=2, &"a"),
                 (5..=100, &"a"),
             ])]

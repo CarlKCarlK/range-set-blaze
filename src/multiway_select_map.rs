@@ -168,7 +168,7 @@ where
 /// [`union`]: crate::MultiwaySortedDisjointMap::union
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct UnionKMergeMap<T, VC, I>
+pub struct MultiwayUnionMap<T, VC, I>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -177,7 +177,7 @@ where
     inner: SweepSelectMap<T, VC, I>,
 }
 
-impl<T, VC, I> UnionKMergeMap<T, VC, I>
+impl<T, VC, I> MultiwayUnionMap<T, VC, I>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -193,7 +193,7 @@ where
     }
 }
 
-impl<T, VC, I> Iterator for UnionKMergeMap<T, VC, I>
+impl<T, VC, I> Iterator for MultiwayUnionMap<T, VC, I>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -207,7 +207,7 @@ where
     }
 }
 
-impl<T, VC, I> FusedIterator for UnionKMergeMap<T, VC, I>
+impl<T, VC, I> FusedIterator for MultiwayUnionMap<T, VC, I>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -224,7 +224,7 @@ where
 /// [`symmetric_difference`]: crate::MultiwaySortedDisjointMap::symmetric_difference
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct SymDiffKMergeMap<T, VC, I>
+pub struct MultiwaySymmetricDifferenceMap<T, VC, I>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -233,7 +233,7 @@ where
     inner: SweepSelectMap<T, VC, I>,
 }
 
-impl<T, VC, I> SymDiffKMergeMap<T, VC, I>
+impl<T, VC, I> MultiwaySymmetricDifferenceMap<T, VC, I>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -249,7 +249,7 @@ where
     }
 }
 
-impl<T, VC, I> Iterator for SymDiffKMergeMap<T, VC, I>
+impl<T, VC, I> Iterator for MultiwaySymmetricDifferenceMap<T, VC, I>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -263,7 +263,7 @@ where
     }
 }
 
-impl<T, VC, I> FusedIterator for SymDiffKMergeMap<T, VC, I>
+impl<T, VC, I> FusedIterator for MultiwaySymmetricDifferenceMap<T, VC, I>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -326,7 +326,7 @@ where
 /// [`union`]: crate::SortedDisjointMap::union
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct UnionMergeMap<T, VC, L, R>
+pub struct UnionMap<T, VC, L, R>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -334,10 +334,10 @@ where
     R: SortedDisjointMap<T, VC>,
 {
     // The k-way union over the two inputs; the right input has priority.
-    inner: UnionKMergeMap<T, VC, EitherMap<L, R>>,
+    inner: MultiwayUnionMap<T, VC, EitherMap<L, R>>,
 }
 
-impl<T, VC, L, R> UnionMergeMap<T, VC, L, R>
+impl<T, VC, L, R> UnionMap<T, VC, L, R>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -346,12 +346,12 @@ where
 {
     pub(crate) fn new2(left: L, right: R) -> Self {
         Self {
-            inner: UnionKMergeMap::new_k([EitherMap::Left(left), EitherMap::Right(right)]),
+            inner: MultiwayUnionMap::new_k([EitherMap::Left(left), EitherMap::Right(right)]),
         }
     }
 }
 
-impl<T, VC, L, R> Iterator for UnionMergeMap<T, VC, L, R>
+impl<T, VC, L, R> Iterator for UnionMap<T, VC, L, R>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -366,7 +366,7 @@ where
     }
 }
 
-impl<T, VC, L, R> FusedIterator for UnionMergeMap<T, VC, L, R>
+impl<T, VC, L, R> FusedIterator for UnionMap<T, VC, L, R>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -384,7 +384,7 @@ where
 /// [`symmetric_difference`]: crate::SortedDisjointMap::symmetric_difference
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct SymDiffMergeMap<T, VC, L, R>
+pub struct SymmetricDifferenceMap<T, VC, L, R>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -392,10 +392,10 @@ where
     R: SortedDisjointMap<T, VC>,
 {
     // The k-way symmetric difference over the two inputs; the right input has priority.
-    inner: SymDiffKMergeMap<T, VC, EitherMap<L, R>>,
+    inner: MultiwaySymmetricDifferenceMap<T, VC, EitherMap<L, R>>,
 }
 
-impl<T, VC, L, R> SymDiffMergeMap<T, VC, L, R>
+impl<T, VC, L, R> SymmetricDifferenceMap<T, VC, L, R>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -404,12 +404,15 @@ where
 {
     pub(crate) fn new2(left: L, right: R) -> Self {
         Self {
-            inner: SymDiffKMergeMap::new_k([EitherMap::Left(left), EitherMap::Right(right)]),
+            inner: MultiwaySymmetricDifferenceMap::new_k([
+                EitherMap::Left(left),
+                EitherMap::Right(right),
+            ]),
         }
     }
 }
 
-impl<T, VC, L, R> Iterator for SymDiffMergeMap<T, VC, L, R>
+impl<T, VC, L, R> Iterator for SymmetricDifferenceMap<T, VC, L, R>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -424,7 +427,7 @@ where
     }
 }
 
-impl<T, VC, L, R> FusedIterator for SymDiffMergeMap<T, VC, L, R>
+impl<T, VC, L, R> FusedIterator for SymmetricDifferenceMap<T, VC, L, R>
 where
     T: Integer,
     VC: ValueCarrier,

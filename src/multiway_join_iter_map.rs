@@ -164,7 +164,7 @@ fn push_merged<T: Integer, W: Eq>(
 /// [`full_join`]: crate::MultiwaySortedDisjointMap::full_join
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct MultiwayFullJoinIterMap<T, VC, I, F, W>
+pub struct MultiwayFullJoinMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -175,7 +175,7 @@ where
     pending: Option<(RangeInclusive<T>, W)>,
 }
 
-impl<T, VC, I, F, W> MultiwayFullJoinIterMap<T, VC, I, F, W>
+impl<T, VC, I, F, W> MultiwayFullJoinMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -195,7 +195,7 @@ where
     }
 }
 
-impl<T, VC, I, F, W> FusedIterator for MultiwayFullJoinIterMap<T, VC, I, F, W>
+impl<T, VC, I, F, W> FusedIterator for MultiwayFullJoinMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -205,7 +205,7 @@ where
 {
 }
 
-impl<T, VC, I, F, W> Iterator for MultiwayFullJoinIterMap<T, VC, I, F, W>
+impl<T, VC, I, F, W> Iterator for MultiwayFullJoinMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -237,7 +237,7 @@ where
 /// [`inner_join`]: crate::MultiwaySortedDisjointMap::inner_join
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct MultiwayInnerJoinIterMap<T, VC, I, F, W>
+pub struct MultiwayInnerJoinMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -253,7 +253,7 @@ where
     zero_inputs_done: bool,
 }
 
-impl<T, VC, I, F, W> MultiwayInnerJoinIterMap<T, VC, I, F, W>
+impl<T, VC, I, F, W> MultiwayInnerJoinMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -292,7 +292,7 @@ where
     }
 }
 
-impl<T, VC, I, F, W> FusedIterator for MultiwayInnerJoinIterMap<T, VC, I, F, W>
+impl<T, VC, I, F, W> FusedIterator for MultiwayInnerJoinMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,
@@ -302,7 +302,7 @@ where
 {
 }
 
-impl<T, VC, I, F, W> Iterator for MultiwayInnerJoinIterMap<T, VC, I, F, W>
+impl<T, VC, I, F, W> Iterator for MultiwayInnerJoinMap<T, VC, I, F, W>
 where
     T: Integer,
     VC: ValueCarrier,

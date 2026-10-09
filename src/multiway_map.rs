@@ -6,8 +6,8 @@
 // }
 
 use crate::{
-    Integer, IntersectionKMap, MultiwayFullJoinIterMap, MultiwayInnerJoinIterMap, MultiwaySweep,
-    RangeMapBlaze, SortedDisjointMap, SymDiffKMergeMap, UnionKMergeMap,
+    Integer, MultiwayFullJoinMap, MultiwayInnerJoinMap, MultiwayIntersectionMap, MultiwaySweep,
+    MultiwaySymmetricDifferenceMap, MultiwayUnionMap, RangeMapBlaze, SortedDisjointMap,
     intersection_iter_map::IntersectionIterMap, map::ValueCarrier,
     range_values::RangeValuesToRangesIter,
 };
@@ -356,8 +356,8 @@ where
     ///
     /// assert_eq!(union.into_string(), r#"(1..=2, "c"), (3..=4, "b"), (5..=100, "c"), (101..=200, "a")"#);
     /// ```
-    fn union(self) -> UnionKMergeMap<T, VC, I> {
-        UnionKMergeMap::new_k(self)
+    fn union(self) -> MultiwayUnionMap<T, VC, I> {
+        MultiwayUnionMap::new_k(self)
     }
 
     /// Intersects the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
@@ -394,7 +394,7 @@ where
     ///
     /// assert_eq!(intersection.into_string(), r#"(2..=2, "c"), (6..=6, "c")"#);
     /// ```
-    fn intersection<'a>(self) -> IntersectionKMap<'a, T, VC, I> {
+    fn intersection(self) -> MultiwayIntersectionMap<T, VC, I> {
         // We define map intersection -- in part -- in terms of set intersection.
         // Elsewhere, we define set intersection in terms of complement and (set/map) union.
         use crate::MultiwaySortedDisjoint;
@@ -403,7 +403,7 @@ where
             .next()
             .expect("The intersection of 0 maps is undefined.");
         let iter_set = iter.map(RangeValuesToRangesIter::new).intersection();
-        IntersectionIterMap::new(iter_map, iter_set)
+        MultiwayIntersectionMap::new(IntersectionIterMap::new(iter_map, iter_set))
     }
 
     /// Symmetric difference on the given [`SortedDisjointMap`] iterators, creating a new [`SortedDisjointMap`] iterator.
@@ -427,8 +427,8 @@ where
     ///
     /// assert_eq!(symmetric_difference.into_string(), r#"(1..=2, "c"), (3..=4, "b"), (6..=6, "c"), (101..=200, "a")"#);
     /// ```
-    fn symmetric_difference(self) -> SymDiffKMergeMap<T, VC, I> {
-        SymDiffKMergeMap::new_k(self)
+    fn symmetric_difference(self) -> MultiwaySymmetricDifferenceMap<T, VC, I> {
+        MultiwaySymmetricDifferenceMap::new_k(self)
     }
 
     // TODO0(api-change): New public multiway join.
@@ -470,12 +470,12 @@ where
     ///     .inner_join(|values| values.iter().copied().sum::<i32>());
     /// assert_eq!(sums.into_string(), "(5..=9, 111), (10..=14, 112)");
     /// ```
-    fn inner_join<F, W>(self, f: F) -> MultiwayInnerJoinIterMap<T, VC, I, F, W>
+    fn inner_join<F, W>(self, f: F) -> MultiwayInnerJoinMap<T, VC, I, F, W>
     where
         F: FnMut(&[VC]) -> W,
         W: Eq + Clone,
     {
-        MultiwayInnerJoinIterMap::new(self, f)
+        MultiwayInnerJoinMap::new(self, f)
     }
 
     // TODO0(api-change): New public multiway join.
@@ -517,12 +517,12 @@ where
     ///     r#"(0..=4, "a"), (5..=9, "a+b"), (10..=14, "b")"#
     /// );
     /// ```
-    fn full_join<F, W>(self, f: F) -> MultiwayFullJoinIterMap<T, VC, I, F, W>
+    fn full_join<F, W>(self, f: F) -> MultiwayFullJoinMap<T, VC, I, F, W>
     where
         F: FnMut(&[Option<VC>]) -> W,
         W: Eq + Clone,
     {
-        MultiwayFullJoinIterMap::new(self, f)
+        MultiwayFullJoinMap::new(self, f)
     }
 
     // TODO0(api-change): New public multiway primitive.

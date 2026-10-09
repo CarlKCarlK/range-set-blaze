@@ -44,28 +44,30 @@ mod integer;
 pub use crate::integer::Integer;
 
 mod inner_join_iter_map;
-pub use inner_join_iter_map::InnerJoinIterMap;
+pub use inner_join_iter_map::InnerJoinMap;
 
 mod intersection_iter_map;
 pub use intersection_iter_map::IntersectionIterMap;
 
 mod multiway_join_iter_map;
 mod multiway_select_map;
-pub use multiway_select_map::{SymDiffKMergeMap, SymDiffMergeMap, UnionKMergeMap, UnionMergeMap};
+pub use multiway_select_map::{
+    MultiwaySymmetricDifferenceMap, MultiwayUnionMap, SymmetricDifferenceMap, UnionMap,
+};
 mod multiway_sweep;
 mod multiway_sym_diff_set;
-pub use multiway_join_iter_map::{MultiwayFullJoinIterMap, MultiwayInnerJoinIterMap};
+pub use multiway_join_iter_map::{MultiwayFullJoinMap, MultiwayInnerJoinMap};
 pub use multiway_sweep::{MultiwaySweep, SweepEvent};
-pub use multiway_sym_diff_set::SymDiffKMerge;
+pub use multiway_sym_diff_set::MultiwaySymmetricDifference;
 
 mod left_join_iter_map;
-pub use left_join_iter_map::LeftJoinIterMap;
+pub use left_join_iter_map::LeftJoinMap;
 
 mod full_join_iter_map;
-pub use full_join_iter_map::FullJoinIterMap;
+pub use full_join_iter_map::FullJoinMap;
 
 mod transform_values_iter_map;
-pub use transform_values_iter_map::TransformValuesIterMap;
+pub use transform_values_iter_map::TransformValuesMap;
 
 mod iter_map;
 pub use crate::iter_map::{IntoIterMap, IterMap};
@@ -90,7 +92,12 @@ pub use multiway_map::{
 };
 
 mod not_iter;
+mod operation_results;
 pub use not_iter::NotIter;
+pub use operation_results::{
+    Difference, DifferenceMap, Intersection, IntersectionMap, MultiwayIntersection,
+    MultiwayIntersectionMap, MultiwayUnion, NotMap, SymmetricDifference, Union,
+};
 
 mod range_values;
 pub use crate::range_values::{
@@ -147,34 +154,45 @@ pub(crate) mod tests_map;
 pub(crate) mod tests_set;
 
 // Helpers
-type NandMerge<T, L, R> = UnionMerge<T, NotIter<T, L>, NotIter<T, R>>;
-type NandKMerge<T, I> = UnionKMerge<T, NotIter<T, I>>;
 type DifferenceMapInternal<T, VC, L, R> = IntersectionIterMap<T, VC, L, NotIter<T, R>>;
-type IntersectionMapInternal<T, I> = NotIter<T, NandKMerge<T, I>>;
+// Implementations of the set union and symmetric difference result types (see
+// `operation_results`), also used directly by the code that builds them.
+type UnionInner<T, L, R> = UnionIter<T, Merge<T, L, R>>;
+type MultiwayUnionInner<T, I> = UnionIter<T, KMerge<T, I>>;
+type SymmetricDifferenceInner<T, L, R> = SymDiffIter<T, Merge<T, L, R>>;
 
-// Public Types
+// Former names of the operation result types, kept so code that named them gets a deprecation
+// warning (with the new name) instead of an error.
 #[doc(hidden)]
-pub type DifferenceMap<T, VC, L, R> =
-    DifferenceMapInternal<T, VC, L, RangeValuesToRangesIter<T, VC, R>>;
+#[deprecated(note = "renamed to `Union`")]
+pub type UnionMerge<T, L, R> = Union<T, L, R>;
 #[doc(hidden)]
-pub type DifferenceMerge<T, L, R> = NotIter<T, UnionMerge<T, NotIter<T, L>, R>>;
-
+#[deprecated(note = "renamed to `Intersection`")]
+pub type IntersectionMerge<T, L, R> = Intersection<T, L, R>;
 #[doc(hidden)]
-pub type IntersectionKMap<'a, T, VC, I> =
-    IntersectionIterMap<T, VC, I, IntersectionMapInternal<T, RangeValuesToRangesIter<T, VC, I>>>;
+#[deprecated(note = "renamed to `Difference`")]
+pub type DifferenceMerge<T, L, R> = Difference<T, L, R>;
 #[doc(hidden)]
-pub type IntersectionMap<T, VC, L, R> =
-    IntersectionIterMap<T, VC, R, RangeValuesToRangesIter<T, VC, L>>;
+#[deprecated(note = "renamed to `SymmetricDifference`")]
+pub type SymDiffMerge<T, L, R> = SymmetricDifference<T, L, R>;
 #[doc(hidden)]
-pub type IntersectionMerge<T, L, R> = NotIter<T, NandMerge<T, L, R>>;
-
+#[deprecated(note = "renamed to `MultiwayUnion`")]
+pub type UnionKMerge<T, I> = MultiwayUnion<T, I>;
 #[doc(hidden)]
-pub type NotMap<T, VC, I> = NotIter<T, RangeValuesToRangesIter<T, VC, I>>;
-
+#[deprecated(note = "renamed to `MultiwaySymmetricDifference`")]
+pub type SymDiffKMerge<T, I> = MultiwaySymmetricDifference<T, I>;
 #[doc(hidden)]
-pub type SymDiffMerge<T, L, R> = SymDiffIter<T, Merge<T, L, R>>;
-
+#[deprecated(note = "renamed to `UnionMap`")]
+pub type UnionMergeMap<T, VC, L, R> = UnionMap<T, VC, L, R>;
 #[doc(hidden)]
-pub type UnionKMerge<T, I> = UnionIter<T, KMerge<T, I>>;
+#[deprecated(note = "renamed to `SymmetricDifferenceMap`")]
+pub type SymDiffMergeMap<T, VC, L, R> = SymmetricDifferenceMap<T, VC, L, R>;
 #[doc(hidden)]
-pub type UnionMerge<T, L, R> = UnionIter<T, merge::Merge<T, L, R>>;
+#[deprecated(note = "renamed to `MultiwayUnionMap`")]
+pub type UnionKMergeMap<T, VC, I> = MultiwayUnionMap<T, VC, I>;
+#[doc(hidden)]
+#[deprecated(note = "renamed to `MultiwaySymmetricDifferenceMap`")]
+pub type SymDiffKMergeMap<T, VC, I> = MultiwaySymmetricDifferenceMap<T, VC, I>;
+#[doc(hidden)]
+#[deprecated(note = "renamed to `MultiwayIntersectionMap` (without the lifetime parameter)")]
+pub type IntersectionKMap<'a, T, VC, I> = MultiwayIntersectionMap<T, VC, I>;

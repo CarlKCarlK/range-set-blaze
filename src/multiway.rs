@@ -248,9 +248,10 @@ pub trait MultiwayRangeSetBlazeRef<'a, T: Integer + 'a>:
     }
 }
 
+use crate::MultiwayUnionInner;
 use crate::{
-    Integer, IntersectionMapInternal, RangeSetBlaze, SortedDisjoint, SymDiffKMerge, UnionIter,
-    UnionKMerge,
+    Integer, MultiwayIntersection, MultiwaySymmetricDifference, MultiwayUnion, RangeSetBlaze,
+    SortedDisjoint,
 };
 
 impl<T, II, I> MultiwaySortedDisjoint<T, I> for II
@@ -300,8 +301,8 @@ where
     ///
     /// assert_eq!(union.into_string(), "1..=15, 18..=100");
     /// ```
-    fn union(self) -> UnionKMerge<T, I> {
-        UnionIter::new_k(self)
+    fn union(self) -> MultiwayUnion<T, I> {
+        MultiwayUnion::new(MultiwayUnionInner::new_k(self))
     }
 
     /// Intersects the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
@@ -334,13 +335,15 @@ where
     ///
     /// assert_eq!(intersection.into_string(), "5..=6, 8..=9, 11..=13");
     /// ```
-    fn intersection(self) -> IntersectionMapInternal<T, I> {
+    fn intersection(self) -> MultiwayIntersection<T, I> {
         // We define set intersection in terms of complement and (set/map) union.
         // Elsewhere, map intersection is defined -- in part -- in terms of set intersection.
-        self.into_iter()
-            .map(|seq| seq.into_iter().complement())
-            .union()
-            .complement()
+        MultiwayIntersection::new(
+            self.into_iter()
+                .map(|seq| seq.into_iter().complement())
+                .union()
+                .complement(),
+        )
     }
 
     /// Computes the symmetric difference of the given [`SortedDisjoint`] iterators, creating a new [`SortedDisjoint`] iterator.
@@ -374,7 +377,7 @@ where
     ///     "-100..=0, 5..=6, 8..=9, 11..=13, 16..=17, 30..=100"
     /// );
     /// ```
-    fn symmetric_difference(self) -> SymDiffKMerge<T, I> {
-        SymDiffKMerge::new_k(self)
+    fn symmetric_difference(self) -> MultiwaySymmetricDifference<T, I> {
+        MultiwaySymmetricDifference::new_k(self)
     }
 }

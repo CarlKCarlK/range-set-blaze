@@ -1,8 +1,9 @@
+use crate::Integer;
 use crate::merge::KMerge;
 use crate::union_iter_map::SortedStartsInVec;
 use crate::unsorted_disjoint::UnsortedDisjoint;
-use crate::{AssumeSortedStarts, Merge, SortedDisjoint, SortedStarts, UnionKMerge};
-use crate::{Integer, UnionMerge};
+use crate::{AssumeSortedStarts, Merge, SortedDisjoint, SortedStarts};
+use crate::{MultiwayUnionInner, UnionInner};
 use core::cmp::max;
 use core::iter::FusedIterator;
 use core::ops::RangeInclusive;
@@ -70,7 +71,7 @@ where
     }
 }
 
-impl<T, L, R> UnionMerge<T, L, R>
+impl<T, L, R> UnionInner<T, L, R>
 where
     T: Integer,
     L: SortedDisjoint<T>,
@@ -83,7 +84,7 @@ where
     }
 }
 
-impl<T, J> UnionKMerge<T, J>
+impl<T, J> MultiwayUnionInner<T, J>
 where
     T: Integer,
     J: SortedDisjoint<T>,

@@ -26,10 +26,10 @@ use quickcheck_macros::quickcheck;
 use rand::Rng;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
-use range_set_blaze::SymDiffIter;
 #[cfg(not(target_arch = "wasm32"))]
 use range_set_blaze::test_util::{How, MemorylessIter, MemorylessRange, k_sets, width_to_range};
 use range_set_blaze::{Integer, NotIter, SortedStarts, prelude::*};
+use range_set_blaze::{SymDiffIter, SymmetricDifference, Union};
 use range_set_blaze::{UnionIter, symmetric_difference_dyn};
 use std::any::Any;
 use std::cmp::Ordering;
@@ -2088,8 +2088,8 @@ fn test_every_sorted_disjoint_method() {
             let e: MapRangesIter<'_, _, _> = c1.ranges();
             let f: NotIter<_, _> = !!CheckSortedDisjoint::new([1..=2, 5..=100]);
             let g: RangesIter<'_, _> = c0.ranges();
-            let h: SymDiffIter<_, _> = c0.ranges() ^ c0.ranges() ^ c0.ranges();
-            let i: UnionIter<_, _> = c0.ranges() | c0.ranges();
+            let h: SymmetricDifference<_, _, _> = c0.ranges() ^ c0.ranges() ^ c0.ranges();
+            let i: Union<_, _, _> = c0.ranges() | c0.ranges();
 
             (a, b, c, d, e, f, g, h, i)
         }};
