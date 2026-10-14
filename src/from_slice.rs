@@ -17,7 +17,6 @@
 
 use crate::{AssumeSortedStarts, Integer, RangeSetBlaze, UnionIter};
 use alloc::vec::Vec;
-use core::ops::RangeInclusive;
 use fearless_simd::{Level, dispatch, prelude::*};
 
 /// Builds a [`RangeSetBlaze`] from a slice, using SIMD to find runs of consecutive integers.
@@ -27,21 +26,60 @@ pub(crate) fn from_slice<T: SimdInteger>(slice: &[T]) -> RangeSetBlaze<T> {
     // Without `std`, fearless_simd can't detect CPU features at runtime and uses the features
     // enabled at compile time (for example, via `-C target-cpu`).
     let level = Level::try_detect().unwrap_or(Level::baseline());
-    let mut ranges = from_slice_ranges(level, slice);
-    ranges.sort_unstable_by(|a, b| a.start().cmp(b.start()));
-    RangeSetBlaze::from_sorted_disjoint(UnionIter::new(AssumeSortedStarts::new(ranges)))
+    from_slice_at_level(level, slice)
+}
+
+/// How many SIMD chunks the run-extending loop checks per iteration.
+///
+/// On clumpy data, 4 was about 1.2-1.6x faster than 1 with AVX2 and AVX-512 (8 added nothing).
+/// It costs a few percent when runs are short (around 100 values), since a block rarely fits.
+const UNROLL: usize = 4;
+
+/// Like [`from_slice`], but at a given SIMD `level` instead of the detected one.
+#[inline]
+#[allow(clippy::redundant_pub_crate)]
+pub(crate) fn from_slice_at_level<T: SimdInteger>(level: Level, slice: &[T]) -> RangeSetBlaze<T> {
+    from_slice_at_level_unrolled::<T, UNROLL>(level, slice)
+}
+
+/// Like [`from_slice_at_level`], but with a given unroll factor (see [`UNROLL`]).
+#[inline]
+#[allow(clippy::redundant_pub_crate)]
+pub(crate) fn from_slice_at_level_unrolled<T: SimdInteger, const N: usize>(
+    level: Level,
+    slice: &[T],
+) -> RangeSetBlaze<T> {
+    let mut ranges = from_slice_ranges_unrolled::<T, N>(level, slice);
+    ranges.sort_unstable_by_key(|&(start, _)| start);
+    RangeSetBlaze::from_sorted_disjoint(UnionIter::new(AssumeSortedStarts::new(
+        ranges.into_iter().map(|(start, end)| start..=end),
+    )))
 }
 
 /// Returns the ranges of `slice`, in slice order, with touching neighbors merged.
 ///
 /// The ranges are nonempty but may overlap and are not sorted.
+#[cfg(test)]
 #[inline]
 #[allow(clippy::redundant_pub_crate)]
 pub(crate) fn from_slice_ranges<T: SimdInteger>(
     level: Level,
     slice: &[T],
-) -> Vec<RangeInclusive<T>> {
-    dispatch!(level, simd => collect_ranges(simd, slice))
+) -> Vec<core::ops::RangeInclusive<T>> {
+    from_slice_ranges_unrolled::<T, UNROLL>(level, slice)
+        .into_iter()
+        .map(|(start, end)| start..=end)
+        .collect()
+}
+
+/// Like [`from_slice_ranges`], but with a given unroll factor (see [`UNROLL`]), and returning
+/// `(start, end)` pairs, which are smaller than `RangeInclusive` and so faster to collect and sort.
+#[inline]
+fn from_slice_ranges_unrolled<T: SimdInteger, const N: usize>(
+    level: Level,
+    slice: &[T],
+) -> Vec<(T, T)> {
+    dispatch!(level, simd => collect_ranges::<T, _, N>(simd, slice))
 }
 
 /// An integer type whose slices can be scanned with SIMD.
@@ -72,7 +110,7 @@ pub(crate) trait SimdInteger: Integer + bytemuck::NoUninit {
     }
 }
 
-// Lane counts: 16 lanes, except 8 for 64-bit types (fearless_simd's widest vector is 512 bits).
+// Every type uses fearless_simd's widest vector, 512 bits (64, 32, 16, or 8 lanes).
 // On narrower hardware, fearless_simd splits wide vectors into several native operations.
 macro_rules! impl_simd_integer {
     ($($type:ty => $vector:ident),+ $(,)?) => {
@@ -91,12 +129,12 @@ macro_rules! impl_simd_integer {
 }
 
 impl_simd_integer!(
-    i8 => i8x16,
-    i16 => i16x16,
+    i8 => i8x64,
+    i16 => i16x32,
     i32 => i32x16,
     i64 => i64x8,
-    u8 => u8x16,
-    u16 => u16x16,
+    u8 => u8x64,
+    u16 => u16x32,
     u32 => u32x16,
     u64 => u64x8,
 );
@@ -139,7 +177,7 @@ macro_rules! impl_simd_integer_pointer_sized {
 }
 
 impl_simd_integer_pointer_sized!(
-    "16": i16 => i16x16, u16 => u16x16;
+    "16": i16 => i16x32, u16 => u16x32;
     "32": i32 => i32x16, u32 => u32x16;
     "64": i64 => i64x8, u64 => u64x8;
 );
@@ -150,13 +188,19 @@ impl_simd_integer_pointer_sized!(
     reason = "must inline into the fearless_simd dispatch target-feature closure"
 )]
 #[inline(always)]
-fn collect_ranges<T, S>(simd: S, slice: &[T]) -> Vec<RangeInclusive<T>>
+fn collect_ranges<T, S, const N: usize>(simd: S, slice: &[T]) -> Vec<(T, T)>
 where
     T: SimdInteger,
     S: Simd,
 {
     let lanes = T::Vector::<S>::LEN;
+    let block = lanes * N;
     let offsets = lane_offsets::<T, S>(simd);
+    let lanes_splat = T::Vector::<S>::splat(
+        simd,
+        T::Lane::try_from(lanes)
+            .unwrap_or_else(|_| unreachable!("a SIMD lane count always fits its lane type")),
+    );
     let mut ranges = RangeCollector::new();
     let mut rest = slice;
     while rest.len() >= lanes {
@@ -171,6 +215,27 @@ where
         // Tight inner loop: extend the run while each next chunk continues it.
         let start = chunk[0];
         let mut end = chunk[lanes - 1];
+        // Unrolled: check `N` chunks per iteration with a single branch.
+        while N > 1 && rest.len() >= block {
+            let (next, after) = rest.split_at(block);
+            // `next[0] > end`, so `next[0] > T::min_value()` and `sub_one` can't overflow.
+            if !(next[0] > end && next[0].sub_one() == end) {
+                break;
+            }
+            // Lane arithmetic wraps, so also require the block's last value to be at least its
+            // first, which rejects wrapped blocks (see `is_consecutive_with_offsets`).
+            let mut expected = T::Vector::<S>::splat(simd, next[0].to_lane()) + offsets;
+            let mut all = next[0] <= next[block - 1];
+            for next_chunk in next.chunks_exact(lanes) {
+                all &= T::load(simd, next_chunk).simd_eq(expected).all_true();
+                expected += lanes_splat;
+            }
+            if !all {
+                break;
+            }
+            end = next[block - 1];
+            rest = after;
+        }
         while rest.len() >= lanes {
             let (next, after) = rest.split_at(lanes);
             // `next[0] > end`, so `next[0] > T::min_value()` and `sub_one` can't overflow.
@@ -196,7 +261,7 @@ where
 /// The range being extended lives in a local (in registers) rather than at the end of the
 /// vector, which keeps the hot all-consecutive path free of memory writes.
 struct RangeCollector<T: Integer> {
-    ranges: Vec<RangeInclusive<T>>,
+    ranges: Vec<(T, T)>,
     current: Option<(T, T)>,
 }
 
@@ -229,7 +294,7 @@ impl<T: Integer> RangeCollector<T> {
                 }
                 return;
             }
-            self.ranges.push(*current_start..=*current_end);
+            self.ranges.push((*current_start, *current_end));
         }
         self.current = Some((start, end));
     }
@@ -239,9 +304,9 @@ impl<T: Integer> RangeCollector<T> {
         reason = "must inline into the fearless_simd dispatch target-feature closure"
     )]
     #[inline(always)]
-    fn finish(mut self) -> Vec<RangeInclusive<T>> {
+    fn finish(mut self) -> Vec<(T, T)> {
         if let Some((start, end)) = self.current {
-            self.ranges.push(start..=end);
+            self.ranges.push((start, end));
         }
         self.ranges
     }

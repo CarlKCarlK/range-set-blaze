@@ -29,7 +29,7 @@ use std::{
 };
 
 use range_set_blaze::test_util::{
-    How, MemorylessIter, MemorylessRange, k_sets, width_to_range_u32,
+    FromSliceAtLevel, How, MemorylessIter, MemorylessRange, k_sets, width_to_range_u32,
 };
 use syntactic_for::syntactic_for;
 
@@ -1574,6 +1574,151 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
     group.finish();
 }
 
+/// Every `fearless_simd` level this CPU can run, from scalar `fallback` up, with a short label.
+fn simd_levels() -> Vec<(&'static str, fearless_simd::Level)> {
+    use fearless_simd::Level;
+    let mut levels = vec![("fallback", Level::fallback())];
+    if let Some(detected) = Level::try_detect() {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        levels.extend(
+            [
+                ("sse2", detected.as_sse2().map(Level::Sse2)),
+                ("sse4.2", detected.as_sse4_2().map(Level::Sse4_2)),
+                ("avx2", detected.as_avx2().map(Level::Avx2)),
+                ("avx512", detected.as_avx512().map(Level::Avx512)),
+            ]
+            .into_iter()
+            .filter_map(|(label, level)| level.map(|level| (label, level))),
+        );
+        #[cfg(target_arch = "aarch64")]
+        if let Some(neon) = detected.as_neon() {
+            levels.push(("neon", Level::Neon(neon)));
+        }
+    }
+    levels
+}
+
+/// `from_slice` at every SIMD level (same code, same data), plus `from_iter` and auto-dispatched
+/// `from_slice`, on `u32` and on the same values as `u64`.
+///
+/// For a fallback with no LLVM auto-vectorization either, run with
+/// `RUSTFLAGS="-C no-vectorize-loops -C no-vectorize-slp"` (affects every series).
+fn ingest_clumps_simd_levels(c: &mut Criterion) {
+    fn bench_type<T>(c: &mut Criterion, type_name: &str, inputs: &[(usize, Vec<T>)])
+    where
+        T: Integer + FromSliceAtLevel,
+    {
+        let mut group = c.benchmark_group(format!("ingest_clumps_simd_levels_{type_name}"));
+        group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+        group.sample_size(20);
+        for (parameter, vec) in inputs {
+            group.bench_with_input(
+                BenchmarkId::new("from_iter", parameter),
+                parameter,
+                |b, _| {
+                    b.iter(|| black_box(RangeSetBlaze::from_iter(vec)));
+                },
+            );
+            for (label, level) in simd_levels() {
+                group.bench_with_input(
+                    BenchmarkId::new(format!("from_slice@{label}"), parameter),
+                    parameter,
+                    |b, _| b.iter(|| black_box(T::from_slice_at_level(level, vec))),
+                );
+            }
+            group.bench_with_input(
+                BenchmarkId::new(
+                    format!("from_slice (auto: {})", simd_level_label()),
+                    parameter,
+                ),
+                parameter,
+                |b, _| b.iter(|| black_box(RangeSetBlaze::from_slice(vec))),
+            );
+        }
+        group.finish();
+    }
+
+    let (inputs_u32, inputs_u64) = clumps_inputs(&[1, 10, 100, 1000, 10_000, 100_000]);
+    bench_type(c, "u32", &inputs_u32);
+    bench_type(c, "u64", &inputs_u64);
+}
+
+/// `from_slice` at each SIMD level with the run-extending loop unrolled 1, 2, 4, and 8 times.
+fn ingest_clumps_unroll(c: &mut Criterion) {
+    fn bench_type<T>(c: &mut Criterion, type_name: &str, inputs: &[(usize, Vec<T>)])
+    where
+        T: Integer + FromSliceAtLevel,
+    {
+        let mut group = c.benchmark_group(format!("ingest_clumps_unroll_{type_name}"));
+        group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+        group.sample_size(20);
+        for (parameter, vec) in inputs {
+            for (label, level) in simd_levels() {
+                if !matches!(label, "fallback" | "sse2" | "avx2" | "avx512" | "neon") {
+                    continue;
+                }
+                group.bench_with_input(
+                    BenchmarkId::new(format!("{label}x1"), parameter),
+                    parameter,
+                    |b, _| b.iter(|| black_box(T::from_slice_at_level_unrolled::<1>(level, vec))),
+                );
+                group.bench_with_input(
+                    BenchmarkId::new(format!("{label}x2"), parameter),
+                    parameter,
+                    |b, _| b.iter(|| black_box(T::from_slice_at_level_unrolled::<2>(level, vec))),
+                );
+                group.bench_with_input(
+                    BenchmarkId::new(format!("{label}x4"), parameter),
+                    parameter,
+                    |b, _| b.iter(|| black_box(T::from_slice_at_level_unrolled::<4>(level, vec))),
+                );
+                group.bench_with_input(
+                    BenchmarkId::new(format!("{label}x8"), parameter),
+                    parameter,
+                    |b, _| b.iter(|| black_box(T::from_slice_at_level_unrolled::<8>(level, vec))),
+                );
+            }
+        }
+        group.finish();
+    }
+
+    let (inputs_u32, inputs_u64) = clumps_inputs(&[100, 1000, 10_000, 100_000]);
+    bench_type(c, "u32", &inputs_u32);
+    bench_type(c, "u64", &inputs_u64);
+}
+
+/// The `ingest_clumps_iter_v_slice` data at each average width, as `u32` and as `u64`.
+#[allow(clippy::type_complexity)]
+fn clumps_inputs(average_width_list: &[usize]) -> (Vec<(usize, Vec<u32>)>, Vec<(usize, Vec<u64>)>) {
+    let k = 1;
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    let inputs_u32: Vec<(usize, Vec<u32>)> = average_width_list
+        .iter()
+        .map(|&average_width| {
+            let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+            let vec = MemorylessIter::new(
+                &mut StdRng::seed_from_u64(seed),
+                range_len,
+                range,
+                coverage_goal,
+                k,
+                how,
+            )
+            .collect();
+            (average_width, vec)
+        })
+        .collect();
+    let inputs_u64 = inputs_u32
+        .iter()
+        .map(|(width, vec)| (*width, vec.iter().map(|&x| u64::from(x)).collect()))
+        .collect();
+    (inputs_u32, inputs_u64)
+}
+
 fn ingest_clumps_ranges(c: &mut Criterion) {
     let group_name = "ingest_clumps_ranges";
     let k = 1;
@@ -2309,6 +2454,8 @@ criterion_group!(
     config = Criterion::default();
     targets =
     ingest_clumps_iter_v_slice,
+    ingest_clumps_simd_levels,
+    ingest_clumps_unroll,
     ingest_clumps_integers,
     ingest_clumps_base,
     ingest_clumps_cursor,

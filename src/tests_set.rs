@@ -1027,6 +1027,29 @@ fn assert_from_slice_matches_from_iter<T: from_slice::SimdInteger>(values: &[T])
             expected,
             "{level:?} disagrees with from_iter on {values:?}"
         );
+        for (unroll, set) in [
+            (
+                1,
+                from_slice::from_slice_at_level_unrolled::<T, 1>(level, values),
+            ),
+            (
+                2,
+                from_slice::from_slice_at_level_unrolled::<T, 2>(level, values),
+            ),
+            (
+                4,
+                from_slice::from_slice_at_level_unrolled::<T, 4>(level, values),
+            ),
+            (
+                8,
+                from_slice::from_slice_at_level_unrolled::<T, 8>(level, values),
+            ),
+        ] {
+            assert_eq!(
+                set, expected,
+                "{level:?} with unroll {unroll} disagrees with from_iter on {values:?}"
+            );
+        }
     }
     assert_eq!(RangeSetBlaze::from_slice(values), expected);
 }
@@ -1047,6 +1070,26 @@ fn from_slice_matches_from_iter() {
                         .chain((0..64).map(|index| {
                             <$type>::MAX.wrapping_sub(before_wrap).wrapping_add(index)
                         }))
+                        .collect();
+                    assert_from_slice_matches_from_iter(&values);
+                }
+            }
+            // Longer wrapping runs, so unrolled blocks (up to 8 chunks) meet the wrap too.
+            for before_wrap in [0_usize, 1, 15, 16, 31, 32, 63, 64, 100, 127, 128, 150] {
+                for prefix_len in [0, 1, 7, 8, 15, 16] {
+                    let mut value = <$type>::MAX;
+                    for _ in 0..before_wrap {
+                        value = value.wrapping_sub(1);
+                    }
+                    let run = core::iter::repeat_with(|| {
+                        let current = value;
+                        value = value.wrapping_add(1);
+                        current
+                    })
+                    .take(200);
+                    let values: Vec<$type> = (0..prefix_len)
+                        .map(|index: u8| <$type>::try_from(index * 7).expect("at most 112"))
+                        .chain(run)
                         .collect();
                     assert_from_slice_matches_from_iter(&values);
                 }
