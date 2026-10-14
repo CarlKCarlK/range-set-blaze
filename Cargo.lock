@@ -572,15 +572,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num-integer"
-version = "0.1.46"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7969661fd2958a5cb096e56c8e1ad0444ac2bbcd0061bd28660485a44879858f"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
 name = "num-traits"
 version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -754,7 +745,6 @@ dependencies = [
  "getrandom 0.3.4",
  "glob",
  "itertools 0.14.0",
- "num-integer",
  "num-traits",
  "quickcheck",
  "quickcheck_macros",

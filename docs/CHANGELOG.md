@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - **Breaking:** the `from_slice` Cargo feature, and the `build-simd` and `test-simd` just recipes.
+- The unused `num-integer` dependency.
 
 [`fearless_simd`]: https://crates.io/crates/fearless_simd
 [`bytemuck`]: https://crates.io/crates/bytemuck

@@ -41,7 +41,6 @@ default = ["std"]
 std = [
     "itertools/use_std",
     "num-traits/std",
-    "num-integer/std",
     "fearless_simd/std",
 ]
 # Enables nightly-only `f16` and `f128` floating-point wrappers.
@@ -54,7 +53,6 @@ test_util = ["rand"]
 itertools = { version = "0.14.0", default-features = false, features = [
     "use_alloc",
 ] }
-num-integer = { version = "0.1.46", default-features = false }
 num-traits = { version = "0.2.19", default-features = false }
 gen_ops = "0.4.0"
 rand = { version = "0.9.4", optional = true }
