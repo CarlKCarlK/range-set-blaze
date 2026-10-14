@@ -170,11 +170,11 @@ impl<T: Integer> SortedDisjoint<T> for Once<RangeInclusive<T>> {}
 /// use range_set_blaze::prelude::*;
 ///
 /// // RangeSetBlaze's .ranges() and .into_ranges()
-/// let r = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]);
+/// let r = RangeSetBlaze::from_slice([3, 2, 1, 100, 1]);
 /// let a = r.ranges();
 /// assert!(a.into_string() == "1..=3, 100..=100");
 /// // 'into_ranges' takes ownership of the 'RangeSetBlaze'
-/// let a = RangeSetBlaze::from_iter([3, 2, 1, 100, 1]).into_ranges();
+/// let a = RangeSetBlaze::from_slice([3, 2, 1, 100, 1]).into_ranges();
 /// assert!(a.into_string() == "1..=3, 100..=100");
 ///
 /// // CheckSortedDisjoint -- unsorted or overlapping input ranges will cause a panic.
@@ -642,7 +642,7 @@ pub trait SortedDisjoint<T: Integer>: SortedStarts<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let sub = RangeSetBlaze::from_iter([1, 2]);
+    /// let sub = RangeSetBlaze::from_slice([1, 2]);
     /// let mut set = RangeSetBlaze::new();
     ///
     /// assert_eq!(set.is_superset(&sub), false);

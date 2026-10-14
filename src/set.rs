@@ -102,7 +102,7 @@ where
 /// | [`new`]/[`default`]                         |                              |                          |
 /// | [`from_iter`][1]/[`collect`][1]             | integer iterator             |                          |
 /// | [`from_iter`][2]/[`collect`][2]             | ranges iterator              |                          |
-/// | [`from_slice`][6]                           | slice of integers            | Fast |
+/// | [`from_slice`][6]                           | slice of integers            | Fastest; use when you can |
 /// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze`][3] | [`SortedDisjoint`] iterator |               |
 /// | [`from`][5] /[`into`][5]                    | array of integers            |                          |
 /// | [`from`][7]                                 | `RangeInclusive<T>`          |                          |
@@ -147,10 +147,11 @@ where
 /// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*)),
 /// a quadratic improvement an O(*n₁*) implementation that ignores the clumps.
 ///
-/// The [`from_slice`][6] constructor typically provides a constant-time speed up for array-like collections of clumpy integers.
-/// On a representative benchmark, the speed up was 7×.
-/// The method works by scanning the input for blocks of consecutive integers, and then using `from_iter` on the results.
-/// Where available, it uses SIMD instructions on stable Rust.
+/// **When your integers are in a slice, array, or `Vec`, use [`from_slice`][6].** On clumpy
+/// integers it is typically 10 to 20 times faster than [`from_iter`][1]/[`collect`][1], and in our
+/// benchmarks it was also faster on non-clumpy input of more than a few integers. It scans the input with SIMD instructions (on stable Rust, using the best ones the CPU
+/// supports) for runs of consecutive integers, then sorts and merges those runs, without modifying
+/// the input.
 ///
 /// ## Constructor Examples
 ///
@@ -366,7 +367,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetBlaze::from_iter([3, 1, 2]);
+    /// let set = RangeSetBlaze::from_slice([3, 1, 2]);
     /// let mut set_iter = set.iter();
     /// assert_eq!(set_iter.next(), Some(1));
     /// assert_eq!(set_iter.next_back(), Some(3));
@@ -414,7 +415,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3]);
+    /// let set = RangeSetBlaze::from_slice([1, 2, 3]);
     /// assert_eq!(set.get(2), Some(2));
     /// assert_eq!(set.get(4), None);
     /// ```
@@ -573,9 +574,9 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    /// Creates a [`RangeSetBlaze`] from a collection of integers. It is typically many
-    /// times faster than [`from_iter`][1]/[`collect`][1].
-    /// On a representative benchmark, the speed up was 7×.
+    /// Creates a [`RangeSetBlaze`] from a collection of integers. Prefer it whenever your integers
+    /// are in a slice, array, or `Vec`: on clumpy integers it is typically 10 to 20 times faster than
+    /// [`from_iter`][1]/[`collect`][1]. The input is not modified.
     ///
     /// The function accepts any type that can be referenced as a slice of integers,
     /// including slices, arrays, and vectors. Duplicates and out-of-order elements are fine.
@@ -763,7 +764,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let sub = RangeSetBlaze::from_iter([1, 2]);
+    /// let sub = RangeSetBlaze::from_slice([1, 2]);
     /// let mut set = RangeSetBlaze::new();
     ///
     /// assert_eq!(set.is_superset(&sub), false);
@@ -787,7 +788,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3]);
+    /// let set = RangeSetBlaze::from_slice([1, 2, 3]);
     /// assert_eq!(set.contains(1), true);
     /// assert_eq!(set.contains(4), false);
     /// ```
@@ -1042,8 +1043,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// let b = a.split_off(3);
     ///
-    /// assert_eq!(a, RangeSetBlaze::from_iter([1, 2]));
-    /// assert_eq!(b, RangeSetBlaze::from_iter([3, 17, 41]));
+    /// assert_eq!(a, RangeSetBlaze::from_slice([1, 2]));
+    /// assert_eq!(b, RangeSetBlaze::from_slice([3, 17, 41]));
     /// ```
     #[must_use]
     pub fn split_off(&mut self, key: T) -> Self {
@@ -1115,7 +1116,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut set = RangeSetBlaze::from_iter([1, 2, 3]);
+    /// let mut set = RangeSetBlaze::from_slice([1, 2, 3]);
     /// assert_eq!(set.take(2), Some(2));
     /// assert_eq!(set.take(2), None);
     /// ```
@@ -1555,7 +1556,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// let mut set = RangeSetBlaze::from_iter([1..=6]);
     /// // Keep only the even numbers.
     /// set.retain(|k| k % 2 == 0);
-    /// assert_eq!(set, RangeSetBlaze::from_iter([2, 4, 6]));
+    /// assert_eq!(set, RangeSetBlaze::from_slice([2, 4, 6]));
     /// ```
     pub fn retain<F>(&mut self, mut f: F)
     where
@@ -1600,6 +1601,9 @@ impl<T: Integer> RangeSetBlaze<T> {
 // 2. Turning the SortedDisjoint into a BTreeMap.
 impl<T: Integer> FromIterator<T> for RangeSetBlaze<T> {
     /// Create a [`RangeSetBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
+    ///
+    /// If your integers are already in a slice, array, or `Vec`, use
+    /// [`RangeSetBlaze::from_slice`] instead; it is typically much faster.
     ///
     /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
@@ -1826,12 +1830,12 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
+    /// let set = RangeSetBlaze::from_slice([1, 2, 3, 4]);
     ///
     /// let v: Vec<_> = set.into_iter().collect();
     /// assert_eq!(v, [1, 2, 3, 4]);
     ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
+    /// let set = RangeSetBlaze::from_slice([1, 2, 3, 4]);
     /// let v: Vec<_> = set.into_iter().rev().collect();
     /// assert_eq!(v, [4, 3, 2, 1]);
     /// ```
@@ -2004,7 +2008,7 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     ///
     /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// let mut b = RangeSetBlaze::from_iter([5, 0, 0, 3, 4, 10]);
+    /// let mut b = RangeSetBlaze::from_slice([5, 0, 0, 3, 4, 10]);
     /// a |= b;
     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```

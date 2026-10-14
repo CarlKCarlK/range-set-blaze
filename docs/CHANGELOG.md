@@ -32,6 +32,12 @@ This release is not breaking.
   element-by-element, closing most of the previous performance gap between `isize`/`usize` and
   the corresponding fixed-width integer types.
 
+- **`from_slice` is faster.** It now checks four SIMD chunks per loop iteration, collects
+  smaller intermediate ranges, and uses 512-bit vectors for every integer type (previously 128 or
+  256 bits for 8- and 16-bit types). On clumpy data it is typically 10 to 20 times faster than
+  `from_iter`/`collect`; checked on AMD, Intel, and ARM (including Apple) CPUs.
+- The docs, README, and examples now recommend `from_slice` whenever the integers are in a slice,
+  array, or `Vec`.
 - The pinned nightly toolchain is now `nightly-2026-10-12` (was `nightly-2026-09-15`). This
   affects only local builds and CI.
 

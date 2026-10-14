@@ -2740,12 +2740,12 @@ where
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
+    /// let set = RangeSetBlaze::from_slice([1, 2, 3, 4]);
     ///
     /// let v: Vec<_> = set.into_iter().collect();
     /// assert_eq!(v, [1, 2, 3, 4]);
     ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
+    /// let set = RangeSetBlaze::from_slice([1, 2, 3, 4]);
     /// let v: Vec<_> = set.into_iter().rev().collect();
     /// assert_eq!(v, [4, 3, 2, 1]);
     /// ```
