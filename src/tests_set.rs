@@ -1001,7 +1001,7 @@ fn from_slice_ranges_basic_cases() {
 
     for level in testable_levels() {
         let slice: [u8; 0] = [];
-        assert!(from_slice_ranges(level, &slice).is_empty());
+        assert_eq!(from_slice_ranges(level, &slice), vec![]);
 
         // 1st 500 even numbers
         let slice: &[_] = &(0..1000).step_by(2).collect::<Vec<_>>();

@@ -5,8 +5,9 @@ use core::ops::RangeInclusive;
 use num_traits::identities::One;
 use rand::{Rng, distr::uniform::SampleUniform, rngs::StdRng};
 
-/// Inserts using `RangeSetBlaze`'s normal (non-cursor) insert algorithm,
-/// regardless of which algorithm the `ranges_insert`/`insert` public API
+/// Inserts using `RangeSetBlaze`'s normal (non-cursor) insert algorithm.
+///
+/// It bypasses whichever algorithm the `ranges_insert`/`insert` public API
 /// currently dispatches to. Exposed so benchmarks can compare it directly
 /// against [`ranges_insert_cursor`] in the same process.
 pub fn ranges_insert_baseline<T: Integer>(set: &mut RangeSetBlaze<T>, range: RangeInclusive<T>) {
@@ -20,8 +21,9 @@ pub fn ranges_insert_cursor<T: Integer>(set: &mut RangeSetBlaze<T>, range: Range
     set.internal_add_cursor(range);
 }
 
-/// Inserts using `RangeMapBlaze`'s normal (non-cursor) insert algorithm,
-/// regardless of which algorithm the `insert`/`ranges_insert` public API
+/// Inserts using `RangeMapBlaze`'s normal (non-cursor) insert algorithm.
+///
+/// It bypasses whichever algorithm the `insert`/`ranges_insert` public API
 /// currently dispatches to. Exposed so benchmarks can compare it directly
 /// against [`map_insert_cursor`] in the same process.
 pub fn map_insert_baseline<T: Integer, V: Eq + Clone>(

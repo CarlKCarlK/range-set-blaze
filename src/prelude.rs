@@ -7,8 +7,8 @@
 pub use crate::{
     CheckSortedDisjoint, CheckSortedDisjointMap, DynSortedDisjoint, DynSortedDisjointMap,
     IntoString, MultiwayRangeMapBlaze, MultiwayRangeMapBlazeRef, MultiwayRangeSetBlaze,
-    MultiwayRangeSetBlazeRef, MultiwaySortedDisjoint, MultiwaySortedDisjointMap, RangeMapBlaze,
-    RangeSetBlaze, SortedDisjoint, SortedDisjointMap, SortedStarts, UIntPlusOne, intersection_dyn,
-    intersection_map_dyn, symmetric_difference_dyn, symmetric_difference_map_dyn, union_dyn,
-    union_map_dyn,
+    MultiwayRangeSetBlazeRef, MultiwaySortedDisjoint, MultiwaySortedDisjointMap, Owned,
+    RangeMapBlaze, RangeSetBlaze, SortedDisjoint, SortedDisjointMap, SortedStarts, UIntPlusOne,
+    intersection_dyn, intersection_map_dyn, symmetric_difference_dyn, symmetric_difference_map_dyn,
+    union_dyn, union_map_dyn,
 };

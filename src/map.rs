@@ -1,11 +1,11 @@
 use crate::{
     CheckSortedDisjoint, Integer, IntoKeys, Keys, RangeSetBlaze, SortedDisjoint,
+    SymmetricDifferenceMap,
     iter_map::{IntoIterMap, IterMap},
     map_op, map_unary_op,
     range_values::{IntoRangeValuesIter, MapIntoRangesIter, MapRangesIter, RangeValuesIter},
     set::extract_range,
     sorted_disjoint_map::{IntoString, SortedDisjointMap},
-    sym_diff_iter_map::SymDiffIterMap,
     unsorted_priority_map::{SortedDisjointMapWithLenSoFar, UnsortedPriorityMap},
     values::{IntoValues, Values},
 };
@@ -38,12 +38,14 @@ const STREAM_OVERHEAD: usize = 10;
 ///
 /// `ValueCarrier` enables [`SortedDisjointMap`] to map sorted, disjoint ranges of integers
 /// to values of type `V: Eq + Clone`. It supports plain references (`&V`), shared ownership types
-/// (`Rc<V>` and `Arc<V>`), compound carriers such as `Option<&V>`, and the by-value `bool`
-/// carrier, avoiding unnecessary cloning of values while enabling ownership when needed.
+/// (`Rc<V>` and `Arc<V>`), the by-value carriers `bool` and [`Owned<V>`], and compound carriers
+/// built from other carriers: `Option<VC>` (such as `Option<&V>`) and pairs `(VCL, VCR)` (such as
+/// `(&V1, Rc<V2>)`), avoiding unnecessary cloning of values while enabling ownership when needed.
 ///
 /// All types implementing `ValueCarrier` must also implement `Clone`. For standard carriers like
-/// `&V`, `Rc<V>`, `Arc<V>`, their `Option` forms, and `bool`, this is efficient—cloning
-/// typically just copies a pointer and a discriminant or a small value.
+/// `&V`, `Rc<V>`, `Arc<V>`, their `Option` and pair forms, and `bool`, this is efficient—cloning
+/// typically just copies a pointer and a discriminant or a small value. Cloning an [`Owned<V>`]
+/// clones its `V`.
 ///
 /// # Motivation
 ///
@@ -104,6 +106,9 @@ pub trait ValueCarrier: Clone {
     /// - `&V` → calls `Clone::clone` on `V`. If `V` is a reference (e.g., `&'static str`),
     ///   this simply copies the reference without allocation.
     /// - `Rc<V>` / `Arc<V>` → tries to unwrap if uniquely owned; otherwise clones `V`.
+    /// - [`Owned<V>`] → returns the value it holds.
+    /// - `Option<VC>` → materializes the inner carrier, if any.
+    /// - `(VCL, VCR)` → materializes both carriers, returning a pair of values.
     ///
     /// This is typically used when converting a stream of `(range, value)` pairs into values
     /// that can be stored or returned independently of the original container.
@@ -217,6 +222,74 @@ where
     }
 }
 
+impl<VCL, VCR> ValueCarrier for (VCL, VCR)
+where
+    VCL: ValueCarrier,
+    VCR: ValueCarrier,
+{
+    type Value = (VCL::Value, VCR::Value);
+
+    #[inline]
+    fn value_eq(&self, other: &Self) -> bool {
+        self.0.value_eq(&other.0) && self.1.value_eq(&other.1)
+    }
+
+    #[inline]
+    fn into_value(self) -> Self::Value {
+        (self.0.into_value(), self.1.into_value())
+    }
+}
+
+/// A [`ValueCarrier`] that holds its value directly, by value.
+///
+/// Stream operations that create new values, such as [`SortedDisjointMap::transform_values`],
+/// need a carrier for those values. A reference (`&V`) needs an owner that outlives the stream,
+/// so `Owned<V>` carries the value itself. Cloning an `Owned<V>` clones the `V`, so, as with
+/// every [`RangeMapBlaze`] value, `V` should be cheap to clone; for a large value, use an
+/// [`Rc`] or `Arc` as `V` (for example, a closure returning `Rc<X>` yields `Owned<Rc<X>>`).
+///
+/// Collecting into a [`RangeMapBlaze`] removes the wrapper: a stream of `Owned<V>` builds a
+/// `RangeMapBlaze<T, V>`.
+///
+/// # Examples
+///
+/// ```
+/// use range_set_blaze::prelude::*;
+///
+/// let map = RangeMapBlaze::from_iter([(1..=3, "a"), (5..=6, "bb")]);
+/// let mut lengths = map.range_values().transform_values(|value| value.len());
+/// assert_eq!(lengths.next(), Some((1..=3, Owned(1))));
+/// assert_eq!(lengths.next(), Some((5..=6, Owned(2))));
+/// assert_eq!(lengths.next(), None);
+/// ```
+#[derive(Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub struct Owned<V>(pub V);
+
+// Debug output is transparent, like `&V` and `Rc<V>`, so a stream of `Owned` values prints the
+// same as a stream of borrowed ones (for example, in `IntoString::into_string`).
+impl<V: fmt::Debug> fmt::Debug for Owned<V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl<V> ValueCarrier for Owned<V>
+where
+    V: Eq + Clone,
+{
+    type Value = V;
+
+    #[inline]
+    fn value_eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+
+    #[inline]
+    fn into_value(self) -> Self::Value {
+        self.0
+    }
+}
+
 #[expect(clippy::redundant_pub_crate)]
 #[derive(Clone, Hash, Default, PartialEq, Eq, Debug)]
 pub(crate) struct EndValue<T, V> {
@@ -302,8 +375,16 @@ fn classify_forward<T: Integer>(
 /// Internally, the map stores the
 /// ranges and values in a cache-efficient [`BTreeMap`].
 ///
+/// Values should be cheap to clone. Operations clone a value whenever they split its range (for
+/// example, inserting into the middle of a range, or joining with another map), and the
+/// [`SortedDisjointMap`] stream operations rely on the same assumption. Wrap large values in
+/// [`Rc`] or `Arc` so that each clone only bumps a reference count.
+///
 /// For a side-by-side introduction to range lookups and gap filling, see the
 /// [Ranges and gaps guide][crate::gaps].
+///
+/// To combine the values of two or more maps by key (inner, left, and full joins), see the
+/// [joins guide][crate::joins].
 ///
 /// # Table of Contents
 /// * [`RangeMapBlaze` Constructors](#rangemapblaze-constructors)
@@ -1137,6 +1218,26 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     pub fn is_universal(&self) -> bool {
         self.len() == T::safe_len(&(T::min_value()..=T::max_value()))
     }
+
+    /// Returns a universal map that covers all values of `T` with `value`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let universal = RangeMapBlaze::<u8, &str>::universe_with(&"all");
+    /// assert!(universal.is_universal());
+    /// assert_eq!(universal.get(0), Some(&"all"));
+    /// assert_eq!(universal.get(255), Some(&"all"));
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn universe_with(value: &V) -> Self {
+        // TODO00 Revisit whether `universe_with` is the best public name and constructor shape.
+        Self::new().complement_with(value)
+    }
+
     /// Returns `true` if the set contains an element equal to the value.
     ///
     /// # Examples
@@ -2243,6 +2344,172 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         self.range_values().fill_gaps().into_range_map_blaze()
     }
 
+    /// Joins this map with `other` on the keys covered by both, creating a new map whose values
+    /// are `f` applied to both maps' values there.
+    ///
+    /// `f` is called once per maximal range over which both values are constant, in ascending key
+    /// order, so it may be `FnMut` and keep state. Touching ranges with equal results are merged.
+    /// Only the results are cloned into the new map, not the input values. To keep the pair, use
+    /// `|left, right| (left.clone(), right.clone())`. For the lazy, borrowing form, which yields
+    /// pairs, see [`SortedDisjointMap::inner_join`]. For three or more maps with one value type,
+    /// see [`MultiwayRangeMapBlazeRef::inner_join`].
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
+    ///
+    /// [`MultiwayRangeMapBlazeRef::inner_join`]: crate::MultiwayRangeMapBlazeRef::inner_join
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeMapBlaze;
+    /// let left = RangeMapBlaze::from_iter([(1..=5, "a")]);
+    /// let right = RangeMapBlaze::from_iter([(4..=8, 10)]);
+    /// let joined = left.inner_join(&right, |l, r| format!("{l}{r}"));
+    /// assert_eq!(joined.to_string(), r#"(4..=5, "a10")"#);
+    /// ```
+    #[must_use]
+    pub fn inner_join<V2, W, F>(
+        &self,
+        other: &RangeMapBlaze<T, V2>,
+        mut f: F,
+    ) -> RangeMapBlaze<T, W>
+    where
+        V2: Eq + Clone,
+        W: Eq + Clone,
+        F: FnMut(&V, &V2) -> W,
+    {
+        self.range_values()
+            .inner_join(other.range_values())
+            .transform_values(|(left, right)| f(left, right))
+            .into_range_map_blaze()
+    }
+
+    /// Joins this map with `other` on the keys covered by at least one of them, creating a new map
+    /// whose values are `f` applied to each map's value there, or `None`.
+    ///
+    /// This is a full outer join. `f` is never called with `(None, None)`. It is called once per
+    /// maximal range over which the values are constant, in ascending key order, so it may be
+    /// `FnMut` and keep state. Touching ranges with equal results are merged. When both maps are
+    /// universal (cover every key), it gives the same ranges as [`RangeMapBlaze::inner_join`], with
+    /// every value `Some`. For the lazy, borrowing form, which yields pairs, see
+    /// [`SortedDisjointMap::full_join`]. For three or more maps with one value type, see
+    /// [`MultiwayRangeMapBlazeRef::full_join`].
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
+    ///
+    /// [`MultiwayRangeMapBlazeRef::full_join`]: crate::MultiwayRangeMapBlazeRef::full_join
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeMapBlaze;
+    /// let left = RangeMapBlaze::from_iter([(1..=5, 1)]);
+    /// let right = RangeMapBlaze::from_iter([(4..=8, 10)]);
+    ///
+    /// // Sum the values present, counting a missing value as 0.
+    /// let sums = left.full_join(&right, |l, r| l.unwrap_or(&0) + r.unwrap_or(&0));
+    /// assert_eq!(sums.to_string(), "(1..=3, 1), (4..=5, 11), (6..=8, 10)");
+    /// ```
+    #[must_use]
+    pub fn full_join<V2, W, F>(&self, other: &RangeMapBlaze<T, V2>, mut f: F) -> RangeMapBlaze<T, W>
+    where
+        V2: Eq + Clone,
+        W: Eq + Clone,
+        F: FnMut(Option<&V>, Option<&V2>) -> W,
+    {
+        self.range_values()
+            .full_join(other.range_values())
+            .transform_values(|(left, right)| f(left, right))
+            .into_range_map_blaze()
+    }
+
+    /// Joins this map with `other` on the keys covered by this map, creating a new map whose
+    /// values are `f` applied to this map's value and `other`'s value there, or `None`.
+    ///
+    /// This is a left outer join; for a right join, swap the maps. It stops reading `other` once
+    /// this map's ranges are done. `f` is called once per maximal range over which the values are
+    /// constant, in ascending key order, so it may be `FnMut` and keep state. Touching ranges with
+    /// equal results are merged. For the lazy, borrowing form, which yields pairs, see
+    /// [`SortedDisjointMap::left_join`].
+    ///
+    /// See the [joins guide][crate::joins] for how the joins fit together.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeMapBlaze;
+    /// let left = RangeMapBlaze::from_iter([(1..=5, "a")]);
+    /// let right = RangeMapBlaze::from_iter([(4..=8, "b")]);
+    ///
+    /// // Is each left range also covered by the right?
+    /// let covered = left.left_join(&right, |_, r| r.is_some());
+    /// assert_eq!(covered.to_string(), "(1..=3, false), (4..=5, true)");
+    /// ```
+    #[must_use]
+    pub fn left_join<V2, W, F>(&self, other: &RangeMapBlaze<T, V2>, mut f: F) -> RangeMapBlaze<T, W>
+    where
+        V2: Eq + Clone,
+        W: Eq + Clone,
+        F: FnMut(&V, Option<&V2>) -> W,
+    {
+        self.range_values()
+            .left_join(other.range_values())
+            .transform_values(|(left, right)| f(left, right))
+            .into_range_map_blaze()
+    }
+
+    /// Returns a map with the same keys, where each value is replaced by `f` applied to it.
+    ///
+    /// `f` is called once per range, in ascending key order, so it may be `FnMut` and keep
+    /// state (for example, assigning new IDs as values are first seen). Touching ranges whose new
+    /// values are equal are merged, so the result is in canonical form.
+    ///
+    /// The result has the same [`RangeMapBlaze::len`] as `self`. This is a thin wrapper over the
+    /// stream form, [`SortedDisjointMap::transform_values`], on [`RangeMapBlaze::range_values`];
+    /// the result is built in one pass, without re-inserting ranges.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeMapBlaze;
+    /// let map = RangeMapBlaze::from_iter([(1..=3, 10), (4..=6, 11), (8..=9, 20)]);
+    ///
+    /// let parity = map.transform_values(|value| value % 2);
+    /// assert_eq!(parity.to_string(), "(1..=3, 0), (4..=6, 1), (8..=9, 0)");
+    ///
+    /// // Touching ranges whose new values are equal are merged.
+    /// let tens = map.transform_values(|value| value / 10);
+    /// assert_eq!(tens.to_string(), "(1..=6, 1), (8..=9, 2)");
+    /// assert_eq!(tens.len(), map.len());
+    /// ```
+    ///
+    /// Keeping state, here numbering values in the order they are first seen:
+    ///
+    /// ```
+    /// # use range_set_blaze::RangeMapBlaze;
+    /// let map = RangeMapBlaze::from_iter([(0..=9, "red"), (10..=19, "blue"), (20..=29, "red")]);
+    /// let mut seen = Vec::new();
+    /// let ids = map.transform_values(|value| {
+    ///     seen.iter().position(|v| v == value).unwrap_or_else(|| {
+    ///         seen.push(*value);
+    ///         seen.len() - 1
+    ///     })
+    /// });
+    /// assert_eq!(ids.to_string(), "(0..=9, 0), (10..=19, 1), (20..=29, 0)");
+    /// ```
+    ///
+    /// See the [joins guide][crate::joins] for composing with joins.
+    #[must_use]
+    pub fn transform_values<W, F>(&self, f: F) -> RangeMapBlaze<T, W>
+    where
+        W: Eq + Clone,
+        F: FnMut(&V) -> W,
+    {
+        self.range_values()
+            .transform_values(f)
+            .into_range_map_blaze()
+    }
+
     /// An iterator that visits the ranges and values in the [`RangeMapBlaze`]. Double-ended.
     ///
     /// Also see [`RangeMapBlaze::iter`] and [`RangeMapBlaze::range_values`].
@@ -2779,7 +3046,7 @@ map_op!(
 
     // ── owned ^ owned ────────────────────────────────────────────
     |a, b| {
-        SymDiffIterMap::new2(
+        SymmetricDifferenceMap::new2(
             a.into_range_values(),
             b.into_range_values(),
         )
@@ -2788,7 +3055,7 @@ map_op!(
 
     // ── owned ^ &borrowed ────────────────────────────────────────
     |a, &b| {
-        SymDiffIterMap::new2(
+        SymmetricDifferenceMap::new2(
             a.range_values(),
             b.range_values(),
         )
@@ -2797,7 +3064,7 @@ map_op!(
 
     // ── &borrowed ^ owned ────────────────────────────────────────
     |&a, b| {
-        SymDiffIterMap::new2(
+        SymmetricDifferenceMap::new2(
             a.range_values(),
             b.range_values(),
         )
@@ -2806,7 +3073,7 @@ map_op!(
 
     // ── &borrowed ^ &borrowed ────────────────────────────────────
     |&a, &b| {
-        SymDiffIterMap::new2(
+        SymmetricDifferenceMap::new2(
             a.range_values(),
             b.range_values(),
         )

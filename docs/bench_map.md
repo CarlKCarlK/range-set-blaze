@@ -6,16 +6,16 @@
 
 Updated: *September 2026*
 
-| Crate | # Downloads (all-time) | Ranges | Element Type | Set Operations? | Internal | Maps, too? |
+| Crate | # Downloads (all-time) | Ranges | Element Type | Set and Join Operations? | Internal | Maps, too? |
 | --- | --- | --- | --- | --- | --- | --- |
-|[range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) | 5,379,999 | Disjoint | Integer, char, IPv4, IPv6² | Full set ops | BTreeMap | Sets/Maps |
-|[rangemap](https://crates.io/crates/rangemap) | 35,175,172 | Disjoint | Ord | No set ops on `RangeMap`¹ | BTreeMap | Sets/Maps |
-|[sorted-iter](https://crates.io/crates/sorted-iter) | 773,706 | No | Ord | Full set ops | *n/a* | Sets/Maps |
-|[iset](https://crates.io/crates/iset) | 554,439 | Overlapping | PartialOrd | No set algebra | Red Black | Sets/Maps |
+|[range-set-blaze](https://github.com/CarlKCarlK/range-set-blaze) | 5,379,999 | Disjoint | Integer, char, IPv4, IPv6² | Full set ops; inner, left, and full joins (two-way and multiway) | BTreeMap | Sets/Maps |
+|[rangemap](https://crates.io/crates/rangemap) | 35,175,172 | Disjoint | Ord | None on `RangeMap`¹ | BTreeMap | Sets/Maps |
+|[sorted-iter](https://crates.io/crates/sorted-iter) | 773,706 | No | Ord | Full set ops; inner, left, right, and outer joins | *n/a* | Sets/Maps |
+|[iset](https://crates.io/crates/iset) | 554,439 | Overlapping | PartialOrd | None | Red Black | Sets/Maps |
 
 > *Download counts are all-time totals from the crates.io API, as of September 2026.*
 >
-> ¹ Since v1.5.0, `rangemap`'s `RangeSet` type has gained `union`/`intersection` methods (see the [set benchmarks](bench.md) for that comparison), but its `RangeMap` type — the one relevant to this page — still has no set-operation methods.
+> ¹ Since v1.5.0, `rangemap`'s `RangeSet` type has gained `union`/`intersection` methods (see the [set benchmarks](bench.md) for that comparison), but its `RangeMap` type — the one relevant to this page — still has no set-operation or join methods (as of v1.8.0).
 >
 > ² `range-set-blaze` also has experimental floating-point support (`float_experimental` / `float_nightly_experimental` features), not listed above because it is feature-gated and not part of the crate's normal advertised element types.
 
@@ -29,7 +29,7 @@ I evaluated:
 The `rangemap` crate, like this `range-set-blaze` crate, stores disjoint ranges in a `BTreeMap`.
 I eliminated crates that store overlapping ranges, a different data structure (for example, `iset`).
 
-Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). None of the remaining crates' map types offered set operations. (The inspirational `sorted-iter` does, but it is designed to work on sorted values, not ranges, and so is not included. `rangemap`'s `RangeSet` type gained `union`/`intersection` as of v1.5.0 — see the [set benchmarks](bench.md) — but that addition did not extend to its `RangeMap` type, so it remains excluded here.)
+Finally, I looked for crates that supported set operations (for example, union, intersection, set difference). None of the remaining crates' map types offered set or join operations. (The inspirational `sorted-iter` does, but it is designed to work on sorted values, not ranges, and so is not included. `rangemap`'s `RangeSet` type gained `union`/`intersection` as of v1.5.0 — see the [set benchmarks](bench.md) — but that addition did not extend to its `RangeMap` type, so it remains excluded here.)
 
 If I misunderstood any of the crates, please let me know. If you'd like to benchmark a crate, the benchmarking code is in the `benches` directory of this repository.
 
