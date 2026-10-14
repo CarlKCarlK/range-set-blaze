@@ -74,6 +74,8 @@ pub(crate) fn from_slice_ranges<T: SimdInteger>(
 
 /// Like [`from_slice_ranges`], but with a given unroll factor (see [`UNROLL`]), and returning
 /// `(start, end)` pairs, which are smaller than `RangeInclusive` and so faster to collect and sort.
+// TODO When the MSRV supports the new `Copy` range types (`core::range::RangeInclusive`, which,
+// unlike `core::ops::RangeInclusive`, has no iterator state), use them here instead of pairs.
 #[inline]
 fn from_slice_ranges_unrolled<T: SimdInteger, const N: usize>(
     level: Level,
