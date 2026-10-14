@@ -7,14 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+This release is not breaking.
+
 ### Changed
 
-- **Breaking: `RangeSetBlaze::from_slice` now works on stable Rust and is no longer behind a
-  Cargo feature.** The `from_slice` feature has been removed; the constructor, and its
-  `fearless_simd` and `bytemuck` dependencies, are now unconditional parts of the crate, available
-  in every build (including `no_std`). Downstream `Cargo.toml`s that list
-  `features = ["from_slice"]` must drop that feature name — the crate will otherwise fail to
-  resolve.
+- **`RangeSetBlaze::from_slice` now works on stable Rust and is no longer behind a Cargo
+  feature.** The constructor, and its `fearless_simd` and `bytemuck` dependencies, are now
+  unconditional parts of the crate, available in every build (including `no_std`). The
+  `from_slice` feature still exists so that `features = ["from_slice"]` keeps resolving, but it
+  does nothing and is deprecated; drop it at your convenience.
+- `Integer::from_slice` now has a default implementation (collecting like `from_iter`), so it is
+  not a new required method for types outside this crate that implement `Integer`.
 - The SIMD implementation moved off nightly-only `portable_simd` onto [`fearless_simd`], which
   runs on stable Rust:
   - With the `std` feature (the default), the best SIMD instructions supported by the CPU running
@@ -31,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- **Breaking:** the `from_slice` Cargo feature, and the `build-simd` and `test-simd` just recipes.
+- The `build-simd` and `test-simd` just recipes.
 - The unused `num-integer` dependency.
 
 [`fearless_simd`]: https://crates.io/crates/fearless_simd

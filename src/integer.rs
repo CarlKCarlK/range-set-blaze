@@ -98,8 +98,15 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
 
     /// Creates a [`RangeSetBlaze`] from a slice, specific to the integer type.
     ///
+    /// The default collects the slice like [`RangeSetBlaze::from_iter`]. The primitive
+    /// integer types override it with a SIMD-accelerated version.
+    ///
     /// [`RangeSetBlaze`]: crate::RangeSetBlaze
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self>;
+    /// [`RangeSetBlaze::from_iter`]: crate::RangeSetBlaze::from_iter
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        RangeSetBlaze::from_iter(slice.as_ref())
+    }
 
     /// The type representing the safe length for a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `u16` to handle ranges up to 256 elements.
     /// For larger types like `u128`, this is represented by a custom type `UIntPlusOne<u128>`.
@@ -352,11 +359,6 @@ impl Integer for i128 {
         Self::MAX
     }
 
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        RangeSetBlaze::from_iter(slice.as_ref())
-    }
-
     #[allow(clippy::cast_sign_loss)]
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         debug_assert!(r.start() <= r.end());
@@ -488,11 +490,6 @@ impl Integer for u128 {
     #[inline]
     fn max_value() -> Self {
         Self::MAX
-    }
-
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        RangeSetBlaze::from_iter(slice.as_ref())
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -656,11 +653,6 @@ impl Integer for Ipv4Addr {
         Self::new(255, 255, 255, 255)
     }
 
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        RangeSetBlaze::from_iter(slice.as_ref())
-    }
-
     #[allow(clippy::cast_lossless)]
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
         let start_num = u32::from(*r.start());
@@ -757,11 +749,6 @@ impl Integer for Ipv6Addr {
     #[inline]
     fn max_value() -> Self {
         Self::from(u128::MAX)
-    }
-
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        RangeSetBlaze::from_iter(slice.as_ref())
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
@@ -911,11 +898,6 @@ impl Integer for char {
     #[inline]
     fn max_value() -> Self {
         '\u{10FFFF}'
-    }
-
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        RangeSetBlaze::from_iter(slice.as_ref())
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {

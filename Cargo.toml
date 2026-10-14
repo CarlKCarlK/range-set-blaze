@@ -48,6 +48,9 @@ float_nightly_experimental = []
 # Enables nightly-only B-tree cursor implementations for lookup and insertion.
 cursor_nightly_experimental = []
 test_util = ["rand"]
+# Deprecated no-op, kept so `features = ["from_slice"]` still resolves.
+# `from_slice` is now always available on stable Rust.
+from_slice = []
 
 [dependencies]
 itertools = { version = "0.14.0", default-features = false, features = [
