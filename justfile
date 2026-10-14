@@ -5,7 +5,7 @@
 
 # Pinned nightly, mirroring ci.yml. Keeps a new upstream Clippy lint (or other
 # nightly change) from silently breaking local/CI checks. Bump deliberately.
-nightly := "nightly-2026-09-15"
+nightly := "nightly-2026-10-12"
 
 # MSRV: keep in sync with `rust-version` in Cargo.toml and the `test_msrv` job in ci.yml.
 msrv := "1.89"

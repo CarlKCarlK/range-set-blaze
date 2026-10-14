@@ -49,8 +49,8 @@ jobs:
         # `nightly` breaks CI whenever upstream adds a new Clippy lint (as
         # `clippy::single_range_in_vec_init` did). Bump the date deliberately.
         run: |
-          rustup toolchain install nightly-2026-09-15 --component clippy --allow-downgrade
-          rustup override set nightly-2026-09-15
+          rustup toolchain install nightly-2026-10-12 --component clippy --allow-downgrade
+          rustup override set nightly-2026-10-12
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
         with:
@@ -84,7 +84,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@1.99.0
       - name: Setup Rust nightly
-        run: rustup toolchain install nightly-2026-09-15 --allow-downgrade
+        run: rustup toolchain install nightly-2026-10-12 --allow-downgrade
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
       - name: Install tools
@@ -94,7 +94,7 @@ jobs:
           tool: cargo-deadlinks,cargo-audit,cargo-deny
       - name: Check dead links in documentation
         run: |
-          RUSTDOCFLAGS="--cfg docsrs" cargo +nightly-2026-09-15 doc --no-deps --all-features
+          RUSTDOCFLAGS="--cfg docsrs" cargo +nightly-2026-10-12 doc --no-deps --all-features
           RUST_LOG=error cargo deadlinks --dir target/doc/range_set_blaze
       - name: Audit dependencies (security & license)
         run: |
@@ -170,8 +170,8 @@ jobs:
         run: |
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
-          rustup toolchain install nightly-2026-09-15 --allow-downgrade
-          rustup override set nightly-2026-09-15
+          rustup toolchain install nightly-2026-10-12 --allow-downgrade
+          rustup override set nightly-2026-10-12
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
           cargo check --target thumbv7m-none-eabi --no-default-features --features float_nightly_experimental

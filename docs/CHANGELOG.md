@@ -32,6 +32,9 @@ This release is not breaking.
   element-by-element, closing most of the previous performance gap between `isize`/`usize` and
   the corresponding fixed-width integer types.
 
+- The pinned nightly toolchain is now `nightly-2026-10-12` (was `nightly-2026-09-15`). This
+  affects only local builds and CI.
+
 ### Removed
 
 - The `build-simd` and `test-simd` just recipes.
