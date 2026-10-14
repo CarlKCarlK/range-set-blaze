@@ -2193,7 +2193,7 @@ fn map_random_from_iter_range() {
             inputs.push((key.clone(), value));
 
             let range_map_blaze = inputs.iter().collect();
-            for k in key.clone() {
+            for k in key {
                 btree_map.insert(k, value);
             }
             if !equal_maps(&range_map_blaze, &btree_map) {
@@ -2261,7 +2261,7 @@ fn map_random_insert_range() {
             }
             range_map_blaze.ranges_insert(key.clone(), *value);
             if equal_maps(&range_map_blaze, &btree_map) {
-                inputs.push((key.clone(), value));
+                inputs.push((key, value));
                 continue;
             }
 
@@ -2270,7 +2270,7 @@ fn map_random_insert_range() {
             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone());
             println!("{range_map_blaze}");
             println!("About to insert {}..={} -> {value}", key.start(), key.end());
-            range_map_blaze.ranges_insert(key.clone(), *value);
+            range_map_blaze.ranges_insert(key, *value);
             assert!(equal_maps(&range_map_blaze, &btree_map));
         }
     }
@@ -2333,14 +2333,14 @@ fn map_random_ranges_ranges() {
             range_set_blaze.ranges_insert(key.clone());
             range_map_blaze.ranges_insert(key.clone(), *value);
             if range_set_blaze.ranges().eq(range_map_blaze.ranges()) {
-                inputs.push((key.clone(), value));
+                inputs.push((key, value));
                 continue;
             }
 
             // if range_map_blaze and btree_map are not equal, then we have a bug, so repro it:
 
             let mut range_map_blaze = RangeMapBlaze::from_iter(inputs.clone());
-            range_map_blaze.ranges_insert(key.clone(), *value);
+            range_map_blaze.ranges_insert(key, *value);
             assert!(range_set_blaze.ranges().eq(range_map_blaze.ranges()));
         }
     }
@@ -3679,7 +3679,7 @@ fn test_clumpy_map_iter() {
         let vec: Vec<(u32, u32)> = ClumpyMapIter::new(
             &mut StdRng::seed_from_u64(seed),
             clump_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,

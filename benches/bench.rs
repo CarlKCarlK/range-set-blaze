@@ -1304,7 +1304,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
         let vec_range: Vec<RangeInclusive<u32>> = MemorylessRange::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -1394,7 +1394,7 @@ fn ingest_clumps_cursor(c: &mut Criterion) {
         let vec_range: Vec<RangeInclusive<u32>> = MemorylessRange::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -1454,7 +1454,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
         let vec: Vec<u32> = MemorylessIter::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -1541,7 +1541,7 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
         let vec: Vec<u32> = MemorylessIter::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -1740,7 +1740,7 @@ fn ingest_clumps_ranges(c: &mut Criterion) {
         let vec_range: Vec<RangeInclusive<u32>> = MemorylessRange::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -1809,7 +1809,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
         let vec_range: Vec<RangeInclusive<u32>> = MemorylessRange::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,

@@ -122,7 +122,7 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
         let vec: Vec<(u32, u32)> = ClumpyMapIter::new(
             &mut StdRng::seed_from_u64(seed),
             clump_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -209,7 +209,7 @@ fn map_ingest_clumps_ranges(c: &mut Criterion) {
         let vec_range: Vec<(RangeInclusive<u32>, u32)> = ClumpyMapRange::new(
             &mut StdRng::seed_from_u64(seed),
             clump_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -307,7 +307,7 @@ fn map_ingest_clumps_cursor(c: &mut Criterion) {
         let vec_range: Vec<(RangeInclusive<u32>, u32)> = ClumpyMapRange::new(
             &mut StdRng::seed_from_u64(seed),
             clump_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,

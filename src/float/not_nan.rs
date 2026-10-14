@@ -65,7 +65,7 @@ macro_rules! not_nan_const_constructor {
     ($name:ident, $primitive:ty, $not_nan:ty) => {
         const fn $name(x: $primitive) -> $not_nan {
             assert!(!x.is_nan(), "NotNan type requires a non-NaN value");
-            let normalized = if x == 0.0 && x.is_sign_negative() {
+            let normalized = if x.to_bits() == (-0.0 as $primitive).to_bits() {
                 0.0
             } else {
                 x

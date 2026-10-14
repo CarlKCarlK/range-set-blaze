@@ -1263,7 +1263,7 @@ fn range_set_blaze_slice_constructor() {
         let vec: Vec<u32> = MemorylessIter::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,

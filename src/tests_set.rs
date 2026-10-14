@@ -1189,24 +1189,29 @@ fn test_is_consecutive() {
 }
 
 fn assert_is_consecutive<S: fearless_simd::Simd>(simd: S) {
-    use from_slice::is_consecutive;
+    use fearless_simd::SimdBase;
+    use from_slice::{SimdInteger, is_consecutive};
 
-    let values = (10..26).collect::<Vec<i8>>();
+    // Each check is exactly one vector long for its type.
+    fn lanes<T: SimdInteger, S: fearless_simd::Simd>() -> usize {
+        <T::Vector<S> as SimdBase<S>>::LEN
+    }
+
+    let values = (10i8..).take(lanes::<i8, S>()).collect::<Vec<_>>();
     assert!(is_consecutive(simd, &values));
 
     // Wrapping lane arithmetic must not make these look consecutive.
-    let values = (250..=255).chain(0..10).collect::<Vec<u8>>();
-    assert!(!is_consecutive(simd, &values));
-    let values = (i64::MAX - 3..=i64::MAX)
-        .chain(i64::MIN..=i64::MIN + 3)
+    let values = (250u8..=255)
+        .chain(0..)
+        .take(lanes::<u8, S>())
         .collect::<Vec<_>>();
     assert!(!is_consecutive(simd, &values));
-    let lanes = if cfg!(target_pointer_width = "64") {
-        8
-    } else {
-        16
-    };
-    let values = (0..lanes)
+    let values = (i64::MAX - 3..=i64::MAX)
+        .chain(i64::MIN..)
+        .take(lanes::<i64, S>())
+        .collect::<Vec<_>>();
+    assert!(!is_consecutive(simd, &values));
+    let values = (0..lanes::<usize, S>())
         .map(|index| usize::MAX.wrapping_sub(3).wrapping_add(index))
         .collect::<Vec<_>>();
     assert!(!is_consecutive(simd, &values));
