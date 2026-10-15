@@ -16,6 +16,7 @@ use core::{
 };
 
 use super::not_nan_float::NotNanFloat;
+use alloc::vec::Vec;
 
 use crate::Integer;
 use crate::RangeSetBlaze;
@@ -444,16 +445,63 @@ impl<T: NotNanFloat> NotNan<T> {
     /// # Panics
     ///
     /// Panics if any element is NaN, or is `-0.0` (which can't be normalized to `+0.0`
-    /// without copying — see [`NotNan::from_primitive_slice_unchecked`] if you need a true
+    /// in a view — use [`NotNan::from_primitive_vec`] to normalize it in an owned vector, or
+    /// see [`NotNan::from_primitive_slice_unchecked`] if you need a true
     /// zero-copy view and can guarantee your data already satisfies [`NotNan`]'s invariant).
+    ///
+    /// # Performance
+    ///
+    /// The validation uses SIMD, selected as described in [`RangeSetBlaze::from_slice`].
     #[must_use]
     pub fn from_primitive_slice(values: &[T]) -> &[Self] {
         assert!(
-            values.iter().all(|&v| !T::is_nan(v) && !T::is_neg_zero(v)),
+            T::all_not_nan_or_neg_zero(values),
             "NotNan type requires non-NaN, non-negative-zero values"
         );
         // SAFETY: just validated every element is not NaN and not -0.0.
         unsafe { Self::from_primitive_slice_unchecked(values) }
+    }
+
+    /// Converts a vector of primitive values into ordered [`NotNan`] values, in place,
+    /// normalizing `-0.0` to `+0.0`.
+    ///
+    /// "Primitive" here means Rust's built-in float type (e.g. `f64`).
+    ///
+    /// Unlike [`NotNan::from_primitive_slice`], this accepts `-0.0`. It runs in `O(n)`, using
+    /// SIMD selected as described in [`RangeSetBlaze::from_slice`], and reuses the vector's
+    /// allocation.
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::{RangeSetBlaze, NotNanF64};
+    ///
+    /// let not_nans = NotNanF64::from_primitive_vec(vec![1.0, -0.0, 2.0]);
+    /// assert_eq!(not_nans, [NotNanF64::new(1.0), NotNanF64::new(0.0), NotNanF64::new(2.0)]);
+    /// let set = RangeSetBlaze::from_slice(&not_nans);
+    /// assert!(set.contains(NotNanF64::new(0.0)));
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if any element is NaN.
+    #[must_use]
+    pub fn from_primitive_vec(mut values: Vec<T>) -> Vec<Self> {
+        assert!(
+            T::normalize_neg_zeros_and_check_not_nan(&mut values),
+            "NotNan type requires non-NaN values"
+        );
+        // Wrap only after the check, so a NaN panic still frees the vector.
+        let mut values = mem::ManuallyDrop::new(values);
+        // SAFETY: NotNan<T> is #[repr(transparent)] over T, so the allocation's size and
+        // alignment are unchanged, and every element was just checked not NaN and had any
+        // -0.0 normalized to +0.0. `ManuallyDrop` keeps the original vector from freeing it.
+        unsafe {
+            Vec::from_raw_parts(
+                values.as_mut_ptr().cast::<Self>(),
+                values.len(),
+                values.capacity(),
+            )
+        }
     }
 
     /// Views primitive values as ordered [`NotNan`] values, without validating them.

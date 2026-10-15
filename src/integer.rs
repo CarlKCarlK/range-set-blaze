@@ -1,4 +1,4 @@
-use crate::{RangeSetBlaze, UIntPlusOne, from_slice};
+use crate::{RangeMapBlaze, RangeSetBlaze, UIntPlusOne, from_slice};
 use core::hash::Hash;
 use core::net::{Ipv4Addr, Ipv6Addr};
 use core::ops::{AddAssign, SubAssign};
@@ -99,13 +99,37 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     /// Creates a [`RangeSetBlaze`] from a slice, specific to the integer type.
     ///
     /// The default collects the slice like [`RangeSetBlaze::from_iter`]. The primitive
-    /// integer types override it with a SIMD-accelerated version.
+    /// integer types, `char`, `Ipv4Addr`, and `Ipv6Addr` override it with a SIMD-accelerated
+    /// version.
     ///
     /// [`RangeSetBlaze`]: crate::RangeSetBlaze
     /// [`RangeSetBlaze::from_iter`]: crate::RangeSetBlaze::from_iter
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         RangeSetBlaze::from_iter(slice.as_ref())
+    }
+
+    /// Creates a [`RangeMapBlaze`] from a slice of keys and a same-length slice of values,
+    /// specific to the integer type.
+    ///
+    /// The default collects the pairs like [`RangeMapBlaze::from_iter`]. The primitive
+    /// integer types, `char`, `Ipv4Addr`, and `Ipv6Addr` override it with a version that uses
+    /// SIMD on the keys.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `keys` and `values` have different lengths.
+    ///
+    /// [`RangeMapBlaze`]: crate::RangeMapBlaze
+    /// [`RangeMapBlaze::from_iter`]: crate::RangeMapBlaze::from_iter
+    #[inline]
+    fn from_slices<V: Eq + Clone>(keys: &[Self], values: &[V]) -> RangeMapBlaze<Self, V> {
+        assert_eq!(
+            keys.len(),
+            values.len(),
+            "keys and values must have the same length"
+        );
+        keys.iter().copied().zip(values).collect()
     }
 
     /// The type representing the safe length for a [`RangeSetBlaze`]. For example, the length of a `RangeSetBlaze<u8>` is `u16` to handle ranges up to 256 elements.
@@ -222,6 +246,11 @@ macro_rules! impl_integer_ops {
             from_slice::from_slice(slice.as_ref())
         }
 
+        #[inline]
+        fn from_slices<V: Eq + Clone>(keys: &[Self], values: &[V]) -> RangeMapBlaze<Self, V> {
+            from_slice::from_slices(keys, values)
+        }
+
         #[allow(clippy::cast_sign_loss)]
         fn safe_len(r: &RangeInclusive<Self>) -> <Self as Integer>::SafeLen {
             // 1️⃣ Contract: caller promises start ≤ end  (checked only in debug builds)
@@ -318,6 +347,16 @@ impl Integer for u64 {
 
 impl Integer for i128 {
     type SafeLen = UIntPlusOne<u128>;
+
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        from_slice::from_slice(slice.as_ref())
+    }
+
+    #[inline]
+    fn from_slices<V: Eq + Clone>(keys: &[Self], values: &[V]) -> RangeMapBlaze<Self, V> {
+        from_slice::from_slices(keys, values)
+    }
 
     #[inline]
     fn checked_add_one(self) -> Option<Self> {
@@ -451,6 +490,16 @@ impl Integer for i128 {
 
 impl Integer for u128 {
     type SafeLen = UIntPlusOne<Self>;
+
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        from_slice::from_slice(slice.as_ref())
+    }
+
+    #[inline]
+    fn from_slices<V: Eq + Clone>(keys: &[Self], values: &[V]) -> RangeMapBlaze<Self, V> {
+        from_slice::from_slices(keys, values)
+    }
 
     #[inline]
     fn checked_add_one(self) -> Option<Self> {
@@ -610,6 +659,16 @@ impl Integer for Ipv4Addr {
     type SafeLen = u64;
 
     #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        from_slice::from_slice(slice.as_ref())
+    }
+
+    #[inline]
+    fn from_slices<V: Eq + Clone>(keys: &[Self], values: &[V]) -> RangeMapBlaze<Self, V> {
+        from_slice::from_slices(keys, values)
+    }
+
+    #[inline]
     fn checked_add_one(self) -> Option<Self> {
         let num = u32::from(self);
         num.checked_add(1).map(Self::from)
@@ -706,6 +765,16 @@ impl Integer for Ipv4Addr {
 
 impl Integer for Ipv6Addr {
     type SafeLen = UIntPlusOne<u128>;
+
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        from_slice::from_slice(slice.as_ref())
+    }
+
+    #[inline]
+    fn from_slices<V: Eq + Clone>(keys: &[Self], values: &[V]) -> RangeMapBlaze<Self, V> {
+        from_slice::from_slices(keys, values)
+    }
 
     #[inline]
     fn checked_add_one(self) -> Option<Self> {
@@ -846,6 +915,16 @@ impl Integer for char {
     // in general, the length of a 32-bit inclusive range does not fit in a u32,
     // but unicode doesn't use the full range, so it does fit
     type SafeLen = u32;
+
+    #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        from_slice::from_slice(slice.as_ref())
+    }
+
+    #[inline]
+    fn from_slices<V: Eq + Clone>(keys: &[Self], values: &[V]) -> RangeMapBlaze<Self, V> {
+        from_slice::from_slices(keys, values)
+    }
 
     #[inline]
     fn checked_add_one(self) -> Option<Self> {

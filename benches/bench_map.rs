@@ -141,6 +141,18 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
             },
         );
 
+        // Columnar input: keys and values in separate slices.
+        let (keys, values): (Vec<u32>, Vec<u32>) = vec.iter().copied().unzip();
+        group.bench_with_input(
+            BenchmarkId::new("5. RangeMapBlaze::from_slices", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeMapBlaze::from_slices(&keys, &values);
+                });
+            },
+        );
+
         group.bench_with_input(
             BenchmarkId::new("3. BTreeMap", parameter),
             &parameter,

@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This release is not breaking.
 
+### Added
+
+- **`RangeMapBlaze::from_slices(keys, values)`** builds a map from a slice of keys and a
+  same-length slice of values (two columns of a table), using SIMD to find runs of consecutive
+  keys. Values may be any `V: Eq + Clone`; cheap-to-compare values such as integers are compared
+  in blocks that LLVM vectorizes. On clumpy data it is about 10 to 25 times faster than
+  `from_iter`. It panics if the lengths differ. `Integer::from_slices` backs it, with a default
+  implementation, so it is not a new required method.
+- **`NotNan::from_primitive_vec`** converts a `Vec<f64>` (or `f32`, ...) into `NotNan` values in
+  place, reusing the allocation, normalizing `-0.0` to `+0.0`, and panicking on NaN.
+- The float docs have a new "From Native Float Slices and Vectors" section on bulk conversion.
+
 ### Changed
 
 - **`RangeSetBlaze::from_slice` now works on stable Rust and is no longer behind a Cargo
@@ -36,6 +48,11 @@ This release is not breaking.
   smaller intermediate ranges, and uses 512-bit vectors for every integer type (previously 128 or
   256 bits for 8- and 16-bit types). On clumpy data it is typically 10 to 20 times faster than
   `from_iter`/`collect`; checked on AMD, Intel, and ARM (including Apple) CPUs.
+- `from_slice` now uses SIMD for `char`, `Ipv4Addr`, `u128`, `i128`, and `Ipv6Addr` too. 128-bit
+  values span two 64-bit lanes; the IP address types, whose memory layout Rust doesn't guarantee,
+  are converted lane by lane rather than reinterpreted. On clumpy data they are 6 to 31 times
+  faster than `from_iter`.
+- `NotNan::from_primitive_slice` now validates `f32`/`f64` with SIMD (about 11 times faster).
 - The docs, README, and examples now recommend `from_slice` whenever the integers are in a slice,
   array, or `Vec`.
 - The pinned nightly toolchain is now `nightly-2026-10-12` (was `nightly-2026-09-15`). This

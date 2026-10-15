@@ -67,6 +67,40 @@
 //! assert!(!set.contains(tf32(6.0)));
 //! ```
 //!
+//! ## From Native Float Slices and Vectors
+//!
+//! To build a set or map from many native floats (e.g. `f64`), first convert them in bulk, then
+//! pass the result to [`RangeSetBlaze::from_slice`] or [`RangeMapBlaze::from_slices`]:
+//!
+//! | You have   | Convert with                          | Copies? | NaN    | `-0.0`               |
+//! |------------|---------------------------------------|---------|--------|----------------------|
+//! | `&[f64]`   | [`NotNanF64::from_primitive_slice`]   | No (a view) | panics | panics (a view can't rewrite it) |
+//! | `Vec<f64>` | [`NotNanF64::from_primitive_vec`]     | No (reuses the allocation) | panics | normalized to `+0.0` |
+//! | `&[f64]`   | [`TotalF64::from_primitive_slice`]    | No (a view) | kept   | kept, distinct from `+0.0` |
+//!
+//! The `NotNan` conversions check every value with SIMD for `f32`/`f64`, so they cost about as
+//! much as reading the data once. The same methods exist for the other sizes.
+//!
+//! ```
+//! use range_set_blaze::{NotNanF64, RangeMapBlaze, RangeSetBlaze};
+//!
+//! // A view: no copy, but `-0.0` (like NaN) panics.
+//! let data = [1.0, 2.0, 5.0];
+//! let set = RangeSetBlaze::from_slice(NotNanF64::from_primitive_slice(&data));
+//! assert!(set.contains(NotNanF64::new(5.0)));
+//!
+//! // From an owned vector: reuses its allocation, and turns `-0.0` into `+0.0`.
+//! let keys = NotNanF64::from_primitive_vec(vec![-0.0, 1.0, 2.0]);
+//! let map = RangeMapBlaze::from_slices(&keys, ["a", "b", "b"]);
+//! assert_eq!(map.get(NotNanF64::new(0.0)), Some(&"a"));
+//! ```
+//!
+//! [`RangeSetBlaze::from_slice`]: crate::RangeSetBlaze::from_slice
+//! [`RangeMapBlaze::from_slices`]: crate::RangeMapBlaze::from_slices
+//! [`NotNanF64::from_primitive_slice`]: crate::NotNan::from_primitive_slice
+//! [`NotNanF64::from_primitive_vec`]: crate::NotNan::from_primitive_vec
+//! [`TotalF64::from_primitive_slice`]: crate::Total::from_primitive_slice
+//!
 //! ## Example: Coalescing Two Billion f32's
 #![doc = concat!(
     "````rust,no_run\n",
@@ -128,6 +162,7 @@
 //! ```
 
 mod not_nan_float;
+mod not_nan_simd;
 mod total_float;
 
 pub mod total;

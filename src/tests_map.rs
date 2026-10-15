@@ -875,3 +875,181 @@ fn test_union_2() {
         }
     }
 }
+
+/// Checks `from_slices` against `from_iter` on every testable SIMD level.
+fn assert_from_slices_matches_from_iter<T, V>(keys: &[T], values: &[V])
+where
+    T: crate::from_slice::SimdInteger,
+    V: Eq + Clone + fmt::Debug,
+{
+    let expected: RangeMapBlaze<T, V> = keys.iter().copied().zip(values.iter().cloned()).collect();
+    for level in crate::from_slice::testable_levels() {
+        assert_eq!(
+            crate::from_slice::from_slices_at_level(level, keys, values),
+            expected,
+            "{level:?} disagrees with from_iter on {keys:?} -> {values:?}"
+        );
+    }
+    assert_eq!(RangeMapBlaze::from_slices(keys, values), expected);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slices_matches_from_iter() {
+    use rand::{Rng, SeedableRng, rngs::StdRng};
+
+    let mut rng = StdRng::seed_from_u64(0);
+    macro_rules! check_types {
+        ($($type:ty),+) => {$(
+            // Consecutive keys that wrap from MAX to MIN, at every offset and alignment.
+            for before_wrap in [0, 1, 15, 16, 31, 32, 63, 64, 100, 127] {
+                for prefix_len in [0_u8, 1, 7, 8, 15, 16] {
+                    let mut key = <$type>::MAX.wrapping_sub(before_wrap);
+                    let keys: Vec<$type> = (0..prefix_len)
+                        .map(|index| <$type>::try_from(index * 7).expect("at most 112"))
+                        .chain(core::iter::repeat_with(|| {
+                            let current = key;
+                            key = key.wrapping_add(1);
+                            current
+                        }).take(200))
+                        .collect();
+                    let values = vec![0_u8; keys.len()];
+                    assert_from_slices_matches_from_iter(&keys, &values);
+                }
+            }
+            // One long run of consecutive keys whose value changes at every possible offset.
+            let keys: Vec<$type> = (0..100).map(|index| <$type>::MIN.wrapping_add(index)).collect();
+            for change_at in 0..=keys.len() {
+                let values: Vec<u8> = (0..keys.len()).map(|index| u8::from(index >= change_at)).collect();
+                assert_from_slices_matches_from_iter(&keys, &values);
+            }
+            // Edge cases.
+            assert_from_slices_matches_from_iter::<$type, u8>(&[], &[]);
+            assert_from_slices_matches_from_iter(&[<$type>::MAX; 40], &(0..40).collect::<Vec<u8>>());
+            // Random clumps of consecutive keys, with duplicates, reversals, and few distinct
+            // values, so runs of keys and runs of values overlap in every way.
+            for _ in 0..200 {
+                let mut keys: Vec<$type> = Vec::new();
+                let mut values: Vec<u8> = Vec::new();
+                while keys.len() < 300 {
+                    let start = <$type>::from_ne_bytes(rng.random());
+                    let run_len = rng.random_range(1..80_usize);
+                    let run = (0..run_len).map(|index| {
+                        start.wrapping_add(<$type>::try_from(index % 64).expect("at most 63"))
+                    });
+                    if rng.random_bool(0.2) {
+                        keys.extend(run.rev());
+                    } else {
+                        keys.extend(run);
+                    }
+                    let mut value = rng.random_range(0..3_u8);
+                    for _ in 0..run_len {
+                        if rng.random_bool(0.05) {
+                            value = rng.random_range(0..3);
+                        }
+                        values.push(value);
+                    }
+                }
+                assert_from_slices_matches_from_iter(&keys, &values);
+            }
+        )+};
+    }
+    check_types!(
+        i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize
+    );
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slices_duplicate_keys_last_value_wins() {
+    let keys: Vec<u32> = (0..100).chain(40..60).chain(50..55).collect();
+    let values: Vec<String> = core::iter::repeat_n("a", 100)
+        .chain(core::iter::repeat_n("b", 20))
+        .chain(core::iter::repeat_n("a", 5))
+        .map(ToOwned::to_owned)
+        .collect();
+    assert_from_slices_matches_from_iter(&keys, &values);
+    assert_eq!(
+        RangeMapBlaze::from_slices(&keys, &values).to_string(),
+        r#"(0..=39, "a"), (40..=49, "b"), (50..=54, "a"), (55..=59, "b"), (60..=99, "a")"#
+    );
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slices_non_simd_keys() {
+    let keys = [1.0, 2.0, 3.0, 24.0, 2.0].map(crate::NotNanF64::new);
+    let values = [1, 1, 1, 2, 3];
+    assert_eq!(
+        RangeMapBlaze::from_slices(keys, values),
+        RangeMapBlaze::from_iter(keys.into_iter().zip(values))
+    );
+}
+
+#[test]
+#[should_panic(expected = "keys and values must have the same length")]
+fn from_slices_length_mismatch_panics() {
+    let _ = RangeMapBlaze::from_slices([1_u32, 2, 3], ["a", "b"]);
+}
+
+#[test]
+#[should_panic(expected = "keys and values must have the same length")]
+fn from_slices_length_mismatch_panics_non_simd_keys() {
+    let _ = RangeMapBlaze::from_slices([1.0, 2.0].map(crate::NotNanF64::new), ["a"]);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slices_char_and_ipv4_match_from_iter() {
+    use core::net::Ipv4Addr;
+    use rand::{Rng, SeedableRng, rngs::StdRng};
+
+    let chars: Vec<char> = (0xD800 - 40..0xD800)
+        .chain(0xE000..0xE000 + 200)
+        .filter_map(char::from_u32)
+        .collect();
+    for change_at in [0, 1, 39, 40, 41, 100, chars.len()] {
+        let values: Vec<u8> = (0..chars.len())
+            .map(|index| u8::from(index >= change_at))
+            .collect();
+        assert_from_slices_matches_from_iter(&chars, &values);
+    }
+    let mut rng = StdRng::seed_from_u64(0);
+    for _ in 0..200 {
+        let mut addrs: Vec<Ipv4Addr> = Vec::new();
+        let mut values: Vec<u8> = Vec::new();
+        while addrs.len() < 300 {
+            let start: u32 = rng.random();
+            let run_len = rng.random_range(1..80_u32);
+            addrs.extend((0..run_len).map(|index| Ipv4Addr::from(start.saturating_add(index))));
+            let mut value = rng.random_range(0..3_u8);
+            for _ in 0..run_len {
+                if rng.random_bool(0.05) {
+                    value = rng.random_range(0..3);
+                }
+                values.push(value);
+            }
+        }
+        assert_from_slices_matches_from_iter(&addrs, &values);
+    }
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slices_128_bit_keys_match_from_iter() {
+    use core::net::Ipv6Addr;
+
+    // Runs whose low half carries into the high half, at several offsets.
+    for before_carry in [0_u128, 1, 3, 4, 5, 31, 32, 100] {
+        let start = (5_u128 << 64) + u128::from(u64::MAX) - before_carry;
+        let keys: Vec<u128> = (start..start + 200).collect();
+        for change_at in [0, 1, before_carry as usize, 150] {
+            let values: Vec<u8> = (0..keys.len())
+                .map(|index| u8::from(index >= change_at))
+                .collect();
+            assert_from_slices_matches_from_iter(&keys, &values);
+            let addrs: Vec<Ipv6Addr> = keys.iter().map(|&key| Ipv6Addr::from(key)).collect();
+            assert_from_slices_matches_from_iter(&addrs, &values);
+        }
+    }
+}

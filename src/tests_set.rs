@@ -1122,7 +1122,9 @@ fn from_slice_matches_from_iter() {
             }
         )+};
     }
-    check_types!(i8, i16, i32, i64, isize, u8, u16, u32, u64, usize);
+    check_types!(
+        i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize
+    );
 }
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
@@ -1192,9 +1194,9 @@ fn assert_is_consecutive<S: fearless_simd::Simd>(simd: S) {
     use fearless_simd::SimdBase;
     use from_slice::{SimdInteger, is_consecutive};
 
-    // Each check is exactly one vector long for its type.
+    // Each check is exactly one chunk (one vector) long for its type.
     fn lanes<T: SimdInteger, S: fearless_simd::Simd>() -> usize {
-        <T::Vector<S> as SimdBase<S>>::LEN
+        <T::Vector<S> as SimdBase<S>>::LEN / T::LANES_PER_VALUE
     }
 
     let values = (10i8..).take(lanes::<i8, S>()).collect::<Vec<_>>();
@@ -1215,6 +1217,37 @@ fn assert_is_consecutive<S: fearless_simd::Simd>(simd: S) {
         .map(|index| usize::MAX.wrapping_sub(3).wrapping_add(index))
         .collect::<Vec<_>>();
     assert!(!is_consecutive(simd, &values));
+
+    // Types that aren't SIMD lane types.
+    let values = ('a'..).take(lanes::<char, S>()).collect::<Vec<_>>();
+    assert!(is_consecutive(simd, &values));
+    let values = (0xC0A8_0000_u32..)
+        .map(core::net::Ipv4Addr::from)
+        .take(lanes::<core::net::Ipv4Addr, S>())
+        .collect::<Vec<_>>();
+    assert!(is_consecutive(simd, &values));
+
+    // 128-bit values, two lanes each: SIMD must see runs with nonzero high halves...
+    let start = (7_u128 << 64) + 100;
+    let values = (start..).take(lanes::<u128, S>()).collect::<Vec<_>>();
+    assert!(is_consecutive(simd, &values));
+    let values = (-1000_i128..).take(lanes::<i128, S>()).collect::<Vec<_>>();
+    assert!(is_consecutive(simd, &values));
+    let values = (start..)
+        .map(core::net::Ipv6Addr::from)
+        .take(lanes::<core::net::Ipv6Addr, S>())
+        .collect::<Vec<_>>();
+    assert!(is_consecutive(simd, &values));
+    // ...but not when only the low halves are consecutive...
+    let values = (0..lanes::<u128, S>())
+        .map(|index| start + index as u128 + (u128::from(index == 1) << 64))
+        .collect::<Vec<_>>();
+    assert!(!is_consecutive(simd, &values));
+    // ...nor across `i128::MAX` to `i128::MIN`, consecutive only as `u128` bits.
+    let values = (0..lanes::<i128, S>())
+        .map(|index| i128::MAX.wrapping_add(index as i128))
+        .collect::<Vec<_>>();
+    assert!(!is_consecutive(simd, &values));
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -1224,4 +1257,103 @@ fn test_extract_range() {
 
     assert_eq!(extract_range((Excluded(0), Included(1))), (1, 1));
     assert_eq!(extract_range(0..1), (0, 0));
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slice_char_and_ipv4_match_from_iter() {
+    use core::net::Ipv4Addr;
+    use rand::{Rng, SeedableRng, rngs::StdRng};
+
+    // `char` runs across the surrogate gap (consecutive chars, but not consecutive lanes) and up
+    // to `char::MAX`, at several alignments.
+    for before_gap in [0_u32, 1, 15, 16, 17, 63, 64, 100] {
+        let chars: Vec<char> = (0xD800 - before_gap..0xD800)
+            .chain(0xE000..0xE000 + 200)
+            .filter_map(char::from_u32)
+            .collect();
+        assert_from_slice_matches_from_iter(&chars);
+        assert_eq!(
+            RangeSetBlaze::from_slice(&chars).ranges_len(),
+            1,
+            "{before_gap}"
+        );
+    }
+    let chars: Vec<char> = (0x10_FFFF - 100..=0x10_FFFF)
+        .filter_map(char::from_u32)
+        .collect();
+    assert_from_slice_matches_from_iter(&chars);
+    let chars: Vec<char> = (0..200).filter_map(char::from_u32).rev().collect();
+    assert_from_slice_matches_from_iter(&chars);
+
+    // `Ipv4Addr` runs touching both ends, and random clumps.
+    let addrs: Vec<Ipv4Addr> = (0..200).map(Ipv4Addr::from).collect();
+    assert_from_slice_matches_from_iter(&addrs);
+    let addrs: Vec<Ipv4Addr> = (u32::MAX - 199..=u32::MAX).map(Ipv4Addr::from).collect();
+    assert_from_slice_matches_from_iter(&addrs);
+    let mut rng = StdRng::seed_from_u64(0);
+    for _ in 0..200 {
+        let mut addrs: Vec<Ipv4Addr> = Vec::new();
+        let mut chars: Vec<char> = Vec::new();
+        while addrs.len() < 300 {
+            let start: u32 = rng.random();
+            let run_len = rng.random_range(1..80_u32);
+            addrs.extend((0..run_len).map(|index| Ipv4Addr::from(start.saturating_add(index))));
+            let start = rng.random_range(0..0x11_0000_u32);
+            chars.extend((0..run_len).filter_map(|index| char::from_u32(start + index)));
+        }
+        assert_from_slice_matches_from_iter(&addrs);
+        assert_from_slice_matches_from_iter(&chars);
+    }
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slice_128_bit_matches_from_iter() {
+    use core::net::Ipv6Addr;
+    use rand::{Rng, SeedableRng, rngs::StdRng};
+
+    // Runs whose low half carries into the high half (consecutive values, but not
+    // `splat(first) + offsets` lane-wise), at several offsets and alignments.
+    for before_carry in [0_u128, 1, 2, 3, 4, 5, 7, 8, 31, 32, 33, 100] {
+        for prefix_len in [0_u128, 1, 3, 4] {
+            let start = (5_u128 << 64) + u128::from(u64::MAX) - before_carry;
+            let keys: Vec<u128> = (0..prefix_len).chain(start..start + 200).collect();
+            assert_from_slice_matches_from_iter(&keys);
+            assert_eq!(
+                RangeSetBlaze::from_slice(&keys).ranges_len(),
+                1 + usize::from(prefix_len > 0)
+            );
+            let addrs: Vec<Ipv6Addr> = keys.iter().map(|&key| Ipv6Addr::from(key)).collect();
+            assert_from_slice_matches_from_iter(&addrs);
+            #[expect(clippy::cast_possible_wrap, reason = "testing the i128 bit patterns")]
+            let signed: Vec<i128> = keys.iter().map(|&key| key as i128).collect();
+            assert_from_slice_matches_from_iter(&signed);
+        }
+    }
+    // `i128::MAX` to `i128::MIN` is consecutive as `u128` bits, but not as `i128`.
+    let signed: Vec<i128> = (0..40)
+        .map(|index| i128::MAX.wrapping_sub(19).wrapping_add(index))
+        .collect();
+    assert_from_slice_matches_from_iter(&signed);
+    // `Ipv6Addr` runs touching both ends, and random clumps.
+    let addrs: Vec<Ipv6Addr> = (0..200).map(Ipv6Addr::from).collect();
+    assert_from_slice_matches_from_iter(&addrs);
+    let addrs: Vec<Ipv6Addr> = (u128::MAX - 199..=u128::MAX).map(Ipv6Addr::from).collect();
+    assert_from_slice_matches_from_iter(&addrs);
+    let mut rng = StdRng::seed_from_u64(0);
+    for _ in 0..200 {
+        let mut addrs: Vec<Ipv6Addr> = Vec::new();
+        while addrs.len() < 300 {
+            // Some starts near a low-half carry, so runs cross it.
+            let start: u128 = if rng.random_bool(0.3) {
+                (rng.random::<u128>() | u128::from(u64::MAX)) - rng.random_range(0..40)
+            } else {
+                rng.random()
+            };
+            let run_len = rng.random_range(1..80_u128);
+            addrs.extend((0..run_len).map(|index| Ipv6Addr::from(start.saturating_add(index))));
+        }
+        assert_from_slice_matches_from_iter(&addrs);
+    }
 }
