@@ -460,7 +460,7 @@ fn classify_forward<T: Integer>(
 /// a quadratic improvement an O(*n₁*) implementation that ignores the clumps.
 ///
 /// **When your keys and values are in two slices, arrays, or `Vec`s (for example, two columns of
-/// a table), use [`from_slices`][5].** On clumpy keys it is typically 10 to 20 times faster than
+/// a table), use [`from_slices`][5].** On clumpy keys it is typically 6 to 16 times faster than
 /// [`from_iter`][1]/[`collect`][1]. It scans the keys with SIMD instructions (on stable Rust, using
 /// the best ones the CPU supports) for runs of consecutive keys, splits those runs wherever the
 /// value changes, and then sorts and merges them, without modifying the input.

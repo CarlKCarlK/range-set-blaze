@@ -128,7 +128,7 @@ let set = RangeSetBlaze::from_slice(&readings);
 assert_eq!(set.to_string(), "3..=5, 100..=102");
 ```
 
-Likewise, when a map's keys and values are in two slices, arrays, or `Vec`s (say, two columns of a table), construct with `from_slices`. It uses SIMD on the keys and, on clumpy keys, is typically 10 to 20 times faster than `from_iter`/`collect`:
+Likewise, when a map's keys and values are in two slices, arrays, or `Vec`s (say, two columns of a table), construct with `from_slices`. It uses SIMD on the keys and, on clumpy keys, is typically 6 to 16 times faster than `from_iter`/`collect`:
 
 ```rust
 use range_set_blaze::prelude::*;

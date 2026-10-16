@@ -1574,6 +1574,67 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
     group.finish();
 }
 
+/// `from_slice` vs. `from_iter` on IP addresses: the same clumpy data as
+/// `ingest_clumps_iter_v_slice`, as `Ipv4Addr`s and as `Ipv6Addr`s inside `2001:db8::/32`.
+fn ingest_clumps_ip_addresses(c: &mut Criterion) {
+    use std::net::{Ipv4Addr, Ipv6Addr};
+
+    let group_name = "ingest_clumps_ip_addresses";
+    let k = 1;
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    group.sample_size(20);
+
+    for average_width in average_width_list {
+        let parameter = average_width;
+
+        let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+
+        let vec: Vec<u32> = MemorylessIter::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range,
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+        let ipv4s: Vec<Ipv4Addr> = vec.iter().map(|&x| Ipv4Addr::from(x)).collect();
+        let ipv6s: Vec<Ipv6Addr> = vec
+            .iter()
+            .map(|&x| Ipv6Addr::from((0x2001_0db8_u128 << 96) | u128::from(x)))
+            .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("Ipv4Addr (from_slice)", parameter),
+            &parameter,
+            |b, _| b.iter(|| black_box(RangeSetBlaze::from_slice(ipv4s.as_slice()))),
+        );
+        group.bench_with_input(
+            BenchmarkId::new("Ipv4Addr (from_iter)", parameter),
+            &parameter,
+            |b, _| b.iter(|| black_box(RangeSetBlaze::from_iter(&ipv4s))),
+        );
+        group.bench_with_input(
+            BenchmarkId::new("Ipv6Addr (from_slice)", parameter),
+            &parameter,
+            |b, _| b.iter(|| black_box(RangeSetBlaze::from_slice(ipv6s.as_slice()))),
+        );
+        group.bench_with_input(
+            BenchmarkId::new("Ipv6Addr (from_iter)", parameter),
+            &parameter,
+            |b, _| b.iter(|| black_box(RangeSetBlaze::from_iter(&ipv6s))),
+        );
+    }
+    group.finish();
+}
+
 /// Every `fearless_simd` level this CPU can run, from scalar `fallback` up, with a short label.
 fn simd_levels() -> Vec<(&'static str, fearless_simd::Level)> {
     use fearless_simd::Level;
@@ -2454,6 +2515,7 @@ criterion_group!(
     config = Criterion::default();
     targets =
     ingest_clumps_iter_v_slice,
+    ingest_clumps_ip_addresses,
     ingest_clumps_simd_levels,
     ingest_clumps_unroll,
     ingest_clumps_integers,

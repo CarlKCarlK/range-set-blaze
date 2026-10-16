@@ -61,22 +61,33 @@ These benchmarks allow us to understand the `range-set-blaze::RangeMapBlaze` dat
 ## Benchmark #2: 'map_ingest_clumps_base': Measure `RangeMapBlaze` on increasingly clumpy integer keys
 
 * **Measure**: integer-integer pair intake speed
-* **Candidates**: `HashMap`, `BTreeMap`, `rangemap`, `RangeMapBlaze`
+* **Candidates**: `HashMap`, `BTreeMap`, `rangemap`, `RangeMapBlaze` (`from_iter`), `RangeMapBlaze::from_slices`
 * **Vary**: *average clump size* from 1 (no clumps) to 100K (ten big clumps)
-* **Details**: We generate 1M integer keys with clumps. We ingest the integer pairs one at a time.
+* **Details**: We generate 1M integer keys with clumps. We ingest the integer pairs one at a time, except that `from_slices` takes the keys and values as two slices (two columns).
 Each clump has size chosen uniformly random from roughly 1 to double *average clump size*. (The integer clumps are positioned random uniform, with-replacement, in a span from 0 to roughly 10M. The exact span is sized so that the union of the 1M integers will cover about 10% of the span. In other words, a given integer key in the span will have a 10% chance of being in one of the 1M integers generated.)
 
 The value for each clump is a random integer from 0 to 4.
 
 ### 'map_ingest_clumps_base' Results
 
-With no clumps, `RangeMapBlaze (integers)` is about 9 times slower than `BTreeMap`. Somewhere around clump size 10, `RangeMapBlaze` becomes the best integer performer. As the average clump size goes past 100, `RangeMapBlaze` averages roughly 10 times faster than `BTreeMap`, about 30 times faster than `HashMap`, and roughly 40 times faster than `rangemap (integers)`.
+With no clumps, `RangeMapBlaze` (`from_iter`) is about 6 times slower than `BTreeMap`. By clump size 10, `RangeMapBlaze` is already the best performer. As the average clump size goes past 100, `RangeMapBlaze` is roughly 5 to 15 times faster than `BTreeMap`, 10 to 18 times faster than `HashMap`, and 25 to 45 times faster than `rangemap`.
 
-`RangeSetBlaze` batches integer keys with the same value by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate.
+`RangeMapBlaze::from_slices` (SIMD on the keys, stable Rust) is faster still on clumpy keys: about 2 times faster than `from_iter` at clump size 100, and 6 to 16 times faster at clump sizes of 1000 and up, which makes it about 75 to 115 times faster than `BTreeMap`. With no clumps (sizes 1 and 10) it is about the same as `from_iter` (within 5%). (October 2026, `fearless_simd`, AVX-512.)
+
+| Avg clump size | `BTreeMap` | `HashMap` | `rangemap` | `RangeMapBlaze` (`from_iter`) | `RangeMapBlaze::from_slices` |
+|---|---|---|---|---|---|
+| 1 | 41 ms | 69 ms | 775 ms | 256 ms | 270 ms |
+| 10 | 35 ms | 61 ms | 211 ms | 29 ms | 30 ms |
+| 100 | 34 ms | 49 ms | 129 ms | 5.0 ms | 2.4 ms |
+| 1,000 | 43 ms | 49 ms | 123 ms | 2.8 ms | 0.43 ms |
+| 10,000 | 26 ms | 50 ms | 82 ms | 2.7 ms | 0.22 ms |
+| 100,000 | 14 ms | 47 ms | 73 ms | 3.0 ms | 0.18 ms |
+
+`RangeMapBlaze` batches integer keys with the same value by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate.
 
 ### 'map_ingest_clumps_base' Conclusion
 
-Range-based methods such as `RangeMapBlaze` are a great choice for clumpy integer keys.
+Range-based methods such as `RangeMapBlaze` are a great choice for clumpy integer keys. When the keys and values are already in two slices, arrays, or `Vec`s, use `from_slices`.
 
 ![ingest_clumps_base](criterion/v5/map_ingest_clumps_base/report/lines.svg "ingest_clumps_base")
 

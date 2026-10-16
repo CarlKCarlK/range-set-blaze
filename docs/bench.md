@@ -140,6 +140,32 @@ The B-tree cursor insertion algorithm is a consistent, unconditional win over th
 
 ![ingest_clumps_cursor](criterion/v5/ingest_clumps_cursor/report/lines.svg "ingest_clumps_cursor")
 
+## Benchmark #2c: 'ingest_clumps_ip_addresses': `from_slice` vs. `from_iter` on IP addresses
+
+* **Measure**: IP address intake speed
+* **Candidates**: `RangeSetBlaze::from_slice` and `RangeSetBlaze::from_iter`, on `Ipv4Addr` and on `Ipv6Addr`
+* **Vary**: *average clump size* from 1 (no clumps) to 100K (ten big clumps)
+* **Details**: The same 1M clumpy integers as `ingest_clumps_base`, as `Ipv4Addr`s and as `Ipv6Addr`s inside `2001:db8::/32`. (Think of a blocklist or a log of addresses.)
+
+### 'ingest_clumps_ip_addresses' Results
+
+`from_slice` uses SIMD for both address types. For `Ipv4Addr` it is about 2 times faster than `from_iter` even with no clumps, and 20 to 44 times faster at clump sizes of 1000 and up. For `Ipv6Addr` it is about the same as `from_iter` with no clumps, and 22 to 24 times faster at clump sizes of 1000 and up. (October 2026, `fearless_simd`, AVX-512.)
+
+| Avg clump size | `Ipv4Addr` `from_iter` | `Ipv4Addr` `from_slice` | `Ipv6Addr` `from_iter` | `Ipv6Addr` `from_slice` |
+|---|---|---|---|---|
+| 1 | 85 ms | 45 ms | 206 ms | 202 ms |
+| 10 | 15 ms | 7.2 ms | 50 ms | 31 ms |
+| 100 | 3.9 ms | 0.92 ms | 35 ms | 3.7 ms |
+| 1,000 | 3.5 ms | 0.17 ms | 31 ms | 1.3 ms |
+| 10,000 | 2.6 ms | 0.12 ms | 24 ms | 1.1 ms |
+| 100,000 | 3.3 ms | 0.076 ms | 29 ms | 1.3 ms |
+
+### 'ingest_clumps_ip_addresses' Conclusion
+
+When your IP addresses are in a slice, array, or `Vec`, use `from_slice`.
+
+![ingest_clumps_ip_addresses](criterion/v5/ingest_clumps_ip_addresses/report/lines.svg "ingest_clumps_ip_addresses")
+
 ## Benchmark #3: 'ingest_clumps_integers': Measure the `rangemap` crate on clumpy integers
 
 * **Measure**: integer intake speed
