@@ -27,8 +27,7 @@ containers, see the [Ranges and gaps guide][ranges and gaps].
 >
 > We can construct a `RangeSetBlaze` or `RangeMapBlaze` from unsorted & redundant integers (or ranges). When the inputs are clumpy, construction will be [linear][1] in the number of inputs and set operations will be sped up [quadratically][1].
 >
-> ⚠️ **Warning:**
-> All RangeMapBlaze operations (`into_iter`, union, difference, symmetric difference, etc.) now give precedence to the **right-hand map** when ranges overlap. This change (from version 0.2.0) aligns with the behavior of `BTreeMap` and `HashMap`.
+> When ranges overlap, `RangeMapBlaze` operations (`from_iter`/`collect`, `extend`, union, difference, symmetric difference, etc.) give precedence to the right-hand (later) value, just like `BTreeMap` and `HashMap`.
 
 The crate's main traits are
 
