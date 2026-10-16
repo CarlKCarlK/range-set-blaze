@@ -46,10 +46,16 @@ const UNROLL: usize = 4;
 /// values that aren't consecutive. For example, `u8` (64 lanes) with an unroll factor of 5 gives
 /// 320-value blocks, and `from_slice` would return `0..=127` for input covering `0..=255`.
 ///
-/// The check is sound exactly when `block_len <= 2^bits`, or `2^bits` divides `block_len`. (Then
-/// the block's last value is one below its first, and the block must continue a previous run, so
-/// its first value is never the minimum.) This is proved in Lean as `blockCheck_sound_iff` in the
+/// For lanes that can hold every `bits`-bit pattern, the check is sound exactly when
+/// `block_len <= 2^bits`, or `2^bits` divides `block_len`. (Then the block's last value is one
+/// below its first, and the block must continue a previous run, so its first value is never the
+/// minimum.) This is proved in Lean as `blockCheck_sound_iff` in the
 /// `range-set-blaze-vibe-validation` project (`RangeSetBlaze/SimdRunCheck.lean`).
+///
+/// For key types whose values don't fill their lanes, this condition is sufficient but can be
+/// stricter than necessary. For example, `char` lanes are 32 bits, but only valid Unicode scalar
+/// values occur, so some configurations this rejects (with absurdly large unroll factors) would
+/// in fact be sound.
 ///
 /// Unroll factors 1, 2, 4, and 8 are sound for every supported type. To allow any unroll factor,
 /// the block check could instead compare `first <= MAX - (block_len - 1)`.
