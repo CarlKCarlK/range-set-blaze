@@ -256,6 +256,22 @@ or map from slices, arrays, or `Vec`s of integers. They use SIMD where available
 running CPU are detected at runtime; in `no_std`, the SIMD features selected at compile time for
 the target are used.
 
+These methods use SIMD:
+
+* [`RangeSetBlaze::from_slice`][from-slice] finds runs of consecutive integers with SIMD, for the
+  primitive integer types (`u8` through `u128`, `i8` through `i128`, `usize`, `isize`), `char`,
+  `Ipv4Addr`, and `Ipv6Addr`.
+* [`RangeMapBlaze::from_slices`][from-slices] does the same for its keys; values are compared
+  with ordinary `==`.
+* [`NotNan::from_primitive_slice`][not-nan-slice] and
+  [`NotNan::from_primitive_vec`][not-nan-vec] check `f32`/`f64` values for NaN and `-0.0` with
+  SIMD.
+
+For float keys (`NotNan` or `Total`), `from_slice` and `from_slices` work but don't use SIMD.
+
+[not-nan-slice]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/not_nan/struct.NotNan.html#method.from_primitive_slice
+[not-nan-vec]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/not_nan/struct.NotNan.html#method.from_primitive_vec
+
 The published API documentation includes all optional features. Feature-gated items are marked
 with the feature required to use them; optional features are not enabled by default for users of
 the crate.
