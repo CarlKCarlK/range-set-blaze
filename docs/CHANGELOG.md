@@ -13,13 +13,14 @@ This release is not breaking.
 
 - **`RangeMapBlaze::from_slices(keys, values)`** builds a map from a slice of keys and a
   same-length slice of values (two columns of a table), using SIMD to find runs of consecutive
-  keys. Values may be any `V: Eq + Clone`; cheap-to-compare values such as integers are compared
-  in blocks that LLVM vectorizes. On clumpy data it is about 10 to 25 times faster than
-  `from_iter`. It panics if the lengths differ. `Integer::from_slices` backs it, with a default
+  keys. Values may be any `V: Eq + Clone`. On clumpy keys it is typically 10 to 20 times faster
+  than `from_iter`. It panics if the lengths differ. `Integer::from_slices` backs it, with a default
   implementation, so it is not a new required method.
 - **`NotNan::from_primitive_vec`** converts a `Vec<f64>` (or `f32`, ...) into `NotNan` values in
   place, reusing the allocation, normalizing `-0.0` to `+0.0`, and panicking on NaN.
-- The float docs have a new "From Native Float Slices and Vectors" section on bulk conversion.
+- The float docs have a new "Converting Native Floats" section that lays out every conversion
+  into and out of `NotNan` and `Total` (values, ranges, iterators, slices, vectors) and their NaN
+  and `-0.0` rules.
 
 ### Changed
 

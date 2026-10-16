@@ -427,27 +427,29 @@ impl<T: NotNanFloat> NotNan<T> {
         values.into_iter().map(Self::new)
     }
 
-    /// Views primitive values as ordered [`NotNan`] values, validating as it goes.
+    /// Borrows already-normalized primitive values as [`NotNan`] values; panics on NaN or `-0.0`.
     ///
-    /// "Primitive" here means Rust's built-in float type (e.g. `f64`).
+    /// "Primitive" here means Rust's built-in float type (e.g. `f64`). The result is a view of
+    /// the same memory: nothing is copied or allocated. Because a view can't rewrite `-0.0` to
+    /// `+0.0`, `-0.0` panics here; to accept it, use [`NotNan::from_primitive_vec`], which
+    /// normalizes it in a vector you own. For how this fits with the other conversions, see the
+    /// [float module documentation](crate::float#converting-native-floats).
     ///
-    ///
-    /// This runs in `O(n)` (to validate every element) and does not allocate.
     /// # Examples
     /// ```
     /// use range_set_blaze::{RangeSetBlaze, NotNanF64};
     ///
-    /// let short = RangeSetBlaze::from_iter(NotNanF64::from_primitive_slice(&[1.0, 2.0, 3.0, 4.0]));
-    /// let long = RangeSetBlaze::from_iter([NotNanF64::new(1.0), NotNanF64::new(2.0), NotNanF64::new(3.0), NotNanF64::new(4.0)]);
-    /// assert_eq!(short, long);
+    /// let data = [3.0, 1.0, 2.0, 7.5];
+    /// let set = RangeSetBlaze::from_slice(NotNanF64::from_primitive_slice(&data));
+    /// assert!(set.contains(NotNanF64::new(7.5)));
     /// ```
     ///
     /// # Panics
     ///
-    /// Panics if any element is NaN, or is `-0.0` (which can't be normalized to `+0.0`
-    /// in a view — use [`NotNan::from_primitive_vec`] to normalize it in an owned vector, or
-    /// see [`NotNan::from_primitive_slice_unchecked`] if you need a true
-    /// zero-copy view and can guarantee your data already satisfies [`NotNan`]'s invariant).
+    /// Panics if any element is NaN or `-0.0`.
+    ///
+    /// If you can already guarantee no element is NaN or `-0.0`, the advanced
+    /// [`NotNan::from_primitive_slice_unchecked`] skips the check.
     ///
     /// # Performance
     ///
@@ -462,14 +464,17 @@ impl<T: NotNanFloat> NotNan<T> {
         unsafe { Self::from_primitive_slice_unchecked(values) }
     }
 
-    /// Converts a vector of primitive values into ordered [`NotNan`] values, in place,
-    /// normalizing `-0.0` to `+0.0`.
+    /// Consumes your vector of primitive values, normalizes `-0.0` to `+0.0`, and reuses its
+    /// allocation for the [`NotNan`] values; panics on NaN.
     ///
-    /// "Primitive" here means Rust's built-in float type (e.g. `f64`).
+    /// "Primitive" here means Rust's built-in float type (e.g. `f64`). Unlike
+    /// [`NotNan::from_primitive_slice`], this accepts `-0.0`, because it owns the data and can
+    /// rewrite it. For how this fits with the other conversions, see the
+    /// [float module documentation](crate::float#converting-native-floats).
     ///
-    /// Unlike [`NotNan::from_primitive_slice`], this accepts `-0.0`. It runs in `O(n)`, using
-    /// SIMD selected as described in [`RangeSetBlaze::from_slice`], and reuses the vector's
-    /// allocation.
+    /// # Performance
+    ///
+    /// The check uses SIMD, selected as described in [`RangeSetBlaze::from_slice`].
     ///
     /// # Examples
     /// ```

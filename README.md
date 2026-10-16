@@ -128,6 +128,17 @@ let set = RangeSetBlaze::from_slice(&readings);
 assert_eq!(set.to_string(), "3..=5, 100..=102");
 ```
 
+Likewise, when a map's keys and values are in two slices, arrays, or `Vec`s (say, two columns of a table), construct with `from_slices`. It uses SIMD on the keys and, on clumpy keys, is typically 10 to 20 times faster than `from_iter`/`collect`:
+
+```rust
+use range_set_blaze::prelude::*;
+
+let ids = vec![10, 11, 12, 13, 50, 51];
+let labels = vec!["red", "red", "red", "blue", "blue", "blue"];
+let map = RangeMapBlaze::from_slices(&ids, &labels);
+assert_eq!(map.to_string(), r#"(10..=12, "red"), (13..=13, "blue"), (50..=51, "blue")"#);
+```
+
 **Example 2**: Maps (and Network Addresses)
 - - - - - -
 
@@ -239,9 +250,9 @@ The available Cargo features are:
 * `float_nightly_experimental` — Enables the nightly-only `f16` and `f128` floating-point wrappers; see the [floating-point module documentation][floating-point documentation]. This requires a nightly Rust compiler.
 * `test_util` — Test/benchmark helpers used internally by the crate; not needed by downstream users.
 
-The [`RangeSetBlaze::from_slice`][from-slice] constructor is always available (no feature flag
-needed) and is the fastest way to build a set from a slice, array, or `Vec` of integers. It uses
-SIMD where available, on stable Rust, via `fearless_simd`. With `std` (the default), the best SIMD instructions for the
+The [`RangeSetBlaze::from_slice`][from-slice] and [`RangeMapBlaze::from_slices`][from-slices]
+constructors are always available (no feature flag needed) and are the fastest way to build a set
+or map from slices, arrays, or `Vec`s of integers. They use SIMD where available, on stable Rust, via `fearless_simd`. With `std` (the default), the best SIMD instructions for the
 running CPU are detected at runtime; in `no_std`, the SIMD features selected at compile time for
 the target are used.
 
@@ -251,6 +262,7 @@ the crate.
 
 [floating-point documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/index.html
 [from-slice]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_slice
+[from-slices]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html#method.from_slices
 
 Contributing
 ------------

@@ -580,6 +580,10 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// The function accepts any type that can be referenced as a slice of integers,
     /// including slices, arrays, and vectors. Duplicates and out-of-order elements are fine.
+    /// "Integers" means any [`Integer`] type: SIMD is used for the primitive integers (`u8` through
+    /// `u128`, `i8` through `i128`, `usize`, `isize`), `char`, `Ipv4Addr`, and `Ipv6Addr`.
+    ///
+    /// [`Integer`]: crate::Integer
     ///
     /// Where available, this function leverages SIMD (Single Instruction, Multiple Data) instructions
     /// for performance optimization, on stable Rust. How the best available SIMD instructions are
