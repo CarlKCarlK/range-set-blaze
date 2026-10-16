@@ -33,7 +33,49 @@ pub(crate) fn from_slice<T: SimdInteger>(slice: &[T]) -> RangeSetBlaze<T> {
 ///
 /// On clumpy data, 4 was about 1.2-1.6x faster than 1 with AVX2 and AVX-512 (8 added nothing).
 /// It costs a few percent when runs are short (around 100 values), since a block rarely fits.
+///
+/// Not every unroll factor is correct; see [`unrolled_block_check_is_sound`].
 const UNROLL: usize = 4;
+
+/// Whether the unrolled loop's block check is sound for blocks of `block_len` values that are
+/// `bits` wide.
+///
+/// The block check compares each lane against `first + i` with wrapping arithmetic, and compares
+/// `first <= last` only once for the whole block. A block of more than `2^bits` values can wrap
+/// all the way around and still end at or above where it started. Then the check would accept
+/// values that aren't consecutive. For example, `u8` (64 lanes) with an unroll factor of 5 gives
+/// 320-value blocks, and `from_slice` would return `0..=127` for input covering `0..=255`.
+///
+/// The check is sound exactly when `block_len <= 2^bits`, or `2^bits` divides `block_len`. (Then
+/// the block's last value is one below its first, and the block must continue a previous run, so
+/// its first value is never the minimum.) This is proved in Lean as `blockCheck_sound_iff` in the
+/// `range-set-blaze-vibe-validation` project (`RangeSetBlaze/SimdRunCheck.lean`).
+///
+/// Unroll factors 1, 2, 4, and 8 are sound for every supported type. To allow any unroll factor,
+/// the block check could instead compare `first <= MAX - (block_len - 1)`.
+const fn unrolled_block_check_is_sound(block_len: usize, bits: usize) -> bool {
+    bits >= usize::BITS as usize || block_len <= 1 << bits || block_len.is_multiple_of(1 << bits)
+}
+
+/// Fails to compile if unroll factor `N` would make the block check unsound for `T`; see
+/// [`unrolled_block_check_is_sound`].
+#[expect(
+    clippy::inline_always,
+    reason = "must inline into the fearless_simd dispatch target-feature closure"
+)]
+#[inline(always)]
+const fn assert_unroll_is_sound<T: SimdInteger, S: Simd, const N: usize>() {
+    const {
+        assert!(
+            unrolled_block_check_is_sound(
+                chunk_len::<T, S>() * N,
+                8 * size_of::<T::Lane>() * T::LANES_PER_VALUE,
+            ),
+            "this unroll factor makes the block check unsound for this type; \
+             see unrolled_block_check_is_sound"
+        );
+    }
+}
 
 /// Like [`from_slice`], but at a given SIMD `level` instead of the detected one.
 #[inline]
@@ -410,6 +452,7 @@ where
     T: SimdInteger,
     S: Simd,
 {
+    assert_unroll_is_sound::<T, S, N>();
     let lanes = chunk_len::<T, S>();
     let block = lanes * N;
     let offsets = T::offsets(simd);
@@ -471,6 +514,7 @@ where
     V: Eq,
     S: Simd,
 {
+    assert_unroll_is_sound::<T, S, N>();
     let lanes = chunk_len::<T, S>();
     let block = lanes * N;
     let offsets = T::offsets(simd);
