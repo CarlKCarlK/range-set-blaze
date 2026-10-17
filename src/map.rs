@@ -415,7 +415,7 @@ fn classify_forward<T: Integer>(
 /// | [`new`]/[`default`]                         |                              |                          |
 /// | [`from_iter`][1]/[`collect`][1]           | iterator of `(integer, value)` | References to the pair or value is OK. |
 /// | [`from_iter`][2]/[`collect`][2]           | iterator of `(range, value)`   | References to the pair or value is OK. |
-/// | [`from_slices`][5]                          | slice of keys, slice of values | Fast; SIMD on the keys |
+/// | [`from_slices`][5]                          | slice of keys, slice of values | Faster than `from_iter` on pairs |
 /// | [`from_sorted_disjoint_map`][3]/<br>[`into_range_set_blaze`][3b] | [`SortedDisjointMap`] iterator |               |
 /// | [`from`][4] /[`into`][4]                    | array of `(integer, value)`  |                          |
 ///
@@ -461,9 +461,7 @@ fn classify_forward<T: Integer>(
 ///
 /// **When your keys and values are in two slices, arrays, or `Vec`s (for example, two columns of
 /// a table), use [`from_slices`][5].** On clumpy keys it is typically 6 to 16 times faster than
-/// [`from_iter`][1]/[`collect`][1]. It scans the keys with SIMD instructions (on stable Rust, using
-/// the best ones the CPU supports) for runs of consecutive keys, splits those runs wherever the
-/// value changes, and then sorts and merges them, without modifying the input.
+/// [`from_iter`][1]/[`collect`][1].
 ///
 /// ## Constructor Examples
 ///
@@ -1105,11 +1103,10 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// Duplicates and out-of-order keys are fine. In case of duplicate keys, the last
     /// (right-most) value overrides the previous ones.
     ///
-    /// It uses SIMD to find runs of consecutive keys, on stable Rust, selecting SIMD instructions as
-    /// described in [`RangeSetBlaze::from_slice`], for the same key types: the primitive integers
-    /// (`u8` through `u128`, `i8` through `i128`, `usize`, `isize`), `char`, `Ipv4Addr`, and
-    /// `Ipv6Addr`. Values are compared with ordinary `==`, so any `V: Eq + Clone` works. (Native
-    /// floats aren't `Eq`; for float values, see
+    /// It uses SIMD on the keys as described in [`RangeSetBlaze::from_slice`], for the same key
+    /// types: the primitive integers (`u8` through `u128`, `i8` through `i128`, `usize`, `isize`),
+    /// `char`, `Ipv4Addr`, and `Ipv6Addr`. Values are compared with ordinary `==`, so any
+    /// `V: Eq + Clone` works. (Native floats aren't `Eq`; for float values, see
     /// [Floats as Map Values](crate::float#floats-as-map-values).)
     ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*

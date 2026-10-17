@@ -64,7 +64,7 @@ Benchmarks below (except #2b, which was already current) were re-run in Septembe
 
 ### 'worst' Conclusion
 
-`BTreeSet` or `HashSet`, not `RangeSetBlaze`, is a good choice for ingesting sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just roughly 2 times worse on average. `RangeSetBlaze::from_slice` (SIMD, stable Rust) is faster than `from_iter` here for *n* of about 100 or more (for example, 113 µs vs. 169 µs at *n* = 10,000, close to `BTreeSet` and `HashSet` at about 100 µs), about the same at *n* = 10, and slower only for a single integer (October 2026, `fearless_simd`, AVX-512).
+`BTreeSet` or `HashSet`, not `RangeSetBlaze`, is a good choice for ingesting sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just roughly 2 times worse on average. `RangeSetBlaze::from_slice` (SIMD) is faster than `from_iter` here for *n* of about 100 or more (for example, 113 µs vs. 169 µs at *n* = 10,000, close to `BTreeSet` and `HashSet` at about 100 µs), about the same at *n* = 10, and slower only for a single integer (October 2026, `fearless_simd`, AVX-512).
 
 > See benchmark ['worst_op_blaze'](#benchmark-9-worst_op_blaze-compare-roaring-and-rangesetblaze-operators-on-uniform-data), near the end, for a similar comparison of set operations on uniform data.
 
@@ -83,7 +83,7 @@ Each clump has size chosen uniformly random from roughly 1 to double *average cl
 
 With no clumps, `RangeSetBlaze` is about 2.5 times slower than `HashSet`. By clump size 10, `RangeSetBlaze` is already the best performer. As the average clump size goes past 1000, `RangeSetBlaze` is roughly 18 to 34 times faster than `HashSet` and `BTreeSet`, and roughly 5 to 21 times faster than `Roaring` (the exact ratio varies by clump size; see benchmark #3 for `Roaring`'s trend across the full range).
 
-`RangeSetBlaze::from_slice` (SIMD-accelerated, stable Rust) is even faster: at clump sizes of 1000 and up it is about 10 to 20 times faster than ingesting the same integers with `from_iter`, and about 150 to 360 times faster than `HashSet`. Even with no clumps it is about 1.5 times faster than `from_iter` (October 2026, `fearless_simd`, AVX-512; the plot below predates these numbers).
+`RangeSetBlaze::from_slice` (SIMD-accelerated) is even faster: at clump sizes of 1000 and up it is about 10 to 20 times faster than ingesting the same integers with `from_iter`, and about 150 to 360 times faster than `HashSet`. Even with no clumps it is about 1.5 times faster than `from_iter` (October 2026, `fearless_simd`, AVX-512; the plot below predates these numbers).
 
 If we are allowed to input the clumps as ranges (instead of as individual integers, see benchmark #4), `RangeSetBlaze` is faster still — around 700 to 1300 times faster than `HashSet`/`BTreeSet` (ingesting integers one at a time) at clump size 1000. Compared directly against `Roaring` also given ranges, though, the two are much closer: `RangeSetBlaze` is only about 1.1 to 2.6 times faster (see benchmark #4).
 
@@ -177,7 +177,7 @@ We give each crate the clumps as individual integers.
 
 ### 'ingest_clumps_integers' Results & Conclusion
 
-`rangemap` is 2 to 16 times slower than `HashSet`, and the gap is largest for small clumps (near-uniform data) and narrows as clumps get bigger. It is 7 to 46 times slower than `RangeSetBlaze`, again widest at large clump sizes. `RangeSetBlaze::from_slice` (SIMD-accelerated, stable Rust) is even faster by an order of magnitude. However ...
+`rangemap` is 2 to 16 times slower than `HashSet`, and the gap is largest for small clumps (near-uniform data) and narrows as clumps get bigger. It is 7 to 46 times slower than `RangeSetBlaze`, again widest at large clump sizes. `RangeSetBlaze::from_slice` (SIMD-accelerated) is even faster by an order of magnitude. However ...
 
 `RangeSetBlaze` batches its integer input by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate. However, however, ...
 
