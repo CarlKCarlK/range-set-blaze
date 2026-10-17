@@ -149,7 +149,7 @@ where
 ///
 /// **When your integers are in a slice, array, or `Vec`, use [`from_slice`][6].** On clumpy
 /// integers it is typically 10 to 20 times faster than [`from_iter`][1]/[`collect`][1], and in our
-/// benchmarks it was also faster on non-clumpy input of more than a few integers. It scans the input with SIMD instructions (on stable Rust, using the best ones the CPU
+/// benchmarks it was also faster on non-clumpy input of about 100 or more integers. It scans the input with SIMD instructions (on stable Rust, using the best ones the CPU
 /// supports) for runs of consecutive integers, then sorts and merges those runs, without modifying
 /// the input.
 ///
@@ -591,11 +591,16 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// - With `std` (the default), SIMD capability is detected at runtime, and the best
     ///   instructions supported by the CPU running the program are used automatically.
-    /// - Without `std` (`no_std`), there is no runtime detection; instead, the SIMD instructions
-    ///   selected at compile time for the target (for example, via `-C target-feature` or
-    ///   `-C target-cpu`) are used. A `no_std` build never falls back to scalar code just because
-    ///   `std` is unavailable — it uses whatever SIMD features the target and compiler flags
-    ///   provide.
+    /// - Without `std` (`no_std`), there is no runtime detection; only the SIMD instructions the
+    ///   build target guarantees are used, for example SSE2 on x86-64 or NEON on aarch64. To use
+    ///   more, raise the target's baseline with `-C target-feature` or `-C target-cpu`.
+    ///
+    /// **Warning (`no_std`)**: Many `no_std` targets have no SIMD instructions available, for
+    /// example, Cortex-M microcontrollers and `x86_64-unknown-none` (which disables SSE). On these
+    /// targets, `from_slice` runs portable scalar code. In our benchmarks the scalar code was still
+    /// faster than [`from_iter`][1] (about 3 to 7 times on clumpy integers), but about 2 to 3 times
+    /// slower than SIMD. Likewise, a default x86-64 `no_std` build gets only SSE2, which was about
+    /// 1.5 times slower than AVX2.
     ///
     /// **Caution**: Compiling with `-C target-cpu=native` optimizes the binary for your current CPU architecture,
     /// which may lead to compatibility issues on other machines with different architectures.

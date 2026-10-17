@@ -64,7 +64,7 @@ Benchmarks below (except #2b, which was already current) were re-run in Septembe
 
 ### 'worst' Conclusion
 
-`BTreeSet` or `HashSet`, not `RangeSetBlaze`, is a good choice for ingesting sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just roughly 2 times worse on average. `RangeSetBlaze::from_slice` (SIMD, stable Rust) is faster than `from_iter` here for *n* of 10 or more (for example, 201 µs vs. 315 µs at *n* = 10,000, on par with `BTreeSet` and `HashSet`), and slightly slower only for a single integer (October 2026, `fearless_simd`, AVX-512).
+`BTreeSet` or `HashSet`, not `RangeSetBlaze`, is a good choice for ingesting sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just roughly 2 times worse on average. `RangeSetBlaze::from_slice` (SIMD, stable Rust) is faster than `from_iter` here for *n* of about 100 or more (for example, 113 µs vs. 169 µs at *n* = 10,000, close to `BTreeSet` and `HashSet` at about 100 µs), about the same at *n* = 10, and slower only for a single integer (October 2026, `fearless_simd`, AVX-512).
 
 > See benchmark ['worst_op_blaze'](#benchmark-9-worst_op_blaze-compare-roaring-and-rangesetblaze-operators-on-uniform-data), near the end, for a similar comparison of set operations on uniform data.
 
@@ -83,7 +83,7 @@ Each clump has size chosen uniformly random from roughly 1 to double *average cl
 
 With no clumps, `RangeSetBlaze` is about 2.5 times slower than `HashSet`. By clump size 10, `RangeSetBlaze` is already the best performer. As the average clump size goes past 1000, `RangeSetBlaze` is roughly 18 to 34 times faster than `HashSet` and `BTreeSet`, and roughly 5 to 21 times faster than `Roaring` (the exact ratio varies by clump size; see benchmark #3 for `Roaring`'s trend across the full range).
 
-`RangeSetBlaze::from_slice` (SIMD-accelerated, stable Rust) is even faster: at clump sizes of 1000 and up it is about 12 to 20 times faster than ingesting the same integers with `from_iter`, and about 175 to 375 times faster than `HashSet`. Even with no clumps it is about 1.4 times faster than `from_iter` (October 2026, `fearless_simd`, AVX-512; the plot below predates these numbers).
+`RangeSetBlaze::from_slice` (SIMD-accelerated, stable Rust) is even faster: at clump sizes of 1000 and up it is about 10 to 20 times faster than ingesting the same integers with `from_iter`, and about 150 to 360 times faster than `HashSet`. Even with no clumps it is about 1.5 times faster than `from_iter` (October 2026, `fearless_simd`, AVX-512; the plot below predates these numbers).
 
 If we are allowed to input the clumps as ranges (instead of as individual integers, see benchmark #4), `RangeSetBlaze` is faster still — around 700 to 1300 times faster than `HashSet`/`BTreeSet` (ingesting integers one at a time) at clump size 1000. Compared directly against `Roaring` also given ranges, though, the two are much closer: `RangeSetBlaze` is only about 1.1 to 2.6 times faster (see benchmark #4).
 
@@ -149,16 +149,16 @@ The B-tree cursor insertion algorithm is a consistent, unconditional win over th
 
 ### 'ingest_clumps_ip_addresses' Results
 
-`from_slice` uses SIMD for both address types. For `Ipv4Addr` it is about 2 times faster than `from_iter` even with no clumps, and 20 to 44 times faster at clump sizes of 1000 and up. For `Ipv6Addr` it is about the same as `from_iter` with no clumps, and 22 to 24 times faster at clump sizes of 1000 and up. (October 2026, `fearless_simd`, AVX-512.)
+`from_slice` uses SIMD for both address types. For `Ipv4Addr` it is about 1.3 times faster than `from_iter` even with no clumps, and 17 to 33 times faster at clump sizes of 1000 and up. For `Ipv6Addr` it is about the same as `from_iter` with no clumps, and 21 to 24 times faster at clump sizes of 1000 and up. (October 2026, `fearless_simd`, AVX-512.)
 
 | Avg clump size | `Ipv4Addr` `from_iter` | `Ipv4Addr` `from_slice` | `Ipv6Addr` `from_iter` | `Ipv6Addr` `from_slice` |
 |---|---|---|---|---|
-| 1 | 85 ms | 45 ms | 206 ms | 202 ms |
-| 10 | 15 ms | 7.2 ms | 50 ms | 31 ms |
-| 100 | 3.9 ms | 0.92 ms | 35 ms | 3.7 ms |
-| 1,000 | 3.5 ms | 0.17 ms | 31 ms | 1.3 ms |
-| 10,000 | 2.6 ms | 0.12 ms | 24 ms | 1.1 ms |
-| 100,000 | 3.3 ms | 0.076 ms | 29 ms | 1.3 ms |
+| 1 | 73 ms | 54 ms | 218 ms | 199 ms |
+| 10 | 10 ms | 7.9 ms | 41 ms | 26 ms |
+| 100 | 4.9 ms | 1.4 ms | 29 ms | 3.7 ms |
+| 1,000 | 3.0 ms | 0.18 ms | 30 ms | 1.3 ms |
+| 10,000 | 3.2 ms | 0.10 ms | 29 ms | 1.4 ms |
+| 100,000 | 3.0 ms | 0.090 ms | 31 ms | 1.3 ms |
 
 ### 'ingest_clumps_ip_addresses' Conclusion
 

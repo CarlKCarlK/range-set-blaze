@@ -72,7 +72,7 @@ The value for each clump is a random integer from 0 to 4.
 
 With no clumps, `RangeMapBlaze` (`from_iter`) is about 6 times slower than `BTreeMap`. By clump size 10, `RangeMapBlaze` is already the best performer. As the average clump size goes past 100, `RangeMapBlaze` is roughly 5 to 15 times faster than `BTreeMap`, 10 to 18 times faster than `HashMap`, and 25 to 45 times faster than `rangemap`.
 
-`RangeMapBlaze::from_slices` (SIMD on the keys, stable Rust) is faster still on clumpy keys: about 2 times faster than `from_iter` at clump size 100, and 6 to 16 times faster at clump sizes of 1000 and up, which makes it about 75 to 115 times faster than `BTreeMap`. With no clumps (sizes 1 and 10) it is about the same as `from_iter` (within 5%). (October 2026, `fearless_simd`, AVX-512.)
+`RangeMapBlaze::from_slices` (SIMD on the keys, stable Rust) is faster still on clumpy keys: about 2 times faster than `from_iter` at clump size 100, and 6 to 16 times faster at clump sizes of 1000 and up, which makes it about 75 to 115 times faster than `BTreeMap`. With no clumps (sizes 1 and 10) it is still about 1.1 to 1.25 times faster than `from_iter`. (October 2026, `fearless_simd`, AVX-512.)
 
 | Avg clump size | `BTreeMap` | `HashMap` | `rangemap` | `RangeMapBlaze` (`from_iter`) | `RangeMapBlaze::from_slices` |
 |---|---|---|---|---|---|

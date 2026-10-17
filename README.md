@@ -13,6 +13,7 @@ Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full 
 * `union`, `intersection`, `difference`, `symmetric difference`, and `complement`—available on both [sets][set operations] and [maps][map operations].
 * Can also work directly with [ranges and gaps][ranges and gaps], not just individual integer-like values.
 * [Joins][joins] (inner, left, and full, two-way and multiway) combine the values of range maps by key.
+* Fast ingestion: [`from_slice`][from-slice] (sets) and [`from_slices`][from-slices] (maps) use SIMD on stable Rust, via `fearless_simd`. On clumpy data they are typically about 8 to 30 times faster than `from_iter`/`collect`, and over 75 times faster than `BTreeSet`/`BTreeMap` (see the [set][set benchmarks] and [map][map benchmarks] benchmarks).
 
 The crate's main structs are:
 
@@ -279,6 +280,8 @@ the crate.
 [floating-point documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/index.html
 [from-slice]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_slice
 [from-slices]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html#method.from_slices
+[set benchmarks]: https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md
+[map benchmarks]: https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench_map.md
 
 Contributing
 ------------

@@ -51,8 +51,8 @@ This release is not breaking.
   `from_iter`/`collect`; checked on AMD, Intel, and ARM (including Apple) CPUs.
 - `from_slice` now uses SIMD for `char`, `Ipv4Addr`, `u128`, `i128`, and `Ipv6Addr` too. 128-bit
   values span two 64-bit lanes; the IP address types, whose memory layout Rust doesn't guarantee,
-  are converted lane by lane rather than reinterpreted. On clumpy data they are 6 to 40 times
-  faster than `from_iter`.
+  are converted lane by lane rather than reinterpreted. On clumpy IP addresses they are about
+  17 to 33 times faster than `from_iter`.
 - `NotNan::from_primitive_slice` now validates `f32`/`f64` with SIMD (about 11 times faster).
 - The docs, README, and examples now recommend `from_slice` whenever the integers are in a slice,
   array, or `Vec`.
