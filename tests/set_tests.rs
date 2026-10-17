@@ -1246,6 +1246,40 @@ fn from_slice_all_types() {
     }};
 }
 
+// Lane arithmetic wraps, so a run crossing MAX -> MIN (e.g. `[254u8, 255, 0, 1, ...]`) passes
+// the SIMD test unless the kernel also checks the endpoints. Runs that end at MAX must also not
+// merge with a following run that starts at MIN.
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::unnecessary_cast,
+    reason = "values are built with deliberately wrapping `as` casts"
+)]
+fn from_slice_wrapping_runs() {
+    syntactic_for! { ty in [i8, u8, i16, u16, i32, u32, i64, u64, isize, usize] {
+        $(
+            for back in [1usize, 2, 7, 16, 63, 64, 65, 200] {
+                for len in [2usize, 16, 64, 255, 256, 257, 300, 600] {
+                    let first = <$ty>::MAX.wrapping_sub((back - 1) as $ty);
+                    let v: Vec<$ty> = (0..len + 8).map(|i| first.wrapping_add(i as $ty)).collect();
+                    // Shift the start so the run meets different SIMD alignments.
+                    for offset in 0..8 {
+                        let slice = &v[offset..offset + len];
+                        assert_eq!(
+                            RangeSetBlaze::from_slice(slice),
+                            RangeSetBlaze::from_iter(slice.iter().copied()),
+                            "type={} back={back} len={len} offset={offset}",
+                            stringify!($ty)
+                        );
+                    }
+                }
+            }
+        )*
+    }};
+}
+
 #[test]
 #[cfg(not(target_arch = "wasm32"))]
 fn range_set_blaze_slice_constructor() {
