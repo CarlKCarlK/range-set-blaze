@@ -104,6 +104,7 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     ///
     /// [`RangeSetBlaze`]: crate::RangeSetBlaze
     /// [`RangeSetBlaze::from_iter`]: crate::RangeSetBlaze::from_iter
+    #[doc(hidden)]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         RangeSetBlaze::from_iter(slice.as_ref())
@@ -122,6 +123,7 @@ pub trait Integer: Copy + PartialEq + PartialOrd + Ord + fmt::Debug + Send + Syn
     ///
     /// [`RangeMapBlaze`]: crate::RangeMapBlaze
     /// [`RangeMapBlaze::from_iter`]: crate::RangeMapBlaze::from_iter
+    #[doc(hidden)]
     #[inline]
     fn from_slices<V: Eq + Clone>(keys: &[Self], values: &[V]) -> RangeMapBlaze<Self, V> {
         assert_eq!(
