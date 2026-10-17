@@ -124,27 +124,6 @@ let c = a | b;
 assert_eq!(c, RangeSetBlaze::from_iter([-20..=-20, 100..=999]));
 ```
 
-When your integers are in a slice, array, or `Vec`, construct with `from_slice`; it's typically much faster than `from_iter`/`collect`:
-
-```rust
-use range_set_blaze::prelude::*;
-
-let readings = vec![5, 3, 4, 100, 101, 102, 4];
-let set = RangeSetBlaze::from_slice(&readings);
-assert_eq!(set.to_string(), "3..=5, 100..=102");
-```
-
-Likewise, when a map's keys and values are in two slices, arrays, or `Vec`s (say, two columns of a table), construct with `from_slices`:
-
-```rust
-use range_set_blaze::prelude::*;
-
-let ids = vec![10, 11, 12, 13, 50, 51];
-let labels = vec!["red", "red", "red", "blue", "blue", "blue"];
-let map = RangeMapBlaze::from_slices(&ids, &labels);
-assert_eq!(map.to_string(), r#"(10..=12, "red"), (13..=13, "blue"), (50..=51, "blue")"#);
-```
-
 **Example 2**: Maps (and Network Addresses)
 - - - - - -
 
@@ -243,6 +222,33 @@ for range in intron.ranges() {
     let (start, end) = range.into_inner();
     println!("{chrom}\t{start}\t{end}");
 }
+```
+
+**Example 4**: Columns of Data
+- - - - - -
+
+Data often arrives as columns: slices, arrays, or `Vec`s. Here, a server logs its status once a minute, and
+separately logs the minutes in which errors occurred. [`from_slices`][from-slices] turns the minute and
+status columns into a map of status periods, and [`from_slice`][from-slice] turns the error minutes into a
+set. Both are typically much faster than `from_iter`/`collect`.
+
+```rust
+use range_set_blaze::prelude::*;
+
+// The status log: one row per minute
+let minutes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+let statuses = ["up", "up", "up", "down", "down", "up", "up", "up", "up", "up"];
+let periods = RangeMapBlaze::from_slices(&minutes, &statuses);
+assert_eq!(periods.to_string(), r#"(0..=2, "up"), (3..=4, "down"), (5..=9, "up")"#);
+
+// The error log: unsorted, with repeats
+let error_minutes = [4, 3, 8, 3, 7];
+let errors = RangeSetBlaze::from_slice(&error_minutes);
+assert_eq!(errors.to_string(), "3..=4, 7..=8");
+
+// What was the status during each error? Intersect (operator "&") the map with the set.
+let during_errors = &periods & &errors;
+assert_eq!(during_errors.to_string(), r#"(3..=4, "down"), (7..=8, "up")"#);
 ```
 
 Cargo Features
