@@ -8,6 +8,122 @@
 //!
 //! Each of those is available in four sizes: 16, 32, 64 and 128.
 //!
+//! ## Converting Native Floats
+//!
+//! Choose a wrapper by the meaning you want:
+//!
+//! * [`NotNan`] (e.g. [`NotNanF64`]) is the usual choice: ordinary numeric order, NaN rejected, and
+//!   `-0.0` and `+0.0` treated as the same value (stored as `+0.0`).
+//! * [`Total`] (e.g. [`TotalF64`]) keeps every bit pattern as its own value, ordered by
+//!   `total_cmp`: NaNs are kept, and `-0.0` comes just before `+0.0`.
+//!
+//! **Into a wrapper** (shown for `f64`; `f32`, `f16`, and `f128` work the same way):
+//!
+//! | You have              | `NotNan`                                                    | `Total`                                     |
+//! |-----------------------|-------------------------------------------------------------|---------------------------------------------|
+//! | one value             | [`NotNanF64::new`], [`try_new`] (returns `Option`), [`nnf64`] (`const`) | [`TotalF64::new`], [`tf64`] (`const`) |
+//! | one range `a..=b`     | [`NotNanF64::from_primitive_range`]                         | [`TotalF64::from_primitive_range`]          |
+//! | an iterator of ranges | [`NotNanF64::from_primitive_ranges`]                        | [`TotalF64::from_primitive_ranges`]         |
+//! | an iterator of values | [`NotNanF64::values`]                                       | [`TotalF64::values`]                        |
+//! | `&[f64]` (borrowed)   | [`NotNanF64::from_primitive_slice`]: a view; also panics on `-0.0` | [`TotalF64::from_primitive_slice`]: a view |
+//! | `Vec<f64>` (owned)    | [`NotNanF64::from_primitive_vec`]: reuses the allocation    | `v.into_iter().map(TotalF64::new).collect()` (also reuses it) |
+//!
+//! Range conversions wrap just the two endpoints; they don't list the floats in between.
+//!
+//! **NaN and `-0.0` with `NotNan`:** every `NotNan` conversion panics on NaN, except
+//! [`try_new`], which returns `None`. Every one turns `-0.0` into `+0.0`, except
+//! [`NotNanF64::from_primitive_slice`]: a borrowed view can't rewrite memory, so it panics on
+//! `-0.0` instead. If your data may contain `-0.0`, use [`NotNanF64::from_primitive_vec`] or
+//! [`NotNanF64::values`]. (Advanced: the `unsafe` [`NotNanF64::new_unchecked`] and
+//! [`NotNanF64::from_primitive_slice_unchecked`] skip these checks when you can guarantee there is
+//! no NaN and no `-0.0`.)
+//!
+//! **Building a set or map:** pass wrapped slices to [`RangeSetBlaze::from_slice`] or
+//! [`RangeMapBlaze::from_slices`], and wrapped values or ranges to `from_iter`/`collect`.
+//!
+//! **Back to native floats** (both wrappers):
+//!
+//! | You have  | Use                                                                                     |
+//! |-----------|-----------------------------------------------------------------------------------------|
+//! | one value | `into_inner` ([`NotNan::into_inner`], [`Total::into_inner`])                            |
+//! | a range   | `into_primitive_range` (gives `a..=b`) or `into_primitive_inner` (gives `(a, b)`), from [`NotNanRangeExt`] or [`TotalRangeExt`] |
+//! | a slice   | `as_primitive_slice`, a view, from [`NotNanSliceExt`] or [`TotalSliceExt`]              |
+//!
+//! ```
+//! use range_set_blaze::{NotNanF64, RangeMapBlaze, RangeSetBlaze, not_nan::NotNanRangeExt};
+//!
+//! // A borrowed slice: a view, no copy. (`-0.0`, like NaN, would panic.)
+//! let data = [1.0, 2.0, 5.0];
+//! let set = RangeSetBlaze::from_slice(NotNanF64::from_primitive_slice(&data));
+//! assert!(set.contains(NotNanF64::new(5.0)));
+//!
+//! // An owned vector: reuses its allocation, and turns `-0.0` into `+0.0`.
+//! let keys = NotNanF64::from_primitive_vec(vec![-0.0, 1.0, 2.0]);
+//! let map = RangeMapBlaze::from_slices(&keys, ["a", "b", "b"]);
+//! assert_eq!(map.get(NotNanF64::new(0.0)), Some(&"a"));
+//!
+//! // Ranges in, ranges out.
+//! let set = RangeSetBlaze::from_iter(NotNanF64::from_primitive_ranges([3.0..=4.0, 1.0..=2.0]));
+//! let first = set.ranges().next().map(NotNanRangeExt::into_primitive_range);
+//! assert_eq!(first, Some(1.0..=2.0));
+//! ```
+//!
+//! ## Floats as Map Values
+//!
+//! A [`RangeMapBlaze`]'s values must implement `Eq`, which native floats don't (NaN isn't equal to
+//! itself), so `RangeMapBlaze<u32, f64>` doesn't compile. Use a wrapper as the value type
+//! instead, such as `RangeMapBlaze<u32, NotNanF64>`. Neighboring keys with equal values merge into
+//! one range, using the wrapper's meaning of "equal": with `NotNan`, `-0.0` and `+0.0` are the same
+//! value; with `Total`, they're different, and NaNs with the same bits are equal.
+//!
+//! ```
+//! use range_set_blaze::{NotNanF64, RangeMapBlaze, TotalF64};
+//!
+//! // Price per unit by quantity tier.
+//! let prices = RangeMapBlaze::from_iter([
+//!     (1..=9, NotNanF64::new(2.50)),
+//!     (10..=99, NotNanF64::new(2.00)),
+//!     (100..=u32::MAX, NotNanF64::new(1.75)),
+//! ]);
+//! assert_eq!(prices.get(42).map(|price| price.into_inner()), Some(2.00));
+//!
+//! // From columns: wrap the float column in bulk, then use `from_slices`.
+//! let sensor_ids = [7_u32, 8, 9, 10];
+//! let readings = [0.5, 0.5, 0.5, f64::NAN]; // NaN means "no reading"
+//! let map = RangeMapBlaze::from_slices(sensor_ids, TotalF64::from_primitive_slice(&readings));
+//! assert_eq!(map.range_values_len(), 2); // 7..=9 -> 0.5, 10..=10 -> NaN
+//! ```
+//!
+//! [`NotNan`]: crate::NotNan
+//! [`NotNanF64`]: crate::NotNanF64
+//! [`Total`]: crate::Total
+//! [`TotalF64`]: crate::TotalF64
+//! [`NotNanF64::new`]: crate::NotNan::new
+//! [`try_new`]: crate::NotNan::try_new
+//! [`nnf64`]: crate::not_nan::nnf64
+//! [`TotalF64::new`]: crate::Total::new
+//! [`tf64`]: crate::total::tf64
+//! [`NotNanF64::from_primitive_range`]: crate::NotNan::from_primitive_range
+//! [`TotalF64::from_primitive_range`]: crate::Total::from_primitive_range
+//! [`NotNanF64::from_primitive_ranges`]: crate::NotNan::from_primitive_ranges
+//! [`TotalF64::from_primitive_ranges`]: crate::Total::from_primitive_ranges
+//! [`NotNanF64::values`]: crate::NotNan::values
+//! [`TotalF64::values`]: crate::Total::values
+//! [`NotNanF64::from_primitive_slice`]: crate::NotNan::from_primitive_slice
+//! [`TotalF64::from_primitive_slice`]: crate::Total::from_primitive_slice
+//! [`NotNanF64::from_primitive_vec`]: crate::NotNan::from_primitive_vec
+//! [`NotNanF64::new_unchecked`]: crate::NotNan::new_unchecked
+//! [`NotNanF64::from_primitive_slice_unchecked`]: crate::NotNan::from_primitive_slice_unchecked
+//! [`RangeSetBlaze::from_slice`]: crate::RangeSetBlaze::from_slice
+//! [`RangeMapBlaze::from_slices`]: crate::RangeMapBlaze::from_slices
+//! [`RangeMapBlaze`]: crate::RangeMapBlaze
+//! [`NotNan::into_inner`]: crate::NotNan::into_inner
+//! [`Total::into_inner`]: crate::Total::into_inner
+//! [`NotNanRangeExt`]: crate::not_nan::NotNanRangeExt
+//! [`TotalRangeExt`]: crate::total::TotalRangeExt
+//! [`NotNanSliceExt`]: crate::not_nan::NotNanSliceExt
+//! [`TotalSliceExt`]: crate::total::TotalSliceExt
+//!
 //! ## Example: Merging Overlapping Intervals
 //!
 //! Turn a list of unsorted, overlapping f64 intervals (inclusive) into
@@ -128,6 +244,7 @@
 //! ```
 
 mod not_nan_float;
+mod not_nan_simd;
 mod total_float;
 
 pub mod total;

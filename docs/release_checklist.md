@@ -36,6 +36,9 @@ just clippy-latest
   lints (mirroring how `-A deprecated` and, as of 0.7.0,
   `-A clippy::single_range_in_vec_init` are handled for the nightly job) in
   both `ci.yml` and `justfile`.
+- Bump stable and nightly together. A nightly left behind a newer stable
+  (as happened in 0.8.0: stable went to 1.99.0, nightly stayed at
+  `nightly-2026-09-15`) can lag on lints and warnings that stable already shows.
 - It is fine to skip a bump for a given release to keep its scope small, but
   make that a deliberate choice each time, not a default.
 - Note any toolchain bump in `docs/CHANGELOG.md` under `### Changed`.

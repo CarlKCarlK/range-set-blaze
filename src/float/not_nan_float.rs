@@ -61,6 +61,29 @@ pub trait NotNanFloat:
     fn f64_to_safe_len_lossy(f: f64) -> Self::SafeLen;
     fn inclusive_end_from_start(a: Self, b: Self::SafeLen) -> Self;
     fn start_from_inclusive_end(a: Self, b: Self::SafeLen) -> Self;
+    /// Returns `true` if no value is NaN or `-0.0`.
+    fn all_not_nan_or_neg_zero(values: &[Self]) -> bool;
+    /// Replaces every `-0.0` with `+0.0`, in place, and returns `true` if no value is NaN.
+    fn normalize_neg_zeros_and_check_not_nan(values: &mut [Self]) -> bool;
+}
+
+/// The scalar version of [`NotNanFloat::all_not_nan_or_neg_zero`], for types without a SIMD one.
+#[cfg(feature = "float_nightly_experimental")]
+fn scalar_all_not_nan_or_neg_zero<T: NotNanFloat>(values: &[T]) -> bool {
+    values.iter().all(|&x| !T::is_nan(x) && !T::is_neg_zero(x))
+}
+
+/// The scalar version of [`NotNanFloat::normalize_neg_zeros_and_check_not_nan`], for types
+/// without a SIMD one.
+#[cfg(feature = "float_nightly_experimental")]
+fn scalar_normalize_neg_zeros_and_check_not_nan<T: NotNanFloat>(values: &mut [T]) -> bool {
+    for x in values {
+        if T::is_nan(*x) {
+            return false;
+        }
+        *x = T::normalize(*x);
+    }
+    true
 }
 
 /// Crate-private encoding and arithmetic machinery for not-NaN floats.
@@ -205,7 +228,6 @@ macro_rules! impl_not_nan_ops {
         fn to_ordered(x: Self) -> Self::Ordered {
             $to_ordered(x)
         }
-
         fn to_bits(x: Self) -> Self::Bits {
             x.to_bits()
         }
@@ -245,11 +267,9 @@ macro_rules! impl_not_nan_ops {
         fn total_cmp(x: Self, y: Self) -> Ordering {
             x.total_cmp(&y)
         }
-
         fn is_nan(x: Self) -> bool {
             x.is_nan()
         }
-
         fn normalize(x: Self) -> Self {
             if x.to_bits() == Self::NEG_ZERO_BITS {
                 0.0
@@ -265,7 +285,6 @@ macro_rules! impl_not_nan_ops {
         fn before(x: Self) -> Self {
             x.next_down()
         }
-
         fn is_neg_zero(x: Self) -> bool {
             x.to_bits() == Self::NEG_ZERO_BITS
         }
@@ -280,7 +299,7 @@ impl private::Sealed for f16 {}
 impl private::Sealed for f128 {}
 
 macro_rules! impl_not_nan_capability {
-    ($primitive:ty, $safe_len:ty) => {
+    ($primitive:ty, $safe_len:ty, $all_valid:path, $normalize:path) => {
         impl NotNanFloat for $primitive {
             type SafeLen = $safe_len;
 
@@ -295,11 +314,9 @@ macro_rules! impl_not_nan_capability {
             fn total_cmp(x: Self, y: Self) -> Ordering {
                 <Self as NotNanFloatImpl>::total_cmp(x, y)
             }
-
             fn is_nan(x: Self) -> bool {
                 <Self as NotNanFloatImpl>::is_nan(x)
             }
-
             fn normalize(x: Self) -> Self {
                 <Self as NotNanFloatImpl>::normalize(x)
             }
@@ -311,7 +328,6 @@ macro_rules! impl_not_nan_capability {
             fn before(x: Self) -> Self {
                 <Self as NotNanFloatImpl>::before(x)
             }
-
             fn is_neg_zero(x: Self) -> bool {
                 <Self as NotNanFloatImpl>::is_neg_zero(x)
             }
@@ -335,16 +351,44 @@ macro_rules! impl_not_nan_capability {
             fn start_from_inclusive_end(a: Self, b: Self::SafeLen) -> Self {
                 <Self as NotNanFloatImpl>::start_from_inclusive_end(a, b)
             }
+
+            fn all_not_nan_or_neg_zero(values: &[Self]) -> bool {
+                $all_valid(values)
+            }
+
+            fn normalize_neg_zeros_and_check_not_nan(values: &mut [Self]) -> bool {
+                $normalize(values)
+            }
         }
     };
 }
 
-impl_not_nan_capability!(f64, u64);
-impl_not_nan_capability!(f32, u32);
+impl_not_nan_capability!(
+    f64,
+    u64,
+    super::not_nan_simd::f64::all_valid,
+    super::not_nan_simd::f64::normalize
+);
+impl_not_nan_capability!(
+    f32,
+    u32,
+    super::not_nan_simd::f32::all_valid,
+    super::not_nan_simd::f32::normalize
+);
 #[cfg(feature = "float_nightly_experimental")]
-impl_not_nan_capability!(f16, u16);
+impl_not_nan_capability!(
+    f16,
+    u16,
+    scalar_all_not_nan_or_neg_zero,
+    scalar_normalize_neg_zeros_and_check_not_nan
+);
 #[cfg(feature = "float_nightly_experimental")]
-impl_not_nan_capability!(f128, u128);
+impl_not_nan_capability!(
+    f128,
+    u128,
+    scalar_all_not_nan_or_neg_zero,
+    scalar_normalize_neg_zeros_and_check_not_nan
+);
 
 impl NotNanFloatImpl for f64 {
     type Bits = u64;

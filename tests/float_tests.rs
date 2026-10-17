@@ -540,6 +540,56 @@ fn not_nan_slice_accepts_infinity() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn not_nan_vec_normalizes_negative_zero_in_place() {
+    let values: Vec<f64> = (0..100)
+        .map(|index| {
+            if index % 7 == 0 {
+                -0.0
+            } else {
+                f64::from(index) - 50.5
+            }
+        })
+        .chain([f64::INFINITY, f64::NEG_INFINITY])
+        .collect();
+    let expected: Vec<NotNanF64> = values.iter().map(|&x| NotNanF64::new(x)).collect();
+    let pointer = values.as_ptr();
+    let capacity = values.capacity();
+    let not_nans = NotNanF64::from_primitive_vec(values);
+    assert_eq!(not_nans, expected);
+    assert!(
+        not_nans
+            .iter()
+            .all(|x| x.into_inner().to_bits() != (-0.0f64).to_bits())
+    );
+    // Same allocation, reused in place.
+    assert_eq!(not_nans.as_ptr().cast::<f64>(), pointer);
+    assert_eq!(not_nans.capacity(), capacity);
+
+    let not_nans = NotNanF32::from_primitive_vec(vec![-0.0f32, 1.0, -0.0]);
+    assert_eq!(not_nans, [0.0, 1.0, 0.0].map(NotNanF32::new));
+    assert_eq!(not_nans[2].into_inner().to_bits(), 0.0f32.to_bits());
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[should_panic(expected = "NotNan type requires non-NaN values")]
+fn not_nan_vec_rejects_nan() {
+    let mut values = vec![1.0; 100];
+    values[77] = f64::NAN;
+    let _ = NotNanF64::from_primitive_vec(values);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[should_panic(expected = "NotNan type requires non-NaN, non-negative-zero values")]
+fn not_nan_long_slice_rejects_negative_zero() {
+    let mut values = vec![1.0f32; 100];
+    values[41] = -0.0;
+    let _ = NotNanF32::from_primitive_slice(&values);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn not_nan_slice_unchecked_bypasses_validation() {
     // SAFETY: deliberately violates NotNan's invariant to document exactly what
     // `from_primitive_slice_unchecked` allows through when its safety precondition is broken —
@@ -614,7 +664,9 @@ fn not_nan_range_rejects_nan_start_f128() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 #[cfg(feature = "float_nightly_experimental")]
 fn not_nan_values_normalizes_negative_zero_f128() {
-    let value = NotNanF128::values([-0.0]).next().unwrap();
+    let value = NotNanF128::values([-0.0])
+        .next()
+        .expect("one value in, one value out");
 
     assert_eq!(value, NotNanF128::new(0.0));
     assert_eq!(value.into_inner().to_bits(), 0.0f128.to_bits());
@@ -667,11 +719,13 @@ fn not_nan_f16_exhaustive_bit_patterns_via_constructors() {
 
     for bits in 0..=u16::MAX {
         let x = f16::from_bits(bits);
-        let is_neg_zero = x == 0.0 && x.is_sign_negative();
+        let is_neg_zero = x.to_bits() == (-0.0f16).to_bits();
 
         if !x.is_nan() && !is_neg_zero {
-            let via_values = NotNanF16::values([x]).next().unwrap();
-            if via_values.into_inner() != x {
+            let via_values = NotNanF16::values([x])
+                .next()
+                .expect("one value in, one value out");
+            if via_values.into_inner().to_bits() != x.to_bits() {
                 failures.push(format!(
                     "values(): bits {bits:#06x} ({x}) did not round-trip, got {:?}",
                     via_values.into_inner()
@@ -679,7 +733,7 @@ fn not_nan_f16_exhaustive_bit_patterns_via_constructors() {
             }
 
             let via_range = *NotNanF16::from_primitive_range(x..=x).start();
-            if via_range.into_inner() != x {
+            if via_range.into_inner().to_bits() != x.to_bits() {
                 failures.push(format!(
                     "range(): bits {bits:#06x} ({x}) did not round-trip, got {:?}",
                     via_range.into_inner()
@@ -687,14 +741,16 @@ fn not_nan_f16_exhaustive_bit_patterns_via_constructors() {
             }
 
             let via_slice = NotNanF16::from_primitive_slice(core::slice::from_ref(&x))[0];
-            if via_slice.into_inner() != x {
+            if via_slice.into_inner().to_bits() != x.to_bits() {
                 failures.push(format!(
                     "slice(): bits {bits:#06x} ({x}) did not round-trip, got {:?}",
                     via_slice.into_inner()
                 ));
             }
         } else if is_neg_zero {
-            let via_values = NotNanF16::values([x]).next().unwrap();
+            let via_values = NotNanF16::values([x])
+                .next()
+                .expect("one value in, one value out");
             if via_values.into_inner().is_sign_negative() {
                 failures.push(format!("values(): bits {bits:#06x} did not normalize -0.0"));
             }

@@ -23,7 +23,6 @@
 
 use super::total_float::TotalFloat;
 use crate::Integer;
-#[cfg(feature = "from_slice")]
 use crate::RangeSetBlaze;
 use core::{
     cmp::Ordering,
@@ -302,18 +301,22 @@ impl<T: TotalFloat> Total<T> {
         values.into_iter().map(Self)
     }
 
-    /// Views primitive values as ordered [`Total`] values.
+    /// Borrows primitive values as [`Total`] values, accepting every value, including NaNs and
+    /// both signed zeros.
     ///
-    /// "Primitive" here means Rust's built-in float type (e.g. `f64`).
+    /// "Primitive" here means Rust's built-in float type (e.g. `f64`). The result is a view of
+    /// the same memory: it runs in `O(1)`, and nothing is copied or allocated. For how this fits
+    /// with the other conversions, see the
+    /// [float module documentation](crate::float#converting-native-floats).
     ///
-    /// This runs in `O(1)` and does not allocate.
     /// # Examples
     /// ```
     /// use range_set_blaze::{RangeSetBlaze, TotalF64};
     ///
-    /// let short = RangeSetBlaze::from_iter(TotalF64::from_primitive_slice(&[1.0, 2.0, 3.0, 4.0]));
-    /// let long = RangeSetBlaze::from_iter([TotalF64::new(1.0), TotalF64::new(2.0), TotalF64::new(3.0), TotalF64::new(4.0)]);
-    /// assert_eq!(short, long);
+    /// let data = [3.0, 1.0, f64::NAN, -0.0];
+    /// let set = RangeSetBlaze::from_slice(TotalF64::from_primitive_slice(&data));
+    /// assert!(set.contains(TotalF64::new(f64::NAN)));
+    /// assert!(set.contains(TotalF64::new(-0.0)) && !set.contains(TotalF64::new(0.0)));
     /// ```
     #[must_use]
     pub const fn from_primitive_slice(values: &[T]) -> &[Self] {
@@ -495,7 +498,6 @@ impl<T: TotalFloat> Integer for Total<T> {
         Self::MAX
     }
 
-    #[cfg(feature = "from_slice")]
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
         // TODO Investigate applying the ordered float transform in SIMD chunks here.

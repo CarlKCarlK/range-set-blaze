@@ -1,9 +1,43 @@
+use crate::from_slice::{SimdInteger, from_slice_at_level, from_slice_at_level_unrolled};
 use crate::{Integer, RangeMapBlaze, RangeSetBlaze};
 use alloc::vec;
 use alloc::vec::{IntoIter, Vec};
 use core::ops::RangeInclusive;
 use num_traits::identities::One;
 use rand::{Rng, distr::uniform::SampleUniform, rngs::StdRng};
+
+/// Builds a set like [`RangeSetBlaze::from_slice`], but at a given `fearless_simd` SIMD level
+/// instead of the one detected for this CPU.
+///
+/// Exposed so benchmarks can compare every SIMD level, including the scalar
+/// `Level::fallback()` (which needs `fearless_simd`'s `force_support_fallback` feature), on the
+/// same data in the same process.
+pub trait FromSliceAtLevel: Integer {
+    /// See [`FromSliceAtLevel`].
+    fn from_slice_at_level(level: fearless_simd::Level, slice: &[Self]) -> RangeSetBlaze<Self>;
+
+    /// Like [`FromSliceAtLevel::from_slice_at_level`], but checking `N` SIMD chunks per
+    /// iteration of the run-extending loop.
+    fn from_slice_at_level_unrolled<const N: usize>(
+        level: fearless_simd::Level,
+        slice: &[Self],
+    ) -> RangeSetBlaze<Self>;
+}
+
+impl<T: SimdInteger> FromSliceAtLevel for T {
+    #[inline]
+    fn from_slice_at_level(level: fearless_simd::Level, slice: &[Self]) -> RangeSetBlaze<Self> {
+        from_slice_at_level(level, slice)
+    }
+
+    #[inline]
+    fn from_slice_at_level_unrolled<const N: usize>(
+        level: fearless_simd::Level,
+        slice: &[Self],
+    ) -> RangeSetBlaze<Self> {
+        from_slice_at_level_unrolled::<Self, N>(level, slice)
+    }
+}
 
 /// Inserts using `RangeSetBlaze`'s normal (non-cursor) insert algorithm.
 ///

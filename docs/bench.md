@@ -64,7 +64,7 @@ Benchmarks below (except #2b, which was already current) were re-run in Septembe
 
 ### 'worst' Conclusion
 
-`BTreeSet` or `HashSet`, not `RangeSetBlaze`, is a good choice for ingesting sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just roughly 2 times worse on average. The SIMD version of `RangeSetBlaze` is about 20-35% slower than the non-SIMD version on this benchmark.
+`BTreeSet` or `HashSet`, not `RangeSetBlaze`, is a good choice for ingesting sets of non-clumpy integers. However, `RangeSetBlaze` is not catastrophically bad; it is just roughly 2 times worse on average. `RangeSetBlaze::from_slice` (SIMD, stable Rust) is faster than `from_iter` here for *n* of about 100 or more (for example, 113 µs vs. 169 µs at *n* = 10,000, close to `BTreeSet` and `HashSet` at about 100 µs), about the same at *n* = 10, and slower only for a single integer (October 2026, `fearless_simd`, AVX-512).
 
 > See benchmark ['worst_op_blaze'](#benchmark-9-worst_op_blaze-compare-roaring-and-rangesetblaze-operators-on-uniform-data), near the end, for a similar comparison of set operations on uniform data.
 
@@ -83,7 +83,7 @@ Each clump has size chosen uniformly random from roughly 1 to double *average cl
 
 With no clumps, `RangeSetBlaze` is about 2.5 times slower than `HashSet`. By clump size 10, `RangeSetBlaze` is already the best performer. As the average clump size goes past 1000, `RangeSetBlaze` is roughly 18 to 34 times faster than `HashSet` and `BTreeSet`, and roughly 5 to 21 times faster than `Roaring` (the exact ratio varies by clump size; see benchmark #3 for `Roaring`'s trend across the full range).
 
-The nightly-only `RangeSetBlaze::from_slice` is even faster: at the largest clump sizes tested it is more than 200 times faster than `HashSet`.
+`RangeSetBlaze::from_slice` (SIMD-accelerated, stable Rust) is even faster: at clump sizes of 1000 and up it is about 10 to 20 times faster than ingesting the same integers with `from_iter`, and about 150 to 360 times faster than `HashSet`. Even with no clumps it is about 1.5 times faster than `from_iter` (October 2026, `fearless_simd`, AVX-512; the plot below predates these numbers).
 
 If we are allowed to input the clumps as ranges (instead of as individual integers, see benchmark #4), `RangeSetBlaze` is faster still — around 700 to 1300 times faster than `HashSet`/`BTreeSet` (ingesting integers one at a time) at clump size 1000. Compared directly against `Roaring` also given ranges, though, the two are much closer: `RangeSetBlaze` is only about 1.1 to 2.6 times faster (see benchmark #4).
 
@@ -140,6 +140,32 @@ The B-tree cursor insertion algorithm is a consistent, unconditional win over th
 
 ![ingest_clumps_cursor](criterion/v5/ingest_clumps_cursor/report/lines.svg "ingest_clumps_cursor")
 
+## Benchmark #2c: 'ingest_clumps_ip_addresses': `from_slice` vs. `from_iter` on IP addresses
+
+* **Measure**: IP address intake speed
+* **Candidates**: `RangeSetBlaze::from_slice` and `RangeSetBlaze::from_iter`, on `Ipv4Addr` and on `Ipv6Addr`
+* **Vary**: *average clump size* from 1 (no clumps) to 100K (ten big clumps)
+* **Details**: The same 1M clumpy integers as `ingest_clumps_base`, as `Ipv4Addr`s and as `Ipv6Addr`s inside `2001:db8::/32`. (Think of a blocklist or a log of addresses.)
+
+### 'ingest_clumps_ip_addresses' Results
+
+`from_slice` uses SIMD for both address types. For `Ipv4Addr` it is about 1.3 times faster than `from_iter` even with no clumps, and 17 to 33 times faster at clump sizes of 1000 and up. For `Ipv6Addr` it is about the same as `from_iter` with no clumps, and 21 to 24 times faster at clump sizes of 1000 and up. (October 2026, `fearless_simd`, AVX-512.)
+
+| Avg clump size | `Ipv4Addr` `from_iter` | `Ipv4Addr` `from_slice` | `Ipv6Addr` `from_iter` | `Ipv6Addr` `from_slice` |
+|---|---|---|---|---|
+| 1 | 73 ms | 54 ms | 218 ms | 199 ms |
+| 10 | 10 ms | 7.9 ms | 41 ms | 26 ms |
+| 100 | 4.9 ms | 1.4 ms | 29 ms | 3.7 ms |
+| 1,000 | 3.0 ms | 0.18 ms | 30 ms | 1.3 ms |
+| 10,000 | 3.2 ms | 0.10 ms | 29 ms | 1.4 ms |
+| 100,000 | 3.0 ms | 0.090 ms | 31 ms | 1.3 ms |
+
+### 'ingest_clumps_ip_addresses' Conclusion
+
+When your IP addresses are in a slice, array, or `Vec`, use `from_slice`.
+
+![ingest_clumps_ip_addresses](criterion/v5/ingest_clumps_ip_addresses/report/lines.svg "ingest_clumps_ip_addresses")
+
 ## Benchmark #3: 'ingest_clumps_integers': Measure the `rangemap` crate on clumpy integers
 
 * **Measure**: integer intake speed
@@ -151,7 +177,7 @@ We give each crate the clumps as individual integers.
 
 ### 'ingest_clumps_integers' Results & Conclusion
 
-`rangemap` is 2 to 16 times slower than `HashSet`, and the gap is largest for small clumps (near-uniform data) and narrows as clumps get bigger. It is 7 to 46 times slower than `RangeSetBlaze`, again widest at large clump sizes. The nightly `RangeSetBlaze::from_slice` is even faster by an order of magnitude. However ...
+`rangemap` is 2 to 16 times slower than `HashSet`, and the gap is largest for small clumps (near-uniform data) and narrows as clumps get bigger. It is 7 to 46 times slower than `RangeSetBlaze`, again widest at large clump sizes. `RangeSetBlaze::from_slice` (SIMD-accelerated, stable Rust) is even faster by an order of magnitude. However ...
 
 `RangeSetBlaze` batches its integer input by noticing when consecutive integers fit in a clump. This batching is not implemented in `rangemap` but could easily be added to it or any other range-based crate. However, however, ...
 

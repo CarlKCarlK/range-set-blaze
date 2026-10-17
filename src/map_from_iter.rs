@@ -105,6 +105,9 @@ impl<T: Integer, V: Eq + Clone> FromIterator<(T, V)> for RangeMapBlaze<T, V> {
     ///
     /// In case of overlapping keys, the last (right-most) value overrides the previous ones.
     ///
+    /// If your keys and values are in two slices, arrays, or `Vec`s, use
+    /// [`RangeMapBlaze::from_slices`] instead; it is typically much faster.
+    ///
     /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
     ///
     /// # Examples

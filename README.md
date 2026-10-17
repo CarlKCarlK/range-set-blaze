@@ -13,6 +13,7 @@ Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full 
 * `union`, `intersection`, `difference`, `symmetric difference`, and `complement`—available on both [sets][set operations] and [maps][map operations].
 * Can also work directly with [ranges and gaps][ranges and gaps], not just individual integer-like values.
 * [Joins][joins] (inner, left, and full, two-way and multiway) combine the values of range maps by key.
+* Fast ingestion: [`from_slice`][from-slice] (sets) and [`from_slices`][from-slices] (maps) use SIMD on stable Rust, via `fearless_simd`. On clumpy data they are typically about 8 to 30 times faster than `from_iter`/`collect`, and over 75 times faster than `BTreeSet`/`BTreeMap` (see the [set][set benchmarks] and [map][map benchmarks] benchmarks).
 
 The crate's main structs are:
 
@@ -27,8 +28,7 @@ containers, see the [Ranges and gaps guide][ranges and gaps].
 >
 > We can construct a `RangeSetBlaze` or `RangeMapBlaze` from unsorted & redundant integers (or ranges). When the inputs are clumpy, construction will be [linear][1] in the number of inputs and set operations will be sped up [quadratically][1].
 >
-> ⚠️ **Warning:**
-> All RangeMapBlaze operations (`into_iter`, union, difference, symmetric difference, etc.) now give precedence to the **right-hand map** when ranges overlap. This change (from version 0.2.0) aligns with the behavior of `BTreeMap` and `HashMap`.
+> When ranges overlap, `RangeMapBlaze` operations (`from_iter`/`collect`, `extend`, union, difference, symmetric difference, etc.) give precedence to the right-hand (later) value, just like `BTreeMap` and `HashMap`.
 
 The crate's main traits are
 
@@ -117,6 +117,27 @@ let b = RangeSetBlaze::from_iter([-20..=-20, 400..=599]);
 // c is the union of a and b, namely -20 and 100 to 999 (inclusive)
 let c = a | b;
 assert_eq!(c, RangeSetBlaze::from_iter([-20..=-20, 100..=999]));
+```
+
+When your integers are in a slice, array, or `Vec`, construct with `from_slice`. It uses SIMD on stable Rust, and on clumpy data it is typically 10 to 20 times faster than `from_iter`/`collect`:
+
+```rust
+use range_set_blaze::prelude::*;
+
+let readings = vec![5, 3, 4, 100, 101, 102, 4];
+let set = RangeSetBlaze::from_slice(&readings);
+assert_eq!(set.to_string(), "3..=5, 100..=102");
+```
+
+Likewise, when a map's keys and values are in two slices, arrays, or `Vec`s (say, two columns of a table), construct with `from_slices`. It uses SIMD on the keys and, on clumpy keys, is typically 6 to 16 times faster than `from_iter`/`collect`:
+
+```rust
+use range_set_blaze::prelude::*;
+
+let ids = vec![10, 11, 12, 13, 50, 51];
+let labels = vec!["red", "red", "red", "blue", "blue", "blue"];
+let map = RangeMapBlaze::from_slices(&ids, &labels);
+assert_eq!(map.to_string(), r#"(10..=12, "red"), (13..=13, "blue"), (50..=51, "blue")"#);
 ```
 
 **Example 2**: Maps (and Network Addresses)
@@ -227,9 +248,30 @@ The available Cargo features are:
 * `default` — Enables the `std` feature. Use `--no-default-features` for a `no_std` build.
 * `std` — Enables `std`-specific conveniences and trait implementations. The crate's core functionality remains available with `no_std` and `alloc`; see [the `no_std` usage above](#no_std-wasm-and-embedded).
 * `cursor_nightly_experimental` — Uses Rust's (nightly-only) B-tree cursor API to speed up `insert`/`ranges_insert` on both `RangeSetBlaze` (roughly [1.8x–2.2x, geometric mean ~2.0x](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md#benchmark-2b-ingest_clumps_cursor-experimental-b-tree-cursor-insertion-vs-the-baseline-algorithm)) and `RangeMapBlaze` (roughly [1.5x–2.1x, geometric mean ~1.7x](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench_map.md#benchmark-3b-map_ingest_clumps_cursor-experimental-b-tree-cursor-insertion-vs-the-baseline-algorithm)). Same public API.
-* `from_slice` — Enables the nightly-only [`RangeSetBlaze::from_slice`][from-slice] constructor, which can speed up construction from array-like collections using SIMD where available.
 * `float_nightly_experimental` — Enables the nightly-only `f16` and `f128` floating-point wrappers; see the [floating-point module documentation][floating-point documentation]. This requires a nightly Rust compiler.
 * `test_util` — Test/benchmark helpers used internally by the crate; not needed by downstream users.
+
+The [`RangeSetBlaze::from_slice`][from-slice] and [`RangeMapBlaze::from_slices`][from-slices]
+constructors are always available (no feature flag needed) and are the fastest way to build a set
+or map from slices, arrays, or `Vec`s of integers. They use SIMD where available, on stable Rust, via `fearless_simd`. With `std` (the default), the best SIMD instructions for the
+running CPU are detected at runtime; in `no_std`, the SIMD features selected at compile time for
+the target are used.
+
+These methods use SIMD:
+
+* [`RangeSetBlaze::from_slice`][from-slice] finds runs of consecutive integers with SIMD, for the
+  primitive integer types (`u8` through `u128`, `i8` through `i128`, `usize`, `isize`), `char`,
+  `Ipv4Addr`, and `Ipv6Addr`.
+* [`RangeMapBlaze::from_slices`][from-slices] does the same for its keys; values are compared
+  with ordinary `==`.
+* [`NotNan::from_primitive_slice`][not-nan-slice] and
+  [`NotNan::from_primitive_vec`][not-nan-vec] check `f32`/`f64` values for NaN and `-0.0` with
+  SIMD.
+
+For float keys (`NotNan` or `Total`), `from_slice` and `from_slices` work but don't use SIMD.
+
+[not-nan-slice]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/not_nan/struct.NotNan.html#method.from_primitive_slice
+[not-nan-vec]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/not_nan/struct.NotNan.html#method.from_primitive_vec
 
 The published API documentation includes all optional features. Feature-gated items are marked
 with the feature required to use them; optional features are not enabled by default for users of
@@ -237,6 +279,9 @@ the crate.
 
 [floating-point documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/index.html
 [from-slice]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_slice
+[from-slices]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html#method.from_slices
+[set benchmarks]: https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md
+[map benchmarks]: https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench_map.md
 
 Contributing
 ------------

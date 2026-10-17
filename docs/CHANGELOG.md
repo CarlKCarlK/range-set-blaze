@@ -5,6 +5,74 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+This release is not breaking.
+
+### Added
+
+- **`RangeMapBlaze::from_slices(keys, values)`** builds a map from a slice of keys and a
+  same-length slice of values (two columns of a table), using SIMD to find runs of consecutive
+  keys. Values may be any `V: Eq + Clone`. On clumpy keys it is typically 6 to 16 times faster
+  than `from_iter`. It panics if the lengths differ. `Integer::from_slices` backs it, with a default
+  implementation, so it is not a new required method.
+- **`NotNan::from_primitive_vec`** converts a `Vec<f64>` (or `f32`, ...) into `NotNan` values in
+  place, reusing the allocation, normalizing `-0.0` to `+0.0`, and panicking on NaN.
+- The float docs have a new "Converting Native Floats" section that lays out every conversion
+  into and out of `NotNan` and `Total` (values, ranges, iterators, slices, vectors) and their NaN
+  and `-0.0` rules.
+
+### Changed
+
+- **`RangeSetBlaze::from_slice` now works on stable Rust and is no longer behind a Cargo
+  feature.** The constructor, and its `fearless_simd` and `bytemuck` dependencies, are now
+  unconditional parts of the crate, available in every build (including `no_std`). The
+  `from_slice` feature still exists so that `features = ["from_slice"]` keeps resolving, but it
+  does nothing and is deprecated; drop it at your convenience.
+- `Integer::from_slice` now has a default implementation (collecting like `from_iter`), so it is
+  not a new required method for types outside this crate that implement `Integer`.
+- The SIMD implementation moved off nightly-only `portable_simd` onto [`fearless_simd`], which
+  runs on stable Rust:
+  - With the `std` feature (the default), the best SIMD instructions supported by the CPU running
+    the program are detected and dispatched to at runtime.
+  - Without `std` (`no_std`), there is no runtime detection; the SIMD features selected at compile
+    time for the target (for example, via `-C target-feature` or `-C target-cpu`) are used
+    instead. A `no_std` build does not fall back to scalar code merely because `std` is
+    unavailable.
+- `isize` and `usize` slices are now SIMD-accelerated as well, mapped to the fixed-width integer
+  lanes matching `target_pointer_width` (`i16`/`u16`, `i32`/`u32`, or `i64`/`u64`). Their SIMD load
+  path uses [`bytemuck`] to reinterpret the input slice in place, rather than copying it
+  element-by-element, closing most of the previous performance gap between `isize`/`usize` and
+  the corresponding fixed-width integer types.
+
+- **`from_slice` is faster.** It now checks four SIMD chunks per loop iteration, collects
+  smaller intermediate ranges, and uses 512-bit vectors for every integer type (previously 128 or
+  256 bits for 8- and 16-bit types). On clumpy data it is typically 10 to 20 times faster than
+  `from_iter`/`collect`; checked on AMD, Intel, and ARM (including Apple) CPUs.
+- `from_slice` now uses SIMD for `char`, `Ipv4Addr`, `u128`, `i128`, and `Ipv6Addr` too. 128-bit
+  values span two 64-bit lanes; the IP address types, whose memory layout Rust doesn't guarantee,
+  are converted lane by lane rather than reinterpreted. On clumpy IP addresses they are about
+  17 to 33 times faster than `from_iter`.
+- `NotNan::from_primitive_slice` now validates `f32`/`f64` with SIMD (about 11 times faster).
+- The docs, README, and examples now recommend `from_slice` whenever the integers are in a slice,
+  array, or `Vec`.
+- The benchmark docs report `RangeMapBlaze::from_slices` (in `bench_map.md`) and a new IP address
+  benchmark comparing `from_slice` and `from_iter` (in `bench.md`).
+- The pinned nightly toolchain is now `nightly-2026-10-12` (was `nightly-2026-09-15`). This
+  affects only local builds and CI.
+
+### Removed
+
+- The `build-simd` and `test-simd` just recipes.
+- The unused `num-integer` dependency.
+
+[`fearless_simd`]: https://crates.io/crates/fearless_simd
+[`bytemuck`]: https://crates.io/crates/bytemuck
+
+Note: 0.8.0 already includes the 0.7.1 `from_slice` wraparound correctness fix described below;
+this release does not change that fix, only the feature's stability, platform support, and
+`isize`/`usize` performance.
+
 ## [0.8.0] - 2026-10-09
 
 This is a breaking release (see **Changed** and **Removed**). Code that only uses

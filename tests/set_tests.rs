@@ -12,7 +12,6 @@ wasm_bindgen_test_configure!(run_in_browser);
 use core::fmt;
 use core::fmt::Debug;
 use core::iter::FusedIterator;
-#[cfg(feature = "from_slice")]
 use core::mem::size_of;
 use core::ops::BitAndAssign;
 use core::ops::RangeInclusive;
@@ -1225,59 +1224,8 @@ fn range_set_blaze_constructors() {
     assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100");
 }
 
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[cfg(feature = "from_slice")]
-#[allow(unexpected_cfgs)]
-fn print_features() {
-    println!("feature\tcould\tare");
-    syntactic_for! { feature in [
-        "aes",
-        "pclmulqdq",
-        "rdrand",
-        "rdseed",
-        "tsc",
-        "mmx",
-        "sse",
-        "sse2",
-        "sse3",
-        "ssse3",
-        "sse4.1",
-        "sse2",
-        "sse4a",
-        "sha",
-        "avx",
-        "avx2",
-        "avx512f",
-        "avx512cd",
-        "avx512er",
-        "avx512pf",
-        "avx512bw",
-        "avx512dq",
-        "avx512vl",
-        "avx512ifma",
-        "avx512vbmi",
-        "avx512vpopcntdq",
-        "fma",
-        "bmi1",
-        "bmi2",
-        "abm",
-        "lzcnt",
-        "tbm",
-        "popcnt",
-        "fxsr",
-        "xsave",
-        "xsaveopt",
-        "xsaves",
-        "xsavec",
-        ] {$(
-            println!("{}\t{}\t{}",$feature,is_x86_feature_detected!($feature),cfg!(target_feature = $feature));
-
-    )*}};
-}
-
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "from_slice")]
 fn from_slice_all_types() {
     syntactic_for! { ty in [i8, u8] {
         $(
@@ -1298,12 +1246,43 @@ fn from_slice_all_types() {
     }};
 }
 
+// Lane arithmetic wraps, so a run crossing MAX -> MIN (e.g. `[254u8, 255, 0, 1, ...]`) passes
+// the SIMD test unless the kernel also checks the endpoints. Runs that end at MAX must also not
+// merge with a following run that starts at MIN.
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[cfg(feature = "from_slice")]
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::unnecessary_cast,
+    reason = "values are built with deliberately wrapping `as` casts"
+)]
+fn from_slice_wrapping_runs() {
+    syntactic_for! { ty in [i8, u8, i16, u16, i32, u32, i64, u64, isize, usize] {
+        $(
+            for back in [1usize, 2, 7, 16, 63, 64, 65, 200] {
+                for len in [2usize, 16, 64, 255, 256, 257, 300, 600] {
+                    let first = <$ty>::MAX.wrapping_sub((back - 1) as $ty);
+                    let v: Vec<$ty> = (0..len + 8).map(|i| first.wrapping_add(i as $ty)).collect();
+                    // Shift the start so the run meets different SIMD alignments.
+                    for offset in 0..8 {
+                        let slice = &v[offset..offset + len];
+                        assert_eq!(
+                            RangeSetBlaze::from_slice(slice),
+                            RangeSetBlaze::from_iter(slice.iter().copied()),
+                            "type={} back={back} len={len} offset={offset}",
+                            stringify!($ty)
+                        );
+                    }
+                }
+            }
+        )*
+    }};
+}
+
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn range_set_blaze_slice_constructor() {
-    print_features();
     let k = 1;
     let average_width = 1000;
     let coverage_goal = 0.10;
@@ -1318,7 +1297,7 @@ fn range_set_blaze_slice_constructor() {
         let vec: Vec<u32> = MemorylessIter::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -1332,12 +1311,12 @@ fn range_set_blaze_slice_constructor() {
                 &b0 ^ &b1
             );
         }
-        assert!(b0 == b1);
+        assert_eq!(b0, b1);
     }
 
     let v: Vec<i32> = (100..=150).collect();
     let a2 = RangeSetBlaze::from_slice(v);
-    assert!(a2.to_string() == "100..=150");
+    assert_eq!(a2.to_string(), "100..=150");
 
     // For compatibility with `BTreeSet`, we also support
     // 'from'/'into' from arrays of integers.
@@ -3083,7 +3062,6 @@ fn more_coverage_of_range_set_blaze() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-#[cfg(feature = "from_slice")]
 fn additional_from_slice_iter_coverage() {
     // // Test `FromSliceIter::next` with consecutive ranges followed by a non-consecutive element.
     // let a = RangeSetBlaze::from_slice([1, 2, 3, 10]);

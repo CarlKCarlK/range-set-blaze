@@ -122,7 +122,7 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
         let vec: Vec<(u32, u32)> = ClumpyMapIter::new(
             &mut StdRng::seed_from_u64(seed),
             clump_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -137,6 +137,18 @@ fn map_ingest_clumps_base(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let _answer = vec.iter().collect::<RangeMapBlaze<_, _>>();
+                });
+            },
+        );
+
+        // Columnar input: keys and values in separate slices.
+        let (keys, values): (Vec<u32>, Vec<u32>) = vec.iter().copied().unzip();
+        group.bench_with_input(
+            BenchmarkId::new("5. RangeMapBlaze::from_slices", parameter),
+            &parameter,
+            |b, _| {
+                b.iter(|| {
+                    let _answer = RangeMapBlaze::from_slices(&keys, &values);
                 });
             },
         );
@@ -209,7 +221,7 @@ fn map_ingest_clumps_ranges(c: &mut Criterion) {
         let vec_range: Vec<(RangeInclusive<u32>, u32)> = ClumpyMapRange::new(
             &mut StdRng::seed_from_u64(seed),
             clump_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -307,7 +319,7 @@ fn map_ingest_clumps_cursor(c: &mut Criterion) {
         let vec_range: Vec<(RangeInclusive<u32>, u32)> = ClumpyMapRange::new(
             &mut StdRng::seed_from_u64(seed),
             clump_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,

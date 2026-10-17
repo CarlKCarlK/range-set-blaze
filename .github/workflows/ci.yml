@@ -24,13 +24,15 @@ concurrency:
 
 jobs:
   test_64_bit:
-    # Stable and nightly run as separate jobs so they proceed in parallel.
-    name: Test Rust on 64-bit (${{ matrix.os }}, ${{ matrix.toolchain }})
+    # Stable and two nightly suites run as separate jobs so they proceed in parallel.
+    # The nightly work is split in two because, run as one job, Windows and macOS
+    # nightly were the slowest jobs in the workflow (12-13 minutes).
+    name: Test Rust on 64-bit (${{ matrix.os }}, ${{ matrix.suite }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        toolchain: [stable, nightly]
+        suite: [stable, nightly-cursor, nightly-all-features]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -42,33 +44,35 @@ jobs:
         with:
           components: rust-src
       - name: Setup Rust nightly
-        if: matrix.toolchain == 'nightly'
+        if: matrix.suite != 'stable'
         # Keep this nightly pinned, like the stable toolchain above. A floating
         # `nightly` breaks CI whenever upstream adds a new Clippy lint (as
         # `clippy::single_range_in_vec_init` did). Bump the date deliberately.
         run: |
-          rustup toolchain install nightly-2026-09-15 --component clippy --allow-downgrade
-          rustup override set nightly-2026-09-15
+          rustup toolchain install nightly-2026-10-12 --component clippy --allow-downgrade
+          rustup override set nightly-2026-10-12
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ matrix.toolchain }}
+          key: ${{ matrix.suite }}
       - name: Test Rust Native (stable)
-        if: matrix.toolchain == 'stable'
+        if: matrix.suite == 'stable'
         run: |
           cargo clippy --verbose --all-targets --features std -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
           cargo test --verbose
           cargo test --verbose --release
           cargo test --verbose --no-default-features
           cargo test --verbose --release --no-default-features
-      - name: Test Rust Native (nightly)
-        if: matrix.toolchain == 'nightly'
+      - name: Test Rust Native (nightly, cursor)
+        if: matrix.suite == 'nightly-cursor'
         run: |
-          cargo check --tests --features "float_nightly_experimental"
-          cargo test --verbose --features from_slice
           cargo test --verbose --features cursor_nightly_experimental
           cargo test --verbose --no-default-features --features cursor_nightly_experimental
           cargo clippy --verbose --all-targets --features cursor_nightly_experimental -- -D clippy::all -A deprecated -A clippy::single_range_in_vec_init
+      - name: Test Rust Native (nightly, all features)
+        if: matrix.suite == 'nightly-all-features'
+        run: |
+          cargo check --tests --features "float_nightly_experimental"
           cargo test --verbose --all-features
 
   docs_and_audit:
@@ -80,7 +84,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@1.99.0
       - name: Setup Rust nightly
-        run: rustup toolchain install nightly-2026-09-15 --allow-downgrade
+        run: rustup toolchain install nightly-2026-10-12 --allow-downgrade
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
       - name: Install tools
@@ -90,7 +94,7 @@ jobs:
           tool: cargo-deadlinks,cargo-audit,cargo-deny
       - name: Check dead links in documentation
         run: |
-          RUSTDOCFLAGS="--cfg docsrs" cargo +nightly-2026-09-15 doc --no-deps --all-features
+          RUSTDOCFLAGS="--cfg docsrs" cargo +nightly-2026-10-12 doc --no-deps --all-features
           RUST_LOG=error cargo deadlinks --dir target/doc/range_set_blaze
       - name: Audit dependencies (security & license)
         run: |
@@ -166,8 +170,8 @@ jobs:
         run: |
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
-          rustup toolchain install nightly-2026-09-15 --allow-downgrade
-          rustup override set nightly-2026-09-15
+          rustup toolchain install nightly-2026-10-12 --allow-downgrade
+          rustup override set nightly-2026-10-12
           rustup target add thumbv7m-none-eabi
           cargo check --target thumbv7m-none-eabi --no-default-features
           cargo check --target thumbv7m-none-eabi --no-default-features --features float_nightly_experimental
