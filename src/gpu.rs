@@ -1,5 +1,6 @@
 //! Portable GPU-assisted construction for large unsorted slices.
 
+use core::cell::RefCell;
 use core::mem::size_of;
 use core::net::{Ipv4Addr, Ipv6Addr};
 use std::sync::{OnceLock, mpsc};
@@ -18,11 +19,6 @@ use crate::{CheckSortedDisjoint, NotNanF32, NotNanF64, RangeSetBlaze, TotalF32, 
 use crate::{NotNanF16, NotNanF128, TotalF16, TotalF128};
 
 const WORKGROUP_SIZE: u32 = 256;
-// The existing measurements show a decisive end-to-end win at one million
-// values across the useful compression distributions. Keep the initial policy
-// conservative while adapter-to-adapter data accumulates.
-const GPU_CROSSOVER: usize = 1_000_000;
-
 const BOUNDARY_32_SHADER: &str = r"
 struct Parameters {
     len: u32,
@@ -142,7 +138,7 @@ fn main(
 
 // Maintenance: every crate-owned `Integer` type must have a policy below and
 // appear in `gpu_api!`. This stays separate from the public `Integer` trait so
-// enabling `gpu` does not break downstream `Integer` implementations.
+// enabling `accelerate` does not break downstream `Integer` implementations.
 trait GpuElement: crate::Integer {
     const KEY_WORDS: u8;
     const GAP: Option<(u64, u64)> = None;
@@ -152,13 +148,15 @@ trait GpuElement: crate::Integer {
 }
 
 fn from_slice<T: GpuElement>(values: &[T]) -> RangeSetBlaze<T> {
-    if values.len() < GPU_CROSSOVER || T::KEY_WORDS == 0 {
+    if T::KEY_WORDS == 0 {
         return RangeSetBlaze::from_slice(values);
     }
-    from_slice_gpu(values).unwrap_or_else(|| RangeSetBlaze::from_slice(values))
+    try_gpu(values).unwrap_or_else(|| RangeSetBlaze::from_slice(values))
 }
 
-fn from_slice_gpu<T: GpuElement>(values: &[T]) -> Option<RangeSetBlaze<T>> {
+/// Runs on the GPU, or returns `None` if there is no hardware GPU, the input exceeds the GPU's
+/// limits, or the GPU runs out of memory. Any other GPU error panics.
+fn try_gpu<T: GpuElement>(values: &[T]) -> Option<RangeSetBlaze<T>> {
     let context = gpu_context()?;
     (context.adapter_info.device_type != wgpu::DeviceType::Cpu)
         .then(|| from_slice_gpu_with_context(values, context))?
@@ -172,12 +170,31 @@ fn from_slice_gpu_with_context<T: GpuElement>(
         return Some(RangeSetBlaze::new());
     }
     let len = u32::try_from(values.len()).ok()?;
+    // wgpu reports a failed allocation later, as an error on this thread's error scopes, not
+    // at the call. So capture out-of-memory and validation errors for the whole run.
+    GPU_FAILURE.with_borrow_mut(Option::take);
+    let out_of_memory = context
+        .device
+        .push_error_scope(wgpu::ErrorFilter::OutOfMemory);
+    let validation = context
+        .device
+        .push_error_scope(wgpu::ErrorFilter::Validation);
     let endpoints = match T::KEY_WORDS {
-        1 => normalize_32(context, values, len, T::GAP)?,
-        2 => normalize_64(context, values, len, T::GAP)?,
-        _ => return None,
+        1 => normalize_32(context, values, len, T::GAP),
+        2 => normalize_64(context, values, len, T::GAP),
+        _ => None,
     };
-    let ranges = endpoints
+    let validation_error = pollster::block_on(validation.pop());
+    if pollster::block_on(out_of_memory.pop()).is_some() {
+        return None; // Out of GPU memory: the caller falls back to the CPU.
+    }
+    if let Some(error) = validation_error {
+        panic!("GPU range implementation failure: {error}");
+    }
+    if let Some(failure) = GPU_FAILURE.with_borrow_mut(Option::take) {
+        panic!("GPU range execution failed: {failure}");
+    }
+    let ranges = endpoints?
         .into_iter()
         .map(|(start, end)| T::decode(start)..=T::decode(end));
     Some(RangeSetBlaze::from_sorted_disjoint(
@@ -282,7 +299,7 @@ fn normalize_32<T: GpuElement>(
             .iter()
             .copied()
             .map(|value| u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32")),
-    );
+    )?;
     let sorted = storage_buffer(
         context,
         "GPU range sorted",
@@ -306,8 +323,8 @@ fn normalize_32<T: GpuElement>(
     resource_or_panic(radix_sorter.record_sort(&mut encoder, &input, &sorted, len))?;
     boundary.record(&mut encoder);
     record_compactions_32(&mut compactor, &mut encoder, &sorted, &buffers, len)?;
-    submit(context, encoder.finish());
-    Some(read_endpoints_32(context, &buffers, len))
+    submit(context, encoder.finish())?;
+    read_endpoints_32(context, &buffers, len)
 }
 
 fn normalize_64<T: GpuElement>(
@@ -326,7 +343,7 @@ fn normalize_64<T: GpuElement>(
         "GPU range low words",
         word_bytes,
         values.iter().copied().map(|value| low_word(value.encode())),
-    );
+    )?;
     let hi = input_storage_buffer(
         context,
         "GPU range high words",
@@ -335,7 +352,7 @@ fn normalize_64<T: GpuElement>(
             .iter()
             .copied()
             .map(|value| high_word(value.encode())),
-    );
+    )?;
     let pairs = storage_buffer(
         context,
         "GPU range sorted pairs",
@@ -382,8 +399,8 @@ fn normalize_64<T: GpuElement>(
         &buffers.end_count,
         len,
     ))?;
-    submit(context, encoder.finish());
-    Some(read_endpoints_64(context, &buffers, len))
+    submit(context, encoder.finish())?;
+    read_endpoints_64(context, &buffers, len)
 }
 
 fn record_compactions_32(
@@ -612,58 +629,68 @@ fn groups_x(context: &Context, len: u32) -> Option<u32> {
     (total.div_ceil(maximum) <= maximum).then_some(x)
 }
 
-fn read_counts(context: &Context, buffers: &BoundaryBuffers) -> usize {
+fn read_counts(context: &Context, buffers: &BoundaryBuffers) -> Option<usize> {
     let counts = buffers.count_readback.as_ref().map_or_else(
         || {
             let (starts, ends) =
-                map_two_u32(context, &buffers.start_count, 1, &buffers.end_count, 1);
-            [starts[0], ends[0]].to_vec()
+                map_two_u32(context, &buffers.start_count, 1, &buffers.end_count, 1)?;
+            Some([starts[0], ends[0]].to_vec())
         },
         |readback| {
             let mut encoder = encoder(context, "GPU range count copy");
             encoder.copy_buffer_to_buffer(&buffers.start_count, 0, readback, 0, 4);
             encoder.copy_buffer_to_buffer(&buffers.end_count, 0, readback, 4, 4);
-            submit(context, encoder.finish());
+            submit(context, encoder.finish())?;
             map_u32(context, readback, 2)
         },
-    );
+    )?;
     assert_eq!(
         counts[0], counts[1],
         "GPU emitted unpaired range boundaries"
     );
-    counts[0] as usize
+    Some(counts[0] as usize)
 }
 
-fn read_endpoints_32(context: &Context, buffers: &BoundaryBuffers, len: u32) -> Vec<(u64, u64)> {
-    let count = read_counts(context, buffers);
+fn read_endpoints_32(
+    context: &Context,
+    buffers: &BoundaryBuffers,
+    len: u32,
+) -> Option<Vec<(u64, u64)>> {
+    let count = read_counts(context, buffers)?;
     assert!(count <= len as usize, "GPU emitted too many ranges");
     if count == 0 {
-        return Vec::new();
+        return Some(Vec::new());
     }
     let endpoint_bytes = count as u64 * 4;
     let (starts, ends) = if buffers.count_readback.is_none() {
-        map_two_u32(context, &buffers.starts, count, &buffers.ends, count)
+        map_two_u32(context, &buffers.starts, count, &buffers.ends, count)?
     } else {
         let readback = readback_buffer(context, "GPU range endpoint readback", endpoint_bytes * 2);
         let mut encoder = encoder(context, "GPU range endpoint copy");
         encoder.copy_buffer_to_buffer(&buffers.starts, 0, &readback, 0, endpoint_bytes);
         encoder.copy_buffer_to_buffer(&buffers.ends, 0, &readback, endpoint_bytes, endpoint_bytes);
-        submit(context, encoder.finish());
-        let words = map_u32(context, &readback, count * 2);
+        submit(context, encoder.finish())?;
+        let words = map_u32(context, &readback, count * 2)?;
         (words[..count].to_vec(), words[count..].to_vec())
     };
-    starts
-        .iter()
-        .zip(&ends)
-        .map(|(&start, &end)| (u64::from(start), u64::from(end)))
-        .collect()
+    Some(
+        starts
+            .iter()
+            .zip(&ends)
+            .map(|(&start, &end)| (u64::from(start), u64::from(end)))
+            .collect(),
+    )
 }
 
-fn read_endpoints_64(context: &Context, buffers: &BoundaryBuffers, len: u32) -> Vec<(u64, u64)> {
-    let count = read_counts(context, buffers);
+fn read_endpoints_64(
+    context: &Context,
+    buffers: &BoundaryBuffers,
+    len: u32,
+) -> Option<Vec<(u64, u64)>> {
+    let count = read_counts(context, buffers)?;
     assert!(count <= len as usize, "GPU emitted too many ranges");
     if count == 0 {
-        return Vec::new();
+        return Some(Vec::new());
     }
     let endpoint_bytes = count as u64 * 8;
     let (starts, ends) = if buffers.count_readback.is_none() {
@@ -673,25 +700,27 @@ fn read_endpoints_64(context: &Context, buffers: &BoundaryBuffers, len: u32) -> 
             count * 2,
             &buffers.ends,
             count * 2,
-        )
+        )?
     } else {
         let readback = readback_buffer(context, "GPU range endpoint readback", endpoint_bytes * 2);
         let mut encoder = encoder(context, "GPU range endpoint copy");
         encoder.copy_buffer_to_buffer(&buffers.starts, 0, &readback, 0, endpoint_bytes);
         encoder.copy_buffer_to_buffer(&buffers.ends, 0, &readback, endpoint_bytes, endpoint_bytes);
-        submit(context, encoder.finish());
-        let words = map_u32(context, &readback, count * 4);
+        submit(context, encoder.finish())?;
+        let words = map_u32(context, &readback, count * 4)?;
         (words[..count * 2].to_vec(), words[count * 2..].to_vec())
     };
-    starts
-        .as_chunks::<2>()
-        .0
-        .iter()
-        .zip(ends.as_chunks::<2>().0)
-        .map(|(&[start_hi, start_lo], &[end_hi, end_lo])| {
-            (join_words(start_hi, start_lo), join_words(end_hi, end_lo))
-        })
-        .collect()
+    Some(
+        starts
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .zip(ends.as_chunks::<2>().0)
+            .map(|(&[start_hi, start_lo], &[end_hi, end_lo])| {
+                (join_words(start_hi, start_lo), join_words(end_hi, end_lo))
+            })
+            .collect(),
+    )
 }
 
 fn join_words(hi: u32, lo: u32) -> u64 {
@@ -731,7 +760,18 @@ fn resource_or_panic(result: Result<(), lampshade::Error>) -> Option<()> {
     }
 }
 
-fn submit(context: &Context, command: wgpu::CommandBuffer) {
+std::thread_local! {
+    /// The first GPU failure seen on this thread during the current call, if any.
+    static GPU_FAILURE: RefCell<Option<std::string::String>> = const { RefCell::new(None) };
+}
+
+fn record_gpu_failure(what: &str, error: &impl core::fmt::Display) {
+    GPU_FAILURE.with_borrow_mut(|failure| {
+        failure.get_or_insert_with(|| std::format!("{what}: {error}"));
+    });
+}
+
+fn submit(context: &Context, command: wgpu::CommandBuffer) -> Option<()> {
     let submission = context.queue.submit(Some(command));
     context
         .device
@@ -739,10 +779,12 @@ fn submit(context: &Context, command: wgpu::CommandBuffer) {
             submission_index: Some(submission),
             timeout: None,
         })
-        .unwrap_or_else(|error| panic!("GPU range execution failed while waiting: {error}"));
+        .map_err(|error| record_gpu_failure("GPU range execution failed while waiting", &error))
+        .ok()?;
+    Some(())
 }
 
-fn map_u32(context: &Context, buffer: &wgpu::Buffer, count: usize) -> Vec<u32> {
+fn map_u32(context: &Context, buffer: &wgpu::Buffer, count: usize) -> Option<Vec<u32>> {
     let slice = buffer.slice(..count as u64 * 4);
     let (sender, receiver) = mpsc::channel();
     slice.map_async(wgpu::MapMode::Read, move |result| {
@@ -754,19 +796,23 @@ fn map_u32(context: &Context, buffer: &wgpu::Buffer, count: usize) -> Vec<u32> {
             submission_index: None,
             timeout: None,
         })
-        .unwrap_or_else(|error| panic!("GPU range execution failed while mapping: {error}"));
+        .map_err(|error| record_gpu_failure("GPU range execution failed while mapping", &error))
+        .ok()?;
     receiver
         .recv()
-        .unwrap_or_else(|error| panic!("GPU range readback channel failed: {error}"))
-        .unwrap_or_else(|error| panic!("GPU range readback mapping failed: {error}"));
+        .map_err(|error| record_gpu_failure("GPU range readback channel failed", &error))
+        .ok()?
+        .map_err(|error| record_gpu_failure("GPU range readback mapping failed", &error))
+        .ok()?;
     let result = {
         let mapped = slice
             .get_mapped_range()
-            .unwrap_or_else(|error| panic!("GPU range readback access failed: {error}"));
+            .map_err(|error| record_gpu_failure("GPU range readback access failed", &error))
+            .ok()?;
         bytemuck::cast_slice::<u8, u32>(&mapped).to_vec()
     };
     buffer.unmap();
-    result
+    Some(result)
 }
 
 fn map_two_u32(
@@ -775,7 +821,7 @@ fn map_two_u32(
     first_count: usize,
     second: &wgpu::Buffer,
     second_count: usize,
-) -> (Vec<u32>, Vec<u32>) {
+) -> Option<(Vec<u32>, Vec<u32>)> {
     let first_slice = first.slice(..first_count as u64 * 4);
     let second_slice = second.slice(..second_count as u64 * 4);
     let (first_sender, first_receiver) = mpsc::channel();
@@ -792,30 +838,37 @@ fn map_two_u32(
             submission_index: None,
             timeout: None,
         })
-        .unwrap_or_else(|error| panic!("GPU range execution failed while mapping: {error}"));
+        .map_err(|error| record_gpu_failure("GPU range execution failed while mapping", &error))
+        .ok()?;
     first_receiver
         .recv()
-        .unwrap_or_else(|error| panic!("GPU range readback channel failed: {error}"))
-        .unwrap_or_else(|error| panic!("GPU range readback mapping failed: {error}"));
+        .map_err(|error| record_gpu_failure("GPU range readback channel failed", &error))
+        .ok()?
+        .map_err(|error| record_gpu_failure("GPU range readback mapping failed", &error))
+        .ok()?;
     second_receiver
         .recv()
-        .unwrap_or_else(|error| panic!("GPU range readback channel failed: {error}"))
-        .unwrap_or_else(|error| panic!("GPU range readback mapping failed: {error}"));
+        .map_err(|error| record_gpu_failure("GPU range readback channel failed", &error))
+        .ok()?
+        .map_err(|error| record_gpu_failure("GPU range readback mapping failed", &error))
+        .ok()?;
     let first_words = {
         let mapped = first_slice
             .get_mapped_range()
-            .unwrap_or_else(|error| panic!("GPU range readback access failed: {error}"));
+            .map_err(|error| record_gpu_failure("GPU range readback access failed", &error))
+            .ok()?;
         bytemuck::cast_slice::<u8, u32>(&mapped).to_vec()
     };
     let second_words = {
         let mapped = second_slice
             .get_mapped_range()
-            .unwrap_or_else(|error| panic!("GPU range readback access failed: {error}"));
+            .map_err(|error| record_gpu_failure("GPU range readback access failed", &error))
+            .ok()?;
         bytemuck::cast_slice::<u8, u32>(&mapped).to_vec()
     };
     first.unmap();
     second.unmap();
-    (first_words, second_words)
+    Some((first_words, second_words))
 }
 
 fn input_storage_buffer(
@@ -823,7 +876,7 @@ fn input_storage_buffer(
     label: &'static str,
     size: u64,
     words: impl ExactSizeIterator<Item = u32>,
-) -> wgpu::Buffer {
+) -> Option<wgpu::Buffer> {
     if uses_mappable_primary_buffers(context) {
         assert_eq!(words.len() as u64 * 4, size, "GPU input size mismatch");
         let buffer = context.device.create_buffer(&wgpu::BufferDescriptor {
@@ -835,20 +888,21 @@ fn input_storage_buffer(
         {
             let mut mapped = buffer
                 .get_mapped_range_mut(..)
-                .unwrap_or_else(|error| panic!("GPU input mapping failed: {error}"));
+                .map_err(|error| record_gpu_failure("GPU input mapping failed", &error))
+                .ok()?;
             let (destinations, remainder) = mapped.slice(..).into_chunks::<4>();
             assert!(remainder.is_empty(), "GPU input was not word aligned");
             destinations.write_iter(words.map(u32::to_ne_bytes));
         }
         buffer.unmap();
-        buffer
+        Some(buffer)
     } else {
         let words: Vec<_> = words.collect();
         let buffer = storage_buffer(context, label, size, wgpu::BufferUsages::COPY_DST);
         context
             .queue
             .write_buffer(&buffer, 0, bytemuck::cast_slice(&words));
-        buffer
+        Some(buffer)
     }
 }
 
@@ -921,26 +975,28 @@ macro_rules! gpu_api {
 macro_rules! gpu_api_one {
     ($type:ty) => {
         impl RangeSetBlaze<$type> {
-            /// Constructs from the slice using portable GPU acceleration when supported and
-            /// worthwhile, otherwise using the normal CPU implementation.
+            /// Creates a [`RangeSetBlaze`] from a large slice whose values are in no useful
+            /// order, such as shuffled data, using the GPU.
             ///
-            /// This experimental, opt-in policy is available only with the `gpu` feature. It
-            /// falls back to the CPU for inputs below its crossover threshold, types without a
-            /// GPU key representation, systems without a suitable hardware adapter, and inputs
-            /// that exceed adapter buffer or dispatch limits. Other expected environmental or
-            /// resource constraints can also make GPU execution unavailable.
+            /// *Experimental; requires the `accelerate` feature.* Use this only when values that
+            /// belong to the same range are scattered across the slice. If nearby values are
+            /// already next to each other (sorted or clumpy data in order), use
+            /// [`RangeSetBlaze::from_slice`], which will be much faster. For example, with 10
+            /// million `u32` values in clumps of 256 on an AMD Radeon 8060S:
             ///
-            /// The GPU-capable 32-bit family is `u8`, `u16`, `u32`, `i8`, `i16`, `i32`, `char`,
-            /// [`Ipv4Addr`], [`NotNanF32`], and, with `float_nightly_experimental`, `NotNanF16`.
-            /// The 64-bit family is `u64`, `i64`, [`NotNanF64`], and `usize`/`isize` according to
-            /// the target width. `u128`, `i128`, [`Ipv6Addr`], `NotNanF128`, and the `TotalF*`
-            /// types always use the CPU.
+            /// | Order of the slice | `from_slice` | `from_slice_shuffled` |
+            /// |--------------------|-------------:|----------------------:|
+            /// | shuffled           |       256 ms |                 54 ms |
+            /// | in order           |       1.9 ms |                 50 ms |
             ///
-            /// Unexpected GPU execution or implementation failures are not treated as ordinary
-            /// policy fallback. Existing CPU constructors are unaffected by this method.
-            #[cfg_attr(docsrs, doc(cfg(feature = "gpu")))]
+            /// It always runs on the GPU when it can, even for small inputs. It falls back to
+            /// [`RangeSetBlaze::from_slice`] when there is no hardware GPU, when the input exceeds
+            /// the GPU's limits or memory, and for key types without a GPU representation:
+            /// `u128`, `i128`, [`Ipv6Addr`], `NotNanF128`, and the `TotalF*` types. Any other GPU
+            /// error panics.
+            #[cfg_attr(docsrs, doc(cfg(feature = "accelerate")))]
             #[must_use]
-            pub fn from_slice_gpu(slice: &[$type]) -> Self {
+            pub fn from_slice_shuffled(slice: &[$type]) -> Self {
                 from_slice(slice)
             }
         }
@@ -1304,14 +1360,39 @@ mod tests {
 
     #[test]
     fn public_policy_handles_empty_and_small_inputs() {
-        assert!(RangeSetBlaze::<u32>::from_slice_gpu(&[]).is_empty());
+        assert!(RangeSetBlaze::<u32>::from_slice_shuffled(&[]).is_empty());
         assert_eq!(
-            RangeSetBlaze::<u32>::from_slice_gpu(&[3, 1, 2, 2]),
+            RangeSetBlaze::<u32>::from_slice_shuffled(&[3, 1, 2, 2]),
             RangeSetBlaze::from_iter([1..=3]),
         );
         assert_eq!(
-            RangeSetBlaze::<u128>::from_slice_gpu(&[3, 1, 2, 2]),
+            RangeSetBlaze::<u128>::from_slice_shuffled(&[3, 1, 2, 2]),
             RangeSetBlaze::from_iter([1..=3]),
         );
+    }
+
+    /// The public method matches `from_slice` on shuffled clumpy data, for sizes around the
+    /// GPU work-group size (256) and small enough that every call actually uses the GPU.
+    #[test]
+    fn public_method_matches_from_slice_at_many_sizes() {
+        let seed = 0x2545_f491_4f6c_dd1du64;
+        for len in [1usize, 2, 3, 255, 256, 257, 1_023, 4_097, 65_537] {
+            let mut state = seed ^ len as u64;
+            let mut values: Vec<u32> = (0..len)
+                .map(|index| u32::try_from(index + index / 7).expect("small test index"))
+                .collect();
+            for index in (1..values.len()).rev() {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                let swap = usize::try_from(state % (index as u64 + 1)).expect("small swap index");
+                values.swap(index, swap);
+            }
+            assert_eq!(
+                RangeSetBlaze::<u32>::from_slice_shuffled(&values),
+                RangeSetBlaze::from_slice(&values),
+                "len={len}"
+            );
+        }
     }
 }

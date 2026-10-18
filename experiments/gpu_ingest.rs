@@ -28,7 +28,9 @@ fn main() {
             eprintln!("the public API will use CPU fallback for this adapter");
         }
     }
-    println!("order,type,input_values,output_ranges,cpu_from_iter_ms,cpu_from_slice_ms,gpu_policy_ms");
+    println!(
+        "order,type,input_values,output_ranges,cpu_from_iter_ms,cpu_from_slice_ms,gpu_policy_ms"
+    );
     for size in sizes {
         for (order, shuffle) in [("shuffled", true), ("in_order", false)] {
             let ranks = clumps(size, 256, shuffle);
@@ -46,7 +48,7 @@ fn main() {
 trait BenchElement: Copy + range_set_blaze::Integer {
     const NAME: &'static str;
     fn from_rank(rank: u32) -> Self;
-    fn from_slice_gpu(values: &[Self]) -> RangeSetBlaze<Self>;
+    fn from_slice_shuffled(values: &[Self]) -> RangeSetBlaze<Self>;
 }
 
 macro_rules! bench_element {
@@ -56,8 +58,8 @@ macro_rules! bench_element {
             fn from_rank(rank: u32) -> Self {
                 $convert(rank)
             }
-            fn from_slice_gpu(values: &[Self]) -> RangeSetBlaze<Self> {
-                RangeSetBlaze::<Self>::from_slice_gpu(values)
+            fn from_slice_shuffled(values: &[Self]) -> RangeSetBlaze<Self> {
+                RangeSetBlaze::<Self>::from_slice_shuffled(values)
             }
         }
     };
@@ -90,16 +92,16 @@ fn benchmark<T: BenchElement>(order: &str, ranks: &[u32]) {
     let values: Vec<T> = ranks.iter().copied().map(T::from_rank).collect();
     drop(values.iter().copied().collect::<RangeSetBlaze<_>>());
     drop(RangeSetBlaze::from_slice(&values));
-    drop(T::from_slice_gpu(&values));
+    drop(T::from_slice_shuffled(&values));
 
     let cpu = median_duration(3, || {
         black_box(values.iter().copied()).collect::<RangeSetBlaze<_>>()
     });
     let simd = median_duration(3, || RangeSetBlaze::from_slice(black_box(&values)));
-    let gpu = median_duration(3, || black_box(T::from_slice_gpu(black_box(&values))));
+    let gpu = median_duration(3, || black_box(T::from_slice_shuffled(black_box(&values))));
 
     let expected = values.iter().copied().collect::<RangeSetBlaze<_>>();
-    let actual = T::from_slice_gpu(&values);
+    let actual = T::from_slice_shuffled(&values);
     assert_eq!(
         actual.ranges().collect::<Vec<_>>(),
         expected.ranges().collect::<Vec<_>>()

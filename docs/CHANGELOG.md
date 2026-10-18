@@ -15,6 +15,14 @@ This release is not breaking.
   same-length slice of values (two columns of a table), using SIMD to find runs of consecutive
   keys. Values may be any `V: Eq + Clone`. On clumpy keys it is typically 6 to 16 times faster
   than `from_iter`. It panics if the lengths differ.
+- **Experimental `accelerate` feature, with `RangeSetBlaze::from_slice_shuffled`.** It builds a set
+  on the GPU (portably, via `wgpu`) from a large slice whose values are in no useful order, for
+  example shuffled. On 10 million shuffled clumpy `u32` values it was about 5 times faster than
+  `from_slice` on an AMD Radeon 8060S; on data already in order, `from_slice` is much faster, so
+  use this only for shuffled input. It falls back to `from_slice` when there is no hardware GPU,
+  when the input exceeds the GPU's limits or memory, and for key types without a GPU
+  representation. The feature is off by default and adds no dependencies unless enabled; it is
+  mainly a demonstration of GPU programming.
 - **`NotNan::from_primitive_vec`** converts a `Vec<f64>` (or `f32`, ...) into `NotNan` values in
   place, reusing the allocation, normalizing `-0.0` to `+0.0`, and panicking on NaN.
 - The float docs have a new "Converting Native Floats" section that lays out every conversion

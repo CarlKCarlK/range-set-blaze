@@ -52,8 +52,8 @@ test_util = ["rand"]
 # Deprecated no-op, kept so `features = ["from_slice"]` still resolves.
 # `from_slice` is now always available on stable Rust.
 from_slice = []
-# Experimental: GPU-assisted construction from very large unsorted slices.
-gpu = [
+# Experimental: `from_slice_shuffled`, which uses the GPU for slices in no useful order.
+accelerate = [
     "std",
     "dep:lampshade",
     "dep:pollster",
@@ -123,12 +123,12 @@ harness = false
 [[bin]]
 name = "gpu_normalize_wgpu"
 path = "experiments/gpu_normalize_wgpu.rs"
-required-features = ["gpu"]
+required-features = ["accelerate"]
 
 [[bin]]
 name = "gpu_ingest"
 path = "experiments/gpu_ingest.rs"
-required-features = ["gpu"]
+required-features = ["accelerate"]
 
 [package.metadata.docs.rs]
 # Publish all optional APIs. Rustdoc's `doc_cfg` annotations identify the

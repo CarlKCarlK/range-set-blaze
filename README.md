@@ -54,7 +54,7 @@ The crate's main traits are
 [floating-point documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/index.html
 [from-slice]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_slice
 [from-slices]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html#method.from_slices
-[from-slice-gpu]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_slice_gpu
+[from-slice-shuffled]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_slice_shuffled
 [set benchmarks]: https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md
 [map benchmarks]: https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench_map.md
 [`BTreeMap`]: alloc::collections::BTreeMap
@@ -274,7 +274,7 @@ The available Cargo features are:
 * `default` — Enables the `std` feature. Use `--no-default-features` for a `no_std` build.
 * `std` — Enables `std`-specific conveniences and trait implementations. The crate's core functionality remains available with `no_std` and `alloc`; see [the `no_std` usage above](#no_std-wasm-and-embedded).
 * `cursor_nightly_experimental` — Uses Rust's (nightly-only) B-tree cursor API to speed up `insert`/`ranges_insert` on both `RangeSetBlaze` (roughly [1.8x–2.2x, geometric mean ~2.0x](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md#benchmark-2b-ingest_clumps_cursor-experimental-b-tree-cursor-insertion-vs-the-baseline-algorithm)) and `RangeMapBlaze` (roughly [1.5x–2.1x, geometric mean ~1.7x](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench_map.md#benchmark-3b-map_ingest_clumps_cursor-experimental-b-tree-cursor-insertion-vs-the-baseline-algorithm)). Same public API.
-* `gpu` — Enables the experimental [`RangeSetBlaze::from_slice_gpu`][from-slice-gpu] constructor, which can use the GPU for very large unsorted slices. Off by default; it falls back to the CPU when the GPU wouldn't help or isn't available.
+* `accelerate` — Experimental. Adds [`RangeSetBlaze::from_slice_shuffled`][from-slice-shuffled], which uses the GPU to build a set from a large slice whose values are in no useful order (for example, shuffled). A demonstration of portable GPU programming.
 * `float_nightly_experimental` — Enables the nightly-only `f16` and `f128` floating-point wrappers; see the [floating-point module documentation][floating-point documentation]. This requires a nightly Rust compiler.
 
 The published API documentation includes all optional features. Feature-gated items are marked
