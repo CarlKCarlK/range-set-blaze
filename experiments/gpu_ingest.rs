@@ -1,9 +1,10 @@
 //! Benchmarks `from_slice` against `from_slice_in_place` with each `Engine`, on the same data.
 //!
 //! Usage:
-//! `cargo run --release --features from_slice_in_place --bin gpu_ingest -- [--cpu N]... [SIZES...]`
+//! `cargo run --release --features from_slice_in_place --bin gpu_ingest -- [--cpu N]... [--type T]... [SIZES...]`
 //! (default size: 1,000,000). Each `--cpu N` adds an `Engine::Cpu(N)` column; the default is
-//! every available thread. `Engine::Cpu(1)` is always included. Prints CSV. The GPU column is
+//! every available thread. `Engine::Cpu(1)` is always included. Each `--type T` (such as `u32`)
+//! limits the run to those types; the default is every type. Prints CSV. The GPU column is
 //! empty when there is no hardware GPU.
 //!
 //! Each type gets data built within its own range of values, in two workloads:
@@ -33,6 +34,7 @@ const DUPLICATE_REPEATS: u64 = 16;
 fn main() {
     let mut sizes: Vec<u64> = Vec::new();
     let mut thread_counts: Vec<NonZeroUsize> = Vec::new();
+    let mut types: Vec<String> = Vec::new();
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         if arg == "--cpu" {
@@ -42,6 +44,8 @@ fn main() {
                     .parse()
                     .expect("thread counts must be positive integers"),
             );
+        } else if arg == "--type" {
+            types.push(args.next().expect("--type needs a type name"));
         } else {
             sizes.push(arg.parse().expect("sizes must be positive integers"));
         }
@@ -81,6 +85,7 @@ fn main() {
                     shuffle,
                     has_gpu,
                     thread_counts: &thread_counts,
+                    types: &types,
                 };
                 run.benchmark::<u8>();
                 run.benchmark::<u16>();
@@ -163,10 +168,14 @@ struct Run<'a> {
     shuffle: bool,
     has_gpu: bool,
     thread_counts: &'a [NonZeroUsize],
+    types: &'a [String],
 }
 
 impl Run<'_> {
     fn benchmark<T: BenchElement>(&self) {
+        if !self.types.is_empty() && !self.types.iter().any(|name| name == T::NAME) {
+            return;
+        }
         let workload = match self.workload {
             Workload::Distinct => "distinct",
             Workload::Duplicates => "duplicates",
