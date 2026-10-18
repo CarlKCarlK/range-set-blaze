@@ -52,6 +52,13 @@ test_util = ["rand"]
 # Deprecated no-op, kept so `features = ["from_slice"]` still resolves.
 # `from_slice` is now always available on stable Rust.
 from_slice = []
+# Experimental: GPU-assisted construction from very large unsorted slices.
+gpu = [
+    "std",
+    "dep:lampshade",
+    "dep:pollster",
+    "dep:wgpu",
+]
 
 [dependencies]
 itertools = { version = "0.14.0", default-features = false, features = [
@@ -64,6 +71,9 @@ fearless_simd = { version = "1.0.0", default-features = false, features = [
     "libm",
 ] }
 bytemuck = { version = "1.24.0", default-features = false }
+lampshade = { version = "0.13.0", optional = true }
+pollster = { version = "0.4", optional = true }
+wgpu = { version = "30.0.1", optional = true }
 
 [dev-dependencies]
 # Lets tests exercise fearless_simd's scalar fallback backend via `Level::fallback()`.
@@ -109,6 +119,16 @@ harness = false
 name = "bench_map"
 path = "benches/bench_map.rs"
 harness = false
+
+[[bin]]
+name = "gpu_normalize_wgpu"
+path = "experiments/gpu_normalize_wgpu.rs"
+required-features = ["gpu"]
+
+[[bin]]
+name = "gpu_ingest"
+path = "experiments/gpu_ingest.rs"
+required-features = ["gpu"]
 
 [package.metadata.docs.rs]
 # Publish all optional APIs. Rustdoc's `doc_cfg` annotations identify the

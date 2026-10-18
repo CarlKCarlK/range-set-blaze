@@ -34,6 +34,8 @@ pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 pub mod gaps;
 pub use gaps::{FillGapsIter, FillGapsIterMap};
 
+#[cfg(feature = "gpu")]
+mod gpu;
 pub mod joins;
 
 pub mod float;
