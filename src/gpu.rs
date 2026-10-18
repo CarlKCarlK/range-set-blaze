@@ -167,6 +167,9 @@ pub enum Engine {
     Cpu(NonZeroUsize),
     /// Sort and find the ranges on the GPU, in one pass; only the ranges come back.
     ///
+    /// On a machine with several CPU cores, [`Engine::Cpu`] with all of them is usually faster;
+    /// the GPU's advantage is that it leaves the CPU free for other work.
+    ///
     /// # Panics
     ///
     /// Panics if there is no hardware GPU, if the key type has no GPU representation (`u128`,
