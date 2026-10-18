@@ -101,6 +101,25 @@ jobs:
           cargo audit
           cargo deny check
 
+  miri:
+    # Miri interprets the tests and reports undefined behavior in the `unsafe` code they reach
+    # (the NotNan/Total slice and Vec conversions). It is slow, so it runs only these tests.
+    name: Check unsafe code with Miri
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Rust nightly with Miri
+        run: |
+          rustup toolchain install nightly-2026-10-12 --component miri,rust-src --allow-downgrade
+          rustup override set nightly-2026-10-12
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+      - name: Run float tests under Miri
+        run: |
+          cargo miri setup
+          cargo miri test --test float_tests
+
   test_32_bit_linux:
     name: Test on 32-bit Ubuntu
     runs-on: ubuntu-latest
