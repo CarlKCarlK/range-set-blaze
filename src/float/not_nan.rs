@@ -19,7 +19,7 @@ use super::not_nan_float::NotNanFloat;
 use alloc::vec::Vec;
 
 use crate::Integer;
-use crate::RangeSetBlaze;
+use crate::{RangeMapBlaze, RangeSetBlaze};
 use num_traits::Zero;
 
 /// Total ordered f64, with `-0.0` normalized to `+0.0`, and excluding NaN.
@@ -646,6 +646,16 @@ impl<T: NotNanFloat> Integer for NotNan<T> {
     type SafeLen = T::SafeLen;
 
     #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        T::from_slice(slice.as_ref())
+    }
+
+    #[inline]
+    fn from_slices<V: Eq + Clone>(keys: &[Self], values: &[V]) -> RangeMapBlaze<Self, V> {
+        T::from_slices(keys, values)
+    }
+
+    #[inline]
     fn checked_add_one(self) -> Option<Self> {
         self.checked_after()
     }
@@ -708,13 +718,6 @@ impl<T: NotNanFloat> Integer for NotNan<T> {
     #[inline]
     fn max_value() -> Self {
         Self::MAX
-    }
-
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        // TODO Investigate applying the ordered float transform in SIMD chunks here.
-        // no way to do the fancy thing
-        RangeSetBlaze::from_iter(slice.as_ref())
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> Self::SafeLen {

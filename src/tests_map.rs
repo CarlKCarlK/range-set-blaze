@@ -893,6 +893,31 @@ where
     assert_eq!(RangeMapBlaze::from_slices(keys, values), expected);
 }
 
+/// `from_slices` with float keys: consecutive keys across zero and the infinities, with the
+/// value changing partway.
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slices_float_keys_match_from_iter() {
+    use crate::{NotNanF32, NotNanF64, TotalF32, TotalF64};
+    macro_rules! check {
+        ($type:ty, $start:expr) => {{
+            let keys: Vec<$type> =
+                core::iter::successors(Some($start), |&key: &$type| key.checked_add_one())
+                    .take(200)
+                    .collect();
+            let values: Vec<u8> = (0..keys.len()).map(|i| u8::from(i >= 120)).collect();
+            assert_from_slices_matches_from_iter(&keys, &values);
+        }};
+    }
+    check!(
+        NotNanF32,
+        NotNanF32::new(-0.0).sub_one().sub_one().sub_one()
+    );
+    check!(NotNanF64, NotNanF64::new(f64::MAX).sub_one());
+    check!(TotalF32, TotalF32::new(-0.0).sub_one());
+    check!(TotalF64, TotalF64::new(f64::INFINITY).sub_one());
+}
+
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn from_slices_matches_from_iter() {

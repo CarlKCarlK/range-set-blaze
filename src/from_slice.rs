@@ -366,6 +366,67 @@ impl SimdInteger for core::net::Ipv4Addr {
     }
 }
 
+// Floats: each lane holds the value's order-preserving integer key, so lanes increase in
+// `total_cmp` order, and consecutive keys are adjacent floats. For `Total` floats the key is a
+// bijection onto the lane type. `NotNan` floats never hold `-0.0`, so its key never appears; a run
+// stops there, and the range collector rejoins the two sides with `NotNan`'s own adjacency, just as
+// it does for `char` across the surrogates.
+
+/// The order-preserving `u32` key of an `f32`: flip all bits of a negative value, or just the sign
+/// bit of a non-negative one.
+#[expect(
+    clippy::inline_always,
+    reason = "must inline into the fearless_simd dispatch target-feature closure"
+)]
+#[inline(always)]
+const fn f32_key(value: f32) -> u32 {
+    let bits = value.to_bits();
+    if bits >> 31 == 0 {
+        bits | 0x8000_0000
+    } else {
+        !bits
+    }
+}
+
+/// The order-preserving `u64` key of an `f64`; see [`f32_key`].
+#[expect(
+    clippy::inline_always,
+    reason = "must inline into the fearless_simd dispatch target-feature closure"
+)]
+#[inline(always)]
+const fn f64_key(value: f64) -> u64 {
+    let bits = value.to_bits();
+    if bits >> 63 == 0 {
+        bits | 0x8000_0000_0000_0000
+    } else {
+        !bits
+    }
+}
+
+macro_rules! impl_simd_float {
+    ($wrapper:ty, $lane:ty, $vector:ident, $key:ident) => {
+        impl SimdInteger for $wrapper {
+            type Lane = $lane;
+            type Vector<S: Simd> = fearless_simd::$vector<S>;
+
+            #[inline(always)]
+            fn splat<S: Simd>(simd: S, value: Self) -> Self::Vector<S> {
+                Self::Vector::<S>::splat(simd, $key(value.into_inner()))
+            }
+
+            #[inline(always)]
+            fn load<S: Simd>(simd: S, chunk: &[Self]) -> Self::Vector<S> {
+                Self::Vector::<S>::from_fn(simd, |index| $key(chunk[index].into_inner()))
+            }
+        }
+    };
+}
+
+impl_simd_float!(crate::NotNanF32, u32, u32x16, f32_key);
+impl_simd_float!(crate::NotNanF64, u64, u64x8, f64_key);
+impl_simd_float!(crate::TotalF32, u32, u32x16, f32_key);
+impl_simd_float!(crate::TotalF64, u64, u64x8, f64_key);
+
 // 128-bit values have no SIMD lane type, so each one spans two `u64` lanes, its low and high
 // halves, in memory order: a `u128` slice then casts to `u64` lanes directly.
 

@@ -1259,6 +1259,69 @@ fn test_extract_range() {
     assert_eq!(extract_range(0..1), (0, 0));
 }
 
+/// `len` consecutive values starting at `start`, in `Integer` (adjacency) order, stopping early
+/// at the type's maximum.
+fn consecutive<T: Integer>(start: T, len: usize) -> Vec<T> {
+    core::iter::successors(Some(start), |&value| value.checked_add_one())
+        .take(len)
+        .collect()
+}
+
+/// Float keys go through SIMD as order-preserving integer keys. Check the places where that
+/// mapping is most delicate: around zero (`NotNan` skips `-0.0`, `Total` includes it), next to the
+/// infinities, through the NaNs (`Total` only), across the top-to-bottom wrap, and on random
+/// shuffled clumps; each at several alignments.
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slice_floats_match_from_iter() {
+    use crate::{NotNanF32, NotNanF64, TotalF32, TotalF64};
+    use rand::{Rng, SeedableRng, rngs::StdRng};
+
+    macro_rules! check_float {
+        ($type:ty, $prim:ty) => {{
+            let starts = [
+                <$type>::new(-0.0).sub_one().sub_one().sub_one(), // just below zero
+                <$type>::new(<$prim>::MAX).sub_one(),             // up to +inf
+                <$type>::new(<$prim>::NEG_INFINITY),              // from -inf
+                <$type>::new(1.0),
+            ];
+            for start in starts {
+                for skip in [0, 1, 15, 16, 17, 63, 64] {
+                    let values = consecutive(start, 200 + skip);
+                    assert_from_slice_matches_from_iter(&values[skip.min(values.len())..]);
+                }
+            }
+            // Wraparound: the largest values followed by the smallest must not merge.
+            let mut values = consecutive(<$type>::max_value().sub_one().sub_one(), 3);
+            values.extend(consecutive(<$type>::min_value(), 100));
+            assert_from_slice_matches_from_iter(&values);
+            // Random clumps of floats, shuffled. Seeded, so failures reproduce.
+            let mut rng = StdRng::seed_from_u64(0x5eed_f10a);
+            let mut values = Vec::new();
+            for _ in 0..40 {
+                let start = <$type>::new(rng.random_range(-1.0e6..1.0e6));
+                values.extend(consecutive(start, rng.random_range(1..80)));
+            }
+            assert_from_slice_matches_from_iter(&values);
+            for i in (1..values.len()).rev() {
+                values.swap(i, rng.random_range(0..=i));
+            }
+            assert_from_slice_matches_from_iter(&values);
+        }};
+    }
+    check_float!(NotNanF32, f32);
+    check_float!(NotNanF64, f64);
+    check_float!(TotalF32, f32);
+    check_float!(TotalF64, f64);
+
+    // `NotNan` has no `-0.0`, so the values either side of zero are adjacent: one range.
+    let values = consecutive(NotNanF32::new(-0.0).sub_one().sub_one(), 100);
+    assert_eq!(RangeSetBlaze::from_slice(&values).ranges_len(), 1);
+    // `Total` runs straight through the NaNs, from +inf to the top.
+    let values = consecutive(TotalF32::new(f32::INFINITY), 100);
+    assert_eq!(RangeSetBlaze::from_slice(&values).ranges_len(), 1);
+}
+
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn from_slice_char_and_ipv4_match_from_iter() {

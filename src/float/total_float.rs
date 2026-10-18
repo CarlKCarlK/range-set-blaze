@@ -12,6 +12,11 @@ use core::{
 use num_traits::ops::wrapping::{WrappingAdd, WrappingSub};
 use num_traits::{One, Zero};
 
+use super::total::Total;
+#[cfg(feature = "float_nightly_experimental")]
+use crate::Integer;
+use crate::{RangeMapBlaze, RangeSetBlaze};
+
 #[cfg(feature = "float_nightly_experimental")]
 use crate::UIntPlusOne;
 
@@ -57,6 +62,30 @@ pub trait TotalFloat:
     fn f64_to_safe_len_lossy(f: f64) -> Self::SafeLen;
     fn inclusive_end_from_start(a: Self, b: Self::SafeLen) -> Self;
     fn start_from_inclusive_end(a: Self, b: Self::SafeLen) -> Self;
+    /// Backs [`crate::RangeSetBlaze::from_slice`]: SIMD for `f32` and `f64`.
+    fn from_slice(slice: &[Total<Self>]) -> RangeSetBlaze<Total<Self>>;
+    /// Backs [`crate::RangeMapBlaze::from_slices`]: SIMD on the keys for `f32` and `f64`.
+    fn from_slices<V: Eq + Clone>(
+        keys: &[Total<Self>],
+        values: &[V],
+    ) -> RangeMapBlaze<Total<Self>, V>;
+}
+
+/// The scalar `from_slice`, for float types without a SIMD one.
+#[cfg(feature = "float_nightly_experimental")]
+fn scalar_from_slice<T: Integer>(slice: &[T]) -> RangeSetBlaze<T> {
+    slice.iter().copied().collect()
+}
+
+/// The scalar `from_slices`, for float types without a SIMD one.
+#[cfg(feature = "float_nightly_experimental")]
+fn scalar_from_slices<T: Integer, V: Eq + Clone>(keys: &[T], values: &[V]) -> RangeMapBlaze<T, V> {
+    assert_eq!(
+        keys.len(),
+        values.len(),
+        "keys and values must have the same length"
+    );
+    keys.iter().copied().zip(values).collect()
 }
 
 /// Crate-private encoding and arithmetic machinery for total-order floats.
@@ -220,7 +249,7 @@ impl private::Sealed for f16 {}
 impl private::Sealed for f128 {}
 
 macro_rules! impl_total_capability {
-    ($primitive:ty, $safe_len:ty) => {
+    ($primitive:ty, $safe_len:ty, $from_slice:path, $from_slices:path) => {
         impl TotalFloat for $primitive {
             type SafeLen = $safe_len;
 
@@ -269,16 +298,42 @@ macro_rules! impl_total_capability {
             fn start_from_inclusive_end(a: Self, b: Self::SafeLen) -> Self {
                 <Self as TotalFloatImpl>::start_from_inclusive_end(a, b)
             }
+
+            fn from_slice(slice: &[Total<Self>]) -> RangeSetBlaze<Total<Self>> {
+                $from_slice(slice)
+            }
+
+            fn from_slices<V: Eq + Clone>(
+                keys: &[Total<Self>],
+                values: &[V],
+            ) -> RangeMapBlaze<Total<Self>, V> {
+                $from_slices(keys, values)
+            }
         }
     };
 }
 
-impl_total_capability!(f64, i128);
-impl_total_capability!(f32, i64);
+impl_total_capability!(
+    f64,
+    i128,
+    crate::from_slice::from_slice,
+    crate::from_slice::from_slices
+);
+impl_total_capability!(
+    f32,
+    i64,
+    crate::from_slice::from_slice,
+    crate::from_slice::from_slices
+);
 #[cfg(feature = "float_nightly_experimental")]
-impl_total_capability!(f16, i32);
+impl_total_capability!(f16, i32, scalar_from_slice, scalar_from_slices);
 #[cfg(feature = "float_nightly_experimental")]
-impl_total_capability!(f128, UIntPlusOne<u128>);
+impl_total_capability!(
+    f128,
+    UIntPlusOne<u128>,
+    scalar_from_slice,
+    scalar_from_slices
+);
 
 impl TotalFloatImpl for f64 {
     type Bits = u64;
