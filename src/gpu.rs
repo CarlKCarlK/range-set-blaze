@@ -3,10 +3,12 @@
 use core::cell::RefCell;
 use core::mem::size_of;
 use core::net::{Ipv4Addr, Ipv6Addr};
-use std::sync::{OnceLock, mpsc};
+use core::num::NonZeroUsize;
+use std::sync::{Arc, Mutex, OnceLock, mpsc};
 use std::vec::Vec;
 
 use lampshade::{Compactor, Context, KeyValueCompactor, KeyValueSoaSorter, Sorter};
+use rayon::slice::ParallelSliceMut;
 
 #[cfg(feature = "float_nightly_experimental")]
 use crate::float::{gpu_not_nan_f16_from_ordered, gpu_not_nan_f16_to_ordered};
@@ -138,7 +140,7 @@ fn main(
 
 // Maintenance: every crate-owned `Integer` type must have a policy below and
 // appear in `gpu_api!`. This stays separate from the public `Integer` trait so
-// enabling `accelerate` does not break downstream `Integer` implementations.
+// enabling `from_slice_in_place` does not break downstream `Integer` implementations.
 trait GpuElement: crate::Integer {
     const KEY_WORDS: u8;
     const GAP: Option<(u64, u64)> = None;
@@ -147,11 +149,83 @@ trait GpuElement: crate::Integer {
     fn decode(key: u64) -> Self;
 }
 
-fn from_slice<T: GpuElement>(values: &[T]) -> RangeSetBlaze<T> {
-    if T::KEY_WORDS == 0 {
-        return RangeSetBlaze::from_slice(values);
+/// How [`RangeSetBlaze::from_slice_in_place`] does its work.
+///
+/// *Experimental; requires the `from_slice_in_place` feature.*
+#[cfg_attr(docsrs, doc(cfg(feature = "from_slice_in_place")))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Engine {
+    /// Sort the slice in place on this many CPU threads (Rayon's `par_sort_unstable`), then
+    /// find the ranges. `Cpu(1)` is plain `sort_unstable` followed by
+    /// [`RangeSetBlaze::from_slice`].
+    Cpu(NonZeroUsize),
+    /// Sort and find the ranges on the GPU, in one pass; only the ranges come back.
+    ///
+    /// # Panics
+    ///
+    /// Panics if there is no hardware GPU, if the key type has no GPU representation (`u128`,
+    /// `i128`, `Ipv6Addr`, `NotNanF128`, and the `TotalF*` types), or if the input exceeds the
+    /// GPU's limits or memory.
+    GpuOnly,
+    /// [`Engine::GpuOnly`] when it can run; otherwise [`Engine::Cpu`] with every available
+    /// thread.
+    GpuOrCpu,
+}
+
+fn from_slice_in_place<T: GpuElement>(values: &mut [T], engine: Engine) -> RangeSetBlaze<T> {
+    match engine {
+        Engine::Cpu(threads) => from_slice_cpu(values, threads),
+        Engine::GpuOnly => {
+            assert!(
+                T::KEY_WORDS != 0,
+                "Engine::GpuOnly: this key type has no GPU representation"
+            );
+            let context = gpu_context()
+                .filter(|context| context.adapter_info.device_type != wgpu::DeviceType::Cpu)
+                .expect("Engine::GpuOnly: no hardware GPU is available");
+            from_slice_gpu_with_context(values, context)
+                .expect("Engine::GpuOnly: the input exceeds the GPU's limits or memory")
+        }
+        Engine::GpuOrCpu => (T::KEY_WORDS != 0)
+            .then(|| try_gpu(values))
+            .flatten()
+            .unwrap_or_else(|| from_slice_cpu(values, all_threads())),
     }
-    try_gpu(values).unwrap_or_else(|| RangeSetBlaze::from_slice(values))
+}
+
+fn all_threads() -> NonZeroUsize {
+    std::thread::available_parallelism().unwrap_or(NonZeroUsize::MIN)
+}
+
+/// Sorts the slice in place on `threads` threads (Rayon), then finds the ranges with
+/// [`RangeSetBlaze::from_slice`], which needs only one fast pass over sorted input.
+fn from_slice_cpu<T: crate::Integer>(values: &mut [T], threads: NonZeroUsize) -> RangeSetBlaze<T> {
+    if threads.get() == 1 {
+        values.sort_unstable();
+    } else {
+        thread_pool(threads).install(|| values.par_sort_unstable());
+    }
+    RangeSetBlaze::from_slice(&*values)
+}
+
+/// A Rayon pool with exactly `threads` threads, created on first use and then reused, so
+/// repeated calls don't pay to start threads.
+fn thread_pool(threads: NonZeroUsize) -> Arc<rayon::ThreadPool> {
+    static POOLS: Mutex<Vec<(NonZeroUsize, Arc<rayon::ThreadPool>)>> = Mutex::new(Vec::new());
+    let mut pools = POOLS
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some((_, pool)) = pools.iter().find(|(count, _)| *count == threads) {
+        return Arc::clone(pool);
+    }
+    let pool = Arc::new(
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(threads.get())
+            .build()
+            .expect("could not start the CPU sort threads"),
+    );
+    pools.push((threads, Arc::clone(&pool)));
+    pool
 }
 
 /// Runs on the GPU, or returns `None` if there is no hardware GPU, the input exceeds the GPU's
@@ -975,29 +1049,19 @@ macro_rules! gpu_api {
 macro_rules! gpu_api_one {
     ($type:ty) => {
         impl RangeSetBlaze<$type> {
-            /// Creates a [`RangeSetBlaze`] from a large slice whose values are in no useful
-            /// order, such as shuffled data, using the GPU.
+            /// Creates a [`RangeSetBlaze`] from a slice, using several CPU threads or the GPU,
+            /// as `engine` says. It may reorder the slice; the order afterward is unspecified.
             ///
-            /// *Experimental; requires the `accelerate` feature.* Use this only when values that
-            /// belong to the same range are scattered across the slice. If nearby values are
-            /// already next to each other (sorted or clumpy data in order), use
-            /// [`RangeSetBlaze::from_slice`], which will be much faster. For example, with 10
-            /// million `u32` values in clumps of 256 on an AMD Radeon 8060S:
+            /// *Experimental; requires the `from_slice_in_place` feature.* It pays off for large slices
+            /// whose values are in no useful order, such as shuffled data. If nearby values are
+            /// already next to each other (sorted, or clumpy data in order), use
+            /// [`RangeSetBlaze::from_slice`], which will be much faster.
             ///
-            /// | Order of the slice | `from_slice` | `from_slice_shuffled` |
-            /// |--------------------|-------------:|----------------------:|
-            /// | shuffled           |       256 ms |                 54 ms |
-            /// | in order           |       1.9 ms |                 50 ms |
-            ///
-            /// It always runs on the GPU when it can, even for small inputs. It falls back to
-            /// [`RangeSetBlaze::from_slice`] when there is no hardware GPU, when the input exceeds
-            /// the GPU's limits or memory, and for key types without a GPU representation:
-            /// `u128`, `i128`, [`Ipv6Addr`], `NotNanF128`, and the `TotalF*` types. Any other GPU
-            /// error panics.
-            #[cfg_attr(docsrs, doc(cfg(feature = "accelerate")))]
+            /// See [`Engine`] for the choices, including when [`Engine::GpuOnly`] panics.
+            #[cfg_attr(docsrs, doc(cfg(feature = "from_slice_in_place")))]
             #[must_use]
-            pub fn from_slice_shuffled(slice: &[$type]) -> Self {
-                from_slice(slice)
+            pub fn from_slice_in_place(slice: &mut [$type], engine: Engine) -> Self {
+                from_slice_in_place(slice, engine)
             }
         }
     };
@@ -1358,23 +1422,54 @@ mod tests {
         );
     }
 
-    #[test]
-    fn public_policy_handles_empty_and_small_inputs() {
-        assert!(RangeSetBlaze::<u32>::from_slice_shuffled(&[]).is_empty());
-        assert_eq!(
-            RangeSetBlaze::<u32>::from_slice_shuffled(&[3, 1, 2, 2]),
-            RangeSetBlaze::from_iter([1..=3]),
-        );
-        assert_eq!(
-            RangeSetBlaze::<u128>::from_slice_shuffled(&[3, 1, 2, 2]),
-            RangeSetBlaze::from_iter([1..=3]),
-        );
+    fn has_hardware_gpu() -> bool {
+        gpu_context()
+            .is_some_and(|context| context.adapter_info.device_type != wgpu::DeviceType::Cpu)
     }
 
-    /// The public method matches `from_slice` on shuffled clumpy data, for sizes around the
-    /// GPU work-group size (256) and small enough that every call actually uses the GPU.
+    /// Every engine that can run here, for the type `T`.
+    fn engines(gpu_capable: bool) -> Vec<Engine> {
+        let mut engines = std::vec![
+            Engine::Cpu(NonZeroUsize::MIN),
+            Engine::Cpu(NonZeroUsize::new(3).expect("3 is nonzero")),
+            Engine::GpuOrCpu,
+        ];
+        if gpu_capable && has_hardware_gpu() {
+            engines.push(Engine::GpuOnly);
+        }
+        engines
+    }
+
     #[test]
-    fn public_method_matches_from_slice_at_many_sizes() {
+    fn in_place_handles_empty_and_small_inputs() {
+        for engine in engines(true) {
+            assert!(RangeSetBlaze::<u32>::from_slice_in_place(&mut [], engine).is_empty());
+            assert_eq!(
+                RangeSetBlaze::<u32>::from_slice_in_place(&mut [3, 1, 2, 2], engine),
+                RangeSetBlaze::from_iter([1..=3]),
+                "{engine:?}"
+            );
+        }
+        // u128 has no GPU representation, so GpuOnly is excluded.
+        for engine in engines(false) {
+            assert_eq!(
+                RangeSetBlaze::<u128>::from_slice_in_place(&mut [3, 1, 2, 2], engine),
+                RangeSetBlaze::from_iter([1..=3]),
+                "{engine:?}"
+            );
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "no GPU representation")]
+    fn gpu_only_panics_for_types_without_a_gpu_representation() {
+        let _ = RangeSetBlaze::<u128>::from_slice_in_place(&mut [1, 2], Engine::GpuOnly);
+    }
+
+    /// Every engine matches `from_slice` on shuffled clumpy data, for sizes around the GPU
+    /// work-group size (256).
+    #[test]
+    fn in_place_matches_from_slice_at_many_sizes() {
         let seed = 0x2545_f491_4f6c_dd1du64;
         for len in [1usize, 2, 3, 255, 256, 257, 1_023, 4_097, 65_537] {
             let mut state = seed ^ len as u64;
@@ -1388,11 +1483,15 @@ mod tests {
                 let swap = usize::try_from(state % (index as u64 + 1)).expect("small swap index");
                 values.swap(index, swap);
             }
-            assert_eq!(
-                RangeSetBlaze::<u32>::from_slice_shuffled(&values),
-                RangeSetBlaze::from_slice(&values),
-                "len={len}"
-            );
+            let expected = RangeSetBlaze::from_slice(&values);
+            for engine in engines(true) {
+                let mut copy = values.clone();
+                assert_eq!(
+                    RangeSetBlaze::<u32>::from_slice_in_place(&mut copy, engine),
+                    expected,
+                    "len={len} {engine:?}"
+                );
+            }
         }
     }
 }

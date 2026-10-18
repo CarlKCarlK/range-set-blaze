@@ -52,11 +52,13 @@ test_util = ["rand"]
 # Deprecated no-op, kept so `features = ["from_slice"]` still resolves.
 # `from_slice` is now always available on stable Rust.
 from_slice = []
-# Experimental: `from_slice_shuffled`, which uses the GPU for slices in no useful order.
-accelerate = [
+# Experimental: `RangeSetBlaze::from_slice_in_place`, which sorts with several CPU threads
+# (Rayon) or on the GPU (wgpu).
+from_slice_in_place = [
     "std",
     "dep:lampshade",
     "dep:pollster",
+    "dep:rayon",
     "dep:wgpu",
 ]
 
@@ -73,6 +75,7 @@ fearless_simd = { version = "1.0.0", default-features = false, features = [
 bytemuck = { version = "1.24.0", default-features = false }
 lampshade = { version = "0.13.0", optional = true }
 pollster = { version = "0.4", optional = true }
+rayon = { version = "1.10", optional = true }
 wgpu = { version = "30.0.1", optional = true }
 
 [dev-dependencies]
@@ -123,12 +126,12 @@ harness = false
 [[bin]]
 name = "gpu_normalize_wgpu"
 path = "experiments/gpu_normalize_wgpu.rs"
-required-features = ["accelerate"]
+required-features = ["from_slice_in_place"]
 
 [[bin]]
 name = "gpu_ingest"
 path = "experiments/gpu_ingest.rs"
-required-features = ["accelerate"]
+required-features = ["from_slice_in_place"]
 
 [package.metadata.docs.rs]
 # Publish all optional APIs. Rustdoc's `doc_cfg` annotations identify the

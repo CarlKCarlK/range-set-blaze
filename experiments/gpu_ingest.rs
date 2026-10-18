@@ -1,136 +1,256 @@
-//! Representative type-family benchmark for the public GPU ingestion API.
+//! Benchmarks `from_slice` against `from_slice_in_place` with each `Engine`, on the same data.
+//!
+//! Usage:
+//! `cargo run --release --features from_slice_in_place --bin gpu_ingest -- [--cpu N]... [SIZES...]`
+//! (default size: 1,000,000). Each `--cpu N` adds an `Engine::Cpu(N)` column; the default is
+//! every available thread. `Engine::Cpu(1)` is always included. Prints CSV. The GPU column is
+//! empty when there is no hardware GPU.
+//!
+//! Each type gets data built within its own range of values, in two workloads:
+//!
+//! - `distinct`: `n` distinct values in clumps of 256 (a gap of one value between clumps). A
+//!   type too small to hold `n` distinct values in that layout (for example `u16` at 10 million)
+//!   is reported as `n/a` rather than silently wrapped.
+//! - `duplicates`: the same layout with fewer distinct values, each repeated
+//!   `DUPLICATE_REPEATS` times (or more, for types too small to hold that many distinct values).
+//!
+//! Both run in order (sorted, duplicates adjacent) and shuffled.
 
+use std::fmt::Write;
 use std::hint::black_box;
+use std::num::NonZeroUsize;
 use std::time::{Duration, Instant};
 
 use lampshade::Context;
 use range_set_blaze::not_nan::{nnf32, nnf64};
-use range_set_blaze::{NotNanF32, NotNanF64, RangeSetBlaze};
+use range_set_blaze::{Engine, NotNanF32, NotNanF64, RangeSetBlaze};
+
+/// Seed for the shuffle; fixed so every machine benchmarks the same data.
+const SEED: u64 = 0xd1b5_4a32_d192_ed03;
+const CLUMP_LEN: u64 = 256;
+const DUPLICATE_REPEATS: u64 = 16;
 
 fn main() {
-    let sizes: Vec<usize> = std::env::args()
-        .skip(1)
-        .map(|value| value.parse().expect("sizes must be positive integers"))
-        .collect();
+    let mut sizes: Vec<u64> = Vec::new();
+    let mut thread_counts: Vec<NonZeroUsize> = Vec::new();
+    let mut args = std::env::args().skip(1);
+    while let Some(arg) = args.next() {
+        if arg == "--cpu" {
+            let count = args.next().expect("--cpu needs a thread count");
+            thread_counts.push(
+                count
+                    .parse()
+                    .expect("thread counts must be positive integers"),
+            );
+        } else {
+            sizes.push(arg.parse().expect("sizes must be positive integers"));
+        }
+    }
     let sizes = if sizes.is_empty() {
         vec![1_000_000]
     } else {
         sizes
     };
-    if let Ok(context) = pollster::block_on(Context::init()) {
+    let has_gpu = pollster::block_on(Context::init()).is_ok_and(|context| {
         eprintln!(
             "adapter={:?} backend={:?} device_type={:?}",
             context.adapter_info.name,
             context.adapter_info.backend,
             context.adapter_info.device_type,
         );
-        if context.adapter_info.device_type == wgpu::DeviceType::Cpu {
-            eprintln!("the public API will use CPU fallback for this adapter");
-        }
+        context.adapter_info.device_type != wgpu::DeviceType::Cpu
+    });
+    let available = std::thread::available_parallelism().unwrap_or(NonZeroUsize::MIN);
+    eprintln!("available threads={available}");
+    if thread_counts.is_empty() {
+        thread_counts.push(available);
+    }
+    let mut cpu_columns = String::new();
+    for count in &thread_counts {
+        write!(cpu_columns, ",cpu_{count}_ms").expect("writing to a String can't fail");
     }
     println!(
-        "order,type,input_values,output_ranges,cpu_from_iter_ms,cpu_from_slice_ms,gpu_policy_ms"
+        "workload,order,type,input_values,distinct_values,output_ranges,from_slice_ms,cpu_1_ms{cpu_columns},gpu_only_ms"
     );
-    for size in sizes {
-        for (order, shuffle) in [("shuffled", true), ("in_order", false)] {
-            let ranks = clumps(size, 256, shuffle);
-            benchmark::<u32>(order, &ranks);
-            benchmark::<i32>(order, &ranks);
-            benchmark::<char>(order, &ranks);
-            benchmark::<NotNanF32>(order, &ranks);
-            benchmark::<u64>(order, &ranks);
-            benchmark::<i64>(order, &ranks);
-            benchmark::<NotNanF64>(order, &ranks);
+    for n in sizes {
+        for workload in [Workload::Distinct, Workload::Duplicates] {
+            for shuffle in [true, false] {
+                let run = Run {
+                    n,
+                    workload,
+                    shuffle,
+                    has_gpu,
+                    thread_counts: &thread_counts,
+                };
+                run.benchmark::<u8>();
+                run.benchmark::<u16>();
+                run.benchmark::<u32>();
+                run.benchmark::<i32>();
+                run.benchmark::<char>();
+                run.benchmark::<NotNanF32>();
+                run.benchmark::<u64>();
+                run.benchmark::<i64>();
+                run.benchmark::<NotNanF64>();
+            }
         }
     }
 }
 
+/// A key type, with how many values it can hold and an order-preserving way to make the
+/// `k`-th smallest one, so that consecutive `k` give values the set treats as adjacent.
 trait BenchElement: Copy + range_set_blaze::Integer {
     const NAME: &'static str;
-    fn from_rank(rank: u32) -> Self;
-    fn from_slice_shuffled(values: &[Self]) -> RangeSetBlaze<Self>;
+    /// How many distinct values `from_index` accepts (`0..DOMAIN`).
+    const DOMAIN: u64;
+    fn from_index(k: u64) -> Self;
+    fn in_place(values: &mut [Self], engine: Engine) -> RangeSetBlaze<Self>;
 }
 
 macro_rules! bench_element {
-    ($type:ty, $name:literal, $convert:expr) => {
+    ($type:ty, $name:literal, $domain:expr, $from_index:expr) => {
         impl BenchElement for $type {
             const NAME: &'static str = $name;
-            fn from_rank(rank: u32) -> Self {
-                $convert(rank)
+            const DOMAIN: u64 = $domain;
+            fn from_index(k: u64) -> Self {
+                debug_assert!(k < Self::DOMAIN);
+                $from_index(k)
             }
-            fn from_slice_shuffled(values: &[Self]) -> RangeSetBlaze<Self> {
-                RangeSetBlaze::<Self>::from_slice_shuffled(values)
+            fn in_place(values: &mut [Self], engine: Engine) -> RangeSetBlaze<Self> {
+                RangeSetBlaze::<Self>::from_slice_in_place(values, engine)
             }
         }
     };
 }
 
-bench_element!(u32, "u32", |rank| rank);
-bench_element!(i32, "i32", |rank: u32| (rank ^ 0x8000_0000).cast_signed());
-bench_element!(char, "char", |rank: u32| {
-    let scalar = rank % 0x10_f800;
-    char::from_u32(if scalar < 0xd800 {
-        scalar
-    } else {
-        scalar + 0x800
-    })
-    .expect("rank maps to a Unicode scalar")
-});
-bench_element!(NotNanF32, "NotNanF32", |rank: u32| nnf32(f32::from_bits(
-    rank % 0x7f80_0001
-)));
-bench_element!(u64, "u64", |rank| 0xffff_ff00u64 + u64::from(rank));
-bench_element!(i64, "i64", |rank| (0x7fff_ffff_ffff_ff00u64
-    .wrapping_add(u64::from(rank))
-    ^ 0x8000_0000_0000_0000)
-    .cast_signed());
-bench_element!(NotNanF64, "NotNanF64", |rank| nnf64(f64::from_bits(
-    u64::from(rank)
-)));
+#[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+mod elements {
+    use super::{BenchElement, Engine, NotNanF32, NotNanF64, RangeSetBlaze, nnf32, nnf64};
 
-fn benchmark<T: BenchElement>(order: &str, ranks: &[u32]) {
-    let values: Vec<T> = ranks.iter().copied().map(T::from_rank).collect();
-    drop(values.iter().copied().collect::<RangeSetBlaze<_>>());
-    drop(RangeSetBlaze::from_slice(&values));
-    drop(T::from_slice_shuffled(&values));
-
-    let cpu = median_duration(3, || {
-        black_box(values.iter().copied()).collect::<RangeSetBlaze<_>>()
+    bench_element!(u8, "u8", 1 << 8, |k| k as u8);
+    bench_element!(u16, "u16", 1 << 16, |k| k as u16);
+    bench_element!(u32, "u32", 1 << 32, |k| k as u32);
+    bench_element!(i32, "i32", 1 << 32, |k: u64| (k as u32 ^ 0x8000_0000)
+        as i32);
+    // Unicode scalar values skip the surrogates `0xD800..=0xDFFF`; the set treats `0xD7FF` and
+    // `0xE000` as adjacent.
+    bench_element!(char, "char", 0x10_f800, |k: u64| {
+        let k = k as u32;
+        char::from_u32(if k < 0xd800 { k } else { k + 0x800 }).expect("valid scalar")
     });
-    let simd = median_duration(3, || RangeSetBlaze::from_slice(black_box(&values)));
-    let gpu = median_duration(3, || black_box(T::from_slice_shuffled(black_box(&values))));
-
-    let expected = values.iter().copied().collect::<RangeSetBlaze<_>>();
-    let actual = T::from_slice_shuffled(&values);
-    assert_eq!(
-        actual.ranges().collect::<Vec<_>>(),
-        expected.ranges().collect::<Vec<_>>()
-    );
-    assert_eq!(RangeSetBlaze::from_slice(&values), expected);
-    println!(
-        "{order},{},{},{},{:.6},{:.6},{:.6}",
-        T::NAME,
-        values.len(),
-        expected.ranges_len(),
-        milliseconds(cpu),
-        milliseconds(simd),
-        milliseconds(gpu),
-    );
+    // Non-negative floats in bit order, `+0.0` through `+inf`.
+    bench_element!(NotNanF32, "NotNanF32", 0x7f80_0001, |k: u64| nnf32(
+        f32::from_bits(k as u32)
+    ));
+    // Start just below 2^32, so runs cross from the low 32-bit word into the high one.
+    bench_element!(u64, "u64", u64::MAX - 0xffff_ff00, |k| 0xffff_ff00 + k);
+    // Start just below zero, so runs cross from negative to positive.
+    bench_element!(i64, "i64", u64::MAX / 2, |k: u64| (k as i64)
+        .wrapping_sub(256));
+    bench_element!(NotNanF64, "NotNanF64", 0x7ff0_0000_0000_0001, |k| nnf64(
+        f64::from_bits(k)
+    ));
 }
 
-fn clumps(len: usize, clump_len: usize, shuffle: bool) -> Vec<u32> {
-    let mut values = Vec::with_capacity(len);
-    let mut value = 0u32;
-    for index in 0..len {
-        value = value
-            .checked_add(1 + u32::from(index != 0 && index % clump_len == 0))
-            .expect("benchmark generator exceeded the u32 domain");
-        values.push(value);
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Workload {
+    Distinct,
+    Duplicates,
+}
+
+struct Run<'a> {
+    n: u64,
+    workload: Workload,
+    shuffle: bool,
+    has_gpu: bool,
+    thread_counts: &'a [NonZeroUsize],
+}
+
+impl Run<'_> {
+    fn benchmark<T: BenchElement>(&self) {
+        let workload = match self.workload {
+            Workload::Distinct => "distinct",
+            Workload::Duplicates => "duplicates",
+        };
+        let order = if self.shuffle { "shuffled" } else { "in_order" };
+        let Some((values, distinct)) = self.values::<T>() else {
+            let empty = ",".repeat(self.thread_counts.len() + 4);
+            println!("{workload},{order},{},{},n/a{empty}", T::NAME, self.n);
+            return;
+        };
+        let expected = RangeSetBlaze::from_slice(&values);
+        let from_slice = median(|| (), |()| RangeSetBlaze::from_slice(black_box(&values)));
+        let in_place = |engine: Engine| {
+            let mut check = values.clone();
+            assert_eq!(T::in_place(&mut check, engine), expected, "{engine:?}");
+            median(
+                || values.clone(),
+                |mut copy| T::in_place(black_box(&mut copy), engine),
+            )
+        };
+        let cpu_1 = in_place(Engine::Cpu(NonZeroUsize::MIN));
+        let mut cpu_many = String::new();
+        for &count in self.thread_counts {
+            let elapsed = milliseconds(in_place(Engine::Cpu(count)));
+            write!(cpu_many, ",{elapsed:.3}").expect("writing to a String can't fail");
+        }
+        let gpu = self.has_gpu.then(|| in_place(Engine::GpuOnly));
+        println!(
+            "{workload},{order},{},{},{},{},{:.3},{:.3}{cpu_many},{}",
+            T::NAME,
+            values.len(),
+            distinct,
+            expected.ranges_len(),
+            milliseconds(from_slice),
+            milliseconds(cpu_1),
+            gpu.map_or_else(String::new, |gpu| format!("{:.3}", milliseconds(gpu))),
+        );
     }
-    if !shuffle {
-        return values;
+
+    /// The `n` values for this run and how many are distinct, or `None` if `T` can't hold this
+    /// workload.
+    fn values<T: BenchElement>(&self) -> Option<(Vec<T>, u64)> {
+        let distinct = match self.workload {
+            Workload::Distinct => self.n,
+            Workload::Duplicates => self
+                .n
+                .div_ceil(DUPLICATE_REPEATS)
+                .min(max_distinct(T::DOMAIN)),
+        };
+        let max_index = clump_index(distinct.checked_sub(1)?);
+        if max_index >= T::DOMAIN {
+            return None;
+        }
+        // In order: each distinct value repeated `repeats` times, next to each other.
+        let repeats = self.n.div_ceil(distinct);
+        let mut values: Vec<T> = (0..self.n)
+            .map(|i| T::from_index(clump_index(i / repeats)))
+            .collect();
+        if self.shuffle {
+            shuffle(&mut values, SEED);
+        }
+        Some((values, distinct))
     }
-    let mut state = 0xd1b5_4a32_d192_ed03u64;
+}
+
+/// The index of the `j`-th distinct value: clumps of `CLUMP_LEN`, a gap of one between them.
+const fn clump_index(j: u64) -> u64 {
+    j + j / CLUMP_LEN
+}
+
+/// The most distinct values whose clump layout fits in `domain`.
+const fn max_distinct(domain: u64) -> u64 {
+    // `clump_index(d - 1) < domain` holds for every `d` up to about
+    // `domain * CLUMP_LEN / (CLUMP_LEN + 1)`; start just above that and step down.
+    let mut d = domain - domain / (CLUMP_LEN + 1);
+    while d > 0 && clump_index(d - 1) >= domain {
+        d -= 1;
+    }
+    d
+}
+
+/// Fisher–Yates shuffle driven by xorshift from `seed`.
+fn shuffle<T>(values: &mut [T], seed: u64) {
+    let mut state = seed;
     for index in (1..values.len()).rev() {
         state ^= state << 13;
         state ^= state >> 7;
@@ -139,16 +259,19 @@ fn clumps(len: usize, clump_len: usize, shuffle: bool) -> Vec<u32> {
         let swap_index = usize::try_from(state % modulus).expect("swap index exceeded usize");
         values.swap(index, swap_index);
     }
-    values
 }
 
-fn median_duration<T>(iterations: usize, mut operation: impl FnMut() -> T) -> Duration {
-    let mut samples = Vec::with_capacity(iterations);
-    for _ in 0..iterations {
-        let start = Instant::now();
-        drop(operation());
-        samples.push(start.elapsed());
-    }
+/// Median of five timed runs after one warm-up; `setup` runs outside the timer.
+fn median<S, R>(mut setup: impl FnMut() -> S, mut operation: impl FnMut(S) -> R) -> Duration {
+    drop(operation(setup()));
+    let mut samples: Vec<Duration> = (0..5)
+        .map(|_| {
+            let input = setup();
+            let start = Instant::now();
+            drop(operation(input));
+            start.elapsed()
+        })
+        .collect();
     samples.sort_unstable();
     samples[samples.len() / 2]
 }
