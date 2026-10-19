@@ -134,6 +134,11 @@ path = "experiments/gpu_ingest.rs"
 required-features = ["in_place_slices"]
 
 [[bin]]
+name = "gpu_map_ingest"
+path = "experiments/gpu_map_ingest.rs"
+required-features = ["in_place_slices"]
+
+[[bin]]
 name = "gpu_sort_benchmark"
 path = "experiments/gpu_sort_benchmark.rs"
 required-features = ["in_place_slices"]
