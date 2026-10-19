@@ -97,11 +97,38 @@ pub(crate) fn from_slice_at_level_unrolled<T: SimdInteger, const N: usize>(
     level: Level,
     slice: &[T],
 ) -> RangeSetBlaze<T> {
-    let mut ranges = from_slice_ranges_unrolled::<T, N>(level, slice);
+    let mut ranges = if barely_compresses::<T, N>(level, slice) {
+        // Sorting a copy is faster than sorting one range per value, and the sorted copy's
+        // ranges come out already sorted.
+        let mut sorted = slice.to_vec();
+        sorted.sort_unstable();
+        from_slice_ranges_unrolled::<T, N>(level, &sorted)
+    } else {
+        from_slice_ranges_unrolled::<T, N>(level, slice)
+    };
     ranges.sort_unstable_by_key(|&(start, _)| start);
     RangeSetBlaze::from_sorted_disjoint(UnionIter::new(AssumeSortedStarts::new(
         ranges.into_iter().map(|(start, end)| start..=end),
     )))
+}
+
+/// How many values at the start of a slice [`barely_compresses`] looks at. (Smaller in tests,
+/// so they can reach the sort-a-copy path quickly.)
+const PROBE_LEN: usize = if cfg!(test) { 1 << 10 } else { 1 << 14 };
+
+/// Slices shorter than this never switch to sorting a copy; the probe wouldn't pay for itself.
+const MIN_SORT_COPY_LEN: usize = if cfg!(test) { 1 << 12 } else { 1 << 18 };
+
+/// Whether `slice` looks like it is in no useful order: in its first [`PROBE_LEN`] values, at
+/// least three out of four values start a new run.
+///
+/// Then `from_slice` sorts a copy instead, which is faster: on shuffled clumpy data, sorting
+/// `n` values beats sorting the `n` one-value ranges the kernel would collect. The bar is strict
+/// because the kernel wins as soon as runs average about two values in slice order (in one test,
+/// 1.2x slower at two, 50x faster at 128), so clumpy data in order never switches.
+fn barely_compresses<T: SimdInteger, const N: usize>(level: Level, slice: &[T]) -> bool {
+    slice.len() >= MIN_SORT_COPY_LEN
+        && from_slice_ranges_unrolled::<T, N>(level, &slice[..PROBE_LEN]).len() * 4 >= PROBE_LEN * 3
 }
 
 /// Returns the ranges of `slice`, in slice order, with touching neighbors merged.

@@ -54,6 +54,10 @@ This release is not breaking.
   `TotalF32`, and `TotalF64`. Each lane holds the float's order-preserving integer key (the
   `total_cmp` order). On 10 million clumpy `NotNanF32` values in order, `from_slice` dropped from
   about 53 ms to 2 ms, about the speed of `u32`.
+- `from_slice` is faster on large slices in no useful order (for example, shuffled). When at
+  least three of every four values in the first 16,384 start a new run, it sorts a copy instead,
+  which beats sorting one range per value: 10 million shuffled clumpy `u32` values went from 440 ms
+  to 254 ms. Slices with any useful order (runs averaging about two values or more) are unchanged.
 - `NotNan::from_primitive_slice` now validates `f32`/`f64` with SIMD (about 11 times faster).
 - The docs, README, and examples now recommend `from_slice` whenever the integers are in a slice,
   array, or `Vec`.
