@@ -1282,6 +1282,11 @@ fn from_slice_sort_copy_path_matches_from_iter() {
         .map(|&x| NotNanF32::new(f32::from_bits(x) - 1.0e-40))
         .collect();
     assert_from_slice_matches_from_iter(&floats);
+    let totals: Vec<crate::TotalF64> = values
+        .iter()
+        .map(|&x| crate::TotalF64::new(f64::from_bits(u64::from(x) << 20).copysign(-1.0)))
+        .collect();
+    assert_from_slice_matches_from_iter(&totals);
     // Runs of two, shuffled as pairs: half the values start a run, so this stays on the kernel.
     let mut pairs: Vec<[u32; 2]> = (0..n / 2).map(|i| [3 * i, 3 * i + 1]).collect();
     for i in (1..pairs.len()).rev() {
