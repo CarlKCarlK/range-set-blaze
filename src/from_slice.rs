@@ -97,36 +97,11 @@ pub(crate) fn from_slice_at_level_unrolled<T: SimdInteger, const N: usize>(
     level: Level,
     slice: &[T],
 ) -> RangeSetBlaze<T> {
-    let mut ranges = if barely_compresses::<T, N>(level, slice) {
-        // Sorting a copy is faster than sorting one range per value, and the sorted copy's
-        // ranges come out already sorted.
-        from_slice_ranges_unrolled::<T, N>(level, &T::sorted_copy(slice))
-    } else {
-        from_slice_ranges_unrolled::<T, N>(level, slice)
-    };
+    let mut ranges = from_slice_ranges_unrolled::<T, N>(level, slice);
     ranges.sort_unstable_by_key(|&(start, _)| start);
     RangeSetBlaze::from_sorted_disjoint(UnionIter::new(AssumeSortedStarts::new(
         ranges.into_iter().map(|(start, end)| start..=end),
     )))
-}
-
-/// How many values at the start of a slice [`barely_compresses`] looks at. (Smaller in tests,
-/// so they can reach the sort-a-copy path quickly.)
-const PROBE_LEN: usize = if cfg!(test) { 1 << 10 } else { 1 << 14 };
-
-/// Slices shorter than this never switch to sorting a copy; the probe wouldn't pay for itself.
-const MIN_SORT_COPY_LEN: usize = if cfg!(test) { 1 << 12 } else { 1 << 18 };
-
-/// Whether `slice` looks like it is in no useful order: in its first [`PROBE_LEN`] values, at
-/// least three out of four values start a new run.
-///
-/// Then `from_slice` sorts a copy instead, which is faster: on shuffled clumpy data, sorting
-/// `n` values beats sorting the `n` one-value ranges the kernel would collect. The bar is strict
-/// because the kernel wins as soon as runs average about two values in slice order (in one test,
-/// 1.2x slower at two, 50x faster at 128), so clumpy data in order never switches.
-fn barely_compresses<T: SimdInteger, const N: usize>(level: Level, slice: &[T]) -> bool {
-    slice.len() >= MIN_SORT_COPY_LEN
-        && from_slice_ranges_unrolled::<T, N>(level, &slice[..PROBE_LEN]).len() * 4 >= PROBE_LEN * 3
 }
 
 /// Returns the ranges of `slice`, in slice order, with touching neighbors merged.
@@ -237,14 +212,6 @@ pub(crate) trait SimdInteger: Integer {
 
     /// Loads `chunk`, which must have exactly [`chunk_len`] values, into a vector.
     fn load<S: Simd>(simd: S, chunk: &[Self]) -> Self::Vector<S>;
-
-    /// Returns a sorted copy of `slice`, for [`barely_compresses`] slices. The float types
-    /// override this to sort their integer keys, which is faster than comparing floats.
-    fn sorted_copy(slice: &[Self]) -> Vec<Self> {
-        let mut sorted = slice.to_vec();
-        sorted.sort_unstable();
-        sorted
-    }
 }
 
 /// How many values one SIMD chunk holds.
@@ -421,24 +388,6 @@ const fn f32_key(value: f32) -> u32 {
     }
 }
 
-/// The `f32` whose [`f32_key`] is `key`.
-const fn f32_from_key(key: u32) -> f32 {
-    f32::from_bits(if key >> 31 == 1 {
-        key & 0x7fff_ffff
-    } else {
-        !key
-    })
-}
-
-/// The `f64` whose [`f64_key`] is `key`.
-const fn f64_from_key(key: u64) -> f64 {
-    f64::from_bits(if key >> 63 == 1 {
-        key & 0x7fff_ffff_ffff_ffff
-    } else {
-        !key
-    })
-}
-
 /// The order-preserving `u64` key of an `f64`; see [`f32_key`].
 #[expect(
     clippy::inline_always,
@@ -455,7 +404,7 @@ const fn f64_key(value: f64) -> u64 {
 }
 
 macro_rules! impl_simd_float {
-    ($wrapper:ty, $lane:ty, $vector:ident, $key:ident, $from_key:ident) => {
+    ($wrapper:ty, $lane:ty, $vector:ident, $key:ident) => {
         impl SimdInteger for $wrapper {
             type Lane = $lane;
             type Vector<S: Simd> = fearless_simd::$vector<S>;
@@ -469,23 +418,14 @@ macro_rules! impl_simd_float {
             fn load<S: Simd>(simd: S, chunk: &[Self]) -> Self::Vector<S> {
                 Self::Vector::<S>::from_fn(simd, |index| $key(chunk[index].into_inner()))
             }
-
-            fn sorted_copy(slice: &[Self]) -> Vec<Self> {
-                let mut keys: Vec<$lane> = slice.iter().map(|x| $key(x.into_inner())).collect();
-                keys.sort_unstable();
-                // Same size and alignment, so this reuses the keys' buffer.
-                keys.into_iter()
-                    .map(|key| <$wrapper>::new($from_key(key)))
-                    .collect()
-            }
         }
     };
 }
 
-impl_simd_float!(crate::NotNanF32, u32, u32x16, f32_key, f32_from_key);
-impl_simd_float!(crate::NotNanF64, u64, u64x8, f64_key, f64_from_key);
-impl_simd_float!(crate::TotalF32, u32, u32x16, f32_key, f32_from_key);
-impl_simd_float!(crate::TotalF64, u64, u64x8, f64_key, f64_from_key);
+impl_simd_float!(crate::NotNanF32, u32, u32x16, f32_key);
+impl_simd_float!(crate::NotNanF64, u64, u64x8, f64_key);
+impl_simd_float!(crate::TotalF32, u32, u32x16, f32_key);
+impl_simd_float!(crate::TotalF64, u64, u64x8, f64_key);
 
 // 128-bit values have no SIMD lane type, so each one spans two `u64` lanes, its low and high
 // halves, in memory order: a `u128` slice then casts to `u64` lanes directly.
@@ -967,13 +907,13 @@ pub(crate) fn testable_levels() -> Vec<Level> {
 
 #[cfg(test)]
 mod float_key_tests {
-    use super::{f32_from_key, f32_key, f64_from_key, f64_key};
+    use super::{f32_key, f64_key};
     use alloc::{vec, vec::Vec};
 
-    /// The float keys are order-preserving and invertible: check edge values, every sign and
-    /// exponent pattern with a few mantissas, and NaNs (whose bits must round-trip too).
+    /// The SIMD float lanes rely on the keys ordering floats as `total_cmp` does. Check edge
+    /// values, every sign and exponent pattern with a few mantissas, and NaNs.
     #[test]
-    fn float_keys_round_trip_and_preserve_order() {
+    fn float_keys_preserve_total_cmp_order() {
         let mut f32s: Vec<f32> = vec![
             f32::NEG_INFINITY,
             -f32::MAX,
@@ -993,9 +933,6 @@ mod float_key_tests {
                 f32s.push(f32::from_bits((high << 23) | low));
             }
         }
-        for &x in &f32s {
-            assert_eq!(f32_from_key(f32_key(x)).to_bits(), x.to_bits());
-        }
         for &a in &f32s {
             for &b in &f32s {
                 assert_eq!(f32_key(a).cmp(&f32_key(b)), a.total_cmp(&b), "{a:?} {b:?}");
@@ -1004,9 +941,6 @@ mod float_key_tests {
         let mut f64s: Vec<f64> = f32s.iter().map(|&x| f64::from(x)).collect();
         for high in 0..=0xfff_u64 {
             f64s.push(f64::from_bits((high << 52) | 0x8_0000_0000_0001));
-        }
-        for &x in &f64s {
-            assert_eq!(f64_from_key(f64_key(x)).to_bits(), x.to_bits());
         }
         for a in f64s.iter().step_by(7) {
             for b in f64s.iter().step_by(5) {
