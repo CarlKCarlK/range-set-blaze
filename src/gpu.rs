@@ -189,9 +189,7 @@ fn from_slice_in_place<T: GpuElement>(values: &mut [T], engine: Engine) -> Range
                 T::KEY_WORDS != 0,
                 "Engine::GpuOnly: this key type has no GPU representation"
             );
-            let context = gpu_context()
-                .filter(|context| context.adapter_info.device_type != wgpu::DeviceType::Cpu)
-                .expect("Engine::GpuOnly: no hardware GPU is available");
+            let context = gpu_context().expect("Engine::GpuOnly: no hardware GPU is available");
             from_slice_gpu_with_context(values, context)
                 .expect("Engine::GpuOnly: the input exceeds the GPU's limits or memory")
         }
@@ -284,9 +282,7 @@ fn thread_pool(threads: NonZeroUsize) -> Arc<rayon::ThreadPool> {
 /// Runs on the GPU, or returns `None` if there is no hardware GPU, the input exceeds the GPU's
 /// limits, or the GPU runs out of memory. Any other GPU error panics.
 fn try_gpu<T: GpuElement>(values: &[T]) -> Option<RangeSetBlaze<T>> {
-    let context = gpu_context()?;
-    (context.adapter_info.device_type != wgpu::DeviceType::Cpu)
-        .then(|| from_slice_gpu_with_context(values, context))?
+    from_slice_gpu_with_context(values, gpu_context()?)
 }
 
 fn from_slice_gpu_with_context<T: GpuElement>(
@@ -353,6 +349,9 @@ async fn init_gpu_context() -> Option<Context> {
         .await
         .ok()?;
     let adapter_info = adapter.get_info();
+    if adapter_info.device_type == wgpu::DeviceType::Cpu {
+        return None;
+    }
     let supported_features = adapter.features();
     let required_features = gpu_context_features(&adapter_info, supported_features);
     let (device, queue) = adapter
