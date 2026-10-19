@@ -29,22 +29,37 @@ use std::{
 };
 
 use range_set_blaze::test_util::{
-    How, MemorylessIter, MemorylessRange, k_sets, width_to_range_u32,
+    FromSliceAtLevel, How, MemorylessIter, MemorylessRange, k_sets, width_to_range_u32,
 };
 use syntactic_for::syntactic_for;
 
-#[cfg(feature = "from_slice")]
-const LANES: usize = 16;
-#[cfg(feature = "from_slice")]
-const SIMD_SUFFIX: &str = if cfg!(target_feature = "avx512f") {
-    "avx512f"
-} else if cfg!(target_feature = "avx2") {
-    "avx2"
-} else if cfg!(target_feature = "sse2") {
-    "sse2"
-} else {
-    "error"
-};
+/// A short label for the `fearless_simd` level actually selected for `from_slice` at runtime.
+///
+/// This is deliberately not based on `cfg!(target_feature = ...)`: with `std`, a generic binary
+/// (no `-C target-cpu=native`) still detects and dispatches to the CPU's best supported level
+/// (for example AVX-512) at runtime, so the compile-time target features can under-report what's
+/// actually running.
+fn simd_level_label() -> &'static str {
+    use fearless_simd::Level;
+    let level = Level::try_detect().unwrap_or(Level::baseline());
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    match level {
+        Level::Avx512(_) => return "avx512",
+        Level::Avx2(_) => return "avx2",
+        Level::Sse4_2(_) => return "sse4.2",
+        Level::Sse2(_) => return "sse2",
+        _ => {}
+    }
+    #[cfg(target_arch = "aarch64")]
+    if let Level::Neon(_) = level {
+        return "neon";
+    }
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+    if let Level::WasmSimd128(_) = level {
+        return "wasm-simd128";
+    }
+    "fallback"
+}
 
 #[allow(dead_code)]
 fn shuffled(c: &mut Criterion) {
@@ -1259,7 +1274,6 @@ fn str_vs_ad_by_cover(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "from_slice")]
 fn ingest_clumps_base(c: &mut Criterion) {
     let group_name = "ingest_clumps_base";
     let k = 1;
@@ -1290,7 +1304,7 @@ fn ingest_clumps_base(c: &mut Criterion) {
         let vec_range: Vec<RangeInclusive<u32>> = MemorylessRange::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -1303,10 +1317,9 @@ fn ingest_clumps_base(c: &mut Criterion) {
             |b, _| b.iter(|| RangeSetBlaze::from_iter(&vec)),
         );
 
-        #[cfg(feature = "from_slice")]
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (integers-slice_{SIMD_SUFFIX})"),
+                format!("RangeSetBlaze (integers-slice_{})", simd_level_label()),
                 parameter,
             ),
             &parameter,
@@ -1381,7 +1394,7 @@ fn ingest_clumps_cursor(c: &mut Criterion) {
         let vec_range: Vec<RangeInclusive<u32>> = MemorylessRange::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -1420,7 +1433,6 @@ fn ingest_clumps_cursor(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "from_slice")]
 fn ingest_clumps_integers(c: &mut Criterion) {
     let group_name = "ingest_clumps_integers";
     let k = 1;
@@ -1442,7 +1454,7 @@ fn ingest_clumps_integers(c: &mut Criterion) {
         let vec: Vec<u32> = MemorylessIter::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -1455,10 +1467,9 @@ fn ingest_clumps_integers(c: &mut Criterion) {
             |b, _| b.iter(|| RangeSetBlaze::from_iter(&vec)),
         );
 
-        #[cfg(feature = "from_slice")]
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (from_slice_{SIMD_SUFFIX})"),
+                format!("RangeSetBlaze (from_slice_{})", simd_level_label()),
                 parameter,
             ),
             &parameter,
@@ -1509,7 +1520,6 @@ fn ingest_clumps_integers(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "from_slice")]
 fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
     let group_name = "ingest_clumps_iter_v_slice";
     let k = 1;
@@ -1531,7 +1541,7 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
         let vec: Vec<u32> = MemorylessIter::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -1539,9 +1549,10 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
         .collect();
 
         group.bench_with_input(
-            // format!("RangeSetBlaze (from_slice_{})", LANES)
-            // "RangeSetBlaze (from_slice)"
-            BenchmarkId::new(format!("RangeSetBlaze (from_slice_{LANES})"), parameter),
+            BenchmarkId::new(
+                format!("RangeSetBlaze (from_slice_{})", simd_level_label()),
+                parameter,
+            ),
             &parameter,
             |b, _| {
                 b.iter(|| {
@@ -1561,6 +1572,212 @@ fn ingest_clumps_iter_v_slice(c: &mut Criterion) {
         );
     }
     group.finish();
+}
+
+/// `from_slice` vs. `from_iter` on IP addresses: the same clumpy data as
+/// `ingest_clumps_iter_v_slice`, as `Ipv4Addr`s and as `Ipv6Addr`s inside `2001:db8::/32`.
+fn ingest_clumps_ip_addresses(c: &mut Criterion) {
+    use std::net::{Ipv4Addr, Ipv6Addr};
+
+    let group_name = "ingest_clumps_ip_addresses";
+    let k = 1;
+    let average_width_list = [1, 10, 100, 1000, 10_000, 100_000];
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    let mut group = c.benchmark_group(group_name);
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+    group.sample_size(20);
+
+    for average_width in average_width_list {
+        let parameter = average_width;
+
+        let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+
+        let vec: Vec<u32> = MemorylessIter::new(
+            &mut StdRng::seed_from_u64(seed),
+            range_len,
+            range,
+            coverage_goal,
+            k,
+            how,
+        )
+        .collect();
+        let ipv4s: Vec<Ipv4Addr> = vec.iter().map(|&x| Ipv4Addr::from(x)).collect();
+        let ipv6s: Vec<Ipv6Addr> = vec
+            .iter()
+            .map(|&x| Ipv6Addr::from((0x2001_0db8_u128 << 96) | u128::from(x)))
+            .collect();
+
+        group.bench_with_input(
+            BenchmarkId::new("Ipv4Addr (from_slice)", parameter),
+            &parameter,
+            |b, _| b.iter(|| black_box(RangeSetBlaze::from_slice(ipv4s.as_slice()))),
+        );
+        group.bench_with_input(
+            BenchmarkId::new("Ipv4Addr (from_iter)", parameter),
+            &parameter,
+            |b, _| b.iter(|| black_box(RangeSetBlaze::from_iter(&ipv4s))),
+        );
+        group.bench_with_input(
+            BenchmarkId::new("Ipv6Addr (from_slice)", parameter),
+            &parameter,
+            |b, _| b.iter(|| black_box(RangeSetBlaze::from_slice(ipv6s.as_slice()))),
+        );
+        group.bench_with_input(
+            BenchmarkId::new("Ipv6Addr (from_iter)", parameter),
+            &parameter,
+            |b, _| b.iter(|| black_box(RangeSetBlaze::from_iter(&ipv6s))),
+        );
+    }
+    group.finish();
+}
+
+/// Every `fearless_simd` level this CPU can run, from scalar `fallback` up, with a short label.
+fn simd_levels() -> Vec<(&'static str, fearless_simd::Level)> {
+    use fearless_simd::Level;
+    let mut levels = vec![("fallback", Level::fallback())];
+    if let Some(detected) = Level::try_detect() {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        levels.extend(
+            [
+                ("sse2", detected.as_sse2().map(Level::Sse2)),
+                ("sse4.2", detected.as_sse4_2().map(Level::Sse4_2)),
+                ("avx2", detected.as_avx2().map(Level::Avx2)),
+                ("avx512", detected.as_avx512().map(Level::Avx512)),
+            ]
+            .into_iter()
+            .filter_map(|(label, level)| level.map(|level| (label, level))),
+        );
+        #[cfg(target_arch = "aarch64")]
+        if let Some(neon) = detected.as_neon() {
+            levels.push(("neon", Level::Neon(neon)));
+        }
+    }
+    levels
+}
+
+/// `from_slice` at every SIMD level (same code, same data), plus `from_iter` and auto-dispatched
+/// `from_slice`, on `u32` and on the same values as `u64`.
+///
+/// For a fallback with no LLVM auto-vectorization either, run with
+/// `RUSTFLAGS="-C no-vectorize-loops -C no-vectorize-slp"` (affects every series).
+fn ingest_clumps_simd_levels(c: &mut Criterion) {
+    fn bench_type<T>(c: &mut Criterion, type_name: &str, inputs: &[(usize, Vec<T>)])
+    where
+        T: Integer + FromSliceAtLevel,
+    {
+        let mut group = c.benchmark_group(format!("ingest_clumps_simd_levels_{type_name}"));
+        group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+        group.sample_size(20);
+        for (parameter, vec) in inputs {
+            group.bench_with_input(
+                BenchmarkId::new("from_iter", parameter),
+                parameter,
+                |b, _| {
+                    b.iter(|| black_box(RangeSetBlaze::from_iter(vec)));
+                },
+            );
+            for (label, level) in simd_levels() {
+                group.bench_with_input(
+                    BenchmarkId::new(format!("from_slice@{label}"), parameter),
+                    parameter,
+                    |b, _| b.iter(|| black_box(T::from_slice_at_level(level, vec))),
+                );
+            }
+            group.bench_with_input(
+                BenchmarkId::new(
+                    format!("from_slice (auto: {})", simd_level_label()),
+                    parameter,
+                ),
+                parameter,
+                |b, _| b.iter(|| black_box(RangeSetBlaze::from_slice(vec))),
+            );
+        }
+        group.finish();
+    }
+
+    let (inputs_u32, inputs_u64) = clumps_inputs(&[1, 10, 100, 1000, 10_000, 100_000]);
+    bench_type(c, "u32", &inputs_u32);
+    bench_type(c, "u64", &inputs_u64);
+}
+
+/// `from_slice` at each SIMD level with the run-extending loop unrolled 1, 2, 4, and 8 times.
+fn ingest_clumps_unroll(c: &mut Criterion) {
+    fn bench_type<T>(c: &mut Criterion, type_name: &str, inputs: &[(usize, Vec<T>)])
+    where
+        T: Integer + FromSliceAtLevel,
+    {
+        let mut group = c.benchmark_group(format!("ingest_clumps_unroll_{type_name}"));
+        group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+        group.sample_size(20);
+        for (parameter, vec) in inputs {
+            for (label, level) in simd_levels() {
+                if !matches!(label, "fallback" | "sse2" | "avx2" | "avx512" | "neon") {
+                    continue;
+                }
+                group.bench_with_input(
+                    BenchmarkId::new(format!("{label}x1"), parameter),
+                    parameter,
+                    |b, _| b.iter(|| black_box(T::from_slice_at_level_unrolled::<1>(level, vec))),
+                );
+                group.bench_with_input(
+                    BenchmarkId::new(format!("{label}x2"), parameter),
+                    parameter,
+                    |b, _| b.iter(|| black_box(T::from_slice_at_level_unrolled::<2>(level, vec))),
+                );
+                group.bench_with_input(
+                    BenchmarkId::new(format!("{label}x4"), parameter),
+                    parameter,
+                    |b, _| b.iter(|| black_box(T::from_slice_at_level_unrolled::<4>(level, vec))),
+                );
+                group.bench_with_input(
+                    BenchmarkId::new(format!("{label}x8"), parameter),
+                    parameter,
+                    |b, _| b.iter(|| black_box(T::from_slice_at_level_unrolled::<8>(level, vec))),
+                );
+            }
+        }
+        group.finish();
+    }
+
+    let (inputs_u32, inputs_u64) = clumps_inputs(&[100, 1000, 10_000, 100_000]);
+    bench_type(c, "u32", &inputs_u32);
+    bench_type(c, "u64", &inputs_u64);
+}
+
+/// The `ingest_clumps_iter_v_slice` data at each average width, as `u32` and as `u64`.
+#[allow(clippy::type_complexity)]
+fn clumps_inputs(average_width_list: &[usize]) -> (Vec<(usize, Vec<u32>)>, Vec<(usize, Vec<u64>)>) {
+    let k = 1;
+    let coverage_goal = 0.10;
+    let how = How::None;
+    let seed = 0;
+    let iter_len = 1_000_000;
+
+    let inputs_u32: Vec<(usize, Vec<u32>)> = average_width_list
+        .iter()
+        .map(|&average_width| {
+            let (range_len, range) = width_to_range_u32(iter_len, average_width, coverage_goal);
+            let vec = MemorylessIter::new(
+                &mut StdRng::seed_from_u64(seed),
+                range_len,
+                range,
+                coverage_goal,
+                k,
+                how,
+            )
+            .collect();
+            (average_width, vec)
+        })
+        .collect();
+    let inputs_u64 = inputs_u32
+        .iter()
+        .map(|(width, vec)| (*width, vec.iter().map(|&x| u64::from(x)).collect()))
+        .collect();
+    (inputs_u32, inputs_u64)
 }
 
 fn ingest_clumps_ranges(c: &mut Criterion) {
@@ -1584,7 +1801,7 @@ fn ingest_clumps_ranges(c: &mut Criterion) {
         let vec_range: Vec<RangeInclusive<u32>> = MemorylessRange::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -1653,7 +1870,7 @@ fn ingest_clumps_easy(c: &mut Criterion) {
         let vec_range: Vec<RangeInclusive<u32>> = MemorylessRange::new(
             &mut StdRng::seed_from_u64(seed),
             range_len,
-            range.clone(),
+            range,
             coverage_goal,
             k,
             how,
@@ -1728,7 +1945,6 @@ fn ingest_clumps_easy(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "from_slice")]
 fn worst(c: &mut Criterion) {
     let group_name = "worst";
     let uniform = Uniform::new(0, 1000).expect("Uniform::new");
@@ -1754,10 +1970,9 @@ fn worst(c: &mut Criterion) {
             },
         );
 
-        #[cfg(feature = "from_slice")]
         group.bench_with_input(
             BenchmarkId::new(
-                format!("RangeSetBlaze (from_slice_{SIMD_SUFFIX})"),
+                format!("RangeSetBlaze (from_slice_{})", simd_level_label()),
                 parameter,
             ),
             &parameter,
@@ -2295,23 +2510,18 @@ fn worst_op_blaze(c: &mut Criterion) {
     group.finish();
 }
 
-// Define two separate criterion groups for different features
-#[cfg(feature = "from_slice")]
 criterion_group!(
-    name = benches_with_from_slice;
+    name = benches;
     config = Criterion::default();
     targets =
     ingest_clumps_iter_v_slice,
+    ingest_clumps_ip_addresses,
+    ingest_clumps_simd_levels,
+    ingest_clumps_unroll,
     ingest_clumps_integers,
     ingest_clumps_base,
     ingest_clumps_cursor,
-    worst
-);
-
-criterion_group!(
-    name = benches_without_from_slice;
-    config = Criterion::default();
-    targets =
+    worst,
     intersect_k_sets,
     every_op_blaze,
     every_op_slow_and_blaze,
@@ -2320,13 +2530,8 @@ criterion_group!(
     union_two_maps_or_sets,
     ingest_clumps_ranges,
     ingest_clumps_easy,
-    ingest_clumps_cursor,
     overflow,
     worst_op_blaze
 );
 
-// Conditionally select and execute the appropriate group based on the feature
-#[cfg(feature = "from_slice")]
-criterion_main!(benches_with_from_slice);
-#[cfg(not(feature = "from_slice"))]
-criterion_main!(benches_without_from_slice);
+criterion_main!(benches);

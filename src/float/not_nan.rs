@@ -16,10 +16,10 @@ use core::{
 };
 
 use super::not_nan_float::NotNanFloat;
+use alloc::vec::Vec;
 
 use crate::Integer;
-#[cfg(feature = "from_slice")]
-use crate::RangeSetBlaze;
+use crate::{RangeMapBlaze, RangeSetBlaze};
 use num_traits::Zero;
 
 /// Total ordered f64, with `-0.0` normalized to `+0.0`, and excluding NaN.
@@ -66,7 +66,7 @@ macro_rules! not_nan_const_constructor {
     ($name:ident, $primitive:ty, $not_nan:ty) => {
         const fn $name(x: $primitive) -> $not_nan {
             assert!(!x.is_nan(), "NotNan type requires a non-NaN value");
-            let normalized = if x == 0.0 && x.is_sign_negative() {
+            let normalized = if x.to_bits() == (-0.0 as $primitive).to_bits() {
                 0.0
             } else {
                 x
@@ -427,34 +427,86 @@ impl<T: NotNanFloat> NotNan<T> {
         values.into_iter().map(Self::new)
     }
 
-    /// Views primitive values as ordered [`NotNan`] values, validating as it goes.
+    /// Borrows already-normalized primitive values as [`NotNan`] values; panics on NaN or `-0.0`.
     ///
-    /// "Primitive" here means Rust's built-in float type (e.g. `f64`).
+    /// "Primitive" here means Rust's built-in float type (e.g. `f64`). The result is a view of
+    /// the same memory: nothing is copied or allocated. Because a view can't rewrite `-0.0` to
+    /// `+0.0`, `-0.0` panics here; to accept it, use [`NotNan::from_primitive_vec`], which
+    /// normalizes it in a vector you own. For how this fits with the other conversions, see the
+    /// [float module documentation](crate::float#converting-native-floats).
     ///
-    ///
-    /// This runs in `O(n)` (to validate every element) and does not allocate.
     /// # Examples
     /// ```
     /// use range_set_blaze::{RangeSetBlaze, NotNanF64};
     ///
-    /// let short = RangeSetBlaze::from_iter(NotNanF64::from_primitive_slice(&[1.0, 2.0, 3.0, 4.0]));
-    /// let long = RangeSetBlaze::from_iter([NotNanF64::new(1.0), NotNanF64::new(2.0), NotNanF64::new(3.0), NotNanF64::new(4.0)]);
-    /// assert_eq!(short, long);
+    /// let data = [3.0, 1.0, 2.0, 7.5];
+    /// let set = RangeSetBlaze::from_slice(NotNanF64::from_primitive_slice(&data));
+    /// assert!(set.contains(NotNanF64::new(7.5)));
     /// ```
     ///
     /// # Panics
     ///
-    /// Panics if any element is NaN, or is `-0.0` (which can't be normalized to `+0.0`
-    /// without copying — see [`NotNan::from_primitive_slice_unchecked`] if you need a true
-    /// zero-copy view and can guarantee your data already satisfies [`NotNan`]'s invariant).
+    /// Panics if any element is NaN or `-0.0`.
+    ///
+    /// If you can already guarantee no element is NaN or `-0.0`, the advanced
+    /// [`NotNan::from_primitive_slice_unchecked`] skips the check.
+    ///
+    /// # Performance
+    ///
+    /// The validation uses SIMD, selected as described in [`RangeSetBlaze::from_slice`].
     #[must_use]
     pub fn from_primitive_slice(values: &[T]) -> &[Self] {
         assert!(
-            values.iter().all(|&v| !T::is_nan(v) && !T::is_neg_zero(v)),
+            T::all_not_nan_or_neg_zero(values),
             "NotNan type requires non-NaN, non-negative-zero values"
         );
         // SAFETY: just validated every element is not NaN and not -0.0.
         unsafe { Self::from_primitive_slice_unchecked(values) }
+    }
+
+    /// Consumes your vector of primitive values, normalizes `-0.0` to `+0.0`, and reuses its
+    /// allocation for the [`NotNan`] values; panics on NaN.
+    ///
+    /// "Primitive" here means Rust's built-in float type (e.g. `f64`). Unlike
+    /// [`NotNan::from_primitive_slice`], this accepts `-0.0`, because it owns the data and can
+    /// rewrite it. For how this fits with the other conversions, see the
+    /// [float module documentation](crate::float#converting-native-floats).
+    ///
+    /// # Performance
+    ///
+    /// The check uses SIMD, selected as described in [`RangeSetBlaze::from_slice`].
+    ///
+    /// # Examples
+    /// ```
+    /// use range_set_blaze::{RangeSetBlaze, NotNanF64};
+    ///
+    /// let not_nans = NotNanF64::from_primitive_vec(vec![1.0, -0.0, 2.0]);
+    /// assert_eq!(not_nans, [NotNanF64::new(1.0), NotNanF64::new(0.0), NotNanF64::new(2.0)]);
+    /// let set = RangeSetBlaze::from_slice(&not_nans);
+    /// assert!(set.contains(NotNanF64::new(0.0)));
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if any element is NaN.
+    #[must_use]
+    pub fn from_primitive_vec(mut values: Vec<T>) -> Vec<Self> {
+        assert!(
+            T::normalize_neg_zeros_and_check_not_nan(&mut values),
+            "NotNan type requires non-NaN values"
+        );
+        // Wrap only after the check, so a NaN panic still frees the vector.
+        let mut values = mem::ManuallyDrop::new(values);
+        // SAFETY: NotNan<T> is #[repr(transparent)] over T, so the allocation's size and
+        // alignment are unchanged, and every element was just checked not NaN and had any
+        // -0.0 normalized to +0.0. `ManuallyDrop` keeps the original vector from freeing it.
+        unsafe {
+            Vec::from_raw_parts(
+                values.as_mut_ptr().cast::<Self>(),
+                values.len(),
+                values.capacity(),
+            )
+        }
     }
 
     /// Views primitive values as ordered [`NotNan`] values, without validating them.
@@ -594,6 +646,18 @@ impl<T: NotNanFloat> Integer for NotNan<T> {
     type SafeLen = T::SafeLen;
 
     #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        // TODO Investigate applying the ordered float transform in SIMD chunks here. (may no longer apply)
+        // no way to do the fancy thing (may no longer apply)
+        T::from_slice(slice.as_ref())
+    }
+
+    #[inline]
+    fn from_slices<V: Eq + Clone>(keys: &[Self], values: &[V]) -> RangeMapBlaze<Self, V> {
+        T::from_slices(keys, values)
+    }
+
+    #[inline]
     fn checked_add_one(self) -> Option<Self> {
         self.checked_after()
     }
@@ -656,14 +720,6 @@ impl<T: NotNanFloat> Integer for NotNan<T> {
     #[inline]
     fn max_value() -> Self {
         Self::MAX
-    }
-
-    #[cfg(feature = "from_slice")]
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        // TODO Investigate applying the ordered float transform in SIMD chunks here.
-        // no way to do the fancy thing
-        RangeSetBlaze::from_iter(slice.as_ref())
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> Self::SafeLen {

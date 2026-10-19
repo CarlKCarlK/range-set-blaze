@@ -380,6 +380,10 @@ fn classify_forward<T: Integer>(
 /// [`SortedDisjointMap`] stream operations rely on the same assumption. Wrap large values in
 /// [`Rc`] or `Arc` so that each clone only bumps a reference count.
 ///
+/// Values must also be `Eq`, which native floats such as `f64` aren't. For float values, use a
+/// wrapper such as [`NotNanF64`](crate::NotNanF64); see
+/// [Floats as Map Values](crate::float#floats-as-map-values).
+///
 /// For a side-by-side introduction to range lookups and gap filling, see the
 /// [Ranges and gaps guide][crate::gaps].
 ///
@@ -411,6 +415,7 @@ fn classify_forward<T: Integer>(
 /// | [`new`]/[`default`]                         |                              |                          |
 /// | [`from_iter`][1]/[`collect`][1]           | iterator of `(integer, value)` | References to the pair or value is OK. |
 /// | [`from_iter`][2]/[`collect`][2]           | iterator of `(range, value)`   | References to the pair or value is OK. |
+/// | [`from_slices`][5]                          | slice of keys, slice of values | Faster than `from_iter` on pairs |
 /// | [`from_sorted_disjoint_map`][3]/<br>[`into_range_set_blaze`][3b] | [`SortedDisjointMap`] iterator |               |
 /// | [`from`][4] /[`into`][4]                    | array of `(integer, value)`  |                          |
 ///
@@ -424,6 +429,7 @@ fn classify_forward<T: Integer>(
 /// [3b]: `SortedDisjointMap::into_range_map_blaze
 /// [`SortedDisjointMap`]: crate::SortedDisjointMap.html#table-of-contents
 /// [4]: `RangeMapBlaze::from`
+/// [5]: `RangeMapBlaze::from_slices`
 ///
 /// # Constructor Performance
 ///
@@ -453,6 +459,10 @@ fn classify_forward<T: Integer>(
 /// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*)),
 /// a quadratic improvement an O(*n₁*) implementation that ignores the clumps.
 ///
+/// **When your keys and values are in two slices, arrays, or `Vec`s (for example, two columns of
+/// a table), use [`from_slices`][5].** On clumpy keys it is typically 6 to 16 times faster than
+/// [`from_iter`][1]/[`collect`][1].
+///
 /// ## Constructor Examples
 ///
 /// ```
@@ -469,6 +479,13 @@ fn classify_forward<T: Integer>(
 /// let a0 = RangeMapBlaze::from_iter([(100, "b"), (1, "c"),(3, "a"), (2, "a"), (1, "a")]);
 /// let a1: RangeMapBlaze<i32, &str> = [(100, "b"), (1, "c"), (3, "a"), (2, "a"), (1, "a")].into_iter().collect();
 /// assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
+///
+/// // 'from_slices': From a slice (or array or vector) of keys and one of values.
+/// // Same rules as above, and faster.
+/// let keys = [100, 1, 3, 2, 1];
+/// let values = ["b", "c", "a", "a", "a"];
+/// let a2 = RangeMapBlaze::from_slices(keys, values);
+/// assert_eq!(a2, a0);
 ///
 /// // 'from_iter'/'collect': From an iterator of inclusive ranges, start..=end.
 /// // Overlapping, out-of-order, and empty ranges are fine.
@@ -1079,6 +1096,41 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
         self.btree_map
             .last_key_value()
             .map(|(_, end_value)| (end_value.end, &end_value.value))
+    }
+
+    /// Create a [`RangeMapBlaze`] from a slice of keys and a same-length slice of values, such as
+    /// two columns of a table. The `i`-th key maps to the `i`-th value.
+    /// Duplicates and out-of-order keys are fine. In case of duplicate keys, the last
+    /// (right-most) value overrides the previous ones.
+    ///
+    /// It uses SIMD on the keys as described in [`RangeSetBlaze::from_slice`], for the same key
+    /// types: the primitive integers (`u8` through `u128`, `i8` through `i128`, `usize`, `isize`),
+    /// `char`, `Ipv4Addr`, and `Ipv6Addr`. Values are compared with ordinary `==`, so any
+    /// `V: Eq + Clone` works. (Native floats aren't `Eq`; for float values, see
+    /// [Floats as Map Values](crate::float#floats-as-map-values).)
+    ///
+    /// *For more about constructors and performance, see [`RangeMapBlaze` Constructors](struct.RangeMapBlaze.html#rangemapblaze-constructors).*
+    ///
+    /// # Panics
+    ///
+    /// Panics if `keys` and `values` have different lengths.
+    ///
+    /// [`RangeSetBlaze::from_slice`]: crate::RangeSetBlaze::from_slice
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use range_set_blaze::RangeMapBlaze;
+    ///
+    /// let keys = [100, 1, 3, 2, 1];
+    /// let values = ["b", "c", "a", "a", "a"];
+    /// let a0 = RangeMapBlaze::from_slices(keys, values);
+    /// let a1 = RangeMapBlaze::from_iter([(100, "b"), (1, "c"), (3, "a"), (2, "a"), (1, "a")]);
+    /// assert!(a0 == a1 && a0.to_string() == r#"(1..=3, "a"), (100..=100, "b")"#);
+    /// ```
+    #[inline]
+    pub fn from_slices(keys: impl AsRef<[T]>, values: impl AsRef<[V]>) -> Self {
+        T::from_slices(keys.as_ref(), values.as_ref())
     }
 
     /// Create a [`RangeMapBlaze`] from a [`SortedDisjointMap`] iterator.
@@ -2740,12 +2792,12 @@ where
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
+    /// let set = RangeSetBlaze::from_slice([1, 2, 3, 4]);
     ///
     /// let v: Vec<_> = set.into_iter().collect();
     /// assert_eq!(v, [1, 2, 3, 4]);
     ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
+    /// let set = RangeSetBlaze::from_slice([1, 2, 3, 4]);
     /// let v: Vec<_> = set.into_iter().rev().collect();
     /// assert_eq!(v, [4, 3, 2, 1]);
     /// ```

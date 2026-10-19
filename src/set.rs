@@ -102,7 +102,7 @@ where
 /// | [`new`]/[`default`]                         |                              |                          |
 /// | [`from_iter`][1]/[`collect`][1]             | integer iterator             |                          |
 /// | [`from_iter`][2]/[`collect`][2]             | ranges iterator              |                          |
-/// | [`from_slice`][5]                           | slice of integers            | Fast, but nightly-only  |
+/// | [`from_slice`][6]                           | slice of integers            | Faster than `from_iter` on integers |
 /// | [`from_sorted_disjoint`][3]/[`into_range_set_blaze`][3] | [`SortedDisjoint`] iterator |               |
 /// | [`from`][5] /[`into`][5]                    | array of integers            |                          |
 /// | [`from`][7]                                 | `RangeInclusive<T>`          |                          |
@@ -147,10 +147,8 @@ where
 /// Moreover, we'll see that set operations are O(*n₃*). Thus, if *n₃* ≈ sqrt(*n₁*) then set operations are O(sqrt(*n₁*)),
 /// a quadratic improvement an O(*n₁*) implementation that ignores the clumps.
 ///
-/// The [`from_slice`][5] constructor typically provides a constant-time speed up for array-like collections of clumpy integers.
-/// On a representative benchmark, the speed up was 7×.
-/// The method works by scanning the input for blocks of consecutive integers, and then using `from_iter` on the results.
-/// Where available, it uses SIMD instructions. It is nightly only and enabled by the `from_slice` feature.
+/// **When your integers are in a slice, array, or `Vec`, use [`from_slice`][6].** On clumpy
+/// integers it is typically 10 to 20 times faster than [`from_iter`][1]/[`collect`][1].
 ///
 /// ## Constructor Examples
 ///
@@ -177,10 +175,8 @@ where
 /// assert!(a0 == a1 && a0.to_string() == "-10..=-5, 1..=2");
 ///
 /// // 'from_slice': From any array-like collection of integers.
-/// // Nightly-only, but faster than 'from_iter'/'collect' on integers.
-/// #[cfg(feature = "from_slice")]
+/// // Faster than 'from_iter'/'collect' on integers.
 /// let a0 = RangeSetBlaze::from_slice(vec![3, 2, 1, 100, 1]);
-/// #[cfg(feature = "from_slice")]
 /// assert!(a0.to_string() == "1..=3, 100..=100");
 ///
 /// // If we know the ranges are already sorted and disjoint,
@@ -368,7 +364,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetBlaze::from_iter([3, 1, 2]);
+    /// let set = RangeSetBlaze::from_slice([3, 1, 2]);
     /// let mut set_iter = set.iter();
     /// assert_eq!(set_iter.next(), Some(1));
     /// assert_eq!(set_iter.next_back(), Some(3));
@@ -416,7 +412,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3]);
+    /// let set = RangeSetBlaze::from_slice([1, 2, 3]);
     /// assert_eq!(set.get(2), Some(2));
     /// assert_eq!(set.get(4), None);
     /// ```
@@ -575,26 +571,22 @@ impl<T: Integer> RangeSetBlaze<T> {
         }
     }
 
-    /// Creates a [`RangeSetBlaze`] from a collection of integers. It is typically many
-    /// times faster than [`from_iter`][1]/[`collect`][1].
-    /// On a representative benchmark, the speed up was 7×.
+    /// Creates a [`RangeSetBlaze`] from a collection of integers. Prefer it whenever your integers
+    /// are in a slice, array, or `Vec`: on clumpy integers it is typically 10 to 20 times faster than
+    /// [`from_iter`][1]/[`collect`][1]. The input is not modified.
     ///
-    /// **Warning: Requires the nightly compiler. Also, you must enable the `from_slice`
-    /// feature in your `Cargo.toml`. For example, with the command:**
-    /// ```bash
-    ///  cargo add range-set-blaze --features "from_slice"
-    /// ```
     /// The function accepts any type that can be referenced as a slice of integers,
     /// including slices, arrays, and vectors. Duplicates and out-of-order elements are fine.
+    /// "Integers" means any [`Integer`] type: SIMD is used for the primitive integers (`u8` through
+    /// `u128`, `i8` through `i128`, `usize`, `isize`), `char`, `Ipv4Addr`, and `Ipv6Addr`.
     ///
-    /// Where available, this function leverages SIMD (Single Instruction, Multiple Data) instructions
-    /// for performance optimization. To enable SIMD optimizations, compile with the Rust compiler
-    /// (rustc) flag `-C target-cpu=native`. This instructs rustc to use the native instruction set
-    /// of the CPU on the machine compiling the code, potentially enabling more SIMD optimizations.
+    /// [`Integer`]: crate::Integer
     ///
-    /// **Caution**: Compiling with `-C target-cpu=native` optimizes the binary for your current CPU architecture,
-    /// which may lead to compatibility issues on other machines with different architectures.
-    /// This is particularly important for distributing the binary or running it in varied environments.
+    /// It uses SIMD instructions where available. With `std` (the default), it detects the best SIMD
+    /// instructions for the running CPU at runtime. Without `std`, it uses whatever SIMD instructions
+    /// your build target and compiler flags enable; on targets without SIMD, such as many
+    /// microcontrollers, it runs portable scalar code, which is still faster than
+    /// [`from_iter`][1] on clumpy integers.
     ///
     /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
@@ -609,7 +601,6 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// assert!(a0 == a1 && a1 == a2 && a0.to_string() == "1..=3, 100..=100");
     /// ```
     /// [1]: struct.RangeSetBlaze.html#impl-FromIterator<T>-for-RangeSetBlaze<T>
-    #[cfg(feature = "from_slice")]
     #[inline]
     pub fn from_slice(slice: impl AsRef<[T]>) -> Self {
         T::from_slice(slice)
@@ -764,7 +755,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let sub = RangeSetBlaze::from_iter([1, 2]);
+    /// let sub = RangeSetBlaze::from_slice([1, 2]);
     /// let mut set = RangeSetBlaze::new();
     ///
     /// assert_eq!(set.is_superset(&sub), false);
@@ -788,7 +779,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3]);
+    /// let set = RangeSetBlaze::from_slice([1, 2, 3]);
     /// assert_eq!(set.contains(1), true);
     /// assert_eq!(set.contains(4), false);
     /// ```
@@ -1043,8 +1034,8 @@ impl<T: Integer> RangeSetBlaze<T> {
     ///
     /// let b = a.split_off(3);
     ///
-    /// assert_eq!(a, RangeSetBlaze::from_iter([1, 2]));
-    /// assert_eq!(b, RangeSetBlaze::from_iter([3, 17, 41]));
+    /// assert_eq!(a, RangeSetBlaze::from_slice([1, 2]));
+    /// assert_eq!(b, RangeSetBlaze::from_slice([3, 17, 41]));
     /// ```
     #[must_use]
     pub fn split_off(&mut self, key: T) -> Self {
@@ -1116,7 +1107,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let mut set = RangeSetBlaze::from_iter([1, 2, 3]);
+    /// let mut set = RangeSetBlaze::from_slice([1, 2, 3]);
     /// assert_eq!(set.take(2), Some(2));
     /// assert_eq!(set.take(2), None);
     /// ```
@@ -1556,7 +1547,7 @@ impl<T: Integer> RangeSetBlaze<T> {
     /// let mut set = RangeSetBlaze::from_iter([1..=6]);
     /// // Keep only the even numbers.
     /// set.retain(|k| k % 2 == 0);
-    /// assert_eq!(set, RangeSetBlaze::from_iter([2, 4, 6]));
+    /// assert_eq!(set, RangeSetBlaze::from_slice([2, 4, 6]));
     /// ```
     pub fn retain<F>(&mut self, mut f: F)
     where
@@ -1601,6 +1592,9 @@ impl<T: Integer> RangeSetBlaze<T> {
 // 2. Turning the SortedDisjoint into a BTreeMap.
 impl<T: Integer> FromIterator<T> for RangeSetBlaze<T> {
     /// Create a [`RangeSetBlaze`] from an iterator of integers. Duplicates and out-of-order elements are fine.
+    ///
+    /// If your integers are already in a slice, array, or `Vec`, use
+    /// [`RangeSetBlaze::from_slice`] instead; it is typically much faster.
     ///
     /// *For more about constructors and performance, see [`RangeSetBlaze` Constructors](struct.RangeSetBlaze.html#rangesetblaze-constructors).*
     ///
@@ -1711,11 +1705,6 @@ impl<T: Integer, const N: usize> From<[T; N]> for RangeSetBlaze<T> {
     /// let a1: RangeSetBlaze<i32> = [3, 2, 1, 100, 1].into();
     /// assert!(a0 == a1 && a0.to_string() == "1..=3, 100..=100")
     /// ```
-    #[cfg(not(feature = "from_slice"))]
-    fn from(arr: [T; N]) -> Self {
-        arr.into_iter().collect()
-    }
-    #[cfg(feature = "from_slice")]
     fn from(arr: [T; N]) -> Self {
         Self::from_slice(arr)
     }
@@ -1832,12 +1821,12 @@ impl<T: Integer> IntoIterator for RangeSetBlaze<T> {
     /// ```
     /// use range_set_blaze::RangeSetBlaze;
     ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
+    /// let set = RangeSetBlaze::from_slice([1, 2, 3, 4]);
     ///
     /// let v: Vec<_> = set.into_iter().collect();
     /// assert_eq!(v, [1, 2, 3, 4]);
     ///
-    /// let set = RangeSetBlaze::from_iter([1, 2, 3, 4]);
+    /// let set = RangeSetBlaze::from_slice([1, 2, 3, 4]);
     /// let v: Vec<_> = set.into_iter().rev().collect();
     /// assert_eq!(v, [4, 3, 2, 1]);
     /// ```
@@ -2010,7 +1999,7 @@ impl<T: Integer> Extend<T> for RangeSetBlaze<T> {
     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     ///
     /// let mut a = RangeSetBlaze::from_iter([1..=4]);
-    /// let mut b = RangeSetBlaze::from_iter([5, 0, 0, 3, 4, 10]);
+    /// let mut b = RangeSetBlaze::from_slice([5, 0, 0, 3, 4, 10]);
     /// a |= b;
     /// assert_eq!(a, RangeSetBlaze::from_iter([0..=5, 10..=10]));
     /// ```

@@ -13,6 +13,7 @@ Integer sets as fast, sorted integer ranges; Maps with integer-range keys; Full 
 * `union`, `intersection`, `difference`, `symmetric difference`, and `complement`—available on both [sets][set operations] and [maps][map operations].
 * Can also work directly with [ranges and gaps][ranges and gaps], not just individual integer-like values.
 * [Joins][joins] (inner, left, and full, two-way and multiway) combine the values of range maps by key.
+* Fast ingestion: [`from_slice`][from-slice] (sets) and [`from_slices`][from-slices] (maps) use SIMD (CPU instructions that process several values at once). On clumpy data they are typically about 8 to 30 times faster than `from_iter`/`collect`, and over 75 times faster than `BTreeSet`/`BTreeMap` (see the [set][set benchmarks] and [map][map benchmarks] benchmarks).
 
 The crate's main structs are:
 
@@ -27,8 +28,7 @@ containers, see the [Ranges and gaps guide][ranges and gaps].
 >
 > We can construct a `RangeSetBlaze` or `RangeMapBlaze` from unsorted & redundant integers (or ranges). When the inputs are clumpy, construction will be [linear][1] in the number of inputs and set operations will be sped up [quadratically][1].
 >
-> ⚠️ **Warning:**
-> All RangeMapBlaze operations (`into_iter`, union, difference, symmetric difference, etc.) now give precedence to the **right-hand map** when ranges overlap. This change (from version 0.2.0) aligns with the behavior of `BTreeMap` and `HashMap`.
+> When ranges overlap, `RangeMapBlaze` operations (`from_iter`/`collect`, `extend`, union, difference, symmetric difference, etc.) give precedence to the right-hand (later) value, just like `BTreeMap` and `HashMap`.
 
 The crate's main traits are
 
@@ -51,6 +51,11 @@ The crate's main traits are
 [map documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html
 [ranges and gaps]: https://docs.rs/range-set-blaze/latest/range_set_blaze/gaps/index.html
 [joins]: https://docs.rs/range-set-blaze/latest/range_set_blaze/joins/index.html
+[floating-point documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/index.html
+[from-slice]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_slice
+[from-slices]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html#method.from_slices
+[set benchmarks]: https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md
+[map benchmarks]: https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench_map.md
 [`BTreeMap`]: alloc::collections::BTreeMap
 [`BTreeSet`]: alloc::collections::BTreeSet
 [`HashSet`]: std::collections::HashSet
@@ -219,6 +224,33 @@ for range in intron.ranges() {
 }
 ```
 
+**Example 4**: Columns of Data
+- - - - - -
+
+Data often arrives as columns: slices, arrays, or `Vec`s. Here, a server logs its status once a minute, and
+separately logs the minutes in which errors occurred. [`from_slices`][from-slices] turns the minute and
+status columns into a map of status periods, and [`from_slice`][from-slice] turns the error minutes into a
+set. Both are typically much faster than `from_iter`/`collect`.
+
+```rust
+use range_set_blaze::prelude::*;
+
+// The status log: one row per minute
+let minutes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+let statuses = ["up", "up", "up", "down", "down", "up", "up", "up", "up", "up"];
+let periods = RangeMapBlaze::from_slices(&minutes, &statuses);
+assert_eq!(periods.to_string(), r#"(0..=2, "up"), (3..=4, "down"), (5..=9, "up")"#);
+
+// The error log: unsorted, with repeats
+let error_minutes = [4, 3, 8, 3, 7];
+let errors = RangeSetBlaze::from_slice(&error_minutes);
+assert_eq!(errors.to_string(), "3..=4, 7..=8");
+
+// What was the status during each error? Intersect (operator "&") the map with the set.
+let during_errors = &periods & &errors;
+assert_eq!(during_errors.to_string(), r#"(3..=4, "down"), (7..=8, "up")"#);
+```
+
 Cargo Features
 --------------
 
@@ -227,16 +259,11 @@ The available Cargo features are:
 * `default` — Enables the `std` feature. Use `--no-default-features` for a `no_std` build.
 * `std` — Enables `std`-specific conveniences and trait implementations. The crate's core functionality remains available with `no_std` and `alloc`; see [the `no_std` usage above](#no_std-wasm-and-embedded).
 * `cursor_nightly_experimental` — Uses Rust's (nightly-only) B-tree cursor API to speed up `insert`/`ranges_insert` on both `RangeSetBlaze` (roughly [1.8x–2.2x, geometric mean ~2.0x](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md#benchmark-2b-ingest_clumps_cursor-experimental-b-tree-cursor-insertion-vs-the-baseline-algorithm)) and `RangeMapBlaze` (roughly [1.5x–2.1x, geometric mean ~1.7x](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench_map.md#benchmark-3b-map_ingest_clumps_cursor-experimental-b-tree-cursor-insertion-vs-the-baseline-algorithm)). Same public API.
-* `from_slice` — Enables the nightly-only [`RangeSetBlaze::from_slice`][from-slice] constructor, which can speed up construction from array-like collections using SIMD where available.
 * `float_nightly_experimental` — Enables the nightly-only `f16` and `f128` floating-point wrappers; see the [floating-point module documentation][floating-point documentation]. This requires a nightly Rust compiler.
-* `test_util` — Test/benchmark helpers used internally by the crate; not needed by downstream users.
 
 The published API documentation includes all optional features. Feature-gated items are marked
 with the feature required to use them; optional features are not enabled by default for users of
 the crate.
-
-[floating-point documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/index.html
-[from-slice]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_slice
 
 Contributing
 ------------

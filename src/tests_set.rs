@@ -994,34 +994,138 @@ fn convert_challenge() {
     // what about multiple inputs?
 }
 
-#[cfg(feature = "from_slice")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn understand_slice_iter() {
-    use std::simd::Simd;
+fn from_slice_ranges_basic_cases() {
+    use from_slice::{from_slice_ranges, testable_levels};
 
-    use from_slice::FromSliceIter;
-    use integer::LANES;
+    for level in testable_levels() {
+        let slice: [u8; 0] = [];
+        assert_eq!(from_slice_ranges(level, &slice), vec![]);
 
-    let slice: [u8; 0] = [];
-    let iter = FromSliceIter::<u8, LANES>::new(&slice);
-    assert_eq!(iter.size_hint(), (0, Some(0)));
-    assert_eq!(iter.count(), 0);
+        // 1st 500 even numbers
+        let slice: &[_] = &(0..1000).step_by(2).collect::<Vec<_>>();
+        assert_eq!(from_slice_ranges(level, slice).len(), 500);
 
-    // 1st 500 even numbers
-    let slice: &[_] = &(0..1000).step_by(2).collect::<Vec<_>>();
-    let iter = FromSliceIter::<_, LANES>::new(slice);
-    assert_eq!(iter.size_hint(), (1, Some(500)));
-    assert_eq!(iter.count(), 500);
-
-    // 32 consecutive u8's as a slice
-    let slice: &[_] = &(0..64i64).collect::<Vec<_>>();
-    let slice = Simd::<_, 64>::from_slice(slice);
-    let iter = FromSliceIter::<_, LANES>::new(slice.as_array());
-    assert_eq!(iter.size_hint(), (1, Some(64)));
-    assert_eq!(iter.count(), 1);
+        // 64 consecutive integers as a slice
+        let slice: &[_] = &(0..64i64).collect::<Vec<_>>();
+        assert_eq!(from_slice_ranges(level, slice), [0..=63]);
+    }
 }
 
+/// Checks `from_slice` against `from_iter` on every testable SIMD level.
+fn assert_from_slice_matches_from_iter<T: from_slice::SimdInteger>(values: &[T]) {
+    let expected = RangeSetBlaze::from_iter(values);
+    for level in from_slice::testable_levels() {
+        let ranges = from_slice::from_slice_ranges(level, values);
+        assert!(
+            ranges.iter().all(|range| range.start() <= range.end()),
+            "{level:?} produced an empty range from {values:?}: {ranges:?}"
+        );
+        assert_eq!(
+            RangeSetBlaze::from_iter(ranges),
+            expected,
+            "{level:?} disagrees with from_iter on {values:?}"
+        );
+        for (unroll, set) in [
+            (
+                1,
+                from_slice::from_slice_at_level_unrolled::<T, 1>(level, values),
+            ),
+            (
+                2,
+                from_slice::from_slice_at_level_unrolled::<T, 2>(level, values),
+            ),
+            (
+                4,
+                from_slice::from_slice_at_level_unrolled::<T, 4>(level, values),
+            ),
+            (
+                8,
+                from_slice::from_slice_at_level_unrolled::<T, 8>(level, values),
+            ),
+        ] {
+            assert_eq!(
+                set, expected,
+                "{level:?} with unroll {unroll} disagrees with from_iter on {values:?}"
+            );
+        }
+    }
+    assert_eq!(RangeSetBlaze::from_slice(values), expected);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slice_matches_from_iter() {
+    use rand::{Rng, SeedableRng, rngs::StdRng};
+
+    let mut rng = StdRng::seed_from_u64(0);
+    macro_rules! check_types {
+        ($($type:ty),+) => {$(
+            // Consecutive runs that wrap from MAX to MIN, at every offset and alignment.
+            for before_wrap in 0..40 {
+                for prefix_len in 0..17 {
+                    let values: Vec<$type> = (0..prefix_len)
+                        .map(|index: u8| <$type>::try_from(index * 7).expect("at most 112"))
+                        .chain((0..64).map(|index| {
+                            <$type>::MAX.wrapping_sub(before_wrap).wrapping_add(index)
+                        }))
+                        .collect();
+                    assert_from_slice_matches_from_iter(&values);
+                }
+            }
+            // Longer wrapping runs, so unrolled blocks (up to 8 chunks) meet the wrap too.
+            for before_wrap in [0_usize, 1, 15, 16, 31, 32, 63, 64, 100, 127, 128, 150] {
+                for prefix_len in [0, 1, 7, 8, 15, 16] {
+                    let mut value = <$type>::MAX;
+                    for _ in 0..before_wrap {
+                        value = value.wrapping_sub(1);
+                    }
+                    let run = core::iter::repeat_with(|| {
+                        let current = value;
+                        value = value.wrapping_add(1);
+                        current
+                    })
+                    .take(200);
+                    let values: Vec<$type> = (0..prefix_len)
+                        .map(|index: u8| <$type>::try_from(index * 7).expect("at most 112"))
+                        .chain(run)
+                        .collect();
+                    assert_from_slice_matches_from_iter(&values);
+                }
+            }
+            // Runs that touch MIN or MAX without wrapping, plus small edge cases.
+            assert_from_slice_matches_from_iter::<$type>(&[]);
+            assert_from_slice_matches_from_iter(&[<$type>::MIN; 40]);
+            assert_from_slice_matches_from_iter(
+                &(0..40).map(|index| <$type>::MIN.wrapping_add(index)).collect::<Vec<_>>(),
+            );
+            assert_from_slice_matches_from_iter(
+                &(0..40).rev().map(|index| <$type>::MAX.wrapping_sub(index)).collect::<Vec<_>>(),
+            );
+            // Random clumps of consecutive values, with duplicates and reversals.
+            for _ in 0..200 {
+                let mut values: Vec<$type> = Vec::new();
+                while values.len() < 300 {
+                    let start = <$type>::from_ne_bytes(rng.random());
+                    let run_len = rng.random_range(1..40_usize);
+                    let run = (0..run_len).map(|index| {
+                        start.wrapping_add(<$type>::try_from(index).expect("at most 39"))
+                    });
+                    if rng.random_bool(0.2) {
+                        values.extend(run.rev());
+                    } else {
+                        values.extend(run);
+                    }
+                }
+                assert_from_slice_matches_from_iter(&values);
+            }
+        )+};
+    }
+    check_types!(
+        i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize
+    );
+}
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_merge() {
@@ -1076,68 +1180,74 @@ fn bitand() {
     assert!(a.ranges().equal(f));
 }
 
-#[cfg(feature = "from_slice")]
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_is_consecutive() {
-    use crate::from_slice::SimdInteger;
-    use core::array;
-    use std::simd::Simd;
+    use fearless_simd::dispatch;
 
-    let simd: Simd<i8, 64> = Simd::from_array(array::from_fn(|i| {
-        i8::try_from(10 + i).expect("i in 0..64 so 10+i fits in i8")
-    }));
-    assert!(i8::is_consecutive(simd));
+    for level in from_slice::testable_levels() {
+        dispatch!(level, simd => assert_is_consecutive(simd));
+    }
+}
+
+fn assert_is_consecutive<S: fearless_simd::Simd>(simd: S) {
+    use fearless_simd::SimdBase;
+    use from_slice::{SimdInteger, is_consecutive};
+
+    // Each check is exactly one chunk (one vector) long for its type.
+    fn lanes<T: SimdInteger, S: fearless_simd::Simd>() -> usize {
+        <T::Vector<S> as SimdBase<S>>::LEN / T::LANES_PER_VALUE
+    }
+
+    let values = (10i8..).take(lanes::<i8, S>()).collect::<Vec<_>>();
+    assert!(is_consecutive(simd, &values));
 
     // Wrapping lane arithmetic must not make these look consecutive.
-    let simd: Simd<u8, 16> = Simd::from_array(array::from_fn(|i| {
-        250u8.wrapping_add(u8::try_from(i).expect("i in 0..16 fits in u8"))
-    }));
-    assert!(!u8::is_consecutive(simd));
-    let simd: Simd<i64, 8> = Simd::from_array(array::from_fn(|i| {
-        (i64::MAX - 3).wrapping_add(i64::try_from(i).expect("i in 0..8 fits in i64"))
-    }));
-    assert!(!i64::is_consecutive(simd));
-}
+    let values = (250u8..=255)
+        .chain(0..)
+        .take(lanes::<u8, S>())
+        .collect::<Vec<_>>();
+    assert!(!is_consecutive(simd, &values));
+    let values = (i64::MAX - 3..=i64::MAX)
+        .chain(i64::MIN..)
+        .take(lanes::<i64, S>())
+        .collect::<Vec<_>>();
+    assert!(!is_consecutive(simd, &values));
+    let values = (0..lanes::<usize, S>())
+        .map(|index| usize::MAX.wrapping_sub(3).wrapping_add(index))
+        .collect::<Vec<_>>();
+    assert!(!is_consecutive(simd, &values));
 
-/// Checks `from_slice` against `from_iter`.
-#[cfg(feature = "from_slice")]
-fn assert_from_slice_matches_from_iter<T: Integer>(values: &[T]) {
-    assert_eq!(
-        RangeSetBlaze::from_slice(values),
-        RangeSetBlaze::from_iter(values),
-        "from_slice disagrees with from_iter on {values:?}"
-    );
-}
+    // Types that aren't SIMD lane types.
+    let values = ('a'..).take(lanes::<char, S>()).collect::<Vec<_>>();
+    assert!(is_consecutive(simd, &values));
+    let values = (0xC0A8_0000_u32..)
+        .map(core::net::Ipv4Addr::from)
+        .take(lanes::<core::net::Ipv4Addr, S>())
+        .collect::<Vec<_>>();
+    assert!(is_consecutive(simd, &values));
 
-#[cfg(feature = "from_slice")]
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn from_slice_wraparound_matches_from_iter() {
-    macro_rules! check_types {
-        ($($type:ty),+) => {$(
-            // Consecutive runs that wrap from MAX to MIN, at every offset and alignment.
-            for before_wrap in 0..40 {
-                for prefix_len in 0..17 {
-                    let values: Vec<$type> = (0..prefix_len)
-                        .map(|index: u8| <$type>::try_from(index * 7).expect("at most 112"))
-                        .chain((0..64).map(|index| {
-                            <$type>::MAX.wrapping_sub(before_wrap).wrapping_add(index)
-                        }))
-                        .collect();
-                    assert_from_slice_matches_from_iter(&values);
-                }
-            }
-            // Runs that touch MIN or MAX without wrapping.
-            assert_from_slice_matches_from_iter(
-                &(0..40).map(|index| <$type>::MIN.wrapping_add(index)).collect::<Vec<_>>(),
-            );
-            assert_from_slice_matches_from_iter(
-                &(0..40).rev().map(|index| <$type>::MAX.wrapping_sub(index)).collect::<Vec<_>>(),
-            );
-        )+};
-    }
-    check_types!(i8, i16, i32, i64, isize, u8, u16, u32, u64, usize);
+    // 128-bit values, two lanes each: SIMD must see runs with nonzero high halves...
+    let start = (7_u128 << 64) + 100;
+    let values = (start..).take(lanes::<u128, S>()).collect::<Vec<_>>();
+    assert!(is_consecutive(simd, &values));
+    let values = (-1000_i128..).take(lanes::<i128, S>()).collect::<Vec<_>>();
+    assert!(is_consecutive(simd, &values));
+    let values = (start..)
+        .map(core::net::Ipv6Addr::from)
+        .take(lanes::<core::net::Ipv6Addr, S>())
+        .collect::<Vec<_>>();
+    assert!(is_consecutive(simd, &values));
+    // ...but not when only the low halves are consecutive...
+    let values = (0..lanes::<u128, S>())
+        .map(|index| start + index as u128 + (u128::from(index == 1) << 64))
+        .collect::<Vec<_>>();
+    assert!(!is_consecutive(simd, &values));
+    // ...nor across `i128::MAX` to `i128::MIN`, consecutive only as `u128` bits.
+    let values = (0..lanes::<i128, S>())
+        .map(|index| i128::MAX.wrapping_add(index as i128))
+        .collect::<Vec<_>>();
+    assert!(!is_consecutive(simd, &values));
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -1147,4 +1257,166 @@ fn test_extract_range() {
 
     assert_eq!(extract_range((Excluded(0), Included(1))), (1, 1));
     assert_eq!(extract_range(0..1), (0, 0));
+}
+
+/// `len` consecutive values starting at `start`, in `Integer` (adjacency) order, stopping early
+/// at the type's maximum.
+fn consecutive<T: Integer>(start: T, len: usize) -> Vec<T> {
+    core::iter::successors(Some(start), |&value| value.checked_add_one())
+        .take(len)
+        .collect()
+}
+
+/// Float keys go through SIMD as order-preserving integer keys. Check the places where that
+/// mapping is most delicate: around zero (`NotNan` skips `-0.0`, `Total` includes it), next to the
+/// infinities, through the NaNs (`Total` only), across the top-to-bottom wrap, and on random
+/// shuffled clumps; each at several alignments.
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slice_floats_match_from_iter() {
+    use crate::{NotNanF32, NotNanF64, TotalF32, TotalF64};
+    use rand::{Rng, SeedableRng, rngs::StdRng};
+
+    macro_rules! check_float {
+        ($type:ty, $prim:ty) => {{
+            let starts = [
+                <$type>::new(-0.0).sub_one().sub_one().sub_one(), // just below zero
+                <$type>::new(<$prim>::MAX).sub_one(),             // up to +inf
+                <$type>::new(<$prim>::NEG_INFINITY),              // from -inf
+                <$type>::new(1.0),
+            ];
+            for start in starts {
+                for skip in [0, 1, 15, 16, 17, 63, 64] {
+                    let values = consecutive(start, 200 + skip);
+                    assert_from_slice_matches_from_iter(&values[skip.min(values.len())..]);
+                }
+            }
+            // Wraparound: the largest values followed by the smallest must not merge.
+            let mut values = consecutive(<$type>::max_value().sub_one().sub_one(), 3);
+            values.extend(consecutive(<$type>::min_value(), 100));
+            assert_from_slice_matches_from_iter(&values);
+            // Random clumps of floats, shuffled. Seeded, so failures reproduce.
+            let mut rng = StdRng::seed_from_u64(0x5eed_f10a);
+            let mut values = Vec::new();
+            for _ in 0..40 {
+                let start = <$type>::new(rng.random_range(-1.0e6..1.0e6));
+                values.extend(consecutive(start, rng.random_range(1..80)));
+            }
+            assert_from_slice_matches_from_iter(&values);
+            for i in (1..values.len()).rev() {
+                values.swap(i, rng.random_range(0..=i));
+            }
+            assert_from_slice_matches_from_iter(&values);
+        }};
+    }
+    check_float!(NotNanF32, f32);
+    check_float!(NotNanF64, f64);
+    check_float!(TotalF32, f32);
+    check_float!(TotalF64, f64);
+
+    // `NotNan` has no `-0.0`, so the values either side of zero are adjacent: one range.
+    let values = consecutive(NotNanF32::new(-0.0).sub_one().sub_one(), 100);
+    assert_eq!(RangeSetBlaze::from_slice(&values).ranges_len(), 1);
+    // `Total` runs straight through the NaNs, from +inf to the top.
+    let values = consecutive(TotalF32::new(f32::INFINITY), 100);
+    assert_eq!(RangeSetBlaze::from_slice(&values).ranges_len(), 1);
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slice_char_and_ipv4_match_from_iter() {
+    use core::net::Ipv4Addr;
+    use rand::{Rng, SeedableRng, rngs::StdRng};
+
+    // `char` runs across the surrogate gap (consecutive chars, but not consecutive lanes) and up
+    // to `char::MAX`, at several alignments.
+    for before_gap in [0_u32, 1, 15, 16, 17, 63, 64, 100] {
+        let chars: Vec<char> = (0xD800 - before_gap..0xD800)
+            .chain(0xE000..0xE000 + 200)
+            .filter_map(char::from_u32)
+            .collect();
+        assert_from_slice_matches_from_iter(&chars);
+        assert_eq!(
+            RangeSetBlaze::from_slice(&chars).ranges_len(),
+            1,
+            "{before_gap}"
+        );
+    }
+    let chars: Vec<char> = (0x10_FFFF - 100..=0x10_FFFF)
+        .filter_map(char::from_u32)
+        .collect();
+    assert_from_slice_matches_from_iter(&chars);
+    let chars: Vec<char> = (0..200).filter_map(char::from_u32).rev().collect();
+    assert_from_slice_matches_from_iter(&chars);
+
+    // `Ipv4Addr` runs touching both ends, and random clumps.
+    let addrs: Vec<Ipv4Addr> = (0..200).map(Ipv4Addr::from).collect();
+    assert_from_slice_matches_from_iter(&addrs);
+    let addrs: Vec<Ipv4Addr> = (u32::MAX - 199..=u32::MAX).map(Ipv4Addr::from).collect();
+    assert_from_slice_matches_from_iter(&addrs);
+    let mut rng = StdRng::seed_from_u64(0);
+    for _ in 0..200 {
+        let mut addrs: Vec<Ipv4Addr> = Vec::new();
+        let mut chars: Vec<char> = Vec::new();
+        while addrs.len() < 300 {
+            let start: u32 = rng.random();
+            let run_len = rng.random_range(1..80_u32);
+            addrs.extend((0..run_len).map(|index| Ipv4Addr::from(start.saturating_add(index))));
+            let start = rng.random_range(0..0x11_0000_u32);
+            chars.extend((0..run_len).filter_map(|index| char::from_u32(start + index)));
+        }
+        assert_from_slice_matches_from_iter(&addrs);
+        assert_from_slice_matches_from_iter(&chars);
+    }
+}
+
+#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn from_slice_128_bit_matches_from_iter() {
+    use core::net::Ipv6Addr;
+    use rand::{Rng, SeedableRng, rngs::StdRng};
+
+    // Runs whose low half carries into the high half (consecutive values, but not
+    // `splat(first) + offsets` lane-wise), at several offsets and alignments.
+    for before_carry in [0_u128, 1, 2, 3, 4, 5, 7, 8, 31, 32, 33, 100] {
+        for prefix_len in [0_u128, 1, 3, 4] {
+            let start = (5_u128 << 64) + u128::from(u64::MAX) - before_carry;
+            let keys: Vec<u128> = (0..prefix_len).chain(start..start + 200).collect();
+            assert_from_slice_matches_from_iter(&keys);
+            assert_eq!(
+                RangeSetBlaze::from_slice(&keys).ranges_len(),
+                1 + usize::from(prefix_len > 0)
+            );
+            let addrs: Vec<Ipv6Addr> = keys.iter().map(|&key| Ipv6Addr::from(key)).collect();
+            assert_from_slice_matches_from_iter(&addrs);
+            #[expect(clippy::cast_possible_wrap, reason = "testing the i128 bit patterns")]
+            let signed: Vec<i128> = keys.iter().map(|&key| key as i128).collect();
+            assert_from_slice_matches_from_iter(&signed);
+        }
+    }
+    // `i128::MAX` to `i128::MIN` is consecutive as `u128` bits, but not as `i128`.
+    let signed: Vec<i128> = (0..40)
+        .map(|index| i128::MAX.wrapping_sub(19).wrapping_add(index))
+        .collect();
+    assert_from_slice_matches_from_iter(&signed);
+    // `Ipv6Addr` runs touching both ends, and random clumps.
+    let addrs: Vec<Ipv6Addr> = (0..200).map(Ipv6Addr::from).collect();
+    assert_from_slice_matches_from_iter(&addrs);
+    let addrs: Vec<Ipv6Addr> = (u128::MAX - 199..=u128::MAX).map(Ipv6Addr::from).collect();
+    assert_from_slice_matches_from_iter(&addrs);
+    let mut rng = StdRng::seed_from_u64(0);
+    for _ in 0..200 {
+        let mut addrs: Vec<Ipv6Addr> = Vec::new();
+        while addrs.len() < 300 {
+            // Some starts near a low-half carry, so runs cross it.
+            let start: u128 = if rng.random_bool(0.3) {
+                (rng.random::<u128>() | u128::from(u64::MAX)) - rng.random_range(0..40)
+            } else {
+                rng.random()
+            };
+            let run_len = rng.random_range(1..80_u128);
+            addrs.extend((0..run_len).map(|index| Ipv6Addr::from(start.saturating_add(index))));
+        }
+        assert_from_slice_matches_from_iter(&addrs);
+    }
 }

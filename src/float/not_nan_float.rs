@@ -16,6 +16,11 @@ use super::total_float::{from_ordered_32, from_ordered_64, to_ordered_32, to_ord
 use num_traits::ops::wrapping::{WrappingAdd, WrappingSub};
 use num_traits::{One, Zero};
 
+use super::not_nan::NotNan;
+#[cfg(feature = "float_nightly_experimental")]
+use crate::Integer;
+use crate::{RangeMapBlaze, RangeSetBlaze};
+
 mod private {
     pub trait Sealed {}
 }
@@ -61,6 +66,53 @@ pub trait NotNanFloat:
     fn f64_to_safe_len_lossy(f: f64) -> Self::SafeLen;
     fn inclusive_end_from_start(a: Self, b: Self::SafeLen) -> Self;
     fn start_from_inclusive_end(a: Self, b: Self::SafeLen) -> Self;
+    /// Returns `true` if no value is NaN or `-0.0`.
+    fn all_not_nan_or_neg_zero(values: &[Self]) -> bool;
+    /// Replaces every `-0.0` with `+0.0`, in place, and returns `true` if no value is NaN.
+    fn normalize_neg_zeros_and_check_not_nan(values: &mut [Self]) -> bool;
+    /// Backs [`crate::RangeSetBlaze::from_slice`]: SIMD for `f32` and `f64`.
+    fn from_slice(slice: &[NotNan<Self>]) -> RangeSetBlaze<NotNan<Self>>;
+    /// Backs [`crate::RangeMapBlaze::from_slices`]: SIMD on the keys for `f32` and `f64`.
+    fn from_slices<V: Eq + Clone>(
+        keys: &[NotNan<Self>],
+        values: &[V],
+    ) -> RangeMapBlaze<NotNan<Self>, V>;
+}
+
+/// The scalar `from_slice`, for float types without a SIMD one.
+#[cfg(feature = "float_nightly_experimental")]
+fn scalar_from_slice<T: Integer>(slice: &[T]) -> RangeSetBlaze<T> {
+    slice.iter().copied().collect()
+}
+
+/// The scalar `from_slices`, for float types without a SIMD one.
+#[cfg(feature = "float_nightly_experimental")]
+fn scalar_from_slices<T: Integer, V: Eq + Clone>(keys: &[T], values: &[V]) -> RangeMapBlaze<T, V> {
+    assert_eq!(
+        keys.len(),
+        values.len(),
+        "keys and values must have the same length"
+    );
+    keys.iter().copied().zip(values).collect()
+}
+
+/// The scalar version of [`NotNanFloat::all_not_nan_or_neg_zero`], for types without a SIMD one.
+#[cfg(feature = "float_nightly_experimental")]
+fn scalar_all_not_nan_or_neg_zero<T: NotNanFloat>(values: &[T]) -> bool {
+    values.iter().all(|&x| !T::is_nan(x) && !T::is_neg_zero(x))
+}
+
+/// The scalar version of [`NotNanFloat::normalize_neg_zeros_and_check_not_nan`], for types
+/// without a SIMD one.
+#[cfg(feature = "float_nightly_experimental")]
+fn scalar_normalize_neg_zeros_and_check_not_nan<T: NotNanFloat>(values: &mut [T]) -> bool {
+    for x in values {
+        if T::is_nan(*x) {
+            return false;
+        }
+        *x = T::normalize(*x);
+    }
+    true
 }
 
 /// Crate-private encoding and arithmetic machinery for not-NaN floats.
@@ -205,7 +257,6 @@ macro_rules! impl_not_nan_ops {
         fn to_ordered(x: Self) -> Self::Ordered {
             $to_ordered(x)
         }
-
         fn to_bits(x: Self) -> Self::Bits {
             x.to_bits()
         }
@@ -245,11 +296,9 @@ macro_rules! impl_not_nan_ops {
         fn total_cmp(x: Self, y: Self) -> Ordering {
             x.total_cmp(&y)
         }
-
         fn is_nan(x: Self) -> bool {
             x.is_nan()
         }
-
         fn normalize(x: Self) -> Self {
             if x.to_bits() == Self::NEG_ZERO_BITS {
                 0.0
@@ -265,7 +314,6 @@ macro_rules! impl_not_nan_ops {
         fn before(x: Self) -> Self {
             x.next_down()
         }
-
         fn is_neg_zero(x: Self) -> bool {
             x.to_bits() == Self::NEG_ZERO_BITS
         }
@@ -280,7 +328,7 @@ impl private::Sealed for f16 {}
 impl private::Sealed for f128 {}
 
 macro_rules! impl_not_nan_capability {
-    ($primitive:ty, $safe_len:ty) => {
+    ($primitive:ty, $safe_len:ty, $all_valid:path, $normalize:path, $from_slice:path, $from_slices:path) => {
         impl NotNanFloat for $primitive {
             type SafeLen = $safe_len;
 
@@ -295,11 +343,9 @@ macro_rules! impl_not_nan_capability {
             fn total_cmp(x: Self, y: Self) -> Ordering {
                 <Self as NotNanFloatImpl>::total_cmp(x, y)
             }
-
             fn is_nan(x: Self) -> bool {
                 <Self as NotNanFloatImpl>::is_nan(x)
             }
-
             fn normalize(x: Self) -> Self {
                 <Self as NotNanFloatImpl>::normalize(x)
             }
@@ -311,7 +357,6 @@ macro_rules! impl_not_nan_capability {
             fn before(x: Self) -> Self {
                 <Self as NotNanFloatImpl>::before(x)
             }
-
             fn is_neg_zero(x: Self) -> bool {
                 <Self as NotNanFloatImpl>::is_neg_zero(x)
             }
@@ -335,16 +380,63 @@ macro_rules! impl_not_nan_capability {
             fn start_from_inclusive_end(a: Self, b: Self::SafeLen) -> Self {
                 <Self as NotNanFloatImpl>::start_from_inclusive_end(a, b)
             }
+
+            fn all_not_nan_or_neg_zero(values: &[Self]) -> bool {
+                $all_valid(values)
+            }
+
+            fn normalize_neg_zeros_and_check_not_nan(values: &mut [Self]) -> bool {
+                $normalize(values)
+            }
+
+            fn from_slice(slice: &[NotNan<Self>]) -> RangeSetBlaze<NotNan<Self>> {
+                $from_slice(slice)
+            }
+
+            fn from_slices<V: Eq + Clone>(
+                keys: &[NotNan<Self>],
+                values: &[V],
+            ) -> RangeMapBlaze<NotNan<Self>, V> {
+                $from_slices(keys, values)
+            }
         }
     };
 }
 
-impl_not_nan_capability!(f64, u64);
-impl_not_nan_capability!(f32, u32);
+impl_not_nan_capability!(
+    f64,
+    u64,
+    super::not_nan_simd::f64::all_valid,
+    super::not_nan_simd::f64::normalize,
+    crate::from_slice::from_slice,
+    crate::from_slice::from_slices
+);
+impl_not_nan_capability!(
+    f32,
+    u32,
+    super::not_nan_simd::f32::all_valid,
+    super::not_nan_simd::f32::normalize,
+    crate::from_slice::from_slice,
+    crate::from_slice::from_slices
+);
 #[cfg(feature = "float_nightly_experimental")]
-impl_not_nan_capability!(f16, u16);
+impl_not_nan_capability!(
+    f16,
+    u16,
+    scalar_all_not_nan_or_neg_zero,
+    scalar_normalize_neg_zeros_and_check_not_nan,
+    scalar_from_slice,
+    scalar_from_slices
+);
 #[cfg(feature = "float_nightly_experimental")]
-impl_not_nan_capability!(f128, u128);
+impl_not_nan_capability!(
+    f128,
+    u128,
+    scalar_all_not_nan_or_neg_zero,
+    scalar_normalize_neg_zeros_and_check_not_nan,
+    scalar_from_slice,
+    scalar_from_slices
+);
 
 impl NotNanFloatImpl for f64 {
     type Bits = u64;
