@@ -328,11 +328,29 @@ fn from_slice_gpu_with_context<T: GpuElement>(
 fn gpu_context() -> Option<&'static Context> {
     static CONTEXT: OnceLock<Option<Context>> = OnceLock::new();
     CONTEXT
-        .get_or_init(|| pollster::block_on(init_gpu_context()))
+        .get_or_init(|| pollster::block_on(init_gpu_context(false)))
         .as_ref()
 }
 
-async fn init_gpu_context() -> Option<Context> {
+/// A context for tests, which may also use a software Vulkan adapter (such as Mesa's lavapipe),
+/// so CI can run the GPU pipeline on machines without a GPU. See [`accepts_adapter`].
+#[cfg(test)]
+fn test_context() -> Option<&'static Context> {
+    static CONTEXT: OnceLock<Option<Context>> = OnceLock::new();
+    CONTEXT
+        .get_or_init(|| pollster::block_on(init_gpu_context(true)))
+        .as_ref()
+}
+
+/// Whether to create a device on this adapter. Real use never takes a software adapter: the CPU
+/// is faster, and creating a device on Windows' software adapter (WARP) crashed in CI. Tests may
+/// take a software *Vulkan* adapter, which is how CI exercises the pipeline without a GPU.
+fn accepts_adapter(adapter_info: &wgpu::AdapterInfo, allow_software_vulkan: bool) -> bool {
+    adapter_info.device_type != wgpu::DeviceType::Cpu
+        || (allow_software_vulkan && adapter_info.backend == wgpu::Backend::Vulkan)
+}
+
+async fn init_gpu_context(allow_software_vulkan: bool) -> Option<Context> {
     let descriptor = wgpu::InstanceDescriptor {
         backends: wgpu::Backends::PRIMARY,
         ..wgpu::InstanceDescriptor::new_without_display_handle()
@@ -349,7 +367,7 @@ async fn init_gpu_context() -> Option<Context> {
         .await
         .ok()?;
     let adapter_info = adapter.get_info();
-    if adapter_info.device_type == wgpu::DeviceType::Cpu {
+    if !accepts_adapter(&adapter_info, allow_software_vulkan) {
         return None;
     }
     let supported_features = adapter.features();
@@ -1279,7 +1297,7 @@ mod tests {
 
     fn check<T: GpuElement>(values: &[T]) {
         let expected: RangeSetBlaze<T> = values.iter().copied().collect();
-        let Some(context) = gpu_context() else {
+        let Some(context) = test_context() else {
             return;
         };
         let Some(actual) = from_slice_gpu_with_context(values, context) else {
@@ -1474,6 +1492,32 @@ mod tests {
                 .filter_map(|&value| NotNanF64::try_new(f64::from_bits(value)))
                 .collect::<Vec<_>>(),
         );
+    }
+
+    /// CI sets `RANGE_SET_BLAZE_REQUIRE_TEST_GPU` where a software Vulkan driver is installed, so
+    /// the GPU tests can't pass there by silently skipping.
+    #[test]
+    fn test_gpu_is_available_when_required() {
+        if std::env::var_os("RANGE_SET_BLAZE_REQUIRE_TEST_GPU").is_some() {
+            let context = test_context()
+                .expect("RANGE_SET_BLAZE_REQUIRE_TEST_GPU is set, but no test GPU was found");
+            std::println!(
+                "test GPU: {:?} ({:?}, {:?})",
+                context.adapter_info.name,
+                context.adapter_info.backend,
+                context.adapter_info.device_type
+            );
+        }
+    }
+
+    /// Real use never takes a software adapter, even where tests do.
+    #[test]
+    fn real_use_rejects_software_adapters() {
+        if test_context()
+            .is_some_and(|context| context.adapter_info.device_type == wgpu::DeviceType::Cpu)
+        {
+            assert!(gpu_context().is_none());
+        }
     }
 
     fn has_hardware_gpu() -> bool {
