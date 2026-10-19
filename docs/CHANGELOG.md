@@ -17,10 +17,9 @@ This release is not breaking.
   than `from_iter`. It panics if the lengths differ.
 - **Experimental `from_slice_in_place` feature, with `RangeSetBlaze::from_slice_in_place(&mut
   slice, engine)`.** It sorts the slice in place, then finds the ranges, so it suits large slices
-  in no useful order (for example, shuffled). `Engine::Cpu(n)` sorts with Rayon on `n` threads
-  (float keys are sorted as order-preserving integers); `Engine::GpuOnly` sorts and finds the
-  ranges on the GPU via `wgpu`, panicking if it can't run; `Engine::GpuOrCpu` falls back to every
-  thread. On 100 million shuffled `u32` values on an AMD Ryzen AI MAX+ 395 laptop, `Cpu(32)` took
+  in no useful order (for example, shuffled). `Engine::Cpu(n)` sorts with Rayon on `n` threads;
+  `Engine::GpuOnly` sorts and finds the ranges on the GPU via `wgpu`, panicking if it can't run;
+  `Engine::GpuOrCpu` falls back to every thread. On 100 million shuffled `u32` values on an AMD Ryzen AI MAX+ 395 laptop, `Cpu(32)` took
   463 ms and its integrated GPU 644 ms, against 4,044 ms for `from_slice`; on data already in
   order, `from_slice` is fastest. The feature is off by default and adds no dependencies unless
   enabled; it is mainly a demonstration of GPU programming and a fair test of it.

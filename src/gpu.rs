@@ -1,7 +1,7 @@
 //! Portable GPU-assisted construction for large unsorted slices.
 
 use core::cell::RefCell;
-use core::mem::{align_of, size_of};
+use core::mem::size_of;
 use core::net::{Ipv4Addr, Ipv6Addr};
 use core::num::NonZeroUsize;
 use std::sync::{Arc, Mutex, OnceLock, mpsc};
@@ -147,12 +147,6 @@ trait GpuElement: crate::Integer {
 
     fn encode(self) -> u64;
     fn decode(key: u64) -> Self;
-
-    /// [`Engine::Cpu`]: sorts in place on `threads` threads and builds the set. The float
-    /// types override this to sort their integer keys instead, which is much faster.
-    fn sort_on_cpu(values: &mut [Self], threads: NonZeroUsize) -> RangeSetBlaze<Self> {
-        from_slice_cpu(values, threads)
-    }
 }
 
 /// How [`RangeSetBlaze::from_slice_in_place`] does its work.
@@ -183,7 +177,7 @@ pub enum Engine {
 
 fn from_slice_in_place<T: GpuElement>(values: &mut [T], engine: Engine) -> RangeSetBlaze<T> {
     match engine {
-        Engine::Cpu(threads) => T::sort_on_cpu(values, threads),
+        Engine::Cpu(threads) => from_slice_cpu(values, threads),
         Engine::GpuOnly => {
             assert!(
                 T::KEY_WORDS != 0,
@@ -196,7 +190,7 @@ fn from_slice_in_place<T: GpuElement>(values: &mut [T], engine: Engine) -> Range
         Engine::GpuOrCpu => (T::KEY_WORDS != 0)
             .then(|| try_gpu(values))
             .flatten()
-            .unwrap_or_else(|| T::sort_on_cpu(values, all_threads())),
+            .unwrap_or_else(|| from_slice_cpu(values, all_threads())),
     }
 }
 
@@ -217,46 +211,6 @@ fn sort_in_place<T: Ord + Send>(values: &mut [T], threads: NonZeroUsize) {
     } else {
         thread_pool(threads).install(|| values.par_sort_unstable());
     }
-}
-
-/// [`Engine::Cpu`] for a float key type `$float` whose GPU key fits in `$key`, the unsigned
-/// integer the same size as the float.
-///
-/// Comparing floats is slow (`total_cmp` redoes a bit trick on every comparison), and
-/// `from_slice` has no SIMD path for float keys. So, in place: turn each float into its
-/// order-preserving integer key, sort the keys as integers, find the key ranges with the SIMD
-/// `from_slice`, then turn the keys back into floats. Unioning the decoded ranges also rejoins
-/// the two ranges either side of `-0.0`, which `NotNan` never holds.
-macro_rules! float_sort_on_cpu {
-    ($float:ty, $key:ty) => {
-        fn sort_on_cpu(values: &mut [Self], threads: NonZeroUsize) -> RangeSetBlaze<Self> {
-            const _: () = assert!(size_of::<$float>() == size_of::<$key>());
-            const _: () = assert!(align_of::<$float>() == align_of::<$key>());
-            let len = values.len();
-            // SAFETY: `Self` is `#[repr(transparent)]` over `$float`, which has the size and
-            // alignment of `$key` (checked above), and every bit pattern is a valid `$key`. The
-            // view is the only access to the slice while it lives; before it ends, every element
-            // is written back as the bits of a valid, non-NaN `Self`.
-            let keys =
-                unsafe { core::slice::from_raw_parts_mut(values.as_mut_ptr().cast::<$key>(), len) };
-            for slot in keys.iter_mut() {
-                let value = Self::new(<$float>::from_bits(*slot));
-                *slot = <$key>::try_from(value.encode()).expect("float key fits its width");
-            }
-            sort_in_place(keys, threads);
-            let set =
-                RangeSetBlaze::from_iter(RangeSetBlaze::<$key>::from_slice(&*keys).ranges().map(
-                    |range| {
-                        Self::decode(range.start().clone().into())
-                            ..=Self::decode(range.end().clone().into())
-                    },
-                ));
-            for slot in keys.iter_mut() {
-                *slot = Self::decode((*slot).into()).into_inner().to_bits();
-            }
-            set
-        }
-    };
 }
 
 /// A Rayon pool with exactly `threads` threads, created on first use and then reused, so
@@ -1219,7 +1173,6 @@ impl GpuElement for Ipv4Addr {
 }
 
 impl GpuElement for NotNanF32 {
-    float_sort_on_cpu!(f32, u32);
     const KEY_WORDS: u8 = 1;
     const GAP: Option<(u64, u64)> = Some((0x7fff_fffe, 0x8000_0000));
     fn encode(self) -> u64 {
@@ -1233,7 +1186,6 @@ impl GpuElement for NotNanF32 {
 }
 
 impl GpuElement for NotNanF64 {
-    float_sort_on_cpu!(f64, u64);
     const KEY_WORDS: u8 = 2;
     const GAP: Option<(u64, u64)> = Some((0x7fff_ffff_ffff_fffe, 0x8000_0000_0000_0000));
     fn encode(self) -> u64 {
@@ -1564,9 +1516,8 @@ mod tests {
         let _ = RangeSetBlaze::<u128>::from_slice_in_place(&mut [1, 2], Engine::GpuOnly);
     }
 
-    /// The CPU engine sorts float keys as integers; check the edges of that mapping: negatives,
-    /// subnormals on both sides of the `-0.0` gap, zero, and the infinities. Afterward the slice
-    /// must still hold the same values.
+    /// The CPU engine on float keys: negatives, subnormals on both sides of the `-0.0` gap, zero,
+    /// and the infinities. Afterward the slice must still hold the same values.
     #[test]
     fn cpu_float_keys_match_from_slice() {
         let f32s: Vec<f32> = std::vec![
@@ -1588,7 +1539,7 @@ mod tests {
         ];
         let f64s: Vec<f64> = f32s.iter().map(|&x| f64::from(x)).collect();
         // Under Miri, only one thread: Rayon's `crossbeam-epoch` trips Miri's aliasing model on
-        // its own. The `unsafe` key view is the same for any thread count.
+        // its own.
         let thread_counts: &[usize] = if cfg!(miri) { &[1] } else { &[1, 3] };
         for &threads in thread_counts {
             let threads = NonZeroUsize::new(threads).expect("nonzero");
