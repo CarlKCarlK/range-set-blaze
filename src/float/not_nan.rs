@@ -647,6 +647,8 @@ impl<T: NotNanFloat> Integer for NotNan<T> {
 
     #[inline]
     fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        // TODO Investigate applying the ordered float transform in SIMD chunks here. (may no longer apply)
+        // no way to do the fancy thing (may no longer apply)
         T::from_slice(slice.as_ref())
     }
 
