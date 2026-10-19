@@ -54,7 +54,7 @@ The crate's main traits are
 [floating-point documentation]: https://docs.rs/range-set-blaze/latest/range_set_blaze/float/index.html
 [from-slice]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_slice
 [from-slices]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeMapBlaze.html#method.from_slices
-[from-slice-in-place]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_slice_in_place
+[from-in-place-slice]: https://docs.rs/range-set-blaze/latest/range_set_blaze/struct.RangeSetBlaze.html#method.from_in_place_slice
 [set benchmarks]: https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md
 [map benchmarks]: https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench_map.md
 [`BTreeMap`]: alloc::collections::BTreeMap
@@ -274,7 +274,7 @@ The available Cargo features are:
 * `default` — Enables the `std` feature. Use `--no-default-features` for a `no_std` build.
 * `std` — Enables `std`-specific conveniences and trait implementations. The crate's core functionality remains available with `no_std` and `alloc`; see [the `no_std` usage above](#no_std-wasm-and-embedded).
 * `cursor_nightly_experimental` — Uses Rust's (nightly-only) B-tree cursor API to speed up `insert`/`ranges_insert` on both `RangeSetBlaze` (roughly [1.8x–2.2x, geometric mean ~2.0x](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench.md#benchmark-2b-ingest_clumps_cursor-experimental-b-tree-cursor-insertion-vs-the-baseline-algorithm)) and `RangeMapBlaze` (roughly [1.5x–2.1x, geometric mean ~1.7x](https://github.com/CarlKCarlK/range-set-blaze/blob/main/docs/bench_map.md#benchmark-3b-map_ingest_clumps_cursor-experimental-b-tree-cursor-insertion-vs-the-baseline-algorithm)). Same public API.
-* `from_slice_in_place` — Experimental. Adds [`RangeSetBlaze::from_slice_in_place`][from-slice-in-place], which builds a set from a slice using several CPU threads or the GPU, as you choose. A demonstration of portable GPU programming.
+* `in_place_slices` — Experimental. Adds [`RangeSetBlaze::from_in_place_slice`][from-in-place-slice], which builds a set from a slice using several CPU threads or the GPU, as you choose. A demonstration of portable GPU programming.
 * `float_nightly_experimental` — Enables the nightly-only `f16` and `f128` floating-point wrappers; see the [floating-point module documentation][floating-point documentation]. This requires a nightly Rust compiler.
 
 The published API documentation includes all optional features. Feature-gated items are marked

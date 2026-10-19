@@ -52,9 +52,9 @@ test_util = ["rand"]
 # Deprecated no-op, kept so `features = ["from_slice"]` still resolves.
 # `from_slice` is now always available on stable Rust.
 from_slice = []
-# Experimental: `RangeSetBlaze::from_slice_in_place`, which sorts with several CPU threads
+# Experimental: `RangeSetBlaze::from_in_place_slice`, which sorts with several CPU threads
 # (Rayon) or on the GPU (wgpu).
-from_slice_in_place = [
+in_place_slices = [
     "std",
     "dep:lampshade",
     "dep:pollster",
@@ -126,17 +126,17 @@ harness = false
 [[bin]]
 name = "gpu_normalize_wgpu"
 path = "experiments/gpu_normalize_wgpu.rs"
-required-features = ["from_slice_in_place"]
+required-features = ["in_place_slices"]
 
 [[bin]]
 name = "gpu_ingest"
 path = "experiments/gpu_ingest.rs"
-required-features = ["from_slice_in_place"]
+required-features = ["in_place_slices"]
 
 [[bin]]
 name = "gpu_sort_benchmark"
 path = "experiments/gpu_sort_benchmark.rs"
-required-features = ["from_slice_in_place"]
+required-features = ["in_place_slices"]
 
 [package.metadata.docs.rs]
 # Publish all optional APIs. Rustdoc's `doc_cfg` annotations identify the

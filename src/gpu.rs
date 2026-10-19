@@ -140,7 +140,7 @@ fn main(
 
 // Maintenance: every crate-owned `Integer` type must have a policy below and
 // appear in `gpu_api!`. This stays separate from the public `Integer` trait so
-// enabling `from_slice_in_place` does not break downstream `Integer` implementations.
+// enabling `in_place_slices` does not break downstream `Integer` implementations.
 trait GpuElement: crate::Integer {
     const KEY_WORDS: u8;
     const GAP: Option<(u64, u64)> = None;
@@ -149,10 +149,10 @@ trait GpuElement: crate::Integer {
     fn decode(key: u64) -> Self;
 }
 
-/// How [`RangeSetBlaze::from_slice_in_place`] does its work.
+/// How [`RangeSetBlaze::from_in_place_slice`] does its work.
 ///
-/// *Experimental; requires the `from_slice_in_place` feature.*
-#[cfg_attr(docsrs, doc(cfg(feature = "from_slice_in_place")))]
+/// *Experimental; requires the `in_place_slices` feature.*
+#[cfg_attr(docsrs, doc(cfg(feature = "in_place_slices")))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Engine {
     /// Sort the slice in place on this many CPU threads (Rayon's `par_sort_unstable`), then
@@ -175,7 +175,7 @@ pub enum Engine {
     GpuOrCpu,
 }
 
-fn from_slice_in_place<T: GpuElement>(values: &mut [T], engine: Engine) -> RangeSetBlaze<T> {
+fn from_in_place_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> RangeSetBlaze<T> {
     match engine {
         Engine::Cpu(threads) => from_slice_cpu(values, threads),
         Engine::GpuOnly => {
@@ -1076,16 +1076,16 @@ macro_rules! gpu_api_one {
             /// Creates a [`RangeSetBlaze`] from a slice, using several CPU threads or the GPU,
             /// as `engine` says. It may reorder the slice; the order afterward is unspecified.
             ///
-            /// *Experimental; requires the `from_slice_in_place` feature.* It pays off for large slices
+            /// *Experimental; requires the `in_place_slices` feature.* It pays off for large slices
             /// whose values are in no useful order, such as shuffled data. If nearby values are
             /// already next to each other (sorted, or clumpy data in order), use
             /// [`RangeSetBlaze::from_slice`], which will be much faster.
             ///
             /// See [`Engine`] for the choices, including when [`Engine::GpuOnly`] panics.
-            #[cfg_attr(docsrs, doc(cfg(feature = "from_slice_in_place")))]
+            #[cfg_attr(docsrs, doc(cfg(feature = "in_place_slices")))]
             #[must_use]
-            pub fn from_slice_in_place(slice: &mut [$type], engine: Engine) -> Self {
-                from_slice_in_place(slice, engine)
+            pub fn from_in_place_slice(slice: &mut [$type], engine: Engine) -> Self {
+                from_in_place_slice(slice, engine)
             }
         }
     };
@@ -1493,9 +1493,9 @@ mod tests {
     #[test]
     fn in_place_handles_empty_and_small_inputs() {
         for engine in engines(true) {
-            assert!(RangeSetBlaze::<u32>::from_slice_in_place(&mut [], engine).is_empty());
+            assert!(RangeSetBlaze::<u32>::from_in_place_slice(&mut [], engine).is_empty());
             assert_eq!(
-                RangeSetBlaze::<u32>::from_slice_in_place(&mut [3, 1, 2, 2], engine),
+                RangeSetBlaze::<u32>::from_in_place_slice(&mut [3, 1, 2, 2], engine),
                 RangeSetBlaze::from_iter([1..=3]),
                 "{engine:?}"
             );
@@ -1503,7 +1503,7 @@ mod tests {
         // u128 has no GPU representation, so GpuOnly is excluded.
         for engine in engines(false) {
             assert_eq!(
-                RangeSetBlaze::<u128>::from_slice_in_place(&mut [3, 1, 2, 2], engine),
+                RangeSetBlaze::<u128>::from_in_place_slice(&mut [3, 1, 2, 2], engine),
                 RangeSetBlaze::from_iter([1..=3]),
                 "{engine:?}"
             );
@@ -1513,7 +1513,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "no GPU representation")]
     fn gpu_only_panics_for_types_without_a_gpu_representation() {
-        let _ = RangeSetBlaze::<u128>::from_slice_in_place(&mut [1, 2], Engine::GpuOnly);
+        let _ = RangeSetBlaze::<u128>::from_in_place_slice(&mut [1, 2], Engine::GpuOnly);
     }
 
     /// The CPU engine on float keys: negatives, subnormals on both sides of the `-0.0` gap, zero,
@@ -1548,7 +1548,7 @@ mod tests {
             let mut sorted_before = values.clone();
             sorted_before.sort_unstable();
             assert_eq!(
-                RangeSetBlaze::<NotNanF32>::from_slice_in_place(&mut values, Engine::Cpu(threads)),
+                RangeSetBlaze::<NotNanF32>::from_in_place_slice(&mut values, Engine::Cpu(threads)),
                 expected
             );
             values.sort_unstable();
@@ -1559,7 +1559,7 @@ mod tests {
             let mut sorted_before = values.clone();
             sorted_before.sort_unstable();
             assert_eq!(
-                RangeSetBlaze::<NotNanF64>::from_slice_in_place(&mut values, Engine::Cpu(threads)),
+                RangeSetBlaze::<NotNanF64>::from_in_place_slice(&mut values, Engine::Cpu(threads)),
                 expected
             );
             values.sort_unstable();
@@ -1571,7 +1571,7 @@ mod tests {
             nnf32(-f32::from_bits(1)),
             nnf32(0.0)
         ];
-        let set = RangeSetBlaze::<NotNanF32>::from_slice_in_place(
+        let set = RangeSetBlaze::<NotNanF32>::from_in_place_slice(
             &mut values,
             Engine::Cpu(NonZeroUsize::MIN),
         );
@@ -1599,7 +1599,7 @@ mod tests {
             for engine in engines(true) {
                 let mut copy = values.clone();
                 assert_eq!(
-                    RangeSetBlaze::<u32>::from_slice_in_place(&mut copy, engine),
+                    RangeSetBlaze::<u32>::from_in_place_slice(&mut copy, engine),
                     expected,
                     "len={len} {engine:?}"
                 );

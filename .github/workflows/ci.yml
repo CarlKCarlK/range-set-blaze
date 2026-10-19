@@ -122,7 +122,7 @@ jobs:
 
   gpu_software:
     # Runs the GPU pipeline tests on Mesa's software Vulkan driver (lavapipe), so CI exercises the
-    # from_slice_in_place GPU code without a GPU. Only tests use a software adapter; real use never
+    # from_in_place_slice GPU code without a GPU. Only tests use a software adapter; real use never
     # does. RANGE_SET_BLAZE_REQUIRE_TEST_GPU makes the tests fail rather than skip if the driver is
     # missing.
     name: Test GPU pipeline on software Vulkan
@@ -139,7 +139,7 @@ jobs:
       - name: Run the GPU tests
         env:
           RANGE_SET_BLAZE_REQUIRE_TEST_GPU: "1"
-        run: cargo test --verbose --features from_slice_in_place --lib gpu -- --nocapture
+        run: cargo test --verbose --features in_place_slices --lib gpu -- --nocapture
 
   test_32_bit_linux:
     name: Test on 32-bit Ubuntu

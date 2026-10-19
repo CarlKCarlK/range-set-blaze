@@ -15,7 +15,7 @@ This release is not breaking.
   same-length slice of values (two columns of a table), using SIMD to find runs of consecutive
   keys. Values may be any `V: Eq + Clone`. On clumpy keys it is typically 6 to 16 times faster
   than `from_iter`. It panics if the lengths differ.
-- **Experimental `from_slice_in_place` feature, with `RangeSetBlaze::from_slice_in_place(&mut
+- **Experimental `in_place_slices` feature, with `RangeSetBlaze::from_in_place_slice(&mut
   slice, engine)`.** It sorts the slice in place, then finds the ranges, so it suits large slices
   in no useful order (for example, shuffled). `Engine::Cpu(n)` sorts with Rayon on `n` threads;
   `Engine::GpuOnly` sorts and finds the ranges on the GPU via `wgpu`, panicking if it can't run;

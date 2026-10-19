@@ -1,7 +1,7 @@
-//! Benchmarks `from_slice` against `from_slice_in_place` with each `Engine`, on the same data.
+//! Benchmarks `from_slice` against `from_in_place_slice` with each `Engine`, on the same data.
 //!
 //! Usage:
-//! `cargo run --release --features from_slice_in_place --bin gpu_ingest -- [--cpu N]... [--type T]... [SIZES...]`
+//! `cargo run --release --features in_place_slices --bin gpu_ingest -- [--cpu N]... [--type T]... [SIZES...]`
 //! (default size: 1,000,000). Each `--cpu N` adds an `Engine::Cpu(N)` column; the default is
 //! every available thread. `Engine::Cpu(1)` is always included. Each `--type T` (such as `u32`)
 //! limits the run to those types; the default is every type. Prints CSV. The GPU column is
@@ -121,7 +121,7 @@ macro_rules! bench_element {
                 $from_index(k)
             }
             fn in_place(values: &mut [Self], engine: Engine) -> RangeSetBlaze<Self> {
-                RangeSetBlaze::<Self>::from_slice_in_place(values, engine)
+                RangeSetBlaze::<Self>::from_in_place_slice(values, engine)
             }
         }
     };
