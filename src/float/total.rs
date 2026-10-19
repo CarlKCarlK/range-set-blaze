@@ -23,7 +23,7 @@
 
 use super::total_float::TotalFloat;
 use crate::Integer;
-use crate::RangeSetBlaze;
+use crate::{RangeMapBlaze, RangeSetBlaze};
 use core::{
     cmp::Ordering,
     fmt::Debug,
@@ -434,6 +434,16 @@ impl<T: TotalFloat> Integer for Total<T> {
     type SafeLen = T::SafeLen;
 
     #[inline]
+    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
+        T::from_slice(slice.as_ref())
+    }
+
+    #[inline]
+    fn from_slices<V: Eq + Clone>(keys: &[Self], values: &[V]) -> RangeMapBlaze<Self, V> {
+        T::from_slices(keys, values)
+    }
+
+    #[inline]
     fn checked_add_one(self) -> Option<Self> {
         self.checked_after()
     }
@@ -496,13 +506,6 @@ impl<T: TotalFloat> Integer for Total<T> {
     #[inline]
     fn max_value() -> Self {
         Self::MAX
-    }
-
-    #[inline]
-    fn from_slice(slice: impl AsRef<[Self]>) -> RangeSetBlaze<Self> {
-        // TODO Investigate applying the ordered float transform in SIMD chunks here.
-        // no way to do the fancy thing
-        RangeSetBlaze::from_iter(slice.as_ref())
     }
 
     fn safe_len(r: &RangeInclusive<Self>) -> Self::SafeLen {

@@ -59,6 +59,16 @@ This release is not breaking.
   values span two 64-bit lanes; the IP address types, whose memory layout Rust doesn't guarantee,
   are converted lane by lane rather than reinterpreted. On clumpy IP addresses they are about
   17 to 33 times faster than `from_iter`.
+- `from_slice` and `from_slices` now use SIMD for float keys too: `NotNanF32`, `NotNanF64`,
+  `TotalF32`, and `TotalF64`. Each lane holds the float's order-preserving integer key (the
+  `total_cmp` order). On 10 million clumpy `NotNanF32` values in order, `from_slice` dropped from
+  about 53 ms to 2 ms, about the speed of `u32`.
+- `from_slice` is faster on large slices in no useful order (for example, shuffled). When at
+  least three of every four values in the first 16,384 start a new run, it sorts a copy instead,
+  which beats sorting one range per value; float keys are sorted as order-preserving integers.
+  10 million shuffled clumpy values went from 440 ms to 254 ms for `u32`, and from 647 ms to 264 ms
+  for `NotNanF32`. Slices with any useful order (runs averaging about two values or more) are
+  unchanged.
 - `NotNan::from_primitive_slice` now validates `f32`/`f64` with SIMD (about 11 times faster).
 - The docs, README, and examples now recommend `from_slice` whenever the integers are in a slice,
   array, or `Vec`.
