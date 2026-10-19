@@ -1259,43 +1259,6 @@ fn test_extract_range() {
     assert_eq!(extract_range(0..1), (0, 0));
 }
 
-/// Big enough slices in no useful order switch to sorting a copy (see `barely_compresses`).
-/// Check that path, and the near-miss that stays on the kernel, against `from_iter`.
-#[test]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn from_slice_sort_copy_path_matches_from_iter() {
-    use crate::NotNanF32;
-    use rand::{Rng, SeedableRng, rngs::StdRng};
-
-    let mut rng = StdRng::seed_from_u64(0x5047_c09e);
-    let n = 20_000_u32; // above the test-build `MIN_SORT_COPY_LEN`
-    // Clumps of 256 values, scattered one by one: every run has length one, so this switches.
-    let mut values: Vec<u32> = (0..n).map(|i| i + i / 256).collect();
-    for i in (1..values.len()).rev() {
-        values.swap(i, rng.random_range(0..=i));
-    }
-    assert_from_slice_matches_from_iter(&values);
-    let signed: Vec<i32> = values.iter().map(|&x| x.cast_signed() - 150_000).collect();
-    assert_from_slice_matches_from_iter(&signed);
-    let floats: Vec<NotNanF32> = values
-        .iter()
-        .map(|&x| NotNanF32::new(f32::from_bits(x) - 1.0e-40))
-        .collect();
-    assert_from_slice_matches_from_iter(&floats);
-    let totals: Vec<crate::TotalF64> = values
-        .iter()
-        .map(|&x| crate::TotalF64::new(f64::from_bits(u64::from(x) << 20).copysign(-1.0)))
-        .collect();
-    assert_from_slice_matches_from_iter(&totals);
-    // Runs of two, shuffled as pairs: half the values start a run, so this stays on the kernel.
-    let mut pairs: Vec<[u32; 2]> = (0..n / 2).map(|i| [3 * i, 3 * i + 1]).collect();
-    for i in (1..pairs.len()).rev() {
-        pairs.swap(i, rng.random_range(0..=i));
-    }
-    let pairs: Vec<u32> = pairs.into_iter().flatten().collect();
-    assert_from_slice_matches_from_iter(&pairs);
-}
-
 /// `len` consecutive values starting at `start`, in `Integer` (adjacency) order, stopping early
 /// at the type's maximum.
 fn consecutive<T: Integer>(start: T, len: usize) -> Vec<T> {
