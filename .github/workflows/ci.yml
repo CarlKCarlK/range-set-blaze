@@ -193,6 +193,10 @@ jobs:
       - name: Setup WASM/unknown
         uses: jetli/wasm-pack-action@v0.4.0
       - name: Test WASM/unknown
+        env:
+          # wasm-bindgen-test-runner's default is 20 seconds; the whole suite runs in one browser
+          # page, and newer runners (wasm-bindgen 0.2.129, pulled in by wgpu) exceeded it.
+          WASM_BINDGEN_TEST_TIMEOUT: "120"
         run: |
           wasm-pack test --chrome --headless -- --no-default-features --verbose
           wasm-pack test --chrome --headless -- --features std --verbose
