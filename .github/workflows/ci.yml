@@ -120,6 +120,27 @@ jobs:
           cargo miri setup
           cargo miri test --test float_tests
 
+  gpu_software:
+    # Runs the GPU pipeline tests on Mesa's software Vulkan driver (lavapipe), so CI exercises the
+    # from_shuffled_slice GPU code without a GPU. Only tests use a software adapter; real use never
+    # does. RANGE_SET_BLAZE_REQUIRE_TEST_GPU makes the tests fail rather than skip if the driver is
+    # missing.
+    name: Test GPU pipeline on software Vulkan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@1.99.0
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+      - name: Install Mesa's software Vulkan driver
+        run: sudo apt-get update && sudo apt-get install -y mesa-vulkan-drivers
+      - name: Run the GPU tests
+        env:
+          RANGE_SET_BLAZE_REQUIRE_TEST_GPU: "1"
+        run: cargo test --verbose --features shuffled_slices --lib gpu -- --nocapture
+
   test_32_bit_linux:
     name: Test on 32-bit Ubuntu
     runs-on: ubuntu-latest
@@ -172,6 +193,10 @@ jobs:
       - name: Setup WASM/unknown
         uses: jetli/wasm-pack-action@v0.4.0
       - name: Test WASM/unknown
+        env:
+          # wasm-bindgen-test-runner's default is 20 seconds; the whole suite runs in one browser
+          # page, and newer runners (wasm-bindgen 0.2.129, pulled in by wgpu) exceeded it.
+          WASM_BINDGEN_TEST_TIMEOUT: "120"
         run: |
           wasm-pack test --chrome --headless -- --no-default-features --verbose
           wasm-pack test --chrome --headless -- --features std --verbose
