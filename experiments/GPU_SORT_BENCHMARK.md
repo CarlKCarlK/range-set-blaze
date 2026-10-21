@@ -17,7 +17,7 @@ The measurement ran as a Windows x86-64 process on Windows 11 Pro 10.0.26200 (bu
 The exact benchmark command, issued from the repository root in WSL so that the Windows toolchain could reach the hardware adapter, was:
 
 ```bash
-/mnt/c/Users/carlk/.cargo/bin/cargo.exe run --release --features in_place_slices --bin gpu_sort_benchmark > experiments/results/gpu_sort_cpu_vs_gpu.csv 2> experiments/results/gpu_sort_cpu_vs_gpu.log
+/mnt/c/Users/carlk/.cargo/bin/cargo.exe run --release --features shuffled_slices --bin gpu_sort_benchmark > experiments/results/gpu_sort_cpu_vs_gpu.csv 2> experiments/results/gpu_sort_cpu_vs_gpu.log
 ```
 
 Regenerate the dependency-free SVG chart with:

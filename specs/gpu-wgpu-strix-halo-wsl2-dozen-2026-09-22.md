@@ -134,8 +134,8 @@ production heuristic; `--staged` keeps the decision easy to revisit.
 Run either path under WSL2 after applying the new-shell environment above:
 
 ```bash
-cargo run --release --bin gpu_normalize_wgpu --features in_place_slices -- 1000000
-cargo run --release --bin gpu_normalize_wgpu --features in_place_slices -- 1000000 --staged
+cargo run --release --bin gpu_normalize_wgpu --features shuffled_slices -- 1000000
+cargo run --release --bin gpu_normalize_wgpu --features shuffled_slices -- 1000000 --staged
 ```
 
 ## Environment
@@ -258,8 +258,8 @@ and `DRIVER_ID_MESA_DOZEN`. Do not proceed if it names llvmpipe.
 Run a tiny RangeSetBlaze probe, then the existing benchmark unchanged:
 
 ```bash
-cargo run --release --bin gpu_normalize_wgpu --features in_place_slices -- 1
-cargo run --release --bin gpu_normalize_wgpu --features in_place_slices
+cargo run --release --bin gpu_normalize_wgpu --features shuffled_slices -- 1
+cargo run --release --bin gpu_normalize_wgpu --features shuffled_slices
 ```
 
 The full default sweep currently exits at 100M because of the Dozen binding
@@ -271,14 +271,14 @@ The initial WSL2 command used the benchmark source before the mappable-primary
 follow-up:
 
 ```bash
-cargo run --release --bin gpu_normalize_wgpu --features in_place_slices
+cargo run --release --bin gpu_normalize_wgpu --features shuffled_slices
 ```
 
 The matched native-Windows control used the same commit and requested 1M and
 10M explicitly:
 
 ```powershell
-cargo run --release --bin gpu_normalize_wgpu --features in_place_slices -- 1000000 10000000
+cargo run --release --bin gpu_normalize_wgpu --features shuffled_slices -- 1000000 10000000
 ```
 
 All timing columns are medians. The benchmark uses 9 iterations at 100K, 7 at

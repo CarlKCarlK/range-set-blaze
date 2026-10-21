@@ -1,5 +1,5 @@
-//! [`RangeMapBlaze::from_in_place_slices`]: a map from unsorted key and value columns, built on
-//! several CPU threads or on the GPU.
+//! [`RangeMapBlaze::from_shuffled_slices`]: a map from key and value columns whose keys are in no
+//! useful order, built on several CPU threads or on the GPU.
 //!
 //! Both engines produce the same thing: each range's start and end keys, and the input position
 //! of its first surviving pair. (A pair survives if it is the last pair with its key, which is
@@ -40,10 +40,9 @@ unsafe impl castaway::LifetimeFree for NotNanF64 {}
 impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// Creates a [`RangeMapBlaze`] from a slice of keys and a slice of their values, using
     /// several CPU threads or the GPU, as `engine` says. Where a key repeats, the last value
-    /// wins, as with [`RangeMapBlaze::from_slices`]. It may reorder the slices; their order
-    /// afterward is unspecified.
+    /// wins, as with [`RangeMapBlaze::from_slices`].
     ///
-    /// *Experimental; requires the `in_place_slices` feature.* It pays off for large slices
+    /// *Experimental; requires the `shuffled_slices` feature.* It pays off for large slices
     /// whose keys are in no useful order, such as shuffled data. If nearby keys are already next
     /// to each other (sorted, or clumpy data in order), [`RangeMapBlaze::from_slices`] may be
     /// faster.
@@ -63,19 +62,19 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// ```
     /// use range_set_blaze::{Engine, prelude::*};
     ///
-    /// let mut keys = [3_u32, 1, 2, 9, 2];
-    /// let mut values = ["c", "a", "x", "z", "a"];
-    /// let map = RangeMapBlaze::from_in_place_slices(&mut keys, &mut values, Engine::GpuOrCpu);
+    /// let keys = [3_u32, 1, 2, 9, 2];
+    /// let values = ["c", "a", "x", "z", "a"];
+    /// let map = RangeMapBlaze::from_shuffled_slices(&keys, &values, Engine::GpuOrCpu);
     /// assert_eq!(map.to_string(), r#"(1..=2, "a"), (3..=3, "c"), (9..=9, "z")"#);
     /// ```
-    #[cfg_attr(docsrs, doc(cfg(feature = "in_place_slices")))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "shuffled_slices")))]
     #[must_use]
-    pub fn from_in_place_slices(keys: &mut [T], values: &mut [V], engine: Engine) -> Self {
-        from_in_place_slices(keys, values, engine)
+    pub fn from_shuffled_slices(keys: &[T], values: &[V], engine: Engine) -> Self {
+        from_shuffled_slices(keys, values, engine)
     }
 }
 
-fn from_in_place_slices<K: Integer, V: Eq + Clone>(
+fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
     keys: &[K],
     values: &[V],
     engine: Engine,
@@ -921,9 +920,8 @@ mod tests {
     ) {
         let expected = RangeMapBlaze::from_slices(keys, values);
         for engine in engines(gpu_capable) {
-            let (mut keys, mut values) = (keys.to_vec(), values.to_vec());
             assert_eq!(
-                RangeMapBlaze::from_in_place_slices(&mut keys, &mut values, engine),
+                RangeMapBlaze::from_shuffled_slices(keys, values, engine),
                 expected,
                 "{engine:?}"
             );
@@ -1051,23 +1049,22 @@ mod tests {
     #[test]
     fn non_sync_values() {
         use std::rc::Rc;
-        let mut keys = [3_u32, 1, 2, 2];
-        let mut values = [Rc::new(3), Rc::new(1), Rc::new(9), Rc::new(1)];
-        let map = RangeMapBlaze::from_in_place_slices(&mut keys, &mut values, Engine::GpuOrCpu);
+        let keys = [3_u32, 1, 2, 2];
+        let values = [Rc::new(3), Rc::new(1), Rc::new(9), Rc::new(1)];
+        let map = RangeMapBlaze::from_shuffled_slices(&keys, &values, Engine::GpuOrCpu);
         assert_eq!(map.to_string(), "(1..=2, 1), (3..=3, 3)");
     }
 
     #[test]
     #[should_panic(expected = "no GPU representation")]
     fn gpu_only_panics_for_types_without_a_gpu_representation() {
-        let _ = RangeMapBlaze::from_in_place_slices(&mut [1_u32], &mut ["a"], Engine::GpuOnly);
+        let _ = RangeMapBlaze::from_shuffled_slices(&[1_u32], &["a"], Engine::GpuOnly);
     }
 
     #[test]
     #[should_panic(expected = "same length")]
     fn lengths_must_match() {
-        let _ =
-            RangeMapBlaze::from_in_place_slices(&mut [1_u32, 2], &mut [1_u32], Engine::GpuOrCpu);
+        let _ = RangeMapBlaze::from_shuffled_slices(&[1_u32, 2], &[1_u32], Engine::GpuOrCpu);
     }
 
     /// Seeded random cases around the 256-wide workgroup and the CPU chunking, mixing

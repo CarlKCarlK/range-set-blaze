@@ -1,7 +1,7 @@
-//! Benchmarks `from_slice` against `from_in_place_slice` with each `Engine`, on the same data.
+//! Benchmarks `from_slice` against `from_shuffled_slice` with each `Engine`, on the same data.
 //!
 //! Usage:
-//! `cargo run --release --features in_place_slices --bin gpu_ingest -- [--cpu N]... [--type T]... [SIZES...]`
+//! `cargo run --release --features shuffled_slices --bin gpu_ingest -- [--cpu N]... [--type T]... [SIZES...]`
 //! (default size: 1,000,000). Each `--cpu N` adds an `Engine::Cpu(N)` column; the default is
 //! every available thread. `Engine::Cpu(1)` is always included. Each `--type T` (such as `u32`)
 //! limits the run to those types; the default is every type. Prints CSV. The GPU column is
@@ -108,7 +108,7 @@ trait BenchElement: Copy + range_set_blaze::Integer {
     /// How many distinct values `from_index` accepts (`0..DOMAIN`).
     const DOMAIN: u64;
     fn from_index(k: u64) -> Self;
-    fn in_place(values: &mut [Self], engine: Engine) -> RangeSetBlaze<Self>;
+    fn shuffled(values: &mut [Self], engine: Engine) -> RangeSetBlaze<Self>;
 }
 
 macro_rules! bench_element {
@@ -120,8 +120,8 @@ macro_rules! bench_element {
                 debug_assert!(k < Self::DOMAIN);
                 $from_index(k)
             }
-            fn in_place(values: &mut [Self], engine: Engine) -> RangeSetBlaze<Self> {
-                RangeSetBlaze::<Self>::from_in_place_slice(values, engine)
+            fn shuffled(values: &mut [Self], engine: Engine) -> RangeSetBlaze<Self> {
+                RangeSetBlaze::<Self>::from_shuffled_slice(values, engine)
             }
         }
     };
@@ -188,21 +188,21 @@ impl Run<'_> {
         };
         let expected = RangeSetBlaze::from_slice(&values);
         let from_slice = median(|| (), |()| RangeSetBlaze::from_slice(black_box(&values)));
-        let in_place = |engine: Engine| {
+        let shuffled = |engine: Engine| {
             let mut check = values.clone();
-            assert_eq!(T::in_place(&mut check, engine), expected, "{engine:?}");
+            assert_eq!(T::shuffled(&mut check, engine), expected, "{engine:?}");
             median(
                 || values.clone(),
-                |mut copy| T::in_place(black_box(&mut copy), engine),
+                |mut copy| T::shuffled(black_box(&mut copy), engine),
             )
         };
-        let cpu_1 = in_place(Engine::Cpu(NonZeroUsize::MIN));
+        let cpu_1 = shuffled(Engine::Cpu(NonZeroUsize::MIN));
         let mut cpu_many = String::new();
         for &count in self.thread_counts {
-            let elapsed = milliseconds(in_place(Engine::Cpu(count)));
+            let elapsed = milliseconds(shuffled(Engine::Cpu(count)));
             write!(cpu_many, ",{elapsed:.3}").expect("writing to a String can't fail");
         }
-        let gpu = self.has_gpu.then(|| in_place(Engine::GpuOnly));
+        let gpu = self.has_gpu.then(|| shuffled(Engine::GpuOnly));
         println!(
             "{workload},{order},{},{},{},{},{:.3},{:.3}{cpu_many},{}",
             T::NAME,
