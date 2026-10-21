@@ -10,6 +10,8 @@ use std::vec::Vec;
 use lampshade::{Compactor, Context, KeyValueCompactor, KeyValueSoaSorter, Sorter};
 use rayon::slice::ParallelSliceMut;
 
+#[cfg(doc)]
+use crate::RangeMapBlaze;
 #[cfg(feature = "float_nightly_experimental")]
 use crate::float::{gpu_not_nan_f16_from_ordered, gpu_not_nan_f16_to_ordered};
 use crate::float::{
@@ -19,6 +21,8 @@ use crate::float::{
 use crate::{CheckSortedDisjoint, NotNanF32, NotNanF64, RangeSetBlaze, TotalF32, TotalF64};
 #[cfg(feature = "float_nightly_experimental")]
 use crate::{NotNanF16, NotNanF128, TotalF16, TotalF128};
+
+mod map_ingest;
 
 const WORKGROUP_SIZE: u32 = 256;
 const BOUNDARY_32_SHADER: &str = r"
@@ -149,14 +153,15 @@ trait GpuElement: crate::Integer {
     fn decode(key: u64) -> Self;
 }
 
-/// How [`RangeSetBlaze::from_in_place_slice`] does its work.
+/// How [`RangeSetBlaze::from_in_place_slice`] and [`RangeMapBlaze::from_in_place_slices`] do
+/// their work.
 ///
 /// *Experimental; requires the `in_place_slices` feature.*
 #[cfg_attr(docsrs, doc(cfg(feature = "in_place_slices")))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Engine {
-    /// Sort the slice in place on this many CPU threads (Rayon's `par_sort_unstable`), then
-    /// find the ranges. `Cpu(1)` is plain `sort_unstable` followed by
+    /// Sort on this many CPU threads (Rayon's `par_sort_unstable`), then find the ranges. For a
+    /// set, the sort is in place, and `Cpu(1)` is plain `sort_unstable` followed by
     /// [`RangeSetBlaze::from_slice`].
     Cpu(NonZeroUsize),
     /// Sort and find the ranges on the GPU, in one pass; only the ranges come back.
@@ -168,7 +173,8 @@ pub enum Engine {
     ///
     /// Panics if there is no hardware GPU, if the key type has no GPU representation (`u128`,
     /// `i128`, `Ipv6Addr`, `NotNanF128`, and the `TotalF*` types), or if the input exceeds the
-    /// GPU's limits or memory.
+    /// GPU's limits or memory. For a map, it also panics for key and value types the GPU doesn't
+    /// handle; [`RangeMapBlaze::from_in_place_slices`] lists the ones it does.
     GpuOnly,
     /// [`Engine::GpuOnly`] when it can run; otherwise [`Engine::Cpu`] with every available
     /// thread.
@@ -247,6 +253,22 @@ fn from_slice_gpu_with_context<T: GpuElement>(
         return Some(RangeSetBlaze::new());
     }
     let len = u32::try_from(values.len()).ok()?;
+    let endpoints = with_error_scopes(context, || match T::KEY_WORDS {
+        1 => normalize_32(context, values, len, T::GAP),
+        2 => normalize_64(context, values, len, T::GAP),
+        _ => None,
+    });
+    let ranges = endpoints?
+        .into_iter()
+        .map(|(start, end)| T::decode(start)..=T::decode(end));
+    Some(RangeSetBlaze::from_sorted_disjoint(
+        CheckSortedDisjoint::new(ranges),
+    ))
+}
+
+/// Runs `run`, which records and submits GPU work. Returns `None` if `run` does, or if the GPU
+/// ran out of memory; panics on any other GPU error.
+fn with_error_scopes<R>(context: &Context, run: impl FnOnce() -> Option<R>) -> Option<R> {
     // wgpu reports a failed allocation later, as an error on this thread's error scopes, not
     // at the call. So capture out-of-memory and validation errors for the whole run.
     GPU_FAILURE.with_borrow_mut(Option::take);
@@ -256,11 +278,7 @@ fn from_slice_gpu_with_context<T: GpuElement>(
     let validation = context
         .device
         .push_error_scope(wgpu::ErrorFilter::Validation);
-    let endpoints = match T::KEY_WORDS {
-        1 => normalize_32(context, values, len, T::GAP),
-        2 => normalize_64(context, values, len, T::GAP),
-        _ => None,
-    };
+    let result = run();
     let validation_error = pollster::block_on(validation.pop());
     if pollster::block_on(out_of_memory.pop()).is_some() {
         return None; // Out of GPU memory: the caller falls back to the CPU.
@@ -271,12 +289,7 @@ fn from_slice_gpu_with_context<T: GpuElement>(
     if let Some(failure) = GPU_FAILURE.with_borrow_mut(Option::take) {
         panic!("GPU range execution failed: {failure}");
     }
-    let ranges = endpoints?
-        .into_iter()
-        .map(|(start, end)| T::decode(start)..=T::decode(end));
-    Some(RangeSetBlaze::from_sorted_disjoint(
-        CheckSortedDisjoint::new(ranges),
-    ))
+    result
 }
 
 fn gpu_context() -> Option<&'static Context> {
@@ -1002,6 +1015,23 @@ fn input_storage_buffer(
             .write_buffer(&buffer, 0, bytemuck::cast_slice(&words));
         Some(buffer)
     }
+}
+
+/// Like [`input_storage_buffer`], but from a slice, which the queue can copy from directly.
+fn slice_storage_buffer(
+    context: &Context,
+    label: &'static str,
+    words: &[u32],
+) -> Option<wgpu::Buffer> {
+    let size = size_of_val(words) as u64;
+    if uses_mappable_primary_buffers(context) {
+        return input_storage_buffer(context, label, size, words.iter().copied());
+    }
+    let buffer = storage_buffer(context, label, size, wgpu::BufferUsages::COPY_DST);
+    context
+        .queue
+        .write_buffer(&buffer, 0, bytemuck::cast_slice(words));
+    Some(buffer)
 }
 
 fn storage_buffer(

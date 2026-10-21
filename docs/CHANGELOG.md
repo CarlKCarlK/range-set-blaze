@@ -23,6 +23,15 @@ This release is not breaking.
   463 ms and its integrated GPU 644 ms, against 4,044 ms for `from_slice`; on data already in
   order, `from_slice` is fastest. The feature is off by default and adds no dependencies unless
   enabled; it is mainly a demonstration of GPU programming and a fair test of it.
+- **`RangeMapBlaze::from_in_place_slices(&mut keys, &mut values, engine)`** (same experimental
+  `in_place_slices` feature) builds a map from unsorted key and value slices on several CPU
+  threads or the GPU. The last value wins for a repeated key, as with `from_slices`. Any
+  `Integer` keys and any `V: Eq + Clone` values work on the CPU, including borrowed and non-`Sync`
+  values; the GPU handles keys of at most 32 bits with the crate's integer values of at most 64
+  bits, and `GpuOrCpu` silently uses the CPU for other types. On 10 million shuffled `u32` pairs
+  on an AMD Ryzen 9 7950X with an NVIDIA RTX 3060, `Cpu(32)` took 50 to 130 ms and the GPU 37 to
+  123 ms when the map had at most 2.5 million ranges, against 1.8 to 2.0 seconds for
+  `from_slices`.
 - **`NotNan::from_primitive_vec`** converts a `Vec<f64>` (or `f32`, ...) into `NotNan` values in
   place, reusing the allocation, normalizing `-0.0` to `+0.0`, and panicking on NaN.
 - The float docs have a new "Converting Native Floats" section that lays out every conversion

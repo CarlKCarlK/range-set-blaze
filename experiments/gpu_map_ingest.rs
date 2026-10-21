@@ -21,7 +21,8 @@
 //! 6. Read back the range count, then the ranges.
 //!
 //! `cpu_parallel_from_slices` runs the same pipeline on every CPU thread (the `cpu_parallel_ms`
-//! column), as the fair CPU comparison.
+//! column), as the fair CPU comparison. `lib_cpu_ms` and `lib_gpu_ms` time the library's
+//! `RangeMapBlaze::from_in_place_slices` with `Engine::Cpu` (every thread) and `Engine::GpuOnly`.
 //!
 //! Results on an AMD Radeon 8060S (Vulkan) with a 32-thread CPU are in
 //! `experiments/results/gpu_map_ingest_radeon_8060s.csv` (cold start in the `.log` beside it).
@@ -32,7 +33,7 @@ use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
 use lampshade::{Compactor, Context, KeyValueSoaSorter};
-use range_set_blaze::{CheckSortedDisjointMap, RangeMapBlaze};
+use range_set_blaze::{CheckSortedDisjointMap, Engine, RangeMapBlaze};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use rayon::slice::{ParallelSlice, ParallelSliceMut};
 
@@ -73,7 +74,7 @@ fn main() -> Result<(), String> {
     );
 
     println!(
-        "pattern,order,input_pairs,output_ranges,gpu_first_call_ms,gpu_steady_ms,cpu_from_slices_ms,cpu_from_iter_ms,cpu_rayon_sort_ms,cpu_parallel_ms"
+        "pattern,order,input_pairs,output_ranges,gpu_first_call_ms,gpu_steady_ms,cpu_from_slices_ms,cpu_from_iter_ms,cpu_rayon_sort_ms,cpu_parallel_ms,lib_cpu_ms,lib_gpu_ms"
     );
     for &n in &sizes {
         for pattern in Pattern::ALL {
@@ -83,6 +84,10 @@ fn main() -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+fn all_threads() -> std::num::NonZeroUsize {
+    std::thread::available_parallelism().unwrap_or(std::num::NonZeroUsize::MIN)
 }
 
 /// Times one pattern, size, and order, and prints its CSV row.
@@ -141,8 +146,23 @@ fn benchmark_case(
             black_box(&values),
         ))
     })?;
+    // The library's `from_in_place_slices`. It doesn't reorder these slices, so one copy serves
+    // every run.
+    let (mut lib_keys, mut lib_values) = (keys.clone(), values.clone());
+    let mut library =
+        |engine| RangeMapBlaze::from_in_place_slices(&mut lib_keys, &mut lib_values, engine);
+    for engine in [Engine::Cpu(all_threads()), Engine::GpuOnly] {
+        if library(engine) != expected {
+            return Err(format!(
+                "from_in_place_slices({engine:?}) differs from from_slices: {} {n}",
+                pattern.name()
+            ));
+        }
+    }
+    let library_threads = median(5, || Ok(library(Engine::Cpu(all_threads()))))?;
+    let library_gpu = median(5, || Ok(library(Engine::GpuOnly)))?;
     println!(
-        "{},{},{n},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3}",
+        "{},{},{n},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3}",
         pattern.name(),
         if shuffled { "shuffled" } else { "in_order" },
         expected.ranges_len(),
@@ -152,6 +172,8 @@ fn benchmark_case(
         milliseconds(cpu_iter),
         milliseconds(cpu_rayon),
         milliseconds(cpu_parallel),
+        milliseconds(library_threads),
+        milliseconds(library_gpu),
     );
     Ok(())
 }
