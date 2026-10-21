@@ -20,6 +20,9 @@
 //! 5. Compact start keys, end keys, and start values.
 //! 6. Read back the range count, then the ranges.
 //!
+//! `cpu_parallel_from_slices` runs the same pipeline on every CPU thread (the `cpu_parallel_ms`
+//! column), as the fair CPU comparison.
+//!
 //! Results on an AMD Radeon 8060S (Vulkan) with a 32-thread CPU are in
 //! `experiments/results/gpu_map_ingest_radeon_8060s.csv` (cold start in the `.log` beside it).
 
@@ -30,7 +33,8 @@ use std::time::{Duration, Instant};
 
 use lampshade::{Compactor, Context, KeyValueSoaSorter};
 use range_set_blaze::{CheckSortedDisjointMap, RangeMapBlaze};
-use rayon::slice::ParallelSliceMut;
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use rayon::slice::{ParallelSlice, ParallelSliceMut};
 
 /// Seed for generated data; fixed so every machine benchmarks the same inputs.
 const SEED: u64 = 0x5eed_ba5e_d00d_f00d;
@@ -69,7 +73,7 @@ fn main() -> Result<(), String> {
     );
 
     println!(
-        "pattern,order,input_pairs,output_ranges,gpu_first_call_ms,gpu_steady_ms,cpu_from_slices_ms,cpu_from_iter_ms,cpu_rayon_sort_ms"
+        "pattern,order,input_pairs,output_ranges,gpu_first_call_ms,gpu_steady_ms,cpu_from_slices_ms,cpu_from_iter_ms,cpu_rayon_sort_ms,cpu_parallel_ms"
     );
     for &n in &sizes {
         for pattern in Pattern::ALL {
@@ -125,8 +129,20 @@ fn benchmark_case(
             black_box(&values),
         ))
     })?;
+    if cpu_parallel_from_slices(&keys, &values) != expected {
+        return Err(format!(
+            "CPU parallel result differs from from_slices: {} {n}",
+            pattern.name()
+        ));
+    }
+    let cpu_parallel = median(5, || {
+        Ok(cpu_parallel_from_slices(
+            black_box(&keys),
+            black_box(&values),
+        ))
+    })?;
     println!(
-        "{},{},{n},{},{:.3},{:.3},{:.3},{:.3},{:.3}",
+        "{},{},{n},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3}",
         pattern.name(),
         if shuffled { "shuffled" } else { "in_order" },
         expected.ranges_len(),
@@ -135,8 +151,92 @@ fn benchmark_case(
         milliseconds(cpu_slices),
         milliseconds(cpu_iter),
         milliseconds(cpu_rayon),
+        milliseconds(cpu_parallel),
     );
     Ok(())
+}
+
+/// The CPU counterpart of the GPU pipeline, on every Rayon thread:
+///
+/// 1. Pack each pair's key and input position into a `u64` (`key << 32 | position`) and sort
+///    those with Rayon's unstable sort. Each packed value is distinct, so equal keys still end
+///    up in input order, and the last of each key is the right-most input value.
+/// 2. Split the sorted array into chunks that start at key boundaries, so no key spans two
+///    chunks, and in each chunk keep the last of each key and merge consecutive keys with
+///    equal values into ranges.
+/// 3. Join the chunks' ranges, merging across chunk seams, and build the map from them.
+fn cpu_parallel_from_slices(keys: &[u32], values: &[u32]) -> RangeMapBlaze<u32, u32> {
+    assert_eq!(keys.len(), values.len(), "keys and values differ in length");
+    assert!(
+        u32::try_from(keys.len().saturating_sub(1)).is_ok(),
+        "more than 2^32 pairs"
+    );
+    let mut packed: Vec<u64> = keys
+        .par_iter()
+        .enumerate()
+        .map(|(position, &key)| u64::from(key) << 32 | position as u64)
+        .collect();
+    packed.par_sort_unstable();
+
+    let key = |index: usize| (packed[index] >> 32) as u32;
+    let chunk_count = (rayon::current_num_threads() * 4).min(packed.len()).max(1);
+    let mut bounds = vec![0];
+    for chunk in 1..chunk_count {
+        let mut bound = (chunk * packed.len() / chunk_count).max(*bounds.last().expect("nonempty"));
+        while bound < packed.len() && bound > 0 && key(bound) == key(bound - 1) {
+            bound += 1;
+        }
+        bounds.push(bound);
+    }
+    bounds.push(packed.len());
+
+    let chunks: Vec<Vec<(u32, u32, u32)>> = bounds
+        .par_windows(2)
+        .map(|window| sorted_chunk_ranges(&packed[window[0]..window[1]], values))
+        .collect();
+
+    let mut ranges: Vec<(u32, u32, u32)> = Vec::with_capacity(chunks.iter().map(Vec::len).sum());
+    for (start, end, value) in chunks.into_iter().flatten() {
+        match ranges.last_mut() {
+            Some((_, last_end, last_value))
+                if *last_value == value && last_end.checked_add(1) == Some(start) =>
+            {
+                *last_end = end;
+            }
+            _ => ranges.push((start, end, value)),
+        }
+    }
+    RangeMapBlaze::from_sorted_disjoint_map(CheckSortedDisjointMap::new(
+        ranges
+            .iter()
+            .map(|(start, end, value)| (*start..=*end, value)),
+    ))
+}
+
+/// The `(start, end, value)` ranges of a sorted run of packed pairs that no key crosses out of.
+fn sorted_chunk_ranges(packed: &[u64], values: &[u32]) -> Vec<(u32, u32, u32)> {
+    let mut ranges: Vec<(u32, u32, u32)> = Vec::new();
+    for (index, &pair) in packed.iter().enumerate() {
+        let key = (pair >> 32) as u32;
+        // Only the last of each key survives.
+        if packed
+            .get(index + 1)
+            .is_some_and(|&next| (next >> 32) as u32 == key)
+        {
+            continue;
+        }
+        let position = usize::try_from(pair & u64::from(u32::MAX)).expect("position fits in usize");
+        let value = values[position];
+        match ranges.last_mut() {
+            Some((_, end, last_value))
+                if *last_value == value && end.checked_add(1) == Some(key) =>
+            {
+                *end = key;
+            }
+            _ => ranges.push((key, key, value)),
+        }
+    }
+    ranges
 }
 
 /// The multithreaded CPU baseline: pair up the columns, sort the pairs by key with Rayon's
@@ -716,6 +816,7 @@ mod tests {
             keys.iter().copied().zip(values.iter().copied()).collect();
         assert_eq!(expected, from_iter);
         assert_eq!(rayon_sort_then_from_slices(keys, values), expected);
+        assert_eq!(cpu_parallel_from_slices(keys, values), expected);
         let Some((context, kernels)) = context() else {
             assert!(
                 std::env::var_os("RANGE_SET_BLAZE_REQUIRE_TEST_GPU").is_none(),
