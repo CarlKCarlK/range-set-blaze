@@ -94,6 +94,8 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
     let threads = match engine {
         Engine::Cpu(threads) => threads,
         Engine::GpuOnly | Engine::GpuOrCpu => all_threads(),
+        #[cfg(feature = "cuda")]
+        Engine::CudaOnly => panic!("Engine::CudaOnly: maps are not supported yet"),
     };
     // Only work that needs no `V: Sync` runs on the pool: keys, and values once they are words.
     let pool = thread_pool(threads);
@@ -131,6 +133,8 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
                     value_words.as_ref(),
                 )
             }),
+        #[cfg(feature = "cuda")]
+        Engine::CudaOnly => unreachable!("Engine::CudaOnly panicked above"),
     };
     build_map(&pool, values, found)
 }

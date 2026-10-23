@@ -22,6 +22,8 @@ use crate::{CheckSortedDisjoint, NotNanF32, NotNanF64, RangeSetBlaze, TotalF32, 
 #[cfg(feature = "float_nightly_experimental")]
 use crate::{NotNanF16, NotNanF128, TotalF16, TotalF128};
 
+#[cfg(feature = "cuda")]
+mod cuda;
 mod map_ingest;
 
 const WORKGROUP_SIZE: u32 = 256;
@@ -179,6 +181,17 @@ pub enum Engine {
     /// [`Engine::GpuOnly`] when it can run; otherwise [`Engine::Cpu`] with every available
     /// thread.
     GpuOrCpu,
+    /// Like [`Engine::GpuOnly`], but with CUDA kernels written in Rust (cuda-oxide) instead of
+    /// portable wgpu shaders. NVIDIA GPUs on Linux only; 32-bit keys only, and sets only.
+    ///
+    /// *Experimental; requires the `cuda` feature.*
+    ///
+    /// # Panics
+    ///
+    /// Panics if there is no CUDA GPU, if the key type isn't 32 bits, for a map, or if the input
+    /// exceeds the GPU's memory.
+    #[cfg(feature = "cuda")]
+    CudaOnly,
 }
 
 fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> RangeSetBlaze<T> {
@@ -197,7 +210,30 @@ fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> Range
             .then(|| try_gpu(values))
             .flatten()
             .unwrap_or_else(|| from_slice_cpu(values, all_threads())),
+        #[cfg(feature = "cuda")]
+        Engine::CudaOnly => from_slice_cuda(values),
     }
+}
+
+#[cfg(feature = "cuda")]
+fn from_slice_cuda<T: GpuElement>(values: &[T]) -> RangeSetBlaze<T> {
+    assert!(
+        T::KEY_WORDS == 1,
+        "Engine::CudaOnly: only 32-bit key types are supported"
+    );
+    let context = cuda::cuda_context().expect("Engine::CudaOnly: no CUDA GPU is available");
+    let gap = T::GAP.map(|(left, right)| {
+        (
+            u32::try_from(left).expect("32-bit gap exceeded u32"),
+            u32::try_from(right).expect("32-bit gap exceeded u32"),
+        )
+    });
+    let encode = |value: T| u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32");
+    let ranges = cuda::ranges_32(context, values, encode, gap)
+        .expect("Engine::CudaOnly: the input exceeds the GPU's memory")
+        .into_iter()
+        .map(|(start, end)| T::decode(u64::from(start))..=T::decode(u64::from(end)));
+    RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::new(ranges))
 }
 
 fn all_threads() -> NonZeroUsize {

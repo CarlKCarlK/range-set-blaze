@@ -5,7 +5,8 @@
 //! (default size: 1,000,000). Each `--cpu N` adds an `Engine::Cpu(N)` column; the default is
 //! every available thread. `Engine::Cpu(1)` is always included. Each `--type T` (such as `u32`)
 //! limits the run to those types; the default is every type. Prints CSV. The GPU column is
-//! empty when there is no hardware GPU.
+//! empty when there is no hardware GPU. With the `cuda` feature, a `cuda_ms` column times
+//! `Engine::CudaOnly` (empty for 64-bit types, which it doesn't support).
 //!
 //! Each type gets data built within its own range of values, in two workloads:
 //!
@@ -74,7 +75,7 @@ fn main() {
         write!(cpu_columns, ",cpu_{count}_ms").expect("writing to a String can't fail");
     }
     println!(
-        "workload,order,type,input_values,distinct_values,output_ranges,from_slice_ms,cpu_1_ms{cpu_columns},gpu_only_ms"
+        "workload,order,type,input_values,distinct_values,output_ranges,from_slice_ms,cpu_1_ms{cpu_columns},gpu_only_ms,cuda_ms"
     );
     for n in sizes {
         for workload in [Workload::Distinct, Workload::Duplicates] {
@@ -182,7 +183,7 @@ impl Run<'_> {
         };
         let order = if self.shuffle { "shuffled" } else { "in_order" };
         let Some((values, distinct)) = self.values::<T>() else {
-            let empty = ",".repeat(self.thread_counts.len() + 4);
+            let empty = ",".repeat(self.thread_counts.len() + 5);
             println!("{workload},{order},{},{},n/a{empty}", T::NAME, self.n);
             return;
         };
@@ -203,8 +204,13 @@ impl Run<'_> {
             write!(cpu_many, ",{elapsed:.3}").expect("writing to a String can't fail");
         }
         let gpu = self.has_gpu.then(|| shuffled(Engine::GpuOnly));
+        #[cfg(feature = "cuda")]
+        let cuda =
+            (!matches!(T::NAME, "u64" | "i64" | "NotNanF64")).then(|| shuffled(Engine::CudaOnly));
+        #[cfg(not(feature = "cuda"))]
+        let cuda: Option<Duration> = None;
         println!(
-            "{workload},{order},{},{},{},{},{:.3},{:.3}{cpu_many},{}",
+            "{workload},{order},{},{},{},{},{:.3},{:.3}{cpu_many},{},{}",
             T::NAME,
             values.len(),
             distinct,
@@ -212,6 +218,7 @@ impl Run<'_> {
             milliseconds(from_slice),
             milliseconds(cpu_1),
             gpu.map_or_else(String::new, |gpu| format!("{:.3}", milliseconds(gpu))),
+            cuda.map_or_else(String::new, |cuda| format!("{:.3}", milliseconds(cuda))),
         );
     }
 
