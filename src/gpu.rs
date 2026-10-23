@@ -181,15 +181,15 @@ pub enum Engine {
     /// [`Engine::GpuOnly`] when it can run; otherwise [`Engine::Cpu`] with every available
     /// thread.
     GpuOrCpu,
-    /// Like [`Engine::GpuOnly`], but with CUDA kernels written in Rust (cuda-oxide) instead of
-    /// portable wgpu shaders. NVIDIA GPUs on Linux only; 32-bit keys only, and sets only.
+    /// Like [`Engine::GpuOnly`], with the same types, but with CUDA kernels written in Rust
+    /// (cuda-oxide) instead of portable wgpu shaders. NVIDIA GPUs on Linux only.
     ///
     /// *Experimental; requires the `cuda` feature.*
     ///
     /// # Panics
     ///
-    /// Panics if there is no CUDA GPU, if the key type isn't 32 bits, for a map, or if the input
-    /// exceeds the GPU's memory.
+    /// Panics if there is no CUDA GPU, for the types [`Engine::GpuOnly`] panics for, or if the
+    /// input exceeds the GPU's memory.
     #[cfg(feature = "cuda")]
     CudaOnly,
 }
@@ -217,22 +217,30 @@ fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> Range
 
 #[cfg(feature = "cuda")]
 fn from_slice_cuda<T: GpuElement>(values: &[T]) -> RangeSetBlaze<T> {
-    assert!(
-        T::KEY_WORDS == 1,
-        "Engine::CudaOnly: only 32-bit key types are supported"
-    );
     let context = cuda::cuda_context().expect("Engine::CudaOnly: no CUDA GPU is available");
-    let gap = T::GAP.map(|(left, right)| {
-        (
-            u32::try_from(left).expect("32-bit gap exceeded u32"),
-            u32::try_from(right).expect("32-bit gap exceeded u32"),
-        )
-    });
-    let encode = |value: T| u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32");
-    let ranges = cuda::ranges_32(context, values, encode, gap)
-        .expect("Engine::CudaOnly: the input exceeds the GPU's memory")
-        .into_iter()
-        .map(|(start, end)| T::decode(u64::from(start))..=T::decode(u64::from(end)));
+    let ranges = match T::KEY_WORDS {
+        1 => {
+            let gap = T::GAP.map(|(left, right)| {
+                (
+                    u32::try_from(left).expect("32-bit gap exceeded u32"),
+                    u32::try_from(right).expect("32-bit gap exceeded u32"),
+                )
+            });
+            let encode =
+                |value: T| u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32");
+            cuda::ranges_32(context, values, encode, gap).map(|ranges| {
+                ranges
+                    .into_iter()
+                    .map(|(start, end)| (u64::from(start), u64::from(end)))
+                    .collect()
+            })
+        }
+        2 => cuda::ranges_64(context, values, T::encode, T::GAP),
+        _ => panic!("Engine::CudaOnly: this key type has no GPU representation"),
+    }
+    .expect("Engine::CudaOnly: the input exceeds the GPU's memory")
+    .into_iter()
+    .map(|(start, end)| T::decode(start)..=T::decode(end));
     RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::new(ranges))
 }
 
@@ -1552,6 +1560,10 @@ mod tests {
         ];
         if gpu_capable && has_hardware_gpu() {
             engines.push(Engine::GpuOnly);
+        }
+        #[cfg(feature = "cuda")]
+        if gpu_capable && cuda::cuda_context().is_some() {
+            engines.push(Engine::CudaOnly);
         }
         engines
     }

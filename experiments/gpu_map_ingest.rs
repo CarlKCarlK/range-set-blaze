@@ -23,7 +23,8 @@
 //! `cpu_parallel_from_slices` runs the same pipeline on every CPU thread (the `cpu_parallel_ms`
 //! column), as the fair CPU comparison. `lib_cpu_1_ms`, `lib_cpu_ms`, and `lib_gpu_ms` time the
 //! library's `RangeMapBlaze::from_shuffled_slices` with `Engine::Cpu(1)`, `Engine::Cpu` (every
-//! thread), and `Engine::GpuOnly`.
+//! thread), and `Engine::GpuOnly`. With the `cuda` feature, `lib_cuda_ms` times
+//! `Engine::CudaOnly`. On a software adapter (such as WSL's llvmpipe) the wgpu columns are empty.
 //!
 //! Results on an AMD Radeon 8060S (Vulkan) with a 32-thread CPU are in
 //! `experiments/results/gpu_map_ingest_radeon_8060s.csv` (cold start in the `.log` beside it).
@@ -65,6 +66,7 @@ fn main() -> Result<(), String> {
         "adapter={:?} backend={:?} device_type={:?}",
         context.adapter_info.name, context.adapter_info.backend, context.adapter_info.device_type
     );
+    let has_gpu = context.adapter_info.device_type != wgpu::DeviceType::Cpu;
     let start = Instant::now();
     let kernels = Kernels::new(&context);
     let kernel_time = start.elapsed();
@@ -75,12 +77,12 @@ fn main() -> Result<(), String> {
     );
 
     println!(
-        "pattern,order,input_pairs,output_ranges,gpu_first_call_ms,gpu_steady_ms,cpu_from_slices_ms,cpu_from_iter_ms,cpu_rayon_sort_ms,cpu_parallel_ms,lib_cpu_1_ms,lib_cpu_ms,lib_gpu_ms"
+        "pattern,order,input_pairs,output_ranges,gpu_first_call_ms,gpu_steady_ms,cpu_from_slices_ms,cpu_from_iter_ms,cpu_rayon_sort_ms,cpu_parallel_ms,lib_cpu_1_ms,lib_cpu_ms,lib_gpu_ms,lib_cuda_ms"
     );
     for &n in &sizes {
         for pattern in Pattern::ALL {
             for shuffled in [true, false] {
-                benchmark_case(&context, &kernels, pattern, n, shuffled)?;
+                benchmark_case(&context, &kernels, has_gpu, pattern, n, shuffled)?;
             }
         }
     }
@@ -95,6 +97,7 @@ fn all_threads() -> std::num::NonZeroUsize {
 fn benchmark_case(
     context: &Context,
     kernels: &Kernels,
+    has_gpu: bool,
     pattern: Pattern,
     n: usize,
     shuffled: bool,
@@ -102,20 +105,24 @@ fn benchmark_case(
     let (keys, values) = pattern.generate(n, shuffled, SEED);
     let expected = RangeMapBlaze::from_slices(&keys, &values);
 
-    // First call at this size: allocates buffers and prepares the sorter.
-    let start = Instant::now();
-    let mut ingest = MapIngest::new(context, kernels, n)?;
-    let first = ingest.run(&keys, &values)?;
-    let first_time = start.elapsed();
-    if first != expected {
-        return Err(format!(
-            "GPU result differs from from_slices: {} {n}",
-            pattern.name()
-        ));
-    }
-
-    // Steady state: the same prepared buffers and pipelines, reused.
-    let gpu = median(5, || ingest.run(black_box(&keys), black_box(&values)))?;
+    // First call at this size: allocates buffers and prepares the sorter. Then the steady state:
+    // the same prepared buffers and pipelines, reused.
+    let (first_time, gpu) = if has_gpu {
+        let start = Instant::now();
+        let mut ingest = MapIngest::new(context, kernels, n)?;
+        let first = ingest.run(&keys, &values)?;
+        let first_time = start.elapsed();
+        if first != expected {
+            return Err(format!(
+                "GPU result differs from from_slices: {} {n}",
+                pattern.name()
+            ));
+        }
+        let gpu = median(5, || ingest.run(black_box(&keys), black_box(&values)))?;
+        (Some(first_time), Some(gpu))
+    } else {
+        (None, None)
+    };
     let cpu_slices = median(5, || {
         Ok(RangeMapBlaze::from_slices(
             black_box(&keys),
@@ -149,11 +156,16 @@ fn benchmark_case(
     })?;
     // The library's `from_shuffled_slices`.
     let library = |engine| RangeMapBlaze::from_shuffled_slices(&keys, &values, engine);
-    for engine in [
+    let mut engines = vec![
         Engine::Cpu(std::num::NonZeroUsize::MIN),
         Engine::Cpu(all_threads()),
-        Engine::GpuOnly,
-    ] {
+    ];
+    if has_gpu {
+        engines.push(Engine::GpuOnly);
+    }
+    #[cfg(feature = "cuda")]
+    engines.push(Engine::CudaOnly);
+    for engine in engines {
         if library(engine) != expected {
             return Err(format!(
                 "from_shuffled_slices({engine:?}) differs from from_slices: {} {n}",
@@ -163,21 +175,30 @@ fn benchmark_case(
     }
     let library_one = median(5, || Ok(library(Engine::Cpu(std::num::NonZeroUsize::MIN))))?;
     let library_threads = median(5, || Ok(library(Engine::Cpu(all_threads()))))?;
-    let library_gpu = median(5, || Ok(library(Engine::GpuOnly)))?;
+    let library_gpu = if has_gpu {
+        Some(median(5, || Ok(library(Engine::GpuOnly)))?)
+    } else {
+        None
+    };
+    #[cfg(feature = "cuda")]
+    let library_cuda = Some(median(5, || Ok(library(Engine::CudaOnly)))?);
+    #[cfg(not(feature = "cuda"))]
+    let library_cuda: Option<Duration> = None;
     println!(
-        "{},{},{n},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3}",
+        "{},{},{n},{},{},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{},{}",
         pattern.name(),
         if shuffled { "shuffled" } else { "in_order" },
         expected.ranges_len(),
-        milliseconds(first_time),
-        milliseconds(gpu),
+        optional_milliseconds(first_time),
+        optional_milliseconds(gpu),
         milliseconds(cpu_slices),
         milliseconds(cpu_iter),
         milliseconds(cpu_rayon),
         milliseconds(cpu_parallel),
         milliseconds(library_one),
         milliseconds(library_threads),
-        milliseconds(library_gpu),
+        optional_milliseconds(library_gpu),
+        optional_milliseconds(library_cuda),
     );
     Ok(())
 }
@@ -812,6 +833,13 @@ fn median<R>(
     }
     samples.sort_unstable();
     Ok(samples[runs / 2])
+}
+
+/// Milliseconds to three places, or empty.
+fn optional_milliseconds(duration: Option<Duration>) -> String {
+    duration.map_or_else(String::new, |duration| {
+        format!("{:.3}", milliseconds(duration))
+    })
 }
 
 fn milliseconds(duration: Duration) -> f64 {

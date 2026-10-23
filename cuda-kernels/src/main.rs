@@ -39,7 +39,7 @@ mod kernels {
                     BlockAtomicU32::from_ptr(
                         SharedArray::as_raw_mut_ptr(&raw mut HISTOGRAM).add(digit as usize),
                     )
-                        .fetch_add(1, AtomicOrdering::Relaxed);
+                    .fetch_add(1, AtomicOrdering::Relaxed);
                 }
             }
             round += 1;
@@ -268,11 +268,23 @@ mod kernels {
     /// count as adjacent when `has_gap` is 1 (for `char`, across the surrogates).
     #[kernel]
     #[launch_bounds(256)]
-    pub fn mark_starts(sorted: &[u32], gap_left: u32, gap_right: u32, has_gap: u32, starts: *mut u32) {
+    pub fn mark_starts(
+        sorted: &[u32],
+        gap_left: u32,
+        gap_right: u32,
+        has_gap: u32,
+        starts: *mut u32,
+    ) {
         let index = thread::blockIdx_x() * BLOCK + thread::threadIdx_x();
         if index < sorted.len() as u32 {
             let is_start = index == 0
-                || !joins(sorted[index as usize - 1], sorted[index as usize], gap_left, gap_right, has_gap);
+                || !joins(
+                    sorted[index as usize - 1],
+                    sorted[index as usize],
+                    gap_left,
+                    gap_right,
+                    has_gap,
+                );
             unsafe {
                 *starts.add(index as usize) = is_start as u32;
             }
@@ -298,7 +310,8 @@ mod kernels {
             let i = index as usize;
             let key = sorted[i];
             let is_start = index == 0 || !joins(sorted[i - 1], key, gap_left, gap_right, has_gap);
-            let is_end = index + 1 == len || !joins(key, sorted[i + 1], gap_left, gap_right, has_gap);
+            let is_end =
+                index + 1 == len || !joins(key, sorted[i + 1], gap_left, gap_right, has_gap);
             let range = scanned[i] + is_start as u32;
             unsafe {
                 if is_start {
@@ -310,6 +323,271 @@ mod kernels {
             }
         }
     }
+
+    /// As [`mark_starts`], for 64-bit keys sorted as `(hi, lo)` word pairs. The gap is
+    /// `(gap_left_hi, gap_left_lo)` to `(gap_right_hi, gap_right_lo)`.
+    #[kernel]
+    #[launch_bounds(256)]
+    pub fn mark_starts_64(
+        hi: &[u32],
+        lo: &[u32],
+        gap_left_hi: u32,
+        gap_left_lo: u32,
+        gap_right_hi: u32,
+        gap_right_lo: u32,
+        has_gap: u32,
+        starts: *mut u32,
+    ) {
+        let index = thread::blockIdx_x() * BLOCK + thread::threadIdx_x();
+        if index < hi.len() as u32 {
+            let i = index as usize;
+            let gap = Gap64 {
+                left_hi: gap_left_hi,
+                left_lo: gap_left_lo,
+                right_hi: gap_right_hi,
+                right_lo: gap_right_lo,
+                enabled: has_gap == 1,
+            };
+            let is_start = index == 0 || !joins_64(hi[i - 1], lo[i - 1], hi[i], lo[i], &gap);
+            unsafe {
+                *starts.add(i) = is_start as u32;
+            }
+        }
+    }
+
+    /// As [`emit_ranges`], for 64-bit keys: each range's ends go out as `(hi, lo)` words.
+    #[kernel]
+    #[launch_bounds(256)]
+    pub fn emit_ranges_64(
+        hi: &[u32],
+        lo: &[u32],
+        scanned: &[u32],
+        gap_left_hi: u32,
+        gap_left_lo: u32,
+        gap_right_hi: u32,
+        gap_right_lo: u32,
+        has_gap: u32,
+        starts_hi: *mut u32,
+        starts_lo: *mut u32,
+        ends_hi: *mut u32,
+        ends_lo: *mut u32,
+    ) {
+        let index = thread::blockIdx_x() * BLOCK + thread::threadIdx_x();
+        let len = hi.len() as u32;
+        if index < len {
+            let i = index as usize;
+            let gap = Gap64 {
+                left_hi: gap_left_hi,
+                left_lo: gap_left_lo,
+                right_hi: gap_right_hi,
+                right_lo: gap_right_lo,
+                enabled: has_gap == 1,
+            };
+            let is_start = index == 0 || !joins_64(hi[i - 1], lo[i - 1], hi[i], lo[i], &gap);
+            let is_end = index + 1 == len || !joins_64(hi[i], lo[i], hi[i + 1], lo[i + 1], &gap);
+            let range = (scanned[i] + is_start as u32) as usize - 1;
+            unsafe {
+                if is_start {
+                    *starts_hi.add(range) = hi[i];
+                    *starts_lo.add(range) = lo[i];
+                }
+                if is_end {
+                    *ends_hi.add(range) = hi[i];
+                    *ends_lo.add(range) = lo[i];
+                }
+            }
+        }
+    }
+
+    /// Writes `0..len` to `positions`: each map entry's input position, for the sort to carry.
+    #[kernel]
+    #[launch_bounds(256)]
+    pub fn fill_positions(positions: *mut u32, len: u32) {
+        let index = thread::blockIdx_x() * BLOCK + thread::threadIdx_x();
+        if index < len {
+            unsafe {
+                *positions.add(index as usize) = index;
+            }
+        }
+    }
+
+    /// Writes 1 where a sorted map entry is the last of its key (so its value wins), else 0.
+    #[kernel]
+    #[launch_bounds(256)]
+    pub fn mark_survivors(keys: &[u32], keep: *mut u32) {
+        let index = thread::blockIdx_x() * BLOCK + thread::threadIdx_x();
+        let len = keys.len() as u32;
+        if index < len {
+            let i = index as usize;
+            let survives = index + 1 == len || keys[i + 1] != keys[i];
+            unsafe {
+                *keep.add(i) = survives as u32;
+            }
+        }
+    }
+
+    /// From the exclusive scan of `mark_survivors`, packs the surviving keys and positions.
+    #[kernel]
+    #[launch_bounds(256)]
+    pub fn compact_survivors(
+        keys: &[u32],
+        positions: &[u32],
+        scanned: &[u32],
+        keys_out: *mut u32,
+        positions_out: *mut u32,
+    ) {
+        let index = thread::blockIdx_x() * BLOCK + thread::threadIdx_x();
+        let len = keys.len() as u32;
+        if index < len {
+            let i = index as usize;
+            if index + 1 == len || keys[i + 1] != keys[i] {
+                let slot = scanned[i] as usize;
+                unsafe {
+                    *keys_out.add(slot) = keys[i];
+                    *positions_out.add(slot) = positions[i];
+                }
+            }
+        }
+    }
+
+    /// Writes 1 where a surviving map entry starts a range: its key doesn't follow the previous
+    /// survivor's, or its value differs. Values are `value_lo` words, plus `value_hi` words if
+    /// that slice isn't empty.
+    #[kernel]
+    #[launch_bounds(256)]
+    pub fn mark_map_starts(
+        keys: &[u32],
+        positions: &[u32],
+        value_lo: &[u32],
+        value_hi: &[u32],
+        gap_left: u32,
+        gap_right: u32,
+        has_gap: u32,
+        starts: *mut u32,
+    ) {
+        let index = thread::blockIdx_x() * BLOCK + thread::threadIdx_x();
+        if index < keys.len() as u32 {
+            let i = index as usize;
+            let values = Values {
+                lo: value_lo,
+                hi: value_hi,
+            };
+            let is_start = index == 0
+                || !map_joins(
+                    keys,
+                    positions,
+                    &values,
+                    i - 1,
+                    gap_left,
+                    gap_right,
+                    has_gap,
+                );
+            unsafe {
+                *starts.add(i) = is_start as u32;
+            }
+        }
+    }
+
+    /// From the exclusive scan of `mark_map_starts`, writes each range's first and last keys and
+    /// the input position of its first entry (whose value is the range's).
+    #[kernel]
+    #[launch_bounds(256)]
+    pub fn emit_map_ranges(
+        keys: &[u32],
+        positions: &[u32],
+        value_lo: &[u32],
+        value_hi: &[u32],
+        scanned: &[u32],
+        gap_left: u32,
+        gap_right: u32,
+        has_gap: u32,
+        starts: *mut u32,
+        ends: *mut u32,
+        firsts: *mut u32,
+    ) {
+        let index = thread::blockIdx_x() * BLOCK + thread::threadIdx_x();
+        let len = keys.len() as u32;
+        if index < len {
+            let i = index as usize;
+            let values = Values {
+                lo: value_lo,
+                hi: value_hi,
+            };
+            let is_start = index == 0
+                || !map_joins(
+                    keys,
+                    positions,
+                    &values,
+                    i - 1,
+                    gap_left,
+                    gap_right,
+                    has_gap,
+                );
+            let is_end = index + 1 == len
+                || !map_joins(keys, positions, &values, i, gap_left, gap_right, has_gap);
+            let range = (scanned[i] + is_start as u32) as usize - 1;
+            unsafe {
+                if is_start {
+                    *starts.add(range) = keys[i];
+                    *firsts.add(range) = positions[i];
+                }
+                if is_end {
+                    *ends.add(range) = keys[i];
+                }
+            }
+        }
+    }
+}
+
+struct Gap64 {
+    left_hi: u32,
+    left_lo: u32,
+    right_hi: u32,
+    right_lo: u32,
+    enabled: bool,
+}
+
+/// Whether sorted 64-bit keys `(left_hi, left_lo)` then `(right_hi, right_lo)` belong to the
+/// same range.
+fn joins_64(left_hi: u32, left_lo: u32, right_hi: u32, right_lo: u32, gap: &Gap64) -> bool {
+    let same = left_hi == right_hi && left_lo == right_lo;
+    let next_in_word = left_hi == right_hi && left_lo != u32::MAX && right_lo == left_lo + 1;
+    let carry =
+        left_lo == u32::MAX && right_lo == 0 && left_hi != u32::MAX && right_hi == left_hi + 1;
+    let exceptional = gap.enabled
+        && left_hi == gap.left_hi
+        && left_lo == gap.left_lo
+        && right_hi == gap.right_hi
+        && right_lo == gap.right_lo;
+    same || next_in_word || carry || exceptional
+}
+
+/// A map's values as one or two words each, indexed by input position.
+struct Values<'a> {
+    lo: &'a [u32],
+    hi: &'a [u32],
+}
+
+/// Whether survivors `left` and `left + 1` share a range: adjacent keys and equal values.
+fn map_joins(
+    keys: &[u32],
+    positions: &[u32],
+    values: &Values<'_>,
+    left: usize,
+    gap_left: u32,
+    gap_right: u32,
+    has_gap: u32,
+) -> bool {
+    let key = keys[left];
+    let next = keys[left + 1];
+    let adjacent = (key != u32::MAX && next == key + 1)
+        || (has_gap == 1 && key == gap_left && next == gap_right);
+    if !adjacent {
+        return false;
+    }
+    let a = positions[left] as usize;
+    let b = positions[left + 1] as usize;
+    values.lo[a] == values.lo[b] && (values.hi.is_empty() || values.hi[a] == values.hi[b])
 }
 
 /// Whether sorted keys `left` then `right` belong to the same range.

@@ -95,7 +95,7 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
         Engine::Cpu(threads) => threads,
         Engine::GpuOnly | Engine::GpuOrCpu => all_threads(),
         #[cfg(feature = "cuda")]
-        Engine::CudaOnly => panic!("Engine::CudaOnly: maps are not supported yet"),
+        Engine::CudaOnly => all_threads(),
     };
     // Only work that needs no `V: Sync` runs on the pool: keys, and values once they are words.
     let pool = thread_pool(threads);
@@ -134,7 +134,25 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
                 )
             }),
         #[cfg(feature = "cuda")]
-        Engine::CudaOnly => unreachable!("Engine::CudaOnly panicked above"),
+        Engine::CudaOnly => {
+            let (Some(key_words), Some(value_words)) = (&key_words, &value_words) else {
+                panic!("Engine::CudaOnly: the key or value type has no GPU representation");
+            };
+            let context =
+                super::cuda::cuda_context().expect("Engine::CudaOnly: no CUDA GPU is available");
+            let (bounds, firsts) = super::cuda::map_ranges(
+                context,
+                &key_words.words,
+                key_words.gap,
+                &value_words.lo,
+                value_words.hi.as_deref(),
+            )
+            .expect("Engine::CudaOnly: the input exceeds the GPU's memory");
+            Found::Words(Ranges {
+                bounds,
+                firsts: firsts.into_iter().map(|first| first as usize).collect(),
+            })
+        }
     };
     build_map(&pool, values, found)
 }
@@ -911,6 +929,10 @@ mod tests {
         ];
         if gpu_capable && has_hardware_gpu() {
             engines.push(Engine::GpuOnly);
+        }
+        #[cfg(feature = "cuda")]
+        if gpu_capable && super::super::cuda::cuda_context().is_some() {
+            engines.push(Engine::CudaOnly);
         }
         engines
     }
