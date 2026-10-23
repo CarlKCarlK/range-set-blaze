@@ -2,7 +2,7 @@
 //! search that follows it. Every kernel runs blocks of `BLOCK` threads over tiles of `TILE`
 //! items, and the host (`src/gpu/cuda.rs`) launches them by name from the generated PTX.
 
-use cuda_device::atomic::{AtomicOrdering, BlockAtomicU32};
+use cuda_device::atomic::{AtomicOrdering, BlockAtomicU32, DeviceAtomicU32};
 use cuda_device::{SharedArray, kernel, launch_bounds, thread, warp};
 use cuda_host::cuda_module;
 
@@ -11,6 +11,9 @@ const WARPS: u32 = BLOCK / 32;
 const ITEMS: u32 = 16;
 const TILE: u32 = BLOCK * ITEMS;
 const RADIX: u32 = 256;
+/// Items per warp in `radix_scatter`, and the rounds of 32 they take.
+const WARP_ITEMS: u32 = TILE / WARPS;
+const WARP_ROUNDS: u32 = WARP_ITEMS / 32;
 
 #[cuda_module]
 mod kernels {
@@ -165,9 +168,66 @@ mod kernels {
         }
     }
 
+    /// Adds every key's four 8-bit digit counts to `counts[pass * 256 + digit]`, which must start
+    /// at zero. The host reads them to skip passes where every key has the same digit.
+    #[kernel]
+    #[launch_bounds(256)]
+    pub fn digit_counts(keys: &[u32], counts: *mut u32) {
+        static mut HISTOGRAMS: SharedArray<u32, 1024> = SharedArray::UNINIT;
+        let tid = thread::threadIdx_x();
+        let len = keys.len() as u32;
+        let mut pass = 0;
+        while pass < 4 {
+            unsafe {
+                HISTOGRAMS[(pass * RADIX + tid) as usize] = 0;
+            }
+            pass += 1;
+        }
+        thread::sync_threads();
+        let base = thread::blockIdx_x() * TILE;
+        let mut round = 0;
+        while round < ITEMS {
+            let index = base + round * BLOCK + tid;
+            if index < len {
+                let key = keys[index as usize];
+                pass = 0;
+                while pass < 4 {
+                    let digit = (key >> (pass * 8)) & (RADIX - 1);
+                    unsafe {
+                        BlockAtomicU32::from_ptr(
+                            SharedArray::as_raw_mut_ptr(&raw mut HISTOGRAMS)
+                                .add((pass * RADIX + digit) as usize),
+                        )
+                        .fetch_add(1, AtomicOrdering::Relaxed);
+                    }
+                    pass += 1;
+                }
+            }
+            round += 1;
+        }
+        thread::sync_threads();
+        pass = 0;
+        while pass < 4 {
+            let slot = (pass * RADIX + tid) as usize;
+            let count = unsafe { HISTOGRAMS[slot] };
+            if count != 0 {
+                unsafe {
+                    DeviceAtomicU32::from_ptr(counts.add(slot))
+                        .fetch_add(count, AtomicOrdering::Relaxed);
+                }
+            }
+            pass += 1;
+        }
+    }
+
     /// Stable scatter of each tile's keys (and, if `values` is non-empty, their values) to the
-    /// positions given by the scanned histogram. Within a tile, items go in order: by round,
-    /// then warp, then lane, with ranks among equal digits from `match_any_sync`.
+    /// positions given by the scanned histogram.
+    ///
+    /// Each warp owns `WARP_ITEMS` consecutive items of the tile. The warps count their digits
+    /// (phase A), which gives each warp its start for each digit within the tile (B); they then
+    /// rank their items again and place them in shared memory in digit order (C); and the block
+    /// copies them out in that order, so neighboring threads mostly write neighboring addresses
+    /// (D). Ranks come from `match_any_sync`, in item order, so the sort is stable.
     #[kernel]
     #[launch_bounds(256)]
     pub fn radix_scatter(
@@ -179,33 +239,108 @@ mod kernels {
         keys_out: *mut u32,
         values_out: *mut u32,
     ) {
-        static mut DIGIT_OFFSETS: SharedArray<u32, 256> = SharedArray::UNINIT;
-        static mut WARP_COUNTS: SharedArray<u32, 2048> = SharedArray::UNINIT;
+        static mut SORTED_KEYS: SharedArray<u32, 4096> = SharedArray::UNINIT;
+        static mut SORTED_VALUES: SharedArray<u32, 4096> = SharedArray::UNINIT;
+        // Per warp and digit: first a count, then that warp's next slot in the tile.
+        static mut WARP_SLOTS: SharedArray<u32, 2048> = SharedArray::UNINIT;
+        static mut TILE_STARTS: SharedArray<u32, 256> = SharedArray::UNINIT;
+        static mut GLOBAL_STARTS: SharedArray<u32, 256> = SharedArray::UNINIT;
+        static mut WARP_TOTALS: SharedArray<u32, 8> = SharedArray::UNINIT;
         let tid = thread::threadIdx_x();
         let tile = thread::blockIdx_x();
         let len = keys.len() as u32;
         let with_values = !values.is_empty();
+        let lane = warp::lane_id();
         let lane_below = warp::lanemask_lt();
         let warp_index = tid / 32;
+        let base = tile * TILE;
+        let segment = base + warp_index * WARP_ITEMS;
         unsafe {
-            DIGIT_OFFSETS[tid as usize] = offsets[(tid * tiles + tile) as usize];
+            GLOBAL_STARTS[tid as usize] = offsets[(tid * tiles + tile) as usize];
         }
         let mut w = 0;
         while w < WARPS {
             unsafe {
-                WARP_COUNTS[(w * RADIX + tid) as usize] = 0;
+                WARP_SLOTS[(w * RADIX + tid) as usize] = 0;
             }
             w += 1;
         }
         thread::sync_threads();
 
-        let base = tile * TILE;
+        // A: count each warp's digits.
         let mut round = 0;
-        while round < ITEMS {
-            let index = base + round * BLOCK + tid;
+        while round < WARP_ROUNDS {
+            let index = segment + round * 32 + lane;
+            let valid = index < len;
+            // Past the end, a digit no real key has, so those lanes match only each other.
+            let digit = if valid {
+                (keys[index as usize] >> shift) & (RADIX - 1)
+            } else {
+                RADIX
+            };
+            let peers = warp::match_any_sync(0xffff_ffff, digit);
+            if valid && (peers & lane_below) == 0 {
+                unsafe {
+                    WARP_SLOTS[(warp_index * RADIX + digit) as usize] += peers.count_ones();
+                }
+            }
+            warp::sync_mask(0xffff_ffff);
+            round += 1;
+        }
+        thread::sync_threads();
+
+        // B: thread `tid` owns digit `tid`. Prefix its counts across warps, then scan the tile's
+        // digit totals across the block.
+        let mut total = 0;
+        w = 0;
+        while w < WARPS {
+            let slot = (w * RADIX + tid) as usize;
+            let count = unsafe { WARP_SLOTS[slot] };
+            unsafe {
+                WARP_SLOTS[slot] = total;
+            }
+            total += count;
+            w += 1;
+        }
+        let mut inclusive = total;
+        let mut delta = 1;
+        while delta < 32 {
+            let up = warp::shuffle_up_sync(0xffff_ffff, inclusive, delta);
+            if lane >= delta {
+                inclusive += up;
+            }
+            delta *= 2;
+        }
+        if lane == 31 {
+            unsafe {
+                WARP_TOTALS[warp_index as usize] = inclusive;
+            }
+        }
+        thread::sync_threads();
+        let mut tile_start = inclusive - total;
+        w = 0;
+        while w < warp_index {
+            tile_start += unsafe { WARP_TOTALS[w as usize] };
+            w += 1;
+        }
+        unsafe {
+            TILE_STARTS[tid as usize] = tile_start;
+        }
+        w = 0;
+        while w < WARPS {
+            unsafe {
+                WARP_SLOTS[(w * RADIX + tid) as usize] += tile_start;
+            }
+            w += 1;
+        }
+        thread::sync_threads();
+
+        // C: rank again and place each item in shared memory, in digit order.
+        round = 0;
+        while round < WARP_ROUNDS {
+            let index = segment + round * 32 + lane;
             let valid = index < len;
             let key = if valid { keys[index as usize] } else { 0 };
-            // Past the end, a digit no real key has, so those lanes match only each other.
             let digit = if valid {
                 (key >> shift) & (RADIX - 1)
             } else {
@@ -213,54 +348,45 @@ mod kernels {
             };
             let peers = warp::match_any_sync(0xffff_ffff, digit);
             let rank = (peers & lane_below).count_ones();
-            if valid && rank == 0 {
-                unsafe {
-                    WARP_COUNTS[(warp_index * RADIX + digit) as usize] = peers.count_ones();
-                }
-            }
-            thread::sync_threads();
-
-            // Thread `tid` owns digit `tid`: an exclusive scan of its count across warps.
-            let mut running = 0;
-            w = 0;
-            while w < WARPS {
-                let slot = (w * RADIX + tid) as usize;
-                let count = unsafe { WARP_COUNTS[slot] };
-                unsafe {
-                    WARP_COUNTS[slot] = running;
-                }
-                running += count;
-                w += 1;
-            }
-            thread::sync_threads();
-
+            let slot = (warp_index * RADIX + digit) as usize;
+            let first = if valid {
+                unsafe { WARP_SLOTS[slot] }
+            } else {
+                0
+            };
+            warp::sync_mask(0xffff_ffff);
             if valid {
-                let destination = unsafe {
-                    DIGIT_OFFSETS[digit as usize]
-                        + WARP_COUNTS[(warp_index * RADIX + digit) as usize]
-                        + rank
-                } as usize;
+                let place = (first + rank) as usize;
                 unsafe {
-                    *keys_out.add(destination) = key;
+                    SORTED_KEYS[place] = key;
                     if with_values {
-                        *values_out.add(destination) = values[index as usize];
+                        SORTED_VALUES[place] = values[index as usize];
+                    }
+                    if rank == 0 {
+                        WARP_SLOTS[slot] = first + peers.count_ones();
                     }
                 }
             }
-            thread::sync_threads();
-
-            unsafe {
-                DIGIT_OFFSETS[tid as usize] += running;
-            }
-            w = 0;
-            while w < WARPS {
-                unsafe {
-                    WARP_COUNTS[(w * RADIX + tid) as usize] = 0;
-                }
-                w += 1;
-            }
-            thread::sync_threads();
+            warp::sync_mask(0xffff_ffff);
             round += 1;
+        }
+        thread::sync_threads();
+
+        // D: copy out in digit order. Item `place` of digit `d` goes `place - TILE_STARTS[d]`
+        // past this tile's global start for `d`.
+        let in_tile = if len - base < TILE { len - base } else { TILE };
+        let mut place = tid;
+        while place < in_tile {
+            let key = unsafe { SORTED_KEYS[place as usize] };
+            let digit = ((key >> shift) & (RADIX - 1)) as usize;
+            let destination = unsafe { GLOBAL_STARTS[digit] + place - TILE_STARTS[digit] } as usize;
+            unsafe {
+                *keys_out.add(destination) = key;
+                if with_values {
+                    *values_out.add(destination) = SORTED_VALUES[place as usize];
+                }
+            }
+            place += BLOCK;
         }
     }
 

@@ -531,6 +531,7 @@ struct Kernels {
     _module: Arc<CudaModule>,
     radix_histogram: CudaFunction,
     radix_scatter: CudaFunction,
+    digit_counts: CudaFunction,
     scan_tiles: CudaFunction,
     add_tile_offsets: CudaFunction,
     mark_starts: CudaFunction,
@@ -550,6 +551,7 @@ impl Kernels {
         Ok(Self {
             radix_histogram: module.load_function("radix_histogram")?,
             radix_scatter: module.load_function("radix_scatter")?,
+            digit_counts: module.load_function("digit_counts")?,
             scan_tiles: module.load_function("scan_tiles")?,
             add_tile_offsets: module.load_function("add_tile_offsets")?,
             mark_starts: module.load_function("mark_starts")?,
@@ -565,9 +567,10 @@ impl Kernels {
         })
     }
 
-    /// Stable LSD radix sort of `len` keys: four 8-bit passes between `keys` and `keys_spare`,
-    /// carrying `values` (and their spare) along if given. The result ends up back in `keys`
-    /// (and `values`).
+    /// Stable LSD radix sort of `len` keys: up to four 8-bit passes between `keys` and
+    /// `keys_spare`, carrying `values` (and their spare) along if given. The result ends up back
+    /// in `keys` (and `values`). A pass where every key has the same digit would change nothing,
+    /// so it is skipped.
     fn radix_sort(
         &self,
         stream: &Arc<CudaStream>,
@@ -577,8 +580,23 @@ impl Kernels {
         mut values: Option<(&mut DeviceBuffer<u32>, &mut DeviceBuffer<u32>)>,
     ) -> Result<(), DriverError> {
         let tiles = len.div_ceil(TILE);
+        let mut digit_counts = scratch(stream, (4 * RADIX) as usize)?;
+        digit_counts.zero_async(stream)?;
+        launch(
+            stream,
+            &self.digit_counts,
+            tiles,
+            &[pointer(keys), u64::from(len), pointer(&digit_counts)],
+        )?;
+        let digit_counts_host = digit_counts.to_host_vec(stream)?;
+        // SAFETY: as in `release`, everything runs on `stream`.
+        unsafe { digit_counts.drop_async(stream)? };
         let counts = scratch(stream, (RADIX * tiles) as usize)?;
-        for shift in [0_u32, 8, 16, 24] {
+        for (pass, shift) in [0_u32, 8, 16, 24].into_iter().enumerate() {
+            let pass_counts = &digit_counts_host[pass * RADIX as usize..][..RADIX as usize];
+            if pass_counts.contains(&len) {
+                continue;
+            }
             launch(
                 stream,
                 &self.radix_histogram,
