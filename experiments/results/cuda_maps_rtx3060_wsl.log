@@ -1,0 +1,2 @@
+adapter="llvmpipe (LLVM 15.0.7, 256 bits)" backend=Vulkan device_type=Cpu
+cold: context 38.3 ms, shader pipelines 1.1 ms
