@@ -636,7 +636,7 @@ fn sort_scratch(len: u32) -> usize {
 }
 
 /// Words for a scatter's look-back state: a 64-bit status per tile and digit, then the ticket.
-fn look_back_words(tiles: u32) -> usize {
+const fn look_back_words(tiles: u32) -> usize {
     tiles as usize * RADIX as usize * 2 + 1
 }
 
