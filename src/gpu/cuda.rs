@@ -509,7 +509,7 @@ struct Words {
 
 impl Words {
     /// The kernel arguments for this view as a slice: its pointer and its length.
-    fn argument(self) -> [u64; 2] {
+    const fn argument(self) -> [u64; 2] {
         [self.pointer, self.len as u64]
     }
 
