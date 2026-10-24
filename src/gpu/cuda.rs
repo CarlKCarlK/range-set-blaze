@@ -1,40 +1,799 @@
 //! [`Engine::CudaOnly`]: the GPU pipeline as CUDA kernels written in Rust with cuda-oxide.
 //!
-//! The kernels live in `cuda-kernels/` and are compiled ahead of time to `cuda_kernels.ptx`, so
-//! building this crate needs only `cuda-core`, not the cuda-oxide compiler. Each call is one-shot:
-//! only the CUDA context is kept between calls; the module (JIT-compiled from the PTX by the
-//! driver) and every buffer are created per call, as the wgpu engine creates its pipelines and
-//! buffers per call.
+//! Kernels and host code share this file: `#[cuda_module]` compiles the kernels to device code
+//! and generates a typed launcher for each, so building the `cuda` feature needs `cargo oxide`
+//! (`cargo oxide build -- --features cuda`), which supplies cuda-oxide's codegen backend.
+//!
+//! Each kernel declares a launch contract (1-D, `BLOCK` threads per block), so every launch is
+//! checked against it. Kernels that write only their own thread's element take a
+//! `DisjointSlice`, and launching them is safe. Kernels that write wherever the data says (the
+//! sort's scatter, scans, and range emission) take raw pointers and are `unsafe fn`; each launch
+//! says why its pointers are valid.
+//!
+//! Each call is one-shot: only the CUDA context is kept between calls. The module and every
+//! buffer are created per call, as the wgpu engine creates its pipelines and buffers per call.
 
-use core::ffi::c_void;
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::too_many_arguments,
+    reason = "kernels index with u32 and take many arguments, as CUDA kernels do"
+)]
+
+use std::string::String;
 use std::sync::{Arc, OnceLock};
 use std::vec::Vec;
 
-use cuda_core::simt::launch_kernel_on_stream;
-use cuda_core::simt::memory::{memcpy_dtoh_async, memcpy_htod_async, memset_d8_async};
+use cuda_core::simt::memory::memcpy_htod_async;
 use cuda_core::sys::cudaError_enum_CUDA_ERROR_OUT_OF_MEMORY;
 use cuda_core::{
-    CudaContext, CudaFunction, CudaModule, CudaStream, DeviceBuffer, DriverError, PinnedHostBuffer,
+    CudaContext, CudaStream, DeviceBuffer, DeviceCopy, DriverError, LaunchConfig1D,
+    LaunchContractError, PinnedHostBuffer,
 };
+use cuda_device::atomic::{AtomicOrdering, BlockAtomicU32, DeviceAtomicU32, DeviceAtomicU64};
+use cuda_device::{
+    DisjointSlice, SharedArray, kernel, launch_bounds, launch_contract, thread, warp,
+};
+use cuda_host::{EmbeddedModuleError, cuda_module};
 
 use super::{high_word, join_words, low_word};
 
 #[cfg(doc)]
 use super::Engine;
 
-const PTX: &str = include_str!("cuda_kernels.ptx");
-/// Threads per block and items per block in the kernels; they must match `cuda-kernels/`.
+/// Threads per block.
 const BLOCK: u32 = 256;
-const TILE: u32 = 4096;
+const WARPS: u32 = BLOCK / 32;
+/// Items per thread, and per block (a tile), in the tiled kernels.
+const ITEMS: u32 = 16;
+const TILE: u32 = BLOCK * ITEMS;
+/// Values of an 8-bit radix-sort digit.
 const RADIX: u32 = 256;
+/// Items per warp in `radix_scatter`, and the rounds of 32 they take.
+const WARP_ITEMS: u32 = TILE / WARPS;
+const WARP_ROUNDS: u32 = WARP_ITEMS / 32;
+/// Flags on a look-back `status` word, above its 32-bit count: published, and published as the
+/// count of every tile so far (rather than of this tile alone).
+const AGGREGATE: u64 = 1 << 32;
+const INCLUSIVE: u64 = 2 << 32;
+const READY: u64 = AGGREGATE | INCLUSIVE;
 /// Keys per upload chunk: each is encoded into pinned memory while the one before it copies.
 const CHUNK: usize = 1 << 18;
 /// Inputs up to this many keys are encoded into ordinary memory and copied at once: allocating
 /// pinned memory costs more than it saves (about 0.6 ms per MB, plus freeing it), while beyond
 /// about 4 MB a fresh ordinary buffer pays more in page faults.
 const PAGEABLE_UPLOAD: usize = 1 << 20;
-/// Each buffer carved from an [`Arena`] starts on a multiple of this many words (256 bytes).
-const ALIGN_WORDS: usize = 64;
+
+#[cuda_module]
+mod kernels {
+    use super::*;
+
+    /// Writes `0..len` to `positions`: each map entry's input position, for the sort to carry.
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 1, block = (256, 1, 1))]
+    pub(super) fn fill_positions(mut positions: DisjointSlice<'_, u32>) {
+        if let Some((position, index)) = positions.get_mut_indexed() {
+            *position = index.get() as u32;
+        }
+    }
+
+    /// Adds every key's four 8-bit digit counts to `counts[pass * 256 + digit]`. The host reads
+    /// them to find where each digit starts, and to skip passes where every key has the same
+    /// digit.
+    ///
+    /// # Safety
+    ///
+    /// `counts` must point to 1,024 zeroed words. Launch one block per `TILE` keys.
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 1, block = (256, 1, 1))]
+    pub(super) unsafe fn digit_counts(keys: &[u32], counts: *mut u32) {
+        static mut HISTOGRAMS: SharedArray<u32, 1024> = SharedArray::UNINIT;
+        let tid = thread::threadIdx_x();
+        let len = keys.len() as u32;
+        let mut pass = 0;
+        while pass < 4 {
+            unsafe {
+                HISTOGRAMS[(pass * RADIX + tid) as usize] = 0;
+            }
+            pass += 1;
+        }
+        thread::sync_threads();
+        let base = thread::blockIdx_x() * TILE;
+        let mut round = 0;
+        while round < ITEMS {
+            let index = base + round * BLOCK + tid;
+            if index < len {
+                let key = keys[index as usize];
+                pass = 0;
+                while pass < 4 {
+                    let digit = (key >> (pass * 8)) & (RADIX - 1);
+                    unsafe {
+                        BlockAtomicU32::from_ptr(
+                            SharedArray::as_raw_mut_ptr(&raw mut HISTOGRAMS)
+                                .add((pass * RADIX + digit) as usize),
+                        )
+                        .fetch_add(1, AtomicOrdering::Relaxed);
+                    }
+                    pass += 1;
+                }
+            }
+            round += 1;
+        }
+        thread::sync_threads();
+        pass = 0;
+        while pass < 4 {
+            let slot = (pass * RADIX + tid) as usize;
+            let count = unsafe { HISTOGRAMS[slot] };
+            if count != 0 {
+                unsafe {
+                    DeviceAtomicU32::from_ptr(counts.add(slot))
+                        .fetch_add(count, AtomicOrdering::Relaxed);
+                }
+            }
+            pass += 1;
+        }
+    }
+
+    /// One pass of a "Onesweep" LSD radix sort: a stable scatter of each tile's keys (and, if
+    /// `values` is non-empty, their values) by their 8-bit digit at `shift`.
+    /// `digit_bases[bases_offset + d]` is where digit `d` starts in the output (from
+    /// `digit_counts`). Each tile learns where its items of digit `d` go by decoupled
+    /// look-back: it publishes its own count in `status`, then adds up its predecessors'
+    /// published counts until it reaches one that already includes everything before it, and
+    /// publishes that inclusive total for its successors. Tiles take their indices from
+    /// `ticket` in launch order, so a tile only ever waits on tiles that started before it.
+    ///
+    /// Each warp owns `WARP_ITEMS` consecutive items of the tile. The warps count their digits
+    /// (phase A), which gives each warp its start for each digit within the tile (B); they then
+    /// rank their items again and place them in shared memory in digit order (C); and the block
+    /// copies them out in that order, so neighboring threads mostly write neighboring addresses
+    /// (D). Ranks come from `match_any_sync`, in item order, so the sort is stable.
+    ///
+    /// # Safety
+    ///
+    /// `keys_out` (and `values_out`, if there are values) must point to `keys.len()` words;
+    /// `status` to one zeroed word per tile and digit; and `ticket` to one zeroed word. Launch
+    /// one block per `TILE` keys.
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 1, block = (256, 1, 1))]
+    pub(super) unsafe fn radix_scatter(
+        keys: &[u32],
+        values: &[u32],
+        shift: u32,
+        digit_bases: &[u32],
+        bases_offset: u32,
+        status: *mut u64,
+        ticket: *mut u32,
+        keys_out: *mut u32,
+        values_out: *mut u32,
+    ) {
+        static mut SORTED_KEYS: SharedArray<u32, 4096> = SharedArray::UNINIT;
+        static mut SORTED_VALUES: SharedArray<u32, 4096> = SharedArray::UNINIT;
+        // Per warp and digit: first a count, then that warp's next slot in the tile.
+        static mut WARP_SLOTS: SharedArray<u32, 2048> = SharedArray::UNINIT;
+        static mut TILE_STARTS: SharedArray<u32, 256> = SharedArray::UNINIT;
+        static mut GLOBAL_STARTS: SharedArray<u32, 256> = SharedArray::UNINIT;
+        static mut WARP_TOTALS: SharedArray<u32, 8> = SharedArray::UNINIT;
+        static mut TILE_INDEX: SharedArray<u32, 1> = SharedArray::UNINIT;
+        let tid = thread::threadIdx_x();
+        if tid == 0 {
+            unsafe {
+                TILE_INDEX[0] =
+                    DeviceAtomicU32::from_ptr(ticket).fetch_add(1, AtomicOrdering::Relaxed);
+            }
+        }
+        thread::sync_threads();
+        let tile = unsafe { TILE_INDEX[0] };
+        let len = keys.len() as u32;
+        let with_values = !values.is_empty();
+        let lane = warp::lane_id();
+        let lane_below = warp::lanemask_lt();
+        let warp_index = tid / 32;
+        let base = tile * TILE;
+        let segment = base + warp_index * WARP_ITEMS;
+        let mut w = 0;
+        while w < WARPS {
+            unsafe {
+                WARP_SLOTS[(w * RADIX + tid) as usize] = 0;
+            }
+            w += 1;
+        }
+        thread::sync_threads();
+
+        // A: count each warp's digits.
+        let mut round = 0;
+        while round < WARP_ROUNDS {
+            let index = segment + round * 32 + lane;
+            let valid = index < len;
+            // Past the end, a digit no real key has, so those lanes match only each other.
+            let digit = if valid {
+                (keys[index as usize] >> shift) & (RADIX - 1)
+            } else {
+                RADIX
+            };
+            let peers = warp::match_any_sync(0xffff_ffff, digit);
+            if valid && (peers & lane_below) == 0 {
+                unsafe {
+                    WARP_SLOTS[(warp_index * RADIX + digit) as usize] += peers.count_ones();
+                }
+            }
+            warp::sync_mask(0xffff_ffff);
+            round += 1;
+        }
+        thread::sync_threads();
+
+        // B: thread `tid` owns digit `tid`. Prefix its counts across warps, then scan the tile's
+        // digit totals across the block.
+        let mut total = 0;
+        w = 0;
+        while w < WARPS {
+            let slot = (w * RADIX + tid) as usize;
+            let count = unsafe { WARP_SLOTS[slot] };
+            unsafe {
+                WARP_SLOTS[slot] = total;
+            }
+            total += count;
+            w += 1;
+        }
+        let mut inclusive = total;
+        let mut delta = 1;
+        while delta < 32 {
+            let up = warp::shuffle_up_sync(0xffff_ffff, inclusive, delta);
+            if lane >= delta {
+                inclusive += up;
+            }
+            delta *= 2;
+        }
+        if lane == 31 {
+            unsafe {
+                WARP_TOTALS[warp_index as usize] = inclusive;
+            }
+        }
+        // Look back: the count of digit `tid` in all tiles before this one.
+        let slot = |tile: u32| unsafe {
+            DeviceAtomicU64::from_ptr(status.add((tile * RADIX + tid) as usize))
+        };
+        let prefix = if tile == 0 {
+            0
+        } else {
+            slot(tile).store(AGGREGATE | u64::from(total), AtomicOrdering::Release);
+            let mut prefix = 0;
+            let mut previous = tile;
+            loop {
+                previous -= 1;
+                let mut word = slot(previous).load(AtomicOrdering::Acquire);
+                while word & READY == 0 {
+                    word = slot(previous).load(AtomicOrdering::Acquire);
+                }
+                prefix += word as u32;
+                if word & INCLUSIVE != 0 {
+                    break;
+                }
+            }
+            prefix
+        };
+        slot(tile).store(
+            INCLUSIVE | u64::from(prefix + total),
+            AtomicOrdering::Release,
+        );
+        unsafe {
+            GLOBAL_STARTS[tid as usize] = digit_bases[(bases_offset + tid) as usize] + prefix;
+        }
+        thread::sync_threads();
+        let mut tile_start = inclusive - total;
+        w = 0;
+        while w < warp_index {
+            tile_start += unsafe { WARP_TOTALS[w as usize] };
+            w += 1;
+        }
+        unsafe {
+            TILE_STARTS[tid as usize] = tile_start;
+        }
+        w = 0;
+        while w < WARPS {
+            unsafe {
+                WARP_SLOTS[(w * RADIX + tid) as usize] += tile_start;
+            }
+            w += 1;
+        }
+        thread::sync_threads();
+
+        // C: rank again and place each item in shared memory, in digit order.
+        round = 0;
+        while round < WARP_ROUNDS {
+            let index = segment + round * 32 + lane;
+            let valid = index < len;
+            let key = if valid { keys[index as usize] } else { 0 };
+            let digit = if valid {
+                (key >> shift) & (RADIX - 1)
+            } else {
+                RADIX
+            };
+            let peers = warp::match_any_sync(0xffff_ffff, digit);
+            let rank = (peers & lane_below).count_ones();
+            let slot = (warp_index * RADIX + digit) as usize;
+            let first = if valid {
+                unsafe { WARP_SLOTS[slot] }
+            } else {
+                0
+            };
+            warp::sync_mask(0xffff_ffff);
+            if valid {
+                let place = (first + rank) as usize;
+                unsafe {
+                    SORTED_KEYS[place] = key;
+                    if with_values {
+                        SORTED_VALUES[place] = values[index as usize];
+                    }
+                    if rank == 0 {
+                        WARP_SLOTS[slot] = first + peers.count_ones();
+                    }
+                }
+            }
+            warp::sync_mask(0xffff_ffff);
+            round += 1;
+        }
+        thread::sync_threads();
+
+        // D: copy out in digit order. Item `place` of digit `d` goes `place - TILE_STARTS[d]`
+        // past this tile's global start for `d`.
+        let in_tile = if len - base < TILE { len - base } else { TILE };
+        let mut place = tid;
+        while place < in_tile {
+            let key = unsafe { SORTED_KEYS[place as usize] };
+            let digit = ((key >> shift) & (RADIX - 1)) as usize;
+            let destination =
+                unsafe { GLOBAL_STARTS[digit] + place - TILE_STARTS[digit] } as usize;
+            unsafe {
+                *keys_out.add(destination) = key;
+                if with_values {
+                    *values_out.add(destination) = SORTED_VALUES[place as usize];
+                }
+            }
+            place += BLOCK;
+        }
+    }
+
+    /// Exclusive scan of each `TILE` of `data[..len]`, in place; each tile's total goes to
+    /// `tile_sums[tile]`.
+    ///
+    /// # Safety
+    ///
+    /// `data` must point to `len` words, and `tile_sums` to one word per tile. Launch one block
+    /// per `TILE` words.
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 1, block = (256, 1, 1))]
+    pub(super) unsafe fn scan_tiles(data: *mut u32, len: u32, tile_sums: *mut u32) {
+        static mut ITEMS_IN_TILE: SharedArray<u32, 4096> = SharedArray::UNINIT;
+        static mut WARP_SUMS: SharedArray<u32, 8> = SharedArray::UNINIT;
+        let tid = thread::threadIdx_x();
+        let tile = thread::blockIdx_x();
+        let base = tile * TILE;
+        let mut round = 0;
+        while round < ITEMS {
+            let local = round * BLOCK + tid;
+            let index = base + local;
+            let value = if index < len {
+                unsafe { *data.add(index as usize) }
+            } else {
+                0
+            };
+            unsafe {
+                ITEMS_IN_TILE[local as usize] = value;
+            }
+            round += 1;
+        }
+        thread::sync_threads();
+
+        // Each thread scans its own ITEMS consecutive items.
+        let first = tid * ITEMS;
+        let mut thread_sum = 0;
+        let mut item = 0;
+        while item < ITEMS {
+            let value = unsafe { ITEMS_IN_TILE[(first + item) as usize] };
+            unsafe {
+                ITEMS_IN_TILE[(first + item) as usize] = thread_sum;
+            }
+            thread_sum += value;
+            item += 1;
+        }
+
+        // Exclusive scan of the thread sums: within each warp, then across warps.
+        let lane = warp::lane_id();
+        let warp_index = tid / 32;
+        let mut inclusive = thread_sum;
+        let mut delta = 1;
+        while delta < 32 {
+            let up = warp::shuffle_up_sync(0xffff_ffff, inclusive, delta);
+            if lane >= delta {
+                inclusive += up;
+            }
+            delta *= 2;
+        }
+        if lane == 31 {
+            unsafe {
+                WARP_SUMS[warp_index as usize] = inclusive;
+            }
+        }
+        thread::sync_threads();
+        let mut warp_offset = 0;
+        let mut total = 0;
+        let mut w = 0;
+        while w < WARPS {
+            let sum = unsafe { WARP_SUMS[w as usize] };
+            if w < warp_index {
+                warp_offset += sum;
+            }
+            total += sum;
+            w += 1;
+        }
+        let thread_offset = warp_offset + inclusive - thread_sum;
+        item = 0;
+        while item < ITEMS {
+            unsafe {
+                ITEMS_IN_TILE[(first + item) as usize] += thread_offset;
+            }
+            item += 1;
+        }
+        thread::sync_threads();
+
+        round = 0;
+        while round < ITEMS {
+            let local = round * BLOCK + tid;
+            let index = base + local;
+            if index < len {
+                unsafe {
+                    *data.add(index as usize) = ITEMS_IN_TILE[local as usize];
+                }
+            }
+            round += 1;
+        }
+        if tid == 0 {
+            unsafe {
+                *tile_sums.add(tile as usize) = total;
+            }
+        }
+    }
+
+    /// Adds each tile's scanned offset to its items: the second half of a multi-tile scan.
+    ///
+    /// # Safety
+    ///
+    /// `data` must point to `len` words. Launch one block per `TILE` words.
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 1, block = (256, 1, 1))]
+    pub(super) unsafe fn add_tile_offsets(data: *mut u32, len: u32, tile_offsets: &[u32]) {
+        let tile = thread::blockIdx_x();
+        let offset = tile_offsets[tile as usize];
+        let base = tile * TILE;
+        let mut round = 0;
+        while round < ITEMS {
+            let index = base + round * BLOCK + thread::threadIdx_x();
+            if index < len {
+                unsafe {
+                    *data.add(index as usize) += offset;
+                }
+            }
+            round += 1;
+        }
+    }
+
+    /// Writes 1 where a sorted key starts a range, else 0. The keys `gap_left` and `gap_right`
+    /// count as adjacent when `has_gap` is 1 (for `char`, across the surrogates).
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 1, block = (256, 1, 1))]
+    pub(super) fn mark_starts(
+        sorted: &[u32],
+        gap_left: u32,
+        gap_right: u32,
+        has_gap: u32,
+        mut starts: DisjointSlice<'_, u32>,
+    ) {
+        if let Some((start, index)) = starts.get_mut_indexed() {
+            let i = index.get();
+            *start = u32::from(
+                i == 0 || !joins(sorted[i - 1], sorted[i], gap_left, gap_right, has_gap),
+            );
+        }
+    }
+
+    /// From the exclusive scan of `mark_starts`, writes each range's first key to `starts` and
+    /// its last key to `ends`.
+    ///
+    /// # Safety
+    ///
+    /// `starts` and `ends` must point to one word per range. Launch one thread per key.
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 1, block = (256, 1, 1))]
+    pub(super) unsafe fn emit_ranges(
+        sorted: &[u32],
+        scanned: &[u32],
+        gap_left: u32,
+        gap_right: u32,
+        has_gap: u32,
+        starts: *mut u32,
+        ends: *mut u32,
+    ) {
+        let index = thread::blockIdx_x() * BLOCK + thread::threadIdx_x();
+        let len = sorted.len() as u32;
+        if index < len {
+            let i = index as usize;
+            let key = sorted[i];
+            let is_start = index == 0 || !joins(sorted[i - 1], key, gap_left, gap_right, has_gap);
+            let is_end =
+                index + 1 == len || !joins(key, sorted[i + 1], gap_left, gap_right, has_gap);
+            let range = (scanned[i] + u32::from(is_start)) as usize - 1;
+            unsafe {
+                if is_start {
+                    *starts.add(range) = key;
+                }
+                if is_end {
+                    *ends.add(range) = key;
+                }
+            }
+        }
+    }
+
+    /// As [`mark_starts`], for 64-bit keys sorted as `(hi, lo)` word pairs. The gap is
+    /// `(gap_left_hi, gap_left_lo)` to `(gap_right_hi, gap_right_lo)`.
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 1, block = (256, 1, 1))]
+    pub(super) fn mark_starts_64(
+        hi: &[u32],
+        lo: &[u32],
+        gap_left_hi: u32,
+        gap_left_lo: u32,
+        gap_right_hi: u32,
+        gap_right_lo: u32,
+        has_gap: u32,
+        mut starts: DisjointSlice<'_, u32>,
+    ) {
+        if let Some((start, index)) = starts.get_mut_indexed() {
+            let i = index.get();
+            let gap = Gap64 {
+                left_hi: gap_left_hi,
+                left_lo: gap_left_lo,
+                right_hi: gap_right_hi,
+                right_lo: gap_right_lo,
+                enabled: has_gap == 1,
+            };
+            *start = u32::from(i == 0 || !joins_64(hi[i - 1], lo[i - 1], hi[i], lo[i], &gap));
+        }
+    }
+
+    /// As [`emit_ranges`], for 64-bit keys: each range's ends go out as `(hi, lo)` words.
+    ///
+    /// # Safety
+    ///
+    /// The four outputs must each point to one word per range. Launch one thread per key.
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 1, block = (256, 1, 1))]
+    pub(super) unsafe fn emit_ranges_64(
+        hi: &[u32],
+        lo: &[u32],
+        scanned: &[u32],
+        gap_left_hi: u32,
+        gap_left_lo: u32,
+        gap_right_hi: u32,
+        gap_right_lo: u32,
+        has_gap: u32,
+        starts_hi: *mut u32,
+        starts_lo: *mut u32,
+        ends_hi: *mut u32,
+        ends_lo: *mut u32,
+    ) {
+        let index = thread::blockIdx_x() * BLOCK + thread::threadIdx_x();
+        let len = hi.len() as u32;
+        if index < len {
+            let i = index as usize;
+            let gap = Gap64 {
+                left_hi: gap_left_hi,
+                left_lo: gap_left_lo,
+                right_hi: gap_right_hi,
+                right_lo: gap_right_lo,
+                enabled: has_gap == 1,
+            };
+            let is_start = index == 0 || !joins_64(hi[i - 1], lo[i - 1], hi[i], lo[i], &gap);
+            let is_end = index + 1 == len || !joins_64(hi[i], lo[i], hi[i + 1], lo[i + 1], &gap);
+            let range = (scanned[i] + u32::from(is_start)) as usize - 1;
+            unsafe {
+                if is_start {
+                    *starts_hi.add(range) = hi[i];
+                    *starts_lo.add(range) = lo[i];
+                }
+                if is_end {
+                    *ends_hi.add(range) = hi[i];
+                    *ends_lo.add(range) = lo[i];
+                }
+            }
+        }
+    }
+
+    /// Writes 1 where a sorted map entry is the last of its key (so its value wins), else 0.
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 1, block = (256, 1, 1))]
+    pub(super) fn mark_survivors(keys: &[u32], mut keep: DisjointSlice<'_, u32>) {
+        if let Some((survives, index)) = keep.get_mut_indexed() {
+            let i = index.get();
+            *survives = u32::from(i + 1 == keys.len() || keys[i + 1] != keys[i]);
+        }
+    }
+
+    /// From the exclusive scan of `mark_survivors`, packs the surviving keys and positions.
+    ///
+    /// # Safety
+    ///
+    /// `keys_out` and `positions_out` must point to one word per survivor. Launch one thread
+    /// per entry.
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 1, block = (256, 1, 1))]
+    pub(super) unsafe fn compact_survivors(
+        keys: &[u32],
+        positions: &[u32],
+        scanned: &[u32],
+        keys_out: *mut u32,
+        positions_out: *mut u32,
+    ) {
+        let index = thread::blockIdx_x() * BLOCK + thread::threadIdx_x();
+        let len = keys.len() as u32;
+        if index < len {
+            let i = index as usize;
+            if index + 1 == len || keys[i + 1] != keys[i] {
+                let slot = scanned[i] as usize;
+                unsafe {
+                    *keys_out.add(slot) = keys[i];
+                    *positions_out.add(slot) = positions[i];
+                }
+            }
+        }
+    }
+
+    /// Writes 1 where a surviving map entry starts a range: its key doesn't follow the previous
+    /// survivor's, or its value differs. Values are `value_lo` words, plus `value_hi` words if
+    /// that slice isn't empty.
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 1, block = (256, 1, 1))]
+    pub(super) fn mark_map_starts(
+        keys: &[u32],
+        positions: &[u32],
+        value_lo: &[u32],
+        value_hi: &[u32],
+        gap_left: u32,
+        gap_right: u32,
+        has_gap: u32,
+        mut starts: DisjointSlice<'_, u32>,
+    ) {
+        if let Some((start, index)) = starts.get_mut_indexed() {
+            let i = index.get();
+            let values = Values {
+                lo: value_lo,
+                hi: value_hi,
+            };
+            *start = u32::from(
+                i == 0
+                    || !map_joins(keys, positions, &values, i - 1, gap_left, gap_right, has_gap),
+            );
+        }
+    }
+
+    /// From the exclusive scan of `mark_map_starts`, writes each range's first and last keys and
+    /// the input position of its first entry (whose value is the range's).
+    ///
+    /// # Safety
+    ///
+    /// `starts`, `ends`, and `firsts` must point to one word per range. Launch one thread per
+    /// survivor.
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 1, block = (256, 1, 1))]
+    pub(super) unsafe fn emit_map_ranges(
+        keys: &[u32],
+        positions: &[u32],
+        value_lo: &[u32],
+        value_hi: &[u32],
+        scanned: &[u32],
+        gap_left: u32,
+        gap_right: u32,
+        has_gap: u32,
+        starts: *mut u32,
+        ends: *mut u32,
+        firsts: *mut u32,
+    ) {
+        let index = thread::blockIdx_x() * BLOCK + thread::threadIdx_x();
+        let len = keys.len() as u32;
+        if index < len {
+            let i = index as usize;
+            let values = Values {
+                lo: value_lo,
+                hi: value_hi,
+            };
+            let is_start = index == 0
+                || !map_joins(keys, positions, &values, i - 1, gap_left, gap_right, has_gap);
+            let is_end = index + 1 == len
+                || !map_joins(keys, positions, &values, i, gap_left, gap_right, has_gap);
+            let range = (scanned[i] + u32::from(is_start)) as usize - 1;
+            unsafe {
+                if is_start {
+                    *starts.add(range) = keys[i];
+                    *firsts.add(range) = positions[i];
+                }
+                if is_end {
+                    *ends.add(range) = keys[i];
+                }
+            }
+        }
+    }
+}
+
+/// Whether sorted keys `left` then `right` belong to the same range.
+fn joins(left: u32, right: u32, gap_left: u32, gap_right: u32, has_gap: u32) -> bool {
+    left == right
+        || (left != u32::MAX && right == left + 1)
+        || (has_gap == 1 && left == gap_left && right == gap_right)
+}
+
+/// The exceptional adjacent pair of 64-bit keys, if `enabled`, as words.
+struct Gap64 {
+    left_hi: u32,
+    left_lo: u32,
+    right_hi: u32,
+    right_lo: u32,
+    enabled: bool,
+}
+
+/// Whether sorted 64-bit keys `(left_hi, left_lo)` then `(right_hi, right_lo)` belong to the
+/// same range.
+fn joins_64(left_hi: u32, left_lo: u32, right_hi: u32, right_lo: u32, gap: &Gap64) -> bool {
+    let same = left_hi == right_hi && left_lo == right_lo;
+    let next_in_word = left_hi == right_hi && left_lo != u32::MAX && right_lo == left_lo + 1;
+    let carry =
+        left_lo == u32::MAX && right_lo == 0 && left_hi != u32::MAX && right_hi == left_hi + 1;
+    let exceptional = gap.enabled
+        && left_hi == gap.left_hi
+        && left_lo == gap.left_lo
+        && right_hi == gap.right_hi
+        && right_lo == gap.right_lo;
+    same || next_in_word || carry || exceptional
+}
+
+/// A map's values as one or two words each, indexed by input position.
+struct Values<'a> {
+    lo: &'a [u32],
+    hi: &'a [u32],
+}
+
+/// Whether survivors `left` and `left + 1` share a range: adjacent keys and equal values.
+fn map_joins(
+    keys: &[u32],
+    positions: &[u32],
+    values: &Values<'_>,
+    left: usize,
+    gap_left: u32,
+    gap_right: u32,
+    has_gap: u32,
+) -> bool {
+    let key = keys[left];
+    let next = keys[left + 1];
+    let adjacent = (key != u32::MAX && next == key + 1)
+        || (has_gap == 1 && key == gap_left && next == gap_right);
+    if !adjacent {
+        return false;
+    }
+    let a = positions[left] as usize;
+    let b = positions[left + 1] as usize;
+    values.lo[a] == values.lo[b] && (values.hi.is_empty() || values.hi[a] == values.hi[b])
+}
 
 pub(super) fn cuda_context() -> Option<&'static Arc<CudaContext>> {
     static CONTEXT: OnceLock<Option<Arc<CudaContext>>> = OnceLock::new();
@@ -87,623 +846,203 @@ pub(super) fn map_ranges(
 /// A map's ranges as `(start, end)` key words, and each range's first input position.
 type MapRanges = (Vec<(u32, u32)>, Vec<u32>);
 
-fn finish<R>(result: Result<R, DriverError>) -> Option<R> {
+/// Why a CUDA call failed: the GPU ran out of memory (the caller may fall back to the CPU), or
+/// anything else (a bug or a broken driver).
+#[derive(Debug)]
+enum Failure {
+    OutOfMemory,
+    Other(String),
+}
+
+impl From<DriverError> for Failure {
+    fn from(error: DriverError) -> Self {
+        if error.0 == cudaError_enum_CUDA_ERROR_OUT_OF_MEMORY {
+            Self::OutOfMemory
+        } else {
+            Self::Other(std::format!("{error:?}"))
+        }
+    }
+}
+
+impl From<LaunchContractError> for Failure {
+    fn from(error: LaunchContractError) -> Self {
+        match error {
+            LaunchContractError::Driver(error) => error.into(),
+            error => Self::Other(std::format!("{error}")),
+        }
+    }
+}
+
+impl From<EmbeddedModuleError> for Failure {
+    fn from(error: EmbeddedModuleError) -> Self {
+        match error {
+            EmbeddedModuleError::Core(cuda_core::EmbeddedModuleError::Driver(error)) => {
+                error.into()
+            }
+            error => Self::Other(std::format!("{error}")),
+        }
+    }
+}
+
+fn finish<R>(result: Result<R, Failure>) -> Option<R> {
     match result {
         Ok(ranges) => Some(ranges),
-        Err(error) if error.0 == cudaError_enum_CUDA_ERROR_OUT_OF_MEMORY => None,
-        Err(error) => panic!("CUDA range execution failed: {error:?}"),
+        Err(Failure::OutOfMemory) => None,
+        Err(Failure::Other(error)) => panic!("CUDA range execution failed: {error}"),
     }
 }
 
-fn try_ranges_32<T: Copy>(
-    context: &Arc<CudaContext>,
-    values: &[T],
-    encode: impl Fn(T) -> u32,
-    gap: Option<(u32, u32)>,
-) -> Result<Vec<(u32, u32)>, DriverError> {
-    let Some(len) = length(values.len()) else {
-        return Ok(Vec::new());
-    };
-    let n = values.len();
-    let kernels = Kernels::load(context)?;
-    let stream = context.default_stream();
-    let mut arena = Arena::new(
-        &stream,
-        2 * aligned(n) + sort_scratch(len) + scan_scratch(len),
-    )?;
-    let mut sorted = arena.take(n);
-    let mut spare = arena.take(n);
-    let sort_space = arena.take(sort_scratch(len));
-    let scan_space = arena.take(scan_scratch(len));
-    upload(context, &stream, values, encode, sorted)?;
-    kernels.radix_sort(&stream, &mut sorted, &mut spare, None, sort_space)?;
-
-    // Ranges: mark each range's first key, scan the marks, then emit each range's ends.
-    let (gap_left, gap_right) = gap.unwrap_or((0, 0));
-    let gap_words = [
-        u64::from(gap_left),
-        u64::from(gap_right),
-        u64::from(gap.is_some()),
-    ];
-    let marks = spare;
-    let blocks = len.div_ceil(BLOCK);
-    let mut arguments = sorted.argument().to_vec();
-    arguments.extend(gap_words);
-    arguments.push(marks.pointer);
-    launch(&stream, &kernels.mark_starts, blocks, &arguments)?;
-    let count = read_count(&stream, kernels.exclusive_scan(&stream, marks, scan_space)?)?;
-    let mut outputs = Arena::new(&stream, 2 * aligned(count))?;
-    let (starts, ends) = (outputs.take(count), outputs.take(count));
-    let mut arguments = [sorted.argument(), marks.argument()].concat();
-    arguments.extend(gap_words);
-    arguments.extend([starts.pointer, ends.pointer]);
-    launch(&stream, &kernels.emit_ranges, blocks, &arguments)?;
-    let host = read(&stream, outputs.used())?;
-    let (starts, ends) = (&host[..count], &host[aligned(count)..][..count]);
-    release(&stream, [arena, outputs])?;
-    Ok(starts.iter().copied().zip(ends.iter().copied()).collect())
+/// The loaded kernels and the stream they run on, for one call.
+struct Gpu {
+    context: Arc<CudaContext>,
+    stream: Arc<CudaStream>,
+    module: kernels::LoadedModule,
 }
 
-fn try_ranges_64<T: Copy>(
-    context: &Arc<CudaContext>,
-    values: &[T],
-    encode: impl Fn(T) -> u64,
-    gap: Option<(u64, u64)>,
-) -> Result<Vec<(u64, u64)>, DriverError> {
-    let Some(len) = length(values.len()) else {
-        return Ok(Vec::new());
-    };
-    let n = values.len();
-    let kernels = Kernels::load(context)?;
-    let stream = context.default_stream();
-    let mut arena = Arena::new(
-        &stream,
-        4 * aligned(n) + sort_scratch(len) + scan_scratch(len),
-    )?;
-    let (mut lo, mut hi) = (arena.take(n), arena.take(n));
-    let (mut lo_spare, mut hi_spare) = (arena.take(n), arena.take(n));
-    let sort_space = arena.take(sort_scratch(len));
-    let scan_space = arena.take(scan_scratch(len));
-    upload(
-        context,
-        &stream,
-        values,
-        |value| low_word(encode(value)),
-        lo,
-    )?;
-    upload(
-        context,
-        &stream,
-        values,
-        |value| high_word(encode(value)),
-        hi,
-    )?;
-
-    // Sort by the low word carrying the high word, then stably by the high word carrying the
-    // low word: the keys end up in `(hi, lo)` order.
-    kernels.radix_sort(
-        &stream,
-        &mut lo,
-        &mut lo_spare,
-        Some((&mut hi, &mut hi_spare)),
-        sort_space,
-    )?;
-    kernels.radix_sort(
-        &stream,
-        &mut hi,
-        &mut hi_spare,
-        Some((&mut lo, &mut lo_spare)),
-        sort_space,
-    )?;
-
-    let (gap_left, gap_right) = gap.unwrap_or((0, 0));
-    let gap_words = [
-        u64::from(high_word(gap_left)),
-        u64::from(low_word(gap_left)),
-        u64::from(high_word(gap_right)),
-        u64::from(low_word(gap_right)),
-        u64::from(gap.is_some()),
-    ];
-    let marks = lo_spare;
-    let blocks = len.div_ceil(BLOCK);
-    let mut arguments = [hi.argument(), lo.argument()].concat();
-    arguments.extend(gap_words);
-    arguments.push(marks.pointer);
-    launch(&stream, &kernels.mark_starts_64, blocks, &arguments)?;
-    let count = read_count(&stream, kernels.exclusive_scan(&stream, marks, scan_space)?)?;
-    let mut outputs = Arena::new(&stream, 4 * aligned(count))?;
-    let ends = [(); 4].map(|()| outputs.take(count));
-    let mut arguments = [hi.argument(), lo.argument(), marks.argument()].concat();
-    arguments.extend(gap_words);
-    arguments.extend(ends.iter().map(|words| words.pointer));
-    launch(&stream, &kernels.emit_ranges_64, blocks, &arguments)?;
-    let host = read(&stream, outputs.used())?;
-    let column = |index: usize| &host[index * aligned(count)..][..count];
-    let (starts_hi, starts_lo, ends_hi, ends_lo) = (column(0), column(1), column(2), column(3));
-    let ranges = (0..count)
-        .map(|range| {
-            (
-                join_words(starts_hi[range], starts_lo[range]),
-                join_words(ends_hi[range], ends_lo[range]),
-            )
-        })
-        .collect();
-    release(&stream, [arena, outputs])?;
-    Ok(ranges)
-}
-
-fn try_map_ranges(
-    context: &Arc<CudaContext>,
-    keys: &[u32],
-    gap: Option<(u32, u32)>,
-    value_lo: &[u32],
-    value_hi: Option<&[u32]>,
-) -> Result<MapRanges, DriverError> {
-    let Some(len) = length(keys.len()) else {
-        return Ok((Vec::new(), Vec::new()));
-    };
-    let n = keys.len();
-    let kernels = Kernels::load(context)?;
-    let stream = context.default_stream();
-    let value_columns = if value_hi.is_some() { 2 } else { 1 };
-    let mut arena = Arena::new(
-        &stream,
-        (5 + value_columns) * aligned(n) + sort_scratch(len) + scan_scratch(len),
-    )?;
-    let survivors = survivors(context, &kernels, &stream, &mut arena, keys)?;
-
-    // Ranges among the survivors: keys adjacent and values equal.
-    let lo_words = arena.take(n);
-    upload(context, &stream, value_lo, |word| word, lo_words)?;
-    let hi_words = match value_hi {
-        Some(value_hi) => {
-            let words = arena.take(n);
-            upload(context, &stream, value_hi, |word| word, words)?;
-            words
-        }
-        // An empty slice: the kernels then compare one word.
-        None => Words {
-            pointer: lo_words.pointer,
-            len: 0,
-        },
-    };
-    let (gap_left, gap_right) = gap.unwrap_or((0, 0));
-    let gap_words = [
-        u64::from(gap_left),
-        u64::from(gap_right),
-        u64::from(gap.is_some()),
-    ];
-    let Survivors {
-        keys: survivor_keys,
-        positions: survivor_positions,
-        marks,
-        scan_space,
-    } = survivors;
-    let survivor_count = u32::try_from(survivor_keys.len).expect("survivors fit in u32");
-    let survivor_blocks = survivor_count.div_ceil(BLOCK);
-    let entries = [
-        survivor_keys.argument(),
-        survivor_positions.argument(),
-        lo_words.argument(),
-        hi_words.argument(),
-    ]
-    .concat();
-    let mut arguments = entries.clone();
-    arguments.extend(gap_words);
-    arguments.push(marks.pointer);
-    launch(
-        &stream,
-        &kernels.mark_map_starts,
-        survivor_blocks,
-        &arguments,
-    )?;
-    let count = read_count(&stream, kernels.exclusive_scan(&stream, marks, scan_space)?)?;
-    let mut outputs = Arena::new(&stream, 3 * aligned(count))?;
-    let columns = [(); 3].map(|()| outputs.take(count));
-    let mut arguments = entries;
-    arguments.extend(marks.argument());
-    arguments.extend(gap_words);
-    arguments.extend(columns.iter().map(|words| words.pointer));
-    launch(
-        &stream,
-        &kernels.emit_map_ranges,
-        survivor_blocks,
-        &arguments,
-    )?;
-    let host = read(&stream, outputs.used())?;
-    let column = |index: usize| &host[index * aligned(count)..][..count];
-    let ranges = column(0)
-        .iter()
-        .copied()
-        .zip(column(1).iter().copied())
-        .collect();
-    let firsts = column(2).to_vec();
-    release(&stream, [arena, outputs])?;
-    Ok((ranges, firsts))
-}
-
-/// A map's surviving entries (the last of each key), sorted by key, on the device.
-struct Survivors {
-    keys: Words,
-    positions: Words,
-    /// Scratch with room for one word per survivor, and for scanning them.
-    marks: Words,
-    scan_space: Words,
-}
-
-/// Sorts the keys carrying their input positions, then keeps the last entry of each key: the
-/// sort is stable, so that entry has the key's last value. Takes five columns, the sort's
-/// scratch, and the scan's scratch from `arena`.
-fn survivors(
-    context: &Arc<CudaContext>,
-    kernels: &Kernels,
-    stream: &Arc<CudaStream>,
-    arena: &mut Arena,
-    keys: &[u32],
-) -> Result<Survivors, DriverError> {
-    let n = keys.len();
-    let len = u32::try_from(n).expect("CUDA input exceeds u32 positions");
-    let blocks = len.div_ceil(BLOCK);
-    let (mut sorted, mut positions) = (arena.take(n), arena.take(n));
-    let (mut sorted_spare, mut positions_spare) = (arena.take(n), arena.take(n));
-    let marks = arena.take(n);
-    let sort_space = arena.take(sort_scratch(len));
-    let scan_space = arena.take(scan_scratch(len));
-    upload(context, stream, keys, |key| key, sorted)?;
-    launch(
-        stream,
-        &kernels.fill_positions,
-        blocks,
-        &[positions.pointer, u64::from(len)],
-    )?;
-    kernels.radix_sort(
-        stream,
-        &mut sorted,
-        &mut sorted_spare,
-        Some((&mut positions, &mut positions_spare)),
-        sort_space,
-    )?;
-
-    launch(
-        stream,
-        &kernels.mark_survivors,
-        blocks,
-        &[sorted.pointer, u64::from(len), marks.pointer],
-    )?;
-    let count = read_count(stream, kernels.exclusive_scan(stream, marks, scan_space)?)?;
-    let mut arguments = [sorted.argument(), positions.argument(), marks.argument()].concat();
-    arguments.extend([sorted_spare.pointer, positions_spare.pointer]);
-    launch(stream, &kernels.compact_survivors, blocks, &arguments)?;
-    Ok(Survivors {
-        keys: sorted_spare.prefix(count),
-        positions: positions_spare.prefix(count),
-        marks: marks.prefix(count),
-        scan_space,
-    })
-}
-
-/// The input length as the kernels' `u32`, or `None` if the input is empty.
-fn length(len: usize) -> Option<u32> {
-    (len != 0).then(|| u32::try_from(len).expect("CUDA input exceeds u32 positions"))
-}
-
-/// Encodes `values` into `keys` on the device. Large inputs go a chunk at a time through two
-/// pinned host buffers, so encoding one chunk overlaps copying the one before it. (Encoding all
-/// of a large input into fresh memory first is slow: its page faults cost more than the copy.)
-fn upload<T: Copy>(
-    context: &Arc<CudaContext>,
-    stream: &CudaStream,
-    values: &[T],
-    encode: impl Fn(T) -> u32,
-    keys: Words,
-) -> Result<(), DriverError> {
-    debug_assert_eq!(
-        values.len(),
-        keys.len,
-        "upload into a column of another length"
-    );
-    if values.len() <= PAGEABLE_UPLOAD {
-        let encoded: Vec<u32> = values.iter().map(|&value| encode(value)).collect();
-        // SAFETY: the destination is `keys`, and the copy finishes before `encoded` is dropped
-        // (we synchronize below).
-        unsafe {
-            memcpy_htod_async(
-                keys.pointer,
-                encoded.as_ptr(),
-                encoded.len() * size_of::<u32>(),
-                stream.cu_stream(),
-            )?;
-        }
-        return stream.synchronize();
-    }
-    let chunk = CHUNK.min(values.len());
-    let mut staging = [
-        PinnedHostBuffer::<u32>::zeroed(context, chunk)?,
-        PinnedHostBuffer::<u32>::zeroed(context, chunk)?,
-    ];
-    for (index, values) in values.chunks(chunk).enumerate() {
-        let buffer = &mut staging[index % 2];
-        for (key, &value) in buffer.iter_mut().zip(values) {
-            *key = encode(value);
-        }
-        // The copy issued two chunks ago read this buffer; wait for it (and the one after it).
-        stream.synchronize()?;
-        let offset = (index * chunk * size_of::<u32>()) as u64;
-        // SAFETY: the destination range lies inside `keys`, the source is pinned and stays
-        // untouched until the next synchronize, and both outlive the copy (we synchronize below).
-        unsafe {
-            memcpy_htod_async(
-                keys.pointer + offset,
-                buffer.as_ptr(),
-                values.len() * size_of::<u32>(),
-                stream.cu_stream(),
-            )?;
-        }
-    }
-    stream.synchronize()
-}
-
-/// Copies a few `words` to the device.
-fn upload_words(stream: &CudaStream, words: &[u32], destination: Words) -> Result<(), DriverError> {
-    debug_assert!(
-        words.len() <= destination.len,
-        "upload larger than its destination"
-    );
-    // SAFETY: the destination has room, and the copy finishes before `words` can change (we
-    // synchronize below).
-    unsafe {
-        memcpy_htod_async(
-            destination.pointer,
-            words.as_ptr(),
-            size_of_val(words),
-            stream.cu_stream(),
-        )?;
-    }
-    stream.synchronize()
-}
-
-/// Zeroes `words` on the device.
-fn zero(stream: &CudaStream, words: Words) -> Result<(), DriverError> {
-    // SAFETY: `words` is device memory of this many bytes, and everything runs on `stream`.
-    unsafe {
-        memset_d8_async(
-            words.pointer,
-            0,
-            words.len * size_of::<u32>(),
-            stream.cu_stream(),
-        )
-    }
-}
-
-/// Copies `words` from the device.
-fn read(stream: &CudaStream, words: Words) -> Result<Vec<u32>, DriverError> {
-    let mut host = Vec::with_capacity(words.len);
-    // SAFETY: `host` has room for `words.len` words, which the copy fills before `set_len`
-    // (we synchronize first).
-    unsafe {
-        memcpy_dtoh_async(
-            host.as_mut_ptr(),
-            words.pointer,
-            words.len * size_of::<u32>(),
-            stream.cu_stream(),
-        )?;
-        stream.synchronize()?;
-        host.set_len(words.len);
-    }
-    Ok(host)
-}
-
-/// Reads a scan's one-word total.
-fn read_count(stream: &CudaStream, total: Words) -> Result<usize, DriverError> {
-    Ok(read(stream, total)?[0] as usize)
-}
-
-/// Launches `function` on `blocks` blocks of [`BLOCK`] threads. Each argument is passed
-/// from the low bytes of a `u64`, which suits the kernels' `u32` and 64-bit parameters
-/// (a slice is two: its pointer and its length).
-fn launch(
-    stream: &CudaStream,
-    function: &CudaFunction,
-    blocks: u32,
-    arguments: &[u64],
-) -> Result<(), DriverError> {
-    let mut storage = arguments.to_vec();
-    let mut parameters: Vec<*mut c_void> = storage
-        .iter_mut()
-        .map(|argument| core::ptr::from_mut(argument).cast())
-        .collect();
-    // SAFETY: the arguments match the kernel's PTX parameters in order and kind (see
-    // `cuda-kernels/`), every pointer is live device memory of the length passed with it,
-    // and each kernel bounds-checks its own grid against those lengths.
-    unsafe {
-        launch_kernel_on_stream(
-            function,
-            (blocks, 1, 1),
-            (BLOCK, 1, 1),
-            0,
-            stream,
-            &mut parameters,
-        )
-    }
-}
-
-/// `len` rounded up to whole [`ALIGN_WORDS`].
-const fn aligned(len: usize) -> usize {
-    len.next_multiple_of(ALIGN_WORDS)
-}
-
-/// A view of `len` words of device memory, inside an [`Arena`].
-#[derive(Clone, Copy)]
-struct Words {
-    pointer: u64,
-    len: usize,
-}
-
-impl Words {
-    /// The kernel arguments for this view as a slice: its pointer and its length.
-    const fn argument(self) -> [u64; 2] {
-        [self.pointer, self.len as u64]
-    }
-
-    /// The first `len` words.
-    fn prefix(self, len: usize) -> Self {
-        assert!(len <= self.len, "prefix past the end of a device view");
-        Self {
-            pointer: self.pointer,
-            len,
-        }
-    }
-
-    /// The first `len` words, and the rest after rounding `len` up to [`ALIGN_WORDS`].
-    fn split(self, len: usize) -> (Self, Self) {
-        let taken = aligned(len);
-        assert!(taken <= self.len, "device scratch is smaller than planned");
-        (
-            self.prefix(len),
-            Self {
-                pointer: self.pointer + (taken * size_of::<u32>()) as u64,
-                len: self.len - taken,
-            },
-        )
-    }
-}
-
-/// One stream-ordered (`cuMemAllocAsync`) allocation, carved into [`Words`] views, so a call
-/// allocates once per phase rather than once per buffer. Every view is written (by copy or
-/// kernel) before it is read. Plain `cuMemFree` of large buffers is slow (about 95 ms per
-/// 100M-key call under WSL), so free arenas with [`release`].
-struct Arena {
-    buffer: DeviceBuffer<u32>,
-    rest: Words,
-}
-
-impl Arena {
-    /// An arena of `len` words; [`Arena::take`] rounds each view up to [`ALIGN_WORDS`].
-    fn new(stream: &Arc<CudaStream>, len: usize) -> Result<Self, DriverError> {
-        // SAFETY: every view is written before it is read (see above).
-        let buffer = unsafe { DeviceBuffer::uninitialized_async(stream, len.max(1))? };
-        let rest = Words {
-            pointer: buffer.cu_deviceptr(),
-            len,
-        };
-        Ok(Self { buffer, rest })
-    }
-
-    fn take(&mut self, len: usize) -> Words {
-        let (taken, rest) = self.rest.split(len);
-        self.rest = rest;
-        taken
-    }
-
-    /// Everything taken so far, as one view.
-    fn used(&self) -> Words {
-        Words {
-            pointer: self.buffer.cu_deviceptr(),
-            len: usize::try_from(self.rest.pointer - self.buffer.cu_deviceptr())
-                .expect("arena offsets fit in usize")
-                / size_of::<u32>(),
-        }
-    }
-}
-
-/// Frees `arenas` in stream order, then waits once, so the memory is back with the driver when
-/// the call returns. (Dropping a buffer instead synchronizes the context every time.)
-fn release(
-    stream: &CudaStream,
-    arenas: impl IntoIterator<Item = Arena>,
-) -> Result<(), DriverError> {
-    for arena in arenas {
-        // SAFETY: all of this module's work runs on `stream`, so nothing else can still be
-        // using the memory when the free runs.
-        unsafe { arena.buffer.drop_async(stream)? };
-    }
-    stream.synchronize()
-}
-
-/// Words of scratch for [`Kernels::exclusive_scan`] of `len` words.
-fn scan_scratch(len: u32) -> usize {
-    let tiles = len.div_ceil(TILE);
-    if tiles <= 1 {
-        aligned(1)
-    } else {
-        aligned(tiles as usize) + scan_scratch(tiles)
-    }
-}
-
-/// Words of scratch for [`Kernels::radix_sort`] of `len` keys.
-const fn sort_scratch(len: u32) -> usize {
-    2 * aligned(4 * RADIX as usize) + aligned(look_back_words(len.div_ceil(TILE)))
-}
-
-/// Words for a scatter's look-back state: a 64-bit status per tile and digit, then the ticket.
-const fn look_back_words(tiles: u32) -> usize {
-    tiles as usize * RADIX as usize * 2 + 1
-}
-
-struct Kernels {
-    // Keeps the functions' module loaded.
-    _module: Arc<CudaModule>,
-    radix_scatter: CudaFunction,
-    digit_counts: CudaFunction,
-    scan_tiles: CudaFunction,
-    add_tile_offsets: CudaFunction,
-    mark_starts: CudaFunction,
-    emit_ranges: CudaFunction,
-    mark_starts_64: CudaFunction,
-    emit_ranges_64: CudaFunction,
-    fill_positions: CudaFunction,
-    mark_survivors: CudaFunction,
-    compact_survivors: CudaFunction,
-    mark_map_starts: CudaFunction,
-    emit_map_ranges: CudaFunction,
-}
-
-impl Kernels {
-    fn load(context: &Arc<CudaContext>) -> Result<Self, DriverError> {
-        let module = context.load_module_from_ptx_src(PTX)?;
+impl Gpu {
+    fn new(context: &Arc<CudaContext>) -> Result<Self, Failure> {
+        // SAFETY: this crate owns the device code embedded for `kernels`.
+        let module = unsafe { kernels::load(context)? };
         Ok(Self {
-            radix_scatter: module.load_function("radix_scatter")?,
-            digit_counts: module.load_function("digit_counts")?,
-            scan_tiles: module.load_function("scan_tiles")?,
-            add_tile_offsets: module.load_function("add_tile_offsets")?,
-            mark_starts: module.load_function("mark_starts")?,
-            emit_ranges: module.load_function("emit_ranges")?,
-            mark_starts_64: module.load_function("mark_starts_64")?,
-            emit_ranges_64: module.load_function("emit_ranges_64")?,
-            fill_positions: module.load_function("fill_positions")?,
-            mark_survivors: module.load_function("mark_survivors")?,
-            compact_survivors: module.load_function("compact_survivors")?,
-            mark_map_starts: module.load_function("mark_map_starts")?,
-            emit_map_ranges: module.load_function("emit_map_ranges")?,
-            _module: module,
+            context: Arc::clone(context),
+            stream: context.default_stream(),
+            module,
         })
     }
 
-    /// Stable LSD radix sort of the keys: up to four 8-bit passes between `keys` and
-    /// `keys_spare`, carrying `values` (and their spare) along if given. The result ends up back
-    /// in `keys` (and `values`). A pass where every key has the same digit would change nothing,
-    /// so it is skipped. `scratch` must hold [`sort_scratch`] words.
+    /// A launch of one 256-thread block per `per_block` of `items`.
+    fn blocks(items: usize, per_block: u32) -> LaunchConfig1D {
+        let blocks = u32::try_from(items.div_ceil(per_block as usize).max(1))
+            .expect("CUDA grid exceeds u32 blocks");
+        LaunchConfig1D::new(blocks, BLOCK, 0)
+    }
+
+    /// A launch of one thread per item.
+    fn threads(items: usize) -> LaunchConfig1D {
+        Self::blocks(items, BLOCK)
+    }
+
+    /// A launch of one block per tile of `items`.
+    fn tiles(items: usize) -> LaunchConfig1D {
+        Self::blocks(items, TILE)
+    }
+
+    /// A stream-ordered (`cuMemAllocAsync`) buffer that a kernel or copy fills before anything
+    /// reads it. Plain `cuMemFree` of large buffers is slow (about 95 ms per 100M-key call under
+    /// WSL), so free buffers with [`Gpu::release`].
+    fn scratch<T: DeviceCopy>(&self, len: usize) -> Result<DeviceBuffer<T>, Failure> {
+        // SAFETY: every caller writes the whole buffer (by copy or kernel) before reading it.
+        Ok(unsafe { DeviceBuffer::uninitialized_async(&self.stream, len)? })
+    }
+
+    /// A zeroed stream-ordered buffer.
+    fn zeroed<T: DeviceCopy>(&self, len: usize) -> Result<DeviceBuffer<T>, Failure> {
+        let mut buffer = self.scratch(len)?;
+        buffer.zero_async(&self.stream)?;
+        Ok(buffer)
+    }
+
+    /// Frees `buffers` in stream order. (Dropping a buffer instead synchronizes the context.)
+    fn release<T: DeviceCopy>(
+        &self,
+        buffers: impl IntoIterator<Item = DeviceBuffer<T>>,
+    ) -> Result<(), Failure> {
+        for buffer in buffers {
+            // SAFETY: all of this module's work runs on `self.stream`, so nothing else can still
+            // be using the buffer when the free runs.
+            unsafe { buffer.drop_async(&self.stream)? };
+        }
+        Ok(())
+    }
+
+    /// Waits for all queued work, so the freed memory is back with the driver.
+    fn finish(&self) -> Result<(), Failure> {
+        Ok(self.stream.synchronize()?)
+    }
+
+    /// Encodes `values` into a new device buffer. Large inputs go a chunk at a time through two
+    /// pinned host buffers, so encoding one chunk overlaps copying the one before it. (Encoding
+    /// all of a large input into fresh memory first is slow: its page faults cost more than the
+    /// copy.)
+    fn upload<T: Copy>(
+        &self,
+        values: &[T],
+        encode: impl Fn(T) -> u32,
+    ) -> Result<DeviceBuffer<u32>, Failure> {
+        let keys = self.scratch(values.len())?;
+        if values.len() <= PAGEABLE_UPLOAD {
+            let encoded: Vec<u32> = values.iter().map(|&value| encode(value)).collect();
+            // SAFETY: the destination is `keys`, of this length, and the copy finishes before
+            // `encoded` is dropped (we synchronize below).
+            unsafe {
+                memcpy_htod_async(
+                    keys.cu_deviceptr(),
+                    encoded.as_ptr(),
+                    size_of_val(encoded.as_slice()),
+                    self.stream.cu_stream(),
+                )?;
+            }
+            self.stream.synchronize()?;
+            return Ok(keys);
+        }
+        let mut staging = [
+            PinnedHostBuffer::<u32>::zeroed(&self.context, CHUNK)?,
+            PinnedHostBuffer::<u32>::zeroed(&self.context, CHUNK)?,
+        ];
+        for (index, values) in values.chunks(CHUNK).enumerate() {
+            let buffer = &mut staging[index % 2];
+            for (key, &value) in buffer.iter_mut().zip(values) {
+                *key = encode(value);
+            }
+            // The copy issued two chunks ago read this buffer; wait for it (and the one after).
+            self.stream.synchronize()?;
+            let offset = (index * CHUNK * size_of::<u32>()) as u64;
+            // SAFETY: the destination range lies inside `keys`, the source is pinned and stays
+            // untouched until the next synchronize, and both outlive the copy (we synchronize
+            // below).
+            unsafe {
+                memcpy_htod_async(
+                    keys.cu_deviceptr() + offset,
+                    buffer.as_ptr(),
+                    values.len() * size_of::<u32>(),
+                    self.stream.cu_stream(),
+                )?;
+            }
+        }
+        self.stream.synchronize()?;
+        Ok(keys)
+    }
+
+    /// Reads a scan's one-word total.
+    fn read_count(&self, total: &DeviceBuffer<u32>) -> Result<usize, Failure> {
+        Ok(total.to_host_vec(&self.stream)?[0] as usize)
+    }
+
+    /// Stable LSD radix sort of `keys`: up to four 8-bit passes between `keys` and `keys_spare`,
+    /// carrying `values` (and their spare) along if given. The result ends up back in `keys` (and
+    /// `values`). A pass where every key has the same digit would change nothing, so it is
+    /// skipped.
     fn radix_sort(
         &self,
-        stream: &Arc<CudaStream>,
-        keys: &mut Words,
-        keys_spare: &mut Words,
-        mut values: Option<(&mut Words, &mut Words)>,
-        scratch: Words,
-    ) -> Result<(), DriverError> {
-        let len = u32::try_from(keys.len).expect("CUDA input exceeds u32 positions");
-        let tiles = len.div_ceil(TILE);
-        let (digit_counts, rest) = scratch.split(4 * RADIX as usize);
-        let (digit_bases, rest) = rest.split(4 * RADIX as usize);
-        let (look_back, _) = rest.split(look_back_words(tiles));
-        zero(stream, digit_counts)?;
-        launch(
-            stream,
-            &self.digit_counts,
-            tiles,
-            &[keys.pointer, keys.len as u64, digit_counts.pointer],
-        )?;
-        let counts = read(stream, digit_counts)?;
+        keys: &mut DeviceBuffer<u32>,
+        keys_spare: &mut DeviceBuffer<u32>,
+        mut values: Option<(&mut DeviceBuffer<u32>, &mut DeviceBuffer<u32>)>,
+    ) -> Result<(), Failure> {
+        let len = u32::try_from(keys.len()).expect("CUDA input exceeds u32 positions");
+        let module = &self.module;
+        let tiles = Self::tiles(keys.len());
+        let mut digit_bases = self.zeroed::<u32>(4 * RADIX as usize)?;
+        let prepared = module.prepare_digit_counts(tiles)?;
+        // SAFETY: `digit_bases` holds 1,024 zeroed words, with one block per tile.
+        unsafe {
+            module.digit_counts(
+                &self.stream,
+                &prepared,
+                keys,
+                digit_bases.cu_deviceptr() as *mut u32,
+            )?;
+        }
+        let counts = digit_bases.to_host_vec(&self.stream)?;
         // Where each digit starts, for each pass: exclusive sums of its counts.
         let bases: Vec<u32> = counts
             .chunks(RADIX as usize)
@@ -715,66 +1054,363 @@ impl Kernels {
                 })
             })
             .collect();
-        upload_words(stream, &bases, digit_bases)?;
+        digit_bases.copy_from_host(&self.stream, &bases)?;
+        let tile_count = keys.len().div_ceil(TILE as usize);
+        let no_values = self.scratch::<u32>(0)?;
+        let mut status = self.scratch::<u64>(tile_count * RADIX as usize)?;
+        let mut ticket = self.scratch::<u32>(1)?;
+        let prepared = module.prepare_radix_scatter(tiles)?;
         for (pass, shift) in [0_u32, 8, 16, 24].into_iter().enumerate() {
-            let pass_counts = &counts[pass * RADIX as usize..][..RADIX as usize];
-            if pass_counts.contains(&len) {
+            if counts[pass * RADIX as usize..][..RADIX as usize].contains(&len) {
                 continue;
             }
-            zero(stream, look_back)?;
-            let status = look_back.pointer;
-            let ticket = status + u64::from(tiles) * u64::from(RADIX) * 8;
-            // No values: an empty slice, and an output nothing writes.
+            status.zero_async(&self.stream)?;
+            ticket.zero_async(&self.stream)?;
             let (values_in, values_out) = values.as_ref().map_or_else(
-                || ([keys.pointer, 0], 0),
-                |(values, values_spare)| (values.argument(), values_spare.pointer),
+                || (&no_values, core::ptr::null_mut()),
+                |(values, values_spare)| (&**values, values_spare.cu_deviceptr() as *mut u32),
             );
-            let mut arguments = keys.argument().to_vec();
-            arguments.extend(values_in);
-            arguments.push(u64::from(shift));
-            arguments.extend(
-                digit_bases
-                    .split(pass * RADIX as usize)
-                    .1
-                    .prefix(RADIX as usize)
-                    .argument(),
-            );
-            arguments.extend([status, ticket, keys_spare.pointer, values_out]);
-            launch(stream, &self.radix_scatter, tiles, &arguments)?;
+            // SAFETY: `keys_spare` (and the values' spare, if any) hold `len` words, `status`
+            // one zeroed word per tile and digit, and `ticket` one zeroed word; one block per
+            // tile.
+            unsafe {
+                module.radix_scatter(
+                    &self.stream,
+                    &prepared,
+                    keys,
+                    values_in,
+                    shift,
+                    &digit_bases,
+                    pass as u32 * RADIX,
+                    status.cu_deviceptr() as *mut u64,
+                    ticket.cu_deviceptr() as *mut u32,
+                    keys_spare.cu_deviceptr() as *mut u32,
+                    values_out,
+                )?;
+            }
             core::mem::swap(keys, keys_spare);
             if let Some((values, values_spare)) = &mut values {
                 core::mem::swap(*values, *values_spare);
             }
         }
-        Ok(())
+        self.release([status])?;
+        self.release([digit_bases, no_values, ticket])
     }
 
-    /// Exclusive scan of `data`, in place, using `scratch` ([`scan_scratch`] words). Returns a
-    /// one-word view of their total.
-    fn exclusive_scan(
-        &self,
-        stream: &Arc<CudaStream>,
-        data: Words,
-        scratch: Words,
-    ) -> Result<Words, DriverError> {
-        let len = u32::try_from(data.len).expect("CUDA scan exceeds u32 words");
-        let tiles = len.div_ceil(TILE).max(1);
-        let (tile_sums, rest) = scratch.split(tiles as usize);
-        launch(
-            stream,
-            &self.scan_tiles,
-            tiles,
-            &[data.pointer, u64::from(len), tile_sums.pointer],
-        )?;
+    /// Exclusive scan of `data`, in place. Returns a one-word buffer holding the total.
+    fn exclusive_scan(&self, data: &DeviceBuffer<u32>) -> Result<DeviceBuffer<u32>, Failure> {
+        let module = &self.module;
+        let len = u32::try_from(data.len()).expect("CUDA scan exceeds u32 words");
+        let tiles = data.len().div_ceil(TILE as usize).max(1);
+        let tile_sums = self.scratch::<u32>(tiles)?;
+        let prepared = module.prepare_scan_tiles(Self::tiles(data.len()))?;
+        // SAFETY: `data` holds `len` words, and `tile_sums` one word per tile.
+        unsafe {
+            module.scan_tiles(
+                &self.stream,
+                &prepared,
+                data.cu_deviceptr() as *mut u32,
+                len,
+                tile_sums.cu_deviceptr() as *mut u32,
+            )?;
+        }
         if tiles == 1 {
             return Ok(tile_sums);
         }
-        let total = self.exclusive_scan(stream, tile_sums, rest)?;
-        let mut arguments = std::vec![data.pointer, u64::from(len)];
-        arguments.extend(tile_sums.argument());
-        launch(stream, &self.add_tile_offsets, tiles, &arguments)?;
+        let total = self.exclusive_scan(&tile_sums)?;
+        let prepared = module.prepare_add_tile_offsets(Self::tiles(data.len()))?;
+        // SAFETY: `data` holds `len` words, with one block per tile.
+        unsafe {
+            module.add_tile_offsets(
+                &self.stream,
+                &prepared,
+                data.cu_deviceptr() as *mut u32,
+                len,
+                &tile_sums,
+            )?;
+        }
+        self.release([tile_sums])?;
         Ok(total)
     }
+}
+
+/// The input length, or `None` if the input is empty.
+fn length(len: usize) -> Option<usize> {
+    (len != 0).then(|| {
+        assert!(
+            u32::try_from(len).is_ok(),
+            "CUDA input exceeds u32 positions"
+        );
+        len
+    })
+}
+
+fn try_ranges_32<T: Copy>(
+    context: &Arc<CudaContext>,
+    values: &[T],
+    encode: impl Fn(T) -> u32,
+    gap: Option<(u32, u32)>,
+) -> Result<Vec<(u32, u32)>, Failure> {
+    let Some(n) = length(values.len()) else {
+        return Ok(Vec::new());
+    };
+    let gpu = Gpu::new(context)?;
+    let module = &gpu.module;
+    let mut sorted = gpu.upload(values, encode)?;
+    let mut marks = gpu.scratch(n)?;
+    gpu.radix_sort(&mut sorted, &mut marks, None)?;
+
+    // Ranges: mark each range's first key, scan the marks, then emit each range's ends.
+    let (gap_left, gap_right) = gap.unwrap_or((0, 0));
+    let has_gap = u32::from(gap.is_some());
+    let prepared = module.prepare_mark_starts(Gpu::threads(n))?;
+    module.mark_starts(
+        &gpu.stream,
+        &prepared,
+        &sorted,
+        gap_left,
+        gap_right,
+        has_gap,
+        &mut marks,
+    )?;
+    let total = gpu.exclusive_scan(&marks)?;
+    let count = gpu.read_count(&total)?;
+    let starts = gpu.scratch::<u32>(count)?;
+    let ends = gpu.scratch::<u32>(count)?;
+    let prepared = module.prepare_emit_ranges(Gpu::threads(n))?;
+    // SAFETY: `starts` and `ends` hold one word per range (the scan's total).
+    unsafe {
+        module.emit_ranges(
+            &gpu.stream,
+            &prepared,
+            &sorted,
+            &marks,
+            gap_left,
+            gap_right,
+            has_gap,
+            starts.cu_deviceptr() as *mut u32,
+            ends.cu_deviceptr() as *mut u32,
+        )?;
+    }
+    let starts_host = starts.to_host_vec(&gpu.stream)?;
+    let ends_host = ends.to_host_vec(&gpu.stream)?;
+    gpu.release([sorted, marks, total, starts, ends])?;
+    gpu.finish()?;
+    Ok(starts_host.into_iter().zip(ends_host).collect())
+}
+
+fn try_ranges_64<T: Copy>(
+    context: &Arc<CudaContext>,
+    values: &[T],
+    encode: impl Fn(T) -> u64,
+    gap: Option<(u64, u64)>,
+) -> Result<Vec<(u64, u64)>, Failure> {
+    let Some(n) = length(values.len()) else {
+        return Ok(Vec::new());
+    };
+    let gpu = Gpu::new(context)?;
+    let module = &gpu.module;
+    let mut lo = gpu.upload(values, |value| low_word(encode(value)))?;
+    let mut hi = gpu.upload(values, |value| high_word(encode(value)))?;
+
+    // Sort by the low word carrying the high word, then stably by the high word carrying the
+    // low word: the keys end up in `(hi, lo)` order.
+    let mut lo_spare = gpu.scratch(n)?;
+    let mut hi_spare = gpu.scratch(n)?;
+    gpu.radix_sort(&mut lo, &mut lo_spare, Some((&mut hi, &mut hi_spare)))?;
+    gpu.radix_sort(&mut hi, &mut hi_spare, Some((&mut lo, &mut lo_spare)))?;
+
+    let (gap_left, gap_right) = gap.unwrap_or((0, 0));
+    let (gap_left_hi, gap_left_lo) = (high_word(gap_left), low_word(gap_left));
+    let (gap_right_hi, gap_right_lo) = (high_word(gap_right), low_word(gap_right));
+    let has_gap = u32::from(gap.is_some());
+    let mut marks = lo_spare;
+    let prepared = module.prepare_mark_starts_64(Gpu::threads(n))?;
+    module.mark_starts_64(
+        &gpu.stream,
+        &prepared,
+        &hi,
+        &lo,
+        gap_left_hi,
+        gap_left_lo,
+        gap_right_hi,
+        gap_right_lo,
+        has_gap,
+        &mut marks,
+    )?;
+    let total = gpu.exclusive_scan(&marks)?;
+    let count = gpu.read_count(&total)?;
+    let outputs = [
+        gpu.scratch::<u32>(count)?,
+        gpu.scratch::<u32>(count)?,
+        gpu.scratch::<u32>(count)?,
+        gpu.scratch::<u32>(count)?,
+    ];
+    let [starts_hi, starts_lo, ends_hi, ends_lo] =
+        outputs.each_ref().map(|buffer| buffer.cu_deviceptr() as *mut u32);
+    let prepared = module.prepare_emit_ranges_64(Gpu::threads(n))?;
+    // SAFETY: each of the four outputs holds one word per range (the scan's total).
+    unsafe {
+        module.emit_ranges_64(
+            &gpu.stream,
+            &prepared,
+            &hi,
+            &lo,
+            &marks,
+            gap_left_hi,
+            gap_left_lo,
+            gap_right_hi,
+            gap_right_lo,
+            has_gap,
+            starts_hi,
+            starts_lo,
+            ends_hi,
+            ends_lo,
+        )?;
+    }
+    let mut columns = Vec::with_capacity(outputs.len());
+    for buffer in &outputs {
+        columns.push(buffer.to_host_vec(&gpu.stream)?);
+    }
+    gpu.release([hi, lo, hi_spare, marks, total])?;
+    gpu.release(outputs)?;
+    gpu.finish()?;
+    Ok((0..count)
+        .map(|range| {
+            (
+                join_words(columns[0][range], columns[1][range]),
+                join_words(columns[2][range], columns[3][range]),
+            )
+        })
+        .collect())
+}
+
+fn try_map_ranges(
+    context: &Arc<CudaContext>,
+    keys: &[u32],
+    gap: Option<(u32, u32)>,
+    value_lo: &[u32],
+    value_hi: Option<&[u32]>,
+) -> Result<MapRanges, Failure> {
+    if length(keys.len()).is_none() {
+        return Ok((Vec::new(), Vec::new()));
+    }
+    let gpu = Gpu::new(context)?;
+    let module = &gpu.module;
+    let (survivor_keys, survivor_positions) = survivors(&gpu, keys)?;
+    let survivors = survivor_keys.len();
+
+    // Ranges among the survivors: keys adjacent and values equal.
+    let lo_device = gpu.upload(value_lo, |word| word)?;
+    // No high words: an empty slice, so the kernels compare one word.
+    let hi_device = match value_hi {
+        Some(value_hi) => gpu.upload(value_hi, |word| word)?,
+        None => gpu.scratch(0)?,
+    };
+    let (gap_left, gap_right) = gap.unwrap_or((0, 0));
+    let has_gap = u32::from(gap.is_some());
+    let mut marks = gpu.scratch(survivors)?;
+    let prepared = module.prepare_mark_map_starts(Gpu::threads(survivors))?;
+    module.mark_map_starts(
+        &gpu.stream,
+        &prepared,
+        &survivor_keys,
+        &survivor_positions,
+        &lo_device,
+        &hi_device,
+        gap_left,
+        gap_right,
+        has_gap,
+        &mut marks,
+    )?;
+    let total = gpu.exclusive_scan(&marks)?;
+    let count = gpu.read_count(&total)?;
+    let starts = gpu.scratch::<u32>(count)?;
+    let ends = gpu.scratch::<u32>(count)?;
+    let firsts = gpu.scratch::<u32>(count)?;
+    let prepared = module.prepare_emit_map_ranges(Gpu::threads(survivors))?;
+    // SAFETY: `starts`, `ends`, and `firsts` hold one word per range (the scan's total).
+    unsafe {
+        module.emit_map_ranges(
+            &gpu.stream,
+            &prepared,
+            &survivor_keys,
+            &survivor_positions,
+            &lo_device,
+            &hi_device,
+            &marks,
+            gap_left,
+            gap_right,
+            has_gap,
+            starts.cu_deviceptr() as *mut u32,
+            ends.cu_deviceptr() as *mut u32,
+            firsts.cu_deviceptr() as *mut u32,
+        )?;
+    }
+    let starts_host = starts.to_host_vec(&gpu.stream)?;
+    let ends_host = ends.to_host_vec(&gpu.stream)?;
+    let firsts_host = firsts.to_host_vec(&gpu.stream)?;
+    gpu.release([
+        survivor_keys,
+        survivor_positions,
+        lo_device,
+        hi_device,
+        marks,
+        total,
+        starts,
+        ends,
+        firsts,
+    ])?;
+    gpu.finish()?;
+    Ok((
+        starts_host.into_iter().zip(ends_host).collect(),
+        firsts_host,
+    ))
+}
+
+/// Sorts the keys carrying their input positions, then keeps the last entry of each key: the
+/// sort is stable, so that entry has the key's last value. Returns the survivors' keys and
+/// positions, in key order.
+fn survivors(
+    gpu: &Gpu,
+    keys: &[u32],
+) -> Result<(DeviceBuffer<u32>, DeviceBuffer<u32>), Failure> {
+    let module = &gpu.module;
+    let n = keys.len();
+    let mut sorted = gpu.upload(keys, |key| key)?;
+    let mut positions = gpu.scratch(n)?;
+    let prepared = module.prepare_fill_positions(Gpu::threads(n))?;
+    module.fill_positions(&gpu.stream, &prepared, &mut positions)?;
+    let mut sorted_spare = gpu.scratch(n)?;
+    let mut positions_spare = gpu.scratch(n)?;
+    gpu.radix_sort(
+        &mut sorted,
+        &mut sorted_spare,
+        Some((&mut positions, &mut positions_spare)),
+    )?;
+
+    let mut marks = sorted_spare;
+    let prepared = module.prepare_mark_survivors(Gpu::threads(n))?;
+    module.mark_survivors(&gpu.stream, &prepared, &sorted, &mut marks)?;
+    let total = gpu.exclusive_scan(&marks)?;
+    let count = gpu.read_count(&total)?;
+    let survivor_keys = gpu.scratch::<u32>(count)?;
+    let survivor_positions = gpu.scratch::<u32>(count)?;
+    let prepared = module.prepare_compact_survivors(Gpu::threads(n))?;
+    // SAFETY: both outputs hold one word per survivor (the scan's total).
+    unsafe {
+        module.compact_survivors(
+            &gpu.stream,
+            &prepared,
+            &sorted,
+            &positions,
+            &marks,
+            survivor_keys.cu_deviceptr() as *mut u32,
+            survivor_positions.cu_deviceptr() as *mut u32,
+        )?;
+    }
+    gpu.release([sorted, positions, positions_spare, marks, total])?;
+    Ok((survivor_keys, survivor_positions))
 }
 
 #[cfg(test)]

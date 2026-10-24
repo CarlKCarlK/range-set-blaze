@@ -7,8 +7,11 @@ context, the CUDA context, and the Rayon thread pools.
 
 - **CPU** (`Engine::Cpu(n)`): Rayon sort on `n` threads, then range finding.
 - **wgpu** (`Engine::GpuOnly`): portable compute shaders (Lampshade radix sort) through Vulkan.
-- **CUDA** (`Engine::CudaOnly`, feature `cuda`): CUDA kernels written in Rust with cuda-oxide: a
-  Onesweep radix sort with warp-ranked, coalesced scatter, then range marking, scan, and emit.
+- **CUDA** (`Engine::CudaOnly`, feature `cuda`): CUDA kernels written in Rust with cuda-oxide,
+  single-source with the host code in `src/gpu/cuda.rs` (`#[cuda_module]`, typed launches with
+  launch contracts): a Onesweep radix sort with warp-ranked, coalesced scatter, then range marking,
+  scan, and emit. These numbers were measured with the earlier build, which compiled the same
+  kernels to a separate PTX file.
 
 ## No single environment runs all three
 
@@ -88,9 +91,9 @@ AMD Ryzen 9 7950X (16 cores, 32 threads), NVIDIA GeForce RTX 3060 12 GB, driver 
 32 processors; CUDA 13.3; Rust 1.99. wgpu 30 with Lampshade 0.13, Vulkan backend on Windows.
 
 ```bash
-# WSL2: CPU and CUDA
-cargo run --release --features cuda --bin gpu_ingest -- --cpu 16 1000000 10000000 100000000
-cargo run --release --features cuda --bin gpu_map_ingest -- 1000000 10000000 100000000
+# WSL2: CPU and CUDA (the cuda feature builds with cargo oxide)
+cargo oxide run -- --release --features cuda --bin gpu_ingest -- --cpu 16 1000000 10000000 100000000
+cargo oxide run -- --release --features cuda --bin gpu_map_ingest -- 1000000 10000000 100000000
 # Windows: CPU and wgpu
 cargo run --release --features shuffled_slices --bin gpu_ingest -- --cpu 16 --cpu 32 1000000 10000000 100000000
 cargo run --release --features shuffled_slices --bin gpu_map_ingest -- 1000000 10000000 100000000

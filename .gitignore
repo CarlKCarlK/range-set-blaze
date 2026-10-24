@@ -28,3 +28,7 @@ coverage.lcov
 gpu_normalize_oxide.ll
 gpu_normalize_oxide.opt.ll
 gpu_normalize_oxide.ptx
+
+# cargo oxide writes its device-code intermediates to the crate root
+/*.ll
+/*.ptx

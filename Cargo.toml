@@ -18,11 +18,9 @@ exclude = [
     ".codex",
     ".env",
     "Cargo.toml.orig",
-    "cuda-kernels/**/*",
 ]
 
 [workspace]
-exclude = ["cuda-kernels"]
 members = [
     ".",
     "xtask",
@@ -65,8 +63,10 @@ shuffled_slices = [
     "dep:wgpu",
 ]
 # Experimental, Linux only: adds `Engine::CudaOnly`, which runs the same pipeline as CUDA kernels
-# written in Rust with cuda-oxide (see `cuda-kernels/`). Building needs the CUDA toolkit headers.
-cuda = ["shuffled_slices", "dep:cuda-core"]
+# written in Rust with cuda-oxide, single-source in `src/gpu/cuda.rs`. Build and test it with
+# `cargo oxide` (for example `cargo oxide test -- --release --features cuda --lib gpu`), which
+# needs the CUDA toolkit and the codegen backend that `cargo oxide setup` installs.
+cuda = ["shuffled_slices", "dep:cuda-core", "dep:cuda-device", "dep:cuda-host"]
 
 [dependencies]
 itertools = { version = "0.14.0", default-features = false, features = [
@@ -84,6 +84,8 @@ pollster = { version = "0.4", optional = true }
 rayon = { version = "1.10", optional = true }
 wgpu = { version = "30.0.1", optional = true }
 cuda-core = { git = "https://github.com/NVIDIA/cuda-rust.git", rev = "ad0a42c8e5a161ca850ec819cdc7e90e9a88809a", optional = true }
+cuda-device = { git = "https://github.com/NVIDIA/cuda-rust.git", rev = "ad0a42c8e5a161ca850ec819cdc7e90e9a88809a", optional = true }
+cuda-host = { git = "https://github.com/NVIDIA/cuda-rust.git", rev = "ad0a42c8e5a161ca850ec819cdc7e90e9a88809a", optional = true }
 castaway = { version = "0.2.4", optional = true }
 
 [dev-dependencies]
