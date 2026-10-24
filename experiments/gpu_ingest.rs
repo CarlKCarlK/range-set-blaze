@@ -31,6 +31,8 @@ use range_set_blaze::{Engine, NotNanF32, NotNanF64, RangeSetBlaze};
 const SEED: u64 = 0xd1b5_4a32_d192_ed03;
 const CLUMP_LEN: u64 = 256;
 const DUPLICATE_REPEATS: u64 = 16;
+/// The least time each timed operation runs before its samples (see `median`).
+const WARM_UP: Duration = Duration::from_millis(1000);
 
 fn main() {
     let mut sizes: Vec<u64> = Vec::new();
@@ -278,7 +280,14 @@ fn shuffle<T>(values: &mut [T], seed: u64) {
 
 /// Median of five timed runs after one warm-up; `setup` runs outside the timer.
 fn median<S, R>(mut setup: impl FnMut() -> S, mut operation: impl FnMut(S) -> R) -> Duration {
+    // Warm up for at least `WARM_UP`, not just one call: after a few idle seconds a GPU drops to
+    // its idle clocks (P8 on an RTX 3060: 210 MHz, a tenth of its peak) and needs sustained work
+    // to come back up. The same rule applies to every engine.
+    let warm_up = Instant::now();
     drop(operation(setup()));
+    while warm_up.elapsed() < WARM_UP {
+        drop(operation(setup()));
+    }
     let mut samples: Vec<Duration> = (0..5)
         .map(|_| {
             let input = setup();

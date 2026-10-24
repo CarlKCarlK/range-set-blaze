@@ -42,6 +42,8 @@ use rayon::slice::{ParallelSlice, ParallelSliceMut};
 /// Seed for generated data; fixed so every machine benchmarks the same inputs.
 const SEED: u64 = 0x5eed_ba5e_d00d_f00d;
 const WORKGROUP_SIZE: u32 = 256;
+/// The least time each timed operation runs before its samples (see `median`).
+const WARM_UP: Duration = Duration::from_millis(1000);
 
 fn main() -> Result<(), String> {
     let sizes: Vec<usize> = std::env::args()
@@ -824,7 +826,14 @@ fn median<R>(
     runs: usize,
     mut operation: impl FnMut() -> Result<R, String>,
 ) -> Result<Duration, String> {
+    // Warm up for at least `WARM_UP`, not just one call: after a few idle seconds a GPU drops to
+    // its idle clocks (P8 on an RTX 3060: 210 MHz, a tenth of its peak) and needs sustained work
+    // to come back up. The same rule applies to every engine.
+    let warm_up = Instant::now();
     drop(operation()?);
+    while warm_up.elapsed() < WARM_UP {
+        drop(operation()?);
+    }
     let mut samples = Vec::with_capacity(runs);
     for _ in 0..runs {
         let start = Instant::now();
