@@ -33,7 +33,7 @@ use cuda_device::atomic::{AtomicOrdering, BlockAtomicU32, DeviceAtomicU32, Devic
 use cuda_device::{
     DisjointSlice, SharedArray, kernel, launch_bounds, launch_contract, thread, warp,
 };
-use cuda_host::{EmbeddedModuleError, cuda_module};
+use cuda_host::cuda_module;
 
 use super::{high_word, join_words, low_word};
 
@@ -795,9 +795,24 @@ fn map_joins(
     values.lo[a] == values.lo[b] && (values.hi.is_empty() || values.hi[a] == values.hi[b])
 }
 
-pub(super) fn cuda_context() -> Option<&'static Arc<CudaContext>> {
-    static CONTEXT: OnceLock<Option<Arc<CudaContext>>> = OnceLock::new();
-    CONTEXT.get_or_init(|| CudaContext::new(0).ok()).as_ref()
+/// The process-wide CUDA handle: the context and the loaded kernels. Like the wgpu engine's
+/// context and pipelines, these are code and connections, not data, so they are created once and
+/// kept; every buffer still belongs to a single call.
+pub(super) struct Cuda {
+    context: Arc<CudaContext>,
+    module: kernels::LoadedModule,
+}
+
+/// The [`Cuda`] handle, or `None` if there is no CUDA GPU (or its kernels won't load).
+pub(super) fn cuda_context() -> Option<&'static Cuda> {
+    static CUDA: OnceLock<Option<Cuda>> = OnceLock::new();
+    CUDA.get_or_init(|| {
+        let context = CudaContext::new(0).ok()?;
+        // SAFETY: this crate owns the device code embedded for `kernels`.
+        let module = unsafe { kernels::load(&context) }.ok()?;
+        Some(Cuda { context, module })
+    })
+    .as_ref()
 }
 
 /// The ranges of `values` encoded as `u32` keys, as `(start, end)` key pairs, or `None` if the GPU
@@ -808,22 +823,22 @@ pub(super) fn cuda_context() -> Option<&'static Arc<CudaContext>> {
 ///
 /// Panics on any other CUDA error.
 pub(super) fn ranges_32<T: Copy>(
-    context: &Arc<CudaContext>,
+    cuda: &Cuda,
     values: &[T],
     encode: impl Fn(T) -> u32,
     gap: Option<(u32, u32)>,
 ) -> Option<Vec<(u32, u32)>> {
-    finish(try_ranges_32(context, values, encode, gap))
+    finish(try_ranges_32(cuda, values, encode, gap))
 }
 
 /// As [`ranges_32`], for values encoded as `u64` keys.
 pub(super) fn ranges_64<T: Copy>(
-    context: &Arc<CudaContext>,
+    cuda: &Cuda,
     values: &[T],
     encode: impl Fn(T) -> u64,
     gap: Option<(u64, u64)>,
 ) -> Option<Vec<(u64, u64)>> {
-    finish(try_ranges_64(context, values, encode, gap))
+    finish(try_ranges_64(cuda, values, encode, gap))
 }
 
 /// A map's ranges from its `u32` key words and its values' one or two `u32` words: each range's
@@ -834,13 +849,13 @@ pub(super) fn ranges_64<T: Copy>(
 ///
 /// Panics on any other CUDA error.
 pub(super) fn map_ranges(
-    context: &Arc<CudaContext>,
+    cuda: &Cuda,
     keys: &[u32],
     gap: Option<(u32, u32)>,
     value_lo: &[u32],
     value_hi: Option<&[u32]>,
 ) -> Option<MapRanges> {
-    finish(try_map_ranges(context, keys, gap, value_lo, value_hi))
+    finish(try_map_ranges(cuda, keys, gap, value_lo, value_hi))
 }
 
 /// A map's ranges as `(start, end)` key words, and each range's first input position.
@@ -873,17 +888,6 @@ impl From<LaunchContractError> for Failure {
     }
 }
 
-impl From<EmbeddedModuleError> for Failure {
-    fn from(error: EmbeddedModuleError) -> Self {
-        match error {
-            EmbeddedModuleError::Core(cuda_core::EmbeddedModuleError::Driver(error)) => {
-                error.into()
-            }
-            error => Self::Other(std::format!("{error}")),
-        }
-    }
-}
-
 fn finish<R>(result: Result<R, Failure>) -> Option<R> {
     match result {
         Ok(ranges) => Some(ranges),
@@ -892,21 +896,21 @@ fn finish<R>(result: Result<R, Failure>) -> Option<R> {
     }
 }
 
-/// The loaded kernels and the stream they run on, for one call.
-struct Gpu {
-    context: Arc<CudaContext>,
+/// The kernels and the stream they run on, for one call.
+struct Gpu<'a> {
+    context: &'a Arc<CudaContext>,
     stream: Arc<CudaStream>,
-    module: kernels::LoadedModule,
+    module: &'a kernels::LoadedModule,
 }
 
-impl Gpu {
-    fn new(context: &Arc<CudaContext>) -> Result<Self, Failure> {
-        // SAFETY: this crate owns the device code embedded for `kernels`.
-        let module = unsafe { kernels::load(context)? };
+impl<'a> Gpu<'a> {
+    /// Makes the context current on this thread (calls may come from any thread), for one call.
+    fn new(cuda: &'a Cuda) -> Result<Self, Failure> {
+        cuda.context.bind_to_thread()?;
         Ok(Self {
-            context: Arc::clone(context),
-            stream: context.default_stream(),
-            module,
+            context: &cuda.context,
+            stream: cuda.context.default_stream(),
+            module: &cuda.module,
         })
     }
 
@@ -986,8 +990,8 @@ impl Gpu {
             return Ok(keys);
         }
         let mut staging = [
-            PinnedHostBuffer::<u32>::zeroed(&self.context, CHUNK)?,
-            PinnedHostBuffer::<u32>::zeroed(&self.context, CHUNK)?,
+            PinnedHostBuffer::<u32>::zeroed(self.context, CHUNK)?,
+            PinnedHostBuffer::<u32>::zeroed(self.context, CHUNK)?,
         ];
         for (index, values) in values.chunks(CHUNK).enumerate() {
             let buffer = &mut staging[index % 2];
@@ -1029,7 +1033,7 @@ impl Gpu {
         mut values: Option<(&mut DeviceBuffer<u32>, &mut DeviceBuffer<u32>)>,
     ) -> Result<(), Failure> {
         let len = u32::try_from(keys.len()).expect("CUDA input exceeds u32 positions");
-        let module = &self.module;
+        let module = self.module;
         let tiles = Self::tiles(keys.len());
         let mut digit_bases = self.zeroed::<u32>(4 * RADIX as usize)?;
         let prepared = module.prepare_digit_counts(tiles)?;
@@ -1099,7 +1103,7 @@ impl Gpu {
 
     /// Exclusive scan of `data`, in place. Returns a one-word buffer holding the total.
     fn exclusive_scan(&self, data: &DeviceBuffer<u32>) -> Result<DeviceBuffer<u32>, Failure> {
-        let module = &self.module;
+        let module = self.module;
         let len = u32::try_from(data.len()).expect("CUDA scan exceeds u32 words");
         let tiles = data.len().div_ceil(TILE as usize).max(1);
         let tile_sums = self.scratch::<u32>(tiles)?;
@@ -1146,7 +1150,7 @@ fn length(len: usize) -> Option<usize> {
 }
 
 fn try_ranges_32<T: Copy>(
-    context: &Arc<CudaContext>,
+    cuda: &Cuda,
     values: &[T],
     encode: impl Fn(T) -> u32,
     gap: Option<(u32, u32)>,
@@ -1154,8 +1158,8 @@ fn try_ranges_32<T: Copy>(
     let Some(n) = length(values.len()) else {
         return Ok(Vec::new());
     };
-    let gpu = Gpu::new(context)?;
-    let module = &gpu.module;
+    let gpu = Gpu::new(cuda)?;
+    let module = gpu.module;
     let mut sorted = gpu.upload(values, encode)?;
     let mut marks = gpu.scratch(n)?;
     gpu.radix_sort(&mut sorted, &mut marks, None)?;
@@ -1200,7 +1204,7 @@ fn try_ranges_32<T: Copy>(
 }
 
 fn try_ranges_64<T: Copy>(
-    context: &Arc<CudaContext>,
+    cuda: &Cuda,
     values: &[T],
     encode: impl Fn(T) -> u64,
     gap: Option<(u64, u64)>,
@@ -1208,8 +1212,8 @@ fn try_ranges_64<T: Copy>(
     let Some(n) = length(values.len()) else {
         return Ok(Vec::new());
     };
-    let gpu = Gpu::new(context)?;
-    let module = &gpu.module;
+    let gpu = Gpu::new(cuda)?;
+    let module = gpu.module;
     let mut lo = gpu.upload(values, |value| low_word(encode(value)))?;
     let mut hi = gpu.upload(values, |value| high_word(encode(value)))?;
 
@@ -1286,7 +1290,7 @@ fn try_ranges_64<T: Copy>(
 }
 
 fn try_map_ranges(
-    context: &Arc<CudaContext>,
+    cuda: &Cuda,
     keys: &[u32],
     gap: Option<(u32, u32)>,
     value_lo: &[u32],
@@ -1295,8 +1299,8 @@ fn try_map_ranges(
     if length(keys.len()).is_none() {
         return Ok((Vec::new(), Vec::new()));
     }
-    let gpu = Gpu::new(context)?;
-    let module = &gpu.module;
+    let gpu = Gpu::new(cuda)?;
+    let module = gpu.module;
     let (survivor_keys, survivor_positions) = survivors(&gpu, keys)?;
     let survivors = survivor_keys.len();
 
@@ -1372,10 +1376,10 @@ fn try_map_ranges(
 /// sort is stable, so that entry has the key's last value. Returns the survivors' keys and
 /// positions, in key order.
 fn survivors(
-    gpu: &Gpu,
+    gpu: &Gpu<'_>,
     keys: &[u32],
 ) -> Result<(DeviceBuffer<u32>, DeviceBuffer<u32>), Failure> {
-    let module = &gpu.module;
+    let module = gpu.module;
     let n = keys.len();
     let mut sorted = gpu.upload(keys, |key| key)?;
     let mut positions = gpu.scratch(n)?;
