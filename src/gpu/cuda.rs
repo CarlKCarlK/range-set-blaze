@@ -631,7 +631,7 @@ fn scan_scratch(len: u32) -> usize {
 }
 
 /// Words of scratch for [`Kernels::radix_sort`] of `len` keys.
-fn sort_scratch(len: u32) -> usize {
+const fn sort_scratch(len: u32) -> usize {
     2 * aligned(4 * RADIX as usize) + aligned(look_back_words(len.div_ceil(TILE)))
 }
 
