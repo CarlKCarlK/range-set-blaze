@@ -443,6 +443,38 @@ fn upload<T: Copy>(
     stream.synchronize()
 }
 
+/// Copies a few `words` to the device.
+fn upload_words(stream: &CudaStream, words: &[u32], destination: Words) -> Result<(), DriverError> {
+    debug_assert!(
+        words.len() <= destination.len,
+        "upload larger than its destination"
+    );
+    // SAFETY: the destination has room, and the copy finishes before `words` can change (we
+    // synchronize below).
+    unsafe {
+        memcpy_htod_async(
+            destination.pointer,
+            words.as_ptr(),
+            size_of_val(words),
+            stream.cu_stream(),
+        )?;
+    }
+    stream.synchronize()
+}
+
+/// Zeroes `words` on the device.
+fn zero(stream: &CudaStream, words: Words) -> Result<(), DriverError> {
+    // SAFETY: `words` is device memory of this many bytes, and everything runs on `stream`.
+    unsafe {
+        memset_d8_async(
+            words.pointer,
+            0,
+            words.len * size_of::<u32>(),
+            stream.cu_stream(),
+        )
+    }
+}
+
 /// Copies `words` from the device.
 fn read(stream: &CudaStream, words: Words) -> Result<Vec<u32>, DriverError> {
     let mut host = Vec::with_capacity(words.len);
@@ -600,14 +632,17 @@ fn scan_scratch(len: u32) -> usize {
 
 /// Words of scratch for [`Kernels::radix_sort`] of `len` keys.
 fn sort_scratch(len: u32) -> usize {
-    let counts = RADIX * len.div_ceil(TILE);
-    aligned(4 * RADIX as usize) + aligned(counts as usize) + scan_scratch(counts)
+    2 * aligned(4 * RADIX as usize) + aligned(look_back_words(len.div_ceil(TILE)))
+}
+
+/// Words for a scatter's look-back state: a 64-bit status per tile and digit, then the ticket.
+fn look_back_words(tiles: u32) -> usize {
+    tiles as usize * RADIX as usize * 2 + 1
 }
 
 struct Kernels {
     // Keeps the functions' module loaded.
     _module: Arc<CudaModule>,
-    radix_histogram: CudaFunction,
     radix_scatter: CudaFunction,
     digit_counts: CudaFunction,
     scan_tiles: CudaFunction,
@@ -627,7 +662,6 @@ impl Kernels {
     fn load(context: &Arc<CudaContext>) -> Result<Self, DriverError> {
         let module = context.load_module_from_ptx_src(PTX)?;
         Ok(Self {
-            radix_histogram: module.load_function("radix_histogram")?,
             radix_scatter: module.load_function("radix_scatter")?,
             digit_counts: module.load_function("digit_counts")?,
             scan_tiles: module.load_function("scan_tiles")?,
@@ -660,42 +694,36 @@ impl Kernels {
         let len = u32::try_from(keys.len).expect("CUDA input exceeds u32 positions");
         let tiles = len.div_ceil(TILE);
         let (digit_counts, rest) = scratch.split(4 * RADIX as usize);
-        let (counts, scan_space) = rest.split((RADIX * tiles) as usize);
-        // SAFETY: `digit_counts` is device memory of this many bytes, and everything runs on
-        // `stream`.
-        unsafe {
-            memset_d8_async(
-                digit_counts.pointer,
-                0,
-                digit_counts.len * size_of::<u32>(),
-                stream.cu_stream(),
-            )?;
-        }
+        let (digit_bases, rest) = rest.split(4 * RADIX as usize);
+        let (look_back, _) = rest.split(look_back_words(tiles));
+        zero(stream, digit_counts)?;
         launch(
             stream,
             &self.digit_counts,
             tiles,
             &[keys.pointer, keys.len as u64, digit_counts.pointer],
         )?;
-        let digit_counts = read(stream, digit_counts)?;
+        let counts = read(stream, digit_counts)?;
+        // Where each digit starts, for each pass: exclusive sums of its counts.
+        let bases: Vec<u32> = counts
+            .chunks(RADIX as usize)
+            .flat_map(|pass| {
+                pass.iter().scan(0, |start, &count| {
+                    let base = *start;
+                    *start += count;
+                    Some(base)
+                })
+            })
+            .collect();
+        upload_words(stream, &bases, digit_bases)?;
         for (pass, shift) in [0_u32, 8, 16, 24].into_iter().enumerate() {
-            let pass_counts = &digit_counts[pass * RADIX as usize..][..RADIX as usize];
+            let pass_counts = &counts[pass * RADIX as usize..][..RADIX as usize];
             if pass_counts.contains(&len) {
                 continue;
             }
-            launch(
-                stream,
-                &self.radix_histogram,
-                tiles,
-                &[
-                    keys.pointer,
-                    keys.len as u64,
-                    u64::from(shift),
-                    u64::from(tiles),
-                    counts.pointer,
-                ],
-            )?;
-            self.exclusive_scan(stream, counts, scan_space)?;
+            zero(stream, look_back)?;
+            let status = look_back.pointer;
+            let ticket = status + u64::from(tiles) * u64::from(RADIX) * 8;
             // No values: an empty slice, and an output nothing writes.
             let (values_in, values_out) = values.as_ref().map_or_else(
                 || ([keys.pointer, 0], 0),
@@ -703,9 +731,15 @@ impl Kernels {
             );
             let mut arguments = keys.argument().to_vec();
             arguments.extend(values_in);
-            arguments.extend([u64::from(shift), u64::from(tiles)]);
-            arguments.extend(counts.argument());
-            arguments.extend([keys_spare.pointer, values_out]);
+            arguments.push(u64::from(shift));
+            arguments.extend(
+                digit_bases
+                    .split(pass * RADIX as usize)
+                    .1
+                    .prefix(RADIX as usize)
+                    .argument(),
+            );
+            arguments.extend([status, ticket, keys_spare.pointer, values_out]);
             launch(stream, &self.radix_scatter, tiles, &arguments)?;
             core::mem::swap(keys, keys_spare);
             if let Some((values, values_spare)) = &mut values {

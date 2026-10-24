@@ -2,7 +2,7 @@
 //! search that follows it. Every kernel runs blocks of `BLOCK` threads over tiles of `TILE`
 //! items, and the host (`src/gpu/cuda.rs`) launches them by name from the generated PTX.
 
-use cuda_device::atomic::{AtomicOrdering, BlockAtomicU32, DeviceAtomicU32};
+use cuda_device::atomic::{AtomicOrdering, BlockAtomicU32, DeviceAtomicU32, DeviceAtomicU64};
 use cuda_device::{SharedArray, kernel, launch_bounds, thread, warp};
 use cuda_host::cuda_module;
 
@@ -14,44 +14,15 @@ const RADIX: u32 = 256;
 /// Items per warp in `radix_scatter`, and the rounds of 32 they take.
 const WARP_ITEMS: u32 = TILE / WARPS;
 const WARP_ROUNDS: u32 = WARP_ITEMS / 32;
+/// Flags on a look-back `status` word, above its 32-bit count: published, and published as the
+/// count of every tile so far (rather than of this tile alone).
+const AGGREGATE: u64 = 1 << 32;
+const INCLUSIVE: u64 = 2 << 32;
+const READY: u64 = AGGREGATE | INCLUSIVE;
 
 #[cuda_module]
 mod kernels {
     use super::*;
-
-    /// Counts each tile's 8-bit digits at `shift`. Writes digit-major, `counts[digit * tiles +
-    /// tile]`, so one exclusive scan of `counts` gives every tile's start for every digit.
-    #[kernel]
-    #[launch_bounds(256)]
-    pub fn radix_histogram(keys: &[u32], shift: u32, tiles: u32, counts: *mut u32) {
-        static mut HISTOGRAM: SharedArray<u32, 256> = SharedArray::UNINIT;
-        let tid = thread::threadIdx_x();
-        let tile = thread::blockIdx_x();
-        let len = keys.len() as u32;
-        unsafe {
-            HISTOGRAM[tid as usize] = 0;
-        }
-        thread::sync_threads();
-        let base = tile * TILE;
-        let mut round = 0;
-        while round < ITEMS {
-            let index = base + round * BLOCK + tid;
-            if index < len {
-                let digit = (keys[index as usize] >> shift) & (RADIX - 1);
-                unsafe {
-                    BlockAtomicU32::from_ptr(
-                        SharedArray::as_raw_mut_ptr(&raw mut HISTOGRAM).add(digit as usize),
-                    )
-                    .fetch_add(1, AtomicOrdering::Relaxed);
-                }
-            }
-            round += 1;
-        }
-        thread::sync_threads();
-        unsafe {
-            *counts.add((tid * tiles + tile) as usize) = HISTOGRAM[tid as usize];
-        }
-    }
 
     /// Exclusive scan of each `TILE` of `data[..len]`, in place; each tile's total goes to
     /// `tile_sums[tile]`.
@@ -220,8 +191,14 @@ mod kernels {
         }
     }
 
-    /// Stable scatter of each tile's keys (and, if `values` is non-empty, their values) to the
-    /// positions given by the scanned histogram.
+    /// One pass of a "Onesweep" LSD radix sort: a stable scatter of each tile's keys (and, if
+    /// `values` is non-empty, their values) by their 8-bit digit at `shift`. `digit_bases[d]` is
+    /// where digit `d` starts in the output (from `digit_counts`). Each tile learns where its
+    /// items of digit `d` go by decoupled look-back: it publishes its own count in `status`, then
+    /// adds up its predecessors' published counts until it reaches one that already includes
+    /// everything before it, and publishes that inclusive total for its successors. Tiles take
+    /// their indices from `ticket` in launch order, so a tile only ever waits on tiles that
+    /// started before it. `status` (one word per tile and digit) and `ticket` must start at zero.
     ///
     /// Each warp owns `WARP_ITEMS` consecutive items of the tile. The warps count their digits
     /// (phase A), which gives each warp its start for each digit within the tile (B); they then
@@ -234,8 +211,9 @@ mod kernels {
         keys: &[u32],
         values: &[u32],
         shift: u32,
-        tiles: u32,
-        offsets: &[u32],
+        digit_bases: &[u32],
+        status: *mut u64,
+        ticket: *mut u32,
         keys_out: *mut u32,
         values_out: *mut u32,
     ) {
@@ -246,8 +224,16 @@ mod kernels {
         static mut TILE_STARTS: SharedArray<u32, 256> = SharedArray::UNINIT;
         static mut GLOBAL_STARTS: SharedArray<u32, 256> = SharedArray::UNINIT;
         static mut WARP_TOTALS: SharedArray<u32, 8> = SharedArray::UNINIT;
+        static mut TILE_INDEX: SharedArray<u32, 1> = SharedArray::UNINIT;
         let tid = thread::threadIdx_x();
-        let tile = thread::blockIdx_x();
+        if tid == 0 {
+            unsafe {
+                TILE_INDEX[0] =
+                    DeviceAtomicU32::from_ptr(ticket).fetch_add(1, AtomicOrdering::Relaxed);
+            }
+        }
+        thread::sync_threads();
+        let tile = unsafe { TILE_INDEX[0] };
         let len = keys.len() as u32;
         let with_values = !values.is_empty();
         let lane = warp::lane_id();
@@ -255,9 +241,6 @@ mod kernels {
         let warp_index = tid / 32;
         let base = tile * TILE;
         let segment = base + warp_index * WARP_ITEMS;
-        unsafe {
-            GLOBAL_STARTS[tid as usize] = offsets[(tid * tiles + tile) as usize];
-        }
         let mut w = 0;
         while w < WARPS {
             unsafe {
@@ -315,6 +298,36 @@ mod kernels {
             unsafe {
                 WARP_TOTALS[warp_index as usize] = inclusive;
             }
+        }
+        // Look back: the count of digit `tid` in all tiles before this one.
+        let slot = |tile: u32| unsafe {
+            DeviceAtomicU64::from_ptr(status.add((tile * RADIX + tid) as usize))
+        };
+        let prefix = if tile == 0 {
+            0
+        } else {
+            slot(tile).store(AGGREGATE | u64::from(total), AtomicOrdering::Release);
+            let mut prefix = 0;
+            let mut previous = tile;
+            loop {
+                previous -= 1;
+                let mut word = slot(previous).load(AtomicOrdering::Acquire);
+                while word & READY == 0 {
+                    word = slot(previous).load(AtomicOrdering::Acquire);
+                }
+                prefix += word as u32;
+                if word & INCLUSIVE != 0 {
+                    break;
+                }
+            }
+            prefix
+        };
+        slot(tile).store(
+            INCLUSIVE | u64::from(prefix + total),
+            AtomicOrdering::Release,
+        );
+        unsafe {
+            GLOBAL_STARTS[tid as usize] = digit_bases[tid as usize] + prefix;
         }
         thread::sync_threads();
         let mut tile_start = inclusive - total;
