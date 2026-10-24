@@ -1,4 +1,4 @@
-//! [`Engine::CudaOnly`]: the GPU pipeline as CUDA kernels written in Rust with cuda-oxide.
+//! [`Engine::Cuda`]: the GPU pipeline as CUDA kernels written in Rust with cuda-oxide.
 //!
 //! Kernels and host code share this file: `#[cuda_module]` compiles the kernels to device code
 //! and generates a typed launcher for each, so building the `cuda` feature needs `cargo oxide`
@@ -344,8 +344,7 @@ mod kernels {
         while place < in_tile {
             let key = unsafe { SORTED_KEYS[place as usize] };
             let digit = ((key >> shift) & (RADIX - 1)) as usize;
-            let destination =
-                unsafe { GLOBAL_STARTS[digit] + place - TILE_STARTS[digit] } as usize;
+            let destination = unsafe { GLOBAL_STARTS[digit] + place - TILE_STARTS[digit] } as usize;
             unsafe {
                 *keys_out.add(destination) = key;
                 if with_values {
@@ -496,9 +495,8 @@ mod kernels {
     ) {
         if let Some((start, index)) = starts.get_mut_indexed() {
             let i = index.get();
-            *start = u32::from(
-                i == 0 || !joins(sorted[i - 1], sorted[i], gap_left, gap_right, has_gap),
-            );
+            *start =
+                u32::from(i == 0 || !joins(sorted[i - 1], sorted[i], gap_left, gap_right, has_gap));
         }
     }
 
@@ -682,7 +680,15 @@ mod kernels {
             };
             *start = u32::from(
                 i == 0
-                    || !map_joins(keys, positions, &values, i - 1, gap_left, gap_right, has_gap),
+                    || !map_joins(
+                        keys,
+                        positions,
+                        &values,
+                        i - 1,
+                        gap_left,
+                        gap_right,
+                        has_gap,
+                    ),
             );
         }
     }
@@ -719,7 +725,15 @@ mod kernels {
                 hi: value_hi,
             };
             let is_start = index == 0
-                || !map_joins(keys, positions, &values, i - 1, gap_left, gap_right, has_gap);
+                || !map_joins(
+                    keys,
+                    positions,
+                    &values,
+                    i - 1,
+                    gap_left,
+                    gap_right,
+                    has_gap,
+                );
             let is_end = index + 1 == len
                 || !map_joins(keys, positions, &values, i, gap_left, gap_right, has_gap);
             let range = (scanned[i] + u32::from(is_start)) as usize - 1;
@@ -1250,8 +1264,9 @@ fn try_ranges_64<T: Copy>(
         gpu.scratch::<u32>(count)?,
         gpu.scratch::<u32>(count)?,
     ];
-    let [starts_hi, starts_lo, ends_hi, ends_lo] =
-        outputs.each_ref().map(|buffer| buffer.cu_deviceptr() as *mut u32);
+    let [starts_hi, starts_lo, ends_hi, ends_lo] = outputs
+        .each_ref()
+        .map(|buffer| buffer.cu_deviceptr() as *mut u32);
     let prepared = module.prepare_emit_ranges_64(Gpu::threads(n))?;
     // SAFETY: each of the four outputs holds one word per range (the scan's total).
     unsafe {
@@ -1427,7 +1442,7 @@ mod tests {
         ($values:expr) => {{
             let values = $values;
             let expected = RangeSetBlaze::from_iter(values.iter().copied());
-            let found = super::super::from_shuffled_slice(&mut values.to_vec(), Engine::CudaOnly);
+            let found = super::super::from_shuffled_slice(&mut values.to_vec(), Engine::Cuda);
             assert_eq!(found, expected, "len {}", values.len());
         }};
     }
@@ -1526,19 +1541,31 @@ mod tests {
     fn check_map<V: crate::Integer + Eq + Clone + core::fmt::Debug>(keys: &[u32], values: &[V]) {
         let expected: RangeMapBlaze<u32, V> =
             keys.iter().copied().zip(values.iter().cloned()).collect();
-        let found = RangeMapBlaze::from_shuffled_slices(keys, values, Engine::CudaOnly);
+        let found = RangeMapBlaze::from_shuffled_slices(keys, values, Engine::Cuda);
         assert_eq!(found, expected, "len {}", keys.len());
+    }
+
+    #[test]
+    fn cuda_or_cpu_falls_back_for_unsupported_types() {
+        let set = RangeSetBlaze::<u128>::from_shuffled_slice(&mut [3, 1, 2, 9], Engine::CudaOrCpu);
+        assert_eq!(set, RangeSetBlaze::from_iter([1_u128, 2, 3, 9]));
+        let map = RangeMapBlaze::from_shuffled_slices(
+            &[2_u32, 1, 2],
+            &["b", "a", "c"],
+            Engine::CudaOrCpu,
+        );
+        assert_eq!(map, RangeMapBlaze::from_iter([(1_u32, "a"), (2, "c")]));
     }
 
     #[test]
     #[should_panic(expected = "no GPU representation")]
     fn unsupported_keys_panic() {
-        let _ = RangeSetBlaze::<u128>::from_shuffled_slice(&mut [1, 2], Engine::CudaOnly);
+        let _ = RangeSetBlaze::<u128>::from_shuffled_slice(&mut [1, 2], Engine::Cuda);
     }
 
     #[test]
     #[should_panic(expected = "no GPU representation")]
     fn unsupported_map_values_panic() {
-        let _ = RangeMapBlaze::from_shuffled_slices(&[1_u32], &["a"], Engine::CudaOnly);
+        let _ = RangeMapBlaze::from_shuffled_slices(&[1_u32], &["a"], Engine::Cuda);
     }
 }

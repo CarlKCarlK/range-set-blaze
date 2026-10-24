@@ -18,8 +18,8 @@ This release is not breaking.
 - **Experimental `shuffled_slices` feature, with `RangeSetBlaze::from_shuffled_slice(&mut
   slice, engine)`.** It sorts the slice in place, then finds the ranges, so it suits large slices
   in no useful order (for example, shuffled). `Engine::Cpu(n)` sorts with Rayon on `n` threads;
-  `Engine::GpuOnly` sorts and finds the ranges on the GPU via `wgpu`, panicking if it can't run;
-  `Engine::GpuOrCpu` falls back to every thread. On 100 million shuffled `u32` values on an AMD Ryzen AI MAX+ 395 laptop, `Cpu(32)` took
+  `Engine::Wgpu` sorts and finds the ranges on the GPU via `wgpu`, panicking if it can't run;
+  `Engine::WgpuOrCpu` falls back to every thread. On 100 million shuffled `u32` values on an AMD Ryzen AI MAX+ 395 laptop, `Cpu(32)` took
   463 ms and its integrated GPU 644 ms, against 4,044 ms for `from_slice`; on data already in
   order, `from_slice` is fastest. The feature is off by default and adds no dependencies unless
   enabled; it is mainly a demonstration of GPU programming and a fair test of it.
@@ -28,7 +28,7 @@ This release is not breaking.
   order, on several CPU threads or the GPU. It leaves the slices unchanged. The last value wins for a repeated key, as with `from_slices`. Any
   `Integer` keys and any `V: Eq + Clone` values work on the CPU, including borrowed and non-`Sync`
   values; the GPU handles keys of at most 32 bits with the crate's integer values of at most 64
-  bits, and `GpuOrCpu` silently uses the CPU for other types. On 10 million shuffled `u32` pairs
+  bits, and `WgpuOrCpu` silently uses the CPU for other types. On 10 million shuffled `u32` pairs
   on an AMD Ryzen 9 7950X with an NVIDIA RTX 3060, `Cpu(32)` took 50 to 130 ms and the GPU 37 to
   123 ms when the map had at most 2.5 million ranges, against 1.8 to 2.0 seconds for
   `from_slices`.

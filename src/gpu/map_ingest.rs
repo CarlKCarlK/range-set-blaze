@@ -47,15 +47,15 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     /// to each other (sorted, or clumpy data in order), [`RangeMapBlaze::from_slices`] may be
     /// faster.
     ///
-    /// Any key and value types work with [`Engine::Cpu`] and [`Engine::GpuOrCpu`]. The GPU
+    /// Any key and value types work with [`Engine::Cpu`] and [`Engine::WgpuOrCpu`]. The GPU
     /// handles keys of type `u8`, `u16`, `u32`, `i8`, `i16`, `i32`, `char`, or `NotNanF32`, with
     /// values of those types or of `u64`, `i64`, `usize`, `isize`, or `NotNanF64`. For other types,
-    /// [`Engine::GpuOrCpu`] uses the CPU and [`Engine::GpuOnly`] panics. On the CPU, values of
+    /// [`Engine::WgpuOrCpu`] uses the CPU and [`Engine::Wgpu`] panics. On the CPU, values of
     /// other types are compared on one thread, so they needn't be [`Sync`].
     ///
     /// # Panics
     ///
-    /// Panics if `keys` and `values` have different lengths, and as [`Engine::GpuOnly`] says.
+    /// Panics if `keys` and `values` have different lengths, and as [`Engine::Wgpu`] says.
     ///
     /// # Examples
     ///
@@ -64,7 +64,7 @@ impl<T: Integer, V: Eq + Clone> RangeMapBlaze<T, V> {
     ///
     /// let keys = [3_u32, 1, 2, 9, 2];
     /// let values = ["c", "a", "x", "z", "a"];
-    /// let map = RangeMapBlaze::from_shuffled_slices(&keys, &values, Engine::GpuOrCpu);
+    /// let map = RangeMapBlaze::from_shuffled_slices(&keys, &values, Engine::WgpuOrCpu);
     /// assert_eq!(map.to_string(), r#"(1..=2, "a"), (3..=3, "c"), (9..=9, "z")"#);
     /// ```
     #[cfg_attr(docsrs, doc(cfg(feature = "shuffled_slices")))]
@@ -87,15 +87,15 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
     if keys.is_empty() {
         return RangeMapBlaze::new();
     }
-    // Positions are `u32`s. Beyond that, `from_slices` (rather than Engine::GpuOnly's panic).
+    // Positions are `u32`s. Beyond that, `from_slices` (rather than Engine::Wgpu's panic).
     if u32::try_from(keys.len() - 1).is_err() {
         return RangeMapBlaze::from_slices(keys, values);
     }
     let threads = match engine {
         Engine::Cpu(threads) => threads,
-        Engine::GpuOnly | Engine::GpuOrCpu => all_threads(),
+        Engine::Wgpu | Engine::WgpuOrCpu => all_threads(),
         #[cfg(feature = "cuda")]
-        Engine::CudaOnly => all_threads(),
+        Engine::Cuda | Engine::CudaOrCpu => all_threads(),
     };
     // Only work that needs no `V: Sync` runs on the pool: keys, and values once they are words.
     let pool = thread_pool(threads);
@@ -109,15 +109,15 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
             key_words.as_ref(),
             value_words.as_ref(),
         ),
-        Engine::GpuOnly => {
+        Engine::Wgpu => {
             let (Some(key_words), Some(value_words)) = (&key_words, &value_words) else {
-                panic!("Engine::GpuOnly: the key or value type has no GPU representation");
+                panic!("Engine::Wgpu: the key or value type has no GPU representation");
             };
-            let context = gpu_context().expect("Engine::GpuOnly: no hardware GPU is available");
+            let context = gpu_context().expect("Engine::Wgpu: no hardware GPU is available");
             ranges_gpu(context, key_words, value_words)
-                .expect("Engine::GpuOnly: the input exceeds the GPU's limits or memory")
+                .expect("Engine::Wgpu: the input exceeds the GPU's limits or memory")
         }
-        Engine::GpuOrCpu => key_words
+        Engine::WgpuOrCpu => key_words
             .as_ref()
             .zip(value_words.as_ref())
             .zip(gpu_context())
@@ -134,27 +134,46 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
                 )
             }),
         #[cfg(feature = "cuda")]
-        Engine::CudaOnly => {
-            let (Some(key_words), Some(value_words)) = (&key_words, &value_words) else {
-                panic!("Engine::CudaOnly: the key or value type has no GPU representation");
-            };
-            let context =
-                super::cuda::cuda_context().expect("Engine::CudaOnly: no CUDA GPU is available");
-            let (bounds, firsts) = super::cuda::map_ranges(
-                context,
-                &key_words.words,
-                key_words.gap,
-                &value_words.lo,
-                value_words.hi.as_deref(),
-            )
-            .expect("Engine::CudaOnly: the input exceeds the GPU's memory");
-            Found::Words(Ranges {
-                bounds,
-                firsts: firsts.into_iter().map(|first| first as usize).collect(),
+        Engine::Cuda => ranges_cuda(key_words.as_ref(), value_words.as_ref())
+            .unwrap_or_else(|unavailable| panic!("Engine::Cuda: {unavailable}")),
+        #[cfg(feature = "cuda")]
+        Engine::CudaOrCpu => {
+            ranges_cuda(key_words.as_ref(), value_words.as_ref()).unwrap_or_else(|_| {
+                ranges_cpu(
+                    &pool,
+                    keys,
+                    values,
+                    key_words.as_ref(),
+                    value_words.as_ref(),
+                )
             })
         }
     };
     build_map(&pool, values, found)
+}
+
+/// The ranges, from CUDA, if the key and value types have words and CUDA can run.
+#[cfg(feature = "cuda")]
+fn ranges_cuda<K>(
+    key_words: Option<&KeyWords<'_>>,
+    value_words: Option<&ValueWords<'_>>,
+) -> Result<Found<K>, super::CudaUnavailable> {
+    let (Some(key_words), Some(value_words)) = (key_words, value_words) else {
+        return Err(super::CudaUnavailable::UnsupportedType);
+    };
+    let cuda = super::cuda::cuda_context().ok_or(super::CudaUnavailable::NoGpu)?;
+    let (bounds, firsts) = super::cuda::map_ranges(
+        cuda,
+        &key_words.words,
+        key_words.gap,
+        &value_words.lo,
+        value_words.hi.as_deref(),
+    )
+    .ok_or(super::CudaUnavailable::OutOfMemory)?;
+    Ok(Found::Words(Ranges {
+        bounds,
+        firsts: firsts.into_iter().map(|first| first as usize).collect(),
+    }))
 }
 
 /// The map from the engine's ranges.
@@ -925,15 +944,17 @@ mod tests {
         let mut engines = vec![
             Engine::Cpu(NonZeroUsize::MIN),
             Engine::Cpu(NonZeroUsize::new(3).expect("3 is nonzero")),
-            Engine::GpuOrCpu,
+            Engine::WgpuOrCpu,
         ];
         if gpu_capable && has_hardware_gpu() {
-            engines.push(Engine::GpuOnly);
+            engines.push(Engine::Wgpu);
         }
         #[cfg(feature = "cuda")]
         if gpu_capable && super::super::cuda::cuda_context().is_some() {
-            engines.push(Engine::CudaOnly);
+            engines.push(Engine::Cuda);
         }
+        #[cfg(feature = "cuda")]
+        engines.push(Engine::CudaOrCpu);
         engines
     }
 
@@ -1077,20 +1098,20 @@ mod tests {
         use std::rc::Rc;
         let keys = [3_u32, 1, 2, 2];
         let values = [Rc::new(3), Rc::new(1), Rc::new(9), Rc::new(1)];
-        let map = RangeMapBlaze::from_shuffled_slices(&keys, &values, Engine::GpuOrCpu);
+        let map = RangeMapBlaze::from_shuffled_slices(&keys, &values, Engine::WgpuOrCpu);
         assert_eq!(map.to_string(), "(1..=2, 1), (3..=3, 3)");
     }
 
     #[test]
     #[should_panic(expected = "no GPU representation")]
-    fn gpu_only_panics_for_types_without_a_gpu_representation() {
-        let _ = RangeMapBlaze::from_shuffled_slices(&[1_u32], &["a"], Engine::GpuOnly);
+    fn wgpu_panics_for_types_without_a_gpu_representation() {
+        let _ = RangeMapBlaze::from_shuffled_slices(&[1_u32], &["a"], Engine::Wgpu);
     }
 
     #[test]
     #[should_panic(expected = "same length")]
     fn lengths_must_match() {
-        let _ = RangeMapBlaze::from_shuffled_slices(&[1_u32, 2], &[1_u32], Engine::GpuOrCpu);
+        let _ = RangeMapBlaze::from_shuffled_slices(&[1_u32, 2], &[1_u32], Engine::WgpuOrCpu);
     }
 
     /// Seeded random cases around the 256-wide workgroup and the CPU chunking, mixing

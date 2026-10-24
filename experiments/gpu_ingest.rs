@@ -6,7 +6,7 @@
 //! every available thread. `Engine::Cpu(1)` is always included. Each `--type T` (such as `u32`)
 //! limits the run to those types; the default is every type. Prints CSV. The GPU column is
 //! empty when there is no hardware GPU. With the `cuda` feature, a `cuda_ms` column times
-//! `Engine::CudaOnly`.
+//! `Engine::Cuda`.
 //!
 //! Each type gets data built within its own range of values, in two workloads:
 //!
@@ -205,9 +205,9 @@ impl Run<'_> {
             let elapsed = milliseconds(shuffled(Engine::Cpu(count)));
             write!(cpu_many, ",{elapsed:.3}").expect("writing to a String can't fail");
         }
-        let gpu = self.has_gpu.then(|| shuffled(Engine::GpuOnly));
+        let gpu = self.has_gpu.then(|| shuffled(Engine::Wgpu));
         #[cfg(feature = "cuda")]
-        let cuda = Some(shuffled(Engine::CudaOnly));
+        let cuda = Some(shuffled(Engine::Cuda));
         #[cfg(not(feature = "cuda"))]
         let cuda: Option<Duration> = None;
         println!(

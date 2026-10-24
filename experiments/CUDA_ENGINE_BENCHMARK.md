@@ -6,8 +6,8 @@ pipelines or module, and staging. The only things kept between calls are the pro
 context, the CUDA context, and the Rayon thread pools.
 
 - **CPU** (`Engine::Cpu(n)`): Rayon sort on `n` threads, then range finding.
-- **wgpu** (`Engine::GpuOnly`): portable compute shaders (Lampshade radix sort) through Vulkan.
-- **CUDA** (`Engine::CudaOnly`, feature `cuda`): CUDA kernels written in Rust with cuda-oxide,
+- **wgpu** (`Engine::Wgpu`): portable compute shaders (Lampshade radix sort) through Vulkan.
+- **CUDA** (`Engine::Cuda`, feature `cuda`): CUDA kernels written in Rust with cuda-oxide,
   single-source with the host code in `src/gpu/cuda.rs` (`#[cuda_module]`, typed launches with
   launch contracts): a Onesweep radix sort with warp-ranked, coalesced scatter, then range marking,
   scan, and emit. These numbers were measured with the earlier build, which compiled the same
@@ -73,6 +73,14 @@ nearly every key is its own range, building the map on the CPU dominates for eve
 builds take the same time (about 1.25 s) on identical data, so this is not a code regression.
 
 ## Caveats
+
+- **What persists between calls.** Each call allocates and frees its own buffers. Kept
+  process-wide: the wgpu device, the CUDA context and loaded CUDA kernels (compiled code, loaded
+  once as CUDA programs normally do), and the Rayon thread pools. The wgpu engine still creates its
+  compute pipelines on every call, because Lampshade's sorters own their pipelines and their
+  buffers together; that costs it about a millisecond per call, which matters mainly at 1M keys.
+  These numbers predate caching the CUDA kernels, which saved about 1.2 ms per CUDA call (1M
+  shuffled `u32`: 5.2 ms to 2.7 ms in a back-to-back probe).
 
 - **GPU clocks.** Idle, the RTX 3060 sits in P8 (210 MHz graphics, 405 MHz memory, against a
   2,100 MHz peak). Bursts of work between idle periods keep it there, so the same kernels can run

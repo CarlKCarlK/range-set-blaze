@@ -62,7 +62,7 @@ shuffled_slices = [
     "dep:rayon",
     "dep:wgpu",
 ]
-# Experimental, Linux only: adds `Engine::CudaOnly`, which runs the same pipeline as CUDA kernels
+# Experimental, Linux only: adds `Engine::Cuda`, which runs the same pipeline as CUDA kernels
 # written in Rust with cuda-oxide, single-source in `src/gpu/cuda.rs`. Build and test it with
 # `cargo oxide` (for example `cargo oxide test -- --release --features cuda --lib gpu`), which
 # needs the CUDA toolkit and the codegen backend that `cargo oxide setup` installs.

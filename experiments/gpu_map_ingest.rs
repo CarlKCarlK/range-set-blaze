@@ -23,8 +23,8 @@
 //! `cpu_parallel_from_slices` runs the same pipeline on every CPU thread (the `cpu_parallel_ms`
 //! column), as the fair CPU comparison. `lib_cpu_1_ms`, `lib_cpu_ms`, and `lib_gpu_ms` time the
 //! library's `RangeMapBlaze::from_shuffled_slices` with `Engine::Cpu(1)`, `Engine::Cpu` (every
-//! thread), and `Engine::GpuOnly`. With the `cuda` feature, `lib_cuda_ms` times
-//! `Engine::CudaOnly`. On a software adapter (such as WSL's llvmpipe) the wgpu columns are empty.
+//! thread), and `Engine::Wgpu`. With the `cuda` feature, `lib_cuda_ms` times
+//! `Engine::Cuda`. On a software adapter (such as WSL's llvmpipe) the wgpu columns are empty.
 //!
 //! Results on an AMD Radeon 8060S (Vulkan) with a 32-thread CPU are in
 //! `experiments/results/gpu_map_ingest_radeon_8060s.csv` (cold start in the `.log` beside it).
@@ -163,10 +163,10 @@ fn benchmark_case(
         Engine::Cpu(all_threads()),
     ];
     if has_gpu {
-        engines.push(Engine::GpuOnly);
+        engines.push(Engine::Wgpu);
     }
     #[cfg(feature = "cuda")]
-    engines.push(Engine::CudaOnly);
+    engines.push(Engine::Cuda);
     for engine in engines {
         if library(engine) != expected {
             return Err(format!(
@@ -178,12 +178,12 @@ fn benchmark_case(
     let library_one = median(5, || Ok(library(Engine::Cpu(std::num::NonZeroUsize::MIN))))?;
     let library_threads = median(5, || Ok(library(Engine::Cpu(all_threads()))))?;
     let library_gpu = if has_gpu {
-        Some(median(5, || Ok(library(Engine::GpuOnly)))?)
+        Some(median(5, || Ok(library(Engine::Wgpu)))?)
     } else {
         None
     };
     #[cfg(feature = "cuda")]
-    let library_cuda = Some(median(5, || Ok(library(Engine::CudaOnly)))?);
+    let library_cuda = Some(median(5, || Ok(library(Engine::Cuda)))?);
     #[cfg(not(feature = "cuda"))]
     let library_cuda: Option<Duration> = None;
     println!(
