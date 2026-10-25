@@ -435,7 +435,7 @@ mod kernels {
         let zero_key: Tile<u32, { [1024] }> = constant(0u32, shape![1024]);
         let one_key: Tile<u32, { [1024] }> = constant(1u32, shape![1024]);
         // `left + 1` wraps to 0 exactly when `left` is `u32::MAX`. (This avoids a `u32::MAX`
-        // constant: this cuTile version compiled `constant(4_294_967_295u32, ..)` as 0.)
+        // constant: cuTile compiles any `u32` constant above `i32::MAX` as 0.)
         let successor: Tile<u32, { [1024] }> = left + one_key;
         let wrapped: Tile<bool, { [1024] }> = eq_tile(successor, zero_key);
         let follows: Tile<bool, { [1024] }> = eq_tile(right, successor);

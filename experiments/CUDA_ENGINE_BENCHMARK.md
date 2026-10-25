@@ -110,8 +110,12 @@ One WSL run with all three engines, shuffled keys:
   thread, overlapped with its upload.
 - Ranking with one 1,024 × 16 one-hot tile and a single scan was about 40% slower than 16 scans of
   1,024, so only `digit_counts` uses the one-hot tile (one `reduce_sum`).
-- Worked around in this cuTile version (cuda-rust `ad0a42c`): `constant(false, ..)` compiles as
-  true, and `constant(4_294_967_295u32, ..)` as 0.
+- Worked around: two cuTile compiler bugs, confirmed on the GPU at cuda-rust `ad0a42c` and at
+  `main` as of 2026-10-25 (`9df9e7c`). Both are in `encode_literal_bytes`
+  (`cutile-compiler/src/compiler/compile_expression.rs`). `constant(false, ..)` compiles as true:
+  the bool literal arrives as the string `"false"`, and the encoder treats anything but `"0"` as
+  true. Any `u32` constant above `i32::MAX` compiles as 0: integers are signless, so it is parsed as
+  `i32`, and a failed parse silently becomes 0.
 
 ```bash
 cargo oxide run --features cuda,cutile --bin gpu_ingest -- --cpu 16 --type u32 --type i32 --type char --type NotNanF32 1000000 10000000 100000000
