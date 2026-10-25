@@ -115,7 +115,10 @@ One WSL run with all three engines, shuffled keys:
   (`cutile-compiler/src/compiler/compile_expression.rs`). `constant(false, ..)` compiles as true:
   the bool literal arrives as the string `"false"`, and the encoder treats anything but `"0"` as
   true. Any `u32` constant above `i32::MAX` compiles as 0: integers are signless, so it is parsed as
-  `i32`, and a failed parse silently becomes 0.
+  `i32`, and a failed parse silently becomes 0. Both are reported in
+  [cuda-rust#1469](https://github.com/NVIDIA/cuda-rust/issues/1469), with a fix in
+  [cuda-rust#1470](https://github.com/NVIDIA/cuda-rust/pull/1470) (open as of 2026-10-25); once it
+  merges, the workarounds can go.
 
 ```bash
 cargo oxide run --features cuda,cutile --bin gpu_ingest -- --cpu 16 --type u32 --type i32 --type char --type NotNanF32 1000000 10000000 100000000
