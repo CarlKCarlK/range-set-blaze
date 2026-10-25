@@ -207,6 +207,18 @@ pub enum Engine {
     /// *Experimental; requires the `cuda` feature, which builds with `cargo oxide`.*
     #[cfg(feature = "cuda")]
     CudaOrCpu,
+    /// Sort and find the ranges with cuTile, NVIDIA's tile-based kernels in Rust. NVIDIA GPUs
+    /// on Linux only. So far, sets only, with keys of 32 bits or fewer.
+    ///
+    /// *Experimental; requires the `cutile` feature. The CUDA toolkit must be installed where
+    /// the program runs, because cuTile compiles its kernels on first use.*
+    ///
+    /// # Panics
+    ///
+    /// Panics if there is no CUDA GPU or toolkit, for maps, for key types wider than 32 bits,
+    /// and for the types [`Engine::Wgpu`] panics for.
+    #[cfg(feature = "cutile")]
+    CuTile,
 }
 
 fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> RangeSetBlaze<T> {
@@ -233,7 +245,29 @@ fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> Range
         Engine::CudaOrCpu => {
             try_cuda(values).unwrap_or_else(|_| from_slice_cpu(values, all_threads()))
         }
+        #[cfg(feature = "cutile")]
+        Engine::CuTile => from_slice_cutile(values),
     }
+}
+
+#[cfg(feature = "cutile")]
+fn from_slice_cutile<T: GpuElement>(values: &[T]) -> RangeSetBlaze<T> {
+    assert!(
+        T::KEY_WORDS == 1,
+        "Engine::CuTile: only key types of 32 bits or fewer are supported so far"
+    );
+    let gap = T::GAP.map(|(left, right)| {
+        (
+            u32::try_from(left).expect("32-bit gap exceeded u32"),
+            u32::try_from(right).expect("32-bit gap exceeded u32"),
+        )
+    });
+    let encode = |value: T| u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32");
+    let ranges = cutile::ranges_32(values, encode, gap)
+        .unwrap_or_else(|error| panic!("Engine::CuTile: {error}"))
+        .into_iter()
+        .map(|(start, end)| T::decode(u64::from(start))..=T::decode(u64::from(end)));
+    RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::new(ranges))
 }
 
 /// Why [`Engine::Cuda`] couldn't run.

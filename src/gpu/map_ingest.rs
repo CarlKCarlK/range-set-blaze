@@ -96,6 +96,8 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
         Engine::Wgpu | Engine::WgpuOrCpu => all_threads(),
         #[cfg(feature = "cuda")]
         Engine::Cuda | Engine::CudaOrCpu => all_threads(),
+        #[cfg(feature = "cutile")]
+        Engine::CuTile => panic!("Engine::CuTile: maps are not supported yet"),
     };
     // Only work that needs no `V: Sync` runs on the pool: keys, and values once they are words.
     let pool = thread_pool(threads);
@@ -148,6 +150,8 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
                 )
             })
         }
+        #[cfg(feature = "cutile")]
+        Engine::CuTile => unreachable!("Engine::CuTile is rejected above"),
     };
     build_map(&pool, values, found)
 }
