@@ -24,6 +24,8 @@ use crate::{NotNanF16, NotNanF128, TotalF16, TotalF128};
 
 #[cfg(feature = "cuda")]
 mod cuda;
+#[cfg(feature = "cutile")]
+mod cutile;
 mod map_ingest;
 
 const WORKGROUP_SIZE: u32 = 256;

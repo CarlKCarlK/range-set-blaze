@@ -67,6 +67,10 @@ shuffled_slices = [
 # `cargo oxide` (for example `cargo oxide test -- --release --features cuda --lib gpu`), which
 # needs the CUDA toolkit and the codegen backend that `cargo oxide setup` installs.
 cuda = ["shuffled_slices", "dep:cuda-core", "dep:cuda-device", "dep:cuda-host"]
+# Experimental, Linux only, in progress: cuTile kernels in `src/gpu/cutile.rs`. Builds with plain
+# `cargo` on stable Rust, but the CUDA toolkit (its `tileiras` compiler) must be installed where the
+# program runs, since cuTile compiles kernels on first use.
+cutile = ["shuffled_slices", "dep:cutile"]
 
 [dependencies]
 itertools = { version = "0.14.0", default-features = false, features = [
@@ -86,6 +90,7 @@ wgpu = { version = "30.0.1", optional = true }
 cuda-core = { git = "https://github.com/NVIDIA/cuda-rust.git", rev = "ad0a42c8e5a161ca850ec819cdc7e90e9a88809a", optional = true }
 cuda-device = { git = "https://github.com/NVIDIA/cuda-rust.git", rev = "ad0a42c8e5a161ca850ec819cdc7e90e9a88809a", optional = true }
 cuda-host = { git = "https://github.com/NVIDIA/cuda-rust.git", rev = "ad0a42c8e5a161ca850ec819cdc7e90e9a88809a", optional = true }
+cutile = { git = "https://github.com/NVIDIA/cuda-rust.git", rev = "ad0a42c8e5a161ca850ec819cdc7e90e9a88809a", optional = true }
 castaway = { version = "0.2.4", optional = true }
 
 [dev-dependencies]
