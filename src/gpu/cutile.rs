@@ -3,7 +3,7 @@
 //! A cuTile program works on whole tiles of values rather than on single threads: the compiler
 //! decides how threads and warps share each tile. Each tile here is `TILE` keys.
 //!
-//! **Sort** (least-significant digit first, 4 bits per pass): each pass takes two launches with a
+//! **Sort** (least-significant digit first, 3 bits per pass): each pass takes two launches with a
 //! host scan between them.
 //!
 //! 1. `digit_counts`: each tile counts how many of its keys have each digit.
@@ -34,7 +34,7 @@ use cutile::tile_kernel::TileKernel;
 /// Keys per tile. The tile shapes in [`kernels`] must match.
 const TILE: usize = 1024;
 /// Bits per sort digit, and the number of digit values. `kernels` must match.
-const DIGIT_BITS: u32 = 4;
+const DIGIT_BITS: u32 = 3;
 const DIGITS: usize = 1 << DIGIT_BITS;
 
 #[cutile::module]
@@ -61,12 +61,12 @@ mod kernels {
     // `constant(false, ..)` as true (https://github.com/NVIDIA/cuda-rust/issues/1469; fixed by
     // https://github.com/NVIDIA/cuda-rust/pull/1470, not yet merged).
 
-    /// Writes how many of each tile's keys have each digit (the 4 bits at `shift`) to
+    /// Writes how many of each tile's keys have each digit (the 3 bits at `shift`) to
     /// `counts[digit * tiles + tile]`: the column sums of the tile's digit flags.
     ///
     /// # Safety
     ///
-    /// `keys` must point to `len` keys and `counts` to 16 words per tile.
+    /// `keys` must point to `len` keys and `counts` to 8 words per tile.
     #[cutile::entry()]
     unsafe fn digit_counts(counts: *mut i32, keys: *mut u32, len: i32, shift: u32, tiles: i32) {
         let tile: i32 = get_tile_block_id().0;
@@ -74,18 +74,18 @@ mod kernels {
         // SAFETY: `keys` points to `len` keys.
         let key: Tile<u32, { [1024] }> = unsafe { gather(keys, index, len) };
         let digit: Tile<i32, { [1024] }> = digits(key, shift, index, len);
-        let flags: Tile<i32, { [1024, 16] }> = digit_flags(digit);
-        let count: Tile<i32, { [16] }> = reduce_sum(flags, 0i32);
+        let flags: Tile<i32, { [1024, 8] }> = digit_flags(digit);
+        let count: Tile<i32, { [8] }> = reduce_sum(flags, 0i32);
         // `counts[value * tiles + tile]` for each digit value.
-        let values: Tile<i32, { [16] }> = iota(shape![16]);
-        let tile_counts: Tile<i32, { [16] }> = broadcast_scalar(tiles, shape![16]);
-        let this_tile: Tile<i32, { [16] }> = broadcast_scalar(tile, shape![16]);
-        let offsets: Tile<i32, { [16] }> = values * tile_counts + this_tile;
+        let values: Tile<i32, { [8] }> = iota(shape![8]);
+        let tile_counts: Tile<i32, { [8] }> = broadcast_scalar(tiles, shape![8]);
+        let this_tile: Tile<i32, { [8] }> = broadcast_scalar(tile, shape![8]);
+        let offsets: Tile<i32, { [8] }> = values * tile_counts + this_tile;
         let counts_base: PointerTile<*mut i32, { [] }> = pointer_to_tile(counts);
         let counts_1: PointerTile<*mut i32, { [1] }> = counts_base.reshape(shape![1]);
-        let counts_all: PointerTile<*mut i32, { [16] }> = counts_1.broadcast(shape![16]);
-        let slots: PointerTile<*mut i32, { [16] }> = counts_all.offset_tile(offsets);
-        // SAFETY: `counts` has 16 words per tile.
+        let counts_all: PointerTile<*mut i32, { [8] }> = counts_1.broadcast(shape![8]);
+        let slots: PointerTile<*mut i32, { [8] }> = counts_all.offset_tile(offsets);
+        // SAFETY: `counts` has 8 words per tile.
         unsafe {
             store_ptr_tko(
                 slots,
@@ -99,13 +99,13 @@ mod kernels {
         }
     }
 
-    /// Moves each key to `sorted`, ordered by its digit (the 4 bits at `shift`), keeping keys
+    /// Moves each key to `sorted`, ordered by its digit (the 3 bits at `shift`), keeping keys
     /// with the same digit in order. `bases[digit * tiles + tile]` is where this tile's first key
     /// with that digit goes.
     ///
     /// # Safety
     ///
-    /// `keys` and `sorted` must each point to `len` keys, and `bases` to 16 words per tile that
+    /// `keys` and `sorted` must each point to `len` keys, and `bases` to 8 words per tile that
     /// place every key in `0..len` exactly once.
     #[cutile::entry()]
     unsafe fn scatter_digits(
@@ -125,9 +125,10 @@ mod kernels {
         let one: Tile<i32, { [1024] }> = constant(1i32, shape![1024]);
 
         // Each key's rank among this tile's keys with the same digit, one digit value at a
-        // time. (Scanning all 16 columns of `digit_flags` at once was about 40% slower.)
+        // time. (With 4-bit digits, scanning all 16 columns of `digit_flags` at once was about
+        // 40% slower.)
         let mut rank: Tile<i32, { [1024] }> = constant(0i32, shape![1024]);
-        for value in 0i32..16i32 {
+        for value in 0i32..8i32 {
             let wanted: Tile<i32, { [1024] }> = broadcast_scalar(value, shape![1024]);
             let matches: Tile<bool, { [1024] }> = eq_tile(digit, wanted);
             let flags: Tile<i32, { [1024] }> = select(matches, one, zero);
@@ -142,7 +143,7 @@ mod kernels {
         let this_tile: Tile<i32, { [1024] }> = broadcast_scalar(tile, shape![1024]);
         let base_index: Tile<i32, { [1024] }> = digit * tile_counts + this_tile;
         let base_slots: PointerTile<*mut i32, { [1024] }> = slots(bases, base_index);
-        // SAFETY: the mask skips keys outside `0..len`, the only ones whose digit (16) has no
+        // SAFETY: the mask skips keys outside `0..len`, the only ones whose digit (8) has no
         // base.
         let (base, _): (Tile<i32, { [1024] }>, Token) = unsafe {
             load_ptr_tko(
@@ -296,17 +297,17 @@ mod kernels {
         }
     }
 
-    /// A 1024 × 16 tile with a 1 in each key's row at its digit's column, and 0 elsewhere (an
-    /// all-0 row where the digit is 16).
-    fn digit_flags(digit: Tile<i32, { [1024] }>) -> Tile<i32, { [1024, 16] }> {
-        let zero: Tile<i32, { [1024, 16] }> = constant(0i32, shape![1024, 16]);
-        let one: Tile<i32, { [1024, 16] }> = constant(1i32, shape![1024, 16]);
+    /// A 1024 × 8 tile with a 1 in each key's row at its digit's column, and 0 elsewhere (an
+    /// all-0 row where the digit is 8).
+    fn digit_flags(digit: Tile<i32, { [1024] }>) -> Tile<i32, { [1024, 8] }> {
+        let zero: Tile<i32, { [1024, 8] }> = constant(0i32, shape![1024, 8]);
+        let one: Tile<i32, { [1024, 8] }> = constant(1i32, shape![1024, 8]);
         let digit_column: Tile<i32, { [1024, 1] }> = digit.reshape(shape![1024, 1]);
-        let digits: Tile<i32, { [1024, 16] }> = digit_column.broadcast(shape![1024, 16]);
-        let values: Tile<i32, { [16] }> = iota(shape![16]);
-        let values_row: Tile<i32, { [1, 16] }> = values.reshape(shape![1, 16]);
-        let all_values: Tile<i32, { [1024, 16] }> = values_row.broadcast(shape![1024, 16]);
-        let matches: Tile<bool, { [1024, 16] }> = eq_tile(digits, all_values);
+        let digits: Tile<i32, { [1024, 8] }> = digit_column.broadcast(shape![1024, 8]);
+        let values: Tile<i32, { [8] }> = iota(shape![8]);
+        let values_row: Tile<i32, { [1, 8] }> = values.reshape(shape![1, 8]);
+        let all_values: Tile<i32, { [1024, 8] }> = values_row.broadcast(shape![1024, 8]);
+        let matches: Tile<bool, { [1024, 8] }> = eq_tile(digits, all_values);
         select(matches, one, zero)
     }
 
@@ -356,7 +357,7 @@ mod kernels {
         keys
     }
 
-    /// Each key's digit, the 4 bits at `shift`; 16, which matches no digit, where `index` is
+    /// Each key's digit, the 3 bits at `shift`; 8, which matches no digit, where `index` is
     /// outside `0..len`.
     fn digits(
         key: Tile<u32, { [1024] }>,
@@ -365,8 +366,8 @@ mod kernels {
         len: i32,
     ) -> Tile<i32, { [1024] }> {
         let one: Tile<i32, { [1024] }> = constant(1i32, shape![1024]);
-        let none: Tile<i32, { [1024] }> = constant(16i32, shape![1024]);
-        let low_bits: Tile<u32, { [1024] }> = constant(15u32, shape![1024]);
+        let none: Tile<i32, { [1024] }> = constant(8i32, shape![1024]);
+        let low_bits: Tile<u32, { [1024] }> = constant(7u32, shape![1024]);
         let shifts: Tile<u32, { [1024] }> = broadcast_scalar(shift, shape![1024]);
         let shifted: Tile<u32, { [1024] }> = shri(key, shifts);
         let digit_bits: Tile<u32, { [1024] }> = andi(shifted, low_bits);
@@ -482,7 +483,9 @@ fn tiles(len: i32) -> (usize, i32, (u32, u32, u32)) {
     (tiles, count, grid)
 }
 
-/// Sorts `len` keys, one 4-bit digit per pass, from the least significant.
+/// Sorts `len` keys, one 3-bit digit per pass, from the least significant. (3 bits took about 15%
+/// less time than 4 or 2: each pass's ranking does one scan per digit value, so narrower digits mean
+/// cheaper passes, but more of them.)
 fn sort(keys: Tensor<u32>, len: i32) -> Result<Tensor<u32>, Error> {
     let (tiles, tile_count, grid) = tiles(len);
     let mut keys = keys;
@@ -490,9 +493,9 @@ fn sort(keys: Tensor<u32>, len: i32) -> Result<Tensor<u32>, Error> {
     let mut spare = zeros::<u32>(&[n]).sync()?;
     // Reused every pass, so shared: reading a plain `Tensor` back to the host consumes it.
     let counts = Arc::new(zeros::<i32>(&[DIGITS * tiles]).sync()?);
-    for pass in 0..u32::BITS / DIGIT_BITS {
+    for pass in 0..u32::BITS.div_ceil(DIGIT_BITS) {
         let shift = pass * DIGIT_BITS;
-        // SAFETY: `keys` holds `len` keys and `counts` 16 words per tile.
+        // SAFETY: `keys` holds `len` keys and `counts` 8 words per tile.
         unsafe {
             digit_counts(
                 counts.device_pointer(),
