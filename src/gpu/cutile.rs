@@ -61,7 +61,7 @@ mod kernels {
     // `constant(false, ..)` as true.
 
     /// Writes how many of each tile's keys have each digit (the 4 bits at `shift`) to
-    /// `counts[digit * tiles + tile]`.
+    /// `counts[digit * tiles + tile]`: the column sums of the tile's digit flags.
     ///
     /// # Safety
     ///
@@ -73,27 +73,28 @@ mod kernels {
         // SAFETY: `keys` points to `len` keys.
         let key: Tile<u32, { [1024] }> = unsafe { gather(keys, index, len) };
         let digit: Tile<i32, { [1024] }> = digits(key, shift, index, len);
-        let zero: Tile<i32, { [1024] }> = constant(0i32, shape![1024]);
-        let one: Tile<i32, { [1024] }> = constant(1i32, shape![1024]);
+        let flags: Tile<i32, { [1024, 16] }> = digit_flags(digit);
+        let count: Tile<i32, { [16] }> = reduce_sum(flags, 0i32);
+        // `counts[value * tiles + tile]` for each digit value.
+        let values: Tile<i32, { [16] }> = iota(shape![16]);
+        let tile_counts: Tile<i32, { [16] }> = broadcast_scalar(tiles, shape![16]);
+        let this_tile: Tile<i32, { [16] }> = broadcast_scalar(tile, shape![16]);
+        let offsets: Tile<i32, { [16] }> = values * tile_counts + this_tile;
         let counts_base: PointerTile<*mut i32, { [] }> = pointer_to_tile(counts);
-        for value in 0i32..16i32 {
-            let wanted: Tile<i32, { [1024] }> = broadcast_scalar(value, shape![1024]);
-            let matches: Tile<bool, { [1024] }> = eq_tile(digit, wanted);
-            let flags: Tile<i32, { [1024] }> = select(matches, one, zero);
-            let count: Tile<i32, { [] }> = reduce_sum(flags, 0i32);
-            let slot: PointerTile<*mut i32, { [] }> = addptr(counts_base, value * tiles + tile);
-            // SAFETY: `counts` has 16 words per tile.
-            unsafe {
-                store_ptr_tko(
-                    slot,
-                    count,
-                    ordering::Weak,
-                    None::<scope::TileBlock>,
-                    None,
-                    None,
-                    Latency::<0>,
-                );
-            }
+        let counts_1: PointerTile<*mut i32, { [1] }> = counts_base.reshape(shape![1]);
+        let counts_all: PointerTile<*mut i32, { [16] }> = counts_1.broadcast(shape![16]);
+        let slots: PointerTile<*mut i32, { [16] }> = counts_all.offset_tile(offsets);
+        // SAFETY: `counts` has 16 words per tile.
+        unsafe {
+            store_ptr_tko(
+                slots,
+                count,
+                ordering::Weak,
+                None::<scope::TileBlock>,
+                None,
+                None,
+                Latency::<0>,
+            );
         }
     }
 
@@ -122,7 +123,8 @@ mod kernels {
         let zero: Tile<i32, { [1024] }> = constant(0i32, shape![1024]);
         let one: Tile<i32, { [1024] }> = constant(1i32, shape![1024]);
 
-        // Each key's rank among this tile's keys with the same digit.
+        // Each key's rank among this tile's keys with the same digit, one digit value at a
+        // time. (Scanning all 16 columns of `digit_flags` at once was about 40% slower.)
         let mut rank: Tile<i32, { [1024] }> = constant(0i32, shape![1024]);
         for value in 0i32..16i32 {
             let wanted: Tile<i32, { [1024] }> = broadcast_scalar(value, shape![1024]);
@@ -293,6 +295,20 @@ mod kernels {
         }
     }
 
+    /// A 1024 × 16 tile with a 1 in each key's row at its digit's column, and 0 elsewhere (an
+    /// all-0 row where the digit is 16).
+    fn digit_flags(digit: Tile<i32, { [1024] }>) -> Tile<i32, { [1024, 16] }> {
+        let zero: Tile<i32, { [1024, 16] }> = constant(0i32, shape![1024, 16]);
+        let one: Tile<i32, { [1024, 16] }> = constant(1i32, shape![1024, 16]);
+        let digit_column: Tile<i32, { [1024, 1] }> = digit.reshape(shape![1024, 1]);
+        let digits: Tile<i32, { [1024, 16] }> = digit_column.broadcast(shape![1024, 16]);
+        let values: Tile<i32, { [16] }> = iota(shape![16]);
+        let values_row: Tile<i32, { [1, 16] }> = values.reshape(shape![1, 16]);
+        let all_values: Tile<i32, { [1024, 16] }> = values_row.broadcast(shape![1024, 16]);
+        let matches: Tile<bool, { [1024, 16] }> = eq_tile(digits, all_values);
+        select(matches, one, zero)
+    }
+
     /// The positions of tile `tile`'s keys.
     fn tile_indices(tile: i32) -> Tile<i32, { [1024] }> {
         let offsets: Tile<i32, { [1024] }> = iota(shape![1024]);
@@ -440,23 +456,18 @@ mod kernels {
 
 use kernels::{count_ranges, digit_counts, emit_ranges, scatter_digits};
 
-/// The ranges of `values` encoded as `u32` keys, as `(start, end)` key pairs. `gap` names two
-/// keys that count as adjacent (as for `char`, across the surrogates).
+/// The ranges of `keys`, as `(start, end)` pairs. `gap` names two keys that count as adjacent
+/// (as for `char`, across the surrogates).
 ///
 /// # Panics
 ///
-/// Panics if there are more than `i32::MAX` values.
-pub(super) fn ranges_32<T: Copy>(
-    values: &[T],
-    encode: impl Fn(T) -> u32,
-    gap: Option<(u32, u32)>,
-) -> Result<Vec<(u32, u32)>, Error> {
-    if values.is_empty() {
+/// Panics if there are more than `i32::MAX` keys.
+pub(super) fn ranges_32(keys: Vec<u32>, gap: Option<(u32, u32)>) -> Result<Vec<(u32, u32)>, Error> {
+    if keys.is_empty() {
         return Ok(Vec::new());
     }
-    let len = i32::try_from(values.len()).expect("cuTile input exceeds i32 positions");
-    let encoded: Vec<u32> = values.iter().map(|&value| encode(value)).collect();
-    let keys = copy_host_vec_to_device(&Arc::new(encoded)).sync()?;
+    let len = i32::try_from(keys.len()).expect("cuTile input exceeds i32 positions");
+    let keys = copy_host_vec_to_device(&Arc::new(keys)).sync()?;
     let sorted = sort(keys, len)?;
     ranges(&sorted, len, gap)
 }
@@ -636,7 +647,7 @@ mod tests {
         cases.push((0..10_000).collect());
         for keys in cases {
             assert_eq!(
-                ranges_32(&keys, |key| key, None).expect("cuTile launch failed"),
+                ranges_32(keys.clone(), None).expect("cuTile launch failed"),
                 cpu_ranges(&keys, None),
                 "on {} keys",
                 keys.len()
@@ -690,7 +701,7 @@ mod tests {
         let gap = Some((0xd7ff, 0xe000));
         let keys = vec![0xe001, 0xd7fe, 0xe000, 0xd7ff, 0xe003];
         assert_eq!(
-            ranges_32(&keys, |key| key, gap).expect("cuTile launch failed"),
+            ranges_32(keys.clone(), gap).expect("cuTile launch failed"),
             cpu_ranges(&keys, gap)
         );
         assert_eq!(

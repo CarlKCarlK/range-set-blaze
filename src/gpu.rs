@@ -8,6 +8,8 @@ use std::sync::{Arc, Mutex, OnceLock, mpsc};
 use std::vec::Vec;
 
 use lampshade::{Compactor, Context, KeyValueCompactor, KeyValueSoaSorter, Sorter};
+#[cfg(feature = "cutile")]
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rayon::slice::ParallelSliceMut;
 
 #[cfg(doc)]
@@ -262,8 +264,13 @@ fn from_slice_cutile<T: GpuElement>(values: &[T]) -> RangeSetBlaze<T> {
             u32::try_from(right).expect("32-bit gap exceeded u32"),
         )
     });
-    let encode = |value: T| u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32");
-    let ranges = cutile::ranges_32(values, encode, gap)
+    let keys = thread_pool(all_threads()).install(|| {
+        values
+            .par_iter()
+            .map(|&value| u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32"))
+            .collect()
+    });
+    let ranges = cutile::ranges_32(keys, gap)
         .unwrap_or_else(|error| panic!("Engine::CuTile: {error}"))
         .into_iter()
         .map(|(start, end)| T::decode(u64::from(start))..=T::decode(u64::from(end)));
