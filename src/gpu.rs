@@ -209,16 +209,16 @@ pub enum Engine {
     /// *Experimental; requires the `cuda` feature, which builds with `cargo oxide`.*
     #[cfg(feature = "cuda")]
     CudaOrCpu,
-    /// Sort and find the ranges with cuTile, NVIDIA's tile-based kernels in Rust. NVIDIA GPUs
-    /// on Linux only. So far, sets only, with keys of 32 bits or fewer.
+    /// Like [`Engine::Wgpu`], with the same types, but with cuTile kernels (NVIDIA's tile-based
+    /// kernels in Rust) instead of portable shaders. NVIDIA GPUs on Linux only.
     ///
     /// *Experimental; requires the `cutile` feature. The CUDA toolkit must be installed where
     /// the program runs, because cuTile compiles its kernels on first use.*
     ///
     /// # Panics
     ///
-    /// Panics if there is no CUDA GPU or toolkit, for maps, for key types wider than 32 bits,
-    /// and for the types [`Engine::Wgpu`] panics for.
+    /// Panics if there is no CUDA GPU or toolkit, and for the types [`Engine::Wgpu`] panics
+    /// for.
     #[cfg(feature = "cutile")]
     CuTile,
 }
@@ -255,25 +255,35 @@ fn from_shuffled_slice<T: GpuElement>(values: &mut [T], engine: Engine) -> Range
 #[cfg(feature = "cutile")]
 fn from_slice_cutile<T: GpuElement>(values: &[T]) -> RangeSetBlaze<T> {
     assert!(
-        T::KEY_WORDS == 1,
-        "Engine::CuTile: only key types of 32 bits or fewer are supported so far"
+        T::KEY_WORDS != 0,
+        "Engine::CuTile: this key type has no GPU representation"
     );
-    let gap = T::GAP.map(|(left, right)| {
-        (
-            u32::try_from(left).expect("32-bit gap exceeded u32"),
-            u32::try_from(right).expect("32-bit gap exceeded u32"),
-        )
-    });
-    let keys = thread_pool(all_threads()).install(|| {
-        values
-            .par_iter()
-            .map(|&value| u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32"))
+    let pool = thread_pool(all_threads());
+    let ranges: Vec<(u64, u64)> = if T::KEY_WORDS == 1 {
+        let gap = T::GAP.map(|(left, right)| {
+            (
+                u32::try_from(left).expect("32-bit gap exceeded u32"),
+                u32::try_from(right).expect("32-bit gap exceeded u32"),
+            )
+        });
+        let keys = pool.install(|| {
+            values
+                .par_iter()
+                .map(|&value| u32::try_from(value.encode()).expect("32-bit GPU key exceeded u32"))
+                .collect()
+        });
+        cutile::ranges(keys, gap)
+            .unwrap_or_else(|error| panic!("Engine::CuTile: {error}"))
+            .into_iter()
+            .map(|(start, end)| (u64::from(start), u64::from(end)))
             .collect()
-    });
-    let ranges = cutile::ranges_32(keys, gap)
-        .unwrap_or_else(|error| panic!("Engine::CuTile: {error}"))
+    } else {
+        let keys = pool.install(|| values.par_iter().map(|&value| value.encode()).collect());
+        cutile::ranges(keys, T::GAP).unwrap_or_else(|error| panic!("Engine::CuTile: {error}"))
+    };
+    let ranges = ranges
         .into_iter()
-        .map(|(start, end)| T::decode(u64::from(start))..=T::decode(u64::from(end)));
+        .map(|(start, end)| T::decode(start)..=T::decode(end));
     RangeSetBlaze::from_sorted_disjoint(CheckSortedDisjoint::new(ranges))
 }
 
@@ -1652,6 +1662,10 @@ mod tests {
         }
         #[cfg(feature = "cuda")]
         engines.push(Engine::CudaOrCpu);
+        #[cfg(feature = "cutile")]
+        if gpu_capable && cutile::available() {
+            engines.push(Engine::CuTile);
+        }
         engines
     }
 

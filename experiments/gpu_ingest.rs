@@ -6,8 +6,7 @@
 //! every available thread. `Engine::Cpu(1)` is always included. Each `--type T` (such as `u32`)
 //! limits the run to those types; the default is every type. Prints CSV. The GPU column is
 //! empty when there is no hardware GPU. With the `cuda` feature, a `cuda_ms` column times
-//! `Engine::Cuda`; with the `cutile` feature, a `cutile_ms` column times `Engine::CuTile` for
-//! types of 32 bits or fewer.
+//! `Engine::Cuda`; with the `cutile` feature, a `cutile_ms` column times `Engine::CuTile`.
 //!
 //! Each type gets data built within its own range of values, in two workloads:
 //!
@@ -212,7 +211,7 @@ impl Run<'_> {
         #[cfg(not(feature = "cuda"))]
         let cuda: Option<Duration> = None;
         #[cfg(feature = "cutile")]
-        let cutile = (size_of::<T>() <= 4).then(|| shuffled(Engine::CuTile));
+        let cutile = Some(shuffled(Engine::CuTile));
         #[cfg(not(feature = "cutile"))]
         let cutile: Option<Duration> = None;
         println!(

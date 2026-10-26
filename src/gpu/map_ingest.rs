@@ -97,7 +97,7 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
         #[cfg(feature = "cuda")]
         Engine::Cuda | Engine::CudaOrCpu => all_threads(),
         #[cfg(feature = "cutile")]
-        Engine::CuTile => panic!("Engine::CuTile: maps are not supported yet"),
+        Engine::CuTile => all_threads(),
     };
     // Only work that needs no `V: Sync` runs on the pool: keys, and values once they are words.
     let pool = thread_pool(threads);
@@ -151,7 +151,12 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
             })
         }
         #[cfg(feature = "cutile")]
-        Engine::CuTile => unreachable!("Engine::CuTile is rejected above"),
+        Engine::CuTile => {
+            let (Some(key_words), Some(value_words)) = (&key_words, &value_words) else {
+                panic!("Engine::CuTile: the key or value type has no GPU representation");
+            };
+            ranges_cutile(key_words, value_words)
+        }
     };
     build_map(&pool, values, found)
 }
@@ -178,6 +183,21 @@ fn ranges_cuda<K>(
         bounds,
         firsts: firsts.into_iter().map(|first| first as usize).collect(),
     }))
+}
+
+#[cfg(feature = "cutile")]
+fn ranges_cutile<K>(key_words: &KeyWords<'_>, value_words: &ValueWords<'_>) -> Found<K> {
+    let (bounds, firsts) = super::cutile::map_ranges(
+        key_words.words.to_vec(),
+        key_words.gap,
+        value_words.lo.to_vec(),
+        value_words.hi.clone(),
+    )
+    .unwrap_or_else(|error| panic!("Engine::CuTile: {error}"));
+    Found::Words(Ranges {
+        bounds,
+        firsts: firsts.into_iter().map(|first| first as usize).collect(),
+    })
 }
 
 /// The map from the engine's ranges.
@@ -959,6 +979,10 @@ mod tests {
         }
         #[cfg(feature = "cuda")]
         engines.push(Engine::CudaOrCpu);
+        #[cfg(feature = "cutile")]
+        if gpu_capable && super::super::cutile::available() {
+            engines.push(Engine::CuTile);
+        }
         engines
     }
 

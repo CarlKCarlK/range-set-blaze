@@ -24,7 +24,7 @@
 //! column), as the fair CPU comparison. `lib_cpu_1_ms`, `lib_cpu_ms`, and `lib_gpu_ms` time the
 //! library's `RangeMapBlaze::from_shuffled_slices` with `Engine::Cpu(1)`, `Engine::Cpu` (every
 //! thread), and `Engine::Wgpu`. With the `cuda` feature, `lib_cuda_ms` times
-//! `Engine::Cuda`. On a software adapter (such as WSL's llvmpipe) the wgpu columns are empty.
+//! `Engine::Cuda`; with the `cutile` feature, `lib_cutile_ms` times `Engine::CuTile`. On a software adapter (such as WSL's llvmpipe) the wgpu columns are empty.
 //!
 //! Results on an AMD Radeon 8060S (Vulkan) with a 32-thread CPU are in
 //! `experiments/results/gpu_map_ingest_radeon_8060s.csv` (cold start in the `.log` beside it).
@@ -79,7 +79,7 @@ fn main() -> Result<(), String> {
     );
 
     println!(
-        "pattern,order,input_pairs,output_ranges,gpu_first_call_ms,gpu_steady_ms,cpu_from_slices_ms,cpu_from_iter_ms,cpu_rayon_sort_ms,cpu_parallel_ms,lib_cpu_1_ms,lib_cpu_ms,lib_gpu_ms,lib_cuda_ms"
+        "pattern,order,input_pairs,output_ranges,gpu_first_call_ms,gpu_steady_ms,cpu_from_slices_ms,cpu_from_iter_ms,cpu_rayon_sort_ms,cpu_parallel_ms,lib_cpu_1_ms,lib_cpu_ms,lib_gpu_ms,lib_cuda_ms,lib_cutile_ms"
     );
     for &n in &sizes {
         for pattern in Pattern::ALL {
@@ -167,6 +167,8 @@ fn benchmark_case(
     }
     #[cfg(feature = "cuda")]
     engines.push(Engine::Cuda);
+    #[cfg(feature = "cutile")]
+    engines.push(Engine::CuTile);
     for engine in engines {
         if library(engine) != expected {
             return Err(format!(
@@ -186,8 +188,12 @@ fn benchmark_case(
     let library_cuda = Some(median(5, || Ok(library(Engine::Cuda)))?);
     #[cfg(not(feature = "cuda"))]
     let library_cuda: Option<Duration> = None;
+    #[cfg(feature = "cutile")]
+    let library_cutile = Some(median(5, || Ok(library(Engine::CuTile)))?);
+    #[cfg(not(feature = "cutile"))]
+    let library_cutile: Option<Duration> = None;
     println!(
-        "{},{},{n},{},{},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{},{}",
+        "{},{},{n},{},{},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{},{},{}",
         pattern.name(),
         if shuffled { "shuffled" } else { "in_order" },
         expected.ranges_len(),
@@ -201,6 +207,7 @@ fn benchmark_case(
         milliseconds(library_threads),
         optional_milliseconds(library_gpu),
         optional_milliseconds(library_cuda),
+        optional_milliseconds(library_cutile),
     );
     Ok(())
 }
