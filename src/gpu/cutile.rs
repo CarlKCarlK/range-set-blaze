@@ -56,9 +56,16 @@ mod kernels {
     use cutile::core::*;
 
     // Kernels are generic over the key type `K` (`u32` or `u64`); the host names it with
-    // `.generics(..)`. cuTile converts only to and from floats, not between integer types, so a
-    // generic kernel can't make a `K` constant from a literal: the host passes `key_zero`,
-    // `key_one`, and `digit_mask` (7), and the kernels derive the rest with tile arithmetic.
+    // `.generics(..)`. Two limits of this cuTile version shape how they're written (neither is a
+    // miscompile; the JIT or the type checker rejects the code):
+    //
+    // - `convert_scalar` and `convert_tile` convert only to and from floats, never between
+    //   integer types: the JIT rejects `i32` -> `u32` and `u32` -> `u64` ("Unsupported
+    //   conversion"). So a generic kernel can't make a `K` constant from a literal, and the host
+    //   passes `key_zero`, `key_one`, and `digit_mask` (7) as arguments.
+    // - A generic `K` scalar has no arithmetic in Rust's type checker (`ElementType` doesn't
+    //   imply `Add` or `Sub`), but a `Tile<K, _>` does. So anything derived from those
+    //   arguments, such as the "no digit" value 8 or a zero tile, is computed on tiles.
     //
     // The cuTile compiler can't infer the type of a bare `constant(..)` argument, so constants
     // get annotated `let`s; the other intermediate values follow suit for readability.
@@ -86,9 +93,8 @@ mod kernels {
     ) {
         let tile: i32 = get_tile_block_id().0;
         let index: Tile<i32, { [1024] }> = tile_indices(tile);
-        let zero_key: K = key_zero;
         // SAFETY: `keys` points to `len` keys.
-        let key: Tile<K, { [1024] }> = unsafe { gather(keys, index, len, zero_key) };
+        let key: Tile<K, { [1024] }> = unsafe { gather(keys, index, len, key_zero) };
         let digit: Tile<K, { [1024] }> = digits(key, shift, key_one, digit_mask, index, len);
         let flags: Tile<i32, { [1024, 8] }> = digit_flags(digit);
         let count: Tile<i32, { [8] }> = reduce_sum(flags, 0i32);
@@ -139,9 +145,8 @@ mod kernels {
     ) {
         let tile: i32 = get_tile_block_id().0;
         let index: Tile<i32, { [1024] }> = tile_indices(tile);
-        let zero_key: K = key_zero;
         // SAFETY: `keys` points to `len` keys.
-        let key: Tile<K, { [1024] }> = unsafe { gather(keys, index, len, zero_key) };
+        let key: Tile<K, { [1024] }> = unsafe { gather(keys, index, len, key_zero) };
         let digit: Tile<K, { [1024] }> = digits(key, shift, key_one, digit_mask, index, len);
         let zero: Tile<i32, { [1024] }> = constant(0i32, shape![1024]);
         let one: Tile<i32, { [1024] }> = constant(1i32, shape![1024]);
@@ -152,7 +157,7 @@ mod kernels {
         // scanning all 16 columns of `digit_flags` at once was about 40% slower.)
         let mut destination: Tile<i32, { [1024] }> = constant(0i32, shape![1024]);
         let step: Tile<K, { [1024] }> = broadcast_scalar(key_one, shape![1024]);
-        let mut wanted: Tile<K, { [1024] }> = broadcast_scalar(zero_key, shape![1024]);
+        let mut wanted: Tile<K, { [1024] }> = broadcast_scalar(key_zero, shape![1024]);
         for value in 0i32..8i32 {
             let matches: Tile<bool, { [1024] }> = eq_tile(digit, wanted);
             let flags: Tile<i32, { [1024] }> = select(matches, one, zero);
@@ -231,13 +236,12 @@ mod kernels {
     ) {
         let tile: i32 = get_tile_block_id().0;
         let index: Tile<i32, { [1024] }> = tile_indices(tile);
-        let zero_key: K = key_zero;
         let one: Tile<i32, { [1024] }> = constant(1i32, shape![1024]);
         let previous_index: Tile<i32, { [1024] }> = index - one;
         // SAFETY: `sorted` points to `len` keys.
-        let key: Tile<K, { [1024] }> = unsafe { gather(sorted, index, len, zero_key) };
+        let key: Tile<K, { [1024] }> = unsafe { gather(sorted, index, len, key_zero) };
         let previous: Tile<K, { [1024] }> =
-            unsafe { gather(sorted, previous_index, len, zero_key) };
+            unsafe { gather(sorted, previous_index, len, key_zero) };
         let joined: Tile<i32, { [1024] }> =
             joins(previous, key, gap_left, gap_right, has_gap, key_one);
         let starts: Tile<i32, { [1024] }> = range_starts(index, joined, len);
@@ -268,15 +272,14 @@ mod kernels {
     ) {
         let tile: i32 = get_tile_block_id().0;
         let index: Tile<i32, { [1024] }> = tile_indices(tile);
-        let zero_key: K = key_zero;
         let one: Tile<i32, { [1024] }> = constant(1i32, shape![1024]);
         let previous_index: Tile<i32, { [1024] }> = index - one;
         let next_index: Tile<i32, { [1024] }> = index + one;
         // SAFETY: `sorted` points to `len` keys.
-        let key: Tile<K, { [1024] }> = unsafe { gather(sorted, index, len, zero_key) };
+        let key: Tile<K, { [1024] }> = unsafe { gather(sorted, index, len, key_zero) };
         let previous: Tile<K, { [1024] }> =
-            unsafe { gather(sorted, previous_index, len, zero_key) };
-        let next: Tile<K, { [1024] }> = unsafe { gather(sorted, next_index, len, zero_key) };
+            unsafe { gather(sorted, previous_index, len, key_zero) };
+        let next: Tile<K, { [1024] }> = unsafe { gather(sorted, next_index, len, key_zero) };
         let joined_before: Tile<i32, { [1024] }> =
             joins(previous, key, gap_left, gap_right, has_gap, key_one);
         let joined_after: Tile<i32, { [1024] }> =

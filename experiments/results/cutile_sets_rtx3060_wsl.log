@@ -11,7 +11,7 @@ This is the proper cargo workflow:
 Building and running range-set-blaze (bin: gpu_ingest)...
 
    Compiling range-set-blaze v0.8.0 (/home/carlk/programs/range-set-blaze)
-    Finished `release` profile [optimized] target(s) in 12.15s
-     Running `target/release/gpu_ingest --cpu 16 --type u32 --type i32 --type char --type NotNanF32 1000000 10000000 100000000`
+    Finished `release` profile [optimized] target(s) in 13.17s
+     Running `target/release/gpu_ingest --cpu 16 1000000 10000000 100000000`
 adapter="llvmpipe (LLVM 15.0.7, 256 bits)" backend=Vulkan device_type=Cpu
 available threads=32
