@@ -26,7 +26,7 @@
 use std::sync::Arc;
 use std::vec::Vec;
 
-use cutile::api::{copy_host_vec_to_device, zeros};
+use cutile::api::{arange, copy_host_vec_to_device, zeros};
 use cutile::error::Error;
 use cutile::prelude::{DType, DeviceOp, IntoDeviceOp};
 use cutile::tensor::{Tensor, ToHostVec};
@@ -870,7 +870,7 @@ pub(super) fn map_ranges(
     let len = i32::try_from(keys.len()).expect("cuTile input exceeds i32 positions");
     let n = keys.len();
     let keys = copy_host_vec_to_device(&Arc::new(keys)).sync()?;
-    let positions = copy_host_vec_to_device(&Arc::new((0..len).collect::<Vec<i32>>())).sync()?;
+    let positions = arange::<i32>(n).sync()?;
     let (sorted, positions) = sort(keys, Some(positions), len)?;
     let positions = positions.expect("the sort carries positions when given them");
 

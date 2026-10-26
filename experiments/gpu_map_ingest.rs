@@ -96,6 +96,10 @@ fn all_threads() -> std::num::NonZeroUsize {
 }
 
 /// Times one pattern, size, and order, and prints its CSV row.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one benchmark case, timed with every engine"
+)]
 fn benchmark_case(
     context: &Context,
     kernels: &Kernels,

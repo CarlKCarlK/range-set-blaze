@@ -155,7 +155,7 @@ fn from_shuffled_slices<K: Integer, V: Eq + Clone>(
             let (Some(key_words), Some(value_words)) = (&key_words, &value_words) else {
                 panic!("Engine::CuTile: the key or value type has no GPU representation");
             };
-            ranges_cutile(key_words, value_words)
+            ranges_cutile(&pool, key_words, value_words)
         }
     };
     build_map(&pool, values, found)
@@ -186,14 +186,22 @@ fn ranges_cuda<K>(
 }
 
 #[cfg(feature = "cutile")]
-fn ranges_cutile<K>(key_words: &KeyWords<'_>, value_words: &ValueWords<'_>) -> Found<K> {
-    let (bounds, firsts) = super::cutile::map_ranges(
-        key_words.words.to_vec(),
-        key_words.gap,
-        value_words.lo.to_vec(),
-        value_words.hi.clone(),
-    )
-    .unwrap_or_else(|error| panic!("Engine::CuTile: {error}"));
+fn ranges_cutile<K>(
+    pool: &ThreadPool,
+    key_words: &KeyWords<'_>,
+    value_words: &ValueWords<'_>,
+) -> Found<K> {
+    // cuTile uploads from owned vectors. Copying 100M keys and values on one thread took about
+    // 300 ms (mostly page faults on the fresh memory), on every thread about 60 ms.
+    let (keys, value_lo) = pool.install(|| {
+        (
+            key_words.words.par_iter().copied().collect(),
+            value_words.lo.par_iter().copied().collect(),
+        )
+    });
+    let (bounds, firsts) =
+        super::cutile::map_ranges(keys, key_words.gap, value_lo, value_words.hi.clone())
+            .unwrap_or_else(|error| panic!("Engine::CuTile: {error}"));
     Found::Words(Ranges {
         bounds,
         firsts: firsts.into_iter().map(|first| first as usize).collect(),
