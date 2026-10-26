@@ -76,55 +76,87 @@ nearly every key is its own range, building the map on the CPU dominates for eve
 CUDA roughly ties `cpu_parallel`. The 25M-range row varies by run (one earlier run measured 727 ms
 for CUDA), so treat it as noisy.
 
-## cuTile: sets with 32-bit keys
+## cuTile
 
 `Engine::CuTile` (feature `cutile`, `src/gpu/cutile.rs`) runs the same pipeline as cuTile
 kernels: NVIDIA's tile-based Rust kernels, where each program works on a tile of 1,024 keys and
-the compiler maps tiles onto threads and warps. It builds with plain `cargo`, but cuTile compiles
-the kernels on first use (about 3 s), so the CUDA toolkit must be installed where it runs. So far it
-handles sets with keys of 32 bits or fewer. The sort is a least-significant-digit radix sort with
-4-bit digits (8 passes; passes where every key has the same digit are skipped), and each pass ranks
-keys within their digit with 16 tile-wide scans.
+the compiler maps tiles onto threads and warps. It handles the same types as `Engine::Wgpu` (sets
+with keys up to 64 bits; maps with keys up to 32 bits and values of one or two words). It builds
+with plain `cargo`, but cuTile compiles the kernels on first use (about 3 s), so the CUDA toolkit
+must be installed where it runs. The sort is a least-significant-digit radix sort with 3-bit
+digits (11 passes for 32-bit keys, 22 for 64-bit; passes where every key has the same digit are
+skipped), and each pass ranks keys within their digit with 8 tile-wide scans. The code-level
+comparison with the CUDA engine is in [CUDA_VS_CUTILE.md](CUDA_VS_CUTILE.md).
 
-One WSL run with all three engines, shuffled keys:
+### Sets: 100M shuffled keys
 
-| Keys | Type | Workload | `Cpu(16)` | CUDA | cuTile |
-| ---: | --- | --- | ---: | ---: | ---: |
-| 100M | `u32` | distinct | 251 ms | **141 ms** | 271 ms |
-| 100M | `i32` | distinct | 276 ms | **135 ms** | 269 ms |
-| 100M | `NotNanF32` | distinct | 336 ms | **135 ms** | 278 ms |
-| 100M | `char` | duplicates | 272 ms | **133 ms** | 252 ms |
-| 100M | `NotNanF32` | duplicates | 394 ms | **126 ms** | 251 ms |
-| 10M | `u32` | distinct | 26 ms | **17 ms** | 37 ms |
-| 10M | `NotNanF32` | distinct | 36 ms | **17 ms** | 35 ms |
-| 1M | `u32` | distinct | 3.0 ms | **2.4 ms** | 4.2 ms |
+One WSL run with all three engines:
 
-- At 100M, cuTile ties or beats `Cpu(16)` and is about 2× slower than the CUDA engine. At 10M it
-  roughly ties the CPU, and at 1M it is the slowest (4–8 ms, noisy).
-- Where the time goes, for 100M shuffled `u32` (one warm call, about 250 ms): `scatter_digits` 147
-  ms (7 passes, about 21 ms each), upload 45 ms, encoding on the CPU about 28 ms, `digit_counts` 12
-  ms, the host round trips of the digit counts about 11 ms, and finding ranges 5 ms. Moving the keys
-  costs only about 2 ms per pass, so `scatter_digits` is bound by its 16 scans. The CUDA engine
-  ranks keys with warp instructions, which cuTile's tiles don't expose.
+| Type | Workload | `Cpu(16)` | CUDA | cuTile |
+| --- | --- | ---: | ---: | ---: |
+| `u32` | distinct | 269 ms | **154 ms** | 264 ms |
+| `NotNanF32` | distinct | 362 ms | **148 ms** | 249 ms |
+| `char` | duplicates | 291 ms | **149 ms** | 218 ms |
+| `u8` | duplicates | 194 ms | **98 ms** | 166 ms |
+| `u64` | distinct | 484 ms | **316 ms** | 473 ms |
+| `i64` | distinct | 568 ms | **382 ms** | 607 ms |
+| `NotNanF64` | distinct | 579 ms | **342 ms** | 443 ms |
+
+- For keys of 32 bits or fewer, cuTile beats `Cpu(16)` and takes about 1.6× as long as CUDA. For
+  64-bit keys (up to 22 passes) it roughly ties the CPU and takes about 1.5× as long as CUDA.
+- At 10M and 1M this run was noisy for every engine (CUDA took 39 ms for 10M `u32`, against about
+  17 ms in other runs), so compare small sizes only within a run. In this run, cuTile was the
+  slowest engine at 1M (9–12 ms) and 10M.
+- Where the time goes, for 100M shuffled `u32` with the earlier 4-bit digits (one warm call, about
+  250 ms): `scatter_digits` 147 ms (about 21 ms per pass), upload 45 ms, encoding on the CPU about
+  28 ms, `digit_counts` 12 ms, the host round trips of the digit counts about 11 ms, and finding
+  ranges 5 ms. Moving the keys costs only about 2 ms per pass, so the scatter is bound by its
+  scans. The CUDA engine ranks keys with warp instructions, which cuTile's tiles don't expose.
+- Digit width trades scans per pass against passes: on 100M `u32`, 3-bit digits took 208–224 ms,
+  4-bit 250–266 ms, and 2-bit about 268 ms (alternating runs of one call).
+- Ranking with one 1,024 × 16 one-hot tile and a single scan was about 40% slower than 16 scans of
+  1,024, so only `digit_counts` uses a one-hot tile (one `reduce_sum`).
 - cuTile encodes keys on every CPU thread (as the map path does); the CUDA engine encodes on one
   thread, overlapped with its upload.
-- Ranking with one 1,024 × 16 one-hot tile and a single scan was about 40% slower than 16 scans of
-  1,024, so only `digit_counts` uses the one-hot tile (one `reduce_sum`).
-- Worked around: two cuTile compiler bugs, confirmed on the GPU at cuda-rust `ad0a42c` and at
-  `main` as of 2026-10-25 (`9df9e7c`). Both are in `encode_literal_bytes`
-  (`cutile-compiler/src/compiler/compile_expression.rs`). `constant(false, ..)` compiles as true:
-  the bool literal arrives as the string `"false"`, and the encoder treats anything but `"0"` as
-  true. Any `u32` constant above `i32::MAX` compiles as 0: integers are signless, so it is parsed as
-  `i32`, and a failed parse silently becomes 0. Both are reported in
-  [cuda-rust#1469](https://github.com/NVIDIA/cuda-rust/issues/1469), with a fix in
-  [cuda-rust#1470](https://github.com/NVIDIA/cuda-rust/pull/1470) (open as of 2026-10-25); once it
-  merges, the workarounds can go.
+
+### Maps: shuffled key-value pairs
+
+| Pairs | Ranges | `cpu_parallel` | CUDA | cuTile |
+| --- | ---: | ---: | ---: | ---: |
+| 100M | 1 | 791 ms | **352 ms** | 464 ms |
+| 100M | 390K | 630 ms | **356 ms** | 492 ms |
+| 100M | 12.5M | 689 ms | **426 ms** | 548 ms |
+| 100M | 25M | **1,081 ms** | 1,510 ms | 1,517 ms |
+| 100M | 100M | **3,143 ms** | 4,782 ms | 4,851 ms |
+| 10M | 39K | 52 ms | **44 ms** | 52 ms |
+| 10M | 10M | **310 ms** | 391 ms | 421 ms |
+
+- With few ranges, cuTile beats the CPU builder at 100M and ties it at 10M; CUDA is fastest.
+  When most keys are their own range, building the map on the CPU dominates every engine.
+- Two host-side fixes cut a warm 100M one-range call from 816 to 415 ms: positions come from
+  `arange` on the GPU (about 159 ms on the host before), and the key and value words are copied
+  for upload on every thread (about 300 ms on one thread before; cuTile uploads only from owned
+  vectors).
+
+### Compiler bugs worked around
+
+Two cuTile compiler bugs, confirmed on the GPU at cuda-rust `ad0a42c` and at `main` as of
+2026-10-25 (`9df9e7c`). Both are in `encode_literal_bytes`
+(`cutile-compiler/src/compiler/compile_expression.rs`). `constant(false, ..)` compiles as true:
+the bool literal arrives as the string `"false"`, and the encoder treats anything but `"0"` as
+true. Any unsigned constant above the signed maximum (for `u32`, above `i32::MAX`) compiles as 0:
+integers are signless, so it is parsed as signed, and a failed parse silently becomes 0. Both are
+reported in [cuda-rust#1469](https://github.com/NVIDIA/cuda-rust/issues/1469), with a fix in
+[cuda-rust#1470](https://github.com/NVIDIA/cuda-rust/pull/1470) (open as of 2026-10-25); once it
+merges, the workarounds can go.
 
 ```bash
-cargo oxide run --features cuda,cutile --bin gpu_ingest -- --cpu 16 --type u32 --type i32 --type char --type NotNanF32 1000000 10000000 100000000
+cargo oxide run --features cuda,cutile --bin gpu_ingest -- --cpu 16 1000000 10000000 100000000
+cargo oxide run --features cuda,cutile --bin gpu_map_ingest -- 1000000 10000000 100000000
 ```
 
-[Results](results/cutile_sets_rtx3060_wsl.csv) ([log](results/cutile_sets_rtx3060_wsl.log)).
+[Sets](results/cutile_sets_rtx3060_wsl.csv) ([log](results/cutile_sets_rtx3060_wsl.log)),
+[maps](results/cutile_maps_rtx3060_wsl.csv) ([log](results/cutile_maps_rtx3060_wsl.log)).
 
 ## Caveats
 
