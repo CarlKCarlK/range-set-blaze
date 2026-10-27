@@ -1,0 +1,2 @@
+adapter="AMD Radeon(TM) 8060S Graphics" backend=Vulkan device_type=IntegratedGpu
+cold: context 359.3 ms, shader pipelines 1.4 ms

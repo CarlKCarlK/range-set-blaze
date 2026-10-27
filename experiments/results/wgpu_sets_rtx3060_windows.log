@@ -1,0 +1,2 @@
+adapter="NVIDIA GeForce RTX 3060" backend=Vulkan device_type=DiscreteGpu
+available threads=32

@@ -34,6 +34,10 @@ pub use dyn_sorted_disjoint_map::DynSortedDisjointMap;
 pub mod gaps;
 pub use gaps::{FillGapsIter, FillGapsIterMap};
 
+#[cfg(feature = "shuffled_slices")]
+mod gpu;
+#[cfg(feature = "shuffled_slices")]
+pub use gpu::Engine;
 pub mod joins;
 
 pub mod float;
